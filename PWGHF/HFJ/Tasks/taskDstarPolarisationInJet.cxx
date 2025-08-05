@@ -72,23 +72,6 @@ struct HfTaskPolarisationDstarInJet {
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 Pi"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
 
-  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {200, 0.139f, 0.179f}, "#it{M} (GeV/#it{c}^{2})"};
-  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.f, 100.f}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis configThnAxisY{"configThnAxisY", {20, -1.f, 1.f}, "#it{y}"};
-  ConfigurableAxis configThnAxisCosThetaStar{"configThnAxisCosThetaStar", {20, -1.f, 1.f}, "cos(#vartheta_{helicity})"};
-  ConfigurableAxis configThnAxisMlBkg{"configThnAxisMlBkg", {100, 0.f, 1.f}, "ML bkg"};
-  ConfigurableAxis configThnAxisInvMassD0{"configThnAxisInvMassD0", {250, 1.65f, 2.15f}, "#it{M}(D^{0}) (GeV/#it{c}^{2})"}; // only for D*+
-  // ConfigurableAxis configThnAxisMlPrompt{"configThnAxisMlPrompt", {100, 0.f, 1.f}, "ML prompt"};
-  ConfigurableAxis configThnAxisMlNonPrompt{"configThnAxisMlNonPrompt", {100, 0.f, 1.f}, "ML non-prompt"};
-  ConfigurableAxis configThnAxisNumCandidates{"configThnAxisNumCandidates", {1, -0.5f, 0.5f}, "num candidates"};
-  ConfigurableAxis configThnAxisPtB{"configThnAxisPtB", {3000, 0.f, 300.f}, "#it{p}_{T}(B mother) (GeV/#it{c})"};
-  ConfigurableAxis configThnAxisAbsEtaTrackMin{"configThnAxisAbsEtaTrackMin", {3, 0.f, 0.3f}, "min |#it{#eta_{track}}|"};
-  ConfigurableAxis configThnAxisNumItsClsMin{"configThnAxisNumItsClsMin", {4, 3.5f, 7.5f}, "min #it{N}_{cls ITS}"};
-  ConfigurableAxis configThnAxisNumTpcClsMin{"configThnAxisNumTpcClsMin", {3, 79.5f, 140.5f}, "min #it{N}_{cls TPC}"};
-  ConfigurableAxis configThnAxisCharge{"configThnAxisCharge", {2, -2.f, 2.f}, "electric charge"};
-  ConfigurableAxis configThnAxisProjection{"configThnAxisProjection", {300, 0.f, 10.f}, "z^{D^{*+},jet}_{||}"};
-  ConfigurableAxis configThnAxisJetPt{"configThnAxisJetPt", {100, 0.f, 100.f}, "#it{p}_{T} (GeV/#it{c})"};
-
   /// activate rotational background
   Configurable<int> nBkgRotations{"nBkgRotations", 0, "Number of rotated copies (background) per each original candidate"};
   Configurable<float> minRotAngleMultByPi{"minRotAngleMultByPi", 5. / 6, "Minimum angle rotation for track rotation, to be multiplied by pi"};
@@ -117,6 +100,23 @@ struct HfTaskPolarisationDstarInJet {
   PresliceUnsorted<aod::JetCollisionsMCD> collisionsPerMCCollisionPreslice = aod::jmccollisionlb::mcCollisionId;
   Preslice<JetMCDTable> dstarMCDJetsPerCollisionPreslice = aod::jet::collisionId;
   Preslice<DstarJets> dstarJetsPerCollision = aod::jet::collisionId;
+
+  ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {200, 0.139f, 0.179f}, "#it{M} (GeV/#it{c}^{2})"}; // o2-linter: disable=pdg/explicit-mass (false positive)
+  ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.f, 100.f}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisY{"configThnAxisY", {20, -1.f, 1.f}, "#it{y}"};
+  ConfigurableAxis configThnAxisCosThetaStar{"configThnAxisCosThetaStar", {20, -1.f, 1.f}, "cos(#vartheta_{helicity})"};
+  ConfigurableAxis configThnAxisMlBkg{"configThnAxisMlBkg", {100, 0.f, 1.f}, "ML bkg"};
+  ConfigurableAxis configThnAxisInvMassD0{"configThnAxisInvMassD0", {250, 1.65f, 2.15f}, "#it{M}(D^{0}) (GeV/#it{c}^{2})"}; // only for D*+
+  // ConfigurableAxis configThnAxisMlPrompt{"configThnAxisMlPrompt", {100, 0.f, 1.f}, "ML prompt"};
+  ConfigurableAxis configThnAxisMlNonPrompt{"configThnAxisMlNonPrompt", {100, 0.f, 1.f}, "ML non-prompt"};
+  ConfigurableAxis configThnAxisNumCandidates{"configThnAxisNumCandidates", {1, -0.5f, 0.5f}, "num candidates"};
+  ConfigurableAxis configThnAxisPtB{"configThnAxisPtB", {3000, 0.f, 300.f}, "#it{p}_{T}(B mother) (GeV/#it{c})"};
+  ConfigurableAxis configThnAxisAbsEtaTrackMin{"configThnAxisAbsEtaTrackMin", {3, 0.f, 0.3f}, "min |#it{#eta_{track}}|"};
+  ConfigurableAxis configThnAxisNumItsClsMin{"configThnAxisNumItsClsMin", {4, 3.5f, 7.5f}, "min #it{N}_{cls ITS}"};
+  ConfigurableAxis configThnAxisNumTpcClsMin{"configThnAxisNumTpcClsMin", {3, 79.5f, 140.5f}, "min #it{N}_{cls TPC}"};
+  ConfigurableAxis configThnAxisCharge{"configThnAxisCharge", {2, -2.f, 2.f}, "electric charge"};
+  ConfigurableAxis configThnAxisProjection{"configThnAxisProjection", {300, 0.f, 10.f}, "z^{D^{*+},jet}_{||}"};
+  ConfigurableAxis configThnAxisJetPt{"configThnAxisJetPt", {100, 0.f, 100.f}, "#it{p}_{T} (GeV/#it{c})"};
 
   HistogramRegistry registry{"registry", {}};
 
