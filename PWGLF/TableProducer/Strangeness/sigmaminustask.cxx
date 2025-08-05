@@ -115,6 +115,8 @@ struct sigmaminustask {
       rFindable.add("hFilterIndex", "hFilterIndex", {HistType::kTH1F, {filtersAxis}});
       rFindable.add("h2MCRadiusFilterIndex", "h2MCRadiusFilterIndex", {HistType::kTH2F, {filtersAxis, radiusAxis}});
       rFindable.add("h2RecRadiusFilterIndex", "h2RecRadiusFilterIndex", {HistType::kTH2F, {filtersAxis, radiusAxis}});
+      rFindable.add("h2MCRadiusFilter_protonkink", "h2MCRadiusFilter_protonkink", {HistType::kTH2F, {filtersAxis, radiusAxis}});
+      rFindable.add("h2MCRadiusFilter_pikink", "h2MCRadiusFilter_pikink", {HistType::kTH2F, {filtersAxis, radiusAxis}});
     }
   }
 
@@ -297,6 +299,18 @@ struct sigmaminustask {
 
   PROCESS_SWITCH(sigmaminustask, processMC, "MC processing", false);
 
+  void fillFindableHistograms(int filterIndex, float mcRadius, float recRadius, bool isPiDaughter) {
+    rFindable.fill(HIST("hFilterIndex"), filterIndex);
+    rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
+    rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+    
+    if (isPiDaughter) {
+      rFindable.fill(HIST("h2MCRadiusFilter_pikink"), filterIndex, mcRadius);
+    } else {
+      rFindable.fill(HIST("h2MCRadiusFilter_protonkink"), filterIndex, mcRadius);
+    }
+  }
+
   void processFindable(aod::KinkCands const& kinkCands, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC,
                     TracksFull const& tracks, CollisionsFullMC const& mcCollisions){
     // A - generated findable track pairs map: mcMother.globalIndex() -> (motherTrack.globalIndex(), daughterTrack.globalIndex())
@@ -382,6 +396,7 @@ struct sigmaminustask {
       // Compute mass and radii
       float mcMass = std::sqrt(mcMother.e() * mcMother.e() - mcMother.p() * mcMother.p());
       int sigmaSign = mcMother.pdgCode() > 0 ? 1 : -1;
+      bool isPiDaughter = std::abs(mcDaughter.pdgCode()) == 211;
       float mcRadius = std::sqrt((mcMother.vx() - mcDaughter.vx()) * (mcMother.vx() - mcDaughter.vx()) +
                         (mcMother.vy() - mcDaughter.vy()) * (mcMother.vy() - mcDaughter.vy()));
       float recRadius = -1.0;
@@ -394,17 +409,14 @@ struct sigmaminustask {
 
       // Define filter index and progressively apply kinkbuilder cuts to track pairs
       int filterIndex = 0;
-      rFindable.fill(HIST("hFilterIndex"), filterIndex);
-      rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
-      rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+      fillFindableHistograms(filterIndex, mcRadius, recRadius, isPiDaughter);
 
       // 1 - tracks with right ITS, TPC, TOF signals
       if (motherTrack.has_collision() && motherTrack.hasITS() && !motherTrack.hasTPC() && !motherTrack.hasTOF() &&
           daughterTrack.hasITS() && daughterTrack.hasTPC()) {
         filterIndex += 1;
-        rFindable.fill(HIST("hFilterIndex"), filterIndex);
-        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, isPiDaughter);
+
       } else {
         continue; 
       }
@@ -413,18 +425,16 @@ struct sigmaminustask {
       if (motherTrack.itsNCls() < 6 &&
             motherTrack.itsNClsInnerBarrel() == 3 && motherTrack.itsChi2NCl() < 36) {
         filterIndex += 1;
-        rFindable.fill(HIST("hFilterIndex"), filterIndex);
-        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, isPiDaughter);
+
       } else {
         continue; 
       }
 
       if (motherTrack.pt() > KBminPtMoth) {
         filterIndex += 1;
-        rFindable.fill(HIST("hFilterIndex"), filterIndex);
-        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, isPiDaughter);
+
       } else {
         continue; 
       }
@@ -433,9 +443,8 @@ struct sigmaminustask {
       if (daughterTrack.itsNClsInnerBarrel() == 0 && daughterTrack.itsNCls() < 4 &&
           daughterTrack.tpcNClsCrossedRows() > 0.8 * daughterTrack.tpcNClsFindable() && daughterTrack.tpcNClsFound() > KBnTPCClusMinDaug) {
         filterIndex += 1;
-        rFindable.fill(HIST("hFilterIndex"), filterIndex);
-        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, isPiDaughter);
+
       } else {
         continue; 
       }
@@ -443,9 +452,8 @@ struct sigmaminustask {
       // 5 - geometric cuts: eta
       if (std::abs(motherTrack.eta()) < KBetaMax && std::abs(daughterTrack.eta()) < KBetaMax) {
         filterIndex += 1;
-        rFindable.fill(HIST("hFilterIndex"), filterIndex);
-        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, isPiDaughter);
+
       } else {
         continue; 
       }
@@ -453,9 +461,8 @@ struct sigmaminustask {
       // 6 - geometric cuts: phi difference
       if (std::abs(motherTrack.phi() - daughterTrack.phi()) * radToDeg < KBmaxPhiDiff) {
         filterIndex += 1;
-        rFindable.fill(HIST("hFilterIndex"), filterIndex);
-        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, isPiDaughter);
+
       } else {
         continue; 
       }
@@ -463,9 +470,8 @@ struct sigmaminustask {
       // 7 - radius cut
       if (recRadius > KBradiusCut) {
         filterIndex += 1;
-        rFindable.fill(HIST("hFilterIndex"), filterIndex);
-        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, isPiDaughter);
+
       } else {
         continue; 
       }
@@ -474,11 +480,16 @@ struct sigmaminustask {
       auto collision = motherTrack.template collision_as<CollisionsFullMC>();
       if (!(std::abs(collision.posZ()) > cutzvertex || !collision.sel8())) {
         filterIndex += 1;
-        rFindable.fill(HIST("hFilterIndex"), filterIndex);
-        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, isPiDaughter);
+
       }
 
+      // 9 - TOF daughter presence
+      if (daughterTrack.hasTOF()) {
+        filterIndex += 1;
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, isPiDaughter);
+
+      }
     }
   }
 
@@ -492,10 +503,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 }
 
 // Next steps:
-// 0. Resolution histograms should have relative values, not absolute: OK
-// 1. New h2 with genRadius (recRadius) vs FilterIndex: OK
-// 2. Get recRadius through a map on kinkCands, put a negative value if the candidate is not reconstructed: OK
-// 2.1 Consider adding step in filters with the cuts on radius: OK
-// 2.2 Add h2 of radius resolution vs pt: OK
-// 3. Rewrite the findable method using maps to avoid the nested loop: OK
 // 4. For generated h2, avoid mass axis, use a bool axis to easily distinguish sigma minus and sigma plus
