@@ -12,13 +12,26 @@
 // jet finder task
 //
 // Author: Hadi Hassan, Universiy of Jväskylä, hadi.hassan@cern.ch
-#include <memory>
-#include <tuple>
-#include "Framework/Logger.h"
-#include "Common/Core/RecoDecay.h"
-#include "PWGJE/Core/JetUtilities.h"
+
 #include "PWGJE/Core/JetBkgSubUtils.h"
-#include "PWGJE/Core/FastJetUtilities.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <TMath.h>
+
+#include <fastjet/AreaDefinition.hh>
+#include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/GhostedAreaSpec.hh>
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
+#include <fastjet/Selector.hh>
+#include <fastjet/contrib/ConstituentSubtractor.hh>
+#include <fastjet/tools/Subtractor.hh>
+
+#include <tuple>
+#include <vector>
+
+#include <math.h>
 
 JetBkgSubUtils::JetBkgSubUtils(float jetBkgR_out, float bkgEtaMin_out, float bkgEtaMax_out, float bkgPhiMin_out, float bkgPhiMax_out, float constSubAlpha_out, float constSubRMax_out, int nHardReject_out, fastjet::GhostedAreaSpec ghostAreaSpec_out) : jetBkgR(jetBkgR_out),
                                                                                                                                                                                                                                                           bkgEtaMin(bkgEtaMin_out),
@@ -147,7 +160,7 @@ std::tuple<double, double> JetBkgSubUtils::estimateRhoPerpCone(const std::vector
   return std::make_tuple(perpPtDensity, perpMdDensity);
 }
 
-fastjet::PseudoJet JetBkgSubUtils::doRhoAreaSub(fastjet::PseudoJet& jet, double rhoParam, double rhoMParam)
+fastjet::PseudoJet JetBkgSubUtils::doRhoAreaSub(const fastjet::PseudoJet& jet, double rhoParam, double rhoMParam)
 {
 
   fastjet::Subtractor sub = fastjet::Subtractor(rhoParam, rhoMParam);
@@ -159,7 +172,6 @@ fastjet::PseudoJet JetBkgSubUtils::doRhoAreaSub(fastjet::PseudoJet& jet, double 
 
 std::vector<fastjet::PseudoJet> JetBkgSubUtils::doEventConstSub(std::vector<fastjet::PseudoJet>& inputParticles, double rhoParam, double rhoMParam)
 {
-
   JetBkgSubUtils::initialise();
   fastjet::contrib::ConstituentSubtractor constituentSub(rhoParam, rhoMParam);
   constituentSub.set_distance_type(fastjet::contrib::ConstituentSubtractor::deltaR); /// deltaR=sqrt((y_i-y_j)^2+(phi_i-phi_j)^2)), longitudinal Lorentz invariant

@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -24,7 +24,6 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "TDatabasePDG.h"
 #include "ReconstructionDataFormats/PID.h"
 #include "Common/DataModel/PIDResponse.h"
 
@@ -137,10 +136,11 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   Configurable<int> ConfTPCOccupancyHigh{"ConfTPCOccupancyHigh", 500, "Higher limit for TPC occupancy"};
   Configurable<float> ConfIntRateLow{"ConfIntRateLow", 0.0, "Lower limit for interaction rate"};
   Configurable<float> ConfIntRateHigh{"ConfIntRateHigh", 10000.0, "Higher limit for interaction rate"};
+  Configurable<bool> ConfIsCent{"ConfIsCent", true, "Condition to choose centrality of multiplicity for mixing"};
 
   Filter collfilterFDtable = (o2::aod::femtouniversecollision::multV0M > ConfV0MLow) && (o2::aod::femtouniversecollision::multV0M < ConfV0MHigh);
   Filter collfilterFDExttable = (o2::aod::femtouniversecollision::interactionRate > ConfIntRateLow) && (o2::aod::femtouniversecollision::interactionRate < ConfIntRateHigh) &&
-                                (o2::aod::femtouniversecollision::occupancy > ConfTPCOccupancyLow) && (o2::aod::femtouniversecollision::occupancy < ConfTPCOccupancyHigh);
+                                (o2::aod::femtouniversecollision::occupancy >= ConfTPCOccupancyLow) && (o2::aod::femtouniversecollision::occupancy < ConfTPCOccupancyHigh);
   using FilteredFDCollisions = soa::Filtered<soa::Join<aod::FdCollisions, aod::FDExtCollisions>>;
   using FilteredFDCollision = FilteredFDCollisions::iterator;
   // Filter trackAdditionalfilter = (nabs(aod::femtouniverseparticle::eta) < twotracksconfigs.ConfEtaMax); // example filtering on configurable
@@ -150,7 +150,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   ConfigurableAxis ConfTempFitVarpTBins{"ConfTempFitVarpTBins", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot"};
 
   /// Correlation part
-  ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - multiplicity or centrality"}; // \todo to be obtained from the hash task
+  ConfigurableAxis ConfMultBinsCent{"ConfMultBinsCent", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f, 99999.f}, "Mixing bins - centrality"}; // \todo to be obtained from the hash task
+  ConfigurableAxis ConfMultBinsMult{"ConfMultBinsMult", {VARIABLE_WIDTH, 0.0f, 400.0f, 800.0f, 1200.0f, 1600.0f, 2000.0f, 2500.0f, 3000.0f, 3500.0f, 4000.0f, 4500.0f, 5000.0f, 6000.0f, 7000.0f, 8000.0f, 9000.0f, 10000.0f, 11000.0f, 12000.0f, 13000.0f, 14000.0f, 15000.0f, 16000.0f, 17000.0f, 18000.0f, 99999.f}, "Mixing bins - centrality"};
   ConfigurableAxis ConfMultKstarBins{"ConfMultKstarBins", {VARIABLE_WIDTH, 0.0f, 200.0f}, "Bins for kstar analysis in multiplicity or centrality bins (10 is maximum)"};
   ConfigurableAxis ConfKtKstarBins{"ConfKtKstarBins", {VARIABLE_WIDTH, 0.1f, 0.2f, 0.3f, 0.4f}, "Bins for kstar analysis in kT bins"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
@@ -158,7 +159,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   ConfigurableAxis ConfmTBins3D{"ConfmTBins3D", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twotracksconfigs.ConfUse3D>> to true in order to use)"};
   ConfigurableAxis ConfmultBins3D{"ConfmultBins3D", {VARIABLE_WIDTH, 0.0f, 20.0f, 30.0f, 40.0f, 99999.0f}, "multiplicity Binning for the 3Dimensional plot: k* vs multiplicity vs mT (set <<twotracksconfigs.ConfUse3D>> to true in order to use)"};
 
-  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinning{{ConfVtxBins, ConfMultBins}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultV0M> colBinningCent{{ConfVtxBins, ConfMultBinsCent}, true};
+  ColumnBinningPolicy<aod::collision::PosZ, aod::femtouniversecollision::MultNtr> colBinningNtr{{ConfVtxBins, ConfMultBinsMult}, true};
 
   ConfigurableAxis ConfkstarBins{"ConfkstarBins", {60, 0.0, 0.3}, "binning kstar"};
   ConfigurableAxis ConfkTBins{"ConfkTBins", {150, 0., 9.}, "binning kT"};
@@ -180,6 +182,11 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   Configurable<bool> cfgProcessMultBins{"cfgProcessMultBins", true, "Process kstar histograms in multiplicity bins (in multiplicity bins)"};
   Configurable<bool> cfgProcessKtBins{"cfgProcessKtBins", true, "Process kstar histograms in kT bins (if cfgProcessMultBins is set false, this will not be processed regardless this Configurable state)"};
   Configurable<bool> cfgProcessKtMt3DCF{"cfgProcessKtMt3DCF", false, "Process 3D histograms in kT and Mult bins"};
+  Configurable<bool> ConfIsFillAngqLCMS{"ConfIsFillAngqLCMS", true, "Fill qLCMS vs dEta vs dPhi"};
+  Configurable<float> confCPRDistMax{"confCPRDistMax", 0.0, "Max. radial seperation between two closed-pairs"};
+  Configurable<float> confCPRFracMax{"confCPRFracMax", 0.0, "Max. allowed fraction bad to all TPC points of radial seperation between two closed-pairs"};
+  Configurable<bool> confCPRIsAtITS{"confCPRIsAtITS", false, "Close Pair Rejection at ITS or TPC"};
+  Configurable<bool> confCPRDphiAvgOrDist{"confCPRDphiAvgOrDist", true, "Close Pair Rejection by radial or angular seperation"};
 
   FemtoUniverseSHContainer<femto_universe_sh_container::EventType::same, femto_universe_sh_container::Observable::kstar> sameEventCont;
   FemtoUniverseSHContainer<femto_universe_sh_container::EventType::mixed, femto_universe_sh_container::Observable::kstar> mixedEventCont;
@@ -237,13 +244,13 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     // ConfNsigmaCombined -> TPC and TOF Sigma (combined) for momentum > 0.5
 
     if (mom < twotracksconfigs.ConfTOFPtMin) {
-      if (TMath::Abs(nsigmaTPCPr) < twotracksconfigs.ConfNsigmaTPC) {
+      if (std::abs(nsigmaTPCPr) < twotracksconfigs.ConfNsigmaTPC) {
         return true;
       } else {
         return false;
       }
     } else {
-      if (TMath::Hypot(nsigmaTOFPr, nsigmaTPCPr) < twotracksconfigs.ConfNsigmaCombined) {
+      if (std::hypot(nsigmaTOFPr, nsigmaTPCPr) < twotracksconfigs.ConfNsigmaCombined) {
         return true;
       } else {
         return false;
@@ -255,25 +262,25 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   bool IsKaonNSigma(float mom, float nsigmaTPCK, float nsigmaTOFK)
   {
     if (mom < 0.3) { // 0.0-0.3
-      if (TMath::Abs(nsigmaTPCK) < 3.0) {
+      if (std::abs(nsigmaTPCK) < 3.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.45) { // 0.30 - 0.45
-      if (TMath::Abs(nsigmaTPCK) < 2.0) {
+      if (std::abs(nsigmaTPCK) < 2.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 0.55) { // 0.45-0.55
-      if (TMath::Abs(nsigmaTPCK) < 1.0) {
+      if (std::abs(nsigmaTPCK) < 1.0) {
         return true;
       } else {
         return false;
       }
     } else if (mom < 1.5) { // 0.55-1.5 (now we use TPC and TOF)
-      if ((TMath::Abs(nsigmaTOFK) < 3.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+      if ((std::abs(nsigmaTOFK) < 3.0) && (std::abs(nsigmaTPCK) < 3.0)) {
         {
           return true;
         }
@@ -281,7 +288,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         return false;
       }
     } else if (mom > 1.5) { // 1.5 -
-      if ((TMath::Abs(nsigmaTOFK) < 2.0) && (TMath::Abs(nsigmaTPCK) < 3.0)) {
+      if ((std::abs(nsigmaTOFK) < 2.0) && (std::abs(nsigmaTPCK) < 3.0)) {
         return true;
       } else {
         return false;
@@ -302,13 +309,13 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     // ConfNsigmaCombined -> TPC and TOF Pion Sigma (combined) for momentum > 0.5
     if (true) {
       if (mom < twotracksconfigs.ConfTOFPtMin) {
-        if (TMath::Abs(nsigmaTPCPi) < twotracksconfigs.ConfNsigmaTPC) {
+        if (std::abs(nsigmaTPCPi) < twotracksconfigs.ConfNsigmaTPC) {
           return true;
         } else {
           return false;
         }
       } else {
-        if (TMath::Hypot(nsigmaTOFPi, nsigmaTPCPi) < twotracksconfigs.ConfNsigmaCombined) {
+        if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < twotracksconfigs.ConfNsigmaCombined) {
           return true;
         } else {
           return false;
@@ -422,9 +429,13 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   }
 
   template <typename CollisionType>
-  void fillCollision(CollisionType col)
+  void fillCollision(CollisionType col, bool IsCent)
   {
-    MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinning.getBin({col.posZ(), col.multV0M()}));
+    if (IsCent) {
+      MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinningCent.getBin({col.posZ(), col.multV0M()}));
+    } else {
+      MixQaRegistry.fill(HIST("MixingQA/hSECollisionBins"), colBinningNtr.getBin({col.posZ(), col.multNtr()}));
+    }
     eventHisto.fillQA(col);
   }
 
@@ -444,7 +455,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
 
     /// Histogramming same event
     if ((ContType == 1 || ContType == 2) && fillQA) {
-      for (auto& part : groupPartsOne) {
+      for (const auto& part : groupPartsOne) {
         if (!IsParticleNSigma((int8_t)1, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
           continue;
         }
@@ -453,7 +464,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     }
 
     if ((ContType == 1 || ContType == 3) && fillQA) {
-      for (auto& part : groupPartsTwo) {
+      for (const auto& part : groupPartsTwo) {
         if (!IsParticleNSigma((int8_t)2, part.p(), trackCuts.getNsigmaTPC(part, o2::track::PID::Proton), trackCuts.getNsigmaTOF(part, o2::track::PID::Proton), trackCuts.getNsigmaTPC(part, o2::track::PID::Pion), trackCuts.getNsigmaTOF(part, o2::track::PID::Pion), trackCuts.getNsigmaTPC(part, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(part, o2::track::PID::Kaon))) {
           continue;
         }
@@ -464,7 +475,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     if (ContType == 1) {
 
       /// Now build the combinations for non-identical particle pairs
-      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
         if (!IsParticleNSigma((int8_t)1, p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon))) {
           continue;
@@ -475,8 +486,14 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         if (ConfIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
-            continue;
+          if (confCPRIsAtITS.value) {
+            if (pairCloseRejection.isClosePairAtITS(p1, p2, magFieldTesla, femto_universe_container::EventType::same)) {
+              continue;
+            }
+          } else {
+            if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::same, confCPRDphiAvgOrDist, confCPRDistMax, confCPRFracMax)) {
+              continue;
+            }
           }
         }
 
@@ -488,7 +505,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         sameEventMultCont.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
       }
     } else {
-      for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
+      for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsOne, groupPartsOne))) {
 
         if (!IsParticleNSigma((int8_t)2, p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon))) {
           continue;
@@ -499,8 +516,14 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         }
 
         if (ConfIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
-            continue;
+          if (confCPRIsAtITS.value) {
+            if (pairCloseRejection.isClosePairAtITS(p1, p2, magFieldTesla, femto_universe_container::EventType::same)) {
+              continue;
+            }
+          } else {
+            if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::same, confCPRDphiAvgOrDist, confCPRDistMax, confCPRFracMax)) {
+              continue;
+            }
           }
         }
 
@@ -513,12 +536,21 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         double rand;
         rand = randgen->Rndm();
 
+        std::vector<double> f3d;
+        double kv;
+
         switch (ContType) {
           case 2: {
             if (rand > 0.5) {
               sameEventMultContPP.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
+              f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
             } else if (rand <= 0.5) {
               sameEventMultContPP.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
+              f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+            }
+            if (ConfIsFillAngqLCMS) {
+              kv = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2] + f3d[3] * f3d[3]);
+              pairCloseRejection.ClosePairqLCMS(p1, p2, magFieldTesla, femto_universe_container::EventType::same, kv);
             }
             break;
           }
@@ -526,8 +558,14 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           case 3: {
             if (rand > 0.5) {
               sameEventMultContMM.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
+              f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
             } else if (rand <= 0.5) {
               sameEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::same, 2, multCol, kT, ConfIsIden);
+              f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+            }
+            if (ConfIsFillAngqLCMS) {
+              kv = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2] + f3d[3] * f3d[3]);
+              pairCloseRejection.ClosePairqLCMS(p1, p2, magFieldTesla, femto_universe_container::EventType::same, kv);
             }
             break;
           }
@@ -541,10 +579,10 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// process function for to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processSameEvent(FilteredFDCollision& col,
-                        FilteredFemtoFullParticles& parts)
+  void processSameEvent(FilteredFDCollision const& col,
+                        FilteredFemtoFullParticles const& parts)
   {
-    fillCollision(col);
+    fillCollision(col, ConfIsCent);
 
     auto thegroupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -552,16 +590,26 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     bool fillQA = true;
     randgen = new TRandom2(0);
 
-    if (cfgProcessPM) {
-      doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
-    }
-
-    if (cfgProcessPP) {
-      doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multV0M(), 2, fillQA);
-    }
-
-    if (cfgProcessMM) {
-      doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
+    if (ConfIsCent) {
+      if (cfgProcessPM) {
+        doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
+      }
+      if (cfgProcessPP) {
+        doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multV0M(), 2, fillQA);
+      }
+      if (cfgProcessMM) {
+        doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
+      }
+    } else {
+      if (cfgProcessPM) {
+        doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 1, fillQA);
+      }
+      if (cfgProcessPP) {
+        doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multNtr(), 2, fillQA);
+      }
+      if (cfgProcessMM) {
+        doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 3, fillQA);
+      }
     }
     delete randgen;
   }
@@ -571,14 +619,39 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// \param col subscribe to the collision table (Monte Carlo Reconstructed reconstructed)
   /// \param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// \param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processSameEventMC(o2::aod::FdCollision& col,
-                          soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& /*parts*/,
-                          o2::aod::FdMCParticles&)
+  void processSameEventMC(o2::aod::FdCollision const& col,
+                          soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels> const& parts,
+                          o2::aod::FdMCParticles const&)
   {
-    fillCollision(col);
+    fillCollision(col, ConfIsCent);
 
     auto thegroupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto thegroupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    bool fillQA = true;
+    randgen = new TRandom2(0);
+
+    if (ConfIsCent) {
+      if (cfgProcessPM) {
+        doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 1, fillQA);
+      }
+      if (cfgProcessPP) {
+        doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multV0M(), 2, fillQA);
+      }
+      if (cfgProcessMM) {
+        doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multV0M(), 3, fillQA);
+      }
+    } else {
+      if (cfgProcessPM) {
+        doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 1, fillQA);
+      }
+      if (cfgProcessPP) {
+        doSameEvent<false>(thegroupPartsOne, thegroupPartsOne, parts, col.magField(), col.multNtr(), 2, fillQA);
+      }
+      if (cfgProcessMM) {
+        doSameEvent<false>(thegroupPartsTwo, thegroupPartsTwo, parts, col.magField(), col.multNtr(), 3, fillQA);
+      }
+    }
+    delete randgen;
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
@@ -592,11 +665,11 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   /// \param parts femtoUniverseParticles table (in case of Monte Carlo joined with FemtoUniverseMCLabels)
   /// \param magFieldTesla magnetic field of the collision
   /// \param multCol multiplicity of the collision
-  template <bool isMC, typename PartitionType, typename PartType>
-  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, PartType parts, float magFieldTesla, int multCol, int ContType)
+  template <bool isMC, typename PartitionType>
+  void doMixedEvent(PartitionType groupPartsOne, PartitionType groupPartsTwo, float magFieldTesla, int multCol, int ContType)
   {
 
-    for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+    for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
 
       if (!IsParticleNSigma((int8_t)2, p1.p(), trackCuts.getNsigmaTPC(p1, o2::track::PID::Proton), trackCuts.getNsigmaTOF(p1, o2::track::PID::Proton), trackCuts.getNsigmaTPC(p1, o2::track::PID::Pion), trackCuts.getNsigmaTOF(p1, o2::track::PID::Pion), trackCuts.getNsigmaTPC(p1, o2::track::PID::Kaon), trackCuts.getNsigmaTOF(p1, o2::track::PID::Kaon))) {
         continue;
@@ -607,14 +680,23 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       }
 
       if (ConfIsCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::mixed)) {
-          continue;
+        if (confCPRIsAtITS.value) {
+          if (pairCloseRejection.isClosePairAtITS(p1, p2, magFieldTesla, femto_universe_container::EventType::same)) {
+            continue;
+          }
+        } else {
+          if (pairCloseRejection.isClosePairFrac(p1, p2, magFieldTesla, femto_universe_container::EventType::same, confCPRDphiAvgOrDist, confCPRDistMax, confCPRFracMax)) {
+            continue;
+          }
         }
       }
 
       float kT = FemtoUniverseMath::getkT(p1, mass1, p2, mass2);
       double rand;
       rand = randgen->Rndm();
+
+      std::vector<double> f3d;
+      double kv;
 
       switch (ContType) {
         case 1: {
@@ -629,8 +711,14 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         case 2: {
           if (rand > 0.5) {
             mixedEventMultContPP.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
           } else {
             mixedEventMultContPP.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+          }
+          if (ConfIsFillAngqLCMS) {
+            kv = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2] + f3d[3] * f3d[3]);
+            pairCloseRejection.ClosePairqLCMS(p1, p2, magFieldTesla, femto_universe_container::EventType::mixed, kv);
           }
           break;
         }
@@ -638,8 +726,14 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
         case 3: {
           if (rand > 0.5) {
             mixedEventMultContMM.fillMultNumDen(p1, p2, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            f3d = FemtoUniverseMath::newpairfunc(p1, mass1, p2, mass2, ConfIsIden);
           } else {
             mixedEventMultContMM.fillMultNumDen(p2, p1, femto_universe_sh_container::EventType::mixed, 2, multCol, kT, ConfIsIden);
+            f3d = FemtoUniverseMath::newpairfunc(p2, mass2, p1, mass1, ConfIsIden);
+          }
+          if (ConfIsFillAngqLCMS) {
+            kv = std::sqrt(f3d[1] * f3d[1] + f3d[2] * f3d[2] + f3d[3] * f3d[3]);
+            pairCloseRejection.ClosePairqLCMS(p1, p2, magFieldTesla, femto_universe_container::EventType::mixed, kv);
           }
           break;
         }
@@ -652,16 +746,16 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
 
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
-  /// @param parts subscribe to the femtoUniverseParticleTable
-  void processMixedEvent(FilteredFDCollisions& cols,
-                         FilteredFemtoFullParticles& parts)
+  /// @param  subscribe to the femtoUniverseParticleTable
+  void processMixedEventCent(FilteredFDCollisions const& cols,
+                             FilteredFemtoFullParticles const&)
   {
     randgen = new TRandom2(0);
 
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, ConfNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
-      MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
+      MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningCent.getBin({collision1.posZ(), multiplicityCol}));
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -673,27 +767,68 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       if (cfgProcessPM) {
         auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
         auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
-        doMixedEvent<false>(groupPartsOne, groupPartsTwo, parts, magFieldTesla1, multiplicityCol, 1);
+        doMixedEvent<false>(groupPartsOne, groupPartsTwo, magFieldTesla1, multiplicityCol, 1);
       }
       if (cfgProcessPP) {
         auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
         auto groupPartsTwo = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
-        doMixedEvent<false>(groupPartsOne, groupPartsTwo, parts, magFieldTesla1, multiplicityCol, 2);
+        doMixedEvent<false>(groupPartsOne, groupPartsTwo, magFieldTesla1, multiplicityCol, 2);
       }
       if (cfgProcessMM) {
         auto groupPartsOne = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
         auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
-        doMixedEvent<false>(groupPartsOne, groupPartsTwo, parts, magFieldTesla1, multiplicityCol, 3);
+        doMixedEvent<false>(groupPartsOne, groupPartsTwo, magFieldTesla1, multiplicityCol, 3);
       }
     }
     delete randgen;
   }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processMixedEventCent, "Enable processing mixed events for centrality", true);
+
+  /// process function for to call doMixedEvent with Data
+  /// @param cols subscribe to the collisions table (Data)
+  /// @param parts subscribe to the femtoUniverseParticleTable
+  void processMixedEventNtr(FilteredFDCollisions const& cols,
+                            FilteredFemtoFullParticles const&)
+  {
+    randgen = new TRandom2(0);
+
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningNtr, ConfNEventsMix, -1, cols, cols)) {
+
+      const int multiplicityCol = collision1.multNtr();
+      MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningNtr.getBin({collision1.posZ(), multiplicityCol}));
+
+      const auto& magFieldTesla1 = collision1.magField();
+      const auto& magFieldTesla2 = collision2.magField();
+
+      if (magFieldTesla1 != magFieldTesla2) {
+        continue;
+      }
+
+      if (cfgProcessPM) {
+        auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+        doMixedEvent<false>(groupPartsOne, groupPartsTwo, magFieldTesla1, multiplicityCol, 1);
+      }
+      if (cfgProcessPP) {
+        auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+        doMixedEvent<false>(groupPartsOne, groupPartsTwo, magFieldTesla1, multiplicityCol, 2);
+      }
+      if (cfgProcessMM) {
+        auto groupPartsOne = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+        doMixedEvent<false>(groupPartsOne, groupPartsTwo, magFieldTesla1, multiplicityCol, 3);
+      }
+    }
+    delete randgen;
+  }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processMixedEventNtr, "Enable processing mixed events for centrality", false);
 
   /// process function for to fill covariance histograms
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoUniverseParticleTable
-  void processCov(soa::Filtered<o2::aod::FdCollisions>::iterator& /*col*/,
-                  FilteredFemtoFullParticles& /*parts*/)
+  void processCov(soa::Filtered<o2::aod::FdCollisions>::iterator const& /*col*/,
+                  FilteredFemtoFullParticles const& /*parts*/)
   {
     int JMax = (ConfLMax + 1) * (ConfLMax + 1);
     if (cfgProcessMM) {
@@ -707,22 +842,22 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       mixedEventMultCont.fillMultkTCov(femto_universe_sh_container::EventType::mixed, JMax);
     }
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processCov, "Enable processing same event covariance", true);
-
-  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processMixedEvent, "Enable processing mixed events", true);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processCov, "Enable processing same event covariance", false);
 
   /// brief process function for to call doMixedEvent with Monte Carlo
   /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
   /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
   /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
-  void processMixedEventMC(o2::aod::FdCollisions& cols,
-                           soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels>& /*parts*/,
-                           o2::aod::FdMCParticles&)
+  void processMixedEventMCCent(o2::aod::FdCollisions const& cols,
+                               soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels> const&,
+                               o2::aod::FdMCParticles const&)
   {
-    for (auto& [collision1, collision2] : soa::selfCombinations(colBinning, ConfNEventsMix, -1, cols, cols)) {
+    randgen = new TRandom2(0);
+
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningCent, ConfNEventsMix, -1, cols, cols)) {
 
       const int multiplicityCol = collision1.multV0M();
-      MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
+      MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningCent.getBin({collision1.posZ(), multiplicityCol}));
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -732,9 +867,70 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
       }
       /// \todo before mixing we should check whether both collisions contain a pair of particles!
       // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
+
+      if (cfgProcessPM) {
+        auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+        doMixedEvent<false>(groupPartsOne, groupPartsTwo, magFieldTesla1, multiplicityCol, 1);
+      }
+      if (cfgProcessPP) {
+        auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+        doMixedEvent<false>(groupPartsOne, groupPartsTwo, magFieldTesla1, multiplicityCol, 2);
+      }
+      if (cfgProcessMM) {
+        auto groupPartsOne = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+        doMixedEvent<false>(groupPartsOne, groupPartsTwo, magFieldTesla1, multiplicityCol, 3);
+      }
     }
+    delete randgen;
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processMixedEventMC, "Enable processing mixed events MC", false);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processMixedEventMCCent, "Enable processing mixed events MC", false);
+
+  /// brief process function for to call doMixedEvent with Monte Carlo
+  /// @param cols subscribe to the collisions table (Monte Carlo Reconstructed reconstructed)
+  /// @param parts subscribe to joined table FemtoUniverseParticles and FemtoUniverseMCLables to access Monte Carlo truth
+  /// @param FemtoUniverseMCParticles subscribe to the Monte Carlo truth table
+  void processMixedEventMCNtr(o2::aod::FdCollisions const& cols,
+                              soa::Join<FilteredFemtoFullParticles, aod::FDMCLabels> const&,
+                              o2::aod::FdMCParticles const&)
+  {
+    randgen = new TRandom2(0);
+
+    for (const auto& [collision1, collision2] : soa::selfCombinations(colBinningNtr, ConfNEventsMix, -1, cols, cols)) {
+
+      const int multiplicityCol = collision1.multV0M();
+      MixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinningNtr.getBin({collision1.posZ(), multiplicityCol}));
+
+      const auto& magFieldTesla1 = collision1.magField();
+      const auto& magFieldTesla2 = collision2.magField();
+
+      if (magFieldTesla1 != magFieldTesla2) {
+        continue;
+      }
+      /// \todo before mixing we should check whether both collisions contain a pair of particles!
+      // if (partsOne.size() == 0 || nPart2Evt1 == 0 || nPart1Evt2 == 0 || partsTwo.size() == 0 ) continue;
+
+      if (cfgProcessPM) {
+        auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+        doMixedEvent<false>(groupPartsOne, groupPartsTwo, magFieldTesla1, multiplicityCol, 1);
+      }
+      if (cfgProcessPP) {
+        auto groupPartsOne = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsOneMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+        doMixedEvent<false>(groupPartsOne, groupPartsTwo, magFieldTesla1, multiplicityCol, 2);
+      }
+      if (cfgProcessMM) {
+        auto groupPartsOne = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+        auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
+        doMixedEvent<false>(groupPartsOne, groupPartsTwo, magFieldTesla1, multiplicityCol, 3);
+      }
+    }
+    delete randgen;
+  }
+  PROCESS_SWITCH(femtoUniversePairTaskTrackTrackSpherHarMultKtExtended, processMixedEventMCNtr, "Enable processing mixed events MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

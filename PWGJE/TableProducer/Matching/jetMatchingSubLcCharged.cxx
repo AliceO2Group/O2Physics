@@ -15,6 +15,17 @@
 
 #include "PWGJE/TableProducer/Matching/jetMatchingSub.cxx"
 
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
+
 using LcChargedJetMatchingSub = JetMatchingSub<soa::Join<aod::LcChargedJets, aod::LcChargedJetConstituents>,
                                                soa::Join<aod::LcChargedEventWiseSubtractedJets, aod::LcChargedEventWiseSubtractedJetConstituents>,
                                                aod::LcChargedJetsMatchedToLcChargedEventWiseSubtractedJets,

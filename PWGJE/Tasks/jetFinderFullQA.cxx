@@ -13,28 +13,35 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGHF/Core/HfHelper.h"
-
-#include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
+#include "PWGJE/DataModel/EMCALClusterDefinition.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 
-#include "EventFiltering/filterTables.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMathBase.h>
+
+#include <cmath>
+#include <cstddef>
+#include <string>
+#include <type_traits>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
@@ -74,6 +81,8 @@ struct JetFinderFullQATask {
   Configurable<float> pTHatMaxMCD{"pTHatMaxMCD", 999.0, "maximum fraction of hard scattering for jet acceptance in detector MC"};
   Configurable<float> pTHatMaxMCP{"pTHatMaxMCP", 999.0, "maximum fraction of hard scattering for jet acceptance in particle MC"};
   Configurable<float> pTHatExponent{"pTHatExponent", 6.0, "exponent of the event weight for the calculation of pTHat"};
+  Configurable<float> pTHatAbsoluteMin{"pTHatAbsoluteMin", -99.0, "minimum value of pTHat"};
+  Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection applied at the jet finder level, here rejection is applied for collision and track process functions"};
 
   std::vector<bool> filledJetR;
   std::vector<double> jetRadiiValues;
@@ -243,7 +252,7 @@ struct JetFinderFullQATask {
   using JetTableMCPMatchedWeightedJoined = soa::Join<JetTableMCD, JetConstituentTableMCP, JetMatchingTableMCPMCD, JetTableMCPWeighted>;
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
+  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
   aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
   Filter clusterFilter = (aod::jcluster::definition == static_cast<int>(clusterDefinition) && aod::jcluster::eta > clusterEtaMin && aod::jcluster::eta < clusterEtaMax && aod::jcluster::phi >= clusterPhiMin && aod::jcluster::phi <= clusterPhiMax && aod::jcluster::energy >= clusterEnergyMin && aod::jcluster::time > clusterTimeMin && aod::jcluster::time < clusterTimeMax && (clusterRejectExotics && aod::jcluster::isExotic != true));
 
@@ -277,7 +286,7 @@ struct JetFinderFullQATask {
   {
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-    if (jet.pt() > pTHatMaxMCD * pTHat) {
+    if (jet.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
     registry.fill(HIST("h_jet_phat_weighted"), pTHat, weight);
@@ -327,7 +336,7 @@ struct JetFinderFullQATask {
   {
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-    if (jet.pt() > pTHatMaxMCP * pTHat) {
+    if (jet.pt() > pTHatMaxMCP * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
     registry.fill(HIST("h_jet_phat_part_weighted"), pTHat, weight);
@@ -362,7 +371,7 @@ struct JetFinderFullQATask {
   {
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
-    if (jetBase.pt() > pTHatMaxMCD * pTHat) {
+    if (jetBase.pt() > pTHatMaxMCD * pTHat || pTHat < pTHatAbsoluteMin) {
       return;
     }
 
@@ -435,6 +444,10 @@ struct JetFinderFullQATask {
   template <typename T, typename U>
   void fillTrackHistograms(T const& tracks, U const& clusters, float weight = 1.0)
   {
+    float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
+    if (pTHat < pTHatAbsoluteMin) {
+      return;
+    }
     for (auto const& track : tracks) {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
@@ -467,7 +480,7 @@ struct JetFinderFullQATask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillHistograms(jet, collision.centrality());
+      fillHistograms(jet, collision.centFT0M());
     }
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsData, "jet finder HF QA data", false);
@@ -481,7 +494,7 @@ struct JetFinderFullQATask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillHistograms(jet, collision.centrality());
+      fillHistograms(jet, collision.centFT0M());
     }
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCD, "jet finder HF QA mcd", false);
@@ -495,7 +508,7 @@ struct JetFinderFullQATask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillHistograms(jet, collision.centrality(), jet.eventWeight());
+      fillHistograms(jet, collision.centFT0M(), jet.eventWeight());
     }
   }
   PROCESS_SWITCH(JetFinderFullQATask, processJetsMCDWeighted, "jet finder HF QA mcd on weighted events", false);
@@ -566,7 +579,9 @@ struct JetFinderFullQATask {
 
   void processMCCollisionsWeighted(aod::JetMcCollision const& collision)
   {
-
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     registry.fill(HIST("h_collision_eventweight_part"), collision.weight());
   }
   PROCESS_SWITCH(JetFinderFullQATask, processMCCollisionsWeighted, "collision QA for weighted events", false);
@@ -575,23 +590,29 @@ struct JetFinderFullQATask {
                      soa::Filtered<aod::JetTracks> const& tracks,
                      soa::Filtered<aod::JetClusters> const& clusters)
   {
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     registry.fill(HIST("h_collisions"), 0.5);
-    registry.fill(HIST("h_centrality_collisions"), collision.centrality(), 0.5);
+    registry.fill(HIST("h_centrality_collisions"), collision.centFT0M(), 0.5);
     if (!jetderiveddatautilities::eventEMCAL(collision)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
-    registry.fill(HIST("h_centrality_collisions"), collision.centrality(), 1.5);
+    registry.fill(HIST("h_centrality_collisions"), collision.centFT0M(), 1.5);
     fillTrackHistograms(tracks, clusters);
   }
   PROCESS_SWITCH(JetFinderFullQATask, processTracks, "QA for charged tracks", false);
 
-  void processTracksWeighted(soa::Join<aod::JCollisions, aod::JMcCollisionLbs>::iterator const& collision,
+  void processTracksWeighted(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>::iterator const& collision,
                              aod::JMcCollisions const&,
                              soa::Filtered<aod::JetTracks> const& tracks,
                              soa::Filtered<aod::JetClusters> const& clusters)
   {
     float eventWeight = collision.mcCollision().weight();
+    if (skipMBGapEvents && collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
+      return;
+    }
     registry.fill(HIST("h_collisions"), 0.5);
     registry.fill(HIST("h_collisions_weighted"), 0.5, eventWeight);
     if (!jetderiveddatautilities::eventEMCAL(collision)) {

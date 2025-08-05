@@ -16,8 +16,12 @@
 #include <TF1.h>
 #include <vector>
 #include <string>
+#include <iostream>
 #include "AnalysisCompositeCut.h"
 #include "VarManager.h"
+
+using std::cout;
+using std::endl;
 
 AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 {
@@ -48,6 +52,120 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug5_noCorr"));
     return cut;
   }
+  if (!nameStr.compare("Electron2025_1")) {
+    AnalysisCut* kineCut = new AnalysisCut("kineCut", "kine cut");
+    kineCut->AddCut(VarManager::kP, 1.0, 1000.0);
+    kineCut->AddCut(VarManager::kEta, -0.9, 0.9);
+
+    AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
+    qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
+    qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
+
+    AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -3.0, 4.0, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -1.5, 4.0, false, VarManager::kPin, 5.0, 1000.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPi, 2.5, 999, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPr, 2.5, 999, false, VarManager::kPin, 0.0, 5.0);
+
+    cut->AddCut(kineCut);
+    cut->AddCut(qualityCuts);
+    cut->AddCut(pidCuts);
+    return cut;
+  }
+
+  if (!nameStr.compare("Electron2025_2")) {
+    AnalysisCut* kineCut = new AnalysisCut("kineCut", "kine cut");
+    kineCut->AddCut(VarManager::kP, 1.0, 1000.0);
+    kineCut->AddCut(VarManager::kEta, -0.9, 0.9);
+
+    AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
+    qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
+    qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
+
+    AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -3.0, 4.0, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -2.0, 4.0, false, VarManager::kPin, 5.0, 1000.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPi, 2.0, 999, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPr, 2.5, 999, false, VarManager::kPin, 0.0, 5.0);
+
+    cut->AddCut(kineCut);
+    cut->AddCut(qualityCuts);
+    cut->AddCut(pidCuts);
+    return cut;
+  }
+
+  if (!nameStr.compare("Electron2025_3")) {
+    AnalysisCut* kineCut = new AnalysisCut("kineCut", "kine cut");
+    kineCut->AddCut(VarManager::kP, 1.0, 1000.0);
+    kineCut->AddCut(VarManager::kEta, -0.9, 0.9);
+
+    AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
+    qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
+    qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
+
+    AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -2.5, 4.0, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -2.0, 4.0, false, VarManager::kPin, 5.0, 1000.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPr, 2.5, 999, false, VarManager::kPin, 0.0, 5.0);
+
+    cut->AddCut(kineCut);
+    cut->AddCut(qualityCuts);
+    cut->AddCut(pidCuts);
+    return cut;
+  }
+
+  if (!nameStr.compare("Electron2025_4")) {
+    AnalysisCut* kineCut = new AnalysisCut("kineCut", "kine cut");
+    kineCut->AddCut(VarManager::kP, 1.0, 1000.0);
+    kineCut->AddCut(VarManager::kEta, -0.9, 0.9);
+
+    AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
+    qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
+    qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
+
+    AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -2.5, 4.0, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -1.5, 4.0, false, VarManager::kPin, 5.0, 1000.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPi, 2.5, 999, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPr, 3.0, 999, false, VarManager::kPin, 0.0, 5.0);
+
+    cut->AddCut(kineCut);
+    cut->AddCut(qualityCuts);
+    cut->AddCut(pidCuts);
+    return cut;
+  }
+
+  if (!nameStr.compare("Electron2025_5")) {
+    AnalysisCut* kineCut = new AnalysisCut("kineCut", "kine cut");
+    kineCut->AddCut(VarManager::kP, 1.0, 1000.0);
+    kineCut->AddCut(VarManager::kEta, -0.9, 0.9);
+
+    AnalysisCut* qualityCuts = new AnalysisCut("qualityCuts", "quality cuts");
+    qualityCuts->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    qualityCuts->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    qualityCuts->AddCut(VarManager::kTPCncls, 70, 161.);
+    qualityCuts->AddCut(VarManager::kTrackDCAz, -0.5, 0.5);
+
+    AnalysisCut* pidCuts = new AnalysisCut("pidCuts", "pid cuts");
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -2.25, 4.0, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaEl, -1.5, 4.0, false, VarManager::kPin, 5.0, 1000.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPi, 2.5, 999, false, VarManager::kPin, 0.0, 5.0);
+    pidCuts->AddCut(VarManager::kTPCnSigmaPr, 3.0, 999, false, VarManager::kPin, 0.0, 5.0);
+
+    cut->AddCut(kineCut);
+    cut->AddCut(qualityCuts);
+    cut->AddCut(pidCuts);
+    return cut;
+  }
+
   if (!nameStr.compare("LowMassElectron2023")) {
     cut->AddCut(GetAnalysisCut("lmeeStandardKine"));
     cut->AddCut(GetAnalysisCut("LooseGlobalTrackRun3"));
@@ -72,6 +190,18 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
   if (!nameStr.compare("MuonHigh2023")) {
     cut->AddCut(GetAnalysisCut("muonHighPt6"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    cut->AddCut(GetAnalysisCut("MCHMID"));
+    return cut;
+  }
+  if (!nameStr.compare("ElectronForEMu")) {
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
+    return cut;
+  }
+  if (!nameStr.compare("MuonForEMu")) {
+    cut->AddCut(GetAnalysisCut("muonLowPt5"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     cut->AddCut(GetAnalysisCut("MCHMID"));
     return cut;
@@ -138,7 +268,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     cut->AddCut(GetAnalysisCut("electronPIDnsigmaMedium"));
     return cut;
   }
-
+  if (!nameStr.compare("electronSelection1_ionut_withTOFPID")) {
+    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
+    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaMedium_withLargeTOFPID"));
+    return cut;
+  }
   if (!nameStr.compare("electronSelection1_idstoreh")) { // same as electronSelection1_ionut, but with kIsSPDAny -> kIsITSibAny
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
@@ -379,6 +515,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("JpsiPWGSkimmedCuts5")) {
+    cut->AddCut(GetAnalysisCut("electronTrackQualitySkimmed3"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug8"));
+    return cut;
+  }
+
   if (!nameStr.compare("pidElectron_ionut")) {
     cut->AddCut(GetAnalysisCut("pidcalib_ele"));
     cut->AddCut(GetAnalysisCut("jpsiStandardKine3"));
@@ -489,6 +631,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
 
   if (!nameStr.compare("pionPIDCut1")) {
     cut->AddCut(GetAnalysisCut("pionQualityCut1"));
+    cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pionPIDCut2")) {
+    cut->AddCut(GetAnalysisCut("pionQualityCut2"));
     cut->AddCut(GetAnalysisCut("pionPIDnsigma"));
     return cut;
   }
@@ -818,6 +966,17 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("protonPIDPV")) {
+    cut->AddCut(GetAnalysisCut("protonPID_TPCnTOF2"));
+    cut->AddCut(GetAnalysisCut("protonPVcut"));
+    return cut;
+  }
+
+  if (!nameStr.compare("protonPIDPV2")) {
+    cut->AddCut(GetAnalysisCut("protonPID_TPCnTOF2"));
+    return cut;
+  }
+
   if (!nameStr.compare("PrimaryTrack_DCAz")) {
     cut->AddCut(GetAnalysisCut("PrimaryTrack_DCAz"));
     return cut;
@@ -963,6 +1122,13 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("Jpsi_TPCPost_calib_debug10")) {
+    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
+    cut->AddCut(GetAnalysisCut("jpsi_trackCut_debug6"));
+    cut->AddCut(GetAnalysisCut("jpsi_TPCPID_debug10"));
+    return cut;
+  }
+
   if (!nameStr.compare("LMee_TPCPost_calib_debug1")) {
     cut->AddCut(GetAnalysisCut("lmee_trackCut_debug"));
     cut->AddCut(GetAnalysisCut("lmee_TPCPID_debug1"));
@@ -1015,6 +1181,153 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
       return cut;
     }
   }
+
+  // Magnus composite cuts -----------------------------------------------------------------------------------------------------------------
+
+  AnalysisCompositeCut* magnus_PID111 = new AnalysisCompositeCut("magnus_PID111", "");
+  magnus_PID111->AddCut(GetAnalysisCut("pidJpsi_magnus_ele1"));
+  magnus_PID111->AddCut(GetAnalysisCut("pidJpsi_magnus_pion1"));
+  magnus_PID111->AddCut(GetAnalysisCut("pidJpsi_magnus_prot1"));
+  if (!nameStr.compare("MagnussOptimization111")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID111);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID211 = new AnalysisCompositeCut("magnus_PID211", "");
+  magnus_PID211->AddCut(GetAnalysisCut("pidJpsi_magnus_ele2"));
+  magnus_PID211->AddCut(GetAnalysisCut("pidJpsi_magnus_pion1"));
+  magnus_PID211->AddCut(GetAnalysisCut("pidJpsi_magnus_prot1"));
+  if (!nameStr.compare("MagnussOptimization211")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID211);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID311 = new AnalysisCompositeCut("magnus_PID311", "");
+  magnus_PID311->AddCut(GetAnalysisCut("pidJpsi_magnus_ele3"));
+  magnus_PID311->AddCut(GetAnalysisCut("pidJpsi_magnus_pion1"));
+  magnus_PID311->AddCut(GetAnalysisCut("pidJpsi_magnus_prot1"));
+  if (!nameStr.compare("MagnussOptimization311")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID311);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID121 = new AnalysisCompositeCut("magnus_PID121", "");
+  magnus_PID121->AddCut(GetAnalysisCut("pidJpsi_magnus_ele1"));
+  magnus_PID121->AddCut(GetAnalysisCut("pidJpsi_magnus_pion2"));
+  magnus_PID121->AddCut(GetAnalysisCut("pidJpsi_magnus_prot1"));
+  if (!nameStr.compare("MagnussOptimization121")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID121);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID112 = new AnalysisCompositeCut("magnus_PID112", "");
+  magnus_PID112->AddCut(GetAnalysisCut("pidJpsi_magnus_ele1"));
+  magnus_PID112->AddCut(GetAnalysisCut("pidJpsi_magnus_pion1"));
+  magnus_PID112->AddCut(GetAnalysisCut("pidJpsi_magnus_prot2"));
+  if (!nameStr.compare("MagnussOptimization112")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID112);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID122 = new AnalysisCompositeCut("magnus_PID122", "");
+  magnus_PID122->AddCut(GetAnalysisCut("pidJpsi_magnus_ele1"));
+  magnus_PID122->AddCut(GetAnalysisCut("pidJpsi_magnus_pion2"));
+  magnus_PID122->AddCut(GetAnalysisCut("pidJpsi_magnus_prot2"));
+  if (!nameStr.compare("MagnussOptimization122")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID122);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID222 = new AnalysisCompositeCut("magnus_PID222", "");
+  magnus_PID222->AddCut(GetAnalysisCut("pidJpsi_magnus_ele2"));
+  magnus_PID222->AddCut(GetAnalysisCut("pidJpsi_magnus_pion2"));
+  magnus_PID222->AddCut(GetAnalysisCut("pidJpsi_magnus_prot2"));
+  if (!nameStr.compare("MagnussOptimization222")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID222);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID212 = new AnalysisCompositeCut("magnus_PID212", "");
+  magnus_PID212->AddCut(GetAnalysisCut("pidJpsi_magnus_ele2"));
+  magnus_PID212->AddCut(GetAnalysisCut("pidJpsi_magnus_pion1"));
+  magnus_PID212->AddCut(GetAnalysisCut("pidJpsi_magnus_prot2"));
+  if (!nameStr.compare("MagnussOptimization212")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID212);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID221 = new AnalysisCompositeCut("magnus_PID221", "");
+  magnus_PID221->AddCut(GetAnalysisCut("pidJpsi_magnus_ele2"));
+  magnus_PID221->AddCut(GetAnalysisCut("pidJpsi_magnus_pion2"));
+  magnus_PID221->AddCut(GetAnalysisCut("pidJpsi_magnus_prot1"));
+  if (!nameStr.compare("MagnussOptimization221")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID221);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID321 = new AnalysisCompositeCut("magnus_PID321", "");
+  magnus_PID321->AddCut(GetAnalysisCut("pidJpsi_magnus_ele3"));
+  magnus_PID321->AddCut(GetAnalysisCut("pidJpsi_magnus_pion2"));
+  magnus_PID321->AddCut(GetAnalysisCut("pidJpsi_magnus_prot1"));
+  if (!nameStr.compare("MagnussOptimization321")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID321);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID312 = new AnalysisCompositeCut("magnus_PID312", "");
+  magnus_PID312->AddCut(GetAnalysisCut("pidJpsi_magnus_ele3"));
+  magnus_PID312->AddCut(GetAnalysisCut("pidJpsi_magnus_pion1"));
+  magnus_PID312->AddCut(GetAnalysisCut("pidJpsi_magnus_prot2"));
+  if (!nameStr.compare("MagnussOptimization312")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID312);
+    return cut;
+  }
+
+  AnalysisCompositeCut* magnus_PID322 = new AnalysisCompositeCut("magnus_PID322", "");
+  magnus_PID322->AddCut(GetAnalysisCut("pidJpsi_magnus_ele1"));
+  magnus_PID322->AddCut(GetAnalysisCut("pidJpsi_magnus_pion2"));
+  magnus_PID322->AddCut(GetAnalysisCut("pidJpsi_magnus_prot2"));
+  if (!nameStr.compare("MagnussOptimization322")) {
+    cut->AddCut(GetAnalysisCut("kineJpsiEle_ionut"));
+    cut->AddCut(GetAnalysisCut("dcaCut1_ionut"));
+    cut->AddCut(GetAnalysisCut("trackQuality_ionut"));
+    cut->AddCut(magnus_PID322);
+    return cut;
+  }
+  //-------------------------------------------------------------------------------------------------------
 
   //---------------------------------------------------------------
   // Cuts for the selection of legs from dalitz decay
@@ -2652,6 +2965,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("muonMinimalCuts")) {
+    cut->AddCut(GetAnalysisCut("muonMinimalCuts"));
+    return cut;
+  }
+
   if (!nameStr.compare("muonQualityCuts")) {
     cut->AddCut(GetAnalysisCut("muonQualityCuts"));
     return cut;
@@ -2675,6 +2993,12 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   if (!nameStr.compare("muonLowPt5SigmaPDCA_Run3")) {
     cut->AddCut(GetAnalysisCut("muonLowPt"));
     cut->AddCut(GetAnalysisCut("muonQualityCuts5SigmaPDCA_Run3"));
+    cut->AddCut(GetAnalysisCut("MCHMID"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonQualityCuts10SigmaPDCA_MCHMID")) {
+    cut->AddCut(GetAnalysisCut("muonQualityCuts10SigmaPDCA"));
     cut->AddCut(GetAnalysisCut("MCHMID"));
     return cut;
   }
@@ -2872,6 +3196,17 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("muonQualityCutsMUONStandalone")) {
+    cut->AddCut(GetAnalysisCut("matchedMchMid"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
+
+  if (!nameStr.compare("muonQualityCutsGlobal")) {
+    cut->AddCut(GetAnalysisCut("matchedGlobal"));
+    cut->AddCut(GetAnalysisCut("muonQualityCuts"));
+    return cut;
+  }
   // -----------------------------------------------------------
   // Pair cuts
   if (!nameStr.compare("pairNoCut")) {
@@ -3149,6 +3484,11 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairJpsi3")) {
+    cut->AddCut(GetAnalysisCut("pairJpsi3"));
+    return cut;
+  }
+
   if (!nameStr.compare("pairPsi2S")) {
     cut->AddCut(GetAnalysisCut("pairPsi2S"));
     return cut;
@@ -3164,8 +3504,23 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairX3872Cut2")) {
+    cut->AddCut(GetAnalysisCut("pairX3872_2"));
+    return cut;
+  }
+
+  if (!nameStr.compare("pairX3872Cut3")) {
+    cut->AddCut(GetAnalysisCut("pairX3872_3"));
+    return cut;
+  }
+
   if (!nameStr.compare("DipionPairCut1")) {
     cut->AddCut(GetAnalysisCut("DipionMassCut1"));
+    return cut;
+  }
+
+  if (!nameStr.compare("DipionPairCut2")) {
+    cut->AddCut(GetAnalysisCut("DipionMassCut2"));
     return cut;
   }
 
@@ -3318,66 +3673,10 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("emu_electron_test1")) {
+  if (!nameStr.compare("emu_electron_test")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
-    cut->AddCut(GetAnalysisCut("electronPIDnsigmaOpen"));
-    return cut;
-  }
-
-  if (!nameStr.compare("emu_electron_test2")) {
-    cut->AddCut(GetAnalysisCut("jpsiStandardKine2"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
-    cut->AddCut(GetAnalysisCut("electronPIDnsigmaOpen"));
-    return cut;
-  }
-
-  if (!nameStr.compare("emu_electron_test3")) {
-    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
-    cut->AddCut(GetAnalysisCut("electronPIDnsigmaOpen"));
-    return cut;
-  }
-
-  if (!nameStr.compare("emu_electron_test1_loosensigma")) {
-    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
-    cut->AddCut(GetAnalysisCut("electronPIDnsigmaVeryVeryLoose2"));
-    return cut;
-  }
-
-  if (!nameStr.compare("emu_electron_test2_loosensigma")) {
-    cut->AddCut(GetAnalysisCut("jpsiStandardKine2"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
-    cut->AddCut(GetAnalysisCut("electronPIDnsigmaVeryVeryLoose2"));
-    return cut;
-  }
-
-  if (!nameStr.compare("emu_electron_test3_loosensigma")) {
-    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
-    cut->AddCut(GetAnalysisCut("electronPIDnsigmaVeryVeryLoose2"));
-    return cut;
-  }
-
-  if (!nameStr.compare("emu_electron_test1_tightnsigma")) {
-    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
-    cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
-    return cut;
-  }
-
-  if (!nameStr.compare("emu_electron_test2_tightnsigma")) {
-    cut->AddCut(GetAnalysisCut("jpsiStandardKine2"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
-    cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
-    return cut;
-  }
-
-  if (!nameStr.compare("emu_electron_test3_tightnsigma")) {
-    cut->AddCut(GetAnalysisCut("jpsiKineSkimmed"));
-    cut->AddCut(GetAnalysisCut("electronStandardQualityForO2MCdebug4"));
-    cut->AddCut(GetAnalysisCut("electronPIDnsigmaLoose"));
+    cut->AddCut(GetAnalysisCut("electronTrackQuality_Maolin"));
+    cut->AddCut(GetAnalysisCut("electronPIDnsigmaEMu"));
     return cut;
   }
 
@@ -3428,7 +3727,7 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
   }
 
   delete cut;
-  LOGF(info, Form("Did not find cut %s", cutName));
+  LOGF(fatal, Form("Did not find cut %s. Returning nullptr", cutName));
   return nullptr;
 }
 
@@ -3466,7 +3765,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("eventStandardSel8")) {
+  if (!nameStr.compare("eventSel8")) { // kIsSel8 = kIsTriggerTVX && kNoITSROFrameBorder && kNoTimeFrameBorder
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    return cut;
+  }
+  if (!nameStr.compare("eventStandardSel8")) { // kIsSel8 = kIsTriggerTVX && kNoITSROFrameBorder && kNoTimeFrameBorder
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
     return cut;
@@ -3479,14 +3782,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("eventStandardSel8NoTFBorder")) {
+  if (!nameStr.compare("eventStandardSel8NoTFBorder")) { // Redundant w.r.t. eventStandardSel8, to be removed
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
     cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
     return cut;
   }
 
-  if (!nameStr.compare("eventStandardSel8NoTFBNoITSROFB")) {
+  if (!nameStr.compare("eventStandardSel8NoTFBNoITSROFB")) { // Redundant w.r.t. eventStandardSel8, to be removed
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
     cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
@@ -3512,6 +3815,17 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("eventStandardSel8PbPbQualityGoodITSLayersAll")) { // kIsSel8 = kIsTriggerTVX && kNoITSROFrameBorder && kNoTimeFrameBorder
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsGoodITSLayersAll, 0.5, 1.5);
+    return cut;
+  }
+
   if (!nameStr.compare("eventStandardSel8PbPbQualityTightTrackOccupancy")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
@@ -3521,9 +3835,9 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
     cut->AddCut(VarManager::kCentFT0C, 0.0, 90.0);
     cut->AddCut(VarManager::kTrackOccupancyInTimeRange, 0., 1000);
-
     return cut;
   }
+
   if (!nameStr.compare("eventStandardSel8PbPbQualityFirmTrackOccupancy")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
@@ -3607,6 +3921,21 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     }
   }
 
+  for (size_t icase = 0; icase < vecOccupancies.size() - 1; icase++) {
+    if (!nameStr.compare(Form("eventStandardSel8PbPbQualityTrackOccupancySlice_0_%lu", icase))) {
+      cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+      cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+      cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
+      cut->AddCut(VarManager::kCentFT0C, 0.0, 90.0);
+      cut->AddCut(VarManager::kTrackOccupancyInTimeRange, 0, vecOccupancies[icase]);
+
+      return cut;
+    }
+  }
+
   if (!nameStr.compare("eventStandardSel8ppQuality")) {
     cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
     cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
@@ -3616,6 +3945,44 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
     cut->AddCut(VarManager::kIsVertexITSTPC, 0.5, 1.5);
     cut->AddCut(VarManager::kIsVertexTOFmatched, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardSel8multAnalysis")) {
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoTFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoITSROFBorder, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsVertexITSTPC, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardSel8VtxQuality1")) { // kIsSel8 = kIsTriggerTVX && kNoITSROFrameBorder && kNoTimeFrameBorder
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsVertexITSTPC, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsVertexTOFmatched, 0.5, 1.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("eventStandardSel8PbPbMultCorr")) {
+    TF1* fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+    fMultPVCutLow->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
+    TF1* fMultPVCutHigh = new TF1("fMultPVCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)", 0, 100);
+    fMultPVCutHigh->SetParameters(3257.29, -121.848, 1.98492, -0.0172128, 6.47528e-05, 154.756, -1.86072, -0.0274713, 0.000633499, -3.37757e-06);
+
+    TF1* fMultCutLow = new TF1("fMultCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+    fMultCutLow->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
+    TF1* fMultCutHigh = new TF1("fMultCutHigh", "[0]+[1]*x+[2]*x*x+[3]*x*x*x + 3.*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
+    fMultCutHigh->SetParameters(1654.46, -47.2379, 0.449833, -0.0014125, 150.773, -3.67334, 0.0530503, -0.000614061, 3.15956e-06);
+    cut->AddCut(VarManager::kVtxNcontribReal, fMultPVCutLow, fMultPVCutHigh, false, VarManager::kCentFT0C, 0.0, 100.0, false);
+    cut->AddCut(VarManager::kMultA, fMultCutLow, fMultCutHigh, false, VarManager::kCentFT0C, 0.0, 100.0, false);
+    cut->AddCut(VarManager::kVtxZ, -10.0, 10.0);
+    cut->AddCut(VarManager::kIsSel8, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsNoSameBunch, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsGoodZvtxFT0vsPV, 0.5, 1.5);
     return cut;
   }
 
@@ -4041,6 +4408,15 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("jpsi_trackCut_debug6")) {
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCncls, 120., 159);
+    cut->AddCut(VarManager::kTPCnclsCR, 140., 159);
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    cut->AddCut(VarManager::kIsSPDfirst, 0.5, 1.5);
+    return cut;
+  }
+
   if (!nameStr.compare("lmee_trackCut_debug")) {
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
     cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
@@ -4301,10 +4677,50 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("electronTrackQualitySkimmed3")) {
+    cut->AddCut(VarManager::kPt, 1.0, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCnclsCR, 70, 161);
+    cut->AddCut(VarManager::kTPCncls, 70, 161);
+    return cut;
+  }
+
+  if (!nameStr.compare("electronTrackQuality_Maolin")) {
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    cut->AddCut(VarManager::kITSchi2, 0.0, 15.0);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCncls, 70, 161.);
+    cut->AddCut(VarManager::kTPCnclsCR, 70, 161);
+    cut->AddCut(VarManager::kTrackDCAxy, -2.0, 2.0);
+    cut->AddCut(VarManager::kTrackDCAz, -2.0, 2.0);
+    return cut;
+  }
+
   if (!nameStr.compare("pionQualityCut1")) {
     cut->AddCut(VarManager::kPt, 0.15, 1000.0);
     cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
     cut->AddCut(VarManager::kTPCncls, 70, 161);
+    return cut;
+  }
+
+  if (!nameStr.compare("pionQualityCut2")) {
+    cut->AddCut(VarManager::kPt, 0.15, 1000.0);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kIsITSibAny, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCncls, 90, 161);
+    cut->AddCut(VarManager::kTPCnclsCR, 70, 161);
+    return cut;
+  }
+
+  if (!nameStr.compare("protonPVcut")) {
+    cut->AddCut(VarManager::kTrackDCAxy, -0.1, 0.1);
+    cut->AddCut(VarManager::kTrackDCAz, -0.15, 0.15);
+    cut->AddCut(VarManager::kPt, 0.4, 3);
+    cut->AddCut(VarManager::kEta, -0.9, 0.9);
+    cut->AddCut(VarManager::kIsSPDany, 0.5, 1.5);
+    cut->AddCut(VarManager::kTPCchi2, 0.0, 4.0);
+    cut->AddCut(VarManager::kTPCncls, 80, 161.);
     return cut;
   }
 
@@ -4419,6 +4835,39 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaEl, -2.0, 4.0);
     return cut;
   }
+
+  // Magnus cuts ----------------------------------------------------------
+
+  if (!nameStr.compare("pidJpsi_magnus_ele1")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 4.0);
+    return cut;
+  }
+  if (!nameStr.compare("pidJpsi_magnus_ele2")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -2.0, 4.0);
+    return cut;
+  }
+  if (!nameStr.compare("pidJpsi_magnus_ele3")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -1.0, 4.0);
+    return cut;
+  }
+  if (!nameStr.compare("pidJpsi_magnus_prot1")) {
+    cut->AddCut(VarManager::kTPCnSigmaPr, 3.0, 1000.0);
+    return cut;
+  }
+  if (!nameStr.compare("pidJpsi_magnus_prot2")) {
+    cut->AddCut(VarManager::kTPCnSigmaPr, 3.5, 1000.0);
+    return cut;
+  }
+  if (!nameStr.compare("pidJpsi_magnus_pion1")) {
+    cut->AddCut(VarManager::kTPCnSigmaPi, 3.0, 1000.0);
+    return cut;
+  }
+  if (!nameStr.compare("pidJpsi_magnus_pion2")) {
+    cut->AddCut(VarManager::kTPCnSigmaPi, 3.5, 1000.0);
+    return cut;
+  }
+
+  // ----------------------------------------------------------------------------------
 
   if (!nameStr.compare("standardPrimaryTrackDCAz")) {
     cut->AddCut(VarManager::kTrackDCAxy, -3.0, 3.0);
@@ -4595,6 +5044,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaEl, -2.5, 4.0);
     cut->AddCut(VarManager::kTPCnSigmaPi, 1.0, 999, false, VarManager::kPin, 3.0, 999.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, 2.0, 999);
+    return cut;
+  }
+
+  if (!nameStr.compare("jpsi_TPCPID_debug10")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -1.5, 2.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi, 4.0, 999);
+    cut->AddCut(VarManager::kTPCnSigmaPr, 3.5, 999);
     return cut;
   }
 
@@ -5056,13 +5512,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("electronPIDnsigmaVeryVeryLoose2")) {
-    cut->AddCut(VarManager::kTPCnSigmaEl, -4.0, 4.0);
-    cut->AddCut(VarManager::kTPCnSigmaPr, 2.5, 3000.0);
-    cut->AddCut(VarManager::kTPCnSigmaPi, 2.5, 3000.0);
-    return cut;
-  }
-
   if (!nameStr.compare("electronPIDnsigmaVeryLoose")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -4.0, 4.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, 2.5, 3000.0);
@@ -5084,7 +5533,13 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaPi, 2.7, 3000.0);
     return cut;
   }
-
+  if (!nameStr.compare("electronPIDnsigmaMedium_withLargeTOFPID")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -3.0, 3.0);
+    cut->AddCut(VarManager::kTPCnSigmaPr, 2.7, 3000.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi, 2.7, 3000.0);
+    cut->AddCut(VarManager::kTOFnSigmaEl, -5.0, 5.0);
+    return cut;
+  }
   if (!nameStr.compare("electronPIDnsigmaSkewed")) {
     cut->AddCut(VarManager::kTPCnSigmaEl, -2.0, 3.0);
     cut->AddCut(VarManager::kTPCnSigmaPr, 3.5, 3000.0);
@@ -5130,6 +5585,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3.0, 3.0, true, VarManager::kPin, 0.0, 1.0, false);
     cut->AddCut(VarManager::kTPCnSigmaPi_Corr, -3.0, 2.0, true, VarManager::kPin, 0.0, 1.0, true);
     cut->AddCut(VarManager::kTPCnSigmaKa, -3.0, 3.0, true);
+    return cut;
+  }
+
+  if (!nameStr.compare("electronPIDnsigmaEMu")) {
+    cut->AddCut(VarManager::kTPCnSigmaEl, -1.0, 3.0);
+    cut->AddCut(VarManager::kTPCnSigmaPr, 3.5, 3000.0);
+    cut->AddCut(VarManager::kTPCnSigmaPi, 3.5, 3000.0);
+    cut->AddCut(VarManager::kTPCnSigmaKa, 3.5, 3000.0);
     return cut;
   }
 
@@ -5201,6 +5664,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("protonPID_TPCnTOF")) {
     cut->AddCut(VarManager::kTPCnSigmaPr, -3.0, 3.0);
     cut->AddCut(VarManager::kTOFnSigmaPr, -3.0, 3.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("protonPID_TPCnTOF2")) {
+    cut->AddCut(VarManager::kTPCnSigmaPr, -2.5, 2.5);
     return cut;
   }
 
@@ -5554,6 +6022,14 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("MCHStandalone")) {
     cut->AddCut(VarManager::kMuonTrackType, 3.5, 4.5);
+    return cut;
+  }
+
+  if (!nameStr.compare("muonMinimalCuts")) {
+    cut->AddCut(VarManager::kEta, -4.0, -2.5);
+    cut->AddCut(VarManager::kMuonRAtAbsorberEnd, 17.6, 89.5);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 594.0, false, VarManager::kMuonRAtAbsorberEnd, 17.6, 26.5);
+    cut->AddCut(VarManager::kMuonPDca, 0.0, 324.0, false, VarManager::kMuonRAtAbsorberEnd, 26.5, 89.5);
     return cut;
   }
 
@@ -5919,6 +6395,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("DipionMassCut2")) {
+    cut->AddCut(VarManager::kMass, 0.0, 1.0);
+    return cut;
+  }
+
   if (!nameStr.compare("pairMassLow1")) {
     cut->AddCut(VarManager::kMass, 1.0, 1000.0);
     return cut;
@@ -6019,6 +6500,11 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
+  if (!nameStr.compare("pairJpsi3")) {
+    cut->AddCut(VarManager::kMass, 2.92, 3.14);
+    return cut;
+  }
+
   if (!nameStr.compare("pairPsi2S")) {
     cut->AddCut(VarManager::kMass, 3.4, 3.9);
     return cut;
@@ -6031,6 +6517,22 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
 
   if (!nameStr.compare("pairX3872")) {
     cut->AddCut(VarManager::kQ, 0.0, 0.3);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairX3872_2")) {
+    cut->AddCut(VarManager::kQuadDefaultDileptonMass, 3.0, 5.0);
+    cut->AddCut(VarManager::kQ, 0.0, 0.5);
+    cut->AddCut(VarManager::kDeltaR, 0.0, 5.0);
+    cut->AddCut(VarManager::kQuadPt, 5.0, 40.0);
+    return cut;
+  }
+
+  if (!nameStr.compare("pairX3872_3")) {
+    cut->AddCut(VarManager::kQuadDefaultDileptonMass, 3.0, 5.0);
+    cut->AddCut(VarManager::kQ, 0.0, 0.5);
+    cut->AddCut(VarManager::kDeltaR, 0.0, 5.0);
+    cut->AddCut(VarManager::kQuadPt, 0.0, 1000.0);
     return cut;
   }
 
@@ -6205,6 +6707,396 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   }
 
   delete cut;
-  LOGF(info, Form("Did not find cut %s", cutName));
+  LOGF(fatal, Form("Did not find cut %s", cutName));
   return nullptr;
+}
+
+//________________________________________________________________________________________________
+std::vector<AnalysisCut*> o2::aod::dqcuts::GetCutsFromJSON(const char* json)
+{
+  //
+  // configure cuts using a json file
+  //
+
+  std::vector<AnalysisCut*> cuts;
+  // AnalysisCut* cuts[100];
+  LOG(info) << "========================================== interpreting JSON for analysis cuts";
+  LOG(info) << "JSON string: " << json;
+
+  //
+  // Create a vector of AnalysisCuts from a JSON formatted string
+  //   The JSON is expected to contain a list of objects, with each object containing the fields needed
+  //    to define either an AnalysisCut or an AnalysisCompositeCut
+  rapidjson::Document document;
+
+  // Check that the json is parsed correctly
+  rapidjson::ParseResult ok = document.Parse(json);
+  if (!ok) {
+    LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")";
+    return cuts;
+  }
+
+  // The json is expected to contain a list of objects, each of which should provide the configuration of a cut
+  for (rapidjson::Value::ConstMemberIterator it = document.MemberBegin(); it != document.MemberEnd(); it++) {
+
+    const char* cutName = it->name.GetString();
+    LOG(info) << "=================================================== Configuring cut " << cutName;
+    const auto& cut = it->value;
+
+    // Detect if this is an AnalysisCut or a composite cut
+    bool isAnalysisCut = false;
+    bool isAnalysisCompositeCut = false;
+    if (cut.HasMember("type")) {
+      TString typeStr = cut.FindMember("type")->value.GetString();
+      if (typeStr.CompareTo("AnalysisCut") == 0) {
+        LOG(debug) << "This is an AnalysisCut";
+        isAnalysisCut = true;
+      }
+      if (typeStr.CompareTo("AnalysisCompositeCut") == 0) {
+        LOG(debug) << "This is an AnalysisCompositeCut";
+        isAnalysisCompositeCut = true;
+      }
+    }
+    if (!(isAnalysisCut || isAnalysisCompositeCut)) {
+      LOG(fatal) << "Member is neither an AnalysisCut or AnalysisCompositeCut";
+      return cuts;
+    }
+
+    // Parse the object, construct the cut and add it to the return vector
+    if (isAnalysisCut) {
+      AnalysisCut* anaCut = ParseJSONAnalysisCut(&cut, cutName);
+      if (anaCut != nullptr) {
+        cuts.push_back(anaCut);
+      } else {
+        LOG(fatal) << "Something went wrong in creating the AnalysisCut " << cutName;
+        return cuts;
+      }
+    }
+    if (isAnalysisCompositeCut) {
+      AnalysisCompositeCut* anaCut = ParseJSONAnalysisCompositeCut(&cut, cutName);
+      if (anaCut != nullptr) {
+        cuts.push_back(anaCut);
+      } else {
+        LOG(fatal) << "Something went wrong in creating the AnalysisCompositeCut " << cutName;
+        return cuts;
+      }
+    }
+  }
+
+  return cuts;
+}
+
+//________________________________________________________________________________________________
+template <typename T>
+bool o2::aod::dqcuts::ValidateJSONAnalysisCut(T cut)
+{
+  //
+  // Validate cut definition in JSON file
+  //
+  // The type field is compulsory
+  if (!cut->HasMember("type")) {
+    LOG(fatal) << "Missing type information";
+    return false;
+  }
+  TString typeStr = cut->FindMember("type")->value.GetString();
+  if (typeStr.CompareTo("AnalysisCut") != 0) {
+    LOG(fatal) << "Type is not AnalysisCut";
+    return false;
+  }
+
+  return true;
+}
+
+//________________________________________________________________________________________________
+template <typename T>
+bool o2::aod::dqcuts::ValidateJSONAddCut(T addcut, bool isSimple)
+{
+  //
+  // Validate AddCut definition in JSON file
+  //
+
+  // Check if this AddCut is adding an analysis cut (if the mother is a composite cut)
+  bool isAnalysisCut = false;
+  if (addcut->HasMember("type")) {
+    isAnalysisCut = true;
+  }
+  // check if this is adding a basic variable range cut
+  bool isBasicCut = false;
+  if (addcut->HasMember("var") && addcut->HasMember("cutLow") && addcut->HasMember("cutHigh")) {
+    isBasicCut = true;
+  }
+
+  // if neither of the two option is true, then something is wrong
+  if (!(isBasicCut || isAnalysisCut)) {
+    LOG(fatal) << "This is neither adding an AnalysisCut nor a basic variable range cut";
+    return false;
+  }
+  if (isSimple && isAnalysisCut) {
+    LOG(fatal) << "One cannot call AddCut with an AnalysisCut in this case";
+    return false;
+  }
+  if (!isSimple && isAnalysisCut) {
+    return true;
+  }
+
+  // check that the variable to cut on is a valid one (implemented in the VarManager)
+  const char* var = addcut->FindMember("var")->value.GetString();
+  if (VarManager::fgVarNamesMap.find(var) == VarManager::fgVarNamesMap.end()) {
+    LOG(fatal) << "Bad cut variable (" << var << ") specified for this AddCut";
+    return false;
+  }
+
+  // check whether the specified cut low and high are numbers or functions
+  bool cutLow_isNumber = addcut->FindMember("cutLow")->value.IsNumber();
+  bool cutHigh_isNumber = addcut->FindMember("cutHigh")->value.IsNumber();
+  if (!cutLow_isNumber) {
+    auto& cutLow = addcut->FindMember("cutLow")->value;
+    if (!cutLow.HasMember("funcName") || !cutLow.HasMember("funcBody") ||
+        !cutLow.HasMember("xLow") || !cutLow.HasMember("xHigh")) {
+      LOG(fatal) << "Missing fields for the cutLow TF1 definition";
+      return false;
+    }
+  }
+  if (!cutHigh_isNumber) {
+    auto& cutHigh = addcut->FindMember("cutHigh")->value;
+    if (!cutHigh.HasMember("funcName") || !cutHigh.HasMember("funcBody") ||
+        !cutHigh.HasMember("xLow") || !cutHigh.HasMember("xHigh")) {
+      LOG(fatal) << "Missing fields for the cutLow TF1 definition";
+      return false;
+    }
+  }
+  if (!cutHigh_isNumber || !cutLow_isNumber) {
+    if (!addcut->HasMember("dependentVar") || !addcut->HasMember("depCutLow") || !addcut->HasMember("depCutHigh")) {
+      LOG(fatal) << "For cutLow or cutHigh as a TF1, the definition of the dependentVar and range are also required";
+      return false;
+    }
+    const char* depVar = addcut->FindMember("dependentVar")->value.GetString();
+    if (VarManager::fgVarNamesMap.find(depVar) == VarManager::fgVarNamesMap.end()) {
+      LOG(fatal) << "Bad cut variable (" << depVar << ") specified for the dependentVar";
+      return false;
+    }
+  }
+  if (addcut->HasMember("dependentVar1") && cutLow_isNumber && cutHigh_isNumber) {
+    const char* depVar1 = addcut->FindMember("dependentVar1")->value.GetString();
+    if (VarManager::fgVarNamesMap.find(depVar1) == VarManager::fgVarNamesMap.end()) {
+      LOG(fatal) << "Bad cut variable (" << depVar1 << ") specified for the dependentVar";
+      return false;
+    }
+    if (!addcut->HasMember("depCut2Low") || !addcut->HasMember("depCut2High")) {
+      LOG(fatal) << "dependentVar2 specified, but not its range";
+      return false;
+    }
+  }
+  if (addcut->HasMember("dependentVar2")) {
+    const char* depVar2 = addcut->FindMember("dependentVar2")->value.GetString();
+    if (VarManager::fgVarNamesMap.find(depVar2) == VarManager::fgVarNamesMap.end()) {
+      LOG(fatal) << "Bad cut variable (" << depVar2 << ") specified for the dependentVar2";
+      return false;
+    }
+    if (!addcut->HasMember("depCut2Low") || !addcut->HasMember("depCut2High")) {
+      LOG(fatal) << "dependentVar2 specified, but not its range";
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//_______________________________________________________________________________________________
+template <typename T>
+AnalysisCut* o2::aod::dqcuts::ParseJSONAnalysisCut(T cut, const char* cutName)
+{
+
+  // Parse the json object and build an AnalysisCut
+  if (!ValidateJSONAnalysisCut(cut)) {
+    LOG(fatal) << "AnalysisCut not properly defined in the JSON file. Skipping it";
+    return nullptr;
+  }
+
+  // If the analysis cut has the field "library", its just loaded from the preexisting cuts in the library and return
+  if (cut->HasMember("library")) {
+    return GetAnalysisCut(cut->FindMember("library")->value.GetString());
+  }
+
+  // construct the AnalysisCut object and add the AddCuts
+  AnalysisCut* retCut = new AnalysisCut(cutName, cut->HasMember("library") ? cut->FindMember("title")->value.GetString() : "");
+
+  // loop over all the members for this cut and configure the AddCut objects
+  for (rapidjson::Value::ConstMemberIterator it = cut->MemberBegin(); it != cut->MemberEnd(); it++) {
+
+    TString itName = it->name.GetString();
+
+    if (itName.Contains("AddCut")) {
+
+      LOG(debug) << "Parsing " << itName.Data();
+      const auto& addcut = it->value;
+      if (!ValidateJSONAddCut(&addcut, true)) {
+        LOG(fatal) << "AddCut statement not properly defined";
+        return nullptr;
+      }
+
+      const char* var = addcut.FindMember("var")->value.GetString();
+      LOG(info) << "var " << var;
+      bool cutLow_isNumber = addcut.FindMember("cutLow")->value.IsNumber();
+      LOG(info) << "cutLow_isNumber " << cutLow_isNumber;
+      bool cutHigh_isNumber = addcut.FindMember("cutHigh")->value.IsNumber();
+      LOG(info) << "cutHigh_isNumber " << cutHigh_isNumber;
+
+      bool exclude = (addcut.HasMember("exclude") ? addcut.FindMember("exclude")->value.GetBool() : false);
+      LOG(info) << "exclude " << exclude;
+      const char* dependentVar = (addcut.HasMember("dependentVar") ? addcut.FindMember("dependentVar")->value.GetString() : "kNothing");
+      LOG(info) << "dependentVar " << dependentVar;
+      double depCutLow = (addcut.HasMember("depCutLow") ? addcut.FindMember("depCutLow")->value.GetDouble() : 0.0);
+      LOG(info) << "depCutLow " << depCutLow;
+      double depCutHigh = (addcut.HasMember("depCutHigh") ? addcut.FindMember("depCutHigh")->value.GetDouble() : 10.0);
+      LOG(info) << "depCutHigh " << depCutHigh;
+      bool depCutExclude = (addcut.HasMember("depCutExclude") ? addcut.FindMember("depCutExclude")->value.GetBool() : false);
+      LOG(info) << "depCutExclude " << depCutExclude;
+      const char* dependentVar2 = (addcut.HasMember("dependentVar2") ? addcut.FindMember("dependentVar2")->value.GetString() : "kNothing");
+      LOG(info) << "dependentVar2 " << dependentVar2;
+      double depCut2Low = (addcut.HasMember("depCut2Low") ? addcut.FindMember("depCut2Low")->value.GetDouble() : 0.0);
+      LOG(info) << "depCut2Low " << depCut2Low;
+      double depCut2High = (addcut.HasMember("depCut2High") ? addcut.FindMember("depCut2High")->value.GetDouble() : 10.0);
+      LOG(info) << "depCut2High " << depCut2High;
+      bool depCut2Exclude = (addcut.HasMember("depCut2Exclude") ? addcut.FindMember("depCut2Exclude")->value.GetBool() : false);
+      LOG(info) << "depCut2Exclude " << depCut2Exclude;
+
+      TF1* cutLowFunc = nullptr;
+      TF1* cutHighFunc = nullptr;
+      double cutLowNumber = 0.0;
+      double cutHighNumber = 0.0;
+      if (cutLow_isNumber) {
+        cutLowNumber = addcut.FindMember("cutLow")->value.GetDouble();
+        LOG(info) << "cutLowNumber " << cutLowNumber;
+      } else {
+        auto& cutLow = addcut.FindMember("cutLow")->value;
+        cutLowFunc = new TF1(cutLow.FindMember("funcName")->value.GetString(), cutLow.FindMember("funcBody")->value.GetString(),
+                             cutLow.FindMember("xLow")->value.GetDouble(), cutLow.FindMember("xHigh")->value.GetDouble());
+        LOG(info) << "cutLowFunc " << cutLow.FindMember("funcName")->value.GetString() << ", " << cutLow.FindMember("funcBody")->value.GetString()
+                  << ", " << cutLow.FindMember("xLow")->value.GetDouble() << ", " << cutLow.FindMember("xHigh")->value.GetDouble();
+      }
+      if (cutHigh_isNumber) {
+        cutHighNumber = addcut.FindMember("cutHigh")->value.GetDouble();
+        LOG(info) << "cutHighNumber " << cutHighNumber;
+      } else {
+        auto& cutHigh = addcut.FindMember("cutHigh")->value;
+        cutHighFunc = new TF1(cutHigh.FindMember("funcName")->value.GetString(), cutHigh.FindMember("funcBody")->value.GetString(),
+                              cutHigh.FindMember("xLow")->value.GetDouble(), cutHigh.FindMember("xHigh")->value.GetDouble());
+        LOG(info) << "cutHighFunc " << cutHigh.FindMember("funcName")->value.GetString() << ", " << cutHigh.FindMember("funcBody")->value.GetString()
+                  << ", " << cutHigh.FindMember("xLow")->value.GetDouble() << ", " << cutHigh.FindMember("xHigh")->value.GetDouble();
+      }
+      if (cutLow_isNumber) {
+        if (cutHigh_isNumber) {
+          retCut->AddCut(VarManager::fgVarNamesMap[var], cutLowNumber, cutHighNumber, exclude,
+                         VarManager::fgVarNamesMap[dependentVar], depCutLow, depCutHigh, depCutExclude,
+                         VarManager::fgVarNamesMap[dependentVar2], depCut2Low, depCut2High, depCut2Exclude);
+        } else {
+          retCut->AddCut(VarManager::fgVarNamesMap[var], cutLowNumber, cutHighFunc, exclude,
+                         VarManager::fgVarNamesMap[dependentVar], depCutLow, depCutHigh, depCutExclude,
+                         VarManager::fgVarNamesMap[dependentVar2], depCut2Low, depCut2High, depCut2Exclude);
+        }
+      } else {
+        if (cutHigh_isNumber) {
+          retCut->AddCut(VarManager::fgVarNamesMap[var], cutLowFunc, cutHighNumber, exclude,
+                         VarManager::fgVarNamesMap[dependentVar], depCutLow, depCutHigh, depCutExclude,
+                         VarManager::fgVarNamesMap[dependentVar2], depCut2Low, depCut2High, depCut2Exclude);
+        } else {
+          retCut->AddCut(VarManager::fgVarNamesMap[var], cutLowFunc, cutHighFunc, exclude,
+                         VarManager::fgVarNamesMap[dependentVar], depCutLow, depCutHigh, depCutExclude,
+                         VarManager::fgVarNamesMap[dependentVar2], depCut2Low, depCut2High, depCut2Exclude);
+        }
+      }
+    }
+  }
+
+  return retCut;
+}
+
+//_______________________________________________________________________________________________
+template <typename T>
+bool o2::aod::dqcuts::ValidateJSONAnalysisCompositeCut(T cut)
+{
+  //
+  // Validate composite cut definition in JSON file
+  //
+  if (!cut->HasMember("type")) {
+    LOG(fatal) << "Missing type field";
+    return false;
+  }
+  if (!(cut->HasMember("library") || cut->HasMember("useAND"))) {
+    LOG(fatal) << "Either library or useAND fields are required in an AnalysisCompositeCut definition";
+  }
+  TString typeStr = cut->FindMember("type")->value.GetString();
+  if (typeStr.CompareTo("AnalysisCompositeCut") != 0) {
+    LOG(fatal) << "Type is not AnalysisCompositeCut";
+    return false;
+  }
+
+  return true;
+}
+
+//_______________________________________________________________________________________________
+template <typename T>
+AnalysisCompositeCut* o2::aod::dqcuts::ParseJSONAnalysisCompositeCut(T cut, const char* cutName)
+{
+
+  // Configure an AnalysisCompositeCut
+  if (!ValidateJSONAnalysisCompositeCut(cut)) {
+    LOG(fatal) << "Composite Cut not properly defined in the JSON file. Skipping it";
+    return nullptr;
+  }
+
+  if (cut->HasMember("library")) {
+    return GetCompositeCut(cut->FindMember("library")->value.GetString());
+  }
+
+  AnalysisCompositeCut* retCut = new AnalysisCompositeCut(cutName, cut->HasMember("library") ? cut->FindMember("title")->value.GetString() : "", cut->FindMember("useAND")->value.GetBool());
+
+  // Loop to find AddCut objects
+  for (rapidjson::Value::ConstMemberIterator it = cut->MemberBegin(); it != cut->MemberEnd(); it++) {
+
+    TString itName = it->name.GetString();
+
+    if (itName.Contains("AddCut")) {
+
+      LOG(debug) << "Parsing " << itName.Data();
+      const auto& addcut = it->value;
+      if (!ValidateJSONAddCut(&addcut, false)) {
+        LOG(fatal) << "AddCut statement not properly defined";
+        return nullptr;
+      }
+
+      // For an AnalysisCompositeCut, one can call AddCut with either an AnalysisCut or another AnalysisCompositeCut
+      bool isAnalysisCut = false;
+      bool isAnalysisCompositeCut = false;
+      TString typeStr = addcut.FindMember("type")->value.GetString();
+      if (typeStr.CompareTo("AnalysisCut") == 0) {
+        isAnalysisCut = true;
+      }
+      if (typeStr.CompareTo("AnalysisCompositeCut") == 0) {
+        isAnalysisCompositeCut = true;
+      }
+
+      // Add an AnalysisCut
+      if (isAnalysisCut) {
+        AnalysisCut* cutMember = ParseJSONAnalysisCut(&addcut, itName.Data());
+        if (cutMember != nullptr) {
+          retCut->AddCut(cutMember);
+        } else {
+          return nullptr;
+        }
+      }
+      // Add an AnalysisCompositeCut
+      if (isAnalysisCompositeCut) {
+        AnalysisCompositeCut* cutMember = ParseJSONAnalysisCompositeCut(&addcut, itName.Data());
+        if (cutMember != nullptr) {
+          retCut->AddCut(cutMember);
+        } else {
+          return nullptr;
+        }
+      }
+    }
+  }
+
+  return retCut;
 }

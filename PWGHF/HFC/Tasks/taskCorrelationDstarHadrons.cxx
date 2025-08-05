@@ -14,15 +14,22 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Shyam Kumar <shyam.kumar@cern.ch>
 
-// Framework
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-// PWGHF
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TString.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -61,7 +68,7 @@ auto vecSidebandRightInnerDefault = std::vector<double>{sidebandRightInnerDefaul
 const double sidebandRightOuterDefault[nBinsPtCorrelation] = {0.154, 0.154, 0.154, 0.154, 0.154, 0.154, 0.154, 0.154};
 auto vecSidebandRightOuterDefault = std::vector<double>{sidebandRightOuterDefault, sidebandRightOuterDefault + nBinsPtCorrelation};
 
-const int npTBinsEfficiency = o2::analysis::hf_cuts_dstar_to_d0_pi::nBinsPt;
+const int npTBinsEfficiency = o2::analysis::hf_cuts_dstar_to_d0_pi::NBinsPt;
 std::vector<double> vecEfficiencyDstarDefault(npTBinsEfficiency); // line # 76 in taskCorrelationDstarHadron.cxx; why (npTBinsEfficiency+1) ?
 
 // Dstar-Hadron correlation pair

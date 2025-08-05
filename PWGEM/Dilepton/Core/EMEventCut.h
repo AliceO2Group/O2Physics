@@ -16,9 +16,10 @@
 #ifndef PWGEM_DILEPTON_CORE_EMEVENTCUT_H_
 #define PWGEM_DILEPTON_CORE_EMEVENTCUT_H_
 
-#include "TNamed.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+
+#include "TNamed.h"
 
 using namespace std;
 
@@ -37,12 +38,16 @@ class EMEventCut : public TNamed
     kNoITSROFB, // no ITS read out frame border
     kNoSameBunchPileup,
     kIsVertexITSTPC,
+    kIsVertexTOFmatched,
     kIsGoodZvtxFT0vsPV,
     kNoCollInTimeRangeStandard,
     kNoCollInTimeRangeStrict,
     kNoCollInITSROFStandard,
     kNoCollInITSROFStrict,
     kNoHighMultCollInPrevRof,
+    kIsGoodITSLayer3,
+    kIsGoodITSLayer0123,
+    kIsGoodITSLayersAll,
     kNCuts
   };
 
@@ -70,6 +75,9 @@ class EMEventCut : public TNamed
     if (mRequireVertexITSTPC && !IsSelected(collision, EMEventCuts::kIsVertexITSTPC)) {
       return false;
     }
+    if (mRequireVertexTOFmatched && !IsSelected(collision, EMEventCuts::kIsVertexTOFmatched)) {
+      return false;
+    }
     if (mRequireGoodZvtxFT0vsPV && !IsSelected(collision, EMEventCuts::kIsGoodZvtxFT0vsPV)) {
       return false;
     }
@@ -86,6 +94,15 @@ class EMEventCut : public TNamed
       return false;
     }
     if (mRequireNoHighMultCollInPrevRof && !IsSelected(collision, EMEventCuts::kNoHighMultCollInPrevRof)) {
+      return false;
+    }
+    if (mRequireGoodITSLayer3 && !IsSelected(collision, EMEventCuts::kIsGoodITSLayer3)) {
+      return false;
+    }
+    if (mRequireGoodITSLayer0123 && !IsSelected(collision, EMEventCuts::kIsGoodITSLayer0123)) {
+      return false;
+    }
+    if (mRequireGoodITSLayersAll && !IsSelected(collision, EMEventCuts::kIsGoodITSLayersAll)) {
       return false;
     }
     return true;
@@ -116,6 +133,9 @@ class EMEventCut : public TNamed
       case EMEventCuts::kIsVertexITSTPC:
         return collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC);
 
+      case EMEventCuts::kIsVertexTOFmatched:
+        return collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched);
+
       case EMEventCuts::kIsGoodZvtxFT0vsPV:
         return collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV);
 
@@ -134,6 +154,15 @@ class EMEventCut : public TNamed
       case EMEventCuts::kNoHighMultCollInPrevRof:
         return collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof);
 
+      case EMEventCuts::kIsGoodITSLayer3:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer3);
+
+      case EMEventCuts::kIsGoodITSLayer0123:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123);
+
+      case EMEventCuts::kIsGoodITSLayersAll:
+        return collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll);
+
       default:
         return true;
     }
@@ -147,12 +176,16 @@ class EMEventCut : public TNamed
   void SetRequireNoITSROFB(bool flag);
   void SetRequireNoSameBunchPileup(bool flag);
   void SetRequireVertexITSTPC(bool flag);
+  void SetRequireVertexTOFmatched(bool flag);
   void SetRequireGoodZvtxFT0vsPV(bool flag);
   void SetRequireNoCollInTimeRangeStandard(bool flag);
   void SetRequireNoCollInTimeRangeStrict(bool flag);
   void SetRequireNoCollInITSROFStandard(bool flag);
   void SetRequireNoCollInITSROFStrict(bool flag);
   void SetRequireNoHighMultCollInPrevRof(bool flag);
+  void SetRequireGoodITSLayer3(bool flag);
+  void SetRequireGoodITSLayer0123(bool flag);
+  void SetRequireGoodITSLayersAll(bool flag);
 
  private:
   bool mRequireSel8{false};
@@ -162,12 +195,16 @@ class EMEventCut : public TNamed
   bool mRequireNoITSROFB{false};
   bool mRequireNoSameBunchPileup{false};
   bool mRequireVertexITSTPC{false};
+  bool mRequireVertexTOFmatched{false};
   bool mRequireGoodZvtxFT0vsPV{false};
   bool mRequireNoCollInTimeRangeStandard{false};
   bool mRequireNoCollInTimeRangeStrict{false};
   bool mRequireNoCollInITSROFStandard{false};
   bool mRequireNoCollInITSROFStrict{false};
   bool mRequireNoHighMultCollInPrevRof{false};
+  bool mRequireGoodITSLayer3{false};
+  bool mRequireGoodITSLayer0123{false};
+  bool mRequireGoodITSLayersAll{false};
 
   ClassDef(EMEventCut, 1);
 };

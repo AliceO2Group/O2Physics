@@ -134,7 +134,7 @@ struct TrackExtension {
           }
           auto trackPar = getTrackPar(track);
           auto const& collision = track.collision();
-          gpu::gpustd::array<float, 2> dcaInfo;
+          std::array<float, 2> dcaInfo;
           if (o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo)) {
             dca[0] = dcaInfo[0];
             dca[1] = dcaInfo[1];

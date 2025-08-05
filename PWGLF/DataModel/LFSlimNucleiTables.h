@@ -14,9 +14,10 @@
 /// \brief Slim nuclei tables
 ///
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Common/DataModel/Centrality.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 #ifndef PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
@@ -31,6 +32,7 @@ DECLARE_SOA_COLUMN(Phi, phi, float);
 DECLARE_SOA_COLUMN(TPCInnerParam, tpcInnerParam, float);
 DECLARE_SOA_COLUMN(Beta, beta, float);
 DECLARE_SOA_COLUMN(Zvertex, zVertex, float);
+DECLARE_SOA_COLUMN(NContrib, nContrib, int);
 DECLARE_SOA_COLUMN(DCAxy, dcaxy, float);
 DECLARE_SOA_COLUMN(DCAz, dcaz, float);
 DECLARE_SOA_COLUMN(TPCsignal, tpcSignal, float);
@@ -44,15 +46,39 @@ DECLARE_SOA_COLUMN(ITSclsMap, itsClsMap, uint8_t);
 DECLARE_SOA_COLUMN(TPCnCls, tpcNCls, uint8_t);
 DECLARE_SOA_COLUMN(TPCnClsShared, tpcNClsShared, uint8_t);
 DECLARE_SOA_COLUMN(ITSclusterSizes, itsClusterSizes, uint32_t);
+DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool);
 DECLARE_SOA_COLUMN(gPt, genPt, float);
 DECLARE_SOA_COLUMN(gEta, genEta, float);
 DECLARE_SOA_COLUMN(gPhi, genPhi, float);
 DECLARE_SOA_COLUMN(PDGcode, pdgCode, int);
 DECLARE_SOA_COLUMN(MotherPDGcode, MotherpdgCode, int);
-DECLARE_SOA_COLUMN(SurvivedEventSelection, survivedEventSelection, bool);
+DECLARE_SOA_COLUMN(MotherDecRad, motherDecRad, float);
 DECLARE_SOA_COLUMN(AbsoDecL, absoDecL, float);
 
 } // namespace NucleiTableNS
+
+namespace NucleiPairTableNS
+{
+DECLARE_SOA_COLUMN(Pt1, pt1, float);                              // first particle pt
+DECLARE_SOA_COLUMN(Eta1, eta1, float);                            // first particle eta
+DECLARE_SOA_COLUMN(Phi1, phi1, float);                            // first particle phi
+DECLARE_SOA_COLUMN(TPCInnerParam1, tpcInnerParam1, float);        // first particle TPC inner param
+DECLARE_SOA_COLUMN(TPCsignal1, tpcSignal1, float);                // first particle TPC signal
+DECLARE_SOA_COLUMN(DCAxy1, dcaxy1, float);                        // first particle DCA xy
+DECLARE_SOA_COLUMN(DCAz1, dcaz1, float);                          // first particle DCA z
+DECLARE_SOA_COLUMN(ClusterSizesITS1, clusterSizesITS1, uint32_t); // first particle ITS cluster sizes
+DECLARE_SOA_COLUMN(Flags1, flags1, uint16_t);                     // first particle flags
+DECLARE_SOA_COLUMN(Pt2, pt2, float);                              // second particle pt
+DECLARE_SOA_COLUMN(Eta2, eta2, float);                            // second particle eta
+DECLARE_SOA_COLUMN(Phi2, phi2, float);                            // second particle phi
+DECLARE_SOA_COLUMN(TPCInnerParam2, tpcInnerParam2, float);        // second particle TPC inner param
+DECLARE_SOA_COLUMN(TPCsignal2, tpcSignal2, float);                // second particle TPC signal
+DECLARE_SOA_COLUMN(DCAxy2, dcaxy2, float);                        // second particle DCA xy
+DECLARE_SOA_COLUMN(DCAz2, dcaz2, float);                          // second particle DCA z
+DECLARE_SOA_COLUMN(ClusterSizesITS2, clusterSizesITS2, uint32_t); // second particle ITS cluster sizes
+DECLARE_SOA_COLUMN(Flags2, flags2, uint16_t);                     // second particle flags
+} // namespace NucleiPairTableNS
+
 namespace NucleiFlowTableNS
 {
 DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float); // centrality with FT0A estimator
@@ -60,13 +86,15 @@ DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float); // centrality with FT0A estimator
 DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float); // centrality with FT0C estimator
 DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float); // centrality with FT0M estimator
 DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);   // Psi with FT0A estimator
-DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float); // Multiplicity with FT0A estimator
 DECLARE_SOA_COLUMN(PsiFT0C, psiFT0C, float);   // Psi with FT0C estimator
-DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float); // Multiplicity with FT0C estimator
 DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);     // Psi with TPC estimator
 DECLARE_SOA_COLUMN(PsiTPCl, psiTPCl, float);   // Psi with TPC estimator (left)
 DECLARE_SOA_COLUMN(PsiTPCr, psiTPCr, float);   // Psi with TPC estimator (right)
-DECLARE_SOA_COLUMN(MultTPC, multTPC, int);     // Multiplicity with TPC estimator
+DECLARE_SOA_COLUMN(QFT0A, qFT0A, float);       // Amplitude with FT0A estimator
+DECLARE_SOA_COLUMN(QFT0C, qFT0C, float);       // Amplitude with FT0C estimator
+DECLARE_SOA_COLUMN(QTPC, qTPC, float);         // Amplitude with TPC estimator
+DECLARE_SOA_COLUMN(QTPCl, qTPCl, float);       // Amplitude with TPC estimator (left)
+DECLARE_SOA_COLUMN(QTPCr, qTPCr, float);       // Amplitude with TPC estimator (right)
 } // namespace NucleiFlowTableNS
 
 DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
@@ -76,6 +104,7 @@ DECLARE_SOA_TABLE(NucleiTable, "AOD", "NUCLEITABLE",
                   NucleiTableNS::TPCInnerParam,
                   NucleiTableNS::Beta,
                   NucleiTableNS::Zvertex,
+                  NucleiTableNS::NContrib,
                   NucleiTableNS::DCAxy,
                   NucleiTableNS::DCAz,
                   NucleiTableNS::TPCsignal,
@@ -96,13 +125,15 @@ DECLARE_SOA_TABLE(NucleiTableFlow, "AOD", "NUCLEITABLEFLOW",
                   NucleiFlowTableNS::CentFT0A,
                   NucleiFlowTableNS::CentFT0C,
                   NucleiFlowTableNS::PsiFT0A,
-                  NucleiFlowTableNS::MultFT0A,
                   NucleiFlowTableNS::PsiFT0C,
-                  NucleiFlowTableNS::MultFT0C,
                   NucleiFlowTableNS::PsiTPC,
                   NucleiFlowTableNS::PsiTPCl,
                   NucleiFlowTableNS::PsiTPCr,
-                  NucleiFlowTableNS::MultTPC);
+                  NucleiFlowTableNS::QFT0A,
+                  NucleiFlowTableNS::QFT0C,
+                  NucleiFlowTableNS::QTPC,
+                  NucleiFlowTableNS::QTPCl,
+                  NucleiFlowTableNS::QTPCr);
 
 DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::Pt,
@@ -111,6 +142,7 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::TPCInnerParam,
                   NucleiTableNS::Beta,
                   NucleiTableNS::Zvertex,
+                  NucleiTableNS::NContrib,
                   NucleiTableNS::DCAxy,
                   NucleiTableNS::DCAz,
                   NucleiTableNS::TPCsignal,
@@ -124,13 +156,34 @@ DECLARE_SOA_TABLE(NucleiTableMC, "AOD", "NUCLEITABLEMC",
                   NucleiTableNS::TPCnCls,
                   NucleiTableNS::TPCnClsShared,
                   NucleiTableNS::ITSclusterSizes,
+                  NucleiTableNS::SurvivedEventSelection,
                   NucleiTableNS::gPt,
                   NucleiTableNS::gEta,
                   NucleiTableNS::gPhi,
                   NucleiTableNS::PDGcode,
                   NucleiTableNS::MotherPDGcode,
-                  NucleiTableNS::SurvivedEventSelection,
+                  NucleiTableNS::MotherDecRad,
                   NucleiTableNS::AbsoDecL);
+
+DECLARE_SOA_TABLE(NucleiPairTable, "AOD", "NUCLEIPAIRTABLE",
+                  NucleiPairTableNS::Pt1,
+                  NucleiPairTableNS::Eta1,
+                  NucleiPairTableNS::Phi1,
+                  NucleiPairTableNS::TPCInnerParam1,
+                  NucleiPairTableNS::TPCsignal1,
+                  NucleiPairTableNS::DCAxy1,
+                  NucleiPairTableNS::DCAz1,
+                  NucleiPairTableNS::ClusterSizesITS1,
+                  NucleiPairTableNS::Flags1,
+                  NucleiPairTableNS::Pt2,
+                  NucleiPairTableNS::Eta2,
+                  NucleiPairTableNS::Phi2,
+                  NucleiPairTableNS::TPCInnerParam2,
+                  NucleiPairTableNS::TPCsignal2,
+                  NucleiPairTableNS::DCAxy2,
+                  NucleiPairTableNS::DCAz2,
+                  NucleiPairTableNS::ClusterSizesITS2,
+                  NucleiPairTableNS::Flags2);
 
 } // namespace o2::aod
 

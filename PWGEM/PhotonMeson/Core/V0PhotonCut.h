@@ -16,16 +16,18 @@
 #ifndef PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 
-#include <algorithm>
-#include <set>
-#include <vector>
-#include <utility>
-#include <string>
 #include "Rtypes.h"
-#include "TNamed.h"
-#include "TMath.h"
 
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+
+#include "TMath.h"
+#include "TNamed.h"
+
+#include <algorithm>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 using namespace o2::pwgem::photonmeson;
 
 class V0PhotonCut : public TNamed
@@ -70,7 +72,6 @@ class V0PhotonCut : public TNamed
     kRequireTPConly,
     kRequireTPCTRD,
     kRequireTPCTOF,
-    kRequireTPCTRDTOF,
     kNCuts
   };
 
@@ -150,6 +151,9 @@ class V0PhotonCut : public TNamed
       if (mDisableITSonly && isITSonlyTrack(track)) {
         return false;
       }
+      if (mDisableTPConly && isTPConlyTrack(track)) {
+        return false;
+      }
 
       if (mRejectITSib) {
         auto hits_ib = std::count_if(its_ib_Requirement.second.begin(), its_ib_Requirement.second.end(), [&](auto&& requiredLayer) { return track.itsClusterMap() & (1 << requiredLayer); });
@@ -193,9 +197,6 @@ class V0PhotonCut : public TNamed
         return false;
       }
       if (mRequireTPCTOF && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPCTOF)) {
-        return false;
-      }
-      if (mRequireTPCTRDTOF && !IsSelectedTrack(track, V0PhotonCuts::kRequireTPCTRDTOF)) {
         return false;
       }
     }
@@ -288,7 +289,7 @@ class V0PhotonCut : public TNamed
         return v0.chiSquareNDF() <= mMaxChi2KF;
 
       case V0PhotonCuts::kRZLine:
-        return v0.v0radius() > abs(v0.vz()) * std::tan(2 * std::atan(std::exp(-mMaxV0Eta))) - mMaxMarginZ;
+        return v0.v0radius() > std::fabs(v0.vz()) * std::tan(2 * std::atan(std::exp(-mMaxV0Eta))) - mMaxMarginZ;
 
       case V0PhotonCuts::kOnWwireIB: {
         const float margin_xy = 1.0; // cm
@@ -297,9 +298,9 @@ class V0PhotonCut : public TNamed
         // const float rxy_max = 14.846;         // cm
         // const float z_min = -17.56; // cm
         // const float z_max = +31.15;           // cm
-        float x = abs(v0.vx()); // cm, measured secondary vertex of gamma->ee
-        float y = v0.vy();      // cm, measured secondary vertex of gamma->ee
-        float z = v0.vz();      // cm, measured secondary vertex of gamma->ee
+        float x = std::fabs(v0.vx()); // cm, measured secondary vertex of gamma->ee
+        float y = v0.vy();            // cm, measured secondary vertex of gamma->ee
+        float z = v0.vz();            // cm, measured secondary vertex of gamma->ee
 
         float rxy = sqrt(x * x + y * y);
         if (rxy < 7.0 || 14.0 < rxy) {
@@ -311,7 +312,7 @@ class V0PhotonCut : public TNamed
           return false;
         }
 
-        float dxy = abs(1.0 * y - x * std::tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(std::tan(-8.52 * TMath::DegToRad()), 2));
+        float dxy = std::fabs(1.0 * y - x * std::tan(-8.52 * TMath::DegToRad())) / sqrt(pow(1.0, 2) + pow(std::tan(-8.52 * TMath::DegToRad()), 2));
         return !(dxy > margin_xy);
       }
       case V0PhotonCuts::kOnWwireOB: {
@@ -344,10 +345,10 @@ class V0PhotonCut : public TNamed
   {
     switch (cut) {
       case V0PhotonCuts::kTrackPtRange:
-        return track.pt() >= mMinTrackPt && track.pt() <= mMaxTrackPt;
+        return track.pt() > mMinTrackPt && track.pt() < mMaxTrackPt;
 
       case V0PhotonCuts::kTrackEtaRange:
-        return track.eta() >= mMinTrackEta && track.eta() <= mMaxTrackEta;
+        return track.eta() > mMinTrackEta && track.eta() < mMaxTrackEta;
 
       case V0PhotonCuts::kTPCNCls:
         return track.tpcNClsFound() >= mMinNClustersTPC;
@@ -359,22 +360,22 @@ class V0PhotonCut : public TNamed
         return track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC;
 
       case V0PhotonCuts::kTPCFracSharedClusters:
-        return track.tpcFractionSharedCls() <= mMaxFracSharedClustersTPC;
+        return track.tpcFractionSharedCls() < mMaxFracSharedClustersTPC;
 
       case V0PhotonCuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
       case V0PhotonCuts::kTPCNsigmaEl:
-        return track.tpcNSigmaEl() >= mMinTPCNsigmaEl && track.tpcNSigmaEl() <= mMaxTPCNsigmaEl;
+        return track.tpcNSigmaEl() > mMinTPCNsigmaEl && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
 
       case V0PhotonCuts::kTPCNsigmaPi:
-        return track.tpcNSigmaPi() >= mMinTPCNsigmaPi && track.tpcNSigmaPi() <= mMaxTPCNsigmaPi;
+        return track.tpcNSigmaPi() > mMinTPCNsigmaPi && track.tpcNSigmaPi() < mMaxTPCNsigmaPi;
 
       case V0PhotonCuts::kDCAxy:
-        return abs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
+        return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
       case V0PhotonCuts::kDCAz:
-        return abs(track.dcaZ()) <= mMaxDcaZ;
+        return std::fabs(track.dcaZ()) < mMaxDcaZ;
 
       case V0PhotonCuts::kITSNCls:
         return mMinNClustersITS <= track.itsNCls() && track.itsNCls() <= mMaxNClustersITS;
@@ -397,13 +398,13 @@ class V0PhotonCut : public TNamed
         // if (abs(track.y()) > abs(track.x() * TMath::Tan(10.f * TMath::DegToRad())) + 15.f) {
         //   return false;
         // }
-        if (track.x() < 0.1 && abs(track.y()) > 15.f) {
+        if (track.x() < 0.1 && std::fabs(track.y()) > 15.f) {
           return false;
         }
-        if (track.x() > 82.9 && abs(track.y()) > abs(track.x() * std::tan(10.f * TMath::DegToRad())) + 5.f) {
+        if (track.x() > 82.9 && std::fabs(track.y()) > std::fabs(track.x() * std::tan(10.f * TMath::DegToRad())) + 5.f) {
           return false;
         }
-        if (track.x() > 82.9 && abs(track.y()) < 15.0 && abs(abs(track.z()) - 44.5) < 2.5) {
+        if (track.x() > 82.9 && std::fabs(track.y()) < 15.0 && abs(abs(track.z()) - 44.5) < 2.5) {
           return false;
         }
         return true;
@@ -425,9 +426,6 @@ class V0PhotonCut : public TNamed
 
       case V0PhotonCuts::kRequireTPCTOF:
         return isTPCTOFTrack(track);
-
-      case V0PhotonCuts::kRequireTPCTRDTOF:
-        return isTPCTRDTOFTrack(track);
 
       default:
         return false;
@@ -474,8 +472,8 @@ class V0PhotonCut : public TNamed
   void SetRequireTPConly(bool flag);
   void SetRequireTPCTRD(bool flag);
   void SetRequireTPCTOF(bool flag);
-  void SetRequireTPCTRDTOF(bool flag);
   void SetDisableITSonly(bool flag);
+  void SetDisableTPConly(bool flag);
 
  private:
   static const std::pair<int8_t, std::set<uint8_t>> its_ib_Requirement;
@@ -525,8 +523,8 @@ class V0PhotonCut : public TNamed
   bool mRequireTPConly{false};
   bool mRequireTPCTRD{false};
   bool mRequireTPCTOF{false};
-  bool mRequireTPCTRDTOF{false};
   bool mDisableITSonly{false};
+  bool mDisableTPConly{false};
 
   ClassDef(V0PhotonCut, 1);
 };

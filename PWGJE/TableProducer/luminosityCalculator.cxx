@@ -14,13 +14,21 @@
 ///
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-
 #include "PWGJE/DataModel/JetReducedData.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <Framework/Configurable.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -32,7 +40,7 @@ struct LuminosityCalculator {
   void init(InitContext&)
   {
 
-    std::vector<std::string> histLabels = {"BC", "BC+TVX", "BC+TVX+NoTFB", "BC+TVX+NoTFB+NoITSROFB", "Coll", "Coll+TVX", "Coll+TVX+VtxZ+Sel8", "Coll+TVX+VtxZ+Sel8Full", "Coll+TVX+VtxZ+Sel8FullPbPb", "Coll+TVX+VtxZ+SelMC", "Coll+TVX+VtxZ+SelMCFull", "Coll+TVX+VtxZ+SelMCFullPbPb", "Coll+TVX+VtxZ+SelUnanchoredMC", "Coll+TVX+VtxZ+SelTVX", "Coll+TVX+VtxZ+Sel7", "Coll+TVX+VtxZ+Sel7KINT7"};
+    std::vector<std::string> histLabels = {"BC", "BC+TVX", "BC+TVX+NoTFB", "BC+TVX+NoTFB+NoITSROFB", "Coll", "Coll+TVX", "Coll+TVX+VtxZ+Sel8", "Coll+TVX+VtxZ+Sel8Full", "Coll+TVX+VtxZ+Sel8FullPbPb", "Coll+TVX+VtxZ+SelMC", "Coll+TVX+VtxZ+SelMCFull", "Coll+TVX+VtxZ+SelMCFullPbPb", "Coll+TVX+VtxZ+SelUnanchoredMC", "Coll+TVX+VtxZ+SelTVX", "Coll+TVX+VtxZ+Sel7", "Coll+TVX+VtxZ+Sel7KINT7", "custom"};
     registry.add("counter", "BCs and Collisions", HistType::kTH1D, {{static_cast<int>(histLabels.size()), -0.5, static_cast<double>(histLabels.size()) - 0.5}});
     auto counter = registry.get<TH1>(HIST("counter"));
     for (std::vector<std::string>::size_type iCounter = 0; iCounter < histLabels.size(); iCounter++) {
@@ -66,6 +74,7 @@ struct LuminosityCalculator {
     int readCollisionWithTVXAndZVertexAndSelTVXCounter = 0;
     int readCollisionWithTVXAndZVertexAndSel7Counter = 0;
     int readCollisionWithTVXAndZVertexAndSel7KINT7Counter = 0;
+    int readCollisionWithCustomCounter = 0;
 
     for (const auto& collisionCount : collisionCounts) {
       readCollision += collisionCount.readCounts().front();
@@ -80,6 +89,7 @@ struct LuminosityCalculator {
       readCollisionWithTVXAndZVertexAndSelTVXCounter += collisionCount.readCountsWithTVXAndZVertexAndSelTVX().front();
       readCollisionWithTVXAndZVertexAndSel7Counter += collisionCount.readCountsWithTVXAndZVertexAndSel7().front();
       readCollisionWithTVXAndZVertexAndSel7KINT7Counter += collisionCount.readCountsWithTVXAndZVertexAndSel7KINT7().front();
+      readCollisionWithCustomCounter += collisionCount.readCountsWithCustom().front();
     }
 
     registry.get<TH1>(HIST("counter"))->SetBinContent(1, registry.get<TH1>(HIST("counter"))->GetBinContent(1) + readBC);
@@ -98,6 +108,7 @@ struct LuminosityCalculator {
     registry.get<TH1>(HIST("counter"))->SetBinContent(14, registry.get<TH1>(HIST("counter"))->GetBinContent(14) + readCollisionWithTVXAndZVertexAndSelTVXCounter);
     registry.get<TH1>(HIST("counter"))->SetBinContent(15, registry.get<TH1>(HIST("counter"))->GetBinContent(15) + readCollisionWithTVXAndZVertexAndSel7Counter);
     registry.get<TH1>(HIST("counter"))->SetBinContent(16, registry.get<TH1>(HIST("counter"))->GetBinContent(16) + readCollisionWithTVXAndZVertexAndSel7KINT7Counter);
+    registry.get<TH1>(HIST("counter"))->SetBinContent(16, registry.get<TH1>(HIST("counter"))->GetBinContent(17) + readCollisionWithCustomCounter);
   }
   PROCESS_SWITCH(LuminosityCalculator, processCalculateLuminosity, "calculate ingredients for luminosity and fill a histogram", true);
 };

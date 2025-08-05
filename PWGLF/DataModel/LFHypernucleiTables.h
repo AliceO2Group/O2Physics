@@ -30,6 +30,7 @@ DECLARE_SOA_COLUMN(CentralityFT0M, centralityFT0M, float); // centrality with FT
 DECLARE_SOA_COLUMN(PsiFT0A, psiFT0A, float);               // Psi with FT0A estimator
 DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);             // Multiplicity with FT0A estimator
 DECLARE_SOA_COLUMN(PsiFT0C, psiFT0C, float);               // Psi with FT0C estimator
+DECLARE_SOA_COLUMN(QFT0C, qFT0C, float);                   // Amplitude with FT0C estimator
 DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);             // Multiplicity with FT0C estimator
 DECLARE_SOA_COLUMN(PsiTPC, psiTPC, float);                 // Psi with TPC estimator
 DECLARE_SOA_COLUMN(MultTPC, multTPC, float);               // Multiplicity with TPC estimator
@@ -54,9 +55,13 @@ DECLARE_SOA_COLUMN(CosPA, cosPA, double);                             // Cosine 
 DECLARE_SOA_COLUMN(NSigmaHe, nSigmaHe, float);                        // Number of sigmas of the He daughter
 DECLARE_SOA_COLUMN(NTPCclusHe, nTPCclusHe, uint8_t);                  // Number of TPC clusters of the He daughter
 DECLARE_SOA_COLUMN(NTPCclusPi, nTPCclusPi, uint8_t);                  // Number of TPC clusters of the Pi daughter
+DECLARE_SOA_COLUMN(NTPCpidClusHe, nTPCpidClusHe, uint8_t);            // Number of TPC clusters with PID information of the He daughter
+DECLARE_SOA_COLUMN(NTPCpidClusPi, nTPCpidClusPi, uint8_t);            // Number of TPC clusters with PID information of the Pi daughter
 DECLARE_SOA_COLUMN(TPCsignalHe, tpcSignalHe, uint16_t);               // TPC signal of the He daughter
 DECLARE_SOA_COLUMN(TPCsignalPi, tpcSignalPi, uint16_t);               // TPC signal of the Pi daughter
 DECLARE_SOA_COLUMN(TPCChi2He, tpcChi2He, float);                      // TPC chi2 of the He daughter
+DECLARE_SOA_COLUMN(ITSChi2He, itsChi2He, float);                      // ITS chi2 of the He daughter
+DECLARE_SOA_COLUMN(ITSChi2Pi, itsChi2Pi, float);                      // ITS chi2 of the Pi daughter
 DECLARE_SOA_COLUMN(TrackedClSize, trackedClSize, int);                // int: zero for non-tracked candidates
 DECLARE_SOA_COLUMN(Flags, flags, uint8_t);                            // Flags for PID in tracking (bits [0, 3] for negative daughter, [4,7] for positive daughter)
 DECLARE_SOA_COLUMN(TPCmomHe, tpcMomHe, float);                        // TPC momentum of the He daughter
@@ -90,8 +95,8 @@ DECLARE_SOA_TABLE(DataHypCands, "AOD", "HYPCANDS",
                   hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
-                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi,
-                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi,
+                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He, hyperrec::ITSChi2He, hyperrec::ITSChi2Pi,
                   hyperrec::TOFMass,
                   hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
                   hyperrec::Flags, hyperrec::TrackedClSize);
@@ -100,7 +105,7 @@ DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
                   o2::soa::Index<>,
                   hyperrec::CentralityFT0A, hyperrec::CentralityFT0C, hyperrec::CentralityFT0M,
                   hyperrec::PsiFT0A, hyperrec::MultFT0A,
-                  hyperrec::PsiFT0C, hyperrec::MultFT0C,
+                  hyperrec::PsiFT0C, hyperrec::MultFT0C, hyperrec::QFT0C,
                   hyperrec::PsiTPC, hyperrec::MultTPC,
                   hyperrec::XPrimVtx, hyperrec::YPrimVtx, hyperrec::ZPrimVtx,
 
@@ -109,8 +114,8 @@ DECLARE_SOA_TABLE(DataHypCandsFlow, "AOD", "HYPCANDSFLOW",
                   hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
-                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi,
-                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi,
+                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He, hyperrec::ITSChi2He, hyperrec::ITSChi2Pi,
                   hyperrec::TOFMass,
                   hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
                   hyperrec::Flags, hyperrec::TrackedClSize);
@@ -125,8 +130,8 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::PtPi, hyperrec::PhiPi, hyperrec::EtaPi,
                   hyperrec::XDecVtx, hyperrec::YDecVtx, hyperrec::ZDecVtx,
                   hyperrec::DcaV0Daug, hyperrec::DcaHe, hyperrec::DcaPi,
-                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi,
-                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He,
+                  hyperrec::NSigmaHe, hyperrec::NTPCclusHe, hyperrec::NTPCclusPi, hyperrec::NTPCpidClusHe, hyperrec::NTPCpidClusPi,
+                  hyperrec::TPCmomHe, hyperrec::TPCmomPi, hyperrec::TPCsignalHe, hyperrec::TPCsignalPi, hyperrec::TPCChi2He, hyperrec::ITSChi2He, hyperrec::ITSChi2Pi,
                   hyperrec::TOFMass,
                   hyperrec::ITSclusterSizesHe, hyperrec::ITSclusterSizesPi,
                   hyperrec::Flags, hyperrec::TrackedClSize,

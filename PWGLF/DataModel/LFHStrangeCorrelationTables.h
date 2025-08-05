@@ -22,10 +22,15 @@
 #ifndef PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_
 #define PWGLF_DATAMODEL_LFHSTRANGECORRELATIONTABLES_H_
 
-#include <cmath>
-#include "Framework/AnalysisDataModel.h"
+/// this data model uses the LF one, add here
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/RecoDecay.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisDataModel.h"
+
+#include <cmath>
 
 // Simple checker
 #define bitcheck(var, nbit) ((var) & (1 << (nbit)))
@@ -42,21 +47,36 @@ DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Trigger"); //!
 DECLARE_SOA_COLUMN(MCOriginalPt, mcOriginalPt, float);                // true generated pt
 } // namespace triggerTracks
 DECLARE_SOA_TABLE(TriggerTracks, "AOD", "TRIGGERTRACKS", o2::soa::Index<>, triggerTracks::CollisionId, triggerTracks::MCPhysicalPrimary, triggerTracks::TrackId, triggerTracks::MCOriginalPt);
+namespace triggerTrackExtras
+{
+DECLARE_SOA_COLUMN(Extra, extra, int); // true physical primary flag
+} // namespace triggerTrackExtras
+DECLARE_SOA_TABLE(TriggerTrackExtras, "AOD", "TRIGGERTRACKEXTRAs", triggerTrackExtras::Extra);
 /// _________________________________________
 /// Table for storing assoc track indices
-namespace assocPions
-{
-DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
-DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Assoc"); //!
-} // namespace assocPions
-DECLARE_SOA_TABLE(AssocPions, "AOD", "ASSOCPIONS", o2::soa::Index<>, assocPions::CollisionId, assocPions::TrackId);
-
 namespace assocHadrons
 {
 DECLARE_SOA_INDEX_COLUMN(Collision, collision);                     //!
+DECLARE_SOA_COLUMN(MCPhysicalPrimary, mcPhysicalPrimary, bool);     // true physical primary flag
 DECLARE_SOA_INDEX_COLUMN_FULL(Track, track, int, Tracks, "_Assoc"); //!
+DECLARE_SOA_COLUMN(MCOriginalPt, mcOriginalPt, float);              // true generated pt
 } // namespace assocHadrons
-DECLARE_SOA_TABLE(AssocHadrons, "AOD", "ASSOCHADRONS", o2::soa::Index<>, assocHadrons::CollisionId, assocHadrons::TrackId);
+DECLARE_SOA_TABLE(AssocHadrons, "AOD", "ASSOCHADRONS", o2::soa::Index<>, assocHadrons::CollisionId, assocHadrons::MCPhysicalPrimary, assocHadrons::TrackId, assocHadrons::MCOriginalPt);
+/// _________________________________________
+/// Table for storing assoc track PID
+namespace assocPID
+{
+DECLARE_SOA_COLUMN(NSigmaTPCPi, nSigmaTPCPi, float);
+DECLARE_SOA_COLUMN(NSigmaTPCKa, nSigmaTPCKa, float);
+DECLARE_SOA_COLUMN(NSigmaTPCPr, nSigmaTPCPr, float);
+DECLARE_SOA_COLUMN(NSigmaTPCEl, nSigmaTPCEl, float);
+DECLARE_SOA_COLUMN(NSigmaTOFPi, nSigmaTOFPi, float);
+DECLARE_SOA_COLUMN(NSigmaTOFKa, nSigmaTOFKa, float);
+DECLARE_SOA_COLUMN(NSigmaTOFPr, nSigmaTOFPr, float);
+DECLARE_SOA_COLUMN(NSigmaTOFEl, nSigmaTOFEl, float);
+} // namespace assocPID
+DECLARE_SOA_TABLE(AssocPID, "AOD", "ASSOCPID", assocPID::NSigmaTPCPi, assocPID::NSigmaTPCKa, assocPID::NSigmaTPCPr, assocPID::NSigmaTPCEl, assocPID::NSigmaTOFPi, assocPID::NSigmaTOFKa, assocPID::NSigmaTOFPr, assocPID::NSigmaTOFEl);
+
 /// _________________________________________
 /// Table for storing associated V0 indices
 namespace assocV0s

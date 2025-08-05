@@ -17,7 +17,12 @@
 #ifndef TUTORIALS_PWGHF_DATAMODELMINI_H_
 #define TUTORIALS_PWGHF_DATAMODELMINI_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include "Common/Core/RecoDecay.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+
+#include <array>
 
 namespace o2::aod
 {

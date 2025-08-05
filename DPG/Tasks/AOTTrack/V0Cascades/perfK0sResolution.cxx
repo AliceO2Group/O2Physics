@@ -9,6 +9,8 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include <string>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
@@ -291,10 +293,10 @@ struct perfK0sResolution {
     if (!ntrack.hasTPC() || !ptrack.hasTPC()) {
       return false;
     }
-    if (abs(ntrack.tpcNSigmaPi()) > nMaxTPCNsigma) {
+    if (std::abs(ntrack.tpcNSigmaPi()) > nMaxTPCNsigma) {
       return false;
     }
-    if (abs(ptrack.tpcNSigmaPi()) > nMaxTPCNsigma) {
+    if (std::abs(ptrack.tpcNSigmaPi()) > nMaxTPCNsigma) {
       return false;
     }
     if (ntrack.tpcNClsCrossedRows() < extraCutTPCClusters || ptrack.tpcNClsCrossedRows() < extraCutTPCClusters) {

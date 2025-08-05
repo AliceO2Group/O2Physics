@@ -16,6 +16,19 @@
 
 #include "DhCorrelationExtraction.h"
 
+#include <TCanvas.h>
+#include <TDirectoryFile.h>
+#include <TFile.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <THnSparse.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <cstdio>
+#include <iostream>
+
 DhCorrelationExtraction::DhCorrelationExtraction() : // default constructor
                                                      fFileMass(0x0),
                                                      fFileSE(0x0),

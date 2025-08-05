@@ -16,11 +16,12 @@
 #ifndef PWGHF_CORE_HFMLRESPONSEXICTOXIPIPI_H_
 #define PWGHF_CORE_HFMLRESPONSEXICTOXIPIPI_H_
 
-#include <map>
-#include <string>
-#include <vector>
-
 #include "PWGHF/Core/HfMlResponse.h"
+
+#include "Tools/ML/MlResponse.h"
+
+#include <cstdint>
+#include <vector>
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
@@ -62,13 +63,32 @@ enum class InputFeaturesXicToXiPiPi : uint8_t {
   decayLengthXYNormalised,
   cpa,
   cpaXY,
-  cosPaXi,
-  cosPaXYXi,
-  cosPaLambda,
-  cosPaXYLambda,
-  impactParameterXY0,
-  impactParameterXY1,
-  impactParameterXY2
+  cpaXi,
+  cpaXYXi,
+  cpaLambda,
+  cpaXYLambda,
+  impactParameterXi,
+  impactParameterPi0,
+  impactParameterPi1,
+  invMassXi,
+  invMassLambda,
+  dcaXiDaughters,
+  dcaV0Daughters,
+  dcaPosToPV,
+  dcaNegToPV,
+  dcaBachelorToPV,
+  dcaXYCascToPV,
+  dcaZCascToPV,
+  nSigTpcPiFromXicPlus0,
+  nSigTpcPiFromXicPlus1,
+  nSigTpcBachelorPi,
+  nSigTpcPiFromLambda,
+  nSigTpcPrFromLambda,
+  nSigTofPiFromXicPlus0,
+  nSigTofPiFromXicPlus1,
+  nSigTofBachelorPi,
+  nSigTofPiFromLambda,
+  nSigTofPrFromLambda
 };
 
 template <typename TypeOutputScore = float>
@@ -100,13 +120,32 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XICTOXIPIPI(decayLengthXYNormalised);
         CHECK_AND_FILL_VEC_XICTOXIPIPI(cpa);
         CHECK_AND_FILL_VEC_XICTOXIPIPI(cpaXY);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaXi);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaXYXi);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaLambda);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI(cosPaXYLambda);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXY0, impactParameter0);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXY1, impactParameter1);
-        CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXY2, impactParameter2);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cpaXi);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cpaXYXi);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cpaLambda);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(cpaXYLambda);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterXi, impactParameter0);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterPi0, impactParameter1);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI_FULL(candidate, impactParameterPi1, impactParameter2);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(invMassXi);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(invMassLambda);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaXiDaughters);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaV0Daughters);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaPosToPV);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaNegToPV);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaBachelorToPV);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaXYCascToPV);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(dcaZCascToPV);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTpcPiFromXicPlus0);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTpcPiFromXicPlus1);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTpcBachelorPi);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTpcPiFromLambda);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTpcPrFromLambda);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTofPiFromXicPlus0);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTofPiFromXicPlus1);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTofBachelorPi);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTofPiFromLambda);
+        CHECK_AND_FILL_VEC_XICTOXIPIPI(nSigTofPrFromLambda);
       }
     }
 
@@ -128,13 +167,32 @@ class HfMlResponseXicToXiPiPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XICTOXIPIPI(decayLengthXYNormalised),
       FILL_MAP_XICTOXIPIPI(cpa),
       FILL_MAP_XICTOXIPIPI(cpaXY),
-      FILL_MAP_XICTOXIPIPI(cosPaXi),
-      FILL_MAP_XICTOXIPIPI(cosPaXYXi),
-      FILL_MAP_XICTOXIPIPI(cosPaLambda),
-      FILL_MAP_XICTOXIPIPI(cosPaXYLambda),
-      FILL_MAP_XICTOXIPIPI(impactParameterXY0),
-      FILL_MAP_XICTOXIPIPI(impactParameterXY1),
-      FILL_MAP_XICTOXIPIPI(impactParameterXY2)};
+      FILL_MAP_XICTOXIPIPI(cpaXi),
+      FILL_MAP_XICTOXIPIPI(cpaXYXi),
+      FILL_MAP_XICTOXIPIPI(cpaLambda),
+      FILL_MAP_XICTOXIPIPI(cpaXYLambda),
+      FILL_MAP_XICTOXIPIPI(impactParameterXi),
+      FILL_MAP_XICTOXIPIPI(impactParameterPi0),
+      FILL_MAP_XICTOXIPIPI(impactParameterPi1),
+      FILL_MAP_XICTOXIPIPI(invMassXi),
+      FILL_MAP_XICTOXIPIPI(invMassLambda),
+      FILL_MAP_XICTOXIPIPI(dcaXiDaughters),
+      FILL_MAP_XICTOXIPIPI(dcaV0Daughters),
+      FILL_MAP_XICTOXIPIPI(dcaPosToPV),
+      FILL_MAP_XICTOXIPIPI(dcaNegToPV),
+      FILL_MAP_XICTOXIPIPI(dcaBachelorToPV),
+      FILL_MAP_XICTOXIPIPI(dcaXYCascToPV),
+      FILL_MAP_XICTOXIPIPI(dcaZCascToPV),
+      FILL_MAP_XICTOXIPIPI(nSigTpcPiFromXicPlus0),
+      FILL_MAP_XICTOXIPIPI(nSigTpcPiFromXicPlus1),
+      FILL_MAP_XICTOXIPIPI(nSigTpcBachelorPi),
+      FILL_MAP_XICTOXIPIPI(nSigTpcPiFromLambda),
+      FILL_MAP_XICTOXIPIPI(nSigTpcPrFromLambda),
+      FILL_MAP_XICTOXIPIPI(nSigTofPiFromXicPlus0),
+      FILL_MAP_XICTOXIPIPI(nSigTofPiFromXicPlus1),
+      FILL_MAP_XICTOXIPIPI(nSigTofBachelorPi),
+      FILL_MAP_XICTOXIPIPI(nSigTofPiFromLambda),
+      FILL_MAP_XICTOXIPIPI(nSigTofPrFromLambda)};
   }
 };
 

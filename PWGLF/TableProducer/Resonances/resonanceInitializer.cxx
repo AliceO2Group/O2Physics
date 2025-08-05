@@ -47,6 +47,7 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 using namespace o2::constants::math;
+using namespace o2::aod::rctsel;
 
 /// Initializer for the resonance candidate producers
 struct ResonanceInitializer {
@@ -58,10 +59,18 @@ struct ResonanceInitializer {
   Service<o2::framework::O2DatabasePDG> pdg;
 
   Produces<aod::ResoCollisions> resoCollisions;
+  Produces<aod::ResoCollisionColls> resoCollisionColls;
   Produces<aod::ResoMCCollisions> resoMCCollisions;
+  Produces<aod::ResoSpheroCollisions> resoSpheroCollisions;
+  Produces<aod::ResoEvtPlCollisions> resoEvtPlCollisions;
   Produces<aod::ResoTracks> reso2trks;
+  Produces<aod::ResoTrackTracks> resoTrackTracks;
+  Produces<aod::ResoMicroTracks> reso2microtrks;
+  Produces<aod::ResoMicroTrackTracks> resoMicroTrackTracks;
   Produces<aod::ResoV0s> reso2v0s;
+  Produces<aod::ResoV0V0s> resoV0V0s;
   Produces<aod::ResoCascades> reso2cascades;
+  Produces<aod::ResoCascadeCascades> resoCascadeCascades;
   Produces<aod::ResoMCTracks> reso2mctracks;
   Produces<aod::ResoMCParents> reso2mcparents;
   Produces<aod::ResoMCV0s> reso2mcv0s;
@@ -75,6 +84,10 @@ struct ResonanceInitializer {
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   Configurable<bool> cfgFatalWhenNull{"cfgFatalWhenNull", true, "Fatal when null on ccdb access"};
+  Configurable<bool> cfgFillMicroTracks{"cfgFillMicroTracks", false, "Fill micro tracks"};
+  Configurable<bool> cfgBypassTrackFill{"cfgBypassTrackFill", false, "Bypass track fill"};
+  Configurable<bool> cfgBypassCollIndexFill{"cfgBypassCollIndexFill", false, "Bypass collision index fill"};
+  Configurable<bool> cfgBypassTrackIndexFill{"cfgBypassTrackIndexFill", false, "Bypass track index fill"};
 
   // Configurables
   Configurable<double> dBzInput{"dBzInput", -999, "bz field, -999 is automatic"};
@@ -91,17 +104,28 @@ struct ResonanceInitializer {
 
   /// Event cuts
   o2::analysis::CollisonCuts colCuts;
-  Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
-  Configurable<int> cfgEvtOccupancyInTimeRange{"cfgEvtOccupancyInTimeRange", -1, "Evt sel: maximum track occupancy"};
-  Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
-  Configurable<int> cfgEvtTriggerSel{"cfgEvtTriggerSel", 8, "Evt sel: trigger"};
-  Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", true, "Evt sel: check for offline selection"};
-  Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
-  Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
-  Configurable<bool> cfgEvtUseITSTPCvertex{"cfgEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
-  Configurable<bool> cfgEvtZvertexTimedifference{"cfgEvtZvertexTimedifference", false, "Evt sel: apply Z-vertex time difference"};
-  Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", false, "Evt sel: apply pileup rejection"};
-  Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
+
+  struct : ConfigurableGroup {
+    Configurable<float> cfgEvtZvtx{"cfgEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
+    Configurable<int> cfgEvtOccupancyInTimeRangeMax{"cfgEvtOccupancyInTimeRangeMax", -1, "Evt sel: maximum track occupancy"};
+    Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
+    Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
+    Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", true, "Evt sel: check for offline selection"};
+    Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
+    Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
+    Configurable<bool> cfgEvtUseITSTPCvertex{"cfgEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
+    Configurable<bool> cfgEvtZvertexTimedifference{"cfgEvtZvertexTimedifference", false, "Evt sel: apply Z-vertex time difference"};
+    Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", false, "Evt sel: apply pileup rejection"};
+    Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
+    Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", false, "Evt sel: apply NoCollInTimeRangeStandard"};
+    Configurable<bool> cfgEvtRun2AliEventCuts{"cfgEvtRun2AliEventCuts", true, "Evt sel: apply Run2 AliEventCuts"};
+    Configurable<bool> cfgEvtRun2INELgtZERO{"cfgEvtRun2INELgtZERO", false, "Evt sel: apply Run2 INELgtZERO"};
+    Configurable<bool> cfgEvtUseRCTFlagChecker{"cfgEvtUseRCTFlagChecker", false, "Evt sel: use RCT flag checker"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+  } EventCuts;
+  RCTFlagsChecker rctChecker;
 
   Configurable<std::string> cfgMultName{"cfgMultName", "FT0M", "The name of multiplicity estimator"};
 
@@ -140,6 +164,44 @@ struct ResonanceInitializer {
   Configurable<double> cMaxCascRadius{"cMaxCascRadius", 200.0, "Maximum Cascade radius from PV"};
   Configurable<double> cMinCascRadius{"cMinCascRadius", 0.0, "Minimum Cascade radius from PV"};
   Configurable<double> cCascMassResol{"cCascMassResol", 999, "Cascade mass resolution"};
+
+  // Derived dataset selections
+  struct : ConfigurableGroup {
+    Configurable<bool> cfgFillPionTracks{"cfgFillPionTracks", false, "Fill pion tracks"};
+    Configurable<bool> cfgFillKaonTracks{"cfgFillKaonTracks", false, "Fill kaon tracks"};
+    Configurable<bool> cfgFillProtonTracks{"cfgFillProtonTracks", false, "Fill proton tracks"};
+    Configurable<bool> cfgFillPionMicroTracks{"cfgFillPionMicroTracks", false, "Fill pion micro tracks"};
+    Configurable<bool> cfgFillKaonMicroTracks{"cfgFillKaonMicroTracks", false, "Fill kaon micro tracks"};
+    Configurable<bool> cfgFillProtonMicroTracks{"cfgFillProtonMicroTracks", false, "Fill proton micro tracks"};
+    Configurable<bool> cfgFillK0s{"cfgFillK0s", false, "Fill K0s"};
+    Configurable<bool> cfgFillLambda0{"cfgFillLambda0", false, "Fill Lambda0"};
+    Configurable<bool> cfgFillXi0{"cfgFillXi0", false, "Fill Xi0"};
+    Configurable<bool> cfgFillOmega0{"cfgFillOmega0", false, "Fill Omega0"};
+  } FilterForDerivedTables;
+
+  // Secondary cuts
+  // Secondary Selection for K0s
+  struct : ConfigurableGroup {
+    Configurable<bool> cfgSecondaryRequire{"cfgSecondaryRequire", true, "Secondary cuts on/off"};
+    Configurable<bool> cfgSecondaryArmenterosCut{"cfgSecondaryArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
+    Configurable<bool> cfgSecondaryCrossMassHypothesisCut{"cfgSecondaryCrossMassHypothesisCut", false, "Apply cut based on the lambda mass hypothesis"};
+
+    Configurable<bool> cfgByPassDauPIDSelection{"cfgByPassDauPIDSelection", true, "Bypass Daughters PID selection"};
+    Configurable<float> cfgSecondaryDauDCAMax{"cfgSecondaryDauDCAMax", 0.2, "Maximum DCA Secondary daughters to PV"};
+    Configurable<float> cfgSecondaryDauPosDCAtoPVMin{"cfgSecondaryDauPosDCAtoPVMin", 0.0, "Minimum DCA Secondary positive daughters to PV"};
+    Configurable<float> cfgSecondaryDauNegDCAtoPVMin{"cfgSecondaryDauNegDCAtoPVMin", 0.0, "Minimum DCA Secondary negative daughters to PV"};
+
+    Configurable<float> cfgSecondaryPtMin{"cfgSecondaryPtMin", 0.f, "Minimum transverse momentum of Secondary"};
+    Configurable<float> cfgSecondaryRapidityMax{"cfgSecondaryRapidityMax", 0.5, "Maximum rapidity of Secondary"};
+    Configurable<float> cfgSecondaryRadiusMin{"cfgSecondaryRadiusMin", 0.0, "Minimum transverse radius of Secondary"};
+    Configurable<float> cfgSecondaryRadiusMax{"cfgSecondaryRadiusMax", 999.9, "Maximum transverse radius of Secondary"};
+    Configurable<float> cfgSecondaryCosPAMin{"cfgSecondaryCosPAMin", 0.998, "Mininum cosine pointing angle of Secondary"};
+    Configurable<float> cfgSecondaryDCAtoPVMax{"cfgSecondaryDCAtoPVMax", 0.4, "Maximum DCA Secondary to PV"};
+    Configurable<float> cfgSecondaryProperLifetimeMax{"cfgSecondaryProperLifetimeMax", 20., "Maximum Secondary Lifetime"};
+    Configurable<float> cfgSecondaryparamArmenterosCut{"cfgSecondaryparamArmenterosCut", 0.2, "parameter for Armenteros Cut"};
+    Configurable<float> cfgSecondaryMassWindow{"cfgSecondaryMassWindow", 0.03, "Secondary inv mass selection window"};
+    Configurable<float> cfgSecondaryCrossMassCutWindow{"cfgSecondaryCrossMassCutWindow", 0.05, "Secondary inv mass selection window with (anti)lambda hypothesis"};
+  } SecondaryCuts;
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -180,7 +242,7 @@ struct ResonanceInitializer {
                                                     || (nabs(aod::mcparticle::pdgCode) == 123314)  // Xi(1820)0
                                                     || (nabs(aod::mcparticle::pdgCode) == 123324); // Xi(1820)-0
 
-  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
+  using ResoEvents = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
   using ResoRun2Events = soa::Join<aod::Collisions, aod::EvSels, aod::CentRun2V0Ms>;
   using ResoEventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
   using ResoRun2EventsMC = soa::Join<ResoEvents, aod::McCollisionLabels>;
@@ -191,6 +253,145 @@ struct ResonanceInitializer {
   using ResoCascades = aod::CascDatas;
   using ResoCascadesMC = soa::Join<ResoCascades, aod::McCascLabels>;
   using BCsWithRun2Info = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps>;
+
+  template <typename T>
+  bool filterMicroTrack(T const& track)
+  {
+    // if no selection is requested, return true
+    if (!FilterForDerivedTables.cfgFillPionMicroTracks && !FilterForDerivedTables.cfgFillKaonMicroTracks && !FilterForDerivedTables.cfgFillProtonMicroTracks)
+      return true;
+    if (FilterForDerivedTables.cfgFillPionMicroTracks) {
+      if (std::abs(track.tpcNSigmaPi()) < pidnSigmaPreSelectionCut)
+        return true;
+    }
+    if (FilterForDerivedTables.cfgFillKaonMicroTracks) {
+      if (std::abs(track.tpcNSigmaKa()) < pidnSigmaPreSelectionCut)
+        return true;
+    }
+    if (FilterForDerivedTables.cfgFillProtonMicroTracks) {
+      if (std::abs(track.tpcNSigmaPr()) < pidnSigmaPreSelectionCut)
+        return true;
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool filterTrack(T const& track)
+  {
+    // if no selection is requested, return true
+    if (!FilterForDerivedTables.cfgFillPionTracks && !FilterForDerivedTables.cfgFillKaonTracks && !FilterForDerivedTables.cfgFillProtonTracks)
+      return true;
+    if (FilterForDerivedTables.cfgFillPionTracks) {
+      if (std::abs(track.tpcNSigmaPi()) < pidnSigmaPreSelectionCut)
+        return true;
+    }
+    if (FilterForDerivedTables.cfgFillKaonTracks) {
+      if (std::abs(track.tpcNSigmaKa()) < pidnSigmaPreSelectionCut)
+        return true;
+    }
+    if (FilterForDerivedTables.cfgFillProtonTracks) {
+      if (std::abs(track.tpcNSigmaPr()) < pidnSigmaPreSelectionCut)
+        return true;
+    }
+    return false;
+  }
+
+  template <typename CollisionType, typename V0Type>
+  bool filterV0(CollisionType const& collision, V0Type const& v0)
+  {
+    // if no selection is requested, return true
+    if (!FilterForDerivedTables.cfgFillK0s && !FilterForDerivedTables.cfgFillLambda0)
+      return true;
+    if (FilterForDerivedTables.cfgFillK0s) {
+      if (!SecondaryCuts.cfgSecondaryRequire)
+        return true;
+      if (v0.dcaV0daughters() > SecondaryCuts.cfgSecondaryDauDCAMax)
+        return false;
+      if (std::abs(v0.dcapostopv()) < SecondaryCuts.cfgSecondaryDauPosDCAtoPVMin)
+        return false;
+      if (std::abs(v0.dcanegtopv()) < SecondaryCuts.cfgSecondaryDauNegDCAtoPVMin)
+        return false;
+      if (v0.pt() < SecondaryCuts.cfgSecondaryPtMin)
+        return false;
+      if (std::fabs(v0.yK0Short()) > SecondaryCuts.cfgSecondaryRapidityMax)
+        return false;
+      if (v0.v0radius() < SecondaryCuts.cfgSecondaryRadiusMin || v0.v0radius() > SecondaryCuts.cfgSecondaryRadiusMax)
+        return false;
+      if (v0.dcav0topv() > SecondaryCuts.cfgSecondaryDCAtoPVMax)
+        return false;
+      if (v0.v0cosPA() < SecondaryCuts.cfgSecondaryCosPAMin)
+        return false;
+      if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short > SecondaryCuts.cfgSecondaryProperLifetimeMax)
+        return false;
+      if (v0.qtarm() < SecondaryCuts.cfgSecondaryparamArmenterosCut * std::abs(v0.alpha()))
+        return false;
+      if (std::fabs(v0.mK0Short() - MassK0Short) > SecondaryCuts.cfgSecondaryMassWindow)
+        return false;
+      if (SecondaryCuts.cfgSecondaryCrossMassHypothesisCut &&
+          ((std::fabs(v0.mLambda() - MassLambda0) < SecondaryCuts.cfgSecondaryCrossMassCutWindow) || (std::fabs(v0.mAntiLambda() - MassLambda0Bar) < SecondaryCuts.cfgSecondaryCrossMassCutWindow)))
+        return false;
+      return true;
+    }
+    if (FilterForDerivedTables.cfgFillLambda0) {
+      if (!SecondaryCuts.cfgSecondaryRequire)
+        return true;
+      if (v0.dcaV0daughters() > SecondaryCuts.cfgSecondaryDauDCAMax)
+        return false;
+      if (std::abs(v0.dcapostopv()) < SecondaryCuts.cfgSecondaryDauPosDCAtoPVMin)
+        return false;
+      if (std::abs(v0.dcanegtopv()) < SecondaryCuts.cfgSecondaryDauNegDCAtoPVMin)
+        return false;
+      if (v0.pt() < SecondaryCuts.cfgSecondaryPtMin)
+        return false;
+      if (std::fabs(v0.yLambda()) > SecondaryCuts.cfgSecondaryRapidityMax)
+        return false;
+      if (v0.v0radius() < SecondaryCuts.cfgSecondaryRadiusMin || v0.v0radius() > SecondaryCuts.cfgSecondaryRadiusMax)
+        return false;
+      if (v0.dcav0topv() > SecondaryCuts.cfgSecondaryDCAtoPVMax)
+        return false;
+      if (v0.v0cosPA() < SecondaryCuts.cfgSecondaryCosPAMin)
+        return false;
+      if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassLambda0 > SecondaryCuts.cfgSecondaryProperLifetimeMax)
+        return false;
+      if (v0.qtarm() < SecondaryCuts.cfgSecondaryparamArmenterosCut * std::abs(v0.alpha()))
+        return false;
+      if (std::fabs(v0.mLambda() - MassLambda0) < SecondaryCuts.cfgSecondaryMassWindow)
+        return false;
+      if (SecondaryCuts.cfgSecondaryCrossMassHypothesisCut && (std::fabs(v0.mK0Short() - MassK0Short) < SecondaryCuts.cfgSecondaryCrossMassCutWindow))
+        return false;
+      return true;
+    }
+    return false;
+  }
+
+  template <typename T>
+  bool filterCasc(T const& /*casc*/)
+  {
+    // if no selection is requested, return true
+    if (!FilterForDerivedTables.cfgFillXi0 && !FilterForDerivedTables.cfgFillOmega0)
+      return true;
+    if (FilterForDerivedTables.cfgFillXi0) {
+      // TODO: Implement, but cascades are very rare, do we need this?
+      return true;
+    }
+    if (FilterForDerivedTables.cfgFillOmega0) {
+      // TODO: Implement, but cascades are very rare, do we need this?
+      return true;
+    }
+    return false;
+  }
+  template <bool isMC, typename CollisionType, typename TrackType>
+  bool isMicroTrackSelected(CollisionType const&, TrackType const& track)
+  {
+    // Micro track selection
+    // DCAxy cut
+    if (std::fabs(track.dcaXY()) > cMaxDCArToPVcut)
+      return false;
+    // DCAz cut
+    if (std::fabs(track.dcaZ()) > cMaxDCAzToPVcut || std::fabs(track.dcaZ()) < cMinDCAzToPVcut)
+      return false;
+    return true;
+  }
 
   template <bool isMC, typename CollisionType, typename TrackType>
   bool isTrackSelected(CollisionType const&, TrackType const& track)
@@ -365,9 +566,6 @@ struct ResonanceInitializer {
       case 2:
         returnValue = ResoEvents.centFT0A();
         break;
-      case 99:
-        returnValue = ResoEvents.centFV0A();
-        break;
       default:
         returnValue = ResoEvents.centFT0M();
         break;
@@ -446,52 +644,85 @@ struct ResonanceInitializer {
     returnValue = helperEP.GetResolution(helperEP.GetEventPlane(ResoEvents.qvecRe()[a * 4 + 3], ResoEvents.qvecIm()[a * 4 + 3], 2), helperEP.GetEventPlane(ResoEvents.qvecRe()[b * 4 + 3], ResoEvents.qvecIm()[b * 4 + 3], 2), 2);
     return returnValue;
   }
-
+  // Filter for micro tracks
+  template <bool isMC, typename TrackType, typename CollisionType>
+  void fillMicroTracks(CollisionType const& collision, TrackType const& tracks)
+  {
+    // Loop over tracks
+    for (auto const& track : tracks) {
+      if (!isMicroTrackSelected<isMC>(collision, track))
+        continue;
+      if (!filterMicroTrack(track))
+        continue;
+      o2::aod::resomicrodaughter::ResoMicroTrackSelFlag trackSelFlag(track.dcaXY(), track.dcaZ());
+      if (std::abs(track.dcaXY()) < (0.004 + (0.013 / track.pt()))) {
+        trackSelFlag.setDCAxy0();
+      }
+      if (std::abs(track.dcaZ()) < (0.004 + (0.013 / track.pt()))) { // TODO: check this
+        trackSelFlag.setDCAz0();
+      }
+      uint8_t trackFlags = (track.passedITSRefit() << 0) |
+                           (track.passedTPCRefit() << 1) |
+                           (track.isGlobalTrackWoDCA() << 2) |
+                           (track.isGlobalTrack() << 3) |
+                           (track.isPrimaryTrack() << 4) |
+                           (track.isPVContributor() << 5) |
+                           (track.hasTOF() << 6) |
+                           ((track.sign() > 0) << 7); // sign +1: 1, -1: 0
+      reso2microtrks(resoCollisions.lastIndex(),
+                     track.px(),
+                     track.py(),
+                     track.pz(),
+                     static_cast<uint8_t>(o2::aod::resomicrodaughter::PidNSigma(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.hasTOF())),
+                     static_cast<uint8_t>(o2::aod::resomicrodaughter::PidNSigma(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.hasTOF())),
+                     static_cast<uint8_t>(o2::aod::resomicrodaughter::PidNSigma(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.hasTOF())),
+                     static_cast<uint8_t>(trackSelFlag),
+                     trackFlags);
+      if (!cfgBypassTrackIndexFill) {
+        resoMicroTrackTracks(track.globalIndex());
+      }
+    }
+  }
   // Filter for all tracks
   template <bool isMC, typename TrackType, typename CollisionType>
   void fillTracks(CollisionType const& collision, TrackType const& tracks)
   {
+    if (cfgBypassTrackFill)
+      return;
     // Loop over tracks
     for (auto const& track : tracks) {
       if (!isTrackSelected<isMC>(collision, track))
         continue;
+      if (!filterTrack(track))
+        continue;
+      uint8_t trackFlags = (track.passedITSRefit() << 0) |
+                           (track.passedTPCRefit() << 1) |
+                           (track.isGlobalTrackWoDCA() << 2) |
+                           (track.isGlobalTrack() << 3) |
+                           (track.isPrimaryTrack() << 4) |
+                           (track.isPVContributor() << 5) |
+                           (track.hasTOF() << 6) |
+                           ((track.sign() > 0) << 7); // sign +1: 1, -1: 0
       reso2trks(resoCollisions.lastIndex(),
-                track.globalIndex(),
                 track.pt(),
                 track.px(),
                 track.py(),
                 track.pz(),
-                track.eta(),
-                track.phi(),
-                track.sign(),
-                (uint8_t)track.tpcNClsCrossedRows(),
-                (uint8_t)track.tpcNClsFound(),
-                (uint8_t)track.itsNCls(),
-                track.dcaXY(),
-                track.dcaZ(),
-                track.x(),
-                track.alpha(),
-                track.hasITS(),
-                track.hasTPC(),
-                track.hasTOF(),
-                track.tpcNSigmaPi(),
-                track.tpcNSigmaKa(),
-                track.tpcNSigmaPr(),
-                track.tpcNSigmaEl(),
-                track.tofNSigmaPi(),
-                track.tofNSigmaKa(),
-                track.tofNSigmaPr(),
-                track.tofNSigmaEl(),
-                track.tpcSignal(),
-                track.passedITSRefit(),
-                track.passedTPCRefit(),
-                track.isGlobalTrackWoDCA(),
-                track.isGlobalTrack(),
-                track.isPrimaryTrack(),
-                track.isPVContributor(),
-                track.tpcCrossedRowsOverFindableCls(),
-                track.itsChi2NCl(),
-                track.tpcChi2NCl());
+                static_cast<uint8_t>(track.tpcNClsCrossedRows()),
+                static_cast<uint8_t>(track.tpcNClsFound()),
+                static_cast<int16_t>(std::round(track.dcaXY() * 10000)),
+                static_cast<int16_t>(std::round(track.dcaZ() * 10000)),
+                static_cast<int8_t>(std::round(track.tpcNSigmaPi() * 10)),
+                static_cast<int8_t>(std::round(track.tpcNSigmaKa() * 10)),
+                static_cast<int8_t>(std::round(track.tpcNSigmaPr() * 10)),
+                static_cast<int8_t>(std::round(track.tofNSigmaPi() * 10)),
+                static_cast<int8_t>(std::round(track.tofNSigmaKa() * 10)),
+                static_cast<int8_t>(std::round(track.tofNSigmaPr() * 10)),
+                static_cast<int8_t>(std::round(track.tpcSignal() * 10)),
+                trackFlags);
+      if (!cfgBypassTrackIndexFill) {
+        resoTrackTracks(track.globalIndex());
+      }
       if constexpr (isMC) {
         fillMCTrack(track);
       }
@@ -508,27 +739,26 @@ struct ResonanceInitializer {
         continue;
       childIDs[0] = v0.posTrackId();
       childIDs[1] = v0.negTrackId();
+      if (!filterV0(collision, v0))
+        continue;
       reso2v0s(resoCollisions.lastIndex(),
-               v0.globalIndex(),
                v0.pt(),
                v0.px(),
                v0.py(),
                v0.pz(),
-               v0.eta(),
-               v0.phi(),
                childIDs,
-               v0.template posTrack_as<TrackType>().tpcNSigmaPi(),
-               v0.template posTrack_as<TrackType>().tpcNSigmaKa(),
-               v0.template posTrack_as<TrackType>().tpcNSigmaPr(),
-               v0.template negTrack_as<TrackType>().tpcNSigmaPi(),
-               v0.template negTrack_as<TrackType>().tpcNSigmaKa(),
-               v0.template negTrack_as<TrackType>().tpcNSigmaPr(),
-               v0.template negTrack_as<TrackType>().tofNSigmaPi(),
-               v0.template negTrack_as<TrackType>().tofNSigmaKa(),
-               v0.template negTrack_as<TrackType>().tofNSigmaPr(),
-               v0.template posTrack_as<TrackType>().tofNSigmaPi(),
-               v0.template posTrack_as<TrackType>().tofNSigmaKa(),
-               v0.template posTrack_as<TrackType>().tofNSigmaPr(),
+               (int8_t)(v0.template posTrack_as<TrackType>().tpcNSigmaPi() * 10),
+               (int8_t)(v0.template posTrack_as<TrackType>().tpcNSigmaKa() * 10),
+               (int8_t)(v0.template posTrack_as<TrackType>().tpcNSigmaPr() * 10),
+               (int8_t)(v0.template negTrack_as<TrackType>().tpcNSigmaPi() * 10),
+               (int8_t)(v0.template negTrack_as<TrackType>().tpcNSigmaKa() * 10),
+               (int8_t)(v0.template negTrack_as<TrackType>().tpcNSigmaPr() * 10),
+               (int8_t)(v0.template negTrack_as<TrackType>().tofNSigmaPi() * 10),
+               (int8_t)(v0.template negTrack_as<TrackType>().tofNSigmaKa() * 10),
+               (int8_t)(v0.template negTrack_as<TrackType>().tofNSigmaPr() * 10),
+               (int8_t)(v0.template posTrack_as<TrackType>().tofNSigmaPi() * 10),
+               (int8_t)(v0.template posTrack_as<TrackType>().tofNSigmaKa() * 10),
+               (int8_t)(v0.template posTrack_as<TrackType>().tofNSigmaPr() * 10),
                v0.v0cosPA(),
                v0.dcaV0daughters(),
                v0.dcapostopv(),
@@ -538,6 +768,9 @@ struct ResonanceInitializer {
                v0.mAntiLambda(),
                v0.mK0Short(),
                v0.v0radius(), v0.x(), v0.y(), v0.z());
+      if (!cfgBypassTrackIndexFill) {
+        resoV0V0s(v0.globalIndex());
+      }
       if constexpr (isMC) {
         fillMCV0(v0);
       }
@@ -555,33 +788,32 @@ struct ResonanceInitializer {
       childIDs[0] = casc.posTrackId();
       childIDs[1] = casc.negTrackId();
       childIDs[2] = casc.bachelorId();
+      if (!filterCasc(casc))
+        continue;
       reso2cascades(resoCollisions.lastIndex(),
-                    casc.globalIndex(),
                     casc.pt(),
                     casc.px(),
                     casc.py(),
                     casc.pz(),
-                    casc.eta(),
-                    casc.phi(),
                     childIDs,
-                    casc.template posTrack_as<TrackType>().tpcNSigmaPi(),
-                    casc.template posTrack_as<TrackType>().tpcNSigmaKa(),
-                    casc.template posTrack_as<TrackType>().tpcNSigmaPr(),
-                    casc.template negTrack_as<TrackType>().tpcNSigmaPi(),
-                    casc.template negTrack_as<TrackType>().tpcNSigmaKa(),
-                    casc.template negTrack_as<TrackType>().tpcNSigmaPr(),
-                    casc.template bachelor_as<TrackType>().tpcNSigmaPi(),
-                    casc.template bachelor_as<TrackType>().tpcNSigmaKa(),
-                    casc.template bachelor_as<TrackType>().tpcNSigmaPr(),
-                    casc.template posTrack_as<TrackType>().tofNSigmaPi(),
-                    casc.template posTrack_as<TrackType>().tofNSigmaKa(),
-                    casc.template posTrack_as<TrackType>().tofNSigmaPr(),
-                    casc.template negTrack_as<TrackType>().tofNSigmaPi(),
-                    casc.template negTrack_as<TrackType>().tofNSigmaKa(),
-                    casc.template negTrack_as<TrackType>().tofNSigmaPr(),
-                    casc.template bachelor_as<TrackType>().tofNSigmaPi(),
-                    casc.template bachelor_as<TrackType>().tofNSigmaKa(),
-                    casc.template bachelor_as<TrackType>().tofNSigmaPr(),
+                    (int8_t)(casc.template posTrack_as<TrackType>().tpcNSigmaPi() * 10),
+                    (int8_t)(casc.template posTrack_as<TrackType>().tpcNSigmaKa() * 10),
+                    (int8_t)(casc.template posTrack_as<TrackType>().tpcNSigmaPr() * 10),
+                    (int8_t)(casc.template negTrack_as<TrackType>().tpcNSigmaPi() * 10),
+                    (int8_t)(casc.template negTrack_as<TrackType>().tpcNSigmaKa() * 10),
+                    (int8_t)(casc.template negTrack_as<TrackType>().tpcNSigmaPr() * 10),
+                    (int8_t)(casc.template bachelor_as<TrackType>().tpcNSigmaPi() * 10),
+                    (int8_t)(casc.template bachelor_as<TrackType>().tpcNSigmaKa() * 10),
+                    (int8_t)(casc.template bachelor_as<TrackType>().tpcNSigmaPr() * 10),
+                    (int8_t)(casc.template posTrack_as<TrackType>().tofNSigmaPi() * 10),
+                    (int8_t)(casc.template posTrack_as<TrackType>().tofNSigmaKa() * 10),
+                    (int8_t)(casc.template posTrack_as<TrackType>().tofNSigmaPr() * 10),
+                    (int8_t)(casc.template negTrack_as<TrackType>().tofNSigmaPi() * 10),
+                    (int8_t)(casc.template negTrack_as<TrackType>().tofNSigmaKa() * 10),
+                    (int8_t)(casc.template negTrack_as<TrackType>().tofNSigmaPr() * 10),
+                    (int8_t)(casc.template bachelor_as<TrackType>().tofNSigmaPi() * 10),
+                    (int8_t)(casc.template bachelor_as<TrackType>().tofNSigmaKa() * 10),
+                    (int8_t)(casc.template bachelor_as<TrackType>().tofNSigmaPr() * 10),
                     casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()),
                     casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()),
                     casc.dcaV0daughters(),
@@ -596,6 +828,9 @@ struct ResonanceInitializer {
                     casc.mLambda(),
                     casc.mXi(),
                     casc.v0radius(), casc.cascradius(), casc.x(), casc.y(), casc.z());
+      if (!cfgBypassTrackIndexFill) {
+        resoCascadeCascades(casc.globalIndex());
+      }
       if constexpr (isMC) {
         fillMCCascade(casc);
       }
@@ -868,8 +1103,6 @@ struct ResonanceInitializer {
                      mcPart.px(),
                      mcPart.py(),
                      mcPart.pz(),
-                     mcPart.eta(),
-                     mcPart.phi(),
                      mcPart.y(),
                      mcPart.e(),
                      mcPart.statusCode());
@@ -961,17 +1194,24 @@ struct ResonanceInitializer {
 
     // Case selector based on the process.
     if (doprocessTrackDataRun2 || doprocessTrackV0DataRun2 || doprocessTrackV0CascDataRun2 || doprocessTrackMCRun2 || doprocessTrackV0MCRun2 || doprocessTrackV0CascMCRun2) {
-      colCuts.setCuts(cfgEvtZvtx, cfgEvtTriggerCheck, cfgEvtTriggerSel, cfgEvtOfflineCheck, false);
+      colCuts.setCuts(EventCuts.cfgEvtZvtx, EventCuts.cfgEvtTriggerCheck, EventCuts.cfgEvtOfflineCheck, false);
     } else if (doprocessTrackData || doprocessTrackV0Data || doprocessTrackV0CascData || doprocessTrackMC || doprocessTrackV0MC || doprocessTrackV0CascMC || doprocessTrackEPData) {
-      colCuts.setCuts(cfgEvtZvtx, cfgEvtTriggerCheck, cfgEvtTriggerSel, cfgEvtOfflineCheck, true, false, cfgEvtOccupancyInTimeRange);
+      colCuts.setCuts(EventCuts.cfgEvtZvtx, EventCuts.cfgEvtTriggerCheck, EventCuts.cfgEvtOfflineCheck, /*checkRun3*/ true, /*triggerTVXsel*/ false, EventCuts.cfgEvtOccupancyInTimeRangeMax, EventCuts.cfgEvtOccupancyInTimeRangeMin);
     }
     colCuts.init(&qaRegistry);
-    colCuts.setTriggerTVX(cfgEvtTriggerTVXSel);
-    colCuts.setApplyTFBorderCut(cfgEvtTFBorderCut);
-    colCuts.setApplyITSTPCvertex(cfgEvtUseITSTPCvertex);
-    colCuts.setApplyZvertexTimedifference(cfgEvtZvertexTimedifference);
-    colCuts.setApplyPileupRejection(cfgEvtPileupRejection);
-    colCuts.setApplyNoITSROBorderCut(cfgEvtNoITSROBorderCut);
+    colCuts.setTriggerTVX(EventCuts.cfgEvtTriggerTVXSel);
+    colCuts.setApplyTFBorderCut(EventCuts.cfgEvtTFBorderCut);
+    colCuts.setApplyITSTPCvertex(EventCuts.cfgEvtUseITSTPCvertex);
+    colCuts.setApplyZvertexTimedifference(EventCuts.cfgEvtZvertexTimedifference);
+    colCuts.setApplyPileupRejection(EventCuts.cfgEvtPileupRejection);
+    colCuts.setApplyNoITSROBorderCut(EventCuts.cfgEvtNoITSROBorderCut);
+    colCuts.setApplyCollInTimeRangeStandard(EventCuts.cfgEvtCollInTimeRangeStandard);
+    colCuts.setApplyRun2AliEventCuts(EventCuts.cfgEvtRun2AliEventCuts);
+    colCuts.setApplyRun2INELgtZERO(EventCuts.cfgEvtRun2INELgtZERO);
+    colCuts.printCuts();
+
+    rctChecker.init(EventCuts.cfgEvtRCTFlagCheckerLabel, EventCuts.cfgEvtRCTFlagCheckerZDCCheck, EventCuts.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+
     if (!cfgBypassCCDB) {
       ccdb->setURL(ccdbURL.value);
       ccdb->setCaching(true);
@@ -1043,7 +1283,7 @@ struct ResonanceInitializer {
     LOGF(info, "Bz set to %f for run: ", dBz, mRunNumber);
   }
 
-  void processDummy(ResoRun2Events const& /*collisions*/)
+  void processDummy(aod::Collisions const& /*collisions*/)
   {
   }
   PROCESS_SWITCH(ResonanceInitializer, processDummy, "Process for dummy", true);
@@ -1057,11 +1297,21 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+      return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<false>(collision, tracks);
+    }
   }
   PROCESS_SWITCH(ResonanceInitializer, processTrackData, "Process for data", false);
 
@@ -1069,15 +1319,25 @@ struct ResonanceInitializer {
                             soa::Filtered<ResoTracks> const& tracks,
                             BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<BCsWithRun2Info>();
+    // auto bc = collision.bc_as<BCsWithRun2Info>();
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+      return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), computeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<false>(collision, tracks);
+    }
   }
   PROCESS_SWITCH(ResonanceInitializer, processTrackDataRun2, "Process for data", false);
 
@@ -1090,11 +1350,20 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+      return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId), dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
-
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId));
     fillTracks<false>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<false>(collision, tracks);
+    }
   }
   PROCESS_SWITCH(ResonanceInitializer, processTrackEPData, "Process for data and ep ana", false);
 
@@ -1108,11 +1377,21 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+      return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<false>(collision, tracks);
+    }
     fillV0s<false>(collision, V0s, tracks);
   }
   PROCESS_SWITCH(ResonanceInitializer, processTrackV0Data, "Process for data", false);
@@ -1122,15 +1401,23 @@ struct ResonanceInitializer {
                               ResoV0s const& V0s,
                               BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<BCsWithRun2Info>();
+    // auto bc = collision.bc_as<BCsWithRun2Info>();
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), computeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<false>(collision, tracks);
+    }
     fillV0s<false>(collision, V0s, tracks);
   }
   PROCESS_SWITCH(ResonanceInitializer, processTrackV0DataRun2, "Process for data", false);
@@ -1146,11 +1433,20 @@ struct ResonanceInitializer {
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+      return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
-
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     fillTracks<false>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<false>(collision, tracks);
+    }
     fillV0s<false>(collision, V0s, tracks);
     fillCascades<false>(collision, Cascades, tracks);
   }
@@ -1162,15 +1458,23 @@ struct ResonanceInitializer {
                                   ResoCascades const& Cascades,
                                   BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<BCsWithRun2Info>();
+    // auto bc = collision.bc_as<BCsWithRun2Info>();
     // Default event selection
     if (!colCuts.isSelected(collision))
       return;
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), computeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
 
     fillTracks<false>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<false>(collision, tracks);
+    }
     fillV0s<false>(collision, V0s, tracks);
     fillCascades<false>(collision, Cascades, tracks);
   }
@@ -1183,16 +1487,25 @@ struct ResonanceInitializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+      return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
-
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     auto mccollision = collision.mcCollision_as<aod::McCollisions>();
     float impactpar = mccollision.impactParameter();
     fillMCCollision<false>(collision, mcParticles, impactpar);
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<true>(collision, tracks);
+    }
 
     // Loop over all MC particles
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
@@ -1206,13 +1519,23 @@ struct ResonanceInitializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+      return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId), dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(getEvtPl(collision), getEvtPlRes(collision, evtPlDetId, evtPlRefAId), getEvtPlRes(collision, evtPlDetId, evtPlRefBId), getEvtPlRes(collision, evtPlRefAId, evtPlRefBId));
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
     fillTracks<false>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<false>(collision, tracks);
+    }
     // Loop over all MC particles
     auto mcParts = selectedMCParticles->sliceBy(perMcCollision, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
@@ -1224,15 +1547,22 @@ struct ResonanceInitializer {
                           aod::McCollisions const&, soa::Filtered<ResoTracksMC> const& tracks,
                           aod::McParticles const& mcParticles, BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<BCsWithRun2Info>();
+    // auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), computeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
-
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<true>(collision, tracks);
+    }
     // Loop over all MC particles
     auto mcParts = selectedMCParticles->sliceBy(perMcCollisionRun2, collision.mcCollision().globalIndex());
     fillMCParticles(mcParts, mcParticles);
@@ -1246,13 +1576,23 @@ struct ResonanceInitializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+      return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<true>(collision, tracks);
+    }
     fillV0s<true>(collision, V0s, tracks);
 
     // Loop over all MC particles
@@ -1266,14 +1606,22 @@ struct ResonanceInitializer {
                             ResoV0sMC const& V0s,
                             aod::McParticles const& mcParticles, BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<BCsWithRun2Info>();
+    // auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), computeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<true>(collision, tracks);
+    }
     fillV0s<true>(collision, V0s, tracks);
 
     // Loop over all MC particles
@@ -1290,13 +1638,23 @@ struct ResonanceInitializer {
   {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>(); /// adding timestamp to access magnetic field later
     initCCDB(bc);
+    if (EventCuts.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+      return;
     colCuts.fillQA(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), computeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), centEst(collision), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<false>(collision, mcParticles);
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<true>(collision, tracks);
+    }
     fillV0s<true>(collision, V0s, tracks);
     fillCascades<true>(collision, Cascades, tracks);
 
@@ -1312,14 +1670,22 @@ struct ResonanceInitializer {
                                 ResoCascadesMC const& Cascades,
                                 aod::McParticles const& mcParticles, BCsWithRun2Info const&)
   {
-    auto bc = collision.bc_as<BCsWithRun2Info>();
+    // auto bc = collision.bc_as<BCsWithRun2Info>();
     colCuts.fillQARun2(collision);
 
-    resoCollisions(collision.globalIndex(), 0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), computeSpherocity(tracks, trackSphMin, trackSphDef), 0., 0., 0., 0., dBz, bc.timestamp(), collision.trackOccupancyInTimeRange());
+    resoCollisions(0, collision.posX(), collision.posY(), collision.posZ(), collision.centRun2V0M(), dBz);
+    if (!cfgBypassCollIndexFill) {
+      resoCollisionColls(collision.globalIndex());
+    }
+    resoSpheroCollisions(computeSpherocity(tracks, trackSphMin, trackSphDef));
+    resoEvtPlCollisions(0, 0, 0, 0);
     fillMCCollision<true>(collision, mcParticles);
 
     // Loop over tracks
     fillTracks<true>(collision, tracks);
+    if (cfgFillMicroTracks) {
+      fillMicroTracks<true>(collision, tracks);
+    }
     fillV0s<true>(collision, V0s, tracks);
     fillCascades<true>(collision, Cascades, tracks);
 

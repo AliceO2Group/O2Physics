@@ -14,20 +14,20 @@
 // This code runs loop over v0 photons for PCM QC.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
+#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include <string>
 #include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
-#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
-#include "PWGEM/Dilepton/Utils/MCUtilities.h"
-#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -44,7 +44,7 @@ using MyCollision = MyCollisions::iterator;
 using MyMCCollisions = soa::Join<aod::EMMCEvents, aod::BinnedGenPts>;
 using MyMCCollision = MyMCCollisions::iterator;
 
-using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0PhotonsKFCov, aod::V0KFEMEventIds>;
+using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
 using MyV0Photon = MyV0Photons::iterator;
 
 using MyMCV0Legs = soa::Join<aod::V0Legs, aod::V0LegMCLabels>;
@@ -58,6 +58,8 @@ struct PCMQCMC {
 
   Configurable<float> maxRgen{"maxRgen", 90.f, "maximum radius for generated particles"};
   Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
+  Configurable<bool> cfgRequireTrueAssociation{"cfgRequireTrueAssociation", false, "flag to require true mc collision association"};
+  Configurable<bool> cfg_fill_resolution{"cfg_fill_resoltion", false, "flag to fill resolution histogram"};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -87,32 +89,33 @@ struct PCMQCMC {
     Configurable<bool> cfg_require_v0_with_itstpc{"cfg_require_v0_with_itstpc", false, "flag to select V0s with ITS-TPC matched tracks"};
     Configurable<bool> cfg_require_v0_with_itsonly{"cfg_require_v0_with_itsonly", false, "flag to select V0s with ITSonly tracks"};
     Configurable<bool> cfg_require_v0_with_tpconly{"cfg_require_v0_with_tpconly", false, "flag to select V0s with TPConly tracks"};
-    Configurable<bool> cfg_require_v0_on_wwire_ib{"cfg_require_v0_on_wwire_ib", false, "flag to select V0s on W wires ITSib"};
     Configurable<float> cfg_min_pt_v0{"cfg_min_pt_v0", 0.1, "min pT for v0 photons at PV"};
+    Configurable<float> cfg_max_pt_v0{"cfg_max_pt_v0", 1e+10, "max pT for v0 photons at PV"};
     Configurable<float> cfg_min_eta_v0{"cfg_min_eta_v0", -0.8, "min eta for v0 photons at PV"};
     Configurable<float> cfg_max_eta_v0{"cfg_max_eta_v0", +0.8, "max eta for v0 photons at PV"};
     Configurable<float> cfg_min_v0radius{"cfg_min_v0radius", 4.0, "min v0 radius"};
     Configurable<float> cfg_max_v0radius{"cfg_max_v0radius", 90.0, "max v0 radius"};
     Configurable<float> cfg_max_alpha_ap{"cfg_max_alpha_ap", 0.95, "max alpha for AP cut"};
     Configurable<float> cfg_max_qt_ap{"cfg_max_qt_ap", 0.01, "max qT for AP cut"};
-    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.997, "min V0 CosPA"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.999, "min V0 CosPA"};
     Configurable<float> cfg_max_pca{"cfg_max_pca", 3.0, "max distance btween 2 legs"};
     Configurable<float> cfg_max_chi2kf{"cfg_max_chi2kf", 1e+10, "max chi2/ndf with KF"};
-    Configurable<bool> cfg_require_v0_with_correct_xz{"cfg_require_v0_with_correct_xz", true, "flag to select V0s with correct xz"};
+    Configurable<bool> cfg_require_v0_with_correct_xz{"cfg_require_v0_with_correct_xz", false, "flag to select V0s with correct xz"};
     Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 40, "min ncrossed rows"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
-    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
+    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -3.0, "min. TPC n sigma for electron"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron"};
     Configurable<bool> cfg_disable_itsonly_track{"cfg_disable_itsonly_track", false, "flag to disable ITSonly tracks"};
+    Configurable<bool> cfg_disable_tpconly_track{"cfg_disable_tpconly_track", false, "flag to disable TPConly tracks"};
   } pcmcuts;
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
   static constexpr std::string_view event_types[2] = {"before/", "after/"};
-  static constexpr std::string_view mcphoton_types[3] = {"primary/", "fromWD/", "fromHS/"};
+  static constexpr std::string_view mcphoton_types[5] = {"primary/", "fromWD/", "fromHS/", "fromPi0Dalitz/", "fromEtaDalitz/"};
 
   void init(InitContext&)
   {
@@ -142,12 +145,13 @@ struct PCMQCMC {
     if (doprocessGen) {
       fRegistry.add("Generated/hPt", "pT;p_{T} (GeV/c)", kTH1F, {axis_pt}, true);
       fRegistry.add("Generated/hPtY", "Generated info", kTH2F, {axis_pt, axis_rapidity}, true);
-      fRegistry.add("Generated/hPt_ConvertedPhoton", "converted photon pT;p_{T} (GeV/c)", kTH1F, {axis_pt}, true);
-      fRegistry.add("Generated/hY_ConvertedPhoton", "converted photon y;rapidity y", kTH1F, {{40, -2.0f, 2.0f}}, true);
-      fRegistry.add("Generated/hPhi_ConvertedPhoton", "converted photon #varphi;#varphi (rad.)", kTH1F, {{180, 0, 2 * M_PI}}, true);
-      fRegistry.add("Generated/hPhotonRxy", "conversion point in XY MC;V_{x} (cm);V_{y} (cm)", kTH2F, {{800, -100.0f, 100.0f}, {800, -100.0f, 100.0f}}, true);
-      fRegistry.add("Generated/hPhotonRZ", "conversion point in RZ MC;V_{z} (cm);R_{xy} (cm)", kTH2F, {{400, -100.0f, 100.0f}, {400, 0.f, 100.0f}}, true);
-      fRegistry.add("Generated/hPhotonPhivsRxy", "conversion point of #varphi vs. R_{xy} MC;#varphi (rad.);R_{xy} (cm);N_{e}", kTH2F, {{360, 0.0f, 2 * M_PI}, {400, 0, 100}}, true);
+      fRegistry.add("Generated/hPt_ConversionPhoton", "converted photon pT;p_{T} (GeV/c)", kTH1F, {axis_pt}, true);
+      fRegistry.add("Generated/hY_ConversionPhoton", "converted photon y;rapidity y", kTH1F, {{40, -2.0f, 2.0f}}, true);
+      fRegistry.add("Generated/hPhi_ConversionPhoton", "converted photon #varphi;#varphi (rad.)", kTH1F, {{180, 0, 2 * M_PI}}, true);
+      fRegistry.add("Generated/hXY", "conversion point in XY MC;V_{x} (cm);V_{y} (cm)", kTH2F, {{800, -100.0f, 100.0f}, {800, -100.0f, 100.0f}}, true);
+      fRegistry.add("Generated/hRZ", "conversion point in RZ MC;V_{z} (cm);R_{xy} (cm)", kTH2F, {{400, -100.0f, 100.0f}, {400, 0.f, 100.0f}}, true);
+      fRegistry.add("Generated/hRPhi", "conversion point of #varphi vs. R_{xy} MC;#varphi (rad.);R_{xy} (cm);N_{e}", kTH2F, {{360, 0.0f, 2 * M_PI}, {400, 0, 100}}, true);
+      fRegistry.add("Generated/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {80, -2, +2}}, true);
     }
 
     // event info
@@ -176,43 +180,60 @@ struct PCMQCMC {
 
     // v0 info
     fRegistry.add("V0/primary/hPt", "pT;p_{T,#gamma} (GeV/c)", kTH1F, {{2000, 0.0f, 20}}, false);
-    fRegistry.add("V0/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {40, -1.0f, 1.0f}}, false);
-    fRegistry.add("V0/primary/hRadius", "V0Radius; radius in Z (cm);radius in XY (cm)", kTH2F, {{200, -100, 100}, {200, 0.0f, 100.0f}}, false);
-    fRegistry.add("V0/primary/hCosPA", "V0CosPA;cosine pointing angle", kTH1F, {{100, 0.99f, 1.0f}}, false);
-    fRegistry.add("V0/primary/hCosPA_Rxy", "cos PA vs. R_{xy};R_{xy} (cm);cosine pointing angle", kTH2F, {{200, 0.f, 100.f}, {100, 0.99f, 1.0f}}, false);
+    fRegistry.add("V0/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {200, -1.0f, 1.0f}}, false);
+    fRegistry.add("V0/primary/hXY", "conversion point in XY;V_{x} (cm);V_{y} (cm)", kTH2F, {{400, -100.0f, 100.0f}, {400, -100.0f, 100.0f}}, false);
+    fRegistry.add("V0/primary/hRZ", "conversion point in RZ;Z (cm);R_{xy} (cm)", kTH2F, {{200, -100, 100}, {200, 0.0f, 100.0f}}, false);
+    fRegistry.add("V0/primary/hCosPA", "V0CosPA;cosine pointing angle in 3D", kTH1F, {{100, 0.99f, 1.0f}}, false);
+    fRegistry.add("V0/primary/hCosPAXY", "V0CosPA;cosine pointing angle in XY", kTH1F, {{100, 0.99f, 1.0f}}, false);
+    fRegistry.add("V0/primary/hCosPARZ", "V0CosPA;cosine pointing angle in RZ", kTH1F, {{100, 0.99f, 1.0f}}, false);
     fRegistry.add("V0/primary/hPCA", "distance between 2 legs;PCA (cm)", kTH1F, {{500, 0.0f, 5.0f}}, false);
-    fRegistry.add("V0/primary/hPCA_Rxy", "distance between 2 legs vs. R_{xy};R_{xy} (cm);PCA (cm)", kTH2F, {{200, 0.f, 100.f}, {500, 0.0f, 5.0f}}, false);
-    fRegistry.add("V0/primary/hPCA_CosPA", "distance between 2 legs vs. cosPA;cosine of pointing angle;PCA (cm)", kTH2F, {{100, 0.99f, 1.f}, {500, 0.0f, 5.0f}}, false);
     fRegistry.add("V0/primary/hDCAxyz", "DCA to PV;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -5.f, +5.f}, {200, -5.f, +5.f}}, false);
+    fRegistry.add("V0/primary/hDCAz_Pt", "DCA_{z} to PV vs. p_{T};DCA_{z} (cm);p_{T} (GeV/c)", kTH2F, {{200, -5.f, +5.f}, {2000, 0.0f, 20}}, false);
     fRegistry.add("V0/primary/hAPplot", "AP plot;#alpha;q_{T} (GeV/c)", kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}}, false);
     fRegistry.add("V0/primary/hMassGamma", "hMassGamma;R_{xy} (cm);m_{ee} (GeV/c^{2})", kTH2F, {{200, 0.0f, 100.0f}, {100, 0.0f, 0.1f}}, false);
-    fRegistry.add("V0/primary/hGammaRxy", "conversion point in XY;V_{x} (cm);V_{y} (cm)", kTH2F, {{400, -100.0f, 100.0f}, {400, -100.0f, 100.0f}}, false);
     fRegistry.add("V0/primary/hKFChi2vsM", "KF chi2 vs. m_{ee};m_{ee} (GeV/c^{2});KF chi2/NDF", kTH2F, {{100, 0.0f, 0.1f}, {100, 0.f, 100.0f}}, false);
     fRegistry.add("V0/primary/hKFChi2vsR", "KF chi2 vs. conversion point in XY;R_{xy} (cm);KF chi2/NDF", kTH2F, {{200, 0.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
     fRegistry.add("V0/primary/hKFChi2vsX", "KF chi2 vs. conversion point in X;X (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
     fRegistry.add("V0/primary/hKFChi2vsY", "KF chi2 vs. conversion point in Y;Y (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
     fRegistry.add("V0/primary/hKFChi2vsZ", "KF chi2 vs. conversion point in Z;Z (cm);KF chi2/NDF", kTH2F, {{200, -100.0f, 100.0f}, {100, 0.f, 100.0f}}, false);
-    fRegistry.add("V0/primary/hPResolution", "p resolution;p_{#gamma} (GeV/c);#Deltap/p", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.1}}, false);
-    fRegistry.add("V0/primary/hPtResolution", "p_{T} resolution;p_{#gamma} (GeV/c);#Deltap_{T}/p_{T}", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.1}}, false);
-    fRegistry.add("V0/primary/hEtaResolution", "#eta resolution;p_{#gamma} (GeV/c);#Delta#eta", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
-    fRegistry.add("V0/primary/hThetaResolution", "#theta resolution;p_{#gamma} (GeV/c);#Delta#theta (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
-    fRegistry.add("V0/primary/hPhiResolution", "#varphi resolution;p_{#gamma} (GeV/c);#Delta#varphi (rad.)", kTH2F, {{1000, 0.0f, 10}, {100, 0, 0.01}}, false);
-    fRegistry.add("V0/primary/hNgamma", "Number of true #gamma per collision", kTH1F, {{101, -0.5f, 100.5f}});
+    fRegistry.add("V0/primary/hNgamma", "Number of true #gamma per collision;N_{#gamma} per event;Number of events", kTH1F, {{101, -0.5f, 100.5f}});
     fRegistry.add("V0/primary/hConvPoint_diffX", "conversion point diff X MC;X_{MC} (cm);X_{rec} - X_{MC} (cm)", kTH2F, {{200, -100, +100}, {100, -50.0f, 50.0f}}, true);
     fRegistry.add("V0/primary/hConvPoint_diffY", "conversion point diff Y MC;Y_{MC} (cm);Y_{rec} - Y_{MC} (cm)", kTH2F, {{200, -100, +100}, {100, -50.0f, 50.0f}}, true);
     fRegistry.add("V0/primary/hConvPoint_diffZ", "conversion point diff Z MC;Z_{MC} (cm);Z_{rec} - Z_{MC} (cm)", kTH2F, {{200, -100, +100}, {100, -50.0f, 50.0f}}, true);
-    fRegistry.add("V0/primary/hPtGen_DeltaPtOverPtGen", "photon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
-    fRegistry.add("V0/primary/hPtGen_DeltaEta", "photon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
-    fRegistry.add("V0/primary/hPtGen_DeltaPhi", "photon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
-    fRegistry.add("V0/primary/hXY_Photon_MC", "X vs. Y of true photon conversion point.;X (cm);Y (cm)", kTH2F, {{400, -100.0f, +100}, {400, -100, +100}}, true);
-    fRegistry.add("V0/primary/hRZ_Photon_MC", "R vs. Z of true photon conversion point;Z (cm);R_{xy} (cm)", kTH2F, {{200, -100.0f, +100}, {200, 0, 100}}, true);
-    fRegistry.addClone("V0/primary/", "V0/fromWD/"); // from weak decay
-    fRegistry.addClone("V0/primary/", "V0/fromHS/"); // from hadronic shower in detector materials
+    fRegistry.add("V0/primary/hPtGen_DeltaPtOverPtGen", "photon p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {200, -1.0f, 1.0f}}, true);
+    fRegistry.add("V0/primary/hPtGen_DeltaEta", "photon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
+    fRegistry.add("V0/primary/hPtGen_DeltaPhi", "photon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
+    fRegistry.add("V0/primary/hRxyGen_DeltaPtOverPtGen", "photon p_{T} resolution; R_{xy}^{gen} (cm);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{100, 0, 100}, {200, -1.0f, 1.0f}}, true);
+    fRegistry.add("V0/primary/hsPhotonResolution",
+                  "Photon resolution;p_{T};#eta;R_{xy};Z_{conv};Z_{vtx};#Deltap_{T}/p_{T};#Delta#eta;#Delta#phi",
+                  kTHnSparseF,
+                  {{100, 0, 10},
+                   {80, -1.6, 1.6},
+                   {100, 0, 100},
+                   {100, -50, 50},
+                   {100, -50, 50},
+                   {200, -1, 1},
+                   {100, -0.5, 0.5},
+                   {100, -0.5, 0.5}},
+                  false);
+    fRegistry.add("V0/primary/hRxyGen_DeltaEta", "photon #eta resolution;R_{xy}^{gen} (cm);#eta^{rec} - #eta^{gen}", kTH2F, {{100, 0, 100}, {100, -0.5f, 0.5f}}, true);
+    fRegistry.add("V0/primary/hRxyGen_DeltaPhi", "photon #varphi resolution;R_{xy}^{gen} (cm);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{100, 0, 100}, {100, -0.5f, 0.5f}}, true);
+    fRegistry.add("V0/primary/hRxyGen_DeltaR", "photon #varphi resolution;R_{xy}^{gen} (cm);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{100, 0, 100}, {100, 0, 100}}, true);
+    fRegistry.add("V0/primary/hsConvVtxZPtR", "z_{vtx} vs p_{T} vs R_{xy};z_{vtx} (cm);p_{T} (GeV/c);R_{xy} (cm)", kTHnSparseF, {{100, -20.0f, +20.0f}, {100, 0.0f, 10.0f}, {100, 0, 100}}, false);
+    fRegistry.add("V0/primary/hXY_MC", "X vs. Y of true photon conversion point.;X (cm);Y (cm)", kTH2F, {{400, -100.0f, +100}, {400, -100, +100}}, true);
+    fRegistry.add("V0/primary/hRZ_MC", "R vs. Z of true photon conversion point;Z (cm);R_{xy} (cm)", kTH2F, {{200, -100.0f, +100}, {200, 0, 100}}, true);
+    fRegistry.add("V0/primary/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {80, -2, +2}}, false);
+    fRegistry.addClone("V0/primary/", "V0/fromWD/");                  // from weak decay
+    fRegistry.addClone("V0/primary/", "V0/fromHS/");                  // from hadronic shower in detector materials
+    fRegistry.addClone("V0/primary/", "V0/fromPi0Dalitz/");           // misidentified dielectron from pi0 dalitz decay
+    fRegistry.addClone("V0/primary/", "V0/fromEtaDalitz/");           // misidentified dielectron from eta dalitz decay
+    fRegistry.addClone("V0/primary/hPt", "V0/candidate/hPt");         // only for purity
+    fRegistry.addClone("V0/primary/hEtaPhi", "V0/candidate/hEtaPhi"); // only for purity
 
     // v0leg info
     fRegistry.add("V0Leg/primary/hPt", "pT;p_{T,e} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
     fRegistry.add("V0Leg/primary/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{1000, -50, 50}}, false);
-    fRegistry.add("V0Leg/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {40, -3.0f, 1.0f}}, false);
+    fRegistry.add("V0Leg/primary/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {200, -1.0f, 1.0f}}, false);
     fRegistry.add("V0Leg/primary/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -50.0f, 50.0f}, {200, -50.0f, 50.0f}}, false);
     fRegistry.add("V0Leg/primary/hNclsTPC", "number of TPC clusters", kTH1F, {{161, -0.5, 160.5}}, false);
     fRegistry.add("V0Leg/primary/hNcrTPC", "number of TPC crossed rows", kTH1F, {{161, -0.5, 160.5}}, false);
@@ -230,11 +251,36 @@ struct PCMQCMC {
     fRegistry.add("V0Leg/primary/hXY", "X vs. Y;X (cm);Y (cm)", kTH2F, {{100, 0, 100}, {40, -20, 20}}, false);
     fRegistry.add("V0Leg/primary/hZX", "Z vs. X;Z (cm);X (cm)", kTH2F, {{200, -100, 100}, {100, 0, 100}}, false);
     fRegistry.add("V0Leg/primary/hZY", "Z vs. Y;Z (cm);Y (cm)", kTH2F, {{200, -100, 100}, {40, -20, 20}}, false);
-    fRegistry.add("V0Leg/primary/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
-    fRegistry.add("V0Leg/primary/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
-    fRegistry.add("V0Leg/primary/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {400, -1.0f, 1.0f}}, true);
-    fRegistry.addClone("V0Leg/primary/", "V0Leg/fromWD/"); // from weak decay
-    fRegistry.addClone("V0Leg/primary/", "V0Leg/fromHS/"); // from hadronic shower in detector materials
+    fRegistry.add("V0Leg/primary/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {200, -1.0f, 1.0f}}, true);
+    fRegistry.add("V0Leg/primary/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
+    if (cfg_fill_resolution) {
+      fRegistry.add("V0Leg/primary/hsPhotonResolution",
+                    "Photon resolution;p_{T};#eta;R_{xy};Z_{conv};Z_{vtx};#Deltap_{T}/p_{T};#Delta#eta;#Delta#phi",
+                    kTHnSparseF,
+                    {{100, 0, 10},
+                     {80, -1.6, 1.6},
+                     {100, 0, 100},
+                     {100, -50, 50},
+                     {100, -50, 50},
+                     {200, -1, 1},
+                     {100, -0.5, 0.5},
+                     {100, -0.5, 0.5}},
+                    false);
+    }
+
+    fRegistry.add("V0Leg/primary/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
+    fRegistry.add("V0Leg/primary/hRxyGen_DeltaPtOverPtGen", "photon p_{T} resolution; R_{xy}^{gen} (cm);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{100, 0, 100}, {200, -1.0f, 1.0f}}, true);
+    fRegistry.add("V0Leg/primary/hRxyGen_DeltaEta", "photon #eta resolution;R_{xy}^{gen} (cm);#eta^{rec} - #eta^{gen}", kTH2F, {{100, 0, 100}, {100, -0.5f, 0.5f}}, true);
+    fRegistry.add("V0Leg/primary/hRxyGen_DeltaPhi", "photon #varphi resolution;R_{xy}^{gen} (cm);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{100, 0, 100}, {100, 0, 100}}, true);
+    fRegistry.add("V0Leg/primary/hRxyGen_DeltaR", "photon p_{T} resolution; R_{xy}^{gen} (cm);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{100, 0, 100}, {200, -1.0f, 1.0f}}, true);
+
+    fRegistry.addClone("V0Leg/primary/", "V0Leg/fromWD/");        // from weak decay
+    fRegistry.addClone("V0Leg/primary/", "V0Leg/fromHS/");        // from hadronic shower in detector materials
+    fRegistry.addClone("V0Leg/primary/", "V0Leg/fromPi0Dalitz/"); // misidentified dielectron from pi0 dalitz decay
+    fRegistry.addClone("V0Leg/primary/", "V0Leg/fromEtaDalitz/"); // misidentified dielectron from eta dalitz decay
+
+    fRegistry.addClone("V0Leg/primary/hPt", "V0Leg/candidate/hPt");         // only for purity
+    fRegistry.addClone("V0Leg/primary/hEtaPhi", "V0Leg/candidate/hEtaPhi"); // only for purity
   }
 
   void DefineEMEventCut()
@@ -260,7 +306,7 @@ struct PCMQCMC {
     fV0PhotonCut = V0PhotonCut("fV0PhotonCut", "fV0PhotonCut");
 
     // for v0
-    fV0PhotonCut.SetV0PtRange(pcmcuts.cfg_min_pt_v0, 1e10f);
+    fV0PhotonCut.SetV0PtRange(pcmcuts.cfg_min_pt_v0, pcmcuts.cfg_max_pt_v0);
     fV0PhotonCut.SetV0EtaRange(pcmcuts.cfg_min_eta_v0, pcmcuts.cfg_max_eta_v0);
     fV0PhotonCut.SetMinCosPA(pcmcuts.cfg_min_cospa);
     fV0PhotonCut.SetMaxPCA(pcmcuts.cfg_max_pca);
@@ -270,8 +316,6 @@ struct PCMQCMC {
     fV0PhotonCut.RejectITSib(pcmcuts.cfg_reject_v0_on_itsib);
 
     // for track
-    fV0PhotonCut.SetTrackPtRange(pcmcuts.cfg_min_pt_v0 * 0.4, 1e+10f);
-    fV0PhotonCut.SetTrackEtaRange(pcmcuts.cfg_min_eta_v0, pcmcuts.cfg_max_eta_v0);
     fV0PhotonCut.SetMinNClustersTPC(pcmcuts.cfg_min_ncluster_tpc);
     fV0PhotonCut.SetMinNCrossedRowsTPC(pcmcuts.cfg_min_ncrossedrows);
     fV0PhotonCut.SetMinNCrossedRowsOverFindableClustersTPC(0.8);
@@ -279,33 +323,14 @@ struct PCMQCMC {
     fV0PhotonCut.SetChi2PerClusterTPC(0.0, pcmcuts.cfg_max_chi2tpc);
     fV0PhotonCut.SetTPCNsigmaElRange(pcmcuts.cfg_min_TPCNsigmaEl, pcmcuts.cfg_max_TPCNsigmaEl);
     fV0PhotonCut.SetChi2PerClusterITS(-1e+10, pcmcuts.cfg_max_chi2its);
-    fV0PhotonCut.SetDisableITSonly(pcmcuts.cfg_disable_itsonly_track);
-
-    if (pcmcuts.cfg_reject_v0_on_itsib) {
-      fV0PhotonCut.SetNClustersITS(2, 4);
-    } else {
-      fV0PhotonCut.SetNClustersITS(0, 7);
-    }
+    fV0PhotonCut.SetNClustersITS(0, 7);
     fV0PhotonCut.SetMeanClusterSizeITSob(0.0, 16.0);
     fV0PhotonCut.SetIsWithinBeamPipe(pcmcuts.cfg_require_v0_with_correct_xz);
-
-    if (pcmcuts.cfg_require_v0_with_itstpc) {
-      fV0PhotonCut.SetRequireITSTPC(true);
-      fV0PhotonCut.SetRxyRange(4, 40);
-    }
-    if (pcmcuts.cfg_require_v0_with_itsonly) {
-      fV0PhotonCut.SetRequireITSonly(true);
-      fV0PhotonCut.SetRxyRange(4, 24);
-    }
-    if (pcmcuts.cfg_require_v0_with_tpconly) {
-      fV0PhotonCut.SetRequireTPConly(true);
-      fV0PhotonCut.SetRxyRange(32, 90);
-    }
-    if (pcmcuts.cfg_require_v0_on_wwire_ib) {
-      fV0PhotonCut.SetOnWwireIB(true);
-      fV0PhotonCut.SetOnWwireOB(false);
-      fV0PhotonCut.SetRxyRange(7, 14);
-    }
+    fV0PhotonCut.SetDisableITSonly(pcmcuts.cfg_disable_itsonly_track);
+    fV0PhotonCut.SetDisableTPConly(pcmcuts.cfg_disable_tpconly_track);
+    fV0PhotonCut.SetRequireITSTPC(pcmcuts.cfg_require_v0_with_itstpc);
+    fV0PhotonCut.SetRequireITSonly(pcmcuts.cfg_require_v0_with_itsonly);
+    fV0PhotonCut.SetRequireTPConly(pcmcuts.cfg_require_v0_with_tpconly);
   }
 
   template <const int ev_id, typename TCollision>
@@ -333,9 +358,10 @@ struct PCMQCMC {
     if (collision.sel8()) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 8.0);
     }
-    if (abs(collision.posZ()) < 10.0) {
+    if (std::fabs(collision.posZ()) < 10.0) {
       fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCollisionCounter"), 9.0);
     }
+
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
 
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPV"), collision.multNTracksPV());
@@ -353,34 +379,52 @@ struct PCMQCMC {
   {
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPt"), v0.pt());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hEtaPhi"), v0.phi(), v0.eta());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRadius"), v0.vz(), v0.v0radius());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hXY"), v0.vx(), v0.vy());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRZ"), v0.vz(), v0.v0radius());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hCosPA"), v0.cospa());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hCosPA_Rxy"), v0.v0radius(), v0.cospa());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hCosPAXY"), v0.cospaXY());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hCosPARZ"), v0.cospaRZ());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPCA"), v0.pca());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPCA_CosPA"), v0.cospa(), v0.pca());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPCA_Rxy"), v0.v0radius(), v0.pca());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hDCAxyz"), v0.dcaXYtopv(), v0.dcaZtopv());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hDCAz_Pt"), v0.dcaZtopv(), v0.pt());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hAPplot"), v0.alpha(), v0.qtarm());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hMassGamma"), v0.v0radius(), v0.mGamma());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hGammaRxy"), v0.vx(), v0.vy());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsM"), v0.mGamma(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsR"), v0.v0radius(), v0.chiSquareNDF());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hsConvVtxZPtR"),
+                   v0.vz(), v0.pt(), v0.v0radius());
+
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsX"), v0.vx(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsY"), v0.vy(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsZ"), v0.vz(), v0.chiSquareNDF());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPResolution"), v0.p(), getPResolution(v0) / v0.p());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPtResolution"), v0.p(), getPtResolution(v0) / v0.pt());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hEtaResolution"), v0.p(), getEtaResolution(v0));
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hThetaResolution"), v0.p(), getThetaResolution(v0));
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPhiResolution"), v0.p(), getPhiResolution(v0));
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaPtOverPtGen"), mcphoton.pt(), (v0.pt() - mcphoton.pt()) / mcphoton.pt());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaEta"), mcphoton.pt(), v0.eta() - mcphoton.eta());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaPhi"), mcphoton.pt(), v0.phi() - mcphoton.phi());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaPtOverPtGen"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), (v0.pt() - mcphoton.pt()) / mcphoton.pt());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaEta"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), v0.eta() - mcphoton.eta());
+    if (cfg_fill_resolution) {
+      fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hsPhotonResolution"),
+                     mcphoton.pt(),
+                     mcphoton.eta(),
+                     std::sqrt(mcleg.vx() * mcleg.vx() + mcleg.vy() * mcleg.vy()),
+                     mcleg.vz(),
+                     v0.vz(),
+                     (v0.pt() - mcphoton.pt()) / mcphoton.pt(),
+                     v0.eta() - mcphoton.eta(),
+                     TVector2::Phi_mpi_pi(v0.phi() - mcphoton.phi()));
+    }
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaPhi"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), v0.phi() - mcphoton.phi());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaR"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), v0.v0radius() - std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)));
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hConvPoint_diffX"), mcleg.vx(), v0.vx() - mcleg.vx());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hConvPoint_diffY"), mcleg.vy(), v0.vy() - mcleg.vy());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hConvPoint_diffZ"), mcleg.vz(), v0.vz() - mcleg.vz());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hXY_Photon_MC"), mcleg.vx(), mcleg.vy());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRZ_Photon_MC"), mcleg.vz(), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)));
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hXY_MC"), mcleg.vx(), mcleg.vy());
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRZ_MC"), mcleg.vz(), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)));
+
+    float phi_cp = std::atan2(v0.vy(), v0.vx());
+    o2::math_utils::bringTo02Pi(phi_cp);
+    float eta_cp = std::atanh(v0.vz() / std::sqrt(std::pow(v0.vx(), 2) + std::pow(v0.vy(), 2) + std::pow(v0.vz(), 2)));
+    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hsConvPoint"), v0.v0radius(), phi_cp, eta_cp);
   }
 
   template <int mctype, typename TLeg>
@@ -412,11 +456,25 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaPtOverPtGen"), mcleg.pt(), (leg.pt() - mcleg.pt()) / mcleg.pt());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaEta"), mcleg.pt(), leg.eta() - mcleg.eta());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaPhi"), mcleg.pt(), leg.phi() - mcleg.phi());
+    fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaPtOverPtGen"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), (leg.pt() - mcleg.pt()) / mcleg.pt());
+    if (cfg_fill_resolution) {
+      fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hsPhotonResolution"),
+                     mcleg.pt(),
+                     mcleg.eta(),
+                     std::sqrt(mcleg.vx() * mcleg.vx() + mcleg.vy() * mcleg.vy()),
+                     mcleg.vz(),
+                     leg.z(),
+                     (leg.pt() - mcleg.pt()) / mcleg.pt(),
+                     leg.eta() - mcleg.eta(),
+                     TVector2::Phi_mpi_pi(leg.phi() - mcleg.phi()));
+    }
+    fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaEta"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), leg.eta() - mcleg.eta());
+    fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaPhi"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), leg.phi() - mcleg.phi());
   }
 
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
   Filter collisionFilter_occupancy_track = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
-  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin < o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
+  Filter collisionFilter_occupancy_ft0c = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
 
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;
@@ -437,7 +495,7 @@ struct PCMQCMC {
       fRegistry.fill(HIST("Event/after/hCollisionCounter"), 10.0);  // accepted
 
       auto V0Photons_coll = v0photons.sliceBy(perCollision, collision.globalIndex());
-      int ng_primary = 0, ng_wd = 0, ng_hs = 0;
+      int ng_primary = 0, ng_wd = 0, ng_hs = 0, nee_pi0 = 0, nee_eta = 0;
       for (auto& v0 : V0Photons_coll) {
         auto pos = v0.posTrack_as<MyMCV0Legs>();
         auto ele = v0.negTrack_as<MyMCV0Legs>();
@@ -449,36 +507,78 @@ struct PCMQCMC {
         if (!fV0PhotonCut.IsSelected<MyMCV0Legs>(v0)) {
           continue;
         }
+
+        fRegistry.fill(HIST("V0/candidate/hPt"), v0.pt());
+        fRegistry.fill(HIST("V0/candidate/hEtaPhi"), v0.phi(), v0.eta());
+        for (auto& leg : {pos, ele}) {
+          fRegistry.fill(HIST("V0Leg/candidate/hPt"), leg.pt());
+          fRegistry.fill(HIST("V0Leg/candidate/hEtaPhi"), leg.phi(), leg.eta());
+        }
+
         int photonid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 22, mcparticles);
-        if (photonid < 0) {
+        int pi0id = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 111, mcparticles); // pi0 dalitz decay
+        int etaid = FindCommonMotherFrom2Prongs(posmc, elemc, -11, 11, 221, mcparticles); // eta dalitz decay
+        if (photonid < 0 && pi0id < 0 && etaid < 0) {
           continue;
         }
-        auto mcphoton = mcparticles.iteratorAt(photonid);
 
-        if (mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator()) {
-          fillV0Info<0>(v0, mcphoton, elemc);
-          for (auto& leg : {pos, ele}) {
-            fillV0LegInfo<0>(leg);
+        if (photonid > 0) {
+          auto mcphoton = mcparticles.iteratorAt(photonid);
+          if (cfgRequireTrueAssociation && (mcphoton.emmceventId() != collision.emmceventId())) {
+            continue;
           }
-          ng_primary++;
-        } else if (IsFromWD(mcphoton.template emmcevent_as<aod::EMMCEvents>(), mcphoton, mcparticles) > 0) {
-          fillV0Info<1>(v0, mcphoton, elemc);
-          for (auto& leg : {pos, ele}) {
-            fillV0LegInfo<1>(leg);
+
+          if (mcphoton.isPhysicalPrimary() || mcphoton.producedByGenerator()) {
+            fillV0Info<0>(v0, mcphoton, elemc);
+            for (auto& leg : {pos, ele}) {
+              fillV0LegInfo<0>(leg);
+            }
+            ng_primary++;
+          } else if (IsFromWD(mcphoton.template emmcevent_as<aod::EMMCEvents>(), mcphoton, mcparticles) > 0) {
+            fillV0Info<1>(v0, mcphoton, elemc);
+            for (auto& leg : {pos, ele}) {
+              fillV0LegInfo<1>(leg);
+            }
+            ng_wd++;
+          } else {
+            fillV0Info<2>(v0, mcphoton, elemc);
+            for (auto& leg : {pos, ele}) {
+              fillV0LegInfo<2>(leg);
+            }
+            ng_hs++;
+            // LOGF(info, "mcphoton.vx() = %f, mcphoton.vy() = %f, mcphoton.vz() = %f, mother_pdg = %d", mcphoton.vx(), mcphoton.vy(), mcphoton.vz(), mother_pdg);
           }
-          ng_wd++;
-        } else {
-          fillV0Info<2>(v0, mcphoton, elemc);
-          for (auto& leg : {pos, ele}) {
-            fillV0LegInfo<2>(leg);
+        } else if (pi0id > 0) {
+          auto mcpi0 = mcparticles.iteratorAt(pi0id);
+          if (cfgRequireTrueAssociation && (mcpi0.emmceventId() != collision.emmceventId())) {
+            continue;
           }
-          ng_hs++;
-          // LOGF(info, "mcphoton.vx() = %f, mcphoton.vy() = %f, mcphoton.vz() = %f, mother_pdg = %d", mcphoton.vx(), mcphoton.vy(), mcphoton.vz(), mother_pdg);
+          if (mcpi0.isPhysicalPrimary() || mcpi0.producedByGenerator()) {
+            fillV0Info<3>(v0, mcpi0, elemc);
+            for (auto& leg : {pos, ele}) {
+              fillV0LegInfo<3>(leg);
+            }
+            nee_pi0++;
+          }
+        } else if (etaid > 0) {
+          auto mceta = mcparticles.iteratorAt(etaid);
+          if (cfgRequireTrueAssociation && (mceta.emmceventId() != collision.emmceventId())) {
+            continue;
+          }
+          if (mceta.isPhysicalPrimary() || mceta.producedByGenerator()) {
+            fillV0Info<4>(v0, mceta, elemc);
+            for (auto& leg : {pos, ele}) {
+              fillV0LegInfo<4>(leg);
+            }
+            nee_eta++;
+          }
         }
       } // end of v0 loop
       fRegistry.fill(HIST("V0/primary/hNgamma"), ng_primary);
       fRegistry.fill(HIST("V0/fromWD/hNgamma"), ng_wd);
       fRegistry.fill(HIST("V0/fromHS/hNgamma"), ng_hs);
+      fRegistry.fill(HIST("V0/fromPi0Dalitz/hNgamma"), nee_pi0);
+      fRegistry.fill(HIST("V0/fromEtaDalitz/hNgamma"), nee_eta);
     } // end of collision loop
   } // end of process
 
@@ -529,19 +629,31 @@ struct PCMQCMC {
 
       auto mctracks_coll = mcparticles.sliceBy(perMcCollision, mccollision.globalIndex());
       for (auto& mctrack : mctracks_coll) {
-        if (abs(mctrack.y()) > pcmcuts.cfg_max_eta_v0) {
+        if (std::fabs(mctrack.y()) > pcmcuts.cfg_max_eta_v0) {
           continue;
         }
 
-        if (abs(mctrack.pdgCode()) == 22 && (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
-          fRegistry.fill(HIST("Generated/hPt_ConvertedPhoton"), mctrack.pt());
-          fRegistry.fill(HIST("Generated/hY_ConvertedPhoton"), mctrack.y());
-          fRegistry.fill(HIST("Generated/hPhi_ConvertedPhoton"), mctrack.phi());
+        if (std::abs(mctrack.pdgCode()) == 22 && (mctrack.isPhysicalPrimary() || mctrack.producedByGenerator())) {
           auto daughter = mcparticles.iteratorAt(mctrack.daughtersIds()[0]); // choose ele or pos.
-          float rxy_gen_e = sqrt(pow(daughter.vx(), 2) + pow(daughter.vy(), 2));
-          fRegistry.fill(HIST("Generated/hPhotonRZ"), daughter.vz(), rxy_gen_e);
-          fRegistry.fill(HIST("Generated/hPhotonRxy"), daughter.vx(), daughter.vy());
-          fRegistry.fill(HIST("Generated/hPhotonPhivsRxy"), daughter.phi(), rxy_gen_e);
+          float rxy_gen_e = std::sqrt(std::pow(daughter.vx(), 2) + std::pow(daughter.vy(), 2));
+          float phi_cp = std::atan2(daughter.vy(), daughter.vx());
+          o2::math_utils::bringTo02Pi(phi_cp);
+          float eta_cp = std::atanh(daughter.vz() / std::sqrt(std::pow(daughter.vx(), 2) + std::pow(daughter.vy(), 2) + std::pow(daughter.vz(), 2)));
+
+          if (rxy_gen_e < std::fabs(daughter.vz()) * std::tan(2 * std::atan(std::exp(-pcmcuts.cfg_max_eta_v0))) - margin_z_mc) {
+            continue;
+          }
+          if (rxy_gen_e > maxRgen) {
+            continue;
+          }
+
+          fRegistry.fill(HIST("Generated/hPt_ConversionPhoton"), mctrack.pt());
+          fRegistry.fill(HIST("Generated/hY_ConversionPhoton"), mctrack.y());
+          fRegistry.fill(HIST("Generated/hPhi_ConversionPhoton"), mctrack.phi());
+          fRegistry.fill(HIST("Generated/hsConvPoint"), rxy_gen_e, phi_cp, eta_cp);
+          fRegistry.fill(HIST("Generated/hXY"), daughter.vx(), daughter.vy());
+          fRegistry.fill(HIST("Generated/hRZ"), daughter.vz(), rxy_gen_e);
+          fRegistry.fill(HIST("Generated/hRPhi"), phi_cp, rxy_gen_e);
         }
       } // end of mctrack loop per collision
     } // end of collision loop

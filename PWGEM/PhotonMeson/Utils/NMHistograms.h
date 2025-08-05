@@ -15,10 +15,14 @@
 #ifndef PWGEM_PHOTONMESON_UTILS_NMHISTOGRAMS_H_
 #define PWGEM_PHOTONMESON_UTILS_NMHISTOGRAMS_H_
 
-#include <vector>
-#include "TF1.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
+
+#include "Framework/HistogramRegistry.h"
+
+#include "TF1.h"
+
+#include <vector>
 
 using namespace o2::framework;
 using namespace o2::aod::pwgem::photonmeson::utils::mcutil;
@@ -48,7 +52,11 @@ void addNMHistograms(HistogramRegistry* fRegistry, bool isMC, const char* pairna
     fRegistry->add("Pair/Pi0/hs_Primary", "rec. true pi0", kTHnSparseD, {axis_mass, axis_pt}, true);
     fRegistry->add("Pair/Pi0/hs_FromWD", "rec. true pi0 from weak decay", kTHnSparseD, {axis_mass, axis_pt}, true);
     fRegistry->add("Pair/Pi0/hs_FromHS", "rec. true pi0 from hadronic shower in material", kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Pi0/hs_FromSameGamma", "Two clusters from same gamma that is a pi0 daughter (conversion)", kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Eta/hs_FromSameGamma", "Two clusters from same gamma that is a eta daughter (conversion)", kTHnSparseD, {axis_mass, axis_pt}, true);
     fRegistry->add("Pair/Eta/hs_Primary", "rec. true eta", kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Eta/hs_FromWD", "rec. true eta from weak decay", kTHnSparseD, {axis_mass, axis_pt}, true);
+    fRegistry->add("Pair/Eta/hs_FromHS", "rec. true eta from hadronic shower in material", kTHnSparseD, {axis_mass, axis_pt}, true);
 
     const AxisSpec axis_rapidity{{0.0, +0.8, +0.9}, "rapidity |y|"};
     fRegistry->add("Generated/Pi0/hPt", "pT;p_{T} (GeV/c)", kTH1F, {axis_pt}, true);
@@ -70,16 +78,16 @@ void addNMHistograms(HistogramRegistry* fRegistry, bool isMC, const char* pairna
 template <typename TDiphoton, typename TMCParitlce, typename TMCParticles, typename TMCCollisions>
 void fillTruePairInfo(HistogramRegistry* fRegistry, TDiphoton const& v12, TMCParitlce const& mcparticle, TMCParticles const& mcparticles, TMCCollisions const&, const TF1* f1fd_k0s_to_pi0 = nullptr, float eventWeight = 1.f)
 {
-  int pdg = abs(mcparticle.pdgCode());
+  int pdg = std::abs(mcparticle.pdgCode());
   float weight = eventWeight;
+  int motherid_strhad = IsFromWD(mcparticle.template emmcevent_as<TMCCollisions>(), mcparticle, mcparticles);
   switch (pdg) {
     case 111: {
-      int motherid_strhad = IsFromWD(mcparticle.template emmcevent_as<TMCCollisions>(), mcparticle, mcparticles);
       if (mcparticle.isPhysicalPrimary() || mcparticle.producedByGenerator()) {
         fRegistry->fill(HIST("Pair/Pi0/hs_Primary"), v12.M(), v12.Pt(), weight);
       } else if (motherid_strhad > 0) {
         auto str_had = mcparticles.iteratorAt(motherid_strhad);
-        if (abs(str_had.pdgCode()) == 310 && f1fd_k0s_to_pi0 != nullptr) {
+        if (std::abs(str_had.pdgCode()) == 310 && f1fd_k0s_to_pi0 != nullptr) {
           weight *= f1fd_k0s_to_pi0->Eval(str_had.pt());
         }
         fRegistry->fill(HIST("Pair/Pi0/hs_FromWD"), v12.M(), v12.Pt(), weight);
@@ -91,6 +99,10 @@ void fillTruePairInfo(HistogramRegistry* fRegistry, TDiphoton const& v12, TMCPar
     case 221: {
       if (mcparticle.isPhysicalPrimary() || mcparticle.producedByGenerator()) {
         fRegistry->fill(HIST("Pair/Eta/hs_Primary"), v12.M(), v12.Pt(), weight);
+      } else if (motherid_strhad > 0) {
+        fRegistry->fill(HIST("Pair/Eta/hs_FromWD"), v12.M(), v12.Pt(), weight);
+      } else {
+        fRegistry->fill(HIST("Pair/Eta/hs_FromHS"), v12.M(), v12.Pt(), weight);
       }
       break;
     }

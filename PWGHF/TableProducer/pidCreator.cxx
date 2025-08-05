@@ -14,13 +14,21 @@
 ///
 /// \author Vít Kučera <vit.kucera@cern.ch>, Inha University
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
 
 #include "Common/Core/TableHelper.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -37,8 +45,8 @@ struct HfPidCreator {
   Produces<aod::PidTpcTofFullPr> trackPidFullPr;
   Produces<aod::PidTpcTofTinyPr> trackPidTinyPr;
 
-  static constexpr float defaultNSigmaTolerance = .1f;
-  static constexpr float defaultNSigma = -999.f + defaultNSigmaTolerance; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+  static constexpr float NSigmaToleranceDefault = .1f;
+  static constexpr float NSigmaDefault = -999.f + NSigmaToleranceDefault; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
 
   /// Function to check whether the process function flag matches the need for filling the table
   /// \param initContext  workflow context (argument of the init function)
@@ -85,13 +93,13 @@ struct HfPidCreator {
       tpcNSigma *= aod::pidtpc_tiny::binning::bin_width;
       tofNSigma *= aod::pidtof_tiny::binning::bin_width;
     }
-    if ((tpcNSigma > defaultNSigma) && (tofNSigma > defaultNSigma)) { // TPC and TOF
+    if ((tpcNSigma > NSigmaDefault) && (tofNSigma > NSigmaDefault)) { // TPC and TOF
       return std::sqrt(.5f * (tpcNSigma * tpcNSigma + tofNSigma * tofNSigma));
     }
-    if (tpcNSigma > defaultNSigma) { // only TPC
+    if (tpcNSigma > NSigmaDefault) { // only TPC
       return std::abs(tpcNSigma);
     }
-    if (tofNSigma > defaultNSigma) { // only TOF
+    if (tofNSigma > NSigmaDefault) { // only TOF
       return std::abs(tofNSigma);
     }
     return tofNSigma; // no TPC nor TOF

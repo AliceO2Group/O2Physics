@@ -17,17 +17,33 @@
 /// \author Luigi Dello Stritto <luigi.dello.stritto@cern.ch >, SALERNO
 /// \author Mattia Faggin <mattia.faggin@cern.ch>, University and INFN PADOVA
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
-
-#include "Common/Core/trackUtilities.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/Variant.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/V0.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -41,7 +57,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   workflowOptions.push_back(optionDoMC);
 }
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 /// Reconstruction of xicc candidates
 struct HfCandidateCreatorXicc {
@@ -105,7 +121,7 @@ struct HfCandidateCreatorXicc {
                aod::TracksWCov const& tracks)
   {
     for (const auto& xicCand : xicCands) {
-      if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::XicToPKPi)) {
+      if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::XicToPKPi)) {
         continue;
       }
       if (xicCand.isSelXicToPKPi() >= selectionFlagXic) {
@@ -195,9 +211,9 @@ struct HfCandidateCreatorXicc {
                          xicCand.globalIndex(), trackpion.globalIndex(),
                          hfFlag);
       } // if on selected Xicc
-    }   // loop over candidates
-  }     // end of process
-};      // end of struct
+    } // loop over candidates
+  } // end of process
+}; // end of struct
 
 /// Extends the base table with expression columns.
 struct HfCandidateCreatorXiccExpressions {

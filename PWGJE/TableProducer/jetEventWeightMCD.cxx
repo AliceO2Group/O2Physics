@@ -13,18 +13,21 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
 
 template <typename MCDetectorLevelJetTable, typename MCDetectorLevelWeightsTable, typename MCDetectorLevelEventWiseSubtractedJetTable, typename MCDetectorLevelEventWiseSubtractedWeightsTable>
 
@@ -40,14 +43,14 @@ struct JetEventWeightMCDTask {
   void processMCDetectorLevelEventWeight(MCDetectorLevelJetTable const& jet, soa::Join<aod::JetCollisions, aod::JMcCollisionLbs> const&, aod::JetMcCollisions const&)
   {
     auto collision = jet.template collision_as<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>();
-    mcDetectorLevelWeightsTable(jet.globalIndex(), collision.mcCollision().weight());
+    mcDetectorLevelWeightsTable(jet.globalIndex(), collision.weight());
   }
   PROCESS_SWITCH(JetEventWeightMCDTask, processMCDetectorLevelEventWeight, "Fill event weight tables for detector level MC jets", false);
 
   void processMCDetectorLevelEventWiseSubtractedEventWeight(MCDetectorLevelEventWiseSubtractedJetTable const& jet, soa::Join<aod::JetCollisions, aod::JMcCollisionLbs> const&, aod::JetMcCollisions const&)
   {
     auto collision = jet.template collision_as<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>();
-    mcDetectorLevelEventWiseSubtractedWeightsTable(jet.globalIndex(), collision.mcCollision().weight());
+    mcDetectorLevelEventWiseSubtractedWeightsTable(jet.globalIndex(), collision.weight());
   }
   PROCESS_SWITCH(JetEventWeightMCDTask, processMCDetectorLevelEventWiseSubtractedEventWeight, "Fill event weight tables for detector level MC jets", false);
 };
@@ -56,7 +59,10 @@ using ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::ChargedMCDetectorLev
 using NeutralMCJetsEventWeight = JetEventWeightMCDTask<aod::NeutralMCDetectorLevelJet, aod::NeutralMCDetectorLevelJetEventWeights, aod::NeutralMCDetectorLevelEventWiseSubtractedJet, aod::NeutralMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 using FullMCJetsEventWeight = JetEventWeightMCDTask<aod::FullMCDetectorLevelJet, aod::FullMCDetectorLevelJetEventWeights, aod::FullMCDetectorLevelEventWiseSubtractedJet, aod::FullMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 using D0ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::D0ChargedMCDetectorLevelJet, aod::D0ChargedMCDetectorLevelJetEventWeights, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJet, aod::D0ChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
+using DplusChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::DplusChargedMCDetectorLevelJet, aod::DplusChargedMCDetectorLevelJetEventWeights, aod::DplusChargedMCDetectorLevelEventWiseSubtractedJet, aod::DplusChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
+using DstarChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::DstarChargedMCDetectorLevelJet, aod::DstarChargedMCDetectorLevelJetEventWeights, aod::DstarChargedMCDetectorLevelEventWiseSubtractedJet, aod::DstarChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 using LcChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::LcChargedMCDetectorLevelJet, aod::LcChargedMCDetectorLevelJetEventWeights, aod::LcChargedMCDetectorLevelEventWiseSubtractedJet, aod::LcChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
+using B0ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::B0ChargedMCDetectorLevelJet, aod::B0ChargedMCDetectorLevelJetEventWeights, aod::B0ChargedMCDetectorLevelEventWiseSubtractedJet, aod::B0ChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 using BplusChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::BplusChargedMCDetectorLevelJet, aod::BplusChargedMCDetectorLevelJetEventWeights, aod::BplusChargedMCDetectorLevelEventWiseSubtractedJet, aod::BplusChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 using V0ChargedMCJetsEventWeight = JetEventWeightMCDTask<aod::V0ChargedMCDetectorLevelJet, aod::V0ChargedMCDetectorLevelJetEventWeights, aod::V0ChargedMCDetectorLevelEventWiseSubtractedJet, aod::V0ChargedMCDetectorLevelEventWiseSubtractedJetEventWeights>;
 
@@ -82,8 +88,20 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
                                                   SetDefaultProcesses{}, TaskName{"jet-d0-eventweight-mcd-charged"}));
 
   tasks.emplace_back(
+    adaptAnalysisTask<DplusChargedMCJetsEventWeight>(cfgc,
+                                                     SetDefaultProcesses{}, TaskName{"jet-dplus-eventweight-mcd-charged"}));
+
+  tasks.emplace_back(
+    adaptAnalysisTask<DstarChargedMCJetsEventWeight>(cfgc,
+                                                     SetDefaultProcesses{}, TaskName{"jet-dstar-eventweight-mcd-charged"}));
+
+  tasks.emplace_back(
     adaptAnalysisTask<LcChargedMCJetsEventWeight>(cfgc,
                                                   SetDefaultProcesses{}, TaskName{"jet-lc-eventweight-mcd-charged"}));
+
+  tasks.emplace_back(
+    adaptAnalysisTask<B0ChargedMCJetsEventWeight>(cfgc,
+                                                  SetDefaultProcesses{}, TaskName{"jet-b0-eventweight-mcd-charged"}));
 
   tasks.emplace_back(
     adaptAnalysisTask<BplusChargedMCJetsEventWeight>(cfgc,

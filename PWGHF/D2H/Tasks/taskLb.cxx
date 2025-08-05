@@ -15,32 +15,51 @@
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 /// \author Martin Voelkl <martin.andreas.volkl@cern.ch>, University of Birmingham
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Common/DataModel/Centrality.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
+using namespace o2::hf_decay::hf_cand_beauty;
 
 /// Λb0 analysis task
 struct HfTaskLb {
   Configurable<int> selectionFlagLb{"selectionFlagLb", 0, "Selection Flag for Lb"};
   Configurable<float> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
   Configurable<float> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
-  Configurable<float> DCALengthParameter{"DCALengthParameter", 0.02, "decay length for DCA"};
+  Configurable<float> lengthDCAParameter{"lengthDCAParameter", 0.02, "decay length for DCA"};
   Configurable<float> minLikelihoodRatio{"minLikelihoodRatio", 10., "min. likelihood ratio for combined DCAs"};
   Configurable<float> minLikelihoodRatioLc{"minLikelihoodRatioLc", 10., "min. likelihood ratio for Lc cross check"};
   Configurable<float> mDiffKStar892Max{"mDiffKStar892Max", 0.0473, "Accepted range around KStar mass peak"};
@@ -55,24 +74,24 @@ struct HfTaskLb {
   HfHelper hfHelper;
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_lb::isSelLbToLcPi >= selectionFlagLb);
-
   using TracksWExt = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
   using TracksWExtMc = soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, aod::TrackSelection, o2::aod::TrackSelectionExtension, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa, McTrackLabels>;
 
-  PresliceUnsorted<aod::TracksWMc> McPartID = aod::mctracklabel::mcParticleId;
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_lb::isSelLbToLcPi >= selectionFlagLb);
+
+  PresliceUnsorted<aod::TracksWMc> mcPartID = aod::mctracklabel::mcParticleId;
 
   bool passesImpactParameterResolution(float pT, float d0Resolution)
   {
-    float expectedResolution(0.001 + 0.0052 * exp(-0.655 * pT));
+    float expectedResolution(0.001 + 0.0052 * std::exp(-0.655 * pT));
     return (d0Resolution <= expectedResolution * 1.5);
   } // Compares to pT dependent cut on impact parameter resolution
 
-  float logLikelihoodRatioSingleTrackDCA(float DCA, float reso, float lengthParameter)
+  float logLikelihoodRatioSingleTrackDCA(float dca, float reso, float lengthParameter)
   {
     reso *= resoCorrectionFactor; // In case real resolution is worse
-    float numerator = 1. / lengthParameter * std::exp(-DCA / lengthParameter);
-    float denominator = (1. - largeLifetimeBG) * TMath::Gaus(DCA, 0., reso, true) + largeLifetimeBG / 0.2; // flat distribution to 2 mm
+    float numerator = 1. / lengthParameter * std::exp(-dca / lengthParameter);
+    float denominator = (1. - largeLifetimeBG) * TMath::Gaus(dca, 0., reso, true) + largeLifetimeBG / 0.2; // flat distribution to 2 mm
     return std::log(numerator / denominator);
   } // Creates the single track log likelihood assuming an exonential law for the secondaries
 
@@ -170,6 +189,8 @@ struct HfTaskLb {
   {
     float massKStar892 = 0.892;
     float massDelta1232 = 1.232;
+    std::array<float, 3> dca = {0.f, 0.f, 0.f};
+    std::array<float, 3> dcaResolution = {0.f, 0.f, 0.f};
 
     for (const auto& candidateLc : candidatesLc) {
       if (!candidateLc.isSelLcToPKPi() && !candidateLc.isSelLcToPiKP())
@@ -192,12 +213,26 @@ struct HfTaskLb {
         continue;
       if (!passesImpactParameterResolution(track2.pt(), reso2))
         continue;
-      float DCA0 = candidateLc.impactParameter0();
-      float DCA1 = candidateLc.impactParameter1();
-      float DCA2 = candidateLc.impactParameter2();
-      if (DCA0 > maximumImpactParameterForLambdaCCrossChecks || DCA1 > maximumImpactParameterForLambdaCCrossChecks || DCA2 > maximumImpactParameterForLambdaCCrossChecks)
+
+      dca = {
+        candidateLc.impactParameter0(),
+        candidateLc.impactParameter1(),
+        candidateLc.impactParameter2()};
+
+      bool exceedsMaxDca = std::any_of(dca.begin(), dca.end(), [&](float val) {
+        return val > maximumImpactParameterForLambdaCCrossChecks;
+      });
+
+      if (exceedsMaxDca) {
         continue;
-      float likelihoodRatio = logLikelihoodRatioSingleTrackDCA(DCA0, reso0, DCALengthParameter) + logLikelihoodRatioSingleTrackDCA(DCA1, reso1, DCALengthParameter) + logLikelihoodRatioSingleTrackDCA(DCA2, reso2, DCALengthParameter);
+      }
+      dcaResolution = {reso0, reso1, reso2};
+
+      float likelihoodRatio = 0.0f;
+      for (size_t i = 0; i < dca.size(); ++i) {
+        likelihoodRatio += logLikelihoodRatioSingleTrackDCA(dca[i], dcaResolution[i], lengthDCAParameter);
+      }
+
       registry.get<TH2>(HIST("hPtlogLikelihood"))->Fill(candidateLc.pt(), likelihoodRatio);
       if (likelihoodRatio < minLikelihoodRatioLc)
         continue;
@@ -253,24 +288,31 @@ struct HfTaskLb {
     } // Lambda_c candidates loop for cross checks
 
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) { // This should never be true as the loop is over Lb candidates
-        continue;
-      }
+
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
         continue;
       }
       registry.get<TH1>(HIST("hZVertex"))->Fill(collision.posZ());
 
       auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>();
-      float d0resolution0 = candLc.errorImpactParameter0();
-      float d0resolution1 = candLc.errorImpactParameter1();
-      float d0resolution2 = candLc.errorImpactParameter2();
-      float DCA0 = candLc.impactParameter0();
-      float DCA1 = candLc.impactParameter1();
-      float DCA2 = candLc.impactParameter2();
-      float likelihoodRatio = logLikelihoodRatioSingleTrackDCA(DCA0, d0resolution0, DCALengthParameter) + logLikelihoodRatioSingleTrackDCA(DCA1, d0resolution1, DCALengthParameter) + logLikelihoodRatioSingleTrackDCA(DCA2, d0resolution2, DCALengthParameter);
-      if (likelihoodRatio < minLikelihoodRatio)
+      dca = {
+        candLc.impactParameter0(),
+        candLc.impactParameter1(),
+        candLc.impactParameter2()};
+
+      dcaResolution = {
+        candLc.errorImpactParameter0(),
+        candLc.errorImpactParameter1(),
+        candLc.errorImpactParameter2()};
+
+      float likelihoodRatio = 0.0f;
+      for (size_t i = 0; i < dca.size(); ++i) {
+        likelihoodRatio += logLikelihoodRatioSingleTrackDCA(dca[i], dcaResolution[i], lengthDCAParameter);
+      }
+
+      if (likelihoodRatio < minLikelihoodRatio) {
         continue; // Larger likelihood means more likely to be signal
+      }
       float lbMass = hfHelper.invMassLbToLcPi(candidate);
       registry.get<TH2>(HIST("hPtinvMassLb"))->Fill(candidate.pt(), lbMass);
 
@@ -302,15 +344,14 @@ struct HfTaskLb {
   {
     // MC rec
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << hf_cand_lb::DecayType::LbToLcPi)) {
-        continue;
-      }
+
       if (yCandRecoMax >= 0. && std::abs(hfHelper.yLb(candidate)) > yCandRecoMax) {
         continue;
       }
-      auto candLc = candidate.prong0_as<aod::HfCand3Prong>();
+      auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec>>();
+      auto flagMcMatchRecLb = std::abs(candidate.flagMcMatchRec());
 
-      if (std::abs(candidate.flagMcMatchRec()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
+      if (flagMcMatchRecLb == DecayChannelMain::LbToLcPi) {
 
         auto indexMother = RecoDecay::getMother(mcParticles, candidate.prong1_as<TracksWExtMc>().mcParticle_as<soa::Join<aod::McParticles, aod::HfCandLbMcGen>>(), o2::constants::physics::Pdg::kLambdaB0, true);
         auto particleMother = mcParticles.rawIteratorAt(indexMother);
@@ -357,7 +398,7 @@ struct HfTaskLb {
 
     // MC gen. level
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << hf_cand_lb::DecayType::LbToLcPi) {
+      if (std::abs(particle.flagMcMatchGen()) == DecayChannelMain::LbToLcPi) {
 
         auto yParticle = RecoDecay::y(particle.pVector(), o2::constants::physics::MassLambdaB0);
         if (yCandGenMax >= 0. && std::abs(yParticle) > yCandGenMax) {

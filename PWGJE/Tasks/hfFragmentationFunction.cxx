@@ -1,4 +1,4 @@
-// Copyright 2019-2024 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -9,42 +9,43 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file hfFragmentationFunction.cxx
 /// \brief charm hadron hadronization task
 /// \author Christian Reckziegel <christian.reckziegel@cern.ch>, Federal University of ABC
 /// \since 15.03.2024
 ///
 /// The task store data relevant to the calculation of hadronization observables radial
 /// profile and/or jet momentum fraction for charmed hadrons
-#include <vector>
-#include <string>
+
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+//
+#include "PWGHF/Core/DecayChannels.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 #include "TVector3.h"
+#include <TH1.h>
 
-#include "fastjet/PseudoJet.hh"
-#include "fastjet/ClusterSequenceArea.hh"
+#include <Rtypes.h>
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
-#include "PWGJE/DataModel/Jet.h"
-#include "PWGJE/DataModel/JetSubstructure.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetHFUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -68,34 +69,34 @@ namespace o2::aod
 {
 namespace jet_distance
 {
-DECLARE_SOA_COLUMN(JetHfDist, jethfdist, float);
-DECLARE_SOA_COLUMN(JetPt, jetpt, float);
-DECLARE_SOA_COLUMN(JetEta, jeteta, float);
-DECLARE_SOA_COLUMN(JetPhi, jetphi, float);
-DECLARE_SOA_COLUMN(JetNConst, jetnconst, int);
-DECLARE_SOA_COLUMN(HfPt, hfpt, float);
-DECLARE_SOA_COLUMN(HfEta, hfeta, float);
-DECLARE_SOA_COLUMN(HfPhi, hfphi, float);
-DECLARE_SOA_COLUMN(HfMass, hfmass, float);
-DECLARE_SOA_COLUMN(HfY, hfy, float);
+DECLARE_SOA_COLUMN(JetHfDist, jetHfDist, float);
+DECLARE_SOA_COLUMN(JetPt, jetPt, float);
+DECLARE_SOA_COLUMN(JetEta, jetEta, float);
+DECLARE_SOA_COLUMN(JetPhi, jetPhi, float);
+DECLARE_SOA_COLUMN(JetNConst, jetNConst, int);
+DECLARE_SOA_COLUMN(HfPt, hfPt, float);
+DECLARE_SOA_COLUMN(HfEta, hfEta, float);
+DECLARE_SOA_COLUMN(HfPhi, hfPhi, float);
+DECLARE_SOA_COLUMN(HfMass, hfMass, float);
+DECLARE_SOA_COLUMN(HfY, hfY, float);
 DECLARE_SOA_COLUMN(HfPrompt, hfPrompt, bool);
-DECLARE_SOA_COLUMN(HfMatch, hfmatch, bool);
-DECLARE_SOA_COLUMN(HfMlScore0, hfmlscore0, float);
-DECLARE_SOA_COLUMN(HfMlScore1, hfmlscore1, float);
-DECLARE_SOA_COLUMN(HfMlScore2, hfmlscore2, float);
-DECLARE_SOA_COLUMN(HfMatchedFrom, hfmatchedfrom, int);
-DECLARE_SOA_COLUMN(HfSelectedAs, hfselectedas, int);
-DECLARE_SOA_COLUMN(MCJetHfDist, mcjethfdist, float);
-DECLARE_SOA_COLUMN(MCJetPt, mcjetpt, float);
-DECLARE_SOA_COLUMN(MCJetEta, mcjeteta, float);
-DECLARE_SOA_COLUMN(MCJetPhi, mcjetphi, float);
-DECLARE_SOA_COLUMN(MCJetNConst, mcjetnconst, float);
-DECLARE_SOA_COLUMN(MCHfPt, mchfpt, float);
-DECLARE_SOA_COLUMN(MCHfEta, mchfeta, float);
-DECLARE_SOA_COLUMN(MCHfPhi, mchfphi, float);
-DECLARE_SOA_COLUMN(MCHfY, mchfy, float);
-DECLARE_SOA_COLUMN(MCHfPrompt, mchfPrompt, bool);
-DECLARE_SOA_COLUMN(MCHfMatch, mchfmatch, bool);
+DECLARE_SOA_COLUMN(HfMatch, hfMatch, bool);
+DECLARE_SOA_COLUMN(HfMlScore0, hfMlScore0, float);
+DECLARE_SOA_COLUMN(HfMlScore1, hfMlScore1, float);
+DECLARE_SOA_COLUMN(HfMlScore2, hfMlScore2, float);
+DECLARE_SOA_COLUMN(HfMatchedFrom, hfMatchedFrom, int);
+DECLARE_SOA_COLUMN(HfSelectedAs, hfSelectedAs, int);
+DECLARE_SOA_COLUMN(McJetHfDist, mcJetHfDist, float);
+DECLARE_SOA_COLUMN(McJetPt, mcJetPt, float);
+DECLARE_SOA_COLUMN(McJetEta, mcJetEta, float);
+DECLARE_SOA_COLUMN(McJetPhi, mcJetPhi, float);
+DECLARE_SOA_COLUMN(McJetNConst, mcJetNConst, float);
+DECLARE_SOA_COLUMN(McHfPt, mcHfPt, float);
+DECLARE_SOA_COLUMN(McHfEta, mcHfEta, float);
+DECLARE_SOA_COLUMN(McHfPhi, mcHfPhi, float);
+DECLARE_SOA_COLUMN(McHfY, mcHfY, float);
+DECLARE_SOA_COLUMN(McHfPrompt, mcHfPrompt, bool);
+DECLARE_SOA_COLUMN(McHfMatch, mcHfMatch, bool);
 } // namespace jet_distance
 DECLARE_SOA_TABLE(JetDistanceTable, "AOD", "JETDISTTABLE",
                   jet_distance::JetHfDist,
@@ -112,17 +113,17 @@ DECLARE_SOA_TABLE(JetDistanceTable, "AOD", "JETDISTTABLE",
                   jet_distance::HfMlScore1,
                   jet_distance::HfMlScore2);
 DECLARE_SOA_TABLE(MCPJetDistanceTable, "AOD", "MCPJETDISTTABLE",
-                  jet_distance::MCJetHfDist,
-                  jet_distance::MCJetPt,
-                  jet_distance::MCJetEta,
-                  jet_distance::MCJetPhi,
-                  jet_distance::MCJetNConst,
-                  jet_distance::MCHfPt,
-                  jet_distance::MCHfEta,
-                  jet_distance::MCHfPhi,
-                  jet_distance::MCHfY,
-                  jet_distance::MCHfPrompt,
-                  jet_distance::MCHfMatch);
+                  jet_distance::McJetHfDist,
+                  jet_distance::McJetPt,
+                  jet_distance::McJetEta,
+                  jet_distance::McJetPhi,
+                  jet_distance::McJetNConst,
+                  jet_distance::McHfPt,
+                  jet_distance::McHfEta,
+                  jet_distance::McHfPhi,
+                  jet_distance::McHfY,
+                  jet_distance::McHfPrompt,
+                  jet_distance::McHfMatch);
 DECLARE_SOA_TABLE(MCDJetDistanceTable, "AOD", "MCDJETDISTTABLE",
                   jet_distance::JetHfDist,
                   jet_distance::JetPt,
@@ -142,16 +143,16 @@ DECLARE_SOA_TABLE(MCDJetDistanceTable, "AOD", "MCDJETDISTTABLE",
                   jet_distance::HfMatchedFrom,
                   jet_distance::HfSelectedAs);
 DECLARE_SOA_TABLE(MatchJetDistanceTable, "AOD", "MATCHTABLE",
-                  jet_distance::MCJetHfDist,
-                  jet_distance::MCJetPt,
-                  jet_distance::MCJetEta,
-                  jet_distance::MCJetPhi,
-                  jet_distance::MCJetNConst,
-                  jet_distance::MCHfPt,
-                  jet_distance::MCHfEta,
-                  jet_distance::MCHfPhi,
-                  jet_distance::MCHfY,
-                  jet_distance::MCHfPrompt,
+                  jet_distance::McJetHfDist,
+                  jet_distance::McJetPt,
+                  jet_distance::McJetEta,
+                  jet_distance::McJetPhi,
+                  jet_distance::McJetNConst,
+                  jet_distance::McHfPt,
+                  jet_distance::McHfEta,
+                  jet_distance::McHfPhi,
+                  jet_distance::McHfY,
+                  jet_distance::McHfPrompt,
                   jet_distance::JetHfDist,
                   jet_distance::JetPt,
                   jet_distance::JetEta,
@@ -170,7 +171,7 @@ DECLARE_SOA_TABLE(MatchJetDistanceTable, "AOD", "MATCHTABLE",
                   jet_distance::HfSelectedAs);
 } // namespace o2::aod
 
-struct HfFragmentationFunctionTask {
+struct HfFragmentationFunction {
   // producing new table
   Produces<aod::JetDistanceTable> distJetTable;
   Produces<aod::MCPJetDistanceTable> mcpdistJetTable;
@@ -182,9 +183,9 @@ struct HfFragmentationFunctionTask {
   using JetMCPTable = soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>;
 
   // slices for accessing proper HF mcdjets collision associated to mccollisions
-  PresliceUnsorted<aod::JetCollisionsMCD> CollisionsPerMCCollision = aod::jmccollisionlb::mcCollisionId;
-  Preslice<JetMCDTable> D0MCDJetsPerCollision = aod::jet::collisionId;
-  Preslice<JetMCPTable> D0MCPJetsPerMCCollision = aod::jet::mcCollisionId;
+  PresliceUnsorted<aod::JetCollisionsMCD> collisionsPerMCCollisionPreslice = aod::jmccollisionlb::mcCollisionId;
+  Preslice<JetMCDTable> d0MCDJetsPerCollisionPreslice = aod::jet::collisionId;
+  Preslice<JetMCPTable> d0MCPJetsPerMCCollisionPreslice = aod::jet::mcCollisionId;
 
   // Histogram registry: an object to hold your histograms
   HistogramRegistry registry{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -192,12 +193,12 @@ struct HfFragmentationFunctionTask {
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
 
-  int eventSelection = -1;
+  std::vector<int> eventSelectionBits;
 
   void init(InitContext const&)
   {
     // initialise event selection:
-    eventSelection = jetderiveddatautilities::initialiseEventSelection(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
 
     // create histograms
     // collision system histograms
@@ -228,39 +229,40 @@ struct HfFragmentationFunctionTask {
   }
 
   void processDummy(aod::TracksIU const&) {}
-  PROCESS_SWITCH(HfFragmentationFunctionTask, processDummy, "Dummy process function turned on by default", true);
+  PROCESS_SWITCH(HfFragmentationFunction, processDummy, "Dummy process function turned on by default", true);
 
   void processDataChargedSubstructure(aod::JetCollision const& collision,
                                       soa::Join<aod::D0ChargedJets, aod::D0ChargedJetConstituents> const& jets,
-                                      aod::CandidatesD0Data const&)
+                                      aod::CandidatesD0Data const&,
+                                      aod::JetTracks const&)
   {
     // apply event selection and fill histograms for sanity check
     registry.fill(HIST("h_collision_counter"), 2.0);
-    if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !(abs(collision.posZ()) < vertexZCut)) {
+    if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
       return;
     }
     registry.fill(HIST("h_collision_counter"), 3.0);
 
-    for (auto& jet : jets) {
+    for (const auto& jet : jets) {
       // fill jet counter histogram
       registry.fill(HIST("h_jet_counter"), 0.5);
       // obtaining jet 3-vector
       TVector3 jetVector(jet.px(), jet.py(), jet.pz());
 
-      for (auto& d0Candidate : jet.candidates_as<aod::CandidatesD0Data>()) {
+      for (const auto& d0Candidate : jet.candidates_as<aod::CandidatesD0Data>()) {
 
         // obtaining jet 3-vector
         TVector3 d0Vector(d0Candidate.px(), d0Candidate.py(), d0Candidate.pz());
 
         // calculating fraction of the jet momentum carried by the D0 along the direction of the jet axis
-        double z_parallel = (jetVector * d0Vector) / (jetVector * jetVector);
+        double zParallel = (jetVector * d0Vector) / (jetVector * jetVector);
 
         // calculating angular distance in eta-phi plane
         double axisDistance = jetutilities::deltaR(jet, d0Candidate);
 
         // filling histograms
-        registry.fill(HIST("h_d0_jet_projection"), z_parallel);
-        registry.fill(HIST("h_d0_jet_distance_vs_projection"), axisDistance, z_parallel);
+        registry.fill(HIST("h_d0_jet_projection"), zParallel);
+        registry.fill(HIST("h_d0_jet_distance_vs_projection"), axisDistance, zParallel);
         registry.fill(HIST("h_d0_jet_distance"), axisDistance);
         registry.fill(HIST("h_d0_jet_pt"), jet.pt());
         registry.fill(HIST("h_d0_jet_eta"), jet.eta());
@@ -280,7 +282,7 @@ struct HfFragmentationFunctionTask {
     } // end of jets loop
 
   } // end of process function
-  PROCESS_SWITCH(HfFragmentationFunctionTask, processDataChargedSubstructure, "charged HF jet substructure", false);
+  PROCESS_SWITCH(HfFragmentationFunction, processDataChargedSubstructure, "charged HF jet substructure", false);
 
   void processMcEfficiency(aod::JetMcCollisions const& mccollisions,
                            aod::JetCollisionsMCD const& collisions,
@@ -295,23 +297,23 @@ struct HfFragmentationFunctionTask {
 
       registry.fill(HIST("h_collision_counter"), 0.0);
       // skip collisions outside of |z| < vertexZCut
-      if (abs(mccollision.posZ()) > vertexZCut) {
+      if (std::abs(mccollision.posZ()) > vertexZCut) {
         continue;
       }
       registry.fill(HIST("h_collision_counter"), 1.0);
 
       // reconstructed collisions associated to same mccollision
-      const auto collisionsPerMCCollision = collisions.sliceBy(CollisionsPerMCCollision, mccollision.globalIndex());
+      const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
       for (const auto& collision : collisionsPerMCCollision) {
 
         registry.fill(HIST("h_collision_counter"), 2.0);
-        if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !(abs(collision.posZ()) < vertexZCut)) {
+        if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
           continue;
         }
         registry.fill(HIST("h_collision_counter"), 3.0);
 
         // d0 detector level jets associated to the current same collision
-        const auto d0mcdJetsPerCollision = mcdjets.sliceBy(D0MCDJetsPerCollision, collision.globalIndex());
+        const auto d0mcdJetsPerCollision = mcdjets.sliceBy(d0MCDJetsPerCollisionPreslice, collision.globalIndex());
         for (const auto& mcdjet : d0mcdJetsPerCollision) {
 
           registry.fill(HIST("h_jet_counter"), 0.5);
@@ -325,7 +327,7 @@ struct HfFragmentationFunctionTask {
 
           // reflection information for storage: D0 = +1, D0bar = -1, neither = 0
           int matchedFrom = 0;
-          int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
+          int decayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
           int selectedAs = 0;
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
@@ -350,7 +352,7 @@ struct HfFragmentationFunctionTask {
       }
 
       // d0 particle level jets associated to same mccollision
-      const auto d0mcpJetsPerMCCollision = mcpjets.sliceBy(D0MCPJetsPerMCCollision, mccollision.globalIndex());
+      const auto d0mcpJetsPerMCCollision = mcpjets.sliceBy(d0MCPJetsPerMCCollisionPreslice, mccollision.globalIndex());
       for (const auto& mcpjet : d0mcpJetsPerMCCollision) {
 
         registry.fill(HIST("h_jet_counter"), 0.0);
@@ -370,7 +372,7 @@ struct HfFragmentationFunctionTask {
       }
     }
   }
-  PROCESS_SWITCH(HfFragmentationFunctionTask, processMcEfficiency, "non-matched and matched MC HF and jets", false);
+  PROCESS_SWITCH(HfFragmentationFunction, processMcEfficiency, "non-matched and matched MC HF and jets", false);
 
   void processMcChargedMatched(aod::JetMcCollisions const& mccollisions,
                                aod::JetCollisionsMCD const& collisions,
@@ -386,22 +388,22 @@ struct HfFragmentationFunctionTask {
       registry.fill(HIST("h_collision_counter"), 0.0);
 
       // skip collisions outside of |z| < vertexZCut
-      if (abs(mccollision.posZ()) > vertexZCut) {
+      if (std::abs(mccollision.posZ()) > vertexZCut) {
         continue;
       }
       registry.fill(HIST("h_collision_counter"), 1.0);
 
       // reconstructed collisions associated to same mccollision
-      const auto collisionsPerMCCollision = collisions.sliceBy(CollisionsPerMCCollision, mccollision.globalIndex());
+      const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mccollision.globalIndex());
       for (const auto& collision : collisionsPerMCCollision) {
 
         registry.fill(HIST("h_collision_counter"), 2.0);
-        if (!jetderiveddatautilities::selectCollision(collision, eventSelection) || !(abs(collision.posZ()) < vertexZCut)) {
+        if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) || !(std::abs(collision.posZ()) < vertexZCut)) {
           continue;
         }
         registry.fill(HIST("h_collision_counter"), 3.0);
         // d0 detector level jets associated to the current same collision
-        const auto d0mcdJetsPerCollision = mcdjets.sliceBy(D0MCDJetsPerCollision, collision.globalIndex());
+        const auto d0mcdJetsPerCollision = mcdjets.sliceBy(d0MCDJetsPerCollisionPreslice, collision.globalIndex());
         for (const auto& mcdjet : d0mcdJetsPerCollision) {
 
           registry.fill(HIST("h_jet_counter"), 0.5);
@@ -416,7 +418,7 @@ struct HfFragmentationFunctionTask {
 
           // reflection information for storage: D0 = +1, D0bar = -1, neither = 0
           int matchedFrom = 0;
-          int decayChannel = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
+          int decayChannel = o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
           int selectedAs = 0;
 
           if (mcdd0cand.flagMcMatchRec() == decayChannel) { // matched to D0 on truth level
@@ -432,7 +434,7 @@ struct HfFragmentationFunctionTask {
           }
 
           // loop through detector level matched to current particle level
-          for (auto& mcpjet : mcdjet.matchedJetCand_as<JetMCPTable>()) {
+          for (const auto& mcpjet : mcdjet.matchedJetCand_as<JetMCPTable>()) {
 
             registry.fill(HIST("h_jet_counter"), 2.5);
 
@@ -451,11 +453,11 @@ struct HfFragmentationFunctionTask {
       }
     }
   }
-  PROCESS_SWITCH(HfFragmentationFunctionTask, processMcChargedMatched, "matched MC HF and jets", false);
+  PROCESS_SWITCH(HfFragmentationFunction, processMcChargedMatched, "matched MC HF and jets", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfFragmentationFunctionTask>(cfgc, TaskName{"jet-charm-hadronization"})};
+    adaptAnalysisTask<HfFragmentationFunction>(cfgc)};
 }

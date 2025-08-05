@@ -14,16 +14,31 @@
 ///
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/Core/RecoDecay.h"
-
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/SelectorCuts.h"
+#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH3.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <numeric>
 
 using namespace o2;
 using namespace o2::aod;
@@ -127,11 +142,11 @@ struct HfTaskBsReduced {
 
   HfHelper hfHelper;
 
+  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
+
   Filter filterSelectCandidates = (aod::hf_sel_candidate_bs::isSelBsToDsPi >= selectionFlagBs);
 
   HistogramRegistry registry{"registry"};
-
-  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
 
   void init(InitContext&)
   {
@@ -262,6 +277,8 @@ struct HfTaskBsReduced {
           labels[hf_cand_bs::DecayTypeMc::BsToDsPiToK0starKPiToKKPiPi] = "B^{0}_{s} #rightarrow (D_{s} #rightarrow K^{0*}K #rightarrow KK#pi) #pi";
           labels[hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi] = "B^{0} #rightarrow (D_{s} #rightarrow #Phi#pi #rightarrow KK#pi) #pi";
           labels[hf_cand_bs::DecayTypeMc::B0ToDsPiToK0starKPiToKKPiPi] = "B^{0} #rightarrow (D_{s} #rightarrow K^{0*}K #rightarrow KK#pi) #pi";
+          labels[hf_cand_bs::DecayTypeMc::BsToDsKToPhiPiKToKKPiK] = "B^{0}_{s} #rightarrow (D_{s} #rightarrow #Phi#pi #rightarrow KK#pi) K";
+          labels[hf_cand_bs::DecayTypeMc::BsToDsKToK0starKKToKKPiK] = "B^{0}_{s} #rightarrow (D_{s} #rightarrow K^{0*}K #rightarrow KK#pi) K";
           labels[hf_cand_bs::DecayTypeMc::PartlyRecoDecay] = "Partly reconstructed decay channel";
           labels[hf_cand_bs::DecayTypeMc::OtherDecay] = "Other decays";
           static const AxisSpec axisDecayType = {kNBinsDecayTypeMc, 0.5, kNBinsDecayTypeMc + 0.5, ""};
@@ -451,7 +468,7 @@ struct HfTaskBsReduced {
       }
     }
     if (fillSparses) {
-      if constexpr (withDmesMl) {
+      if constexpr (doMc) {
         if (isSignal) {
           if constexpr (withDmesMl) {
             registry.fill(HIST("hMassPtCutVarsRecSig"), invMassBs, ptCandBs, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassDs, ptDs, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
@@ -474,7 +491,7 @@ struct HfTaskBsReduced {
       }
     }
     if (fillTree) {
-      float pseudoRndm = ptDs * 1000. - (int64_t)(ptDs * 1000);
+      float pseudoRndm = ptDs * 1000. - static_cast<int64_t>(ptDs * 1000);
       if (flagMcMatchRec != 0 || (((doMc && fillBackground) || !doMc) && (ptCandBs >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
         float prong0MlScoreBkg = -1.;
         float prong0MlScorePrompt = -1.;

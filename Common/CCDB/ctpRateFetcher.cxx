@@ -22,7 +22,7 @@
 
 namespace o2
 {
-double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName)
+double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName, bool fCrashOnNull)
 {
   setupRun(runNumber, ccdb, timeStamp);
   if (sourceName.find("ZNC") != std::string::npos) {
@@ -43,7 +43,7 @@ double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStam
       if (ret < 0.) {
         LOG(info) << "Trying different class";
         ret = fetchCTPratesClasses(ccdb, timeStamp, runNumber, "CMTVX-NONE");
-        if (ret < 0) {
+        if ((ret < 0) && fCrashOnNull) {
           LOG(fatal) << "None of the classes used for lumi found";
         }
       }
@@ -69,7 +69,7 @@ double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* /*ccdb*/
     LOG(warn) << "Trigger class " << className << " not found in CTPConfiguration";
     return -1.;
   }
-  auto rate{mScalers->getRateGivenT(timeStamp * 1.e-3, classIndex, inputType)};
+  auto rate{mScalers->getRateGivenT(timeStamp * 1.e-3, classIndex, inputType, 1)};
   return pileUpCorrection(rate.second);
 }
 
@@ -77,7 +77,7 @@ double ctpRateFetcher::fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* /*ccdb*/,
 {
   std::vector<ctp::CTPScalerRecordO2> recs = mScalers->getScalerRecordO2();
   if (recs[0].scalersInps.size() == 48) {
-    return pileUpCorrection(mScalers->getRateGivenT(timeStamp * 1.e-3, input, 7).second);
+    return pileUpCorrection(mScalers->getRateGivenT(timeStamp * 1.e-3, input, 7, 1).second);
   } else {
     LOG(error) << "Inputs not available";
     return -1.;

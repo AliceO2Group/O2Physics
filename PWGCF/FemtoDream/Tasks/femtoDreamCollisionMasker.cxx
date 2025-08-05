@@ -1,4 +1,4 @@
-// Copyright 2019-2023 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -16,6 +16,7 @@
 
 #include <cstdint>
 #include <vector>
+#include <string>
 #include <bitset>
 #include <algorithm>
 #include <random>
@@ -243,7 +244,7 @@ struct femoDreamCollisionMasker {
             NegChildPIDTPCBits.at(CollisionMasks::kPartTwo).push_back(option.defaultValue.get<femtodreamparticle::cutContainerType>());
           }
         }
-      } else if (device.name.find("femto-dream-triplet-task-track-track-track") != std::string::npos) {
+      } else if ((device.name.find("femto-dream-triplet-task-track-track-track") != std::string::npos) || (device.name.find("femto-dream-triplet-task-track-track-track-pb-pb") != std::string::npos)) {
         LOG(info) << "Matched workflow: " << device.name;
         TaskFinder = CollisionMasks::kTrackTrackTrack;
         for (auto const& option : device.options) {
@@ -263,6 +264,8 @@ struct femoDreamCollisionMasker {
             FilterTempFitVarMax.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
           } else if (option.name.compare(std::string("ConfMinDCAxy")) == 0) {
             FilterTempFitVarMin.at(CollisionMasks::kPartOne).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfDCACutPtDep")) == 0) {
+            TrackDCACutPtDep.push_back(option.defaultValue.get<bool>());
           }
         }
       } else if (device.name.find("femto-dream-triplet-task-track-track-v0") != std::string::npos) {
@@ -307,6 +310,8 @@ struct femoDreamCollisionMasker {
             FilterPtMin.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<float>());
           } else if (option.name.compare(std::string("Conf_maxPt_V0")) == 0) {
             FilterPtMax.at(CollisionMasks::kPartThree).push_back(option.defaultValue.get<float>());
+          } else if (option.name.compare(std::string("ConfDCACutPtDep")) == 0) {
+            TrackDCACutPtDep.push_back(option.defaultValue.get<bool>());
           }
         }
       }
@@ -332,16 +337,18 @@ struct femoDreamCollisionMasker {
       // if they are not passed, skip the particle
       if (track.pt() < FilterPtMin.at(P).at(index) || track.pt() > FilterPtMax.at(P).at(index) ||
           track.eta() < FilterEtaMin.at(P).at(index) || track.eta() > FilterEtaMax.at(P).at(index)) {
-        // check if we apply pt dependend dca cut
-        if (TrackDCACutPtDep.at(index)) {
-          if (std::fabs(track.tempFitVar()) > 0.0105f * (0.035f / std::pow(track.pt(), 1.1f))) {
-            continue;
-          }
-        } else {
-          // or cut on the DCA directly
-          if (track.tempFitVar() < FilterTempFitVarMin.at(P).at(index) || track.tempFitVar() > FilterTempFitVarMax.at(P).at(index)) {
-            continue;
-          }
+        continue;
+      }
+      // check if we apply pt dependend dca cut
+      // if they do not pass this cut, skip particle as well
+      if (TrackDCACutPtDep.at(index)) {
+        if (std::fabs(track.tempFitVar()) > 0.0105f + (0.035f / std::pow(track.pt(), 1.1f))) {
+          continue;
+        }
+      } else {
+        // or cut on the DCA directly
+        if (track.tempFitVar() < FilterTempFitVarMin.at(P).at(index) || track.tempFitVar() > FilterTempFitVarMax.at(P).at(index)) {
+          continue;
         }
       }
       // set the bit at the index of the selection equal to one if the track passes all selections
@@ -385,12 +392,24 @@ struct femoDreamCollisionMasker {
         if (track.partType() != static_cast<uint8_t>(femtodreamparticle::kTrack)) {
           continue;
         }
+
         // check filter cuts
-        if (track.pt() < FilterPtMin.at(P).at(index) || track.pt() > FilterPtMax.at(P).at(index) ||
-            track.tempFitVar() > FilterTempFitVarMax.at(P).at(index) || track.tempFitVar() < FilterTempFitVarMin.at(P).at(index)) {
+        if (track.pt() < FilterPtMin.at(P).at(index) || track.pt() > FilterPtMax.at(P).at(index)) {
           // if they are not passed, skip the particle
           continue;
         }
+
+        if (TrackDCACutPtDep.at(index)) {
+          if (std::fabs(track.tempFitVar()) > 0.0105f + (0.035f / std::pow(track.pt(), 1.1f))) {
+            continue;
+          }
+        } else {
+          // or cut on the DCA directly
+          if (track.tempFitVar() < FilterTempFitVarMin.at(P).at(index) || track.tempFitVar() > FilterTempFitVarMax.at(P).at(index)) {
+            continue;
+          }
+        }
+
         // set the bit at the index of the selection equal to one if the track passes all selections
         // check track cuts
         if ((track.cut() & TrackCutBits.at(P).at(index)) == TrackCutBits.at(P).at(index)) {

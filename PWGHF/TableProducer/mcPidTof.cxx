@@ -16,31 +16,49 @@
 ///         It works only for MC and adds the possibility to apply postcalibrations for MC.
 ///
 
-#include <map>
-#include <utility>
-#include <vector>
-#include <string>
-#include <unordered_map>
-
-#include <TPDGCode.h>
-
-// O2 includes
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "TOFBase/EventTimeMaker.h"
-
-// O2Physics includes
-#include "TableHelper.h"
-#include "MetadataHelper.h"
-#include "CollisionTypeHelper.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/CollisionTypeHelper.h"
+#include "Common/Core/MetadataHelper.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/TableProducer/PID/pidTOFBase.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <DataFormatsTOF/ParameterContainers.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <PID/PIDTOF.h>
+#include <ReconstructionDataFormats/PID.h>
+#include <TOFBase/EventTimeMaker.h>
+
+#include <TGraph.h>
+#include <TH2.h>
+#include <TPDGCode.h>
+#include <TString.h>
+
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -48,7 +66,7 @@ using namespace o2::pid;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-MetadataHelper metadataInfo;
+o2::common::core::MetadataHelper metadataInfo;
 
 // Input data types
 using Trks = o2::soa::Join<aod::TracksIU, aod::TracksExtra>;
@@ -82,14 +100,14 @@ struct TOFCalibConfig {
   }
 
   template <typename VType>
-  void getCfg(o2::framework::InitContext& initContext, const std::string name, VType& v, const std::string task)
+  void getCfg(o2::framework::InitContext& initContext, const std::string& name, VType& v, const std::string& task)
   {
     if (!getTaskOptionValue(initContext, task, name, v, false)) {
       LOG(fatal) << "Could not get " << name << " from " << task << " task";
     }
   }
 
-  void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string task = "tof-signal")
+  void inheritFromBaseTask(o2::framework::InitContext& initContext, const std::string& task = "tof-signal")
   {
     mInitMode = 2;
     getCfg(initContext, "ccdb-url", mUrl, task);
@@ -297,7 +315,7 @@ struct TOFCalibConfig {
   // Configurable options
   std::string mUrl;
   std::string mPathGrpLhcIf;
-  int64_t mTimestamp;
+  int64_t mTimestamp{0};
   std::string mTimeShiftCCDBPathPos;
   std::string mTimeShiftCCDBPathNeg;
   std::string mTimeShiftCCDBPathPosMC;
@@ -306,10 +324,10 @@ struct TOFCalibConfig {
   std::string mParametrizationPath;
   std::string mReconstructionPass;
   std::string mReconstructionPassDefault;
-  bool mFatalOnPassNotAvailable;
-  bool mEnableTimeDependentResponse;
-  int mCollisionSystem;
-  bool mAutoSetProcessFunctions;
+  bool mFatalOnPassNotAvailable{false};
+  bool mEnableTimeDependentResponse{false};
+  int mCollisionSystem{-1};
+  bool mAutoSetProcessFunctions{false};
 };
 
 // Part 1 TOF signal definition
@@ -395,7 +413,7 @@ struct tofSignal {
     if (enableTablepidTOFFlags) {
       tableFlags.reserve(tracks.size());
     }
-    for (auto& trk : tracks) {
+    for (auto const& trk : tracks) {
       const float& sig = o2::pid::tof::TOFSignal<Trks::iterator>::GetTOFSignal(trk);
       if (enableQaHistograms) {
         histos.fill(HIST("tofSignal"), sig);
@@ -514,7 +532,7 @@ struct tofEventTime {
   Preslice<TrksWtof> perCollision = aod::track::collisionId;
   template <o2::track::PID::ID pid>
   using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksWtof::iterator, pid>;
-  void process(TrksWtof& tracks,
+  void process(TrksWtof const& tracks,
                aod::FT0s const&,
                EvTimeCollisionsFT0 const&,
                aod::BCsWithTimestamps const& bcs)
@@ -593,7 +611,7 @@ struct tofEventTime {
           if constexpr (removeTOFEvTimeBias) {
             evTimeMakerTOF.removeBias<TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
           }
-          if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || abs(t0TOF[0]) < maxEvTimeTOF)) {
+          if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || std::abs(t0TOF[0]) < maxEvTimeTOF)) {
             flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
 
             weight = 1.f / (t0TOF[1] * t0TOF[1]);
@@ -621,7 +639,7 @@ struct tofEventTime {
           } else {
             tableFlags(flags);
           }
-          tableEvTime(eventTime / sumOfWeights, sqrt(1. / sumOfWeights));
+          tableEvTime(eventTime / sumOfWeights, std::sqrt(1. / sumOfWeights));
           if (enableTableEvTimeTOFOnly) {
             tableEvTimeTOFOnly((uint8_t)filterForTOFEventTime(trk), t0TOF[0], t0TOF[1], evTimeMakerTOF.mEventTimeMultiplicity);
           }
@@ -657,7 +675,7 @@ struct tofEventTime {
             evTimeMakerTOF.removeBias<TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
           }
           uint8_t flags = 0;
-          if (erret < errDiamond && (maxEvTimeTOF <= 0.f || abs(et) < maxEvTimeTOF)) {
+          if (erret < errDiamond && (maxEvTimeTOF <= 0.f || std::abs(et) < maxEvTimeTOF)) {
             flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
           } else {
             et = 0.f;
@@ -737,6 +755,10 @@ struct mcPidTof {
     Configurable<std::string> ccdbPath{"ccdbPath", "Users/f/fgrosa/RecalibmcPidTof/", "path for MC recalibration objects in CCDB"};
   } mcRecalib;
 
+  // list of productions for which the postcalibrations must be turned off (FT0 digitisation fixed)
+  const std::vector<std::string> prodNoPostCalib = {"LHC24h1c"};
+  bool enableMcRecalib{false};
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Running variables
@@ -793,6 +815,8 @@ struct mcPidTof {
       }
       hnSigmaFull[iSpecie] = histos.add<TH2>(Form("nSigmaFull/%s", particleNames[iSpecie].c_str()), Form("N_{#sigma}^{TOF}(%s)", particleNames[iSpecie].c_str()), kTH2F, {pAxis, nSigmaAxis});
     }
+
+    enableMcRecalib = mcRecalib.enable;
   }
 
   // Reserves an empty table for the given particle ID with size of the given track table
@@ -870,6 +894,10 @@ struct mcPidTof {
     std::map<std::string, std::string> metadata;
     if (metadataInfo.isFullyDefined()) {
       metadata["RecoPassName"] = metadataInfo.get("AnchorPassName");
+      if (std::find(prodNoPostCalib.begin(), prodNoPostCalib.end(), metadataInfo.get("LPMProductionTag")) != prodNoPostCalib.end()) {
+        enableMcRecalib = false;
+        LOGP(warn, "Nsigma postcalibrations turned off for {} (new MC productions have FT0 digitisation fixed)", metadataInfo.get("LPMProductionTag"));
+      }
     } else {
       LOGP(error, "Impossible to read metadata! Using default calibrations (2022 apass7)");
       metadata["RecoPassName"] = "";
@@ -956,7 +984,7 @@ struct mcPidTof {
         continue;
       }
 
-      if (mcRecalib.enable) {
+      if (enableMcRecalib) {
         auto runNumber = trk.collision().bc_as<aod::BCsWithTimestamps>().runNumber();
         if (runNumber != currentRun) {
           // update postcalibration files
@@ -970,7 +998,7 @@ struct mcPidTof {
         switch (pidId) {
           case idxPi: {
             nSigma = responsePi.GetSeparation(mRespParamsV3, trk);
-            if (mcRecalib.enable && trk.has_mcParticle()) {
+            if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == kPiPlus) { // we rescale only true signal
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
               }
@@ -980,7 +1008,7 @@ struct mcPidTof {
           }
           case idxKa: {
             nSigma = responseKa.GetSeparation(mRespParamsV3, trk);
-            if (mcRecalib.enable && trk.has_mcParticle()) {
+            if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == kKPlus) { // we rescale only true signal
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
               }
@@ -990,7 +1018,7 @@ struct mcPidTof {
           }
           case idxPr: {
             nSigma = responsePr.GetSeparation(mRespParamsV3, trk);
-            if (mcRecalib.enable && trk.has_mcParticle()) {
+            if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == kProton) { // we rescale only true signal
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
               }
@@ -1012,7 +1040,7 @@ struct mcPidTof {
           case idxPi: {
             resolution = responsePi.GetExpectedSigma(mRespParamsV3, trk);
             nSigma = responsePi.GetSeparation(mRespParamsV3, trk);
-            if (mcRecalib.enable && trk.has_mcParticle()) {
+            if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == kPiPlus) { // we rescale only true signal
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
               }
@@ -1023,7 +1051,7 @@ struct mcPidTof {
           case idxKa: {
             resolution = responseKa.GetExpectedSigma(mRespParamsV3, trk);
             nSigma = responseKa.GetSeparation(mRespParamsV3, trk, resolution);
-            if (mcRecalib.enable && trk.has_mcParticle()) {
+            if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == kKPlus) { // we rescale only true signal
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
               }
@@ -1034,7 +1062,7 @@ struct mcPidTof {
           case idxPr: {
             resolution = responsePr.GetExpectedSigma(mRespParamsV3, trk);
             nSigma = responsePr.GetSeparation(mRespParamsV3, trk, resolution);
-            if (mcRecalib.enable && trk.has_mcParticle()) {
+            if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == kProton) { // we rescale only true signal
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
               }

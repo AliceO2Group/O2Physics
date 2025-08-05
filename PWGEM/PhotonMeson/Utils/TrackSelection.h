@@ -43,7 +43,7 @@ inline bool isITSTPCTrack(TTrack const& track)
 template <typename TTrack>
 inline bool isTPCTRDTrack(TTrack const& track)
 {
-  return !track.hasITS() && track.hasTPC() && track.hasTRD();
+  return !track.hasITS() && track.hasTPC() && track.hasTRD() && !track.hasTOF();
 }
 
 /**
@@ -56,7 +56,7 @@ inline bool isTPCTRDTrack(TTrack const& track)
 template <typename TTrack>
 inline bool isITSTPCTRDTrack(TTrack const& track)
 {
-  return track.hasITS() && track.hasTPC() && track.hasTRD();
+  return track.hasITS() && track.hasTPC() && track.hasTRD() && !track.hasTOF();
 }
 
 /**
@@ -215,7 +215,7 @@ inline bool isTPConly_ITSonly(TTrack const& track0, TTrack const& track1)
 template <PDG_t motherType, typename T>
 inline bool checkMCParticles(T const& mc1, T const& mc2)
 {
-  if (abs(mc1.pdgCode()) != kElectron || abs(mc2.pdgCode()) != kElectron) {
+  if (std::abs(mc1.pdgCode()) != kElectron || std::abs(mc2.pdgCode()) != kElectron) {
     return false;
   }
   if (!mc1.has_mothers() || !mc2.has_mothers()) {

@@ -17,20 +17,35 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Grazia Luparello  <grazia.luparello@cern.ch>, INFN Trieste
 
-#include <string>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelectorPID.h"
-
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/HfMlResponseLcToPKPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
+#include "Common/Core/TrackSelectorPID.h"
+#include "Common/DataModel/PIDResponseCombined.h"
+
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH2.h>
+
+#include <array>
+#include <cstdint>
+#include <numeric>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -69,18 +84,21 @@ struct HfCandidateSelectorLc {
   Configurable<float> itsChi2PerClusterMax{"itsChi2PerClusterMax", 1e10f, "max its fit chi2 per ITS cluster"};
   // DCA track cuts
   Configurable<std::vector<double>> binsPtTrack{"binsPtTrack", std::vector<double>{hf_cuts_single_track::vecBinsPtTrack}, "track pT bin limits for DCA XY/Z pT-dependent cut"};
-  Configurable<LabeledArray<double>> cutsSingleTrack{"cutsSingleTrack", {hf_cuts_single_track::cutsTrack[0], hf_cuts_single_track::nBinsPtTrack, hf_cuts_single_track::nCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections"};
+  Configurable<LabeledArray<double>> cutsSingleTrack{"cutsSingleTrack", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections"};
   // topological cuts
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{hf_cuts_lc_to_p_k_pi::vecBinsPt}, "pT bin limits"};
-  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::cuts[0], hf_cuts_lc_to_p_k_pi::nBinsPt, hf_cuts_lc_to_p_k_pi::nCutVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> cuts{"cuts", {hf_cuts_lc_to_p_k_pi::Cuts[0], hf_cuts_lc_to_p_k_pi::NBinsPt, hf_cuts_lc_to_p_k_pi::NCutVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutVar}, "Lc candidate selection per pT bin"};
+  Configurable<LabeledArray<double>> kfCuts{"kfCuts", {hf_cuts_lc_to_p_k_pi::CutsKf[0], hf_cuts_lc_to_p_k_pi::NBinsPt, hf_cuts_lc_to_p_k_pi::NCutKfVars, hf_cuts_lc_to_p_k_pi::labelsPt, hf_cuts_lc_to_p_k_pi::labelsCutKfVar}, "Lc candidate selection per pT bin with KF-associated variables"};
+  Configurable<bool> applyNonKfCuts{"applyNonKfCuts", true, "Whether to apply non-KF cuts when running in KF mode. In DCAFitter mode this field is not effective"};
+  Configurable<bool> applyKfCuts{"applyKfCuts", true, "Whether to apply KF cuts when running in KF mode. In DCAFitter mode this field is not effective"};
   // QA switch
   Configurable<bool> activateQA{"activateQA", false, "Flag to enable QA histogram"};
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
   Configurable<std::vector<double>> binsPtMl{"binsPtMl", std::vector<double>{hf_cuts_ml::vecBinsPt}, "pT bin limits for ML application"};
   Configurable<std::vector<int>> cutDirMl{"cutDirMl", std::vector<int>{hf_cuts_ml::vecCutDir}, "Whether to reject score values greater or smaller than the threshold"};
-  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::cuts[0], hf_cuts_ml::nBinsPt, hf_cuts_ml::nCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
-  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::nCutScores), "Number of classes in ML model"};
+  Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
+  Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -90,7 +108,8 @@ struct HfCandidateSelectorLc {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   HfHelper hfHelper;
-  o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponse;
+  o2::analysis::HfMlResponseLcToPKPi<float, aod::hf_cand::VertexerType::DCAFitter> hfMlResponseDCA;
+  o2::analysis::HfMlResponseLcToPKPi<float, aod::hf_cand::VertexerType::KfParticle> hfMlResponseKF;
   std::vector<float> outputMlLcToPKPi = {};
   std::vector<float> outputMlLcToPiKP = {};
   o2::ccdb::CcdbApi ccdbApi;
@@ -108,7 +127,7 @@ struct HfCandidateSelectorLc {
 
   void init(InitContext const&)
   {
-    std::array<bool, 2> processes = {doprocessNoBayesPid, doprocessBayesPid};
+    std::array<bool, 4> processes = {doprocessNoBayesPidWithDCAFitterN, doprocessBayesPidWithDCAFitterN, doprocessNoBayesPidWithKFParticle, doprocessBayesPidWithKFParticle};
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
@@ -139,15 +158,28 @@ struct HfCandidateSelectorLc {
     }
 
     if (applyMl) {
-      hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
-      if (loadModelsFromCCDB) {
-        ccdbApi.init(ccdbUrl);
-        hfMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
-      } else {
-        hfMlResponse.setModelPathsLocal(onnxFileNames);
+      if (doprocessNoBayesPidWithDCAFitterN || doprocessBayesPidWithDCAFitterN) {
+        hfMlResponseDCA.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        if (loadModelsFromCCDB) {
+          ccdbApi.init(ccdbUrl);
+          hfMlResponseDCA.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        } else {
+          hfMlResponseDCA.setModelPathsLocal(onnxFileNames);
+        }
+        hfMlResponseDCA.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseDCA.init();
       }
-      hfMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
-      hfMlResponse.init();
+      if (doprocessNoBayesPidWithKFParticle || doprocessBayesPidWithKFParticle) {
+        hfMlResponseKF.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
+        if (loadModelsFromCCDB) {
+          ccdbApi.init(ccdbUrl);
+          hfMlResponseKF.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        } else {
+          hfMlResponseKF.setModelPathsLocal(onnxFileNames);
+        }
+        hfMlResponseKF.cacheInputFeaturesIndices(namesInputFeatures);
+        hfMlResponseKF.init();
+      }
     }
 
     massK0Star892 = o2::constants::physics::MassK0Star892;
@@ -175,7 +207,7 @@ struct HfCandidateSelectorLc {
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
-  template <typename T>
+  template <aod::hf_cand::VertexerType reconstructionType, typename T>
   bool selectionTopol(const T& candidate)
   {
     auto candpT = candidate.pt();
@@ -190,33 +222,54 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
-    // cosine of pointing angle
-    if (candidate.cpa() <= cuts->get(pTBin, "cos pointing angle")) {
-      return false;
+    if (reconstructionType == aod::hf_cand::VertexerType::DCAFitter || (reconstructionType == aod::hf_cand::VertexerType::KfParticle && applyNonKfCuts)) {
+      // cosine of pointing angle
+      if (candidate.cpa() <= cuts->get(pTBin, "cos pointing angle")) {
+        return false;
+      }
+
+      // candidate chi2PCA
+      if (candidate.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
+        return false;
+      }
+
+      if (candidate.decayLength() <= cuts->get(pTBin, "decay length")) {
+        return false;
+      }
+
+      // candidate decay length XY
+      if (candidate.decayLengthXY() <= cuts->get(pTBin, "decLengthXY")) {
+        return false;
+      }
+
+      // candidate normalized decay length XY
+      if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "normDecLXY")) {
+        return false;
+      }
+
+      // candidate impact parameter XY
+      if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impParXY")) {
+        return false;
+      }
     }
 
-    // candidate chi2PCA
-    if (candidate.chi2PCA() > cuts->get(pTBin, "Chi2PCA")) {
-      return false;
-    }
+    if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      if (applyKfCuts) {
+        // candidate chi2geo of the triplet of prongs
+        if (candidate.kfChi2Geo() > kfCuts->get(pTBin, "kfChi2Geo")) {
+          return false;
+        }
 
-    if (candidate.decayLength() <= cuts->get(pTBin, "decay length")) {
-      return false;
-    }
+        // candidate's decay point separation from the PV in terms of its error
+        if (candidate.kfDecayLength() / candidate.kfDecayLengthError() < kfCuts->get(pTBin, "kfLdL")) {
+          return false;
+        }
 
-    // candidate decay length XY
-    if (candidate.decayLengthXY() <= cuts->get(pTBin, "decLengthXY")) {
-      return false;
-    }
-
-    // candidate normalized decay length XY
-    if (candidate.decayLengthXYNormalised() < cuts->get(pTBin, "normDecLXY")) {
-      return false;
-    }
-
-    // candidate impact parameter XY
-    if (std::abs(candidate.impactParameterXY()) > cuts->get(pTBin, "impParXY")) {
-      return false;
+        // candidate's chi2 to the PV
+        if (candidate.kfChi2Topo() > kfCuts->get(pTBin, "kfChi2Topo")) {
+          return false;
+        }
+      }
     }
 
     if (!isSelectedCandidateProngDca(candidate)) {
@@ -232,7 +285,7 @@ struct HfCandidateSelectorLc {
   /// \param trackPion is the track with the pion hypothesis
   /// \param trackKaon is the track with the kaon hypothesis
   /// \return true if candidate passes all cuts for the given Conjugate
-  template <typename T1, typename T2>
+  template <aod::hf_cand::VertexerType reconstructionType, typename T1, typename T2>
   bool selectionTopolConjugate(const T1& candidate, const T2& trackProton, const T2& trackKaon, const T2& trackPion)
   {
 
@@ -242,35 +295,114 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
-    // cut on daughter pT
-    if (trackProton.pt() < cuts->get(pTBin, "pT p") || trackKaon.pt() < cuts->get(pTBin, "pT K") || trackPion.pt() < cuts->get(pTBin, "pT Pi")) {
-      return false;
-    }
+    if (reconstructionType == aod::hf_cand::VertexerType::DCAFitter || (reconstructionType == aod::hf_cand::VertexerType::KfParticle && applyNonKfCuts)) {
 
-    // cut on Lc->pKpi, piKp mass values
-    if (trackProton.globalIndex() == candidate.prong0Id()) {
-      if (std::abs(hfHelper.invMassLcToPKPi(candidate) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
+      // cut on daughter pT
+      if (trackProton.pt() < cuts->get(pTBin, "pT p") || trackKaon.pt() < cuts->get(pTBin, "pT K") || trackPion.pt() < cuts->get(pTBin, "pT Pi")) {
         return false;
       }
-    } else {
-      if (std::abs(hfHelper.invMassLcToPiKP(candidate) - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
+
+      float massLc{0.f}, massKPi{0.f};
+      if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
+        if (trackProton.globalIndex() == candidate.prong0Id()) {
+          massLc = hfHelper.invMassLcToPKPi(candidate);
+          massKPi = hfHelper.invMassKPiPairLcToPKPi(candidate);
+        } else {
+          massLc = hfHelper.invMassLcToPiKP(candidate);
+          massKPi = hfHelper.invMassKPiPairLcToPiKP(candidate);
+        }
+      } else if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+        if (trackProton.globalIndex() == candidate.prong0Id()) {
+          massLc = candidate.kfMassPKPi();
+          massKPi = candidate.kfMassKPi();
+        } else {
+          massLc = candidate.kfMassPiKP();
+          massKPi = candidate.kfMassPiK();
+        }
+      }
+
+      // cut on Lc->pKpi, piKp mass values
+      if (std::abs(massLc - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "m")) {
+        return false;
+      }
+
+      /// cut on the Kpi pair invariant mass, to study Lc->pK*(->Kpi)
+      const double cutMassKPi = cuts->get(pTBin, "mass (Kpi)");
+      if (cutMassKPi > 0 && std::abs(massKPi - massK0Star892) > cutMassKPi) {
         return false;
       }
     }
 
-    /// cut on the Kpi pair invariant mass, to study Lc->pK*(->Kpi)
-    const double cutMassKPi = cuts->get(pTBin, "mass (Kpi)");
-    if (cutMassKPi > 0) {
-      if (trackProton.globalIndex() == candidate.prong0Id()) {
-        // inspecting the pKpi hypothesis
-        // K: prong1, pi: prong 2
-        if (std::abs(hfHelper.invMassKPiPairLcToPKPi(candidate) - massK0Star892) > cutMassKPi) {
+    if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      if (applyKfCuts) {
+        const float chi2PrimProng0 = candidate.kfChi2PrimProng0();
+        const float chi2PrimProng1 = candidate.kfChi2PrimProng1();
+        const float chi2PrimProng2 = candidate.kfChi2PrimProng2();
+
+        const float chi2GeoProng1Prong2 = candidate.kfChi2GeoProng1Prong2();
+        const float chi2GeoProng0Prong2 = candidate.kfChi2GeoProng0Prong2();
+        const float chi2GeoProng0Prong1 = candidate.kfChi2GeoProng0Prong1();
+
+        const float dcaProng1Prong2 = candidate.kfDcaProng1Prong2();
+        const float dcaProng0Prong2 = candidate.kfDcaProng0Prong2();
+        const float dcaProng0Prong1 = candidate.kfDcaProng0Prong1();
+
+        const double cutChi2PrimPr = kfCuts->get(pTBin, "kfChi2PrimPr");
+        const double cutChi2PrimKa = kfCuts->get(pTBin, "kfChi2PrimKa");
+        const double cutChi2PrimPi = kfCuts->get(pTBin, "kfChi2PrimPi");
+
+        const double cutChi2GeoKaPi = kfCuts->get(pTBin, "kfChi2GeoKaPi");
+        const double cutChi2GeoPrPi = kfCuts->get(pTBin, "kfChi2GeoPrPi");
+        const double cutChi2GeoPrKa = kfCuts->get(pTBin, "kfChi2GeoPrKa");
+
+        const double cutDcaKaPi = kfCuts->get(pTBin, "kfDcaKaPi");
+        const double cutDcaPrPi = kfCuts->get(pTBin, "kfDcaPrPi");
+        const double cutDcaPrKa = kfCuts->get(pTBin, "kfDcaPrKa");
+
+        // kaon's chi2 to the PV
+        if (chi2PrimProng1 < cutChi2PrimKa) {
           return false;
         }
-      } else {
-        // inspecting the piKp hypothesis
-        // K: prong1, pi: prong 0
-        if (std::abs(hfHelper.invMassKPiPairLcToPiKP(candidate) - massK0Star892) > cutMassKPi) {
+
+        // chi2geo between proton and pion
+        if (chi2GeoProng0Prong2 > cutChi2GeoPrPi) {
+          return false;
+        }
+
+        // dca between proton and pion
+        if (dcaProng0Prong2 > cutDcaPrPi) {
+          return false;
+        }
+
+        const bool isPKPi = trackProton.globalIndex() == candidate.prong0Id();
+
+        // 0-th prong chi2 to the PV
+        if (chi2PrimProng0 < (isPKPi ? cutChi2PrimPr : cutChi2PrimPi)) {
+          return false;
+        }
+
+        // 2-nd prong chi2 to the PV
+        if (chi2PrimProng2 < (isPKPi ? cutChi2PrimPi : cutChi2PrimPr)) {
+          return false;
+        }
+
+        // chi2geo between 1-st and 2-nd prongs
+        if (chi2GeoProng1Prong2 > (isPKPi ? cutChi2GeoKaPi : cutChi2GeoPrKa)) {
+          return false;
+        }
+
+        // chi2geo between 0-th and 1-st prongs
+        if (chi2GeoProng0Prong1 > (isPKPi ? cutChi2GeoPrKa : cutChi2GeoKaPi)) {
+          return false;
+        }
+
+        // dca between 1-st and 2-nd prongs
+        if (dcaProng1Prong2 > (isPKPi ? cutDcaKaPi : cutDcaPrKa)) {
+          return false;
+        }
+
+        // dca between 0-th and 1-st prongs
+        if (dcaProng0Prong1 > (isPKPi ? cutDcaPrKa : cutDcaKaPi)) {
           return false;
         }
       }
@@ -306,10 +438,11 @@ struct HfCandidateSelectorLc {
   }
 
   /// \brief function to apply Lc selections
+  /// \param reconstructionType is the reconstruction type (DCAFitterN or KFParticle)
   /// \param candidates Lc candidate table
   /// \param tracks track table
-  template <bool useBayesPid = false, typename TTracks>
-  void runSelectLc(aod::HfCand3Prong const& candidates, TTracks const&)
+  template <bool useBayesPid = false, aod::hf_cand::VertexerType reconstructionType, typename CandType, typename TTracks>
+  void runSelectLc(CandType const& candidates, TTracks const&)
   {
     // looping over 3-prong candidates
     for (const auto& candidate : candidates) {
@@ -355,7 +488,7 @@ struct HfCandidateSelectorLc {
       }
 
       // conjugate-independent topological selection
-      if (!selectionTopol(candidate)) {
+      if (!selectionTopol<reconstructionType>(candidate)) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         if (applyMl) {
           hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
@@ -364,8 +497,8 @@ struct HfCandidateSelectorLc {
       }
 
       // conjugate-dependent topological selection for Lc
-      bool topolLcToPKPi = selectionTopolConjugate(candidate, trackPos1, trackNeg, trackPos2);
-      bool topolLcToPiKP = selectionTopolConjugate(candidate, trackPos2, trackNeg, trackPos1);
+      bool topolLcToPKPi = selectionTopolConjugate<reconstructionType>(candidate, trackPos1, trackNeg, trackPos2);
+      bool topolLcToPiKP = selectionTopolConjugate<reconstructionType>(candidate, trackPos2, trackNeg, trackPos1);
 
       if (!topolLcToPKPi && !topolLcToPiKP) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
@@ -393,17 +526,17 @@ struct HfCandidateSelectorLc {
         TrackSelectorPID::Status pidTrackPos2Pion = TrackSelectorPID::Accepted;
         TrackSelectorPID::Status pidTrackNegKaon = TrackSelectorPID::Accepted;
         if (usePidTpcAndTof) {
-          pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1);
-          pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2);
-          pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1);
-          pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2);
-          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg);
+          pidTrackPos1Proton = selectorProton.statusTpcAndTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
+          pidTrackPos2Proton = selectorProton.statusTpcAndTof(trackPos2, candidate.nSigTpcPr2(), candidate.nSigTofPr2());
+          pidTrackPos1Pion = selectorPion.statusTpcAndTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
+          pidTrackPos2Pion = selectorPion.statusTpcAndTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
+          pidTrackNegKaon = selectorKaon.statusTpcAndTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
         } else {
-          pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1);
-          pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2);
-          pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1);
-          pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2);
-          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg);
+          pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
+          pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2, candidate.nSigTpcPr2(), candidate.nSigTofPr2());
+          pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
+          pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
+          pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
         }
 
         if (!isSelectedPID(pidTrackPos1Proton, pidTrackNegKaon, pidTrackPos2Pion)) {
@@ -449,13 +582,24 @@ struct HfCandidateSelectorLc {
         isSelectedMlLcToPKPi = false;
         isSelectedMlLcToPiKP = false;
 
-        if (pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && topolLcToPKPi) {
-          std::vector<float> inputFeaturesLcToPKPi = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, true);
-          isSelectedMlLcToPKPi = hfMlResponse.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);
-        }
-        if (pidLcToPiKP == 1 && pidBayesLcToPiKP == 1 && topolLcToPiKP) {
-          std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, trackPos1, trackNeg, trackPos2, false);
-          isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlLcToPiKP);
+        if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
+          if (pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && topolLcToPKPi) {
+            std::vector<float> inputFeaturesLcToPKPi = hfMlResponseDCA.getInputFeatures(candidate, true);
+            isSelectedMlLcToPKPi = hfMlResponseDCA.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);
+          }
+          if (pidLcToPiKP == 1 && pidBayesLcToPiKP == 1 && topolLcToPiKP) {
+            std::vector<float> inputFeaturesLcToPiKP = hfMlResponseDCA.getInputFeatures(candidate, false);
+            isSelectedMlLcToPiKP = hfMlResponseDCA.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlLcToPiKP);
+          }
+        } else {
+          if (pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && topolLcToPKPi) {
+            std::vector<float> inputFeaturesLcToPKPi = hfMlResponseKF.getInputFeatures(candidate, true);
+            isSelectedMlLcToPKPi = hfMlResponseKF.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);
+          }
+          if (pidLcToPiKP == 1 && pidBayesLcToPiKP == 1 && topolLcToPiKP) {
+            std::vector<float> inputFeaturesLcToPiKP = hfMlResponseKF.getInputFeatures(candidate, false);
+            isSelectedMlLcToPiKP = hfMlResponseKF.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlLcToPiKP);
+          }
         }
 
         hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
@@ -481,25 +625,45 @@ struct HfCandidateSelectorLc {
     }
   }
 
-  /// \brief process function w/o Bayes PID
+  /// \brief process function w/o Bayes PID with DCAFitterN
   /// \param candidates Lc candidate table
   /// \param tracks track table
-  void processNoBayesPid(aod::HfCand3Prong const& candidates,
-                         TracksSel const& tracks)
+  void processNoBayesPidWithDCAFitterN(aod::HfCand3ProngWPidPiKaPr const& candidates,
+                                       TracksSel const& tracks)
   {
-    runSelectLc<false>(candidates, tracks);
+    runSelectLc<false, aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
   }
-  PROCESS_SWITCH(HfCandidateSelectorLc, processNoBayesPid, "Process Lc selection w/o Bayes PID", true);
+  PROCESS_SWITCH(HfCandidateSelectorLc, processNoBayesPidWithDCAFitterN, "Process Lc selection w/o Bayes PID with DCAFitterN", true);
 
-  /// \brief process function with Bayes PID
+  /// \brief process function with Bayes PID with DCAFitterN
   /// \param candidates Lc candidate table
   /// \param tracks track table with Bayes PID information
-  void processBayesPid(aod::HfCand3Prong const& candidates,
-                       TracksSelBayesPid const& tracks)
+  void processBayesPidWithDCAFitterN(aod::HfCand3ProngWPidPiKaPr const& candidates,
+                                     TracksSelBayesPid const& tracks)
   {
-    runSelectLc<true>(candidates, tracks);
+    runSelectLc<true, aod::hf_cand::VertexerType::DCAFitter>(candidates, tracks);
   }
-  PROCESS_SWITCH(HfCandidateSelectorLc, processBayesPid, "Process Lc selection with Bayes PID", false);
+  PROCESS_SWITCH(HfCandidateSelectorLc, processBayesPidWithDCAFitterN, "Process Lc selection with Bayes PID with DCAFitterN", false);
+
+  /// \brief process function w/o Bayes PID with KFParticle
+  /// \param candidates Lc candidate table
+  /// \param tracks track table
+  void processNoBayesPidWithKFParticle(soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngKF> const& candidates,
+                                       TracksSel const& tracks)
+  {
+    runSelectLc<false, aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorLc, processNoBayesPidWithKFParticle, "Process Lc selection w/o Bayes PID with KFParticle", false);
+
+  /// \brief process function with Bayes PID with KFParticle
+  /// \param candidates Lc candidate table
+  /// \param tracks track table with Bayes PID information
+  void processBayesPidWithKFParticle(soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfCand3ProngKF> const& candidates,
+                                     TracksSelBayesPid const& tracks)
+  {
+    runSelectLc<true, aod::hf_cand::VertexerType::KfParticle>(candidates, tracks);
+  }
+  PROCESS_SWITCH(HfCandidateSelectorLc, processBayesPidWithKFParticle, "Process Lc selection with Bayes PID with KFParticle", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

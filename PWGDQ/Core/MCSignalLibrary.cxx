@@ -12,12 +12,17 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 #include <string>
+#include <vector>
+// #include <iostream>
 
 #include <TPDGCode.h>
 #include "CommonConstants/PhysicsConstants.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
+#include "Framework/Logger.h"
 
 using namespace o2::constants::physics;
+// using std::cout;
+// using std::endl;
 
 MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 {
@@ -126,6 +131,18 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Helium3", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("Helium3Primary")) {
+    MCProng prong(1, {1000020030}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Helium3Primary", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("Helium3FromTransport")) {
+    MCProng prong(1, {1000020030}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kProducedInTransport);
+    signal = new MCSignal(name, "Helium3FromTransport", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("nonPromptJpsi")) {
     MCProng prong(2, {443, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Non-prompt jpsi", {prong}, {-1});
@@ -157,7 +174,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   if (!nameStr.compare("promptPsi2S")) {
-    MCProng prong(2, {100443, 503}, {true, true}, {false, true}, {0, 0}, {0, 0}, {false, false});
+    MCProng prong(1, {100443}, {true}, {false}, {0}, {0}, {false}, false, {503}, {true});
     signal = new MCSignal(name, "Prompt psi2s (not from beauty)", {prong}, {-1});
     return signal;
   }
@@ -201,8 +218,20 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "All beauty hadrons", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("allBeautyHadronsFS")) {
+    MCProng prong(1, {503}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kHEPMCFinalState);
+    signal = new MCSignal(name, "All beauty hadrons", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("allOpenBeautyHadrons")) {
     MCProng prong(1, {502}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "All open beauty hadrons", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("allOpenBeautyHadronsFS")) {
+    MCProng prong(1, {502}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kHEPMCFinalState);
     signal = new MCSignal(name, "All open beauty hadrons", {prong}, {-1});
     return signal;
   }
@@ -232,8 +261,20 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Everything from beauty", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("everythingFromBeautyFS")) {
+    MCProng prong(2, {0, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(1, MCProng::kHEPMCFinalState);
+    signal = new MCSignal(name, "Everything from beauty", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("everythingFromEverythingFromBeauty")) {
     MCProng prong(3, {0, 0, 503}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Everything from everything from beauty", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("everythingFromEverythingFromBeautyFS")) {
+    MCProng prong(3, {0, 0, 503}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    prong.SetSourceBit(2, MCProng::kHEPMCFinalState);
     signal = new MCSignal(name, "Everything from everything from beauty", {prong}, {-1});
     return signal;
   }
@@ -320,6 +361,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "electron from a photon conversion", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("PowhegDYMuon1")) {
+    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});        // selecting muons
+    prong.SetSourceBit(0, MCProng::kIsPowhegDYMuon);                   // set source to be Muon from POWHEG
+    signal = new MCSignal(name, "POWHEG Muon singles", {prong}, {-1}); // define a signal with 1-prong
+    return signal;
+  }
 
   // 2-prong signals
   if (!nameStr.compare("dielectron")) {
@@ -351,6 +398,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("dielectronPCPi0")) {
     MCProng prong(3, {11, 22, 111}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     signal = new MCSignal(name, "dielectron from a photon conversion from a pi0", {prong, prong}, {1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("PowhegDYMuon2")) {
+    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});                // selecting muons
+    prong.SetSourceBit(0, MCProng::kIsPowhegDYMuon);                           // set source to be Muon from POWHEG
+    signal = new MCSignal(name, "POWHEG Muon pair", {prong, prong}, {-1, -1}); // define a signal with 2-prong
     return signal;
   }
 
@@ -555,6 +608,36 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Electrons from open charmed hadron decays with b hadron in decay history", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("eFromPromptLM")) {
+    MCProng prong(2, {11, 101}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
+    signal = new MCSignal(name, "Electrons from light mesons without B/D in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromHbtoLM")) {
+    MCProng prong(2, {11, 101}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
+    signal = new MCSignal(name, "Electrons from light mesons with B hadron in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromHctoLM")) {
+    MCProng prong(2, {11, 101, 402}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
+    signal = new MCSignal(name, "Electrons from light mesons from D hadron decays and no B in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromUpsilon1S")) {
+    MCProng prong(2, {11, 553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electrons from Upsilon1S decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromUpsilon2S")) {
+    MCProng prong(2, {11, 100553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electrons from Upsilon2S decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("eFromUpsilon3S")) {
+    MCProng prong(2, {11, 200553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Electrons from Upsilon3S decays", {prong}, {-1});
+    return signal;
+  }
 
   // muon signals with mother X: mu from mother X
   if (!nameStr.compare("muFromJpsi")) {
@@ -565,6 +648,57 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("muFromPsi2S")) {
     MCProng prong(2, {13, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "muons from psi2s decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromHb")) {
+    MCProng prong(2, {13, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "muons from b->mu", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromPromptHc")) {
+    MCProng prong(2, {13, 402}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {true});
+    signal = new MCSignal(name, "muons from c->mu, without beauty in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromHbtoHc")) {
+    MCProng prong(3, {13, 402, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "muons from b->c->mu", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("secondaryMuon")) {
+    MCProng prong(1, {13}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kProducedInTransport);
+    signal = new MCSignal(name, "muons produced during transport in detector", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromPromptLM")) {
+    MCProng prong(2, {13, 101}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502, 402}, {true, true});
+    signal = new MCSignal(name, "muons from light mesons without B/D in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromHbtoLM")) {
+    MCProng prong(2, {13, 101}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {502}, {false});
+    signal = new MCSignal(name, "muons from light mesons with B hadron in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromHctoLM")) {
+    MCProng prong(2, {13, 101, 402}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false}, false, {502}, {true});
+    signal = new MCSignal(name, "muons from light mesons from D hadron decays and no B in decay history", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromUpsilon1S")) {
+    MCProng prong(2, {13, 553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "muons from Upsilon1S decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromUpsilon2S")) {
+    MCProng prong(2, {13, 100553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "muons from Upsilon2S decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("muFromUpsilon3S")) {
+    MCProng prong(2, {13, 200553}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "muons from Upsilon3S decays", {prong}, {-1});
     return signal;
   }
 
@@ -734,9 +868,27 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "ee pairs from non-prompt j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
+  if (!nameStr.compare("mumuFromPhi")) {
+    MCProng prong(2, {13, 333}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "mumu pairs from phi decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
   if (!nameStr.compare("mumuFromJpsi")) {
     MCProng prong(2, {13, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "mumu pairs from j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("mumuFromPromptJpsi")) {
+    MCProng prong(2, {13, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {503}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "mumu pairs from prompt j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("mumuFromNonPromptJpsi")) {
+    MCProng prong(2, {13, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {503}, {false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "mumu pairs from non-prompt j/psi decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
   if (!nameStr.compare("eeFromPsi2S")) {
@@ -748,6 +900,18 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("mumuFromPsi2S")) {
     MCProng prong(2, {13, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "mumu pairs from psi2s decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("mumuFromPromptPsi2S")) {
+    MCProng prong(2, {13, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {503}, {true});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "mumu pairs from prompt psi2s decays", {prong, prong}, {1, 1}); // signal at pair level
+    return signal;
+  }
+  if (!nameStr.compare("mumuFromNonPromptPsi2S")) {
+    MCProng prong(2, {13, 100443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false}, false, {503}, {false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "mumu pairs from non-prompt psi2s decays", {prong, prong}, {1, 1}); // signal at pair level
     return signal;
   }
   if (!nameStr.compare("mumuFromUpsilon1S")) {
@@ -1116,6 +1280,33 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
+  if (!nameStr.compare("kaonFromBplusHistory")) {
+    MCProng prong(1, {321}, {true}, {false}, {0}, {0}, {false}, false, {521}, {false});
+    signal = new MCSignal(name, "Kaons from B+ decays", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("kaonPrimaryFromBplusHistory")) {
+    MCProng prong(1, {321}, {true}, {false}, {0}, {0}, {false}, false, {521}, {false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    signal = new MCSignal(name, "Kaons from B+ decays", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("kaonPrimaryFromBplusFS")) {
+    MCProng prong(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    prong.SetSourceBit(0, MCProng::kPhysicalPrimary);
+    prong.SetSourceBit(1, MCProng::kHEPMCFinalState);
+    signal = new MCSignal(name, "Kaons from B+ decays", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("kaonFromAnyBHistory")) {
+    MCProng prong(1, {321}, {true}, {false}, {0}, {0}, {false}, false, {503}, {false});
+    signal = new MCSignal(name, "Kaons from B+ decays", {prong}, {-1});
+    return signal;
+  }
+
   if (!nameStr.compare("JpsiFromBplus")) {
     MCProng prong(2, {443, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Jpsi from B+ decays", {prong}, {1});
@@ -1125,6 +1316,18 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
   if (!nameStr.compare("eFromJpsiFromBplus")) {
     MCProng prong(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     signal = new MCSignal(name, "Electrons from Jpsi from B+ decays", {prong}, {1});
+    return signal;
+  }
+
+  if (!nameStr.compare("electronFromJpsiFromBplus")) {
+    MCProng prong(3, {11, 443, 521}, {false, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Electrons from Jpsi from B+ decays", {prong}, {1});
+    return signal;
+  }
+
+  if (!nameStr.compare("positronFromJpsiFromBplus")) {
+    MCProng prong(3, {-11, 443, 521}, {false, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Positrons from Jpsi from B+ decays", {prong}, {1});
     return signal;
   }
 
@@ -1138,6 +1341,13 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Kaon and electron pair from B+", {pronge, pronge, prongKaon}, {2, 2, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeFromJpsiKaonAny")) {
+    MCProng pronge(2, {11, 443}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongKaon(1, {321}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Kaon and electron pair", {pronge, pronge, prongKaon}, {-1, -1, -1});
     return signal;
   }
 
@@ -1172,29 +1382,82 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
-  if (!nameStr.compare("eeKaonFromBplusViaKstar")) { // specific K exited state decays
-    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
-    MCProng prongKaon(3, {321, 323, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
-    signal = new MCSignal(name, "Kaon and electron pair from B+ via Kstar", {pronge, pronge, prongKaon}, {2, 2, 2});
+  if (!nameStr.compare("eeKaonFromB0")) {
+    MCProng pronge(3, {11, 443, 511}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(2, {321, 511}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from B0", {pronge, pronge, prongKaon}, {2, 2, 1});
     return signal;
   }
 
-  if (!nameStr.compare("eeKaonFromBplusViaK1270")) { // specific K exited state decays
-    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
-    MCProng prongKaon(3, {321, 10323, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
-    signal = new MCSignal(name, "Kaon and electron pair from B+ via K1270", {pronge, pronge, prongKaon}, {2, 2, 2});
+  if (!nameStr.compare("eePionFromB0ViaEverything")) { // catching feed-down for B0
+    MCProng pronge(3, {11, 443, 511}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongPion(3, {211, 0, 511}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    signal = new MCSignal(name, "Pion and electron pair from B0", {pronge, pronge, prongPion}, {2, 2, 1});
     return signal;
   }
 
-  if (!nameStr.compare("eeKaonFromBplusViaK1400")) { // specific K exited state decays
+  if (!nameStr.compare("eeKaonFromOpenBeautyMesons")) {
+    MCProng pronge(3, {11, 443, 501}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(2, {321, 501}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Excited kaon and electron pair from B0", {pronge, pronge, prongKaon}, {2, 2, 2});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonFromOpenBeautyHadrons")) {
+    MCProng pronge(3, {11, 443, 502}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(2, {321, 502}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from open beauty hadrons", {pronge, pronge, prongKaon}, {2, 2, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonFromLambdaB")) {
+    MCProng pronge(3, {11, 443, 5122}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(2, {321, 5122}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon and electron pair from lambda B", {pronge, pronge, prongKaon}, {2, 2, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonPion0FromBplus")) {
     MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
-    MCProng prongKaon(3, {321, 20323, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
-    signal = new MCSignal(name, "Kaon and electron pair from B+ via K1400", {pronge, pronge, prongKaon}, {2, 2, 2});
+    MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPion(2, {111, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon, pi0 and electron pair from B+", {pronge, pronge, prongKaon, prongPion}, {2, 2, 1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonEtaFromBplus")) {
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongEta(2, {221, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon, eta and electron pair from B+", {pronge, pronge, prongKaon, prongEta}, {2, 2, 1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonOmegaFromBplus")) {
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongOmega(2, {223, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon, omega and electron pair from B+", {pronge, pronge, prongKaon, prongOmega}, {2, 2, 1, 1});
+    return signal;
+  }
+
+  if (!nameStr.compare("eeKaonPionFromBplus")) {
+    MCProng pronge(3, {11, 443, 521}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
+    MCProng prongKaon(2, {321, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongPion(2, {211, 521}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon, pion and electron pair from B+", {pronge, pronge, prongKaon, prongPion}, {2, 2, 1, 1});
     return signal;
   }
 
   if (!nameStr.compare("Bplus")) {
     MCProng prong(1, {521}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "B+", {prong}, {-1});
+    return signal;
+  }
+
+  if (!nameStr.compare("BplusFS")) {
+    MCProng prong(1, {521}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kHEPMCFinalState);
     signal = new MCSignal(name, "B+", {prong}, {-1});
     return signal;
   }
@@ -1228,10 +1491,27 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "D0", {prong}, {-1});
     return signal;
   }
+  if (!nameStr.compare("nonPromptD0")) {
+    MCProng prong(2, {Pdg::kD0, 503}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Non-prompt D0", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("D0FS")) {
+    MCProng prong(1, {Pdg::kD0}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kHEPMCFinalState);
+    signal = new MCSignal(name, "D0", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("KPiFromD0")) {
     MCProng prongKaon(2, {321, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     MCProng prongPion(2, {211, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
     signal = new MCSignal(name, "Kaon and pion pair from D0", {prongKaon, prongPion}, {1, 1});
+    return signal;
+  }
+  if (!nameStr.compare("KPiFromD0Reflected")) {
+    MCProng prongFalseKaon(2, {211, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    MCProng prongFalsePion(2, {321, Pdg::kD0}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Kaon and pion pair from D0 with reflected mass assumption", {prongFalseKaon, prongFalsePion}, {1, 1});
     return signal;
   }
   if (!nameStr.compare("Dcharged")) {
@@ -1484,6 +1764,12 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
 
   //--------------------------------------------------------------------------------
 
+  if (!nameStr.compare("X3872")) {
+    MCProng prong(1, {9920443}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Inclusive X(3872)", {prong}, {-1});
+    return signal;
+  }
+
   if (!nameStr.compare("JpsiFromX3872")) {
     MCProng prong(1, {443}, {true}, {false}, {0}, {0}, {false}, false, {9920443}, {false});
     signal = new MCSignal(name, "Jpsi from X3872", {prong}, {-1});
@@ -1508,7 +1794,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
 
-  if (!nameStr.compare("eFromPsi2S")) {
+  if (!nameStr.compare("eFromJpsiFromPsi2S")) {
     MCProng prong(3, {11, 443, 100443}, {true, true, true}, {false, false, false}, {0, 0, 0}, {0, 0, 0}, {false, false, false});
     signal = new MCSignal(name, "Electron from Jpsi from Psi2S", {prong}, {1});
     return signal;
@@ -1560,4 +1846,419 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   return nullptr;
+}
+
+//_______________________________________________________________________________________________
+std::vector<MCSignal*> o2::aod::dqmcsignals::GetMCSignalsFromJSON(const char* json)
+{
+  //
+  // configure MC signals using a json file
+  //
+  std::vector<MCSignal*> signals;
+  LOG(info) << "========================================== interpreting JSON for MC signals";
+  LOG(info) << "JSON string: " << json;
+  //
+  // Create a vector of MCSignal from a JSON formatted string
+  //   The JSON is expected to contain a list of objects, with each object containing the fields needed
+  //    to define an MCSignal
+  rapidjson::Document document;
+
+  // Check that the json is parsed correctly
+  rapidjson::ParseResult ok = document.Parse(json);
+  if (!ok) {
+    TString str = "";
+    for (int i = ok.Offset() - 30; i < static_cast<int>(ok.Offset()) + 50; i++) {
+      if ((i >= 0) && (i < static_cast<int>(strlen(json)))) {
+        str += json[i];
+      }
+    }
+    LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")" << " **** Parsing error is somewhere here: " << str.Data();
+    return signals;
+  }
+
+  // loop over the top level objects in the json
+  for (rapidjson::Value::ConstMemberIterator it = document.MemberBegin(); it != document.MemberEnd(); it++) {
+
+    const char* sigName = it->name.GetString();
+    LOG(info) << "=================================================== Configuring MC signal " << sigName;
+    const auto& signal = it->value;
+
+    // Validate the entry for this MCSignal
+    if (!ValidateJSONMCSignal(&signal, sigName)) {
+      LOG(fatal) << "MCSignal JSON not properly defined for " << sigName << ". Skipping";
+      continue;
+    } else {
+      LOG(debug) << "MCSignal validated";
+    }
+
+    // Get the signal title
+    const char* title = (signal.HasMember("title") ? signal.FindMember("title")->value.GetString() : "");
+    LOG(info) << "Title is: " << title;
+
+    // Get the exclude common ancestor
+    bool excludeCommonAncestor = false;
+    if (signal.HasMember("excludeCommonAncestor")) {
+      excludeCommonAncestor = signal.FindMember("excludeCommonAncestor")->value.GetBool();
+    }
+    LOG(debug) << "exclude common ancestor " << excludeCommonAncestor;
+
+    // Check for MCProng objects in the json
+    std::vector<MCProng> prongs;
+    for (rapidjson::Value::ConstMemberIterator prongIt = signal.MemberBegin(); prongIt != signal.MemberEnd(); prongIt++) {
+
+      // If the name is not MCProng, continue
+      TString prongName = prongIt->name.GetString();
+      if (!prongName.Contains("MCProng")) {
+        continue;
+      }
+
+      // Call the function to parse the MCProng object and get the pointer to the created MCProng
+      MCProng* prong = ParseJSONMCProng(&prongIt->value, prongName.Data());
+      if (prong == nullptr) {
+        LOG(fatal) << "MCProng not built! MCSignal not configured";
+        return signals;
+      }
+      LOG(debug) << "MCProng defined";
+      // Print the contents of the configured prong
+      prong->Print();
+      // push the prong to the vector
+      prongs.push_back(*prong);
+    }
+
+    // Get the common ancestors array
+    std::vector<int8_t> commonAncestors;
+    if (signal.HasMember("commonAncestors")) {
+      for (auto& v : signal.FindMember("commonAncestors")->value.GetArray()) {
+        commonAncestors.push_back(v.GetInt());
+        LOG(debug) << "common ancestor " << v.GetInt();
+      }
+    } else {
+      for (uint32_t i = 0; i < prongs.size(); i++) {
+        commonAncestors.push_back(-1);
+      }
+    }
+
+    if (prongs.size() == 0) {
+      LOG(fatal) << "No prongs were defined for this MCSignal!";
+      return signals;
+    }
+
+    // Check that we have as many prongs defined as the size of the common ancestors array
+    if (prongs.size() != commonAncestors.size()) {
+      LOG(fatal) << "Number of defined prongs and size of commonAncestors array must coincide in MCSignal definition";
+      return signals;
+    }
+
+    // Create the signal and add it to the output vector
+    MCSignal* mcSignal = new MCSignal(sigName, title, prongs, commonAncestors, excludeCommonAncestor);
+    LOG(debug) << "MCSignal defined, adding to the output vector";
+    mcSignal->PrintConfig();
+    signals.push_back(mcSignal);
+  }
+
+  return signals;
+}
+
+//_______________________________________________________________________________________________
+template <typename T>
+bool o2::aod::dqmcsignals::ValidateJSONMCProng(T prongJSON, const char* prongName)
+{
+
+  // Check that the json entry for this prong is correctly given
+  LOG(debug) << "Validating the prong " << prongName;
+
+  // The fields for the number of generations, pdg codes and checkBothCharges are required
+  if (!prongJSON->HasMember("n") || !prongJSON->HasMember("pdgs") || !prongJSON->HasMember("checkBothCharges")) {
+    LOG(fatal) << "Missing either n, pdgs or checkBothCharges fields in MCProng JSON definition";
+    return false;
+  }
+  // the size of the pdgs array must be equal to n
+  int n = prongJSON->FindMember("n")->value.GetInt();
+  uint32_t nSigned = static_cast<uint64_t>(n);
+  if (prongJSON->FindMember("pdgs")->value.GetArray().Size() != nSigned) {
+    LOG(fatal) << "Size of the pdgs array must be equal to n in MCProng JSON definition";
+    return false;
+  }
+  // the size of the checkBothCharges array must be equal to n
+  if (prongJSON->FindMember("checkBothCharges")->value.GetArray().Size() != nSigned) {
+    LOG(fatal) << "Size of the checkBothCharges array must be equal to n in MCProng JSON definition";
+    return false;
+  }
+  // the size of the exclude pdg array must be equal to n
+  if (prongJSON->HasMember("excludePDG")) {
+    if (prongJSON->FindMember("excludePDG")->value.GetArray().Size() != nSigned) {
+      LOG(fatal) << "Size of the excludePDG array must be equal to n in MCProng JSON definition";
+      return false;
+    }
+  }
+
+  // Check the corectness of the source bits fields, if these are specified
+  // The sourceBits field should be an array of size n, with each element being another array containing an array of sources specified as strings
+  //    The source strings have to be the ones specified in MCProng::Source
+  //  If the excludeSource is specified in addition, then this field should be an array of size n, with each element being another array of booleans
+  //     corresponding to each source specified in sourceBits
+  if (prongJSON->HasMember("sourceBits")) {
+    if (prongJSON->FindMember("sourceBits")->value.GetArray().Size() != nSigned) {
+      LOG(fatal) << "Size of the sourceBits array must be equal to n in MCProng JSON definition";
+      return false;
+    }
+    std::vector<uint32_t> nSourceBits;
+    for (auto& ii : prongJSON->FindMember("sourceBits")->value.GetArray()) {
+      if (!ii.IsArray()) {
+        LOG(fatal) << "The sourceBits field should be an array of arrays of MCProng::Source";
+        return false;
+      }
+      nSourceBits.push_back(ii.GetArray().Size());
+      for (auto& iii : ii.GetArray()) {
+        if (MCProng::fgSourceNames.find(iii.GetString()) == MCProng::fgSourceNames.end()) {
+          LOG(fatal) << "Source " << iii.GetString() << " not implemented in MCProng";
+          return false;
+        }
+      }
+    }
+    if (prongJSON->HasMember("excludeSource")) {
+      if (prongJSON->FindMember("excludeSource")->value.GetArray().Size() != nSigned) {
+        LOG(fatal) << "Size of the excludeSource array must be equal to n in MCProng JSON definition";
+        return false;
+      }
+      int iElem = 0;
+      for (auto& ii : prongJSON->FindMember("excludeSource")->value.GetArray()) {
+        if (!ii.IsArray()) {
+          LOG(fatal) << "The excludeSource field should be an array of arrays of bool";
+          return false;
+        }
+        if (ii.GetArray().Size() != nSourceBits[iElem]) {
+          LOG(fatal) << "The size of excludeSource arrays does not match the size of the arrays in sourceBits";
+          return false;
+        }
+        iElem++;
+      }
+    }
+    // Check the useAND on source bit map
+    if (prongJSON->HasMember("useANDonSourceBitMap")) {
+      if (prongJSON->FindMember("useANDonSourceBitMap")->value.GetArray().Size() != nSigned) {
+        LOG(fatal) << "Size of the useANDonSourceBitMap array must be equal to n in MCProng JSON definition";
+        return false;
+      }
+    }
+  }
+
+  // sourceBits is needed in case the other source related fields are specified
+  if ((prongJSON->HasMember("excludeSource") || prongJSON->HasMember("useANDonSourceBitMap")) && !prongJSON->HasMember("sourceBits")) {
+    LOG(fatal) << "Field sourceBits is needed when specifying excludeSource or useANDonSourceBitMap";
+    return false;
+  }
+
+  // check checkGenerationsInTime
+  if (prongJSON->HasMember("checkGenerationsInTime")) {
+    if (!prongJSON->FindMember("checkGenerationsInTime")->value.IsBool()) {
+      LOG(fatal) << "Field checkGeneretionsInTime must be boolean";
+      return false;
+    }
+  }
+
+  if (prongJSON->HasMember("checkIfPDGInHistory")) {
+    if (!prongJSON->FindMember("checkIfPDGInHistory")->value.IsArray()) {
+      LOG(fatal) << "Field checkGeneretionsInTime must be an array of integers";
+      return false;
+    }
+    uint32_t vecSize = prongJSON->FindMember("checkIfPDGInHistory")->value.GetArray().Size();
+    if (prongJSON->HasMember("excludePDGInHistory")) {
+      if (!prongJSON->FindMember("excludePDGInHistory")->value.IsArray()) {
+        LOG(fatal) << "Field excludePDGInHistory must be an array of booleans";
+        return false;
+      }
+      if (prongJSON->FindMember("excludePDGInHistory")->value.GetArray().Size() != vecSize) {
+        LOG(fatal) << "Field excludePDGInHistory must be an array of equal size with the array specified by checkIfPDGInHistory";
+        return false;
+      }
+    }
+  } else {
+    if (prongJSON->HasMember("excludePDGInHistory")) {
+      LOG(fatal) << "Field checkIfPDGInHistory is required when excludePDGInHistory is specified";
+      return false;
+    }
+  }
+
+  return true;
+}
+
+//_______________________________________________________________________________________________
+template <typename T>
+MCProng* o2::aod::dqmcsignals::ParseJSONMCProng(T prongJSON, const char* prongName)
+{
+
+  // Check that the entry for this prong is validated
+  LOG(debug) << "Parsing the prong " << prongName;
+  if (!ValidateJSONMCProng(prongJSON, prongName)) {
+    LOG(fatal) << "MCProng not properly defined in the JSON file.";
+    return nullptr;
+  }
+
+  // Get the number of generations
+  int n = prongJSON->FindMember("n")->value.GetInt();
+  LOG(debug) << "n: " << n;
+  // Get the array of PDG codes
+  std::vector<int> pdgs;
+  for (auto& pdg : prongJSON->FindMember("pdgs")->value.GetArray()) {
+    pdgs.push_back(pdg.GetInt());
+    LOG(debug) << "pdgs: " << pdg.GetInt();
+  }
+  // get the array of booleans for check both charges option
+  std::vector<bool> checkBothCharges;
+  for (auto& ii : prongJSON->FindMember("checkBothCharges")->value.GetArray()) {
+    checkBothCharges.push_back(ii.GetBool());
+    LOG(debug) << "check both charges " << ii.GetBool();
+  }
+
+  // get the array of booleans for the excludePDG option, defaults to false
+  std::vector<bool> excludePDG;
+  if (prongJSON->HasMember("excludePDG")) {
+    for (auto& ii : prongJSON->FindMember("excludePDG")->value.GetArray()) {
+      excludePDG.push_back(ii.GetBool());
+      LOG(debug) << "exclude pdg " << ii.GetBool();
+    }
+  } else {
+    for (int i = 0; i < n; i++) {
+      excludePDG.push_back(false);
+    }
+  }
+
+  // get the source bits, and transform from string to int
+  std::vector<std::vector<int>> sourceBitsVec;
+  if (prongJSON->HasMember("sourceBits")) {
+    for (auto& ii : prongJSON->FindMember("sourceBits")->value.GetArray()) {
+      std::vector<int> sourceBits;
+      for (auto& iii : ii.GetArray()) {
+        sourceBits.push_back(MCProng::fgSourceNames[iii.GetString()]);
+        LOG(debug) << "source bit " << iii.GetString();
+      }
+      sourceBitsVec.push_back(sourceBits);
+    }
+  }
+  // prepare the exclusion source options if specified
+  std::vector<std::vector<bool>> excludeSourceVec;
+  if (prongJSON->HasMember("excludeSource")) {
+    for (auto& ii : prongJSON->FindMember("excludeSource")->value.GetArray()) {
+      std::vector<bool> excludeSource;
+      for (auto& iii : ii.GetArray()) {
+        excludeSource.push_back(iii.GetBool());
+        LOG(debug) << "exclude source bit " << iii.GetBool();
+      }
+      excludeSourceVec.push_back(excludeSource);
+    }
+  }
+
+  // prepare the useANDonSourceBitMap vector, defaults to true for each generation
+  std::vector<bool> useANDonSourceBitMap;
+  if (prongJSON->HasMember("useANDonSourceBitMap")) {
+    for (auto& ii : prongJSON->FindMember("useANDonSourceBitMap")->value.GetArray()) {
+      useANDonSourceBitMap.push_back(ii.GetBool());
+      LOG(debug) << "use AND on source map " << ii.GetBool();
+    }
+  } else {
+    for (int i = 0; i < n; i++) {
+      useANDonSourceBitMap.push_back(true);
+    }
+  }
+
+  // prepare the bit maps suitable for the MCProng constructor
+  bool hasExclude = prongJSON->HasMember("excludeSource");
+  int igen = 0;
+  std::vector<uint64_t> sBitsVec;
+  std::vector<uint64_t> sBitsExcludeVec;
+  for (auto& itgen : sourceBitsVec) {
+    int is = 0;
+    uint64_t sBits = 0;
+    uint64_t sBitsExclude = 0;
+    auto excludeVec = (hasExclude ? excludeSourceVec[igen] : std::vector<bool>{});
+    for (auto& s : itgen) {
+      bool exclude = (hasExclude ? excludeVec[is] : false);
+      if (s != MCProng::kNothing) {
+        sBits |= (static_cast<uint64_t>(1) << s);
+        if (exclude) {
+          sBitsExclude |= (static_cast<uint64_t>(1) << s);
+        }
+      }
+      is++;
+    }
+    sBitsVec.push_back(sBits);
+    sBitsExcludeVec.push_back(sBitsExclude);
+    LOG(debug) << "igen " << igen;
+    LOG(debug) << "igen sBits " << sBits;
+    LOG(debug) << "igen exclude " << sBitsExclude;
+    igen++;
+  }
+
+  // check that the sourceBits has the size of n generations
+  if (prongJSON->HasMember("sourceBits")) {
+    if (sBitsVec.size() != static_cast<uint32_t>(n)) {
+      LOG(fatal) << "sourceBits array should have a size equal to n";
+    }
+  } else {
+    sBitsVec.clear();
+    for (int i = 0; i < n; i++) {
+      sBitsVec.push_back(0);
+    }
+  }
+  // check that the sourceBits exclude has the size of n generations
+  if (prongJSON->HasMember("excludeSource")) {
+    if (sBitsExcludeVec.size() != static_cast<uint32_t>(n)) {
+      LOG(fatal) << "sourceBits exclude array should have a size equal to n";
+    }
+  } else {
+    sBitsExcludeVec.clear();
+    for (int i = 0; i < n; i++) {
+      sBitsExcludeVec.push_back(0);
+    }
+  }
+
+  bool checkGenerationsInTime = false;
+  if (prongJSON->HasMember("checkGenerationsInTime")) {
+    checkGenerationsInTime = prongJSON->FindMember("checkGenerationsInTime")->value.GetBool();
+  }
+  LOG(debug) << "checkGenerationsInTime: " << checkGenerationsInTime;
+
+  std::vector<int> checkIfPDGInHistory = {};
+  if (prongJSON->HasMember("checkIfPDGInHistory")) {
+    for (auto& ii : prongJSON->FindMember("checkIfPDGInHistory")->value.GetArray()) {
+      checkIfPDGInHistory.push_back(ii.GetInt());
+      LOG(debug) << "checkIfPDGInHistory: " << ii.GetInt();
+    }
+  }
+
+  std::vector<bool> excludePDGInHistory = {};
+  if (prongJSON->HasMember("excludePDGInHistory")) {
+    for (auto& ii : prongJSON->FindMember("excludePDGInHistory")->value.GetArray()) {
+      excludePDGInHistory.push_back(ii.GetBool());
+      LOG(debug) << "excludePDGInHistory: " << ii.GetBool();
+    }
+  }
+
+  // Calling the MCProng constructor
+  MCProng* prong = new MCProng(n, pdgs, checkBothCharges, excludePDG, sBitsVec, sBitsExcludeVec, useANDonSourceBitMap,
+                               checkGenerationsInTime, checkIfPDGInHistory, excludePDGInHistory);
+  // Print the configuration
+  prong->Print();
+  return prong;
+}
+
+//_______________________________________________________________________________________________
+template <typename T>
+bool o2::aod::dqmcsignals::ValidateJSONMCSignal(T sigJSON, const char* sigName)
+{
+
+  LOG(info) << "Validating MC signal " << sigName;
+  if (sigJSON->HasMember("commonAncestors")) {
+    if (!sigJSON->FindMember("commonAncestors")->value.IsArray()) {
+      LOG(fatal) << "In MCSignal definition, commonAncestors must be an array";
+      return false;
+    }
+  }
+  if (sigJSON->HasMember("excludeCommonAncestor") && !sigJSON->HasMember("commonAncestors")) {
+    LOG(fatal) << "In MCSignal definition, commonAncestors field is needed if excludeCommonAncestor is specified";
+    return false;
+  }
+
+  return true;
 }

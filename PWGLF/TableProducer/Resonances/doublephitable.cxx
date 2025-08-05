@@ -45,6 +45,7 @@
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
+#include "Common/DataModel/PIDResponseITS.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -143,6 +144,7 @@ struct doublephitable {
   ROOT::Math::PxPyPzMVector KaonPlus, KaonMinus, PhiMesonMother, PhiVectorDummy, Phid1dummy, Phid2dummy;
   void processPhiReducedTable(EventCandidates::iterator const& collision, TrackCandidates const&, aod::BCsWithTimestamps const&)
   {
+    o2::aod::ITSResponse itsResponse;
     bool keepEventDoublePhi = false;
     int numberPhi = 0;
     auto currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
@@ -179,6 +181,9 @@ struct doublephitable {
         if (!selectionPID(track1)) {
           continue;
         }
+        if (!(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track1) < 3.0)) {
+          continue;
+        }
         Npostrack = Npostrack + 1;
         qaRegistry.fill(HIST("hNsigmaPtkaonTPC"), track1.tpcNSigmaKa(), track1.pt());
         if (track1.hasTOF()) {
@@ -199,6 +204,9 @@ struct doublephitable {
           }
           auto track2ID = track2.globalIndex();
           if (track2ID == track1ID) {
+            continue;
+          }
+          if (!(itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) > -3.0 && itsResponse.nSigmaITS<o2::track::PID::Kaon>(track2) < 3.0)) {
             continue;
           }
           if (!selectionPair(track1, track2)) {
