@@ -79,8 +79,8 @@ using std::array;
 
 // Define convenient aliases for commonly used table joins
 using SelectedCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-using recCollisionsMc = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
-using genCollisionsMc = aod::McCollisions;
+using RecCollisionsMc = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
+using GenCollisionsMc = aod::McCollisions;
 using AntiNucleiTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksDCA, aod::pidTPCFullPr, aod::pidTPCFullDe, aod::pidTPCFullHe, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFFullHe>;
 using AntiNucleiTracksMc = soa::Join<AntiNucleiTracks, aod::McTrackLabels>;
 
@@ -1077,7 +1077,7 @@ struct AntinucleiInJets {
   PROCESS_SWITCH(AntinucleiInJets, processQC, "Process QC", false);
 
   // Antinuclei reconstruction efficiency
-  void processAntinucleiEfficiency(recCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, aod::McParticles const& mcParticles)
+  void processAntinucleiEfficiency(RecCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, aod::McParticles const& mcParticles)
   {
     // Loop over all simulated collision events
     for (const auto& collision : collisions) {
@@ -1264,7 +1264,7 @@ struct AntinucleiInJets {
   PROCESS_SWITCH(AntinucleiInJets, processAntinucleiEfficiency, "process antinuclei efficiency", false);
 
   // Generated events
-  void processJetsMCgen(genCollisionsMc const& collisions, aod::McParticles const& mcParticles)
+  void processJetsMCgen(GenCollisionsMc const& collisions, aod::McParticles const& mcParticles)
   {
     // Loop over all simulated collisions
     for (const auto& collision : collisions) {
@@ -1391,7 +1391,7 @@ struct AntinucleiInJets {
   PROCESS_SWITCH(AntinucleiInJets, processJetsMCgen, "process jets mc gen", false);
 
   // Reconstructed events
-  void processJetsMCrec(recCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, McParticles const&)
+  void processJetsMCrec(RecCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, McParticles const&)
   {
     // Loop over all reconstructed collisions
     for (const auto& collision : collisions) {
@@ -1799,7 +1799,7 @@ struct AntinucleiInJets {
   PROCESS_SWITCH(AntinucleiInJets, processSystData, "Process syst data", true);
 
   // Process MC with systematic variations of analysis parameters
-  void processSystEff(genCollisionsMc const& genCollisions, recCollisionsMc const& recCollisions, AntiNucleiTracksMc const& mcTracks, aod::McParticles const& mcParticles)
+  void processSystEff(GenCollisionsMc const& genCollisions, RecCollisionsMc const& recCollisions, AntiNucleiTracksMc const& mcTracks, aod::McParticles const& mcParticles)
   {
     // Cut settings
     static std::vector<double> maxDcaxySyst = {
