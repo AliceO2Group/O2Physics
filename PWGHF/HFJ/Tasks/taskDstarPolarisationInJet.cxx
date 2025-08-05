@@ -645,8 +645,8 @@ struct HfTaskDstarPolarisationInJet {
   bool isInSignalRegion(float invMass)
   {
     if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
-      invMassMin = 0.142f;
-      invMassMax = 0.15f;
+      float invMassMin = 0.142f;
+      float invMassMax = 0.15f;
       if (invMassMin < invMass && invMass < invMassMax) {
         return true;
       }
