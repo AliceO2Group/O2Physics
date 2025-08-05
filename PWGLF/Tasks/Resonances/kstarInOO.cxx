@@ -46,7 +46,6 @@
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
-#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -76,7 +75,6 @@ struct kstarInOO {
 
   // Track Selection
   // General
-  Configurable<std::string> cfg_Track_Selections{"cfg_Track_Selections", "globalTracks", "set track selections"};
   Configurable<double> cfg_Track_MinPt{"cfg_Track_MinPt", 0.15, "set track min pT"};
   Configurable<double> cfg_Track_MaxEta{"cfg_Track_MaxEta", 0.9, "set track max Eta"};
   Configurable<double> cfg_Track_MaxDCArToPVcut{"cfg_Track_MaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
@@ -126,23 +124,27 @@ struct kstarInOO {
     const AxisSpec MinvAxis = {cfg_MinvNBins, cfg_MinvMin, cfg_MinvMax};
 
     if (cfg_Event_CutQA) {
-      OOhistos.add("hPosZ_BC", "PosZ_Bc", kTH1F, {{100, 0.0, 15.0}});
-      OOhistos.add("hPosZ_AC", "PosZ_AC", kTH1F, {{100, 0.0, 15.0}});
+      OOhistos.add("hPosZ_BC", "hPosZ_Bc", kTH1F, {{100, 0.0, 15.0}});
+      OOhistos.add("hPosZ_AC", "hPosZ_AC", kTH1F, {{100, 0.0, 15.0}});
     }
 
     if (cfg_Track_CutQA) {
-      OOhistos.add("h_rawpT", "h_rawpT", kTH1F, {{1000, 0.0, 10.0}});
-      OOhistos.add("h_rawpT_Kaon", "h_rawpT_Kaon", kTH1F, {{1000, 0.0, 10.0}});
-      OOhistos.add("h_rawpT_Pion", "h_rawpT_Pion", kTH1F, {{1000, 0.0, 10.0}});
-      OOhistos.add("h_eta", "h_eta", kTH1F, {axisEta});
-      OOhistos.add("h_phi", "h_phi", kTH1F, {axisPhi});
+      // OOhistos.add("h_rawpT", "h_rawpT", kTH1F, {{1000, 0.0, 10.0}});
+      // OOhistos.add("h_rawpT_Kaon", "h_rawpT_Kaon", kTH1F, {{1000, 0.0, 10.0}});
+      // OOhistos.add("h_rawpT_Pion", "h_rawpT_Pion", kTH1F, {{1000, 0.0, 10.0}});
+      // OOhistos.add("h_eta", "h_eta", kTH1F, {axisEta});
+      // OOhistos.add("h_phi", "h_phi", kTH1F, {axisPhi});
 
       OOhistos.add("QA_nSigma_pion_TPC", "QA_nSigma_pion_TPC", {HistType::kTH2F, {PtAxis, PIDAxis}});
       OOhistos.add("QA_nSigma_pion_TOF", "QA_nSigma_pion_TOF", {HistType::kTH2F, {PtAxis, PIDAxis}});
       OOhistos.add("QA_pion_TPC_TOF", "QA_pion_TPC_TOF", {HistType::kTH2F, {PIDAxis, PIDAxis}});
-      OOhistos.add("QA_nSigma_kaon_TPC", "QA_nSigma_kaon_TPC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      OOhistos.add("QA_nSigma_kaon_TOF", "QA_nSigma_kaon_TOF", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      OOhistos.add("QA_kaon_TPC_TOF", "QA_kaon_TPC_TOF", {HistType::kTH2F, {PIDAxis, PIDAxis}});
+      OOhistos.add("QA_nSigma_kaon_TPC_BC", "QA_nSigma_kaon_TPC_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      OOhistos.add("QA_nSigma_kaon_TOF_BC", "QA_nSigma_kaon_TOF_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      OOhistos.add("QA_kaon_TPC_TOF_BC", "QA_kaon_TPC_TOF_BC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
+
+      OOhistos.add("QA_nSigma_kaon_TPC_AC", "QA_nSigma_kaon_TPC_AC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      OOhistos.add("QA_nSigma_kaon_TOF_AC", "QA_nSigma_kaon_TOF_AC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      OOhistos.add("QA_kaon_TPC_TOF_AC", "QA_kaon_TPC_TOF_AC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
     }
 
     // MC histos
@@ -170,8 +172,8 @@ struct kstarInOO {
   // For Mixed Event
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
-  Partition<TrackCandidates_MC> Kaon_MC = nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig;
-  Partition<TrackCandidates_MC> Pion_MC = nabs(aod::pidtpc::tpcNSigmaPi) <= cfg_Track_TPCPID_nSig;
+  Partition<TrackCandidates_MC> Kaon_MC = !cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig);
+  Partition<TrackCandidates_MC> Pion_MC = !cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaPi) <= cfg_Track_TPCPID_nSig);
 
   double massKa = o2::constants::physics::MassKPlus;
   double massPi = o2::constants::physics::MassPiMinus;
@@ -184,6 +186,9 @@ struct kstarInOO {
   template <typename EventType>
   bool eventSelection(const EventType event)
   {
+    if (cfg_Event_CutQA)
+      OOhistos.fill(HIST("hPosZ_BC"), event.posZ());
+
     if (!event.sel8())
       return false;
     if (std::abs(event.posZ()) > cfg_Event_VtxCut)
@@ -198,6 +203,9 @@ struct kstarInOO {
       return false;
     if (!event.selection_bit(aod::evsel::kNoCollInTimeRangeStandard))
       return false;
+
+    if (cfg_Event_CutQA)
+      OOhistos.fill(HIST("hPosZ_AC"), event.posZ());
 
     return true;
   };
@@ -250,25 +258,31 @@ struct kstarInOO {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     // TPC
     if (cfg_Track_CutQA) {
-      OOhistos.fill(HIST("QA_nSigma_kaon_TPC"), candidate.pt(), candidate.tpcNSigmaKa());
-      OOhistos.fill(HIST("QA_nSigma_kaon_TOF"), candidate.pt(), candidate.tofNSigmaKa());
-      OOhistos.fill(HIST("QA_kaon_TPC_TOF"), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
+      OOhistos.fill(HIST("QA_nSigma_kaon_TPC_BC"), candidate.pt(), candidate.tpcNSigmaKa());
+      OOhistos.fill(HIST("QA_nSigma_kaon_TOF_BC"), candidate.pt(), candidate.tofNSigmaKa());
+      OOhistos.fill(HIST("QA_kaon_TPC_TOF_BC"), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
     }
     if (std::abs(candidate.tpcNSigmaKa()) < cfg_Track_TPCPID_nSig)
       tpcPIDPassed = true;
 
     // TOF
     if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaKa()) < cfg_Track_TOFPID_nSig)
+      if (std::abs(candidate.tofNSigmaKa()) < cfg_Track_TOFPID_nSig) {
         tofPIDPassed = true;
-      else
-        tofPIDPassed = true;
+      }
+    } else {
+      tofPIDPassed = true;
     }
 
     // TPC & TOF
-    if (tpcPIDPassed && tofPIDPassed)
+    if (tpcPIDPassed && tofPIDPassed) {
+      if (cfg_Track_CutQA) {
+        OOhistos.fill(HIST("QA_nSigma_kaon_TPC_AC"), candidate.pt(), candidate.tpcNSigmaKa());
+        OOhistos.fill(HIST("QA_nSigma_kaon_TOF_AC"), candidate.pt(), candidate.tofNSigmaKa());
+        OOhistos.fill(HIST("QA_kaon_TPC_TOF_AC"), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
+      }
       return true;
-
+    }
     return false;
   }
 
@@ -308,6 +322,12 @@ struct kstarInOO {
     auto centrality = collision1.centFT0C();
 
     for (auto& [trk1, trk2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+
+      if (!trackSelection(trk1) || !trackSelection(trk2))
+        continue;
+      if (!trackPIDKaon(trk1) || !trackPIDPion(trk2))
+        continue;
+
       auto [KstarPt, Minv] = minvReconstruction(trk1, trk2);
       if (Minv < 0)
         continue;
@@ -336,14 +356,14 @@ struct kstarInOO {
 
     if (!trackSelection(trk1) || !trackSelection(trk2))
       return {-1.0, -1.0};
+
     if (!trackPIDKaon(trk1) || !trackPIDPion(trk2))
       return {-1.0, -1.0};
 
     if (trk1.globalIndex() == trk2.globalIndex()) {
-      // std::cout<<"This happens"<<std::endl;
-
-      return {-1.0, -1.0}; // For Kstar, we need to run (0,1), (1,0) pairs as well. but same id pairs are not neede.
+      return {-1.0, -1.0}; // For Kstar, we need to run (0,1), (1,0) pairs as well. but same id pairs are not need.
     }
+
     lDecayDaughter1.SetXYZM(trk1.px(), trk1.py(), trk1.pz(), massKa);
     lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
     lResonance = lDecayDaughter1 + lDecayDaughter2;
