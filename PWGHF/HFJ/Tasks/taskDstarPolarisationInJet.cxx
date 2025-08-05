@@ -32,6 +32,7 @@
 #include "TRandom3.h"
 #include "TVector3.h"
 
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -884,8 +885,7 @@ struct TaskPolarisationDstarInJet {
         const auto dstarMcDJetsPerCollision = mcdJets.sliceBy(dstarMCDJetsPerCollisionPreslice, collision.globalIndex());
         for (const auto& mcdJet : dstarMcDJetsPerCollision) {
           for (const auto& mcdDstarCand : mcdJet.candidates_as<aod::CandidatesDstarMCD>()) {
-            if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(mcdJet, mcdDstarCand, 0)) {
-            }
+            runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(mcdJet, mcdDstarCand, 0);
             break;
           }
         }
@@ -909,8 +909,7 @@ struct TaskPolarisationDstarInJet {
         const auto dstarMcdJetsPerCollision = mcdJets.sliceBy(dstarMCDJetsPerCollisionPreslice, collision.globalIndex());
         for (const auto& mcdJet : dstarMcdJetsPerCollision) {
           for (const auto& mcdDstarCand : mcdJet.candidates_as<aod::CandidatesDstarMCD>()) {
-            if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(mcdJet, mcdDstarCand, 0)) {
-            }
+            runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(mcdJet, mcdDstarCand, 0);
           }
         }
       }
