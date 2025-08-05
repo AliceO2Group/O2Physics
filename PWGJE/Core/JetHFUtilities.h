@@ -845,7 +845,10 @@ void fillDstarCandidateTable(T const& candidate, U& DstarParTable, V& DstarParDa
     candidate.impactParameterNormalised1(),
     candidate.nSigTpcPi1(),
     candidate.nSigTofPi1(),
-    candidate.nSigTpcTofPi1());
+    candidate.nSigTpcTofPi1(),
+    candidate.absEtaTrackMin(),
+    candidate.numItsClsMin(),
+    candidate.numTpcClsMin());
 
   DstarParDaughterTable(
     candidate.chi2PCACharm(),
