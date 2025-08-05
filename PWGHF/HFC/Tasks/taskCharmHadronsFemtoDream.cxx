@@ -52,12 +52,19 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoDream;
 
+inline o2::framework::expressions::Node coshEta(o2::framework::expressions::Node&& eta) {
+    return (nexp(std::move(eta)) + nexp(0.0f - std::move(eta))) * 0.5f;
+}
+
 struct HfTaskCharmHadronsFemtoDream {
 
   enum TrackCharge {
     PositiveCharge = 1,
     NegativeCharge = -1
   };
+  
+  constexpr static int OriginRecPrompt = 1;
+  constexpr static int OriginRecFD = 2;
 
   Produces<o2::aod::FDHfCharm> rowFemtoResultCharm;
   Produces<o2::aod::FDHfTrk> rowFemtoResultTrk;
@@ -145,16 +152,16 @@ struct HfTaskCharmHadronsFemtoDream {
 
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
-  /// Partition for particle 1
-  Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, cutBitTrack1)) && ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, tpcTofBitTrack1));
+ /// Partition for particle 1
+  Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, cutBitTrack1)) && ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, tpcTofBitTrack1));
 
   Partition<FilteredFDMcParts> partitionMcTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
                                                  (ncheckbit(aod::femtodreamparticle::cut, cutBitTrack1)) &&
-                                                 ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, tpcTofBitTrack1));
+                                                 ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, tpcTofBitTrack1));
 
   /// Partition for particle 2
   Partition<FilteredCharmCands> partitionCharmHadron = aod::fdhf::bdtBkg < charmHadBkgBDTmax && aod::fdhf::bdtFD < charmHadFdBDTmax && aod::fdhf::bdtFD > charmHadFdBDTmin&& aod::fdhf::bdtPrompt<charmHadPromptBDTmax && aod::fdhf::bdtPrompt> charmHadPromptBDTmin;
-  Partition<FilteredCharmMcCands> partitionMcCharmHadron = aod::fdhf::originMcRec == 1 || aod::fdhf::originMcRec == 2;
+  Partition<FilteredCharmMcCands> partitionMcCharmHadron = aod::fdhf::originMcRec == OriginRecPrompt || aod::fdhf::originMcRec == OriginRecFD;
 
   /// Axis configurables
   ConfigurableAxis dummy{"dummy", {1, 0, 1}, "dummy axis"};
@@ -171,7 +178,7 @@ struct HfTaskCharmHadronsFemtoDream {
   ConfigurableAxis binMulPercentile{"binMulPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning"};
   ConfigurableAxis binpTTrack{"binpTTrack", {50, 0.5, 10.05}, "pT binning of the pT vs. TempFitVar plot (Track)"};
   ConfigurableAxis binEta{"binEta", {{200, -1.5, 1.5}}, "eta binning"};
-  ConfigurableAxis binPhi{"binPhi", {{200, 0, TMath::TwoPi()}}, "phi binning"};
+  ConfigurableAxis binPhi{"binPhi", {{200, 0, 2.f * 3.14159274101257324e+00f}}, "phi binning"};
   ConfigurableAxis binkT{"binkT", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis binkstar{"binkstar", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis binNSigmaTPC{"binNSigmaTPC", {1600, -8, 8}, "Binning of Nsigma TPC plot"};
@@ -300,10 +307,11 @@ struct HfTaskCharmHadronsFemtoDream {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-
+      
+      constexpr int CUT_BIT_CHARGE_POSITIVE = 2;
       // proton track charge
       float chargeTrack = 0.;
-      if ((p1.cut() & 2) == 2) {
+      if ((p1.cut() & CUT_BIT_CHARGE_POSITIVE) == CUT_BIT_CHARGE_POSITIVE) {
         chargeTrack = PositiveCharge;
       } else {
         chargeTrack = NegativeCharge;
