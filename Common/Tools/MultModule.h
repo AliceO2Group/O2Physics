@@ -522,7 +522,7 @@ class MultModule
     hVtxZFDDA = nullptr;
     hVtxZFDDC = nullptr;
     hVtxZNTracks = nullptr;
-    hVtxZNMFTTracks = nullptr; 
+    hVtxZNMFTTracks = nullptr;
     hVtxZNGlobalTracks = nullptr;
 
     opts = internalOpts;
@@ -663,10 +663,10 @@ class MultModule
             LOGF(error, "Problem loading CCDB objects! Please check");
             lCalibLoaded = false;
           }
-          if (!hVtxZNMFTTracks){
+          if (!hVtxZNMFTTracks) {
             LOGF(info, "MFT track counter: vertex-Z calibration not loaded, will run without.");
           }
-          if (!hVtxZNGlobalTracks){
+          if (!hVtxZNGlobalTracks) {
             LOGF(info, "Global track counter: vertex-Z calibration not loaded, will run without.");
           }
         } else {
@@ -854,9 +854,9 @@ class MultModule
 
       cursors.multsGlobal(mults.multGlobalTracks, mults.multNbrContribsEta08GlobalTrackWoDCA, mults.multNbrContribsEta10GlobalTrackWoDCA, mults.multNbrContribsEta05GlobalTrackWoDCA);
 
-      if(!hVtxZNGlobalTracks || std::fabs(collision.posZ()) > 15.0f){
+      if (!hVtxZNGlobalTracks || std::fabs(collision.posZ()) > 15.0f) {
         mults.multGlobalTracksZeq = mults.multGlobalTracks; // if no equalization available, don't do it
-      }else{
+      } else {
         mults.multGlobalTracksZeq = hVtxZNGlobalTracks->Interpolate(0.0) * mults.multFT0C / hVtxZNGlobalTracks->Interpolate(collision.posZ());
       }
 
@@ -978,9 +978,9 @@ class MultModule
     mults[collision.globalIndex()].multMFTTracks = nTracks;
 
     // vertex-Z equalized MFT
-    if(!hVtxZNMFTTracks || std::fabs(collision.posZ()) > 15.0f){
+    if (!hVtxZNMFTTracks || std::fabs(collision.posZ()) > 15.0f) {
       mults[collision.globalIndex()].multMFTTracksZeq = mults[collision.globalIndex()].multMFTTracks; // if no equalization available, don't do it
-    }else{
+    } else {
       mults[collision.globalIndex()].multMFTTracksZeq = hVtxZNMFTTracks->Interpolate(0.0) * mults[collision.globalIndex()].multMFTTracks / hVtxZNMFTTracks->Interpolate(collision.posZ());
     }
 

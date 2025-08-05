@@ -211,14 +211,14 @@ using MultHepMCHI = MultHepMCHIs::iterator;
 
 namespace multZeq
 {
-DECLARE_SOA_COLUMN(MultZeqFV0A, multZeqFV0A, float);             //! Multiplicity equalized for the vertex position with the FV0A detector
-DECLARE_SOA_COLUMN(MultZeqFT0A, multZeqFT0A, float);             //! Multiplicity equalized for the vertex position with the FT0A detector
-DECLARE_SOA_COLUMN(MultZeqFT0C, multZeqFT0C, float);             //! Multiplicity equalized for the vertex position with the FT0C detector
-DECLARE_SOA_COLUMN(MultZeqFDDA, multZeqFDDA, float);             //! Multiplicity equalized for the vertex position with the FDDA detector
-DECLARE_SOA_COLUMN(MultZeqFDDC, multZeqFDDC, float);             //! Multiplicity equalized for the vertex position with the FDDC detector
-DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float);   //! Multiplicity equalized for the vertex position from the PV contributors
+DECLARE_SOA_COLUMN(MultZeqFV0A, multZeqFV0A, float);                   //! Multiplicity equalized for the vertex position with the FV0A detector
+DECLARE_SOA_COLUMN(MultZeqFT0A, multZeqFT0A, float);                   //! Multiplicity equalized for the vertex position with the FT0A detector
+DECLARE_SOA_COLUMN(MultZeqFT0C, multZeqFT0C, float);                   //! Multiplicity equalized for the vertex position with the FT0C detector
+DECLARE_SOA_COLUMN(MultZeqFDDA, multZeqFDDA, float);                   //! Multiplicity equalized for the vertex position with the FDDA detector
+DECLARE_SOA_COLUMN(MultZeqFDDC, multZeqFDDC, float);                   //! Multiplicity equalized for the vertex position with the FDDC detector
+DECLARE_SOA_COLUMN(MultZeqNTracksPV, multZeqNTracksPV, float);         //! Multiplicity equalized for the vertex position from the PV contributors
 DECLARE_SOA_COLUMN(MultZeqNTracksGlobal, multZeqNTracksGlobal, float); //! Multiplicity equalized for the vertex position, global tracks
-DECLARE_SOA_COLUMN(MultZeqMFTNtracks, multZeqMFTNtracks, float); //! Multiplicity equalized for the vertex position, MFT tracks
+DECLARE_SOA_COLUMN(MultZeqMFTNtracks, multZeqMFTNtracks, float);       //! Multiplicity equalized for the vertex position, MFT tracks
 } // namespace multZeq
 DECLARE_SOA_TABLE(FV0MultZeqs, "AOD", "FV0MULTZEQ", //! Multiplicity equalized for the vertex position with the FV0 detector
                   multZeq::MultZeqFV0A);
