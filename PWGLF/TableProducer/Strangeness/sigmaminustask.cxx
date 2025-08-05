@@ -49,6 +49,12 @@ struct sigmaminustask {
   Configurable<float> cutRapMotherMC{"cutRapMotherMC", 1.0f, "Rapidity cut for mother Sigma in MC"};
 
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Kink candidates"};
+  // Configurables for findable tracks (see kinkBuilder.cxx)
+  Configurable<float> KBminPtMoth{"KBminPtMoth", 0.5, "Minimum pT of the mother"};
+  Configurable<float> KBmaxPhiDiff{"KBmaxPhiDiff", 100, "Max phi difference between the kink daughter and the mother"};
+  Configurable<float> KBetaMax{"KBetaMax", 1., "Max eta for both mother and daughter"};
+  Configurable<float> KBnTPCClusMinDaug{"KBnTPCClusMinDaug", 80, "Min daug NTPC clusters"};
+  Configurable<float> KBradiusCut{"KBradiusCut", 19.6213f, "Min reconstructed decay radius of the mother"};
 
   Preslice<aod::KinkCands> mPerCol = aod::track::collisionId;
 
@@ -414,7 +420,7 @@ struct sigmaminustask {
         continue; 
       }
 
-      if (motherTrack.pt() > 0.5) {
+      if (motherTrack.pt() > KBminPtMoth) {
         filterIndex += 1;
         rFindable.fill(HIST("hFilterIndex"), filterIndex);
         rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
@@ -425,7 +431,7 @@ struct sigmaminustask {
 
       // 4 - daughter track ITS+TPC properties
       if (daughterTrack.itsNClsInnerBarrel() == 0 && daughterTrack.itsNCls() < 4 &&
-          daughterTrack.tpcNClsCrossedRows() > 0.8 * daughterTrack.tpcNClsFindable() && daughterTrack.tpcNClsFound() > 80) {
+          daughterTrack.tpcNClsCrossedRows() > 0.8 * daughterTrack.tpcNClsFindable() && daughterTrack.tpcNClsFound() > KBnTPCClusMinDaug) {
         filterIndex += 1;
         rFindable.fill(HIST("hFilterIndex"), filterIndex);
         rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
@@ -435,7 +441,7 @@ struct sigmaminustask {
       }
 
       // 5 - geometric cuts: eta
-      if (std::abs(motherTrack.eta()) < 1.0 && std::abs(daughterTrack.eta()) < 1.0) {
+      if (std::abs(motherTrack.eta()) < KBetaMax && std::abs(daughterTrack.eta()) < KBetaMax) {
         filterIndex += 1;
         rFindable.fill(HIST("hFilterIndex"), filterIndex);
         rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
@@ -445,7 +451,7 @@ struct sigmaminustask {
       }
       
       // 6 - geometric cuts: phi difference
-      if (std::abs(motherTrack.phi() - daughterTrack.phi()) * radToDeg < 50.0) {
+      if (std::abs(motherTrack.phi() - daughterTrack.phi()) * radToDeg < KBmaxPhiDiff) {
         filterIndex += 1;
         rFindable.fill(HIST("hFilterIndex"), filterIndex);
         rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
@@ -455,7 +461,7 @@ struct sigmaminustask {
       }
       
       // 7 - radius cut
-      if (recRadius > 19.6213f) {
+      if (recRadius > KBradiusCut) {
         filterIndex += 1;
         rFindable.fill(HIST("hFilterIndex"), filterIndex);
         rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
