@@ -74,15 +74,11 @@ struct decay3bodyCandidate {
   int sign;
   float momentum[3];
   float position[3];
-  // std::array<float, 3> momentum = {0.0f, 0.0f, 0.0f};
-  // std::array<float, 3> position = {0.0f, 0.0f, 0.0f};
-  // float dcaToPV = 0.0f;
-  // float dcaxyToPV = 0.0f;
   float chi2 = 0.0f;
   float trackedClSize = 0.0f;
   float cosPA = 0.0f;                                        // cosine of pointing angle
   float ctau = 0.0f;                                         // ctau of the candidate
-  float daughterDCAatSV = 0.0f;                              // quadratic sum of DCA between daughters at SV
+  float daughterDCAtoSVaverage = 0.0f;                       // average of quadratic sum of daughter DCAs to SV
   std::array<float, 3> daughterDCAtoSV = {0.0f, 0.0f, 0.0f}; // 0 - pos, 1 - neg, 2 - bach
 
   // covariance matrix
@@ -148,7 +144,7 @@ class decay3bodyBuilderHelper
     double minTOFnSigmaDeuteron;
     double maxTOFnSigmaDeuteron;
     float minPDeuteronUseTOF;
-    float maxDCADauAtSV;
+    float maxDCADauToSVaverage;
     // candidate
     float maxRapidity;
     float minPt;
@@ -188,6 +184,7 @@ class decay3bodyBuilderHelper
                                 bool useKFParticle = false,
                                 bool kfSetTopologicalConstraint = false,
                                 bool useSelections = true,
+                                bool useChi2Selection = true,
                                 bool useTPCforPion = false,
                                 bool acceptTPCOnly = false,
                                 bool askOnlyITSMatch = true,
@@ -342,18 +339,6 @@ class decay3bodyBuilderHelper
     auto trackPionPt = std::sqrt(decay3body.momPion[0] * decay3body.momPion[0] + decay3body.momPion[1] * decay3body.momPion[1]);
     auto trackDeuteronPt = std::sqrt(decay3body.momDeuteron[0] * decay3body.momDeuteron[0] + decay3body.momDeuteron[1] * decay3body.momDeuteron[1]);
 
-    // DCA between daughters at SV
-    decay3body.daughterDCAatSV = std::hypot(
-      std::hypot(decay3body.posProton[0] - decay3body.posPion[0],
-                 decay3body.posProton[1] - decay3body.posPion[1],
-                 decay3body.posProton[2] - decay3body.posPion[2]),
-      std::hypot(decay3body.posProton[0] - decay3body.posDeuteron[0],
-                 decay3body.posProton[1] - decay3body.posDeuteron[1],
-                 decay3body.posProton[2] - decay3body.posDeuteron[2]),
-      std::hypot(decay3body.posPion[0] - decay3body.posProton[0],
-                 decay3body.posPion[1] - decay3body.posProton[1],
-                 decay3body.posPion[2] - decay3body.posProton[2]));
-
     // daughter DCA to SV
     // proton daughter
     decay3body.daughterDCAtoSV[0] = std::hypot(
@@ -370,6 +355,12 @@ class decay3bodyBuilderHelper
       decay3body.posDeuteron[0] - decay3body.position[0],
       decay3body.posDeuteron[1] - decay3body.position[1],
       decay3body.posDeuteron[2] - decay3body.position[2]);
+
+    // DCA daughters to SV average of quadratic sum
+    decay3body.daughterDCAtoSVaverage = (decay3body.daughterDCAtoSV[0] * decay3body.daughterDCAtoSV[0] +
+                                         decay3body.daughterDCAtoSV[1] * decay3body.daughterDCAtoSV[1] +
+                                         decay3body.daughterDCAtoSV[2] * decay3body.daughterDCAtoSV[2]) /
+                                        3;
 
     //_____________________________________________________
     // selections after vertex fit
@@ -392,7 +383,7 @@ class decay3bodyBuilderHelper
       }
 
       // daughter DCAs at SV
-      if (decay3body.daughterDCAatSV > decay3bodyselections.maxDCADauAtSV) {
+      if (decay3body.daughterDCAtoSVaverage > decay3bodyselections.maxDCADauToSVaverage) {
         decay3body = {};
         return false;
       }
@@ -418,7 +409,7 @@ class decay3bodyBuilderHelper
       }
 
       // vertex chi2
-      if (decay3body.chi2 > decay3bodyselections.maxChi2) {
+      if (useChi2Selection && decay3body.chi2 > decay3bodyselections.maxChi2) {
         decay3body = {};
         return false;
       }

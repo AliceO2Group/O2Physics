@@ -19,16 +19,19 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEDETADPHISTAR_H_
 
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseAngularContainer.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseFemtoContainer.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
+#include "Framework/HistogramRegistry.h"
+
+#include "TMath.h"
+
 #include <memory>
 #include <string>
 #include <vector>
-#include "TMath.h"
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseFemtoContainer.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseAngularContainer.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseContainer.h"
-#include "Framework/HistogramRegistry.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 
 namespace o2::analysis
 {
@@ -279,7 +282,7 @@ class FemtoUniverseDetaDphiStar
         auto indexOfDaughterpart2 = (ChosenEventType == femto_universe_container::EventType::mixed ? part2.globalIndex() : part2.index()) + CascChildTable[i][1];
         auto daughterpart1 = particles.begin() + indexOfDaughterpart1;
         auto daughterpart2 = particles.begin() + indexOfDaughterpart2;
-        if (isSameSignCPR && (daughterpart1.sign() != daughterpart2.sign()))
+        if (isSameSignCPR && (daughterpart1.mAntiLambda() != daughterpart2.mAntiLambda())) // mAntiLambda() is used here as sign getter
           continue;
         auto deta = daughterpart1.eta() - daughterpart2.eta();
         auto dphiAvg = averagePhiStar(*daughterpart1, *daughterpart2, i);
@@ -404,6 +407,47 @@ class FemtoUniverseDetaDphiStar
         }
       }
       return pass;
+    } else {
+      LOG(fatal) << "FemtoUniversePairCleaner: Combination of objects not defined - quitting!";
+      return false;
+    }
+  }
+
+  ///  Check if pair is close or not
+  template <typename Part>
+  bool isClosePairAtITS(Part const& part1, Part const& part2, float lmagfield, uint8_t ChosenEventType)
+  {
+    magfield = lmagfield;
+
+    if constexpr (kPartOneType == o2::aod::femtouniverseparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtouniverseparticle::ParticleType::kTrack) {
+      /// Track-Track combination
+      // check if provided particles are in agreement with the class instantiation
+      if (part1.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtouniverseparticle::ParticleType::kTrack) {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar instantiation! Please provide kTrack,kTrack candidates.";
+        return false;
+      }
+      auto deta = part1.eta() - part2.eta();
+      auto dphiAvg = part1.phi() - part2.phi();
+      if (ChosenEventType == femto_universe_container::EventType::same) {
+        histdetadpisame[0][0]->Fill(deta, dphiAvg);
+      } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+        histdetadpimixed[0][0]->Fill(deta, dphiAvg);
+      } else {
+        LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+      }
+
+      if (std::pow(dphiAvg, 2) / std::pow(cutDeltaPhiStarMax, 2) + std::pow(deta, 2) / std::pow(cutDeltaEtaMax, 2) < 1.) {
+        return true;
+      } else {
+        if (ChosenEventType == femto_universe_container::EventType::same) {
+          histdetadpisame[0][1]->Fill(deta, dphiAvg);
+        } else if (ChosenEventType == femto_universe_container::EventType::mixed) {
+          histdetadpimixed[0][1]->Fill(deta, dphiAvg);
+        } else {
+          LOG(fatal) << "FemtoUniverseDetaDphiStar: passed arguments don't agree with FemtoUniverseDetaDphiStar's type of events! Please provide same or mixed.";
+        }
+        return false;
+      }
     } else {
       LOG(fatal) << "FemtoUniversePairCleaner: Combination of objects not defined - quitting!";
       return false;
@@ -577,7 +621,7 @@ class FemtoUniverseDetaDphiStar
     for (size_t i = 0; i < 9; i++) {
       double arg = 0.3 * charge * magfield * TmpRadiiTPC[i] * 0.01 / (2. * pt);
       if (std::abs(arg) < 1.0) {
-        tmpVec.push_back(phi0 - std::asin(arg));
+        tmpVec.push_back(phi0 + std::asin(arg));
       } else {
         tmpVec.push_back(999.0);
       }

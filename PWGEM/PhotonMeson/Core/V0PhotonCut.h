@@ -16,16 +16,18 @@
 #ifndef PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 #define PWGEM_PHOTONMESON_CORE_V0PHOTONCUT_H_
 
-#include <algorithm>
-#include <set>
-#include <vector>
-#include <utility>
-#include <string>
 #include "Rtypes.h"
-#include "TNamed.h"
-#include "TMath.h"
 
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
+
+#include "TMath.h"
+#include "TNamed.h"
+
+#include <algorithm>
+#include <set>
+#include <string>
+#include <utility>
+#include <vector>
 using namespace o2::pwgem::photonmeson;
 
 class V0PhotonCut : public TNamed
@@ -343,10 +345,10 @@ class V0PhotonCut : public TNamed
   {
     switch (cut) {
       case V0PhotonCuts::kTrackPtRange:
-        return track.pt() >= mMinTrackPt && track.pt() <= mMaxTrackPt;
+        return track.pt() > mMinTrackPt && track.pt() < mMaxTrackPt;
 
       case V0PhotonCuts::kTrackEtaRange:
-        return track.eta() >= mMinTrackEta && track.eta() <= mMaxTrackEta;
+        return track.eta() > mMinTrackEta && track.eta() < mMaxTrackEta;
 
       case V0PhotonCuts::kTPCNCls:
         return track.tpcNClsFound() >= mMinNClustersTPC;
@@ -358,22 +360,22 @@ class V0PhotonCut : public TNamed
         return track.tpcCrossedRowsOverFindableCls() >= mMinNCrossedRowsOverFindableClustersTPC;
 
       case V0PhotonCuts::kTPCFracSharedClusters:
-        return track.tpcFractionSharedCls() <= mMaxFracSharedClustersTPC;
+        return track.tpcFractionSharedCls() < mMaxFracSharedClustersTPC;
 
       case V0PhotonCuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
 
       case V0PhotonCuts::kTPCNsigmaEl:
-        return track.tpcNSigmaEl() >= mMinTPCNsigmaEl && track.tpcNSigmaEl() <= mMaxTPCNsigmaEl;
+        return track.tpcNSigmaEl() > mMinTPCNsigmaEl && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
 
       case V0PhotonCuts::kTPCNsigmaPi:
-        return track.tpcNSigmaPi() >= mMinTPCNsigmaPi && track.tpcNSigmaPi() <= mMaxTPCNsigmaPi;
+        return track.tpcNSigmaPi() > mMinTPCNsigmaPi && track.tpcNSigmaPi() < mMaxTPCNsigmaPi;
 
       case V0PhotonCuts::kDCAxy:
-        return std::fabs(track.dcaXY()) <= ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
+        return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
       case V0PhotonCuts::kDCAz:
-        return std::fabs(track.dcaZ()) <= mMaxDcaZ;
+        return std::fabs(track.dcaZ()) < mMaxDcaZ;
 
       case V0PhotonCuts::kITSNCls:
         return mMinNClustersITS <= track.itsNCls() && track.itsNCls() <= mMaxNClustersITS;

@@ -84,8 +84,8 @@ struct alice3multicharm {
     std::string prefix = "bdt"; // JSON group name
     Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> localPath{"localPath", "MCharm_BDTModel.onnx", "(std::string) Path to the local .onnx file."};
-    Configurable<std::string> pathCCDB{"btdPathCCDB", "Users/j/jekarlss/MLModels2", "Path on CCDB"};
-    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB.  Exceptions: > 0 for the specific timestamp, 0 gets the run dependent timestamp"};
+    Configurable<std::string> pathCCDB{"btdPathCCDB", "Users/j/jekarlss/MLModels", "Path on CCDB"};
+    Configurable<int64_t> timestampCCDB{"timestampCCDB", 1695750420200, "timestamp of the ONNX file for ML model used to query in CCDB. Please use 1695750420200"};
     Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
     Configurable<bool> enableOptimizations{"enableOptimizations", false, "Enables the ONNX extended model-optimization: sessionOptions.SetGraphOptimizationLevel(GraphOptimizationLevel::ORT_ENABLE_EXTENDED)"};
     Configurable<bool> enableML{"enableML", false, "Enables bdt model"};
@@ -93,7 +93,7 @@ struct alice3multicharm {
   } bdt;
 
   ConfigurableAxis axisEta{"axisEta", {80, -4.0f, +4.0f}, "#eta"};
-  ConfigurableAxis axisXicMass{"axisXicMass", {200, 2.368f, 2.568f}, "XiC Inv Mass (GeV/c^{2})"};
+  ConfigurableAxis axisXicMass{"axisXicMass", {200, 2.368f, 2.568f}, "Xic Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisXiccMass{"axisXiccMass", {200, 3.521f, 3.721f}, "Xicc Inv Mass (GeV/c^{2})"};
   ConfigurableAxis axisDCA{"axisDCA", {400, 0, 400}, "DCA (#mum)"};
   ConfigurableAxis axisRadiusLarge{"axisRadiusLarge", {1000, 0, 20}, "Decay radius (cm)"};
@@ -102,6 +102,7 @@ struct alice3multicharm {
   ConfigurableAxis axisNSigma{"axisNSigma", {21, -10, 10}, "nsigma"};
   ConfigurableAxis axisDecayLength{"axisDecayLength", {2000, 0, 2000}, "Decay lenght (#mum)"};
   ConfigurableAxis axisDcaDaughters{"axisDcaDaughters", {200, 0, 100}, "DCA (mum)"};
+  ConfigurableAxis axisBDTScore{"axisBDTScore", {100, 0, 1}, "BDT Score"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
 
   Configurable<float> xiMinDCAxy{"xiMinDCAxy", -1, "[0] in |DCAxy| > [0]+[1]/pT"};
@@ -133,21 +134,6 @@ struct alice3multicharm {
 
   void init(InitContext&)
   {
-    ccdb->setURL(bdt.ccdbUrl.value);
-    if (bdt.loadModelsFromCCDB) {
-      ccdbApi.init(bdt.ccdbUrl);
-      LOG(info) << "Fetching model for timestamp: " << bdt.timestampCCDB.value;
-      bool retrieveSuccessMCharm = ccdbApi.retrieveBlob(bdt.pathCCDB.value, ".", metadata, bdt.timestampCCDB.value, false, bdt.localPath.value);
-
-      if (retrieveSuccessMCharm) {
-        bdtMCharm.initModel(bdt.localPath.value, bdt.enableOptimizations.value);
-      } else {
-        LOG(fatal) << "Error encountered while fetching/loading the MCharm model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
-      }
-    } else {
-      bdtMCharm.initModel(bdt.localPath.value, bdt.enableOptimizations.value);
-    }
-
     histos.add("SelectionQA/hDCAXicDaughters", "hDCAXicDaughters; DCA between Xic daughters (#mum)", kTH1D, {axisDcaDaughters});
     histos.add("SelectionQA/hDCAXiccDaughters", "hDCAXiccDaughters; DCA between Xicc daughters (#mum)", kTH1D, {axisDcaDaughters});
     histos.add("SelectionQA/hDCAxyXi", "hDCAxyXi; Xi DCAxy to PV (#mum)", kTH1D, {axisDCA});
@@ -249,6 +235,24 @@ struct alice3multicharm {
     histos.add("h3dXicc", "h3dXicc; Xicc pT (GeV/#it(c)); Xicc #eta; Xicc mass (GeV/#it(c)^{2})", kTH3D, {axisPt, axisEta, axisXiccMass});
 
     if (bdt.enableML) {
+      ccdb->setURL(bdt.ccdbUrl.value);
+      if (bdt.loadModelsFromCCDB) {
+        ccdbApi.init(bdt.ccdbUrl);
+        LOG(info) << "Fetching model for timestamp: " << bdt.timestampCCDB.value;
+        bool retrieveSuccessMCharm = ccdbApi.retrieveBlob(bdt.pathCCDB.value, ".", metadata, bdt.timestampCCDB.value, false, bdt.localPath.value);
+
+        if (retrieveSuccessMCharm) {
+          bdtMCharm.initModel(bdt.localPath.value, bdt.enableOptimizations.value);
+        } else {
+          LOG(fatal) << "Error encountered while fetching/loading the MCharm model from CCDB! Maybe the model doesn't exist yet for this runnumber/timestamp?";
+        }
+      } else {
+        bdtMCharm.initModel(bdt.localPath.value, bdt.enableOptimizations.value);
+      }
+
+      histos.add("hBDTScore", "hBDTScore", kTH1D, {axisBDTScore});
+      histos.add("hBDTScoreVsXiccMass", "hBDTScoreVsXiccMass", kTH2D, {axisXiccMass, axisBDTScore});
+      histos.add("hBDTScoreVsXiccPt", "hBDTScoreVsXiccPt", kTH2D, {axisXiccMass, axisPt});
       for (const auto& score : bdt.requiredScores.value) {
         histPath = std::format("MLQA/RequiredBDTScore_{}/", static_cast<int>(score * 100));
         histPointers.insert({histPath + "hDCAXicDaughters", histos.add((histPath + "hDCAXicDaughters").c_str(), "hDCAXicDaughters", {kTH1D, {{axisDcaDaughters}}})});
@@ -292,7 +296,6 @@ struct alice3multicharm {
   void genericProcessXicc(TMCharmCands xiccCands)
   {
     for (const auto& xiccCand : xiccCands) {
-
       if (bdt.enableML) {
         std::vector<float> inputFeatures{
           xiccCand.xicDauDCA(),
@@ -317,6 +320,10 @@ struct alice3multicharm {
 
         float* probabilityMCharm = bdtMCharm.evalModel(inputFeatures);
         float bdtScore = probabilityMCharm[1];
+
+        histos.fill(HIST("hBDTScore"), bdtScore);
+        histos.fill(HIST("hBDTScoreVsXiccMass"), xiccCand.xiccMass(), bdtScore);
+        histos.fill(HIST("hBDTScoreVsXiccPt"), xiccCand.xiccPt(), bdtScore);
 
         for (const auto& requiredScore : bdt.requiredScores.value) {
           if (bdtScore > requiredScore) {

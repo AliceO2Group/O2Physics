@@ -127,6 +127,9 @@ struct lambdaTwoPartPolarization {
   ConfigurableAxis detaAxis{"dyAxis", {20, -1, 1}, "relative rapidity axis"};
   ConfigurableAxis dphiAxis{"dphiAxis", {20, -constants::math::PI * 0.5, constants::math::PI * 1.5}, "relative azimuth axis"};
 
+  ConfigurableAxis cosSigAxis{"cosSigAxis", {110, -1.05, 1.05}, "Signal cosine axis"};
+  ConfigurableAxis cosAccAxis{"cosAccAxis", {110, -7.05, 7.05}, "Accepatance cosine axis"};
+
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
 
@@ -158,8 +161,8 @@ struct lambdaTwoPartPolarization {
       histos.add("QA/nsigma_tpc_pt_mpi", "", {HistType::kTH2F, {ptAxis, pidAxis}});
     }
 
-    histos.add("Ana/Signal", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis}});
-    histos.add("Ana/Acceptance", "", {HistType::kTHnSparseF, {ptAxis, centAxis, RapAxis}});
+    histos.add("Ana/Signal", "", {HistType::kTHnSparseF, {ptAxis, ptAxis, detaAxis, dphiAxis, centAxis, cosSigAxis}});
+    histos.add("Ana/Acceptance", "", {HistType::kTHnSparseF, {ptAxis, centAxis, RapAxis, cosAccAxis}});
 
     fMultPVCutLow = new TF1("fMultPVCutLow", "[0]+[1]*x+[2]*x*x+[3]*x*x*x - 2.5*([4]+[5]*x+[6]*x*x+[7]*x*x*x+[8]*x*x*x*x)", 0, 100);
     fMultPVCutLow->SetParameters(2834.66, -87.0127, 0.915126, -0.00330136, 332.513, -12.3476, 0.251663, -0.00272819, 1.12242e-05);
@@ -179,6 +182,8 @@ struct lambdaTwoPartPolarization {
 
   ROOT::Math::PxPyPzMVector ProtonVec1, PionVec1, LambdaVec1, ProtonBoostedVec1, PionBoostedVec1;
   ROOT::Math::PxPyPzMVector ProtonVec2, PionVec2, LambdaVec2, ProtonBoostedVec2, PionBoostedVec2;
+  int V01Tag;
+  int V02Tag;
   double costhetastar1;
   double costhetastar2;
 
@@ -289,10 +294,12 @@ struct lambdaTwoPartPolarization {
       if (LambdaTag) {
         ProtonVec1 = ROOT::Math::PxPyPzMVector(v01.pxpos(), v01.pypos(), v01.pzpos(), massPr);
         PionVec1 = ROOT::Math::PxPyPzMVector(v01.pxneg(), v01.pyneg(), v01.pzneg(), massPi);
+        V01Tag = 0;
       }
       if (aLambdaTag) {
         ProtonVec1 = ROOT::Math::PxPyPzMVector(v01.pxneg(), v01.pyneg(), v01.pzneg(), massPr);
         PionVec1 = ROOT::Math::PxPyPzMVector(v01.pxpos(), v01.pypos(), v01.pzpos(), massPi);
+        V01Tag = 1;
       }
       LambdaVec1 = ProtonVec1 + PionVec1;
       LambdaVec1.SetM(massLambda);
@@ -334,10 +341,12 @@ struct lambdaTwoPartPolarization {
         if (LambdaTag) {
           ProtonVec2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), massPr);
           PionVec2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), massPi);
+          V02Tag = 0;
         }
         if (aLambdaTag) {
           ProtonVec2 = ROOT::Math::PxPyPzMVector(v02.pxneg(), v02.pyneg(), v02.pzneg(), massPr);
           PionVec2 = ROOT::Math::PxPyPzMVector(v02.pxpos(), v02.pypos(), v02.pzpos(), massPi);
+          V02Tag = 1;
         }
         LambdaVec2 = ProtonVec2 + PionVec2;
         LambdaVec2.SetM(massLambda);
@@ -352,6 +361,10 @@ struct lambdaTwoPartPolarization {
         weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v01.pt()), AccMap->GetYaxis()->FindBin(v01.yLambda())) : 1.;
         weight *= cfgEffCor ? 1.0 / EffMap->GetBinContent(EffMap->GetXaxis()->FindBin(v02.pt()), EffMap->GetYaxis()->FindBin(centrality)) : 1.;
         weight *= cfgAccCor ? 1.0 / AccMap->GetBinContent(AccMap->GetXaxis()->FindBin(v02.pt()), AccMap->GetYaxis()->FindBin(v02.yLambda())) : 1.;
+
+        if (V01Tag != V02Tag) {
+          weight *= -1.0;
+        }
 
         dphi = TVector2::Phi_0_2pi(v01.phi() - v02.phi());
         if (dphi > constants::math::PI * 1.5) {

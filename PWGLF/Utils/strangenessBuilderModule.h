@@ -894,7 +894,7 @@ class BuilderModule
                 posTrackPar.setPID(o2::track::PID::Electron);
                 negTrackPar.setPID(o2::track::PID::Electron);
                 if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, pTrack, posTrackPar)) {
-                  return;
+                  continue;
                 }
               }
               if (isNegTPCOnly) {
@@ -902,7 +902,7 @@ class BuilderModule
                 posTrackPar.setPID(o2::track::PID::Electron);
                 negTrackPar.setPID(o2::track::PID::Electron);
                 if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, nTrack, negTrackPar)) {
-                  return;
+                  continue;
                 }
               }
             } // end TPC drift treatment
@@ -1338,6 +1338,12 @@ class BuilderModule
     for (size_t iv0 = 0; iv0 < v0List.size(); iv0++) {
       const auto& v0 = v0List[sorted_v0[iv0]];
 
+      if (!v0BuilderOpts.generatePhotonCandidates.value && v0.v0Type > 1) {
+        // skip photons if not requested
+        products.v0dataLink(-1, -1);
+        continue;
+      }
+
       if (!baseOpts.mEnabledTables[kV0CoresBase] && v0Map[iv0] == -2) {
         // this v0 hasn't been used by cascades and we're not generating V0s, so skip it
         products.v0dataLink(-1, -1);
@@ -1370,7 +1376,8 @@ class BuilderModule
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
           if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)) {
-            return;
+            products.v0dataLink(-1, -1);
+            continue;
           }
         }
 
@@ -1382,12 +1389,13 @@ class BuilderModule
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
           if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)) {
-            return;
+            products.v0dataLink(-1, -1);
+            continue;
           }
         }
       }
 
-      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, baseOpts.mEnabledTables[kV0Covs], true)) {
+      if (!straHelper.buildV0Candidate(v0.collisionId, pvX, pvY, pvZ, posTrack, negTrack, posTrackPar, negTrackPar, v0.isCollinearV0, baseOpts.mEnabledTables[kV0Covs], v0BuilderOpts.generatePhotonCandidates)) {
         products.v0dataLink(-1, -1);
         continue;
       }
@@ -1647,6 +1655,8 @@ class BuilderModule
             }
           } // enabled tables check
         } // constexpr requires check
+      } else {
+        products.v0dataLink(-1, -1);
       }
     }
 

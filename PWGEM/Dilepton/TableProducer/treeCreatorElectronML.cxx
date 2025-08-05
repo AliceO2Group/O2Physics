@@ -551,7 +551,7 @@ struct TreeCreatorElectronML {
     }
   }
 
-  template <typename TTrack, typename TMCParticle, typename TMCParticles>
+  template <bool isDerived, typename TTrack, typename TMCParticle, typename TMCParticles>
   void doSingleTrack(TTrack& track, TMCParticle& mctrack, TMCParticles& mctracks, uint64_t collisionId, std::vector<uint64_t>& collisions_old_labels, int& collisions_counter, bool use_downsample = true)
   {
     if (!IsSelected(track)) {
@@ -584,15 +584,28 @@ struct TreeCreatorElectronML {
         collisions_counter++;
         collisions_old_labels.push_back(collisionId);
       }
-      mytrack(collisions_counter,
-              track.sign(), track.pt(), track.eta(), track.phi(), track.tgl(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()), track.cZY(),
-              track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
-              track.tpcChi2NCl(), track.tpcInnerParam(),
-              track.tpcSignal(), track.tpcNSigmaEl(), /*track.tpcNSigmaMu(),*/ track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-              track.beta(), track.tofNSigmaEl(), /*track.tofNSigmaMu(),*/ track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
-              track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
-              mctrack.vx(), mctrack.vy(), mctrack.vz(),
-              mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
+
+      if constexpr (isDerived) {
+        mytrack(collisions_counter,
+                track.sign(), track.pt(), track.eta(), track.phi(), track.tgl(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()), track.cZY(),
+                track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+                track.tpcChi2NCl(), track.tpcInnerParam(),
+                track.tpcSignal(), track.tpcNSigmaEl(), /*track.tpcNSigmaMu(),*/ track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                track.beta(), track.tofNSigmaEl(), /*track.tofNSigmaMu(),*/ 0, 0, 0,
+                track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
+                mctrack.vx(), mctrack.vy(), mctrack.vz(),
+                mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
+      } else {
+        mytrack(collisions_counter,
+                track.sign(), track.pt(), track.eta(), track.phi(), track.tgl(), track.dcaXY(), track.dcaZ(), sqrt(track.cYY()), sqrt(track.cZZ()), track.cZY(),
+                track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+                track.tpcChi2NCl(), track.tpcInnerParam(),
+                track.tpcSignal(), track.tpcNSigmaEl(), /*track.tpcNSigmaMu(),*/ track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
+                track.beta(), track.tofNSigmaEl(), /*track.tofNSigmaMu(),*/ track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                track.tofChi2(), track.itsChi2NCl(), track.itsClusterSizes(),
+                mctrack.vx(), mctrack.vy(), mctrack.vz(),
+                mctrack.pdgCode(), mctrack.isPhysicalPrimary(), mothers_id, mothers_pdg);
+      }
 
       mothers_id.shrink_to_fit();
       mothers_pdg.shrink_to_fit();
@@ -638,7 +651,7 @@ struct TreeCreatorElectronML {
           continue;
         }
         auto mctrack = track.mcParticle_as<aod::McParticles>();
-        doSingleTrack(track, mctrack, mctracks, collision.globalIndex(), collisions_old_labels, collisions_counter);
+        doSingleTrack<false>(track, mctrack, mctracks, collision.globalIndex(), collisions_old_labels, collisions_counter);
       }
     }
 
@@ -651,7 +664,7 @@ struct TreeCreatorElectronML {
   }
   PROCESS_SWITCH(TreeCreatorElectronML, processSingleTrack, "produce ML input for single track level", false);
 
-  using MyFilteredCollisionsSkimmed = soa::Filtered<soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMMCEventLabels>>;
+  using MyFilteredCollisionsSkimmed = soa::Filtered<soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsXY, aod::EMMCEventLabels>>;
   using MyFilteredTracksMCSkimmed = soa::Filtered<soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronMCLabels, aod::EMPrimaryElectronEMEventIds>>;
   Preslice<MyFilteredTracksMCSkimmed> perCollisionSkimmed = aod::emprimaryelectron::emeventId;
 
@@ -672,7 +685,7 @@ struct TreeCreatorElectronML {
           continue;
         }
         auto mctrack = track.emmcparticle_as<aod::EMMCParticles>();
-        doSingleTrack(track, mctrack, mctracks, collision.globalIndex(), collisions_old_labels, collisions_counter);
+        doSingleTrack<true>(track, mctrack, mctracks, collision.globalIndex(), collisions_old_labels, collisions_counter);
       }
     }
 
@@ -736,7 +749,7 @@ struct TreeCreatorElectronML {
         auto track = tracks.rawIteratorAt(track_label);
         auto mctrack = track.mcParticle_as<aod::McParticles>();
 
-        doSingleTrack(track, mctrack, mctracks, collision.globalIndex(), collisions_old_labels, collisions_counter, false);
+        doSingleTrack<false>(track, mctrack, mctracks, collision.globalIndex(), collisions_old_labels, collisions_counter, false);
 
       } // end of track loop
 
@@ -808,7 +821,7 @@ struct TreeCreatorElectronML {
         auto track = tracks.rawIteratorAt(track_label);
         auto mctrack = track.emmcparticle_as<aod::EMMCParticles>();
 
-        doSingleTrack(track, mctrack, mctracks, collision.globalIndex(), collisions_old_labels_track, collisions_counter_track, false);
+        doSingleTrack<true>(track, mctrack, mctracks, collision.globalIndex(), collisions_old_labels_track, collisions_counter_track, false);
 
       } // end of track loop
 

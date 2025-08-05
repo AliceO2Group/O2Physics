@@ -1185,7 +1185,7 @@ struct EventSelectionQaTask {
               histos.fill(HIST("occupancyQA/tpcNCrossedRows_vs_V0A_vs_occupancy"), multV0A, track.tpcNClsFindable() - tpcNClsFindableMinusCrossedRowsCorrected, occupancyByTracks);
             }
           } // end of hasTPC
-          if (track.tpcNClsFound() > 50 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
+          if (col.sel8() && fabs(col.posZ()) < 10 && track.tpcNClsFound() > 50 && track.tpcNClsCrossedRows() > 80 && track.itsChi2NCl() < 36 && track.tpcChi2NCl() < 4) {
             nContributorsAfterEtaTPCCuts++;
             // ROF border QA
             histos.fill(HIST("ITSROFborderQA/hFoundBC_kTVX_nITSlayers_for_ITSTPCtracks"), localBC, track.itsNCls());

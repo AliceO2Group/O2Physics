@@ -15,7 +15,6 @@
 //    Please write to: daiki.sekihata@cern.ch
 
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-// #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
@@ -70,11 +69,19 @@ struct eventQC {
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2, 3}, "Modulation of interest. Please keep increasing order"};
   Configurable<int> cfgCentEstimator{"cfgCentEstimator", 2, "FT0M:0, FT0A:1, FT0C:2"};
   Configurable<int> cfgQvecEstimator{"cfgQvecEstimator", 0, "FT0M:0, FT0A:1, FT0C:2, BTot:3, BPos:4, BNeg:5"};
-  Configurable<float> cfgCentMin{"cfgCentMin", 0, "min. centrality"};
+  Configurable<float> cfgCentMin{"cfgCentMin", -1.f, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
+  Configurable<int> cfgNtracksPV08Min{"cfgNtracksPV08Min", -1, "min. multNTracksPV"};
+  Configurable<int> cfgNtracksPV08Max{"cfgNtracksPV08Max", 1000000000, "max. multNTracksPV"};
   ConfigurableAxis ConfPtBins{"ConfPtBins", {VARIABLE_WIDTH, 0.00, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35, 0.40, 0.45, 0.50, 0.55, 0.60, 0.65, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 1.00, 1.10, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pT bins for output histograms"};
   Configurable<int> cfgNbinsEta{"cfgNbinsEta", 20, "number of eta bins for output histograms"};
   Configurable<int> cfgNbinsPhi{"cfgNbinsPhi", 36, "number of phi bins for output histograms"};
+
+  ConfigurableAxis ConfFT0AMultBins{"ConfFT0AMultBins", {200, 0, 200e+3}, "FT0A multiplicity bins for output histograms"};
+  ConfigurableAxis ConfFT0CMultBins{"ConfFT0CMultBins", {600, 0, 60e+3}, "FT0C multiplicity bins for output histograms"};
+  ConfigurableAxis ConfFV0AMultBins{"ConfFV0AMultBins", {200, 0, 200e+3}, "FV0A multiplicity bins for output histograms"};
+  ConfigurableAxis ConfTrackMultBins{"ConfTrackMultBins", {6001, -0.5, 6e+3 + 0.5}, "Track multiplicity bins for output histograms"};
+  ConfigurableAxis ConfCentBins{"ConfCentBins", {110, 0, 110}, "centrality bins for output histograms"};
 
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
@@ -128,36 +135,6 @@ struct eventQC {
     Configurable<bool> cfg_requireTOF{"cfg_requireTOF", false, "require TOF hit"};
   } trackcuts;
 
-  struct : ConfigurableGroup {
-    std::string prefix = "v0cut_group";
-    Configurable<float> cfg_min_mass_photon{"cfg_min_mass_photon", 0.0, "min mass for photon rejection"};
-    Configurable<float> cfg_max_mass_photon{"cfg_max_mass_photon", 0.1, "max mass for photon rejection"};
-    Configurable<float> cfg_min_mass_k0s{"cfg_min_mass_k0s", 0.490, "min mass for K0S"};
-    Configurable<float> cfg_max_mass_k0s{"cfg_max_mass_k0s", 0.505, "max mass for K0S"};
-    Configurable<float> cfg_min_mass_lambda{"cfg_min_mass_lambda", 1.11, "min mass for Lambda rejection"};
-    Configurable<float> cfg_max_mass_lambda{"cfg_max_mass_lambda", 1.12, "max mass for Lambda rejection"};
-    Configurable<float> cfg_min_cospa_v0hadron{"cfg_min_cospa_v0hadron", 0.999, "min cospa for v0hadron"};
-    Configurable<float> cfg_max_pca_v0hadron{"cfg_max_pca_v0hadron", 0.5, "max distance between 2 legs for v0hadron"};
-    Configurable<float> cfg_min_radius_v0hadron{"cfg_min_radius_v0hadron", 1.0, "min rxy for v0hadron"};
-    Configurable<float> cfg_max_kfchi2{"cfg_max_kfchi2", 1e+10, "max kfchi2 for PCM"};
-    Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
-    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
-    Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 40, "min ncrossed rows"};
-    Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
-    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_max_chi2tof{"cfg_max_chi2tof", 1.0, "max chi2 for TOF"};
-    Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
-    Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -4, "min n sigma e in TPC"};
-    Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +4, "max n sigma e in TPC"};
-    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -4, "min n sigma pi in TPC"};
-    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +4, "max n sigma pi in TPC"};
-    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -2, "min n sigma el in TOF"};
-    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +2, "max n sigma el in TOF"};
-    Configurable<float> cfg_min_TOFNsigmaPi{"cfg_min_TOFNsigmaPi", -2, "min n sigma pi in TOF"};
-    Configurable<float> cfg_max_TOFNsigmaPi{"cfg_max_TOFNsigmaPi", +2, "max n sigma pi in TOF"};
-  } v0cuts;
-
   // for RCT
   Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
   Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
@@ -210,8 +187,30 @@ struct eventQC {
 
   void addhistograms()
   {
-    // event info
+    const AxisSpec axis_cent_ft0m{ConfCentBins, "centrality FT0M (%)"};
+    const AxisSpec axis_cent_ft0a{ConfCentBins, "centrality FT0A (%)"};
+    const AxisSpec axis_cent_ft0c{ConfCentBins, "centrality FT0C (%)"};
 
+    const AxisSpec axis_mult_ft0a{ConfFT0AMultBins, "FT0A multiplicity"};
+    const AxisSpec axis_mult_ft0c{ConfFT0CMultBins, "FT0C multiplicity"};
+    const AxisSpec axis_mult_fv0a{ConfFV0AMultBins, "FV0A multiplicity"};
+    const AxisSpec axis_mult_ncontrib{ConfTrackMultBins, "N_{track} to PV"};
+    const AxisSpec axis_mult_ncontrib08{ConfTrackMultBins, "N_{track} to PV in |#eta| < 0.8"};
+    const AxisSpec axis_mult_global_ncontrib08{ConfTrackMultBins, "N_{track}^{global} to PV in |#eta| < 0.8"};
+    const AxisSpec axis_mult_globalTrack{ConfTrackMultBins, "N_{track}^{global} in |#eta| < 0.8"};
+
+    if (doprocessEventQC_SWT) {
+      fRegistry.add("BC/hNcoll", "Number of collisions per triggered BC;N_{collision} per triggered BC", kTH1F, {{11, -0.5, +10.5}}, false);
+      fRegistry.add("BC/hDeltaT", "diff. in collision time per BC;#DeltaT_{coll} (ns)", kTH1F, {{200, -100, +100}}, false);
+      fRegistry.add("BC/hDeltaZ", "diff. in collision Z_{vtx} per BC;#DeltaZ_{vtx} (cm)", kTH1F, {{200, -10, +10}}, false);
+      fRegistry.add("BC/hCorrNcontrib", "hMultNTracksPV;", kTH2F, {{axis_mult_ncontrib}, {axis_mult_ncontrib}}, false);
+      fRegistry.add("BC/Collision/hMultNTracksPV", "hMultNTracksPV;N_{track} to PV in |#eta| < 0.8", kTH1F, {{axis_mult_ncontrib08}}, false);
+      fRegistry.add("BC/Collision/hMultFT0AFT0C", "hMultFT0AFT0C;mult. FT0A;mult. FT0C", kTH2F, {{axis_mult_ft0a}, {axis_mult_ft0c}}, false);
+      fRegistry.add("BC/Collision/hMultFT0AFV0A", "hMultFT0AFV0A;mult. FT0A;mult. FV0A", kTH2F, {{axis_mult_ft0a}, {axis_mult_fv0a}}, false);
+      fRegistry.add("BC/Collision/hMultFT0CFV0A", "hMultFT0CFV0A;mult. FT0C;mult. FV0A", kTH2F, {{axis_mult_ft0c}, {axis_mult_fv0a}}, false);
+    }
+
+    // event info
     const int nbin_ev = 20;
     auto hCollisionCounter = fRegistry.add<TH1>("Event/before/hCollisionCounter", "collision counter;;Number of events", kTH1F, {{nbin_ev, 0.5, nbin_ev + 0.5}}, false);
     hCollisionCounter->GetXaxis()->SetBinLabel(1, "all");
@@ -237,52 +236,33 @@ struct eventQC {
 
     fRegistry.add("hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
 
-    const AxisSpec axis_cent_ft0m{{0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-                                   20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
-                                   40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
-                                   60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-                                   80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110},
-                                  "centrality FT0M (%)"};
-
-    const AxisSpec axis_cent_ft0a{{0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-                                   20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
-                                   40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
-                                   60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-                                   80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110},
-                                  "centrality FT0A (%)"};
-
-    const AxisSpec axis_cent_ft0c{{0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
-                                   20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39,
-                                   40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,
-                                   60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79,
-                                   80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110},
-                                  "centrality FT0C (%)"};
-
     if (cfgFillEvent) {
       fRegistry.add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
-      fRegistry.add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
-      fRegistry.add("Event/before/hMultNTracksPVeta1", "hMultNTracksPVeta1; N_{track} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
-      fRegistry.add("Event/before/hMultFT0", "hMultFT0;mult. FT0A;mult. FT0C", kTH2F, {{200, 0, 200000}, {60, 0, 60000}}, false);
+      fRegistry.add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV in |#eta| < 0.8", kTH1F, {{axis_mult_ncontrib08}}, false);
+      fRegistry.add("Event/before/hMultFT0AFT0C", "hMultFT0AFT0C;mult. FT0A;mult. FT0C", kTH2F, {{axis_mult_ft0a}, {axis_mult_ft0c}}, false);
+      fRegistry.add("Event/before/hMultFT0AFV0A", "hMultFT0AFV0A;mult. FT0A;mult. FV0A", kTH2F, {{axis_mult_ft0a}, {axis_mult_fv0a}}, false);
+      fRegistry.add("Event/before/hMultFT0CFV0A", "hMultFT0CFV0A;mult. FT0C;mult. FV0A", kTH2F, {{axis_mult_ft0c}, {axis_mult_fv0a}}, false);
       fRegistry.add("Event/before/hCentFT0A", "hCentFT0A;centrality FT0A (%)", kTH1F, {{axis_cent_ft0a}}, false);
       fRegistry.add("Event/before/hCentFT0C", "hCentFT0C;centrality FT0C (%)", kTH1F, {{axis_cent_ft0c}}, false);
       fRegistry.add("Event/before/hCentFT0M", "hCentFT0M;centrality FT0M (%)", kTH1F, {{axis_cent_ft0m}}, false);
-      fRegistry.add("Event/before/hCentFT0CvsMultNTracksPV", "hCentFT0CvsMultNTracksPV;centrality FT0C (%);N_{track} to PV", kTH2F, {{100, 0, 100}, {600, 0, 6000}}, false);
-      fRegistry.add("Event/before/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV", kTH2F, {{60, 0, 60000}, {600, 0, 6000}}, false);
-      fRegistry.add("Event/before/hMultFT0CvsOccupancy", "hMultFT0CvsOccupancy;mult. FT0C;N_{track} in time range", kTH2F, {{60, 0, 60000}, {200, 0, 20000}}, false);
-      fRegistry.add("Event/before/hNTracksPVvsOccupancy", "hNTracksPVvsOccupancy;N_{track} to PV;N_{track} in time range", kTH2F, {{600, 0, 6000}, {200, 0, 20000}}, false);
-      fRegistry.add("Event/before/hNGlobalTracksvsOccupancy", "hNGlobalTracksvsOccupancy;N_{track}^{global};N_{track} in time range", kTH2F, {{600, 0, 6000}, {200, 0, 20000}}, false);
-      fRegistry.add("Event/before/hNGlobalTracksPVvsOccupancy", "hNGlobalTracksPVvsOccupancy;N_{track}^{global} to PV;N_{track} in time range", kTH2F, {{600, 0, 6000}, {200, 0, 20000}}, false);
+      fRegistry.add("Event/before/hCentFT0CvsMultNTracksPV", "hCentFT0CvsMultNTracksPV;centrality FT0C (%);N_{track} to PV in |#eta| < 0.8", kTH2F, {{axis_cent_ft0c}, {axis_mult_ncontrib08}}, false);
+      fRegistry.add("Event/before/hMultFT0CvsMultNTracksPV", "hMultFT0CvsMultNTracksPV;mult. FT0C;N_{track} to PV in |#eta| < 0.8", kTH2F, {{axis_mult_ft0c}, {axis_mult_ncontrib08}}, false);
+      fRegistry.add("Event/before/hMultFT0CvsTrackOccupancy", "hMultFT0CvsTrackOccupancy;mult. FT0C;N_{track} in time range", kTH2F, {{axis_mult_ft0c}, {200, 0, 20000}}, false);
+      fRegistry.add("Event/before/hMultFV0AvsMultNTracksPV", "hMultFV0AvsMultNTracksPV;mult. FV0A;N_{track} to PV in |#eta| < 0.8", kTH2F, {{axis_mult_fv0a}, {axis_mult_ncontrib08}}, false);
+      fRegistry.add("Event/before/hNTracksPVvsTrackOccupancy", "hNTracksPVvsTrackOccupancy;N_{track} to PV in |#eta| < 0.8;N_{track} in time range", kTH2F, {{axis_mult_ncontrib08}, {200, 0, 20000}}, false);
+      fRegistry.add("Event/before/hNGlobalTracksvsTrackOccupancy", "hNGlobalTracksvsTrackOccupancy;N_{track}^{global} in |#eta| < 0.8;N_{track} in time range", kTH2F, {{axis_mult_globalTrack}, {200, 0, 20000}}, false);
+      fRegistry.add("Event/before/hNGlobalTracksPVvsTrackOccupancy", "hNGlobalTracksPVvsTrackOccupancy;N_{track}^{global} to PV in |#eta| < 0.8;N_{track} in time range", kTH2F, {{axis_mult_global_ncontrib08}, {200, 0, 20000}}, false);
       fRegistry.add("Event/before/hCorrOccupancy", "occupancy correlation;FT0C occupancy;track-based occupancy", kTH2F, {{200, 0, 200000}, {200, 0, 20000}}, false);
     }
     fRegistry.addClone("Event/before/", "Event/after/");
 
     if (cfgFillEvent) {
-      fRegistry.add("Event/after/hMultNGlobalTracks", "hMultNGlobalTracks; N_{track}^{global}", kTH1F, {{6001, -0.5, 6000.5}}, false);
-      fRegistry.add("Event/after/hCentFT0CvsMultNGlobalTracks", "hCentFT0CvsMultNGlobalTracks;centrality FT0C (%);N_{track}^{global}", kTH2F, {{100, 0, 100}, {600, 0, 6000}}, false);
-      fRegistry.add("Event/after/hMultFT0CvsMultNGlobalTracks", "hMultFT0CvsMultNGlobalTracks;mult. FT0C;N_{track}^{global}", kTH2F, {{60, 0, 60000}, {600, 0, 6000}}, false);
-      fRegistry.add("Event/after/hMultNGlobalTracksPV", "hMultNGlobalTracksPV; N_{track}^{global} to PV", kTH1F, {{6001, -0.5, 6000.5}}, false);
-      fRegistry.add("Event/after/hCentFT0CvsMultNGlobalTracksPV", "hCentFT0CvsMultNGlobalTracksPV;centrality FT0C (%);N_{track}^{global} to PV", kTH2F, {{100, 0, 100}, {600, 0, 6000}}, false);
-      fRegistry.add("Event/after/hMultFT0CvsMultNGlobalTracksPV", "hMultFT0CvsMultNGlobalTracksPV;mult. FT0C;N_{track}^{global} to PV", kTH2F, {{60, 0, 60000}, {600, 0, 6000}}, false);
+      fRegistry.add("Event/after/hMultNGlobalTracks", "hMultNGlobalTracks; N_{track}^{global} in |#eta| < 0.8", kTH1F, {{axis_mult_globalTrack}}, false);
+      fRegistry.add("Event/after/hCentFT0CvsMultNGlobalTracks", "hCentFT0CvsMultNGlobalTracks;centrality FT0C (%);N_{track}^{global} in |#eta| < 0.8", kTH2F, {{axis_cent_ft0c}, {axis_mult_globalTrack}}, false);
+      fRegistry.add("Event/after/hMultFT0CvsMultNGlobalTracks", "hMultFT0CvsMultNGlobalTracks;mult. FT0C;N_{track}^{global} in |#eta| < 0.8", kTH2F, {{axis_mult_ft0c}, {axis_mult_globalTrack}}, false);
+      fRegistry.add("Event/after/hMultNGlobalTracksPV", "hMultNGlobalTracksPV; N_{track}^{global} to PV in |#eta| < 0.8", kTH1F, {{axis_mult_global_ncontrib08}}, false);
+      fRegistry.add("Event/after/hCentFT0CvsMultNGlobalTracksPV", "hCentFT0CvsMultNGlobalTracksPV;centrality FT0C (%);N_{track}^{global} to PV in |#eta| < 0.8", kTH2F, {{axis_cent_ft0c}, {axis_mult_global_ncontrib08}}, false);
+      fRegistry.add("Event/after/hMultFT0CvsMultNGlobalTracksPV", "hMultFT0CvsMultNGlobalTracksPV;mult. FT0C;N_{track}^{global} to PV in |#eta| < 0.8", kTH2F, {{axis_mult_ft0c}, {axis_mult_global_ncontrib08}}, false);
     }
 
     std::vector<double> tmp_ptbins;
@@ -500,11 +480,13 @@ struct eventQC {
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
 
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPV"), collision.multNTracksPV());
-    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPVeta1"), collision.multNTracksPVeta1());
-    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0"), collision.multFT0A(), collision.multFT0C());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0AFT0C"), collision.multFT0A(), collision.multFT0C());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0AFV0A"), collision.multFT0A(), collision.multFV0A());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0CFV0A"), collision.multFT0C(), collision.multFV0A());
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0CvsMultNTracksPV"), collision.multFT0C(), collision.multNTracksPV());
-    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0CvsOccupancy"), collision.multFT0C(), collision.trackOccupancyInTimeRange());
-    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hNTracksPVvsOccupancy"), collision.multNTracksPV(), collision.trackOccupancyInTimeRange());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFV0AvsMultNTracksPV"), collision.multFV0A(), collision.multNTracksPV());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0CvsTrackOccupancy"), collision.multFT0C(), collision.trackOccupancyInTimeRange());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hNTracksPVvsTrackOccupancy"), collision.multNTracksPV(), collision.trackOccupancyInTimeRange());
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCorrOccupancy"), collision.ft0cOccupancyInTimeRange(), collision.trackOccupancyInTimeRange());
 
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hCentFT0A"), collision.centFT0A());
@@ -757,40 +739,6 @@ struct eventQC {
     return true;
   }
 
-  template <typename TTrack>
-  bool isSelectedV0Leg(TTrack const& track)
-  {
-    if (!track.hasTPC()) {
-      return false;
-    }
-
-    if (track.hasITS() && track.itsChi2NCl() > v0cuts.cfg_max_chi2its) {
-      return false;
-    }
-
-    if (track.tpcChi2NCl() > v0cuts.cfg_max_chi2tpc) {
-      return false;
-    }
-
-    if (track.tpcNClsFound() < v0cuts.cfg_min_ncluster_tpc) {
-      return false;
-    }
-
-    if (track.tpcNClsCrossedRows() < v0cuts.cfg_min_ncrossedrows_tpc) {
-      return false;
-    }
-
-    if (track.tpcCrossedRowsOverFindableCls() < v0cuts.cfg_min_cr2findable_ratio_tpc) {
-      return false;
-    }
-
-    if (track.tpcFractionSharedCls() > v0cuts.cfg_max_frac_shared_clusters_tpc) {
-      return false;
-    }
-
-    return true;
-  }
-
   template <typename TCollision>
   bool isSelectedEvent(TCollision const& collision)
   {
@@ -873,8 +821,10 @@ struct eventQC {
     return true;
   }
 
-  Filter collisionFilter_evsel = o2::aod::evsel::sel8 == true && (eventcuts.cfgZvtxMin < o2::aod::collision::posZ && o2::aod::collision::posZ < eventcuts.cfgZvtxMax);
+  Filter collisionFilter_evsel = ifnode(eventcuts.cfgRequireSel8.node(), o2::aod::evsel::sel8 == true, true);
+  Filter collisionFilter_zvtx = eventcuts.cfgZvtxMin < o2::aod::collision::posZ && o2::aod::collision::posZ < eventcuts.cfgZvtxMax;
   Filter collisionFilter_centrality = (cfgCentMin < o2::aod::cent::centFT0M && o2::aod::cent::centFT0M < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0A && o2::aod::cent::centFT0A < cfgCentMax) || (cfgCentMin < o2::aod::cent::centFT0C && o2::aod::cent::centFT0C < cfgCentMax);
+  Filter collisionFilter_multiplicity = cfgNtracksPV08Min <= o2::aod::mult::multNTracksPV && o2::aod::mult::multNTracksPV < cfgNtracksPV08Max;
   Filter collisionFilter_track_occupancy = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_ft0c_occupancy = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
   using FilteredMyCollisions = soa::Filtered<MyCollisions>;
@@ -888,11 +838,40 @@ struct eventQC {
 
   SliceCache cache;
   Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
+  Preslice<aod::Collisions> perBC = o2::aod::collision::bcId;
 
   template <bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks>
-  void runQC(TBCs const&, TCollisions const& collisions, TTracks const& tracks)
+  void runQC(TBCs const& bcs, TCollisions const& collisions, TTracks const& tracks)
   {
-    for (auto& collision : collisions) {
+    if constexpr (isTriggerAnalysis) {
+      for (const auto& bc : bcs) {
+        initCCDB(bc);
+        if (!zorro.isSelected(bc.globalBC())) { // triggered BC
+          continue;
+        }
+
+        // if (!bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        //   continue;
+        // }
+
+        const auto& collisions_per_bc = collisions.sliceBy(perBC, bc.globalIndex());
+        fRegistry.fill(HIST("BC/hNcoll"), collisions_per_bc.size());
+        for (const auto& collision : collisions_per_bc) {
+          fRegistry.fill(HIST("BC/Collision/hMultNTracksPV"), collision.multNTracksPV());
+          fRegistry.fill(HIST("BC/Collision/hMultFT0AFT0C"), collision.multFT0A(), collision.multFT0C());
+          fRegistry.fill(HIST("BC/Collision/hMultFT0AFV0A"), collision.multFT0A(), collision.multFV0A());
+          fRegistry.fill(HIST("BC/Collision/hMultFT0CFV0A"), collision.multFT0C(), collision.multFV0A());
+        }
+
+        for (const auto& [col1, col2] : combinations(CombinationsStrictlyUpperIndexPolicy(collisions_per_bc, collisions_per_bc))) {
+          fRegistry.fill(HIST("BC/hDeltaZ"), col1.posZ() - col2.posZ());
+          fRegistry.fill(HIST("BC/hDeltaT"), col1.collisionTime() - col2.collisionTime());
+          fRegistry.fill(HIST("BC/hCorrNcontrib"), col1.numContrib(), col2.numContrib());
+        } // end of pairing
+      } // end of bc loop
+    }
+
+    for (const auto& collision : collisions) {
       if constexpr (isTriggerAnalysis) {
         const auto& bc = collision.template bc_as<TBCs>(); // don't use foundBC for CEFP.
         initCCDB(bc);
@@ -924,7 +903,7 @@ struct eventQC {
 
       int nGlobalTracks = 0, nGlobalTracksPV = 0;
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
-      for (auto& track : tracks_per_coll) {
+      for (const auto& track : tracks_per_coll) {
         if (!isSelectedTrack(track)) {
           continue;
         }
@@ -955,8 +934,8 @@ struct eventQC {
         fRegistry.fill(HIST("Event/after/hMultNGlobalTracksPV"), nGlobalTracksPV);
         fRegistry.fill(HIST("Event/after/hMultFT0CvsMultNGlobalTracks"), collision.multFT0C(), nGlobalTracks);
         fRegistry.fill(HIST("Event/after/hMultFT0CvsMultNGlobalTracksPV"), collision.multFT0C(), nGlobalTracksPV);
-        fRegistry.fill(HIST("Event/after/hNGlobalTracksvsOccupancy"), nGlobalTracks, collision.trackOccupancyInTimeRange());
-        fRegistry.fill(HIST("Event/after/hNGlobalTracksPVvsOccupancy"), nGlobalTracksPV, collision.trackOccupancyInTimeRange());
+        fRegistry.fill(HIST("Event/after/hNGlobalTracksvsTrackOccupancy"), nGlobalTracks, collision.trackOccupancyInTimeRange());
+        fRegistry.fill(HIST("Event/after/hNGlobalTracksPVvsTrackOccupancy"), nGlobalTracksPV, collision.trackOccupancyInTimeRange());
         fRegistry.fill(HIST("Event/after/hCentFT0CvsMultNGlobalTracks"), collision.centFT0C(), nGlobalTracks);
         fRegistry.fill(HIST("Event/after/hCentFT0CvsMultNGlobalTracksPV"), collision.centFT0C(), nGlobalTracksPV);
       }

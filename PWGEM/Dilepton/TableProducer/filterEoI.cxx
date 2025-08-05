@@ -41,7 +41,7 @@ struct filterEoI {
   HistogramRegistry fRegistry{"output"};
   void init(o2::framework::InitContext&)
   {
-    auto hEventCounter = fRegistry.add<TH1>("hEventCounter", "hEventCounter", kTH1D, {{8, 0.5f, 8.5f}});
+    auto hEventCounter = fRegistry.add<TH1>("hEventCounter", "hEventCounter", kTH1D, {{7, 0.5f, 7.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "event with electron");
     hEventCounter->GetXaxis()->SetBinLabel(3, "event with forward muon");
@@ -49,7 +49,6 @@ struct filterEoI {
     hEventCounter->GetXaxis()->SetBinLabel(5, "event with electron or forward muon");
     hEventCounter->GetXaxis()->SetBinLabel(6, "event with electron and forward muon");
     hEventCounter->GetXaxis()->SetBinLabel(7, "event with electron or forward muon or v0");
-    hEventCounter->GetXaxis()->SetBinLabel(8, "event with electron and forward muon and v0");
   }
 
   SliceCache cache;
@@ -96,9 +95,6 @@ struct filterEoI {
       }
       if (does_electron_exist || does_fwdmuon_exist || does_pcm_exist) {
         fRegistry.fill(HIST("hEventCounter"), 7);
-      }
-      if (does_electron_exist && does_fwdmuon_exist && does_pcm_exist) {
-        fRegistry.fill(HIST("hEventCounter"), 8);
       }
 
       emeoi(does_electron_exist || does_fwdmuon_exist || does_pcm_exist);
