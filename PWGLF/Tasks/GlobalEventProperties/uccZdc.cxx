@@ -69,8 +69,9 @@ using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, 
 
 static constexpr int kSizeBootStrapEnsemble{8};
 
-std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNch{};
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hPoisson{};
+std::array<std::shared_ptr<TH2>, kSizeBootStrapEnsemble> hNchVsT0M{};
+std::array<std::shared_ptr<TH2>, kSizeBootStrapEnsemble> hNchVsV0A{};
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsOneParCorrVsZN{};
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsTwoParCorrVsZN{};
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsThreeParCorrVsZN{};
@@ -89,6 +90,7 @@ std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsNch
 
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hPoissonMC{};
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNchGen{};
+std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNch{};
 
 // std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsT0MGen{};
 // std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsT0MGen{};
@@ -293,7 +295,8 @@ struct UccZdc {
       registry.add("ThreeParCorrVsV0A", Form(";%s;%s;", tiV0A, tiThreeParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
 
       for (int i = 0; i < kSizeBootStrapEnsemble; i++) {
-        hNch[i] = registry.add<TH1>(Form("Nch_Replica%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
+        hNchVsV0A[i] = registry.add<TH2>(Form("NchVsV0A_Replica%d", i), Form(";%s;%s", tiNch, tiV0A), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+        hNchVsT0M[i] = registry.add<TH2>(Form("NchVsT0M_Replica%d", i), Form(";%s;%s", tiNch, tiT0M), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
         hPoisson[i] = registry.add<TH1>(Form("Poisson_Replica%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
         pNchVsOneParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsOneParCorrVsZN_Replica%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
         pNchVsTwoParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsTwoParCorrVsZN_Replica%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
@@ -359,7 +362,6 @@ struct UccZdc {
 
         hPoissonMC[i] = registry.add<TH1>(Form("PoissonMC_Replica%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
         hNchGen[i] = registry.add<TH1>(Form("NchGen_Replica%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
-
         pOneParCorrVsNchGen[i] = registry.add<TProfile>(Form("OneParCorrVsNchGen_Replica%d", i), Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
         pTwoParCorrVsNchGen[i] = registry.add<TProfile>(Form("TwoParCorrVsNchGen_Replica%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
         pThreeParCorrVsNchGen[i] = registry.add<TProfile>(Form("ThreeParCorrVsNchGen_Replica%d", i), Form(";%s;%s;", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
@@ -778,7 +780,7 @@ struct UccZdc {
     }
 
     // Nch-based selection
-    int glbTracks{0};
+    double glbTracks{0.0};
     for (const auto& track : tracks) {
       // Track Selection
       if (!track.isGlobalTrack()) {
@@ -790,11 +792,7 @@ struct UccZdc {
       if ((track.eta() < minEta) || (track.eta() > maxEta)) {
         continue;
       }
-      glbTracks++;
-    }
-
-    if (glbTracks < minNchSel) {
-      return;
+      glbTracks += 1.0;
     }
 
     bool skipEvent{false};
@@ -831,10 +829,15 @@ struct UccZdc {
       return;
     }
 
-    double nchMult{static_cast<double>(glbTracks)};
-    std::vector<float> pTs;
-    std::vector<float> vecFD;
-    std::vector<float> vecEff;
+    // Reject low-multiplcicity events
+    if (glbTracks < minNchSel) {
+      return;
+    }
+
+    double nchMult{glbTracks};
+    std::vector<double> pTs;
+    std::vector<double> vecFD;
+    std::vector<double> vecEff;
 
     // apply corrections
     if (applyEff || applyFD) {
@@ -871,8 +874,14 @@ struct UccZdc {
         }
       }
 
-      if (applyEff && !correctNch)
-        nchMult = static_cast<double>(glbTracks);
+      if (applyEff && !correctNch) {
+        nchMult = glbTracks;
+      }
+
+      // Reject low-multiplcicity events
+      if (nchMult < minNchSel) {
+        return;
+      }
 
       // Fill vectors for [pT] measurement
       for (const auto& track : tracks) {
@@ -1432,7 +1441,6 @@ struct UccZdc {
         const double threeParCorr{numThreeParCorr / denThreeParCorr};
 
         hNchGen[replica]->Fill(nchMult);
-
         pOneParCorrVsNchGen[replica]->Fill(nchMult, oneParCorr, w1);
         pTwoParCorrVsNchGen[replica]->Fill(nchMult, twoParCorr, denTwoParCorr);
         pThreeParCorrVsNchGen[replica]->Fill(nchMult, threeParCorr, denThreeParCorr);
@@ -1584,7 +1592,6 @@ struct UccZdc {
         const double threeParCorr{numThreeParCorr / denThreeParCorr};
 
         hNch[replica]->Fill(nchMult);
-
         pOneParCorrVsNch[replica]->Fill(nchMult, oneParCorr, w1);
         pTwoParCorrVsNch[replica]->Fill(nchMult, twoParCorr, denTwoParCorr);
         pThreeParCorrVsNch[replica]->Fill(nchMult, threeParCorr, denThreeParCorr);
@@ -1740,7 +1747,8 @@ struct UccZdc {
         const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
         const double threeParCorr{numThreeParCorr / denThreeParCorr};
 
-        hNch[replica]->Fill(nchMult);
+        hNchVsV0A[replica]->Fill(nchMult, normV0A);
+        hNchVsT0M[replica]->Fill(nchMult, normT0M);
         pNchVsOneParCorrVsZN[replica]->Fill(nchMult, sumZNs, oneParCorr, w1);
         pNchVsTwoParCorrVsZN[replica]->Fill(nchMult, sumZNs, twoParCorr, denTwoParCorr);
         pNchVsThreeParCorrVsZN[replica]->Fill(nchMult, sumZNs, threeParCorr, denThreeParCorr);
