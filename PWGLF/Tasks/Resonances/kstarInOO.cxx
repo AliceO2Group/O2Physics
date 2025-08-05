@@ -41,12 +41,12 @@
 
 #include <RtypesCore.h>
 
+#include <iostream>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
-#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -167,7 +167,7 @@ struct kstarInOO {
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                     aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>;
   using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection,
-                                      aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>;
+                                       aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>;
 
   // For Mixed Event
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
@@ -321,7 +321,7 @@ struct kstarInOO {
     auto tracks2 = Pion_MC->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
     auto centrality = collision1.centFT0C();
 
-    for (auto& [trk1, trk2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+    for (const auto& [trk1, trk2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
       if (!trackSelection(trk1) || !trackSelection(trk2))
         continue;
