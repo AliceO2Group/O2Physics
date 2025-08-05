@@ -555,7 +555,7 @@ struct AntinucleiInJets {
       return false;
     if (track.pt() < minPt)
       return false;
-     
+
     return true;
   }
 
@@ -596,7 +596,7 @@ struct AntinucleiInJets {
     // Retrieve the bunch crossing information with timestamps from the collision
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
-      
+
     // If skimmed processing is enabled, apply Zorro trigger selection
     if (cfgSkimmedProcessing && !zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC())) {
       return;
@@ -942,7 +942,7 @@ struct AntinucleiInJets {
       fastjet::PseudoJet jetMinusBkg = backgroundSub.doRhoAreaSub(jetForSub, rhoPerp, rhoMPerp);
       if (jetMinusBkg.pt() < minJetPt)
         continue;
-        
+
       // Apply area cut if required
       double normalizedJetArea = jet.area() / (PI * rJet * rJet);
       if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
@@ -1334,7 +1334,7 @@ struct AntinucleiInJets {
         for (const auto& particle : jetConstituents) {
           if (particle.user_index() != PDG_t::kProtonBar)
             continue;
-            
+
           if (particle.eta() < minEta || particle.eta() > maxEta)
             continue;
 
@@ -1374,7 +1374,7 @@ struct AntinucleiInJets {
           // Reject tracks that lie outside the maxConeRadius from both UE axes
           if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius)
             continue;
-            
+
           // Select antiprotons based on PDG
           if (particle.pdgCode() != PDG_t::kProtonBar)
             continue;
@@ -1405,7 +1405,7 @@ struct AntinucleiInJets {
 
       // Event counter: after event selection
       registryMC.fill(HIST("recEvents"), 1.5);
-        
+
       // Reject events near the ITS Read-Out Frame border
       if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))
         continue;
@@ -1435,7 +1435,7 @@ struct AntinucleiInJets {
       if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
         continue;
       registryMC.fill(HIST("recEvents"), 7.5);
-  
+
       // Loop over reconstructed tracks
       int id(-1);
       std::vector<fastjet::PseudoJet> fjParticles;
@@ -1569,7 +1569,7 @@ struct AntinucleiInJets {
           if (!track.has_mcParticle())
             continue;
           const auto mcparticle = track.mcParticle();
-            
+
           // Antiproton selection
           if (track.sign() > 0 || mcparticle.pdgCode() != PDG_t::kProtonBar)
             continue;
@@ -1580,7 +1580,7 @@ struct AntinucleiInJets {
           double pt = track.pt();
           double dcaxy = track.dcaXY();
           double dcaz = track.dcaZ();
-            
+
           // Fill DCA templates
           if (mcparticle.pdgCode() == PDG_t::kProtonBar && std::fabs(dcaz) < maxDcaz) {
             if (mcparticle.isPhysicalPrimary()) {
@@ -1621,11 +1621,11 @@ struct AntinucleiInJets {
 
           // Fill inclusive antiproton spectrum
           registryMC.fill(HIST("antiproton_incl_ue"), pt);
-          
+
           // Select physical primary antiprotons
           if (!mcparticle.isPhysicalPrimary())
             continue;
-            
+
           // Fill antiproton spectrum for physical primaries
           registryMC.fill(HIST("antiproton_prim_ue"), pt);
 
@@ -1748,7 +1748,7 @@ struct AntinucleiInJets {
         // Apply track selection
         if (!passedTrackSelectionSyst(track,isyst))
           continue;
-                        
+
         // Define variables
         double nsigmaTPCPr = track.tpcNSigmaPr();
         double nsigmaTOFPr = track.tofNSigmaPr();
