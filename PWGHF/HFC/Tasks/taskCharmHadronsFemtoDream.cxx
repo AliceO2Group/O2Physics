@@ -59,28 +59,6 @@ struct HfTaskCharmHadronsFemtoDream {
     NegativeCharge = -1
   };
 
-  /// Binning configurables
-  ConfigurableAxis bin4Dkstar{"bin4Dkstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
-  ConfigurableAxis bin4DMult{"bin4Dmult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "multiplicity Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
-  ConfigurableAxis bin4DmT{"bin4DmT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
-  ConfigurableAxis bin4DmultPercentile{"bin4DmultPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
-  ConfigurableAxis binInvMass{"binInvMass", {400, 2.10, 2.50}, "InvMass binning"};
-  ConfigurableAxis binpTCharm{"binpTCharm", {360, 0, 36}, "pT binning of charm hadron"};
-  ConfigurableAxis binTempFitVarTrack{"binTempFitVarTrack", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (Track)"};
-  ConfigurableAxis binmT{"binmT", {225, 0., 7.5}, "binning mT"};
-  ConfigurableAxis binmultTempFit{"binmultTempFit", {1, 0, 1}, "multiplicity Binning for the TempFitVar plot"};
-  ConfigurableAxis binMulPercentile{"binMulPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning"};
-  ConfigurableAxis binpTTrack{"binpTTrack", {50, 0.5, 10.05}, "pT binning of the pT vs. TempFitVar plot (Track)"};
-  ConfigurableAxis binEta{"binEta", {{200, -1.5, 1.5}}, "eta binning"};
-  ConfigurableAxis binPhi{"binPhi", {{200, 0, TMath::TwoPi()}}, "phi binning"};
-  ConfigurableAxis binkT{"binkT", {150, 0., 9.}, "binning kT"};
-  ConfigurableAxis binkstar{"binkstar", {1500, 0., 6.}, "binning kstar"};
-  ConfigurableAxis binNSigmaTPC{"binNSigmaTPC", {1600, -8, 8}, "Binning of Nsigma TPC plot"};
-  ConfigurableAxis binNSigmaTOF{"binNSigmaTOF", {3000, -15, 15}, "Binning of the Nsigma TOF plot"};
-  ConfigurableAxis binNSigmaTPCTOF{"binNSigmaTPCTOF", {3000, -15, 15}, "Binning of the Nsigma TPC+TOF plot"};
-  ConfigurableAxis binTPCClusters{"binTPCClusters", {163, -0.5, 162.5}, "Binning of TPC found clusters plot"};
-  Configurable<int> confTempFitVarMomentum{"confTempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
-
   /// Particle 2 (Charm Hadrons)
   Configurable<float> charmHadBkgBDTmax{"charmHadBkgBDTmax", 1., "Maximum background bdt score for Charm Hadron (particle 2)"};
   Configurable<int> charmHadCandSel{"charmHadCandSel", 1, "candidate selection for charm hadron"};
@@ -143,14 +121,32 @@ struct HfTaskCharmHadronsFemtoDream {
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCleaner;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCloseRejectionSE;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCloseRejectionME;
-  Filter eventMultiplicity = aod::femtodreamcollision::multNtr >= eventSel.multMin && aod::femtodreamcollision::multNtr <= eventSel.multMax;
-  Filter eventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= eventSel.multPercentileMin && aod::femtodreamcollision::multV0M <= eventSel.multPercentileMax;
-  Filter hfCandSelFilter = aod::fdhf::candidateSelFlag >= static_cast<int8_t>(charmHadCandSel.value);
-  Filter hfMcSelFilter = nabs(aod::fdhf::flagMc) == static_cast<int8_t>(charmHadMcSel.value);
-  Filter trackEtaFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta < etaTrack1Max, true);
-  Filter trackEtaFilterUp = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta > etaTrack1Min, true);
-  Filter trackPtFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt < ptTrack1Max, true);
-  Filter trackPtFilterUp = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt > ptTrack1Min, true);
+  
+  femtodreamcollision::BitMaskType bitMask = 1 << 0;
+
+  /// Histogramming for particle 1
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> allTrackHisto;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 5> selectedTrackHisto;
+
+  /// Histogramming for Event
+  FemtoDreamEventHisto eventHisto;
+  /// Histogram output
+  HistogramRegistry registry{"CorrelationsAndQA", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry registryMixQa{"registryMixQa"};
+  HistogramRegistry registryCharmHadronQa{"registryCharmHadronQa"};
+
+  float massOne = o2::analysis::femtoDream::getMass(pdgCodeTrack1);
+  float massTwo = o2::analysis::femtoDream::getMass(charmHadPDGCode);
+  int8_t partSign = 0;
+  int64_t processType = 0;
+
+  SliceCache cache;
+  Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
+  Produces<o2::aod::FDHfCharm> rowFemtoResultCharm;
+  Produces<o2::aod::FDHfTrk> rowFemtoResultTrk;
+  Produces<o2::aod::FDHfColl> rowFemtoResultColl;
+
+  Configurable<int> confTempFitVarMomentum{"confTempFitVarMomentum", 0, "Momentum used for binning: 0 -> pt; 1 -> preco; 2 -> ptpc"};
 
   using FilteredCharmCands = soa::Filtered<aod::FDHfCand>;
   using FilteredCharmCand = FilteredCharmCands::iterator;
@@ -170,20 +166,16 @@ struct HfTaskCharmHadronsFemtoDream {
   using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDParticlesIndex>>;
   using FilteredFDParticle = FilteredFDParticles::iterator;
 
-  femtodreamcollision::BitMaskType bitMask = 1 << 0;
+  Filter eventMultiplicity = aod::femtodreamcollision::multNtr >= eventSel.multMin && aod::femtodreamcollision::multNtr <= eventSel.multMax;
+  Filter eventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= eventSel.multPercentileMin && aod::femtodreamcollision::multV0M <= eventSel.multPercentileMax;
+  Filter hfCandSelFilter = aod::fdhf::candidateSelFlag >= static_cast<int8_t>(charmHadCandSel.value);
+  Filter hfMcSelFilter = nabs(aod::fdhf::flagMc) == static_cast<int8_t>(charmHadMcSel.value);
+  Filter trackEtaFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta < etaTrack1Max, true);
+  Filter trackEtaFilterUp = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta > etaTrack1Min, true);
+  Filter trackPtFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt < ptTrack1Max, true);
+  Filter trackPtFilterUp = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt > ptTrack1Min, true);
 
-  /// Histogramming for particle 1
-  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 1> allTrackHisto;
-  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kTrack, 5> selectedTrackHisto;
-
-  /// Histogramming for Event
-  FemtoDreamEventHisto eventHisto;
-  /// Histogram output
-  HistogramRegistry registry{"CorrelationsAndQA", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry registryMixQa{"registryMixQa"};
-  HistogramRegistry registryCharmHadronQa{"registryCharmHadronQa"};
   /// Partition for particle 1
-
   Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, cutBitTrack1)) && ifnode(aod::femtodreamparticle::pt * (nexp(aod::femtodreamparticle::eta) + nexp(-1.f * aod::femtodreamparticle::eta)) / 2.f <= pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, tpcTofBitTrack1));
 
   Partition<FilteredFDMcParts> partitionMcTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
@@ -194,16 +186,26 @@ struct HfTaskCharmHadronsFemtoDream {
   Partition<FilteredCharmCands> partitionCharmHadron = aod::fdhf::bdtBkg < charmHadBkgBDTmax && aod::fdhf::bdtFD < charmHadFdBDTmax && aod::fdhf::bdtFD > charmHadFdBDTmin&& aod::fdhf::bdtPrompt<charmHadPromptBDTmax && aod::fdhf::bdtPrompt> charmHadPromptBDTmin;
   Partition<FilteredCharmMcCands> partitionMcCharmHadron = aod::fdhf::originMcRec == 1 || aod::fdhf::originMcRec == 2;
 
-  float massOne = o2::analysis::femtoDream::getMass(pdgCodeTrack1);
-  float massTwo = o2::analysis::femtoDream::getMass(charmHadPDGCode);
-  int8_t partSign = 0;
-  int64_t processType = 0;
-
-  SliceCache cache;
-  Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
-  Produces<o2::aod::FDHfCharm> rowFemtoResultCharm;
-  Produces<o2::aod::FDHfTrk> rowFemtoResultTrk;
-  Produces<o2::aod::FDHfColl> rowFemtoResultColl;
+  /// Binning configurables
+  ConfigurableAxis bin4Dkstar{"bin4Dkstar", {1500, 0., 6.}, "binning kstar for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
+  ConfigurableAxis bin4DMult{"bin4DMult", {VARIABLE_WIDTH, 0.0f, 4.0f, 8.0f, 12.0f, 16.0f, 20.0f, 24.0f, 28.0f, 32.0f, 36.0f, 40.0f, 44.0f, 48.0f, 52.0f, 56.0f, 60.0f, 64.0f, 68.0f, 72.0f, 76.0f, 80.0f, 84.0f, 88.0f, 92.0f, 96.0f, 100.0f, 200.0f}, "multiplicity Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
+  ConfigurableAxis bin4DmT{"bin4DmT", {VARIABLE_WIDTH, 1.02f, 1.14f, 1.20f, 1.26f, 1.38f, 1.56f, 1.86f, 4.50f}, "mT Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
+  ConfigurableAxis bin4DmultPercentile{"bin4DmultPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<Confuse4D>> to true in order to use)"};
+  ConfigurableAxis binInvMass{"binInvMass", {400, 2.10, 2.50}, "InvMass binning"};
+  ConfigurableAxis binpTCharm{"binpTCharm", {360, 0, 36}, "pT binning of charm hadron"};
+  ConfigurableAxis binTempFitVarTrack{"binTempFitVarTrack", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (Track)"};
+  ConfigurableAxis binmT{"binmT", {225, 0., 7.5}, "binning mT"};
+  ConfigurableAxis binmultTempFit{"binmultTempFit", {1, 0, 1}, "multiplicity Binning for the TempFitVar plot"};
+  ConfigurableAxis binMulPercentile{"binMulPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning"};
+  ConfigurableAxis binpTTrack{"binpTTrack", {50, 0.5, 10.05}, "pT binning of the pT vs. TempFitVar plot (Track)"};
+  ConfigurableAxis binEta{"binEta", {{200, -1.5, 1.5}}, "eta binning"};
+  ConfigurableAxis binPhi{"binPhi", {{200, 0, TMath::TwoPi()}}, "phi binning"};
+  ConfigurableAxis binkT{"binkT", {150, 0., 9.}, "binning kT"};
+  ConfigurableAxis binkstar{"binkstar", {1500, 0., 6.}, "binning kstar"};
+  ConfigurableAxis binNSigmaTPC{"binNSigmaTPC", {1600, -8, 8}, "Binning of Nsigma TPC plot"};
+  ConfigurableAxis binNSigmaTOF{"binNSigmaTOF", {3000, -15, 15}, "Binning of the Nsigma TOF plot"};
+  ConfigurableAxis binNSigmaTPCTOF{"binNSigmaTPCTOF", {3000, -15, 15}, "Binning of the Nsigma TPC+TOF plot"};
+  ConfigurableAxis binTPCClusters{"binTPCClusters", {163, -0.5, 162.5}, "Binning of TPC found clusters plot"};
 
   void init(InitContext& /*context*/)
   {
