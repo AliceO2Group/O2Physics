@@ -121,7 +121,7 @@ struct HfTaskCharmHadronsFemtoDream {
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCleaner;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCloseRejectionSE;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kCharmHadron> pairCloseRejectionME;
-  
+
   femtodreamcollision::BitMaskType bitMask = 1 << 0;
 
   /// Histogramming for particle 1
