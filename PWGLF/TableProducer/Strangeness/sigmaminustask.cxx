@@ -18,11 +18,9 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 
-#include "Common/Core/trackUtilities.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
-#include "ReconstructionDataFormats/Track.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -66,13 +64,13 @@ struct sigmaminustask {
     const AxisSpec xiMassAxis{100, 1.2, 1.6, "m_{#Xi} (GeV/#it{c}^{2})"};
     const AxisSpec pdgAxis{10001, -5000, 5000, "PDG code"};
     const AxisSpec vertexZAxis{100, -15., 15., "vrtx_{Z} [cm]"};
-    const AxisSpec dcaMothAxis{100, 0, 1, "DCA [cm]"};
+    const AxisSpec dcaMothAxis{100, 0, 0.2, "DCA [cm]"};
     const AxisSpec dcaDaugAxis{200, 0, 20, "DCA [cm]"};
     const AxisSpec radiusAxis{100, -1, 40, "Decay radius [cm]"};
 
-    const AxisSpec ptResolutionAxis{100, -2, 2, "(#it{p}_{T}^{rec} - #it{p}_{T}^{gen}) / #it{p}_{T}^{gen}"};
-    const AxisSpec massResolutionAxis{100, -2, 2, "(m_{rec} - m_{gen}) / m_{gen}"};
-    const AxisSpec radiusResolutionAxis{100, -2, 2, "(r_{rec} - r_{gen}) / r_{gen}"};
+    const AxisSpec ptResolutionAxis{100, -1.0, 1.0, "(#it{p}_{T}^{rec} - #it{p}_{T}^{gen}) / #it{p}_{T}^{gen}"};
+    const AxisSpec massResolutionAxis{100, -0.5, 0.5, "(m_{rec} - m_{gen}) / m_{gen}"};
+    const AxisSpec radiusResolutionAxis{100, -0.5, 0.5, "(r_{rec} - r_{gen}) / r_{gen}"};
 
     const AxisSpec boolAxis{2, -0.5, 1.5, "Boolean value (0=false, 1=true)"};
     const AxisSpec filtersAxis{10, -0.5, 9.5, "Filter index"};
@@ -93,7 +91,8 @@ struct sigmaminustask {
 
       rSigmaMinus.add("h2MassResolution", "h2MassResolution", {HistType::kTH2F, {ptAxis, massResolutionAxis}});
       rSigmaMinus.add("h2PtResolution", "h2PtResolution", {HistType::kTH2F, {ptAxis, ptResolutionAxis}});
-      
+      rSigmaMinus.add("h2RadiusResolution", "h2RadiusResolution", {HistType::kTH2F, {ptAxis, radiusResolutionAxis}});
+
       rSigmaMinus.add("h2NSigmaTOFPiPt", "h2NSigmaTOFPiPt", {HistType::kTH2F, {ptAxis, nSigmaPiAxis}});
       rSigmaMinus.add("h2NSigmaTOFPrPt", "h2NSigmaTOFPrPt", {HistType::kTH2F, {ptAxis, nSigmaPrAxis}});
 
@@ -108,9 +107,8 @@ struct sigmaminustask {
       // Add findable Sigma histograms
       rFindable.add("h2MassPtFindableAll", "h2MassPtFindableAll", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
       rFindable.add("hFilterIndex", "hFilterIndex", {HistType::kTH1F, {filtersAxis}});
-      rFindable.add("h2MCRadiusFilterIndex", "h2RadiusFilterIndex", {HistType::kTH2F, {filtersAxis, radiusAxis}});
+      rFindable.add("h2MCRadiusFilterIndex", "h2MCRadiusFilterIndex", {HistType::kTH2F, {filtersAxis, radiusAxis}});
       rFindable.add("h2RecRadiusFilterIndex", "h2RecRadiusFilterIndex", {HistType::kTH2F, {filtersAxis, radiusAxis}});
-
     }
   }
 
@@ -293,114 +291,188 @@ struct sigmaminustask {
 
   PROCESS_SWITCH(sigmaminustask, processMC, "MC processing", false);
 
-  void processFindable(TracksFull const& tracks, aod::McTrackLabels const& trackLabelsMC, aod::KinkCands const& kinkCands, aod::McParticles const&, CollisionsFullMC const&)
-  {
-    for (const auto& motherTrack : tracks) {
-      // Check if mother is Sigma in MC
-      auto mcLabelMother = trackLabelsMC.rawIteratorAt(motherTrack.globalIndex());
-      if (!mcLabelMother.has_mcParticle()) {
-        continue;
-      }
-      auto mcMother = mcLabelMother.mcParticle_as<aod::McParticles>();
-      if (std::abs(mcMother.pdgCode()) != 3112 && std::abs(mcMother.pdgCode()) != 3222) {
-        continue;
-      }
+  void processFindable(aod::KinkCands const& kinkCands, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC,
+                    TracksFull const& tracks, CollisionsFullMC const& mcCollisions){
+    // A - generated findable track pairs map: mcMother.globalIndex() -> (motherTrack.globalIndex(), daughterTrack.globalIndex())
+    std::unordered_map<int64_t, std::pair<int64_t, int64_t>> allCandsIndices;
 
-      for (const auto& daughterTrack : tracks) {
-        // Check if daughter is pi/proton
-        auto mcLabelDaughter = trackLabelsMC.rawIteratorAt(daughterTrack.globalIndex());
-        if (!mcLabelDaughter.has_mcParticle()) {
-          continue;
-        }
-        auto mcDaughter = mcLabelDaughter.mcParticle_as<aod::McParticles>();
-        if (std::abs(mcDaughter.pdgCode()) != 211 && std::abs(mcDaughter.pdgCode()) != 2212) {
-          continue;
-        }
-        
-        // Verify the MC mother-daughter relationship
-        bool isValidPair = false;
-        if (mcDaughter.has_mothers()) {
-          for (const auto& mother : mcDaughter.mothers_as<aod::McParticles>()) {
-            if (mother.globalIndex() == mcMother.globalIndex()) {
-              isValidPair = true;
-              break;
-            }
+    for (const auto& track : tracks) {
+      auto mcLabel = trackLabelsMC.rawIteratorAt(track.globalIndex());
+      if (!mcLabel.has_mcParticle()) {
+        continue;
+      }
+      auto mcParticle = mcLabel.mcParticle_as<aod::McParticles>();
+
+      if (mcParticle.has_daughters() && (std::abs(mcParticle.pdgCode()) == 3112 || std::abs(mcParticle.pdgCode()) == 3222)) {
+        allCandsIndices[mcParticle.globalIndex()] = {track.globalIndex(), -1};
+      } 
+    }
+
+    for (const auto& track : tracks) {
+      auto mcLabel = trackLabelsMC.rawIteratorAt(track.globalIndex());
+      if (!mcLabel.has_mcParticle()) {
+        continue;
+      }
+      auto mcParticle = mcLabel.mcParticle_as<aod::McParticles>();
+
+      if (mcParticle.has_mothers() && (std::abs(mcParticle.pdgCode()) == 211 || std::abs(mcParticle.pdgCode()) == 2212)) {
+        for (const auto& mother : mcParticle.mothers_as<aod::McParticles>()) {
+          auto it = allCandsIndices.find(mother.globalIndex());
+          if (it != allCandsIndices.end()) {
+            it->second.second = track.globalIndex();
+            break;
           }
         }
-        if (!isValidPair) {
-          continue; 
-        }
-
-        float mcMass = std::sqrt(mcMother.e() * mcMother.e() - mcMother.p() * mcMother.p());
-        int sigmaSign = mcMother.pdgCode() > 0 ? 1 : -1;
-        rSigmaMinus.fill(HIST("h2MassPtFindable"), sigmaSign * motherTrack.pt(), mcMass);
-
-        // Define filter index and progressively apply kinkbuilder cuts to track pairs
-        int filterIndex = 0;
-        rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
-
-        // 1 - tracks with right ITS, TPC, TOF signals
-        if (motherTrack.has_collision() && motherTrack.hasITS() && !motherTrack.hasTPC() && !motherTrack.hasTOF() &&
-            daughterTrack.hasITS() && daughterTrack.hasTPC()) {
-          filterIndex += 1;
-          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
-        } else {
-          continue; 
-        }
-        
-        // 2, 3 - mother track ITS properties
-        if (motherTrack.itsNCls() < 6 &&
-            motherTrack.itsNClsInnerBarrel() == 3 && motherTrack.itsChi2NCl() < 36) {
-          filterIndex += 1;
-          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
-        }
-        if (filterIndex > 1 && motherTrack.pt() > 0.5) {
-          filterIndex += 1;
-          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
-        } else {
-          continue; 
-        }
-
-        // 4 - daughter track ITS+TPC properties
-        if (daughterTrack.itsNClsInnerBarrel() == 0 && daughterTrack.itsNCls() < 4 &&
-            daughterTrack.tpcNClsCrossedRows() > 0.8 * daughterTrack.tpcNClsFindable() && daughterTrack.tpcNClsFound() > 80) {
-          filterIndex += 1;
-          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
-        } else {
-          continue; 
-        }
-        
-        // 5 - geometric cuts: eta
-        if (std::abs(motherTrack.eta()) < 1.0 && std::abs(daughterTrack.eta()) < 1.0) {
-          filterIndex += 1;
-          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
-        } else {
-          continue; 
-        }
-        // 6 - geometric cuts: phi difference
-        if (std::abs(motherTrack.phi() - daughterTrack.phi()) * radToDeg < 50.0) {
-          filterIndex += 1;
-          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
-        } else {
-          continue; 
-        }
-        // 7 - geometric cuts: z difference
-        o2::track::TrackParCov trackParCovMoth = getTrackParCov(motherTrack);
-        o2::track::TrackParCov trackParCovDaug = getTrackParCov(daughterTrack);
-        if (std::abs(trackParCovMoth.getZ() - trackParCovDaug.getZ()) < 20.0) {
-          filterIndex += 1;
-          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
-        } else {
-          continue; 
-        }
-        // 8 - collision selection
-        auto collision = motherTrack.template collision_as<CollisionsFullMC>();
-        if (!(std::abs(collision.posZ()) > cutzvertex || !collision.sel8())) {
-          filterIndex += 1;
-          rSigmaMinus.fill(HIST("hFilterIndex"), filterIndex);
-        }
-        
       }
+    }
+
+    // B - reconstructed kinkcands map: mcMother.globalIndex() -> kinkCand.globalIndex()
+    std::unordered_map<int64_t, int64_t> findableToKinkCand;
+    for (const auto& kinkCand : kinkCands) {
+      auto motherTrack = kinkCand.trackMoth_as<TracksFull>();
+      auto daughterTrack = kinkCand.trackDaug_as<TracksFull>();
+
+      auto mcLabMoth = trackLabelsMC.rawIteratorAt(motherTrack.globalIndex());
+      auto mcLabDaug = trackLabelsMC.rawIteratorAt(daughterTrack.globalIndex());
+      if (!mcLabMoth.has_mcParticle() || !mcLabDaug.has_mcParticle()) {
+        continue;
+      }
+      auto mcMother = mcLabMoth.mcParticle_as<aod::McParticles>();
+      auto mcDaughter = mcLabDaug.mcParticle_as<aod::McParticles>();
+
+      if (std::abs(mcMother.pdgCode()) != 3112 && std::abs(mcMother.pdgCode()) != 3222) {
+        continue; 
+      }
+      if (std::abs(mcDaughter.pdgCode()) != 211 && std::abs(mcDaughter.pdgCode()) != 2212) {
+        continue; 
+      }
+
+      auto findableIt = allCandsIndices.find(mcMother.globalIndex());
+      if (findableIt != allCandsIndices.end() && 
+        findableIt->second.first == motherTrack.globalIndex() && 
+        findableIt->second.second == daughterTrack.globalIndex()) {
+
+        findableToKinkCand[mcMother.globalIndex()] = kinkCand.globalIndex();
+      }
+    }
+
+
+    // C - loop on valid pairs for findable analysis
+    for (const auto& [mcMotherIndex, trackIndices] : allCandsIndices) {
+      if (trackIndices.second == -1 || trackIndices.first == -1) {
+        continue; 
+      }
+      // Retrieve mother and daughter tracks and mcParticles
+      auto motherTrack = tracks.rawIteratorAt(trackIndices.first);
+      auto daughterTrack = tracks.rawIteratorAt(trackIndices.second);
+      auto mcLabMoth = trackLabelsMC.rawIteratorAt(motherTrack.globalIndex());
+      auto mcLabDaug = trackLabelsMC.rawIteratorAt(daughterTrack.globalIndex());
+      if (!mcLabMoth.has_mcParticle() || !mcLabDaug.has_mcParticle()) {
+        continue; 
+      }
+      auto mcMother = mcLabMoth.mcParticle_as<aod::McParticles>();
+      auto mcDaughter = mcLabDaug.mcParticle_as<aod::McParticles>();
+
+      // Compute mass and radii
+      float mcMass = std::sqrt(mcMother.e() * mcMother.e() - mcMother.p() * mcMother.p());
+      int sigmaSign = mcMother.pdgCode() > 0 ? 1 : -1;
+      float mcRadius = std::sqrt((mcMother.vx() - mcDaughter.vx()) * (mcMother.vx() - mcDaughter.vx()) +
+                        (mcMother.vy() - mcDaughter.vy()) * (mcMother.vy() - mcDaughter.vy()));
+      float recRadius = -1.0;
+      if (findableToKinkCand.find(mcMother.globalIndex()) != findableToKinkCand.end()) {
+        auto kinkCand = kinkCands.rawIteratorAt(findableToKinkCand[mcMother.globalIndex()]);
+        recRadius = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
+      }
+
+      rFindable.fill(HIST("h2MassPtFindableAll"), sigmaSign * mcMother.pt(), mcMass);
+
+      // Define filter index and progressively apply kinkbuilder cuts to track pairs
+      int filterIndex = 0;
+      rFindable.fill(HIST("hFilterIndex"), filterIndex);
+      rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
+      rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+
+      // 1 - tracks with right ITS, TPC, TOF signals
+      if (motherTrack.has_collision() && motherTrack.hasITS() && !motherTrack.hasTPC() && !motherTrack.hasTOF() &&
+          daughterTrack.hasITS() && daughterTrack.hasTPC()) {
+        filterIndex += 1;
+        rFindable.fill(HIST("hFilterIndex"), filterIndex);
+        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
+        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+      } else {
+        continue; 
+      }
+        
+      // 2, 3 - mother track ITS properties
+      if (motherTrack.itsNCls() < 6 &&
+            motherTrack.itsNClsInnerBarrel() == 3 && motherTrack.itsChi2NCl() < 36) {
+        filterIndex += 1;
+        rFindable.fill(HIST("hFilterIndex"), filterIndex);
+        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
+        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+      } else {
+        continue; 
+      }
+
+      if (motherTrack.pt() > 0.5) {
+        filterIndex += 1;
+        rFindable.fill(HIST("hFilterIndex"), filterIndex);
+        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
+        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+      } else {
+        continue; 
+      }
+
+      // 4 - daughter track ITS+TPC properties
+      if (daughterTrack.itsNClsInnerBarrel() == 0 && daughterTrack.itsNCls() < 4 &&
+          daughterTrack.tpcNClsCrossedRows() > 0.8 * daughterTrack.tpcNClsFindable() && daughterTrack.tpcNClsFound() > 80) {
+        filterIndex += 1;
+        rFindable.fill(HIST("hFilterIndex"), filterIndex);
+        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
+        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+      } else {
+        continue; 
+      }
+
+      // 5 - geometric cuts: eta
+      if (std::abs(motherTrack.eta()) < 1.0 && std::abs(daughterTrack.eta()) < 1.0) {
+        filterIndex += 1;
+        rFindable.fill(HIST("hFilterIndex"), filterIndex);
+        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
+        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+      } else {
+        continue; 
+      }
+      
+      // 6 - geometric cuts: phi difference
+      if (std::abs(motherTrack.phi() - daughterTrack.phi()) * radToDeg < 50.0) {
+        filterIndex += 1;
+        rFindable.fill(HIST("hFilterIndex"), filterIndex);
+        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
+        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+      } else {
+        continue; 
+      }
+      
+      // 7 - radius cut
+      if (recRadius > 19.6213f) {
+        filterIndex += 1;
+        rFindable.fill(HIST("hFilterIndex"), filterIndex);
+        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
+        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+      } else {
+        continue; 
+      }
+
+      // 8 - collision selection
+      auto collision = motherTrack.template collision_as<CollisionsFullMC>();
+      if (!(std::abs(collision.posZ()) > cutzvertex || !collision.sel8())) {
+        filterIndex += 1;
+        rFindable.fill(HIST("hFilterIndex"), filterIndex);
+        rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
+        rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
+      }
+
     }
   }
 
@@ -414,10 +486,10 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 }
 
 // Next steps:
-// 0. Resolution histograms should have relative values, not absolute OK
-// 1. New h2 with genRadius (recRadius) vs FilterIndex
-// 2. Get recRadius through a map on kinkCands, put a negative value if the candidate is not reconstructed
-// 2.1 Consider adding step in filters with the cuts on radius 
-// 2.2 Add h2 of radius resolution vs pt
-// 3. Rewrite the findable method using maps to avoid the nested loop
+// 0. Resolution histograms should have relative values, not absolute: OK
+// 1. New h2 with genRadius (recRadius) vs FilterIndex: OK
+// 2. Get recRadius through a map on kinkCands, put a negative value if the candidate is not reconstructed: OK
+// 2.1 Consider adding step in filters with the cuts on radius: OK
+// 2.2 Add h2 of radius resolution vs pt: OK
+// 3. Rewrite the findable method using maps to avoid the nested loop: OK
 // 4. For generated h2, avoid mass axis, use a bool axis to easily distinguish sigma minus and sigma plus
