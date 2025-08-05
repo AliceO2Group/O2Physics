@@ -93,6 +93,7 @@ struct HfTaskCharmHadronsFemtoDream {
 
   // Mixing configurables
   Configurable<int> mixingBinPolicy{"mixingBinPolicy", 0, "Binning policy for mixing - 0: multiplicity, 1: multipliciy percentile, 2: both"};
+  Configurable<int> mixingDepth{"mixingDepth", 5, "Number of events for mixing"};
 
   /// Event selection
   struct : ConfigurableGroup {
@@ -182,7 +183,6 @@ struct HfTaskCharmHadronsFemtoDream {
   ConfigurableAxis mixingBinMult{"mixingBinMult", {VARIABLE_WIDTH, 0.0f, 20.0f, 60.0f, 200.0f}, "Mixing bins - multiplicity"};
   ConfigurableAxis mixingBinMultPercentile{"mixingBinMultPercentile", {VARIABLE_WIDTH, 0.0f, 100.f}, "Mixing bins - multiplicity percentile"};
   ConfigurableAxis mixingBinVztx{"mixingBinVztx", {VARIABLE_WIDTH, -10.0f, -4.f, 0.f, 4.f, 10.f}, "Mixing bins - z-vertex"};
-  Configurable<int> mixingDepth{"mixingDepth", 5, "Number of events for mixing"};
                                   
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{mixingBinVztx, mixingBinMult}, true};
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{mixingBinVztx, mixingBinMultPercentile}, true};
