@@ -167,14 +167,14 @@ struct kstarInOO {
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Cs>; //, aod::CentFT0Ms, aod::CentFT0As
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                     aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>;
-  using TrackCandidates_MC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection,
+  using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection,
                                        aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>;
 
   // For Mixed Event
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
-  Partition<TrackCandidates_MC> Kaon_MC = !cfgTrackTPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfgTrackTPCPIDnSig);
-  Partition<TrackCandidates_MC> Pion_MC = !cfgTrackTPCPID || (nabs(aod::pidtpc::tpcNSigmaPi) <= cfgTrackTPCPIDnSig);
+  Partition<TrackCandidatesMC> Kaon_MC = !cfgTrackTPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfgTrackTPCPIDnSig);
+  Partition<TrackCandidatesMC> Pion_MC = !cfgTrackTPCPID || (nabs(aod::pidtpc::tpcNSigmaPi) <= cfgTrackTPCPIDnSig);
 
   double massKa = o2::constants::physics::MassKPlus;
   double massPi = o2::constants::physics::MassPiMinus;
@@ -381,15 +381,15 @@ struct kstarInOO {
   //|
   //=======================================================
 
-  int nEvents_MC = 0;
-  void processSameEvent_MC(EventCandidates::iterator const& collision, TrackCandidates_MC const& tracks, aod::McParticles const&)
+  int nEventsMC = 0;
+  void processSameEventMC(EventCandidates::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&)
   {
     if (cDebugLevel > 0) {
-      nEvents_MC++;
-      if ((nEvents_MC + 1) % 10000 == 0) {
+      nEventsMC++;
+      if ((nEventsMC + 1) % 10000 == 0) {
         double histmem = histos.getSize();
         std::cout << histmem << std::endl;
-        std::cout << "process_SameEvent_MC: " << nEvents_MC << std::endl;
+        std::cout << "process_SameEvent_MC: " << nEventsMC << std::endl;
       }
     }
 
@@ -412,7 +412,7 @@ struct kstarInOO {
     TrackSlicing_MC(collision, tracks, collision, tracks, false);
 
   } // processSameEvents_MC
-  PROCESS_SWITCH(kstarInOO, processSameEvent_MC, "process Same Event MC", true);
+  PROCESS_SWITCH(kstarInOO, processSameEventMC, "process Same Event MC", true);
 
   //=======================================================
   //|
@@ -420,17 +420,17 @@ struct kstarInOO {
   //|
   //=======================================================
 
-  int nEvents_MC_Mix = 0;
-  void processMixedEvent_MC(EventCandidates const& collisions, TrackCandidates_MC const& tracks, aod::McParticles const&)
+  int nEventsMCMix = 0;
+  void processMixedEventMC(EventCandidates const& collisions, TrackCandidatesMC const& tracks, aod::McParticles const&)
   {
     auto tracksTuple = std::make_tuple(tracks);
     BinningType colBinning{{cfgBinsMixVtx, cfgBinsMixMult}, true}; // true is for 'ignore overflows' (true by default)
-    SameKindPair<EventCandidates, TrackCandidates_MC, BinningType> pairs{colBinning, cfgMixNMixedEvents, -1, collisions, tracksTuple, &cache};
+    SameKindPair<EventCandidates, TrackCandidatesMC, BinningType> pairs{colBinning, cfgMixNMixedEvents, -1, collisions, tracksTuple, &cache};
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (cDebugLevel > 0) {
-        nEvents_MC_Mix++;
-        if ((nEvents_MC_Mix + 1) % 10000 == 0) {
-          std::cout << "Processed Mixed Events: " << nEvents_MC_Mix << std::endl;
+        nEventsMCMix++;
+        if ((nEventsMCMix + 1) % 10000 == 0) {
+          std::cout << "Processed Mixed Events: " << nEventsMCMix << std::endl;
         }
       }
       auto goodEv1 = eventSelection(collision1);
@@ -445,7 +445,7 @@ struct kstarInOO {
       TrackSlicing_MC(collision1, tracks1, collision2, tracks2, true);
     } // mixing
   } // processMixedEvent_MC
-  PROCESS_SWITCH(kstarInOO, processMixedEvent_MC, "process Mixed Event MC", false);
+  PROCESS_SWITCH(kstarInOO, processMixedEventMC, "process Mixed Event MC", false);
 
   void processEventsDummy(EventCandidates::iterator const&, TrackCandidates const&)
   {
