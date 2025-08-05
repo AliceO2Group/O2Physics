@@ -667,10 +667,10 @@ struct centralityStudy {
       histos.fill(HIST("hNGlobalTracksVsNMFTTracks"), mftNtracks, multNTracksGlobal);
       histos.fill(HIST("hNGlobalTracksVsNTPV"), multNTracksPV, multNTracksGlobal);
 
-      // per run 
+      // per run
       getHist(TH2, histPath + "hNGlobalTracksVsFT0A")->Fill(multFT0A, multNTracksGlobal);
       getHist(TH2, histPath + "hNGlobalTracksVsFT0C")->Fill(multFT0C, multNTracksGlobal);
-      getHist(TH2, histPath + "hNGlobalTracksVsFT0M")->Fill(multFT0A+multFT0C, multNTracksGlobal);
+      getHist(TH2, histPath + "hNGlobalTracksVsFT0M")->Fill(multFT0A + multFT0C, multNTracksGlobal);
       getHist(TH2, histPath + "hNGlobalTracksVsFV0A")->Fill(multFV0A, multNTracksGlobal);
       getHist(TH2, histPath + "hNGlobalTracksVsNMFTTracks")->Fill(mftNtracks, multNTracksGlobal);
       getHist(TH2, histPath + "hNGlobalTracksVsNTPV")->Fill(multNTracksPV, multNTracksGlobal);
