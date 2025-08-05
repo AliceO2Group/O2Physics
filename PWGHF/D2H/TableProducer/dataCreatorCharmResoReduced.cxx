@@ -350,7 +350,8 @@ struct HfDataCreatorCharmResoReduced {
         doprocessDstarV0MC || doprocessDstarTrackMC || doprocessDstarV0AndTrackMC || doprocessDstarV0MCWithMl || doprocessDstarTrackMCWithMl || doprocessDstarV0AndTrackMCWithMl ||
         doprocessDplusV0MC || doprocessDplusTrackMC || doprocessDplusV0AndTrackMC || doprocessDplusV0MCWithMl || doprocessDplusTrackMCWithMl || doprocessDplusV0AndTrackMCWithMl) {
       // MC Rec
-      registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1D, {{31, -15.5, 15.5}}});
+      int nChannels = hf_decay::hf_cand_reso::DecayChannelMain::NChannelsMain;
+      registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1D, {{2*nChannels + 1, -(nChannels + 0.5), nChannels + 0.5}}});
       registry.add("hMCRecDebug", "Debug of MC Reco", {HistType::kTH1D, {{551, -0.5, 550.5}}});
       registry.add("hMCRecOrigin", "Origin of Matched particles", {HistType::kTH1D, {{3, -0.5, 2.5}}});
       registry.add("hMCRecMassGen", "Generated inv. mass of resoncances", {HistType::kTH1D, {{2000, 1.8, 3.8}}});
@@ -931,6 +932,9 @@ struct HfDataCreatorCharmResoReduced {
         origin = candCharmBach.originMcRec();
       }
       flagTrack = getMatchingFlagTrack(bachelorTrack);
+      if (std::abs(flagTrack) > 0) {
+        SETBIT(debugMcRec, flagTrack);
+      }
       if (hf_decay::hf_cand_2prong::daughtersD0Main.contains(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach))) && flagTrack == hf_decay::hf_cand_reso::PartialMatchMc::PionMatched) {
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], bachelorTrack};
         auto pdgCodesDzeroDaughters = hf_decay::hf_cand_2prong::daughtersD0Main.at(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach)));
