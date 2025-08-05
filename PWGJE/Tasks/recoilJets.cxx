@@ -677,9 +677,9 @@ struct RecoilJets {
     spectra.fill(HIST("hMultFT0C"), collision.multFT0C(), weight);
     spectra.fill(HIST("hMultFT0M"), collision.multFT0M(), weight);
 
-    spectra.fill(HIST("hScaleMultFT0A"), collision.multFT0A()/meanFT0A, weight);
-    spectra.fill(HIST("hScaleMultFT0C"), collision.multFT0C()/meanFT0C, weight);
-    spectra.fill(HIST("hScaleMultFT0M"), collision.multFT0M()/meanFT0M, weight);
+    spectra.fill(HIST("hScaleMultFT0A"), collision.multFT0A() / meanFT0A, weight);
+    spectra.fill(HIST("hScaleMultFT0C"), collision.multFT0C() / meanFT0C, weight);
+    spectra.fill(HIST("hScaleMultFT0M"), collision.multFT0M() / meanFT0M, weight);
 
     spectra.fill(HIST("hMultZNA"), collision.multZNA(), weight);
     spectra.fill(HIST("hMultZNC"), collision.multZNC(), weight);
