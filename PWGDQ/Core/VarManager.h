@@ -5531,6 +5531,8 @@ float VarManager::calculatePhiV(T1 const& t1, T2 const& t2)
   return pairPhiV;
 }
 
+/// Fill BDT score values.
+/// Supports binary (1 output) and multiclass (3 outputs) models.
 template <typename T1>
 void VarManager::FillBdtScore(T1 const& bdtScore, float* values)
 {

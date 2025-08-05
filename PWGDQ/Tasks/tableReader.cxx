@@ -1057,7 +1057,7 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   // ML inference
   Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
-  Configurable<string> fConfigBdtCutsJSON{"fConfigBdtCutsJSON", "", "Additional list of BDT cuts in JSON format"};
+  Configurable<std::string> fConfigBdtCutsJSON{"fConfigBdtCutsJSON", "", "Additional list of BDT cuts in JSON format"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/j/jseo/ML/PbPbPsi/default/"}, "Paths of models on CCDB"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
@@ -1078,8 +1078,8 @@ struct AnalysisSameEventPairing {
 
   HistogramManager* fHistMan;
 
-  o2::analysis::DQMlResponse<float> dqMlResponse;
-  std::vector<float> outputMlPsi2ee = {}; // TODO: check this is needed or not
+  o2::analysis::DQMlResponse<float> fDQMlResponse;
+  std::vector<float> fOutputMlPsi2ee = {}; // TODO: check this is needed or not
   o2::ccdb::CcdbApi ccdbApi;
 
   // NOTE: The track filter produced by the barrel track selection contain a number of electron cut decisions and one last cut for hadrons used in the
@@ -1151,9 +1151,9 @@ struct AnalysisSameEventPairing {
         cutDirMl = cfg.cutDirs;
         namesInputFeatures = cfg.inputFeatures;
         onnxFileNames = cfg.onnxFiles;
-        dqMlResponse.setBinsCent(cfg.binsCent);
-        dqMlResponse.setBinsPt(cfg.binsPt);
-        dqMlResponse.setCentType(cfg.centType);
+        fDQMlResponse.setBinsCent(cfg.binsCent);
+        fDQMlResponse.setBinsPt(cfg.binsPt);
+        fDQMlResponse.setCentType(cfg.centType);
         LOG(info) << "Using BDT cuts for binary classification";
       } else {
         auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
@@ -1163,21 +1163,21 @@ struct AnalysisSameEventPairing {
         cutDirMl = cfg.cutDirs;
         namesInputFeatures = cfg.inputFeatures;
         onnxFileNames = cfg.onnxFiles;
-        dqMlResponse.setBinsCent(cfg.binsCent);
-        dqMlResponse.setBinsPt(cfg.binsPt);
-        dqMlResponse.setCentType(cfg.centType);
+        fDQMlResponse.setBinsCent(cfg.binsCent);
+        fDQMlResponse.setBinsPt(cfg.binsPt);
+        fDQMlResponse.setCentType(cfg.centType);
         LOG(info) << "Using BDT cuts for multiclass classification";
       }
 
-      dqMlResponse.configure(binsMl, cutsMl, cutDirMl, nClassesMl);
+      fDQMlResponse.configure(binsMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdburl);
-        dqMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+        fDQMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
       } else {
-        dqMlResponse.setModelPathsLocal(onnxFileNames);
+        fDQMlResponse.setModelPathsLocal(onnxFileNames);
       }
-      dqMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
-      dqMlResponse.init();
+      fDQMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      fDQMlResponse.init();
     }
 
     if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithCov") || context.mOptions.get<bool>("processDecayToEESkimmedWithCovNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithColl") || context.mOptions.get<bool>("processDecayToEESkimmedWithCollNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToPiPiSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
@@ -1457,7 +1457,7 @@ struct AnalysisSameEventPairing {
       }
       if constexpr ((TPairType == pairTypeEE) && (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
         if (applyBDT) {
-          std::vector<float> dqInputFeatures = dqMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
+          std::vector<float> dqInputFeatures = fDQMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
 
           if (dqInputFeatures.empty()) {
             LOG(fatal) << "Input features for ML selection are empty! Please check your configuration.";
@@ -1465,9 +1465,9 @@ struct AnalysisSameEventPairing {
           }
 
           int modelIndex = -1;
-          const auto& binsCent = dqMlResponse.getBinsCent();
-          const auto& binsPt = dqMlResponse.getBinsPt();
-          const std::string& centType = dqMlResponse.getCentType();
+          const auto& binsCent = fDQMlResponse.getBinsCent();
+          const auto& binsPt = fDQMlResponse.getBinsPt();
+          const std::string& centType = fDQMlResponse.getCentType();
 
           if ("kCentFT0C" == centType) {
             modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
@@ -1486,8 +1486,8 @@ struct AnalysisSameEventPairing {
           }
 
           LOG(debug) << "Model index: " << modelIndex << ", pT: " << VarManager::fgValues[VarManager::kPt] << ", centrality (kCentFT0C): " << VarManager::fgValues[VarManager::kCentFT0C];
-          isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, modelIndex, outputMlPsi2ee);
-          VarManager::FillBdtScore(outputMlPsi2ee); // TODO: check if this is needed or not
+          isSelectedBDT = fDQMlResponse.isSelectedMl(dqInputFeatures, modelIndex, fOutputMlPsi2ee);
+          VarManager::FillBdtScore(fOutputMlPsi2ee); // TODO: check if this is needed or not
         }
 
         if (applyBDT && !isSelectedBDT)

@@ -1249,7 +1249,7 @@ struct AnalysisSameEventPairing {
   } fConfigOptions;
   struct : ConfigurableGroup {
     Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
-    Configurable<string> fConfigBdtCutsJSON{"fConfigBdtCutsJSON", "", "Additional list of BDT cuts in JSON format"};
+    Configurable<std::string> fConfigBdtCutsJSON{"fConfigBdtCutsJSON", "", "Additional list of BDT cuts in JSON format"};
 
     Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/j/jseo/ML/PbPbPsi/default/"}, "Paths of models on CCDB"};
     Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
@@ -1263,8 +1263,8 @@ struct AnalysisSameEventPairing {
 
   HistogramManager* fHistMan;
 
-  o2::analysis::DQMlResponse<float> dqMlResponse;
-  std::vector<float> outputMlPsi2ee = {}; // TODO: check this is needed or not
+  o2::analysis::DQMlResponse<float> fDQMlResponse;
+  std::vector<float> fOutputMlPsi2ee = {}; // TODO: check this is needed or not
 
   // keep histogram class names in maps, so we don't have to buld their names in the pair loops
   std::map<int, std::vector<TString>> fTrackHistNames;
@@ -1352,9 +1352,9 @@ struct AnalysisSameEventPairing {
         cutDirMl = cfg.cutDirs;
         namesInputFeatures = cfg.inputFeatures;
         onnxFileNames = cfg.onnxFiles;
-        dqMlResponse.setBinsCent(cfg.binsCent);
-        dqMlResponse.setBinsPt(cfg.binsPt);
-        dqMlResponse.setCentType(cfg.centType);
+        fDQMlResponse.setBinsCent(cfg.binsCent);
+        fDQMlResponse.setBinsPt(cfg.binsPt);
+        fDQMlResponse.setCentType(cfg.centType);
         LOG(info) << "Using BDT cuts for binary classification";
       } else {
         auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
@@ -1364,21 +1364,21 @@ struct AnalysisSameEventPairing {
         cutDirMl = cfg.cutDirs;
         namesInputFeatures = cfg.inputFeatures;
         onnxFileNames = cfg.onnxFiles;
-        dqMlResponse.setBinsCent(cfg.binsCent);
-        dqMlResponse.setBinsPt(cfg.binsPt);
-        dqMlResponse.setCentType(cfg.centType);
+        fDQMlResponse.setBinsCent(cfg.binsCent);
+        fDQMlResponse.setBinsPt(cfg.binsPt);
+        fDQMlResponse.setCentType(cfg.centType);
         LOG(info) << "Using BDT cuts for multiclass classification";
       }
 
-      dqMlResponse.configure(binsMl, cutsMl, cutDirMl, nClassesMl);
+      fDQMlResponse.configure(binsMl, cutsMl, cutDirMl, nClassesMl);
       if (fConfigML.loadModelsFromCCDB) {
         fCCDBApi.init(fConfigCCDB.url);
-        dqMlResponse.setModelPathsCCDB(onnxFileNames, fCCDBApi, fConfigML.modelPathsCCDB, fConfigML.timestampCCDB);
+        fDQMlResponse.setModelPathsCCDB(onnxFileNames, fCCDBApi, fConfigML.modelPathsCCDB, fConfigML.timestampCCDB);
       } else {
-        dqMlResponse.setModelPathsLocal(onnxFileNames);
+        fDQMlResponse.setModelPathsLocal(onnxFileNames);
       }
-      dqMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
-      dqMlResponse.init();
+      fDQMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      fDQMlResponse.init();
     }
 
     // get the barrel track selection cuts
@@ -1769,7 +1769,7 @@ struct AnalysisSameEventPairing {
             dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
             if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
               if (fConfigML.applyBDT) {
-                std::vector<float> dqInputFeatures = dqMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
+                std::vector<float> dqInputFeatures = fDQMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
 
                 if (dqInputFeatures.empty()) {
                   LOG(fatal) << "Input features for ML selection are empty! Please check your configuration.";
@@ -1777,9 +1777,9 @@ struct AnalysisSameEventPairing {
                 }
 
                 int modelIndex = -1;
-                const auto& binsCent = dqMlResponse.getBinsCent();
-                const auto& binsPt = dqMlResponse.getBinsPt();
-                const std::string& centType = dqMlResponse.getCentType();
+                const auto& binsCent = fDQMlResponse.getBinsCent();
+                const auto& binsPt = fDQMlResponse.getBinsPt();
+                const std::string& centType = fDQMlResponse.getCentType();
 
                 if ("kCentFT0C" == centType) {
                   modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
@@ -1798,8 +1798,8 @@ struct AnalysisSameEventPairing {
                 }
 
                 LOG(debug) << "Model index: " << modelIndex << ", pT: " << VarManager::fgValues[VarManager::kPt] << ", centrality (kCentFT0C): " << VarManager::fgValues[VarManager::kCentFT0C];
-                isSelectedBDT = dqMlResponse.isSelectedMl(dqInputFeatures, modelIndex, outputMlPsi2ee);
-                VarManager::FillBdtScore(outputMlPsi2ee); // TODO: check if this is needed or not
+                isSelectedBDT = fDQMlResponse.isSelectedMl(dqInputFeatures, modelIndex, fOutputMlPsi2ee);
+                VarManager::FillBdtScore(fOutputMlPsi2ee); // TODO: check if this is needed or not
               }
 
               if (fConfigML.applyBDT && !isSelectedBDT)
