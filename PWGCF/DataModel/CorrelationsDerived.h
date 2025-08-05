@@ -91,7 +91,7 @@ namespace cfmultiplicityset
 {
 DECLARE_SOA_COLUMN(Multiplicities, multiplicities, std::vector<float>); //! List of auxiliary multiplicities
 }
-DECLARE_SOA_TABLE(CFMultiplicitySets, "AOD", "CFMULTSET", cfmultiplicityset::Multiplicities); //! Auxilary multiplicity set table
+DECLARE_SOA_TABLE(CFMultiplicitySets, "AOD", "CFMULTIPLICITYSET", cfmultiplicityset::Multiplicities); //! Auxilary multiplicity set table
 
 using CFMultiplicitySet = CFMultiplicitySets::iterator;
 
