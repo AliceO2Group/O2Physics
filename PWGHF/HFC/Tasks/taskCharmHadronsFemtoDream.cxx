@@ -309,10 +309,10 @@ struct HfTaskCharmHadronsFemtoDream {
         continue;
       }
 
-      constexpr int cutBitChargePositive = 2;
+      constexpr int CutBitChargePositive = 2;
       // proton track charge
       float chargeTrack = 0.;
-      if ((p1.cut() & cutBitChargePositive) == cutBitChargePositive) {
+      if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
         chargeTrack = PositiveCharge;
       } else {
         chargeTrack = NegativeCharge;
