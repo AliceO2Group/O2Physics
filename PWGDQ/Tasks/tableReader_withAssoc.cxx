@@ -15,6 +15,7 @@
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/DQMlResponse.h"
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/MixingHandler.h"
@@ -1251,6 +1252,14 @@ struct AnalysisSameEventPairing {
     Configurable<bool> propTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
     Configurable<bool> useRemoteCollisionInfo{"cfgUseRemoteCollisionInfo", false, "Use remote collision information from CCDB"};
   } fConfigOptions;
+  struct : ConfigurableGroup {
+    Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
+    Configurable<std::string> fConfigBdtCutsJSON{"fConfigBdtCutsJSON", "", "Additional list of BDT cuts in JSON format"};
+
+    Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/j/jseo/ML/PbPbPsi/default/"}, "Paths of models on CCDB"};
+    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+    Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  } fConfigML;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   o2::ccdb::CcdbApi fCCDBApi;
@@ -1258,6 +1267,9 @@ struct AnalysisSameEventPairing {
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(0);
 
   HistogramManager* fHistMan;
+
+  o2::analysis::DQMlResponse<float> fDQMlResponse;
+  std::vector<float> fOutputMlPsi2ee = {}; // TODO: check this is needed or not
 
   // keep histogram class names in maps, so we don't have to buld their names in the pair loops
   std::map<int, std::vector<TString>> fTrackHistNames;
@@ -1324,6 +1336,54 @@ struct AnalysisSameEventPairing {
     TObjArray* objArrayMuonCuts = nullptr;
     if (!muonCutsStr.IsNull()) {
       objArrayMuonCuts = muonCutsStr.Tokenize(",");
+    }
+
+    if (fConfigML.applyBDT) {
+      // BDT cuts via JSON
+      std::vector<double> binsMl;
+      o2::framework::LabeledArray<double> cutsMl;
+      std::vector<int> cutDirMl;
+      int nClassesMl = 1;
+      std::vector<std::string> namesInputFeatures;
+      std::vector<std::string> onnxFileNames;
+
+      auto config = o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFromJSON(fConfigML.fConfigBdtCutsJSON.value.c_str());
+
+      if (std::holds_alternative<dqmlcuts::BinaryBdtScoreConfig>(config)) {
+        auto& cfg = std::get<dqmlcuts::BinaryBdtScoreConfig>(config);
+        binsMl = cfg.binsMl;
+        nClassesMl = 1;
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
+        namesInputFeatures = cfg.inputFeatures;
+        onnxFileNames = cfg.onnxFiles;
+        fDQMlResponse.setBinsCent(cfg.binsCent);
+        fDQMlResponse.setBinsPt(cfg.binsPt);
+        fDQMlResponse.setCentType(cfg.centType);
+        LOG(info) << "Using BDT cuts for binary classification";
+      } else {
+        auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
+        binsMl = cfg.binsMl;
+        nClassesMl = 3;
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
+        namesInputFeatures = cfg.inputFeatures;
+        onnxFileNames = cfg.onnxFiles;
+        fDQMlResponse.setBinsCent(cfg.binsCent);
+        fDQMlResponse.setBinsPt(cfg.binsPt);
+        fDQMlResponse.setCentType(cfg.centType);
+        LOG(info) << "Using BDT cuts for multiclass classification";
+      }
+
+      fDQMlResponse.configure(binsMl, cutsMl, cutDirMl, nClassesMl);
+      if (fConfigML.loadModelsFromCCDB) {
+        fCCDBApi.init(fConfigCCDB.url);
+        fDQMlResponse.setModelPathsCCDB(onnxFileNames, fCCDBApi, fConfigML.modelPathsCCDB, fConfigML.timestampCCDB);
+      } else {
+        fDQMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      fDQMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      fDQMlResponse.init();
     }
 
     // get the barrel track selection cuts
@@ -1632,6 +1692,7 @@ struct AnalysisSameEventPairing {
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
     constexpr bool eventHasQvectorCentr = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
+    bool isSelectedBDT = false;
 
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
@@ -1712,6 +1773,43 @@ struct AnalysisSameEventPairing {
           if constexpr (trackHasCov && TTwoProngFitter) {
             dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
             if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
+              if (fConfigML.applyBDT) {
+                std::vector<float> dqInputFeatures = fDQMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
+
+                if (dqInputFeatures.empty()) {
+                  LOG(fatal) << "Input features for ML selection are empty! Please check your configuration.";
+                  return;
+                }
+
+                int modelIndex = -1;
+                const auto& binsCent = fDQMlResponse.getBinsCent();
+                const auto& binsPt = fDQMlResponse.getBinsPt();
+                const std::string& centType = fDQMlResponse.getCentType();
+
+                if ("kCentFT0C" == centType) {
+                  modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+                } else if ("kCentFT0A" == centType) {
+                  modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0A], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+                } else if ("kCentFT0M" == centType) {
+                  modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+                } else {
+                  LOG(fatal) << "Unknown centrality estimation type: " << centType;
+                  return;
+                }
+
+                if (modelIndex < 0) {
+                  LOG(info) << "Ml index is negative! This means that the centrality/pt is not in the range of the model bins.";
+                  continue;
+                }
+
+                LOG(debug) << "Model index: " << modelIndex << ", pT: " << VarManager::fgValues[VarManager::kPt] << ", centrality (kCentFT0C): " << VarManager::fgValues[VarManager::kCentFT0C];
+                isSelectedBDT = fDQMlResponse.isSelectedMl(dqInputFeatures, modelIndex, fOutputMlPsi2ee);
+                VarManager::FillBdtScore(fOutputMlPsi2ee); // TODO: check if this is needed or not
+              }
+
+              if (fConfigML.applyBDT && !isSelectedBDT)
+                continue;
+
               if (fConfigOptions.flatTables.value) {
                 dielectronAllList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), twoTrackFilter, dileptonMcDecision,
                                   t1.pt(), t1.eta(), t1.phi(), t1.itsClusterMap(), t1.itsChi2NCl(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(),
@@ -1836,6 +1934,10 @@ struct AnalysisSameEventPairing {
         bool isLeg1Ambi = false;
         bool isLeg2Ambi = false;
         bool isAmbiExtra = false;
+
+        if (fConfigML.applyBDT && !isSelectedBDT)
+          continue;
+
         for (int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));

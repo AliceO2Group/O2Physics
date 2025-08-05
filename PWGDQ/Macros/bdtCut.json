@@ -1,0 +1,89 @@
+{
+    "TestCut": {
+        "type": "Binary",
+        "title": "MyBDTModel",
+        "inputFeatures": [
+            "kMass",
+            "kPt",
+            "kEta",
+            "kPhi",
+            "kPt1",
+            "kITSChi2NCl1",
+            "kTPCNClsCR1",
+            "kTPCNClsFound1",
+            "kTPCChi2NCl1",
+            "kDcaXY1",
+            "kDcaZ1",
+            "kTPCNSigmaEl1",
+            "kTPCNSigmaPi1",
+            "kTPCNSigmaPr1",
+            "kTOFNSigmaEl1",
+            "kTOFNSigmaPi1",
+            "kTOFNSigmaPr1",
+            "kPt2",
+            "kITSChi2NCl2",
+            "kTPCNClsCR2",
+            "kTPCNClsFound2",
+            "kTPCChi2NCl2",
+            "kDcaXY2",
+            "kDcaZ2",
+            "kTPCNSigmaEl2",
+            "kTPCNSigmaPi2",
+            "kTPCNSigmaPr2",
+            "kTOFNSigmaEl2",
+            "kTOFNSigmaPi2",
+            "kTOFNSigmaPr2"
+        ],
+        "modelFiles": [
+            "cent_10_30_pt0_2_onnx.onnx",
+            "cent_10_30_pt2_20_onnx.onnx",
+            "cent_30_50_pt0_2_onnx.onnx",
+            "cent_30_50_pt2_20_onnx.onnx"
+        ],
+        "cent": "kCentFT0C",
+        "AddCentCut-Cent1030": {
+            "centMin": 10,
+            "centMax": 30,
+            "AddPtCut-pTBin1": {
+                "pTMin": 0,
+                "pTMax": 2,
+                "AddMLCut-background": {
+                    "var": "kBdtBackground",
+                    "cut": 0.5,
+                    "exclude": false
+                }
+            },
+            "AddPtCut-pTBin2": {
+                "pTMin": 2,
+                "pTMax": 20,
+                "AddMLCut-background": {
+                    "var": "kBdtBackground",
+                    "cut": 0.5,
+                    "exclude": false
+                }
+            }
+        },
+        "AddCentCut-Cent3050": {
+            "centMin": 30,
+            "centMax": 50,
+            "AddPtCut-pTBin1": {
+                "pTMin": 0,
+                "pTMax": 2,
+                "AddMLCut-background": {
+                    "var": "kBdtBackground",
+                    "cut": 0.5,
+                    "exclude": false
+                }
+            },
+            "AddPtCut-pTBin2": {
+                "pTMin": 2,
+                "pTMax": 20,
+                "AddMLCut-background": {
+                    "var": "kBdtBackground",
+                    "cut": 0.5,
+                    "exclude": false
+                }
+            }
+        }
+    }
+}

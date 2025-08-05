@@ -12,13 +12,18 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //
 #include "PWGDQ/Core/CutsLibrary.h"
-#include <RtypesCore.h>
-#include <TF1.h>
-#include <vector>
-#include <string>
-#include <iostream>
+
 #include "AnalysisCompositeCut.h"
 #include "VarManager.h"
+
+#include <TF1.h>
+
+#include <RtypesCore.h>
+
+#include <iostream>
+#include <set>
+#include <string>
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -7099,4 +7104,231 @@ AnalysisCompositeCut* o2::aod::dqcuts::ParseJSONAnalysisCompositeCut(T cut, cons
   }
 
   return retCut;
+}
+
+//________________________________________________________________________________________________
+o2::aod::dqmlcuts::BdtScoreConfig o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFromJSON(const char* json)
+{
+  LOG(info) << "========================================== interpreting JSON for ML analysis cuts";
+  if (!json) {
+    LOG(fatal) << "JSON config string is null!";
+    return {};
+  }
+  LOG(info) << "JSON string: " << json;
+
+  rapidjson::Document document;
+
+  // Check that the json is parsed correctly
+  rapidjson::ParseResult ok = document.Parse(json);
+  if (!ok) {
+    LOG(fatal) << "JSON parse error: " << rapidjson::GetParseErrorFunc(ok.Code()) << " (" << ok.Offset() << ")";
+    return {};
+  }
+
+  for (auto it = document.MemberBegin(); it != document.MemberEnd(); ++it) {
+    const auto& obj = it->value;
+
+    // Classification type
+    if (!obj.HasMember("type")) {
+      LOG(fatal) << "Missing type (Binary/MultiClass)";
+      return {};
+    }
+    TString typeStr = obj["type"].GetString();
+    if (typeStr != "Binary" && typeStr != "MultiClass") {
+      LOG(fatal) << "Unsupported classification type: " << typeStr;
+      return {};
+    }
+
+    // Input features
+    if (!obj.HasMember("inputFeatures") || !obj["inputFeatures"].IsArray()) {
+      LOG(fatal) << "Missing inputFeatures member or array";
+      return {};
+    }
+    std::vector<std::string> namesInputFeatures;
+    for (const auto& feature : obj["inputFeatures"].GetArray()) {
+      namesInputFeatures.emplace_back(feature.GetString());
+      LOG(debug) << "Input features: " << feature.GetString();
+    }
+
+    // Model files
+    if (!obj.HasMember("modelFiles") || !obj["modelFiles"].IsArray()) {
+      LOG(fatal) << "Missing modelFiles member or array";
+      return {};
+    }
+    std::vector<std::string> onnxFileNames;
+    for (const auto& model : obj["modelFiles"].GetArray()) {
+      onnxFileNames.emplace_back(model.GetString());
+      LOG(debug) << "Model Files: " << model.GetString() << " ";
+    }
+
+    // Centrality estimation type
+    if (!obj.HasMember("cent") || !obj["cent"].IsString()) {
+      LOG(fatal) << "Missing cent member";
+      return {};
+    }
+    std::string cent = obj["cent"].GetString();
+    LOG(debug) << "Centrality type: " << cent;
+    if (cent != "kCentFT0C" && cent != "kCentFT0A" && cent != "kCentFT0M") {
+      LOG(fatal) << "Unsupported centrality type: " << cent;
+      return {};
+    }
+
+    // Cut storage
+    std::vector<std::pair<double, double>> centBins;
+    std::vector<std::pair<double, double>> ptBins;
+    std::vector<std::vector<double>> cutsMl;
+    std::vector<int> cutDirs;
+    std::vector<std::string> labelsFlatBin;
+    bool cutDirsFilled = false;
+
+    for (auto centMember = obj.MemberBegin(); centMember != obj.MemberEnd(); ++centMember) {
+      TString centKey = centMember->name.GetString();
+      if (!centKey.Contains("AddCentCut"))
+        continue;
+
+      const auto& centCut = centMember->value;
+
+      // Centrality info
+      if (!centCut.HasMember("centMin") || !centCut.HasMember("centMax")) {
+        LOG(fatal) << "Missing centMin/centMax in " << centKey;
+        return {};
+      }
+      double centMin = centCut["centMin"].GetDouble();
+      double centMax = centCut["centMax"].GetDouble();
+
+      for (auto ptMember = centCut.MemberBegin(); ptMember != centCut.MemberEnd(); ++ptMember) {
+        TString ptKey = ptMember->name.GetString();
+        if (!ptKey.Contains("AddPtCut"))
+          continue;
+
+        const auto& ptCut = ptMember->value;
+
+        // Pt info
+        if (!ptCut.HasMember("pTMin") || !ptCut.HasMember("pTMax")) {
+          LOG(fatal) << "Missing pTMin/pTMax in " << ptKey;
+          return {};
+        }
+
+        double ptMin = ptCut["pTMin"].GetDouble();
+        double ptMax = ptCut["pTMax"].GetDouble();
+
+        std::vector<double> binCuts;
+        bool exclude = false;
+
+        for (auto mlMember = ptCut.MemberBegin(); mlMember != ptCut.MemberEnd(); ++mlMember) {
+          TString mlKey = mlMember->name.GetString();
+          if (!mlKey.Contains("AddMLCut"))
+            continue;
+
+          const auto& mlcut = mlMember->value;
+
+          if (!mlcut.HasMember("cut")) {
+            LOG(fatal) << "Missing cut (score) in " << mlKey;
+            return {};
+          }
+
+          double cutVal = mlcut["cut"].GetDouble();
+          exclude = mlcut.HasMember("exclude") ? mlcut["exclude"].GetBool() : false;
+
+          binCuts.push_back(cutVal);
+
+          if (!cutDirsFilled) {
+            cutDirs.push_back(exclude ? 0 : 1);
+          }
+        }
+
+        if (!cutDirsFilled) {
+          cutDirsFilled = true;
+        }
+
+        centBins.emplace_back(centMin, centMax);
+        ptBins.emplace_back(ptMin, ptMax);
+        cutsMl.push_back(binCuts);
+        labelsFlatBin.push_back(Form("%s_cent%.0f_%.0f_pt%.1f_%.1f", cent.c_str(), centMin, centMax, ptMin, ptMax));
+        LOG(info) << "Added cut for " << Form("%s_cent%.0f_%.0f_pt%.1f_%.1f", cent.c_str(), centMin, centMax, ptMin, ptMax) << " with cuts: [";
+        for (size_t i = 0; i < binCuts.size(); ++i) {
+          std::cout << binCuts[i];
+          if (i != binCuts.size() - 1)
+            std::cout << ", ";
+        }
+        std::cout << "] and direction: " << (exclude ? "CutGreater" : "CutSmaller") << std::endl;
+      }
+    }
+
+    if (cutDirs.size() != cutsMl[0].size()) {
+      LOG(fatal) << "Mismatch the cut size and direction size: cutsMl[0].size() = " << cutsMl[0].size()
+                 << ", cutsMl[0].size() = " << cutDirs.size();
+      return {};
+    }
+
+    std::vector<std::string> labelsClass;
+    for (size_t j = 0; j < cutsMl[0].size(); ++j) {
+      labelsClass.push_back(Form("score class %d", static_cast<int>(j)));
+    }
+
+    size_t nFlatBins = cutsMl.size();
+    std::vector<double> binsMl(nFlatBins + 1);
+    std::iota(binsMl.begin(), binsMl.end(), 0);
+
+    // Binary
+    if (typeStr == "Binary") {
+      dqmlcuts::BinaryBdtScoreConfig binaryCfg;
+      binaryCfg.inputFeatures = namesInputFeatures;
+      binaryCfg.onnxFiles = onnxFileNames;
+      binaryCfg.binsCent = centBins;
+      binaryCfg.binsPt = ptBins;
+      binaryCfg.binsMl = binsMl;
+      binaryCfg.cutDirs = cutDirs;
+      binaryCfg.centType = cent;
+      binaryCfg.cutsMl = makeLabeledCutsMl(cutsMl, labelsFlatBin, labelsClass);
+
+      return binaryCfg;
+
+      // MultiClass
+    } else if (typeStr == "MultiClass") {
+      dqmlcuts::MultiClassBdtScoreConfig multiCfg;
+      multiCfg.inputFeatures = namesInputFeatures;
+      multiCfg.onnxFiles = onnxFileNames;
+      multiCfg.binsCent = centBins;
+      multiCfg.binsPt = ptBins;
+      multiCfg.binsMl = binsMl;
+      multiCfg.cutDirs = cutDirs;
+      multiCfg.centType = cent;
+      multiCfg.cutsMl = makeLabeledCutsMl(cutsMl, labelsFlatBin, labelsClass);
+
+      return multiCfg;
+    }
+  }
+
+  return {};
+}
+
+o2::framework::LabeledArray<double> o2::aod::dqmlcuts::makeLabeledCutsMl(const std::vector<std::vector<double>>& cuts,
+                                                                         const std::vector<std::string>& labelsflatBin,
+                                                                         const std::vector<std::string>& labelsClass)
+{
+  const size_t nRows = cuts.size();
+  const size_t nCols = cuts.empty() ? 0 : cuts[0].size();
+  std::vector<double> flat;
+
+  for (const auto& row : cuts) {
+    flat.insert(flat.end(), row.begin(), row.end());
+  }
+
+  o2::framework::Array2D<double> arr(flat.data(), nRows, nCols);
+  return o2::framework::LabeledArray<double>(arr, labelsflatBin, labelsClass);
+}
+
+int o2::aod::dqmlcuts::getMlBinIndex(double cent, double pt,
+                                     const std::vector<std::pair<double, double>>& binsCent,
+                                     const std::vector<std::pair<double, double>>& binsPt)
+{
+  LOG(debug) << "Searching for Ml bin index for cent: " << cent << ", pt: " << pt;
+  for (size_t i = 0; i < binsCent.size(); ++i) {
+    if (cent >= binsCent[i].first && cent < binsCent[i].second && pt >= binsPt[i].first && pt < binsPt[i].second) {
+      LOG(debug) << " - Found at index: " << i;
+      return static_cast<int>(i);
+    }
+  }
+  return -1; // not found
 }

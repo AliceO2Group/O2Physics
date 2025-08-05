@@ -855,6 +855,11 @@ class VarManager : public TObject
     // deltaMass_jpsi = kPairMass - kPairMassDau +3.096900
     kDeltaMass_jpsi,
 
+    // BDT score
+    kBdtBackground,
+    kBdtPrompt,
+    kBdtNonprompt,
+
     kNVars
   }; // end of Variables enumeration
 
@@ -1127,6 +1132,8 @@ class VarManager : public TObject
   static void FillDileptonTrackTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track1, T1 const& track2, float* values);
   template <typename T>
   static void FillZDC(const T& zdc, float* values = nullptr);
+  template <typename T>
+  static void FillBdtScore(const T& bdtScore, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
@@ -5522,6 +5529,26 @@ float VarManager::calculatePhiV(T1 const& t1, T2 const& t2)
   // The angle between them should be small if the pair is conversion. This function then returns values close to pi!
   pairPhiV = TMath::ACos(wx * ax + wy * ay); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
   return pairPhiV;
+}
+
+/// Fill BDT score values.
+/// Supports binary (1 output) and multiclass (3 outputs) models.
+template <typename T1>
+void VarManager::FillBdtScore(T1 const& bdtScore, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  if (bdtScore.size() == 1) {
+    values[kBdtBackground] = bdtScore[0];
+  } else if (bdtScore.size() == 3) {
+    values[kBdtBackground] = bdtScore[0];
+    values[kBdtPrompt] = bdtScore[1];
+    values[kBdtNonprompt] = bdtScore[2];
+  } else {
+    LOG(warning) << "Unexpected number of BDT outputs: " << bdtScore.size();
+  }
 }
 
 #endif // PWGDQ_CORE_VARMANAGER_H_

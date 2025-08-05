@@ -14,6 +14,7 @@
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/DQMlResponse.h"
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/MixingHandler.h"
@@ -1054,6 +1055,12 @@ struct AnalysisSameEventPairing {
   Configurable<float> fCenterMassEnergy{"energy", 13600, "Center of mass energy in GeV"};
   Configurable<bool> fConfigCumulants{"cfgCumulants", false, "If true, fill Cumulants with Weights different than 0"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
+  // ML inference
+  Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
+  Configurable<std::string> fConfigBdtCutsJSON{"fConfigBdtCutsJSON", "", "Additional list of BDT cuts in JSON format"};
+  Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/j/jseo/ML/PbPbPsi/default/"}, "Paths of models on CCDB"};
+  Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+  Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   // Configurables to create output tree (flat tables or minitree)
   struct : ConfigurableGroup {
@@ -1070,6 +1077,10 @@ struct AnalysisSameEventPairing {
   Filter prefilter = aod::dqanalysisflags::isPrefilterVetoed == 0;
 
   HistogramManager* fHistMan;
+
+  o2::analysis::DQMlResponse<float> fDQMlResponse;
+  std::vector<float> fOutputMlPsi2ee = {}; // TODO: check this is needed or not
+  o2::ccdb::CcdbApi ccdbApi;
 
   // NOTE: The track filter produced by the barrel track selection contain a number of electron cut decisions and one last cut for hadrons used in the
   //           dilepton - hadron task downstream. So the bit mask is required to select pairs just based on the electron cuts
@@ -1119,6 +1130,54 @@ struct AnalysisSameEventPairing {
       for (int icut = 0; icut < objArray->GetEntries(); ++icut) {
         fPairCuts.push_back(*dqcuts::GetCompositeCut(objArray->At(icut)->GetName()));
       }
+    }
+
+    if (applyBDT) {
+      // BDT cuts via JSON
+      std::vector<double> binsMl;
+      o2::framework::LabeledArray<double> cutsMl;
+      std::vector<int> cutDirMl;
+      int nClassesMl = 1;
+      std::vector<std::string> namesInputFeatures;
+      std::vector<std::string> onnxFileNames;
+
+      auto config = o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFromJSON(fConfigBdtCutsJSON.value.c_str());
+
+      if (std::holds_alternative<dqmlcuts::BinaryBdtScoreConfig>(config)) {
+        auto& cfg = std::get<dqmlcuts::BinaryBdtScoreConfig>(config);
+        binsMl = cfg.binsMl;
+        nClassesMl = 1;
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
+        namesInputFeatures = cfg.inputFeatures;
+        onnxFileNames = cfg.onnxFiles;
+        fDQMlResponse.setBinsCent(cfg.binsCent);
+        fDQMlResponse.setBinsPt(cfg.binsPt);
+        fDQMlResponse.setCentType(cfg.centType);
+        LOG(info) << "Using BDT cuts for binary classification";
+      } else {
+        auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
+        binsMl = cfg.binsMl;
+        nClassesMl = 3;
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
+        namesInputFeatures = cfg.inputFeatures;
+        onnxFileNames = cfg.onnxFiles;
+        fDQMlResponse.setBinsCent(cfg.binsCent);
+        fDQMlResponse.setBinsPt(cfg.binsPt);
+        fDQMlResponse.setCentType(cfg.centType);
+        LOG(info) << "Using BDT cuts for multiclass classification";
+      }
+
+      fDQMlResponse.configure(binsMl, cutsMl, cutDirMl, nClassesMl);
+      if (loadModelsFromCCDB) {
+        ccdbApi.init(ccdburl);
+        fDQMlResponse.setModelPathsCCDB(onnxFileNames, ccdbApi, modelPathsCCDB, timestampCCDB);
+      } else {
+        fDQMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      fDQMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      fDQMlResponse.init();
     }
 
     if (context.mOptions.get<bool>("processDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEESkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithCov") || context.mOptions.get<bool>("processDecayToEESkimmedWithCovNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEEVertexingSkimmed") || context.mOptions.get<bool>("processVnDecayToEESkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmed") || context.mOptions.get<bool>("processDecayToEEPrefilterSkimmedNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToEESkimmedWithColl") || context.mOptions.get<bool>("processDecayToEESkimmedWithCollNoTwoProngFitter") || context.mOptions.get<bool>("processDecayToPiPiSkimmed") || context.mOptions.get<bool>("processAllSkimmed")) {
@@ -1317,6 +1376,8 @@ struct AnalysisSameEventPairing {
       dileptonMiniTree.reserve(1);
     }
 
+    bool isSelectedBDT = false;
+
     if (fConfigMultDimuons.value) {
 
       uint32_t mult_dimuons = 0;
@@ -1395,6 +1456,43 @@ struct AnalysisSameEventPairing {
         }
       }
       if constexpr ((TPairType == pairTypeEE) && (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
+        if (applyBDT) {
+          std::vector<float> dqInputFeatures = fDQMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
+
+          if (dqInputFeatures.empty()) {
+            LOG(fatal) << "Input features for ML selection are empty! Please check your configuration.";
+            return;
+          }
+
+          int modelIndex = -1;
+          const auto& binsCent = fDQMlResponse.getBinsCent();
+          const auto& binsPt = fDQMlResponse.getBinsPt();
+          const std::string& centType = fDQMlResponse.getCentType();
+
+          if ("kCentFT0C" == centType) {
+            modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+          } else if ("kCentFT0A" == centType) {
+            modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0A], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+          } else if ("kCentFT0M" == centType) {
+            modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+          } else {
+            LOG(fatal) << "Unknown centrality estimation type: " << centType;
+            return;
+          }
+
+          if (modelIndex < 0) {
+            LOG(debug) << "Ml index is negative! This means that the centrality/pt is not in the range of the model bins.";
+            continue;
+          }
+
+          LOG(debug) << "Model index: " << modelIndex << ", pT: " << VarManager::fgValues[VarManager::kPt] << ", centrality (kCentFT0C): " << VarManager::fgValues[VarManager::kCentFT0C];
+          isSelectedBDT = fDQMlResponse.isSelectedMl(dqInputFeatures, modelIndex, fOutputMlPsi2ee);
+          VarManager::FillBdtScore(fOutputMlPsi2ee); // TODO: check if this is needed or not
+        }
+
+        if (applyBDT && !isSelectedBDT)
+          continue;
+
         if (fConfigFlatTables.value) {
           dielectronAllList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), dileptonFilterMap, dileptonMcDecision,
                             t1.pt(), t1.eta(), t1.phi(), t1.itsClusterMap(), t1.itsChi2NCl(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(),
@@ -1467,6 +1565,9 @@ struct AnalysisSameEventPairing {
           isFirst = false;
         }
       }
+
+      if (applyBDT && !isSelectedBDT)
+        continue;
 
       int iCut = 0;
       for (int icut = 0; icut < ncuts; icut++) {
