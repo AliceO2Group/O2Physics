@@ -52,8 +52,9 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoDream;
 
-inline o2::framework::expressions::Node coshEta(o2::framework::expressions::Node&& eta) {
-    return (nexp(std::move(eta)) + nexp(0.0f - std::move(eta))) * 0.5f;
+inline o2::framework::expressions::Node coshEta(o2::framework::expressions::Node&& eta)
+{
+  return (nexp(std::move(eta)) + nexp(0.0f - std::move(eta))) * 0.5f;
 }
 
 struct HfTaskCharmHadronsFemtoDream {
@@ -62,7 +63,7 @@ struct HfTaskCharmHadronsFemtoDream {
     PositiveCharge = 1,
     NegativeCharge = -1
   };
-  
+
   constexpr static int OriginRecPrompt = 1;
   constexpr static int OriginRecFD = 2;
 
@@ -152,7 +153,7 @@ struct HfTaskCharmHadronsFemtoDream {
 
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
- /// Partition for particle 1
+  /// Partition for particle 1
   Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, cutBitTrack1)) && ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, tpcTofBitTrack1));
 
   Partition<FilteredFDMcParts> partitionMcTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) &&
@@ -307,7 +308,7 @@ struct HfTaskCharmHadronsFemtoDream {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
-      
+
       constexpr int CUT_BIT_CHARGE_POSITIVE = 2;
       // proton track charge
       float chargeTrack = 0.;
