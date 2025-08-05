@@ -109,14 +109,12 @@ struct TaskPolarisationDstarInJet {
 
   // Tables for MC jet matching
   using DstarJets = soa::Join<aod::DstarChargedJets, aod::DstarChargedJetConstituents>;
-  using JetMCDTable = soa::Join<aod::D0ChargedMCDetectorLevelJets, aod::D0ChargedMCDetectorLevelJetConstituents, aod::D0ChargedMCDetectorLevelJetsMatchedToD0ChargedMCParticleLevelJets>;
-  using JetMCPTable = soa::Join<aod::D0ChargedMCParticleLevelJets, aod::D0ChargedMCParticleLevelJetConstituents, aod::D0ChargedMCParticleLevelJetsMatchedToD0ChargedMCDetectorLevelJets>;
+  using JetMCDTable = soa::Join<aod::DstarChargedMCDetectorLevelJets, aod::DstarChargedMCDetectorLevelJetConstituents, aod::DstarChargedMCDetectorLevelJetsMatchedToDstarChargedMCParticleLevelJets>;
   using TracksWithExtra = soa::Join<aod::JTracks, aod::TracksExtra>;
 
   // slices for accessing proper HF mcdjets collision associated to mccollisions
   PresliceUnsorted<aod::JetCollisionsMCD> collisionsPerMCCollisionPreslice = aod::jmccollisionlb::mcCollisionId;
   Preslice<JetMCDTable> dstarMCDJetsPerCollisionPreslice = aod::jet::collisionId;
-  Preslice<JetMCPTable> dstarMCPJetsPerMCCollisionPreslice = aod::jet::mcCollisionId;
   Preslice<DstarJets> dstarJetsPerCollision = aod::jet::collisionId;
 
   HistogramRegistry registry{"registry", {}};
@@ -206,6 +204,7 @@ struct TaskPolarisationDstarInJet {
     std::vector<AxisSpec> thnRecNonPromptAxes = thnRecDataAxes;
 
     if (doprocessDstar || doprocessDstarWithMl) {
+      thnRecDataAxes.insert(thnRecDataAxes.end(), {thnAxisProjection, thnAxisJetPt});
       // Data histos
       if (activateTHnSparseCosThStarHelicity) {
         registry.add("hHelicity", "THn for polarisation studies with cosThStar ", HistType::kTHnSparseF, thnRecDataAxes);
@@ -214,13 +213,12 @@ struct TaskPolarisationDstarInJet {
         registry.add("hProduction", "THn for polarisation studies with cosThStar w.r.t. production axis", HistType::kTHnSparseF, thnRecDataAxes);
       }
       if (activateTHnSparseCosThStarJetAxis) {
-        thnRecDataAxes.insert(thnRecDataAxes.end(), {thnAxisProjection, thnAxisJetPt});
         registry.add("hJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis", HistType::kTHnSparseF, thnRecDataAxes);
       }
     } else if (doprocessDstarMc || doprocessDstarMcWithMl) {
       // MC Reco histos
-      thnRecPromptAxes.push_back(thnAxisDauToMuons);
-      thnRecNonPromptAxes.insert(thnRecNonPromptAxes.end(), {thnAxisPtB, thnAxisDauToMuons});
+      thnRecPromptAxes.insert(thnRecPromptAxes.end(), {thnAxisDauToMuons, thnAxisProjection, thnAxisJetPt});
+      thnRecNonPromptAxes.insert(thnRecNonPromptAxes.end(), {thnAxisPtB, thnAxisDauToMuons, thnAxisProjection, thnAxisJetPt});
       if (activateTHnSparseCosThStarHelicity) {
         registry.add("hRecoPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
         registry.add("hRecoNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, thnRecNonPromptAxes);
@@ -238,8 +236,6 @@ struct TaskPolarisationDstarInJet {
         }
       }
       if (activateTHnSparseCosThStarJetAxis) {
-        thnRecPromptAxes.insert(thnRecPromptAxes.end(), {thnAxisProjection, thnAxisJetPt});
-        thnRecNonPromptAxes.insert(thnRecNonPromptAxes.end(), {thnAxisProjection, thnAxisJetPt});
         registry.add("hRecoPromptJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis and BDT scores -- reco prompt signal", HistType::kTHnSparseF, thnRecPromptAxes);
         registry.add("hRecoNonPromptJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis and BDT scores -- reco non-prompt signal", HistType::kTHnSparseF, thnRecNonPromptAxes);
         if (activatePartRecoDstar) {
@@ -249,8 +245,8 @@ struct TaskPolarisationDstarInJet {
       } 
 
       // MC Gen histos
-      std::vector<AxisSpec> thnGenPromptAxes = {thnAxisPt, thnAxisY, thnAxisCosThetaStar, thnAxisDausAcc, thnAxisCharge};
-      std::vector<AxisSpec> thnGenNonPromptAxes = {thnAxisPt, thnAxisY, thnAxisCosThetaStar, thnAxisPtB, thnAxisDausAcc, thnAxisCharge};
+      std::vector<AxisSpec> thnGenPromptAxes = {thnAxisPt, thnAxisY, thnAxisCosThetaStar, thnAxisDausAcc, thnAxisCharge, thnAxisProjection, thnAxisJetPt};
+      std::vector<AxisSpec> thnGenNonPromptAxes = {thnAxisPt, thnAxisY, thnAxisCosThetaStar, thnAxisPtB, thnAxisDausAcc, thnAxisCharge, thnAxisProjection, thnAxisJetPt};
 
       if (activateTHnSparseCosThStarHelicity) {
         registry.add("hGenPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis -- gen prompt signal", HistType::kTHnSparseF, thnGenPromptAxes);
@@ -269,8 +265,6 @@ struct TaskPolarisationDstarInJet {
         }
       }
       if (activateTHnSparseCosThStarJetAxis) {
-        thnGenPromptAxes.insert(thnGenPromptAxes.end(), {thnAxisProjection, thnAxisJetPt});
-        thnGenNonPromptAxes.insert(thnGenNonPromptAxes.end(), {thnAxisProjection, thnAxisJetPt});
         registry.add("hGenPromptJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis -- gen prompt signal", HistType::kTHnSparseF, thnGenPromptAxes);
         registry.add("hGenNonPromptJetAxis", "THn for polarisation studies with cosThStar w.r.t. jet axis -- gen non-prompt signal", HistType::kTHnSparseF, thnGenNonPromptAxes);
         if (activatePartRecoDstar && (doprocessDstarMc || doprocessDstarMcWithMl)) {
@@ -306,29 +300,29 @@ struct TaskPolarisationDstarInJet {
         if constexpr (withMl) {                                                         // with ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
             } else {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
             }
           } else {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
             } else {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
             }
           }   
         } else {                                                                       // without ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
+              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, zParallel, jetPt);
             } else {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin);
+              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, zParallel, jetPt);
             }
           } else {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate);
+              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate, zParallel, jetPt);
             } else {
-              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar);
+              registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, zParallel, jetPt);
             }
           }  
         }
@@ -337,29 +331,29 @@ struct TaskPolarisationDstarInJet {
           if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
               if (activateTrackingSys) {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons);
+                  registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons);
+                  registry.fill(HIST("hPartRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
                 }
               } else {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons);
+                  registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons);
+                  registry.fill(HIST("hPartRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
                 }
               }
           } else {                                                                       // non-prompt
               if (activateTrackingSys) {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons);
+                  registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons);
+                  registry.fill(HIST("hPartRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
                 }
               } else {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons);
+                  registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons);
+                  registry.fill(HIST("hPartRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
                 }
               }
           }
@@ -367,30 +361,30 @@ struct TaskPolarisationDstarInJet {
           if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
               if (activateTrackingSys) {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons);
+                  registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons);
+                  registry.fill(HIST("hPartRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, zParallel, jetPt);
                 }
               } else {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons);
+                  registry.fill(HIST("hRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons);
+                  registry.fill(HIST("hPartRecoPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons, zParallel, jetPt);
                 }
               }
 
           } else {                                                                       // non-prompt
               if (activateTrackingSys) {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons);
+                  registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons);
+                  registry.fill(HIST("hPartRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons, zParallel, jetPt);
                 }
               } else {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons);
+                  registry.fill(HIST("hRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons);
+                  registry.fill(HIST("hPartRecoNonPromptHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons, zParallel, jetPt);
                 }
               }
       
@@ -402,29 +396,29 @@ struct TaskPolarisationDstarInJet {
         if constexpr (withMl) {                                                         // with ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
             } else {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
             }
           } else {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
             } else {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2]);
+              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
             }
           }   
         } else {                                                                       // without ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate);
+              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, zParallel, jetPt);
             } else {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin);
+              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, zParallel, jetPt);
             }
           } else {
             if (nBkgRotations > 0) {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate);
+              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, isRotatedCandidate, zParallel, jetPt);
             } else {
-              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar);
+              registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, zParallel, jetPt);
             }
           }  
         }
@@ -433,29 +427,29 @@ struct TaskPolarisationDstarInJet {
           if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
               if (activateTrackingSys) {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons);
+                  registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons);
+                  registry.fill(HIST("hPartRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
                 }
               } else {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons);
+                  registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons);
+                  registry.fill(HIST("hPartRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], nMuons, zParallel, jetPt);
                 }
               }
           } else {                                                                       // non-prompt
               if (activateTrackingSys) {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons);
+                  registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons);
+                  registry.fill(HIST("hPartRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
                 }
               } else {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons);
+                  registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons);
+                  registry.fill(HIST("hPartRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, outputMl[0], /*outputMl[1],*/ outputMl[2], ptBhadMother, nMuons, zParallel, jetPt);
                 }
               }
           }
@@ -463,30 +457,30 @@ struct TaskPolarisationDstarInJet {
           if (origin == RecoDecay::OriginType::Prompt) {                                 // prompt
               if (activateTrackingSys) {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons);
+                  registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons);
+                  registry.fill(HIST("hPartRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, nMuons, zParallel, jetPt);
                 }
               } else {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons);
+                  registry.fill(HIST("hRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons);
+                  registry.fill(HIST("hPartRecoPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, nMuons, zParallel, jetPt);
                 }
               }
 
           } else {                                                                       // non-prompt
               if (activateTrackingSys) {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons);
+                  registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons);
+                  registry.fill(HIST("hPartRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, ptBhadMother, nMuons, zParallel, jetPt);
                 }
               } else {
                 if (!isPartRecoDstar) {
-                  registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons);
+                  registry.fill(HIST("hRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons, zParallel, jetPt);
                 } else {
-                  registry.fill(HIST("hPartRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons);
+                  registry.fill(HIST("hPartRecoNonPromptProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, ptBhadMother, nMuons, zParallel, jetPt);
                 }
               }
       
@@ -600,48 +594,48 @@ struct TaskPolarisationDstarInJet {
   /// \param areDausInAcc is a flag indicating whether the daughters are in acceptance or not
   /// \param isPartRecoDstar is a flag indicating if it is a partly reconstructed Dstar->D0pi->Kpipipi0 meson (MC only)
   template <charm_polarisation::CosThetaStarType cosThetaStarType>
-  void fillGenHistos(float ptCharmHad, float rapCharmHad, float cosThetaStar, int8_t origin, float ptBhadMother, bool areDausInAcc, int8_t charge, bool isPartRecoDstar)
+  void fillGenHistos(float ptCharmHad, float rapCharmHad, float cosThetaStar, int8_t origin, float ptBhadMother, bool areDausInAcc, int8_t charge, bool isPartRecoDstar, float zParallel, float jetPt)
   {
     if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
       if (origin == RecoDecay::OriginType::Prompt) {                                    // prompt
         if (!isPartRecoDstar) {
-          registry.fill(HIST("hGenPromptHelicity"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge);
+          registry.fill(HIST("hGenPromptHelicity"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge, zParallel, jetPt);
         } else {
-          registry.fill(HIST("hGenPartRecoPromptHelicity"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge);
+          registry.fill(HIST("hGenPartRecoPromptHelicity"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge, zParallel, jetPt);
         }
       } else { // non-prompt
         if (!isPartRecoDstar) {
-          registry.fill(HIST("hGenNonPromptHelicity"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge);
+          registry.fill(HIST("hGenNonPromptHelicity"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge, zParallel, jetPt);
         } else {
-          registry.fill(HIST("hGenPartRecoNonPromptHelicity"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge);
+          registry.fill(HIST("hGenPartRecoNonPromptHelicity"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge, zParallel, jetPt);
         }
       }
     } else if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Production) { // Production
       if (origin == RecoDecay::OriginType::Prompt) {                                             // prompt
         if (!isPartRecoDstar) {
-          registry.fill(HIST("hGenPromptProduction"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge);
+          registry.fill(HIST("hGenPromptProduction"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge, zParallel, jetPt);
         } else {
-          registry.fill(HIST("hGenPartRecoPromptProduction"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc,  charge);
+          registry.fill(HIST("hGenPartRecoPromptProduction"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc,  charge, zParallel, jetPt);
         }
       } else { // non-prompt
         if (!isPartRecoDstar) {
-          registry.fill(HIST("hGenNonPromptProduction"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge);
+          registry.fill(HIST("hGenNonPromptProduction"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge, zParallel, jetPt);
         } else {
-          registry.fill(HIST("hGenPartRecoNonPromptProduction"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge);
+          registry.fill(HIST("hGenPartRecoNonPromptProduction"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge, zParallel, jetPt);
         }
       }
     } else if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::JetAxis) { // JetAxis
       if (origin == RecoDecay::OriginType::Prompt) {                                             // prompt
         if (!isPartRecoDstar) {
-          registry.fill(HIST("hGenPromptJetAxis"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge);
+          registry.fill(HIST("hGenPromptJetAxis"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge, zParallel, jetPt);
         } else {
-          registry.fill(HIST("hGenPartRecoPromptJetAxis"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge);
+          registry.fill(HIST("hGenPartRecoPromptJetAxis"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge, zParallel, jetPt);
         }
       } else { // non-prompt
         if (!isPartRecoDstar) {
-          registry.fill(HIST("hGenNonPromptJetAxis"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge);
+          registry.fill(HIST("hGenNonPromptJetAxis"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge, zParallel, jetPt);
         } else {
-          registry.fill(HIST("hGenPartRecoNonPromptJetAxis"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge);
+          registry.fill(HIST("hGenPartRecoNonPromptJetAxis"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge, zParallel, jetPt);
         }
       }
     }
@@ -677,35 +671,13 @@ struct TaskPolarisationDstarInJet {
     return true;
   }
 
-  /// \param prongTrack is the track we want to find the mother of
-  /// \param idMothers is the vector containing the mother IDs
-  /// \param particles are the MC particles
-  template <typename Trk, typename Part>
-  void searchFirstLevelMother(Trk const& prongTrack, std::vector<int>& idMothers, Part const& /*particles*/)
-  {
-    /// particle associated to the prong track
-    if (!prongTrack.has_mcParticle()) {
-      return;
-    }
-    auto prongParticle = prongTrack.template mcParticle_as<Part>();
-    /// leave the vector of mother indices empty if the currect paticle has no mothers
-    if (!prongParticle.has_mothers()) {
-      return;
-    }
-    // loop over the mother particles of the analysed particle
-    for (auto iMother = prongParticle.mothersIds().front(); iMother <= prongParticle.mothersIds().back(); ++iMother) {
-      idMothers.push_back(iMother);
-      break; // we keep only the first one
-    }
-  };
-
   /// \param candidates are the selected candidates
   /// \param bkgRotationId is the id for the background rotation
   /// \param particles are the generated particles
   /// \param tracks are the reconstructed tracks
   /// \return true if candidate in signal region
-  template <charm_polarisation::DecayChannel channel, bool withMl, bool doMc, typename Jet, typename Cand, typename Trk>
-  bool runPolarisationAnalysis(Jet const& jet, Cand const& candidate, int bkgRotationId, Trk const& /*tracks*/)
+  template <charm_polarisation::DecayChannel channel, bool withMl, bool doMc, typename Jet, typename Cand>
+  bool runPolarisationAnalysis(Jet const& jet, Cand const& candidate, int bkgRotationId)
   {
     bool isCandidateInSignalRegion{false};
     int8_t origin{RecoDecay::OriginType::None};
@@ -855,8 +827,7 @@ struct TaskPolarisationDstarInJet {
   // Dstar with rectangular cuts
   void processDstar(aod::JetCollisions const& collisions,
                     DstarJets const& jets,
-                    aod::CandidatesDstarData const&,
-                    TracksWithExtra const& tracks)
+                    aod::CandidatesDstarData const&)
   {
     for (const auto& collision : collisions) {
       if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
@@ -866,9 +837,9 @@ struct TaskPolarisationDstarInJet {
       auto groupedDstarjets = jets.sliceBy(dstarJetsPerCollision, thisCollId);
       for (const auto& jet : groupedDstarjets){
         for (const auto& dstarCandidate : jet.candidates_as<aod::CandidatesDstarData>()){
-          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(jet, dstarCandidate, 0, tracks);
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(jet, dstarCandidate, 0);
           for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-            runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(jet, dstarCandidate, iRotation, tracks);
+            runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, false>(jet, dstarCandidate, iRotation);
           }
           break; // hf jet should have only one Dstar candidate but for safety
         }
@@ -880,8 +851,7 @@ struct TaskPolarisationDstarInJet {
   // Dstar with ML cuts
   void processDstarWithMl(aod::JetCollisions const& collisions,
                           DstarJets const& jets,
-                          aod::CandidatesDstarData const&,
-                          TracksWithExtra const& tracks)
+                          aod::CandidatesDstarData const&)
   {
     for (const auto& collision : collisions) {
       if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
@@ -891,9 +861,9 @@ struct TaskPolarisationDstarInJet {
       auto groupedDstarJets = jets.sliceBy(dstarJetsPerCollision, thisCollId);
       for (const auto& jet : groupedDstarJets){
         for (const auto& dstarCandidate : jet.candidates_as<aod::CandidatesDstarData>()){
-          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(jet, dstarCandidate, 0, tracks);
+          runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(jet, dstarCandidate, 0);
           for (int iRotation{1}; iRotation <= nBkgRotations; ++iRotation) {
-            runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(jet, dstarCandidate, iRotation, tracks);
+            runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, false>(jet, dstarCandidate, iRotation);
           }
           break; // hf jet should have only one Dstar candidate but for safety
         }
@@ -906,10 +876,7 @@ struct TaskPolarisationDstarInJet {
   void processDstarMc(aod::JetMcCollisions const& mcCollisions,
                       aod::JetCollisions const& collisions,
                       JetMCDTable const& mcdJets,
-                      JetMCPTable const&,
-                      aod::CandidatesDstarMCD const&,
-                      aod::CandidatesDstarMCP const&,
-                      TracksWithExtra const& tracks)
+                      aod::CandidatesDstarMCD const&)
   {
     for (const auto& mcCollision : mcCollisions){
       const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mcCollision.globalIndex());
@@ -920,7 +887,7 @@ struct TaskPolarisationDstarInJet {
         const auto dstarMcDJetsPerCollision = mcdJets.sliceBy(dstarMCDJetsPerCollisionPreslice, collision.globalIndex());
         for (const auto& mcdJet : dstarMcDJetsPerCollision){
           for (const auto& mcdDstarCand : mcdJet.candidates_as<aod::CandidatesDstarMCD>()){
-            if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(mcdJet, mcdDstarCand, 0, tracks)) {
+            if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, false, true>(mcdJet, mcdDstarCand, 0)) {
             }
             break;
           }
@@ -934,10 +901,7 @@ struct TaskPolarisationDstarInJet {
   void processDstarMcWithMl(aod::JetMcCollisions const& mcCollisions,
                       aod::JetCollisions const& collisions,
                       JetMCDTable const& mcdJets,
-                      JetMCPTable const&,
-                      aod::CandidatesDstarMCD const&,
-                      aod::CandidatesDstarMCP const&,
-                      TracksWithExtra const& tracks)
+                      aod::CandidatesDstarMCD const&)
   {
     for (const auto& mcCollision : mcCollisions){
       const auto collisionsPerMCCollision = collisions.sliceBy(collisionsPerMCCollisionPreslice, mcCollision.globalIndex());
@@ -948,7 +912,7 @@ struct TaskPolarisationDstarInJet {
         const auto dstarMcdJetsPerCollision = mcdJets.sliceBy(dstarMCDJetsPerCollisionPreslice, collision.globalIndex());
         for (const auto& mcdJet : dstarMcdJetsPerCollision){
           for (const auto& mcdDstarCand : mcdJet.candidates_as<aod::CandidatesDstarMCD>()){
-            if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(mcdJet, mcdDstarCand, 0, tracks)) {
+            if (runPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true, true>(mcdJet, mcdDstarCand, 0)) {
             }   
           }
         }
