@@ -115,7 +115,7 @@ struct AntinucleiInJets {
   Configurable<bool> applyRandomEventRejection{"applyRandomEventRejection", false, "reject some events for syst"};
   Configurable<double> rejectionPercentage{"rejectionPercentage", 3.0, "percentage of events to reject"};
   Configurable<int> nSyst{"nSyst", 50, "number of systematic variations"};
-  
+
   // Track quality, kinematic, and PID selection parameters
   Configurable<bool> requirePvContributor{"requirePvContributor", false, "require that the track is a PV contributor"};
   Configurable<bool> applyItsPid{"applyItsPid", true, "apply ITS PID"};
@@ -259,7 +259,7 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_rec_tof_jet", "antiproton_rec_tof_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_rec_tpc_ue", "antiproton_rec_tpc_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_rec_tof_ue", "antiproton_rec_tof_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
-      
+
       // Fraction of primary antiprotons
       registryMC.add("antiproton_prim_jet", "antiproton_prim_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_incl_jet", "antiproton_incl_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -430,14 +430,14 @@ struct AntinucleiInJets {
   template <typename JetTrack>
   bool passedTrackSelectionForJetReconstruction(const JetTrack& track)
   {
-    static constexpr int minTpcCr = 70;
-    static constexpr double maxChi2Tpc = 4.0;
-    static constexpr double maxChi2Its = 36.0;
-    static constexpr double minPtTrack = 0.1;
-    static constexpr double dcaxyMaxTrackPar0 = 0.0105;
-    static constexpr double dcaxyMaxTrackPar1 = 0.035;
-    static constexpr double dcaxyMaxTrackPar2 = 1.1;
-    static constexpr double dcazMaxTrack = 2.0;
+    static constexpr int MinTpcCr = 70;
+    static constexpr double MaxChi2Tpc = 4.0;
+    static constexpr double MaxChi2Its = 36.0;
+    static constexpr double MinPtTrack = 0.1;
+    static constexpr double DcaxyMaxTrackPar0 = 0.0105;
+    static constexpr double DcaxyMaxTrackPar1 = 0.035;
+    static constexpr double DcaxyMaxTrackPar2 = 1.1;
+    static constexpr double DcazMaxTrack = 2.0;
 
     if (!track.hasITS())
       return false;
@@ -445,19 +445,19 @@ struct AntinucleiInJets {
       return false;
     if (!track.hasTPC())
       return false;
-    if (track.tpcNClsCrossedRows() < minTpcCr)
+    if (track.tpcNClsCrossedRows() < MinTpcCr)
       return false;
-    if (track.tpcChi2NCl() > maxChi2Tpc)
+    if (track.tpcChi2NCl() > MaxChi2Tpc)
       return false;
-    if (track.itsChi2NCl() > maxChi2Its)
+    if (track.itsChi2NCl() > MaxChi2Its)
       return false;
     if (std::fabs(track.eta()) > maxEta)
       return false;
-    if (track.pt() < minPtTrack)
+    if (track.pt() < MinPtTrack)
       return false;
-    if (std::fabs(track.dcaXY()) > (dcaxyMaxTrackPar0 + dcaxyMaxTrackPar1 / std::pow(track.pt(), dcaxyMaxTrackPar2)))
+    if (std::fabs(track.dcaXY()) > (DcaxyMaxTrackPar0 + DcaxyMaxTrackPar1 / std::pow(track.pt(), DcaxyMaxTrackPar2)))
       return false;
-    if (std::fabs(track.dcaZ()) > dcazMaxTrack)
+    if (std::fabs(track.dcaZ()) > DcazMaxTrack)
       return false;
     return true;
   }
@@ -567,12 +567,12 @@ struct AntinucleiInJets {
     double nsigmaTPCPr = track.tpcNSigmaPr();
     double nsigmaTOFPr = track.tofNSigmaPr();
     double pt = track.pt();
-    static constexpr double ptThreshold = 0.5;
-    static constexpr double nsigmaMaxPr = 2.0;
+    static constexpr double PtThreshold = 0.5;
+    static constexpr double NsigmaMaxPr = 2.0;
 
-    if (pt < ptThreshold && std::fabs(nsigmaTPCPr) < nsigmaMaxPr)
+    if (pt < PtThreshold && std::fabs(nsigmaTPCPr) < NsigmaMaxPr)
       return true;
-    if (pt >= ptThreshold && std::fabs(nsigmaTPCPr) < nsigmaMaxPr && track.hasTOF() && std::fabs(nsigmaTOFPr) < nsigmaMaxPr)
+    if (pt >= PtThreshold && std::fabs(nsigmaTPCPr) < NsigmaMaxPr && track.hasTOF() && std::fabs(nsigmaTOFPr) < NsigmaMaxPr)
       return true;
     return false;
   }
@@ -1286,8 +1286,8 @@ struct AntinucleiInJets {
         // Select physical primaries within acceptance
         if (!particle.isPhysicalPrimary())
           continue;
-        static constexpr double minPtParticle = 0.1;
-        if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < minPtParticle)
+        static constexpr double MinPtParticle = 0.1;
+        if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < MinPtParticle)
           continue;
 
         // 4-momentum representation of a particle
@@ -1353,8 +1353,8 @@ struct AntinucleiInJets {
         for (const auto& particle : mcParticles) {
 
           // Select physical primaries within the acceptance
-          static constexpr double minPtParticle = 0.1;
-          if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < minPtParticle)
+          static constexpr double MinPtParticle = 0.1;
+          if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < MinPtParticle)
             continue;
 
           // Compute distance of particle from both perpendicular cone axes
