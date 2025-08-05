@@ -75,6 +75,9 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
 static constexpr TrackSelectionFlags::flagtype TrackSelectionDcaxyOnly =
   TrackSelectionFlags::kDCAxy;
 
+static constexpr std::string_view kCorrType[] = {"Ft0aGlobal/", "Ft0cGlobal/", "Fv0Global/", "MftGlobal/", "Fv0Mft/"};
+static constexpr std::string_view kEvntType[] = {"SE/", "ME/"};
+
 AxisSpec axisEvent{10, 0.5, 9.5, "#Event", "EventAxis"};
 
 struct LongrangeCorrelation {
@@ -128,6 +131,9 @@ struct LongrangeCorrelation {
   Preslice<TrksTable> perColGlobal = aod::track::collisionId;
   Preslice<MftTrkTable> perColMft = aod::fwdtrack::collisionId;
 
+  o2::ft0::Geometry ft0Det;
+  o2::fv0::Geometry* fv0Det;
+
   OutputObj<CorrelationContainer> sameFt0aGlobal{Form("sameEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
   OutputObj<CorrelationContainer> mixedFt0aGlobal{Form("mixedEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
   OutputObj<CorrelationContainer> sameFt0cGlobal{Form("sameEventFt0cGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
@@ -138,6 +144,23 @@ struct LongrangeCorrelation {
   OutputObj<CorrelationContainer> mixedFv0Global{Form("mixedEventFv0Global_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
   OutputObj<CorrelationContainer> sameFv0Mft{Form("sameEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
   OutputObj<CorrelationContainer> mixedFv0Mft{Form("mixedEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+
+  template <int corrType, int evntType>
+  void addHistos()
+  {
+    histos.add(Form("%s%shMult", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1D, {axisMultiplicity});
+    histos.add(Form("%s%sTrig_etavsphi", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH2D, {axisPhi, axisEtaTrig});
+    histos.add(Form("%s%sTrig_eta", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1D, {axisEtaTrig});
+    histos.add(Form("%s%sTrig_phi", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1D, {axisPhi});
+    histos.add(Form("%s%sTrig_pt", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1D, {axisPtTrigger});
+    histos.add(Form("%s%shMult_used", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1F, {axisMultiplicity});
+    histos.add(Form("%s%sTrig_hist", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTHnSparseF, {axisSample, axisVtxZ, axisPtTrigger});
+    histos.add(Form("%s%sAssoc_amp", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH2D, {channelFt0aAxis, amplitudeFt0a});
+    histos.add(Form("%s%sAssoc_eta", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1D, {axisEtaAssoc});
+    histos.add(Form("%s%sAssoc_phi", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1D, {axisPhi});
+    histos.add(Form("%s%sAssoc_etavsphi", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH2D, {axisPhi, axisEtaAssoc});
+    histos.add(Form("%s%sdeltaEta_deltaPhi", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH2D, {axisDeltaPhi, axisDeltaEta});
+  }
 
   void init(InitContext const&)
   {
@@ -151,8 +174,8 @@ struct LongrangeCorrelation {
     offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", cfgCcdbParam.noLaterThan.value);
     LOGF(info, "Offset for FT0A: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[0].getX(), (*offsetFT0)[0].getY(), (*offsetFT0)[0].getZ());
     LOGF(info, "Offset for FT0C: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY(), (*offsetFT0)[1].getZ());
-    LOGF(info, "Offset for FV0-left: x = %.3f y = %.3f\n", (*offsetFV0)[0].getX(), (*offsetFV0)[0].getY());
-    LOGF(info, "Offset for FV0-right: x = %.3f y = %.3f\n", (*offsetFV0)[1].getX(), (*offsetFV0)[1].getY());
+    LOGF(info, "Offset for FV0-left: x = %.3f y = %.3f z = %.3f\n", (*offsetFV0)[0].getX(), (*offsetFV0)[0].getY(), (*offsetFV0)[0].getZ());
+    LOGF(info, "Offset for FV0-right: x = %.3f y = %.3f z = %.3f\n", (*offsetFV0)[1].getX(), (*offsetFV0)[1].getY(), (*offsetFV0)[1].getZ());
 
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVtxZ, "z-vtx (cm)"},
@@ -166,6 +189,8 @@ struct LongrangeCorrelation {
 
     std::vector<AxisSpec> userAxis;
 
+    fv0Det = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
+
     if (doprocessEventStat) {
       histos.add("QA/EventHist", "events", kTH1F, {axisEvent}, false);
       histos.add("QA/VtxZHist", "v_{z} (cm)", kTH1F, {axisVtxZ}, false);
@@ -178,59 +203,37 @@ struct LongrangeCorrelation {
       x->SetBinLabel(4, "|vz|<10");
     }
 
-    histos.add("Ft0aGlobal/SE/hMult", "", kTH1D, {axisMultiplicity});
-    histos.add("Ft0aGlobal/SE/Trig_etavsphi", "", kTH2D, {axisPhi, axisEtaTrig});
-    histos.add("Ft0aGlobal/SE/Trig_eta", "", kTH1D, {axisEtaTrig});
-    histos.add("Ft0aGlobal/SE/Trig_phi", "", kTH1D, {axisPhi});
-    histos.add("Ft0aGlobal/SE/Trig_pt", "", kTH1D, {axisPtTrigger});
-    histos.add("Ft0aGlobal/SE/hMult_used", "", kTH1F, {axisMultiplicity});
-    histos.add("Ft0aGlobal/SE/Trig_hist", "", kTHnSparseF, {axisSample, axisVtxZ, axisPtTrigger});
-    histos.add("Ft0aGlobal/SE/Assoc_amp", "", kTH2D, {channelFt0aAxis, amplitudeFt0a});
-    histos.add("Ft0aGlobal/SE/Assoc_eta", "", kTH1D, {axisEtaAssoc});
-    histos.add("Ft0aGlobal/SE/Assoc_phi", "", kTH1D, {axisPhi});
-    histos.add("Ft0aGlobal/SE/Assoc_etavsphi", "", kTH2D, {axisPhi, axisEtaAssoc});
-    histos.add("Ft0aGlobal/SE/deltaEta_deltaPhi", "", kTH2D, {axisDeltaPhi, axisDeltaEta});
-
-    histos.add("Ft0aGlobal/ME/hMult", "", kTH1D, {axisMultiplicity});
-    histos.add("Ft0aGlobal/ME/Trig_etavsphi", "", kTH2D, {axisPhi, axisEtaTrig});
-    histos.add("Ft0aGlobal/ME/Trig_eta", "", kTH1D, {axisEtaTrig});
-    histos.add("Ft0aGlobal/ME/Trig_phi", "", kTH1D, {axisPhi});
-    histos.add("Ft0aGlobal/ME/Trig_pt", "", kTH1D, {axisPtTrigger});
-    histos.add("Ft0aGlobal/ME/Assoc_amp", "", kTH2D, {channelFt0aAxis, amplitudeFt0a});
-    histos.add("Ft0aGlobal/ME/Assoc_eta", "", kTH1D, {axisEtaAssoc});
-    histos.add("Ft0aGlobal/ME/Assoc_phi", "", kTH1D, {axisPhi});
-    histos.add("Ft0aGlobal/ME/Assoc_etavsphi", "", kTH2D, {axisPhi, axisEtaAssoc});
-    histos.add("Ft0aGlobal/ME/deltaEta_deltaPhi", "", kTH2D, {axisDeltaPhi, axisDeltaEta});
-
     if (doprocessFt0aGlobalSE || doprocessFt0aGlobalME) {
+      addHistos<0, 0>();
+      addHistos<0, 1>();
       sameFt0aGlobal.setObject(new CorrelationContainer(Form("sameEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
       mixedFt0aGlobal.setObject(new CorrelationContainer(Form("mixedEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
     }
 
     if (doprocessFt0cGlobalSE || doprocessFt0cGlobalME) {
-      histos.addClone("Ft0aGlobal/SE/", "Ft0cGlobal/SE/");
-      histos.addClone("Ft0aGlobal/ME/", "Ft0cGlobal/ME/");
+      addHistos<1, 0>();
+      addHistos<1, 1>();
       sameFt0cGlobal.setObject(new CorrelationContainer(Form("sameEventFt0cGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventFt0cGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
       mixedFt0cGlobal.setObject(new CorrelationContainer(Form("mixedEventFt0cGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventFt0cGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
     }
 
-    if (doprocessMftGlobalSE || doprocessMftGlobalME) {
-      histos.addClone("Ft0aGlobal/SE/", "MftGlobal/SE/");
-      histos.addClone("Ft0aGlobal/ME/", "MftGlobal/ME/");
-      sameMftGlobal.setObject(new CorrelationContainer(Form("sameEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
-      mixedMftGlobal.setObject(new CorrelationContainer(Form("mixedEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
-    }
-
     if (doprocessFv0GlobalSE || doprocessFv0GlobalME) {
-      histos.addClone("Ft0aGlobal/SE/", "Fv0Global/SE/");
-      histos.addClone("Ft0aGlobal/ME/", "Fv0Global/ME/");
+      addHistos<2, 0>();
+      addHistos<2, 1>();
       sameFv0Global.setObject(new CorrelationContainer(Form("sameEventFv0Global_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventFv0Global_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
       mixedFv0Global.setObject(new CorrelationContainer(Form("mixedEventFv0Global_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventFv0Global_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
     }
 
+    if (doprocessMftGlobalSE || doprocessMftGlobalME) {
+      addHistos<3, 0>();
+      addHistos<3, 1>();
+      sameMftGlobal.setObject(new CorrelationContainer(Form("sameEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+      mixedMftGlobal.setObject(new CorrelationContainer(Form("mixedEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+    }
+
     if (doprocessFv0MftSE || doprocessFv0MftME) {
-      histos.addClone("Ft0aGlobal/SE/", "Fv0Mft/SE/");
-      histos.addClone("Ft0aGlobal/ME/", "Fv0Mft/ME/");
+      addHistos<4, 0>();
+      addHistos<4, 1>();
       sameFv0Mft.setObject(new CorrelationContainer(Form("sameEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
       mixedFv0Mft.setObject(new CorrelationContainer(Form("mixedEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
     }
@@ -249,17 +252,15 @@ struct LongrangeCorrelation {
   Filter fMftTrackColID = (aod::fwdtrack::bestCollisionId >= 0);
   Filter fMftTrackDca = (nabs(aod::fwdtrack::bestDCAXY) < cfigMftDcaxy);
 
-  double getPhiFT0(int chno, double offsetX, double offsetY)
+  double getPhiFT0(int chno, int i)
   {
-    o2::ft0::Geometry ft0Det;
     ft0Det.calculateChannelCenter();
     auto chPos = ft0Det.getChannelCenter(chno);
-    return RecoDecay::phi(chPos.X() + offsetX, chPos.Y() + offsetY);
+    return RecoDecay::phi(chPos.X() + (*offsetFT0)[i].getX(), chPos.Y() + (*offsetFT0)[i].getY());
   }
 
   double getPhiFV0(int chno)
   {
-    o2::fv0::Geometry fv0Det;
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
     float offsetX, offsetY;
@@ -271,18 +272,17 @@ struct LongrangeCorrelation {
       offsetY = (*offsetFV0)[1].getY();
     }
 
-    auto chPos = fv0Det.getReadoutCenter(chno);
+    auto chPos = fv0Det->getReadoutCenter(chno);
     return RecoDecay::phi(chPos.x + offsetX, chPos.y + offsetY);
   }
 
-  double getEtaFT0(int chno, double offsetX, double offsetY, double offsetZ)
+  double getEtaFT0(int chno, int i)
   {
-    o2::ft0::Geometry ft0Det;
     ft0Det.calculateChannelCenter();
     auto chPos = ft0Det.getChannelCenter(chno);
-    auto x = chPos.X() + offsetX;
-    auto y = chPos.Y() + offsetY;
-    auto z = chPos.Z() + offsetZ;
+    auto x = chPos.X() + (*offsetFT0)[i].getX();
+    auto y = chPos.Y() + (*offsetFT0)[i].getY();
+    auto z = chPos.Z() + (*offsetFT0)[i].getZ();
     auto r = std::sqrt(x * x + y * y);
     auto theta = std::atan2(r, z);
     return -std::log(std::tan(0.5 * theta));
@@ -290,7 +290,6 @@ struct LongrangeCorrelation {
 
   double getEtaFV0(int chno)
   {
-    o2::fv0::Geometry fv0Det;
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
     float offsetX, offsetY, offsetZ;
@@ -304,7 +303,7 @@ struct LongrangeCorrelation {
       offsetZ = (*offsetFV0)[1].getZ();
     }
 
-    auto chPos = fv0Det.getReadoutCenter(chno);
+    auto chPos = fv0Det->getReadoutCenter(chno);
     auto x = chPos.x + offsetX;
     auto y = chPos.y + offsetY;
     auto z = chPos.z + offsetZ;
@@ -337,29 +336,24 @@ struct LongrangeCorrelation {
     return true;
   }
 
-  template <int mode, typename TTracks>
-  void fillYield(TTracks tracks, bool mixing)
+  template <int corrType, int evntType, typename TTracks>
+  void fillYield(TTracks tracks)
   {
-    static constexpr std::string_view SubDirSE[] = {"Ft0aGlobal/SE/", "Ft0cGlobal/SE/", "Fv0Global/SE/",
-                                                    "MftGlobal/SE/", "Fv0Mft/SE/"};
-    static constexpr std::string_view SubDirME[] = {"Ft0aGlobal/ME/", "Ft0cGlobal/ME/", "Fv0Global/ME/",
-                                                    "MftGlobal/ME/", "Fv0Mft/ME/"};
-
-    if (mixing) {
-      histos.fill(HIST(SubDirME[mode]) + HIST("hMult"), tracks.size());
-      for (auto const& triggerTrack : tracks) {
-        histos.fill(HIST(SubDirME[mode]) + HIST("Trig_etavsphi"), triggerTrack.phi(), triggerTrack.eta());
-        histos.fill(HIST(SubDirME[mode]) + HIST("Trig_eta"), triggerTrack.eta());
-        histos.fill(HIST(SubDirME[mode]) + HIST("Trig_phi"), triggerTrack.phi());
-        histos.fill(HIST(SubDirME[mode]) + HIST("Trig_pt"), triggerTrack.pt());
+    if (evntType == 1) {
+      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("hMult"), tracks.size());
+      for (auto const& iTrk : tracks) {
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_etavsphi"), iTrk.phi(), iTrk.eta());
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_eta"), iTrk.eta());
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_phi"), iTrk.phi());
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_pt"), iTrk.pt());
       }
     } else {
-      histos.fill(HIST(SubDirSE[mode]) + HIST("hMult"), tracks.size());
-      for (auto const& triggerTrack : tracks) {
-        histos.fill(HIST(SubDirSE[mode]) + HIST("Trig_etavsphi"), triggerTrack.phi(), triggerTrack.eta());
-        histos.fill(HIST(SubDirSE[mode]) + HIST("Trig_eta"), triggerTrack.eta());
-        histos.fill(HIST(SubDirSE[mode]) + HIST("Trig_phi"), triggerTrack.phi());
-        histos.fill(HIST(SubDirSE[mode]) + HIST("Trig_pt"), triggerTrack.pt());
+      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("hMult"), tracks.size());
+      for (auto const& iTrk : tracks) {
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_etavsphi"), iTrk.phi(), iTrk.eta());
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_eta"), iTrk.eta());
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_phi"), iTrk.phi());
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_pt"), iTrk.pt());
       }
     }
   }
@@ -374,9 +368,6 @@ struct LongrangeCorrelation {
       if (!mixing)
         histos.fill(HIST("Ft0aGlobal/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
 
-      auto offsetX = (*offsetFT0)[0].getX();
-      auto offsetY = (*offsetFT0)[0].getY();
-      auto offsetZ = (*offsetFT0)[0].getZ();
       for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
         auto chanelid = ft0.channelA()[iCh];
         float ampl = ft0.amplitudeA()[iCh];
@@ -387,8 +378,8 @@ struct LongrangeCorrelation {
         else
           histos.fill(HIST("Ft0aGlobal/SE/Assoc_amp"), chanelid, ampl);
 
-        auto phi = getPhiFT0(chanelid, offsetX, offsetY);
-        auto eta = getEtaFT0(chanelid, offsetX, offsetY, offsetZ);
+        auto phi = getPhiFT0(chanelid, 0);
+        auto eta = getEtaFT0(chanelid, 0);
 
         if (mixing) {
           histos.fill(HIST("Ft0aGlobal/ME/Assoc_eta"), eta);
@@ -420,9 +411,6 @@ struct LongrangeCorrelation {
       if (!mixing)
         histos.fill(HIST("Ft0cGlobal/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
 
-      auto offsetX = (*offsetFT0)[1].getX();
-      auto offsetY = (*offsetFT0)[1].getY();
-      auto offsetZ = (*offsetFT0)[1].getZ();
       for (std::size_t iCh = 0; iCh < ft0.channelC().size(); iCh++) {
         auto chanelid = ft0.channelC()[iCh];
         float ampl = ft0.amplitudeC()[iCh];
@@ -433,8 +421,8 @@ struct LongrangeCorrelation {
         else
           histos.fill(HIST("Ft0cGlobal/SE/Assoc_amp"), chanelid, ampl);
 
-        auto phi = getPhiFT0(chanelid, offsetX, offsetY);
-        auto eta = getEtaFT0(chanelid, offsetX, offsetY, offsetZ);
+        auto phi = getPhiFT0(chanelid, 1);
+        auto eta = getEtaFT0(chanelid, 1);
 
         if (mixing) {
           histos.fill(HIST("Ft0cGlobal/ME/Assoc_eta"), eta);
@@ -609,7 +597,7 @@ struct LongrangeCorrelation {
       return;
     }
     if (col.has_foundFT0()) {
-      fillYield<0>(tracks, false);
+      fillYield<0, 0>(tracks);
       const auto& ft0 = col.foundFT0();
       if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
         return;
@@ -624,7 +612,7 @@ struct LongrangeCorrelation {
       return;
     }
     if (col.has_foundFT0()) {
-      fillYield<1>(tracks, false);
+      fillYield<1, 0>(tracks);
       const auto& ft0 = col.foundFT0();
       if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
         return;
@@ -638,7 +626,7 @@ struct LongrangeCorrelation {
     if (!isEventSelected(col)) {
       return;
     }
-    fillYield<3>(tracks, false);
+    fillYield<3, 0>(tracks);
     if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
       return;
     }
@@ -651,7 +639,7 @@ struct LongrangeCorrelation {
       return;
     }
     if (col.has_foundFV0()) {
-      fillYield<2>(tracks, false);
+      fillYield<2, 0>(tracks);
       const auto& fv0 = col.foundFV0();
       if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
         return;
@@ -666,7 +654,7 @@ struct LongrangeCorrelation {
       return;
     }
     if (col.has_foundFV0()) {
-      fillYield<4>(mfttracks, false);
+      fillYield<4, 0>(mfttracks);
       const auto& fv0 = col.foundFV0();
       if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
         return;
@@ -693,7 +681,7 @@ struct LongrangeCorrelation {
       }
       if (col1.has_foundFT0() && col2.has_foundFT0()) {
         auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
-        fillYield<0>(slicedTriggerTracks, true);
+        fillYield<0, 1>(slicedTriggerTracks);
         const auto& ft0 = col2.foundFT0();
         if (slicedTriggerTracks.size() < cfgMinMult || slicedTriggerTracks.size() >= cfgMaxMult) {
           continue;
@@ -721,7 +709,7 @@ struct LongrangeCorrelation {
       }
       if (col1.has_foundFT0() && col2.has_foundFT0()) {
         auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
-        fillYield<1>(slicedTriggerTracks, true);
+        fillYield<1, 1>(slicedTriggerTracks);
         const auto& ft0 = col2.foundFT0();
         if (slicedTriggerTracks.size() < cfgMinMult || slicedTriggerTracks.size() >= cfgMaxMult) {
           continue;
@@ -771,7 +759,7 @@ struct LongrangeCorrelation {
       }
       if (col1.has_foundFV0() && col2.has_foundFV0()) {
         auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
-        fillYield<2>(slicedTriggerTracks, true);
+        fillYield<2, 1>(slicedTriggerTracks);
         const auto& fv0 = col2.foundFV0();
         if (slicedTriggerTracks.size() < cfgMinMult || slicedTriggerTracks.size() >= cfgMaxMult) {
           continue;
@@ -800,7 +788,7 @@ struct LongrangeCorrelation {
       if (col1.has_foundFV0() && col2.has_foundFV0()) {
         auto slicedGlobalTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
         auto slicedTriggerMftTracks = mfttracks.sliceBy(perColMft, col1.globalIndex());
-        fillYield<4>(slicedTriggerMftTracks, true);
+        fillYield<4, 1>(slicedTriggerMftTracks);
         const auto& fv0 = col2.foundFV0();
         if (slicedGlobalTracks.size() < cfgMinMult || slicedGlobalTracks.size() >= cfgMaxMult) {
           continue;
