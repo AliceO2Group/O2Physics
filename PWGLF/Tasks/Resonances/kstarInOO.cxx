@@ -69,49 +69,49 @@ struct kstarInOO {
   //==================================
 
   // Event Selection
-  Configurable<std::string> cfg_Event_Selections{"cfg_Event_Selections", "sel8", "choose event selection"};
-  Configurable<float> cfg_Event_VtxCut{"cfg_Event_VtxCut", 10.0, "V_z cut selection"};
+  Configurable<std::string> cfgEventSelections{"cfgEventSelections", "sel8", "choose event selection"};
+  Configurable<float> cfgEventVtxCut{"cfgEventVtxCut", 10.0, "V_z cut selection"};
 
-  ConfigurableAxis cfg_CentAxis{"cfg_CentAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
+  ConfigurableAxis cfgCentAxis{"cfgCentAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
 
   // Track Selection
   // General
-  Configurable<double> cfg_Track_MinPt{"cfg_Track_MinPt", 0.15, "set track min pT"};
-  Configurable<double> cfg_Track_MaxEta{"cfg_Track_MaxEta", 0.9, "set track max Eta"};
-  Configurable<double> cfg_Track_MaxDCArToPVcut{"cfg_Track_MaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
-  Configurable<double> cfg_Track_MaxDCAzToPVcut{"cfg_Track_MaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
-  Configurable<bool> cfg_Track_PrimaryTrack{"cfg_Track_PrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
-  Configurable<bool> cfg_Track_ConnectedToPV{"cfg_Track_ConnectedToPV", true, "PV contributor track selection"};           // PV Contriuibutor
-  Configurable<bool> cfg_Track_GlobalWoDCATrack{"cfg_Track_GlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
+  Configurable<double> cfgTrackMinPt{"cfgTrackMinPt", 0.15, "set track min pT"};
+  Configurable<double> cfgTrackMaxEta{"cfgTrackMaxEta", 0.9, "set track max Eta"};
+  Configurable<double> cfgTrackMaxDCArToPVcut{"cfgTrackMaxDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
+  Configurable<double> cfgTrackMaxDCAzToPVcut{"cfgTrackMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
+  Configurable<bool> cfgTrackPrimaryTrack{"cfgTrackPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
+  Configurable<bool> cfgTrackConnectedToPV{"cfgTrackConnectedToPV", true, "PV contributor track selection"};           // PV Contriuibutor
+  Configurable<bool> cfgTrackGlobalWoDCATrack{"cfgTrackGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   // TPC
-  Configurable<double> cfg_Track_nFindableTPCClusters{"cfg_Track_FindableTPCClusters", 50, "nFindable TPC Clusters"};
-  Configurable<double> cfg_Track_nTPCCrossedRows{"cfg_Track_TPCCrossedRows", 70, "nCrossed TPC Rows"};
-  Configurable<double> cfg_Track_nRowsOverFindable{"cfg_Track_RowsOverFindable", 1.2, "nRowsOverFindable TPC CLusters"};
-  Configurable<double> cfg_Track_nTPCChi2{"cfg_Track_TPCChi2", 4.0, "nTPC Chi2 per Cluster"};
+  Configurable<double> cfgTracknFindableTPCClusters{"cfgTrackFindableTPCClusters", 50, "nFindable TPC Clusters"};
+  Configurable<double> cfgTracknTPCCrossedRows{"cfgTrackTPCCrossedRows", 70, "nCrossed TPC Rows"};
+  Configurable<double> cfgTracknRowsOverFindable{"cfgTrackRowsOverFindable", 1.2, "nRowsOverFindable TPC CLusters"};
+  Configurable<double> cfgTracknTPCChi2{"cfgTrackTPCChi2", 4.0, "nTPC Chi2 per Cluster"};
 
-  // ITS
-  Configurable<double> cfg_Track_nITSChi2{"cfg_Track_ITSChi2", 36.0, "nITS Chi2 per Cluster"};
+  // IT
+  Configurable<double> cfgTracknITSChi2{"cfgTrackITSChi2", 36.0, "nITS Chi2 per Cluster"};
 
   // PID
-  Configurable<bool> cfg_Track_TPCPID{"cfg_Track_TPCPID", true, "Enables TPC PID"};
-  Configurable<bool> cfg_Track_TOFPID{"cfg_Track_TOFPID", true, "Enables TOF PID"};
-  Configurable<float> cfg_Track_TPCPID_nSig{"cfg_Track_TPCPID_nSig", 4.0, "nTPC PID sigma"};
-  Configurable<float> cfg_Track_TOFPID_nSig{"cfg_Track_TOFPID_nSig", 4.0, "nTOF PID sigma"};
+  Configurable<bool> cfgTrackTPCPID{"cfgTrackTPCPID", true, "Enables TPC PID"};
+  Configurable<bool> cfgTrackTOFPID{"cfgTrackTOFPID", true, "Enables TOF PID"};
+  Configurable<float> cfgTrackTPCPIDnSig{"cfgTrackTPCPIDnSig", 4.0, "nTPC PID sigma"};
+  Configurable<float> cfgTrackTOFPID_nSig{"cfgTrackTOFPIDnSig", 4.0, "nTOF PID sigma"};
   Configurable<int> cDebugLevel{"cDebugLevel", 0, "Resolution of Debug"};
 
   // Mixing
-  ConfigurableAxis cfg_bins_MixMult{"cfg_bins_Cent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
-  ConfigurableAxis cfg_bins_MixVtx{"cfg_bins_MixVtx", {VARIABLE_WIDTH, -10.0f, -5.f, 0.f, 5.f, 10.f}, "Mixing bins - z-vertex"};
-  Configurable<int> cfg_Mix_NMixedEvents{"cfg_Mix_NMixedEvents", 10, "Number of mixed events per event"};
+  ConfigurableAxis cfgBinsMixMult{"cfgBinsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
+  ConfigurableAxis cfgBinsMixVtx{"cfgBinsMixVtx", {VARIABLE_WIDTH, -10.0f, -5.f, 0.f, 5.f, 10.f}, "Mixing bins - z-vertex"};
+  Configurable<int> cfgMixNMixedEvents{"cfgMixNMixedEvents", 10, "Number of mixed events per event"};
 
   // Pair
-  Configurable<int> cfg_MinvNBins{"cfg_MinvNBins", 300, "Number of bins for Minv axis"};
-  Configurable<float> cfg_MinvMin{"cfg_MinvMin", 0.60, "Minimum Minv value"};
-  Configurable<float> cfg_MinvMax{"cfg_MinvMax", 1.20, "Maximum Minv value"};
+  Configurable<int> cfgMinvNBins{"cfgMinvNBins", 300, "Number of bins for Minv axis"};
+  Configurable<float> cfgMinvMin{"cfgMinvMin", 0.60, "Minimum Minv value"};
+  Configurable<float> cfgMinvMax{"cfgMinvMax", 1.20, "Maximum Minv value"};
 
   // Histogram
-  Configurable<bool> cfg_Event_CutQA{"cfg_Event_CutsQA", false, "Enable Event QA Hists"};
-  Configurable<bool> cfg_Track_CutQA{"cfg_Track_CutQA", false, "Enable Track QA Hists"};
+  Configurable<bool> cfgEventCutQA{"cfgEventCutsQA", false, "Enable Event QA Hists"};
+  Configurable<bool> cfgTrackCutQA{"cfgTrackCutQA", false, "Enable Track QA Hists"};
 
   // std::vector<int> eventSelectionBits;
 
@@ -122,14 +122,14 @@ struct kstarInOO {
     const AxisSpec axisPhi{200, -1, +7, "#phi"};
     const AxisSpec PtAxis = {200, 0, 20.0};
     const AxisSpec PIDAxis = {120, -6, 6};
-    const AxisSpec MinvAxis = {cfg_MinvNBins, cfg_MinvMin, cfg_MinvMax};
+    const AxisSpec MinvAxis = {cfgMinvNBins, cfgMinvMin, cfgMinvMax};
 
-    if (cfg_Event_CutQA) {
+    if (cfgEventCutQA) {
       OOhistos.add("hPosZ_BC", "hPosZ_Bc", kTH1F, {{100, 0.0, 15.0}});
       OOhistos.add("hPosZ_AC", "hPosZ_AC", kTH1F, {{100, 0.0, 15.0}});
     }
 
-    if (cfg_Track_CutQA) {
+    if (cfgTrackCutQA) {
       // OOhistos.add("h_rawpT", "h_rawpT", kTH1F, {{1000, 0.0, 10.0}});
       // OOhistos.add("h_rawpT_Kaon", "h_rawpT_Kaon", kTH1F, {{1000, 0.0, 10.0}});
       // OOhistos.add("h_rawpT_Pion", "h_rawpT_Pion", kTH1F, {{1000, 0.0, 10.0}});
@@ -149,10 +149,10 @@ struct kstarInOO {
     }
 
     // MC histos
-    OOhistos.add("hMC_USS", "hMC_USS", kTHnSparseF, {cfg_CentAxis, PtAxis, MinvAxis});
-    OOhistos.add("hMC_LSS", "hMC_LSS", kTHnSparseF, {cfg_CentAxis, PtAxis, MinvAxis});
-    OOhistos.add("hMC_USS_Mix", "hMC_USS_Mix", kTHnSparseF, {cfg_CentAxis, PtAxis, MinvAxis});
-    OOhistos.add("hMC_LSS_Mix", "hMC_LSS_Mix", kTHnSparseF, {cfg_CentAxis, PtAxis, MinvAxis});
+    OOhistos.add("hMC_USS", "hMC_USS", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
+    OOhistos.add("hMC_LSS", "hMC_LSS", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
+    OOhistos.add("hMC_USS_Mix", "hMC_USS_Mix", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
+    OOhistos.add("hMC_LSS_Mix", "hMC_LSS_Mix", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
 
     // OOhistos.add("hMC_pt_Pion", "hMC_pt_Pion", kTH1F, {PtAxis});
     // OOhistos.add("hMC_pt_Kaon", "hMC_pt_Kaon", kTH1F, {PtAxis});
@@ -173,8 +173,8 @@ struct kstarInOO {
   // For Mixed Event
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
-  Partition<TrackCandidates_MC> Kaon_MC = !cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfg_Track_TPCPID_nSig);
-  Partition<TrackCandidates_MC> Pion_MC = !cfg_Track_TPCPID || (nabs(aod::pidtpc::tpcNSigmaPi) <= cfg_Track_TPCPID_nSig);
+  Partition<TrackCandidates_MC> Kaon_MC = !cfgTrackTPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfgTrackTPCPIDnSig);
+  Partition<TrackCandidates_MC> Pion_MC = !cfgTrackTPCPID || (nabs(aod::pidtpc::tpcNSigmaPi) <= cfgTrackTPCPIDnSig);
 
   double massKa = o2::constants::physics::MassKPlus;
   double massPi = o2::constants::physics::MassPiMinus;
@@ -192,7 +192,7 @@ struct kstarInOO {
 
     if (!event.sel8())
       return false;
-    if (std::abs(event.posZ()) > cfg_Event_VtxCut)
+    if (std::abs(event.posZ()) > cfgEventVtxCut)
       return false;
     if (!event.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
       return false;
@@ -205,7 +205,7 @@ struct kstarInOO {
     if (!event.selection_bit(aod::evsel::kNoCollInTimeRangeStandard))
       return false;
 
-    if (cfg_Event_CutQA)
+    if (cfgEventCutQA)
       OOhistos.fill(HIST("hPosZ_AC"), event.posZ());
 
     return true;
@@ -214,40 +214,40 @@ struct kstarInOO {
   template <typename TracksType>
   bool trackSelection(const TracksType track)
   {
-    if (track.pt() < cfg_Track_MinPt)
+    if (track.pt() < cfgTrackMinPt)
       return false;
 
-    if (std::abs(track.eta()) > cfg_Track_MaxEta)
+    if (std::abs(track.eta()) > cfgTrackMaxEta)
       return false;
 
-    if (std::abs(track.dcaXY()) > cfg_Track_MaxDCArToPVcut)
+    if (std::abs(track.dcaXY()) > cfgTrackMaxDCArToPVcut)
       return false;
 
-    if (std::abs(track.dcaZ()) > cfg_Track_MaxDCAzToPVcut)
+    if (std::abs(track.dcaZ()) > cfgTrackMaxDCAzToPVcut)
       return false;
 
-    if (cfg_Track_PrimaryTrack && !track.isPrimaryTrack())
+    if (cfgTrackPrimaryTrack && !track.isPrimaryTrack())
       return false;
 
-    if (cfg_Track_GlobalWoDCATrack && !track.isGlobalTrackWoDCA())
+    if (cfgTrackGlobalWoDCATrack && !track.isGlobalTrackWoDCA())
       return false;
 
-    if (track.tpcNClsFindable() < cfg_Track_nFindableTPCClusters)
+    if (track.tpcNClsFindable() < cfgTracknFindableTPCClusters)
       return false;
 
-    if (track.tpcNClsCrossedRows() < cfg_Track_nTPCCrossedRows)
+    if (track.tpcNClsCrossedRows() < cfgTracknTPCCrossedRows)
       return false;
 
-    if (track.tpcCrossedRowsOverFindableCls() > cfg_Track_nRowsOverFindable)
+    if (track.tpcCrossedRowsOverFindableCls() > cfgTracknRowsOverFindable)
       return false;
 
-    if (track.tpcChi2NCl() > cfg_Track_nTPCChi2)
+    if (track.tpcChi2NCl() > cfgTracknTPCChi2)
       return false;
 
-    if (track.itsChi2NCl() > cfg_Track_nITSChi2)
+    if (track.itsChi2NCl() > cfgTracknITSChi2)
       return false;
 
-    if (cfg_Track_ConnectedToPV && !track.isPVContributor())
+    if (cfgTrackConnectedToPV && !track.isPVContributor())
       return false;
 
     return true;
@@ -263,12 +263,12 @@ struct kstarInOO {
       OOhistos.fill(HIST("QA_nSigma_kaon_TOF_BC"), candidate.pt(), candidate.tofNSigmaKa());
       OOhistos.fill(HIST("QA_kaon_TPC_TOF_BC"), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
     }
-    if (std::abs(candidate.tpcNSigmaKa()) < cfg_Track_TPCPID_nSig)
+    if (std::abs(candidate.tpcNSigmaKa()) < cfgTrackTPCPIDnSig)
       tpcPIDPassed = true;
 
     // TOF
     if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaKa()) < cfg_Track_TOFPID_nSig) {
+      if (std::abs(candidate.tofNSigmaKa()) < cfgTrackTOFPID_nSig) {
         tofPIDPassed = true;
       }
     } else {
@@ -277,7 +277,7 @@ struct kstarInOO {
 
     // TPC & TOF
     if (tpcPIDPassed && tofPIDPassed) {
-      if (cfg_Track_CutQA) {
+      if (cfgTrackCutQA) {
         OOhistos.fill(HIST("QA_nSigma_kaon_TPC_AC"), candidate.pt(), candidate.tpcNSigmaKa());
         OOhistos.fill(HIST("QA_nSigma_kaon_TOF_AC"), candidate.pt(), candidate.tofNSigmaKa());
         OOhistos.fill(HIST("QA_kaon_TPC_TOF_AC"), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
@@ -298,11 +298,11 @@ struct kstarInOO {
       OOhistos.fill(HIST("QA_pion_TPC_TOF"), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
     }
 
-    if (std::abs(candidate.tpcNSigmaPi()) < cfg_Track_TPCPID_nSig)
+    if (std::abs(candidate.tpcNSigmaPi()) < cfgTrackTPCPIDnSig)
       tpcPIDPassed = true;
 
     if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaPi()) < cfg_Track_TOFPID_nSig)
+      if (std::abs(candidate.tofNSigmaPi()) < cfgTrackTOFPIDnSig)
         tofPIDPassed = true;
       else
         tofPIDPassed = true;
@@ -369,7 +369,7 @@ struct kstarInOO {
     lDecayDaughter2.SetXYZM(trk2.px(), trk2.py(), trk2.pz(), massPi);
     lResonance = lDecayDaughter1 + lDecayDaughter2;
 
-    if (std::abs(lResonance.Eta()) > cfg_Track_MaxEta)
+    if (std::abs(lResonance.Eta()) > cfgTrackMaxEta)
       return {-1.0, -1.0};
 
     return {lResonance.Pt(), lResonance.M()};
@@ -400,7 +400,7 @@ struct kstarInOO {
 
     bool INELgt0 = false;
     for (const auto& track : tracks) {
-      if (std::fabs(track.eta()) < cfg_Track_MaxEta) {
+      if (std::fabs(track.eta()) < cfgTrackMaxEta) {
         INELgt0 = true;
         break;
       }
@@ -424,8 +424,8 @@ struct kstarInOO {
   void processMixedEvent_MC(EventCandidates const& collisions, TrackCandidates_MC const& tracks, aod::McParticles const&)
   {
     auto tracksTuple = std::make_tuple(tracks);
-    BinningType colBinning{{cfg_bins_MixVtx, cfg_bins_MixMult}, true}; // true is for 'ignore overflows' (true by default)
-    SameKindPair<EventCandidates, TrackCandidates_MC, BinningType> pairs{colBinning, cfg_Mix_NMixedEvents, -1, collisions, tracksTuple, &cache};
+    BinningType colBinning{{cfgBinsMixVtx, cfgBinsMixMult}, true}; // true is for 'ignore overflows' (true by default)
+    SameKindPair<EventCandidates, TrackCandidates_MC, BinningType> pairs{colBinning, cfgMixNMixedEvents, -1, collisions, tracksTuple, &cache};
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
       if (cDebugLevel > 0) {
         nEvents_MC_Mix++;
