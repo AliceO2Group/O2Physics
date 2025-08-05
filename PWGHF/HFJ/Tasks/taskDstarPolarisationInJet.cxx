@@ -97,9 +97,9 @@ struct HfTaskPolarisationDstarInJet {
   using TracksWithExtra = soa::Join<aod::JTracks, aod::TracksExtra>;
 
   // slices for accessing proper HF mcdjets collision associated to mccollisions
-  PresliceUnsorted<aod::JetCollisionsMCD> collisionsPerMCCollisionPreslice = aod::jmccollisionlb::mcCollisionId;
   Preslice<JetMCDTable> dstarMCDJetsPerCollisionPreslice = aod::jet::collisionId;
   Preslice<DstarJets> dstarJetsPerCollision = aod::jet::collisionId;
+  PresliceUnsorted<aod::JetCollisionsMCD> collisionsPerMCCollisionPreslice = aod::jmccollisionlb::mcCollisionId;
 
   ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {200, 0.139f, 0.179f}, "#it{M} (GeV/#it{c}^{2})"}; // o2-linter: disable=pdg/explicit-mass (false positive)
   ConfigurableAxis configThnAxisPt{"configThnAxisPt", {100, 0.f, 100.f}, "#it{p}_{T} (GeV/#it{c})"};
