@@ -13,44 +13,47 @@
 /// \brief Tasks processing derived data for Cascade analysis in PbPb collisions
 /// \author Lucia Anna Tarasovicova (lucia.anna.husova@cern.ch)
 
-#include <string>
-#include <vector>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Framework/StaticFor.h"
+#include "MetadataHelper.h"
 
-#include "Framework/ConfigParamSpec.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/LHCConstants.h"
-#include "Framework/HistogramRegistry.h"
 #include "DataFormatsFT0/Digit.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "MetadataHelper.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
+#include "DataFormatsParameters/GRPECSObject.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/ConfigParamSpec.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
+#include "ITSMFTBase/DPLAlpideParam.h"
+#include "ReconstructionDataFormats/Track.h"
 
 #include <TFile.h>
 #include <TH2F.h>
-#include <TProfile.h>
 #include <TLorentzVector.h>
 #include <TPDGCode.h>
+#include <TProfile.h>
+
+#include <string>
+#include <vector>
 
 // constants
 const float ctauxiPDG = 4.91;     // from PDG
@@ -76,6 +79,7 @@ struct Derivedcascadeanalysis {
   ConfigurableAxis axisIR{"axisIR", {510, -1, 50}, "Binning for the interaction rate (kHz)"};
 
   Configurable<bool> isXi{"isXi", 1, "Apply cuts for Xi identification"};
+  Configurable<bool> ispO{"ispO", 0, "Analyse p--O collisions"};
   Configurable<bool> useCentralityFT0M{"useCentralityFT0M", 0, "If true, use centFT0M"};
   Configurable<bool> useCentralityFT0A{"useCentralityFT0A", 0, "If true, use centFT0A"};
   Configurable<bool> useCentralityFT0Cvar1{"useCentralityFT0Cvar1", 0, "If true, use centFT0FT0Cvar1"};
@@ -119,6 +123,18 @@ struct Derivedcascadeanalysis {
     Configurable<int> maxOccupancy{"maxOccupancy", -1, "Maximal occupancy"};
     Configurable<float> minOccupancyFT0{"minOccupancyFT0", -1, "Minimal occupancy"};
     Configurable<float> maxOccupancyFT0{"maxOccupancyFT0", -1, "Maximal occupancy"};
+    Configurable<float> globalTracksCorrelpar0Low{"globalTracksCorrelpar0Low", 81, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
+    Configurable<float> globalTracksCorrelpar1Low{"globalTracksCorrelpar1Low", -0.0431016, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
+    Configurable<float> globalTracksCorrelpar2Low{"globalTracksCorrelpar2Low", -6, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
+    Configurable<float> globalTracksCorrelpar0High{"globalTracksCorrelpar0High", 226, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
+    Configurable<float> globalTracksCorrelpar1High{"globalTracksCorrelpar1High", -0.0181686, "[0]*exp([1]*centrality)+[2], mean plus 3*sigma"};
+    Configurable<float> globalTracksCorrelpar2High{"globalTracksCorrelpar2High", -22, "[0]*exp([1]*centrality)+[2], mean plus 3*sigma"};
+    Configurable<float> pvContribCorrelpar0Low{"pvcontribCorrelpar0Low", 152, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
+    Configurable<float> pvContribCorrelpar1Low{"pvcontribCorrelpar1Low", -0.0431016, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
+    Configurable<float> pvContribCorrelpar2Low{"pvcontribCorrelpar2Low", -15.3776, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
+    Configurable<float> pvContribCorrelpar0High{"pvcontribCorrelpar0High", 384.861, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
+    Configurable<float> pvContribCorrelpar1High{"pvcontribCorrelpar1High", -0.0181686, "[0]*exp([1]*centrality)+[2], mean plus 3*sigma"};
+    Configurable<float> pvContribCorrelpar2High{"pvcontribCorrelpar2High", -39, "[0]*exp([1]*centrality)+[2], mean plus 3*sigma"};
   } eventSelectionRun3Flags;
 
   struct : ConfigurableGroup {
@@ -219,6 +235,8 @@ struct Derivedcascadeanalysis {
     Configurable<float> rejcomp{"rejcomp", 0.008, "Competing Cascade rejection"};
     Configurable<float> masswin{"masswin", 0.05, "Mass window limit"};
     Configurable<float> rapCut{"rapCut", 0.5, "Rapidity acceptance"};
+    Configurable<float> minRapCut{"minRapCut", -0.845, "minimal rapidity acceptance in case of p--o"};
+    Configurable<float> maxRapCut{"maxRapCut", 0.155, "maximal rapidity acceptance in case of p--o"};
     Configurable<float> etaDauCut{"etaDauCut", 0.8, "Pseudorapidity acceptance of the cascade daughters"};
     Configurable<int> minITSclusters{"minITSclusters", 3, "minimal number of ITS hits for the daughter tracks"};
   } candidateSelectionValues;
@@ -301,6 +319,10 @@ struct Derivedcascadeanalysis {
     histos.add("hNCrossedRowsNegative", "", kTH1F, {{400, -200, 200}});
     histos.add("hNCrossedRowsPositive", "", kTH1F, {{400, -200, 200}});
     histos.add("hNCrossedRowsBachelor", "", kTH1F, {{400, -200, 200}});
+
+    histos.add("hPseudorapPosDaughter", "", kTH1F, {{50, -1, 1}});
+    histos.add("hPseudorapNegDaughter", "", kTH1F, {{50, -1, 1}});
+    histos.add("hPseudorapBachelor", "", kTH1F, {{50, -1, 1}});
 
     histos.add("hEventNchCorrelationAfCuts", "hEventNchCorrelationAfCuts", kTH2F, {{5000, 0, 5000}, {5000, 0, 2500}});
     histos.add("hEventPVcontributorsVsCentrality", "hEventPVcontributorsVsCentrality", kTH2F, {{100, 0, 100}, {5000, 0, 5000}});
@@ -660,9 +682,9 @@ struct Derivedcascadeanalysis {
         histos.fill(HIST("hEventSelection"), 11.5 /* Not at TF border */);
 
       if (eventSelectionRun3Flags.doMultiplicityCorrCut) {
-        if (coll.multNTracksGlobal() < (1343.3 * std::exp(-0.0443259 * centrality) - 50) || coll.multNTracksGlobal() > (2098.9 * std::exp(-0.0332444 * centrality)))
+        if (coll.multNTracksGlobal() < (eventSelectionRun3Flags.globalTracksCorrelpar0Low * std::exp(eventSelectionRun3Flags.globalTracksCorrelpar1Low * centrality) + eventSelectionRun3Flags.globalTracksCorrelpar2Low) || coll.multNTracksGlobal() > (eventSelectionRun3Flags.globalTracksCorrelpar0High * std::exp(eventSelectionRun3Flags.globalTracksCorrelpar1High * centrality) + eventSelectionRun3Flags.globalTracksCorrelpar2High))
           return false;
-        if (coll.multNTracksPVeta1() < (3703 * std::exp(-0.0455483 * centrality) - 150) || coll.multNTracksPVeta1() > (4937.33 * std::exp(-0.0372668 * centrality) + 20))
+        if (coll.multNTracksPVeta1() < (eventSelectionRun3Flags.pvContribCorrelpar0Low * std::exp(eventSelectionRun3Flags.pvContribCorrelpar1Low * centrality) + eventSelectionRun3Flags.pvContribCorrelpar2Low) || coll.multNTracksPVeta1() > (eventSelectionRun3Flags.pvContribCorrelpar0High * std::exp(eventSelectionRun3Flags.pvContribCorrelpar1High * centrality) + eventSelectionRun3Flags.pvContribCorrelpar2High))
           return false;
       }
       if (fillHists)
@@ -826,13 +848,17 @@ struct Derivedcascadeanalysis {
     float cut = candidateSelectionValues.masswin;
     histos.fill(HIST("hCutValue"), 1, cut);
     cut = candidateSelectionValues.rapCut;
+    if (ispO)
+      cut = candidateSelectionValues.maxRapCut;
     histos.fill(HIST("hCutValue"), 2, cut);
     if (isXi) {
       if (std::abs(casc.mXi() - o2::constants::physics::MassXiMinus) > candidateSelectionValues.masswin) {
         return false;
       }
       histos.fill(HIST("hCandidate"), ++counter);
-      if (std::abs(casc.yXi()) > candidateSelectionValues.rapCut)
+      if (ispO && (casc.yXi() < candidateSelectionValues.minRapCut || casc.yXi() > candidateSelectionValues.maxRapCut))
+        return false;
+      else if (std::abs(casc.yXi()) > candidateSelectionValues.rapCut)
         return false;
       histos.fill(HIST("hCandidate"), ++counter);
     } else {
@@ -840,7 +866,9 @@ struct Derivedcascadeanalysis {
         return false;
       }
       histos.fill(HIST("hCandidate"), ++counter);
-      if (std::abs(casc.yOmega()) > candidateSelectionValues.rapCut)
+      if (ispO && (casc.yOmega() < candidateSelectionValues.minRapCut || casc.yOmega() > candidateSelectionValues.maxRapCut))
+        return false;
+      else if (std::abs(casc.yOmega()) > candidateSelectionValues.rapCut)
         return false;
       histos.fill(HIST("hCandidate"), ++counter);
     }
@@ -1161,6 +1189,10 @@ struct Derivedcascadeanalysis {
         continue;
       histos.fill(HIST("hCandidate"), ++counter);
 
+      histos.fill(HIST("hPseudorapPosDaughter"), poseta);
+      histos.fill(HIST("hPseudorapNegDaughter"), negeta);
+      histos.fill(HIST("hPseudorapBachelor"), bacheta);
+
       if (candidateSelectionFlags.doCascadeCosPaCut) {
         if (!isCosPAAccepted(casc, coll.posX(), coll.posY(), coll.posZ(), candidateSelectionFlags.doPtDepCosPaCut, true))
           continue;
@@ -1434,7 +1466,9 @@ struct Derivedcascadeanalysis {
       else if (std::abs(cascMC.pdgCode()) == 3334)
         ymc = RecoDecay::y(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
 
-      if (std::abs(ymc) > candidateSelectionValues.rapCut)
+      if (ispO && (ymc > candidateSelectionValues.rapCutMax || yms < candidateSelectionValues.rapCutMin))
+        continue;
+      else if (std::abs(ymc) > candidateSelectionValues.rapCut)
         continue;
 
       auto mcCollision = cascMC.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
