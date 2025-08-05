@@ -41,12 +41,12 @@
 
 #include <RtypesCore.h>
 
-#include <iostream>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstddef>
 #include <cstdlib>
+#include <iostream>
 #include <string>
 #include <utility>
 #include <vector>
@@ -69,7 +69,6 @@ struct kstarInOO {
   //==================================
 
   // Event Selection
-  Configurable<std::string> cfgEventSelections{"cfgEventSelections", "sel8", "choose event selection"};
   Configurable<float> cfgEventVtxCut{"cfgEventVtxCut", 10.0, "V_z cut selection"};
 
   ConfigurableAxis cfgCentAxis{"cfgCentAxis", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
@@ -96,7 +95,7 @@ struct kstarInOO {
   Configurable<bool> cfgTrackTPCPID{"cfgTrackTPCPID", true, "Enables TPC PID"};
   Configurable<bool> cfgTrackTOFPID{"cfgTrackTOFPID", true, "Enables TOF PID"};
   Configurable<float> cfgTrackTPCPIDnSig{"cfgTrackTPCPIDnSig", 4.0, "nTPC PID sigma"};
-  Configurable<float> cfgTrackTOFPID_nSig{"cfgTrackTOFPIDnSig", 4.0, "nTOF PID sigma"};
+  Configurable<float> cfgTrackTOFPIDnSig{"cfgTrackTOFPIDnSig", 4.0, "nTOF PID sigma"};
   Configurable<int> cDebugLevel{"cDebugLevel", 0, "Resolution of Debug"};
 
   // Mixing
@@ -168,7 +167,7 @@ struct kstarInOO {
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                     aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>;
   using TrackCandidatesMC = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection,
-                                       aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>;
+                                      aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi>;
 
   // For Mixed Event
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
@@ -187,7 +186,7 @@ struct kstarInOO {
   template <typename EventType>
   bool eventSelection(const EventType event)
   {
-    if (cfg_Event_CutQA)
+    if (cfgEventCutQA)
       histos.fill(HIST("hPosZ_BC"), event.posZ());
 
     if (!event.sel8())
@@ -258,7 +257,7 @@ struct kstarInOO {
   {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     // TPC
-    if (cfg_Track_CutQA) {
+    if (cfgTrackCutQA) {
       histos.fill(HIST("QA_nSigma_kaon_TPC_BC"), candidate.pt(), candidate.tpcNSigmaKa());
       histos.fill(HIST("QA_nSigma_kaon_TOF_BC"), candidate.pt(), candidate.tofNSigmaKa());
       histos.fill(HIST("QA_kaon_TPC_TOF_BC"), candidate.tpcNSigmaKa(), candidate.tofNSigmaKa());
@@ -268,7 +267,7 @@ struct kstarInOO {
 
     // TOF
     if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaKa()) < cfgTrackTOFPID_nSig) {
+      if (std::abs(candidate.tofNSigmaKa()) < cfgTrackTOFPIDnSig) {
         tofPIDPassed = true;
       }
     } else {
@@ -292,7 +291,7 @@ struct kstarInOO {
   {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     // TPC
-    if (cfg_Track_CutQA) {
+    if (cfgTrackCutQA) {
       histos.fill(HIST("QA_nSigma_pion_TPC"), candidate.pt(), candidate.tpcNSigmaPi());
       histos.fill(HIST("QA_nSigma_pion_TOF"), candidate.pt(), candidate.tofNSigmaPi());
       histos.fill(HIST("QA_pion_TPC_TOF"), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
