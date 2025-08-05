@@ -1731,10 +1731,10 @@ struct AntinucleiInJets {
         continue;
 
       // Loop over different cut settings
-      for (int isyst = 0 ; isyst < nSyst ; isyst++) {
+      for (int isyst = 0; isyst < nSyst; isyst++) {
 
         // Apply track selection
-        if (!passedTrackSelectionSyst(track,isyst))
+        if (!passedTrackSelectionSyst(track, isyst))
           continue;
 
         // Define variables
@@ -1919,10 +1919,10 @@ struct AntinucleiInJets {
         const auto mcparticle = track.mcParticle();
 
         // Loop over different cut settings
-        for (int isyst = 0 ; isyst < nSyst ; isyst++) {
+        for (int isyst = 0; isyst < nSyst; isyst++) {
 
           // Apply track selection
-          if (!passedTrackSelectionSyst(track,isyst))
+          if (!passedTrackSelectionSyst(track, isyst))
             continue;
 
           // Define variables
