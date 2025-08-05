@@ -59,7 +59,7 @@ enum DecayChannel : uint8_t {
 } // namespace charm_polarisation
 } // namespace o2::aod
 
-struct TaskPolarisationDstarInJet {
+struct HfTaskPolarisationDstarInJet {
 
   float massPi{0.f};
   float massProton{0.f};
@@ -82,7 +82,7 @@ struct TaskPolarisationDstarInJet {
   ConfigurableAxis configThnAxisMlNonPrompt{"configThnAxisMlNonPrompt", {100, 0.f, 1.f}, "ML non-prompt"};
   ConfigurableAxis configThnAxisNumCandidates{"configThnAxisNumCandidates", {1, -0.5f, 0.5f}, "num candidates"};
   ConfigurableAxis configThnAxisPtB{"configThnAxisPtB", {3000, 0.f, 300.f}, "#it{p}_{T}(B mother) (GeV/#it{c})"};
-  ConfigurableAxis configThnAxisAbsEtaTrackMin{"configThnAxisEtaTrackMin", {3, 0.f, 0.3f}, "min |#it{#eta_{track}}|"};
+  ConfigurableAxis configThnAxisAbsEtaTrackMin{"configThnAxisAbsEtaTrackMin", {3, 0.f, 0.3f}, "min |#it{#eta_{track}}|"};
   ConfigurableAxis configThnAxisNumItsClsMin{"configThnAxisNumItsClsMin", {4, 3.5f, 7.5f}, "min #it{N}_{cls ITS}"};
   ConfigurableAxis configThnAxisNumTpcClsMin{"configThnAxisNumTpcClsMin", {3, 79.5f, 140.5f}, "min #it{N}_{cls TPC}"};
   ConfigurableAxis configThnAxisCharge{"configThnAxisCharge", {2, -2.f, 2.f}, "electric charge"};
@@ -645,7 +645,9 @@ struct TaskPolarisationDstarInJet {
   bool isInSignalRegion(float invMass)
   {
     if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
-      if (0.142f < invMass && invMass < 0.15f) {
+      invMassMin = 0.142f;
+      invMassMax = 0.15f;
+      if (invMassMin < invMass && invMass < invMassMax) {
         return true;
       }
     }
@@ -692,7 +694,7 @@ struct TaskPolarisationDstarInJet {
         ptBhadMother = candidate.ptBhadMotherPart();
         int pdgBhadMother = candidate.pdgBhadMotherPart();
         // For unknown reasons there are charm hadrons coming directly from beauty diquarks without an intermediate B-hadron which have an unreasonable correlation between the pT of the charm hadron and the beauty mother. We also remove charm hadrons from quarkonia.
-        if (origin == RecoDecay::OriginType::NonPrompt && (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 553 || pdgBhadMother == 557)) {
+        if (origin == RecoDecay::OriginType::NonPrompt && (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 553 || pdgBhadMother == 557)) { // o2-linter: disable=pdg/explicit-code, magic-number (constants not in the PDG header)
           return isCandidateInSignalRegion;
         }
       }
@@ -844,7 +846,7 @@ struct TaskPolarisationDstarInJet {
       }
     }
   }
-  PROCESS_SWITCH(TaskPolarisationDstarInJet, processDstar, "Process Dstar candidates without ML", true);
+  PROCESS_SWITCH(HfTaskPolarisationDstarInJet, processDstar, "Process Dstar candidates without ML", true);
 
   // Dstar with ML cuts
   void processDstarWithMl(aod::JetCollisions const& collisions,
@@ -868,7 +870,7 @@ struct TaskPolarisationDstarInJet {
       }
     }
   }
-  PROCESS_SWITCH(TaskPolarisationDstarInJet, processDstarWithMl, "Process Dstar candidates with ML", false);
+  PROCESS_SWITCH(HfTaskPolarisationDstarInJet, processDstarWithMl, "Process Dstar candidates with ML", false);
 
   // Dstar in MC with rectangular cuts
   void processDstarMc(aod::JetMcCollisions const& mcCollisions,
@@ -892,7 +894,7 @@ struct TaskPolarisationDstarInJet {
       }
     }
   }
-  PROCESS_SWITCH(TaskPolarisationDstarInJet, processDstarMc, "Process Dstar candidates in MC without ML", false);
+  PROCESS_SWITCH(HfTaskPolarisationDstarInJet, processDstarMc, "Process Dstar candidates in MC without ML", false);
 
   // Dstar in MC with ML cuts
   void processDstarMcWithMl(aod::JetMcCollisions const& mcCollisions,
@@ -915,10 +917,10 @@ struct TaskPolarisationDstarInJet {
       }
     }
   }
-  PROCESS_SWITCH(TaskPolarisationDstarInJet, processDstarMcWithMl, "Process Dstar candidates in MC with ML", false);
+  PROCESS_SWITCH(HfTaskPolarisationDstarInJet, processDstarMcWithMl, "Process Dstar candidates in MC with ML", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<TaskPolarisationDstarInJet>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskPolarisationDstarInJet>(cfgc)};
 }
