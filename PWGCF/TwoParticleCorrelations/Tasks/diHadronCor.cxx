@@ -692,13 +692,13 @@ struct DiHadronCor {
 
     auto multNTracksPV = collision.multNTracksPV();
     if (cfgEvSelMultCorrelation) {
-      if (cfgFuncParas.cfgMultPVT0CCutEnabled) {
+      if (cfgFuncParas.cfgMultPVT0CCutEnabled && !cfgCentTableUnavailable) {
         if (multNTracksPV < cfgFuncParas.fMultPVT0CCutLow->Eval(centrality))
           return 0;
         if (multNTracksPV > cfgFuncParas.fMultPVT0CCutHigh->Eval(centrality))
           return 0;
       }
-      if (cfgFuncParas.cfgMultT0CCutEnabled) {
+      if (cfgFuncParas.cfgMultT0CCutEnabled && !cfgCentTableUnavailable) {
         if (multTrk < cfgFuncParas.fMultT0CCutLow->Eval(centrality))
           return 0;
         if (multTrk > cfgFuncParas.fMultT0CCutHigh->Eval(centrality))
@@ -737,11 +737,13 @@ struct DiHadronCor {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     float cent = -1.;
     float weightCent = 1.0f;
+    if (!cfgCentTableUnavailable) {
+      cent = getCentrality(collision);
+    }
     if (cfgUseAdditionalEventCut && !eventSelected(collision, tracks.size(), cent, true))
       return;
     loadCorrection(bc.timestamp());
     if (!cfgCentTableUnavailable) {
-      cent = getCentrality(collision);
       getCentralityWeight(weightCent, cent);
       registry.fill(HIST("Centrality"), cent);
       registry.fill(HIST("CentralityWeighted"), cent, weightCent);
