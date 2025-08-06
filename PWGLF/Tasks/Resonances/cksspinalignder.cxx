@@ -15,7 +15,6 @@
 /// \author prottay.das@cern.ch
 
 #include "PWGLF/DataModel/LFCKSSpinalignmentTables.h"
-#include "PWGLF/DataModel/LFSpincorrelationTables.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
@@ -32,14 +31,13 @@
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector3D.h>
 #include <Math/Vector4D.h>
-#include <TLorentzVector.h>
 #include <TMath.h>
 
 #include <fairlogger/Logger.h>
 
 #include <cmath> // for std::fabs
 #include <deque>
-#include <iostream>
+// #include <iostream>
 #include <iterator>
 #include <set> // <<< CHANGED: for dedup sets
 #include <string>
@@ -62,7 +60,7 @@ struct cksspinalignder {
 
   struct : ConfigurableGroup {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-    Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+    Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
 
   // event sel/////////
@@ -85,8 +83,8 @@ struct cksspinalignder {
 
   // Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 5, "Number of events to mix"};
-  ConfigurableAxis CfgVtxBins{"CfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
-  ConfigurableAxis CfgMultBins{"CfgMultBins", {8, 0.0, 80}, "Mixing bins - centrality"};
+  ConfigurableAxis cfgVtxBins{"cfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
+  ConfigurableAxis cfgMultBins{"cfgMultBins", {8, 0.0, 80}, "Mixing bins - centrality"};
 
   // THnsparse bining
   ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {50, 1.09, 1.14}, "#it{M} (GeV/#it{c}^{2})"};
@@ -162,13 +160,14 @@ struct cksspinalignder {
     auto py = candidate.pionBachPy();
     auto pz = candidate.pionBachPz();
     auto p = std::sqrt(px * px + py * py + pz * pz);
-    if (p < 0.5) {
-      if (!candidate.pionBachTOFHit() && TMath::Abs(candidate.pionBachTPC()) < nsigmaCutTPC) {
+    float lowmom = 0.5;
+    if (p < lowmom) {
+      if (!candidate.pionBachTOFHit() && std::abs(candidate.pionBachTPC()) < nsigmaCutTPC) {
         return true;
-      } else if (candidate.pionBachTOFHit() && TMath::Sqrt(candidate.pionBachTPC() * candidate.pionBachTPC() + candidate.pionBachTOF() * candidate.pionBachTOF()) < nsigmaCutTOF) {
+      } else if (candidate.pionBachTOFHit() && std::sqrt(candidate.pionBachTPC() * candidate.pionBachTPC() + candidate.pionBachTOF() * candidate.pionBachTOF()) < nsigmaCutTOF) {
         return true;
       }
-    } else if (candidate.pionBachTOFHit() && TMath::Sqrt(candidate.pionBachTPC() * candidate.pionBachTPC() + candidate.pionBachTOF() * candidate.pionBachTOF()) < nsigmaCutTOF) {
+    } else if (candidate.pionBachTOFHit() && std::sqrt(candidate.pionBachTPC() * candidate.pionBachTPC() + candidate.pionBachTOF() * candidate.pionBachTOF()) < nsigmaCutTOF) {
       return true;
     }
     return false;
@@ -234,13 +233,13 @@ struct cksspinalignder {
   // Processing Event Mixing
   SliceCache cache;
   using BinningType = ColumnBinningPolicy<aod::kshortpionevent::Posz, aod::kshortpionevent::Cent>;
-  BinningType colBinning{{CfgVtxBins, CfgMultBins}, true};
+  BinningType colBinning{{cfgVtxBins, cfgMultBins}, true};
   Preslice<aod::KShortTracks> tracksPerCollisionV0 = aod::kshortpionpair::kshortpioneventId;
   Preslice<aod::PionTracks> tracksPerCollisionBach = aod::kshortpionpair::kshortpioneventId;
 
   void processMixedData(EventCandidates const& collisions, aod::KShortTracks const& V0s, aod::PionTracks const& piontracks)
   {
-    for (auto& [collision1, collision2] : selfCombinations(colBinning, nEvtMixing, -1, collisions, collisions)) {
+    for (const auto& [collision1, collision2] : selfCombinations(colBinning, nEvtMixing, -1, collisions, collisions)) {
       if (collision1.index() == collision2.index()) {
         continue;
       }
@@ -249,7 +248,7 @@ struct cksspinalignder {
 
       auto groupV0 = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
       auto groupPion = piontracks.sliceBy(tracksPerCollisionBach, collision2.index());
-      for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV0, groupPion))) {
+      for (const auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV0, groupPion))) {
         if (!selectionV0(t1))
           continue;
         auto [kshortPtmix, kshortEtamix, kshortPhimix] = computePtEtaPhi(t1.kShortPx(), t1.kShortPy(), t1.kShortPz());
