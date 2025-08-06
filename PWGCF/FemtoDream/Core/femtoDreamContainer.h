@@ -202,10 +202,12 @@ class FemtoDreamContainer
   {
     const float kT = FemtoDreamMath::getkT(part1, mMassOne, part2, mMassTwo);
     if constexpr (isHF) {
-      float mP2;
-      if (part2.candidateSelFlag() == o2::aod::fdhf::lcToPKPi) {
+      float mP2 = 0.0;
+      if (part2.candidateSelFlag() == o2::aod::fdhf::dplusToPiKPi) {
+        mP2 = part2.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
+      } else if (part2.candidateSelFlag() == o2::aod::fdhf::lcToPKPi) {
         mP2 = part2.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
-      } else {
+      } else if (part2.candidateSelFlag() == o2::aod::fdhf::lcToPiKP) {
         mP2 = part2.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
       }
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmP2"), femtoObs, mP2);
