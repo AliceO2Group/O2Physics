@@ -989,7 +989,7 @@ struct DndetaMFTPbPb {
     if constexpr (fillHis) {
       registry.fill(HIST("Events/hEvtSel"), 3);
     }
-    if (collision.posZ() < eventCuts.minZvtx || collision.posZ() > eventCuts.maxZvtx) {
+    if (collision.posZ() <= eventCuts.minZvtx || collision.posZ() >= eventCuts.maxZvtx) {
       return false;
     }
     if constexpr (fillHis) {
