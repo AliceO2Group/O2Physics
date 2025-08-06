@@ -1463,7 +1463,7 @@ struct Derivedcascadeanalysis {
       else if (std::abs(cascMC.pdgCode()) == 3334)
         ymc = RecoDecay::y(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
 
-      if (ispO && (ymc > candidateSelectionValues.rapCutMax || yms < candidateSelectionValues.rapCutMin))
+      if (ispO && (ymc > candidateSelectionValues.maxRapCut || ymc < candidateSelectionValues.minRapCut))
         continue;
       else if (std::abs(ymc) > candidateSelectionValues.rapCut)
         continue;
