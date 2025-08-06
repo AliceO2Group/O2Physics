@@ -317,6 +317,21 @@ struct HfTaskCharmHadronsFemtoDream {
         continue;
       }
 
+      float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
+      if (kstar > highkstarCut) {
+        continue;
+      }
+
+      float invMass = getCharmHadronMass(p2);
+
+      if (invMass < charmHadMinInvMass || invMass > charmHadMaxInvMass) {
+        continue;
+      }
+
+      if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
+        continue;
+      }
+
       constexpr int CutBitChargePositive = 2;
       // proton track charge
       float chargeTrack = 0.;
@@ -332,20 +347,6 @@ struct HfTaskCharmHadronsFemtoDream {
         pairSign = UnLikeSignPair;
       }
 
-      float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
-      if (kstar > highkstarCut) {
-        continue;
-      }
-
-      float invMass = getCharmHadronMass(p2);
-
-      if (invMass < charmHadMinInvMass || invMass > charmHadMaxInvMass) {
-        continue;
-      }
-
-      if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
-        continue;
-      }
       /// Filling QA histograms of the selected tracks
       selectedTrackHisto.fillQA<isMc, true>(p1, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
 
@@ -425,13 +426,14 @@ struct HfTaskCharmHadronsFemtoDream {
         if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
           continue;
         }
+        constexpr int CutBitChargePositive = 2;
+        // proton track charge
         float chargeTrack = 0.;
-        if ((p1.cut() & 2) == 2) {
+        if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
           chargeTrack = PositiveCharge;
         } else {
           chargeTrack = NegativeCharge;
         }
-
         int pairSign = 0;
         if (chargeTrack == p2.charge()) {
           pairSign = LikeSignPair;
@@ -445,6 +447,7 @@ struct HfTaskCharmHadronsFemtoDream {
           charmHadMc = p2.flagMc();
           originType = p2.originMcRec();
         }
+
         rowFemtoResultPairs(
           invMass,
           p2.pt(),
