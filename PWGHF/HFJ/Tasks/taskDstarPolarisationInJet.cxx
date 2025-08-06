@@ -129,7 +129,7 @@ struct HfTaskDstarPolarisationInJet {
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections.value);
 
     /// check process functions
-    const int nProcesses = 
+    const int nProcesses =
       static_cast<int>(doprocessDstar) +
       static_cast<int>(doprocessDstarWithMl) +
       static_cast<int>(doprocessDstarMc) +
@@ -600,7 +600,7 @@ struct HfTaskDstarPolarisationInJet {
   void fillGenHistos(charm_polarisation::CosThetaStarType cosThetaStarType, float ptCharmHad, float rapCharmHad, float cosThetaStar, int8_t origin, float ptBhadMother, bool areDausInAcc, int8_t charge, bool isPartRecoDstar, float zParallel, float jetPt)
   {
     if (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
-      if (origin == RecoDecay::OriginType::Prompt) {                                    // prompt
+      if (origin == RecoDecay::OriginType::Prompt) {                          // prompt
         if (!isPartRecoDstar) {
           registry.fill(HIST("hGenPromptHelicity"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge, zParallel, jetPt);
         } else {
@@ -614,7 +614,7 @@ struct HfTaskDstarPolarisationInJet {
         }
       }
     } else if (cosThetaStarType == charm_polarisation::CosThetaStarType::Production) { // Production
-      if (origin == RecoDecay::OriginType::Prompt) {                                             // prompt
+      if (origin == RecoDecay::OriginType::Prompt) {                                   // prompt
         if (!isPartRecoDstar) {
           registry.fill(HIST("hGenPromptProduction"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge, zParallel, jetPt);
         } else {
@@ -628,7 +628,7 @@ struct HfTaskDstarPolarisationInJet {
         }
       }
     } else if (cosThetaStarType == charm_polarisation::CosThetaStarType::JetAxis) { // JetAxis
-      if (origin == RecoDecay::OriginType::Prompt) {                                          // prompt
+      if (origin == RecoDecay::OriginType::Prompt) {                                // prompt
         if (!isPartRecoDstar) {
           registry.fill(HIST("hGenPromptJetAxis"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge, zParallel, jetPt);
         } else {
@@ -748,8 +748,8 @@ struct HfTaskDstarPolarisationInJet {
           pxDau = candidate.pxProng1();
           pyDau = candidate.pyProng1();
           pzDau = candidate.pzProng1();
-          std::array<float, 3> threeVecCand = RecoDecay::pVec(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()}, 
-                                                              std::array{candidate.pyProng0Charm(), candidate.pxProng0Charm(), candidate.pzProng0Charm()}, 
+          std::array<float, 3> threeVecCand = RecoDecay::pVec(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()},
+                                                              std::array{candidate.pyProng0Charm(), candidate.pxProng0Charm(), candidate.pzProng0Charm()},
                                                               std::array{candidate.pxProng1Charm(), candidate.pyProng1Charm(), candidate.pzProng1Charm()});
           pxCharmHad = threeVecCand[0];
           pyCharmHad = threeVecCand[1];
