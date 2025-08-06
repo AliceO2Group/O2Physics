@@ -3516,6 +3516,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
         return false;
       }
     }
+
+    return true;
   }
 
   /// Method to perform selections for Xic 3-prong candidates after vertex reconstruction
@@ -3543,6 +3545,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
     if (decayLength < config.decayLengthXicMin) {
       return false;
     }
+
+    return true;
   }
 
   void processNoLfCascades(SelectedCollisions const&)
