@@ -135,9 +135,14 @@ struct kstarInOO {
       // histos.add("h_eta", "h_eta", kTH1F, {axisEta});
       // histos.add("h_phi", "h_phi", kTH1F, {axisPhi});
 
-      histos.add("QA_nSigma_pion_TPC", "QA_nSigma_pion_TPC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      histos.add("QA_nSigma_pion_TOF", "QA_nSigma_pion_TOF", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      histos.add("QA_pion_TPC_TOF", "QA_pion_TPC_TOF", {HistType::kTH2F, {PIDAxis, PIDAxis}});
+      histos.add("QA_nSigma_pion_TPC_BC", "QA_nSigma_pion_TPC_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      histos.add("QA_nSigma_pion_TOF_BC", "QA_nSigma_pion_TOF_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      histos.add("QA_pion_TPC_TOF_BC", "QA_pion_TPC_TOF_BC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
+
+      histos.add("QA_nSigma_pion_TPC_AC", "QA_nSigma_pion_TPC_AC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      histos.add("QA_nSigma_pion_TOF_AC", "QA_nSigma_pion_TOF_AC", {HistType::kTH2F, {PtAxis, PIDAxis}});
+      histos.add("QA_pion_TPC_TOF_AC", "QA_pion_TPC_TOF_AC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
+
       histos.add("QA_nSigma_kaon_TPC_BC", "QA_nSigma_kaon_TPC_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
       histos.add("QA_nSigma_kaon_TOF_BC", "QA_nSigma_kaon_TOF_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
       histos.add("QA_kaon_TPC_TOF_BC", "QA_kaon_TPC_TOF_BC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
@@ -292,25 +297,30 @@ struct kstarInOO {
     bool tpcPIDPassed{false}, tofPIDPassed{false};
     // TPC
     if (cfgTrackCutQA) {
-      histos.fill(HIST("QA_nSigma_pion_TPC"), candidate.pt(), candidate.tpcNSigmaPi());
-      histos.fill(HIST("QA_nSigma_pion_TOF"), candidate.pt(), candidate.tofNSigmaPi());
-      histos.fill(HIST("QA_pion_TPC_TOF"), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
+      histos.fill(HIST("QA_nSigma_pion_TPC_BC"), candidate.pt(), candidate.tpcNSigmaPi());
+      histos.fill(HIST("QA_nSigma_pion_TOF_BC"), candidate.pt(), candidate.tofNSigmaPi());
+      histos.fill(HIST("QA_pion_TPC_TOF_BC"), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
     }
-
     if (std::abs(candidate.tpcNSigmaPi()) < cfgTrackTPCPIDnSig)
       tpcPIDPassed = true;
 
     if (candidate.hasTOF()) {
-      if (std::abs(candidate.tofNSigmaPi()) < cfgTrackTOFPIDnSig)
+      if (std::abs(candidate.tofNSigmaPi()) < cfgTrackTOFPIDnSig) {
         tofPIDPassed = true;
-      else
-        tofPIDPassed = true;
+      }
+    } else {
+      tofPIDPassed = true;
     }
 
     // TPC & TOF
-    if (tpcPIDPassed && tofPIDPassed)
+    if (tpcPIDPassed && tofPIDPassed) {
+      if (cfgTrackCutQA) {
+        histos.fill(HIST("QA_nSigma_pion_TPC_AC"), candidate.pt(), candidate.tpcNSigmaPi());
+        histos.fill(HIST("QA_nSigma_pion_TOF_AC"), candidate.pt(), candidate.tofNSigmaPi());
+        histos.fill(HIST("QA_pion_TPC_TOF_AC"), candidate.tpcNSigmaPi(), candidate.tofNSigmaPi());
+      }
       return true;
-
+    }
     return false;
   }
 
