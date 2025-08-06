@@ -86,6 +86,15 @@ using CFTrackWithLabel = CFTracksWithLabel::iterator;
 //------transient CF-filter to CF-2prong-filter
 DECLARE_SOA_TABLE(CFCollRefs, "AOD", "CFCOLLREF", o2::soa::Index<>, track::CollisionId); //! Transient cf collision index table
 
+//------multiplicity set
+namespace cfmultiplicityset
+{
+DECLARE_SOA_COLUMN(Multiplicities, multiplicities, std::vector<float>); //! List of auxiliary multiplicities
+}
+DECLARE_SOA_TABLE(CFMultiplicitySets, "AOD", "CFMULTIPLICITYSET", cfmultiplicityset::Multiplicities); //! Auxilary multiplicity set table
+
+using CFMultiplicitySet = CFMultiplicitySets::iterator;
+
 // Reco
 
 using CFCollRef = CFCollRefs::iterator;
