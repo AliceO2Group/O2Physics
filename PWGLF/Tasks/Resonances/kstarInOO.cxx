@@ -177,8 +177,8 @@ struct kstarInOO {
   // For Mixed Event
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
 
-  Partition<TrackCandidatesMC> Kaon_MC = !cfgTrackTPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfgTrackTPCPIDnSig);
-  Partition<TrackCandidatesMC> Pion_MC = !cfgTrackTPCPID || (nabs(aod::pidtpc::tpcNSigmaPi) <= cfgTrackTPCPIDnSig);
+  Partition<TrackCandidatesMC> kaonMC = !cfgTrackTPCPID || (nabs(aod::pidtpc::tpcNSigmaKa) <= cfgTrackTPCPIDnSig);
+  Partition<TrackCandidatesMC> pionMC = !cfgTrackTPCPID || (nabs(aod::pidtpc::tpcNSigmaPi) <= cfgTrackTPCPIDnSig);
 
   double massKa = o2::constants::physics::MassKPlus;
   double massPi = o2::constants::physics::MassPiMinus;
@@ -325,10 +325,10 @@ struct kstarInOO {
   }
 
   template <typename CollisionType, typename TracksType>
-  void TrackSlicing_MC(const CollisionType& collision1, const TracksType&, const CollisionType& collision2, const TracksType&, const bool IsMix)
+  void TrackSlicingMC(const CollisionType& collision1, const TracksType&, const CollisionType& collision2, const TracksType&, const bool IsMix)
   {
-    auto tracks1 = Kaon_MC->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
-    auto tracks2 = Pion_MC->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
+    auto tracks1 = kaonMC->sliceByCached(aod::track::collisionId, collision1.globalIndex(), cache);
+    auto tracks2 = pionMC->sliceByCached(aod::track::collisionId, collision2.globalIndex(), cache);
     auto centrality = collision1.centFT0C();
 
     for (const auto& [trk1, trk2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
@@ -418,7 +418,7 @@ struct kstarInOO {
       return;
 
     histos.fill(HIST("nEvents_MC"), 1.5);
-    TrackSlicing_MC(collision, tracks, collision, tracks, false);
+    TrackSlicingMC(collision, tracks, collision, tracks, false);
 
   } // processSameEvents_MC
   PROCESS_SWITCH(kstarInOO, processSameEventMC, "process Same Event MC", true);
@@ -451,7 +451,7 @@ struct kstarInOO {
 
       histos.fill(HIST("nEvents_MC_Mix"), 1.5);
 
-      TrackSlicing_MC(collision1, tracks1, collision2, tracks2, true);
+      TrackSlicingMC(collision1, tracks1, collision2, tracks2, true);
     } // mixing
   } // processMixedEvent_MC
   PROCESS_SWITCH(kstarInOO, processMixedEventMC, "process Mixed Event MC", false);
