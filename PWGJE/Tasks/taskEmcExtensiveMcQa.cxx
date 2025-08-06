@@ -140,18 +140,13 @@ struct TaskEmcExtensiveMcQa {
   /// \param mcparticle is the mcparticle we want to find the PoI type
   /// \param mcparticles table containing the mcparticles
   /// \return PoI type of the given mcparticle
-  template <typename T, typename TMCs>
-  int findPoIType(T const& mcparticle, TMCs const& mcparticles)
+  template <typename T>
+  int findPoIType(T const& mcparticle)
   {
-    if (!mcparticle.has_mothers()) {
-      return -1;
-    }
-
-    int motherid = mcparticle.mothersIds()[0];
-    auto mother = mcparticles.iteratorAt(motherid);
-    auto it = std::find(arrPoIPDG.begin(), arrPoIPDG.end(), std::abs(mother.pdgCode()));
+    auto it = std::find(arrPoIPDG.begin(), arrPoIPDG.end(), std::abs(mcparticle.pdgCode()));
     if (it != arrPoIPDG.end()) {
-      return *it;
+      int index = std::distance(arrPoIPDG.begin(), it);
+      return index;
     } else {
       return PoI::kHadron;
     }
@@ -160,7 +155,7 @@ struct TaskEmcExtensiveMcQa {
   Filter clusterDefinitionSelection = (o2::aod::emcalcluster::definition == clusterDefinition);
 
   /// \brief Process EMCAL clusters that are matched to a collisions
-  void processCollisions(CollisionEvSels const& collisions, SelectedClusters const& clusters, McParticles const& mcparticles)
+  void processCollisions(CollisionEvSels const& collisions, SelectedClusters const& clusters, McParticles const& /*mcparticles*/)
   {
 
     for (const auto& collision : collisions) {
@@ -179,8 +174,8 @@ struct TaskEmcExtensiveMcQa {
           continue;
         }
         auto mainMcParticle = cluster.mcParticle_as<McParticles>()[0];
-        float radius = std::hypot(mainMcParticle.px(), mainMcParticle.py());
-        mHistManager.fill(HIST("hSparseClusterQA"), cluster.energy(), cluster.time(), cluster.m02(), cluster.nCells(), radius, findPoIType(mainMcParticle, mcparticles));
+        float radius = std::hypot(mainMcParticle.vx(), mainMcParticle.vy());
+        mHistManager.fill(HIST("hSparseClusterQA"), cluster.energy(), cluster.time(), cluster.m02(), cluster.nCells(), radius, findPoIType(mainMcParticle));
       }
     }
   }
