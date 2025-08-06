@@ -77,7 +77,10 @@ struct MeanptFluctuationsQAQnTable {
   Configurable<int> cfgITScluster{"cfgITScluster", 1, "Minimum Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 80, "Minimum Number of TPC cluster"};
   Configurable<int> cfgTPCnCrossedRows{"cfgTPCnCrossedRows", 70, "Minimum Number of TPC crossed-rows"};
-  ConfigurableAxis nchAxis{"nchAxis", {5000, 0.5, 5000.5}, ""};
+  ConfigurableAxis nchAxis{"nchAxis", {500, 0.5, 500.5}, "Axis for multiplicity of GlobalTracks/PVTracks"};
+  ConfigurableAxis nchAxis2{"nchAxis2", {1000, 0.5, 30000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
+  ConfigurableAxis nchAxis3{"nchAxis3", {1000, 0.5, 100000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
+  ConfigurableAxis centAxis{"centAxis", {90, 0., 90.0}, ""};
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
   Configurable<bool> cfgEvSelkNoITSROFrameBorder{"cfgEvSelkNoITSROFrameBorder", true, "ITSROFrame border event selection cut"};
@@ -156,8 +159,6 @@ struct MeanptFluctuationsQAQnTable {
     // Variable bin width axis
     std::vector<double> ptBinning = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4.};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-    std::vector<double> centBining = {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90};
-    AxisSpec centAxis = {centBining, "centrality (%)"};
 
     // Add histograms to histogram manager (as in the output object of in AliPhysics)
     histos.add("hZvtx_after_sel", ";Z (cm)", kTH1F, {vtxZAxis});
@@ -172,19 +173,21 @@ struct MeanptFluctuationsQAQnTable {
     histos.add("Hist2D_globalTracks_PVTracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
     histos.add("Hist2D_cent_nch", "", {HistType::kTH2D, {nchAxis, centAxis}});
     // before selection
-    histos.add("His2D_globalTracks_PVTracks_beforeSel", "", {HistType::kTH2D, {nchAxis, nchAxis}});
-    histos.add("His2D_globalTracks_centFT0C_beforeSel", "", {HistType::kTH2D, {centAxis, nchAxis}});
-    histos.add("His2D_PVTracks_centFT0C_beforeSel", "", {HistType::kTH2D, {centAxis, nchAxis}});
-    histos.add("His2D_globalTracks_V0ATracks_beforeSel", "", {HistType::kTH2D, {nchAxis, nchAxis}});
-    histos.add("His2D_globalTracks_T0ATracks_beforeSel", "", {HistType::kTH2D, {nchAxis, nchAxis}});
-    histos.add("His2D_V0ATracks_T0CTracks_beforeSel", "", {HistType::kTH2D, {nchAxis, nchAxis}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_PVTracks_beforeSel", "", {HistType::kTH2D, {nchAxis, nchAxis}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_centFT0C_beforeSel", "", {HistType::kTH2D, {centAxis, nchAxis}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_PVTracks_centFT0C_beforeSel", "", {HistType::kTH2D, {centAxis, nchAxis}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_V0ATracks_beforeSel", "", {HistType::kTH2D, {nchAxis3, nchAxis}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_T0ATracks_beforeSel", "", {HistType::kTH2D, {nchAxis2, nchAxis}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_V0ATracks_T0CTracks_beforeSel", "", {HistType::kTH2D, {nchAxis2, nchAxis3}});
     // after selection
-    histos.add("His2D_globalTracks_PVTracks_afterSel", "", {HistType::kTH2D, {nchAxis, nchAxis}});
-    histos.add("His2D_globalTracks_centFT0C_afterSel", "", {HistType::kTH2D, {centAxis, nchAxis}});
-    histos.add("His2D_PVTracks_centFT0C_afterSel", "", {HistType::kTH2D, {centAxis, nchAxis}});
-    histos.add("His2D_globalTracks_V0ATracks_afterSel", "", {HistType::kTH2D, {nchAxis, nchAxis}});
-    histos.add("His2D_globalTracks_T0ATracks_afterSel", "", {HistType::kTH2D, {nchAxis, nchAxis}});
-    histos.add("His2D_V0ATracks_T0CTracks_afterSel", "", {HistType::kTH2D, {nchAxis, nchAxis}});
+    if (cfgUseSmallIonAdditionalEventCut) {
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_PVTracks_afterSel", "", {HistType::kTH2D, {nchAxis, nchAxis}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_centFT0C_afterSel", "", {HistType::kTH2D, {centAxis, nchAxis}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_PVTracks_centFT0C_afterSel", "", {HistType::kTH2D, {centAxis, nchAxis}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_V0ATracks_afterSel", "", {HistType::kTH2D, {nchAxis3, nchAxis}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_T0ATracks_afterSel", "", {HistType::kTH2D, {nchAxis2, nchAxis}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_V0ATracks_T0CTracks_afterSel", "", {HistType::kTH2D, {nchAxis2, nchAxis3}});
+    }
 
     // Event selection - Alex
     if (cfgUse22sEventCut) {
@@ -327,12 +330,12 @@ struct MeanptFluctuationsQAQnTable {
       return;
     }
 
-    histos.fill(HIST("His2D_globalTracks_PVTracks_beforeSel"), coll.multNTracksPV(), inputTracks.size());
-    histos.fill(HIST("His2D_globalTracks_centFT0C_beforeSel"), coll.centFT0C(), inputTracks.size());
-    histos.fill(HIST("His2D_PVTracks_centFT0C_beforeSel"), coll.centFT0C(), coll.multNTracksPV());
-    histos.fill(HIST("His2D_globalTracks_V0ATracks_beforeSel"), coll.multFV0A(), inputTracks.size());
-    histos.fill(HIST("His2D_globalTracks_T0ATracks_beforeSel"), coll.multFT0A(), inputTracks.size());
-    histos.fill(HIST("His2D_V0ATracks_T0CTracks_beforeSel"), coll.multFT0C(), coll.multFV0A());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_PVTracks_beforeSel"), coll.multNTracksPV(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_centFT0C_beforeSel"), coll.centFT0C(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_PVTracks_centFT0C_beforeSel"), coll.centFT0C(), coll.multNTracksPV());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_V0ATracks_beforeSel"), coll.multFV0A(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_T0ATracks_beforeSel"), coll.multFT0A(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_V0ATracks_T0CTracks_beforeSel"), coll.multFT0C(), coll.multFV0A());
 
     const auto centralityFT0C = coll.centFT0C();
     if (cfgUse22sEventCut && !eventSelected(coll, inputTracks.size(), centralityFT0C))
@@ -340,12 +343,14 @@ struct MeanptFluctuationsQAQnTable {
     if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(coll, inputTracks.size(), centralityFT0C))
       return;
 
-    histos.fill(HIST("His2D_globalTracks_PVTracks_afterSel"), coll.multNTracksPV(), inputTracks.size());
-    histos.fill(HIST("His2D_globalTracks_centFT0C_afterSel"), coll.centFT0C(), inputTracks.size());
-    histos.fill(HIST("His2D_PVTracks_centFT0C_afterSel"), coll.centFT0C(), coll.multNTracksPV());
-    histos.fill(HIST("His2D_globalTracks_V0ATracks_afterSel"), coll.multFV0A(), inputTracks.size());
-    histos.fill(HIST("His2D_globalTracks_T0ATracks_afterSel"), coll.multFT0A(), inputTracks.size());
-    histos.fill(HIST("His2D_V0ATracks_T0CTracks_afterSel"), coll.multFT0C(), coll.multFV0A());
+    if (cfgUseSmallIonAdditionalEventCut) {
+      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_PVTracks_afterSel"), coll.multNTracksPV(), inputTracks.size());
+      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_centFT0C_afterSel"), coll.centFT0C(), inputTracks.size());
+      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_PVTracks_centFT0C_afterSel"), coll.centFT0C(), coll.multNTracksPV());
+      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_V0ATracks_afterSel"), coll.multFV0A(), inputTracks.size());
+      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_T0ATracks_afterSel"), coll.multFT0A(), inputTracks.size());
+      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_V0ATracks_T0CTracks_afterSel"), coll.multFT0C(), coll.multFV0A());
+    }
 
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
 
