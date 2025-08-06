@@ -189,7 +189,7 @@ struct skimmerGammaConversion {
            theTrack.tpcChi2NCl(), theTrack.tpcInnerParam(), theTrack.tpcSignal(),
            theTrack.tpcNSigmaEl(), theTrack.tpcNSigmaPi(),
            theTrack.itsClusterSizes(), theTrack.itsChi2NCl(), theTrack.detectorMap(), 0,
-           theTrack.x(), theTrack.y(), theTrack.z(), theTrack.tgl());
+           theTrack.x(), theTrack.y(), theTrack.z());
   }
 
   template <typename TTRACK>

@@ -16,6 +16,8 @@
 
 // #include <TDatabasePDG.h>
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
@@ -105,6 +107,7 @@ struct Kstarqa {
     Configurable<bool> cfgUseITSTPCRefit{"cfgUseITSTPCRefit", false, "Require ITS Refit"};
     Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "No collision in time range standard"};
     Configurable<bool> isApplyPtDepDCAxyCut{"isApplyPtDepDCAxyCut", false, "Apply pT dependent DCAxy cut"};
+    Configurable<bool> isGoldenChi2{"isGoldenChi2", false, "Apply golden chi2 cut"};
 
     // cuts on mother
     Configurable<bool> isApplyCutsOnMother{"isApplyCutsOnMother", false, "Enable additional cuts on Kstar mother"};
@@ -427,6 +430,8 @@ struct Kstarqa {
         if (std::abs(candidate.dcaXY()) > (0.0105 + 0.035 / std::pow(candidate.pt(), 1.1)))
           return false;
       }
+      if (selectionConfig.isGoldenChi2 && candidate.passedGoldenChi2())
+        return false;
       if (std::abs(candidate.dcaZ()) > selectionConfig.cfgCutDCAz)
         return false;
       if (candidate.tpcCrossedRowsOverFindableCls() < selectionConfig.cfgRCRFC)
@@ -660,12 +665,13 @@ struct Kstarqa {
   Filter acceptanceFilter = (nabs(aod::track::eta) < selectionConfig.cfgCutEta && nabs(aod::track::pt) > selectionConfig.cfgCutPT);
   Filter fDCAcutFilter = (nabs(aod::track::dcaXY) < selectionConfig.cfgCutDCAxy) && (nabs(aod::track::dcaZ) < selectionConfig.cfgCutDCAz);
 
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::PVMults>;     // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
-  using EventCandidatesMix = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As>>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
-  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTOFbeta>>;
-  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::FT0Mults, aod::PVMults>;
+  using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::PVMults>>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
+  using EventCandidatesMix = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As>>;            // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
+  using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTOFbeta, aod::TrackSelectionExtension>>;
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::MultZeqs, aod::FT0Mults, aod::PVMults, aod::CentFV0As>;
+  // using EventCandidatesMC = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::FT0Mults, aod::PVMults, aod::CentFV0As>>;
 
-  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels, aod::pidTOFbeta>>;
+  using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::McTrackLabels, aod::pidTOFbeta, aod::TrackSelectionExtension>>;
   using EventMCGenerated = soa::Join<aod::McCollisions, aod::MultsExtraMC>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
 
   //*********Varibles declaration***************
@@ -1005,16 +1011,20 @@ struct Kstarqa {
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningTypeFT0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0A>;
   using BinningTypeFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
+  using BinningTypeMC = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
 
   BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
   BinningTypeCentralityM binningOnCentrality{{axisVertex, axisMultiplicity}, true};
   BinningTypeFT0A binningOnFT0A{{axisVertex, axisMultiplicity}, true};
   BinningTypeFV0A binningOnFV0A{{axisVertex, axisMultiplicity}, true};
+  BinningTypeMC binningOnMC{{axisVertex, axisMultiplicity}, true};
 
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair1{binningOnPositions, selectionConfig.cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeCentralityM> pair2{binningOnCentrality, selectionConfig.cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0A> pair3{binningOnFT0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeFV0A> pair4{binningOnFV0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
+
+  SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMC> pairmc{binningOnMC, selectionConfig.cfgNoMixedEvents, -1, &cache};
 
   void processME(EventCandidatesMix const&, TrackCandidates const&)
   {
@@ -1061,8 +1071,192 @@ struct Kstarqa {
       runMixing(pair4, [](const auto& c) { return c.centFV0A(); });
     }
   }
-
   PROCESS_SWITCH(Kstarqa, processME, "Process Mixed event", true);
+
+  void processSEMC(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
+  {
+    int occupancy = collision.trackOccupancyInTimeRange();
+    rEventSelection.fill(HIST("hOccupancy"), occupancy);
+
+    if (!selectionEvent(collision, true)) {
+      return;
+    }
+
+    multiplicity = -1;
+
+    if (cSelectMultEstimator == kFT0M) {
+      multiplicity = collision.centFT0M();
+    } else if (cSelectMultEstimator == kFT0A) {
+      multiplicity = collision.centFT0A();
+    } else if (cSelectMultEstimator == kFT0C) {
+      multiplicity = collision.centFT0C();
+    } else if (cSelectMultEstimator == kFV0A) {
+      multiplicity = collision.centFV0A();
+    } else {
+      multiplicity = collision.centFT0M(); // default
+    }
+
+    // Fill the event counter
+    if (cQAevents) {
+      rEventSelection.fill(HIST("hVertexZRec"), collision.posZ());
+      rEventSelection.fill(HIST("hMultiplicity"), multiplicity);
+      rEventSelection.fill(HIST("multdist_FT0M"), collision.multFT0M());
+      // rEventSelection.fill(HIST("multdist_FT0A"), collision.multFT0A());
+      // rEventSelection.fill(HIST("multdist_FT0C"), collision.multFT0C());
+      // rEventSelection.fill(HIST("hNcontributor"), collision.numContrib());
+    }
+
+    for (const auto& [track1, track2] : combinations(CombinationsFullIndexPolicy(tracks, tracks))) {
+      rEventSelection.fill(HIST("tracksCheckData"), 0.5);
+      if (!selectionTrack(track1)) {
+        continue;
+      }
+      if (!selectionTrack(track2)) {
+        continue;
+      }
+      rEventSelection.fill(HIST("tracksCheckData"), 1.5);
+
+      if (cQAplots) {
+        hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track1.pt(), track1.tpcNSigmaKa());
+        hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track1.pt(), track1.tofNSigmaKa());
+        hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
+        hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
+        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
+        hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+
+        hPID.fill(HIST("Before/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
+        hPID.fill(HIST("Before/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
+        hPID.fill(HIST("Before/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
+        hPID.fill(HIST("Before/hTOFnsigPi_mult_pt"), track2.tofNSigmaKa(), multiplicity, track2.pt());
+
+        hOthers.fill(HIST("hCRFC_before"), track1.tpcCrossedRowsOverFindableCls());
+        hOthers.fill(HIST("dE_by_dx_TPC"), track1.p(), track1.tpcSignal());
+        hOthers.fill(HIST("hphi"), track1.phi());
+
+        if (track1.sign() < 0) {
+          hPID.fill(HIST("Before/h1PID_TPC_neg_kaon"), track1.tpcNSigmaKa());
+          hPID.fill(HIST("Before/h1PID_TPC_neg_pion"), track2.tpcNSigmaPi());
+          hPID.fill(HIST("Before/h1PID_TOF_neg_kaon"), track1.tofNSigmaKa());
+          hPID.fill(HIST("Before/h1PID_TOF_neg_pion"), track2.tofNSigmaPi());
+        } else {
+          hPID.fill(HIST("Before/h1PID_TPC_pos_kaon"), track1.tpcNSigmaKa());
+          hPID.fill(HIST("Before/h1PID_TPC_pos_pion"), track2.tpcNSigmaPi());
+          hPID.fill(HIST("Before/h1PID_TOF_pos_kaon"), track1.tofNSigmaKa());
+          hPID.fill(HIST("Before/h1PID_TOF_pos_pion"), track2.tofNSigmaPi());
+        }
+      }
+
+      if (cQAevents) {
+        rEventSelection.fill(HIST("hDcaxy"), track1.dcaXY());
+        rEventSelection.fill(HIST("hDcaz"), track1.dcaZ());
+      }
+
+      // since we are using combinations full index policy, so repeated pairs are allowed, so we can check one with Kaon and other with pion
+      if (!applypTdepPID && !selectionPID(track1, 1)) // Track 1 is checked with Kaon
+        continue;
+      if (!applypTdepPID && !selectionPID(track2, 0)) // Track 2 is checked with Pion
+        continue;
+
+      if (applypTdepPID && !selectionPIDNew(track1, 1)) // Track 1 is checked with Kaon
+        continue;
+      if (applypTdepPID && !selectionPIDNew(track2, 0)) // Track 2 is checked with Pion
+        continue;
+
+      rEventSelection.fill(HIST("tracksCheckData"), 2.5);
+
+      if (cFakeTrack && isFakeTrack(track1, 1)) // Kaon
+        continue;
+      if (cFakeTrack && isFakeTrack(track2, 0)) // Pion
+        continue;
+
+      // if (cMID) {
+      //   if (cMIDselectionPID(track1, 0)) // Kaon misidentified as pion
+      //     continue;
+      //   if (cMIDselectionPID(track1, 2)) // Kaon misidentified as proton
+      //     continue;
+      //   if (cMIDselectionPID(track2, 1)) // Pion misidentified as kaon
+      //     continue;
+      // }
+
+      rEventSelection.fill(HIST("tracksCheckData"), 3.5);
+
+      if (cQAplots) {
+        hPID.fill(HIST("After/hDcaxyPi"), track2.dcaXY());
+        hPID.fill(HIST("After/hDcaxyKa"), track1.dcaXY());
+        hPID.fill(HIST("After/hDcazPi"), track2.dcaZ());
+        hPID.fill(HIST("After/hDcazKa"), track1.dcaZ());
+
+        hPID.fill(HIST("After/hTPCnsigKa_mult_pt"), track1.tpcNSigmaKa(), multiplicity, track1.pt());
+        hPID.fill(HIST("After/hTPCnsigPi_mult_pt"), track2.tpcNSigmaPi(), multiplicity, track2.pt());
+        hPID.fill(HIST("After/hTOFnsigKa_mult_pt"), track1.tofNSigmaKa(), multiplicity, track1.pt());
+        hPID.fill(HIST("After/hTOFnsigPi_mult_pt"), track2.tofNSigmaKa(), multiplicity, track2.pt());
+        hOthers.fill(HIST("hEta_after"), track1.eta());
+        hOthers.fill(HIST("hCRFC_after"), track1.tpcCrossedRowsOverFindableCls());
+        hPID.fill(HIST("After/hNsigmaKaonTPC_after"), track1.pt(), track1.tpcNSigmaKa());
+        hPID.fill(HIST("After/hNsigmaKaonTOF_after"), track1.pt(), track1.tofNSigmaKa());
+        hPID.fill(HIST("After/hNsigmaPionTPC_after"), track2.pt(), track2.tpcNSigmaPi());
+        hPID.fill(HIST("After/hNsigmaPionTOF_after"), track2.pt(), track2.tofNSigmaPi());
+        hPID.fill(HIST("After/hNsigma_TPC_TOF_Ka_after"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
+        hPID.fill(HIST("After/hNsigma_TPC_TOF_Pi_after"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+      }
+
+      if (track1.globalIndex() == track2.globalIndex())
+        continue;
+
+      rEventSelection.fill(HIST("tracksCheckData"), 4.5);
+
+      daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+      daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+      mother = daughter1 + daughter2; // Kstar meson
+
+      if (selectionConfig.isApplyCutsOnMother) {
+        if (mother.Pt() >= selectionConfig.cMaxPtMotherCut) // excluding candidates in overflow
+          continue;
+        if (mother.M() >= selectionConfig.cMaxMinvMotherCut) // excluding candidates in overflow
+          continue;
+      }
+
+      hOthers.fill(HIST("hKstar_Rap"), mother.Rapidity());
+      hOthers.fill(HIST("hKstar_Eta"), mother.Eta());
+
+      isMix = false;
+      fillInvMass(daughter1, daughter2, mother, multiplicity, isMix, track1, track2);
+    }
+  }
+  PROCESS_SWITCH(Kstarqa, processSEMC, "Process same event in MC", true);
+
+  void processMEMC(EventCandidatesMC const&, TrackCandidatesMC const&, aod::McParticles const&, aod::McCollisions const&)
+  {
+    for (const auto& [c1, tracks1, c2, tracks2] : pairmc) {
+
+      if (!selectionEvent(c1, false) || !selectionEvent(c2, false)) {
+        continue;
+      }
+
+      // multiplicity = multiplicityGetter(c1);
+      multiplicity = c1.centFT0M(); // default, can be changed later
+
+      for (const auto& [t1, t2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
+        if (!selectionTrack(t1) || !selectionTrack(t2))
+          continue;
+        if (!selectionPID(t1, 1) || !selectionPID(t2, 0))
+          continue;
+
+        daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa);
+        daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massPi);
+        mother = daughter1 + daughter2;
+
+        isMix = true;
+
+        if (std::abs(mother.Rapidity()) < selectionConfig.rapidityMotherData) {
+          fillInvMass(daughter1, daughter2, mother, multiplicity, isMix, t1, t2);
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(Kstarqa, processMEMC, "Process mixed-event in MC", true);
+
+  Service<o2::framework::O2DatabasePDG> pdgDB;
 
   // void processGen(EventMCGenerated::iterator const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
   void processGen(aod::McCollision const& mcCollision, aod::McParticles const& mcParticles, const soa::SmallGroups<EventCandidatesMC>& collisions)
@@ -1085,6 +1279,15 @@ struct Kstarqa {
     int nevts = 0;
     multiplicity = -1.0;
     // float impactParameter = mcCollision.impactParameter();
+
+    bool isINELgt0true = false;
+
+    if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
+      isINELgt0true = true;
+    }
+    if (selectionConfig.isINELgt0 && !isINELgt0true) {
+      return;
+    }
 
     // if (selectionConfig.isINELgt0 && !mcCollision.isInelGt0()) {
     //   return;
@@ -1129,16 +1332,12 @@ struct Kstarqa {
 
     for (const auto& mcParticle : mcParticles) {
       if (std::abs(mcParticle.y()) < selectionConfig.rapidityMotherData && std::abs(mcParticle.pdgCode()) == o2::constants::physics::kK0Star892) {
-        // if (inelgt0MCgen) {
         hInvMass.fill(HIST("hAllKstarGenCollisisons"), multiplicity, mcParticle.pt());
-        // }
       }
     }
 
     const auto evtReconstructedAndSelected = std::find(selectedEvents.begin(), selectedEvents.end(), mcCollision.globalIndex()) != selectedEvents.end();
-    // if (inelgt0MCgen) {
     hInvMass.fill(HIST("hAllGenCollisions"), multiplicity);
-    // }
     if (!cAllGenCollisions && !evtReconstructedAndSelected) { // Check that the event is reconstructed and that the reconstructed events pass the selection
       return;
     }
@@ -1200,6 +1399,15 @@ struct Kstarqa {
     // if (selectionConfig.isINELgt0 && !mcCollision.isInelGt0()) {
     //   return;
     // }
+
+    bool isINELgt0true = false;
+
+    if (pwglf::isINELgtNmc(mcParticles, 0, pdgDB)) {
+      isINELgt0true = true;
+    }
+    if (selectionConfig.isINELgt0 && !isINELgt0true) {
+      return;
+    }
 
     auto impactPar = mcCollision.impactParameter();
     hInvMass.fill(HIST("MCcorrections/hImpactParameterGen"), impactPar);

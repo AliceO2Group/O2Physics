@@ -54,7 +54,6 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   ConfigurableAxis confChildTempFitVarBins{"confChildTempFitVarBins", {300, -0.15, 0.15}, "V0 child: binning of the TempFitVar in the pT vs. TempFitVar plot"};
   Configurable<float> confCascInvMassLowLimit{"confCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};
   Configurable<float> confCascInvMassUpLimit{"confCascInvMassUpLimit", 1.325, "Upper limit of the Casc invariant mass"};
-  Configurable<float> confCascTranRad{"confCascTranRad", 0.5, "Cascade transverse radius"};
 
   Configurable<float> confNSigmaTPCPion{"confNSigmaTPCPion", 4, "NSigmaTPCPion"};
   Configurable<float> confNSigmaTPCProton{"confNSigmaTPCProton", 4, "NSigmaTPCProton"};
@@ -66,6 +65,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   // configurations for correlation part
   Configurable<int> confTrackChoicePartOne{"confTrackChoicePartOne", 0, "0:Proton, 1:Pion, 2:Kaon"};
   Configurable<int> confTrkPDGCodePartOne{"confTrkPDGCodePartOne", 2212, "Particle 1 (Track) - PDG code"};
+  Configurable<int> confCascPDGCodePartTwo{"confCascPDGCodePartTwo", 3312, "Particle 2 (Cascade) - PDG code"};
   Configurable<int> confCascType1{"confCascType1", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for track-cascade combination"};
   Configurable<int> confCascType2{"confCascType2", 0, "select one of the Cascades (Omega = 0, Xi = 1, anti-Omega = 2, anti-Xi = 3) for cascade-cascade combination"};
   Configurable<bool> confIsCPR{"confIsCPR", false, "Close Pair Rejection"};
@@ -193,18 +193,20 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   }
 
   template <typename T>
-  bool isParticleTPC(const T& part, int id)
+  bool isParticleTPC(const T& part, int id, float* partSigma = 0)
   {
     const float tpcNSigmas[3] = {unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePr()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStorePi()), unPackInTable<aod::pidtpc_tiny::binning>(part.tpcNSigmaStoreKa())};
-
+    if (partSigma)
+      *partSigma = tpcNSigmas[id];
     return isNSigmaTPC(tpcNSigmas[id]);
   }
 
   template <typename T>
-  bool isParticleTOF(const T& part, int id)
+  bool isParticleTOF(const T& part, int id, float* partSigma = 0)
   {
     const float tofNSigmas[3] = {unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePr()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStorePi()), unPackInTable<aod::pidtof_tiny::binning>(part.tofNSigmaStoreKa())};
-
+    if (partSigma)
+      *partSigma = tofNSigmas[id];
     return isNSigmaTOF(part.p(), tofNSigmas[id], part.tempFitVar());
   }
 
@@ -251,11 +253,19 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     rXiQA.add("hInvMpTmult", "hInvMpTmult", kTH3F, {{ptAxis}, {aXiMassAxis}, {multAxis}});
 
     eventHisto.init(&qaRegistry);
+    /// nSigma debug histograms for the selected particle species only i.e. not sigmas of all particles mixed together
     qaRegistry.add("Tracks_pos/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Tracks_pos/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Tracks_neg/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("Tracks_neg/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
     qaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
+
+    qaRegistry.add("V0Child_pos/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
+    qaRegistry.add("V0Child_neg/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
+    qaRegistry.add("hBachelor/nSigmaTPC", "; #it{p} (GeV/#it{c}); n#sigma_{TPC}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
+    qaRegistry.add("V0Child_pos/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
+    qaRegistry.add("V0Child_neg/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
+    qaRegistry.add("hBachelor/nSigmaTOF", "; #it{p} (GeV/#it{c}); n#sigma_{TOF}", kTH2F, {{100, 0, 10}, {200, -4.975, 5.025}});
 
     // MC gen
     registryMCgen.add("plus/MCgenCasc", "MC gen cascades;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
@@ -292,6 +302,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
 
     sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     mixedEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
+    sameEventCont.setPDGCodes(confTrkPDGCodePartOne, confCascPDGCodePartTwo);
+    mixedEventCont.setPDGCodes(confTrkPDGCodePartOne, confCascPDGCodePartTwo);
+
     pairCleaner.init(&qaRegistry);
     pairCleanerCasc.init(&qaRegistry);
     if (confIsCPR.value) {
@@ -299,29 +312,17 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     }
   }
 
-  void processCascades([[maybe_unused]] const FilteredFDCollision& col, const FemtoFullParticles& parts, const aod::FDCascParticles& fdcascs)
+  void processCascadeQA([[maybe_unused]] const FilteredFDCollision& col, const FemtoFullParticles& parts, const aod::FDCascParticles& fdcascs)
   {
-    // auto groupCascs = cascs->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
-    //  const int multCol = col.multNtr();
-
     for (const auto& casc : fdcascs) {
       const auto& part = casc.fdParticle_as<FemtoFullParticles>();
       rXiQA.fill(HIST("hMassXi"), part.mLambda());
-
-      // if (!invMCascade(casc.mLambda(), casc.mAntiLambda()))
-      //   continue;
 
       const auto& posChild = parts.iteratorAt(part.globalIndex() - 3 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
 
-      // if (casc.transRadius() < confCascTranRad)
-      //   continue;
-      // std::cout<<std::endl;
-      // std::cout<<"TYPE:"<<std::endl;
-      // std::cout<<casc.partType()<<std::endl;
       //  nSigma selection for daughter and bachelor tracks
-
       if (part.sign() < 0) {
         if (std::abs(posChild.tpcNSigmaPr()) > confNSigmaTPCProton) {
           continue;
@@ -356,13 +357,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       rXiQA.fill(HIST("hDcaBachtoPV"), casc.dcabachtopv());
       rXiQA.fill(HIST("hDcaV0toPV"), casc.dcav0topv());
       rXiQA.fill(HIST("hInvMpT"), part.pt(), part.mLambda());
-
-      posChildHistos.fillQA<false, true>(posChild);
-      negChildHistos.fillQA<false, true>(negChild);
-      bachHistos.fillQABase<false, true>(bachelor, HIST("hBachelor"));
     }
   }
-  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processCascades, "Enable processing cascades", false);
+  PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processCascadeQA, "Enable processing cascades", false);
 
   template <class T>
   using hasSigma = decltype(std::declval<T&>().tpcNSigmaStorePr());
@@ -383,25 +380,33 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       if (!invMCascade(part.mLambda(), part.mAntiLambda(), confCascType1)) /// mLambda stores Xi mass, mAntiLambda stores Omega mass
         continue;
 
-      if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value)
-        cascQAHistos.fillQA<false, true>(part);
-      else
-        cascQAHistos.fillQA<false, false>(part);
-
       const auto& posChild = parts.iteratorAt(part.globalIndex() - 3 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
       /// Child particles must pass this condition to be selected
       if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
-        if (!isParticleTPC(posChild, CascChildTable[confCascType1][0]) || !isParticleTPC(negChild, CascChildTable[confCascType1][1]) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2]))
+        float posChildTPC, negChildTPC, bachelorTPC, posChildTOF, negChildTOF, bachelorTOF;
+        if (!isParticleTPC(posChild, CascChildTable[confCascType1][0], &posChildTPC) || !isParticleTPC(negChild, CascChildTable[confCascType1][1], &negChildTPC) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2], &bachelorTPC))
           continue;
 
-        if ((!confCheckTOFBachelorOnly && (!isParticleTOF(posChild, CascChildTable[confCascType1][0]) || !isParticleTOF(negChild, CascChildTable[confCascType1][1]))) || !isParticleTOF(bachelor, CascChildTable[confCascType1][2]))
+        if ((!confCheckTOFBachelorOnly && (!isParticleTOF(posChild, CascChildTable[confCascType1][0], &posChildTOF) || !isParticleTOF(negChild, CascChildTable[confCascType1][1], &negChildTOF))) || !isParticleTOF(bachelor, CascChildTable[confCascType1][2], &bachelorTOF))
           continue;
 
         posChildHistos.fillQA<false, true>(posChild);
         negChildHistos.fillQA<false, true>(negChild);
         bachHistos.fillQABase<false, true>(bachelor, HIST("hBachelor"));
+
+        qaRegistry.fill(HIST("V0Child_pos/nSigmaTPC"), posChild.p(), posChildTPC);
+        qaRegistry.fill(HIST("V0Child_neg/nSigmaTPC"), negChild.p(), negChildTPC);
+        qaRegistry.fill(HIST("hBachelor/nSigmaTPC"), bachelor.p(), bachelorTPC);
+        if (!confCheckTOFBachelorOnly) {
+          qaRegistry.fill(HIST("V0Child_pos/nSigmaTOF"), posChild.p(), posChildTOF);
+          qaRegistry.fill(HIST("V0Child_neg/nSigmaTOF"), negChild.p(), negChildTOF);
+        }
+        qaRegistry.fill(HIST("hBachelor/nSigmaTOF"), bachelor.p(), bachelorTOF);
+
+        cascQAHistos.fillQA<false, true>(part);
+
       } else {
         if ((posChild.pidCut() & (1u << CascChildTable[confCascType1][0])) == 0 || (negChild.pidCut() & (1u << CascChildTable[confCascType1][1])) == 0 || (bachelor.pidCut() & (1u << CascChildTable[confCascType1][2])) == 0)
           continue;
@@ -412,6 +417,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         posChildHistos.fillQA<false, false>(posChild);
         negChildHistos.fillQA<false, false>(negChild);
         bachHistos.fillQABase<false, false>(bachelor, HIST("hBachelor"));
+        cascQAHistos.fillQA<false, false>(part);
       }
       rXiQA.fill(HIST("hInvMpTmult"), part.pt(), part.mLambda(), multCol);
     }

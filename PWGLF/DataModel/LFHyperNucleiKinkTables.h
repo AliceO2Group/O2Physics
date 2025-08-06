@@ -95,7 +95,9 @@ DECLARE_SOA_TABLE(HypKinkCand, "AOD", "HYPKINKCANDS",
                   hyperkink::PxDaugSV, hyperkink::PyDaugSV, hyperkink::PzDaugSV,
                   hyperkink::DcaMothPv, hyperkink::DcaDaugPv, hyperkink::DcaKinkTopo,
                   hyperkink::ItsChi2Moth, hyperkink::ItsClusterSizesMoth, hyperkink::ItsClusterSizesDaug,
-                  hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug, hyperkink::NSigmaTOFDaug);
+                  hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug, hyperkink::NSigmaTOFDaug,
+                  hyperkink::PxMothPV, hyperkink::PyMothPV, hyperkink::PzMothPV,
+                  hyperkink::UpdatePxMothPV, hyperkink::UpdatePyMothPV, hyperkink::UpdatePzMothPV);
 
 DECLARE_SOA_TABLE(MCHypKinkCand, "AOD", "MCHYPKINKCANDS",
                   o2::soa::Index<>,
