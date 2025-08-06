@@ -25,8 +25,8 @@
 #include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/Track.h>
 
-#include <vector>
 #include <unordered_set>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
