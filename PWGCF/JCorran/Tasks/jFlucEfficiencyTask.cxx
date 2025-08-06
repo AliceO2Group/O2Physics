@@ -178,15 +178,15 @@ struct JFlucEfficiencyTask {
       registry.add("hPtGenPos", "Generated p_{T} (positive);p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
       registry.add("hPtGenPos_Pos", "Generated p_{T} (positive) in TPC positive side;p_{T} (GeV/c);Centrality (%);Counts",
-                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
       registry.add("hPtGenPos_Neg", "Generated p_{T} (positive) in TPC negative side;p_{T} (GeV/c);Centrality (%);Counts",
-                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
       registry.add("hPtGenNeg", "Generated p_{T} (negative);p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
       registry.add("hPtGenNeg_Pos", "Generated p_{T} (negative) in TPC positive side;p_{T} (GeV/c);Centrality (%);Counts",
-                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
       registry.add("hPtGenNeg_Neg", "Generated p_{T} (negative) in TPC negative side;p_{T} (GeV/c);Centrality (%);Counts",
-                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
     }
     registry.add("hPtRec", "Reconstructed p_{T} (all);p_{T} (GeV/c);Centrality (%);Counts",
                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
@@ -195,15 +195,15 @@ struct JFlucEfficiencyTask {
     registry.add("hPtRecPos", "Reconstructed p_{T} (positive);p_{T} (GeV/c);Centrality (%);Counts",
                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
     registry.add("hPtRecPos_Pos", "Reconstructed p_{T} (positive) in TPC positive side;p_{T} (GeV/c);Centrality (%);Counts",
-                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+                 o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
     registry.add("hPtRecPos_Neg", "Reconstructed p_{T} (positive) in TPC negative side;p_{T} (GeV/c);Centrality (%);Counts",
-                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+                 o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
     registry.add("hPtRecNeg", "Reconstructed p_{T} (negative);p_{T} (GeV/c);Centrality (%);Counts",
                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
     registry.add("hPtRecNeg_Pos", "Reconstructed p_{T} (negative) in TPC positive side;p_{T} (GeV/c);Centrality (%);Counts",
-                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+                 o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
     registry.add("hPtRecNeg_Neg", "Reconstructed p_{T} (negative) in TPC negative side;p_{T} (GeV/c);Centrality (%);Counts",
-                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+                 o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
     if (applyMCStudy) {
       registry.add("hChargeSignMismatch", "Charge-Sign mismatch cases", {HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)}});
       registry.add("hChargeSignMismatchPos", "MC charge + but track sign -", {HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)}});
@@ -456,7 +456,7 @@ struct JFlucEfficiencyTask {
           // Check charge-sign consistency
           auto mcCharge = getCharge(mcPart);
           auto trackSign = track.sign();
-          
+
           if (mcCharge > 0 && trackSign > 0) {
             // MC charge + and track sign +
             registry.fill(HIST("hChargeSignMatchPos"), track.pt(), centrality);
