@@ -64,6 +64,13 @@ struct FilterCF {
     kPIDProton = BIT(1)
   };
 
+  enum MultiplicityEstimators : uint8_t {
+    kCentFT0C = BIT(0),
+    kMultFV0A = BIT(1),
+    kMultNTracksPV = BIT(2),
+    kMultNTracksGlobal = BIT(3),
+  };
+
   // Configuration
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 7.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPt, float, 0.5f, "Minimal pT for tracks")
@@ -90,6 +97,7 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(tpcnclusters, int, 50, "minimum number of TPC clusters found")
   O2_DEFINE_CONFIGURABLE(chi2pertpccluster, float, 2.5, "maximum Chi2 / cluster for the TPC track segment")
   O2_DEFINE_CONFIGURABLE(chi2peritscluster, float, 36, "maximum Chi2 / cluster for the ITS track segment")
+  O2_DEFINE_CONFIGURABLE(cfgEstimatorBitMask, uint16_t, 0, "BitMask for multiplicity estimators to be included in the CFMultiplicitySet tables.");
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -116,6 +124,9 @@ struct FilterCF {
   Produces<aod::CFCollRefs> outputCollRefs;
   Produces<aod::CFTrackRefs> outputTrackRefs;
   Produces<aod::CFMcParticleRefs> outputMcParticleRefs;
+
+  Produces<aod::CFMultiplicitySets> outputMultSets;
+  std::vector<float> multiplicities{};
 
   // persistent caches
   std::vector<bool> mcReconstructedCache;
@@ -238,6 +249,9 @@ struct FilterCF {
     return 0;
   }
 
+  template <class T>
+  using HasMultTables = decltype(std::declval<T&>().multNTracksPV());
+
   /// \brief Templetized process data for a given collision and its associated tracks
   /// \param collision The collision object containing information about the collision
   /// \param tracks The collection of tracks associated with the collision
@@ -254,6 +268,19 @@ struct FilterCF {
 
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
+
+    if constexpr (std::experimental::is_detected<HasMultTables, typename T1::iterator>::value) {
+      multiplicities.clear();
+      if (cfgEstimatorBitMask & kCentFT0C)
+        multiplicities.push_back(collision.centFT0C());
+      if (cfgEstimatorBitMask & kMultFV0A)
+        multiplicities.push_back(collision.multFV0A());
+      if (cfgEstimatorBitMask & kMultNTracksPV)
+        multiplicities.push_back(collision.multNTracksPV());
+      if (cfgEstimatorBitMask & kMultNTracksGlobal)
+        multiplicities.push_back(collision.multNTracksGlobal());
+      outputMultSets(multiplicities);
+    }
 
     if (cfgTransientTables)
       outputCollRefs(collision.globalIndex());
@@ -282,6 +309,12 @@ struct FilterCF {
     processDataT(collision, tracks);
   }
   PROCESS_SWITCH(FilterCF, processDataPid, "Process data with PID", false);
+
+  void processDataMults(soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CFMultiplicities, aod::CentFT0Cs, aod::PVMults, aod::FV0Mults, aod::MultsGlobal>>::iterator const& collision, aod::BCsWithTimestamps const&, soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>> const& tracks)
+  {
+    processDataT(collision, tracks);
+  }
+  PROCESS_SWITCH(FilterCF, processDataMults, "Process data with multiplicity sets", false);
 
   /// \brief Process MC data for a given set of MC collisions and associated particles and tracks
   /// \param mcCollisions The collection of MC collisions
