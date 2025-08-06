@@ -126,12 +126,12 @@ struct Derivedcascadeanalysis {
     Configurable<float> globalTracksCorrelpar0High{"globalTracksCorrelpar0High", 226, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
     Configurable<float> globalTracksCorrelpar1High{"globalTracksCorrelpar1High", -0.0181686, "[0]*exp([1]*centrality)+[2], mean plus 3*sigma"};
     Configurable<float> globalTracksCorrelpar2High{"globalTracksCorrelpar2High", -22, "[0]*exp([1]*centrality)+[2], mean plus 3*sigma"};
-    Configurable<float> pvContribCorrelpar0Low{"pvcontribCorrelpar0Low", 152, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
-    Configurable<float> pvContribCorrelpar1Low{"pvcontribCorrelpar1Low", -0.0431016, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
-    Configurable<float> pvContribCorrelpar2Low{"pvcontribCorrelpar2Low", -15.3776, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
-    Configurable<float> pvContribCorrelpar0High{"pvcontribCorrelpar0High", 384.861, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
-    Configurable<float> pvContribCorrelpar1High{"pvcontribCorrelpar1High", -0.0181686, "[0]*exp([1]*centrality)+[2], mean plus 3*sigma"};
-    Configurable<float> pvContribCorrelpar2High{"pvcontribCorrelpar2High", -39, "[0]*exp([1]*centrality)+[2], mean plus 3*sigma"};
+    Configurable<float> pvContribCorrelpar0Low{"pvContribCorrelpar0Low", 152, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
+    Configurable<float> pvContribCorrelpar1Low{"pvContribCorrelpar1Low", -0.0431016, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
+    Configurable<float> pvContribCorrelpar2Low{"pvContribCorrelpar2Low", -15.3776, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
+    Configurable<float> pvContribCorrelpar0High{"pvContribCorrelpar0High", 384.861, "[0]*exp([1]*centrality)+[2], mean minus 3*sigma"};
+    Configurable<float> pvContribCorrelpar1High{"pvContribCorrelpar1High", -0.0181686, "[0]*exp([1]*centrality)+[2], mean plus 3*sigma"};
+    Configurable<float> pvContribCorrelpar2High{"pvContribCorrelpar2High", -39, "[0]*exp([1]*centrality)+[2], mean plus 3*sigma"};
   } eventSelectionRun3Flags;
 
   struct : ConfigurableGroup {
@@ -1145,11 +1145,11 @@ struct Derivedcascadeanalysis {
         auto cascMC = casc.template cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
         ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxMC(), cascMC.pyMC());
 
-        if (cascMC.isPhysicalPrimary() && ((isXi && std::abs(cascMC.pdgCode()) == 3312) || (!isXi && std::abs(cascMC.pdgCode()) == 3334)))
+        if (cascMC.isPhysicalPrimary() && ((isXi && std::abs(cascMC.pdgCode()) == PDG_t::kXiMinus) || (!isXi && std::abs(cascMC.pdgCode()) == PDG_t::kOmegaMinus)))
           isTrueMCCascade = true;
-        if (isTrueMCCascade && ((isPositive && cascMC.pdgCodePositive() == 211 && cascMC.pdgCodeNegative() == -2212) || (isNegative && cascMC.pdgCodePositive() == 2212 && cascMC.pdgCodeNegative() == -211)))
+        if (isTrueMCCascade && ((isPositive && cascMC.pdgCodePositive() == PDG_t::kPiPlus && cascMC.pdgCodeNegative() == PDG_t::kProtonBar) || (isNegative && cascMC.pdgCodePositive() == PDG_t::kProton && cascMC.pdgCodeNegative() == PDG_t::kPiMinus)))
           isCorrectLambdaDecay = true;
-        if (isTrueMCCascade && isCorrectLambdaDecay && ((isXi && std::abs(cascMC.pdgCodeBachelor()) == 211) || (!isXi && std::abs(cascMC.pdgCodeBachelor()) == 321)))
+        if (isTrueMCCascade && isCorrectLambdaDecay && ((isXi && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kPiPlus) || (!isXi && std::abs(cascMC.pdgCodeBachelor()) == PDG_t::kKPlus)))
           isTrueMCCascadeDecay = true;
 
         if (qaFlags.doBefSelCheck && isTrueMCCascade) {
@@ -1458,9 +1458,9 @@ struct Derivedcascadeanalysis {
 
       float ptmc = RecoDecay::sqrtSumOfSquares(cascMC.pxMC(), cascMC.pyMC());
       float ymc = 1e3;
-      if (std::abs(cascMC.pdgCode()) == 3312)
+      if (std::abs(cascMC.pdgCode()) == PDG_t::kXiMinus)
         ymc = RecoDecay::y(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}, o2::constants::physics::MassXiMinus);
-      else if (std::abs(cascMC.pdgCode()) == 3334)
+      else if (std::abs(cascMC.pdgCode()) == PDG_t::kOmegaMinus)
         ymc = RecoDecay::y(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}, o2::constants::physics::MassOmegaMinus);
 
       if (ispO && (ymc > candidateSelectionValues.maxRapCut || ymc < candidateSelectionValues.minRapCut))
@@ -1502,7 +1502,7 @@ struct Derivedcascadeanalysis {
         nChEta1 = collision.multNTracksPVeta1();
       }
 
-      if (cascMC.pdgCode() == 3312 && isXi) {
+      if (cascMC.pdgCode() == PDG_t::kXiMinus && isXi) {
         histos.fill(HIST("h2dGenXiMinus"), centrality, ptmc);
         histos.fill(HIST("h2dGenXiMinusVsNch"), nChEta1, ptmc);
         histos.fill(HIST("h2dGenXiMinusEta"), RecoDecay::eta(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}));
@@ -1515,7 +1515,7 @@ struct Derivedcascadeanalysis {
         histos.fill(HIST("h2dGenXiMinusVsCentIR"), ptmc, centrality, intRate);
         histos.fill(HIST("h2dGenXiMinusVsNchVsOccupancy"), ptmc, nChEta1, occupancy);
       }
-      if (cascMC.pdgCode() == -3312 && isXi) {
+      if (cascMC.pdgCode() ==  PDG_t::kXiPlusBar && isXi) {
         histos.fill(HIST("h2dGenXiPlus"), centrality, ptmc);
         histos.fill(HIST("h2dGenXiPlusVsNch"), nChEta1, ptmc);
         histos.fill(HIST("h2dGenXiPlusVsMultMCVsCentrality"), mcCollision.multMCNParticlesEta05(), centrality, ptmc);
@@ -1524,7 +1524,7 @@ struct Derivedcascadeanalysis {
         histos.fill(HIST("h2dGenXiPlusVsNchVsOccupancy"), ptmc, nChEta1, occupancy);
         histos.fill(HIST("h2dGenXiPlusVsCentIR"), ptmc, centrality, intRate);
       }
-      if (cascMC.pdgCode() == 3334 && !isXi) {
+      if (cascMC.pdgCode() == PDG_t::kOmegaMinus && !isXi) {
         histos.fill(HIST("h2dGenOmegaMinus"), centrality, ptmc);
         histos.fill(HIST("h2dGenOmegaMinusVsNch"), nChEta1, ptmc);
         histos.fill(HIST("h2dGenOmegaMinusEta"), RecoDecay::eta(std::array{cascMC.pxMC(), cascMC.pyMC(), cascMC.pzMC()}));
@@ -1537,7 +1537,7 @@ struct Derivedcascadeanalysis {
         histos.fill(HIST("h2dGenOmegaMinusVsNchVsOccupancy"), ptmc, nChEta1, occupancy);
         histos.fill(HIST("h2dGenOmegaMinusVsCentIR"), ptmc, centrality, intRate);
       }
-      if (cascMC.pdgCode() == -3334 && !isXi) {
+      if (cascMC.pdgCode() == PDG_t::kOmegaPlusBar && !isXi) {
         histos.fill(HIST("h2dGenOmegaPlus"), centrality, ptmc);
         histos.fill(HIST("h2dGenOmegaPlusVsNch"), nChEta1, ptmc);
         histos.fill(HIST("h2dGenOmegaPlusVsMultMCVsCentrality"), mcCollision.multMCNParticlesEta05(), centrality, ptmc);
