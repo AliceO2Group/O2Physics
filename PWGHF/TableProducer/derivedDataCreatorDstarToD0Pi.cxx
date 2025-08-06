@@ -153,12 +153,11 @@ struct HfDerivedDataCreatorDstarToD0Pi {
   void fillTablesCandidate(const T& candidate, const U& prong0, const U& prong1, const U& prongSoftPi, int candFlag, double invMass, double invMassD0,
                            double y, int8_t flagMc, int8_t flagMcD0, int8_t origin, int8_t nTracksDecayed, double ptBhad, int pdgBhad, const std::vector<float>& mlScores)
   {
-    float absEtaTrackMin{-1.f};
-    int numItsClsMin{-1}, numTpcClsMin{-1};
-    getTrackingInfos(std::vector{prong0, prong1, prongSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
-
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
+      float absEtaTrackMin{-1.f};
+      int numItsClsMin{-1}, numTpcClsMin{-1};
+      getTrackingInfos(std::vector{prong0, prong1, prongSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
       rowCandidatePar(
         candidate.pxD0(),
         candidate.pyD0(),

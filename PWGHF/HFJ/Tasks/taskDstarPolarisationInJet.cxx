@@ -22,15 +22,15 @@
 #include "PWGJE/Core/JetUtilities.h"
 #include "PWGJE/DataModel/Jet.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/runDataProcessing.h>
 
-#include "Math/GenVector/Boost.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "TRandom3.h"
-#include "TVector3.h"
+#include <Math/GenVector/Boost.h>
+#include <Math/Vector3D.h>
+#include <Math/Vector4D.h>
+#include <TRandom3.h>
+#include <TVector3.h>
 
 #include <string>
 #include <vector>
@@ -62,9 +62,10 @@ enum DecayChannel : uint8_t {
 struct HfTaskDstarPolarisationInJet {
 
   float massPi{0.f};
-  float massProton{0.f};
   float massKaon{0.f};
+  float massProton{0.f};
   float massDstar{0.f};
+
   float bkgRotationAngleStep{0.f};
 
   uint8_t nMassHypos{0u};
@@ -85,11 +86,11 @@ struct HfTaskDstarPolarisationInJet {
   Configurable<bool> activateTHnSparseCosThStarJetAxis{"activateTHnSparseCosThStarJetAxis", true, "Activate the THnSparse with cosThStar w.r.t. production axis"};
   Configurable<bool> activateTHnSparseCosThStarProduction{"activateTHnSparseCosThStarProduction", true, "Activate the THnSparse with cosThStar w.r.t. production axis"};
   Configurable<bool> activatePartRecoDstar{"activatePartRecoDstar", false, "Activate the study of partly reconstructed D*+ -> D0 (-> KPiPi0) Pi decays"};
-  float minInvMass{0.f};
-  float maxInvMass{1000.f};
+  float invMassMin{0.f};
+  float invMassMax{1000.f};
 
   /// Application of rapidity cut for reconstructed candidates
-  Configurable<float> rapidityCut{"rapidityCut", 999.f, "Max. value of reconstructed candidate rapidity (abs. value)"};
+  Configurable<float> maxAbsRapidityCut{"maxAbsRapidityCut", 999.f, "Max. value of reconstructed candidate rapidity (abs. value)"};
 
   // Tables for MC jet matching
   using DstarJets = soa::Join<aod::DstarChargedJets, aod::DstarChargedJetConstituents>;
@@ -125,14 +126,20 @@ struct HfTaskDstarPolarisationInJet {
   void init(InitContext&)
   {
     // initialise event selection:
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections.value);
 
     /// check process functions
-    std::array<int, 4> processes = {doprocessDstar, doprocessDstarWithMl, doprocessDstarMc, doprocessDstarMcWithMl};
-    const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
+    const int nProcesses = 
+      static_cast<int>(doprocessDstar) +
+      static_cast<int>(doprocessDstarWithMl) +
+      static_cast<int>(doprocessDstarMc) +
+      static_cast<int>(doprocessDstarMcWithMl);
+    // std::array<int, 4> processes = {doprocessDstar, doprocessDstarWithMl, doprocessDstarMc, doprocessDstarMcWithMl};
+    // const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
     if (nProcesses > 1) {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
-    } else if (nProcesses == 0) {
+    }
+    if (nProcesses == 0) {
       LOGP(fatal, "No process function enabled");
     }
 
@@ -140,16 +147,15 @@ struct HfTaskDstarPolarisationInJet {
     std::array<int, 3> sparses = {activateTHnSparseCosThStarHelicity, activateTHnSparseCosThStarJetAxis, activateTHnSparseCosThStarProduction};
     if (std::accumulate(sparses.begin(), sparses.end(), 0) == 0) {
       LOGP(fatal, "No output THnSparses enabled");
-    } else {
-      if (activateTHnSparseCosThStarHelicity) {
-        LOGP(info, "THnSparse with cosThStar w.r.t. helicity axis active.");
-      }
-      if (activateTHnSparseCosThStarJetAxis) {
-        LOGP(info, "THnSparse with cosThStar w.r.t. jet axis active.");
-      }
-      if (activateTHnSparseCosThStarProduction) {
-        LOGP(info, "THnSparse with cosThStar w.r.t. production axis active.");
-      }
+    }
+    if (activateTHnSparseCosThStarHelicity) {
+      LOGP(info, "THnSparse with cosThStar w.r.t. helicity axis active.");
+    }
+    if (activateTHnSparseCosThStarJetAxis) {
+      LOGP(info, "THnSparse with cosThStar w.r.t. jet axis active.");
+    }
+    if (activateTHnSparseCosThStarProduction) {
+      LOGP(info, "THnSparse with cosThStar w.r.t. production axis active.");
     }
 
     if (activatePartRecoDstar && !(doprocessDstarMc || doprocessDstarMcWithMl)) {
@@ -188,8 +194,8 @@ struct HfTaskDstarPolarisationInJet {
     const AxisSpec thnAxisSelFlag{2, -0.5f, 1.5f, "Sel flag"};
 
     auto invMassBins = thnAxisInvMass.binEdges;
-    minInvMass = invMassBins.front();
-    maxInvMass = invMassBins.back();
+    invMassMin = invMassBins.front();
+    invMassMax = invMassBins.back();
 
     std::vector<AxisSpec> thnRecDataAxes = {thnAxisInvMass, thnAxisPt, thnAxisY, thnAxisInvMassD0, thnAxisCosThetaStar};
     if (activateTrackingSys) {
@@ -591,10 +597,9 @@ struct HfTaskDstarPolarisationInJet {
   /// \param ptBhadMother is the pt of the b-hadron mother (only in case of non-prompt)
   /// \param areDausInAcc is a flag indicating whether the daughters are in acceptance or not
   /// \param isPartRecoDstar is a flag indicating if it is a partly reconstructed Dstar->D0pi->Kpipipi0 meson (MC only)
-  template <charm_polarisation::CosThetaStarType cosThetaStarType>
-  void fillGenHistos(float ptCharmHad, float rapCharmHad, float cosThetaStar, int8_t origin, float ptBhadMother, bool areDausInAcc, int8_t charge, bool isPartRecoDstar, float zParallel, float jetPt)
+  void fillGenHistos(charm_polarisation::CosThetaStarType cosThetaStarType, float ptCharmHad, float rapCharmHad, float cosThetaStar, int8_t origin, float ptBhadMother, bool areDausInAcc, int8_t charge, bool isPartRecoDstar, float zParallel, float jetPt)
   {
-    if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
+    if (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
       if (origin == RecoDecay::OriginType::Prompt) {                                    // prompt
         if (!isPartRecoDstar) {
           registry.fill(HIST("hGenPromptHelicity"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge, zParallel, jetPt);
@@ -608,7 +613,7 @@ struct HfTaskDstarPolarisationInJet {
           registry.fill(HIST("hGenPartRecoNonPromptHelicity"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge, zParallel, jetPt);
         }
       }
-    } else if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::Production) { // Production
+    } else if (cosThetaStarType == charm_polarisation::CosThetaStarType::Production) { // Production
       if (origin == RecoDecay::OriginType::Prompt) {                                             // prompt
         if (!isPartRecoDstar) {
           registry.fill(HIST("hGenPromptProduction"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge, zParallel, jetPt);
@@ -622,7 +627,7 @@ struct HfTaskDstarPolarisationInJet {
           registry.fill(HIST("hGenPartRecoNonPromptProduction"), ptCharmHad, rapCharmHad, cosThetaStar, ptBhadMother, areDausInAcc, charge, zParallel, jetPt);
         }
       }
-    } else if constexpr (cosThetaStarType == charm_polarisation::CosThetaStarType::JetAxis) { // JetAxis
+    } else if (cosThetaStarType == charm_polarisation::CosThetaStarType::JetAxis) { // JetAxis
       if (origin == RecoDecay::OriginType::Prompt) {                                          // prompt
         if (!isPartRecoDstar) {
           registry.fill(HIST("hGenPromptJetAxis"), ptCharmHad, rapCharmHad, cosThetaStar, areDausInAcc, charge, zParallel, jetPt);
@@ -645,9 +650,9 @@ struct HfTaskDstarPolarisationInJet {
   bool isInSignalRegion(float invMass)
   {
     if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
-      float invMassMin = 0.142f;
-      float invMassMax = 0.15f;
-      if (invMassMin < invMass && invMass < invMassMax) {
+      float invMassSigMin = 0.142f;
+      float invMassSigMax = 0.15f;
+      if (invMassSigMin < invMass && invMass < invMassSigMax) {
         return true;
       }
     }
@@ -726,9 +731,10 @@ struct HfTaskDstarPolarisationInJet {
           pxDau = threeVecSoftPi[0];
           pyDau = threeVecSoftPi[1];
           pzDau = threeVecSoftPi[2];
-          pxCharmHad = threeVecSoftPi[0] + threeVecD0Prong0[0] + threeVecD0Prong1[0];
-          pyCharmHad = threeVecSoftPi[1] + threeVecD0Prong0[1] + threeVecD0Prong1[1];
-          pzCharmHad = threeVecSoftPi[2] + threeVecD0Prong0[2] + threeVecD0Prong1[2];
+          std::array<float, 3> threeVecCand = RecoDecay::pVec(threeVecSoftPi, threeVecD0Prong0, threeVecD0Prong1);
+          pxCharmHad = threeVecCand[0];
+          pyCharmHad = threeVecCand[1];
+          pzCharmHad = threeVecCand[2];
           if (candidate.signProng1() > 0) {
             invMassCharmHad = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1, threeVecSoftPi}, std::array{massPi, massKaon, massPi});
             invMassD0 = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1}, std::array{massPi, massKaon});
@@ -736,15 +742,18 @@ struct HfTaskDstarPolarisationInJet {
             invMassCharmHad = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1, threeVecSoftPi}, std::array{massKaon, massPi, massPi});
             invMassD0 = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1}, std::array{massKaon, massPi});
           }
-          rapidity = RecoDecay::y(std::array{pxCharmHad, pyCharmHad, pzCharmHad}, massDstar);
+          rapidity = RecoDecay::y(threeVecCand, massDstar);
         } else {
           isRotatedCandidate = 0;
           pxDau = candidate.pxProng1();
           pyDau = candidate.pyProng1();
           pzDau = candidate.pzProng1();
-          pxCharmHad = pxDau + candidate.pxProng0Charm() + candidate.pxProng1Charm();
-          pyCharmHad = pyDau + candidate.pyProng0Charm() + candidate.pyProng1Charm();
-          pzCharmHad = pzDau + candidate.pzProng0Charm() + candidate.pzProng1Charm();
+          std::array<float, 3> threeVecCand = RecoDecay::pVec(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()}, 
+                                                              std::array{candidate.pyProng0Charm(), candidate.pxProng0Charm(), candidate.pzProng0Charm()}, 
+                                                              std::array{candidate.pxProng1Charm(), candidate.pyProng1Charm(), candidate.pzProng1Charm()});
+          pxCharmHad = threeVecCand[0];
+          pyCharmHad = threeVecCand[1];
+          pzCharmHad = threeVecCand[2];
           invMassCharmHad = candidate.m();
           invMassD0 = candidate.invMassCharm();
           rapidity = candidate.y();
@@ -752,17 +761,15 @@ struct HfTaskDstarPolarisationInJet {
         invMassCharmHadForSparse = invMassCharmHad - invMassD0;
 
         if constexpr (withMl) {
-          outputMl[0] = candidate.mlScores()[0];
-          outputMl[1] = candidate.mlScores()[1];
-          outputMl[2] = candidate.mlScores()[2];
+          std::copy_n(candidate.mlScores().begin(), outputMl.size(), outputMl.begin());
         }
       }
-      if (invMassCharmHadForSparse < minInvMass || invMassCharmHadForSparse > maxInvMass) {
+      if (invMassCharmHadForSparse < invMassMin || invMassCharmHadForSparse > invMassMax) {
         continue;
       }
 
       /// apply rapidity selection on the reconstructed candidate
-      if (std::abs(rapidity) > rapidityCut) {
+      if (std::abs(rapidity) > maxAbsRapidityCut) {
         continue;
       }
 
