@@ -418,6 +418,9 @@ struct RecoilJets {
       spectra.add("hScaleMultFT0M", "Scaled total mult. signal from FT0A & FTOC", kTH1F,
                   {{200, 0.0, 20.}});
 
+      spectra.add("hScaleMultFT0M_v2", "Scaled total mult. signal from FT0A & FTOC", kTH1F,
+                  {{200, 0.0, 20.}});
+
       spectra.add("hMultZNA", "Mult. signal from ZDC A-side", kTH1F,
                   {{500, 0.0, 10000.}});
       spectra.add("hMultZNC", "Mult. signal from ZDC C-side", kTH1F,
@@ -680,6 +683,8 @@ struct RecoilJets {
     spectra.fill(HIST("hScaleMultFT0A"), collision.multFT0A() / meanFT0A, weight);
     spectra.fill(HIST("hScaleMultFT0C"), collision.multFT0C() / meanFT0C, weight);
     spectra.fill(HIST("hScaleMultFT0M"), collision.multFT0M() / meanFT0M, weight);
+    spectra.fill(HIST("hScaleMultFT0M_v2"), collision.multFT0A() / meanFT0A + collision.multFT0C() / meanFT0C,
+                 weight);
 
     spectra.fill(HIST("hMultZNA"), collision.multZNA(), weight);
     spectra.fill(HIST("hMultZNC"), collision.multZNC(), weight);
