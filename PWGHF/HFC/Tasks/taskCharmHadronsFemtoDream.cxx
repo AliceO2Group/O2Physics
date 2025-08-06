@@ -74,7 +74,7 @@ struct HfTaskCharmHadronsFemtoDream {
   constexpr static int OriginRecPrompt = 1;
   constexpr static int OriginRecFD = 2;
 
-  Produces<o2::aod::FDResultsHF> rowFemtoResultPairs;
+  Produces<o2::aod::FDHfPairs> rowFemtoResultPairs;
   Produces<o2::aod::FDHfCharm> rowFemtoResultCharm;
   Produces<o2::aod::FDHfTrk> rowFemtoResultTrk;
   Produces<o2::aod::FDHfColl> rowFemtoResultColl;
