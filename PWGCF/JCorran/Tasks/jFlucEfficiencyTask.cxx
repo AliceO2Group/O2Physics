@@ -49,6 +49,8 @@ struct JFlucEfficiencyTask {
     170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0,
     270.0, 280.0, 290.0, 300.0};
 
+  static constexpr double kChargeThreshold = 3.0; // PDG charge units: 3 = |e|
+
   // Update the axisPt configuration with proper vector initialization
   ConfigurableAxis axisPt{"axisPt", std::vector<double>(PttJacek.begin(), PttJacek.end()), "pT axis"};
 
@@ -104,6 +106,8 @@ struct JFlucEfficiencyTask {
     Configurable<float> cfgMaxbDCArToPVcut{"cfgMaxbDCArToPVcut", 0.5, "Track DCAr cut to PV Maximum"};
     Configurable<float> cfgMaxbDCAzToPVcut{"cfgMaxbDCAzToPVcut", 1.0, "Track DCAz cut to PV Maximum"};
   } TrackCuts;
+
+  Configurable<bool> applyMCStudy{"applyMCStudy", false, "Apply MC study"};
 
   // Configurable for track selection
   Configurable<int> trackSelection{"trackSelection", 0, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -175,7 +179,15 @@ struct JFlucEfficiencyTask {
                    o2::framework::HistType::kTH2F, {AxisSpec(100, -1, 1), AxisSpec(axisMultiplicity)});
       registry.add("hPtGenPos", "Generated p_{T} (positive);p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+      registry.add("hPtGenPos_Pos", "Generated p_{T} (positive) in TPC positive side;p_{T} (GeV/c);Centrality (%);Counts",
+                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+      registry.add("hPtGenPos_Neg", "Generated p_{T} (positive) in TPC negative side;p_{T} (GeV/c);Centrality (%);Counts",
+                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
       registry.add("hPtGenNeg", "Generated p_{T} (negative);p_{T} (GeV/c);Centrality (%);Counts",
+                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+      registry.add("hPtGenNeg_Pos", "Generated p_{T} (negative) in TPC positive side;p_{T} (GeV/c);Centrality (%);Counts",
+                   o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+      registry.add("hPtGenNeg_Neg", "Generated p_{T} (negative) in TPC negative side;p_{T} (GeV/c);Centrality (%);Counts",
                    o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
     }
     registry.add("hPtRec", "Reconstructed p_{T} (all);p_{T} (GeV/c);Centrality (%);Counts",
@@ -184,8 +196,33 @@ struct JFlucEfficiencyTask {
                  o2::framework::HistType::kTH2F, {AxisSpec(100, -1, 1), AxisSpec(axisMultiplicity)});
     registry.add("hPtRecPos", "Reconstructed p_{T} (positive);p_{T} (GeV/c);Centrality (%);Counts",
                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+    registry.add("hPtRecPos_Pos", "Reconstructed p_{T} (positive) in TPC positive side;p_{T} (GeV/c);Centrality (%);Counts",
+                 o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+    registry.add("hPtRecPos_Neg", "Reconstructed p_{T} (positive) in TPC negative side;p_{T} (GeV/c);Centrality (%);Counts",
+                 o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
     registry.add("hPtRecNeg", "Reconstructed p_{T} (negative);p_{T} (GeV/c);Centrality (%);Counts",
                  o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+    registry.add("hPtRecNeg_Pos", "Reconstructed p_{T} (negative) in TPC positive side;p_{T} (GeV/c);Centrality (%);Counts",
+                 o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+    registry.add("hPtRecNeg_Neg", "Reconstructed p_{T} (negative) in TPC negative side;p_{T} (GeV/c);Centrality (%);Counts",
+                 o2::framework::HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)});
+    if (applyMCStudy) {
+      registry.add("hChargeSignMismatch", "Charge-Sign mismatch cases", {HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)}});
+      registry.add("hChargeSignMismatchPos", "MC charge + but track sign -", {HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)}});
+      registry.add("hChargeSignMismatchNeg", "MC charge - but track sign +", {HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)}});
+      registry.add("hChargeSignMatch", "Charge-Sign match cases", {HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)}});
+      registry.add("hChargeSignMatchPos", "MC charge + and track sign +", {HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)}});
+      registry.add("hChargeSignMatchNeg", "MC charge - and track sign -", {HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)}});
+      registry.add("hChargeSignRatio", "Ratio of mismatch to total", {HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)}});
+
+      // pT resolution
+      registry.add("hPtResolution", "p_{T} resolution;p_{T} (GeV/c);Centrality (%);Counts",
+                   o2::framework::HistType::kTH3F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity), AxisSpec(60, -3, 3)});
+      registry.add("hPtResolutionPos", "p_{T} resolution (positive);p_{T} (GeV/c);Centrality (%);Counts",
+                   o2::framework::HistType::kTH3F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity), AxisSpec(60, -3, 3)});
+      registry.add("hPtResolutionNeg", "p_{T} resolution (negative);p_{T} (GeV/c);Centrality (%);Counts",
+                   o2::framework::HistType::kTH3F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity), AxisSpec(60, -3, 3)});
+    }
 
     if (doprocessEfficiency) {
       registry.add("hPtGenData", "Generated p_{T} from data events (all);p_{T} (GeV/c);Centrality (%);Counts",
@@ -239,7 +276,7 @@ struct JFlucEfficiencyTask {
     if (p != nullptr) {
       charge = p->Charge();
     }
-    return std::abs(charge) >= 3.;
+    return std::abs(charge) >= kChargeThreshold;
   }
   // Track selection
   template <typename TrackType>
@@ -380,10 +417,25 @@ struct JFlucEfficiencyTask {
       }
       registry.fill(HIST("hPtGen"), particle.pt(), centrality);
       registry.fill(HIST("hEtaGen"), particle.eta(), centrality);
+      if (particle.eta() > 0) {
+        registry.fill(HIST("hPtGenPos_Pos"), particle.pt(), centrality);
+      } else if (particle.eta() < 0) {
+        registry.fill(HIST("hPtGenNeg_Neg"), particle.pt(), centrality);
+      }
       if (charge > 0) { // Positive particles
         registry.fill(HIST("hPtGenPos"), particle.pt(), centrality);
+        if (particle.eta() > 0) {
+          registry.fill(HIST("hPtGenPos_Pos"), particle.pt(), centrality);
+        } else if (particle.eta() < 0) {
+          registry.fill(HIST("hPtGenPos_Neg"), particle.pt(), centrality);
+        }
       } else if (charge < 0) { // Negative particles
         registry.fill(HIST("hPtGenNeg"), particle.pt(), centrality);
+        if (particle.eta() > 0) {
+          registry.fill(HIST("hPtGenNeg_Pos"), particle.pt(), centrality);
+        } else if (particle.eta() < 0) {
+          registry.fill(HIST("hPtGenNeg_Neg"), particle.pt(), centrality);
+        }
       }
     }
     // Reconstruct tracks from MC particles
@@ -402,12 +454,56 @@ struct JFlucEfficiencyTask {
         if (!mcPart.isPhysicalPrimary() || !isChargedParticle(mcPart.pdgCode())) {
           continue;
         }
+        if (applyMCStudy) {
+          // Check charge-sign consistency
+          auto mcCharge = getCharge(mcPart);
+          auto trackSign = track.sign();
+
+          if (mcCharge > 0 && trackSign > 0) {
+            // MC charge + and track sign +
+            registry.fill(HIST("hChargeSignMatchPos"), track.pt(), centrality);
+            registry.fill(HIST("hChargeSignMatch"), track.pt(), centrality);
+          } else if (mcCharge < 0 && trackSign < 0) {
+            // MC charge - and track sign -
+            registry.fill(HIST("hChargeSignMatchNeg"), track.pt(), centrality);
+            registry.fill(HIST("hChargeSignMatch"), track.pt(), centrality);
+          } else if (mcCharge > 0 && trackSign < 0) {
+            // MC charge + but track sign -
+            registry.fill(HIST("hChargeSignMismatchPos"), track.pt(), centrality);
+            registry.fill(HIST("hChargeSignMismatch"), track.pt(), centrality);
+          } else if (mcCharge < 0 && trackSign > 0) {
+            // MC charge - but track sign +
+            registry.fill(HIST("hChargeSignMismatchNeg"), track.pt(), centrality);
+            registry.fill(HIST("hChargeSignMismatch"), track.pt(), centrality);
+          }
+
+          // pT resolution
+          auto ptRec = track.pt();
+          auto ptGen = mcPart.pt();
+          auto ptResolution = (ptRec - ptGen);
+          registry.fill(HIST("hPtResolution"), ptRec, centrality, ptResolution);
+          if (track.sign() > 0) {
+            registry.fill(HIST("hPtResolutionPos"), ptRec, centrality, ptResolution);
+          } else if (track.sign() < 0) {
+            registry.fill(HIST("hPtResolutionNeg"), ptRec, centrality, ptResolution);
+          }
+        }
         registry.fill(HIST("hPtRec"), track.pt(), centrality);
         registry.fill(HIST("hEtaRec"), track.eta(), centrality);
         if (track.sign() > 0) { // Positive tracks
           registry.fill(HIST("hPtRecPos"), track.pt(), centrality);
+          if (track.eta() > 0) {
+            registry.fill(HIST("hPtRecPos_Pos"), track.pt(), centrality);
+          } else if (track.eta() < 0) {
+            registry.fill(HIST("hPtRecPos_Neg"), track.pt(), centrality);
+          }
         } else if (track.sign() < 0) { // Negative tracks
           registry.fill(HIST("hPtRecNeg"), track.pt(), centrality);
+          if (track.eta() > 0) {
+            registry.fill(HIST("hPtRecNeg_Pos"), track.pt(), centrality);
+          } else if (track.eta() < 0) {
+            registry.fill(HIST("hPtRecNeg_Neg"), track.pt(), centrality);
+          }
         }
       }
     }
@@ -481,6 +577,11 @@ struct JFlucEfficiencyTask {
           registry.fill(HIST("hPtRecPos"), track.pt(), centrality);
         } else if (track.sign() < 0) { // Negative tracks
           registry.fill(HIST("hPtRecNeg"), track.pt(), centrality);
+          if (track.eta() > 0) {
+            registry.fill(HIST("hPtRecNeg_Pos"), track.pt(), centrality);
+          } else if (track.eta() < 0) {
+            registry.fill(HIST("hPtRecNeg_Neg"), track.pt(), centrality);
+          }
         }
       }
     }
@@ -508,8 +609,18 @@ struct JFlucEfficiencyTask {
       registry.fill(HIST("hEtaRec"), track.eta(), centrality);
       if (track.sign() > 0) { // Positive tracks
         registry.fill(HIST("hPtRecPos"), track.pt(), centrality);
+        if (track.eta() > 0) {
+          registry.fill(HIST("hPtRecPos_Pos"), track.pt(), centrality);
+        } else if (track.eta() < 0) {
+          registry.fill(HIST("hPtRecPos_Neg"), track.pt(), centrality);
+        }
       } else if (track.sign() < 0) { // Negative tracks
         registry.fill(HIST("hPtRecNeg"), track.pt(), centrality);
+        if (track.eta() > 0) {
+          registry.fill(HIST("hPtRecPos_Pos"), track.pt(), centrality);
+        } else if (track.eta() < 0) {
+          registry.fill(HIST("hPtRecPos_Neg"), track.pt(), centrality);
+        }
       }
     }
   }
@@ -535,6 +646,11 @@ struct JFlucEfficiencyTask {
         registry.fill(HIST("hPtRecPos"), track.pt(), centrality);
       } else if (track.sign() < 0) { // Negative tracks
         registry.fill(HIST("hPtRecNeg"), track.pt(), centrality);
+        if (track.eta() > 0) {
+          registry.fill(HIST("hPtRecNeg_Pos"), track.pt(), centrality);
+        } else if (track.eta() < 0) {
+          registry.fill(HIST("hPtRecNeg_Neg"), track.pt(), centrality);
+        }
       }
     }
   }
