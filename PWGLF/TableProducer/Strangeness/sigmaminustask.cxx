@@ -64,7 +64,7 @@ struct sigmaminustask {
   {
     // Axes
     const AxisSpec ptAxis{100, -10, 10, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec ptDaughterAxis{200, 0, 10, "Daughter #it{p}_{T} (GeV/#it{c})"};
+    const AxisSpec ptUnsignedAxis{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec nSigmaPiAxis{60, -30, 30, "n#sigma_{#pi}"};
     const AxisSpec nSigmaPrAxis{60, -30, 30, "n#sigma_{p}"};
     const AxisSpec sigmaMassAxis{100, 1.1, 1.4, "m (GeV/#it{c}^{2})"};
@@ -111,31 +111,29 @@ struct sigmaminustask {
     }
 
     if (doprocessFindable) {
+      std::vector<std::string> filterLabels = {"Initial", "ITS/TPC present", "Moth ITS", "Moth p_{T}", "Daug ITS+TPC", "#eta", "#Delta#phi", "Radius", "Collision", "Daug TOF"};
+      
       // Add findable Sigma histograms
       rFindable.add("hFilterIndex", "hFilterIndex", {HistType::kTH1F, {filtersAxis}});
-      
-      auto hFilterIndex = rFindable.get<TH1>(HIST("hFilterIndex"));
-      hFilterIndex->GetXaxis()->SetBinLabel(1, "Initial");      // 0: all generated pairs with tracks
-      hFilterIndex->GetXaxis()->SetBinLabel(2, "Det. signals"); // 1: correct ITS, TPC signals present
-      hFilterIndex->GetXaxis()->SetBinLabel(3, "Moth ITS");     // 2: cuts on ITS mother signal
-      hFilterIndex->GetXaxis()->SetBinLabel(4, "Moth p_{T}");   // 3: mother pT > KBminPtMoth
-      hFilterIndex->GetXaxis()->SetBinLabel(5, "Daug TPC");     // 4: cuts on TPC daughter signal
-      hFilterIndex->GetXaxis()->SetBinLabel(6, "#eta cuts");    // 5: eta < KBetaMax
-      hFilterIndex->GetXaxis()->SetBinLabel(7, "#Delta#phi");   // 6: delta phi < KBmaxPhiDiff
-      hFilterIndex->GetXaxis()->SetBinLabel(8, "Radius");       // 7: decay radius > KBradiusCut
-      hFilterIndex->GetXaxis()->SetBinLabel(9, "Collision");    // 8: collision sel8 cut
-      hFilterIndex->GetXaxis()->SetBinLabel(10, "TOF daug");    // 9: daughter has TOF
-
       rFindable.add("h2MCRadiusFilterIndex", "h2MCRadiusFilterIndex", {HistType::kTH2F, {filtersAxis, radiusAxis}});
       rFindable.add("h2RecRadiusFilterIndex", "h2RecRadiusFilterIndex", {HistType::kTH2F, {filtersAxis, radiusAxis}});
+
+      auto hFilterIndex = rFindable.get<TH1>(HIST("hFilterIndex"));
+      auto h2MCRadiusFilterIndex = rFindable.get<TH2>(HIST("h2MCRadiusFilterIndex"));
+      auto h2RecRadiusFilterIndex = rFindable.get<TH2>(HIST("h2RecRadiusFilterIndex"));
+      for (size_t i = 0; i < filterLabels.size(); ++i) {
+          hFilterIndex->GetXaxis()->SetBinLabel(i + 1, filterLabels[i].c_str());
+          h2MCRadiusFilterIndex->GetXaxis()->SetBinLabel(i + 1, filterLabels[i].c_str());
+          h2RecRadiusFilterIndex->GetXaxis()->SetBinLabel(i + 1, filterLabels[i].c_str());
+      }
 
       rFindable.add("h2MCRadiusFilter_plus_protonkink", "h2MCRadiusFilter_plus_protonkink", {HistType::kTH2F, {filtersAxis, radiusAxis}});
       rFindable.add("h2MCRadiusFilter_plus_pikink", "h2MCRadiusFilter_plus_pikink", {HistType::kTH2F, {filtersAxis, radiusAxis}});
       rFindable.add("h2MCRadiusFilter_minus_pikink", "h2MCRadiusFilter_minus_pikink", {HistType::kTH2F, {filtersAxis, radiusAxis}});
       
-      rFindable.add("h2PtFilter_plus_protonkink", "h2PtFilter_plus_protonkink", {HistType::kTH2F, {filtersAxis, ptDaughterAxis}});
-      rFindable.add("h2PtFilter_plus_pikink", "h2PtFilter_plus_pikink", {HistType::kTH2F, {filtersAxis, ptDaughterAxis}});
-      rFindable.add("h2PtFilter_minus_pikink", "h2PtFilter_minus_pikink", {HistType::kTH2F, {filtersAxis, ptDaughterAxis}});
+      rFindable.add("h2PtFilter_plus_protonkink", "h2PtFilter_plus_protonkink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
+      rFindable.add("h2PtFilter_plus_pikink", "h2PtFilter_plus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
+      rFindable.add("h2PtFilter_minus_pikink", "h2PtFilter_minus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
     }
   }
 
@@ -318,7 +316,7 @@ struct sigmaminustask {
 
   PROCESS_SWITCH(sigmaminustask, processMC, "MC processing", false);
 
-  void fillFindableHistograms(int filterIndex, float mcRadius, float recRadius, float ptDaughter, bool isSigmaMinus, bool isPiDaughter) {
+  void fillFindableHistograms(int filterIndex, float mcRadius, float recRadius, float pt, bool isSigmaMinus, bool isPiDaughter) {
     rFindable.fill(HIST("hFilterIndex"), filterIndex);
     rFindable.fill(HIST("h2MCRadiusFilterIndex"), filterIndex, mcRadius);
     rFindable.fill(HIST("h2RecRadiusFilterIndex"), filterIndex, recRadius);
@@ -326,15 +324,15 @@ struct sigmaminustask {
     if (isPiDaughter) {
       if (isSigmaMinus) {
         rFindable.fill(HIST("h2MCRadiusFilter_minus_pikink"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2PtFilter_minus_pikink"), filterIndex, ptDaughter);
+        rFindable.fill(HIST("h2PtFilter_minus_pikink"), filterIndex, pt);
       } else {
         rFindable.fill(HIST("h2MCRadiusFilter_plus_pikink"), filterIndex, mcRadius);
-        rFindable.fill(HIST("h2PtFilter_plus_pikink"), filterIndex, ptDaughter);
-        }
+        rFindable.fill(HIST("h2PtFilter_plus_pikink"), filterIndex, pt);
+      }
     } else {
       if (!isSigmaMinus) {
       rFindable.fill(HIST("h2MCRadiusFilter_plus_protonkink"), filterIndex, mcRadius);
-      rFindable.fill(HIST("h2PtFilter_plus_protonkink"), filterIndex, ptDaughter);
+      rFindable.fill(HIST("h2PtFilter_plus_protonkink"), filterIndex, pt);
       }
     }
   }
@@ -434,17 +432,17 @@ struct sigmaminustask {
         recRadius = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
       }
       float recPtDaughter = daughterTrack.pt();
+      float recPtMother = motherTrack.pt();
 
       // Define filter index and progressively apply kinkbuilder cuts to track pairs
       int filterIndex = 0;
-      fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtDaughter, isSigmaMinus, isPiDaughter);
+      fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, isSigmaMinus, isPiDaughter);
 
       // 1 - tracks with right ITS, TPC, TOF signals
       if (motherTrack.has_collision() && motherTrack.hasITS() && !motherTrack.hasTPC() && !motherTrack.hasTOF() &&
           daughterTrack.hasITS() && daughterTrack.hasTPC()) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtDaughter, isSigmaMinus, isPiDaughter);
-
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, isSigmaMinus, isPiDaughter);
       } else {
         continue; 
       }
@@ -453,16 +451,14 @@ struct sigmaminustask {
       if (motherTrack.itsNCls() < 6 &&
             motherTrack.itsNClsInnerBarrel() == 3 && motherTrack.itsChi2NCl() < 36) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtDaughter, isSigmaMinus, isPiDaughter);
-
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, isSigmaMinus, isPiDaughter);
       } else {
         continue; 
       }
 
       if (motherTrack.pt() > KBminPtMoth) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtDaughter, isSigmaMinus, isPiDaughter);
-
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, isSigmaMinus, isPiDaughter);
       } else {
         continue; 
       }
@@ -471,8 +467,7 @@ struct sigmaminustask {
       if (daughterTrack.itsNClsInnerBarrel() == 0 && daughterTrack.itsNCls() < 4 &&
           daughterTrack.tpcNClsCrossedRows() > 0.8 * daughterTrack.tpcNClsFindable() && daughterTrack.tpcNClsFound() > KBnTPCClusMinDaug) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtDaughter, isSigmaMinus, isPiDaughter);
-
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, isSigmaMinus, isPiDaughter);
       } else {
         continue; 
       }
@@ -480,8 +475,7 @@ struct sigmaminustask {
       // 5 - geometric cuts: eta
       if (std::abs(motherTrack.eta()) < KBetaMax && std::abs(daughterTrack.eta()) < KBetaMax) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtDaughter, isSigmaMinus, isPiDaughter);
-
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, isSigmaMinus, isPiDaughter);
       } else {
         continue; 
       }
@@ -489,8 +483,7 @@ struct sigmaminustask {
       // 6 - geometric cuts: phi difference
       if (std::abs(motherTrack.phi() - daughterTrack.phi()) * radToDeg < KBmaxPhiDiff) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtDaughter, isSigmaMinus, isPiDaughter);
-
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, isSigmaMinus, isPiDaughter);
       } else {
         continue; 
       }
@@ -498,8 +491,7 @@ struct sigmaminustask {
       // 7 - radius cut
       if (recRadius > KBradiusCut) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtDaughter, isSigmaMinus, isPiDaughter);
-
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, isSigmaMinus, isPiDaughter);
       } else {
         continue; 
       }
@@ -508,15 +500,15 @@ struct sigmaminustask {
       auto collision = motherTrack.template collision_as<CollisionsFullMC>();
       if (!(std::abs(collision.posZ()) > cutzvertex || !collision.sel8())) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtDaughter, isSigmaMinus, isPiDaughter);
-
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, isSigmaMinus, isPiDaughter);
+      } else {
+        continue; 
       }
 
       // 9 - TOF daughter presence
       if (daughterTrack.hasTOF()) {
         filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtDaughter, isSigmaMinus, isPiDaughter);
-
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, isSigmaMinus, isPiDaughter);
       }
     }
   }
