@@ -17,41 +17,43 @@
 //    HF decays. Work in progress: use at your own risk!
 //
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <map>
-#include <iterator>
-#include <utility>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "ALICE3/DataModel/OTFTOF.h"
-#include "ALICE3/DataModel/RICH.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "ALICE3/DataModel/A3DecayFinderTables.h"
-#include "ALICE3/DataModel/OTFStrangeness.h"
 #include "ALICE3/DataModel/OTFMulticharm.h"
+#include "ALICE3/DataModel/OTFRICH.h"
+#include "ALICE3/DataModel/OTFStrangeness.h"
+#include "ALICE3/DataModel/OTFTOF.h"
 #include "ALICE3/DataModel/tracksAlice3.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 #include "DetectorsVertexing/PVertexer.h"
 #include "DetectorsVertexing/PVertexerHelpers.h"
-#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iterator>
+#include <map>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
@@ -68,14 +70,16 @@ using FullTracksExt = soa::Join<aod::Tracks, aod::TracksCov>;
 // For MC association in pre-selection
 using labeledTracks = soa::Join<aod::Tracks, aod::McTrackLabels>;
 using tofTracks = soa::Join<aod::Tracks, aod::UpgradeTofs>;
-using richTracks = soa::Join<aod::Tracks, aod::RICHs>;
-using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3, aod::UpgradeTofs, aod::UpgradeTofExpectedTimes>;
+using richTracks = soa::Join<aod::Tracks, aod::UpgradeRichs, aod::UpgradeRichSignals>;
+using alice3tracks = soa::Join<aod::Tracks, aod::TracksCov, aod::Alice3DecayMaps, aod::McTrackLabels, aod::TracksDCA, aod::TracksExtraA3, aod::UpgradeTofs, aod::UpgradeTofExpectedTimes, aod::UpgradeRichs, aod::UpgradeRichSignals>;
 
 struct alice3multicharmTable {
   SliceCache cache;
 
   Produces<aod::MCharmIndices> multiCharmIdx;
   Produces<aod::MCharmCores> multiCharmCore;
+  Produces<aod::MCharmPID> multiCharmPID;
+  Produces<aod::MCharmExtra> multiCharmExtra;
 
   // Operation and minimisation criteria
   Configurable<bool> fillDerivedTable{"fillDerivedTable", false, "fill MCharm[] tables (careful: memory)"};
@@ -120,6 +124,7 @@ struct alice3multicharmTable {
   Configurable<float> xiccMaxEta{"xiccMaxEta", 1.5, "Max eta"};
   Configurable<float> massWindowXi{"massWindowXi", 0.015, "Mass window around Xi peak (GeV/c)"};
   Configurable<float> massWindowXiC{"massWindowXiC", 0.015, "Mass window around XiC peak (GeV/c)"};
+  Configurable<float> massWindowXiCC{"massWindowXiCC", 0.4, "Mass window around XiCC peak (GeV/c). Make sure that bkg region is included in this window"};
 
   ConfigurableAxis axisEta{"axisEta", {80, -4.0f, +4.0f}, "#eta"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for QA histograms"};
@@ -247,6 +252,11 @@ struct alice3multicharmTable {
     }
 
     thisXiCCcandidate.mass = RecoDecay::m(array{array{thisXiCCcandidate.prong0mom[0], thisXiCCcandidate.prong0mom[1], thisXiCCcandidate.prong0mom[2]}, array{thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong1mom[1], thisXiCCcandidate.prong1mom[2]}}, array{mass0, mass1});
+
+    if (std::fabs(thisXiCCcandidate.mass - o2::constants::physics::MassXiCCPlusPlus) > massWindowXiCC) {
+      return false;
+    }
+
     thisXiCCcandidate.pt = std::hypot(thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1]);
     thisXiCCcandidate.eta = RecoDecay::eta(array{thisXiCCcandidate.prong0mom[0] + thisXiCCcandidate.prong1mom[0], thisXiCCcandidate.prong0mom[1] + thisXiCCcandidate.prong1mom[1], thisXiCCcandidate.prong0mom[2] + thisXiCCcandidate.prong1mom[2]});
     return true;
@@ -319,6 +329,13 @@ struct alice3multicharmTable {
     thisXiCcandidate.pt = std::hypot(thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1]);
     thisXiCcandidate.eta = RecoDecay::eta(array{thisXiCcandidate.prong0mom[0] + thisXiCcandidate.prong1mom[0] + thisXiCcandidate.prong2mom[0], thisXiCcandidate.prong0mom[1] + thisXiCcandidate.prong1mom[1] + thisXiCcandidate.prong2mom[1], thisXiCcandidate.prong0mom[2] + thisXiCcandidate.prong1mom[2] + thisXiCcandidate.prong2mom[2]});
     return true;
+  }
+
+  template <typename TTrackType>
+  int getPdgCodeForTrack(TTrackType track)
+  {
+    auto mcParticle = track.template mcParticle_as<aod::McParticles>();
+    return mcParticle.pdgCode();
   }
 
   /// function to check if tracks have the same mother in MC
@@ -723,33 +740,46 @@ struct alice3multicharmTable {
                 picc.globalIndex());
 
               multiCharmCore(
-                thisXiCcandidate.dca, thisXiCCcandidate.dca,
-                thisXiCcandidate.mass, thisXiCCcandidate.mass,
-                thisXiCCcandidate.pt, thisXiCCcandidate.eta,
+                thisXiCCcandidate.mass, thisXiCCcandidate.pt,
+                thisXiCCcandidate.eta, thisXiCCcandidate.dca,
+                thisXiCcandidate.mass, thisXiCcandidate.pt,
+                thisXiCcandidate.eta, thisXiCcandidate.dca,
                 xi.dcaXY(), xi.dcaZ(),
                 xicdcaXY, xicdcaZ,
                 xiccdcaXY, xiccdcaZ,
-                piFromXi.dcaXY(), piFromXi.dcaZ(),
-                piFromLa.dcaXY(), piFromLa.dcaZ(),
-                prFromLa.dcaXY(), prFromLa.dcaZ(),
                 pi1c.dcaXY(), pi1c.dcaZ(),
                 pi2c.dcaXY(), pi2c.dcaZ(),
                 picc.dcaXY(), picc.dcaZ(),
                 xicDecayRadius2D, xiccDecayRadius2D,
-                xicProperLength, xicDecayDistanceFromPV,
+                xicProperLength,
+                xicDecayDistanceFromPV,
                 xiccProperLength,
+                pi1c.pt(),
+                pi2c.pt(),
+                picc.pt());
+
+              multiCharmPID(
                 pi1cTOFDiffInner, pi1c.nSigmaPionInnerTOF(),
                 pi1cTOFDiffOuter, pi1c.nSigmaPionOuterTOF(),
+                pi1c.hasSigPi(), pi1c.nSigmaPionRich(),
+                getPdgCodeForTrack(pi1c),
                 pi2cTOFDiffInner, pi2c.nSigmaPionInnerTOF(),
                 pi2cTOFDiffOuter, pi2c.nSigmaPionOuterTOF(),
+                pi2c.hasSigPi(), pi2c.nSigmaPionRich(),
+                getPdgCodeForTrack(pi2c),
                 piccTOFDiffInner, picc.nSigmaPionInnerTOF(),
                 piccTOFDiffOuter, picc.nSigmaPionOuterTOF(),
+                picc.hasSigPi(), picc.nSigmaPionRich(),
+                getPdgCodeForTrack(picc));
+
+              multiCharmExtra(
                 piFromXi.pt(), piFromXi.eta(),
+                piFromXi.dcaXY(), piFromXi.dcaZ(),
                 prFromLa.pt(), prFromLa.eta(),
+                prFromLa.dcaXY(), prFromLa.dcaZ(),
                 piFromLa.pt(), piFromLa.eta(),
-                pi1c.pt(), pi1c.eta(),
-                pi2c.pt(), pi2c.eta(),
-                picc.pt(), picc.eta());
+                piFromLa.dcaXY(), piFromLa.dcaZ(),
+                pi1c.eta(), pi2c.eta(), picc.eta());
             }
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);

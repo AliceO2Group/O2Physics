@@ -101,7 +101,7 @@ DECLARE_SOA_COLUMN(IsPionGlbTrkWoDca, isPionGlbTrkWoDca, bool);
 DECLARE_SOA_COLUMN(PionItsNCls, pionItsNCls, uint8_t);
 // from creator - MC
 DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
-DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(CollisionMatched, collisionMatched, bool);
 // from selector
 DECLARE_SOA_COLUMN(PidTpcInfoStored, pidTpcInfoStored, int);
@@ -190,7 +190,7 @@ DECLARE_SOA_TABLE(HfOmegac0ToOmegaPiLites, "AOD", "HFTOOMEPILITE",
                   full::PidTpcInfoStored, full::PidTofInfoStored,
                   full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaKaFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
                   full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaKaFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
-                  full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched, hf_track_index::HFflag);
+                  full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched, hf_track_index::HFflag);
 
 DECLARE_SOA_TABLE(HfKfOmegacFulls, "AOD", "HFKFOMEGACFULL",
                   full::NSigmaTPCPiFromOmegac, full::NSigmaTOFPiFromOmegac, full::NSigmaTPCKaFromCasc, full::NSigmaTOFKaFromCasc,
@@ -211,7 +211,7 @@ DECLARE_SOA_TABLE(HfKfOmegacFulls, "AOD", "HFKFOMEGACFULL",
                   full::MassV0Ndf, full::MassCascNdf,
                   full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf,
                   full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf, full::CascRejectInvmass,
-                  full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched, hf_track_index::HFflag);
+                  full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched, hf_track_index::HFflag);
 
 DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
                   full::NSigmaTPCPiFromOmegac, full::NSigmaTOFPiFromOmegac, full::NSigmaTPCKaFromCasc, full::NSigmaTOFKaFromCasc,
@@ -225,7 +225,7 @@ DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
                   full::CosThetaStarPiFromOmegac, full::CtOmegac, full::EtaOmegac,
                   full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf,
                   full::CascRejectInvmass,
-                  full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched, hf_track_index::HFflag);
+                  full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched, hf_track_index::HFflag);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -504,7 +504,7 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
   PROCESS_SWITCH(HfTreeCreatorOmegac0ToOmegaPi, processMcLite, "Process MC", false);
@@ -521,11 +521,11 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       if (keepOnlyMcSignal) {
-        if (candidate.originRec() != 0) {
-          fillKfCandidate(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+        if (candidate.originMcRec() != 0) {
+          fillKfCandidate(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
         }
       } else {
-        fillKfCandidate(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+        fillKfCandidate(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
       }
     }
   }
@@ -543,11 +543,11 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
       if (keepOnlyMcSignal) {
-        if (candidate.originRec() != 0) {
-          fillKfCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+        if (candidate.originMcRec() != 0) {
+          fillKfCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
         }
       } else {
-        fillKfCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+        fillKfCandidateLite(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
       }
     }
   }

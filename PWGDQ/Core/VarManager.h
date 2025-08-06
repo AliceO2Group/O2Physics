@@ -24,49 +24,49 @@
 #define HomogeneousField
 #endif
 
-#include <vector>
-#include <map>
-#include <cmath>
-#include <iostream>
-#include <utility>
-#include <complex>
-#include <algorithm>
-
-#include <TObject.h>
-#include <TString.h>
-#include "TRandom.h"
-#include "TH3F.h"
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/GenVector/Boost.h"
-#include "Math/VectorUtil.h"
-
-#include "Framework/DataTypes.h"
-#include "TGeoGlobalMagField.h"
-#include "Field/MagneticField.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/Vertex.h"
-#include "DCAFitter/DCAFitterN.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
+#include "Common/Core/CollisionTypeHelper.h"
+#include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/trackUtilities.h"
 
-#include "Math/SMatrix.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
-#include "DCAFitter/FwdDCAFitterN.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "CommonConstants/PhysicsConstants.h"
 #include "CommonConstants/LHCConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DCAFitter/FwdDCAFitterN.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/DataTypes.h"
+#include "GlobalTracking/MatchGlobalFwd.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+#include "ReconstructionDataFormats/Vertex.h"
 
-#include "KFParticle.h"
+#include "Math/GenVector/Boost.h"
+#include "Math/SMatrix.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "Math/VectorUtil.h"
+#include "TGeoGlobalMagField.h"
+#include "TH3F.h"
+#include "TRandom.h"
+#include <TObject.h>
+#include <TString.h>
+
 #include "KFPTrack.h"
 #include "KFPVertex.h"
+#include "KFParticle.h"
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 
-#include "Common/Core/EventPlaneHelper.h"
+#include <algorithm>
+#include <cmath>
+#include <complex>
+#include <iostream>
+#include <map>
+#include <utility>
+#include <vector>
 
 using std::complex;
 using std::cout;
@@ -855,6 +855,11 @@ class VarManager : public TObject
     // deltaMass_jpsi = kPairMass - kPairMassDau +3.096900
     kDeltaMass_jpsi,
 
+    // BDT score
+    kBdtBackground,
+    kBdtPrompt,
+    kBdtNonprompt,
+
     kNVars
   }; // end of Variables enumeration
 
@@ -927,6 +932,7 @@ class VarManager : public TObject
 
   // Setup the collision system
   static void SetCollisionSystem(TString system, float energy);
+  static void SetCollisionSystem(o2::parameters::GRPLHCIFData* grplhcif);
 
   static void SetMagneticField(float magField)
   {
@@ -1126,6 +1132,8 @@ class VarManager : public TObject
   static void FillDileptonTrackTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track1, T1 const& track2, float* values);
   template <typename T>
   static void FillZDC(const T& zdc, float* values = nullptr);
+  template <typename T>
+  static void FillBdtScore(const T& bdtScore, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
@@ -1197,6 +1205,8 @@ class VarManager : public TObject
   static int fgITSROFBorderMarginHigh;    // ITS ROF border high margin
   static uint64_t fgSOR;                  // Timestamp for start of run
   static uint64_t fgEOR;                  // Timestamp for end of run
+  static ROOT::Math::PxPyPzEVector fgBeamA; // beam from A-side 4-momentum vector
+  static ROOT::Math::PxPyPzEVector fgBeamC; // beam from C-side 4-momentum vector
 
   // static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
@@ -2807,21 +2817,12 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
   values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
-  if (t1.sign() > 0) {
-    values[kPt1] = t1.pt();
-    values[kEta1] = t1.eta();
-    values[kPhi1] = t1.phi();
-    values[kPt2] = t2.pt();
-    values[kEta2] = t2.eta();
-    values[kPhi2] = t2.phi();
-  } else {
-    values[kPt1] = t2.pt();
-    values[kEta1] = t2.eta();
-    values[kPhi1] = t2.phi();
-    values[kPt2] = t1.pt();
-    values[kEta2] = t1.eta();
-    values[kPhi2] = t1.phi();
-  }
+  values[kPt1] = t1.pt();
+  values[kEta1] = t1.eta();
+  values[kPhi1] = t1.phi();
+  values[kPt2] = t2.pt();
+  values[kEta2] = t2.eta();
+  values[kPhi2] = t2.phi();
 
   if (fgUsedVars[kDeltaPhiPair2]) {
     double phipair2 = v1.Phi() - v2.Phi();
@@ -2866,16 +2867,11 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   bool useRM = fgUsedVars[kCosThetaRM];                       // Random frame
 
   if (useHE || useCS || usePP || useRM) {
-    // TO DO: get the correct values from CCDB
-    double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
-    ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
-    ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, fgCenterOfMassEnergy / 2);
-
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
     ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(fgBeamA).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(fgBeamC).Vect()).Unit()};
 
     // using positive sign convention for the first track
     ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM);
@@ -3381,16 +3377,11 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
   bool useRM = fgUsedVars[kMCCosThetaRM];                         // Random frame
 
   if (useHE || useCS || usePP || useRM) {
-    // TO DO: get the correct values from CCDB
-    double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
-    ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
-    ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, fgCenterOfMassEnergy / 2);
-
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
     ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(fgBeamA).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(fgBeamC).Vect()).Unit()};
 
     // using positive sign convention for the first track
     ROOT::Math::XYZVectorF v_CM = (t1.pdgCode() > 0 ? v1_CM : v2_CM);
@@ -4848,9 +4839,6 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   // global polarization parameters
   bool useGlobalPolarizatiobSpinOne = fgUsedVars[kCosThetaStarTPC] || fgUsedVars[kCosThetaStarFT0A] || fgUsedVars[kCosThetaStarFT0C];
   if (useGlobalPolarizatiobSpinOne) {
-    double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
-    ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
-
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
     ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
@@ -5541,6 +5529,26 @@ float VarManager::calculatePhiV(T1 const& t1, T2 const& t2)
   // The angle between them should be small if the pair is conversion. This function then returns values close to pi!
   pairPhiV = TMath::ACos(wx * ax + wy * ay); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
   return pairPhiV;
+}
+
+/// Fill BDT score values.
+/// Supports binary (1 output) and multiclass (3 outputs) models.
+template <typename T1>
+void VarManager::FillBdtScore(T1 const& bdtScore, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  if (bdtScore.size() == 1) {
+    values[kBdtBackground] = bdtScore[0];
+  } else if (bdtScore.size() == 3) {
+    values[kBdtBackground] = bdtScore[0];
+    values[kBdtPrompt] = bdtScore[1];
+    values[kBdtNonprompt] = bdtScore[2];
+  } else {
+    LOG(warning) << "Unexpected number of BDT outputs: " << bdtScore.size();
+  }
 }
 
 #endif // PWGDQ_CORE_VARMANAGER_H_
