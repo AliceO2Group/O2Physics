@@ -73,6 +73,7 @@ struct HfTaskCharmHadronsFemtoDream {
 
   constexpr static int OriginRecPrompt = 1;
   constexpr static int OriginRecFD = 2;
+  constexpr static int CutBitChargePositive = 2;
 
   Produces<o2::aod::FDHfPairs> rowFemtoResultPairs;
   Produces<o2::aod::FDHfCharm> rowFemtoResultCharm;
@@ -332,7 +333,6 @@ struct HfTaskCharmHadronsFemtoDream {
         continue;
       }
 
-      constexpr int CutBitChargePositive = 2;
       // proton track charge
       float chargeTrack = 0.;
       if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
@@ -426,7 +426,6 @@ struct HfTaskCharmHadronsFemtoDream {
         if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
           continue;
         }
-        constexpr int CutBitChargePositive = 2;
         // proton track charge
         float chargeTrack = 0.;
         if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
@@ -485,12 +484,13 @@ struct HfTaskCharmHadronsFemtoDream {
     for (auto const& part : sliceTrk1) {
       allTrackHisto.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
 
-      float chargeTrack = 0.;
-      if ((part.cut() & 2) == 2) {
-        chargeTrack = PositiveCharge;
-      } else {
-        chargeTrack = NegativeCharge;
-      }
+        // proton track charge
+        float chargeTrack = 0.;
+        if ((part.cut() & CutBitChargePositive) == CutBitChargePositive) {
+          chargeTrack = PositiveCharge;
+        } else {
+          chargeTrack = NegativeCharge;
+        }
 
       rowFemtoResultTrk(
         col.globalIndex(),
