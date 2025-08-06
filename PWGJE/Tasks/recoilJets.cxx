@@ -104,6 +104,12 @@ struct RecoilJets {
                                      "applied at the jet finder level, here rejection is applied for "
                                      "collision and track process functions"};
 
+  Configurable<float> meanFT0A{"meanFT0A", -1.0, "Mean value of FT0A"};
+
+  Configurable<float> meanFT0C{"meanFT0C", -1.0, "Mean value of FT0C"};
+
+  Configurable<float> meanFT0M{"meanFT0M", -1.0, "Mean value of FT0M"};
+
   // List of configurable parameters for MC
   Configurable<float> pTHatExponent{"pTHatExponent", 4.0,
                                     "Exponent of the event weight for the calculation of pTHat"};
@@ -405,6 +411,13 @@ struct RecoilJets {
       spectra.add("hMultFT0M", "Total mult. signal from FT0A & FTOC", kTH1F,
                   {{3000, 0.0, 60000.}});
 
+      spectra.add("hScaleMultFT0A", "Scaled mult. signal from FTOA", kTH1F,
+                  {{200, 0.0, 20.}});
+      spectra.add("hScaleMultFT0C", "Scaled mult. signal from FTOC", kTH1F,
+                  {{200, 0.0, 20.}});
+      spectra.add("hScaleMultFT0M", "Scaled total mult. signal from FT0A & FTOC", kTH1F,
+                  {{200, 0.0, 20.}});
+
       spectra.add("hMultZNA", "Mult. signal from ZDC A-side", kTH1F,
                   {{500, 0.0, 10000.}});
       spectra.add("hMultZNC", "Mult. signal from ZDC C-side", kTH1F,
@@ -663,6 +676,10 @@ struct RecoilJets {
     spectra.fill(HIST("hMultFT0A"), collision.multFT0A(), weight);
     spectra.fill(HIST("hMultFT0C"), collision.multFT0C(), weight);
     spectra.fill(HIST("hMultFT0M"), collision.multFT0M(), weight);
+
+    spectra.fill(HIST("hScaleMultFT0A"), collision.multFT0A() / meanFT0A, weight);
+    spectra.fill(HIST("hScaleMultFT0C"), collision.multFT0C() / meanFT0C, weight);
+    spectra.fill(HIST("hScaleMultFT0M"), collision.multFT0M() / meanFT0M, weight);
 
     spectra.fill(HIST("hMultZNA"), collision.multZNA(), weight);
     spectra.fill(HIST("hMultZNC"), collision.multZNC(), weight);
