@@ -9,44 +9,71 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// task for charged particle pt spectra vs multiplicity analysis with 2d unfolding for run3+
-// mimics https://github.com/alisw/AliPhysics/blob/master/PWGLF/SPECTRA/ChargedHadrons/MultDepSpec/AliMultDepSpecAnalysisTask.cxx
+/// \file chargedParticles.cxx
+/// \brief Task for analysis of charged particle pt spectra vs multiplicity with 2d unfolding.
+/// \author Mario Krüger <mario.kruger@cern.ch>
 
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Common/DataModel/EventSelection.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "TDatabasePDG.h"
+
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
+
+#include <unordered_set>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
+using aod::track::TrackSelectionFlags;
 
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
 // Task declaration
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
-struct chargedSpectra {
+struct ChargedParticles {
 
   HistogramRegistry histos;
   Service<o2::framework::O2DatabasePDG> pdg;
 
-  // task settings that can be steered via hyperloop
   Configurable<bool> isRun3{"isRun3", true, "is Run3 dataset"};
   Configurable<uint32_t> maxMultMeas{"maxMultMeas", 100, "max measured multiplicity"};
   Configurable<uint32_t> maxMultTrue{"maxMultTrue", 100, "max true multiplicity"};
   Configurable<float> etaCut{"etaCut", 0.8f, "eta cut"};
   Configurable<float> ptMinCut{"ptMinCut", 0.15f, "pt min cut"};
   Configurable<float> ptMaxCut{"ptMaxCut", 10.f, "pt max cut"};
-
   Configurable<bool> normINELGT0{"normINELGT0", false, "normalize INEL>0 according to MC"};
 
+  enum : uint32_t {
+    kSystNominal = 100,
+    kSystDownChi2PerClusterITS,
+    kSystUpChi2PerClusterITS,
+    kSystDownChi2PerClusterTPC,
+    kSystUpChi2PerClusterTPC,
+    kSystDownTPCCrossedRowsOverNCls,
+    kSystUpTPCCrossedRowsOverNCls,
+    kSystDownDCAxy = 111,
+    kSystUpDCAxy,
+    kSystDownDCAz,
+    kSystUpDCAz,
+    kSystITSHits,
+    kSystDownTPCCrossedRows,
+    kSystUpTPCCrossedRows
+  };
+  Configurable<uint32_t> systMode{"systMode", kSystNominal, "variation for systematic uncertainties"};
+  uint16_t trackSelMask{TrackSelectionFlags::kGlobalTrackWoPtEta}; // track selection bitmask (without cut that is being varied)
+  uint16_t cutVarFlag{0};
+  TrackSelection trackSel;
+  TrackSelection::TrackCuts trackSelFlag;
+
   // helper struct to store transient properties
-  struct varContainer {
+  struct VarContainer {
     uint32_t multMeas{0u};
     uint32_t multTrue{0u};
     bool isAcceptedEvent{false};
@@ -54,7 +81,8 @@ struct chargedSpectra {
     bool isINELGT0EventMC{false};
     bool isChargedPrimary{false};
   };
-  varContainer vars;
+  VarContainer vars;
+  static constexpr float kMaxVtxZ = 10.f;
 
   void init(InitContext const&);
 
@@ -70,43 +98,29 @@ struct chargedSpectra {
   template <typename C, typename P>
   void initEventMC(const C& collision, const P& particles);
 
-  template <bool IS_MC, typename C, typename T>
-  void processMeas(const C& collision, const T& tracks);
+  template <bool IS_MC, typename T>
+  void processMeas(const T& tracks);
 
-  template <typename C, typename P>
-  void processTrue(const C& collision, const P& particles);
+  template <typename P>
+  void processTrue(const P& particles);
 
   using CollisionTableData = soa::Join<aod::Collisions, aod::EvSels>;
-  using TrackTableData = soa::Join<aod::Tracks, aod::TrackSelection>;
+  using TrackTableData = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection>;
   void processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks);
-  PROCESS_SWITCH(chargedSpectra, processData, "process data", false);
+  PROCESS_SWITCH(ChargedParticles, processData, "process data", false);
 
   using CollisionTableMCTrue = aod::McCollisions;
   using CollisionTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels>>;
-  using TrackTableMC = soa::Join<aod::Tracks, aod::McTrackLabels, aod::TrackSelection>;
+  using TrackTableMC = soa::Join<aod::FullTracks, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>;
   using ParticleTableMC = aod::McParticles;
   Preslice<TrackTableMC> perCollision = aod::track::collisionId;
   void processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles);
-  PROCESS_SWITCH(chargedSpectra, processMC, "process mc", true);
-
-  // TODO: - Milestone -  express most of the selections on events and tracks in a declarative way to improve performance
-  /*
-   add
-    Filter xy;
-    soa::Filtered<Table>
-
-   For the collision and track tables (data and MC):
-    - collision z pos < 10cm
-    - trigger condition + event selection
-    - track selection + is in kine range
-
-   For the MC tables we need to keep everything that EITHER fulfils the conditions in data OR in MC to get correct efficiencies and contamination!
-  */
+  PROCESS_SWITCH(ChargedParticles, processMC, "process mc", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<chargedSpectra>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<ChargedParticles>(cfgc)};
 }
 
 //--------------------------------------------------------------------------------------------------
@@ -120,7 +134,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
  * Initialise the task and add histograms.
  */
 //**************************************************************************************************
-void chargedSpectra::init(InitContext const&)
+void ChargedParticles::init(InitContext const&)
 {
   std::vector<double> ptBinEdges = {0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75,
                                     0.8, 0.85, 0.9, 0.95, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9,
@@ -162,6 +176,62 @@ void chargedSpectra::init(InitContext const&)
     histos.add("multPtSpec_trk_meas_evtcont", "", kTH2D, {multMeasAxis, ptMeasAxis}); // tracks from events that are measured, but do not belong to the desired class of events
     histos.add("multPtSpec_trk_inter", "", kTH2D, {multTrueAxis, ptMeasAxis});
   }
+
+  trackSel = getGlobalTrackSelection();
+  if (systMode == kSystDownChi2PerClusterITS) {
+    trackSel.SetMaxChi2PerClusterITS(25.);
+    cutVarFlag = TrackSelectionFlags::kITSChi2NDF;
+    trackSelFlag = TrackSelection::TrackCuts::kITSChi2NDF;
+  } else if (systMode == kSystUpChi2PerClusterITS) {
+    trackSel.SetMaxChi2PerClusterITS(49.);
+    cutVarFlag = TrackSelectionFlags::kITSChi2NDF;
+    trackSelFlag = TrackSelection::TrackCuts::kITSChi2NDF;
+  } else if (systMode == kSystDownChi2PerClusterTPC) {
+    trackSel.SetMaxChi2PerClusterTPC(3.0);
+    cutVarFlag = TrackSelectionFlags::kTPCChi2NDF;
+    trackSelFlag = TrackSelection::TrackCuts::kTPCChi2NDF;
+  } else if (systMode == kSystUpChi2PerClusterTPC) {
+    trackSel.SetMaxChi2PerClusterTPC(5.0);
+    cutVarFlag = TrackSelectionFlags::kTPCChi2NDF;
+    trackSelFlag = TrackSelection::TrackCuts::kTPCChi2NDF;
+  } else if (systMode == kSystDownTPCCrossedRowsOverNCls) {
+    trackSel.SetMinNCrossedRowsOverFindableClustersTPC(0.7);
+    cutVarFlag = TrackSelectionFlags::kTPCCrossedRowsOverNCls;
+    trackSelFlag = TrackSelection::TrackCuts::kTPCCrossedRowsOverNCls;
+  } else if (systMode == kSystUpTPCCrossedRowsOverNCls) {
+    trackSel.SetMinNCrossedRowsOverFindableClustersTPC(0.9);
+    cutVarFlag = TrackSelectionFlags::kTPCCrossedRowsOverNCls;
+    trackSelFlag = TrackSelection::TrackCuts::kTPCCrossedRowsOverNCls;
+  } else if (systMode == kSystDownDCAxy) {
+    trackSel.SetMaxDcaXYPtDep([](float pt) { return 4. / 7. * (0.0105f + 0.0350f / std::pow(pt, 1.1f)); });
+    cutVarFlag = TrackSelectionFlags::kDCAxy;
+    trackSelFlag = TrackSelection::TrackCuts::kDCAxy;
+  } else if (systMode == kSystUpDCAxy) {
+    trackSel.SetMaxDcaXYPtDep([](float pt) { return 10. / 7. * (0.0105f + 0.0350f / std::pow(pt, 1.1f)); });
+    cutVarFlag = TrackSelectionFlags::kDCAxy;
+    trackSelFlag = TrackSelection::TrackCuts::kDCAxy;
+  } else if (systMode == kSystDownDCAz) {
+    trackSel.SetMaxDcaZ(1.0);
+    cutVarFlag = TrackSelectionFlags::kDCAz;
+    trackSelFlag = TrackSelection::TrackCuts::kDCAz;
+  } else if (systMode == kSystUpDCAz) {
+    trackSel.SetMaxDcaZ(5.0);
+    cutVarFlag = TrackSelectionFlags::kDCAz;
+    trackSelFlag = TrackSelection::TrackCuts::kDCAz;
+  } else if (systMode == kSystITSHits) {
+    trackSel.ResetITSRequirements();
+    cutVarFlag = TrackSelectionFlags::kITSHits;
+    trackSelFlag = TrackSelection::TrackCuts::kITSHits;
+  } else if (systMode == kSystDownTPCCrossedRows) {
+    trackSel.SetMinNCrossedRowsTPC(60);
+    cutVarFlag = TrackSelectionFlags::kTPCCrossedRows;
+    trackSelFlag = TrackSelection::TrackCuts::kTPCCrossedRows;
+  } else if (systMode == kSystUpTPCCrossedRows) {
+    trackSel.SetMinNCrossedRowsTPC(80);
+    cutVarFlag = TrackSelectionFlags::kTPCCrossedRows;
+    trackSelFlag = TrackSelection::TrackCuts::kTPCCrossedRows;
+  }
+  trackSelMask &= (~cutVarFlag);
 }
 
 //**************************************************************************************************
@@ -169,10 +239,10 @@ void chargedSpectra::init(InitContext const&)
  * Entrypoint to processes data.
  */
 //**************************************************************************************************
-void chargedSpectra::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
+void ChargedParticles::processData(CollisionTableData::iterator const& collision, TrackTableData const& tracks)
 {
   initEvent(collision, tracks);
-  processMeas<false>(collision, tracks);
+  processMeas<false>(tracks);
 }
 
 //**************************************************************************************************
@@ -180,7 +250,7 @@ void chargedSpectra::processData(CollisionTableData::iterator const& collision, 
  * Entrypoint to processes mc.
  */
 //**************************************************************************************************
-void chargedSpectra::processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles)
+void ChargedParticles::processMC(CollisionTableMCTrue::iterator const& mcCollision, CollisionTableMC const& collisions, TrackTableMC const& tracks, ParticleTableMC const& particles)
 {
   histos.fill(HIST("collision_ambiguity"), collisions.size());
 
@@ -198,14 +268,14 @@ void chargedSpectra::processMC(CollisionTableMCTrue::iterator const& mcCollision
   if (collisions.size() == 0) {
     vars.isAcceptedEvent = false;
   } else {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       auto curTracks = tracks.sliceBy(perCollision, collision.globalIndex());
       initEvent(collision, curTracks);
-      processMeas<true>(collision, curTracks);
+      processMeas<true>(curTracks);
       break; // for now look only at first collision...
     }
   }
-  processTrue(mcCollision, particles);
+  processTrue(particles);
 }
 
 //**************************************************************************************************
@@ -214,7 +284,7 @@ void chargedSpectra::processMC(CollisionTableMCTrue::iterator const& mcCollision
  */
 //**************************************************************************************************
 template <typename P>
-bool chargedSpectra::initParticle(const P& particle)
+bool ChargedParticles::initParticle(const P& particle)
 {
   vars.isChargedPrimary = false;
   auto pdgParticle = pdg->GetParticle(particle.pdgCode());
@@ -241,7 +311,7 @@ bool chargedSpectra::initParticle(const P& particle)
  */
 //**************************************************************************************************
 template <typename T>
-bool chargedSpectra::initTrack(const T& track)
+bool ChargedParticles::initTrack(const T& track)
 {
   if (std::abs(track.eta()) >= etaCut) {
     return false;
@@ -249,7 +319,11 @@ bool chargedSpectra::initTrack(const T& track)
   if (track.pt() <= ptMinCut || track.pt() >= ptMaxCut) {
     return false;
   }
-  if (!track.isGlobalTrackWoPtEta()) {
+  if (!TrackSelectionFlags::checkFlag(track.trackCutFlag(), trackSelMask)) {
+    return false;
+  }
+  // for systematic variation of standard selections, check if the varied cut is passed
+  if (cutVarFlag && !trackSel.IsSelected(track, trackSelFlag)) {
     return false;
   }
   return true;
@@ -261,17 +335,17 @@ bool chargedSpectra::initTrack(const T& track)
  */
 //**************************************************************************************************
 template <typename C, typename T>
-void chargedSpectra::initEvent(const C& collision, const T& tracks)
+void ChargedParticles::initEvent(const C& collision, const T& tracks)
 {
   vars.multMeas = 0;
-  for (auto& track : tracks) {
+  for (const auto& track : tracks) {
     if (initTrack(track)) {
       ++vars.multMeas;
     }
   }
 
   vars.isAcceptedEvent = false;
-  if (std::abs(collision.posZ()) < 10.f) {
+  if (std::abs(collision.posZ()) < kMaxVtxZ) {
     if (isRun3 ? collision.sel8() : collision.sel7()) {
       if ((isRun3 || doprocessMC) ? true : collision.alias_bit(kINT7)) {
         vars.isAcceptedEvent = true;
@@ -286,18 +360,18 @@ void chargedSpectra::initEvent(const C& collision, const T& tracks)
  */
 //**************************************************************************************************
 template <typename C, typename P>
-void chargedSpectra::initEventMC(const C& collision, const P& particles)
+void ChargedParticles::initEventMC(const C& collision, const P& particles)
 {
   vars.isINELGT0EventMC = false; // will be set to true in case a charged particle within eta +-1 is found
   vars.multTrue = 0;
-  for (auto& particle : particles) {
+  for (const auto& particle : particles) {
     if (!initParticle(particle) || !vars.isChargedPrimary) {
       continue;
     }
     ++vars.multTrue;
   }
   bool isGoodEventClass = (normINELGT0) ? vars.isINELGT0EventMC : (vars.multTrue > 0);
-  vars.isAcceptedEventMC = isGoodEventClass && (std::abs(collision.posZ()) < 10.f);
+  vars.isAcceptedEventMC = isGoodEventClass && (std::abs(collision.posZ()) < kMaxVtxZ);
 }
 
 //**************************************************************************************************
@@ -305,8 +379,8 @@ void chargedSpectra::initEventMC(const C& collision, const P& particles)
  * Function to processes MC truth info. Assumes initEvent and initEventMC have been called previously.
  */
 //**************************************************************************************************
-template <typename C, typename P>
-void chargedSpectra::processTrue(const C& /*collision*/, const P& particles)
+template <typename P>
+void ChargedParticles::processTrue(const P& particles)
 {
   if (!vars.isAcceptedEventMC) {
     return;
@@ -314,7 +388,7 @@ void chargedSpectra::processTrue(const C& /*collision*/, const P& particles)
 
   histos.fill(HIST("multDist_evt_gen"), vars.multTrue);
 
-  for (auto& particle : particles) {
+  for (const auto& particle : particles) {
     if (initParticle(particle) && vars.isChargedPrimary) {
       histos.fill(HIST("multPtSpec_prim_gen"), vars.multTrue, particle.pt());
       if (!vars.isAcceptedEvent) {
@@ -329,8 +403,8 @@ void chargedSpectra::processTrue(const C& /*collision*/, const P& particles)
  * Function to process reconstructed data and MC. Assumes initEvent (and initEventMC in case of MC) have been called previously.
  */
 //**************************************************************************************************
-template <bool IS_MC, typename C, typename T>
-void chargedSpectra::processMeas(const C& /*collision*/, const T& tracks)
+template <bool IS_MC, typename T>
+void ChargedParticles::processMeas(const T& tracks)
 {
   if (!vars.isAcceptedEvent) {
     return;
@@ -345,8 +419,7 @@ void chargedSpectra::processMeas(const C& /*collision*/, const T& tracks)
   }
 
   std::vector<int> foundParticles;
-  for (auto& track : tracks) {
-
+  for (const auto& track : tracks) {
     if (!initTrack(track)) {
       continue;
     }
@@ -390,7 +463,7 @@ void chargedSpectra::processMeas(const C& /*collision*/, const T& tracks)
   }
 
   std::unordered_set<int> uniqueIndices(foundParticles.begin(), foundParticles.end());
-  for (auto mcParticleID : uniqueIndices) {
+  for (const auto& mcParticleID : uniqueIndices) {
     histos.fill(HIST("track_ambiguity"), std::count(foundParticles.begin(), foundParticles.end(), mcParticleID));
   }
 }
