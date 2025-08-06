@@ -484,13 +484,13 @@ struct HfTaskCharmHadronsFemtoDream {
     for (auto const& part : sliceTrk1) {
       allTrackHisto.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
 
-        // proton track charge
-        float chargeTrack = 0.;
-        if ((part.cut() & CutBitChargePositive) == CutBitChargePositive) {
-          chargeTrack = PositiveCharge;
-        } else {
-          chargeTrack = NegativeCharge;
-        }
+      // proton track charge
+      float chargeTrack = 0.;
+      if ((part.cut() & CutBitChargePositive) == CutBitChargePositive) {
+        chargeTrack = PositiveCharge;
+      } else {
+        chargeTrack = NegativeCharge;
+      }
 
       rowFemtoResultTrk(
         col.globalIndex(),
