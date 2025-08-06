@@ -90,6 +90,7 @@ struct v0selector {
   Configurable<float> cutAPL2{"cutAPL2", -0.69, "cutAPL2"};
   Configurable<float> cutAPL3{"cutAPL3", 0.5, "cutAPL3"};
   Configurable<bool> produceV0ID{"produceV0ID", false, "Produce additional V0ID table"};
+  Configurable<bool> produceCascID{"produceCascID", false, "Produce additional CascID table"};
 
   enum { // Reconstructed V0
     kUndef = -1,
@@ -97,11 +98,13 @@ struct v0selector {
     kK0S = 1,
     kLambda = 2,
     kAntiLambda = 3,
-    kOmega = 4
+    kOmega = 4,
+    kAntiOmega = 5
   };
 
   Produces<o2::aod::V0Bits> v0bits;
   Produces<o2::aod::V0MapID> v0mapID;
+  Produces<o2::aod::CascMapID> cascMapID;
 
   // int checkV0(const array<float, 3>& ppos, const array<float, 3>& pneg)
   int checkV0(const float alpha, const float qt)
@@ -116,7 +119,7 @@ struct v0selector {
 
     // // K0S cuts
     // const float cutQTK0S[2] = {0.1075, 0.215};
-    // const float cutAPK0S[2] = {0.199, 0.8}; //  parameters for curved QT cut
+    // const float cutAPK0S[2] = {0.199, 0.8}; // parameters for curved QT cut
 
     // // Lambda & A-Lambda cuts
     // const float cutQTL = 0.03;
@@ -158,6 +161,12 @@ struct v0selector {
     return kUndef;
   }
 
+  int checkCascade()
+  {
+    // to be implemented;
+    return kOmega;
+  }
+
   // Configurables
   Configurable<float> v0max_mee{"v0max_mee", 0.1, "max mee for photon"};
   Configurable<float> maxpsipair{"maxpsipair", 1.6, "max psi_pair for photon"};
@@ -180,6 +189,7 @@ struct v0selector {
   {
     if (fillhisto) {
       registry.add("hV0Candidate", "hV0Candidate", HistType::kTH1F, {{2, 0.5f, 2.5f}});
+      registry.add("hCascCandidate", "hCascCandidate", HistType::kTH1F, {{2, 0.5f, 2.5f}});
       registry.add("hMassGamma", "hMassGamma", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.0f, 0.1f}});
       registry.add("hGammaRxy", "hGammaRxy", HistType::kTH2F, {{1800, -90.0f, 90.0f}, {1800, -90.0f, 90.0f}});
       registry.add("hMassK0S", "hMassK0S", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 0.45, 0.55}});
@@ -203,7 +213,7 @@ struct v0selector {
     }
   }
 
-  void process(aod::V0Datas const& V0s, FullTracksExt const& tracks, aod::Collisions const&)
+  void process(aod::V0Datas const& V0s, aod::CascDatas const& Cascs, FullTracksExt const& tracks, aod::Collisions const&)
   {
     std::vector<uint8_t> pidmap;
     pidmap.clear();
@@ -213,6 +223,11 @@ struct v0selector {
     v0pidmap.clear();
     if (produceV0ID.value) {
       v0pidmap.resize(V0s.size(), -1);
+    }
+    std::vector<int8_t> cascpidmap;
+    cascpidmap.clear();
+    if (produceCascID.value) {
+      cascpidmap.resize(V0s.size(), kUndef);
     }
     for (auto& V0 : V0s) {
       // if (!(V0.posTrack_as<FullTracksExt>().trackType() & o2::aod::track::TPCrefit)) {
@@ -380,6 +395,20 @@ struct v0selector {
         v0mapID(v0pidmap[V0.globalIndex()]);
       }
     }
+    for (const auto& Casc : Cascs) {
+      if (fillhisto) {
+        registry.fill(HIST("hCascCandidate"), 1);
+      }
+
+      // topological selections
+
+      if (fillhisto) {
+        registry.fill(HIST("hCascCandidate"), 2);
+      }
+
+      const float mOmega = Casc.mOmega();
+
+    } // end of Casc loop
     for (auto& track : tracks) {
       // printf("setting pidmap[%lld] = %d\n",track.globalIndex(),pidmap[track.globalIndex()]);
       v0bits(pidmap[track.globalIndex()]);
