@@ -49,7 +49,7 @@ struct JFlucEfficiencyTask {
     170.0, 180.0, 190.0, 200.0, 210.0, 220.0, 230.0, 240.0, 250.0, 260.0,
     270.0, 280.0, 290.0, 300.0};
 
-  static double kChargeThreshold = 3.0; // PDG charge units: 3 = |e|
+  static constexpr double kChargeThreshold = 3.0; // PDG charge units: 3 = |e|
 
   // Update the axisPt configuration with proper vector initialization
   ConfigurableAxis axisPt{"axisPt", std::vector<double>(PttJacek.begin(), PttJacek.end()), "pT axis"};
