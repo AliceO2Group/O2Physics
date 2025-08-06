@@ -419,6 +419,7 @@ struct FullJetSpectra {
     }
     if (doprocessJetsMCP || doprocessJetsMCPWeighted) {
       registry.add("hPartcollisionCounter", "event status;event status;entries", {HistType::kTH1F, {{10, 0.0, 10.0}}});
+      registry.add("hRecoMatchesPerMcCollision", "split vertices QA;;entries", {HistType::kTH1F, {{5, 0.0, 5.0}}});
 
       registry.add("h_full_mcpjet_tablesize", "", {HistType::kTH1F, {{4, 0., 5.}}});
       registry.add("h_full_mcpjet_ntracks", "", {HistType::kTH1F, {{200, -0.5, 200.}}});
@@ -524,7 +525,7 @@ struct FullJetSpectra {
 
     if (doprocessMBMCPCollisionsWithMultiplicity || doprocessMBMCPCollisionsWeightedWithMultiplicity) {
       registry.add("hPartEventmultiplicityCounter", "event status;event status;entries", {HistType::kTH1F, {{11, 0.0, 11.0}}});
-      registry.add("hRecoMatchesPerMcCollision", "split vertices QA;;entries", {HistType::kTH1F, {{5, 0.0, 5.0}}});
+      registry.add("hRecoMatchesPerMcCollisionMult", "split vertices QA;;entries", {HistType::kTH1F, {{5, 0.0, 5.0}}});
       registry.add("hMCCollMatchedFT0Mult", "", {HistType::kTH1F, {{3500, 0., 3500.}}});
       registry.add("hMCCollMatchedFT0Cent", "", {HistType::kTH1F, {{105, 0., 105.}}});
 
@@ -900,19 +901,19 @@ struct FullJetSpectra {
     registry.fill(HIST("hDetcollisionCounter"), 1.5); // DetCollWithVertexZ
 
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, doMBGapTrigger)) {
-      registry.fill(HIST("hDetcollisionCounter"), 2.5); // EventsNotSatisfyingEventSelection
+      registry.fill(HIST("hDetcollisionCounter"), 4.5); // EventsNotSatisfyingEventSelection
       return;
     }
     if (doEMCALEventWorkaround) {
       if (collision.isEmcalReadout() && !collision.isAmbiguous()) { // i.e. EMCAL has a cell content
         eventAccepted = true;
         if (collision.alias_bit(kTVXinEMC)) {
-          registry.fill(HIST("hDetcollisionCounter"), 3.5); // EMCreadoutDetEventsWithkTVXinEMC
+          registry.fill(HIST("hDetcollisionCounter"), 5.5); // EMCreadoutDetEventsWithkTVXinEMC
         }
       }
     } else {
       if (!collision.isAmbiguous() && jetderiveddatautilities::eventEMCAL(collision) && collision.alias_bit(kTVXinEMC)) {
-        registry.fill(HIST("hDetcollisionCounter"), 3.5); // EMCreadoutDetEventsWithkTVXinEMC
+        registry.fill(HIST("hDetcollisionCounter"), 5.5); // EMCreadoutDetEventsWithkTVXinEMC
         eventAccepted = true;
       }
     }
@@ -923,10 +924,10 @@ struct FullJetSpectra {
           fillRejectedJetHistograms(jet, 1.0);
         }
       }
-      registry.fill(HIST("hDetcollisionCounter"), 4.5); // AllRejectedDetEventsAfterEMCEventSelection
+      registry.fill(HIST("hDetcollisionCounter"), 6.5); // AllRejectedDetEventsAfterEMCEventSelection
       return;
     }
-    registry.fill(HIST("hDetcollisionCounter"), 5.5); // EMCAcceptedDetColl
+    registry.fill(HIST("hDetcollisionCounter"), 7.5); // EMCAcceptedDetColl
 
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
@@ -2390,7 +2391,7 @@ struct FullJetSpectra {
     // Perform MC Collision matching, i.e. match the current MC collision to its associated reco (MCD) collision
     //  to get the corresponding FT0M component at the particle level
     auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, mccollision.globalIndex());
-    registry.fill(HIST("hRecoMatchesPerMcCollision"), collisionspermcpjet.size()); // for split vertices QA
+    registry.fill(HIST("hRecoMatchesPerMcCollisionMult"), collisionspermcpjet.size()); // for split vertices QA
 
     if (collisionspermcpjet.size() == 0 || collisionspermcpjet.size() < 1) {
       registry.fill(HIST("hPartEventmultiplicityCounter"), 4.5); // RejectedPartCollForDetCollWithSize0or<1
@@ -2555,7 +2556,7 @@ struct FullJetSpectra {
     // Perform MC Collision matching, i.e. match the current MC collision to its associated reco (MCD) collision
     //  to get the corresponding FT0M component at the particle level
     auto collisionspermcpjet = collisions.sliceBy(CollisionsPerMCPCollision, mccollision.globalIndex());
-    registry.fill(HIST("hRecoMatchesPerMcCollision"), collisionspermcpjet.size(), mccollision.weight()); // for split vertices QA
+    registry.fill(HIST("hRecoMatchesPerMcCollisionMult"), collisionspermcpjet.size(), mccollision.weight()); // for split vertices QA
 
     if (collisionspermcpjet.size() == 0 || collisionspermcpjet.size() < 1) {
       registry.fill(HIST("hPartEventmultiplicityCounter"), 4.5, mccollision.weight()); // RejectedWeightedPartCollForDetCollWithSize0or<1
