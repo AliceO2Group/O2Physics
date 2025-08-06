@@ -229,7 +229,7 @@ o2physics_add_dpl_workflow(double-resonance-scan
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(kstar-in-oo
+o2physics_add_dpl_workflow(kstarinoo
     SOURCES kstarInOO.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
