@@ -137,15 +137,9 @@ struct HfDerivedDataCreatorDstarToD0Pi {
     nTpcClsMin = 1000;
 
     for (const auto& track : prongTracks) {
-      if (std::abs(track.eta()) < etaMin) {
-        etaMin = std::abs(track.eta());
-      }
-      if (track.itsNCls() < nItsClsMin) {
-        nItsClsMin = track.itsNCls();
-      }
-      if (track.tpcNClsCrossedRows() < nTpcClsMin) {
-        nTpcClsMin = track.tpcNClsCrossedRows();
-      }
+      etaMin = std::min(etaMin, std::abs(track.eta()));
+      nItsClsMin = std::min(nItsClsMin, static_cast<int>(track.itsNCls()));
+      nTpcClsMin = std::min(nTpcClsMin, static_cast<int>(track.tpcNClsCrossedRows()));
     }
   }
 
