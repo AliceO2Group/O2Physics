@@ -3330,7 +3330,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
     Configurable<float> dcaV0ToPv{"dcaV0ToPv", 0.02, "DCA V0 To PV"};                            // 0.03 in run2
     Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"};                                   // 0.97 in run2 - KEEP LOSE to re-cut after PVRefit! - double -> N.B. dcos(x)/dx = 0 at x=0)
     Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"};                             // 0.97 in run2 - KEEP LOSE to re-cut after PVRefit! - double -> N.B. dcos(x)/dx = 0 at x=0)
-    Configurable<double> xicCosPA{"xicCosPA", 0.95, "Xic CosPA"};                                // 0.97 in run2 - KEEP LOSE to re-cut after PVRefit! - double -> N.B. dcos(x)/dx = 0 at x=0)
+    Configurable<double> xicCosPA{"xicCosPA", 0.95, "Xic CosPA"};                                // ...
     Configurable<float> dcaV0Dau{"dcaV0Dau", 2.0, "DCA V0 Daughters"};                           // conservative, a cut ar 1.0 should also be fine
     Configurable<float> dcaCascDau{"dcaCascDau", 2.0, "DCA Casc Daughters"};                     // conservative, a cut ar 1.0 should also be fine
     Configurable<float> dcaNegToPv{"dcaNegToPv", 0.05, "DCA Neg To PV"};                         // 0.06 in run2
@@ -3493,12 +3493,12 @@ struct HfTrackIndexSkimCreatorLfCascades {
     return false;
   }
 
-  /// Method to perform selections for 3-prong candidates before vertex reconstruction
+  /// Method to perform selections for Xic 3-prong candidates before vertex reconstruction
   /// \param pVecTrack0 is the momentum array of the first daughter track
   /// \param pVecTrack1 is the momentum array of the second daughter track
   /// \param pVecTrack2 is the momentum array of the third daughter track
   template <typename T1>
-  bool isPreselectedCandidate(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2)
+  bool isPreselectedCandidateXic(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2)
   {
     // pt
     auto pt = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + config.ptTolerance; // add tolerance because of no reco decay vertex
@@ -3518,13 +3518,13 @@ struct HfTrackIndexSkimCreatorLfCascades {
     }
   }
 
-  /// Method to perform selections for 3-prong candidates after vertex reconstruction
+  /// Method to perform selections for Xic 3-prong candidates after vertex reconstruction
   /// \param pVecCand is the array for the candidate momentum after reconstruction of secondary vertex
   /// \param secVtx is the secondary vertex
   /// \param primVtx is the primary vertex
   /// \return selection outcome
   template <typename T1, typename T2, typename T3>
-  bool isSelectedCandidate(const T1& pVecCand, const T2& secVtx, const T3& primVtx)
+  bool isSelectedCandidateXic(const T1& pVecCand, const T2& secVtx, const T3& primVtx)
   {
     // pt
     auto pt = RecoDecay::pt(pVecCand);
@@ -3804,7 +3804,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 continue;
               }
 
-              if (!isPreselectedCandidate(pVecCasc, trackCharmBachelor1.pVector(), trackCharmBachelor2.pVector())) {
+              if (!isPreselectedCandidateXic(pVecCasc, trackCharmBachelor1.pVector(), trackCharmBachelor2.pVector())) {
                 continue;
               }
 
@@ -3843,7 +3843,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                     registry.fill(HIST("hRejpTStatusXicPlusToXiPiPi"), 1);
                   }
 
-                  if (!isSelectedCandidate(pVecCand, secondaryVertex, primaryVertex)) {
+                  if (!isSelectedCandidateXic(pVecCand, secondaryVertex, primaryVertex)) {
                     continue;
                   }
 
