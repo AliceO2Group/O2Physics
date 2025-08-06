@@ -198,7 +198,8 @@ const std::unordered_map<int, int> particlesToDstarPi = {
 const std::unordered_map<int, int> particlesToDplusPi = {
   {DecayChannelMain::D2starzeroToDplusPi, constants::physics::Pdg::kD2Star0}};
 const std::unordered_map<int, int> particlesToD0Pi = {
-  {DecayChannelMain::D2starplusToD0Pi, constants::physics::Pdg::kD2StarPlus}};
+  {DecayChannelMain::D2starplusToD0Pi, constants::physics::Pdg::kD2StarPlus},
+  {DecayChannelMain::DstarToD0Pi, constants::physics::Pdg::kDStar}};
 const std::unordered_map<int, int> particlesToD0Kplus = {
   {DecayChannelMain::Ds2starToD0Kplus, constants::physics::Pdg::kDS2Star}};
 

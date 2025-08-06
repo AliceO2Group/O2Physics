@@ -208,7 +208,8 @@ namespace fdhf
 enum CharmHadronMassHypo {
   wrongParticle = 0,
   lcToPKPi = 1,
-  lcToPiKP = 2
+  lcToPiKP = 2,
+  dplusToPiKPi = 4
 };
 DECLARE_SOA_COLUMN(GIndexCol, gIndexCol, int);                      //! Global index for the collision
 DECLARE_SOA_COLUMN(TimeStamp, timeStamp, int64_t);                  //! Timestamp for the collision
@@ -227,7 +228,7 @@ DECLARE_SOA_COLUMN(Prong2Eta, prong2Eta, float);                    //! Track et
 DECLARE_SOA_COLUMN(Prong0Phi, prong0Phi, float);                    //! Track phi of charm hadron prong0
 DECLARE_SOA_COLUMN(Prong1Phi, prong1Phi, float);                    //! Track phi of charm hadron prong1
 DECLARE_SOA_COLUMN(Prong2Phi, prong2Phi, float);                    //! Track phi of charm hadron prong2
-DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);     //! Selection of mass hypothesis for charm hadron (1 for Lc -> pkpi, 2 for Lc -> pikp)
+DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int8_t);     //! Selection of mass hypothesis for charm hadron (1 for Lc -> pkpi, 2 for Lc -> pikp, 4 for D+ -> pikpi)
 DECLARE_SOA_COLUMN(BDTBkg, bdtBkg, float);                          //! Background score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTPrompt, bdtPrompt, float);                    //! Prompt signal score using Boosted Decision Tree for charm hadron
 DECLARE_SOA_COLUMN(BDTFD, bdtFD, float);                            //! Feed-down score using Boosted Decision Tree for charm hadron

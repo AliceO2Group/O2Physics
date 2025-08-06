@@ -252,7 +252,8 @@ struct alice3multicharm {
 
       histos.add("hBDTScore", "hBDTScore", kTH1D, {axisBDTScore});
       histos.add("hBDTScoreVsXiccMass", "hBDTScoreVsXiccMass", kTH2D, {axisXiccMass, axisBDTScore});
-      histos.add("hBDTScoreVsXiccPt", "hBDTScoreVsXiccPt", kTH2D, {axisXiccMass, axisPt});
+      histos.add("hBDTScoreVsXiccPt", "hBDTScoreVsXiccPt", kTH2D, {axisPt, axisBDTScore});
+      histos.add("h3dBDTScore", "h3dBDTScore", kTH3D, {axisPt, axisXiccMass, axisBDTScore});
       for (const auto& score : bdt.requiredScores.value) {
         histPath = std::format("MLQA/RequiredBDTScore_{}/", static_cast<int>(score * 100));
         histPointers.insert({histPath + "hDCAXicDaughters", histos.add((histPath + "hDCAXicDaughters").c_str(), "hDCAXicDaughters", {kTH1D, {{axisDcaDaughters}}})});
@@ -293,7 +294,7 @@ struct alice3multicharm {
   }
 
   template <typename TMCharmCands>
-  void genericProcessXicc(TMCharmCands xiccCands)
+  void genericProcessXicc(TMCharmCands const& xiccCands)
   {
     for (const auto& xiccCand : xiccCands) {
       if (bdt.enableML) {
@@ -324,6 +325,7 @@ struct alice3multicharm {
         histos.fill(HIST("hBDTScore"), bdtScore);
         histos.fill(HIST("hBDTScoreVsXiccMass"), xiccCand.xiccMass(), bdtScore);
         histos.fill(HIST("hBDTScoreVsXiccPt"), xiccCand.xiccPt(), bdtScore);
+        histos.fill(HIST("h3dBDTScore"), xiccCand.xiccPt(), xiccCand.xiccMass(), bdtScore);
 
         for (const auto& requiredScore : bdt.requiredScores.value) {
           if (bdtScore > requiredScore) {
