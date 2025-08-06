@@ -1515,7 +1515,7 @@ struct Derivedcascadeanalysis {
         histos.fill(HIST("h2dGenXiMinusVsCentIR"), ptmc, centrality, intRate);
         histos.fill(HIST("h2dGenXiMinusVsNchVsOccupancy"), ptmc, nChEta1, occupancy);
       }
-      if (cascMC.pdgCode() ==  PDG_t::kXiPlusBar && isXi) {
+      if (cascMC.pdgCode() == PDG_t::kXiPlusBar && isXi) {
         histos.fill(HIST("h2dGenXiPlus"), centrality, ptmc);
         histos.fill(HIST("h2dGenXiPlusVsNch"), nChEta1, ptmc);
         histos.fill(HIST("h2dGenXiPlusVsMultMCVsCentrality"), mcCollision.multMCNParticlesEta05(), centrality, ptmc);
