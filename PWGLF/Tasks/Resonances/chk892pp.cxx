@@ -24,7 +24,7 @@
 #include <TObjArray.h>
 #include <TFile.h>
 #include <TH2F.h>
-#include <TDatabasePDG.h> // FIXME
+// #include <TDatabasePDG.h> // FIXME
 #include <TPDGCode.h>     // FIXME
 
 #include <vector>
@@ -288,6 +288,10 @@ struct Chk892pp {
     histos.add("QA/before/CentDist", "Centrality distribution", {HistType::kTH1D, {centAxis}});
     histos.add("QA/before/VtxZ", "Centrality distribution", {HistType::kTH1D, {vtxzAxis}});
     histos.add("QA/before/hEvent", "Number of Events", HistType::kTH1F, {{1, 0.5, 1.5}});
+
+    if (BkgEstimationConfig.cfgFillRotBkg) {
+      histos.add("QA/RotBkg/hRotBkg", "Rotated angle of rotated background", HistType::kTH1F, {{360, 0.0, o2::constants::math::TwoPI}});
+    }
 
     // Bachelor pion
     histos.add("QA/before/trkbpionDCAxy", "DCAxy distribution of bachelor pion candidates", HistType::kTH1D, {dcaxyAxis});
@@ -666,16 +670,16 @@ struct Chk892pp {
     if (std::abs(motherbTrack.pdgCode()) != kKstarPlus) // Are you charged Kstar's daughter?
       return false;                                // Apply first since it's more restrictive
 
-    if (std::abs(motherkV0.pdgCode()) != 310) // Is it K0s?
+    if (std::abs(motherkV0.pdgCode()) != kPDGK0s) // Is it K0s?
       return false;
     // Check if K0s's mother is K0 (311)
     auto motherK0 = motherkV0.template mothers_as<aod::McParticles>();
-    if (std::abs(motherK0.pdgCode()) != 311)
+    if (std::abs(motherK0.pdgCode()) != kPDGK0)
       return false;
 
     // Check if K0's mother is Kstar (323)
     auto motherKstar = motherK0.template mothers_as<aod::McParticles>();
-    if (std::abs(motherKstar.pdgCode()) != 323)
+    if (std::abs(motherKstar.pdgCode()) != kKstarPlus)
       return false;
 
     // Check if bTrack and K0 have the same mother (global index)
@@ -696,7 +700,7 @@ struct Chk892pp {
     std::vector<int> trackIndicies = {};
     std::vector<int> k0sIndicies = {};
 
-    for (auto& bTrack : dTracks1) {
+    for (const auto& bTrack : dTracks1) {
       auto trkbpt = bTrack.pt();
       auto istrkbhasTOF = bTrack.hasTOF();
       auto trkbNSigmaPiTPC = bTrack.tpcNSigmaPi();
@@ -733,7 +737,7 @@ struct Chk892pp {
       trackIndicies.push_back(bTrack.index());
     }
 
-    for (auto& k0sCand : dTracks2) {
+    for (const auto& k0sCand : dTracks2) {
       auto posDauTrack = k0sCand.template posTrack_as<TrackCandidates>();
       auto negDauTrack = k0sCand.template negTrack_as<TrackCandidates>();
 
@@ -838,8 +842,8 @@ struct Chk892pp {
       k0sIndicies.push_back(k0sCand.index());
     }
 
-    for (auto& trackIndex : trackIndicies) {
-      for (auto& k0sIndex : k0sIndicies) {
+    for (const auto& trackIndex : trackIndicies) {
+      for (const auto& k0sIndex : k0sIndicies) {
         auto bTrack = dTracks1.rawIteratorAt(trackIndex);
         auto k0sCand = dTracks2.rawIteratorAt(k0sIndex);
         auto trkkMass = k0sCand.mK0Short();
