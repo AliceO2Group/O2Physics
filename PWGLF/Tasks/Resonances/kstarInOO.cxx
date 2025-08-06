@@ -119,9 +119,9 @@ struct kstarInOO {
     // HISTOGRAMS
     const AxisSpec axisEta{30, -1.5, +1.5, "#eta"};
     const AxisSpec axisPhi{200, -1, +7, "#phi"};
-    const AxisSpec PtAxis = {200, 0, 20.0};
-    const AxisSpec PIDAxis = {120, -6, 6};
-    const AxisSpec MinvAxis = {cfgMinvNBins, cfgMinvMin, cfgMinvMax};
+    const AxisSpec ptAxis = {200, 0, 20.0};
+    const AxisSpec pidAxis = {120, -6, 6};
+    const AxisSpec minvAxis = {cfgMinvNBins, cfgMinvMin, cfgMinvMax};
 
     if (cfgEventCutQA) {
       histos.add("hPosZ_BC", "hPosZ_Bc", kTH1F, {{100, 0.0, 15.0}});
@@ -135,32 +135,32 @@ struct kstarInOO {
       // histos.add("h_eta", "h_eta", kTH1F, {axisEta});
       // histos.add("h_phi", "h_phi", kTH1F, {axisPhi});
 
-      histos.add("QA_nSigma_pion_TPC_BC", "QA_nSigma_pion_TPC_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      histos.add("QA_nSigma_pion_TOF_BC", "QA_nSigma_pion_TOF_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      histos.add("QA_pion_TPC_TOF_BC", "QA_pion_TPC_TOF_BC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
+      histos.add("QA_nSigma_pion_TPC_BC", "QA_nSigma_pion_TPC_BC", {HistType::kTH2F, {ptAxis, pidAxis}});
+      histos.add("QA_nSigma_pion_TOF_BC", "QA_nSigma_pion_TOF_BC", {HistType::kTH2F, {ptAxis, pidAxis}});
+      histos.add("QA_pion_TPC_TOF_BC", "QA_pion_TPC_TOF_BC", {HistType::kTH2F, {pidAxis, pidAxis}});
 
-      histos.add("QA_nSigma_pion_TPC_AC", "QA_nSigma_pion_TPC_AC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      histos.add("QA_nSigma_pion_TOF_AC", "QA_nSigma_pion_TOF_AC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      histos.add("QA_pion_TPC_TOF_AC", "QA_pion_TPC_TOF_AC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
+      histos.add("QA_nSigma_pion_TPC_AC", "QA_nSigma_pion_TPC_AC", {HistType::kTH2F, {ptAxis, pidAxis}});
+      histos.add("QA_nSigma_pion_TOF_AC", "QA_nSigma_pion_TOF_AC", {HistType::kTH2F, {ptAxis, pidAxis}});
+      histos.add("QA_pion_TPC_TOF_AC", "QA_pion_TPC_TOF_AC", {HistType::kTH2F, {pidAxis, pidAxis}});
 
-      histos.add("QA_nSigma_kaon_TPC_BC", "QA_nSigma_kaon_TPC_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      histos.add("QA_nSigma_kaon_TOF_BC", "QA_nSigma_kaon_TOF_BC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      histos.add("QA_kaon_TPC_TOF_BC", "QA_kaon_TPC_TOF_BC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
+      histos.add("QA_nSigma_kaon_TPC_BC", "QA_nSigma_kaon_TPC_BC", {HistType::kTH2F, {ptAxis, pidAxis}});
+      histos.add("QA_nSigma_kaon_TOF_BC", "QA_nSigma_kaon_TOF_BC", {HistType::kTH2F, {ptAxis, pidAxis}});
+      histos.add("QA_kaon_TPC_TOF_BC", "QA_kaon_TPC_TOF_BC", {HistType::kTH2F, {pidAxis, pidAxis}});
 
-      histos.add("QA_nSigma_kaon_TPC_AC", "QA_nSigma_kaon_TPC_AC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      histos.add("QA_nSigma_kaon_TOF_AC", "QA_nSigma_kaon_TOF_AC", {HistType::kTH2F, {PtAxis, PIDAxis}});
-      histos.add("QA_kaon_TPC_TOF_AC", "QA_kaon_TPC_TOF_AC", {HistType::kTH2F, {PIDAxis, PIDAxis}});
+      histos.add("QA_nSigma_kaon_TPC_AC", "QA_nSigma_kaon_TPC_AC", {HistType::kTH2F, {ptAxis, pidAxis}});
+      histos.add("QA_nSigma_kaon_TOF_AC", "QA_nSigma_kaon_TOF_AC", {HistType::kTH2F, {ptAxis, pidAxis}});
+      histos.add("QA_kaon_TPC_TOF_AC", "QA_kaon_TPC_TOF_AC", {HistType::kTH2F, {pidAxis, pidAxis}});
     }
 
     // MC histos
-    histos.add("hMC_USS", "hMC_USS", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
-    histos.add("hMC_LSS", "hMC_LSS", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
-    histos.add("hMC_USS_Mix", "hMC_USS_Mix", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
-    histos.add("hMC_LSS_Mix", "hMC_LSS_Mix", kTHnSparseF, {cfgCentAxis, PtAxis, MinvAxis});
+    histos.add("hMC_USS", "hMC_USS", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+    histos.add("hMC_LSS", "hMC_LSS", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+    histos.add("hMC_USS_Mix", "hMC_USS_Mix", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
+    histos.add("hMC_LSS_Mix", "hMC_LSS_Mix", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
 
-    // histos.add("hMC_pt_Pion", "hMC_pt_Pion", kTH1F, {PtAxis});
-    // histos.add("hMC_pt_Kaon", "hMC_pt_Kaon", kTH1F, {PtAxis});
-    // histos.add("hMC_pt_Proton", "hMC_pt_Proton", kTH1F, {PtAxis});
+    // histos.add("hMC_pt_Pion", "hMC_pt_Pion", kTH1F, {ptAxis});
+    // histos.add("hMC_pt_Kaon", "hMC_pt_Kaon", kTH1F, {ptAxis});
+    // histos.add("hMC_pt_Proton", "hMC_pt_Proton", kTH1F, {ptAxis});
 
     // Event Histograms
     histos.add("nEvents_MC", "nEvents_MC", kTH1F, {{4, 0.0, 4.0}});
