@@ -608,9 +608,7 @@ struct NetchargeFluctuations {
       if (track.sign() == 1) {
         fpos++;
         posWeight += weight;
-      }
-
-      else if (track.sign() == -1) {
+      } else if (track.sign() == -1) {
         fneg++;
         negWeight += weight;
       }
