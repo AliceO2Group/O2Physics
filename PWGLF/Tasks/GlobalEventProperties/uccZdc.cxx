@@ -72,17 +72,19 @@ static constexpr int kSizeBootStrapEnsemble{8};
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hPoisson{};
 std::array<std::shared_ptr<TH2>, kSizeBootStrapEnsemble> hNchVsT0M{};
 std::array<std::shared_ptr<TH2>, kSizeBootStrapEnsemble> hNchVsV0A{};
+std::array<std::shared_ptr<TH2>, kSizeBootStrapEnsemble> hNchVsZN{};
+
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsOneParCorrVsZN{};
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsTwoParCorrVsZN{};
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsThreeParCorrVsZN{};
 
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsT0M{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsT0M{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsT0M{};
+std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsOneParCorrVsT0M{};
+std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsTwoParCorrVsT0M{};
+std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsThreeParCorrVsT0M{};
 
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsV0A{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsV0A{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsV0A{};
+std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsOneParCorrVsV0A{};
+std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsTwoParCorrVsV0A{};
+std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsThreeParCorrVsV0A{};
 
 std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsNch{};
 std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsNch{};
@@ -91,14 +93,6 @@ std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsNch
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hPoissonMC{};
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNchGen{};
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNch{};
-
-// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsT0MGen{};
-// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsT0MGen{};
-// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsT0MGen{};
-//
-// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsV0AGen{};
-// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsV0AGen{};
-// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsV0AGen{};
 
 std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsNchGen{};
 std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsNchGen{};
@@ -128,6 +122,7 @@ struct UccZdc {
   Configurable<bool> correctNch{"correctNch", true, "Correct also Nch"};
   Configurable<bool> skipRecoColGTOne{"skipRecoColGTOne", true, "Remove collisions if reconstructed more than once"};
   Configurable<std::string> detector4Calibration{"detector4Calibration", "T0M", "Detector for nSigma-Nch rejection"};
+  Configurable<std::string> detectorZDC{"detectorZDC", "ZN", "Detector for Cent. Selec. based on spectator neutrons"};
 
   // Event selection
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
@@ -279,36 +274,41 @@ struct UccZdc {
     x->SetBinLabel(17, "Within ZEM cut?");
 
     if (doprocessZdcCollAss) {
-      registry.add("NchVsT0Mamp", Form(";%s;%s;", tiNch, tiT0M), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
-      registry.add("NchVsV0Aamp", Form(";%s;%s;", tiNch, tiV0A), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+      registry.add("NchVsT0M", Form(";%s;%s;", tiNch, tiT0M), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+      registry.add("NchVsV0A", Form(";%s;%s;", tiNch, tiV0A), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
       registry.add("NchVsZN", Form(";%s;%s;", tiNch, tiZNs), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
       registry.add("NchVsZP", Form(";%s;%s;", tiNch, tiZPs), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZP, minZN, maxZP}}});
       registry.add("NchVsZNVsPt", Form(";%s;%s;%s", tiNch, tiZNs, tiPt), kTH3F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}, {axisPt}}});
+
       registry.add("NchVsOneParCorrVsZN", Form(";%s;%s;%s", tiNch, tiZNs, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
       registry.add("NchVsTwoParCorrVsZN", Form(";%s;%s;%s", tiNch, tiZNs, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
       registry.add("NchVsThreeParCorrVsZN", Form(";%s;%s;%s", tiNch, tiZNs, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
-      registry.add("OneParCorrVsT0M", Form(";%s;%s;", tiT0M, tiOneParCorr), kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
-      registry.add("TwoParCorrVsT0M", Form(";%s;%s;", tiT0M, tiTwoParCorr), kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
-      registry.add("ThreeParCorrVsT0M", Form(";%s;%s;", tiT0M, tiThreeParCorr), kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
-      registry.add("OneParCorrVsV0A", Form(";%s;%s;", tiV0A, tiOneParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
-      registry.add("TwoParCorrVsV0A", Form(";%s;%s;", tiV0A, tiTwoParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
-      registry.add("ThreeParCorrVsV0A", Form(";%s;%s;", tiV0A, tiThreeParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
+
+      registry.add("NchVsOneParCorrVsT0M", Form(";%s;%s;%s", tiNch, tiT0M, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+      registry.add("NchVsTwoParCorrVsT0M", Form(";%s;%s;%s", tiNch, tiT0M, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+      registry.add("NchVsThreeParCorrVsT0M", Form(";%s;%s;%s", tiNch, tiT0M, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+
+      registry.add("NchVsOneParCorrVsV0A", Form(";%s;%s;%s", tiNch, tiV0A, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+      registry.add("NchVsTwoParCorrVsV0A", Form(";%s;%s;%s", tiNch, tiV0A, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+      registry.add("NchVsThreeParCorrVsV0A", Form(";%s;%s;%s", tiNch, tiV0A, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
 
       for (int i = 0; i < kSizeBootStrapEnsemble; i++) {
-        hNchVsV0A[i] = registry.add<TH2>(Form("NchVsV0A_Replica%d", i), Form(";%s;%s", tiNch, tiV0A), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
-        hNchVsT0M[i] = registry.add<TH2>(Form("NchVsT0M_Replica%d", i), Form(";%s;%s", tiNch, tiT0M), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
-        hPoisson[i] = registry.add<TH1>(Form("Poisson_Replica%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
-        pNchVsOneParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsOneParCorrVsZN_Replica%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
-        pNchVsTwoParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsTwoParCorrVsZN_Replica%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
-        pNchVsThreeParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsThreeParCorrVsZN_Replica%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
+        hNchVsZN[i] = registry.add<TH2>(Form("NchVsZN_Rep%d", i), Form(";%s;%s", tiNch, tiZNs), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
+        hNchVsV0A[i] = registry.add<TH2>(Form("NchVsV0A_Rep%d", i), Form(";%s;%s", tiNch, tiV0A), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+        hNchVsT0M[i] = registry.add<TH2>(Form("NchVsT0M_Rep%d", i), Form(";%s;%s", tiNch, tiT0M), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+        hPoisson[i] = registry.add<TH1>(Form("Poisson_Rep%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
 
-        pOneParCorrVsT0M[i] = registry.add<TProfile>(Form("OneParCorrVsT0M_Replica%d", i), Form(";%s;%s;", tiT0M, tiOneParCorr), kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
-        pTwoParCorrVsT0M[i] = registry.add<TProfile>(Form("TwoParCorrVsT0M_Replica%d", i), Form(";%s;%s;", tiT0M, tiTwoParCorr), kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
-        pThreeParCorrVsT0M[i] = registry.add<TProfile>(Form("ThreeParCorrVsT0M_Replica%d", i), Form(";%s;%s;", tiT0M, tiThreeParCorr), kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
+        pNchVsOneParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsOneParCorrVsZN_Rep%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
+        pNchVsTwoParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsTwoParCorrVsZN_Rep%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
+        pNchVsThreeParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsThreeParCorrVsZN_Rep%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
 
-        pOneParCorrVsV0A[i] = registry.add<TProfile>(Form("OneParCorrVsV0A_Replica%d", i), Form(";%s;%s;", tiV0A, tiOneParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
-        pTwoParCorrVsV0A[i] = registry.add<TProfile>(Form("TwoParCorrVsV0A_Replica%d", i), Form(";%s;%s;", tiV0A, tiTwoParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
-        pThreeParCorrVsV0A[i] = registry.add<TProfile>(Form("ThreeParCorrVsV0A_Replica%d", i), Form(";%s;%s;", tiV0A, tiThreeParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
+        pNchVsOneParCorrVsT0M[i] = registry.add<TProfile2D>(Form("NchVsOneParCorrVsT0M_Rep%d", i), Form(";%s;%s;%s", tiNch, tiT0M, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+        pNchVsTwoParCorrVsT0M[i] = registry.add<TProfile2D>(Form("NchVsTwoParCorrVsT0M_Rep%d", i), Form(";%s;%s;%s", tiNch, tiT0M, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+        pNchVsThreeParCorrVsT0M[i] = registry.add<TProfile2D>(Form("NchVsThreeParCorrVsT0M_Rep%d", i), Form(";%s;%s;%s", tiNch, tiT0M, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+
+        pNchVsOneParCorrVsV0A[i] = registry.add<TProfile2D>(Form("NchVsOneParCorrVsV0A_Rep%d", i), Form(";%s;%s;%s", tiNch, tiV0A, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+        pNchVsTwoParCorrVsV0A[i] = registry.add<TProfile2D>(Form("NchVsTwoParCorrVsV0A_Rep%d", i), Form(";%s;%s;%s", tiNch, tiV0A, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+        pNchVsThreeParCorrVsV0A[i] = registry.add<TProfile2D>(Form("NchVsThreeParCorrVsV0A_Rep%d", i), Form(";%s;%s;%s", tiNch, tiV0A, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
       }
     }
 
@@ -360,37 +360,20 @@ struct UccZdc {
 
       for (int i = 0; i < kSizeBootStrapEnsemble; i++) {
 
-        hPoissonMC[i] = registry.add<TH1>(Form("PoissonMC_Replica%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
-        hNchGen[i] = registry.add<TH1>(Form("NchGen_Replica%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
-        pOneParCorrVsNchGen[i] = registry.add<TProfile>(Form("OneParCorrVsNchGen_Replica%d", i), Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-        pTwoParCorrVsNchGen[i] = registry.add<TProfile>(Form("TwoParCorrVsNchGen_Replica%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-        pThreeParCorrVsNchGen[i] = registry.add<TProfile>(Form("ThreeParCorrVsNchGen_Replica%d", i), Form(";%s;%s;", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        hPoissonMC[i] = registry.add<TH1>(Form("PoissonMC_Rep%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
+        hNchGen[i] = registry.add<TH1>(Form("NchGen_Rep%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
+        pOneParCorrVsNchGen[i] = registry.add<TProfile>(Form("OneParCorrVsNchGen_Rep%d", i), Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        pTwoParCorrVsNchGen[i] = registry.add<TProfile>(Form("TwoParCorrVsNchGen_Rep%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        pThreeParCorrVsNchGen[i] = registry.add<TProfile>(Form("ThreeParCorrVsNchGen_Rep%d", i), Form(";%s;%s;", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
 
-        //                pOneParCorrVsT0MGen[i] = registry.add<TProfile>(Form("OneParCorrVsT0MGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiOneParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //                pTwoParCorrVsT0MGen[i] = registry.add<TProfile>(Form("TwoParCorrVsT0MGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiTwoParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //                pThreeParCorrVsT0MGen[i] = registry.add<TProfile>(Form("ThreeParCorrVsT0MGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiThreeParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
+        hNch[i] = registry.add<TH1>(Form("Nch_Rep%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
+        hPoisson[i] = registry.add<TH1>(Form("Poisson_Rep%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
 
-        //                pOneParCorrVsV0AGen[i] = registry.add<TProfile>(Form("OneParCorrVsV0AGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiOneParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //                pTwoParCorrVsV0AGen[i] = registry.add<TProfile>(Form("TwoParCorrVsV0AGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiTwoParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //                pThreeParCorrVsV0AGen[i] = registry.add<TProfile>(Form("ThreeParCorrVsV0AGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiThreeParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-
-        hNch[i] = registry.add<TH1>(Form("Nch_Replica%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
-        hPoisson[i] = registry.add<TH1>(Form("Poisson_Replica%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
-
-        pOneParCorrVsNch[i] = registry.add<TProfile>(Form("OneParCorrVsNch_Replica%d", i), Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-        pTwoParCorrVsNch[i] = registry.add<TProfile>(Form("TwoParCorrVsNch_Replica%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-        pThreeParCorrVsNch[i] = registry.add<TProfile>(Form("ThreeParCorrVsNch_Replica%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-
-        //                pOneParCorrVsT0M[i] = registry.add<TProfile>(Form("OneParCorrVsT0M_Replica%d",i),Form(";%s;%s;",tiT0M,tiOneParCorr),kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //                pTwoParCorrVsT0M[i] = registry.add<TProfile>(Form("TwoParCorrVsT0M_Replica%d",i),Form(";%s;%s;",tiT0M,tiTwoParCorr),kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //                pThreeParCorrVsT0M[i] = registry.add<TProfile>(Form("ThreeParCorrVsT0M_Replica%d",i),Form(";%s;%s;",tiT0M,tiThreeParCorr),kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //
-        //                pOneParCorrVsV0A[i] = registry.add<TProfile>(Form("OneParCorrVsV0A_Replica%d",i),Form(";%s;%s;",tiV0A,tiOneParCorr),kTProfile,{{nBinsAmpV0A,0.,maxAmpV0A}});
-        //                pTwoParCorrVsV0A[i] = registry.add<TProfile>(Form("TwoParCorrVsV0A_Replica%d",i),Form(";%s;%s;",tiV0A,tiTwoParCorr),kTProfile,{{nBinsAmpV0A,0.,maxAmpV0A}});
-        //                pThreeParCorrVsV0A[i] = registry.add<TProfile>(Form("ThreeParCorrVsV0A_Replica%d",i),Form(";%s;%s;",tiV0A,tiThreeParCorr),kTProfile,{{nBinsAmpV0A,0.,maxAmpV0A}});
+        pOneParCorrVsNch[i] = registry.add<TProfile>(Form("OneParCorrVsNch_Rep%d", i), Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        pTwoParCorrVsNch[i] = registry.add<TProfile>(Form("TwoParCorrVsNch_Rep%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        pThreeParCorrVsNch[i] = registry.add<TProfile>(Form("ThreeParCorrVsNch_Rep%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
       }
     }
-
     if (doprocessQA) {
       registry.add("zPos", ";;Entries;", kTH1F, {axisZpos});
       registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
@@ -429,6 +412,7 @@ struct UccZdc {
     LOG(info) << "\tcorrectNch=" << correctNch.value;
     LOG(info) << "\tpaTHEff=" << paTHEff.value;
     LOG(info) << "\tpaTHFD=" << paTHFD.value;
+    LOG(info) << "\tdetectorZDC=" << detectorZDC.value;
     LOG(info) << "\tuseMidRapNchSel=" << useMidRapNchSel.value;
     LOG(info) << "\tdetector4Calibration=" << detector4Calibration.value;
     LOG(info) << "\tnSigmaNchCut=" << nSigmaNchCut.value;
@@ -759,9 +743,18 @@ struct UccZdc {
     znC /= kCollEnergy;
     zpA /= kCollEnergy;
     zpC /= kCollEnergy;
-    const double sumZNs{znA + znC};
+    double sumZNs{-999.};
     const double sumZPs{zpA + zpC};
     const double sumZEMs{aZEM1 + aZEM2};
+
+    TString sZDC = TString(detectorZDC.value);
+    if (sZDC == "ZNA") {
+      sumZNs = znA;
+    } else if (sZDC == "ZNC") {
+      sumZNs = znC;
+    } else {
+      sumZNs = (znA + znC);
+    }
 
     // TDC cut
     if (isTDCcut) {
@@ -960,8 +953,8 @@ struct UccZdc {
     registry.fill(HIST("Nch"), nchMult);
     registry.fill(HIST("NchUncorrected"), glbTracks);
 
-    registry.fill(HIST("NchVsV0Aamp"), nchMult, normV0A);
-    registry.fill(HIST("NchVsT0Mamp"), nchMult, normT0M);
+    registry.fill(HIST("NchVsV0A"), nchMult, normV0A);
+    registry.fill(HIST("NchVsT0M"), nchMult, normT0M);
     registry.fill(HIST("NchVsZN"), nchMult, sumZNs);
     registry.fill(HIST("NchVsZP"), nchMult, sumZPs);
 
@@ -971,13 +964,13 @@ struct UccZdc {
     registry.fill(HIST("NchVsTwoParCorrVsZN"), nchMult, sumZNs, twoParCorr, denTwoParCorr);
     registry.fill(HIST("NchVsThreeParCorrVsZN"), nchMult, sumZNs, threeParCorr, denThreeParCorr);
 
-    registry.fill(HIST("OneParCorrVsT0M"), normT0M, oneParCorr, w1);
-    registry.fill(HIST("TwoParCorrVsT0M"), normT0M, twoParCorr, denTwoParCorr);
-    registry.fill(HIST("ThreeParCorrVsT0M"), normT0M, threeParCorr, denThreeParCorr);
+    registry.fill(HIST("NchVsOneParCorrVsT0M"), nchMult, normT0M, oneParCorr, w1);
+    registry.fill(HIST("NchVsTwoParCorrVsT0M"), nchMult, normT0M, twoParCorr, denTwoParCorr);
+    registry.fill(HIST("NchVsThreeParCorrVsT0M"), nchMult, normT0M, threeParCorr, denThreeParCorr);
 
-    registry.fill(HIST("OneParCorrVsV0A"), normV0A, oneParCorr, w1);
-    registry.fill(HIST("TwoParCorrVsV0A"), normV0A, twoParCorr, denTwoParCorr);
-    registry.fill(HIST("ThreeParCorrVsV0A"), normV0A, threeParCorr, denThreeParCorr);
+    registry.fill(HIST("NchVsOneParCorrVsV0A"), nchMult, normV0A, oneParCorr, w1);
+    registry.fill(HIST("NchVsTwoParCorrVsV0A"), nchMult, normV0A, twoParCorr, denTwoParCorr);
+    registry.fill(HIST("NchVsThreeParCorrVsV0A"), nchMult, normV0A, threeParCorr, denThreeParCorr);
 
     const uint64_t timeStamp{foundBC.timestamp()};
     eventSampling(tracks, normV0A, normT0M, sumZNs, timeStamp);
@@ -1444,14 +1437,6 @@ struct UccZdc {
         pOneParCorrVsNchGen[replica]->Fill(nchMult, oneParCorr, w1);
         pTwoParCorrVsNchGen[replica]->Fill(nchMult, twoParCorr, denTwoParCorr);
         pThreeParCorrVsNchGen[replica]->Fill(nchMult, threeParCorr, denThreeParCorr);
-
-        //                pOneParCorrVsV0AGen[replica]->Fill(normV0A, oneParCorr, w1);
-        //                pTwoParCorrVsV0AGen[replica]->Fill(normV0A, twoParCorr, denTwoParCorr);
-        //                pThreeParCorrVsV0AGen[replica]->Fill(normV0A, threeParCorr, denThreeParCorr);
-
-        //                pOneParCorrVsT0MGen[replica]->Fill(normT0M, oneParCorr, w1);
-        //                pTwoParCorrVsT0MGen[replica]->Fill(normT0M, twoParCorr, denTwoParCorr);
-        //                pThreeParCorrVsT0MGen[replica]->Fill(normT0M, threeParCorr, denThreeParCorr);
       } // event per replica
     } // replica's loop
   }
@@ -1595,14 +1580,6 @@ struct UccZdc {
         pOneParCorrVsNch[replica]->Fill(nchMult, oneParCorr, w1);
         pTwoParCorrVsNch[replica]->Fill(nchMult, twoParCorr, denTwoParCorr);
         pThreeParCorrVsNch[replica]->Fill(nchMult, threeParCorr, denThreeParCorr);
-
-        //                pOneParCorrVsV0A[replica]->Fill(normV0A, oneParCorr, w1);
-        //                pTwoParCorrVsV0A[replica]->Fill(normV0A, twoParCorr, denTwoParCorr);
-        //                pThreeParCorrVsV0A[replica]->Fill(normV0A, threeParCorr, denThreeParCorr);
-        //
-        //                pOneParCorrVsT0M[replica]->Fill(normT0M, oneParCorr, w1);
-        //                pTwoParCorrVsT0M[replica]->Fill(normT0M, twoParCorr, denTwoParCorr);
-        //                pThreeParCorrVsT0M[replica]->Fill(normT0M, threeParCorr, denThreeParCorr);
       } // event per replica
     } // replica's loop
   }
@@ -1747,19 +1724,21 @@ struct UccZdc {
         const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
         const double threeParCorr{numThreeParCorr / denThreeParCorr};
 
+        hNchVsZN[replica]->Fill(nchMult, sumZNs);
         hNchVsV0A[replica]->Fill(nchMult, normV0A);
         hNchVsT0M[replica]->Fill(nchMult, normT0M);
+
         pNchVsOneParCorrVsZN[replica]->Fill(nchMult, sumZNs, oneParCorr, w1);
         pNchVsTwoParCorrVsZN[replica]->Fill(nchMult, sumZNs, twoParCorr, denTwoParCorr);
         pNchVsThreeParCorrVsZN[replica]->Fill(nchMult, sumZNs, threeParCorr, denThreeParCorr);
 
-        pOneParCorrVsV0A[replica]->Fill(normV0A, oneParCorr, w1);
-        pTwoParCorrVsV0A[replica]->Fill(normV0A, twoParCorr, denTwoParCorr);
-        pThreeParCorrVsV0A[replica]->Fill(normV0A, threeParCorr, denThreeParCorr);
+        pNchVsOneParCorrVsT0M[replica]->Fill(nchMult, normT0M, oneParCorr, w1);
+        pNchVsTwoParCorrVsT0M[replica]->Fill(nchMult, normT0M, twoParCorr, denTwoParCorr);
+        pNchVsThreeParCorrVsT0M[replica]->Fill(nchMult, normT0M, threeParCorr, denThreeParCorr);
 
-        pOneParCorrVsT0M[replica]->Fill(normT0M, oneParCorr, w1);
-        pTwoParCorrVsT0M[replica]->Fill(normT0M, twoParCorr, denTwoParCorr);
-        pThreeParCorrVsT0M[replica]->Fill(normT0M, threeParCorr, denThreeParCorr);
+        pNchVsOneParCorrVsV0A[replica]->Fill(nchMult, normV0A, oneParCorr, w1);
+        pNchVsTwoParCorrVsV0A[replica]->Fill(nchMult, normV0A, twoParCorr, denTwoParCorr);
+        pNchVsThreeParCorrVsV0A[replica]->Fill(nchMult, normV0A, threeParCorr, denThreeParCorr);
       } // event per replica
     } // replica's loop
   }
