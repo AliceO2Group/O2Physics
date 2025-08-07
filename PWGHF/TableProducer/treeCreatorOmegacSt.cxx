@@ -468,13 +468,13 @@ struct HfTreeCreatorOmegacSt {
       }
       uint32_t toiMask = 0;
       if (skimmedProcessing) {
-          bool sel = zorro.isSelected(bc.globalBC());
-          if(sel){
-              std::vector<bool> toivect = zorro.getTriggerOfInterestResults();
-              for(size_t i{0}; i < toivect.size(); i++){
-                  toiMask |= static_cast<uint32_t>(toivect[i]) << i;
-              }
+        bool sel = zorro.isSelected(bc.globalBC());
+        if (sel) {
+          std::vector<bool> toivect = zorro.getTriggerOfInterestResults();
+          for (size_t i{0}; i < toivect.size(); i++) {
+            toiMask |= static_cast<uint32_t>(toivect[i]) << i;
           }
+        }
       }
 
       const auto primaryVertex = getPrimaryVertex(collision);
