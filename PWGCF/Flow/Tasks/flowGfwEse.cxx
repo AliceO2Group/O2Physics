@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FlowGfwEse.cxx
+/// \file flowGfwEse.cxx
 /// \brief Dedicated GFW task to analyse angular correlations using ESE primarily in light ions
 /// \author Emil Gorm Nielsen, NBI, emil.gorm.nielsen@cern.ch, Joachim C. K. B. Hansen, Lund University, joachim.hansen@cern.ch
 
@@ -58,7 +58,7 @@ using namespace o2::framework;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-namespace o2::analysis::gfw
+namespace o2::analysis::gfwflowese
 {
 std::vector<double> ptbinning = {0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.2, 2.4, 2.6, 2.8, 3, 3.5, 4, 5, 6, 8, 10};
 float ptpoilow = 0.2, ptpoiup = 10.0;
@@ -84,7 +84,7 @@ std::vector<double> multGlobalPVCorrCutPars;
 std::vector<double> multGlobalV0ACutPars;
 std::vector<double> multGlobalT0ACutPars;
 std::vector<int> firstRunsOfFill;
-} // namespace o2::analysis::gfw
+} // namespace o2::analysis::gfwflowese
 
 struct FlowGfwEse {
 
@@ -266,89 +266,74 @@ struct FlowGfwEse {
 
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   o2::framework::expressions::Filter mcCollFilter = nabs(aod::mccollision::posZ) < cfgVtxZ;
-  o2::framework::expressions::Filter mcParticlesFilter = (aod::mcparticle::eta > o2::analysis::gfw::etalow && aod::mcparticle::eta < o2::analysis::gfw::etaup && aod::mcparticle::pt > o2::analysis::gfw::ptlow && aod::mcparticle::pt < o2::analysis::gfw::ptup);
+  o2::framework::expressions::Filter mcParticlesFilter = (aod::mcparticle::eta > o2::analysis::gfwflowese::etalow && aod::mcparticle::eta < o2::analysis::gfwflowese::etaup && aod::mcparticle::pt > o2::analysis::gfwflowese::ptlow && aod::mcparticle::pt < o2::analysis::gfwflowese::ptup);
 
   using GFWTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelection, aod::TracksDCA>>;
 
   void init(InitContext const&)
   {
     LOGF(info, "FlowGfwEse::init()");
-    o2::analysis::gfw::regions.SetNames(cfgRegions->GetNames());
-    o2::analysis::gfw::regions.SetEtaMin(cfgRegions->GetEtaMin());
-    o2::analysis::gfw::regions.SetEtaMax(cfgRegions->GetEtaMax());
-    o2::analysis::gfw::regions.SetpTDifs(cfgRegions->GetpTDifs());
-    o2::analysis::gfw::regions.SetBitmasks(cfgRegions->GetBitmasks());
-    o2::analysis::gfw::configs.SetCorrs(cfgCorrConfig->GetCorrs());
-    o2::analysis::gfw::configs.SetHeads(cfgCorrConfig->GetHeads());
-    o2::analysis::gfw::configs.SetpTDifs(cfgCorrConfig->GetpTDifs());
-    o2::analysis::gfw::configs.SetpTCorrMasks(cfgCorrConfig->GetpTCorrMasks());
-    o2::analysis::gfw::regions.Print();
-    o2::analysis::gfw::configs.Print();
-    o2::analysis::gfw::ptbinning = cfgGFWBinning->GetPtBinning();
-    o2::analysis::gfw::ptpoilow = cfgGFWBinning->GetPtPOImin();
-    o2::analysis::gfw::ptpoiup = cfgGFWBinning->GetPtPOImax();
-    o2::analysis::gfw::ptreflow = cfgGFWBinning->GetPtRefMin();
-    o2::analysis::gfw::ptrefup = cfgGFWBinning->GetPtRefMax();
-    o2::analysis::gfw::ptlow = cfgPtmin;
-    o2::analysis::gfw::ptup = cfgPtmax;
-    o2::analysis::gfw::etabins = cfgGFWBinning->GetEtaBins();
-    o2::analysis::gfw::vtxZbins = cfgGFWBinning->GetVtxZbins();
-    o2::analysis::gfw::phibins = cfgGFWBinning->GetPhiBins();
-    o2::analysis::gfw::philow = 0.0f;
-    o2::analysis::gfw::phiup = o2::constants::math::TwoPI;
-    o2::analysis::gfw::nchbins = cfgGFWBinning->GetNchBins();
-    o2::analysis::gfw::nchlow = cfgGFWBinning->GetNchMin();
-    o2::analysis::gfw::nchup = cfgGFWBinning->GetNchMax();
-    o2::analysis::gfw::centbinning = cfgGFWBinning->GetCentBinning();
+    o2::analysis::gfwflowese::regions.SetNames(cfgRegions->GetNames());
+    o2::analysis::gfwflowese::regions.SetEtaMin(cfgRegions->GetEtaMin());
+    o2::analysis::gfwflowese::regions.SetEtaMax(cfgRegions->GetEtaMax());
+    o2::analysis::gfwflowese::regions.SetpTDifs(cfgRegions->GetpTDifs());
+    o2::analysis::gfwflowese::regions.SetBitmasks(cfgRegions->GetBitmasks());
+    o2::analysis::gfwflowese::configs.SetCorrs(cfgCorrConfig->GetCorrs());
+    o2::analysis::gfwflowese::configs.SetHeads(cfgCorrConfig->GetHeads());
+    o2::analysis::gfwflowese::configs.SetpTDifs(cfgCorrConfig->GetpTDifs());
+    o2::analysis::gfwflowese::configs.SetpTCorrMasks(cfgCorrConfig->GetpTCorrMasks());
+    o2::analysis::gfwflowese::regions.Print();
+    o2::analysis::gfwflowese::configs.Print();
+    o2::analysis::gfwflowese::ptbinning = cfgGFWBinning->GetPtBinning();
+    o2::analysis::gfwflowese::ptpoilow = cfgGFWBinning->GetPtPOImin();
+    o2::analysis::gfwflowese::ptpoiup = cfgGFWBinning->GetPtPOImax();
+    o2::analysis::gfwflowese::ptreflow = cfgGFWBinning->GetPtRefMin();
+    o2::analysis::gfwflowese::ptrefup = cfgGFWBinning->GetPtRefMax();
+    o2::analysis::gfwflowese::ptlow = cfgPtmin;
+    o2::analysis::gfwflowese::ptup = cfgPtmax;
+    o2::analysis::gfwflowese::etabins = cfgGFWBinning->GetEtaBins();
+    o2::analysis::gfwflowese::vtxZbins = cfgGFWBinning->GetVtxZbins();
+    o2::analysis::gfwflowese::phibins = cfgGFWBinning->GetPhiBins();
+    o2::analysis::gfwflowese::philow = 0.0f;
+    o2::analysis::gfwflowese::phiup = o2::constants::math::TwoPI;
+    o2::analysis::gfwflowese::nchbins = cfgGFWBinning->GetNchBins();
+    o2::analysis::gfwflowese::nchlow = cfgGFWBinning->GetNchMin();
+    o2::analysis::gfwflowese::nchup = cfgGFWBinning->GetNchMax();
+    o2::analysis::gfwflowese::centbinning = cfgGFWBinning->GetCentBinning();
     cfgGFWBinning->Print();
-    o2::analysis::gfw::multGlobalCorrCutPars = cfgMultGlobalCutPars;
-    o2::analysis::gfw::multPVCorrCutPars = cfgMultPVCutPars;
-    o2::analysis::gfw::multGlobalPVCorrCutPars = cfgMultGlobalPVCutPars;
-    o2::analysis::gfw::multGlobalV0ACutPars = cfgGlobalAsideCorrCuts.cfgMultGlobalV0ACutPars;
-    o2::analysis::gfw::multGlobalT0ACutPars = cfgGlobalAsideCorrCuts.cfgMultGlobalT0ACutPars;
-    o2::analysis::gfw::firstRunsOfFill = cfgFirstRunsOfFill;
-    if (cfgTimeDependent && !std::is_sorted(o2::analysis::gfw::firstRunsOfFill.begin(), o2::analysis::gfw::firstRunsOfFill.end())) {
-      std::sort(o2::analysis::gfw::firstRunsOfFill.begin(), o2::analysis::gfw::firstRunsOfFill.end());
+    o2::analysis::gfwflowese::multGlobalCorrCutPars = cfgMultGlobalCutPars;
+    o2::analysis::gfwflowese::multPVCorrCutPars = cfgMultPVCutPars;
+    o2::analysis::gfwflowese::multGlobalPVCorrCutPars = cfgMultGlobalPVCutPars;
+    o2::analysis::gfwflowese::multGlobalV0ACutPars = cfgGlobalAsideCorrCuts.cfgMultGlobalV0ACutPars;
+    o2::analysis::gfwflowese::multGlobalT0ACutPars = cfgGlobalAsideCorrCuts.cfgMultGlobalT0ACutPars;
+    o2::analysis::gfwflowese::firstRunsOfFill = cfgFirstRunsOfFill;
+    if (cfgTimeDependent && !std::is_sorted(o2::analysis::gfwflowese::firstRunsOfFill.begin(), o2::analysis::gfwflowese::firstRunsOfFill.end())) {
+      std::sort(o2::analysis::gfwflowese::firstRunsOfFill.begin(), o2::analysis::gfwflowese::firstRunsOfFill.end());
     }
-    firstRunOfCurrentFill = o2::analysis::gfw::firstRunsOfFill.begin();
+    firstRunOfCurrentFill = o2::analysis::gfwflowese::firstRunsOfFill.begin();
 
-    AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
-    AxisSpec etaAxis = {o2::analysis::gfw::etabins, -cfgEta, cfgEta, "#eta"};
-    AxisSpec vtxAxis = {o2::analysis::gfw::vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
-    AxisSpec ptAxis = {o2::analysis::gfw::ptbinning, "#it{p}_{T} GeV/#it{c}"};
+    AxisSpec phiAxis = {o2::analysis::gfwflowese::phibins, o2::analysis::gfwflowese::philow, o2::analysis::gfwflowese::phiup, "#phi"};
+    AxisSpec etaAxis = {o2::analysis::gfwflowese::etabins, -cfgEta, cfgEta, "#eta"};
+    AxisSpec vtxAxis = {o2::analysis::gfwflowese::vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
+    AxisSpec ptAxis = {o2::analysis::gfwflowese::ptbinning, "#it{p}_{T} GeV/#it{c}"};
     std::string sCentralityEstimator;
-    switch (cfgCentEstimator) {
-      case kCentFT0C:
-        sCentralityEstimator = "FT0C";
-        break;
-      case kCentFT0CVariant1:
-        sCentralityEstimator = "FT0C variant 1";
-        break;
-      case kCentFT0M:
-        sCentralityEstimator = "FT0M";
-        break;
-      case kCentFV0A:
-        sCentralityEstimator = "FV0A";
-        break;
-      case kCentNTPV:
-        sCentralityEstimator = "NTPV";
-        break;
-      case kCentNGlobal:
-        sCentralityEstimator = "NGlobals";
-        break;
-      case kCentMFT:
-        sCentralityEstimator = "MFT";
-        break;
-      default:
-        sCentralityEstimator = "FT0C";
-        break;
-    }
+    std::map<int, std::string> centEstimatorMap = {
+      {kCentFT0C, "FT0C"},
+      {kCentFT0CVariant1, "FT0C variant 1"},
+      {kCentFT0M, "FT0M"},
+      {kCentFV0A, "FV0A"},
+      {kCentNTPV, "NTPV"},
+      {kCentNGlobal, "NGlobals"},
+      {kCentMFT, "MFT"}
+    };
+
+    sCentralityEstimator = centEstimatorMap.count(cfgCentEstimator) ? centEstimatorMap[cfgCentEstimator] : "FT0C";
     sCentralityEstimator += " centrality (%)";
-    AxisSpec centAxis = {o2::analysis::gfw::centbinning, sCentralityEstimator.c_str()};
+    AxisSpec centAxis = {o2::analysis::gfwflowese::centbinning, sCentralityEstimator.c_str()};
     std::vector<double> nchbinning;
-    int nchskip = (o2::analysis::gfw::nchup - o2::analysis::gfw::nchlow) / o2::analysis::gfw::nchbins;
-    for (int i = 0; i <= o2::analysis::gfw::nchbins; ++i) {
-      nchbinning.push_back(nchskip * i + o2::analysis::gfw::nchlow + 0.5);
+    int nchskip = (o2::analysis::gfwflowese::nchup - o2::analysis::gfwflowese::nchlow) / o2::analysis::gfwflowese::nchbins;
+    for (int i = 0; i <= o2::analysis::gfwflowese::nchbins; ++i) {
+      nchbinning.push_back(nchskip * i + o2::analysis::gfwflowese::nchlow + 0.5);
     }
     AxisSpec nchAxis = {nchbinning, "N_{ch}"};
     std::vector<double> bbinning(201);
@@ -380,8 +365,8 @@ struct FlowGfwEse {
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
-    int ptbins = o2::analysis::gfw::ptbinning.size() - 1;
-    fSecondAxis = (cfgTimeDependent) ? new TAxis(timeAxis.binEdges.size() - 1, &(timeAxis.binEdges[0])) : new TAxis(ptbins, &o2::analysis::gfw::ptbinning[0]);
+    int ptbins = o2::analysis::gfwflowese::ptbinning.size() - 1;
+    fSecondAxis = (cfgTimeDependent) ? new TAxis(timeAxis.binEdges.size() - 1, &(timeAxis.binEdges[0])) : new TAxis(ptbins, &o2::analysis::gfwflowese::ptbinning[0]);
 
     if (doprocessData) {
       registry.add("trackQA/before/phi_eta_vtxZ", "", {HistType::kTH3D, {phiAxis, etaAxis, vtxAxis}});
@@ -394,8 +379,8 @@ struct FlowGfwEse {
       registry.add("trackQA/before/nTPCCrossedRows", "Number of crossed TPC Rows; TPC X-rows; Counts", {HistType::kTH1D, {{100, 40, 180}}});
 
       registry.addClone("trackQA/before/", "trackQA/after/");
-      registry.add("trackQA/after/pt_ref", "", {HistType::kTH1D, {{100, o2::analysis::gfw::ptreflow, o2::analysis::gfw::ptrefup}}});
-      registry.add("trackQA/after/pt_poi", "", {HistType::kTH1D, {{100, o2::analysis::gfw::ptpoilow, o2::analysis::gfw::ptpoiup}}});
+      registry.add("trackQA/after/pt_ref", "", {HistType::kTH1D, {{100, o2::analysis::gfwflowese::ptreflow, o2::analysis::gfwflowese::ptrefup}}});
+      registry.add("trackQA/after/pt_poi", "", {HistType::kTH1D, {{100, o2::analysis::gfwflowese::ptpoilow, o2::analysis::gfwflowese::ptpoiup}}});
 
       registry.add("eventQA/before/multiplicity", "", {HistType::kTH1D, {nchAxis}});
       if (cfgTimeDependent) {
@@ -441,13 +426,13 @@ struct FlowGfwEse {
       }
     }
 
-    if (o2::analysis::gfw::regions.GetSize() < 0)
+    if (o2::analysis::gfwflowese::regions.GetSize() < 0)
       LOGF(error, "Configuration contains vectors of different size - check the GFWRegions configurable");
-    for (auto i(0); i < o2::analysis::gfw::regions.GetSize(); ++i) {
-      fGFW->AddRegion(o2::analysis::gfw::regions.GetNames()[i], o2::analysis::gfw::regions.GetEtaMin()[i], o2::analysis::gfw::regions.GetEtaMax()[i], (o2::analysis::gfw::regions.GetpTDifs()[i]) ? ptbins + 1 : 1, o2::analysis::gfw::regions.GetBitmasks()[i]);
+    for (auto i(0); i < o2::analysis::gfwflowese::regions.GetSize(); ++i) {
+      fGFW->AddRegion(o2::analysis::gfwflowese::regions.GetNames()[i], o2::analysis::gfwflowese::regions.GetEtaMin()[i], o2::analysis::gfwflowese::regions.GetEtaMax()[i], (o2::analysis::gfwflowese::regions.GetpTDifs()[i]) ? ptbins + 1 : 1, o2::analysis::gfwflowese::regions.GetBitmasks()[i]);
     }
-    for (auto i = 0; i < o2::analysis::gfw::configs.GetSize(); ++i) {
-      corrconfigs.push_back(fGFW->GetCorrelatorConfig(o2::analysis::gfw::configs.GetCorrs()[i], o2::analysis::gfw::configs.GetHeads()[i], o2::analysis::gfw::configs.GetpTDifs()[i]));
+    for (auto i = 0; i < o2::analysis::gfwflowese::configs.GetSize(); ++i) {
+      corrconfigs.push_back(fGFW->GetCorrelatorConfig(o2::analysis::gfwflowese::configs.GetCorrs()[i], o2::analysis::gfwflowese::configs.GetHeads()[i], o2::analysis::gfwflowese::configs.GetpTDifs()[i]));
     }
     if (corrconfigs.empty())
       LOGF(error, "Configuration contains vectors of different size - check the GFWCorrConfig configurable");
@@ -462,53 +447,53 @@ struct FlowGfwEse {
     delete oba;
     fFCpt->setUseCentralMoments(cfgUseCentralMoments);
     fFCpt->setUseGapMethod(true);
-    fFCpt->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
+    fFCpt->initialise(multAxis, cfgMpar, o2::analysis::gfwflowese::configs, cfgNbootstrap);
     fFCptgen->setUseCentralMoments(cfgUseCentralMoments);
     fFCptgen->setUseGapMethod(true);
-    fFCptgen->initialise(multAxis, cfgMpar, o2::analysis::gfw::configs, cfgNbootstrap);
+    fFCptgen->initialise(multAxis, cfgMpar, o2::analysis::gfwflowese::configs, cfgNbootstrap);
 
     fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgDCAxy->c_str()), 0.001, 100);
     fPtDepDCAxy->SetParameter(0, cfgDCAxyNSigma);
     LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgDCAxy->c_str()));
     if (cfgUseAdditionalEventCut) {
       fMultPVCutLow = new TF1("fMultPVCutLow", cfgMultCorrLowCutFunction->c_str(), 0, 100);
-      fMultPVCutLow->SetParameters(&(o2::analysis::gfw::multPVCorrCutPars[0]));
+      fMultPVCutLow->SetParameters(&(o2::analysis::gfwflowese::multPVCorrCutPars[0]));
       fMultPVCutHigh = new TF1("fMultPVCutHigh", cfgMultCorrHighCutFunction->c_str(), 0, 100);
-      fMultPVCutHigh->SetParameters(&(o2::analysis::gfw::multPVCorrCutPars[0]));
+      fMultPVCutHigh->SetParameters(&(o2::analysis::gfwflowese::multPVCorrCutPars[0]));
       fMultCutLow = new TF1("fMultCutLow", cfgMultCorrLowCutFunction->c_str(), 0, 100);
-      fMultCutLow->SetParameters(&(o2::analysis::gfw::multGlobalCorrCutPars[0]));
+      fMultCutLow->SetParameters(&(o2::analysis::gfwflowese::multGlobalCorrCutPars[0]));
       fMultCutHigh = new TF1("fMultCutHigh", cfgMultCorrHighCutFunction->c_str(), 0, 100);
-      fMultCutHigh->SetParameters(&(o2::analysis::gfw::multGlobalCorrCutPars[0]));
+      fMultCutHigh->SetParameters(&(o2::analysis::gfwflowese::multGlobalCorrCutPars[0]));
       fMultPVGlobalCutHigh = new TF1("fMultPVGlobalCutHigh", cfgMultGlobalPVCorrCutFunction->c_str(), 0, nchbinning.back());
-      fMultPVGlobalCutHigh->SetParameters(&(o2::analysis::gfw::multGlobalPVCorrCutPars[0]));
+      fMultPVGlobalCutHigh->SetParameters(&(o2::analysis::gfwflowese::multGlobalPVCorrCutPars[0]));
 
       LOGF(info, "Global V0A function: %s in range 0-%g", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), v0aAxis.binEdges.back());
       fMultGlobalV0ACutLow = new TF1("fMultGlobalV0ACutLow", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, v0aAxis.binEdges.back());
-      for (std::size_t i = 0; i < o2::analysis::gfw::multGlobalV0ACutPars.size(); ++i)
-        fMultGlobalV0ACutLow->SetParameter(i, o2::analysis::gfw::multGlobalV0ACutPars[i]);
-      fMultGlobalV0ACutLow->SetParameter(o2::analysis::gfw::multGlobalV0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalV0ALowSigma);
+      for (std::size_t i = 0; i < o2::analysis::gfwflowese::multGlobalV0ACutPars.size(); ++i)
+        fMultGlobalV0ACutLow->SetParameter(i, o2::analysis::gfwflowese::multGlobalV0ACutPars[i]);
+      fMultGlobalV0ACutLow->SetParameter(o2::analysis::gfwflowese::multGlobalV0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalV0ALowSigma);
       for (int i = 0; i < fMultGlobalV0ACutLow->GetNpar(); ++i)
         LOGF(info, "fMultGlobalV0ACutLow par %d = %g", i, fMultGlobalV0ACutLow->GetParameter(i));
 
       fMultGlobalV0ACutHigh = new TF1("fMultGlobalV0ACutHigh", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, v0aAxis.binEdges.back());
-      for (std::size_t i = 0; i < o2::analysis::gfw::multGlobalV0ACutPars.size(); ++i)
-        fMultGlobalV0ACutHigh->SetParameter(i, o2::analysis::gfw::multGlobalV0ACutPars[i]);
-      fMultGlobalV0ACutHigh->SetParameter(o2::analysis::gfw::multGlobalV0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalV0AHighSigma);
+      for (std::size_t i = 0; i < o2::analysis::gfwflowese::multGlobalV0ACutPars.size(); ++i)
+        fMultGlobalV0ACutHigh->SetParameter(i, o2::analysis::gfwflowese::multGlobalV0ACutPars[i]);
+      fMultGlobalV0ACutHigh->SetParameter(o2::analysis::gfwflowese::multGlobalV0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalV0AHighSigma);
       for (int i = 0; i < fMultGlobalV0ACutHigh->GetNpar(); ++i)
         LOGF(info, "fMultGlobalV0ACutHigh par %d = %g", i, fMultGlobalV0ACutHigh->GetParameter(i));
 
       LOGF(info, "Global T0A function: %s", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str());
       fMultGlobalT0ACutLow = new TF1("fMultGlobalT0ACutLow", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, t0aAxis.binEdges.back());
-      for (std::size_t i = 0; i < o2::analysis::gfw::multGlobalT0ACutPars.size(); ++i)
-        fMultGlobalT0ACutLow->SetParameter(i, o2::analysis::gfw::multGlobalT0ACutPars[i]);
-      fMultGlobalT0ACutLow->SetParameter(o2::analysis::gfw::multGlobalT0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalT0ALowSigma);
+      for (std::size_t i = 0; i < o2::analysis::gfwflowese::multGlobalT0ACutPars.size(); ++i)
+        fMultGlobalT0ACutLow->SetParameter(i, o2::analysis::gfwflowese::multGlobalT0ACutPars[i]);
+      fMultGlobalT0ACutLow->SetParameter(o2::analysis::gfwflowese::multGlobalT0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalT0ALowSigma);
       for (int i = 0; i < fMultGlobalT0ACutLow->GetNpar(); ++i)
         LOGF(info, "fMultGlobalT0ACutLow par %d = %g", i, fMultGlobalT0ACutLow->GetParameter(i));
 
       fMultGlobalT0ACutHigh = new TF1("fMultGlobalT0ACutHigh", cfgGlobalAsideCorrCuts.cfgMultGlobalASideCorrCutFunction->c_str(), 0, t0aAxis.binEdges.back());
-      for (std::size_t i = 0; i < o2::analysis::gfw::multGlobalT0ACutPars.size(); ++i)
-        fMultGlobalT0ACutHigh->SetParameter(i, o2::analysis::gfw::multGlobalT0ACutPars[i]);
-      fMultGlobalT0ACutHigh->SetParameter(o2::analysis::gfw::multGlobalT0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalT0AHighSigma);
+      for (std::size_t i = 0; i < o2::analysis::gfwflowese::multGlobalT0ACutPars.size(); ++i)
+        fMultGlobalT0ACutHigh->SetParameter(i, o2::analysis::gfwflowese::multGlobalT0ACutPars[i]);
+      fMultGlobalT0ACutHigh->SetParameter(o2::analysis::gfwflowese::multGlobalT0ACutPars.size(), cfgGlobalAsideCorrCuts.cfgGlobalT0AHighSigma);
       for (int i = 0; i < fMultGlobalT0ACutHigh->GetNpar(); ++i)
         LOGF(info, "fMultGlobalT0ACutHigh par %d = %g", i, fMultGlobalT0ACutHigh->GetParameter(i));
     }
@@ -712,7 +697,7 @@ struct FlowGfwEse {
     }
     auto multNTracksPV = collision.multNTracksPV();
 
-    if (vtxz > o2::analysis::gfw::vtxZup || vtxz < o2::analysis::gfw::vtxZlow)
+    if (vtxz > o2::analysis::gfwflowese::vtxZup || vtxz < o2::analysis::gfwflowese::vtxZlow)
       return 0;
 
     if (cfgMultCut) {
@@ -767,11 +752,11 @@ struct FlowGfwEse {
 
   void createRunByRunHistograms(const int& run)
   {
-    AxisSpec phiAxis = {o2::analysis::gfw::phibins, o2::analysis::gfw::philow, o2::analysis::gfw::phiup, "#phi"};
-    AxisSpec etaAxis = {o2::analysis::gfw::etabins, -cfgEta, cfgEta, "#eta"};
-    AxisSpec vtxAxis = {o2::analysis::gfw::vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
-    AxisSpec nchAxis = {o2::analysis::gfw::nchbins, o2::analysis::gfw::nchlow, o2::analysis::gfw::nchup, "N_{ch}"};
-    AxisSpec centAxis = {o2::analysis::gfw::centbinning, "Centrality (%)"};
+    AxisSpec phiAxis = {o2::analysis::gfwflowese::phibins, o2::analysis::gfwflowese::philow, o2::analysis::gfwflowese::phiup, "#phi"};
+    AxisSpec etaAxis = {o2::analysis::gfwflowese::etabins, -cfgEta, cfgEta, "#eta"};
+    AxisSpec vtxAxis = {o2::analysis::gfwflowese::vtxZbins, -cfgVtxZ, cfgVtxZ, "Vtx_{z} (cm)"};
+    AxisSpec nchAxis = {o2::analysis::gfwflowese::nchbins, o2::analysis::gfwflowese::nchlow, o2::analysis::gfwflowese::nchup, "N_{ch}"};
+    AxisSpec centAxis = {o2::analysis::gfwflowese::centbinning, "Centrality (%)"};
     std::vector<std::shared_ptr<TH1>> histos(kCount_TH1Names);
     histos[hPhi] = registry.add<TH1>(Form("%d/phi", run), "", {HistType::kTH1D, {phiAxis}});
     histos[hEta] = registry.add<TH1>(Form("%d/eta", run), "", {HistType::kTH1D, {etaAxis}});
@@ -817,7 +802,7 @@ struct FlowGfwEse {
         auto val = fGFW->Calculate(corrconfigs.at(l_ind), 0, kFALSE).real() / dnx;
         if (std::abs(val) < 1) {
           (dt == kGen) ? fFCgen->FillProfile(corrconfigs.at(l_ind).Head.c_str(), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm) : fFC->FillProfile(Form("ese_%i_%s", qPtmp, corrconfigs.at(l_ind).Head.c_str()), centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm);
-          (dt == kGen) ? fFCptgen->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, o2::analysis::gfw::configs.GetpTCorrMasks()[l_ind]) : fFCpt->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, o2::analysis::gfw::configs.GetpTCorrMasks()[l_ind]);
+          (dt == kGen) ? fFCptgen->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, o2::analysis::gfwflowese::configs.GetpTCorrMasks()[l_ind]) : fFCpt->fillVnPtProfiles(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0, rndm, o2::analysis::gfwflowese::configs.GetpTCorrMasks()[l_ind]);
           if (cfgRunByRun && cfgFillFlowRunByRun && dt != kGen && l_ind == 0) {
             tpfsList[run][pfCorr22]->Fill(centmult, val, (cfgUseMultiplicityFlowWeights) ? dnx : 1.0);
           }
@@ -855,7 +840,7 @@ struct FlowGfwEse {
   {
     if (tracks.size() < 1)
       return;
-    if (dt != kGen && xaxis.centrality >= 0 && (xaxis.centrality < o2::analysis::gfw::centbinning.front() || xaxis.centrality > o2::analysis::gfw::centbinning.back()))
+    if (dt != kGen && xaxis.centrality >= 0 && (xaxis.centrality < o2::analysis::gfwflowese::centbinning.front() || xaxis.centrality > o2::analysis::gfwflowese::centbinning.back()))
       return;
     if (xaxis.multiplicity < cfgFixedMultMin || xaxis.multiplicity > cfgFixedMultMax)
       return;
@@ -888,7 +873,7 @@ struct FlowGfwEse {
       double q3x = 0, q3y = 0;
       double q4x = 0, q4y = 0;
       for (const auto& track : tracks) {
-        bool withinPtRef = (o2::analysis::gfw::ptreflow < track.pt()) && (track.pt() < o2::analysis::gfw::ptrefup); // within RF pT rang
+        bool withinPtRef = (o2::analysis::gfwflowese::ptreflow < track.pt()) && (track.pt() < o2::analysis::gfwflowese::ptrefup); // within RF pT rang
         if (withinPtRef) {
           q2x += std::cos(2 * track.phi());
           q2y += std::sin(2 * track.phi());
@@ -953,13 +938,13 @@ struct FlowGfwEse {
   template <typename TTrack>
   void fillAcceptedTracks(TTrack track, AcceptedTracks& acceptedTracks)
   {
-    if (posRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[posRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[posRegionIndex])
+    if (posRegionIndex >= 0 && track.eta() > o2::analysis::gfwflowese::regions.GetEtaMin()[posRegionIndex] && track.eta() < o2::analysis::gfwflowese::regions.GetEtaMax()[posRegionIndex])
       ++acceptedTracks.nPos;
-    if (negRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[negRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[negRegionIndex])
+    if (negRegionIndex >= 0 && track.eta() > o2::analysis::gfwflowese::regions.GetEtaMin()[negRegionIndex] && track.eta() < o2::analysis::gfwflowese::regions.GetEtaMax()[negRegionIndex])
       ++acceptedTracks.nNeg;
-    if (fullRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[fullRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[fullRegionIndex])
+    if (fullRegionIndex >= 0 && track.eta() > o2::analysis::gfwflowese::regions.GetEtaMin()[fullRegionIndex] && track.eta() < o2::analysis::gfwflowese::regions.GetEtaMax()[fullRegionIndex])
       ++acceptedTracks.nFull;
-    if (midRegionIndex >= 0 && track.eta() > o2::analysis::gfw::regions.GetEtaMin()[midRegionIndex] && track.eta() < o2::analysis::gfw::regions.GetEtaMax()[midRegionIndex])
+    if (midRegionIndex >= 0 && track.eta() > o2::analysis::gfwflowese::regions.GetEtaMin()[midRegionIndex] && track.eta() < o2::analysis::gfwflowese::regions.GetEtaMax()[midRegionIndex])
       ++acceptedTracks.nMid;
   }
 
@@ -1041,8 +1026,8 @@ struct FlowGfwEse {
   template <DataType dt, typename TTrack>
   inline void fillGFW(TTrack track, const double& vtxz, DensityCorr densitycorrections)
   {
-    bool withinPtRef = (track.pt() > o2::analysis::gfw::ptreflow && track.pt() < o2::analysis::gfw::ptrefup);
-    bool withinPtPOI = (track.pt() > o2::analysis::gfw::ptpoilow && track.pt() < o2::analysis::gfw::ptpoiup);
+    bool withinPtRef = (track.pt() > o2::analysis::gfwflowese::ptreflow && track.pt() < o2::analysis::gfwflowese::ptrefup);
+    bool withinPtPOI = (track.pt() > o2::analysis::gfwflowese::ptpoilow && track.pt() < o2::analysis::gfwflowese::ptpoiup);
     if (!withinPtPOI && !withinPtRef)
       return;
     double weff = (dt == kGen) ? 1. : getEfficiency(track);
@@ -1076,7 +1061,7 @@ struct FlowGfwEse {
     double weff = (dt == kGen) ? 1. : getEfficiency(track);
     if (weff < 0)
       return;
-    if (std::abs(track.eta()) < cfgEtaPtPt && track.pt() > o2::analysis::gfw::ptreflow && track.pt() < o2::analysis::gfw::ptrefup) {
+    if (std::abs(track.eta()) < cfgEtaPtPt && track.pt() > o2::analysis::gfwflowese::ptreflow && track.pt() < o2::analysis::gfwflowese::ptrefup) {
       (dt == kGen) ? fFCptgen->fill(1., track.pt()) : fFCpt->fill(weff, track.pt());
     }
   }
@@ -1206,7 +1191,7 @@ struct FlowGfwEse {
       th1sList[run][hEventSel]->Fill(kOccupancy);
 
     const XAxis xaxis{getCentrality(collision), tracks.size(), (cfgTimeDependent) ? getTimeSinceStartOfFill(bc.timestamp(), *firstRunOfCurrentFill) : -1.0};
-    if (cfgTimeDependent && run == *firstRunOfCurrentFill && firstRunOfCurrentFill != o2::analysis::gfw::firstRunsOfFill.end() - 1)
+    if (cfgTimeDependent && run == *firstRunOfCurrentFill && firstRunOfCurrentFill != o2::analysis::gfwflowese::firstRunsOfFill.end() - 1)
       ++firstRunOfCurrentFill;
 
     if (cfgFillQA)
