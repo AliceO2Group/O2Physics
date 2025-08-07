@@ -2141,11 +2141,11 @@ struct AntinucleiInJets {
 
     // Multiplicity percentile
     const float multiplicity = collision.centFT0M();
-     
+
     // pt/A bins
     std::vector<double> ptOverAbins = {0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
     const int nBins = ptOverAbins.size() - 1;
-        
+
     // Particle counters
     std::vector<int> nAntiprotonFullEvent(nBins, 0);
     std::vector<int> nAntideuteronFullEvent(nBins, 0);
@@ -2223,11 +2223,11 @@ struct AntinucleiInJets {
     int netDeuteronFullEvent = nTotDeuteronFullEvent - nTotAntideuteronFullEvent;
     registryCorr.fill(HIST("rho_fullEvent"), nTotAntideuteronFullEvent, nTotAntiprotonFullEvent, multiplicity);
     registryCorr.fill(HIST("rho_netP_netD_fullEvent" ), netDeuteronFullEvent, netProtonFullEvent);
-        
+
     // Fill efficiency histograms
     for (int i = 0; i < nBins; i++) {
       double ptAcenter_i = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
-          
+
       registryCorr.fill(HIST("q1d_fullEvent"), nAntideuteronFullEvent[i], ptAcenter_i);
       registryCorr.fill(HIST("q1p_fullEvent"), nAntiprotonFullEvent[i], ptAcenter_i);
       for (int j = 0; j < nBins; j++) {
@@ -2238,9 +2238,6 @@ struct AntinucleiInJets {
       }
     }
 
-    // ==== end of processing of full event
-        
-        
     // Loop over reconstructed tracks (refactoring: this part can be incorporated above)
     int id(-1);
     std::vector<fastjet::PseudoJet> fjParticles;
@@ -2320,7 +2317,7 @@ struct AntinucleiInJets {
         // Apply DCA selections
         if (std::fabs(track.dcaXY()) > maxDcaxy || std::fabs(track.dcaZ()) > maxDcaz)
           continue;
-          
+
         // Particle identification using the ITS cluster size
         bool passedItsPidProt(true), passedItsPidDeut(true);
         double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
@@ -2373,13 +2370,13 @@ struct AntinucleiInJets {
           }
         }
       } // end of loop over constituents
-        
+
       // Fill correlation histograms
       int netProtonJet = nTotProtonJet - nTotAntiprotonJet;
       int netDeuteronJet = nTotDeuteronJet - nTotAntideuteronJet;
       registryCorr.fill(HIST("rho_jet"), nTotAntideuteronJet, nTotAntiprotonJet, multiplicity);
       registryCorr.fill(HIST("rho_netP_netD_jet" ), netDeuteronJet, netProtonJet);
-            
+
       // Fill efficiency histograms
       for (int i = 0; i < nBins; i++) {
         double ptAcenter_i = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
@@ -2393,8 +2390,7 @@ struct AntinucleiInJets {
           registryCorr.fill(HIST("q1d_q1p_jet"), ptAcenter_i, ptAcenter_j, nAntideuteronJet[i] * nAntiprotonJet[j]);
         }
       }
-        
-     
+
       // Particle counters
       std::vector<int> nAntiprotonUE(nBins, 0);
       std::vector<int> nAntideuteronUE(nBins, 0);
@@ -2431,7 +2427,7 @@ struct AntinucleiInJets {
         // Reject tracks that lie outside the maxConeRadius from both UE axes
         if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius)
           continue;
-          
+
         // Particle identification using the ITS cluster size
         bool passedItsPidProt(true), passedItsPidDeut(true);
         double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
@@ -2484,17 +2480,17 @@ struct AntinucleiInJets {
           }
         }
       }
-        
+
       // Fill correlation histograms
       int netProtonUE = nTotProtonUE - nTotAntiprotonUE;
       int netDeuteronUE = nTotDeuteronUE - nTotAntideuteronUE;
       registryCorr.fill(HIST("rho_ue"), nTotAntideuteronUE, nTotAntiprotonUE, multiplicity);
       registryCorr.fill(HIST("rho_netP_netD_ue" ), netDeuteronUE, netProtonUE);
-            
+
       // Fill efficiency histograms
       for (int i = 0; i < nBins; i++) {
         double ptAcenter_i = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
-              
+
         registryCorr.fill(HIST("q1d_ue"), nAntideuteronUE[i], ptAcenter_i);
         registryCorr.fill(HIST("q1p_ue"), nAntiprotonUE[i], ptAcenter_i);
         for (int j = 0; j < nBins; j++) {
