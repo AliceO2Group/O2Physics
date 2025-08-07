@@ -139,6 +139,9 @@ struct AntinucleiInJets {
   Configurable<double> nSigmaItsMin{"nSigmaItsMin", -3.0, "nSigmaITS min"};
   Configurable<double> nSigmaItsMax{"nSigmaItsMax", +3.0, "nSigmaITS max"};
 
+  // Initialize ITS PID Response object
+  o2::aod::ITSResponse itsResponse;
+
   // CCDB manager service for accessing condition data
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
@@ -252,6 +255,9 @@ struct AntinucleiInJets {
     // Reconstructed antiproton spectra in jets and UE (MC-matched) with TPC/TOF PID
     if (doprocessJetsMCrec) {
 
+      // Configure ITS PID response with default parameters for Monte Carlo analysis
+      itsResponse.setMCDefaultParameters();
+
       // Event counter
       registryMC.add("recEvents", "number of reconstructed events in mc", HistType::kTH1F, {{20, 0, 20, "counter"}});
 
@@ -332,6 +338,9 @@ struct AntinucleiInJets {
 
     // Systematic uncertainties (MC)
     if (doprocessSystEff) {
+
+      // Configure ITS PID response with default parameters for Monte Carlo analysis
+      itsResponse.setMCDefaultParameters();
 
       // Histograms for generated antiparticles
       registryMC.add("antiproton_gen_syst", "antiproton_gen_syst", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -803,9 +812,6 @@ struct AntinucleiInJets {
       // Get jet constituents
       std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
 
-      // Initialize ITS PID Response object
-      o2::aod::ITSResponse itsResponse;
-
       // Loop over jet constituents
       for (const auto& particle : jetConstituents) {
 
@@ -1261,9 +1267,6 @@ struct AntinucleiInJets {
         }
       }
 
-      // ITS PID response utility
-      o2::aod::ITSResponse itsResponse;
-
       // Loop over all reconstructed MC tracks
       for (auto const& track : mcTracks) {
 
@@ -1496,9 +1499,6 @@ struct AntinucleiInJets {
   // Reconstructed events
   void processJetsMCrec(RecCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, McParticles const&)
   {
-    // Initialize ITS PID Response object
-    o2::aod::ITSResponse itsResponse;
-
     // Loop over all reconstructed collisions
     for (const auto& collision : collisions) {
 
@@ -1837,9 +1837,6 @@ struct AntinucleiInJets {
       3.41, 2.75, 3.26, 2.61, 3.09, 2.54, 3.36, 2.95, 3.20, 2.58,
       3.44, 2.83, 3.11, 2.62, 3.28, 2.69, 3.23, 2.73, 3.39, 2.90};
 
-    // Initialize ITS PID Response object
-    o2::aod::ITSResponse itsResponse;
-
     // Loop over reconstructed tracks
     for (auto const& track : tracks) {
 
@@ -2020,9 +2017,6 @@ struct AntinucleiInJets {
       if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
         continue;
 
-      // Initialize ITS PID Response object
-      o2::aod::ITSResponse itsResponse;
-
       // Loop over reconstructed tracks
       for (auto const& track : mcTracks) {
 
@@ -2149,9 +2143,6 @@ struct AntinucleiInJets {
 
     // Multiplicity percentile
     const float multiplicity = collision.centFT0M();
-
-    // Initialize ITS PID Response object
-    o2::aod::ITSResponse itsResponse;
 
     // pt/A bins
     std::vector<double> ptOverAbins = {0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0};
