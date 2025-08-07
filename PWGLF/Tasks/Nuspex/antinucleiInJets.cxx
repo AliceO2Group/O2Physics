@@ -1455,6 +1455,10 @@ struct AntinucleiInJets {
         // Loop over MC particles to analyze underlying event region
         for (const auto& particle : mcParticles) {
 
+          // Antiproton selection based on the pdg
+          if (particle.user_index() != PDG_t::kProtonBar)
+            continue;
+
           // Select physical primaries within the acceptance
           static constexpr double MinPtParticle = 0.1;
           if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < MinPtParticle)
@@ -1478,10 +1482,6 @@ struct AntinucleiInJets {
           if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius)
             continue;
 
-          // Select antiprotons based on PDG
-          if (particle.pdgCode() != PDG_t::kProtonBar)
-            continue;
-
           // Fill histogram for antiprotons in the UE
           registryMC.fill(HIST("antiproton_gen_ue"), particle.pt());
         }
@@ -1496,6 +1496,9 @@ struct AntinucleiInJets {
   // Reconstructed events
   void processJetsMCrec(RecCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, McParticles const&)
   {
+    // Initialize ITS PID Response object
+    o2::aod::ITSResponse itsResponse;
+
     // Loop over all reconstructed collisions
     for (const auto& collision : collisions) {
 
@@ -1595,9 +1598,6 @@ struct AntinucleiInJets {
         // Get jet constituents
         std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
 
-        // Initialize ITS PID Response object
-        o2::aod::ITSResponse itsResponse;
-
         // Loop over jet constituents
         for (const auto& particle : jetConstituents) {
 
@@ -1606,10 +1606,18 @@ struct AntinucleiInJets {
           if (!passedTrackSelection(track))
             continue;
 
+          // Antimatter selection
+          if (track.sign() > 0)
+            continue;
+
           // Get corresponding MC particle
           if (!track.has_mcParticle())
             continue;
           const auto mcparticle = track.mcParticle();
+
+          // Antiproton selection based on the PDG
+          if (mcparticle.pdgCode() != PDG_t::kProtonBar)
+            continue;
 
           // Define variables
           double nsigmaTPCPr = track.tpcNSigmaPr();
@@ -1619,7 +1627,7 @@ struct AntinucleiInJets {
           double dcaz = track.dcaZ();
 
           // Fill DCA templates
-          if (mcparticle.pdgCode() == PDG_t::kProtonBar && std::fabs(dcaz) < maxDcaz) {
+          if (std::fabs(dcaz) < maxDcaz) {
             if (mcparticle.isPhysicalPrimary()) {
               registryMC.fill(HIST("antiproton_prim_dca_jet"), pt, dcaxy);
             } else {
@@ -1629,10 +1637,6 @@ struct AntinucleiInJets {
 
           // Apply DCA selections
           if (std::fabs(dcaxy) > maxDcaxy || std::fabs(dcaz) > maxDcaz)
-            continue;
-
-          // Antiproton selection
-          if (track.sign() > 0 || mcparticle.pdgCode() != PDG_t::kProtonBar)
             continue;
 
           // Particle identification using the ITS cluster size
@@ -1668,13 +1672,17 @@ struct AntinucleiInJets {
           if (!passedTrackSelection(track))
             continue;
 
+          // Antiproton selection
+          if (track.sign() > 0)
+            continue;
+
           // Get corresponding MC particle
           if (!track.has_mcParticle())
             continue;
           const auto mcparticle = track.mcParticle();
 
-          // Antiproton selection
-          if (track.sign() > 0 || mcparticle.pdgCode() != PDG_t::kProtonBar)
+          // Antiproton selection based on the PDG
+          if (mcparticle.pdgCode() != PDG_t::kProtonBar)
             continue;
 
           // Define variables
@@ -1685,7 +1693,7 @@ struct AntinucleiInJets {
           double dcaz = track.dcaZ();
 
           // Fill DCA templates
-          if (mcparticle.pdgCode() == PDG_t::kProtonBar && std::fabs(dcaz) < maxDcaz) {
+          if (std::fabs(dcaz) < maxDcaz) {
             if (mcparticle.isPhysicalPrimary()) {
               registryMC.fill(HIST("antiproton_prim_dca_ue"), pt, dcaxy);
             } else {
