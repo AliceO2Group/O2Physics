@@ -417,7 +417,7 @@ struct FemtoCorrelationsMC {
         continue;
       if (_requestIsGoodITSLayersAll && !collision.isGoodITSLayersAll())
         continue;
-        
+      
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {
         if (IsIdentical)
           continue;

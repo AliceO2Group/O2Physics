@@ -254,10 +254,6 @@ struct QAHistograms {
         if (TPChisto) TPChisto->Fill(track.p(), o2::aod::singletrackselector::getTPCNsigma(track, _particlePDG));
         if (TOFhisto) TOFhisto->Fill(track.p(), o2::aod::singletrackselector::getTOFNsigma(track, _particlePDG));
 
-        if (!ITShisto || !TPChisto || !TOFhisto) {
-          LOGF(error, "One or more dynamic histograms were not created. Check PDG: %d", _particlePDG.value);}
-
-
         if constexpr (FillExtra) {
           registry.fill(HIST("TPCSignal"), track.tpcInnerParam(), track.tpcSignal());
           registry.fill(HIST("TOFSignal"), track.p(), track.beta());
