@@ -207,6 +207,7 @@ struct TreeCreatorElectronMLDDA {
     Configurable<bool> cfg_includeITSsa{"cfg_includeITSsa", false, "Flag to include ITSsa tracks"};
     Configurable<float> cfg_max_pt_itssa{"cfg_max_pt_itssa", 0.15, "mix pt for ITSsa track"};
     Configurable<float> cfg_min_qt_strangeness{"cfg_min_qt_strangeness", 0.015, "min qt for Lambda and K0S"};
+    Configurable<bool> cfg_require_collinearV0{"cfg_require_collinearV0", false, "require collinear V0 for photon conversions"};
 
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -5, "min n sigma e in TPC"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +5, "max n sigma e in TPC"};
@@ -748,7 +749,7 @@ struct TreeCreatorElectronMLDDA {
   Partition<MyTracks> negTracks = o2::aod::track::signed1Pt < 0.f && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
   std::vector<uint64_t> stored_trackIds;
 
-  void processPID(filteredMyCollisions const& collisions, aod::BCsWithTimestamps const&, filteredV0s const& v0s, filteredCascades const& cascades, MyTracks const& tracks)
+  void processPID(filteredMyCollisions const& collisions, aod::BCsWithTimestamps const&, filteredV0s const& v0s, filteredCascades const& cascades, MyTracks const& tracks, aod::V0s const&)
   {
     stored_trackIds.reserve(tracks.size());
     for (const auto& collision : collisions) {
@@ -768,6 +769,7 @@ struct TreeCreatorElectronMLDDA {
 
       auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
       for (const auto& v0 : v0s_coll) {
+        auto o2v0 = v0.template v0_as<aod::V0s>();
         auto pos = v0.template posTrack_as<MyTracks>();
         auto neg = v0.template negTrack_as<MyTracks>();
         // LOGF(info, "v0.globalIndex() = %d, v0.collisionId() = %d, v0.posTrackId() = %d, v0.negTrackId() = %d", v0.globalIndex(), v0.collisionId(), v0.posTrackId(), v0.negTrackId());
@@ -831,25 +833,27 @@ struct TreeCreatorElectronMLDDA {
           }
         } // end of stangeness
 
-        if (isElectronTight(pos) && isElectron(neg)) {
-          registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
-          registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
-          if (v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon) {
-            registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
-            fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron));
-            registry.fill(HIST("V0/hTPCdEdx_P_El"), neg.tpcInnerParam(), neg.tpcSignal());
-            registry.fill(HIST("V0/hTOFbeta_P_El"), neg.tpcInnerParam(), neg.beta());
+        if (!v0cuts.cfg_require_collinearV0 || o2v0.isCollinearV0()) {
+          if (isElectronTight(pos) && isElectron(neg)) {
+            registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
+            registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
+            if (v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon) {
+              registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
+              fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron));
+              registry.fill(HIST("V0/hTPCdEdx_P_El"), neg.tpcInnerParam(), neg.tpcSignal());
+              registry.fill(HIST("V0/hTOFbeta_P_El"), neg.tpcInnerParam(), neg.beta());
+            }
           }
-        }
 
-        if (isElectron(pos) && isElectronTight(neg)) {
-          registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
-          registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
-          if (v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon) {
-            registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
-            fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron));
-            registry.fill(HIST("V0/hTPCdEdx_P_El"), pos.tpcInnerParam(), pos.tpcSignal());
-            registry.fill(HIST("V0/hTOFbeta_P_El"), pos.tpcInnerParam(), pos.beta());
+          if (isElectron(pos) && isElectronTight(neg)) {
+            registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
+            registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
+            if (v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon) {
+              registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
+              fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron));
+              registry.fill(HIST("V0/hTPCdEdx_P_El"), pos.tpcInnerParam(), pos.tpcSignal());
+              registry.fill(HIST("V0/hTOFbeta_P_El"), pos.tpcInnerParam(), pos.beta());
+            }
           }
         }
 
