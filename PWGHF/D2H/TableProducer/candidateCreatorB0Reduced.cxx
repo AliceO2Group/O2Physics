@@ -69,7 +69,6 @@ struct HfCandidateCreatorB0Reduced {
   Configurable<float> invMassWindowDPiTolerance{"invMassWindowDPiTolerance", 0.01, "invariant-mass window tolerance for DPi pair preselections (GeV/c2)"};
 
   float myInvMassWindowDPi{1.}; // variable that will store the value of invMassWindowDPi (defined in dataCreatorDplusPiReduced.cxx)
-  float massB0{0.};
   float bz{0.};
 
   o2::vertexing::DCAFitterN<2> df2; // fitter for B vertex (2-prong vertex fitter for DpPi candidates)
@@ -93,9 +92,6 @@ struct HfCandidateCreatorB0Reduced {
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "Only one process function for data should be enabled at a time.");
     }
-
-    // invariant-mass window cut
-    massB0 = o2::constants::physics::MassB0;
 
     // Initialize fitter
     df2.setPropagateToPCA(propagateToPCA);
@@ -360,8 +356,8 @@ struct HfCandidateCreatorB0Reduced {
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DPi pair preselection
     // to avoid accepting DPi pairs that were not formed in DPi pair creator
-    float invMass2DPiMin = (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    float invMass2DPiMax = (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    float invMass2DPiMin = (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    float invMass2DPiMax = (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -394,8 +390,8 @@ struct HfCandidateCreatorB0Reduced {
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DPi pair preselection
     // to avoid accepting DPi pairs that were not formed in DPi pair creator
-    float invMass2DPiMin = (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    float invMass2DPiMax = (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    float invMass2DPiMin = (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    float invMass2DPiMax = (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -429,8 +425,8 @@ struct HfCandidateCreatorB0Reduced {
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DPi pair preselection
     // to avoid accepting DPi pairs that were not formed in DPi pair creator
-    float invMass2DPiMin = (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    float invMass2DPiMax = (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    float invMass2DPiMin = (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    float invMass2DPiMax = (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -464,8 +460,8 @@ struct HfCandidateCreatorB0Reduced {
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DPi pair preselection
     // to avoid accepting DPi pairs that were not formed in DPi pair creator
-    float invMass2DPiMin = (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    float invMass2DPiMax = (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    float invMass2DPiMin = (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    float invMass2DPiMax = (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance) * (o2::constants::physics::MassB0 + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
