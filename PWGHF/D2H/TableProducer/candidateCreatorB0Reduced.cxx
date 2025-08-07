@@ -69,9 +69,6 @@ struct HfCandidateCreatorB0Reduced {
   Configurable<float> invMassWindowDPiTolerance{"invMassWindowDPiTolerance", 0.01, "invariant-mass window tolerance for DPi pair preselections (GeV/c2)"};
 
   float myInvMassWindowDPi{1.}; // variable that will store the value of invMassWindowDPi (defined in dataCreatorDplusPiReduced.cxx)
-  float massPi{0.};
-  float massDplus{0.};
-  float massDstar{0.};
   float massB0{0.};
   float bz{0.};
 
@@ -98,9 +95,6 @@ struct HfCandidateCreatorB0Reduced {
     }
 
     // invariant-mass window cut
-    massPi = o2::constants::physics::MassPiPlus;
-    massDplus = o2::constants::physics::MassDPlus;
-    massDstar = o2::constants::physics::MassDStar;
     massB0 = o2::constants::physics::MassB0;
 
     // Initialize fitter
@@ -146,8 +140,8 @@ struct HfCandidateCreatorB0Reduced {
   void runCandidateCreationDStar(Coll const& collision,
                                  Cands const& candsDThisColl,
                                  Pions const& tracksPionThisCollision,
-                                 const float& invMass2DPiMin,
-                                 const float& invMass2DPiMax)
+                                 const float invMass2DPiMin,
+                                 const float invMass2DPiMax)
   {
     auto primaryVertex = getPrimaryVertex(collision);
     auto covMatrixPV = primaryVertex.getCov();
@@ -174,7 +168,7 @@ struct HfCandidateCreatorB0Reduced {
         std::array<float, 3> pVecPion = trackPion.pVector();
 
         // compute invariant mass square and apply selection
-        auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecSoftPi, pVecPion}, std::array{massDstar, massPi, massPi});
+        auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecSoftPi, pVecPion}, std::array{o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiPlus});
         if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
           continue;
         }
@@ -262,8 +256,8 @@ struct HfCandidateCreatorB0Reduced {
   void runCandidateCreation(Coll const& collision,
                             Cands const& candsDThisColl,
                             Pions const& tracksPionThisCollision,
-                            const float& invMass2DPiMin,
-                            const float& invMass2DPiMax)
+                            const float invMass2DPiMin,
+                            const float invMass2DPiMax)
   {
     auto primaryVertex = getPrimaryVertex(collision);
     auto covMatrixPV = primaryVertex.getCov();
@@ -286,7 +280,7 @@ struct HfCandidateCreatorB0Reduced {
         std::array<float, 3> pVecPion = trackPion.pVector();
 
         // compute invariant mass square and apply selection
-        auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{massDplus, massPi});
+        auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecPion}, std::array{o2::constants::physics::MassDMinus, o2::constants::physics::MassPiPlus});
         if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
           continue;
         }
