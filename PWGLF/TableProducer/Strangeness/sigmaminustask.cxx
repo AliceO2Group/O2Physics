@@ -141,12 +141,11 @@ struct sigmaminustask {
       // BC ID comparison histograms
       rSigmaMinus.add("hMcCollIdCoherence", "McCollId (coll == daug)", {HistType::kTH1F, {boolAxis}});
       rSigmaMinus.add("h2CollId_BCId", "(McCollId coherence) vs (EvSelBC == McBC)", {HistType::kTH2F, {boolAxis, boolAxis}});
-      rSigmaMinus.add("h2BCId_comp1", "(BC == McBC) vs (BC == EvSelBC)", {HistType::kTH2F, {boolAxis, boolAxis}});
-      rSigmaMinus.add("h2BCId_comp2", "(McBC == EvSelBC) vs (BC == EvSelBC)", {HistType::kTH2F, {boolAxis, boolAxis}});
+      rSigmaMinus.add("h2BCId_comp", "(McBC == EvSelBC) vs (BC == EvSelBC)", {HistType::kTH2F, {boolAxis, boolAxis}});
     }
 
     if (doprocessFindable) {
-      std::vector<std::string> filterLabels = {"Initial", "ITS/TPC present", "ITS/TPC quality", "Moth p_{T}", "min #eta", "max #Delta#phi", "max #Delta Z", "max DCAmoth", "min DCAdaug", "min Radius", "sel8 coll", "Daug TOF"};
+      std::vector<std::string> filterLabels = {"Initial", "ITS/TPC present", "ITS/TPC quality", "Moth p_{T}", "max #eta", "max #Delta#phi", "max #Delta Z", "max DCAmoth", "min DCAdaug", "min Radius", "sel8 coll", "Daug TOF"};
 
       // Add findable Sigma histograms
       rFindable.add("hfakeITSfindable", "hfakeITSfindable", {HistType::kTH1F, {fakeITSAxis}});
@@ -314,14 +313,13 @@ struct sigmaminustask {
             }
             // Check bunch crossing ID coherence
             auto mcCollision = mcTrackPiDau.template mcCollision_as<aod::McCollisions>();
-            bool BCId_vs_MCBCId = collision.bcId() == mcCollision.bcId();
+            //bool BCId_vs_MCBCId = collision.bcId() == mcCollision.bcId();
             bool BCId_vs_EvSel = collision.bcId() == collision.foundBCId();
             bool EvSel_vs_MCBCId = collision.foundBCId() == mcCollision.bcId();
 
             rSigmaMinus.fill(HIST("hMcCollIdCoherence"), static_cast<int>(mcCollisionIdCheck));
             rSigmaMinus.fill(HIST("h2CollId_BCId"), static_cast<int>(mcCollisionIdCheck), static_cast<int>(EvSel_vs_MCBCId));
-            rSigmaMinus.fill(HIST("h2BCId_comp1"), static_cast<int>(BCId_vs_MCBCId), static_cast<int>(BCId_vs_EvSel));
-            rSigmaMinus.fill(HIST("h2BCId_comp2"), static_cast<int>(EvSel_vs_MCBCId), static_cast<int>(BCId_vs_EvSel));
+            rSigmaMinus.fill(HIST("h2BCId_comp"), static_cast<int>(EvSel_vs_MCBCId), static_cast<int>(BCId_vs_EvSel));
 
             rSigmaMinus.fill(HIST("h2MassPtMCRec"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
             rSigmaMinus.fill(HIST("h2MassResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), (kinkCand.mSigmaMinus() - MotherMassMC) / MotherMassMC);
