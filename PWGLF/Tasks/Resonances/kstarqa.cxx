@@ -303,7 +303,7 @@ struct Kstarqa {
     rEventSelection.add("recMCparticles", "No. of events in the reconstructed MC", kTH1I, {{20, 0, 20}});
     rEventSelection.add("hOccupancy", "Occupancy distribution", kTH1F, {{1000, 0, 15000}});
 
-    std::shared_ptr<TH1> hrecLabel = rEventSelection.get<TH1>(HIST("hEventCut"));
+    std::shared_ptr<TH1> hrecLabel = rEventSelection.get<TH1>(HIST("recMCparticles"));
     hrecLabel->GetXaxis()->SetBinLabel(1, "All tracks");
     hrecLabel->GetXaxis()->SetBinLabel(2, "Track selection");
     hrecLabel->GetXaxis()->SetBinLabel(3, "has_MC");
@@ -1011,20 +1011,31 @@ struct Kstarqa {
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningTypeFT0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0A>;
   using BinningTypeFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
-  using BinningTypeMC = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+
+  using BinningTypeMCFT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  using BinningTypeMCFT0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0A>;
+  using BinningTypeMCFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  using BinningTypeMCFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
 
   BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
   BinningTypeCentralityM binningOnCentrality{{axisVertex, axisMultiplicity}, true};
   BinningTypeFT0A binningOnFT0A{{axisVertex, axisMultiplicity}, true};
   BinningTypeFV0A binningOnFV0A{{axisVertex, axisMultiplicity}, true};
-  BinningTypeMC binningOnMC{{axisVertex, axisMultiplicity}, true};
+
+  BinningTypeMCFT0M binningOnMCFT0M{{axisVertex, axisMultiplicity}, true};
+  BinningTypeMCFT0A binningOnMCFT0A{{axisVertex, axisMultiplicity}, true};
+  BinningTypeMCFT0C binningOnMCFT0C{{axisVertex, axisMultiplicity}, true};
+  BinningTypeMCFV0A binningOnMCFV0A{{axisVertex, axisMultiplicity}, true};
 
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair1{binningOnPositions, selectionConfig.cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeCentralityM> pair2{binningOnCentrality, selectionConfig.cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0A> pair3{binningOnFT0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeFV0A> pair4{binningOnFV0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
 
-  SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMC> pairmc{binningOnMC, selectionConfig.cfgNoMixedEvents, -1, &cache};
+  SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMCFT0M> pairmc1{binningOnMCFT0M, selectionConfig.cfgNoMixedEvents, -1, &cache};
+  SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMCFT0C> pairmc2{binningOnMCFT0C, selectionConfig.cfgNoMixedEvents, -1, &cache};
+  SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMCFT0A> pairmc3{binningOnMCFT0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
+  SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMCFV0A> pairmc4{binningOnMCFV0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
 
   void processME(EventCandidatesMix const&, TrackCandidates const&)
   {
@@ -1075,10 +1086,14 @@ struct Kstarqa {
 
   void processSEMC(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
   {
+    auto oldindex = -999;
+    if (!collision.has_mcCollision()) {
+      return;
+    }
     int occupancy = collision.trackOccupancyInTimeRange();
     rEventSelection.fill(HIST("hOccupancy"), occupancy);
 
-    if (!selectionEvent(collision, true)) {
+    if (!selectionEvent(collision, false)) {
       return;
     }
 
@@ -1112,6 +1127,21 @@ struct Kstarqa {
         continue;
       }
       if (!selectionTrack(track2)) {
+        continue;
+      }
+
+      const auto mctrack1 = track1.mcParticle();
+      const auto mctrack2 = track2.mcParticle();
+
+      if (!track1.has_mcParticle() || !track2.has_mcParticle()) {
+        continue; // skip if no MC particle associated
+      }
+
+      if (!mctrack1.isPhysicalPrimary()) {
+        continue;
+      }
+
+      if (!mctrack2.isPhysicalPrimary()) {
         continue;
       }
       rEventSelection.fill(HIST("tracksCheckData"), 1.5);
@@ -1205,32 +1235,66 @@ struct Kstarqa {
 
       rEventSelection.fill(HIST("tracksCheckData"), 4.5);
 
-      daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
-      daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
-      mother = daughter1 + daughter2; // Kstar meson
+      for (const auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
+        for (const auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
 
-      if (selectionConfig.isApplyCutsOnMother) {
-        if (mother.Pt() >= selectionConfig.cMaxPtMotherCut) // excluding candidates in overflow
-          continue;
-        if (mother.M() >= selectionConfig.cMaxMinvMotherCut) // excluding candidates in overflow
-          continue;
+          if (mothertrack1.globalIndex() != mothertrack2.globalIndex()) {
+            continue;
+          }
+
+          if (!mothertrack1.producedByGenerator()) {
+            continue;
+          }
+
+          if (selectionConfig.isApplyCutsOnMother) {
+            if (mothertrack1.pt() >= selectionConfig.cMaxPtMotherCut) // excluding candidates in overflow
+              continue;
+            if ((std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p())) >= selectionConfig.cMaxMinvMotherCut) // excluding candidates in overflow
+              continue;
+          }
+
+          if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
+            continue;
+          }
+          rEventSelection.fill(HIST("recMCparticles"), 11.5);
+
+          oldindex = mothertrack1.globalIndex();
+
+          daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+          daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+          mother = daughter1 + daughter2; // Kstar meson
+
+          if (selectionConfig.isApplyCutsOnMother) {
+            if (mother.Pt() >= selectionConfig.cMaxPtMotherCut) // excluding candidates in overflow
+              continue;
+            if (mother.M() >= selectionConfig.cMaxMinvMotherCut) // excluding candidates in overflow
+              continue;
+          }
+
+          hOthers.fill(HIST("hKstar_Rap"), mother.Rapidity());
+          hOthers.fill(HIST("hKstar_Eta"), mother.Eta());
+
+          isMix = false;
+          fillInvMass(daughter1, daughter2, mother, multiplicity, isMix, track1, track2);
+        }
       }
-
-      hOthers.fill(HIST("hKstar_Rap"), mother.Rapidity());
-      hOthers.fill(HIST("hKstar_Eta"), mother.Eta());
-
-      isMix = false;
-      fillInvMass(daughter1, daughter2, mother, multiplicity, isMix, track1, track2);
     }
   }
   PROCESS_SWITCH(Kstarqa, processSEMC, "Process same event in MC", true);
 
   void processMEMC(EventCandidatesMC const&, TrackCandidatesMC const&, aod::McParticles const&, aod::McCollisions const&)
   {
-    for (const auto& [c1, tracks1, c2, tracks2] : pairmc) {
+    // if (!collision.has_mcCollision()) {
+    //   return;
+    // }
+    for (const auto& [c1, tracks1, c2, tracks2] : pairmc1) {
 
       if (!selectionEvent(c1, false) || !selectionEvent(c2, false)) {
         continue;
+      }
+
+      if (!c1.has_mcCollision() || !c2.has_mcCollision()) {
+        continue; // skip if no MC collision associated
       }
 
       // multiplicity = multiplicityGetter(c1);
@@ -1241,6 +1305,21 @@ struct Kstarqa {
           continue;
         if (!selectionPID(t1, 1) || !selectionPID(t2, 0))
           continue;
+
+        if (!t1.has_mcParticle() || !t2.has_mcParticle()) {
+          continue; // skip if no MC particle associated
+        }
+
+        const auto mctrack1 = t1.mcParticle();
+        const auto mctrack2 = t2.mcParticle();
+
+        if (!mctrack1.isPhysicalPrimary()) {
+          continue;
+        }
+
+        if (!mctrack2.isPhysicalPrimary()) {
+          continue;
+        }
 
         daughter1 = ROOT::Math::PxPyPzMVector(t1.px(), t1.py(), t1.pz(), massKa);
         daughter2 = ROOT::Math::PxPyPzMVector(t2.px(), t2.py(), t2.pz(), massPi);
