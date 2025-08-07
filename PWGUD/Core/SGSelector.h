@@ -46,7 +46,7 @@ enum TrueGap : int {
   TrkOutOfRange = 4,
   BadDoubleGap = 5
 };
-}
+} // namespace o2::aod::sgselector
 
 class SGSelector
 {
@@ -156,15 +156,15 @@ class SGSelector
       if (FT0C > fit_cut[2] || ZNC > zdc_cut)
         true_gap = o2::aod::sgselector::NoGap;          // -1
     } else if (gap == o2::aod::sgselector::DoubleGap) { // gap == 2
-      if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut))
+      if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut)) {
         true_gap = o2::aod::sgselector::NoGap; // -1
-      else if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C <= fit_cut[2] && ZNC <= zdc_cut))
+      } else if ((FV0A > fit_cut[0] || FT0A > fit_cut[1] || ZNA > zdc_cut) && (FT0C <= fit_cut[2] && ZNC <= zdc_cut)) {
         true_gap = o2::aod::sgselector::SingleGapC; // 1
-      else if ((FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut))
+      } else if ((FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut) && (FT0C > fit_cut[2] || ZNC > zdc_cut)) {
         true_gap = o2::aod::sgselector::SingleGapA; // 0
-      else if (FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut && FT0C <= fit_cut[2] && ZNC <= zdc_cut)
+      } else if (FV0A <= fit_cut[0] && FT0A <= fit_cut[1] && ZNA <= zdc_cut && FT0C <= fit_cut[2] && ZNC <= zdc_cut) {
         true_gap = o2::aod::sgselector::DoubleGap; // 2
-      else {
+      } else {
         LOGF(info, "Something wrong with DG");
         true_gap = o2::aod::sgselector::BadDoubleGap; // 5
       }
