@@ -3533,7 +3533,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
     // pt
     if (config.ptMinXicplusLfCasc > 0.f) {
       auto pt = RecoDecay::pt(pVecCand);
-      if (pt <= config.ptMinXicplusLfCasc) {
+      if (pt < config.ptMinXicplusLfCasc) {
         return false;
       }
     }
@@ -3824,7 +3824,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
               // Use only bachelor tracks for vertex reconstruction because the Xi track has large uncertainties.
               int nVtxFrom3ProngFitterXiHyp = 0;
               try {
-                auto trackParCovCharmBachelor2 = getTrackParCov(trackCharmBachelor2);
+                const auto trackParCovCharmBachelor2 = getTrackParCov(trackCharmBachelor2);
                 nVtxFrom3ProngFitterXiHyp = df2.process(trackParCovCharmBachelor1, trackParCovCharmBachelor2);
               } catch (...) {
                 if (config.fillHistograms) {
@@ -3845,10 +3845,10 @@ struct HfTrackIndexSkimCreatorLfCascades {
                   // get bachelor momenta at the Xic vertex
                   df2.getTrack(0).getPxPyPzGlo(pVec1);
                   df2.getTrack(1).getPxPyPzGlo(pVec2);
-                  auto pVecCand = RecoDecay::pVec(pVec1, pVec2, pVec3);
-                  auto ptCand = RecoDecay::pt(pVecCand);
-                  std::array<float, 3> primaryVertex{collision.posX(), collision.posY(), collision.posZ()}; // primary vertex
-                  const auto& secondaryVertex = df2.getPCACandidate();                                      // secondary vertex
+                  const auto pVecCand = RecoDecay::pVec(pVec1, pVec2, pVec3);
+                  const auto ptCand = RecoDecay::pt(pVecCand);
+                  const std::array<float, 3> primaryVertex{collision.posX(), collision.posY(), collision.posZ()}; // primary vertex
+                  const auto& secondaryVertex = df2.getPCACandidate();                                            // secondary vertex
 
                   registry.fill(HIST("hRejpTStatusXicPlusToXiPiPi"), 0);
                   if (ptCand >= config.ptMinXicplusLfCasc) {
@@ -3861,8 +3861,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
                   // fill histograms
                   if (config.fillHistograms) {
-                    std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
-                    auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
+                    const std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
+                    const auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
                     registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
                     registry.fill(HIST("hPtCutsXicPlusToXiPiPi"), ptCand);
                   }
