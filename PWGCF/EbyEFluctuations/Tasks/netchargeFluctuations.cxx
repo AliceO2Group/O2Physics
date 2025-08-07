@@ -87,24 +87,10 @@ struct NetchargeFluctuations {
   HistogramRegistry histogramRegistry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Configurables
-  Configurable<int64_t> ccdbNoLaterThan{
-    "ccdbNoLaterThan",
-    std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::chrono::system_clock::now().time_since_epoch())
-      .count(),
-    "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> cfgUrlCCDB{
-    "cfgUrlCCDB",
-    "http://alice-ccdb.cern.ch",
-    "url of ccdb"};
-  Configurable<std::string> cfgPathCCDB{
-    "cfgPathCCDB",
-    "Users/n/nimalik/efftest",
-    "Path for ccdb-object"};
-  Configurable<bool> cfgLoadEff{
-    "cfgLoadEff",
-    true,
-    "Load efficiency"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> cfgUrlCCDB{"cfgUrlCCDB", "http://alice-ccdb.cern.ch", "url of ccdb"};
+  Configurable<std::string> cfgPathCCDB{"cfgPathCCDB", "Users/n/nimalik/efftest", "Path for ccdb-object"};
+  Configurable<bool> cfgLoadEff{"cfgLoadEff", true, "Load efficiency"};
 
   Configurable<float> vertexZcut{"vertexZcut", 10.f, "Vertex Z"};
   Configurable<float> etaCut{"etaCut", 0.8, "Eta cut"};
