@@ -52,6 +52,7 @@ struct QAHistograms {
   Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
   Configurable<int> _requestVertexTOForTRDmatched{"requestVertexTOFmatched", 0, "0 -> no selectio; 1 -> vertex is matched to TOF or TRD; 2 -> matched to both;"};
   Configurable<bool> _requestNoCollInTimeRangeStandard{"requestNoCollInTimeRangeStandard", false, ""};
+  Configurable<bool>_requestIsGoodITSLayersAll{"requestIsGoodITSLayersAll", false, "cut time intervals with dead ITS staves"};
   Configurable<std::pair<float, float>> _IRcut{"IRcut", std::pair<float, float>{0.f, 100.f}, "[min., max.] IR range to keep events within"};
   Configurable<std::pair<int, int>> _OccupancyCut{"OccupancyCut", std::pair<int, int>{0, 10000}, "[min., max.] occupancy range to keep events within"};
 
@@ -181,6 +182,8 @@ struct QAHistograms {
         continue;
       if (_requestNoCollInTimeRangeStandard && !collision.noCollInTimeRangeStandard())
         continue;
+      if (_requestIsGoodITSLayersAll && !collision.isGoodITSLayersAll())
+        continue;
       if (collision.multPerc() < _centCut.value.first || collision.multPerc() >= _centCut.value.second)
         continue;
       if (collision.hadronicRate() < _IRcut.value.first || collision.hadronicRate() >= _IRcut.value.second)
@@ -205,6 +208,8 @@ struct QAHistograms {
       if (_requestVertexTOForTRDmatched > track.template singleCollSel_as<ColsType>().isVertexTOForTRDmatched())
         continue;
       if (_requestNoCollInTimeRangeStandard && !track.template singleCollSel_as<ColsType>().noCollInTimeRangeStandard())
+        continue;
+      if (_requestIsGoodITSLayersAll && !track.template singleCollSel_as<ColsType>().isGoodITSLayersAll())
         continue;
 
       if (std::fabs(track.template singleCollSel_as<ColsType>().posZ()) > _vertexZ)
@@ -245,9 +250,13 @@ struct QAHistograms {
         registry.fill(HIST("ITSchi2"), track.itsChi2NCl());
         registry.fill(HIST("TPCchi2"), track.tpcChi2NCl());
 
-        ITShisto->Fill(track.p(), o2::aod::singletrackselector::getITSNsigma(track, _particlePDG));
-        TPChisto->Fill(track.p(), o2::aod::singletrackselector::getTPCNsigma(track, _particlePDG));
-        TOFhisto->Fill(track.p(), o2::aod::singletrackselector::getTOFNsigma(track, _particlePDG));
+        if (ITShisto) ITShisto->Fill(track.p(), o2::aod::singletrackselector::getITSNsigma(track, _particlePDG));
+        if (TPChisto) TPChisto->Fill(track.p(), o2::aod::singletrackselector::getTPCNsigma(track, _particlePDG));
+        if (TOFhisto) TOFhisto->Fill(track.p(), o2::aod::singletrackselector::getTOFNsigma(track, _particlePDG));
+
+        if (!ITShisto || !TPChisto || !TOFhisto) {
+          LOGF(error, "One or more dynamic histograms were not created. Check PDG: %d", _particlePDG.value);}
+
 
         if constexpr (FillExtra) {
           registry.fill(HIST("TPCSignal"), track.tpcInnerParam(), track.tpcSignal());
