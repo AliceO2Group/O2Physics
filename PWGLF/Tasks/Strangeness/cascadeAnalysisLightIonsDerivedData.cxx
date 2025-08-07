@@ -734,6 +734,7 @@ struct CascadeAnalysisLightIonsDerivedData {
      bool atLeastOne = false;
      int biggestNContribs = -1;
      int nCollisions = 0;
+     float multiplicitydata = -1.0f;
      for (auto const& collision : groupedCollisions) {
 
        // event selections
@@ -778,29 +779,28 @@ struct CascadeAnalysisLightIonsDerivedData {
          continue;
        }
       
-
        if (biggestNContribs < collision.multPVTotalContributors()) {
          biggestNContribs = collision.multPVTotalContributors();
-         if(centralityEstimator == Option::kFT0C) centrality = collision.centFT0C();
-         if(centralityEstimator == Option::kFT0M) centrality = collision.centFT0M();
-         if(centralityEstimator == Option::kFV0A) centrality = collision.centFV0A();
-         if(centralityEstimator == Option::kNGlobal) centrality = collision.centNGlobal();
+         if(centralityEstimator == Option::kFT0C) multiplicitydata = collision.centFT0C();
+         if(centralityEstimator == Option::kFT0M) multiplicitydata = collision.centFT0M();
+         if(centralityEstimator == Option::kFV0A) multiplicitydata = collision.centFV0A();
+         if(centralityEstimator == Option::kNGlobal) multiplicitydata = collision.centNGlobal();
        }       
        nCollisions++;
 
        atLeastOne = true;
      }
 
-     registryMC.fill(HIST("hCentralityVsNcoll_beforeEvSel"), centrality, groupedCollisions.size());
-     registryMC.fill(HIST("hCentralityVsNcoll_afterEvSel"), centrality, nCollisions);
-     registryMC.fill(HIST("hCentralityVsMultMC"), centrality, mcCollisions.multMCNParticlesEta05());
+     registryMC.fill(HIST("hCentralityVsNcoll_beforeEvSel"), multiplicitydata, groupedCollisions.size());
+     registryMC.fill(HIST("hCentralityVsNcoll_afterEvSel"), multiplicitydata, nCollisions);
+     registryMC.fill(HIST("hCentralityVsMultMC"), multiplicitydata, mcCollisions.multMCNParticlesEta05());
      
      registryQC.fill(HIST("hVertexZGen"), mcCollisions.posZ());
 
      if (atLeastOne) {
        registryMC.fill(HIST("hGenEvents"), mcCollisions.multMCNParticlesEta05(), 1 /* at least 1 rec. event*/);
 
-       registryMC.fill(HIST("hGenEventCentrality"), centrality);
+       registryMC.fill(HIST("hGenEventCentrality"), multiplicitydata);
      }
    }
    return;
@@ -1150,15 +1150,15 @@ struct CascadeAnalysisLightIonsDerivedData {
       // Store the Zvtx
       registryQC.fill(HIST("hVertexZGen"), mcCollision.posZ());
       
-      float centrality = 100.5f;
+      //float centrality = 100.5f;
       
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
         auto collision = RecCols.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
       
-        if(centralityEstimator == Option::kFT0C) centrality = collision.centFT0C();
-        if(centralityEstimator == Option::kFT0M) centrality = collision.centFT0M();
-        if(centralityEstimator == Option::kFV0A) centrality = collision.centFV0A();
-        if(centralityEstimator == Option::kNGlobal) centrality = collision.centNGlobal();
+        //if(centralityEstimator == Option::kFT0C) centrality = collision.centFT0C();
+        //if(centralityEstimator == Option::kFT0M) centrality = collision.centFT0M();
+        //if(centralityEstimator == Option::kFV0A) centrality = collision.centFV0A();
+        //if(centralityEstimator == Option::kNGlobal) centrality = collision.centNGlobal();
     
         if (cascMC.pdgCode() == kXiMinus && std::abs(cascMC.rapidityMC(0)) < rapcut) {
           registryMC.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
