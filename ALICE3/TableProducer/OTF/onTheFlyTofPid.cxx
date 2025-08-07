@@ -24,40 +24,43 @@
 /// \since  May 22, 2024
 ///
 
-#include <utility>
-#include <map>
-#include <string>
-#include <vector>
+#include "TableHelper.h"
 
-#include <TPDGCode.h>
+#include "ALICE3/Core/DelphesO2TrackSmearer.h"
+#include "ALICE3/Core/TrackUtilities.h"
+#include "ALICE3/DataModel/OTFTOF.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/GeomConstants.h"
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "CommonUtils/NameConf.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsVertexing/HelixHelper.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "ALICE3/Core/TrackUtilities.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonUtils/NameConf.h"
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "CommonConstants/GeomConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "TRandom3.h"
-#include "ALICE3/DataModel/OTFTOF.h"
-#include "DetectorsVertexing/HelixHelper.h"
-#include "TableHelper.h"
-#include "ALICE3/Core/DelphesO2TrackSmearer.h"
+
 #include "TEfficiency.h"
 #include "THashList.h"
+#include "TRandom3.h"
+#include <TPDGCode.h>
+
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -84,7 +87,7 @@ struct OnTheFlyTofPid {
   // more could be added (especially a disk TOF at a certain z?)
   // in the evolution of this effort
   struct : ConfigurableGroup {
-    Configurable<float> dBz{"dBz", 20, "magnetic field (kilogauss)"};
+    Configurable<float> magneticField{"magneticField", 0, "magnetic field (kilogauss) if 0, taken from the tracker task"};
     Configurable<bool> considerEventTime{"considerEventTime", true, "flag to consider event time"};
     Configurable<float> innerTOFRadius{"innerTOFRadius", 20, "barrel inner TOF radius (cm)"};
     Configurable<float> outerTOFRadius{"outerTOFRadius", 80, "barrel outer TOF radius (cm)"};
@@ -140,6 +143,13 @@ struct OnTheFlyTofPid {
   void init(o2::framework::InitContext& initContext)
   {
     pRandomNumberGenerator.SetSeed(0); // fully randomize
+    if (simConfig.magneticField.value < o2::constants::math::Epsilon) {
+      LOG(info) << "Getting the magnetic field from the on-the-fly tracker task";
+      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", simConfig.magneticField, false)) {
+        LOG(fatal) << "Could not get Bz from on-the-fly-tracker task";
+      }
+      LOG(info) << "Bz = " << simConfig.magneticField.value << " T";
+    }
 
     // Check if inheriting the LUT configuration
     auto configLutPath = [&](Configurable<std::string>& lut) {
@@ -221,33 +231,33 @@ struct OnTheFlyTofPid {
 
       std::string particleNames[kParticles] = {"#it{e}", "#it{#mu}", "#it{#pi}", "#it{K}", "#it{p}"};
       std::string particleNames2[kParticles] = {"Elec", "Muon", "Pion", "Kaon", "Prot"};
-      for (int i_true = 0; i_true < kParticles; i_true++) {
+      for (int iTrue = 0; iTrue < kParticles; iTrue++) {
         auto addHistogram = [&](const std::string& name, const AxisSpec& axis) {
           return histos.add<TH2>(name, "", kTH2F, {axisMomentum, axis});
         };
 
-        const AxisSpec axisTrackTimeRes{plotsConfig.nBinsTimeRes, 0.0f, +200.0f, "Track time resolution - " + particleNames[i_true] + " (ps)"};
-        h2dInnerTimeResTrack[i_true] = addHistogram("iTOF/res/h2dInnerTimeResTrack" + particleNames2[i_true] + "VsP", axisTrackTimeRes);
-        h2dOuterTimeResTrack[i_true] = addHistogram("oTOF/res/h2dOuterTimeResTrack" + particleNames2[i_true] + "VsP", axisTrackTimeRes);
-        const AxisSpec axisTotalTimeRes{plotsConfig.nBinsTimeRes, 0.0f, +200.0f, "Total time resolution - " + particleNames[i_true] + " (ps)"};
-        h2dInnerTimeResTotal[i_true] = addHistogram("iTOF/res/h2dInnerTimeResTotal" + particleNames2[i_true] + "VsP", axisTotalTimeRes);
-        h2dOuterTimeResTotal[i_true] = addHistogram("oTOF/res/h2dOuterTimeResTotal" + particleNames2[i_true] + "VsP", axisTotalTimeRes);
-        for (int i_hyp = 0; i_hyp < kParticles; i_hyp++) {
-          std::string nameTitleInner = "h2dInnerNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
-          std::string nameTitleOuter = "h2dOuterNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
-          std::string nameTitleInnerDelta = "h2dInnerDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
-          std::string nameTitleOuterDelta = "h2dOuterDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis";
+        const AxisSpec axisTrackTimeRes{plotsConfig.nBinsTimeRes, 0.0f, +200.0f, "Track time resolution - " + particleNames[iTrue] + " (ps)"};
+        h2dInnerTimeResTrack[iTrue] = addHistogram("iTOF/res/h2dInnerTimeResTrack" + particleNames2[iTrue] + "VsP", axisTrackTimeRes);
+        h2dOuterTimeResTrack[iTrue] = addHistogram("oTOF/res/h2dOuterTimeResTrack" + particleNames2[iTrue] + "VsP", axisTrackTimeRes);
+        const AxisSpec axisTotalTimeRes{plotsConfig.nBinsTimeRes, 0.0f, +200.0f, "Total time resolution - " + particleNames[iTrue] + " (ps)"};
+        h2dInnerTimeResTotal[iTrue] = addHistogram("iTOF/res/h2dInnerTimeResTotal" + particleNames2[iTrue] + "VsP", axisTotalTimeRes);
+        h2dOuterTimeResTotal[iTrue] = addHistogram("oTOF/res/h2dOuterTimeResTotal" + particleNames2[iTrue] + "VsP", axisTotalTimeRes);
+        for (int iHyp = 0; iHyp < kParticles; iHyp++) {
+          std::string nameTitleInner = "h2dInnerNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
+          std::string nameTitleOuter = "h2dOuterNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
+          std::string nameTitleInnerDelta = "h2dInnerDeltaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
+          std::string nameTitleOuterDelta = "h2dOuterDeltaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis";
           const AxisSpec axisX{plotsConfig.doSeparationVsPt.value ? axisPt : axisMomentum};
-          const AxisSpec axisNsigmaCorrect{plotsConfig.nBinsNsigmaCorrectSpecies, plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-          const AxisSpec axisDeltaCorrect{plotsConfig.nBinsDeltaCorrectSpecies, plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-          const AxisSpec axisNsigmaWrong{plotsConfig.nBinsNsigmaWrongSpecies, plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma -  True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-          const AxisSpec axisDeltaWrong{plotsConfig.nBinsDeltaWrongSpecies, plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[i_true] + " vs " + particleNames[i_hyp] + " hypothesis"};
-          const AxisSpec axisNSigma{i_true == i_hyp ? axisNsigmaCorrect : axisNsigmaWrong};
-          const AxisSpec axisDelta{i_true == i_hyp ? axisDeltaCorrect : axisDeltaWrong};
-          h2dInnerNsigmaTrue[i_true][i_hyp] = histos.add<TH2>("iTOF/nsigma/h2dInnerNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis", "", kTH2F, {axisX, axisNSigma});
-          h2dOuterNsigmaTrue[i_true][i_hyp] = histos.add<TH2>("oTOF/nsigma/h2dOuterNsigmaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis", "", kTH2F, {axisX, axisNSigma});
-          h2dInnerDeltaTrue[i_true][i_hyp] = histos.add<TH2>("iTOF/delta/h2dInnerDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis", "", kTH2F, {axisX, axisDelta});
-          h2dOuterDeltaTrue[i_true][i_hyp] = histos.add<TH2>("oTOF/delta/h2dOuterDeltaTrue" + particleNames2[i_true] + "Vs" + particleNames2[i_hyp] + "Hypothesis", "", kTH2F, {axisX, axisDelta});
+          const AxisSpec axisNsigmaCorrect{plotsConfig.nBinsNsigmaCorrectSpecies, plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma - True " + particleNames[iTrue] + " vs " + particleNames[iHyp] + " hypothesis"};
+          const AxisSpec axisDeltaCorrect{plotsConfig.nBinsDeltaCorrectSpecies, plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[iTrue] + " vs " + particleNames[iHyp] + " hypothesis"};
+          const AxisSpec axisNsigmaWrong{plotsConfig.nBinsNsigmaWrongSpecies, plotsConfig.minNsigmaRange, plotsConfig.maxNsigmaRange, "N#sigma -  True " + particleNames[iTrue] + " vs " + particleNames[iHyp] + " hypothesis"};
+          const AxisSpec axisDeltaWrong{plotsConfig.nBinsDeltaWrongSpecies, plotsConfig.minDeltaRange, plotsConfig.maxDeltaRange, "#Delta - True " + particleNames[iTrue] + " vs " + particleNames[iHyp] + " hypothesis"};
+          const AxisSpec axisNSigma{iTrue == iHyp ? axisNsigmaCorrect : axisNsigmaWrong};
+          const AxisSpec axisDelta{iTrue == iHyp ? axisDeltaCorrect : axisDeltaWrong};
+          h2dInnerNsigmaTrue[iTrue][iHyp] = histos.add<TH2>("iTOF/nsigma/h2dInnerNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis", "", kTH2F, {axisX, axisNSigma});
+          h2dOuterNsigmaTrue[iTrue][iHyp] = histos.add<TH2>("oTOF/nsigma/h2dOuterNsigmaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis", "", kTH2F, {axisX, axisNSigma});
+          h2dInnerDeltaTrue[iTrue][iHyp] = histos.add<TH2>("iTOF/delta/h2dInnerDeltaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis", "", kTH2F, {axisX, axisDelta});
+          h2dOuterDeltaTrue[iTrue][iHyp] = histos.add<TH2>("oTOF/delta/h2dOuterDeltaTrue" + particleNames2[iTrue] + "Vs" + particleNames2[iHyp] + "Hypothesis", "", kTH2F, {axisX, axisDelta});
         }
       }
     }
@@ -397,7 +407,7 @@ struct OnTheFlyTofPid {
 
     static constexpr float kMaxEventTimeResolution = 200.f;
     if (sumw <= 0. || tracks.size() <= 1 || std::sqrt(1. / sumw) > kMaxEventTimeResolution) {
-      tzero[0] = 0.;    // [ps]
+      tzero[0] = 0.;                      // [ps]
       tzero[1] = kMaxEventTimeResolution; // [ps]
       return false;
     }
@@ -496,13 +506,13 @@ struct OnTheFlyTofPid {
 
       float xPv = -100.f;
       static constexpr float kTrkXThreshold = -99.f; // Threshold to consider a good propagation of the track
-      if (o2track.propagateToDCA(mcPvVtx, simConfig.dBz)) {
+      if (o2track.propagateToDCA(mcPvVtx, simConfig.magneticField)) {
         xPv = o2track.getX();
       }
       float trackLengthInnerTOF = -1, trackLengthOuterTOF = -1;
       if (xPv > kTrkXThreshold) {
-        trackLengthInnerTOF = computeTrackLength(o2track, simConfig.innerTOFRadius, simConfig.dBz);
-        trackLengthOuterTOF = computeTrackLength(o2track, simConfig.outerTOFRadius, simConfig.dBz);
+        trackLengthInnerTOF = computeTrackLength(o2track, simConfig.innerTOFRadius, simConfig.magneticField);
+        trackLengthOuterTOF = computeTrackLength(o2track, simConfig.outerTOFRadius, simConfig.magneticField);
       }
 
       // get mass to calculate velocity
@@ -526,12 +536,12 @@ struct OnTheFlyTofPid {
       float trackLengthRecoInnerTOF = -1, trackLengthRecoOuterTOF = -1;
       auto recoTrack = getTrackParCov(track);
       xPv = -100.f;
-      if (recoTrack.propagateToDCA(pvVtx, simConfig.dBz)) {
+      if (recoTrack.propagateToDCA(pvVtx, simConfig.magneticField)) {
         xPv = recoTrack.getX();
       }
       if (xPv > kTrkXThreshold) {
-        trackLengthRecoInnerTOF = computeTrackLength(recoTrack, simConfig.innerTOFRadius, simConfig.dBz);
-        trackLengthRecoOuterTOF = computeTrackLength(recoTrack, simConfig.outerTOFRadius, simConfig.dBz);
+        trackLengthRecoInnerTOF = computeTrackLength(recoTrack, simConfig.innerTOFRadius, simConfig.magneticField);
+        trackLengthRecoOuterTOF = computeTrackLength(recoTrack, simConfig.outerTOFRadius, simConfig.magneticField);
       }
 
       // cache the track info needed for the event time calculation
@@ -639,8 +649,8 @@ struct OnTheFlyTofPid {
             ptResolution = mSmearer.getAbsPtRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentum / std::cosh(pseudorapidity));
             etaResolution = mSmearer.getAbsEtaRes(pdgInfoThis->PdgCode(), dNdEta, pseudorapidity, momentum / std::cosh(pseudorapidity));
           }
-          float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentum / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.innerTOFRadius, simConfig.dBz);
-          float outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentum / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.outerTOFRadius, simConfig.dBz);
+          float innerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentum / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.innerTOFRadius, simConfig.magneticField);
+          float outerTrackTimeReso = calculateTrackTimeResolutionAdvanced(momentum / std::cosh(pseudorapidity), pseudorapidity, ptResolution, etaResolution, masses[ii], simConfig.outerTOFRadius, simConfig.magneticField);
           innerTotalTimeReso = std::hypot(simConfig.innerTOFTimeReso, innerTrackTimeReso);
           outerTotalTimeReso = std::hypot(simConfig.outerTOFTimeReso, outerTrackTimeReso);
 

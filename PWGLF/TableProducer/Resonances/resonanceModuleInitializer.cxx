@@ -817,7 +817,7 @@ struct ResonanceDaughterInitializer {
     for (auto const& track : tracks) {
       if (!filterMicroTrack(track))
         continue;
-      o2::aod::resodmciroaughter::ResoMicroTrackSelFlag trackSelFlag(track.dcaXY(), track.dcaZ());
+      o2::aod::resomicrodaughter::ResoMicroTrackSelFlag trackSelFlag(track.dcaXY(), track.dcaZ());
       if (std::abs(track.dcaXY()) < (0.004 + (0.013 / track.pt()))) {
         trackSelFlag.setDCAxy0();
       }
@@ -836,9 +836,9 @@ struct ResonanceDaughterInitializer {
                      track.px(),
                      track.py(),
                      track.pz(),
-                     static_cast<uint8_t>(o2::aod::resodmciroaughter::PidNSigma(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.hasTOF())),
-                     static_cast<uint8_t>(o2::aod::resodmciroaughter::PidNSigma(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.hasTOF())),
-                     static_cast<uint8_t>(o2::aod::resodmciroaughter::PidNSigma(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.hasTOF())),
+                     static_cast<uint8_t>(o2::aod::resomicrodaughter::PidNSigma(std::abs(track.tpcNSigmaPi()), std::abs(track.tofNSigmaPi()), track.hasTOF())),
+                     static_cast<uint8_t>(o2::aod::resomicrodaughter::PidNSigma(std::abs(track.tpcNSigmaKa()), std::abs(track.tofNSigmaKa()), track.hasTOF())),
+                     static_cast<uint8_t>(o2::aod::resomicrodaughter::PidNSigma(std::abs(track.tpcNSigmaPr()), std::abs(track.tofNSigmaPr()), track.hasTOF())),
                      static_cast<uint8_t>(trackSelFlag),
                      trackFlags);
       if (!cfgBypassTrackIndexFill) {

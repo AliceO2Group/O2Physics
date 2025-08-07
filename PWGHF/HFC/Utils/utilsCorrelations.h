@@ -16,17 +16,22 @@
 #ifndef PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 #define PWGHF_HFC_UTILS_UTILSCORRELATIONS_H_
 
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
+
 #include <TPDGCode.h>
 
-#include <fairlogger/Logger.h>
+#include <Rtypes.h>
 
 #include <cmath>
 #include <cstddef>
-
-#include "CommonConstants/MathConstants.h"
-
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/PIDResponseTOF.h"
 
 namespace o2::analysis::hf_correlations
 {
@@ -45,12 +50,16 @@ enum PairSign {
   LcNegTrkNeg
 };
 
+constexpr float PhiTowardMax{o2::constants::math::PIThird};
+constexpr float PhiAwayMin{2.f * o2::constants::math::PIThird};
+constexpr float PhiAwayMax{4.f * o2::constants::math::PIThird};
+
 template <typename T>
 Region getRegion(T const deltaPhi)
 {
-  if (std::abs(deltaPhi) < o2::constants::math::PIThird) {
+  if (std::abs(deltaPhi) < PhiTowardMax) {
     return Toward;
-  } else if (deltaPhi > 2. * o2::constants::math::PIThird && deltaPhi < 4. * o2::constants::math::PIThird) {
+  } else if (deltaPhi > PhiAwayMin && deltaPhi < PhiAwayMax) {
     return Away;
   } else {
     return Transverse;
@@ -117,6 +126,70 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
     }
   }
   return true; // Passed all checks
+}
+
+/// @brief Selects a candidate based on its PDG code, decay channel, and assigns the corresponding mass.
+///
+/// @tparam isScCandidate  Boolean template parameter:
+///                   - `true` to check for Sigma_c candidates
+///                   - `false` to check for Lambda_c candidates
+/// @tparam McParticleType Type representing the MC particle, must provide `pdgCode()` and `flagMcMatchGen()`
+///
+/// @param[in] particle  MC particle whose PDG code and decay flag are evaluated
+/// @param[out] massCand Mass of the matched candidate is set here, if a valid match is found
+///
+/// @return `true` if candidate matches expected PDG and decay flag, and mass is set; `false` otherwise
+template <bool isScCandidate, typename McParticleType>
+bool matchCandAndMass(McParticleType const& particle, double& massCand)
+{
+  const auto pdgCand = std::abs(particle.pdgCode());
+  const auto matchGenFlag = std::abs(particle.flagMcMatchGen());
+
+  // Validate PDG code based on candidate type
+  if (isScCandidate) {
+    if (!(pdgCand == o2::constants::physics::Pdg::kSigmaC0 ||
+          pdgCand == o2::constants::physics::Pdg::kSigmaCPlusPlus ||
+          pdgCand == o2::constants::physics::Pdg::kSigmaCStar0 ||
+          pdgCand == o2::constants::physics::Pdg::kSigmaCStarPlusPlus)) {
+      return false;
+    }
+  } else {
+    if (pdgCand != o2::constants::physics::Pdg::kLambdaCPlus) {
+      return false;
+    }
+  }
+
+  // Map decay type to mass
+  switch (matchGenFlag) {
+    case BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi): {
+      massCand = o2::constants::physics::MassSigmaC0;
+      return true;
+    }
+
+    case BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi): {
+      massCand = o2::constants::physics::MassSigmaCStar0;
+      return true;
+    }
+
+    case BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi): {
+      massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
+      return true;
+    }
+
+    case BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi): {
+      massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
+      return true;
+    }
+
+    case hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi: {
+      massCand = o2::constants::physics::MassLambdaCPlus;
+      return true;
+    }
+
+    default: {
+      return false;
+    }
+  }
 }
 
 // ========= Find Leading Particle ==============

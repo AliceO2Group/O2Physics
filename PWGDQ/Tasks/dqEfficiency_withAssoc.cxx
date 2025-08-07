@@ -12,43 +12,47 @@
 // Contact: iarsene@cern.ch, i.c.arsene@fys.uio.no
 //   Configurable workflow for running several DQ or other PWG analyses
 
-#include <iostream>
-#include <vector>
-#include <algorithm>
-#include <map>
-#include <string>
-#include <memory>
-#include <utility>
+#include "PWGDQ/Core/AnalysisCompositeCut.h"
+#include "PWGDQ/Core/AnalysisCut.h"
+#include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
+#include "PWGDQ/Core/MCSignal.h"
+#include "PWGDQ/Core/MCSignalLibrary.h"
+#include "PWGDQ/Core/MixingHandler.h"
+#include "PWGDQ/Core/MixingLibrary.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
+#include "Common/Core/TableHelper.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TGeoGlobalMagField.h"
 #include <TH1F.h>
 #include <TH3F.h>
 #include <THashList.h>
 #include <TList.h>
-#include <TString.h>
 #include <TObjString.h>
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisHelpers.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/MixingHandler.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
-#include "PWGDQ/Core/CutsLibrary.h"
-#include "PWGDQ/Core/MixingLibrary.h"
-#include "PWGDQ/Core/MCSignal.h"
-#include "PWGDQ/Core/MCSignalLibrary.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "Field/MagneticField.h"
-#include "TGeoGlobalMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "Common/Core/TableHelper.h"
+#include <TString.h>
+
+#include <algorithm>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -84,7 +88,42 @@ DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float);
 DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);
 DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
 DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
-DECLARE_SOA_COLUMN(DCAxyzBetweenProngs, dcaxyzBetweenProngs, float);
+DECLARE_SOA_COLUMN(PINassoc, pINassoc, float);
+DECLARE_SOA_COLUMN(Etaassoc, etaassoc, float);
+DECLARE_SOA_COLUMN(Ptpair, ptpair, float);
+DECLARE_SOA_COLUMN(Etapair, etapair, float);
+DECLARE_SOA_COLUMN(PINleg1, pINleg1, float);
+DECLARE_SOA_COLUMN(Etaleg1, etaleg1, float);
+DECLARE_SOA_COLUMN(PINleg2, pINleg2, float);
+DECLARE_SOA_COLUMN(Etaleg2, etaleg2, float);
+DECLARE_SOA_COLUMN(TPCnsigmaKaassoc, tpcnsigmaKaassoc, float);
+DECLARE_SOA_COLUMN(TPCnsigmaPiassoc, tpcnsigmaPiassoc, float);
+DECLARE_SOA_COLUMN(TPCnsigmaPrassoc, tpcnsigmaPrassoc, float);
+DECLARE_SOA_COLUMN(TOFnsigmaKaassoc, tofnsigmaKaassoc, float);
+DECLARE_SOA_COLUMN(TPCnsigmaElleg1, tpcnsigmaElleg1, float);
+DECLARE_SOA_COLUMN(TPCnsigmaPileg1, tpcnsigmaPileg1, float);
+DECLARE_SOA_COLUMN(TPCnsigmaPrleg1, tpcnsigmaPrleg1, float);
+DECLARE_SOA_COLUMN(TPCnsigmaElleg2, tpcnsigmaElleg2, float);
+DECLARE_SOA_COLUMN(TPCnsigmaPileg2, tpcnsigmaPileg2, float);
+DECLARE_SOA_COLUMN(TPCnsigmaPrleg2, tpcnsigmaPrleg2, float);
+DECLARE_SOA_COLUMN(DCAXYassoc, dcaXYassoc, float);
+DECLARE_SOA_COLUMN(DCAZassoc, dcaZassoc, float);
+DECLARE_SOA_COLUMN(DCAXYleg1, dcaXYleg1, float);
+DECLARE_SOA_COLUMN(DCAZleg1, dcaZleg1, float);
+DECLARE_SOA_COLUMN(DCAXYleg2, dcaXYleg2, float);
+DECLARE_SOA_COLUMN(DCAZleg2, dcaZleg2, float);
+DECLARE_SOA_COLUMN(ITSClusterMapassoc, itsClusterMapassoc, uint8_t);
+DECLARE_SOA_COLUMN(ITSClusterMapleg1, itsClusterMapleg1, uint8_t);
+DECLARE_SOA_COLUMN(ITSClusterMapleg2, itsClusterMapleg2, uint8_t);
+DECLARE_SOA_COLUMN(ITSChi2assoc, itsChi2assoc, float);
+DECLARE_SOA_COLUMN(ITSChi2leg1, itsChi2leg1, float);
+DECLARE_SOA_COLUMN(ITSChi2leg2, itsChi2leg2, float);
+DECLARE_SOA_COLUMN(TPCNclsassoc, tpcNclsassoc, float);
+DECLARE_SOA_COLUMN(TPCNclsleg1, tpcNclsleg1, float);
+DECLARE_SOA_COLUMN(TPCNclsleg2, tpcNclsleg2, float);
+DECLARE_SOA_COLUMN(TPCChi2assoc, tpcChi2assoc, float);
+DECLARE_SOA_COLUMN(TPCChi2leg1, tpcChi2leg1, float);
+DECLARE_SOA_COLUMN(TPCChi2leg2, tpcChi2leg2, float);
 DECLARE_SOA_COLUMN(McFlag, mcFlag, int8_t);
 DECLARE_SOA_BITMAP_COLUMN(IsJpsiFromBSelected, isJpsiFromBSelected, 32);
 // Candidate columns for prompt-non-prompt JPsi separation
@@ -107,8 +146,17 @@ DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsBarrelSele
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
                   dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltaMassBcandidate, dqanalysisflags::pTBcandidate,
                   dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate,
-                  dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::DCAxyzBetweenProngs,
-                  dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate,
+                  dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate,
+                  dqanalysisflags::PINassoc, dqanalysisflags::Etaassoc, dqanalysisflags::Ptpair, dqanalysisflags::Etapair,
+                  dqanalysisflags::PINleg1, dqanalysisflags::Etaleg1, dqanalysisflags::PINleg2, dqanalysisflags::Etaleg2,
+                  dqanalysisflags::TPCnsigmaKaassoc, dqanalysisflags::TPCnsigmaPiassoc, dqanalysisflags::TPCnsigmaPrassoc, dqanalysisflags::TOFnsigmaKaassoc,
+                  dqanalysisflags::TPCnsigmaElleg1, dqanalysisflags::TPCnsigmaPileg1, dqanalysisflags::TPCnsigmaPrleg1,
+                  dqanalysisflags::TPCnsigmaElleg2, dqanalysisflags::TPCnsigmaPileg2, dqanalysisflags::TPCnsigmaPrleg2,
+                  dqanalysisflags::DCAXYassoc, dqanalysisflags::DCAZassoc, dqanalysisflags::DCAXYleg1, dqanalysisflags::DCAZleg1, dqanalysisflags::DCAXYleg2, dqanalysisflags::DCAZleg2,
+                  dqanalysisflags::ITSClusterMapassoc, dqanalysisflags::ITSClusterMapleg1, dqanalysisflags::ITSClusterMapleg2,
+                  dqanalysisflags::ITSChi2assoc, dqanalysisflags::ITSChi2leg1, dqanalysisflags::ITSChi2leg2,
+                  dqanalysisflags::TPCNclsassoc, dqanalysisflags::TPCNclsleg1, dqanalysisflags::TPCNclsleg2,
+                  dqanalysisflags::TPCChi2assoc, dqanalysisflags::TPCChi2leg1, dqanalysisflags::TPCChi2leg2,
                   dqanalysisflags::IsJpsiFromBSelected, dqanalysisflags::IsBarrelSelected, dqanalysisflags::McFlag);
 DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER", dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Lxyee, dqanalysisflags::LxyeePoleMass, dqanalysisflags::Lzee, dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::Corrassoc);
 } // namespace o2::aod
@@ -166,8 +214,8 @@ struct AnalysisEventSelection {
   Produces<aod::EventCuts> eventSel;
   OutputObj<THashList> fOutputList{"output"};
 
-  Configurable<string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
-  Configurable<string> fConfigEventCutsJSON{"cfgEventCutsJSON", "", "Additional event cuts specified in JSON format"};
+  Configurable<std::string> fConfigEventCuts{"cfgEventCuts", "eventStandard", "Event selection"};
+  Configurable<std::string> fConfigEventCutsJSON{"cfgEventCutsJSON", "", "Additional event cuts specified in JSON format"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigAddEventHistogram{"cfgAddEventHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddEventMCHistogram{"cfgAddEventMCHistogram", "generator", "Comma separated list of histograms"};
@@ -177,7 +225,7 @@ struct AnalysisEventSelection {
   Configurable<unsigned int> fConfigSplitCollisionsDeltaBC{"splitCollisionsDeltaBC", 100, "maximum delta-BC between two collisions to consider them as split candidates; do not apply if value is negative"};
   Configurable<bool> fConfigCheckSplitCollisions{"checkSplitCollisions", false, "If true, run the split collision check and fill histograms"};
 
-  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   HistogramManager* fHistMan = nullptr;
@@ -386,14 +434,14 @@ struct AnalysisTrackSelection {
   Produces<aod::BarrelAmbiguities> trackAmbiguities;
   OutputObj<THashList> fOutputList{"output"};
 
-  Configurable<string> fConfigCuts{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
+  Configurable<std::string> fConfigCuts{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
   Configurable<std::string> fConfigCutsJSON{"cfgBarrelTrackCutsJSON", "", "Additional list of barrel track cuts in JSON format"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
-  Configurable<string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
+  Configurable<std::string> fConfigAddTrackHistogram{"cfgAddTrackHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   Configurable<bool> fConfigPublishAmbiguity{"cfgPublishAmbiguity", true, "If true, publish ambiguity table and fill QA histograms"};
-  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> fConfigCcdbPathTPC{"ccdb-path-tpc", "Users/z/zhxiong/TPCPID/PostCalib", "base path to the ccdb object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
@@ -490,7 +538,7 @@ struct AnalysisTrackSelection {
         DefineHistograms(fHistMan, "TrackBarrel_AmbiguityInBunch;TrackBarrel_AmbiguityOutOfBunch;", "ambiguity");
       }
       dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
-      VarManager::SetUseVars(fHistMan->GetUsedVars()); // provide the list of required variables so that VarManager knows what to fill
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                                       // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
 
@@ -711,13 +759,13 @@ struct AnalysisMuonSelection {
   Produces<aod::MuonAmbiguities> muonAmbiguities;
   OutputObj<THashList> fOutputList{"output"};
 
-  Configurable<string> fConfigCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
+  Configurable<std::string> fConfigCuts{"cfgMuonCuts", "muonQualityCuts", "Comma separated list of muon cuts"};
   Configurable<std::string> fConfigCutsJSON{"cfgMuonCutsJSON", "", "Additional list of muon cuts in JSON format"};
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigAddMuonHistogram{"cfgAddMuonHistogram", "", "Comma separated list of histograms"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
   Configurable<bool> fConfigPublishAmbiguity{"cfgPublishAmbiguity", true, "If true, publish ambiguity table and fill QA histograms"};
-  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
@@ -812,9 +860,9 @@ struct AnalysisMuonSelection {
         histClasses += "Muon_AmbiguityInBunch;Muon_AmbiguityOutOfBunch;";
       }
 
-      DefineHistograms(fHistMan, histClasses.Data(), fConfigAddMuonHistogram.value.data()); // define all histograms
+      DefineHistograms(fHistMan, histClasses.Data(), fConfigAddMuonHistogram.value.data());  // define all histograms
       dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
-      VarManager::SetUseVars(fHistMan->GetUsedVars());                                      // provide the list of required variables so that VarManager knows what to fill
+      VarManager::SetUseVars(fHistMan->GetUsedVars());                                       // provide the list of required variables so that VarManager knows what to fill
       fOutputList.setObject(fHistMan->GetMainHistogramList());
     }
 
@@ -1216,9 +1264,9 @@ struct AnalysisSameEventPairing {
   OutputObj<THashList> fOutputList{"output"};
 
   struct : ConfigurableGroup {
-    Configurable<string> track{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
-    Configurable<string> muon{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
-    Configurable<string> pair{"cfgPairCuts", "", "Comma separated list of pair cuts, !!! Use only if you know what you are doing, otherwise leave empty"};
+    Configurable<std::string> track{"cfgTrackCuts", "jpsiO2MCdebugCuts2", "Comma separated list of barrel track cuts"};
+    Configurable<std::string> muon{"cfgMuonCuts", "", "Comma separated list of muon cuts"};
+    Configurable<std::string> pair{"cfgPairCuts", "", "Comma separated list of pair cuts, !!! Use only if you know what you are doing, otherwise leave empty"};
     // TODO: Add pair cuts via JSON
   } fConfigCuts;
 
@@ -1227,7 +1275,7 @@ struct AnalysisSameEventPairing {
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
 
   struct : ConfigurableGroup {
-    Configurable<string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
     Configurable<std::string> grpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
     Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
@@ -1594,9 +1642,9 @@ struct AnalysisSameEventPairing {
 
     VarManager::SetCollisionSystem((TString)fConfigOptions.collisionSystem, fConfigOptions.centerMassEnergy); // set collision system and center of mass energy
 
-    DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data()); // define all histograms
+    DefineHistograms(fHistMan, histNames.Data(), fConfigAddSEPHistogram.value.data());     // define all histograms
     dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
-    VarManager::SetUseVars(fHistMan->GetUsedVars());                                   // provide the list of required variables so that VarManager knows what to fill
+    VarManager::SetUseVars(fHistMan->GetUsedVars());                                       // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
@@ -1883,6 +1931,24 @@ struct AnalysisSameEventPairing {
 
                       float dileptonMass = VarManager::fgValues[VarManager::kMass];
                       if (dileptonMass > useMiniTree.fConfigMiniTreeMinMass && dileptonMass < useMiniTree.fConfigMiniTreeMaxMass) {
+                        // In the miniTree the positive daughter is positioned as first
+                        if (t1.sign() > 0) {
+                          dileptonMiniTreeRec(mcDecision,
+                                              VarManager::fgValues[VarManager::kMass],
+                                              VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kCentFT0C],
+                                              t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(),
+                                              t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(),
+                                              t1.pt(), t1.eta(), t1.phi(),
+                                              t2.pt(), t2.eta(), t2.phi());
+                        } else {
+                          dileptonMiniTreeRec(mcDecision,
+                                              VarManager::fgValues[VarManager::kMass],
+                                              VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kCentFT0C],
+                                              t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(),
+                                              t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(),
+                                              t2.pt(), t2.eta(), t2.phi(),
+                                              t2.pt(), t2.eta(), t2.phi());
+                        }
                         dileptonMiniTreeRec(mcDecision,
                                             VarManager::fgValues[VarManager::kMass],
                                             VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kCentFT0C],
@@ -2011,7 +2077,7 @@ struct AnalysisSameEventPairing {
           fHistMan->FillHistClass(Form("MCTruthGen_%s", sig->GetName()), VarManager::fgValues);
           if (useMiniTree.fConfigMiniTree) {
             auto mcEvent = mcEvents.rawIteratorAt(mctrack.reducedMCeventId());
-            dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), VarManager::fgValues[VarManager::kCentFT0C], mctrack.pt(), mctrack.eta(), mctrack.phi(), -999, -999, -999);
+            dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), mctrack.pt(), mctrack.eta(), mctrack.phi(), -999, -999, -999);
           }
         }
       }
@@ -2115,11 +2181,16 @@ struct AnalysisSameEventPairing {
         continue;
       }
 
-      auto groupedMCTracks = mcTracks.sliceBy(perReducedMcGenEvent, event.reducedMCeventId());
-      groupedMCTracks.bindInternalIndicesTo(&mcTracks);
-      for (auto& track : groupedMCTracks) {
+      // auto groupedMCTracks = mcTracks.sliceBy(perReducedMcGenEvent, event.reducedMCeventId());
+      // groupedMCTracks.bindInternalIndicesTo(&mcTracks);
+      // for (auto& track : groupedMCTracks) {
+      for (auto& track : mcTracks) {
+        if (track.reducedMCeventId() != event.reducedMCeventId()) {
+          continue;
+        }
         VarManager::FillTrackMC(mcTracks, track);
-        auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
+        auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
+        // auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
@@ -2173,13 +2244,13 @@ struct AnalysisAsymmetricPairing {
   OutputObj<THashList> fOutputList{"output"};
 
   // Configurables
-  Configurable<string> fConfigLegCuts{"cfgLegCuts", "", "<leg-A-1>:<leg-B-1>[:<leg-C-1>],[<leg-A-2>:<leg-B-2>[:<leg-C-1>],...]"};
+  Configurable<std::string> fConfigLegCuts{"cfgLegCuts", "", "<leg-A-1>:<leg-B-1>[:<leg-C-1>],[<leg-A-2>:<leg-B-2>[:<leg-C-1>],...]"};
   Configurable<uint32_t> fConfigLegAFilterMask{"cfgLegAFilterMask", 0, "Filter mask corresponding to cuts in event-selection"};
   Configurable<uint32_t> fConfigLegBFilterMask{"cfgLegBFilterMask", 0, "Filter mask corresponding to cuts in event-selection"};
   Configurable<uint32_t> fConfigLegCFilterMask{"cfgLegCFilterMask", 0, "Filter mask corresponding to cuts in event-selection"};
-  Configurable<string> fConfigCommonTrackCuts{"cfgCommonTrackCuts", "", "Comma separated list of cuts to be applied to all legs"};
-  Configurable<string> fConfigPairCuts{"cfgPairCuts", "", "Comma separated list of pair cuts"};
-  Configurable<string> fConfigPairCutsJSON{"cfgPairCutsJSON", "", "Additional list of pair cuts in JSON format"};
+  Configurable<std::string> fConfigCommonTrackCuts{"cfgCommonTrackCuts", "", "Comma separated list of cuts to be applied to all legs"};
+  Configurable<std::string> fConfigPairCuts{"cfgPairCuts", "", "Comma separated list of pair cuts"};
+  Configurable<std::string> fConfigPairCutsJSON{"cfgPairCutsJSON", "", "Additional list of pair cuts in JSON format"};
   Configurable<bool> fConfigSkipAmbiguousIdCombinations{"cfgSkipAmbiguousIdCombinations", true, "Choose whether to skip pairs/triples which pass a stricter combination of cuts, e.g. KKPi triplets for D+ -> KPiPi"};
 
   Configurable<std::string> fConfigHistogramSubgroups{"cfgAsymmetricPairingHistogramsSubgroups", "barrel,vertexing", "Comma separated list of asymmetric-pairing histogram subgroups"};
@@ -2189,7 +2260,7 @@ struct AnalysisAsymmetricPairing {
   Configurable<bool> fConfigQA{"cfgQA", false, "If true, fill QA histograms"};
   Configurable<std::string> fConfigAddJSONHistograms{"cfgAddJSONHistograms", "", "Histograms in JSON format"};
 
-  Configurable<string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> fConfigGRPMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> fConfigUseRemoteField{"cfgUseRemoteField", false, "Choose whether to fetch the magnetic field from ccdb or set it manually"};
   Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
@@ -2593,7 +2664,7 @@ struct AnalysisAsymmetricPairing {
     VarManager::SetupMatLUTFwdDCAFitter(fLUT);
 
     dqhistograms::AddHistogramsFromJSON(fHistMan, fConfigAddJSONHistograms.value.c_str()); // ad-hoc histograms via JSON
-    VarManager::SetUseVars(fHistMan->GetUsedVars());                                      // provide the list of required variables so that VarManager knows what to fill
+    VarManager::SetUseVars(fHistMan->GetUsedVars());                                       // provide the list of required variables so that VarManager knows what to fill
     fOutputList.setObject(fHistMan->GetMainHistogramList());
   }
 
@@ -2753,7 +2824,7 @@ struct AnalysisAsymmetricPairing {
         for (int icut = 0; icut < fNLegCuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbi = (twoTrackFilter & (static_cast<uint32_t>(1) << 30)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 31));
-            if (sign1 * sign2 < 0) {                                                    // +- pairs
+            if (sign1 * sign2 < 0) {                                                                                // +- pairs
               fHistMan->FillHistClass(Form("PairsBarrelSEPM_%s", fLegCutNames[icut].Data()), VarManager::fgValues); // reconstructed, unmatched
               if (isAmbi && fConfigQA) {
                 fHistMan->FillHistClass(Form("PairsBarrelSEPM_ambiguous_%s", fLegCutNames[icut].Data()), VarManager::fgValues);
@@ -3172,7 +3243,7 @@ struct AnalysisDileptonTrack {
   Produces<aod::BmesonCandidates> BmesonsTable;
   OutputObj<THashList> fOutputList{"output"};
 
-  Configurable<string> fConfigTrackCuts{"cfgTrackCuts", "kaonPID", "Comma separated list of track cuts to be correlated with the dileptons"};
+  Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "kaonPID", "Comma separated list of track cuts to be correlated with the dileptons"};
   Configurable<float> fConfigDileptonLowMass{"cfgDileptonLowMass", 2.8, "Low mass cut for the dileptons used in analysis"};
   Configurable<float> fConfigDileptonHighMass{"cfgDileptonHighMass", 3.2, "High mass cut for the dileptons used in analysis"};
   Configurable<float> fConfigDileptonpTCut{"cfgDileptonpTCut", 0.0, "pT cut for dileptons used in the triplet vertexing"};
@@ -3630,6 +3701,21 @@ struct AnalysisDileptonTrack {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
+          // table to be written out for ML analysis
+          BmesonsTable(fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt],
+                       fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
+                       fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],
+                       fValuesHadron[VarManager::kVertexingChi2PCA],
+                       track.tpcInnerParam(), track.eta(), dilepton.pt(), dilepton.eta(), lepton1.tpcInnerParam(), lepton1.eta(), lepton2.tpcInnerParam(), lepton2.eta(),
+                       track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tpcNSigmaPr(), track.tofNSigmaKa(),
+                       lepton1.tpcNSigmaEl(), lepton1.tpcNSigmaPi(), lepton1.tpcNSigmaPr(),
+                       lepton2.tpcNSigmaEl(), lepton2.tpcNSigmaPi(), lepton2.tpcNSigmaPr(),
+                       track.dcaXY(), track.dcaZ(), lepton1.dcaXY(), lepton1.dcaZ(), lepton2.dcaXY(), lepton2.dcaZ(),
+                       track.itsClusterMap(), lepton1.itsClusterMap(), lepton2.itsClusterMap(),
+                       track.itsChi2NCl(), lepton1.itsChi2NCl(), lepton2.itsChi2NCl(),
+                       track.tpcNClsFound(), lepton1.tpcNClsFound(), lepton2.tpcNClsFound(),
+                       track.tpcChi2NCl(), lepton1.tpcChi2NCl(), lepton2.tpcChi2NCl(),
+                       dilepton.filterMap_raw(), trackSelection, mcDecision);
         }
 
         if constexpr (TCandidateType == VarManager::kDstarToD0KPiPi) {
@@ -3739,11 +3825,6 @@ struct AnalysisDileptonTrack {
             }
           } // end loop over track cuts
         } // end loop over dilepton cuts
-        // table to be written out for ML analysis
-        BmesonsTable(fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt],
-                     fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
-                     fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kKFDCAxyzBetweenProngs],
-                     fValuesHadron[VarManager::kCosPointingAngle], fValuesHadron[VarManager::kVertexingChi2PCA], dilepton.filterMap_raw(), trackSelection, mcDecision);
       } // end loop over associations
     } // end loop over dileptons
   }

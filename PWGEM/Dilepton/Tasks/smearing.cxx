@@ -13,21 +13,21 @@
 // Analysis task to produce smeared pt, eta, phi for electrons/muons in dilepton analysis
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <array>
-#include <string>
-#include <chrono>
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "PWGEM/Dilepton/Utils/MomentumSmearer.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/DataTypes.h"
 #include "Framework/HistogramRegistry.h"
-// #include "PWGDQ/DataModel/ReducedInfoTables.h" // remove this later, because 2 data tables (covariant matrix) in this header confilict against EM tables.
-#include "PWGEM/Dilepton/Utils/MomentumSmearer.h"
-#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
+#include "Framework/runDataProcessing.h"
+
+#include <array>
+#include <chrono>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -292,20 +292,16 @@ struct ApplySmearing {
   }
 
   void processDummyMCanalysisEM(aod::EMMCParticles const&) {}
-  // void processDummyMCanalysisDQ(ReducedMCTracks const&) {}
 
   PROCESS_SWITCH(ApplySmearing, processMCanalysisEM, "Run for MC analysis which uses skimmed EM data format", false);
-  // PROCESS_SWITCH(ApplySmearing, processMCanalysisDQ, "Run for MC analysis which uses skimmed DQ data format", false);
   PROCESS_SWITCH(ApplySmearing, processCocktail, "Run for cocktail analysis", false);
   PROCESS_SWITCH(ApplySmearing, processDummyMCanalysisEM, "Dummy process function", false);
-  // PROCESS_SWITCH(ApplySmearing, processDummyMCanalysisDQ, "Dummy process function", false);
   PROCESS_SWITCH(ApplySmearing, processDummyCocktail, "Dummy process function", true);
 };
 
 struct CheckSmearing {
-  using EMMCParticlesWithSmearing = soa::Join<aod::EMMCParticles, aod::SmearedElectrons>; // this is only for electrons
-  // using MyReducedTracks = soa::Join<ReducedMCTracks, aod::SmearedElectrons>;              // this is only for electrons
-  using MyCocktailTracks = soa::Join<aod::McParticles, aod::SmearedElectrons>; // this is only for electrons
+  using EMMCParticlesWithSmearing = soa::Join<aod::EMMCParticles, aod::SmearedElectrons, aod::SmearedMuons>;
+  using MyCocktailTracks = soa::Join<aod::McParticles, aod::SmearedElectrons, aod::SmearedMuons>;
 
   // Run for electrons or muons
   Configurable<int> fPdgCode{"cfgPdgCode", 11, "Set the type of particle to be checked"};
@@ -322,9 +318,9 @@ struct CheckSmearing {
 
   void init(o2::framework::InitContext&)
   {
-    registry.add<TH2>("hCorrelation_Pt", "pT correlation;p_{T,l}^{gen} (GeV/c);p_{T,l}^{smeared} (GeV/c)", {HistType::kTH2F, {{1000, 0.0f, 10.0f}, {1000, 0.0f, 10.0f}}});
-    registry.add<TH2>("hCorrelation_Eta", "eta correlation;#eta_{l}^{gen};#eta_{l}^{smeared}", {HistType::kTH2F, {{200, -1.0f, +1.0f}, {200, -1.0f, +1.0f}}});
-    registry.add<TH2>("hCorrelation_Phi", "phi correlation;#varphi_{l}^{gen} (rad.);#varphi_{l}^{smeared} (rad.)", {HistType::kTH2F, {{100, 0.0f, TMath::TwoPi()}, {100, 0.0f, TMath::TwoPi()}}});
+    registry.add<TH2>("Electron/hCorrelation_Pt", "pT correlation;p_{T,l}^{gen} (GeV/c);p_{T,l}^{smeared} (GeV/c)", {HistType::kTH2F, {{1000, 0.0f, 10.0f}, {1000, 0.0f, 10.0f}}});
+    registry.add<TH2>("Electron/hCorrelation_Eta", "eta correlation;#eta_{l}^{gen};#eta_{l}^{smeared}", {HistType::kTH2F, {{200, -1.0f, +1.0f}, {200, -1.0f, +1.0f}}});
+    registry.add<TH2>("Electron/hCorrelation_Phi", "phi correlation;#varphi_{l}^{gen} (rad.);#varphi_{l}^{smeared} (rad.)", {HistType::kTH2F, {{100, 0.0f, TMath::TwoPi()}, {100, 0.0f, TMath::TwoPi()}}});
 
     // Binning for resolution
     AxisSpec axisPtRes{ptResBins, "#it{p}^{gen}_{T,l} (GeV/#it{c})"};
@@ -333,16 +329,19 @@ struct CheckSmearing {
     AxisSpec axisDeltaphiRes{deltaphiResBins, "#varphi^{gen} - #varphi^{rec} (rad.)"};
 
     if (!fConfigUsePtVecRes) {
-      registry.add<TH2>("PtGen_DeltaPtOverPtGen", "", HistType::kTH2D, {axisPtRes, axisDeltaptRes}, true);
-      registry.add<TH2>("PtGen_DeltaEta", "", HistType::kTH2D, {axisPtRes, axisDeltaetaRes}, true);
-      registry.add<TH2>("PtGen_DeltaPhi_Neg", "", HistType::kTH2D, {axisPtRes, axisDeltaphiRes}, true);
-      registry.add<TH2>("PtGen_DeltaPhi_Pos", "", HistType::kTH2D, {axisPtRes, axisDeltaphiRes}, true);
+      registry.add<TH2>("Electron/PtGen_DeltaPtOverPtGen", "", HistType::kTH2D, {axisPtRes, axisDeltaptRes}, true);
+      registry.add<TH2>("Electron/PtGen_DeltaEta", "", HistType::kTH2D, {axisPtRes, axisDeltaetaRes}, true);
+      registry.add<TH2>("Electron/PtGen_DeltaPhi_Neg", "", HistType::kTH2D, {axisPtRes, axisDeltaphiRes}, true);
+      registry.add<TH2>("Electron/PtGen_DeltaPhi_Pos", "", HistType::kTH2D, {axisPtRes, axisDeltaphiRes}, true);
     } else {
-      registry.add<TH2>("PtGen_DeltaPtOverPtGen", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,l} (GeV/#it{c})"}, axisDeltaptRes}, true);
-      registry.add<TH2>("PtGen_DeltaEta", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,l} (GeV/#it{c})"}, axisDeltaetaRes}, true);
-      registry.add<TH2>("PtGen_DeltaPhi_Neg", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,l} (GeV/#it{c})"}, axisDeltaphiRes}, true);
-      registry.add<TH2>("PtGen_DeltaPhi_Pos", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,l} (GeV/#it{c})"}, axisDeltaphiRes}, true);
+      registry.add<TH2>("Electron/PtGen_DeltaPtOverPtGen", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,l} (GeV/#it{c})"}, axisDeltaptRes}, true);
+      registry.add<TH2>("Electron/PtGen_DeltaEta", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,l} (GeV/#it{c})"}, axisDeltaetaRes}, true);
+      registry.add<TH2>("Electron/PtGen_DeltaPhi_Neg", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,l} (GeV/#it{c})"}, axisDeltaphiRes}, true);
+      registry.add<TH2>("Electron/PtGen_DeltaPhi_Pos", "", HistType::kTH2D, {{ptResBinsVec, "#it{p}^{gen}_{T,l} (GeV/#it{c})"}, axisDeltaphiRes}, true);
     }
+
+    registry.addClone("Electron/", "GlobalMuon/");
+    registry.addClone("Electron/", "StandaloneMuon/");
   }
 
   template <o2::aod::pwgem::dilepton::smearing::EMAnaType type, typename TTracksMC, typename TMCCollisions>
@@ -360,21 +359,59 @@ struct CheckSmearing {
         }
       }
 
-      float deltaptoverpt = -1000.;
-      if (mctrack.pt() > 0.)
-        deltaptoverpt = (mctrack.pt() - mctrack.ptSmeared()) / mctrack.pt();
-      float deltaeta = mctrack.eta() - mctrack.etaSmeared();
-      float deltaphi = mctrack.phi() - mctrack.phiSmeared();
-      registry.fill(HIST("PtGen_DeltaPtOverPtGen"), mctrack.pt(), deltaptoverpt);
-      registry.fill(HIST("PtGen_DeltaEta"), mctrack.pt(), deltaeta);
-      if (mctrack.pdgCode() < 0) {
-        registry.fill(HIST("PtGen_DeltaPhi_Neg"), mctrack.pt(), deltaphi);
-      } else {
-        registry.fill(HIST("PtGen_DeltaPhi_Pos"), mctrack.pt(), deltaphi);
+      if (std::abs(mctrack.pdgCode()) == 11) { // for electrons
+        float deltaptoverpt = -1000.f;
+        if (mctrack.pt() > 0.f) {
+          deltaptoverpt = (mctrack.pt() - mctrack.ptSmeared()) / mctrack.pt();
+        }
+        float deltaeta = mctrack.eta() - mctrack.etaSmeared();
+        float deltaphi = mctrack.phi() - mctrack.phiSmeared();
+        registry.fill(HIST("Electron/PtGen_DeltaPtOverPtGen"), mctrack.pt(), deltaptoverpt);
+        registry.fill(HIST("Electron/PtGen_DeltaEta"), mctrack.pt(), deltaeta);
+        if (mctrack.pdgCode() < 0) { // e+
+          registry.fill(HIST("Electron/PtGen_DeltaPhi_Pos"), mctrack.pt(), deltaphi);
+        } else { // e-
+          registry.fill(HIST("Electron/PtGen_DeltaPhi_Neg"), mctrack.pt(), deltaphi);
+        }
+        registry.fill(HIST("Electron/hCorrelation_Pt"), mctrack.pt(), mctrack.ptSmeared());
+        registry.fill(HIST("Electron/hCorrelation_Eta"), mctrack.eta(), mctrack.etaSmeared());
+        registry.fill(HIST("Electron/hCorrelation_Phi"), mctrack.phi(), mctrack.phiSmeared());
+      } else if (std::abs(mctrack.pdgCode()) == 13) { // for muons
+        float deltaptoverpt = -1000.f;
+        // for standalone muons
+        if (mctrack.pt() > 0.f) {
+          deltaptoverpt = (mctrack.pt() - mctrack.ptSmeared_sa_muon()) / mctrack.pt();
+        }
+        float deltaeta = mctrack.eta() - mctrack.etaSmeared_sa_muon();
+        float deltaphi = mctrack.phi() - mctrack.phiSmeared_sa_muon();
+        registry.fill(HIST("StandaloneMuon/PtGen_DeltaPtOverPtGen"), mctrack.pt(), deltaptoverpt);
+        registry.fill(HIST("StandaloneMuon/PtGen_DeltaEta"), mctrack.pt(), deltaeta);
+        if (mctrack.pdgCode() < 0) { // mu+
+          registry.fill(HIST("StandaloneMuon/PtGen_DeltaPhi_Pos"), mctrack.pt(), deltaphi);
+        } else { // mu-
+          registry.fill(HIST("StandaloneMuon/PtGen_DeltaPhi_Neg"), mctrack.pt(), deltaphi);
+        }
+        registry.fill(HIST("StandaloneMuon/hCorrelation_Pt"), mctrack.pt(), mctrack.ptSmeared_sa_muon());
+        registry.fill(HIST("StandaloneMuon/hCorrelation_Eta"), mctrack.eta(), mctrack.etaSmeared_sa_muon());
+        registry.fill(HIST("StandaloneMuon/hCorrelation_Phi"), mctrack.phi(), mctrack.phiSmeared_sa_muon());
+
+        // for global muons
+        if (mctrack.pt() > 0.f) {
+          deltaptoverpt = (mctrack.pt() - mctrack.ptSmeared_gl_muon()) / mctrack.pt();
+        }
+        deltaeta = mctrack.eta() - mctrack.etaSmeared_gl_muon();
+        deltaphi = mctrack.phi() - mctrack.phiSmeared_gl_muon();
+        registry.fill(HIST("GlobalMuon/PtGen_DeltaPtOverPtGen"), mctrack.pt(), deltaptoverpt);
+        registry.fill(HIST("GlobalMuon/PtGen_DeltaEta"), mctrack.pt(), deltaeta);
+        if (mctrack.pdgCode() < 0) { // mu+
+          registry.fill(HIST("GlobalMuon/PtGen_DeltaPhi_Pos"), mctrack.pt(), deltaphi);
+        } else { // mu-
+          registry.fill(HIST("GlobalMuon/PtGen_DeltaPhi_Neg"), mctrack.pt(), deltaphi);
+        }
+        registry.fill(HIST("GlobalMuon/hCorrelation_Pt"), mctrack.pt(), mctrack.ptSmeared_gl_muon());
+        registry.fill(HIST("GlobalMuon/hCorrelation_Eta"), mctrack.eta(), mctrack.etaSmeared_gl_muon());
+        registry.fill(HIST("GlobalMuon/hCorrelation_Phi"), mctrack.phi(), mctrack.phiSmeared_gl_muon());
       }
-      registry.fill(HIST("hCorrelation_Pt"), mctrack.pt(), mctrack.ptSmeared());
-      registry.fill(HIST("hCorrelation_Eta"), mctrack.eta(), mctrack.etaSmeared());
-      registry.fill(HIST("hCorrelation_Phi"), mctrack.phi(), mctrack.phiSmeared());
     } // end of mctrack loop
   }
 
@@ -383,25 +420,17 @@ struct CheckSmearing {
     Check<o2::aod::pwgem::dilepton::smearing::EMAnaType::kEfficiency>(tracksMC, mccollisions);
   }
 
-  // void processCheckMCanalysisDQ(MyReducedTracks const& tracksMC)
-  // {
-  //   Check(tracksMC);
-  // }
-
   void processCheckCocktail(MyCocktailTracks const& tracksMC)
   {
     Check<o2::aod::pwgem::dilepton::smearing::EMAnaType::kCocktail>(tracksMC, nullptr);
   }
 
   void processDummyMCanalysisEM(aod::EMMCParticles const&) {}
-  // void processDummyMCanalysisDQ(ReducedMCTracks const&) {}
   void processDummyCocktail(aod::McParticles const&) {}
 
   PROCESS_SWITCH(CheckSmearing, processCheckMCanalysisEM, "Run for MC analysis", false);
-  // PROCESS_SWITCH(CheckSmearing, processCheckMCanalysisDQ, "Run for MC analysis", false);
   PROCESS_SWITCH(CheckSmearing, processCheckCocktail, "Run for cocktail analysis", false);
   PROCESS_SWITCH(CheckSmearing, processDummyMCanalysisEM, "Dummy process function", false);
-  // PROCESS_SWITCH(CheckSmearing, processDummyMCanalysisDQ, "Dummy process function", false);
   PROCESS_SWITCH(CheckSmearing, processDummyCocktail, "Dummy process function", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

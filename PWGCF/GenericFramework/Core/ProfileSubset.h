@@ -9,9 +9,13 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+/// \file ProfileSubset.h/.cxx
+/// \brief // Helper class to select a subrange of a TProfile
+/// \author Emil Gorm Nielsen (ack. V. Vislavicius), NBI, emil.gorm.nielsen@cern.ch
+
 #ifndef PWGCF_GENERICFRAMEWORK_CORE_PROFILESUBSET_H_
 #define PWGCF_GENERICFRAMEWORK_CORE_PROFILESUBSET_H_
-// Helper function to select a subrange of a TProfile
+
 #include "TProfile.h"
 #include "TProfile2D.h"
 #include "TError.h"

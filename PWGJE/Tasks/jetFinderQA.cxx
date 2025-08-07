@@ -372,7 +372,7 @@ struct JetFinderQATask {
   }
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
+  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
   PresliceUnsorted<soa::Filtered<aod::JetCollisionsMCD>> CollisionsPerMCPCollision = aod::jmccollisionlb::mcCollisionId;
 
   template <typename T, typename U>
@@ -678,9 +678,9 @@ struct JetFinderQATask {
       if (!jetderiveddatautilities::selectTrack(track, trackSelection)) {
         continue;
       }
-      registry.fill(HIST("h3_centrality_track_pt_track_phi"), collision.centrality(), track.pt(), track.phi(), weight);
-      registry.fill(HIST("h3_centrality_track_pt_track_eta"), collision.centrality(), track.pt(), track.eta(), weight);
-      registry.fill(HIST("h3_centrality_track_pt_track_dcaxy"), collision.centrality(), track.pt(), track.dcaXY(), weight);
+      registry.fill(HIST("h3_centrality_track_pt_track_phi"), collision.centFT0M(), track.pt(), track.phi(), weight);
+      registry.fill(HIST("h3_centrality_track_pt_track_eta"), collision.centFT0M(), track.pt(), track.eta(), weight);
+      registry.fill(HIST("h3_centrality_track_pt_track_dcaxy"), collision.centFT0M(), track.pt(), track.dcaXY(), weight);
       registry.fill(HIST("h3_track_pt_track_eta_track_phi"), track.pt(), track.eta(), track.phi(), weight);
     }
   }
@@ -707,7 +707,7 @@ struct JetFinderQATask {
         }
       }
     }
-    registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centFT0M(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
     // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles
     randomConePt = 0;
@@ -720,7 +720,7 @@ struct JetFinderQATask {
         }
       }
     }
-    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"), collision.centFT0M(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
     // removing the leading jet from the random cone
     if (jets.size() > 0) { // if there are no jets in the acceptance (from the jetfinder cuts) then there can be no leading jet
@@ -749,7 +749,7 @@ struct JetFinderQATask {
       }
     }
 
-    registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centFT0M(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
     // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles, removing tracks from 2 leading jets
     double randomConePtWithoutOneLeadJet = 0;
@@ -768,8 +768,8 @@ struct JetFinderQATask {
         }
       }
     }
-    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets"), collision.centrality(), randomConePtWithoutOneLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
-    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), collision.centrality(), randomConePtWithoutTwoLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets"), collision.centFT0M(), randomConePtWithoutOneLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), collision.centFT0M(), randomConePtWithoutTwoLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
   }
 
   void processJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets, aod::JetTracks const&)
@@ -784,7 +784,7 @@ struct JetFinderQATask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.hadronicRate());
+      fillHistograms(jet, collision.centFT0M(), collision.trackOccupancyInTimeRange(), collision.hadronicRate());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsData, "jet finder QA data", false);
@@ -803,7 +803,7 @@ struct JetFinderQATask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.rho());
+      fillRhoAreaSubtractedHistograms(jet, collision.centFT0M(), collision.trackOccupancyInTimeRange(), collision.rho());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsRhoAreaSubData, "jet finder QA for rho-area subtracted jets", false);
@@ -822,7 +822,7 @@ struct JetFinderQATask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillRhoAreaSubtractedHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.rho());
+      fillRhoAreaSubtractedHistograms(jet, collision.centFT0M(), collision.trackOccupancyInTimeRange(), collision.rho());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsRhoAreaSubMCD, "jet finder QA for rho-area subtracted mcd jets", false);
@@ -839,7 +839,7 @@ struct JetFinderQATask {
       if (!isAcceptedJet<aod::JetTracksSub>(jet)) {
         continue;
       }
-      fillEventWiseConstituentSubtractedHistograms(jet, collision.centrality());
+      fillEventWiseConstituentSubtractedHistograms(jet, collision.centFT0M());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processEvtWiseConstSubJetsData, "jet finder QA for eventwise constituent-subtracted jets data", false);
@@ -856,7 +856,7 @@ struct JetFinderQATask {
       if (!isAcceptedJet<aod::JetTracksSub>(jet)) {
         continue;
       }
-      fillEventWiseConstituentSubtractedHistograms(jet, collision.centrality());
+      fillEventWiseConstituentSubtractedHistograms(jet, collision.centFT0M());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processEvtWiseConstSubJetsMCD, "jet finder QA for eventwise constituent-subtracted mcd jets", false);
@@ -899,7 +899,7 @@ struct JetFinderQATask {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      fillHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.hadronicRate());
+      fillHistograms(jet, collision.centFT0M(), collision.trackOccupancyInTimeRange(), collision.hadronicRate());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCD, "jet finder QA mcd", false);
@@ -922,7 +922,7 @@ struct JetFinderQATask {
           registry.fill(HIST("h_jet_ptcut"), jet.pt(), N * 0.25, jet.eventWeight());
         }
       }
-      fillHistograms(jet, collision.centrality(), collision.trackOccupancyInTimeRange(), collision.hadronicRate(), jet.eventWeight());
+      fillHistograms(jet, collision.centFT0M(), collision.trackOccupancyInTimeRange(), collision.hadronicRate(), jet.eventWeight());
     }
   }
   PROCESS_SWITCH(JetFinderQATask, processJetsMCDWeighted, "jet finder QA mcd with weighted events", false);
@@ -1173,17 +1173,17 @@ struct JetFinderQATask {
       return;
     }
     registry.fill(HIST("h_collisions"), 0.5);
-    registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 0.5);
+    registry.fill(HIST("h2_centrality_collisions"), collision.centFT0M(), 0.5);
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
     registry.fill(HIST("h_collisions"), 1.5);
-    registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 1.5);
+    registry.fill(HIST("h2_centrality_collisions"), collision.centFT0M(), 1.5);
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);
-    registry.fill(HIST("h2_centrality_collisions"), collision.centrality(), 2.5);
+    registry.fill(HIST("h2_centrality_collisions"), collision.centFT0M(), 2.5);
     fillTrackHistograms(collision, tracks);
   }
   PROCESS_SWITCH(JetFinderQATask, processTracks, "QA for charged tracks", false);
@@ -1225,8 +1225,8 @@ struct JetFinderQATask {
       return;
     }
     for (auto const& track : tracks) {
-      registry.fill(HIST("h3_centrality_track_pt_track_phi_eventwiseconstituentsubtracted"), collision.centrality(), track.pt(), track.phi());
-      registry.fill(HIST("h3_centrality_track_pt_track_eta_eventwiseconstituentsubtracted"), collision.centrality(), track.pt(), track.eta());
+      registry.fill(HIST("h3_centrality_track_pt_track_phi_eventwiseconstituentsubtracted"), collision.centFT0M(), track.pt(), track.phi());
+      registry.fill(HIST("h3_centrality_track_pt_track_eta_eventwiseconstituentsubtracted"), collision.centFT0M(), track.pt(), track.eta());
       registry.fill(HIST("h3_track_pt_track_eta_track_phi_eventwiseconstituentsubtracted"), track.pt(), track.eta(), track.phi());
     }
   }
@@ -1249,11 +1249,11 @@ struct JetFinderQATask {
         nTracks++;
       }
     }
-    registry.fill(HIST("h2_centrality_ntracks"), collision.centrality(), nTracks);
+    registry.fill(HIST("h2_centrality_ntracks"), collision.centFT0M(), nTracks);
     registry.fill(HIST("h2_ntracks_rho"), nTracks, collision.rho());
     registry.fill(HIST("h2_ntracks_rhom"), nTracks, collision.rhoM());
-    registry.fill(HIST("h2_centrality_rho"), collision.centrality(), collision.rho());
-    registry.fill(HIST("h2_centrality_rhom"), collision.centrality(), collision.rhoM());
+    registry.fill(HIST("h2_centrality_rho"), collision.centFT0M(), collision.rho());
+    registry.fill(HIST("h2_centrality_rhom"), collision.centFT0M(), collision.rhoM());
   }
   PROCESS_SWITCH(JetFinderQATask, processRho, "QA for rho-area subtracted jets", false);
 

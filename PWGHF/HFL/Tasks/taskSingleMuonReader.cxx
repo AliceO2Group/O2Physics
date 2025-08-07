@@ -12,17 +12,20 @@
 /// \file taskSingleMuonReader.cxx
 /// \brief Task used to read the derived table produced by the tableMaker of DQ framework and extract observables on single muons needed for the HF-muon analysis.
 /// \author Maolin Zhang <maolin.zhang@cern.ch>, CCNU
-#include <iostream>
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
+
 #include "PWGDQ/DataModel/ReducedInfoTables.h"
+
 #include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::aod;

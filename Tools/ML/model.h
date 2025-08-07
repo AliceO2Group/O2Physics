@@ -20,19 +20,18 @@
 #ifndef TOOLS_ML_MODEL_H_
 #define TOOLS_ML_MODEL_H_
 
-// C++ and system includes
+#include <Framework/Logger.h>
+
 #include <onnxruntime_cxx_api.h>
-#include <vector>
-#include <string>
-#include <memory>
-#include <map>
+
 #include <algorithm>
-
-// ROOT includes
-#include "TSystem.h"
-
-// O2 includes
-#include "Framework/Logger.h"
+#include <cassert>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <memory>
+#include <string>
+#include <vector>
 
 namespace o2
 {

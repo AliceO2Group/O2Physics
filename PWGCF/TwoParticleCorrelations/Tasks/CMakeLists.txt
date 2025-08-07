@@ -40,7 +40,7 @@ o2physics_add_dpl_workflow(dpt-dpt-efficiency-and-qc
 
 o2physics_add_dpl_workflow(dpt-dpt-per-run-qc
                            SOURCES dptDptPerRunQc.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2::DataFormatsITSMFT
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dpt-dpt-per-run-extra-qc
@@ -60,6 +60,11 @@ o2physics_add_dpl_workflow(neutron-proton-corr-zdc
 
 o2physics_add_dpl_workflow(di-hadron-cor
                            SOURCES diHadronCor.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(pid-di-hadron
+                           SOURCES pidDiHadron.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
                            COMPONENT_NAME Analysis)
 
