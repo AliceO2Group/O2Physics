@@ -3494,15 +3494,15 @@ struct HfTrackIndexSkimCreatorLfCascades {
   }
 
   /// Method to perform selections for Xic 3-prong candidates before vertex reconstruction
-  /// \param pVecTrack0 is the momentum array of the first daughter track
-  /// \param pVecTrack1 is the momentum array of the second daughter track
-  /// \param pVecTrack2 is the momentum array of the third daughter track
+  /// \param pVecXi is the momentum array of the Xi daughter track
+  /// \param pVecPi1 is the momentum array of the first pion daughter track
+  /// \param pVecPi2 is the momentum array of the second pion daughter track
   template <typename T1>
-  bool isPreselectedCandidateXic(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2)
+  bool isPreselectedCandidateXic(T1 const& pVecXi, T1 const& pVecPi1, T1 const& pVecPi2)
   {
     // pt
     if (config.ptMinXicplusLfCasc > 0.f) {
-      const auto pt = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + config.ptTolerance; // add tolerance because of no reco decay vertex
+      const auto pt = RecoDecay::pt(pVecXi, pVecPi1, pVecPi2) + config.ptTolerance; // add tolerance because of no reco decay vertex
       if (pt < config.ptMinXicplusLfCasc) {
         return false;
       }
@@ -3512,7 +3512,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
     if (config.massXiPiPiMin >= 0. && config.massXiPiPiMax > 0.) {
       const double invMassMin = config.massXiPiPiMin;
       const double invMassMax = config.massXiPiPiMax;
-      const auto arrMom = std::array{pVecTrack0, pVecTrack1, pVecTrack2};
+      const auto arrMom = std::array{pVecXi, pVecPi1, pVecPi2};
       const auto invMass2 = RecoDecay::m2(arrMom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
       if (invMass2 < invMassMin * invMassMin || invMass2 >= invMassMax * invMassMax) {
         return false;
@@ -3839,16 +3839,15 @@ struct HfTrackIndexSkimCreatorLfCascades {
               if (nVtxFrom3ProngFitterXiHyp > 0) {
                 df2.propagateTracksToVertex();
                 if (df2.isPropagateTracksToVertexDone()) {
-                  std::array<float, 3> pVec1{0.};
-                  std::array<float, 3> pVec2{0.};
-                  const std::array<float, 3> pVec3{pVecCasc}; // Use the Xi track for the 3-prong calculations.
+                  std::array<float, 3> pVecPi1{};
+                  std::array<float, 3> pVecPi2{};
                   // get bachelor momenta at the Xic vertex
-                  df2.getTrack(0).getPxPyPzGlo(pVec1);
-                  df2.getTrack(1).getPxPyPzGlo(pVec2);
-                  const auto pVecCand = RecoDecay::pVec(pVec1, pVec2, pVec3);
+                  df2.getTrack(0).getPxPyPzGlo(pVecPi1);
+                  df2.getTrack(1).getPxPyPzGlo(pVecPi2);
+                  const auto pVecCand = RecoDecay::pVec(pVecCasc, pVecPi1, pVecPi2);
                   const auto ptCand = RecoDecay::pt(pVecCand);
-                  const std::array<float, 3> primaryVertex{collision.posX(), collision.posY(), collision.posZ()}; // primary vertex
-                  const auto& secondaryVertex = df2.getPCACandidate();                                            // secondary vertex
+                  const std::array primaryVertex{collision.posX(), collision.posY(), collision.posZ()}; // primary vertex
+                  const auto& secondaryVertex = df2.getPCACandidate();                                  // secondary vertex
 
                   registry.fill(HIST("hRejpTStatusXicPlusToXiPiPi"), 0);
                   if (ptCand >= config.ptMinXicplusLfCasc) {
@@ -3861,7 +3860,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
                   // fill histograms
                   if (config.fillHistograms) {
-                    const std::array<std::array<float, 3>, 3> arr3Mom = {pVec1, pVec2, pVec3};
+                    const std::array arr3Mom{pVecCasc, pVecPi1, pVecPi2};
                     const auto mass3Prong = RecoDecay::m(arr3Mom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
                     registry.fill(HIST("hMassXicPlusToXiPiPi"), mass3Prong);
                     registry.fill(HIST("hPtCutsXicPlusToXiPiPi"), ptCand);
