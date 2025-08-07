@@ -3323,20 +3323,20 @@ struct HfTrackIndexSkimCreatorLfCascades {
     Configurable<float> ptMinOmegaczeroToOmegaKaLfCasc{"ptMinOmegaczeroToOmegaKaLfCasc", 0.f, "min. pT for Omegaczero in Omega + Ka decays"};
     Configurable<float> ptMinXicZeroOmegacZeroToXiPiLfCasc{"ptMinXicZeroOmegacZeroToXiPiLfCasc", 0.f, "min. pT for XicZeroOmegacZero in Xi + Pi decays"};
     Configurable<float> ptMinXicplusLfCasc{"ptMinXicplusLfCasc", 0.f, "min. pT for Xicplus in Xi + Pi + Pi decays"};
-    Configurable<float> v0TransvRadius{"v0TransvRadius", 1.0, "V0 radius in xy plane"};          // 1.2 (xi) and 1.1 (omega) in run2
-    Configurable<float> cascTransvRadius{"cascTransvRadius", 0.4, "Cascade radius in xy plane"}; // 0.5 cm (xi) and 0.6 (omega) in run2
-    Configurable<float> decayLengthXicMin{"decayLengthXicMin", 0.4, "Min. decay length of Xic"}; // ...
-    Configurable<float> dcaBachToPv{"dcaBachToPv", 0.03, "DCA Bach To PV"};                      // 0.04 in run2
-    Configurable<float> dcaV0ToPv{"dcaV0ToPv", 0.02, "DCA V0 To PV"};                            // 0.03 in run2
-    Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"};                                   // 0.97 in run2 - KEEP LOSE to re-cut after PVRefit! - double -> N.B. dcos(x)/dx = 0 at x=0)
-    Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"};                             // 0.97 in run2 - KEEP LOSE to re-cut after PVRefit! - double -> N.B. dcos(x)/dx = 0 at x=0)
-    Configurable<double> xicCosPA{"xicCosPA", 0.95, "Xic CosPA"};                                // ...
-    Configurable<float> dcaV0Dau{"dcaV0Dau", 2.0, "DCA V0 Daughters"};                           // conservative, a cut ar 1.0 should also be fine
-    Configurable<float> dcaCascDau{"dcaCascDau", 2.0, "DCA Casc Daughters"};                     // conservative, a cut ar 1.0 should also be fine
-    Configurable<float> dcaNegToPv{"dcaNegToPv", 0.05, "DCA Neg To PV"};                         // 0.06 in run2
-    Configurable<float> dcaPosToPv{"dcaPosToPv", 0.05, "DCA Pos To PV"};                         // 0.06 in run2
-    Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};                    // 0.008 in run2
-    Configurable<float> cascadeMassWindow{"cascadeMassWindow", 0.01, "Cascade mass window"};
+    Configurable<float> v0TransvRadius{"v0TransvRadius", 1.f, "V0 radius in xy plane"};           // 1.2 (xi) and 1.1 (omega) in run2
+    Configurable<float> cascTransvRadius{"cascTransvRadius", 0.4f, "Cascade radius in xy plane"}; // 0.5 cm (xi) and 0.6 (omega) in run2
+    Configurable<float> decayLengthXicMin{"decayLengthXicMin", -1.f, "Min. decay length of Xic"}; // ...
+    Configurable<float> dcaBachToPv{"dcaBachToPv", 0.03f, "DCA Bach To PV"};                      // 0.04 in run2
+    Configurable<float> dcaV0ToPv{"dcaV0ToPv", 0.02f, "DCA V0 To PV"};                            // 0.03 in run2
+    Configurable<double> v0CosPA{"v0CosPA", 0.95, "V0 CosPA"};                                    // 0.97 in run2 - KEEP LOSE to re-cut after PVRefit! - double -> N.B. dcos(x)/dx = 0 at x=0)
+    Configurable<double> cascCosPA{"cascCosPA", 0.95, "Casc CosPA"};                              // 0.97 in run2 - KEEP LOSE to re-cut after PVRefit! - double -> N.B. dcos(x)/dx = 0 at x=0)
+    Configurable<double> xicCosPA{"xicCosPA", 0.95, "Xic CosPA"};                                 // ...
+    Configurable<float> dcaV0Dau{"dcaV0Dau", 2.f, "DCA V0 Daughters"};                            // conservative, a cut ar 1.0 should also be fine
+    Configurable<float> dcaCascDau{"dcaCascDau", 2.f, "DCA Casc Daughters"};                      // conservative, a cut ar 1.0 should also be fine
+    Configurable<float> dcaNegToPv{"dcaNegToPv", 0.05f, "DCA Neg To PV"};                         // 0.06 in run2
+    Configurable<float> dcaPosToPv{"dcaPosToPv", 0.05f, "DCA Pos To PV"};                         // 0.06 in run2
+    Configurable<float> v0MassWindow{"v0MassWindow", 0.01f, "V0 mass window"};                    // 0.008 in run2
+    Configurable<float> cascadeMassWindow{"cascadeMassWindow", 0.01f, "Cascade mass window"};
 
     // magnetic field setting from CCDB
     Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
@@ -3501,9 +3501,11 @@ struct HfTrackIndexSkimCreatorLfCascades {
   bool isPreselectedCandidateXic(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2)
   {
     // pt
-    auto pt = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + config.ptTolerance; // add tolerance because of no reco decay vertex
-    if (pt < config.ptMinXicplusLfCasc) {
-      return false;
+    if (config.ptMinXicplusLfCasc > 0.f) {
+      auto pt = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + config.ptTolerance; // add tolerance because of no reco decay vertex
+      if (pt < config.ptMinXicplusLfCasc) {
+        return false;
+      }
     }
 
     // invariant mass
@@ -3529,21 +3531,27 @@ struct HfTrackIndexSkimCreatorLfCascades {
   bool isSelectedCandidateXic(const T1& pVecCand, const T2& secVtx, const T3& primVtx)
   {
     // pt
-    auto pt = RecoDecay::pt(pVecCand);
-    if (pt <= config.ptMinXicplusLfCasc) {
-      return false;
+    if (config.ptMinXicplusLfCasc > 0.f) {
+      auto pt = RecoDecay::pt(pVecCand);
+      if (pt <= config.ptMinXicplusLfCasc) {
+        return false;
+      }
     }
 
     // CPA
-    auto cpa = RecoDecay::cpa(primVtx, secVtx, pVecCand);
-    if (cpa < config.xicCosPA) {
-      return false;
+    if (config.xicCosPA > -1.f) {
+      auto cpa = RecoDecay::cpa(primVtx, secVtx, pVecCand);
+      if (cpa < config.xicCosPA) {
+        return false;
+      }
     }
 
     // decay length
-    auto decayLength = RecoDecay::distance(primVtx, secVtx);
-    if (decayLength < config.decayLengthXicMin) {
-      return false;
+    if (config.decayLengthXicMin > 0.f) {
+      auto decayLength = RecoDecay::distance(primVtx, secVtx);
+      if (decayLength < config.decayLengthXicMin) {
+        return false;
+      }
     }
 
     return true;
