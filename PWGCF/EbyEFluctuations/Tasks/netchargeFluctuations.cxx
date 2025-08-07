@@ -607,9 +607,7 @@ struct NetchargeFluctuations {
       if (track.sign() == 1) {
         fpos++;
         posWeight += weight;
-      }
-
-      else if (track.sign() == -1) {
+      } else if (track.sign() == -1) {
         fneg++;
         negWeight += weight;
       }
@@ -723,7 +721,7 @@ struct NetchargeFluctuations {
           std::abs(pid) != kProton)
         continue;
 
-      if (std::fabs(mcpart.eta()) > etaCut)
+      if (std::fabs(mcpart.eta()) >= etaCut)
         continue;
       if ((mcpart.pt() <= ptMinCut) || (mcpart.pt() >= ptMaxCut))
         continue;
