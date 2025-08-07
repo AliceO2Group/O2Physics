@@ -65,9 +65,17 @@ struct HfTaskCharmHadronsFemtoDream {
     NegativeCharge = -1
   };
 
+  enum PairSign {
+    PairNotDefined = 0,
+    LikeSignPair = 1,
+    UnLikeSignPair = 2
+  };
+
   constexpr static int OriginRecPrompt = 1;
   constexpr static int OriginRecFD = 2;
+  constexpr static int CutBitChargePositive = 2;
 
+  Produces<o2::aod::FDHfPairs> rowFemtoResultPairs;
   Produces<o2::aod::FDHfCharm> rowFemtoResultCharm;
   Produces<o2::aod::FDHfTrk> rowFemtoResultTrk;
   Produces<o2::aod::FDHfColl> rowFemtoResultColl;
@@ -131,7 +139,7 @@ struct HfTaskCharmHadronsFemtoDream {
   using FilteredCharmMcCands = soa::Filtered<soa::Join<aod::FDHfCand, aod::FDHfCandMC>>;
   using FilteredCharmMcCand = FilteredCharmMcCands::iterator;
 
-  using FilteredColisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks>>;
+  using FilteredColisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks, aod::Collisions>>;
   using FilteredColision = FilteredColisions::iterator;
 
   using FilteredMcColisions = soa::Filtered<soa::Join<aod::FDCollisions, FDColMasks, aod::FDMCCollLabels>>;
@@ -294,7 +302,7 @@ struct HfTaskCharmHadronsFemtoDream {
   void doSameEvent(PartitionType& sliceTrk1, CandType& sliceCharmHad, TableTracks const& parts, Collision const& col)
   {
     fillCollision(col);
-
+    processType = 1; // for same event
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
 
       if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id())
@@ -308,15 +316,6 @@ struct HfTaskCharmHadronsFemtoDream {
 
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
-      }
-
-      constexpr int CutBitChargePositive = 2;
-      // proton track charge
-      float chargeTrack = 0.;
-      if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
-        chargeTrack = PositiveCharge;
-      } else {
-        chargeTrack = NegativeCharge;
       }
 
       float kstar = FemtoDreamMath::getkstar(p1, massOne, p2, massTwo);
@@ -333,6 +332,21 @@ struct HfTaskCharmHadronsFemtoDream {
       if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
         continue;
       }
+
+      // proton track charge
+      float chargeTrack = 0.;
+      if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
+        chargeTrack = PositiveCharge;
+      } else {
+        chargeTrack = NegativeCharge;
+      }
+      int pairSign = 0;
+      if (chargeTrack == p2.charge()) {
+        pairSign = LikeSignPair;
+      } else {
+        pairSign = UnLikeSignPair;
+      }
+
       /// Filling QA histograms of the selected tracks
       selectedTrackHisto.fillQA<isMc, true>(p1, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
 
@@ -343,38 +357,23 @@ struct HfTaskCharmHadronsFemtoDream {
         originType = p2.originMcRec();
       }
 
-      rowFemtoResultCharm(
-        col.globalIndex(),
-        p2.timeStamp(),
+      rowFemtoResultPairs(
         invMass,
         p2.pt(),
-        p2.eta(),
-        p2.phi(),
-        p2.charge(),
+        p1.pt(),
         p2.bdtBkg(),
         p2.bdtPrompt(),
         p2.bdtFD(),
+        kstar,
+        FemtoDreamMath::getkT(p1, massOne, p2, massTwo),
+        FemtoDreamMath::getmT(p1, massOne, p2, massTwo),
+        col.multNtr(),
+        col.multV0M(),
+        p2.charge(),
+        pairSign,
+        processType,
         charmHadMc,
         originType);
-
-      rowFemtoResultTrk(
-        col.globalIndex(),
-        p2.timeStamp(),
-        p1.pt(),
-        p1.eta(),
-        p1.phi(),
-        chargeTrack,
-        p1.tpcNClsFound(),
-        p1.tpcNClsFindable(),
-        p1.tpcNClsCrossedRows(),
-        p1.tpcNSigmaPr(),
-        p1.tofNSigmaPr());
-
-      rowFemtoResultColl(
-        col.globalIndex(),
-        p2.timeStamp(),
-        col.posZ(),
-        col.multNtr());
 
       sameEventCont.setPair<isMc, true>(p1, p2, col.multNtr(), col.multV0M(), use4D, extendedPlots, smearingByOrigin);
     }
@@ -383,7 +382,7 @@ struct HfTaskCharmHadronsFemtoDream {
   template <bool isMc, typename CollisionType, typename PartType, typename PartitionType1, typename PartitionType2, typename BinningType>
   void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType1& part1, PartitionType2& part2, BinningType policy)
   {
-
+    processType = 2; // for mixed event
     // Mixed events that contain the pair of interest
     Partition<CollisionType> partitionMaskedCol1 = (aod::femtodreamcollision::bitmaskTrackOne & bitMask) == bitMask;
     partitionMaskedCol1.bindTable(cols);
@@ -427,8 +426,45 @@ struct HfTaskCharmHadronsFemtoDream {
         if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
           continue;
         }
+        // proton track charge
+        float chargeTrack = 0.;
+        if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
+          chargeTrack = PositiveCharge;
+        } else {
+          chargeTrack = NegativeCharge;
+        }
+        int pairSign = 0;
+        if (chargeTrack == p2.charge()) {
+          pairSign = LikeSignPair;
+        } else {
+          pairSign = UnLikeSignPair;
+        }
 
-        // if constexpr (!isMc) mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
+        int charmHadMc = 0;
+        int originType = 0;
+        if constexpr (isMc) {
+          charmHadMc = p2.flagMc();
+          originType = p2.originMcRec();
+        }
+
+        rowFemtoResultPairs(
+          invMass,
+          p2.pt(),
+          p1.pt(),
+          p2.bdtBkg(),
+          p2.bdtPrompt(),
+          p2.bdtFD(),
+          kstar,
+          FemtoDreamMath::getkT(p1, massOne, p2, massTwo),
+          FemtoDreamMath::getmT(p1, massOne, p2, massTwo),
+          collision1.multNtr(),
+          collision1.multV0M(),
+          p2.charge(),
+          pairSign,
+          processType,
+          charmHadMc,
+          originType);
+
         mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
       }
     }
@@ -441,14 +477,59 @@ struct HfTaskCharmHadronsFemtoDream {
     eventHisto.fillQA(col);
     auto sliceTrk1 = partitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto sliceCharmHad = partitionCharmHadron->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    auto bc = col.template bc_as<aod::BCsWithTimestamps>();
+    int64_t timeStamp = bc.timestamp();
+
     /// Filling QA histograms of the all tracks and all charm hadrons before pairing
     for (auto const& part : sliceTrk1) {
       allTrackHisto.fillQA<false, true>(part, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+
+      // proton track charge
+      float chargeTrack = 0.;
+      if ((part.cut() & CutBitChargePositive) == CutBitChargePositive) {
+        chargeTrack = PositiveCharge;
+      } else {
+        chargeTrack = NegativeCharge;
+      }
+
+      rowFemtoResultTrk(
+        col.globalIndex(),
+        timeStamp,
+        part.pt(),
+        part.eta(),
+        part.phi(),
+        part.trackId(),
+        chargeTrack,
+        part.tpcNClsFound(),
+        part.tpcNClsFindable(),
+        part.tpcNClsCrossedRows(),
+        part.tpcNSigmaPr(),
+        part.tofNSigmaPr());
     }
     for (auto const& part : sliceCharmHad) {
       float invMass = getCharmHadronMass(part);
       registryCharmHadronQa.fill(HIST("CharmHadronQA/hPtVsMass"), part.pt(), invMass);
+      rowFemtoResultCharm(
+        col.globalIndex(),
+        timeStamp,
+        invMass,
+        part.pt(),
+        part.eta(),
+        part.phi(),
+        part.prong0Id(),
+        part.prong1Id(),
+        part.prong2Id(),
+        part.charge(),
+        part.bdtBkg(),
+        part.bdtPrompt(),
+        part.bdtFD());
     }
+
+    rowFemtoResultColl(
+      col.globalIndex(),
+      timeStamp,
+      col.posZ(),
+      col.multNtr());
 
     if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
       return;

@@ -313,6 +313,24 @@ DECLARE_SOA_TABLE(FDHfCand, "AOD", "FDHFCAND", //! Table to store the derived da
                   fdhf::Phi<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>,
                   fdhf::Pt<fdhf::Prong0Pt, fdhf::Prong0Phi, fdhf::Prong0Eta, fdhf::Prong1Pt, fdhf::Prong1Phi, fdhf::Prong1Eta, fdhf::Prong2Pt, fdhf::Prong2Phi, fdhf::Prong2Eta>);
 
+DECLARE_SOA_TABLE(FDHfPairs, "AOD", "FDHFPAIRS", //! table to store results for HF femtoscopy
+                  fdhf::CharmM,
+                  fdhf::CharmPt,
+                  fdhf::TrkPt,
+                  fdhf::BDTBkg,
+                  fdhf::BDTPrompt,
+                  fdhf::BDTFD,
+                  fdhf::Kstar,
+                  fdhf::KT,
+                  fdhf::MT,
+                  fdhf::Mult,
+                  fdhf::MultPercentile,
+                  fdhf::Charge,
+                  fdhf::PairSign,
+                  fdhf::ProcessType,
+                  fdhf::FlagMc,
+                  fdhf::OriginMcRec);
+
 DECLARE_SOA_TABLE(FDHfCharm, "AOD", "FDHFCHARM", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
                   fdhf::TimeStamp,
@@ -320,12 +338,13 @@ DECLARE_SOA_TABLE(FDHfCharm, "AOD", "FDHFCHARM", //! table to store results for 
                   fdhf::CharmPt,
                   fdhf::CharmEta,
                   fdhf::CharmPhi,
+                  fdhf::Prong0Id,
+                  fdhf::Prong1Id,
+                  fdhf::Prong2Id,
                   fdhf::Charge,
                   fdhf::BDTBkg,
                   fdhf::BDTPrompt,
-                  fdhf::BDTFD,
-                  fdhf::FlagMc,
-                  fdhf::OriginMcRec);
+                  fdhf::BDTFD);
 
 DECLARE_SOA_TABLE(FDHfTrk, "AOD", "FDHFTRK", //! table to store results for HF femtoscopy
                   fdhf::GIndexCol,
@@ -333,6 +352,7 @@ DECLARE_SOA_TABLE(FDHfTrk, "AOD", "FDHFTRK", //! table to store results for HF f
                   fdhf::TrkPt,
                   fdhf::TrkEta,
                   fdhf::TrkPhi,
+                  fdhf::TrackId,
                   femtodreamparticle::Sign,
                   femtodreamparticle::TPCNClsFound,
                   track::TPCNClsFindable,
