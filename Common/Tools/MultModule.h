@@ -505,6 +505,11 @@ class MultModule
       internalOpts.generatorName.value = "PYTHIA";
     }
 
+    // capture the need for PYTHIA calibration in light ion runs automatically
+    if (metadataInfo.isMC() && mRunNumber >= 564250 && mRunNumber <= 564472) {
+      internalOpts.generatorName.value = "PYTHIA";
+    }
+
     // list enabled tables
     for (int i = 0; i < nTablesConst; i++) {
       // printout to be improved in the future
