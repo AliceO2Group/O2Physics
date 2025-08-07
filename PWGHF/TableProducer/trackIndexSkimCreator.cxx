@@ -3502,18 +3502,18 @@ struct HfTrackIndexSkimCreatorLfCascades {
   {
     // pt
     if (config.ptMinXicplusLfCasc > 0.f) {
-      auto pt = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + config.ptTolerance; // add tolerance because of no reco decay vertex
+      const auto pt = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + config.ptTolerance; // add tolerance because of no reco decay vertex
       if (pt < config.ptMinXicplusLfCasc) {
         return false;
       }
     }
 
     // invariant mass
-    double invMassMin = config.massXiPiPiMin;
-    double invMassMax = config.massXiPiPiMax;
-    if (invMassMin >= 0. && invMassMax > 0.) {
-      auto arrMom = std::array{pVecTrack0, pVecTrack1, pVecTrack2};
-      auto invMass2 = RecoDecay::m2(arrMom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
+    if (config.massXiPiPiMin >= 0. && config.massXiPiPiMax > 0.) {
+      const double invMassMin = config.massXiPiPiMin;
+      const double invMassMax = config.massXiPiPiMax;
+      const auto arrMom = std::array{pVecTrack0, pVecTrack1, pVecTrack2};
+      const auto invMass2 = RecoDecay::m2(arrMom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
       if (invMass2 < invMassMin * invMassMin || invMass2 >= invMassMax * invMassMax) {
         return false;
       }
@@ -3532,7 +3532,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   {
     // pt
     if (config.ptMinXicplusLfCasc > 0.f) {
-      auto pt = RecoDecay::pt(pVecCand);
+      const auto pt = RecoDecay::pt(pVecCand);
       if (pt < config.ptMinXicplusLfCasc) {
         return false;
       }
@@ -3540,7 +3540,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
     // CPA
     if (config.xicCosPA > -1.f) {
-      auto cpa = RecoDecay::cpa(primVtx, secVtx, pVecCand);
+      const auto cpa = RecoDecay::cpa(primVtx, secVtx, pVecCand);
       if (cpa < config.xicCosPA) {
         return false;
       }
@@ -3548,7 +3548,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
     // decay length
     if (config.decayLengthXicMin > 0.f) {
-      auto decayLength = RecoDecay::distance(primVtx, secVtx);
+      const auto decayLength = RecoDecay::distance(primVtx, secVtx);
       if (decayLength < config.decayLengthXicMin) {
         return false;
       }
@@ -3577,16 +3577,16 @@ struct HfTrackIndexSkimCreatorLfCascades {
     for (const auto& collision : collisions) {
 
       // set the magnetic field from CCDB
-      auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+      const auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
       initCCDB(bc, runNumber, ccdb, config.isRun2 ? config.ccdbPathGrp : config.ccdbPathGrpMag, lut, config.isRun2);
-      auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); // z component
+      const auto magneticField = o2::base::Propagator::Instance()->getNominalBz(); // z component
 
       df2.setBz(magneticField);
       df2.setRefitWithMatCorr(config.refitWithMatCorr);
 
       // cascade loop
-      auto thisCollId = collision.globalIndex();
-      auto groupedCascades = cascades.sliceBy(cascadesPerCollision, thisCollId);
+      const auto thisCollId = collision.globalIndex();
+      const auto groupedCascades = cascades.sliceBy(cascadesPerCollision, thisCollId);
 
       for (const auto& casc : groupedCascades) {
 
@@ -3594,11 +3594,11 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
         //----------------accessing particles in the decay chain-------------
         // cascade daughter - charged particle
-        auto trackCascDauCharged = casc.bachelor_as<aod::TracksWCovDca>(); // meson <- xi track
+        const auto trackCascDauCharged = casc.bachelor_as<aod::TracksWCovDca>(); // meson <- xi track
         // cascade daughter - V0
-        auto trackV0PosDau = casc.posTrack_as<aod::TracksWCovDca>(); // p <- V0 track (positive track) 0
+        const auto trackV0PosDau = casc.posTrack_as<aod::TracksWCovDca>(); // p <- V0 track (positive track) 0
         // V0 negative daughter
-        auto trackV0NegDau = casc.negTrack_as<aod::TracksWCovDca>(); // pion <- V0 track (negative track) 1
+        const auto trackV0NegDau = casc.negTrack_as<aod::TracksWCovDca>(); // pion <- V0 track (negative track) 1
 
         // check that particles come from the same collision
         if (config.rejDiffCollTrack) {
@@ -3618,8 +3618,8 @@ struct HfTrackIndexSkimCreatorLfCascades {
           continue;
         }
 
-        std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
-        std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
+        const std::array<float, 3> vertexCasc = {casc.x(), casc.y(), casc.z()};
+        const std::array<float, 3> pVecCasc = {casc.px(), casc.py(), casc.pz()};
         std::array<float, 21> covCasc = {0.};
         constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
         for (int i = 0; i < 6; i++) {
@@ -3643,14 +3643,14 @@ struct HfTrackIndexSkimCreatorLfCascades {
         trackParCovCascOmega.setPID(o2::track::PID::OmegaMinus);
 
         //--------------combining cascade and pion tracks--------------
-        auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
+        const auto groupedBachTrackIndices = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
         for (auto trackIdCharmBachelor1 = groupedBachTrackIndices.begin(); trackIdCharmBachelor1 != groupedBachTrackIndices.end(); ++trackIdCharmBachelor1) {
 
           hfFlag = 0;
           isGoogForXi2Prong = true;
           isGoogForOmega2Prong = true;
 
-          auto trackCharmBachelor1 = trackIdCharmBachelor1.track_as<aod::TracksWCovDca>();
+          const auto trackCharmBachelor1 = trackIdCharmBachelor1.track_as<aod::TracksWCovDca>();
 
           if ((config.rejDiffCollTrack) && (trackCascDauCharged.collisionId() != trackCharmBachelor1.collisionId())) {
             continue;
@@ -3667,7 +3667,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
           }
 
           // primary pion track to be processed with DCAFitter
-          auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
+          const auto trackParCovCharmBachelor1 = getTrackParCov(trackCharmBachelor1);
 
           // find charm baryon decay using xi PID hypothesis (xi pi channel)
           int nVtxFrom2ProngFitterXiHyp = 0;
@@ -3800,7 +3800,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 continue;
               }
 
-              auto trackCharmBachelor2 = trackIdCharmBachelor2.track_as<aod::TracksWCovDca>();
+              const auto trackCharmBachelor2 = trackIdCharmBachelor2.track_as<aod::TracksWCovDca>();
 
               if ((config.rejDiffCollTrack) && (trackCascDauCharged.collisionId() != trackCharmBachelor2.collisionId())) {
                 continue;
@@ -3841,7 +3841,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
                 if (df2.isPropagateTracksToVertexDone()) {
                   std::array<float, 3> pVec1{0.};
                   std::array<float, 3> pVec2{0.};
-                  std::array<float, 3> pVec3{pVecCasc}; // Use the Xi track for the 3-prong calculations.
+                  const std::array<float, 3> pVec3{pVecCasc}; // Use the Xi track for the 3-prong calculations.
                   // get bachelor momenta at the Xic vertex
                   df2.getTrack(0).getPxPyPzGlo(pVec1);
                   df2.getTrack(1).getPxPyPzGlo(pVec2);
