@@ -375,21 +375,21 @@ struct AntinucleiInJets {
       registryCorr.add("rho_netP_netD_ue", "rho_netP_netD_ue", HistType::kTH2F, {nAntideuteronsAxis, nAntiprotonsAxis});
       registryCorr.add("rho_netP_netD_fullEvent", "rho_netP_netD_fullEvent", HistType::kTH2F, {nAntideuteronsAxis, nAntiprotonsAxis});
 
-      //Efficiency histograms jet
+      // Efficiency histograms jet
       registryCorr.add("q1d_jet", "q1d_jet", HistType::kTH2F, {nAntideuteronsAxis, ptPerNucleonAxis});
       registryCorr.add("q1p_jet", "q1p_jet", HistType::kTH2F, {nAntiprotonsAxis, ptPerNucleonAxis});
       registryCorr.add("q1d_square_jet", "q1d_square_jet", HistType::kTH3F, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis});
       registryCorr.add("q1p_square_jet", "q1p_square_jet", HistType::kTH3F, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis});
       registryCorr.add("q1d_q1p_jet", "q1d_q1p_jet", HistType::kTH3F, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis});
 
-      //Efficiency histograms UE
+      // Efficiency histograms UE
       registryCorr.add("q1d_ue", "q1d_ue", HistType::kTH2F, {nAntideuteronsAxis, ptPerNucleonAxis});
       registryCorr.add("q1p_ue", "q1p_ue", HistType::kTH2F, {nAntiprotonsAxis, ptPerNucleonAxis});
       registryCorr.add("q1d_square_ue", "q1d_square_ue", HistType::kTH3F, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis});
       registryCorr.add("q1p_square_ue", "q1p_square_ue", HistType::kTH3F, {ptPerNucleonAxis, ptPerNucleonAxis, nBarP2Axis});
       registryCorr.add("q1d_q1p_ue", "q1d_q1p_ue", HistType::kTH3F, {ptPerNucleonAxis, ptPerNucleonAxis, nBarDnBarPAxis});
 
-      //Efficiency histograms full event
+      // Efficiency histograms full event
       registryCorr.add("q1d_fullEvent", "q1d_fullEvent", HistType::kTH2F, {nAntideuteronsAxis, ptPerNucleonAxis});
       registryCorr.add("q1p_fullEvent", "q1p_fullEvent", HistType::kTH2F, {nAntiprotonsAxis, ptPerNucleonAxis});
       registryCorr.add("q1d_square_fullEvent", "q1d_square_fullEvent", HistType::kTH3F, {ptPerNucleonAxis, ptPerNucleonAxis, nBarD2Axis});
@@ -2182,8 +2182,7 @@ struct AntinucleiInJets {
         if (track.pt() < ptOverAbins[0] || track.pt() >= ptOverAbins[nBins]) {
           continue;
         }
-      }
-      else if (isDeuteron(track) && passedItsPidDeut) {
+      } else if (isDeuteron(track) && passedItsPidDeut) {
         double ptPerNucleon = 0.5 * track.pt();
         if (ptPerNucleon < ptOverAbins[0] || ptPerNucleon >= ptOverAbins[nBins]) {
           continue;
@@ -2222,7 +2221,7 @@ struct AntinucleiInJets {
     int netProtonFullEvent = nTotProtonFullEvent - nTotAntiprotonFullEvent;
     int netDeuteronFullEvent = nTotDeuteronFullEvent - nTotAntideuteronFullEvent;
     registryCorr.fill(HIST("rho_fullEvent"), nTotAntideuteronFullEvent, nTotAntiprotonFullEvent, multiplicity);
-    registryCorr.fill(HIST("rho_netP_netD_fullEvent" ), netDeuteronFullEvent, netProtonFullEvent);
+    registryCorr.fill(HIST("rho_netP_netD_fullEvent"), netDeuteronFullEvent, netProtonFullEvent);
 
     // Fill efficiency histograms
     for (int i = 0; i < nBins; i++) {
@@ -2335,8 +2334,7 @@ struct AntinucleiInJets {
           if (track.pt() < ptOverAbins[0] || track.pt() >= ptOverAbins[nBins]) {
             continue;
           }
-        }
-        else if (isDeuteron(track) && passedItsPidDeut) {
+        } else if (isDeuteron(track) && passedItsPidDeut) {
           double ptPerNucleon = 0.5 * track.pt();
           if (ptPerNucleon < ptOverAbins[0] || ptPerNucleon >= ptOverAbins[nBins]) {
             continue;
@@ -2375,7 +2373,7 @@ struct AntinucleiInJets {
       int netProtonJet = nTotProtonJet - nTotAntiprotonJet;
       int netDeuteronJet = nTotDeuteronJet - nTotAntideuteronJet;
       registryCorr.fill(HIST("rho_jet"), nTotAntideuteronJet, nTotAntiprotonJet, multiplicity);
-      registryCorr.fill(HIST("rho_netP_netD_jet" ), netDeuteronJet, netProtonJet);
+      registryCorr.fill(HIST("rho_netP_netD_jet"), netDeuteronJet, netProtonJet);
 
       // Fill efficiency histograms
       for (int i = 0; i < nBins; i++) {
@@ -2445,8 +2443,7 @@ struct AntinucleiInJets {
           if (track.pt() < ptOverAbins[0] || track.pt() >= ptOverAbins[nBins]) {
             continue;
           }
-        }
-        else if (isDeuteron(track) && passedItsPidDeut) {
+        } else if (isDeuteron(track) && passedItsPidDeut) {
           double ptPerNucleon = 0.5 * track.pt();
           if (ptPerNucleon < ptOverAbins[0] || ptPerNucleon >= ptOverAbins[nBins]) {
             continue;
@@ -2485,7 +2482,7 @@ struct AntinucleiInJets {
       int netProtonUE = nTotProtonUE - nTotAntiprotonUE;
       int netDeuteronUE = nTotDeuteronUE - nTotAntideuteronUE;
       registryCorr.fill(HIST("rho_ue"), nTotAntideuteronUE, nTotAntiprotonUE, multiplicity);
-      registryCorr.fill(HIST("rho_netP_netD_ue" ), netDeuteronUE, netProtonUE);
+      registryCorr.fill(HIST("rho_netP_netD_ue"), netDeuteronUE, netProtonUE);
 
       // Fill efficiency histograms
       for (int i = 0; i < nBins; i++) {
