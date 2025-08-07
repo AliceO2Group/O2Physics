@@ -15,12 +15,19 @@
 
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
 
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
+#include "ReconstructionDataFormats/Track.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -52,21 +59,43 @@ struct sigmaminustask {
 
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Kink candidates"};
 
-  // Configurables for findable tracks (see kinkBuilder.cxx)
-  Configurable<float> KBminPtMoth{"KBminPtMoth", 0.5, "Minimum pT of the mother"};
-  Configurable<float> KBmaxPhiDiff{"KBmaxPhiDiff", 100, "Max phi difference between the kink daughter and the mother"};
-  Configurable<float> KBetaMax{"KBetaMax", 1., "Max eta for both mother and daughter"};
-  Configurable<float> KBnTPCClusMinDaug{"KBnTPCClusMinDaug", 80, "Min daug NTPC clusters"};
-  Configurable<float> KBradiusCut{"KBradiusCut", 19.6213f, "Min reconstructed decay radius of the mother"};
-  Configurable<float> KBdcaMothPv{"KBdcaMothPv", 0.1f, "Max DCA of the mother to PV"};
-  Configurable<float> KBdcaDaugPv{"KBdcaDaugPv", 0.1f, "Max DCA of the daughter to PV"};
+  // Configurables for findable tracks (kinkBuilder.cxx efficiency)
+  Configurable<float> minPtMothKB{"minPtMothKB", 0.5f, "Minimum pT of the mother"};
+  Configurable<float> maxPhiDiffKB{"maxPhiDiffKB", 100.0f, "Max phi difference between the kink daughter and the mother"};
+  Configurable<float> maxZDiffKB{"maxZDiffKB", 20.0f, "Max z difference between the kink daughter and the mother"};
+  Configurable<float> etaMaxKB{"etaMaxKB", 1.0f, "Max eta for both mother and daughter"};
+  Configurable<float> nTPCClusMinDaugKB{"nTPCClusMinDaugKB", 80, "Min daug NTPC clusters"};
+  Configurable<float> radiusCutKB{"radiusCutKB", 19.6213f, "Min reconstructed decay radius of the mother"};
+  Configurable<float> maxDcaMothPvKB{"maxDcaMothPvKB", 0.1f, "Max DCA of the mother to PV"};
+  Configurable<float> minDcaDaugPvKB{"minDcaDaugPvKB", 0.1f, "Min DCA of the daughter to PV"};
 
   Preslice<aod::KinkCands> mPerCol = aod::track::collisionId;
 
+  // Constants
   float radToDeg = o2::constants::math::Rad2Deg;
+
+  // Services CCDB
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  Configurable<std::string> ccdbPath{"ccdbPath", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+  Configurable<int> cfgMaterialCorrection{"cfgMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrLUT), "Type of material correction"};
+
+  // Runtime variables
+  int mRunNumber = 0;
+  float mBz = 0.0f; 
+  o2::base::MatLayerCylSet* matLUT = nullptr;
 
   void init(InitContext const&)
   {
+    // Initialize CCDB
+    ccdb->setURL(ccdbPath);
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setFatalWhenNull(true);
+
+    matLUT = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>("GLO/Param/MatLUT"));
+
     // Axes
     const AxisSpec ptAxis{100, -10, 10, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ptUnsignedAxis{100, 0, 10, "#it{p}_{T} (GeV/#it{c})"};
@@ -76,7 +105,7 @@ struct sigmaminustask {
     const AxisSpec xiMassAxis{100, 1.2, 1.6, "m_{#Xi} (GeV/#it{c}^{2})"};
     const AxisSpec pdgAxis{10001, -5000, 5000, "PDG code"};
     const AxisSpec vertexZAxis{100, -15., 15., "vrtx_{Z} [cm]"};
-    const AxisSpec dcaMothAxis{100, 0, 0.2, "DCA [cm]"};
+    const AxisSpec dcaMothAxis{100, 0, 0.03, "DCA [cm]"};
     const AxisSpec dcaDaugAxis{200, 0, 20, "DCA [cm]"};
     const AxisSpec radiusAxis{100, -1, 40, "Decay radius [cm]"};
 
@@ -85,8 +114,8 @@ struct sigmaminustask {
     const AxisSpec radiusResolutionAxis{100, -0.5, 0.5, "(r_{rec} - r_{gen}) / r_{gen}"};
 
     const AxisSpec boolAxis{2, -0.5, 1.5, "Boolean value"};
-    const AxisSpec filtersAxis{10, -0.5, 9.5, "Filter index"};
-    const AxisSpec fakeITSAxis{9, -2.5, 6.5, "Fake ITS cluster layer"};
+    const AxisSpec filtersAxis{12, -0.5, 11.5, "Filter index"};
+    const AxisSpec fakeITSAxis{8, -1.5, 6.5, "Fake ITS cluster layer"};
 
     // Event selection
     rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
@@ -117,8 +146,8 @@ struct sigmaminustask {
     }
 
     if (doprocessFindable) {
-      std::vector<std::string> filterLabels = {"Initial", "ITS/TPC present", "Moth ITS", "Moth p_{T}", "Daug ITS+TPC", "#eta", "#Delta#phi", "Radius", "Collision", "Daug TOF"};
-      
+      std::vector<std::string> filterLabels = {"Initial", "ITS/TPC present", "ITS/TPC quality", "Moth p_{T}", "min #eta", "max #Delta#phi", "max #Delta Z", "max DCAmoth", "min DCAdaug", "min Radius", "sel8 coll", "Daug TOF"};
+
       // Add findable Sigma histograms
       rFindable.add("hfakeITSfindable", "hfakeITSfindable", {HistType::kTH1F, {fakeITSAxis}});
       rFindable.add("hFilterIndex", "hFilterIndex", {HistType::kTH1F, {filtersAxis}});
@@ -146,7 +175,28 @@ struct sigmaminustask {
       rFindable.add("h2PtDaugFilter_plus_pikink", "h2PtDaugFilter_plus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
       rFindable.add("h2PtDaugFilter_minus_pikink", "h2PtDaugFilter_minus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
 
+      rFindable.add("h2DCAMothPt_protonkink", "h2DCAMothPt_protonkink", {HistType::kTH2F, {ptAxis, dcaMothAxis}});
+      rFindable.add("h2DCADaugPt_protonkink", "h2DCADaugPt_protonkink", {HistType::kTH2F, {ptAxis, dcaDaugAxis}});
+      rFindable.add("h2DCAMothPt_pikink", "h2DCAMothPt_pikink", {HistType::kTH2F, {ptAxis, dcaMothAxis}});
+      rFindable.add("h2DCADaugPt_pikink", "h2DCADaugPt_pikink", {HistType::kTH2F, {ptAxis, dcaDaugAxis}});
     }
+  }
+
+  void initCCDB(aod::BCs::iterator const& bc)
+  {
+    if (mRunNumber == bc.runNumber()) {
+      return;
+    }
+    mRunNumber = bc.runNumber();
+    LOG(info) << "Initializing CCDB for run " << mRunNumber;
+    o2::parameters::GRPMagField* grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, mRunNumber);
+    o2::base::Propagator::initFieldFromGRP(grpmag);
+    mBz = grpmag->getNominalL3Field();
+    if (!matLUT) {
+      matLUT = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(lutPath));
+    }
+    o2::base::Propagator::Instance()->setMatLUT(matLUT);
+    LOG(info) << "Task initialized for run " << mRunNumber << " with magnetic field " << mBz << " kZG";
   }
 
   float alphaAP(const std::array<float, 3>& momMother, const std::array<float, 3>& momKink)
@@ -346,7 +396,6 @@ struct sigmaminustask {
       }
     }
   }
-
   PROCESS_SWITCH(sigmaminustask, processMC, "MC processing", false);
 
   void fillFindableHistograms(int filterIndex, float mcRadius, float recRadius, float ptMoth, float ptDaug, bool isSigmaMinus, bool isPiDaughter) 
@@ -375,7 +424,7 @@ struct sigmaminustask {
   }
 
   void processFindable(aod::KinkCands const& kinkCands, aod::McTrackLabels const& trackLabelsMC, 
-                    TracksFull const& tracks, aod::McParticles const&, CollisionsFullMC const&)
+                    TracksFull const& tracks, aod::McParticles const&, CollisionsFullMC const&, aod::BCs const&)
   {
     // A - generated findable track pairs map: mcMother.globalIndex() -> (motherTrack.globalIndex(), daughterTrack.globalIndex())
     std::unordered_map<int64_t, std::pair<int64_t, int64_t>> allCandsIndices;
@@ -446,32 +495,28 @@ struct sigmaminustask {
       if (trackIndices.second == -1 || trackIndices.first == -1) {
         continue; 
       }
+
       // Retrieve mother and daughter tracks and mcParticles
       auto motherTrack = tracks.rawIteratorAt(trackIndices.first);
       auto daughterTrack = tracks.rawIteratorAt(trackIndices.second);
       auto mcLabMoth = trackLabelsMC.rawIteratorAt(motherTrack.globalIndex());
       auto mcLabDaug = trackLabelsMC.rawIteratorAt(daughterTrack.globalIndex());
-      if (!mcLabMoth.has_mcParticle() || !mcLabDaug.has_mcParticle()) {
-        continue; 
-      }
       auto mcMother = mcLabMoth.mcParticle_as<aod::McParticles>();
       auto mcDaughter = mcLabDaug.mcParticle_as<aod::McParticles>();
 
-      // Compute mass and radii
+      // Compute useful quantities for histograms
       bool isSigmaMinus = (std::abs(mcMother.pdgCode()) == 3112);
       bool isPiDaughter = (std::abs(mcDaughter.pdgCode()) == 211);
-
-      //float mcMass = std::sqrt(mcMother.e() * mcMother.e() - mcMother.p() * mcMother.p());
-      //int sigmaSign = mcMother.pdgCode() > 0 ? 1 : -1;
+      int sigmaSign = mcMother.pdgCode() > 0 ? 1 : -1;
+      float recPtDaughter = daughterTrack.pt();
+      float recPtMother = motherTrack.pt();
       float mcRadius = std::sqrt((mcMother.vx() - mcDaughter.vx()) * (mcMother.vx() - mcDaughter.vx()) + (mcMother.vy() - mcDaughter.vy()) * (mcMother.vy() - mcDaughter.vy()));
       float recRadius = -1.0;
       if (findableToKinkCand.find(mcMother.globalIndex()) != findableToKinkCand.end()) {
         auto kinkCand = kinkCands.rawIteratorAt(findableToKinkCand[mcMother.globalIndex()]);
         recRadius = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
       }
-      float recPtDaughter = daughterTrack.pt();
-      float recPtMother = motherTrack.pt();
-
+      
       // Check for detector mismatches in ITS mother tracks
       auto mask_value = mcLabMoth.mcMask();
       int mismatchITS_index = -1;
@@ -487,68 +532,107 @@ struct sigmaminustask {
       int filterIndex = 0;
       fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
 
-      // 1 - tracks with right ITS, TPC, TOF signals
+      // 1 - tracks with right ITS, TPC, TOF signals 
       if (motherTrack.has_collision() && motherTrack.hasITS() && !motherTrack.hasTPC() && !motherTrack.hasTOF() &&
           daughterTrack.hasITS() && daughterTrack.hasTPC()) {
         filterIndex += 1;
         fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
         rFindable.fill(HIST("hfakeITSfindable"), mismatchITS_index);
-
       } else {
         continue; 
       }
         
-      // 2, 3 - mother track ITS properties
-      if (motherTrack.itsNCls() < 6 &&
-            motherTrack.itsNClsInnerBarrel() == 3 && motherTrack.itsChi2NCl() < 36) {
+      // 2 - moth+daug track quality cuts 
+      bool motherGoodITS = motherTrack.hasITS() && motherTrack.itsNCls() < 6 && motherTrack.itsNClsInnerBarrel() == 3 && motherTrack.itsChi2NCl() < 36;
+      bool daughterGoodITSTPC = daughterTrack.hasITS() && daughterTrack.hasTPC() && daughterTrack.itsNClsInnerBarrel() == 0 &&
+          daughterTrack.itsNCls() < 4 && daughterTrack.tpcNClsCrossedRows() > 0.8 * daughterTrack.tpcNClsFindable() && daughterTrack.tpcNClsFound() > nTPCClusMinDaugKB;
+      if (motherGoodITS && daughterGoodITSTPC) {
         filterIndex += 1;
         fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
       } else {
         continue; 
       }
 
-      if (motherTrack.pt() > KBminPtMoth) {
+      // 3 - mother track min pT
+      if (motherTrack.pt() > minPtMothKB) {
         filterIndex += 1;
         fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
       } else {
         continue; 
       }
 
-      // 4 - daughter track ITS+TPC properties
-      if (daughterTrack.itsNClsInnerBarrel() == 0 && daughterTrack.itsNCls() < 4 &&
-          daughterTrack.tpcNClsCrossedRows() > 0.8 * daughterTrack.tpcNClsFindable() && daughterTrack.tpcNClsFound() > KBnTPCClusMinDaug) {
+      // 4 - geometric cuts: eta
+      if (std::abs(motherTrack.eta()) < etaMaxKB && std::abs(daughterTrack.eta()) < etaMaxKB) {
         filterIndex += 1;
         fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
       } else {
         continue; 
       }
 
-      // 5 - geometric cuts: eta
-      if (std::abs(motherTrack.eta()) < KBetaMax && std::abs(daughterTrack.eta()) < KBetaMax) {
+      // 5 - geometric cuts: phi difference
+      if (std::abs(motherTrack.phi() - daughterTrack.phi()) * radToDeg < maxPhiDiffKB) {
         filterIndex += 1;
         fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
       } else {
         continue; 
       }
       
-      // 6 - geometric cuts: phi difference
-      if (std::abs(motherTrack.phi() - daughterTrack.phi()) * radToDeg < KBmaxPhiDiff) {
-        filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
-      } else {
-        continue; 
-      }
-      
-      // 7 - radius cut
-      if (recRadius > KBradiusCut) {
-        filterIndex += 1;
-        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
-      } else {
-        continue; 
-      }
-
-      // 8 - collision selection
+      // DCA calculation: initialization CCDB
       auto collision = motherTrack.template collision_as<CollisionsFullMC>();
+      auto bc = collision.template bc_as<aod::BCs>();
+      initCCDB(bc);
+      const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
+      o2::track::TrackParCov trackParCovMoth = getTrackParCov(motherTrack);
+      o2::track::TrackParCov trackParCovDaug = getTrackParCov(daughterTrack);
+
+      // get DCA to PV for mother and daughter tracks
+      std::array<float, 2> dcaInfoMoth;
+      o2::base::Propagator::Instance()->propagateToDCA(collVtx, trackParCovMoth, mBz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoMoth);
+      std::array<float, 2> dcaInfoDaug;
+      o2::base::Propagator::Instance()->propagateToDCA(collVtx, trackParCovDaug, mBz, 2.f, static_cast<o2::base::Propagator::MatCorrType>(cfgMaterialCorrection.value), &dcaInfoDaug);
+      float dcaXYMother = std::abs(dcaInfoMoth[0]);
+      float dcaXYDaughter = std::abs(dcaInfoDaug[0]);
+      if (isPiDaughter) {
+        rFindable.fill(HIST("h2DCAMothPt_pikink"), sigmaSign * recPtMother, dcaXYMother);
+        rFindable.fill(HIST("h2DCADaugPt_pikink"), sigmaSign * recPtDaughter, dcaXYDaughter);
+      } else {
+        rFindable.fill(HIST("h2DCAMothPt_protonkink"), sigmaSign * recPtMother, dcaXYMother);
+        rFindable.fill(HIST("h2DCADaugPt_protonkink"), sigmaSign * recPtDaughter, dcaXYDaughter);
+      }
+
+      // 6 - max Z difference
+      if (std::abs(trackParCovMoth.getZ() - trackParCovDaug.getZ()) < maxZDiffKB) {
+        filterIndex += 1;
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+      } else {
+        continue;
+      }
+
+      // 7 - DCA mother
+      if (dcaXYMother < maxDcaMothPvKB) {
+        filterIndex += 1;
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+      } else {
+        continue; 
+      }
+
+      // 8 - DCA daughter
+      if (dcaXYDaughter > minDcaDaugPvKB) {
+        filterIndex += 1;
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+      } else {
+        continue; 
+      }
+
+      // 9 - radius cut
+      if (recRadius > radiusCutKB) {
+        filterIndex += 1;
+        fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
+      } else {
+        continue; 
+      }
+
+      // 10 - collision selection
       if (!(std::abs(collision.posZ()) > cutzvertex || !collision.sel8())) {
         filterIndex += 1;
         fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
@@ -556,7 +640,7 @@ struct sigmaminustask {
         continue; 
       }
 
-      // 9 - TOF daughter presence
+      // 11 - TOF daughter presence
       if (daughterTrack.hasTOF()) {
         filterIndex += 1;
         fillFindableHistograms(filterIndex, mcRadius, recRadius, recPtMother, recPtDaughter, isSigmaMinus, isPiDaughter);
@@ -572,10 +656,3 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<sigmaminustask>(cfgc)};
 }
-
-// TO DO:
-// 2) Histogram of fake its tracks of mothers among findable not found candidates
-// 2.1) -1 index for not fake, 0,1,2,3 etc. for fake ITS tracks, with index as layer of fake cluster
-// 3) Add DCA mother and daughter to PV using track propagation from hyperhelium or hypertriton tasks
-// 3.1) Do it for each findable, add cuts on DCA to the filterIndex histos to understand what's the most effective cut
-// 4) Open PR
