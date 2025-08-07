@@ -2187,8 +2187,7 @@ struct AntinucleiInJets {
         if (ptPerNucleon < ptOverAbins[0] || ptPerNucleon >= ptOverAbins[nBins]) {
           continue;
         }
-      }
-      else {
+      } else {
         continue;
       }
 
@@ -2339,8 +2338,7 @@ struct AntinucleiInJets {
           if (ptPerNucleon < ptOverAbins[0] || ptPerNucleon >= ptOverAbins[nBins]) {
             continue;
           }
-        }
-        else {
+        } else {
           continue;
         }
 
@@ -2448,8 +2446,7 @@ struct AntinucleiInJets {
           if (ptPerNucleon < ptOverAbins[0] || ptPerNucleon >= ptOverAbins[nBins]) {
             continue;
           }
-        }
-        else {
+        } else {
           continue;
         }
 
