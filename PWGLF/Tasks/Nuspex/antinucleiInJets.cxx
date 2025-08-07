@@ -2226,15 +2226,15 @@ struct AntinucleiInJets {
 
     // Fill efficiency histograms
     for (int i = 0; i < nBins; i++) {
-      double ptAcenter_i = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
+      double ptAcenteri = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
 
-      registryCorr.fill(HIST("q1d_fullEvent"), nAntideuteronFullEvent[i], ptAcenter_i);
-      registryCorr.fill(HIST("q1p_fullEvent"), nAntiprotonFullEvent[i], ptAcenter_i);
+      registryCorr.fill(HIST("q1d_fullEvent"), nAntideuteronFullEvent[i], ptAcenteri);
+      registryCorr.fill(HIST("q1p_fullEvent"), nAntiprotonFullEvent[i], ptAcenteri);
       for (int j = 0; j < nBins; j++) {
-        double ptAcenter_j = 0.5 * (ptOverAbins[j] + ptOverAbins[j + 1]);
-        registryCorr.fill(HIST("q1d_square_fullEvent"), ptAcenter_i, ptAcenter_j, nAntideuteronFullEvent[i] * nAntideuteronFullEvent[j]);
-        registryCorr.fill(HIST("q1p_square_fullEvent"), ptAcenter_i, ptAcenter_j, nAntiprotonFullEvent[i] * nAntiprotonFullEvent[j]);
-        registryCorr.fill(HIST("q1d_q1p_fullEvent"), ptAcenter_i, ptAcenter_j, nAntideuteronFullEvent[i] * nAntiprotonFullEvent[j]);
+        double ptAcenterj = 0.5 * (ptOverAbins[j] + ptOverAbins[j + 1]);
+        registryCorr.fill(HIST("q1d_square_fullEvent"), ptAcenteri, ptAcenterj, nAntideuteronFullEvent[i] * nAntideuteronFullEvent[j]);
+        registryCorr.fill(HIST("q1p_square_fullEvent"), ptAcenteri, ptAcenterj, nAntiprotonFullEvent[i] * nAntiprotonFullEvent[j]);
+        registryCorr.fill(HIST("q1d_q1p_fullEvent"), ptAcenteri, ptAcenterj, nAntideuteronFullEvent[i] * nAntiprotonFullEvent[j]);
       }
     }
 
@@ -2379,15 +2379,15 @@ struct AntinucleiInJets {
 
       // Fill efficiency histograms
       for (int i = 0; i < nBins; i++) {
-        double ptAcenter_i = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
-              
-        registryCorr.fill(HIST("q1d_jet"), nAntideuteronJet[i], ptAcenter_i);
-        registryCorr.fill(HIST("q1p_jet"), nAntiprotonJet[i], ptAcenter_i);
+        double ptAcenteri = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
+
+        registryCorr.fill(HIST("q1d_jet"), nAntideuteronJet[i], ptAcenteri);
+        registryCorr.fill(HIST("q1p_jet"), nAntiprotonJet[i], ptAcenteri);
         for (int j = 0; j < nBins; j++) {
-          double ptAcenter_j = 0.5 * (ptOverAbins[j] + ptOverAbins[j + 1]);
-          registryCorr.fill(HIST("q1d_square_jet"), ptAcenter_i, ptAcenter_j, nAntideuteronJet[i] * nAntideuteronJet[j]);
-          registryCorr.fill(HIST("q1p_square_jet"), ptAcenter_i, ptAcenter_j, nAntiprotonJet[i] * nAntiprotonJet[j]);
-          registryCorr.fill(HIST("q1d_q1p_jet"), ptAcenter_i, ptAcenter_j, nAntideuteronJet[i] * nAntiprotonJet[j]);
+          double ptAcenterj = 0.5 * (ptOverAbins[j] + ptOverAbins[j + 1]);
+          registryCorr.fill(HIST("q1d_square_jet"), ptAcenteri, ptAcenterj, nAntideuteronJet[i] * nAntideuteronJet[j]);
+          registryCorr.fill(HIST("q1p_square_jet"), ptAcenteri, ptAcenterj, nAntiprotonJet[i] * nAntiprotonJet[j]);
+          registryCorr.fill(HIST("q1d_q1p_jet"), ptAcenteri, ptAcenterj, nAntideuteronJet[i] * nAntiprotonJet[j]);
         }
       }
 
@@ -2489,15 +2489,15 @@ struct AntinucleiInJets {
 
       // Fill efficiency histograms
       for (int i = 0; i < nBins; i++) {
-        double ptAcenter_i = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
+        double ptAcenteri = 0.5 * (ptOverAbins[i] + ptOverAbins[i + 1]);
 
-        registryCorr.fill(HIST("q1d_ue"), nAntideuteronUE[i], ptAcenter_i);
-        registryCorr.fill(HIST("q1p_ue"), nAntiprotonUE[i], ptAcenter_i);
+        registryCorr.fill(HIST("q1d_ue"), nAntideuteronUE[i], ptAcenteri);
+        registryCorr.fill(HIST("q1p_ue"), nAntiprotonUE[i], ptAcenteri);
         for (int j = 0; j < nBins; j++) {
-          double ptAcenter_j = 0.5 * (ptOverAbins[j] + ptOverAbins[j + 1]);
-          registryCorr.fill(HIST("q1d_square_ue"), ptAcenter_i, ptAcenter_j, nAntideuteronUE[i] * nAntideuteronUE[j]);
-          registryCorr.fill(HIST("q1p_square_ue"), ptAcenter_i, ptAcenter_j, nAntiprotonUE[i] * nAntiprotonUE[j]);
-          registryCorr.fill(HIST("q1d_q1p_ue"), ptAcenter_i, ptAcenter_j, nAntideuteronUE[i] * nAntiprotonUE[j]);
+          double ptAcenterj = 0.5 * (ptOverAbins[j] + ptOverAbins[j + 1]);
+          registryCorr.fill(HIST("q1d_square_ue"), ptAcenteri, ptAcenterj, nAntideuteronUE[i] * nAntideuteronUE[j]);
+          registryCorr.fill(HIST("q1p_square_ue"), ptAcenteri, ptAcenterj, nAntiprotonUE[i] * nAntiprotonUE[j]);
+          registryCorr.fill(HIST("q1d_q1p_ue"), ptAcenteri, ptAcenterj, nAntideuteronUE[i] * nAntiprotonUE[j]);
         }
       }
     }
