@@ -511,7 +511,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// \param dca is a 2-element array with dca in transverse and longitudinal directions
   /// \param statusProng is the selection flag
   template <typename T>
-  void isSelectedTrack(const T& hfTrack, const float& trackPt, const float& trackEta, const std::array<float, 2>& dca, int& statusProng)
+  void isSelectedTrack(const T& hfTrack, const float trackPt, const float trackEta, const std::array<float, 2>& dca, int& statusProng)
   {
     if (config.fillHistograms) {
       registry.fill(HIST("hPtNoCuts"), trackPt);
@@ -3449,7 +3449,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
   /// Single-cascade cuts
   template <typename TCascade>
-  bool isPreselectedCascade(const TCascade& casc, const float& pvx, const float& pvy, const float& pvz)
+  bool isPreselectedCascade(const TCascade& casc, const float pvx, const float pvy, const float pvz)
   {
     registry.fill(HIST("hCandidateCounter"), 2.5);
 
