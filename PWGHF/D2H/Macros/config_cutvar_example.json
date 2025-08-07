@@ -57,6 +57,13 @@
     "minimisation": {
         "correlated": true
     },
+    "is_draw_title": {
+        "rawy": true,
+        "frac": false,
+        "eff": false,
+        "cov": false,
+        "unc": true
+    },
     "central_efficiency": {
         "computerawfrac": true,
         "inputdir": "path/to/central/efficiency",

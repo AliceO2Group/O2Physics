@@ -61,6 +61,12 @@ def main(config):
     if (pt_bin_to_process != -1 and pt_bin_to_process < 1) or pt_bin_to_process > hist_rawy[0].GetNbinsX():
         sys.exit("Fatal error: pt_bin_to_process must be a positive value up to number of bins in raw yield histogram. Exit.")
 
+    is_draw_title_rawy = cfg.get("is_draw_title", {}).get("rawy", True)
+    is_draw_title_eff = cfg.get("is_draw_title", {}).get("eff", False)
+    is_draw_title_frac = cfg.get("is_draw_title", {}).get("frac", False)
+    is_draw_title_cov = cfg.get("is_draw_title", {}).get("cov", False)
+    is_draw_title_unc = cfg.get("is_draw_title", {}).get("unc", True)
+
     if cfg["central_efficiency"]["computerawfrac"]:
         infile_name = os.path.join(cfg["central_efficiency"]["inputdir"], cfg["central_efficiency"]["inputfile"])
         infile_central_eff = ROOT.TFile.Open(infile_name)
@@ -211,31 +217,36 @@ def main(config):
 
             hist_bin_title = f"bin # {ipt+1}; {pt_axis_title}#in ({pt_min}; {pt_max})"
 
-            canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            hist_bin_title_rawy = hist_bin_title if is_draw_title_rawy else ""
+            canv_rawy, histos_rawy, leg_r = minimiser.plot_result(f"_pt{pt_min}_{pt_max}", hist_bin_title_rawy)
             output.cd()
             canv_rawy.Write()
             for _, hist in histos_rawy.items():
                 hist.Write()
 
-            canv_unc, histos_unc, leg_unc = minimiser.plot_uncertainties(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            hist_bin_title_unc = hist_bin_title if is_draw_title_unc else ""
+            canv_unc, histos_unc, leg_unc = minimiser.plot_uncertainties(f"_pt{pt_min}_{pt_max}", hist_bin_title_unc)
             output.cd()
             canv_unc.Write()
             for _, hist in histos_unc.items():
                 hist.Write()
 
-            canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            hist_bin_title_eff = hist_bin_title if is_draw_title_eff else ""
+            canv_eff, histos_eff, leg_e = minimiser.plot_efficiencies(f"_pt{pt_min}_{pt_max}", hist_bin_title_eff)
             output.cd()
             canv_eff.Write()
             for _, hist in histos_eff.items():
                 hist.Write()
 
-            canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            hist_bin_title_frac = hist_bin_title if is_draw_title_frac else ""
+            canv_frac, histos_frac, leg_f = minimiser.plot_fractions(f"_pt{pt_min}_{pt_max}", hist_bin_title_frac)
             output.cd()
             canv_frac.Write()
             for _, hist in histos_frac.items():
                 hist.Write()
 
-            canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min}_{pt_max}", hist_bin_title)
+            hist_bin_title_cov = hist_bin_title if is_draw_title_cov else ""
+            canv_cov, histo_cov = minimiser.plot_cov_matrix(True, f"_pt{pt_min}_{pt_max}", hist_bin_title_cov)
             output.cd()
             canv_cov.Write()
             histo_cov.Write()
