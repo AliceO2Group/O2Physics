@@ -1385,6 +1385,7 @@ struct AntinucleiInJets {
 
       // Loop over all MC particles
       std::vector<fastjet::PseudoJet> fjParticles;
+      std::vector<TVector3> protonMomentum;
       for (const auto& particle : mcParticles) {
 
         // Select physical primaries within acceptance
@@ -1393,6 +1394,12 @@ struct AntinucleiInJets {
         static constexpr double MinPtParticle = 0.1;
         if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < MinPtParticle)
           continue;
+
+        // Store 3-momentum vectors of antiprotons for further analysis
+        if (particle.pdgCode() == PDG_t::kProtonBar) {
+          TVector3 pVec(particle.px(), particle.py(), particle.pz());
+          protonMomentum.push_back(pVec);
+        }
 
         // 4-momentum representation of a particle
         double energy = std::sqrt(particle.p() * particle.p() + MassPionCharged * MassPionCharged);
@@ -1454,23 +1461,14 @@ struct AntinucleiInJets {
         getPerpendicularAxis(jetAxis, ueAxis2, -1);
 
         // Loop over MC particles to analyze underlying event region
-        for (const auto& particle : mcParticles) {
-
-          // Antiproton selection based on the pdg
-          if (particle.user_index() != PDG_t::kProtonBar)
-            continue;
-
-          // Select physical primaries within the acceptance
-          static constexpr double MinPtParticle = 0.1;
-          if (particle.eta() < minEta || particle.eta() > maxEta || particle.pt() < MinPtParticle)
-            continue;
+        for (const auto& protonVec : protonMomentum) {
 
           // Compute distance of particle from both perpendicular cone axes
-          double deltaEtaUe1 = particle.eta() - ueAxis1.Eta();
-          double deltaPhiUe1 = getDeltaPhi(particle.phi(), ueAxis1.Phi());
+          double deltaEtaUe1 = protonVec.Eta() - ueAxis1.Eta();
+          double deltaPhiUe1 = getDeltaPhi(protonVec.Phi(), ueAxis1.Phi());
           double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
-          double deltaEtaUe2 = particle.eta() - ueAxis2.Eta();
-          double deltaPhiUe2 = getDeltaPhi(particle.phi(), ueAxis2.Phi());
+          double deltaEtaUe2 = protonVec.Eta() - ueAxis2.Eta();
+          double deltaPhiUe2 = getDeltaPhi(protonVec.Phi(), ueAxis2.Phi());
           double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
           // Determine the maximum allowed distance from UE axes for particle selection
@@ -1484,7 +1482,7 @@ struct AntinucleiInJets {
             continue;
 
           // Fill histogram for antiprotons in the UE
-          registryMC.fill(HIST("antiproton_gen_ue"), particle.pt());
+          registryMC.fill(HIST("antiproton_gen_ue"), protonVec.Pt());
         }
       }
       if (isAtLeastOneJetSelected) {
