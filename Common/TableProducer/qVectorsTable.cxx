@@ -154,7 +154,7 @@ struct qVectorsTable {
   Produces<aod::QvectorBTotVecs> qVectorBTotVec;
   /////////////////////////////////////////////////////////////////
 
-  std::unordered_map<string, bool> useDetector = {
+  std::unordered_map<std::string, bool> useDetector = {
     {"QvectorBTots", cfgUseBTot},
     {"QvectorBNegs", cfgUseBNeg},
     {"QvectorBPoss", cfgUseBPos},

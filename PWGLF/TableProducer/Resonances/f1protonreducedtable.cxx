@@ -400,7 +400,7 @@ struct f1protonreducedtable {
 
   std::vector<double> setValuesBB(o2::ccdb::CcdbApi& ccdbApi, aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string ccdbPath)
   {
-    map<string, string> metadata;
+    std::map<std::string, std::string> metadata;
     auto h = ccdbApi.retrieveFromTFileAny<TH1F>(ccdbPath, metadata, bunchCrossing.timestamp());
     // auto h = ccdb->getForTimeStamp<TH1F>(ccdbPath, bunchCrossing.timestamp()); // check if possible to use this without getting fatal
     if (!h) {

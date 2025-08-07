@@ -1112,7 +1112,7 @@ struct TableMakerMC {
           VarManager::SetupMuonMagField();
         }
       }
-      std::map<string, string> metadataRCT, header;
+      std::map<std::string, std::string> metadataRCT, header;
       header = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", bcs.begin().runNumber()), metadataRCT, -1);
       uint64_t sor = std::atol(header["SOR"].c_str());
       uint64_t eor = std::atol(header["EOR"].c_str());

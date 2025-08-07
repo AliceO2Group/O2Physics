@@ -109,7 +109,7 @@ void ctpRateFetcher::setupRun(int runNumber, o2::ccdb::BasicCCDBManager* ccdb, u
     delete mScalers;
     delete mLHCIFdata;
   }
-  std::map<string, string> metadata;
+  std::map<std::string, std::string> metadata;
   mLHCIFdata = ccdb->getSpecific<parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
   if (mLHCIFdata == nullptr) {
     LOG(fatal) << "GRPLHCIFData not in database, timestamp:" << timeStamp;

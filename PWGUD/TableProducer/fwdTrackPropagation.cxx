@@ -99,7 +99,7 @@ struct FwdTrackPropagation {
 
     if (run != fRun) {
       fRun = run;
-      std::map<string, string> metadata;
+      std::map<std::string, std::string> metadata;
       auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(fCCDBApi, run);
       auto ts = soreor.first;
       auto grpmag = fCCDBApi.retrieveFromTFileAny<o2::parameters::GRPMagField>("GLO/Config/GRPMagField", metadata, ts);
