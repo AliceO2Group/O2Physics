@@ -132,7 +132,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
     cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    cut->SetIsWithinBeamPipe(true);
+    // cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(3.0);
@@ -201,7 +201,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
     cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    cut->SetIsWithinBeamPipe(true);
+    // cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetMinCosPA(0.995);
     cut->SetMaxPCA(0.5);
@@ -216,7 +216,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
     cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    cut->SetIsWithinBeamPipe(true);
+    // cut->SetIsWithinBeamPipe(true);
     cut->SetRequireITSTPC(true);
     // for v0
     cut->SetMinCosPA(0.99);
@@ -232,7 +232,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
     cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    cut->SetIsWithinBeamPipe(true);
+    // cut->SetIsWithinBeamPipe(true);
     // for v0
     cut->SetMinCosPA(0.99);
     cut->SetMaxPCA(3.0);
@@ -249,7 +249,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
     cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    cut->SetIsWithinBeamPipe(false);
+    // cut->SetIsWithinBeamPipe(false);
     // for v0
     cut->SetMinCosPA(0.95);
     cut->SetMaxPCA(3.0);
@@ -265,7 +265,7 @@ V0PhotonCut* o2::aod::pwgem::photon::pcmcuts::GetCut(const char* cutName)
     cut->SetChi2PerClusterITS(-1e+10, 5.0);
     cut->SetNClustersITS(2, 4);
     cut->SetMeanClusterSizeITSob(0.0, 16.0);
-    cut->SetIsWithinBeamPipe(false);
+    // cut->SetIsWithinBeamPipe(false);
     // for v0
     cut->SetMinCosPA(0.95);
     cut->SetMaxPCA(3.0);

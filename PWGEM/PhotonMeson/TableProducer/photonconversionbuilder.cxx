@@ -71,6 +71,8 @@ using MyTracksIUMC = soa::Join<MyTracksIU, aod::McTrackLabels, aod::mcTPCTuneOnD
 struct PhotonConversionBuilder {
   Produces<aod::V0PhotonsKF> v0photonskf;
   Produces<aod::V0Legs> v0legs;
+  Produces<aod::V0LegsXYZ> v0legsXYZ;
+  Produces<aod::V0LegsDeDxMC> v0legsDeDxMC;
   // Produces<aod::V0PhotonsKFCov> v0photonskfcov;
   // Produces<aod::EMEventsNgPCM> events_ngpcm;
 
@@ -367,18 +369,18 @@ struct PhotonConversionBuilder {
   template <bool isMC, typename TTrack, typename TShiftedTrack, typename TKFParticle>
   void fillTrackTable(TTrack const& track, TShiftedTrack const& shiftedtrack, TKFParticle const& kfp, const float dcaXY, const float dcaZ)
   {
-    float mcTunedTPCSignal = 0.f;
-    if constexpr (isMC) {
-      mcTunedTPCSignal = track.mcTunedTPCSignal();
-    }
-
     v0legs(track.collisionId(), track.globalIndex(), track.sign(),
            kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), dcaXY, dcaZ,
            track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
            track.tpcChi2NCl(), track.tpcInnerParam(), track.tpcSignal(),
            track.tpcNSigmaEl(), track.tpcNSigmaPi(),
-           track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap(), mcTunedTPCSignal,
-           shiftedtrack.getX(), shiftedtrack.getY(), shiftedtrack.getZ());
+           track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap());
+
+    v0legsXYZ(shiftedtrack.getX(), shiftedtrack.getY(), shiftedtrack.getZ());
+
+    if constexpr (isMC) {
+      v0legsDeDxMC(track.mcTunedTPCSignal());
+    }
   }
 
   template <bool isMC, class TBCs, class TCollisions, class TTracks, typename TV0>

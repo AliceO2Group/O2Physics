@@ -56,6 +56,7 @@ struct skimmerPrimaryElectronFromDalitzEE {
   Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
   Preslice<aod::V0PhotonsKF> perCol_pcm = o2::aod::v0photonkf::collisionId;
   Produces<aod::EMPrimaryElectronsFromDalitz> emprimaryelectrons;
+  Produces<aod::EMPrimaryElectronsDeDxMC> emprimaryelectronsDeDxMC;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -313,18 +314,17 @@ struct skimmerPrimaryElectronFromDalitzEE {
   template <bool isMC, typename TCollision, typename TTrack>
   void fillTrackTable(TCollision const& collision, TTrack const& track)
   {
-    float mcTunedTPCSignal = 0.f;
-    if constexpr (isMC) {
-      mcTunedTPCSignal = track.mcTunedTPCSignal();
-    }
-
     emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
                        track.pt(), track.eta(), track.phi(), track.dcaXY(), track.dcaZ(), track.cYY(), track.cZY(), track.cZZ(),
                        track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
                        track.tpcChi2NCl(), track.tpcInnerParam(),
                        track.tpcSignal(), track.tpcNSigmaEl(), track.tpcNSigmaPi(),
                        track.beta(), track.tofNSigmaEl(),
-                       track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(), mcTunedTPCSignal);
+                       track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap());
+
+    if constexpr (isMC) {
+      emprimaryelectronsDeDxMC(track.mcTunedTPCSignal());
+    }
   }
 
   template <bool isMC, typename TTrack>

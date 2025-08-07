@@ -641,6 +641,11 @@ using EMPrimaryElectronsCov = EMPrimaryElectronsCov_001;
 // iterators
 using EMPrimaryElectronCov = EMPrimaryElectronsCov::iterator;
 
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectronsDeDxMC_000, "AOD", "EMPRMELDEDXMC", 0, mcpidtpc::DeDxTunedMc, o2::soa::Marker<1>);
+using EMPrimaryElectronsDeDxMC = EMPrimaryElectronsDeDxMC_000;
+// iterators
+using EMPrimaryElectronDeDxMC = EMPrimaryElectronsDeDxMC::iterator;
+
 DECLARE_SOA_TABLE(EMPrimaryElectronEMEventIds, "AOD", "PRMELMEVENTID", emprimaryelectron::EMEventId); // To be joined with EMPrimaryElectrons table at analysis level.
 // iterators
 using EMPrimaryElectronEMEventId = EMPrimaryElectronEMEventIds::iterator;
