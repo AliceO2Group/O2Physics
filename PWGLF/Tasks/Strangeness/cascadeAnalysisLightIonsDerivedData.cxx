@@ -1153,8 +1153,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       //float centrality = 100.5f;
       
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
-        auto collision = RecCols.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
-      
+        //auto collision = RecCols.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
         //if(centralityEstimator == Option::kFT0C) centrality = collision.centFT0C();
         //if(centralityEstimator == Option::kFT0M) centrality = collision.centFT0M();
         //if(centralityEstimator == Option::kFV0A) centrality = collision.centFV0A();
