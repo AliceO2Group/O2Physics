@@ -3509,10 +3509,10 @@ struct HfTrackIndexSkimCreatorLfCascades {
     }
 
     // invariant mass
-    if (config.massXiPiPiMin >= 0. && config.massXiPiPiMax > 0.) {
+    if (config.massXiPiPiMin >= 0.f && config.massXiPiPiMax > 0.f) {
       const double invMassMin = config.massXiPiPiMin;
       const double invMassMax = config.massXiPiPiMax;
-      const auto arrMom = std::array{pVecXi, pVecPi1, pVecPi2};
+      const std::array arrMom{pVecXi, pVecPi1, pVecPi2};
       const auto invMass2 = RecoDecay::m2(arrMom, arrMass3Prong[hf_cand_casc_lf::DecayType3Prong::XicplusToXiPiPi]);
       if (invMass2 < invMassMin * invMassMin || invMass2 >= invMassMax * invMassMax) {
         return false;
