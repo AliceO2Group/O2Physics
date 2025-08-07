@@ -1185,6 +1185,7 @@ struct AntinucleiInJets {
 
     // Initialize ITS PID Response object
     o2::aod::ITSResponse itsResponse;
+    itsResponse.setMCDefaultParameters();
 
     // Loop over all simulated collision events
     for (const auto& collision : collisions) {
@@ -1497,6 +1498,7 @@ struct AntinucleiInJets {
   {
     // Initialize ITS PID Response object
     o2::aod::ITSResponse itsResponse;
+    itsResponse.setMCDefaultParameters();
 
     // Loop over all reconstructed collisions
     for (const auto& collision : collisions) {
@@ -1758,9 +1760,6 @@ struct AntinucleiInJets {
   // Process real data with systematic variations of analysis parameters
   void processSystData(SelectedCollisions::iterator const& collision, AntiNucleiTracks const& tracks)
   {
-    // Initialize ITS PID Response object
-    o2::aod::ITSResponse itsResponse;
-
     // Event counter: before event selection
     registryData.fill(HIST("number_of_events_data_syst"), 0.5);
 
@@ -1800,6 +1799,9 @@ struct AntinucleiInJets {
     if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
       return;
     registryData.fill(HIST("number_of_events_data_syst"), 7.5);
+
+    // Initialize ITS PID Response object
+    o2::aod::ITSResponse itsResponse;
 
     // Cut settings
     static std::vector<double> maxDcaxySyst = {
@@ -1907,6 +1909,7 @@ struct AntinucleiInJets {
   {
     // Initialize ITS PID Response object
     o2::aod::ITSResponse itsResponse;
+    itsResponse.setMCDefaultParameters();
 
     // Cut settings
     static std::vector<double> maxDcaxySyst = {
@@ -2145,6 +2148,9 @@ struct AntinucleiInJets {
     if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
       return;
     registryCorr.fill(HIST("eventCounter"), 7.5);
+
+    // Initialize ITS PID Response object
+    o2::aod::ITSResponse itsResponse;
 
     // Multiplicity percentile
     const float multiplicity = collision.centFT0M();
