@@ -324,8 +324,7 @@ struct FlowGfwEse {
       {kCentFV0A, "FV0A"},
       {kCentNTPV, "NTPV"},
       {kCentNGlobal, "NGlobals"},
-      {kCentMFT, "MFT"}
-    };
+      {kCentMFT, "MFT"}};
 
     sCentralityEstimator = centEstimatorMap.count(cfgCentEstimator) ? centEstimatorMap[cfgCentEstimator] : "FT0C";
     sCentralityEstimator += " centrality (%)";
