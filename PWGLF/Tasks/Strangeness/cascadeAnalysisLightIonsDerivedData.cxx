@@ -13,7 +13,7 @@
 ///
 /// \brief Analysis of cascades (Xi, antiXi, Omega, antiOmega) in light-ion collisions using derived data
 /// \author Sara Pucillo (sara.pucillo@cern.ch), Alberto Caliva (alberto.caliva@cern.ch)
-/// \since August 06, 2025
+/// \since August 07, 2025
 
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -717,10 +717,10 @@ struct CascadeAnalysisLightIonsDerivedData {
 
   // Fill generated event information (for event loss/splitting estimation)
   template <typename TMCCollisions, typename TCollisions>
-  void fillGeneratedEventProperties(TMCCollisions const& mcCollisionss, TCollisions const& collisions)
+  void fillGeneratedEventProperties(TMCCollisions const& mcCollisions, TCollisions const& collisions)
   {
-   std::vector<int> listBestCollisionIdx(mcCollisionss.size());
-   for (auto const& mcCollisions : mcCollisionss) {
+   std::vector<int> listBestCollisionIdx(mcCollisions.size());
+   for (auto const& mcCollisions : mcCollisions) {
    
      // event selections
      if (applyVtxZ && std::fabs(mcCollisions.posZ()) > zVtx)
@@ -733,7 +733,6 @@ struct CascadeAnalysisLightIonsDerivedData {
      // If so, we consider it
      bool atLeastOne = false;
      int biggestNContribs = -1;
-     float centrality = 100.5f;
      int nCollisions = 0;
      for (auto const& collision : groupedCollisions) {
 
@@ -809,7 +808,7 @@ struct CascadeAnalysisLightIonsDerivedData {
 
   void processData(SelCollisions::iterator const& collision,
                    CascadeCandidates const& fullCascades,
-                   DaughterTracks const& tracks) {
+                   DaughterTracks const&) {
 
     // Fill event counter before event selection
     registryData.fill(HIST("number_of_events_data"), 0);
@@ -951,11 +950,7 @@ struct CascadeAnalysisLightIonsDerivedData {
 
   PROCESS_SWITCH(CascadeAnalysisLightIonsDerivedData, processData, "Process data", true);
 
-  void processMonteCarloRec(SimCollisions const& RecCols, 
-                         CascadeMCCandidates const& fullCascades,   
-                         DaughterTracks const& mcTracks,
-                         CollisionMCTrueTable const& mcCollisions,
-                         CascadeMCCores const& CascMCCores) {
+  void processMonteCarloRec(SimCollisions const& RecCols, CascadeMCCandidates const& fullCascades, DaughterTracks const&) {
     
     for (const auto& RecCol : RecCols) {
         
