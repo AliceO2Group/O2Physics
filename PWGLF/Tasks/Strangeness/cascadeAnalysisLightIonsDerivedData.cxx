@@ -147,7 +147,7 @@ struct CascadeAnalysisLightIonsDerivedData {
   // For manual sliceBy
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
 
-  void init(InitContext const& )
+  void init(InitContext const&)
   {
     // setting CCDB service
     ccdb->setURL(ccdbConfigurations.ccdbUrl);
