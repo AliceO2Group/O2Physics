@@ -985,13 +985,13 @@ class EventSelectionModule
       int64_t foundGlobalBC = 0;
       int32_t foundBCindex = -1;
 
-      // alternative collision-BC matching (currently: test mode)
+      // alternative collision-BC matching (currently: test mode, the aim is to improve pileup rejection)
       if (evselOpts.confLightIonsAlternativeBcMatching) {
-        int32_t bcFromPattern = -1;
+        foundGlobalBC = globalBC;
         // find closest nominal bc in pattern
         for (unsigned long i = 0; i < bcsPattern.size(); i++) {
           int32_t localBC = globalBC % nBCsPerOrbit;
-          bcFromPattern = bcsPattern.at(i);
+          int32_t bcFromPattern = bcsPattern.at(i);
           int64_t bcDiff = bcFromPattern - localBC;
           if (std::abs(bcDiff) <= 20) {
             foundGlobalBC = (globalBC / nBCsPerOrbit) * nBCsPerOrbit + bcFromPattern;
@@ -999,7 +999,7 @@ class EventSelectionModule
           }
         }
 
-        // matched with TOF --> precise time, match to TVX
+        // matched with TOF --> precise time, match to TVX, but keep the nominal foundGlobalBC from pattern
         if (vIsVertexTOFmatched[colIndex]) {
           std::map<int64_t, int32_t>::iterator it = mapGlobalBcWithTVX.find(foundGlobalBC);
           if (it != mapGlobalBcWithTVX.end()) {
@@ -1007,12 +1007,12 @@ class EventSelectionModule
           } else {                                           // check if TVX is in nearby bcs
             it = mapGlobalBcWithTVX.find(foundGlobalBC + 1); // next bc
             if (it != mapGlobalBcWithTVX.end()) {
-              foundGlobalBC += 1;
+              // foundGlobalBC += 1;
               foundBCindex = it->second;
             } else {
               it = mapGlobalBcWithTVX.find(foundGlobalBC - 1); // previous bc
               if (it != mapGlobalBcWithTVX.end()) {
-                foundGlobalBC -= 1;
+                // foundGlobalBC -= 1;
                 foundBCindex = it->second;
               } else {
                 foundBCindex = bc.globalIndex(); // keep original BC index
@@ -1024,16 +1024,23 @@ class EventSelectionModule
           int64_t meanBC = globalBC + TMath::Nint(sumHighPtTime / sumHighPtW / bcNS);
           int64_t bestGlobalBC = findBestGlobalBC(meanBC, evselOpts.confSigmaBCforHighPtTracks, vNcontributors[colIndex], col.posZ(), mapGlobalBcVtxZ);
           if (bestGlobalBC > 0) {
-            // foundGlobalBC = bestGlobalBC;
-            foundGlobalBC = (bestGlobalBC / nBCsPerOrbit) * nBCsPerOrbit + bcFromPattern;
+            foundGlobalBC = bestGlobalBC;
+            // find closest nominal bc in pattern
+            for (unsigned long j = 0; j < bcsPattern.size(); j++) {
+              int32_t bcFromPatternBest = bcsPattern.at(j);
+              int64_t bcDiff = bcFromPatternBest - (bestGlobalBC % nBCsPerOrbit);
+              if (std::abs(bcDiff) <= 20) {
+                foundGlobalBC = (bestGlobalBC / nBCsPerOrbit) * nBCsPerOrbit + bcFromPatternBest;
+                break; // the bc in pattern is found
+              }
+            }
             foundBCindex = mapGlobalBcWithTVX[bestGlobalBC];
           } else {                           // failed to find a proper TVX with small vZ difference
             foundBCindex = bc.globalIndex(); // keep original BC index
           }
-        } // end of non-TOFmatched vertices
+        } // end of non-TOF matched vertices
         //  sanitity check: if BC was not found
         if (foundBCindex == -1) {
-          foundGlobalBC = globalBC;
           foundBCindex = bc.globalIndex();
         }
         vBCinPatternPerColl[colIndex] = foundGlobalBC;
