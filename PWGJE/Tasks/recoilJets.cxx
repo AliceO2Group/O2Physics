@@ -687,7 +687,7 @@ struct RecoilJets {
     spectra.fill(HIST("hMultFT0C"), collision.multFT0C(), weight);
     spectra.fill(HIST("hMultFT0M"), collision.multFT0M(), weight);
 
-    float scaledFT0Mv2 = 0.5*(collision.multFT0A() / meanFT0A + collision.multFT0C() / meanFT0C);
+    float scaledFT0Mv2 = 0.5 * (collision.multFT0A() / meanFT0A + collision.multFT0C() / meanFT0C);
 
     spectra.fill(HIST("hScaleMultFT0A"), collision.multFT0A() / meanFT0A, weight);
     spectra.fill(HIST("hScaleMultFT0C"), collision.multFT0C() / meanFT0C, weight);
@@ -715,8 +715,6 @@ struct RecoilJets {
                  collision.multZNA() + collision.multZNC(), weight);
     spectra.fill(HIST("hScaleMultFT0Mv2_vs_ZNM"), scaledFT0Mv2,
                  collision.multZNA() + collision.multZNC(), weight);
-
-
   }
 
   //------------------------------------------------------------------------------
