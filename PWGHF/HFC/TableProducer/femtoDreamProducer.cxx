@@ -102,7 +102,7 @@ struct HfFemtoDreamProducer {
   Produces<aod::FDHfCandMC> rowCandMcCharmHad;
   Produces<aod::FDHfCandMCGen> rowCandCharmHadGen;
   Produces<aod::FDParticlesIndex> outputPartsIndex;
-  Produces<aod::FDParticlesTimeStamp> outputPartsTime;
+  Produces<aod::FDTrkTimeStamp> outputPartsTime;
   Produces<aod::FDMCCollisions> outputMcCollision;
   Produces<aod::FDMCCollLabels> outputCollsMcLabels;
   Produces<aod::FDParticles> outputParts;
