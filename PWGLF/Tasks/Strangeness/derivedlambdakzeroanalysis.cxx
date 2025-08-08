@@ -83,8 +83,7 @@ using V0McCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, a
 #define BITSET(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 #define BITCHECK(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
-
-enum CentEstimator { 
+enum CentEstimator {
   kCentFT0C = 0,
   kCentFT0M,
   kCentFT0CVariant1,
