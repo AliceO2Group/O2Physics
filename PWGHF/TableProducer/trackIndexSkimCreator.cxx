@@ -3497,6 +3497,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   /// \param pVecXi is the momentum array of the Xi daughter track
   /// \param pVecPi1 is the momentum array of the first pion daughter track
   /// \param pVecPi2 is the momentum array of the second pion daughter track
+  /// \return selection outcome
   template <typename T1>
   bool isPreselectedCandidateXic(T1 const& pVecXi, T1 const& pVecPi1, T1 const& pVecPi2)
   {
@@ -3523,7 +3524,7 @@ struct HfTrackIndexSkimCreatorLfCascades {
   }
 
   /// Method to perform selections for Xic 3-prong candidates after vertex reconstruction
-  /// \param pVecCand is the array for the candidate momentum after reconstruction of secondary vertex
+  /// \param pVecCand is the momentum array of the candidate after the reconstruction of the secondary vertex
   /// \param secVtx is the secondary vertex
   /// \param primVtx is the primary vertex
   /// \return selection outcome
