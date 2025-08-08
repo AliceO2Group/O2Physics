@@ -60,6 +60,7 @@ struct MCGeneratorStudies {
   Configurable<bool> mRequireNoSameBunchPileup{"mRequireNoSameBunchPileup", true, "require no same bunch pileup in event cut"};
   Configurable<bool> mRequireGoodZvtxFT0vsPV{"mRequireGoodZvtxFT0vsPV", true, "require good Zvtx between FT0 vs. PV in event cut"};
   Configurable<bool> mRequireEMCReadoutInMB{"mRequireEMCReadoutInMB", true, "require the EMC to be read out in an MB collision (kTVXinEMC)"};
+  Configurable<bool> mRequireEMCReadoutInL0{"mRequireEMCReadoutInL0", false, "require the EMC to be read out by L0 trigger"};
 
   void init(InitContext const&)
   {
@@ -207,9 +208,11 @@ struct MCGeneratorStudies {
                 if (!mRequireNoSameBunchPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
                   mHistManager.fill(HIST("Yield_TZSGU"), mcParticle.pt());
                   if (!mRequireEMCReadoutInMB || (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC))) {
-                    mHistManager.fill(HIST("Yield_TZSGUE"), mcParticle.pt());
-                    if (isAccepted(mcParticle, mcParticles))
-                      mHistManager.fill(HIST("Yield_TZSGUE_Accepted"), mcParticle.pt());
+                    if (!mRequireEMCReadoutInL0 || (collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7))) {
+                      mHistManager.fill(HIST("Yield_TZSGUE"), mcParticle.pt());
+                      if (isAccepted(mcParticle, mcParticles))
+                        mHistManager.fill(HIST("Yield_TZSGUE_Accepted"), mcParticle.pt());
+                    }
                   }
                 }
               }
@@ -293,7 +296,9 @@ struct MCGeneratorStudies {
             if (!mRequireNoSameBunchPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
               fRegistry->fill(HIST("hCollisionCounter"), 6);
               if (!mRequireEMCReadoutInMB || (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC)))
-                fRegistry->fill(HIST("hCollisionCounter"), 7);
+                if (!mRequireEMCReadoutInL0 || (collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7))) {
+                  fRegistry->fill(HIST("hCollisionCounter"), 7);
+                }
             }
           }
         }
