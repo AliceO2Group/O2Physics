@@ -24,6 +24,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <EMCALBase/Geometry.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
@@ -34,6 +35,8 @@
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
+
+#include <TPDGCode.h>
 
 #include <algorithm>
 #include <array>
@@ -46,24 +49,31 @@
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::constants;
 using namespace o2::hf_evsel;
 using namespace o2::hf_centrality;
 using CollisionEvSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
 using BcEvSelIt = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>::iterator;
 using SelectedClusters = o2::soa::Filtered<o2::soa::Join<o2::aod::EMCALClusters, o2::aod::EMCALMCClusters>>;
 
+namespace poi
+{
 enum PoI {
   kPhoton = 0,
-  kElectron = 1,
-  kHadron = 2,
-  kNPoI = 3
+  kElectronPrim = 1,
+  kElectronSec = 2,
+  kMuon = 3,
+  kHadronCharge = 4,
+  kHadronNeutral = 5,
+  kNPoI = 6
 };
+} // namespace poi
 
 /// \struct TaskEmcExtensiveMcQa
 struct TaskEmcExtensiveMcQa {
 
   static constexpr int NSM = 20; // there 20 supermodlues for the EMCal
-  std::array<int, 2> arrPoIPDG = {22, 11};
+  std::array<int, 6> arrPDGHadronNeutral = {kNeutron, kK0Short, kK0Long, kLambda0, physics::kXi0, kSigma0};
 
   SliceCache cache;
   Preslice<SelectedClusters> psClusterPerCollision = o2::aod::emcalcluster::collisionId;
@@ -88,10 +98,13 @@ struct TaskEmcExtensiveMcQa {
   ConfigurableAxis nClustersBinning{"nClustersBinning", {201, -0.5, 200.5}, "binning for the number of clusters"};
 
   ConfigurableAxis clusterEnergy{"clusterEnergy", {100, 0., 10}, "binning for the cluster energy in GeV"};
-  ConfigurableAxis clusterTimeBinning{"clusterTimeBinning", {1500, -600, 900}, "binning for the cluster time in ns"};
   ConfigurableAxis clusterM02{"clusterM02", {100, 0., 2.0}, "binning for the cluster M02"};
+  ConfigurableAxis clusterM20{"clusterM20", {100, 0., 2.0}, "binning for the cluster M20"};
   ConfigurableAxis clusterNCellBinning{"clusterNCellBinning", {100, 0.5, 100.5}, "binning for the number of cells per cluster"};
   ConfigurableAxis clusterOriginRadius{"clusterOriginRadius", {225, 0., 450}, "binning for the radial original point of the main contributor of a cluster"};
+  ConfigurableAxis clusterNContributor{"clusterNContributor", {20, 0.5, 20.5}, "binning for the number of contributor of a cluster"};
+  ConfigurableAxis clusterEnergyRatio{"clusterEnergyRatio", {100, 0., 10.}, "binning for ratio of the deposited energy of the leading particle to its generated momentum cluster"};
+  ConfigurableAxis collisionCent{"collisionCent", {10, 0., 100.}, "binning for the event centrality"};
 
   std::vector<float> mCellTime;
 
@@ -103,12 +116,17 @@ struct TaskEmcExtensiveMcQa {
 
     // create common axes
     const AxisSpec numberClustersAxis{nClustersBinning, "#it{N}_{cl}/ #it{N}_{event}"};
-    const AxisSpec axisParticle = {PoI::kNPoI, -0.5f, +PoI::kNPoI - 0.5f, ""};
+    const AxisSpec axisParticle = {poi::kNPoI, -0.5f, +poi::kNPoI - 0.5f, ""};
     const AxisSpec axisEnergy{clusterEnergy, "#it{E}_{cl} (GeV)"};
-    const AxisSpec axisTime{clusterTimeBinning, "#it{t}_{cl} (ns)"};
     const AxisSpec axisM02{clusterM02, "#it{M}_{02}"};
+    const AxisSpec axisM20{clusterM20, "#it{M}_{20}"};
     const AxisSpec axisNCell{clusterNCellBinning, "#it{N}_{cells}"};
     const AxisSpec axisRadius{clusterOriginRadius, "#it{R}_{origin} (cm)"};
+    const AxisSpec axisNContributor{clusterNContributor, "#it{N}_{particles}"};
+    const AxisSpec axisCent{collisionCent, "cent (%)"};
+    const AxisSpec axisLeadingEnergy{clusterEnergy, "#it{E}_{lead} (GeV)"};
+    const AxisSpec axisLeadingGenMomentum{clusterEnergy, "#it{p}_{lead, gen} (GeV/#it{c})"};
+    const AxisSpec axisLeadingRatio{clusterEnergy, "#it{E}_{lead}/#it{p}_{lead, gen} (#it{c})"};
 
     // create histograms
 
@@ -116,7 +134,8 @@ struct TaskEmcExtensiveMcQa {
     mHistManager.add("numberOfClustersEvents", "number of clusters per event (selected events)", HistType::kTH1D, {numberClustersAxis});
 
     // cluster properties (matched clusters)
-    mHistManager.add("hSparseClusterQA", "THn for Cluster QA", HistType::kTHnSparseF, {axisEnergy, axisTime, axisM02, axisNCell, axisRadius, axisParticle});
+    mHistManager.add("hSparseClusterQA", "THnSparse for Cluster QA", HistType::kTHnSparseF, {axisEnergy, axisM02, axisM20, axisNCell, axisRadius, axisParticle, axisNContributor, axisCent});
+    mHistManager.add("hSparseClusterContributors", "THnSparse with cluster contributors and energies", HistType::kTHnSparseF, {axisEnergy, axisParticle, axisNContributor, axisLeadingEnergy, axisLeadingGenMomentum, axisLeadingRatio, axisCent});
     mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", HistType::kTH2F, {{140, -0.7, 0.7}, {360, 0, o2::constants::math::TwoPI}});
 
     hfEvSel.addHistograms(mHistManager);
@@ -127,9 +146,8 @@ struct TaskEmcExtensiveMcQa {
   }
 
   template <typename Coll>
-  bool isCollSelected(const Coll& coll)
+  bool isCollSelected(const Coll& coll, float& cent)
   {
-    float cent{-1.f};
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(coll, cent, ccdb, mHistManager);
     /// monitor the satisfied event selections
     hfEvSel.fillHistograms(coll, rejectionMask, cent);
@@ -143,12 +161,28 @@ struct TaskEmcExtensiveMcQa {
   template <typename T>
   int findPoIType(T const& mcparticle)
   {
-    auto it = std::find(arrPoIPDG.begin(), arrPoIPDG.end(), std::abs(mcparticle.pdgCode()));
-    if (it != arrPoIPDG.end()) {
-      int index = std::distance(arrPoIPDG.begin(), it);
-      return index;
-    } else {
-      return PoI::kHadron;
+    auto pdgValue = std::abs(mcparticle.pdgCode());
+    switch (pdgValue) {
+      case kGamma: {
+        return poi::kPhoton;
+      }
+      case kElectron: {
+        if (mcparticle.isPhysicalPrimary()) {
+          return poi::kElectronPrim;
+        } else {
+          return poi::kElectronSec;
+        }
+      }
+      case kMuonMinus: {
+        return poi::kMuon;
+      }
+      default: {
+        auto it = std::find(arrPDGHadronNeutral.begin(), arrPDGHadronNeutral.end(), pdgValue);
+        if (it != arrPDGHadronNeutral.end()) {
+          return poi::kHadronNeutral;
+        }
+        return poi::kHadronCharge;
+      }
     }
   }
 
@@ -159,7 +193,8 @@ struct TaskEmcExtensiveMcQa {
   {
 
     for (const auto& collision : collisions) {
-      if (applyEvSels && !isCollSelected(collision)) {
+      float cent = -1.f;
+      if (applyEvSels && !isCollSelected(collision, cent)) {
         continue;
       }
 
@@ -175,7 +210,11 @@ struct TaskEmcExtensiveMcQa {
         }
         auto mainMcParticle = cluster.mcParticle_as<McParticles>()[0];
         float radius = std::hypot(mainMcParticle.vx(), mainMcParticle.vy());
-        mHistManager.fill(HIST("hSparseClusterQA"), cluster.energy(), cluster.time(), cluster.m02(), cluster.nCells(), radius, findPoIType(mainMcParticle));
+        float momentum = mainMcParticle.p();
+        float leadingEnergy = cluster.energy() * cluster.amplitudeA()[0];
+        float leadingFraction = leadingEnergy / momentum;
+        mHistManager.fill(HIST("hSparseClusterQA"), cluster.energy(), cluster.m02(), cluster.m20(), cluster.nCells(), radius, findPoIType(mainMcParticle), cluster.mcParticle().size(), cent);
+        mHistManager.fill(HIST("hSparseClusterContributors"), cluster.energy(), findPoIType(mainMcParticle), cluster.mcParticle().size(), leadingEnergy, momentum, leadingFraction, cent);
       }
     }
   }
