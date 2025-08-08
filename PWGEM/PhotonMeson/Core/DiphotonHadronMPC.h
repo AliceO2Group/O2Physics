@@ -374,7 +374,7 @@ struct DiphotonHadronMPC {
     const AxisSpec axis_deta_hh{ConfDEtaBins, "#Delta#eta = #eta_{h}^{ref1} - #eta_{h}^{ref2}"};
     const AxisSpec axis_dphi_hh{cfgNbinsDPhi, -M_PI / 2, +3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
     // const AxisSpec axis_cosndphi_hh{cfgNbinsCosNDPhi, -1, +1, std::format("cos({0:d}(#varphi_{{h}}^{{ref1}} - #varphi_{{h}}^{{ref2}}))", cfgNmod.value)};
-    fRegistry.add("HadronHadron/same/hDEtaDPhi", "hadron-hadron 2PC", kTH2D, {axis_deta_hh, axis_dphi_hh}, true);
+    fRegistry.add("HadronHadron/same/hDEtaDPhi", "hadron-hadron 2PC", kTH2D, {axis_dphi_hh, axis_deta_hh}, true);
     fRegistry.addClone("HadronHadron/same/", "HadronHadron/mix/");
   }
 
@@ -720,7 +720,7 @@ struct DiphotonHadronMPC {
             float dphi = ref1.phi() - ref2.phi();
             // o2::math_utils::bringTo02Pi(dphi);
             dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
-            fRegistry.fill(HIST("HadronHadron/same/hDEtaDPhi"), deta, dphi);
+            fRegistry.fill(HIST("HadronHadron/same/hDEtaDPhi"), dphi, deta);
           }
         }
       }
@@ -917,7 +917,7 @@ struct DiphotonHadronMPC {
             float dphi = ref1.phi() - ref2.phi();
             // o2::math_utils::bringTo02Pi(dphi);
             dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
-            fRegistry.fill(HIST("HadronHadron/mix/hDEtaDPhi"), deta, dphi);
+            fRegistry.fill(HIST("HadronHadron/mix/hDEtaDPhi"), dphi, deta);
           }
         }
       } // end of loop over mixed event pool between hadron-hadron
