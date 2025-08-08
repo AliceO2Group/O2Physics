@@ -331,7 +331,7 @@ struct skimmerPrimaryTrack {
         trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAxy03cm);
       }
 
-      emprimarytracks(collision.globalIndex(), track.globalIndex(), track.sign(), pt, eta, phi, trackBit);
+      emprimarytracks(collision.globalIndex(), track.globalIndex(), track.sign() / pt, eta, phi, trackBit);
       // prmtrackeventidtmp(collision.globalIndex());
 
       stored_trackIds.emplace_back(std::pair<int, int>{collision.globalIndex(), track.globalIndex()});
