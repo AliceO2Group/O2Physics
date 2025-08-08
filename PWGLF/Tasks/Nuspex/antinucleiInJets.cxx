@@ -138,6 +138,7 @@ struct AntinucleiInJets {
   Configurable<double> ptMaxItsPidHel{"ptMaxItsPidHel", 1.0, "maximum pt for ITS PID for helium"};
   Configurable<double> nSigmaItsMin{"nSigmaItsMin", -3.0, "nSigmaITS min"};
   Configurable<double> nSigmaItsMax{"nSigmaItsMax", +3.0, "nSigmaITS max"};
+  Configurable<bool> setMCDefaultItsParams{"setMCDefaultItsParams", false, "set MC default parameters"};
 
   // CCDB manager service for accessing condition data
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -151,6 +152,9 @@ struct AntinucleiInJets {
 
   // Utility object for jet background subtraction methods
   JetBkgSubUtils backgroundSub;
+
+  // Initialize ITS PID Response object
+  o2::aod::ITSResponse itsResponse;
 
   // Initialize CCDB access and histogram registry for Zorro processing
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
@@ -166,6 +170,11 @@ struct AntinucleiInJets {
     // Set summary object if processing skimmed data
     if (cfgSkimmedProcessing) {
       zorroSummary.setObject(zorro.getZorroSummary());
+    }
+
+    // Set default MC parametrization for ITS response
+    if (setMCDefaultItsParams) {
+      itsResponse.setMCDefaultParameters();
     }
 
     // Binning
@@ -743,9 +752,6 @@ struct AntinucleiInJets {
       return;
     registryData.fill(HIST("number_of_events_data"), 8.5);
 
-    // Initialize ITS PID Response object
-    o2::aod::ITSResponse itsResponse;
-
     // Loop over reconstructed tracks
     int id(-1);
     std::vector<fastjet::PseudoJet> fjParticles;
@@ -1182,11 +1188,6 @@ struct AntinucleiInJets {
   // Antinuclei reconstruction efficiency
   void processAntinucleiEfficiency(RecCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, aod::McParticles const& mcParticles)
   {
-
-    // Initialize ITS PID Response object
-    o2::aod::ITSResponse itsResponse;
-    itsResponse.setMCDefaultParameters();
-
     // Loop over all simulated collision events
     for (const auto& collision : collisions) {
 
@@ -1496,10 +1497,6 @@ struct AntinucleiInJets {
   // Reconstructed events
   void processJetsMCrec(RecCollisionsMc const& collisions, AntiNucleiTracksMc const& mcTracks, McParticles const&)
   {
-    // Initialize ITS PID Response object
-    o2::aod::ITSResponse itsResponse;
-    itsResponse.setMCDefaultParameters();
-
     // Loop over all reconstructed collisions
     for (const auto& collision : collisions) {
 
@@ -1546,8 +1543,21 @@ struct AntinucleiInJets {
       // Loop over reconstructed tracks
       int id(-1);
       std::vector<fastjet::PseudoJet> fjParticles;
+      std::vector<int> trackIndex;
       for (auto const& track : mcTracks) {
         id++;
+
+        // Get corresponding MC particle
+        if (!track.has_mcParticle())
+          continue;
+        const auto mcparticle = track.mcParticle();
+
+        // Store track index for antiproton tracks
+        if (passedTrackSelection(track) && track.sign() < 0 && mcparticle.pdgCode() == PDG_t::kProtonBar) {
+          trackIndex.emplace_back(id);
+        }
+
+        // Apply track selection for jet reconstruction
         if (!passedTrackSelectionForJetReconstruction(track))
           continue;
 
@@ -1667,24 +1677,15 @@ struct AntinucleiInJets {
         }
 
         // Loop over tracks in the underlying event
-        for (auto const& track : mcTracks) {
+        for (auto const& index : trackIndex) {
 
-          // Apply track selection
-          if (!passedTrackSelection(track))
-            continue;
-
-          // Antiproton selection
-          if (track.sign() > 0)
-            continue;
+          // retrieve track associated to index
+          auto const& track = mcTracks.iteratorAt(index);
 
           // Get corresponding MC particle
           if (!track.has_mcParticle())
             continue;
           const auto mcparticle = track.mcParticle();
-
-          // Antiproton selection based on the PDG
-          if (mcparticle.pdgCode() != PDG_t::kProtonBar)
-            continue;
 
           // Define variables
           double nsigmaTPCPr = track.tpcNSigmaPr();
@@ -1800,9 +1801,6 @@ struct AntinucleiInJets {
       return;
     registryData.fill(HIST("number_of_events_data_syst"), 7.5);
 
-    // Initialize ITS PID Response object
-    o2::aod::ITSResponse itsResponse;
-
     // Cut settings
     static std::vector<double> maxDcaxySyst = {
       0.071, 0.060, 0.066, 0.031, 0.052, 0.078, 0.045, 0.064, 0.036, 0.074,
@@ -1907,10 +1905,6 @@ struct AntinucleiInJets {
   // Process MC with systematic variations of analysis parameters
   void processSystEff(GenCollisionsMc const& genCollisions, RecCollisionsMc const& recCollisions, AntiNucleiTracksMc const& mcTracks, aod::McParticles const& mcParticles)
   {
-    // Initialize ITS PID Response object
-    o2::aod::ITSResponse itsResponse;
-    itsResponse.setMCDefaultParameters();
-
     // Cut settings
     static std::vector<double> maxDcaxySyst = {
       0.071, 0.060, 0.066, 0.031, 0.052, 0.078, 0.045, 0.064, 0.036, 0.074,
@@ -2148,9 +2142,6 @@ struct AntinucleiInJets {
     if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched))
       return;
     registryCorr.fill(HIST("eventCounter"), 7.5);
-
-    // Initialize ITS PID Response object
-    o2::aod::ITSResponse itsResponse;
 
     // Multiplicity percentile
     const float multiplicity = collision.centFT0M();
