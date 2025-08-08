@@ -295,10 +295,11 @@ struct MCGeneratorStudies {
             fRegistry->fill(HIST("hCollisionCounter"), 5);
             if (!mRequireNoSameBunchPileup || collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
               fRegistry->fill(HIST("hCollisionCounter"), 6);
-              if (!mRequireEMCReadoutInMB || (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC)))
+              if (!mRequireEMCReadoutInMB || (mRequireEMCCellContent ? collision.isemcreadout() : collision.alias_bit(kTVXinEMC))) {
                 if (!mRequireEMCReadoutInL0 || (collision.alias_bit(kEMC7) || collision.alias_bit(kDMC7))) {
                   fRegistry->fill(HIST("hCollisionCounter"), 7);
                 }
+              }
             }
           }
         }
