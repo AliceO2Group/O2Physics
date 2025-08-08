@@ -56,7 +56,7 @@ double massPi = TDatabasePDG::Instance()->GetParticle(211)->Mass();
 double massKa = TDatabasePDG::Instance()->GetParticle(321)->Mass();
 double massPr = TDatabasePDG::Instance()->GetParticle(2212)->Mass();
 
-struct diffPtFluctPid {
+struct DiffPtFluctPid {
   // Histogram registry: an object to hold your histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -756,5 +756,5 @@ struct diffPtFluctPid {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<diffPtFluctPid>(cfgc)};
+    adaptAnalysisTask<DiffPtFluctPid>(cfgc)};
 }
