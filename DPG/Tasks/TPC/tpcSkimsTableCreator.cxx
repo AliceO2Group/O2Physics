@@ -107,8 +107,8 @@ struct TreeWriterTpcV0 {
   ctpRateFetcher mRateFetcher;
 
   /// Funktion to fill skimmed tables
-  template <bool doUseCorreceddEdx = false, typename T, typename C, typename V0>
-  void fillSkimmedV0Table(V0 const& v0, T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate)
+  template <bool doUseCorreceddEdx = false, typename T, typename C, typename V0Casc>
+  void fillSkimmedV0Table(V0Casc const& v0casc, T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -120,12 +120,12 @@ struct TreeWriterTpcV0 {
     auto trackocc = collision.trackOccupancyInTimeRange();
     auto ft0occ = collision.ft0cOccupancyInTimeRange();
 
-    const float alpha = v0.alpha();
-    const float qt = v0.qtarm();
-    const float cosPA = v0.v0cosPA();
-    const float pT = v0.pt();
-    const float v0radius = v0.v0radius();
-    const float gammapsipair = v0.psipair();
+    const float alpha = v0casc.alpha();
+    const float qt = v0casc.qtarm();
+    const float cosPA = GetCosPA(v0casc);
+    const float pT = v0casc.pt();
+    const float v0radius = GetRadius(v0casc);
+    const float gammapsipair = v0casc.psipair();
 
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
@@ -348,6 +348,30 @@ struct TreeWriterTpcV0 {
     ccdb->setFatalWhenNull(false);
   }
 
+  /// Evaluate cosPA of the v0
+  double GetCosPA(V0sWithID::iterator const& v0)
+  {
+    return v0.v0cosPA();
+  }
+
+  /// Evaluate cosPA of the cascade
+  double GetCosPA(CascsWithID::iterator const& casc)
+  {
+    return casc.casccosPA();
+  }
+
+  /// Evaluate radius of the v0
+  double GetRadius(V0sWithID::iterator const& v0)
+  {
+    return v0.v0radius();
+  }
+
+  /// Evaluate radius of the cascade
+  double GetRadius(CascsWithID::iterator const& casc)
+  {
+    return casc.cascradius();
+  }
+
   /// Apply a track quality selection with a filter!
   void processStandard(Colls::iterator const& collision, soa::Filtered<Trks> const& tracks, V0sWithID const& v0s, CascsWithID const& cascs, aod::BCsWithTimestamps const&)
   {
@@ -419,7 +443,7 @@ struct TreeWriterTpcV0 {
       // Omega
       if (static_cast<bool>(bachTrack.pidbit() & (1 << kOmega))) {
         if (downsampleTsalisCharged(bachTrack.pt(), downsamplingTsalisKaons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Kaon], maxPt4dwnsmplTsalisKaons)) {
-          //           fillSkimmedV0Table(casc, bachTrack, collision, bachTrack.tpcNSigmaPr(), bachTrack.tofNSigmaPr(), bachTrack.tpcExpSignalPr(bachTrack.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate);
+          fillSkimmedV0Table(casc, bachTrack, collision, bachTrack.tpcNSigmaPr(), bachTrack.tofNSigmaPr(), bachTrack.tpcExpSignalPr(bachTrack.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate);
         }
       }
     }
