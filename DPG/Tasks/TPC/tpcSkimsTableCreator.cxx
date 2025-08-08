@@ -77,6 +77,7 @@ struct TreeWriterTpcV0 {
   Configurable<double> dwnSmplFactor_Pi{"dwnSmplFactor_Pi", 1., "downsampling factor for pions, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactor_Pr{"dwnSmplFactor_Pr", 1., "downsampling factor for protons, default fraction to keep is 1."};
   Configurable<double> dwnSmplFactor_El{"dwnSmplFactor_El", 1., "downsampling factor for electrons, default fraction to keep is 1."};
+  Configurable<double> dwnSmplFactor_Ka{"dwnSmplFactor_Ka", 1., "downsampling factor for kaons, default fraction to keep is 1."};
   Configurable<float> sqrtSNN{"sqrt_s_NN", 0., "sqrt(s_NN), used for downsampling with the Tsallis distribution"};
   Configurable<float> downsamplingTsalisPions{"downsamplingTsalisPions", -1., "Downsampling factor to reduce the number of pions"};
   Configurable<float> downsamplingTsalisProtons{"downsamplingTsalisProtons", -1., "Downsampling factor to reduce the number of protons"};
@@ -122,7 +123,7 @@ struct TreeWriterTpcV0 {
 
     const float alpha = v0casc.alpha();
     const float qt = v0casc.qtarm();
-    const float cosPA = GetCosPA(v0casc);
+    const float cosPA = GetCosPA(v0casc, collision);
     const float pT = v0casc.pt();
     const float v0radius = GetRadius(v0casc);
     const float gammapsipair = v0casc.psipair();
@@ -349,15 +350,17 @@ struct TreeWriterTpcV0 {
   }
 
   /// Evaluate cosPA of the v0
-  double GetCosPA(V0sWithID::iterator const& v0)
+  template <typename CollisionType>
+  double GetCosPA(V0sWithID::iterator const& v0, CollisionType const&)
   {
     return v0.v0cosPA();
   }
 
   /// Evaluate cosPA of the cascade
-  double GetCosPA(CascsWithID::iterator const& casc)
+  template <typename CollisionType>
+  double GetCosPA(CascsWithID::iterator const& casc, CollisionType const& collision)
   {
-    return casc.casccosPA();
+    return casc.casccosPA(collision.posX(), collision.posY(), collision.posZ());
   }
 
   /// Evaluate radius of the v0
@@ -440,10 +443,10 @@ struct TreeWriterTpcV0 {
       if (casc.cascaddid() == kUndef) {
         continue;
       }
-      // Omega
-      if (static_cast<bool>(bachTrack.pidbit() & (1 << kOmega))) {
+      // Omega and antiomega
+      if (static_cast<bool>(bachTrack.pidbit() & (1 << kOmega)) || static_cast<bool>(bachTrack.pidbit() & (1 << kAntiOmega))) {
         if (downsampleTsalisCharged(bachTrack.pt(), downsamplingTsalisKaons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Kaon], maxPt4dwnsmplTsalisKaons)) {
-          fillSkimmedV0Table(casc, bachTrack, collision, bachTrack.tpcNSigmaPr(), bachTrack.tofNSigmaPr(), bachTrack.tpcExpSignalPr(bachTrack.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate);
+          fillSkimmedV0Table(casc, bachTrack, collision, bachTrack.tpcNSigmaKa(), bachTrack.tofNSigmaKa(), bachTrack.tpcExpSignalKa(bachTrack.tpcSignal()), o2::track::PID::Kaon, runnumber, dwnSmplFactor_Ka, hadronicRate);
         }
       }
     }
