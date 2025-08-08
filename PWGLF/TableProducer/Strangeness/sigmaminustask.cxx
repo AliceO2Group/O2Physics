@@ -249,8 +249,8 @@ struct sigmaminustask {
         continue;
       }
       float cosPointingAngleRec = cosPAngle(std::array{kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()},
-                                                  std::array{0.0f, 0.0f, 0.0f},
-                                                  std::array{kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx()});
+                                            std::array{0.0f, 0.0f, 0.0f},
+                                            std::array{kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx()});
       rSigmaMinus.fill(HIST("h2CosPointingAnglePt"), kinkCand.mothSign() * kinkCand.ptMoth(), cosPointingAngleRec);
 
       rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
