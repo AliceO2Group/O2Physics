@@ -60,15 +60,19 @@ struct JetShapeTask {
   HistogramRegistry registry{"registry",
                              {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsDistance, 0, distanceMax}}}},
                               {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsDistance, 0, distanceMax}}}},
+                              {"tpcTofPiOutOfJet", "tpcTofPiOutOfJet", {HistType::kTH2F, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
+                              {"tpcTofPrOutOfJet", "tpcTofPrOutOfJet", {HistType::kTH2F, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
                               {"tpcPi", "tpcPi", {HistType::kTH2F, {{70, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
                               {"tofPi", "tofPi", {HistType::kTH2F, {{50, 0, ptMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
                               {"tpcPr", "tpcPr", {HistType::kTH2F, {{70, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
                               {"tofPr", "tofPr", {HistType::kTH2F, {{50, 0, ptMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
                               {"tpcDedx", "tpcDedx", {HistType::kTHnSparseD, {{nBinsPForDedx, 0, pMax}, {nBinsTpcDedx, 0, 1000}, {nBinsDistance, 0, distanceMax}}}},
                               {"tpcDedxOutOfJet", "tpcDedxOutOfJet", {HistType::kTH2F, {{nBinsPForDedx, 0, pMax}, {nBinsTpcDedx, 0, 1000}}}},
-                              {"tofBeta", "tofBeta", {HistType::kTHnSparseD, {{nBinsPForBeta, 0, pMax}, {nBinsTofBeta, 0.4, 1.1}, {nBinsDistance, 0, distanceMax}}}},
-                              {"pVsPtForProton", "pVsPtForProton", {HistType::kTHnSparseD, {{70, 0, pMax}, {50, 0, ptMax}, {nBinsDistance, 0, distanceMax}}}},
-                              {"pVsPtForPion", "pVsPtPion", {HistType::kTHnSparseD, {{70, 0, pMax}, {50, 0, ptMax}, {nBinsDistance, 0, distanceMax}}}},
+                              {"tofBeta", "tofBeta", {HistType::kTH2F, {{nBinsPForBeta, 0, pMax}, {nBinsTofBeta, 0.4, 1.1}}}},
+                              {"pVsPtForPr", "pVsPtForPr", {HistType::kTHnSparseD, {{70, 0, pMax}, {50, 0, ptMax}, {nBinsDistance, 0, distanceMax}}}},
+                              {"pVsPtForPi", "pVsPtPi", {HistType::kTHnSparseD, {{70, 0, pMax}, {50, 0, ptMax}, {nBinsDistance, 0, distanceMax}}}},
+                              {"pVsPtForPrOutOfJet", "pVsPtForPrOutOfJet", {HistType::kTH2F, {{70, 0, pMax}, {50, 0, ptMax}}}},
+                              {"pVsPtForPiOutOfJet", "pVsPtPionOutOfJet", {HistType::kTH2F, {{70, 0, pMax}, {50, 0, ptMax}}}},
                               {"tofMass", "tofMass", {HistType::kTH1F, {{300, 0, 3}}}},
                               {"trackPhi", "trackPhi", {HistType::kTH1F, {{80, -1, 7}}}},
                               {"trackEta", "trackEta", {HistType::kTH1F, {{100, -1, 1}}}},
@@ -298,8 +302,6 @@ struct JetShapeTask {
 
         // PID check
         registry.fill(HIST("tofMass"), track.mass());
-
-        // for calculate purity
         registry.fill(HIST("tpcPi"), track.p(), track.tpcNSigmaPi());
         registry.fill(HIST("tofPi"), track.pt(), track.tofNSigmaPi());
         registry.fill(HIST("tpcPr"), track.p(), track.tpcNSigmaPr());
@@ -324,30 +326,42 @@ struct JetShapeTask {
         float deltaPhiBg2 = RecoDecay::constrainAngle(preDeltaPhiBg2, -o2::constants::math::PI);
 
         // Calculate distance to background cone axes
-        // Note: deltaEta is the same for all cones at the same eta
         float distanceBg1 = std::sqrt(deltaEta * deltaEta + deltaPhiBg1 * deltaPhiBg1);
         float distanceBg2 = std::sqrt(deltaEta * deltaEta + deltaPhiBg2 * deltaPhiBg2);
 
         // Fill histogram if track is inside one of the perpendicular cones
         if (distanceBg1 < jetR || distanceBg2 < jetR) {
           registry.fill(HIST("tpcDedxOutOfJet"), track.p(), track.tpcSignal());
+
+          if (std::abs(track.tofNSigmaPi()) < nSigmaTofCut) {
+            registry.fill(HIST("tpcTofPiOutOfJet"), track.p(), track.tpcNSigmaPi());
+            if (track.tpcNSigmaPi() > tpcNSigmaPiMin && track.tpcNSigmaPi() < tpcNSigmaPiMax) {
+              registry.fill(HIST("pVsPtForPiOutOfJet"), track.p(), track.pt());
+            }
+          }
+          if (std::abs(track.tofNSigmaPr()) < nSigmaTofCut) {
+            registry.fill(HIST("tpcTofPrOutOfJet"), track.p(), track.tpcNSigmaPr());
+            if (track.tpcNSigmaPr() > tpcNSigmaPrMin && track.tpcNSigmaPr() < tpcNSigmaPrMax) {
+              registry.fill(HIST("pVsPtForPrOutOfJet"), track.p(), track.pt());
+            }
+          }
         }
 
         registry.fill(HIST("distanceVsTrackpt"), distance, track.pt());
         registry.fill(HIST("tpcDedx"), track.p(), track.tpcSignal(), distance);
-        registry.fill(HIST("tofBeta"), track.p(), track.beta(), distance);
+        registry.fill(HIST("tofBeta"), track.p(), track.beta());
 
         if (std::abs(track.tofNSigmaPr()) < nSigmaTofCut) {
           registry.fill(HIST("tpcTofPr"), track.p(), track.tpcNSigmaPr(), distance);
           if (track.tpcNSigmaPr() > tpcNSigmaPrMin && track.tpcNSigmaPr() < tpcNSigmaPrMax) {
-            registry.fill(HIST("pVsPtForProton"), track.p(), track.pt(), distance);
+            registry.fill(HIST("pVsPtForPr"), track.p(), track.pt(), distance);
           }
         }
 
         if (std::abs(track.tofNSigmaPi()) < nSigmaTofCut) {
           registry.fill(HIST("tpcTofPi"), track.p(), track.tpcNSigmaPi(), distance);
           if (track.tpcNSigmaPi() > tpcNSigmaPiMin && track.tpcNSigmaPi() < tpcNSigmaPiMax) {
-            registry.fill(HIST("pVsPtForPion"), track.p(), track.pt(), distance);
+            registry.fill(HIST("pVsPtForPi"), track.p(), track.pt(), distance);
           }
         }
       }
