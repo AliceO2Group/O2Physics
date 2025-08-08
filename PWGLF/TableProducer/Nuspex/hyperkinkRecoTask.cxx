@@ -408,7 +408,7 @@ struct HyperkinkRecoTask {
   Configurable<float> maxZVertex{"maxZVertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cutTPCNSigmaDaug{"cutTPCNSigmaDaug", 5, "TPC NSigma cut for daughter tracks"};
   Configurable<float> cutTOFNSigmaDaug{"cutTOFNSigmaDaug", 1000, "TOF NSigma cut for daughter tracks"};
-  Configurable<bool> askTOFForDaug{"askTOFforDaug", false, "If true, ask for TOF signal"};
+  Configurable<bool> askTOFForDaug{"askTOFForDaug", false, "If true, ask for TOF signal"};
 
   // CCDB options
   Configurable<double> inputBz{"inputBz", -999, "bz field, -999 is automatic"};
