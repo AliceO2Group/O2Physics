@@ -174,39 +174,13 @@ struct v0selector {
     return kUndef;
   }
 
-  std::pair<float, float> evalArmenterosPodolanskiCascade(aod::CascData const& casc)
-  {
-    const float pxv0 = casc.pxpos() + casc.pxneg();
-    const float pyv0 = casc.pypos() + casc.pyneg();
-    const float pzv0 = casc.pzpos() + casc.pzneg();
-
-    const float pxbach = casc.pxbach();
-    const float pybach = casc.pybach();
-    const float pzbach = casc.pzbach();
-
-    const double momTot = RecoDecay::p2(pxv0 + pxbach, pyv0 + pybach, pzv0 + pzbach);
-
-    const float lQlv0 = RecoDecay::dotProd(std::array{pxv0, pyv0, pzv0}, std::array{pxv0 + pxbach, pyv0 + pybach, pzv0 + pzbach}) / momTot;
-    const float lQlbach = RecoDecay::dotProd(std::array{pxbach, pybach, pzbach}, std::array{pxv0 + pxbach, pyv0 + pybach, pzv0 + pzbach}) / momTot;
-    const float dp = RecoDecay::dotProd(std::array{pxbach, pybach, pzbach}, std::array{pxv0 + pxbach, pyv0 + pybach, pzv0 + pzbach});
-
-    float alpha = (lQlv0 - lQlbach) / (lQlv0 + lQlbach);
-    const float qtarm = std::sqrt(RecoDecay::p2(pxbach, pybach, pzbach) - dp * dp / momTot / momTot);
-
-    if (casc.sign() > 0) {
-      alpha = -alpha;
-    }
-
-    return std::make_pair(alpha, qtarm);
-  }
-
   int checkCascade(float alpha, float qt)
   {
     const bool isAlphaPos = alpha > 0;
     alpha = std::fabs(alpha);
 
-    const float qUp = cutAPOmegaUp1 * std::sqrt(std::abs(1.0f - ((alpha - cutAPOmegaUp2) * (alpha - cutAPOmegaUp2)) / (cutAPOmegaUp3 * cutAPOmegaUp3)));
-    const float qDown = cutAPOmegaDown1 * std::sqrt(std::abs(1.0f - ((alpha - cutAPOmegaDown2) * (alpha - cutAPOmegaDown2)) / (cutAPOmegaDown3 * cutAPOmegaDown3)));
+    const float qUp = std::abs(alpha - cutAPOmegaUp2) > std::abs(cutAPOmegaUp3) ? 0. : cutAPOmegaUp1 * std::sqrt(1.0f - ((alpha - cutAPOmegaUp2) * (alpha - cutAPOmegaUp2)) / (cutAPOmegaUp3 * cutAPOmegaUp3));
+    const float qDown = std::abs(alpha - cutAPOmegaDown2) > std::abs(cutAPOmegaDown3) ? 0. : cutAPOmegaDown1 * std::sqrt(1.0f - ((alpha - cutAPOmegaDown2) * (alpha - cutAPOmegaDown2)) / (cutAPOmegaDown3 * cutAPOmegaDown3));
 
     if (alpha < cutAlphaOmegaLow || alpha > cutAlphaOmegaHigh || qt < qDown || qt > qUp) {
       return kUndef;
@@ -262,8 +236,8 @@ struct v0selector {
       registry.add("hV0APplot", "hV0APplot", HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
       registry.add("hV0APplotSelected", "hV0APplotSelected", HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
       registry.add("hV0Psi", "hV0Psi", HistType::kTH2F, {{100, 0, TMath::PiOver2()}, {100, 0, 0.1}});
-      registry.add("hCascAPplot", "hCascAPplot", HistType::kTH2F, {{200, -1.0f, +1.0f}, {500, 0.0f, 0.5f}});
-      registry.add("hCascAPplotSelected", "hCascAPplotSelected", HistType::kTH2F, {{200, -1.0f, +1.0f}, {500, 0.0f, 0.5f}});
+      registry.add("hCascAPplot", "hCascAPplot", HistType::kTH2F, {{200, -1.0f, +1.0f}, {300, 0.0f, 0.3f}});
+      registry.add("hCascAPplotSelected", "hCascAPplotSelected", HistType::kTH2F, {{200, -1.0f, +1.0f}, {300, 0.0f, 0.3f}});
       registry.add("hMassOmega", "hMassOmega", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.62f, 1.72f}});
       registry.add("hMassAntiOmega", "hMassAntiOmega", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.62f, 1.72f}});
     }
@@ -283,7 +257,7 @@ struct v0selector {
     std::vector<int8_t> cascpidmap;
     cascpidmap.clear();
     if (produceCascID.value) {
-      cascpidmap.resize(V0s.size(), kUndef);
+      cascpidmap.resize(Cascs.size(), kUndef);
     }
     for (auto& V0 : V0s) {
       // if (!(V0.posTrack_as<FullTracksExt>().trackType() & o2::aod::track::TPCrefit)) {
@@ -467,7 +441,8 @@ struct v0selector {
 
       const float mOmega = Casc.mOmega();
 
-      auto [alpha, qt] = evalArmenterosPodolanskiCascade(Casc);
+      const float alpha = Casc.alpha();
+      const float qt = Casc.qtarm();
 
       if (fillhisto) {
         registry.fill(HIST("hCascAPplot"), alpha, qt);
