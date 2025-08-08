@@ -77,11 +77,7 @@ struct pcmConverter1 {
         v0leg.tpcNSigmaPi(),
         v0leg.itsClusterSizes(),
         v0leg.itsChi2NCl(),
-        v0leg.detectorMap(),
-        0.f,
-        v0leg.x(),
-        v0leg.y(),
-        v0leg.z());
+        v0leg.detectorMap());
     } // end of v0leg loop
   } // end of process
 };

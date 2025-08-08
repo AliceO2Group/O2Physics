@@ -57,6 +57,8 @@ using namespace o2::constants::physics;
 using namespace o2::constants::math;
 using namespace pwgmm::mult;
 
+auto static constexpr kMinCharge = 3.f;
+
 AxisSpec ptAxis = {1001, -0.005, 10.005};
 AxisSpec multAxis = {701, -0.5, 700.5, "N_{trk}"};
 AxisSpec zAxis = {60, -30., 30.};
@@ -102,79 +104,49 @@ struct DndetaMFTPbPb {
 
   struct : ConfigurableGroup {
     Configurable<bool> usephiCut{"usephiCut", false, "use azimuthal angle cut"};
-    Configurable<float> phiCut{"phiCut", 0.1f,
-                               "Cut on azimuthal angle of MFT tracks"};
+    Configurable<float> phiCut{"phiCut", 0.1f, "Cut on azimuthal angle of MFT tracks"};
     Configurable<float> minPhi{"minPhi", 0.f, ""};
     Configurable<float> maxPhi{"maxPhi", 6.2832, ""};
     Configurable<float> minEta{"minEta", -3.6f, ""};
     Configurable<float> maxEta{"maxEta", -2.5f, ""};
-    Configurable<int> minNclusterMft{"minNclusterMft", 5,
-                                     "minimum number of MFT clusters"};
+    Configurable<int> minNclusterMft{"minNclusterMft", 5, "minimum number of MFT clusters"};
     Configurable<bool> useChi2Cut{"useChi2Cut", false, "use track chi2 cut"};
     Configurable<float> maxChi2NCl{"maxChi2NCl", 1000.f, "maximum chi2 per MFT clusters"};
     Configurable<bool> usePtCut{"usePtCut", false, "use track pT cut"};
     Configurable<double> minPt{"minPt", 0., "minimum pT of the MFT tracks"};
-    Configurable<bool> requireCA{
-      "requireCA", false, "Use Cellular Automaton track-finding algorithm"};
+    Configurable<bool> requireCA{"requireCA", false, "Use Cellular Automaton track-finding algorithm"};
     Configurable<float> maxDCAxy{"maxDCAxy", 2.0f, "Cut on dcaXY"};
   } trackCuts;
 
   struct : ConfigurableGroup {
     Configurable<float> maxZvtx{"maxZvtx", 10.0f, "maximum cut on z-vtx (cm)"};
     Configurable<float> minZvtx{"minZvtx", -10.0f, "minimum cut on z-vtx (cm)"};
-    Configurable<bool> useZDiffCut{"useZDiffCut", false,
-                                   "use Zvtx reco-mc diff. cut"};
-    Configurable<float> maxZvtxDiff{
-      "maxZvtxDiff", 1.0f,
-      "max allowed Z vtx difference for reconstruced collisions (cm)"};
+    Configurable<bool> useZDiffCut{"useZDiffCut", false, "use Zvtx reco-mc diff. cut"};
+    Configurable<float> maxZvtxDiff{"maxZvtxDiff", 1.0f, "max allowed Z vtx difference for reconstruced collisions (cm)"};
     Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require events with PV position along z consistent (within 1 cm) between PV reconstructed using tracks and PV using FT0 A-C time difference"};
     Configurable<bool> requireRejectSameBunchPileup{"requireRejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
     Configurable<bool> requireNoCollInTimeRangeStrict{"requireNoCollInTimeRangeStrict", false, " requireNoCollInTimeRangeStrict"};
     Configurable<bool> requireNoCollInRofStrict{"requireNoCollInRofStrict", false, "requireNoCollInRofStrict"};
     Configurable<bool> requireNoCollInRofStandard{"requireNoCollInRofStandard", false, "requireNoCollInRofStandard"};
     Configurable<bool> requireNoHighMultCollInPrevRof{"requireNoHighMultCollInPrevRof", false, "requireNoHighMultCollInPrevRof"};
-    Configurable<bool> requireNoCollInTimeRangeStd{
-      "requireNoCollInTimeRangeStd", true,
-      "reject collisions corrupted by the cannibalism, with other collisions "
-      "within +/- 10 microseconds"};
-    Configurable<bool> requireNoCollInTimeRangeNarrow{
-      "requireNoCollInTimeRangeNarrow", false,
-      "reject collisions corrupted by the cannibalism, with other collisions "
-      "within +/- 10 microseconds"};
-    Configurable<uint> occupancyEstimator{
-      "occupancyEstimator", 1,
-      "Occupancy estimator: 1 = trackOccupancyInTimeRange, 2 = "
-      "ft0cOccupancyInTimeRange"};
-    Configurable<float> minOccupancy{
-      "minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
-    Configurable<float> maxOccupancy{
-      "maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
+    Configurable<bool> requireNoCollInTimeRangeStd{"requireNoCollInTimeRangeStd", true, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
+    Configurable<bool> requireNoCollInTimeRangeNarrow{"requireNoCollInTimeRangeNarrow", false, "reject collisions corrupted by the cannibalism, with other collisions within +/- 10 microseconds"};
+    Configurable<uint> occupancyEstimator{"occupancyEstimator", 1, "Occupancy estimator: 1 = trackOccupancyInTimeRange, 2 = ft0cOccupancyInTimeRange"};
+    Configurable<float> minOccupancy{"minOccupancy", -1, "minimum occupancy from neighbouring collisions"};
+    Configurable<float> maxOccupancy{"maxOccupancy", -1, "maximum occupancy from neighbouring collisions"};
     Configurable<float> minIR{"minIR", -1, "minimum IR (kHz) collisions"};
     Configurable<float> maxIR{"maxIR", -1, "maximum IR (kHz) collisions"};
   } eventCuts;
 
-  ConfigurableAxis occupancyBins{"occupancyBins",
-                                 {VARIABLE_WIDTH, 0.0f, 250.0f, 500.0f, 750.0f,
-                                  1000.0f, 1500.0f, 2000.0f, 3000.0f, 4500.0f,
-                                  6000.0f, 8000.0f, 10000.0f, 50000.0f},
-                                 "Occupancy"};
-  ConfigurableAxis centralityBins{
-    "centralityBins",
-    {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},
-    "Centrality"};
+  ConfigurableAxis occupancyBins{"occupancyBins", {VARIABLE_WIDTH, 0.0f, 250.0f, 500.0f, 750.0f, 1000.0f, 1500.0f, 2000.0f, 3000.0f, 4500.0f, 6000.0f, 8000.0f, 10000.0f, 50000.0f}, "Occupancy"};
+  ConfigurableAxis centralityBins{"centralityBins", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Centrality"};
   ConfigurableAxis irBins{"irBins", {500, 0, 50}, "Interaction rate (kHz)"};
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> ccdbNoLaterThan{
-    "ccdbNoLaterThan",
-    std::chrono::duration_cast<std::chrono::milliseconds>(
-      std::chrono::system_clock::now().time_since_epoch())
-      .count(),
-    "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch",
-                                    "url of the ccdb repository"};
+  Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   int mRunNumber{-1};
   uint64_t mSOR{0};
@@ -1061,7 +1033,7 @@ struct DndetaMFTPbPb {
     if (p != nullptr) {
       charge = p->Charge();
     }
-    return std::abs(charge) >= 3.;
+    return std::abs(charge) >= kMinCharge;
   }
 
   template <bool isCent, typename P>
@@ -1371,27 +1343,27 @@ struct DndetaMFTPbPb {
     bool gtZeroColl = false;
     int gtOneColl = 0;
 
-    float cgen = -1;
+    float cGen = -1;
     if constexpr (has_reco_cent<C>) {
-      float crec_min = 105.f;
+      float crecMin = 105.f;
       for (const auto& collision : collisions) {
         if (isGoodEvent<false>(collision)) {
           float c = getRecoCent(collision);
-          if (c < crec_min) {
-            crec_min = c;
+          if (c < crecMin) {
+            crecMin = c;
           }
         }
       }
-      if (cgen < 0)
-        cgen = crec_min;
+      if (cGen < 0)
+        cGen = crecMin;
     }
 
-    float occgen = -1.;
+    float occGen = -1.;
     for (const auto& collision : collisions) {
       if (isGoodEvent<false>(collision)) {
         float o = getOccupancy(collision, eventCuts.occupancyEstimator);
-        if (o > occgen) {
-          occgen = o;
+        if (o > occGen) {
+          occGen = o;
         }
       }
     }
@@ -1449,9 +1421,9 @@ struct DndetaMFTPbPb {
     }
 
     if constexpr (has_reco_cent<C>) {
-      registry.fill(HIST("Events/Centrality/EvtEffGen"), 3., cgen, occgen);
+      registry.fill(HIST("Events/Centrality/EvtEffGen"), 3., cGen, occGen);
     } else {
-      registry.fill(HIST("Events/EvtEffGen"), 3., occgen);
+      registry.fill(HIST("Events/EvtEffGen"), 3., occGen);
     }
 
     auto perCollMCsample = mcSample->sliceByCached(
@@ -1461,7 +1433,7 @@ struct DndetaMFTPbPb {
 
     if (gtOneColl > 1) {
       if constexpr (has_reco_cent<C>) {
-        qaregistry.fill(HIST("Events/Centrality/SplitMult"), nchrg, zvtxMC, cgen);
+        qaregistry.fill(HIST("Events/Centrality/SplitMult"), nchrg, zvtxMC, cGen);
       } else {
         qaregistry.fill(HIST("Events/SplitMult"), nchrg, zvtxMC);
       }
@@ -1470,17 +1442,17 @@ struct DndetaMFTPbPb {
     auto nCharged = countPart(particles);
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged, zvtxMC,
-                    cgen);
+                    cGen);
     } else {
       registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, zvtxMC);
     }
 
-    fillHistMC<has_reco_cent<C>>(particles, cgen, occgen, zvtxMC, gtZeroColl);
+    fillHistMC<has_reco_cent<C>>(particles, cGen, occGen, zvtxMC, gtZeroColl);
 
     if (collisions.size() == 0) {
       if constexpr (has_reco_cent<C>) {
         qaregistry.fill(HIST("Events/Centrality/NotFoundEventZvtx"),
-                        mcCollision.posZ(), cgen);
+                        mcCollision.posZ(), cGen);
       } else {
         qaregistry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ());
       }
@@ -1574,27 +1546,27 @@ struct DndetaMFTPbPb {
     FiltBestTracks const& besttracks)
   {
     bool gtZeroColl = false;
-    float cgen = -1;
+    float cGen = -1;
     if constexpr (has_reco_cent<C>) {
-      float crec_min = 105.f;
+      float crecMin = 105.f;
       for (const auto& collision : collisions) {
         if (isGoodEvent<false>(collision)) {
           float c = getRecoCent(collision);
-          if (c < crec_min) {
-            crec_min = c;
+          if (c < crecMin) {
+            crecMin = c;
           }
         }
       }
-      if (cgen < 0)
-        cgen = crec_min;
+      if (cGen < 0)
+        cGen = crecMin;
     }
 
-    float occgen = -1.;
+    float occGen = -1.;
     for (const auto& collision : collisions) {
       if (isGoodEvent<false>(collision)) {
         float o = getOccupancy(collision, eventCuts.occupancyEstimator);
-        if (o > occgen) {
-          occgen = o;
+        if (o > occGen) {
+          occGen = o;
         }
       }
     }
@@ -1637,26 +1609,26 @@ struct DndetaMFTPbPb {
     }
 
     if constexpr (has_reco_cent<C>) {
-      registry.fill(HIST("Events/Centrality/EvtEffGen"), 3., cgen, occgen);
+      registry.fill(HIST("Events/Centrality/EvtEffGen"), 3., cGen, occGen);
     } else {
-      registry.fill(HIST("Events/EvtEffGen"), 3., occgen);
+      registry.fill(HIST("Events/EvtEffGen"), 3., occGen);
     }
 
     auto zvtxMC = mcCollision.posZ();
     auto nCharged = countPart(particles);
     if constexpr (has_reco_cent<C>) {
       registry.fill(HIST("Events/Centrality/NtrkZvtxGen_t"), nCharged, zvtxMC,
-                    cgen);
+                    cGen);
     } else {
       registry.fill(HIST("Events/NtrkZvtxGen_t"), nCharged, zvtxMC);
     }
 
-    fillHistMC<has_reco_cent<C>>(particles, cgen, occgen, zvtxMC, gtZeroColl);
+    fillHistMC<has_reco_cent<C>>(particles, cGen, occGen, zvtxMC, gtZeroColl);
 
     if (collisions.size() == 0) {
       if constexpr (has_reco_cent<C>) {
         qaregistry.fill(HIST("Events/Centrality/NotFoundEventZvtx"),
-                        mcCollision.posZ(), cgen);
+                        mcCollision.posZ(), cGen);
       } else {
         qaregistry.fill(HIST("Events/NotFoundEventZvtx"), mcCollision.posZ());
       }

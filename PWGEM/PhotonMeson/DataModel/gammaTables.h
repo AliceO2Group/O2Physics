@@ -209,8 +209,6 @@ DECLARE_SOA_TABLE_VERSIONED(V0Legs_001, "AOD", "V0LEG", 1, //!
                             track::TPCChi2NCl, track::TPCInnerParam,
                             track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
                             track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
-                            mcpidtpc::DeDxTunedMc,
-                            track::X, track::Y, track::Z,
 
                             // dynamic column
                             v0leg::P<v0leg::Px, v0leg::Py, v0leg::Pz>,
@@ -231,9 +229,18 @@ DECLARE_SOA_TABLE_VERSIONED(V0Legs_001, "AOD", "V0LEG", 1, //!
                             v0leg::MeanClusterSizeITSob<track::ITSClusterSizes>);
 
 using V0Legs = V0Legs_001;
-
 // iterators
 using V0Leg = V0Legs::iterator;
+
+DECLARE_SOA_TABLE_VERSIONED(V0LegsXYZ_000, "AOD", "V0LEGXYZ", 0, track::X, track::Y, track::Z);
+using V0LegsXYZ = V0LegsXYZ_000;
+// iterators
+using V0LegXYZ = V0LegsXYZ::iterator;
+
+DECLARE_SOA_TABLE_VERSIONED(V0LegsDeDxMC_000, "AOD", "V0LEGDEDXMC", 0, mcpidtpc::DeDxTunedMc, o2::soa::Marker<2>);
+using V0LegsDeDxMC = V0LegsDeDxMC_000;
+// iterators
+using V0LegDeDxMC = V0LegsDeDxMC::iterator;
 
 namespace emevent
 {
@@ -379,7 +386,6 @@ DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectronsFromDalitz_001, "AOD", "EMPRIMARYE
                             track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
                             pidtofbeta::Beta, pidtof::TOFNSigmaEl,
                             track::ITSClusterSizes, track::ITSChi2NCl, track::TOFChi2, track::DetectorMap,
-                            mcpidtpc::DeDxTunedMc,
 
                             // dynamic column
                             track::TPCNClsFound<track::TPCNClsFindable, track::TPCNClsFindableMinusFound>,

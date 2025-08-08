@@ -736,7 +736,7 @@ struct DetectorOccupancyQaTask {
       int nCollInTimeWindowSelIfTOF = 0;
       double multFT0CmainCollision = 0.f;
       double multFT0CInTimeWindow = 0.f;
-      map<int64_t, int32_t> mUniqueBC;
+      std::map<int64_t, int32_t> mUniqueBC;
 
       bool sel = col.selection_bit(kIsTriggerTVX);
 
