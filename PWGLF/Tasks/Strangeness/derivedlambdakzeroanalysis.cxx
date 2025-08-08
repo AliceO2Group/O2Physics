@@ -83,6 +83,14 @@ using V0McCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, a
 #define BITSET(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 #define BITCHECK(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
+enum CentEstimator {
+  kCentFT0C = 0,
+  kCentFT0M,
+  kCentFT0CVariant1,
+  kCentMFT,
+  kCentNGlobal
+};
+
 struct derivedlambdakzeroanalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -96,6 +104,7 @@ struct derivedlambdakzeroanalysis {
 
   Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true"};
   Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
+  Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0C, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 3:CentFT0CVariant1, 4:CentMFT, 5:CentNGlobal)"};
 
   struct : ConfigurableGroup {
     Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
@@ -273,7 +282,7 @@ struct derivedlambdakzeroanalysis {
   ConfigurableAxis axisPtCoarse{"axisPtCoarse", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
   ConfigurableAxis axisK0Mass{"axisK0Mass", {200, 0.4f, 0.6f}, ""};
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
-  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "Centrality"};
+  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "Centrality (%)"};
   ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +5000.0f}, "Number of charged particles"};
   ConfigurableAxis axisIRBinning{"axisIRBinning", {500, 0, 50}, "Binning for the interaction rate (kHz)"};
 
@@ -973,6 +982,25 @@ struct derivedlambdakzeroanalysis {
 
   // ______________________________________________________
   // Return slicing output
+  template <typename TCollision>
+  auto getCentralityRun3(TCollision const& collision)
+  {
+    if (centralityEstimator == kCentFT0C)
+      return collision.centFT0C();
+    else if (centralityEstimator == kCentFT0M)
+      return collision.centFT0M();
+    else if (centralityEstimator == kCentFT0CVariant1)
+      return collision.centFT0CVariant1();
+    else if (centralityEstimator == kCentMFT)
+      return collision.centMFT();
+    else if (centralityEstimator == kCentNGlobal)
+      return collision.centNGlobal();
+
+    return -1.f;
+  }
+
+  // ______________________________________________________
+  // Return slicing output
   template <bool run3, typename TCollisions>
   auto getGroupedCollisions(TCollisions const& collisions, int globalIndex)
   {
@@ -1073,34 +1101,34 @@ struct derivedlambdakzeroanalysis {
 
     // TOF PID in DeltaT
     // Positive track
-    if (std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+    if (!posTrackExtra.hasTOF() || std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
       BITSET(bitMap, selTOFDeltaTPositiveProtonLambda);
-    if (std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+    if (!posTrackExtra.hasTOF() || std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
       BITSET(bitMap, selTOFDeltaTPositivePionLambda);
-    if (std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+    if (!posTrackExtra.hasTOF() || std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
       BITSET(bitMap, selTOFDeltaTPositivePionK0Short);
     // Negative track
-    if (std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+    if (!negTrackExtra.hasTOF() || std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
       BITSET(bitMap, selTOFDeltaTNegativeProtonLambda);
-    if (std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+    if (!negTrackExtra.hasTOF() || std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
       BITSET(bitMap, selTOFDeltaTNegativePionLambda);
-    if (std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+    if (!negTrackExtra.hasTOF() || std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
       BITSET(bitMap, selTOFDeltaTNegativePionK0Short);
 
     // TOF PID in NSigma
     // Positive track
-    if (std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
+    if (!posTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
       BITSET(bitMap, selTOFNSigmaPositiveProtonLambda);
-    if (std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
+    if (!posTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
       BITSET(bitMap, selTOFNSigmaPositivePionLambda);
-    if (std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
+    if (!posTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
       BITSET(bitMap, selTOFNSigmaPositivePionK0Short);
     // Negative track
-    if (std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
+    if (!negTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
       BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
-    if (std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
+    if (!negTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
       BITSET(bitMap, selTOFNSigmaNegativePionLambda);
-    if (std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
+    if (!negTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
       BITSET(bitMap, selTOFNSigmaNegativePionK0Short);
 
     // ITS only tag
@@ -2016,7 +2044,7 @@ struct derivedlambdakzeroanalysis {
   void fillReconstructedEventProperties(TCollision const& collision, float& centrality, float& collisionOccupancy, double& interactionRate, int& gapSide, int& selGapSide)
   {
     if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
-      centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+      centrality = getCentralityRun3(collision);
       collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
       // Fetch interaction rate only if required (in order to limit ccdb calls)
       interactionRate = !irSource.value.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
@@ -2098,7 +2126,7 @@ struct derivedlambdakzeroanalysis {
         if constexpr (run3) { // check if we are in Run 3
           if (biggestNContribs < collision.multPVTotalContributors()) {
             biggestNContribs = collision.multPVTotalContributors();
-            centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+            centrality = getCentralityRun3(collision);
           }
         } else { // we are in Run 2: there should be only one collision in groupedCollisions
           centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
@@ -2337,7 +2365,7 @@ struct derivedlambdakzeroanalysis {
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
         auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
         if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
-          centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+          centrality = getCentralityRun3(collision);
         } else { // no, we are in Run 2
           centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
         }
@@ -2402,7 +2430,7 @@ struct derivedlambdakzeroanalysis {
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
         auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
         if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
-          centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+          centrality = getCentralityRun3(collision);
         } else { // no, we are in Run 2
           centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
         }
