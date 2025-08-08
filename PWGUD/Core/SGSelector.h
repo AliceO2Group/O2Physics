@@ -38,13 +38,13 @@ struct SelectionResult {
 namespace o2::aod::sgselector
 {
 enum TrueGap : int {
-  NoGap = -1,
-  SingleGapA = 0,
-  SingleGapC = 1,
-  DoubleGap = 2,
-  NoUpc = 3,
-  TrkOutOfRange = 4,
-  BadDoubleGap = 5
+  NoGap = -1,        // no gap due to change of threshold(s) in any of FV0, FT0A, ZNA, FT0C, ZNC
+  SingleGapA = 0,    // initially single gap at A side event
+  SingleGapC = 1,    // initially single gap at C side event
+  DoubleGap = 2,     // initially double gap event
+  NoUpc = 3,         // initially no UPC event with default thresholds (FT0A=150, FT0C=50)
+  TrkOutOfRange = 4, // to many tracks (>100 default)
+  BadDoubleGap = 5   // unknows status of double gap check with changed thresholds
 };
 } // namespace o2::aod::sgselector
 

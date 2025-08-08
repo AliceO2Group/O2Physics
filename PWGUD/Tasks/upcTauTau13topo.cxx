@@ -84,7 +84,7 @@ DECLARE_SOA_COLUMN(TotalFV0AmplitudeA, totalFV0AmplitudeA, float);
 DECLARE_SOA_COLUMN(TrkPx, trkPx, float[4]);
 DECLARE_SOA_COLUMN(TrkPy, trkPy, float[4]);
 DECLARE_SOA_COLUMN(TrkPz, trkPz, float[4]);
-// DECLARE_SOA_COLUMN(TrkSign, trkSign, int[4]);
+DECLARE_SOA_COLUMN(TrkSign, trkSign, int8_t[4]);
 DECLARE_SOA_COLUMN(TrkDCAxy, trkDCAxy, float[4]);
 DECLARE_SOA_COLUMN(TrkDCAz, trkDCAz, float[4]);
 DECLARE_SOA_COLUMN(TrkTPCcr, trkTPCcr, int[4]);
@@ -95,14 +95,12 @@ DECLARE_SOA_COLUMN(TrkITScl, trkITScl, int[4]);
 
 DECLARE_SOA_COLUMN(TrkTPCsignal, trkTPCsignal, float[4]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaEl, trkTPCnSigmaEl, float[4]);
-// DECLARE_SOA_COLUMN(TrkTPCnSigmaMu, trkTPCnSigmaMu, float[4]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaPi, trkTPCnSigmaPi, float[4]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaKa, trkTPCnSigmaKa, float[4]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaPr, trkTPCnSigmaPr, float[4]);
 DECLARE_SOA_COLUMN(TrkTPCnSigmaMu, trkTPCnSigmaMu, float[4]);
 DECLARE_SOA_COLUMN(TrkTOFbeta, trkTOFbeta, float[4]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaEl, trkTOFnSigmaEl, float[4]);
-// DECLARE_SOA_COLUMN(TrkTOFnSigmaMu, trkTOFnSigmaMu, float[4]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaPi, trkTOFnSigmaPi, float[4]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaKa, trkTOFnSigmaKa, float[4]);
 DECLARE_SOA_COLUMN(TrkTOFnSigmaPr, trkTOFnSigmaPr, float[4]);
@@ -123,7 +121,7 @@ DECLARE_SOA_TABLE(TauFourTracks, "AOD", "TAUFOURTRACK",
                   tau_tree::TotalFT0AmplitudeA, tau_tree::TotalFT0AmplitudeC, tau_tree::TotalFV0AmplitudeA,
                   // tau_tree::TimeFT0A, tau_tree::TimeFT0C, tau_tree::TimeFV0A,
                   tau_tree::TrkPx, tau_tree::TrkPy, tau_tree::TrkPz,
-                  // tau_tree::TrkSign,
+		  tau_tree::TrkSign,
                   tau_tree::TrkDCAxy, tau_tree::TrkDCAz,
                   tau_tree::TrkTPCcr,
                   tau_tree::TrkTPCfind, tau_tree::TrkTPCchi2, tau_tree::TrkITSchi2, tau_tree::TrkITScl,
@@ -3347,7 +3345,9 @@ struct TauTau13topo {
 
     // loop over MC particles
     for (const auto& mcParticle : mcParticles) {
-      // LOGF(info, "<processSimpleMCSG> mcParticle pdg %d",  mcParticle.pdgCode());
+      if (verbose) {
+	LOGF(info, "<processSimpleMCSG> mcParticle pdg %d, gen %d, prim %d",  mcParticle.pdgCode(), mcParticle.producedByGenerator(), mcParticle.isPhysicalPrimary() );
+      }
       // primaries
       // if (mcParticle.isPhysicalPrimary()) {
       // countPrim++;
@@ -3358,7 +3358,7 @@ struct TauTau13topo {
       if (mcParticle.producedByGenerator()) {
         countGen++;
         if (mcParticle.isPhysicalPrimary()) {
-          countBoth++;
+	countBoth++;
           // if (mcParticle.pdgCode() != 22 && std::abs(mcParticle.pdgCode()) != 12 && std::abs(mcParticle.pdgCode()) != 14 && std::abs(mcParticle.pdgCode()) != 16 && mcParticle.pdgCode() != 130 && mcParticle.pdgCode() != 111) {
           if (mcParticle.pdgCode() != kGamma && std::abs(mcParticle.pdgCode()) != kNuE && std::abs(mcParticle.pdgCode()) != kNuMu && std::abs(mcParticle.pdgCode()) != kNuTau && mcParticle.pdgCode() != kK0Long && mcParticle.pdgCode() != kPi0) {
             countCharged++;
@@ -3376,7 +3376,7 @@ struct TauTau13topo {
               } // mother is tau
             } // mc particle has mother
           } // veto neutral particles
-        } // physicsl primary
+	} // physics primary
       } // generator produced by
 
       //
@@ -3549,7 +3549,8 @@ struct TauTau13topo {
   {
     // LOGF(info, "<tautau13topo_MC> Per DF: UDMcParticles size %d, UDMcCollisions size %d, FullMcUdCollisions size %d",  mcParts.size(), mcCollisions.size(), collisionsFull.size());
     // LOGF(info, "<tautau13topo_MC> Per DF: UDMcParticles size %d, UDMcCollisions size %d, FullMcUdCollisions size %d",  mcParts.size(), mcCollisions.size(), collisions.size());
-
+    LOGF(info, "<tautau13topo_MCSG> UDMcCollision size %d, SmallGroups FullMcUdCollisions size %d, UDtracks %d, UDMcParticles %d", mcCollision.size(), collisions.size(), tracks.size(), mcParticles.size());
+    
     // loop over generated collisions
     // for (const auto &mcCollision : mcCollisions) {
     // LOGF(info, "<tautau13topo_MC> Per mcCollision not sliced: UDMcParticles size %d, FullMcUdCollisions size %d",  mcParts.size(), collisionsFull.size());
@@ -5089,7 +5090,7 @@ struct TauTau13topo {
     //
     int counterTmp = 0;
     float px[4], py[4], pz[4];
-    // int sign[4];
+    int8_t sign[4];
     float dcaZ[4];
     float dcaXY[4];
 
@@ -5105,8 +5106,6 @@ struct TauTau13topo {
     float nSigmaPr[4];
     float nSigmaKa[4];
     float nSigmaMu[4];
-    // float chi2TPC[4];
-    // float chi2ITS[4];
     float chi2TOF[4] = {-1., -1., -1., -1.};
     int nclTPCcrossedRows[4];
     int nclTPCfind[4];
@@ -5123,7 +5122,7 @@ struct TauTau13topo {
       px[counterTmp] = trk.px();
       py[counterTmp] = trk.py();
       pz[counterTmp] = trk.pz();
-      // sign[counterTmp] = trk.sign();
+      sign[counterTmp] = trk.sign();
       dcaZ[counterTmp] = trk.dcaZ();
       dcaXY[counterTmp] = trk.dcaXY();
 
@@ -5141,8 +5140,6 @@ struct TauTau13topo {
       tmpTofNsigmaPr[counterTmp] = trk.tofNSigmaPr();
       tmpTofNsigmaMu[counterTmp] = trk.tofNSigmaMu();
 
-      // chi2TPC[counterTmp] = trk.tpcChi2NCl();
-      // chi2ITS[counterTmp] = trk.itsChi2NCl();
       if (trk.hasTOF())
         chi2TOF[counterTmp] = trk.tofChi2();
       // nclTPCfind[counterTmp] = trk.tpcNClsFindable();
@@ -5174,7 +5171,7 @@ struct TauTau13topo {
                   dgcand.tfb(), dgcand.itsROFb(), dgcand.sbp(), dgcand.zVtxFT0vPV(), dgcand.vtxITSTPC(),
                   dgcand.totalFT0AmplitudeA(), dgcand.totalFT0AmplitudeC(), dgcand.totalFV0AmplitudeA(),
                   // dgcand.timeFT0A(), dgcand.timeFT0C(), dgcand.timeFV0A(),
-                  px, py, pz, // sign,
+                  px, py, pz, sign,
                   dcaXY, dcaZ,
                   nclTPCcrossedRows, nclTPCfind, nclTPCchi2, trkITSchi2, trkITScl,
                   tmpDedx, nSigmaEl, nSigmaPi, nSigmaKa, nSigmaPr, nSigmaMu,
