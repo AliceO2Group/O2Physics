@@ -17,8 +17,8 @@
 
 #include "Common/Core/TableHelper.h"
 
-#include "Framework/InitContext.h"
-#include "Framework/RunningWorkflowInfo.h"
+#include <Framework/InitContext.h>
+#include <Framework/RunningWorkflowInfo.h>
 
 #include <string>
 
@@ -26,7 +26,7 @@
 /// @param initContext initContext of the init function
 void o2::common::core::printTablesInWorkflow(o2::framework::InitContext& initContext)
 {
-  auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
+  const auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
   for (auto const& device : workflows.devices) {
     for (auto const& input : device.inputs) {
       LOG(info) << "Table: " << input.matcher.binding << " in device: " << device.name;
@@ -41,7 +41,7 @@ bool o2::common::core::isTableRequiredInWorkflow(o2::framework::InitContext& ini
 {
   LOG(debug) << "Checking if table " << table << " is needed";
   bool tableNeeded = false;
-  auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
+  const auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
   for (auto const& device : workflows.devices) {
     for (auto const& input : device.inputs) {
       if (input.matcher.binding == table) {

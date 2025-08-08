@@ -16,16 +16,25 @@
 #ifndef COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_
 #define COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_
 
-#include "TableHelper.h"
-
+#include "Common/Core/TableHelper.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Tools/TrackTuner.h"
 
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramSpec.h"
+#include <CommonConstants/GeomConstants.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
+
+#include <TH1.h>
+#include <TH2.h>
 
 #include <array>
 #include <cmath>
@@ -89,7 +98,7 @@ class TrackPropagationModule
   std::shared_ptr<TH1> trackTunedTracks;
 
   // Running variables
-  std::array<float, 2> mDcaInfo;
+  std::array<float, 2> mDcaInfo{};
   o2::dataformats::DCA mDcaInfoCov;
   o2::dataformats::VertexBase mVtx;
   o2::track::TrackParametrization<float> mTrackPar;

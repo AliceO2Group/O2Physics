@@ -12,9 +12,9 @@
 #ifndef COMMON_CCDB_CTPRATEFETCHER_H_
 #define COMMON_CCDB_CTPRATEFETCHER_H_
 
-#include <string>
+#include <CCDB/BasicCCDBManager.h>
 
-#include "CCDB/BasicCCDBManager.h"
+#include <string>
 
 namespace o2
 {
@@ -34,7 +34,7 @@ class ctpRateFetcher
 {
  public:
   ctpRateFetcher() = default;
-  double fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName, bool fCrashOnNull = true);
+  double fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& sourceName, bool fCrashOnNull = true);
 
   void setManualCleanup(bool manualCleanup = true) { mManualCleanup = manualCleanup; }
 
