@@ -108,6 +108,9 @@ struct sigmaminustask {
     const AxisSpec dcaMothAxis{100, 0, 0.03, "DCA [cm]"};
     const AxisSpec dcaDaugAxis{200, 0, 20, "DCA [cm]"};
     const AxisSpec radiusAxis{100, -1, 40, "Decay radius [cm]"};
+    const AxisSpec alphaAPAxis{200, -1.0, 1.0, "#alpha_{AP}"};
+    const AxisSpec qtAPAxis{200, 0.0, 0.5, "q_{T,AP}"};
+    const AxisSpec cosPointingAngleAxis{100, -1.0, 1.0, "Cos#theta_{PA}"};
 
     const AxisSpec ptResolutionAxis{100, -1.0, 1.0, "(#it{p}_{T}^{rec} - #it{p}_{T}^{gen}) / #it{p}_{T}^{gen}"};
     const AxisSpec massResolutionAxis{100, -0.5, 0.5, "(m_{rec} - m_{gen}) / m_{gen}"};
@@ -125,6 +128,8 @@ struct sigmaminustask {
     rSigmaMinus.add("h2NSigmaTPCPiPt", "h2NSigmaTPCPiPt", {HistType::kTH2F, {ptAxis, nSigmaPiAxis}});
     rSigmaMinus.add("h2DCAMothPt", "h2DCAMothPt", {HistType::kTH2F, {ptAxis, dcaMothAxis}});
     rSigmaMinus.add("h2DCADaugPt", "h2DCADaugPt", {HistType::kTH2F, {ptAxis, dcaDaugAxis}});
+    rSigmaMinus.add("h2ArmenterosPreCuts", "h2ArmenterosPreCuts", {HistType::kTH2F, {alphaAPAxis, qtAPAxis}});
+    rSigmaMinus.add("h2CosPointingAnglePt", "h2CosPointingAnglePt", {HistType::kTH2F, {ptAxis, cosPointingAngleAxis}});
 
     if (doprocessMC) {
       // Add MC histograms if needed
@@ -214,6 +219,14 @@ struct sigmaminustask {
     return std::sqrt(p2A - dp * dp / p2V0);
   }
 
+  float cosPAngle(const std::array<float, 3>& momMother, const std::array<float, 3>& posMother, const std::array<float, 3>& posKink)
+  {
+    std::array<float, 3> vMother = {posKink[0] - posMother[0], posKink[1] - posMother[1], posKink[2] - posMother[2]};
+    float pMother = std::sqrt(std::inner_product(momMother.begin(), momMother.end(), momMother.begin(), 0.f));
+    float vMotherNorm = std::sqrt(std::inner_product(vMother.begin(), vMother.end(), vMother.begin(), 0.f));
+    return (std::inner_product(momMother.begin(), momMother.end(), vMother.begin(), 0.f)) / (pMother * vMotherNorm);
+  }
+
   void processData(CollisionsFull::iterator const& collision, aod::KinkCands const& KinkCands, TracksFull const&)
   {
     if (std::abs(collision.posZ()) > cutzvertex || !collision.sel8()) {
@@ -228,10 +241,17 @@ struct sigmaminustask {
         continue;
       }
 
-      float qt = qtAP(std::array{kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()}, std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()});
-      if (qt < cutMinQtAP || qt > cutMaxQtAP) {
+      float alphaAPValue = alphaAP(std::array{kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()}, std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()});
+      float qtValue = qtAP(std::array{kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()}, std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()});
+      rSigmaMinus.fill(HIST("h2ArmenterosPreCuts"), alphaAPValue, qtValue);
+
+      if (qtValue < cutMinQtAP || qtValue > cutMaxQtAP) {
         continue;
       }
+      float cosPointingAngleRec = cosPAngle(std::array{kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()},
+                                                  std::array{0.0f, 0.0f, 0.0f},
+                                                  std::array{kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx()});
+      rSigmaMinus.fill(HIST("h2CosPointingAnglePt"), kinkCand.mothSign() * kinkCand.ptMoth(), cosPointingAngleRec);
 
       rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
@@ -275,6 +295,9 @@ struct sigmaminustask {
         }
 
         // histograms filled with all kink candidates
+        float alphaAPValue = alphaAP(std::array{kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()}, std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()});
+        float qtValue = qtAP(std::array{kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()}, std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()});
+        rSigmaMinus.fill(HIST("h2ArmenterosPreCuts"), alphaAPValue, qtValue);
         rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
         rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
         rSigmaMinus.fill(HIST("h2NSigmaTPCPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
@@ -305,6 +328,9 @@ struct sigmaminustask {
             float deltaYMother = mcTrackPiDau.vy() - piMother.vy();
             float decayRadiusMC = std::sqrt(deltaXMother * deltaXMother + deltaYMother * deltaYMother);
             float decayRadiusRec = std::sqrt(kinkCand.xDecVtx() * kinkCand.xDecVtx() + kinkCand.yDecVtx() * kinkCand.yDecVtx());
+            float cosPointingAngleRec = cosPAngle(std::array{kinkCand.pxMoth(), kinkCand.pyMoth(), kinkCand.pzMoth()},
+                                                  std::array{0.0f, 0.0f, 0.0f},
+                                                  std::array{kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx()});
 
             // Check coherence of MCcollision Id for daughter MCparticle and reconstructed collision
             bool mcCollisionIdCheck = false;
@@ -327,6 +353,7 @@ struct sigmaminustask {
             rSigmaMinus.fill(HIST("h2RadiusResolution"), kinkCand.mothSign() * kinkCand.ptMoth(), (decayRadiusRec - decayRadiusMC) / decayRadiusMC);
             rSigmaMinus.fill(HIST("h2DCAMothPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.dcaMothPv());
             rSigmaMinus.fill(HIST("h2DCADaugPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.dcaDaugPv());
+            rSigmaMinus.fill(HIST("h2CosPointingAnglePt"), kinkCand.mothSign() * kinkCand.ptMoth(), cosPointingAngleRec);
 
             if (std::abs(mcTrackPiDau.pdgCode()) == 211) {
               rSigmaMinus.fill(HIST("h2NSigmaTOFPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tofNSigmaPi());
