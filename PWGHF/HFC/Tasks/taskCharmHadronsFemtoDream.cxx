@@ -139,7 +139,7 @@ struct HfTaskCharmHadronsFemtoDream {
   using FilteredCharmMcCands = soa::Filtered<soa::Join<aod::FDHfCand, aod::FDHfCandMC>>;
   using FilteredCharmMcCand = FilteredCharmMcCands::iterator;
 
-  using FilteredColisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks, aod::Collisions>>;
+  using FilteredColisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks>>;
   using FilteredColision = FilteredColisions::iterator;
 
   using FilteredMcColisions = soa::Filtered<soa::Join<aod::FDCollisions, FDColMasks, aod::FDMCCollLabels>>;
@@ -148,7 +148,7 @@ struct HfTaskCharmHadronsFemtoDream {
   using FilteredFDMcParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDExtParticles, aod::FDMCLabels, aod::FDExtMCLabels>>;
   using FilteredFDMcPart = FilteredFDMcParts::iterator;
 
-  using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDParticlesIndex>>;
+  using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDParticlesIndex, aod::FDParticlesTimeStamp>>;
   using FilteredFDParticle = FilteredFDParticles::iterator;
 
   Filter eventMultiplicity = aod::femtodreamcollision::multNtr >= eventSel.multMin && aod::femtodreamcollision::multNtr <= eventSel.multMax;
@@ -477,8 +477,7 @@ struct HfTaskCharmHadronsFemtoDream {
     eventHisto.fillQA(col);
     auto sliceTrk1 = partitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto sliceCharmHad = partitionCharmHadron->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    auto bc = col.template bc_as<aod::BCsWithTimestamps>();
-    int64_t timeStamp = bc.timestamp();
+    int64_t timeStamp = -999;
 
     /// Filling QA histograms of the all tracks and all charm hadrons before pairing
     for (auto const& part : sliceTrk1) {
@@ -491,7 +490,7 @@ struct HfTaskCharmHadronsFemtoDream {
       } else {
         chargeTrack = NegativeCharge;
       }
-
+      timeStamp = part.timeStamp();
       rowFemtoResultTrk(
         col.globalIndex(),
         timeStamp,
@@ -509,6 +508,8 @@ struct HfTaskCharmHadronsFemtoDream {
     for (auto const& part : sliceCharmHad) {
       float invMass = getCharmHadronMass(part);
       registryCharmHadronQa.fill(HIST("CharmHadronQA/hPtVsMass"), part.pt(), invMass);
+      timeStamp = part.timeStamp();
+
       rowFemtoResultCharm(
         col.globalIndex(),
         timeStamp,
@@ -525,12 +526,14 @@ struct HfTaskCharmHadronsFemtoDream {
         part.bdtFD());
     }
 
-    rowFemtoResultColl(
-      col.globalIndex(),
-      timeStamp,
-      col.posZ(),
-      col.multNtr());
+    if (sliceCharmHad.size() || sliceTrk1.size()) {
 
+      rowFemtoResultColl(
+        col.globalIndex(),
+        timeStamp,
+        col.posZ(),
+        col.multNtr());
+    }
     if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
       return;
     }
