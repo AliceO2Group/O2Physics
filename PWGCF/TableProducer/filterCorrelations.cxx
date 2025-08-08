@@ -97,7 +97,7 @@ struct FilterCF {
   O2_DEFINE_CONFIGURABLE(tpcnclusters, int, 50, "minimum number of TPC clusters found")
   O2_DEFINE_CONFIGURABLE(chi2pertpccluster, float, 2.5, "maximum Chi2 / cluster for the TPC track segment")
   O2_DEFINE_CONFIGURABLE(chi2peritscluster, float, 36, "maximum Chi2 / cluster for the ITS track segment")
-  O2_DEFINE_CONFIGURABLE(cfgEstimatorBitMask, uint16_t, 0, "BitMask for multiplicity estimators to be included in the CFMultiplicitySet tables.");
+  O2_DEFINE_CONFIGURABLE(cfgEstimatorBitMask, uint16_t, 0, "BitMask for multiplicity estimators to be included in the CFMultSet tables.");
 
   // Filters and input definitions
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
@@ -125,7 +125,7 @@ struct FilterCF {
   Produces<aod::CFTrackRefs> outputTrackRefs;
   Produces<aod::CFMcParticleRefs> outputMcParticleRefs;
 
-  Produces<aod::CFMultiplicitySets> outputMultSets;
+  Produces<aod::CFMultSets> outputMultSets;
   std::vector<float> multiplicities{};
 
   // persistent caches
@@ -269,7 +269,7 @@ struct FilterCF {
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     outputCollisions(bc.runNumber(), collision.posZ(), collision.multiplicity(), bc.timestamp());
 
-    if constexpr (std::experimental::is_detected<HasMultTables, typename T1::iterator>::value) {
+    if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
       multiplicities.clear();
       if (cfgEstimatorBitMask & kCentFT0C)
         multiplicities.push_back(collision.centFT0C());
