@@ -17,6 +17,7 @@
 
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -26,14 +27,18 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
+
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
+
 #include "ReconstructionDataFormats/Track.h"
+
 #include <TFile.h>
 #include <TH2D.h>
 #include <TMath.h>
@@ -129,28 +134,32 @@ struct CascadeAnalysisLightIonsDerivedData {
   Configurable<float> competingmassrej{"competingmassrej", 0.008, "Competing mass rejection"};
   // Axes parameters
   ConfigurableAxis centEstimatorHistBin{"centEstimatorHistBin", {501, -0.5, 500.5}, ""};
-  ConfigurableAxis centralityBinning{"centralityBinning",{VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},""};
+  ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},""};
   ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +1000.0f}, "Number of charged particles"};
 
   // Centrality estimator
   Configurable<int> centralityEstimator{"centralityEstimator", 0, "0 = FT0C, 1 = FTOM, 2 = FV0A, 3 = NGlobal"};
 
   // List of estimators
-  enum Option { kFT0C, kFT0M, kFV0A, kNGlobal};
+  enum Option { kFT0C,
+                kFT0M,
+                kFV0A,
+                kNGlobal };
 
   // For manual sliceBy
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
 
-  void init(InitContext const &) {
+  void init(InitContext const &)
+  {
     // setting CCDB service
     ccdb->setURL(ccdbConfigurations.ccdbUrl);
     ccdb->setCaching(true);
     ccdb->setFatalWhenNull(false);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(
-        std::chrono::duration_cast<std::chrono::milliseconds>(
-            std::chrono::system_clock::now().time_since_epoch())
-            .count());
+      std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch())
+        .count());
 
     // Axes and Binning
     AxisSpec axisCentEstimator = {centEstimatorHistBin, "CentEstimator", "CentEstimatorAxis"};
@@ -192,7 +201,7 @@ struct CascadeAnalysisLightIonsDerivedData {
 
       // Multiplicity Histograms
       registryData.add("hCentEstimator", "hCentEstimator", HistType::kTH1D, {axisCentEstimator});
-      registryData.add("hCentralityVsNch", "hCentralityVsNch", HistType::kTH2D, {axisCentEstimator,axisNch});
+      registryData.add("hCentralityVsNch", "hCentralityVsNch", HistType::kTH2D, {axisCentEstimator, axisNch});
 
       // Histograms for xi (data)
       registryData.add("hMassXipos", "hMassXipos", HistType::kTH3F, {centAxis, ptAxis, invMassXiAxis});
@@ -236,7 +245,7 @@ struct CascadeAnalysisLightIonsDerivedData {
 
       // Multiplicity Histograms
       registryMC.add("hCentEstimator_truerec", "hCentEstimator_truerec", HistType::kTH1D, {axisCentEstimator});
-      registryMC.add("hCentralityVsNch_truerec", "hCentralityVsNch_truerec", HistType::kTH2D, {axisCentEstimator,axisNch});
+      registryMC.add("hCentralityVsNch_truerec", "hCentralityVsNch_truerec", HistType::kTH2D, {axisCentEstimator, axisNch});
 
       // Histograms for xi (mc)
       registryMC.add("hMassXipos_truerec", "hMassXipos_truerec", HistType::kTH3F, {centAxis, ptAxis, invMassXiAxis});
@@ -308,7 +317,7 @@ struct CascadeAnalysisLightIonsDerivedData {
 
   // Single-Track Selection
   template <typename Track>
-  bool passedSingleTrackSelection(const Track &track)
+  bool passedSingleTrackSelection(const Track& track)
   {
     if (requireITS && (!track.hasITS()))
       return false;
@@ -330,9 +339,9 @@ struct CascadeAnalysisLightIonsDerivedData {
   // Xi Selection
   template <typename Xi, typename TrackPos, typename TrackNeg,
             typename TrackBac, typename Coll>
-  bool passedXiSelection(const Xi &casc, const TrackPos &ptrack,
-                         const TrackNeg &ntrack, const TrackBac &btrack,
-                         const Coll &coll)
+  bool passedXiSelection(const Xi& casc, const TrackPos& ptrack,
+                         const TrackNeg& ntrack, const TrackBac& btrack,
+                         const Coll& coll)
   {
     if (!passedSingleTrackSelection(ptrack))
       return false;
@@ -438,9 +447,9 @@ struct CascadeAnalysisLightIonsDerivedData {
   // Omega Selection
   template <typename Omega, typename TrackPos, typename TrackNeg,
             typename TrackBac, typename Coll>
-  bool passedOmegaSelection(const Omega &casc, const TrackPos &ptrack,
-                            const TrackNeg &ntrack, const TrackBac &btrack,
-                            const Coll &coll)
+  bool passedOmegaSelection(const Omega& casc, const TrackPos& ptrack,
+                            const TrackNeg& ntrack, const TrackBac& btrack,
+                            const Coll& coll)
   {
     if (!passedSingleTrackSelection(ptrack))
       return false;
@@ -602,82 +611,82 @@ struct CascadeAnalysisLightIonsDerivedData {
   template <typename TMCCollisions, typename TCollisions>
   void fillGeneratedEventProperties(TMCCollisions const& mcCollisions, TCollisions const& collisions)
   {
-   std::vector<int> listBestCollisionIdx(mcCollisions.size());
-   for (auto const& mcCollisions : mcCollisions) {
-     // event selections
-     if (applyVtxZ && std::fabs(mcCollisions.posZ()) > zVtx)
+    std::vector<int> listBestCollisionIdx(mcCollisions.size());
+    for (auto const& mcCollisions : mcCollisions) {
+      // event selections
+      if (applyVtxZ && std::fabs(mcCollisions.posZ()) > zVtx)
         return;
 
-     registryMC.fill(HIST("hGenEvents"), mcCollisions.multMCNParticlesEta05(), 0 /* all gen. events*/);
+      registryMC.fill(HIST("hGenEvents"), mcCollisions.multMCNParticlesEta05(), 0 /* all gen. events*/);
 
-     auto groupedCollisions = getGroupedCollisions(collisions, mcCollisions.globalIndex());
-     // Check if there is at least one of the reconstructed collisions associated to this MC collision
-     // If so, we consider it
-     bool atLeastOne = false;
-     int biggestNContribs = -1;
-     int nCollisions = 0;
-     float multiplicitydata = -1.0f;
-     for (auto const& collision : groupedCollisions) {
-       // event selections
-       if (applySel8 && !collision.sel8())
-         continue;
+      auto groupedCollisions = getGroupedCollisions(collisions, mcCollisions.globalIndex());
+      // Check if there is at least one of the reconstructed collisions associated to this MC collision
+      // If so, we consider it
+      bool atLeastOne = false;
+      int biggestNContribs = -1;
+      int nCollisions = 0;
+      float multiplicitydata = -1.0f;
+      for (auto const& collision : groupedCollisions) {
+        // event selections
+        if (applySel8 && !collision.sel8())
+          continue;
 
-       if (applyVtxZ && std::fabs(collision.posZ()) > zVtx)
-         continue;
+        if (applyVtxZ && std::fabs(collision.posZ()) > zVtx)
+          continue;
 
-       if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-         continue;
-       }
+        if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+          continue;
+        }
 
-       if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-         continue;
-       }
+        if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+          continue;
+        }
 
-       if (requireVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-         continue;
-       }
+        if (requireVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+          continue;
+        }
 
-       if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-         continue;
-       }
+        if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+          continue;
+        }
 
-       if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
-         continue;
-       }
+        if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+          continue;
+        }
 
-       if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
-         continue;
-       }
+        if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+          continue;
+        }
 
-       if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-         continue;
-       }
+        if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+          continue;
+        }
 
-       if (biggestNContribs < collision.multPVTotalContributors()) {
-         biggestNContribs = collision.multPVTotalContributors();
-         if(centralityEstimator == Option::kFT0C) multiplicitydata = collision.centFT0C();
-         if(centralityEstimator == Option::kFT0M) multiplicitydata = collision.centFT0M();
-         if(centralityEstimator == Option::kFV0A) multiplicitydata = collision.centFV0A();
-         if(centralityEstimator == Option::kNGlobal) multiplicitydata = collision.centNGlobal();
-       }
-       nCollisions++;
+        if (biggestNContribs < collision.multPVTotalContributors()) {
+          biggestNContribs = collision.multPVTotalContributors();
+          if(centralityEstimator == Option::kFT0C) multiplicitydata = collision.centFT0C();
+          if(centralityEstimator == Option::kFT0M) multiplicitydata = collision.centFT0M();
+          if(centralityEstimator == Option::kFV0A) multiplicitydata = collision.centFV0A();
+          if(centralityEstimator == Option::kNGlobal) multiplicitydata = collision.centNGlobal();
+        }
+        nCollisions++;
 
-       atLeastOne = true;
-     }
+        atLeastOne = true;
+      }
 
-     registryMC.fill(HIST("hCentralityVsNcoll_beforeEvSel"), multiplicitydata, groupedCollisions.size());
-     registryMC.fill(HIST("hCentralityVsNcoll_afterEvSel"), multiplicitydata, nCollisions);
-     registryMC.fill(HIST("hCentralityVsMultMC"), multiplicitydata, mcCollisions.multMCNParticlesEta05());
+      registryMC.fill(HIST("hCentralityVsNcoll_beforeEvSel"), multiplicitydata, groupedCollisions.size());
+      registryMC.fill(HIST("hCentralityVsNcoll_afterEvSel"), multiplicitydata, nCollisions);
+      registryMC.fill(HIST("hCentralityVsMultMC"), multiplicitydata, mcCollisions.multMCNParticlesEta05());
 
-     registryQC.fill(HIST("hVertexZGen"), mcCollisions.posZ());
+      registryQC.fill(HIST("hVertexZGen"), mcCollisions.posZ());
 
-     if (atLeastOne) {
-       registryMC.fill(HIST("hGenEvents"), mcCollisions.multMCNParticlesEta05(), 1 /* at least 1 rec. event*/);
+      if (atLeastOne) {
+        registryMC.fill(HIST("hGenEvents"), mcCollisions.multMCNParticlesEta05(), 1 /* at least 1 rec. event*/);
 
-       registryMC.fill(HIST("hGenEventCentrality"), multiplicitydata);
-     }
-   }
-   return;
+        registryMC.fill(HIST("hGenEventCentrality"), multiplicitydata);
+      }
+    }
+    return;
   }
 
   void processData(SelCollisions::iterator const& collision,
@@ -721,8 +730,7 @@ struct CascadeAnalysisLightIonsDerivedData {
     if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
       return;
     }
-    registryData.fill(
-        HIST("number_of_events_data"), 7 /* PV with at least one contributor matched with TOF */);
+    registryData.fill(HIST("number_of_events_data"), 7 /* PV with at least one contributor matched with TOF */);
 
     if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
       return;
@@ -739,10 +747,15 @@ struct CascadeAnalysisLightIonsDerivedData {
 
     // Store the event multiplicity using different estimators
     float multiplicity = -1.0f;
-    if(centralityEstimator == Option::kFT0C) multiplicity = collision.centFT0C();
-    if(centralityEstimator == Option::kFT0M) multiplicity = collision.centFT0M();
-    if(centralityEstimator == Option::kFV0A) multiplicity = collision.centFV0A();
-    if(centralityEstimator == Option::kNGlobal) multiplicity = collision.centNGlobal();
+
+    if (centralityEstimator == Option::kFT0C)
+      multiplicity = collision.centFT0C();
+    if (centralityEstimator == Option::kFT0M)
+      multiplicity = collision.centFT0M();
+    if (centralityEstimator == Option::kFV0A)
+      multiplicity = collision.centFV0A();
+    if (centralityEstimator == Option::kNGlobal)
+      multiplicity = collision.centNGlobal();
 
     registryData.fill(HIST("hCentEstimator"), multiplicity);
     registryData.fill(HIST("hCentralityVsNch"), multiplicity, collision.multNTracksPVeta1());
@@ -762,14 +775,14 @@ struct CascadeAnalysisLightIonsDerivedData {
       // ------------------------------------- Store selctions distribution for QC
       registryQC.fill(HIST("hv0cosPAdata"), casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ()));
       registryQC.fill(HIST("hcasccosPAdata"), casc.casccosPA(collision.posX(), collision.posY(), collision.posZ()));
-      registryQC.fill(HIST("hv0radiusdata"),casc.v0radius());
-      registryQC.fill(HIST("hcascradiusdata"),casc.cascradius());
-      registryQC.fill(HIST("hdcaV0daughtersdata"),casc.dcaV0daughters());
-      registryQC.fill(HIST("hdcacascdaughtersdata"),casc.dcacascdaughters());
-      registryQC.fill(HIST("hdcapostopvdata"),casc.dcapostopv());
-      registryQC.fill(HIST("hdcanegtopvdata"),casc.dcanegtopv());
-      registryQC.fill(HIST("hdcabachtopvdata"),casc.dcabachtopv());
-      registryQC.fill(HIST("hdcav0topvdata"),casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
+      registryQC.fill(HIST("hv0radiusdata"), casc.v0radius());
+      registryQC.fill(HIST("hcascradiusdata"), casc.cascradius());
+      registryQC.fill(HIST("hdcaV0daughtersdata"), casc.dcaV0daughters());
+      registryQC.fill(HIST("hdcacascdaughtersdata"), casc.dcacascdaughters());
+      registryQC.fill(HIST("hdcapostopvdata"), casc.dcapostopv());
+      registryQC.fill(HIST("hdcanegtopvdata"), casc.dcanegtopv());
+      registryQC.fill(HIST("hdcabachtopvdata"), casc.dcabachtopv());
+      registryQC.fill(HIST("hdcav0topvdata"), casc.dcav0topv(collision.posX(), collision.posY(), collision.posZ()));
 
       // ------------------------------------- Store selctions distribution for analysis
       if (casc.sign() < 0) {
@@ -857,10 +870,14 @@ struct CascadeAnalysisLightIonsDerivedData {
       // Store the event multiplicity using different estimators
       float multiplicityMcRec = -1.0f;
 
-      if(centralityEstimator == Option::kFT0C) multiplicityMcRec = RecCol.centFT0C();
-      if(centralityEstimator == Option::kFT0M) multiplicityMcRec = RecCol.centFT0M();
-      if(centralityEstimator == Option::kFV0A) multiplicityMcRec = RecCol.centFV0A();
-      if(centralityEstimator == Option::kNGlobal) multiplicityMcRec = RecCol.centNGlobal();
+      if (centralityEstimator == Option::kFT0C)
+        multiplicityMcRec = RecCol.centFT0C();
+      if (centralityEstimator == Option::kFT0M)
+        multiplicityMcRec = RecCol.centFT0M();
+      if (centralityEstimator == Option::kFV0A)
+        multiplicityMcRec = RecCol.centFV0A();
+      if (centralityEstimator == Option::kNGlobal)
+        multiplicityMcRec = RecCol.centNGlobal();
 
       registryMC.fill(HIST("hCentEstimator_truerec"), multiplicityMcRec);
       registryMC.fill(HIST("hCentralityVsNch_truerec"), multiplicityMcRec, RecCol.multNTracksPVeta1());
@@ -892,14 +909,14 @@ struct CascadeAnalysisLightIonsDerivedData {
         // ------------------------------------- Store selctions distribution for QC
         registryQC.fill(HIST("hv0cosPARec"), casc.v0cosPA(RecCol.posX(), RecCol.posY(), RecCol.posZ()));
         registryQC.fill(HIST("hcasccosPARec"), casc.casccosPA(RecCol.posX(), RecCol.posY(), RecCol.posZ()));
-        registryQC.fill(HIST("hv0radiusRec"),casc.v0radius());
-        registryQC.fill(HIST("hcascradiusRec"),casc.cascradius());
-        registryQC.fill(HIST("hdcaV0daughtersRec"),casc.dcaV0daughters());
-        registryQC.fill(HIST("hdcacascdaughtersRec"),casc.dcacascdaughters());
-        registryQC.fill(HIST("hdcapostopvRec"),casc.dcapostopv());
-        registryQC.fill(HIST("hdcanegtopvRec"),casc.dcanegtopv());
-        registryQC.fill(HIST("hdcabachtopvRec"),casc.dcabachtopv());
-        registryQC.fill(HIST("hdcav0topvRec"),casc.dcav0topv(RecCol.posX(), RecCol.posY(), RecCol.posZ()));
+        registryQC.fill(HIST("hv0radiusRec"), casc.v0radius());
+        registryQC.fill(HIST("hcascradiusRec"), casc.cascradius());
+        registryQC.fill(HIST("hdcaV0daughtersRec"), casc.dcaV0daughters());
+        registryQC.fill(HIST("hdcacascdaughtersRec"), casc.dcacascdaughters());
+        registryQC.fill(HIST("hdcapostopvRec"), casc.dcapostopv());
+        registryQC.fill(HIST("hdcanegtopvRec"), casc.dcanegtopv());
+        registryQC.fill(HIST("hdcabachtopvRec"), casc.dcabachtopv());
+        registryQC.fill(HIST("hdcav0topvRec"), casc.dcav0topv(RecCol.posX(), RecCol.posY(), RecCol.posZ()));
 
         // ------------------------------------- Store selctions distribution for analysis
         if (casc.sign() < 0) {
@@ -939,8 +956,8 @@ struct CascadeAnalysisLightIonsDerivedData {
   PROCESS_SWITCH(CascadeAnalysisLightIonsDerivedData, processMonteCarloRec, "Process MC Rec", false);
 
   void processMonteCarloGen(CollisionMCTrueTable const& mcCollisions,
-                         CascadeMCCores const& CascMCCores,
-                         SimCollisions const& RecCols)
+                            CascadeMCCores const& CascMCCores,
+                            SimCollisions const& RecCols)
   {
     // Fill generated event information (for event loss/splitting estimation)
     fillGeneratedEventProperties(mcCollisions, RecCols);
@@ -959,19 +976,19 @@ struct CascadeAnalysisLightIonsDerivedData {
 
       // event selections
       if (applyVtxZ && std::abs(mcCollision.posZ()) > zVtx)
-         return;
+        return;
 
       // Store the Zvtx
       registryQC.fill(HIST("hVertexZGen"), mcCollision.posZ());
 
-      //float centrality = 100.5f;
+      // float centrality = 100.5f;
 
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
-        //auto collision = RecCols.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
-        //if(centralityEstimator == Option::kFT0C) centrality = collision.centFT0C();
-        //if(centralityEstimator == Option::kFT0M) centrality = collision.centFT0M();
-        //if(centralityEstimator == Option::kFV0A) centrality = collision.centFV0A();
-        //if(centralityEstimator == Option::kNGlobal) centrality = collision.centNGlobal();
+        // auto collision = RecCols.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
+        // if (centralityEstimator == Option::kFT0C) centrality = collision.centFT0C();
+        // if (centralityEstimator == Option::kFT0M) centrality = collision.centFT0M();
+        // if (centralityEstimator == Option::kFV0A) centrality = collision.centFV0A();
+        // if (centralityEstimator == Option::kNGlobal) centrality = collision.centNGlobal();
 
         if (cascMC.pdgCode() == kXiMinus && std::abs(cascMC.rapidityMC(0)) < rapcut) {
           registryMC.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
@@ -999,12 +1016,13 @@ struct CascadeAnalysisLightIonsDerivedData {
       if (cascMC.pdgCode() == kOmegaPlusBar && std::abs(cascMC.rapidityMC(2)) < rapcut) {
         registryMC.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
-    } //cascMC loop
+    } // cascMC loop
   }
 
   PROCESS_SWITCH(CascadeAnalysisLightIonsDerivedData, processMonteCarloGen, "Process MC Gen", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc) {
+WorkflowSpec defineDataProcessing(ConfigContext const &cfgc)
+{
   return WorkflowSpec{adaptAnalysisTask<CascadeAnalysisLightIonsDerivedData>(cfgc)};
 }
