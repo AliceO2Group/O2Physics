@@ -60,6 +60,7 @@ struct TreeWriterTpcV0 {
   using Colls = soa::Join<aod::Collisions, aod::Mults, aod::EvSels>;
   using MyBCTable = soa::Join<aod::BCsWithTimestamps, aod::BCTFinfoTable>;
   using V0sWithID = soa::Join<aod::V0Datas, aod::V0MapID>;
+  using CascsWithID = soa::Join<aod::CascDatas, aod::CascMapID>;
 
   /// Tables to be produced
   Produces<o2::aod::SkimmedTPCV0Tree> rowTPCTree;
@@ -80,9 +81,21 @@ struct TreeWriterTpcV0 {
   Configurable<float> downsamplingTsalisPions{"downsamplingTsalisPions", -1., "Downsampling factor to reduce the number of pions"};
   Configurable<float> downsamplingTsalisProtons{"downsamplingTsalisProtons", -1., "Downsampling factor to reduce the number of protons"};
   Configurable<float> downsamplingTsalisElectrons{"downsamplingTsalisElectrons", -1., "Downsampling factor to reduce the number of electrons"};
+  Configurable<float> downsamplingTsalisKaons{"downsamplingTsalisKaons", -1., "Downsampling factor to reduce the number of kaons"};
   Configurable<float> maxPt4dwnsmplTsalisPions{"maxPt4dwnsmplTsalisPions", 100., "Maximum Pt for applying downsampling factor of pions"};
   Configurable<float> maxPt4dwnsmplTsalisProtons{"maxPt4dwnsmplTsalisProtons", 100., "Maximum Pt for applying downsampling factor of protons"};
   Configurable<float> maxPt4dwnsmplTsalisElectrons{"maxPt4dwnsmplTsalisElectrons", 100., "Maximum Pt for applying  downsampling factor of electrons"};
+  Configurable<float> maxPt4dwnsmplTsalisKaons{"maxPt4dwnsmplTsalisKaons", 100., "Maximum Pt for applying  downsampling factor of kaons"};
+
+  enum { // Reconstructed V0
+    kUndef = -1,
+    kGamma = 0,
+    kK0S = 1,
+    kLambda = 2,
+    kAntiLambda = 3,
+    kOmega = 4,
+    kAntiOmega = 5
+  };
 
   Filter trackFilter = (trackSelection.node() == 0) ||
                        ((trackSelection.node() == 1) && requireGlobalTrackInFilter()) ||
@@ -336,7 +349,7 @@ struct TreeWriterTpcV0 {
   }
 
   /// Apply a track quality selection with a filter!
-  void processStandard(Colls::iterator const& collision, soa::Filtered<Trks> const& tracks, V0sWithID const& v0s, aod::BCsWithTimestamps const&)
+  void processStandard(Colls::iterator const& collision, soa::Filtered<Trks> const& tracks, V0sWithID const& v0s, CascsWithID const& cascs, aod::BCsWithTimestamps const&)
   {
     /// Check event slection
     if (!isEventSelected(collision, tracks)) {
@@ -396,6 +409,21 @@ struct TreeWriterTpcV0 {
         }
       }
     }
+
+    /// Loop over cascade candidates
+    for (const auto& casc : cascs) {
+      auto bachTrack = casc.bachelor_as<soa::Filtered<Trks>>();
+      if (casc.cascaddid() == kUndef) {
+        continue;
+      }
+      // Omega
+      if (static_cast<bool>(bachTrack.pidbit() & (1 << kOmega))) {
+        if (downsampleTsalisCharged(bachTrack.pt(), downsamplingTsalisKaons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Kaon], maxPt4dwnsmplTsalisKaons)) {
+          //           fillSkimmedV0Table(casc, bachTrack, collision, bachTrack.tpcNSigmaPr(), bachTrack.tofNSigmaPr(), bachTrack.tpcExpSignalPr(bachTrack.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate);
+        }
+      }
+    }
+
   } /// process Standard
   PROCESS_SWITCH(TreeWriterTpcV0, processStandard, "Standard V0 Samples for PID", true);
 
