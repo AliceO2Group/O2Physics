@@ -30,13 +30,11 @@
 
 #include "CommonConstants/MathConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
-
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
-
 #include "ReconstructionDataFormats/Track.h"
 
 #include <TFile.h>
@@ -134,7 +132,7 @@ struct CascadeAnalysisLightIonsDerivedData {
   Configurable<float> competingmassrej{"competingmassrej", 0.008, "Competing mass rejection"};
   // Axes parameters
   ConfigurableAxis centEstimatorHistBin{"centEstimatorHistBin", {501, -0.5, 500.5}, ""};
-  ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100},""};
+  ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
   ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +1000.0f}, "Number of charged particles"};
 
   // Centrality estimator
@@ -149,7 +147,7 @@ struct CascadeAnalysisLightIonsDerivedData {
   // For manual sliceBy
   PresliceUnsorted<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
 
-  void init(InitContext const &)
+  void init(InitContext const& )
   {
     // setting CCDB service
     ccdb->setURL(ccdbConfigurations.ccdbUrl);
@@ -664,10 +662,14 @@ struct CascadeAnalysisLightIonsDerivedData {
 
         if (biggestNContribs < collision.multPVTotalContributors()) {
           biggestNContribs = collision.multPVTotalContributors();
-          if(centralityEstimator == Option::kFT0C) multiplicitydata = collision.centFT0C();
-          if(centralityEstimator == Option::kFT0M) multiplicitydata = collision.centFT0M();
-          if(centralityEstimator == Option::kFV0A) multiplicitydata = collision.centFV0A();
-          if(centralityEstimator == Option::kNGlobal) multiplicitydata = collision.centNGlobal();
+          if (centralityEstimator == Option::kFT0C)
+            multiplicitydata = collision.centFT0C();
+          if (centralityEstimator == Option::kFT0M)
+            multiplicitydata = collision.centFT0M();
+          if (centralityEstimator == Option::kFV0A)
+            multiplicitydata = collision.centFV0A();
+          if (centralityEstimator == Option::kNGlobal)
+            multiplicitydata = collision.centNGlobal();
         }
         nCollisions++;
 
@@ -1022,7 +1024,7 @@ struct CascadeAnalysisLightIonsDerivedData {
   PROCESS_SWITCH(CascadeAnalysisLightIonsDerivedData, processMonteCarloGen, "Process MC Gen", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const &cfgc)
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<CascadeAnalysisLightIonsDerivedData>(cfgc)};
 }
