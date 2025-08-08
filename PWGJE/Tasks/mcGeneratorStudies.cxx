@@ -160,7 +160,7 @@ struct MCGeneratorStudies {
               continue;
             else if (mSelectOnlyChargedParticles && TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode())->Charge())
               continue;
-            if (fabs(mcParticle.y()) > mRapidityCut)
+            if (std::abs(mcParticle.y()) > mRapidityCut)
               continue;
             if (!mcParticle.isPhysicalPrimary() && !mcParticle.producedByGenerator())
               continue;
@@ -187,7 +187,7 @@ struct MCGeneratorStudies {
           continue;
         else if (mSelectOnlyChargedParticles && TDatabasePDG::Instance()->GetParticle(mcParticle.pdgCode())->Charge())
           continue;
-        if (fabs(mcParticle.y()) > mRapidityCut)
+        if (std::abs(mcParticle.y()) > mRapidityCut)
           continue;
         if (!mcParticle.isPhysicalPrimary() && !mcParticle.producedByGenerator())
           continue;
@@ -199,7 +199,7 @@ struct MCGeneratorStudies {
           mHistManager.fill(HIST("Yield_Accepted"), mcParticle.pt());
         if (!mRequireTVX || collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
           mHistManager.fill(HIST("Yield_T"), mcParticle.pt());
-          if (abs(collision.posZ()) < mVertexCut) {
+          if (std::abs(collision.posZ()) < mVertexCut) {
             mHistManager.fill(HIST("Yield_TZ"), mcParticle.pt());
             if (!mRequireSel8 || collision.sel8()) {
               mHistManager.fill(HIST("Yield_TZS"), mcParticle.pt());
@@ -274,7 +274,7 @@ struct MCGeneratorStudies {
       fRegistry->fill(HIST("hEMCollisionCounter"), 7.0);
     if (collision.sel8())
       fRegistry->fill(HIST("hEMCollisionCounter"), 8.0);
-    if (abs(collision.posZ()) < 10.0)
+    if (std::abs(collision.posZ()) < 10.0)
       fRegistry->fill(HIST("hEMCollisionCounter"), 9.0);
     if (collision.alias_bit(kTVXinEMC))
       fRegistry->fill(HIST("hEMCollisionCounter"), 10.0);
@@ -287,7 +287,7 @@ struct MCGeneratorStudies {
     fRegistry->fill(HIST("hCollisionCounter"), 1);
     if (!mRequireTVX || collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       fRegistry->fill(HIST("hCollisionCounter"), 2);
-      if (abs(collision.posZ()) < mVertexCut) {
+      if (std::abs(collision.posZ()) < mVertexCut) {
         fRegistry->fill(HIST("hCollisionCounter"), 3);
         if (!mRequireSel8 || collision.sel8()) {
           fRegistry->fill(HIST("hCollisionCounter"), 4);
