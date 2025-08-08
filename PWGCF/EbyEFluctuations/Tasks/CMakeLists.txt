@@ -44,8 +44,8 @@ o2physics_add_dpl_workflow(robust-fluctuation-observables
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(v0pt-pp-task
-                    SOURCES Diff_pT_fluct_PID.cxx
+o2physics_add_dpl_workflow(diff-pt-fluct-pid
+                    SOURCES diffPtFluctPid.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                     COMPONENT_NAME Analysis)
 
