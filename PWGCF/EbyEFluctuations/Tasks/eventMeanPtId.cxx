@@ -8,7 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// 
+//
 /// \file eventMeanPtId.cxx
 /// \brief Analysis task to study Mean pT Fluctuations using two particle correlator using Cumulant Method
 /// \author Sweta Singh (sweta.singh@cern.ch)
