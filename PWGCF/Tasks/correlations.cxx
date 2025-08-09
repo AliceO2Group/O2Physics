@@ -123,7 +123,7 @@ struct CorrelationTask {
   Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
 
   // Track filters
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true));
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt) && ((aod::track::trackType & (uint8_t)cfgTrackBitMask) == (uint8_t)cfgTrackBitMask);
 
   // MC filters
@@ -177,8 +177,8 @@ struct CorrelationTask {
       }
     }
     if (doprocessSameDerivedMultSet) {
-	  if(cfgMultCorrelationsMask == 0)
-	    LOGF(fatal,"cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
+      if (cfgMultCorrelationsMask == 0)
+        LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
       std::vector<AxisSpec> multAxes;
       if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0C)
         multAxes.emplace_back(100, 0, 100, "FT0C centrality");
