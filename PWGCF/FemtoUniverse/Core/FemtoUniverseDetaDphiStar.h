@@ -621,7 +621,7 @@ class FemtoUniverseDetaDphiStar
     for (size_t i = 0; i < 9; i++) {
       double arg = 0.3 * charge * magfield * TmpRadiiTPC[i] * 0.01 / (2. * pt);
       if (std::abs(arg) < 1.0) {
-        tmpVec.push_back(phi0 + std::asin(arg));
+        tmpVec.push_back(phi0 - std::asin(arg));
       } else {
         tmpVec.push_back(999.0);
       }
