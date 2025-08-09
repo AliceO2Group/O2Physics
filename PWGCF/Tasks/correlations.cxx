@@ -85,6 +85,7 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgLocalEfficiency, int, 0, "0 = OFF and 1 = ON for local efficiency");
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps");
   O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task");
+  O2_DEFINE_CONFIGURABLE(cfgMultCorrelationsMask, uint16_t, 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask.")
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
   Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {kCfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
 
@@ -174,6 +175,20 @@ struct CorrelationTask {
         registry.add("invMassTwoPart", "2D 2-prong invariant mass (GeV/c^2)", {HistType::kTHnSparseF, {axisSpecMass, axisSpecMass, axisPtTrigger, axisPtAssoc, axisMultiplicity}});
         registry.add("invMassTwoPartDPhi", "2D 2-prong invariant mass (GeV/c^2)", {HistType::kTHnSparseF, {axisSpecMass, axisSpecMass, axisPtTrigger, axisPtAssoc, axisDeltaPhi}});
       }
+    }
+    if (doprocessSameDerivedMultSet) {
+	  if(cfgMultCorrelationsMask == 0)
+	    LOGF(fatal,"cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
+      std::vector<AxisSpec> multAxes;
+      if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0C)
+        multAxes.emplace_back(100, 0, 100, "FT0C centrality");
+      if (cfgMultCorrelationsMask & aod::cfmultset::MultFV0A)
+        multAxes.emplace_back(100, 0, 100000, "V0A multiplicity");
+      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksPV)
+        multAxes.emplace_back(100, 0, 1000, "Nch PV");
+      if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksGlobal)
+        multAxes.emplace_back(100, 0, 1000, "Nch Global");
+      registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     }
     registry.add("multiplicity", "event multiplicity", {HistType::kTH1F, {{1000, 0, 100, "/multiplicity/centrality"}}});
     registry.add("yvspt", "y vs pT", {HistType::kTH2F, {{100, -1, 1, "y"}, {100, 0, 20, "p_{T}"}}}); // y vs pT for all tracks (control histogram)
@@ -272,10 +287,20 @@ struct CorrelationTask {
     return !((track.decay() == 0 && track.mlProbD0()[0] > cfgPtCentDepMLbkgSel->at(idx)) || (track.decay() == 1 && track.mlProbD0bar()[0] > cfgPtCentDepMLbkgSel->at(idx)));
   }
 
+  template <class T>
+  using HasMultSet = decltype(std::declval<T&>().multiplicities());
+
   template <typename TCollision, typename TTracks>
-  void fillQA(const TCollision& /*collision*/, float multiplicity, const TTracks& tracks)
+  void fillQA(const TCollision& collision, float multiplicity, const TTracks& tracks)
   {
     registry.fill(HIST("multiplicity"), multiplicity);
+    if constexpr (std::experimental::is_detected<HasMultSet, TCollision>::value) {
+      if (std::popcount(cfgMultCorrelationsMask.value) != static_cast<int>(collision.multiplicities().size()))
+        LOGF(fatal, "Multiplicity selections (cfgMultCorrelationsMask = 0x%x) do not match the size of the table column (%ld). The histogram filling relies on the preservation of order.", cfgMultCorrelationsMask.value, collision.multiplicities().size());
+      // need to convert to vec of doubles since THnSparse has no way to fill vec of floats directly
+      std::vector<double> v(collision.multiplicities().begin(), collision.multiplicities().end());
+      registry.get<THnSparse>(HIST("multCorrelations")).get()->Fill(v.data());
+    }
     for (const auto& track1 : tracks) {
       registry.fill(HIST("yields"), multiplicity, track1.pt(), track1.eta());
       registry.fill(HIST("etaphi"), multiplicity, track1.eta(), track1.phi());
@@ -565,8 +590,10 @@ struct CorrelationTask {
           if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track2.decay()))) == 0u) {
             continue; // skip particles that do not match the decay mask
           }
-          if (cfgV0RapidityMax > 0 && std::abs(getV0Rapidity(track1)) > cfgV0RapidityMax) {
-            continue; // V0s are not allowed to be outside the rapidity range
+          if (cfgV0RapidityMax > 0) {
+            auto [t, y] = getV0Rapidity(track1);
+            if (t && std::abs(y) > cfgV0RapidityMax)
+              continue; // V0s are not allowed to be outside the rapidity range
           }
         }
 
@@ -739,8 +766,8 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSameAOD, "Process same event on AOD", true);
 
-  template <class TTracks1, class TTracks2>
-  void processSameDerivedT(DerivedCollisions::iterator const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2)
+  template <class CollType, class TTracks1, class TTracks2>
+  void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
     BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     if (cfgVerbosity > 0) {
@@ -776,6 +803,12 @@ struct CorrelationTask {
     processSameDerivedT(collision, tracks, tracks);
   }
   PROCESS_SWITCH(CorrelationTask, processSameDerived, "Process same event on derived data", false);
+
+  void processSameDerivedMultSet(soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>>::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  {
+    processSameDerivedT(collision, tracks, tracks);
+  }
+  PROCESS_SWITCH(CorrelationTask, processSameDerivedMultSet, "Process same event on derived data with multiplicity sets", false);
 
   void processSame2ProngDerived(DerivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
   {
@@ -1140,7 +1173,7 @@ struct CorrelationTask {
       }
     }
 
-    if (!(doprocessSameDerived || doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML)) {
+    if (!(doprocessSameDerived || doprocessSameDerivedMultSet || doprocessSame2ProngDerived || doprocessSame2ProngDerivedML || doprocessSame2Prong2Prong || doprocessSame2Prong2ProngML)) {
       if constexpr (std::experimental::is_detected<HasDecay, typename Particles1::iterator>::value)
         fillQA(mcCollision, multiplicity, mcParticles1, mcParticles2);
       else
