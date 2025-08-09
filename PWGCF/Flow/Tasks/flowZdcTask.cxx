@@ -269,10 +269,14 @@ struct FlowZdcTask {
       histos.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZN", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
-      histos.add("ZNA", ";ZNA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
-      histos.add("ZPA", ";ZPA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
-      histos.add("ZNC", ";ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
-      histos.add("ZPC", ";ZPC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
+      histos.add("ZNA", ";ZNA Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
+      histos.add("ZPA", ";ZPA Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
+      histos.add("ZNC", ";ZNC Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
+      histos.add("ZPC", ";ZPC Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
+      histos.add("ZNACommon", ";ZNA Common Energy;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
+      histos.add("ZPACommon", ";ZPA Common Energy;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
+      histos.add("ZNCCommon", ";ZNC Common Energy;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
+      histos.add("ZPCCommon", ";ZPC Common Energy;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
       histos.add("ZNAVsZNC", ";ZNC;ZNA", kTH2F, {{{30, -0.5, maxZn}, {30, -0.5, maxZn}}});
       histos.add("ZPAVsZPC", ";ZPC;ZPA;", kTH2F, {{{100, -0.5, maxZp}, {100, -0.5, maxZp}}});
       histos.add("ZNAVsZPA", ";ZPA;ZNA;", kTH2F, {{{20, -0.5, maxZp}, {30, -0.5, maxZn}}});
@@ -312,6 +316,8 @@ struct FlowZdcTask {
       histos.add("ZPCvsCent", ";centFT0C;ZPC", kTH2F, {{{axisCent}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("pZPAvsFT0Ccent", ";FT0C centrality;ZPA Amplitude", kTProfile, {{nBinsCent, minT0CcentCut, maxT0CcentCut}});
       histos.add("pZPCvsFT0Ccent", ";FT0C centrality;ZPC Amplitude", kTProfile, {{nBinsCent, minT0CcentCut, maxT0CcentCut}});
+      histos.add("pZPAvsGlbTrack", ";Global Tracks (ITS + TPC);ZPA Amplitude", kTProfile, {{nBinsNch, minNch, maxNch}});
+      histos.add("pZPCvsGlbTrack", ";Global Tracks (ITS + TPC);ZPC Amplitude", kTProfile, {{nBinsNch, minNch, maxNch}});
     }
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -450,6 +456,10 @@ struct FlowZdcTask {
     float znC = zdc.amplitudeZNC() / cfgCollisionEnergy;
     float zpA = zdc.amplitudeZPA() / cfgCollisionEnergy;
     float zpC = zdc.amplitudeZPC() / cfgCollisionEnergy;
+    float commonSumZnc = zdc.energyCommonZNC() / cfgCollisionEnergy;
+    float commonSumZna = zdc.energyCommonZNA() / cfgCollisionEnergy;
+    float commonSumZpc = zdc.energyCommonZPC() / cfgCollisionEnergy;
+    float commonSumZpa = zdc.energyCommonZPA() / cfgCollisionEnergy;
     float aZEM1{zdc.amplitudeZEM1()};
     float aZEM2{zdc.amplitudeZEM2()};
     float sumZEMs{aZEM1 + aZEM2};
@@ -550,6 +560,8 @@ struct FlowZdcTask {
     // Neutron ZDC
     histos.fill(HIST("ZNA"), znA);
     histos.fill(HIST("ZNC"), znC);
+    histos.fill(HIST("ZNACommon"), commonSumZna);
+    histos.fill(HIST("ZNCCommon"), commonSumZnc);
     histos.fill(HIST("ZNASector"), sumZNA / cfgCollisionEnergy);
     histos.fill(HIST("ZNCSector"), sumZNC / cfgCollisionEnergy);
     histos.fill(HIST("ZN"), znA + znC);
@@ -564,21 +576,25 @@ struct FlowZdcTask {
     // Proton ZDC
     if (!isOneNeutronFound || znA >= oneNeutron) {
       histos.fill(HIST("ZPA"), zpA);
+      histos.fill(HIST("ZPACommon"), commonSumZpa);
       histos.fill(HIST("ZPASector"), sumZPA / cfgCollisionEnergy);
       histos.fill(HIST("ZPAVstdc"), tZPA, zpA);
       histos.fill(HIST("ZPAvsCent"), cent, zpA);
       if (std::isfinite(zpA) && !std::isnan(zpA) &&
-          cent >= minT0CcentCut && cent < maxT0CcentCut) {
+          cent >= minT0CcentCut && cent < maxT0CcentCut && glbTracks >= minNch && glbTracks < maxNch) {
         histos.fill(HIST("pZPAvsFT0Ccent"), cent, zpA);
+        histos.fill(HIST("pZPAvsGlbTrack"), glbTracks, zpA);
       }
     }
     if (!isOneNeutronFound || znC >= oneNeutron) {
       histos.fill(HIST("ZPC"), zpC);
+      histos.fill(HIST("ZPCCommon"), commonSumZpc);
       histos.fill(HIST("ZPCSector"), sumZPC / cfgCollisionEnergy);
       histos.fill(HIST("ZPCvsCent"), cent, zpC);
       if (std::isfinite(zpC) && !std::isnan(zpC) &&
-          cent >= minT0CcentCut && cent < maxT0CcentCut) {
+          cent >= minT0CcentCut && cent < maxT0CcentCut && glbTracks >= minNch && glbTracks < maxNch) {
         histos.fill(HIST("pZPCvsFT0Ccent"), cent, zpC);
+        histos.fill(HIST("pZPCvsGlbTrack"), glbTracks, zpC);
       }
     }
 
