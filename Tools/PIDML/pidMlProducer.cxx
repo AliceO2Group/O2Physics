@@ -15,18 +15,33 @@
 /// \author Maja Kabus <mkabus@cern.ch>
 /// \author Marek Mytkowski <marek.mytkowski@cern.ch>
 
-#include <string_view>
-#include <limits>
-#include "Framework/AnalysisTask.h"
-#include "Framework/StaticFor.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/PIDML/pidMl.h"
 #include "Tools/PIDML/pidUtils.h"
+//
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
+
+#include <array>
+#include <cstdint>
+#include <limits>
+#include <memory>
+#include <string_view>
 
 using namespace o2;
 using namespace o2::framework;

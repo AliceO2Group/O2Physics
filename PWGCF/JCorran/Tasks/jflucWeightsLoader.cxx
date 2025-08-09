@@ -12,27 +12,27 @@
 /// \since May 2024
 // o2-linter: disable='doc/file'
 
-#include <experimental/type_traits>
-#include <string>
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGCF/JCorran/DataModel/JCatalyst.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/V0.h"
+
 #include <TFile.h>
 #include <THn.h>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "ReconstructionDataFormats/V0.h"
-
-#include "CCDB/BasicCCDBManager.h"
-
-#include "PWGCF/JCorran/DataModel/JCatalyst.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "Framework/runDataProcessing.h"
+#include <experimental/type_traits>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -50,7 +50,7 @@ struct JflucWeightsLoader {
 
   THnF* ph = 0;
   TFile* pf = 0;
-  THnD* pheff = 0;
+  THnF* pheff = 0;
   TFile* pfeff = 0;
   int runNumber = 0;
   int timestamp = 0;
@@ -108,7 +108,6 @@ struct JflucWeightsLoader {
       useCCDB = false;
     } else {
       LOGF(info, "Didn't find \"local://\" or \"ccdb\" for non-uniform acceptance corrections.");
-      return;
     }
 
     if (cfgPathEffWeights.value.substr(0, 8) == "local://") {
@@ -118,16 +117,13 @@ struct JflucWeightsLoader {
         delete pfeff;
         pfeff = 0;
         LOGF(fatal, "Efficiency correction weights file not found: %s", cfgPathEffWeights.value.substr(8).c_str());
-      }
-      //
-      if (!(pheff = pfeff->Get<THnD>("ccdb_object"))) {
+      } else if (!(pheff = pfeff->Get<THnF>("ccdb_object"))) {
         LOGF(warning, "Efficiency correction histogram not found.");
       } else {
         LOGF(info, "Loaded efficiency correction histogram locally.");
       }
     } else {
       LOGF(info, "Didn't find \"local://\" or \"ccdb\" for efficiency corrections.");
-      return;
     }
   }
 
