@@ -437,7 +437,7 @@ struct lambdapolsp {
   }
 
   template <typename V0, typename T>
-  bool isSelectedV0Daughter(V0 const& candidate, T const& track, int pid)
+  bool isSelectedV0Daughter(V0 const& candidate, T const& track, int pid, int pid2)
   {
     // const auto eta = track.eta();
     // const auto pt = track.pt();
@@ -471,10 +471,10 @@ struct lambdapolsp {
       return false;
     }
 
-    if (pid == 0 && (TMath::Abs(candidate.dcapostopv()) < cMinV0DCAPr || TMath::Abs(candidate.dcanegtopv()) < cMinV0DCAPi)) {
+    if (pid2 == 0 && (TMath::Abs(candidate.dcapostopv()) < cMinV0DCAPr || TMath::Abs(candidate.dcanegtopv()) < cMinV0DCAPi)) {
       return false;
     }
-    if (pid == 1 && (TMath::Abs(candidate.dcapostopv()) < cMinV0DCAPi || TMath::Abs(candidate.dcanegtopv()) < cMinV0DCAPr)) {
+    if (pid2 == 1 && (TMath::Abs(candidate.dcapostopv()) < cMinV0DCAPi || TMath::Abs(candidate.dcanegtopv()) < cMinV0DCAPr)) {
       return false;
     }
 
@@ -994,10 +994,10 @@ struct lambdapolsp {
           continue;
         }
 
-        if (isSelectedV0Daughter(v0, postrack, 0) && isSelectedV0Daughter(v0, negtrack, 1)) {
+        if (isSelectedV0Daughter(v0, postrack, 0, 0) && isSelectedV0Daughter(v0, negtrack, 1, 0)) {
           LambdaTag = 1;
         }
-        if (isSelectedV0Daughter(v0, negtrack, 0) && isSelectedV0Daughter(v0, postrack, 1)) {
+        if (isSelectedV0Daughter(v0, negtrack, 0, 1) && isSelectedV0Daughter(v0, postrack, 1, 1)) {
           aLambdaTag = 1;
         }
 
