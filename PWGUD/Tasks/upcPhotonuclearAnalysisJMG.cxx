@@ -128,7 +128,7 @@ struct UpcPhotonuclearAnalysisJMG {
   Configurable<float> cutMyetaMax{"cutMyetaMax", 0.8, {"My Track cut"}};
   Configurable<float> cutMydcaZmax{"cutMydcaZmax", 2.f, {"My Track cut"}};
   Configurable<float> cutMydcaXYmax{"cutMydcaXYmax", 1e0f, {"My Track cut"}};
-  Configurable<bool> cutMydcaXYusePt{"cutMydcaXYusePt", false, {"My Track cut"}};
+  Configurable<bool> cutMydcaXYusePt{"cutMydcaXYusePt", true, {"My Track cut"}};
   Configurable<bool> cutMyHasITS{"cutMyHasITS", true, {"My Track cut"}};
   Configurable<int> cutMyITSNClsMin{"cutMyITSNClsMin", 1, {"My Track cut"}};
   Configurable<float> cutMyITSChi2NClMax{"cutMyITSChi2NClMax", 36.f, {"My Track cut"}};
@@ -182,7 +182,7 @@ struct UpcPhotonuclearAnalysisJMG {
   OutputObj<CorrelationContainer> sameGapSideA{"sameEventGapSideA"};
   OutputObj<CorrelationContainer> mixedGapSideA{"mixedEventGapSideA"};
   OutputObj<CorrelationContainer> sameGapSideC{"sameEventGapSideC"};
-  OutputObj<CorrelationContainer> mixedGapSideC{"mixedEventGapSideC"};
+  OutputObj<CorrelationContainer> mixedGapSideC{"mixedEventGapSideC"};*/
 
   UPCPairCuts mPairCuts;
   bool doPairCuts = false;
@@ -311,7 +311,7 @@ struct UpcPhotonuclearAnalysisJMG {
   }
 
   std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -10.0f, -7.0f, -5.0f, -2.5f, 0.0f, 2.5f, 5.0f, 7.0f, 10.0f};
-  std::vector<double> gapSideBinsEdges{VARIABLE_WIDTH, -0.5, 0.5, 1.5};
+  //std::vector<double> gapSideBinsEdges{VARIABLE_WIDTH, -0.5, 0.5, 1.5};
 
   SliceCache cache;
   // int countEvents = 0;
@@ -359,11 +359,7 @@ struct UpcPhotonuclearAnalysisJMG {
   template <typename T>
   bool isTrackCut(T const& track)
   {
-<<<<<<< HEAD
     if (track.sign() != 1 && track.sign() != -1) {
-=======
-    if (track.sign() != 1 || track.sign() != -1) {
->>>>>>> cd0581547 (updating O2Physics)
       return false;
     }
     if (track.pt() < cutMyptMin || track.pt() > cutMyptMax) {
@@ -462,9 +458,9 @@ struct UpcPhotonuclearAnalysisJMG {
         if (isTrackCut(track2) == false) {
           return;
         }
-        if (doPairCuts && mPairCuts.conversionCuts(track1, track2)) {
+        /*if (doPairCuts && mPairCuts.conversionCuts(track1, track2)) {
           continue;
-        }
+        }*/
         float deltaPhi = phi(track1.px(), track1.py()) - phi(track2.px(), track2.py());
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf);
         target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed, eta(track1.px(), track1.py(), track1.pz()) - eta(track2.px(), track2.py(), track2.pz()), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, 1.0);
@@ -637,7 +633,7 @@ struct UpcPhotonuclearAnalysisJMG {
           }
           nTracksCharged++;
           sumPt += track.pt();
-          float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
+            float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
           histos.fill(HIST("Tracks/SGsideC/hTrackPt"), track.pt());
           histos.fill(HIST("Tracks/SGsideC/hTrackPhi"), phiVal);
           histos.fill(HIST("Tracks/SGsideC/hTrackEta"), eta(track.px(), track.py(), track.pz()));
