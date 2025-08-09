@@ -381,7 +381,7 @@ struct phianalysisrun3_PbPb {
   using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullKa, aod::pidTOFFullKa>>;
 
   // using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::McCollisionLabels>;
-  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFV0As>;
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
   using TrackCandidatesMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                                     aod::pidTPCFullKa, aod::pidTOFFullKa,
                                                     aod::McTrackLabels>>;
@@ -1462,7 +1462,6 @@ struct phianalysisrun3_PbPb {
     std::vector<int64_t> selectedEvents(collisions.size());
     int nevts = 0;
     auto multiplicity = -1.0;
-    histos.fill(HIST("Centgen1"), multiplicity);
     histos.fill(HIST("hMC1"), 2.5);
     for (const auto& collision : collisions) {
       if (!collision.sel8() || std::abs(collision.mcCollision().posZ()) > cfgCutVertex) {
@@ -1498,7 +1497,21 @@ struct phianalysisrun3_PbPb {
         continue;
       }
       histos.fill(HIST("hMC1"), 10.5);
-      multiplicity = collision.centFT0C();
+      const int kCentFT0C = 0;
+      const int kCentFT0A = 1;
+      const int kCentFT0M = 2;
+      const int kCentFV0A = 3;
+
+      if (centestimator == kCentFT0C) {
+        multiplicity = collision.centFT0C();
+      } else if (centestimator == kCentFT0A) {
+        multiplicity = collision.centFT0A();
+      } else if (centestimator == kCentFT0M) {
+        multiplicity = collision.centFT0M();
+      } else if (centestimator == kCentFV0A) {
+        multiplicity = collision.centFV0A();
+      }
+      histos.fill(HIST("Centgen1"), multiplicity);
       selectedEvents[nevts++] = collision.mcCollision_as<aod::McCollisions>().globalIndex();
     }
     selectedEvents.resize(nevts);
@@ -1578,7 +1591,20 @@ struct phianalysisrun3_PbPb {
     if (fillOccupancy && (occupancy > cfgCutOccupancy)) {
       return;
     }
-    auto multiplicity = collision.centFT0C();
+    const int kCentFT0C = 0;
+    const int kCentFT0A = 1;
+    const int kCentFT0M = 2;
+    const int kCentFV0A = 3;
+    auto multiplicity = -1.0;
+    if (centestimator == kCentFT0C) {
+      multiplicity = collision.centFT0C();
+    } else if (centestimator == kCentFT0A) {
+      multiplicity = collision.centFT0A();
+    } else if (centestimator == kCentFT0M) {
+      multiplicity = collision.centFT0M();
+    } else if (centestimator == kCentFV0A) {
+      multiplicity = collision.centFV0A();
+    }
     histos.fill(HIST("Centrec1"), multiplicity);
     histos.fill(HIST("hMC1"), 13.5);
     auto oldindex = -999;
