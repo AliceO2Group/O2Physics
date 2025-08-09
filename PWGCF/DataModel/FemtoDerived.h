@@ -374,6 +374,9 @@ DECLARE_SOA_TABLE(FDHfCandMC, "AOD", "FDHFCANDMC", //! Table for reconstructed M
 DECLARE_SOA_TABLE(FDParticlesIndex, "AOD", "FDPARTICLEINDEX", //! Table track index to match associate particle with charm hadron prongs
                   o2::soa::Index<>,
                   fdhf::TrackId);
+DECLARE_SOA_TABLE(FDTrkTimeStamp, "AOD", "FDHFTRKTIMESTAMP", //! Time Stampe of track associate event
+                  o2::soa::Index<>,
+                  fdhf::TimeStamp);
 
 DECLARE_SOA_TABLE_STAGED(FDParticles, "FDPARTICLE",
                          o2::soa::Index<>,
