@@ -45,6 +45,7 @@
 #include <string>
 #include <utility>
 #include <vector>
+#include <tuple>
 
 using namespace o2;
 using namespace o2::framework;
