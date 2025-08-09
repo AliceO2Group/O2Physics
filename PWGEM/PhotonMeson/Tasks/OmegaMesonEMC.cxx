@@ -85,6 +85,9 @@ struct OmegaMesonEMC {
   Configurable<float> confEvtZvtx{"confEvtZvtx", 10.f, "Evt sel: Max. z-Vertex (cm)"};
   Configurable<bool> confEvtRequireSel8{"confEvtRequireSel8", true, "Evt sel: check for sel8 trigger bit"};
   Configurable<bool> confEvtRequirekTVXinEMC{"confEvtRequirekTVXinEMC", false, "Evt sel: check for EMCal MB trigger kTVXinEMC"};
+  Configurable<bool> confEvtRequireL0{"confEvtRequireL0", false, "Evt sel: check for EMCal L0 trigger"};
+  Configurable<bool> confEvtRequireGoodZVertex{"confEvtRequireGoodZVertex", false, "Evt sel: check for EMCal good z-vertex"};
+  Configurable<bool> confEvtRequireNoSameBunchPileUp{"confEvtRequireNoSameBunchPileUp", false, "Evt sel: check for no same bunch pile-up"};
 
   // ---> Track selection
   Configurable<LabeledArray<float>> cfgChargedPionCuts{"cfgChargedPionCuts", {hnm::chargedPionCutsTable[0], 3, 2, hnm::chargedPionCutsName, hnm::chargedPionMinMaxName}, "Charged pion track cuts"};
@@ -224,6 +227,12 @@ struct OmegaMesonEMC {
       return; // Skip this collision if sel8 trigger bit is not set
     if (confEvtRequirekTVXinEMC && !iskTVXinEMC)
       return; // Skip this collision if kTVXinEMC trigger bit is not set
+    if (confEvtRequireL0 && !isL0Triggered)
+      return; // Skip this collision if L0 trigger bit is not set
+    if (confEvtRequireGoodZVertex && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
+      return; // Skip this collision if good z-vertex condition is not met
+    if (confEvtRequireNoSameBunchPileUp && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
+      return; // Skip this collision if no same bunch pileup condition is not met
 
     if (bcHasEMCCells && iskTVXinEMC)
       mHistManager.fill(HIST("Event/nEMCalEvents"), 0);
