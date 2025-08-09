@@ -327,7 +327,7 @@ struct FemtoUniverseEfficiencyBase {
         break;
       case 321:  // Kaon+
       case -321: // Kaon-
-        if(isKaonLF) {
+        if (isKaonLF) {
           return isKaonNSigmaLF(mom, nsigmaTPCK, nsigmaTOFK);
         } else {
           return isKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);

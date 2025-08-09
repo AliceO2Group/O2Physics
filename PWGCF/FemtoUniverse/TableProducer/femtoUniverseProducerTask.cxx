@@ -745,7 +745,7 @@ struct FemtoUniverseProducerTask {
                        -999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999.,
                        -999.,
-                       hfHelper.yD0(particle), // getter transRadius
+                       hfHelper.yD0(particle),    // getter transRadius
                        particle.mlProbD0bar()[0], // getter decayVtxX
                        particle.mlProbD0bar()[1], // getter decayVtxY
                        particle.mlProbD0bar()[2], // getter decayVtxZ
@@ -761,10 +761,10 @@ struct FemtoUniverseProducerTask {
   template <bool isD0ML, bool isD0barML, typename ParticleType>
   void fillDebugD0D0barMcMl(ParticleType const& particle)
   {
-    int8_t originMcReco = 2; // 0 - prompt, 1 - non-prompt, 2 - default/else 
-    if(particle.originMcRec() == RecoDecay::OriginType::Prompt) {
+    int8_t originMcReco = 2; // 0 - prompt, 1 - non-prompt, 2 - default/else
+    if (particle.originMcRec() == RecoDecay::OriginType::Prompt) {
       originMcReco = 0;
-    } else if(particle.originMcRec() == RecoDecay::OriginType::NonPrompt) {
+    } else if (particle.originMcRec() == RecoDecay::OriginType::NonPrompt) {
       originMcReco = 1;
     } else {
       originMcReco = 2;
@@ -774,7 +774,7 @@ struct FemtoUniverseProducerTask {
                        originMcReco, -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999.,
-                       -999., 
+                       -999.,
                        hfHelper.yD0(particle), // getter transRadius
                        particle.mlProbD0()[0], // getter decayVtxX
                        particle.mlProbD0()[1], // getter decayVtxY
@@ -785,7 +785,7 @@ struct FemtoUniverseProducerTask {
                        originMcReco, -999., -999., -999., -999., -999., -999., -999.,
                        -999., -999., -999., -999., -999.,
                        -999.,
-                       hfHelper.yD0(particle), // getter transRadius
+                       hfHelper.yD0(particle),    // getter transRadius
                        particle.mlProbD0bar()[0], // getter decayVtxX
                        particle.mlProbD0bar()[1], // getter decayVtxY
                        particle.mlProbD0bar()[2], // getter decayVtxZ
@@ -1567,8 +1567,8 @@ struct FemtoUniverseProducerTask {
                     hfCand.eta(),
                     hfCand.phi(),
                     aod::femtouniverseparticle::ParticleType::kD0,
-                    -999,            // cut, CutContainerType
-                    -999,            // PID, CutContainerType
+                    -999,  // cut, CutContainerType
+                    -999,  // PID, CutContainerType
                     -999., // tempFitVar
                     indexChildID,
                     invMassD0,     // D0 mass (mLambda)
@@ -1706,8 +1706,8 @@ struct FemtoUniverseProducerTask {
                       hfCand.eta(),
                       hfCand.phi(),
                       aod::femtouniverseparticle::ParticleType::kD0,
-                      -999,            // cut, CutContainerType
-                      -999,            // PID, CutContainerType
+                      -999,  // cut, CutContainerType
+                      -999,  // PID, CutContainerType
                       -999., // tempFitVar
                       indexChildID,
                       invMassD0,     // D0 mass (mLambda)
@@ -1725,7 +1725,7 @@ struct FemtoUniverseProducerTask {
             }
           }
           if constexpr (isMC) {
-            auto particleMother = mcParticles.rawIteratorAt(indexMcRec);                                                 // gen. level pT
+            auto particleMother = mcParticles.rawIteratorAt(indexMcRec);                        // gen. level pT
             auto yGen = RecoDecay::y(particleMother.pVector(), o2::constants::physics::MassD0); // gen. level y
             outputPartsMC(0, particleMother.pdgCode(), particleMother.pt(), yGen, particleMother.phi());
             outputPartsMCLabels(outputPartsMC.lastIndex());

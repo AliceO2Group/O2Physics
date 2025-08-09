@@ -23,30 +23,30 @@
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseEventHisto.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniversePairCleaner.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/Core/FemtoUniverseSoftPionRemoval.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseTrackSelection.h"
 #include "PWGCF/FemtoUniverse/Core/femtoUtils.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
-
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Framework/AnalysisTask.h"
+
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/PID.h"
 
-#include <vector>
 #include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -253,7 +253,7 @@ struct FemtoUniversePairTaskTrackD0 {
   float weight = 1.0;
 
   HistogramRegistry registry{"registry",
-                              {{"hPtD0", "D^{0} cand.;#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {confPtBins}}},
+                             {{"hPtD0", "D^{0} cand.;#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {confPtBins}}},
                               {"hPtD0bar", "#bar{D^{0}};#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {confPtBins}}},
                               {"hPtD0D0bar", "#bar{D^{0}};#it{p}_{T} (GeV/#it{c});counts", {HistType::kTH1F, {confPtBins}}},
                               {"hPhiD0D0bar", ";#varphi (rad);counts", {HistType::kTH1F, {{80, 0., o2::constants::math::TwoPI}}}},
@@ -465,7 +465,7 @@ struct FemtoUniversePairTaskTrackD0 {
     mcRecoRegistry.add("hMcRecAntiPrPt", "MC Reco antiproton;#it{p}_{T} (GeV/c); counts", {HistType::kTH1F, {{500, 0, 5}}});
     mcRecoRegistry.add("hMcRecAntiPrPtGenEtaGen", "MC Reco antiproton;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{500, 0, 5}, {400, -1.0, 1.0}}});
 
-   // MC truth
+    // MC truth
     mcTruthRegistry.add("hMcGenD0", "MC Truth all D0s;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
     mcTruthRegistry.add("hMcGenD0Prompt", "MC Truth prompt D0s;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
     mcTruthRegistry.add("hMcGenD0NonPrompt", "MC Truth non-prompt D0s;#it{p}_{T} (GeV/c); #eta", {HistType::kTH2F, {{vbins, "#it{p}_{T} (GeV/#it{c})"}, {400, -1.0, 1.0}}});
@@ -509,7 +509,6 @@ struct FemtoUniversePairTaskTrackD0 {
 
     vPIDTrack = ConfTrack.confPIDTrack.value;
     kNsigma = ConfBothTracks.confTrkPIDnSigmaMax.value;
-
   }
 
   template <typename CollisionType>
@@ -675,7 +674,7 @@ struct FemtoUniversePairTaskTrackD0 {
       registry.fill(HIST("DebugBdt/hBdtScore1VsStatus"), d0d0bar.decayVtxX(), 1);
       registry.fill(HIST("DebugBdt/hBdtScore2VsStatus"), d0d0bar.decayVtxY(), 1);
       registry.fill(HIST("DebugBdt/hBdtScore3VsStatus"), d0d0bar.decayVtxZ(), 1);
-      
+
       weight = 1.0f;
       if (doEfficiencyCorr) {
         weight = efficiencyCalculator.getWeight(ParticleNo::TWO, d0d0bar.pt());
@@ -1154,12 +1153,12 @@ struct FemtoUniversePairTaskTrackD0 {
               mcRecoRegistry.fill(HIST("hMcRecKmPtGenEtaGen"), mcpart.pt(), mcpart.eta());
             }
           }
-        }  
+        }
       } else if ((part.partType() == aod::femtouniverseparticle::ParticleType::kD0) && (part.pt() > ConfDmesons.confMinPtD0D0barReco) && (part.pt() < ConfDmesons.confMaxPtD0D0barReco)) {
         if (mcpart.pdgMCTruth() == ConfDmesons.confPDGCodeD0) {
           mcRecoRegistry.fill(HIST("hMcRecD0"), part.pt(), part.eta());
           mcRecoRegistry.fill(HIST("hMcRecD0Phi"), part.phi());
-          if(part.tpcNClsFound() == 0) { // prompt candidates
+          if (part.tpcNClsFound() == 0) { // prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0Prompt"), part.pt(), part.eta());
           } else if (part.tpcNClsFound() == 1) { // non-prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0NonPrompt"), part.pt(), part.eta());
@@ -1167,7 +1166,7 @@ struct FemtoUniversePairTaskTrackD0 {
         } else if (mcpart.pdgMCTruth() == ConfDmesons.confPDGCodeD0bar) {
           mcRecoRegistry.fill(HIST("hMcRecD0bar"), part.pt(), part.eta());
           mcRecoRegistry.fill(HIST("hMcRecD0barPhi"), part.phi());
-          if(part.tpcNClsFound() == 0) { // prompt candidates
+          if (part.tpcNClsFound() == 0) { // prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0barPrompt"), part.pt(), part.eta());
           } else if (part.tpcNClsFound() == 1) { // non-prompt candidates
             mcRecoRegistry.fill(HIST("hMcRecD0barNonPrompt"), part.pt(), part.eta());
@@ -1194,14 +1193,14 @@ struct FemtoUniversePairTaskTrackD0 {
         }
         // filling the inv. mass histograms
         if (part.mLambda() > 0) {
-          if(part.sign() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
+          if (part.sign() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
             mcRecoRegistry.fill(HIST("hMassVsPtD0Sig"), part.mLambda(), part.pt(), weight);
           } else if (part.sign() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
             mcRecoRegistry.fill(HIST("hMassVsPtD0Refl"), part.mLambda(), part.pt(), weight);
           } else {
             mcRecoRegistry.fill(HIST("hMassVsPtD0Bkg"), part.mLambda(), part.pt(), weight);
           }
-          if(part.tpcNClsFound() == 0) { // prompt candidates
+          if (part.tpcNClsFound() == 0) { // prompt candidates
             mcRecoRegistry.fill(HIST("hMassVsPtD0Prompt"), part.mLambda(), part.pt(), weight);
           } else if (part.tpcNClsFound() == 1) { // non-prompt candidates
             mcRecoRegistry.fill(HIST("hMassVsPtD0NonPrompt"), part.mLambda(), part.pt(), weight);
@@ -1214,7 +1213,7 @@ struct FemtoUniversePairTaskTrackD0 {
           } else {
             mcRecoRegistry.fill(HIST("hMassVsPtD0barBkg"), part.mAntiLambda(), part.pt(), weight);
           }
-          if(part.tpcNClsFound() == 0) { // prompt candidates
+          if (part.tpcNClsFound() == 0) { // prompt candidates
             mcRecoRegistry.fill(HIST("hMassVsPtD0barPrompt"), part.mAntiLambda(), part.pt(), weight);
           } else if (part.tpcNClsFound() == 1) { // non-prompt candidates
             mcRecoRegistry.fill(HIST("hMassVsPtD0barNonPrompt"), part.mAntiLambda(), part.pt(), weight);
@@ -1259,7 +1258,6 @@ struct FemtoUniversePairTaskTrackD0 {
             mcTruthRegistry.fill(HIST("hMcGenD0NonPrompt"), part.pt(), part.eta());
           }
         }
-        
       }
       if (pdgCode == PDG_t::kProton) {
         mcTruthRegistry.fill(HIST("hMcGenPrPtVsEta"), part.pt(), part.eta());
