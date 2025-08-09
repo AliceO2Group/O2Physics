@@ -55,6 +55,7 @@ struct jflucAnalysisTask {
   O2_DEFINE_CONFIGURABLE(ptmin, float, 0.2, "Minimum pt for tracks");
   O2_DEFINE_CONFIGURABLE(ptmax, float, 5.0, "Maximum pt for tracks");
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC process");
+  O2_DEFINE_CONFIGURABLE(cfgMultCorrelationsMask, uint16_t, 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask.")
 
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 100.1}, "multiplicity / centrality axis for histograms"};
   ConfigurableAxis phiAxis{"axisPhi", {50, 0.0, o2::constants::math::TwoPI}, "phi axis for histograms"};
@@ -78,15 +79,15 @@ struct jflucAnalysisTask {
     auto axisSpecZvt = AxisSpec(zvtAxis);
     auto axisSpecPt = AxisSpec(ptAxis);
     auto axisSpecMass = AxisSpec(massAxis);
-    if (doprocessJDerived || doprocessJDerivedCorrected || doprocessCFDerived || doprocessCFDerivedCorrected || doprocessMCCFDerived) {
-      pcf = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, "jfluc");
+    if (doprocessJDerived || doprocessJDerivedCorrected || doprocessCFDerived || doprocessCFDerivedCorrected || doprocessCFDerivedMultSet || doprocessCFDerivedMultSetCorrected || doprocessMCCFDerived) {
+      pcf = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, cfgMultCorrelationsMask, "jfluc");
       pcf->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
       pcf->UserCreateOutputObjects();
     } else {
       pcf = 0;
     }
     if (doprocessCF2ProngDerived || doprocessCF2ProngDerivedCorrected) {
-      pcf2Prong = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, "jfluc2prong");
+      pcf2Prong = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, cfgMultCorrelationsMask, "jfluc2prong");
       pcf2Prong->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
       pcf2Prong->UserCreateOutputObjects();
 
@@ -95,6 +96,8 @@ struct jflucAnalysisTask {
     } else {
       pcf2Prong = 0;
     }
+    if ((doprocessCFDerivedMultSet || doprocessCFDerivedMultSetCorrected) && cfgMultCorrelationsMask == 0)
+      LOGF(fatal, "cfgMultCorrelationsMask can not be 0 when MultSet process functions are in use.");
   }
 
   template <class T>
@@ -107,6 +110,7 @@ struct jflucAnalysisTask {
     pcf->SetEventCentrality(collision.multiplicity());
     pcf->SetEventVertex(collision.posZ());
     pcf->FillQA(tracks);
+    pcf->FillMultSet(collision);
     qvecs.Calculate(tracks, etamin, etamax);
     pcf->SetJQVectors(&qvecs);
     pcf->UserExec("");
@@ -157,6 +161,22 @@ struct jflucAnalysisTask {
     analyze(collision, tracks);
   }
   PROCESS_SWITCH(jflucAnalysisTask, processCFDerivedCorrected, "Process CF derived data with corrections", true);
+
+  void processCFDerivedMultSet(soa::Join<aod::CFCollisions, aod::CFMultSets>::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  {
+    if (std::popcount(cfgMultCorrelationsMask.value) != static_cast<int>(collision.multiplicities().size()))
+      LOGF(fatal, "Multiplicity selections (cfgMultCorrelationsMask = 0x%x) do not match the size of the table column (%ld). The histogram filling relies on the preservation of order.", cfgMultCorrelationsMask.value, collision.multiplicities().size());
+    analyze(collision, tracks);
+  }
+  PROCESS_SWITCH(jflucAnalysisTask, processCFDerivedMultSet, "Process CF derived data with multiplicity sets", false);
+
+  void processCFDerivedMultSetCorrected(soa::Join<aod::CFCollisions, aod::CFMultSets>::iterator const& collision, soa::Filtered<soa::Join<aod::CFTracks, aod::JWeights>> const& tracks)
+  {
+    if (std::popcount(cfgMultCorrelationsMask.value) != static_cast<int>(collision.multiplicities().size()))
+      LOGF(fatal, "Multiplicity selections (cfgMultCorrelationsMask = 0x%x) do not match the size of the table column (%ld). The histogram filling relies on the preservation of order.", cfgMultCorrelationsMask.value, collision.multiplicities().size());
+    analyze(collision, tracks);
+  }
+  PROCESS_SWITCH(jflucAnalysisTask, processCFDerivedMultSetCorrected, "Process CF derived data with corrections and multiplicity sets", false);
 
   void processCF2ProngDerived(aod::CFCollision const& collision, soa::Filtered<aod::CFTracks> const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
   {
