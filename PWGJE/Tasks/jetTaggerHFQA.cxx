@@ -113,6 +113,12 @@ struct JetTaggerHFQA {
   ConfigurableAxis binSigmaLxyz{"binSigmaLxyz", {100, 0., 0.1}, ""};
 
   int numberOfJetFlavourSpecies = 6;
+  int firstTaggerForTrackCounting = 0;
+  int secondTaggerForTrackCounting = 1;
+  int thirdTaggerForTrackCounting = 2;
+  float kUnsetJetAreaFraction = -98.0;
+  float kUnsetConstituentPtMin = -98.0;
+  float kUnsetConstituentPtMax = 9998.0;
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
@@ -446,14 +452,14 @@ struct JetTaggerHFQA {
   template <typename T, typename U>
   bool isAcceptedJet(U const& jet)
   {
-    if (jetAreaFractionMin > -98.0) {
+    if (jetAreaFractionMin > kUnsetJetAreaFraction) {
       if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
     bool checkConstituentPt = true;
-    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);
-    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0);
+    bool checkConstituentMinPt = (leadingConstituentPtMin > kUnsetConstituentPtMin);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < kUnsetConstituentPtMax);
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
     }
@@ -596,7 +602,7 @@ struct JetTaggerHFQA {
     if (fillIPxyz)
       std::sort(vecSignImpXYZSig.begin(), vecSignImpXYZSig.end(), sortImp);
 
-    if (vecSignImpXYSig.size() > 0) { // N1
+    if (vecSignImpXYSig.size() > firstTaggerForTrackCounting) { // N1
       if (fillIPxy)
         registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xy_significance_N1"), jet.pt(), vecSignImpXYSig[0][0]);
       if (fillIPz)
@@ -604,7 +610,7 @@ struct JetTaggerHFQA {
       if (fillIPxyz)
         registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xyz_significance_N1"), jet.pt(), vecSignImpXYZSig[0][0]);
     }
-    if (vecSignImpXYSig.size() > 1) { // N2
+    if (vecSignImpXYSig.size() > secondTaggerForTrackCounting) { // N2
       if (fillIPxy)
         registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xy_significance_N2"), jet.pt(), vecSignImpXYSig[1][0]);
       if (fillIPz)
@@ -612,7 +618,7 @@ struct JetTaggerHFQA {
       if (fillIPxyz)
         registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xyz_significance_N2"), jet.pt(), vecSignImpXYZSig[1][0]);
     }
-    if (vecSignImpXYSig.size() > 2) { // N3
+    if (vecSignImpXYSig.size() > thirdTaggerForTrackCounting) { // N3
       if (fillIPxy)
         registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xy_significance_N3"), jet.pt(), vecSignImpXYSig[2][0]);
       if (fillIPz)
@@ -750,7 +756,7 @@ struct JetTaggerHFQA {
     sort(vecSignImpZSig[jetflavour].begin(), vecSignImpZSig[jetflavour].end(), std::greater<float>());
     sort(vecSignImpXYZSig[jetflavour].begin(), vecSignImpXYZSig[jetflavour].end(), std::greater<float>());
 
-    if (vecImpXY[jetflavour].size() > 0) { // N1
+    if (vecImpXY[jetflavour].size() > firstTaggerForTrackCounting) { // N1
       if (fillIPxy)
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N1"), mcdjet.pt(), vecSignImpXYSig[jetflavour][0], jetflavour, eventWeight);
       if (fillIPz)
@@ -758,7 +764,7 @@ struct JetTaggerHFQA {
       if (fillIPxyz)
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N1"), mcdjet.pt(), vecSignImpXYZSig[jetflavour][0], jetflavour, eventWeight);
     }
-    if (vecImpXY[jetflavour].size() > 1) { // N2
+    if (vecImpXY[jetflavour].size() > secondTaggerForTrackCounting) { // N2
       if (fillIPxy)
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), vecSignImpXYSig[jetflavour][1], jetflavour, eventWeight);
       if (fillIPz)
@@ -766,7 +772,7 @@ struct JetTaggerHFQA {
       if (fillIPxyz)
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), vecSignImpXYZSig[jetflavour][1], jetflavour, eventWeight);
     }
-    if (vecImpXY[jetflavour].size() > 2) { // N3
+    if (vecImpXY[jetflavour].size() > thirdTaggerForTrackCounting) { // N3
       if (fillIPxy)
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N3"), mcdjet.pt(), vecSignImpXYSig[jetflavour][2], jetflavour, eventWeight);
       if (fillIPz)
@@ -1142,10 +1148,11 @@ struct JetTaggerHFQA {
       }
       int jetflavour = mcdjet.origin();
       float secondaryPt = 0;
-      float totalJetPt  = 0;
+      float totalJetPt = 0;
       for (auto const& track : mcdjet.template tracks_as<JetTagTracksMCD>()) {
         float varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
-        if (!track.has_mcParticle()) continue;
+        if (!track.has_mcParticle())
+          continue;
         auto mcParticle = track.mcParticle();
         totalJetPt += track.pt();
         if (mcParticle.isPhysicalPrimary()) {
@@ -1633,5 +1640,5 @@ using JetTaggerhfQACharged = JetTaggerHFQA<JetTaggerQAChargedDataJets, aod::Char
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetTaggerhfQACharged>(cfgc, TaskName{"jet-taggerhf-qa-charged"})}; // o2-linter: disable=name/o2-task
+    adaptAnalysisTask<JetTaggerhfQACharged>(cfgc, TaskName{"jet-taggerhf-qa-charged"})}; // o2-linter: disable=name/o2-task (wrong hyphenation)
 }
