@@ -1344,25 +1344,25 @@ struct Dilepton {
 
         for (const auto& pos : selected_posTracks_in_this_event) { // ULS mix
           for (const auto& neg : negTracks_from_event_pool) {
-            fillPairInfo<1>(collision, pos, neg, cut, tracks);
+            fillPairInfo<1>(collision, pos, neg, cut, nullptr);
           }
         }
 
         for (const auto& neg : selected_negTracks_in_this_event) { // ULS mix
           for (const auto& pos : posTracks_from_event_pool) {
-            fillPairInfo<1>(collision, neg, pos, cut, tracks);
+            fillPairInfo<1>(collision, neg, pos, cut, nullptr);
           }
         }
 
         for (const auto& pos1 : selected_posTracks_in_this_event) { // LS++ mix
           for (const auto& pos2 : posTracks_from_event_pool) {
-            fillPairInfo<1>(collision, pos1, pos2, cut, tracks);
+            fillPairInfo<1>(collision, pos1, pos2, cut, nullptr);
           }
         }
 
         for (const auto& neg1 : selected_negTracks_in_this_event) { // LS-- mix
           for (const auto& neg2 : negTracks_from_event_pool) {
-            fillPairInfo<1>(collision, neg1, neg2, cut, tracks);
+            fillPairInfo<1>(collision, neg1, neg2, cut, nullptr);
           }
         }
       } // end of loop over mixed event pool

@@ -155,3 +155,8 @@ o2physics_add_dpl_workflow(lambdatwopartpolarization
     SOURCES lambdaTwoPartPolarization.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascadeanalysislightions
+    SOURCES cascadeAnalysisLightIonsDerivedData.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)

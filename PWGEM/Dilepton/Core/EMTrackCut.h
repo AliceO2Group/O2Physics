@@ -45,8 +45,8 @@ class EMTrackCut : public TNamed
     kTrackPtRange,
     kTrackEtaRange,
     kTrackPhiRange,
-    kDCAxy,
-    kDCAz,
+    // kDCAxy,
+    // kDCAz,
     // kTPCNCls,
     // kTPCCrossedRows,
     // kTPCCrossedRowsOverNCls,
@@ -75,12 +75,13 @@ class EMTrackCut : public TNamed
       return false;
     }
 
-    if (!IsSelectedTrack(track, EMTrackCuts::kDCAxy)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, EMTrackCuts::kDCAz)) {
-      return false;
-    }
+    // if (!IsSelectedTrack(track, EMTrackCuts::kDCAxy)) {
+    //   return false;
+    // }
+    // if (!IsSelectedTrack(track, EMTrackCuts::kDCAz)) {
+    //   return false;
+    // }
+
     if (!IsSelectedTrack(track, EMTrackCuts::kTrackBit)) {
       return false;
     }

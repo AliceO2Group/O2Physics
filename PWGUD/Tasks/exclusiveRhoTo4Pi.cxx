@@ -395,10 +395,6 @@ struct ExclusiveRhoTo4Pi {
   // Run Numbers
   static int runNos[113];
   static int numRunNums;
-  // static std::string eventLabels[12];
-  // static std::string trackLabels[14];
-  // static int numTrackCuts;
-  // static int numEventCuts;
   // Derived Data
   Produces<aod::SignalData> sigFromData;
   Produces<aod::BkgroundData> bkgFromData;
@@ -438,7 +434,7 @@ struct ExclusiveRhoTo4Pi {
   Configurable<float> rhoMassMin{"rhoMassMin", 1, "Min Mass of rho"};
   Configurable<float> rhoMassMax{"rhoMassMax", 2.5, "Max Mass of rho"};
   // Axis Configurations
-  ConfigurableAxis pTAxis{"pTAxis", {1000, 0, 2}, "Axis for pT histograms"};
+  ConfigurableAxis pTAxis{"pTAxis", {1000, 0, 1}, "Axis for pT histograms"};
   ConfigurableAxis etaAxis{"etaAxis", {1000, -1.1, 1.1}, "Axis for Eta histograms"};
   ConfigurableAxis rapidityAxis{"rapidityAxis", {1000, -2.5, 2.5}, "Axis for Rapidity histograms"};
   ConfigurableAxis invMassAxis{"invMassAxis", {1000, 1, 2.5}, "Axis for Phi histograms"};
@@ -451,9 +447,11 @@ struct ExclusiveRhoTo4Pi {
     histosCounter.add("EventsCounts_vs_runNo", "Number of Selected 4-Pion Events per Run; Run Number; Number of Events", kTH2F, {{113, 0, 113}, {12, 0, 12}});
     histosCounter.add("TracksCounts_vs_runNo", "Number of Selected Tracks per Run; Run Number; Number of Tracks", kTH2F, {{113, 0, 113}, {14, 0, 14}});
     histosCounter.add("fourPionCounts_0c", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
+    histosCounter.add("fourPionCounts_0c_within_mass", "Four Pion Counts within mass range; Run Number; Events", kTH1F, {{113, 0, 113}});
     histosCounter.add("fourPionCounts_0c_within_rap", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
     histosCounter.add("fourPionCounts_0c_selected", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
     histosCounter.add("fourPionCounts_n0c", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
+    histosCounter.add("fourPionCounts_n0c_within_mass", "Four Pion Counts within mass range; Run Number; Events", kTH1F, {{113, 0, 113}});
     histosCounter.add("fourPionCounts_n0c_within_rap", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
     histosCounter.add("fourPionCounts_n0c_selected", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
     // QA plots: event selection
@@ -800,6 +798,10 @@ struct ExclusiveRhoTo4Pi {
 
       histosCounter.fill(HIST("fourPionCounts_0c"), runIndex);
 
+      if (rhoMassMin < p1234.M() && p1234.M() < rhoMassMax) {
+        histosCounter.fill(HIST("fourPionCounts_0c_within_mass"), runIndex);
+      }
+
       if (std::fabs(p1234.Rapidity()) < rhoRapCut) {
         histosData.fill(HIST("fourpion_pT_0_charge_within_rap"), p1234.Pt());
         histosData.fill(HIST("fourpion_eta_0_charge_within_rap"), p1234.Eta());
@@ -912,7 +914,9 @@ struct ExclusiveRhoTo4Pi {
         p1234.M());
 
       histosCounter.fill(HIST("fourPionCounts_n0c"), runIndex);
-
+      if (rhoMassMin < p1234.M() && p1234.M() < rhoMassMax) {
+        histosCounter.fill(HIST("fourPionCounts_n0c_within_mass"), runIndex);
+      }
       if (std::fabs(p1234.Rapidity()) < rhoRapCut) {
         histosData.fill(HIST("fourpion_pT_non_0_charge_within_rap"), p1234.Pt());
         histosData.fill(HIST("fourpion_eta_non_0_charge_within_rap"), p1234.Eta());
@@ -1231,6 +1235,7 @@ struct ExclusiveRhoTo4Pi {
     for (int i = 0; i < numTrackCuts; ++i) {
       h2->GetYaxis()->SetBinLabel(i + 1, trackLabels[i].c_str());
     }
+
   } // end of setHistBinLabels function
 
 }; // End of Struct exclusiveRhoTo4Pi
@@ -1250,22 +1255,6 @@ int ExclusiveRhoTo4Pi::runNos[113] = {
   545332, 545345, 545367};
 
 int ExclusiveRhoTo4Pi::numRunNums = 113;
-
-// std::string ExclusiveRhoTo4Pi::eventLabels[12] = {
-//         "No Cuts","UPC mode","vtxITSTPC=1","sbp=1","itsROFb=1","tfb=1",
-//         "FT0A <= 50","FT0C <= 50","FV0A <= 50","ZDC <= 0",
-//         "n PV Contrib = 4","V_{z} < 10cm"
-// };
-
-// int ExclusiveRhoTo4Pi::numEventCuts = 20;
-
-// std::string ExclusiveRhoTo4Pi::trackLabels[14] = {
-//         "No Cuts","isPVContributor","pT > 0.15 GeV/c","|#eta| < 0.9","DCA Z < 2 cm",
-//         "DCA XY cut","hasITS","hasTPC","itsChi2NCl < 36","tpcChi2NCl < 4",
-//         "tpcNClsFindable < 70","#pi tracks","#pi^{+} tracks","#pi^{-} tracks"
-// };
-//
-// int ExclusiveRhoTo4Pi::numTrackCuts = 14;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

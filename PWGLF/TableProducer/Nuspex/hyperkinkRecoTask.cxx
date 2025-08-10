@@ -458,19 +458,22 @@ struct HyperkinkRecoTask {
     const AxisSpec vertexZAxis{100, -15., 15., "vtx_{Z} [cm]"};
     const AxisSpec ptAxis{50, -10, 10, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec nSigmaAxis{120, -6.f, 6.f, "n#sigma"};
-    const AxisSpec massAxis{100, 3.85, 4.25, "m (GeV/#it{c}^{2})"};
+    AxisSpec massAxis(100, 2.94, 3.2, "m (GeV/#it{c}^{2})");
+    if (hypoMoth == kHyperhelium4sigma) {
+      massAxis = AxisSpec{100, 3.85, 4.25, "m (GeV/#it{c}^{2})"};
+    }
     const AxisSpec diffPtAxis{200, -10.f, 10.f, "#Delta #it{p}_{T} (GeV/#it{c})"};
     const AxisSpec diffPzAxis{200, -10.f, 10.f, "#Delta #it{p}_{z} (GeV/#it{c})"};
     const AxisSpec radiusAxis{40, 0.f, 40.f, "R (cm)"};
 
     registry.add<TH1>("hEventCounter", "hEventCounter", HistType::kTH1F, {{2, 0, 2}});
     registry.add<TH1>("hVertexZCollision", "hVertexZCollision", HistType::kTH1F, {vertexZAxis});
-    registry.add<TH1>("hCandidateCounter", "hCandidateCounter", HistType::kTH1F, {{3, 0, 3}});
+    registry.add<TH1>("hCandidateCounter", "hCandidateCounter", HistType::kTH1F, {{4, 0, 4}});
 
     if (doprocessMC == true) {
       itsResponse.setMCDefaultParameters();
 
-      registry.add<TH1>("hTrueCandidateCounter", "hTrueCandidateCounter", HistType::kTH1F, {{3, 0, 3}});
+      registry.add<TH1>("hTrueCandidateCounter", "hTrueCandidateCounter", HistType::kTH1F, {{4, 0, 4}});
       registry.add<TH1>("hDiffSVx", ";#Delta x (cm);", HistType::kTH1F, {{200, -10, 10}});
       registry.add<TH1>("hDiffSVy", ";#Delta y (cm);", HistType::kTH1F, {{200, -10, 10}});
       registry.add<TH1>("hDiffSVz", ";#Delta z (cm);", HistType::kTH1F, {{200, -10, 10}});
@@ -663,8 +666,6 @@ struct HyperkinkRecoTask {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
       auto motherTrack = kinkCand.trackMoth_as<FullTracksExtIU>();
-      HypKinkCandidate hypkinkCand;
-      fillCandidate(hypkinkCand, collision, kinkCand, motherTrack, daugTrack);
       float nSigmaTOF = -999.f;
       if (daugTrack.hasTOF() && daugTrack.has_collision()) {
         auto originalDaugCol = daugTrack.collision_as<CollisionsFull>();
@@ -673,6 +674,10 @@ struct HyperkinkRecoTask {
       if (std::abs(nSigmaTOF) > cutTOFNSigmaDaug) {
         continue;
       }
+
+      registry.fill(HIST("hCandidateCounter"), 2);
+      HypKinkCandidate hypkinkCand;
+      fillCandidate(hypkinkCand, collision, kinkCand, motherTrack, daugTrack);
       hypkinkCand.nSigmaTOFDaug = nSigmaTOF;
 
       o2::dataformats::VertexBase primaryVtx = {{collision.posX(), collision.posY(), collision.posZ()}, {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()}};
@@ -698,7 +703,9 @@ struct HyperkinkRecoTask {
         hypkinkCand.momDaugSV[0], hypkinkCand.momDaugSV[1], hypkinkCand.momDaugSV[2],
         hypkinkCand.dcaXYMothPv, hypkinkCand.dcaXYDaugPv, hypkinkCand.dcaKinkTopo,
         hypkinkCand.chi2ITSMoth, hypkinkCand.itsClusterSizeMoth, hypkinkCand.itsClusterSizeDaug,
-        hypkinkCand.nSigmaTPCDaug, hypkinkCand.nSigmaITSDaug, hypkinkCand.nSigmaTOFDaug);
+        hypkinkCand.nSigmaTPCDaug, hypkinkCand.nSigmaITSDaug, hypkinkCand.nSigmaTOFDaug,
+        hypkinkCand.momMothPV[0], hypkinkCand.momMothPV[1], hypkinkCand.momMothPV[2],
+        hypkinkCand.updateMomMothPV[0], hypkinkCand.updateMomMothPV[1], hypkinkCand.updateMomMothPV[2]);
     }
   }
   PROCESS_SWITCH(HyperkinkRecoTask, processData, "process data", true);
@@ -773,8 +780,6 @@ struct HyperkinkRecoTask {
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
-      HypKinkCandidate hypkinkCand;
-      fillCandidate(hypkinkCand, collision, kinkCand, motherTrack, daugTrack);
       float nSigmaTOF = -999.f;
       if (daugTrack.hasTOF() && daugTrack.has_collision()) {
         auto originalDaugCol = daugTrack.collision_as<MCLabeledCollisionsFull>();
@@ -791,6 +796,13 @@ struct HyperkinkRecoTask {
       if (std::abs(nSigmaTOF) > cutTOFNSigmaDaug) {
         continue;
       }
+      registry.fill(HIST("hCandidateCounter"), 3);
+      if (isKinkSignal) {
+        registry.fill(HIST("hTrueCandidateCounter"), 3);
+      }
+
+      HypKinkCandidate hypkinkCand;
+      fillCandidate(hypkinkCand, collision, kinkCand, motherTrack, daugTrack);
       hypkinkCand.nSigmaTOFDaug = nSigmaTOF;
 
       std::array<float, 3> posDecVtx = {kinkCand.xDecVtx() + collision.posX(), kinkCand.yDecVtx() + collision.posY(), kinkCand.zDecVtx() + collision.posZ()};
@@ -826,8 +838,6 @@ struct HyperkinkRecoTask {
 
         hypkinkCand.isSignal = true;
         hypkinkCand.isSignalReco = true;
-        hypkinkCand.isCollReco = true;
-        hypkinkCand.isSurvEvSelection = true;
         fillCandidateMCInfo(hypkinkCand, mcMothTrack, mcDaugTrack, mcNeutTrack);
         mcPartIndices.push_back(mcMothTrack.globalIndex());
 
@@ -837,6 +847,9 @@ struct HyperkinkRecoTask {
         registry.fill(HIST("hDCAXYMothToRecSV"), dcaInfo[0]);
         registry.fill(HIST("hDCAZMothToRecSV"), dcaInfo[1]);
       }
+
+      hypkinkCand.isCollReco = true;
+      hypkinkCand.isSurvEvSelection = true;
 
       outputMCTable(
         mBz > 0 ? 1 : -1,
@@ -862,10 +875,22 @@ struct HyperkinkRecoTask {
 
     // fill kink signals which are not reconstructed
     for (auto const& mcparticle : particlesMC) {
-      auto dChannel = He4SDecay::getDecayChannel<aod::McParticles>(mcparticle, dauIDList);
-      if (dChannel != He4SDecay::k2body) {
+      bool isKinkSignal = false;
+      if (hypoMoth == kHypertriton) {
+        auto dChannel = H3LDecay::getDecayChannel<aod::McParticles>(mcparticle, dauIDList);
+        if (dChannel == H3LDecay::k2bodyNeutral) {
+          isKinkSignal = true;
+        }
+      } else if (hypoMoth == kHyperhelium4sigma) {
+        auto dChannel = He4SDecay::getDecayChannel<aod::McParticles>(mcparticle, dauIDList);
+        if (dChannel == He4SDecay::k2body) {
+          isKinkSignal = true;
+        }
+      }
+      if (!isKinkSignal) {
         continue;
       }
+
       if (std::find(mcPartIndices.begin(), mcPartIndices.end(), mcparticle.globalIndex()) != mcPartIndices.end()) {
         continue;
       }
@@ -928,6 +953,7 @@ struct HyperkinkQa {
 
   o2::aod::ITSResponse itsResponse;
 
+  int charge = 1;
   float massMoth = 999.f;
   float massChargedDaug = 999.f;
   float massNeutralDaug = 999.f;
@@ -941,6 +967,7 @@ struct HyperkinkQa {
       itsResponse.setMCDefaultParameters();
 
       if (hypoMoth == kHypertriton) {
+        charge = 1;
         massMoth = o2::constants::physics::MassHyperTriton;
         massChargedDaug = o2::constants::physics::MassTriton;
         massNeutralDaug = o2::constants::physics::MassPi0;
@@ -949,6 +976,7 @@ struct HyperkinkQa {
         pdgDaug[kDaugNeutral] = PDG_t::kPi0;
         pidTypeDaug = o2::track::PID::Triton;
       } else if (hypoMoth == kHyperhelium4sigma) {
+        charge = 2;
         massMoth = o2::constants::physics::MassHyperHelium4Sigma;
         massChargedDaug = o2::constants::physics::MassAlpha;
         massNeutralDaug = o2::constants::physics::MassPi0;
@@ -986,8 +1014,8 @@ struct HyperkinkQa {
         hGenHyperMothCounter->GetXaxis()->SetBinLabel(3, "AntiMatter");
         hGenHyperMothCounter->GetXaxis()->SetBinLabel(4, "t + #pi^{0}");
         hGenHyperMothCounter->GetXaxis()->SetBinLabel(5, "#bar{t} + #pi^{0}");
-        hGenHyperMothCounter->GetXaxis()->SetBinLabel(6, "he3 + #pi^{-}");
-        hGenHyperMothCounter->GetXaxis()->SetBinLabel(7, "#bar{he3} + #pi^{+}");
+        hGenHyperMothCounter->GetXaxis()->SetBinLabel(6, "{}^{3}He + #pi^{-}");
+        hGenHyperMothCounter->GetXaxis()->SetBinLabel(7, "{}^{3}#bar{He} + #pi^{+}");
         hGenHyperMothCounter->GetXaxis()->SetBinLabel(8, "d + p + #pi^{-}");
         hGenHyperMothCounter->GetXaxis()->SetBinLabel(9, "#bar{d} + #bar{p} + #pi^{+}");
         hGenHyperMothCounter->GetXaxis()->SetBinLabel(10, "Others");
@@ -1043,7 +1071,7 @@ struct HyperkinkQa {
         hist->GetXaxis()->SetBinLabel(6, "TPC Ncls");
         hist->GetXaxis()->SetBinLabel(7, "TPC n#sigma");
         hist->GetXaxis()->SetBinLabel(8, "ITS hits");
-        hist->GetXaxis()->SetBinLabel(9, "has TOF)");
+        hist->GetXaxis()->SetBinLabel(9, "has TOF");
       }
 
       recoQAHist.add<TH1>("hMothIsPVContributer", "", HistType::kTH1F, {{2, 0.f, 2.f}});
@@ -1279,7 +1307,7 @@ struct HyperkinkQa {
           auto motherTrack = tracks.rawIteratorAt(mcPartIndices[mcparticle.globalIndex()]);
           bool isGoodMother = motherTrackCheck(motherTrack, hMothCounter);
           float svR = RecoDecay::sqrtSumOfSquares(svPos[0], svPos[1]);
-          float diffpt = mcparticle.pt() - 2 * motherTrack.pt();
+          float diffpt = mcparticle.pt() - charge * motherTrack.pt();
 
           recoQAHist.fill(HIST("h2TrueMotherDiffPtVsTrueSVR"), svR, diffpt);
           recoQAHist.fill(HIST("h2TrueMotherDiffEtaVsTrueSVR"), svR, mcparticle.eta() - motherTrack.eta());

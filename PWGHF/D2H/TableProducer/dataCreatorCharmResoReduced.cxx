@@ -350,7 +350,8 @@ struct HfDataCreatorCharmResoReduced {
         doprocessDstarV0MC || doprocessDstarTrackMC || doprocessDstarV0AndTrackMC || doprocessDstarV0MCWithMl || doprocessDstarTrackMCWithMl || doprocessDstarV0AndTrackMCWithMl ||
         doprocessDplusV0MC || doprocessDplusTrackMC || doprocessDplusV0AndTrackMC || doprocessDplusV0MCWithMl || doprocessDplusTrackMCWithMl || doprocessDplusV0AndTrackMCWithMl) {
       // MC Rec
-      registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1D, {{31, -15.5, 15.5}}});
+      int nChannels = hf_decay::hf_cand_reso::DecayChannelMain::NChannelsMain;
+      registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1D, {{2 * nChannels + 1, -(nChannels + 0.5), nChannels + 0.5}}});
       registry.add("hMCRecDebug", "Debug of MC Reco", {HistType::kTH1D, {{551, -0.5, 550.5}}});
       registry.add("hMCRecOrigin", "Origin of Matched particles", {HistType::kTH1D, {{3, -0.5, 2.5}}});
       registry.add("hMCRecMassGen", "Generated inv. mass of resoncances", {HistType::kTH1D, {{2000, 1.8, 3.8}}});
@@ -645,24 +646,24 @@ struct HfDataCreatorCharmResoReduced {
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prongPiId()));
       // Check if D* is matched
       flagCharmBach = candCharmBach.flagMcMatchRec();
-      if (std::abs(flagCharmBach) > 0) {
+      if (flagCharmBach != 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::DstarMatched);
         origin = candCharmBach.originMcRec();
       }
       // Check if D0 is matched
       flagCharmBachInterm = candCharmBach.flagMcMatchRecD0();
-      if (std::abs(flagCharmBachInterm) > 0) {
+      if (flagCharmBachInterm != 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::D0Matched);
       }
       // Check if V0 is matched
       vecDaughtersReso.push_back(tracks.rawIteratorAt(bachelorV0.posTrackId()));
       vecDaughtersReso.push_back(tracks.rawIteratorAt(bachelorV0.negTrackId()));
       flagV0 = getMatchingFlagV0(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]});
-      if (std::abs(flagV0) > 0) {
+      if (flagV0 != 0) {
         SETBIT(debugMcRec, std::abs(flagV0));
       }
       // If both D* and K0s are matched, try to match resonance
-      if (std::abs(flagCharmBach) > 0 && flagV0 == hf_decay::hf_cand_reso::PartialMatchMc::K0Matched) {
+      if (flagCharmBach != 0 && flagV0 == hf_decay::hf_cand_reso::PartialMatchMc::K0Matched) {
         std::array<int, 5> pdgCodesDaughters = {+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus};
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]};
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarK0s) {
@@ -672,7 +673,7 @@ struct HfDataCreatorCharmResoReduced {
             break;
           }
         }
-      } else if (std::abs(flagCharmBachInterm) > 0 && flagV0 == hf_decay::hf_cand_reso::PartialMatchMc::K0Matched) {
+      } else if (flagCharmBachInterm != 0 && flagV0 == hf_decay::hf_cand_reso::PartialMatchMc::K0Matched) {
         std::array<int, 4> pdgCodesDaughters = {+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus};
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[3], vecDaughtersReso[4]};
         // Peaking background of D0K0s <- Ds* with spurious soft pion
@@ -703,7 +704,7 @@ struct HfDataCreatorCharmResoReduced {
       // Check if D+ is matched
       flagCharmBach = candCharmBach.flagMcMatchRec();
       flagCharmBachInterm = candCharmBach.flagMcDecayChanRec();
-      if (std::abs(flagCharmBach) > 0) {
+      if (flagCharmBach != 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::DplusMatched);
         origin = candCharmBach.originMcRec();
       }
@@ -711,7 +712,7 @@ struct HfDataCreatorCharmResoReduced {
       vecDaughtersReso.push_back(tracks.rawIteratorAt(bachelorV0.posTrackId()));
       vecDaughtersReso.push_back(tracks.rawIteratorAt(bachelorV0.negTrackId()));
       flagV0 = getMatchingFlagV0(particlesMc, std::array{vecDaughtersReso[3], vecDaughtersReso[4]});
-      if (std::abs(flagV0) > 0) {
+      if (flagV0 != 0) {
         SETBIT(debugMcRec, std::abs(flagV0));
       }
       // If both D+ and K0s are matched, try to match resonance
@@ -755,7 +756,7 @@ struct HfDataCreatorCharmResoReduced {
       // Check if D0 is matched
       flagCharmBach = candCharmBach.flagMcMatchRec();
       flagCharmBachInterm = candCharmBach.flagMcDecayChanRec();
-      if (std::abs(flagCharmBach) > 0) {
+      if (flagCharmBach != 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::D0Matched);
         origin = candCharmBach.originMcRec();
       }
@@ -763,7 +764,7 @@ struct HfDataCreatorCharmResoReduced {
       vecDaughtersReso.push_back(tracks.rawIteratorAt(bachelorV0.posTrackId()));
       vecDaughtersReso.push_back(tracks.rawIteratorAt(bachelorV0.negTrackId()));
       flagV0 = getMatchingFlagV0(particlesMc, std::array{vecDaughtersReso[2], vecDaughtersReso[3]});
-      if (std::abs(flagV0) > 0) {
+      if (flagV0 != 0) {
         SETBIT(debugMcRec, std::abs(flagV0));
       }
       // No physical channel expected in D0 K0s
@@ -797,7 +798,7 @@ struct HfDataCreatorCharmResoReduced {
       registry.fill(HIST("hMCRecOrigin"), origin);
       registry.fill(HIST("hMCRecMassGen"), invMassGen);
     }
-    if (std::abs(flagCharmBach) > 0) {
+    if (flagCharmBach != 0) {
       registry.fill(HIST("hMCRecCharmDau"), flagCharmBach);
     }
   }
@@ -843,22 +844,22 @@ struct HfDataCreatorCharmResoReduced {
       vecDaughtersReso.push_back(tracks.rawIteratorAt(candCharmBach.prongPiId()));
       // Check if D* is matched
       flagCharmBach = candCharmBach.flagMcMatchRec();
-      if (std::abs(flagCharmBach) > 0) {
+      if (flagCharmBach != 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::DstarMatched);
         origin = candCharmBach.originMcRec();
       }
       // Check if D0 is matched
       flagCharmBachInterm = candCharmBach.flagMcMatchRecD0();
-      if (std::abs(flagCharmBachInterm) > 0) {
+      if (flagCharmBachInterm != 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::D0Matched);
       }
       // Check if Track is matched
       flagTrack = getMatchingFlagTrack(bachelorTrack);
-      if (std::abs(flagTrack) > 0) {
+      if (flagTrack != 0) {
         SETBIT(debugMcRec, flagTrack);
       }
       // If both D* and Track are matched, try to match resonance
-      if (std::abs(flagCharmBach) > 0 && flagTrack == hf_decay::hf_cand_reso::PartialMatchMc::PionMatched) {
+      if (flagCharmBach != 0 && flagTrack == hf_decay::hf_cand_reso::PartialMatchMc::PionMatched) {
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], bachelorTrack};
         auto pdgCodesDaughters = std::array{+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus};
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarPi) {
@@ -887,13 +888,13 @@ struct HfDataCreatorCharmResoReduced {
       // Check if D+ is matched
       flagCharmBach = candCharmBach.flagMcMatchRec();
       flagCharmBachInterm = candCharmBach.flagMcDecayChanRec();
-      if (std::abs(flagCharmBach) > 0) {
+      if (flagCharmBach != 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::DplusMatched);
         origin = candCharmBach.originMcRec();
       }
       // Check if Track is matched
       flagTrack = getMatchingFlagTrack(bachelorTrack);
-      if (std::abs(flagTrack) > 0) {
+      if (flagTrack != 0) {
         SETBIT(debugMcRec, flagTrack);
       }
       // If both D+ and Track are matched, try to match resonance
@@ -926,11 +927,14 @@ struct HfDataCreatorCharmResoReduced {
       // Check if D0 is matched
       flagCharmBach = candCharmBach.flagMcMatchRec();
       flagCharmBachInterm = candCharmBach.flagMcDecayChanRec();
-      if (std::abs(flagCharmBach) > 0) {
+      if (flagCharmBach != 0) {
         SETBIT(debugMcRec, hf_decay::hf_cand_reso::PartialMatchMc::D0Matched);
         origin = candCharmBach.originMcRec();
       }
       flagTrack = getMatchingFlagTrack(bachelorTrack);
+      if (flagTrack != 0) {
+        SETBIT(debugMcRec, flagTrack);
+      }
       if (hf_decay::hf_cand_2prong::daughtersD0Main.contains(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach))) && flagTrack == hf_decay::hf_cand_reso::PartialMatchMc::PionMatched) {
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], bachelorTrack};
         auto pdgCodesDzeroDaughters = hf_decay::hf_cand_2prong::daughtersD0Main.at(static_cast<hf_decay::hf_cand_2prong::DecayChannelMain>(std::abs(flagCharmBach)));
@@ -971,7 +975,7 @@ struct HfDataCreatorCharmResoReduced {
       registry.fill(HIST("hMCRecOrigin"), origin);
       registry.fill(HIST("hMCRecMassGen"), invMassGen);
     }
-    if (std::abs(flagCharmBach) > 0) {
+    if (flagCharmBach != 0) {
       registry.fill(HIST("hMCRecCharmDau"), flagCharmBach);
     }
   } // fillMcRecoInfoDTrack
