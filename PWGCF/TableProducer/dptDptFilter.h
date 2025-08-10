@@ -16,33 +16,36 @@
 #ifndef PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 #define PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 
-#include <CCDB/BasicCCDBManager.h>
-#include <TPDGCode.h>
-#include <TMCProcess.h>
-#include <TF1.h>
-#include <TList.h>
-#include <vector>
-#include <bitset>
-#include <string>
-#include <iomanip>
-#include <fstream>
-#include <locale>
-#include <sstream>
-#include <ranges>
-#include <functional>
-#include <map>
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
 
-#include "ReconstructionDataFormats/PID.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "ReconstructionDataFormats/PID.h"
+#include <CCDB/BasicCCDBManager.h>
+
+#include <TF1.h>
+#include <TList.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
+
+#include <bitset>
+#include <fstream>
+#include <functional>
+#include <iomanip>
+#include <locale>
+#include <map>
+#include <ranges>
+#include <sstream>
+#include <string>
+#include <vector>
 
 namespace o2
 {

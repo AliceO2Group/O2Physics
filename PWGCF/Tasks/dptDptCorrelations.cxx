@@ -13,7 +13,26 @@
 /// \brief implements two-particle correlations base data collection
 /// \author victor.gonzalez.sebastian@gmail.com
 
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/Core/PairCuts.h"
+#include "PWGCF/DataModel/DptDptFiltered.h"
+#include "PWGCF/TableProducer/dptDptFilter.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TableHelper.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
@@ -24,28 +43,12 @@
 #include <TProfile3D.h>
 #include <TROOT.h>
 #include <TVector2.h>
+
+#include <cmath>
 #include <cstdio>
+#include <ctime>
 #include <string>
 #include <vector>
-#include <cmath>
-#include <ctime>
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TableHelper.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/DataModel/DptDptFiltered.h"
-#include "PWGCF/TableProducer/dptDptFilter.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -279,15 +282,17 @@ struct DptDptCorrelations {
       photon = p1+p2;
       photon.M()*/
 
-      float tantheta1 = 1e10;
+      constexpr float kLARGETANTHETA = 1e10;
+      constexpr float kVERYSMALLETA = 1e-10;
+      float tantheta1 = kLARGETANTHETA;
 
-      if (track1.eta() < -1e-10 || track1.eta() > 1e-10) {
+      if (track1.eta() < -kVERYSMALLETA || track1.eta() > kVERYSMALLETA) {
         float expTmp = std::exp(-track1.eta());
         tantheta1 = 2.0 * expTmp / (1.0 - expTmp * expTmp);
       }
 
-      float tantheta2 = 1e10;
-      if (track2.eta() < -1e-10 || track2.eta() > 1e-10) {
+      float tantheta2 = kLARGETANTHETA;
+      if (track2.eta() < -kVERYSMALLETA || track2.eta() > kVERYSMALLETA) {
         float expTmp = std::exp(-track2.eta());
         tantheta2 = 2.0 * expTmp / (1.0 - expTmp * expTmp);
       }

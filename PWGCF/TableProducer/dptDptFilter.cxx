@@ -13,40 +13,43 @@
 /// \brief Filters collisions and tracks according to selection criteria
 /// \author victor.gonzalez.sebastian@gmail.com
 
-#include <cmath>
-#include <algorithm>
-#include <string>
-#include <vector>
+#include "PWGCF/TableProducer/dptDptFilter.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/DataModel/DptDptFiltered.h"
+
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "PWGCF/DataModel/DptDptFiltered.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
-#include <TROOT.h>
-#include <TPDGCode.h>
-#include <TParameter.h>
-#include <TList.h>
+#include "Framework/runDataProcessing.h"
+
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <TList.h>
+#include <TPDGCode.h>
+#include <TParameter.h>
 #include <TProfile3D.h>
+#include <TROOT.h>
 
-#include "PWGCF/TableProducer/dptDptFilter.h"
+#include <algorithm>
+#include <cmath>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
