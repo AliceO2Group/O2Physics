@@ -13,7 +13,26 @@
 /// \brief implements two-particle correlations base data collection
 /// \author victor.gonzalez.sebastian@gmail.com
 
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/Core/PairCuts.h"
+#include "PWGCF/DataModel/DptDptFiltered.h"
+#include "PWGCF/TableProducer/dptDptFilter.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TableHelper.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
@@ -24,28 +43,12 @@
 #include <TProfile3D.h>
 #include <TROOT.h>
 #include <TVector2.h>
+
+#include <cmath>
 #include <cstdio>
+#include <ctime>
 #include <string>
 #include <vector>
-#include <cmath>
-#include <ctime>
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TableHelper.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "PWGCF/Core/PairCuts.h"
-#include "PWGCF/DataModel/DptDptFiltered.h"
-#include "PWGCF/TableProducer/dptDptFilter.h"
 
 using namespace o2;
 using namespace o2::framework;
