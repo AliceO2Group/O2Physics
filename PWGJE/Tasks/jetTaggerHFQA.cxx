@@ -151,6 +151,7 @@ struct JetTaggerHFQA {
     AxisSpec axisMass = {binMass, "#it{m}_{SV}"};
     AxisSpec axisSigmaLxy = {binSigmaLxy, "#sigma_{L_{XY}} [cm]"};
     AxisSpec axisSigmaLxyz = {binSigmaLxyz, "#sigma_{L_{XYZ}} [cm]"};
+    AxisSpec axisFracSecPt = {100, 0, 1, "#frac{#Sigma#it{p}_{T}^{secondary track}}{#it{p}_{T, jet}}"};
 
     if (doprocessTracksDca) {
       if (fillIPxy) {
@@ -166,9 +167,13 @@ struct JetTaggerHFQA {
         registry.add("h_impact_parameter_xyz_significance", "", {HistType::kTH1F, {{axisImpactParameterXYZSignificance}}});
       }
     }
-    if (doprocessSecondaryContamination) {
-      registry.add("h2_impact_parameter_xy_physical_primary_flavour", "", {HistType::kTH2F, {{axisImpactParameterXY}, {axisJetFlavour}}});
-      registry.add("h2_impact_parameter_xy_secondary_flavour", "", {HistType::kTH2F, {{axisImpactParameterXY}, {axisJetFlavour}}});
+    if (doprocessTracksInJetsData) {
+      registry.add("h3_track_pt_impact_parameter_xy", "", {HistType::kTH3F, {{axisJetPt}, {axisTrackPt}, {axisImpactParameterXY}}});
+    }
+    if (doprocessSecondaryContaminationMCD) {
+      registry.add("hn_jet_pt_track_pt_impact_parameter_xy_physical_primary_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisTrackPt}, {axisImpactParameterXY}, {axisJetFlavour}}});
+      registry.add("hn_jet_pt_track_pt_impact_parameter_xy_secondary_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisTrackPt}, {axisImpactParameterXY}, {axisJetFlavour}}});
+      registry.add("h3_jet_pt_frac_secondary_pt_per_jet_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisFracSecPt}, {axisJetFlavour}}});
     }
     if (doprocessValFlavourDefMCD) {
       registry.add("h2_flavour_dist_quark_flavour_dist_hadron", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
@@ -1099,7 +1104,27 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processTracksDca, "Fill inclusive tracks' imformation for data", false);
 
-  void processSecondaryContamination(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, weightMCD> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& /*mcpjets*/, JetTagTracksMCD const& tracks, aod::JetParticles const& /*particles*/)
+  void processTracksInJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData> const& jets)
+  {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    for (auto const& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+        continue;
+      }
+      for (auto const& track : jet.template tracks_as<JetTagTracksMCD>()) {
+        float varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
+        registry.fill(HIST("h2_track_pt_impact_parameter_xy"), track.pt(), varImpXY);
+      }
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processTracksInJetsData, "Fill QA comtamination of secondary-track inside jets for data jets", false);
+
+  void processSecondaryContaminationMCD(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, weightMCD> const& mcdjets, JetTagTracksMCD const& /*tracks*/, aod::JetParticles const& /*particles*/)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -1111,27 +1136,32 @@ struct JetTaggerHFQA {
       if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
         continue;
       }
-      if (!mcdjet.has_matchedJetGeo()) {
-        continue;
-      }
       float pTHat = 10. / (std::pow(mcdjet.eventWeight(), 1.0 / pTHatExponent));
       if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
         continue;
       }
       int jetflavour = mcdjet.origin();
+      float secondaryPt = 0;
+      float totalJetPt  = 0;
       for (auto const& track : mcdjet.template tracks_as<JetTagTracksMCD>()) {
         float varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
         if (!track.has_mcParticle()) continue;
         auto mcParticle = track.mcParticle();
+        totalJetPt += track.pt();
         if (mcParticle.isPhysicalPrimary()) {
-          registry.fill(HIST("h2_impact_parameter_xy_physical_primary_flavour"), varImpXY, jetflavour, mcdjet.eventWeight());
+          registry.fill(HIST("hn_jet_pt_track_pt_impact_parameter_xy_physical_primary_flavour"), mcdjet.pt(), track.pt(), varImpXY, jetflavour, mcdjet.eventWeight());
         } else {
-          registry.fill(HIST("h2_impact_parameter_xy_secondary_flavour"), varImpXY, jetflavour, mcdjet.eventWeight());
+          registry.fill(HIST("hn_jet_pt_track_pt_impact_parameter_xy_secondary_flavour"), mcdjet.pt(), track.pt(), varImpXY, jetflavour, mcdjet.eventWeight());
+          secondaryPt += track.pt();
         }
+      }
+      if (totalJetPt > 0) {
+        float fracSecondary = secondaryPt / totalJetPt;
+        registry.fill(HIST("h3_jet_pt_frac_secondary_pt_per_jet_flavour"), mcdjet.pt(), fracSecondary, jetflavour, mcdjet.eventWeight());
       }
     }
   }
-  PROCESS_SWITCH(JetTaggerHFQA, processSecondaryContamination, "Fill QA comtamination of secondary-track inside jets", false);
+  PROCESS_SWITCH(JetTaggerHFQA, processSecondaryContaminationMCD, "Fill QA comtamination of secondary-track inside jets for mcd jets", false);
 
   void processValFlavourDefMCD(soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, weightMCD> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& /*mcpjets*/, JetTagTracksMCD const& tracks, aod::JetParticles const& particles)
   {
