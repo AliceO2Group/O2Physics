@@ -282,15 +282,17 @@ struct DptDptCorrelations {
       photon = p1+p2;
       photon.M()*/
 
-      float tantheta1 = 1e10;
+      constexpr float kLARGETANTHETA = 1e10;
+      constexpr float kVERYSMALLETA = 1e-10;
+      float tantheta1 = kLARGETANTHETA;
 
-      if (track1.eta() < -1e-10 || track1.eta() > 1e-10) {
+      if (track1.eta() < -kVERYSMALLETA || track1.eta() > kVERYSMALLETA) {
         float expTmp = std::exp(-track1.eta());
         tantheta1 = 2.0 * expTmp / (1.0 - expTmp * expTmp);
       }
 
-      float tantheta2 = 1e10;
-      if (track2.eta() < -1e-10 || track2.eta() > 1e-10) {
+      float tantheta2 = kLARGETANTHETA;
+      if (track2.eta() < -kVERYSMALLETA || track2.eta() > kVERYSMALLETA) {
         float expTmp = std::exp(-track2.eta());
         tantheta2 = 2.0 * expTmp / (1.0 - expTmp * expTmp);
       }

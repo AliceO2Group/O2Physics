@@ -744,41 +744,41 @@ struct PidDataCollectingEngine {
     if constexpr (kindOfData == kReco) {
       /* PID histograms */
       std::vector<std::string> whenname{"Before", "After"};
-      constexpr char whenprefix[kNoOfSteps]{'B', 'A'};
+      constexpr char kWhenPrefix[kNoOfSteps]{'B', 'A'};
       std::vector<std::string> whentitle{"before", ""};
       for (uint ix = 0; ix < kNoOfSteps; ++ix) {
         fhTPCdEdxSignalVsP[ix] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
-                                              HNAMESTRING("tpcSignalVsP%c", whenprefix[ix]),
+                                              HNAMESTRING("tpcSignalVsP%c", kWhenPrefix[ix]),
                                               HTITLESTRING("TPC dE/dx signal %s", whentitle[ix].c_str()), kTH2F, {pidPAxis, dEdxAxis});
         fhTOFSignalVsP[ix] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
-                                          HNAMESTRING("tofSignalVsP%c", whenprefix[ix]),
+                                          HNAMESTRING("tofSignalVsP%c", kWhenPrefix[ix]),
                                           HTITLESTRING("TOF signal %s", whentitle[ix].c_str()),
                                           kTH2F, {pidPAxis, {200, 0.0, 1.1, "#beta"}});
         fhPvsTOFSqMass[ix] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
-                                          HNAMESTRING("tofPvsMassSq%c", whenprefix[ix]),
+                                          HNAMESTRING("tofPvsMassSq%c", kWhenPrefix[ix]),
                                           HTITLESTRING("Momentum versus #it{m}^{2} %s", whentitle[ix].c_str()),
                                           kTH2F, {{140, 0.0, 1.4, "#it{m}^{2} ((GeV/c^{2})^{2})"}, pidPAxis});
         for (uint isp = 0; isp < nmainsp; ++isp) {
           fhTPCdEdxSignalDiffVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
-                                                         HNAMESTRING("tpcSignalDiffVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
+                                                         HNAMESTRING("tpcSignalDiffVsP%c_%s", kWhenPrefix[ix], mainspnames[isp].c_str()),
                                                          HTITLESTRING("TPC dE/dx to the %s line %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
                                                          kTH2F, {pidPAxis, {400, -200.0, 200.0, FORMATSTRING("dE/dx - <dE/dx>_{%s}", mainsptitles[isp].c_str())}});
           fhTOFSignalDiffVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
-                                                     HNAMESTRING("tofSignalDiffVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
+                                                     HNAMESTRING("tofSignalDiffVsP%c_%s", kWhenPrefix[ix], mainspnames[isp].c_str()),
                                                      HTITLESTRING("#Delta^{TOF_{%s}} %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
                                                      kTH2F, {pidPAxis, {200, -1000.0, 1000.0, FORMATSTRING("t-t_{ev}-t_{exp_{%s}} (ps)", mainsptitles[isp].c_str())}});
           fhTPCTOFSigmaVsP[ix][isp] = ADDHISTOGRAM(TH3, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
-                                                   HNAMESTRING("toftpcNSigmasVsP%c_%s", whenprefix[ix], mainspnames[isp].c_str()),
+                                                   HNAMESTRING("toftpcNSigmasVsP%c_%s", kWhenPrefix[ix], mainspnames[isp].c_str()),
                                                    HTITLESTRING("n#sigma to the %s line %s", mainsptitles[isp].c_str(), whentitle[ix].c_str()),
                                                    kTH3F, {pidPAxis, {noOfNSigmaBins, minNSigma, maxNSigma, FORMATSTRING("n#sigma_{TPC}^{%s}", mainsptitles[isp].c_str())}, {120, -6.0, 6.0, FORMATSTRING("n#sigma_{TOF}^{%s}", mainsptitles[isp].c_str())}});
         }
         for (uint isp = 0; isp < nallmainsp; ++isp) {
           fhTPCnSigmasVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
-                                                  HNAMESTRING("tpcNSigmasVsP%c_%s", whenprefix[ix], allmainspnames[isp].c_str()),
+                                                  HNAMESTRING("tpcNSigmasVsP%c_%s", kWhenPrefix[ix], allmainspnames[isp].c_str()),
                                                   HTITLESTRING("TPC n#sigma to the %s line %s", allmainsptitles[isp].c_str(), whentitle[ix].c_str()),
                                                   kTH2F, {pidPAxis, {noOfNSigmaBins, minNSigma, maxNSigma, FORMATSTRING("n#sigma_{TPC}^{%s}", allmainsptitles[isp].c_str())}});
           fhTOFnSigmasVsP[ix][isp] = ADDHISTOGRAM(TH2, DIRECTORYSTRING("%s/%s/%s", dirname, "PID", whenname[ix].c_str()),
-                                                  HNAMESTRING("tofNSigmasVsP%c_%s", whenprefix[ix], allmainspnames[isp].c_str()),
+                                                  HNAMESTRING("tofNSigmasVsP%c_%s", kWhenPrefix[ix], allmainspnames[isp].c_str()),
                                                   HTITLESTRING("TOF n#sigma to the %s line %s", allmainsptitles[isp].c_str(), whentitle[ix].c_str()),
                                                   kTH2F, {pidPAxis, {noOfNSigmaBins, minNSigma, maxNSigma, FORMATSTRING("n#sigma_{TOF}^{%s}", allmainsptitles[isp].c_str())}});
         }
