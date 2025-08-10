@@ -830,11 +830,6 @@ struct DileptonHadronMPC {
           }
         }
       }
-
-      // possibleIds1.clear();
-      // possibleIds1.shrink_to_fit();
-      // possibleIds2.clear();
-      // possibleIds2.shrink_to_fit();
     }
     return true;
   }
@@ -1186,6 +1181,8 @@ struct DileptonHadronMPC {
 
       auto collisionIds_in_mixing_pool = emh_pos->GetCollisionIdsFromEventPool(key_bin); // pos/neg does not matter.
 
+      // LOGF(info, "selected_posTracks_in_this_event.size() = %d, selected_negTracks_in_this_event.size() = %d, collisionIds_in_mixing_pool.size() = %d", selected_posTracks_in_this_event.size(), selected_negTracks_in_this_event.size(), collisionIds_in_mixing_pool.size());
+
       // perform event mixing, only if at least 1 dilepton exists.
 
       for (const auto& mix_dfId_collisionId : collisionIds_in_mixing_pool) {
@@ -1204,28 +1201,29 @@ struct DileptonHadronMPC {
 
         auto posTracks_from_event_pool = emh_pos->GetTracksPerCollision(mix_dfId_collisionId);
         auto negTracks_from_event_pool = emh_neg->GetTracksPerCollision(mix_dfId_collisionId);
+        // LOGF(info, "posTracks_from_event_pool.size() = %d, negTracks_from_event_pool.size() = %d", posTracks_from_event_pool.size(), negTracks_from_event_pool.size());
 
         for (const auto& pos : selected_posTracks_in_this_event) { // ULS mix
           for (const auto& neg : negTracks_from_event_pool) {
-            fillDilepton<1>(collision, pos, neg, cut, tracks);
+            fillDilepton<1>(collision, pos, neg, cut, nullptr);
           }
         }
 
         for (const auto& neg : selected_negTracks_in_this_event) { // ULS mix
           for (const auto& pos : posTracks_from_event_pool) {
-            fillDilepton<1>(collision, neg, pos, cut, tracks);
+            fillDilepton<1>(collision, neg, pos, cut, nullptr);
           }
         }
 
         for (const auto& pos1 : selected_posTracks_in_this_event) { // LS++ mix
           for (const auto& pos2 : posTracks_from_event_pool) {
-            fillDilepton<1>(collision, pos1, pos2, cut, tracks);
+            fillDilepton<1>(collision, pos1, pos2, cut, nullptr);
           }
         }
 
         for (const auto& neg1 : selected_negTracks_in_this_event) { // LS-- mix
           for (const auto& neg2 : negTracks_from_event_pool) {
-            fillDilepton<1>(collision, neg1, neg2, cut, tracks);
+            fillDilepton<1>(collision, neg1, neg2, cut, nullptr);
           }
         }
       } // end of loop over mixed event pool for lepton-lepton
@@ -1233,6 +1231,7 @@ struct DileptonHadronMPC {
       if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonHadronAnalysisType::kAzimuthalCorrelation)) {
         auto selected_refTracks_in_this_event = emh_ref->GetTracksPerCollision(key_df_collision);
         auto collisionIds_in_mixing_pool_hadron = emh_ref->GetCollisionIdsFromEventPool(key_bin);
+        // LOGF(info, "selected_refTracks_in_this_event.size() = %d, collisionIds_in_mixing_pool_hadron.size() = %d", selected_refTracks_in_this_event.size(), collisionIds_in_mixing_pool_hadron.size());
 
         for (const auto& mix_dfId_collisionId : collisionIds_in_mixing_pool_hadron) {
           int mix_dfId = mix_dfId_collisionId.first;
@@ -1249,6 +1248,7 @@ struct DileptonHadronMPC {
           }
 
           auto refTracks_from_event_pool = emh_ref->GetTracksPerCollision(mix_dfId_collisionId);
+          // LOGF(info, "refTracks_from_event_pool.size() = %d", refTracks_from_event_pool.size());
           for (const auto& ref1 : selected_refTracks_in_this_event) { // ref-ref mix
             for (const auto& ref2 : refTracks_from_event_pool) {
               fillHadronHadron<1>(collision, ref1, ref2, nullptr, nullptr);
