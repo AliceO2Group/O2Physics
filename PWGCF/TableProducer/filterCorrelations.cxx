@@ -64,13 +64,6 @@ struct FilterCF {
     kPIDProton = BIT(1)
   };
 
-  enum MultiplicityEstimators : uint8_t {
-    kCentFT0C = BIT(0),
-    kMultFV0A = BIT(1),
-    kMultNTracksPV = BIT(2),
-    kMultNTracksGlobal = BIT(3),
-  };
-
   // Configuration
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 7.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgCutPt, float, 0.5f, "Minimal pT for tracks")
@@ -271,13 +264,13 @@ struct FilterCF {
 
     if constexpr (std::experimental::is_detected<HasMultTables, C1>::value) {
       multiplicities.clear();
-      if (cfgEstimatorBitMask & kCentFT0C)
+      if (cfgEstimatorBitMask & aod::cfmultset::CentFT0C)
         multiplicities.push_back(collision.centFT0C());
-      if (cfgEstimatorBitMask & kMultFV0A)
+      if (cfgEstimatorBitMask & aod::cfmultset::MultFV0A)
         multiplicities.push_back(collision.multFV0A());
-      if (cfgEstimatorBitMask & kMultNTracksPV)
+      if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksPV)
         multiplicities.push_back(collision.multNTracksPV());
-      if (cfgEstimatorBitMask & kMultNTracksGlobal)
+      if (cfgEstimatorBitMask & aod::cfmultset::MultNTracksGlobal)
         multiplicities.push_back(collision.multNTracksGlobal());
       outputMultSets(multiplicities);
     }
