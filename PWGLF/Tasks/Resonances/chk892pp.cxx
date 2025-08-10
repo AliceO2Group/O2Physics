@@ -368,6 +368,7 @@ struct Chk892pp {
     histos.add("QA/before/KstarRapidity", "Rapidity distribution of chK(892)", HistType::kTH1D, {yAxis});
     histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso});
     histos.add("hInvmass_Kstar_Mix", "Invariant mass of unlike-sign chK(892) from mixed event", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso});
+    histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s});
 
     // Mass QA (quick check)
     histos.add("QA/before/kstarinvmass", "Invariant mass of unlike-sign chK(892)", HistType::kTH1D, {invMassAxisReso});
