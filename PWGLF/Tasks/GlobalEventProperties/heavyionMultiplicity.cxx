@@ -164,6 +164,7 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
   Configurable<bool> isApplyCentNGlobal{"isApplyCentNGlobal", false, "Centrality based on global tracks"};
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
+  Configurable<bool> isApplySplitRecCol{"isApplySplitRecCol", false, "Split MC reco collisions"};
 
   void init(InitContext const&)
   {
@@ -434,6 +435,11 @@ struct HeavyionMultiplicity {
 
   void processMonteCarlo(CollisionMCTrueTable::iterator const&, CollisionMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
+
+    if (isApplySplitRecCol && (RecCols.size() == 0 || RecCols.size() > 1)) {
+      return;
+    }
+
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
         continue;
