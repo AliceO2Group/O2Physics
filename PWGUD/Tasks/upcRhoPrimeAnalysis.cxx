@@ -245,7 +245,6 @@ struct upcRhoPrimeAnalysis {
     // Loop over all tracks in the event
     for (const auto& track : tracks) {
       registry.fill(HIST("Tracks/RejectionReasons"), 0); // Count all tracks
-      nTotalTracks++;
 
       // Track selection criteria applied in sequence:
       if (useOnlyPVtracks && !track.isPVContributor()) {
@@ -314,7 +313,6 @@ struct upcRhoPrimeAnalysis {
 
       // Track passed all selection criteria
       registry.fill(HIST("Tracks/RejectionReasons"), 11);
-      nGoodTracks++;
 
       if (track.sign() > 0 && posPions.size() < 2) {
         posPions.push_back(track);
