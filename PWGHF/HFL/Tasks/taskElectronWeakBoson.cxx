@@ -126,7 +126,7 @@ struct HfTaskElectronWeakBoson {
   Configurable<int> chiSqNdfMax{"chiSqNdfMax", 10, "Chi2 Max for mass reco by KF particle"};
 
   // Centrality estimator configuration
-  Configurable<int> centralityEstimator{"centralityEstimator", 2, "Centrality estimator (0=FT0A, 1=FT0C, 2=FT0M, 3=FV0A, 4=NTracksPV)"};
+  Configurable<int> centralityEstimator{"centralityEstimator", CentralityEstimator::FT0M, "Centrality estimator"};
   Configurable<bool> enableCentralityAnalysis{"enableCentralityAnalysis", true, "Enable centrality-dependent analysis"};
   Configurable<float> centralityMin{"centralityMin", -1, "minimum cut on centrality selection"};
   Configurable<float> centralityMax{"centralityMax", 101, "maximum cut on centrality selection"};
@@ -196,6 +196,10 @@ struct HfTaskElectronWeakBoson {
     if (cfgSkimmedProcessing) {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
+    // check centrality
+    if (centralityEstimator < CentralityEstimator::FT0A || centralityEstimator > CentralityEstimator::FV0A) {
+      LOGF(fatal, "Invalid centrality estimator: %d", static_cast<int>(centralityEstimator.value));
+    }
 
     // add configurable for CCDB path
     zorro.setBaseCCDBPath(cfgCCDBPath.value);
@@ -234,7 +238,7 @@ struct HfTaskElectronWeakBoson {
     registry.add("hZvtx", "Z vertex", kTH1D, {axisZvtx});
     registry.add("hEventCounterInit", "hEventCounterInit", kTH1D, {axisCounter});
     registry.add("hEventCounter", "hEventCounter", kTH1D, {axisCounter});
-    registry.add("hCentrality", "Centrality distribution", kTH1F, {axisCentrality});
+    registry.add("hCentrality", "Centrality distribution", kTH1D, {axisCentrality});
     registry.add("hITSchi2", "ITS #chi^{2}", kTH1F, {axisChi2});
     registry.add("hTPCchi2", "TPC #chi^{2}", kTH1F, {axisChi2});
     registry.add("hTPCnCls", "TPC NCls", kTH1F, {axisCluster});
@@ -267,14 +271,6 @@ struct HfTaskElectronWeakBoson {
 
     // hisotgram for EMCal trigger
     registry.add("hEMCalTrigger", "EMCal trigger", kTH1D, {axisTrigger});
-  }
-
-  // Centrality estimation function
-  template <typename CollType>
-  float getCentrality(const CollType& collision)
-  {
-    // Use PWGHF centrality estimation framework
-    return o2::hf_centrality::getCentralityColl(collision, centralityEstimator);
   }
 
   double getIsolatedCluster(const o2::aod::EMCALCluster& cluster,
@@ -465,7 +461,7 @@ struct HfTaskElectronWeakBoson {
 
     // Calculate centrality
     if (enableCentralityAnalysis) {
-      float centrality = getCentrality(collision);
+      float centrality = o2::hf_centrality::getCentralityColl(collision, centralityEstimator);
       // LOG(info) << centrality;
       if (centrality < centralityMin || centrality > centralityMax) {
         return;
