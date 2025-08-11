@@ -13,7 +13,7 @@
 /// \author daiki.sekihata@cern.ch
 
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
+#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
@@ -44,6 +44,7 @@ using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
+using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEoIs>;
 using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
@@ -57,6 +58,7 @@ struct skimmerPrimaryTrack {
   SliceCache cache;
   Preslice<aod::TracksIU> perCol = o2::aod::track::collisionId;
   Produces<aod::EMPrimaryTracks> emprimarytracks;
+  // Produces<aod::EMPrimaryTrackEMEventIdsTMP> prmtrackeventidtmp;
 
   // Configurables
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -69,19 +71,21 @@ struct skimmerPrimaryTrack {
   // Operation and minimisation criteria
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
   Configurable<float> d_bz_input{"d_bz_input", -999, "bz field in kG, -999 is automatic"};
-  Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
-  Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
-  Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
-  Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
-  Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
-  Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
-  Configurable<float> maxchi2its{"maxchi2its", 36.0, "max. chi2/NclsITS"};
-  Configurable<float> minpt{"minpt", 0.15, "min pt for ITS-TPC track"};
-  Configurable<float> maxeta{"maxeta", 2.0, "eta acceptance"};
+
+  Configurable<float> minpt{"minpt", 0.2, "min pt for ITS-TPC track"};
+  Configurable<float> maxpt{"maxpt", 5.0, "max pt for ITS-TPC track"};
+  Configurable<float> maxeta{"maxeta", 0.8, "eta acceptance"};
   Configurable<float> dca_xy_max{"dca_xy_max", 1.0, "max DCAxy in cm"};
   Configurable<float> dca_z_max{"dca_z_max", 1.0, "max DCAz in cm"};
-  Configurable<float> dca_3d_sigma_max{"dca_3d_sigma_max", 1e+10, "max DCA 3D in sigma"};
   Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
+
+  // Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
+  // Configurable<int> mincrossedrows{"mincrossedrows", 70, "min. crossed rows"};
+  // Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
+  // Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
+  // Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
+  // Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max. chi2/NclsTPC"};
+  // Configurable<float> maxchi2its{"maxchi2its", 36.0, "max. chi2/NclsITS"};
 
   HistogramRegistry fRegistry{"output", {}, OutputObjHandlingPolicy::AnalysisObject, false, false};
 
@@ -195,29 +199,29 @@ struct skimmerPrimaryTrack {
       return false;
     }
 
-    if (track.itsChi2NCl() > maxchi2its) {
+    if (track.itsChi2NCl() > 36.f) {
       return false;
     }
-    if (track.itsNCls() < min_ncluster_its) {
+    if (track.itsNCls() < 4) {
       return false;
     }
-    if (track.itsNClsInnerBarrel() < min_ncluster_itsib) {
-      return false;
-    }
-
-    if (track.tpcChi2NCl() > maxchi2tpc) {
+    if (track.itsNClsInnerBarrel() < 1) {
       return false;
     }
 
-    if (track.tpcNClsFound() < min_ncluster_tpc) {
+    if (track.tpcChi2NCl() > 5.f) {
       return false;
     }
 
-    if (track.tpcNClsCrossedRows() < mincrossedrows) {
+    if (track.tpcNClsFound() < 0) {
       return false;
     }
 
-    if (track.tpcCrossedRowsOverFindableCls() < min_tpc_cr_findable_ratio) {
+    if (track.tpcNClsCrossedRows() < 50) {
+      return false;
+    }
+
+    if (track.tpcCrossedRowsOverFindableCls() < 0.8) {
       return false;
     }
 
@@ -238,20 +242,14 @@ struct skimmerPrimaryTrack {
     if (std::fabs(dcaXY) > dca_xy_max || std::fabs(dcaZ) > dca_z_max) {
       return false;
     }
-
-    float dca_3d = 999.f;
-    float det = trackParCov.getSigmaY2() * trackParCov.getSigmaZ2() - trackParCov.getSigmaZY() * trackParCov.getSigmaZY();
-    if (det < 0) {
-      dca_3d = 999.f;
-    } else {
-      float chi2 = (dcaXY * dcaXY * trackParCov.getSigmaZ2() + dcaZ * dcaZ * trackParCov.getSigmaY2() - 2. * dcaXY * dcaZ * trackParCov.getSigmaZY()) / det;
-      dca_3d = std::sqrt(std::fabs(chi2) / 2.);
-    }
-    if (dca_3d > dca_3d_sigma_max) {
+    if (std::fabs(dcaZ) > 3.f) {
       return false;
     }
 
-    if (std::fabs(trackParCov.getEta()) > maxeta || trackParCov.getPt() < minpt) {
+    if (std::fabs(trackParCov.getEta()) > maxeta || trackParCov.getPt() < minpt || maxpt < trackParCov.getPt()) {
+      return false;
+    }
+    if (trackParCov.getPt() > 5.f) {
       return false;
     }
 
@@ -272,26 +270,80 @@ struct skimmerPrimaryTrack {
       float dcaXY = mDcaInfoCov.getY();
       float dcaZ = mDcaInfoCov.getZ();
 
-      float pt_recalc = trackParCov.getPt();
-      float eta_recalc = trackParCov.getEta();
-      float phi_recalc = trackParCov.getPhi();
-      o2::math_utils::bringTo02Pi(phi_recalc);
+      float pt = trackParCov.getPt();
+      float eta = trackParCov.getEta();
+      float phi = trackParCov.getPhi();
+      o2::math_utils::bringTo02Pi(phi);
+      uint16_t trackBit = 0;
 
-      emprimarytracks(collision.globalIndex(), track.globalIndex(), track.sign(),
-                      pt_recalc, eta_recalc, phi_recalc, dcaXY, dcaZ,
-                      track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(), track.tpcChi2NCl(),
-                      track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap());
+      // As minimal cuts, following cuts are applied. The cut values are hardcoded on the purpose for consistent bit operation.
+      // has info on ITS and TPC
+      // a hit on ITSib any
+      // Ncls ITS >= 4
+      // chi2/Ncls ITS < 36
+      // Ncr TPC >= 50
+      // chi2/Ncls TPC < 5
+      // Ncr/Nf ratio in TPC > 0.8
+
+      if (track.itsNCls() >= 5) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsITS5);
+      }
+      if (track.itsNCls() >= 6) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsITS6);
+      }
+
+      if (track.tpcNClsCrossedRows() >= 70) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kNcrTPC70);
+      }
+      if (track.tpcNClsCrossedRows() >= 90) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kNcrTPC90);
+      }
+      if (track.tpcNClsFound() >= 50) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC50);
+      }
+      if (track.tpcNClsFound() >= 70) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC70);
+      }
+      if (track.tpcNClsFound() >= 90) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kNclsTPC90);
+      }
+      if (track.tpcChi2NCl() < 4.f) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kChi2TPC4);
+      }
+      if (track.tpcChi2NCl() < 3.f) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kChi2TPC3);
+      }
+      if (track.tpcFractionSharedCls() < 0.7) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kFracSharedTPC07);
+      }
+
+      if (std::fabs(dcaZ) < 0.5) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAz05cm);
+      }
+      if (std::fabs(dcaZ) < 0.3) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAz03cm);
+      }
+
+      if (std::fabs(dcaXY) < 0.5) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAxy05cm);
+      }
+      if (std::fabs(dcaXY) < 0.3) {
+        trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAxy03cm);
+      }
+
+      emprimarytracks(collision.globalIndex(), track.globalIndex(), track.sign() / pt, eta, phi, trackBit);
+      // prmtrackeventidtmp(collision.globalIndex());
 
       stored_trackIds.emplace_back(std::pair<int, int>{collision.globalIndex(), track.globalIndex()});
 
       if (fillQAHistogram) {
-        fRegistry.fill(HIST("Track/hPt"), pt_recalc);
-        fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / pt_recalc);
-        fRegistry.fill(HIST("Track/hEtaPhi"), phi_recalc, eta_recalc);
+        fRegistry.fill(HIST("Track/hPt"), pt);
+        fRegistry.fill(HIST("Track/hQoverPt"), track.sign() / pt);
+        fRegistry.fill(HIST("Track/hEtaPhi"), phi, eta);
         fRegistry.fill(HIST("Track/hDCAxyz"), dcaXY, dcaZ);
         fRegistry.fill(HIST("Track/hDCAxyzSigma"), dcaXY / std::sqrt(trackParCov.getSigmaY2()), dcaZ / std::sqrt(trackParCov.getSigmaZ2()));
-        fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), pt_recalc, std::sqrt(trackParCov.getSigmaY2()) * 1e+4); // convert cm to um
-        fRegistry.fill(HIST("Track/hDCAzRes_Pt"), pt_recalc, std::sqrt(trackParCov.getSigmaZ2()) * 1e+4);  // convert cm to um
+        fRegistry.fill(HIST("Track/hDCAxyRes_Pt"), pt, std::sqrt(trackParCov.getSigmaY2()) * 1e+4); // convert cm to um
+        fRegistry.fill(HIST("Track/hDCAzRes_Pt"), pt, std::sqrt(trackParCov.getSigmaZ2()) * 1e+4);  // convert cm to um
         fRegistry.fill(HIST("Track/hNclsITS"), track.itsNCls());
         fRegistry.fill(HIST("Track/hNclsTPC"), track.tpcNClsFound());
         fRegistry.fill(HIST("Track/hNcrTPC"), track.tpcNClsCrossedRows());
@@ -308,7 +360,7 @@ struct skimmerPrimaryTrack {
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   std::vector<std::pair<int, int>> stored_trackIds;
-  Filter trackFilter = o2::aod::track::itsChi2NCl < maxchi2its && o2::aod::track::tpcChi2NCl < maxchi2tpc && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
+  Filter trackFilter = o2::aod::track::itsChi2NCl < 36.f && o2::aod::track::tpcChi2NCl < 5.f && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC) == true;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
   // ---------- for data ----------

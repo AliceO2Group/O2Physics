@@ -168,12 +168,18 @@ class CutVarMinimiser:
                     self.m_cov_sets[i_row, i_col] = cov_row_col
 
             self.m_cov_sets = np.matrix(self.m_cov_sets)
-            self.m_weights = np.linalg.inv(np.linalg.cholesky(self.m_cov_sets))
+            try:
+                self.m_weights = np.linalg.inv(np.linalg.cholesky(self.m_cov_sets))
+            except np.linalg.LinAlgError:
+                return False
             self.m_weights = self.m_weights.T * self.m_weights
             m_eff_tr = self.m_eff.T
 
             self.m_covariance = (m_eff_tr * self.m_weights) * self.m_eff
-            self.m_covariance = np.linalg.inv(np.linalg.cholesky(self.m_covariance))
+            try:
+                self.m_covariance = np.linalg.inv(np.linalg.cholesky(self.m_covariance))
+            except np.linalg.LinAlgError:
+                return False
             self.m_covariance = self.m_covariance.T * self.m_covariance
 
             self.m_corr_yields = self.m_covariance * (m_eff_tr * self.m_weights) * self.m_rawy
@@ -223,6 +229,8 @@ class CutVarMinimiser:
             self.unc_frac_prompt[i_set] = unc_fp
             self.unc_frac_nonprompt[i_set] = unc_fnp
 
+        return True
+
     def get_red_chi2(self):
         """
         Helper function to get reduced chi2
@@ -270,6 +278,30 @@ class CutVarMinimiser:
         """
 
         return self.m_covariance.item(1, 0)
+
+    def get_prompt_prompt_cov(self):
+        """
+        Helper function to get covariance between prompt and prompt corrected yields
+
+        Returns
+        -----------------------------------------------------
+        - cov_p_np: float
+            covariance between prompt and prompt corrected yields
+        """
+
+        return self.m_covariance.item(0, 0)
+
+    def get_nonprompt_nonprompt_cov(self):
+        """
+        Helper function to get covariance between non-prompt and non-prompt corrected yields
+
+        Returns
+        -----------------------------------------------------
+        - cov_p_np: float
+            covariance between non-prompt and non-prompt corrected yields
+        """
+
+        return self.m_covariance.item(1, 1)
 
     def get_raw_prompt_fraction(self, effacc_p, effacc_np):
         """

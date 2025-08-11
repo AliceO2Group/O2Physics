@@ -103,6 +103,7 @@ struct HfTaskElectronWeakBoson {
 
   Configurable<float> massZMin{"massZMin", 60.0, "Minimum Z mass (GeV/c^2)"};
   Configurable<float> massZMax{"massZMax", 120.0, "Maximum Z mass (GeV/c^2)"};
+  Configurable<float> correctionPtElectron{"correctionPtElectron", 1.0, "momentum correction factor for decay electrons from Z boson"};
 
   // flag for THn
   Configurable<bool> isTHnElectron{"isTHnElectron", true, "Enables THn for electrons"};
@@ -195,6 +196,7 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisEta{20, -1.0, 1.0, "#eta"};
     const AxisSpec axisPt{nBinsPt, 0, binPtmax, "p_{T}"};
     const AxisSpec axisNsigma{100, -5, 5, "N#sigma"};
+    const AxisSpec axisDedx{150, 0, 150, "dEdx"};
     const AxisSpec axisE{nBinsE, 0, binEmax, "Energy"};
     const AxisSpec axisM02{100, 0, 1, "M02"};
     const AxisSpec axisdPhi{100, -0.5, 0.5, "dPhi"};
@@ -213,12 +215,13 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisTrigger{3, -0.5, 2.5, "Trigger status of zorro"};
     const AxisSpec axisDPhiZh{64, -o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf, "#Delta#phi(Z-h)"};
     const AxisSpec axisPtHadron{50, 0, 50, "p_{T,hadron} (GeV/c)"};
-    const AxisSpec axisZpt{150, 0, 150, "p_{T,Z} (GeV/c)"};
+    const AxisSpec axisPtZ{150, 0, 150, "p_{T,Z} (GeV/c)"};
+    const AxisSpec axisSign{2, -2, 2, "charge sign"};
 
     // create registrygrams
-    registry.add("hZvtx", "Z vertex", kTH1F, {axisZvtx});
-    registry.add("hEventCounterInit", "hEventCounterInit", kTH1F, {axisCounter});
-    registry.add("hEventCounter", "hEventCounter", kTH1F, {axisCounter});
+    registry.add("hZvtx", "Z vertex", kTH1D, {axisZvtx});
+    registry.add("hEventCounterInit", "hEventCounterInit", kTH1D, {axisCounter});
+    registry.add("hEventCounter", "hEventCounter", kTH1D, {axisCounter});
     registry.add("hITSchi2", "ITS #chi^{2}", kTH1F, {axisChi2});
     registry.add("hTPCchi2", "TPC #chi^{2}", kTH1F, {axisChi2});
     registry.add("hTPCnCls", "TPC NCls", kTH1F, {axisCluster});
@@ -244,15 +247,15 @@ struct HfTaskElectronWeakBoson {
     registry.add("hInvMassZeeUls", "invariant mass for Z ULS pair", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hKfInvMassZeeLs", "invariant mass for Z LS pair KFp", kTH2F, {{axisPt}, {axisInvMassZ}});
     registry.add("hKfInvMassZeeUls", "invariant mass for Z ULS pair KFp", kTH2F, {{axisPt}, {axisInvMassZ}});
-    registry.add("hTHnElectrons", "electron info", HistType::kTHnSparseF, {axisPt, axisNsigma, axisM02, axisEop, axisIsoEnergy, axisIsoTrack});
+    registry.add("hTHnElectrons", "electron info", HistType::kTHnSparseF, {axisPt, axisNsigma, axisM02, axisEop, axisIsoEnergy, axisIsoTrack, axisEta, axisDedx});
     registry.add("hTHnTrMatch", "Track EMC Match", HistType::kTHnSparseF, {axisPt, axisdPhi, axisdEta});
 
     // Z-hadron correlation histograms
-    registry.add("hZHadronDphi", "Z-hadron #Delta#phi correlation", kTH2F, {{axisZpt}, {axisDPhiZh}});
-    registry.add("hZptSpectrum", "Z boson p_{T} spectrum", kTH1F, {axisZpt});
+    registry.add("hZHadronDphi", "Z-hadron #Delta#phi correlation", HistType::kTHnSparseF, {axisSign, axisPtZ, axisDPhiZh});
+    registry.add("hZptSpectrum", "Z boson p_{T} spectrum", kTH2F, {{axisSign}, {axisPtZ}});
 
     // hisotgram for EMCal trigger
-    registry.add("hEMCalTrigger", "EMCal trigger", kTH1F, {axisTrigger});
+    registry.add("hEMCalTrigger", "EMCal trigger", kTH1D, {axisTrigger});
   }
 
   double getIsolatedCluster(const o2::aod::EMCALCluster& cluster,
@@ -337,8 +340,8 @@ struct HfTaskElectronWeakBoson {
       KFPTrack kfpTrackAssEle = createKFPTrackFromTrack(track);
       KFParticle kfpAssEle(kfpTrackAssEle, pdgAss);
       // reco by RecoDecay
-      auto child1 = RecoDecayPtEtaPhi::pVector(kfpIsoEle.GetPt(), kfpIsoEle.GetEta(), kfpIsoEle.GetPhi());
-      auto child2 = RecoDecayPtEtaPhi::pVector(kfpAssEle.GetPt(), kfpAssEle.GetEta(), kfpAssEle.GetPhi());
+      auto child1 = RecoDecayPtEtaPhi::pVector(kfpIsoEle.GetPt() * correctionPtElectron, kfpIsoEle.GetEta(), kfpIsoEle.GetPhi());
+      auto child2 = RecoDecayPtEtaPhi::pVector(kfpAssEle.GetPt() * correctionPtElectron, kfpAssEle.GetEta(), kfpAssEle.GetPhi());
       double invMassEE = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
 
       // reco by KFparticle
@@ -349,6 +352,9 @@ struct HfTaskElectronWeakBoson {
       // LOG(info) << "Invarimass cal by KF particle Chi2/NDF = " << zeeKF.GetChi2()/zeeKF.GetNDF();
       float chiSqNdf = zeeKF.GetChi2() / zeeKF.GetNDF();
       if (zeeKF.GetNDF() < 1) {
+        continue;
+      }
+      if (zeeKF.GetChi2() < 0) {
         continue;
       }
       if (chiSqNdf > chiSqNdfMax) {
@@ -552,7 +558,7 @@ struct HfTaskElectronWeakBoson {
             int trackCount = getIsolatedTrack(track.eta(), track.phi(), track.pt(), tracks) - 1;
 
             if (match.track_as<TrackEle>().pt() > ptTHnThresh && isTHnElectron) {
-              registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, eop, isoEnergy, trackCount);
+              registry.fill(HIST("hTHnElectrons"), match.track_as<TrackEle>().pt(), match.track_as<TrackEle>().tpcNSigmaEl(), m02Emc, eop, isoEnergy, trackCount, track.eta(), track.tpcSignal());
             }
             // LOG(info) << "E/p" << eop;
             registry.fill(HIST("hEopNsigTPC"), match.track_as<TrackEle>().tpcNSigmaEl(), eop);
@@ -605,9 +611,10 @@ struct HfTaskElectronWeakBoson {
     if (reconstructedZ.size() > 0) {
       for (const auto& zBoson : reconstructedZ) {
         // Z boson selection
-        if (zBoson.mass < massZMin || zBoson.mass > massZMax)
+        if (zBoson.mass < massZMin || zBoson.mass > massZMax) {
           continue;
-        registry.fill(HIST("hZptSpectrum"), zBoson.pt);
+        }
+        registry.fill(HIST("hZptSpectrum"), zBoson.charge, zBoson.pt);
         for (const auto& trackAss : selectedElectronsAss) {
           if (std::abs(trackAss.pt - zBoson.ptchild0) < ptMatch) {
             continue;
@@ -617,7 +624,7 @@ struct HfTaskElectronWeakBoson {
           }
           // calculate Z-h correlation
           double deltaPhi = RecoDecay::constrainAngle(trackAss.phi - zBoson.phi, -o2::constants::math::PIHalf);
-          registry.fill(HIST("hZHadronDphi"), zBoson.pt, deltaPhi);
+          registry.fill(HIST("hZHadronDphi"), zBoson.charge, zBoson.pt, deltaPhi);
         }
       }
     } // end of Z-hadron correlation

@@ -15,6 +15,11 @@ o2physics_add_dpl_workflow(event-converter2
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(event-converter3
+                  SOURCES eventConverter3.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(electron-converter2
                   SOURCES electronConverter2.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
@@ -22,6 +27,16 @@ o2physics_add_dpl_workflow(electron-converter2
 
 o2physics_add_dpl_workflow(electron-converter3
                   SOURCES electronConverter3.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(electron-converter4
+                  SOURCES electronConverter4.cxx
+                  PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                  COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(track-converter1
+                  SOURCES trackConverter1.cxx
                   PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                   COMPONENT_NAME Analysis)
 

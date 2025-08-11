@@ -101,7 +101,7 @@ class DielectronCut : public TNamed
   }
 
   template <bool dont_require_rapidity = false, typename TTrack1, typename TTrack2>
-  bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2, const float bz) const
+  bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2, const float bz, const float refR) const
   {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
@@ -137,10 +137,25 @@ class DielectronCut : public TNamed
       return false;
     }
 
+    if (mApplydEtadPhi && mApplydEtadPhiPosition) { // applying both cuts is not allowed.
+      return false;
+    }
+
     float deta = v1.Eta() - v2.Eta();
     float dphi = v1.Phi() - v2.Phi();
     o2::math_utils::bringToPMPi(dphi);
     if (mApplydEtadPhi && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphi / mMinDeltaPhi, 2) < 1.f) {
+      return false;
+    }
+
+    float phiPosition1 = t1.phi() + std::asin(t1.sign() * 0.30282 * (bz * 0.1) * refR / (2.f * t1.pt()));
+    float phiPosition2 = t2.phi() + std::asin(t2.sign() * 0.30282 * (bz * 0.1) * refR / (2.f * t2.pt()));
+
+    phiPosition1 = RecoDecay::constrainAngle(phiPosition1, 0, 1); // 0-2pi
+    phiPosition2 = RecoDecay::constrainAngle(phiPosition2, 0, 1); // 0-2pi
+    float dphiPosition = phiPosition1 - phiPosition2;
+    o2::math_utils::bringToPMPi(dphiPosition);
+    if (mApplydEtadPhiPosition && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphiPosition / mMinDeltaPhi, 2) < 1.f) {
       return false;
     }
 
@@ -258,14 +273,15 @@ class DielectronCut : public TNamed
   }
 
   template <typename TTrack, typename TCollision>
-  bool PassPIDML(TTrack const& track, TCollision const& collision) const
+  bool PassPIDML(TTrack const&, TCollision const&) const
   {
+    return false;
     /*if (!PassTOFif(track)) { // Allows for pre-selection. But potentially dangerous if analyzers are not aware of it
       return false;
     }*/
-    std::vector<float> inputFeatures = mPIDMlResponse->getInputFeatures(track, collision);
-    float binningFeature = mPIDMlResponse->getBinningFeature(track, collision);
-    return mPIDMlResponse->isSelectedMl(inputFeatures, binningFeature);
+    // std::vector<float> inputFeatures = mPIDMlResponse->getInputFeatures(track, collision);
+    // float binningFeature = mPIDMlResponse->getBinningFeature(track, collision);
+    // return mPIDMlResponse->isSelectedMl(inputFeatures, binningFeature);
   }
 
   template <typename T>
@@ -443,7 +459,7 @@ class DielectronCut : public TNamed
   void SetPairOpAng(float minOpAng = 0.f, float maxOpAng = 1e10f);
   void SetMaxMeePhiVDep(std::function<float(float)> phivDepCut, float min_phiv, float max_phiv);
   void SelectPhotonConversion(bool flag);
-  void SetMindEtadPhi(bool flag, float min_deta, float min_dphi);
+  void SetMindEtadPhi(bool applydEtadPhi, bool applydEtadPhiPosition, float min_deta, float min_dphi);
   void SetRequireDifferentSides(bool flag);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
@@ -516,6 +532,7 @@ class DielectronCut : public TNamed
   std::function<float(float)> mMaxMeePhiVDep{}; // max mee as a function of phiv
   bool mSelectPC{false};                        // flag to select photon conversion used in mMaxPhivPairMeeDep
   bool mApplydEtadPhi{false};                   // flag to apply deta, dphi cut between 2 tracks
+  bool mApplydEtadPhiPosition{false};           // flag to apply deta, dphi cut between 2 tracks
   float mMinDeltaEta{0.f};
   float mMinDeltaPhi{0.f};
   float mMinOpAng{0.f}, mMaxOpAng{1e10f};

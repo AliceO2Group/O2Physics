@@ -47,7 +47,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::evsel;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 using BCsWithRun2InfosTimestampsAndMatches = soa::Join<aod::BCs, aod::Run2BCInfos, aod::Timestamps, aod::Run2MatchedToBCSparse>;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::Timestamps, aod::Run3MatchedToBCSparse>;
@@ -84,6 +84,8 @@ struct BcSelectionTask {
   int mITSROFrameEndBorderMargin = 20;   // default value
   int mTimeFrameStartBorderMargin = 300; // default value
   int mTimeFrameEndBorderMargin = 4000;  // default value
+  std::string strLPMProductionTag = "";  // MC production tag to be retrieved from AO2D metadata
+
   TriggerAliases* aliases = nullptr;
   EventSelectionParams* par = nullptr;
   std::map<uint64_t, uint32_t>* mapRCT = nullptr;
@@ -99,6 +101,8 @@ struct BcSelectionTask {
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
+    strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
+
     histos.add("hCounterInvalidBCTimestamp", "", kTH1D, {{1, 0., 1.}});
   }
 
@@ -256,7 +260,7 @@ struct BcSelectionTask {
         // duration of TF in bcs
         nBCsPerTF = 32; // hard-coded for Run3 MC (no info from ccdb at the moment)
       } else {
-        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+        auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
         // SOR and EOR timestamps
         sorTimestamp = runInfo.sor;
         eorTimestamp = runInfo.eor;
@@ -511,10 +515,11 @@ struct EventSelectionTask {
   int lastRun = -1;                     // last run number (needed to access ccdb only if run!=lastRun)
   std::bitset<nBCsPerOrbit> bcPatternB; // bc pattern of colliding bunches
 
-  int64_t bcSOR = -1;     // global bc of the start of the first orbit
-  int64_t nBCsPerTF = -1; // duration of TF in bcs, should be 128*3564 or 32*3564
-  int rofOffset = -1;     // ITS ROF offset, in bc
-  int rofLength = -1;     // ITS ROF length, in bc
+  int64_t bcSOR = -1;                   // global bc of the start of the first orbit
+  int64_t nBCsPerTF = -1;               // duration of TF in bcs, should be 128*3564 or 32*3564
+  int rofOffset = -1;                   // ITS ROF offset, in bc
+  int rofLength = -1;                   // ITS ROF length, in bc
+  std::string strLPMProductionTag = ""; // MC production tag to be retrieved from AO2D metadata
 
   int32_t findClosest(int64_t globalBC, std::map<int64_t, int32_t>& bcs)
   {
@@ -580,6 +585,7 @@ struct EventSelectionTask {
         }
       }
     }
+    strLPMProductionTag = metadataInfo.get("LPMProductionTag"); // to extract info from ccdb by the tag
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -678,7 +684,7 @@ struct EventSelectionTask {
     int run3min = 500000;
     if (run != lastRun && run >= run3min) {
       lastRun = run;
-      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run);
+      auto runInfo = o2::parameters::AggregatedRunInfo::buildAggregatedRunInfo(o2::ccdb::BasicCCDBManager::instance(), run, strLPMProductionTag);
       // first bc of the first orbit
       bcSOR = runInfo.orbitSOR * nBCsPerOrbit;
       // duration of TF in bcs
@@ -1280,7 +1286,7 @@ struct LumiTask {
         LOGP(warn, "Cross section for z={} + z={} @ {} GeV is not defined", beamZ1, beamZ2, sqrts);
       }
       // getting CTP config to extract lumi class indices (used for rate fetching and pileup correction)
-      std::map<string, string> metadata;
+      std::map<std::string, std::string> metadata;
       metadata["runNumber"] = std::to_string(run);
       auto config = ccdb->getSpecific<o2::ctp::CTPConfiguration>("CTP/Config/Config", ts, metadata);
       auto classes = config->getCTPClasses();

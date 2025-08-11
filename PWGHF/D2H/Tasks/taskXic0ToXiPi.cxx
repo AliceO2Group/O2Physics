@@ -243,7 +243,7 @@ struct HfTaskXic0ToXiPi {
                       kfptXic,
                       candidate.kfRapXic(),
                       candidate.ptBhadMotherPart(),
-                      candidate.originRec(),
+                      candidate.originMcRec(),
                       candidate.flagMcMatchRec(),
                       numPvContributors);
       } else {
@@ -252,7 +252,7 @@ struct HfTaskXic0ToXiPi {
                       kfptXic,
                       candidate.kfRapXic(),
                       candidate.ptBhadMotherPart(),
-                      candidate.originRec(),
+                      candidate.originMcRec(),
                       candidate.flagMcMatchRec(),
                       numPvContributors);
       }
@@ -273,7 +273,7 @@ struct HfTaskXic0ToXiPi {
         maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
       }
 
-      if (particle.originGen() == RecoDecay::OriginType::Prompt) {
+      if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
         registry.fill(HIST("hSparseAcc"),
                       ptGen,
                       -1.,

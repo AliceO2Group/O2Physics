@@ -555,8 +555,9 @@ struct EbyeMaker {
     for (const auto& track : tracks) {
       if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < trklEtaMax && !(doprocessRun3 || doprocessMcRun3)) { // tracklet
         nTrackletsColl++;
+      } else if (std::abs(track.eta()) < trklEtaMax && track.itsNCls() > 3 && (doprocessRun3 || doprocessMcRun3)) { // ITS only + global tracks
+        nTrackletsColl++;
       }
-
       if (!selectTrack(track)) {
         continue;
       }
@@ -570,8 +571,8 @@ struct EbyeMaker {
         continue;
       }
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-
-      nTracksColl++;
+      if (trackPt > ptMin[0] && trackPt < ptMax[0])
+        nTracksColl++;
 
       for (int iP{0}; iP < kNpart; ++iP) {
         if (trackPt < ptMin[iP] || trackPt > ptMax[iP]) {
@@ -852,7 +853,8 @@ struct EbyeMaker {
       if ((((mcPart.flags() & 0x8) || (mcPart.flags() & 0x2)) && (doprocessMcRun2 || doprocessMiniMcRun2)) || ((mcPart.flags() & 0x1) && !doprocessMiniMcRun2))
         continue;
       auto pdgCode = mcPart.pdgCode();
-      if (std::abs(pdgCode) == PDG_t::kPiPlus || std::abs(pdgCode) == PDG_t::kElectron || std::abs(pdgCode) == PDG_t::kMuonMinus || std::abs(pdgCode) == PDG_t::kKPlus || std::abs(pdgCode) == PDG_t::kProton)
+      auto genPt = std::hypot(mcPart.px(), mcPart.py());
+      if ((std::abs(pdgCode) == PDG_t::kPiPlus || std::abs(pdgCode) == PDG_t::kElectron || std::abs(pdgCode) == PDG_t::kMuonMinus || std::abs(pdgCode) == PDG_t::kKPlus || std::abs(pdgCode) == PDG_t::kProton) && mcPart.isPhysicalPrimary() && genPt > ptMin[0] && genPt < ptMax[0])
         nChPartGen++;
       if (std::abs(pdgCode) == PDG_t::kLambda0) {
         if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
@@ -867,7 +869,6 @@ struct EbyeMaker {
         if (!foundPr) {
           continue;
         }
-        auto genPt = std::hypot(mcPart.px(), mcPart.py());
         CandidateV0 candV0;
         candV0.genpt = genPt;
         candV0.geneta = mcPart.eta();
@@ -925,7 +926,7 @@ struct EbyeMaker {
       histos.fill(HIST("QA/PvMultVsCent"), centrality, collision.numContrib());
       fillRecoEvent(collision, tracks, v0TableThisCollision, centrality);
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, 0x0, centrality, nTracksColl);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), 0x0, nTrackletsColl, centrality, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         auto tk = tracks.rawIteratorAt(candidateTrack.globalIndex);
@@ -1104,7 +1105,7 @@ struct EbyeMaker {
       fillMcEvent(collision, tracks, v0TableThisCollision, centrality, mcParticles, mcLab);
       fillMcGen(mcParticles, mcLab, collision.mcCollisionId());
 
-      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, 0x0, centrality, nTracksColl);
+      miniCollTable(static_cast<int8_t>(collision.posZ() * 10), nChPartGen, nTrackletsColl, centrality, nTracksColl);
 
       for (auto& candidateTrack : candidateTracks[0]) { // o2-linter: disable=const-ref-in-for-loop (not a const ref)
         int selMask = -1;
