@@ -179,10 +179,10 @@ struct sigmaminustask {
       rFindable.add("h2PtDaugFilter_plus_pikink", "h2PtDaugFilter_plus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
       rFindable.add("h2PtDaugFilter_minus_pikink", "h2PtDaugFilter_minus_pikink", {HistType::kTH2F, {filtersAxis, ptUnsignedAxis}});
 
-      rFindable.add("h2DCAMothPt_protonkink", "h2DCAMothPt_protonkink", {HistType::kTH2F, {ptAxis, dcaMothAxis}});
-      rFindable.add("h2DCADaugPt_protonkink", "h2DCADaugPt_protonkink", {HistType::kTH2F, {ptAxis, dcaDaugAxis}});
-      rFindable.add("h2DCAMothPt_pikink", "h2DCAMothPt_pikink", {HistType::kTH2F, {ptAxis, dcaMothAxis}});
-      rFindable.add("h2DCADaugPt_pikink", "h2DCADaugPt_pikink", {HistType::kTH2F, {ptAxis, dcaDaugAxis}});
+      rFindable.add("h2DCAMothPt_protonkink", "h2DCAMothPt_protonkink", {HistType::kTH2F, {ptUnsignedAxis, dcaMothAxis}});
+      rFindable.add("h2DCADaugPt_protonkink", "h2DCADaugPt_protonkink", {HistType::kTH2F, {ptUnsignedAxis, dcaDaugAxis}});
+      rFindable.add("h2DCAMothPt_pikink", "h2DCAMothPt_pikink", {HistType::kTH2F, {ptUnsignedAxis, dcaMothAxis}});
+      rFindable.add("h2DCADaugPt_pikink", "h2DCADaugPt_pikink", {HistType::kTH2F, {ptUnsignedAxis, dcaDaugAxis}});
     }
   }
 
@@ -617,11 +617,11 @@ struct sigmaminustask {
       float dcaXYMother = std::abs(dcaInfoMoth[0]);
       float dcaXYDaughter = std::abs(dcaInfoDaug[0]);
       if (isPiDaughter) {
-        rFindable.fill(HIST("h2DCAMothPt_pikink"), sigmaSign * recPtMother, dcaXYMother);
-        rFindable.fill(HIST("h2DCADaugPt_pikink"), sigmaSign * recPtDaughter, dcaXYDaughter);
+        rFindable.fill(HIST("h2DCAMothPt_pikink"), recPtMother, dcaXYMother);
+        rFindable.fill(HIST("h2DCADaugPt_pikink"), recPtMother, dcaXYDaughter);
       } else {
-        rFindable.fill(HIST("h2DCAMothPt_protonkink"), sigmaSign * recPtMother, dcaXYMother);
-        rFindable.fill(HIST("h2DCADaugPt_protonkink"), sigmaSign * recPtDaughter, dcaXYDaughter);
+        rFindable.fill(HIST("h2DCAMothPt_protonkink"), recPtMother, dcaXYMother);
+        rFindable.fill(HIST("h2DCADaugPt_protonkink"), recPtMother, dcaXYDaughter);
       }
 
       // 6 - max Z difference
