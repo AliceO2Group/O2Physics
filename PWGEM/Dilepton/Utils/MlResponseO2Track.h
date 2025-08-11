@@ -144,18 +144,18 @@ enum class InputFeaturesO2Track : uint8_t {
   reldiffp,
   tpcSignal,
   tpcNSigmaEl,
-  tpcNSigmaMu,
+  // tpcNSigmaMu,
   tpcNSigmaPi,
   tpcNSigmaKa,
   tpcNSigmaPr,
   beta,
   tofNSigmaEl,
-  tofNSigmaMu,
+  // tofNSigmaMu,
   tofNSigmaPi,
   tofNSigmaKa,
   tofNSigmaPr,
   tpctofNSigmaEl,
-  tpctofNSigmaMu,
+  // tpctofNSigmaMu,
   tpctofNSigmaPi,
   tpctofNSigmaKa,
   tpctofNSigmaPr,
@@ -198,18 +198,18 @@ class MlResponseO2Track : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_O2_TRACK_RELDIFF(reldiffp, getP, tpcInnerParam);
       CHECK_AND_FILL_O2_TRACK(tpcSignal);
       CHECK_AND_FILL_O2_TRACK(tpcNSigmaEl);
-      CHECK_AND_FILL_O2_TRACK(tpcNSigmaMu);
+      // CHECK_AND_FILL_O2_TRACK(tpcNSigmaMu);
       CHECK_AND_FILL_O2_TRACK(tpcNSigmaPi);
       CHECK_AND_FILL_O2_TRACK(tpcNSigmaKa);
       CHECK_AND_FILL_O2_TRACK(tpcNSigmaPr);
       CHECK_AND_FILL_O2_TRACK(beta);
       CHECK_AND_FILL_O2_TRACK(tofNSigmaEl);
-      CHECK_AND_FILL_O2_TRACK(tofNSigmaMu);
+      // CHECK_AND_FILL_O2_TRACK(tofNSigmaMu);
       CHECK_AND_FILL_O2_TRACK(tofNSigmaPi);
       CHECK_AND_FILL_O2_TRACK(tofNSigmaKa);
       CHECK_AND_FILL_O2_TRACK(tofNSigmaPr);
       CHECK_AND_FILL_O2_TRACK_TPCTOF(tpctofNSigmaEl, tpcNSigmaEl, tofNSigmaEl, hasTOF);
-      CHECK_AND_FILL_O2_TRACK_TPCTOF(tpctofNSigmaMu, tpcNSigmaMu, tofNSigmaMu, hasTOF);
+      // CHECK_AND_FILL_O2_TRACK_TPCTOF(tpctofNSigmaMu, tpcNSigmaMu, tofNSigmaMu, hasTOF);
       CHECK_AND_FILL_O2_TRACK_TPCTOF(tpctofNSigmaPi, tpcNSigmaPi, tofNSigmaPi, hasTOF);
       CHECK_AND_FILL_O2_TRACK_TPCTOF(tpctofNSigmaKa, tpcNSigmaKa, tofNSigmaKa, hasTOF);
       CHECK_AND_FILL_O2_TRACK_TPCTOF(tpctofNSigmaPr, tpcNSigmaPr, tofNSigmaPr, hasTOF);
@@ -278,18 +278,18 @@ class MlResponseO2Track : public MlResponse<TypeOutputScore>
       FILL_MAP_O2_TRACK(reldiffp),
       FILL_MAP_O2_TRACK(tpcSignal),
       FILL_MAP_O2_TRACK(tpcNSigmaEl),
-      FILL_MAP_O2_TRACK(tpcNSigmaMu),
+      // FILL_MAP_O2_TRACK(tpcNSigmaMu),
       FILL_MAP_O2_TRACK(tpcNSigmaPi),
       FILL_MAP_O2_TRACK(tpcNSigmaKa),
       FILL_MAP_O2_TRACK(tpcNSigmaPr),
       FILL_MAP_O2_TRACK(beta),
       FILL_MAP_O2_TRACK(tofNSigmaEl),
-      FILL_MAP_O2_TRACK(tofNSigmaMu),
+      // FILL_MAP_O2_TRACK(tofNSigmaMu),
       FILL_MAP_O2_TRACK(tofNSigmaPi),
       FILL_MAP_O2_TRACK(tofNSigmaKa),
       FILL_MAP_O2_TRACK(tofNSigmaPr),
       FILL_MAP_O2_TRACK(tpctofNSigmaEl),
-      FILL_MAP_O2_TRACK(tpctofNSigmaMu),
+      // FILL_MAP_O2_TRACK(tpctofNSigmaMu),
       FILL_MAP_O2_TRACK(tpctofNSigmaPi),
       FILL_MAP_O2_TRACK(tpctofNSigmaKa),
       FILL_MAP_O2_TRACK(tpctofNSigmaPr),

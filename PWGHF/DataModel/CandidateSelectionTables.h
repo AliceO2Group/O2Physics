@@ -375,9 +375,7 @@ DECLARE_SOA_TABLE(HfSelToXiPi, "AOD", "HFSELTOXIPI",
                   hf_sel_toxipi::TofNSigmaPiFromCharmBaryon, hf_sel_toxipi::TofNSigmaPiFromCasc, hf_sel_toxipi::TofNSigmaPiFromLambda, hf_sel_toxipi::TofNSigmaPrFromLambda);
 
 DECLARE_SOA_TABLE(HfSelToXiPiKf, "AOD", "HFSELTOXIPIKF",
-                  hf_sel_toxipi::StatusPidCharmBaryon, hf_sel_toxipi::StatusPidCascade, hf_sel_toxipi::StatusPidLambda,
-                  hf_sel_toxipi::StatusInvMassCharmBaryon, hf_sel_toxipi::StatusInvMassCascade, hf_sel_toxipi::StatusInvMassLambda,
-                  hf_sel_toxipi::ResultSelections, hf_sel_toxipi::PidTpcInfoStored, hf_sel_toxipi::PidTofInfoStored,
+                  hf_sel_toxipi::ResultSelections,
                   hf_sel_toxipi::TpcNSigmaPiFromCharmBaryon, hf_sel_toxipi::TpcNSigmaPiFromCasc, hf_sel_toxipi::TpcNSigmaPiFromLambda, hf_sel_toxipi::TpcNSigmaPrFromLambda,
                   hf_sel_toxipi::TofNSigmaPiFromCharmBaryon, hf_sel_toxipi::TofNSigmaPiFromCasc, hf_sel_toxipi::TofNSigmaPiFromLambda, hf_sel_toxipi::TofNSigmaPrFromLambda);
 

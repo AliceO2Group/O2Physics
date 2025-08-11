@@ -13,39 +13,45 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
-#include <CCDB/BasicCCDBManager.h>
-#include <fairlogger/Logger.h>
-#include <vector>
-#include <string>
+#include "PWGCF/DataModel/FemtoDerived.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamCascadeSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamCollisionSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamV0Selection.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "EventFiltering/Zorro.h"
+
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamCollisionSelection.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamV0Selection.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamCascadeSelection.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-#include "EventFiltering/Zorro.h"
-#include "PWGCF/DataModel/FemtoDerived.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "TMath.h"
+#include <CCDB/BasicCCDBManager.h>
+
 #include "Math/Vector4D.h"
+#include "TMath.h"
+
+#include <fairlogger/Logger.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
 using namespace o2::analysis::femtoDream;
 
 namespace o2::aod
@@ -205,6 +211,12 @@ struct femtoDreamProducerTask {
 
   } OptionTrackSpecialSelections;
 
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", false, "Check event quality in run condition table"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+  } rctCut;
+
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry V0Registry{"V0", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -214,6 +226,7 @@ struct femtoDreamProducerTask {
   float mMagField;
   std::string zorroTriggerNames = "";
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
+  RCTFlagsChecker rctChecker;
 
   void init(InitContext&)
   {
@@ -254,6 +267,8 @@ struct femtoDreamProducerTask {
       }
       zorroTriggerNames.pop_back();
     }
+
+    rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, false, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     colCuts.setCuts(ConfEvtZvtx.value, ConfEvtTriggerCheck.value, ConfEvtTriggerSel.value, ConfEvtOfflineCheck.value, ConfEvtAddOfflineCheck.value, ConfIsRun3.value);
     colCuts.init(&qaRegistry);
@@ -568,6 +583,7 @@ struct femtoDreamProducerTask {
     if (!colCuts.isSelectedCollision(col)) {
       return;
     }
+
     if (ConfIsActivateV0.value) {
       if (colCuts.isEmptyCollision(col, tracks, trackCuts) && colCuts.isEmptyCollision(col, fullV0s, v0Cuts, tracks)) {
         return;
@@ -576,6 +592,10 @@ struct femtoDreamProducerTask {
       if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
         return;
       }
+    }
+
+    if (rctCut.requireRCTFlagChecker && !rctChecker(col)) {
+      return;
     }
 
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);

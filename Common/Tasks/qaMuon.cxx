@@ -45,7 +45,12 @@
 #include "Math/Vector4D.h"
 #include "TGeoGlobalMagField.h"
 
+#include <algorithm>
 #include <chrono>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace std;
 using namespace o2;
@@ -562,12 +567,34 @@ struct muonQa {
     }
 
     if (configQAs.fEnableQADimuon) {
+      // single muons
+      AxisSpec transverseMomentumAxis = {100, 0, 30, "p_{T} (GeV/c)"};
+      AxisSpec etaAxis = {40, -5, -1, "#eta"};
+      AxisSpec rAbsAxis = {10, 0., 100.0, "R_{abs} (cm)"};
+      AxisSpec dcaAxis = {40, 0.0, 20.0, "DCA"};
+      AxisSpec phiAxis = {36, -180.0, 180.0, "#phi (degrees)"};
+      // dimuons
       AxisSpec invMassAxis = {400, 1, 5, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
       AxisSpec invMassCorrelationAxis = {80, 0, 8, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
       AxisSpec invMassAxisFull = {5000, 0, 100, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
       AxisSpec yPairAxis = {120, 0.0, 6.0, "#y_{pair}"};
       AxisSpec invMassAxis2D = {750, 0, 15, "M_{#mu^{+}#mu^{-}} (GeV/c^{2})"};
       AxisSpec pTAxis2D = {120, 0, 30, "p_{T} (GeV/c)"};
+      // Single muons - dimuons correlations
+      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPt_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} p_{T}", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, pTAxis2D}});
+      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPt_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} p_{T}", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, pTAxis2D}});
+      //
+      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosEta_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} #eta", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, etaAxis}});
+      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegEta_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} #eta", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, etaAxis}});
+      //
+      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosRabs_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} R_{abs}", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, rAbsAxis}});
+      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegRabs_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} R_{abs}", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, rAbsAxis}});
+      //
+      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosDca_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} DCA", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, dcaAxis}});
+      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegDca_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} DCA", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, dcaAxis}});
+      //
+      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{+} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxis}});
+      registryDimuon.add("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPhi_MuonKine_MuonCuts", "#mu^{+}#mu^{-} and #mu^{-} #phi", {HistType::kTH3F, {invMassAxis2D, pTAxis2D, phiAxis}});
       // MCH-MID tracks with MCH acceptance cuts
       registryDimuon.add("dimuon/same-event/invariantMass_MuonKine_MuonCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxis}});
       registryDimuon.add("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts", "#mu^{+}#mu^{-} invariant mass", {HistType::kTH1F, {invMassAxisFull}});
@@ -1796,7 +1823,7 @@ struct muonQa {
     std::vector<std::array<double, 2>> yPos;
     std::vector<std::array<double, 2>> thetax;
     std::vector<std::array<double, 2>> thetay;
-    for (int zi = 0; zi < int(zRefPlane.size()); zi++) {
+    for (int zi = 0; zi < static_cast<int>(zRefPlane.size()); zi++) {
       xPos.emplace_back(std::array<double, 2>{fgVectorsMCH[zi].x, fgVectorsMFT[zi].x});
       yPos.emplace_back(std::array<double, 2>{fgVectorsMCH[zi].y, fgVectorsMFT[zi].y});
       thetax.emplace_back(std::array<double, 2>{
@@ -1807,7 +1834,7 @@ struct muonQa {
         std::atan2(fgVectorsMFT[zi].py, -1.0 * fgVectorsMFT[zi].pz) * 180 / TMath::Pi()});
     }
 
-    for (int i = 0; i < int(zRefPlane.size()); i++) {
+    for (int i = 0; i < static_cast<int>(zRefPlane.size()); i++) {
       if (same) {
         std::get<std::shared_ptr<TH2>>(trackResidualsHistos[i][quadrant]["dx_vs_x"])->Fill(std::fabs(xPos[i][1]), xPos[i][0] - xPos[i][1]);
         std::get<std::shared_ptr<TH2>>(trackResidualsHistos[i][quadrant]["dx_vs_y"])->Fill(std::fabs(yPos[i][1]), xPos[i][0] - xPos[i][1]);
@@ -2180,7 +2207,7 @@ struct muonQa {
       }
 
       // Loop over attached clusters
-      for (int iCls = 0; iCls < int(fgValuesClsTmp.posClusters.size()); iCls++) {
+      for (int iCls = 0; iCls < static_cast<int>(fgValuesClsTmp.posClusters.size()); iCls++) {
 
         double phiCls = std::atan2(fgValuesClsTmp.posClusters[iCls][1], fgValuesClsTmp.posClusters[iCls][0]) * 180 / TMath::Pi();
         int quadrantCls = GetQuadrantPhi(phiCls);
@@ -2327,7 +2354,7 @@ struct muonQa {
       FillMatching(muontrack, fgValuesMCH, fgValuesMFT);
 
       //// Fill global informations
-      registry.get<TH1>(HIST("global-muons/NCandidates"))->Fill(int(globalMuonsVector.size()));
+      registry.get<TH1>(HIST("global-muons/NCandidates"))->Fill(static_cast<int>(globalMuonsVector.size()));
       for (size_t candidateIndex = 0; candidateIndex < globalMuonsVector.size(); candidateIndex++) {
         auto const& muon = muons.rawIteratorAt(globalMuonsVector[candidateIndex]);
         registry.get<TH2>(HIST("global-muons/MatchChi2"))->Fill(muon.chi2MatchMCHMFT(), candidateIndex);
@@ -2369,7 +2396,7 @@ struct muonQa {
       }
 
       //// Fill global muon candidates info
-      for (int i = 0; i < int(globalMuonsVector.size()); i++) {
+      for (int i = 0; i < static_cast<int>(globalMuonsVector.size()); i++) {
         VarTrack fgValuesTmp;
         auto muonCandidate = muons.rawIteratorAt(globalMuonsVector[i]);
         FillTrack<0>(muonCandidate, fgValuesTmp);
@@ -2473,6 +2500,21 @@ struct muonQa {
       if ((sign1 * sign2) >= 0)
         continue;
 
+      const auto& muonPos = fgValuesMuon1.sign > 0 ? fgValuesMuon1 : fgValuesMuon2;
+      const auto& muonNeg = fgValuesMuon1.sign < 0 ? fgValuesMuon1 : fgValuesMuon2;
+      // μ⁺ variables
+      double muPosPt = muonPos.pT;
+      double muPosEta = muonPos.eta;
+      double muPosRabs = muonPos.rabs;
+      double muPosPhi = muonPos.phi * 180.0 / TMath::Pi();
+      double muPosDca = std::sqrt(muonPos.dcaX * muonPos.dcaX + muonPos.dcaY * muonPos.dcaY);
+      // μ⁻ variables
+      double muNegPt = muonNeg.pT;
+      double muNegEta = muonNeg.eta;
+      double muNegRabs = muonNeg.rabs;
+      double muNegPhi = muonNeg.phi * 180.0 / TMath::Pi();
+      double muNegDca = std::sqrt(muonNeg.dcaX * muonNeg.dcaX + muonNeg.dcaY * muonNeg.dcaY);
+
       int Quadrant1 = GetQuadrantPhi(muonTrack1.phi() * 180.0 / TMath::Pi());
       int Quadrant2 = GetQuadrantPhi(muonTrack2.phi() * 180.0 / TMath::Pi());
       int TopBottom1 = (Quadrant1 == 0 || Quadrant1 == 1) ? 0 : 1;
@@ -2491,6 +2533,22 @@ struct muonQa {
       if (goodMuonTracks) {
         if (sameEvent) {
           // same-event case
+          // single muons
+          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPt_MuonKine_MuonCuts"))->Fill(mass, pT, muPosPt);
+          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPt_MuonKine_MuonCuts"))->Fill(mass, pT, muNegPt);
+          //
+          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosEta_MuonKine_MuonCuts"))->Fill(mass, pT, muPosEta);
+          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegEta_MuonKine_MuonCuts"))->Fill(mass, pT, muNegEta);
+          //
+          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosRabs_MuonKine_MuonCuts"))->Fill(mass, pT, muPosRabs);
+          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegRabs_MuonKine_MuonCuts"))->Fill(mass, pT, muNegRabs);
+          //
+          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosDca_MuonKine_MuonCuts"))->Fill(mass, pT, muPosDca);
+          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegDca_MuonKine_MuonCuts"))->Fill(mass, pT, muNegDca);
+          //
+          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuPosPhi_MuonKine_MuonCuts"))->Fill(mass, pT, muPosPhi);
+          registryDimuon.get<TH3>(HIST("dimuon/same-event/single-muon-dimuon-correlations/invariantMass_pT_MuNegPhi_MuonKine_MuonCuts"))->Fill(mass, pT, muNegPhi);
+          // dimuons
           registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMass_MuonKine_MuonCuts"))->Fill(mass);
           registryDimuon.get<TH1>(HIST("dimuon/same-event/invariantMassFull_MuonKine_MuonCuts"))->Fill(mass);
           registryDimuon.get<TH2>(HIST("dimuon/same-event/invariantMass_pT_MuonKine_MuonCuts"))->Fill(mass, pT);

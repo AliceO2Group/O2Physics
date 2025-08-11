@@ -38,6 +38,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <cstdint>
+#include <cstdlib>
 #include <unordered_map>
 
 using namespace o2;
@@ -293,8 +294,11 @@ struct HfTreeCreatorDsToKKPi {
   Partition<CandDsData> selectedDsToKKPiCand = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlagDs;
   Partition<CandDsData> selectedDsToPiKKCand = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlagDs;
 
-  Partition<CandDsMcReco> reconstructedCandSig = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (aod::hf_cand_3prong::flagMcDecayChanRec == channelsResonant[Mother::Ds][decayChannel] || (fillDplusMc && aod::hf_cand_3prong::flagMcDecayChanRec == channelsResonant[Mother::Dplus][decayChannel])); // Do not store Dplus MC if fillDplusMc is false
-  Partition<CandDsMcReco> reconstructedCandBkg = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK);
+  Partition<CandDsMcReco> reconstructedCandSig = (nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && aod::hf_cand_3prong::flagMcDecayChanRec == channelsResonant[Mother::Ds][decayChannel]) || (fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) && aod::hf_cand_3prong::flagMcDecayChanRec == channelsResonant[Mother::Dplus][decayChannel]); // Do not store Dplus MC if fillDplusMc is false
+  Partition<CandDsMcReco> reconstructedCandBkg = (nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK)) ||
+                                                 (nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && aod::hf_cand_3prong::flagMcDecayChanRec != channelsResonant[Mother::Ds][decayChannel]) ||
+                                                 (nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) && aod::hf_cand_3prong::flagMcDecayChanRec != channelsResonant[Mother::Dplus][decayChannel]) ||
+                                                 (!fillDplusMc && nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKK) && aod::hf_cand_3prong::flagMcDecayChanRec == channelsResonant[Mother::Dplus][decayChannel]);
 
   void init(InitContext const&)
   {
@@ -324,29 +328,6 @@ struct HfTreeCreatorDsToKKPi {
   template <bool doMc = false, int massHypo = 0, typename Coll, typename T>
   void fillCandidateTable(const T& candidate)
   {
-    int8_t flagMc = 0;
-    int8_t originMc = 0;
-    int8_t channelMc = 0;
-    int8_t isSwapped = massHypo; // 0 if KKPi, 1 if PiKK
-    float yCand = 0;
-    float eCand = 0;
-    float ctCand = 0;
-    if constexpr (doMc) {
-      flagMc = candidate.flagMcMatchRec();
-      originMc = candidate.originMcRec();
-      channelMc = candidate.flagMcDecayChanRec();
-      isSwapped = candidate.isCandidateSwapped();
-      if (fillDplusMc && candidate.flagMcDecayChanRec() == channelsResonant[Mother::Dplus][decayChannel]) {
-        yCand = hfHelper.yDplus(candidate);
-        eCand = hfHelper.eDplus(candidate);
-        ctCand = hfHelper.ctDplus(candidate);
-      } else {
-        yCand = hfHelper.yDs(candidate);
-        eCand = hfHelper.eDs(candidate);
-        ctCand = hfHelper.ctDs(candidate);
-      }
-    }
-
     float invMassDs = 0;
     float deltaMassPhiKK = 0;
     float absCos3PiKDs = 0;
@@ -358,6 +339,27 @@ struct HfTreeCreatorDsToKKPi {
       invMassDs = hfHelper.invMassDsToPiKK(candidate);
       deltaMassPhiKK = hfHelper.deltaMassPhiDsToPiKK(candidate);
       absCos3PiKDs = hfHelper.absCos3PiKDsToPiKK(candidate);
+    }
+
+    int8_t flagMc{0};
+    int8_t originMc{0};
+    int8_t channelMc{0};
+    int8_t isSwapped{massHypo}; // 0 if KKPi, 1 if PiKK
+    float eCand{0.f};
+    float ctCand{0.f};
+    float yCand = candidate.y(invMassDs);
+    if constexpr (doMc) {
+      flagMc = candidate.flagMcMatchRec();
+      originMc = candidate.originMcRec();
+      channelMc = candidate.flagMcDecayChanRec();
+      isSwapped = candidate.isCandidateSwapped();
+      if (fillDplusMc && candidate.flagMcDecayChanRec() == channelsResonant[Mother::Dplus][decayChannel]) {
+        eCand = hfHelper.eDplus(candidate);
+        ctCand = hfHelper.ctDplus(candidate);
+      } else {
+        eCand = hfHelper.eDs(candidate);
+        ctCand = hfHelper.ctDs(candidate);
+      }
     }
 
     auto const& collision = candidate.template collision_as<Coll>();
@@ -617,7 +619,7 @@ struct HfTreeCreatorDsToKKPi {
         particle.pt(),
         particle.eta(),
         particle.phi(),
-        RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS),
+        std::abs(particle.pdgCode()) == o2::constants::physics::Pdg::kDS ? RecoDecay::y(particle.pVector(), o2::constants::physics::MassDS) : RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus),
         particle.flagMcMatchGen(),
         particle.originMcGen());
     }

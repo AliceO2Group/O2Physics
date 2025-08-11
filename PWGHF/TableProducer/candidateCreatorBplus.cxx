@@ -18,6 +18,7 @@
 /// \author Deepa Thomas <deepa.thomas@cern.ch>, UT Austin
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, Università degli Studi di Bari & INFN, Sezione di Bari
 
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -70,6 +71,7 @@ using namespace o2::aod;
 using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 /// Reconstruction of B± → D0bar(D0) π± → (K± π∓) π±
 struct HfCandidateCreatorBplus {
@@ -388,14 +390,16 @@ struct HfCandidateCreatorBplusExpressions {
 
     int indexRec = -1, indexRecD0 = -1;
     int8_t signB = 0, signD0 = 0;
-    int8_t flag = 0;
+    int8_t flagChannelMain = 0;
+    int8_t flagChannelReso = 0;
     int8_t origin = 0;
 
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : candsBplus) {
 
-      flag = 0;
+      flagChannelMain = 0;
+      flagChannelReso = 0;
       origin = 0;
       auto candDaughterD0 = candidate.prong0();
       auto arrayDaughtersD0 = std::array{candDaughterD0.prong0_as<aod::TracksWMc>(), candDaughterD0.prong1_as<aod::TracksWMc>()};
@@ -406,9 +410,9 @@ struct HfCandidateCreatorBplusExpressions {
       indexRecD0 = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersD0, -Pdg::kD0, std::array{+kKPlus, -kPiPlus}, true, &signD0, 1);
 
       if (indexRecD0 > -1 && indexRec > -1) {
-        flag = signB * (1 << hf_cand_bplus::DecayType::BplusToD0Pi);
+        flagChannelMain = signB * DecayChannelMain::BplusToD0Pi;
       }
-      rowMcMatchRec(flag, origin);
+      rowMcMatchRec(flagChannelMain, flagChannelReso, origin);
     }
     hf_mc_gen::fillMcMatchGenBplus(mcParticles, rowMcMatchGen); // gen
   } // process

@@ -28,6 +28,7 @@
 #include "Common/Core/TrackSelectorPID.h"
 
 #include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisHelpers.h>
@@ -46,6 +47,7 @@
 #include <Rtypes.h>
 
 #include <array>
+#include <cmath>
 #include <cstdint>
 #include <numeric>
 #include <string>
@@ -188,7 +190,7 @@ DECLARE_SOA_TABLE(HfRedCandBsLites, "AOD", "HFREDCANDBSLITE", //! Table with som
                   hf_cand_bstojpsiphi_lite::NSigTpcTofKaBachelor1,
                   // MC truth
                   hf_cand_bs::FlagMcMatchRec,
-                  hf_cand_bs::ChannelMcMatchRec,
+                  hf_cand_bs::FlagMcDecayChanRec,
                   hf_cand_bs::OriginMcRec,
                   hf_cand_bstojpsiphi_lite::FlagWrongCollision,
                   hf_cand_bstojpsiphi_lite::PtGen);
@@ -381,14 +383,14 @@ struct HfTaskBsToJpsiPhiReduced {
     auto invMassPhi = RecoDecay::m(std::array{pVecKa0, pVecKa1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
     uint8_t statusBs = 0;
 
-    int8_t flagMcMatchRec{0}, channelMcMatchRec{0}, flagWrongCollision{0};
+    int8_t flagMcMatchRec{0}, flagMcDecayChanRec{0}, flagWrongCollision{0};
     bool isSignal = false;
     if constexpr (doMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
-      channelMcMatchRec = candidate.channelMcMatchRec();
+      flagMcDecayChanRec = candidate.flagMcDecayChanRec();
       flagWrongCollision = candidate.flagWrongCollision();
       isSignal = flagMcMatchRec == o2::hf_decay::hf_cand_beauty::BsToJpsiKK &&
-                 channelMcMatchRec == o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
+                 flagMcDecayChanRec == o2::hf_decay::hf_cand_beauty::BsToJpsiPhi;
     }
 
     SETBIT(statusBs, SelectionStep::RecoSkims);
@@ -513,7 +515,7 @@ struct HfTaskBsToJpsiPhiReduced {
         candKa1.tpcTofNSigmaKa(),
         // MC truth
         flagMcMatchRec,
-        channelMcMatchRec,
+        flagMcDecayChanRec,
         isSignal,
         flagWrongCollision,
         ptMother);

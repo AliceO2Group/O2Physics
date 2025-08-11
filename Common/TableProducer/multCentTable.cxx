@@ -46,7 +46,7 @@ using namespace o2;
 using namespace o2::framework;
 // using namespace o2::framework::expressions;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 struct MultCentTable {
   o2::common::multiplicity::standardConfigurables opts;
@@ -75,7 +75,7 @@ struct MultCentTable {
     ccdb->setFatalWhenNull(false); // please never crash on your own, all exceptions captured (as they always should)
 
     // task-specific
-    module.init(opts, initContext);
+    module.init(metadataInfo, opts, initContext);
   }
 
   void processRun2(soa::Join<aod::Collisions, aod::Run2MatchedSparse> const& collisions,
