@@ -1184,7 +1184,7 @@ struct EventMeanPtId {
     const auto& mcpartgen = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mccolgen.globalIndex(), cache);
     histos.fill(HIST("hVtxZ_after_gensim"), mccolgen.posZ());
 
-    double nchGen = 0., nchGenAll = 0., nchGenTrue = 0.;
+    double nchGenAll = 0., nchGenTrue = 0.;
     double nchPiGen = 0., nchKaGen = 0., nchPrGen = 0.;
     double nch1 = 0., nch2 = 0., nch3 = 0.;
     double q1AllGen = 0, q2AllGen = 0.;
