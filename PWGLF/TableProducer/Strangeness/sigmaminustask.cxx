@@ -538,7 +538,7 @@ struct sigmaminustask {
       // Compute useful quantities for histograms
       bool isSigmaMinus = (std::abs(mcMother.pdgCode()) == 3112);
       bool isPiDaughter = (std::abs(mcDaughter.pdgCode()) == 211);
-      int sigmaSign = mcMother.pdgCode() > 0 ? 1 : -1;
+      
       float recPtDaughter = daughterTrack.pt();
       float recPtMother = motherTrack.pt();
       float mcRadius = std::sqrt((mcMother.vx() - mcDaughter.vx()) * (mcMother.vx() - mcDaughter.vx()) + (mcMother.vy() - mcDaughter.vy()) * (mcMother.vy() - mcDaughter.vy()));
@@ -625,10 +625,10 @@ struct sigmaminustask {
       float dcaXYDaughter = std::abs(dcaInfoDaug[0]);
       if (isPiDaughter) {
         rFindable.fill(HIST("h2DCAMothPt_pikink"), recPtMother, dcaXYMother);
-        rFindable.fill(HIST("h2DCADaugPt_pikink"), recPtMother, dcaXYDaughter);
+        rFindable.fill(HIST("h2DCADaugPt_pikink"), recPtDaughter, dcaXYDaughter);
       } else {
         rFindable.fill(HIST("h2DCAMothPt_protonkink"), recPtMother, dcaXYMother);
-        rFindable.fill(HIST("h2DCADaugPt_protonkink"), recPtMother, dcaXYDaughter);
+        rFindable.fill(HIST("h2DCADaugPt_protonkink"), recPtDaughter, dcaXYDaughter);
       }
 
       // 6 - max Z difference
