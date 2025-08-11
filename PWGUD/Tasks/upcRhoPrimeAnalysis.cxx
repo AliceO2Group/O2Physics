@@ -242,9 +242,6 @@ struct upcRhoPrimeAnalysis {
     posPions.reserve(2);
     negPions.reserve(2);
 
-    int nTotalTracks = 0;
-    int nGoodTracks = 0;
-
     // Loop over all tracks in the event
     for (const auto& track : tracks) {
       registry.fill(HIST("Tracks/RejectionReasons"), 0); // Count all tracks
