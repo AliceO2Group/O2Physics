@@ -90,7 +90,7 @@ struct FlowGfwEse {
 
   O2_DEFINE_CONFIGURABLE(cfgNbootstrap, int, 10, "Number of subsamples")
   O2_DEFINE_CONFIGURABLE(cfgMpar, int, 4, "Highest order of pt-pt correlations")
-  O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FT0A")
+  O2_DEFINE_CONFIGURABLE(cfgCentEstimator, int, 0, "0:FT0C; 1:FT0CVariant1; 2:FT0M; 3:FV0A, 4:NTPV, 5:NGlobals, 6:MFT")
   O2_DEFINE_CONFIGURABLE(cfgUseNch, bool, false, "Do correlations as function of Nch")
   O2_DEFINE_CONFIGURABLE(cfgFillWeights, bool, false, "Fill NUA weights")
   O2_DEFINE_CONFIGURABLE(cfgRunByRun, bool, false, "Fill histograms on a run-by-run basis")
@@ -262,7 +262,7 @@ struct FlowGfwEse {
   TF1* fPtDepDCAxy = nullptr;
 
   o2::framework::expressions::Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
-  o2::framework::expressions::Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::itsChi2NCl < cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgDCAz;
+  o2::framework::expressions::Filter trackFilter = nabs(aod::track::eta) < cfgEta && aod::track::pt > cfgPtmin&& aod::track::pt < cfgPtmax && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == static_cast<uint8_t>(true))) && (aod::track::itsChi2NCl < cfgChi2PrITSCls) && (aod::track::tpcChi2NCl < cfgChi2PrTPCCls) && nabs(aod::track::dcaZ) < cfgDCAz;
 
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
   o2::framework::expressions::Filter mcCollFilter = nabs(aod::mccollision::posZ) < cfgVtxZ;
@@ -326,7 +326,7 @@ struct FlowGfwEse {
       {kCentNGlobal, "NGlobals"},
       {kCentMFT, "MFT"}};
 
-    sCentralityEstimator = centEstimatorMap.count(cfgCentEstimator) ? centEstimatorMap[cfgCentEstimator] : "FT0C";
+    sCentralityEstimator = centEstimatorMap.at(cfgCentEstimator);
     sCentralityEstimator += " centrality (%)";
     AxisSpec centAxis = {o2::analysis::gfwflowese::centbinning, sCentralityEstimator.c_str()};
     std::vector<double> nchbinning;
@@ -515,30 +515,16 @@ struct FlowGfwEse {
       funcV4->SetParameters(0.008845, 0.000259668, -3.24435e-06, 4.54837e-08, -6.01825e-10);
     }
     if (cfgConsistentEventFlag) {
-      posRegionIndex = [&]() {
+      auto findRegionIndex = [&](const std::string& name) {
         auto begin = cfgRegions->GetNames().begin();
         auto end = cfgRegions->GetNames().end();
-        auto it = std::find(begin, end, "refP");
+        auto it = std::find(begin, end, name);
         return (it != end) ? std::distance(begin, it) : -1;
-      }();
-      negRegionIndex = [&]() {
-        auto begin = cfgRegions->GetNames().begin();
-        auto end = cfgRegions->GetNames().end();
-        auto it = std::find(begin, end, "refN");
-        return (it != end) ? std::distance(begin, it) : -1;
-      }();
-      fullRegionIndex = [&]() {
-        auto begin = cfgRegions->GetNames().begin();
-        auto end = cfgRegions->GetNames().end();
-        auto it = std::find(begin, end, "refFull");
-        return (it != end) ? std::distance(begin, it) : -1;
-      }();
-      midRegionIndex = [&]() {
-        auto begin = cfgRegions->GetNames().begin();
-        auto end = cfgRegions->GetNames().end();
-        auto it = std::find(begin, end, "refMid");
-        return (it != end) ? std::distance(begin, it) : -1;
-      }();
+      };
+      posRegionIndex = findRegionIndex("refP");
+      negRegionIndex = findRegionIndex("refN");
+      fullRegionIndex = findRegionIndex("refFull");
+      midRegionIndex = findRegionIndex("refMid");
     }
   }
 
