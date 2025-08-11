@@ -593,7 +593,7 @@ struct TreeCreatorElectronMLDDA {
     // float dcaZ = mDcaInfoCov.getZ();
 
     if (pidlabel == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron)) {
-      if (trackParCov.getP() < max_p_for_downscaling_electron) {
+      if (track.tpcInnerParam() < max_p_for_downscaling_electron) {
         if (dist01(engine) > downscaling_electron_lowP) {
           return;
         }
@@ -603,7 +603,7 @@ struct TreeCreatorElectronMLDDA {
         }
       }
     } else if (pidlabel == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion)) {
-      if (trackParCov.getP() < max_p_for_downscaling_pion) {
+      if (track.tpcInnerParam() < max_p_for_downscaling_pion) {
         if (dist01(engine) > downscaling_pion_lowP) {
           return;
         }
@@ -613,7 +613,7 @@ struct TreeCreatorElectronMLDDA {
         }
       }
     } else if (pidlabel == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kKaon)) {
-      if (trackParCov.getP() < max_p_for_downscaling_kaon) {
+      if (track.tpcInnerParam() < max_p_for_downscaling_kaon) {
         if (dist01(engine) > downscaling_kaon_lowP) {
           return;
         }
@@ -623,7 +623,7 @@ struct TreeCreatorElectronMLDDA {
         }
       }
     } else if (pidlabel == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton)) {
-      if (trackParCov.getP() < max_p_for_downscaling_proton) {
+      if (track.tpcInnerParam() < max_p_for_downscaling_proton) {
         if (dist01(engine) > downscaling_proton_lowP) {
           return;
         }
