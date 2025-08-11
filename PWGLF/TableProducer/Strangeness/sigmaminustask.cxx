@@ -538,7 +538,7 @@ struct sigmaminustask {
       // Compute useful quantities for histograms
       bool isSigmaMinus = (std::abs(mcMother.pdgCode()) == 3112);
       bool isPiDaughter = (std::abs(mcDaughter.pdgCode()) == 211);
-      
+
       float recPtDaughter = daughterTrack.pt();
       float recPtMother = motherTrack.pt();
       float mcRadius = std::sqrt((mcMother.vx() - mcDaughter.vx()) * (mcMother.vx() - mcDaughter.vx()) + (mcMother.vy() - mcDaughter.vy()) * (mcMother.vy() - mcDaughter.vy()));
