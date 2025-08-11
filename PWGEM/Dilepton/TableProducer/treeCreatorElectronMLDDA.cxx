@@ -955,63 +955,63 @@ struct MLTrackQC {
   HistogramRegistry registry{
     "registry",
     {
-      {"hTPCdEdx_P_All", "TPC dE/dx vs. p;p_{pv} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0.f, 5.f}, {200, 0, 200}}}},
-      {"hTOFbeta_P_All", "TOF beta vs. p;p_{pv} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0.f, 5.f}, {220, 0.0, 1.1}}}},
-      {"hITSobClusterSize_P_All", "mean ITSob cluster size vs. p;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"hTPCdEdx_P_Electron", "TPC dE/dx vs. p;p_{pv} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0.f, 5.f}, {200, 0, 200}}}},
-      {"hTOFbeta_P_Electron", "TOF beta vs. p;p_{pv} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0.f, 5.f}, {220, 0.0, 1.1}}}},
-      {"hITSobClusterSize_P_Electron", "mean ITSob cluster size vs. p;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"hTPCdEdx_P_Pion", "TPC dE/dx vs. p;p_{pv} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0.f, 5.f}, {200, 0, 200}}}},
-      {"hTOFbeta_P_Pion", "TOF beta vs. p;p_{pv} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0.f, 5.f}, {220, 0.0, 1.1}}}},
-      {"hITSobClusterSize_P_Pion", "mean ITSob cluster size vs. p;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"hTPCdEdx_P_Kaon", "TPC dE/dx vs. p;p_{pv} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0.f, 5.f}, {200, 0, 200}}}},
-      {"hTOFbeta_P_Kaon", "TOF beta vs. p;p_{pv} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0.f, 5.f}, {220, 0.0, 1.1}}}},
-      {"hITSobClusterSize_P_Kaon", "mean ITSob cluster size vs. p;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
-      {"hTPCdEdx_P_Proton", "TPC dE/dx vs. p;p_{pv} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{500, 0.f, 5.f}, {200, 0, 200}}}},
-      {"hTOFbeta_P_Proton", "TOF beta vs. p;p_{pv} (GeV/c);TOF #beta", {HistType::kTH2F, {{500, 0.f, 5.f}, {220, 0.0, 1.1}}}},
-      {"hITSobClusterSize_P_Proton", "mean ITSob cluster size vs. p;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{500, 0.f, 5.f}, {150, 0.0, 15}}}},
+      {"hTPCdEdx_P_All", "TPC dE/dx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0, 200}}}},
+      {"hTOFbeta_P_All", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 10.f}, {220, 0.0, 1.1}}}},
+      {"hITSobClusterSize_P_All", "mean ITSob cluster size vs. p;p_{in} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{1000, 0.f, 10.f}, {150, 0.0, 15}}}},
+      {"hTPCdEdx_P_Electron", "TPC dE/dx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0, 200}}}},
+      {"hTOFbeta_P_Electron", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 10.f}, {220, 0.0, 1.1}}}},
+      {"hITSobClusterSize_P_Electron", "mean ITSob cluster size vs. p;p_{in} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{1000, 0.f, 10.f}, {150, 0.0, 15}}}},
+      {"hTPCdEdx_P_Pion", "TPC dE/dx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0, 200}}}},
+      {"hTOFbeta_P_Pion", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 10.f}, {220, 0.0, 1.1}}}},
+      {"hITSobClusterSize_P_Pion", "mean ITSob cluster size vs. p;p_{in} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{1000, 0.f, 10.f}, {150, 0.0, 15}}}},
+      {"hTPCdEdx_P_Kaon", "TPC dE/dx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0, 200}}}},
+      {"hTOFbeta_P_Kaon", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 10.f}, {220, 0.0, 1.1}}}},
+      {"hITSobClusterSize_P_Kaon", "mean ITSob cluster size vs. p;p_{in} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{1000, 0.f, 10.f}, {150, 0.0, 15}}}},
+      {"hTPCdEdx_P_Proton", "TPC dE/dx vs. p;p_{in} (GeV/c);TPC dE/dx", {HistType::kTH2F, {{1000, 0.f, 10.f}, {200, 0, 200}}}},
+      {"hTOFbeta_P_Proton", "TOF beta vs. p;p_{in} (GeV/c);TOF #beta", {HistType::kTH2F, {{1000, 0.f, 10.f}, {220, 0.0, 1.1}}}},
+      {"hITSobClusterSize_P_Proton", "mean ITSob cluster size vs. p;p_{in} (GeV/c);<ITSob cluster size> #times cos(#lambda)", {HistType::kTH2F, {{1000, 0.f, 10.f}, {150, 0.0, 15}}}},
 
-      {"hTPCNsigmaEl_P", "TPC n#sigma_{e} vs. p;p_{pv} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"hTPCNsigmaPi_P", "TPC n#sigma_{#pi} vs. p;p_{pv} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"hTPCNsigmaKa_P", "TPC n#sigma_{K} vs. p;p_{pv} (GeV/c);n #sigma_{K}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"hTPCNsigmaPr_P", "TPC n#sigma_{p} vs. p;p_{pv} (GeV/c);n #sigma_{p}^{TPC}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"hTOFNsigmaEl_P", "TOF n#sigma_{e} vs. p;p_{pv} (GeV/c);n #sigma_{e}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"hTOFNsigmaPi_P", "TOF n#sigma_{#pi} vs. p;p_{pv} (GeV/c);n #sigma_{#pi}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"hTOFNsigmaKa_P", "TOF n#sigma_{K} vs. p;p_{pv} (GeV/c);n #sigma_{K}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
-      {"hTOFNsigmaPr_P", "TOF n#sigma_{p} vs. p;p_{pv} (GeV/c);n #sigma_{p}^{TOF}", {HistType::kTH2F, {{500, 0.f, 5.f}, {100, -5, +5}}}},
+      {"hTPCNsigmaEl_P", "TPC n#sigma_{e} vs. p;p_{in} (GeV/c);n #sigma_{e}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5, +5}}}},
+      {"hTPCNsigmaPi_P", "TPC n#sigma_{#pi} vs. p;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5, +5}}}},
+      {"hTPCNsigmaKa_P", "TPC n#sigma_{K} vs. p;p_{in} (GeV/c);n #sigma_{K}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5, +5}}}},
+      {"hTPCNsigmaPr_P", "TPC n#sigma_{p} vs. p;p_{in} (GeV/c);n #sigma_{p}^{TPC}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5, +5}}}},
+      {"hTOFNsigmaEl_P", "TOF n#sigma_{e} vs. p;p_{in} (GeV/c);n #sigma_{e}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5, +5}}}},
+      {"hTOFNsigmaPi_P", "TOF n#sigma_{#pi} vs. p;p_{in} (GeV/c);n #sigma_{#pi}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5, +5}}}},
+      {"hTOFNsigmaKa_P", "TOF n#sigma_{K} vs. p;p_{in} (GeV/c);n #sigma_{K}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5, +5}}}},
+      {"hTOFNsigmaPr_P", "TOF n#sigma_{p} vs. p;p_{in} (GeV/c);n #sigma_{p}^{TOF}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, -5, +5}}}},
     },
   };
 
   void processQC(aod::EMTracksForMLPID const& tracks)
   {
     for (const auto& track : tracks) {
-      registry.fill(HIST("hTPCdEdx_P_All"), track.p(), track.tpcSignal());
-      registry.fill(HIST("hTOFbeta_P_All"), track.p(), track.beta());
-      registry.fill(HIST("hITSobClusterSize_P_All"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
+      registry.fill(HIST("hTPCdEdx_P_All"), track.tpcInnerParam(), track.tpcSignal());
+      registry.fill(HIST("hTOFbeta_P_All"), track.tpcInnerParam(), track.beta());
+      registry.fill(HIST("hITSobClusterSize_P_All"), track.tpcInnerParam(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
       if (track.pidlabel() == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron)) {
-        registry.fill(HIST("hTPCdEdx_P_Electron"), track.p(), track.tpcSignal());
-        registry.fill(HIST("hTOFbeta_P_Electron"), track.p(), track.beta());
-        registry.fill(HIST("hITSobClusterSize_P_Electron"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
-        registry.fill(HIST("hTPCNsigmaEl_P"), track.p(), track.tpcNSigmaEl());
-        registry.fill(HIST("hTOFNsigmaEl_P"), track.p(), track.tofNSigmaEl());
+        registry.fill(HIST("hTPCdEdx_P_Electron"), track.tpcInnerParam(), track.tpcSignal());
+        registry.fill(HIST("hTOFbeta_P_Electron"), track.tpcInnerParam(), track.beta());
+        registry.fill(HIST("hITSobClusterSize_P_Electron"), track.tpcInnerParam(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
+        registry.fill(HIST("hTPCNsigmaEl_P"), track.tpcInnerParam(), track.tpcNSigmaEl());
+        registry.fill(HIST("hTOFNsigmaEl_P"), track.tpcInnerParam(), track.tofNSigmaEl());
       } else if (track.pidlabel() == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion)) {
-        registry.fill(HIST("hTPCdEdx_P_Pion"), track.p(), track.tpcSignal());
-        registry.fill(HIST("hTOFbeta_P_Pion"), track.p(), track.beta());
-        registry.fill(HIST("hITSobClusterSize_P_Pion"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
-        registry.fill(HIST("hTPCNsigmaPi_P"), track.p(), track.tpcNSigmaPi());
-        registry.fill(HIST("hTOFNsigmaPi_P"), track.p(), track.tofNSigmaPi());
+        registry.fill(HIST("hTPCdEdx_P_Pion"), track.tpcInnerParam(), track.tpcSignal());
+        registry.fill(HIST("hTOFbeta_P_Pion"), track.tpcInnerParam(), track.beta());
+        registry.fill(HIST("hITSobClusterSize_P_Pion"), track.tpcInnerParam(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
+        registry.fill(HIST("hTPCNsigmaPi_P"), track.tpcInnerParam(), track.tpcNSigmaPi());
+        registry.fill(HIST("hTOFNsigmaPi_P"), track.tpcInnerParam(), track.tofNSigmaPi());
       } else if (track.pidlabel() == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kKaon)) {
-        registry.fill(HIST("hTPCdEdx_P_Kaon"), track.p(), track.tpcSignal());
-        registry.fill(HIST("hTOFbeta_P_Kaon"), track.p(), track.beta());
-        registry.fill(HIST("hITSobClusterSize_P_Kaon"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
-        registry.fill(HIST("hTPCNsigmaKa_P"), track.p(), track.tpcNSigmaKa());
-        registry.fill(HIST("hTOFNsigmaKa_P"), track.p(), track.tofNSigmaKa());
+        registry.fill(HIST("hTPCdEdx_P_Kaon"), track.tpcInnerParam(), track.tpcSignal());
+        registry.fill(HIST("hTOFbeta_P_Kaon"), track.tpcInnerParam(), track.beta());
+        registry.fill(HIST("hITSobClusterSize_P_Kaon"), track.tpcInnerParam(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
+        registry.fill(HIST("hTPCNsigmaKa_P"), track.tpcInnerParam(), track.tpcNSigmaKa());
+        registry.fill(HIST("hTOFNsigmaKa_P"), track.tpcInnerParam(), track.tofNSigmaKa());
       } else if (track.pidlabel() == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton)) {
-        registry.fill(HIST("hTPCdEdx_P_Proton"), track.p(), track.tpcSignal());
-        registry.fill(HIST("hTOFbeta_P_Proton"), track.p(), track.beta());
-        registry.fill(HIST("hITSobClusterSize_P_Proton"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
-        registry.fill(HIST("hTPCNsigmaPr_P"), track.p(), track.tpcNSigmaPr());
-        registry.fill(HIST("hTOFNsigmaPr_P"), track.p(), track.tofNSigmaPr());
+        registry.fill(HIST("hTPCdEdx_P_Proton"), track.tpcInnerParam(), track.tpcSignal());
+        registry.fill(HIST("hTOFbeta_P_Proton"), track.tpcInnerParam(), track.beta());
+        registry.fill(HIST("hITSobClusterSize_P_Proton"), track.tpcInnerParam(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
+        registry.fill(HIST("hTPCNsigmaPr_P"), track.tpcInnerParam(), track.tpcNSigmaPr());
+        registry.fill(HIST("hTOFNsigmaPr_P"), track.tpcInnerParam(), track.tofNSigmaPr());
       }
     } // end of track loop
   }
