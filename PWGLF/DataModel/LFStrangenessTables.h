@@ -1464,6 +1464,21 @@ DECLARE_SOA_DYNAMIC_COLUMN(PsiPair, psipair, //! psi pair angle
                              }
                              return std::asin(clipToPM1(argsin));
                            });
+
+DECLARE_SOA_DYNAMIC_COLUMN(V0Alpha, v0Alpha, //! Armenteros Alpha
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) {
+                             // No need to divide by momentum of the v0 (as in the v0data namespace) since the ratio of lQl is evaluated
+                             const float lQlPos = RecoDecay::dotProd(std::array{pxpos, pypos, pzpos}, std::array{pxneg + pxpos, pyneg + pypos, pzneg + pzpos});
+                             const float lQlNeg = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxneg + pxpos, pyneg + pypos, pzneg + pzpos});
+                             return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(V0QtArm, v0Qtarm, //! Armenteros Qt
+                           [](float pxpos, float pypos, float pzpos, float pxneg, float pyneg, float pzneg) {
+                             const float momTot2 = RecoDecay::p2(pxpos + pxneg, pypos + pyneg, pzpos + pzneg);
+                             const float dp = RecoDecay::dotProd(std::array{pxneg, pyneg, pzneg}, std::array{pxpos + pxneg, pypos + pyneg, pzpos + pzneg});
+                             return std::sqrt(RecoDecay::p2(pxneg, pyneg, pzneg) - dp * dp / momTot2); // qtarm
+                           });
 } // namespace cascdata
 
 //______________________________________________________
@@ -1542,10 +1557,12 @@ DECLARE_SOA_TABLE(StoredCascCores, "AOD", "CASCCORE", //! core information about
                   cascdata::BachelorEta<cascdata::PxBach, cascdata::PyBach, cascdata::PzBach>,
                   cascdata::BachelorPhi<cascdata::PxBach, cascdata::PyBach>,
 
-                  // Armenteros-Podolanski
+                  // Armenteros-Podolanski and psi-pair
                   cascdata::Alpha<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg, cascdata::PxBach, cascdata::PyBach, cascdata::PzBach, cascdata::Sign>,
                   cascdata::QtArm<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg, cascdata::PxBach, cascdata::PyBach, cascdata::PzBach>,
-                  cascdata::PsiPair<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg, cascdata::PxBach, cascdata::PyBach, cascdata::PzBach, cascdata::Sign>);
+                  cascdata::PsiPair<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg, cascdata::PxBach, cascdata::PyBach, cascdata::PzBach, cascdata::Sign>,
+                  cascdata::V0Alpha<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>,
+                  cascdata::V0QtArm<cascdata::PxPos, cascdata::PyPos, cascdata::PzPos, cascdata::PxNeg, cascdata::PyNeg, cascdata::PzNeg>);
 
 DECLARE_SOA_TABLE(StoredKFCascCores, "AOD", "KFCASCCORE", //!
                   cascdata::Sign, cascdata::MXi, cascdata::MOmega,

@@ -103,6 +103,7 @@ struct v0selector {
   Configurable<float> cutMassOmegaLow{"cutMassOmegaLow", 1.667, "cutMassOmegaLow"};
 
   Configurable<bool> produceV0ID{"produceV0ID", false, "Produce additional V0ID table"};
+  Configurable<bool> selectCascades{"selectCascades", false, "Select cascades in addition to v0s"};
   Configurable<bool> produceCascID{"produceCascID", false, "Produce additional CascID table"};
 
   enum { // Reconstructed V0
@@ -205,10 +206,21 @@ struct v0selector {
   Configurable<int> mincrossedrows{"mincrossedrows", 70, "min crossed rows"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 4.0, "max chi2/NclsTPC"};
   Configurable<bool> fillhisto{"fillhisto", false, "flag to fill histograms"};
-  // cutNsigmaElTPC, cutNsigmaPiTPC, cutNsigmaPrTPC
+  // Cascade-related Configurables
+  Configurable<float> cascDcaMax{"cascDcaMax", 0.3, "DCA cascade daughters"};
+  Configurable<float> cascV0DcaMax{"cascV0DcaMax", 0.3, "DCA V0 daughters of the cascade"};
+  Configurable<float> cascRadiusMin{"cascRadiusMin", 0.0, "Cascade Radius min"};
+  Configurable<float> cascRadiusMax{"cascRadiusMax", 90.0, "Cascade Radius max"};
+  Configurable<float> cascV0RadiusMin{"cascV0RadiusMin", 0.0, "V0 of the Cascade Radius min"};
+  Configurable<float> cascV0RadiusMax{"cascV0RadiusMax", 90.0, "V0 of the Cascade Radius max"};
+  Configurable<float> cascCosinePAMin{"cascCosinePAMin", 0.998, "Cascade CosPA min"};
+  Configurable<float> cascV0CosinePAMin{"cascV0CosinePAMin", 0.995, "V0 of the Cascade CosPA min"};
+  Configurable<float> cascV0CosinePAMax{"cascV0CosinePAMax", 1.000, "V0 of the Cascade CosPA max"};
+  // cutNsigmaElTPC, cutNsigmaPiTPC, cutNsigmaPrTPC, cutNsigmaKaTPC
   Configurable<float> cutNsigmaElTPC{"cutNsigmaElTPC", 5.0, "cutNsigmaElTPC"};
   Configurable<float> cutNsigmaPiTPC{"cutNsigmaPiTPC", 5.0, "cutNsigmaPiTPC"};
   Configurable<float> cutNsigmaPrTPC{"cutNsigmaPrTPC", 5.0, "cutNsigmaPrTPC"};
+  Configurable<float> cutNsigmaKaTPC{"cutNsigmaKaTPC", 5.0, "cutNsigmaKaTPC"};
 
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
@@ -236,10 +248,35 @@ struct v0selector {
       registry.add("hV0APplot", "hV0APplot", HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
       registry.add("hV0APplotSelected", "hV0APplotSelected", HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
       registry.add("hV0Psi", "hV0Psi", HistType::kTH2F, {{100, 0, TMath::PiOver2()}, {100, 0, 0.1}});
-      registry.add("hCascAPplot", "hCascAPplot", HistType::kTH2F, {{200, -1.0f, +1.0f}, {300, 0.0f, 0.3f}});
-      registry.add("hCascAPplotSelected", "hCascAPplotSelected", HistType::kTH2F, {{200, -1.0f, +1.0f}, {300, 0.0f, 0.3f}});
-      registry.add("hMassOmega", "hMassOmega", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.62f, 1.72f}});
-      registry.add("hMassAntiOmega", "hMassAntiOmega", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.62f, 1.72f}});
+      if (selectCascades) {
+        registry.add("hCascPt", "pT", HistType::kTH1F, {{100, 0.0f, 10}});
+        registry.add("hCascEtaPhi", "#eta vs. #varphi", HistType::kTH2F, {{63, 0, 6.3}, {20, -1.0f, 1.0f}});
+        registry.add("hCascDCAxyPosToPV", "hCascDCAxyPosToPV", HistType::kTH1F, {{1000, -5.0f, 5.0f}});
+        registry.add("hCascDCAxyNegToPV", "hCascDCAxyNegToPV", HistType::kTH1F, {{1000, -5.0f, 5.0f}});
+        registry.add("hCascDCAxyBachToPV", "hCascDCAxyBachToPV", HistType::kTH1F, {{1000, -5.0f, 5.0f}});
+        registry.add("hCascDCAzPosToPV", "hCascDCAzPosToPV", HistType::kTH1F, {{1000, -5.0f, 5.0f}});
+        registry.add("hCascDCAzNegToPV", "hCascDCAzNegToPV", HistType::kTH1F, {{1000, -5.0f, 5.0f}});
+        registry.add("hCascDCAzBachToPV", "hCascDCAzBachToPV", HistType::kTH1F, {{1000, -5.0f, 5.0f}});
+        registry.add("hCascAPplot", "hCascAPplot", HistType::kTH2F, {{200, -1.0f, +1.0f}, {300, 0.0f, 0.3f}});
+        registry.add("hCascV0APplot", "hCascV0APplot", HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
+        registry.add("hCascAPplotSelected", "hCascAPplotSelected", HistType::kTH2F, {{200, -1.0f, +1.0f}, {300, 0.0f, 0.3f}});
+        registry.add("hCascV0APplotSelected", "hCascV0APplotSelected", HistType::kTH2F, {{200, -1.0f, +1.0f}, {250, 0.0f, 0.25f}});
+        registry.add("hCascRadius", "hCascRadius", HistType::kTH1F, {{1000, 0.0f, 100.0f}});
+        registry.add("hCascV0Radius", "hCascV0Radius", HistType::kTH1F, {{1000, 0.0f, 100.0f}});
+        registry.add("hCascCosPA", "hCascCosPA", HistType::kTH1F, {{50, 0.95f, 1.0f}});
+        registry.add("hCascV0CosPA", "hCascV0CosPA", HistType::kTH1F, {{50, 0.95f, 1.0f}});
+        registry.add("hMassOmega", "hMassOmega", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.62f, 1.72f}});
+        registry.add("hMassAntiOmega", "hMassAntiOmega", HistType::kTH2F, {{900, 0.0f, 90.0f}, {100, 1.62f, 1.72f}});
+        registry.add("hCascDCADau", "hCascDCADau", HistType::kTH1F, {{1000, 0.0f, 10.0f}});
+        registry.add("hCascV0DCADau", "hCascV0DCADau", HistType::kTH1F, {{1000, 0.0f, 10.0f}});
+      }
+    }
+
+    if (selectCascades == false && produceCascID == true) {
+      LOGP(error, "produceCascID is available only when selectCascades is enabled");
+    }
+    if (cutAPOmegaUp1 < cutAPOmegaDown1) {
+      LOGP(error, "cutAPOmegaUp1 must be greater than cutAPOmegaDown1");
     }
   }
 
@@ -426,63 +463,164 @@ struct v0selector {
       }
     }
 
-    for (const auto& Casc : Cascs) {
-      if (fillhisto) {
-        registry.fill(HIST("hCascCandidate"), 1);
-      }
-
-      // topological selections
-
-      if (fillhisto) {
-        registry.fill(HIST("hCascCandidate"), 2);
-      }
-
-      const float Cascradius = Casc.cascradius();
-
-      const float mOmega = Casc.mOmega();
-
-      const float alpha = Casc.alpha();
-      const float qt = Casc.qtarm();
-
-      if (fillhisto) {
-        registry.fill(HIST("hCascAPplot"), alpha, qt);
-      }
-
-      const int cascid = checkCascade(alpha, qt);
-      if (cascid < 0) {
-        continue;
-      }
-      if (fillhisto) {
-        registry.fill(HIST("hCascAPplotSelected"), alpha, qt);
-      }
-
-      auto storeCascAddID = [&](auto gix, auto id) {
-        if (produceCascID.value) {
-          cascpidmap[gix] = id;
-        }
-      };
-
-      if (cascid == kOmega) {
+    if (selectCascades) {
+      for (const auto& casc : Cascs) {
         if (fillhisto) {
-          registry.fill(HIST("hMassOmega"), Cascradius, mOmega);
+          registry.fill(HIST("hCascCandidate"), 1);
         }
-        if (cutMassOmegaLow < mOmega && mOmega < cutMassOmegaHigh) {
-          pidmap[Casc.bachelorId()] |= (uint8_t(1) << kOmega);
-          storeCascAddID(Casc.globalIndex(), kOmega);
+
+        if (std::fabs(casc.posTrack_as<FullTracksExt>().eta()) > 0.9) {
+          continue;
         }
-      } else if (cascid == kAntiOmega) {
+        if (std::fabs(casc.negTrack_as<FullTracksExt>().eta()) > 0.9) {
+          continue;
+        }
+        if (std::fabs(casc.negTrack_as<FullTracksExt>().eta()) > 0.9) {
+          continue;
+        }
+
+        if (casc.posTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
+          continue;
+        }
+        if (casc.negTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
+          continue;
+        }
+        if (casc.bachelor_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
+          continue;
+        }
+        if (casc.posTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
+          continue;
+        }
+        if (casc.negTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
+          continue;
+        }
+        if (casc.bachelor_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
+          continue;
+        }
+        if (std::fabs(casc.posTrack_as<FullTracksExt>().dcaXY()) < dcamin) {
+          continue;
+        }
+        if (std::fabs(casc.negTrack_as<FullTracksExt>().dcaXY()) < dcamin) {
+          continue;
+        }
+        if (std::fabs(casc.bachelor_as<FullTracksExt>().dcaXY()) < dcamin) {
+          continue;
+        }
+        if (std::fabs(casc.posTrack_as<FullTracksExt>().dcaXY()) > dcamax) {
+          continue;
+        }
+        if (std::fabs(casc.negTrack_as<FullTracksExt>().dcaXY()) > dcamax) {
+          continue;
+        }
+        if (std::fabs(casc.bachelor_as<FullTracksExt>().dcaXY()) > dcamax) {
+          continue;
+        }
+
+        if (casc.posTrack_as<FullTracksExt>().sign() * casc.negTrack_as<FullTracksExt>().sign() > 0) { // reject same sign pair
+          continue;
+        }
+
         if (fillhisto) {
-          registry.fill(HIST("hMassAntiOmega"), Cascradius, mOmega);
+          registry.fill(HIST("hCascCandidate"), 2);
         }
-        if (cutMassOmegaLow < mOmega && mOmega < cutMassOmegaHigh) {
-          pidmap[Casc.bachelorId()] |= (uint8_t(1) << kAntiOmega);
-          storeCascAddID(Casc.globalIndex(), kAntiOmega);
+
+        auto collision = casc.collision_as<aod::Collisions>();
+        const float collisionX = collision.posX();
+        const float collisionY = collision.posY();
+        const float collisionZ = collision.posZ();
+
+        const float cascDca = casc.dcacascdaughters(); // NOTE the name of getter is misleading. In case of no-KF this is sqrt(Chi2)
+        const float cascV0Dca = casc.dcaV0daughters(); // NOTE the name of getter is misleading. In case of kfDoDCAFitterPreMinimV0 this is sqrt(Chi2)
+        const float cascRadius = casc.cascradius();
+        const float cascV0Radius = casc.dcaV0daughters();
+        const float cascCosinePA = casc.casccosPA(collisionX, collisionY, collisionZ);
+        const float cascV0CosinePA = casc.v0cosPA(collisionX, collisionY, collisionZ);
+
+        if (cascDca > cascDcaMax) {
+          continue;
         }
-      }
-    } // end of Casc loop
-    if (produceCascID.value) {
-      for (auto& Casc : Cascs) {
-        cascmapID(cascpidmap[Casc.globalIndex()]);
+        if (cascV0Dca > cascV0DcaMax) {
+          continue;
+        }
+        if (cascRadius < cascRadiusMin || cascRadius > cascRadiusMax) {
+          continue;
+        }
+        if (cascV0Radius < cascV0RadiusMin || cascV0Radius > cascV0RadiusMax) {
+          continue;
+        }
+        if (cascCosinePA < cascCosinePAMin) {
+          continue;
+        }
+        if (cascV0CosinePA < cascV0CosinePAMin || cascV0CosinePA > cascV0CosinePAMax) {
+          continue;
+        }
+
+        const float mOmega = casc.mOmega();
+        const float alpha = casc.alpha();
+        const float qt = casc.qtarm();
+        const float v0Alpha = casc.v0Alpha();
+        const float v0Qt = casc.v0Qtarm();
+
+        if (fillhisto) {
+          registry.fill(HIST("hCascPt"), casc.pt());
+          registry.fill(HIST("hCascEtaPhi"), casc.phi(), casc.eta());
+          registry.fill(HIST("hCascDCAxyPosToPV"), casc.posTrack_as<FullTracksExt>().dcaXY());
+          registry.fill(HIST("hCascDCAxyNegToPV"), casc.negTrack_as<FullTracksExt>().dcaXY());
+          registry.fill(HIST("hCascDCAxyBachToPV"), casc.bachelor_as<FullTracksExt>().dcaXY());
+          registry.fill(HIST("hCascDCAzPosToPV"), casc.posTrack_as<FullTracksExt>().dcaZ());
+          registry.fill(HIST("hCascDCAzNegToPV"), casc.negTrack_as<FullTracksExt>().dcaZ());
+          registry.fill(HIST("hCascDCAzBachToPV"), casc.bachelor_as<FullTracksExt>().dcaZ());
+          registry.fill(HIST("hCascAPplot"), alpha, qt);
+          registry.fill(HIST("hCascV0APplot"), v0Alpha, v0Qt);
+          registry.fill(HIST("hCascRadius"), cascRadius);
+          registry.fill(HIST("hCascV0Radius"), cascV0Radius);
+          registry.fill(HIST("hCascCosPA"), cascCosinePA);
+          registry.fill(HIST("hCascV0CosPA"), cascV0CosinePA);
+          registry.fill(HIST("hCascDCADau"), cascDca);
+          registry.fill(HIST("hCascV0DCADau"), cascV0Dca);
+        }
+
+        const int cascid = checkCascade(alpha, qt);
+        const int v0id = checkV0(v0Alpha, v0Qt);
+        if (cascid < 0) {
+          continue;
+        }
+        if (v0id != kLambda && v0id != kAntiLambda) {
+          continue;
+        }
+        if (fillhisto) {
+          registry.fill(HIST("hCascAPplotSelected"), alpha, qt);
+          registry.fill(HIST("hCascV0APplotSelected"), v0Alpha, v0Qt);
+        }
+
+        auto storeCascAddID = [&](auto gix, auto id) {
+          if (produceCascID.value) {
+            cascpidmap[gix] = id;
+          }
+        };
+
+        if (cascid == kOmega) {
+          if (fillhisto) {
+            registry.fill(HIST("hMassOmega"), cascRadius, mOmega);
+          }
+          if (cutMassOmegaLow < mOmega && mOmega < cutMassOmegaHigh && std::abs(casc.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC && std::abs(casc.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < cutNsigmaKaTPC) {
+            pidmap[casc.bachelorId()] |= (uint8_t(1) << kOmega);
+            storeCascAddID(casc.globalIndex(), kOmega);
+          }
+        } else if (cascid == kAntiOmega) {
+          if (fillhisto) {
+            registry.fill(HIST("hMassAntiOmega"), cascRadius, mOmega);
+          }
+          if (cutMassOmegaLow < mOmega && mOmega < cutMassOmegaHigh && std::abs(casc.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(casc.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC && std::abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < cutNsigmaKaTPC) {
+            pidmap[casc.bachelorId()] |= (uint8_t(1) << kAntiOmega);
+            storeCascAddID(casc.globalIndex(), kAntiOmega);
+          }
+        }
+      } // end of Casc loop
+      if (produceCascID.value) {
+        for (auto& casc : Cascs) {
+          cascmapID(cascpidmap[casc.globalIndex()]);
+        }
       }
     }
     for (auto& track : tracks) {
