@@ -227,6 +227,7 @@ struct UccZdc {
     const char* tiT0C{"T0C (#times 1/100, -3.3 < #eta < -2.1)"};
     const char* tiT0M{"T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9)"};
     const char* tiNch{"#it{N}_{ch} (|#eta| < 0.8)"};
+    const char* tiNPV{"#it{N}_{PV} (|#eta|<1)"};
     const char* tiV0A{"V0A (#times 1/100, 2.2 < #eta < 5)"};
     const char* tiZNs{"ZNA + ZNC"};
     const char* tiZPs{"ZPA + ZPC"};
@@ -250,6 +251,7 @@ struct UccZdc {
     registry.add("ExcludedEvtVsFT0M", Form(";%s;Entries;", tiT0M), kTH1F, {{nBinsAmpFT0, 0., maxAmpFT0}});
     registry.add("ExcludedEvtVsFV0A", Form(";%s;Entries;", tiT0M), kTH1F, {{nBinsAmpV0A, 0., maxAmpV0A}});
     registry.add("ExcludedEvtVsNch", Form(";%s;Entries;", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
+    registry.add("ExcludedEvtVsNPV", Form(";%s;Entries;", tiNPV), kTH1F, {{nBinsITSTrack, 0, maxITSTrack}});
     registry.add("Nch", Form(";%s;Entries;", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
     registry.add("NchVsOneParCorr", Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
 
@@ -549,6 +551,7 @@ struct UccZdc {
       }
     }
 
+    const double nPV{collision.multNTracksPVeta1() / 1.};
     const double normT0M{(aT0A + aT0C) / 100.};
     const double normV0A{aV0A / 100.};
     const double normT0A{aT0A / 100.};
@@ -619,6 +622,9 @@ struct UccZdc {
       if (s1 == "V0A") {
         xEval = normV0A;
       }
+      if (s1 == "NPV") {
+        xEval = nPV;
+      }
 
       const int bin4Calibration{cfgNch.hMeanNch->FindBin(xEval)};
       const double meanNch{cfgNch.hMeanNch->GetBinContent(bin4Calibration)};
@@ -630,6 +636,7 @@ struct UccZdc {
         registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
         registry.fill(HIST("ExcludedEvtVsFV0A"), normV0A);
         registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
+        registry.fill(HIST("ExcludedEvtVsNPV"), nPV);
         skipEvent = true;
       }
     }
@@ -725,6 +732,7 @@ struct UccZdc {
       }
     }
 
+    const double nPV{collision.multNTracksPVeta1() / 1.};
     const double normT0M{(aT0A + aT0C) / 100.};
     const double normV0A{aV0A / 100.};
     float znA{foundBC.zdc().amplitudeZNA()};
@@ -802,6 +810,9 @@ struct UccZdc {
       if (s1 == "V0A") {
         xEval = normV0A;
       }
+      if (s1 == "NPV") {
+        xEval = nPV;
+      }
 
       const int bin4Calibration{cfgNch.hMeanNch->FindBin(xEval)};
       const double meanNch{cfgNch.hMeanNch->GetBinContent(bin4Calibration)};
@@ -813,6 +824,7 @@ struct UccZdc {
         registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
         registry.fill(HIST("ExcludedEvtVsFV0A"), normV0A);
         registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
+        registry.fill(HIST("ExcludedEvtVsNPV"), nPV);
         skipEvent = true;
       }
     }
