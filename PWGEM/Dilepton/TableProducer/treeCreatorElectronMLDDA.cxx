@@ -768,7 +768,7 @@ struct TreeCreatorElectronMLDDA {
 
       auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
       for (const auto& v0 : v0s_coll) {
-        auto o2v0 = v0.template v0_as<aod::V0s>();
+        // auto o2v0 = v0.template v0_as<aod::V0s>();
         auto pos = v0.template posTrack_as<MyTracks>();
         auto neg = v0.template negTrack_as<MyTracks>();
         // LOGF(info, "v0.globalIndex() = %d, v0.collisionId() = %d, v0.posTrackId() = %d, v0.negTrackId() = %d", v0.globalIndex(), v0.collisionId(), v0.posTrackId(), v0.negTrackId());
