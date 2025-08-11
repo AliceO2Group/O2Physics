@@ -250,7 +250,10 @@ enum DecayChannelMain : int8_t {
   // Xic(3080)0
   Xic3080zeroToD0Lambda = 14, // D0 Λ
   // Xic(3080)+
-  Xic3080plusToDplusLambda = 15 // D+ Λ
+  Xic3080plusToDplusLambda = 15, // D+ Λ
+  // D*+
+  DstarToD0Pi = 16,           // D0 π+
+  NChannelsMain = DstarToD0Pi // last channel
 };
 } // namespace hf_cand_reso
 } // namespace o2::hf_decay

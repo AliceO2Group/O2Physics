@@ -13,25 +13,24 @@
 /// \brief basic check for the matching between generator level and detector level
 /// \author victor.gonzalez.sebastian@gmail.com
 
-#include <cmath>
-#include <string>
-#include <vector>
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/DataModel/DptDptFiltered.h"
+#include "PWGCF/TableProducer/dptDptFilter.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "PWGCF/DataModel/DptDptFiltered.h"
-#include "PWGCF/TableProducer/dptDptFilter.h"
+
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
@@ -41,6 +40,10 @@
 #include <TParameter.h>
 #include <TProfile3D.h>
 #include <TROOT.h>
+
+#include <cmath>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
