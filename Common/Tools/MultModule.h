@@ -505,6 +505,11 @@ class MultModule
       internalOpts.generatorName.value = "PYTHIA";
     }
 
+    // capture the need for PYTHIA calibration in light ion runs automatically
+    if (metadataInfo.isMC() && mRunNumber >= 564250 && mRunNumber <= 564472) {
+      internalOpts.generatorName.value = "PYTHIA";
+    }
+
     // list enabled tables
     for (int i = 0; i < nTablesConst; i++) {
       // printout to be improved in the future
@@ -857,7 +862,7 @@ class MultModule
       if (!hVtxZNGlobalTracks || std::fabs(collision.posZ()) > 15.0f) {
         mults.multGlobalTracksZeq = mults.multGlobalTracks; // if no equalization available, don't do it
       } else {
-        mults.multGlobalTracksZeq = hVtxZNGlobalTracks->Interpolate(0.0) * mults.multFT0C / hVtxZNGlobalTracks->Interpolate(collision.posZ());
+        mults.multGlobalTracksZeq = hVtxZNGlobalTracks->Interpolate(0.0) * mults.multGlobalTracks / hVtxZNGlobalTracks->Interpolate(collision.posZ());
       }
 
       // provide vertex-Z equalized Nglobals (or non-equalized if missing or beyond range)

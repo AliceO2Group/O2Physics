@@ -641,6 +641,11 @@ using EMPrimaryElectronsCov = EMPrimaryElectronsCov_001;
 // iterators
 using EMPrimaryElectronCov = EMPrimaryElectronsCov::iterator;
 
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryElectronsDeDxMC_000, "AOD", "EMPRMELDEDXMC", 0, mcpidtpc::DeDxTunedMc, o2::soa::Marker<1>);
+using EMPrimaryElectronsDeDxMC = EMPrimaryElectronsDeDxMC_000;
+// iterators
+using EMPrimaryElectronDeDxMC = EMPrimaryElectronsDeDxMC::iterator;
+
 DECLARE_SOA_TABLE(EMPrimaryElectronEMEventIds, "AOD", "PRMELMEVENTID", emprimaryelectron::EMEventId); // To be joined with EMPrimaryElectrons table at analysis level.
 // iterators
 using EMPrimaryElectronEMEventId = EMPrimaryElectronEMEventIds::iterator;
@@ -764,12 +769,19 @@ DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
 DECLARE_SOA_COLUMN(TrackBit, trackBit, uint16_t);  //!
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float signed1Pt) -> float { return 1.f / std::fabs(signed1Pt); });
 } // namespace emprimarytrack
 
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //! primary charged track table for 2PC
                             o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId, emprimarytrack::Sign, track::Pt, track::Eta, track::Phi, emprimarytrack::TrackBit);
 
-using EMPrimaryTracks = EMPrimaryTracks_000;
+DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_001, "AOD", "EMPRIMARYTRACK", 1, //! primary charged track table for 2PC
+                            o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId,
+                            track::Signed1Pt, track::Eta, track::Phi, emprimarytrack::TrackBit,
+                            // dynamic column
+                            track::Sign<track::Signed1Pt>, emprimarytrack::Pt<track::Signed1Pt>);
+
+using EMPrimaryTracks = EMPrimaryTracks_001;
 // iterators
 using EMPrimaryTrack = EMPrimaryTracks::iterator;
 

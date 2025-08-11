@@ -87,13 +87,20 @@ using CFTrackWithLabel = CFTracksWithLabel::iterator;
 DECLARE_SOA_TABLE(CFCollRefs, "AOD", "CFCOLLREF", o2::soa::Index<>, track::CollisionId); //! Transient cf collision index table
 
 //------multiplicity set
-namespace cfmultiplicityset
+namespace cfmultset
 {
 DECLARE_SOA_COLUMN(Multiplicities, multiplicities, std::vector<float>); //! List of auxiliary multiplicities
-}
-DECLARE_SOA_TABLE(CFMultiplicitySets, "AOD", "CFMULTIPLICITYSET", cfmultiplicityset::Multiplicities); //! Auxilary multiplicity set table
+enum MultiplicityEstimators : uint8_t {
+  CentFT0C = 0x1,
+  MultFV0A = 0x2,
+  MultNTracksPV = 0x4,
+  MultNTracksGlobal = 0x8
+};
 
-using CFMultiplicitySet = CFMultiplicitySets::iterator;
+} // namespace cfmultset
+DECLARE_SOA_TABLE(CFMultSets, "AOD", "CFMULTSET", cfmultset::Multiplicities); //! Auxilary multiplicity set table
+
+using CFMultSet = CFMultSets::iterator;
 
 // Reco
 
