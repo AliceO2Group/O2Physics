@@ -42,7 +42,7 @@ struct AssociateMCInfoDilepton {
     kPCM = 0x4,
   };
 
-  using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMEvSels>;
+  using MyCollisionsMC = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::EMEvSels, aod::EMEoIs>;
   using TracksMC = soa::Join<aod::TracksIU, aod::McTrackLabels>;
   using FwdTracksMC = soa::Join<aod::FwdTracks, aod::McFwdTrackLabels>;
   using MFTTracksMC = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
@@ -169,6 +169,10 @@ struct AssociateMCInfoDilepton {
       }
 
       if (!collision.isSelected()) {
+        continue;
+      }
+
+      if (!collision.isEoI()) { // events with at least 1 lepton for data reduction.
         continue;
       }
 
