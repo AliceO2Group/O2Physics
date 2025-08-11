@@ -56,7 +56,7 @@ struct sigmaminustask {
   Configurable<float> cutRapMotherMC{"cutRapMotherMC", 1.0f, "Rapidity cut for mother Sigma in MC"};
   Configurable<float> cutMinQtAP{"cutMinQtAP", 0.15f, "Minimum Qt for Armenteros-Podolanski cut"};
   Configurable<float> cutMaxQtAP{"cutMaxQtAP", 0.20f, "Maximum Qt for Armenteros-Podolanski cut"};
-  Configurable<float> cutPtGen{"cutPtGen", 0.5f, "Minimum pT for generated particles"};
+  Configurable<float> cutPtGen{"cutPtGen", 0.5f, "Minimum pT for generated sigma particles"};
 
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Kink candidates"};
 
