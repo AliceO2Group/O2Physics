@@ -56,6 +56,7 @@ struct sigmaminustask {
   Configurable<float> cutRapMotherMC{"cutRapMotherMC", 1.0f, "Rapidity cut for mother Sigma in MC"};
   Configurable<float> cutMinQtAP{"cutMinQtAP", 0.15f, "Minimum Qt for Armenteros-Podolanski cut"};
   Configurable<float> cutMaxQtAP{"cutMaxQtAP", 0.20f, "Maximum Qt for Armenteros-Podolanski cut"};
+  Configurable<float> cutPtGen{"cutPtGen", 0.5f, "Minimum pT for generated particles"};
 
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Kink candidates"};
 
@@ -129,6 +130,7 @@ struct sigmaminustask {
     rSigmaMinus.add("h2DCAMothPt", "h2DCAMothPt", {HistType::kTH2F, {ptAxis, dcaMothAxis}});
     rSigmaMinus.add("h2DCADaugPt", "h2DCADaugPt", {HistType::kTH2F, {ptAxis, dcaDaugAxis}});
     rSigmaMinus.add("h2ArmenterosPreCuts", "h2ArmenterosPreCuts", {HistType::kTH2F, {alphaAPAxis, qtAPAxis}});
+    rSigmaMinus.add("h2ArmenterosPostCuts", "h2ArmenterosPostCuts", {HistType::kTH2F, {alphaAPAxis, qtAPAxis}});
     rSigmaMinus.add("h2CosPointingAnglePt", "h2CosPointingAnglePt", {HistType::kTH2F, {ptAxis, cosPointingAngleAxis}});
 
     if (doprocessMC) {
@@ -252,7 +254,7 @@ struct sigmaminustask {
                                             std::array{0.0f, 0.0f, 0.0f},
                                             std::array{kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx()});
       rSigmaMinus.fill(HIST("h2CosPointingAnglePt"), kinkCand.mothSign() * kinkCand.ptMoth(), cosPointingAngleRec);
-
+      rSigmaMinus.fill(HIST("h2ArmenterosPostCuts"), alphaAPValue, qtValue);
       rSigmaMinus.fill(HIST("h2MassSigmaMinusPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("h2SigmaMassVsXiMass"), kinkCand.mXiMinus(), kinkCand.mSigmaMinus());
       rSigmaMinus.fill(HIST("h2NSigmaTPCPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tpcNSigmaPi());
@@ -354,7 +356,7 @@ struct sigmaminustask {
             rSigmaMinus.fill(HIST("h2DCAMothPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.dcaMothPv());
             rSigmaMinus.fill(HIST("h2DCADaugPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.dcaDaugPv());
             rSigmaMinus.fill(HIST("h2CosPointingAnglePt"), kinkCand.mothSign() * kinkCand.ptMoth(), cosPointingAngleRec);
-
+            rSigmaMinus.fill(HIST("h2ArmenterosPostCuts"), alphaAPValue, qtValue);
             if (std::abs(mcTrackPiDau.pdgCode()) == 211) {
               rSigmaMinus.fill(HIST("h2NSigmaTOFPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tofNSigmaPi());
             } else if (std::abs(mcTrackPiDau.pdgCode()) == 2212) {
@@ -383,6 +385,11 @@ struct sigmaminustask {
       if ((std::abs(mcPart.pdgCode()) != 3112 && std::abs(mcPart.pdgCode()) != 3222) || std::abs(mcPart.y()) > cutRapMotherMC) { // only sigma mothers and rapidity cut
         continue;
       }
+
+      if (mcPart.pt() < cutPtGen) {
+        continue; // Skip if pT is below threshold
+      }
+
       if (!mcPart.has_daughters()) {
         continue; // Skip if no daughters
       }
