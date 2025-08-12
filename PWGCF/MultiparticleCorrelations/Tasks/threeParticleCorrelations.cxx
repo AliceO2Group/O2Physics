@@ -1007,7 +1007,7 @@ struct ThreeParticleCorrelations {
           return false;
         }
       } else if (track.pt() > pionPtMid1 && track.pt() < pionPtMid2) {
-        if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= -nSigma2) {
+        if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= nSigma2) {
           return false;
         }
       } else if (track.pt() > pionPtMid2 && track.pt() < pionPtMax) {
