@@ -18,19 +18,20 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
 
 using namespace o2;
 using namespace o2::constants::math;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 enum PdgCode {
   kEta = 221,
   kOmega = 223,
-  kPhi = 333,
   kEtaPrime = 331
 };
 
@@ -118,38 +119,38 @@ struct HfTaskSingleElectron {
   void init(InitContext const&)
   {
     // create histograms
-    histos.add("nEvents", "Number of events", kTH1F, {{1, 0., 1.}});
-    histos.add("VtxZ", "VtxZ; cm; entries", kTH1F, {axisPosZ});
-    histos.add("etaTrack", "etaTrack; #eta; entries", kTH1F, {axisEta});
-    histos.add("ptTrack", "#it{p}_{T} distribution of selected tracks; #it{p}_{T} (GeV/#it{c}); entries", kTH1F, {axisPt});
+    histos.add("nEvents", "Number of events", kTH1D, {{1, 0., 1.}});
+    histos.add("VtxZ", "VtxZ; cm; entries", kTH1D, {axisPosZ});
+    histos.add("etaTrack", "etaTrack; #eta; entries", kTH1D, {axisEta});
+    histos.add("ptTrack", "#it{p}_{T} distribution of selected tracks; #it{p}_{T} (GeV/#it{c}); entries", kTH1D, {axisPt});
 
     // QA plots for trigger track selection
-    histos.add("tpcNClsTrack", "tpcNClsTrack", kTH1F, {{200, 0, 200}});
-    histos.add("tpcFoundFindableTrack", "", kTH1F, {{10, 0, 1}});
-    histos.add("tpcChi2Track", "", kTH1F, {{100, 0, 10}});
-    histos.add("itsIBClsTrack", "", kTH1F, {{10, 0, 10}});
-    histos.add("dcaXYTrack", "", kTH1F, {{600, -3, 3}});
-    histos.add("dcaZTrack", "", kTH1F, {{600, -3, 3}});
+    histos.add("tpcNClsTrack", "tpcNClsTrack", kTH1D, {{200, 0, 200}});
+    histos.add("tpcFoundFindableTrack", "", kTH1D, {{10, 0, 1}});
+    histos.add("tpcChi2Track", "", kTH1D, {{100, 0, 10}});
+    histos.add("itsIBClsTrack", "", kTH1D, {{10, 0, 10}});
+    histos.add("dcaXYTrack", "", kTH1D, {{600, -3, 3}});
+    histos.add("dcaZTrack", "", kTH1D, {{600, -3, 3}});
 
     // pid
-    histos.add("tofNSigPt", "", kTH2F, {{axisPtEl}, {axisNsig}});
-    histos.add("tofNSigPtQA", "", kTH2F, {{axisPtEl}, {axisNsig}});
-    histos.add("tpcNSigPt", "", kTH2F, {{axisPtEl}, {axisNsig}});
-    histos.add("tpcNSigPtAfterTofCut", "", kTH2F, {{axisPtEl}, {axisNsig}});
-    histos.add("tpcNSigPtQA", "", kTH2F, {{axisPtEl}, {axisNsig}});
+    histos.add("tofNSigPt", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tofNSigPtQA", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tpcNSigPt", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tpcNSigPtAfterTofCut", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tpcNSigPtQA", "", kTH2D, {{axisPtEl}, {axisNsig}});
 
     // track impact parameter
-    histos.add("dcaTrack", "", kTH2F, {{axisPtEl}, {axisTrackIp}});
-    histos.add("dcaBeauty", "", kTH2F, {{axisPtEl}, {axisTrackIp}});
-    histos.add("dcaCharm", "", kTH2F, {{axisPtEl}, {axisTrackIp}});
-    histos.add("dcaDalitz", "", kTH2F, {{axisPtEl}, {axisTrackIp}});
-    histos.add("dcaConv", "", kTH2F, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaTrack", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaBeauty", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaCharm", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaDalitz", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaConv", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
 
     // QA plots for MC
-    histos.add("hPdgC", "", kTH1F, {{10001, -0.5, 10000.5}});
-    histos.add("hPdgB", "", kTH1F, {{10001, -0.5, 10000.5}});
-    histos.add("hPdgDa", "", kTH1F, {{10001, -0.5, 10000.5}});
-    histos.add("hPdgCo", "", kTH1F, {{10001, -0.5, 10000.5}});
+    histos.add("hPdgC", "", kTH1D, {{10001, -0.5, 10000.5}});
+    histos.add("hPdgB", "", kTH1D, {{10001, -0.5, 10000.5}});
+    histos.add("hPdgDa", "", kTH1D, {{10001, -0.5, 10000.5}});
+    histos.add("hPdgCo", "", kTH1D, {{10001, -0.5, 10000.5}});
   }
 
   template <typename TrackType>
