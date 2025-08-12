@@ -486,30 +486,31 @@ struct sigmaanalysis {
       histos.add("Gen/hCentralityVsPVzMC", "hCentralityVsPVzMC", kTH2F, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
     
       // Sigma0 specific
-      histos.add("Gen/h2dGenSigma0", "h2dGenSigma0", kTH2D, {axisCentrality, axisPt});
-      histos.add("Gen/h2dGenAntiSigma0", "h2dGenAntiSigma0", kTH2D, {axisCentrality, axisPt});      
-      histos.add("Gen/h2dGenSigma0VsMultMC_RecoedEvt", "h2dGenSigma0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
-      histos.add("Gen/h2dGenAntiSigma0VsMultMC_RecoedEvt", "h2dGenAntiSigma0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
-      histos.add("Gen/h2dGenSigma0VsMultMC", "h2dGenSigma0VsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("Gen/h2dGenAntiSigma0VsMultMC", "h2dGenAntiSigma0VsMultMC", kTH2D, {axisNch, axisPt});      
+      if (doprocessGeneratedRun3){
+        histos.add("Gen/h2dGenSigma0", "h2dGenSigma0", kTH2D, {axisCentrality, axisPt});
+        histos.add("Gen/h2dGenAntiSigma0", "h2dGenAntiSigma0", kTH2D, {axisCentrality, axisPt});      
+        histos.add("Gen/h2dGenSigma0VsMultMC_RecoedEvt", "h2dGenSigma0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
+        histos.add("Gen/h2dGenAntiSigma0VsMultMC_RecoedEvt", "h2dGenAntiSigma0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
+        histos.add("Gen/h2dGenSigma0VsMultMC", "h2dGenSigma0VsMultMC", kTH2D, {axisNch, axisPt});
+        histos.add("Gen/h2dGenAntiSigma0VsMultMC", "h2dGenAntiSigma0VsMultMC", kTH2D, {axisNch, axisPt});      
 
-      auto hGenSigma0Type = histos.add<TH1>("Gen/hGenSigma0Type", "hGenSigma0Type", kTH1D, {{4, -0.5f, 3.5f}});
-      hGenSigma0Type->GetXaxis()->SetBinLabel(1, "All Sigma0s");
-      hGenSigma0Type->GetXaxis()->SetBinLabel(2, "Sterile");
-      hGenSigma0Type->GetXaxis()->SetBinLabel(3, "Lambda+Gamma");
-      hGenSigma0Type->GetXaxis()->SetBinLabel(4, "Others");
+        auto hGenSigma0Type = histos.add<TH1>("Gen/hGenSigma0Type", "hGenSigma0Type", kTH1D, {{4, -0.5f, 3.5f}});
+        hGenSigma0Type->GetXaxis()->SetBinLabel(1, "All Sigma0s");
+        hGenSigma0Type->GetXaxis()->SetBinLabel(2, "Sterile");
+        hGenSigma0Type->GetXaxis()->SetBinLabel(3, "Lambda+Gamma");
+        hGenSigma0Type->GetXaxis()->SetBinLabel(4, "Others");
 
-      auto h2DGenSigma0Type = histos.add<TH2>("Gen/h2DGenSigma0Type", "h2DGenSigma0Type", kTH2D, {{4, -0.5f, 3.5f}, axisGeneratorIds});
-      h2DGenSigma0Type->GetXaxis()->SetBinLabel(1, "All Sigma0s");
-      h2DGenSigma0Type->GetXaxis()->SetBinLabel(2, "Sterile");
-      h2DGenSigma0Type->GetXaxis()->SetBinLabel(3, "Lambda+Gamma");
-      h2DGenSigma0Type->GetXaxis()->SetBinLabel(4, "Others");
-
-      // Pi0 specific
-      histos.add("Gen/h2dGenPi0VsMultMC_RecoedEvt", "h2dGenPi0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
-      histos.add("Gen/h2dGenPi0", "h2dGenPi0", kTH2D, {axisCentrality, axisPt});
-      histos.add("Gen/h2dGenPi0VsMultMC", "h2dGenPi0VsMultMC", kTH2D, {axisNch, axisPt});
-      
+        auto h2DGenSigma0Type = histos.add<TH2>("Gen/h2DGenSigma0Type", "h2DGenSigma0Type", kTH2D, {{4, -0.5f, 3.5f}, axisGeneratorIds});
+        h2DGenSigma0Type->GetXaxis()->SetBinLabel(1, "All Sigma0s");
+        h2DGenSigma0Type->GetXaxis()->SetBinLabel(2, "Sterile");
+        h2DGenSigma0Type->GetXaxis()->SetBinLabel(3, "Lambda+Gamma");
+        h2DGenSigma0Type->GetXaxis()->SetBinLabel(4, "Others");
+      }
+      else{ // Pi0 specific        
+        histos.add("Gen/h2dGenPi0VsMultMC_RecoedEvt", "h2dGenPi0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
+        histos.add("Gen/h2dGenPi0", "h2dGenPi0", kTH2D, {axisCentrality, axisPt});
+        histos.add("Gen/h2dGenPi0VsMultMC", "h2dGenPi0VsMultMC", kTH2D, {axisNch, axisPt});        
+      }      
     }
   }
 

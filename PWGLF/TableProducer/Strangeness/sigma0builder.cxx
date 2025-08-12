@@ -407,15 +407,17 @@ struct sigma0builder {
         histos.fill(HIST("Gen/hPrimaryPi0s"), 0);
         if (isPrimary) histos.fill(HIST("Gen/hPrimaryPi0s"), 1);
         
-        pi0Gens(ptmc); // optional table to store generated pi0 candidates. Be careful, this is a large table!
-        pi0GenCollRefs(mccollisionid); // link to stramccollision table
+        if (fillPi0Tables){
+          pi0Gens(ptmc); // optional table to store generated pi0 candidates. Be careful, this is a large table!
+          pi0GenCollRefs(mccollisionid); // link to stramccollision table
+        }        
       }  
       
       // Sigma0-specific
       if (isSigma0 || isAntiSigma0){     
         
         // Checking decay mode
-        auto daughtersIDs = mcParticle.daughtersIds();
+        //auto daughtersIDs = mcParticle.daughtersIds();
         auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
                 
         if (daughters.size() == 2) {
