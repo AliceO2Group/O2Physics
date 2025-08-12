@@ -2699,8 +2699,9 @@ struct FlowPidCme {
     int detInd = detId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
     int refAInd = refAId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
     int refBInd = refBId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
+    double nonzero = 1e-8;
     if (nmode == fourier_mode::kMode2) {
-      if (collision.qvecAmp()[detId] > 1e-8) {
+      if (collision.qvecAmp()[detId] > nonzero) {
         histosQA.fill(HIST("QA/histQvec_CorrL0_V2"), collision.qvecRe()[detInd], collision.qvecIm()[detInd], collision.centFT0C());
         histosQA.fill(HIST("QA/histQvec_CorrL1_V2"), collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1], collision.centFT0C());
         histosQA.fill(HIST("QA/histQvec_CorrL2_V2"), collision.qvecRe()[detInd + 2], collision.qvecIm()[detInd + 2], collision.centFT0C());
@@ -2710,7 +2711,7 @@ struct FlowPidCme {
         histosQA.fill(HIST("QA/histEvtPl_CorrL2_V2"), helperEP.GetEventPlane(collision.qvecRe()[detInd + 2], collision.qvecIm()[detInd + 2], nmode), collision.centFT0C());
         histosQA.fill(HIST("QA/histEvtPl_CorrL3_V2"), helperEP.GetEventPlane(collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3], nmode), collision.centFT0C());
       }
-      if (collision.qvecAmp()[detId] > 1e-8 && collision.qvecAmp()[refAId] > 1e-8 && collision.qvecAmp()[refBId] > 1e-8) {
+      if (collision.qvecAmp()[detId] > nonzero && collision.qvecAmp()[refAId] > nonzero && collision.qvecAmp()[refBId] > nonzero) {
         histosQA.fill(HIST("QA/histQvecRes_SigRefAV2"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3], nmode), helperEP.GetEventPlane(collision.qvecRe()[refAInd + 3], collision.qvecIm()[refAInd + 3], nmode), nmode), collision.centFT0C());
         histosQA.fill(HIST("QA/histQvecRes_SigRefBV2"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3], nmode), helperEP.GetEventPlane(collision.qvecRe()[refBInd + 3], collision.qvecIm()[refBInd + 3], nmode), nmode), collision.centFT0C());
         histosQA.fill(HIST("QA/histQvecRes_RefARefBV2"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecRe()[refAInd + 3], collision.qvecIm()[refAInd + 3], nmode), helperEP.GetEventPlane(collision.qvecRe()[refBInd + 3], collision.qvecIm()[refBInd + 3], nmode), nmode), collision.centFT0C());
@@ -2721,7 +2722,7 @@ struct FlowPidCme {
   template <typename CollType, typename TrackType>
   void fillHistosFlowGammaDelta(const CollType& collision, const TrackType& track1, const TrackType& track2, const TrackType& track3, int nmode)
   {
-    if (collision.qvecAmp()[detId] < 1e-8) {
+    if (collision.qvecAmp()[detId] < nonzero) {
       return;
     }
     auto cent = collision.centFT0C();
