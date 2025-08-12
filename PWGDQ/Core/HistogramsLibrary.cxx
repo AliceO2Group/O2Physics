@@ -1621,6 +1621,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "MassMult", "", false, 750, 0.0, 15.0, VarManager::kMass, 301, -0.5, 300.5, VarManager::kVtxNcontrib);
         hm->AddHistogram(histClass, "MassVtxZMult", "", false, 300, 0.0, 6.0, VarManager::kMass, 60, -15.0, 15.0, VarManager::kVtxZ, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
       }
+      if (subGroupStr.Contains("dimuon-drellyan")) {
+        hm->AddHistogram(histClass, "DY_mass", "", false, 5000, 0.0, 50.0, VarManager::kMass); // 10 MeV mass res
+        hm->AddHistogram(histClass, "DY_pT", "", false, 2000, 0.0, 100.0, VarManager::kPt);    // 50 MeV pT res
+        hm->AddHistogram(histClass, "DY_y", "", false, 20, 2.0, 4.0, VarManager::kRap);
+        hm->AddHistogram(histClass, "DY_phi", "", false, 180, constants::math::PI, 2 * constants::math::PI, VarManager::kPhi);
+      }
     } else if (subGroupStr.Contains("electronmuon")) {
       hm->AddHistogram(histClass, "Mass", "", false, 750, 0.0, 30.0, VarManager::kMass);
       hm->AddHistogram(histClass, "Pt", "", false, 120, 0.0, 30.0, VarManager::kPt);
@@ -1985,13 +1991,6 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Mass_Photon", "", false, 500, 0.0, 0.1, VarManager::kMassDau);
     hm->AddHistogram(histClass, "Mass_Pt", "", false, 500, 0.0, 5.0, VarManager::kMassDau, 200, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Rapidity", "", false, 400, -4.0, 4.0, VarManager::kRap);
-  }
-
-  if (subGroupStr.Contains("DY-dimuon")) {
-    hm->AddHistogram(histClass, "DY_mass", "", false, 5000, 0.0, 50.0, VarManager::kMass); // 10 MeV mass res
-    hm->AddHistogram(histClass, "DY_pT", "", false, 2000, 0.0, 100.0, VarManager::kPt);    // 50 MeV pT res
-    hm->AddHistogram(histClass, "DY_y", "", false, 20, 2.0, 4.0, VarManager::kRap);
-    hm->AddHistogram(histClass, "DY_phi", "", false, 180, constants::math::PI, 2 * constants::math::PI, VarManager::kPhi);
   }
 }
 

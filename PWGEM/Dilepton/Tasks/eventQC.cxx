@@ -201,8 +201,8 @@ struct eventQC {
 
     if (doprocessEventQC_SWT) {
       fRegistry.add("BC/hNcoll", "Number of collisions per triggered BC;N_{collision} per triggered BC", kTH1F, {{11, -0.5, +10.5}}, false);
-      fRegistry.add("BC/hDeltaT", "diff. in collision time per BC;#DeltaT_{coll} (ns)", kTH1F, {{200, -100, +100}}, false);
-      fRegistry.add("BC/hDeltaZ", "diff. in collision Z_{vtx} per BC;#DeltaZ_{vtx} (cm)", kTH1F, {{200, -10, +10}}, false);
+      fRegistry.add("BC/hDeltaT", "diff. in collision time per BC;#DeltaT_{coll} (ns)", kTH1F, {{500, -25, +25}}, false);
+      fRegistry.add("BC/hDeltaZ", "diff. in collision Z_{vtx} per BC;#DeltaZ_{vtx} (cm)", kTH1F, {{1000, -5, +5}}, false);
       fRegistry.add("BC/hCorrNcontrib", "hMultNTracksPV;", kTH2F, {{axis_mult_ncontrib}, {axis_mult_ncontrib}}, false);
       fRegistry.add("BC/Collision/hMultNTracksPV", "hMultNTracksPV;N_{track} to PV in |#eta| < 0.8", kTH1F, {{axis_mult_ncontrib08}}, false);
       fRegistry.add("BC/Collision/hMultFT0AFT0C", "hMultFT0AFT0C;mult. FT0A;mult. FT0C", kTH2F, {{axis_mult_ft0a}, {axis_mult_ft0c}}, false);
