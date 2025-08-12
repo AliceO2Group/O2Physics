@@ -120,6 +120,7 @@ struct Kstarqa {
     Configurable<bool> isApplyCutsOnMother{"isApplyCutsOnMother", false, "Enable additional cuts on Kstar mother"};
     Configurable<float> cMaxPtMotherCut{"cMaxPtMotherCut", 15.0, "Maximum pt of mother cut"};
     Configurable<float> cMaxMinvMotherCut{"cMaxMinvMotherCut", 1.5, "Maximum mass of mother cut"};
+    Configurable<float> rapidityMotherData{"rapidityMotherData", 0.5, "Maximum rapidity of mother"};
     Configurable<bool> isPDGCheckMC{"isPDGCheckMC", true, "Check PDG code in MC (false for MC closure test)"};
 
     // PID selections
@@ -135,7 +136,7 @@ struct Kstarqa {
     // Other fixed variables
     float lowPtCutPID = 0.5;
     int noOfDaughters = 2;
-    float rapidityMotherData = 0.5;
+    // float rapidityMotherData = 0.5;
 
   } selectionConfig;
 
@@ -170,7 +171,7 @@ struct Kstarqa {
   Configurable<bool> onlyTOFHIT{"onlyTOFHIT", false, "accept only TOF hit tracks at high pt"};
   Configurable<bool> onlyTPC{"onlyTPC", true, "only TPC tracks"};
   Configurable<int> cRotations{"cRotations", 3, "Number of random rotations in the rotational background"};
-  Configurable<int> cSelectMultEstimator{"cSelectMultEstimator", 0, "Select multiplicity estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C"};
+  Configurable<int> cSelectMultEstimator{"cSelectMultEstimator", 0, "Select multiplicity estimator: 0 - FT0M, 1 - FT0A, 2 - FT0C, 3 - FV0A"};
   Configurable<bool> applyRecMotherRapidity{"applyRecMotherRapidity", true, "Apply rapidity cut on reconstructed mother track"};
   Configurable<bool> applypTdepPID{"applypTdepPID", false, "Apply pT dependent PID"};
 
@@ -696,7 +697,7 @@ struct Kstarqa {
 
             auto cosThetaStarHelicityRot = motherRot.Vect().Dot(daughterRotCM.Vect()) / (std::sqrt(daughterRotCM.Vect().Mag2()) * std::sqrt(motherRot.Vect().Mag2()));
 
-            if (calcRotational && motherRot.Rapidity() < selectionConfig.rapidityMotherData)
+            if (calcRotational && std::abs(motherRot.Rapidity()) < selectionConfig.rapidityMotherData)
               hInvMass.fill(HIST("h3KstarInvMassRotated"), multiplicity, motherRot.Pt(), motherRot.M(), cosThetaStarHelicityRot);
           }
         } else if (isMix && std::abs(mother.Rapidity()) < selectionConfig.rapidityMotherData) {
@@ -1004,9 +1005,9 @@ struct Kstarqa {
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {2000, 0, 10000}, "TPC multiplicity axis for ME mixing"};
 
   // using BinningTypeTPCMultiplicity = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultTPC>;
-  using BinningTypeCentralityM = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  using BinningTypeFT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningTypeFT0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0A>;
+  using BinningTypeFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   using BinningTypeFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
 
   using BinningTypeMCFT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
@@ -1014,9 +1015,9 @@ struct Kstarqa {
   using BinningTypeMCFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   using BinningTypeMCFV0A = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFV0A>;
 
-  BinningTypeVertexContributor binningOnPositions{{axisVertex, axisMultiplicity}, true};
-  BinningTypeCentralityM binningOnCentrality{{axisVertex, axisMultiplicity}, true};
+  BinningTypeFT0M binningOnFT0M{{axisVertex, axisMultiplicity}, true};
   BinningTypeFT0A binningOnFT0A{{axisVertex, axisMultiplicity}, true};
+  BinningTypeFT0C binningOnFT0C{{axisVertex, axisMultiplicity}, true};
   BinningTypeFV0A binningOnFV0A{{axisVertex, axisMultiplicity}, true};
 
   BinningTypeMCFT0M binningOnMCFT0M{{axisVertex, axisMultiplicity}, true};
@@ -1024,14 +1025,14 @@ struct Kstarqa {
   BinningTypeMCFT0C binningOnMCFT0C{{axisVertex, axisMultiplicity}, true};
   BinningTypeMCFV0A binningOnMCFV0A{{axisVertex, axisMultiplicity}, true};
 
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair1{binningOnPositions, selectionConfig.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeCentralityM> pair2{binningOnCentrality, selectionConfig.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0A> pair3{binningOnFT0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
+  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0M> pair1{binningOnFT0M, selectionConfig.cfgNoMixedEvents, -1, &cache};
+  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0A> pair2{binningOnFT0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
+  SameKindPair<EventCandidates, TrackCandidates, BinningTypeFT0C> pair3{binningOnFT0C, selectionConfig.cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidates, TrackCandidates, BinningTypeFV0A> pair4{binningOnFV0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
 
   SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMCFT0M> pairmc1{binningOnMCFT0M, selectionConfig.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMCFT0C> pairmc2{binningOnMCFT0C, selectionConfig.cfgNoMixedEvents, -1, &cache};
-  SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMCFT0A> pairmc3{binningOnMCFT0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
+  SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMCFT0A> pairmc2{binningOnMCFT0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
+  SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMCFT0C> pairmc3{binningOnMCFT0C, selectionConfig.cfgNoMixedEvents, -1, &cache};
   SameKindPair<EventCandidatesMC, TrackCandidatesMC, BinningTypeMCFV0A> pairmc4{binningOnMCFV0A, selectionConfig.cfgNoMixedEvents, -1, &cache};
 
   void processME(EventCandidatesMix const&, TrackCandidates const&)
@@ -1430,7 +1431,19 @@ struct Kstarqa {
       if (!selectionEvent(collision, true)) {
         continue;
       }
-      multiplicity = collision.centFT0M();
+      // multiplicity = collision.centFT0M();
+
+      if (cSelectMultEstimator == kFT0M) {
+        multiplicity = collision.centFT0M();
+      } else if (cSelectMultEstimator == kFT0A) {
+        multiplicity = collision.centFT0A();
+      } else if (cSelectMultEstimator == kFT0C) {
+        multiplicity = collision.centFT0C();
+      } else if (cSelectMultEstimator == kFV0A) {
+        multiplicity = collision.centFV0A();
+      } else {
+        multiplicity = collision.centFT0M(); // default
+      }
       hInvMass.fill(HIST("h1GenMult"), multiplicity);
 
       int occupancy = collision.trackOccupancyInTimeRange();
@@ -1527,7 +1540,20 @@ struct Kstarqa {
     for (const auto& RecCollision : recCollisions) {
       if (!selectionEvent(RecCollision, false))
         continue;
-      multiplicity1 = RecCollision.centFT0M();
+      // multiplicity1 = RecCollision.centFT0M();
+
+      if (cSelectMultEstimator == kFT0M) {
+        multiplicity1 = RecCollision.centFT0M();
+      } else if (cSelectMultEstimator == kFT0A) {
+        multiplicity1 = RecCollision.centFT0A();
+      } else if (cSelectMultEstimator == kFT0C) {
+        multiplicity1 = RecCollision.centFT0C();
+      } else if (cSelectMultEstimator == kFV0A) {
+        multiplicity1 = RecCollision.centFV0A();
+      } else {
+        multiplicity1 = RecCollision.centFT0M(); // default
+      }
+
       isSelectedEvent = true;
     }
 
@@ -1561,7 +1587,22 @@ struct Kstarqa {
     if (selectionConfig.isINELgt0 && !collision.isInelGt0()) {
       return;
     }
-    multiplicity = collision.centFT0M();
+    // multiplicity = collision.centFT0M();
+
+    multiplicity = -1.0;
+
+    if (cSelectMultEstimator == kFT0M) {
+      multiplicity = collision.centFT0M();
+    } else if (cSelectMultEstimator == kFT0A) {
+      multiplicity = collision.centFT0A();
+    } else if (cSelectMultEstimator == kFT0C) {
+      multiplicity = collision.centFT0C();
+    } else if (cSelectMultEstimator == kFV0A) {
+      multiplicity = collision.centFV0A();
+    } else {
+      multiplicity = collision.centFT0M(); // default
+    }
+
     hInvMass.fill(HIST("hAllRecCollisions"), multiplicity);
 
     if (!selectionEvent(collision, false)) {
@@ -1592,7 +1633,22 @@ struct Kstarqa {
     //   return;
     // }
 
-    multiplicity = collision.centFT0M();
+    // multiplicity = collision.centFT0M();
+
+    multiplicity = -1.0;
+
+    if (cSelectMultEstimator == kFT0M) {
+      multiplicity = collision.centFT0M();
+    } else if (cSelectMultEstimator == kFT0A) {
+      multiplicity = collision.centFT0A();
+    } else if (cSelectMultEstimator == kFT0C) {
+      multiplicity = collision.centFT0C();
+    } else if (cSelectMultEstimator == kFV0A) {
+      multiplicity = collision.centFV0A();
+    } else {
+      multiplicity = collision.centFT0M(); // default
+    }
+
     hInvMass.fill(HIST("h1RecMult"), multiplicity);
 
     auto oldindex = -999;
