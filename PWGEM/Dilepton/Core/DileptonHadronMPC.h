@@ -1071,7 +1071,7 @@ struct DileptonHadronMPC {
   using RefTracks = soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackEMEventIds>;
   using RefTrack = RefTracks::iterator;
   Preslice<RefTracks> perCollision_track = aod::emprimarytrack::emeventId;
-  Filter refTrackFilter = trackcuts.cfg_min_pt_track < 1/nabs(o2::aod::emprimarytrack::signed1Pt) && 1/nabs(o2::aod::emprimarytrack::signed1Pt) < trackcuts.cfg_max_pt_track && trackcuts.cfg_min_eta_track < o2::aod::emprimarytrack::eta && o2::aod::emprimarytrack::eta < trackcuts.cfg_max_eta_track;
+  Filter refTrackFilter = trackcuts.cfg_min_pt_track < 1 / nabs(o2::aod::emprimarytrack::signed1Pt) && 1 / nabs(o2::aod::emprimarytrack::signed1Pt) < trackcuts.cfg_max_pt_track && trackcuts.cfg_min_eta_track < o2::aod::emprimarytrack::eta && o2::aod::emprimarytrack::eta < trackcuts.cfg_max_eta_track;
   using FilteredRefTracks = soa::Filtered<RefTracks>;
   using FilteredRefTrack = FilteredRefTracks::iterator;
 
