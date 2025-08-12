@@ -15,17 +15,15 @@
 ///
 /// \author Su-Jeong Ji <su-jeong.ji@cern.ch>
 
-#include <TH1F.h>
-#include <TH1D.h>
 #include <TDirectory.h>
+#include <TFile.h>
+#include <TH1D.h>
+#include <TH1F.h>
+#include <TH2F.h>
 #include <THn.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
 // #include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h>     // FIXME
-
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/collisionCuts.h"
 
@@ -63,6 +61,7 @@
 #include "TRandom3.h"
 #include "TVector2.h"
 #include <TMath.h>
+#include <TPDGCode.h> // FIXME
 #include <TPDGCode.h> // FIXME
 
 #include <array>
