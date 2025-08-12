@@ -19,7 +19,7 @@
 #include <TH1D.h>
 #include <TDirectory.h>
 #include <THn.h>
-#include <TLorentzVector.h>
+//#include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TFile.h>
@@ -39,6 +39,7 @@
 #include "TVector2.h"
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
+#include "Math/RotationZ.h"
 #include "Math/GenVector/Boost.h"
 #include <TMath.h>
 
@@ -105,6 +106,7 @@ struct Chk892pp {
   using MCEventCandidates = soa::Join<EventCandidates, aod::McCollisionLabels>;
   using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabels>;
   using MCV0Candidates = soa::Join<V0Candidates, aod::McV0Labels>;
+	using LorentzVectorSetXYZM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>>;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -159,7 +161,7 @@ struct Chk892pp {
   Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", -100, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<bool> cfgNCollinTR{"cfgNCollinTR", false, "Additional selection for the number of coll in time range"};
 */
-  Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 1: FT0C, 2: FT0M"};
+  Configurable<int> cfgCentEst{"cfgCentEst", 2, "Centrality estimator, 1: FT0C, 2: FT0M"};
 
   /// PID Selections, pion
   struct : ConfigurableGroup {
@@ -442,15 +444,19 @@ struct Chk892pp {
     histos.print();
   }
 
+	const int kCentFT0C = 1;
+	const int kCentFT0M = 2;
+	const float kInvalidCentrality = -999.f;
+
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
   {
-    if (cfgCentEst == 1) {
+    if (cfgCentEst == kCentFT0C) {
       return collision.multFT0C();
-    } else if (cfgCentEst == 2) {
+    } else if (cfgCentEst == kCentFT0M) {
       return collision.multFT0M();
     } else {
-      return -999;
+      return kInvalidCentrality;
     }
   }
 
@@ -697,7 +703,7 @@ struct Chk892pp {
   {
     histos.fill(HIST("QA/before/CentDist"), lCentrality);
 
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot, lResonanceRot;
+    LorentzVectorSetXYZM lDecayDaughter1, lDecayDaughter2, lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot, lResonanceRot;
     std::vector<int> trackIndicies = {};
     std::vector<int> k0sIndicies = {};
 
@@ -849,8 +855,8 @@ struct Chk892pp {
         auto k0sCand = dTracks2.rawIteratorAt(k0sIndex);
         auto trkkMass = k0sCand.mK0Short();
 
-        lDecayDaughter_bach.SetXYZM(bTrack.px(), bTrack.py(), bTrack.pz(), MassPionCharged);
-        lResoSecondary.SetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), trkkMass);
+        lDecayDaughter_bach = LorentzVectorSetXYZM(bTrack.px(), bTrack.py(), bTrack.pz(), MassPionCharged);
+        lResoSecondary = LorentzVectorSetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), trkkMass);
         lResoKstar = lResoSecondary + lDecayDaughter_bach;
 
         // QA plots
@@ -875,11 +881,17 @@ struct Chk892pp {
               histos.fill(HIST("QA/RotBkg/hRotBkg"), lRotAngle);
               if (BkgEstimationConfig.cfgRotPion) {
                 lDaughterRot = lDecayDaughter_bach;
-                lDaughterRot.RotateZ(lRotAngle);
+                //lDaughterRot.RotateZ(lRotAngle);
+								ROOT::Math::RotationZ rot(lRotAngle);
+								auto p3 = rot * lDaughterRot.Vect();
+								lDaughterRot = LorentzVectorSetXYZM(p3.X(),p3.Y(),p3.Z(),lDaughterRot.M());
                 lResonanceRot = lDaughterRot + lResoSecondary;
               } else {
                 lDaughterRot = lResoSecondary;
-                lDaughterRot.RotateZ(lRotAngle);
+                //lDaughterRot.RotateZ(lRotAngle);
+								ROOT::Math::RotationZ rot(lRotAngle);
+								auto p3 = rot * lDaughterRot.Vect();
+								lDaughterRot = LorentzVectorSetXYZM(p3.X(),p3.Y(),p3.Z(),lDaughterRot.M());
                 lResonanceRot = lDecayDaughter_bach + lDaughterRot;
               }
               typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_Rot : BinType::kKstarN_Rot;
