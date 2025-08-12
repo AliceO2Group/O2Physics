@@ -126,7 +126,7 @@ struct HfTaskElectronWeakBoson {
   Configurable<int> chiSqNdfMax{"chiSqNdfMax", 10, "Chi2 Max for mass reco by KF particle"};
 
   // Centrality estimator configuration
-  Configurable<int> centralityEstimator{"centralityEstimator", CentralityEstimator::FT0M, "Centrality estimator"};
+  Configurable<int> centralityEstimator{"centralityEstimator", CentralityEstimator::FT0M, "Centrality estimator. See CentralityEstimator for valid values."};
   Configurable<bool> enableCentralityAnalysis{"enableCentralityAnalysis", true, "Enable centrality-dependent analysis"};
   Configurable<float> centralityMin{"centralityMin", -1, "minimum cut on centrality selection"};
   Configurable<float> centralityMax{"centralityMax", 101, "maximum cut on centrality selection"};
