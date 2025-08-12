@@ -106,14 +106,14 @@ struct upcPhotonuclearAnalysisJMG {
   Configurable<float> myTimeZNACut{"myTimeZNACut", 2., {"My collision cut"}};
   Configurable<float> myTimeZNCCut{"myTimeZNCCut", 2., {"My collision cut"}};
   // Declare configurables on side A gap
-  Configurable<float> cutAGapMyEnergyZNAMax{"cutAGapMyEnergyZNAMax", 0., {"My collision cut. A Gap"}};
+  Configurable<float> cutGapAMyEnergyZNA{"cutGapAMyEnergyZNA", 0., {"My collision cut. A Gap"}};
   // Configurable<float> cutAGapMyAmplitudeFT0AMax{"cutAGapMyAmplitudeFT0AMax", 200., {"My collision cut. A Gap"}};
-  Configurable<float> cutAGapMyEnergyZNCMin{"cutAGapMyEnergyZNCMin", 1., {"My collision cut. A Gap"}};
+  Configurable<float> cutGapAMyEnergyZNC{"cutGapAMyEnergyZNC", 1., {"My collision cut. A Gap"}};
   // Configurable<float> cutAGapMyAmplitudeFT0CMin{"cutAGapMyAmplitudeFT0CMin", 0., {"My collision cut. A Gap"}};
   // Declare configurables on side C gap
-  Configurable<float> cutCGapMyEnergyZNAMin{"cutCGapMyEnergyZNAMin", 1., {"My collision cut. C Gap"}};
+  Configurable<float> cutGapCMyEnergyZNA{"cutGapCMyEnergyZNA", 1., {"My collision cut. C Gap"}};
   // Configurable<float> cutCGapMyAmplitudeFT0AMin{"cutCGapMyAmplitudeFT0AMin", 0., {"My collision cut. A Gap"}};
-  Configurable<float> cutCGapMyEnergyZNCMax{"cutCGapMyEnergyZNCMax", 0., {"My collision cut. C Gap"}};
+  Configurable<float> cutGapCMyEnergyZNC{"cutGapCMyEnergyZNC", 0., {"My collision cut. C Gap"}};
   // Configurable<float> cutCGapMyAmplitudeFT0CMax{"cutCGapMyAmplitudeFT0CMax", 200., {"My collision cut. A Gap"}};
   // Declare configurables on tracks
   Configurable<float> cutMyptMin{"cutMyptMin", 0.2, {"My Track cut"}};
@@ -122,7 +122,7 @@ struct upcPhotonuclearAnalysisJMG {
   Configurable<float> cutMyetaMax{"cutMyetaMax", 0.8, {"My Track cut"}};
   Configurable<float> cutMydcaZmax{"cutMydcaZmax", 2.f, {"My Track cut"}};
   Configurable<float> cutMydcaXYmax{"cutMydcaXYmax", 1e0f, {"My Track cut"}};
-  Configurable<bool> cutMydcaXYusePt{"cutMydcaXYusePt", true, {"My Track cut"}};
+  Configurable<bool> cutMydcaXYusePt{"cutMydcaXYusePt", false, {"My Track cut"}};
   Configurable<bool> cutMyHasITS{"cutMyHasITS", true, {"My Track cut"}};
   Configurable<int> cutMyITSNClsMin{"cutMyITSNClsMin", 1, {"My Track cut"}};
   Configurable<float> cutMyITSChi2NClMax{"cutMyITSChi2NClMax", 36.f, {"My Track cut"}};
@@ -173,7 +173,7 @@ struct upcPhotonuclearAnalysisJMG {
     const AxisSpec axisPt{402, -0.05, 20.05};
     const AxisSpec axisP{402, -10.05, 10.05};
     const AxisSpec axisTPCSignal{802, -0.05, 400.05};
-    const AxisSpec axisPhi{64, -2 * PI, 2 * PI};
+    const AxisSpec axisPhi{64, 0 * PI, 2 * PI};
     const AxisSpec axisEta{50, -1.2, 1.2};
     const AxisSpec axisNch{601, -0.5, 600.5};
     const AxisSpec axisZNEnergy{1002, -0.5, 500.5};
@@ -182,6 +182,7 @@ struct upcPhotonuclearAnalysisJMG {
     const AxisSpec axisNCls{201, -0.5, 200.5};
     const AxisSpec axisChi2NCls{100, 0, 50};
     const AxisSpec axisTPCNClsCrossedRowsMin{100, -0.05, 2.05};
+    const AxisSpec axisCountTracks{17, -0.5, 16.5};
 
     histos.add("yields", "multiplicity vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
     histos.add("etaphi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity"}, {100, -2, 2, "#eta"}, {200, 0, 2 * PI, "#varphi"}}});
@@ -199,6 +200,7 @@ struct upcPhotonuclearAnalysisJMG {
       doPairCuts = true;
     }
     histos.add("Events/hCountCollisions", "0 total - 1 side A - 2 side C - 3 both side; Number of analysed collision; counts", kTH1F, {axisCollision});
+    histos.add("Tracks/hTracksAfterCuts", " ; ; counts", kTH1F, {axisCountTracks});
 
     // histos to selection gap in side A
     histos.add("Tracks/SGsideA/hTrackPt", "#it{p_{T}} distribution; #it{p_{T}}; counts", kTH1F, {axisPt});
@@ -300,31 +302,38 @@ struct upcPhotonuclearAnalysisJMG {
   template <typename CSG>
   bool isCollisionCutSG(CSG const& collision, int SideGap)
   {
+    bool gapSideA = (collision.energyCommonZNA() < cutGapAMyEnergyZNA) && (collision.energyCommonZNC() >= cutGapAMyEnergyZNC);
+    bool gapSideC = (collision.energyCommonZNA() >= cutGapCMyEnergyZNA) && (collision.energyCommonZNC() < cutGapCMyEnergyZNC);
+
     switch (SideGap) {
       case 0:                                                                                                                         // Gap in A side
-        if ((collision.energyCommonZNA() < cutAGapMyEnergyZNAMax && collision.energyCommonZNC() >= cutAGapMyEnergyZNCMin) == false) { // 0n - A side && Xn - C Side
-          return false;
-        }
+        return gapSideA; // 0n - A side && Xn - C Side
         // if ((collision.totalFT0AmplitudeA() < cutAGapMyAmplitudeFT0AMax && collision.totalFT0AmplitudeC() >= cutAGapMyAmplitudeFT0CMin) == false) {
         //   return false;
         // }
         break;
       case 1:                                                                                                                         // Gap in C side
-        if ((collision.energyCommonZNA() >= cutCGapMyEnergyZNAMin && collision.energyCommonZNC() < cutCGapMyEnergyZNCMax) == false) { // Xn - A side && 0n - C Side
-          return false;
-        }
+        return gapSideC; // Xn - A side && 0n - C Side
         // if ((collision.totalFT0AmplitudeA() >= cutCGapMyAmplitudeFT0AMin && collision.totalFT0AmplitudeC() < cutCGapMyAmplitudeFT0CMax) == false) {
         //   return false;
         // }
         break;
+      default:
+        return false;
+        break;
     }
-    return true;
+  }
+
+  template <typename CSG>
+  bool isCollisionCutSG(CSG const& collision)
+  {
+    return isCollisionCutSG(collision, 0) || isCollisionCutSG(collision, 1);
   }
 
   template <typename T>
   bool isTrackCut(T const& track)
   {
-    if (track.sign() != 1 || track.sign() != -1) {
+    if (track.sign() != 1 && track.sign() != -1) {
       return false;
     }
     if (track.pt() < cutMyptMin || track.pt() > cutMyptMax) {
@@ -386,11 +395,11 @@ struct upcPhotonuclearAnalysisJMG {
   }
 
   template <typename TTracks>
-  void fillQAUD(const TTracks tracks)
+  void fillQAUD(const TTracks tracks, float multiplicity)
   {
     for (const auto& track : tracks) {
-      histos.fill(HIST("yields"), tracks.size(), track.pt(), eta(track.px(), track.py(), track.pz()));
-      histos.fill(HIST("etaphi"), tracks.size(), eta(track.px(), track.py(), track.pz()), phi(track.px(), track.py()));
+      histos.fill(HIST("yields"), multiplicity, track.pt(), eta(track.px(), track.py(), track.pz()));
+      histos.fill(HIST("etaphi"), multiplicity, eta(track.px(), track.py(), track.pz()), phi(track.px(), track.py()));
     }
   }
 
@@ -408,7 +417,7 @@ struct upcPhotonuclearAnalysisJMG {
     multiplicity = tracks1.size();
     for (const auto& track1 : tracks1) {
       if (isTrackCut(track1) == false) {
-        continue;
+        return;
       }
       target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, track1.pt(), multiplicity, posZ, 1.0);
       for (const auto& track2 : tracks2) {
@@ -416,7 +425,7 @@ struct upcPhotonuclearAnalysisJMG {
           continue;
         }
         if (isTrackCut(track2) == false) {
-          continue;
+          return;
         }
         /*if (doPairCuts && mPairCuts.conversionCuts(track1, track2)) {
           continue;
@@ -463,6 +472,7 @@ struct upcPhotonuclearAnalysisJMG {
         histos.fill(HIST("Events/SGsideA/hAmplitudFT0A"), reconstructedCollision.totalFT0AmplitudeA());
         histos.fill(HIST("Events/SGsideA/hAmplitudFT0C"), reconstructedCollision.totalFT0AmplitudeC());
         for (const auto& track : reconstructedTracks) {
+          //LOGF(debug, "Filling tracks. Gap Side A");
           ++NchGapSideA;
           if (track.isPVContributor() == true) {
             ++NchPVGapSideA;
@@ -498,7 +508,6 @@ struct upcPhotonuclearAnalysisJMG {
           histos.fill(HIST("Tracks/SGsideA/hTrackTPCNClsFindableMinusCrossedRows"), track.tpcNClsFindableMinusCrossedRows());
           histos.fill(HIST("Tracks/SGsideA/hTrackTPCChi2NCls"), track.tpcChi2NCl());
           histos.fill(HIST("Tracks/SGsideA/hTrackITSNClsTPCCls"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound(), track.itsNCls());
-          LOGF(debug, "Filling tracks. Gap Side A");
         }
         histos.fill(HIST("Events/SGsideA/hNch"), nTracksCharged);
         histos.fill(HIST("Events/SGsideA/hMultiplicity"), reconstructedTracks.size());
@@ -581,14 +590,89 @@ struct upcPhotonuclearAnalysisJMG {
     //int sgSide = reconstructedCollision.gapSide();
     float multiplicity = 0;
 
-
-    if (isCollisionCutSG(reconstructedCollision, 0) == false) {
+    if (isCollisionCutSG(reconstructedCollision) == false) {
       return;
     }
     for (const auto& track : reconstructedTracks) {
-      if (isTrackCut(track) == false) {
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 0);
+      if (track.sign() != 1 && track.sign() != -1) {
         continue;
       }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 1);
+      if (track.pt() < cutMyptMin || track.pt() > cutMyptMax) {
+        continue;
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 2);
+      if (eta(track.px(), track.py(), track.pz()) < cutMyetaMin || eta(track.px(), track.py(), track.pz()) > cutMyetaMax) {
+        continue;
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 3);
+      if (std::abs(track.dcaZ()) > cutMydcaZmax) {
+        continue;
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 4);
+      if (cutMydcaXYusePt) {
+        float maxDCA = 0.0105f + 0.0350f / std::pow(track.pt(), 1.1f);
+        if (std::abs(track.dcaXY()) > maxDCA) {
+          continue;
+        }
+      } else {
+        if (std::abs(track.dcaXY()) > cutMydcaXYmax) {
+          continue;
+        }
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 5);
+      if (track.isPVContributor() == false) {
+        continue;
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 6);
+      // Quality Track
+      // ITS
+      if (cutMyHasITS && !track.hasITS()) {
+        continue; // ITS refit
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 7);
+      if (track.itsNCls() < cutMyITSNClsMin) {
+        continue;
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 8);
+      if (track.itsChi2NCl() > cutMyITSChi2NClMax) {
+        continue;
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 9);
+      // TPC
+      if (cutMyHasTPC && !track.hasTPC()) {
+        continue; // TPC refit
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 10);
+      if (track.tpcNClsCrossedRows() < cutMyTPCNClsCrossedRowsMin) {
+        continue;
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 11);
+      if ((track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) < cutMyTPCNClsMin) {
+        continue; // tpcNClsFound()
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 12);
+      if (track.tpcNClsFindable() < cutMyTPCNClsFindableMin) {
+        continue;
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 13);
+      if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < cutMyTPCNClsCrossedRowsOverNClsFindableMin) {
+        continue; //
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 14);
+      if ((static_cast<float>(track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) / static_cast<float>(track.tpcNClsFindable())) < cutMyTPCNClsCrossedRowsOverNClsFindableMin) {
+        continue; //
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 15);
+      if (track.tpcChi2NCl() > cutMyTPCChi2NclMax) {
+        continue; // TPC chi2
+      }
+      histos.fill(HIST("Tracks/hTracksAfterCuts"), 16);
+
+      /*if (isTrackCut(track) == false) {
+        continue;
+      }*/
       ++multiplicity;
     }
     //multiplicity = reconstructedTracks.size();
@@ -597,7 +681,7 @@ struct upcPhotonuclearAnalysisJMG {
     }
     // LOGF(debug, "Filling same events");
     histos.fill(HIST("eventcount"), -2);
-    fillQAUD(reconstructedTracks);
+    fillQAUD(reconstructedTracks, multiplicity);
     fillCorrelationsUD(same, reconstructedTracks, reconstructedTracks, multiplicity, reconstructedCollision.posZ());
 
     /*switch (sgSide) {
@@ -666,13 +750,10 @@ struct upcPhotonuclearAnalysisJMG {
       /*if (countGapA >= maxCountGapA && countGapC >= maxCountGapC) {
         break;
       }*/
-      /*if (countEvents >= maxCount) {
-        break;
-      }*/
 
       float multiplicity = 0;
 
-      if (isCollisionCutSG(collision1, 0) == false && isCollisionCutSG(collision2, 0) == false) {
+      if (isCollisionCutSG(collision1) == false || isCollisionCutSG(collision2) == false) {
         continue;
       }
       //++countEvents;
