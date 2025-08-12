@@ -62,7 +62,6 @@
 #include "TVector2.h"
 #include <TMath.h>
 #include <TPDGCode.h> // FIXME
-#include <TPDGCode.h> // FIXME
 
 #include <array>
 #include <chrono>
