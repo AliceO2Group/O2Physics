@@ -762,24 +762,32 @@ DECLARE_SOA_TABLE(EMGlobalMuonSelfIds, "AOD", "EMGLMUSELFID", emprimarymuon::Glo
 // iterators
 using EMGlobalMuonSelfId = EMGlobalMuonSelfIds::iterator;
 
+namespace oldemprimarytrack
+{
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);
+} // namespace oldemprimarytrack
+
 namespace emprimarytrack
 {
 DECLARE_SOA_INDEX_COLUMN(EMEvent, emevent);        //!
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
-DECLARE_SOA_COLUMN(Sign, sign, int8_t);            //!
 DECLARE_SOA_COLUMN(TrackBit, trackBit, uint16_t);  //!
+DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float);   //! (sign of charge)/Pt in c/GeV. Use pt() and sign() instead
+DECLARE_SOA_COLUMN(Eta, eta, float);               //!
+DECLARE_SOA_COLUMN(Phi, phi, float);               //!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float signed1Pt) -> float { return 1.f / std::fabs(signed1Pt); });
+DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign, [](float signed1Pt) -> short { return (signed1Pt > 0) ? 1 : -1; }); //! Charge: positive: 1, negative: -1
 } // namespace emprimarytrack
 
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_000, "AOD", "EMPRIMARYTRACK", 0, //! primary charged track table for 2PC
-                            o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId, emprimarytrack::Sign, track::Pt, track::Eta, track::Phi, emprimarytrack::TrackBit);
+                            o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId, oldemprimarytrack::Sign, track::Pt, track::Eta, track::Phi, emprimarytrack::TrackBit);
 
 DECLARE_SOA_TABLE_VERSIONED(EMPrimaryTracks_001, "AOD", "EMPRIMARYTRACK", 1, //! primary charged track table for 2PC
                             o2::soa::Index<>, emprimarytrack::CollisionId, emprimarytrack::TrackId,
-                            track::Signed1Pt, track::Eta, track::Phi, emprimarytrack::TrackBit,
+                            emprimarytrack::Signed1Pt, emprimarytrack::Eta, emprimarytrack::Phi, emprimarytrack::TrackBit,
                             // dynamic column
-                            track::Sign<track::Signed1Pt>, emprimarytrack::Pt<track::Signed1Pt>);
+                            emprimarytrack::Sign<emprimarytrack::Signed1Pt>, emprimarytrack::Pt<emprimarytrack::Signed1Pt>);
 
 using EMPrimaryTracks = EMPrimaryTracks_001;
 // iterators
