@@ -15,66 +15,60 @@
 ///
 /// \author Su-Jeong Ji <su-jeong.ji@cern.ch>
 
-#include <TH1F.h>
-#include <TH1D.h>
 #include <TDirectory.h>
+#include <TFile.h>
+#include <TH1D.h>
+#include <TH1F.h>
+#include <TH2F.h>
 #include <THn.h>
-#include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
 // #include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h>     // FIXME
-
-#include <vector>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <chrono>
-#include <string>
-
-#include "TRandom3.h"
-#include "TF1.h"
-#include "TVector2.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-#include <TMath.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/StaticFor.h"
-#include "DCAFitter/DCAFitterN.h"
-
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/RecoDecay.h"
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "CommonConstants/MathConstants.h"
-
-#include "ReconstructionDataFormats/Track.h"
-
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/collisionCuts.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/RotationZ.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
+#include "TVector2.h"
+#include <TMath.h>
+#include <TPDGCode.h> // FIXME
+
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -105,6 +99,7 @@ struct Chk892pp {
   using MCEventCandidates = soa::Join<EventCandidates, aod::McCollisionLabels>;
   using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabels>;
   using MCV0Candidates = soa::Join<V0Candidates, aod::McV0Labels>;
+  using LorentzVectorSetXYZM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>>;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -159,7 +154,7 @@ struct Chk892pp {
   Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", -100, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<bool> cfgNCollinTR{"cfgNCollinTR", false, "Additional selection for the number of coll in time range"};
 */
-  Configurable<int> cfgCentEst{"cfgCentEst", 1, "Centrality estimator, 1: FT0C, 2: FT0M"};
+  Configurable<int> cfgCentEst{"cfgCentEst", 2, "Centrality estimator, 1: FT0C, 2: FT0M"};
 
   /// PID Selections, pion
   struct : ConfigurableGroup {
@@ -368,6 +363,7 @@ struct Chk892pp {
     histos.add("QA/before/KstarRapidity", "Rapidity distribution of chK(892)", HistType::kTH1D, {yAxis});
     histos.add("hInvmass_Kstar", "Invariant mass of unlike-sign chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso});
     histos.add("hInvmass_Kstar_Mix", "Invariant mass of unlike-sign chK(892) from mixed event", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso});
+    histos.add("hInvmass_K0s", "Invariant mass of unlike-sign K0s", HistType::kTHnSparseD, {centAxis, ptAxis, invMassAxisK0s});
 
     // Mass QA (quick check)
     histos.add("QA/before/kstarinvmass", "Invariant mass of unlike-sign chK(892)", HistType::kTH1D, {invMassAxisReso});
@@ -441,15 +437,19 @@ struct Chk892pp {
     histos.print();
   }
 
+  const int kCentFT0C = 1;
+  const int kCentFT0M = 2;
+  const float kInvalidCentrality = -999.f;
+
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
   {
-    if (cfgCentEst == 1) {
+    if (cfgCentEst == kCentFT0C) {
       return collision.multFT0C();
-    } else if (cfgCentEst == 2) {
+    } else if (cfgCentEst == kCentFT0M) {
       return collision.multFT0M();
     } else {
-      return -999;
+      return kInvalidCentrality;
     }
   }
 
@@ -696,7 +696,7 @@ struct Chk892pp {
   {
     histos.fill(HIST("QA/before/CentDist"), lCentrality);
 
-    TLorentzVector lDecayDaughter1, lDecayDaughter2, lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot, lResonanceRot;
+    LorentzVectorSetXYZM lDecayDaughter1, lDecayDaughter2, lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot, lResonanceRot;
     std::vector<int> trackIndicies = {};
     std::vector<int> k0sIndicies = {};
 
@@ -848,8 +848,8 @@ struct Chk892pp {
         auto k0sCand = dTracks2.rawIteratorAt(k0sIndex);
         auto trkkMass = k0sCand.mK0Short();
 
-        lDecayDaughter_bach.SetXYZM(bTrack.px(), bTrack.py(), bTrack.pz(), MassPionCharged);
-        lResoSecondary.SetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), trkkMass);
+        lDecayDaughter_bach = LorentzVectorSetXYZM(bTrack.px(), bTrack.py(), bTrack.pz(), MassPionCharged);
+        lResoSecondary = LorentzVectorSetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), trkkMass);
         lResoKstar = lResoSecondary + lDecayDaughter_bach;
 
         // QA plots
@@ -874,11 +874,17 @@ struct Chk892pp {
               histos.fill(HIST("QA/RotBkg/hRotBkg"), lRotAngle);
               if (BkgEstimationConfig.cfgRotPion) {
                 lDaughterRot = lDecayDaughter_bach;
-                lDaughterRot.RotateZ(lRotAngle);
+                // lDaughterRot.RotateZ(lRotAngle);
+                ROOT::Math::RotationZ rot(lRotAngle);
+                auto p3 = rot * lDaughterRot.Vect();
+                lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
                 lResonanceRot = lDaughterRot + lResoSecondary;
               } else {
                 lDaughterRot = lResoSecondary;
-                lDaughterRot.RotateZ(lRotAngle);
+                // lDaughterRot.RotateZ(lRotAngle);
+                ROOT::Math::RotationZ rot(lRotAngle);
+                auto p3 = rot * lDaughterRot.Vect();
+                lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
                 lResonanceRot = lDecayDaughter_bach + lDaughterRot;
               }
               typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_Rot : BinType::kKstarN_Rot;
