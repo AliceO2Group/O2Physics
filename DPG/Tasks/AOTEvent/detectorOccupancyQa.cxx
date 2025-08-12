@@ -98,7 +98,7 @@ struct DetectorOccupancyQaTask {
 
   Configurable<bool> confUsePhiAtTPCinnerR{"UsePhiAtTPCinnerR", false, "0 - not use, 1 - use"};                              // o2-linter: disable=name/configurable (temporary fix)
   Configurable<int> confUseAorCsideForPhiStudy{"UseAorCsideForPhiStudy", -1, "-1 - use full eta range, 0 - A, 1 - C sides"}; // o2-linter: disable=name/configurable (temporary fix)
-  Configurable<int> confRadiusForPhiCorrection{"RadiusForPhiCorrection", 0.8, "default: inner TPC radius, cm"};              // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confRadiusForPhiCorrection{"RadiusForPhiCorrection", 0.8, "default: inner TPC radius, cm"};            // o2-linter: disable=name/configurable (temporary fix)
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
