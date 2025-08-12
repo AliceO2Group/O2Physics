@@ -14,39 +14,40 @@
 /// \brief  task to calculate the pikp cme signal and bacground.
 // C++/ROOT includes.
 #include <CCDB/BasicCCDBManager.h>
-#include <chrono>
-#include <string>
-#include <vector>
-#include <utility>
-#include <memory>
-#include <TF1.h>
+
 #include <TComplex.h>
+#include <TF1.h>
 #include <TH1F.h>
 #include <TH2D.h>
 #include <TMath.h>
 #include <TVector2.h>
 
-// o2Physics includes.
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
+#include <chrono>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
+// o2Physics includes.
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
 
 // o2 includes.
 
@@ -312,13 +313,13 @@ struct FillPIDcolums {
       pidVectorUpper = pidVectorTPCPtUpper;
       pidVectorLower = pidVectorTPCPtLower;
     } else {
-      if(candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()){
+      if (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) {
         nSigmaToUse = nSigmaCombined;
         pidVectorUpper = cfgnSigmaCutRMSUpper.value;
         pidVectorLower = cfgnSigmaCutRMSLower.value;
-      }else if(candidate.pt() > cfgPtMaxforTPCOnlyPID && !candidate.hasTOF() && cfgUseStrictPID){
+      } else if (candidate.pt() > cfgPtMaxforTPCOnlyPID && !candidate.hasTOF() && cfgUseStrictPID) {
         return 0;
-      }else{
+      } else {
         nSigmaToUse = nSigmaTPC;
         pidVectorUpper = cfgnSigmaCutTPCUpper.value;
         pidVectorLower = cfgnSigmaCutTPCLower.value;
@@ -457,12 +458,12 @@ struct FillPIDcolums {
         }
       }
     }
-    if(cfgUseStrictPID){
+    if (cfgUseStrictPID) {
       // Only use the track which was recognized as an unique PID particle
       int index = (kIsPr << 2) | (kIsKa << 1) | kIsPi;
       const int map[] = {0, 1, 2, 0, 3, 0, 0, 0};
       return map[index];
-    }else{
+    } else {
       if (cfgOpenAllowCrossTrack) {
         // one track can be recognized as different PID particles
         int index = (kIsPr << 2) | (kIsKa << 1) | kIsPi;
