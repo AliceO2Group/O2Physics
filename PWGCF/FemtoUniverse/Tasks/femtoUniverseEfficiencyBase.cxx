@@ -70,6 +70,7 @@ struct FemtoUniverseEfficiencyBase {
 
   /// Kaon configurable
   Configurable<bool> isKaonRun2{"isKaonRun2", false, "Enable kaon selection used in Run2"}; // to check consistency with Run2 results
+  Configurable<bool> isKaonLF{"isKaonLF", false, "Enable kaon selection used in LF group"}; // select kaons according to the selection in LF group
   struct : o2::framework::ConfigurableGroup {
     // Momentum thresholds for Run2 and Run3
     Configurable<float> confMomKaonRun2{"confMomKaonRun2", 0.4, "Momentum threshold for kaon identification using ToF (Run2)"};
@@ -93,6 +94,10 @@ struct FemtoUniverseEfficiencyBase {
     Configurable<float> confKaonNsigmaTOFfrom055to15{"confKaonNsigmaTOFfrom055to15", 3.0, "Reject kaons within pT from 0.55 to 1.5 if ToF n sigma is above this value."};
     Configurable<float> confKaonNsigmaTPCfrom15{"confKaonNsigmaTPCfrom15", 3.0, "Reject kaons with pT above 1.5 if TPC n sigma is above this value."};
     Configurable<float> confKaonNsigmaTOFfrom15{"confKaonNsigmaTOFfrom15", 2.0, "Reject kaons with pT above 1.5 if ToF n sigma is above this value.."};
+    // n sigma cuts as in LF
+    Configurable<float> confMomKaonLF{"confMomKaonLF", 0.5, "Momentum threshold for kaon identification using TOF (LF selection)"};
+    Configurable<float> confNSigmaTPCKaonLF{"confNSigmaTPCKaonLF", 3.0, "TPC Kaon Sigma as in LF"};
+    Configurable<float> confNSigmaCombKaonLF{"confNSigmaCombKaonLF", 3.0, "TPC and TOF Kaon Sigma (combined) as in LF"};
   } ConfKaonSelection;
 
   /// Deuteron configurables
@@ -259,6 +264,25 @@ struct FemtoUniverseEfficiencyBase {
     }
   }
 
+  bool isKaonNSigmaLF(float mom, float nsigmaTPCK, float nsigmaTOFK)
+  {
+    if (mom < ConfKaonSelection.confMomKaonLF) {
+      if (std::abs(nsigmaTPCK) < ConfKaonSelection.confNSigmaTPCKaonLF) {
+        return true;
+      } else {
+        return false;
+      }
+    } else if (mom >= ConfKaonSelection.confMomKaonLF) {
+      if (std::sqrt(nsigmaTPCK * nsigmaTPCK + nsigmaTOFK * nsigmaTOFK) < ConfKaonSelection.confNSigmaCombKaonLF) {
+        return true;
+      } else {
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
   bool isPionNSigma(float mom, float nsigmaTPCPi, float nsigmaTOFPi)
   {
     if (mom < ConfBothTracks.confMomPion) {
@@ -303,7 +327,11 @@ struct FemtoUniverseEfficiencyBase {
         break;
       case 321:  // Kaon+
       case -321: // Kaon-
-        return isKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
+        if (isKaonLF) {
+          return isKaonNSigmaLF(mom, nsigmaTPCK, nsigmaTOFK);
+        } else {
+          return isKaonNSigma(mom, nsigmaTPCK, nsigmaTOFK);
+        }
         break;
       case 1000010020:  // Deuteron
       case -1000010020: // Antideuteron

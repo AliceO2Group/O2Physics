@@ -15,6 +15,7 @@
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
 #include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/DQMlResponse.h"
 #include "PWGDQ/Core/HistogramManager.h"
 #include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/MixingHandler.h"
@@ -179,6 +180,7 @@ DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER", dqanalysisflags::Ma
 // Declarations of various short names
 using MyEvents = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended>;
 using MyEventsMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
+using MyEventsMultExtraQVector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
 using MyEventsZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedZdcs>;
 using MyEventsMultExtraZdc = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedZdcs>;
 using MyEventsSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts>;
@@ -187,7 +189,8 @@ using MyEventsVtxCovSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::Reduc
 using MyEventsHashSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::EventCuts, aod::MixingHashes>;
 using MyEventsVtxCov = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov>;
 using MyEventsVtxCovSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts>;
-using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvector>;
+using MyEventsVtxCovSelectedQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra>;
+using MyEventsVtxCovSelectedQvectorWithHash = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll, aod::ReducedEventsVtxCov, aod::EventCuts, aod::ReducedEventsQvectorCentr, aod::ReducedEventsQvectorCentrExtra, aod::MixingHashes>;
 using MyEventsVtxCovZdcSelected = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::EventCuts>;
 using MyEventsVtxCovZdcSelectedMultExtra = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsVtxCov, aod::ReducedZdcs, aod::EventCuts, aod::ReducedEventsMultPV, aod::ReducedEventsMultAll>;
 using MyEventsQvector = soa::Join<aod::ReducedEvents, aod::ReducedEventsExtended, aod::ReducedEventsQvector>;
@@ -212,8 +215,11 @@ using MyMuonTracksSelectedWithColl = soa::Join<aod::ReducedMuons, aod::ReducedMu
 constexpr static uint32_t gkEventFillMap = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended;
 constexpr static uint32_t gkEventFillMapWithZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ReducedZdc;
 constexpr static uint32_t gkEventFillMapWithCov = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov;
+// constexpr static uint32_t gkEventFillMapWithCovFlow = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ObjTypes::ReducedEventQvector;
 constexpr static uint32_t gkEventFillMapWithCovZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ReducedZdc;
 constexpr static uint32_t gkEventFillMapWithMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra;
+// New fillmap
+constexpr static uint32_t gkEventFillMapWithMultExtraWithQVector = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ObjTypes::CollisionQvect;
 constexpr static uint32_t gkEventFillMapWithMultExtraZdc = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventMultExtra | VarManager::ReducedZdc;
 constexpr static uint32_t gkEventFillMapWithCovZdcMultExtra = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::ReducedEventVtxCov | VarManager::ReducedZdc | VarManager::ReducedEventMultExtra;
 constexpr static uint32_t gkEventFillMapWithQvectorCentr = VarManager::ObjTypes::ReducedEvent | VarManager::ObjTypes::ReducedEventExtended | VarManager::ObjTypes::CollisionQvect | VarManager::ObjTypes::ReducedEventMultExtra;
@@ -354,7 +360,7 @@ struct AnalysisEventSelection {
   void runEventSelection(TEvents const& events)
   {
     if (events.size() > 0 && events.begin().runNumber() != fCurrentRun) {
-      std::map<string, string> metadataRCT, header;
+      std::map<std::string, std::string> metadataRCT, header;
       header = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", events.begin().runNumber()), metadataRCT, -1);
       uint64_t sor = std::atol(header["SOR"].c_str());
       uint64_t eor = std::atol(header["EOR"].c_str());
@@ -651,7 +657,7 @@ struct AnalysisTrackSelection {
         LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
       }
 
-      std::map<string, string> metadataRCT, header;
+      std::map<std::string, std::string> metadataRCT, header;
       header = fCCDBApi.retrieveHeaders(Form("RCT/Info/RunInformation/%i", events.begin().runNumber()), metadataRCT, -1);
       uint64_t sor = std::atol(header["SOR"].c_str());
       uint64_t eor = std::atol(header["EOR"].c_str());
@@ -1246,6 +1252,14 @@ struct AnalysisSameEventPairing {
     Configurable<bool> propTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
     Configurable<bool> useRemoteCollisionInfo{"cfgUseRemoteCollisionInfo", false, "Use remote collision information from CCDB"};
   } fConfigOptions;
+  struct : ConfigurableGroup {
+    Configurable<bool> applyBDT{"applyBDT", false, "Flag to apply ML selections"};
+    Configurable<std::string> fConfigBdtCutsJSON{"fConfigBdtCutsJSON", "", "Additional list of BDT cuts in JSON format"};
+
+    Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"Users/j/jseo/ML/PbPbPsi/default/"}, "Paths of models on CCDB"};
+    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
+    Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
+  } fConfigML;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
   o2::ccdb::CcdbApi fCCDBApi;
@@ -1253,6 +1267,9 @@ struct AnalysisSameEventPairing {
   Filter filterEventSelected = aod::dqanalysisflags::isEventSelected > static_cast<uint8_t>(0);
 
   HistogramManager* fHistMan;
+
+  o2::analysis::DQMlResponse<float> fDQMlResponse;
+  std::vector<float> fOutputMlPsi2ee = {}; // TODO: check this is needed or not
 
   // keep histogram class names in maps, so we don't have to buld their names in the pair loops
   std::map<int, std::vector<TString>> fTrackHistNames;
@@ -1282,7 +1299,7 @@ struct AnalysisSameEventPairing {
   {
     LOG(info) << "Starting initialization of AnalysisSameEventPairing (idstoreh)";
     fEnableBarrelHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmed") || context.mOptions.get<bool>("processBarrelOnlyWithCollSkimmed") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCov") || context.mOptions.get<bool>("processBarrelOnlySkimmedNoCovWithMultExtra") || context.mOptions.get<bool>("processBarrelOnlyWithQvectorCentrSkimmedNoCov");
-    fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed");
+    fEnableBarrelMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmed") || context.mOptions.get<bool>("processMixingBarrelSkimmedFlow");
     fEnableMuonHistos = context.mOptions.get<bool>("processAllSkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmed") || context.mOptions.get<bool>("processMuonOnlySkimmedMultExtra") || context.mOptions.get<bool>("processMixingMuonSkimmed");
     fEnableMuonMixingHistos = context.mOptions.get<bool>("processMixingAllSkimmed") || context.mOptions.get<bool>("processMixingMuonSkimmed");
 
@@ -1319,6 +1336,54 @@ struct AnalysisSameEventPairing {
     TObjArray* objArrayMuonCuts = nullptr;
     if (!muonCutsStr.IsNull()) {
       objArrayMuonCuts = muonCutsStr.Tokenize(",");
+    }
+
+    if (fConfigML.applyBDT) {
+      // BDT cuts via JSON
+      std::vector<double> binsMl;
+      o2::framework::LabeledArray<double> cutsMl;
+      std::vector<int> cutDirMl;
+      int nClassesMl = 1;
+      std::vector<std::string> namesInputFeatures;
+      std::vector<std::string> onnxFileNames;
+
+      auto config = o2::aod::dqmlcuts::GetBdtScoreCutsAndConfigFromJSON(fConfigML.fConfigBdtCutsJSON.value.c_str());
+
+      if (std::holds_alternative<dqmlcuts::BinaryBdtScoreConfig>(config)) {
+        auto& cfg = std::get<dqmlcuts::BinaryBdtScoreConfig>(config);
+        binsMl = cfg.binsMl;
+        nClassesMl = 1;
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
+        namesInputFeatures = cfg.inputFeatures;
+        onnxFileNames = cfg.onnxFiles;
+        fDQMlResponse.setBinsCent(cfg.binsCent);
+        fDQMlResponse.setBinsPt(cfg.binsPt);
+        fDQMlResponse.setCentType(cfg.centType);
+        LOG(info) << "Using BDT cuts for binary classification";
+      } else {
+        auto& cfg = std::get<dqmlcuts::MultiClassBdtScoreConfig>(config);
+        binsMl = cfg.binsMl;
+        nClassesMl = 3;
+        cutsMl = cfg.cutsMl;
+        cutDirMl = cfg.cutDirs;
+        namesInputFeatures = cfg.inputFeatures;
+        onnxFileNames = cfg.onnxFiles;
+        fDQMlResponse.setBinsCent(cfg.binsCent);
+        fDQMlResponse.setBinsPt(cfg.binsPt);
+        fDQMlResponse.setCentType(cfg.centType);
+        LOG(info) << "Using BDT cuts for multiclass classification";
+      }
+
+      fDQMlResponse.configure(binsMl, cutsMl, cutDirMl, nClassesMl);
+      if (fConfigML.loadModelsFromCCDB) {
+        fCCDBApi.init(fConfigCCDB.url);
+        fDQMlResponse.setModelPathsCCDB(onnxFileNames, fCCDBApi, fConfigML.modelPathsCCDB, fConfigML.timestampCCDB);
+      } else {
+        fDQMlResponse.setModelPathsLocal(onnxFileNames);
+      }
+      fDQMlResponse.cacheInputFeaturesIndices(namesInputFeatures);
+      fDQMlResponse.init();
     }
 
     // get the barrel track selection cuts
@@ -1627,6 +1692,7 @@ struct AnalysisSameEventPairing {
     constexpr bool eventHasQvector = ((TEventFillMap & VarManager::ObjTypes::ReducedEventQvector) > 0);
     constexpr bool eventHasQvectorCentr = ((TEventFillMap & VarManager::ObjTypes::CollisionQvect) > 0);
     constexpr bool trackHasCov = ((TTrackFillMap & VarManager::ObjTypes::TrackCov) > 0 || (TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelCov) > 0);
+    bool isSelectedBDT = false;
 
     for (auto& event : events) {
       if (!event.isEventSelected_bit(0)) {
@@ -1707,6 +1773,43 @@ struct AnalysisSameEventPairing {
           if constexpr (trackHasCov && TTwoProngFitter) {
             dielectronsExtraList(t1.globalIndex(), t2.globalIndex(), VarManager::fgValues[VarManager::kVertexingTauzProjected], VarManager::fgValues[VarManager::kVertexingLzProjected], VarManager::fgValues[VarManager::kVertexingLxyProjected]);
             if constexpr ((TTrackFillMap & VarManager::ObjTypes::ReducedTrackBarrelPID) > 0) {
+              if (fConfigML.applyBDT) {
+                std::vector<float> dqInputFeatures = fDQMlResponse.getInputFeatures(t1, t2, VarManager::fgValues);
+
+                if (dqInputFeatures.empty()) {
+                  LOG(fatal) << "Input features for ML selection are empty! Please check your configuration.";
+                  return;
+                }
+
+                int modelIndex = -1;
+                const auto& binsCent = fDQMlResponse.getBinsCent();
+                const auto& binsPt = fDQMlResponse.getBinsPt();
+                const std::string& centType = fDQMlResponse.getCentType();
+
+                if ("kCentFT0C" == centType) {
+                  modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0C], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+                } else if ("kCentFT0A" == centType) {
+                  modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0A], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+                } else if ("kCentFT0M" == centType) {
+                  modelIndex = o2::aod::dqmlcuts::getMlBinIndex(VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kPt], binsCent, binsPt);
+                } else {
+                  LOG(fatal) << "Unknown centrality estimation type: " << centType;
+                  return;
+                }
+
+                if (modelIndex < 0) {
+                  LOG(info) << "Ml index is negative! This means that the centrality/pt is not in the range of the model bins.";
+                  continue;
+                }
+
+                LOG(debug) << "Model index: " << modelIndex << ", pT: " << VarManager::fgValues[VarManager::kPt] << ", centrality (kCentFT0C): " << VarManager::fgValues[VarManager::kCentFT0C];
+                isSelectedBDT = fDQMlResponse.isSelectedMl(dqInputFeatures, modelIndex, fOutputMlPsi2ee);
+                VarManager::FillBdtScore(fOutputMlPsi2ee); // TODO: check if this is needed or not
+              }
+
+              if (fConfigML.applyBDT && !isSelectedBDT)
+                continue;
+
               if (fConfigOptions.flatTables.value) {
                 dielectronAllList(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], t1.sign() + t2.sign(), twoTrackFilter, dileptonMcDecision,
                                   t1.pt(), t1.eta(), t1.phi(), t1.itsClusterMap(), t1.itsChi2NCl(), t1.tpcNClsCrossedRows(), t1.tpcNClsFound(), t1.tpcChi2NCl(), t1.dcaXY(), t1.dcaZ(), t1.tpcSignal(), t1.tpcNSigmaEl(), t1.tpcNSigmaPi(), t1.tpcNSigmaPr(), t1.beta(), t1.tofNSigmaEl(), t1.tofNSigmaPi(), t1.tofNSigmaPr(),
@@ -1831,6 +1934,10 @@ struct AnalysisSameEventPairing {
         bool isLeg1Ambi = false;
         bool isLeg2Ambi = false;
         bool isAmbiExtra = false;
+
+        if (fConfigML.applyBDT && !isSelectedBDT)
+          continue;
+
         for (int icut = 0; icut < ncuts; icut++) {
           if (twoTrackFilter & (static_cast<uint32_t>(1) << icut)) {
             isAmbiInBunch = (twoTrackFilter & (static_cast<uint32_t>(1) << 28)) || (twoTrackFilter & (static_cast<uint32_t>(1) << 29));
@@ -2124,6 +2231,13 @@ struct AnalysisSameEventPairing {
     runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithCov, gkTrackFillMapWithCov>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
   }
 
+  void processBarrelOnlySkimmedFlow(MyEventsVtxCovSelectedQvector const& events,
+                                    soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
+                                    MyBarrelTracksWithAmbiguities const& barrelTracks)
+  {
+    runSameEventPairing<true, VarManager::kDecayToEE, gkEventFillMapWithMultExtraWithQVector, gkTrackFillMap>(events, trackAssocsPerCollision, barrelAssocs, barrelTracks);
+  }
+
   void processBarrelOnlySkimmedNoCov(MyEventsSelected const& events,
                                      soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& barrelAssocs,
                                      MyBarrelTracksWithAmbiguities const& barrelTracks)
@@ -2178,6 +2292,12 @@ struct AnalysisSameEventPairing {
     runSameSideMixing<pairTypeEE, gkEventFillMap>(events, trackAssocs, tracks, trackAssocsPerCollision);
   }
 
+  void processMixingBarrelSkimmedFlow(soa::Filtered<MyEventsVtxCovSelectedQvectorWithHash>& events,
+                                      soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& trackAssocs, aod::ReducedTracks const& tracks)
+  {
+    runSameSideMixing<pairTypeEE, gkEventFillMapWithMultExtraWithQVector>(events, trackAssocs, tracks, trackAssocsPerCollision);
+  }
+
   void processMixingMuonSkimmed(soa::Filtered<MyEventsHashSelected>& events,
                                 soa::Join<aod::ReducedMuonsAssoc, aod::MuonTrackCuts> const& muonAssocs, MyMuonTracksWithCovWithAmbiguities const& muons)
   {
@@ -2195,10 +2315,12 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedNoCov, "Run barrel only pairing (no covariances), with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedNoCovWithMultExtra, "Run barrel only pairing (no covariances), with skimmed tracks, with collision information, with MultsExtra", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithQvectorCentrSkimmedNoCov, "Run barrel only pairing (no covariances), with skimmed tracks, with Qvector from central framework", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlySkimmedFlow, "Run barrel only pairing, with skimmed tracks and with flow", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmedMultExtra, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingAllSkimmed, "Run all types of mixed pairing, with skimmed tracks/muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingBarrelSkimmed, "Run barrel type mixing pairing, with skimmed tracks", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processMixingBarrelSkimmedFlow, "Run barrel type mixing pairing, with flow, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingMuonSkimmed, "Run muon type mixing pairing, with skimmed muons", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
 };

@@ -475,6 +475,7 @@ struct cascadeFlow {
   // Tables to produce
   Produces<aod::CascTraining> trainingSample;
   Produces<aod::CascAnalysis> analysisSample;
+  Produces<aod::LambdaAnalysis> analysisLambdaSample;
   Configurable<LabeledArray<double>> parSigmaMass{
     "parSigmaMass",
     {cascadev2::massSigmaParameters[0], nParameters, nParticles,
@@ -572,6 +573,29 @@ struct cascadeFlow {
                    cosThetaStarProton,
                    pdgCode);
   }
+
+  template <class collision_t, class v0_t>
+  void fillAnalysedLambdaTable(collision_t coll, bool hasEventPlane, bool hasSpectatorPlane, int chargeIndex, v0_t v0, float v2CEP, float psiT0C, double pzs2Lambda, double cos2ThetaLambda, double cosThetaLambda)
+  {
+    analysisLambdaSample(coll.centFT0C(),
+                         hasEventPlane,
+                         hasSpectatorPlane,
+                         chargeIndex,
+                         v0.pt(),
+                         v0.phi(),
+                         v0.mLambda(),
+                         v0.v0radius(),
+                         v0.dcapostopv(),
+                         v0.dcanegtopv(),
+                         v0.v0cosPA(),
+                         v0.dcaV0daughters(),
+                         v2CEP,
+                         psiT0C,
+                         pzs2Lambda,
+                         cos2ThetaLambda,
+                         cosThetaLambda);
+  }
+
   void initAcceptanceFromCCDB()
   {
     LOG(info) << "Loading acceptance from CCDB ";
@@ -1483,6 +1507,9 @@ struct cascadeFlow {
       }
     }
 
+    bool hasSpectatorPlane = 0;
+    bool hasEventPlane = 1;
+
     histos.fill(HIST("hNEvents"), 9.5);
     histos.fill(HIST("hEventNchCorrelationAfterEP"), coll.multNTracksPVeta1(), coll.multNTracksGlobal());
     histos.fill(HIST("hEventPVcontributorsVsCentralityAfterEP"), coll.centFT0C(), coll.multNTracksPVeta1());
@@ -1631,6 +1658,9 @@ struct cascadeFlow {
         if (fillingConfigs.isFillTHN_Acc)
           histos.get<THn>(HIST("hLambdaCos2ThetaVsPsi"))->Fill(coll.centFT0C(), chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda, 2 * lambdaminuspsiT0C);
       }
+
+      if (fillingConfigs.isFillTree)
+        fillAnalysedLambdaTable(coll, hasEventPlane, hasSpectatorPlane, chargeIndex, v0, v2CEP, psiT0C, pzs2Lambda, cos2ThetaLambda, cosThetaLambda);
     }
   }
 

@@ -57,8 +57,7 @@ struct electronFromDalitzConverter1 {
                    track.itsClusterSizes(),
                    track.itsChi2NCl(),
                    track.tofChi2(),
-                   track.detectorMap(),
-                   0.f);
+                   track.detectorMap());
 
     } // end of track loop
   } // end of process
