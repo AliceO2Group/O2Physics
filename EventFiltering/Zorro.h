@@ -74,7 +74,7 @@ class Zorro
 
   ZorroSummary mZorroSummary{"ZorroSummary", "ZorroSummary"};
 
-  std::string mBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/Chunked/";
+  std::string mBaseCCDBPath = "EventFiltering/Zorro/";
   int mRunNumber = 0;
   std::pair<int64_t, int64_t> mRunDuration;
   int64_t mOrbitResetTimestamp = 0;

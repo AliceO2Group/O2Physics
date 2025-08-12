@@ -45,7 +45,7 @@ struct ThreeParticleCorrelations {
 
   // Track PID parameters
   double pionID = 0.0, kaonID = 1.0, protonID = 2.0;
-  float nSigma0 = 0.0, nSigma2 = 2.0, nSigma4 = 4.0, nSigma5 = 5.0;
+  float nSigma0 = 0.0, nSigma1 = 1.0, nSigma2 = 2.0, nSigma4 = 4.0, nSigma5 = 5.0;
 
   // V0 filter parameters
   float tpcNCrossedRowsMin = 70.0;
@@ -55,8 +55,8 @@ struct ThreeParticleCorrelations {
   int dcaV0DauMax = 1;
 
   // Track filter parameters
-  float pionPtMin = 0.3, pionPtMax = 2.3, kaonPtMin = 0.5, kaonPtMax = 2.5, protonPtMin = 0.5, protonPtMax = 2.5;
-  float pionPtMid = 1.5, kaonPtMid1 = 1.5, kaonPtMid2 = 2.0, protonPtMid = 0.7;
+  float pionPtMin = 0.3, pionPtMax = 2.3, kaonPtMin = 0.5, kaonPtMax = 2.3, protonPtMin = 0.6;
+  float pionPtMid1 = 1.6, pionPtMid2 = 2.0, kaonPtMid1 = 1.5, kaonPtMid2 = 2.0, protonPtMid = 2.3;
 
   // RD filter parameters
   float dEtaMax = 0.05, dEtaMin = 0.023;
@@ -1002,11 +1002,15 @@ struct ThreeParticleCorrelations {
       }
       if (track.pt() < pionPtMin) {
         return false;
-      } else if (track.pt() > pionPtMin && track.pt() < pionPtMid) {
+      } else if (track.pt() > pionPtMin && track.pt() < pionPtMid1) {
         if (std::abs(track.tofNSigmaPi()) >= nSigma4) {
           return false;
         }
-      } else if (track.pt() > pionPtMid && track.pt() < pionPtMax) {
+      } else if (track.pt() > pionPtMid1 && track.pt() < pionPtMid2) {
+        if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= -nSigma2) {
+          return false;
+        }
+      } else if (track.pt() > pionPtMid2 && track.pt() < pionPtMax) {
         if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= nSigma0) {
           return false;
         }
@@ -1025,7 +1029,7 @@ struct ThreeParticleCorrelations {
           return false;
         }
       } else if (track.pt() > kaonPtMid1 && track.pt() < kaonPtMid2) {
-        if (track.tofNSigmaKa() <= -nSigma2 || track.tofNSigmaKa() >= nSigma4) {
+        if (track.tofNSigmaKa() <= -nSigma1 || track.tofNSigmaKa() >= nSigma4) {
           return false;
         }
       } else if (track.pt() > kaonPtMid2 && track.pt() < kaonPtMax) {
@@ -1043,14 +1047,10 @@ struct ThreeParticleCorrelations {
       if (track.pt() < protonPtMin) {
         return false;
       } else if (track.pt() > protonPtMin && track.pt() < protonPtMid) {
-        if (track.tofNSigmaPr() <= -nSigma2 || track.tofNSigmaPr() >= nSigma4) {
-          return false;
-        }
-      } else if (track.pt() > protonPtMid && track.pt() < protonPtMax) {
         if (std::abs(track.tofNSigmaPr()) >= nSigma4) {
           return false;
         }
-      } else if (track.pt() > protonPtMax) {
+      } else if (track.pt() > protonPtMid) {
         if (track.tofNSigmaPr() <= -nSigma2 || track.tofNSigmaPr() >= nSigma4) {
           return false;
         }
