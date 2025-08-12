@@ -217,8 +217,8 @@ struct SGCandProducer {
 
     // Cross sections in ub. Using dummy -1 if lumi estimator is not reliable
     float csTCE = 10.36e6;
-    float csZEM = 415.2e6; // see AN: https://alice-notes.web.cern.ch/node/1515
-    float csZNC = 214.5e6; // see AN: https://alice-notes.web.cern.ch/node/1515
+    const float csZEM = 415.2e6; // see AN: https://alice-notes.web.cern.ch/node/1515
+    const float csZNC = 214.5e6; // see AN: https://alice-notes.web.cern.ch/node/1515
     if (runNumber > 543437 && runNumber < 543514) {
       csTCE = 8.3e6;
     }
@@ -326,14 +326,14 @@ struct SGCandProducer {
     getHist(TH1, histdir + "/Stat")->Fill(8., 1.);
 
     //
-    int trs = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ? 1 : 0;
-    int trofs = collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard) ? 1 : 0;
-    int hmpr = collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof) ? 1 : 0;
-    int tfb = collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) ? 1 : 0;
-    int itsROFb = collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) ? 1 : 0;
-    int sbp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) ? 1 : 0;
-    int zVtxFT0vPv = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) ? 1 : 0;
-    int vtxITSTPC = collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC) ? 1 : 0;
+    const int trs = collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ? 1 : 0;
+    const int trofs = collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard) ? 1 : 0;
+    const int hmpr = collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof) ? 1 : 0;
+    const int tfb = collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder) ? 1 : 0;
+    const int itsROFb = collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder) ? 1 : 0;
+    const int sbp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup) ? 1 : 0;
+    const int zVtxFT0vPv = collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV) ? 1 : 0;
+    const int vtxITSTPC = collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC) ? 1 : 0;
     auto bc = collision.template foundBC_as<BCs>();
     double ir = 0.;
     const uint64_t ts = bc.timestamp();
@@ -363,14 +363,14 @@ struct SGCandProducer {
           return;
       }
       upchelpers::FITInfo fitInfo{};
-      uint8_t chFT0A = 0;
-      uint8_t chFT0C = 0;
-      uint8_t chFDDA = 0;
-      uint8_t chFDDC = 0;
-      uint8_t chFV0A = 0;
-      int occ = collision.trackOccupancyInTimeRange();
+      const uint8_t chFT0A = 0;
+      const uint8_t chFT0C = 0;
+      const uint8_t chFDDA = 0;
+      const uint8_t chFDDC = 0;
+      const uint8_t chFV0A = 0;
+      const int occ = collision.trackOccupancyInTimeRange();
       udhelpers::getFITinfo(fitInfo, newbc, bcs, ft0s, fv0as, fdds);
-      int upc_flag = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? 1 : 0;
+      const int upc_flag = (collision.flags() & dataformats::Vertex<o2::dataformats::TimeStamp<int>>::Flags::UPCMode) ? 1 : 0;
       // update SG candidates tables
       outputCollisions(bc.globalBC(), bc.runNumber(),
                        collision.posX(), collision.posY(), collision.posZ(), upc_flag,
