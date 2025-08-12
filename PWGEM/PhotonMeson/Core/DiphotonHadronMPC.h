@@ -78,9 +78,6 @@ using MyV0Photon = MyV0Photons::iterator;
 using MyPrimaryElectrons = soa::Filtered<soa::Join<aod::EMPrimaryElectronsFromDalitz, aod::EMPrimaryElectronEMEventIds, aod::EMPrimaryElectronsPrefilterBitDerived>>;
 using MyPrimaryElectron = MyPrimaryElectrons::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackEMEventIds>;
-using MyTrack = MyTracks::iterator;
-
 template <PairType pairtype, typename... Types>
 struct DiphotonHadronMPC {
 
@@ -362,7 +359,8 @@ struct DiphotonHadronMPC {
     const AxisSpec axis_eta_hadron{40, -2, +2, "#eta_{h}"};
     const AxisSpec axis_phi_hadron{36, 0, 2 * M_PI, "#varphi_{h} (rad.)"};
 
-    fRegistry.add("Hadron/hs", "hadron", kTHnSparseD, {axis_pt_hadron, axis_eta_hadron, axis_phi_hadron}, true);
+    fRegistry.add("Hadron/hs", "hadron", kTHnSparseD, {axis_pt_hadron, axis_eta_hadron, axis_phi_hadron}, false);
+    fRegistry.add("Hadron/hTrackBit", "track bit", kTH1D, {{65536, -0.5, 65535.5}}, false);
 
     fRegistry.add("Diphoton/same/hs", "diphoton", kTHnSparseD, {axis_mass, axis_pt}, true);
     fRegistry.addClone("Diphoton/same/", "Diphoton/mix/");
@@ -467,11 +465,17 @@ struct DiphotonHadronMPC {
 
   SliceCache cache;
   Preslice<MyV0Photons> perCollision_pcm = aod::v0photonkf::emeventId;
-  Preslice<MyTracks> perCollision_track = aod::emprimarytrack::emeventId;
 
   Preslice<MyPrimaryElectrons> perCollision_electron = aod::emprimaryelectron::emeventId;
   Partition<MyPrimaryElectrons> positrons = o2::aod::emprimaryelectron::sign > int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt&& nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl&& o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
   Partition<MyPrimaryElectrons> electrons = o2::aod::emprimaryelectron::sign < int8_t(0) && static_cast<float>(dileptoncuts.cfg_min_pt_track) < o2::aod::track::pt && nabs(o2::aod::track::eta) < static_cast<float>(dileptoncuts.cfg_max_eta_track) && static_cast<float>(dileptoncuts.cfg_min_TPCNsigmaEl) < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < static_cast<float>(dileptoncuts.cfg_max_TPCNsigmaEl);
+
+  using RefTracks = soa::Join<aod::EMPrimaryTracks, aod::EMPrimaryTrackEMEventIds>;
+  using RefTrack = RefTracks::iterator;
+  Preslice<RefTracks> perCollision_track = aod::emprimarytrack::emeventId;
+  Filter refTrackFilter = trackcuts.cfg_min_pt_track < 1 / nabs(o2::aod::emprimarytrack::signed1Pt) && 1 / nabs(o2::aod::emprimarytrack::signed1Pt) < trackcuts.cfg_max_pt_track && trackcuts.cfg_min_eta_track < o2::aod::emprimarytrack::eta && o2::aod::emprimarytrack::eta < trackcuts.cfg_max_eta_track;
+  using FilteredRefTracks = soa::Filtered<RefTracks>;
+  using FilteredRefTrack = FilteredRefTracks::iterator;
 
   using MyEMH = o2::aod::pwgem::dilepton::utils::EventMixingHandler<std::tuple<int, int, int, int>, std::pair<int, int>, EMTrack>;
   MyEMH* emh1 = nullptr;
@@ -555,6 +559,7 @@ struct DiphotonHadronMPC {
       for (const auto& track : refTracks_per_collision) {
         if (fEMTrackCut.IsSelected(track)) {
           fRegistry.fill(HIST("Hadron/hs"), track.pt(), track.eta(), track.phi());
+          fRegistry.fill(HIST("Hadron/hTrackBit"), track.trackBit());
         }
       }
 
@@ -942,7 +947,7 @@ struct DiphotonHadronMPC {
   Filter prefilter_primaryelectron = ifnode(dileptoncuts.cfg_apply_cuts_from_prefilter_derived.node(), o2::aod::emprimaryelectron::pfbderived == static_cast<uint16_t>(0), true);
 
   int ndf = 0;
-  void processAnalysis(FilteredMyCollisions const& collisions, MyTracks const& refTracks, Types const&... args)
+  void processAnalysis(FilteredMyCollisions const& collisions, FilteredRefTracks const& refTracks, Types const&... args)
   {
     // LOGF(info, "ndf = %d", ndf);
     if constexpr (pairtype == PairType::kPCMPCM) {
@@ -961,7 +966,7 @@ struct DiphotonHadronMPC {
   PROCESS_SWITCH(DiphotonHadronMPC, processAnalysis, "process pair analysis", true);
 
   using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
-  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, MyTracks const& refTracks, Types const&... args)
+  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, FilteredRefTracks const& refTracks, Types const&... args)
   {
     // LOGF(info, "ndf = %d", ndf);
     if constexpr (pairtype == PairType::kPCMPCM) {
