@@ -210,10 +210,6 @@ struct HfTaskSingleElectron {
     mpt = motherPt;                                     // copy of first mother pt
     mpdg = motherPdg;                                   // copy of first mother pdg
 
-    std::vector<int> anc;
-    anc.push_back(std::abs(mcpart.pdgCode()));
-    anc.push_back(mpdg);
-
     // check if electron from charm hadrons
     if ((static_cast<int>(motherPdg / 100.) % 10) == kCharm || (static_cast<int>(motherPdg / 1000.) % 10) == kCharm) {
 
@@ -228,7 +224,6 @@ struct HfTaskSingleElectron {
           } else {
             grmotherPt = mctrack.front().pt();
             grmotherPdg = std::abs(mctrack.front().pdgCode());
-            anc.push_back(mctrack.front().pdgCode());
             if ((static_cast<int>(grmotherPdg / 100.) % 10) == kBottom || (static_cast<int>(grmotherPdg / 1000.) % 10) == kBottom) {
               mpt = grmotherPt;
               mpdg = grmotherPdg;
