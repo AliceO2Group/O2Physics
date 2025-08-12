@@ -75,8 +75,8 @@ using std::array;
 using namespace o2::aod::rctsel;
 
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
-using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs>;
-using CascadeCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs, aod::CascTOFPIDs>;
+using V0Candidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
+using CascadeCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs>;
 
 struct strangenessderivedbinnedinfo {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -123,6 +123,17 @@ struct strangenessderivedbinnedinfo {
     Configurable<float> minIR{"minIR", -1, "minimum IR collisions"};
     Configurable<float> maxIR{"maxIR", -1, "maximum IR collisions"};
   } eventSelections;
+
+  static constexpr float defaultSqrtScalingParameters[1][4] = {{0.1, 0.1, 0, 128}};
+
+  // preselection options
+  struct : ConfigurableGroup {
+    std::string prefix = "encodingOpts";
+    Configurable<bool> useSqrtEncodingForOccupancy{"useSqrtEncodingForOccupancy", false, "Store sqrt(occupancy) instead of occupancy"};
+    Configurable<bool> useSqrtEncodingForRadius{"useSqrtEncodingForRadius", false, "Store sqrt(radius) instead of radius"};
+    Configurable<bool> useSqrtScalingForEncodingPt{"useSqrtScalingForEncodingPt", false, "Store sqrt scaling(pT) instead of pT"};
+    Configurable<LabeledArray<float>> sqrtScalingParameters{"sqrtScalingParameters", {defaultSqrtScalingParameters[0], 4, {"sigma0", "sigma1", "clampMin", "clampMax"}}, "Sqrt scaling parameters"};
+  } encodingOpts;
 
   struct : ConfigurableGroup {
     Configurable<int> v0TypeSelection{"v0Selections.v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
@@ -240,9 +251,27 @@ struct strangenessderivedbinnedinfo {
   ConfigurableAxis axisEta{"axisEta", {10, -1.0f, 1.0f}, "Pseudo-rapidity #eta"};
   ConfigurableAxis axisRadius{"axisRadius", {10, 0.0f, 250.0f}, "Decay radius (cm)"};
   ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.2f, 0.4f, 0.6f, 0.8f, 1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 4.0f, 5.0f, 7.0f, 9.0f, 11.0f, 15.0f, 30.0f}, "#it{p}_{T} (GeV/#it{c})"};
+  ConfigurableAxis axisAlphaV0{"axisAlphaV0", {1, -1.0f, 1.f}, "V0 #alpha Armenteros"};
+  ConfigurableAxis axisPtArmV0{"axisPtArmV0", {1, 0.0f, 10.f}, "V0 #it{p}_{T} Armenteros"};
 
   // PDG database
   Service<o2::framework::O2DatabasePDG> pdgDB;
+
+  // Sqrt scaling function
+  // Author: Marian Ivanov
+  int codeSqrtScaling(float val, float sigma0, float sigma1, int clampMin, int clampMax)
+  {
+    float code_f = std::asinh((sigma1 * val) / sigma0) / sigma0;
+    return std::clamp(static_cast<int>(std::round(code_f)), clampMin, clampMax);
+  }
+
+  // Function to decode the sqrt scaling
+  // Author: Marian Ivanov
+  float decodeSqrtScaling(int code, float sigma0, float sigma1)
+  {
+    float code_f = static_cast<float>(code);
+    return (sigma0 / sigma1) * std::sinh(sigma0 * code_f);
+  }
 
   void init(InitContext const&)
   {
@@ -285,7 +314,16 @@ struct strangenessderivedbinnedinfo {
     histos.add("hEventCentrality", "hEventCentrality", kTH1F, {{100, 0.0f, +100.0f}});
     histos.add("hEventOccupancy", "hEventOccupancy", kTH1F, {axisOccupancy});
 
-    histos.add("h7dCentOccQoverPtMassRadiusPhiEta", "h7dCentOccQoverPtMassRadiusPhiEta", kTHnSparseF, {axisCentrality, axisOccupancy, axisPt, axisMass, axisRadius, axisPhi, axisEta});
+    histos.add("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc", "h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc", kTHnSparseF, {axisMass, axisPt, axisPhi, axisEta, axisPtArmV0, axisAlphaV0, axisRadius, axisCentrality, axisOccupancy});
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(0)->SetName("Mass");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(1)->SetName("Pt");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(2)->SetName("Phi");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(3)->SetName("Eta");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(4)->SetName("V0PtArm");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(5)->SetName("V0Alpha");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(6)->SetName("Radius");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(7)->SetName("Centrality");
+    histos.get<THnSparse>(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"))->GetAxis(8)->SetName("Occupancy");
 
     if (cfgSkimmedProcessing) {
       zorroSummary.setObject(zorro.getZorroSummary());
@@ -470,6 +508,8 @@ struct strangenessderivedbinnedinfo {
     } else {
       centrality = collision.centFT0C();
       occupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
+      if (encodingOpts.useSqrtEncodingForOccupancy)
+        occupancy = std::sqrt(occupancy);
     }
     histos.fill(HIST("hEventCentrality"), centrality);
     histos.fill(HIST("hEventOccupancy"), occupancy);
@@ -761,14 +801,17 @@ struct strangenessderivedbinnedinfo {
         if (v0.v0Type() != v0Selections.v0TypeSelection && v0Selections.v0TypeSelection > -1)
           continue; // skip V0s that are not standard
 
+        float pT = encodingOpts.useSqrtScalingForEncodingPt ? codeSqrtScaling(v0.pt(), encodingOpts.sqrtScalingParameters->get("sigma0"), encodingOpts.sqrtScalingParameters->get("sigma1"), encodingOpts.sqrtScalingParameters->get("clampMin"), encodingOpts.sqrtScalingParameters->get("clampMax")) : v0.pt();
+        float decayRadius = encodingOpts.useSqrtEncodingForRadius ? std::sqrt(v0.v0radius()) : v0.v0radius();
+
         if (analyseK0Short && isV0Selected(v0, collision, v0.yK0Short())) {
-          histos.fill(HIST("h7dCentOccQoverPtMassRadiusPhiEta"), centrality, occupancy, v0.pt(), v0.mK0Short(), v0.v0radius(), v0.phi(), v0.eta());
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mK0Short(), pT, v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), decayRadius, centrality, occupancy);
         }
         if (analyseLambda && isV0Selected(v0, collision, v0.yLambda())) {
-          histos.fill(HIST("h7dCentOccQoverPtMassRadiusPhiEta"), centrality, occupancy, v0.pt(), v0.mLambda(), v0.v0radius(), v0.phi(), v0.eta());
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mLambda(), pT, v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), decayRadius, centrality, occupancy);
         }
         if (analyseAntiLambda && isV0Selected(v0, collision, v0.yLambda())) {
-          histos.fill(HIST("h7dCentOccQoverPtMassRadiusPhiEta"), centrality, occupancy, v0.pt(), v0.mAntiLambda(), v0.v0radius(), v0.phi(), v0.eta());
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mAntiLambda(), pT, v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), decayRadius, centrality, occupancy);
         }
       } // end v0 loop
     }
@@ -780,11 +823,14 @@ struct strangenessderivedbinnedinfo {
             std::abs(cascade.bacheloreta()) > cascSelections.daughterEtaCut)
           continue; // remove acceptance that's badly reproduced by MC / superfluous in future
 
+        float pT = encodingOpts.useSqrtScalingForEncodingPt ? codeSqrtScaling(cascade.pt(), encodingOpts.sqrtScalingParameters->get("sigma0"), encodingOpts.sqrtScalingParameters->get("sigma1"), encodingOpts.sqrtScalingParameters->get("clampMin"), encodingOpts.sqrtScalingParameters->get("clampMax")) : cascade.pt();
+        float decayRadius = encodingOpts.useSqrtEncodingForRadius ? std::sqrt(cascade.cascradius()) : cascade.cascradius();
+
         if (analyseXi && isCascadeSelected(cascade, collision, cascade.yXi())) {
-          histos.fill(HIST("h7dCentOccQoverPtMassRadiusPhiEta"), centrality, occupancy, cascade.pt(), cascade.m(1), cascade.cascradius(), cascade.phi(), cascade.eta());
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), cascade.m(1), pT, cascade.phi(), cascade.eta(), 0., 0., decayRadius, centrality, occupancy);
         }
         if (analyseOmega && isCascadeSelected(cascade, collision, cascade.yOmega())) {
-          histos.fill(HIST("h7dCentOccQoverPtMassRadiusPhiEta"), centrality, occupancy, cascade.pt(), cascade.m(2), cascade.cascradius(), cascade.phi(), cascade.eta());
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), cascade.m(2), pT, cascade.phi(), cascade.eta(), 0., 0., decayRadius, centrality, occupancy);
         }
       } // end cascade loop
     }

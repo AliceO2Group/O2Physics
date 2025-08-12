@@ -1648,7 +1648,8 @@ struct StrangenessBuilder {
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
           if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, posTrack, posTrackPar)) {
-            return;
+            products.v0dataLink(-1, -1);
+            continue;
           }
         }
 
@@ -1660,7 +1661,8 @@ struct StrangenessBuilder {
 
           auto const& collision = collisions.rawIteratorAt(v0.collisionId);
           if (!mVDriftMgr.moveTPCTrack<TBCs, TCollisions>(collision, negTrack, negTrackPar)) {
-            return;
+            products.v0dataLink(-1, -1);
+            continue;
           }
         }
       }
@@ -1925,6 +1927,8 @@ struct StrangenessBuilder {
             }
           } // enabled tables check
         } // constexpr requires check
+      } else {
+        products.v0dataLink(-1, -1);
       }
     }
 

@@ -24,6 +24,7 @@ namespace o2::aod
 
 namespace hyperkink
 {
+DECLARE_SOA_COLUMN(MagPolarity, magPolarity, int8_t);                   //! Magnetic field polarity
 DECLARE_SOA_COLUMN(XPV, xPV, float);                                    //! Primary vertex of the candidate (x direction)
 DECLARE_SOA_COLUMN(YPV, yPV, float);                                    //! Primary vertex of the candidate (y direction)
 DECLARE_SOA_COLUMN(ZPV, zPV, float);                                    //! Primary vertex of the candidate (z direction)
@@ -54,6 +55,7 @@ DECLARE_SOA_COLUMN(ItsClusterSizesMoth, itsClusterSizesMoth, uint32_t); //! ITS 
 DECLARE_SOA_COLUMN(ItsClusterSizesDaug, itsClusterSizesDaug, uint32_t); //! ITS cluster size of the daughter track
 DECLARE_SOA_COLUMN(NSigmaTPCDaug, nSigmaTPCDaug, float);                //! Number of tpc sigmas of the daughter track
 DECLARE_SOA_COLUMN(NSigmaITSDaug, nSigmaITSDaug, float);                //! Number of ITS sigmas of the daughter track
+DECLARE_SOA_COLUMN(NSigmaTOFDaug, nSigmaTOFDaug, float);                //! Number of TOF sigmas of the daughter track
 
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                   //! bool: true for hyperhelium4signal
 DECLARE_SOA_COLUMN(IsSignalReco, isSignalReco, bool);           //! bool: true if the signal is reconstructed
@@ -82,6 +84,7 @@ DECLARE_SOA_COLUMN(UpdatePzMothPV, updatePzMothPV, float);      //! updated pz o
 
 DECLARE_SOA_TABLE(HypKinkCand, "AOD", "HYPKINKCANDS",
                   o2::soa::Index<>,
+                  hyperkink::MagPolarity,
                   hyperkink::XPV, hyperkink::YPV, hyperkink::ZPV,
                   hyperkink::XSV, hyperkink::YSV, hyperkink::ZSV,
                   hyperkink::IsMatter,
@@ -92,10 +95,13 @@ DECLARE_SOA_TABLE(HypKinkCand, "AOD", "HYPKINKCANDS",
                   hyperkink::PxDaugSV, hyperkink::PyDaugSV, hyperkink::PzDaugSV,
                   hyperkink::DcaMothPv, hyperkink::DcaDaugPv, hyperkink::DcaKinkTopo,
                   hyperkink::ItsChi2Moth, hyperkink::ItsClusterSizesMoth, hyperkink::ItsClusterSizesDaug,
-                  hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug);
+                  hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug, hyperkink::NSigmaTOFDaug,
+                  hyperkink::PxMothPV, hyperkink::PyMothPV, hyperkink::PzMothPV,
+                  hyperkink::UpdatePxMothPV, hyperkink::UpdatePyMothPV, hyperkink::UpdatePzMothPV);
 
 DECLARE_SOA_TABLE(MCHypKinkCand, "AOD", "MCHYPKINKCANDS",
                   o2::soa::Index<>,
+                  hyperkink::MagPolarity,
                   hyperkink::XPV, hyperkink::YPV, hyperkink::ZPV,
                   hyperkink::XSV, hyperkink::YSV, hyperkink::ZSV,
                   hyperkink::IsMatter,
@@ -106,7 +112,7 @@ DECLARE_SOA_TABLE(MCHypKinkCand, "AOD", "MCHYPKINKCANDS",
                   hyperkink::PxDaugSV, hyperkink::PyDaugSV, hyperkink::PzDaugSV,
                   hyperkink::DcaMothPv, hyperkink::DcaDaugPv, hyperkink::DcaKinkTopo,
                   hyperkink::ItsChi2Moth, hyperkink::ItsClusterSizesMoth, hyperkink::ItsClusterSizesDaug,
-                  hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug,
+                  hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug, hyperkink::NSigmaTOFDaug,
                   hyperkink::IsSignal, hyperkink::IsSignalReco, hyperkink::IsCollReco, hyperkink::IsSurvEvSelection,
                   hyperkink::TrueXSV, hyperkink::TrueYSV, hyperkink::TrueZSV,
                   hyperkink::TruePxMothPV, hyperkink::TruePyMothPV, hyperkink::TruePzMothPV,

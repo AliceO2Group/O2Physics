@@ -14,20 +14,20 @@
 // This code runs loop over v0 photons for PCM QC.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include "PWGEM/Dilepton/Utils/MCUtilities.h"
+#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
+#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include <string>
 #include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
-#include "PWGEM/PhotonMeson/Utils/MCUtilities.h"
-#include "PWGEM/Dilepton/Utils/MCUtilities.h"
-#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -59,7 +59,6 @@ struct PCMQCMC {
   Configurable<float> maxRgen{"maxRgen", 90.f, "maximum radius for generated particles"};
   Configurable<float> margin_z_mc{"margin_z_mc", 7.0, "margin for z cut in cm for MC"};
   Configurable<bool> cfgRequireTrueAssociation{"cfgRequireTrueAssociation", false, "flag to require true mc collision association"};
-  Configurable<bool> cfg_fill_resolution{"cfg_fill_resoltion", false, "flag to fill resolution histogram"};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -97,16 +96,15 @@ struct PCMQCMC {
     Configurable<float> cfg_max_v0radius{"cfg_max_v0radius", 90.0, "max v0 radius"};
     Configurable<float> cfg_max_alpha_ap{"cfg_max_alpha_ap", 0.95, "max alpha for AP cut"};
     Configurable<float> cfg_max_qt_ap{"cfg_max_qt_ap", 0.01, "max qT for AP cut"};
-    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.997, "min V0 CosPA"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.999, "min V0 CosPA"};
     Configurable<float> cfg_max_pca{"cfg_max_pca", 3.0, "max distance btween 2 legs"};
     Configurable<float> cfg_max_chi2kf{"cfg_max_chi2kf", 1e+10, "max chi2/ndf with KF"};
-    Configurable<bool> cfg_require_v0_with_correct_xz{"cfg_require_v0_with_correct_xz", true, "flag to select V0s with correct xz"};
     Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 40, "min ncrossed rows"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
-    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
+    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -3.0, "min. TPC n sigma for electron"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron"};
     Configurable<bool> cfg_disable_itsonly_track{"cfg_disable_itsonly_track", false, "flag to disable ITSonly tracks"};
@@ -204,22 +202,9 @@ struct PCMQCMC {
     fRegistry.add("V0/primary/hPtGen_DeltaEta", "photon #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
     fRegistry.add("V0/primary/hPtGen_DeltaPhi", "photon #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
     fRegistry.add("V0/primary/hRxyGen_DeltaPtOverPtGen", "photon p_{T} resolution; R_{xy}^{gen} (cm);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{100, 0, 100}, {200, -1.0f, 1.0f}}, true);
-    fRegistry.add("V0/primary/hsPhotonResolution",
-                  "Photon resolution;p_{T};#eta;R_{xy};Z_{conv};Z_{vtx};#Deltap_{T}/p_{T};#Delta#eta;#Delta#phi",
-                  kTHnSparseF,
-                  {{100, 0, 10},
-                   {80, -1.6, 1.6},
-                   {100, 0, 100},
-                   {100, -50, 50},
-                   {100, -50, 50},
-                   {200, -1, 1},
-                   {100, -0.5, 0.5},
-                   {100, -0.5, 0.5}},
-                  false);
     fRegistry.add("V0/primary/hRxyGen_DeltaEta", "photon #eta resolution;R_{xy}^{gen} (cm);#eta^{rec} - #eta^{gen}", kTH2F, {{100, 0, 100}, {100, -0.5f, 0.5f}}, true);
     fRegistry.add("V0/primary/hRxyGen_DeltaPhi", "photon #varphi resolution;R_{xy}^{gen} (cm);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{100, 0, 100}, {100, -0.5f, 0.5f}}, true);
     fRegistry.add("V0/primary/hRxyGen_DeltaR", "photon #varphi resolution;R_{xy}^{gen} (cm);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{100, 0, 100}, {100, 0, 100}}, true);
-    fRegistry.add("V0/primary/hsConvVtxZPtR", "z_{vtx} vs p_{T} vs R_{xy};z_{vtx} (cm);p_{T} (GeV/c);R_{xy} (cm)", kTHnSparseF, {{100, -20.0f, +20.0f}, {100, 0.0f, 10.0f}, {100, 0, 100}}, false);
     fRegistry.add("V0/primary/hXY_MC", "X vs. Y of true photon conversion point.;X (cm);Y (cm)", kTH2F, {{400, -100.0f, +100}, {400, -100, +100}}, true);
     fRegistry.add("V0/primary/hRZ_MC", "R vs. Z of true photon conversion point;Z (cm);R_{xy} (cm)", kTH2F, {{200, -100.0f, +100}, {200, 0, 100}}, true);
     fRegistry.add("V0/primary/hsConvPoint", "photon conversion point;r_{xy} (cm);#varphi (rad.);#eta;", kTHnSparseF, {{100, 0.0f, 100}, {90, 0, 2 * M_PI}, {80, -2, +2}}, false);
@@ -248,26 +233,11 @@ struct PCMQCMC {
     fRegistry.add("V0Leg/primary/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("V0Leg/primary/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
     fRegistry.add("V0Leg/primary/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {160, 0, 16}}, false);
-    fRegistry.add("V0Leg/primary/hXY", "X vs. Y;X (cm);Y (cm)", kTH2F, {{100, 0, 100}, {40, -20, 20}}, false);
-    fRegistry.add("V0Leg/primary/hZX", "Z vs. X;Z (cm);X (cm)", kTH2F, {{200, -100, 100}, {100, 0, 100}}, false);
-    fRegistry.add("V0Leg/primary/hZY", "Z vs. Y;Z (cm);Y (cm)", kTH2F, {{200, -100, 100}, {40, -20, 20}}, false);
+    // fRegistry.add("V0Leg/primary/hXY", "X vs. Y;X (cm);Y (cm)", kTH2F, {{100, 0, 100}, {40, -20, 20}}, false);
+    // fRegistry.add("V0Leg/primary/hZX", "Z vs. X;Z (cm);X (cm)", kTH2F, {{200, -100, 100}, {100, 0, 100}}, false);
+    // fRegistry.add("V0Leg/primary/hZY", "Z vs. Y;Z (cm);Y (cm)", kTH2F, {{200, -100, 100}, {40, -20, 20}}, false);
     fRegistry.add("V0Leg/primary/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{1000, 0, 10}, {200, -1.0f, 1.0f}}, true);
     fRegistry.add("V0Leg/primary/hPtGen_DeltaEta", "electron #eta resolution;p_{T}^{gen} (GeV/c);#eta^{rec} - #eta^{gen}", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
-    if (cfg_fill_resolution) {
-      fRegistry.add("V0Leg/primary/hsPhotonResolution",
-                    "Photon resolution;p_{T};#eta;R_{xy};Z_{conv};Z_{vtx};#Deltap_{T}/p_{T};#Delta#eta;#Delta#phi",
-                    kTHnSparseF,
-                    {{100, 0, 10},
-                     {80, -1.6, 1.6},
-                     {100, 0, 100},
-                     {100, -50, 50},
-                     {100, -50, 50},
-                     {200, -1, 1},
-                     {100, -0.5, 0.5},
-                     {100, -0.5, 0.5}},
-                    false);
-    }
-
     fRegistry.add("V0Leg/primary/hPtGen_DeltaPhi", "electron #varphi resolution;p_{T}^{gen} (GeV/c);#varphi^{rec} - #varphi^{gen} (rad.)", kTH2F, {{1000, 0, 10}, {100, -0.5f, 0.5f}}, true);
     fRegistry.add("V0Leg/primary/hRxyGen_DeltaPtOverPtGen", "photon p_{T} resolution; R_{xy}^{gen} (cm);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{100, 0, 100}, {200, -1.0f, 1.0f}}, true);
     fRegistry.add("V0Leg/primary/hRxyGen_DeltaEta", "photon #eta resolution;R_{xy}^{gen} (cm);#eta^{rec} - #eta^{gen}", kTH2F, {{100, 0, 100}, {100, -0.5f, 0.5f}}, true);
@@ -325,7 +295,6 @@ struct PCMQCMC {
     fV0PhotonCut.SetChi2PerClusterITS(-1e+10, pcmcuts.cfg_max_chi2its);
     fV0PhotonCut.SetNClustersITS(0, 7);
     fV0PhotonCut.SetMeanClusterSizeITSob(0.0, 16.0);
-    fV0PhotonCut.SetIsWithinBeamPipe(pcmcuts.cfg_require_v0_with_correct_xz);
     fV0PhotonCut.SetDisableITSonly(pcmcuts.cfg_disable_itsonly_track);
     fV0PhotonCut.SetDisableTPConly(pcmcuts.cfg_disable_tpconly_track);
     fV0PhotonCut.SetRequireITSTPC(pcmcuts.cfg_require_v0_with_itstpc);
@@ -391,9 +360,6 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hMassGamma"), v0.v0radius(), v0.mGamma());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsM"), v0.mGamma(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsR"), v0.v0radius(), v0.chiSquareNDF());
-    fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hsConvVtxZPtR"),
-                   v0.vz(), v0.pt(), v0.v0radius());
-
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsX"), v0.vx(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsY"), v0.vy(), v0.chiSquareNDF());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hKFChi2vsZ"), v0.vz(), v0.chiSquareNDF());
@@ -402,17 +368,6 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaPhi"), mcphoton.pt(), v0.phi() - mcphoton.phi());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaPtOverPtGen"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), (v0.pt() - mcphoton.pt()) / mcphoton.pt());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaEta"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), v0.eta() - mcphoton.eta());
-    if (cfg_fill_resolution) {
-      fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hsPhotonResolution"),
-                     mcphoton.pt(),
-                     mcphoton.eta(),
-                     std::sqrt(mcleg.vx() * mcleg.vx() + mcleg.vy() * mcleg.vy()),
-                     mcleg.vz(),
-                     v0.vz(),
-                     (v0.pt() - mcphoton.pt()) / mcphoton.pt(),
-                     v0.eta() - mcphoton.eta(),
-                     TVector2::Phi_mpi_pi(v0.phi() - mcphoton.phi()));
-    }
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaPhi"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), v0.phi() - mcphoton.phi());
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaR"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), v0.v0radius() - std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)));
     fRegistry.fill(HIST("V0/") + HIST(mcphoton_types[mctype]) + HIST("hConvPoint_diffX"), mcleg.vx(), v0.vx() - mcleg.vx());
@@ -449,25 +404,14 @@ struct PCMQCMC {
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hTPCdEdx"), leg.tpcInnerParam(), leg.tpcSignal());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hTPCNsigmaEl"), leg.tpcInnerParam(), leg.tpcNSigmaEl());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hTPCNsigmaPi"), leg.tpcInnerParam(), leg.tpcNSigmaPi());
-    fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hXY"), leg.x(), leg.y());
-    fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hZX"), leg.z(), leg.x());
-    fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hZY"), leg.z(), leg.y());
+    // fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hXY"), leg.x(), leg.y());
+    // fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hZX"), leg.z(), leg.x());
+    // fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hZY"), leg.z(), leg.y());
     auto mcleg = leg.template emmcparticle_as<aod::EMMCParticles>();
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaPtOverPtGen"), mcleg.pt(), (leg.pt() - mcleg.pt()) / mcleg.pt());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaEta"), mcleg.pt(), leg.eta() - mcleg.eta());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hPtGen_DeltaPhi"), mcleg.pt(), leg.phi() - mcleg.phi());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaPtOverPtGen"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), (leg.pt() - mcleg.pt()) / mcleg.pt());
-    if (cfg_fill_resolution) {
-      fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hsPhotonResolution"),
-                     mcleg.pt(),
-                     mcleg.eta(),
-                     std::sqrt(mcleg.vx() * mcleg.vx() + mcleg.vy() * mcleg.vy()),
-                     mcleg.vz(),
-                     leg.z(),
-                     (leg.pt() - mcleg.pt()) / mcleg.pt(),
-                     leg.eta() - mcleg.eta(),
-                     TVector2::Phi_mpi_pi(leg.phi() - mcleg.phi()));
-    }
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaEta"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), leg.eta() - mcleg.eta());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hRxyGen_DeltaPhi"), std::sqrt(std::pow(mcleg.vx(), 2) + std::pow(mcleg.vy(), 2)), leg.phi() - mcleg.phi());
   }

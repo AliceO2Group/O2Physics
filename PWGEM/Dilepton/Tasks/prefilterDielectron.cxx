@@ -14,32 +14,33 @@
 // This code produces information on prefilter for dielectron.
 //    Please write to: daiki.sekihata@cern.ch
 
-#include <string>
-#include <vector>
-#include <unordered_map>
-#include <map>
-#include <tuple>
-
-#include "TString.h"
-#include "Math/Vector4D.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Core/DielectronCut.h"
 #include "PWGEM/Dilepton/Core/EMEventCut.h"
+#include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 #include "PWGEM/Dilepton/Utils/EMTrack.h"
 #include "PWGEM/Dilepton/Utils/EventHistograms.h"
 #include "PWGEM/Dilepton/Utils/PairUtilities.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
+#include "TString.h"
+
+#include <map>
+#include <string>
+#include <tuple>
+#include <unordered_map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -52,7 +53,7 @@ using namespace o2::aod::pwgem::dilepton::utils::pairutil;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronsCov, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit>;
+using MyTracks = soa::Join<aod::EMPrimaryElectrons, aod::EMPrimaryElectronEMEventIds, aod::EMAmbiguousElectronSelfIds, aod::EMPrimaryElectronsPrefilterBit>;
 using MyTrack = MyTracks::iterator;
 
 struct prefilterDielectron {
@@ -101,12 +102,14 @@ struct prefilterDielectron {
     Configurable<float> cfg_max_phiv{"cfg_max_phiv", 3.2, "max phiv"};                                 // region to be rejected
 
     // for deta-dphi prefilter
-    Configurable<bool> cfg_apply_detadphi_uls{"cfg_apply_detadphi_uls", false, "flag to apply generator deta-dphi elliptic cut in ULS"}; // region to be rejected
-    Configurable<bool> cfg_apply_detadphi_ls{"cfg_apply_detadphi_ls", false, "flag to apply generator deta-dphi elliptic cut in LS"};    // region to be rejected
-    Configurable<float> cfg_min_deta_ls{"cfg_min_deta_ls", 0.04, "deta between 2 electrons (elliptic cut)"};                             // region to be rejected
-    Configurable<float> cfg_min_dphi_ls{"cfg_min_dphi_ls", 0.2, "dphi between 2 electrons (elliptic cut)"};                              // region to be rejected
-    Configurable<float> cfg_min_deta_uls{"cfg_min_deta_uls", 0.04, "deta between 2 electrons (elliptic cut)"};                           // region to be rejected
-    Configurable<float> cfg_min_dphi_uls{"cfg_min_dphi_uls", 0.2, "dphi between 2 electrons (elliptic cut)"};                            // region to be rejected
+    Configurable<bool> cfg_apply_detadphi_uls{"cfg_apply_detadphi_uls", false, "flag to apply generator deta-dphi elliptic cut in ULS"};                 // region to be rejected
+    Configurable<bool> cfg_apply_detadphi_ls{"cfg_apply_detadphi_ls", false, "flag to apply generator deta-dphi elliptic cut in LS"};                    // region to be rejected
+    Configurable<bool> cfg_apply_detadphiposition_uls{"cfg_apply_detadphiposition_uls", false, "flag to apply generator deta-dphi elliptic cut in ULS"}; // region to be rejected
+    Configurable<bool> cfg_apply_detadphiposition_ls{"cfg_apply_detadphiposition_ls", false, "flag to apply generator deta-dphi elliptic cut in LS"};    // region to be rejected
+    Configurable<float> cfg_min_deta_ls{"cfg_min_deta_ls", 0.04, "deta between 2 electrons (elliptic cut)"};                                             // region to be rejected
+    Configurable<float> cfg_min_dphi_ls{"cfg_min_dphi_ls", 0.2, "dphi between 2 electrons (elliptic cut)"};                                              // region to be rejected
+    Configurable<float> cfg_min_deta_uls{"cfg_min_deta_uls", 0.04, "deta between 2 electrons (elliptic cut)"};                                           // region to be rejected
+    Configurable<float> cfg_min_dphi_uls{"cfg_min_dphi_uls", 0.2, "dphi between 2 electrons (elliptic cut)"};                                            // region to be rejected
 
     Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.2, "min pT for single track"};
     Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
@@ -170,6 +173,19 @@ struct prefilterDielectron {
 
   void init(InitContext& /*context*/)
   {
+    if (dielectroncuts.cfg_apply_detadphi_ls && dielectroncuts.cfg_apply_detadphiposition_ls) {
+      LOG(fatal) << "Please choose deta-dphi prefiter either at PV or certain radius";
+    }
+    if (dielectroncuts.cfg_apply_detadphi_uls && dielectroncuts.cfg_apply_detadphiposition_uls) {
+      LOG(fatal) << "Please choose deta-dphi prefiter either at PV or certain radius";
+    }
+    if (dielectroncuts.cfg_apply_detadphi_uls && dielectroncuts.cfg_apply_detadphiposition_ls) {
+      LOG(fatal) << "Please choose deta-dphi prefiter either at PV or certain radius";
+    }
+    if (dielectroncuts.cfg_apply_detadphi_ls && dielectroncuts.cfg_apply_detadphiposition_uls) {
+      LOG(fatal) << "Please choose deta-dphi prefiter either at PV or certain radius";
+    }
+
     DefineEMEventCut();
     DefineDielectronCut();
     addhistograms();
@@ -267,7 +283,7 @@ struct prefilterDielectron {
     fDielectronCut.SetPairDCARange(0.f, 1e+10); // in sigma
     fDielectronCut.ApplyPhiV(false);
     fDielectronCut.ApplyPrefilter(false);
-    fDielectronCut.SetMindEtadPhi(false, 1.f, 1.f);
+    fDielectronCut.SetMindEtadPhi(false, false, 1.f, 1.f);
     fDielectronCut.SetPairOpAng(0.f, 3.2f);
     fDielectronCut.SetRequireDifferentSides(false);
 
@@ -407,11 +423,18 @@ struct prefilterDielectron {
           map_pfb[ele.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kPhiV);
         }
 
-        if (dielectroncuts.cfg_apply_detadphi_uls && std::pow(deta / dielectroncuts.cfg_min_deta_uls, 2) + std::pow(dphi / dielectroncuts.cfg_min_dphi_uls, 2) < 1.f) {
-          map_pfb[pos.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS);
-          map_pfb[ele.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS);
+        if (dielectroncuts.cfg_apply_detadphiposition_uls) {
+          if (std::pow(deta / dielectroncuts.cfg_min_deta_uls, 2) + std::pow(dphiPosition / dielectroncuts.cfg_min_dphi_uls, 2) < 1.f) {
+            map_pfb[pos.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS);
+            map_pfb[ele.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS);
+          }
+        } else if (dielectroncuts.cfg_apply_detadphi_uls) {
+          if (std::pow(deta / dielectroncuts.cfg_min_deta_uls, 2) + std::pow(dphi / dielectroncuts.cfg_min_dphi_uls, 2) < 1.f) {
+            map_pfb[pos.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS);
+            map_pfb[ele.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackULS);
+          }
         }
-      }
+      } // end of ULS pairing
 
       for (auto& [pos1, pos2] : combinations(CombinationsStrictlyUpperIndexPolicy(posTracks_per_coll, posTracks_per_coll))) { // LS++
         if (!fDielectronCut.IsSelectedTrack(pos1) || !fDielectronCut.IsSelectedTrack(pos2)) {
@@ -440,11 +463,18 @@ struct prefilterDielectron {
         fRegistry.fill(HIST("Pair/before/lspp/hDeltaEtaDeltaPhi"), dphi, deta);
         fRegistry.fill(HIST("Pair/before/lspp/hDeltaEtaDeltaPhiPosition"), dphiPosition, deta);
 
-        if (dielectroncuts.cfg_apply_detadphi_ls && std::pow(deta / dielectroncuts.cfg_min_deta_ls, 2) + std::pow(dphi / dielectroncuts.cfg_min_dphi_ls, 2) < 1.f) {
-          map_pfb[pos1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
-          map_pfb[pos2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
+        if (dielectroncuts.cfg_apply_detadphiposition_ls) {
+          if (std::pow(deta / dielectroncuts.cfg_min_deta_ls, 2) + std::pow(dphiPosition / dielectroncuts.cfg_min_dphi_ls, 2) < 1.f) {
+            map_pfb[pos1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
+            map_pfb[pos2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
+          }
+        } else if (dielectroncuts.cfg_apply_detadphi_ls) {
+          if (std::pow(deta / dielectroncuts.cfg_min_deta_ls, 2) + std::pow(dphi / dielectroncuts.cfg_min_dphi_ls, 2) < 1.f) {
+            map_pfb[pos1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
+            map_pfb[pos2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
+          }
         }
-      }
+      } // end of LS++ pairing
 
       for (auto& [ele1, ele2] : combinations(CombinationsStrictlyUpperIndexPolicy(negTracks_per_coll, negTracks_per_coll))) { // LS--
         if (!fDielectronCut.IsSelectedTrack(ele1) || !fDielectronCut.IsSelectedTrack(ele2)) {
@@ -473,11 +503,18 @@ struct prefilterDielectron {
         fRegistry.fill(HIST("Pair/before/lsmm/hDeltaEtaDeltaPhi"), dphi, deta);
         fRegistry.fill(HIST("Pair/before/lsmm/hDeltaEtaDeltaPhiPosition"), dphiPosition, deta);
 
-        if (dielectroncuts.cfg_apply_detadphi_ls && std::pow(deta / dielectroncuts.cfg_min_deta_ls, 2) + std::pow(dphi / dielectroncuts.cfg_min_dphi_ls, 2) < 1.f) {
-          map_pfb[ele1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
-          map_pfb[ele2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
+        if (dielectroncuts.cfg_apply_detadphiposition_ls) {
+          if (std::pow(deta / dielectroncuts.cfg_min_deta_ls, 2) + std::pow(dphiPosition / dielectroncuts.cfg_min_dphi_ls, 2) < 1.f) {
+            map_pfb[ele1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
+            map_pfb[ele2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
+          }
+        } else if (dielectroncuts.cfg_apply_detadphi_ls) {
+          if (std::pow(deta / dielectroncuts.cfg_min_deta_ls, 2) + std::pow(dphi / dielectroncuts.cfg_min_dphi_ls, 2) < 1.f) {
+            map_pfb[ele1.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
+            map_pfb[ele2.globalIndex()] |= 1 << static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonPrefilterBitDerived::kSplitOrMergedTrackLS);
+          }
         }
-      }
+      } // end of LS-- pairing
 
     } // end of collision loop
 

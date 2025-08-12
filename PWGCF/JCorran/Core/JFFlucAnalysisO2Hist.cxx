@@ -12,24 +12,41 @@
 /// \since Sep 2024
 
 #include "JFFlucAnalysisO2Hist.h"
-#include <vector>
-#include <memory>
+
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+
 #include "CommonConstants/MathConstants.h"
+
+#include <memory>
+#include <vector>
 
 using namespace o2;
 
-JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec& axisMultiplicity, AxisSpec& phiAxis, AxisSpec& etaAxis, AxisSpec& zvtAxis, AxisSpec& ptAxis, AxisSpec& massAxis, const TString& folder) : JFFlucAnalysis()
+JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec& axisMultiplicity, AxisSpec& phiAxis, AxisSpec& etaAxis, AxisSpec& zvtAxis, AxisSpec& ptAxis, AxisSpec& massAxis, uint16_t multCorrMask, const TString& folder) : JFFlucAnalysis()
 {
 
   ph1[HIST_TH1_CENTRALITY] = std::get<std::shared_ptr<TH1>>(registry.add(Form("%s/h_cent", folder.Data()), "multiplicity/centrality", {HistType::kTH1F, {axisMultiplicity}})).get();
   ph1[HIST_TH1_IMPACTPARAM] = std::get<std::shared_ptr<TH1>>(registry.add(Form("%s/h_IP", folder.Data()), "impact parameter", {HistType::kTH1F, {{400, -2.0, 20.0}}})).get();
   ph1[HIST_TH1_ZVERTEX] = std::get<std::shared_ptr<TH1>>(registry.add(Form("%s/h_vertex", folder.Data()), "z vertex", {HistType::kTH1F, {{100, -20.0, 20.0}}})).get();
 
+  if (multCorrMask != 0) {
+    std::vector<AxisSpec> multAxes;
+    if (multCorrMask & aod::cfmultset::CentFT0C)
+      multAxes.emplace_back(100, 0, 100, "FT0C centrality");
+    if (multCorrMask & aod::cfmultset::MultFV0A)
+      multAxes.emplace_back(100, 0, 100000, "V0A multiplicity");
+    if (multCorrMask & aod::cfmultset::MultNTracksPV)
+      multAxes.emplace_back(100, 0, 1000, "Nch PV");
+    if (multCorrMask & aod::cfmultset::MultNTracksGlobal)
+      multAxes.emplace_back(100, 0, 1000, "Nch Global");
+    registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
+    phs[HIST_THN_SPARSE_MULTCORR] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_multcorr", folder.Data()), "multiplicity/centrality correlations", {HistType::kTHnSparseF, multAxes})).get();
+  }
+
   AxisSpec chgAxis = {3, -1.5, 1.5, "charge"};
   AxisSpec typeAxis = {2, -0.5, 1.5, "type"};
-  pht[HIST_THN_PHIETAZ] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_phietaz", folder.Data()), "multiplicity/centrality, type, phi, eta, z", {HistType::kTHnSparseF, {axisMultiplicity, typeAxis, phiAxis, etaAxis, zvtAxis}})).get();
+  pht[HIST_THN_PHIETAZ] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_phietaz", folder.Data()), "(corrected) multiplicity/centrality, type, phi, eta, z", {HistType::kTHnSparseF, {axisMultiplicity, typeAxis, phiAxis, etaAxis, zvtAxis}})).get();
   pht[HIST_THN_PTETA] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_pteta", folder.Data()), "(corrected) multiplicity/centrality, pT, eta, charge", {HistType::kTHnSparseF, {axisMultiplicity, ptAxis, etaAxis, chgAxis}})).get();
-  pht[HIST_THN_PHIETA] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_phieta", folder.Data()), "(corrected) multiplicity/centrality, phi, eta", {HistType::kTHnSparseF, {axisMultiplicity, phiAxis, etaAxis}})).get();
   AxisSpec hAxis = {kNH, -0.5, static_cast<double>(kNH - 1) + 0.5, "#it{n}"};
   AxisSpec kAxis = {nKL, -0.5, static_cast<double>(nKL - 1) + 0.5, "#it{k}"};
   AxisSpec vnAxis = {2048, -0.1, 0.1, "#it{V}_#it{n}"};

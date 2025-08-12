@@ -45,8 +45,8 @@ class EMTrackCut : public TNamed
     kTrackPtRange,
     kTrackEtaRange,
     kTrackPhiRange,
-    kDCAxy,
-    kDCAz,
+    // kDCAxy,
+    // kDCAz,
     // kTPCNCls,
     // kTPCCrossedRows,
     // kTPCCrossedRowsOverNCls,
@@ -75,12 +75,13 @@ class EMTrackCut : public TNamed
       return false;
     }
 
-    if (!IsSelectedTrack(track, EMTrackCuts::kDCAxy)) {
-      return false;
-    }
-    if (!IsSelectedTrack(track, EMTrackCuts::kDCAz)) {
-      return false;
-    }
+    // if (!IsSelectedTrack(track, EMTrackCuts::kDCAxy)) {
+    //   return false;
+    // }
+    // if (!IsSelectedTrack(track, EMTrackCuts::kDCAz)) {
+    //   return false;
+    // }
+
     if (!IsSelectedTrack(track, EMTrackCuts::kTrackBit)) {
       return false;
     }
@@ -140,11 +141,11 @@ class EMTrackCut : public TNamed
       case EMTrackCuts::kTrackPhiRange:
         return track.phi() > mMinTrackPhi && track.phi() < mMaxTrackPhi;
 
-      case EMTrackCuts::kDCAxy:
-        return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
+        // case EMTrackCuts::kDCAxy:
+        //   return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
 
-      case EMTrackCuts::kDCAz:
-        return std::fabs(track.dcaZ()) < mMaxDcaZ;
+        // case EMTrackCuts::kDCAz:
+        //   return std::fabs(track.dcaZ()) < mMaxDcaZ;
 
       case EMTrackCuts::kTrackBit: {
         // for (int i = 0; i < 10; i++) {

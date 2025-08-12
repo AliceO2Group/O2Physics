@@ -29,11 +29,6 @@ o2physics_add_dpl_workflow(cascadeanalysis
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(sigmaminus-task
-    SOURCES sigmaminustask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(cascadeanalysismc
     SOURCES cascadeanalysisMC.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -158,5 +153,10 @@ o2physics_add_dpl_workflow(strangenessderivedbinnedinfo
 
 o2physics_add_dpl_workflow(lambdatwopartpolarization
     SOURCES lambdaTwoPartPolarization.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascadeanalysislightions
+    SOURCES cascadeAnalysisLightIonsDerivedData.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

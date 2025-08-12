@@ -94,9 +94,9 @@ o2physics_add_dpl_workflow(nuclei-flow-trees
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(hyperhelium4sigma-reco-task
-    SOURCES hyperhelium4sigmaRecoTask.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+o2physics_add_dpl_workflow(hyperkink-reco-task
+    SOURCES hyperkinkRecoTask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::TOFBase
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(he3-lambda-analysis
