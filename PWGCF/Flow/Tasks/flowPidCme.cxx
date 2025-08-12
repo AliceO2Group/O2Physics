@@ -2722,7 +2722,8 @@ struct FlowPidCme {
   template <typename CollType, typename TrackType>
   void fillHistosFlowGammaDelta(const CollType& collision, const TrackType& track1, const TrackType& track2, const TrackType& track3, int nmode)
   {
-    if (collision.qvecAmp()[detId] < nonzero) {
+    double nonzero2 = 1e-8;
+    if (collision.qvecAmp()[detId] < nonzero2) {
       return;
     }
     auto cent = collision.centFT0C();
