@@ -215,7 +215,7 @@ struct HfTaskSingleElectron {
     anc.push_back(mpdg);
 
     // check if electron from charm hadrons
-    if ((int(motherPdg / 100.) % 10) == kCharm || (int(motherPdg / 1000.) % 10) == kCharm) {
+    if ((static_cast<int>(motherPdg / 100.) % 10) == kCharm || (static_cast<int>(motherPdg / 1000.) % 10) == kCharm) {
 
       // iterate until B hadron is found as an ancestor
       while (partMother.size()) {
@@ -229,7 +229,7 @@ struct HfTaskSingleElectron {
             grmotherPt = mctrack.front().pt();
             grmotherPdg = std::abs(mctrack.front().pdgCode());
             anc.push_back(mctrack.front().pdgCode());
-            if ((int(grmotherPdg / 100.) % 10) == kBottom || (int(grmotherPdg / 1000.) % 10) == kBottom) {
+            if ((static_cast<int>(grmotherPdg / 100.) % 10) == kBottom || (static_cast<int>(grmotherPdg / 1000.) % 10) == kBottom) {
               mpt = grmotherPt;
               mpdg = grmotherPdg;
               return BeautyCharm;
@@ -238,15 +238,9 @@ struct HfTaskSingleElectron {
         }
         partMother = mctrack;
       }
-    }
-
-    // check if electron from beauty hadrons
-    else if ((int(motherPdg / 100.) % 10) == kBottom || (int(motherPdg / 1000.) % 10) == kBottom) {
+    } else if ((static_cast<int>(motherPdg / 100.) % 10) == kBottom || (static_cast<int>(motherPdg / 1000.) % 10) == kBottom) { // check if electron from beauty hadrons
       return DirectBeauty;
-    }
-
-    // check if electron from photon conversion
-    else if (motherPdg == kGamma) {
+    } else if (motherPdg == kGamma) { // check if electron from photon conversion
       mctrack = partMother.front().template mothers_as<aod::McParticles>();
       if (mctrack.size()) {
         auto const& grmothersIdsVec = mctrack.front().mothersIds();
@@ -325,10 +319,7 @@ struct HfTaskSingleElectron {
           }
         }
       }
-    }
-
-    // check if electron from Dalitz decays
-    else {
+    } else { // check if electron from Dalitz decays
       mctrack = partMother.front().template mothers_as<aod::McParticles>();
       if (mctrack.size()) {
         auto const& grmothersIdsVec = mctrack.front().mothersIds();
