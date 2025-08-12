@@ -19,63 +19,57 @@
 #include <TH1D.h>
 #include <TDirectory.h>
 #include <THn.h>
-//#include <TLorentzVector.h>
+// #include <TLorentzVector.h>
 #include <TMath.h>
 #include <TObjArray.h>
 #include <TFile.h>
 #include <TH2F.h>
 // #include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h>     // FIXME
-
-#include <vector>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <chrono>
-#include <string>
-
-#include "TRandom3.h"
-#include "TF1.h"
-#include "TVector2.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/RotationZ.h"
-#include "Math/GenVector/Boost.h"
-#include <TMath.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/StaticFor.h"
-#include "DCAFitter/DCAFitterN.h"
-
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/RecoDecay.h"
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "CommonConstants/MathConstants.h"
-
-#include "ReconstructionDataFormats/Track.h"
-
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/collisionCuts.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/RotationZ.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
+#include "TVector2.h"
+#include <TMath.h>
+#include <TPDGCode.h> // FIXME
+
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -106,7 +100,7 @@ struct Chk892pp {
   using MCEventCandidates = soa::Join<EventCandidates, aod::McCollisionLabels>;
   using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabels>;
   using MCV0Candidates = soa::Join<V0Candidates, aod::McV0Labels>;
-	using LorentzVectorSetXYZM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>>;
+  using LorentzVectorSetXYZM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>>;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -444,9 +438,9 @@ struct Chk892pp {
     histos.print();
   }
 
-	const int kCentFT0C = 1;
-	const int kCentFT0M = 2;
-	const float kInvalidCentrality = -999.f;
+  const int kCentFT0C = 1;
+  const int kCentFT0M = 2;
+  const float kInvalidCentrality = -999.f;
 
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
@@ -881,17 +875,17 @@ struct Chk892pp {
               histos.fill(HIST("QA/RotBkg/hRotBkg"), lRotAngle);
               if (BkgEstimationConfig.cfgRotPion) {
                 lDaughterRot = lDecayDaughter_bach;
-                //lDaughterRot.RotateZ(lRotAngle);
-								ROOT::Math::RotationZ rot(lRotAngle);
-								auto p3 = rot * lDaughterRot.Vect();
-								lDaughterRot = LorentzVectorSetXYZM(p3.X(),p3.Y(),p3.Z(),lDaughterRot.M());
+                // lDaughterRot.RotateZ(lRotAngle);
+                ROOT::Math::RotationZ rot(lRotAngle);
+                auto p3 = rot * lDaughterRot.Vect();
+                lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
                 lResonanceRot = lDaughterRot + lResoSecondary;
               } else {
                 lDaughterRot = lResoSecondary;
-                //lDaughterRot.RotateZ(lRotAngle);
-								ROOT::Math::RotationZ rot(lRotAngle);
-								auto p3 = rot * lDaughterRot.Vect();
-								lDaughterRot = LorentzVectorSetXYZM(p3.X(),p3.Y(),p3.Z(),lDaughterRot.M());
+                // lDaughterRot.RotateZ(lRotAngle);
+                ROOT::Math::RotationZ rot(lRotAngle);
+                auto p3 = rot * lDaughterRot.Vect();
+                lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
                 lResonanceRot = lDecayDaughter_bach + lDaughterRot;
               }
               typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_Rot : BinType::kKstarN_Rot;
