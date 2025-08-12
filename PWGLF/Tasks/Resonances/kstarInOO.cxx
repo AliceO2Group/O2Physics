@@ -648,7 +648,7 @@ struct kstarInOO {
   {
     if (cDebugLevel > 0) {
       ++nEventsTrue;
-      if (nEventsTrue & 10000 == 0) {
+      if ((nEventsTrue & 10000) == 0) {
         std::cout << "Processed MC True Events : " << nEventsTrue << std::endl;
       }
     }
