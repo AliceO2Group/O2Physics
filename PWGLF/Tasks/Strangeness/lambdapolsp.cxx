@@ -1391,7 +1391,6 @@ struct lambdapolsp {
             Lambda = Proton + AntiPion;
             tagb = 0;
             double acvalue = 1.0;
-            histos.fill(HIST("hpRes"), centrality, (TMath::Cos(GetPhiInRange(psiZDCA - psiZDCC))));
             fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), desbinvalue, acvalue, 1.0);
           }
 
