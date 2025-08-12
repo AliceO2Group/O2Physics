@@ -76,7 +76,7 @@ constexpr double kTrackPIDSettings[nParticles][nTrkSettings]{
   {1, 0, 4, 70, 4.0, 0.5, 100, 0.50, 5.0, 3.0, -1, 0, 100, 2., 2., 0., 1000, 70, 1},
   {1, 0, 4, 75, 4.0, 0.5, 100, 0.50, 5.0, 5.0, -1, 0, 100, 2., 2., 0., 1000, 70, 1},
   {1, 0, 4, 70, 4.0, 0.5, 100, 0.50, 5.0, 5.0, -1, 0, 100, 2., 2., 0., 1000, 70, 1}};
-  
+
 const int nTrkSettings2 = 3;
 static const std::vector<std::string> trackPIDsettingsNames2{"useITSnsigma", "minITSnsigma", "maxITSnsigma"};
 constexpr double kTrackPIDSettings2[nParticles][nTrkSettings2]{
@@ -86,8 +86,7 @@ constexpr double kTrackPIDSettings2[nParticles][nTrkSettings2]{
   {1, -5, 4},
   {1, -5, 4},
   {1, -5, 4}};
-  
-  
+
 struct PrimParticles {
   TString name;
   int pdgCode, charge;
@@ -186,7 +185,7 @@ struct NucleitpcPbPb {
   ConfigurableAxis axisITScls{"axisITScls", {400, 0., 200.}, "ITScls axis"};
   ConfigurableAxis axisITSchi2{"axisITSchi2", {400, 0., 100.}, "ITSchi2 axis"};
   ConfigurableAxis axisTPCchi2{"axisTPCchi2", {400, 0., 100.}, "TPCchi2 axis"};
-  
+
   // CCDB
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Configurable<double> bField{"bField", -999, "bz field, -999 is automatic"};
@@ -230,9 +229,9 @@ struct NucleitpcPbPb {
     histos.add("histeta", "histeta", kTH1F, {axiseta});
     histos.add("Tofsignal", "Tofsignal", kTH2F, {axisRigidity, {4000, 0.2, 1.2, "#beta"}});
     histos.add("Tpcsignal", "Tpcsignal", kTH2F, {axisRigidity, axisdEdx});
-    
+
     hmass.resize(2 * nParticles + 2);
-    
+
     for (int i = 0; i < nParticles; i++) {
       TString histName = primaryParticles[i].name;
       if (cfgFillmass) {
@@ -240,11 +239,11 @@ struct NucleitpcPbPb {
         hmass[2 * i + 1] = histos.add<TH2>(Form("histmass_ptanti/histmass_%s", histName.Data()), ";p_T{TPC} (GeV/#it{c}); mass^{2}", HistType::kTH2F, {ptAxis, axismass});
       }
     }
-    
-    histos.add<THnSparse>("hSpectra"," ",HistType::kTHnSparseF, {speciesBitAxis, ptAxis, nsigmaAxis,{5, -2.5, 2.5},axisCent, axisRigidity, axisdEdx,axisDCA, axisDCA, nsigmaAxis});
-           
-    histos.add<THnSparse>("hQAtest","",HistType::kTHnSparseF, {speciesBitAxis, ptAxis, {5, -2.5, 2.5}, axisTPCcls, axisITScls, axisITSchi2, axisTPCchi2});
-    
+
+    histos.add<THnSparse>("hSpectra", " ", HistType::kTHnSparseF, {speciesBitAxis, ptAxis, nsigmaAxis, {5, -2.5, 2.5}, axisCent, axisRigidity, axisdEdx, axisDCA, axisDCA, nsigmaAxis});
+
+    histos.add<THnSparse>("hQAtest", "", HistType::kTHnSparseF, {speciesBitAxis, ptAxis, {5, -2.5, 2.5}, axisTPCcls, axisITScls, axisITSchi2, axisTPCchi2});
+
     if (doprocessMC) {
       histomc.add("histVtxZgen", "histVtxZgen", kTH1F, {axisVtxZ});
       histomc.add("ImptParameter", "ImptParameter", kTH1F, {axisImpt});
@@ -285,15 +284,19 @@ struct NucleitpcPbPb {
       if (std::abs(track.eta()) > cfgCutEta && cfgetaRequire)
         continue;
       for (size_t i = 0; i < primaryParticles.size(); i++) {
-        
+
         float ptMomn;
         setTrackParCov(track, mTrackParCov);
         mTrackParCov.setPID(track.pidForTracking());
         ptMomn = (i == he3 || i == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
-	int sign = 0;
-	if (track.sign() > 0) { sign = 1;}
-	if (track.sign() < 0) {sign = -1;} // <- This redeclares a new local variable!
-        if (cfgFillQAplots){
+        int sign = 0;
+        if (track.sign() > 0) {
+          sign = 1;
+        }
+        if (track.sign() < 0) {
+          sign = -1;
+        } // <- This redeclares a new local variable!
+        if (cfgFillQAplots) {
           histos.fill(HIST("hQAtest"), i, ptMomn, sign, track.tpcNClsFound(), track.itsNCls(), track.itsChi2NCl(), track.tpcChi2NCl());
         }
         if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
@@ -309,7 +312,7 @@ struct NucleitpcPbPb {
         if (track.itsNCls() < cfgTrackPIDsettings->get(i, "minITSnCls") && cfgminITSnClsRequire)
           continue;
         double cosheta = std::cosh(track.eta());
-        if ((track.itsNCls()/ cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && cfgminITSnClscosRequire)
+        if ((track.itsNCls() / cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && cfgminITSnClscosRequire)
           continue;
         if ((track.itsNClsInnerBarrel() < cfgTrackPIDsettings->get(i, "minReqClusterITSib")) && cfgminReqClusterITSibRequire)
           continue;
@@ -323,26 +326,26 @@ struct NucleitpcPbPb {
         bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptMomn, 1.1f)))); // o2-linter: disable=magic-number (To be checked)
         if ((!(insideDCAxy) || std::abs(track.dcaZ()) > dcazSigma(ptMomn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
           continue;
-          
+
         float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
         if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
           continue;
-        float itsSigma = getITSnSigma(track, primaryParticles.at(i));          
-        
+        float itsSigma = getITSnSigma(track, primaryParticles.at(i));
+
         if (itsSigma < cfgTrackPIDsettings2->get(i, "minITSnsigma") && cfgTrackPIDsettings2->get(i, "useITSnsigma") < 1)
           continue;
         if (itsSigma > cfgTrackPIDsettings2->get(i, "maxITSnsigma") && cfgTrackPIDsettings2->get(i, "useITSnsigma") < 1)
           continue;
-          
+
         fillhmass(track, i);
-	if (cfgFillhspectra){
-        histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, cent, getRigidity(track) * track.sign(),  track.tpcSignal(),track.dcaZ(),track.dcaXY(), itsSigma);
-       }
+        if (cfgFillhspectra) {
+          histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, cent, getRigidity(track) * track.sign(), track.tpcSignal(), track.dcaZ(), track.dcaXY(), itsSigma);
+        }
         if (cfgRequirebetaplot) {
           histos.fill(HIST("Tofsignal"), getRigidity(track) * track.sign(), o2::pid::tof::Beta::GetBeta(track));
         }
       }
-      if(track.tpcNClsFound() < cfgtpcNClsFound || track.itsNCls() < cfgitsNCls){
+      if (track.tpcNClsFound() < cfgtpcNClsFound || track.itsNCls() < cfgitsNCls) {
         histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
       }
       histos.fill(HIST("histeta"), track.eta());
@@ -372,8 +375,8 @@ struct NucleitpcPbPb {
       histos.fill(HIST("histCentFTOC_cut"), collision.centFT0C());
       const uint64_t collIdx = collision.globalIndex();
       auto tracksByColl = tracksColl.sliceBy(perCollision, collIdx);
-      
-      findprimaryParticles(tracksByColl, tracks,collision.centFT0C());
+
+      findprimaryParticles(tracksByColl, tracks, collision.centFT0C());
       if (!collHasCandidate)
         continue;
     }
@@ -481,62 +484,66 @@ struct NucleitpcPbPb {
         for (size_t i = 0; i < primaryParticles.size(); i++) {
           if (std::abs(pdg) != std::abs(particlePdgCodes.at(i)))
             continue;
-                  
-        float ptMomn;
-        setTrackParCov(track, mTrackParCov);
-        mTrackParCov.setPID(track.pidForTracking());
-        ptMomn = (i == he3 || i == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
-	int sign = 0;
-	if (track.sign() > 0) { sign = 1;}
-	if (track.sign() < 0) {sign = -1;} // <- This redeclares a new local variable!
-        if (cfgFillQAplots){
-          histos.fill(HIST("hQAtest"), i, ptMomn, sign, track.tpcNClsFound(), track.itsNCls(), track.itsChi2NCl(), track.tpcChi2NCl());
-        }
-        if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
-          continue;
-        if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && cfgTPCNClsfoundRequire)
-          continue;
-        if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire) // o2-linter: disable=magic-number (To be checked)
-          continue;
-        if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && cfgmaxTPCchi2Require)
-          continue;
-        if (track.tpcChi2NCl() < cfgTrackPIDsettings->get(i, "minTPCchi2") && cfgminTPCchi2Require)
-          continue;
-        if (track.itsNCls() < cfgTrackPIDsettings->get(i, "minITSnCls") && cfgminITSnClsRequire)
-          continue;
-        double cosheta = std::cosh(track.eta());
-        if ((track.itsNCls()/ cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && cfgminITSnClscosRequire)
-          continue;
-        if ((track.itsNClsInnerBarrel() < cfgTrackPIDsettings->get(i, "minReqClusterITSib")) && cfgminReqClusterITSibRequire)
-          continue;
-        if (track.itsChi2NCl() > cfgTrackPIDsettings->get(i, "maxITSchi2") && cfgmaxITSchi2Require)
-          continue;
-        if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && cfgminGetMeanItsClsSizeRequire)
-          continue;
-        if (getMeanItsClsSize(track) > cfgTrackPIDsettings->get(i, "maxITSclsSize") && cfgmaxGetMeanItsClsSizeRequire)
-          continue;
 
-        bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptMomn, 1.1f)))); // o2-linter: disable=magic-number (To be checked)
-        if ((!(insideDCAxy) || std::abs(track.dcaZ()) > dcazSigma(ptMomn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
-          continue;
-          
-        float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
-        if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
-          continue;
-        float itsSigma = getITSnSigma(track, primaryParticles.at(i));          
-  
-        if (itsSigma < cfgTrackPIDsettings2->get(i, "minITSnsigma") && cfgTrackPIDsettings2->get(i, "useITSnsigma") < 1)
-          continue;
-        if (itsSigma > cfgTrackPIDsettings2->get(i, "maxITSnsigma") && cfgTrackPIDsettings2->get(i, "useITSnsigma") < 1)
-          continue;
+          float ptMomn;
+          setTrackParCov(track, mTrackParCov);
+          mTrackParCov.setPID(track.pidForTracking());
+          ptMomn = (i == he3 || i == he4) ? 2 * mTrackParCov.getPt() : mTrackParCov.getPt();
+          int sign = 0;
+          if (track.sign() > 0) {
+            sign = 1;
+          }
+          if (track.sign() < 0) {
+            sign = -1;
+          } // <- This redeclares a new local variable!
+          if (cfgFillQAplots) {
+            histos.fill(HIST("hQAtest"), i, ptMomn, sign, track.tpcNClsFound(), track.itsNCls(), track.itsChi2NCl(), track.tpcChi2NCl());
+          }
+          if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
+            continue;
+          if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && cfgTPCNClsfoundRequire)
+            continue;
+          if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire) // o2-linter: disable=magic-number (To be checked)
+            continue;
+          if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && cfgmaxTPCchi2Require)
+            continue;
+          if (track.tpcChi2NCl() < cfgTrackPIDsettings->get(i, "minTPCchi2") && cfgminTPCchi2Require)
+            continue;
+          if (track.itsNCls() < cfgTrackPIDsettings->get(i, "minITSnCls") && cfgminITSnClsRequire)
+            continue;
+          double cosheta = std::cosh(track.eta());
+          if ((track.itsNCls() / cosheta) < cfgTrackPIDsettings->get(i, "minITSnClscos") && cfgminITSnClscosRequire)
+            continue;
+          if ((track.itsNClsInnerBarrel() < cfgTrackPIDsettings->get(i, "minReqClusterITSib")) && cfgminReqClusterITSibRequire)
+            continue;
+          if (track.itsChi2NCl() > cfgTrackPIDsettings->get(i, "maxITSchi2") && cfgmaxITSchi2Require)
+            continue;
+          if (getMeanItsClsSize(track) < cfgTrackPIDsettings->get(i, "minITSclsSize") && cfgminGetMeanItsClsSizeRequire)
+            continue;
+          if (getMeanItsClsSize(track) > cfgTrackPIDsettings->get(i, "maxITSclsSize") && cfgmaxGetMeanItsClsSizeRequire)
+            continue;
 
-        fillhmass(track, i);
-	if (cfgFillhspectra){
-        histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), getRigidity(track) * track.sign(),  track.tpcSignal(),track.dcaZ(),track.dcaXY(),  itsSigma);
-       }
-        if (cfgRequirebetaplot) {
-          histos.fill(HIST("Tofsignal"), getRigidity(track) * track.sign(), o2::pid::tof::Beta::GetBeta(track));
-        }
+          bool insideDCAxy = (std::abs(track.dcaXY()) <= (cfgTrackPIDsettings->get(i, "maxDcaXY") * (0.0105f + 0.0350f / std::pow(ptMomn, 1.1f)))); // o2-linter: disable=magic-number (To be checked)
+          if ((!(insideDCAxy) || std::abs(track.dcaZ()) > dcazSigma(ptMomn, cfgTrackPIDsettings->get(i, "maxDcaZ"))) && cfgDCAwithptRequire)
+            continue;
+
+          float tpcNsigma = getTPCnSigma(track, primaryParticles.at(i));
+          if ((std::abs(tpcNsigma) > cfgTrackPIDsettings->get(i, "maxTPCnSigma")) && cfgmaxTPCnSigmaRequire)
+            continue;
+          float itsSigma = getITSnSigma(track, primaryParticles.at(i));
+
+          if (itsSigma < cfgTrackPIDsettings2->get(i, "minITSnsigma") && cfgTrackPIDsettings2->get(i, "useITSnsigma") < 1)
+            continue;
+          if (itsSigma > cfgTrackPIDsettings2->get(i, "maxITSnsigma") && cfgTrackPIDsettings2->get(i, "useITSnsigma") < 1)
+            continue;
+
+          fillhmass(track, i);
+          if (cfgFillhspectra) {
+            histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), getRigidity(track) * track.sign(), track.tpcSignal(), track.dcaZ(), track.dcaXY(), itsSigma);
+          }
+          if (cfgRequirebetaplot) {
+            histos.fill(HIST("Tofsignal"), getRigidity(track) * track.sign(), o2::pid::tof::Beta::GetBeta(track));
+          }
 
           /*----------------------------------------------------------------------------------------------------------------*/
           float ptReco;
