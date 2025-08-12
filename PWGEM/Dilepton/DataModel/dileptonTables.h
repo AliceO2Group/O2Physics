@@ -762,7 +762,6 @@ DECLARE_SOA_TABLE(EMGlobalMuonSelfIds, "AOD", "EMGLMUSELFID", emprimarymuon::Glo
 // iterators
 using EMGlobalMuonSelfId = EMGlobalMuonSelfIds::iterator;
 
-
 namespace oldemprimarytrack
 {
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);
@@ -775,8 +774,8 @@ DECLARE_SOA_COLUMN(CollisionId, collisionId, int); //!
 DECLARE_SOA_COLUMN(TrackId, trackId, int);         //!
 DECLARE_SOA_COLUMN(TrackBit, trackBit, uint16_t);  //!
 DECLARE_SOA_COLUMN(Signed1Pt, signed1Pt, float);   //! (sign of charge)/Pt in c/GeV. Use pt() and sign() instead
-DECLARE_SOA_COLUMN(Eta, eta, float);  //!
-DECLARE_SOA_COLUMN(Phi, phi, float);  //!
+DECLARE_SOA_COLUMN(Eta, eta, float);               //!
+DECLARE_SOA_COLUMN(Phi, phi, float);               //!
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float signed1Pt) -> float { return 1.f / std::fabs(signed1Pt); });
 DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign, [](float signed1Pt) -> short { return (signed1Pt > 0) ? 1 : -1; }); //! Charge: positive: 1, negative: -1
 } // namespace emprimarytrack
