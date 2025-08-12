@@ -36,6 +36,9 @@ struct MultiplicityExtraTable {
   Produces<aod::Mults2BC> mult2bc;
   Produces<aod::BC2Mults> bc2mult;
 
+  // auxiliary for MC
+  Produces<aod::MultHepMCHIs> multHepMCHIs;
+
   // Allow for downscaling of BC table for less space use in derived data
   Configurable<float> bcDownscaleFactor{"bcDownscaleFactor", 2, "Downscale factor for BC table (0: save nothing, 1: save all)"};
   Configurable<float> minFT0CforBCTable{"minFT0CforBCTable", 25.0f, "Minimum FT0C amplitude to fill BC table to reduce data"};
@@ -277,9 +280,22 @@ struct MultiplicityExtraTable {
     }
   }
 
+  void processHepMCHeavyIons(aod::HepMCHeavyIons const& hepmchis)
+  {
+    for (auto const& hepmchi : hepmchis) {
+      multHepMCHIs(hepmchi.mcCollisionId(),
+                   hepmchi.ncollHard(),
+                   hepmchi.npartProj(),
+                   hepmchi.npartTarg(),
+                   hepmchi.ncoll(),
+                   hepmchi.impactParameter());
+    }
+  }
+
   // Process switches
   PROCESS_SWITCH(MultiplicityExtraTable, processBCs, "Produce BC tables", true);
   PROCESS_SWITCH(MultiplicityExtraTable, processCollisionNeighbors, "Produce neighbor timing tables", true);
+  PROCESS_SWITCH(MultiplicityExtraTable, processHepMCHeavyIons, "Produce MultHepMCHIs tables", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
