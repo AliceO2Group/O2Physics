@@ -97,9 +97,9 @@ struct Kstarqa {
     Configurable<int> rotationalCut{"rotationalCut", 10, "Cut value (Rotation angle pi - pi/cut and pi + pi/cut)"};
     Configurable<float> cfgCutPT{"cfgCutPT", 0.2f, "PT cut on daughter track"};
     Configurable<float> cfgCutEtaMax{"cfgCutEtaMax", 0.8f, "Eta cut on daughter track"};
-    Configurable<float> cfgCutEtaMin{"cfgCutEtaMin", 0.0f, "Eta cut on daughter track"};
+    // Configurable<float> cfgCutEtaMin{"cfgCutEtaMin", 0.0f, "Eta cut on daughter track"};
     Configurable<float> cfgCutDCAxyMax{"cfgCutDCAxyMax", 2.0f, "DCAxy range for tracks"};
-    Configurable<float> cfgCutDCAxyMin{"cfgCutDCAxyMin", 0.0f, "DCAxy range for tracks"};
+    // Configurable<float> cfgCutDCAxyMin{"cfgCutDCAxyMin", 0.0f, "DCAxy range for tracks"};
     Configurable<float> cfgCutDCAz{"cfgCutDCAz", 2.0f, "DCAz range for tracks"};
     Configurable<float> ctrackRapidity{"ctrackRapidity", 0.3f, "Cut on track rapidity"};
     Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
@@ -324,18 +324,20 @@ struct Kstarqa {
 
     std::shared_ptr<TH1> hrecLabel = rEventSelection.get<TH1>(HIST("recMCparticles"));
     hrecLabel->GetXaxis()->SetBinLabel(1, "All tracks");
-    hrecLabel->GetXaxis()->SetBinLabel(2, "Track selection");
-    hrecLabel->GetXaxis()->SetBinLabel(3, "has_MC");
+    hrecLabel->GetXaxis()->SetBinLabel(2, "has_MC");
+    hrecLabel->GetXaxis()->SetBinLabel(3, "Track selection");
     hrecLabel->GetXaxis()->SetBinLabel(4, "StrictlyUpperIndex");
     hrecLabel->GetXaxis()->SetBinLabel(5, "Unlike Sign");
     hrecLabel->GetXaxis()->SetBinLabel(6, "Physical Primary");
-    hrecLabel->GetXaxis()->SetBinLabel(7, "PID Cut");
-    hrecLabel->GetXaxis()->SetBinLabel(8, "Rapidity Cut");
-    hrecLabel->GetXaxis()->SetBinLabel(9, "Same mother");
-    hrecLabel->GetXaxis()->SetBinLabel(10, "Generator");
-    hrecLabel->GetXaxis()->SetBinLabel(11, "Rapidity");
-    hrecLabel->GetXaxis()->SetBinLabel(12, "MotherPID313");
-    hrecLabel->GetXaxis()->SetBinLabel(13, "Split track");
+    hrecLabel->GetXaxis()->SetBinLabel(7, "Track PDG");
+    hrecLabel->GetXaxis()->SetBinLabel(8, "Global Index");
+    hrecLabel->GetXaxis()->SetBinLabel(9, "Generator");
+    hrecLabel->GetXaxis()->SetBinLabel(10, "Mother y");
+    hrecLabel->GetXaxis()->SetBinLabel(11, "Mother PDG");
+    hrecLabel->GetXaxis()->SetBinLabel(12, "Track PID");
+    hrecLabel->GetXaxis()->SetBinLabel(13, "Track MID");
+    hrecLabel->GetXaxis()->SetBinLabel(14, "Track y");
+    hrecLabel->GetXaxis()->SetBinLabel(15, "Split tracks");
 
     std::shared_ptr<TH1> hDataTracks = rEventSelection.get<TH1>(HIST("tracksCheckData"));
     hDataTracks->GetXaxis()->SetBinLabel(1, "All tracks");
@@ -455,16 +457,18 @@ struct Kstarqa {
         return false;
       if (std::abs(candidate.pt()) < selectionConfig.cfgCutPT)
         return false;
-      if (std::abs(candidate.eta()) > selectionConfig.cfgCutEtaMax || std::abs(candidate.eta()) < selectionConfig.cfgCutEtaMin)
+      // if (std::abs(candidate.eta()) > selectionConfig.cfgCutEtaMax || std::abs(candidate.eta()) < selectionConfig.cfgCutEtaMin)
+      if (std::abs(candidate.eta()) > selectionConfig.cfgCutEtaMax)
         return false;
       if (!selectionConfig.isApplyPtDepDCAxyCut) {
-        if (std::abs(candidate.dcaXY()) > selectionConfig.cfgCutDCAxyMax || std::abs(candidate.dcaXY()) < selectionConfig.cfgCutDCAxyMin)
+        // if (std::abs(candidate.dcaXY()) > selectionConfig.cfgCutDCAxyMax || std::abs(candidate.dcaXY()) < selectionConfig.cfgCutDCAxyMin)
+        if (std::abs(candidate.dcaXY()) > selectionConfig.cfgCutDCAxyMax)
           return false;
       } else {
         if (std::abs(candidate.dcaXY()) > (0.0105 + 0.035 / std::pow(candidate.pt(), 1.1)))
           return false;
       }
-      if (selectionConfig.isGoldenChi2 && candidate.passedGoldenChi2())
+      if (selectionConfig.isGoldenChi2 && !candidate.passedGoldenChi2())
         return false;
       if (std::abs(candidate.dcaZ()) > selectionConfig.cfgCutDCAz)
         return false;
@@ -485,9 +489,11 @@ struct Kstarqa {
     } else if (!selectionConfig.isGlobalTracks) {
       if (std::abs(candidate.pt()) < selectionConfig.cfgCutPT)
         return false;
-      if (std::abs(candidate.eta()) > selectionConfig.cfgCutEtaMax || std::abs(candidate.eta()) < selectionConfig.cfgCutEtaMin)
+      // if (std::abs(candidate.eta()) > selectionConfig.cfgCutEtaMax || std::abs(candidate.eta()) < selectionConfig.cfgCutEtaMin)
+      if (std::abs(candidate.eta()) > selectionConfig.cfgCutEtaMax)
         return false;
-      if (std::abs(candidate.dcaXY()) > selectionConfig.cfgCutDCAxyMax || std::abs(candidate.dcaXY()) < selectionConfig.cfgCutDCAxyMin)
+      // if (std::abs(candidate.dcaXY()) > selectionConfig.cfgCutDCAxyMax || std::abs(candidate.dcaXY()) < selectionConfig.cfgCutDCAxyMin)
+      if (std::abs(candidate.dcaXY()) > selectionConfig.cfgCutDCAxyMax)
         return false;
       if (std::abs(candidate.dcaZ()) > selectionConfig.cfgCutDCAz)
         return false;
@@ -650,8 +656,10 @@ struct Kstarqa {
   // Filter eventFilter = (o2::aod::evsel::sel8 == true);
   Filter posZFilter = (nabs(o2::aod::collision::posZ) < selectionConfig.cutzvertex);
 
-  Filter acceptanceFilter = (nabs(aod::track::eta) < selectionConfig.cfgCutEtaMax && nabs(aod::track::pt) > selectionConfig.cfgCutPT) && (nabs(aod::track::eta) > selectionConfig.cfgCutEtaMin);
-  Filter fDCAcutFilter = (nabs(aod::track::dcaXY) < selectionConfig.cfgCutDCAxyMax) && (nabs(aod::track::dcaZ) < selectionConfig.cfgCutDCAz) && (nabs(aod::track::dcaXY) > selectionConfig.cfgCutDCAxyMin);
+  // Filter acceptanceFilter = (nabs(aod::track::eta) < selectionConfig.cfgCutEtaMax && nabs(aod::track::pt) > selectionConfig.cfgCutPT) && (nabs(aod::track::eta) > selectionConfig.cfgCutEtaMin);
+  Filter acceptanceFilter = (nabs(aod::track::eta) < selectionConfig.cfgCutEtaMax && nabs(aod::track::pt) > selectionConfig.cfgCutPT);
+  // Filter fDCAcutFilter = (nabs(aod::track::dcaXY) < selectionConfig.cfgCutDCAxyMax) && (nabs(aod::track::dcaZ) < selectionConfig.cfgCutDCAz) && (nabs(aod::track::dcaXY) > selectionConfig.cfgCutDCAxyMin);
+  Filter fDCAcutFilter = (nabs(aod::track::dcaXY) < selectionConfig.cfgCutDCAxyMax) && (nabs(aod::track::dcaZ) < selectionConfig.cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As, aod::PVMults>>; // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
   using EventCandidatesMix = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::CentFV0As>>;            // aod::CentNGlobals, aod::CentNTPVs, aod::CentMFTs
@@ -1126,6 +1134,17 @@ struct Kstarqa {
           if (!selectionPID(t1, 1) || !selectionPID(t2, 0))
             continue;
 
+          if (selectionConfig.isApplyParticleMID) {
+            if (selectionPID(t1, 0)) // Kaon misidentified as pion
+              continue;
+            if (selectionPID(t1, 2)) // Kaon misidentified as proton
+              continue;
+            if (selectionPID(t2, 1)) // Pion misidentified as kaon
+              continue;
+            if (selectionPID(t2, 2)) // Pion misidentified as proton
+              continue;
+          }
+
           if (!t1.has_mcParticle() || !t2.has_mcParticle()) {
             continue; // skip if no MC particle associated
           }
@@ -1282,12 +1301,23 @@ struct Kstarqa {
         continue;
       rEventSelection.fill(HIST("tracksCheckData"), 3.5);
 
+      if (selectionConfig.isApplyParticleMID) {
+        if (selectionPID(track1, 0)) // Kaon misidentified as pion
+          continue;
+        if (selectionPID(track1, 2)) // Kaon misidentified as proton
+          continue;
+        if (selectionPID(track2, 1)) // Pion misidentified as kaon
+          continue;
+        if (selectionPID(track2, 2)) // Pion misidentified as proton
+          continue;
+      }
+
+      rEventSelection.fill(HIST("tracksCheckData"), 4.5);
       if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > selectionConfig.ctrackRapidity)
         continue;
 
       if (std::abs(track2.rapidity(o2::track::PID::getMass(o2::track::PID::Pion))) > selectionConfig.ctrackRapidity)
         continue;
-      rEventSelection.fill(HIST("tracksCheckData"), 4.5);
 
       // if (cFakeTrack && isFakeTrack(track1, 1)) // Kaon
       //   continue;
@@ -1731,21 +1761,13 @@ struct Kstarqa {
         // if (!(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kPiPlus)) {
         //   continue;
         // }
-        if (selectionConfig.isPDGCheckMC && (track1PDG != PDG_t::kPiPlus) && (track1PDG != PDG_t::kKPlus)) {
+        if (selectionConfig.isPDGCheckMC && (track1PDG != PDG_t::kKPlus) && (track1PDG != PDG_t::kPiPlus)) {
           continue;
         }
-        if (selectionConfig.isPDGCheckMC && (track2PDG != PDG_t::kPiPlus) && (track2PDG != PDG_t::kKPlus)) {
+        if (selectionConfig.isPDGCheckMC && (track2PDG != PDG_t::kKPlus) && (track2PDG != PDG_t::kPiPlus)) {
           continue;
         }
         rEventSelection.fill(HIST("recMCparticles"), 6.5);
-
-        if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > selectionConfig.ctrackRapidity)
-          continue;
-
-        if (std::abs(track2.rapidity(o2::track::PID::getMass(o2::track::PID::Pion))) > selectionConfig.ctrackRapidity)
-          continue;
-
-        rEventSelection.fill(HIST("recMCparticles"), 7.5);
 
         for (const auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
           for (const auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
@@ -1756,22 +1778,22 @@ struct Kstarqa {
             if (mothertrack1.globalIndex() != mothertrack2.globalIndex()) {
               continue;
             }
-            rEventSelection.fill(HIST("recMCparticles"), 8.5);
+            rEventSelection.fill(HIST("recMCparticles"), 7.5);
 
             if (!mothertrack1.producedByGenerator()) {
               continue;
             }
-            rEventSelection.fill(HIST("recMCparticles"), 9.5);
+            rEventSelection.fill(HIST("recMCparticles"), 8.5);
 
             if (std::abs(mothertrack1.y()) >= selectionConfig.rapidityMotherData) {
               continue;
             }
-            rEventSelection.fill(HIST("recMCparticles"), 10.5);
+            rEventSelection.fill(HIST("recMCparticles"), 9.5);
 
             if (selectionConfig.isPDGCheckMC && (std::abs(mothertrack1.pdgCode()) != o2::constants::physics::kK0Star892)) {
               continue;
             }
-            rEventSelection.fill(HIST("recMCparticles"), 11.5);
+            rEventSelection.fill(HIST("recMCparticles"), 10.5);
 
             if (selectionConfig.isPDGCheckMC && (track1PDG == PDG_t::kPiPlus)) {
               if (!applypTdepPID && !(selectionPID(track1, 0) && selectionPID(track2, 1))) { // pion and kaon
@@ -1779,12 +1801,52 @@ struct Kstarqa {
               } else if (applypTdepPID && !(selectionPIDNew(track1, 0) && selectionPIDNew(track2, 1))) { // pion and kaon
                 continue;
               }
-            } else if (selectionConfig.isPDGCheckMC) {
+              rEventSelection.fill(HIST("recMCparticles"), 11.5);
+              if (selectionConfig.isApplyParticleMID) {
+                if (selectionPID(track2, 0)) // Kaon misidentified as pion
+                  continue;
+                if (selectionPID(track2, 2)) // Kaon misidentified as proton
+                  continue;
+                if (selectionPID(track1, 1)) // Pion misidentified as kaon
+                  continue;
+                if (selectionPID(track1, 2)) // Pion misidentified as proton
+                  continue;
+              }
+              rEventSelection.fill(HIST("recMCparticles"), 12.5);
+
+              if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Pion))) > selectionConfig.ctrackRapidity)
+                continue;
+
+              if (std::abs(track2.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > selectionConfig.ctrackRapidity)
+                continue;
+              rEventSelection.fill(HIST("recMCparticles"), 13.5);
+
+            } else if (selectionConfig.isPDGCheckMC && (track1PDG == PDG_t::kKPlus)) {
               if (!applypTdepPID && !(selectionPID(track1, 1) && selectionPID(track2, 0))) { // kaon and pion
                 continue;
               } else if (applypTdepPID && !(selectionPIDNew(track1, 1) && selectionPIDNew(track2, 0))) { // kaon and pion
                 continue;
               }
+              rEventSelection.fill(HIST("recMCparticles"), 11.5);
+
+              if (selectionConfig.isApplyParticleMID) {
+                if (selectionPID(track1, 0)) // Kaon misidentified as pion
+                  continue;
+                if (selectionPID(track1, 2)) // Kaon misidentified as proton
+                  continue;
+                if (selectionPID(track2, 1)) // Pion misidentified as kaon
+                  continue;
+                if (selectionPID(track2, 2)) // Pion misidentified as proton
+                  continue;
+              }
+              rEventSelection.fill(HIST("recMCparticles"), 12.5);
+
+              if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > selectionConfig.ctrackRapidity)
+                continue;
+
+              if (std::abs(track2.rapidity(o2::track::PID::getMass(o2::track::PID::Pion))) > selectionConfig.ctrackRapidity)
+                continue;
+              rEventSelection.fill(HIST("recMCparticles"), 13.5);
             }
 
             if (selectionConfig.isApplyCutsOnMother) {
@@ -1798,7 +1860,7 @@ struct Kstarqa {
               hInvMass.fill(HIST("h1KSRecsplit"), mothertrack1.pt());
               continue;
             }
-            rEventSelection.fill(HIST("recMCparticles"), 12.5);
+            rEventSelection.fill(HIST("recMCparticles"), 14.5);
 
             oldindex = mothertrack1.globalIndex();
             if (track1.sign() * track2.sign() < 0) {
