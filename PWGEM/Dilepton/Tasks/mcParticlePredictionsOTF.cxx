@@ -1,0 +1,63 @@
+// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// All rights not expressly granted are reserved.
+//
+// This software is distributed under the terms of the GNU General Public
+// License v3 (GPL Version 3), copied verbatim in the file "COPYING".
+//
+// In applying this license CERN does not waive the privileges and immunities
+// granted to it by virtue of its status as an Intergovernmental Organization
+// or submit itself to any jurisdiction.
+
+///
+/// \file   mcParticlePrediction.cxx
+/// \author Sebastian Scheid, s.scheid@cern.ch
+/// \brief Task to build the predictions from the models based on the generated particles
+///
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
+using namespace o2;
+using namespace o2::framework;
+
+struct otfParticlePrediction {
+  // histogram registry
+  HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
+  // define configurables
+  ConfigurableAxis binsEta{"binsEta", {100, -5, 5}, "Binning of the Eta axis"};
+  ConfigurableAxis binsPt{"binsPt", {100, 0, 10}, "Binning of the Pt axis"};
+
+  // init function
+  void init()
+  {
+
+    const AxisSpec axisEta{binsEta, "#eta"};
+    const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
+
+    histos.add<TH1>("collisions/generated", "collisions", kTH1D, {{1, -0.5, 0.5}});
+    histos.add<TH2>("particles/generated/phi", "phi", kTH2D, {axisPt, axisEta});
+  }
+
+  void process(aod::McCollisions const& mcCollisions,
+               aod::McParticles const& mcParticles)
+  {
+    for (const auto& collission : mcCollisions) {
+      histos.fill(HIST("collisions/generated"), 0);
+    }
+
+    for (const auto& particle : mcParticles) {
+      if (std::abs(particle.pdgCode()) == 333) // phi
+      {
+        histos.fill(HIST("particles/generated/phi"), particle.pt(), particle.eta());
+      }
+    }
+  }
+};
+
+WorkflowSpec
+  defineDataProcessing(ConfigContext const& cfgc)
+{
+  return WorkflowSpec{adaptAnalysisTask<otfParticlePrediction>(cfgc)};
+}
