@@ -37,6 +37,11 @@ struct otfParticlePrediction {
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
 
     histos.add<TH1>("collisions/generated", "collisions", kTH1D, {{1, -0.5, 0.5}});
+    histos.add<TH2>("particles/generated/pi0", "pi0", kTH2D, {axisPt, axisEta});
+    histos.add<TH2>("particles/generated/eta", "eta", kTH2D, {axisPt, axisEta});
+    histos.add<TH2>("particles/generated/etaP", "etaP", kTH2D, {axisPt, axisEta});
+    histos.add<TH2>("particles/generated/rho", "rho", kTH2D, {axisPt, axisEta});
+    histos.add<TH2>("particles/generated/omega", "omega", kTH2D, {axisPt, axisEta});
     histos.add<TH2>("particles/generated/phi", "phi", kTH2D, {axisPt, axisEta});
   }
 
@@ -48,9 +53,34 @@ struct otfParticlePrediction {
     }
 
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.pdgCode()) == 333) // phi
-      {
-        histos.fill(HIST("particles/generated/phi"), particle.pt(), particle.eta());
+      auto pdg = std::abs(particle.pdgCode());
+      if (pdg < 100) {
+        continue;
+      }
+      if (pdg > 1000) {
+        continue;
+      }
+      switch (pdg) {
+        case 111:
+          histos.fill(HIST("particles/generated/pi0"), particle.pt(), particle.eta());
+          break;
+        case 221:
+          histos.fill(HIST("particles/generated/eta"), particle.pt(), particle.eta());
+          break;
+        case 331:
+          histos.fill(HIST("particles/generated/etaP"), particle.pt(), particle.eta());
+          break;
+        case 223:
+          histos.fill(HIST("particles/generated/omega"), particle.pt(), particle.eta());
+          break;
+        case 113:
+          histos.fill(HIST("particles/generated/rho"), particle.pt(), particle.eta());
+          break;
+        case 333:
+          histos.fill(HIST("particles/generated/phi"), particle.pt(), particle.eta());
+          break;
+        default:
+          break;
       }
     }
   }
