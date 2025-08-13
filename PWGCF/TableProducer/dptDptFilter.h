@@ -16,33 +16,37 @@
 #ifndef PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 #define PWGCF_TABLEPRODUCER_DPTDPTFILTER_H_
 
-#include <CCDB/BasicCCDBManager.h>
-#include <TPDGCode.h>
-#include <TMCProcess.h>
-#include <TF1.h>
-#include <TList.h>
-#include <vector>
-#include <bitset>
-#include <string>
-#include <iomanip>
-#include <fstream>
-#include <locale>
-#include <sstream>
-#include <ranges>
-#include <functional>
-#include <map>
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
 
-#include "ReconstructionDataFormats/PID.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "ReconstructionDataFormats/PID.h"
+#include <CCDB/BasicCCDBManager.h>
+
+#include <TF1.h>
+#include <TList.h>
+#include <TMCProcess.h>
+#include <TPDGCode.h>
+
+#include <bitset>
+#include <fstream>
+#include <functional>
+#include <iomanip>
+#include <locale>
+#include <map>
+#include <ranges>
+#include <sstream>
+#include <string>
+#include <vector>
 
 namespace o2
 {
@@ -71,6 +75,9 @@ enum SystemType {
   kXeXe,         ///< **Xe-Xe** system
   kppRun3,       ///< **p-p Run 3** system
   kPbPbRun3,     ///< **Pb-Pb Run 3** system
+  kNeNeRun3,     ///< **Ne-Ne Run 3** system
+  kOORun3,       ///< **O-O Run 3** system
+  kpORun3,       ///< **p-O Run 3** system
   knSystems      ///< number of handled systems
 };
 
@@ -190,6 +197,11 @@ float overallminp = 0.0f;
 // The collision selection flags and configuration objects
 //============================================================================================
 std::bitset<32> collisionFlags;
+
+//============================================================================================
+// The input data metadata access helper
+//============================================================================================
+o2::common::core::MetadataHelper metadataInfo;
 
 //============================================================================================
 // The DptDptFilter configuration objects
@@ -558,6 +570,22 @@ inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
   }
 }
 
+inline SystemType getSytemTypeFromMetaData()
+{
+  auto period = metadataInfo.get("LPMProductionTag");
+
+  if (period == "LHC25ad" || period == "LHC25g5") {
+    return kpORun3;
+  } else if (period == "LHC25ae" || period == "LHC25g6") {
+    return kOORun3;
+  } else if (period == "LHC25af" || period == "LHC25g7") {
+    return kNeNeRun3;
+  } else {
+    LOGF(fatal, "DptDptCorrelations::getSystemTypeFromMetadata(). No automatic system type configuration for %s period", period.c_str());
+  }
+  return kPbp;
+}
+
 inline SystemType getSystemType(std::string const& sysstr)
 {
   /* we have to figure out how extract the system type */
@@ -569,14 +597,14 @@ inline SystemType getSystemType(std::string const& sysstr)
     return kpPb;
   } else if (sysstr == "Pbp") {
     return kPbp;
-  } else if (sysstr == "pPb") {
-    return kpPb;
   } else if (sysstr == "XeXe") {
     return kXeXe;
   } else if (sysstr == "ppRun3") {
     return kppRun3;
   } else if (sysstr == "PbPbRun3") {
     return kPbPbRun3;
+  } else if (sysstr == "Auto") {
+    return getSytemTypeFromMetaData();
   } else {
     LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %s", sysstr.c_str());
   }

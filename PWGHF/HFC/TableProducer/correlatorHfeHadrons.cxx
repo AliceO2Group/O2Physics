@@ -157,6 +157,7 @@ struct HfCorrelatorHfeHadrons {
       if (!selAssoHadron(hTrack)) {
         continue;
       }
+
       registry.fill(HIST("hTracksBin"), poolBin);
       entryHadron(hTrack.phi(), hTrack.eta(), hTrack.pt(), poolBin, gCollisionId, timeStamp);
     }
