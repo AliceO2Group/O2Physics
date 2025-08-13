@@ -506,7 +506,7 @@ struct LFNucleiBATask {
       if (enableHe) {
         histos.add<TH3>("tracks/helium/dca/before/hDCAxyVsDCAzVsPtHelium", "DCAxy vs DCAz vs Pt/z (He); DCAxy; DCAz", HistType::kTH3F, {{140, -0.7f, 0.7f}, {160, -0.8f, 0.8f}, {binsPtZHe}});
         histos.add<TH3>("tracks/helium/dca/before/hDCAxyVsDCAzVsPtantiHelium", "DCAxy vs DCAz vs Pt/z (#bar{He}); DCAxy; DCAz", HistType::kTH3F, {{140, -0.7f, 0.7f}, {160, -0.8f, 0.8f}, {binsPtZHe}});
-        histos.add("tracks/helium/dca/before/h3DCAvsPtHelium", "",  HistType::kTHnSparseD, {dcaxyAxis, dcazAxis, ptZHeAxis});
+        histos.add("tracks/helium/dca/before/h3DCAvsPtHelium", "", HistType::kTHnSparseD, {dcaxyAxis, dcazAxis, ptZHeAxis});
         histos.add("tracks/helium/dca/before/h3DCAvsPtantiHelium", "", HistType::kTHnSparseD, {dcaxyAxis, dcazAxis, ptZHeAxis});
 
         histos.add<TH2>("tracks/helium/dca/before/hDCAxyVsPtHelium", "DCAxy vs Pt (He)", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
