@@ -368,6 +368,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   template <class TableType, typename PartitionType>
   void doSameEvent(const FilteredFDCollision& col, const TableType& parts, PartitionType& partsOne, PartitionType& partsTwo)
   {
+    const auto& magFieldTesla = col.magField();
 
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -457,6 +458,11 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       // track cleaning
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
+      }
+      if (confIsCPR.value) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+          return;
+        }
       }
 
       const auto& posChild = parts.iteratorAt(p2.globalIndex() - 3 - parts.begin().globalIndex());
@@ -681,6 +687,11 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         // track cleaning
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
+        }
+        if (confIsCPR.value) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::same)) {
+            return;
+          }
         }
 
         mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
