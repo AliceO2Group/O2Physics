@@ -29,14 +29,17 @@ struct otfParticlePrediction {
   ConfigurableAxis binsEta{"binsEta", {100, -5, 5}, "Binning of the Eta axis"};
   ConfigurableAxis binsPt{"binsPt", {100, 0, 10}, "Binning of the Pt axis"};
 
+  configurable<double> maxEtaParticle{"maxEtaParticle", 5.0, "Max eta of particles considered"}
+
   // init function
-  void init()
+  void
+    init()
   {
 
     const AxisSpec axisEta{binsEta, "#eta"};
     const AxisSpec axisPt{binsPt, "#it{p}_{T} (GeV/#it{c})"};
 
-    histos.add<TH1>("collisions/generated", "collisions", kTH1D, {{1, -0.5, 0.5}});
+    histos.add<TH1>("collisions/generated", "collisions", kTH1D, {{2, -0.5, 1.5}});
     histos.add<TH2>("particles/generated/pi0", "pi0", kTH2D, {axisPt, axisEta});
     histos.add<TH2>("particles/generated/eta", "eta", kTH2D, {axisPt, axisEta});
     histos.add<TH2>("particles/generated/etaP", "etaP", kTH2D, {axisPt, axisEta});
@@ -48,12 +51,18 @@ struct otfParticlePrediction {
   void process(aod::McCollisions const& mcCollisions,
                aod::McParticles const& mcParticles)
   {
-    for (const auto& collission : mcCollisions) {
+    for (const auto& collision : mcCollisions) {
       histos.fill(HIST("collisions/generated"), 0);
+      if (std::abs(collision.posZ())) {
+        histos.fill(HIST("collisions/generated"), 1);
+      }
     }
 
     for (const auto& particle : mcParticles) {
       auto pdg = std::abs(particle.pdgCode());
+      if (particle.eta() < maxEtaParticle) {
+        continue;
+      }
       if (pdg < 100) {
         continue;
       }
