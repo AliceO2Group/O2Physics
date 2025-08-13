@@ -52,9 +52,9 @@ using namespace o2::hf_trkcandsel;
 /// Reconstruction of B0 candidates
 struct HfCandidateCreatorB0Reduced {
   Produces<aod::HfCandB0Base> rowCandidateBase;              // table defined in CandidateReconstructionTables.h
+  Produces<aod::HfCandB0DStar> rowCandidateB0DStar;          // table defined in CandidateReconstructionTables.h
   Produces<aod::HfRedB0Prongs> rowCandidateProngs;           // table defined in ReducedDataModel.h
   Produces<aod::HfRedB0ProngDStars> rowCandidateProngsDStar; // table defined in ReducedDataModel.h
-  Produces<aod::HfRedB0SoftPi> rowCandidateSoftPi;           // table defined in ReducedDataModel.h
   Produces<aod::HfRedB0DpMls> rowCandidateDmesMlScores;      // table defined in ReducedDataModel.h
 
   // vertexing
@@ -79,8 +79,8 @@ struct HfCandidateCreatorB0Reduced {
 
   Preslice<soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov>> candsDplusPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<soa::Join<aod::HfRed3Prongs, aod::HfRed3ProngsCov, aod::HfRed3ProngsMl>> candsDplusWithMlPerCollision = hf_track_index_reduced::hfRedCollisionId;
-  Preslice<soa::Join<aod::HfRedDStars, aod::HfRedDStarsCov>> candsDstarPerCollision = hf_track_index_reduced::hfRedCollisionId;
-  Preslice<soa::Join<aod::HfRedDStars, aod::HfRedDStarsCov, aod::HfRedDStarsMl>> candsDstarWithMlPerCollision = hf_track_index_reduced::hfRedCollisionId;
+  Preslice<soa::Join<aod::HfRed2Prongs, aod::HfRed2ProngsCov>> candsDstarPerCollision = hf_track_index_reduced::hfRedCollisionId;
+  Preslice<soa::Join<aod::HfRed2Prongs, aod::HfRed2ProngsCov, aod::HfRed3ProngsMl>> candsDstarWithMlPerCollision = hf_track_index_reduced::hfRedCollisionId;
   Preslice<soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov>> tracksPionPerCollision = hf_track_index_reduced::hfRedCollisionId;
 
   std::shared_ptr<TH1> hCandidates;
@@ -112,9 +112,9 @@ struct HfCandidateCreatorB0Reduced {
 
     // histograms
     if (doprocessDataDplusPi || doprocessDataDplusPiWithDmesMl) {
-      registry.add("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
+      registry.add("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{#minus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 3., 8.}}});
     } else if (doprocessDataDstarPi || doprocessDataDstarPiWithDmesMl) {
-      registry.add("hMassB0ToDPi", "2-prong candidates;inv. mass (B^{0} #rightarrow D^{*}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 3., 8.}}});
+      registry.add("hMassB0ToDPi", "3-prong candidates;inv. mass (B^{0} #rightarrow D^{0}#pi^{#plus}#pi^{#plus} #rightarrow #pi^{#minus}K^{#plus}#pi^{#minus}#pi^{#plus}) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{500, 3., 8.}}});
     }
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
@@ -132,9 +132,10 @@ struct HfCandidateCreatorB0Reduced {
   /// \param tracksPionThisCollision pion tracks in this collision
   /// \param invMass2DPiMin minimum B0 invariant-mass
   /// \param invMass2DPiMax maximum B0 invariant-mass
-  template <bool withDmesMl, typename Cands, typename Pions, typename Coll>
+  template <bool withDmesMl, typename Cands, typename Pions, typename SoftPions, typename Coll>
   void runCandidateCreationDStar(Coll const& collision,
                                  Cands const& candsDThisColl,
+                                 SoftPions const& softPions,
                                  Pions const& tracksPionThisCollision,
                                  const float invMass2DPiMin,
                                  const float invMass2DPiMax)
@@ -149,28 +150,27 @@ struct HfCandidateCreatorB0Reduced {
     for (const auto& candD : candsDThisColl) {
       auto trackParCovD = getTrackParCov(candD);
       std::array<float, 3> pVecD0 = candD.pVector();
-      auto softPi = candD.template softPi_as<HfSoftPiWCovAndPid>();
-      std::array<float, 3> pVecSoftPi = softPi.pVector();
-      auto trackParCovSoftPi = getTrackParCov(softPi);
-      std::array<float, 3> pVecD = RecoDecay::sumOfVec(pVecD0, pVecSoftPi);
+      auto trackSoftPion = softPions.rawIteratorAt(candD.globalIndex());
+      std::array<float, 3> pVecSoftPion = trackSoftPion.pVector();
+      auto trackParCovSoftPi = getTrackParCov(trackSoftPion);
 
-      for (const auto& trackPion : tracksPionThisCollision) {
+      for (const auto& trackBachPion : tracksPionThisCollision) {
         // this track is among daughters
-        if (trackPion.trackId() == candD.prong0Id() || trackPion.trackId() == candD.prong1Id() || trackPion.trackId() == candD.prong2Id()) {
+        if (trackBachPion.trackId() == candD.prong0Id() || trackBachPion.trackId() == candD.prong1Id() || trackBachPion.trackId() == trackSoftPion.trackId()) {
           continue;
         }
 
-        auto trackParCovPi = getTrackParCov(trackPion);
-        std::array<float, 3> pVecPion = trackPion.pVector();
+        auto trackParCovPi = getTrackParCov(trackBachPion);
+        std::array<float, 3> pVecBachPion = trackBachPion.pVector();
 
         // compute invariant mass square and apply selection
-        auto invMass2DPi = RecoDecay::m2(std::array{pVecD, pVecSoftPi, pVecPion}, std::array{o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiPlus});
+        auto invMass2DPi = RecoDecay::m2(std::array{pVecD0, pVecSoftPion, pVecBachPion}, std::array{o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiPlus});
         if ((invMass2DPi < invMass2DPiMin) || (invMass2DPi > invMass2DPiMax)) {
           continue;
         }
 
         // ---------------------------------
-        // reconstruct the 2-prong B0 vertex
+        // reconstruct the 3-prong B0 vertex
         hCandidates->Fill(SVFitting::BeforeFit);
         try {
           if (df3.process(trackParCovD, trackParCovSoftPi, trackParCovPi) == 0) {
@@ -195,19 +195,19 @@ struct HfCandidateCreatorB0Reduced {
         // propagate D and Pi to the B0 vertex
         df3.propagateTracksToVertex();
         // track.getPxPyPzGlo(pVec) modifies pVec of track
-        df3.getTrack(0).getPxPyPzGlo(pVecD);      // momentum of D at the B0 vertex
-        df3.getTrack(1).getPxPyPzGlo(pVecSoftPi); // momentum of SoftPi at the B0 vertex
-        df3.getTrack(2).getPxPyPzGlo(pVecPion);   // momentum of Pi at the B0 vertex
+        df3.getTrack(0).getPxPyPzGlo(pVecD0);       // momentum of D at the B0 vertex
+        df3.getTrack(1).getPxPyPzGlo(pVecSoftPion); // momentum of SoftPi at the B0 vertex
+        df3.getTrack(2).getPxPyPzGlo(pVecBachPion); // momentum of Pi at the B0 vertex
 
         registry.fill(HIST("hMassB0ToDPi"), std::sqrt(invMass2DPi));
 
         // compute impact parameters of D and Pi
         o2::dataformats::DCA dcaD;
-        o2::dataformats::DCA dcaSoftPi;
-        o2::dataformats::DCA dcaPion;
+        o2::dataformats::DCA dcaSoftPion;
+        o2::dataformats::DCA dcaBachPion;
         trackParCovD.propagateToDCA(primaryVertex, bz, &dcaD);
-        trackParCovSoftPi.propagateToDCA(primaryVertex, bz, &dcaSoftPi);
-        trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaPion);
+        trackParCovSoftPi.propagateToDCA(primaryVertex, bz, &dcaSoftPion);
+        trackParCovPi.propagateToDCA(primaryVertex, bz, &dcaBachPion);
 
         // get uncertainty of the decay length
         float phi, theta;
@@ -217,22 +217,18 @@ struct HfCandidateCreatorB0Reduced {
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
         // fill the candidate table for the B0 here:
-        rowCandidateBase(collision.globalIndex(),
-                         collision.posX(), collision.posY(), collision.posZ(),
-                         secondaryVertexB0[0], secondaryVertexB0[1], secondaryVertexB0[2],
-                         errorDecayLength, errorDecayLengthXY,
-                         chi2PCA,
-                         pVecD[0], pVecD[1], pVecD[2],
-                         pVecPion[0], pVecPion[1], pVecPion[2],
-                         dcaD.getY(), dcaPion.getY(),
-                         std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaPion.getSigmaY2()));
+        rowCandidateB0DStar(collision.globalIndex(),
+                            collision.posX(), collision.posY(), collision.posZ(),
+                            secondaryVertexB0[0], secondaryVertexB0[1], secondaryVertexB0[2],
+                            errorDecayLength, errorDecayLengthXY,
+                            chi2PCA,
+                            pVecD0[0], pVecD0[1], pVecD0[2],
+                            pVecSoftPion[0], pVecSoftPion[1], pVecSoftPion[2],
+                            pVecBachPion[0], pVecBachPion[1], pVecBachPion[2],
+                            dcaD.getY(), dcaSoftPion.getY(), dcaBachPion.getY(),
+                            std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaSoftPion.getSigmaY2()), std::sqrt(dcaBachPion.getSigmaY2()));
 
-        rowCandidateProngsDStar(candD.globalIndex(), trackPion.globalIndex(), softPi.globalIndex());
-
-        rowCandidateSoftPi(collision.globalIndex(),
-                           pVecSoftPi[0], pVecSoftPi[1], pVecSoftPi[2],
-                           dcaSoftPi.getY(),
-                           std::sqrt(dcaSoftPi.getSigmaY2()));
+        rowCandidateProngsDStar(candD.globalIndex(), trackSoftPion.globalIndex(), trackBachPion.globalIndex());
 
         if constexpr (withDmesMl) {
           rowCandidateDmesMlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());
@@ -413,11 +409,11 @@ struct HfCandidateCreatorB0Reduced {
   PROCESS_SWITCH(HfCandidateCreatorB0Reduced, processDataDplusPiWithDmesMl, "Process data D-pi with ML scores of D mesons", false);
 
   void processDataDstarPi(HfRedCollisionsWithExtras const& collisions,
-                          soa::Join<aod::HfRedDStars, aod::HfRedDStarsCov> const& candsD,
+                          soa::Join<aod::HfRed2Prongs, aod::HfRed2ProngsCov> const& candsD,
+                          HfSoftPiWCovAndPid const& softPions,
                           soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& tracksPion,
                           aod::HfOrigColCounts const& collisionsCounter,
-                          aod::HfCandB0Configs const& configs,
-                          HfSoftPiWCovAndPid const& /*softPi*/)
+                          aod::HfCandB0Configs const& configs)
   {
     // DPi invariant-mass window cut
     for (const auto& config : configs) {
@@ -437,7 +433,7 @@ struct HfCandidateCreatorB0Reduced {
       auto thisCollId = collision.globalIndex();
       auto candsDThisColl = candsD.sliceBy(candsDstarPerCollision, thisCollId);
       auto tracksPionThisCollision = tracksPion.sliceBy(tracksPionPerCollision, thisCollId);
-      runCandidateCreationDStar<false>(collision, candsDThisColl, tracksPionThisCollision, invMass2DPiMin, invMass2DPiMax);
+      runCandidateCreationDStar<false>(collision, candsDThisColl, softPions, tracksPionThisCollision, invMass2DPiMin, invMass2DPiMax);
       if (ncol % 10000 == 0) {
         LOGP(debug, "collisions parsed {}", ncol);
       }
@@ -448,11 +444,11 @@ struct HfCandidateCreatorB0Reduced {
   PROCESS_SWITCH(HfCandidateCreatorB0Reduced, processDataDstarPi, "Process data D*pi without any ML score", false);
 
   void processDataDstarPiWithDmesMl(HfRedCollisionsWithExtras const& collisions,
-                                    soa::Join<aod::HfRedDStars, aod::HfRedDStarsCov, aod::HfRedDStarsMl> const& candsD,
+                                    soa::Join<aod::HfRed2Prongs, aod::HfRed2ProngsCov, aod::HfRed3ProngsMl> const& candsD,
+                                    HfSoftPiWCovAndPid const& softPions,
                                     soa::Join<aod::HfRedTrackBases, aod::HfRedTracksCov> const& tracksPion,
                                     aod::HfOrigColCounts const& collisionsCounter,
-                                    aod::HfCandB0Configs const& configs,
-                                    HfSoftPiWCovAndPid const&)
+                                    aod::HfCandB0Configs const& configs)
   {
     // DPi invariant-mass window cut
     for (const auto& config : configs) {
@@ -470,9 +466,9 @@ struct HfCandidateCreatorB0Reduced {
     static int ncol = 0;
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto candsDThisColl = candsD.sliceBy(candsDstarPerCollision, thisCollId);
+      auto candsDThisColl = candsD.sliceBy(candsDstarWithMlPerCollision, thisCollId);
       auto tracksPionThisCollision = tracksPion.sliceBy(tracksPionPerCollision, thisCollId);
-      runCandidateCreationDStar<true>(collision, candsDThisColl, tracksPionThisCollision, invMass2DPiMin, invMass2DPiMax);
+      runCandidateCreationDStar<true>(collision, candsDThisColl, softPions, tracksPionThisCollision, invMass2DPiMin, invMass2DPiMax);
       if (ncol % 10000 == 0) {
         LOGP(debug, "collisions parsed {}", ncol);
       }
@@ -487,6 +483,7 @@ struct HfCandidateCreatorB0Reduced {
 /// Extends the table base with expression columns and performs MC matching.
 struct HfCandidateCreatorB0ReducedExpressions {
   Spawns<aod::HfCandB0Ext> rowCandidateB0;
+  Spawns<aod::HfCandB0DStExt> rowCandidateB0DSt;
   Spawns<aod::HfRedTracksExt> rowTracksExt;
   Produces<aod::HfMcRecRedB0s> rowB0McRec;
   Produces<aod::HfMcCheckB0s> rowB0McCheck;
@@ -505,8 +502,8 @@ struct HfCandidateCreatorB0ReducedExpressions {
           if ((rowDPiMcRec.prong0Id() != candB0.prong0Id()) || (rowDPiMcRec.prong1Id() != candB0.prong1Id())) {
             continue;
           }
-        } else if constexpr (std::is_same_v<B0Prongs, aod::HfRedB0ProngDStars>) {
-          if ((rowDPiMcRec.prongDStarId() != candB0.prongDStarId()) || (rowDPiMcRec.prong1Id() != candB0.prong1Id()) || (rowDPiMcRec.prongSoftPiId() != candB0.prongSoftPiId())) {
+        } else if constexpr (std::is_same_v<B0Prongs, aod::HfRedB0ProngDStars>) { // No need to check ID of soft pion, it is the same as D0
+          if ((rowDPiMcRec.prongD0Id() != candB0.prongD0Id()) || (rowDPiMcRec.prongBachPiId() != candB0.prongBachPiId())) {
             continue;
           }
         }

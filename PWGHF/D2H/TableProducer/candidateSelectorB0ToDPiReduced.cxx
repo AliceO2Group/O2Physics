@@ -103,8 +103,8 @@ struct HfCandidateSelectorB0ToDPiReduced {
   TrackSelectorPi selectorPion;
   HfHelper hfHelper;
 
-  using TracksPion = soa::Join<HfRedTracks, HfRedTracksPid>;
-  using SoftPions = soa::Join<aod::HfRedSoftPiBases, aod::HfRedSoftPiCov, aod::HfRedSoftPiPid>;
+  using TracksBachPion = soa::Join<HfRedTracks, HfRedTracksPid>;
+  using TracksSoftPions = soa::Join<aod::HfRedSoftPiBases, aod::HfRedSoftPiCov, aod::HfRedSoftPiPid>;
 
   HistogramRegistry registry{"registry"};
 
@@ -156,6 +156,18 @@ struct HfCandidateSelectorB0ToDPiReduced {
     }
   }
 
+  // For D* channel
+  template <IsB0ToDstarPiChannel T>
+  auto getTrackBachPi(const T& candidate) {
+    return candidate.template prongBachPi_as<TracksBachPion>();
+  }
+
+  // For non-D* channel
+  template <typename T>
+  auto getTrackBachPi(const T& candidate) {
+    return candidate.template prong1_as<TracksBachPion>();
+  }
+
   /// Main function to perform B0 candidate creation
   /// \param withDmesMl is the flag to use the table with ML scores for the D- daughter (only possible if present in the derived data)
   /// \param hfCandsB0 B0 candidates
@@ -163,7 +175,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
   /// \param configs config inherited from the Dpi data creator
   template <bool withDmesMl, typename Cands>
   void runSelection(Cands const& hfCandsB0,
-                    TracksPion const&,
+                    TracksBachPion const&,
                     HfCandB0Configs const& configs)
   {
     // get DplusPi creator configurable
@@ -206,16 +218,15 @@ struct HfCandidateSelectorB0ToDPiReduced {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoTopol, ptCandB0);
       }
 
-      // track-level PID selection
-      auto trackPi = hfCandB0.template prong1_as<TracksPion>();
+      auto trackPiBachPi = getTrackBachPi(hfCandB0);
       if (pionPidMethod == PidMethod::TpcOrTof || pionPidMethod == PidMethod::TpcAndTof) {
-        int pidTrackPi{TrackSelectorPID::Status::NotApplicable};
+        int pidTrackPiBachPi{TrackSelectorPID::Status::NotApplicable};
         if (pionPidMethod == PidMethod::TpcOrTof) {
-          pidTrackPi = selectorPion.statusTpcOrTof(trackPi);
+          pidTrackPiBachPi = selectorPion.statusTpcOrTof(trackPiBachPi);
         } else if (pionPidMethod == PidMethod::TpcAndTof) {
-          pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
+          pidTrackPiBachPi = selectorPion.statusTpcAndTof(trackPiBachPi);
         }
-        if (!hfHelper.selectionB0ToDPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
+        if (!hfHelper.selectionB0ToDPiPid(pidTrackPiBachPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           if (applyB0Ml) {
@@ -228,10 +239,9 @@ struct HfCandidateSelectorB0ToDPiReduced {
           registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoPID, ptCandB0);
         }
       }
-
       if (applyB0Ml) {
         // B0 ML selections
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withDmesMl>(hfCandB0, trackPi);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withDmesMl>(hfCandB0, trackPiBachPi);
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandB0, outputMl);
         hfMlB0ToDPiCandidate(outputMl[1]); // storing ML score for signal class
 
@@ -251,42 +261,42 @@ struct HfCandidateSelectorB0ToDPiReduced {
   }
 
   void processSelectionDplusPi(HfRedCandB0 const& hfCandsB0,
-                               TracksPion const& pionTracks,
+                               TracksBachPion const& pionTracks,
                                HfCandB0Configs const& configs)
   {
     runSelection<false>(hfCandsB0, pionTracks, configs);
   } // processSelectionDplusPi
 
-  PROCESS_SWITCH(HfCandidateSelectorB0ToDPiReduced, processSelectionDplusPi, "Process selection without ML scores of D mesons", true);
+  PROCESS_SWITCH(HfCandidateSelectorB0ToDPiReduced, processSelectionDplusPi, "Process selection DplusPi without ML scores of D mesons", true);
 
   void processSelectionDplusPiWithDmesMl(soa::Join<HfRedCandB0, HfRedB0DpMls> const& hfCandsB0,
-                                         TracksPion const& pionTracks,
+                                         TracksBachPion const& pionTracks,
                                          HfCandB0Configs const& configs)
   {
     runSelection<true>(hfCandsB0, pionTracks, configs);
   } // processSelectionDplusPiWithDmesMl
 
-  PROCESS_SWITCH(HfCandidateSelectorB0ToDPiReduced, processSelectionDplusPiWithDmesMl, "Process selection with ML scores of D mesons", false);
+  PROCESS_SWITCH(HfCandidateSelectorB0ToDPiReduced, processSelectionDplusPiWithDmesMl, "Process selection DplusPi with ML scores of D mesons", false);
 
   void processSelectionDstarPi(HfRedCandB0DStar const& hfCandsB0,
-                               TracksPion const& pionTracks,
+                               TracksBachPion const& pionTracks,
                                HfCandB0Configs const& configs,
-                               SoftPions const& /*softPions*/)
+                               TracksSoftPions const& /*softPions*/)
   {
     runSelection<false>(hfCandsB0, pionTracks, configs);
   } // processSelectionDstarPi
 
-  PROCESS_SWITCH(HfCandidateSelectorB0ToDPiReduced, processSelectionDstarPi, "Process selection without ML scores of D mesons", false);
+  PROCESS_SWITCH(HfCandidateSelectorB0ToDPiReduced, processSelectionDstarPi, "Process selection DstarPi without ML scores of D mesons", false);
 
   void processSelectionDstarPiWithDmesMl(soa::Join<HfRedCandB0DStar, HfRedB0DpMls> const& hfCandsB0,
-                                         TracksPion const& pionTracks,
+                                         TracksBachPion const& pionTracks,
                                          HfCandB0Configs const& configs,
-                                         SoftPions const& /*softPions*/)
+                                         TracksSoftPions const& /*softPions*/)
   {
     runSelection<true>(hfCandsB0, pionTracks, configs);
   } // processSelectionDstarPiWithDmesMl
 
-  PROCESS_SWITCH(HfCandidateSelectorB0ToDPiReduced, processSelectionDstarPiWithDmesMl, "Process selection with ML scores of D mesons", false);
+  PROCESS_SWITCH(HfCandidateSelectorB0ToDPiReduced, processSelectionDstarPiWithDmesMl, "Process selection DstarPi with ML scores of D mesons", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
