@@ -142,9 +142,9 @@ struct H3LDecay {
 
     if ((haveTriton && havePion0) || (haveAntiTriton && havePion0)) {
       return H3LDecay::k2bodyNeutral;
-    } else if ((haveHelium3 && havePion0) || (haveAntiHelium3 && havePion0)) {
+    } else if ((haveHelium3 && havePionMinus) || (haveAntiHelium3 && havePionPlus)) {
       return H3LDecay::k2bodyCharged;
-    } else if ((haveDeuteron && haveProton && havePionPlus) || (haveAntiDeuteron && haveAntiProton && havePionMinus)) {
+    } else if ((haveDeuteron && haveProton && havePionMinus) || (haveAntiDeuteron && haveAntiProton && havePionPlus)) {
       return H3LDecay::k3bodyCharged;
     } else {
       return kNChannel;
@@ -408,6 +408,7 @@ struct HyperkinkRecoTask {
   Configurable<float> maxZVertex{"maxZVertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> cutTPCNSigmaDaug{"cutTPCNSigmaDaug", 5, "TPC NSigma cut for daughter tracks"};
   Configurable<float> cutTOFNSigmaDaug{"cutTOFNSigmaDaug", 1000, "TOF NSigma cut for daughter tracks"};
+  Configurable<bool> askTOFForDaug{"askTOFForDaug", false, "If true, ask for TOF signal"};
 
   // CCDB options
   Configurable<double> inputBz{"inputBz", -999, "bz field, -999 is automatic"};
@@ -671,7 +672,7 @@ struct HyperkinkRecoTask {
         auto originalDaugCol = daugTrack.collision_as<CollisionsFull>();
         nSigmaTOF = getTOFNSigma<false>(mRespParamsV3, daugTrack, collision, originalDaugCol);
       }
-      if (std::abs(nSigmaTOF) > cutTOFNSigmaDaug) {
+      if ((daugTrack.hasTOF() || askTOFForDaug) && std::abs(nSigmaTOF) > cutTOFNSigmaDaug) {
         continue;
       }
 
@@ -793,7 +794,7 @@ struct HyperkinkRecoTask {
           registry.fill(HIST("hDaugNewTOFNSigma_WrongCol"), nSigmaTOF);
         }
       }
-      if (std::abs(nSigmaTOF) > cutTOFNSigmaDaug) {
+      if ((daugTrack.hasTOF() || askTOFForDaug) && std::abs(nSigmaTOF) > cutTOFNSigmaDaug) {
         continue;
       }
       registry.fill(HIST("hCandidateCounter"), 3);

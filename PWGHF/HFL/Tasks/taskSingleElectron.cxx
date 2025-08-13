@@ -18,14 +18,55 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
 
+#include <map>
+
 using namespace o2;
 using namespace o2::constants::math;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+enum PdgCode {
+  kEta = 221,
+  kOmega = 223,
+  kEtaPrime = 331
+};
+
+enum SourceType {
+  fNotElec = 0,      // not electron
+  fDirectCharm = 1,  // electrons from prompt charm hadrons
+  fDirectBeauty = 2, // electrons from primary beauty hadrons
+  fBeautyCharm = 3,  // electrons from non-prompt charm hadrons
+  fDirectGamma = 4,  // electrons from direct photon
+  fGammaPi0 = 5,
+  fGammaEta = 6,
+  fGammaOmega = 7,
+  fGammaPhi = 8,
+  fGammaEtaPrime = 9,
+  fGammaRho0 = 10,
+  fGammaK0s = 11,
+  fGammaK0l = 12,
+  fGammaKe3 = 13,
+  fGammaLambda0 = 14,
+  fGammaSigma = 15,
+  fPi0 = 16,
+  fEta = 17,
+  fOmega = 18,
+  fPhi = 19,
+  fEtaPrime = 20,
+  fRho0 = 21,
+  fK0s = 22,
+  fK0l = 23,
+  fKe3 = 24,
+  fLambda0 = 25,
+  fSigma = 26,
+  fElse = 27
+};
 
 struct HfTaskSingleElectron {
 
@@ -55,6 +96,7 @@ struct HfTaskSingleElectron {
   // using declarations
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
   using TracksEl = soa::Join<aod::Tracks, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl>;
+  using McTracksEl = soa::Join<aod::Tracks, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::McTrackLabels>;
 
   // Filter
   Filter collZFilter = nabs(aod::collision::posZ) < posZMax;
@@ -79,29 +121,38 @@ struct HfTaskSingleElectron {
   void init(InitContext const&)
   {
     // create histograms
-    histos.add("hEventCounter", "hEventCounter", kTH1F, {axisEvt});
-    histos.add("nEvents", "Number of events", kTH1F, {{1, 0., 1.}});
-    histos.add("VtxZ", "VtxZ; cm; entries", kTH1F, {axisPosZ});
-    histos.add("etaTrack", "etaTrack; #eta; entries", kTH1F, {axisEta});
-    histos.add("ptTrack", "#it{p}_{T} distribution of selected tracks; #it{p}_{T} (GeV/#it{c}); entries", kTH1F, {axisPt});
+    histos.add("nEvents", "Number of events", kTH1D, {{1, 0., 1.}});
+    histos.add("VtxZ", "VtxZ; cm; entries", kTH1D, {axisPosZ});
+    histos.add("etaTrack", "etaTrack; #eta; entries", kTH1D, {axisEta});
+    histos.add("ptTrack", "#it{p}_{T} distribution of selected tracks; #it{p}_{T} (GeV/#it{c}); entries", kTH1D, {axisPt});
 
     // QA plots for trigger track selection
-    histos.add("tpcNClsTrack", "tpcNClsTrack", kTH1F, {{200, 0, 200}});
-    histos.add("tpcFoundFindableTrack", "", kTH1F, {{10, 0, 1}});
-    histos.add("tpcChi2Track", "", kTH1F, {{100, 0, 10}});
-    histos.add("itsIBClsTrack", "", kTH1F, {{10, 0, 10}});
-    histos.add("dcaXYTrack", "", kTH1F, {{600, -3, 3}});
-    histos.add("dcaZTrack", "", kTH1F, {{600, -3, 3}});
+    histos.add("tpcNClsTrack", "tpcNClsTrack", kTH1D, {{200, 0, 200}});
+    histos.add("tpcFoundFindableTrack", "", kTH1D, {{10, 0, 1}});
+    histos.add("tpcChi2Track", "", kTH1D, {{100, 0, 10}});
+    histos.add("itsIBClsTrack", "", kTH1D, {{10, 0, 10}});
+    histos.add("dcaXYTrack", "", kTH1D, {{600, -3, 3}});
+    histos.add("dcaZTrack", "", kTH1D, {{600, -3, 3}});
 
     // pid
-    histos.add("tofNSigPt", "", kTH2F, {{axisPtEl}, {axisNsig}});
-    histos.add("tofNSigPtQA", "", kTH2F, {{axisPtEl}, {axisNsig}});
-    histos.add("tpcNSigPt", "", kTH2F, {{axisPtEl}, {axisNsig}});
-    histos.add("tpcNSigPtAfterTofCut", "", kTH2F, {{axisPtEl}, {axisNsig}});
-    histos.add("tpcNSigPtQA", "", kTH2F, {{axisPtEl}, {axisNsig}});
+    histos.add("tofNSigPt", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tofNSigPtQA", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tpcNSigPt", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tpcNSigPtAfterTofCut", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tpcNSigPtQA", "", kTH2D, {{axisPtEl}, {axisNsig}});
 
     // track impact parameter
-    histos.add("dcaTrack", "", kTH2F, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaTrack", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaBeauty", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaCharm", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaDalitz", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaConv", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+
+    // QA plots for MC
+    histos.add("hPdgC", "", kTH1D, {{10001, -0.5, 10000.5}});
+    histos.add("hPdgB", "", kTH1D, {{10001, -0.5, 10000.5}});
+    histos.add("hPdgDa", "", kTH1D, {{10001, -0.5, 10000.5}});
+    histos.add("hPdgCo", "", kTH1D, {{10001, -0.5, 10000.5}});
   }
 
   template <typename TrackType>
@@ -138,24 +189,212 @@ struct HfTaskSingleElectron {
     return true;
   }
 
-  void process(soa::Filtered<MyCollisions>::iterator const& collision,
-               TracksEl const& tracks)
+  template <typename TrackType>
+  int getElecSource(const TrackType& track, double& mpt, int& mpdg)
   {
-    float flagEventFill = 0.5;
+    auto mcpart = track.mcParticle();
+    if (std::abs(mcpart.pdgCode()) != kElectron) {
+      return fNotElec;
+    }
+
+    int motherPdg = -999;
+    int grmotherPdg = -999;
+    int ggrmotherPdg = -999; // mother, grand mother, grand grand mother pdg
+    int motherPt = -999.;
+    int grmotherPt = -999;
+    int ggrmotherPt = -999.; // mother, grand mother, grand grand mother pt
+
+    auto partMother = mcpart.template mothers_as<aod::McParticles>(); // first mother particle of electron
+    auto partMotherCopy = partMother;                                 // copy of the first mother
+    auto mctrack = partMother;                                        // will change all the time
+
+    motherPt = partMother.front().pt();                 // first mother pt
+    motherPdg = std::abs(partMother.front().pdgCode()); // first mother pdg
+    mpt = motherPt;                                     // copy of first mother pt
+    mpdg = motherPdg;                                   // copy of first mother pdg
+
+    // check if electron from charm hadrons
+    if ((static_cast<int>(motherPdg / 100.) % 10) == kCharm || (static_cast<int>(motherPdg / 1000.) % 10) == kCharm) {
+
+      // iterate until B hadron is found as an ancestor
+      while (partMother.size()) {
+        mctrack = partMother.front().template mothers_as<aod::McParticles>();
+        if (mctrack.size()) {
+          auto const& grmothersIdsVec = mctrack.front().mothersIds();
+
+          if (grmothersIdsVec.empty()) {
+            return fDirectCharm;
+          } else {
+            grmotherPt = mctrack.front().pt();
+            grmotherPdg = std::abs(mctrack.front().pdgCode());
+            if ((static_cast<int>(grmotherPdg / 100.) % 10) == kBottom || (static_cast<int>(grmotherPdg / 1000.) % 10) == kBottom) {
+              mpt = grmotherPt;
+              mpdg = grmotherPdg;
+              return fBeautyCharm;
+            }
+          }
+        }
+        partMother = mctrack;
+      }
+    } else if ((static_cast<int>(motherPdg / 100.) % 10) == kBottom || (static_cast<int>(motherPdg / 1000.) % 10) == kBottom) { // check if electron from beauty hadrons
+      return fDirectBeauty;
+    } else if (motherPdg == kGamma) { // check if electron from photon conversion
+      mctrack = partMother.front().template mothers_as<aod::McParticles>();
+      if (mctrack.size()) {
+        auto const& grmothersIdsVec = mctrack.front().mothersIds();
+        if (grmothersIdsVec.empty()) {
+          return fDirectGamma;
+        } else {
+          grmotherPdg = std::abs(mctrack.front().pdgCode());
+          mpdg = grmotherPdg;
+          mpt = mctrack.front().pt();
+
+          partMother = mctrack;
+          mctrack = partMother.front().template mothers_as<aod::McParticles>();
+          if (mctrack.size()) {
+            auto const& ggrmothersIdsVec = mctrack.front().mothersIds();
+            if (ggrmothersIdsVec.empty()) {
+              if (grmotherPdg == kPi0) {
+                return fGammaPi0;
+              } else if (grmotherPdg == kEta) {
+                return fGammaEta;
+              } else if (grmotherPdg == kOmega) {
+                return fGammaOmega;
+              } else if (grmotherPdg == kPhi) {
+                return fGammaPhi;
+              } else if (grmotherPdg == kEtaPrime) {
+                return fGammaEtaPrime;
+              } else if (grmotherPdg == kRho770_0) {
+                return fGammaRho0;
+              } else {
+                return fElse;
+              }
+            } else {
+              ggrmotherPdg = mctrack.front().pdgCode();
+              ggrmotherPt = mctrack.front().pt();
+              mpdg = ggrmotherPdg;
+              mpt = ggrmotherPt;
+              if (grmotherPdg == kPi0) {
+                if (ggrmotherPdg == kK0Short) {
+                  return fGammaK0s;
+                } else if (ggrmotherPdg == kK0Long) {
+                  return fGammaK0l;
+                } else if (ggrmotherPdg == kKPlus) {
+                  return fGammaKe3;
+                } else if (ggrmotherPdg == kLambda0) {
+                  return fGammaLambda0;
+                } else if (ggrmotherPdg == kSigmaPlus) {
+                  return fGammaSigma;
+                } else {
+                  mpdg = grmotherPdg;
+                  mpt = grmotherPt;
+                  return fGammaPi0;
+                }
+              } else if (grmotherPdg == kEta) {
+                mpdg = grmotherPdg;
+                mpt = grmotherPt;
+                return fGammaEta;
+              } else if (grmotherPdg == kOmega) {
+                mpdg = grmotherPdg;
+                mpt = grmotherPt;
+                return fGammaOmega;
+              } else if (grmotherPdg == kPhi) {
+                mpdg = grmotherPdg;
+                mpt = grmotherPt;
+                return fGammaPhi;
+              } else if (grmotherPdg == kEtaPrime) {
+                mpdg = grmotherPdg;
+                mpt = grmotherPt;
+                return fGammaEtaPrime;
+              } else if (grmotherPdg == kRho770_0) {
+                mpdg = grmotherPdg;
+                mpt = grmotherPt;
+                return fGammaRho0;
+              } else {
+                return fElse;
+              }
+            }
+          }
+        }
+      }
+    } else { // check if electron from Dalitz decays
+      mctrack = partMother.front().template mothers_as<aod::McParticles>();
+      if (mctrack.size()) {
+        auto const& grmothersIdsVec = mctrack.front().mothersIds();
+        if (grmothersIdsVec.empty()) {
+          static const std::map<int, SourceType> pdgToSource = {
+            {kPi0, fPi0},
+            {kEta, fEta},
+            {kOmega, fOmega},
+            {kPhi, fPhi},
+            {kEtaPrime, fEtaPrime},
+            {kRho770_0, fRho0},
+            {kKPlus, fKe3},
+            {kK0Long, fK0l}};
+
+          auto it = pdgToSource.find(motherPdg);
+          if (it != pdgToSource.end()) {
+            return it->second;
+          }
+          return fElse;
+
+        } else {
+          if (motherPdg == kPi0) {
+            grmotherPt = mctrack.front().pt();
+            grmotherPdg = mctrack.front().pdgCode();
+            mpt = grmotherPt;
+            mpdg = grmotherPdg;
+            if (grmotherPdg == kK0Short) {
+              return fK0s;
+            } else if (grmotherPdg == kK0Long) {
+              return fK0l;
+            } else if (grmotherPdg == kKPlus) {
+              return fKe3;
+            } else if (grmotherPdg == kLambda0) {
+              return fLambda0;
+            } else if (grmotherPdg == kSigmaPlus) {
+              return fSigma;
+            } else {
+              mpt = motherPt;
+              mpdg = motherPdg;
+              return fPi0;
+            }
+          } else if (motherPdg == kEta) {
+            return fEta;
+          } else if (motherPdg == kOmega) {
+            return fOmega;
+          } else if (motherPdg == kPhi) {
+            return fPhi;
+          } else if (motherPdg == kEtaPrime) {
+            return fEtaPrime;
+          } else if (motherPdg == kRho770_0) {
+            return fRho0;
+          } else if (motherPdg == kKPlus) {
+            return fKe3;
+          } else if (motherPdg == kK0Long) {
+            return fK0l;
+          } else {
+            return fElse;
+          }
+        }
+      }
+    }
+
+    return fElse;
+  }
+
+  void processData(soa::Filtered<MyCollisions>::iterator const& collision,
+                   TracksEl const& tracks)
+  {
     float flagAnalysedEvt = 0.5;
-    histos.fill(HIST("hEventCounter"), flagEventFill);
 
     if (!collision.sel8()) {
       return;
     }
-    flagEventFill += 1.;
-    histos.fill(HIST("hEventCounter"), flagEventFill);
 
     if (collision.numContrib() < nContribMin) {
       return;
     }
-    flagEventFill += 1.;
-    histos.fill(HIST("hEventCounter"), flagEventFill);
 
     histos.fill(HIST("VtxZ"), collision.posZ());
     histos.fill(HIST("nEvents"), flagAnalysedEvt);
@@ -193,6 +432,83 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("dcaTrack"), track.pt(), track.dcaXY());
     }
   }
+  PROCESS_SWITCH(HfTaskSingleElectron, processData, "For real data", true);
+
+  void processMc(soa::Filtered<MyCollisions>::iterator const& collision,
+                 McTracksEl const& tracks,
+                 aod::McParticles const&)
+  {
+    float flagAnalysedEvt = 0.5;
+
+    if (!collision.sel8()) {
+      return;
+    }
+
+    if (collision.numContrib() < nContribMin) {
+      return;
+    }
+
+    histos.fill(HIST("VtxZ"), collision.posZ());
+    histos.fill(HIST("nEvents"), flagAnalysedEvt);
+
+    for (const auto& track : tracks) {
+
+      if (!trackSel(track)) {
+        continue;
+      }
+
+      histos.fill(HIST("etaTrack"), track.eta());
+      histos.fill(HIST("ptTrack"), track.pt());
+
+      histos.fill(HIST("tpcNClsTrack"), track.tpcNClsCrossedRows());
+      histos.fill(HIST("tpcFoundFindableTrack"), track.tpcCrossedRowsOverFindableCls());
+      histos.fill(HIST("tpcChi2Track"), track.tpcChi2NCl());
+      histos.fill(HIST("itsIBClsTrack"), track.itsNClsInnerBarrel());
+      histos.fill(HIST("dcaXYTrack"), track.dcaXY());
+      histos.fill(HIST("dcaZTrack"), track.dcaZ());
+
+      histos.fill(HIST("tofNSigPt"), track.pt(), track.tofNSigmaEl());
+      histos.fill(HIST("tpcNSigPt"), track.pt(), track.tpcNSigmaEl());
+
+      int mpdg;   // electron source pdg code
+      double mpt; // electron source pt
+      int source = getElecSource(track, mpt, mpdg);
+
+      if (source == fDirectBeauty || source == fBeautyCharm) {
+        histos.fill(HIST("hPdgB"), mpdg);
+        histos.fill(HIST("dcaBeauty"), track.pt(), track.dcaXY());
+      }
+
+      if (source == fDirectCharm) {
+        histos.fill(HIST("hPdgC"), mpdg);
+        histos.fill(HIST("dcaCharm"), track.pt(), track.dcaXY());
+      }
+
+      if (source >= fGammaPi0 && source <= fGammaSigma) {
+        histos.fill(HIST("hPdgCo"), mpdg);
+        histos.fill(HIST("dcaConv"), track.pt(), track.dcaXY());
+      }
+
+      if (source >= fPi0 && source <= fSigma) {
+        histos.fill(HIST("hPdgDa"), mpdg);
+        histos.fill(HIST("dcaDalitz"), track.pt(), track.dcaXY());
+      }
+
+      if (std::abs(track.tofNSigmaEl()) > tofNSigmaMax) {
+        continue;
+      }
+      histos.fill(HIST("tofNSigPtQA"), track.pt(), track.tofNSigmaEl());
+      histos.fill(HIST("tpcNSigPtAfterTofCut"), track.pt(), track.tpcNSigmaEl());
+
+      if (track.tpcNSigmaEl() < tpcNSigmaMin || track.tpcNSigmaEl() > tpcNSigmaMax) {
+        continue;
+      }
+      histos.fill(HIST("tpcNSigPtQA"), track.pt(), track.tpcNSigmaEl());
+
+      histos.fill(HIST("dcaTrack"), track.pt(), track.dcaXY());
+    }
+  }
+  PROCESS_SWITCH(HfTaskSingleElectron, processMc, "For real data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

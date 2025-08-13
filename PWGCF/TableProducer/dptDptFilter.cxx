@@ -13,40 +13,43 @@
 /// \brief Filters collisions and tracks according to selection criteria
 /// \author victor.gonzalez.sebastian@gmail.com
 
-#include <cmath>
-#include <algorithm>
-#include <string>
-#include <vector>
+#include "PWGCF/TableProducer/dptDptFilter.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
+#include "PWGCF/Core/AnalysisConfigurableCuts.h"
+#include "PWGCF/DataModel/DptDptFiltered.h"
+
 #include "Common/Core/TableHelper.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGCF/Core/AnalysisConfigurableCuts.h"
-#include "PWGCF/DataModel/DptDptFiltered.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
-#include <TROOT.h>
-#include <TPDGCode.h>
-#include <TParameter.h>
-#include <TList.h>
+#include "Framework/runDataProcessing.h"
+
 #include <TDirectory.h>
 #include <TFolder.h>
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
+#include <TList.h>
+#include <TPDGCode.h>
+#include <TParameter.h>
 #include <TProfile3D.h>
+#include <TROOT.h>
 
-#include "PWGCF/TableProducer/dptDptFilter.h"
+#include <algorithm>
+#include <cmath>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -94,32 +97,12 @@ const char* speciesName[kDptDptNoOfSpecies] = {"h", "e", "mu", "pi", "ka", "p"};
 
 const char* speciesTitle[kDptDptNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"};
 
-const char* eventSelectionSteps[knCollisionSelectionFlags] = {
-  "IN",
-  "MB",
-  "INT7",
-  "SEL7",
-  "SEL8",
-  "NOSAMEBUNCHPUP",
-  "ISGOODZVTXFT0VSPV",
-  "ISVERTEXITSTPC",
-  "ISVERTEXTOFMATCHED",
-  "ISVERTEXTRDMATCHED",
-  "NOCOLLINTIMERANGE",
-  "NOCOLLINROF",
-  "OCCUPANCY",
-  "ISGOODITSLAYER3",
-  "ISGOODITSLAYER0123",
-  "ISGOODITSLAYERALL",
-  "CENTRALITY",
-  "ZVERTEX",
-  "SELECTED"};
-
 //============================================================================================
 // The DptDptFilter histogram objects
 // TODO: consider registering in the histogram registry
 //============================================================================================
 TH1D* fhEventSelection = nullptr;
+TH1D* fhTriggerSelection = nullptr;
 TH1F* fhCentMultB = nullptr;
 TH1F* fhCentMultA = nullptr;
 TH1F* fhVertexZB = nullptr;
@@ -371,7 +354,6 @@ struct DptDptFilter {
 
   struct : ConfigurableGroup {
     std::string prefix = "cfgEventSelection";
-    Configurable<std::string> itsDeadMaps{"itsDeadMaps", "", "Level of inactive chips: nocheck(empty), goodIts3, goodIts0123, goodItsAll. Default empty"};
     Configurable<int64_t> minOrbit{"minOrbit", -1, "Lowest orbit to track"};
     Configurable<int64_t> maxOrbit{"maxOrbit", INT64_MAX, "Highest orbit to track"};
     struct : ConfigurableGroup {
@@ -430,9 +412,9 @@ struct DptDptFilter {
     /* the track types and combinations */
     /* the centrality/multiplicity estimation */
     if (doprocessWithoutCent || doprocessWithoutCentDetectorLevel || doprocessWithoutCentGeneratorLevel) {
-      fCentMultEstimator = kNOCM;
+      fCentMultEstimator = CentMultNOCM;
     } else if (doprocessOnTheFlyGeneratorLevel) {
-      fCentMultEstimator = kFV0A;
+      fCentMultEstimator = CentMultFV0A;
     } else {
       fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
     }
@@ -440,11 +422,9 @@ struct DptDptFilter {
     fOccupancyEstimation = getOccupancyEstimator(cfgEventSelection.cfgOccupancySelection.cfgOccupancyEstimation);
     fMinOccupancy = cfgEventSelection.cfgOccupancySelection.cfgMinOccupancy;
     fMaxOccupancy = cfgEventSelection.cfgOccupancySelection.cfgMaxOccupancy;
-    /* the ITS dead map check */
-    fItsDeadMapCheck = getItsDeadMapCheck(cfgEventSelection.itsDeadMaps);
 
     /* the trigger selection */
-    fTriggerSelection = getTriggerSelection(cfgTriggSel);
+    triggerSelectionFlags = getTriggerSelection(cfgTriggSel);
     traceCollId0 = cfgTraceCollId0;
 
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
@@ -458,9 +438,13 @@ struct DptDptFilter {
 
     if ((fDataType == kData) || (fDataType == kDataNoEvtSel) || (fDataType == kMC)) {
       /* create the reconstructed data histograms */
-      fhEventSelection = new TH1D("EventSelection", ";;counts", knCollisionSelectionFlags, -0.5f, static_cast<float>(knCollisionSelectionFlags) - 0.5f);
-      for (int ix = 0; ix < knCollisionSelectionFlags; ++ix) {
-        fhEventSelection->GetXaxis()->SetBinLabel(ix + 1, eventSelectionSteps[ix]);
+      fhEventSelection = new TH1D("EventSelection", ";;counts", CollSelNOOFFLAGS, -0.5f, static_cast<float>(CollSelNOOFFLAGS) - 0.5f);
+      for (int ix = 0; ix < CollSelNOOFFLAGS; ++ix) {
+        fhEventSelection->GetXaxis()->SetBinLabel(ix + 1, collisionSelectionExternalNamesMap.at(ix).c_str());
+      }
+      fhTriggerSelection = new TH1D("TriggerSelection", ";;counts", TriggSelNOOFTRIGGERS, -0.5f, static_cast<float>(TriggSelNOOFTRIGGERS) - 0.5f);
+      for (int ix = 0; ix < TriggSelNOOFTRIGGERS; ++ix) {
+        fhTriggerSelection->GetXaxis()->SetBinLabel(ix + 1, TString::Format("#color[%d]{%s}", triggerSelectionFlags.test(ix) ? 2 : 1, triggerSelectionExternalNamesMap.at(ix).c_str()).Data());
       }
       /* TODO: proper axes and axes titles according to the system; still incomplete */
       std::string multestimator = getCentMultEstimatorName(fCentMultEstimator);
@@ -482,6 +466,7 @@ struct DptDptFilter {
 
       /* add the hstograms to the output list */
       fOutputList->Add(fhEventSelection);
+      fOutputList->Add(fhTriggerSelection);
       fOutputList->Add(fhCentMultB);
       fOutputList->Add(fhCentMultA);
       fOutputList->Add(fhMultB);
@@ -614,8 +599,13 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
       collisionsinfo(uint8_t(false), 105.0);
     }
   }
-  /* report the event selection */
-  for (int iflag = 0; iflag < knCollisionSelectionFlags; ++iflag) {
+  /* report the trigger and event selection */
+  for (int iflag = 0; iflag < TriggSelNOOFTRIGGERS; ++iflag) {
+    if (triggerFlags.test(iflag)) {
+      fhTriggerSelection->Fill(iflag);
+    }
+  }
+  for (int iflag = 0; iflag < CollSelNOOFFLAGS; ++iflag) {
     if (collisionFlags.test(iflag)) {
       fhEventSelection->Fill(iflag);
     }
@@ -1754,10 +1744,8 @@ void DptDptFilterTracks::fillParticleHistosAfterSelection(ParticleObject const& 
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<DptDptFilter>(cfgc,
-                                                        SetDefaultProcesses{
-                                                          {{"processWithoutCent", true},
-                                                           {"processWithoutCentMC", true}}}),
+  metadataInfo.initMetadata(cfgc);
+  WorkflowSpec workflow{adaptAnalysisTask<DptDptFilter>(cfgc),
                         adaptAnalysisTask<DptDptFilterTracks>(cfgc)};
   return workflow;
 }
