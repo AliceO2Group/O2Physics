@@ -59,6 +59,9 @@ struct otfParticlePrediction {
       if (particle.eta() < maxEtaParticle) {
         continue;
       }
+      if (!particle.isPhysicalPrimary()) {
+        continue;
+      }
       if (pdg < 100) {
         continue;
       }
