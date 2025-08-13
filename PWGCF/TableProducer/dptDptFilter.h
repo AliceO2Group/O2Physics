@@ -18,6 +18,7 @@
 
 #include "PWGCF/Core/AnalysisConfigurableCuts.h"
 
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/Core/MetadataHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -212,6 +213,7 @@ enum CollisionSelectionFlags {
   CollSelINT7BIT,       ///< INT7 Run 1/2
   CollSelSEL7BIT,       ///< Sel7 Run 1/2
   CollSelTRIGGSELBIT,   ///< Accepted by trigger selection
+  CollSelRCTBIT,        ///< Accetped by the RCT information
   CollSelOCCUPANCYBIT,  ///< occupancy within limits
   CollSelCENTRALITYBIT, ///< centrality cut passed
   CollSelZVERTEXBIT,    ///< zvtx cut passed
@@ -227,6 +229,7 @@ static const std::map<int, std::string> collisionSelectionExternalNamesMap{
   {CollSelINT7BIT, "INT7"},
   {CollSelSEL7BIT, "Sel7"},
   {CollSelTRIGGSELBIT, "Trigger selection"},
+  {CollSelRCTBIT, "RCT accepted"},
   {CollSelOCCUPANCYBIT, "Occupancy"},
   {CollSelCENTRALITYBIT, "Centrality"},
   {CollSelZVERTEXBIT, "z vertex"},
@@ -269,6 +272,12 @@ std::bitset<32> triggerSelectionFlags;
 // The input data metadata access helper
 //============================================================================================
 o2::common::core::MetadataHelper metadataInfo;
+
+//============================================================================================
+// The RCT information access
+//============================================================================================
+bool useRctInformation = false;
+o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
 //============================================================================================
 // The DptDptFilter configuration objects
@@ -1155,6 +1164,21 @@ inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 
   bool trigsel = triggerSelection(collision);
 
+  bool rctsel = false;
+  if (useRctInformation) {
+    if constexpr (framework::has_type_v<aod::evsel::Rct, typename CollisionObject::all_columns>) {
+      if (rctChecker.checkTable(collision)) {
+        rctsel = true;
+        collisionFlags.set(CollSelRCTBIT);
+      }
+    } else {
+      LOGF(fatal, "RCT check required but the dataset does not have RCT information associated. Please, fix it");
+    }
+  } else {
+    collisionFlags.set(CollSelRCTBIT);
+    rctsel = true;
+  }
+
   bool occupancysel = occupancySelection(collision);
 
   bool zvtxsel = false;
@@ -1174,7 +1198,7 @@ inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 
   bool centmultsel = centralitySelection(collision, centormult);
 
-  bool accepted = trigsel && occupancysel && zvtxsel && centmultsel;
+  bool accepted = trigsel && rctsel && occupancysel && zvtxsel && centmultsel;
 
   if (accepted) {
     collisionFlags.set(CollSelSELECTED);
