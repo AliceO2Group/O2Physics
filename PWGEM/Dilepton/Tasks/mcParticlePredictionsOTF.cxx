@@ -29,7 +29,7 @@ struct otfParticlePrediction {
   ConfigurableAxis binsEta{"binsEta", {100, -5, 5}, "Binning of the Eta axis"};
   ConfigurableAxis binsPt{"binsPt", {100, 0, 10}, "Binning of the Pt axis"};
 
-  configurable<double> maxEtaParticle{"maxEtaParticle", 5.0, "Max eta of particles considered"}
+  Configurable<float> maxEtaParticle{"maxEtaParticle", 5.f, "Max eta of particles considered"};
 
   // init function
   void
@@ -51,12 +51,8 @@ struct otfParticlePrediction {
   void process(aod::McCollisions const& mcCollisions,
                aod::McParticles const& mcParticles)
   {
-    for (const auto& collision : mcCollisions) {
-      histos.fill(HIST("collisions/generated"), 0);
-      if (std::abs(collision.posZ())) {
-        histos.fill(HIST("collisions/generated"), 1);
-      }
-    }
+
+    histos.fill(HIST("collisions/generated"), 0, mcCollisions.size());
 
     for (const auto& particle : mcParticles) {
       auto pdg = std::abs(particle.pdgCode());
