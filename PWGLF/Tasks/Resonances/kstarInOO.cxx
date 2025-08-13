@@ -80,6 +80,7 @@ struct kstarInOO {
   Configurable<double> cfgTrackMaxDCAzToPVcut{"cfgTrackMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
   Configurable<bool> cfgTrackPrimaryTrack{"cfgTrackPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgTrackConnectedToPV{"cfgTrackConnectedToPV", true, "PV contributor track selection"};           // PV Contriuibutor
+  Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                                // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgTrackGlobalWoDCATrack{"cfgTrackGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   // TPC
   Configurable<double> cfgTracknFindableTPCClusters{"cfgTrackFindableTPCClusters", 50, "nFindable TPC Clusters"};
@@ -238,6 +239,9 @@ struct kstarInOO {
       return false;
 
     if (std::abs(track.eta()) > cfgTrackMaxEta)
+      return false;
+
+    if (cfgGlobalTrack && !track.isGlobalTrack())
       return false;
 
     if (std::abs(track.dcaXY()) > cfgTrackMaxDCArToPVcut)
