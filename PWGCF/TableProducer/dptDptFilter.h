@@ -95,66 +95,142 @@ enum DataType {
 /// \enum CentMultEstimatorType
 /// \brief The detector used to estimate centrality/multiplicity
 enum CentMultEstimatorType {
-  kNOCM = 0,           ///< do not use centrality/multiplicity estimator
-  kV0M,                ///< V0M centrality/multiplicity estimator Run 1/2
-  kCL0,                ///< CL0 centrality/multiplicity estimator Run 1/2
-  kCL1,                ///< CL1 centrality/multiplicity estimator Run 1/2
-  kFV0A,               ///< FV0A centrality/multiplicity estimator Run 3
-  kFT0M,               ///< FT0M centrality/multiplicity estimator Run 3
-  kFT0A,               ///< FT0A centrality/multiplicity estimator Run 3
-  kFT0C,               ///< FT0C centrality/multiplicity estimator Run 3
-  kNTPV,               ///< NTPV centrality/multiplicity estimator Run 3
-  knCentMultEstimators ///< number of centrality/mutiplicity estimator
+  CentMultNOCM = 0,      ///< do not use centrality/multiplicity estimator
+  CentMultV0M,           ///< V0M centrality/multiplicity estimator Run 1/2
+  CentMultCL0,           ///< CL0 centrality/multiplicity estimator Run 1/2
+  CentMultCL1,           ///< CL1 centrality/multiplicity estimator Run 1/2
+  CentMultFV0A,          ///< FV0A centrality/multiplicity estimator Run 3
+  CentMultFT0M,          ///< FT0M centrality/multiplicity estimator Run 3
+  CentMultFT0A,          ///< FT0A centrality/multiplicity estimator Run 3
+  CentMultFT0C,          ///< FT0C centrality/multiplicity estimator Run 3
+  CentMultNTPV,          ///< NTPV centrality/multiplicity estimator Run 3
+  CentMultNOOFESTIMATORS ///< number of centrality/mutiplicity estimator
 };
 
-/// \enum TriggerSelectionType
-/// \brief The type of trigger to apply for event selection
-enum TriggerSelectionType {
-  kNONE = 0,              ///< do not use trigger selection
-  kMB,                    ///< Minimum bias trigger
-  kMBEXTRA,               ///< Additional Run3 event quality
-  kVTXTOFMATCHED,         ///< at least one vertex contributor is matched to TOF
-  kVTXTRDMATCHED,         ///< at least one vertex contributor is matched to TRD
-  kVTXTRDTOFMATCHED,      ///< at least one vertex contributor is matched to TRD and TOF
-  kEXTRAVTXTOFMATCHED,    ///< Additional Run3 event quality and at least one vertex contributor is matched to TOF
-  kEXTRAVTXTRDMATCHED,    ///< Additional Run3 event quality and at least one vertex contributor is matched to TRD
-  kEXTRAVTXTRDTOFMATCHED, ///< Additional Run3 event quality and at least one vertex contributor is matched to TRD and TOF
-  knEventSelection        ///< number of triggers for event selection
+/// \std::map estimatorInternalCodesMap
+/// \brief maps centrality/multiplicity estimator names to internal estimator codes
+static const std::map<std::string, int> estimatorInternalCodesMap{
+  {"NOCM", CentMultNOCM},
+  {"V0M", CentMultV0M},
+  {"CL0", CentMultCL0},
+  {"CL1", CentMultCL1},
+  {"FV0A", CentMultFV0A},
+  {"FT0M", CentMultFT0M},
+  {"FT0A", CentMultFT0A},
+  {"FT0C", CentMultFT0C},
+  {"NTPV", CentMultNTPV}};
+
+/// \std::map estimatorExternalNamesMap
+/// \brief maps internal estimator codes to centrality/multiplicity estimator external names
+static const std::map<int, std::string> estimatorExternalNamesMap{
+  {CentMultNOCM, "NOCM"},
+  {CentMultV0M, "V0M"},
+  {CentMultCL0, "CL0"},
+  {CentMultCL1, "CL1"},
+  {CentMultFV0A, "FV0A"},
+  {CentMultFT0M, "FT0M"},
+  {CentMultFT0A, "FT0A"},
+  {CentMultFT0C, "FT0C"},
+  {CentMultNTPV, "NTPV"}};
+
+/// \enum TriggerSelectionTags
+/// \brief The potential trigger tags to apply for event selection
+enum TriggerSelectionTags {
+  TriggSelNONE = 0,           ///< do not use trigger selection
+  TriggSelMB,                 ///< Minimum bias trigger
+  TriggSelNOSAMEBUNCHPUP,     ///< No same bunch pile up
+  TriggSelNUMPVCONTRIBUTORS,  ///< Number of primary vertex contributors
+  TriggSelVTXTOFMATCHED,      ///< at least one primary vertex contributor is matched to TOF
+  TriggSelVTXTRDMATCHED,      ///< at least one primary vertex contributor is matched to TRD
+  TriggSelNOCOLLINTRSTD,      ///< no other collision in standard time range gap
+  TriggSelNOCOLLINROFSTD,     ///< no other collision in standard readout frame gap
+  TriggSelISVERTEXITSTPC,     ///< primary vertex contributors are matched tracks ITS+TPC
+  TriggSelISGOODZVTXFT0VSPV,  ///< vertex extracted from FT0 is compatible with the one from primary vertex contributors
+  TriggSelGOODITSLAYER3,      ///< good the 3 ITS layer
+  TriggSelGOODITSLAYER0123,   ///< check good the 0,1,2,and 3 ITS layers
+  TriggSelGOODITSLAYERALL,    ///< check good all ITS layers
+  TriggSelNOGOODITSLAYER3,    ///< check no good the  3 ITS layer
+  TriggSelNOGOODITSLAYER0123, ///< check no good the 0,1,2,and 3 ITS layers
+  TriggSelNOGOODITSLAYERALL,  ///< check no good all ITS layers
+  TriggSelNOOFTRIGGERS        ///< number of triggers for event selection
 };
+
+/// \std::map triggerSelectionBitsMap
+/// \brief maps trigger selection tags to internal trigger selection bits
+static const std::map<std::string, int> triggerSelectionBitsMap{
+  {"none", TriggSelNONE},
+  {"mb", TriggSelMB},
+  {"nosamebunchpup", TriggSelNOSAMEBUNCHPUP},
+  {"numpvcontr", TriggSelNUMPVCONTRIBUTORS},
+  {"vtxtofmatched", TriggSelVTXTOFMATCHED},
+  {"vtxtrdmatched", TriggSelVTXTRDMATCHED},
+  {"nocollintrstd", TriggSelNOCOLLINTRSTD},
+  {"nocollinrofstd", TriggSelNOCOLLINROFSTD},
+  {"isvtxitstpc", TriggSelISVERTEXITSTPC},
+  {"isgoodvtxft0vspv", TriggSelISGOODZVTXFT0VSPV},
+  {"gooditslayer3", TriggSelGOODITSLAYER3},
+  {"gooditslayer0123", TriggSelGOODITSLAYER0123},
+  {"gooditslayerall", TriggSelGOODITSLAYERALL},
+  {"nogooditslayer3", TriggSelNOGOODITSLAYER3},
+  {"nogooditslayer0123", TriggSelNOGOODITSLAYER0123},
+  {"nogooditslayerall", TriggSelNOGOODITSLAYERALL}};
+
+/// \std::map triggerSelectionExternalNamesMap
+/// \brief maps trigger selection bits to external names
+static const std::map<int, std::string> triggerSelectionExternalNamesMap{
+  {TriggSelNONE, "none"},
+  {TriggSelMB, "Sel8"}, ///< Sel8 includes kIsTriggerTVX, kNoTimeFrameBorder, and kNoITSROFrameBorder
+  {TriggSelNOSAMEBUNCHPUP, "No same bunch pileup"},
+  {TriggSelNUMPVCONTRIBUTORS, "Number PV contributors"},
+  {TriggSelVTXTOFMATCHED, "PV contributor TOF matched"},
+  {TriggSelVTXTRDMATCHED, "PV contributor TRD matched"},
+  {TriggSelNOCOLLINTRSTD, "No coll in TR standard"},
+  {TriggSelNOCOLLINROFSTD, "No coll in ROF standard"},
+  {TriggSelISVERTEXITSTPC, "Vertex from ITS and TPC"},
+  {TriggSelISGOODZVTXFT0VSPV, "Good vtx FT0 vs PV"},
+  {TriggSelGOODITSLAYER3, "Good ITS layer 3"},
+  {TriggSelGOODITSLAYER0123, "Good ITS layers 0,1,2,3"},
+  {TriggSelGOODITSLAYERALL, "Good ITS layer all"},
+  {TriggSelNOGOODITSLAYER3, "No good ITS layer 3"},
+  {TriggSelNOGOODITSLAYER0123, "No good ITS layer 0,1,2,3"},
+  {TriggSelNOGOODITSLAYERALL, "No good ITS layer all"}};
 
 /// \enum OccupancyEstimationType
 /// \brief The type of occupancy estimation
 enum OccupancyEstimationType {
-  kNOOCC = 0,           ///< do not use occupancy estimation
-  kTRACKSOCC,           ///< occupancy estimated using tracks
-  kFT0COCC,             ///< occupancy estimated using the FT0C
-  knOccupancyEstimators ///< the number of occupancy estimators
+  OccupancyNOOCC = 0,     ///< do not use occupancy estimation
+  OccupancyTRACKSOCC,     ///< occupancy estimated using tracks
+  OccupancyFT0COCC,       ///< occupancy estimated using the FT0C
+  OccupancyNOOFESTIMATORS ///< the number of occupancy estimators
 };
 
 /// \enum CollisionSelectionFlags
 /// \brief The different criteria for selecting/rejecting collisions
 enum CollisionSelectionFlags {
-  kIN = 0,                  ///< new unhandled, yet, event
-  kMBBIT,                   ///< minimum  bias
-  kINT7BIT,                 ///< INT7 Run 1/2
-  kSEL7BIT,                 ///< Sel7 Run 1/2
-  kSEL8BIT,                 ///< Sel8
-  kNOSAMEBUNCHPUPBIT,       ///< no same bunch pile up
-  kISGOODZVTXFT0VSPVBIT,    ///< good zvtx FT0 vs PV
-  kISVERTEXITSTPCBIT,       ///< is vertex TPC and ITS
-  kISVERTEXTOFMATCHEDBIT,   ///< vertex contributor with TOF matched
-  kISVERTEXTRDMATCHEDBIT,   ///< vertex contributor with TRD matche
-  kNOCOLLINTIMERANGEBIT,    ///< no collision in time range
-  kNOCOLLINROFBIT,          ///< no collision in readout
-  kOCCUPANCYBIT,            ///< occupancy within limits
-  kISGOODITSLAYER3BIT,      ///< right level of inactive chips for ITS layer 3
-  kISGOODITSLAYER0123BIT,   ///< right level of inactive chips for ITS layers 0,1,2, and 3
-  kISGOODITSLAYERALLBIT,    ///< right level of inactive chips for all seven ITS layers
-  kCENTRALITYBIT,           ///< centrality cut passed
-  kZVERTEXBIT,              ///< zvtx cut passed
-  kSELECTED,                ///< the event has passed all selections
-  knCollisionSelectionFlags ///< number of flags
+  CollSelIN = 0,        ///< new unhandled, yet, event
+  CollSelMBBIT,         ///< minimum  bias
+  CollSelINT7BIT,       ///< INT7 Run 1/2
+  CollSelSEL7BIT,       ///< Sel7 Run 1/2
+  CollSelTRIGGSELBIT,   ///< Accepted by trigger selection
+  CollSelOCCUPANCYBIT,  ///< occupancy within limits
+  CollSelCENTRALITYBIT, ///< centrality cut passed
+  CollSelZVERTEXBIT,    ///< zvtx cut passed
+  CollSelSELECTED,      ///< the event has passed all selections
+  CollSelNOOFFLAGS      ///< number of flags
 };
+
+/// \std::mag collisionSelectionExternalNamesMap
+/// \brief maps collision selection bits to external names
+static const std::map<int, std::string> collisionSelectionExternalNamesMap{
+  {CollSelIN, "In"},
+  {CollSelMBBIT, "MB"},
+  {CollSelINT7BIT, "INT7"},
+  {CollSelSEL7BIT, "Sel7"},
+  {CollSelTRIGGSELBIT, "Trigger selection"},
+  {CollSelOCCUPANCYBIT, "Occupancy"},
+  {CollSelCENTRALITYBIT, "Centrality"},
+  {CollSelZVERTEXBIT, "z vertex"},
+  {CollSelSELECTED, "Selected"}};
 
 /// \enum StrongDebugging
 /// \brief Enable a per track information debugging. Only for local analyses
@@ -171,18 +247,6 @@ enum TpcExclusionMethod {
   kDYNAMIC          ///< pT dependent exclusion matching the sector borders a la Alex Dobrin
 };
 
-/// \enum ItsDeadMapsCheckType
-/// \brief Check for the right level of ITS dead chips
-enum ItsDeadMapsCheckType {
-  kNOCHECK = 0,        ///< no check
-  kGOODITSLAYER3,      ///< check good the 3 ITS layer
-  kGOODITSLAYER0123,   ///< check good the 0,1,2,and 3 ITS layers
-  kGOODITSLAYERALL,    ///< check good all ITS layers
-  kNOGOODITSLAYER3,    ///< check no good the  3 ITS layer
-  kNOGOODITSLAYER0123, ///< check no good the 0,1,2,and 3 ITS layers
-  kNOGOODITSLAYERALL   ///< check no good all ITS layers
-};
-
 //============================================================================================
 // The debug output stream
 //============================================================================================
@@ -194,9 +258,12 @@ std::ofstream debugstream;
 float overallminp = 0.0f;
 
 //============================================================================================
-// The collision selection flags and configuration objects
+// The collision selection and trigger selection flags and configuration objects
 //============================================================================================
 std::bitset<32> collisionFlags;
+std::bitset<32> collisionSelectionFlags;
+std::bitset<32> triggerFlags;
+std::bitset<32> triggerSelectionFlags;
 
 //============================================================================================
 // The input data metadata access helper
@@ -528,10 +595,8 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
 
 SystemType fSystem = kNoSystem;
 DataType fDataType = kData;
-CentMultEstimatorType fCentMultEstimator = kV0M;
-TriggerSelectionType fTriggerSelection = kMB;
-OccupancyEstimationType fOccupancyEstimation = kNOOCC; /* the occupancy estimator to use */
-ItsDeadMapsCheckType fItsDeadMapCheck = kNOCHECK;      /* the check of the ITS dead maps to use */
+CentMultEstimatorType fCentMultEstimator = CentMultV0M;
+OccupancyEstimationType fOccupancyEstimation = OccupancyNOOCC; /* the occupancy estimator to use */
 
 float fMinOccupancy = 0.0f; /* the minimum allowed occupancy */
 float fMaxOccupancy = 1e6f; /* the maximum allowed occupancy */
@@ -544,30 +609,35 @@ float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
 
-inline TriggerSelectionType getTriggerSelection(std::string const& triggstr)
+inline std::bitset<32> getTriggerSelection(std::string const& triggstr)
 {
-  if (triggstr.empty() || triggstr == "MB") {
-    return kMB;
-  } else if (triggstr == "MBEXTRA") {
-    return kMBEXTRA;
-  } else if (triggstr == "VTXTOFMATCHED") {
-    return kVTXTOFMATCHED;
-  } else if (triggstr == "VTXTRDMATCHED") {
-    return kVTXTRDMATCHED;
-  } else if (triggstr == "VTXTRDTOFMATCHED") {
-    return kVTXTRDTOFMATCHED;
-  } else if (triggstr == "EXTRAVTXTOFMATCHED") {
-    return kEXTRAVTXTOFMATCHED;
-  } else if (triggstr == "EXTRAVTXTRDMATCHED") {
-    return kEXTRAVTXTRDMATCHED;
-  } else if (triggstr == "EXTRAVTXTRDTOFMATCHED") {
-    return kEXTRAVTXTRDTOFMATCHED;
-  } else if (triggstr == "None") {
-    return kNONE;
-  } else {
-    LOGF(fatal, "Wrong trigger selection: %s", triggstr.c_str());
-    return kNONE;
+  std::bitset<32> flags;
+
+  auto split = [](const auto s) {
+    std::vector<std::string> tokens;
+    std::string token;
+
+    size_t posStart = 0;
+    size_t posEnd;
+    while ((posEnd = s.find("+", posStart)) != std::string::npos) {
+      token = s.substr(posStart, posEnd - posStart);
+      posStart = posEnd + 1;
+      tokens.push_back(token);
+    }
+    tokens.push_back(s.substr(posStart));
+    return tokens;
+  };
+
+  std::vector<std::string> tags = split(triggstr);
+
+  for (const auto& tag : tags) {
+    if (triggerSelectionBitsMap.contains(tag)) {
+      flags.set(triggerSelectionBitsMap.at(tag), true);
+    } else {
+      LOGF(fatal, "Wrong trigger selection tag: %s", tag.c_str());
+    }
   }
+  return flags;
 }
 
 inline SystemType getSytemTypeFromMetaData()
@@ -575,10 +645,13 @@ inline SystemType getSytemTypeFromMetaData()
   auto period = metadataInfo.get("LPMProductionTag");
 
   if (period == "LHC25ad" || period == "LHC25g5") {
+    LOGF(info, "Configuring for p-O LHC25ad period");
     return kpORun3;
   } else if (period == "LHC25ae" || period == "LHC25g6") {
+    LOGF(info, "Configuring for O-O LHC25ae period");
     return kOORun3;
   } else if (period == "LHC25af" || period == "LHC25g7") {
+    LOGF(info, "Configuring for Ne-Ne LHC25af period");
     return kNeNeRun3;
   } else {
     LOGF(fatal, "DptDptCorrelations::getSystemTypeFromMetadata(). No automatic system type configuration for %s period", period.c_str());
@@ -635,100 +708,35 @@ inline DataType getDataType(std::string const& datastr)
 
 inline CentMultEstimatorType getCentMultEstimator(std::string const& datastr)
 {
-  if (datastr == "V0M") {
-    return kV0M;
-  } else if (datastr == "CL0") {
-    return kCL0;
-  } else if (datastr == "CL1") {
-    return kCL1;
-  } else if (datastr == "FV0A") {
-    return kFV0A;
-  } else if (datastr == "FT0M") {
-    return kFT0M;
-  } else if (datastr == "FT0A") {
-    return kFT0A;
-  } else if (datastr == "FT0C") {
-    return kFT0C;
-  } else if (datastr == "NTPV") {
-    return kNTPV;
-  } else if (datastr == "NOCM") {
-    return kNOCM;
+  if (estimatorInternalCodesMap.contains(datastr)) {
+    return static_cast<CentMultEstimatorType>(estimatorInternalCodesMap.at(datastr));
   } else {
     LOGF(fatal, "Centrality/Multiplicity estimator %s not supported yet", datastr.c_str());
   }
-  return kNOCM;
+  return CentMultNOCM;
 }
 
 inline std::string getCentMultEstimatorName(CentMultEstimatorType est)
 {
-  switch (est) {
-    case kV0M:
-      return "V0M";
-      break;
-    case kCL0:
-      return "CL0";
-      break;
-    case kCL1:
-      return "CL1";
-      break;
-    case kFV0A:
-      return "FV0A";
-      break;
-    case kFT0M:
-      return "FT0M";
-      break;
-    case kFT0A:
-      return "FT0A";
-      break;
-    case kFT0C:
-      return "FT0C";
-      break;
-    case kNTPV:
-      return "NTPV";
-      break;
-    case kNOCM:
-      return "NOCM";
-      break;
-    default:
-      LOGF(fatal, "Centrality/Multiplicity estimator %d not supported yet", (int)est);
-      return "WRONG";
-      break;
+  if (estimatorExternalNamesMap.contains(est)) {
+    return estimatorExternalNamesMap.at(est);
+  } else {
+    LOGF(fatal, "Centrality/Multiplicity estimator %d not supported yet", static_cast<int>(est));
   }
+  return "WRONG";
 }
 
 inline OccupancyEstimationType getOccupancyEstimator(const std::string& estimator)
 {
   if (estimator == "None") {
-    return kNOOCC;
+    return OccupancyNOOCC;
   } else if (estimator == "Tracks") {
-    return kTRACKSOCC;
+    return OccupancyTRACKSOCC;
   } else if (estimator == "FT0C") {
-    return kFT0COCC;
+    return OccupancyFT0COCC;
   } else {
     LOGF(fatal, "Occupancy estimator %s not supported yet", estimator.c_str());
-    return kNOOCC;
-  }
-}
-
-inline ItsDeadMapsCheckType getItsDeadMapCheck(const std::string& check)
-{
-  if (check.length() == 0 || check == "None") {
-    return kNOCHECK;
-  } else if (check == "goodIts3") {
-    return kGOODITSLAYER3;
-  } else if (check == "goodIts0123") {
-    return kGOODITSLAYER0123;
-  } else if (check == "goodItsAll") {
-    return kGOODITSLAYERALL;
-  } else if (check == "noGoodIts3") {
-    return kNOGOODITSLAYER3;
-  } else if (check == "noGoodIts0123") {
-    return kNOGOODITSLAYER0123;
-  } else if (check == "noGoodItsAll") {
-    return kNOGOODITSLAYERALL;
-  } else {
-    LOGF(fatal, "ITS dead map check %s not implemented", check.c_str());
-    return kNOCHECK;
+    return OccupancyNOOCC;
   }
 }
 
@@ -747,115 +755,67 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
     case kPbp:
     case kPbPb:
     case kXeXe:
-      switch (fTriggerSelection) {
-        case kMB:
-          switch (fDataType) {
-            case kData:
-              if (collision.alias_bit(kINT7)) {
-                collisionFlags.set(kINT7BIT);
-                if (collision.sel7()) {
-                  trigsel = true;
-                  collisionFlags.set(kSEL7BIT);
-                }
-              }
-              break;
-            case kMC:
+      if (triggerSelectionFlags.test(TriggSelMB)) {
+        switch (fDataType) {
+          case kData:
+            if (collision.alias_bit(kINT7)) {
+              collisionFlags.set(CollSelINT7BIT);
               if (collision.sel7()) {
                 trigsel = true;
-                collisionFlags.set(kSEL7BIT);
+                collisionFlags.set(CollSelSEL7BIT);
               }
-              break;
-            default:
-              collisionFlags.set(kMBBIT);
+            }
+            break;
+          case kMC:
+            if (collision.sel7()) {
               trigsel = true;
-              break;
-          }
-          break;
-        case kNONE:
-          trigsel = true;
-          break;
-        default:
-          break;
+              collisionFlags.set(CollSelSEL7BIT);
+            }
+            break;
+          default:
+            collisionFlags.set(CollSelMBBIT);
+            trigsel = true;
+            break;
+        }
+      } else if (triggerSelectionFlags.test(TriggSelNONE)) {
+        trigsel = true;
       }
       break;
     case kppRun3:
-    case kPbPbRun3: {
-      auto run3Accepted = [](auto const& coll) {
-        return coll.sel8() &&
-               coll.selection_bit(aod::evsel::kNoCollInTimeRangeStandard) &&
-               coll.selection_bit(aod::evsel::kNoCollInRofStandard);
+    case kPbPbRun3:
+    case kNeNeRun3:
+    case kpORun3:
+    case kOORun3: {
+      auto setTriggerFlags = [](auto& flags, auto const& coll) {
+        flags.set(TriggSelMB, coll.sel8() != 0);
+        flags.set(TriggSelNOSAMEBUNCHPUP, coll.selection_bit(aod::evsel::kNoSameBunchPileup));
+        flags.set(TriggSelNUMPVCONTRIBUTORS, coll.numContrib() > 1); /* TODO: make it configurable */
+        flags.set(TriggSelVTXTOFMATCHED, coll.selection_bit(aod::evsel::kIsVertexTOFmatched));
+        flags.set(TriggSelVTXTRDMATCHED, coll.selection_bit(aod::evsel::kIsVertexTRDmatched));
+        flags.set(TriggSelNOCOLLINTRSTD, coll.selection_bit(aod::evsel::kNoCollInTimeRangeStandard));
+        flags.set(TriggSelNOCOLLINROFSTD, coll.selection_bit(aod::evsel::kNoCollInRofStandard));
+        flags.set(TriggSelISVERTEXITSTPC, coll.selection_bit(aod::evsel::kIsVertexITSTPC));
+        flags.set(TriggSelISGOODZVTXFT0VSPV, coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV));
+        flags.set(TriggSelGOODITSLAYER3, coll.selection_bit(aod::evsel::kIsGoodITSLayer3));
+        flags.set(TriggSelGOODITSLAYER0123, coll.selection_bit(aod::evsel::kIsGoodITSLayer0123));
+        flags.set(TriggSelGOODITSLAYERALL, coll.selection_bit(aod::evsel::kIsGoodITSLayersAll));
+        flags.set(TriggSelNOGOODITSLAYER3, !coll.selection_bit(aod::evsel::kIsGoodITSLayer3));
+        flags.set(TriggSelNOGOODITSLAYER0123, !coll.selection_bit(aod::evsel::kIsGoodITSLayer0123));
+        flags.set(TriggSelNOGOODITSLAYERALL, !coll.selection_bit(aod::evsel::kIsGoodITSLayersAll));
       };
-      auto run3ExtraAccepted = [](auto const& coll) {
-        return coll.sel8() &&
-               coll.selection_bit(aod::evsel::kNoSameBunchPileup) &&
-               coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) &&
-               coll.selection_bit(aod::evsel::kIsVertexITSTPC);
-      };
-      auto setCollisionFlags = [](auto& flags, auto const& coll) {
-        flags.set(kSEL8BIT, coll.sel8() != 0);
-        flags.set(kNOSAMEBUNCHPUPBIT, coll.selection_bit(aod::evsel::kNoSameBunchPileup));
-        flags.set(kISGOODZVTXFT0VSPVBIT, coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV));
-        flags.set(kISVERTEXITSTPCBIT, coll.selection_bit(aod::evsel::kIsVertexITSTPC));
-        flags.set(kISVERTEXTOFMATCHEDBIT, coll.selection_bit(aod::evsel::kIsVertexTOFmatched));
-        flags.set(kISVERTEXTRDMATCHEDBIT, coll.selection_bit(aod::evsel::kIsVertexTRDmatched));
-        flags.set(kNOCOLLINTIMERANGEBIT, coll.selection_bit(aod::evsel::kNoCollInTimeRangeStandard));
-        flags.set(kNOCOLLINROFBIT, coll.selection_bit(aod::evsel::kNoCollInRofStandard));
-        flags.set(kISGOODITSLAYER3BIT, coll.selection_bit(aod::evsel::kIsGoodITSLayer3));
-        flags.set(kISGOODITSLAYER0123BIT, coll.selection_bit(aod::evsel::kIsGoodITSLayer0123));
-        flags.set(kISGOODITSLAYERALLBIT, coll.selection_bit(aod::evsel::kIsGoodITSLayersAll));
-      };
-      switch (fTriggerSelection) {
-        case kMB:
-          if (run3Accepted(collision)) {
-            trigsel = true;
-          }
-          break;
-        case kMBEXTRA:
-          if (run3ExtraAccepted(collision)) {
-            trigsel = true;
-          }
-          break;
-        case kVTXTOFMATCHED:
-          if (run3Accepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
-            trigsel = true;
-          }
-          break;
-        case kVTXTRDMATCHED:
-          if (run3Accepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched)) {
-            trigsel = true;
-          }
-          break;
-        case kVTXTRDTOFMATCHED:
-          if (run3Accepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
-            trigsel = true;
-          }
-          break;
-        case kEXTRAVTXTOFMATCHED:
-          if (run3ExtraAccepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
-            trigsel = true;
-          }
-          break;
-        case kEXTRAVTXTRDMATCHED:
-          if (run3ExtraAccepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched)) {
-            trigsel = true;
-          }
-          break;
-        case kEXTRAVTXTRDTOFMATCHED:
-          if (run3ExtraAccepted(collision) && collision.selection_bit(aod::evsel::kIsVertexTRDmatched) && collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
-            trigsel = true;
-          }
-          break;
-        case kNONE:
-          trigsel = true;
-          break;
-        default:
-          break;
+      setTriggerFlags(triggerFlags, collision);
+
+      /* special treatment for no trigger selection */
+      if (triggerSelectionFlags.test(TriggSelNONE)) {
+        trigsel = true;
+      } else {
+        trigsel = ((triggerSelectionFlags & triggerFlags) == triggerSelectionFlags);
       }
-      setCollisionFlags(collisionFlags, collision);
     } break;
     default:
       break;
   }
+  collisionFlags.set(CollSelTRIGGSELBIT, trigsel);
   return trigsel;
 }
 
@@ -927,31 +887,31 @@ template <typename CollisionObject>
 inline float extractMultiplicity(CollisionObject const& collision, CentMultEstimatorType est)
 {
   switch (est) {
-    case kV0M:
+    case CentMultV0M:
       return collision.multFV0M();
       break;
-    case kCL0:
+    case CentMultCL0:
       return collision.multTracklets();
       break;
-    case kCL1:
+    case CentMultCL1:
       return collision.multTracklets();
       break;
-    case kFV0A:
+    case CentMultFV0A:
       return collision.multFV0A();
       break;
-    case kFT0M:
+    case CentMultFT0M:
       return collision.multFT0M();
       break;
-    case kFT0A:
+    case CentMultFT0A:
       return collision.multFT0A();
       break;
-    case kFT0C:
+    case CentMultFT0C:
       return collision.multFT0M();
       break;
-    case kNTPV:
+    case CentMultNTPV:
       return collision.multNTracksPV();
       break;
-    case kNOCM:
+    case CentMultNOCM:
       return collision.multFT0M();
       break;
     default:
@@ -971,11 +931,11 @@ template <typename CollisionObject>
 float getCentMultPercentile(CollisionObject collision)
 {
   switch (fCentMultEstimator) {
-    case kV0M:
+    case CentMultV0M:
       return collision.centRun2V0M();
-    case kCL0:
+    case CentMultCL0:
       return collision.centRun2CL0();
-    case kCL1:
+    case CentMultCL1:
       return collision.centRun2CL1();
     default:
       return 105.0;
@@ -987,15 +947,15 @@ template <typename CollisionObject>
 float getCentMultPercentile(CollisionObject collision)
 {
   switch (fCentMultEstimator) {
-    case kFV0A:
+    case CentMultFV0A:
       return collision.centFV0A();
-    case kFT0M:
+    case CentMultFT0M:
       return collision.centFT0M();
-    case kFT0A:
+    case CentMultFT0A:
       return collision.centFT0A();
-    case kFT0C:
+    case CentMultFT0C:
       return collision.centFT0C();
-    case kNTPV:
+    case CentMultNTPV:
       return collision.centNTPV();
     default:
       return 105.0;
@@ -1009,7 +969,7 @@ inline bool centralitySelectionMult(CollisionObject collision, float& centmult)
   float mult = getCentMultPercentile(collision);
   if (mult < kValidPercentileUpLimit && kValidPercentileLowLimit < mult) {
     centmult = mult;
-    collisionFlags.set(kCENTRALITYBIT);
+    collisionFlags.set(CollSelCENTRALITYBIT);
     return true;
   }
   return false;
@@ -1021,10 +981,10 @@ inline bool centralitySelectionNoMult(CollisionObject const&, float& centmult)
 {
   bool centmultsel = false;
   switch (fCentMultEstimator) {
-    case kNOCM:
+    case CentMultNOCM:
       centmult = 50.0;
       centmultsel = true;
-      collisionFlags.set(kCENTRALITYBIT);
+      collisionFlags.set(CollSelCENTRALITYBIT);
       break;
     default:
       break;
@@ -1103,19 +1063,19 @@ template <typename CollisionObject>
 inline bool selectOnOccupancy(CollisionObject collision)
 {
   switch (fOccupancyEstimation) {
-    case kNOOCC:
-      collisionFlags.set(kOCCUPANCYBIT);
+    case OccupancyNOOCC:
+      collisionFlags.set(CollSelOCCUPANCYBIT);
       return true;
-    case kTRACKSOCC:
+    case OccupancyTRACKSOCC:
       if ((fMinOccupancy <= collision.trackOccupancyInTimeRange()) && (collision.trackOccupancyInTimeRange() < fMaxOccupancy)) {
-        collisionFlags.set(kOCCUPANCYBIT);
+        collisionFlags.set(CollSelOCCUPANCYBIT);
         return true;
       } else {
         return false;
       }
-    case kFT0COCC:
+    case OccupancyFT0COCC:
       if ((fMinOccupancy <= collision.ft0cOccupancyInTimeRange()) && (collision.ft0cOccupancyInTimeRange() < fMaxOccupancy)) {
-        collisionFlags.set(kOCCUPANCYBIT);
+        collisionFlags.set(CollSelOCCUPANCYBIT);
         return true;
       } else {
         return false;
@@ -1183,109 +1143,19 @@ inline bool occupancySelection<aod::McCollision>(aod::McCollision const&)
 }
 
 //////////////////////////////////////////////////////////////////////////////////
-/// ITS dead maps selection
-//////////////////////////////////////////////////////////////////////////////////
-
-/// \brief select on the ITS dead maps
-/// \return true if the collision passes the ITS dead maps check false otherwise
-template <typename CollisionObject>
-inline bool selectOnItsDeadMaps(CollisionObject coll)
-{
-  auto checkFlag = [](auto flag, bool invert = false) {
-    return invert ? !flag : flag;
-  };
-  switch (fItsDeadMapCheck) {
-    case kNOCHECK:
-      return true;
-    case kGOODITSLAYER3:
-      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayer3));
-    case kGOODITSLAYER0123:
-      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayer0123));
-    case kGOODITSLAYERALL:
-      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayersAll));
-    case kNOGOODITSLAYER3:
-      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayer3), true);
-    case kNOGOODITSLAYER0123:
-      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayer0123), true);
-    case kNOGOODITSLAYERALL:
-      return checkFlag(coll.selection_bit(aod::evsel::kIsGoodITSLayersAll), true);
-    default:
-      return false;
-  }
-}
-
-/// \brief Occupancy selection by default: unknown subscribed collision table
-template <typename CollisionObject>
-inline bool itsDeadMapsSelection(CollisionObject const&)
-{
-  LOGF(fatal, "Occupancy selection not implemented for this kind of collisions");
-  return false;
-}
-
-/// \brief Occupancy selection for reconstructed and detector level collision tables with centrality/multiplicity information
-template <>
-inline bool itsDeadMapsSelection<aod::CollisionEvSelCent>(aod::CollisionEvSelCent const& collision)
-{
-  return selectOnItsDeadMaps(collision);
-}
-
-/// \brief Occupancy selection for reconstructed and detector level collision tables with Run 2 centrality/multiplicity information
-template <>
-inline bool itsDeadMapsSelection<aod::CollisionEvSelRun2Cent>(aod::CollisionEvSelRun2Cent const&)
-{
-  return true;
-}
-
-/// \brief Occupancy selection for reconstructed and detector level collision tables without centrality/multiplicity information
-template <>
-inline bool itsDeadMapsSelection<aod::CollisionEvSel>(aod::CollisionEvSel const& collision)
-{
-  return selectOnItsDeadMaps(collision);
-}
-
-/// \brief Occupancy selection for detector level collision tables without centrality/multiplicity
-template <>
-inline bool itsDeadMapsSelection<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>::iterator const& collision)
-{
-  return selectOnItsDeadMaps(collision);
-}
-
-/// \brief Occupancy selection for detector level collision tables with centrality/multiplicity
-template <>
-inline bool itsDeadMapsSelection<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>::iterator const& collision)
-{
-  return selectOnItsDeadMaps(collision);
-}
-
-/// \brief Occupancy selection for detector level collision tables with Run 2 centrality/multiplicity
-template <>
-inline bool itsDeadMapsSelection<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator>(soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>::iterator const&)
-{
-  return true;
-}
-
-/// \brief Occupancy selection for generator level collision table
-template <>
-inline bool itsDeadMapsSelection<aod::McCollision>(aod::McCollision const&)
-{
-  return true;
-}
-
-//////////////////////////////////////////////////////////////////////////////////
 /// Event selection
 //////////////////////////////////////////////////////////////////////////////////
 
 template <typename CollisionObject>
 inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 {
+  triggerFlags.reset();
   collisionFlags.reset();
-  collisionFlags.set(kIN);
+  collisionFlags.set(CollSelIN);
 
   bool trigsel = triggerSelection(collision);
 
   bool occupancysel = occupancySelection(collision);
-
-  bool itsdeadmapssel = itsDeadMapsSelection(collision);
 
   bool zvtxsel = false;
   /* TODO: vertex quality checks */
@@ -1294,20 +1164,20 @@ inline bool isEventSelected(CollisionObject const& collision, float& centormult)
       if (collision.posZ() != 0.0) {
         /* if only one side, we accept collisions which have zvtx different than zero */
         zvtxsel = true;
-        collisionFlags.set(kZVERTEXBIT);
+        collisionFlags.set(CollSelZVERTEXBIT);
       }
     } else {
       zvtxsel = true;
-      collisionFlags.set(kZVERTEXBIT);
+      collisionFlags.set(CollSelZVERTEXBIT);
     }
   }
 
   bool centmultsel = centralitySelection(collision, centormult);
 
-  bool accepted = trigsel && occupancysel && itsdeadmapssel && zvtxsel && centmultsel;
+  bool accepted = trigsel && occupancysel && zvtxsel && centmultsel;
 
   if (accepted) {
-    collisionFlags.set(kSELECTED);
+    collisionFlags.set(CollSelSELECTED);
   }
 
   return accepted;
