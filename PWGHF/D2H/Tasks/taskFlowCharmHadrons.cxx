@@ -398,7 +398,7 @@ struct HfTaskFlowCharmHadrons {
 
   /// Get the event selection flags
   /// \param hfevselflag is the event selection flag
-  std::vector<int> getEventSelectionFlags(uint32_t hfevselflag)
+  std::vector<int> getEventSelectionFlags(const o2::hf_evsel::HfCollisionRejectionMask hfevselflag)
   {
     return {
       TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
@@ -419,16 +419,16 @@ struct HfTaskFlowCharmHadrons {
   /// \param outputMl are the ML scores
   /// \param occupancy is the occupancy of the collision using the track estimator
   /// \param hfevselflag flag of the collision associated to utilsEvSelHf.h
-  void fillThn(float& mass,
-               float& pt,
-               float& cent,
-               float& cosNPhi,
-               float& sinNPhi,
-               float& cosDeltaPhi,
-               float& sp,
-               std::vector<float>& outputMl,
-               float& occupancy,
-               uint32_t& hfevselflag)
+  void fillThn(const float mass,
+               const float pt,
+               const float cent,
+               const float cosNPhi,
+               const float sinNPhi,
+               const float cosDeltaPhi,
+               const float sp,
+               const std::vector<float>& outputMl,
+               const float occupancy,
+               const o2::hf_evsel::HfCollisionRejectionMask hfevselflag)
   {
     if (occEstimator != 0) {
       std::vector<int> evtSelFlags = getEventSelectionFlags(hfevselflag);
@@ -476,7 +476,7 @@ struct HfTaskFlowCharmHadrons {
                       aod::BCsWithTimestamps const&,
                       float& centrality)
   {
-    float occupancy = getOccupancyColl(collision, occEstimator);
+    const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
     centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
 
@@ -546,9 +546,9 @@ struct HfTaskFlowCharmHadrons {
       return;
     }
     float occupancy = 0.;
-    uint32_t hfevflag{};
+    o2::hf_evsel::HfCollisionRejectionMask hfevflag{};
     if (occEstimator != 0) {
-      occupancy = getOccupancyColl(collision, occEstimator);
+      occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
       hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
     }
@@ -846,11 +846,10 @@ struct HfTaskFlowCharmHadrons {
 
     centrality = o2::hf_centrality::getCentralityColl(collision, o2::hf_centrality::CentralityEstimator::FT0C);
     if (storeResoOccu) {
-      float occupancy{-1.f};
-      occupancy = getOccupancyColl(collision, occEstimator);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
-      uint32_t hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-      std::vector<int> evtSelFlags = getEventSelectionFlags(hfevflag);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      std::vector<int> evtSelFlags = getEventSelectionFlags(rejectionMask);
       registry.fill(HIST("spReso/hSparseReso"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a,
                     xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot,
                     xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot,

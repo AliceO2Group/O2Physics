@@ -728,7 +728,7 @@ struct HfDataCreatorJpsiHadReduced {
 
     registry.fill(HIST("hEvents"), 1 + Event::Processed);
     float centrality = -1.f;
-    auto hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    const auto hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
     if (skipRejectedCollisions && hfRejMap != 0) {
       return;
     }
