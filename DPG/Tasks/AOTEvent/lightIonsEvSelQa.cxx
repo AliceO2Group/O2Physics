@@ -641,9 +641,18 @@ struct LightIonsEvSelQa {
       histos.add("hSecondsCollisions/noPU_good", "", kTH1F, {axisSeconds});
 
       const AxisSpec axisDiffMeanVz{80, -4, 4, ""};
+      const AxisSpec axisVzNarrow{40, -10, 10, ""};
       histos.add("hSecondsCollisions/noPU_meanDiffVz", "", kTH2F, {axisSeconds, axisDiffMeanVz});
       histos.add("hSecondsCollisions/noPU_meanDiffVz_lowMult", "", kTH2F, {axisSeconds, axisDiffMeanVz});
       histos.add("hSecondsCollisions/noPU_meanDiffVz_highMult", "", kTH2F, {axisSeconds, axisDiffMeanVz});
+      histos.add("hSecondsCollisions/noPU_Vz", "", kTH2F, {axisSeconds, axisVzNarrow});
+      histos.add("hSecondsCollisions/noPU_VzByFT0", "", kTH2F, {axisSeconds, axisVzNarrow});
+
+      const AxisSpec axisVz{200, -20, 20, ""};
+      histos.add("noSpecSelections/Vz", "", kTH1F, {axisVz});
+      histos.add("noPU/Vz", "", kTH1F, {axisVz});
+      histos.add("noPU_badVzDiff/Vz", "", kTH1F, {axisVz});
+      histos.add("noPU_goodVzDiff/Vz", "", kTH1F, {axisVz});
 
     } // end of runNumber check
 
@@ -958,10 +967,12 @@ struct LightIonsEvSelQa {
 
       histos.fill(HIST("noSpecSelections/hBcColNoSel8"), localBC);
       histos.fill(HIST("noSpecSelections/hBcOrigNoSel8"), bcOriginal);
+      histos.fill(HIST("noSpecSelections/Vz"), vZ);
 
       if (noPU) {
         histos.fill(HIST("noPU/hBcColNoSel8"), localBC);
         histos.fill(HIST("noPU/hBcOrigNoSel8"), bcOriginal);
+        histos.fill(HIST("noPU/Vz"), vZ);
       }
       if (noPU && pvTOFmatched) {
         histos.fill(HIST("noPU_pvTOFmatched/hBcColNoSel8"), localBC);
@@ -986,9 +997,11 @@ struct LightIonsEvSelQa {
       }
       if (noPU && badVzDiff) {
         histos.fill(HIST("noPU_badVzDiff/hBcColNoSel8"), localBC);
+        histos.fill(HIST("noPU_badVzDiff/Vz"), vZ);
       }
       if (noPU && !badVzDiff) {
         histos.fill(HIST("noPU_goodVzDiff/hBcColNoSel8"), localBC);
+        histos.fill(HIST("noPU_goodVzDiff/Vz"), vZ);
       }
       if (noPU && !badVzDiff && narrowTimeVeto) {
         histos.fill(HIST("noPU_goodVzDiff_narrowTimeVeto/hBcColNoSel8"), localBC);
@@ -1042,6 +1055,9 @@ struct LightIonsEvSelQa {
           histos.fill(HIST("hSecondsCollisions/noPU_grassOnTheRight"), secFromSOR);
         if (!underLine && !grassOnTheRight)
           histos.fill(HIST("hSecondsCollisions/noPU_good"), secFromSOR);
+
+        histos.fill(HIST("hSecondsCollisions/noPU_Vz"), secFromSOR, vZ);
+        histos.fill(HIST("hSecondsCollisions/noPU_VzByFT0"), secFromSOR, vZft0);
 
         if (std::abs(diffVz) < 4) {
           histos.fill(HIST("hSecondsCollisions/noPU_meanDiffVz"), secFromSOR, diffVz);

@@ -14,29 +14,30 @@
 ///
 /// \author Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
-#include <vector>
-#include <map>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/CCDB/EventSelectionParams.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/HistogramRegistry.h"
-#include "CommonDataFormat/BunchFilling.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPECSObject.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonDataFormat/BunchFilling.h"
 #include "DataFormatsParameters/AggregatedRunInfo.h"
+#include "DataFormatsParameters/GRPECSObject.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
 #include "TH3.h"
+
+#include <map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -90,11 +91,14 @@ struct DetectorOccupancyQaTask {
 
   Configurable<int> nMaxBcInTFforAnalysis{"nMaxBcInTFforAnalysis", -1, "When to stop taking collisions in TF, if -1: take all collisions"}; // o2-linter: disable=name/configurable (temporary fix)
 
+  Configurable<int> confNPhiBins{"nPhiBins", 810, "N phi bits for histograms"}; // o2-linter: disable=name/configurable (temporary fix)
+
   ConfigurableAxis confAxisPtBinsForPhiStudy{"PtBinsForPhiStudy", {VARIABLE_WIDTH, 0.2, 0.6, 1.0, 2.0, 10}, "pt axis"};
   ConfigurableAxis confAxisOccupForKine{"AxisOccupForKine", {VARIABLE_WIDTH, 0, 500, 1000, 2000, 4000, 6000, 8000, 10000, 20000}, "weighted occupancy"};
 
   Configurable<bool> confUsePhiAtTPCinnerR{"UsePhiAtTPCinnerR", false, "0 - not use, 1 - use"};                              // o2-linter: disable=name/configurable (temporary fix)
   Configurable<int> confUseAorCsideForPhiStudy{"UseAorCsideForPhiStudy", -1, "-1 - use full eta range, 0 - A, 1 - C sides"}; // o2-linter: disable=name/configurable (temporary fix)
+  Configurable<float> confRadiusForPhiCorrection{"RadiusForPhiCorrection", 0.8, "default: inner TPC radius, cm"};            // o2-linter: disable=name/configurable (temporary fix)
 
   uint64_t minGlobalBC = 0;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -263,7 +267,7 @@ struct DetectorOccupancyQaTask {
       histos.add("track_distr_nITStrThisEv_above_2000/hEta_highOccupInDistantFuture", ";#eta;n tracks", kTH1D, {axisEta});
       histos.add("track_distr_nITStrThisEv_above_2000/hEta_highOccupInNeighbourEvents", ";#eta;n tracks", kTH1D, {axisEta});
 
-      const int nPhiBins = 810;                                 // 18*45
+      const int nPhiBins = confNPhiBins;                        // 810=18*45
       AxisSpec axisPhi{nPhiBins, 0, TMath::TwoPi(), "#varphi"}; // o2-linter: disable=external-pi (temporary fix)
       histos.add("track_distr_nITStrThisEv_10_200/hPhi_lowOccupInTPC", ";#varphi;n tracks", kTH1D, {axisPhi});
       histos.add("track_distr_nITStrThisEv_10_200/hPhi_highOccupInRecentPast", ";#varphi;n tracks", kTH1D, {axisPhi});
@@ -303,6 +307,13 @@ struct DetectorOccupancyQaTask {
       histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_pos", ";#varphi;n tracks", kTH3D, {axisPhi, confAxisOccupForKine, confAxisPtBinsForPhiStudy});
       histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_neg", ";#varphi;n tracks", kTH3D, {axisPhi, confAxisOccupForKine, confAxisPtBinsForPhiStudy});
 
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_tpcNClsFindable_pos", ";#varphi;n tracks", kTH3D, {axisPhi, confAxisOccupForKine, confAxisPtBinsForPhiStudy});
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_tpcNClsFound_pos", ";#varphi;n tracks", kTH3D, {axisPhi, confAxisOccupForKine, confAxisPtBinsForPhiStudy});
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_tpcNClsCrossedRows_pos", ";#varphi;n tracks", kTH3D, {axisPhi, confAxisOccupForKine, confAxisPtBinsForPhiStudy});
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_tpcNClsFindable_neg", ";#varphi;n tracks", kTH3D, {axisPhi, confAxisOccupForKine, confAxisPtBinsForPhiStudy});
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_tpcNClsFound_neg", ";#varphi;n tracks", kTH3D, {axisPhi, confAxisOccupForKine, confAxisPtBinsForPhiStudy});
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_tpcNClsCrossedRows_neg", ";#varphi;n tracks", kTH3D, {axisPhi, confAxisOccupForKine, confAxisPtBinsForPhiStudy});
+
       histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPt_pos", ";p_{T};weighted occupancy", kTH2D, {axisLogPt, confAxisOccupForKine});
       histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPt_neg", ";p_{T};weighted occupancy", kTH2D, {axisLogPt, confAxisOccupForKine});
       histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hEta_pos", ";#eta;weighted occupancy", kTH2D, {axisEta, confAxisOccupForKine});
@@ -327,6 +338,12 @@ struct DetectorOccupancyQaTask {
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hEta_neg", ";#eta;weighted occupancy", kTH2D, {axisEta, confAxisOccupForKine});
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPhi_pos", ";#varphi;n tracks", kTH3D, {axisPhi, confAxisOccupForKine, confAxisPtBinsForPhiStudy});
       histos.add("track_distr_nITStrThisEv_above_2000/kine_vs_weighted_occup/PV_hPhi_neg", ";#varphi;n tracks", kTH3D, {axisPhi, confAxisOccupForKine, confAxisPtBinsForPhiStudy});
+
+      // QA nTPCcls
+      AxisSpec axisNTPCclsPlusMinusQA{521, -260, 260, "n TPC clusters"};
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/QA_tpcNClsFindable_pos", "", kTH1D, {axisNTPCclsPlusMinusQA});
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/QA_tpcNClsFound_pos", "", kTH1D, {axisNTPCclsPlusMinusQA});
+      histos.add("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/QA_tpcNClsCrossedRows_pos", "", kTH1D, {axisNTPCclsPlusMinusQA});
 
       AxisSpec axisLogPtFor2D{50, 0.05, 10, "p_{T}"};
       AxisSpec axisLogPtTpcFor2D{50, 0.05, 10, "p_{T} TPC inner"};
@@ -1235,7 +1252,7 @@ struct DetectorOccupancyQaTask {
           float phiInitial = phi;
 
           if (confUsePhiAtTPCinnerR) {
-            phi -= asin(0.8 /*inner TPC radius*/ / 2 * 0.3 * sign * 0.5 / pt);
+            phi -= asin(confRadiusForPhiCorrection /*inner TPC radius*/ / 2 * 0.3 * sign * 0.5 / pt);
             if (phi < 0)
               phi += TMath::TwoPi();
             else if (phi > TMath::TwoPi())
@@ -1280,6 +1297,11 @@ struct DetectorOccupancyQaTask {
               } // end of TPC good global
 
               // July 2025: for data vs MC kine distr comparison
+
+              int tpcNClsFindable = track.tpcNClsFindable();
+              int tpcNClsFound = track.tpcNClsFound();
+              int tpcNClsCrossedRows = track.tpcNClsCrossedRows();
+
               if (sign > 0) // positive tracks
               {
                 histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/PV_hPt_pos"), pt, occupancy);
@@ -1289,6 +1311,14 @@ struct DetectorOccupancyQaTask {
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPt_pos"), pt, occupancy);
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hEta_pos"), eta, occupancy);
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_pos"), phi, occupancy, pt);
+
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_tpcNClsFindable_pos"), phi, occupancy, pt, tpcNClsFindable);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_tpcNClsFound_pos"), phi, occupancy, pt, tpcNClsFound);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_tpcNClsCrossedRows_pos"), phi, occupancy, pt, tpcNClsCrossedRows);
+
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/QA_tpcNClsFindable_pos"), tpcNClsFindable);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/QA_tpcNClsFound_pos"), tpcNClsFound);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/QA_tpcNClsCrossedRows_pos"), tpcNClsCrossedRows);
                 }
               } else // negative tracks
               {
@@ -1299,6 +1329,10 @@ struct DetectorOccupancyQaTask {
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPt_neg"), pt, occupancy);
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hEta_neg"), eta, occupancy);
                   histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_neg"), phi, occupancy, pt);
+
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_tpcNClsFindable_neg"), phi, occupancy, pt, tpcNClsFindable);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_tpcNClsFound_neg"), phi, occupancy, pt, tpcNClsFound);
+                  histos.fill(HIST("track_distr_nITStrThisEv_10_200/kine_vs_weighted_occup/hPhi_tpcNClsCrossedRows_neg"), phi, occupancy, pt, tpcNClsCrossedRows);
                 }
               }
               // end of July 2025: for data vs MC kine distr comparison
