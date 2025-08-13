@@ -322,7 +322,7 @@ struct HfTaskSingleElectron {
       if (mctrack.size()) {
         auto const& grmothersIdsVec = mctrack.front().mothersIds();
         if (grmothersIdsVec.empty()) {
-          static const std::map<int, SourceType> PdgToSource = {
+          static const std::map<int, SourceType> pdgToSource = {
             {kPi0, fPi0},
             {kEta, fEta},
             {kOmega, fOmega},
@@ -332,8 +332,8 @@ struct HfTaskSingleElectron {
             {kKPlus, fKe3},
             {kK0Long, fK0l}};
 
-          auto it = PdgToSource.find(motherPdg);
-          if (it != PdgToSource.end()) {
+          auto it = pdgToSource.find(motherPdg);
+          if (it != pdgToSource.end()) {
             return it->second;
           }
           return fElse;
