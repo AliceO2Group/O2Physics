@@ -356,8 +356,9 @@ struct DptDptFilter {
     std::string prefix = "cfgEventSelection";
     Configurable<int64_t> minOrbit{"minOrbit", -1, "Lowest orbit to track"};
     Configurable<int64_t> maxOrbit{"maxOrbit", INT64_MAX, "Highest orbit to track"};
+    Configurable<std::string> rctSource{"rctSource", "None", "RCT selection source: None,CBT,CBT_hadronPID,CBT_electronPID,CBT_calo,CBT_muon,CBT_muon_glo. Default: None"};
     struct : ConfigurableGroup {
-      std::string prefix = "cfgOccupancySelection";
+      std::string prefix = "cfgEventSelection.cfgOccupancySelection";
       Configurable<std::string> cfgOccupancyEstimation{"cfgOccupancyEstimation", "None", "Occupancy estimation: None, Tracks, FT0C. Default None"};
       Configurable<float> cfgMinOccupancy{"cfgMinOccupancy", 0.0f, "Minimum allowed occupancy. Depends on the occupancy estimation"};
       Configurable<float> cfgMaxOccupancy{"cfgMaxOccupancy", 1e6f, "Maximum allowed occupancy. Depends on the occupancy estimation"};
@@ -418,6 +419,15 @@ struct DptDptFilter {
     } else {
       fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
     }
+    /* RCT information usage */
+    if (cfgEventSelection.rctSource.value == "None") {
+      useRctInformation = false;
+    } else {
+      /* for the time being we don't require ZDC and treat limited acceptance as faulty */
+      rctChecker.init(cfgEventSelection.rctSource.value, false, true);
+      useRctInformation = true;
+    }
+
     /* the occupancy selection */
     fOccupancyEstimation = getOccupancyEstimator(cfgEventSelection.cfgOccupancySelection.cfgOccupancyEstimation);
     fMinOccupancy = cfgEventSelection.cfgOccupancySelection.cfgMinOccupancy;
