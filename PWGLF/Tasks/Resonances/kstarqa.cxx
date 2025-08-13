@@ -1761,10 +1761,10 @@ struct Kstarqa {
         // if (!(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kPiPlus)) {
         //   continue;
         // }
-        if (selectionConfig.isPDGCheckMC && ((track1PDG != PDG_t::kKPlus) || (track1PDG != PDG_t::kPiPlus))) {
+        if (selectionConfig.isPDGCheckMC && (track1PDG != PDG_t::kKPlus) && (track1PDG != PDG_t::kPiPlus)) {
           continue;
         }
-        if (selectionConfig.isPDGCheckMC && ((track2PDG != PDG_t::kKPlus) || (track2PDG != PDG_t::kPiPlus))) {
+        if (selectionConfig.isPDGCheckMC && (track2PDG != PDG_t::kKPlus) && (track2PDG != PDG_t::kPiPlus)) {
           continue;
         }
         rEventSelection.fill(HIST("recMCparticles"), 6.5);
