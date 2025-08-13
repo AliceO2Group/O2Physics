@@ -440,11 +440,11 @@ struct DptDptFilter {
       /* create the reconstructed data histograms */
       fhEventSelection = new TH1D("EventSelection", ";;counts", CollSelNOOFFLAGS, -0.5f, static_cast<float>(CollSelNOOFFLAGS) - 0.5f);
       for (int ix = 0; ix < CollSelNOOFFLAGS; ++ix) {
-        fhEventSelection->GetXaxis()->SetBinLabel(ix + 1, CollisionSelectionExternalNames.at(ix).c_str());
+        fhEventSelection->GetXaxis()->SetBinLabel(ix + 1, collisionSelectionExternalNamesMap.at(ix).c_str());
       }
       fhTriggerSelection = new TH1D("TriggerSelection", ";;counts", TriggSelNOOFTRIGGERS, -0.5f, static_cast<float>(TriggSelNOOFTRIGGERS) - 0.5f);
       for (int ix = 0; ix < TriggSelNOOFTRIGGERS; ++ix) {
-        fhTriggerSelection->GetXaxis()->SetBinLabel(ix + 1, TString::Format("#color[%d]{%s}", triggerSelectionFlags.test(ix) ? 2 : 1, TriggerSelectionExternalNames.at(ix).c_str()).Data());
+        fhTriggerSelection->GetXaxis()->SetBinLabel(ix + 1, TString::Format("#color[%d]{%s}", triggerSelectionFlags.test(ix) ? 2 : 1, triggerSelectionExternalNamesMap.at(ix).c_str()).Data());
       }
       /* TODO: proper axes and axes titles according to the system; still incomplete */
       std::string multestimator = getCentMultEstimatorName(fCentMultEstimator);

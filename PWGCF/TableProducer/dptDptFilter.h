@@ -107,9 +107,9 @@ enum CentMultEstimatorType {
   CentMultNOOFESTIMATORS ///< number of centrality/mutiplicity estimator
 };
 
-/// \std::map EstimatorInternalCodes
+/// \std::map estimatorInternalCodesMap
 /// \brief maps centrality/multiplicity estimator names to internal estimator codes
-static const std::map<std::string, int> EstimatorInternalCodes{
+static const std::map<std::string, int> estimatorInternalCodesMap{
   {"NOCM", CentMultNOCM},
   {"V0M", CentMultV0M},
   {"CL0", CentMultCL0},
@@ -120,9 +120,9 @@ static const std::map<std::string, int> EstimatorInternalCodes{
   {"FT0C", CentMultFT0C},
   {"NTPV", CentMultNTPV}};
 
-/// \std::map EstimatorExternalNames
+/// \std::map estimatorExternalNamesMap
 /// \brief maps internal estimator codes to centrality/multiplicity estimator external names
-static const std::map<int, std::string> EstimatorExternalNames{
+static const std::map<int, std::string> estimatorExternalNamesMap{
   {CentMultNOCM, "NOCM"},
   {CentMultV0M, "V0M"},
   {CentMultCL0, "CL0"},
@@ -155,9 +155,9 @@ enum TriggerSelectionTags {
   TriggSelNOOFTRIGGERS        ///< number of triggers for event selection
 };
 
-/// \std::map TriggerSelectionBit
+/// \std::map triggerSelectionBitsMap
 /// \brief maps trigger selection tags to internal trigger selection bits
-static const std::map<std::string, int> TriggerSelectionBit{
+static const std::map<std::string, int> triggerSelectionBitsMap{
   {"none", TriggSelNONE},
   {"mb", TriggSelMB},
   {"nosamebunchpup", TriggSelNOSAMEBUNCHPUP},
@@ -175,9 +175,9 @@ static const std::map<std::string, int> TriggerSelectionBit{
   {"nogooditslayer0123", TriggSelNOGOODITSLAYER0123},
   {"nogooditslayerall", TriggSelNOGOODITSLAYERALL}};
 
-/// \std::map TriggerSelectionExternalNames
+/// \std::map triggerSelectionExternalNamesMap
 /// \brief maps trigger selection bits to external names
-static const std::map<int, std::string> TriggerSelectionExternalNames{
+static const std::map<int, std::string> triggerSelectionExternalNamesMap{
   {TriggSelNONE, "none"},
   {TriggSelMB, "Sel8"}, ///< Sel8 includes kIsTriggerTVX, kNoTimeFrameBorder, and kNoITSROFrameBorder
   {TriggSelNOSAMEBUNCHPUP, "No same bunch pileup"},
@@ -219,9 +219,9 @@ enum CollisionSelectionFlags {
   CollSelNOOFFLAGS      ///< number of flags
 };
 
-/// \std::mag CollisionSelectionExternalNames
+/// \std::mag collisionSelectionExternalNamesMap
 /// \brief maps collision selection bits to external names
-static const std::map<int, std::string> CollisionSelectionExternalNames{
+static const std::map<int, std::string> collisionSelectionExternalNamesMap{
   {CollSelIN, "In"},
   {CollSelMBBIT, "MB"},
   {CollSelINT7BIT, "INT7"},
@@ -630,9 +630,9 @@ inline std::bitset<32> getTriggerSelection(std::string const& triggstr)
 
   std::vector<std::string> tags = split(triggstr);
 
-  for (auto tag : tags) {
-    if (TriggerSelectionBit.contains(tag)) {
-      flags.set(TriggerSelectionBit.at(tag), true);
+  for (const auto& tag : tags) {
+    if (triggerSelectionBitsMap.contains(tag)) {
+      flags.set(triggerSelectionBitsMap.at(tag), true);
     } else {
       LOGF(fatal, "Wrong trigger selection tag: %s", tag.c_str());
     }
@@ -708,8 +708,8 @@ inline DataType getDataType(std::string const& datastr)
 
 inline CentMultEstimatorType getCentMultEstimator(std::string const& datastr)
 {
-  if (EstimatorInternalCodes.contains(datastr)) {
-    return static_cast<CentMultEstimatorType>(EstimatorInternalCodes.at(datastr));
+  if (estimatorInternalCodesMap.contains(datastr)) {
+    return static_cast<CentMultEstimatorType>(estimatorInternalCodesMap.at(datastr));
   } else {
     LOGF(fatal, "Centrality/Multiplicity estimator %s not supported yet", datastr.c_str());
   }
@@ -718,8 +718,8 @@ inline CentMultEstimatorType getCentMultEstimator(std::string const& datastr)
 
 inline std::string getCentMultEstimatorName(CentMultEstimatorType est)
 {
-  if (EstimatorExternalNames.contains(est)) {
-    return EstimatorExternalNames.at(est);
+  if (estimatorExternalNamesMap.contains(est)) {
+    return estimatorExternalNamesMap.at(est);
   } else {
     LOGF(fatal, "Centrality/Multiplicity estimator %d not supported yet", static_cast<int>(est));
   }
