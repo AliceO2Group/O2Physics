@@ -506,8 +506,6 @@ class VarManager : public TObject
     kTPCnCRoverFindCls,
     kTPCchi2,
     kTPCsignal,
-    kTPCsignalRandomized,
-    kTPCsignalRandomizedDelta,
     kPhiTPCOuter,
     kTrackIsInsideTPCModule,
     kTRDsignal,
@@ -531,20 +529,14 @@ class VarManager : public TObject
     kTrackCTglTgl,
     kTrackC1Pt21Pt2,
     kTPCnSigmaEl,
-    kTPCnSigmaElRandomized,
-    kTPCnSigmaElRandomizedDelta,
     kTPCnSigmaMu,
     kTPCnSigmaPi,
-    kTPCnSigmaPiRandomized,
-    kTPCnSigmaPiRandomizedDelta,
     kTPCnSigmaKa,
     kTPCnSigmaPr,
     kTPCnSigmaEl_Corr,
     kTPCnSigmaPi_Corr,
     kTPCnSigmaKa_Corr,
     kTPCnSigmaPr_Corr,
-    kTPCnSigmaPrRandomized,
-    kTPCnSigmaPrRandomizedDelta,
     kTOFnSigmaEl,
     kTOFnSigmaMu,
     kTOFnSigmaPi,
@@ -2529,22 +2521,6 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTOFnSigmaPi] = track.tofNSigmaPi();
       values[kTOFnSigmaKa] = track.tofNSigmaKa();
       values[kTOFnSigmaPr] = track.tofNSigmaPr();
-    }
-
-    if (fgUsedVars[kTPCsignalRandomized] || fgUsedVars[kTPCnSigmaElRandomized] || fgUsedVars[kTPCnSigmaPiRandomized] || fgUsedVars[kTPCnSigmaPrRandomized]) {
-      // NOTE: this is needed temporarily for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
-      //     This study involves a degradation from a dE/dx resolution of 5% to one of 6% (20% worsening)
-      //     For this we smear the dE/dx and n-sigmas using a gaus distribution with a width of 3.3%
-      //         which is approx the needed amount to get dE/dx to a resolution of 6%
-      double randomX = gRandom->Gaus(0.0, 0.033);
-      values[kTPCsignalRandomized] = values[kTPCsignal] * (1.0 + randomX);
-      values[kTPCsignalRandomizedDelta] = values[kTPCsignal] * randomX;
-      values[kTPCnSigmaElRandomized] = values[kTPCnSigmaEl] * (1.0 + randomX);
-      values[kTPCnSigmaElRandomizedDelta] = values[kTPCnSigmaEl] * randomX;
-      values[kTPCnSigmaPiRandomized] = values[kTPCnSigmaPi] * (1.0 + randomX);
-      values[kTPCnSigmaPiRandomizedDelta] = values[kTPCnSigmaPi] * randomX;
-      values[kTPCnSigmaPrRandomized] = values[kTPCnSigmaPr] * (1.0 + randomX);
-      values[kTPCnSigmaPrRandomizedDelta] = values[kTPCnSigmaPr] * randomX;
     }
 
     if constexpr ((fillMap & ReducedTrackBarrelPID) > 0) {
