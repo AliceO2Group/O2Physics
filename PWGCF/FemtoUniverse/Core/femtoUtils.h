@@ -17,11 +17,13 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUTILS_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUTILS_H_
 
-#include <vector>
-#include <functional>
-#include <algorithm>
-#include "Framework/ASoAHelpers.h"
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
+#include "Framework/ASoAHelpers.h"
+
+#include <algorithm>
+#include <functional>
+#include <vector>
 
 namespace o2::analysis::femto_universe
 {
