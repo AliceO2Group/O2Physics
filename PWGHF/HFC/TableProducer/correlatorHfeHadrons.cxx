@@ -154,6 +154,9 @@ struct HfCorrelatorHfeHadrons {
 
     // Add hadron Table For Mix Event Electron Hadron correlation
     for (const auto& hTrack : tracks) {
+      if (!selAssoHadron(hTrack)) {
+        continue;
+      }
       registry.fill(HIST("hTracksBin"), poolBin);
       entryHadron(hTrack.phi(), hTrack.eta(), hTrack.pt(), poolBin, gCollisionId, timeStamp);
     }
