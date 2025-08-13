@@ -1463,7 +1463,6 @@ struct HfDataCreatorCharmHadPiReduced {
           tables.hfMomDMesDaugs(pVec0[0], pVec0[1], pVec0[2],
                                 pVec1[0], pVec1[1], pVec1[2],
                                 pVecSoftPion[0], pVecSoftPion[1], pVecSoftPion[2]);
-
         }
         fillHfReducedCollision = true;
       }

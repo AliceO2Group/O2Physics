@@ -158,13 +158,15 @@ struct HfCandidateSelectorB0ToDPiReduced {
 
   // For D* channel
   template <IsB0ToDstarPiChannel T>
-  auto getTrackBachPi(const T& candidate) {
+  auto getTrackBachPi(const T& candidate)
+  {
     return candidate.template prongBachPi_as<TracksBachPion>();
   }
 
   // For non-D* channel
   template <typename T>
-  auto getTrackBachPi(const T& candidate) {
+  auto getTrackBachPi(const T& candidate)
+  {
     return candidate.template prong1_as<TracksBachPion>();
   }
 
