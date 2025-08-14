@@ -36,8 +36,8 @@ namespace hf_mc_gen
 {
 
 template <typename TMcParticles, typename TMcParticlesPerColl, typename TCursor>
-void fillMcMatchGen2Prong(const TMcParticles& mcParticles,
-                          const TMcParticlesPerColl& mcParticlesPerMcColl,
+void fillMcMatchGen2Prong(TMcParticles const& mcParticles,
+                          TMcParticlesPerColl const& mcParticlesPerMcColl,
                           TCursor& rowMcMatchGen,
                           const bool rejectBackground,
                           const bool matchCorrelatedBackground)
