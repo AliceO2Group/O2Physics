@@ -580,9 +580,12 @@ struct cascadeFlow {
   void fillAnalysedLambdaTable(collision_t coll, bool hasEventPlane, bool hasSpectatorPlane, int chargeIndex, v0_t v0, float v2CEP, float psiT0C, double pzs2Lambda, double cos2ThetaLambda, double cosThetaLambda)
   {
     double invMassLambda = 0;
-    if (chargeIndex == 0) invMassLambda =  v0.mLambda();
-    else if (chargeIndex == 1) invMassLambda =  v0.mAntiLambda();
-    else invMassLambda =  v0.mLambda();
+    if (chargeIndex == 0)
+      invMassLambda = v0.mLambda();
+    else if (chargeIndex == 1)
+      invMassLambda = v0.mAntiLambda();
+    else
+      invMassLambda = v0.mLambda();
     analysisLambdaSample(coll.centFT0C(),
                          hasEventPlane,
                          hasSpectatorPlane,
@@ -1598,7 +1601,7 @@ struct cascadeFlow {
       }
       if (!isSelectedV0[0] && !isSelectedV0[1])
         continue;
-      
+
       ROOT::Math::XYZVector lambdaQvec{std::cos(2 * v0.phi()), std::sin(2 * v0.phi()), 0};
       auto v2CSP = lambdaQvec.Dot(eventplaneVecT0C); // not normalised by amplitude
       auto lambdaminuspsiT0C = GetPhiInRange(v0.phi() - psiT0C);
@@ -1666,13 +1669,17 @@ struct cascadeFlow {
       }
 
       double invMassLambda = 0;
-      if (chargeIndex == 0) invMassLambda =  v0.mLambda();
-      else if (chargeIndex == 1) invMassLambda =  v0.mAntiLambda();
-      else invMassLambda =  v0.mLambda();
+      if (chargeIndex == 0)
+        invMassLambda = v0.mLambda();
+      else if (chargeIndex == 1)
+        invMassLambda = v0.mAntiLambda();
+      else
+        invMassLambda = v0.mLambda();
 
-      //mass selection
-      if (invMassLambda < V0Configs.MinMassLambdaInTree || invMassLambda > V0Configs.MaxMassLambdaInTree) continue;
-      
+      // mass selection
+      if (invMassLambda < V0Configs.MinMassLambdaInTree || invMassLambda > V0Configs.MaxMassLambdaInTree)
+        continue;
+
       if (fillingConfigs.isFillTree)
         fillAnalysedLambdaTable(coll, hasEventPlane, hasSpectatorPlane, chargeIndex, v0, v2CEP, psiT0C, pzs2Lambda, cos2ThetaLambda, cosThetaLambda);
     }
