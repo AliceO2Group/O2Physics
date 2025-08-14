@@ -749,9 +749,9 @@ namespace hf_cand_b0_reduced
 {
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong0, prong0, int, HfRed3Prongs, "_0");    //! Prong0 index
 DECLARE_SOA_INDEX_COLUMN_FULL(Prong1, prong1, int, HfRedTrackBases, "_1"); //! Prong1 index
-DECLARE_SOA_INDEX_COLUMN_FULL(ProngD0, prongD0, int, HfRed2Prongs, "");    //! ProngD0 index
-DECLARE_SOA_INDEX_COLUMN_FULL(ProngSoftPi, prongSoftPi, int, HfRedTrackBases, ""); //! ProngSoftPi index
-DECLARE_SOA_INDEX_COLUMN_FULL(ProngBachPi, prongBachPi, int, HfRedTrackBases, ""); //! ProngBachPi index
+DECLARE_SOA_INDEX_COLUMN_FULL(ProngD0, prongD0, int, HfRed2Prongs, "_0");    //! ProngD0 index
+DECLARE_SOA_INDEX_COLUMN_FULL(ProngBachPi, prongBachPi, int, HfRedTrackBases, "_1"); //! ProngBachPi index
+DECLARE_SOA_INDEX_COLUMN_FULL(ProngSoftPi, prongSoftPi, int, HfRedSoftPiBases, "_2"); //! ProngSoftPi index
 DECLARE_SOA_COLUMN(Prong0MlScoreBkg, prong0MlScoreBkg, float);             //! Bkg ML score of the D daughter
 DECLARE_SOA_COLUMN(Prong0MlScorePrompt, prong0MlScorePrompt, float);       //! Prompt ML score of the D daughter
 DECLARE_SOA_COLUMN(Prong0MlScoreNonprompt, prong0MlScoreNonprompt, float); //! Nonprompt ML score of the D daughter
@@ -761,7 +761,7 @@ DECLARE_SOA_TABLE(HfRedB0Prongs, "AOD", "HFREDB0PRONG", //! Table with B0 daught
                   hf_cand_b0_reduced::Prong0Id, hf_cand_b0_reduced::Prong1Id);
 
 DECLARE_SOA_TABLE(HfRedB0ProngDStars, "AOD", "HFREDB0PRONGDST", //! Table with B0 daughter indices
-                  hf_cand_b0_reduced::ProngD0Id, hf_cand_b0_reduced::ProngSoftPiId, hf_cand_b0_reduced::ProngBachPiId);
+                  hf_cand_b0_reduced::ProngD0Id, hf_cand_b0_reduced::ProngBachPiId, hf_cand_b0_reduced::ProngSoftPiId);
 
 DECLARE_SOA_TABLE(HfRedB0DpMls, "AOD", "HFREDB0DPML", //! Table with ML scores for the D+ daughter
                   hf_cand_b0_reduced::Prong0MlScoreBkg,

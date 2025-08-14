@@ -18,7 +18,6 @@
 #define PWGHF_CORE_HFMLRESPONSEB0TODPI_H_
 
 #include "PWGHF/Core/HfMlResponse.h"
-#include "PWGHF/D2H/DataModel/ReducedDataModel.h"
 #include "PWGHF/D2H/Utils/utilsRedDataFormat.h"
 
 #include "Tools/ML/MlResponse.h"
@@ -173,16 +172,17 @@ class HfMlResponseB0ToDPi : public HfMlResponse<TypeOutputScore>
   /// Method to get the input features vector needed for ML inference
   /// \param candidate is the B0 candidate
   /// \param prongBachPi is the candidate's bachelor pion prong
+  /// \param prongSoftPi is the candidate's soft pion prong
   /// \param mlScoresD is the vector of ML scores for the D meson (if available)
   /// \note this method is used for B0 → D*∓ π± candidates with D meson ML scores
   /// \return inputFeatures vector
-  template <bool withDmesMl, IsB0ToDstarPiChannel T1, typename T2>
-  std::vector<float> getInputFeatures(T1 const& candidate,
-                                      T2 const& prongBachPi,
-                                      const std::vector<float>* mlScoresD = nullptr)
+  template <bool withDmesMl, typename T1, typename T2, typename T3>
+  std::vector<float> getInputFeaturesDStarPi(T1 const& candidate,
+                                             T2 const& prongBachPi,
+                                             T3 const& prongSoftPi,
+                                             const std::vector<float>* mlScoresD = nullptr)
   {
     std::vector<float> inputFeatures;
-    auto prongSoftPi = candidate.template prongSoftPi_as<o2::soa::Join<o2::aod::HfRedSoftPiBases, o2::aod::HfRedSoftPiCov, o2::aod::HfRedSoftPiPid>>();
 
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       switch (idx) {

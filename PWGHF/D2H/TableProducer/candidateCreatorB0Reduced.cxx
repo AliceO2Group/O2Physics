@@ -228,7 +228,7 @@ struct HfCandidateCreatorB0Reduced {
                             dcaD.getY(), dcaSoftPion.getY(), dcaBachPion.getY(),
                             std::sqrt(dcaD.getSigmaY2()), std::sqrt(dcaSoftPion.getSigmaY2()), std::sqrt(dcaBachPion.getSigmaY2()));
 
-        rowCandidateProngsDStar(candD.globalIndex(), trackSoftPion.globalIndex(), trackBachPion.globalIndex());
+        rowCandidateProngsDStar(candD.globalIndex(), trackBachPion.globalIndex(), trackSoftPion.globalIndex());
 
         if constexpr (withDmesMl) {
           rowCandidateDmesMlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());

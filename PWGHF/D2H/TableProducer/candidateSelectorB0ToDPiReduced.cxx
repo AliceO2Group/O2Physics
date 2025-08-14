@@ -156,18 +156,49 @@ struct HfCandidateSelectorB0ToDPiReduced {
     }
   }
 
-  // For D* channel
-  template <IsB0ToDstarPiChannel T>
-  auto getTrackBachPi(const T& candidate)
-  {
+  /// Utility function to retrieve the bach pion track 
+  ///from the B0 candidate in the D*-pi decay channel
+  /// \param candidate is the B0 candidate
+  /// \return bach pion track
+  template <IsB0ToDstarPiChannel T1>
+  auto getTrackBachPi(const T1& candidate) {
     return candidate.template prongBachPi_as<TracksBachPion>();
   }
 
-  // For non-D* channel
-  template <typename T>
-  auto getTrackBachPi(const T& candidate)
-  {
+  /// Method to get the input features vector needed for ML inference
+  /// \param candidate is the B0 candidate
+  /// \param prongBachPi is the candidate's bachelor pion prong
+  /// \note this method is used for B0 → D*- π+ candidates with D meson ML scores
+  template <bool withDmesMl, IsB0ToDstarPiChannel T1, typename T2>
+  auto getMlInputFeatures(const T1& candB0, const T2& prongBachPi) {
+    auto prongSoftPi = candB0.template prongSoftPi_as<TracksSoftPions>();
+    if constexpr (withDmesMl) {
+        return hfMlResponse.getInputFeaturesDStarPi<true>(candB0, prongBachPi, prongSoftPi);
+    } else {
+        return hfMlResponse.getInputFeaturesDStarPi<false>(candB0, prongBachPi, prongSoftPi);
+    }
+  }
+
+  /// Utility function to retrieve the bach pion track 
+  ///from the B0 candidate in the D-pi decay channel
+  /// \param candidate is the B0 candidate
+  /// \return bach pion track
+  template <typename T1>
+  auto getTrackBachPi(const T1& candidate) {
     return candidate.template prong1_as<TracksBachPion>();
+  }
+
+  /// Method to get the input features vector needed for ML inference
+  /// \param candB0 is the B0 candidate
+  /// \param prongBachPi is the candidate's bachelor pion prong
+  /// \note this method is used for B0 → D- π+ candidates with D meson ML scores
+  template <bool withDmesMl, typename T1, typename T2>
+  auto getMlInputFeatures(const T1& candB0, const T2& prongBachPi) {
+    if constexpr (withDmesMl) {
+      return hfMlResponse.getInputFeatures<true>(candB0, prongBachPi);
+    } else {
+      return hfMlResponse.getInputFeatures<false>(candB0, prongBachPi);
+    }
   }
 
   /// Main function to perform B0 candidate creation
@@ -220,15 +251,15 @@ struct HfCandidateSelectorB0ToDPiReduced {
         registry.fill(HIST("hSelections"), 2 + SelectionStep::RecoTopol, ptCandB0);
       }
 
-      auto trackPiBachPi = getTrackBachPi(hfCandB0);
+      auto trackBachPi = getTrackBachPi(hfCandB0);
       if (pionPidMethod == PidMethod::TpcOrTof || pionPidMethod == PidMethod::TpcAndTof) {
-        int pidTrackPiBachPi{TrackSelectorPID::Status::NotApplicable};
+        int pidTrackBachPi{TrackSelectorPID::Status::NotApplicable};
         if (pionPidMethod == PidMethod::TpcOrTof) {
-          pidTrackPiBachPi = selectorPion.statusTpcOrTof(trackPiBachPi);
+          pidTrackBachPi = selectorPion.statusTpcOrTof(trackBachPi);
         } else if (pionPidMethod == PidMethod::TpcAndTof) {
-          pidTrackPiBachPi = selectorPion.statusTpcAndTof(trackPiBachPi);
+          pidTrackBachPi = selectorPion.statusTpcAndTof(trackBachPi);
         }
-        if (!hfHelper.selectionB0ToDPiPid(pidTrackPiBachPi, acceptPIDNotApplicable.value)) {
+        if (!hfHelper.selectionB0ToDPiPid(pidTrackBachPi, acceptPIDNotApplicable.value)) {
           // LOGF(info, "B0 candidate selection failed at PID selection");
           hfSelB0ToDPiCandidate(statusB0ToDPi);
           if (applyB0Ml) {
@@ -243,7 +274,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
       }
       if (applyB0Ml) {
         // B0 ML selections
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withDmesMl>(hfCandB0, trackPiBachPi);
+        std::vector<float> inputFeatures = getMlInputFeatures<withDmesMl>(hfCandB0, trackBachPi);
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandB0, outputMl);
         hfMlB0ToDPiCandidate(outputMl[1]); // storing ML score for signal class
 
