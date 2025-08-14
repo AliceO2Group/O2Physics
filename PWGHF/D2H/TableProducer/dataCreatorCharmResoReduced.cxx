@@ -830,8 +830,8 @@ struct HfDataCreatorCharmResoReduced {
                             CCand const& candCharmBach,
                             BBachTr const& bachelorTrack,
                             Tr const& tracks,
-                            int& indexHfCandCharm,
-                            int64_t& indexCandTrBach)
+                            const int64_t indexHfCandCharm,
+                            const int64_t indexCandTrBach)
   {
     std::vector<typename Tr::iterator> vecDaughtersReso{};
     int8_t sign{0}, nKinkedTracks{0}, origin{0}, flagCharmBach{0}, flagCharmBachInterm{0}, flagTrack{0}, flagReso{0};

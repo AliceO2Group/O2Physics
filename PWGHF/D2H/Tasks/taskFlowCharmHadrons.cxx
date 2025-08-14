@@ -317,10 +317,10 @@ struct HfTaskFlowCharmHadrons {
   /// \param tracksQy is the Y component of the Q vector for the tracks
   /// \param channel is the decay channel
   template <DecayChannel channel, typename T1>
-  void getQvecDtracks(const T1& cand,
+  void getQvecDtracks(T1 const& cand,
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
-                      float& ampl)
+                      const float ampl)
   {
     // TODO: add possibility to consider different weights for the tracks, at the moment only pT is considered;
     float pXTrack0 = cand.pxProng0();
@@ -668,7 +668,7 @@ struct HfTaskFlowCharmHadrons {
 
       // If TPC is used for the SP estimation, the tracks of the hadron candidate must be removed from the TPC Q vector to avoid double counting
       if (qvecDetector == QvecEstimator::TPCNeg || qvecDetector == QvecEstimator::TPCPos) {
-        float ampl = amplQVec - static_cast<float>(nProngs);
+        float const ampl = amplQVec - static_cast<float>(nProngs);
         std::vector<float> tracksQx = {};
         std::vector<float> tracksQy = {};
         if constexpr (std::is_same_v<T1, CandXic0Data> || std::is_same_v<T1, CandXic0DataWMl>) {

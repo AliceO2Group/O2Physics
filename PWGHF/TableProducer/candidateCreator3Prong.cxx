@@ -394,7 +394,7 @@ struct HfCandidateCreator3Prong {
       if (indexCollision == track2.collisionId() && track2.isPVContributor()) {
         SETBIT(bitmapProngsContributorsPV, 2);
       }
-      uint8_t nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
+      const auto nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
 
       // fill candidate table rows
       rowCandidateBase(indexCollision,
@@ -635,7 +635,7 @@ struct HfCandidateCreator3Prong {
       if (indexCollision == track2.collisionId() && track2.isPVContributor()) {
         SETBIT(bitmapProngsContributorsPV, 2);
       }
-      uint8_t nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
+      const auto nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
 
       // fill candidate table rows
       rowCandidateBase(indexCollision,
