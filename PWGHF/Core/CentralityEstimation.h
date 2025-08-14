@@ -156,7 +156,7 @@ template <typename TCollisions>
 float getCentralityGenColl(TCollisions const& collSlice)
 {
   using TMult = uint16_t; // type of numContrib
-  float centrality{-1};
+  float centrality{-1.f};
   TMult multiplicity{};
   for (const auto& collision : collSlice) {
     const TMult collMult = collision.numContrib();
