@@ -156,12 +156,13 @@ struct HfCandidateSelectorB0ToDPiReduced {
     }
   }
 
-  /// Utility function to retrieve the bach pion track 
-  ///from the B0 candidate in the D*-pi decay channel
+  /// Utility function to retrieve the bach pion track
+  /// from the B0 candidate in the D*-pi decay channel
   /// \param candidate is the B0 candidate
   /// \return bach pion track
   template <IsB0ToDstarPiChannel T1>
-  auto getTrackBachPi(const T1& candidate) {
+  auto getTrackBachPi(const T1& candidate)
+  {
     return candidate.template prongBachPi_as<TracksBachPion>();
   }
 
@@ -170,21 +171,23 @@ struct HfCandidateSelectorB0ToDPiReduced {
   /// \param prongBachPi is the candidate's bachelor pion prong
   /// \note this method is used for B0 → D*- π+ candidates with D meson ML scores
   template <bool withDmesMl, IsB0ToDstarPiChannel T1, typename T2>
-  auto getMlInputFeatures(const T1& candB0, const T2& prongBachPi) {
+  auto getMlInputFeatures(const T1& candB0, const T2& prongBachPi)
+  {
     auto prongSoftPi = candB0.template prongSoftPi_as<TracksSoftPions>();
     if constexpr (withDmesMl) {
-        return hfMlResponse.getInputFeaturesDStarPi<true>(candB0, prongBachPi, prongSoftPi);
+      return hfMlResponse.getInputFeaturesDStarPi<true>(candB0, prongBachPi, prongSoftPi);
     } else {
-        return hfMlResponse.getInputFeaturesDStarPi<false>(candB0, prongBachPi, prongSoftPi);
+      return hfMlResponse.getInputFeaturesDStarPi<false>(candB0, prongBachPi, prongSoftPi);
     }
   }
 
-  /// Utility function to retrieve the bach pion track 
-  ///from the B0 candidate in the D-pi decay channel
+  /// Utility function to retrieve the bach pion track
+  /// from the B0 candidate in the D-pi decay channel
   /// \param candidate is the B0 candidate
   /// \return bach pion track
   template <typename T1>
-  auto getTrackBachPi(const T1& candidate) {
+  auto getTrackBachPi(const T1& candidate)
+  {
     return candidate.template prong1_as<TracksBachPion>();
   }
 
@@ -193,7 +196,8 @@ struct HfCandidateSelectorB0ToDPiReduced {
   /// \param prongBachPi is the candidate's bachelor pion prong
   /// \note this method is used for B0 → D- π+ candidates with D meson ML scores
   template <bool withDmesMl, typename T1, typename T2>
-  auto getMlInputFeatures(const T1& candB0, const T2& prongBachPi) {
+  auto getMlInputFeatures(const T1& candB0, const T2& prongBachPi)
+  {
     if constexpr (withDmesMl) {
       return hfMlResponse.getInputFeatures<true>(candB0, prongBachPi);
     } else {
