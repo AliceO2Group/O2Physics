@@ -284,9 +284,11 @@ struct decay3bodyBuilder {
     ccdb->setFatalWhenNull(false);
 
     // TOF PID parameters initialization
-    mTOFCalibConfig.metadataInfo = metadataInfo;
-    mTOFCalibConfig.inheritFromBaseTask(initContext);
-    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb);
+    if (doprocessRealData == true || doprocessMonteCarlo == true) {
+      mTOFCalibConfig.metadataInfo = metadataInfo;
+      mTOFCalibConfig.inheritFromBaseTask(initContext);
+      mTOFCalibConfig.initSetup(mRespParamsV3, ccdb);
+    }
 
     // Set material correction
     if (useMatCorrType == 1) {
