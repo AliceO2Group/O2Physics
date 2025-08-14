@@ -876,7 +876,7 @@ struct JetHadronRecoil {
   }
   PROCESS_SWITCH(JetHadronRecoil, processRecoilJetsMCPMCDMatchedWeighted, "process MC matched with event weights (recoil jets)", false);
 
-  template <typename T, typename U, typename X>
+  template <typename T, typename X>
   double getWTAaxisDifference(T const& jet, X const& /*tracks or particles*/)
   {
     double deltaPhi = -1;
