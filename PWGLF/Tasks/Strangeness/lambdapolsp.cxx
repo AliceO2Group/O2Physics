@@ -142,8 +142,8 @@ struct lambdapolsp {
   Configurable<float> ConfDaughEta{"ConfDaughEta", 0.8f, "V0 Daugh sel: max eta"};
   Configurable<float> cfgDaughPrPt{"cfgDaughPrPt", 0.4, "minimum daughter proton pt"};
   Configurable<float> cfgDaughPiPt{"cfgDaughPiPt", 0.2, "minimum daughter pion pt"};
-  Configurable<float> rcrfc{"rcrfc", 0.8f, "Ratio of CR to FC"};
-  Configurable<float> ConfDaughTPCnclsMin{"ConfDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
+  // Configurable<float> rcrfc{"rcrfc", 0.8f, "Ratio of CR to FC"};
+  // Configurable<float> ConfDaughTPCnclsMin{"ConfDaughTPCnclsMin", 50.f, "V0 Daugh sel: Min. nCls TPC"};
   Configurable<float> ConfDaughPIDCuts{"ConfDaughPIDCuts", 3, "PID selections for Lambda daughters"};
   Configurable<bool> usesubdet{"usesubdet", false, "use subdet"};
   Configurable<bool> useAccCorr{"useAccCorr", false, "use acceptance correction"};
@@ -483,12 +483,13 @@ struct lambdapolsp {
     /*if (TMath::Abs(eta) > ConfDaughEta) {
       return false;
       }*/
+    /*
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
     if (track.tpcCrossedRowsOverFindableCls() < rcrfc) {
       return false;
-    }
+      }*/
 
     if (pid == 0 && TMath::Abs(track.tpcNSigmaPr()) > ConfDaughPIDCuts) {
       return false;
@@ -541,13 +542,14 @@ struct lambdapolsp {
     if (posTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster || negTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster) {
       return false;
     }
+    /*
     if (posTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin) {
       return false;
     }
     if (posTrackExtra.tpcCrossedRowsOverFindableCls() < rcrfc || negTrackExtra.tpcCrossedRowsOverFindableCls() < rcrfc) {
       return false;
     }
-
+    */
     // check TPC PID
     if (pid == 0 && ((std::abs(posTrackExtra.tpcNSigmaPr()) > ConfDaughPIDCuts) || (std::abs(negTrackExtra.tpcNSigmaPi()) > ConfDaughPIDCuts))) {
       return false;
@@ -586,13 +588,13 @@ struct lambdapolsp {
     // check TPC tracking properties
     if (posTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster || negTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster) {
       return false;
-    }
-    if (posTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin) {
-      return false;
-    }
-    if (posTrackExtra.tpcCrossedRowsOverFindableCls() < rcrfc || negTrackExtra.tpcCrossedRowsOverFindableCls() < rcrfc) {
-      return false;
-    }
+    } /*
+     if (posTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin) {
+       return false;
+     }
+     if (posTrackExtra.tpcCrossedRowsOverFindableCls() < rcrfc || negTrackExtra.tpcCrossedRowsOverFindableCls() < rcrfc) {
+       return false;
+       }*/
     // check TPC PID
     if (((std::abs(posTrackExtra.tpcNSigmaPi()) > ConfDaughPIDCuts) || (std::abs(negTrackExtra.tpcNSigmaPi()) > ConfDaughPIDCuts))) {
       return false;
