@@ -132,6 +132,12 @@ struct Kstarqa {
     Configurable<float> nsigmaCutTOFPr{"nsigmaCutTOFPr", 3.0, "TOF Nsigma cut for protons (for MID)"};
     Configurable<float> nsigmaCutCombinedKa{"nsigmaCutCombinedKa", 3.0, "Combined Nsigma cut for kaon"};
     Configurable<float> nsigmaCutCombinedPi{"nsigmaCutCombinedPi", 3.0, "Combined Nsigma cut for pion"};
+    Configurable<float> nsigmaCutCombinedMIDKa{"nsigmaCutCombinedMIDKa", 3.0, "Combined Nsigma cut for kaon in MID"};
+    Configurable<float> nsigmaCutCombinedMIDPi{"nsigmaCutCombinedMIDPi", 3.0, "Combined Nsigma cut for pion in MID"};
+    Configurable<float> nsigmaCutTPCMIDPi{"nsigmaCutTPCMIDPi", 1.0, "MID Nsigma cut for pion in TPC"};
+    Configurable<float> nsigmaCutTPCMIDKa{"nsigmaCutTPCMIDKa", 1.0, "MID Nsigma cut for kaon in TPC"};
+    Configurable<float> nsigmaCutTOFMIDPi{"nsigmaCutTOFMIDPi", 1.0, "MID Nsigma cut for pion in TOF"};
+    Configurable<float> nsigmaCutTOFMIDKa{"nsigmaCutTOFMIDKa", 1.0, "MID Nsigma cut for kaon in TOF"};
 
     // Other fixed variables
     float lowPtCutPID = 0.5;
@@ -610,6 +616,85 @@ struct Kstarqa {
   }
 
   template <typename T>
+  bool selectionMID(const T& candidate, int PID)
+  {
+    if (PID == PIDParticle::kPion) {
+      if (onlyTOF) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFMIDPi && candidate.beta() > cBetaCutTOF) {
+          return true;
+        }
+      } else if (onlyTOFHIT) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPi()) < selectionConfig.nsigmaCutTOFMIDPi && candidate.beta() > cBetaCutTOF) {
+          return true;
+        }
+        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMIDPi) {
+          return true;
+        }
+      } else if (onlyTPC) {
+        if (std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMIDPi) {
+          return true;
+        }
+      } else {
+        if (candidate.hasTOF() && (candidate.tofNSigmaPi() * candidate.tofNSigmaPi() + candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi()) < (selectionConfig.nsigmaCutCombinedMIDPi * selectionConfig.nsigmaCutCombinedMIDPi) && candidate.beta() > cBetaCutTOF) {
+          return true;
+        }
+        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPi()) < selectionConfig.nsigmaCutTPCMIDPi) {
+          return true;
+        }
+      }
+    } else if (PID == PIDParticle::kKaon) {
+      if (onlyTOF) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFMIDKa && candidate.beta() > cBetaCutTOF) {
+          return true;
+        }
+      } else if (onlyTOFHIT) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaKa()) < selectionConfig.nsigmaCutTOFMIDKa && candidate.beta() > cBetaCutTOF) {
+          return true;
+        }
+        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMIDKa) {
+          return true;
+        }
+      } else if (onlyTPC) {
+        if (std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMIDKa) {
+          return true;
+        }
+      } else {
+        if (candidate.hasTOF() && (candidate.tofNSigmaKa() * candidate.tofNSigmaKa() + candidate.tpcNSigmaKa() * candidate.tpcNSigmaKa()) < (selectionConfig.nsigmaCutCombinedMIDKa * selectionConfig.nsigmaCutCombinedMIDKa) && candidate.beta() > cBetaCutTOF) {
+          return true;
+        }
+        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaKa()) < selectionConfig.nsigmaCutTPCMIDKa) {
+          return true;
+        }
+      }
+    } else if (PID == PIDParticle::kProton) { // for proton
+      if (onlyTOF) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < selectionConfig.nsigmaCutTOFPr && candidate.beta() > cBetaCutTOF) {
+          return true;
+        }
+      } else if (onlyTOFHIT) {
+        if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < selectionConfig.nsigmaCutTOFPr && candidate.beta() > cBetaCutTOF) {
+          return true;
+        }
+        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < selectionConfig.nsigmaCutTPCPr) {
+          return true;
+        }
+      } else if (onlyTPC) {
+        if (std::abs(candidate.tpcNSigmaPr()) < selectionConfig.nsigmaCutTPCPr) {
+          return true;
+        }
+      } else {
+        if (candidate.hasTOF() && (candidate.tofNSigmaPr() * candidate.tofNSigmaPr() + candidate.tpcNSigmaPr() * candidate.tpcNSigmaPr()) < (selectionConfig.nsigmaCutTOFPr * selectionConfig.nsigmaCutTOFPr) && candidate.beta() > cBetaCutTOF) {
+          return true;
+        }
+        if (!candidate.hasTOF() && std::abs(candidate.tpcNSigmaPr()) < selectionConfig.nsigmaCutTPCPr) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  template <typename T>
   bool selectionPIDNew(const T& candidate, int PID)
   {
     if (PID == PIDParticle::kPion) {
@@ -953,13 +1038,13 @@ struct Kstarqa {
       rEventSelection.fill(HIST("tracksCheckData"), 4.5);
 
       if (selectionConfig.isApplyParticleMID) {
-        if (selectionPID(track1, 0)) // Kaon misidentified as pion
+        if (selectionMID(track1, 0)) // Kaon misidentified as pion
           continue;
-        if (selectionPID(track1, 2)) // Kaon misidentified as proton
+        if (selectionMID(track1, 2)) // Kaon misidentified as proton
           continue;
-        if (selectionPID(track2, 1)) // Pion misidentified as kaon
+        if (selectionMID(track2, 1)) // Pion misidentified as kaon
           continue;
-        if (selectionPID(track2, 2)) // Pion misidentified as proton
+        if (selectionMID(track2, 2)) // Pion misidentified as proton
           continue;
       }
 
@@ -1076,13 +1161,13 @@ struct Kstarqa {
             continue;
 
           if (selectionConfig.isApplyParticleMID) {
-            if (selectionPID(t1, 0)) // Kaon misidentified as pion
+            if (selectionMID(t1, 0)) // Kaon misidentified as pion
               continue;
-            if (selectionPID(t1, 2)) // Kaon misidentified as proton
+            if (selectionMID(t1, 2)) // Kaon misidentified as proton
               continue;
-            if (selectionPID(t2, 1)) // Pion misidentified as kaon
+            if (selectionMID(t2, 1)) // Pion misidentified as kaon
               continue;
-            if (selectionPID(t2, 2)) // Pion misidentified as proton
+            if (selectionMID(t2, 2)) // Pion misidentified as proton
               continue;
           }
 
@@ -1135,13 +1220,13 @@ struct Kstarqa {
             continue;
 
           if (selectionConfig.isApplyParticleMID) {
-            if (selectionPID(t1, 0)) // Kaon misidentified as pion
+            if (selectionMID(t1, 0)) // Kaon misidentified as pion
               continue;
-            if (selectionPID(t1, 2)) // Kaon misidentified as proton
+            if (selectionMID(t1, 2)) // Kaon misidentified as proton
               continue;
-            if (selectionPID(t2, 1)) // Pion misidentified as kaon
+            if (selectionMID(t2, 1)) // Pion misidentified as kaon
               continue;
-            if (selectionPID(t2, 2)) // Pion misidentified as proton
+            if (selectionMID(t2, 2)) // Pion misidentified as proton
               continue;
           }
 
@@ -1302,13 +1387,13 @@ struct Kstarqa {
       rEventSelection.fill(HIST("tracksCheckData"), 3.5);
 
       if (selectionConfig.isApplyParticleMID) {
-        if (selectionPID(track1, 0)) // Kaon misidentified as pion
+        if (selectionMID(track1, 0)) // Kaon misidentified as pion
           continue;
-        if (selectionPID(track1, 2)) // Kaon misidentified as proton
+        if (selectionMID(track1, 2)) // Kaon misidentified as proton
           continue;
-        if (selectionPID(track2, 1)) // Pion misidentified as kaon
+        if (selectionMID(track2, 1)) // Pion misidentified as kaon
           continue;
-        if (selectionPID(track2, 2)) // Pion misidentified as proton
+        if (selectionMID(track2, 2)) // Pion misidentified as proton
           continue;
       }
 
@@ -1803,13 +1888,13 @@ struct Kstarqa {
               }
               rEventSelection.fill(HIST("recMCparticles"), 11.5);
               if (selectionConfig.isApplyParticleMID) {
-                if (selectionPID(track2, 0)) // Kaon misidentified as pion
+                if (selectionMID(track2, 0)) // Kaon misidentified as pion
                   continue;
-                if (selectionPID(track2, 2)) // Kaon misidentified as proton
+                if (selectionMID(track2, 2)) // Kaon misidentified as proton
                   continue;
-                if (selectionPID(track1, 1)) // Pion misidentified as kaon
+                if (selectionMID(track1, 1)) // Pion misidentified as kaon
                   continue;
-                if (selectionPID(track1, 2)) // Pion misidentified as proton
+                if (selectionMID(track1, 2)) // Pion misidentified as proton
                   continue;
               }
               rEventSelection.fill(HIST("recMCparticles"), 12.5);
@@ -1830,13 +1915,13 @@ struct Kstarqa {
               rEventSelection.fill(HIST("recMCparticles"), 11.5);
 
               if (selectionConfig.isApplyParticleMID) {
-                if (selectionPID(track1, 0)) // Kaon misidentified as pion
+                if (selectionMID(track1, 0)) // Kaon misidentified as pion
                   continue;
-                if (selectionPID(track1, 2)) // Kaon misidentified as proton
+                if (selectionMID(track1, 2)) // Kaon misidentified as proton
                   continue;
-                if (selectionPID(track2, 1)) // Pion misidentified as kaon
+                if (selectionMID(track2, 1)) // Pion misidentified as kaon
                   continue;
-                if (selectionPID(track2, 2)) // Pion misidentified as proton
+                if (selectionMID(track2, 2)) // Pion misidentified as proton
                   continue;
               }
               rEventSelection.fill(HIST("recMCparticles"), 12.5);
@@ -1883,6 +1968,256 @@ struct Kstarqa {
     }
   }
   PROCESS_SWITCH(Kstarqa, processRec, "Process Reconstructed", false);
+
+  void processRec2(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
+  {
+
+    if (!collision.has_mcCollision()) {
+      return;
+    }
+
+    if (selectionConfig.isINELgt0 && !collision.isInelGt0()) {
+      return;
+    }
+    // multiplicity = collision.centFT0M();
+
+    multiplicity = -1.0;
+
+    if (cSelectMultEstimator == kFT0M) {
+      multiplicity = collision.centFT0M();
+    } else if (cSelectMultEstimator == kFT0A) {
+      multiplicity = collision.centFT0A();
+    } else if (cSelectMultEstimator == kFT0C) {
+      multiplicity = collision.centFT0C();
+    } else if (cSelectMultEstimator == kFV0A) {
+      multiplicity = collision.centFV0A();
+    } else {
+      multiplicity = collision.centFT0M(); // default
+    }
+
+    hInvMass.fill(HIST("hAllRecCollisions"), multiplicity);
+
+    if (!selectionEvent(collision, false)) {
+      return;
+    }
+
+    // // if (std::abs(collision.mcCollision().posZ()) > selectionConfig.cutzvertex || !collision.sel8()) {
+    // if (std::abs(collision.mcCollision().posZ()) > selectionConfig.cutzvertex) {
+    //   return;
+    // }
+
+    // if (selectionConfig.isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+    //   return;
+    // }
+
+    // if (selectionConfig.isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+    //   return;
+    // }
+
+    // if (!collision.sel8()) {
+    //   return;
+    // }
+
+    // if (selectionConfig.isNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+    //   return;
+    // }
+    // if (selectionConfig.isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    //   return;
+    // }
+
+    // multiplicity = collision.centFT0M();
+
+    multiplicity = -1.0;
+
+    if (cSelectMultEstimator == kFT0M) {
+      multiplicity = collision.centFT0M();
+    } else if (cSelectMultEstimator == kFT0A) {
+      multiplicity = collision.centFT0A();
+    } else if (cSelectMultEstimator == kFT0C) {
+      multiplicity = collision.centFT0C();
+    } else if (cSelectMultEstimator == kFV0A) {
+      multiplicity = collision.centFV0A();
+    } else {
+      multiplicity = collision.centFT0M(); // default
+    }
+
+    hInvMass.fill(HIST("h1RecMult"), multiplicity);
+
+    auto oldindex = -999;
+    for (const auto& track1 : tracks) {
+      if (!selectionTrack(track1)) {
+        continue;
+      }
+
+      if (!track1.has_mcParticle()) {
+        continue;
+      }
+
+      auto track1ID = track1.index();
+      for (const auto& track2 : tracks) {
+        rEventSelection.fill(HIST("recMCparticles"), 0.5);
+        if (!track2.has_mcParticle()) {
+          continue;
+        }
+        rEventSelection.fill(HIST("recMCparticles"), 1.5);
+
+        if (!selectionTrack(track2)) {
+          continue;
+        }
+        rEventSelection.fill(HIST("recMCparticles"), 2.5);
+
+        auto track2ID = track2.index();
+        if (track2ID == track1ID) {
+          continue;
+        }
+        rEventSelection.fill(HIST("recMCparticles"), 3.5);
+
+        if (track1.sign() * track2.sign() >= 0) {
+          continue;
+        }
+        rEventSelection.fill(HIST("recMCparticles"), 4.5);
+
+        const auto mctrack1 = track1.mcParticle();
+        const auto mctrack2 = track2.mcParticle();
+        int track1PDG = std::abs(mctrack1.pdgCode());
+        int track2PDG = std::abs(mctrack2.pdgCode());
+
+        if (cQAplots && (mctrack2.pdgCode() == PDG_t::kPiPlus)) { // pion
+          hPID.fill(HIST("Before/h1PID_TPC_pos_pion"), track2.tpcNSigmaPi());
+          hPID.fill(HIST("Before/h1PID_TOF_pos_pion"), track2.tofNSigmaPi());
+          hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
+          hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
+        }
+        if (cQAplots && (mctrack2.pdgCode() == PDG_t::kKPlus)) { // kaon
+          hPID.fill(HIST("Before/h1PID_TPC_pos_kaon"), track2.tpcNSigmaKa());
+          hPID.fill(HIST("Before/h1PID_TOF_pos_kaon"), track2.tofNSigmaKa());
+          hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
+          hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
+        }
+        if (cQAplots && (mctrack2.pdgCode() == -PDG_t::kPiMinus)) { // negative track pion
+          hPID.fill(HIST("Before/h1PID_TPC_neg_pion"), track2.tpcNSigmaPi());
+          hPID.fill(HIST("Before/h1PID_TOF_neg_pion"), track2.tofNSigmaPi());
+          hPID.fill(HIST("Before/hNsigmaTPC_Pi_before"), track2.pt(), track2.tpcNSigmaPi());
+          hPID.fill(HIST("Before/hNsigmaTOF_Pi_before"), track2.pt(), track2.tofNSigmaPi());
+        }
+        if (cQAplots && (mctrack2.pdgCode() == -PDG_t::kKMinus)) { // negative track kaon
+          hPID.fill(HIST("Before/h1PID_TPC_neg_kaon"), track2.tpcNSigmaKa());
+          hPID.fill(HIST("Before/h1PID_TOF_neg_kaon"), track2.tofNSigmaKa());
+          hPID.fill(HIST("Before/hNsigmaTPC_Ka_before"), track2.pt(), track2.tpcNSigmaKa());
+          hPID.fill(HIST("Before/hNsigmaTOF_Ka_before"), track2.pt(), track2.tofNSigmaKa());
+        }
+        if (cQAplots && (std::abs(mctrack1.pdgCode()) == PDG_t::kKPlus && std::abs(mctrack2.pdgCode()) == PDG_t::kPiPlus)) {
+          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Ka_before"), track1.tpcNSigmaKa(), track1.tofNSigmaKa());
+          hPID.fill(HIST("Before/hNsigma_TPC_TOF_Pi_before"), track2.tpcNSigmaPi(), track2.tofNSigmaPi());
+        }
+
+        if (!mctrack1.isPhysicalPrimary()) {
+          continue;
+        }
+
+        if (!mctrack2.isPhysicalPrimary()) {
+          continue;
+        }
+        rEventSelection.fill(HIST("recMCparticles"), 5.5);
+
+        // if (!(track1PDG == PDG_t::kKPlus && track2PDG == PDG_t::kPiPlus)) {
+        //   continue;
+        // }
+        if (selectionConfig.isPDGCheckMC && (track1PDG != PDG_t::kKPlus)) {
+          continue;
+        }
+        if (selectionConfig.isPDGCheckMC && (track2PDG != PDG_t::kPiPlus)) {
+          continue;
+        }
+        rEventSelection.fill(HIST("recMCparticles"), 6.5);
+
+        for (const auto& mothertrack1 : mctrack1.mothers_as<aod::McParticles>()) {
+          for (const auto& mothertrack2 : mctrack2.mothers_as<aod::McParticles>()) {
+            if (selectionConfig.isPDGCheckMC && (mothertrack1.pdgCode() != mothertrack2.pdgCode())) {
+              continue;
+            }
+
+            if (mothertrack1.globalIndex() != mothertrack2.globalIndex()) {
+              continue;
+            }
+            rEventSelection.fill(HIST("recMCparticles"), 7.5);
+
+            if (!mothertrack1.producedByGenerator()) {
+              continue;
+            }
+            rEventSelection.fill(HIST("recMCparticles"), 8.5);
+
+            if (std::abs(mothertrack1.y()) >= selectionConfig.rapidityMotherData) {
+              continue;
+            }
+            rEventSelection.fill(HIST("recMCparticles"), 9.5);
+
+            if (selectionConfig.isPDGCheckMC && (std::abs(mothertrack1.pdgCode()) != o2::constants::physics::kK0Star892)) {
+              continue;
+            }
+            rEventSelection.fill(HIST("recMCparticles"), 10.5);
+
+            if (!applypTdepPID && !(selectionPID(track1, 1) && selectionPID(track2, 0))) {
+              continue;
+            } else if (applypTdepPID && !(selectionPIDNew(track1, 1) && selectionPIDNew(track2, 0))) {
+              continue;
+            }
+            rEventSelection.fill(HIST("recMCparticles"), 11.5);
+
+            if (selectionConfig.isApplyParticleMID) {
+              if (selectionMID(track1, 0)) // Kaon misidentified as pion
+                continue;
+              if (selectionMID(track1, 2)) // Kaon misidentified as proton
+                continue;
+              if (selectionMID(track2, 1)) // Pion misidentified as kaon
+                continue;
+              if (selectionMID(track2, 2)) // Pion misidentified as proton
+                continue;
+            }
+            rEventSelection.fill(HIST("recMCparticles"), 12.5);
+
+            if (std::abs(track1.rapidity(o2::track::PID::getMass(o2::track::PID::Kaon))) > selectionConfig.ctrackRapidity)
+              continue;
+
+            if (std::abs(track2.rapidity(o2::track::PID::getMass(o2::track::PID::Pion))) > selectionConfig.ctrackRapidity)
+              continue;
+
+            rEventSelection.fill(HIST("recMCparticles"), 13.5);
+
+            if (selectionConfig.isApplyCutsOnMother) {
+              if (mothertrack1.pt() >= selectionConfig.cMaxPtMotherCut) // excluding candidates in overflow
+                continue;
+              if ((std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p())) >= selectionConfig.cMaxMinvMotherCut) // excluding candidates in overflow
+                continue;
+            }
+
+            if (avoidsplitrackMC && oldindex == mothertrack1.globalIndex()) {
+              hInvMass.fill(HIST("h1KSRecsplit"), mothertrack1.pt());
+              continue;
+            }
+            rEventSelection.fill(HIST("recMCparticles"), 14.5);
+
+            oldindex = mothertrack1.globalIndex();
+            if (track1.sign() * track2.sign() < 0) {
+              daughter1 = ROOT::Math::PxPyPzMVector(track1.px(), track1.py(), track1.pz(), massKa);
+              daughter2 = ROOT::Math::PxPyPzMVector(track2.px(), track2.py(), track2.pz(), massPi);
+              mother = daughter1 + daughter2; // Kstar meson
+
+              hInvMass.fill(HIST("h2KstarRecpt2"), mothertrack1.pt(), multiplicity, std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p()));
+
+              if (applyRecMotherRapidity && mother.Rapidity() >= selectionConfig.rapidityMotherData) {
+                continue;
+              }
+
+              hInvMass.fill(HIST("h1KstarRecMass"), mother.M());
+              hInvMass.fill(HIST("h2KstarRecpt1"), mother.Pt(), multiplicity, mother.M());
+            }
+          }
+        }
+      }
+    }
+  }
+  PROCESS_SWITCH(Kstarqa, processRec2, "Process Reconstructed 2", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
