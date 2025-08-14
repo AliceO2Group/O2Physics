@@ -124,10 +124,14 @@ struct TreeCreatorElectronMLDDA {
   Configurable<float> downscaling_kaon_highP{"downscaling_kaon_highP", 1.1, "down scaling factor to store kaon at high p"};
   Configurable<float> downscaling_proton_highP{"downscaling_proton_highP", 1.1, "down scaling factor to store proton at high p"};
 
+  Configurable<float> downscaling_electron_midP{"downscaling_electron_midP", 0.1, "down scaling factor to store electron at intermediate p"};
+
   Configurable<float> downscaling_electron_lowP{"downscaling_electron_lowP", 0.01, "down scaling factor to store electron at low p"};
   Configurable<float> downscaling_pion_lowP{"downscaling_pion_lowP", 0.01, "down scaling factor to store pion at low p"};
   Configurable<float> downscaling_kaon_lowP{"downscaling_kaon_lowP", 1.1, "down scaling factor to store kaon at low p"};
   Configurable<float> downscaling_proton_lowP{"downscaling_proton_lowP", 0.01, "down scaling factor to store proton at low p"};
+
+  Configurable<float> mid_p_for_downscaling_electron{"mid_p_for_downscaling_electron", 0.8, "intermediate p to apply down scaling factor to store electron"};
 
   Configurable<float> max_p_for_downscaling_electron{"max_p_for_downscaling_electron", 2.0, "max p to apply down scaling factor to store electron"};
   Configurable<float> max_p_for_downscaling_pion{"max_p_for_downscaling_pion", 2.0, "max p to apply down scaling factor to store pion"};
@@ -593,8 +597,12 @@ struct TreeCreatorElectronMLDDA {
     // float dcaZ = mDcaInfoCov.getZ();
 
     if (pidlabel == static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron)) {
-      if (track.tpcInnerParam() < max_p_for_downscaling_electron) {
+      if (track.tpcInnerParam() < mid_p_for_downscaling_electron) {
         if (dist01(engine) > downscaling_electron_lowP) {
+          return;
+        }
+      } else if (track.tpcInnerParam() < max_p_for_downscaling_electron) {
+        if (dist01(engine) > downscaling_electron_midP) {
           return;
         }
       } else {
