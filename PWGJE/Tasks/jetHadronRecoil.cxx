@@ -205,7 +205,7 @@ struct JetHadronRecoil {
     jetReclusterer.recombScheme = fastjet::WTA_pt_scheme;
   }
 
-  template <typename T, typename U, typename W>
+  template <typename T, typename U>
   void fillHistograms(T const& jets, U const& tracks, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
   {
     bool isSigCol;
@@ -347,7 +347,7 @@ struct JetHadronRecoil {
     registry.fill(HIST("hTracksvsJets"), leadingTrackPt, leadingJetPt, pTHat, weight);
   }
 
-  template <typename T, typename W, typename U>
+  template <typename T, typename U>
   void fillMCPHistograms(T const& jets, U const& particles, float weight = 1.0, float pTHat = 999.0)
   {
     bool isSigCol;
@@ -470,7 +470,7 @@ struct JetHadronRecoil {
     registry.fill(HIST("hPartvsJets"), leadingPartPt, leadingJetPt, pTHat, weight);
   }
 
-  template <typename T, typename V, typename W, typename U, typename X, typename Y>
+  template <typename T, typename U, typename X, typename Y>
   void fillMatchedHistograms(T const& jetsBase, U const&, X const& tracks, Y const& particles, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
   {
     for (const auto& jetBase : jetsBase) {
@@ -513,7 +513,7 @@ struct JetHadronRecoil {
     }
   }
 
-  template <typename T, typename V, typename W, typename U, typename X, typename Y>
+  template <typename T, typename U, typename X, typename Y>
   void fillRecoilJetMatchedHistograms(T const& jetsBase, U const&, X const& tracks, Y const& particles, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
   {
     std::vector<double> phiTTAr;
