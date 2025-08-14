@@ -148,7 +148,7 @@ void setEventRejectionLabels(Histo& hRejection, std::string const& softwareTrigg
 }
 
 struct HfEventSelection : o2::framework::ConfigurableGroup {
-  const std::string prefix = "hfEvSel"; // JSON group name
+  std::string prefix = "hfEvSel"; // JSON group name
   // event selection parameters (in chronological order of application)
   o2::framework::Configurable<float> centralityMin{"centralityMin", 0.f, "Minimum centrality"};
   o2::framework::Configurable<float> centralityMax{"centralityMax", 100.f, "Maximum centrality"};

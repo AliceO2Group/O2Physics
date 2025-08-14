@@ -173,7 +173,7 @@ bool isCandidateInMassRange(const float invMass,
 
 /// Configurable group to apply trigger specific cuts for 2-prong HF analysis
 struct HfTrigger2ProngCuts : o2::framework::ConfigurableGroup {
-  const std::string prefix = "hfTrigger2ProngCuts"; // JSON group name
+  std::string prefix = "hfTrigger2ProngCuts"; // JSON group name
 
   static constexpr float DefaultDeltaMassPars[1][2] = {{-0.0025f, 0.0001f}};
   static constexpr float DefaultSigmaPars[1][2] = {{0.01424f, 0.00178f}};
@@ -186,7 +186,7 @@ struct HfTrigger2ProngCuts : o2::framework::ConfigurableGroup {
 
 /// Configurable group to apply trigger specific cuts for 3-prong HF analysis
 struct HfTrigger3ProngCuts : o2::framework::ConfigurableGroup {
-  const std::string prefix = "hfTrigger3ProngCuts"; // JSON group name
+  std::string prefix = "hfTrigger3ProngCuts"; // JSON group name
 
   static constexpr float DefaultDeltaMassPars[1][2] = {{-0.0025f, 0.0001f}};
   static constexpr float DefaultSigmaPars[1][2] = {{0.00796f, 0.00176f}};
