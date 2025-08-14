@@ -70,7 +70,7 @@ class FemtoUniverseParticleHisto
 
   // comment
   template <o2::aod::femtouniverse_mc_particle::MCType mc, typename T>
-  void init_debug(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis) // o2-linter: disable=name/function-variable
+  void init_debug(std::string folderName, T& tempFitVarpTAxis) // o2-linter: disable=name/function-variable
   {
     std::string folderSuffix = static_cast<std::string>(o2::aod::femtouniverse_mc_particle::MCTypeName[mc]).c_str();
     if constexpr (mParticleType == o2::aod::femtouniverseparticle::ParticleType::kTrack || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kV0Child || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kCascadeBachelor || mParticleType == o2::aod::femtouniverseparticle::ParticleType::kMCTruthTrack) {
@@ -242,7 +242,7 @@ class FemtoUniverseParticleHisto
       // Fill here the actual histogramms by calling init_base and init_MC
       init_base<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
       if (isDebug) {
-        init_debug<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
+        init_debug<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(folderName, tempFitVarpTAxis);
       }
       if (isMC) {
         init_base<o2::aod::femtouniverse_mc_particle::MCType::kTruth>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
