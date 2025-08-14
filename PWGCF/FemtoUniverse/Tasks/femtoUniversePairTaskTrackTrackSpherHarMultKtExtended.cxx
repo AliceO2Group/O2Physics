@@ -472,6 +472,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
           continue;
         }
         trackHistoPartOne.fillQA<isMC, true>(part);
+        trackHistoPartOne.fillQAMisIden<isMC, true>(part, trackonefilter.ConfPDGCodePartOne);
       }
     }
 
