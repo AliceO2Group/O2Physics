@@ -880,7 +880,6 @@ struct JetHadronRecoil {
   double getWTAaxisDifference(T const& jet, X const& /*tracks or particles*/)
   {
     double deltaPhi = -1;
-    double deltaEta = -1;
     double deltaY = -1;
     double dR = -1;
     jetConstituents.clear();
