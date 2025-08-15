@@ -29,7 +29,7 @@ struct otfParticlePrediction {
   ConfigurableAxis binsEta{"binsEta", {100, -5, 5}, "Binning of the Eta axis"};
   ConfigurableAxis binsPt{"binsPt", {100, 0, 10}, "Binning of the Pt axis"};
 
-  Configurable<float> maxEtaParticle{"maxEtaParticle", 5.f, "Max eta of particles considered"};
+  Configurable<float> maxYParticle{"maxYParticle", 5.f, "Max rapidity of particles considered"};
 
   // init function
   void init(InitContext&)
@@ -55,7 +55,7 @@ struct otfParticlePrediction {
 
     for (const auto& particle : mcParticles) {
       auto pdg = std::abs(particle.pdgCode());
-      if (std::abs(particle.eta()) > maxEtaParticle) {
+      if (std::abs(particle.y()) > maxYParticle) {
         continue;
       }
       // if (!(particle.isPhysicalPrimary())) {
@@ -69,22 +69,22 @@ struct otfParticlePrediction {
       }
       switch (pdg) {
         case 111:
-          histos.fill(HIST("particles/generated/pi0"), particle.pt(), particle.eta());
+          histos.fill(HIST("particles/generated/pi0"), particle.pt(), particle.y());
           break;
         case 221:
-          histos.fill(HIST("particles/generated/eta"), particle.pt(), particle.eta());
+          histos.fill(HIST("particles/generated/eta"), particle.pt(), particle.y());
           break;
         case 331:
-          histos.fill(HIST("particles/generated/etaP"), particle.pt(), particle.eta());
+          histos.fill(HIST("particles/generated/etaP"), particle.pt(), particle.y());
           break;
         case 223:
-          histos.fill(HIST("particles/generated/omega"), particle.pt(), particle.eta());
+          histos.fill(HIST("particles/generated/omega"), particle.pt(), particle.y());
           break;
         case 113:
-          histos.fill(HIST("particles/generated/rho"), particle.pt(), particle.eta());
+          histos.fill(HIST("particles/generated/rho"), particle.pt(), particle.y());
           break;
         case 333:
-          histos.fill(HIST("particles/generated/phi"), particle.pt(), particle.eta());
+          histos.fill(HIST("particles/generated/phi"), particle.pt(), particle.y());
           break;
         default:
           break;
