@@ -113,9 +113,9 @@ struct JetTaggerHFQA {
   ConfigurableAxis binSigmaLxyz{"binSigmaLxyz", {100, 0., 0.1}, ""};
 
   int numberOfJetFlavourSpecies = 6;
-  int firstTaggerForTrackCounting = 0;
-  int secondTaggerForTrackCounting = 1;
-  int thirdTaggerForTrackCounting = 2;
+  std::size_t firstTaggerForTrackCounting = 0;
+  std::size_t secondTaggerForTrackCounting = 1;
+  std::size_t thirdTaggerForTrackCounting = 2;
   float kUnsetJetAreaFraction = -98.0;
   float kUnsetConstituentPtMin = -98.0;
   float kUnsetConstituentPtMax = 9998.0;
