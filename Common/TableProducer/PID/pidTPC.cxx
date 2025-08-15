@@ -154,7 +154,6 @@ struct tpcPid {
   Configurable<float> networkInputBatchedMode{"networkInputBatchedMode", -1, {"-1: Takes all tracks, >0: Takes networkInputBatchedMode number of tracks at once"}};
   Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   ctpRateFetcher mRateFetcher;
-  
   // Parametrization configuration
   bool useCCDBParam = false;
   std::vector<float> track_properties;
@@ -404,12 +403,12 @@ struct tpcPid {
           track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
         }
         if (input_dimensions == 8 && networkVersion == "3") {
-          if(trk.has_collision()){
+          if (trk.has_collision()) {
             auto trk_bc = (collisions.iteratorAt(trk.collisionId())).template bc_as<B>();
             float hadronicRate = mRateFetcher.fetch(ccdb.service, trk_bc.timestamp(), trk_bc.runNumber(), irSource) * 1.e-3;
-            track_properties[counter_track_props + 7] = hadronicRate/50.;
+            track_properties[counter_track_props + 7] = hadronicRate / 50.;
           }else{
-            track_properties[counter_track_props + 7] =1;
+            track_properties[counter_track_props + 7] = 1;
           }
         }
 
