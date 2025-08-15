@@ -32,8 +32,7 @@ struct otfParticlePrediction {
   Configurable<float> maxEtaParticle{"maxEtaParticle", 5.f, "Max eta of particles considered"};
 
   // init function
-  void
-    init()
+  void init(InitContext&)
   {
 
     const AxisSpec axisEta{binsEta, "#eta"};
@@ -56,12 +55,12 @@ struct otfParticlePrediction {
 
     for (const auto& particle : mcParticles) {
       auto pdg = std::abs(particle.pdgCode());
-      if (particle.eta() < maxEtaParticle) {
+      if (std::abs(particle.eta()) > maxEtaParticle) {
         continue;
       }
-      if (!particle.isPhysicalPrimary()) {
-        continue;
-      }
+      // if (!(particle.isPhysicalPrimary())) {
+      //   continue;
+      // }
       if (pdg < 100) {
         continue;
       }
