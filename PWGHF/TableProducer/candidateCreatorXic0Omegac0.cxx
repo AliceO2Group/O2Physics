@@ -2726,7 +2726,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
       const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
       float centrality{-1.f};
-      uint32_t rejectionMask{0u};
+      o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       int nSplitColl = 0;
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
         const auto collSlice = collsWithMcLabels.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());

@@ -9,44 +9,45 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \author ZhengqingWang(zhengqing.wang@cern.ch)
+/// \author ZhengqingWang(zhengqing.wang@cern.ch), KegangXiong(kxiong@cern.ch)
 /// \file   flowPidCme.cxx
 /// \brief  task to calculate the pikp cme signal and bacground.
 // C++/ROOT includes.
 #include <CCDB/BasicCCDBManager.h>
-#include <chrono>
-#include <string>
-#include <vector>
-#include <utility>
-#include <memory>
-#include <TF1.h>
+
 #include <TComplex.h>
+#include <TF1.h>
 #include <TH1F.h>
 #include <TH2D.h>
 #include <TMath.h>
 #include <TVector2.h>
 
-// o2Physics includes.
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
+#include <chrono>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
+// o2Physics includes.
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
 
 // o2 includes.
 
@@ -158,6 +159,7 @@ struct FillPIDcolums {
   Configurable<bool> cfgOpenITSCut{"cfgOpenITSCut", true, "open ITSnsigma cut"};
   Configurable<bool> cfgOpenITSCutQAPlots{"cfgOpenITSCutQAPlots", true, "open QA plots after ITS nsigma cut"};
   Configurable<bool> cfgOpenDetailPlotsTPCITSContaimination{"cfgOpenDetailPlotsTPCITSContaimination", false, "open detail TH3D plots for nSigmaTPC-ITS Pt-eta-Phi nSigmaITS-clustersize"};
+  Configurable<bool> cfgUseStrictPID{"cfgUseStrictPID", true, "More strict pid strategy"};
   Configurable<bool> cfgOpenAllowCrossTrack{"cfgOpenAllowCrossTrack", false, "Allow one track to be identified as different kind of PID particles"};
   Configurable<bool> cfgOpenCrossTrackQAPlots{"cfgOpenCrossTrackQAPlots", true, "open cross pid track QA plots"};
   Configurable<bool> cfgOpenTOFOnlyPID{"cfgOpenTOFOnlyPID", true, "only accept tracks who has TOF infomation and use TOFnsigma for PID(priority greater than TPConly and combined"};
@@ -311,9 +313,17 @@ struct FillPIDcolums {
       pidVectorUpper = pidVectorTPCPtUpper;
       pidVectorLower = pidVectorTPCPtLower;
     } else {
-      nSigmaToUse = (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) ? nSigmaCombined : nSigmaTPC;
-      pidVectorUpper = (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) ? cfgnSigmaCutRMSUpper.value : cfgnSigmaCutTPCUpper.value;
-      pidVectorLower = (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) ? cfgnSigmaCutRMSLower.value : cfgnSigmaCutTPCLower.value;
+      if (candidate.pt() > cfgPtMaxforTPCOnlyPID && candidate.hasTOF()) {
+        nSigmaToUse = nSigmaCombined;
+        pidVectorUpper = cfgnSigmaCutRMSUpper.value;
+        pidVectorLower = cfgnSigmaCutRMSLower.value;
+      } else if (candidate.pt() > cfgPtMaxforTPCOnlyPID && !candidate.hasTOF() && cfgUseStrictPID) {
+        return 0;
+      } else {
+        nSigmaToUse = nSigmaTPC;
+        pidVectorUpper = cfgnSigmaCutTPCUpper.value;
+        pidVectorLower = cfgnSigmaCutTPCLower.value;
+      }
     }
     float nsigma = 9999.99;
     const int nPOI = 3;
@@ -448,20 +458,27 @@ struct FillPIDcolums {
         }
       }
     }
-    if (cfgOpenAllowCrossTrack) {
-      // one track can be recognized as different PID particles
+    if (cfgUseStrictPID) {
+      // Only use the track which was recognized as an unique PID particle
       int index = (kIsPr << 2) | (kIsKa << 1) | kIsPi;
-      const int map[] = {0, 1, 2, 7, 3, 8, 9, 10};
+      const int map[] = {0, 1, 2, 0, 3, 0, 0, 0};
       return map[index];
     } else {
-      // Select particle with the lowest nsigma (If not allow cross track)
-      for (int i = 0; i < nPOI; ++i) {
-        if (std::abs(nSigmaToUse[i]) < nsigma && (nSigmaToUse[i] > pidVectorLower[i] && nSigmaToUse[i] < pidVectorUpper[i])) {
-          pid = i;
-          nsigma = std::abs(nSigmaToUse[i]);
+      if (cfgOpenAllowCrossTrack) {
+        // one track can be recognized as different PID particles
+        int index = (kIsPr << 2) | (kIsKa << 1) | kIsPi;
+        const int map[] = {0, 1, 2, 7, 3, 8, 9, 10};
+        return map[index];
+      } else {
+        // Select particle with the lowest nsigma (If not allow cross track)
+        for (int i = 0; i < nPOI; ++i) {
+          if (std::abs(nSigmaToUse[i]) < nsigma && (nSigmaToUse[i] > pidVectorLower[i] && nSigmaToUse[i] < pidVectorUpper[i])) {
+            pid = i;
+            nsigma = std::abs(nSigmaToUse[i]);
+          }
         }
+        return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
       }
-      return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
     }
     // Clear the vectors
     std::vector<float>().swap(pidVectorLower);
@@ -2682,8 +2699,9 @@ struct FlowPidCme {
     int detInd = detId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
     int refAInd = refAId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
     int refBInd = refBId * 4 + cfgnTotalSystem * 4 * (nmode - 2);
+    double nonzero = 1e-8;
     if (nmode == fourier_mode::kMode2) {
-      if (collision.qvecAmp()[detId] > 1e-8) {
+      if (collision.qvecAmp()[detId] > nonzero) {
         histosQA.fill(HIST("QA/histQvec_CorrL0_V2"), collision.qvecRe()[detInd], collision.qvecIm()[detInd], collision.centFT0C());
         histosQA.fill(HIST("QA/histQvec_CorrL1_V2"), collision.qvecRe()[detInd + 1], collision.qvecIm()[detInd + 1], collision.centFT0C());
         histosQA.fill(HIST("QA/histQvec_CorrL2_V2"), collision.qvecRe()[detInd + 2], collision.qvecIm()[detInd + 2], collision.centFT0C());
@@ -2693,7 +2711,7 @@ struct FlowPidCme {
         histosQA.fill(HIST("QA/histEvtPl_CorrL2_V2"), helperEP.GetEventPlane(collision.qvecRe()[detInd + 2], collision.qvecIm()[detInd + 2], nmode), collision.centFT0C());
         histosQA.fill(HIST("QA/histEvtPl_CorrL3_V2"), helperEP.GetEventPlane(collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3], nmode), collision.centFT0C());
       }
-      if (collision.qvecAmp()[detId] > 1e-8 && collision.qvecAmp()[refAId] > 1e-8 && collision.qvecAmp()[refBId] > 1e-8) {
+      if (collision.qvecAmp()[detId] > nonzero && collision.qvecAmp()[refAId] > nonzero && collision.qvecAmp()[refBId] > nonzero) {
         histosQA.fill(HIST("QA/histQvecRes_SigRefAV2"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3], nmode), helperEP.GetEventPlane(collision.qvecRe()[refAInd + 3], collision.qvecIm()[refAInd + 3], nmode), nmode), collision.centFT0C());
         histosQA.fill(HIST("QA/histQvecRes_SigRefBV2"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecRe()[detInd + 3], collision.qvecIm()[detInd + 3], nmode), helperEP.GetEventPlane(collision.qvecRe()[refBInd + 3], collision.qvecIm()[refBInd + 3], nmode), nmode), collision.centFT0C());
         histosQA.fill(HIST("QA/histQvecRes_RefARefBV2"), helperEP.GetResolution(helperEP.GetEventPlane(collision.qvecRe()[refAInd + 3], collision.qvecIm()[refAInd + 3], nmode), helperEP.GetEventPlane(collision.qvecRe()[refBInd + 3], collision.qvecIm()[refBInd + 3], nmode), nmode), collision.centFT0C());
@@ -2704,7 +2722,8 @@ struct FlowPidCme {
   template <typename CollType, typename TrackType>
   void fillHistosFlowGammaDelta(const CollType& collision, const TrackType& track1, const TrackType& track2, const TrackType& track3, int nmode)
   {
-    if (collision.qvecAmp()[detId] < 1e-8) {
+    double nonzero2 = 1e-8;
+    if (collision.qvecAmp()[detId] < nonzero2) {
       return;
     }
     auto cent = collision.centFT0C();

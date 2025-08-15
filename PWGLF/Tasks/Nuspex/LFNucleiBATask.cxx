@@ -466,6 +466,7 @@ struct LFNucleiBATask {
     // DCAxy,z
     if (outFlagOptions.makeDCABeforeCutPlots) {
       histos.add<TH3>("tracks/dca/before/hDCAxyVsDCAzVsPt", "DCAxy vs DCAz vs Pt/z; DCAxy; DCAz", HistType::kTH3F, {{140, -0.7f, 0.7f}, {160, -0.8f, 0.8f}, {binsPtHe}});
+
       histos.add<TH2>("tracks/dca/before/hDCAxyVsDCAz", "DCAxy vs DCAz (before cuts)", HistType::kTH2F, {{550, -1.1, 1.1}, {550, -1.1, 1.1}});
       histos.add<TH1>("tracks/dca/before/hDCAxy", "DCAxy", HistType::kTH1F, {dcaxyAxis});
       histos.add<TH1>("tracks/dca/before/hDCAz", "DCAz", HistType::kTH1F, {dcazAxis});
@@ -505,6 +506,9 @@ struct LFNucleiBATask {
       if (enableHe) {
         histos.add<TH3>("tracks/helium/dca/before/hDCAxyVsDCAzVsPtHelium", "DCAxy vs DCAz vs Pt/z (He); DCAxy; DCAz", HistType::kTH3F, {{140, -0.7f, 0.7f}, {160, -0.8f, 0.8f}, {binsPtZHe}});
         histos.add<TH3>("tracks/helium/dca/before/hDCAxyVsDCAzVsPtantiHelium", "DCAxy vs DCAz vs Pt/z (#bar{He}); DCAxy; DCAz", HistType::kTH3F, {{140, -0.7f, 0.7f}, {160, -0.8f, 0.8f}, {binsPtZHe}});
+        histos.add("tracks/helium/dca/before/h3DCAvsPtHelium", "", HistType::kTHnSparseD, {dcaxyAxis, dcazAxis, ptZHeAxis});
+        histos.add("tracks/helium/dca/before/h3DCAvsPtantiHelium", "", HistType::kTHnSparseD, {dcaxyAxis, dcazAxis, ptZHeAxis});
+
         histos.add<TH2>("tracks/helium/dca/before/hDCAxyVsPtHelium", "DCAxy vs Pt (He)", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
         histos.add<TH2>("tracks/helium/dca/before/hDCAxyVsPtantiHelium", "DCAxy vs Pt (#bar{He})", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
         histos.add<TH2>("tracks/helium/dca/before/hDCAzVsPtHelium", "DCAz vs Pt (He)", HistType::kTH2F, {{ptZHeAxis}, {dcazAxis}});
@@ -561,6 +565,8 @@ struct LFNucleiBATask {
     if (enableHe && outFlagOptions.makeDCAAfterCutPlots) {
       histos.add<TH3>("tracks/helium/dca/after/hDCAxyVsDCAzVsPtHelium", "DCAxy vs DCAz vs Pt/z (He); DCAxy; DCAz", HistType::kTH3F, {{140, -0.7f, 0.7f}, {160, -0.8f, 0.8f}, {binsPtZHe}});
       histos.add<TH3>("tracks/helium/dca/after/hDCAxyVsDCAzVsPtantiHelium", "DCAxy vs DCAz vs Pt/z (#bar{He}); DCAxy; DCAz", HistType::kTH3F, {{140, -0.7f, 0.7f}, {160, -0.8f, 0.8f}, {binsPtZHe}});
+      histos.add("tracks/helium/dca/after/h3DCAvsPtHelium", "", HistType::kTHnSparseD, {dcaxyAxis, dcazAxis, ptZHeAxis});
+      histos.add("tracks/helium/dca/after/h3DCAvsPtantiHelium", "", HistType::kTHnSparseD, {dcaxyAxis, dcazAxis, ptZHeAxis});
       histos.add<TH2>("tracks/helium/dca/after/hDCAxyVsPtHelium", "DCAxy vs Pt (He)", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
       histos.add<TH2>("tracks/helium/dca/after/hDCAxyVsPtantiHelium", "DCAxy vs Pt (#bar{He})", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
       histos.add<TH2>("tracks/helium/dca/after/hDCAzVsPtHelium", "DCAz vs Pt (He)", HistType::kTH2F, {{ptZHeAxis}, {dcazAxis}});
@@ -2531,12 +2537,14 @@ struct LFNucleiBATask {
 
         if (isHe && std::abs(track.tpcNSigmaHe()) < nsigmaTPCvar.nsigmaTPCHe) {
           histos.fill(HIST("tracks/helium/dca/before/hDCAxyVsDCAzVsPtHelium"), track.dcaXY(), track.dcaZ(), hePt);
+          histos.fill(HIST("tracks/helium/dca/before/h3DCAvsPtHelium"), track.dcaXY(), track.dcaZ(), hePt);
           if (track.hasTOF() && outFlagOptions.doTOFplots) {
             histos.fill(HIST("tracks/helium/dca/before/TOF/hDCAxyVsDCAzVsPtHelium"), track.dcaXY(), track.dcaZ(), hePt);
           }
         }
         if (isAntiHe && std::abs(track.tpcNSigmaHe()) < nsigmaTPCvar.nsigmaTPCHe) {
           histos.fill(HIST("tracks/helium/dca/before/hDCAxyVsDCAzVsPtantiHelium"), track.dcaXY(), track.dcaZ(), antihePt);
+          histos.fill(HIST("tracks/helium/dca/before/h3DCAvsPtantiHelium"), track.dcaXY(), track.dcaZ(), antihePt);
           if (track.hasTOF() && outFlagOptions.doTOFplots) {
             histos.fill(HIST("tracks/helium/dca/before/TOF/hDCAxyVsDCAzVsPtantiHelium"), track.dcaXY(), track.dcaZ(), antihePt);
           }
@@ -3697,12 +3705,14 @@ struct LFNucleiBATask {
 
         if (isHeWTPCpid) {
           histos.fill(HIST("tracks/helium/dca/after/hDCAxyVsDCAzVsPtHelium"), track.dcaXY(), track.dcaZ(), hePt);
+          histos.fill(HIST("tracks/helium/dca/after/h3DCAvsPtHelium"), track.dcaXY(), track.dcaZ(), hePt);
           if (track.hasTOF() && outFlagOptions.doTOFplots) {
             histos.fill(HIST("tracks/helium/dca/after/TOF/hDCAxyVsDCAzVsPtHelium"), track.dcaXY(), track.dcaZ(), hePt);
           }
         }
         if (isAntiHeWTPCpid) {
           histos.fill(HIST("tracks/helium/dca/after/hDCAxyVsDCAzVsPtantiHelium"), track.dcaXY(), track.dcaZ(), antihePt);
+          histos.fill(HIST("tracks/helium/dca/after/h3DCAvsPtantiHelium"), track.dcaXY(), track.dcaZ(), antihePt);
           if (track.hasTOF() && outFlagOptions.doTOFplots) {
             histos.fill(HIST("tracks/helium/dca/after/TOF/hDCAxyVsDCAzVsPtantiHelium"), track.dcaXY(), track.dcaZ(), antihePt);
           }

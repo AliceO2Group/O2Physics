@@ -33,6 +33,11 @@
 #include <cmath>
 #include <vector>
 
+template <typename T>
+concept IsB0ToDstarPiChannel = requires(T candidate) {
+  candidate.prongD0Id();
+};
+
 class HfHelper
 {
  public:
@@ -632,6 +637,12 @@ class HfHelper
   auto invMassB0ToDPi(const T& candidate)
   {
     return candidate.m(std::array{o2::constants::physics::MassDMinus, o2::constants::physics::MassPiPlus});
+  }
+
+  template <IsB0ToDstarPiChannel T>
+  auto invMassB0ToDPi(const T& candidate)
+  {
+    return candidate.m(std::array{o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiPlus});
   }
 
   template <typename T>
