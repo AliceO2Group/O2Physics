@@ -52,10 +52,17 @@ jobs:
           echo "Tip: If you allow actions in your fork repository, O2 linter will run when you push commits."
       - name: Comment PR
         if: (success() || failure()) && (github.event_name == 'pull_request_target' && steps.linter.outputs.linter_ran == 1)
-        uses: thollander/actions-comment-pull-request@v3
-        with:
-          comment-tag: o2-linter
-          message: "**O2 linter results:**
-            ❌ ${{ steps.linter.outputs.n_issues }} errors,
-            ⚠️ ${{ steps.linter.outputs.n_tolerated }} warnings,
-            🔕 ${{ steps.linter.outputs.n_disabled }} disabled"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          n_issues="${{ steps.linter.outputs.n_issues }}"
+          n_tolerated="${{ steps.linter.outputs.n_tolerated }}"
+          n_disabled="${{ steps.linter.outputs.n_disabled }}"
+          
+          # Only comment if there are actual issues, warnings, or disabled items
+          if [ "${n_issues}" -gt 0 ] || [ "${n_tolerated}" -gt 0 ] || [ "${n_disabled}" -gt 0 ]; then
+            gh pr comment ${{ github.event.pull_request.number }} --body "**O2 linter results:**
+            ❌ ${n_issues} errors,
+            ⚠️ ${n_tolerated} warnings,
+            🔕 ${n_disabled} disabled"
+          fi
