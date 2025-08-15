@@ -627,7 +627,7 @@ class EventSelectionModule
   std::vector<float> diffVzParMean;  // parameterization for mean of diff vZ by FT0 vs by tracks
   std::vector<float> diffVzParSigma; // parameterization for stddev of diff vZ by FT0 vs by tracks
 
-  int32_t findClosest(int64_t globalBC, std::map<int64_t, int32_t>& bcs)
+  int32_t findClosest(const int64_t globalBC, const std::map<int64_t, int32_t>& bcs)
   {
     auto it = bcs.lower_bound(globalBC);
     int64_t bc1 = it->first;
