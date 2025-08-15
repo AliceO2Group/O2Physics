@@ -982,6 +982,7 @@ struct prefilterPrimaryElectron {
 
     if constexpr (loose_track_sign > 0) { // positive track is loose track
       auto trackParCov = getTrackParCov(pos);
+      trackParCov.setPID(o2::track::PID::Electron);
       o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
       getPxPyPz(trackParCov, pVec_recalc);
 
@@ -992,6 +993,7 @@ struct prefilterPrimaryElectron {
       phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pVec_recalc[0], pVec_recalc[1], pVec_recalc[2], ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
     } else {
       auto trackParCov = getTrackParCov(ele);
+      trackParCov.setPID(o2::track::PID::Electron);
       o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
       getPxPyPz(trackParCov, pVec_recalc);
 
