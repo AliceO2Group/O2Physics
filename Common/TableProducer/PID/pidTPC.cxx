@@ -407,7 +407,7 @@ struct tpcPid {
             auto trk_bc = (collisions.iteratorAt(trk.collisionId())).template bc_as<B>();
             float hadronicRate = mRateFetcher.fetch(ccdb.service, trk_bc.timestamp(), trk_bc.runNumber(), irSource) * 1.e-3;
             track_properties[counter_track_props + 7] = hadronicRate / 50.;
-          }else{
+          } else {
             track_properties[counter_track_props + 7] = 1;
           }
         }
