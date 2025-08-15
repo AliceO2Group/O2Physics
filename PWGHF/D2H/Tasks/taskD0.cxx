@@ -391,7 +391,7 @@ struct HfTaskD0 {
           cent = getCentralityColl(collision, centEstimator);
         }
         if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-          occ = getOccupancyColl(collision, occEstimator);
+          occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
         }
       }
 
@@ -558,7 +558,7 @@ struct HfTaskD0 {
         cent = getCentralityColl(collision, centEstimator);
       }
       if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-        occ = getOccupancyColl(collision, occEstimator);
+        occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
       }
       float massD0, massD0bar;
       if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
@@ -844,7 +844,7 @@ struct HfTaskD0 {
             cent = getCentralityGenColl(recoCollsPerMcCollCent, centEstimator);
           }
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = getOccupancyGenColl(recoCollsPerMcCollCent, occEstimator);
+            occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcCollCent, occEstimator);
           }
         } else {
           const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());

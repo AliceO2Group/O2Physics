@@ -511,10 +511,10 @@ struct HfDataCreatorJpsiHadReduced {
   /// \param indexHfCandJpsi is the index of the Jpsi candidate
   /// \param selectedTracksBach is the map with the indices of selected bachelor pion tracks
   template <uint8_t decChannel, typename CColl, typename PParticles, typename TTrack>
-  void fillMcRecoInfo(const CColl& collision,
-                      const PParticles& particlesMc,
-                      const std::vector<TTrack>& vecDaughtersB,
-                      int& indexHfCandJpsi,
+  void fillMcRecoInfo(CColl const& collision,
+                      PParticles const& particlesMc,
+                      std::vector<TTrack> const& vecDaughtersB,
+                      const int64_t indexHfCandJpsi,
                       std::array<std::map<int64_t, int64_t>, 2> selectedTracksBach,
                       const int64_t indexCollisionMaxNumContrib)
   {
@@ -728,13 +728,13 @@ struct HfDataCreatorJpsiHadReduced {
 
     registry.fill(HIST("hEvents"), 1 + Event::Processed);
     float centrality = -1.f;
-    auto hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    const auto hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
     if (skipRejectedCollisions && hfRejMap != 0) {
       return;
     }
 
     // helpers for ReducedTables filling
-    int indexHfReducedCollision = hfReducedCollision.lastIndex() + 1;
+    int const indexHfReducedCollision = hfReducedCollision.lastIndex() + 1;
     // std::map where the key is the track.globalIndex() and
     // the value is the track index in the table of the selected tracks
     std::map<int64_t, int64_t> selectedTracksBach;
@@ -797,8 +797,8 @@ struct HfDataCreatorJpsiHadReduced {
 
       // ---------------------------------
       // reconstruct J/Psi candidate secondary vertex
-      o2::track::TrackParCov trackParCovJpsi{};
-      std::array<float, 3> pVecJpsi{};
+      o2::track::TrackParCov trackParCovJpsi{}; // FIXME: unused
+      std::array<float, 3> pVecJpsi{};          // FIXME: unused
       registry.fill(HIST("hFitCandidatesJpsi"), SVFitting::BeforeFit);
       try {
         if (df2.process(trackPosParCov, trackNegParCov) == 0) {
@@ -823,8 +823,8 @@ struct HfDataCreatorJpsiHadReduced {
       }
       registry.fill(HIST("hSelectionsJpsi"), 2 + aod::SelectionStep::RecoPID, candidate.pt());
 
-      int indexHfCandJpsi = hfJpsi.lastIndex() + 1;
-      float invMassJpsi = runJpsiToee ? hfHelper.invMassJpsiToEE(candidate) : hfHelper.invMassJpsiToMuMu(candidate);
+      int const indexHfCandJpsi = hfJpsi.lastIndex() + 1;
+      float const invMassJpsi = runJpsiToee ? hfHelper.invMassJpsiToEE(candidate) : hfHelper.invMassJpsiToMuMu(candidate);
       registry.fill(HIST("hMassJpsi"), invMassJpsi);
       registry.fill(HIST("hPtJpsi"), candidate.pt());
       registry.fill(HIST("hCpaJpsi"), candidate.cpa());
@@ -1189,7 +1189,7 @@ struct HfDataCreatorJpsiHadReduced {
       auto candsJpsiThisColl = candsJpsi.sliceBy(candsJpsiPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(colPerMcCollision, collision.mcCollisionId());
-      int64_t indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
+      int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
       runDataCreation<true, DecayChannel::BplusToJpsiK>(collision, candsJpsiThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
     }
     // handle normalization by the right number of collisions
@@ -1226,7 +1226,7 @@ struct HfDataCreatorJpsiHadReduced {
       auto candsJpsiThisColl = candsJpsi.sliceBy(candsJpsiPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(colPerMcCollision, collision.mcCollisionId());
-      int64_t indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
+      int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
       runDataCreation<true, DecayChannel::BsToJpsiPhi>(collision, candsJpsiThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
     }
     // handle normalization by the right number of collisions

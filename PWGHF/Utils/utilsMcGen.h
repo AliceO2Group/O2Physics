@@ -35,8 +35,12 @@
 namespace hf_mc_gen
 {
 
-template <typename T, typename U, typename V>
-void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground, bool matchCorrelatedBackground)
+template <typename TMcParticles, typename TMcParticlesPerColl, typename TCursor>
+void fillMcMatchGen2Prong(TMcParticles const& mcParticles,
+                          TMcParticlesPerColl const& mcParticlesPerMcColl,
+                          TCursor& rowMcMatchGen,
+                          const bool rejectBackground,
+                          const bool matchCorrelatedBackground)
 {
   using namespace o2::constants::physics;
   using namespace o2::hf_decay::hf_cand_2prong;
@@ -123,8 +127,12 @@ void fillMcMatchGen2Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
   }
 }
 
-template <typename T, typename U, typename V>
-void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V& rowMcMatchGen, bool rejectBackground, std::vector<int> const& pdgMothersCorrelBkg = {})
+template <typename TMcParticles, typename TMcParticlesPerColl, typename TCursor>
+void fillMcMatchGen3Prong(TMcParticles const& mcParticles,
+                          TMcParticlesPerColl const& mcParticlesPerMcColl,
+                          TCursor& rowMcMatchGen,
+                          const bool rejectBackground,
+                          std::vector<int> const& pdgMothersCorrelBkg = {})
 {
   using namespace o2::constants::physics;
   using namespace o2::hf_decay::hf_cand_3prong;
@@ -157,7 +165,7 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
         if (std::abs(particle.pdgCode()) != pdgMother) {
           continue; // Skip if the particle PDG code does not match the mother PDG code
         }
-        auto finalStates = getDecayChannelsMain(pdgMother);
+        const auto finalStates = getDecayChannelsMain(pdgMother);
         constexpr int DepthMainMax = 2; // Depth for final state matching
         constexpr int DepthResoMax = 1; // Depth for resonant decay matching
 
@@ -307,8 +315,8 @@ void fillMcMatchGen3Prong(T const& mcParticles, U const& mcParticlesPerMcColl, V
   }
 }
 
-template <typename T, typename U>
-void fillMcMatchGenBplus(T const& mcParticles, U& rowMcMatchGen)
+template <typename TMcParticles, typename TCursor>
+void fillMcMatchGenBplus(TMcParticles const& mcParticles, TCursor& rowMcMatchGen)
 {
   using namespace o2::constants::physics;
   using namespace o2::hf_decay::hf_cand_beauty;
@@ -340,8 +348,8 @@ void fillMcMatchGenBplus(T const& mcParticles, U& rowMcMatchGen)
   } // B candidate
 }
 
-template <typename T, typename U>
-void fillMcMatchGenB0(T const& mcParticles, U& rowMcMatchGen)
+template <typename TMcParticles, typename TCursor>
+void fillMcMatchGenB0(TMcParticles const& mcParticles, TCursor& rowMcMatchGen)
 {
   using namespace o2::constants::physics;
   using namespace o2::hf_decay::hf_cand_beauty;

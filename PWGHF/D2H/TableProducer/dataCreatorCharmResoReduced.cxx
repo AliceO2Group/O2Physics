@@ -830,8 +830,8 @@ struct HfDataCreatorCharmResoReduced {
                             CCand const& candCharmBach,
                             BBachTr const& bachelorTrack,
                             Tr const& tracks,
-                            int& indexHfCandCharm,
-                            int64_t& indexCandTrBach)
+                            const int64_t indexHfCandCharm,
+                            const int64_t indexCandTrBach)
   {
     std::vector<typename Tr::iterator> vecDaughtersReso{};
     int8_t sign{0}, nKinkedTracks{0}, origin{0}, flagCharmBach{0}, flagCharmBachInterm{0}, flagTrack{0}, flagReso{0};
@@ -992,7 +992,7 @@ struct HfDataCreatorCharmResoReduced {
   {
     // helpers for ReducedTables filling
     float centrality = -1.f;
-    uint16_t hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, BCs>(collision, centrality, ccdb, registry);
+    const auto hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, BCs>(collision, centrality, ccdb, registry);
     if (rejectCollisionsWithBadEvSel && hfRejMap != 0) {
       return;
     }
@@ -1546,7 +1546,7 @@ struct HfDataCreatorCharmResoReduced {
       const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
       float centrality{-1.f};
-      uint16_t rejectionMask{0};
+      o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       int nSplitColl = 0;
       const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
       rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centrality);

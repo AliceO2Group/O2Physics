@@ -50,8 +50,8 @@ namespace aod
 {
 namespace hf_reduced_collision
 {
-DECLARE_SOA_COLUMN(Bz, bz, float);                                              //! Magnetic field in z-direction
-DECLARE_SOA_COLUMN(HfCollisionRejectionMap, hfCollisionRejectionMap, uint32_t); //! Bitmask with failed selection criteria
+DECLARE_SOA_COLUMN(Bz, bz, float);                                                                            //! Magnetic field in z-direction
+DECLARE_SOA_COLUMN(HfCollisionRejectionMap, hfCollisionRejectionMap, o2::hf_evsel::HfCollisionRejectionMask); //! Bitmask with failed selection criteria
 // keep track of the number of studied events (for normalization purposes)
 DECLARE_SOA_COLUMN(OriginalCollisionCount, originalCollisionCount, int);                                                         //! Size of COLLISION table processed
 DECLARE_SOA_COLUMN(ZvtxSelectedCollisionCount, zvtxSelectedCollisionCount, int);                                                 //! Number of COLLISIONS with |zvtx| < zvtxMax
@@ -1235,7 +1235,7 @@ DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                      //!
 DECLARE_SOA_COLUMN(ItsNClsSoftPi, itsNClsSoftPi, int);                       //! minimum value of number of ITS clusters for the decay daughter tracks
 DECLARE_SOA_COLUMN(TpcNClsCrossedRowsSoftPi, tpcNClsCrossedRowsSoftPi, int); //! minimum value of number of TPC crossed rows for the decay daughter tracks
 DECLARE_SOA_COLUMN(TpcChi2NClSoftPi, tpcChi2NClSoftPi, float);               //! maximum value of TPC chi2 for the decay daughter tracks
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                                           //!
                            [](float pxProng0, float pxProng1, float pxProng2) -> float { return 1.f * pxProng0 + 1.f * pxProng1 + 1.f * pxProng2; });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
                            [](float pyProng0, float pyProng1, float pyProng2) -> float { return 1.f * pyProng0 + 1.f * pyProng1 + 1.f * pyProng2; });
@@ -1447,16 +1447,16 @@ DECLARE_SOA_COLUMN(InvMassProng1, invMassProng1, float); //! Invariant Mass of V
 DECLARE_SOA_COLUMN(Sign, sign, int8_t);                  //! Sign of the Resonance candidate
 DECLARE_SOA_COLUMN(IsWrongSign, isWrongSign, int8_t);    //! Flag for wrong sign of the Resonance candidate, 1 = wrong sign, 0 = right sign
 
-DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);               // flag for resonance decay channel classification reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchRecD, flagMcMatchRecD, int8_t);             // flag for D meson bachelor decay channel classification reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchChanD, flagMcMatchChanD, int8_t);           // flag for D meson resonant channel classification reconstruction level
-DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);               // flag for decay channel classification generator level
-DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, uint16_t);                     // debug flag for mis-association at reconstruction level
-DECLARE_SOA_COLUMN(Origin, origin, int8_t);                               // Flag for origin of MC particle 1=promt, 2=FD
-DECLARE_SOA_COLUMN(SignD0, signD0, int8_t);                               // Sign of the D0 in the channels with D* -> D0 pi, needed in case of non-matched D*
-DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                  // Pt at generation level in GeV/c
-DECLARE_SOA_COLUMN(InvMassGen, invMassGen, float);                        //! Invariant mass at generation level in GeV/c2
-DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                                        //!
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t);     // flag for resonance decay channel classification reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchRecD, flagMcMatchRecD, int8_t);   // flag for D meson bachelor decay channel classification reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchChanD, flagMcMatchChanD, int8_t); // flag for D meson resonant channel classification reconstruction level
+DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t);     // flag for decay channel classification generator level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, uint16_t);           // debug flag for mis-association at reconstruction level
+DECLARE_SOA_COLUMN(Origin, origin, int8_t);                     // Flag for origin of MC particle 1=promt, 2=FD
+DECLARE_SOA_COLUMN(SignD0, signD0, int8_t);                     // Sign of the D0 in the channels with D* -> D0 pi, needed in case of non-matched D*
+DECLARE_SOA_COLUMN(PtGen, ptGen, float);                        // Pt at generation level in GeV/c
+DECLARE_SOA_COLUMN(InvMassGen, invMassGen, float);              //! Invariant mass at generation level in GeV/c2
+DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,                              //!
                            [](float pxProng0, float pxProng1, float pyProng0, float pyProng1) -> float { return RecoDecay::pt((1.f * pxProng0 + 1.f * pxProng1), (1.f * pyProng0 + 1.f * pyProng1)); });
 DECLARE_SOA_DYNAMIC_COLUMN(PtProng0, ptProng0, //!
                            [](float pxProng0, float pyProng0) -> float { return RecoDecay::pt(pxProng0, pyProng0); });

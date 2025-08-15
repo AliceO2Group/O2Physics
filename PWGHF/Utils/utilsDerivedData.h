@@ -39,8 +39,10 @@ namespace o2::analysis::hf_derived
 /// \param cursor  cursor of the filled table
 /// \param enabled  switch for filling the table
 /// \param size  size of the source table
-template <typename T>
-void reserveTable(T& cursor, const o2::framework::Configurable<bool>& enabled, const uint64_t size)
+template <typename TCursor>
+void reserveTable(TCursor& cursor,
+                  const o2::framework::Configurable<bool>& enabled,
+                  const uint64_t size)
 {
   if (enabled.value) {
     cursor.reserve(size);
@@ -94,36 +96,34 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
     conf = &c;
   }
 
-  template <typename T>
-  void reserveTablesCandidates(T size)
+  void reserveTablesCandidates(const uint64_t size)
   {
     o2::analysis::hf_derived::reserveTable(rowCandidateBase, conf->fillCandidateBase, size);
   }
 
-  template <typename T>
-  void reserveTablesColl(T size)
+  void reserveTablesColl(const uint64_t size)
   {
     o2::analysis::hf_derived::reserveTable(rowCollBase, conf->fillCollBase, size);
     o2::analysis::hf_derived::reserveTable(rowCollId, conf->fillCollId, size);
   }
 
-  template <typename T>
-  void reserveTablesMcColl(T size)
+  void reserveTablesMcColl(const uint64_t size)
   {
     o2::analysis::hf_derived::reserveTable(rowMcCollBase, conf->fillMcCollBase, size);
     o2::analysis::hf_derived::reserveTable(rowMcCollId, conf->fillMcCollId, size);
     o2::analysis::hf_derived::reserveTable(rowMcRCollId, conf->fillMcRCollId, size);
   }
 
-  template <typename T>
-  void reserveTablesParticles(T size)
+  void reserveTablesParticles(const uint64_t size)
   {
     o2::analysis::hf_derived::reserveTable(rowParticleBase, conf->fillParticleBase, size);
     o2::analysis::hf_derived::reserveTable(rowParticleId, conf->fillParticleId, size);
   }
 
-  template <typename T>
-  void fillTablesCandidate(const T& candidate, double invMass, double y)
+  template <typename TCandidate>
+  void fillTablesCandidate(const TCandidate& candidate,
+                           const double invMass,
+                           const double y)
   {
     if (conf->fillCandidateBase.value) {
       rowCandidateBase(
@@ -136,9 +136,8 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
     }
   }
 
-  template <bool isMC, typename T>
-  // void fillTablesCollision(const T& collision, int isEventReject, int runNumber)
-  void fillTablesCollision(const T& collision)
+  template <bool isMC, typename TCollision>
+  void fillTablesCollision(TCollision const& collision)
   {
     if (conf->fillCollBase.value) {
       rowCollBase(
@@ -165,8 +164,8 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
     }
   }
 
-  template <typename T>
-  void fillTablesMcCollision(const T& mcCollision)
+  template <typename TMcCollision>
+  void fillTablesMcCollision(TMcCollision const& mcCollision)
   {
     if (conf->fillMcCollBase.value) {
       rowMcCollBase(
@@ -186,8 +185,8 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
     }
   }
 
-  template <typename T, typename U>
-  void fillTablesParticle(const T& particle, U mass)
+  template <typename TMcParticle, typename TMass>
+  void fillTablesParticle(TMcParticle const& particle, const TMass mass)
   {
     if (conf->fillParticleBase.value) {
       rowParticleBase(
@@ -206,10 +205,10 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
     }
   }
 
-  template <typename CollisionType, typename ParticleType>
-  void preProcessMcCollisions(CollisionType const& mcCollisions,
-                              o2::framework::Preslice<ParticleType> const& mcParticlesPerMcCollision,
-                              ParticleType const& mcParticles)
+  template <typename TMcCollisions, typename TMcParticles>
+  void preProcessMcCollisions(TMcCollisions const& mcCollisions,
+                              o2::framework::Preslice<TMcParticles> const& mcParticlesPerMcCollision,
+                              TMcParticles const& mcParticles)
   {
     if (!conf->fillMcRCollId.value) {
       return;
@@ -217,26 +216,26 @@ struct HfProducesDerivedData : o2::framework::ProducesGroup {
     hasMcParticles.clear();
     // Fill MC collision flags
     for (const auto& mcCollision : mcCollisions) {
-      auto thisMcCollId = mcCollision.globalIndex();
-      auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
+      const auto thisMcCollId = mcCollision.globalIndex();
+      const auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
       LOGF(debug, "MC collision %d has %d MC particles (preprocess)", thisMcCollId, particlesThisMcColl.size());
       hasMcParticles[thisMcCollId] = (particlesThisMcColl.size() > 0);
     }
   }
 
-  template <typename CollisionType, typename ParticleType, typename TMass>
-  void processMcParticles(CollisionType const& mcCollisions,
-                          o2::framework::Preslice<ParticleType> const& mcParticlesPerMcCollision,
-                          ParticleType const& mcParticles,
-                          TMass const massParticle)
+  template <typename TMcCollisions, typename TMcParticles, typename TMass>
+  void processMcParticles(TMcCollisions const& mcCollisions,
+                          o2::framework::Preslice<TMcParticles> const& mcParticlesPerMcCollision,
+                          TMcParticles const& mcParticles,
+                          const TMass massParticle)
   {
     // Fill MC collision properties
-    auto sizeTableMcColl = mcCollisions.size();
+    const auto sizeTableMcColl = mcCollisions.size();
     reserveTablesMcColl(sizeTableMcColl);
     for (const auto& mcCollision : mcCollisions) {
-      auto thisMcCollId = mcCollision.globalIndex();
-      auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
-      auto sizeTablePart = particlesThisMcColl.size();
+      const auto thisMcCollId = mcCollision.globalIndex();
+      const auto particlesThisMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, thisMcCollId);
+      const auto sizeTablePart = particlesThisMcColl.size();
       LOGF(debug, "MC collision %d has %d MC particles", thisMcCollId, sizeTablePart);
       // Skip MC collisions without HF particles (and without HF candidates in matched reconstructed collisions if saving indices of reconstructed collisions matched to MC collisions)
       LOGF(debug, "MC collision %d has %d saved derived rec. collisions", thisMcCollId, matchedCollisions[thisMcCollId].size());

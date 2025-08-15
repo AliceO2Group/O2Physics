@@ -283,11 +283,11 @@ struct HfTaskMcValidationGen {
 
     // Slice the collisions table to get the collision info for the current MC collision
     float centrality{105.f};
-    int occupancy = 0;
+    float occupancy{0.f};
     if (storeOccupancy) {
-      occupancy = getOccupancyGenColl(recoCollisions, OccupancyEstimator::Its);
+      occupancy = o2::hf_occupancy::getOccupancyGenColl(recoCollisions, OccupancyEstimator::Its);
     }
-    uint32_t rejectionMask{0u};
+    o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
     if constexpr (centEstimator == CentralityEstimator::FT0C) {
       rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, recoCollisions, centrality);
     } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
