@@ -19,11 +19,10 @@
 #define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
 #define bitcheck64(var, nbit) ((var) & (static_cast<uint64_t>(1) << (nbit)))
 
-#include "MetadataHelper.h"
-#include "TableHelper.h"
-
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/MetadataHelper.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h>

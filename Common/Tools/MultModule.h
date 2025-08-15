@@ -16,11 +16,10 @@
 #ifndef COMMON_TOOLS_MULTMODULE_H_
 #define COMMON_TOOLS_MULTMODULE_H_
 
-#include "TableHelper.h"
-
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 #include "Common/Core/TPCVDriftManager.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 

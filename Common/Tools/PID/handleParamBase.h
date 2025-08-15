@@ -84,7 +84,7 @@ void setStandardOpt(bpo::options_description& options)
 template <typename T>
 T* retrieveFromCCDB(const std::string& path,
                     const int64_t timestamp,
-                    std::map<std::string, std::string> metadata)
+                    const std::map<std::string, std::string>& metadata)
 {
   std::map<std::string, std::string> headers;
   LOG(info) << "Object " << path << " for timestamp " << timestamp << " -> " << timeStampToHReadble(timestamp);
