@@ -453,8 +453,6 @@ struct DileptonHadronMPC {
 
     used_trackIds.clear();
     used_trackIds.shrink_to_fit();
-    used_refTrackIds.clear();
-    used_refTrackIds.shrink_to_fit();
   }
 
   void addhistograms()
@@ -1063,7 +1061,6 @@ struct DileptonHadronMPC {
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   std::vector<std::pair<int, int>> used_trackIds;
-  std::vector<std::pair<int, int>> used_refTrackIds;
   int ndf = 0;
 
   template <bool isTriggerAnalysis, typename TCollisions, typename TLeptons, typename TPresilce, typename TCut, typename TAllTracks, typename TRefTracks>
@@ -1142,12 +1139,8 @@ struct DileptonHadronMPC {
 
             // store ref tracks for mixed event in case of kAzimuthalCorrelation
             if (cfgDoMix && cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonHadronAnalysisType::kAzimuthalCorrelation)) {
-              std::pair<int, int> pair_tmp_refTrack = std::make_pair(ndf, track.globalIndex());
-              if (std::find(used_refTrackIds.begin(), used_refTrackIds.end(), pair_tmp_refTrack) == used_refTrackIds.end()) {
-                used_refTrackIds.emplace_back(pair_tmp_refTrack);
-                emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(ndf, track.globalIndex(), collision.globalIndex(), track.trackId(), track.pt(), track.eta(), track.phi(), 0.139));
-              } // store ref tracks
-            }
+              emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(ndf, track.globalIndex(), collision.globalIndex(), track.trackId(), track.pt(), track.eta(), track.phi(), 0.139));
+            } // store ref tracks
           }
         }
         for (const auto& [ref1, ref2] : combinations(CombinationsStrictlyUpperIndexPolicy(refTracks_per_coll, refTracks_per_coll))) {
