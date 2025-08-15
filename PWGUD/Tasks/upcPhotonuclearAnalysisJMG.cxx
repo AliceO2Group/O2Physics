@@ -311,7 +311,7 @@ struct UpcPhotonuclearAnalysisJMG {
   }
 
   std::vector<double> vtxBinsEdges{VARIABLE_WIDTH, -10.0f, -7.0f, -5.0f, -2.5f, 0.0f, 2.5f, 5.0f, 7.0f, 10.0f};
-  //std::vector<double> gapSideBinsEdges{VARIABLE_WIDTH, -0.5, 0.5, 1.5};
+  std::vector<double> gapSideBinsEdges{VARIABLE_WIDTH, -0.5, 0.5, 1.5};
 
   SliceCache cache;
   // int countEvents = 0;
@@ -780,6 +780,108 @@ struct UpcPhotonuclearAnalysisJMG {
 
   PROCESS_SWITCH(UpcPhotonuclearAnalysisJMG, processMixed, "Process mixed events", true);
 
+  void processMixed(FullSGUDCollision const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
+  {
+    //(void)reconstructedCollision;
+    // int sgSide = reconstructedCollision.gapSide();
+    // int sgSide = 0;
+
+    //int maxCount = 0;
+    /*int maxCountGapA = 0;
+    int maxCountGapC = 0;*/
+
+    /*if (auto histEventCount = histos.get<TH1>(HIST("eventcount"))) {
+      int binA = histEventCount->GetXaxis()->FindBin(-2); // Gap A
+      int binC = histEventCount->GetXaxis()->FindBin(-1);  Gap C
+
+      maxCount = histEventCount->GetBinContent(binA) * factorEventsMixed;
+      maxCountGapA = histEventCount->GetBinContent(binA) * factorEventsMixed;
+      maxCountGapC = histEventCount->GetBinContent(binC) * factorEventsMixed;
+    }*/
+
+    auto histoEthaPhiVtxZ = histos.get<TH3>(HIST("etaphiVtx"));
+
+    MakeNUAWeights(histoEthaPhiVtxZ);
+
+    BinningType bindingOnVtx{{vtxBinsEdges, gapSideBinsEdges}, true};
+    //BinningType bindingOnVtx{{vtxBinsEdges}, true};
+    auto tracksTuple = std::make_tuple(reconstructedTracks);
+    SameKindPair<FullSGUDCollision, FullUDTracks, BinningType> pairs{bindingOnVtx, nEventsMixed, -1, reconstructedCollision, tracksTuple, &cache};
+
+    for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+      if (collision1.size() == 0 || collision2.size() == 0) {
+        // LOGF(info, "One or both collisions are empty.");
+        continue;
+      }
+
+      /*if (countGapA >= maxCountGapA && countGapC >= maxCountGapC) {
+        break;
+      }*/
+
+      float multiplicity = 0;
+
+      histos.fill(HIST("Events/hCountCollisionsMixed"), 0);
+
+      if (isCollisionCutSG(collision1) == false || isCollisionCutSG(collision2) == false) {
+        continue;
+      }
+      histos.fill(HIST("Events/hCountCollisionsMixed"), 1);
+      //++countEvents;
+      // LOGF(info, "In the pairs loop");
+      for (const auto& track : tracks1) {
+        if (isTrackCut(track) == false) {
+          continue;
+        }
+        ++multiplicity;
+      }
+      //multiplicity = tracks1.size();
+      if (fillCollisionUD(mixed, multiplicity) == false) {
+        return;
+      }
+      histos.fill(HIST("Events/hCountCollisionsMixed"), 2);
+      //histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
+      histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ(), collision1.gapSide()}));
+      fillCorrelationsUD(mixed, tracks1, tracks2, multiplicity, collision1.posZ());
+      // LOGF(info, "Filling mixed events");
+
+      /*if (collision1.gapSide() == 0 && collision2.gapSide() == 0) { // gap on side A
+        if (isCollisionCutSG(collision1, 0) == false && isCollisionCutSG(collision2, 0) == false) {
+          continue;
+        }
+        // std::cout << "Counts for Gap A: " << countGapA << " Maximum Count for Gap A " << maxCountGapA << std::endl;
+        ++countGapA;
+        // LOGF(info, "In the pairs loop, gap side A");
+        multiplicity = tracks1.size();
+        if (fillCollisionUD(mixedGapSideA, multiplicity) == false) {
+          return;
+        }
+        // histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ()}));
+        histos.fill(HIST("eventcount"), bindingOnVtx.getBin({collision1.posZ(), collision1.gapSide()}));
+        fillCorrelationsUD(mixedGapSideA, tracks1, tracks2, multiplicity, collision1.posZ());
+        // LOGF(info, "Filling mixedGapSideA events, Gap for side A");
+      }*/
+
+      /*if (collision1.gapSide() == 1 && collision2.gapSide() == 1) { // gap on side C
+        if (isCollisionCutSG(collision1, 1) == false && isCollisionCutSG(collision2, 1) == false) {
+          continue;
+        }
+        // std::cout << "Counts for Gap C: " << countGapC << " Maximum Count for Gap C" << maxCountGapC << std::endl;
+        ++countGapC;
+        // LOGF(info, "In the pairs loop, gap side C");
+        multiplicity = tracks1.size();
+        if (fillCollisionUD(mixedGapSideC, multiplicity) == false) {
+          return;
+        }
+        fillCorrelationsUD(mixedGapSideC, tracks1, tracks2, multiplicity, collision1.posZ());
+        // LOGF(info, "Filling mixedGapSideC events, Gap for side C");
+      } else {
+        continue;
+      }*/
+    }
+  }
+
+  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processMixed, "Process mixed events", true);
+
   void processSame(FullSGUDCollision::iterator const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
   {
     // int sgSide = reconstructedCollision.gapSide();
@@ -942,7 +1044,7 @@ struct UpcPhotonuclearAnalysisJMG {
 
       /*if (isTrackCut(track) == false) {
         continue;
-      }*/
+      }
       ++multiplicity;
 
       float weightNUA = getNUAWeight(reconstructedCollision.posZ(), eta(track.px(), track.py(), track.pz()), phi(track.px(), track.py()));
