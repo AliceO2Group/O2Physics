@@ -16,29 +16,30 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
-#include <utility>
 #include <algorithm>
-#include <vector>
 #include <memory>
 #include <string>
+#include <utility>
+#include <vector>
 
 // O2 includes
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/Array2D.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/Core/PID/DetectorResponse.h"
-#include "Common/Core/PID/ParamBase.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponseCombined.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-
 #include "pidTOFBase.h"
+
+#include "Common/Core/PID/DetectorResponse.h"
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/PID/ParamBase.h"
+#include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseCombined.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/RunningWorkflowInfo.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -52,7 +53,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   std::swap(workflowOptions, options);
 }
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 struct bayesPid {
   using Trks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFSignal, aod::TOFEvTime, aod::pidEvTimeFlags>;
@@ -163,7 +164,7 @@ struct bayesPid {
     }
 
     // Checking the tables are requested in the workflow and enabling them
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       for (auto const& input : device.inputs) {
         auto enableFlag = [&input](const PID::ID& id, Configurable<int>& flag) {
@@ -284,12 +285,12 @@ struct bayesPid {
     //  bethe = fTPCResponse.GetExpectedSignal(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
     //  sigma = fTPCResponse.GetExpectedSigma(track, type, AliTPCPIDResponse::kdEdxDefault, fUseTPCEtaCorrection, fUseTPCMultiplicityCorrection, fUseTPCPileupCorrection);
 
-    if (abs(dedx - bethe) > fRange * sigma) {
-      // Probability[kTPC][pid] = exp(-0.5 * fRange * fRange) / sigma; // BUG fix
-      Probability[kTPC][pid] = exp(-0.5 * fRange * fRange);
+    if (std::abs(dedx - bethe) > fRange * sigma) {
+      // Probability[kTPC][pid] = std::exp(-0.5 * fRange * fRange) / sigma; // BUG fix
+      Probability[kTPC][pid] = std::exp(-0.5 * fRange * fRange);
     } else {
-      // Probability[kTPC][pid] = exp(-0.5 * (dedx - bethe) * (dedx - bethe) / (sigma * sigma)) / sigma; //BUG fix
-      Probability[kTPC][pid] = exp(-0.5 * (dedx - bethe) * (dedx - bethe) / (sigma * sigma));
+      // Probability[kTPC][pid] = std::exp(-0.5 * (dedx - bethe) * (dedx - bethe) / (sigma * sigma)) / sigma; //BUG fix
+      Probability[kTPC][pid] = std::exp(-0.5 * (dedx - bethe) * (dedx - bethe) / (sigma * sigma));
       mismatch = false;
     }
     if (Probability[kTPC][pid] <= 0.f) {
@@ -325,10 +326,10 @@ struct bayesPid {
     constexpr respTOF<pid> responseTOFPID;
 
     // const float pt = track.pt();
-    float mismPropagationFactor[10] = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
+    const float mismPropagationFactor[10] = {1., 1., 1., 1., 1., 1., 1., 1., 1., 1.};
     // In the O2 this cannot be done because the cluster information is missing in the AOD
     // if (!fNoTOFmism) {                                                                  // this flag allows to disable mismatch for iterative procedure to get prior probabilities
-    //   mismPropagationFactor[3] = 1 + exp(1 - 1.12 * pt);                                // it has to be aligned with the one in AliPIDCombined
+    //   mismPropagationFactor[3] = 1 + std::exp(1 - 1.12 * pt);                                // it has to be aligned with the one in AliPIDCombined
     //   mismPropagationFactor[4] = 1 + 1. / (4.71114 - 5.72372 * pt + 2.94715 * pt * pt); // it has to be aligned with the one in AliPIDCombined
 
     //   int nTOFcluster = 0;
@@ -342,10 +343,10 @@ struct bayesPid {
     //         nTOFcluster = 80;
     //         break;
     //       case kPPB: // pPb 5.05 ATeV
-    //         nTOFcluster = int(308 - 2.12 * fCurrCentrality + exp(4.917 - 0.1604 * fCurrCentrality));
+    //         nTOFcluster = int(308 - 2.12 * fCurrCentrality + std::exp(4.917 - 0.1604 * fCurrCentrality));
     //         break;
     //       case kPBPB: // PbPb 2.76 ATeV
-    //         nTOFcluster = int(exp(9.4 - 0.022 * fCurrCentrality));
+    //         nTOFcluster = int(std::exp(9.4 - 0.022 * fCurrCentrality));
     //         break;
     //     }
     //   }
@@ -376,9 +377,9 @@ struct bayesPid {
     const float sig = /*responseTOFPID.GetExpectedSigma(Response[kTOF], track)*/ +0.f;
 
     if (nsigmas < fTOFtail) {
-      Probability[kTOF][pid] = exp(-0.5 * nsigmas * nsigmas) / sig;
+      Probability[kTOF][pid] = std::exp(-0.5 * nsigmas * nsigmas) / sig;
     } else {
-      Probability[kTOF][pid] = exp(-(nsigmas - fTOFtail * 0.5) * fTOFtail) / sig;
+      Probability[kTOF][pid] = std::exp(-(nsigmas - fTOFtail * 0.5) * fTOFtail) / sig;
     }
 
     Probability[kTOF][pid] += fgTOFmismatchProb * mismPropagationFactor[pid];
@@ -556,7 +557,7 @@ struct bayesPidQa {
     double lmin = TMath::Log10(min);
     double ldelta = (TMath::Log10(max) - lmin) / (static_cast<double>(kNBins));
     for (int i = 0; i < kNBins; i++) {
-      binp[i] = exp(TMath::Log(10) * (lmin + i * ldelta));
+      binp[i] = std::exp(TMath::Log(10) * (lmin + i * ldelta));
     }
     binp[kNBins] = max + 1;
     h->GetXaxis()->Set(kNBins, binp);
