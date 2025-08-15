@@ -29,7 +29,7 @@ struct otfParticlePrediction {
   ConfigurableAxis binsEta{"binsEta", {100, -5, 5}, "Binning of the Eta axis"};
   ConfigurableAxis binsPt{"binsPt", {100, 0, 10}, "Binning of the Pt axis"};
 
-  Configurable<float> maxYParticle{"maxEtaParticle", 5.f, "Max eta of particles considered"};
+  Configurable<float> maxYParticle{"maxYParticle", 5.f, "Max rapidity of particles considered"};
 
   // init function
   void init(InitContext&)
