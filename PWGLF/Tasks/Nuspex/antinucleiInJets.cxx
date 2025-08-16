@@ -113,8 +113,6 @@ struct AntinucleiInJets {
   Configurable<bool> applyAreaCut{"applyAreaCut", false, "apply area cut"};
   Configurable<double> maxNormalizedJetArea{"maxNormalizedJetArea", 0.6, "area cut"};
   Configurable<double> deltaEtaEdge{"deltaEtaEdge", 0.05, "eta gap from the edge"};
-  Configurable<bool> applyRandomEventRejection{"applyRandomEventRejection", false, "reject some events for syst"};
-  Configurable<double> rejectionPercentage{"rejectionPercentage", 3.0, "percentage of events to reject"};
   Configurable<int> nSyst{"nSyst", 50, "number of systematic variations"};
 
   // Track quality, kinematic, and PID selection parameters
@@ -213,7 +211,6 @@ struct AntinucleiInJets {
 
       // Event counters
       registryData.add("number_of_events_data", "number of events in data", HistType::kTH1F, {{20, 0, 20, "counter"}});
-      registryData.add("number_of_rejected_events", "check on number of events rejected", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
       // Jet effective area over piR^2
       registryData.add("jetEffectiveAreaOverPiR2", "jet effective area / piR^2", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
@@ -245,6 +242,9 @@ struct AntinucleiInJets {
       // Helium-3
       registryData.add("helium3_jet_tpc", "helium3_jet_tpc", HistType::kTH2F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
       registryData.add("helium3_ue_tpc", "helium3_ue_tpc", HistType::kTH2F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
+
+      // nsigmaITS for antiproton candidates
+      registryData.add("antiproton_nsigma_its_data", "antiproton_nsigma_its_data", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{ITS}"}});
     }
 
     // Generated antiproton spectra in jets and UE from MC truth
@@ -281,6 +281,12 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_prim_dca_ue", "antiproton_prim_dca_ue", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
       registryMC.add("antiproton_all_dca_jet", "antiproton_all_dca_jet", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
       registryMC.add("antiproton_all_dca_ue", "antiproton_all_dca_ue", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
+
+      // nsigmaITS for antiproton candidates
+      registryMC.add("antiproton_nsigma_its_mc", "antiproton_nsigma_its_mc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{ITS}"}});
+
+      // nsigmaTOF for antiprotons
+      registryMC.add("antiproton_nsigma_tof_jet_mc", "antiproton_nsigma_tof_jet_mc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
     }
 
     // Efficiency of antinuclei
@@ -538,6 +544,8 @@ struct AntinucleiInJets {
       return false;
     if (!track.hasITS())
       return false;
+    if ((!hasITSHit(track, 1)) && (!hasITSHit(track, 2)) && (!hasITSHit(track, 3)))
+      return false;
     if (track.itsNCls() < minItsNclusters)
       return false;
     if (!track.hasTPC())
@@ -567,30 +575,35 @@ struct AntinucleiInJets {
       6, 5, 3, 5, 4, 3, 6, 6, 4, 7,
       3, 4, 3, 5, 7, 6, 6, 4, 3, 5,
       4, 7, 3, 6, 4, 5, 6, 3, 7, 5};
+
     static std::vector<int> minTpcNcrossedRowsSyst = {
       90, 108, 112, 119, 92, 111, 98, 105, 86, 117,
       118, 101, 87, 116, 82, 109, 80, 115, 89, 97,
       107, 120, 104, 94, 100, 93, 103, 84, 102, 85,
       108, 96, 113, 117, 91, 88, 99, 110, 106, 83,
       118, 95, 112, 114, 109, 89, 116, 92, 98, 120};
+
     static std::vector<double> maxChiSquareTpcSyst = {
       4.28, 4.81, 4.43, 4.02, 3.38, 3.58, 3.11, 4.17, 3.51, 4.53,
       4.90, 3.07, 3.20, 4.86, 4.62, 3.91, 3.98, 4.38, 3.66, 3.84,
       3.03, 3.14, 4.96, 4.07, 4.75, 4.32, 3.31, 3.78, 4.11, 3.23,
       3.87, 3.70, 4.99, 4.48, 4.69, 4.25, 3.93, 3.45, 4.58, 3.35,
       3.18, 3.60, 4.21, 3.75, 4.64, 4.35, 3.26, 3.42, 4.15, 3.09};
+
     static std::vector<double> maxChiSquareItsSyst = {
       42.84, 48.66, 39.27, 34.09, 43.73, 36.98, 30.23, 49.11, 37.67, 35.10,
       44.55, 46.79, 38.92, 40.66, 47.14, 33.46, 30.88, 41.32, 45.90, 39.68,
       31.42, 32.71, 43.17, 36.04, 49.80, 33.95, 31.89, 38.37, 48.08, 35.87,
       47.61, 44.02, 32.15, 46.21, 34.75, 40.17, 37.14, 30.55, 45.42, 42.30,
       41.79, 33.21, 39.12, 47.98, 36.52, 31.58, 49.44, 38.02, 35.56, 43.49};
+
     static std::vector<double> minEtaSyst = {
       -0.804, -0.844, -0.751, -0.784, -0.819, -0.823, -0.768, -0.781, -0.845, -0.787,
       -0.758, -0.828, -0.776, -0.842, -0.808, -0.763, -0.849, -0.770, -0.799, -0.754,
       -0.825, -0.847, -0.806, -0.783, -0.796, -0.835, -0.777, -0.752, -0.838, -0.813,
       -0.785, -0.802, -0.795, -0.846, -0.780, -0.829, -0.817, -0.773, -0.765, -0.789,
       -0.800, -0.839, -0.758, -0.820, -0.833, -0.762, -0.792, -0.809, -0.827, -0.751};
+
     static std::vector<double> maxEtaSyst = {
       0.804, 0.844, 0.751, 0.784, 0.819, 0.823, 0.768, 0.781, 0.845, 0.787,
       0.758, 0.828, 0.776, 0.842, 0.808, 0.763, 0.849, 0.770, 0.799, 0.754,
@@ -687,16 +700,6 @@ struct AntinucleiInJets {
 
     // High-pt: require valid TOF match and pass TOF PID
     return (track.hasTOF() && std::abs(nsigmaTOF) < kNsigmaMax);
-  }
-
-  // Event rejection
-  bool rejectEvent()
-  {
-    static std::random_device rd;
-    static std::mt19937 gen(rd());
-    static std::uniform_real_distribution<double> dis(0.0, 100.0);
-
-    return dis(gen) < rejectionPercentage;
   }
 
   // Process Data
@@ -844,6 +847,11 @@ struct AntinucleiInJets {
         double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
         double nSigmaITSdeut = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Deuteron>(track));
         double nSigmaITShel3 = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Helium3>(track));
+
+        // Fill nsigmaITS for antiproton candidates
+        if (isHighPurityAntiproton(track)) {
+          registryData.fill(HIST("antiproton_nsigma_its_data"), pt, nSigmaITSprot);
+        }
 
         if (applyItsPid && pt < ptMaxItsPidProt && (nSigmaITSprot < nSigmaItsMin || nSigmaITSprot > nSigmaItsMax)) {
           passedItsPidProt = false;
@@ -1543,7 +1551,7 @@ struct AntinucleiInJets {
       // Loop over reconstructed tracks
       int id(-1);
       std::vector<fastjet::PseudoJet> fjParticles;
-      std::vector<int> trackIndex;
+      std::vector<int> antiprotonTrackIndex;
       for (auto const& track : mcTracks) {
         id++;
 
@@ -1554,7 +1562,7 @@ struct AntinucleiInJets {
 
         // Store track index for antiproton tracks
         if (passedTrackSelection(track) && track.sign() < 0 && mcparticle.pdgCode() == PDG_t::kProtonBar) {
-          trackIndex.emplace_back(id);
+          antiprotonTrackIndex.emplace_back(id);
         }
 
         // Apply track selection for jet reconstruction
@@ -1626,16 +1634,21 @@ struct AntinucleiInJets {
             continue;
           const auto mcparticle = track.mcParticle();
 
-          // Antiproton selection based on the PDG
-          if (mcparticle.pdgCode() != PDG_t::kProtonBar)
-            continue;
-
           // Define variables
           double nsigmaTPCPr = track.tpcNSigmaPr();
           double nsigmaTOFPr = track.tofNSigmaPr();
           double pt = track.pt();
           double dcaxy = track.dcaXY();
           double dcaz = track.dcaZ();
+
+          // Fill nsigmaTOF template
+          if (track.hasTOF() && std::fabs(dcaxy) < maxDcaxy && std::fabs(dcaz) < maxDcaz && mcparticle.isPhysicalPrimary() && nsigmaTPCPr > minNsigmaTpc && nsigmaTPCPr < maxNsigmaTpc && mcparticle.pdgCode() != PDG_t::kProtonBar) {
+            registryMC.fill(HIST("antiproton_nsigma_tof_jet_mc"), pt, nsigmaTOFPr);
+          }
+
+          // Antiproton selection based on the PDG
+          if (mcparticle.pdgCode() != PDG_t::kProtonBar)
+            continue;
 
           // Fill DCA templates
           if (std::fabs(dcaz) < maxDcaz) {
@@ -1650,9 +1663,16 @@ struct AntinucleiInJets {
           if (std::fabs(dcaxy) > maxDcaxy || std::fabs(dcaz) > maxDcaz)
             continue;
 
+          // nsigmaITS for antiprotons
+          double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
+
+          // Fill nsigmaITS for antiproton candidates
+          if (isHighPurityAntiproton(track)) {
+            registryMC.fill(HIST("antiproton_nsigma_its_mc"), pt, nSigmaITSprot);
+          }
+
           // Particle identification using the ITS cluster size
           bool passedItsPidProt(true);
-          double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
           if (applyItsPid && pt < ptMaxItsPidProt && (nSigmaITSprot < nSigmaItsMin || nSigmaITSprot > nSigmaItsMax)) {
             passedItsPidProt = false;
           }
@@ -1677,7 +1697,7 @@ struct AntinucleiInJets {
         }
 
         // Loop over tracks in the underlying event
-        for (auto const& index : trackIndex) {
+        for (auto const& index : antiprotonTrackIndex) {
 
           // retrieve track associated to index
           auto const& track = mcTracks.iteratorAt(index);
@@ -1808,36 +1828,41 @@ struct AntinucleiInJets {
       0.057, 0.055, 0.073, 0.038, 0.050, 0.075, 0.041, 0.061, 0.033, 0.069,
       0.035, 0.044, 0.076, 0.049, 0.037, 0.054, 0.072, 0.046, 0.058, 0.040,
       0.068, 0.042, 0.056, 0.039, 0.047, 0.065, 0.051, 0.053, 0.063, 0.030};
+
     static std::vector<double> maxDcazSyst = {
       0.064, 0.047, 0.032, 0.076, 0.039, 0.058, 0.043, 0.069, 0.050, 0.035,
       0.074, 0.061, 0.045, 0.033, 0.068, 0.055, 0.037, 0.071, 0.042, 0.053,
       0.077, 0.038, 0.065, 0.049, 0.036, 0.059, 0.044, 0.067, 0.041, 0.034,
       0.073, 0.052, 0.040, 0.063, 0.046, 0.031, 0.070, 0.054, 0.037, 0.062,
       0.048, 0.035, 0.075, 0.051, 0.039, 0.066, 0.043, 0.060, 0.032, 0.056};
+
     static std::vector<double> nSigmaItsMinSyst = {
-      -2.91, -2.77, -3.03, -3.40, -2.69, -3.28, -2.96, -3.11, -3.36, -3.14,
-      -2.99, -2.75, -3.17, -2.64, -2.72, -3.44, -2.87, -2.95, -3.00, -2.66,
-      -2.93, -3.31, -3.05, -3.12, -3.21, -3.01, -2.89, -2.73, -3.26, -2.97,
-      -2.81, -3.33, -2.68, -3.30, -2.78, -3.39, -2.84, -3.45, -2.92, -3.15,
-      -3.22, -2.58, -3.07, -2.86, -3.10, -2.76, -2.94, -3.25, -3.04, -2.82};
+      -2.9, -2.8, -3.0, -3.4, -2.7, -3.3, -3.0, -3.1, -3.4, -3.1,
+      -3.0, -2.8, -3.2, -2.6, -2.7, -3.4, -2.9, -3.0, -3.0, -2.7,
+      -2.9, -3.3, -3.0, -3.1, -3.2, -3.0, -2.9, -2.7, -3.3, -3.0,
+      -2.8, -3.3, -2.7, -3.3, -2.8, -3.4, -2.8, -3.4, -2.9, -3.1,
+      -3.2, -2.6, -3.1, -2.9, -3.1, -2.8, -2.9, -3.3, -3.0, -2.8};
+
     static std::vector<double> nSigmaItsMaxSyst = {
-      2.91, 2.77, 3.03, 3.40, 2.69, 3.28, 2.96, 3.11, 3.36, 3.14,
-      2.99, 2.75, 3.17, 2.64, 2.72, 3.44, 2.87, 2.95, 3.00, 2.66,
-      2.93, 3.31, 3.05, 3.12, 3.21, 3.01, 2.89, 2.73, 3.26, 2.97,
-      2.81, 3.33, 2.68, 3.30, 2.78, 3.39, 2.84, 3.45, 2.92, 3.15,
-      3.22, 2.58, 3.07, 2.86, 3.10, 2.76, 2.94, 3.25, 3.04, 2.82};
+      2.9, 2.8, 3.0, 3.4, 2.7, 3.3, 3.0, 3.1, 3.4, 3.1,
+      3.0, 2.8, 3.2, 2.6, 2.7, 3.4, 2.9, 3.0, 3.0, 2.7,
+      2.9, 3.3, 3.0, 3.1, 3.2, 3.0, 2.9, 2.7, 3.3, 3.0,
+      2.8, 3.3, 2.7, 3.3, 2.8, 3.4, 2.8, 3.4, 2.9, 3.1,
+      3.2, 2.6, 3.1, 2.9, 3.1, 2.8, 2.9, 3.3, 3.0, 2.8};
+
     static std::vector<double> minNsigmaTpcSyst = {
-      -3.18, -2.86, -3.12, -2.91, -3.49, -2.57, -3.33, -2.98, -3.46, -2.70,
-      -3.01, -2.65, -3.27, -3.40, -2.81, -3.10, -2.55, -3.22, -3.07, -2.77,
-      -3.35, -2.68, -3.43, -2.88, -3.04, -2.53, -3.30, -2.79, -3.15, -2.66,
-      -3.41, -2.75, -3.26, -2.61, -3.09, -2.54, -3.36, -2.95, -3.20, -2.58,
-      -3.44, -2.83, -3.11, -2.62, -3.28, -2.69, -3.23, -2.73, -3.39, -2.90};
+      -3.2, -2.9, -3.1, -2.9, -3.5, -2.6, -3.3, -3.0, -3.5, -2.7,
+      -3.0, -2.6, -3.3, -3.4, -2.8, -3.1, -2.6, -3.2, -3.1, -2.8,
+      -3.4, -2.7, -3.4, -2.9, -3.0, -2.5, -3.3, -2.8, -3.1, -2.7,
+      -3.4, -2.8, -3.3, -2.6, -3.1, -2.5, -3.4, -3.0, -3.2, -2.6,
+      -3.4, -2.8, -3.1, -2.6, -3.3, -2.7, -3.2, -2.7, -3.4, -2.9};
+
     static std::vector<double> maxNsigmaTpcSyst = {
-      3.18, 2.86, 3.12, 2.91, 3.49, 2.57, 3.33, 2.98, 3.46, 2.70,
-      3.01, 2.65, 3.27, 3.40, 2.81, 3.10, 2.55, 3.22, 3.07, 2.77,
-      3.35, 2.68, 3.43, 2.88, 3.04, 2.53, 3.30, 2.79, 3.15, 2.66,
-      3.41, 2.75, 3.26, 2.61, 3.09, 2.54, 3.36, 2.95, 3.20, 2.58,
-      3.44, 2.83, 3.11, 2.62, 3.28, 2.69, 3.23, 2.73, 3.39, 2.90};
+      3.2, 2.9, 3.1, 2.9, 3.5, 2.6, 3.3, 3.0, 3.5, 2.7,
+      3.0, 2.6, 3.3, 3.4, 2.8, 3.1, 2.6, 3.2, 3.1, 2.8,
+      3.4, 2.7, 3.4, 2.9, 3.0, 2.5, 3.3, 2.8, 3.1, 2.7,
+      3.4, 2.8, 3.3, 2.6, 3.1, 2.5, 3.4, 3.0, 3.2, 2.6,
+      3.4, 2.8, 3.1, 2.6, 3.3, 2.7, 3.2, 2.7, 3.4, 2.9};
 
     // Loop over reconstructed tracks
     for (auto const& track : tracks) {
@@ -1912,48 +1937,55 @@ struct AntinucleiInJets {
       0.057, 0.055, 0.073, 0.038, 0.050, 0.075, 0.041, 0.061, 0.033, 0.069,
       0.035, 0.044, 0.076, 0.049, 0.037, 0.054, 0.072, 0.046, 0.058, 0.040,
       0.068, 0.042, 0.056, 0.039, 0.047, 0.065, 0.051, 0.053, 0.063, 0.030};
+
     static std::vector<double> maxDcazSyst = {
       0.064, 0.047, 0.032, 0.076, 0.039, 0.058, 0.043, 0.069, 0.050, 0.035,
       0.074, 0.061, 0.045, 0.033, 0.068, 0.055, 0.037, 0.071, 0.042, 0.053,
       0.077, 0.038, 0.065, 0.049, 0.036, 0.059, 0.044, 0.067, 0.041, 0.034,
       0.073, 0.052, 0.040, 0.063, 0.046, 0.031, 0.070, 0.054, 0.037, 0.062,
       0.048, 0.035, 0.075, 0.051, 0.039, 0.066, 0.043, 0.060, 0.032, 0.056};
+
     static std::vector<double> nSigmaItsMinSyst = {
-      -2.91, -2.77, -3.03, -3.40, -2.69, -3.28, -2.96, -3.11, -3.36, -3.14,
-      -2.99, -2.75, -3.17, -2.64, -2.72, -3.44, -2.87, -2.95, -3.00, -2.66,
-      -2.93, -3.31, -3.05, -3.12, -3.21, -3.01, -2.89, -2.73, -3.26, -2.97,
-      -2.81, -3.33, -2.68, -3.30, -2.78, -3.39, -2.84, -3.45, -2.92, -3.15,
-      -3.22, -2.58, -3.07, -2.86, -3.10, -2.76, -2.94, -3.25, -3.04, -2.82};
+      -2.9, -2.8, -3.0, -3.4, -2.7, -3.3, -3.0, -3.1, -3.4, -3.1,
+      -3.0, -2.8, -3.2, -2.6, -2.7, -3.4, -2.9, -3.0, -3.0, -2.7,
+      -2.9, -3.3, -3.0, -3.1, -3.2, -3.0, -2.9, -2.7, -3.3, -3.0,
+      -2.8, -3.3, -2.7, -3.3, -2.8, -3.4, -2.8, -3.4, -2.9, -3.1,
+      -3.2, -2.6, -3.1, -2.9, -3.1, -2.8, -2.9, -3.3, -3.0, -2.8};
+
     static std::vector<double> nSigmaItsMaxSyst = {
-      2.91, 2.77, 3.03, 3.40, 2.69, 3.28, 2.96, 3.11, 3.36, 3.14,
-      2.99, 2.75, 3.17, 2.64, 2.72, 3.44, 2.87, 2.95, 3.00, 2.66,
-      2.93, 3.31, 3.05, 3.12, 3.21, 3.01, 2.89, 2.73, 3.26, 2.97,
-      2.81, 3.33, 2.68, 3.30, 2.78, 3.39, 2.84, 3.45, 2.92, 3.15,
-      3.22, 2.58, 3.07, 2.86, 3.10, 2.76, 2.94, 3.25, 3.04, 2.82};
+      2.9, 2.8, 3.0, 3.4, 2.7, 3.3, 3.0, 3.1, 3.4, 3.1,
+      3.0, 2.8, 3.2, 2.6, 2.7, 3.4, 2.9, 3.0, 3.0, 2.7,
+      2.9, 3.3, 3.0, 3.1, 3.2, 3.0, 2.9, 2.7, 3.3, 3.0,
+      2.8, 3.3, 2.7, 3.3, 2.8, 3.4, 2.8, 3.4, 2.9, 3.1,
+      3.2, 2.6, 3.1, 2.9, 3.1, 2.8, 2.9, 3.3, 3.0, 2.8};
+
     static std::vector<double> minNsigmaTpcSyst = {
-      -3.18, -2.86, -3.12, -2.91, -3.49, -2.57, -3.33, -2.98, -3.46, -2.70,
-      -3.01, -2.65, -3.27, -3.40, -2.81, -3.10, -2.55, -3.22, -3.07, -2.77,
-      -3.35, -2.68, -3.43, -2.88, -3.04, -2.53, -3.30, -2.79, -3.15, -2.66,
-      -3.41, -2.75, -3.26, -2.61, -3.09, -2.54, -3.36, -2.95, -3.20, -2.58,
-      -3.44, -2.83, -3.11, -2.62, -3.28, -2.69, -3.23, -2.73, -3.39, -2.90};
+      -3.2, -2.9, -3.1, -2.9, -3.5, -2.6, -3.3, -3.0, -3.5, -2.7,
+      -3.0, -2.6, -3.3, -3.4, -2.8, -3.1, -2.6, -3.2, -3.1, -2.8,
+      -3.4, -2.7, -3.4, -2.9, -3.0, -2.5, -3.3, -2.8, -3.1, -2.7,
+      -3.4, -2.8, -3.3, -2.6, -3.1, -2.5, -3.4, -3.0, -3.2, -2.6,
+      -3.4, -2.8, -3.1, -2.6, -3.3, -2.7, -3.2, -2.7, -3.4, -2.9};
+
     static std::vector<double> maxNsigmaTpcSyst = {
-      3.18, 2.86, 3.12, 2.91, 3.49, 2.57, 3.33, 2.98, 3.46, 2.70,
-      3.01, 2.65, 3.27, 3.40, 2.81, 3.10, 2.55, 3.22, 3.07, 2.77,
-      3.35, 2.68, 3.43, 2.88, 3.04, 2.53, 3.30, 2.79, 3.15, 2.66,
-      3.41, 2.75, 3.26, 2.61, 3.09, 2.54, 3.36, 2.95, 3.20, 2.58,
-      3.44, 2.83, 3.11, 2.62, 3.28, 2.69, 3.23, 2.73, 3.39, 2.90};
+      3.2, 2.9, 3.1, 2.9, 3.5, 2.6, 3.3, 3.0, 3.5, 2.7,
+      3.0, 2.6, 3.3, 3.4, 2.8, 3.1, 2.6, 3.2, 3.1, 2.8,
+      3.4, 2.7, 3.4, 2.9, 3.0, 2.5, 3.3, 2.8, 3.1, 2.7,
+      3.4, 2.8, 3.3, 2.6, 3.1, 2.5, 3.4, 3.0, 3.2, 2.6,
+      3.4, 2.8, 3.1, 2.6, 3.3, 2.7, 3.2, 2.7, 3.4, 2.9};
+
     static std::vector<double> minNsigmaTofSyst = {
-      -3.18, -2.86, -3.12, -2.91, -3.49, -2.57, -3.33, -2.98, -3.46, -2.70,
-      -3.01, -2.65, -3.27, -3.40, -2.81, -3.10, -2.55, -3.22, -3.07, -2.77,
-      -3.35, -2.68, -3.43, -2.88, -3.04, -2.53, -3.30, -2.79, -3.15, -2.66,
-      -3.41, -2.75, -3.26, -2.61, -3.09, -2.54, -3.36, -2.95, -3.20, -2.58,
-      -3.44, -2.83, -3.11, -2.62, -3.28, -2.69, -3.23, -2.73, -3.39, -2.90};
+      -3.2, -2.9, -3.1, -2.9, -3.5, -2.6, -3.3, -3.0, -3.5, -2.7,
+      -3.0, -2.6, -3.3, -3.4, -2.8, -3.1, -2.6, -3.2, -3.1, -2.8,
+      -3.4, -2.7, -3.4, -2.9, -3.0, -2.5, -3.3, -2.8, -3.1, -2.7,
+      -3.4, -2.8, -3.3, -2.6, -3.1, -2.5, -3.4, -3.0, -3.2, -2.6,
+      -3.4, -2.8, -3.1, -2.6, -3.3, -2.7, -3.2, -2.7, -3.4, -2.9};
+
     static std::vector<double> maxNsigmaTofSyst = {
-      3.94, 3.62, 3.83, 3.15, 3.23, 3.49, 3.10, 3.78, 3.54, 3.36,
-      3.91, 3.84, 3.72, 3.00, 3.63, 3.13, 3.68, 3.40, 3.97, 3.01,
-      3.74, 3.25, 3.89, 3.08, 3.30, 3.48, 3.59, 3.16, 3.47, 3.31,
-      3.92, 3.03, 3.43, 3.24, 3.11, 3.86, 3.60, 3.07, 3.21, 3.98,
-      3.14, 3.69, 3.56, 3.12, 3.28, 3.46, 3.34, 3.39, 3.05, 3.76};
+      3.9, 3.6, 3.8, 3.2, 3.2, 3.5, 3.1, 3.8, 3.5, 3.4,
+      3.9, 3.8, 3.7, 3.0, 3.6, 3.1, 3.7, 3.4, 4.0, 3.0,
+      3.7, 3.3, 3.9, 3.1, 3.3, 3.5, 3.6, 3.2, 3.5, 3.3,
+      3.9, 3.0, 3.4, 3.2, 3.1, 3.9, 3.6, 3.1, 3.2, 4.0,
+      3.1, 3.7, 3.6, 3.1, 3.3, 3.5, 3.3, 3.4, 3.1, 3.8};
 
     // Loop over generated collisions
     for (const auto& collision : genCollisions) {
