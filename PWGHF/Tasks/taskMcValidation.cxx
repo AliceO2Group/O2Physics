@@ -107,9 +107,9 @@ static constexpr int nOriginTypes = 2;                                          
 static constexpr std::array<int, nChannels> PDGArrayParticle = {o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kDStar,
                                                                 o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDPlus,
                                                                 o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS1, o2::constants::physics::Pdg::kDS2Star,
-                                                                o2::constants::physics::Pdg::kD10, o2::constants::physics::Pdg::kD2Star0, 
-                                                                o2::constants::physics::Pdg::kB0, o2::constants::physics::Pdg::kBPlus, o2::constants::physics::Pdg::kBS, 
-                                                                o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kLambdaCPlus, 
+                                                                o2::constants::physics::Pdg::kD10, o2::constants::physics::Pdg::kD2Star0,
+                                                                o2::constants::physics::Pdg::kB0, o2::constants::physics::Pdg::kBPlus, o2::constants::physics::Pdg::kBS,
+                                                                o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kLambdaCPlus,
                                                                 o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kXiC0,
                                                                 o2::constants::physics::Pdg::kOmegaC0, o2::constants::physics::Pdg::kOmegaC0};
 static constexpr std::array<unsigned int, nChannels> nDaughters = {2, 3, 3, 3, 3, 3, 5, 5, 4, 4, 4, 3, 4, 3, 3, 3, 5, 4, 4, 4};

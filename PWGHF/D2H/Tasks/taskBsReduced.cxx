@@ -66,8 +66,8 @@ DECLARE_SOA_COLUMN(ImpactParameterProduct, impactParameterProduct, float);   //!
 DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);       //! Maximum normalized difference between measured and expected impact parameter of candidate prongs
 DECLARE_SOA_COLUMN(MlScoreSig, mlScoreSig, float);                           //! ML score for signal class
 // D meson features
-DECLARE_SOA_COLUMN(MProng0, mProng0, float);                                 //! Invariant mass of prong0 (GeV/c)
-DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                               //! Transverse momentum of prong0 (GeV/c)
+DECLARE_SOA_COLUMN(MProng0, mProng0, float);                                             //! Invariant mass of prong0 (GeV/c)
+DECLARE_SOA_COLUMN(PtProng0, ptProng0, float);                                           //! Transverse momentum of prong0 (GeV/c)
 DECLARE_SOA_COLUMN(DecayLength0, decayLength0, float);                                   //! Decay length of D-meson daughter candidate (cm)
 DECLARE_SOA_COLUMN(DecayLengthXY0, decayLengthXY0, float);                               //! Transverse decay length of D-meson daughter candidate (cm)
 DECLARE_SOA_COLUMN(ImpactParameter0, impactParameter0, float);                           //! Impact parameter product of D-meson daughter candidate
@@ -99,12 +99,12 @@ DECLARE_SOA_COLUMN(NSigTpcTofPiProng1, nSigTpcTofPiProng1, float);           //!
 DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);          //! Flag for association with wrong collision
 DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                     //! Transverse momentum of candidate (GeV/c)
 // General vars (unused for now)
-DECLARE_SOA_COLUMN(P, p, float);                                             //! Momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(E, e, float);                                             //! Energy of candidate (GeV)
+DECLARE_SOA_COLUMN(P, p, float); //! Momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(E, e, float); //! Energy of candidate (GeV)
 } // namespace hf_cand_bs_lite
 
 DECLARE_SOA_TABLE(HfRedCandBsLites, "AOD", "HFREDCANDBSLITE", //! Table with some Bs properties
-                  // B meson features
+                                                              // B meson features
                   hf_cand_bs_lite::M,
                   hf_cand_bs_lite::Pt,
                   hf_cand_bs_lite::Eta,
