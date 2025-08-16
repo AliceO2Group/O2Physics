@@ -35,8 +35,8 @@
 
 #include <TTree.h>
 
-#include <vector>
 #include <algorithm>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -49,21 +49,21 @@ namespace tree
 DECLARE_SOA_COLUMN(PtSideA, ptSideA, std::vector<float>);
 DECLARE_SOA_COLUMN(RapSideA, rapSideA, std::vector<float>);
 DECLARE_SOA_COLUMN(PhiSideA, phiSideA, std::vector<float>);
-DECLARE_SOA_COLUMN(TPCSignalSideA, tpcSignalSideA, std::vector<float>);
-DECLARE_SOA_COLUMN(TOFSignalSideA, tofSignalSideA, std::vector<float>);
-DECLARE_SOA_COLUMN(TPCNSigmaPiSideA, tpcNSigmaPiSideA, std::vector<float>);
-DECLARE_SOA_COLUMN(TOFNSigmaPiSideA, tofNSigmaPiSideA, std::vector<float>);
-DECLARE_SOA_COLUMN(TPCNSigmaKaSideA, tpcNSigmaKaSideA, std::vector<float>);
-DECLARE_SOA_COLUMN(TOFNSigmaKaSideA, tofNSigmaKaSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(TpcSignalSideA, tpcSignalSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(TofSignalSideA, tofSignalSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(TpcNSigmaPiSideA, tpcNSigmaPiSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(TofNSigmaPiSideA, tofNSigmaPiSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(TpcNSigmaKaSideA, tpcNSigmaKaSideA, std::vector<float>);
+DECLARE_SOA_COLUMN(TofNSigmaKaSideA, tofNSigmaKaSideA, std::vector<float>);
 DECLARE_SOA_COLUMN(PtSideC, ptSideC, std::vector<float>);
 DECLARE_SOA_COLUMN(RapSideC, rapSideC, std::vector<float>);
 DECLARE_SOA_COLUMN(PhiSideC, phiSideC, std::vector<float>);
-DECLARE_SOA_COLUMN(TPCSignalSideC, tpcSignalSideC, std::vector<float>);
-DECLARE_SOA_COLUMN(TOFSignalSideC, tofSignalSideC, std::vector<float>);
-DECLARE_SOA_COLUMN(TPCNSigmaPiSideC, tpcNSigmaPiSideC, std::vector<float>);
-DECLARE_SOA_COLUMN(TOFNSigmaPiSideC, tofNSigmaPiSideC, std::vector<float>);
-DECLARE_SOA_COLUMN(TPCNSigmaKaSideC, tpcNSigmaKaSideC, std::vector<float>);
-DECLARE_SOA_COLUMN(TOFNSigmaKaSideC, tofNSigmaKaSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(TpcSignalSideC, tpcSignalSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(TofSignalSideC, tofSignalSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(TpcNSigmaPiSideC, tpcNSigmaPiSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(TofNSigmaPiSideC, tofNSigmaPiSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(TpcNSigmaKaSideC, tpcNSigmaKaSideC, std::vector<float>);
+DECLARE_SOA_COLUMN(TofNSigmaKaSideC, tofNSigmaKaSideC, std::vector<float>);
 DECLARE_SOA_COLUMN(NchSideA, nchSideA, int);
 DECLARE_SOA_COLUMN(MultiplicitySideA, multiplicitySideA, int);
 DECLARE_SOA_COLUMN(NchSideC, nchSideC, int);
@@ -73,21 +73,21 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
                   tree::PtSideA,
                   tree::RapSideA,
                   tree::PhiSideA,
-                  tree::TPCSignalSideA,
-                  tree::TOFSignalSideA,
-                  tree::TPCNSigmaPiSideA,
-                  tree::TOFNSigmaPiSideA,
-                  tree::TPCNSigmaKaSideA,
-                  tree::TOFNSigmaKaSideA,
+                  tree::TpcSignalSideA,
+                  tree::TofSignalSideA,
+                  tree::TpcNSigmaPiSideA,
+                  tree::TofNSigmaPiSideA,
+                  tree::TpcNSigmaKaSideA,
+                  tree::TofNSigmaKaSideA,
                   tree::PtSideC,
                   tree::RapSideC,
                   tree::PhiSideC,
-                  tree::TPCSignalSideC,
-                  tree::TOFSignalSideC,
-                  tree::TPCNSigmaPiSideC,
-                  tree::TOFNSigmaPiSideC,
-                  tree::TPCNSigmaKaSideC,
-                  tree::TOFNSigmaKaSideC,
+                  tree::TpcSignalSideC,
+                  tree::TofSignalSideC,
+                  tree::TpcNSigmaPiSideC,
+                  tree::TofNSigmaPiSideC,
+                  tree::TpcNSigmaKaSideC,
+                  tree::TofNSigmaKaSideC,
                   tree::NchSideA,
                   tree::MultiplicitySideA,
                   tree::NchSideC,
@@ -135,8 +135,8 @@ struct UPCPhotonuclearAnalysisJMG {
   Configurable<float> cutMyTPCNClsCrossedRowsOverNClsFindableMin{"cutMyTPCNClsCrossedRowsOverNClsFindableMin", 0.8f, {"My Track cut"}};
   Configurable<float> cutMyTPCNClsOverFindableNClsMin{"cutMyTPCNClsOverFindableNClsMin", 0.5f, {"My Track cut"}};
   Configurable<float> cutMyTPCChi2NclMax{"cutMyTPCChi2NclMax", 4.f, {"My Track cut"}};
-  Configurable<float> myWeightMin{"MyWeightMin", 0.2f, {"My Track cut"}};
-  Configurable<float> myWeightMax{"MyWeightMax", 5.f, {"My Track cut"}};
+  Configurable<float> myWeightMin{"myWeightMin", 0.2f, {"My Track cut"}};
+  Configurable<float> myWeightMax{"myWeightMax", 5.f, {"My Track cut"}};
   Configurable<float> myEpsilonToWeight{"myEpsilonToWeight", 1e-6f, {"My Track cut"}};
   Configurable<bool> useEpsilon{"useEpsilon", false, {"My Track cut"}};
   Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut",
@@ -181,7 +181,7 @@ struct UPCPhotonuclearAnalysisJMG {
     const AxisSpec axisPt{402, -0.05, 20.05};
     const AxisSpec axisP{402, -10.05, 10.05};
     const AxisSpec axisTPCSignal{802, -0.05, 400.05};
-    const AxisSpec axisPhi{64, 0. , TwoPI};
+    const AxisSpec axisPhi{64, 0., TwoPI};
     const AxisSpec axisEta{32, -0.8, 0.8};
     const AxisSpec axisNch{601, -0.5, 600.5};
     const AxisSpec axisZNEnergy{1002, -0.5, 500.5};
@@ -193,8 +193,8 @@ struct UPCPhotonuclearAnalysisJMG {
     const AxisSpec axisCountTracks{17, -0.5, 16.5};
 
     histos.add("yields", "multiplicity vs pT vs eta", {HistType::kTH3F, {{100, 0, 100, "multiplicity"}, {40, 0, 20, "p_{T}"}, {100, -2, 2, "#eta"}}});
-    histos.add("etaphi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity"}, {100, -2, 2, "#eta"}, {64, 0. , TwoPI, "#varphi"}}});
-    histos.add("etaphiVtx", "vertex Z vs eta vs phi", {HistType::kTH3F, {{20, -10., 10., "vertex Z"}, {32, -0.8, 0.8, "#eta"}, {64, 0. , TwoPI, "#varphi"}}});
+    histos.add("etaphi", "multiplicity vs eta vs phi", {HistType::kTH3F, {{100, 0, 100, "multiplicity"}, {100, -2, 2, "#eta"}, {64, 0., TwoPI, "#varphi"}}});
+    histos.add("etaphiVtx", "vertex Z vs eta vs phi", {HistType::kTH3F, {{20, -10., 10., "vertex Z"}, {32, -0.8, 0.8, "#eta"}, {64, 0., TwoPI, "#varphi"}}});
     histos.add("weightNUA", "weight per bin", {HistType::kTH3F, {{20, -10., 10., "vertex Z"}, {32, -0.8, 0.8, "#eta"}, {64, 0., TwoPI, "#varphi"}}});
 
     const int maxMixBin = axisMultiplicity->size() * axisVertex->size();
@@ -472,15 +472,23 @@ struct UPCPhotonuclearAnalysisJMG {
           sum += histoRaw3D->GetBinContent(iVtxZ, jEtha, kPhi);
           count += 1.0;
         }
-        const double Nmean = (count > 0) ? sum / count : 0.0;
+        const double nMean = (count > 0) ? sum / count : 0.0;
 
         for (int kPhi = 1; kPhi <= nPhi; ++kPhi) {
-          double N = histoRaw3D->GetBinContent(iVtxZ, jEtha, kPhi);
+          double nEntry = histoRaw3D->GetBinContent(iVtxZ, jEtha, kPhi);
           double w;
           if (useEpsilon) {
-            w = (Nmean > 0) ? Nmean / std::max(N, (double)myEpsilonToWeight) : 1.0;
+            if (nMean > 0) {
+              w = nMean / std::max(nEntry, (double)myEpsilonToWeight);
+            } else {
+              w = 1.0;
+            }
           } else {
-            w = (Nmean > 0) ? Nmean / N : 1.0;
+            if (nMean > 0) {
+              w = nMean / nEntry ;
+            } else {
+              w = 1.0;
+            }
           }
           if (w < myWeightMin)
             w = myWeightMin;
@@ -498,7 +506,7 @@ struct UPCPhotonuclearAnalysisJMG {
   {
     auto hWeight = histos.get<TH3>(HIST("weightNUA"));
     if (phi < 0)
-      phi += 2 * PI;
+      phi += TwoPI;
     int iPhi = hWeight->GetZaxis()->FindBin(phi);
     int iEta = hWeight->GetYaxis()->FindBin(eta);
     int iVz = hWeight->GetXaxis()->FindBin(vz);
