@@ -134,7 +134,7 @@ struct HigherMassResonances {
     Configurable<float> confKsrapidity{"confKsrapidity", 0.5f, "Rapidity cut on K0s"};
     Configurable<float> angSepCut{"angSepCut", 0.01f, "Angular separation cut"};
     Configurable<bool> isapplyAngSepCut{"isapplyAngSepCut", false, "Apply angular separation cut"};
-    Configurable<bool> isStandardV0{"StandardV0", true, "Standard V0 selection"};
+    Configurable<bool> isStandardV0{"isStandardV0", false, "Standard V0 selection"};
     Configurable<bool> isApplyEtaCutK0s{"isApplyEtaCutK0s", false, "Apply eta cut on K0s daughters"};
     Configurable<float> cfgETAcut{"cfgETAcut", 0.8f, "Track ETA cut"};
 
@@ -860,8 +860,8 @@ struct HigherMassResonances {
         continue;
       }
 
-      if (config.isApplyEtaCutK0s && (v1.eta() < 0.8 || v2.eta() < 0.8)) {
-        continue; // skip if eta is less than 0.8
+      if (config.isApplyEtaCutK0s && (v1.eta() < confDaughEta || v2.eta() < confDaughEta)) {
+        continue;
       }
 
       if (config.qAv0) {
