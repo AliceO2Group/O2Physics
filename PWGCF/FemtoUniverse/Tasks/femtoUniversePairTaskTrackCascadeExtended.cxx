@@ -32,7 +32,9 @@
 
 #include <TPDGCode.h>
 
+#include <memory>
 #include <set>
+#include <string>
 #include <vector>
 
 using namespace o2;
