@@ -90,6 +90,7 @@ struct HfCorrelatorLcHadronsSelection {
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
   Configurable<float> centMin{"centMin", 0., "Minimum Centrality"};
   Configurable<float> centMax{"centMax", 100., "Maximum Centrality"};
+  Configurable<bool> isMultiplicityDependent{"isMultiplicityDependent", false, "Flag for multiplicity dependent analyses"};
 
   HfHelper hfHelper;
   SliceCache cache;
@@ -122,7 +123,10 @@ struct HfCorrelatorLcHadronsSelection {
       }
     }
 
-    float cent = collision.centFT0M();
+    float cent = 0.;
+    if (isMultiplicityDependent) {
+      cent = collision.centFT0M();
+    }
 
     if (useSel8) {
       isSel8 = collision.sel8();
@@ -315,11 +319,7 @@ struct HfCorrelatorLcHadrons {
     registry.add("hCentFT0M", "Centrality FT0M; Centrality;entries", {HistType::kTH1D, {{100, 0., 100.}}});
     registry.add("hLcBin", "Lc selected in pool Bin;pool Bin;entries", {HistType::kTH1D, {{9, 0., 9.}}});
     registry.add("hTracksBin", "Tracks selected in pool Bin;pool Bin;entries", {HistType::kTH1D, {{9, 0., 9.}}});
-    if (isMultiplicityDependent) {
-      registry.add("hMassLcVsPtvsCent", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH3F, {{axisMassLc}, {axisPtLc}, {axisCent}}});
-    } else {
-      registry.add("hMassLcVsPt", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{axisMassLc}, {axisPtLc}}});
-    }
+    registry.add("hMassLcVsPtvsCent", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH3F, {{axisMassLc}, {axisPtLc}, {axisCent}}});
     registry.add("hMassLcData", "Lc candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH1D, {{axisMassLc}}});
     registry.add("hLcPoolBin", "Lc candidates pool bin", {HistType::kTH1D, {axisPoolBin}});
     registry.add("hTracksPoolBin", "Particles associated pool bin", {HistType::kTH1D, {axisPoolBin}});
@@ -389,8 +389,10 @@ struct HfCorrelatorLcHadrons {
     int gCollisionId = collision.globalIndex();
     int64_t timeStamp = bc.timestamp();
 
-    float cent = collision.centFT0M();
-
+    float cent = 0.;
+    if (isMultiplicityDependent) {
+      cent = collision.centFT0M();
+    }
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     int nTracks = 0;
     if (collision.numContrib() > 1) {
@@ -431,11 +433,7 @@ struct HfCorrelatorLcHadrons {
       registry.fill(HIST("hLcBin"), poolBin);
 
       if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
-        if (isMultiplicityDependent) {
-          registry.fill(HIST("hMassLcVsPtvsCent"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
-        } else {
-          registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
-        }
+        registry.fill(HIST("hMassLcVsPtvsCent"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
         registry.fill(HIST("hMassLcData"), hfHelper.invMassLcToPKPi(candidate), efficiencyWeightLc);
         registry.fill(HIST("hSelectionStatusLcToPKPi"), candidate.isSelLcToPKPi());
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -445,11 +443,7 @@ struct HfCorrelatorLcHadrons {
         entryLc(candidate.phi(), candidate.eta(), candidate.pt() * chargeLc, hfHelper.invMassLcToPKPi(candidate), poolBin, gCollisionId, timeStamp);
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
-        if (isMultiplicityDependent) {
-          registry.fill(HIST("hMassLcVsPtvsCent"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
-        } else {
-          registry.fill(HIST("hMassLcVsPt"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), efficiencyWeightLc);
-        }
+        registry.fill(HIST("hMassLcVsPtvsCent"), hfHelper.invMassLcToPKPi(candidate), candidate.pt(), cent, efficiencyWeightLc);
         registry.fill(HIST("hMassLcData"), hfHelper.invMassLcToPiKP(candidate), efficiencyWeightLc);
         registry.fill(HIST("hSelectionStatusLcToPiKP"), candidate.isSelLcToPiKP());
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
