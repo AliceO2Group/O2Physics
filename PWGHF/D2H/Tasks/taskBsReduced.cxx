@@ -104,7 +104,7 @@ DECLARE_SOA_COLUMN(E, e, float); //! Energy of candidate (GeV)
 } // namespace hf_cand_bs_lite
 
 DECLARE_SOA_TABLE(HfRedCandBsLites, "AOD", "HFREDCANDBSLITE", //! Table with some Bs properties
-                                                              // B meson features
+                  // B meson features
                   hf_cand_bs_lite::M,
                   hf_cand_bs_lite::Pt,
                   hf_cand_bs_lite::Eta,
