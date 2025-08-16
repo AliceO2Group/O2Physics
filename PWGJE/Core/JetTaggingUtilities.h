@@ -416,8 +416,8 @@ int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
 }
 
 /**
- * return also the s-jet flavor: 1 for c-jet, 2 for b-jet, 6 for s-jet
- *                               5 for u,d or g jets.
+ * return also the s-jet flavor: 1 for c-jet, 2 for b-jet, 7 for s-jet
+ *                               6 for u,d or g jets.
  *
  * @param AnyJet the jet that we need to study its flavor
  * @param AllMCParticles a vector of all the mc particles stack
