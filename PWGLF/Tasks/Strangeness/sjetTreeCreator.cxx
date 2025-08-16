@@ -247,8 +247,8 @@ struct SjetTreeCreator {
       auto hJetFlavor = registry.get<TH1>(HIST("h_jet_flav"));
       hJetFlavor->GetXaxis()->SetBinLabel(1, "no mcparticle"); // bin 1
       hJetFlavor->GetXaxis()->SetBinLabel(2, "hf-jet");        // bin 2 --> flavour number 1+2
-      hJetFlavor->GetXaxis()->SetBinLabel(3, "s-jet");         // bin 3 --> flavour number 6
-      hJetFlavor->GetXaxis()->SetBinLabel(4, "udg-jet");       // bin 4 --> flavour number 5
+      hJetFlavor->GetXaxis()->SetBinLabel(3, "s-jet");         // bin 3 --> flavour number 7
+      hJetFlavor->GetXaxis()->SetBinLabel(4, "udg-jet");       // bin 4 --> flavour number 6
 
       // Track information
       registry.add("h_trk_pt", "trk_pt;#it{p}_{T} (GeV/#it{c});Entries", {HistType::kTH1F, {{200, 0., 100.}}});

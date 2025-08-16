@@ -50,8 +50,9 @@ enum JetTaggingSpecies {
   beauty = 2,
   lightflavour = 3,
   lightquark = 4,
-  udg = 5,
-  strange = 6,
+  gluon = 5,
+  udg = 6,
+  strange = 7,
 };
 
 enum BJetTaggingMethod {
