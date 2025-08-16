@@ -99,6 +99,7 @@ struct lambdapolsp {
   Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 1000, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", 0, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
   Configurable<int> sys{"sys", 1, "flag to select systematic source"};
+  Configurable<int> centestim{"centestim", 0, "flag to select centrality estimator"};
   Configurable<bool> dosystematic{"dosystematic", false, "flag to perform systematic study"};
   Configurable<bool> needetaaxis{"needetaaxis", false, "flag to use last axis"};
   struct : ConfigurableGroup {
@@ -483,6 +484,7 @@ struct lambdapolsp {
     /*if (TMath::Abs(eta) > ConfDaughEta) {
       return false;
       }*/
+
     if (tpcNClsF < ConfDaughTPCnclsMin) {
       return false;
     }
@@ -541,6 +543,7 @@ struct lambdapolsp {
     if (posTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster || negTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster) {
       return false;
     }
+
     if (posTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin) {
       return false;
     }
@@ -587,12 +590,14 @@ struct lambdapolsp {
     if (posTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster || negTrackExtra.tpcNClsCrossedRows() < cfgTPCcluster) {
       return false;
     }
+
     if (posTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < ConfDaughTPCnclsMin) {
       return false;
     }
     if (posTrackExtra.tpcCrossedRowsOverFindableCls() < rcrfc || negTrackExtra.tpcCrossedRowsOverFindableCls() < rcrfc) {
       return false;
     }
+
     // check TPC PID
     if (((std::abs(posTrackExtra.tpcNSigmaPi()) > ConfDaughPIDCuts) || (std::abs(negTrackExtra.tpcNSigmaPi()) > ConfDaughPIDCuts))) {
       return false;
@@ -798,7 +803,16 @@ struct lambdapolsp {
     if (!collision.sel8()) {
       return;
     }
-    auto centrality = collision.centFT0C();
+    double centrality = -999.;
+    if (centestim == 0)
+      centrality = collision.centFT0C();
+    else if (centestim == 1)
+      centrality = collision.centFT0M();
+    else if (centestim == 2)
+      centrality = collision.centFT0A();
+    else if (centestim == 3)
+      centrality = collision.centFV0A();
+
     // histos.fill(HIST("hCentrality0"), centrality);
     if (!collision.triggereventsp()) {
       return;
@@ -1199,7 +1213,17 @@ struct lambdapolsp {
     if (!collision.sel8()) {
       return;
     }
-    auto centrality = collision.centFT0C();
+    double centrality = -999.;
+    if (centestim == 0)
+      centrality = collision.centFT0C();
+    else if (centestim == 1)
+      centrality = collision.centFT0M();
+    else if (centestim == 2)
+      centrality = collision.centFT0A();
+    else if (centestim == 3)
+      centrality = collision.centFV0A();
+
+    // auto centrality = collision.centFT0C();
     if (!collision.triggereventsp()) { // provided by StraZDCSP
       return;
     }
@@ -1617,7 +1641,6 @@ struct lambdapolsp {
       if (additionalEvSel4 && !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
-
       auto centrality = collision1.centFT0C();
       auto qxZDCA = collision1.qxZDCA();
       auto qxZDCC = collision1.qxZDCC();
