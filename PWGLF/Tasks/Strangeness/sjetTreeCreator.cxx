@@ -419,8 +419,7 @@ struct SjetTreeCreator {
                      MCPJetTable const& MCPjets,
                      JetTracksMCDwID const& allTracks,
                      JetParticleswID const& MCParticles,
-                     OriginalTracks const& origTracks,
-                     aod::McParticles const& origParticles)
+                     OriginalTracks const& origTracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits) ||
         (static_cast<double>(std::rand()) / RAND_MAX < eventReductionFactor)) {
