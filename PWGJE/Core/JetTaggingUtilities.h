@@ -50,7 +50,8 @@ enum JetTaggingSpecies {
   beauty = 2,
   lightflavour = 3,
   lightquark = 4,
-  gluon = 5
+  udg = 5,
+  strange = 6,
 };
 
 enum BJetTaggingMethod {
@@ -411,6 +412,45 @@ int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
   }
 
   return JetTaggingSpecies::lightflavour; // Light flavor jet
+}
+
+/**
+ * return also the s-jet flavor: 1 for c-jet, 2 for b-jet, 6 for s-jet
+ *                               5 for u,d or g jets.
+ *
+ * @param AnyJet the jet that we need to study its flavor
+ * @param AllMCParticles a vector of all the mc particles stack
+ */
+template <typename AnyJet, typename AllMCParticles>
+int16_t getSJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
+{
+  bool charmQuark = false;
+  bool strangeQuark = false;
+
+  for (auto const& mcpart : mcparticles) {
+    int pdgcode = mcpart.pdgCode();
+    if (std::abs(pdgcode) == 21 || (std::abs(pdgcode) >= 1 && std::abs(pdgcode) <= 5)) {
+      double dR = jetutilities::deltaR(jet, mcpart);
+
+      if (dR < jet.r() / 100.f) {
+        if (std::abs(pdgcode) == 5) {
+          return JetTaggingSpecies::beauty; // Beauty jet
+        } else if (std::abs(pdgcode) == 4) {
+          charmQuark = true;
+        } else if (std::abs(pdgcode) == 3) {
+          strangeQuark = true;
+        }
+      }
+    }
+  }
+
+  if (charmQuark) {
+    return JetTaggingSpecies::charm; // Charm jet
+  } else if (strangeQuark) {
+    return JetTaggingSpecies::strange; // Strange jet
+  }
+
+  return JetTaggingSpecies::udg; // Up, Down or Gluon jet
 }
 
 /**
