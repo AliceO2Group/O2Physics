@@ -803,7 +803,7 @@ struct lambdapolsp {
     if (!collision.sel8()) {
       return;
     }
-    double centrality;
+    double centrality = -999.;
     if (centestim == 0)
       centrality = collision.centFT0C();
     else if (centestim == 1)
@@ -1213,7 +1213,7 @@ struct lambdapolsp {
     if (!collision.sel8()) {
       return;
     }
-    double centrality;
+    double centrality = -999.;
     if (centestim == 0)
       centrality = collision.centFT0C();
     else if (centestim == 1)
