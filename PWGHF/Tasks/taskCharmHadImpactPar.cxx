@@ -269,13 +269,13 @@ struct HfTaskCharmHadImpactPar {
         }
       }
     }
-    float centrality = 0.;
-    float occupancy = 0.;
+    float centrality = 0.f;
+    float occupancy = 0.f;
     if (centEstimator != CentralityEstimator::None) {
       centrality = getCentralityColl(collision, centEstimator);
     }
     if (occEstimator != OccupancyEstimator::None) {
-      occupancy = getOccupancyColl(collision, occEstimator);
+      occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
     }
 
     int8_t flagMcMatchRec = 0;

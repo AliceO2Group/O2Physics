@@ -48,14 +48,14 @@ using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 using namespace o2::aod::evsel;
 
-using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>;
-using ColDataTablepp = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>;
+using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>;
+using ColDataTablepp = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Ms>;
 using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 using FilTrackDataTable = soa::Filtered<TrackDataTable>;
 using CollisionMCTrueTable = aod::McCollisions;
 using TrackMCTrueTable = aod::McParticles;
-using CollisionMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>>;
-using ColMCRecTablepp = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>>;
+using CollisionMCRecTable = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>>;
+using ColMCRecTablepp = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Ms>>;
 using TrackMCRecTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>;
 using FilTrackMCRecTable = soa::Filtered<TrackMCRecTable>;
 using V0TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
@@ -115,7 +115,6 @@ AxisSpec axisMassLambda = {200, 1.07, 1.17, "Lambda/AntiLamda Mass", "Lambda/Ant
 AxisSpec axisTracks{9, 0.5, 9.5, "#tracks", "TrackAxis"};
 auto static constexpr kMinCharge = 3.f;
 auto static constexpr kMinpTcut = 0.1f;
-auto static constexpr kEtaInelgt0 = 1.0f;
 auto static constexpr kNItslayers = 7;
 
 struct HeavyionMultiplicity {
@@ -160,10 +159,13 @@ struct HeavyionMultiplicity {
   Configurable<bool> isApplyNoHighMultCollInPrevRof{"isApplyNoHighMultCollInPrevRof", false, "Enable NoHighMultCollInPrevRof cut"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "Enable FT0CbasedOccupancy cut"};
   Configurable<bool> isApplyCentFT0C{"isApplyCentFT0C", true, "Centrality based on FT0C"};
+  Configurable<bool> isApplyCentFV0A{"isApplyCentFV0A", false, "Centrality based on FV0A"};
   Configurable<bool> isApplyCentFT0CVariant1{"isApplyCentFT0CVariant1", false, "Centrality based on FT0C variant1"};
   Configurable<bool> isApplyCentFT0M{"isApplyCentFT0M", false, "Centrality based on FT0A + FT0C"};
   Configurable<bool> isApplyCentNGlobal{"isApplyCentNGlobal", false, "Centrality based on global tracks"};
   Configurable<bool> isApplyCentMFT{"isApplyCentMFT", false, "Centrality based on MFT tracks"};
+  Configurable<bool> isApplySplitRecCol{"isApplySplitRecCol", false, "Split MC reco collisions"};
+  Configurable<bool> isApplyInelgt0{"isApplyInelgt0", false, "Enable INEL > 0 condition"};
 
   void init(InitContext const&)
   {
@@ -190,6 +192,7 @@ struct HeavyionMultiplicity {
     x->SetBinLabel(6, "ApplyNoCollInTimeRangeStandard");
     x->SetBinLabel(7, "ApplyNoCollInRofStandard");
     x->SetBinLabel(8, "ApplyNoHighMultCollInPrevRof");
+    x->SetBinLabel(9, "INEL > 0");
 
     if (doprocessData) {
       histos.add("CentPercentileHist", "CentPercentileHist", kTH1D, {axisCent}, false);
@@ -307,6 +310,11 @@ struct HeavyionMultiplicity {
       return false;
     }
     histos.fill(HIST("EventHist"), 8);
+
+    if (isApplyInelgt0 && !col.isInelGt0()) {
+      return false;
+    }
+    histos.fill(HIST("EventHist"), 9);
     return true;
   }
 
@@ -316,6 +324,9 @@ struct HeavyionMultiplicity {
     auto cent = -1;
     if (isApplyCentFT0C) {
       cent = col.centFT0C();
+    }
+    if (isApplyCentFV0A) {
+      cent = col.centFV0A();
     }
     if (isApplyCentFT0CVariant1) {
       cent = col.centFT0CVariant1();
@@ -434,6 +445,11 @@ struct HeavyionMultiplicity {
 
   void processMonteCarlo(CollisionMCTrueTable::iterator const&, CollisionMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
+
+    if (isApplySplitRecCol && (RecCols.size() == 0 || RecCols.size() > 1)) {
+      return;
+    }
+
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
         continue;
@@ -663,41 +679,31 @@ struct HeavyionMultiplicity {
       return;
     }
 
-    // INEL>0 sample
-    auto nTrks = 0;
+    histos.fill(HIST("VtxZHist"), cols.posZ());
+    histos.fill(HIST("MultPercentileHist"), cols.centFT0M());
+    histos.fill(HIST("hdatazvtxmultpp"), cols.posZ(), cols.centFT0M());
+
     for (const auto& track : tracks) {
       if (!isTrackSelected(track)) {
         continue;
       }
-      if (track.eta() < kEtaInelgt0) {
-        nTrks++;
+      histos.fill(HIST("PhiVsEtaHistpp"), track.phi(), track.eta());
+      histos.fill(HIST("hdatadndetapp"), cols.posZ(), cols.centFT0M(), track.eta(), track.phi(), kGlobalplusITS);
+      if (track.hasTPC()) {
+        histos.fill(HIST("hdatadndetapp"), cols.posZ(), cols.centFT0M(), track.eta(), track.phi(), kGlobalonly);
+      } else {
+        histos.fill(HIST("hdatadndetapp"), cols.posZ(), cols.centFT0M(), track.eta(), track.phi(), kITSonly);
       }
     } // track loop
-
-    if (nTrks > 0) {
-      histos.fill(HIST("EventHist"), 9);
-      histos.fill(HIST("VtxZHist"), cols.posZ());
-      histos.fill(HIST("MultPercentileHist"), cols.centFT0M());
-      histos.fill(HIST("hdatazvtxmultpp"), cols.posZ(), cols.centFT0M());
-
-      for (const auto& track : tracks) {
-        if (!isTrackSelected(track)) {
-          continue;
-        }
-        histos.fill(HIST("PhiVsEtaHistpp"), track.phi(), track.eta());
-        histos.fill(HIST("hdatadndetapp"), cols.posZ(), cols.centFT0M(), track.eta(), track.phi(), kGlobalplusITS);
-        if (track.hasTPC()) {
-          histos.fill(HIST("hdatadndetapp"), cols.posZ(), cols.centFT0M(), track.eta(), track.phi(), kGlobalonly);
-        } else {
-          histos.fill(HIST("hdatadndetapp"), cols.posZ(), cols.centFT0M(), track.eta(), track.phi(), kITSonly);
-        }
-      } // track loop
-    } // nTrks>0
   }
   PROCESS_SWITCH(HeavyionMultiplicity, processppData, "process pp data", false);
 
   void processppMonteCarlo(CollisionMCTrueTable::iterator const&, ColMCRecTablepp const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
+    if (isApplySplitRecCol && (RecCols.size() == 0 || RecCols.size() > 1)) {
+      return;
+    }
+
     for (const auto& RecCol : RecCols) {
       if (!isEventSelected(RecCol)) {
         continue;
@@ -705,103 +711,89 @@ struct HeavyionMultiplicity {
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       std::vector<int> mclabels;
 
-      // INEL>0 sample
-      auto nTrks = 0;
+      histos.fill(HIST("VtxZHist"), RecCol.posZ());
+      histos.fill(HIST("MultPercentileMCRecHist"), RecCol.centFT0M());
+      histos.fill(HIST("hmczvtxmultpp"), RecCol.posZ(), RecCol.centFT0M());
+
       for (const auto& Rectrack : recTracksPart) {
         if (!isTrackSelected(Rectrack)) {
           continue;
         }
-        if (Rectrack.eta() < kEtaInelgt0) {
-          nTrks++;
+        histos.fill(HIST("MCrecPhiVsEtaHistpp"), Rectrack.phi(), Rectrack.eta());
+        histos.fill(HIST("hmcrecdndetapp"), RecCol.posZ(), RecCol.centFT0M(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kSpAll), kGlobalplusITS);
+        if (Rectrack.hasTPC()) {
+          histos.fill(HIST("hmcrecdndetapp"), RecCol.posZ(), RecCol.centFT0M(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kSpAll), kGlobalonly);
+        } else {
+          histos.fill(HIST("hmcrecdndetapp"), RecCol.posZ(), RecCol.centFT0M(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kSpAll), kITSonly);
         }
-      }
 
-      if (nTrks > 0) {
-        histos.fill(HIST("EventHist"), 9);
-        histos.fill(HIST("VtxZHist"), RecCol.posZ());
-        histos.fill(HIST("MultPercentileMCRecHist"), RecCol.centFT0M());
-        histos.fill(HIST("hmczvtxmultpp"), RecCol.posZ(), RecCol.centFT0M());
-
-        for (const auto& Rectrack : recTracksPart) {
-          if (!isTrackSelected(Rectrack)) {
-            continue;
-          }
-          histos.fill(HIST("MCrecPhiVsEtaHistpp"), Rectrack.phi(), Rectrack.eta());
-          histos.fill(HIST("hmcrecdndetapp"), RecCol.posZ(), RecCol.centFT0M(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kSpAll), kGlobalplusITS);
-          if (Rectrack.hasTPC()) {
-            histos.fill(HIST("hmcrecdndetapp"), RecCol.posZ(), RecCol.centFT0M(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kSpAll), kGlobalonly);
-          } else {
-            histos.fill(HIST("hmcrecdndetapp"), RecCol.posZ(), RecCol.centFT0M(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kSpAll), kITSonly);
-          }
-
-          if (Rectrack.has_mcParticle()) {
-            int pid = kBkg;
-            auto mcpart = Rectrack.template mcParticle_as<aod::McParticles>();
-            if (mcpart.isPhysicalPrimary()) {
-              switch (std::abs(mcpart.pdgCode())) {
-                case PDG_t::kPiPlus:
-                  pid = kSpPion;
-                  break;
-                case PDG_t::kKPlus:
-                  pid = kSpKaon;
-                  break;
-                case PDG_t::kProton:
-                  pid = kSpProton;
-                  break;
-                default:
-                  pid = kSpOther;
-                  break;
-              }
-            } else {
-              pid = kSpNotPrimary;
+        if (Rectrack.has_mcParticle()) {
+          int pid = kBkg;
+          auto mcpart = Rectrack.template mcParticle_as<aod::McParticles>();
+          if (mcpart.isPhysicalPrimary()) {
+            switch (std::abs(mcpart.pdgCode())) {
+              case PDG_t::kPiPlus:
+                pid = kSpPion;
+                break;
+              case PDG_t::kKPlus:
+                pid = kSpKaon;
+                break;
+              case PDG_t::kProton:
+                pid = kSpProton;
+                break;
+              default:
+                pid = kSpOther;
+                break;
             }
-            if (mcpart.has_mothers()) {
-              auto mcpartMother = mcpart.template mothers_as<aod::McParticles>().front();
-              if (mcpartMother.pdgCode() == PDG_t::kK0Short || std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
-                pid = kSpStrangeDecay;
-              }
-            }
-            if (find(mclabels.begin(), mclabels.end(), Rectrack.mcParticleId()) != mclabels.end()) {
-              pid = kBkg;
-            }
-            mclabels.push_back(Rectrack.mcParticleId());
-            histos.fill(HIST("hmcrecdndetapp"), RecCol.posZ(), RecCol.centFT0M(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(pid), kGlobalplusITS);
           } else {
-            histos.fill(HIST("hmcrecdndetapp"), RecCol.posZ(), RecCol.centFT0M(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kBkg), kGlobalplusITS);
+            pid = kSpNotPrimary;
           }
-        } // track (mcrec) loop
+          if (mcpart.has_mothers()) {
+            auto mcpartMother = mcpart.template mothers_as<aod::McParticles>().front();
+            if (mcpartMother.pdgCode() == PDG_t::kK0Short || std::abs(mcpartMother.pdgCode()) == PDG_t::kLambda0) {
+              pid = kSpStrangeDecay;
+            }
+          }
+          if (find(mclabels.begin(), mclabels.end(), Rectrack.mcParticleId()) != mclabels.end()) {
+            pid = kBkg;
+          }
+          mclabels.push_back(Rectrack.mcParticleId());
+          histos.fill(HIST("hmcrecdndetapp"), RecCol.posZ(), RecCol.centFT0M(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(pid), kGlobalplusITS);
+        } else {
+          histos.fill(HIST("hmcrecdndetapp"), RecCol.posZ(), RecCol.centFT0M(), Rectrack.eta(), Rectrack.phi(), static_cast<double>(kBkg), kGlobalplusITS);
+        }
+      } // track (mcrec) loop
 
-        for (const auto& particle : GenParticles) {
-          if (!isGenTrackSelected(particle)) {
-            continue;
-          }
-          histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kNoGenpTVar);
-          if (particle.pt() < kMinpTcut) {
-            histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup, -10.0 * particle.pt() + 2);
-            histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
-          } else {
-            histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup);
-            histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown);
-          }
+      for (const auto& particle : GenParticles) {
+        if (!isGenTrackSelected(particle)) {
+          continue;
+        }
+        histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kNoGenpTVar);
+        if (particle.pt() < kMinpTcut) {
+          histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup, -10.0 * particle.pt() + 2);
+          histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown, 5.0 * particle.pt() + 0.5);
+        } else {
+          histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTup);
+          histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(kSpAll), kGenpTdown);
+        }
 
-          int pid = 0;
-          switch (std::abs(particle.pdgCode())) {
-            case PDG_t::kPiPlus:
-              pid = kSpPion;
-              break;
-            case PDG_t::kKPlus:
-              pid = kSpKaon;
-              break;
-            case PDG_t::kProton:
-              pid = kSpProton;
-              break;
-            default:
-              pid = kSpOther;
-              break;
-          }
-          histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(pid), kNoGenpTVar);
-        } // track (mcgen) loop
-      } // nTrks>0
+        int pid = 0;
+        switch (std::abs(particle.pdgCode())) {
+          case PDG_t::kPiPlus:
+            pid = kSpPion;
+            break;
+          case PDG_t::kKPlus:
+            pid = kSpKaon;
+            break;
+          case PDG_t::kProton:
+            pid = kSpProton;
+            break;
+          default:
+            pid = kSpOther;
+            break;
+        }
+        histos.fill(HIST("hmcgendndetapp"), RecCol.posZ(), RecCol.centFT0M(), particle.eta(), particle.phi(), static_cast<double>(pid), kNoGenpTVar);
+      } // track (mcgen) loop
     } // collision loop
   }
   PROCESS_SWITCH(HeavyionMultiplicity, processppMonteCarlo, "process pp MC", false);

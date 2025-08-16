@@ -228,6 +228,8 @@ struct cascadeFlow {
     Configurable<float> MaxPtV0{"MaxPtV0", 10, "Max pt of v0"};
     Configurable<float> MinMassLambda{"MinMassLambda", 1.105, ""};
     Configurable<float> MaxMassLambda{"MaxMassLambda", 1.125, ""};
+    Configurable<float> MinMassLambdaInTree{"MinMassLambdaInTree", 1.09, ""};
+    Configurable<float> MaxMassLambdaInTree{"MaxMassLambdaInTree", 1.14, ""};
     Configurable<float> etaV0{"etaV0", 0.8, "etaV0"};
     Configurable<float> v0cospa{"v0cospa", 0.97, "min V0 CosPA"};
     Configurable<float> dcav0dau{"dcav0dau", 1.0, "max DCA V0 Daughters (cm)"};
@@ -577,13 +579,20 @@ struct cascadeFlow {
   template <class collision_t, class v0_t>
   void fillAnalysedLambdaTable(collision_t coll, bool hasEventPlane, bool hasSpectatorPlane, int chargeIndex, v0_t v0, float v2CEP, float psiT0C, double pzs2Lambda, double cos2ThetaLambda, double cosThetaLambda)
   {
+    double invMassLambda = 0;
+    if (chargeIndex == 0)
+      invMassLambda = v0.mLambda();
+    else if (chargeIndex == 1)
+      invMassLambda = v0.mAntiLambda();
+    else
+      invMassLambda = v0.mLambda();
     analysisLambdaSample(coll.centFT0C(),
                          hasEventPlane,
                          hasSpectatorPlane,
                          chargeIndex,
                          v0.pt(),
                          v0.phi(),
-                         v0.mLambda(),
+                         invMassLambda,
                          v0.v0radius(),
                          v0.dcapostopv(),
                          v0.dcanegtopv(),
@@ -1658,6 +1667,18 @@ struct cascadeFlow {
         if (fillingConfigs.isFillTHN_Acc)
           histos.get<THn>(HIST("hLambdaCos2ThetaVsPsi"))->Fill(coll.centFT0C(), chargeIndex, v0.eta(), v0.pt(), v0.mLambda(), cos2ThetaLambda, 2 * lambdaminuspsiT0C);
       }
+
+      double invMassLambda = 0;
+      if (chargeIndex == 0)
+        invMassLambda = v0.mLambda();
+      else if (chargeIndex == 1)
+        invMassLambda = v0.mAntiLambda();
+      else
+        invMassLambda = v0.mLambda();
+
+      // mass selection
+      if (invMassLambda < V0Configs.MinMassLambdaInTree || invMassLambda > V0Configs.MaxMassLambdaInTree)
+        continue;
 
       if (fillingConfigs.isFillTree)
         fillAnalysedLambdaTable(coll, hasEventPlane, hasSpectatorPlane, chargeIndex, v0, v2CEP, psiT0C, pzs2Lambda, cos2ThetaLambda, cosThetaLambda);

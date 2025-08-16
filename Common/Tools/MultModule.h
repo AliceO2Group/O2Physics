@@ -16,22 +16,26 @@
 #ifndef COMMON_TOOLS_MULTMODULE_H_
 #define COMMON_TOOLS_MULTMODULE_H_
 
-#include <vector>
-#include <memory>
-#include <cstdlib>
-#include <cmath>
-#include <array>
-#include <string>
-#include <map>
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramSpec.h"
-#include "TableHelper.h"
-#include "Common/Core/TPCVDriftManager.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
-#include "TFormula.h"
+
+#include "Common/Core/TPCVDriftManager.h"
+#include "Common/Core/TableHelper.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+
+#include <TFormula.h>
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 //__________________________________________
 // MultModule
@@ -435,7 +439,7 @@ class MultModule
     internalOpts.mEnabledTables.resize(nTablesConst, 0);
 
     LOGF(info, "Configuring tables to generate");
-    auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
+    const auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
 
     TString listOfRequestors[nTablesConst];
     for (int i = 0; i < nTablesConst; i++) {
@@ -1246,7 +1250,7 @@ class MultModule
 
       auto populateTable = [&](auto& table, struct CalibrationInfo& estimator, float multiplicity, bool isInelGt0) {
         const bool assignOutOfRange = internalOpts.embedINELgtZEROselection && !isInelGt0;
-        auto scaleMC = [](float x, float pars[6]) {
+        auto scaleMC = [](float x, const float pars[6]) {
           return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
         };
 
@@ -1331,7 +1335,7 @@ class MultModule
       const auto& firstbc = bcs.begin();
       ConfigureCentralityRun2(ccdb, metadataInfo, firstbc);
 
-      auto scaleMC = [](float x, float pars[6]) {
+      auto scaleMC = [](float x, const float pars[6]) {
         return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
       };
 

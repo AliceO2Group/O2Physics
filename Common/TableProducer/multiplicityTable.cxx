@@ -15,26 +15,29 @@
 /// \author ALICE
 ///
 
-#include <vector>
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+
+#include "Common/Core/MetadataHelper.h"
+#include "Common/Core/TableHelper.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigParamSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TList.h>
+
 #include <algorithm>
 #include <map>
 #include <string>
-
-#include "Framework/ConfigParamSpec.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "TableHelper.h"
-#include "MetadataHelper.h"
-#include "TList.h"
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -100,9 +103,9 @@ struct MultiplicityTable {
   Produces<aod::PVMultZeqs> tablePVZeqs;        // 12
   Produces<aod::MultMCExtras> tableExtraMc;     // 13
   Produces<aod::Mult2MCExtras> tableExtraMult2MCExtras;
-  Produces<aod::MultHepMCHIs> multHepMCHIs;     // Not accounted for, produced using custom process function to avoid dependencies
-  Produces<aod::MFTMults> mftMults;             // Not accounted for, produced using custom process function to avoid dependencies
-  Produces<aod::MultsGlobal> multsGlobal;       // Not accounted for, produced based on process function processGlobalTrackingCounters
+  Produces<aod::MultHepMCHIs> multHepMCHIs; // Not accounted for, produced using custom process function to avoid dependencies
+  Produces<aod::MFTMults> mftMults;         // Not accounted for, produced using custom process function to avoid dependencies
+  Produces<aod::MultsGlobal> multsGlobal;   // Not accounted for, produced based on process function processGlobalTrackingCounters
 
   // For vertex-Z corrections in calibration
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -521,12 +524,6 @@ struct MultiplicityTable {
           } break;
           case kZDCMults: // ZDC
           {
-            multZNA = -1.f;
-            multZNC = -1.f;
-            multZEM1 = -1.f;
-            multZEM2 = -1.f;
-            multZPA = -1.f;
-            multZPC = -1.f;
             if (bc.has_zdc()) {
               multZNA = bc.zdc().amplitudeZNA();
               multZNC = bc.zdc().amplitudeZNC();

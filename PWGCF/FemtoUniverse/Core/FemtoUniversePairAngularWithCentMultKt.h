@@ -17,9 +17,10 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRANGULARWITHCENTMULTKT_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEPAIRANGULARWITHCENTMULTKT_H_
 
+#include "Framework/HistogramRegistry.h"
+
 #include <string>
 #include <vector>
-#include "Framework/HistogramRegistry.h"
 
 namespace o2::analysis::femto_universe
 {
