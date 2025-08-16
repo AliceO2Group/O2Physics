@@ -47,7 +47,7 @@ class OnnxModel
   ~OnnxModel() = default;
 
   // Inferencing
-  void initModel(std::string, bool = false, int = 0, uint64_t = 0, uint64_t = 0);
+  void initModel(const std::string&, const bool = false, const int = 0, const uint64_t = 0, const uint64_t = 0);
 
   // template methods -- best to define them in header
   template <typename T>
@@ -57,7 +57,7 @@ class OnnxModel
     // assert(input[0].GetTensorTypeAndShapeInfo().GetShape() == getNumInputNodes()); --> Fails build in debug mode, TODO: assertion should be checked somehow
 
     try {
-      Ort::RunOptions runOptions;
+      const Ort::RunOptions runOptions;
       std::vector<const char*> inputNamesChar(mInputNames.size(), nullptr);
       std::transform(std::begin(mInputNames), std::end(mInputNames), std::begin(inputNamesChar),
                      [&](const std::string& str) { return str.c_str(); });
@@ -87,7 +87,7 @@ class OnnxModel
   template <typename T>
   T* evalModel(std::vector<T>& input)
   {
-    int64_t size = input.size();
+    const int64_t size = input.size();
     assert(size % mInputShapes[0][1] == 0);
     std::vector<int64_t> inputShape{size / mInputShapes[0][1], mInputShapes[0][1]};
     std::vector<Ort::Value> inputTensors;
@@ -106,16 +106,16 @@ class OnnxModel
 
     Ort::MemoryInfo memInfo = Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
 
-    for (size_t iinput = 0; iinput < input.size(); iinput++) {
+    for (std::size_t iinput = 0; iinput < input.size(); iinput++) {
       [[maybe_unused]] int totalSize = 1;
       int64_t size = input[iinput].size();
-      for (size_t idim = 1; idim < mInputShapes[iinput].size(); idim++) {
+      for (std::size_t idim = 1; idim < mInputShapes[iinput].size(); idim++) {
         totalSize *= mInputShapes[iinput][idim];
       }
       assert(size % totalSize == 0);
 
       std::vector<int64_t> inputShape{static_cast<int64_t>(size / totalSize)};
-      for (size_t idim = 1; idim < mInputShapes[iinput].size(); idim++) {
+      for (std::size_t idim = 1; idim < mInputShapes[iinput].size(); idim++) {
         inputShape.push_back(mInputShapes[iinput][idim]);
       }
 
@@ -142,7 +142,7 @@ class OnnxModel
   int getNumOutputNodes() const { return mOutputShapes[0][1]; }
   uint64_t getValidityFrom() const { return validFrom; }
   uint64_t getValidityUntil() const { return validUntil; }
-  void setActiveThreads(int);
+  void setActiveThreads(const int);
 
  private:
   // Environment variables for the ONNX runtime
@@ -164,7 +164,7 @@ class OnnxModel
 
   // Internal function for printing the shape of tensors
   std::string printShape(const std::vector<int64_t>&);
-  bool checkHyperloop(bool = true);
+  bool checkHyperloop(const bool = true);
 };
 
 } // namespace ml
