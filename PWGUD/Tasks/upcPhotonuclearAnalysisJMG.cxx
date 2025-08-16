@@ -11,7 +11,7 @@
 ///
 /// \brief
 /// \author Josué Martínez García, josuem@cern.ch
-/// \file   UPCPhotonuclearAnalysisJMG.cxx
+/// \file   upcPhotonuclearAnalysisJMG.cxx
 
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGUD/Core/UPCPairCuts.h"
@@ -96,7 +96,7 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
 
 static constexpr float CFGPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
 
-struct UPCPhotonuclearAnalysisJMG {
+struct upcPhotonuclearAnalysisJMG {
 
   Produces<aod::TREE> tree;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -479,13 +479,13 @@ struct UPCPhotonuclearAnalysisJMG {
           double w;
           if (useEpsilon) {
             if (nMean > 0) {
-              w = nMean / std::max(nEntry, (double)myEpsilonToWeight);
+              w = nMean / std::max(nEntry, static_cast<double>(myEpsilonToWeight));
             } else {
               w = 1.0;
             }
           } else {
             if (nMean > 0) {
-              w = nMean / nEntry ;
+              w = nMean / nEntry;
             } else {
               w = 1.0;
             }
@@ -663,7 +663,7 @@ struct UPCPhotonuclearAnalysisJMG {
     // nTracksChargedSideA = nTracksChargedSideC = multiplicitySideA = multiplicitySideC = 0;
   }
 
-  PROCESS_SWITCH(UPCPhotonuclearAnalysisJMG, processSG, "Process in UD tables", true);
+  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSG, "Process in UD tables", true);
 
   void processMixed(FullSGUDCollision const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
   {
@@ -764,7 +764,7 @@ struct UPCPhotonuclearAnalysisJMG {
     }
   }
 
-  PROCESS_SWITCH(UPCPhotonuclearAnalysisJMG, processMixed, "Process mixed events", true);
+  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processMixed, "Process mixed events", true);
 
   void processSame(FullSGUDCollision::iterator const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
   {
@@ -901,10 +901,12 @@ struct UPCPhotonuclearAnalysisJMG {
     }*/
   }
 
-  PROCESS_SWITCH(UPCPhotonuclearAnalysisJMG, processSame, "Process same event", true);
+  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSame, "Process same event", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<UPCPhotonuclearAnalysisJMG>(cfgc, TaskName{"upcphotonuclear"})};
+  return WorkflowSpec{
+    adaptAnalysisTask<upcPhotonuclearAnalysisJMG>(cfgc)
+  };
 }
