@@ -81,7 +81,6 @@ struct JetHadronRecoil {
   Configurable<std::string> triggerMasks{"triggerMasks", "", "possible JE Trigger masks: fJetChLowPt,fJetChHighPt,fTrackLowPt,fTrackHighPt,fJetD0ChLowPt,fJetD0ChHighPt,fJetLcChLowPt,fJetLcChHighPt,fEMCALReadout,fJetFullHighPt,fJetFullLowPt,fJetNeutralHighPt,fJetNeutralLowPt,fGammaVeryHighPtEMCAL,fGammaVeryHighPtDCAL,fGammaHighPtEMCAL,fGammaHighPtDCAL,fGammaLowPtEMCAL,fGammaLowPtDCAL,fGammaVeryLowPtEMCAL,fGammaVeryLowPtDCAL"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false, "flag to choose to reject min. bias gap events; jet-level rejection applied at the jet finder level, here rejection is applied for collision and track process functions"};
   Configurable<bool> outlierRejectEvent{"outlierRejectEvent", true, "where outliers are found, reject event (true) or just reject the single track/jet (false)"};
-  Configurable<int> wtaMethod{"wtaMethod", 1, "method for WTA axis definition: 0 = matching closest WTA jet (incorrect), 1 = recluster original jet"};
 
   Preslice<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> partJetsPerCollision = aod::jet::mcCollisionId;
 
@@ -206,8 +205,8 @@ struct JetHadronRecoil {
     jetReclusterer.recombScheme = fastjet::WTA_pt_scheme;
   }
 
-  template <typename T, typename U, typename W>
-  void fillHistograms(T const& jets, W const& jetsWTA, U const& tracks, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
+  template <typename T, typename U>
+  void fillHistograms(T const& jets, U const& tracks, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
   {
     bool isSigCol;
     std::vector<double> phiTTAr;
@@ -305,7 +304,7 @@ struct JetHadronRecoil {
       registry.fill(HIST("hJetPhi"), jet.phi(), weight);
       registry.fill(HIST("hJet3D"), jet.pt() - (rho * jet.area()), jet.eta(), jet.phi(), weight);
 
-      double dR = getWTAaxisDifference(jet, jetsWTA, tracks);
+      double dR = getWTAaxisDifference(jet, tracks);
 
       registry.fill(HIST("hDeltaR"), dR, weight);
       registry.fill(HIST("hDeltaRpT"), jet.pt() - (rho * jet.area()), dR, weight);
@@ -348,8 +347,8 @@ struct JetHadronRecoil {
     registry.fill(HIST("hTracksvsJets"), leadingTrackPt, leadingJetPt, pTHat, weight);
   }
 
-  template <typename T, typename W, typename U>
-  void fillMCPHistograms(T const& jets, W const& jetsWTA, U const& particles, float weight = 1.0, float pTHat = 999.0)
+  template <typename T, typename U>
+  void fillMCPHistograms(T const& jets, U const& particles, float weight = 1.0, float pTHat = 999.0)
   {
     bool isSigCol;
     std::vector<double> phiTTAr;
@@ -436,7 +435,7 @@ struct JetHadronRecoil {
       registry.fill(HIST("hJetPhi"), jet.phi(), weight);
       registry.fill(HIST("hJet3D"), jet.pt(), jet.eta(), jet.phi(), weight);
 
-      double dR = getWTAaxisDifference(jet, jetsWTA, particles);
+      double dR = getWTAaxisDifference(jet, particles);
 
       registry.fill(HIST("hDeltaRPart"), dR, weight);
       registry.fill(HIST("hDeltaRpTPart"), jet.pt(), dR, weight);
@@ -471,8 +470,8 @@ struct JetHadronRecoil {
     registry.fill(HIST("hPartvsJets"), leadingPartPt, leadingJetPt, pTHat, weight);
   }
 
-  template <typename T, typename V, typename W, typename U, typename X, typename Y>
-  void fillMatchedHistograms(T const& jetsBase, V const& mcdjetsWTA, W const& mcpjetsWTA, U const&, X const& tracks, Y const& particles, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
+  template <typename T, typename U, typename X, typename Y>
+  void fillMatchedHistograms(T const& jetsBase, U const&, X const& tracks, Y const& particles, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
   {
     for (const auto& jetBase : jetsBase) {
       double dR = 0;
@@ -486,7 +485,7 @@ struct JetHadronRecoil {
         }
       }
 
-      dR = getWTAaxisDifference(jetBase, mcdjetsWTA, tracks, true);
+      dR = getWTAaxisDifference(jetBase, tracks);
 
       if (jetBase.has_matchedJetGeo()) {
         for (const auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
@@ -498,7 +497,7 @@ struct JetHadronRecoil {
             }
           }
 
-          dRp = getWTAaxisDifference(jetTag, mcpjetsWTA, particles, true);
+          dRp = getWTAaxisDifference(jetTag, particles);
 
           registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
           registry.fill(HIST("hPhiMatched"), jetBase.phi(), jetTag.phi(), weight);
@@ -514,8 +513,8 @@ struct JetHadronRecoil {
     }
   }
 
-  template <typename T, typename V, typename W, typename U, typename X, typename Y>
-  void fillRecoilJetMatchedHistograms(T const& jetsBase, V const& mcdjetsWTA, W const& mcpjetsWTA, U const&, X const& tracks, Y const& particles, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
+  template <typename T, typename U, typename X, typename Y>
+  void fillRecoilJetMatchedHistograms(T const& jetsBase, U const&, X const& tracks, Y const& particles, float weight = 1.0, float rho = 0.0, float pTHat = 999.0)
   {
     std::vector<double> phiTTAr;
     std::vector<double> phiTTArPart;
@@ -549,7 +548,7 @@ struct JetHadronRecoil {
     if (nTT > 0) {
       trigNumber = rand->Integer(nTT);
       phiTT = phiTTAr[trigNumber];
-      phiTTPart = phiTTAr[trigNumber];
+      phiTTPart = phiTTArPart[trigNumber];
     } else {
       return;
     }
@@ -567,7 +566,7 @@ struct JetHadronRecoil {
       }
 
       float dphi = RecoDecay::constrainAngle(jetBase.phi() - phiTT);
-      dR = getWTAaxisDifference(jetBase, mcdjetsWTA, tracks, true);
+      dR = getWTAaxisDifference(jetBase, tracks);
 
       if (jetBase.has_matchedJetGeo()) {
         for (const auto& jetTag : jetBase.template matchedJetGeo_as<std::decay_t<U>>()) {
@@ -580,15 +579,15 @@ struct JetHadronRecoil {
           }
 
           float dphip = RecoDecay::constrainAngle(jetTag.phi() - phiTTPart);
-          dRp = getWTAaxisDifference(jetTag, mcpjetsWTA, particles, true);
+          dRp = getWTAaxisDifference(jetTag, particles);
+          registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
+          registry.fill(HIST("hPhiMatched"), dphi, dphip, weight);
+          registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - (jetBase.pt() - (rho * jetBase.area()))) / jetTag.pt(), weight);
+          registry.fill(HIST("hPhiResolution"), jetTag.pt(), dphip - dphi, weight);
+          registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
+          registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
+          registry.fill(HIST("hFullMatching"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), dphi, dphip, dR, dRp, weight);
           if ((std::abs(dphi - o2::constants::math::PI) < 0.6) || (std::abs(dphip - o2::constants::math::PI) < 0.6)) {
-            registry.fill(HIST("hPtMatched"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), weight);
-            registry.fill(HIST("hPhiMatched"), dphi, dphip, weight);
-            registry.fill(HIST("hPtResolution"), jetTag.pt(), (jetTag.pt() - (jetBase.pt() - (rho * jetBase.area()))) / jetTag.pt(), weight);
-            registry.fill(HIST("hPhiResolution"), jetTag.pt(), dphip - dphi, weight);
-            registry.fill(HIST("hDeltaRMatched"), dR, dRp, weight);
-            registry.fill(HIST("hDeltaRResolution"), jetTag.pt(), dRp - dR, weight);
-            registry.fill(HIST("hFullMatching"), jetBase.pt() - (rho * jetBase.area()), jetTag.pt(), dphi, dphip, dR, dRp, weight);
             registry.fill(HIST("hPtMatched1d"), jetTag.pt(), weight);
             registry.fill(HIST("hDeltaRMatched1d"), dRp, weight);
           }
@@ -599,7 +598,6 @@ struct JetHadronRecoil {
 
   void processData(soa::Filtered<aod::JetCollisions>::iterator const& collision,
                    soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetsMatchedToCharged1Jets>> const& jets,
-                   soa::Filtered<soa::Join<aod::Charged1Jets, aod::Charged1JetConstituents, aod::Charged1JetsMatchedToChargedJets>> const& jetsWTA,
                    soa::Filtered<aod::JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
@@ -609,13 +607,12 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    fillHistograms(jets, jetsWTA, tracks);
+    fillHistograms(jets, tracks);
   }
   PROCESS_SWITCH(JetHadronRecoil, processData, "process data", true);
 
   void processDataWithRhoSubtraction(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision,
                                      soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents, aod::ChargedJetsMatchedToCharged1Jets>> const& jets,
-                                     soa::Filtered<soa::Join<aod::Charged1Jets, aod::Charged1JetConstituents, aod::Charged1JetsMatchedToChargedJets>> const& jetsWTA,
                                      soa::Filtered<aod::JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
@@ -625,14 +622,13 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    fillHistograms(jets, jetsWTA, tracks, 1.0, collision.rho());
+    fillHistograms(jets, tracks, 1.0, collision.rho());
   }
   PROCESS_SWITCH(JetHadronRecoil, processDataWithRhoSubtraction, "process data with rho subtraction", false);
 
   void processMCD(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
                   aod::JMcCollisions const&,
                   soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToCharged1MCDetectorLevelJets>> const& jets,
-                  soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents, aod::Charged1MCDetectorLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jetsWTA,
                   soa::Filtered<aod::JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
@@ -648,14 +644,13 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    fillHistograms(jets, jetsWTA, tracks, 1.0, 0.0, collision.mcCollision().ptHard());
+    fillHistograms(jets, tracks, 1.0, 0.0, collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCD, "process MC detector level", false);
 
   void processMCDWithRhoSubtraction(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos, aod::JMcCollisionLbs>>::iterator const& collision,
                                     aod::JMcCollisions const&,
                                     soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToCharged1MCDetectorLevelJets>> const& jets,
-                                    soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents, aod::Charged1MCDetectorLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jetsWTA,
                                     soa::Filtered<aod::JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
@@ -671,14 +666,13 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    fillHistograms(jets, jetsWTA, tracks, 1.0, collision.rho(), collision.mcCollision().ptHard());
+    fillHistograms(jets, tracks, 1.0, collision.rho(), collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCDWithRhoSubtraction, "process MC detector level with rho subtraction", false);
 
   void processMCDWeighted(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
                           aod::JMcCollisions const&,
                           soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToCharged1MCDetectorLevelJets>> const& jets,
-                          soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents, aod::Charged1MCDetectorLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jetsWTA,
                           soa::Filtered<aod::JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
@@ -694,14 +688,13 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ(), collision.mcCollision().weight());
-    fillHistograms(jets, jetsWTA, tracks, collision.mcCollision().weight(), 0.0, collision.mcCollision().ptHard());
+    fillHistograms(jets, tracks, collision.mcCollision().weight(), 0.0, collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCDWeighted, "process MC detector level with event weights", false);
 
   void processMCDWeightedWithRhoSubtraction(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::BkgChargedRhos>>::iterator const& collision,
                                             aod::JMcCollisions const&,
                                             soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToCharged1MCDetectorLevelJets>> const& jets,
-                                            soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents, aod::Charged1MCDetectorLevelJetsMatchedToChargedMCDetectorLevelJets>> const& jetsWTA,
                                             soa::Filtered<aod::JetTracks> const& tracks)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
@@ -717,13 +710,12 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ(), collision.mcCollision().weight());
-    fillHistograms(jets, jetsWTA, tracks, collision.mcCollision().weight(), collision.rho(), collision.mcCollision().ptHard());
+    fillHistograms(jets, tracks, collision.mcCollision().weight(), collision.rho(), collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCDWeightedWithRhoSubtraction, "process MC detector level with event weights and rho subtraction", false);
 
   void processMCP(aod::JetMcCollision const& collision,
                   soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToCharged1MCParticleLevelJets>> const& jets,
-                  soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents, aod::Charged1MCParticleLevelJetsMatchedToChargedMCParticleLevelJets>> const& jetsWTA,
                   soa::Filtered<aod::JetParticles> const& particles)
   {
     if (std::abs(collision.posZ()) > vertexZCut) {
@@ -736,13 +728,12 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    fillMCPHistograms(jets, jetsWTA, particles, 1.0, collision.ptHard());
+    fillMCPHistograms(jets, particles, 1.0, collision.ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCP, "process MC particle level", false);
 
   void processMCPWeighted(aod::JetMcCollision const& collision,
                           soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToCharged1MCParticleLevelJets>> const& jets,
-                          soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents, aod::Charged1MCParticleLevelJetsMatchedToChargedMCParticleLevelJets>> const& jetsWTA,
                           soa::Filtered<aod::JetParticles> const& particles)
   {
     if (std::abs(collision.posZ()) > vertexZCut) {
@@ -755,14 +746,12 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ(), collision.weight());
-    fillMCPHistograms(jets, jetsWTA, particles, collision.weight(), collision.ptHard());
+    fillMCPHistograms(jets, particles, collision.weight(), collision.ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processMCPWeighted, "process MC particle level with event weights", false);
 
   void processJetsMCPMCDMatched(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JMcCollisionLbs>>::iterator const& collision,
                                 soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
-                                soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>> const& mcdjetsWTA,
-                                soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> const& mcpjetsWTA,
                                 aod::JetTracks const& tracks,
                                 aod::JetParticles const& particles,
                                 aod::JetMcCollisions const&,
@@ -778,15 +767,12 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(partJetsPerCollision, collision.mcCollisionId());
-    fillMatchedHistograms(mcdjets, mcdjetsWTA, mcpjetsWTACut, mcpjets, tracks, particles);
+    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles);
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatched, "process MC matched (inc jets)", false);
 
   void processJetsMCPMCDMatchedWithRhoSubtraction(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JMcCollisionLbs, aod::BkgChargedRhos>>::iterator const& collision,
                                                   soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
-                                                  soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>> const& mcdjetsWTA,
-                                                  soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> const& mcpjetsWTA,
                                                   aod::JetTracks const& tracks,
                                                   aod::JetParticles const& particles,
                                                   aod::JetMcCollisions const&,
@@ -802,15 +788,12 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(partJetsPerCollision, collision.mcCollisionId());
-    fillMatchedHistograms(mcdjets, mcdjetsWTA, mcpjetsWTACut, mcpjets, tracks, particles, 1.0, 0.0, collision.mcCollision().ptHard());
+    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, 1.0, 0.0, collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWithRhoSubtraction, "process MC matched (inc jets) with rho subtraction", false);
 
   void processJetsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JMcCollisionLbs>>::iterator const& collision,
                                         soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
-                                        soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>> const& mcdjetsWTA,
-                                        soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> const& mcpjetsWTA,
                                         aod::JetTracks const& tracks,
                                         aod::JetParticles const& particles,
                                         aod::JetMcCollisions const&,
@@ -826,15 +809,12 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(partJetsPerCollision, collision.mcCollisionId());
-    fillMatchedHistograms(mcdjets, mcdjetsWTA, mcpjetsWTACut, mcpjets, tracks, particles, collision.mcCollision().weight(), 0.0, collision.mcCollision().ptHard());
+    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, collision.mcCollision().weight(), 0.0, collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWeighted, "process MC matched with event weights (inc jets)", false);
 
   void processJetsMCPMCDMatchedWeightedWithRhoSubtraction(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JMcCollisionLbs, aod::BkgChargedRhos>>::iterator const& collision,
                                                           soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
-                                                          soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>> const& mcdjetsWTA,
-                                                          soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> const& mcpjetsWTA,
                                                           aod::JetTracks const& tracks,
                                                           aod::JetParticles const& particles,
                                                           aod::JetMcCollisions const&,
@@ -850,15 +830,12 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(partJetsPerCollision, collision.mcCollisionId());
-    fillMatchedHistograms(mcdjets, mcdjetsWTA, mcpjetsWTACut, mcpjets, tracks, particles, collision.mcCollision().weight(), collision.rho(), collision.mcCollision().ptHard());
+    fillMatchedHistograms(mcdjets, mcpjets, tracks, particles, collision.mcCollision().weight(), collision.rho(), collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processJetsMCPMCDMatchedWeightedWithRhoSubtraction, "process MC matched with event weights (inc jets) and rho subtraction", false);
 
   void processRecoilJetsMCPMCDMatched(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JMcCollisionLbs>>::iterator const& collision,
                                       soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
-                                      soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>> const& mcdjetsWTA,
-                                      soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> const& mcpjetsWTA,
                                       soa::Filtered<aod::JetTracksMCD> const& tracks,
                                       soa::Filtered<aod::JetParticles> const& particles,
                                       aod::JetMcCollisions const&,
@@ -874,15 +851,12 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(partJetsPerCollision, collision.mcCollisionId());
-    fillRecoilJetMatchedHistograms(mcdjets, mcdjetsWTA, mcpjetsWTACut, mcpjets, tracks, particles, 1.0, 0.0, collision.mcCollision().ptHard());
+    fillRecoilJetMatchedHistograms(mcdjets, mcpjets, tracks, particles, 1.0, 0.0, collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processRecoilJetsMCPMCDMatched, "process MC matched (recoil jets)", false);
 
   void processRecoilJetsMCPMCDMatchedWeighted(soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JMcCollisionLbs>>::iterator const& collision,
                                               soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>> const& mcdjets,
-                                              soa::Filtered<soa::Join<aod::Charged1MCDetectorLevelJets, aod::Charged1MCDetectorLevelJetConstituents>> const& mcdjetsWTA,
-                                              soa::Filtered<soa::Join<aod::Charged1MCParticleLevelJets, aod::Charged1MCParticleLevelJetConstituents>> const& mcpjetsWTA,
                                               soa::Filtered<aod::JetTracksMCD> const& tracks,
                                               soa::Filtered<aod::JetParticles> const& particles,
                                               aod::JetMcCollisions const&,
@@ -898,54 +872,30 @@ struct JetHadronRecoil {
       return;
     }
     registry.fill(HIST("hZvtxSelected"), collision.posZ());
-    const auto& mcpjetsWTACut = mcpjetsWTA.sliceBy(partJetsPerCollision, collision.mcCollisionId());
-    fillRecoilJetMatchedHistograms(mcdjets, mcdjetsWTA, mcpjetsWTACut, mcpjets, tracks, particles, collision.mcCollision().weight(), 0.0, collision.mcCollision().ptHard());
+    fillRecoilJetMatchedHistograms(mcdjets, mcpjets, tracks, particles, collision.mcCollision().weight(), 0.0, collision.mcCollision().ptHard());
   }
   PROCESS_SWITCH(JetHadronRecoil, processRecoilJetsMCPMCDMatchedWeighted, "process MC matched with event weights (recoil jets)", false);
 
-  template <typename T, typename U, typename X>
-  double getWTAaxisDifference(T const& jet, U const& jetsWTA, X const& /*tracks or particles*/, bool isMatched = false)
+  template <typename T, typename X>
+  double getWTAaxisDifference(T const& jet, X const& /*tracks or particles*/)
   {
     double deltaPhi = -1;
-    double deltaEta = -1;
     double deltaY = -1;
     double dR = -1;
-    if (wtaMethod == 0) {
-      // get WTA matched jet - should just be one jet matched geometrically
-      if (isMatched) {
-        // response - requires alternative method
-        for (const auto& jetWTA : jetsWTA) {
-          double djetp = RecoDecay::sqrtSumOfSquares(RecoDecay::constrainAngle(jet.phi() - jetWTA.phi(), -o2::constants::math::PI), jet.eta() - jetWTA.eta());
-          if (djetp < 0.6 * jetR) {
-            dR = djetp;
-            break;
-          }
-        }
-      } else {
-        // MCP or MCD
-        for (const auto& jetWTA : jet.template matchedJetGeo_as<std::decay_t<U>>()) {
-          deltaPhi = RecoDecay::constrainAngle(jetWTA.phi() - jet.phi(), -o2::constants::math::PI);
-          deltaEta = jetWTA.eta() - jet.eta();
-          dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaEta);
-        }
-      }
-    } else if (wtaMethod == 1) {
-      // recluster jet
-      jetConstituents.clear();
-      for (auto& jetConstituent : jet.template tracks_as<X>()) {
-        fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
-      }
-      jetReclustered.clear();
-      fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
-      jetReclustered = sorted_by_pt(jetReclustered);
-
-      deltaPhi = RecoDecay::constrainAngle(jet.phi() - jetReclustered[0].phi(), -o2::constants::math::PI);
-      deltaY = jet.y() - jetReclustered[0].rap();
-      dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaY);
-      LOG(debug) << "orig. jet n const = " << jet.tracksIds().size() << " pt = " << jet.pt() << " eta = " << jet.eta() << " phi = " << jet.phi();
-      LOG(debug) << "recl. jet n const = " << clusterSeq.constituents(jetReclustered[0]).size() << " pt = " << jetReclustered[0].pt() << " eta = " << jetReclustered[0].eta() << " phi = " << jetReclustered[0].phi();
-      LOG(debug) << "distance = " << dR;
+    jetConstituents.clear();
+    for (auto& jetConstituent : jet.template tracks_as<X>()) {
+      fastjetutilities::fillTracks(jetConstituent, jetConstituents, jetConstituent.globalIndex());
     }
+    jetReclustered.clear();
+    fastjet::ClusterSequenceArea clusterSeq(jetReclusterer.findJets(jetConstituents, jetReclustered));
+    jetReclustered = sorted_by_pt(jetReclustered);
+
+    deltaPhi = RecoDecay::constrainAngle(jet.phi() - jetReclustered[0].phi(), -o2::constants::math::PI);
+    deltaY = jet.y() - jetReclustered[0].rap();
+    dR = RecoDecay::sqrtSumOfSquares(deltaPhi, deltaY);
+    LOG(debug) << "orig. jet n const = " << jet.tracksIds().size() << " pt = " << jet.pt() << " eta = " << jet.eta() << " phi = " << jet.phi();
+    LOG(debug) << "recl. jet n const = " << clusterSeq.constituents(jetReclustered[0]).size() << " pt = " << jetReclustered[0].pt() << " eta = " << jetReclustered[0].eta() << " phi = " << jetReclustered[0].phi();
+    LOG(debug) << "distance = " << dR;
     return dR;
   }
 };
