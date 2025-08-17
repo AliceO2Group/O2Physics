@@ -97,7 +97,7 @@ struct strangenesstofpid {
   Configurable<bool> doQA{"doQA", true, "create QA histos"};
   Configurable<bool> doNSigmas{"doNSigmas", false, "calculate TOF N-sigma"};
   Configurable<bool> doQANSigma{"doQANSigma", true, "create QA of Nsigma histos"};
-  
+
   // configurables related to V0s
   struct : ConfigurableGroup {
     std::string prefix = "v0Calibration";
@@ -123,7 +123,6 @@ struct strangenesstofpid {
   Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> nSigmaPath{"nSigmaPath", "Users/d/ddobrigk/stratof", "Path of information for n-sigma calculation"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
 
@@ -444,6 +443,7 @@ struct strangenesstofpid {
       nSigmaCalibObjects = ccdb->getForRun<TList>(nSigmaPath, runNumber);
       if (nSigmaCalibObjects) {
         LOGF(info, "loaded TList with this many objects: %i", nSigmaCalibObjects->GetEntries());
+        nSigmaCalibLoaded = true; // made it thus far, mark loaded
 
         if(calculateV0s.value){
           hMeanPosLaPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosLaPi"));
