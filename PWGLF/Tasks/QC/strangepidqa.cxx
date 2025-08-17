@@ -220,6 +220,13 @@ struct strangepidqa {
     histos.add("h2dTimeVsLengthProtonProng", "h2dTimeVsLengthProtonProng", {HistType::kTH2F, {axisLength, axisTime}});
     histos.add("h2dTimeVsLengthPionProng", "h2dTimeVsLengthPionProng", {HistType::kTH2F, {axisLength, axisTime}});
 
+    histos.add("h1dMassK0Short", "h1dMassK0Short", {HistType::kTH1F, {axisK0ShortMass}});
+    histos.add("h1dMassLambda", "h1dMassLambda", {HistType::kTH1F, {axisLambdaMass}});
+    histos.add("h1dMassAntiLambda", "h1dMassAntiLambda", {HistType::kTH1F, {axisLambdaMass}});
+    histos.add("h1dMassCompatibleK0Short", "h1dMassCompatibleK0Short", {HistType::kTH1F, {axisK0ShortMass}});
+    histos.add("h1dMassCompatibleLambda", "h1dMassCompatibleLambda", {HistType::kTH1F, {axisLambdaMass}});
+    histos.add("h1dMassCompatibleAntiLambda", "h1dMassCompatibleAntiLambda", {HistType::kTH1F, {axisLambdaMass}});
+
     histos.add("h3dMassK0Short", "h3dMassK0Short", {HistType::kTH3F, {centAxis, axisPt, axisK0ShortMass}});
     histos.add("h3dMassLambda", "h3dMassLambda", {HistType::kTH3F, {centAxis, axisPt, axisLambdaMass}});
     histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", {HistType::kTH3F, {centAxis, axisPt, axisLambdaMass}});
@@ -256,6 +263,15 @@ struct strangepidqa {
     }
 
     if (doprocessCascades) {
+      histos.add("h1dMassXiMinus", "h1dMassXiMinus", {HistType::kTH1F, {massAxisXi}});
+      histos.add("h1dMassXiPlus", "h1dMassXiPlus", {HistType::kTH1F, {massAxisXi}});
+      histos.add("h1dMassOmegaMinus", "h1dMassOmegaMinus", {HistType::kTH1F, {massAxisXi}});
+      histos.add("h1dMassOmegaPlus", "h1dMassOmegaPlus", {HistType::kTH1F, {massAxisXi}});
+      histos.add("h1dMassCompatibleXiMinus", "h1dMassCompatibleXiMinus", {HistType::kTH1F, {massAxisXi}});
+      histos.add("h1dMassCompatibleXiPlus", "h1dMassCompatibleXiPlus", {HistType::kTH1F, {massAxisXi}});
+      histos.add("h1dMassCompatibleOmegaMinus", "h1dMassCompatibleOmegaMinus", {HistType::kTH1F, {massAxisXi}});
+      histos.add("h1dMassCompatibleOmegaPlus", "h1dMassCompatibleOmegaPlus", {HistType::kTH1F, {massAxisXi}});
+
       histos.add("h3dMassXiMinus", "h3dMassXiMinus", {HistType::kTH3F, {centAxis, axisPt, massAxisXi}});
       histos.add("h3dMassXiPlus", "h3dMassXiPlus", {HistType::kTH3F, {centAxis, axisPt, massAxisXi}});
       histos.add("h3dMassOmegaMinus", "h3dMassOmegaMinus", {HistType::kTH3F, {centAxis, axisPt, massAxisOmega}});
@@ -284,24 +300,30 @@ struct strangepidqa {
       if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion) {
         // lambda case
         histos.fill(HIST("h3dMassLambda"), coll.centFT0C(), lambda.pt(), lambda.mLambda());
+        histos.fill(HIST("h1dMassLambda"), lambda.mLambda());
         if(lambda.tofLambdaCompatibility(tofNsigmaCompatibility.value)){
           histos.fill(HIST("h3dMassCompatibleLambda"), coll.centFT0C(), lambda.pt(), lambda.mLambda());
+          histos.fill(HIST("h1dMassCompatibleLambda"), lambda.mLambda());
         }
       }
 
       if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaPion) {
         // lambda case
-        histos.fill(HIST("h3dMassAntiLambda"), coll.centFT0C(), lambda.pt(), lambda.mLambda());
+        histos.fill(HIST("h3dMassAntiLambda"), coll.centFT0C(), lambda.pt(), lambda.mAntiLambda());
+        histos.fill(HIST("h1dMassAntiLambda"), lambda.mAntiLambda());
         if(lambda.tofAntiLambdaCompatibility(tofNsigmaCompatibility.value)){
-          histos.fill(HIST("h3dMassCompatibleAntiLambda"), coll.centFT0C(), lambda.pt(), lambda.mLambda());
+          histos.fill(HIST("h3dMassCompatibleAntiLambda"), coll.centFT0C(), lambda.pt(), lambda.mAntiLambda());
+          histos.fill(HIST("h1dMassCompatibleAntiLambda"), lambda.mAntiLambda());
         }
       }
 
       if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaPion) {
         // lambda case
         histos.fill(HIST("h3dMassK0Short"), coll.centFT0C(), lambda.pt(), lambda.mK0Short());
+        histos.fill(HIST("h1dMassK0Short"), lambda.mK0Short());
         if(lambda.tofAntiLambdaCompatibility(tofNsigmaCompatibility.value)){
           histos.fill(HIST("h3dMassCompatibleK0Short"), coll.centFT0C(), lambda.pt(), lambda.mK0Short());
+          histos.fill(HIST("h1dMassCompatibleK0Short"), lambda.mK0Short());
         }
       }
 
@@ -421,6 +443,8 @@ struct strangepidqa {
   void processCascades(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& col, soa::Filtered<soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascTOFNSigmas>> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&)
   {
     histos.fill(HIST("hEventCentrality"), col.centFT0C());
+    if (coll.centFT0C() > maxCentrality || coll.centFT0C() < minCentrality)
+      return;
 
     for (auto& casc : Cascades) {
       // major selections here
@@ -441,28 +465,36 @@ struct strangepidqa {
         if (casc.sign() < 0) {
           if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaPi()) < tpcNsigmaBachelor) {
             histos.fill(HIST("h3dMassXiMinus"), col.centFT0C(), casc.pt(), casc.mXi());
+            histos.fill(HIST("h1dMassXiMinus"), casc.mXi());            
             if(casc.tofXiCompatibility(tofNsigmaCompatibilityCascades.value)){
               histos.fill(HIST("h3dMassCompatibleXiMinus"), col.centFT0C(), casc.pt(), casc.mXi());
+              histos.fill(HIST("h1dMassCompatibleXiMinus"), casc.mXi());            
             }
           }
           if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaKa()) < tpcNsigmaBachelor) {
             histos.fill(HIST("h3dMassOmegaMinus"), col.centFT0C(), casc.pt(), casc.mOmega());
+            histos.fill(HIST("h1dMassOmegaMinus"), casc.mOmega());
             if(casc.tofOmCompatibility(tofNsigmaCompatibilityCascades.value)){
               histos.fill(HIST("h3dMassCompatibleOmegaMinus"), col.centFT0C(), casc.pt(), casc.mOmega());
+              histos.fill(HIST("h1dMassCompatibleOmegaMinus"), casc.mOmega());
             }
           }
         } else {
           if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaPi()) < tpcNsigmaBachelor) {
             histos.fill(HIST("h3dMassXiPlus"), col.centFT0C(), casc.pt(), casc.mXi());
+            histos.fill(HIST("h1dMassXiPlus"), casc.mXi());
             if(casc.tofXiCompatibility(tofNsigmaCompatibilityCascades.value)){
               histos.fill(HIST("h3dMassCompatibleXiPlus"), col.centFT0C(), casc.pt(), casc.mXi());
+              histos.fill(HIST("h1dCompatibleMassXiPlus"), casc.mXi());
             }
           }
 
           if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaKa()) < tpcNsigmaBachelor) {
             histos.fill(HIST("h3dMassOmegaPlus"), col.centFT0C(), casc.pt(), casc.mOmega());
+            histos.fill(HIST("h1dMassOmegaPlus"), casc.mOmega());
             if(casc.tofOmCompatibility(tofNsigmaCompatibilityCascades.value)){
               histos.fill(HIST("h3dMassCompatibleOmegaPlus"), col.centFT0C(), casc.pt(), casc.mOmega());
+              histos.fill(HIST("h1dMassCompatibleOmegaPlus"), casc.mOmega());
             }
           }
         }
