@@ -201,13 +201,13 @@ DECLARE_SOA_COLUMN(TOFNSigmaOmKa, tofNSigmaOmKa, float);     //! bachelor track 
 DECLARE_SOA_DYNAMIC_COLUMN(TofXiCompatibility, tofXiCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
                            [](float tofNSigmaXiLaPr, float tofNSigmaXiLaPi, float tofNSigmaXiPi, float nsigma) -> float { 
                             bool compatible = true;
-                            if(std::abs(tofNSigmaXiLaPr+1000.0f)>1e-3 && std::abs(tofNSigmaXiLaPr)>nsigma){
+                            if(std::abs(tofNSigmaXiLaPr+1000000.0f)>1e-3 && std::abs(tofNSigmaXiLaPr)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
-                            if(std::abs(tofNSigmaXiLaPi+1000.0f)>1e-3 && std::abs(tofNSigmaXiLaPi)>nsigma){
+                            if(std::abs(tofNSigmaXiLaPi+1000000.0f)>1e-3 && std::abs(tofNSigmaXiLaPi)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
-                            if(std::abs(tofNSigmaXiPi+1000.0f)>1e-3 && std::abs(tofNSigmaXiPi)>nsigma){
+                            if(std::abs(tofNSigmaXiPi+1000000.0f)>1e-3 && std::abs(tofNSigmaXiPi)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
                             return compatible;
@@ -216,13 +216,13 @@ DECLARE_SOA_DYNAMIC_COLUMN(TofXiCompatibility, tofXiCompatibility, //! compatibi
 DECLARE_SOA_DYNAMIC_COLUMN(TofOmCompatibility, tofOmCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
                            [](float tofNSigmaOmLaPr, float tofNSigmaOmLaPi, float tofNSigmaOmKa, float nsigma) -> float { 
                             bool compatible = true;
-                            if(std::abs(tofNSigmaOmLaPr+1000.0f)>1e-3 && std::abs(tofNSigmaOmLaPr)>nsigma){
+                            if(std::abs(tofNSigmaOmLaPr+1000000.0f)>1e-3 && std::abs(tofNSigmaOmLaPr)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
-                            if(std::abs(tofNSigmaOmLaPi+1000.0f)>1e-3 && std::abs(tofNSigmaOmLaPi)>nsigma){
+                            if(std::abs(tofNSigmaOmLaPi+1000000.0f)>1e-3 && std::abs(tofNSigmaOmLaPi)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
-                            if(std::abs(tofNSigmaOmKa+1000.0f)>1e-3 && std::abs(tofNSigmaOmKa)>nsigma){
+                            if(std::abs(tofNSigmaOmKa+1000000.0f)>1e-3 && std::abs(tofNSigmaOmKa)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
                             return compatible;
