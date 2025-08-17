@@ -860,7 +860,7 @@ struct HigherMassResonances {
         continue;
       }
 
-      if (config.isApplyEtaCutK0s && (v1.eta() < confDaughEta || v2.eta() < confDaughEta)) {
+      if (config.isApplyEtaCutK0s && (v1.eta() < config.confDaughEta || v2.eta() < config.confDaughEta)) {
         continue;
       }
 
