@@ -523,7 +523,7 @@ struct DileptonHadronMPC {
       // fRegistry.addClone("DileptonHadron/same/", "DileptonHadron/mix/");
 
       // hadron-hadron
-      const AxisSpec axis_dphi_hh{cfgNbinsDPhi, -M_PI / 2, 3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
+      const AxisSpec axis_dphi_hh{90, -M_PI / 2, 3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
       fRegistry.add("HadronHadron/same/hDEtaDPhi", "hadron-hadron 2PC", kTH2D, {axis_dphi_hh, axis_deta_hh}, true);
       fRegistry.addClone("HadronHadron/same/", "HadronHadron/mix/");
       fRegistry.add("HadronHadron/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
