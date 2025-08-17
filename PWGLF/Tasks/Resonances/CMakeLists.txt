@@ -239,7 +239,12 @@ o2physics_add_dpl_workflow(kstarinoo
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-  o2physics_add_dpl_workflow(phioo
+o2physics_add_dpl_workflow(phioo
     SOURCES phiOO.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(phispectrapbpbqa
+    SOURCES phispectrapbpbqa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
