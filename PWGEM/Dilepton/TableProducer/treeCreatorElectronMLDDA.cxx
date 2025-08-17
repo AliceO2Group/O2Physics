@@ -166,22 +166,6 @@ struct TreeCreatorElectronMLDDA {
   } eventcuts;
 
   struct : ConfigurableGroup {
-    std::string prefix = "trackcut_group";
-    Configurable<float> cfg_min_pt{"cfg_min_pt", 0.05, "min pt for v0 legs"};
-    Configurable<float> cfg_max_eta{"cfg_max_eta", 0.9, "max. eta for v0 legs"};
-    Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
-    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
-    Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
-    Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 4, "min ncluster its"};
-    Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 1, "min ncluster itsib"};
-    Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 5.0, "max chi2/NclsTPC"}; // comment
-    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY in cm"};
-    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z in cm"};
-  } trackcuts;
-
-  struct : ConfigurableGroup {
     std::string prefix = "v0cut_group";
     Configurable<float> cfg_min_pt{"cfg_min_pt", 0.05, "min pt for v0 legs"};
     Configurable<float> cfg_max_eta{"cfg_max_eta", 0.9, "max. eta for v0 legs"};
@@ -199,9 +183,12 @@ struct TreeCreatorElectronMLDDA {
 
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.9998, "min cospa for v0"};
     Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.1, "max distance between 2 legs for v0"};
+    Configurable<float> cfg_min_qt_strangeness{"cfg_min_qt_strangeness", 0.015, "min qt for Lambda and K0S"};
+
     Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
     Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 70, "min ncrossed rows"};
+    Configurable<int> cfg_min_ncluster_tpc_pid{"cfg_min_ncluster_tpc_pid", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 2, "min ncluster its"};
     Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
@@ -210,8 +197,6 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY to PV for v0 legs in cm"};
     Configurable<bool> cfg_includeITSsa{"cfg_includeITSsa", false, "Flag to include ITSsa tracks"};
     Configurable<float> cfg_max_pt_itssa{"cfg_max_pt_itssa", 0.15, "mix pt for ITSsa track"};
-    Configurable<float> cfg_min_qt_strangeness{"cfg_min_qt_strangeness", 0.015, "min qt for Lambda and K0S"};
-    Configurable<bool> requireTOF_for_tagging{"requireTOF_for_tagging", false, "flag to require TOF for tagging 1 leg from V0"};
 
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -5, "min n sigma e in TPC"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +5, "max n sigma e in TPC"};
@@ -230,22 +215,36 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_max_TOFNsigmaKa{"cfg_max_TOFNsigmaKa", +5, "max n sigma ka in TOF"};
     Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -5, "min n sigma pr in TOF"};
     Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +5, "max n sigma pr in TOF"};
-
-    Configurable<float> cfg_min_TPCNsigmaEl_tight{"cfg_min_TPCNsigmaEl_tight", -2, "min n sigma e in TPC for pi0->eeg"};
-    Configurable<float> cfg_max_TPCNsigmaEl_tight{"cfg_max_TPCNsigmaEl_tight", +2, "max n sigma e in TPC for pi0->eeg"};
-    Configurable<float> cfg_min_TOFNsigmaEl_tight{"cfg_min_TOFNsigmaEl_tight", -2, "min n sigma e in TOF for pi0->eeg"};
-    Configurable<float> cfg_max_TOFNsigmaEl_tight{"cfg_max_TOFNsigmaEl_tight", +2, "max n sigma e in TOF for pi0->eeg"};
-
-    Configurable<float> cfg_min_TPCNsigmaPi_tight{"cfg_min_TPCNsigmaPi_tight", -2, "min n sigma pi in TPC for Lambda and cascade"};
-    Configurable<float> cfg_max_TPCNsigmaPi_tight{"cfg_max_TPCNsigmaPi_tight", +2, "max n sigma pi in TPC for Lambda and cascade"};
-    Configurable<float> cfg_min_TPCNsigmaPr_tight{"cfg_min_TPCNsigmaPr_tight", -2, "min n sigma pr in TPC for cascade"};
-    Configurable<float> cfg_max_TPCNsigmaPr_tight{"cfg_max_TPCNsigmaPr_tight", +2, "max n sigma pr in TPC for cascade"};
-
-    Configurable<float> cfg_min_TOFNsigmaPi_tight{"cfg_min_TOFNsigmaPi_tight", -2, "min n sigma pi in TOF for Lambda and cascade"};
-    Configurable<float> cfg_max_TOFNsigmaPi_tight{"cfg_max_TOFNsigmaPi_tight", +2, "max n sigma pi in TOF for Lambda and cascade"};
-    Configurable<float> cfg_min_TOFNsigmaPr_tight{"cfg_min_TOFNsigmaPr_tight", -2, "min n sigma pr in TOF for cascade"};
-    Configurable<float> cfg_max_TOFNsigmaPr_tight{"cfg_max_TOFNsigmaPr_tight", +2, "max n sigma pr in TOF for cascade"};
   } v0cuts;
+
+  struct : ConfigurableGroup {
+    std::string prefix = "tightv0cut_group";
+    Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
+    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
+    Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 80, "min ncrossed rows"};
+    Configurable<int> cfg_min_ncluster_tpc_pid{"cfg_min_ncluster_tpc_pid", 60, "min ncluster tpc"};
+    Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
+    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 2, "min ncluster its"};
+    Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
+    Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
+    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
+    Configurable<bool> requireTOF_for_tagging{"requireTOF_for_tagging", false, "flag to require TOF for tagging 1 leg from V0"};
+
+    Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2, "min n sigma e in TPC for pc->ee"};
+    Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +2, "max n sigma e in TPC for pc->ee"};
+    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -2, "min n sigma e in TOF for pc->ee"};
+    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +2, "max n sigma e in TOF for pc->ee"};
+
+    Configurable<float> cfg_min_TPCNsigmaPi{"cfg_min_TPCNsigmaPi", -2, "min n sigma pi in TPC for Lambda and cascade"};
+    Configurable<float> cfg_max_TPCNsigmaPi{"cfg_max_TPCNsigmaPi", +2, "max n sigma pi in TPC for Lambda and cascade"};
+    Configurable<float> cfg_min_TPCNsigmaPr{"cfg_min_TPCNsigmaPr", -2, "min n sigma pr in TPC for cascade"};
+    Configurable<float> cfg_max_TPCNsigmaPr{"cfg_max_TPCNsigmaPr", +2, "max n sigma pr in TPC for cascade"};
+
+    Configurable<float> cfg_min_TOFNsigmaPi{"cfg_min_TOFNsigmaPi", -2, "min n sigma pi in TOF for Lambda and cascade"};
+    Configurable<float> cfg_max_TOFNsigmaPi{"cfg_max_TOFNsigmaPi", +2, "max n sigma pi in TOF for Lambda and cascade"};
+    Configurable<float> cfg_min_TOFNsigmaPr{"cfg_min_TOFNsigmaPr", -2, "min n sigma pr in TOF for cascade"};
+    Configurable<float> cfg_max_TOFNsigmaPr{"cfg_max_TOFNsigmaPr", +2, "max n sigma pr in TOF for cascade"};
+  } tightv0cuts;
 
   struct : ConfigurableGroup {
     std::string prefix = "cascadecut_group";
@@ -262,7 +261,8 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_min_rxy_v0{"cfg_min_rxy_v0", 1.2, "minimum V0 rxy in cascade"};
     Configurable<float> cfg_min_rxy{"cfg_min_rxy", 0.5, "minimum V0 rxy in cascade"};
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
-    Configurable<float> cfg_min_dcaxy_bachelor{"cfg_min_dcaxy_bachelor", 0.1, "min dca XY for bachelor in cm"};
+    Configurable<float> cfg_min_dcaxy_bachelor{"cfg_min_dcaxy_bachelor", 0.05, "min dca XY for bachelor in cm"};
+    Configurable<float> cfg_min_dcaxy_v0{"cfg_min_dcaxy_v0", 0.05, "min dca XY for V0 in cm"};
     Configurable<bool> requireTOF_for_tagging{"requireTOF_for_tagging", false, "flag to require TOF for tagging 1 leg from V0"};
   } cascadecuts;
 
@@ -387,71 +387,6 @@ struct TreeCreatorElectronMLDDA {
   }
 
   template <typename TCollision, typename TTrack>
-  bool isSelectedTrack(TCollision const& collision, TTrack const& track)
-  {
-    if (!track.hasITS()) {
-      return false;
-    }
-
-    if (track.itsNCls() < trackcuts.cfg_min_ncluster_its) {
-      return false;
-    }
-    if (track.itsNClsInnerBarrel() < trackcuts.cfg_min_ncluster_itsib) {
-      return false;
-    }
-    if (track.itsChi2NCl() > trackcuts.cfg_max_chi2its) {
-      return false;
-    }
-
-    if (!v0cuts.cfg_includeITSsa && (!track.hasITS() || !track.hasTPC())) {
-      return false;
-    }
-
-    if (track.hasTPC()) {
-      if (track.tpcNClsCrossedRows() < trackcuts.cfg_min_ncrossedrows_tpc) {
-        return false;
-      }
-      if (track.tpcNClsFound() < trackcuts.cfg_min_ncluster_tpc) {
-        return false;
-      }
-      if (track.tpcChi2NCl() > trackcuts.cfg_max_chi2tpc) {
-        return false;
-      }
-      if (track.tpcCrossedRowsOverFindableCls() < trackcuts.cfg_min_cr2findable_ratio_tpc) {
-        return false;
-      }
-      if (track.tpcFractionSharedCls() > trackcuts.cfg_max_frac_shared_clusters_tpc) {
-        return false;
-      }
-    }
-
-    mDcaInfoCov.set(999, 999, 999, 999, 999);
-    auto trackParCov = getTrackParCov(track);
-    trackParCov.setPID(track.pidForTracking());
-    mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
-    mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-    float dcaXY = mDcaInfoCov.getY();
-    float dcaZ = mDcaInfoCov.getZ();
-
-    if (std::fabs(dcaXY) > trackcuts.cfg_max_dcaxy) {
-      return false;
-    }
-    if (std::fabs(dcaZ) > trackcuts.cfg_max_dcaz) {
-      return false;
-    }
-
-    if (std::fabs(trackParCov.getEta()) > trackcuts.cfg_max_eta || trackParCov.getPt() < trackcuts.cfg_min_pt) {
-      return false;
-    }
-    if ((track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) && v0cuts.cfg_max_pt_itssa < trackParCov.getPt()) {
-      return true;
-    }
-
-    return true;
-  }
-
-  template <typename TCollision, typename TTrack>
   bool isSelectedV0Leg(TCollision const& collision, TTrack const& track)
   {
     if (!track.hasITS()) {
@@ -488,6 +423,9 @@ struct TreeCreatorElectronMLDDA {
       if (track.tpcFractionSharedCls() > v0cuts.cfg_max_frac_shared_clusters_tpc) {
         return false;
       }
+      if (track.tpcNClsPID() < v0cuts.cfg_min_ncluster_tpc_pid) {
+        return false;
+      }
     }
 
     mDcaInfoCov.set(999, 999, 999, 999, 999);
@@ -496,12 +434,12 @@ struct TreeCreatorElectronMLDDA {
     mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
     mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
     o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-    float dcaXY = mDcaInfoCov.getY();
+    // float dcaXY = mDcaInfoCov.getY();
     // float dcaZ = mDcaInfoCov.getZ();
 
-    if (std::fabs(dcaXY) < v0cuts.cfg_min_dcaxy_v0leg) { // this is applied in filter.
-      return false;
-    }
+    // if (std::fabs(dcaXY) < v0cuts.cfg_min_dcaxy_v0leg) { // this is applied in filter.
+    //   return false;
+    // }
 
     if (std::fabs(trackParCov.getEta()) > v0cuts.cfg_max_eta || trackParCov.getPt() < v0cuts.cfg_min_pt) {
       return false;
@@ -509,6 +447,62 @@ struct TreeCreatorElectronMLDDA {
 
     if ((track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) && v0cuts.cfg_max_pt_itssa < track.pt()) {
       return true;
+    }
+
+    return true;
+  }
+
+  template <typename TCollision, typename TTrack>
+  bool isSelectedV0LegTight(TCollision const& collision, TTrack const& track)
+  {
+    if (!track.hasITS() || !track.hasTPC()) {
+      return false;
+    }
+
+    if (track.itsNCls() < tightv0cuts.cfg_min_ncluster_its) {
+      return false;
+    }
+    if (track.itsNClsInnerBarrel() < tightv0cuts.cfg_min_ncluster_itsib) {
+      return false;
+    }
+    if (tightv0cuts.cfg_max_chi2its < track.itsChi2NCl()) {
+      return false;
+    }
+
+    if (track.tpcNClsCrossedRows() < tightv0cuts.cfg_min_ncrossedrows_tpc) {
+      return false;
+    }
+    if (track.tpcNClsFound() < tightv0cuts.cfg_min_ncluster_tpc) {
+      return false;
+    }
+    if (track.tpcChi2NCl() < 0.f || tightv0cuts.cfg_max_chi2tpc < track.tpcChi2NCl()) {
+      return false;
+    }
+    if (track.tpcCrossedRowsOverFindableCls() < tightv0cuts.cfg_min_cr2findable_ratio_tpc) {
+      return false;
+    }
+    if (track.tpcFractionSharedCls() > tightv0cuts.cfg_max_frac_shared_clusters_tpc) {
+      return false;
+    }
+    if (track.tpcNClsPID() < tightv0cuts.cfg_min_ncluster_tpc_pid) {
+      return false;
+    }
+
+    mDcaInfoCov.set(999, 999, 999, 999, 999);
+    auto trackParCov = getTrackParCov(track);
+    trackParCov.setPID(track.pidForTracking());
+    mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
+    mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
+    o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
+    // float dcaXY = mDcaInfoCov.getY();
+    // float dcaZ = mDcaInfoCov.getZ();
+
+    // if (std::fabs(dcaXY) < v0cuts.cfg_min_dcaxy_v0leg) { // this is applied in filter.
+    //   return false;
+    // }
+
+    if (std::fabs(trackParCov.getEta()) > v0cuts.cfg_max_eta || trackParCov.getPt() < v0cuts.cfg_min_pt) {
+      return false;
     }
 
     return true;
@@ -561,24 +555,24 @@ struct TreeCreatorElectronMLDDA {
   template <typename TTrack>
   bool isElectronTight(TTrack const& track)
   {
-    bool is_El_TPC = v0cuts.cfg_min_TPCNsigmaEl_tight < track.tpcNSigmaEl() && track.tpcNSigmaEl() < v0cuts.cfg_max_TPCNsigmaEl_tight;
-    bool is_El_TOF = track.hasTOF() ? v0cuts.cfg_min_TOFNsigmaEl_tight < track.tofNSigmaEl() && track.tofNSigmaEl() < v0cuts.cfg_max_TOFNsigmaEl_tight : true; // TOFif
+    bool is_El_TPC = tightv0cuts.cfg_min_TPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < tightv0cuts.cfg_max_TPCNsigmaEl;
+    bool is_El_TOF = track.hasTOF() ? tightv0cuts.cfg_min_TOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tightv0cuts.cfg_max_TOFNsigmaEl : true; // TOFif
     return is_El_TPC && is_El_TOF;
   }
 
   template <typename TTrack>
   bool isPionTight(TTrack const& track)
   {
-    bool is_Pi_TPC = v0cuts.cfg_min_TPCNsigmaPi_tight < track.tpcNSigmaPi() && track.tpcNSigmaPi() < v0cuts.cfg_max_TPCNsigmaPi_tight;
-    bool is_Pi_TOF = track.hasTOF() ? v0cuts.cfg_min_TOFNsigmaPi_tight < track.tofNSigmaPi() && track.tofNSigmaPi() < v0cuts.cfg_max_TOFNsigmaPi_tight : true; // TOFif
+    bool is_Pi_TPC = tightv0cuts.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < tightv0cuts.cfg_max_TPCNsigmaPi;
+    bool is_Pi_TOF = track.hasTOF() ? tightv0cuts.cfg_min_TOFNsigmaPi < track.tofNSigmaPi() && track.tofNSigmaPi() < tightv0cuts.cfg_max_TOFNsigmaPi : true; // TOFif
     return is_Pi_TPC && is_Pi_TOF;
   }
 
   template <typename TTrack>
   bool isProtonTight(TTrack const& track)
   {
-    bool is_Pr_TPC = v0cuts.cfg_min_TPCNsigmaPr_tight < track.tpcNSigmaPr() && track.tpcNSigmaPr() < v0cuts.cfg_max_TPCNsigmaPr_tight;
-    bool is_Pr_TOF = track.hasTOF() ? v0cuts.cfg_min_TOFNsigmaPr_tight < track.tofNSigmaPr() && track.tofNSigmaPr() < v0cuts.cfg_max_TOFNsigmaPr_tight : true; // TOFif
+    bool is_Pr_TPC = tightv0cuts.cfg_min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < tightv0cuts.cfg_max_TPCNsigmaPr;
+    bool is_Pr_TOF = track.hasTOF() ? tightv0cuts.cfg_min_TOFNsigmaPr < track.tofNSigmaPr() && track.tofNSigmaPr() < tightv0cuts.cfg_max_TOFNsigmaPr : true; // TOFif
     return is_Pr_TPC && is_Pr_TOF;
   }
 
@@ -647,7 +641,7 @@ struct TreeCreatorElectronMLDDA {
     if (std::find(stored_trackIds.begin(), stored_trackIds.end(), track.globalIndex()) == stored_trackIds.end()) {
       emprimarytracks(collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange(),
                       trackParCov.getP(), trackParCov.getTgl(), track.sign(),
-                      track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(),
+                      track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(), track.tpcNClsPID(),
                       track.tpcChi2NCl(), track.tpcInnerParam(),
                       track.tpcSignal(), track.tpcNSigmaEl(), /*track.tpcNSigmaMu(),*/ track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
                       track.beta(), track.tofNSigmaEl(), /*track.tofNSigmaMu(),*/ track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
@@ -804,8 +798,8 @@ struct TreeCreatorElectronMLDDA {
 
         if (v0cuts.cfg_min_qt_strangeness < v0.qtarm()) {
           if (!(v0cuts.cfg_min_mass_lambda_veto < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda_veto) && !(v0cuts.cfg_min_mass_lambda_veto < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda_veto)) {
-            if (isPionTight(pos) && isPion(neg)) {
-              if (!v0cuts.requireTOF_for_tagging || pos.hasTOF()) {
+            if ((isPionTight(pos) && isSelectedV0LegTight(collision, pos)) && (isPion(neg) && isSelectedV0Leg(collision, neg))) {
+              if (!tightv0cuts.requireTOF_for_tagging || pos.hasTOF()) {
                 registry.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
                 if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
                   registry.fill(HIST("V0/hTPCdEdx_P_Pi"), neg.tpcInnerParam(), neg.tpcSignal());
@@ -814,8 +808,8 @@ struct TreeCreatorElectronMLDDA {
                 }
               }
             }
-            if (isPion(pos) && isPionTight(neg)) {
-              if (!v0cuts.requireTOF_for_tagging || neg.hasTOF()) {
+            if (isPion(pos) && isSelectedV0Leg(collision, pos) && isPionTight(neg) && isSelectedV0LegTight(collision, neg)) {
+              if (!tightv0cuts.requireTOF_for_tagging || neg.hasTOF()) {
                 registry.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
                 if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
                   registry.fill(HIST("V0/hTPCdEdx_P_Pi"), pos.tpcInnerParam(), pos.tpcSignal());
@@ -827,8 +821,8 @@ struct TreeCreatorElectronMLDDA {
           } // end of K0S
 
           if (!(v0cuts.cfg_min_mass_k0s_veto < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s_veto)) {
-            if (isProton(pos) && isPionTight(neg)) {
-              if (!v0cuts.requireTOF_for_tagging || neg.hasTOF()) {
+            if (isProton(pos) && isSelectedV0Leg(collision, pos) && isPionTight(neg) && isSelectedV0LegTight(collision, neg)) {
+              if (!tightv0cuts.requireTOF_for_tagging || (neg.hasTOF() || neg.tpcInnerParam() < 0.4)) {
                 registry.fill(HIST("V0/hMassLambda"), v0.mLambda());
                 if (v0cuts.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda) {
                   fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton));
@@ -837,8 +831,8 @@ struct TreeCreatorElectronMLDDA {
                 }
               }
             } // end of Lambda
-            if (isPionTight(pos) && isProton(neg)) {
-              if (!v0cuts.requireTOF_for_tagging || pos.hasTOF()) {
+            if (isPionTight(pos) && isSelectedV0LegTight(collision, pos) && isProton(neg) && isSelectedV0Leg(collision, neg)) {
+              if (!tightv0cuts.requireTOF_for_tagging || (pos.hasTOF() || pos.tpcInnerParam() < 0.4)) {
                 registry.fill(HIST("V0/hMassAntiLambda"), v0.mAntiLambda());
                 if (v0cuts.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda) {
                   fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton));
@@ -850,8 +844,8 @@ struct TreeCreatorElectronMLDDA {
           }
         } // end of stangeness
 
-        if (isElectronTight(pos) && isElectron(neg)) {
-          if (!v0cuts.requireTOF_for_tagging || pos.hasTOF()) {
+        if (isElectronTight(pos) && isSelectedV0LegTight(collision, pos) && isElectron(neg) && isSelectedV0Leg(collision, neg)) {
+          if (!tightv0cuts.requireTOF_for_tagging || pos.hasTOF()) {
             registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
             registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
             if (v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon) {
@@ -863,8 +857,8 @@ struct TreeCreatorElectronMLDDA {
           }
         } // end of photon conversion
 
-        if (isElectron(pos) && isElectronTight(neg)) {
-          if (!v0cuts.requireTOF_for_tagging || neg.hasTOF()) {
+        if (isElectron(pos) && isSelectedV0Leg(collision, pos) && isElectronTight(neg) && isSelectedV0LegTight(collision, neg)) {
+          if (!tightv0cuts.requireTOF_for_tagging || neg.hasTOF()) {
             registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
             registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
             if (v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon) {
@@ -892,14 +886,14 @@ struct TreeCreatorElectronMLDDA {
           if (!isProtonTight(pos) || !isPionTight(neg)) {
             continue;
           }
-          if (cascadecuts.requireTOF_for_tagging && !pos.hasTOF()) { // require TOF to proton candidates. // pion from L is soft. Don't require TOF for soft pions.
+          if (cascadecuts.requireTOF_for_tagging && (!pos.hasTOF() && !neg.hasTOF())) { // require TOF to proton candidates. // pion from L is soft. Don't require TOF for soft pions.
             continue;
           }
         } else { // Omegabar+ -> Lbar + K+ -> pbar + pi+ + K+
           if (!isProtonTight(neg) || !isPionTight(pos)) {
             continue;
           }
-          if (cascadecuts.requireTOF_for_tagging && !neg.hasTOF()) { // require TOF to anti-proton candidates. // pion from L is soft. Don't require TOF for soft pions.
+          if (cascadecuts.requireTOF_for_tagging && (!pos.hasTOF() && !neg.hasTOF())) { // require TOF to anti-proton candidates. // pion from L is soft. Don't require TOF for soft pions.
             continue;
           }
         }
@@ -933,7 +927,11 @@ struct TreeCreatorElectronMLDDA {
           continue;
         }
 
-        if (!isSelectedV0Leg(collision, pos) || !isSelectedV0Leg(collision, neg) || !isSelectedV0Leg(collision, bachelor)) {
+        if (cascade.dcav0topv(collision.posX(), collision.posY(), collision.posZ()) < cascadecuts.cfg_min_dcaxy_v0) {
+          continue;
+        }
+
+        if (!isSelectedV0LegTight(collision, pos) || !isSelectedV0LegTight(collision, neg) || !isSelectedV0Leg(collision, bachelor)) {
           continue;
         }
 
@@ -974,8 +972,8 @@ struct TreeCreatorElectronMLDDA {
   // please choose only 1 process function.
   void processDummy(filteredMyCollisions const&) {}
 
-  PROCESS_SWITCH(TreeCreatorElectronMLDDA, processPID, "produce ML input for single track level", false); // this is for eID with ITSsa. e/pi/k/p are selected by TOF, and these can be used for ITS-TPC PID.
-  PROCESS_SWITCH(TreeCreatorElectronMLDDA, processDummy, "process dummy", true);
+  PROCESS_SWITCH(TreeCreatorElectronMLDDA, processPID, "produce ML input for single track level", true); // this is for eID with ITSsa. e/pi/k/p are selected by TOF, and these can be used for ITS-TPC PID.
+  PROCESS_SWITCH(TreeCreatorElectronMLDDA, processDummy, "process dummy", false);
 };
 
 struct MLTrackQC {
