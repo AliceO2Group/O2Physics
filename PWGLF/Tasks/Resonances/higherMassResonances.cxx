@@ -51,9 +51,9 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <memory>
 #include <string>
 #include <vector>
-#include <memory>
 
 using namespace o2;
 using namespace o2::framework;
