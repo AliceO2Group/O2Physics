@@ -265,12 +265,12 @@ struct strangepidqa {
     if (doprocessCascades) {
       histos.add("h1dMassXiMinus", "h1dMassXiMinus", {HistType::kTH1F, {massAxisXi}});
       histos.add("h1dMassXiPlus", "h1dMassXiPlus", {HistType::kTH1F, {massAxisXi}});
-      histos.add("h1dMassOmegaMinus", "h1dMassOmegaMinus", {HistType::kTH1F, {massAxisXi}});
-      histos.add("h1dMassOmegaPlus", "h1dMassOmegaPlus", {HistType::kTH1F, {massAxisXi}});
+      histos.add("h1dMassOmegaMinus", "h1dMassOmegaMinus", {HistType::kTH1F, {massAxisOmega}});
+      histos.add("h1dMassOmegaPlus", "h1dMassOmegaPlus", {HistType::kTH1F, {massAxisOmega}});
       histos.add("h1dMassCompatibleXiMinus", "h1dMassCompatibleXiMinus", {HistType::kTH1F, {massAxisXi}});
       histos.add("h1dMassCompatibleXiPlus", "h1dMassCompatibleXiPlus", {HistType::kTH1F, {massAxisXi}});
-      histos.add("h1dMassCompatibleOmegaMinus", "h1dMassCompatibleOmegaMinus", {HistType::kTH1F, {massAxisXi}});
-      histos.add("h1dMassCompatibleOmegaPlus", "h1dMassCompatibleOmegaPlus", {HistType::kTH1F, {massAxisXi}});
+      histos.add("h1dMassCompatibleOmegaMinus", "h1dMassCompatibleOmegaMinus", {HistType::kTH1F, {massAxisOmega}});
+      histos.add("h1dMassCompatibleOmegaPlus", "h1dMassCompatibleOmegaPlus", {HistType::kTH1F, {massAxisOmega}});
 
       histos.add("h3dMassXiMinus", "h3dMassXiMinus", {HistType::kTH3F, {centAxis, axisPt, massAxisXi}});
       histos.add("h3dMassXiPlus", "h3dMassXiPlus", {HistType::kTH3F, {centAxis, axisPt, massAxisXi}});
@@ -321,7 +321,7 @@ struct strangepidqa {
         // lambda case
         histos.fill(HIST("h3dMassK0Short"), coll.centFT0C(), lambda.pt(), lambda.mK0Short());
         histos.fill(HIST("h1dMassK0Short"), lambda.mK0Short());
-        if(lambda.tofAntiLambdaCompatibility(tofNsigmaCompatibility.value)){
+        if(lambda.tofK0ShortCompatibility(tofNsigmaCompatibility.value)){
           histos.fill(HIST("h3dMassCompatibleK0Short"), coll.centFT0C(), lambda.pt(), lambda.mK0Short());
           histos.fill(HIST("h1dMassCompatibleK0Short"), lambda.mK0Short());
         }
