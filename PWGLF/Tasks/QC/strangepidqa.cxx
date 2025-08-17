@@ -443,7 +443,7 @@ struct strangepidqa {
   void processCascades(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& col, soa::Filtered<soa::Join<aod::CascCores, aod::CascCollRefs, aod::CascExtras, aod::CascTOFNSigmas>> const& Cascades, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&)
   {
     histos.fill(HIST("hEventCentrality"), col.centFT0C());
-    if (coll.centFT0C() > maxCentrality || coll.centFT0C() < minCentrality)
+    if (col.centFT0C() > maxCentrality || col.centFT0C() < minCentrality)
       return;
 
     for (auto& casc : Cascades) {
