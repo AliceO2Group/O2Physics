@@ -17,8 +17,10 @@
 
 #include "Common/Core/MetadataHelper.h"
 
-#include "Framework/InitContext.h"
-#include "Framework/RunningWorkflowInfo.h"
+#include <Framework/InitContext.h>
+#include <Framework/RunningWorkflowInfo.h>
+
+#include <string>
 
 using namespace o2::common::core;
 

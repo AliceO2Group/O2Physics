@@ -1025,7 +1025,7 @@ struct HfDataCreatorCharmHadPiReduced {
   {
     registry.fill(HIST("hEvents"), 1 + Event::Processed);
     float centrality = -1.f;
-    auto hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    const auto hfRejMap = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
     if (configs.skipRejectedCollisions && hfRejMap != 0) {
       return;
     }
@@ -1498,15 +1498,16 @@ struct HfDataCreatorCharmHadPiReduced {
     // Check event selection
     float centDummy{-1.f}, centFT0C{-1.f}, centFT0M{-1.f};
     const auto collSlice = collisions.sliceBy(preslices.colPerMcCollision, mcCollision.globalIndex());
-    auto hfRejMap = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centDummy);
+    const auto hfRejMap = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centDummy);
     if (configs.skipRejectedCollisions && hfRejMap != 0) {
       return;
     }
 
     // get centrality
-    float multiplicity{0.f};
+    using TMult = uint16_t; // type of numContrib
+    TMult multiplicity{};
     for (const auto& collision : collSlice) {
-      float collMult = collision.numContrib();
+      const TMult collMult = collision.numContrib();
       if (collMult > multiplicity) {
         centFT0C = collision.centFT0C();
         centFT0M = collision.centFT0M();
