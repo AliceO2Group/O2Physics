@@ -205,6 +205,7 @@ struct lambdapolsp {
     ConfigurableAxis axisRadius{"axisRadius", {200, 0, 100}, "radius axis"};
     ConfigurableAxis axisDca{"axisDca", {100, -5, 5}, "dca axis"};
     ConfigurableAxis axisLT{"axisLT", {50, 0, 50}, "lifetime axis"};
+    ConfigurableAxis axisCR{"axisCR", {40, 0, 200}, "CR axis"};
     Configurable<bool> filldist{"filldist", true, "fill topo distr"};
   } distGrp;
 
@@ -406,6 +407,7 @@ struct lambdapolsp {
       histos.add("hdcaneglambda", "hdcaneglambda", HistType::kTH1D, {distGrp.axisDca}, true);
       histos.add("hdcaposantilambda", "hdcaposantilambda", HistType::kTH1D, {distGrp.axisDca}, true);
       histos.add("hdcanegantilambda", "hdcanegantilambda", HistType::kTH1D, {distGrp.axisDca}, true);
+      histos.add("htpcCR", "htpcCR", HistType::kTH1D, {distGrp.axisCR}, true);
     }
 
     ccdb->setURL(cfgCcdbParam.cfgURL);
@@ -1165,11 +1167,13 @@ struct lambdapolsp {
             }
           }
         } else {
+
           if (distGrp.filldist) {
             histos.fill(HIST("hcosine"), v0.v0cosPA());
             histos.fill(HIST("hdcabwv0daugh"), v0.dcaV0daughters());
             histos.fill(HIST("hlifetime"), TMath::Abs(v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * massLambda));
             histos.fill(HIST("hradius"), v0.v0radius());
+            histos.fill(HIST("htpcCR"), postrack.tpcNClsCrossedRows());
           }
 
           if (LambdaTag) {
@@ -1223,6 +1227,7 @@ struct lambdapolsp {
     else if (centestim == 3)
       centrality = collision.centFV0A();
 
+    auto runnumber = collision.runNumber();
     // auto centrality = collision.centFT0C();
     if (!collision.triggereventsp()) { // provided by StraZDCSP
       return;
@@ -1257,6 +1262,16 @@ struct lambdapolsp {
       accprofileAL = ccdb->getForTimeStamp<TProfile2D>(ConfAccPathAL.value, bc.timestamp());
     }
     */
+    auto timestamps = ccdb->getRunDuration(runnumber, true); /// fatalise if timestamps are not found
+    int64_t sorTimestamp = timestamps.first;                 // timestamp of the SOR/SOX/STF in ms
+    int64_t eorTimestamp = timestamps.second;                // timestamp of the EOR/EOX/ETF in ms
+    int64_t ts = eorTimestamp / 2 + sorTimestamp / 2;        // timestamp of the middle of the run
+
+    if (useAccCorr) {
+      accprofileL = ccdb->getForTimeStamp<TProfile2D>(ConfAccPathL.value, ts);
+      accprofileAL = ccdb->getForTimeStamp<TProfile2D>(ConfAccPathAL.value, ts);
+    }
+
     //___________________________________________________________________________________________________
     // retrieve further info provided by StraZDCSP
     auto qxZDCA = collision.qxZDCA();
@@ -1430,7 +1445,10 @@ struct lambdapolsp {
         if (analyzeLambda && LambdaTag) {
           Lambda = Proton + AntiPion;
           tagb = 0;
-          double acvalue = 1.0;
+          int binx = accprofileL->GetXaxis()->FindBin(v0.eta());
+          int biny = accprofileL->GetYaxis()->FindBin(v0.pt());
+          double acvalue = accprofileL->GetBinContent(binx, biny);
+          // double acvalue = 1.0;
           fillHistograms(taga, tagb, Lambda, Proton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mLambda(), v0.pt(), v0.eta(), acvalue, 1.0);
         }
 
@@ -1438,7 +1456,10 @@ struct lambdapolsp {
         if (analyzeLambda && aLambdaTag) {
           AntiLambda = AntiProton + Pion;
           taga = 0;
-          double acvalue = 1.0;
+          int binx = accprofileAL->GetXaxis()->FindBin(v0.eta());
+          int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
+          double acvalue = accprofileAL->GetBinContent(binx, biny);
+          // double acvalue = 1.0;
           fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, 1.0);
         }
       }
