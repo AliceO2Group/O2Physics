@@ -53,6 +53,7 @@
 #include <cstdlib>
 #include <string>
 #include <vector>
+#include <memory>
 
 using namespace o2;
 using namespace o2::framework;
