@@ -79,6 +79,45 @@ DECLARE_SOA_COLUMN(TOFNSigmaALaPi, tofNSigmaALaPi, float);         //! positive 
 DECLARE_SOA_COLUMN(TOFNSigmaK0PiPlus, tofNSigmaK0PiPlus, float);   //! positive track NSigma from pion <- k0short expectation
 DECLARE_SOA_COLUMN(TOFNSigmaK0PiMinus, tofNSigmaK0PiMinus, float); //! negative track NSigma from pion <- k0short expectation
 
+// dynamics based on n-sigmas with use-only-if-tof-present logic
+DECLARE_SOA_DYNAMIC_COLUMN(TofLambdaCompatibility, tofLambdaCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
+                           [](float tofNSigmaLaPr, float tofNSigmaLaPi, float nsigma) -> float { 
+                            bool compatible = true;
+                            if(std::abs(tofNSigmaLaPr+1000.0f)>1e-3 && std::abs(tofNSigmaLaPr)>nsigma){
+                              compatible = false; // reject only if info present and incompatible
+                            }
+                            if(std::abs(tofNSigmaLaPi+1000.0f)>1e-3 && std::abs(tofNSigmaLaPi)>nsigma){
+                              compatible = false; // reject only if info present and incompatible
+                            }
+                            return compatible;
+                          });
+
+// dynamics based on n-sigmas with use-only-if-tof-present logic
+DECLARE_SOA_DYNAMIC_COLUMN(TofAntiLambdaCompatibility, tofAntiLambdaCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
+                           [](float tofNSigmaALaPr, float tofNSigmaALaPi, float nsigma) -> float { 
+                            bool compatible = true;
+                            if(std::abs(tofNSigmaALaPr+1000.0f)>1e-3 && std::abs(tofNSigmaALaPr)>nsigma){
+                              compatible = false; // reject only if info present and incompatible
+                            }
+                            if(std::abs(tofNSigmaALaPi+1000.0f)>1e-3 && std::abs(tofNSigmaALaPi)>nsigma){
+                              compatible = false; // reject only if info present and incompatible
+                            }
+                            return compatible;
+                          });
+
+// dynamics based on n-sigmas with use-only-if-tof-present logic
+DECLARE_SOA_DYNAMIC_COLUMN(TofK0ShortCompatibility, tofK0ShortCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
+                           [](float tofNSigmaK0PiPlus, float tofNSigmaK0PiMinus, float nsigma) -> float { 
+                            bool compatible = true;
+                            if(std::abs(tofNSigmaK0PiPlus+1000.0f)>1e-3 && std::abs(tofNSigmaK0PiPlus)>nsigma){
+                              compatible = false; // reject only if info present and incompatible
+                            }
+                            if(std::abs(tofNSigmaK0PiMinus+1000.0f)>1e-3 && std::abs(tofNSigmaK0PiMinus)>nsigma){
+                              compatible = false; // reject only if info present and incompatible
+                            }
+                            return compatible;
+                          });
+
 // beta values
 DECLARE_SOA_COLUMN(TofBetaLambda, tofBetaLambda, float);         //! beta value with Lambda hypothesis
 DECLARE_SOA_COLUMN(TofBetaAntiLambda, tofBetaAntiLambda, float); //! beta value with AntiLambda hypothesis
@@ -120,7 +159,10 @@ DECLARE_SOA_TABLE(V0TOFBetas, "AOD", "V0TOFBETA", // processed info table (for a
 DECLARE_SOA_TABLE(V0TOFNSigmas, "AOD", "V0TOFNSIGMA", // processed NSigma table (for analysis)
                   v0data::TOFNSigmaLaPr, v0data::TOFNSigmaLaPi,
                   v0data::TOFNSigmaALaPr, v0data::TOFNSigmaALaPi,
-                  v0data::TOFNSigmaK0PiPlus, v0data::TOFNSigmaK0PiMinus);
+                  v0data::TOFNSigmaK0PiPlus, v0data::TOFNSigmaK0PiMinus,
+                  v0data::TofLambdaCompatibility<v0data::TOFNSigmaLaPr, v0data::TOFNSigmaLaPi>,
+                  v0data::TofAntiLambdaCompatibility<v0data::TOFNSigmaALaPr, v0data::TOFNSigmaALaPi>,
+                  v0data::TofK0ShortCompatibility<v0data::TOFNSigmaK0PiPlus, v0data::TOFNSigmaK0PiMinus>);
 
 namespace cascdata
 {
@@ -154,6 +196,39 @@ DECLARE_SOA_COLUMN(TOFNSigmaXiPi, tofNSigmaXiPi, float);     //! bachelor track 
 DECLARE_SOA_COLUMN(TOFNSigmaOmLaPi, tofNSigmaOmLaPi, float); //! meson track NSigma from pion <- lambda <- om expectation
 DECLARE_SOA_COLUMN(TOFNSigmaOmLaPr, tofNSigmaOmLaPr, float); //! baryon track NSigma from proton <- lambda <- om expectation
 DECLARE_SOA_COLUMN(TOFNSigmaOmKa, tofNSigmaOmKa, float);     //! bachelor track NSigma from kaon <- om expectation
+
+// dynamics based on n-sigmas with use-only-if-tof-present logic
+DECLARE_SOA_DYNAMIC_COLUMN(TofXiCompatibility, tofXiCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
+                           [](float tofNSigmaXiLaPr, float tofNSigmaXiLaPi, float tofNSigmaXiPi, float nsigma) -> float { 
+                            bool compatible = true;
+                            if(std::abs(tofNSigmaXiLaPr+1000.0f)>1e-3 && std::abs(tofNSigmaXiLaPr)>nsigma){
+                              compatible = false; // reject only if info present and incompatible
+                            }
+                            if(std::abs(tofNSigmaXiLaPi+1000.0f)>1e-3 && std::abs(tofNSigmaXiLaPi)>nsigma){
+                              compatible = false; // reject only if info present and incompatible
+                            }
+                            if(std::abs(tofNSigmaXiPi+1000.0f)>1e-3 && std::abs(tofNSigmaXiPi)>nsigma){
+                              compatible = false; // reject only if info present and incompatible
+                            }
+                            return compatible;
+                          });
+
+DECLARE_SOA_DYNAMIC_COLUMN(TofOmCompatibility, tofOmCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
+                           [](float tofNSigmaOmLaPr, float tofNSigmaOmLaPi, float tofNSigmaOmKa, float nsigma) -> float { 
+                            bool compatible = true;
+                            if(std::abs(tofNSigmaOmLaPr+1000.0f)>1e-3 && std::abs(tofNSigmaOmLaPr)>nsigma){
+                              compatible = false; // reject only if info present and incompatible
+                            }
+                            if(std::abs(tofNSigmaOmLaPi+1000.0f)>1e-3 && std::abs(tofNSigmaOmLaPi)>nsigma){
+                              compatible = false; // reject only if info present and incompatible
+                            }
+                            if(std::abs(tofNSigmaOmKa+1000.0f)>1e-3 && std::abs(tofNSigmaOmKa)>nsigma){
+                              compatible = false; // reject only if info present and incompatible
+                            }
+                            return compatible;
+                          });
+
+
 } // namespace cascdata
 
 // /-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/-|-\-|-/
@@ -173,7 +248,9 @@ DECLARE_SOA_TABLE(CascTOFPIDs, "AOD", "CASCTOFPID", // processed information for
                   cascdata::BachTOFDeltaTOmKa);
 DECLARE_SOA_TABLE(CascTOFNSigmas, "AOD", "CascTOFNSigmas", // Nsigmas for cascades
                   cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiPi,
-                  cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmKa);
+                  cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmKa,
+                  cascdata::TofXiCompatibility<cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiPi>,
+                  cascdata::TofOmCompatibility<cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmKa>);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
