@@ -485,7 +485,7 @@ struct strangepidqa {
             histos.fill(HIST("h1dMassXiPlus"), casc.mXi());
             if(casc.tofXiCompatibility(tofNsigmaCompatibilityCascades.value)){
               histos.fill(HIST("h3dMassCompatibleXiPlus"), col.centFT0C(), casc.pt(), casc.mXi());
-              histos.fill(HIST("h1dCompatibleMassXiPlus"), casc.mXi());
+              histos.fill(HIST("h1dMassCompatibleXiPlus"), casc.mXi());
             }
           }
 
