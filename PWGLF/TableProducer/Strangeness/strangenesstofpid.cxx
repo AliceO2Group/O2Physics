@@ -348,37 +348,52 @@ struct strangenesstofpid {
       histos.add("h2dPionMeasuredVsExpected", "h2dPionMeasuredVsExpected", {HistType::kTH2F, {axisTime, axisTime}});
 
       histos.add("hArcDebug", "hArcDebug", kTH2F, {axisPt, {500, -5.0f, 10.0f}});
-      histos.add("h2dposDeltaTimeAsXiPi", "h2dposDeltaTimeAsXiPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dposDeltaTimeAsXiPr", "h2dposDeltaTimeAsXiPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dnegDeltaTimeAsXiPi", "h2dnegDeltaTimeAsXiPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dnegDeltaTimeAsXiPr", "h2dnegDeltaTimeAsXiPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dbachDeltaTimeAsXiPi", "h2dbachDeltaTimeAsXiPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-
-      histos.add("h2dposDeltaTimeAsOmPi", "h2dposDeltaTimeAsOmPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dposDeltaTimeAsOmPr", "h2dposDeltaTimeAsOmPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dnegDeltaTimeAsOmPi", "h2dnegDeltaTimeAsOmPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dnegDeltaTimeAsOmPr", "h2dnegDeltaTimeAsOmPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dbachDeltaTimeAsOmKa", "h2dbachDeltaTimeAsOmKa", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
 
       // standard deltaTime values
-      histos.add("h2dDeltaTimePositiveLambdaPi", "h2dDeltaTimePositiveLambdaPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dDeltaTimeNegativeLambdaPi", "h2dDeltaTimeNegativeLambdaPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dDeltaTimePositiveLambdaPr", "h2dDeltaTimePositiveLambdaPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dDeltaTimeNegativeLambdaPr", "h2dDeltaTimeNegativeLambdaPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dDeltaTimePositiveK0ShortPi", "h2dDeltaTimePositiveK0ShortPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-      histos.add("h2dDeltaTimeNegativeK0ShortPi", "h2dDeltaTimeNegativeK0ShortPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+      if(calculateV0s.value>0){
+        histos.add("h2dDeltaTimePositiveLambdaPi", "h2dDeltaTimePositiveLambdaPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dDeltaTimeNegativeLambdaPi", "h2dDeltaTimeNegativeLambdaPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dDeltaTimePositiveLambdaPr", "h2dDeltaTimePositiveLambdaPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dDeltaTimeNegativeLambdaPr", "h2dDeltaTimeNegativeLambdaPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dDeltaTimePositiveK0ShortPi", "h2dDeltaTimePositiveK0ShortPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dDeltaTimeNegativeK0ShortPi", "h2dDeltaTimeNegativeK0ShortPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+      }
+
+      if(calculateCascades.value>0){
+        histos.add("h2dposDeltaTimeAsXiPi", "h2dposDeltaTimeAsXiPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dposDeltaTimeAsXiPr", "h2dposDeltaTimeAsXiPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dnegDeltaTimeAsXiPi", "h2dnegDeltaTimeAsXiPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dnegDeltaTimeAsXiPr", "h2dnegDeltaTimeAsXiPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dbachDeltaTimeAsXiPi", "h2dbachDeltaTimeAsXiPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+
+        histos.add("h2dposDeltaTimeAsOmPi", "h2dposDeltaTimeAsOmPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dposDeltaTimeAsOmPr", "h2dposDeltaTimeAsOmPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dnegDeltaTimeAsOmPi", "h2dnegDeltaTimeAsOmPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dnegDeltaTimeAsOmPr", "h2dnegDeltaTimeAsOmPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dbachDeltaTimeAsOmKa", "h2dbachDeltaTimeAsOmKa", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+      }
 
       histos.add("h2dPositiveTOFProperties", "h2dPositiveTOFProperties", {HistType::kTH2F, {axisPt, {4, -0.5, 3.5f}}});
       histos.add("h2dNegativeTOFProperties", "h2dNegativeTOFProperties", {HistType::kTH2F, {axisPt, {4, -0.5, 3.5f}}});
 
       if (doQANSigma) {
-        // standard NSigma values
-        histos.add("h2dNSigmaPositiveLambdaPi", "h2dNSigmaPositiveLambdaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
-        histos.add("h2dNSigmaNegativeLambdaPi", "h2dNSigmaNegativeLambdaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
-        histos.add("h2dNSigmaPositiveLambdaPr", "h2dNSigmaPositiveLambdaPr", {HistType::kTH2F, {axisPt, axisNSigma}});
-        histos.add("h2dNSigmaNegativeLambdaPr", "h2dNSigmaNegativeLambdaPr", {HistType::kTH2F, {axisPt, axisNSigma}});
-        histos.add("h2dNSigmaPositiveK0ShortPi", "h2dNSigmaPositiveK0ShortPi", {HistType::kTH2F, {axisPt, axisNSigma}});
-        histos.add("h2dNSigmaNegativeK0ShortPi", "h2dNSigmaNegativeK0ShortPi", {HistType::kTH2F, {axisPt, axisNSigma}});
+        if(calculateV0s.value>0){
+          histos.add("h2dNSigmaPositiveLambdaPi", "h2dNSigmaPositiveLambdaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
+          histos.add("h2dNSigmaNegativeLambdaPi", "h2dNSigmaNegativeLambdaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
+          histos.add("h2dNSigmaPositiveLambdaPr", "h2dNSigmaPositiveLambdaPr", {HistType::kTH2F, {axisPt, axisNSigma}});
+          histos.add("h2dNSigmaNegativeLambdaPr", "h2dNSigmaNegativeLambdaPr", {HistType::kTH2F, {axisPt, axisNSigma}});
+          histos.add("h2dNSigmaPositiveK0ShortPi", "h2dNSigmaPositiveK0ShortPi", {HistType::kTH2F, {axisPt, axisNSigma}});
+          histos.add("h2dNSigmaNegativeK0ShortPi", "h2dNSigmaNegativeK0ShortPi", {HistType::kTH2F, {axisPt, axisNSigma}});
+        }
+
+        if(calculateCascades.value>0){
+          histos.add("h2dNSigmaXiLaPi", "h2dNSigmaXiLaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
+          histos.add("h2dNSigmaXiLaPr", "h2dNSigmaXiLaPr", {HistType::kTH2F, {axisPt, axisNSigma}});
+          histos.add("h2dNSigmaXiPi", "h2dNSigmaXiPi", {HistType::kTH2F, {axisPt, axisNSigma}});
+          histos.add("h2dNSigmaOmLaPi", "h2dNSigmaOmLaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
+          histos.add("h2dNSigmaOmLaPr", "h2dNSigmaOmLaPr", {HistType::kTH2F, {axisPt, axisNSigma}});
+          histos.add("h2dNSigmaOmKa", "h2dNSigmaOmKa", {HistType::kTH2F, {axisPt, axisNSigma}});
+        }
       }
 
       // delta lambda decay time
