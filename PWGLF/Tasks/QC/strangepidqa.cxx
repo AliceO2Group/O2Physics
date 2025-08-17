@@ -293,7 +293,7 @@ struct strangepidqa {
         // lambda case
         histos.fill(HIST("h3dMassAntiLambda"), coll.centFT0C(), lambda.pt(), lambda.mLambda());
         if(lambda.tofAntiLambdaCompatibility(tofNsigmaCompatibility.value)){
-          histos.fill(HIST("h3dMassCompatibleAntiambda"), coll.centFT0C(), lambda.pt(), lambda.mLambda());
+          histos.fill(HIST("h3dMassCompatibleAntiLambda"), coll.centFT0C(), lambda.pt(), lambda.mLambda());
         }
       }
 
