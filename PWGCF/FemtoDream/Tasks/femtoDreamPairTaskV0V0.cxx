@@ -126,19 +126,6 @@ struct femtoDreamPairTaskV0V0 {
                                           (aod::femtodreamparticle::mAntiLambda > V01.InvMassAntiMin) &&
                                           (aod::femtodreamparticle::mAntiLambda < V01.InvMassAntiMax);
 
-    /*
-     Partition<FDMCParts> PartitionMCV01 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
-                                          ((aod::femtodreamparticle::cut & V01.CutBit) == V01.CutBit) &&
-                                          (aod::femtodreamparticle::pt > V01.PtMin) &&
-                                          (aod::femtodreamparticle::pt < V01.PtMax) &&
-                                          (aod::femtodreamparticle::eta > V01.EtaMax) &&
-                                          (aod::femtodreamparticle::eta < V01.EtaMin) &&
-                                          (aod::femtodreamparticle::mLambda > V01.InvMassMin) &&
-                                          (aod::femtodreamparticle::mLambda < V01.InvMassMax) &&
-                                          (aod::femtodreamparticle::mAntiLambda > V01.InvMassAntiMin) &&
-                                          (aod::femtodreamparticle::mAntiLambda < V01.InvMassAntiMax);
-     */
-
     /// Histogramming for particle 1
     FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0, 1> trackHistoPartOne;
     FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 3> posChildHistos;
@@ -177,27 +164,6 @@ struct femtoDreamPairTaskV0V0 {
                                           (aod::femtodreamparticle::mLambda < V02.InvMassMax) &&
                                           (aod::femtodreamparticle::mAntiLambda > V02.InvMassAntiMin) &&
                                           (aod::femtodreamparticle::mAntiLambda < V02.InvMassAntiMax);
-
-    /*
-     Partition<FDMCParts> PartitionMCV02 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
-                                          ((aod::femtodreamparticle::cut & V02.CutBit) == V02.CutBit) &&
-                                          (aod::femtodreamparticle::pt > V02.PtMin) &&
-                                          (aod::femtodreamparticle::pt < V02.PtMax) &&
-                                          (aod::femtodreamparticle::eta > V02.EtaMax) &&
-                                          (aod::femtodreamparticle::eta < V02.EtaMin) &&
-                                          (aod::femtodreamparticle::mLambda > V02.InvMassMin) &&
-                                          (aod::femtodreamparticle::mLambda < V02.InvMassMax) &&
-                                          (aod::femtodreamparticle::mAntiLambda > V02.InvMassAntiMin) &&
-                                          (aod::femtodreamparticle::mAntiLambda < V02.InvMassAntiMax);
-     */
-
-    /// Histogramming for particle 2
-    /*
-    FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0, 2> trackHistoPartTwo;
-    FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 3> posChildHistos;
-    FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 4> negChildHistos;
-     */
-
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
@@ -272,6 +238,7 @@ struct femtoDreamPairTaskV0V0 {
                        Option.IsMC, Option.Use4D, Option.ExtendedPlots,
                        Option.HighkstarCut,
                        Option.SmearingByOrigin);
+    
     mixedEventCont.init(&Registry,
                         Binning.kstar, Binning.pT, Binning.kT, Binning.mT, Mixing.MultMixBins, Mixing.MultPercentileMixBins,
                         Binning4D.kstar, Binning4D.mT, Binning4D.mult, Binning4D.multPercentile,
@@ -310,13 +277,6 @@ struct femtoDreamPairTaskV0V0 {
       for (auto& v0 : SliceV01) {
         const auto& posChild = parts.iteratorAt(v0.index() - 2);
         const auto& negChild = parts.iteratorAt(v0.index() - 1);
-        // This is how it is supposed to work but there seems to be an issue
-        // with partitions and accessing elements in tables that have been declared
-        // with an SELF_INDEX column. Under investigation. Maybe need to change
-        // femtdream dataformat to take special care of v0 candidates
-        // auto posChild = v0.template children_as<S>().front();
-        // auto negChild = v0.template children_as<S>().back();
-        // check cuts on V0 children
         if (((posChild.cut() & V01.ChildPos_CutBit) == V01.ChildPos_CutBit) &&
             ((posChild.pidcut() & V01.ChildPos_TPCBit) == V01.ChildPos_TPCBit) &&
             ((negChild.cut() & V01.ChildNeg_CutBit) == V01.ChildNeg_CutBit) &&
@@ -331,26 +291,40 @@ struct femtoDreamPairTaskV0V0 {
     float rand = 0.;
     if (Option.SameSpecies.value) {
       for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(SliceV01, SliceV02))) {
-        if (Option.CPROn.value) {
-          if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
-            continue;
+        const auto& posChild_1 = parts.iteratorAt(p1.index() - 2);
+        const auto& negChild_1 = parts.iteratorAt(p1.index() - 1);
+        const auto& posChild_2 = parts.iteratorAt(p2.index() - 2);
+        const auto& negChild_2 = parts.iteratorAt(p2.index() - 1);
+        if (((posChild_1.cut() & V01.ChildPos_CutBit) == V01.ChildPos_CutBit) &&
+            ((posChild_1.pidcut() & V01.ChildPos_TPCBit) == V01.ChildPos_TPCBit) &&
+            ((negChild_1.cut() & V01.ChildNeg_CutBit) == V01.ChildNeg_CutBit) &&
+            ((negChild_1.pidcut() & V01.ChildNeg_TPCBit) == V01.ChildNeg_TPCBit) &&
+            ((posChild_2.cut() & V02.ChildPos_CutBit) == V02.ChildPos_CutBit) &&
+            ((posChild_2.pidcut() & V02.ChildPos_TPCBit) == V02.ChildPos_TPCBit) &&
+            ((negChild_2.cut() & V02.ChildNeg_CutBit) == V02.ChildNeg_CutBit) &&
+            ((negChild_2.pidcut() & V02.ChildNeg_TPCBit) == V02.ChildNeg_TPCBit)) {
+            
+              if (Option.CPROn.value) {
+              if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
+                continue;
+              }
+            }
+              /*
+            // track cleaning
+            if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+              continue;
+            }
+            */
+
+            if (Option.RandomizePair.value) {
+              rand = random->Rndm();
+            }
+            if (rand <= 0.5) {
+              sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
+            } else {
+              sameEventCont.setPair<isMC>(p2, p1, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
+            }
           }
-        }
-          /*
-        // track cleaning
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-          continue;
-        }
-        */
-          
-        if (Option.RandomizePair.value) {
-          rand = random->Rndm();
-        }
-        if (rand <= 0.5) {
-          sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
-        } else {
-          sameEventCont.setPair<isMC>(p2, p1, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
-        }
       }
     }
     
@@ -398,6 +372,19 @@ struct femtoDreamPairTaskV0V0 {
         continue;
       }
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceV01, SliceV02))) {
+        const auto& posChild_1 = parts.iteratorAt(p1.index() - 2);
+        const auto& negChild_1 = parts.iteratorAt(p1.index() - 1);
+        const auto& posChild_2 = parts.iteratorAt(p2.index() - 2);
+        const auto& negChild_2 = parts.iteratorAt(p2.index() - 1);
+        if (((posChild_1.cut() & V01.ChildPos_CutBit) == V01.ChildPos_CutBit) &&
+            ((posChild_1.pidcut() & V01.ChildPos_TPCBit) == V01.ChildPos_TPCBit) &&
+            ((negChild_1.cut() & V01.ChildNeg_CutBit) == V01.ChildNeg_CutBit) &&
+            ((negChild_1.pidcut() & V01.ChildNeg_TPCBit) == V01.ChildNeg_TPCBit) &&
+            ((posChild_2.cut() & V02.ChildPos_CutBit) == V02.ChildPos_CutBit) &&
+            ((posChild_2.pidcut() & V02.ChildPos_TPCBit) == V02.ChildPos_TPCBit) &&
+            ((negChild_2.cut() & V02.ChildNeg_CutBit) == V02.ChildNeg_CutBit) &&
+            ((negChild_2.pidcut() & V02.ChildNeg_TPCBit) == V02.ChildNeg_TPCBit)) {
+
         if (Option.CPROn.value) {
           if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
             continue;
@@ -407,6 +394,7 @@ struct femtoDreamPairTaskV0V0 {
       }
     }
   }
+}
 
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
