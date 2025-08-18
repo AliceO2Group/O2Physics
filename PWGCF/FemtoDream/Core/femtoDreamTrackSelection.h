@@ -17,22 +17,20 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMTRACKSELECTION_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMTRACKSELECTION_H_
 
-#include "PWGCF/DataModel/FemtoDerived.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/PID.h"
-
-#include <cmath>
-#include <iostream>
 #include <string>
 #include <vector>
+#include <cmath>
+#include <iostream>
+
+#include "PWGCF/DataModel/FemtoDerived.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
+#include "ReconstructionDataFormats/PID.h"
+#include "Framework/HistogramRegistry.h"
 
 using namespace o2::framework;
 
@@ -54,7 +52,7 @@ enum TrackSel { kSign,         ///< Sign of the track
                 kDCAxyMax,     ///< Max. DCA_xy (cm)
                 kDCAzMax,      ///< Max. DCA_z (cm)
                 kDCAMin,       ///< Min. DCA_xyz (cm)
-                kPIDnSigmaMax  ///< Max. |n_sigma| for PID
+                kPIDnSigmaMax ///< Max. |n_sigma| for PID
 };
 
 enum TrackContainerPosition {
@@ -427,7 +425,7 @@ auto FemtoDreamTrackSelection::getNsigmaITS(T const& track, o2::track::PID pid)
 }
 
 template <typename T>
-bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track, bool UseThreshold)
+bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track, bool UseThreshold ) 
 {
   const auto pT = track.pt();
   const auto eta = track.eta();
@@ -504,19 +502,18 @@ bool FemtoDreamTrackSelection::isSelectedMinimal(T const& track, bool UseThresho
     bool pass = false;
     for (size_t i = 0; i < pidTPC.size(); ++i) {
 
-      auto pidTPCVal = pidTPC.at(i);
-      if (pT < nPTPCThr) {
-        pass = std::fabs(pidTPCVal) < nSigmaPIDMax;
-      } else if (pT >= nPTPCThr) {
-        auto pidTOFVal = pidTOF.at(i);
-        pass = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal) < nSigmaPIDMax;
-      }
-      if (pass)
-        break; // early exit if any condition is satisfied
+        auto pidTPCVal = pidTPC.at(i);
+        if(pT < nPTPCThr) {
+            pass = std::fabs(pidTPCVal) < nSigmaPIDMax;
+        }else if (pT >= nPTPCThr) {
+            auto pidTOFVal = pidTOF.at(i);
+            pass = std::sqrt(pidTPCVal * pidTPCVal + pidTOFVal * pidTOFVal) < nSigmaPIDMax;
+        }
+        if (pass) break; // early exit if any condition is satisfied
     }
 
     if (!pass) {
-      return false;
+        return false;
     }
   }
   return true;
