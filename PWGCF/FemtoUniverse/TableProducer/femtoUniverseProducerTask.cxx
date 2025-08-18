@@ -328,10 +328,7 @@ struct FemtoUniverseProducerTask {
 
   // D0/D0bar mesons
   struct : o2::framework::ConfigurableGroup {
-    Configurable<float> confD0D0barCandMaxY{"confD0D0barCandMaxY", -1., "max. cand. rapidity"};
     Configurable<float> confD0D0barCandEtaCut{"confD0D0barCandEtaCut", 0.8, "max. cand. pseudorapidity"};
-    Configurable<float> yD0D0barCandRecoMax{"yD0D0barCandRecoMax", 0.8, "MC Reco, max. rapidity of D0/D0bar cand."};
-    Configurable<float> yD0D0barCandGenMax{"yD0D0barCandGenMax", 0.8, "MC Truth, max. rapidity of D0/D0bar cand."};
     Configurable<float> trackD0pTGenMin{"trackD0pTGenMin", 0.0, "MC Truth, min. pT for tracks and D0/D0bar cand."};
     Configurable<float> trackD0pTGenMax{"trackD0pTGenMax", 24.0, "MC Truth, max. pT for tracks and D0/D0bar cand."};
     Configurable<bool> storeD0D0barDoubleMassHypo{"storeD0D0barDoubleMassHypo", false, "Store D0/D0bar cand. which pass selection criteria for both, D0 and D0bar"};
@@ -1357,10 +1354,6 @@ struct FemtoUniverseProducerTask {
         continue;
       }
 
-      if (ConfD0Selection.confD0D0barCandMaxY >= 0. && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.confD0D0barCandMaxY) {
-        continue;
-      }
-
       if (std::abs(hfCand.eta()) > ConfD0Selection.confD0D0barCandEtaCut) {
         continue;
       }
@@ -1477,10 +1470,6 @@ struct FemtoUniverseProducerTask {
     for (const auto& hfCand : hfCands) {
 
       if (!(hfCand.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        continue;
-      }
-
-      if (ConfD0Selection.confD0D0barCandMaxY >= 0. && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.confD0D0barCandMaxY) {
         continue;
       }
 
@@ -1607,10 +1596,6 @@ struct FemtoUniverseProducerTask {
     for (const auto& hfCand : hfCands) {
 
       if (!(hfCand.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
-        continue;
-      }
-
-      if (ConfD0Selection.confD0D0barCandMaxY >= 0. && std::abs(hfHelper.yD0(hfCand)) > ConfD0Selection.confD0D0barCandMaxY) {
         continue;
       }
 
@@ -1997,20 +1982,18 @@ struct FemtoUniverseProducerTask {
   }
 
   template <typename TrackType, bool transientLabels = false>
-  void fillMCTruthParticlesD0(TrackType const& mcParts, std::optional<std::reference_wrapper<const std::set<int>>> recoMcIds = std::nullopt)
+  void fillMCTruthParticlesD0(TrackType const& mcParts)
   {
     std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     std::vector<int> tmpIDtrack;
-    float ptGenB = -1;
 
     for (const auto& particle : mcParts) {
-
       if (particle.eta() < -ConfFilterCuts.confEtaFilterCut || particle.eta() > ConfFilterCuts.confEtaFilterCut)
         continue;
       if (particle.pt() < ConfD0Selection.trackD0pTGenMin || particle.pt() > ConfD0Selection.trackD0pTGenMax)
         continue;
 
-      uint32_t pdgCode = static_cast<uint32_t>(particle.pdgCode());
+      int pdgCode = particle.pdgCode();
 
       if (ConfGeneral.confMCTruthAnalysisWithPID) {
         bool pass = false;
@@ -2019,10 +2002,10 @@ struct FemtoUniverseProducerTask {
           if (static_cast<int>(pdg) == static_cast<int>(pdgCode)) {
             if (pdgCode == Pdg::kPhi) {
               pass = true;
-            } else if (pdgCode == Pdg::kD0) {
+            } else if (std::abs(pdgCode) == Pdg::kD0) {
               pass = true;
             } else {
-              if (particle.isPhysicalPrimary() || (ConfGeneral.confActivateSecondaries && recoMcIds && recoMcIds->get().contains(particle.globalIndex())))
+              if (particle.isPhysicalPrimary())
                 pass = true;
             }
           }
@@ -2031,41 +2014,31 @@ struct FemtoUniverseProducerTask {
           continue;
       }
 
-      if (pdgCode == Pdg::kD0) {
-        if (std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
-          if (ConfD0Selection.yD0D0barCandGenMax >= 0. && std::abs(RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0)) > ConfD0Selection.yD0D0barCandGenMax) {
-            continue;
-          }
-          if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-            ptGenB = -1;
-          } else {
-            ptGenB = mcParts.rawIteratorAt(particle.idxBhadMotherPart()).pt();
-          }
-          outputParts(outputCollision.lastIndex(),
-                      particle.pt(),
-                      particle.eta(),
-                      particle.phi(),
-                      aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                      -999.,
-                      pdgCode,
-                      pdgCode, // getter tempFitVar
-                      childIDs,
-                      particle.flagMcMatchGen(),
-                      ptGenB); // pT of the B hadron (mother particle, only when non-prompt D0)
-        }
-      } else {
-        outputParts(outputCollision.lastIndex(),
-                    particle.pt(),
-                    particle.eta(),
-                    particle.phi(),
-                    aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
-                    -999.,
-                    pdgCode,
-                    pdgCode,
-                    childIDs,
-                    -999.,
-                    -999.);
+      /// check if we end-up with the correct final state using MC info
+      int8_t sign = 0;
+      int8_t origin = -99;
+      int8_t mcGenFlag = -99;
+      if (std::abs(particle.pdgCode()) == Pdg::kD0 && !RecoDecay::isMatchedMCGen(mcParts, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
+        /// check if we have D0(bar) → π± K∓
+        continue;
       }
+      if (std::abs(particle.pdgCode()) == Pdg::kD0) {
+        origin = RecoDecay::getCharmHadronOrigin(mcParts, particle);
+        mcGenFlag = particle.flagMcMatchGen();
+      }
+
+      outputParts(outputCollision.lastIndex(),
+                  particle.pt(),
+                  particle.eta(),
+                  particle.phi(),
+                  aod::femtouniverseparticle::ParticleType::kMCTruthTrack,
+                  -999.,
+                  pdgCode,
+                  pdgCode, // getter tempFitVar
+                  childIDs,
+                  mcGenFlag,
+                  origin); // D0(bar) origin
+
       if (confIsDebug) {
         fillDebugParticle<false, true, false>(particle);
       }
@@ -2074,7 +2047,7 @@ struct FemtoUniverseProducerTask {
       // aligned, so that they can be joined in the task.
       if constexpr (transientLabels) {
         outputPartsMCLabels(-1);
-        outputDebugPartsMC(9999);
+        outputDebugPartsMC(-999);
       }
     }
   }
@@ -2534,7 +2507,6 @@ struct FemtoUniverseProducerTask {
                         aod::McParticles const& mcParts)
   {
     // MC Reco
-    std::set<int> recoMcIds;
     for (const auto& col : collisions) {
       auto groupedTracks = tracks.sliceBy(perCollisionTracks, col.globalIndex());
       auto groupedD0s = hfMcRecoCands.sliceBy(perCollisionD0s, col.globalIndex());
@@ -2545,18 +2517,14 @@ struct FemtoUniverseProducerTask {
       if (colcheck) {
         fillTracks<true>(groupedTracks);
         fillD0D0barMcMl<true>(col, groupedTracks, groupedD0s, mcParts);
-        for (const auto& track : groupedTracks) {
-          if (trackCuts.isSelectedMinimal(track))
-            recoMcIds.insert(track.mcParticleId());
-        }
       }
     }
     // MC Truth
     for (const auto& mccol : mccols) {
       auto groupedMCParticles = hfMcGenCands.sliceBy(mcPartPerMcColl, mccol.globalIndex());
       auto groupedCollisions = collisions.sliceBy(recoCollsPerMCColl, mccol.globalIndex());
-      fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                              // fills the reco collisions for mc collision
-      fillMCTruthParticlesD0<decltype(groupedMCParticles), true>(groupedMCParticles, recoMcIds); // fills mc particles
+      fillMCTruthCollisions(groupedCollisions, groupedMCParticles);                   // fills the reco collisions for mc collision
+      fillMCTruthParticlesD0<decltype(groupedMCParticles), true>(groupedMCParticles); // fills mc particles
     }
   }
   PROCESS_SWITCH(FemtoUniverseProducerTask, processTrackD0MC, "Provide MC data for track D0 analysis", false);

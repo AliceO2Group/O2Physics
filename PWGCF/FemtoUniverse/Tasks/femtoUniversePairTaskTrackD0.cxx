@@ -1252,9 +1252,9 @@ struct FemtoUniversePairTaskTrackD0 {
       if (pdgCode == o2::constants::physics::Pdg::kD0) {
         if (std::abs(hfFlagMcGen) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           mcTruthRegistry.fill(HIST("hMcGenD0"), part.pt(), part.eta());
-          if (part.mAntiLambda() > 0) {
+          if (part.mAntiLambda() == 1) {
             mcTruthRegistry.fill(HIST("hMcGenD0Prompt"), part.pt(), part.eta());
-          } else {
+          } else if (part.mAntiLambda() == 2) {
             mcTruthRegistry.fill(HIST("hMcGenD0NonPrompt"), part.pt(), part.eta());
           }
         }
@@ -1278,9 +1278,9 @@ struct FemtoUniversePairTaskTrackD0 {
       if (pdgCode == o2::constants::physics::Pdg::kD0Bar) {
         if (std::abs(hfFlagMcGen) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           mcTruthRegistry.fill(HIST("hMcGenD0bar"), part.pt(), part.eta());
-          if (part.mAntiLambda() > 0) {
+          if (part.mAntiLambda() == 1) {
             mcTruthRegistry.fill(HIST("hMcGenD0barPrompt"), part.pt(), part.eta());
-          } else {
+          } else if (part.mAntiLambda() == 2) {
             mcTruthRegistry.fill(HIST("hMcGenD0barNonPrompt"), part.pt(), part.eta());
           }
         }
