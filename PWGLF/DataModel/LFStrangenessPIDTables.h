@@ -221,7 +221,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(TofXiCompatibility, tofXiCompatibility, //! compatibi
                             return compatible;
                           });
 
-DECLARE_SOA_DYNAMIC_COLUMN(TofOmCompatibility, tofOmCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
+DECLARE_SOA_DYNAMIC_COLUMN(TofOmegaCompatibility, tofOmegaCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
                            [](float tofNSigmaOmLaPr, float tofNSigmaOmLaPi, float tofNSigmaOmKa, float nsigma) -> float { 
                             bool compatible = true;
                             if(std::abs(tofNSigmaOmLaPr-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaOmLaPr)>nsigma){
@@ -258,7 +258,7 @@ DECLARE_SOA_TABLE(CascTOFNSigmas, "AOD", "CascTOFNSigmas", // Nsigmas for cascad
                   cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiPi,
                   cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmKa,
                   cascdata::TofXiCompatibility<cascdata::TOFNSigmaXiLaPr, cascdata::TOFNSigmaXiLaPi, cascdata::TOFNSigmaXiPi>,
-                  cascdata::TofOmCompatibility<cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmKa>);
+                  cascdata::TofOmegaCompatibility<cascdata::TOFNSigmaOmLaPr, cascdata::TOFNSigmaOmLaPi, cascdata::TOFNSigmaOmKa>);
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_

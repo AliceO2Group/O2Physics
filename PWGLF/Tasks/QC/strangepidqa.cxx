@@ -474,7 +474,7 @@ struct strangepidqa {
           if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaKa()) < tpcNsigmaBachelor) {
             histos.fill(HIST("h3dMassOmegaMinus"), col.centFT0C(), casc.pt(), casc.mOmega());
             histos.fill(HIST("h1dMassOmegaMinus"), casc.mOmega());
-            if(casc.tofOmCompatibility(tofNsigmaCompatibilityCascades.value)){
+            if(casc.tofOmegaCompatibility(tofNsigmaCompatibilityCascades.value)){
               histos.fill(HIST("h3dMassCompatibleOmegaMinus"), col.centFT0C(), casc.pt(), casc.mOmega());
               histos.fill(HIST("h1dMassCompatibleOmegaMinus"), casc.mOmega());
             }
@@ -492,7 +492,7 @@ struct strangepidqa {
           if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaKa()) < tpcNsigmaBachelor) {
             histos.fill(HIST("h3dMassOmegaPlus"), col.centFT0C(), casc.pt(), casc.mOmega());
             histos.fill(HIST("h1dMassOmegaPlus"), casc.mOmega());
-            if(casc.tofOmCompatibility(tofNsigmaCompatibilityCascades.value)){
+            if(casc.tofOmegaCompatibility(tofNsigmaCompatibilityCascades.value)){
               histos.fill(HIST("h3dMassCompatibleOmegaPlus"), col.centFT0C(), casc.pt(), casc.mOmega());
               histos.fill(HIST("h1dMassCompatibleOmegaPlus"), casc.mOmega());
             }
