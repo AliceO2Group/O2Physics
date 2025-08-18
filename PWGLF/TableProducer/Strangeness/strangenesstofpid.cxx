@@ -544,19 +544,19 @@ struct strangenesstofpid {
     o2::track::TrackPar posTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxpos(), v0.pypos(), v0.pzpos()}, +1);
     o2::track::TrackPar negTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxneg(), v0.pyneg(), v0.pzneg()}, -1);
 
-    float deltaTimePositiveLambdaPi = -1e+6;
-    float deltaTimeNegativeLambdaPi = -1e+6;
-    float deltaTimePositiveLambdaPr = -1e+6;
-    float deltaTimeNegativeLambdaPr = -1e+6;
-    float deltaTimePositiveK0ShortPi = -1e+6;
-    float deltaTimeNegativeK0ShortPi = -1e+6;
+    float deltaTimePositiveLambdaPi = o2::aod::v0data::kNoTOFValue;
+    float deltaTimeNegativeLambdaPi = o2::aod::v0data::kNoTOFValue;
+    float deltaTimePositiveLambdaPr = o2::aod::v0data::kNoTOFValue;
+    float deltaTimeNegativeLambdaPr = o2::aod::v0data::kNoTOFValue;
+    float deltaTimePositiveK0ShortPi = o2::aod::v0data::kNoTOFValue;
+    float deltaTimeNegativeK0ShortPi = o2::aod::v0data::kNoTOFValue;
 
-    float nSigmaPositiveLambdaPi = -1e+3;
-    float nSigmaPositiveLambdaPr = -1e+3;
-    float nSigmaNegativeLambdaPi = -1e+3;
-    float nSigmaNegativeLambdaPr = -1e+3;
-    float nSigmaPositiveK0ShortPi = -1e+3;
-    float nSigmaNegativeK0ShortPi = -1e+3;
+    float nSigmaPositiveLambdaPi = o2::aod::v0data::kNoTOFValue;
+    float nSigmaPositiveLambdaPr = o2::aod::v0data::kNoTOFValue;
+    float nSigmaNegativeLambdaPi = o2::aod::v0data::kNoTOFValue;
+    float nSigmaNegativeLambdaPr = o2::aod::v0data::kNoTOFValue;
+    float nSigmaPositiveK0ShortPi = o2::aod::v0data::kNoTOFValue;
+    float nSigmaNegativeK0ShortPi = o2::aod::v0data::kNoTOFValue;
 
     float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
     float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
@@ -614,9 +614,9 @@ struct strangenesstofpid {
     float decayTimeAntiLambda = 0.5f * ((pTra.tofSignal() - timePositivePi) + (nTra.tofSignal() - timeNegativePr)) - evTimeMean;
     float decayTimeK0Short = 0.5f * ((pTra.tofSignal() - timePositivePi) + (nTra.tofSignal() - timeNegativePi)) - evTimeMean;
 
-    float betaLambda = -1e+6;
-    float betaAntiLambda = -1e+6;
-    float betaK0Short = -1e+6;
+    float betaLambda = o2::aod::cascdata::kNoTOFValue;;
+    float betaAntiLambda = o2::aod::cascdata::kNoTOFValue;;
+    float betaK0Short = o2::aod::cascdata::kNoTOFValue;;
 
     if (nTra.hasTOF() && pTra.hasTOF()) {
       betaLambda = (lengthV0 / decayTimeLambda) / 0.0299792458;
@@ -736,7 +736,7 @@ struct strangenesstofpid {
 
     // calculate mother lengths
     float lengthV0 = std::hypot(cascade.xlambda() - cascade.x(), cascade.ylambda() - cascade.y(), cascade.zlambda() - cascade.z());
-    float lengthCascade = -1e+6;
+    float lengthCascade = o2::aod::cascdata::kNoTOFValue;;
     const o2::math_utils::Point3D<float> collVtx{collision.getX(), collision.getY(), collision.getZ()};
     bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(collVtx, cascTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE);
     float d = -1.0f, d3d = 0.0f;
@@ -772,12 +772,12 @@ struct strangenesstofpid {
     float bachFlightKa = lengthBachelor / velocityBachelorKa;
 
     // initialize delta-times (actual PID variables)
-    float posDeltaTimeAsXiPi = -1e+6, posDeltaTimeAsXiPr = -1e+6;
-    float negDeltaTimeAsXiPi = -1e+6, negDeltaTimeAsXiPr = -1e+6;
-    float bachDeltaTimeAsXiPi = -1e+6;
-    float posDeltaTimeAsOmPi = -1e+6, posDeltaTimeAsOmPr = -1e+6;
-    float negDeltaTimeAsOmPi = -1e+6, negDeltaTimeAsOmPr = -1e+6;
-    float bachDeltaTimeAsOmKa = -1e+6;
+    float posDeltaTimeAsXiPi = o2::aod::cascdata::kNoTOFValue, posDeltaTimeAsXiPr = o2::aod::cascdata::kNoTOFValue;
+    float negDeltaTimeAsXiPi = o2::aod::cascdata::kNoTOFValue, negDeltaTimeAsXiPr = o2::aod::cascdata::kNoTOFValue;
+    float bachDeltaTimeAsXiPi = o2::aod::cascdata::kNoTOFValue;
+    float posDeltaTimeAsOmPi = o2::aod::cascdata::kNoTOFValue, posDeltaTimeAsOmPr = o2::aod::cascdata::kNoTOFValue;
+    float negDeltaTimeAsOmPi = o2::aod::cascdata::kNoTOFValue, negDeltaTimeAsOmPr = o2::aod::cascdata::kNoTOFValue;
+    float bachDeltaTimeAsOmKa = o2::aod::cascdata::kNoTOFValue;
 
     if (pTra.hasTOF()) {
       posDeltaTimeAsXiPi = (pTra.tofSignal() - pTra.tofEvTime()) - (xiFlight + lambdaFlight + posFlightPi);
@@ -800,12 +800,12 @@ struct strangenesstofpid {
       posDeltaTimeAsXiPi, posDeltaTimeAsXiPr, negDeltaTimeAsXiPi, negDeltaTimeAsXiPr, bachDeltaTimeAsXiPi,
       posDeltaTimeAsOmPi, posDeltaTimeAsOmPr, negDeltaTimeAsOmPi, negDeltaTimeAsOmPr, bachDeltaTimeAsOmKa);
 
-    float nSigmaXiLaPr = -1e+6;
-    float nSigmaXiLaPi = -1e+6;
-    float nSigmaXiPi = -1e+6;
-    float nSigmaOmLaPr = -1e+6;
-    float nSigmaOmLaPi = -1e+6;
-    float nSigmaOmKa = -1e+6;
+    float nSigmaXiLaPr = o2::aod::cascdata::kNoTOFValue;;
+    float nSigmaXiLaPi = o2::aod::cascdata::kNoTOFValue;;
+    float nSigmaXiPi = o2::aod::cascdata::kNoTOFValue;;
+    float nSigmaOmLaPr = o2::aod::cascdata::kNoTOFValue;;
+    float nSigmaOmLaPi = o2::aod::cascdata::kNoTOFValue;;
+    float nSigmaOmKa = o2::aod::cascdata::kNoTOFValue;;
 
     // go for Nsigma values if requested
     if (doNSigmas && nSigmaCalibLoaded) {

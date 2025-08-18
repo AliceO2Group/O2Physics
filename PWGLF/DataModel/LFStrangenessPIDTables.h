@@ -47,6 +47,10 @@ DECLARE_SOA_TABLE(DauTrackTOFPIDs, "AOD", "DAUTRACKTOFPID", // raw table (for po
 
 namespace v0data
 {
+// define constants for NSigma operation 
+const float kNoTOFValue = -1e+6; 
+const float kEpsilon = 1e-4;
+
 // ==== TOF INFORMATION ===
 // lengths as stored in the AO2D for TOF calculations
 DECLARE_SOA_COLUMN(PosTOFLengthToPV, posTOFLengthToPV, float); //! positive track length to PV
@@ -83,10 +87,10 @@ DECLARE_SOA_COLUMN(TOFNSigmaK0PiMinus, tofNSigmaK0PiMinus, float); //! negative 
 DECLARE_SOA_DYNAMIC_COLUMN(TofLambdaCompatibility, tofLambdaCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
                            [](float tofNSigmaLaPr, float tofNSigmaLaPi, float nsigma) -> float { 
                             bool compatible = true;
-                            if(std::abs(tofNSigmaLaPr+1000.0f)>1e-3 && std::abs(tofNSigmaLaPr)>nsigma){
+                            if(std::abs(tofNSigmaLaPr-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaLaPr)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
-                            if(std::abs(tofNSigmaLaPi+1000.0f)>1e-3 && std::abs(tofNSigmaLaPi)>nsigma){
+                            if(std::abs(tofNSigmaLaPi-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaLaPi)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
                             return compatible;
@@ -96,10 +100,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(TofLambdaCompatibility, tofLambdaCompatibility, //! c
 DECLARE_SOA_DYNAMIC_COLUMN(TofAntiLambdaCompatibility, tofAntiLambdaCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
                            [](float tofNSigmaALaPr, float tofNSigmaALaPi, float nsigma) -> float { 
                             bool compatible = true;
-                            if(std::abs(tofNSigmaALaPr+1000.0f)>1e-3 && std::abs(tofNSigmaALaPr)>nsigma){
+                            if(std::abs(tofNSigmaALaPr-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaALaPr)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
-                            if(std::abs(tofNSigmaALaPi+1000.0f)>1e-3 && std::abs(tofNSigmaALaPi)>nsigma){
+                            if(std::abs(tofNSigmaALaPi-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaALaPi)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
                             return compatible;
@@ -109,10 +113,10 @@ DECLARE_SOA_DYNAMIC_COLUMN(TofAntiLambdaCompatibility, tofAntiLambdaCompatibilit
 DECLARE_SOA_DYNAMIC_COLUMN(TofK0ShortCompatibility, tofK0ShortCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
                            [](float tofNSigmaK0PiPlus, float tofNSigmaK0PiMinus, float nsigma) -> float { 
                             bool compatible = true;
-                            if(std::abs(tofNSigmaK0PiPlus+1000.0f)>1e-3 && std::abs(tofNSigmaK0PiPlus)>nsigma){
+                            if(std::abs(tofNSigmaK0PiPlus-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaK0PiPlus)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
-                            if(std::abs(tofNSigmaK0PiMinus+1000.0f)>1e-3 && std::abs(tofNSigmaK0PiMinus)>nsigma){
+                            if(std::abs(tofNSigmaK0PiMinus-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaK0PiMinus)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
                             return compatible;
@@ -166,6 +170,10 @@ DECLARE_SOA_TABLE(V0TOFNSigmas, "AOD", "V0TOFNSIGMA", // processed NSigma table 
 
 namespace cascdata
 {
+// define constants for NSigma operation 
+const float kNoTOFValue = -1e+6; 
+const float kEpsilon = 1e-4;
+
 // lengths as stored in the AO2D for TOF calculations
 DECLARE_SOA_COLUMN(PosTOFLengthToPV, posTOFLengthToPV, float);   //! positive track length
 DECLARE_SOA_COLUMN(NegTOFLengthToPV, negTOFLengthToPV, float);   //! negative track length
@@ -201,13 +209,13 @@ DECLARE_SOA_COLUMN(TOFNSigmaOmKa, tofNSigmaOmKa, float);     //! bachelor track 
 DECLARE_SOA_DYNAMIC_COLUMN(TofXiCompatibility, tofXiCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
                            [](float tofNSigmaXiLaPr, float tofNSigmaXiLaPi, float tofNSigmaXiPi, float nsigma) -> float { 
                             bool compatible = true;
-                            if(std::abs(tofNSigmaXiLaPr+1000000.0f)>1e-3 && std::abs(tofNSigmaXiLaPr)>nsigma){
+                            if(std::abs(tofNSigmaXiLaPr-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaXiLaPr)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
-                            if(std::abs(tofNSigmaXiLaPi+1000000.0f)>1e-3 && std::abs(tofNSigmaXiLaPi)>nsigma){
+                            if(std::abs(tofNSigmaXiLaPi-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaXiLaPi)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
-                            if(std::abs(tofNSigmaXiPi+1000000.0f)>1e-3 && std::abs(tofNSigmaXiPi)>nsigma){
+                            if(std::abs(tofNSigmaXiPi-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaXiPi)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
                             return compatible;
@@ -216,13 +224,13 @@ DECLARE_SOA_DYNAMIC_COLUMN(TofXiCompatibility, tofXiCompatibility, //! compatibi
 DECLARE_SOA_DYNAMIC_COLUMN(TofOmCompatibility, tofOmCompatibility, //! compatibility with being lambda, checked only if TOF present. Argument: number of sigmas
                            [](float tofNSigmaOmLaPr, float tofNSigmaOmLaPi, float tofNSigmaOmKa, float nsigma) -> float { 
                             bool compatible = true;
-                            if(std::abs(tofNSigmaOmLaPr+1000000.0f)>1e-3 && std::abs(tofNSigmaOmLaPr)>nsigma){
+                            if(std::abs(tofNSigmaOmLaPr-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaOmLaPr)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
-                            if(std::abs(tofNSigmaOmLaPi+1000000.0f)>1e-3 && std::abs(tofNSigmaOmLaPi)>nsigma){
+                            if(std::abs(tofNSigmaOmLaPi-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaOmLaPi)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
-                            if(std::abs(tofNSigmaOmKa+1000000.0f)>1e-3 && std::abs(tofNSigmaOmKa)>nsigma){
+                            if(std::abs(tofNSigmaOmKa-kNoTOFValue)>kEpsilon && std::abs(tofNSigmaOmKa)>nsigma){
                               compatible = false; // reject only if info present and incompatible
                             }
                             return compatible;
