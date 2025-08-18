@@ -654,6 +654,9 @@ struct strangenesstofpid {
         nSigmaPositiveK0ShortPi, nSigmaNegativeK0ShortPi);
     }
 
+    float positiveP = std::hypot(v0.pxpos(), v0.pypos(), v0.pzpos());
+    float negativeP = std::hypot(v0.pxneg(), v0.pyneg(), v0.pzneg());
+
     if (doQA) {
       if (pTra.hasTOF()) {
         if (v0.v0cosPA() > v0Group.qaCosPA && v0.dcaV0daughters() < v0Group.qaDCADau) {
@@ -661,8 +664,7 @@ struct strangenesstofpid {
             histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.p(), v0.eta(), deltaTimePositiveLambdaPr);
             histos.fill(HIST("h2dProtonMeasuredVsExpected"),
                       (timeLambda + timePositivePr)/(pTra.tofSignal() - pTra.tofEvTime()),
-                      v0.p());
-
+                      positiveP);
             if (doQANSigma)
               histos.fill(HIST("h2dNSigmaPositiveLambdaPr"), v0.p(), nSigmaPositiveLambdaPr);
           }
@@ -685,7 +687,7 @@ struct strangenesstofpid {
             histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.p(), v0.eta(), deltaTimeNegativeLambdaPi);
             histos.fill(HIST("h2dPionMeasuredVsExpected"),
                     (timeLambda + timeNegativePi)/(nTra.tofSignal() - nTra.tofEvTime()),
-                    v0.p());
+                    negativeP);
             if (doQANSigma)
               histos.fill(HIST("h2dNSigmaNegativeLambdaPi"), v0.p(), nSigmaNegativeLambdaPi);
           }
