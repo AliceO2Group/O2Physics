@@ -26,9 +26,9 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 
 #include <random>
 #include <vector>

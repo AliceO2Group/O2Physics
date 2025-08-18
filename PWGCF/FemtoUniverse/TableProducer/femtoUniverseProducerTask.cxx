@@ -328,10 +328,7 @@ struct FemtoUniverseProducerTask {
 
   // D0/D0bar mesons
   struct : o2::framework::ConfigurableGroup {
-    Configurable<float> confD0D0barCandMaxY{"confD0D0barCandMaxY", -1., "max. cand. rapidity"};
     Configurable<float> confD0D0barCandEtaCut{"confD0D0barCandEtaCut", 0.8, "max. cand. pseudorapidity"};
-    Configurable<float> yD0D0barCandRecoMax{"yD0D0barCandRecoMax", 0.8, "MC Reco, max. rapidity of D0/D0bar cand."};
-    Configurable<float> yD0D0barCandGenMax{"yD0D0barCandGenMax", -1., "MC Truth, max. rapidity of D0/D0bar cand."};
     Configurable<float> trackD0pTGenMin{"trackD0pTGenMin", 0.0, "MC Truth, min. pT for tracks and D0/D0bar cand."};
     Configurable<float> trackD0pTGenMax{"trackD0pTGenMax", 24.0, "MC Truth, max. pT for tracks and D0/D0bar cand."};
     Configurable<bool> storeD0D0barDoubleMassHypo{"storeD0D0barDoubleMassHypo", false, "Store D0/D0bar cand. which pass selection criteria for both, D0 and D0bar"};

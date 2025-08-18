@@ -1280,7 +1280,7 @@ struct FemtoUniversePairTaskTrackD0 {
           mcTruthRegistry.fill(HIST("hMcGenD0bar"), part.pt(), part.eta());
           if (part.mAntiLambda() == 1) {
             mcTruthRegistry.fill(HIST("hMcGenD0barPrompt"), part.pt(), part.eta());
-          } else if (part.mAntiLambda() == 2){
+          } else if (part.mAntiLambda() == 2) {
             mcTruthRegistry.fill(HIST("hMcGenD0barNonPrompt"), part.pt(), part.eta());
           }
         }
