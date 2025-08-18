@@ -15,28 +15,30 @@
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 
-#include <cstdint>
-#include <vector>
-#include <bitset>
-#include <string>
-#include "TRandom3.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/Configurable.h"
-#include "Framework/Expressions.h"
-
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamContainer.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamDetaDphiStar.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/Configurable.h"
+#include "Framework/Expressions.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TRandom3.h"
+
+#include <bitset>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2::aod;
 using namespace o2::soa;
@@ -93,97 +95,96 @@ struct femtoDreamPairTaskV0V0 {
 
   femtodreamcollision::BitMaskType BitMask = 0;
 
-    /// Particle 1 (V0)
-    struct : ConfigurableGroup {
-      std::string prefix = std::string("V01");
-      Configurable<int> PDGCode{"PDGCode", 3122, "PDG code of particle 1 (V0)"};
-      Configurable<femtodreamparticle::cutContainerType> CutBit{"CutBit", 7518, "Selection bit for particle 1 (V0)"};
-      Configurable<femtodreamparticle::cutContainerType> ChildPos_CutBit{"ChildPos_CutBit", 210, "Selection bit for positive child of V0"};
-      Configurable<femtodreamparticle::cutContainerType> ChildPos_TPCBit{"ChildPos_TPCBit", 64, "PID TPC bit for positive child of V0"};
-      Configurable<femtodreamparticle::cutContainerType> ChildNeg_CutBit{"ChildNeg_CutBit", 209, "Selection bit for negative child of V0"};
-      Configurable<femtodreamparticle::cutContainerType> ChildNeg_TPCBit{"ChildNeg_TPCBit", 256, "PID TPC bit for negative child of V0"};
+  /// Particle 1 (V0)
+  struct : ConfigurableGroup {
+    std::string prefix = std::string("V01");
+    Configurable<int> PDGCode{"PDGCode", 3122, "PDG code of particle 1 (V0)"};
+    Configurable<femtodreamparticle::cutContainerType> CutBit{"CutBit", 7518, "Selection bit for particle 1 (V0)"};
+    Configurable<femtodreamparticle::cutContainerType> ChildPos_CutBit{"ChildPos_CutBit", 210, "Selection bit for positive child of V0"};
+    Configurable<femtodreamparticle::cutContainerType> ChildPos_TPCBit{"ChildPos_TPCBit", 64, "PID TPC bit for positive child of V0"};
+    Configurable<femtodreamparticle::cutContainerType> ChildNeg_CutBit{"ChildNeg_CutBit", 209, "Selection bit for negative child of V0"};
+    Configurable<femtodreamparticle::cutContainerType> ChildNeg_TPCBit{"ChildNeg_TPCBit", 256, "PID TPC bit for negative child of V0"};
 
-      Configurable<float> InvMassMin{"InvMassMin", 1.08, "Minimum invariant mass of Partricle 1 (particle) (V0)"};
-      Configurable<float> InvMassMax{"InvMassMax", 1.15, "Maximum invariant mass of Partricle 1 (particle) (V0)"};
-      Configurable<float> InvMassAntiMin{"InvMassAntiMin", 0., "Minimum invariant mass of Partricle 1 (antiparticle) (V0)"};
-      Configurable<float> InvMassAntiMax{"InvMassAntiMax", 999., "Maximum invariant mass of Partricle 1 (antiparticle) (V0)"};
+    Configurable<float> InvMassMin{"InvMassMin", 1.08, "Minimum invariant mass of Partricle 1 (particle) (V0)"};
+    Configurable<float> InvMassMax{"InvMassMax", 1.15, "Maximum invariant mass of Partricle 1 (particle) (V0)"};
+    Configurable<float> InvMassAntiMin{"InvMassAntiMin", 0., "Minimum invariant mass of Partricle 1 (antiparticle) (V0)"};
+    Configurable<float> InvMassAntiMax{"InvMassAntiMax", 999., "Maximum invariant mass of Partricle 1 (antiparticle) (V0)"};
 
-      Configurable<float> PtMin{"PtMin", 0., "Minimum pT of Partricle 1 (V0)"};
-      Configurable<float> PtMax{"PtMax", 999., "Maximum pT of Partricle 1 (V0)"};
-      Configurable<float> EtaMin{"EtaMin", -10., "Minimum eta of Partricle 1 (V0)"};
-      Configurable<float> EtaMax{"EtaMax", 10., "Maximum eta of Partricle 1 (V0)"};
-    } V01;
+    Configurable<float> PtMin{"PtMin", 0., "Minimum pT of Partricle 1 (V0)"};
+    Configurable<float> PtMax{"PtMax", 999., "Maximum pT of Partricle 1 (V0)"};
+    Configurable<float> EtaMin{"EtaMin", -10., "Minimum eta of Partricle 1 (V0)"};
+    Configurable<float> EtaMax{"EtaMax", 10., "Maximum eta of Partricle 1 (V0)"};
+  } V01;
 
-    /// Partition for particle 1
-    Partition<FDParticles> PartitionV01 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
-                                          ((aod::femtodreamparticle::cut & V01.CutBit) == V01.CutBit) &&
-                                          (aod::femtodreamparticle::pt > V01.PtMin) &&
-                                          (aod::femtodreamparticle::pt < V01.PtMax) &&
-                                          (aod::femtodreamparticle::eta > V01.EtaMin) &&
-                                          (aod::femtodreamparticle::eta < V01.EtaMax) &&
-                                          (aod::femtodreamparticle::mLambda > V01.InvMassMin) &&
-                                          (aod::femtodreamparticle::mLambda < V01.InvMassMax) &&
-                                          (aod::femtodreamparticle::mAntiLambda > V01.InvMassAntiMin) &&
-                                          (aod::femtodreamparticle::mAntiLambda < V01.InvMassAntiMax);
+  /// Partition for particle 1
+  Partition<FDParticles> PartitionV01 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+                                        ((aod::femtodreamparticle::cut & V01.CutBit) == V01.CutBit) &&
+                                        (aod::femtodreamparticle::pt > V01.PtMin) &&
+                                        (aod::femtodreamparticle::pt < V01.PtMax) &&
+                                        (aod::femtodreamparticle::eta > V01.EtaMin) &&
+                                        (aod::femtodreamparticle::eta < V01.EtaMax) &&
+                                        (aod::femtodreamparticle::mLambda > V01.InvMassMin) &&
+                                        (aod::femtodreamparticle::mLambda < V01.InvMassMax) &&
+                                        (aod::femtodreamparticle::mAntiLambda > V01.InvMassAntiMin) &&
+                                        (aod::femtodreamparticle::mAntiLambda < V01.InvMassAntiMax);
 
-    /// Histogramming for particle 1
-    FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0, 1> trackHistoPartOne;
-    FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 3> posChildHistos;
-    FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 4> negChildHistos;
+  /// Histogramming for particle 1
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0, 1> trackHistoPartOne;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 3> posChildHistos;
+  FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0Child, 4> negChildHistos;
 
+  /// Particle 2 (V0)
+  struct : ConfigurableGroup {
+    std::string prefix = std::string("V02");
+    Configurable<int> PDGCode{"PDGCode", 3122, "PDG code of particle 2 (V0)"};
+    Configurable<femtodreamparticle::cutContainerType> CutBit{"CutBit", 7518, "Selection bit for particle 2 (V0)"};
+    Configurable<femtodreamparticle::cutContainerType> ChildPos_CutBit{"ChildPos_CutBit", 210, "Selection bit for positive child of V0"};
+    Configurable<femtodreamparticle::cutContainerType> ChildPos_TPCBit{"ChildPos_TPCBit", 64, "PID TPC bit for positive child of V0"};
+    Configurable<femtodreamparticle::cutContainerType> ChildNeg_CutBit{"ChildNeg_CutBit", 209, "Selection bit for negative child of V0"};
+    Configurable<femtodreamparticle::cutContainerType> ChildNeg_TPCBit{"ChildNeg_TPCBit", 256, "PID TPC bit for negative child of V0"};
 
-    /// Particle 2 (V0)
-    struct : ConfigurableGroup {
-      std::string prefix = std::string("V02");
-      Configurable<int> PDGCode{"PDGCode", 3122, "PDG code of particle 2 (V0)"};
-      Configurable<femtodreamparticle::cutContainerType> CutBit{"CutBit", 7518, "Selection bit for particle 2 (V0)"};
-      Configurable<femtodreamparticle::cutContainerType> ChildPos_CutBit{"ChildPos_CutBit", 210, "Selection bit for positive child of V0"};
-      Configurable<femtodreamparticle::cutContainerType> ChildPos_TPCBit{"ChildPos_TPCBit", 64, "PID TPC bit for positive child of V0"};
-      Configurable<femtodreamparticle::cutContainerType> ChildNeg_CutBit{"ChildNeg_CutBit", 209, "Selection bit for negative child of V0"};
-      Configurable<femtodreamparticle::cutContainerType> ChildNeg_TPCBit{"ChildNeg_TPCBit", 256, "PID TPC bit for negative child of V0"};
+    Configurable<float> InvMassMin{"InvMassMin", 1.08, "Minimum invariant mass of Partricle 2 (particle) (V0)"};
+    Configurable<float> InvMassMax{"InvMassMax", 1.15, "Maximum invariant mass of Partricle 2 (particle) (V0)"};
+    Configurable<float> InvMassAntiMin{"InvMassAntiMin", 0., "Minimum invariant mass of Partricle 2 (antiparticle) (V0)"};
+    Configurable<float> InvMassAntiMax{"InvMassAntiMax", 999., "Maximum invariant mass of Partricle 2 (antiparticle) (V0)"};
 
-      Configurable<float> InvMassMin{"InvMassMin", 1.08, "Minimum invariant mass of Partricle 2 (particle) (V0)"};
-      Configurable<float> InvMassMax{"InvMassMax", 1.15, "Maximum invariant mass of Partricle 2 (particle) (V0)"};
-      Configurable<float> InvMassAntiMin{"InvMassAntiMin", 0., "Minimum invariant mass of Partricle 2 (antiparticle) (V0)"};
-      Configurable<float> InvMassAntiMax{"InvMassAntiMax", 999., "Maximum invariant mass of Partricle 2 (antiparticle) (V0)"};
+    Configurable<float> PtMin{"PtMin", 0., "Minimum pT of Partricle 2 (V0)"};
+    Configurable<float> PtMax{"PtMax", 999., "Maximum pT of Partricle 2 (V0)"};
+    Configurable<float> EtaMin{"EtaMin", -10., "Minimum eta of Partricle 2 (V0)"};
+    Configurable<float> EtaMax{"EtaMax", 10., "Maximum eta of Partricle 2 (V0)"};
+  } V02;
 
-      Configurable<float> PtMin{"PtMin", 0., "Minimum pT of Partricle 2 (V0)"};
-      Configurable<float> PtMax{"PtMax", 999., "Maximum pT of Partricle 2 (V0)"};
-      Configurable<float> EtaMin{"EtaMin", -10., "Minimum eta of Partricle 2 (V0)"};
-      Configurable<float> EtaMax{"EtaMax", 10., "Maximum eta of Partricle 2 (V0)"};
-    } V02;
-
-    /// Partition for particle 2
-    Partition<FDParticles> PartitionV02 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
-                                          ((aod::femtodreamparticle::cut & V02.CutBit) == V02.CutBit) &&
-                                          (aod::femtodreamparticle::pt > V02.PtMin) &&
-                                          (aod::femtodreamparticle::pt < V02.PtMax) &&
-                                          (aod::femtodreamparticle::eta > V02.EtaMin) &&
-                                          (aod::femtodreamparticle::eta < V02.EtaMax) &&
-                                          (aod::femtodreamparticle::mLambda > V02.InvMassMin) &&
-                                          (aod::femtodreamparticle::mLambda < V02.InvMassMax) &&
-                                          (aod::femtodreamparticle::mAntiLambda > V02.InvMassAntiMin) &&
-                                          (aod::femtodreamparticle::mAntiLambda < V02.InvMassAntiMax);
+  /// Partition for particle 2
+  Partition<FDParticles> PartitionV02 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kV0)) &&
+                                        ((aod::femtodreamparticle::cut & V02.CutBit) == V02.CutBit) &&
+                                        (aod::femtodreamparticle::pt > V02.PtMin) &&
+                                        (aod::femtodreamparticle::pt < V02.PtMax) &&
+                                        (aod::femtodreamparticle::eta > V02.EtaMin) &&
+                                        (aod::femtodreamparticle::eta < V02.EtaMax) &&
+                                        (aod::femtodreamparticle::mLambda > V02.InvMassMin) &&
+                                        (aod::femtodreamparticle::mLambda < V02.InvMassMax) &&
+                                        (aod::femtodreamparticle::mAntiLambda > V02.InvMassAntiMin) &&
+                                        (aod::femtodreamparticle::mAntiLambda < V02.InvMassAntiMax);
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
 
-    /// Binning configurables
-    struct : ConfigurableGroup {
-      std::string prefix = std::string("Binning");
-      ConfigurableAxis TempFitVarTrack{"TempFitVarTrack", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (Track)"};
-      ConfigurableAxis TempFitVarV0{"TempFitVarV0", {300, 0.9, 1}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0)"};
-      ConfigurableAxis TempFitVarV0Child{"TempFitVarV0Child", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0 child)"};
-      ConfigurableAxis InvMass{"InvMass", {200, 1, 1.2}, "InvMass binning"};
-      ConfigurableAxis pTTrack{"pTTrack", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (Track)"};
-      ConfigurableAxis pTV0{"pTV0", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
-      ConfigurableAxis pTV0Child{"pTV0Child", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
-      ConfigurableAxis pT{"pT", {20, 0.5, 4.05}, "pT binning"};
-      ConfigurableAxis kstar{"kstar", {1500, 0., 6.}, "binning kstar"};
-      ConfigurableAxis kT{"kT", {150, 0., 9.}, "binning kT"};
-      ConfigurableAxis mT{"mT", {225, 0., 7.5}, "binning mT"};
-      ConfigurableAxis multTempFit{"multTempFit", {1, 0, 1}, "multiplicity for the TempFitVar plot"};
-    } Binning;
+  /// Binning configurables
+  struct : ConfigurableGroup {
+    std::string prefix = std::string("Binning");
+    ConfigurableAxis TempFitVarTrack{"TempFitVarTrack", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (Track)"};
+    ConfigurableAxis TempFitVarV0{"TempFitVarV0", {300, 0.9, 1}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0)"};
+    ConfigurableAxis TempFitVarV0Child{"TempFitVarV0Child", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0 child)"};
+    ConfigurableAxis InvMass{"InvMass", {200, 1, 1.2}, "InvMass binning"};
+    ConfigurableAxis pTTrack{"pTTrack", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (Track)"};
+    ConfigurableAxis pTV0{"pTV0", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
+    ConfigurableAxis pTV0Child{"pTV0Child", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
+    ConfigurableAxis pT{"pT", {20, 0.5, 4.05}, "pT binning"};
+    ConfigurableAxis kstar{"kstar", {1500, 0., 6.}, "binning kstar"};
+    ConfigurableAxis kT{"kT", {150, 0., 9.}, "binning kT"};
+    ConfigurableAxis mT{"mT", {225, 0., 7.5}, "binning mT"};
+    ConfigurableAxis multTempFit{"multTempFit", {1, 0, 1}, "multiplicity for the TempFitVar plot"};
+  } Binning;
 
   struct : ConfigurableGroup {
     std::string prefix = "Binning4D";
@@ -209,7 +210,7 @@ struct femtoDreamPairTaskV0V0 {
 
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
-  //FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0> pairCleaner;
+  // FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0> pairCleaner;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0> pairCloseRejectionSE;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0> pairCloseRejectionME;
   /// Histogram output
@@ -238,7 +239,7 @@ struct femtoDreamPairTaskV0V0 {
                        Option.IsMC, Option.Use4D, Option.ExtendedPlots,
                        Option.HighkstarCut,
                        Option.SmearingByOrigin);
-    
+
     mixedEventCont.init(&Registry,
                         Binning.kstar, Binning.pT, Binning.kT, Binning.mT, Mixing.MultMixBins, Mixing.MultPercentileMixBins,
                         Binning4D.kstar, Binning4D.mT, Binning4D.mult, Binning4D.multPercentile,
@@ -247,9 +248,9 @@ struct femtoDreamPairTaskV0V0 {
                         Option.SmearingByOrigin);
     sameEventCont.setPDGCodes(V01.PDGCode, V02.PDGCode);
     mixedEventCont.setPDGCodes(V01.PDGCode, V02.PDGCode);
-    //pairCleaner.init(&Registry);
-    
-     if (Option.CPROn.value) {
+    // pairCleaner.init(&Registry);
+
+    if (Option.CPROn.value) {
       pairCloseRejectionSE.init(&Registry, &Registry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 1, Option.CPROld.value);
       pairCloseRejectionME.init(&Registry, &Registry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 2, Option.CPROld.value);
     }
@@ -274,18 +275,18 @@ struct femtoDreamPairTaskV0V0 {
   template <bool isMC, typename PartitionType, typename PartType, typename Collision>
   void doSameEvent(PartitionType SliceV01, PartitionType SliceV02, PartType parts, Collision col)
   {
-      for (auto& v0 : SliceV01) {
-        const auto& posChild = parts.iteratorAt(v0.index() - 2);
-        const auto& negChild = parts.iteratorAt(v0.index() - 1);
-        if (((posChild.cut() & V01.ChildPos_CutBit) == V01.ChildPos_CutBit) &&
-            ((posChild.pidcut() & V01.ChildPos_TPCBit) == V01.ChildPos_TPCBit) &&
-            ((negChild.cut() & V01.ChildNeg_CutBit) == V01.ChildNeg_CutBit) &&
-            ((negChild.pidcut() & V01.ChildNeg_TPCBit) == V01.ChildNeg_TPCBit)) {
-          trackHistoPartOne.fillQA<isMC, false>(v0, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
-          posChildHistos.fillQA<false, false>(posChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
-          negChildHistos.fillQA<false, false>(negChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
-        }
+    for (auto& v0 : SliceV01) {
+      const auto& posChild = parts.iteratorAt(v0.index() - 2);
+      const auto& negChild = parts.iteratorAt(v0.index() - 1);
+      if (((posChild.cut() & V01.ChildPos_CutBit) == V01.ChildPos_CutBit) &&
+          ((posChild.pidcut() & V01.ChildPos_TPCBit) == V01.ChildPos_TPCBit) &&
+          ((negChild.cut() & V01.ChildNeg_CutBit) == V01.ChildNeg_CutBit) &&
+          ((negChild.pidcut() & V01.ChildNeg_TPCBit) == V01.ChildNeg_TPCBit)) {
+        trackHistoPartOne.fillQA<isMC, false>(v0, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        posChildHistos.fillQA<false, false>(posChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        negChildHistos.fillQA<false, false>(negChild, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
       }
+    }
 
     /// Now build the combinations
     float rand = 0.;
@@ -303,45 +304,45 @@ struct femtoDreamPairTaskV0V0 {
             ((posChild_2.pidcut() & V02.ChildPos_TPCBit) == V02.ChildPos_TPCBit) &&
             ((negChild_2.cut() & V02.ChildNeg_CutBit) == V02.ChildNeg_CutBit) &&
             ((negChild_2.pidcut() & V02.ChildNeg_TPCBit) == V02.ChildNeg_TPCBit)) {
-            
-              if (Option.CPROn.value) {
-              if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
-                continue;
-              }
-            }
-              /*
-            // track cleaning
-            if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+
+          if (Option.CPROn.value) {
+            if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
               continue;
             }
-            */
-
-            if (Option.RandomizePair.value) {
-              rand = random->Rndm();
-            }
-            if (rand <= 0.5) {
-              sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
-            } else {
-              sameEventCont.setPair<isMC>(p2, p1, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
-            }
           }
-      }
-    }
-    
-     else {
-      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceV01, SliceV02))) {
-        if (Option.CPROn.value) {
-          if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
-            continue;
-          }
-        }
           /*
         // track cleaning
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
         */
-          
+
+          if (Option.RandomizePair.value) {
+            rand = random->Rndm();
+          }
+          if (rand <= 0.5) {
+            sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
+          } else {
+            sameEventCont.setPair<isMC>(p2, p1, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
+          }
+        }
+      }
+    }
+
+    else {
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceV01, SliceV02))) {
+        if (Option.CPROn.value) {
+          if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
+            continue;
+          }
+        }
+        /*
+      // track cleaning
+      if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+        continue;
+      }
+      */
+
         sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
       }
     }
@@ -385,16 +386,16 @@ struct femtoDreamPairTaskV0V0 {
             ((negChild_2.cut() & V02.ChildNeg_CutBit) == V02.ChildNeg_CutBit) &&
             ((negChild_2.pidcut() & V02.ChildNeg_TPCBit) == V02.ChildNeg_TPCBit)) {
 
-        if (Option.CPROn.value) {
-          if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
-            continue;
+          if (Option.CPROn.value) {
+            if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
+              continue;
+            }
           }
+          mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
         }
-        mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.SmearingByOrigin);
       }
     }
   }
-}
 
   /// process function for to call doMixedEvent with Data
   /// @param cols subscribe to the collisions table (Data)
@@ -416,9 +417,7 @@ struct femtoDreamPairTaskV0V0 {
     }
   }
   PROCESS_SWITCH(femtoDreamPairTaskV0V0, processMixedEvent, "Enable processing mixed events", true);
-
 };
-   
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

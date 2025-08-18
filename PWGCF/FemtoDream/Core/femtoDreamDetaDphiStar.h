@@ -16,11 +16,13 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMDETADPHISTAR_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMDETADPHISTAR_H_
 
+#include "PWGCF/DataModel/FemtoDerived.h"
+
+#include "Framework/HistogramRegistry.h"
+
 #include <memory>
 #include <string>
 #include <vector>
-#include "PWGCF/DataModel/FemtoDerived.h"
-#include "Framework/HistogramRegistry.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -332,74 +334,72 @@ class FemtoDreamDetaDphiStar
             indexOfDaughterPart1 = part1.index() - 2 + i;
             indexOfDaughterPart2 = part2.index() - 2 + j;
           }
-      
-        
-        auto daughterPart1 = particles.begin() + indexOfDaughterPart1;
-        auto daughterPart2 = particles.begin() + indexOfDaughterPart2;
-        auto deta = daughterPart1.eta() - daughterPart2.eta();
-        auto dphi_AT_PV = daughterPart1.phi() - daughterPart2.phi();
-        auto dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(daughterPart1, radiiTPC) - PhiAtSpecificRadiiTPC(daughterPart2, radiiTPC);
-        bool sameCharge = false;
-        auto dphiAvg = AveragePhiStar(*daughterPart1, *daughterPart2, nhist, &sameCharge);
-        if (Q3 == 999) {
-          histdetadpi[nhist][0]->Fill(deta, dphiAvg); 
-          histdetadpi[nhist][2]->Fill(deta, dphi_AT_PV); 
-          if (fillQA) {
-            histdetadpi_eta[nhist]->Fill(deta, dphiAvg, daughterPart1.eta(), daughterPart2.eta());
-            histdetadpi_phi[nhist]->Fill(deta, dphiAvg, daughterPart1.phi(), daughterPart2.phi());
-          }
-        } /* else if (Q3 < upperQ3LimitForPlotting) {
-          histdetadpi[i][0]->Fill(deta, dphiAvg);
-          histdetadpi[i][2]->Fill(deta, dphi_AT_PV);
-          if (fillQA) {
-            histdetadpi_eta[i]->Fill(deta, dphiAvg, part1.eta(), daughter.eta());
-            histdetadpi_phi[i]->Fill(deta, dphiAvg, part1.phi(), daughter.phi());
-          }
-        } */
-        if (sameCharge) {
-          if (atWhichRadiiToSelect == 1) {
-            if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-              pass = true;
-            } else {
-              if (Q3 == 999) {
-                histdetadpi[nhist][1]->Fill(deta, dphiAvg);
-                histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
-              } else if (Q3 < upperQ3LimitForPlotting) {
-                histdetadpi[nhist][1]->Fill(deta, dphiAvg);
-                histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+
+          auto daughterPart1 = particles.begin() + indexOfDaughterPart1;
+          auto daughterPart2 = particles.begin() + indexOfDaughterPart2;
+          auto deta = daughterPart1.eta() - daughterPart2.eta();
+          auto dphi_AT_PV = daughterPart1.phi() - daughterPart2.phi();
+          auto dphi_AT_SpecificRadii = PhiAtSpecificRadiiTPC(daughterPart1, radiiTPC) - PhiAtSpecificRadiiTPC(daughterPart2, radiiTPC);
+          bool sameCharge = false;
+          auto dphiAvg = AveragePhiStar(*daughterPart1, *daughterPart2, nhist, &sameCharge);
+          if (Q3 == 999) {
+            histdetadpi[nhist][0]->Fill(deta, dphiAvg);
+            histdetadpi[nhist][2]->Fill(deta, dphi_AT_PV);
+            if (fillQA) {
+              histdetadpi_eta[nhist]->Fill(deta, dphiAvg, daughterPart1.eta(), daughterPart2.eta());
+              histdetadpi_phi[nhist]->Fill(deta, dphiAvg, daughterPart1.phi(), daughterPart2.phi());
+            }
+          } /* else if (Q3 < upperQ3LimitForPlotting) {
+            histdetadpi[i][0]->Fill(deta, dphiAvg);
+            histdetadpi[i][2]->Fill(deta, dphi_AT_PV);
+            if (fillQA) {
+              histdetadpi_eta[i]->Fill(deta, dphiAvg, part1.eta(), daughter.eta());
+              histdetadpi_phi[i]->Fill(deta, dphiAvg, part1.phi(), daughter.phi());
+            }
+          } */
+          if (sameCharge) {
+            if (atWhichRadiiToSelect == 1) {
+              if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+                pass = true;
+              } else {
+                if (Q3 == 999) {
+                  histdetadpi[nhist][1]->Fill(deta, dphiAvg);
+                  histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+                } else if (Q3 < upperQ3LimitForPlotting) {
+                  histdetadpi[nhist][1]->Fill(deta, dphiAvg);
+                  histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+                }
               }
-        }
-          } else if (atWhichRadiiToSelect == 0) {
-            if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-              pass = true;
-            } else {
-              if (Q3 == 999) {
-                histdetadpi[nhist][1]->Fill(deta, dphiAvg);
-                histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
-              } else if (Q3 < upperQ3LimitForPlotting) {
-                histdetadpi[nhist][1]->Fill(deta, dphiAvg);
-                histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+            } else if (atWhichRadiiToSelect == 0) {
+              if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+                pass = true;
+              } else {
+                if (Q3 == 999) {
+                  histdetadpi[nhist][1]->Fill(deta, dphiAvg);
+                  histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+                } else if (Q3 < upperQ3LimitForPlotting) {
+                  histdetadpi[nhist][1]->Fill(deta, dphiAvg);
+                  histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+                }
+              }
+            } else if (atWhichRadiiToSelect == 2) {
+              if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+                pass = true;
+              } else {
+                if (Q3 == 999) {
+                  histdetadpi[nhist][1]->Fill(deta, dphiAvg);
+                  histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+                } else if (Q3 < upperQ3LimitForPlotting) {
+                  histdetadpi[nhist][1]->Fill(deta, dphiAvg);
+                  histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
+                }
               }
             }
-          } else if (atWhichRadiiToSelect == 2) {
-            if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
-              pass = true;
-            } else {
-              if (Q3 == 999) {
-                histdetadpi[nhist][1]->Fill(deta, dphiAvg);
-                histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
-              } else if (Q3 < upperQ3LimitForPlotting) {
-                histdetadpi[nhist][1]->Fill(deta, dphiAvg);
-                histdetadpi[nhist][3]->Fill(deta, dphi_AT_PV);
-              }
-            }
           }
+          nhist += 1;
         }
-      nhist += 1;
       }
-    }
-    
-    
+
       return pass;
     } else if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kTrack && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kCharmHadron) {
       // check if provided particles are in agreement with the class instantiation
@@ -485,8 +485,7 @@ class FemtoDreamDetaDphiStar
               histdetadpi[i][3]->Fill(deta, dphi_AT_PV);
             }
           }
-        }
-          else if (atWhichRadiiToSelect == 2) {
+        } else if (atWhichRadiiToSelect == 2) {
           if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
             pass = true;
           } else {
