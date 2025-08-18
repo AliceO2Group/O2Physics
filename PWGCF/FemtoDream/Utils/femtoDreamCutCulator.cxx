@@ -35,8 +35,7 @@ int main(int /*argc*/, char* argv[])
     FemtoDreamCutculator cut;
     cut.init(argv[1]);
 
-    std::cout
-      << "Do you want to work with tracks or V0s or Cascades (T/V/C)? >";
+    std::cout << "Do you want to work with tracks or V0s or Cascades or Resonances (T/V/C/R)? >";
     std::string choice;
     std::cin >> choice;
 
@@ -49,6 +48,12 @@ int main(int /*argc*/, char* argv[])
       cut.setV0SelectionFromFile("ConfV0");
       cut.setTrackSelectionFromFile("ConfChild");
       cut.setPIDSelectionFromFile("ConfChild");
+    } else if (choice == std::string("R")) {
+      std::cout << "Do you want to select Resos or one of its daughters (R/T)? >";
+      std::cin >> choice;
+      cut.setResoSelectionFromFile("ConfReso");
+      cut.setTrackSelectionFromFile("ConfDaughter");
+      cut.setPIDSelectionFromFile("ConfDaughter");
     } else if (choice == std::string("C")) {
       std::cout << "Do you want to select cascades, V0-Daughter tracks of the cascades or the Bachelor track (C/V/B)? >";
       std::cin >> choice;
