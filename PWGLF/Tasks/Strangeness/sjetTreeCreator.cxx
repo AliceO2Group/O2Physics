@@ -309,10 +309,7 @@ struct SjetTreeCreator {
                            int jetFlavor = 0,
                            double eventweight = 1.0)
   {
-    int trkIdx = -1;
     for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
-
-      trkIdx++;
 
       if (constituent.pt() < trackPtMin) {
         continue;
