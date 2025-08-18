@@ -219,7 +219,7 @@ struct femtoDreamPairTaskV0V0 {
 
   TRandom3* random;
 
-  void init(InitContext& context)
+  void init(InitContext&)
   {
     // setup columnpolicy for binning
     colBinningMult = {{Mixing.VztxMixBins, Mixing.MultMixBins}, true};
