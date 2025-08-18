@@ -328,7 +328,7 @@ struct femtoDreamPairTaskV0V0 {
           }
         }
       }
-    }else {
+    } else {
       for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceV01, SliceV02))) {
         if (Option.CPROn.value) {
           if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
