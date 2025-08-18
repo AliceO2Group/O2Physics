@@ -519,8 +519,10 @@ struct upcPhotonuclearAnalysisJMG {
     int sgSide = reconstructedCollision.gapSide();
     int nTracksCharged = 0;
     float sumPt = 0;
-    int nchPVGapSideA, nchPVGapSideC = 0;
-    int nchGapSideA, nchGapSideC = 0;
+    int nchPVGapSideA = 0;
+    int nchPVGapSideC = 0;
+    int nchGapSideA = 0;
+    int nchGapSideC = 0;
     std::vector<float> vTrackPtSideA, vTrackEtaSideA, vTrackPhiSideA, vTrackTPCSignalSideA, vTrackTOFSignalSideA, vTrackTPCNSigmaPiSideA, vTrackTOFNSigmaPiSideA, vTrackTPCNSigmaKaSideA, vTrackTOFNSigmaKaSideA;
     std::vector<float> vTrackPtSideC, vTrackEtaSideC, vTrackPhiSideC, vTrackTPCSignalSideC, vTrackTOFSignalSideC, vTrackTPCNSigmaPiSideC, vTrackTOFNSigmaPiSideC, vTrackTPCNSigmaKaSideC, vTrackTOFNSigmaKaSideC;
 
