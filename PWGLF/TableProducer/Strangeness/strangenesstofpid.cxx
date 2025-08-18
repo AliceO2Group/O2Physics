@@ -132,9 +132,15 @@ struct strangenesstofpid {
 
   ConfigurableAxis axisEta{"axisEta", {20, -1.0f, +1.0f}, "#eta"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {2000, -1000.0f, +1000.0f}, "delta-time (ps)"};
-  ConfigurableAxis axisTime{"axisTime", {200, 0.0f, +20000.0f}, "T (ps)"};
+  ConfigurableAxis axisTime{"axisTime", {200, 10000.0f, +20000.0f}, "T (ps)"};
   ConfigurableAxis axisNSigma{"axisNSigma", {200, -10.0f, +10.0f}, "N(#sigma)"};
-  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
+  ConfigurableAxis axisExpectedOverMeasured{"axisExpectedOverMeasured", {200, 0.9f, 2.9f}, "T_{exp}/T_{meas}"};
+
+  // master p axis
+  ConfigurableAxis axisP{"axisP", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
+
+  // for zooming in at low values only (e-loss studies and effective correction)
+  ConfigurableAxis axisSmallP{"axisSmallP", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f}, "p_{T} (GeV/c)"};
 
   // for n-sigma calibration
   bool nSigmaCalibLoaded;
@@ -343,60 +349,61 @@ struct strangenesstofpid {
 
     // measured vs expected total time QA
     if (doQA) {
-      histos.add("h2dProtonMeasuredVsExpected", "h2dProtonMeasuredVsExpected", {HistType::kTH2F, {axisTime, axisTime}});
-      histos.add("h2dPionMeasuredVsExpected", "h2dPionMeasuredVsExpected", {HistType::kTH2F, {axisTime, axisTime}});
+      // plots for effective eloss corrections - Lambda case
+      histos.add("h2dProtonMeasuredVsExpected", "h2dProtonMeasuredVsExpected", {HistType::kTH2F, {axisExpectedOverMeasured, axisSmallP}});
+      histos.add("h2dPionMeasuredVsExpected", "h2dPionMeasuredVsExpected", {HistType::kTH2F, {axisExpectedOverMeasured, axisSmallP}});
 
-      histos.add("hArcDebug", "hArcDebug", kTH2F, {axisPt, {500, -5.0f, 10.0f}});
+      histos.add("hArcDebug", "hArcDebug", kTH2F, {axisP, {50, -5.0f, 10.0f}});
 
       // standard deltaTime values
       if(calculateV0s.value>0){
-        histos.add("h2dDeltaTimePositiveLambdaPi", "h2dDeltaTimePositiveLambdaPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dDeltaTimeNegativeLambdaPi", "h2dDeltaTimeNegativeLambdaPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dDeltaTimePositiveLambdaPr", "h2dDeltaTimePositiveLambdaPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dDeltaTimeNegativeLambdaPr", "h2dDeltaTimeNegativeLambdaPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dDeltaTimePositiveK0ShortPi", "h2dDeltaTimePositiveK0ShortPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dDeltaTimeNegativeK0ShortPi", "h2dDeltaTimeNegativeK0ShortPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dDeltaTimePositiveLambdaPi", "h2dDeltaTimePositiveLambdaPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dDeltaTimeNegativeLambdaPi", "h2dDeltaTimeNegativeLambdaPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dDeltaTimePositiveLambdaPr", "h2dDeltaTimePositiveLambdaPr", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dDeltaTimeNegativeLambdaPr", "h2dDeltaTimeNegativeLambdaPr", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dDeltaTimePositiveK0ShortPi", "h2dDeltaTimePositiveK0ShortPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dDeltaTimeNegativeK0ShortPi", "h2dDeltaTimeNegativeK0ShortPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
       }
 
       if(calculateCascades.value>0){
-        histos.add("h2dposDeltaTimeAsXiPi", "h2dposDeltaTimeAsXiPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dposDeltaTimeAsXiPr", "h2dposDeltaTimeAsXiPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dnegDeltaTimeAsXiPi", "h2dnegDeltaTimeAsXiPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dnegDeltaTimeAsXiPr", "h2dnegDeltaTimeAsXiPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dbachDeltaTimeAsXiPi", "h2dbachDeltaTimeAsXiPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dposDeltaTimeAsXiPi", "h2dposDeltaTimeAsXiPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dposDeltaTimeAsXiPr", "h2dposDeltaTimeAsXiPr", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dnegDeltaTimeAsXiPi", "h2dnegDeltaTimeAsXiPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dnegDeltaTimeAsXiPr", "h2dnegDeltaTimeAsXiPr", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dbachDeltaTimeAsXiPi", "h2dbachDeltaTimeAsXiPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
 
-        histos.add("h2dposDeltaTimeAsOmPi", "h2dposDeltaTimeAsOmPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dposDeltaTimeAsOmPr", "h2dposDeltaTimeAsOmPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dnegDeltaTimeAsOmPi", "h2dnegDeltaTimeAsOmPi", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dnegDeltaTimeAsOmPr", "h2dnegDeltaTimeAsOmPr", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
-        histos.add("h2dbachDeltaTimeAsOmKa", "h2dbachDeltaTimeAsOmKa", {HistType::kTH3F, {axisPt, axisEta, axisDeltaTime}});
+        histos.add("h2dposDeltaTimeAsOmPi", "h2dposDeltaTimeAsOmPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dposDeltaTimeAsOmPr", "h2dposDeltaTimeAsOmPr", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dnegDeltaTimeAsOmPi", "h2dnegDeltaTimeAsOmPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dnegDeltaTimeAsOmPr", "h2dnegDeltaTimeAsOmPr", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
+        histos.add("h2dbachDeltaTimeAsOmKa", "h2dbachDeltaTimeAsOmKa", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
       }
 
-      histos.add("h2dPositiveTOFProperties", "h2dPositiveTOFProperties", {HistType::kTH2F, {axisPt, {4, -0.5, 3.5f}}});
-      histos.add("h2dNegativeTOFProperties", "h2dNegativeTOFProperties", {HistType::kTH2F, {axisPt, {4, -0.5, 3.5f}}});
+      histos.add("h2dPositiveTOFProperties", "h2dPositiveTOFProperties", {HistType::kTH2F, {axisP, {4, -0.5, 3.5f}}});
+      histos.add("h2dNegativeTOFProperties", "h2dNegativeTOFProperties", {HistType::kTH2F, {axisP, {4, -0.5, 3.5f}}});
 
       if (doQANSigma) {
         if(calculateV0s.value>0){
-          histos.add("h2dNSigmaPositiveLambdaPi", "h2dNSigmaPositiveLambdaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
-          histos.add("h2dNSigmaNegativeLambdaPi", "h2dNSigmaNegativeLambdaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
-          histos.add("h2dNSigmaPositiveLambdaPr", "h2dNSigmaPositiveLambdaPr", {HistType::kTH2F, {axisPt, axisNSigma}});
-          histos.add("h2dNSigmaNegativeLambdaPr", "h2dNSigmaNegativeLambdaPr", {HistType::kTH2F, {axisPt, axisNSigma}});
-          histos.add("h2dNSigmaPositiveK0ShortPi", "h2dNSigmaPositiveK0ShortPi", {HistType::kTH2F, {axisPt, axisNSigma}});
-          histos.add("h2dNSigmaNegativeK0ShortPi", "h2dNSigmaNegativeK0ShortPi", {HistType::kTH2F, {axisPt, axisNSigma}});
+          histos.add("h2dNSigmaPositiveLambdaPi", "h2dNSigmaPositiveLambdaPi", {HistType::kTH2F, {axisP, axisNSigma}});
+          histos.add("h2dNSigmaNegativeLambdaPi", "h2dNSigmaNegativeLambdaPi", {HistType::kTH2F, {axisP, axisNSigma}});
+          histos.add("h2dNSigmaPositiveLambdaPr", "h2dNSigmaPositiveLambdaPr", {HistType::kTH2F, {axisP, axisNSigma}});
+          histos.add("h2dNSigmaNegativeLambdaPr", "h2dNSigmaNegativeLambdaPr", {HistType::kTH2F, {axisP, axisNSigma}});
+          histos.add("h2dNSigmaPositiveK0ShortPi", "h2dNSigmaPositiveK0ShortPi", {HistType::kTH2F, {axisP, axisNSigma}});
+          histos.add("h2dNSigmaNegativeK0ShortPi", "h2dNSigmaNegativeK0ShortPi", {HistType::kTH2F, {axisP, axisNSigma}});
         }
 
         if(calculateCascades.value>0){
-          histos.add("h2dNSigmaXiLaPi", "h2dNSigmaXiLaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
-          histos.add("h2dNSigmaXiLaPr", "h2dNSigmaXiLaPr", {HistType::kTH2F, {axisPt, axisNSigma}});
-          histos.add("h2dNSigmaXiPi", "h2dNSigmaXiPi", {HistType::kTH2F, {axisPt, axisNSigma}});
-          histos.add("h2dNSigmaOmLaPi", "h2dNSigmaOmLaPi", {HistType::kTH2F, {axisPt, axisNSigma}});
-          histos.add("h2dNSigmaOmLaPr", "h2dNSigmaOmLaPr", {HistType::kTH2F, {axisPt, axisNSigma}});
-          histos.add("h2dNSigmaOmKa", "h2dNSigmaOmKa", {HistType::kTH2F, {axisPt, axisNSigma}});
+          histos.add("h2dNSigmaXiLaPi", "h2dNSigmaXiLaPi", {HistType::kTH2F, {axisP, axisNSigma}});
+          histos.add("h2dNSigmaXiLaPr", "h2dNSigmaXiLaPr", {HistType::kTH2F, {axisP, axisNSigma}});
+          histos.add("h2dNSigmaXiPi", "h2dNSigmaXiPi", {HistType::kTH2F, {axisP, axisNSigma}});
+          histos.add("h2dNSigmaOmLaPi", "h2dNSigmaOmLaPi", {HistType::kTH2F, {axisP, axisNSigma}});
+          histos.add("h2dNSigmaOmLaPr", "h2dNSigmaOmLaPr", {HistType::kTH2F, {axisP, axisNSigma}});
+          histos.add("h2dNSigmaOmKa", "h2dNSigmaOmKa", {HistType::kTH2F, {axisP, axisNSigma}});
         }
       }
 
       // delta lambda decay time
-      histos.add("h2dLambdaDeltaDecayTime", "h2dLambdaDeltaDecayTime", {HistType::kTH2F, {axisPt, axisDeltaTime}});
+      histos.add("h2dLambdaDeltaDecayTime", "h2dLambdaDeltaDecayTime", {HistType::kTH2F, {axisP, axisDeltaTime}});
     }
   }
 
@@ -587,8 +594,8 @@ struct strangenesstofpid {
       if (nTra.hasTOF())
         negProperties = negProperties | (static_cast<int>(1) << kHasTOF);
 
-      histos.fill(HIST("h2dPositiveTOFProperties"), v0.pt(), posProperties);
-      histos.fill(HIST("h2dNegativeTOFProperties"), v0.pt(), negProperties);
+      histos.fill(HIST("h2dPositiveTOFProperties"), v0.p(), posProperties);
+      histos.fill(HIST("h2dNegativeTOFProperties"), v0.p(), negProperties);
     }
 
     float deltaDecayTimeLambda = -10e+4;
@@ -629,17 +636,17 @@ struct strangenesstofpid {
       // sweep through all viable hypotheses and produce N-sigma
 
       if (deltaTimePositiveLambdaPi > -1e+5)
-        nSigmaPositiveLambdaPi = (deltaTimePositiveLambdaPi - hMeanPosLaPi->Interpolate(v0.pt())) / hSigmaPosLaPi->Interpolate(v0.pt());
+        nSigmaPositiveLambdaPi = (deltaTimePositiveLambdaPi - hMeanPosLaPi->Interpolate(v0.p())) / hSigmaPosLaPi->Interpolate(v0.p());
       if (deltaTimePositiveLambdaPr > -1e+5)
-        nSigmaPositiveLambdaPr = (deltaTimePositiveLambdaPr - hMeanPosLaPr->Interpolate(v0.pt())) / hSigmaPosLaPr->Interpolate(v0.pt());
+        nSigmaPositiveLambdaPr = (deltaTimePositiveLambdaPr - hMeanPosLaPr->Interpolate(v0.p())) / hSigmaPosLaPr->Interpolate(v0.p());
       if (deltaTimeNegativeLambdaPi > -1e+5)
-        nSigmaNegativeLambdaPi = (deltaTimeNegativeLambdaPi - hMeanNegLaPi->Interpolate(v0.pt())) / hSigmaNegLaPi->Interpolate(v0.pt());
+        nSigmaNegativeLambdaPi = (deltaTimeNegativeLambdaPi - hMeanNegLaPi->Interpolate(v0.p())) / hSigmaNegLaPi->Interpolate(v0.p());
       if (deltaTimeNegativeLambdaPr > -1e+5)
-        nSigmaNegativeLambdaPr = (deltaTimeNegativeLambdaPr - hMeanNegLaPr->Interpolate(v0.pt())) / hSigmaNegLaPr->Interpolate(v0.pt());
+        nSigmaNegativeLambdaPr = (deltaTimeNegativeLambdaPr - hMeanNegLaPr->Interpolate(v0.p())) / hSigmaNegLaPr->Interpolate(v0.p());
       if (deltaTimePositiveK0ShortPi > -1e+5)
-        nSigmaPositiveK0ShortPi = (deltaTimePositiveK0ShortPi - hMeanPosK0Pi->Interpolate(v0.pt())) / hSigmaPosK0Pi->Interpolate(v0.pt());
+        nSigmaPositiveK0ShortPi = (deltaTimePositiveK0ShortPi - hMeanPosK0Pi->Interpolate(v0.p())) / hSigmaPosK0Pi->Interpolate(v0.p());
       if (deltaTimeNegativeK0ShortPi > -1e+5)
-        nSigmaNegativeK0ShortPi = (deltaTimeNegativeK0ShortPi - hMeanNegK0Pi->Interpolate(v0.pt())) / hSigmaNegK0Pi->Interpolate(v0.pt());
+        nSigmaNegativeK0ShortPi = (deltaTimeNegativeK0ShortPi - hMeanNegK0Pi->Interpolate(v0.p())) / hSigmaNegK0Pi->Interpolate(v0.p());
 
       v0tofnsigmas(
         nSigmaPositiveLambdaPr, nSigmaNegativeLambdaPi,
@@ -649,52 +656,53 @@ struct strangenesstofpid {
 
     if (doQA) {
       if (pTra.hasTOF()) {
-        histos.fill(HIST("h2dProtonMeasuredVsExpected"),
-                    (timeLambda + timePositivePr),
-                    (pTra.tofSignal() - pTra.tofEvTime()));
         if (v0.v0cosPA() > v0Group.qaCosPA && v0.dcaV0daughters() < v0Group.qaDCADau) {
           if (std::abs(v0.mLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma) {
-            histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.pt(), v0.eta(), deltaTimePositiveLambdaPr);
+            histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.p(), v0.eta(), deltaTimePositiveLambdaPr);
+            histos.fill(HIST("h2dProtonMeasuredVsExpected"),
+                      (timeLambda + timePositivePr)/(pTra.tofSignal() - pTra.tofEvTime()),
+                      v0.p());
+
             if (doQANSigma)
-              histos.fill(HIST("h2dNSigmaPositiveLambdaPr"), v0.pt(), nSigmaPositiveLambdaPr);
+              histos.fill(HIST("h2dNSigmaPositiveLambdaPr"), v0.p(), nSigmaPositiveLambdaPr);
           }
           if (std::abs(v0.mAntiLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma) {
-            histos.fill(HIST("h2dDeltaTimePositiveLambdaPi"), v0.pt(), v0.eta(), deltaTimePositiveLambdaPi);
+            histos.fill(HIST("h2dDeltaTimePositiveLambdaPi"), v0.p(), v0.eta(), deltaTimePositiveLambdaPi);
             if (doQANSigma)
-              histos.fill(HIST("h2dNSigmaPositiveLambdaPi"), v0.pt(), nSigmaPositiveLambdaPi);
+              histos.fill(HIST("h2dNSigmaPositiveLambdaPi"), v0.p(), nSigmaPositiveLambdaPi);
           }
           if (std::abs(v0.mK0Short() - 0.497) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma) {
-            histos.fill(HIST("h2dDeltaTimePositiveK0ShortPi"), v0.pt(), v0.eta(), deltaTimePositiveK0ShortPi);
+            histos.fill(HIST("h2dDeltaTimePositiveK0ShortPi"), v0.p(), v0.eta(), deltaTimePositiveK0ShortPi);
             if (doQANSigma)
-              histos.fill(HIST("h2dNSigmaPositiveK0ShortPi"), v0.pt(), nSigmaPositiveK0ShortPi);
+              histos.fill(HIST("h2dNSigmaPositiveK0ShortPi"), v0.p(), nSigmaPositiveK0ShortPi);
           }
         }
       }
 
       if (nTra.hasTOF()) {
-        histos.fill(HIST("h2dPionMeasuredVsExpected"),
-                    (timeLambda + timeNegativePi),
-                    (nTra.tofSignal() - nTra.tofEvTime()));
         if (v0.v0cosPA() > v0Group.qaCosPA && v0.dcaV0daughters() < v0Group.qaDCADau) {
           if (std::abs(v0.mLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma) {
-            histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.pt(), v0.eta(), deltaTimeNegativeLambdaPi);
+            histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.p(), v0.eta(), deltaTimeNegativeLambdaPi);
+            histos.fill(HIST("h2dPionMeasuredVsExpected"),
+                    (timeLambda + timeNegativePi)/(nTra.tofSignal() - nTra.tofEvTime()),
+                    v0.p());
             if (doQANSigma)
-              histos.fill(HIST("h2dNSigmaNegativeLambdaPi"), v0.pt(), nSigmaNegativeLambdaPi);
+              histos.fill(HIST("h2dNSigmaNegativeLambdaPi"), v0.p(), nSigmaNegativeLambdaPi);
           }
           if (std::abs(v0.mAntiLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma) {
-            histos.fill(HIST("h2dDeltaTimeNegativeLambdaPr"), v0.pt(), v0.eta(), deltaTimeNegativeLambdaPr);
+            histos.fill(HIST("h2dDeltaTimeNegativeLambdaPr"), v0.p(), v0.eta(), deltaTimeNegativeLambdaPr);
             if (doQANSigma)
-              histos.fill(HIST("h2dNSigmaNegativeLambdaPr"), v0.pt(), nSigmaNegativeLambdaPr);
+              histos.fill(HIST("h2dNSigmaNegativeLambdaPr"), v0.p(), nSigmaNegativeLambdaPr);
           }
           if (std::abs(v0.mK0Short() - 0.497) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma) {
-            histos.fill(HIST("h2dDeltaTimeNegativeK0ShortPi"), v0.pt(), v0.eta(), deltaTimeNegativeK0ShortPi);
+            histos.fill(HIST("h2dDeltaTimeNegativeK0ShortPi"), v0.p(), v0.eta(), deltaTimeNegativeK0ShortPi);
             if (doQANSigma)
-              histos.fill(HIST("h2dNSigmaNegativeK0ShortPi"), v0.pt(), nSigmaNegativeK0ShortPi);
+              histos.fill(HIST("h2dNSigmaNegativeK0ShortPi"), v0.p(), nSigmaNegativeK0ShortPi);
           }
         }
       }
       // delta lambda decay time
-      histos.fill(HIST("h2dLambdaDeltaDecayTime"), v0.pt(), deltaDecayTimeLambda);
+      histos.fill(HIST("h2dLambdaDeltaDecayTime"), v0.p(), deltaDecayTimeLambda);
     }
   }
 
@@ -802,79 +810,79 @@ struct strangenesstofpid {
       // Xi hypothesis ________________________
       if (cascade.sign() < 0) {         // XiMinus
         if (posDeltaTimeAsXiPr > -1e+5) // proton from Lambda from XiMinus has signal
-          nSigmaXiLaPr = (posDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.pt())) / hSigmaPosXiPr->Interpolate(cascade.pt());
+          nSigmaXiLaPr = (posDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.p())) / hSigmaPosXiPr->Interpolate(cascade.p());
         if (negDeltaTimeAsXiPi > -1e+5) // pion from Lambda from XiMinus has signal
-          nSigmaXiLaPi = (negDeltaTimeAsXiPi - hMeanNegXiPi->Interpolate(cascade.pt())) / hSigmaNegXiPi->Interpolate(cascade.pt());
+          nSigmaXiLaPi = (negDeltaTimeAsXiPi - hMeanNegXiPi->Interpolate(cascade.p())) / hSigmaNegXiPi->Interpolate(cascade.p());
         if (bachDeltaTimeAsXiPi > -1e+5) // pion from XiMinus has signal
-          nSigmaXiPi = (bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.pt())) / hSigmaBachXiPi->Interpolate(cascade.pt());
+          nSigmaXiPi = (bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.p())) / hSigmaBachXiPi->Interpolate(cascade.p());
         if (posDeltaTimeAsOmPr > -1e+5) // proton from Lambda from OmegaMinus has signal
-          nSigmaOmLaPr = (posDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.pt())) / hSigmaPosOmPr->Interpolate(cascade.pt());
+          nSigmaOmLaPr = (posDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.p())) / hSigmaPosOmPr->Interpolate(cascade.p());
         if (negDeltaTimeAsOmPi > -1e+5) // pion from Lambda from OmegaMinus has signal
-          nSigmaOmLaPi = (negDeltaTimeAsOmPi - hMeanNegOmPi->Interpolate(cascade.pt())) / hSigmaNegOmPi->Interpolate(cascade.pt());
+          nSigmaOmLaPi = (negDeltaTimeAsOmPi - hMeanNegOmPi->Interpolate(cascade.p())) / hSigmaNegOmPi->Interpolate(cascade.p());
         if (bachDeltaTimeAsOmKa > -1e+5) // kaon from OmegaMinus has signal
-          nSigmaOmKa = (bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.pt())) / hSigmaBachOmKa->Interpolate(cascade.pt());
+          nSigmaOmKa = (bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.p())) / hSigmaBachOmKa->Interpolate(cascade.p());
       } else {
         if (posDeltaTimeAsXiPi > -1e+5) // proton from Lambda from XiMinus has signal
-          nSigmaXiLaPi = (posDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.pt())) / hSigmaPosXiPi->Interpolate(cascade.pt());
+          nSigmaXiLaPi = (posDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.p())) / hSigmaPosXiPi->Interpolate(cascade.p());
         if (negDeltaTimeAsXiPr > -1e+5) // pion from Lambda from XiMinus has signal
-          nSigmaXiLaPr = (negDeltaTimeAsXiPr - hMeanNegXiPr->Interpolate(cascade.pt())) / hSigmaNegXiPr->Interpolate(cascade.pt());
+          nSigmaXiLaPr = (negDeltaTimeAsXiPr - hMeanNegXiPr->Interpolate(cascade.p())) / hSigmaNegXiPr->Interpolate(cascade.p());
         if (bachDeltaTimeAsXiPi > -1e+5) // pion from XiMinus has signal
-          nSigmaXiPi = (bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.pt())) / hSigmaBachXiPi->Interpolate(cascade.pt());
+          nSigmaXiPi = (bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.p())) / hSigmaBachXiPi->Interpolate(cascade.p());
         if (posDeltaTimeAsOmPi > -1e+5) // proton from Lambda from OmegaMinus has signal
-          nSigmaOmLaPi = (posDeltaTimeAsOmPi - hMeanPosOmPi->Interpolate(cascade.pt())) / hSigmaPosOmPi->Interpolate(cascade.pt());
+          nSigmaOmLaPi = (posDeltaTimeAsOmPi - hMeanPosOmPi->Interpolate(cascade.p())) / hSigmaPosOmPi->Interpolate(cascade.p());
         if (negDeltaTimeAsOmPr > -1e+5) // pion from Lambda from OmegaMinus has signal
-          nSigmaOmLaPr = (negDeltaTimeAsOmPr - hMeanNegOmPr->Interpolate(cascade.pt())) / hSigmaNegOmPr->Interpolate(cascade.pt());
+          nSigmaOmLaPr = (negDeltaTimeAsOmPr - hMeanNegOmPr->Interpolate(cascade.p())) / hSigmaNegOmPr->Interpolate(cascade.p());
         if (bachDeltaTimeAsOmKa > -1e+5) // kaon from OmegaMinus has signal
-          nSigmaOmKa = (bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.pt())) / hSigmaBachOmKa->Interpolate(cascade.pt());
+          nSigmaOmKa = (bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.p())) / hSigmaBachOmKa->Interpolate(cascade.p());
       }
       casctofnsigmas(nSigmaXiLaPi, nSigmaXiLaPr, nSigmaXiPi, nSigmaOmLaPi, nSigmaOmLaPr, nSigmaOmKa);
     }
 
     if (doQA) {
       // fill QA histograms for cross-checking
-      histos.fill(HIST("hArcDebug"), cascade.pt(), lengthCascade - d3d); // for debugging purposes
+      histos.fill(HIST("hArcDebug"), cascade.p(), lengthCascade - d3d); // for debugging purposes
 
       if (cascade.dcaV0daughters() < cascadeGroup.qaV0DCADau && cascade.dcacascdaughters() < cascadeGroup.qaCascDCADau && cascade.v0cosPA(collision.getX(), collision.getY(), collision.getZ()) > cascadeGroup.qaV0CosPA && cascade.casccosPA(collision.getX(), collision.getY(), collision.getZ()) > cascadeGroup.qaCascCosPA) {
         if (cascade.sign() < 0) {
           if (std::abs(cascade.mXi() - 1.32171) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma) {
-            histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.pt(), cascade.eta(), posDeltaTimeAsXiPr);
-            histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), negDeltaTimeAsXiPi);
-            histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), bachDeltaTimeAsXiPi);
+            histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.p(), cascade.eta(), posDeltaTimeAsXiPr);
+            histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), negDeltaTimeAsXiPi);
+            histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), bachDeltaTimeAsXiPi);
             if (doQANSigma) {
-              histos.fill(HIST("h2dNSigmaXiLaPi"), cascade.pt(), nSigmaXiLaPi);
-              histos.fill(HIST("h2dNSigmaXiLaPr"), cascade.pt(), nSigmaXiLaPr);
-              histos.fill(HIST("h2dNSigmaXiPi"), cascade.pt(), nSigmaXiPi);
+              histos.fill(HIST("h2dNSigmaXiLaPi"), cascade.p(), nSigmaXiLaPi);
+              histos.fill(HIST("h2dNSigmaXiLaPr"), cascade.p(), nSigmaXiLaPr);
+              histos.fill(HIST("h2dNSigmaXiPi"), cascade.p(), nSigmaXiPi);
             }
           }
           if (std::abs(cascade.mOmega() - 1.67245) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaKa()) < cascadeGroup.qaTPCNSigma) {
-            histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.pt(), cascade.eta(), posDeltaTimeAsOmPr);
-            histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.pt(), cascade.eta(), negDeltaTimeAsOmPi);
-            histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), cascade.eta(), bachDeltaTimeAsOmKa);
+            histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.p(), cascade.eta(), posDeltaTimeAsOmPr);
+            histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.p(), cascade.eta(), negDeltaTimeAsOmPi);
+            histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.p(), cascade.eta(), bachDeltaTimeAsOmKa);
             if (doQANSigma) {
-              histos.fill(HIST("h2dNSigmaOmLaPi"), cascade.pt(), nSigmaOmLaPi);
-              histos.fill(HIST("h2dNSigmaOmLaPr"), cascade.pt(), nSigmaOmLaPr);
-              histos.fill(HIST("h2dNSigmaOmKa"), cascade.pt(), nSigmaOmKa);
+              histos.fill(HIST("h2dNSigmaOmLaPi"), cascade.p(), nSigmaOmLaPi);
+              histos.fill(HIST("h2dNSigmaOmLaPr"), cascade.p(), nSigmaOmLaPr);
+              histos.fill(HIST("h2dNSigmaOmKa"), cascade.p(), nSigmaOmKa);
             }
           }
         } else {
           if (std::abs(cascade.mXi() - 1.32171) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma) {
-            histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), posDeltaTimeAsXiPi);
-            histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.pt(), cascade.eta(), negDeltaTimeAsXiPr);
-            histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.pt(), cascade.eta(), bachDeltaTimeAsXiPi);
+            histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), posDeltaTimeAsXiPi);
+            histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.p(), cascade.eta(), negDeltaTimeAsXiPr);
+            histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), bachDeltaTimeAsXiPi);
             if (doQANSigma) {
-              histos.fill(HIST("h2dNSigmaXiLaPi"), cascade.pt(), nSigmaXiLaPi);
-              histos.fill(HIST("h2dNSigmaXiLaPr"), cascade.pt(), nSigmaXiLaPr);
-              histos.fill(HIST("h2dNSigmaXiPi"), cascade.pt(), nSigmaXiPi);
+              histos.fill(HIST("h2dNSigmaXiLaPi"), cascade.p(), nSigmaXiLaPi);
+              histos.fill(HIST("h2dNSigmaXiLaPr"), cascade.p(), nSigmaXiLaPr);
+              histos.fill(HIST("h2dNSigmaXiPi"), cascade.p(), nSigmaXiPi);
             }
           }
           if (std::abs(cascade.mOmega() - 1.67245) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaKa()) < cascadeGroup.qaTPCNSigma) {
-            histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.pt(), cascade.eta(), posDeltaTimeAsOmPi);
-            histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.pt(), cascade.eta(), negDeltaTimeAsOmPr);
-            histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.pt(), cascade.eta(), bachDeltaTimeAsOmKa);
+            histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.p(), cascade.eta(), posDeltaTimeAsOmPi);
+            histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.p(), cascade.eta(), negDeltaTimeAsOmPr);
+            histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.p(), cascade.eta(), bachDeltaTimeAsOmKa);
             if (doQANSigma) {
-              histos.fill(HIST("h2dNSigmaOmLaPi"), cascade.pt(), nSigmaOmLaPi);
-              histos.fill(HIST("h2dNSigmaOmLaPr"), cascade.pt(), nSigmaOmLaPr);
-              histos.fill(HIST("h2dNSigmaOmKa"), cascade.pt(), nSigmaOmKa);
+              histos.fill(HIST("h2dNSigmaOmLaPi"), cascade.p(), nSigmaOmLaPi);
+              histos.fill(HIST("h2dNSigmaOmLaPr"), cascade.p(), nSigmaOmLaPr);
+              histos.fill(HIST("h2dNSigmaOmKa"), cascade.p(), nSigmaOmKa);
             }
           }
         }
