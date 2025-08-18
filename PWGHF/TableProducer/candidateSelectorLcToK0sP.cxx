@@ -286,10 +286,8 @@ struct HfCandidateSelectorLcToK0sP {
         continue;
       }
 
-      bool isSelectedMlLcToK0sP = true;
       if (applyMl) {
-        isSelectedMlLcToK0sP = false;
-        isSelectedMlLcToK0sP = selectionMl(candidate, bach, outputMl);
+        bool isSelectedMlLcToK0sP = selectionMl(candidate, bach, outputMl);
         hfMlLcToK0sPCandidate(outputMl);
 
         if (!isSelectedMlLcToK0sP) {
