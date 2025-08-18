@@ -350,8 +350,8 @@ struct strangenesstofpid {
     // measured vs expected total time QA
     if (doQA) {
       // plots for effective eloss corrections - Lambda case
-      histos.add("h2dProtonMeasuredVsExpected", "h2dProtonMeasuredVsExpected", {HistType::kTH2F, {axisSmallP, axisExpectedOverMeasured}});
-      histos.add("h2dPionMeasuredVsExpected", "h2dPionMeasuredVsExpected", {HistType::kTH2F, {axisSmallP, axisExpectedOverMeasured}});
+      histos.add("h2dProtonMeasuredVsExpected", "h2dProtonMeasuredVsExpected", {HistType::kTH2F, {axisSmallP, axisExpectedOverMeasured, axisEta}});
+      histos.add("h2dPionMeasuredVsExpected", "h2dPionMeasuredVsExpected", {HistType::kTH2F, {axisSmallP, axisExpectedOverMeasured, axisEta}});
 
       histos.add("hArcDebug", "hArcDebug", kTH2F, {axisP, {50, -5.0f, 10.0f}});
 
@@ -664,7 +664,7 @@ struct strangenesstofpid {
             histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.p(), v0.eta(), deltaTimePositiveLambdaPr);
             histos.fill(HIST("h2dProtonMeasuredVsExpected"),
                       (timeLambda + timePositivePr)/(pTra.tofSignal() - pTra.tofEvTime()),
-                      positiveP);
+                      positiveP, v0.positiveeta());
             if (doQANSigma)
               histos.fill(HIST("h2dNSigmaPositiveLambdaPr"), v0.p(), nSigmaPositiveLambdaPr);
           }
@@ -687,7 +687,7 @@ struct strangenesstofpid {
             histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.p(), v0.eta(), deltaTimeNegativeLambdaPi);
             histos.fill(HIST("h2dPionMeasuredVsExpected"),
                     (timeLambda + timeNegativePi)/(nTra.tofSignal() - nTra.tofEvTime()),
-                    negativeP);
+                    negativeP, v0.negativeeta());
             if (doQANSigma)
               histos.fill(HIST("h2dNSigmaNegativeLambdaPi"), v0.p(), nSigmaNegativeLambdaPi);
           }
