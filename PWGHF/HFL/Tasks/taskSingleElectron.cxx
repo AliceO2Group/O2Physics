@@ -82,6 +82,7 @@ struct HfTaskSingleElectron {
   Configurable<float> tpcNClsFoundOverFindableMin{"tpcNClsFoundOverFindableMin", 0.8, "min # of TPC found/findable clusters"};
   Configurable<float> tpcChi2perNClMax{"tpcChi2perNClMax", 4., "min # of tpc chi2 per clusters"};
   Configurable<int> itsIBClsMin{"itsIBClsMin", 3, "min # of its clusters in IB"};
+  Configurable<float> itsChi2perNClMax{"itsChi2perNClMax", 6., "min # of tpc chi2 per clusters"};
   Configurable<float> dcaxyMax{"dcaxyMax", 1., "max of track dca in xy"};
   Configurable<float> dcazMax{"dcazMax", 2., "max of track dca in z"};
   Configurable<float> tofNSigmaMax{"tofNSigmaMax", 3., "max of tof nsigma"};
@@ -95,7 +96,7 @@ struct HfTaskSingleElectron {
 
   // using declarations
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using TracksEl = soa::Join<aod::Tracks, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl>;
+  using TracksEl = soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl>;
   using McTracksEl = soa::Join<aod::Tracks, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::McTrackLabels>;
 
   // Filter
@@ -131,6 +132,7 @@ struct HfTaskSingleElectron {
     histos.add("tpcFoundFindableTrack", "", kTH1D, {{10, 0, 1}});
     histos.add("tpcChi2Track", "", kTH1D, {{100, 0, 10}});
     histos.add("itsIBClsTrack", "", kTH1D, {{10, 0, 10}});
+    histos.add("itsChi2Track", "", kTH1D, {{50, 0, 50}});
     histos.add("dcaXYTrack", "", kTH1D, {{600, -3, 3}});
     histos.add("dcaZTrack", "", kTH1D, {{600, -3, 3}});
 
@@ -168,9 +170,11 @@ struct HfTaskSingleElectron {
     if (track.tpcNClsCrossedRows() < tpcNCrossedRowMin) {
       return false;
     }
+
     if (track.tpcCrossedRowsOverFindableCls() < tpcNClsFoundOverFindableMin) {
       return false;
     }
+
     if (track.tpcChi2NCl() > tpcChi2perNClMax) {
       return false;
     }
@@ -179,9 +183,14 @@ struct HfTaskSingleElectron {
       return false;
     }
 
+    if (track.itsChi2NCl() > itsChi2perNClMax) {
+      return false;
+    }
+
     if (std::abs(track.dcaXY()) > dcaxyMax) {
       return false;
     }
+
     if (std::abs(track.dcaZ()) > dcazMax) {
       return false;
     }
@@ -405,6 +414,10 @@ struct HfTaskSingleElectron {
         continue;
       }
 
+      if (!(track.passedITSRefit() && track.passedTPCRefit())) {
+        continue;
+      }
+
       histos.fill(HIST("etaTrack"), track.eta());
       histos.fill(HIST("ptTrack"), track.pt());
 
@@ -412,6 +425,7 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("tpcFoundFindableTrack"), track.tpcCrossedRowsOverFindableCls());
       histos.fill(HIST("tpcChi2Track"), track.tpcChi2NCl());
       histos.fill(HIST("itsIBClsTrack"), track.itsNClsInnerBarrel());
+      histos.fill(HIST("itsChi2Track"), track.itsChi2NCl());
       histos.fill(HIST("dcaXYTrack"), track.dcaXY());
       histos.fill(HIST("dcaZTrack"), track.dcaZ());
 
