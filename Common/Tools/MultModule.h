@@ -762,6 +762,12 @@ class MultModule
     }
 
     //_______________________________________________________________________
+    // fill selections (for posterior derived analysis if requested)
+    if (internalOpts.mEnabledTables[kMultSelections]) {
+      cursors.multSelections(collision.selection_raw());
+    }
+
+    //_______________________________________________________________________
     // vertex-Z equalized signals
     if (internalOpts.mEnabledTables[kFV0MultZeqs]) {
       if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
