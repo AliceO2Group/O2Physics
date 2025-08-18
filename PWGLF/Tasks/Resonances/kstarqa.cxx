@@ -110,7 +110,7 @@ struct Kstarqa {
     Configurable<float> cfgTPCChi2NClMax{"cfgTPCChi2NClMax", 4.0, "TPC Chi2/NCl"};
     Configurable<float> cfgTPCChi2NClMin{"cfgTPCChi2NClMin", 0.0, "TPC Chi2/NCl"};
     Configurable<bool> cfgUseITSTPCRefit{"cfgUseITSTPCRefit", false, "Require ITS Refit"};
-    // Configurable<bool> isVertexITSTPC{"isVertexITSTPC", false, "Vertex ITS TPC"};
+    Configurable<bool> isVertexITSTPC{"isVertexITSTPC", false, "Vertex ITS TPC"};
     Configurable<bool> isVertexTOFMatched{"isVertexTOFMatched", false, "Vertex TOF Matched"};
     Configurable<bool> isNoCollInTimeRangeStandard{"isNoCollInTimeRangeStandard", false, "No collision in time range standard"};
     Configurable<bool> isApplyPtDepDCAxyCut{"isApplyPtDepDCAxyCut", false, "Apply pT dependent DCAxy cut"};
@@ -440,9 +440,9 @@ struct Kstarqa {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 11);
 
-    // if (selectionConfig.isVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-    //   return false;
-    // }
+    if (selectionConfig.isVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return false;
+    }
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 12);
 
