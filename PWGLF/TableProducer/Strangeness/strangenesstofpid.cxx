@@ -350,8 +350,8 @@ struct strangenesstofpid {
     // measured vs expected total time QA
     if (doQA) {
       // plots for effective eloss corrections - Lambda case
-      histos.add("h2dProtonMeasuredVsExpected", "h2dProtonMeasuredVsExpected", {HistType::kTH2F, {axisExpectedOverMeasured, axisSmallP}});
-      histos.add("h2dPionMeasuredVsExpected", "h2dPionMeasuredVsExpected", {HistType::kTH2F, {axisExpectedOverMeasured, axisSmallP}});
+      histos.add("h2dProtonMeasuredVsExpected", "h2dProtonMeasuredVsExpected", {HistType::kTH2F, {axisSmallP, axisExpectedOverMeasured}});
+      histos.add("h2dPionMeasuredVsExpected", "h2dPionMeasuredVsExpected", {HistType::kTH2F, {axisSmallP, axisExpectedOverMeasured}});
 
       histos.add("hArcDebug", "hArcDebug", kTH2F, {axisP, {50, -5.0f, 10.0f}});
 
