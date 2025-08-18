@@ -23,38 +23,40 @@
 // (strange, weakly-decaying) particle. This task is meant to be a test, as
 // it hasn't been fully tested yet! Use at your own peril for now :-)
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <map>
-#include <iterator>
-#include <utility>
-
 #include "TableHelper.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFParticleIdentification.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <iterator>
+#include <map>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
@@ -73,10 +75,10 @@ using CascDerivedDatas = soa::Join<aod::CascCores, aod::CascExtras, aod::CascCol
 
 struct strangenesstofpid {
   // TOF pid for strangeness (recalculated with topology)
-  Produces<aod::V0TOFPIDs> v0tofpid;        // table with Nsigmas
-  Produces<aod::V0TOFBetas> v0tofbeta;      // table with betas
-  Produces<aod::V0TOFDebugs> v0tofdebugs;   // table with extra debug information
-  Produces<aod::V0TOFNSigmas> v0tofnsigmas; // table with nsigmas
+  Produces<aod::V0TOFPIDs> v0tofpid;            // table with Nsigmas
+  Produces<aod::V0TOFBetas> v0tofbeta;          // table with betas
+  Produces<aod::V0TOFDebugs> v0tofdebugs;       // table with extra debug information
+  Produces<aod::V0TOFNSigmas> v0tofnsigmas;     // table with nsigmas
   Produces<aod::CascTOFPIDs> casctofpids;       // cascades: table with base info
   Produces<aod::CascTOFNSigmas> casctofnsigmas; // cascades: table with Nsigmas
 
@@ -87,7 +89,7 @@ struct strangenesstofpid {
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // master switches 
+  // master switches
   Configurable<int> calculateV0s{"calculateV0s", -1, "calculate V0-related TOF PID (0: no, 1: yes, -1: auto)"};
   Configurable<int> calculateCascades{"calculateCascades", -1, "calculate cascade-related TOF PID (0: no, 1: yes, -1: auto)"};
 
@@ -302,17 +304,17 @@ struct strangenesstofpid {
 
   void init(InitContext& initContext)
   {
-    if(calculateV0s.value<0){
+    if (calculateV0s.value < 0) {
       // check if TOF information is required, enable if so
       calculateV0s.value = isTableRequiredInWorkflow(initContext, "V0TOFNSigmas");
-      if(calculateV0s.value>0){
+      if (calculateV0s.value > 0) {
         LOGF(info, "Strangeness TOF PID: V0 calculations enabled automatically");
       }
     }
-    if(calculateCascades.value<0){
+    if (calculateCascades.value < 0) {
       // check if TOF information is required, enable if so
       calculateCascades.value = isTableRequiredInWorkflow(initContext, "CascTOFNSigmas");
-      if(calculateCascades.value>0){
+      if (calculateCascades.value > 0) {
         LOGF(info, "Strangeness TOF PID: Cascade calculations enabled automatically");
       }
     }
@@ -356,7 +358,7 @@ struct strangenesstofpid {
       histos.add("hArcDebug", "hArcDebug", kTH2F, {axisP, {50, -5.0f, 10.0f}});
 
       // standard deltaTime values
-      if(calculateV0s.value>0){
+      if (calculateV0s.value > 0) {
         histos.add("h2dDeltaTimePositiveLambdaPi", "h2dDeltaTimePositiveLambdaPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
         histos.add("h2dDeltaTimeNegativeLambdaPi", "h2dDeltaTimeNegativeLambdaPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
         histos.add("h2dDeltaTimePositiveLambdaPr", "h2dDeltaTimePositiveLambdaPr", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
@@ -365,7 +367,7 @@ struct strangenesstofpid {
         histos.add("h2dDeltaTimeNegativeK0ShortPi", "h2dDeltaTimeNegativeK0ShortPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
       }
 
-      if(calculateCascades.value>0){
+      if (calculateCascades.value > 0) {
         histos.add("h2dposDeltaTimeAsXiPi", "h2dposDeltaTimeAsXiPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
         histos.add("h2dposDeltaTimeAsXiPr", "h2dposDeltaTimeAsXiPr", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
         histos.add("h2dnegDeltaTimeAsXiPi", "h2dnegDeltaTimeAsXiPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
@@ -383,7 +385,7 @@ struct strangenesstofpid {
       histos.add("h2dNegativeTOFProperties", "h2dNegativeTOFProperties", {HistType::kTH2F, {axisP, {4, -0.5, 3.5f}}});
 
       if (doQANSigma) {
-        if(calculateV0s.value>0){
+        if (calculateV0s.value > 0) {
           histos.add("h2dNSigmaPositiveLambdaPi", "h2dNSigmaPositiveLambdaPi", {HistType::kTH2F, {axisP, axisNSigma}});
           histos.add("h2dNSigmaNegativeLambdaPi", "h2dNSigmaNegativeLambdaPi", {HistType::kTH2F, {axisP, axisNSigma}});
           histos.add("h2dNSigmaPositiveLambdaPr", "h2dNSigmaPositiveLambdaPr", {HistType::kTH2F, {axisP, axisNSigma}});
@@ -392,7 +394,7 @@ struct strangenesstofpid {
           histos.add("h2dNSigmaNegativeK0ShortPi", "h2dNSigmaNegativeK0ShortPi", {HistType::kTH2F, {axisP, axisNSigma}});
         }
 
-        if(calculateCascades.value>0){
+        if (calculateCascades.value > 0) {
           histos.add("h2dNSigmaXiLaPi", "h2dNSigmaXiLaPi", {HistType::kTH2F, {axisP, axisNSigma}});
           histos.add("h2dNSigmaXiLaPr", "h2dNSigmaXiLaPr", {HistType::kTH2F, {axisP, axisNSigma}});
           histos.add("h2dNSigmaXiPi", "h2dNSigmaXiPi", {HistType::kTH2F, {axisP, axisNSigma}});
@@ -452,7 +454,7 @@ struct strangenesstofpid {
         LOGF(info, "loaded TList with this many objects: %i", nSigmaCalibObjects->GetEntries());
         nSigmaCalibLoaded = true; // made it thus far, mark loaded
 
-        if(calculateV0s.value){
+        if (calculateV0s.value) {
           hMeanPosLaPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosLaPi"));
           hMeanPosLaPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosLaPr"));
           hMeanNegLaPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegLaPi"));
@@ -481,39 +483,39 @@ struct strangenesstofpid {
             LOG(info) << "Problems finding mean histogram hMeanNegK0Pi!";
           if (!hSigmaPosK0Pi || !hSigmaNegK0Pi || !hSigmaPosLaPi || !hSigmaPosLaPr || !hSigmaNegLaPi || !hSigmaNegLaPr) {
             LOG(info) << "Problems finding sigma histograms!";
-        }
+          }
 
-        if(calculateCascades.value){
-          hMeanPosXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosXiPi"));
-          hMeanPosXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosXiPr"));
-          hMeanNegXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegXiPi"));
-          hMeanNegXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegXiPr"));
-          hMeanBachXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanBachXiPi"));
-          hMeanPosOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosOmPi"));
-          hMeanPosOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosOmPr"));
-          hMeanNegOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegOmPi"));
-          hMeanNegOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegOmPr"));
-          hMeanBachOmKa = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanBachOmKa"));
+          if (calculateCascades.value) {
+            hMeanPosXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosXiPi"));
+            hMeanPosXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosXiPr"));
+            hMeanNegXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegXiPi"));
+            hMeanNegXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegXiPr"));
+            hMeanBachXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanBachXiPi"));
+            hMeanPosOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosOmPi"));
+            hMeanPosOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanPosOmPr"));
+            hMeanNegOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegOmPi"));
+            hMeanNegOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanNegOmPr"));
+            hMeanBachOmKa = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hMeanBachOmKa"));
 
-          hSigmaPosXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosXiPi"));
-          hSigmaPosXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosXiPr"));
-          hSigmaNegXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegXiPi"));
-          hSigmaNegXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegXiPr"));
-          hSigmaBachXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaBachXiPi"));
-          hSigmaPosOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosOmPi"));
-          hSigmaPosOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosOmPr"));
-          hSigmaNegOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegOmPi"));
-          hSigmaNegOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegOmPr"));
-          hSigmaBachOmKa = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaBachOmKa"));
+            hSigmaPosXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosXiPi"));
+            hSigmaPosXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosXiPr"));
+            hSigmaNegXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegXiPi"));
+            hSigmaNegXiPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegXiPr"));
+            hSigmaBachXiPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaBachXiPi"));
+            hSigmaPosOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosOmPi"));
+            hSigmaPosOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaPosOmPr"));
+            hSigmaNegOmPi = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegOmPi"));
+            hSigmaNegOmPr = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaNegOmPr"));
+            hSigmaBachOmKa = reinterpret_cast<TH1*>(nSigmaCalibObjects->FindObject("hSigmaBachOmKa"));
 
-          if (!hMeanPosXiPi || !hMeanPosXiPr || !hMeanNegXiPi || !hMeanNegXiPr || !hMeanBachXiPi)
-            LOG(info) << "Problems finding xi mean histograms!";
-          if (!hMeanPosOmPi || !hMeanPosOmPr || !hMeanNegOmPi || !hMeanNegOmPr || !hMeanBachOmKa)
-            LOG(info) << "Problems finding omega sigma histograms!";
-          if (!hSigmaPosXiPi || !hSigmaPosXiPr || !hSigmaNegXiPi || !hSigmaNegXiPr || !hSigmaBachXiPi)
-            LOG(info) << "Problems finding xi sigma histograms!";
-          if (!hSigmaPosOmPi || !hSigmaPosOmPr || !hSigmaNegOmPi || !hSigmaNegOmPr || !hSigmaBachOmKa)
-            LOG(info) << "Problems finding omega sigma histograms!";
+            if (!hMeanPosXiPi || !hMeanPosXiPr || !hMeanNegXiPi || !hMeanNegXiPr || !hMeanBachXiPi)
+              LOG(info) << "Problems finding xi mean histograms!";
+            if (!hMeanPosOmPi || !hMeanPosOmPr || !hMeanNegOmPi || !hMeanNegOmPr || !hMeanBachOmKa)
+              LOG(info) << "Problems finding omega sigma histograms!";
+            if (!hSigmaPosXiPi || !hSigmaPosXiPr || !hSigmaNegXiPi || !hSigmaNegXiPr || !hSigmaBachXiPi)
+              LOG(info) << "Problems finding xi sigma histograms!";
+            if (!hSigmaPosOmPi || !hSigmaPosOmPr || !hSigmaNegOmPi || !hSigmaNegOmPr || !hSigmaBachOmKa)
+              LOG(info) << "Problems finding omega sigma histograms!";
           }
         }
       }
@@ -614,9 +616,12 @@ struct strangenesstofpid {
     float decayTimeAntiLambda = 0.5f * ((pTra.tofSignal() - timePositivePi) + (nTra.tofSignal() - timeNegativePr)) - evTimeMean;
     float decayTimeK0Short = 0.5f * ((pTra.tofSignal() - timePositivePi) + (nTra.tofSignal() - timeNegativePi)) - evTimeMean;
 
-    float betaLambda = o2::aod::cascdata::kNoTOFValue;;
-    float betaAntiLambda = o2::aod::cascdata::kNoTOFValue;;
-    float betaK0Short = o2::aod::cascdata::kNoTOFValue;;
+    float betaLambda = o2::aod::cascdata::kNoTOFValue;
+    ;
+    float betaAntiLambda = o2::aod::cascdata::kNoTOFValue;
+    ;
+    float betaK0Short = o2::aod::cascdata::kNoTOFValue;
+    ;
 
     if (nTra.hasTOF() && pTra.hasTOF()) {
       betaLambda = (lengthV0 / decayTimeLambda) / 0.0299792458;
@@ -663,8 +668,8 @@ struct strangenesstofpid {
           if (std::abs(v0.mLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma) {
             histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.p(), v0.eta(), deltaTimePositiveLambdaPr);
             histos.fill(HIST("h2dProtonMeasuredVsExpected"),
-                      (timeLambda + timePositivePr)/(pTra.tofSignal() - pTra.tofEvTime()),
-                      positiveP, v0.positiveeta());
+                        (timeLambda + timePositivePr) / (pTra.tofSignal() - pTra.tofEvTime()),
+                        positiveP, v0.positiveeta());
             if (doQANSigma)
               histos.fill(HIST("h2dNSigmaPositiveLambdaPr"), v0.p(), nSigmaPositiveLambdaPr);
           }
@@ -686,8 +691,8 @@ struct strangenesstofpid {
           if (std::abs(v0.mLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma) {
             histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.p(), v0.eta(), deltaTimeNegativeLambdaPi);
             histos.fill(HIST("h2dPionMeasuredVsExpected"),
-                    (timeLambda + timeNegativePi)/(nTra.tofSignal() - nTra.tofEvTime()),
-                    negativeP, v0.negativeeta());
+                        (timeLambda + timeNegativePi) / (nTra.tofSignal() - nTra.tofEvTime()),
+                        negativeP, v0.negativeeta());
             if (doQANSigma)
               histos.fill(HIST("h2dNSigmaNegativeLambdaPi"), v0.p(), nSigmaNegativeLambdaPi);
           }
@@ -707,7 +712,6 @@ struct strangenesstofpid {
       histos.fill(HIST("h2dLambdaDeltaDecayTime"), v0.p(), deltaDecayTimeLambda);
     }
   }
-
 
   template <class TCollision, typename TCascade, typename TTrack>
   void processCascadeCandidate(TCollision const& collision, TCascade const& cascade, TTrack const& pTra, TTrack const& nTra, TTrack const& bTra)
@@ -736,7 +740,8 @@ struct strangenesstofpid {
 
     // calculate mother lengths
     float lengthV0 = std::hypot(cascade.xlambda() - cascade.x(), cascade.ylambda() - cascade.y(), cascade.zlambda() - cascade.z());
-    float lengthCascade = o2::aod::cascdata::kNoTOFValue;;
+    float lengthCascade = o2::aod::cascdata::kNoTOFValue;
+    ;
     const o2::math_utils::Point3D<float> collVtx{collision.getX(), collision.getY(), collision.getZ()};
     bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(collVtx, cascTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE);
     float d = -1.0f, d3d = 0.0f;
@@ -800,12 +805,18 @@ struct strangenesstofpid {
       posDeltaTimeAsXiPi, posDeltaTimeAsXiPr, negDeltaTimeAsXiPi, negDeltaTimeAsXiPr, bachDeltaTimeAsXiPi,
       posDeltaTimeAsOmPi, posDeltaTimeAsOmPr, negDeltaTimeAsOmPi, negDeltaTimeAsOmPr, bachDeltaTimeAsOmKa);
 
-    float nSigmaXiLaPr = o2::aod::cascdata::kNoTOFValue;;
-    float nSigmaXiLaPi = o2::aod::cascdata::kNoTOFValue;;
-    float nSigmaXiPi = o2::aod::cascdata::kNoTOFValue;;
-    float nSigmaOmLaPr = o2::aod::cascdata::kNoTOFValue;;
-    float nSigmaOmLaPi = o2::aod::cascdata::kNoTOFValue;;
-    float nSigmaOmKa = o2::aod::cascdata::kNoTOFValue;;
+    float nSigmaXiLaPr = o2::aod::cascdata::kNoTOFValue;
+    ;
+    float nSigmaXiLaPi = o2::aod::cascdata::kNoTOFValue;
+    ;
+    float nSigmaXiPi = o2::aod::cascdata::kNoTOFValue;
+    ;
+    float nSigmaOmLaPr = o2::aod::cascdata::kNoTOFValue;
+    ;
+    float nSigmaOmLaPi = o2::aod::cascdata::kNoTOFValue;
+    ;
+    float nSigmaOmKa = o2::aod::cascdata::kNoTOFValue;
+    ;
 
     // go for Nsigma values if requested
     if (doNSigmas && nSigmaCalibLoaded) {
@@ -892,7 +903,7 @@ struct strangenesstofpid {
     }
   }
 
-  void processStandardData(aod::Collisions const& collisions, V0OriginalDatas const& V0s, CascOriginalDatas const& cascades,TracksWithAllExtras const&, aod::BCsWithTimestamps const& /*bcs*/)
+  void processStandardData(aod::Collisions const& collisions, V0OriginalDatas const& V0s, CascOriginalDatas const& cascades, TracksWithAllExtras const&, aod::BCsWithTimestamps const& /*bcs*/)
   {
     // Fire up CCDB with first collision in record. If no collisions, bypass
     if (useCustomRunNumber || collisions.size() < 1) {
@@ -903,7 +914,7 @@ struct strangenesstofpid {
       initCCDB(bc.runNumber());
     }
 
-    if(calculateV0s.value){
+    if (calculateV0s.value) {
       for (const auto& V0 : V0s) {
         // for storing whatever is the relevant quantity for the PV
         o2::dataformats::VertexBase primaryVertex;
@@ -921,7 +932,7 @@ struct strangenesstofpid {
       }
     }
 
-    if(calculateCascades.value){
+    if (calculateCascades.value) {
       for (const auto& cascade : cascades) {
         // for storing whatever is the relevant quantity for the PV
         o2::dataformats::VertexBase primaryVertex;
@@ -951,7 +962,7 @@ struct strangenesstofpid {
       initCCDB(collision.runNumber());
     }
 
-    if(calculateV0s.value){
+    if (calculateV0s.value) {
       for (const auto& V0 : V0s) {
         // for storing whatever is the relevant quantity for the PV
         o2::dataformats::VertexBase primaryVertex;
@@ -970,7 +981,7 @@ struct strangenesstofpid {
       }
     }
 
-    if(calculateCascades.value){
+    if (calculateCascades.value) {
       for (const auto& cascade : cascades) {
         // for storing whatever is the relevant quantity for the PV
         o2::dataformats::VertexBase primaryVertex;

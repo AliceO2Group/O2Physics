@@ -60,7 +60,7 @@ struct strangepidqa {
   AxisSpec massAxisOmega = {200, 1.572f, 1.772f, "Inv. Mass (GeV/c^{2})"};
 
   // Invariant Mass
-  ConfigurableAxis axisK0ShortMass{"axisK0ShortMass", {200, 0.497f-0.050f, 0.497f+0.050f}, "M_{K0s} (GeV/c^{2})"};
+  ConfigurableAxis axisK0ShortMass{"axisK0ShortMass", {200, 0.497f - 0.050f, 0.497f + 0.050f}, "M_{K0s} (GeV/c^{2})"};
   ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.08f, 1.16f}, "M_{#Lambda} (GeV/c^{2})"};
 
   // time axes
@@ -301,7 +301,7 @@ struct strangepidqa {
         // lambda case
         histos.fill(HIST("h3dMassLambda"), coll.centFT0C(), lambda.pt(), lambda.mLambda());
         histos.fill(HIST("h1dMassLambda"), lambda.mLambda());
-        if(lambda.tofLambdaCompatibility(tofNsigmaCompatibility.value)){
+        if (lambda.tofLambdaCompatibility(tofNsigmaCompatibility.value)) {
           histos.fill(HIST("h3dMassCompatibleLambda"), coll.centFT0C(), lambda.pt(), lambda.mLambda());
           histos.fill(HIST("h1dMassCompatibleLambda"), lambda.mLambda());
         }
@@ -311,7 +311,7 @@ struct strangepidqa {
         // lambda case
         histos.fill(HIST("h3dMassAntiLambda"), coll.centFT0C(), lambda.pt(), lambda.mAntiLambda());
         histos.fill(HIST("h1dMassAntiLambda"), lambda.mAntiLambda());
-        if(lambda.tofAntiLambdaCompatibility(tofNsigmaCompatibility.value)){
+        if (lambda.tofAntiLambdaCompatibility(tofNsigmaCompatibility.value)) {
           histos.fill(HIST("h3dMassCompatibleAntiLambda"), coll.centFT0C(), lambda.pt(), lambda.mAntiLambda());
           histos.fill(HIST("h1dMassCompatibleAntiLambda"), lambda.mAntiLambda());
         }
@@ -321,7 +321,7 @@ struct strangepidqa {
         // lambda case
         histos.fill(HIST("h3dMassK0Short"), coll.centFT0C(), lambda.pt(), lambda.mK0Short());
         histos.fill(HIST("h1dMassK0Short"), lambda.mK0Short());
-        if(lambda.tofK0ShortCompatibility(tofNsigmaCompatibility.value)){
+        if (lambda.tofK0ShortCompatibility(tofNsigmaCompatibility.value)) {
           histos.fill(HIST("h3dMassCompatibleK0Short"), coll.centFT0C(), lambda.pt(), lambda.mK0Short());
           histos.fill(HIST("h1dMassCompatibleK0Short"), lambda.mK0Short());
         }
@@ -465,16 +465,16 @@ struct strangepidqa {
         if (casc.sign() < 0) {
           if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaPi()) < tpcNsigmaBachelor) {
             histos.fill(HIST("h3dMassXiMinus"), col.centFT0C(), casc.pt(), casc.mXi());
-            histos.fill(HIST("h1dMassXiMinus"), casc.mXi());            
-            if(casc.tofXiCompatibility(tofNsigmaCompatibilityCascades.value)){
+            histos.fill(HIST("h1dMassXiMinus"), casc.mXi());
+            if (casc.tofXiCompatibility(tofNsigmaCompatibilityCascades.value)) {
               histos.fill(HIST("h3dMassCompatibleXiMinus"), col.centFT0C(), casc.pt(), casc.mXi());
-              histos.fill(HIST("h1dMassCompatibleXiMinus"), casc.mXi());            
+              histos.fill(HIST("h1dMassCompatibleXiMinus"), casc.mXi());
             }
           }
           if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaKa()) < tpcNsigmaBachelor) {
             histos.fill(HIST("h3dMassOmegaMinus"), col.centFT0C(), casc.pt(), casc.mOmega());
             histos.fill(HIST("h1dMassOmegaMinus"), casc.mOmega());
-            if(casc.tofOmegaCompatibility(tofNsigmaCompatibilityCascades.value)){
+            if (casc.tofOmegaCompatibility(tofNsigmaCompatibilityCascades.value)) {
               histos.fill(HIST("h3dMassCompatibleOmegaMinus"), col.centFT0C(), casc.pt(), casc.mOmega());
               histos.fill(HIST("h1dMassCompatibleOmegaMinus"), casc.mOmega());
             }
@@ -483,7 +483,7 @@ struct strangepidqa {
           if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaPi()) < tpcNsigmaBachelor) {
             histos.fill(HIST("h3dMassXiPlus"), col.centFT0C(), casc.pt(), casc.mXi());
             histos.fill(HIST("h1dMassXiPlus"), casc.mXi());
-            if(casc.tofXiCompatibility(tofNsigmaCompatibilityCascades.value)){
+            if (casc.tofXiCompatibility(tofNsigmaCompatibilityCascades.value)) {
               histos.fill(HIST("h3dMassCompatibleXiPlus"), col.centFT0C(), casc.pt(), casc.mXi());
               histos.fill(HIST("h1dMassCompatibleXiPlus"), casc.mXi());
             }
@@ -492,7 +492,7 @@ struct strangepidqa {
           if (TMath::Abs(posExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(negExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(bachExtra.tpcNSigmaKa()) < tpcNsigmaBachelor) {
             histos.fill(HIST("h3dMassOmegaPlus"), col.centFT0C(), casc.pt(), casc.mOmega());
             histos.fill(HIST("h1dMassOmegaPlus"), casc.mOmega());
-            if(casc.tofOmegaCompatibility(tofNsigmaCompatibilityCascades.value)){
+            if (casc.tofOmegaCompatibility(tofNsigmaCompatibilityCascades.value)) {
               histos.fill(HIST("h3dMassCompatibleOmegaPlus"), col.centFT0C(), casc.pt(), casc.mOmega());
               histos.fill(HIST("h1dMassCompatibleOmegaPlus"), casc.mOmega());
             }
