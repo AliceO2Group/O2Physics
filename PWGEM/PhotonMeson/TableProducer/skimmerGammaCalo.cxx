@@ -175,6 +175,10 @@ struct SkimmerGammaCalo {
       return;
     }
 
+    if (needEMCTrigger.value && !collision.alias_bit(kTVXinEMC)) {
+      return;
+    }
+
     for (const auto& emccluster : emcclusters) {
 
       // Definition cut
