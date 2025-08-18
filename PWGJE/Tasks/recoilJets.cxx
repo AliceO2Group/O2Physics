@@ -508,8 +508,9 @@ struct RecoilJets {
     }
 
     for (const auto& jet : jets) {
-      //skip jets which have a constituent with pT above specified cut	   
-      if(isJetWithHighPtConstituent(jet, tracks)) continue;
+      // skip jets which have a constituent with pT above specified cut
+      if (isJetWithHighPtConstituent(jet, tracks))
+        continue;
 
       spectra.fill(HIST("hJetPtEtaPhiRhoArea"), jet.pt(), jet.eta(), jet.phi(),
                    collision.rho(), jet.area(), weight);
@@ -680,7 +681,7 @@ struct RecoilJets {
     for (const auto& jetBase : jetsBase) {
       bool bIsBaseJetRecoil =
         get<1>(isRecoilJet(jetBase, phiTTSig)) && bIsThereTTSig;
-      dataForUnfolding(jetBase, jetsTag, bIsBaseJetRecoil, tracks, weight); 
+      dataForUnfolding(jetBase, jetsTag, bIsBaseJetRecoil, tracks, weight);
     }
   }
 
@@ -911,30 +912,30 @@ struct RecoilJets {
   template <typename Jet, typename Tracks>
   bool isJetWithHighPtConstituent(Jet const& jet, Tracks const&)
   {
-     bool bIsJetWithHighPtConstituent = false;
-     for (const auto& jetConstituent : jet.template tracks_as<Tracks>()) {
-        if (jetConstituent.pt() > maxJetConstituentPt) {
-           bIsJetWithHighPtConstituent = true;
-           break;
-        }
-     }
-     return bIsJetWithHighPtConstituent;
+    bool bIsJetWithHighPtConstituent = false;
+    for (const auto& jetConstituent : jet.template tracks_as<Tracks>()) {
+      if (jetConstituent.pt() > maxJetConstituentPt) {
+        bIsJetWithHighPtConstituent = true;
+        break;
+      }
+    }
+    return bIsJetWithHighPtConstituent;
   }
 
-  template <typename PartJet, typename DetJet, typename TracksTable>  
+  template <typename PartJet, typename DetJet, typename TracksTable>
   void dataForUnfolding(PartJet const& partJet, DetJet const& detJets,
-                        bool bIsBaseJetRecoil, TracksTable const& tracks, float weight = 1.) 
+                        bool bIsBaseJetRecoil, TracksTable const& tracks, float weight = 1.)
   {
 
-  bool bIsThereMatchedJet = partJet.has_matchedJetGeo();
+    bool bIsThereMatchedJet = partJet.has_matchedJetGeo();
 
-  if (bIsThereMatchedJet) {
-    const auto& jetsMatched =
-      partJet.template matchedJetGeo_as<std::decay_t<DetJet>>();
+    if (bIsThereMatchedJet) {
+      const auto& jetsMatched =
+        partJet.template matchedJetGeo_as<std::decay_t<DetJet>>();
 
       for (const auto& jetMatched : jetsMatched) {
 
-        //skip matches where detector level jets have a constituent with pT above specified cut
+        // skip matches where detector level jets have a constituent with pT above specified cut
         bool skipMatchedDetJet = isJetWithHighPtConstituent(jetMatched, tracks);
 
         if (skipMatchedDetJet) {
@@ -948,22 +949,22 @@ struct RecoilJets {
           spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel"), jetMatched.pt(),
                        partJet.pt(), weight);
           spectra.fill(HIST("hJetPt_resolution"),
-                      (partJet.pt() - jetMatched.pt()) / partJet.pt(),
+                       (partJet.pt() - jetMatched.pt()) / partJet.pt(),
                        partJet.pt(), weight);
           spectra.fill(HIST("hJetPhi_resolution"),
                        partJet.phi() - jetMatched.phi(), partJet.pt(), weight);
-  
+
           if (bIsBaseJetRecoil) {
             spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel_RecoilJets"),
                          jetMatched.pt(), partJet.pt(), weight);
             spectra.fill(HIST("hJetPt_resolution_RecoilJets"),
-                        (partJet.pt() - jetMatched.pt()) / partJet.pt(),
+                         (partJet.pt() - jetMatched.pt()) / partJet.pt(),
                          partJet.pt(), weight);
             spectra.fill(HIST("hJetPhi_resolution_RecoilJets"),
                          partJet.phi() - jetMatched.phi(), partJet.pt(), weight);
           }
         }
-      } 
+      }
     } else {
       // Miss jets
       spectra.fill(HIST("hMissedJets_pT"), partJet.pt(), weight);
@@ -973,7 +974,8 @@ struct RecoilJets {
 
     // Fake jets
     for (const auto& detJet : detJets) {
-      if(isJetWithHighPtConstituent(detJet, tracks)) continue;
+      if (isJetWithHighPtConstituent(detJet, tracks))
+        continue;
 
       bIsThereMatchedJet = detJet.has_matchedJetGeo();
       if (!bIsThereMatchedJet) {
