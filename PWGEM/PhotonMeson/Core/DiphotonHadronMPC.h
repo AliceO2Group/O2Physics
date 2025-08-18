@@ -325,8 +325,6 @@ struct DiphotonHadronMPC {
     used_photonIds.shrink_to_fit();
     used_dileptonIds.clear();
     used_dileptonIds.shrink_to_fit();
-    used_refTrackIds.clear();
-    used_refTrackIds.shrink_to_fit();
 
     map_mixed_eventId_to_globalBC.clear();
   }
@@ -370,7 +368,7 @@ struct DiphotonHadronMPC {
 
     // hadron-hadron
     const AxisSpec axis_deta_hh{60, -3, +3, "#Delta#eta = #eta_{h}^{ref1} - #eta_{h}^{ref2}"};
-    const AxisSpec axis_dphi_hh{cfgNbinsDPhi, -M_PI / 2, +3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
+    const AxisSpec axis_dphi_hh{90, -M_PI / 2, +3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
     // const AxisSpec axis_cosndphi_hh{cfgNbinsCosNDPhi, -1, +1, std::format("cos({0:d}(#varphi_{{h}}^{{ref1}} - #varphi_{{h}}^{{ref2}}))", cfgNmod.value)};
     fRegistry.add("HadronHadron/same/hDEtaDPhi", "hadron-hadron 2PC", kTH2D, {axis_dphi_hh, axis_deta_hh}, true);
     fRegistry.addClone("HadronHadron/same/", "HadronHadron/mix/");
@@ -486,7 +484,6 @@ struct DiphotonHadronMPC {
 
   std::vector<std::pair<int, int>> used_photonIds;              // <ndf, trackId>
   std::vector<std::tuple<int, int, int, int>> used_dileptonIds; // <ndf, trackId>
-  std::vector<std::pair<int, int>> used_refTrackIds;            // <ndf, trackId>
   std::vector<std::tuple<int, int, int, int>> used_diphotonIds; // <ndf, trackId>
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
@@ -708,12 +705,7 @@ struct DiphotonHadronMPC {
           if (fEMTrackCut.IsSelected(track)) {
             fRegistry.fill(HIST("Hadron/hs"), track.pt(), track.eta(), track.phi());
             fRegistry.fill(HIST("Hadron/hTrackBit"), track.trackBit());
-
-            std::pair<int, int> pair_tmp_ref = std::make_pair(ndf, track.globalIndex());
-            if (std::find(used_refTrackIds.begin(), used_refTrackIds.end(), pair_tmp_ref) == used_refTrackIds.end()) { // add a ref track in mixing pool
-              emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(ndf, track.globalIndex(), collision.globalIndex(), track.globalIndex(), track.pt(), track.eta(), track.phi(), 0.139));
-              used_refTrackIds.emplace_back(pair_tmp_ref);
-            }
+            emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(ndf, track.globalIndex(), collision.globalIndex(), track.globalIndex(), track.pt(), track.eta(), track.phi(), 0.139));
           }
         }
 
