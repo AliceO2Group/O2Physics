@@ -95,6 +95,7 @@ struct skimmerPrimaryElectronQC {
 
   struct : ConfigurableGroup {
     std::string prefix = "tighttrackcut";
+    Configurable<int> min_ncluster_tpc_pid{"min_ncluster_tpc_pid", 60, "min ncluster tpc used for PID"};
     Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> mincrossedrows{"mincrossedrows", 100, "min. crossed rows"};
     Configurable<int> min_ncluster_its{"min_ncluster_its", 5, "min ncluster its"};
@@ -389,6 +390,10 @@ struct skimmerPrimaryElectronQC {
     }
 
     if (track.tpcFractionSharedCls() > tighttrackcut.max_frac_shared_clusters_tpc) {
+      return false;
+    }
+
+    if (track.tpcNClsPID() < tighttrackcut.min_ncluster_tpc_pid) {
       return false;
     }
 
