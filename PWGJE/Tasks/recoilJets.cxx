@@ -126,6 +126,9 @@ struct RecoilJets {
   Configurable<float> recoilRegion{"recoilRegion", 0.6,
                                    "Width of recoil acceptance"};
 
+  Configurable<float> maxJetConstituentPt{"maxJetConstituentPt", 100.,
+                                          "Remove jets with constituent above this pt cut"};
+
   // List of configurable parameters for histograms
   Configurable<uint16_t> histJetPt{"histJetPt", 100,
                                    "Maximum value of jet pT shown in histograms"};
@@ -416,9 +419,9 @@ struct RecoilJets {
       spectra.add("hScaleMultFT0C", "Scaled mult. signal from FTOC", kTH1F,
                   {{200, 0.0, 20.}});
       spectra.add("hScaleMultFT0M", "Scaled total mult. signal from FT0A & FTOC", kTH1F,
-                  {{200, 0.0, 20.}});
+                  {{2000, 0.0, 20.}});
       spectra.add("hScaleMultFT0M_v2", "Scaled total mult. signal from FT0A & FTOC", kTH1F,
-                  {{200, 0.0, 20.}});
+                  {{2000, 0.0, 20.}});
 
       spectra.add("hMultZNA", "Mult. signal from ZDC A-side", kTH1F,
                   {{500, 0.0, 10000.}});
@@ -505,6 +508,10 @@ struct RecoilJets {
     }
 
     for (const auto& jet : jets) {
+      // skip jets which have a constituent with pT above specified cut
+      if (isJetWithHighPtConstituent(jet, tracks))
+        continue;
+
       spectra.fill(HIST("hJetPtEtaPhiRhoArea"), jet.pt(), jet.eta(), jet.phi(),
                    collision.rho(), jet.area(), weight);
 
@@ -674,13 +681,13 @@ struct RecoilJets {
     for (const auto& jetBase : jetsBase) {
       bool bIsBaseJetRecoil =
         get<1>(isRecoilJet(jetBase, phiTTSig)) && bIsThereTTSig;
-      dataForUnfolding(jetBase, jetsTag, bIsBaseJetRecoil, weight);
+      dataForUnfolding(jetBase, jetsTag, bIsBaseJetRecoil, tracks, weight);
     }
   }
 
   template <typename Collision>
   void fillMultiplicityHistograms(Collision const& collision,
-                                  float weight = 1.0)
+                                  float weight = 1.)
   {
 
     spectra.fill(HIST("hMultFT0A"), collision.multFT0A(), weight);
@@ -830,12 +837,11 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processJetsMatched,
                  "process matching of MC jets (no weight)", false);
 
-  void
-    processJetsMatchedWeighted(FilteredCollDetLevelGetWeight const& collision,
-                               aod::JetMcCollisions const&,
-                               FilteredTracks const& tracks,
-                               FilteredMatchedJetsDetLevel const& mcdjets,
-                               FilteredMatchedJetsPartLevel const& mcpjets)
+  void processJetsMatchedWeighted(FilteredCollDetLevelGetWeight const& collision,
+                                  aod::JetMcCollisions const&,
+                                  FilteredTracks const& tracks,
+                                  FilteredMatchedJetsDetLevel const& mcdjets,
+                                  FilteredMatchedJetsPartLevel const& mcpjets)
   {
     if (skipEvent(collision) || skipMBGapEvent(collision))
       return;
@@ -903,9 +909,22 @@ struct RecoilJets {
     return 10. / (std::pow(weight, 1.0 / pTHatExponent));
   }
 
-  template <typename PartJet, typename DetJet>
+  template <typename Jet, typename Tracks>
+  bool isJetWithHighPtConstituent(Jet const& jet, Tracks const&)
+  {
+    bool bIsJetWithHighPtConstituent = false;
+    for (const auto& jetConstituent : jet.template tracks_as<Tracks>()) {
+      if (jetConstituent.pt() > maxJetConstituentPt) {
+        bIsJetWithHighPtConstituent = true;
+        break;
+      }
+    }
+    return bIsJetWithHighPtConstituent;
+  }
+
+  template <typename PartJet, typename DetJet, typename TracksTable>
   void dataForUnfolding(PartJet const& partJet, DetJet const& detJets,
-                        bool bIsBaseJetRecoil, float weight = 1.0)
+                        bool bIsBaseJetRecoil, TracksTable const& tracks, float weight = 1.)
   {
 
     bool bIsThereMatchedJet = partJet.has_matchedJetGeo();
@@ -915,24 +934,35 @@ struct RecoilJets {
         partJet.template matchedJetGeo_as<std::decay_t<DetJet>>();
 
       for (const auto& jetMatched : jetsMatched) {
-        spectra.fill(HIST("hNumberMatchedJetsPerOneBaseJet"),
-                     jetsMatched.size(), jetMatched.pt(), weight);
-        spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel"), jetMatched.pt(),
-                     partJet.pt(), weight);
-        spectra.fill(HIST("hJetPt_resolution"),
-                     (partJet.pt() - jetMatched.pt()) / partJet.pt(),
-                     partJet.pt(), weight);
-        spectra.fill(HIST("hJetPhi_resolution"),
-                     partJet.phi() - jetMatched.phi(), partJet.pt(), weight);
 
-        if (bIsBaseJetRecoil) {
-          spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel_RecoilJets"),
-                       jetMatched.pt(), partJet.pt(), weight);
-          spectra.fill(HIST("hJetPt_resolution_RecoilJets"),
+        // skip matches where detector level jets have a constituent with pT above specified cut
+        bool skipMatchedDetJet = isJetWithHighPtConstituent(jetMatched, tracks);
+
+        if (skipMatchedDetJet) {
+          // Miss jets
+          spectra.fill(HIST("hMissedJets_pT"), partJet.pt(), weight);
+          if (bIsBaseJetRecoil)
+            spectra.fill(HIST("hMissedJets_pT_RecoilJets"), partJet.pt(), weight);
+        } else {
+          spectra.fill(HIST("hNumberMatchedJetsPerOneBaseJet"),
+                       jetsMatched.size(), jetMatched.pt(), weight);
+          spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel"), jetMatched.pt(),
+                       partJet.pt(), weight);
+          spectra.fill(HIST("hJetPt_resolution"),
                        (partJet.pt() - jetMatched.pt()) / partJet.pt(),
                        partJet.pt(), weight);
-          spectra.fill(HIST("hJetPhi_resolution_RecoilJets"),
+          spectra.fill(HIST("hJetPhi_resolution"),
                        partJet.phi() - jetMatched.phi(), partJet.pt(), weight);
+
+          if (bIsBaseJetRecoil) {
+            spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel_RecoilJets"),
+                         jetMatched.pt(), partJet.pt(), weight);
+            spectra.fill(HIST("hJetPt_resolution_RecoilJets"),
+                         (partJet.pt() - jetMatched.pt()) / partJet.pt(),
+                         partJet.pt(), weight);
+            spectra.fill(HIST("hJetPhi_resolution_RecoilJets"),
+                         partJet.phi() - jetMatched.phi(), partJet.pt(), weight);
+          }
         }
       }
     } else {
@@ -944,6 +974,9 @@ struct RecoilJets {
 
     // Fake jets
     for (const auto& detJet : detJets) {
+      if (isJetWithHighPtConstituent(detJet, tracks))
+        continue;
+
       bIsThereMatchedJet = detJet.has_matchedJetGeo();
       if (!bIsThereMatchedJet) {
         spectra.fill(HIST("hFakeJets_pT"), detJet.pt(), weight);
