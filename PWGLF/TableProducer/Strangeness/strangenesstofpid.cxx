@@ -687,6 +687,7 @@ struct strangenesstofpid {
       // method to calculate the time and length via Propagator TrackLTIntegral 
       float timeKaon; // will go unused
       if(pTra.hasTOF()){ // calculate if signal at all present, otherwise skip
+        posTrack.setPID(o2::track::PID::Proton); // force test
         calculateTOF(posTrack, timePositivePi, timeKaon, timePositivePr);
       }
       if(nTra.hasTOF()){ // calculate if signal at all present, otherwise skip
