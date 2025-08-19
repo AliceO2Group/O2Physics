@@ -583,7 +583,7 @@ struct QaImpactPar {
             continue;
           }
           auto particle = track.mcParticle();
-          if (keepOnlyPhysPrimary && particle.isPhysicalPrimary()) {
+          if (!particle.isPhysicalPrimary()) {
             continue;
           }
           pdgIndex = PDGtoIndex(std::abs(particle.pdgCode()));
