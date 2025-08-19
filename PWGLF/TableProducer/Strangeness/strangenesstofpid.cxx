@@ -347,9 +347,9 @@ struct strangenesstofpid {
       std::array<float, 3> xyz;
       track.getXYZGlo(xyz);
       float segmentedR = segmentedRadius(xyz[0], xyz[1]); 
-      timeProton = ltIntegral.getTOF(o2::track::PID::Proton);  
-      timeKaon = ltIntegral.getTOF(o2::track::PID::Kaon);
-      timePion = ltIntegral.getTOF(o2::track::PID::Pion); 
+      float currentTimeProton = ltIntegral.getTOF(o2::track::PID::Proton);  
+      float currentTimeKaon = ltIntegral.getTOF(o2::track::PID::Kaon);
+      float currentTimePion = ltIntegral.getTOF(o2::track::PID::Pion); 
       histos.fill(HIST("hTOFPosition"), xyz[0], xyz[1]); // for debugging purposes
 
       // correct for TOF segmentation
@@ -374,18 +374,18 @@ struct strangenesstofpid {
           float timeKaonFinal = ltIntegral.getTOF(o2::track::PID::Kaon);  
           float timePionFinal = ltIntegral.getTOF(o2::track::PID::Pion);  
           float fraction = (tofPosition - segmentedR)/(segmentedRFinal-segmentedR+1e-6); // proportional fraction
-          timeProton = timeProton + (timeProtonFinal-timeProton)*fraction;
-          timeKaon = timeKaon + (timeKaonFinal-timeKaon)*fraction;
-          timePion = timeProton + (timePionFinal-timePion)*fraction;
+          timeProton = currentTimeProton + (timeProtonFinal-timeProton)*fraction;
+          timeKaon = currentTimeKaon + (timeKaonFinal-timeKaon)*fraction;
+          timePion = currentTimePion + (timePionFinal-timePion)*fraction;
           histos.fill(HIST("hTOFPositionFinal"), previousX+fraction*(xyz[0]-previousX), previousY+fraction*(xyz[1]-previousY)); // for debugging purposes
-          break; 
+          return; // get out of the entire function and return (don't just break)
         }
 
         // prepare for next step by setting current position and desired variables
         segmentedR = segmentedRadius(xyz[0], xyz[1]); 
-        timeProton = ltIntegral.getTOF(o2::track::PID::Proton);  
-        timeKaon = ltIntegral.getTOF(o2::track::PID::Kaon);
-        timePion = ltIntegral.getTOF(o2::track::PID::Pion); 
+        currentTimeProton = ltIntegral.getTOF(o2::track::PID::Proton);  
+        currentTimeKaon = ltIntegral.getTOF(o2::track::PID::Kaon);
+        currentTimePion = ltIntegral.getTOF(o2::track::PID::Pion); 
       }
     }
   }
