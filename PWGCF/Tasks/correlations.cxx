@@ -930,10 +930,12 @@ struct CorrelationTask {
   void processMixedDerivedT(CollType const& collisions, TrackTypes&&... tracks)
   {
     auto getMultiplicity =
-      [](auto& col) {
+      [this](auto& col) {
         if constexpr (std::experimental::is_detected<HasMultSet, CollType>::value) {
           if (!passOutlier(col))
             return -1.0f;
+        } else {
+          (void)this; // fix compile error on unused 'this' capture
         }
         return col.multiplicity();
       };
