@@ -832,7 +832,9 @@ DECLARE_SOA_TABLE(DielectronsAll, "AOD", "RTDIELECTRONALL", //!
                   dilepton_track_index::DeviationTrk0KF, dilepton_track_index::DeviationTrk1KF, dilepton_track_index::DeviationxyTrk0KF, dilepton_track_index::DeviationxyTrk1KF,
                   reducedpair::MassKFGeo, reducedpair::Chi2OverNDFKFGeo, reducedpair::DecayLengthKFGeo, reducedpair::DecayLengthOverErrKFGeo, reducedpair::DecayLengthXYKFGeo, reducedpair::DecayLengthXYOverErrKFGeo, reducedpair::PseudoproperDecayTimeKFGeo, reducedpair::PseudoproperDecayTimeErrKFGeo, reducedpair::CosPAKFGeo, reducedpair::PairDCAxyz, reducedpair::PairDCAxy,
                   reducedpair::DeviationPairKF, reducedpair::DeviationxyPairKF,
-                  reducedpair::MassKFGeoTop, reducedpair::Chi2OverNDFKFGeoTop);
+                  reducedpair::MassKFGeoTop, reducedpair::Chi2OverNDFKFGeoTop,
+                  reducedpair::Tauz,reducedpair::Tauxy,
+                  reducedpair::Lz,reducedpair::Lxy);
 
 DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
