@@ -374,9 +374,9 @@ struct strangenesstofpid {
           float timeKaonFinal = ltIntegral.getTOF(o2::track::PID::Kaon);  
           float timePionFinal = ltIntegral.getTOF(o2::track::PID::Pion);  
           float fraction = (tofPosition - segmentedR)/(segmentedRFinal-segmentedR+1e-6); // proportional fraction
-          timeProton = currentTimeProton + (timeProtonFinal-timeProton)*fraction;
-          timeKaon = currentTimeKaon + (timeKaonFinal-timeKaon)*fraction;
-          timePion = currentTimePion + (timePionFinal-timePion)*fraction;
+          timeProton = currentTimeProton + (timeProtonFinal-currentTimeProton)*fraction;
+          timeKaon = currentTimeKaon + (timeKaonFinal-currentTimeKaon)*fraction;
+          timePion = currentTimePion + (timePionFinal-currentTimePion)*fraction;
           histos.fill(HIST("hTOFPositionFinal"), previousX+fraction*(xyz[0]-previousX), previousY+fraction*(xyz[1]-previousY)); // for debugging purposes
           return; // get out of the entire function and return (don't just break)
         }
