@@ -174,7 +174,7 @@ struct cascadeFlow {
   Configurable<bool> cfgShiftCorr{"cfgShiftCorr", 0, ""};
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
   Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
-  
+
   // THN axes
   ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {8, 0, 80}, "FT0C centrality (%)"};
   ConfigurableAxis thnConfigAxisEta{"thnConfigAxisEta", {8, -0.8, 0.8}, "pseudorapidity"};
@@ -473,21 +473,23 @@ struct cascadeFlow {
   std::string fullCCDBShiftCorrPath;
 
   template <typename TCollision>
-  double ApplyShiftCorrection(TCollision coll, double psiT0C){
+  double ApplyShiftCorrection(TCollision coll, double psiT0C)
+  {
     int nmode = 2;
     auto deltapsiFT0C = 0.0;
 
     for (int ishift = 1; ishift <= 10; ishift++) {
       auto coeffshiftxFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(coll.centFT0C(), 0.5, ishift - 0.5));
       auto coeffshiftyFT0C = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(coll.centFT0C(), 1.5, ishift - 0.5));
-      
+
       deltapsiFT0C += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * static_cast<float>(nmode) * psiT0C) + coeffshiftyFT0C * TMath::Sin(ishift * static_cast<float>(nmode) * psiT0C)));
     }
     return psiT0C + deltapsiFT0C;
   }
 
   template <typename TCollision>
-  double ComputeEPResolutionwShifts(TCollision coll, double psiT0C, double psiTPCA, double psiTPCC){
+  double ComputeEPResolutionwShifts(TCollision coll, double psiT0C, double psiTPCA, double psiTPCC)
+  {
     int nmode = 2;
     auto deltapsiFT0C = 0.0;
     auto deltapsiTPCA = 0.0;
@@ -498,14 +500,14 @@ struct cascadeFlow {
       auto coeffshiftxTPCA = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(coll.centFT0C(), 2.5, ishift - 0.5));
       auto coeffshiftyTPCA = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(coll.centFT0C(), 3.5, ishift - 0.5));
       auto coeffshiftxTPCC = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(coll.centFT0C(), 4.5, ishift - 0.5));
-      auto coeffshiftyTPCC = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(coll.centFT0C(), 5.5, ishift - 0.5)); 
+      auto coeffshiftyTPCC = shiftprofile.at(nmode - 2)->GetBinContent(shiftprofile.at(nmode - 2)->FindBin(coll.centFT0C(), 5.5, ishift - 0.5));
       deltapsiFT0C += ((1 / (1.0 * ishift)) * (-coeffshiftxFT0C * TMath::Cos(ishift * static_cast<float>(nmode) * psiT0C) + coeffshiftyFT0C * TMath::Sin(ishift * static_cast<float>(nmode) * psiT0C)));
       deltapsiTPCA += ((1 / (1.0 * ishift)) * (-coeffshiftxTPCA * TMath::Cos(ishift * static_cast<float>(nmode) * psiTPCA) + coeffshiftyTPCA * TMath::Sin(ishift * static_cast<float>(nmode) * psiTPCA)));
       deltapsiTPCC += ((1 / (1.0 * ishift)) * (-coeffshiftxTPCC * TMath::Cos(ishift * static_cast<float>(nmode) * psiTPCC) + coeffshiftyTPCC * TMath::Sin(ishift * static_cast<float>(nmode) * psiTPCC)));
     }
-    //histos.fill(HIST("psi2/QA/EP_FT0C_shifted"), coll.centFT0C(), psiT0C + deltapsiFT0C);
-    //histos.fill(HIST("psi2/QA/EP_TPCA_shifted"), coll.centFT0C(), psiTPCA + deltapsiTPCA);
-    //histos.fill(HIST("psi2/QA/EP_TPCC_shifted"), coll.centFT0C(), psiTPCC + deltapsiTPCC);
+    // histos.fill(HIST("psi2/QA/EP_FT0C_shifted"), coll.centFT0C(), psiT0C + deltapsiFT0C);
+    // histos.fill(HIST("psi2/QA/EP_TPCA_shifted"), coll.centFT0C(), psiTPCA + deltapsiTPCA);
+    // histos.fill(HIST("psi2/QA/EP_TPCC_shifted"), coll.centFT0C(), psiTPCC + deltapsiTPCC);
     resolution.fill(HIST("QVectorsT0CTPCA_Shifted"), coll.centFT0C(), TMath::Cos(static_cast<float>(nmode) * (psiT0C + deltapsiFT0C - psiTPCA - deltapsiTPCA)));
     resolution.fill(HIST("QVectorsT0CTPCC_Shifted"), coll.centFT0C(), TMath::Cos(static_cast<float>(nmode) * (psiT0C + deltapsiFT0C - psiTPCC - deltapsiTPCC)));
     resolution.fill(HIST("QVectorsTPCAC_Shifted"), coll.centFT0C(), TMath::Cos(static_cast<float>(nmode) * (psiTPCA + deltapsiTPCA - psiTPCC - deltapsiTPCC)));
@@ -1043,7 +1045,7 @@ struct cascadeFlow {
         lastRunNumber = currentRunNumber;
       }
     }
-    if (cfgShiftCorr){
+    if (cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C);
       ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC);
     }
@@ -1346,7 +1348,7 @@ struct cascadeFlow {
         lastRunNumber = currentRunNumber;
       }
     }
-    if (cfgShiftCorr){
+    if (cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C);
       ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC);
     }
@@ -1636,7 +1638,7 @@ struct cascadeFlow {
         lastRunNumber = currentRunNumber;
       }
     }
-    if (cfgShiftCorr){
+    if (cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C);
       ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC);
     }
@@ -1841,7 +1843,7 @@ struct cascadeFlow {
         lastRunNumber = currentRunNumber;
       }
     }
-    if (cfgShiftCorr){
+    if (cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C);
       ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC);
     }
