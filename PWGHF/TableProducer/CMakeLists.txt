@@ -204,7 +204,7 @@ o2physics_add_dpl_workflow(candidate-selector-xic-to-xi-pi-pi
 
 o2physics_add_dpl_workflow(candidate-selector-xic0-xicp-to-hadronic
                     SOURCES candidateSelectorXic0XicpToHadronic.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(candidate-selector-xicc-to-p-k-pi-pi

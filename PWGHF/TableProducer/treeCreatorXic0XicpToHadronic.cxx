@@ -9,841 +9,979 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file treeCreatorXic0XicpToHadronic.cxx
-/// \brief tree creator of Xic0 and Xicp candidates
-
+/// \file treeCreatorToXiPi.cxx
+/// \brief Writer of the omegac0 or xic0 to Xi Pi candidates in the form of flat tables to be stored in TTrees.
+///        In this file are defined and filled the output tables
+///
 /// \author Jinhyun Park <jinhyun.park@cern.ch>, Pusan National University
 /// \author Krista Smith <krista.lizbeth.smith@cern.ch>, Pusan National University
 
-// Mandatory
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-// STL
-#include <vector>
-
-// AOB
-#include "CommonConstants/PhysicsConstants.h"
-
-// DataModel
+#include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+
 using namespace o2;
 using namespace o2::framework;
-using namespace o2::framework::expressions;
-using namespace o2::constants::physics;
 
 namespace o2::aod
 {
-
 namespace full
 {
-DECLARE_SOA_COLUMN(CandidateSelFlag, candidateSelFlag, int); //! Selection flag of candidate from candidate selector output
-// vertices
-DECLARE_SOA_COLUMN(Chi2Sv, chi2Sv, float);
-DECLARE_SOA_COLUMN(Chi2XiVtx, chi2XiVtx, float);
-DECLARE_SOA_COLUMN(Chi2LamVtx, chi2LamVtx, float);
-// properties of Xic0
-DECLARE_SOA_COLUMN(E, e, float);
-DECLARE_SOA_COLUMN(M, m, float);
-DECLARE_SOA_COLUMN(P, p, float);
-DECLARE_SOA_COLUMN(Pt, pt, float);
-DECLARE_SOA_COLUMN(Y, y, float);
-DECLARE_SOA_COLUMN(Eta, eta, float);
-DECLARE_SOA_COLUMN(Phi, phi, float);
-DECLARE_SOA_COLUMN(Ct, ct, float);
-DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
-DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
-DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
-DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);
-DECLARE_SOA_COLUMN(Cpa, cpa, float);
-DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);
-DECLARE_SOA_COLUMN(Chi2TopoXic0ToPVBeforeConstraint, chi2TopoXic0ToPVBeforeConstraint, float);
-DECLARE_SOA_COLUMN(Chi2TopoXic0ToPV, chi2TopoXic0ToPV, float);
-DECLARE_SOA_COLUMN(Chi2TopoXiToXic0BeforeConstraint, chi2TopoXiToXic0BeforeConstraint, float);
-DECLARE_SOA_COLUMN(Chi2TopoXiToXic0, chi2TopoXiToXic0, float);
-// properties of Xic0 daughter tracks
-DECLARE_SOA_COLUMN(PtXi, ptXi, float);                                               //! Transverse momentum of Xi(Prong0)
-DECLARE_SOA_COLUMN(ImpactParameterXi, impactParameterXi, float);                     //! Impact parameter of Xi(prong0)
-DECLARE_SOA_COLUMN(ImpactParameterNormalisedXi, impactParameterNormalisedXi, float); //! Normalised impact parameter of Xi(Prong0)
-DECLARE_SOA_COLUMN(PPi, pPi, float);
-DECLARE_SOA_COLUMN(PtPi, ptPi, float);                                               //! Transverse momentum of Pi(Prong1)
-DECLARE_SOA_COLUMN(ImpactParameterPi, impactParameterPi, float);                     //! Impact parameter of Pi(Prong1)
-DECLARE_SOA_COLUMN(ImpactParameterNormalisedPi, impactParameterNormalisedPi, float); //! Normalised impact parameter of Pi(Prong1)
-DECLARE_SOA_COLUMN(MaxNormalisedDeltaIP, maxNormalisedDeltaIP, float);
-DECLARE_SOA_COLUMN(CpaXi, cpaXi, float);
-DECLARE_SOA_COLUMN(CpaXYXi, cpaXYXi, float);
-DECLARE_SOA_COLUMN(CpaLam, cpaLam, float);
-DECLARE_SOA_COLUMN(CpaXYLam, cpaXYLam, float);
-DECLARE_SOA_COLUMN(CpaLamToXi, cpaLamToXi, float);
-DECLARE_SOA_COLUMN(CpaXYLamToXi, cpaXYLamToXi, float);
-DECLARE_SOA_COLUMN(DcaPiXi, dcaPiXi, float);     //! DCA of Xi and charm bachelor pion
-DECLARE_SOA_COLUMN(DcaXYPiXi, dcaXYPiXi, float); //! DCAXY of Xi and charm bachelor pion
-DECLARE_SOA_COLUMN(InvMassXi, invMassXi, float);
+// collision info
+DECLARE_SOA_COLUMN(IsEventSel8, isEventSel8, bool);
+DECLARE_SOA_COLUMN(IsEventSelZ, isEventSelZ, bool);
+DECLARE_SOA_COLUMN(Centrality, centrality, float);
+// from creator
+DECLARE_SOA_COLUMN(XPv, xPv, float);
+DECLARE_SOA_COLUMN(YPv, yPv, float);
+DECLARE_SOA_COLUMN(ZPv, zPv, float);
+DECLARE_SOA_COLUMN(XDecayVtxCharmBaryon, xDecayVtxCharmBaryon, float);
+DECLARE_SOA_COLUMN(YDecayVtxCharmBaryon, yDecayVtxCharmBaryon, float);
+DECLARE_SOA_COLUMN(ZDecayVtxCharmBaryon, zDecayVtxCharmBaryon, float);
+DECLARE_SOA_COLUMN(XDecayVtxCascade, xDecayVtxCascade, float);
+DECLARE_SOA_COLUMN(YDecayVtxCascade, yDecayVtxCascade, float);
+DECLARE_SOA_COLUMN(ZDecayVtxCascade, zDecayVtxCascade, float);
+DECLARE_SOA_COLUMN(XDecayVtxV0, xDecayVtxV0, float);
+DECLARE_SOA_COLUMN(YDecayVtxV0, yDecayVtxV0, float);
+DECLARE_SOA_COLUMN(ZDecayVtxV0, zDecayVtxV0, float);
+DECLARE_SOA_COLUMN(SignDecay, signDecay, int8_t); // sign of pi <- xi
+DECLARE_SOA_COLUMN(CovVtxCharmBaryonXX, covVtxCharmBaryonXX, float);
+DECLARE_SOA_COLUMN(CovVtxCharmBaryonYY, covVtxCharmBaryonYY, float);
+DECLARE_SOA_COLUMN(CovVtxCharmBaryonZZ, covVtxCharmBaryonZZ, float);
+DECLARE_SOA_COLUMN(PxCharmBaryon, pxCharmBaryon, float);
+DECLARE_SOA_COLUMN(PyCharmBaryon, pyCharmBaryon, float);
+DECLARE_SOA_COLUMN(PzCharmBaryon, pzCharmBaryon, float);
+DECLARE_SOA_COLUMN(PxCasc, pxCasc, float);
+DECLARE_SOA_COLUMN(PyCasc, pyCasc, float);
+DECLARE_SOA_COLUMN(PzCasc, pzCasc, float);
+DECLARE_SOA_COLUMN(PxPiFromCharmBaryon, pxPiFromCharmBaryon, float);
+DECLARE_SOA_COLUMN(PyPiFromCharmBaryon, pyPiFromCharmBaryon, float);
+DECLARE_SOA_COLUMN(PzPiFromCharmBaryon, pzPiFromCharmBaryon, float);
+DECLARE_SOA_COLUMN(PxLambda, pxLambda, float);
+DECLARE_SOA_COLUMN(PyLambda, pyLambda, float);
+DECLARE_SOA_COLUMN(PzLambda, pzLambda, float);
+DECLARE_SOA_COLUMN(PxPiFromCasc, pxPiFromCasc, float);
+DECLARE_SOA_COLUMN(PyPiFromCasc, pyPiFromCasc, float);
+DECLARE_SOA_COLUMN(PzPiFromCasc, pzPiFromCasc, float);
+DECLARE_SOA_COLUMN(PxPosV0Dau, pxPosV0Dau, float);
+DECLARE_SOA_COLUMN(PyPosV0Dau, pyPosV0Dau, float);
+DECLARE_SOA_COLUMN(PzPosV0Dau, pzPosV0Dau, float);
+DECLARE_SOA_COLUMN(PxNegV0Dau, pxNegV0Dau, float);
+DECLARE_SOA_COLUMN(PyNegV0Dau, pyNegV0Dau, float);
+DECLARE_SOA_COLUMN(PzNegV0Dau, pzNegV0Dau, float);
+DECLARE_SOA_COLUMN(ImpactParCascXY, impactParCascXY, float);
+DECLARE_SOA_COLUMN(ImpactParPiFromCharmBaryonXY, impactParPiFromCharmBaryonXY, float);
+DECLARE_SOA_COLUMN(ImpactParCascZ, impactParCascZ, float);
+DECLARE_SOA_COLUMN(ImpactParPiFromCharmBaryonZ, impactParPiFromCharmBaryonZ, float);
+DECLARE_SOA_COLUMN(ErrImpactParCascXY, errImpactParCascXY, float);
+DECLARE_SOA_COLUMN(ErrImpactParPiFromCharmBaryonXY, errImpactParPiFromCharmBaryonXY, float);
 DECLARE_SOA_COLUMN(InvMassLambda, invMassLambda, float);
-DECLARE_SOA_COLUMN(PBachelorPi, pBachelorPi, float);
-DECLARE_SOA_COLUMN(PPiFromLambda, pPiFromLambda, float);
-DECLARE_SOA_COLUMN(PPrFromLambda, pPrFromLambda, float);
-// residuals and pulls for Xic0
-DECLARE_SOA_COLUMN(PtResidual, ptResidual, float);
-DECLARE_SOA_COLUMN(PResidual, pResidual, float);
-DECLARE_SOA_COLUMN(XPvResidual, xPvResidual, float);
-DECLARE_SOA_COLUMN(YPvResidual, yPvResidual, float);
-DECLARE_SOA_COLUMN(ZPvResidual, zPvResidual, float);
-DECLARE_SOA_COLUMN(XPvPull, xPvPull, float);
-DECLARE_SOA_COLUMN(YPvPull, yPvPull, float);
-DECLARE_SOA_COLUMN(ZPvPull, zPvPull, float);
-DECLARE_SOA_COLUMN(XSvResidual, xSvResidual, float);
-DECLARE_SOA_COLUMN(YSvResidual, ySvResidual, float);
-DECLARE_SOA_COLUMN(ZSvResidual, zSvResidual, float);
-DECLARE_SOA_COLUMN(XSvPull, xSvPull, float);
-DECLARE_SOA_COLUMN(YSvPull, ySvPull, float);
-DECLARE_SOA_COLUMN(ZSvPull, zSvPull, float);
+DECLARE_SOA_COLUMN(InvMassCascade, invMassCascade, float);
+DECLARE_SOA_COLUMN(InvMassCharmBaryon, invMassCharmBaryon, float);
+DECLARE_SOA_COLUMN(CosPAV0, cosPAV0, float);
+DECLARE_SOA_COLUMN(CosPACharmBaryon, cosPACharmBaryon, float);
+DECLARE_SOA_COLUMN(CosPACasc, cosPACasc, float);
+DECLARE_SOA_COLUMN(CosPAXYV0, cosPAXYV0, float);
+DECLARE_SOA_COLUMN(CosPAXYCharmBaryon, cosPAXYCharmBaryon, float);
+DECLARE_SOA_COLUMN(CosPAXYCasc, cosPAXYCasc, float);
+DECLARE_SOA_COLUMN(CTauOmegac, cTauOmegac, float);
+DECLARE_SOA_COLUMN(CTauCascade, cTauCascade, float);
+DECLARE_SOA_COLUMN(CTauV0, cTauV0, float);
+DECLARE_SOA_COLUMN(CTauXic, cTauXic, float);
+DECLARE_SOA_COLUMN(EtaV0PosDau, etaV0PosDau, float);
+DECLARE_SOA_COLUMN(EtaV0NegDau, etaV0NegDau, float);
+DECLARE_SOA_COLUMN(EtaPiFromCasc, etaPiFromCasc, float);
+DECLARE_SOA_COLUMN(EtaPiFromCharmBaryon, etaPiFromCharmBaryon, float);
+DECLARE_SOA_COLUMN(EtaCharmBaryon, etaCharmBaryon, float);
+DECLARE_SOA_COLUMN(EtaCascade, etaCascade, float);
+DECLARE_SOA_COLUMN(EtaV0, etaV0, float);
+DECLARE_SOA_COLUMN(DcaXYToPvV0Dau0, dcaXYToPvV0Dau0, float);
+DECLARE_SOA_COLUMN(DcaXYToPvV0Dau1, dcaXYToPvV0Dau1, float);
+DECLARE_SOA_COLUMN(DcaXYToPvCascDau, dcaXYToPvCascDau, float);
+DECLARE_SOA_COLUMN(DcaZToPvV0Dau0, dcaZToPvV0Dau0, float);
+DECLARE_SOA_COLUMN(DcaZToPvV0Dau1, dcaZToPvV0Dau1, float);
+DECLARE_SOA_COLUMN(DcaZToPvCascDau, dcaZToPvCascDau, float);
+DECLARE_SOA_COLUMN(DcaCascDau, dcaCascDau, float);
+DECLARE_SOA_COLUMN(DcaV0Dau, dcaV0Dau, float);
+DECLARE_SOA_COLUMN(DcaCharmBaryonDau, dcaCharmBaryonDau, float);
+DECLARE_SOA_COLUMN(DecLenCharmBaryon, decLenCharmBaryon, float);
+DECLARE_SOA_COLUMN(DecLenCascade, decLenCascade, float);
+DECLARE_SOA_COLUMN(DecLenV0, decLenV0, float);
+DECLARE_SOA_COLUMN(ErrorDecayLengthCharmBaryon, errorDecayLengthCharmBaryon, float);
+DECLARE_SOA_COLUMN(ErrorDecayLengthXYCharmBaryon, errorDecayLengthXYCharmBaryon, float);
+DECLARE_SOA_COLUMN(NormImpParCascade, normImpParCascade, double);
+DECLARE_SOA_COLUMN(NormImpParPiFromCharmBar, normImpParPiFromCharmBar, double);
+DECLARE_SOA_COLUMN(NormDecayLenCharmBar, normDecayLenCharmBar, double);
+DECLARE_SOA_COLUMN(IsPionGlbTrkWoDca, isPionGlbTrkWoDca, bool);
+DECLARE_SOA_COLUMN(PionItsNCls, pionItsNCls, uint8_t);
+DECLARE_SOA_COLUMN(NTpcRowsPion, nTpcRowsPion, int16_t);
+DECLARE_SOA_COLUMN(NTpcRowsPiFromCasc, nTpcRowsPiFromCasc, int16_t);
+DECLARE_SOA_COLUMN(NTpcRowsPosV0Dau, nTpcRowsPosV0Dau, int16_t);
+DECLARE_SOA_COLUMN(NTpcRowsNegV0Dau, nTpcRowsNegV0Dau, int16_t);
+// from creator KF
+DECLARE_SOA_COLUMN(KfDcaXYPiFromXic, kfDcaXYPiFromXic, float);
+DECLARE_SOA_COLUMN(KfDcaXYCascToPv, kfDcaXYCascToPv, float);
+DECLARE_SOA_COLUMN(Chi2GeoV0, chi2GeoV0, float);
+DECLARE_SOA_COLUMN(Chi2GeoCasc, chi2GeoCasc, float);
+DECLARE_SOA_COLUMN(Chi2GeoXic, chi2GeoXic, float);
+DECLARE_SOA_COLUMN(Chi2MassV0, chi2MassV0, float);
+DECLARE_SOA_COLUMN(Chi2MassCasc, chi2MassCasc, float);
+DECLARE_SOA_COLUMN(V0ldl, v0ldl, float);
+DECLARE_SOA_COLUMN(Cascldl, cascldl, float);
+DECLARE_SOA_COLUMN(Xicldl, xicldl, float);
+DECLARE_SOA_COLUMN(Chi2TopoV0ToPv, chi2TopoV0ToPv, float);
+DECLARE_SOA_COLUMN(Chi2TopoCascToPv, chi2TopoCascToPv, float);
+DECLARE_SOA_COLUMN(Chi2TopoPiFromXicToPv, chi2TopoPiFromXicToPv, float);
+DECLARE_SOA_COLUMN(Chi2TopoXicToPv, chi2TopoXicToPv, float);
+DECLARE_SOA_COLUMN(Chi2TopoV0ToCasc, chi2TopoV0ToCasc, float);
+DECLARE_SOA_COLUMN(Chi2TopoCascToXic, chi2TopoCascToXic, float);
+DECLARE_SOA_COLUMN(DecayLenXYLambda, decayLenXYLambda, float);
+DECLARE_SOA_COLUMN(DecayLenXYCasc, decayLenXYCasc, float);
+DECLARE_SOA_COLUMN(DecayLenXYXic, decayLenXYXic, float);
+DECLARE_SOA_COLUMN(CosPaV0ToCasc, cosPaV0ToCasc, float);
+DECLARE_SOA_COLUMN(CosPaV0ToPv, cosPaV0ToPv, float);
+DECLARE_SOA_COLUMN(CosPaCascToXic, cosPaCascToXic, float);
+DECLARE_SOA_COLUMN(CosPaCascToPv, cosPaCascToPv, float);
+DECLARE_SOA_COLUMN(CosPaXicToPv, cosPaXicToPv, float);
+DECLARE_SOA_COLUMN(KfRapXic, kfRapXic, float);
+DECLARE_SOA_COLUMN(KfptPiFromXic, kfptPiFromXic, float);
+DECLARE_SOA_COLUMN(KfptXic, kfptXic, float);
+DECLARE_SOA_COLUMN(CosThetaStarPiFromXic, cosThetaStarPiFromXic, float);
+DECLARE_SOA_COLUMN(CtXic, ctXic, float);
+DECLARE_SOA_COLUMN(EtaXic, etaXic, float);
+DECLARE_SOA_COLUMN(V0Ndf, v0Ndf, float);
+DECLARE_SOA_COLUMN(CascNdf, cascNdf, float);
+DECLARE_SOA_COLUMN(XicNdf, xicNdf, float);
+DECLARE_SOA_COLUMN(MassV0Ndf, massV0Ndf, float);
+DECLARE_SOA_COLUMN(MassCascNdf, massCascNdf, float);
+DECLARE_SOA_COLUMN(V0Chi2OverNdf, v0Chi2OverNdf, float);
+DECLARE_SOA_COLUMN(CascChi2OverNdf, cascChi2OverNdf, float);
+DECLARE_SOA_COLUMN(XicChi2OverNdf, xicChi2OverNdf, float);
+DECLARE_SOA_COLUMN(MassV0Chi2OverNdf, massV0Chi2OverNdf, float);
+DECLARE_SOA_COLUMN(MassCascChi2OverNdf, massCascChi2OverNdf, float);
+// from creator - MC
+DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction level
+DECLARE_SOA_COLUMN(DebugMcRec, debugMcRec, int8_t);         // debug flag for mis-association reconstruction level
+DECLARE_SOA_COLUMN(OriginRec, originRec, int8_t);
+DECLARE_SOA_COLUMN(CollisionMatched, collisionMatched, bool);
+// from selector
+DECLARE_SOA_COLUMN(StatusPidLambda, statusPidLambda, bool);
+DECLARE_SOA_COLUMN(StatusPidCascade, statusPidCascade, bool);
+DECLARE_SOA_COLUMN(StatusPidCharmBaryon, statusPidCharmBaryon, bool);
+DECLARE_SOA_COLUMN(StatusInvMassLambda, statusInvMassLambda, bool);
+DECLARE_SOA_COLUMN(StatusInvMassCascade, statusInvMassCascade, bool);
+DECLARE_SOA_COLUMN(StatusInvMassCharmBaryon, statusInvMassCharmBaryon, bool);
+DECLARE_SOA_COLUMN(ResultSelections, resultSelections, bool);
+DECLARE_SOA_COLUMN(PidTpcInfoStored, pidTpcInfoStored, int);
+DECLARE_SOA_COLUMN(PidTofInfoStored, pidTofInfoStored, int);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromCharmBaryon, tpcNSigmaPiFromCharmBaryon, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromCasc, tpcNSigmaPiFromCasc, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPiFromLambda, tpcNSigmaPiFromLambda, float);
+DECLARE_SOA_COLUMN(TpcNSigmaPrFromLambda, tpcNSigmaPrFromLambda, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromCharmBaryon, tofNSigmaPiFromCharmBaryon, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromCasc, tofNSigmaPiFromCasc, float);
+DECLARE_SOA_COLUMN(TofNSigmaPiFromLambda, tofNSigmaPiFromLambda, float);
+DECLARE_SOA_COLUMN(TofNSigmaPrFromLambda, tofNSigmaPrFromLambda, float);
 } // namespace full
 
-DECLARE_SOA_TABLE(HfCandXic0Lites, "AOD", "HFCANDXIC0LITE",
-                  hf_cand_xic0_xicp_to_hadronic::xic0::FlagMcMatchRec,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DebugMcRec,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::OriginRec,
-                  full::CandidateSelFlag,
-                  full::Y,
-                  full::Eta,
-                  full::Phi,
-                  full::P,
-                  full::Pt,
-                  full::PtXi,
-                  full::PtPi,
-                  full::M,
-                  full::InvMassXi,
-                  full::InvMassLambda,
-                  full::Chi2Sv,
-                  full::Ct,
-                  full::DecayLength,
-                  full::DecayLengthNormalised,
-                  full::DecayLengthXY,
-                  full::DecayLengthXYNormalised,
-                  full::Cpa,
-                  full::CpaXY,
-                  full::CpaXi,
-                  full::CpaXYXi,
-                  full::CpaLam,
-                  full::CpaXYLam,
-                  full::ImpactParameterXi,
-                  full::ImpactParameterNormalisedXi,
-                  full::ImpactParameterPi,
-                  full::ImpactParameterNormalisedPi,
-                  full::MaxNormalisedDeltaIP);
+DECLARE_SOA_TABLE(HfToXiPiEvs, "AOD", "HFTOXIPIEV",
+                  full::IsEventSel8, full::IsEventSelZ);
 
-DECLARE_SOA_TABLE(HfCandXic0LiteKfs, "AOD", "HFCANDXIC0LITKF",
-                  hf_cand_xic0_xicp_to_hadronic::xic0::FlagMcMatchRec,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DebugMcRec,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::OriginRec,
-                  full::CandidateSelFlag,
-                  full::Y,
-                  full::Eta,
-                  full::Phi,
-                  full::P,
-                  full::Pt,
-                  full::PtXi,
-                  full::PtPi,
-                  full::M,
-                  full::InvMassXi,
-                  full::InvMassLambda,
-                  full::Chi2Sv,
-                  full::Ct,
-                  full::DecayLength,
-                  full::DecayLengthNormalised,
-                  full::DecayLengthXY,
-                  full::DecayLengthXYNormalised,
-                  full::Cpa,
-                  full::CpaXY,
-                  full::CpaXi,
-                  full::CpaXYXi,
-                  full::CpaLam,
-                  full::CpaXYLam,
-                  full::ImpactParameterXi,
-                  full::ImpactParameterNormalisedXi,
-                  full::ImpactParameterPi,
-                  full::ImpactParameterNormalisedPi,
-                  full::MaxNormalisedDeltaIP,
-                  // KF specific columns
-                  full::Chi2XiVtx,
-                  full::Chi2LamVtx,
-                  full::Chi2TopoXic0ToPVBeforeConstraint,
-                  full::Chi2TopoXic0ToPV,
-                  full::Chi2TopoXiToXic0BeforeConstraint,
-                  full::Chi2TopoXiToXic0,
-                  full::DcaXYPiXi,
-                  full::DcaPiXi);
+DECLARE_SOA_TABLE(HfToXiPiFulls, "AOD", "HFTOXIPIFULL",
+                  full::XPv, full::YPv, full::ZPv, full::Centrality, collision::NumContrib, collision::Chi2,
+                  full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
+                  full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
+                  full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
+                  full::SignDecay,
+                  full::CovVtxCharmBaryonXX, full::CovVtxCharmBaryonYY, full::CovVtxCharmBaryonZZ,
+                  full::PxCharmBaryon, full::PyCharmBaryon, full::PzCharmBaryon,
+                  full::PxCasc, full::PyCasc, full::PzCasc,
+                  full::PxPiFromCharmBaryon, full::PyPiFromCharmBaryon, full::PzPiFromCharmBaryon,
+                  full::PxLambda, full::PyLambda, full::PzLambda,
+                  full::PxPiFromCasc, full::PyPiFromCasc, full::PzPiFromCasc,
+                  full::PxPosV0Dau, full::PyPosV0Dau, full::PzPosV0Dau,
+                  full::PxNegV0Dau, full::PyNegV0Dau, full::PzNegV0Dau,
+                  full::ImpactParCascXY, full::ImpactParPiFromCharmBaryonXY,
+                  full::ImpactParCascZ, full::ImpactParPiFromCharmBaryonZ,
+                  full::ErrImpactParCascXY, full::ErrImpactParPiFromCharmBaryonXY,
+                  full::InvMassLambda, full::InvMassCascade, full::InvMassCharmBaryon,
+                  full::CosPAV0, full::CosPACharmBaryon, full::CosPACasc, full::CosPAXYV0, full::CosPAXYCharmBaryon, full::CosPAXYCasc,
+                  full::CTauOmegac, full::CTauCascade, full::CTauV0, full::CTauXic,
+                  full::EtaV0PosDau, full::EtaV0NegDau, full::EtaPiFromCasc, full::EtaPiFromCharmBaryon,
+                  full::EtaCharmBaryon, full::EtaCascade, full::EtaV0,
+                  full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
+                  full::DcaZToPvV0Dau0, full::DcaZToPvV0Dau1, full::DcaZToPvCascDau,
+                  full::DcaCascDau, full::DcaV0Dau, full::DcaCharmBaryonDau,
+                  full::DecLenCharmBaryon, full::DecLenCascade, full::DecLenV0, full::ErrorDecayLengthCharmBaryon, full::ErrorDecayLengthXYCharmBaryon,
+                  full::NormImpParCascade, full::NormImpParPiFromCharmBar, full::NormDecayLenCharmBar, full::IsPionGlbTrkWoDca, full::PionItsNCls,
+                  full::NTpcRowsPion, full::NTpcRowsPiFromCasc, full::NTpcRowsPosV0Dau, full::NTpcRowsNegV0Dau,
+                  full::StatusPidLambda, full::StatusPidCascade, full::StatusPidCharmBaryon,
+                  full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassCharmBaryon, full::ResultSelections,
+                  full::PidTpcInfoStored, full::PidTofInfoStored,
+                  full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
+                  full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
+                  full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched);
 
-DECLARE_SOA_TABLE(HfCandXic0Fulls, "AOD", "HFCANDXIC0FULL",
-                  hf_cand_xic0_xicp_to_hadronic::xic0::FlagMcMatchRec,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DebugMcRec,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::OriginRec,
-                  full::CandidateSelFlag,
-                  full::Y,
-                  full::Eta,
-                  full::Phi,
-                  full::P,
-                  full::Pt,
-                  full::PtXi,
-                  full::PtPi,
-                  full::M,
-                  full::InvMassXi,
-                  full::InvMassLambda,
-                  full::Chi2Sv,
-                  full::Ct,
-                  full::DecayLength,
-                  full::DecayLengthNormalised,
-                  full::DecayLengthXY,
-                  full::DecayLengthXYNormalised,
-                  full::Cpa,
-                  full::CpaXY,
-                  full::CpaXi,
-                  full::CpaXYXi,
-                  full::CpaLam,
-                  full::CpaXYLam,
-                  full::ImpactParameterXi,
-                  full::ImpactParameterNormalisedXi,
-                  full::ImpactParameterPi,
-                  full::ImpactParameterNormalisedPi,
-                  full::MaxNormalisedDeltaIP,
-                  // additional columns only stored in the full candidate table
-                  full::CpaLamToXi,
-                  full::CpaXYLamToXi,
-                  full::PPi,
-                  full::PBachelorPi,
-                  full::PPiFromLambda,
-                  full::PPrFromLambda,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaXiDaughters,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaV0Daughters,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaPosToPV,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaNegToPV,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaBachelorToPV,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaXYCascToPV,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaZCascToPV,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcPiFromXic0,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcBachelorPi,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcPiFromLambda,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcPrFromLambda,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofPiFromXic0,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofBachelorPi,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofPiFromLambda,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofPrFromLambda);
+DECLARE_SOA_TABLE(HfToXiPiLites, "AOD", "HFTOXIPILITE",
+                  full::XPv, full::YPv, full::ZPv, full::Centrality, collision::NumContrib, collision::Chi2,
+                  full::XDecayVtxCharmBaryon, full::YDecayVtxCharmBaryon, full::ZDecayVtxCharmBaryon,
+                  full::XDecayVtxCascade, full::YDecayVtxCascade, full::ZDecayVtxCascade,
+                  full::XDecayVtxV0, full::YDecayVtxV0, full::ZDecayVtxV0,
+                  full::SignDecay,
+                  full::PxCharmBaryon, full::PyCharmBaryon, full::PzCharmBaryon,
+                  full::PxPiFromCharmBaryon, full::PyPiFromCharmBaryon, full::PzPiFromCharmBaryon,
+                  full::PxPiFromCasc, full::PyPiFromCasc, full::PzPiFromCasc,
+                  full::PxPosV0Dau, full::PyPosV0Dau, full::PzPosV0Dau,
+                  full::PxNegV0Dau, full::PyNegV0Dau, full::PzNegV0Dau,
+                  full::ImpactParCascXY, full::ImpactParPiFromCharmBaryonXY,
+                  full::ErrImpactParCascXY, full::ErrImpactParPiFromCharmBaryonXY,
+                  full::InvMassLambda, full::InvMassCascade, full::InvMassCharmBaryon,
+                  full::EtaV0PosDau, full::EtaV0NegDau, full::EtaPiFromCasc, full::EtaPiFromCharmBaryon,
+                  full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
+                  full::DcaCascDau, full::DcaV0Dau, full::DcaCharmBaryonDau,
+                  full::ErrorDecayLengthCharmBaryon, full::NormImpParCascade, full::NormImpParPiFromCharmBar,
+                  full::IsPionGlbTrkWoDca, full::PionItsNCls,
+                  full::NTpcRowsPion, full::NTpcRowsPiFromCasc, full::NTpcRowsPosV0Dau, full::NTpcRowsNegV0Dau,
+                  full::StatusPidLambda, full::StatusPidCascade, full::StatusPidCharmBaryon,
+                  full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassCharmBaryon, full::ResultSelections,
+                  full::PidTpcInfoStored, full::PidTofInfoStored,
+                  full::TpcNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TpcNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda,
+                  full::TofNSigmaPiFromCharmBaryon, full::TofNSigmaPiFromCasc, full::TofNSigmaPiFromLambda, full::TofNSigmaPrFromLambda,
+                  full::FlagMcMatchRec, full::OriginRec, full::CollisionMatched);
 
-DECLARE_SOA_TABLE(HfCandXic0FullKfs, "AOD", "HFCANDXIC0FULKF",
-                  hf_cand_xic0_xicp_to_hadronic::xic0::FlagMcMatchRec,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DebugMcRec,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::OriginRec,
-                  full::CandidateSelFlag,
-                  full::Y,
-                  full::Eta,
-                  full::Phi,
-                  full::P,
-                  full::Pt,
-                  full::PtXi,
-                  full::PtPi,
-                  full::M,
-                  full::InvMassXi,
-                  full::InvMassLambda,
-                  full::Chi2Sv,
-                  full::Ct,
-                  full::DecayLength,
-                  full::DecayLengthNormalised,
-                  full::DecayLengthXY,
-                  full::DecayLengthXYNormalised,
-                  full::Cpa,
-                  full::CpaXY,
-                  full::CpaXi,
-                  full::CpaXYXi,
-                  full::CpaLam,
-                  full::CpaXYLam,
-                  full::ImpactParameterXi,
-                  full::ImpactParameterNormalisedXi,
-                  full::ImpactParameterPi,
-                  full::ImpactParameterNormalisedPi,
-                  full::MaxNormalisedDeltaIP,
-                  // additional columns only stored in the full candidate table
-                  full::CpaLamToXi,
-                  full::CpaXYLamToXi,
-                  full::PPi,
-                  full::PBachelorPi,
-                  full::PPiFromLambda,
-                  full::PPrFromLambda,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaXiDaughters,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaV0Daughters,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaPosToPV,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaNegToPV,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaBachelorToPV,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaXYCascToPV,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DcaZCascToPV,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcPiFromXic0,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcBachelorPi,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcPiFromLambda,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTpcPrFromLambda,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofPiFromXic0,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofBachelorPi,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofPiFromLambda,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::NSigTofPrFromLambda,
-                  // KF specific columns
-                  full::Chi2XiVtx,
-                  full::Chi2LamVtx,
-                  full::Chi2TopoXic0ToPVBeforeConstraint,
-                  full::Chi2TopoXic0ToPV,
-                  full::Chi2TopoXiToXic0BeforeConstraint,
-                  full::Chi2TopoXiToXic0,
-                  full::DcaXYPiXi,
-                  full::DcaPiXi);
+DECLARE_SOA_TABLE(HfKfXicFulls, "AOD", "HFKFXICFULL",
+                  full::Centrality,
+                  full::StatusPidLambda, full::StatusPidCascade, full::StatusPidCharmBaryon,
+                  full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassCharmBaryon, full::ResultSelections,
+                  full::TpcNSigmaPiFromCharmBaryon, full::TofNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TofNSigmaPiFromCasc,
+                  full::TpcNSigmaPiFromLambda, full::TofNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda, full::TofNSigmaPrFromLambda,
+                  full::KfDcaXYPiFromXic, full::DcaCascDau, full::DcaCharmBaryonDau, full::KfDcaXYCascToPv,
+                  full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
+                  full::Chi2GeoV0, full::Chi2GeoCasc, full::Chi2GeoXic,
+                  full::Chi2MassV0, full::Chi2MassCasc,
+                  full::V0ldl, full::Cascldl, full::Xicldl,
+                  full::Chi2TopoV0ToPv, full::Chi2TopoCascToPv, full::Chi2TopoPiFromXicToPv, full::Chi2TopoXicToPv,
+                  full::Chi2TopoV0ToCasc, full::Chi2TopoCascToXic,
+                  full::DecayLenXYLambda, full::DecayLenXYCasc, full::DecayLenXYXic,
+                  full::CosPaV0ToCasc, full::CosPaV0ToPv, full::CosPaCascToXic, full::CosPaCascToPv, full::CosPaXicToPv,
+                  full::InvMassLambda, full::InvMassCascade, full::InvMassCharmBaryon,
+                  full::KfRapXic, full::KfptPiFromXic, full::KfptXic,
+                  full::CosThetaStarPiFromXic, full::CtXic, full::EtaXic,
+                  full::V0Ndf, full::CascNdf, full::XicNdf,
+                  full::MassV0Ndf, full::MassCascNdf,
+                  full::V0Chi2OverNdf, full::CascChi2OverNdf, full::XicChi2OverNdf,
+                  full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf,
+                  full::FlagMcMatchRec, full::DebugMcRec, full::OriginRec, full::CollisionMatched);
 
-DECLARE_SOA_TABLE(HfCandXic0ToXiPiFullPs, "AOD", "HFXIC0TOXIPIFULLP",
-                  hf_cand_xic0_xicp_to_hadronic::xic0::FlagMcMatchGen,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::DebugMcGen,
-                  hf_cand_xic0_xicp_to_hadronic::xic0::OriginGen,
-                  full::Pt,
-                  full::Eta,
-                  full::Phi,
-                  full::Y);
-
-DECLARE_SOA_TABLE(HfCandXic0ToXiPiResiduals, "AOD", "HFXIC0TOXIPIRESID",
-                  hf_cand_xic0_xicp_to_hadronic::xic0::OriginGen,
-                  full::PResidual,
-                  full::PtResidual,
-                  full::XPvResidual,
-                  full::YPvResidual,
-                  full::ZPvResidual,
-                  full::XPvPull,
-                  full::YPvPull,
-                  full::ZPvPull,
-                  full::XSvResidual,
-                  full::YSvResidual,
-                  full::ZSvResidual,
-                  full::XSvPull,
-                  full::YSvPull,
-                  full::ZSvPull);
 } // namespace o2::aod
 
+/// Writes the full information in an output TTree
 struct HfTreeCreatorXic0XicpToHadronic {
 
-  struct : ProducesGroup {
-    Produces<aod::HfCandXic0Lites> rowCandXic0Lites;
-    Produces<aod::HfCandXic0LiteKfs> rowCandXic0LiteKfs;
-    Produces<aod::HfCandXic0Fulls> rowCandXic0Fulls;
-    Produces<aod::HfCandXic0FullKfs> rowCandXic0FullKfs;
-    Produces<aod::HfCandXic0ToXiPiFullPs> rowCandXic0FullParticles;
-    Produces<aod::HfCandXic0ToXiPiResiduals> rowCandResiduals;
-  } cursors;
+  Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
+  Produces<o2::aod::HfToXiPiLites> rowCandidateLite;
+  Produces<o2::aod::HfKfXicFulls> rowKfCandidate;
+  Produces<o2::aod::HfToXiPiEvs> rowEv;
 
-  struct : ConfigurableGroup {
-    Configurable<int> selectionFlagXic0{"selectionFlagXic0", 1, "Selection flag for Xic0"};
-    Configurable<bool> fillCandidateLite{"fillCandidateLite", true, "Switch to fill lite table with candidate properties"};
-    Configurable<bool> fillGenParticleTable{"fillGenParticleTable", false, "Switch to fill table with MC truth for generated particles"};
-    Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
-    Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
-    Configurable<float> downSampleBkgFactor{"downSampleBkgFactor", 1., "Fraction of background candidates to keep for ML trainings"}; // ?
-    Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximim pt for the application of the downsampling factor"};   // ?
-    // Parameter for MC matching in residual process function
-    Configurable<bool> matchDecayedPions{"matchDecayedPions", true, "Match also candidates with daughter pion tracks that decay with kinked topology"};
-    Configurable<bool> matchInteractionsWithMaterials{"matchInteractionsWithMaterials", true, "Match also candidates with daughter tracks that interact with material"};
-  } configs;
+  Configurable<float> zPvCut{"zPvCut", 10., "Cut on absolute value of primary vertex z coordinate"};
 
-  // Table alises for Xic0
-  using SelectedXic0Candidates = soa::Filtered<soa::Join<aod::HfCandXic0, aod::HfSelXic0ToXiPi>>;
-  using SelectedXic0CandidatesKf = soa::Filtered<soa::Join<aod::HfCandXic0, aod::HfCandXic0KF, aod::HfSelXic0ToXiPi>>;
-  using SelectedXic0CandidatesMc = soa::Filtered<soa::Join<aod::HfCandXic0, aod::HfCandXic0McRec, aod::HfSelXic0ToXiPi>>;
-  using SelectedXic0CandidatesKfMc = soa::Filtered<soa::Join<aod::HfCandXic0, aod::HfCandXic0KF, aod::HfCandXic0McRec, aod::HfSelXic0ToXiPi>>;
-
-  Filter filterSelectXic0Candidates = aod::hf_sel_xic0_xicp_to_hadronic::xic0::isSelXic0ToXiPi >= configs.selectionFlagXic0;
-
-  Partition<SelectedXic0CandidatesMc> recXic0Sig = nabs(aod::hf_cand_xic0_xicp_to_hadronic::xic0::flagMcMatchRec) != int8_t(0);
-  Partition<SelectedXic0CandidatesMc> recXic0Bkg = nabs(aod::hf_cand_xic0_xicp_to_hadronic::xic0::flagMcMatchRec) == int8_t(0);
-  Partition<SelectedXic0CandidatesKfMc> recXic0SigKf = nabs(aod::hf_cand_xic0_xicp_to_hadronic::xic0::flagMcMatchRec) != int8_t(0);
-  Partition<SelectedXic0CandidatesKfMc> recXic0BkgKf = nabs(aod::hf_cand_xic0_xicp_to_hadronic::xic0::flagMcMatchRec) == int8_t(0);
+  using MyTrackTable = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra>;
+  using MyEventTable = soa::Join<aod::Collisions, aod::EvSels>;
+  using MyEventTableWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+  using MyEventTableWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
+  using MyEventTableWithNTracksPV = soa::Join<aod::Collisions, aod::EvSels, aod::CentNTPVs>;
 
   void init(InitContext const&)
   {
+    if ((doprocessMcLiteXic0 && doprocessMcLiteOmegac0) || (doprocessMcFullXic0 && doprocessMcFullOmegac0)) {
+      LOGF(fatal, "Both Xic0 and Omegac0 MC processes enabled, please choose ONLY one!");
+    }
   }
 
-  template <bool doMc, bool doKf, typename T>
-  void fillXic0CandidateTable(const T& candidate)
+  //////////////////////////////////////////////////////
+  //                                                  //
+  //       Fill functions to fill in the tables       //
+  //                                                  //
+  //////////////////////////////////////////////////////
+
+  template <bool useCentrality, typename T>
+  void fillEvent(const T& collision, float cutZPv)
   {
-    int8_t flagMc{0}, debugMc{0}, originMc{0};
-    if constexpr (doMc) {
-      flagMc = candidate.flagMcMatchRec();
-      debugMc = candidate.debugMcRec();
-      originMc = candidate.originRec();
-    }
-    if constexpr (!doKf) {
-      if (configs.fillCandidateLite) {
-        cursors.rowCandXic0Lites(flagMc,
-                                 debugMc,
-                                 originMc,
-                                 candidate.isSelXic0ToXiPi(),
-                                 candidate.y(o2::constants::physics::MassXiC0),
-                                 candidate.eta(),
-                                 candidate.phi(),
-                                 candidate.p(),
-                                 candidate.pt(),
-                                 candidate.ptProng0(),
-                                 candidate.ptProng1(),
-                                 candidate.invMassXic0(),
-                                 candidate.invMassXi(),
-                                 candidate.invMassLambda(),
-                                 candidate.chi2PCA(),
-                                 candidate.ct(o2::constants::physics::MassXiC0),
-                                 candidate.decayLength(),
-                                 candidate.decayLengthNormalised(),
-                                 candidate.decayLengthXY(),
-                                 candidate.decayLengthXYNormalised(),
-                                 candidate.cpa(),
-                                 candidate.cpaXY(),
-                                 candidate.cosPaXi(),
-                                 candidate.cosPaXYXi(),
-                                 candidate.cosPaLambda(),
-                                 candidate.cosPaXYLambda(),
-                                 candidate.impactParameter0(),
-                                 candidate.impactParameterNormalised0(),
-                                 candidate.impactParameter1(),
-                                 candidate.impactParameterNormalised1(),
-                                 candidate.maxNormalisedDeltaIP());
-      } else { // Fill full table
-        cursors.rowCandXic0Fulls(flagMc,
-                                 debugMc,
-                                 originMc,
-                                 candidate.isSelXic0ToXiPi(),
-                                 candidate.y(o2::constants::physics::MassXiC0),
-                                 candidate.eta(),
-                                 candidate.phi(),
-                                 candidate.p(),
-                                 candidate.pt(),
-                                 candidate.ptProng0(),
-                                 candidate.ptProng1(),
-                                 candidate.invMassXic0(),
-                                 candidate.invMassXi(),
-                                 candidate.invMassLambda(),
-                                 candidate.chi2PCA(),
-                                 candidate.ct(o2::constants::physics::MassXiC0),
-                                 candidate.decayLength(),
-                                 candidate.decayLengthNormalised(),
-                                 candidate.decayLengthXY(),
-                                 candidate.decayLengthXYNormalised(),
-                                 candidate.cpa(),
-                                 candidate.cpaXY(),
-                                 candidate.cosPaXi(),
-                                 candidate.cosPaXYXi(),
-                                 candidate.cosPaLambda(),
-                                 candidate.cosPaXYLambda(),
-                                 candidate.impactParameter0(),
-                                 candidate.impactParameterNormalised0(),
-                                 candidate.impactParameter1(),
-                                 candidate.impactParameterNormalised1(),
-                                 candidate.maxNormalisedDeltaIP(),
-                                 // Additional colums only stored in the full candidate table
-                                 candidate.cosPaLambdaToXi(),
-                                 candidate.cosPaXYLambdaToXi(),
-                                 candidate.pProng1(),       // Pi <- Xic0
-                                 candidate.pBachelorPi(),   // Pi <- Xi-
-                                 candidate.pPiFromLambda(), // Pi <- V0 <- Xi-
-                                 candidate.pPrFromLambda(), // Pr <- V0 <- Xi-
-                                 candidate.dcaXiDaughters(),
-                                 candidate.dcaV0Daughters(),
-                                 candidate.dcaPosToPV(),
-                                 candidate.dcaNegToPV(),
-                                 candidate.dcaBachelorToPV(),
-                                 candidate.dcaXYCascToPV(),
-                                 candidate.dcaZCascToPV(),
-                                 candidate.nSigTpcPiFromXic0(),
-                                 candidate.nSigTpcBachelorPi(),
-                                 candidate.nSigTpcPiFromLambda(),
-                                 candidate.nSigTpcPrFromLambda(),
-                                 candidate.nSigTofPiFromXic0(),
-                                 candidate.nSigTofBachelorPi(),
-                                 candidate.nSigTofPiFromLambda(),
-                                 candidate.nSigTofPrFromLambda());
-      }
-    } else { // Fill with KF informations
-      if (configs.fillCandidateLite) {
-        cursors.rowCandXic0LiteKfs(flagMc,
-                                   debugMc,
-                                   originMc,
-                                   candidate.isSelXic0ToXiPi(),
-                                   candidate.y(o2::constants::physics::MassXiC0),
-                                   candidate.eta(),
-                                   candidate.phi(),
-                                   candidate.p(),
-                                   candidate.pt(),
-                                   candidate.ptProng0(),
-                                   candidate.ptProng1(),
-                                   candidate.invMassXic0(),
-                                   candidate.invMassXi(),
-                                   candidate.invMassLambda(),
-                                   candidate.chi2PCA(),
-                                   candidate.ct(o2::constants::physics::MassXiC0),
-                                   candidate.decayLength(),
-                                   candidate.decayLengthNormalised(),
-                                   candidate.decayLengthXY(),
-                                   candidate.decayLengthXYNormalised(),
-                                   candidate.cpa(),
-                                   candidate.cpaXY(),
-                                   candidate.cosPaXi(),
-                                   candidate.cosPaXYXi(),
-                                   candidate.cosPaLambda(),
-                                   candidate.cosPaXYLambda(),
-                                   candidate.impactParameter0(),
-                                   candidate.impactParameterNormalised0(),
-                                   candidate.impactParameter1(),
-                                   candidate.impactParameterNormalised1(),
-                                   candidate.maxNormalisedDeltaIP(),
-                                   // KF-specific columns
-                                   candidate.kfCascadeChi2(),
-                                   candidate.kfV0Chi2(),
-                                   candidate.chi2TopoXic0ToPVBeforeConstraint(),
-                                   candidate.chi2TopoXic0ToPV(),
-                                   candidate.chi2TopoXiToXic0BeforeConstraint(),
-                                   candidate.chi2TopoXiToXic0(),
-                                   candidate.dcaXYPiXi(),
-                                   candidate.dcaPiXi());
+    rowEv(collision.sel8(), std::abs(collision.posZ()) < cutZPv);
+  }
 
-      } else { // Fill full table with KF
-        cursors.rowCandXic0FullKfs(flagMc,
-                                   debugMc,
-                                   originMc,
-                                   candidate.isSelXic0ToXiPi(),
-                                   candidate.y(o2::constants::physics::MassXiC0),
-                                   candidate.eta(),
-                                   candidate.phi(),
-                                   candidate.p(),
-                                   candidate.pt(),
-                                   candidate.ptProng0(),
-                                   candidate.ptProng1(),
-                                   candidate.invMassXic0(),
-                                   candidate.invMassXi(),
-                                   candidate.invMassLambda(),
-                                   candidate.chi2PCA(),
-                                   candidate.ct(o2::constants::physics::MassXiC0),
-                                   candidate.decayLength(),
-                                   candidate.decayLengthNormalised(),
-                                   candidate.decayLengthXY(),
-                                   candidate.decayLengthXYNormalised(),
-                                   candidate.cpa(),
-                                   candidate.cpaXY(),
-                                   candidate.cosPaXi(),
-                                   candidate.cosPaXYXi(),
-                                   candidate.cosPaLambda(),
-                                   candidate.cosPaXYLambda(),
-                                   candidate.impactParameter0(),
-                                   candidate.impactParameterNormalised0(),
-                                   candidate.impactParameter1(),
-                                   candidate.impactParameterNormalised1(),
-                                   candidate.maxNormalisedDeltaIP(),
-                                   // Additional colums only stored in the full candidate table
-                                   candidate.cosPaLambdaToXi(),
-                                   candidate.cosPaXYLambdaToXi(),
-                                   candidate.pProng1(),       // Pi <- Xic0
-                                   candidate.pBachelorPi(),   // Pi <- Xi-
-                                   candidate.pPiFromLambda(), // Pi <- V0 <- Xi-
-                                   candidate.pPrFromLambda(), // Pr <- V0 <- Xi-
-                                   candidate.dcaXiDaughters(),
-                                   candidate.dcaV0Daughters(),
-                                   candidate.dcaPosToPV(),
-                                   candidate.dcaNegToPV(),
-                                   candidate.dcaBachelorToPV(),
-                                   candidate.dcaXYCascToPV(),
-                                   candidate.dcaZCascToPV(),
-                                   candidate.nSigTpcPiFromXic0(),
-                                   candidate.nSigTpcBachelorPi(),
-                                   candidate.nSigTpcPiFromLambda(),
-                                   candidate.nSigTpcPrFromLambda(),
-                                   candidate.nSigTofPiFromXic0(),
-                                   candidate.nSigTofBachelorPi(),
-                                   candidate.nSigTofPiFromLambda(),
-                                   candidate.nSigTofPrFromLambda(),
-                                   // KF-specific columns
-                                   candidate.kfCascadeChi2(),
-                                   candidate.kfV0Chi2(),
-                                   candidate.chi2TopoXic0ToPVBeforeConstraint(),
-                                   candidate.chi2TopoXic0ToPV(),
-                                   candidate.chi2TopoXiToXic0BeforeConstraint(),
-                                   candidate.chi2TopoXiToXic0(),
-                                   candidate.dcaXYPiXi(),
-                                   candidate.dcaPiXi());
-      }
-    }
-  } // end fillXic0CandidateTable
-
-  //////////////////////////////////////////////////
-  ////                                          ////
-  ////          Make TTree with Data            ////
-  ////                                          ////
-  //////////////////////////////////////////////////
-
-  void processDataXic0(SelectedXic0Candidates const& candidates) // -> To be filled
+  template <bool useCentrality, typename MyEventTableType, typename T>
+  void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
-    if (configs.fillCandidateLite) {
-      cursors.rowCandXic0Lites.reserve(candidates.size());
-    } else {
-      cursors.rowCandXic0Fulls.reserve(candidates.size());
+
+    // Save all candidate information
+    float centrality = -999.f;
+    if constexpr (useCentrality) {
+      auto const& collision = candidate.template collision_as<MyEventTableType>();
+      centrality = o2::hf_centrality::getCentralityColl(collision);
     }
 
+    rowCandidateFull(
+      candidate.xPv(),
+      candidate.yPv(),
+      candidate.zPv(),
+      centrality,
+      candidate.template collision_as<MyEventTableType>().numContrib(),
+      candidate.template collision_as<MyEventTableType>().chi2(),
+      candidate.xDecayVtxCharmBaryon(),
+      candidate.yDecayVtxCharmBaryon(),
+      candidate.zDecayVtxCharmBaryon(),
+      candidate.xDecayVtxCascade(),
+      candidate.yDecayVtxCascade(),
+      candidate.zDecayVtxCascade(),
+      candidate.xDecayVtxV0(),
+      candidate.yDecayVtxV0(),
+      candidate.zDecayVtxV0(),
+      candidate.signDecay(),
+      candidate.covVtxCharmBaryon0(),
+      candidate.covVtxCharmBaryon3(),
+      candidate.covVtxCharmBaryon5(),
+      candidate.pxCharmBaryon(),
+      candidate.pyCharmBaryon(),
+      candidate.pzCharmBaryon(),
+      candidate.pxCasc(),
+      candidate.pyCasc(),
+      candidate.pzCasc(),
+      candidate.pxBachFromCharmBaryon(),
+      candidate.pyBachFromCharmBaryon(),
+      candidate.pzBachFromCharmBaryon(),
+      candidate.pxLambda(),
+      candidate.pyLambda(),
+      candidate.pzLambda(),
+      candidate.pxBachFromCasc(),
+      candidate.pyBachFromCasc(),
+      candidate.pzBachFromCasc(),
+      candidate.pxPosV0Dau(),
+      candidate.pyPosV0Dau(),
+      candidate.pzPosV0Dau(),
+      candidate.pxNegV0Dau(),
+      candidate.pyNegV0Dau(),
+      candidate.pzNegV0Dau(),
+      candidate.impactParCascXY(),
+      candidate.impactParBachFromCharmBaryonXY(),
+      candidate.impactParCascZ(),
+      candidate.impactParBachFromCharmBaryonZ(),
+      candidate.errImpactParCascXY(),
+      candidate.errImpactParBachFromCharmBaryonXY(),
+      candidate.invMassLambda(),
+      candidate.invMassCascade(),
+      candidate.invMassCharmBaryon(),
+      candidate.cosPAV0(),
+      candidate.cosPACharmBaryon(),
+      candidate.cosPACasc(),
+      candidate.cosPAXYV0(),
+      candidate.cosPAXYCharmBaryon(),
+      candidate.cosPAXYCasc(),
+      candidate.cTauOmegac(),
+      candidate.cTauCascade(),
+      candidate.cTauV0(),
+      candidate.cTauXic(),
+      candidate.etaV0PosDau(),
+      candidate.etaV0NegDau(),
+      candidate.etaBachFromCasc(),
+      candidate.etaBachFromCharmBaryon(),
+      candidate.etaCharmBaryon(),
+      candidate.etaCascade(),
+      candidate.etaV0(),
+      candidate.dcaXYToPvV0Dau0(),
+      candidate.dcaXYToPvV0Dau1(),
+      candidate.dcaXYToPvCascDau(),
+      candidate.dcaZToPvV0Dau0(),
+      candidate.dcaZToPvV0Dau1(),
+      candidate.dcaZToPvCascDau(),
+      candidate.dcaCascDau(),
+      candidate.dcaV0Dau(),
+      candidate.dcaCharmBaryonDau(),
+      candidate.decLenCharmBaryon(),
+      candidate.decLenCascade(),
+      candidate.decLenV0(),
+      candidate.errorDecayLengthCharmBaryon(),
+      candidate.errorDecayLengthXYCharmBaryon(),
+      candidate.impactParCascXY() / candidate.errImpactParCascXY(),
+      candidate.impactParBachFromCharmBaryonXY() / candidate.errImpactParBachFromCharmBaryonXY(),
+      candidate.decLenCharmBaryon() / candidate.errorDecayLengthCharmBaryon(),
+      candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().isGlobalTrackWoDCA(),
+      candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().itsNCls(),
+      candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().tpcNClsCrossedRows(),
+      candidate.template bachelor_as<MyTrackTable>().tpcNClsCrossedRows(),
+      candidate.template posTrack_as<MyTrackTable>().tpcNClsCrossedRows(),
+      candidate.template negTrack_as<MyTrackTable>().tpcNClsCrossedRows(),
+      candidate.statusPidLambda(),
+      candidate.statusPidCascade(),
+      candidate.statusPidCharmBaryon(),
+      candidate.statusInvMassLambda(),
+      candidate.statusInvMassCascade(),
+      candidate.statusInvMassCharmBaryon(),
+      candidate.resultSelections(),
+      candidate.pidTpcInfoStored(),
+      candidate.pidTofInfoStored(),
+      candidate.tpcNSigmaPiFromCharmBaryon(),
+      candidate.tpcNSigmaPiFromCasc(),
+      candidate.tpcNSigmaPiFromLambda(),
+      candidate.tpcNSigmaPrFromLambda(),
+      candidate.tofNSigmaPiFromCharmBaryon(),
+      candidate.tofNSigmaPiFromCasc(),
+      candidate.tofNSigmaPiFromLambda(),
+      candidate.tofNSigmaPrFromLambda(),
+      flagMc,
+      debugMc,
+      originMc,
+      collisionMatched);
+  }
+
+  template <bool useCentrality, typename MyEventTableType, typename T>
+  void fillCandidateLite(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
+  {
+    float centrality = -999.f;
+    if constexpr (useCentrality) {
+      auto const& collision = candidate.template collision_as<MyEventTableType>();
+      centrality = o2::hf_centrality::getCentralityColl(collision);
+    }
+
+    rowCandidateLite(
+      candidate.xPv(),
+      candidate.yPv(),
+      candidate.zPv(),
+      centrality,
+      candidate.template collision_as<MyEventTableType>().numContrib(),
+      candidate.template collision_as<MyEventTableType>().chi2(),
+      candidate.xDecayVtxCharmBaryon(),
+      candidate.yDecayVtxCharmBaryon(),
+      candidate.zDecayVtxCharmBaryon(),
+      candidate.xDecayVtxCascade(),
+      candidate.yDecayVtxCascade(),
+      candidate.zDecayVtxCascade(),
+      candidate.xDecayVtxV0(),
+      candidate.yDecayVtxV0(),
+      candidate.zDecayVtxV0(),
+      candidate.signDecay(),
+      candidate.pxCharmBaryon(),
+      candidate.pyCharmBaryon(),
+      candidate.pzCharmBaryon(),
+      candidate.pxBachFromCharmBaryon(),
+      candidate.pyBachFromCharmBaryon(),
+      candidate.pzBachFromCharmBaryon(),
+      candidate.pxBachFromCasc(),
+      candidate.pyBachFromCasc(),
+      candidate.pzBachFromCasc(),
+      candidate.pxPosV0Dau(),
+      candidate.pyPosV0Dau(),
+      candidate.pzPosV0Dau(),
+      candidate.pxNegV0Dau(),
+      candidate.pyNegV0Dau(),
+      candidate.pzNegV0Dau(),
+      candidate.impactParCascXY(),
+      candidate.impactParBachFromCharmBaryonXY(),
+      candidate.errImpactParCascXY(),
+      candidate.errImpactParBachFromCharmBaryonXY(),
+      candidate.invMassLambda(),
+      candidate.invMassCascade(),
+      candidate.invMassCharmBaryon(),
+      candidate.etaV0PosDau(),
+      candidate.etaV0NegDau(),
+      candidate.etaBachFromCasc(),
+      candidate.etaBachFromCharmBaryon(),
+      candidate.dcaXYToPvV0Dau0(),
+      candidate.dcaXYToPvV0Dau1(),
+      candidate.dcaXYToPvCascDau(),
+      candidate.dcaCascDau(),
+      candidate.dcaV0Dau(),
+      candidate.dcaCharmBaryonDau(),
+      candidate.errorDecayLengthCharmBaryon(),
+      candidate.impactParCascXY() / candidate.errImpactParCascXY(),
+      candidate.impactParBachFromCharmBaryonXY() / candidate.errImpactParBachFromCharmBaryonXY(),
+      candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().isGlobalTrackWoDCA(),
+      candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().itsNCls(),
+      candidate.template bachelorFromCharmBaryon_as<MyTrackTable>().tpcNClsCrossedRows(),
+      candidate.template bachelor_as<MyTrackTable>().tpcNClsCrossedRows(),
+      candidate.template posTrack_as<MyTrackTable>().tpcNClsCrossedRows(),
+      candidate.template negTrack_as<MyTrackTable>().tpcNClsCrossedRows(),
+      candidate.statusPidLambda(),
+      candidate.statusPidCascade(),
+      candidate.statusPidCharmBaryon(),
+      candidate.statusInvMassLambda(),
+      candidate.statusInvMassCascade(),
+      candidate.statusInvMassCharmBaryon(),
+      candidate.resultSelections(),
+      candidate.pidTpcInfoStored(),
+      candidate.pidTofInfoStored(),
+      candidate.tpcNSigmaPiFromCharmBaryon(),
+      candidate.tpcNSigmaPiFromCasc(),
+      candidate.tpcNSigmaPiFromLambda(),
+      candidate.tpcNSigmaPrFromLambda(),
+      candidate.tofNSigmaPiFromCharmBaryon(),
+      candidate.tofNSigmaPiFromCasc(),
+      candidate.tofNSigmaPiFromLambda(),
+      candidate.tofNSigmaPrFromLambda(),
+      flagMc,
+      originMc,
+      collisionMatched);
+  }
+
+  template <bool useCentrality, typename MyEventTableType, typename T>
+  void fillKfCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
+  {
+    float centrality = -999.f;
+    if constexpr (useCentrality) {
+      auto const& collision = candidate.template collision_as<MyEventTableType>();
+      centrality = o2::hf_centrality::getCentralityColl(collision);
+    }
+
+    rowKfCandidate(
+      centrality,
+      candidate.statusPidLambda(),
+      candidate.statusPidCascade(),
+      candidate.statusPidCharmBaryon(),
+      candidate.statusInvMassLambda(),
+      candidate.statusInvMassCascade(),
+      candidate.statusInvMassCharmBaryon(),
+      candidate.resultSelections(),
+      candidate.tpcNSigmaPiFromCharmBaryon(),
+      candidate.tofNSigmaPiFromCharmBaryon(),
+      candidate.tpcNSigmaPiFromCasc(),
+      candidate.tofNSigmaPiFromCasc(),
+      candidate.tpcNSigmaPiFromLambda(),
+      candidate.tofNSigmaPiFromLambda(),
+      candidate.tpcNSigmaPrFromLambda(),
+      candidate.tofNSigmaPrFromLambda(),
+      candidate.kfDcaXYPiFromXic(),
+      candidate.dcaCascDau(),
+      candidate.dcaCharmBaryonDau(),
+      candidate.kfDcaXYCascToPv(),
+      candidate.dcaXYToPvV0Dau0(),
+      candidate.dcaXYToPvV0Dau1(),
+      candidate.dcaXYToPvCascDau(),
+      candidate.chi2GeoV0(),
+      candidate.chi2GeoCasc(),
+      candidate.chi2GeoXic(),
+      candidate.chi2MassV0(),
+      candidate.chi2MassCasc(),
+      candidate.v0ldl(),
+      candidate.cascldl(),
+      candidate.xicldl(),
+      candidate.chi2TopoV0ToPv(),
+      candidate.chi2TopoCascToPv(),
+      candidate.chi2TopoPiFromXicToPv(),
+      candidate.chi2TopoXicToPv(),
+      candidate.chi2TopoV0ToCasc(),
+      candidate.chi2TopoCascToXic(),
+      candidate.decayLenXYLambda(),
+      candidate.decayLenXYCasc(),
+      candidate.decayLenXYXic(),
+      candidate.cosPaV0ToCasc(),
+      candidate.cosPAV0(),
+      candidate.cosPaCascToXic(),
+      candidate.cosPACasc(),
+      candidate.cosPACharmBaryon(),
+      candidate.invMassLambda(),
+      candidate.invMassCascade(),
+      candidate.invMassCharmBaryon(),
+      candidate.kfRapXic(),
+      candidate.kfptPiFromXic(),
+      candidate.kfptXic(),
+      candidate.cosThetaStarPiFromXic(),
+      candidate.cTauXic(),
+      candidate.etaCharmBaryon(),
+      candidate.v0Ndf(),
+      candidate.cascNdf(),
+      candidate.xicNdf(),
+      candidate.massV0Ndf(),
+      candidate.massCascNdf(),
+      candidate.v0Chi2OverNdf(),
+      candidate.cascChi2OverNdf(),
+      candidate.xicChi2OverNdf(),
+      candidate.massV0Chi2OverNdf(),
+      candidate.massCascChi2OverNdf(),
+      flagMc,
+      debugMc,
+      originMc,
+      collisionMatched);
+  }
+
+  ////////////////////////////////////
+  //                                //
+  //       Process functions        //
+  //                                //
+  ////////////////////////////////////
+
+  //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
+  //*~~~~~~~Data with DCAFitter~~~~~~~~*//
+  //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
+
+  void processDataFull(MyEventTable const& collisions, MyTrackTable const&,
+                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<false>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      if (configs.fillOnlyBackground && configs.downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
-        if (pseudoRndm >= configs.downSampleBkgFactor && candidate.pt() < configs.ptMaxForDownSample) {
-          continue;
-        }
-      }
-      fillXic0CandidateTable<false, false>(candidate);
+      fillCandidate<false, MyEventTable>(candidate, -7, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataXic0, "Process Data with DCAFitter reconstruction", true);
 
-  void processDataXic0Kf(SelectedXic0CandidatesKf const& candidates)
+  void processDataLite(MyEventTable const& collisions, MyTrackTable const&,
+                       soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
-    // Reserve memory
-    if (configs.fillCandidateLite) {
-      cursors.rowCandXic0LiteKfs.reserve(candidates.size());
-    } else {
-      cursors.rowCandXic0FullKfs.reserve(candidates.size());
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<false>(collision, zPvCut);
     }
 
-    // Fill candidate properties
-    for (auto const& candidate : candidates) {
-      if (configs.fillOnlyBackground && configs.downSampleBkgFactor < 1.) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000.);
-        if (pseudoRndm >= configs.downSampleBkgFactor && candidate.pt() < configs.ptMaxForDownSample) {
-          continue;
-        }
-      }
-      fillXic0CandidateTable<false, true>(candidate);
+    // Filling candidate properties
+    rowCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidateLite<false, MyEventTable>(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataXic0Kf, "Process Data with KFParticle reconstruction", false);
 
-  //////////////////////////////////////////////////
-  ////                                          ////
-  ////          Make TTree with MC              ////
-  ////                                          ////
-  //////////////////////////////////////////////////
-
-  void processMcXic0(SelectedXic0CandidatesMc const& candidates,
-                     soa::Join<aod::McParticles, aod::HfCandXic0McGen> const& particles) // -> To be filled
+  void processDataLiteWithFT0M(MyEventTableWithFT0M const& collisions, MyTrackTable const&,
+                               soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
-    //! Fill only signal for ML Training
-    //!! In the reference code, the cursors for DCAFitter was used instead....
-    if (configs.fillOnlySignal) {
-
-      if (configs.fillCandidateLite) {
-        cursors.rowCandXic0Lites.reserve(recXic0Sig.size());
-      } else {
-        cursors.rowCandXic0Fulls.reserve(recXic0Sig.size());
-      }
-
-      for (const auto& candidate : recXic0Sig) {
-        fillXic0CandidateTable<true, false>(candidate);
-      }
-
-      //! Fill only Bkg for ML Training
-    } else if (configs.fillOnlyBackground) {
-
-      if (configs.fillCandidateLite) {
-        cursors.rowCandXic0Lites.reserve(recXic0Bkg.size());
-      } else {
-        cursors.rowCandXic0Fulls.reserve(recXic0Bkg.size());
-      }
-
-      for (const auto& candidate : recXic0Bkg) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
-        if (candidate.pt() < configs.ptMaxForDownSample && pseudoRndm >= configs.downSampleBkgFactor) {
-          continue;
-        }
-        fillXic0CandidateTable<true, false>(candidate);
-      }
-
-      //! Fill whole reconstructed(?) candidates
-    } else {
-
-      if (configs.fillCandidateLite) {
-        cursors.rowCandXic0Lites.reserve(candidates.size());
-      } else {
-        cursors.rowCandXic0Fulls.reserve(candidates.size());
-      }
-
-      for (auto const& candidate : candidates) {
-        fillXic0CandidateTable<true, false>(candidate);
-      }
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<true>(collision, zPvCut);
     }
 
-    if (configs.fillGenParticleTable) {
-      cursors.rowCandXic0FullParticles.reserve(particles.size());
-      for (auto const& particle : particles) {
-        if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic0_xicp_to_hadronic::Xic0ToXiPi)) {
-
-          cursors.rowCandXic0FullParticles(particle.flagMcMatchGen(),
-                                           particle.debugMcGen(),
-                                           particle.originGen(),
-                                           particle.pt(),
-                                           particle.eta(),
-                                           particle.phi(),
-                                           RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiC0));
-        }
-      } // Gen particle loop
+    // Filling candidate properties
+    rowCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidateLite<true, MyEventTableWithFT0M>(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcXic0, "Process MC with DCAFitter reconstruction", false);
 
-  void processMcXic0Kf(SelectedXic0CandidatesKfMc const& candidates,
-                       soa::Join<aod::McParticles, aod::HfCandXic0McGen> const& particles)
+  void processDataLiteWithFT0C(MyEventTableWithFT0C const& collisions, MyTrackTable const&,
+                               soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
-    //! Fill only signal for ML Training
-    //!! In the reference code, the cursors for DCAFitter was used instead....
-    if (configs.fillOnlySignal) {
-
-      if (configs.fillCandidateLite) {
-        cursors.rowCandXic0LiteKfs.reserve(recXic0SigKf.size());
-      } else {
-        cursors.rowCandXic0FullKfs.reserve(recXic0SigKf.size());
-      }
-
-      for (const auto& candidate : recXic0SigKf) {
-        fillXic0CandidateTable<true, true>(candidate);
-      }
-
-      //! Fill only Bkg for ML Training
-    } else if (configs.fillOnlyBackground) {
-
-      if (configs.fillCandidateLite) {
-        cursors.rowCandXic0LiteKfs.reserve(recXic0BkgKf.size());
-      } else {
-        cursors.rowCandXic0FullKfs.reserve(recXic0BkgKf.size());
-      }
-
-      for (const auto& candidate : recXic0BkgKf) {
-        float pseudoRndm = candidate.ptProng1() * 1000. - static_cast<int64_t>(candidate.ptProng1() * 1000);
-        if (candidate.pt() < configs.ptMaxForDownSample && pseudoRndm >= configs.downSampleBkgFactor) {
-          continue;
-        }
-        fillXic0CandidateTable<true, true>(candidate);
-      }
-
-      //! Fill whole reconstructed(?) candidates
-    } else {
-
-      if (configs.fillCandidateLite) {
-        cursors.rowCandXic0LiteKfs.reserve(candidates.size());
-      } else {
-        cursors.rowCandXic0FullKfs.reserve(candidates.size());
-      }
-
-      for (auto const& candidate : candidates) {
-        fillXic0CandidateTable<true, true>(candidate);
-      }
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<true>(collision, zPvCut);
     }
 
-    if (configs.fillGenParticleTable) {
-      cursors.rowCandXic0FullParticles.reserve(particles.size());
-      for (auto const& particle : particles) {
-        if (TESTBIT(std::abs(particle.flagMcMatchGen()), aod::hf_cand_xic0_xicp_to_hadronic::Xic0ToXiPi)) {
-
-          cursors.rowCandXic0FullParticles(particle.flagMcMatchGen(),
-                                           particle.debugMcGen(),
-                                           particle.originGen(),
-                                           particle.pt(),
-                                           particle.eta(),
-                                           particle.phi(),
-                                           RecoDecay::y(particle.pVector(), o2::constants::physics::MassXiC0));
-        }
-      } // Gen particle loop
+    // Filling candidate properties
+    rowCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidateLite<true, MyEventTableWithFT0C>(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcXic0Kf, "Process MC with KFParticle reconstruction", false);
 
-  void processXic0Residuals(SelectedXic0CandidatesMc const&,
-                            aod::TracksWMc const& tracks,
-                            aod::McParticles const& particles,
-                            aod::McCollisions const&)
+  void processDataLiteWithNTracksPV(MyEventTableWithNTracksPV const& collisions, MyTrackTable const&,
+                                    soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi> const& candidates)
   {
-    cursors.rowCandResiduals.reserve(recXic0Sig.size());
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<true>(collision, zPvCut);
+    }
 
-    recXic0Sig->bindExternalIndices(&tracks); // -> What does this feature do exactly?
-
-    std::vector<int> arrDaughIdx;
-    int idxRecXic0;
-    int8_t sign;
-    int8_t origin;
-    std::array<float, 3> pvResiduals;
-    std::array<float, 3> svResiduals;
-    std::array<float, 3> pvPulls;
-    std::array<float, 3> svPulls;
-
-    for (auto const& candidate : recXic0Sig) {
-
-      // Initialization
-      arrDaughIdx.clear();
-      idxRecXic0 = -1;
-      origin = 0;
-      pvResiduals = {-9999.9};
-      svResiduals = {-9999.9};
-      pvPulls = {-9999.9};
-      svPulls = {-9999.9};
-
-      auto arrDaughters = std::array{candidate.pi_as<aod::TracksWMc>(),        // pi <- Xic0
-                                     candidate.bachelor_as<aod::TracksWMc>(),  // pi <- cascade
-                                     candidate.posTrack_as<aod::TracksWMc>(),  // p <- V0
-                                     candidate.negTrack_as<aod::TracksWMc>()}; // pi <- V0
-      // Get Xic0 as MC particle
-      idxRecXic0 = RecoDecay::getMatchedMCRec(particles, arrDaughters, Pdg::kXiC0, std::array{+kPiPlus, +kPiMinus, +kProton, +kPiMinus}, true, &sign, 3);
-      if (idxRecXic0 == -1) {
-        continue;
-      }
-      auto particleXic0Gen = particles.rawIteratorAt(idxRecXic0);
-      origin = RecoDecay::getCharmHadronOrigin(particles, particleXic0Gen, true); // -> What does this do?
-
-      // Get Mc collision
-      auto mcCollision = particleXic0Gen.mcCollision_as<aod::McCollisions>();
-
-      // Get Xic0 daughters as MC Particle
-      RecoDecay::getDaughters(particleXic0Gen, &arrDaughIdx, std::array{+kXiMinus, +kPiPlus}, 1); // -> MaxDepth set to 1...correct?
-      auto daughXic0 = particles.rawIteratorAt(arrDaughIdx[0]);
-
-      // Calculate residuals and pulls
-      float pResidual = candidate.p() - particleXic0Gen.p();
-      float ptResidual = candidate.pt() - particleXic0Gen.pt();
-      pvResiduals[0] = candidate.posX() - mcCollision.posX();
-      pvResiduals[1] = candidate.posY() - mcCollision.posY();
-      pvResiduals[2] = candidate.posZ() - mcCollision.posZ();
-      svResiduals[0] = candidate.xSecondaryVertex() - daughXic0.vx();
-      svResiduals[1] = candidate.ySecondaryVertex() - daughXic0.vy();
-      svResiduals[2] = candidate.zSecondaryVertex() - daughXic0.vz();
-      try {
-        pvPulls[0] = pvResiduals[0] / candidate.xPvErr();
-        pvPulls[1] = pvResiduals[1] / candidate.yPvErr();
-        pvPulls[2] = pvResiduals[2] / candidate.zPvErr();
-        svPulls[0] = svResiduals[0] / candidate.xSvErr();
-        svPulls[1] = svResiduals[1] / candidate.ySvErr();
-        svPulls[2] = svResiduals[2] / candidate.zSvErr();
-      } catch (const std::runtime_error& error) {
-        LOG(info) << "Run time error found: " << error.what() << ". Set values of vertex pulls to -9999.9";
-      }
-
-      cursors.rowCandResiduals(origin,
-                               pResidual,
-                               ptResidual,
-                               pvResiduals[0],
-                               pvResiduals[1],
-                               pvResiduals[2],
-                               pvPulls[0],
-                               pvPulls[1],
-                               pvPulls[2],
-                               svResiduals[0],
-                               svResiduals[1],
-                               svResiduals[2],
-                               svPulls[0],
-                               svPulls[1],
-                               svPulls[2]);
+    // Filling candidate properties
+    rowCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidateLite<true, MyEventTableWithNTracksPV>(candidate, -7, RecoDecay::OriginType::None, false);
     }
   }
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processXic0Residuals, "Process residuals and pulls for both DCAFitter and KFParticle reconstruction", false);
-};
+
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataFull, "Process data with full information w/o centrality", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataLite, "Process data and produce lite table version", true);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataLiteWithFT0M, "Process data and produce lite table version with FT0M", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataLiteWithFT0C, "Process data and produce lite table version with FT0C", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataLiteWithNTracksPV, "Process data and produce lite table version with NTracksPV", false);
+
+  //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
+  //*~~~~~~~Data with KFParticle~~~~~~~~*//
+  //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
+  void processKfData(MyEventTable const& collisions, MyTrackTable const&,
+                     soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<false>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<false, MyEventTable>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+    }
+  }
+
+  void processKfDataWithFT0M(MyEventTableWithFT0M const& collisions, MyTrackTable const&,
+                             soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<true>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<false, MyEventTableWithFT0M>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+    }
+  }
+
+  void processKfDataWithFT0C(MyEventTableWithFT0C const& collisions, MyTrackTable const&,
+                             soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<true>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<true, MyEventTableWithFT0C>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+    }
+  }
+
+  void processKfDataWithNTracksPV(MyEventTableWithNTracksPV const& collisions, MyTrackTable const&,
+                                  soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<true>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<true, MyEventTableWithNTracksPV>(candidate, -7, -7, RecoDecay::OriginType::None, false);
+    }
+  }
+
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfData, "Process KF data, no cent", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfDataWithFT0M, "Process KF data, with FT0M", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfDataWithFT0C, "Process KF data, with FT0C", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfDataWithNTracksPV, "Process KF data, with NTracksPV", false);
+  //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
+  //*~~~~~~~MC with DCAFitter~~~~~~~~*//
+  //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
+
+  void processMcFullXic0(MyEventTable const& collisions, MyTrackTable const&,
+                         soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<false>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowCandidateFull.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidate<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+
+  void processMcFullOmegac0(MyEventTable const& collisions, MyTrackTable const&,
+                            soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<false>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowCandidateFull.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidate<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+
+  void processMcLiteXic0(MyEventTable const& collisions, MyTrackTable const&,
+                         soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<false>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidateLite<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+
+  void processMcLiteXic0WithFT0C(MyEventTableWithFT0C const& collisions, MyTrackTable const&,
+                                 soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<true>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidateLite<true, MyEventTableWithFT0C>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+
+  void processMcLiteXic0WithFT0M(MyEventTableWithFT0M const& collisions, MyTrackTable const&,
+                                 soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<true>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidateLite<true, MyEventTableWithFT0M>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+
+  void processMcLiteXic0WithNTracksPV(MyEventTableWithNTracksPV const& collisions, MyTrackTable const&,
+                                      soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<true>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidateLite<true, MyEventTableWithNTracksPV>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+
+  void processMcLiteOmegac0(MyEventTable const& collisions, MyTrackTable const&,
+                            soa::Join<aod::HfCandToXiPi, aod::HfSelToXiPi, aod::HfOmegacToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<false>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowCandidateLite.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillCandidateLite<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcFullXic0, "Process MC with full information for xic0 w/o centrality", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcFullOmegac0, "Process MC with full information for omegac0", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcLiteXic0, "Process MC and produce lite table version for xic0", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcLiteXic0WithFT0C, "Process MC and produce lite table version for Xic0 with FT0C", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcLiteXic0WithFT0M, "Process MC and produce lite table version for Xic0 with FT0M", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcLiteXic0WithNTracksPV, "Process MC and produce lite table version for Xic0 with NTracksPV", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcLiteOmegac0, "Process MC and produce lite table version for omegac0", false);
+
+  //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
+  //*~~~~~~~MC with KFParticle~~~~~~~~*//
+  //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
+  void processKfMcXic0(MyEventTable const& collisions, MyTrackTable const&,
+                       soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<false>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+
+  void processKfMcXic0WithFT0C(MyEventTableWithFT0C const& collisions, MyTrackTable const&,
+                               soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<true>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<true, MyEventTableWithFT0C>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+
+  void processKfMcXic0WithFT0M(MyEventTableWithFT0M const& collisions, MyTrackTable const&,
+                               soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<true>(collision, zPvCut);
+    }
+
+    // Filling candidate properties
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<true, MyEventTableWithFT0M>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+
+  void processKfMcXic0WithNTracksPV(MyEventTableWithNTracksPV const& collisions, MyTrackTable const&,
+                                    soa::Join<aod::HfCandToXiPiKf, aod::HfSelToXiPiKf, aod::HfXicToXiPiMCRec> const& candidates)
+  {
+    // Filling event properties
+    rowEv.reserve(collisions.size());
+    for (const auto& collision : collisions) {
+      fillEvent<true>(collision, zPvCut);
+    }
+
+    // Filling candidate table
+    rowKfCandidate.reserve(candidates.size());
+    for (const auto& candidate : candidates) {
+      fillKfCandidate<true, MyEventTableWithNTracksPV>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+    }
+  }
+
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfMcXic0, "Process MC with information for xic0", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfMcXic0WithFT0C, "Process MC with information for xic0 at FT0C", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfMcXic0WithFT0M, "Process MC with information for xic0 at FT0M", false);
+  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfMcXic0WithNTracksPV, "Process MC with information for xic0 at Ntrack", false);
+}; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
