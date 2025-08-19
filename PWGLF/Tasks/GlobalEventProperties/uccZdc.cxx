@@ -334,8 +334,6 @@ struct UccZdc {
       registry.add("NchvsOneParCorrGen", Form("MC Closure;%s;%s", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchvsTwoParCorrGen", Form("MC Closure;%s;%s", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchvsThreeParCorrGen", Form("MC Closure;%s;%s", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchVsTwoParCorr", Form("MC Closure;%s;%s", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchVsThreeParCorr", Form("MC Closure;%s;%s", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
       // Corrections
       registry.add("zPosMC", "Filled at MC closure + Corrections;;Entries;", kTH1F, {axisZpos});
       registry.add("hEventCounterMC", "Event counter", kTH1F, {axisEvent});
