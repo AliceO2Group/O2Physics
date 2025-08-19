@@ -763,7 +763,7 @@ struct V0PtInvMassPlots {
   void recMCProcess(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::PVMults>::iterator const& collision,
                     soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s,
                     DaughterTracks const&, // no need to define a variable for tracks, if we don't access them directly
-                    aod::McParticles const& mcParticles)
+                    aod::McParticles const& /*mcParticles*/)
   {
     // tokenise strings into individual values
     pthistos::kaonPtBins = o2::utils::Str::tokenize(kzeroSettingPtBinsString, ',');
