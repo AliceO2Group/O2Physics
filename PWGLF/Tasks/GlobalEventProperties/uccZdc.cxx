@@ -1013,7 +1013,7 @@ struct UccZdc {
           aT0C += amplitude;
         }
       } else {
-        return;
+        continue;
       }
 
       const double normT0M{(aT0A + aT0C) / arbScale};
@@ -1068,18 +1068,18 @@ struct UccZdc {
 
         // Reject event if nchRaw less than a lower cutoff
         if (nchRaw < minNchSel) {
-          return;
+          continue;
         }
 
-        // Calculates the event weight, W_k
         const int foundNchBin{cfg.hEfficiency->GetXaxis()->FindBin(nchRaw)};
 
+        // Calculates the event weight, W_k
         for (const auto& track : groupedTracks) {
           // Track Selection
           if (track.eta() < minEta || track.eta() > maxEta) {
             continue;
           }
-          if (track.pt() < minPt || track.pt() > maxPt) {
+          if (track.pt() < minPt || track.pt() > maxPtSpectra) {
             continue;
           }
           if (!track.isGlobalTrack()) {
@@ -1103,8 +1103,6 @@ struct UccZdc {
           if (std::abs(charge) < kMinCharge) {
             continue;
           }
-          // Is it a primary particle?
-          // if (!particle.isPhysicalPrimary()) { continue; }
 
           const double pt{static_cast<double>(track.pt())};
           const int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
@@ -1145,7 +1143,7 @@ struct UccZdc {
         std::vector<float> vecFullEff;
         std::vector<float> vecFDEqualOne;
 
-        // Calculates the event weight, W_k
+        // calculates the  true Nch
         for (const auto& particle : mcParticles) {
           if (particle.eta() < minEta || particle.eta() > maxEta) {
             continue;
@@ -1171,16 +1169,44 @@ struct UccZdc {
           if (!particle.isPhysicalPrimary()) {
             continue;
           }
-
-          float pt{particle.pt()};
-          pTsMC.emplace_back(pt);
-          vecFullEff.emplace_back(1.);
-          vecFDEqualOne.emplace_back(1.);
           nchMC++;
         }
 
         if (nchMC < minNchSel) {
           continue;
+        }
+
+        // Calculates the event weight, W_k
+        for (const auto& particle : mcParticles) {
+          if (particle.eta() < minEta || particle.eta() > maxEta) {
+            continue;
+          }
+          if (particle.pt() < minPt || particle.pt() > maxPtSpectra) {
+            continue;
+          }
+
+          auto charge{0.};
+          // Get the MC particle
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // Is it a primary particle?
+          if (!particle.isPhysicalPrimary()) {
+            continue;
+          }
+
+          const float pt{particle.pt()};
+          pTsMC.emplace_back(pt);
+          vecFullEff.emplace_back(1.);
+          vecFDEqualOne.emplace_back(1.);
         }
 
         double p1MC, p2MC, p3MC, p4MC, w1MC, w2MC, w3MC, w4MC;
@@ -1207,7 +1233,6 @@ struct UccZdc {
       } else { // Correction with the remaining half of the sample
         registry.fill(HIST("EvtsDivided"), 1);
         //----- MC reconstructed -----//
-        //                const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
         for (const auto& track : groupedTracks) {
           // Track Selection
           if (track.eta() < minEta || track.eta() > maxEta) {
@@ -1219,9 +1244,6 @@ struct UccZdc {
           if (!track.isGlobalTrack()) {
             continue;
           }
-          registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
-          registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
-          registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
           nchRaw++;
         }
 
@@ -1230,7 +1252,7 @@ struct UccZdc {
           if (track.eta() < minEta || track.eta() > maxEta) {
             continue;
           }
-          if (track.pt() < minPt || track.pt() > maxPt) {
+          if (track.pt() < minPt || track.pt() > maxPtSpectra) {
             continue;
           }
           if (!track.isGlobalTrack()) {
@@ -1254,8 +1276,13 @@ struct UccZdc {
           if (std::abs(charge) < kMinCharge) {
             continue;
           }
+
           // All charged particles
           registry.fill(HIST("Pt_all_ch"), nchRaw, track.pt());
+          registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
+          registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+          registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
+
           // Is it a primary particle?
           if (!particle.isPhysicalPrimary()) {
             continue;
@@ -1282,7 +1309,7 @@ struct UccZdc {
           if (particle.eta() < minEta || particle.eta() > maxEta) {
             continue;
           }
-          if (particle.pt() < minPt || particle.pt() > maxPt) {
+          if (particle.pt() < minPt || particle.pt() > maxPtSpectra) {
             continue;
           }
 
@@ -1364,7 +1391,7 @@ struct UccZdc {
         std::vector<float> vecFD;
         std::vector<float> vecEff;
 
-        // Calculates the event weight, W_k
+        // Calculates the true Nch
         for (const auto& particle : mcParticles) {
           if (particle.eta() < minEta || particle.eta() > maxEta) {
             continue;
@@ -1390,18 +1417,45 @@ struct UccZdc {
           if (!particle.isPhysicalPrimary()) {
             continue;
           }
-
-          float pt{particle.pt()};
-          pTs.emplace_back(pt);
-          vecEff.emplace_back(1.);
-          vecFD.emplace_back(1.);
           nchMult++;
         }
 
         if (nchMult < minNchSel) {
           continue;
         }
-        // printf("nchMult = %f  | nchMC = %f  | nchMult/nchMc = %f\n",nchMult,nchMC,nchMult/nchMC);
+
+        // Calculates the event weight, W_k
+        for (const auto& particle : mcParticles) {
+          if (particle.eta() < minEta || particle.eta() > maxEta) {
+            continue;
+          }
+          if (particle.pt() < minPt || particle.pt() > maxPtSpectra) {
+            continue;
+          }
+
+          auto charge{0.};
+          // Get the MC particle
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // Is it a primary particle?
+          if (!particle.isPhysicalPrimary()) {
+            continue;
+          }
+
+          const float pt{particle.pt()};
+          pTs.emplace_back(pt);
+          vecEff.emplace_back(1.);
+          vecFD.emplace_back(1.);
+        }
 
         double p1, p2, p3, p4, w1, w2, w3, w4;
         p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
@@ -1448,7 +1502,7 @@ struct UccZdc {
         std::vector<float> vecFD;
         std::vector<float> vecEff;
 
-        // Calculates the uncorrected Nch multiplicity
+        // Calculates the uncorrected Nch
         for (const auto& track : tracks) {
           // Track Selection
           if (!track.isGlobalTrack()) {
@@ -1482,10 +1536,10 @@ struct UccZdc {
               continue;
             }
 
-            float pt{track.pt()};
+            const float pt{track.pt()};
             double fdValue{1.};
-            int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
-            double effValue{cfg.hEfficiency->GetBinContent(foundNchBin, foundPtBin)};
+            const int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
+            const double effValue{cfg.hEfficiency->GetBinContent(foundNchBin, foundPtBin)};
 
             if (applyFD)
               fdValue = cfg.hFeedDown->GetBinContent(foundNchBin, foundPtBin);
@@ -1516,10 +1570,10 @@ struct UccZdc {
               continue;
             }
 
-            float pt{track.pt()};
+            const float pt{track.pt()};
             double fdValue{1.};
-            int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
-            double effValue{cfg.hEfficiency->GetBinContent(foundNchBin, foundPtBin)};
+            const int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
+            const double effValue{cfg.hEfficiency->GetBinContent(foundNchBin, foundPtBin)};
 
             if (applyFD)
               fdValue = cfg.hFeedDown->GetBinContent(foundNchBin, foundPtBin);
@@ -1729,8 +1783,6 @@ struct UccZdc {
 
   void loadCorrections(uint64_t timeStamp)
   {
-    //        if (cfg.correctionsLoaded) return;
-
     if (paTHEff.value.empty() == false) {
       cfg.hEfficiency = ccdb->getForTimeStamp<TH2F>(paTHEff, timeStamp);
       if (cfg.hEfficiency == nullptr) {
