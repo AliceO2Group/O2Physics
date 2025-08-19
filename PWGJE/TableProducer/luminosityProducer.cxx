@@ -106,12 +106,12 @@ struct LuminosityProducer {
   {
     int readCollisionCounter = 0;
     int readCollisionWithTVXCounter = 0;
-    int readCollisionWithTVXAndSel8Counter = 0; //before applying any VtxZ cut - required for the vertex finding efficiency correction
+    int readCollisionWithTVXAndSel8Counter = 0; // before applying any VtxZ cut - required for the vertex finding efficiency correction
     int readCollisionWithTVXAndSel8AndIsGoodZvtxFT0vsPVCounter = 0;
-    int readCollisionWithTVXAndSel8FullCounter = 0; //before applying any VtxZ cut - required for the vertex finding efficiency correction
+    int readCollisionWithTVXAndSel8FullCounter = 0; // before applying any VtxZ cut - required for the vertex finding efficiency correction
     int readCollisionWithTVXAndSel8FullAndIsGoodZvtxFT0vsPVCounter = 0;
     int readCollisionWithTVXAndZVertexAndSel8Counter = 0;
-    int readCollisionWithTVXAndZVertexAndSel8AndIsGoodZvtxFT0vsPVCounter = 0; //after applying VtxZ cut - required for the vertex finding efficiency correction
+    int readCollisionWithTVXAndZVertexAndSel8AndIsGoodZvtxFT0vsPVCounter = 0; // after applying VtxZ cut - required for the vertex finding efficiency correction
     int readCollisionWithTVXAndZVertexAndSel8FullCounter = 0;
     int readCollisionWithTVXAndZVertexAndSel8FullAndIsGoodZvtxFT0vsPVCounter = 0;
     int readCollisionWithTVXAndZVertexAndSel8FullPbPbCounter = 0;
