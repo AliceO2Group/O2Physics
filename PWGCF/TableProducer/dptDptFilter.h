@@ -68,19 +68,49 @@ namespace dptdptfilter
 /// \enum SystemType
 /// \brief The type of the system under analysis
 enum SystemType {
-  kNoSystem = 0, ///< no system defined
-  kpp,           ///< **p-p** system
-  kpPb,          ///< **p-Pb** system
-  kPbp,          ///< **Pb-p** system
-  kPbPb,         ///< **Pb-Pb** system
-  kXeXe,         ///< **Xe-Xe** system
-  kppRun3,       ///< **p-p Run 3** system
-  kPbPbRun3,     ///< **Pb-Pb Run 3** system
-  kNeNeRun3,     ///< **Ne-Ne Run 3** system
-  kOORun3,       ///< **O-O Run 3** system
-  kpORun3,       ///< **p-O Run 3** system
-  knSystems      ///< number of handled systems
+  SystemNoSystem = 0, ///< no system defined
+  SystemPp,           ///< **p-p** system
+  SystemPPb,          ///< **p-Pb** system
+  SystemPbp,          ///< **Pb-p** system
+  SystemPbPb,         ///< **Pb-Pb** system
+  SystemXeXe,         ///< **Xe-Xe** system
+  SystemPpRun3,       ///< **p-p Run 3** system
+  SystemPbPbRun3,     ///< **Pb-Pb Run 3** system
+  SystemNeNeRun3,     ///< **Ne-Ne Run 3** system
+  SystemOORun3,       ///< **O-O Run 3** system
+  SystemPORun3,       ///< **p-O Run 3** system
+  SystemNoOfSystems   ///< number of handled systems
 };
+
+/// \std::map systemInternalCodesMap
+/// \brief maps system names to internal system codes
+static const std::map<std::string, int> systemInternalCodesMap{
+  {"", SystemNoSystem},
+  {"pp", SystemPp},
+  {"pPb", SystemPPb},
+  {"Pbp", SystemPbp},
+  {"PbPb", SystemPbPb},
+  {"XeXe", SystemXeXe},
+  {"ppRun3", SystemPpRun3},
+  {"PbPbRun3", SystemPbPbRun3},
+  {"NeNeRun3", SystemNeNeRun3},
+  {"OORun3", SystemOORun3},
+  {"pORun3", SystemPORun3}};
+
+/// \std::map systemExternalNamesMap
+/// \brief maps system internal codes to system external names
+static const std::map<int, std::string> systemExternalNamesMap{
+  {SystemNoSystem, ""},
+  {SystemPp, "pp"},
+  {SystemPPb, "pPb"},
+  {SystemPbp, "Pbp"},
+  {SystemPbPb, "PbPb"},
+  {SystemXeXe, "XeXe"},
+  {SystemPpRun3, "ppRun3"},
+  {SystemPbPbRun3, "PbPbRun3"},
+  {SystemNeNeRun3, "NeNeRun3"},
+  {SystemOORun3, "OORun3"},
+  {SystemPORun3, "pORun3"}};
 
 /// \enum DataType
 /// \brief Which kind of data is the task addressing
@@ -133,6 +163,93 @@ static const std::map<int, std::string> estimatorExternalNamesMap{
   {CentMultFT0A, "FT0A"},
   {CentMultFT0C, "FT0C"},
   {CentMultNTPV, "NTPV"}};
+
+/// \enum MultSourceType
+/// \brief The multiplicity source
+enum MultSourceType {
+  MultSourceT0A = 0,        ///< T0A multiplicity
+  MultSourceT0C,            ///< T0C multiplicity
+  MultSourceT0M,            ///< T0M multiplicity
+  MultSourceV0A,            ///< V0A multiplicity
+  MultSourceV0C,            ///< V0C multiplicity
+  MultSourceV0M,            ///< V0M multiplicity
+  MultSourceNtracks,        ///< number of tracks multiplicity
+  MultSourcePvContributors, ///< number of primary vertex contributors
+  MultSourceNOOFSOURCES     ///< number multiplicity sources
+};
+
+/// \enum MultRunType
+/// \brief The multiplicity LHC run
+enum MultRunType {
+  MultRunRUN1RUN2 = 0, ///< LHC Run 1 or Run 2
+  MultRunRUN3,         ///< LHC Run 3
+  MultRunNOOFRUNS      ///< number of runs for multiplicity
+};
+
+/// \std::map multRunForSystemMap
+/// \brief maps the system to the lhc Run for multiplicity
+static const std::map<int, MultRunType> multRunForSystemMap{
+  {SystemNoSystem, MultRunRUN1RUN2},
+  {SystemPp, MultRunRUN1RUN2},
+  {SystemPPb, MultRunRUN1RUN2},
+  {SystemPbp, MultRunRUN1RUN2},
+  {SystemPbPb, MultRunRUN1RUN2},
+  {SystemXeXe, MultRunRUN1RUN2},
+  {SystemPpRun3, MultRunRUN3},
+  {SystemPbPbRun3, MultRunRUN3},
+  {SystemNeNeRun3, MultRunRUN3},
+  {SystemOORun3, MultRunRUN3},
+  {SystemPORun3, MultRunRUN3}};
+
+/// \std::map estimatorMultiplicitySourceMap
+/// \brief maps internal estimator codes internal multiplicity sources
+static const std::map<int, int> estimatorMultiplicitySourceMap{
+  {CentMultNOCM, MultSourceT0C},
+  {CentMultV0M, MultSourceV0M},
+  {CentMultCL0, MultSourceT0C}, /* TODO: for Run1,2 */
+  {CentMultCL1, MultSourceT0C}, /* TODO: for Run1,2 */
+  {CentMultFV0A, MultSourceV0A},
+  {CentMultFT0M, MultSourceT0M},
+  {CentMultFT0A, MultSourceT0A},
+  {CentMultFT0C, MultSourceT0C},
+  {CentMultNTPV, MultSourcePvContributors}};
+
+/// \std::vector<std::map> multiplicitySourceExternalNamesMap
+/// \brief maps internal multiplicity source to external names for the LHC runs
+static const std::vector<std::map<int, std::string>> multiplicitySourceExternalNamesMap{
+  /* Run 1 and Run 2 */
+  {
+    {MultSourceT0A, "T0A multiplicity"},
+    {MultSourceT0C, "T0C multiplicity"},
+    {MultSourceT0M, "T0M multiplicity"},
+    {MultSourceV0A, "V0A multiplicity"},
+    {MultSourceV0C, "V0C multiplicity"},
+    {MultSourceV0M, "V0M multiplicity"},
+    {MultSourceNtracks, "Number of tracks"},
+    {MultSourcePvContributors, "PV contributors"}},
+  /* Run 3 */
+  {
+    {MultSourceT0A, "FT0A multiplicity"},
+    {MultSourceT0C, "FT0C multiplicity"},
+    {MultSourceT0M, "FT0M multiplicity"},
+    {MultSourceV0A, "FV0A multiplicity"},
+    {MultSourceV0C, "WRONG SOURCE"},
+    {MultSourceV0M, "FV0M multiplicity"},
+    {MultSourceNtracks, "Number of tracks"},
+    {MultSourcePvContributors, "PV contributors"}}};
+
+/// \std::map multiplicitySourceConfigNamesMap
+/// \brief maps internal multiplicity source to external configuration names
+/// At configuration time neither the system nor the lhc run is known
+static const std::map<int, std::string> multiplicitySourceConfigNamesMap{
+  {MultSourceT0A, "FT0A"},
+  {MultSourceT0C, "FT0C"},
+  {MultSourceT0M, "FT0M"},
+  {MultSourceV0A, "FV0A"},
+  {MultSourceV0C, "V0C"},
+  {MultSourceV0M, "FV0M"},
+  {MultSourceNtracks, "Number of tracks"},
+  {MultSourcePvContributors, "PV contributors"}};
 
 /// \enum TriggerSelectionTags
 /// \brief The potential trigger tags to apply for event selection
@@ -602,7 +719,8 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
   return lst;
 }
 
-SystemType fSystem = kNoSystem;
+SystemType fSystem = SystemNoSystem;
+MultRunType fLhcRun = MultRunRUN1RUN2;
 DataType fDataType = kData;
 CentMultEstimatorType fCentMultEstimator = CentMultV0M;
 OccupancyEstimationType fOccupancyEstimation = OccupancyNOOCC; /* the occupancy estimator to use */
@@ -655,42 +773,34 @@ inline SystemType getSytemTypeFromMetaData()
 
   if (period == "LHC25ad" || period == "LHC25g5") {
     LOGF(info, "Configuring for p-O LHC25ad period");
-    return kpORun3;
+    return SystemPORun3;
   } else if (period == "LHC25ae" || period == "LHC25g6") {
     LOGF(info, "Configuring for O-O LHC25ae period");
-    return kOORun3;
+    return SystemOORun3;
   } else if (period == "LHC25af" || period == "LHC25g7") {
     LOGF(info, "Configuring for Ne-Ne LHC25af period");
-    return kNeNeRun3;
+    return SystemNeNeRun3;
   } else {
     LOGF(fatal, "DptDptCorrelations::getSystemTypeFromMetadata(). No automatic system type configuration for %s period", period.c_str());
   }
-  return kPbp;
+  return SystemPbPb;
 }
 
 inline SystemType getSystemType(std::string const& sysstr)
 {
   /* we have to figure out how extract the system type */
-  if (sysstr.empty() || (sysstr == "PbPb")) {
-    return kPbPb;
-  } else if (sysstr == "pp") {
-    return kpp;
-  } else if (sysstr == "pPb") {
-    return kpPb;
-  } else if (sysstr == "Pbp") {
-    return kPbp;
-  } else if (sysstr == "XeXe") {
-    return kXeXe;
-  } else if (sysstr == "ppRun3") {
-    return kppRun3;
-  } else if (sysstr == "PbPbRun3") {
-    return kPbPbRun3;
-  } else if (sysstr == "Auto") {
+  if (sysstr == "Auto") {
+    /* special treatment for self configuration */
+    /* TODO: expand it to all systems */
     return getSytemTypeFromMetaData();
   } else {
-    LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %s", sysstr.c_str());
+    if (systemInternalCodesMap.contains(sysstr)) {
+      return static_cast<SystemType>(systemInternalCodesMap.at(sysstr));
+    } else {
+      LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %s", sysstr.c_str());
+    }
   }
-  return kPbPb;
+  return SystemPbPb;
 }
 
 /// \brief Type of data according to the configuration string
@@ -759,11 +869,11 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
 {
   bool trigsel = false;
   switch (fSystem) {
-    case kpp:
-    case kpPb:
-    case kPbp:
-    case kPbPb:
-    case kXeXe:
+    case SystemPp:
+    case SystemPPb:
+    case SystemPbp:
+    case SystemPbPb:
+    case SystemXeXe:
       if (triggerSelectionFlags.test(TriggSelMB)) {
         switch (fDataType) {
           case kData:
@@ -790,11 +900,11 @@ inline bool triggerSelectionReco(CollisionObject const& collision)
         trigsel = true;
       }
       break;
-    case kppRun3:
-    case kPbPbRun3:
-    case kNeNeRun3:
-    case kpORun3:
-    case kOORun3: {
+    case SystemPpRun3:
+    case SystemPbPbRun3:
+    case SystemNeNeRun3:
+    case SystemPORun3:
+    case SystemOORun3: {
       auto setTriggerFlags = [](auto& flags, auto const& coll) {
         flags.set(TriggSelMB, coll.sel8() != 0);
         flags.set(TriggSelNOSAMEBUNCHPUP, coll.selection_bit(aod::evsel::kNoSameBunchPileup));
