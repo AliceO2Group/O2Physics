@@ -50,6 +50,7 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/PID.h"
 
 #include <array>
 #include <cmath>
@@ -87,9 +88,13 @@ struct strangenesstofpid {
   // mean vertex position to be used if no collision associated
   o2::dataformats::MeanVertexObject* mVtx = nullptr;
 
+  // LUT for Propagator + TrackLTIntegral
+  o2::base::MatLayerCylSet* lut = nullptr;
+
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // master switches
+  Configurable<int> calculationMethod{"calculationMethod", 0, "algorithm for TOF calculation. 0: fast analytical withouot eloss, 1: O2 Propagator/ + trackLTIntegral"};
   Configurable<int> calculateV0s{"calculateV0s", -1, "calculate V0-related TOF PID (0: no, 1: yes, -1: auto)"};
   Configurable<int> calculateCascades{"calculateCascades", -1, "calculate cascade-related TOF PID (0: no, 1: yes, -1: auto)"};
 
@@ -121,12 +126,16 @@ struct strangenesstofpid {
   } cascadeGroup;
 
   // CCDB options
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
-  Configurable<std::string> nSigmaPath{"nSigmaPath", "Users/d/ddobrigk/stratof", "Path of information for n-sigma calculation"};
-  Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+    // CCDB options
+  struct : ConfigurableGroup {
+    std::string prefix = "ccdb";
+    Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+    Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
+    Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+    Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
+    Configurable<std::string> nSigmaPath{"nSigmaPath", "Users/d/ddobrigk/stratof", "Path of information for n-sigma calculation"};
+    Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+  } ccdbConfigurations;
 
   // manual
   Configurable<int> useCustomRunNumber{"useCustomRunNumber", false, "Use custom timestamp"};
@@ -302,6 +311,13 @@ struct strangenesstofpid {
     return length;
   }
 
+
+  // /// function to calculate track length of this track up to the TOF using TrackLTIntegra;
+  // /// \param track the track to propagate
+  // float trackLengthToSegment(o2::track::TrackPar track){
+    
+  // }
+
   void init(InitContext& initContext)
   {
     if (calculateV0s.value < 0) {
@@ -341,7 +357,7 @@ struct strangenesstofpid {
     maxSnp = 0.85f;  // could be changed later
     maxStep = 2.00f; // could be changed later
 
-    ccdb->setURL(ccdburl);
+    ccdb->setURL(ccdbConfigurations.ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
@@ -423,12 +439,12 @@ struct strangenesstofpid {
         grpmag.setL3Current(30000.f / (d_bz / 5.0f));
       }
       o2::base::Propagator::initFieldFromGRP(&grpmag);
-      mVtx = ccdb->getForRun<o2::dataformats::MeanVertexObject>(mVtxPath, runNumber);
+      mVtx = ccdb->getForRun<o2::dataformats::MeanVertexObject>(ccdbConfigurations.mVtxPath, runNumber);
       mRunNumber = runNumber;
       return;
     }
 
-    o2::parameters::GRPObject* grpo = ccdb->getForRun<o2::parameters::GRPObject>(grpPath, runNumber);
+    o2::parameters::GRPObject* grpo = ccdb->getForRun<o2::parameters::GRPObject>(ccdbConfigurations.grpPath, runNumber);
     o2::parameters::GRPMagField* grpmag = 0x0;
     if (grpo) {
       o2::base::Propagator::initFieldFromGRP(grpo);
@@ -436,20 +452,20 @@ struct strangenesstofpid {
       d_bz = grpo->getNominalL3Field();
       LOG(info) << "Retrieved GRP for run " << runNumber << " with magnetic field of " << d_bz << " kZG";
     } else {
-      grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(grpmagPath, runNumber);
+      grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, runNumber);
       if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for run " << runNumber;
+        LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpmagPath << " of object GRPMagField and " << ccdbConfigurations.grpPath << " of object GRPObject for run " << runNumber;
       }
       o2::base::Propagator::initFieldFromGRP(grpmag);
       // Fetch magnetic field from ccdb for current collision
       d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      mVtx = ccdb->getForRun<o2::dataformats::MeanVertexObject>(mVtxPath, runNumber);
+      mVtx = ccdb->getForRun<o2::dataformats::MeanVertexObject>(ccdbConfigurations.mVtxPath, runNumber);
       LOG(info) << "Retrieved GRP for run " << runNumber << " with magnetic field of " << d_bz << " kZG";
     }
 
     // if TOF Nsigma desired
     if (doNSigmas) {
-      nSigmaCalibObjects = ccdb->getForRun<TList>(nSigmaPath, runNumber);
+      nSigmaCalibObjects = ccdb->getForRun<TList>(ccdbConfigurations.nSigmaPath, runNumber);
       if (nSigmaCalibObjects) {
         LOGF(info, "loaded TList with this many objects: %i", nSigmaCalibObjects->GetEntries());
         nSigmaCalibLoaded = true; // made it thus far, mark loaded
@@ -520,6 +536,15 @@ struct strangenesstofpid {
         }
       }
     }
+    
+    if (calculationMethod.value==1 && !lut) {
+      // setMatLUT only after magfield has been initalized
+      // (setMatLUT has implicit and problematic init field call if not)
+      LOG(info) << "Loading full (all-radius) material look-up table for run number: " << runNumber;
+      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForRun<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath, runNumber));
+      o2::base::Propagator::Instance()->setMatLUT(lut);
+      LOG(info) << "Materiak look-up table loaded!"; 
+    }
     mRunNumber = runNumber;
   }
 
@@ -565,12 +590,54 @@ struct strangenesstofpid {
     float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
     float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
 
-    float lengthPositive = findInterceptLength(posTrack, d_bz); // FIXME: tofPosition ok? adjust?
-    float lengthNegative = findInterceptLength(negTrack, d_bz); // FIXME: tofPosition ok? adjust?
-    float timePositivePr = lengthPositive / velocityPositivePr;
-    float timePositivePi = lengthPositive / velocityPositivePi;
-    float timeNegativePr = lengthNegative / velocityNegativePr;
-    float timeNegativePi = lengthNegative / velocityNegativePi;
+    float lengthPositive = -1;
+    float lengthNegative = -1;
+
+    float timePositivePr = 1e+6;
+    float timePositivePi = 1e+6;
+    float timeNegativePr = 1e+6;
+    float timeNegativePi = 1e+6;
+
+    if(calculationMethod.value==0){
+      velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
+      velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
+      velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
+      velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
+
+      lengthPositive = findInterceptLength(posTrack, d_bz); // FIXME: tofPosition ok? adjust?
+      lengthNegative = findInterceptLength(negTrack, d_bz); // FIXME: tofPosition ok? adjust?
+
+      timePositivePr = lengthPositive / velocityPositivePr;
+      timePositivePi = lengthPositive / velocityPositivePi;
+      timeNegativePr = lengthNegative / velocityNegativePr;
+      timeNegativePi = lengthNegative / velocityNegativePi;
+    }
+
+    if(calculationMethod.value==1){
+      // method to calculate the time and length via Propagator TrackLTIntegral 
+      o2::track::TrackLTIntegral posTrackLTIntegral;
+      o2::track::TrackLTIntegral negTrackLTIntegral;
+
+      float posTrackX = -100;
+      float negTrackX = -100;
+
+      static constexpr float MAX_SIN_PHI = 0.85f;
+      static constexpr float MAX_STEP = 2.0f;
+
+      bool posTrackOK = posTrack.getXatLabR(tofPosition, posTrackX, d_bz, o2::track::DirOutward);
+      if(posTrackOK){ 
+        o2::base::Propagator::Instance()->propagateToX(posTrack, posTrackX, d_bz, MAX_SIN_PHI, MAX_STEP, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &posTrackLTIntegral);
+        lengthPositive = posTrackLTIntegral.getL();
+        timePositivePr = posTrackLTIntegral.getTOF(o2::track::PID::Proton);  
+      }
+      
+      bool negTrackOK = negTrack.getXatLabR(tofPosition, negTrackX, d_bz, o2::track::DirOutward);
+      if(negTrackOK){ 
+        o2::base::Propagator::Instance()->propagateToX(posTrack, posTrackX, d_bz, MAX_SIN_PHI, MAX_STEP, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &posTrackLTIntegral);
+        lengthPositive = posTrackLTIntegral.getL();
+        timePositivePr = posTrackLTIntegral.getTOF(o2::track::PID::Proton);  
+      }
+    }
 
     if (pTra.hasTOF() && lengthPositive > 0) {
       deltaTimePositiveLambdaPr = (pTra.tofSignal() - pTra.tofEvTime()) - (timeLambda + timePositivePr);
@@ -1001,8 +1068,8 @@ struct strangenesstofpid {
     }
   }
 
-  PROCESS_SWITCH(strangenesstofpid, processStandardData, "Process standard data", true);
-  PROCESS_SWITCH(strangenesstofpid, processDerivedData, "Process derived data", false);
+  PROCESS_SWITCH(strangenesstofpid, processStandardData, "Process standard data", false);
+  PROCESS_SWITCH(strangenesstofpid, processDerivedData, "Process derived data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
