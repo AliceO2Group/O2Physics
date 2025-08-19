@@ -1,4 +1,4 @@
-// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -32,6 +32,7 @@
 #include "TMath.h"
 
 using namespace o2::framework;
+using namespace o2::aod;// maybe not needed
 
 namespace o2::analysis::femtoDream
 {
@@ -99,6 +100,7 @@ class FemtoDreamContainer
     }
     if (extendedplots) {
       mHistogramRegistry->add((folderName + "/relPairkstarmTPtPart1PtPart2MultPercentile").c_str(), ("; :" + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity Percentile (%)").c_str(), kTHnSparseF, {femtoObsAxis, mTAxis4D, pTAxis, pTAxis, multPercentileAxis4D});
+      mHistogramRegistry->add((folderName + "/pT1pT2kstarinvMassPart1invMassPart2").c_str(), ( "#it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c}), " + femtoObs + ";#it{m} (GeV/#it{c}^{2}); #it{m} (GeV/#it{c}^{2})").c_str(), kTHnSparseF, {pTAxis, pTAxis, femtoObsAxis, mP2Axis, mP2Axis});
     }
   }
 
@@ -230,6 +232,10 @@ class FemtoDreamContainer
     }
     if (extendedplots) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmTPtPart1PtPart2MultPercentile"), femtoObs, mT, part1.pt(), part2.pt(), multPercentile);
+
+      if constexpr(std::is_same_v<T1, FDParticle> && std::is_same_v<T2, FDParticle>) {
+        mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/pT1pT2kstarinvMassPart1invMassPart2"), part1.pt() , part2.pt() , femtoObs, part1.mLambda(), part2.mLambda());
+      }
     }
   }
 
@@ -263,7 +269,7 @@ class FemtoDreamContainer
   /// \param part1 Particle one
   /// \param part2 Particle two
   /// \param mult Multiplicity of the event
-  template <bool isMC, bool isHF = false, typename T1, typename T2>
+  template <bool isMC, bool isHF = false, typename T1, typename T2> //depends on the part  type i pass ?--> add bool or compile time flag
   void setPair(T1 const& part1, T2 const& part2, const int mult, const float multPercentile, bool use4dplots, bool extendedplots, bool smearingByOrigin = false)
   {
     float femtoObs, femtoObsMC;
