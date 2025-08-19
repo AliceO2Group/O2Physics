@@ -141,9 +141,10 @@ struct strangenesstofpid {
   Configurable<int> useCustomRunNumber{"useCustomRunNumber", false, "Use custom timestamp"};
   Configurable<int> manualRunNumber{"manualRunNumber", 544122, "manual run number if no collisions saved"};
 
+  ConfigurableAxis axisPosition{"axisPosition", {400, -400.f, +400.f}, "position (cm)"};
   ConfigurableAxis axisEta{"axisEta", {20, -1.0f, +1.0f}, "#eta"};
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {2000, -1000.0f, +1000.0f}, "delta-time (ps)"};
-  ConfigurableAxis axisTime{"axisTime", {200, 10000.0f, +20000.0f}, "T (ps)"};
+  ConfigurableAxis axisTime{"axisTime", {400, 10000.0f, +50000.0f}, "T (ps)"};
   ConfigurableAxis axisNSigma{"axisNSigma", {200, -10.0f, +10.0f}, "N(#sigma)"};
   ConfigurableAxis axisExpectedOverMeasured{"axisExpectedOverMeasured", {200, 0.9f, 2.9f}, "T_{exp}/T_{meas}"};
 
@@ -311,12 +312,78 @@ struct strangenesstofpid {
     return length;
   }
 
+  /// O2 Propagator + TrackLTIntegral approach helpers
 
-  // /// function to calculate track length of this track up to the TOF using TrackLTIntegra;
-  // /// \param track the track to propagate
-  // float trackLengthToSegment(o2::track::TrackPar track){
-    
-  // }
+  /// function to calculate segmented (truncated) radius based on a certain x, y position
+  float segmentedRadius(float x, float y){
+    float atAngle = std::atan2(y, x);
+    float roundedAngle = TMath::Pi()/9; // 18 segments = use 9 here
+    float angleSegmentAxis = 0.5f*roundedAngle + roundedAngle*static_cast<float>(std::floor(atAngle/roundedAngle));
+    float xSegmentAxis = TMath::Cos(angleSegmentAxis);
+    float ySegmentAxis = TMath::Sin(angleSegmentAxis);
+    return xSegmentAxis*x + ySegmentAxis*y; // inner product
+  }
+
+  /// function to calculate track length of this track up to a certain segmented detector
+  /// \param track the input track
+  void calculateTOF(o2::track::TrackPar track, float& timePion, float& timeKaon, float& timeProton)
+  {
+    timePion = timeKaon = timeProton = -1e+6;
+
+    o2::track::TrackLTIntegral ltIntegral;
+
+    float trackX = -100;
+    static constexpr float MAX_SIN_PHI = 0.85f;
+    static constexpr float MAX_STEP = 2.0f;
+    static constexpr float MAX_STEP_FINAL_STAGE = 0.5f;
+    static constexpr float MAX_EXTRA_X = 20.0f; // maximum extra X on top of TOF X for correcting value
+
+    bool trackOK = track.getXatLabR(tofPosition, trackX, d_bz);
+    if(trackOK){ 
+      // propagate outwards to TOF: bulk of propagation 
+      o2::base::Propagator::Instance()->propagateToX(track, trackX, d_bz, MAX_SIN_PHI, MAX_STEP, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &ltIntegral);
+      
+      // mark start position, define variables
+      std::array<float, 3> xyz;
+      track.getXYZGlo(xyz);
+      float segmentedR = segmentedRadius(xyz[0], xyz[1]); 
+      timeProton = ltIntegral.getTOF(o2::track::PID::Proton);  
+      timeKaon = ltIntegral.getTOF(o2::track::PID::Kaon);
+      timePion = ltIntegral.getTOF(o2::track::PID::Pion); 
+      histos.fill(HIST("hTOFPosition"), xyz[0], xyz[1]); // for debugging purposes
+
+      // correct for TOF segmentation
+      float trackXextra = trackX;
+      while(trackXextra < trackX + MAX_EXTRA_X){ 
+        // propagate one step further
+        trackXextra += MAX_STEP_FINAL_STAGE;
+        o2::base::Propagator::Instance()->propagateToX(track, trackXextra, d_bz, MAX_SIN_PHI, MAX_STEP, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &ltIntegral);
+
+        // re-evaluate - did we cross? if yes break
+        float previousX = xyz[0], previousY = xyz[1];
+        track.getXYZGlo(xyz);
+        if(segmentedRadius(xyz[0], xyz[1]) > tofPosition){
+          // crossed boundary -> do proportional scaling with how much we actually crossed the boundary
+          float segmentedRFinal = segmentedRadius(xyz[0], xyz[1]);
+          float timeProtonFinal = ltIntegral.getTOF(o2::track::PID::Proton);  
+          float timeKaonFinal = ltIntegral.getTOF(o2::track::PID::Kaon);  
+          float timePionFinal = ltIntegral.getTOF(o2::track::PID::Pion);  
+          float fraction = (tofPosition - segmentedR)/(segmentedRFinal-segmentedR+1e-6); // proportional fraction
+          timeProton = timeProton + (timeProtonFinal-timeProton)*fraction;
+          timeKaon = timeKaon + (timeKaonFinal-timeKaon)*fraction;
+          timePion = timeProton + (timePionFinal-timePion)*fraction;
+          histos.fill(HIST("hTOFPositionFinal"), previousX+fraction*(xyz[0]-previousX), previousY+fraction*(xyz[1]-previousY)); // for debugging purposes
+          break; 
+        }
+
+        // prepare for next step by setting current position and desired variables
+        segmentedR = segmentedRadius(xyz[0], xyz[1]); 
+        timeProton = ltIntegral.getTOF(o2::track::PID::Proton);  
+        timeKaon = ltIntegral.getTOF(o2::track::PID::Kaon);
+        timePion = ltIntegral.getTOF(o2::track::PID::Pion); 
+      }
+    }
+  }
 
   void init(InitContext& initContext)
   {
@@ -371,7 +438,9 @@ struct strangenesstofpid {
       histos.add("h2dProtonMeasuredVsExpected", "h2dProtonMeasuredVsExpected", {HistType::kTH3F, {axisSmallP, axisExpectedOverMeasured, axisEta}});
       histos.add("h2dPionMeasuredVsExpected", "h2dPionMeasuredVsExpected", {HistType::kTH3F, {axisSmallP, axisExpectedOverMeasured, axisEta}});
 
-      histos.add("hArcDebug", "hArcDebug", kTH2F, {axisP, {50, -5.0f, 10.0f}});
+      histos.add("hArcDebug", "hArcDebug", kTH2F, {axisTime, axisTime});
+      histos.add("hTOFPosition", "hTOFPosition", kTH2F, {axisPosition, axisPosition});
+      histos.add("hTOFPositionFinal", "hTOFPositionFinal", kTH2F, {axisPosition, axisPosition});
 
       // standard deltaTime values
       if (calculateV0s.value > 0) {
@@ -543,7 +612,7 @@ struct strangenesstofpid {
       LOG(info) << "Loading full (all-radius) material look-up table for run number: " << runNumber;
       lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForRun<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath, runNumber));
       o2::base::Propagator::Instance()->setMatLUT(lut);
-      LOG(info) << "Materiak look-up table loaded!"; 
+      LOG(info) << "Material look-up table loaded!"; 
     }
     mRunNumber = runNumber;
   }
@@ -585,59 +654,56 @@ struct strangenesstofpid {
     float nSigmaPositiveK0ShortPi = o2::aod::v0data::kNoTOFValue;
     float nSigmaNegativeK0ShortPi = o2::aod::v0data::kNoTOFValue;
 
-    float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
-    float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
-    float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
-    float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
+    float lengthPositive0 = -1;
+    float lengthNegative0 = -1;
 
-    float lengthPositive = -1;
-    float lengthNegative = -1;
+    float timePositivePr0 = 1e+6;
+    float timePositivePi0 = 1e+6;
+    float timeNegativePr0 = 1e+6;
+    float timeNegativePi0 = 1e+6;
 
-    float timePositivePr = 1e+6;
-    float timePositivePi = 1e+6;
-    float timeNegativePr = 1e+6;
-    float timeNegativePi = 1e+6;
+    float lengthPositive1 = -1;
+    float lengthNegative1 = -1;
 
-    if(calculationMethod.value==0){
-      velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
-      velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
-      velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
-      velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
+    float timePositivePr1 = 1e+6;
+    float timePositivePi1 = 1e+6;
+    float timeNegativePr1 = 1e+6;
+    float timeNegativePi1 = 1e+6;
 
-      lengthPositive = findInterceptLength(posTrack, d_bz); // FIXME: tofPosition ok? adjust?
-      lengthNegative = findInterceptLength(negTrack, d_bz); // FIXME: tofPosition ok? adjust?
+    // if(calculationMethod.value==0){
+      float velocityPositivePr0 = velocity(posTrack.getP(), o2::constants::physics::MassProton);
+      float velocityPositivePi0 = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
+      float velocityNegativePr0 = velocity(negTrack.getP(), o2::constants::physics::MassProton);
+      float velocityNegativePi0 = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
 
-      timePositivePr = lengthPositive / velocityPositivePr;
-      timePositivePi = lengthPositive / velocityPositivePi;
-      timeNegativePr = lengthNegative / velocityNegativePr;
-      timeNegativePi = lengthNegative / velocityNegativePi;
-    }
+      lengthPositive0 = findInterceptLength(posTrack, d_bz); // FIXME: tofPosition ok? adjust?
+      lengthNegative0 = findInterceptLength(negTrack, d_bz); // FIXME: tofPosition ok? adjust?
+
+      timePositivePr0 = lengthPositive0 / velocityPositivePr0;
+      timePositivePi0 = lengthPositive0 / velocityPositivePi0;
+      timeNegativePr0 = lengthNegative0 / velocityNegativePr0;
+      timeNegativePi0 = lengthNegative0 / velocityNegativePi0;
+    // }
 
     if(calculationMethod.value==1){
       // method to calculate the time and length via Propagator TrackLTIntegral 
-      o2::track::TrackLTIntegral posTrackLTIntegral;
-      o2::track::TrackLTIntegral negTrackLTIntegral;
+      float timeKaon; // will go unused
+      calculateTOF(posTrack, timePositivePi1, timeKaon, timePositivePr1);
+      calculateTOF(negTrack, timeNegativePi1, timeKaon, timeNegativePr1);
 
-      float posTrackX = -100;
-      float negTrackX = -100;
+      if(true){ 
+        histos.fill(HIST("hArcDebug"), timePositivePr0, timePositivePr1); // for debugging purposes
 
-      static constexpr float MAX_SIN_PHI = 0.85f;
-      static constexpr float MAX_STEP = 2.0f;
-
-      bool posTrackOK = posTrack.getXatLabR(tofPosition, posTrackX, d_bz, o2::track::DirOutward);
-      if(posTrackOK){ 
-        o2::base::Propagator::Instance()->propagateToX(posTrack, posTrackX, d_bz, MAX_SIN_PHI, MAX_STEP, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &posTrackLTIntegral);
-        lengthPositive = posTrackLTIntegral.getL();
-        timePositivePr = posTrackLTIntegral.getTOF(o2::track::PID::Proton);  
-      }
-      
-      bool negTrackOK = negTrack.getXatLabR(tofPosition, negTrackX, d_bz, o2::track::DirOutward);
-      if(negTrackOK){ 
-        o2::base::Propagator::Instance()->propagateToX(posTrack, posTrackX, d_bz, MAX_SIN_PHI, MAX_STEP, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &posTrackLTIntegral);
-        lengthPositive = posTrackLTIntegral.getL();
-        timePositivePr = posTrackLTIntegral.getTOF(o2::track::PID::Proton);  
       }
     }
+
+    float lengthPositive = lengthPositive0;
+    float lengthNegative = lengthNegative0;
+
+    float timePositivePr = timePositivePr1;
+    float timePositivePi = timePositivePi1;
+    float timeNegativePr = timeNegativePr1;
+    float timeNegativePi = timeNegativePi1;
 
     if (pTra.hasTOF() && lengthPositive > 0) {
       deltaTimePositiveLambdaPr = (pTra.tofSignal() - pTra.tofEvTime()) - (timeLambda + timePositivePr);
@@ -919,9 +985,6 @@ struct strangenesstofpid {
     }
 
     if (doQA) {
-      // fill QA histograms for cross-checking
-      histos.fill(HIST("hArcDebug"), cascade.p(), lengthCascade - d3d); // for debugging purposes
-
       if (cascade.dcaV0daughters() < cascadeGroup.qaV0DCADau && cascade.dcacascdaughters() < cascadeGroup.qaCascDCADau && cascade.v0cosPA(collision.getX(), collision.getY(), collision.getZ()) > cascadeGroup.qaV0CosPA && cascade.casccosPA(collision.getX(), collision.getY(), collision.getZ()) > cascadeGroup.qaCascCosPA) {
         if (cascade.sign() < 0) {
           if (std::abs(cascade.mXi() - 1.32171) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma) {
