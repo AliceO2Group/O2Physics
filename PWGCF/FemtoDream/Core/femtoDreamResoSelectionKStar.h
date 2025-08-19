@@ -40,8 +40,6 @@
 using namespace o2;
 using namespace o2::framework;
 
-/// std::ofstream wtftest("logResoHeader.txt", std::ios::app);
-
 namespace o2::analysis::femtoDream
 {
  namespace femtoDreamResoSelection
