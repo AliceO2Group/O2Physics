@@ -67,25 +67,25 @@ constexpr double kBetheBlochDefault[nParticles][nBetheParams]{
   {5.393020, 7.859534, 0.004048, 2.323197, 1.609307, 0.09},      // triton
   {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09},  // helion
   {-126.557359, -0.858569, 1.111643, 1.210323, 2.656374, 0.09}}; // alpha
-const int nTrkSettings = 19;
-static const std::vector<std::string> trackPIDsettingsNames{"useBBparams", "minITSnCls", "minITSnClscos", "minTPCnCls", "maxTPCchi2", "minTPCchi2", "maxITSchi2", "minRigidity", "maxRigidity", "maxTPCnSigma", "TOFrequiredabove", "minTOFmass", "maxTOFmass", "maxDcaXY", "maxDcaZ", "minITSclsSize", "maxITSclsSize", "minTPCnClsCrossedRows", "minReqClusterITSib"};
+const int nTrkSettings = 14;
+static const std::vector<std::string> trackPIDsettingsNames{"useBBparams", "minITSnCls", "minITSnClscos", "minTPCnCls", "maxTPCchi2", "minTPCchi2", "maxITSchi2", "maxTPCnSigma", "maxDcaXY", "maxDcaZ", "minITSclsSize", "maxITSclsSize", "minTPCnClsCrossedRows", "minReqClusterITSib"};
 constexpr double kTrackPIDSettings[nParticles][nTrkSettings]{
-  {0, 0, 4, 60, 4.0, 0.5, 100, 0.15, 1.2, 2.5, -1, 0, 100, 2., 2., 0., 1000, 70, 1},
-  {1, 0, 4, 70, 4.0, 0.5, 100, 0.20, 4.0, 3.0, -1, 0, 100, 2., 2., 0., 1000, 70, 1},
-  {1, 0, 4, 70, 4.0, 0.5, 100, 0.50, 5.0, 3.0, -1, 0, 100, 2., 2., 0., 1000, 70, 1},
-  {1, 0, 4, 70, 4.0, 0.5, 100, 0.50, 5.0, 3.0, -1, 0, 100, 2., 2., 0., 1000, 70, 1},
-  {1, 0, 4, 75, 4.0, 0.5, 100, 0.50, 5.0, 5.0, -1, 0, 100, 2., 2., 0., 1000, 70, 1},
-  {1, 0, 4, 70, 4.0, 0.5, 100, 0.50, 5.0, 5.0, -1, 0, 100, 2., 2., 0., 1000, 70, 1}};
+  {0, 0, 4, 60, 4.0, 0.5, 100, 2.5, 2., 2., 0., 1000, 70, 1},
+  {1, 0, 4, 70, 4.0, 0.5, 100, 3.0, 2., 2., 0., 1000, 70, 1},
+  {1, 0, 4, 70, 4.0, 0.5, 100, 3.0, 2., 2., 0., 1000, 70, 1},
+  {1, 0, 4, 70, 4.0, 0.5, 100, 3.0, 2., 2., 0., 1000, 70, 1},
+  {1, 0, 4, 75, 4.0, 0.5, 100, 5.0, 2., 2., 0., 1000, 70, 1},
+  {1, 0, 4, 70, 4.0, 0.5, 100, 5.0, 2., 2., 0., 1000, 70, 1}};
 
-const int nTrkSettings2 = 3;
-static const std::vector<std::string> trackPIDsettingsNames2{"useITSnsigma", "minITSnsigma", "maxITSnsigma"};
+const int nTrkSettings2 = 4;
+static const std::vector<std::string> trackPIDsettingsNames2{"useITSnsigma", "minITSnsigma", "maxITSnsigma", "fillsparsh"};
 constexpr double kTrackPIDSettings2[nParticles][nTrkSettings2]{
-  {1, -5, 4},
-  {1, -5, 4},
-  {1, -5, 4},
-  {1, -5, 4},
-  {1, -5, 4},
-  {1, -5, 4}};
+  {1, -5, 4, 0},
+  {1, -5, 4, 0},
+  {1, -5, 4, 0},
+  {1, -5, 4, 1},
+  {1, -5, 4, 1},
+  {1, -5, 4, 1}};
 
 struct PrimParticles {
   TString name;
@@ -139,22 +139,16 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgminReqClusterITSibRequire{"cfgminReqClusterITSibRequire", true, " Require min number of clusters required in ITS inner barrel"};
   Configurable<bool> cfgmaxITSchi2Require{"cfgmaxITSchi2Require", true, "Require maxITSchi2 Cut"};
   Configurable<bool> cfgmaxTPCnSigmaRequire{"cfgmaxTPCnSigmaRequire", true, "Require maxTPCnSigma Cut"};
-  Configurable<bool> cfgmaxITSnSigmaRequire{"cfgmaxITSnSigmaRequire", true, "Require maxITSnSigma Cut for helium"};
   Configurable<bool> cfgminGetMeanItsClsSizeRequire{"cfgminGetMeanItsClsSizeRequire", true, "Require minGetMeanItsClsSize Cut"};
   Configurable<bool> cfgmaxGetMeanItsClsSizeRequire{"cfgmaxGetMeanItsClsSizeRequire", true, "Require maxGetMeanItsClsSize Cut"};
-  Configurable<bool> cfgRigidityCutRequire{"cfgRigidityCutRequire", true, "Require Rigidity Cut"};
-  Configurable<bool> cfgmassRequire{"cfgmassRequire", true, "Require mass Cuts"};
   Configurable<bool> cfgDCAwithptRequire{"cfgDCAwithptRequire", true, "Require DCA cuts with pt dependance"};
   Configurable<bool> cfgDCAnopt{"cfgDCAnopt", true, "Require DCA cuts without pt dependance"};
-  Configurable<bool> cfgTwicemass{"cfgTwicemass", true, "multiply mass by its charge"};
   Configurable<bool> cfgRequirebetaplot{"cfgRequirebetaplot", true, "Require beta plot"};
-  Configurable<bool> cfgRequireMCposZ{"cfgRequireMCposZ", true, "Require beta plot"};
 
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgTrackPIDsettings{"cfgTrackPIDsettings", {kTrackPIDSettings[0], nParticles, nTrkSettings, particleNames, trackPIDsettingsNames}, "track selection and PID criteria"};
   Configurable<LabeledArray<double>> cfgTrackPIDsettings2{"cfgTrackPIDsettings2", {kTrackPIDSettings2[0], nParticles, nTrkSettings2, particleNames, trackPIDsettingsNames2}, "track selection and PID criteria"};
   Configurable<bool> cfgFillhspectra{"cfgFillhspectra", true, "fill data sparsh"};
-  Configurable<bool> cfgFillQAplots{"cfgFillQAplots", false, "Fill QA sparsh"};
   Configurable<bool> cfgFillmass{"cfgFillmass", false, "Fill mass histograms"};
   Configurable<float> centcut{"centcut", 80.0f, "centrality cut"};
   Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5f, "Rapidity range"};
@@ -162,7 +156,6 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgZvertexRequire{"cfgZvertexRequire", true, "Pos Z cut require"};
   Configurable<bool> cfgZvertexRequireMC{"cfgZvertexRequireMC", true, "Pos Z cut require for generated particles"};
   Configurable<bool> cfgsel8Require{"cfgsel8Require", true, "sel8 cut require"};
-  Configurable<float> cfgITSnsigma{"cfgITSnsigma", 5, "Max ITS nsigma value"};
   Configurable<float> cfgtpcNClsFound{"cfgtpcNClsFound", 100.0f, "min. no. of tpcNClsFound"};
   Configurable<float> cfgitsNCls{"cfgitsNCls", 2.0f, "min. no. of itsNCls"};
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
@@ -242,7 +235,6 @@ struct NucleitpcPbPb {
 
     histos.add<THnSparse>("hSpectra", " ", HistType::kTHnSparseF, {speciesBitAxis, ptAxis, nsigmaAxis, {5, -2.5, 2.5}, axisCent, axisRigidity, axisdEdx, axisDCA, axisDCA, nsigmaAxis});
 
-    histos.add<THnSparse>("hQAtest", "", HistType::kTHnSparseF, {speciesBitAxis, ptAxis, {5, -2.5, 2.5}, axisTPCcls, axisITScls, axisITSchi2, axisTPCchi2});
 
     if (doprocessMC) {
       histomc.add("histVtxZgen", "histVtxZgen", kTH1F, {axisVtxZ});
@@ -267,8 +259,31 @@ struct NucleitpcPbPb {
     }
   }
   //----------------------------------------------------------------------------------------------------------------
-  void findprimaryParticles(aod::TrackAssoc const& tracksByColl, TracksFull const& tracks, float cent)
+  //----------------------------------------------------------------------------------------------------------------
+  void processData(CollisionsFull const& collisions, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::TrackAssoc const& tracksColl)
   {
+    for (const auto& collision : collisions) {
+      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      initCCDB(bc);
+      initCollision(collision);
+      if (!collPassedEvSel)
+        continue;
+      if (collision.centFT0C() > centcut)
+        continue;
+      if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+        continue;
+      if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+        continue;
+      if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+      if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
+        continue;
+      if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+        continue;
+      histos.fill(HIST("histCentFTOC_cut"), collision.centFT0C());
+      const uint64_t collIdx = collision.globalIndex();
+      auto tracksByColl = tracksColl.sliceBy(perCollision, collIdx);
+/////////////////////////////////////////////////////////////////////////////////
     for (const auto& trackId : tracksByColl) {
       const auto& track = tracks.rawIteratorAt(trackId.trackId());
       if (!track.isPVContributor() && cfgUsePVcontributors)
@@ -296,9 +311,6 @@ struct NucleitpcPbPb {
         if (track.sign() < 0) {
           sign = -1;
         } // <- This redeclares a new local variable!
-        if (cfgFillQAplots) {
-          histos.fill(HIST("hQAtest"), i, ptMomn, sign, track.tpcNClsFound(), track.itsNCls(), track.itsChi2NCl(), track.tpcChi2NCl());
-        }
         if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
           continue;
         if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && cfgTPCNClsfoundRequire)
@@ -338,47 +350,20 @@ struct NucleitpcPbPb {
           continue;
 
         fillhmass(track, i);
-        if (cfgFillhspectra) {
-          histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, cent, getRigidity(track) * track.sign(), track.tpcSignal(), track.dcaZ(), track.dcaXY(), itsSigma);
+        if (cfgFillhspectra && cfgTrackPIDsettings2->get(i, "fillsparsh") == 1 ) {
+          histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), getRigidity(track) * track.sign(), track.tpcSignal(), track.dcaZ(), track.dcaXY(), itsSigma);
         }
         if (cfgRequirebetaplot) {
           histos.fill(HIST("Tofsignal"), getRigidity(track) * track.sign(), o2::pid::tof::Beta::GetBeta(track));
         }
       }
-      if (track.tpcNClsFound() < cfgtpcNClsFound || track.itsNCls() < cfgitsNCls) {
+      if (track.tpcNClsFound() > cfgtpcNClsFound || track.itsNCls() > cfgitsNCls) {
         histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
       }
       histos.fill(HIST("histeta"), track.eta());
     } // track loop
-  }
-  //----------------------------------------------------------------------------------------------------------------
-  void processData(CollisionsFull const& collisions, TracksFull const& tracks, aod::BCsWithTimestamps const&, aod::TrackAssoc const& tracksColl)
-  {
-    for (const auto& collision : collisions) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
-      initCCDB(bc);
-      initCollision(collision);
-      if (!collPassedEvSel)
-        continue;
-      if (collision.centFT0C() > centcut)
-        continue;
-      if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
-        continue;
-      if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
-        continue;
-      if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
-        continue;
-      if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
-        continue;
-      if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
-        continue;
-      histos.fill(HIST("histCentFTOC_cut"), collision.centFT0C());
-      const uint64_t collIdx = collision.globalIndex();
-      auto tracksByColl = tracksColl.sliceBy(perCollision, collIdx);
+ ///////////////////////////////////////////////      
 
-      findprimaryParticles(tracksByColl, tracks, collision.centFT0C());
-      if (!collHasCandidate)
-        continue;
     }
   }
   PROCESS_SWITCH(NucleitpcPbPb, processData, "data analysis", false);
@@ -496,9 +481,6 @@ struct NucleitpcPbPb {
           if (track.sign() < 0) {
             sign = -1;
           } // <- This redeclares a new local variable!
-          if (cfgFillQAplots) {
-            histos.fill(HIST("hQAtest"), i, ptMomn, sign, track.tpcNClsFound(), track.itsNCls(), track.itsChi2NCl(), track.tpcChi2NCl());
-          }
           if (std::abs(getRapidity(track, i)) > cfgCutRapidity && cfgRapidityRequire)
             continue;
           if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && cfgTPCNClsfoundRequire)
@@ -538,7 +520,7 @@ struct NucleitpcPbPb {
             continue;
 
           fillhmass(track, i);
-          if (cfgFillhspectra) {
+          if (cfgFillhspectra && cfgTrackPIDsettings2->get(i, "fillsparsh") == 1 ) {
             histos.fill(HIST("hSpectra"), i, ptMomn, tpcNsigma, sign, collision.centFT0C(), getRigidity(track) * track.sign(), track.tpcSignal(), track.dcaZ(), track.dcaXY(), itsSigma);
           }
           if (cfgRequirebetaplot) {
