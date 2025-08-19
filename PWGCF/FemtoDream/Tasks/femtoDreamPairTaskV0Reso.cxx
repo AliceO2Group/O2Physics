@@ -51,8 +51,8 @@ struct femtoDreamPairTaskV0Reso {
   FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventCont;
   FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventCont;
   //FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kReso> pairCleaner;
-  //FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kReso> pairCloseRejectionSE;
-  //FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kReso> pairCloseRejectionME;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kReso> pairCloseRejectionSE;
+  FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kReso> pairCloseRejectionME;
 
 
   /// General options
@@ -89,7 +89,7 @@ struct femtoDreamPairTaskV0Reso {
     ConfigurableAxis TempFitVarV0{"TempFitVarV0", {300, 0.9, 1}, "binning of the TempFitVar in the pT vs. TempFitVar plot (Reso))"};
     ConfigurableAxis TempFitVarV0Child{"TempFitVarV0Child", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (V0 child)"};
     ConfigurableAxis TempFitVarResoChild{"TempFitVarResoChild", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot (Reso child)"};
-    ConfigurableAxis InvMass{"InvMass", {200, 1, 1.2}, "InvMass binning"};
+    ConfigurableAxis InvMass{"InvMass", {1500, 0.9, 1.13}, "InvMass binning"};
     ConfigurableAxis pTTrack{"pTTrack", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (Track)"};
     ConfigurableAxis pTV0{"pTV0", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (V0)"};
     ConfigurableAxis pTReso{"pTReso", {20, 0.5, 4.05}, "pT binning of the pT vs. TempFitVar plot (Reso)"};
@@ -231,27 +231,26 @@ struct femtoDreamPairTaskV0Reso {
 
     sameEventCont.init(&Registry,
                        Binning.kstar, Binning.pT, Binning.kT, Binning.mT, Mixing.BinMult, Mixing.BinMultPercentile,
-                       Binning4D.kstar, Binning4D.mT, Binning4D.Mult, Binning4D.multPercentile,
+                       Binning4D.kstar, Binning4D.mT, Binning4D.Mult, Binning4D.multPercentile, 
                        Option.IsMC, Option.Use4D, Option.ExtendedPlots,
                        Option.HighkstarCut,
-                       Option.smearingByOrigin);
+                       Option.smearingByOrigin, Binning.InvMass);
 
     sameEventCont.setPDGCodes(V01.PDGCode, Reso2.PDGCode);
     mixedEventCont.init(&Registry,
                         Binning.kstar, Binning.pT, Binning.kT, Binning.mT, Mixing.BinMult, Mixing.BinMultPercentile,
-                        Binning4D.kstar, Binning4D.mT, Binning4D.Mult, Binning4D.multPercentile,
+                        Binning4D.kstar, Binning4D.mT, Binning4D.Mult, Binning4D.multPercentile, 
                         Option.IsMC, Option.Use4D, Option.ExtendedPlots,
                         Option.HighkstarCut,
-                        Option.smearingByOrigin);
+                        Option.smearingByOrigin, Binning.InvMass);
 
     mixedEventCont.setPDGCodes(V01.PDGCode, Reso2.PDGCode);
-    /*pairCleaner.init(&Registry);
+    //pairCleaner.init(&Registry);
     if (Option.CPROn.value) 
     {
       pairCloseRejectionSE.init(&Registry, &Registry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 1, Option.CPROld.value);
       pairCloseRejectionME.init(&Registry, &Registry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 2, Option.CPROld.value, 99, true);
     }
-*/
   }
 
  template < typename PartitionType, typename TableTracks, typename Collision>
@@ -297,7 +296,7 @@ struct femtoDreamPairTaskV0Reso {
     /// Now build particle combinations vorerst nur not Samespecies!!!
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceV01, SliceReso2))) 
     {
-
+      
       const auto& posChild = parts.iteratorAt(p1.index() - 2);  
       const auto& negChild = parts.iteratorAt(p1.index() - 1);
 
@@ -314,14 +313,11 @@ struct femtoDreamPairTaskV0Reso {
           ((negresoChild.cut() & Reso2.DaughNeg_CutBit) == Reso2.DaughNeg_CutBit)  //TPC & TOF checked in partition...
         ) 
       {
-        /*if (Option.CPROn.value) {
+        if (Option.CPROn.value) {
           if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
             continue;
           }
         }
-        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-          continue;
-        }*/
         sameEventCont.setPair<false>(p1, p2, col.multNtr(), col.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.smearingByOrigin); 
       }
     }
@@ -337,6 +333,7 @@ struct femtoDreamPairTaskV0Reso {
         if (collision1.globalIndex() == collision2.globalIndex()) {
           continue;
         }
+
 
         auto SliceV01 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
         auto SliceReso2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
@@ -368,25 +365,24 @@ struct femtoDreamPairTaskV0Reso {
           {
             continue;
           }
-          /*if (Option.CPROn.value) {
+          if (Option.CPROn.value) {
             if (pairCloseRejectionME.isClosePair(p1, p2, parts, collision1.magField())) {
               continue;
             }
           }
-          if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-            continue;
-          }*/
+                    
           mixedEventCont.setPair<false>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.Use4D, Option.ExtendedPlots, Option.smearingByOrigin);
         }
       }
     }
   }
 
-  void processSameEvent(FilteredCollision& col, FDParticles& parts)
+  void processSameEvent(FilteredCollision& col, FDParticles& parts) //try this.
   {
     //fillCollision<false>(col);
     auto SliceV01 = PartitionV01->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto SliceReso2 = PartitionReso2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    
     if (SliceV01.size() == 0 && SliceReso2.size() == 0) {
       return;
     }
