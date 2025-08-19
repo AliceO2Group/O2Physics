@@ -59,8 +59,8 @@ concept hasNTracksPVCent = requires(T collision) {
 /// Evaluate centrality/multiplicity percentile using FT0A estimator
 /// \param candidate is candidate
 /// \return centrality/multiplicity percentile of the collision
-template <hasFT0ACent Coll>
-float getCentralityColl(const Coll& collision)
+template <hasFT0ACent TCollision>
+float getCentralityColl(const TCollision& collision)
 {
   return collision.centFT0A();
 }
@@ -68,8 +68,8 @@ float getCentralityColl(const Coll& collision)
 /// Evaluate centrality/multiplicity percentile using FT0C estimator
 /// \param candidate is candidate
 /// \return centrality/multiplicity percentile of the collision
-template <hasFT0CCent Coll>
-float getCentralityColl(const Coll& collision)
+template <hasFT0CCent TCollision>
+float getCentralityColl(const TCollision& collision)
 {
   return collision.centFT0C();
 }
@@ -77,8 +77,8 @@ float getCentralityColl(const Coll& collision)
 /// Evaluate centrality/multiplicity percentile using FT0M estimator
 /// \param candidate is candidate
 /// \return centrality/multiplicity percentile of the collision
-template <hasFT0MCent Coll>
-float getCentralityColl(const Coll& collision)
+template <hasFT0MCent TCollision>
+float getCentralityColl(const TCollision& collision)
 {
   return collision.centFT0M();
 }
@@ -86,8 +86,8 @@ float getCentralityColl(const Coll& collision)
 /// Evaluate centrality/multiplicity percentile using FV0A estimator
 /// \param candidate is candidate
 /// \return centrality/multiplicity percentile of the collision
-template <hasFV0ACent Coll>
-float getCentralityColl(const Coll& collision)
+template <hasFV0ACent TCollision>
+float getCentralityColl(const TCollision& collision)
 {
   return collision.centFV0A();
 }
@@ -95,8 +95,8 @@ float getCentralityColl(const Coll& collision)
 /// Evaluate centrality/multiplicity percentile using NTracksPV estimator
 /// \param candidate is candidate
 /// \return centrality/multiplicity percentile of the collision
-template <hasNTracksPVCent Coll>
-float getCentralityColl(const Coll& collision)
+template <hasNTracksPVCent TCollision>
+float getCentralityColl(const TCollision& collision)
 {
   return collision.centNTPV();
 }
@@ -104,8 +104,8 @@ float getCentralityColl(const Coll& collision)
 /// Default case if no centrality/multiplicity estimator is provided
 /// \param candidate is candidate
 /// \return dummy value for centrality/multiplicity percentile of the collision
-template <typename Coll>
-float getCentralityColl(const Coll&)
+template <typename TCollision>
+float getCentralityColl(const TCollision&)
 {
   return 105.0f;
 }
@@ -114,36 +114,36 @@ float getCentralityColl(const Coll&)
 /// \param collision is the collision with the centrality information
 /// \param centEstimator integer to select the centrality estimator
 /// \return collision centrality
-template <typename Coll>
-float getCentralityColl(const Coll& collision, int centEstimator)
+template <typename TCollision>
+float getCentralityColl(const TCollision& collision, const int centEstimator)
 {
   switch (centEstimator) {
     case CentralityEstimator::FT0A:
-      if constexpr (hasFT0ACent<Coll>) {
+      if constexpr (hasFT0ACent<TCollision>) {
         return collision.centFT0A();
       }
       LOG(fatal) << "Collision does not have centFT0A().";
       break;
     case CentralityEstimator::FT0C:
-      if constexpr (hasFT0CCent<Coll>) {
+      if constexpr (hasFT0CCent<TCollision>) {
         return collision.centFT0C();
       }
       LOG(fatal) << "Collision does not have centFT0C().";
       break;
     case CentralityEstimator::FT0M:
-      if constexpr (hasFT0MCent<Coll>) {
+      if constexpr (hasFT0MCent<TCollision>) {
         return collision.centFT0M();
       }
       LOG(fatal) << "Collision does not have centFT0M().";
       break;
     case CentralityEstimator::FV0A:
-      if constexpr (hasFV0ACent<Coll>) {
+      if constexpr (hasFV0ACent<TCollision>) {
         return collision.centFV0A();
       }
       LOG(fatal) << "Collision does not have centFV0A().";
       break;
     default:
-      LOG(fatal) << "Centrality estimator not valid. Possible values are V0A, T0M, T0A, T0C.";
+      LOG(fatal) << "Centrality estimator not valid. See CentralityEstimator for valid values.";
       break;
   }
   return -999.f;
@@ -152,13 +152,14 @@ float getCentralityColl(const Coll& collision, int centEstimator)
 /// \brief Function to get MC collision centrality
 /// \param collSlice collection of reconstructed collisions associated to a generated one
 /// \return generated MC collision centrality
-template <typename CCs>
-float getCentralityGenColl(CCs const& collSlice)
+template <typename TCollisions>
+float getCentralityGenColl(TCollisions const& collSlice)
 {
-  float centrality{-1};
-  float multiplicity{0.f};
+  using TMult = uint16_t; // type of numContrib
+  float centrality{-1.f};
+  TMult multiplicity{};
   for (const auto& collision : collSlice) {
-    float collMult = collision.numContrib();
+    const TMult collMult = collision.numContrib();
     if (collMult > multiplicity) {
       centrality = getCentralityColl(collision);
       multiplicity = collMult;
@@ -171,13 +172,14 @@ float getCentralityGenColl(CCs const& collSlice)
 /// \param collSlice collection of reconstructed collisions associated to a generated one
 /// \param centEstimator integer to select the centrality estimator
 /// \return generated MC collision centrality
-template <typename CCs>
-float getCentralityGenColl(CCs const& collSlice, int centEstimator)
+template <typename TCollisions>
+float getCentralityGenColl(TCollisions const& collSlice, const int centEstimator)
 {
-  float centrality{-1};
-  float multiplicity{0.f};
+  using TMult = uint16_t; // type of numContrib
+  float centrality{-1.f};
+  TMult multiplicity{};
   for (const auto& collision : collSlice) {
-    float collMult = collision.numContrib();
+    const TMult collMult = collision.numContrib();
     if (collMult > multiplicity) {
       centrality = getCentralityColl(collision, centEstimator);
       multiplicity = collMult;

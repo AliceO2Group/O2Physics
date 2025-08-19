@@ -227,6 +227,7 @@ struct UccZdc {
     const char* tiT0C{"T0C (#times 1/100, -3.3 < #eta < -2.1)"};
     const char* tiT0M{"T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9)"};
     const char* tiNch{"#it{N}_{ch} (|#eta| < 0.8)"};
+    const char* tiNPV{"#it{N}_{PV} (|#eta|<1)"};
     const char* tiV0A{"V0A (#times 1/100, 2.2 < #eta < 5)"};
     const char* tiZNs{"ZNA + ZNC"};
     const char* tiZPs{"ZPA + ZPC"};
@@ -250,8 +251,11 @@ struct UccZdc {
     registry.add("ExcludedEvtVsFT0M", Form(";%s;Entries;", tiT0M), kTH1F, {{nBinsAmpFT0, 0., maxAmpFT0}});
     registry.add("ExcludedEvtVsFV0A", Form(";%s;Entries;", tiT0M), kTH1F, {{nBinsAmpV0A, 0., maxAmpV0A}});
     registry.add("ExcludedEvtVsNch", Form(";%s;Entries;", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
+    registry.add("ExcludedEvtVsNPV", Form(";%s;Entries;", tiNPV), kTH1F, {{nBinsITSTrack, 0, maxITSTrack}});
     registry.add("Nch", Form(";%s;Entries;", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
     registry.add("NchVsOneParCorr", Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+    registry.add("NchVsTwoParCorr", Form(";%s;#LT[#it{p}_{T}^{(2)}]#GT;", tiNch), kTProfile, {{nBinsNch, minNch, maxNch}});
+    registry.add("NchVsThreeParCorr", Form(";%s;#LT[#it{p}_{T}^{(3)}]#GT;", tiNch), kTProfile, {{nBinsNch, minNch, maxNch}});
 
     auto hstat = registry.get<TH1>(HIST("hEventCounter"));
     auto* x = hstat->GetXaxis();
@@ -330,8 +334,6 @@ struct UccZdc {
       registry.add("NchvsOneParCorrGen", Form("MC Closure;%s;%s", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchvsTwoParCorrGen", Form("MC Closure;%s;%s", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchvsThreeParCorrGen", Form("MC Closure;%s;%s", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchVsTwoParCorr", Form("MC Closure;%s;%s", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchVsThreeParCorr", Form("MC Closure;%s;%s", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
       // Corrections
       registry.add("zPosMC", "Filled at MC closure + Corrections;;Entries;", kTH1F, {axisZpos});
       registry.add("hEventCounterMC", "Event counter", kTH1F, {axisEvent});
@@ -549,6 +551,7 @@ struct UccZdc {
       }
     }
 
+    const double nPV{collision.multNTracksPVeta1() / 1.};
     const double normT0M{(aT0A + aT0C) / 100.};
     const double normV0A{aV0A / 100.};
     const double normT0A{aT0A / 100.};
@@ -619,6 +622,9 @@ struct UccZdc {
       if (s1 == "V0A") {
         xEval = normV0A;
       }
+      if (s1 == "NPV") {
+        xEval = nPV;
+      }
 
       const int bin4Calibration{cfgNch.hMeanNch->FindBin(xEval)};
       const double meanNch{cfgNch.hMeanNch->GetBinContent(bin4Calibration)};
@@ -630,6 +636,7 @@ struct UccZdc {
         registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
         registry.fill(HIST("ExcludedEvtVsFV0A"), normV0A);
         registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
+        registry.fill(HIST("ExcludedEvtVsNPV"), nPV);
         skipEvent = true;
       }
     }
@@ -638,7 +645,7 @@ struct UccZdc {
       return;
     }
 
-    double meanpt{0.};
+    double sumpt{0.};
     for (const auto& track : tracks) {
       // Track Selection
       if (!track.isGlobalTrack()) {
@@ -655,7 +662,7 @@ struct UccZdc {
       registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
       registry.fill(HIST("sigma1Pt"), track.pt(), track.sigma1Pt());
       registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
-      meanpt += track.pt();
+      sumpt += track.pt();
     }
 
     registry.fill(HIST("zPos"), collision.posZ());
@@ -686,7 +693,7 @@ struct UccZdc {
     registry.fill(HIST("ZNVsNch"), glbTracks, sumZNs);
     registry.fill(HIST("ZNDifVsNch"), glbTracks, znA - znC);
     if (glbTracks >= minNchSel)
-      registry.fill(HIST("NchVsOneParCorr"), glbTracks, meanpt / glbTracks);
+      registry.fill(HIST("NchVsOneParCorr"), glbTracks, sumpt / glbTracks);
   }
   PROCESS_SWITCH(UccZdc, processQA, "Process QA", true);
   void processZdcCollAss(o2::aod::ColEvSels::iterator const& collision, o2::aod::BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, TheFilteredTracks const& tracks)
@@ -725,6 +732,7 @@ struct UccZdc {
       }
     }
 
+    const double nPV{collision.multNTracksPVeta1() / 1.};
     const double normT0M{(aT0A + aT0C) / 100.};
     const double normV0A{aV0A / 100.};
     float znA{foundBC.zdc().amplitudeZNA()};
@@ -802,6 +810,9 @@ struct UccZdc {
       if (s1 == "V0A") {
         xEval = normV0A;
       }
+      if (s1 == "NPV") {
+        xEval = nPV;
+      }
 
       const int bin4Calibration{cfgNch.hMeanNch->FindBin(xEval)};
       const double meanNch{cfgNch.hMeanNch->GetBinContent(bin4Calibration)};
@@ -813,6 +824,7 @@ struct UccZdc {
         registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
         registry.fill(HIST("ExcludedEvtVsFV0A"), normV0A);
         registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
+        registry.fill(HIST("ExcludedEvtVsNPV"), nPV);
         skipEvent = true;
       }
     }
@@ -932,45 +944,41 @@ struct UccZdc {
     getPTpowers(pTs, vecEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
 
     // EbE one-particle pT correlation
-    double oneParCorr{p1 / w1};
+    const double oneParCorr{p1 / w1};
 
     // EbE two-particle pT correlation
-    double denTwoParCorr{std::pow(w1, 2.) - w2};
-    double numTwoParCorr{std::pow(p1, 2.) - p2};
-    double twoParCorr{numTwoParCorr / denTwoParCorr};
+    const double denTwoParCorr{std::pow(w1, 2.) - w2};
+    const double numTwoParCorr{std::pow(p1, 2.) - p2};
+    const double twoParCorr{numTwoParCorr / denTwoParCorr};
 
     // EbE three-particle pT correlation
-    double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
-    double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
-    double threeParCorr{numThreeParCorr / denThreeParCorr};
-
-    // EbE four-particle pT correlation
-    // double denFourParCorr{std::pow(w1, 4.) - 6. * w2 * std::pow(w1, 2.) + 3. * std::pow(w2, 2.) + 8 * w3 * w1 - 6. * w4};
-    // double numFourParCorr{std::pow(p1, 4.) - 6. * p2 * std::pow(p1, 2.) + 3. * std::pow(p2, 2.) + 8 * p3 * p1 - 6. * p4};
-    // double fourParCorr{numFourParCorr / denFourParCorr};
+    const double denThreeParCorr{std::pow(w1, 3.) - (3. * w2 * w1) + (2. * w3)};
+    const double numThreeParCorr{std::pow(p1, 3.) - (3. * p2 * p1) + (2. * p3)};
+    const double threeParCorr{numThreeParCorr / denThreeParCorr};
 
     // One-dimensional distributions
     registry.fill(HIST("Nch"), nchMult);
     registry.fill(HIST("NchUncorrected"), glbTracks);
-
     registry.fill(HIST("NchVsV0A"), nchMult, normV0A);
     registry.fill(HIST("NchVsT0M"), nchMult, normT0M);
     registry.fill(HIST("NchVsZN"), nchMult, sumZNs);
     registry.fill(HIST("NchVsZP"), nchMult, sumZPs);
 
-    registry.fill(HIST("NchVsOneParCorr"), nchMult, oneParCorr, w1);
+    registry.fill(HIST("NchVsOneParCorr"), nchMult, oneParCorr);
+    registry.fill(HIST("NchVsTwoParCorr"), nchMult, twoParCorr);
+    registry.fill(HIST("NchVsThreeParCorr"), nchMult, threeParCorr);
 
-    registry.fill(HIST("NchVsOneParCorrVsZN"), nchMult, sumZNs, oneParCorr, w1);
-    registry.fill(HIST("NchVsTwoParCorrVsZN"), nchMult, sumZNs, twoParCorr, denTwoParCorr);
-    registry.fill(HIST("NchVsThreeParCorrVsZN"), nchMult, sumZNs, threeParCorr, denThreeParCorr);
+    registry.fill(HIST("NchVsOneParCorrVsZN"), nchMult, sumZNs, oneParCorr);
+    registry.fill(HIST("NchVsTwoParCorrVsZN"), nchMult, sumZNs, twoParCorr);
+    registry.fill(HIST("NchVsThreeParCorrVsZN"), nchMult, sumZNs, threeParCorr);
 
-    registry.fill(HIST("NchVsOneParCorrVsT0M"), nchMult, normT0M, oneParCorr, w1);
-    registry.fill(HIST("NchVsTwoParCorrVsT0M"), nchMult, normT0M, twoParCorr, denTwoParCorr);
-    registry.fill(HIST("NchVsThreeParCorrVsT0M"), nchMult, normT0M, threeParCorr, denThreeParCorr);
+    registry.fill(HIST("NchVsOneParCorrVsT0M"), nchMult, normT0M, oneParCorr);
+    registry.fill(HIST("NchVsTwoParCorrVsT0M"), nchMult, normT0M, twoParCorr);
+    registry.fill(HIST("NchVsThreeParCorrVsT0M"), nchMult, normT0M, threeParCorr);
 
-    registry.fill(HIST("NchVsOneParCorrVsV0A"), nchMult, normV0A, oneParCorr, w1);
-    registry.fill(HIST("NchVsTwoParCorrVsV0A"), nchMult, normV0A, twoParCorr, denTwoParCorr);
-    registry.fill(HIST("NchVsThreeParCorrVsV0A"), nchMult, normV0A, threeParCorr, denThreeParCorr);
+    registry.fill(HIST("NchVsOneParCorrVsV0A"), nchMult, normV0A, oneParCorr);
+    registry.fill(HIST("NchVsTwoParCorrVsV0A"), nchMult, normV0A, twoParCorr);
+    registry.fill(HIST("NchVsThreeParCorrVsV0A"), nchMult, normV0A, threeParCorr);
 
     const uint64_t timeStamp{foundBC.timestamp()};
     eventSampling(tracks, normV0A, normT0M, sumZNs, timeStamp);
@@ -1134,10 +1142,8 @@ struct UccZdc {
 
         const double denTwoParCorr{std::pow(w1, 2.) - w2};
         const double numTwoParCorr{std::pow(p1, 2.) - p2};
-        const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
-        const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
-        // const double denFourParCorr{std::pow(w1, 4.) - 6. * w2 * std::pow(w1, 2.) + 3. * std::pow(w2, 2.) + 8 * w3 * w1 - 6. * w4};
-        // const double numFourParCorr{std::pow(p1, 4.) - 6. * p2 * std::pow(p1, 2.) + 3. * std::pow(p2, 2.) + 8 * p3 * p1 - 6. * p4};
+        const double denThreeParCorr{std::pow(w1, 3.) - (3. * w2 * w1) + (2. * w3)};
+        const double numThreeParCorr{std::pow(p1, 3.) - (3. * p2 * p1) + (2. * p3)};
 
         const double oneParCorr{p1 / w1};
         const double twoParCorr{numTwoParCorr / denTwoParCorr};
@@ -1145,9 +1151,9 @@ struct UccZdc {
 
         registry.fill(HIST("Nch"), nchMult);
         registry.fill(HIST("NchUncorrected"), nchRaw);
-        registry.fill(HIST("NchVsOneParCorr"), nchMult, oneParCorr, w1);
-        registry.fill(HIST("NchVsTwoParCorr"), nchMult, twoParCorr, denTwoParCorr);
-        registry.fill(HIST("NchVsThreeParCorr"), nchMult, threeParCorr, denThreeParCorr);
+        registry.fill(HIST("NchVsOneParCorr"), nchMult, oneParCorr);
+        registry.fill(HIST("NchVsTwoParCorr"), nchMult, twoParCorr);
+        registry.fill(HIST("NchVsThreeParCorr"), nchMult, threeParCorr);
 
         //--------------------------- Generated MC ---------------------------
         std::vector<float> pTsMC;
@@ -1199,20 +1205,17 @@ struct UccZdc {
 
         const double denTwoParCorrMC{std::pow(w1MC, 2.) - w2MC};
         const double numTwoParCorrMC{std::pow(p1MC, 2.) - p2MC};
-        const double denThreeParCorrMC{std::pow(w1MC, 3.) - 3. * w2MC * w1MC + 2. * w3MC};
-        const double numThreeParCorrMC{std::pow(p1MC, 3.) - 3. * p2MC * p1MC + 2. * p3MC};
-        // const double denFourParCorrMC{std::pow(w1MC, 4.) - 6. * w2MC * std::pow(w1MC, 2.) + 3. * std::pow(w2MC, 2.) + 8 * w3MC * w1MC - 6. * w4MC};
-        // const double numFourParCorrMC{std::pow(p1MC, 4.) - 6. * p2MC * std::pow(p1MC, 2.) + 3. * std::pow(p2MC, 2.) + 8 * p3MC * p1MC - 6. * p4MC};
+        const double denThreeParCorrMC{std::pow(w1MC, 3.) - (3. * w2MC * w1MC) + (2. * w3MC)};
+        const double numThreeParCorrMC{std::pow(p1MC, 3.) - (3. * p2MC * p1MC) + (2. * p3MC)};
 
         const double oneParCorrMC{p1MC / w1MC};
         const double twoParCorrMC{numTwoParCorrMC / denTwoParCorrMC};
         const double threeParCorrMC{numThreeParCorrMC / denThreeParCorrMC};
-        // const double fourParCorrMC{numFourParCorrMC / denFourParCorrMC};
 
         registry.fill(HIST("NchGen"), nchMC);
-        registry.fill(HIST("NchvsOneParCorrGen"), nchMC, oneParCorrMC, w1MC);
-        registry.fill(HIST("NchvsTwoParCorrGen"), nchMC, twoParCorrMC, denTwoParCorrMC);
-        registry.fill(HIST("NchvsThreeParCorrGen"), nchMC, threeParCorrMC, denThreeParCorrMC);
+        registry.fill(HIST("NchvsOneParCorrGen"), nchMC, oneParCorrMC);
+        registry.fill(HIST("NchvsTwoParCorrGen"), nchMC, twoParCorrMC);
+        registry.fill(HIST("NchvsThreeParCorrGen"), nchMC, threeParCorrMC);
 
         //------------------ Poisson sampling
         eventSamplingMC(mcParticles, timeStamp);
@@ -1429,14 +1432,14 @@ struct UccZdc {
         const double twoParCorr{numTwoParCorr / denTwoParCorr};
 
         // EbE three-particle pT correlation
-        const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
-        const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
+        const double denThreeParCorr{std::pow(w1, 3.) - (3. * w2 * w1) + (2. * w3)};
+        const double numThreeParCorr{std::pow(p1, 3.) - (3. * p2 * p1) + (2. * p3)};
         const double threeParCorr{numThreeParCorr / denThreeParCorr};
 
         hNchGen[replica]->Fill(nchMult);
-        pOneParCorrVsNchGen[replica]->Fill(nchMult, oneParCorr, w1);
-        pTwoParCorrVsNchGen[replica]->Fill(nchMult, twoParCorr, denTwoParCorr);
-        pThreeParCorrVsNchGen[replica]->Fill(nchMult, threeParCorr, denThreeParCorr);
+        pOneParCorrVsNchGen[replica]->Fill(nchMult, oneParCorr);
+        pTwoParCorrVsNchGen[replica]->Fill(nchMult, twoParCorr);
+        pThreeParCorrVsNchGen[replica]->Fill(nchMult, threeParCorr);
       } // event per replica
     } // replica's loop
   }
@@ -1572,14 +1575,14 @@ struct UccZdc {
         const double twoParCorr{numTwoParCorr / denTwoParCorr};
 
         // EbE three-particle pT correlation
-        const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
-        const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
+        const double denThreeParCorr{std::pow(w1, 3.) - (3. * w2 * w1) + (2. * w3)};
+        const double numThreeParCorr{std::pow(p1, 3.) - (3. * p2 * p1) + (2. * p3)};
         const double threeParCorr{numThreeParCorr / denThreeParCorr};
 
         hNch[replica]->Fill(nchMult);
-        pOneParCorrVsNch[replica]->Fill(nchMult, oneParCorr, w1);
-        pTwoParCorrVsNch[replica]->Fill(nchMult, twoParCorr, denTwoParCorr);
-        pThreeParCorrVsNch[replica]->Fill(nchMult, threeParCorr, denThreeParCorr);
+        pOneParCorrVsNch[replica]->Fill(nchMult, oneParCorr);
+        pTwoParCorrVsNch[replica]->Fill(nchMult, twoParCorr);
+        pThreeParCorrVsNch[replica]->Fill(nchMult, threeParCorr);
       } // event per replica
     } // replica's loop
   }
@@ -1720,25 +1723,25 @@ struct UccZdc {
         const double twoParCorr{numTwoParCorr / denTwoParCorr};
 
         // EbE three-particle pT correlation
-        const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
-        const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
+        const double denThreeParCorr{std::pow(w1, 3.) - (3. * w2 * w1) + (2. * w3)};
+        const double numThreeParCorr{std::pow(p1, 3.) - (3. * p2 * p1) + (2. * p3)};
         const double threeParCorr{numThreeParCorr / denThreeParCorr};
 
         hNchVsZN[replica]->Fill(nchMult, sumZNs);
         hNchVsV0A[replica]->Fill(nchMult, normV0A);
         hNchVsT0M[replica]->Fill(nchMult, normT0M);
 
-        pNchVsOneParCorrVsZN[replica]->Fill(nchMult, sumZNs, oneParCorr, w1);
-        pNchVsTwoParCorrVsZN[replica]->Fill(nchMult, sumZNs, twoParCorr, denTwoParCorr);
-        pNchVsThreeParCorrVsZN[replica]->Fill(nchMult, sumZNs, threeParCorr, denThreeParCorr);
+        pNchVsOneParCorrVsZN[replica]->Fill(nchMult, sumZNs, oneParCorr);
+        pNchVsTwoParCorrVsZN[replica]->Fill(nchMult, sumZNs, twoParCorr);
+        pNchVsThreeParCorrVsZN[replica]->Fill(nchMult, sumZNs, threeParCorr);
 
-        pNchVsOneParCorrVsT0M[replica]->Fill(nchMult, normT0M, oneParCorr, w1);
-        pNchVsTwoParCorrVsT0M[replica]->Fill(nchMult, normT0M, twoParCorr, denTwoParCorr);
-        pNchVsThreeParCorrVsT0M[replica]->Fill(nchMult, normT0M, threeParCorr, denThreeParCorr);
+        pNchVsOneParCorrVsT0M[replica]->Fill(nchMult, normT0M, oneParCorr);
+        pNchVsTwoParCorrVsT0M[replica]->Fill(nchMult, normT0M, twoParCorr);
+        pNchVsThreeParCorrVsT0M[replica]->Fill(nchMult, normT0M, threeParCorr);
 
-        pNchVsOneParCorrVsV0A[replica]->Fill(nchMult, normV0A, oneParCorr, w1);
-        pNchVsTwoParCorrVsV0A[replica]->Fill(nchMult, normV0A, twoParCorr, denTwoParCorr);
-        pNchVsThreeParCorrVsV0A[replica]->Fill(nchMult, normV0A, threeParCorr, denThreeParCorr);
+        pNchVsOneParCorrVsV0A[replica]->Fill(nchMult, normV0A, oneParCorr);
+        pNchVsTwoParCorrVsV0A[replica]->Fill(nchMult, normV0A, twoParCorr);
+        pNchVsThreeParCorrVsV0A[replica]->Fill(nchMult, normV0A, threeParCorr);
       } // event per replica
     } // replica's loop
   }
