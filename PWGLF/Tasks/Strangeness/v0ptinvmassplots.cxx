@@ -339,42 +339,42 @@ struct V0PtInvMassPlots {
     }
     rPtAnalysis.fill(HIST("hNEvents"), 1.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel 8");
-    if (!(collision.selection_bit(aod::evsel::kNoTimeFrameBorder) && doNoTimeFrameBorder)) {
+    if (!(doNoTimeFrameBorder && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 2.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "NoTimeFrameBorder");
-    if (!(collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && doNoITSROFrameBorder)) {
+    if (!(doNoITSROFrameBorder && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 3.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "NoITSROFrameBorder");
-    if (!(collision.selection_bit(aod::evsel::kIsTriggerTVX) && doIsTriggerTVX)) {
+    if (!(doIsTriggerTVX && collision.selection_bit(aod::evsel::kIsTriggerTVX))) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 4.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "IsTriggerTVX");
-    if (!(std::abs(collision.posZ()) < cutZVertex && docutZVertex)) {
+    if (!(docutZVertex && std::abs(collision.posZ()) < cutZVertex)) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 5.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "cutZVertex");
-    if (!(collision.selection_bit(aod::evsel::kIsVertexTOFmatched) && doIsVertexTOFmatched)) {
+    if (!(doIsVertexTOFmatched && collision.selection_bit(aod::evsel::kIsVertexTOFmatched))) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 6.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "IsVertexTOFmatched");
-    if (!(collision.selection_bit(aod::evsel::kNoSameBunchPileup) && doNoSameBunchPileup)) {
+    if (!(doNoSameBunchPileup && collision.selection_bit(aod::evsel::kNoSameBunchPileup))) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 7.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(8, "NoSameBunchPileup");
-    if (!(collision.selection_bit(aod::evsel::kIsVertexITSTPC) && doIsVertexITSTPC)) {
+    if (!(doIsVertexITSTPC && collision.selection_bit(aod::evsel::kIsVertexITSTPC))) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 8.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(9, "IsVertexITSTPC");
-    if (!(collision.isInelGt0() && doisInelGt0)) {
+    if (!(doisInelGt0 && collision.isInelGt0())) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 9.5);
@@ -394,22 +394,22 @@ struct V0PtInvMassPlots {
 
     rPtAnalysis.fill(HIST("hNV0s"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(1, "All V0s");
-    if (std::abs(v0.y()) > rapidityCut && doRapidityCut) { // V0 Rapidity Cut
+    if (doRapidityCut && std::abs(v0.y()) > rapidityCut) { // V0 Rapidity Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNV0s"), 1.5);
     rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(2, "Rapidity");
-    if ((std::abs(posDaughterTrack.eta()) > etadau && std::abs(negDaughterTrack.eta()) > etadau) && doDaughterPseudorapidityCut) { // Daughters Pseudorapidity Cut
+    if (doDaughterPseudorapidityCut && (std::abs(posDaughterTrack.eta()) > etadau && std::abs(negDaughterTrack.eta()) > etadau)) { // Daughters Pseudorapidity Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNV0s"), 2.5);
     rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(3, "Dau Pseudorapidity");
-    if ((posDaughterTrack.isITSAfterburner() || negDaughterTrack.isITSAfterburner()) && !doisITSAfterburner) { // ITS After Burner on daughter tracks
+    if (!doisITSAfterburner && (posDaughterTrack.isITSAfterburner() || negDaughterTrack.isITSAfterburner())) { // ITS After Burner on daughter tracks
       return false;
     }
     rPtAnalysis.fill(HIST("hNV0s"), 3.5);
     rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(4, "ITS Afterburner");
-    if (posDaughterTrack.itsNCls() <= itsMinHits && negDaughterTrack.itsNCls() <= itsMinHits && doitsMinHits) { // Minimum hits in the ITS
+    if (doitsMinHits && posDaughterTrack.itsNCls() <= itsMinHits && negDaughterTrack.itsNCls() <= itsMinHits) { // Minimum hits in the ITS
       return false;
       rPtAnalysis.fill(HIST("hNV0s"), 4.5);
       rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(5, "ITS Min Hits");
@@ -431,55 +431,55 @@ struct V0PtInvMassPlots {
     rPtAnalysis.fill(HIST("hNK0sh"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNK0sh"))->GetXaxis()->SetBinLabel(1, "All");
     rPtAnalysis.fill(HIST("hMassK0ShortvsCuts"), 0.5, v0.mK0Short());
-    if ((std::abs(posDaughterTrack.tpcNSigmaPi()) > nSigmaTPCPion && std::abs(negDaughterTrack.tpcNSigmaPi()) > nSigmaTPCPion) && doK0shTPCPID) { // TPC PID for two pions
+    if (doK0shTPCPID && (std::abs(posDaughterTrack.tpcNSigmaPi()) > nSigmaTPCPion && std::abs(negDaughterTrack.tpcNSigmaPi()) > nSigmaTPCPion)) { // TPC PID for two pions
       return false;
     }
     rPtAnalysis.fill(HIST("hNK0sh"), 1.5);
     rPtAnalysis.get<TH1>(HIST("hNK0sh"))->GetXaxis()->SetBinLabel(2, "TPC_PID");
     rPtAnalysis.fill(HIST("hMassK0ShortvsCuts"), 1.5, v0.mK0Short());
-    if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) < compv0masscut && std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) < compv0masscut && doK0shcomptmasscut) { // Kzero competitive v0 mass cut (cut out Lambdas and Anti-Lambdas)
+    if (doK0shcomptmasscut && std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) < compv0masscut && std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) < compv0masscut) { // Kzero competitive v0 mass cut (cut out Lambdas and Anti-Lambdas)
       return false;
     }
     rPtAnalysis.fill(HIST("hNK0sh"), 2.5);
     rPtAnalysis.get<TH1>(HIST("hNK0sh"))->GetXaxis()->SetBinLabel(3, "Compt_Mass");
     rPtAnalysis.fill(HIST("hMassK0ShortvsCuts"), 2.5, v0.mK0Short());
-    if (v0.v0radius() > kaonshmaxct && doK0shMaxct) { // K0sh max ct
+    if (doK0shMaxct && v0.v0radius() > kaonshmaxct) { // K0sh max ct
       return false;
     }
     rPtAnalysis.fill(HIST("hNK0sh"), 3.5);
     rPtAnalysis.get<TH1>(HIST("hNK0sh"))->GetXaxis()->SetBinLabel(4, "Max_ct");
     rPtAnalysis.fill(HIST("hMassK0ShortvsCuts"), 3.5, v0.mK0Short());
-    if (v0.qtarm() < (k0shparamArmenterosCut * std::abs(v0.alpha())) && doK0shArmenterosCut) { // K0sh Armenteros Cut
+    if (doK0shArmenterosCut && v0.qtarm() < (k0shparamArmenterosCut * std::abs(v0.alpha()))) { // K0sh Armenteros Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNK0sh"), 4.5);
     rPtAnalysis.get<TH1>(HIST("hNK0sh"))->GetXaxis()->SetBinLabel(5, "Armenteros");
     rPtAnalysis.fill(HIST("hMassK0ShortvsCuts"), 4.5, v0.mK0Short());
-    if (v0.v0cosPA() < kaonshSettingcosPA && doK0shcosPACut) { // K0sh cosPA Topological Cut
+    if (doK0shcosPACut && v0.v0cosPA() < kaonshSettingcosPA) { // K0sh cosPA Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNK0sh"), 5.5);
     rPtAnalysis.get<TH1>(HIST("hNK0sh"))->GetXaxis()->SetBinLabel(6, "cosPA");
     rPtAnalysis.fill(HIST("hMassK0ShortvsCuts"), 5.5, v0.mK0Short());
-    if (v0.dcaV0daughters() > kaonshSettingdcav0dau && doK0shDCAdauCut) { // K0sh DCAdaughters Topological Cut
+    if (doK0shDCAdauCut && v0.dcaV0daughters() > kaonshSettingdcav0dau) { // K0sh DCAdaughters Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNK0sh"), 6.5);
     rPtAnalysis.get<TH1>(HIST("hNK0sh"))->GetXaxis()->SetBinLabel(7, "DCAdau");
     rPtAnalysis.fill(HIST("hMassK0ShortvsCuts"), 6.5, v0.mK0Short());
-    if (v0.v0radius() < kaonshSettingradius && doK0shv0radiusCut) { // K0sh v0radius Topological Cut
+    if (doK0shv0radiusCut && v0.v0radius() < kaonshSettingradius) { // K0sh v0radius Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNK0sh"), 7.5);
     rPtAnalysis.get<TH1>(HIST("hNK0sh"))->GetXaxis()->SetBinLabel(8, "v0radius");
     rPtAnalysis.fill(HIST("hMassK0ShortvsCuts"), 7.5, v0.mK0Short());
-    if (std::abs(v0.dcapostopv()) < kaonshSettingdcapostopv && doK0shdcaposdautopv) { // K0sh DCAPosDaughterToPV Topological Cut
+    if (doK0shdcaposdautopv && std::abs(v0.dcapostopv()) < kaonshSettingdcapostopv) { // K0sh DCAPosDaughterToPV Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNK0sh"), 8.5);
     rPtAnalysis.get<TH1>(HIST("hNK0sh"))->GetXaxis()->SetBinLabel(9, "DCAPosDautoPV");
     rPtAnalysis.fill(HIST("hMassK0ShortvsCuts"), 8.5, v0.mK0Short());
-    if (std::abs(v0.dcanegtopv()) < kaonshSettingdcanegtopv && doK0shdcanegdautopv) { // K0sh DCANegDaughterToPV Topological Cut
+    if (doK0shdcanegdautopv && std::abs(v0.dcanegtopv()) < kaonshSettingdcanegtopv) { // K0sh DCANegDaughterToPV Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNK0sh"), 9.5);
@@ -508,55 +508,55 @@ struct V0PtInvMassPlots {
     rPtAnalysis.fill(HIST("hNLambda"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(1, "All");
     rPtAnalysis.fill(HIST("hMassLambdavsCuts"), 0.5, v0.mLambda());
-    if (std::abs(posDaughterTrack.tpcNSigmaPr()) > nSigmaTPCProton && std::abs(negDaughterTrack.tpcNSigmaPi()) > nSigmaTPCPion && doLambdaTPCPID) { // TPC PID on daughter pion and proton for Lambda
+    if (doLambdaTPCPID && std::abs(posDaughterTrack.tpcNSigmaPr()) > nSigmaTPCProton && std::abs(negDaughterTrack.tpcNSigmaPi()) > nSigmaTPCPion) { // TPC PID on daughter pion and proton for Lambda
       return false;
     }
     rPtAnalysis.fill(HIST("hNLambda"), 1.5);
     rPtAnalysis.get<TH1>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(2, "TPC_PID");
     rPtAnalysis.fill(HIST("hMassLambdavsCuts"), 1.5, v0.mLambda());
-    if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < compv0masscut && doLambdacomptmasscut) { // Lambda competitive v0 mass cut (cut out Kaons)
+    if (doLambdacomptmasscut && std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < compv0masscut) { // Lambda competitive v0 mass cut (cut out Kaons)
       return false;
     }
     rPtAnalysis.fill(HIST("hNLambda"), 2.5);
     rPtAnalysis.get<TH1>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(3, "Compt_Mass");
     rPtAnalysis.fill(HIST("hMassLambdavsCuts"), 2.5, v0.mLambda());
-    if (v0.v0radius() > lambdamaxct && doLambdaMaxct) { // Lambda max ct
+    if (doLambdaMaxct && v0.v0radius() > lambdamaxct) { // Lambda max ct
       return false;
     }
     rPtAnalysis.fill(HIST("hNLambda"), 3.5);
     rPtAnalysis.get<TH1>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(4, "Max_ct");
     rPtAnalysis.fill(HIST("hMassLambdavsCuts"), 3.5, v0.mLambda());
-    if (v0.qtarm() < (lambdaparamArmenterosCut * std::abs(v0.alpha())) && doLambdaArmenterosCut) { // Lambda Armenteros Cut
+    if (doLambdaArmenterosCut && v0.qtarm() < (lambdaparamArmenterosCut * std::abs(v0.alpha()))) { // Lambda Armenteros Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNLambda"), 4.5);
     rPtAnalysis.get<TH1>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(5, "Armenteros");
     rPtAnalysis.fill(HIST("hMassLambdavsCuts"), 4.5, v0.mLambda());
-    if (v0.v0cosPA() < lambdaSettingcosPA && doLambdacosPACut) { // Lambda cosPA Topological Cut
+    if (doLambdacosPACut && v0.v0cosPA() < lambdaSettingcosPA) { // Lambda cosPA Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNLambda"), 5.5);
     rPtAnalysis.get<TH1>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(6, "cosPA");
     rPtAnalysis.fill(HIST("hMassLambdavsCuts"), 5.5, v0.mLambda());
-    if (v0.dcaV0daughters() > lambdaSettingdcav0dau && doLambdaDCAdauCut) { // Lambda DCAdaughters Topological Cut
+    if (doLambdaDCAdauCut && v0.dcaV0daughters() > lambdaSettingdcav0dau) { // Lambda DCAdaughters Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNLambda"), 6.5);
     rPtAnalysis.get<TH1>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(7, "DCAdau");
     rPtAnalysis.fill(HIST("hMassLambdavsCuts"), 6.5, v0.mLambda());
-    if (v0.v0radius() < lambdaSettingradius && doLambdav0radiusCut) { // Lambda v0radius Topological Cut
+    if (doLambdav0radiusCut && v0.v0radius() < lambdaSettingradius) { // Lambda v0radius Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNLambda"), 7.5);
     rPtAnalysis.get<TH1>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(8, "v0radius");
     rPtAnalysis.fill(HIST("hMassLambdavsCuts"), 7.5, v0.mLambda());
-    if (std::abs(v0.dcapostopv()) < lambdaSettingdcapostopv && doLambdadcaposdautopv) { // Lambda DCAPosDaughterToPV Topological Cut
+    if (doLambdadcaposdautopv && std::abs(v0.dcapostopv()) < lambdaSettingdcapostopv) { // Lambda DCAPosDaughterToPV Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNLambda"), 8.5);
     rPtAnalysis.get<TH1>(HIST("hNLambda"))->GetXaxis()->SetBinLabel(9, "DCAPosDautoPV");
     rPtAnalysis.fill(HIST("hMassLambdavsCuts"), 8.5, v0.mLambda());
-    if (std::abs(v0.dcanegtopv()) < lambdaSettingdcanegtopv && doLambdadcanegdautopv) { // Lambda DCANegDaughterToPV Topological Cut
+    if (doLambdadcanegdautopv && std::abs(v0.dcanegtopv()) < lambdaSettingdcanegtopv) { // Lambda DCANegDaughterToPV Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNLambda"), 9.5);
@@ -585,55 +585,55 @@ struct V0PtInvMassPlots {
     rPtAnalysis.fill(HIST("hNAntilambda"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNAntilambda"))->GetXaxis()->SetBinLabel(1, "All");
     rPtAnalysis.fill(HIST("hMassAntilambdavsCuts"), 0.5, v0.mAntiLambda());
-    if (std::abs(negDaughterTrack.tpcNSigmaPr()) > nSigmaTPCProton && std::abs(posDaughterTrack.tpcNSigmaPi()) > nSigmaTPCPion) { // TPC PID on daughter pion and proton for AntiLambda
+    if (doAntilambdaTPCPID && std::abs(negDaughterTrack.tpcNSigmaPr()) > nSigmaTPCProton && std::abs(posDaughterTrack.tpcNSigmaPi()) > nSigmaTPCPion) { // TPC PID on daughter pion and proton for AntiLambda
       return false;
     }
     rPtAnalysis.fill(HIST("hNAntilambda"), 1.5);
     rPtAnalysis.get<TH1>(HIST("hNAntilambda"))->GetXaxis()->SetBinLabel(2, "TPC_PID");
     rPtAnalysis.fill(HIST("hMassAntilambdavsCuts"), 1.5, v0.mAntiLambda());
-    if (std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < compv0masscut && doAntilambdacomptmasscut) { // Antilambda competitive v0 mass cut (cut out Kaons)
+    if (doAntilambdacomptmasscut && std::abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < compv0masscut) { // Antilambda competitive v0 mass cut (cut out Kaons)
       return false;
     }
     rPtAnalysis.fill(HIST("hNAntilambda"), 2.5);
     rPtAnalysis.get<TH1>(HIST("hNAntilambda"))->GetXaxis()->SetBinLabel(3, "Compt_Mass");
     rPtAnalysis.fill(HIST("hMassAntilambdavsCuts"), 2.5, v0.mAntiLambda());
-    if (v0.v0radius() > antilambdamaxct && doAntilambdaMaxct) { // Antilambda max ct
+    if (doAntilambdaMaxct && v0.v0radius() > antilambdamaxct) { // Antilambda max ct
       return false;
     }
     rPtAnalysis.fill(HIST("hNAntilambda"), 3.5);
     rPtAnalysis.get<TH1>(HIST("hNAntilambda"))->GetXaxis()->SetBinLabel(4, "Max_ct");
     rPtAnalysis.fill(HIST("hMassAntilambdavsCuts"), 3.5, v0.mAntiLambda());
-    if (v0.qtarm() < (antilambdaparamArmenterosCut * std::abs(v0.alpha())) && doAntilambdaArmenterosCut) { // Antilambda Armenteros Cut
+    if (doAntilambdaArmenterosCut && v0.qtarm() < (antilambdaparamArmenterosCut * std::abs(v0.alpha()))) { // Antilambda Armenteros Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNAntilambda"), 4.5);
     rPtAnalysis.get<TH1>(HIST("hNAntilambda"))->GetXaxis()->SetBinLabel(5, "Armenteros");
     rPtAnalysis.fill(HIST("hMassAntilambdavsCuts"), 4.5, v0.mAntiLambda());
-    if (v0.v0cosPA() < antilambdaSettingcosPA && doAntilambdacosPACut) { // Antilambda cosPA Topological Cut
+    if (doAntilambdacosPACut && v0.v0cosPA() < antilambdaSettingcosPA) { // Antilambda cosPA Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNAntilambda"), 5.5);
     rPtAnalysis.get<TH1>(HIST("hNAntilambda"))->GetXaxis()->SetBinLabel(6, "cosPA");
     rPtAnalysis.fill(HIST("hMassAntilambdavsCuts"), 5.5, v0.mAntiLambda());
-    if (v0.dcaV0daughters() > antilambdaSettingdcav0dau && doAntilambdaDCAdauCut) { // Antilambda DCAdaughters Topological Cut
+    if (doAntilambdaDCAdauCut && v0.dcaV0daughters() > antilambdaSettingdcav0dau) { // Antilambda DCAdaughters Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNAntilambda"), 6.5);
     rPtAnalysis.get<TH1>(HIST("hNAntilambda"))->GetXaxis()->SetBinLabel(7, "DCAdau");
     rPtAnalysis.fill(HIST("hMassAntilambdavsCuts"), 6.5, v0.mAntiLambda());
-    if (v0.v0radius() < antilambdaSettingradius && doAntilambdav0radiusCut) { // Antilambda v0radius Topological Cut
+    if (doAntilambdav0radiusCut && v0.v0radius() < antilambdaSettingradius) { // Antilambda v0radius Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNAntilambda"), 7.5);
     rPtAnalysis.get<TH1>(HIST("hNAntilambda"))->GetXaxis()->SetBinLabel(8, "v0radius");
     rPtAnalysis.fill(HIST("hMassAntilambdavsCuts"), 7.5, v0.mAntiLambda());
-    if (std::abs(v0.dcapostopv()) < antilambdaSettingdcapostopv && doAntilambdadcaposdautopv) { // Antilambda DCAPosDaughterToPV Topological Cut
+    if (doAntilambdadcaposdautopv && std::abs(v0.dcapostopv()) < antilambdaSettingdcapostopv) { // Antilambda DCAPosDaughterToPV Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNAntilambda"), 8.5);
     rPtAnalysis.get<TH1>(HIST("hNAntilambda"))->GetXaxis()->SetBinLabel(9, "DCAPosDautoPV");
     rPtAnalysis.fill(HIST("hMassAntilambdavsCuts"), 8.5, v0.mAntiLambda());
-    if (std::abs(v0.dcanegtopv()) < antilambdaSettingdcanegtopv && doAntilambdadcanegdautopv) { // Antilambda DCANegDaughterToPV Topological Cut
+    if (doAntilambdadcanegdautopv && std::abs(v0.dcanegtopv()) < antilambdaSettingdcanegtopv) { // Antilambda DCANegDaughterToPV Topological Cut
       return false;
     }
     rPtAnalysis.fill(HIST("hNAntilambda"), 9.5);
@@ -767,42 +767,10 @@ struct V0PtInvMassPlots {
     }
     rMCCorrections.fill(HIST("hNRecEvents_MC"), 0.5); // Event Split Numenator
 
-    // v0 Signal Splitting Numenator Start
-    for (const auto& mcParticle : mcParticles) {
-      if (mcParticle.isPhysicalPrimary()) {
-        if (std::abs(mcParticle.y()) < rapidityCut) {
-          if (mcParticle.pdgCode() == kK0Short) { // kzero matched
-            rMCCorrections.fill(HIST("hK0ShSplitNumenatorPtSpectrum"), mcParticle.pt());
-          }
-          if (mcParticle.pdgCode() == kLambda0) { // lambda matched
-            rMCCorrections.fill(HIST("hLambdaSplitNumenatorPtSpectrum"), mcParticle.pt());
-          }
-          if (mcParticle.pdgCode() == kLambda0Bar) { // antilambda matched
-            rMCCorrections.fill(HIST("hAntilambdaSplitNumenatorPtSpectrum"), mcParticle.pt());
-          }
-        }
-      }
-    }
-    // V0 Signal Splitting Numenator End
-
     for (const auto& v0 : V0s) {
       // Checking that the V0 is a true K0s/Lambdas/Antilambdas and then filling the parameter histograms and the invariant mass plots for different cuts (which are taken from namespace)
       if (v0.has_mcParticle()) {
         auto v0mcParticle = v0.mcParticle();
-
-        // signal splitting demoninator
-        if (v0mcParticle.isPhysicalPrimary()) {
-          if (v0mcParticle.pdgCode() == kK0Short) { // kzero matched
-            rMCCorrections.fill(HIST("hK0ShSplitDenominatorPtSpectrum"), v0mcParticle.pt());
-          }
-          if (v0mcParticle.pdgCode() == kLambda0) { // lambda matched
-            rMCCorrections.fill(HIST("hLambdaSplitDenominatorPtSpectrum"), v0mcParticle.pt());
-          }
-          if (v0mcParticle.pdgCode() == kLambda0Bar) { // antilambda matched
-            rMCCorrections.fill(HIST("hAntilambdaSplitDenominatorPtSpectrum"), v0mcParticle.pt());
-          }
-        }
-        // signal splitting demoninator end
 
         if (!acceptV0(v0)) { // V0 Selections
           continue;
