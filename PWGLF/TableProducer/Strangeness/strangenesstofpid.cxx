@@ -336,7 +336,7 @@ struct strangenesstofpid {
     static constexpr float MAX_SIN_PHI = 0.85f;
     static constexpr float MAX_STEP = 2.0f;
     static constexpr float MAX_STEP_FINAL_STAGE = 0.5f;
-    static constexpr float MAX_EXTRA_X = 20.0f; // maximum extra X on top of TOF X for correcting value
+    static constexpr float MAX_FINAL_X = 390.0f; // maximum extra X on top of TOF X for correcting value
 
     bool trackOK = track.getXatLabR(tofPosition, trackX, d_bz);
     if(trackOK){ 
@@ -354,10 +354,15 @@ struct strangenesstofpid {
 
       // correct for TOF segmentation
       float trackXextra = trackX;
-      while(trackXextra < trackX + MAX_EXTRA_X){ 
+      bool trackOKextra = true;
+      while(trackXextra < MAX_FINAL_X){ 
         // propagate one step further
         trackXextra += MAX_STEP_FINAL_STAGE;
-        o2::base::Propagator::Instance()->propagateToX(track, trackXextra, d_bz, MAX_SIN_PHI, MAX_STEP, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &ltIntegral);
+        trackOKextra = o2::base::Propagator::Instance()->propagateToX(track, trackXextra, d_bz, MAX_SIN_PHI, MAX_STEP, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &ltIntegral);
+        if(!trackOKextra){
+          timePion = timeKaon = timeProton = -1e+6;
+          return; // propagation failed, skip, won't look reasonable
+        }
 
         // re-evaluate - did we cross? if yes break
         float previousX = xyz[0], previousY = xyz[1];
@@ -681,8 +686,12 @@ struct strangenesstofpid {
     if(calculationMethod.value==1){
       // method to calculate the time and length via Propagator TrackLTIntegral 
       float timeKaon; // will go unused
-      calculateTOF(posTrack, timePositivePi, timeKaon, timePositivePr);
-      calculateTOF(negTrack, timeNegativePi, timeKaon, timeNegativePr);
+      if(pTra.hasTOF()){ // calculate if signal at all present, otherwise skip
+        calculateTOF(posTrack, timePositivePi, timeKaon, timePositivePr);
+      }
+      if(nTra.hasTOF()){ // calculate if signal at all present, otherwise skip
+        calculateTOF(negTrack, timeNegativePi, timeKaon, timeNegativePr);
+      }
     }
 
     if (pTra.hasTOF() && timePositivePr > 0) {
