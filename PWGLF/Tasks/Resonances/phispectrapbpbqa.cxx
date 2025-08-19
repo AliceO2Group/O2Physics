@@ -318,7 +318,7 @@ struct phispectrapbpbqa {
       }
       if (track1.p() < 0.6) {
         histos.fill(HIST("hNsigmaTPC"), nSigmaTPC, track1.p(), occupancy, centrality);
-      } else if (track1.p() > 0.6 && track1.hasTOF() && std::abs(nSigmaTOF) < 4.0) {
+      } else if (track1.p() > 0.6 && track1.hasTOF() && std::abs(nSigmaTOF) < 2.5) {
         histos.fill(HIST("hNsigmaTPC"), nSigmaTPC, track1.p(), occupancy, centrality);
       }
       if (track1.hasTOF()) {
@@ -368,7 +368,7 @@ struct phispectrapbpbqa {
         if (Npostrack == 1) {
           if (track2.p() < 0.6) {
             histos.fill(HIST("hNsigmaTPC"), nSigmaTPC2, track2.p(), occupancy, centrality);
-          } else if (track2.p() > 0.6 && track2.hasTOF() && std::abs(nSigmaTOF2) < 4.0) {
+          } else if (track2.p() > 0.6 && track2.hasTOF() && std::abs(nSigmaTOF2) < 2.5) {
             histos.fill(HIST("hNsigmaTPC"), nSigmaTPC2, track2.p(), occupancy, centrality);
           }
           if (track2.hasTOF()) {
