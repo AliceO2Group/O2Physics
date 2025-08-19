@@ -189,13 +189,13 @@ struct JFlucEfficiencyTask {
       if (isMC) {
         // Generated (MC) histograms - pT has all variations
         registry.add(Form("hPtGen%s", prefix.c_str()),
-                     Form("Generated p_{T} %s;p_{T} (GeV/c);Centrality (%);Counts", prefix.c_str()),
+                     Form("Generated p_{T} %s;p_{T} (GeV/c);Centrality (%%);Counts", prefix.c_str()),
                      {HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)}});
       }
 
       // Reconstructed histograms - pT has all variations
       registry.add(Form("hPtRec%s", prefix.c_str()),
-                   Form("Reconstructed p_{T} %s;p_{T} (GeV/c);Centrality (%);Counts", prefix.c_str()),
+                   Form("Reconstructed p_{T} %s;p_{T} (GeV/c);Centrality (%%);Counts", prefix.c_str()),
                    {HistType::kTH2F, {AxisSpec(axisPt), AxisSpec(axisMultiplicity)}});
     };
 
@@ -403,7 +403,7 @@ struct JFlucEfficiencyTask {
   Preslice<TrackCandidates> perCollision = aod::track::collisionId;
   // Common histogram filling function for tracks
   template <typename TrackType>
-  void fillTrackHistograms(const TrackType& track, float centrality, bool isMC = false)
+  void fillTrackHistograms(const TrackType& track, float centrality)
   {
     // Basic pT and eta histograms
     registry.fill(HIST("hPtRec"), track.pt(), centrality);
@@ -554,7 +554,6 @@ struct JFlucEfficiencyTask {
 
     // Fill MC particle histograms
     for (const auto& particle : mcParticles) {
-      auto charge = getCharge(particle);
       if ((!particle.isPhysicalPrimary()) || !isChargedParticle(particle.pdgCode())) {
         continue;
       }
@@ -650,7 +649,6 @@ struct JFlucEfficiencyTask {
 
     // Fill MC particle histograms
     for (const auto& particle : mcParticles) {
-      auto charge = getCharge(particle);
       if (!isChargedParticle(particle.pdgCode())) {
         continue;
       }
@@ -753,7 +751,6 @@ struct JFlucEfficiencyTask {
 
     // Fill MC particle histograms
     for (const auto& particle : mcParticles) {
-      auto charge = getCharge(particle);
       if ((!particle.isPhysicalPrimary()) || !isChargedParticle(particle.pdgCode())) {
         continue;
       }
