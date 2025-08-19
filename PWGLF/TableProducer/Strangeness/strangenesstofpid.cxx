@@ -730,11 +730,8 @@ struct strangenesstofpid {
     float decayTimeK0Short = 0.5f * ((pTra.tofSignal() - timePositivePi) + (nTra.tofSignal() - timeNegativePi)) - evTimeMean;
 
     float betaLambda = o2::aod::cascdata::kNoTOFValue;
-    ;
     float betaAntiLambda = o2::aod::cascdata::kNoTOFValue;
-    ;
     float betaK0Short = o2::aod::cascdata::kNoTOFValue;
-    ;
 
     if (nTra.hasTOF() && pTra.hasTOF()) {
       betaLambda = (lengthV0 / decayTimeLambda) / 0.0299792458;
