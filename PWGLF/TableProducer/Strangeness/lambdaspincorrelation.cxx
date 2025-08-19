@@ -262,7 +262,8 @@ struct lambdaspincorrelation {
     int numbV0 = 0;
     // LOGF(info, "event collisions: (%d)", collision.index());
     auto centrality = collision.centFT0C();
-    if (cfgEventTypepp) centrality = collision.centFT0M();
+    if (cfgEventTypepp)
+      centrality = collision.centFT0M();
     auto vz = collision.posZ();
     int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hEvtSelInfo"), 0.5);
@@ -361,7 +362,8 @@ struct lambdaspincorrelation {
     int numbV0 = 0;
     // LOGF(info, "event collisions: (%d)", collision.index());
     auto centrality = collision.centFT0C();
-    if (cfgEventTypepp) centrality = collision.centFT0M();
+    if (cfgEventTypepp)
+      centrality = collision.centFT0M();
     auto vz = collision.posZ();
     int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hEvtSelInfo"), 0.5);
