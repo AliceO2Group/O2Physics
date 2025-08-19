@@ -654,63 +654,43 @@ struct strangenesstofpid {
     float nSigmaPositiveK0ShortPi = o2::aod::v0data::kNoTOFValue;
     float nSigmaNegativeK0ShortPi = o2::aod::v0data::kNoTOFValue;
 
-    float lengthPositive0 = -1;
-    float lengthNegative0 = -1;
+    float timePositivePr = -1e+6;
+    float timePositivePi = -1e+6;
+    float timeNegativePr = -1e+6;
+    float timeNegativePi = -1e+6;
 
-    float timePositivePr0 = 1e+6;
-    float timePositivePi0 = 1e+6;
-    float timeNegativePr0 = 1e+6;
-    float timeNegativePi0 = 1e+6;
+    if(calculationMethod.value==0){
+      float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
+      float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
+      float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
+      float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
 
-    float lengthPositive1 = -1;
-    float lengthNegative1 = -1;
+      float lengthPositive = findInterceptLength(posTrack, d_bz); // FIXME: tofPosition ok? adjust?
+      float lengthNegative = findInterceptLength(negTrack, d_bz); // FIXME: tofPosition ok? adjust?
 
-    float timePositivePr1 = 1e+6;
-    float timePositivePi1 = 1e+6;
-    float timeNegativePr1 = 1e+6;
-    float timeNegativePi1 = 1e+6;
-
-    // if(calculationMethod.value==0){
-      float velocityPositivePr0 = velocity(posTrack.getP(), o2::constants::physics::MassProton);
-      float velocityPositivePi0 = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
-      float velocityNegativePr0 = velocity(negTrack.getP(), o2::constants::physics::MassProton);
-      float velocityNegativePi0 = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
-
-      lengthPositive0 = findInterceptLength(posTrack, d_bz); // FIXME: tofPosition ok? adjust?
-      lengthNegative0 = findInterceptLength(negTrack, d_bz); // FIXME: tofPosition ok? adjust?
-
-      timePositivePr0 = lengthPositive0 / velocityPositivePr0;
-      timePositivePi0 = lengthPositive0 / velocityPositivePi0;
-      timeNegativePr0 = lengthNegative0 / velocityNegativePr0;
-      timeNegativePi0 = lengthNegative0 / velocityNegativePi0;
-    // }
+      if(lengthPositive > 0){
+        timePositivePr = lengthPositive / velocityPositivePr;
+        timePositivePi = lengthPositive / velocityPositivePi;
+      }
+      if(lengthNegative > 0){
+        timeNegativePr = lengthNegative / velocityNegativePr;
+        timeNegativePi = lengthNegative / velocityNegativePi;
+      }
+    }
 
     if(calculationMethod.value==1){
       // method to calculate the time and length via Propagator TrackLTIntegral 
       float timeKaon; // will go unused
-      calculateTOF(posTrack, timePositivePi1, timeKaon, timePositivePr1);
-      calculateTOF(negTrack, timeNegativePi1, timeKaon, timeNegativePr1);
-
-      if(true){ 
-        histos.fill(HIST("hArcDebug"), timePositivePr0, timePositivePr1); // for debugging purposes
-
-      }
+      calculateTOF(posTrack, timePositivePi, timeKaon, timePositivePr);
+      calculateTOF(negTrack, timeNegativePi, timeKaon, timeNegativePr);
     }
 
-    float lengthPositive = lengthPositive0;
-    float lengthNegative = lengthNegative0;
-
-    float timePositivePr = timePositivePr1;
-    float timePositivePi = timePositivePi1;
-    float timeNegativePr = timeNegativePr1;
-    float timeNegativePi = timeNegativePi1;
-
-    if (pTra.hasTOF() && lengthPositive > 0) {
+    if (pTra.hasTOF() && timePositivePr > 0) {
       deltaTimePositiveLambdaPr = (pTra.tofSignal() - pTra.tofEvTime()) - (timeLambda + timePositivePr);
       deltaTimePositiveLambdaPi = (pTra.tofSignal() - pTra.tofEvTime()) - (timeLambda + timePositivePi);
       deltaTimePositiveK0ShortPi = (pTra.tofSignal() - pTra.tofEvTime()) - (timeK0Short + timePositivePi);
     }
-    if (nTra.hasTOF() && lengthNegative > 0) {
+    if (nTra.hasTOF() && timeNegativePr > 0) {
       deltaTimeNegativeLambdaPr = (nTra.tofSignal() - nTra.tofEvTime()) - (timeLambda + timeNegativePr);
       deltaTimeNegativeLambdaPi = (nTra.tofSignal() - nTra.tofEvTime()) - (timeLambda + timeNegativePi);
       deltaTimeNegativeK0ShortPi = (nTra.tofSignal() - nTra.tofEvTime()) - (timeK0Short + timeNegativePi);
@@ -719,12 +699,12 @@ struct strangenesstofpid {
     if (doQA) {
       // calculate and pack properties for QA purposes
       int posProperties = 0;
-      if (lengthPositive > 0)
+      if (timePositivePr > 0)
         posProperties = posProperties | (static_cast<int>(1) << kLength);
       if (pTra.hasTOF())
         posProperties = posProperties | (static_cast<int>(1) << kHasTOF);
       int negProperties = 0;
-      if (lengthNegative > 0)
+      if (timeNegativePr > 0)
         negProperties = negProperties | (static_cast<int>(1) << kLength);
       if (nTra.hasTOF())
         negProperties = negProperties | (static_cast<int>(1) << kHasTOF);
@@ -736,7 +716,7 @@ struct strangenesstofpid {
     float deltaDecayTimeLambda = -10e+4;
     float deltaDecayTimeAntiLambda = -10e+4;
     float deltaDecayTimeK0Short = -10e+4;
-    if (nTra.hasTOF() && pTra.hasTOF() > 0 && lengthPositive > 0 && lengthNegative > 0) { // does not depend on event time
+    if (nTra.hasTOF() && pTra.hasTOF() > 0 && timePositivePr > 0 && timeNegativePr > 0) { // does not depend on event time
       deltaDecayTimeLambda = (pTra.tofSignal() - timePositivePr) - (nTra.tofSignal() - timeNegativePi);
       deltaDecayTimeAntiLambda = (pTra.tofSignal() - timePositivePi) - (nTra.tofSignal() - timeNegativePr);
       deltaDecayTimeK0Short = (pTra.tofSignal() - timePositivePi) - (nTra.tofSignal() - timeNegativePi);
@@ -877,7 +857,7 @@ struct strangenesstofpid {
     ;
     const o2::math_utils::Point3D<float> collVtx{collision.getX(), collision.getY(), collision.getZ()};
     bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(collVtx, cascTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE);
-    float d = -1.0f, d3d = 0.0f;
+    float d = -1.0f;
     float linearToPV = std::hypot(cascade.x() - collision.getX(), cascade.y() - collision.getY(), cascade.z() - collision.getZ());
     if (successPropag) {
       std::array<float, 3> cascCloseToPVPosition;
@@ -888,7 +868,7 @@ struct strangenesstofpid {
 
       // calculate 2D distance between two points
       d = std::hypot(cascade.x() - cascCloseToPVPosition[0], cascade.y() - cascCloseToPVPosition[1]);
-      d3d = std::hypot(cascade.x() - cascCloseToPVPosition[0], cascade.y() - cascCloseToPVPosition[1], cascade.z() - cascCloseToPVPosition[2]); // cross-check variable
+      // d3d = std::hypot(cascade.x() - cascCloseToPVPosition[0], cascade.y() - cascCloseToPVPosition[1], cascade.z() - cascCloseToPVPosition[2]); // cross-check variable
       float sinThetaOverTwo = d / (2.0f * trcCircleCascade.rC);
       lengthCascade = 2.0f * trcCircleCascade.rC * TMath::ASin(sinThetaOverTwo);
       lengthCascade *= sqrt(1.0f + cascTrack.getTgl() * cascTrack.getTgl());
