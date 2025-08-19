@@ -14,25 +14,6 @@
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 /// \author Jochen Klein <jochen.klein@cern.ch>
 
-#include <Framework/ASoA.h>
-#include <Framework/AnalysisHelpers.h>
-#include <Framework/Configurable.h>
-#include <Framework/Expressions.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/InitContext.h>
-#include <Framework/O2DatabasePDGPlugin.h>
-#include <Framework/runDataProcessing.h> // IWYU pragma: keep (needed in tasks)
-
-#include <string>
-#include <vector>
-
-#include <fastjet/JetDefinition.hh>
-#include <fastjet/PseudoJet.hh>
-
-#include <THn.h>
-#include <TMathBase.h>
-
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
 #include "PWGJE/Core/JetFinder.h"
 #include "PWGJE/Core/JetFindingUtilities.h"
@@ -41,6 +22,24 @@
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetSubtraction.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h> // IWYU pragma: export
+
+#include <THn.h>
+#include <TMathBase.h>
+
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -169,7 +168,7 @@ struct JetFinderHFTask {
   }
 
   aod::EMCALClusterDefinition clusterDefinition = aod::emcalcluster::getClusterDefinitionFromString(clusterDefinitionS.value);
-  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax && aod::jcollision::trackOccupancyInTimeRange <= trackOccupancyInTimeRangeMax && ((skipMBGapEvents.node() == false) || (aod::jcollision::subGeneratorId != static_cast<int>(jetderiveddatautilities::JCollisionSubGeneratorId::mbGap))));
+  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax && aod::jcollision::trackOccupancyInTimeRange <= trackOccupancyInTimeRangeMax && ((skipMBGapEvents.node() == false) || (aod::jcollision::subGeneratorId != static_cast<int>(jetderiveddatautilities::JCollisionSubGeneratorId::mbGap))));
   Filter mcCollisionFilter = ((skipMBGapEvents.node() == false) || (aod::jmccollision::subGeneratorId != static_cast<int>(jetderiveddatautilities::JCollisionSubGeneratorId::mbGap))); // should we add a posZ vtx cut here or leave it to analysers?
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta >= trackEtaMin && aod::jtrack::eta <= trackEtaMax && aod::jtrack::phi >= trackPhiMin && aod::jtrack::phi <= trackPhiMax);
   Filter partCuts = (aod::jmcparticle::pt >= trackPtMin && aod::jmcparticle::pt < trackPtMax && aod::jmcparticle::eta >= trackEtaMin && aod::jmcparticle::eta <= trackEtaMax && aod::jmcparticle::phi >= trackPhiMin && aod::jmcparticle::phi <= trackPhiMax);
@@ -180,8 +179,12 @@ struct JetFinderHFTask {
   PresliceOptional<soa::Filtered<JetTracksSubTable>> perD0McCandidate = aod::bkgd0mc::candidateId;
   PresliceOptional<soa::Filtered<JetTracksSubTable>> perDplusCandidate = aod::bkgdplus::candidateId;
   PresliceOptional<soa::Filtered<JetTracksSubTable>> perDplusMcCandidate = aod::bkgdplusmc::candidateId;
+  PresliceOptional<soa::Filtered<JetTracksSubTable>> perDstarCandidate = aod::bkgdstar::candidateId;
+  PresliceOptional<soa::Filtered<JetTracksSubTable>> perDstarMcCandidate = aod::bkgdstarmc::candidateId;
   PresliceOptional<soa::Filtered<JetTracksSubTable>> perLcCandidate = aod::bkglc::candidateId;
   PresliceOptional<soa::Filtered<JetTracksSubTable>> perLcMcCandidate = aod::bkglcmc::candidateId;
+  PresliceOptional<soa::Filtered<JetTracksSubTable>> perB0Candidate = aod::bkgb0::candidateId;
+  PresliceOptional<soa::Filtered<JetTracksSubTable>> perB0McCandidate = aod::bkgb0mc::candidateId;
   PresliceOptional<soa::Filtered<JetTracksSubTable>> perBplusCandidate = aod::bkgbplus::candidateId;
   PresliceOptional<soa::Filtered<JetTracksSubTable>> perBplusMcCandidate = aod::bkgbplusmc::candidateId;
   PresliceOptional<soa::Filtered<JetTracksSubTable>> perDielectronCandidate = aod::bkgdielectron::candidateId;
@@ -251,7 +254,7 @@ struct JetFinderHFTask {
   void processChargedEvtWiseSubJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableData const& candidates)
   {
     for (typename CandidateTableData::iterator const& candidate : candidates) {
-      analyseCharged<true>(collision, jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perDplusCandidate, perLcCandidate, perBplusCandidate, perDielectronCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks, jetEWSPtMin, jetEWSPtMax);
+      analyseCharged<true>(collision, jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perDplusCandidate, perDstarCandidate, perLcCandidate, perB0Candidate, perBplusCandidate, perDielectronCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks, jetEWSPtMin, jetEWSPtMax);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsData, "charged hf jet finding on data with event-wise constituent subtraction", false);
@@ -267,7 +270,7 @@ struct JetFinderHFTask {
   void processChargedEvtWiseSubJetsMCD(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Filtered<JetTracksSubTable> const& tracks, CandidateTableMCD const& candidates)
   {
     for (typename CandidateTableMCD::iterator const& candidate : candidates) {
-      analyseCharged<true>(collision, jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perDplusCandidate, perLcCandidate, perBplusCandidate, perDielectronCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks, jetEWSPtMin, jetEWSPtMax);
+      analyseCharged<true>(collision, jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0Candidate, perDplusCandidate, perDstarCandidate, perLcCandidate, perB0Candidate, perBplusCandidate, perDielectronCandidate), candidate, jetsEvtWiseSubTable, constituentsEvtWiseSubTable, tracks, jetEWSPtMin, jetEWSPtMax);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsMCD, "charged hf jet finding on MC detector level with event-wise constituent subtraction", false);
@@ -287,7 +290,7 @@ struct JetFinderHFTask {
                                        CandidateTableMCP const& candidates)
   {
     for (typename CandidateTableMCP::iterator const& candidate : candidates) {
-      analyseMCP<false>(collision, jetcandidateutilities::slicedPerCandidate(particles, candidate, perD0McCandidate, perDplusMcCandidate, perLcMcCandidate, perBplusMcCandidate, perDielectronMcCandidate), candidate, 1, jetPtMin, jetPtMax);
+      analyseMCP<false>(collision, jetcandidateutilities::slicedPerCandidate(particles, candidate, perD0McCandidate, perDplusMcCandidate, perDstarMcCandidate, perLcMcCandidate, perB0McCandidate, perBplusMcCandidate, perDielectronMcCandidate), candidate, 1, jetPtMin, jetPtMax);
     }
   }
   PROCESS_SWITCH(JetFinderHFTask, processChargedEvtWiseSubJetsMCP, "hf jet finding on MC particle level", false);

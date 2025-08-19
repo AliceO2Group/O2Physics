@@ -17,11 +17,11 @@
 #ifndef PWGEM_DILEPTON_UTILS_MLRESPONSEDIELECTRONSINGLETRACK_H_
 #define PWGEM_DILEPTON_UTILS_MLRESPONSEDIELECTRONSINGLETRACK_H_
 
+#include "Tools/ML/MlResponse.h"
+
 #include <map>
 #include <string>
 #include <vector>
-
-#include "Tools/ML/MlResponse.h"
 
 // Fill the map of available input features
 // the key is the feature's name (std::string)
@@ -79,6 +79,16 @@
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
+// by calling the corresponding GETTER1 and GETTER2 from track.
+#define CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK_RELDIFF(FEATURE, GETTER1, GETTER2) \
+  case static_cast<uint8_t>(InputFeaturesDielectronSingleTrack::FEATURE): {       \
+    inputFeature = (track.GETTER2() - track.GETTER1()) / track.GETTER1();         \
+    break;                                                                        \
+  }
+
+// Check if the index of mCachedIndices (index associated to a FEATURE)
+// matches the entry in EnumInputFeatures associated to this FEATURE
+// if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER=FEATURE from collision
 #define CHECK_AND_FILL_DIELECTRON_COLLISION(GETTER)                        \
   case static_cast<uint8_t>(InputFeaturesDielectronSingleTrack::GETTER): { \
@@ -104,20 +114,21 @@ enum class InputFeaturesDielectronSingleTrack : uint8_t {
   tpcNClsShared,
   tpcChi2NCl,
   tpcInnerParam,
+  reldiffp,
   tpcSignal,
   tpcNSigmaEl,
-  tpcNSigmaMu,
+  // tpcNSigmaMu,
   tpcNSigmaPi,
   tpcNSigmaKa,
   tpcNSigmaPr,
   beta,
   tofNSigmaEl,
-  tofNSigmaMu,
+  // tofNSigmaMu,
   tofNSigmaPi,
   tofNSigmaKa,
   tofNSigmaPr,
   tpctofNSigmaEl,
-  tpctofNSigmaMu,
+  // tpctofNSigmaMu,
   tpctofNSigmaPi,
   tpctofNSigmaKa,
   tpctofNSigmaPr,
@@ -225,20 +236,21 @@ class MlResponseDielectronSingleTrack : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tpcNClsShared);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tpcChi2NCl);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tpcInnerParam);
+      CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK_RELDIFF(reldiffp, p, tpcInnerParam);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tpcSignal);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tpcNSigmaEl);
-      CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tpcNSigmaMu);
+      // CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tpcNSigmaMu);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tpcNSigmaPi);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tpcNSigmaKa);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tpcNSigmaPr);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(beta);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tofNSigmaEl);
-      CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tofNSigmaMu);
+      // CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tofNSigmaMu);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tofNSigmaPi);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tofNSigmaKa);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK(tofNSigmaPr);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK_TPCTOF(tpctofNSigmaEl, tpcNSigmaEl, tofNSigmaEl, hasTOF);
-      CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK_TPCTOF(tpctofNSigmaMu, tpcNSigmaMu, tofNSigmaMu, hasTOF);
+      // CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK_TPCTOF(tpctofNSigmaMu, tpcNSigmaMu, tofNSigmaMu, hasTOF);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK_TPCTOF(tpctofNSigmaPi, tpcNSigmaPi, tofNSigmaPi, hasTOF);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK_TPCTOF(tpctofNSigmaKa, tpcNSigmaKa, tofNSigmaKa, hasTOF);
       CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK_TPCTOF(tpctofNSigmaPr, tpcNSigmaPr, tofNSigmaPr, hasTOF);
@@ -372,20 +384,21 @@ class MlResponseDielectronSingleTrack : public MlResponse<TypeOutputScore>
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tpcNClsShared),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tpcChi2NCl),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tpcInnerParam),
+      FILL_MAP_DIELECTRON_SINGLE_TRACK(reldiffp),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tpcSignal),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tpcNSigmaEl),
-      FILL_MAP_DIELECTRON_SINGLE_TRACK(tpcNSigmaMu),
+      // FILL_MAP_DIELECTRON_SINGLE_TRACK(tpcNSigmaMu),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tpcNSigmaPi),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tpcNSigmaKa),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tpcNSigmaPr),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(beta),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tofNSigmaEl),
-      FILL_MAP_DIELECTRON_SINGLE_TRACK(tofNSigmaMu),
+      // FILL_MAP_DIELECTRON_SINGLE_TRACK(tofNSigmaMu),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tofNSigmaPi),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tofNSigmaKa),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tofNSigmaPr),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tpctofNSigmaEl),
-      FILL_MAP_DIELECTRON_SINGLE_TRACK(tpctofNSigmaMu),
+      // FILL_MAP_DIELECTRON_SINGLE_TRACK(tpctofNSigmaMu),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tpctofNSigmaPi),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tpctofNSigmaKa),
       FILL_MAP_DIELECTRON_SINGLE_TRACK(tpctofNSigmaPr),
@@ -475,6 +488,7 @@ class MlResponseDielectronSingleTrack : public MlResponse<TypeOutputScore>
 #undef CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK_SQRT
 #undef CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK_COS
 #undef CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK_TPCTOF
+#undef CHECK_AND_FILL_DIELECTRON_SINGLE_TRACK_RELDIFF
 #undef CHECK_AND_FILL_DIELECTRON_COLLISION
 
 #endif // PWGEM_DILEPTON_UTILS_MLRESPONSEDIELECTRONSINGLETRACK_H_

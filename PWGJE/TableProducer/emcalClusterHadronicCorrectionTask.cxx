@@ -12,28 +12,26 @@
 // **Hadronic Correction in the EMCAL framework: to avoid the double counting of the charged particles' contribution in jets**
 /// \author Archita Rani Dash <archita.rani.dash@cern.ch>
 
-#include <algorithm>
-#include <iostream>
-#include <memory>
-#include <cmath>
-#include <vector>
-#include <TF1.h>
-#include "TVector2.h"
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "DetectorsBase/GeometryManager.h"
-
-#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/EMCALClusterDefinition.h"
+#include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
 
-#include "PWGJE/Core/JetUtilities.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
-#include "CommonDataFormat/InteractionRecord.h"
+#include "TVector2.h"
+#include <TF1.h>
+
+#include <cmath>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -89,7 +87,7 @@ struct EmcalClusterHadronicCorrectionTask {
     registry.add("h_Ecluster2", "; Ecluster2 (GeV); entries", {HistType::kTH1F, {{350, 0., 350.}}});
     registry.add("h_EclusterAll1", "; EclusterAll1 (GeV); entries", {HistType::kTH1F, {{350, 0., 350.}}});
     registry.add("h_EclusterAll2", "; EclusterAll2 (GeV); entries", {HistType::kTH1F, {{350, 0., 350.}}});
-    registry.add("h_ClsTime", "Cluster time distribution of uncorrected cluster E; #it{t}_{cls} (ns); entries", {HistType::kTH1F, {{500, -250., 250.}}});
+    registry.add("h_ClsTime", "Cluster time distribution of uncorrected cluster E; #it{t}_{cls} (ns); entries", {HistType::kTH1F, {{1500, -600., 900.}}});
     registry.add("h_ClsM02", "Cluster M02 distribution of uncorrected cluster E; #it{M}_{02}; entries", {HistType::kTH1F, {{400, 0., 5.}}});
     registry.add("h2_ClsEvsNmatches", "Original cluster energy vs Nmatches; Cls E w/o correction (GeV); Nmatches", {HistType::kTH2F, {{350, 0., 350.}, {100, -0.5, 21.}}});
     registry.add("h2_ClsEvsEcluster1", "; Cls E w/o correction (GeV); Ecluster1 (GeV)", {HistType::kTH2F, {{350, 0., 350.}, {350, 0., 350.}}});

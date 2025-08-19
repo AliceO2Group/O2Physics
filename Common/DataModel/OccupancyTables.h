@@ -209,6 +209,8 @@ namespace trackmeanocc
 {
 DECLARE_SOA_INDEX_COLUMN(Track, track);
 
+// DECLARE_SOA_INDEX_COLUMN(TracksQA, tracksQA);// this is not working
+
 DECLARE_SOA_COLUMN(TmoPrimUnfm80, tmoPrimUnfm80, float);
 DECLARE_SOA_COLUMN(TmoFV0AUnfm80, tmoFV0AUnfm80, float);
 DECLARE_SOA_COLUMN(TmoFV0CUnfm80, tmoFV0CUnfm80, float);
@@ -281,7 +283,7 @@ DECLARE_SOA_COLUMN(TwmoRobustMultExtraTableUnfm80, twmoRobustMultExtraTableUnfm8
 // using Tracks = aod::Tracks;
 // DECLARE_SOA_INDEX_TABLE_USER(TrackMeanOccs0, Tracks, "TRACKMEANOCCS0", o2::aod::trackmeanocc::TrackId);
 
-DECLARE_SOA_TABLE(TmoTrackId, "AOD", "TMOTRACKID", o2::aod::trackmeanocc::TrackId);
+DECLARE_SOA_TABLE(TmoTrackIds, "AOD", "TMOTRACKIDS", o2::aod::trackmeanocc::TrackId);
 
 DECLARE_SOA_TABLE(TmoPrim, "AOD", "TMOPRIM", o2::soa::Index<>, // TrackMeanOccDet
                   o2::aod::trackmeanocc::TmoPrimUnfm80);
@@ -376,6 +378,22 @@ DECLARE_SOA_TABLE(TwmoRNtrackDet, "AOD", "TWMORNTRACKDET", o2::soa::Index<>,
 
 DECLARE_SOA_TABLE(TwmoRMultExtra, "AOD", "TWMORMULTEXTRA", o2::soa::Index<>,
                   o2::aod::trackmeanocc::TwmoRobustMultExtraTableUnfm80);
+
+using Tmo = aod::TmoTrackIds::iterator;
+
+using TrackQA = TracksQAVersion::iterator;
+
+namespace trackmeanocc
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(Tmo, tmo, int64_t, TmoTrackIds, "");
+DECLARE_SOA_INDEX_COLUMN_FULL(TrackQA, trackQA, int64_t, TracksQAVersion, "");
+} // namespace trackmeanocc
+
+DECLARE_SOA_TABLE(TrackToTracksQA, "AOD", "TRACKTOTRACKSQA", o2::aod::trackmeanocc::TrackQAId);
+DECLARE_SOA_TABLE(TrackToTmo, "AOD", "TRACKTOTMO", o2::aod::trackmeanocc::TmoId);
+
+DECLARE_SOA_TABLE(TrackQAToTmo, "AOD", "TRACKQATOTMO", o2::aod::trackmeanocc::TmoId);
+DECLARE_SOA_TABLE(TmoToTrackQA, "AOD", "TMOTOTRACKQA", o2::aod::trackmeanocc::TrackQAId);
 
 } // namespace o2::aod
 #endif // COMMON_DATAMODEL_OCCUPANCYTABLES_H_

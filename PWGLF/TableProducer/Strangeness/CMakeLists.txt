@@ -36,8 +36,8 @@ o2physics_add_dpl_workflow(cascademcfinder
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(cascadepid
-    SOURCES cascadepid.cxx
+o2physics_add_dpl_workflow(strangenesstofpid
+    SOURCES strangenesstofpid.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
     COMPONENT_NAME Analysis)
 
@@ -81,18 +81,18 @@ o2physics_add_dpl_workflow(lambdakzeromcfinder
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(lambdakzeropid
-    SOURCES lambdakzeropid.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase
-    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(lambdakzerospawner
     SOURCES lambdakzerospawner.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(sigmaminus-task
+    SOURCES sigmaminustask.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(strange-tree-creator
-    SOURCES LFStrangeTreeCreator.cxx
+    SOURCES strangeTreeCreator.cxx
     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -108,7 +108,7 @@ o2physics_add_dpl_workflow(strangederivedbuilder
 
 o2physics_add_dpl_workflow(strangenessbuilder
     SOURCES strangenessbuilder.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager O2Physics::MLCore
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(v0-selector
@@ -160,4 +160,14 @@ o2physics_add_dpl_workflow(lambdajetpolarizationbuilder
 o2physics_add_dpl_workflow(stracents
     SOURCES stracents.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(lambdaspincorrelation
+    SOURCES lambdaspincorrelation.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(propagationservice
+    SOURCES propagationService.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter KFParticle::KFParticle O2Physics::TPCDriftManager
     COMPONENT_NAME Analysis)

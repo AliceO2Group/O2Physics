@@ -16,15 +16,21 @@
 #ifndef PWGJE_CORE_UTILSBCSELEMC_H_
 #define PWGJE_CORE_UTILSBCSELEMC_H_
 
+#include "Common/CCDB/EventSelectionParams.h"
+
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+
+#include <TH1.h>
+
+#include <Rtypes.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <memory> // std::shared_ptr
 #include <string> // std::string
-
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/HistogramSpec.h"
-#include "Framework/OutputObjHeader.h"
-
-#include "Common/CCDB/EventSelectionParams.h"
 
 namespace o2::emc_evsel
 {
@@ -38,7 +44,7 @@ enum EventRejection {
   NEventRejection
 };
 
-o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
+inline o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
 
 /// \brief Function to put labels on monitoring histogram
 /// \param hRejection monitoring histogram

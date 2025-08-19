@@ -60,6 +60,11 @@ DECLARE_SOA_TABLE(CentMFTs, "AOD", "CENTMFT", cent::CentMFT);             //! Ru
 // Run 3 variant tables
 DECLARE_SOA_TABLE(CentFT0CVariant1s, "AOD", "CENTFT0Cvar1", cent::CentFT0CVariant1); //! Run 3 FT0C variant 1
 
+// Run 3 centrality per BC (joinable with BC)
+DECLARE_SOA_TABLE(BCCentFT0Ms, "AOD", "BCCENTFT0M", cent::CentFT0M, o2::soa::Marker<1>); //! Run 3 FT0M BC centrality table
+DECLARE_SOA_TABLE(BCCentFT0As, "AOD", "BCCENTFT0A", cent::CentFT0A, o2::soa::Marker<1>); //! Run 3 FT0A BC centrality table
+DECLARE_SOA_TABLE(BCCentFT0Cs, "AOD", "BCCENTFT0C", cent::CentFT0C, o2::soa::Marker<1>); //! Run 3 FT0C BC centrality table
+
 using CentRun2V0M = CentRun2V0Ms::iterator;
 using CentRun2V0A = CentRun2V0As::iterator;
 using CentRun2SPDTrk = CentRun2SPDTrks::iterator;
@@ -76,6 +81,10 @@ using CentFDDM = CentFDDMs::iterator;
 using CentNTPV = CentNTPVs::iterator;
 using CentNGlobal = CentNGlobals::iterator;
 using CentMFT = CentMFTs::iterator;
+
+using BCCentFT0M = BCCentFT0Ms::iterator;
+using BCCentFT0A = BCCentFT0As::iterator;
+using BCCentFT0C = BCCentFT0Cs::iterator;
 
 template <typename T>
 concept HasRun2Centrality = requires(T&& t) {

@@ -15,19 +15,33 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, INFN Bari
 
-#include <vector>
-#include <array>
-
-#include "Common/Core/RecoDecay.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <array>
+#include <cstdint>
+#include <numeric>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -181,7 +195,7 @@ struct HfTaskCharmHadImpactPar {
       if (candidate.isSelD0()) { // D0 -> Kpi
         if constexpr (doMc) {
           if (fillOnlySignal) {
-            if (std::abs(candidate.flagMcMatchRec()) != 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
+            if (std::abs(candidate.flagMcMatchRec()) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
               return;
             }
           }
@@ -255,13 +269,13 @@ struct HfTaskCharmHadImpactPar {
         }
       }
     }
-    float centrality = 0.;
-    float occupancy = 0.;
+    float centrality = 0.f;
+    float occupancy = 0.f;
     if (centEstimator != CentralityEstimator::None) {
       centrality = getCentralityColl(collision, centEstimator);
     }
     if (occEstimator != OccupancyEstimator::None) {
-      occupancy = getOccupancyColl(collision, occEstimator);
+      occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
     }
 
     int8_t flagMcMatchRec = 0;

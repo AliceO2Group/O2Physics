@@ -17,16 +17,23 @@
 
 #include "Common/Core/MetadataHelper.h"
 
-#include "Framework/InitContext.h"
-#include "Framework/RunningWorkflowInfo.h"
+#include <Framework/InitContext.h>
+#include <Framework/RunningWorkflowInfo.h>
+
+#include <string>
+
+using namespace o2::common::core;
 
 MetadataHelper::MetadataHelper()
 {
-  const std::array<std::string, 5> keyList = {"DataType",
+  const std::array<std::string, 8> keyList = {"DataType",
                                               "RecoPassName",
                                               "Run",
                                               "AnchorPassName",
-                                              "AnchorProduction"};
+                                              "AnchorProduction",
+                                              "ROOTVersion",
+                                              "LPMProductionTag",
+                                              "O2Version"};
   for (const auto& key : keyList) {
     mMetadata[key] = "undefined";
   }

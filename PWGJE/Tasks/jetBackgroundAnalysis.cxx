@@ -14,33 +14,29 @@
 /// \author Aimeric Landou <aimeric.landou@cern.ch>
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include <cmath>
-#include <TRandom3.h>
-#include <string>
-#include <vector>
-#include "TLorentzVector.h"
-
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/Core/JetFindingUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
+#include "RecoDecay.h"
 
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
 
-#include "EventFiltering/filterTables.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMath.h>
+#include <TRandom3.h>
+
+#include <cmath>
+#include <string>
+#include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -103,7 +99,7 @@ struct JetBackgroundAnalysisTask {
   }
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
-  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
+  Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
 
   template <typename TTracks, typename TJets>
   bool trackIsInJet(TTracks const& track, TJets const& jet)
@@ -132,7 +128,7 @@ struct JetBackgroundAnalysisTask {
         }
       }
     }
-    registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centFT0M(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
     // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles
     randomConePt = 0;
@@ -145,7 +141,7 @@ struct JetBackgroundAnalysisTask {
         }
       }
     }
-    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"), collision.centFT0M(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
     // removing the leading jet from the random cone
     if (jets.size() > 0) { // if there are no jets in the acceptance (from the jetfinder cuts) then there can be no leading jet
@@ -173,7 +169,7 @@ struct JetBackgroundAnalysisTask {
         }
       }
     }
-    registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centrality(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centFT0M(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
     // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles, removing tracks from 2 leading jets
     double randomConePtWithoutOneLeadJet = 0;
@@ -194,8 +190,8 @@ struct JetBackgroundAnalysisTask {
         }
       }
     }
-    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets"), collision.centrality(), randomConePtWithoutOneLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
-    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), collision.centrality(), randomConePtWithoutTwoLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets"), collision.centFT0M(), randomConePtWithoutOneLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
+    registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), collision.centFT0M(), randomConePtWithoutTwoLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
   }
 
   void processRho(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks)
@@ -212,11 +208,11 @@ struct JetBackgroundAnalysisTask {
         nTracks++;
       }
     }
-    registry.fill(HIST("h2_centrality_ntracks"), collision.centrality(), nTracks);
+    registry.fill(HIST("h2_centrality_ntracks"), collision.centFT0M(), nTracks);
     registry.fill(HIST("h2_ntracks_rho"), nTracks, collision.rho());
     registry.fill(HIST("h2_ntracks_rhom"), nTracks, collision.rhoM());
-    registry.fill(HIST("h2_centrality_rho"), collision.centrality(), collision.rho());
-    registry.fill(HIST("h2_centrality_rhom"), collision.centrality(), collision.rhoM());
+    registry.fill(HIST("h2_centrality_rho"), collision.centFT0M(), collision.rho());
+    registry.fill(HIST("h2_centrality_rhom"), collision.centFT0M(), collision.rhoM());
   }
   PROCESS_SWITCH(JetBackgroundAnalysisTask, processRho, "QA for rho-area subtracted jets", false);
 

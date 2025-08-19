@@ -428,11 +428,11 @@ struct nucleiFlowTree {
             computeEventPlane(collision.qvecTPCallImVec()[cfgHarmonics - 2], collision.qvecTPCallReVec()[cfgHarmonics - 2]),
             computeEventPlane(collision.qvecTPCnegImVec()[cfgHarmonics - 2], collision.qvecTPCnegReVec()[cfgHarmonics - 2]),
             computeEventPlane(collision.qvecTPCposImVec()[cfgHarmonics - 2], collision.qvecTPCposReVec()[cfgHarmonics - 2]),
-            collision.sumAmplFT0A(),
-            collision.sumAmplFT0C(),
-            static_cast<float>(collision.nTrkTPCall()),
-            static_cast<float>(collision.nTrkTPCneg()),
-            static_cast<float>(collision.nTrkTPCpos())});
+            std::hypot(collision.qvecFT0AImVec()[cfgHarmonics - 2], collision.qvecFT0AReVec()[cfgHarmonics - 2]),
+            std::hypot(collision.qvecFT0CImVec()[cfgHarmonics - 2], collision.qvecFT0CReVec()[cfgHarmonics - 2]),
+            std::hypot(collision.qvecTPCallImVec()[cfgHarmonics - 2], collision.qvecTPCallReVec()[cfgHarmonics - 2]),
+            std::hypot(collision.qvecTPCnegImVec()[cfgHarmonics - 2], collision.qvecTPCnegReVec()[cfgHarmonics - 2]),
+            std::hypot(collision.qvecTPCposImVec()[cfgHarmonics - 2], collision.qvecTPCposReVec()[cfgHarmonics - 2])});
         }
         if (flag & kTriton) {
           if (track.pt() < cfgCutPtMinTree || track.pt() > cfgCutPtMaxTree || track.sign() > 0)

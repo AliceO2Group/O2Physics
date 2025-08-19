@@ -18,10 +18,18 @@
 #ifndef COMMON_CORE_FWDTRACKUTILITIES_H_
 #define COMMON_CORE_FWDTRACKUTILITIES_H_
 
+#include <DetectorsBase/GeometryManager.h>
+#include <Field/MagneticField.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
+#include <MCHTracking/TrackExtrap.h>
+#include <ReconstructionDataFormats/GlobalFwdTrack.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
+
+#include <Math/MatrixRepresentationsStatic.h>
+#include <Math/SMatrix.h>
+#include <TGeoGlobalMagField.h>
+
 #include <vector>
-#include <utility>
-#include "Math/SMatrix.h"
-#include "TGeoGlobalMagField.h"
 
 namespace o2::aod
 {

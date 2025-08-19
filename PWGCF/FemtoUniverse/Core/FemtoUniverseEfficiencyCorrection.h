@@ -16,22 +16,22 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCORRECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCORRECTION_H_
 
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/Configurable.h>
 #include <Framework/ConfigurableKinds.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
-
 #include <Framework/O2DatabasePDGPlugin.h>
+
 #include <TH1.h>
 #include <TH2.h>
 
-#include <vector>
-#include <string>
 #include <algorithm>
 #include <ranges>
-
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+#include <string>
+#include <vector>
 
 namespace o2::analysis::femto_universe::efficiency_correction
 {
@@ -50,6 +50,7 @@ struct EffCorConfigurableGroup : framework::ConfigurableGroup {
   framework::Configurable<std::string> confEffCorCCDBPath{"confEffCorCCDBPath", "", "[Efficiency Correction] CCDB path to histograms"};
   framework::Configurable<std::vector<std::string>> confEffCorCCDBTimestamps{"confEffCorCCDBTimestamps", {}, "[Efficiency Correction] Timestamps of histograms in CCDB (0 can be used as a placeholder, e.g. when running subwagons)"};
   framework::Configurable<std::string> confEffCorVariables{"confEffCorVariables", "pt", "[Efficiency Correction] Variables for efficiency correction histogram dimensions (available: 'pt'; 'pt,eta'; 'pt,mult'; 'pt,eta,mult')"};
+  framework::Configurable<bool> confEffCorSetMultToConst{"confEffCorSetMultToConst", false, "[Efficiency Correction] Multiplicity for the histograms set to the constant value"};
 };
 
 class EfficiencyCorrection
@@ -62,6 +63,7 @@ class EfficiencyCorrection
   auto init(framework::HistogramRegistry* registry, std::vector<framework::AxisSpec> axisSpecs) -> void
   {
     shouldFillHistograms = config->confEffCorFillHist;
+    shouldSetMultToConst = config->confEffCorSetMultToConst;
 
     histRegistry = registry;
     if (shouldFillHistograms) {
@@ -115,7 +117,7 @@ class EfficiencyCorrection
     }
   }
 
-  template <uint8_t N>
+  template <uint8_t N, typename CollisionType = aod::FdCollisions>
     requires IsOneOrTwo<N>
   void fillTruthHist(auto particle)
   {
@@ -126,10 +128,10 @@ class EfficiencyCorrection
     histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hMCTruth"),
                        particle.pt(),
                        particle.eta(),
-                       particle.fdCollision().multV0M());
+                       shouldSetMultToConst ? 100 : particle.template fdCollision_as<CollisionType>().multV0M());
   }
 
-  template <uint8_t N>
+  template <uint8_t N, typename CollisionType = aod::FdCollisions>
     requires IsOneOrTwo<N>
   void fillRecoHist(auto particle, int particlePDG)
   {
@@ -149,7 +151,7 @@ class EfficiencyCorrection
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hPrimary"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
 
         case (o2::aod::femtouniverse_mc_particle::kDaughter):
@@ -158,33 +160,34 @@ class EfficiencyCorrection
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hSecondary"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
 
         case (o2::aod::femtouniverse_mc_particle::kMaterial):
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hMaterial"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
 
         case (o2::aod::femtouniverse_mc_particle::kFake):
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hFake"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
 
         default:
           histRegistry->fill(HIST(histDirectory) + HIST("/") + HIST(histSuffix[N - 1]) + HIST("/hOther"),
                              mcParticle.pt(),
                              mcParticle.eta(),
-                             particle.fdCollision().multV0M());
+                             particle.template fdCollision_as<CollisionType>().multV0M());
           break;
       }
     }
   }
 
+  template <typename CollisionType = aod::FdCollisions>
   auto getWeight(ParticleNo partNo, auto particle) -> float
   {
     auto weight = 1.0f;
@@ -203,9 +206,9 @@ class EfficiencyCorrection
       } else if (config->confEffCorVariables.value == "pt,eta") {
         bin = hWeights->FindBin(particle.pt(), particle.eta());
       } else if (config->confEffCorVariables.value == "pt,mult") {
-        bin = hWeights->FindBin(particle.pt(), particle.fdCollision().multV0M());
+        bin = hWeights->FindBin(particle.pt(), particle.template fdCollision_as<CollisionType>().multV0M());
       } else if (config->confEffCorVariables.value == "pt,eta,mult") {
-        bin = hWeights->FindBin(particle.pt(), particle.eta(), particle.fdCollision().multV0M());
+        bin = hWeights->FindBin(particle.pt(), particle.eta(), particle.template fdCollision_as<CollisionType>().multV0M());
       } else {
         LOGF(fatal, notify("Unknown configuration for efficiency variables"));
         return weight;
@@ -276,6 +279,7 @@ class EfficiencyCorrection
 
   bool shouldApplyCorrection{false};
   bool shouldFillHistograms{false};
+  bool shouldSetMultToConst{false};
 
   o2::ccdb::BasicCCDBManager& ccdb{o2::ccdb::BasicCCDBManager::instance()};
   std::array<TH1*, 2> hLoaded{nullptr, nullptr};

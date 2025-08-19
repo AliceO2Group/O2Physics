@@ -24,8 +24,8 @@ DECLARE_SOA_COLUMN(Centrality, centrality, uint8_t);
 DECLARE_SOA_COLUMN(Zvtx, zvtx, float);
 DECLARE_SOA_COLUMN(ZvtxMask, zvtxMask, int8_t);
 DECLARE_SOA_COLUMN(TriggerMask, triggerMask, uint8_t);
-DECLARE_SOA_COLUMN(Ntracklets, ntracklets, uint8_t);
-DECLARE_SOA_COLUMN(V0Multiplicity, v0Multiplicity, uint8_t);
+DECLARE_SOA_COLUMN(CBMultiplicity, cbMultiplicity, uint8_t);
+DECLARE_SOA_COLUMN(Ntracks, ntracks, uint8_t);
 } // namespace LFEbyeCollTable
 
 DECLARE_SOA_TABLE(CollEbyeTables, "AOD", "COLLEBYETABLE",
@@ -38,8 +38,9 @@ DECLARE_SOA_TABLE(MiniCollTables, "AOD", "MINICOLLTABLE",
                   o2::soa::Index<>,
                   LFEbyeCollTable::ZvtxMask,
                   LFEbyeCollTable::TriggerMask,
-                  LFEbyeCollTable::Ntracklets,
-                  LFEbyeCollTable::V0Multiplicity);
+                  LFEbyeCollTable::CBMultiplicity,
+                  LFEbyeCollTable::Centrality,
+                  LFEbyeCollTable::Ntracks);
 using MiniCollTable = MiniCollTables::iterator;
 
 namespace LFEbyeTable

@@ -10,11 +10,7 @@
 // or submit itself to any jurisdiction.
 
 #include <math.h>
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h>
-#else
 #include <onnxruntime_cxx_api.h>
-#endif
 #include <string>
 #include <regex>
 #include <TLorentzVector.h>
@@ -77,11 +73,7 @@ struct mftmchMatchingML {
 
   Ort::Env env{ORT_LOGGING_LEVEL_WARNING, "model-explorer"};
   Ort::SessionOptions session_options;
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-  std::shared_ptr<Ort::Experimental::Session> onnx_session = nullptr;
-#else
   std::shared_ptr<Ort::Session> onnx_session = nullptr;
-#endif
   OnnxModel model;
 
   template <typename F, typename M>
@@ -158,12 +150,6 @@ struct mftmchMatchingML {
     std::vector<std::string> output_names;
     std::vector<std::vector<int64_t>> output_shapes;
 
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-    input_names = onnx_session->GetInputNames();
-    input_shapes = onnx_session->GetInputShapes();
-    output_names = onnx_session->GetOutputNames();
-    output_shapes = onnx_session->GetOutputShapes();
-#else
     Ort::AllocatorWithDefaultOptions tmpAllocator;
     for (size_t i = 0; i < onnx_session->GetInputCount(); ++i) {
       input_names.push_back(onnx_session->GetInputNameAllocated(i, tmpAllocator).get());
@@ -177,7 +163,6 @@ struct mftmchMatchingML {
     for (size_t i = 0; i < onnx_session->GetOutputCount(); ++i) {
       output_shapes.emplace_back(onnx_session->GetOutputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
     }
-#endif
 
     auto input_shape = input_shapes[0];
     input_shape[0] = 1;
@@ -187,11 +172,6 @@ struct mftmchMatchingML {
 
     if (input_tensor_values[8] < cfgXYWindow) {
       std::vector<Ort::Value> input_tensors;
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-      input_tensors.push_back(Ort::Experimental::Value::CreateTensor<float>(input_tensor_values.data(), input_tensor_values.size(), input_shape));
-
-      std::vector<Ort::Value> output_tensors = onnx_session->Run(input_names, input_tensors, output_names);
-#else
       Ort::MemoryInfo mem_info =
         Ort::MemoryInfo::CreateCpu(OrtAllocatorType::OrtArenaAllocator, OrtMemType::OrtMemTypeDefault);
       input_tensors.push_back(Ort::Value::CreateTensor<float>(mem_info, input_tensor_values.data(), input_tensor_values.size(), input_shape.data(), input_shape.size()));
@@ -206,7 +186,6 @@ struct mftmchMatchingML {
                      [&](const std::string& str) { return str.c_str(); });
 
       std::vector<Ort::Value> output_tensors = onnx_session->Run(runOptions, inputNamesChar.data(), input_tensors.data(), input_tensors.size(), outputNamesChar.data(), outputNamesChar.size());
-#endif
 
       const float* output_value = output_tensors[0].GetTensorData<float>();
 

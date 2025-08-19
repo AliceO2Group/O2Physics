@@ -25,10 +25,22 @@ o2physics_add_dpl_workflow(trackselection
 o2physics_add_dpl_workflow(event-selection
                     SOURCES eventSelection.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCCDB
+                                          O2::DataFormatsITSMFT
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(event-selection-service
+                    SOURCES eventSelectionService.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCCDB
+                                          O2::DataFormatsITSMFT
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(multiplicity-table
                     SOURCES multiplicityTable.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(multcenttable
+                    SOURCES multCentTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -44,6 +56,11 @@ o2physics_add_dpl_workflow(centrality-table
 
 o2physics_add_dpl_workflow(timestamp
                     SOURCES timestamp.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(timestamptester
+                    SOURCES timestampTester.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -125,8 +142,8 @@ o2physics_add_dpl_workflow(match-mft-ft0
                                           O2::DetectorsBase O2::DetectorsCommonDataFormats
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(zdc-task-intercalib
-                    SOURCES zdc-task-intercalib.cxx
+o2physics_add_dpl_workflow(zdc-task-inter-calib
+                    SOURCES zdcTaskInterCalib.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
@@ -155,3 +172,7 @@ o2physics_add_dpl_workflow(muon-realignment
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase O2::DetectorsCommonDataFormats O2::MathUtils O2::MCHTracking O2::DataFormatsMCH O2::GlobalTracking O2::MCHBase O2::MCHGeometryTransformer O2::CommonUtils
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(selectionstudytable
+                    SOURCES selectionStudyTable.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)

@@ -18,32 +18,29 @@
 ///         (with or without corrections) and save the results in a dedicated table.
 ///
 
-// C++/ROOT includes.
-#include <chrono>
-#include <string>
-#include <vector>
-#include <TComplex.h>
-#include <TH3F.h>
-
-// o2Physics includes.
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-
 #include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-
 #include "Common/DataModel/Qvectors.h"
-
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-// o2 includes.
-#include "CCDB/BasicCCDBManager.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <DetectorsCommonDataFormats/AlignParam.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TComplex.h>
+#include <TH3F.h>
+
+#include <chrono>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -78,6 +75,9 @@ struct qVectorsTable {
 
   Configurable<float> cfgMinPtOnTPC{"cfgMinPtOnTPC", 0.15, "minimum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
   Configurable<float> cfgMaxPtOnTPC{"cfgMaxPtOnTPC", 5., "maximum transverse momentum selection for TPC tracks participating in Q-vector reconstruction"};
+  Configurable<float> cfgEtaMax{"cfgEtaMax", 0.8, "Maximum pseudorapidiy for charged track"};
+  Configurable<float> cfgEtaMin{"cfgEtaMin", -0.8, "Minimum pseudorapidiy for charged track"};
+
   Configurable<int> cfgCorrLevel{"cfgCorrLevel", 4, "calibration step: 0 = no corr, 1 = gain corr, 2 = rectr, 3 = twist, 4 = full"};
   Configurable<std::vector<int>> cfgnMods{"cfgnMods", {2, 3}, "Modulation of interest"};
   Configurable<float> cfgMaxCentrality{"cfgMaxCentrality", 100.f, "max. centrality for Q vector calibration"};
@@ -149,7 +149,7 @@ struct qVectorsTable {
   Produces<aod::QvectorBTotVecs> qVectorBTotVec;
   /////////////////////////////////////////////////////////////////
 
-  std::unordered_map<string, bool> useDetector = {
+  std::unordered_map<std::string, bool> useDetector = {
     {"QvectorBTots", cfgUseBTot},
     {"QvectorBNegs", cfgUseBNeg},
     {"QvectorBPoss", cfgUseBPos},
@@ -164,7 +164,7 @@ struct qVectorsTable {
   void init(InitContext& initContext)
   {
     // Check the sub-detector used
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       for (auto const& input : device.inputs) {
         if (input.matcher.binding == "Qvectors") {
@@ -255,7 +255,7 @@ struct qVectorsTable {
     }
     fullPath = cfgGainEqPath;
     fullPath += "/FT0";
-    auto objft0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
+    const auto objft0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
     if (!objft0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 208; i++) {
         FT0RelGainConst.push_back(1.);
@@ -266,7 +266,7 @@ struct qVectorsTable {
 
     fullPath = cfgGainEqPath;
     fullPath += "/FV0";
-    auto objfv0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
+    const auto objfv0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
     if (!objfv0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 48; i++) {
         FV0RelGainConst.push_back(1.);
@@ -437,7 +437,10 @@ struct qVectorsTable {
         continue;
       }
       histosQA.fill(HIST("ChTracks"), trk.pt(), trk.eta(), trk.phi(), cent);
-      if (std::abs(trk.eta()) > 0.8) {
+      if (trk.eta() > cfgEtaMax) {
+        continue;
+      }
+      if (trk.eta() < cfgEtaMin) {
         continue;
       }
       qVectTPCall[0] += trk.pt() * std::cos(trk.phi() * nmode);
@@ -552,7 +555,7 @@ struct qVectorsTable {
       runNumber = currentRun;
     }
 
-    float centAllEstim[4] = {
+    const float centAllEstim[4] = {
       coll.centFT0M(), coll.centFT0A(), coll.centFT0C(),
       coll.centFV0A()};
     cent = centAllEstim[cfgCentEsti];

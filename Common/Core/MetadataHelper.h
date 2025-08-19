@@ -8,8 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-///
 /// \file   TableHelper.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \brief  Utility to handle the metadata from the AOD
@@ -18,9 +16,13 @@
 #ifndef COMMON_CORE_METADATAHELPER_H_
 #define COMMON_CORE_METADATAHELPER_H_
 
-#include <string>
-#include <map>
 #include "Framework/ConfigContext.h"
+
+#include <map>
+#include <string>
+
+namespace o2::common::core
+{
 
 struct MetadataHelper {
   /// @brief Constructor for the MetadataHelper. Defines the all the metadata keys that will be looked for and accessible
@@ -63,5 +65,7 @@ struct MetadataHelper {
   std::map<std::string, std::string> mMetadata; /// < The metadata map
   bool mIsInitialized = false;                  /// < Flag to check if the metadata has been initialized
 };
+
+} // namespace o2::common::core
 
 #endif // COMMON_CORE_METADATAHELPER_H_

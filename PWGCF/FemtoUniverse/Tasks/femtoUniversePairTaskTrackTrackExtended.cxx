@@ -567,7 +567,12 @@ struct FemtoUniversePairTaskTrackTrackExtended {
           weight *= effCorrection.getWeight(ParticleNo::TWO, p2);
         }
 
-        sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
+        if (swpart)
+          sameEventCont.setPair<isMC>(p1, p2, multCol, twotracksconfigs.confUse3D, weight);
+        else
+          sameEventCont.setPair<isMC>(p2, p1, multCol, twotracksconfigs.confUse3D, weight);
+
+        swpart = !swpart;
       }
     }
   }

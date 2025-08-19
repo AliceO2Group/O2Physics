@@ -15,40 +15,55 @@
 /// \author Jochen Klein
 /// \author Tiantian Cheng
 
-#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DataFormatsParameters/GRPObject.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Track.h>
 
+#include <TH1.h>
 #include <TPDGCode.h>
 
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <functional>
 #include <map>
 #include <memory>
+#include <optional>
+#include <stdexcept>
 #include <string>
+#include <type_traits>
 #include <vector>
 
 using namespace o2;
@@ -72,7 +87,7 @@ DECLARE_SOA_COLUMN(DecayLengthCharmedBaryon, decayLengthCharmedBaryon, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCharmedBaryon, decayLengthXYCharmedBaryon, float);
 DECLARE_SOA_COLUMN(DecayLengthCasc, decayLengthCasc, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCasc, decayLengthXYCasc, float);
-DECLARE_SOA_COLUMN(OriginGen, originGen, int);
+DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int);
 DECLARE_SOA_COLUMN(DecayChannel, decayChannel, int);
 } // namespace hf_st_charmed_baryon_gen
 
@@ -89,7 +104,7 @@ DECLARE_SOA_TABLE(HfStChBarGens, "AOD", "HFSTCHBARGEN",
                   hf_st_charmed_baryon_gen::DecayLengthXYCharmedBaryon,
                   hf_st_charmed_baryon_gen::DecayLengthCasc,
                   hf_st_charmed_baryon_gen::DecayLengthXYCasc,
-                  hf_st_charmed_baryon_gen::OriginGen,
+                  hf_st_charmed_baryon_gen::OriginMcGen,
                   hf_st_charmed_baryon_gen::DecayChannel);
 
 // CharmedBaryon -> Casc + Pion/Kaon
@@ -149,7 +164,8 @@ DECLARE_SOA_COLUMN(DecayLengthCasc, decayLengthCasc, float);
 DECLARE_SOA_COLUMN(DecayLengthXYCasc, decayLengthXYCasc, float);
 DECLARE_SOA_INDEX_COLUMN_FULL(MotherCasc, motherCasc, int, HfStChBarGens, "_Casc");
 DECLARE_SOA_INDEX_COLUMN_FULL(MotherPionOrKaon, motherPionOrKaon, int, HfStChBarGens, "_PionOrKaon");
-DECLARE_SOA_COLUMN(OriginRec, originRec, int);
+DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);
+DECLARE_SOA_COLUMN(ToiMask, toiMask, uint32_t);
 } // namespace hf_st_charmed_baryon
 
 DECLARE_SOA_TABLE(HfStChBars, "AOD", "HFSTCHBAR",
@@ -205,7 +221,8 @@ DECLARE_SOA_TABLE(HfStChBars, "AOD", "HFSTCHBAR",
                   hf_st_charmed_baryon::DecayLengthXYCasc,
                   hf_st_charmed_baryon::MotherCascId,
                   hf_st_charmed_baryon::MotherPionOrKaonId,
-                  hf_st_charmed_baryon::OriginRec);
+                  hf_st_charmed_baryon::OriginMcRec,
+                  hf_st_charmed_baryon::ToiMask);
 } // namespace o2::aod
 
 struct HfTreeCreatorOmegacSt {
@@ -241,6 +258,7 @@ struct HfTreeCreatorOmegacSt {
   Configurable<float> maxNSigmaPion{"maxNSigmaPion", 5., "Max Nsigma for pion to be paired with Omega"};
   Configurable<float> maxNSigmaKaon{"maxNSigmaKaon", 5., "Max Nsigma for kaon to be paired with Omega"};
   Configurable<bool> bzOnly{"bzOnly", true, "Use B_z instead of full field map"};
+  Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fHfCharmBarToXiBach", "Triggers of interest, comma separated for Zorro"};
 
   const int itsNClsMin = 4;
   const float tpcNclsFindableFraction = 0.8;
@@ -431,7 +449,7 @@ struct HfTreeCreatorOmegacSt {
           if (runNumber == 0) {
             zorroSummary.setObject(zorro.getZorroSummary());
           }
-          zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fTrackedOmega");
+          zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgTriggersOfInterest.value);
           zorro.populateHistRegistry(registry, bc.runNumber());
         }
         runNumber = bc.runNumber();
@@ -448,8 +466,15 @@ struct HfTreeCreatorOmegacSt {
         }
         df2.setBz(bz);
       }
+      uint32_t toiMask = 0;
       if (skimmedProcessing) {
-        zorro.isSelected(collision.bc().globalBC());
+        bool sel = zorro.isSelected(bc.globalBC());
+        if (sel) {
+          std::vector<bool> toivect = zorro.getTriggerOfInterestResults();
+          for (size_t i{0}; i < toivect.size(); i++) {
+            toiMask |= static_cast<uint32_t>(toivect[i]) << i;
+          }
+        }
       }
 
       const auto primaryVertex = getPrimaryVertex(collision);
@@ -755,7 +780,8 @@ struct HfTreeCreatorOmegacSt {
                                   decayLengthCascXY,
                                   trackCascMotherId,
                                   trackMotherId,
-                                  origin);
+                                  origin,
+                                  toiMask);
                     }
                   } else {
                     continue;

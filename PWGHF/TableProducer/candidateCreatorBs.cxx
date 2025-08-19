@@ -15,26 +15,48 @@
 ///
 /// \author Phil Stahlhut <phil.lennart.stahlhut@cern.ch>
 
-#include <string>
-#include <memory>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/V0.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -43,6 +65,7 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_trkcandsel;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 /// Reconstruction of Bs candidates
 struct HfCandidateCreatorBs {
@@ -368,14 +391,16 @@ struct HfCandidateCreatorBsExpressions {
   {
     int indexRec = -1;
     int8_t sign = 0;
-    int8_t flag = 0;
+    int8_t flagChannelMain = 0;
+    int8_t flagChannelReso = 0;
     std::vector<int> arrDaughDsIndex;
     std::array<int, 2> arrPDGDaughDs;
     std::array<int, 2> arrPDGResonantDsPhiPi = {Pdg::kPhi, kPiPlus}; // Ds± → Phi π±
 
     // Match reconstructed candidates.
     for (const auto& candidate : candsBs) {
-      flag = 0;
+      flagChannelMain = 0;
+      flagChannelReso = 0;
       arrDaughDsIndex.clear();
       auto candDs = candidate.prong0();
       auto arrayDaughtersBs = std::array{candDs.prong0_as<aod::TracksWMc>(),
@@ -399,13 +424,13 @@ struct HfCandidateCreatorBsExpressions {
               arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
             }
             if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-              flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi);
+              flagChannelMain = sign * DecayChannelMain::BsToDsPi;
             }
           }
         }
       }
 
-      if (!flag) {
+      if (!flagChannelMain) {
         // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersBs, Pdg::kB0, std::array{-kKPlus, +kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         if (indexRec > -1) {
@@ -419,7 +444,7 @@ struct HfCandidateCreatorBsExpressions {
                 arrPDGDaughDs[iProng] = std::abs(daughI.pdgCode());
               }
               if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-                flag = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi);
+                flagChannelMain = sign * DecayChannelMain::B0ToDsPi;
               }
             }
           }
@@ -428,7 +453,7 @@ struct HfCandidateCreatorBsExpressions {
 
       // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
       // convention: final state particles are prong0,1,2,3
-      if (!flag) {
+      if (!flagChannelMain) {
         auto particleProng0 = arrayDaughtersBs[0].mcParticle();
         auto particleProng1 = arrayDaughtersBs[1].mcParticle();
         auto particleProng2 = arrayDaughtersBs[2].mcParticle();
@@ -443,21 +468,20 @@ struct HfCandidateCreatorBsExpressions {
           int index3Mother = RecoDecay::getMother(mcParticles, particleProng3, bHadronMotherHypo, true);
 
           // look for common b-hadron ancestor
-          if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
-            if (index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
-              flag = BIT(hf_cand_bs::DecayTypeMc::PartlyRecoDecay);
-              break;
-            }
+          if (index0Mother > -1 && index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {
+            flagChannelMain = hf_cand_bs::DecayTypeMc::PartlyRecoDecay; // FIXME
+            break;
           }
         }
       }
 
-      rowMcMatchRec(flag);
+      rowMcMatchRec(flagChannelMain, flagChannelReso);
     } // rec
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      flag = 0;
+      flagChannelMain = 0;
+      flagChannelReso = 0;
       arrDaughDsIndex.clear();
 
       // Checking Bs0(bar) → Ds∓ π± → (K- K+ π∓) π±
@@ -472,13 +496,13 @@ struct HfCandidateCreatorBsExpressions {
               arrPDGDaughDs[jProng] = std::abs(daughJ.pdgCode());
             }
             if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-              flag = sign * BIT(hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi);
+              flagChannelMain = sign * DecayChannelMain::BsToDsPi;
             }
           }
         }
       }
 
-      if (!flag) {
+      if (!flagChannelMain) {
         // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kB0, std::array{+Pdg::kDS, -kPiPlus}, true)) {
           // Checking Ds± → K- K+ π±
@@ -491,14 +515,14 @@ struct HfCandidateCreatorBsExpressions {
                 arrPDGDaughDs[jProng] = std::abs(daughJ.pdgCode());
               }
               if ((arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[0] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[1]) || (arrPDGDaughDs[0] == arrPDGResonantDsPhiPi[1] && arrPDGDaughDs[1] == arrPDGResonantDsPhiPi[0])) {
-                flag = sign * BIT(hf_cand_bs::DecayTypeMc::B0ToDsPiToPhiPiPiToKKPiPi);
+                flagChannelMain = sign * DecayChannelMain::B0ToDsPi;
               }
             }
           }
         }
       }
 
-      rowMcMatchGen(flag);
+      rowMcMatchGen(flagChannelMain, flagChannelReso);
     } // gen
   } // processMc
   PROCESS_SWITCH(HfCandidateCreatorBsExpressions, processMc, "Process MC", false);

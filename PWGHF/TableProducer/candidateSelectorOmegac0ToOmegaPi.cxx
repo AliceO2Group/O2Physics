@@ -16,22 +16,39 @@
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
 
-#include <string>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectorPID.h"
-
-#include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/Core/HfMlResponseOmegacToOmegaPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelectorPID.h"
+
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <cstdlib>
+#include <numeric>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -552,7 +569,7 @@ struct HfCandidateSelectorToOmegaPi {
           }
 
           // Chi2Geo/NDF V0&Casc&Omegac selection
-          if ((candidate.v0Chi2OverNdf() > KfconfigurableGroup.v0Chi2OverNdfMax) || (candidate.cascChi2OverNdf() > KfconfigurableGroup.cascChi2OverNdfMax) || (candidate.omegacChi2OverNdf() > KfconfigurableGroup.omegacChi2OverNdfMax)) {
+          if ((candidate.v0Chi2OverNdf() > KfconfigurableGroup.v0Chi2OverNdfMax) || (candidate.v0Chi2OverNdf() < 0) || (candidate.cascChi2OverNdf() > KfconfigurableGroup.cascChi2OverNdfMax) || (candidate.cascChi2OverNdf() < 0) || (candidate.omegacChi2OverNdf() > KfconfigurableGroup.omegacChi2OverNdfMax) || (candidate.omegacChi2OverNdf() < 0)) {
             resultSelections = false;
             registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_Omegac"), 0);
           } else {
@@ -560,7 +577,7 @@ struct HfCandidateSelectorToOmegaPi {
           }
 
           // Chi2Topo/NDF (chi2TopoV0ToCasc chi2TopoOmegacToPv chi2TopoCascToOmegac chi2TopoCascToPv) selection  (???????????/NDF of which particle????????)
-          if ((candidate.chi2TopoV0ToCasc() > KfconfigurableGroup.chi2TopoV0ToCascMax) || (candidate.chi2TopoOmegacToPv() > KfconfigurableGroup.chi2TopoOmegacToPvMax) || (candidate.chi2TopoCascToOmegac() > KfconfigurableGroup.chi2TopoCascToOmegacMax) || (candidate.chi2TopoCascToPv() > KfconfigurableGroup.chi2TopoCascToPvMax)) {
+          if ((candidate.chi2TopoV0ToCasc() > KfconfigurableGroup.chi2TopoV0ToCascMax) || (candidate.chi2TopoV0ToCasc() < 0) || (candidate.chi2TopoOmegacToPv() > KfconfigurableGroup.chi2TopoOmegacToPvMax) || (candidate.chi2TopoOmegacToPv() < 0) || (candidate.chi2TopoCascToOmegac() > KfconfigurableGroup.chi2TopoCascToOmegacMax) || (candidate.chi2TopoCascToOmegac() < 0) || (candidate.chi2TopoCascToPv() > KfconfigurableGroup.chi2TopoCascToPvMax) || (candidate.chi2TopoCascToPv() < 0)) {
             resultSelections = false;
             registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_Omegac"), 0);
           } else {

@@ -53,6 +53,7 @@
 
 #include "Math/Vector4D.h"
 #include "TRandom3.h"
+#include <TMCProcess.h>
 
 #include <algorithm>
 #include <cmath>
@@ -293,6 +294,7 @@ struct nucleiSpectra {
   Configurable<LabeledArray<double>> cfgDownscaling{"cfgDownscaling", {nuclei::DownscalingDefault[0], 5, 1, nuclei::names, nuclei::DownscalingConfigName}, "Fraction of kept candidates for light nuclei"};
   Configurable<LabeledArray<int>> cfgTreeConfig{"cfgTreeConfig", {nuclei::TreeConfigDefault[0], 5, 2, nuclei::names, nuclei::treeConfigNames}, "Filtered trees configuration"};
   Configurable<bool> cfgFillPairTree{"cfgFillPairTree", true, "Fill trees for pairs of light nuclei"};
+  Configurable<int> cfgFillGenSecondaries{"cfgFillGenSecondaries", 0, "Fill generated secondaries (0: no, 1: only weak decays, 2: all of them)"};
   Configurable<LabeledArray<int>> cfgDCAHists{"cfgDCAHists", {nuclei::DCAHistDefault[0], 5, 2, nuclei::names, nuclei::DCAConfigNames}, "DCA hist configuration"};
   Configurable<LabeledArray<int>> cfgFlowHist{"cfgFlowHist", {nuclei::FlowHistDefault[0], 5, 1, nuclei::names, nuclei::flowConfigNames}, "Flow hist configuration"};
 
@@ -987,6 +989,7 @@ struct nucleiSpectra {
         if (particle.isPhysicalPrimary()) {
           flags |= kIsPhysicalPrimary;
           nuclei::hGenNuclei[iS][particle.pdgCode() < 0]->Fill(1., particle.pt());
+          // antinuclei from B hadrons are classified as physical primaries
           if (particle.has_mothers()) {
             for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
               if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
@@ -997,7 +1000,10 @@ struct nucleiSpectra {
               }
             }
           }
-        } else if (particle.has_mothers()) {
+        } else if (particle.getProcess() == TMCProcess::kPDecay) {
+          if (!particle.has_mothers()) {
+            continue; // skip secondaries from weak decay without mothers
+          }
           flags |= kIsSecondaryFromWeakDecay;
           for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
             motherPdgCode = motherparticle.pdgCode();
@@ -1008,8 +1014,13 @@ struct nucleiSpectra {
         }
 
         if (!isReconstructed[index] && (cfgTreeConfig->get(iS, 0u) || cfgTreeConfig->get(iS, 1u))) {
+          if ((flags & kIsPhysicalPrimary) == 0 && cfgFillGenSecondaries == 0) {
+            continue; // skip secondaries if not requested
+          }
+          if ((flags & (kIsPhysicalPrimary | kIsSecondaryFromWeakDecay)) == 0 && cfgFillGenSecondaries == 1) {
+            continue; // skip secondaries from material if not requested
+          }
           float absDecL = computeAbsoDecL(particle);
-
           nucleiTableMC(999., 999., 999., 0., 0., 999., -1, 999., 999., -1, -1, -1, -1, flags, 0, 0, 0, 0, 0, 0, goodCollisions[particle.mcCollisionId()], particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), motherPdgCode, motherDecRadius, absDecL);
         }
         break;
@@ -1046,6 +1057,61 @@ struct nucleiSpectra {
   }
 
   PROCESS_SWITCH(nucleiSpectra, processMatching, "Matching analysis", false);
+
+  void processMCasData(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mcCollisions, soa::Join<TrackCandidates, aod::McTrackLabels> const& tracks, aod::McParticles const& particlesMC, aod::BCsWithTimestamps const&)
+  {
+    nuclei::candidates.clear();
+    std::vector<bool> goodCollisions(mcCollisions.size(), false);
+    for (auto& collision : collisions) {
+      if (!eventSelection(collision)) {
+        continue;
+      }
+      goodCollisions[collision.mcCollisionId()] = true;
+      const auto& slicedTracks = tracks.sliceBy(tracksPerCollisions, collision.globalIndex());
+      fillDataInfo(collision, slicedTracks);
+    }
+    std::vector<bool> isReconstructed(particlesMC.size(), false);
+    for (size_t i{0}; i < nuclei::candidates.size(); ++i) {
+      auto& c = nuclei::candidates[i];
+      if (c.fillTree) {
+        auto label = tracks.iteratorAt(c.globalIndex);
+        if (label.mcParticleId() < -1 || label.mcParticleId() >= particlesMC.size()) {
+          continue;
+        }
+        auto particle = particlesMC.iteratorAt(label.mcParticleId());
+        int motherPdgCode = 0;
+        float motherDecRadius = -1;
+        isReconstructed[particle.globalIndex()] = true;
+        if (particle.isPhysicalPrimary()) {
+          c.flags |= kIsPhysicalPrimary;
+          if (particle.has_mothers()) {
+            for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+              if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
+                c.flags |= kIsSecondaryFromWeakDecay;
+                motherPdgCode = motherparticle.pdgCode();
+                motherDecRadius = std::hypot(particle.vx() - motherparticle.vx(), particle.vy() - motherparticle.vy());
+                break;
+              }
+            }
+          }
+        } else if (particle.has_mothers()) {
+          c.flags |= kIsSecondaryFromWeakDecay;
+          for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+            motherPdgCode = motherparticle.pdgCode();
+            motherDecRadius = std::hypot(particle.vx() - motherparticle.vx(), particle.vy() - motherparticle.vy());
+          }
+        } else {
+          c.flags |= kIsSecondaryFromMaterial;
+        }
+
+        isReconstructed[particle.globalIndex()] = true;
+        float absoDecL = computeAbsoDecL(particle);
+
+        nucleiTableMC(c.pt, c.eta, c.phi, c.tpcInnerParam, c.beta, c.zVertex, c.nContrib, c.DCAxy, c.DCAz, c.TPCsignal, c.ITSchi2, c.TPCchi2, c.TOFchi2, c.flags, c.TPCfindableCls, c.TPCcrossedRows, c.ITSclsMap, c.TPCnCls, c.TPCnClsShared, c.clusterSizesITS, goodCollisions[particle.mcCollisionId()], particle.pt(), particle.eta(), particle.phi(), particle.pdgCode(), motherPdgCode, motherDecRadius, absoDecL);
+      }
+    }
+  }
+  PROCESS_SWITCH(nucleiSpectra, processMCasData, "MC as data analysis", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

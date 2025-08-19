@@ -985,8 +985,8 @@ struct LfTaskLambdaSpinCorr {
       auto groupV02 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision1.index());
       auto groupV03 = V0s.sliceBy(tracksPerCollisionV0Mixed, collision2.index());
 
-      size_t rows = groupV03.size() + 20;
-      size_t cols = groupV01.size() + 20;
+      size_t rows = groupV03.size() + 1600;
+      size_t cols = groupV01.size() + 1600;
       std::vector<std::vector<bool>> pairStatus(rows, std::vector<bool>(cols, false));
       histos.fill(HIST("hv0Mult"), groupV01.size());
       for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupV01, groupV02))) {

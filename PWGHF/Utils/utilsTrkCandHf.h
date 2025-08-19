@@ -16,10 +16,13 @@
 #ifndef PWGHF_UTILS_UTILSTRKCANDHF_H_
 #define PWGHF_UTILS_UTILSTRKCANDHF_H_
 
-#include <Rtypes.h>
+#include "PWGHF/Utils/utilsAnalysis.h"
 
 #include <Framework/HistogramSpec.h>
 
+#include <Rtypes.h>
+
+#include <cstddef>
 #include <cstdint>
 
 namespace o2::hf_trkcandsel
@@ -34,10 +37,10 @@ enum SVFitting {
 
 o2::framework::AxisSpec axisCands = {SVFitting::NCases, -0.5f, static_cast<float>(SVFitting::NCases) - 0.5f, ""};
 
-/// @brief Function to put labels on candidate monitoring histogram
+/// \brief Function to put labels on candidate monitoring histogram
 /// \param hCandidates is the histogram
-template <typename Histo>
-void setLabelHistoCands(Histo& hCandidates)
+template <typename THisto>
+void setLabelHistoCands(THisto& hCandidates)
 {
   hCandidates->SetTitle("HF candidate counter;;candidates");
   hCandidates->GetXaxis()->SetBinLabel(SVFitting::BeforeFit + 1, "Before secondary vertexing");
@@ -45,17 +48,42 @@ void setLabelHistoCands(Histo& hCandidates)
   hCandidates->GetXaxis()->SetBinLabel(SVFitting::Fail + 1, "Run-time error in secondary vertexing");
 }
 
-/// @brief Function to evaluate number of ones in a binary representation of the argument
+/// \brief Function to evaluate number of ones in a binary representation of the argument
 /// \param num is the input argument
-int countOnesInBinary(uint8_t num)
+int countOnesInBinary(const uint8_t num)
 {
-  int count = 0;
-
-  for (int iBit = 0; iBit < 8; iBit++) {
+  int count{0};
+  constexpr std::size_t NBits{8u};
+  for (std::size_t iBit{0u}; iBit < NBits; iBit++) {
     count += TESTBIT(num, iBit);
   }
-
   return count;
+}
+
+/// Single-track cuts on dcaXY
+/// \param trackPar is the track parametrisation
+/// \param dca is the 2-D array with track DCAs
+/// \param binsPtTrack is the array of pt bins for track selection
+/// \param cutsTrackDCA are the cuts for track DCA selection
+/// \return true if track passes all cuts
+template <typename TTrackPar, typename TArrayDca, typename TArrayPt, typename TArrayCuts>
+bool isSelectedTrackDCA(TTrackPar const& trackPar,
+                        TArrayDca const& dca,
+                        TArrayPt const& binsPtTrack,
+                        TArrayCuts const& cutsTrackDCA)
+{
+  const auto binPtTrack = o2::analysis::findBin(binsPtTrack, trackPar.getPt());
+  if (binPtTrack == -1) {
+    return false;
+  }
+
+  if (std::abs(dca[0]) < cutsTrackDCA->get(binPtTrack, "min_dcaxytoprimary")) {
+    return false; // minimum DCAxy
+  }
+  if (std::abs(dca[0]) > cutsTrackDCA->get(binPtTrack, "max_dcaxytoprimary")) {
+    return false; // maximum DCAxy
+  }
+  return true;
 }
 
 } // namespace o2::hf_trkcandsel

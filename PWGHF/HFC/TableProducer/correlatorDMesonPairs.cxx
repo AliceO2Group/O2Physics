@@ -14,23 +14,38 @@
 ///
 /// \author Andrea Tavira García <tavira-garcia@ijclab.in2p3.fr>, IJCLab Orsay
 
-#include <string>
-#include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/Core/HfMlResponseD0ToKPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/DMesonPairsTables.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <THnSparse.h>
+
+#include <Rtypes.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -75,6 +90,7 @@ struct HfCorrelatorDMesonPairs {
   Configurable<float> massCut{"massCut", 0.05, "Maximum deviation from PDG peak allowed for signal region"};
   Configurable<bool> daughterTracksCutFlag{"daughterTracksCutFlag", false, "Flag to add cut on daughter tracks"};
   Configurable<bool> removeAmbiguous{"removeAmbiguous", false, "Flag to remove ambiguous candidates"};
+  Configurable<float> ptMaxRemoveAmbiguous{"ptMaxRemoveAmbiguous", 5.0, "Max. pT to remove the ambiguous candidates"};
 
   // ML inference
   Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
@@ -311,10 +327,10 @@ struct HfCorrelatorDMesonPairs {
       SETBIT(candidateType, SelectedDbar);
     }
     if constexpr (isMcRec) {
-      if (candidate.flagMcMatchRec() == 1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK) { // matched as D0
+      if (candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) { // matched as D0
         SETBIT(candidateType, TrueD);
       }
-      if (candidate.flagMcMatchRec() == -(1 << o2::aod::hf_cand_2prong::DecayType::D0ToPiK)) { // matched as D0bar
+      if (candidate.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) { // matched as D0bar
         SETBIT(candidateType, TrueDbar);
       }
     }
@@ -517,18 +533,18 @@ struct HfCorrelatorDMesonPairs {
   {
     // Fill hMatchingMcRec - Cand 1
     registry.fill(HIST("hMatchingMcRec"), 1);
-    if (matchedRec1 == 1) {
+    if (matchedRec1 == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
       registry.fill(HIST("hMatchingMcRec"), 2);
-    } else if (matchedRec1 == -1) {
+    } else if (matchedRec1 == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
       registry.fill(HIST("hMatchingMcRec"), 3);
     } else if (matchedRec1 == 0) {
       registry.fill(HIST("hMatchingMcRec"), 4);
     }
     // Fill hMatchingMcRec - Cand 2
     registry.fill(HIST("hMatchingMcRec"), 5);
-    if (matchedRec2 == 1) {
+    if (matchedRec2 == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
       registry.fill(HIST("hMatchingMcRec"), 6);
-    } else if (matchedRec2 == -1) {
+    } else if (matchedRec2 == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
       registry.fill(HIST("hMatchingMcRec"), 7);
     } else if (matchedRec2 == 0) {
       registry.fill(HIST("hMatchingMcRec"), 8);
@@ -612,7 +628,7 @@ struct HfCorrelatorDMesonPairs {
       }
 
       // Remove ambiguous D0 candidates if flag is true
-      if (removeAmbiguous && (isDCand1 && isDbarCand1)) {
+      if (removeAmbiguous && (isDCand1 && isDbarCand1) && candidate1.pt() < ptMaxRemoveAmbiguous) {
         continue;
       }
 
@@ -687,7 +703,7 @@ struct HfCorrelatorDMesonPairs {
           }
 
           // Remove ambiguous D0 candidates if flag is true
-          if (removeAmbiguous && (isDCand2 && isDbarCand2)) {
+          if (removeAmbiguous && (isDCand2 && isDbarCand2) && candidate2.pt() < ptMaxRemoveAmbiguous) {
             continue;
           }
 
@@ -776,7 +792,7 @@ struct HfCorrelatorDMesonPairs {
       }
 
       // Remove ambiguous D0 candidates if flag is true
-      if (removeAmbiguous && (isDCand1 && isDbarCand1)) {
+      if (removeAmbiguous && (isDCand1 && isDbarCand1) && candidate1.pt() < ptMaxRemoveAmbiguous) {
         continue;
       }
 
@@ -803,10 +819,10 @@ struct HfCorrelatorDMesonPairs {
           registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
           registry.fill(HIST("hPtVsYVsNContribMcRec"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           registry.fill(HIST("hNContribMcRec"), collision.numContrib());
-          if (originRec1 == 1) {
+          if (originRec1 == RecoDecay::Prompt) {
             registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
             registry.fill(HIST("hPtVsYVsNContribMcRecPrompt"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
-          } else if (originRec1 == 2) {
+          } else if (originRec1 == RecoDecay::NonPrompt) {
             registry.fill(HIST("hMassMcRecNonPrompt"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
             registry.fill(HIST("hPtVsYVsNContribMcRecNonPrompt"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           }
@@ -824,9 +840,9 @@ struct HfCorrelatorDMesonPairs {
           registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
           registry.fill(HIST("hPtVsYVsNContribMcRec"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           registry.fill(HIST("hNContribMcRec"), collision.numContrib());
-          if (originRec1 == 1) {
+          if (originRec1 == RecoDecay::Prompt) {
             registry.fill(HIST("hMassMcRecPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
-          } else if (originRec1 == 2) {
+          } else if (originRec1 == RecoDecay::NonPrompt) {
             registry.fill(HIST("hMassMcRecNonPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
           }
         } else if (isTrueDCand1) {
@@ -893,7 +909,7 @@ struct HfCorrelatorDMesonPairs {
           }
 
           // Remove ambiguous D0 candidates if flag is true
-          if (removeAmbiguous && (isDCand2 && isDbarCand2)) {
+          if (removeAmbiguous && (isDCand2 && isDbarCand2) && candidate2.pt() < ptMaxRemoveAmbiguous) {
             continue;
           }
 
@@ -1011,10 +1027,10 @@ struct HfCorrelatorDMesonPairs {
       }
 
       registry.fill(HIST("hPtVsYVsNContribMcGen"), particle1.pt(), particle1.y(), numPvContributorsGen);
-      if (originGen1 == 1) {
+      if (originGen1 == RecoDecay::Prompt) {
         registry.fill(HIST("hPtVsYVsNContribMcGenPrompt"), particle1.pt(), particle1.y(), numPvContributorsGen);
       }
-      if (originGen1 == 2) {
+      if (originGen1 == RecoDecay::NonPrompt) {
         registry.fill(HIST("hPtVsYVsNContribMcGenNonPrompt"), particle1.pt(), particle1.y(), numPvContributorsGen);
       }
       registry.fill(HIST("hNContribMcGen"), numPvContributorsGen);
@@ -1042,18 +1058,18 @@ struct HfCorrelatorDMesonPairs {
 
         // Fill hMatchingMcGen - Cand 1
         registry.fill(HIST("hMatchingMcGen"), 1);
-        if (matchedGen1 == 1) {
+        if (matchedGen1 == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           registry.fill(HIST("hMatchingMcGen"), 2);
-        } else if (matchedGen1 == -1) {
+        } else if (matchedGen1 == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           registry.fill(HIST("hMatchingMcGen"), 3);
         } else if (matchedGen1 == 0) {
           registry.fill(HIST("hMatchingMcGen"), 4);
         }
         // Fill hMatchingMcRec - Cand 2
         registry.fill(HIST("hMatchingMcGen"), 5);
-        if (matchedGen2 == 1) {
+        if (matchedGen2 == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           registry.fill(HIST("hMatchingMcGen"), 6);
-        } else if (matchedGen2 == -1) {
+        } else if (matchedGen2 == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           registry.fill(HIST("hMatchingMcGen"), 7);
         } else if (matchedGen2 == 0) {
           registry.fill(HIST("hMatchingMcGen"), 8);

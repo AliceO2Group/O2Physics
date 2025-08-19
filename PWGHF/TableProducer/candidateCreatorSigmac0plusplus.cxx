@@ -15,32 +15,52 @@
 ///
 /// \author Mattia Faggin <mfaggin@cern.ch>, University and INFN PADOVA
 
-#include <string>
-#include <set>
-#include <vector>
-
-#include "CCDB/BasicCCDBManager.h" // for dca recalculation
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h" // for dca recalculation
-#include "DataFormatsParameters/GRPObject.h"   // for dca recalculation
-#include "DetectorsBase/GeometryManager.h"     // for dca recalculation
-#include "DetectorsBase/Propagator.h"          // for dca recalculation
-#include "DetectorsVertexing/PVertexer.h"      // for dca recalculation
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h" // for dca recalculation
 #include "PWGHF/Utils/utilsEvSelHf.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CCDB/BasicCCDBManager.h> // for dca recalculation
+#include <CommonConstants/PhysicsConstants.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h> // for dca recalculation
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <numeric>
+#include <set>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -172,7 +192,7 @@ struct HfCandidateCreatorSigmac0plusplus {
   /// @param candidates are 3-prong candidates satisfying the analysis selections for Λc+ → pK-π+ (and charge conj.)
   /// @param tracks are the tracks (with dcaXY, dcaZ information) → soft-pion candidate tracks
   template <typename TRK, typename CAND>
-  void makeSoftPiLcPair(TRK const& trackSoftPi, CAND const& candidatesThisColl, aod::TracksWDcaExtra const&)
+  void makeSoftPiLcPair(const std::array<float, 2> softPiDca, TRK const& trackSoftPi, CAND const& candidatesThisColl, aod::TracksWDcaExtra const&)
   {
 
     /// loop over Λc+ → pK-π+ (and charge conj.) candidates
@@ -253,7 +273,8 @@ struct HfCandidateCreatorSigmac0plusplus {
                       candLc.hfflag(),
                       /* Σc0,++ specific columns */
                       chargeSigmac,
-                      statusSpreadMinvPKPiFromPDG, statusSpreadMinvPiKPFromPDG);
+                      statusSpreadMinvPKPiFromPDG, statusSpreadMinvPiKPFromPDG,
+                      softPiDca[0], softPiDca[1]);
     } /// end loop over Λc+ → pK-π+ (and charge conj.) candidates
   } /// end makeSoftPiLcPair
 
@@ -278,6 +299,7 @@ struct HfCandidateCreatorSigmac0plusplus {
     if (!softPiCuts.IsSelected(trackSoftPi)) {
       return;
     }
+    std::array<float, 2> softPiDca = {-999.f, -999.f};
     if constexpr (withTimeAssoc) {
       /// dcaXY, dcaZ selections
       /// To be done separately from the others, because for reassigned tracks the dca must be recalculated
@@ -285,9 +307,8 @@ struct HfCandidateCreatorSigmac0plusplus {
       if (trackSoftPi.collisionId() == thisCollId) {
         /// this is a track originally assigned to the current collision
         /// therefore, the dcaXY, dcaZ are those already calculated in the track-propagation workflow
-        if (std::abs(trackSoftPi.dcaXY()) > softPiDcaXYMax || std::abs(trackSoftPi.dcaZ()) > softPiDcaZMax) {
-          return;
-        }
+        softPiDca[0] = trackSoftPi.dcaXY();
+        softPiDca[1] = trackSoftPi.dcaZ();
       } else {
         /// this is a reassigned track
         /// therefore we need to calculate the dcaXY, dcaZ with respect to this new primary vertex
@@ -296,17 +317,19 @@ struct HfCandidateCreatorSigmac0plusplus {
         auto trackParSoftPi = getTrackPar(trackSoftPi);
         std::array<float, 2> dcaInfo{-999., -999.};
         o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParSoftPi, 2.f, noMatCorr, &dcaInfo);
-        if (std::abs(dcaInfo[0]) > softPiDcaXYMax || std::abs(dcaInfo[1]) > softPiDcaZMax) {
-          return;
-        }
+        softPiDca[0] = dcaInfo[0];
+        softPiDca[1] = dcaInfo[1];
       }
     } else {
       /// this is a track originally assigned to the current collision
       /// therefore, the dcaXY, dcaZ are those already calculated in the track-propagation workflow
       /// No need to consider the time-reassociated tracks, since withTimeAssoc == false here
-      if (std::abs(trackSoftPi.dcaXY()) > softPiDcaXYMax || std::abs(trackSoftPi.dcaZ()) > softPiDcaZMax) {
-        return;
-      }
+      softPiDca[0] = trackSoftPi.dcaXY();
+      softPiDca[1] = trackSoftPi.dcaZ();
+    }
+    if (std::abs(softPiDca[0]) > softPiDcaXYMax || std::abs(softPiDca[1]) > softPiDcaZMax) {
+      /// soft-pion dca too large, reject the candidate
+      return;
     }
     histos.fill(HIST("hCounter"), 3);
 
@@ -314,10 +337,10 @@ struct HfCandidateCreatorSigmac0plusplus {
     if constexpr (withTimeAssoc) {
       /// need to group candidates manually
       auto candidatesThisColl = candidates.sliceBy(hf3ProngPerCollision, thisCollId);
-      makeSoftPiLcPair(trackSoftPi, candidatesThisColl, tracks);
+      makeSoftPiLcPair(softPiDca, trackSoftPi, candidatesThisColl, tracks);
     } else {
       /// tracks and candidates already grouped by collision at the level of process function
-      makeSoftPiLcPair(trackSoftPi, candidates, tracks);
+      makeSoftPiLcPair(softPiDca, trackSoftPi, candidates, tracks);
     }
 
   } /// end createSigmaC
@@ -394,7 +417,7 @@ struct HfCandidateSigmac0plusplusMc {
 
   using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
   using LambdacMc = soa::Join<aod::HfCand3Prong, aod::HfSelLc, aod::HfCand3ProngMcRec>;
-  // using LambdacMcGen = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>;
+  using McParticlesLcGenMatch = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>; // including response of particle matching to MC from candidate-creator-3-prong
   using McCollisionsNoCents = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels>;
 
   PresliceUnsorted<McCollisionsNoCents> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
@@ -443,9 +466,9 @@ struct HfCandidateSigmac0plusplusMc {
   /// @brief process function for MC matching of Σc0,++ → Λc+(→pK-π+) π- reconstructed candidates and counting of generated ones
   /// @param candidatesSigmac reconstructed Σc0,++ candidates
   /// @param mcParticles table of generated particles
-  void processMc(aod::McParticles const& mcParticles,
+  void processMc(McParticlesLcGenMatch const& mcParticles,
                  aod::TracksWMc const& tracks,
-                 LambdacMc const& candsLc /*, const LambdacMcGen&*/,
+                 LambdacMc const& candsLc,
                  McCollisionsNoCents const& collInfos,
                  aod::McCollisions const&,
                  BCsInfo const&)
@@ -563,9 +586,8 @@ struct HfCandidateSigmac0plusplusMc {
       /// In case of need, readapt the code templetizing the function
       auto mcCollision = particle.mcCollision();
       float centrality{-1.f};
-      uint16_t rejectionMask{0};
       const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
-      rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centrality);
+      const auto rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centrality);
       hfEvSelMc.fillHistograms<o2::hf_centrality::CentralityEstimator::None>(mcCollision, rejectionMask, 0);
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject gen particles from this collision
@@ -582,11 +604,11 @@ struct HfCandidateSigmac0plusplusMc {
       /// look for Σc0,++(2455)
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaC0, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
         // generated Σc0(2455)
-        for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& daughter : particle.daughters_as<McParticlesLcGenMatch>()) {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
             continue;
-          if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+          if (std::abs(daughter.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi);
             particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaC0);
@@ -595,11 +617,11 @@ struct HfCandidateSigmac0plusplusMc {
         }
       } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaCPlusPlus, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
         // generated Σc++(2455)
-        for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
+        for (const auto& daughter : particle.daughters_as<McParticlesLcGenMatch>()) {
           // look for Λc+ daughter decaying in pK-π+
           if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
             continue;
-          if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+          if (std::abs(daughter.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
             /// Λc+ daughter decaying in pK-π+ found!
             flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi);
             particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCPlusPlus);
@@ -612,11 +634,11 @@ struct HfCandidateSigmac0plusplusMc {
       if (flag == 0) {
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaCStar0, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiMinus)}, true, &sign, 1)) {
           // generated Σc0(2520)
-          for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
+          for (const auto& daughter : particle.daughters_as<McParticlesLcGenMatch>()) {
             // look for Λc+ daughter decaying in pK-π+
             if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
               continue;
-            if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+            if (std::abs(daughter.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
               /// Λc+ daughter decaying in pK-π+ found!
               flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi);
               particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCStar0);
@@ -625,11 +647,11 @@ struct HfCandidateSigmac0plusplusMc {
           }
         } else if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kSigmaCStarPlusPlus, std::array{static_cast<int>(Pdg::kLambdaCPlus), static_cast<int>(kPiPlus)}, true, &sign, 1)) {
           // generated Σc++(2520)
-          for (const auto& daughter : particle.daughters_as<aod::McParticles>()) {
+          for (const auto& daughter : particle.daughters_as<McParticlesLcGenMatch>()) {
             // look for Λc+ daughter decaying in pK-π+
             if (std::abs(daughter.pdgCode()) != Pdg::kLambdaCPlus)
               continue;
-            if (RecoDecay::isMatchedMCGen(mcParticles, daughter, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 2)) {
+            if (std::abs(daughter.flagMcMatchGen()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
               /// Λc+ daughter decaying in pK-π+ found!
               flag = sign * BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi);
               particleAntiparticle = isParticleAntiparticle(particle, Pdg::kSigmaCStarPlusPlus);

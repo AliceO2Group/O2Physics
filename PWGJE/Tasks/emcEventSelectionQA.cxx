@@ -13,16 +13,25 @@
 /// \brief Monitoring task for EMCAL event selection
 /// \author Markus Fasel <markus.fasel@cern.ch>, Oak Ridge National Laoratory
 
-#include <unordered_map>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
 #include "PWGJE/Core/utilsBcSelEMC.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <cstdint>
+#include <unordered_map>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
@@ -136,7 +145,7 @@ struct EmcEventSelectionQA {
       if (bc.runNumber() > mRun3MinNumber) {
         // in case of run3 not all BCs contain EMCAL data, require trigger selection also for min. bias
         // in addition select also L0/L1 triggers as triggers with EMCAL in reaodut
-        if (bc.alias_bit(kTVXinEMC) || bc.alias_bit(kEMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kDG1) || bc.alias_bit(kDG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2) || bc.alias_bit(kDJ1) || bc.alias_bit(kDJ2)) {
+        if (bc.alias_bit(kTVXinEMC) || bc.alias_bit(kEMC7) || bc.alias_bit(kDMC7) || bc.alias_bit(kEG1) || bc.alias_bit(kEG2) || bc.alias_bit(kDG1) || bc.alias_bit(kDG2) || bc.alias_bit(kEJ1) || bc.alias_bit(kEJ2) || bc.alias_bit(kDJ1) || bc.alias_bit(kDJ2)) {
           isEMCALreadout = true;
         }
       } else {

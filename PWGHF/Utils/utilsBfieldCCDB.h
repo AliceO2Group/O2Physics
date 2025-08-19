@@ -16,14 +16,13 @@
 #ifndef PWGHF_UTILS_UTILSBFIELDCCDB_H_
 #define PWGHF_UTILS_UTILSBFIELDCCDB_H_
 
-#include <fairlogger/Logger.h>
-
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DataFormatsParameters/GRPObject.h>
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/Logger.h>
 
 #include <string> // std::string
 
@@ -35,9 +34,12 @@
 /// \param lut is a pointer to the o2::base::MatLayerCylSet object
 /// \param isRun2 tells whether we are analysing Run2 converted data or not (different GRP object type)
 template <typename TBc>
-void initCCDB(TBc const& bc, int& mRunNumber,
-              o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, std::string const& ccdbPathGrp, o2::base::MatLayerCylSet* lut,
-              bool isRun2)
+void initCCDB(TBc const& bc,
+              int& mRunNumber,
+              o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb,
+              std::string const& ccdbPathGrp,
+              o2::base::MatLayerCylSet* lut,
+              const bool isRun2)
 {
   if (mRunNumber != bc.runNumber()) {
     LOGF(info, "====== initCCDB function called (isRun2==%d)", isRun2);
