@@ -177,6 +177,7 @@ struct PhotonChargedTriggerCorrelation {
   Preslice<aod::Hadrons> perColHadrons = aod::corr_particle::jetCollisionId;
   Preslice<aod::Pipms> perColPipms = aod::corr_particle::jetCollisionId;
   Preslice<aod::PhotonPCMs> perColPhotonPCMs = aod::corr_particle::jetCollisionId;
+  Preslice<aod::PhotonPCMPairs> perColPhotonPCMPairs = aod::corr_particle::jetCollisionId;
   Preslice<aod::JetParticles> perColMcParticles = aod::jmcparticle::mcCollisionId;
   Preslice<aod::TriggerParticles> perColTriggerParticles = aod::corr_particle::jetMcCollisionId;
 
@@ -270,7 +271,6 @@ struct PhotonChargedTriggerCorrelation {
     std::vector<std::vector<std::deque<MixingTrigger>>> savedTriggersZPvMult;
   };
 
-  size_t nTriggersThisDataFrame;
   MixingTriggerMemory mixingTriggerMemoryReco{nTriggerSavedForMixing.value, binsZPv.value, binsMult.value};
   MixingTriggerMemory mixingTriggerMemoryTrue{nTriggerSavedForMixing.value, binsZPvMcTrue.value, binsMult.value};
   MixingTriggerMemory mixingTriggerMemoryRecoColTrue{nTriggerSavedForMixing.value, binsZPvMcTrue.value, binsMult.value};
@@ -684,7 +684,7 @@ struct PhotonChargedTriggerCorrelation {
             typename T_funcMixing>
   void corrProcessMixing(T_collision const& collision, T_associatedThisEvent const& associatedThisEvent,
                          T_funcMixing&& funcMixing,
-                         size_t const nTriggerMixing)
+                         size_t const nTriggerMixing, size_t const nTriggersThisDataFrame)
   {
     // skip if event does not contain valid trigger
     if (doTrigEvMixing && !collision.trigEv())
@@ -752,11 +752,10 @@ struct PhotonChargedTriggerCorrelation {
 
   void processCorrFirst(CorrCollisions const& collisions, aod::Triggers const& triggers)
   {
-    // do at beginning of each data frame (before other correlation process functions)
+    // do at beginning of each data frame (before other reco correlation process functions)
     // (PROCESS_SWITCH of this process has to be declared first)
 
-    // set trigger counter
-    nTriggersThisDataFrame = triggers.size();
+    // [wow, such empty]
 
     for (auto const& collision : collisions) {
       // event selection
@@ -779,225 +778,263 @@ struct PhotonChargedTriggerCorrelation {
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrFirst, "process to gather info before correlation processes", false);
 
-  void processCorrHadron(CorrCollision const& collision, aod::Triggers const& triggers, aod::Hadrons const& hadrons)
+  void processCorrHadron(CorrCollisions const& collisions, aod::Triggers const& triggers, aod::Hadrons const& hadrons)
   {
-    // event selection
-    if (!collision.selEv())
-      return;
+    size_t const nTriggersThisDataFrame = triggers.size();
 
-    auto const funcPlain = [this]([[maybe_unused]] auto const& collision, auto const& associated) {
-      histos.fill(HIST("reco/plain/h3_ptPhiEta_hadron"),
-                  associated.pt(), associated.phi(), associated.eta(),
-                  getInvEff<EffParticleType::Hadron>(associated.pt()));
-    };
-    corrProcessPlain(collision, hadrons, funcPlain);
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
 
-    auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
-      // exclude self correlation
-      if (trigger.jetTrackId() == associated.jetTrackId())
-        return;
+      // group collision
+      auto const triggersThisEvent = triggers.sliceBy(perColTriggers, collision.globalIndex());
+      auto const hadronsThisEvent = hadrons.sliceBy(perColHadrons, collision.globalIndex());
 
-      histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_hadron"),
-                  associated.pt(), associated.phi(), associated.eta(),
-                  getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::Hadron>(associated.pt()));
-      histos.fill(HIST("reco/corr/h6_corr_hadron"),
-                  getDeltaPhi(trigger.phi(), associated.phi()),
-                  trigger.eta() - associated.eta(),
-                  trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                  getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::Hadron>(associated.pt()));
-    };
-    corrProcessCorrelation(collision, triggers, hadrons, funcCorrelation);
+      auto const funcPlain = [this]([[maybe_unused]] auto const& collision, auto const& associated) {
+        histos.fill(HIST("reco/plain/h3_ptPhiEta_hadron"),
+                    associated.pt(), associated.phi(), associated.eta(),
+                    getInvEff<EffParticleType::Hadron>(associated.pt()));
+      };
+      corrProcessPlain(collision, hadronsThisEvent, funcPlain);
 
-    auto const funcMixing = [this](auto const& collision,
-                                   float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
-      histos.fill(HIST("reco/corr/h6_mix_hadron"),
-                  getDeltaPhi(mixingTriggerPhi, associated.phi()),
-                  mixingTriggerEta - associated.eta(),
-                  mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                  perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt) * getInvEff<EffParticleType::Hadron>(associated.pt()));
-    };
-    corrProcessMixing(collision, hadrons, funcMixing, nTriggerMixingHadron);
+      auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
+        // exclude self correlation
+        if (trigger.jetTrackId() == associated.jetTrackId())
+          return;
+
+        histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_hadron"),
+                    associated.pt(), associated.phi(), associated.eta(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::Hadron>(associated.pt()));
+        histos.fill(HIST("reco/corr/h6_corr_hadron"),
+                    getDeltaPhi(trigger.phi(), associated.phi()),
+                    trigger.eta() - associated.eta(),
+                    trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::Hadron>(associated.pt()));
+      };
+      corrProcessCorrelation(collision, triggersThisEvent, hadronsThisEvent, funcCorrelation);
+
+      auto const funcMixing = [this](auto const& collision,
+                                     float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
+        histos.fill(HIST("reco/corr/h6_mix_hadron"),
+                    getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                    mixingTriggerEta - associated.eta(),
+                    mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                    perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt) * getInvEff<EffParticleType::Hadron>(associated.pt()));
+      };
+      corrProcessMixing(collision, hadronsThisEvent, funcMixing, nTriggerMixingHadron, nTriggersThisDataFrame);
+    }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrHadron, "process standard correlation for associated hardons", false);
 
-  void processCorrPipm(CorrCollision const& collision, aod::Triggers const& triggers, aod::Pipms const& pipms)
+  void processCorrPipm(CorrCollisions const& collisions, aod::Triggers const& triggers, aod::Pipms const& pipms)
   {
-    // event selection
-    if (!collision.selEv())
-      return;
+    size_t const nTriggersThisDataFrame = triggers.size();
 
-    auto const funcPlain = [this]([[maybe_unused]] auto const& collision, auto const& associated) {
-      histos.fill(HIST("reco/plain/h3_ptPhiEta_pipm"),
-                  associated.pt(), associated.phi(), associated.eta(),
-                  getInvEff<EffParticleType::Pipm>(associated.pt()));
-    };
-    corrProcessPlain(collision, pipms, funcPlain);
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
 
-    auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
-      // exclude self correlation
-      if (trigger.jetTrackId() == associated.jetTrackId())
-        return;
+      // group collision
+      auto const triggersThisEvent = triggers.sliceBy(perColTriggers, collision.globalIndex());
+      auto const pipmsThisEvent = pipms.sliceBy(perColPipms, collision.globalIndex());
 
-      histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pipm"),
-                  associated.pt(), associated.phi(), associated.eta(),
-                  getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::Pipm>(associated.pt()));
-      histos.fill(HIST("reco/corr/h6_corr_pipm"),
-                  getDeltaPhi(trigger.phi(), associated.phi()),
-                  trigger.eta() - associated.eta(),
-                  trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                  getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::Pipm>(associated.pt()));
-    };
-    corrProcessCorrelation(collision, triggers, pipms, funcCorrelation);
+      auto const funcPlain = [this]([[maybe_unused]] auto const& collision, auto const& associated) {
+        histos.fill(HIST("reco/plain/h3_ptPhiEta_pipm"),
+                    associated.pt(), associated.phi(), associated.eta(),
+                    getInvEff<EffParticleType::Pipm>(associated.pt()));
+      };
+      corrProcessPlain(collision, pipmsThisEvent, funcPlain);
 
-    auto const funcMixing = [this](auto const& collision,
-                                   float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
-      histos.fill(HIST("reco/corr/h6_mix_pipm"),
-                  getDeltaPhi(mixingTriggerPhi, associated.phi()),
-                  mixingTriggerEta - associated.eta(),
-                  mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                  perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt) * getInvEff<EffParticleType::Pipm>(associated.pt()));
-    };
-    corrProcessMixing(collision, pipms, funcMixing, nTriggerMixingPipm);
+      auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
+        // exclude self correlation
+        if (trigger.jetTrackId() == associated.jetTrackId())
+          return;
+
+        histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pipm"),
+                    associated.pt(), associated.phi(), associated.eta(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::Pipm>(associated.pt()));
+        histos.fill(HIST("reco/corr/h6_corr_pipm"),
+                    getDeltaPhi(trigger.phi(), associated.phi()),
+                    trigger.eta() - associated.eta(),
+                    trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::Pipm>(associated.pt()));
+      };
+      corrProcessCorrelation(collision, triggersThisEvent, pipmsThisEvent, funcCorrelation);
+
+      auto const funcMixing = [this](auto const& collision,
+                                     float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
+        histos.fill(HIST("reco/corr/h6_mix_pipm"),
+                    getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                    mixingTriggerEta - associated.eta(),
+                    mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                    perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt) * getInvEff<EffParticleType::Pipm>(associated.pt()));
+      };
+      corrProcessMixing(collision, pipmsThisEvent, funcMixing, nTriggerMixingPipm, nTriggersThisDataFrame);
+    }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPipm, "process standard correlation for associated pipm", false);
 
-  void processCorrPhotonPCM(CorrCollision const& collision, aod::Triggers const& triggers, aod::PhotonPCMs const& photonPCMs)
+  void processCorrPhotonPCM(CorrCollisions const& collisions, aod::Triggers const& triggers, aod::PhotonPCMs const& photonPCMs)
   {
-    // event selection
-    if (!collision.selEv())
-      return;
+    size_t const nTriggersThisDataFrame = triggers.size();
 
-    auto const funcPlain = [this]([[maybe_unused]] auto const& collision, auto const& associated) {
-      histos.fill(HIST("reco/plain/h3_ptPhiEta_photonPCM"),
-                  associated.pt(), associated.phi(), associated.eta(),
-                  getInvEff<EffParticleType::PhotonPCM>(associated.pt()));
-    };
-    corrProcessPlain(collision, photonPCMs, funcPlain);
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
 
-    auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
-      // exclude self correlation
-      if (trigger.jetTrackId() == associated.posTrackId() || trigger.jetTrackId() == associated.negTrackId())
-        return;
+      // group collision
+      auto const triggersThisEvent = triggers.sliceBy(perColTriggers, collision.globalIndex());
+      auto const photonPCMsThisEvent = photonPCMs.sliceBy(perColPhotonPCMs, collision.globalIndex());
 
-      histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_photonPCM"),
-                  associated.pt(), associated.phi(), associated.eta(),
-                  getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::PhotonPCM>(associated.pt()));
-      histos.fill(HIST("reco/corr/h6_corr_photonPCM"),
-                  getDeltaPhi(trigger.phi(), associated.phi()),
-                  trigger.eta() - associated.eta(),
-                  trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                  getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::PhotonPCM>(associated.pt()));
-    };
-    corrProcessCorrelation(collision, triggers, photonPCMs, funcCorrelation);
+      auto const funcPlain = [this]([[maybe_unused]] auto const& collision, auto const& associated) {
+        histos.fill(HIST("reco/plain/h3_ptPhiEta_photonPCM"),
+                    associated.pt(), associated.phi(), associated.eta(),
+                    getInvEff<EffParticleType::PhotonPCM>(associated.pt()));
+      };
+      corrProcessPlain(collision, photonPCMsThisEvent, funcPlain);
 
-    auto const funcMixing = [this](auto const& collision,
-                                   float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
-      histos.fill(HIST("reco/corr/h6_mix_photonPCM"),
-                  getDeltaPhi(mixingTriggerPhi, associated.phi()),
-                  mixingTriggerEta - associated.eta(),
-                  mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                  perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt) * getInvEff<EffParticleType::PhotonPCM>(associated.pt()));
-    };
-    corrProcessMixing(collision, photonPCMs, funcMixing, nTriggerMixingPhotonPCM);
+      auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
+        // exclude self correlation
+        if (trigger.jetTrackId() == associated.posTrackId() || trigger.jetTrackId() == associated.negTrackId())
+          return;
+
+        histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_photonPCM"),
+                    associated.pt(), associated.phi(), associated.eta(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::PhotonPCM>(associated.pt()));
+        histos.fill(HIST("reco/corr/h6_corr_photonPCM"),
+                    getDeltaPhi(trigger.phi(), associated.phi()),
+                    trigger.eta() - associated.eta(),
+                    trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()) * getInvEff<EffParticleType::PhotonPCM>(associated.pt()));
+      };
+      corrProcessCorrelation(collision, triggersThisEvent, photonPCMsThisEvent, funcCorrelation);
+
+      auto const funcMixing = [this](auto const& collision,
+                                     float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
+        histos.fill(HIST("reco/corr/h6_mix_photonPCM"),
+                    getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                    mixingTriggerEta - associated.eta(),
+                    mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                    perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt) * getInvEff<EffParticleType::PhotonPCM>(associated.pt()));
+      };
+      corrProcessMixing(collision, photonPCMsThisEvent, funcMixing, nTriggerMixingPhotonPCM, nTriggersThisDataFrame);
+    }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPhotonPCM, "process standard correlation for associated photonPCM", false);
 
-  void processCorrPhotonPCMPair(CorrCollision const& collision, aod::Triggers const& triggers, aod::PhotonPCMPairs const& photonPCMPairs)
+  void processCorrPhotonPCMPair(CorrCollisions const& collisions, aod::Triggers const& triggers, aod::PhotonPCMPairs const& photonPCMPairs)
   {
-    // event selection
-    if (!collision.selEv())
-      return;
+    size_t const nTriggersThisDataFrame = triggers.size();
 
-    auto const funcPlain = [this](auto const& collision, auto const& associated) {
-      histos.fill(HIST("reco/plain/h4_ptMggZPvMult_photonPCMPair"), associated.pt(), associated.mgg(), collision.posZ(), collision.nGlobalTracks());
-    };
-    corrProcessPlain(collision, photonPCMPairs, funcPlain);
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
 
-    auto const funcPlainTrigEv = [this](auto const& collision, auto const& associated) {
-      histos.fill(HIST("reco/plain/h4_ptMggZPvMult_trigEv_photonPCMPair"), associated.pt(), associated.mgg(), collision.posZ(), collision.nGlobalTracks());
-    };
-    if (collision.trigEv())
-      corrProcessPlain(collision, photonPCMPairs, funcPlainTrigEv);
+      // group collision
+      auto const triggersThisEvent = triggers.sliceBy(perColTriggers, collision.globalIndex());
+      auto const photonPCMPairsThisEvent = photonPCMPairs.sliceBy(perColPhotonPCMPairs, collision.globalIndex());
 
-    auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
-      // exclude self correlation
-      if (trigger.jetTrackId() == associated.posTrack1Id() || trigger.jetTrackId() == associated.negTrack1Id() ||
-          trigger.jetTrackId() == associated.negTrack2Id() || trigger.jetTrackId() == associated.posTrack2Id())
-        return;
+      auto const funcPlain = [this](auto const& collision, auto const& associated) {
+        histos.fill(HIST("reco/plain/h4_ptMggZPvMult_photonPCMPair"), associated.pt(), associated.mgg(), collision.posZ(), collision.nGlobalTracks());
+      };
+      corrProcessPlain(collision, photonPCMPairsThisEvent, funcPlain);
 
-      histos.fill(HIST("reco/corr/h4_ptMggZPvMult_assoc_photonPCMPair"),
-                  associated.pt(), associated.mgg(), collision.posZ(), collision.nGlobalTracks(),
-                  getInvEff<EffParticleType::Trigger>(trigger.pt()));
+      auto const funcPlainTrigEv = [this](auto const& collision, auto const& associated) {
+        histos.fill(HIST("reco/plain/h4_ptMggZPvMult_trigEv_photonPCMPair"), associated.pt(), associated.mgg(), collision.posZ(), collision.nGlobalTracks());
+      };
+      if (collision.trigEv())
+        corrProcessPlain(collision, photonPCMPairsThisEvent, funcPlainTrigEv);
 
-      // pi0
-      if (checkMassRange<MassRange::pi0PCMPeak>(associated.mgg())) {
-        histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pi0PCMPeak"),
-                    associated.pt(), associated.phi(), associated.eta(),
-                    getInvEff<EffParticleType::Trigger>(trigger.pt()));
-        histos.fill(HIST("reco/corr/h6_corr_pi0PCMPeak"),
-                    getDeltaPhi(trigger.phi(), associated.phi()),
-                    trigger.eta() - associated.eta(),
-                    trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                    getInvEff<EffParticleType::Trigger>(trigger.pt()));
-      } else if (checkMassRange<MassRange::pi0PCMSide>(associated.mgg())) {
-        histos.fill(HIST("reco/corr/h6_corr_pi0PCMSide"),
-                    getDeltaPhi(trigger.phi(), associated.phi()),
-                    trigger.eta() - associated.eta(),
-                    trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                    getInvEff<EffParticleType::Trigger>(trigger.pt()));
-      }
-      // eta
-      else if (checkMassRange<MassRange::etaPCMPeak>(associated.mgg())) {
-        histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_etaPCMPeak"),
-                    associated.pt(), associated.phi(), associated.eta(),
-                    getInvEff<EffParticleType::Trigger>(trigger.pt()));
-        histos.fill(HIST("reco/corr/h6_corr_etaPCMPeak"),
-                    getDeltaPhi(trigger.phi(), associated.phi()),
-                    trigger.eta() - associated.eta(),
-                    trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                    getInvEff<EffParticleType::Trigger>(trigger.pt()));
-      } else if (checkMassRange<MassRange::etaPCMSide>(associated.mgg())) {
-        histos.fill(HIST("reco/corr/h6_corr_etaPCMSide"),
-                    getDeltaPhi(trigger.phi(), associated.phi()),
-                    trigger.eta() - associated.eta(),
-                    trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                    getInvEff<EffParticleType::Trigger>(trigger.pt()));
-      }
-    };
-    corrProcessCorrelation(collision, triggers, photonPCMPairs, funcCorrelation);
+      auto const funcCorrelation = [this](auto const& collision, auto const& trigger, auto const& associated) {
+        // exclude self correlation
+        if (trigger.jetTrackId() == associated.posTrack1Id() || trigger.jetTrackId() == associated.negTrack1Id() ||
+            trigger.jetTrackId() == associated.negTrack2Id() || trigger.jetTrackId() == associated.posTrack2Id())
+          return;
 
-    auto const funcMixing = [this](auto const& collision,
-                                   float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
-      // pi0
-      if (checkMassRange<MassRange::pi0PCMPeak>(associated.mgg())) {
-        histos.fill(HIST("reco/corr/h6_mix_pi0PCMPeak"),
-                    getDeltaPhi(mixingTriggerPhi, associated.phi()),
-                    mixingTriggerEta - associated.eta(),
-                    mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                    perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
-      } else if (checkMassRange<MassRange::pi0PCMSide>(associated.mgg())) {
-        histos.fill(HIST("reco/corr/h6_mix_pi0PCMSide"),
-                    getDeltaPhi(mixingTriggerPhi, associated.phi()),
-                    mixingTriggerEta - associated.eta(),
-                    mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                    perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
-      }
-      // eta
-      else if (checkMassRange<MassRange::etaPCMPeak>(associated.mgg())) {
-        histos.fill(HIST("reco/corr/h6_mix_etaPCMPeak"),
-                    getDeltaPhi(mixingTriggerPhi, associated.phi()),
-                    mixingTriggerEta - associated.eta(),
-                    mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                    perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
-      } else if (checkMassRange<MassRange::etaPCMSide>(associated.mgg())) {
-        histos.fill(HIST("reco/corr/h6_mix_etaPCMSide"),
-                    getDeltaPhi(mixingTriggerPhi, associated.phi()),
-                    mixingTriggerEta - associated.eta(),
-                    mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
-                    perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
-      }
-    };
-    corrProcessMixing(collision, photonPCMPairs, funcMixing, nTriggerMixingH0PCM);
+        histos.fill(HIST("reco/corr/h4_ptMggZPvMult_assoc_photonPCMPair"),
+                    associated.pt(), associated.mgg(), collision.posZ(), collision.nGlobalTracks(),
+                    getInvEff<EffParticleType::Trigger>(trigger.pt()));
+
+        // pi0
+        if (checkMassRange<MassRange::pi0PCMPeak>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pi0PCMPeak"),
+                      associated.pt(), associated.phi(), associated.eta(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          histos.fill(HIST("reco/corr/h6_corr_pi0PCMPeak"),
+                      getDeltaPhi(trigger.phi(), associated.phi()),
+                      trigger.eta() - associated.eta(),
+                      trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+        } else if (checkMassRange<MassRange::pi0PCMSide>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pi0PCMSide"),
+                      associated.pt(), associated.phi(), associated.eta(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          histos.fill(HIST("reco/corr/h6_corr_pi0PCMSide"),
+                      getDeltaPhi(trigger.phi(), associated.phi()),
+                      trigger.eta() - associated.eta(),
+                      trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+        }
+        // eta
+        else if (checkMassRange<MassRange::etaPCMPeak>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_etaPCMPeak"),
+                      associated.pt(), associated.phi(), associated.eta(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          histos.fill(HIST("reco/corr/h6_corr_etaPCMPeak"),
+                      getDeltaPhi(trigger.phi(), associated.phi()),
+                      trigger.eta() - associated.eta(),
+                      trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+        } else if (checkMassRange<MassRange::etaPCMSide>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_etaPCMSide"),
+                      associated.pt(), associated.phi(), associated.eta(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          histos.fill(HIST("reco/corr/h6_corr_etaPCMSide"),
+                      getDeltaPhi(trigger.phi(), associated.phi()),
+                      trigger.eta() - associated.eta(),
+                      trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      getInvEff<EffParticleType::Trigger>(trigger.pt()));
+        }
+      };
+      corrProcessCorrelation(collision, triggersThisEvent, photonPCMPairsThisEvent, funcCorrelation);
+
+      auto const funcMixing = [this](auto const& collision,
+                                     float const mixingTriggerPt, float const mixingTriggerPhi, float const mixingTriggerEta, auto const& associated, auto const perTriggerWeight) {
+        // pi0
+        if (checkMassRange<MassRange::pi0PCMPeak>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h6_mix_pi0PCMPeak"),
+                      getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                      mixingTriggerEta - associated.eta(),
+                      mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
+        } else if (checkMassRange<MassRange::pi0PCMSide>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h6_mix_pi0PCMSide"),
+                      getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                      mixingTriggerEta - associated.eta(),
+                      mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
+        }
+        // eta
+        else if (checkMassRange<MassRange::etaPCMPeak>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h6_mix_etaPCMPeak"),
+                      getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                      mixingTriggerEta - associated.eta(),
+                      mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
+        } else if (checkMassRange<MassRange::etaPCMSide>(associated.mgg())) {
+          histos.fill(HIST("reco/corr/h6_mix_etaPCMSide"),
+                      getDeltaPhi(mixingTriggerPhi, associated.phi()),
+                      mixingTriggerEta - associated.eta(),
+                      mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
+                      perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
+        }
+      };
+      corrProcessMixing(collision, photonPCMPairsThisEvent, funcMixing, nTriggerMixingH0PCM, nTriggersThisDataFrame);
+    }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processCorrPhotonPCMPair, "process standard correlation for associated pi0PCM", false);
 
@@ -1151,98 +1188,114 @@ struct PhotonChargedTriggerCorrelation {
     }
   }
 
-  void processMcTrueCorr(CorrMcCollision const& mcCollision, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
+  void processMcTrueCorr(CorrMcCollisions const& mcCollisions, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
   {
-    // trigger pairing loop
-    for (auto const& trigger : triggerParticles) {
-      // trigger info
-      histos.fill(HIST("mc/true/corr/h3_ptPhiEta_trig"), trigger.pt(), trigger.phi(), trigger.eta());
+    for (auto const& mcCollision : mcCollisions) {
+      // group collision
+      auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, mcCollision.globalIndex());
+      auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, mcCollision.globalIndex());
 
-      // save trigger for mixing
-      mixingTriggerMemoryTrue.saveTrigger(trigger.pt(), trigger.phi(), trigger.eta(), mcCollision.posZ(), mcCollision.nChargedInEtaRange());
+      // trigger pairing loop
+      for (auto const& trigger : triggerParticlesThisEvent) {
+        // trigger info
+        histos.fill(HIST("mc/true/corr/h3_ptPhiEta_trig"), trigger.pt(), trigger.phi(), trigger.eta());
 
-      for (auto const& associated : mcParticles) {
-        // exclude self correlation
-        if (trigger.jetMcParticleId() == associated.globalIndex())
-          continue;
+        // save trigger for mixing
+        mixingTriggerMemoryTrue.saveTrigger(trigger.pt(), trigger.phi(), trigger.eta(), mcCollision.posZ(), mcCollision.nChargedInEtaRange());
 
-        fillMcCorrHists<McCorrEventType::True, McCorrCorrelationType::Correlation>(mcCollision, trigger, associated, 1);
+        for (auto const& associated : mcParticlesThisEvent) {
+          // exclude self correlation
+          if (trigger.jetMcParticleId() == associated.globalIndex())
+            continue;
+
+          fillMcCorrHists<McCorrEventType::True, McCorrCorrelationType::Correlation>(mcCollision, trigger, associated, 1);
+        }
       }
     }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processMcTrueCorr, "process mc-true (all collisions) correlation for multiple associated particles", false);
 
-  void processMcTrueMix(CorrMcCollision const& mcCollision, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
+  void processMcTrueMix(CorrMcCollisions const& mcCollisions, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
   {
-    const size_t nTriggersThisCollision = triggerParticles.size();
-    auto savedTriggers = mixingTriggerMemoryTrue.getTriggers(mcCollision.posZ(), mcCollision.nChargedInEtaRange());
-    const size_t mixUpToTriggerN = std::min(savedTriggers.size(), static_cast<size_t>(nTriggerMixingMcTrue) + nTriggersThisCollision);
-    const float perTriggerWeight = 1. / (mixUpToTriggerN - nTriggersThisCollision);
+    for (auto const& mcCollision : mcCollisions) {
+      // group collision
+      auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, mcCollision.globalIndex());
+      auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, mcCollision.globalIndex());
 
-    // trigger loop
-    for (size_t i_mixingTrigger = nTriggersThisCollision; i_mixingTrigger < mixUpToTriggerN; i_mixingTrigger++) {
-      MixingTrigger const& mixingTrigger = savedTriggers[i_mixingTrigger];
-      for (auto const& associated : mcParticles) {
-        fillMcCorrHists<McCorrEventType::True, McCorrCorrelationType::Mixing>(mcCollision, mixingTrigger, associated, perTriggerWeight);
+      const size_t nTriggerParticlesThisDataFrame = triggerParticles.size();
+      auto savedTriggers = mixingTriggerMemoryTrue.getTriggers(mcCollision.posZ(), mcCollision.nChargedInEtaRange());
+      const size_t mixUpToTriggerN = std::min(savedTriggers.size(), static_cast<size_t>(nTriggerMixingMcTrue) + nTriggerParticlesThisDataFrame);
+      const float perTriggerWeight = 1. / (mixUpToTriggerN - nTriggerParticlesThisDataFrame);
+
+      // trigger loop
+      for (size_t i_mixingTrigger = nTriggerParticlesThisDataFrame; i_mixingTrigger < mixUpToTriggerN; i_mixingTrigger++) {
+        MixingTrigger const& mixingTrigger = savedTriggers[i_mixingTrigger];
+        for (auto const& associated : mcParticlesThisEvent) {
+          fillMcCorrHists<McCorrEventType::True, McCorrCorrelationType::Mixing>(mcCollision, mixingTrigger, associated, perTriggerWeight);
+        }
       }
     }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processMcTrueMix, "process mc-true (all collisions) correlation mixing for multiple associated particles", false);
 
-  void processMcRecoColTrueCorr(CorrMcDCollision const& collision, CorrMcCollisions const&, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
+  void processMcRecoColTrueCorr(CorrMcDCollisions const& collisions, CorrMcCollisions const&, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
   {
-    // event selection
-    if (!collision.selEv())
-      return;
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
 
-    // group collision
-    auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, collision.mcCollisionId());
-    auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollisionId());
+      // group collision
+      auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, collision.mcCollisionId());
+      auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollisionId());
 
-    auto const& mcCollision = collision.mcCollision_as<CorrMcCollisions>();
+      auto const& mcCollision = collision.mcCollision_as<CorrMcCollisions>();
 
-    // trigger pairing loop
-    for (auto const& trigger : triggerParticlesThisEvent) {
-      // trigger info
-      histos.fill(HIST("mc/recoCol_true/corr/h3_ptPhiEta_trig"), trigger.pt(), trigger.phi(), trigger.eta());
+      // trigger pairing loop
+      for (auto const& trigger : triggerParticlesThisEvent) {
+        // trigger info
+        histos.fill(HIST("mc/recoCol_true/corr/h3_ptPhiEta_trig"), trigger.pt(), trigger.phi(), trigger.eta());
 
-      // save trigger for mixing
-      mixingTriggerMemoryRecoColTrue.saveTrigger(trigger.pt(), trigger.phi(), trigger.eta(), mcCollision.posZ(), mcCollision.nChargedInEtaRange());
+        // save trigger for mixing
+        mixingTriggerMemoryRecoColTrue.saveTrigger(trigger.pt(), trigger.phi(), trigger.eta(), mcCollision.posZ(), mcCollision.nChargedInEtaRange());
 
-      // hadrons (tracks) and pipm
-      for (auto const& associated : mcParticlesThisEvent) {
-        // exclude self correlation
-        if (trigger.jetMcParticleId() == associated.globalIndex())
-          continue;
+        // hadrons (tracks) and pipm
+        for (auto const& associated : mcParticlesThisEvent) {
+          // exclude self correlation
+          if (trigger.jetMcParticleId() == associated.globalIndex())
+            continue;
 
-        fillMcCorrHists<McCorrEventType::RecoColTrue, McCorrCorrelationType::Correlation>(mcCollision, trigger, associated, 1);
+          fillMcCorrHists<McCorrEventType::RecoColTrue, McCorrCorrelationType::Correlation>(mcCollision, trigger, associated, 1);
+        }
       }
     }
   }
   PROCESS_SWITCH(PhotonChargedTriggerCorrelation, processMcRecoColTrueCorr, "process mc-true (reco collisions) correlation for multiple associated particles", false);
 
-  void processMcRecoColTrueMix(CorrMcDCollision const& collision, CorrMcCollisions const&, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
+  void processMcRecoColTrueMix(CorrMcDCollisions const& collisions, CorrMcCollisions const&, aod::TriggerParticles const& triggerParticles, aod::JetParticles const& mcParticles)
   {
-    // event selection
-    if (!collision.selEv())
-      return;
+    for (auto const& collision : collisions) {
+      // event selection
+      if (!collision.selEv())
+        continue;
 
-    // group collision
-    auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, collision.mcCollisionId());
-    auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollisionId());
+      // group collision
+      auto const triggerParticlesThisEvent = triggerParticles.sliceBy(perColTriggerParticles, collision.mcCollisionId());
+      auto const mcParticlesThisEvent = mcParticles.sliceBy(perColMcParticles, collision.mcCollisionId());
 
-    auto const& mcCollision = collision.mcCollision_as<CorrMcCollisions>();
+      auto const& mcCollision = collision.mcCollision_as<CorrMcCollisions>();
 
-    const size_t nTriggersThisCollision = triggerParticlesThisEvent.size();
-    auto savedTriggers = mixingTriggerMemoryRecoColTrue.getTriggers(mcCollision.posZ(), mcCollision.nChargedInEtaRange());
-    const size_t mixUpToTriggerN = std::min(savedTriggers.size(), static_cast<size_t>(nTriggerMixingMcTrue) + nTriggersThisCollision);
-    const float perTriggerWeight = 1. / (mixUpToTriggerN - nTriggersThisCollision);
+      const size_t nTriggerParticlesThisDataFrame = triggerParticles.size();
+      auto savedTriggers = mixingTriggerMemoryRecoColTrue.getTriggers(mcCollision.posZ(), mcCollision.nChargedInEtaRange());
+      const size_t mixUpToTriggerN = std::min(savedTriggers.size(), static_cast<size_t>(nTriggerMixingMcTrue) + nTriggerParticlesThisDataFrame);
+      const float perTriggerWeight = 1. / (mixUpToTriggerN - nTriggerParticlesThisDataFrame);
 
-    // trigger loop
-    for (size_t i_mixingTrigger = nTriggersThisCollision; i_mixingTrigger < mixUpToTriggerN; i_mixingTrigger++) {
-      MixingTrigger const& mixingTrigger = savedTriggers[i_mixingTrigger];
-      for (auto const& associated : mcParticlesThisEvent) {
-        fillMcCorrHists<McCorrEventType::RecoColTrue, McCorrCorrelationType::Mixing>(mcCollision, mixingTrigger, associated, perTriggerWeight);
+      // trigger loop
+      for (size_t i_mixingTrigger = nTriggerParticlesThisDataFrame; i_mixingTrigger < mixUpToTriggerN; i_mixingTrigger++) {
+        MixingTrigger const& mixingTrigger = savedTriggers[i_mixingTrigger];
+        for (auto const& associated : mcParticlesThisEvent) {
+          fillMcCorrHists<McCorrEventType::RecoColTrue, McCorrCorrelationType::Mixing>(mcCollision, mixingTrigger, associated, perTriggerWeight);
+        }
       }
     }
   }
