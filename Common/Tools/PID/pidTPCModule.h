@@ -18,8 +18,8 @@
 /// \author Annalena Kalteyer annalena.sophie.kalteyer@cern.ch
 /// \author Jeremy Wilkinson jeremy.wilkinson@cern.ch
 
-#ifndef COMMON_TOOLS_PIDTPCMODULE_H_
-#define COMMON_TOOLS_PIDTPCMODULE_H_
+#ifndef COMMON_TABLEPRODUCER_PID_PIDTPCMODULE_H_
+#define COMMON_TABLEPRODUCER_PID_PIDTPCMODULE_H_
 
 #include "MetadataHelper.h"
 #include "TableHelper.h"
@@ -789,4 +789,4 @@ class pidTPCModule
 } // namespace pid
 } // namespace o2::aod
 
-#endif // COMMON_TOOLS_PIDTPCMODULE_H_
+#endif // COMMON_TABLEPRODUCER_PID_PIDTPCMODULE_H_
