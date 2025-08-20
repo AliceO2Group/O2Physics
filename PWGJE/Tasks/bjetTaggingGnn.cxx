@@ -57,6 +57,9 @@ struct BjetTaggingGnn {
   Configurable<float> trackEtaMin{"trackEtaMin", -0.9, "minimum track eta"};
   Configurable<float> trackEtaMax{"trackEtaMax", 0.9, "maximum track eta"};
 
+  Configurable<float> maxIPxy{"maxIPxy", 10, "maximum track DCA in xy plane"};
+  Configurable<float> maxIPz{"maxIPz", 10, "maximum track DCA in z direction"};
+
   Configurable<float> trackNppCrit{"trackNppCrit", 0.95, "track not physical primary ratio"};
 
   // sv level configurables
@@ -167,7 +170,7 @@ struct BjetTaggingGnn {
     int nTracks = 0;
     for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
 
-      if (constituent.pt() < trackPtMin) {
+      if (constituent.pt() < trackPtMin || !jettaggingutilities::trackAcceptanceWithDca(constituent, maxIPxy, maxIPz)) {
         continue;
       }
 
