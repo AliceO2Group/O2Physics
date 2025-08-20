@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorXic0XicpToHadronic.cxx
+/// \file candidateSelectorToXiPiQA.cxx
 /// \brief Selection of Xic0 and Xicp candidates
 ///
 /// \author Jinhyun Park <jinhyun.park@cern.ch>, Pusan National University
@@ -60,7 +60,8 @@ enum PidInfoStored {
 };
 
 /// Struct for applying Omegac0/Xic0 selection cuts
-struct HfCandidateSelectorXic0XicpToHadronic {
+struct HfCandidateSelectorToXiPiQA {
+
   // DCAFitter
   Produces<aod::HfSelToXiPi> hfSelToXiPi;
   // KFParticle
@@ -87,43 +88,7 @@ struct HfCandidateSelectorXic0XicpToHadronic {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   // LF analysis selections
-  // Configurable<double> radiusCascMin{"radiusCascMin", 0.6, "Min cascade radius"};
-  // Configurable<double> radiusV0Min{"radiusV0Min", 1.2, "Min V0 radius"};
-  // Configurable<double> cosPAV0Min{"cosPAV0Min", 0.97, "Min valueCosPA V0"};
-  // Configurable<double> cosPACascMin{"cosPACascMin", 0.97, "Min value CosPA cascade"};
-  // Configurable<double> dcaCascDauMax{"dcaCascDauMax", 1.0, "Max DCA cascade daughters"};
-  // Configurable<double> dcaV0DauMax{"dcaV0DauMax", 1.0, "Max DCA V0 daughters"};
-  // Configurable<float> dcaBachToPvMin{"dcaBachToPvMin", 0.04, "DCA Bach To PV"};
-  // Configurable<float> dcaNegToPvMin{"dcaNegToPvMin", 0.06, "DCA Neg To PV"};
-  // Configurable<float> dcaPosToPvMin{"dcaPosToPvMin", 0.06, "DCA Pos To PV"};
-  // Configurable<float> v0MassWindow{"v0MassWindow", 0.01, "V0 mass window"};
-  // Configurable<float> cascadeMassWindow{"cascadeMassWindow", 0.01, "Cascade mass window"};
   Configurable<bool> applyTrkSelLf{"applyTrkSelLf", true, "Apply track selection for LF daughters"};
-
-  // // limit charm baryon invariant mass spectrum
-  // Configurable<double> invMassCharmBaryonMin{"invMassCharmBaryonMin", 2.0, "Lower limit invariant mass spectrum charm baryon"}; // 2.4 Omegac0 only
-  // Configurable<double> invMassCharmBaryonMax{"invMassCharmBaryonMax", 3.1, "Upper limit invariant mass spectrum charm baryon"};
-
-  // // kinematic selections
-  // Configurable<double> etaTrackCharmBachMax{"etaTrackCharmBachMax", 0.8, "Max absolute value of eta for charm baryon bachelor"};
-  // Configurable<double> etaTrackLFDauMax{"etaTrackLFDauMax", 1.0, "Max absolute value of eta for V0 and cascade daughters"};
-  // Configurable<double> ptPiFromCascMin{"ptPiFromCascMin", 0.15, "Min pT pi <- casc"};
-  // Configurable<double> ptPiFromCharmBaryonMin{"ptPiFromCharmBaryonMin", 0.2, "Min pT pi <- charm baryon"};
-
-  // Configurable<double> impactParameterXYPiFromCharmBaryonMin{"impactParameterXYPiFromCharmBaryonMin", 0., "Min dcaxy pi from charm baryon track to PV"};
-  // Configurable<double> impactParameterXYPiFromCharmBaryonMax{"impactParameterXYPiFromCharmBaryonMax", 10., "Max dcaxy pi from charm baryon track to PV"};
-  // Configurable<double> impactParameterZPiFromCharmBaryonMin{"impactParameterZPiFromCharmBaryonMin", 0., "Min dcaz pi from charm baryon track to PV"};
-  // Configurable<double> impactParameterZPiFromCharmBaryonMax{"impactParameterZPiFromCharmBaryonMax", 10., "Max dcaz pi from charm baryon track to PV"};
-
-  // Configurable<double> impactParameterXYCascMin{"impactParameterXYCascMin", 0., "Min dcaxy cascade track to PV"};
-  // Configurable<double> impactParameterXYCascMax{"impactParameterXYCascMax", 10., "Max dcaxy cascade track to PV"};
-  // Configurable<double> impactParameterZCascMin{"impactParameterZCascMin", 0., "Min dcaz cascade track to PV"};
-  // Configurable<double> impactParameterZCascMax{"impactParameterZCascMax", 10., "Max dcaz cascade track to PV"};
-
-  // Configurable<double> ptCandMin{"ptCandMin", 0., "Lower bound of candidate pT"};
-  // Configurable<double> ptCandMax{"ptCandMax", 50., "Upper bound of candidate pT"};
-
-  // Configurable<double> dcaCharmBaryonDauMax{"dcaCharmBaryonDauMax", 2.0, "Max DCA charm baryon daughters"};
 
   // PID options
   Configurable<bool> usePidTpcOnly{"usePidTpcOnly", false, "Perform PID using only TPC"};
@@ -373,33 +338,33 @@ struct HfCandidateSelectorXic0XicpToHadronic {
         registry.fill(HIST("hSelDcaXYToPvPiFromCasc"), 1);
       }
 
-      // cut on charm bachelor pion dcaXY and dcaZ
-      if ((std::abs(candidate.impactParBachFromCharmBaryonXY()) < cuts->get(pTBin, "impactParXYCharmBachelorMin")) || (std::abs(candidate.impactParBachFromCharmBaryonXY()) > cuts->get(pTBin, "impactParXYCharmBachelorMax"))) {
-        resultSelections = false;
-        registry.fill(HIST("hSelDCAXYPrimPi"), 0);
-      } else {
-        registry.fill(HIST("hSelDCAXYPrimPi"), 1);
-      }
-      if ((std::abs(candidate.impactParBachFromCharmBaryonZ()) < cuts->get(pTBin, "impactParZCharmBachelorMin")) || (std::abs(candidate.impactParBachFromCharmBaryonZ()) > cuts->get(pTBin, "impactParZCharmBachelorMax"))) {
-        resultSelections = false;
-        registry.fill(HIST("hSelDCAZPrimPi"), 0);
-      } else {
-        registry.fill(HIST("hSelDCAZPrimPi"), 1);
-      }
+      // // cut on charm bachelor pion dcaXY and dcaZ
+      // if ((std::abs(candidate.impactParBachFromCharmBaryonXY()) < cuts->get(pTBin, "impactParXYCharmBachelorMin")) || (std::abs(candidate.impactParBachFromCharmBaryonXY()) > cuts->get(pTBin, "impactParXYCharmBachelorMax"))) {
+      //   resultSelections = false;
+      //   registry.fill(HIST("hSelDCAXYPrimPi"), 0);
+      // } else {
+      //   registry.fill(HIST("hSelDCAXYPrimPi"), 1);
+      // }
+      // if ((std::abs(candidate.impactParBachFromCharmBaryonZ()) < cuts->get(pTBin, "impactParZCharmBachelorMin")) || (std::abs(candidate.impactParBachFromCharmBaryonZ()) > cuts->get(pTBin, "impactParZCharmBachelorMax"))) {
+      //   resultSelections = false;
+      //   registry.fill(HIST("hSelDCAZPrimPi"), 0);
+      // } else {
+      //   registry.fill(HIST("hSelDCAZPrimPi"), 1);
+      // }
 
-      // cut on cascade dcaXY and dcaZ
-      if ((std::abs(candidate.impactParCascXY()) < cuts->get(pTBin, "impactParXYCascMin")) || (std::abs(candidate.impactParCascXY()) > cuts->get(pTBin, "impactParXYCascMax"))) {
-        resultSelections = false;
-        registry.fill(HIST("hSelDCAXYCasc"), 0);
-      } else {
-        registry.fill(HIST("hSelDCAXYCasc"), 1);
-      }
-      if ((std::abs(candidate.impactParCascZ()) < cuts->get(pTBin, "impactParZCascMin")) || (std::abs(candidate.impactParCascZ()) > cuts->get(pTBin, "impactParZCascMax"))) {
-        resultSelections = false;
-        registry.fill(HIST("hSelDCAZCasc"), 0);
-      } else {
-        registry.fill(HIST("hSelDCAZCasc"), 1);
-      }
+      // // cut on cascade dcaXY and dcaZ
+      // if ((std::abs(candidate.impactParCascXY()) < cuts->get(pTBin, "impactParXYCascMin")) || (std::abs(candidate.impactParCascXY()) > cuts->get(pTBin, "impactParXYCascMax"))) {
+      //   resultSelections = false;
+      //   registry.fill(HIST("hSelDCAXYCasc"), 0);
+      // } else {
+      //   registry.fill(HIST("hSelDCAXYCasc"), 1);
+      // }
+      // if ((std::abs(candidate.impactParCascZ()) < cuts->get(pTBin, "impactParZCascMin")) || (std::abs(candidate.impactParCascZ()) > cuts->get(pTBin, "impactParZCascMax"))) {
+      //   resultSelections = false;
+      //   registry.fill(HIST("hSelDCAZCasc"), 0);
+      // } else {
+      //   registry.fill(HIST("hSelDCAZCasc"), 1);
+      // }
 
       // pT selections
       double ptPiFromCasc = RecoDecay::sqrtSumOfSquares(candidate.pxBachFromCasc(), candidate.pyBachFromCasc());
@@ -586,7 +551,14 @@ struct HfCandidateSelectorXic0XicpToHadronic {
           hfMlToXiPiKf(outputMlXic0ToXiPiKf);
         }
 
-        hfSelToXiPiKf(statusPidCharmBaryon, statusPidCascade, statusPidLambda, statusInvMassCharmBaryon, statusInvMassCascade, statusInvMassLambda, resultSelections, infoTpcStored, infoTofStored,
+        // Set result of selection to false if one of the statusPID or statusInvMass is false
+        // This is required because selection table for KF does not store any information about statusPID or statusInvMass while DCAFitter does.
+        if (!(statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassCharmBaryon && statusInvMassCascade && statusInvMassLambda)) {
+          resultSelections = false;
+        }
+
+        hfSelToXiPiKf(resultSelections,
+                      // statusPidCharmBaryon, statusPidCascade, statusPidLambda, statusInvMassCharmBaryon, statusInvMassCascade, statusInvMassLambda, infoTpcStored, infoTofStored,
                       trackPiFromCharm.tpcNSigmaPi(), trackPiFromCasc.tpcNSigmaPi(), trackPiFromLam.tpcNSigmaPi(), trackPrFromLam.tpcNSigmaPr(),
                       trackPiFromCharm.tofNSigmaPi(), trackPiFromCasc.tofNSigmaPi(), trackPiFromLam.tofNSigmaPi(), trackPrFromLam.tofNSigmaPr());
       }
@@ -647,7 +619,7 @@ struct HfCandidateSelectorXic0XicpToHadronic {
   {
     runSelection<false>(candidates, tracks);
   }
-  PROCESS_SWITCH(HfCandidateSelectorXic0XicpToHadronic, processSelectionDCAFitter, "Xic0 candidate selection with DCAFitter output", true);
+  PROCESS_SWITCH(HfCandidateSelectorToXiPiQA, processSelectionDCAFitter, "Xic0 candidate selection with DCAFitter output", true);
 
   ////////////////////////////////////
   ///    Process with KFParticle    //
@@ -656,12 +628,12 @@ struct HfCandidateSelectorXic0XicpToHadronic {
   {
     runSelection<true>(candidates, tracks);
   }
-  PROCESS_SWITCH(HfCandidateSelectorXic0XicpToHadronic, processSelectionKFParticle, "Xic0 candidate selection with KFParticle output", false);
+  PROCESS_SWITCH(HfCandidateSelectorToXiPiQA, processSelectionKFParticle, "Xic0 candidate selection with KFParticle output", false);
 
 }; // end struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorXic0XicpToHadronic>(cfgc)};
+    adaptAnalysisTask<HfCandidateSelectorToXiPiQA>(cfgc)};
 }

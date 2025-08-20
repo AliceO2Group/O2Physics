@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateCreatorXic0XicpToHadronic.cxx
+/// \file candidateCreatorXic0Omegac0QA.cxx
 /// \brief Reconstruction of Xic0 and Xicp candiates with hadronic decay chain
 ///
 /// \author Jinhyun Park <jinhyun.park@cern.ch>, Pusan National University
@@ -63,7 +63,7 @@ using namespace o2::hf_occupancy;
 using namespace o2::constants::physics;
 using namespace o2::hf_evsel;
 
-struct HfCandidateCreatorXic0XicpToHadronic {
+struct HfCandidateCreatorXic0Omegac0QA {
 
   // Cursor to fill tables
   struct : ProducesGroup {
@@ -965,7 +965,6 @@ struct HfCandidateCreatorXic0XicpToHadronic {
       if constexpr (decayChannel == hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi) {
         cursors.rowCandToXiPiKf(collision.globalIndex(),                        // Global index of collision
                                 pvCoord[0], pvCoord[1], pvCoord[2],             // coordination of PV
-                                0.f, 0.f, 0.f,                                  // VertexCharmBaryonFromFitter. In KFTable, this is set to 0.f
                                 kfCasc.GetX(), kfCasc.GetY(), kfCasc.GetZ(),    // Decay position of kfCasc
                                 casc.xlambda(), casc.ylambda(), casc.zlambda(), // Decay position of KfV0. This values can be also taken from LF table
                                 trackBach.sign(),                               // Sign of bachelor
@@ -977,30 +976,30 @@ struct HfCandidateCreatorXic0XicpToHadronic {
                                 kfBachConstrainedToCasc.GetPx(), kfBachConstrainedToCasc.GetPy(), kfBachConstrainedToCasc.GetPz(),
                                 casc.pxpos(), casc.pypos(), casc.pzpos(),
                                 casc.pxneg(), casc.pyneg(), casc.pzneg(),
-                                impactParameterCasc.getY(), impactParameterCharmBachelor.getY(),
-                                impactParameterCasc.getZ(), impactParameterCharmBachelor.getZ(),
-                                std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBachelor.getSigmaY2()),
+                                // impactParameterCasc.getY(), impactParameterCharmBachelor.getY(),
+                                // impactParameterCasc.getZ(), impactParameterCharmBachelor.getZ(),
+                                // std::sqrt(impactParameterCasc.getSigmaY2()), std::sqrt(impactParameterCharmBachelor.getSigmaY2()),
                                 cascAodElement.v0Id(), casc.posTrackId(), casc.negTrackId(),
                                 casc.cascadeId(), trackCharmBachelor.globalIndex(), casc.bachelorId(),
                                 casc.mLambda(), kfCasc.GetMass(), kfCharmBaryon.GetMass(),
-                                cosPaV0ToPv, cosPaCharmBaryonToPv, cosPaCascToPv,
-                                cosPaXYV0ToPv, cosPaXYCharmBaryonToPv, cosPaXYCascToPv,
-                                /*Omegac0*/ ctCharmBaryon, ctCasc, ctV0, /*Xic0*/ ctCharmBaryon,
+                                cosPaV0ToPv, cosPaCascToPv,
+                                // cosPaCharmBaryonToPv, cosPaXYV0ToPv, cosPaXYCharmBaryonToPv, cosPaXYCascToPv,
+                                ctCasc, ctV0, ctCharmBaryon,
                                 casc.positiveeta(), casc.negativeeta(), casc.bacheloreta(), kfCharmBachelorConstrainedToCharmBaryon.GetEta(),
-                                kfCharmBaryon.GetEta(), kfCasc.GetEta(), kfV0.GetEta() /*FIXME*/,
+                                kfCharmBaryon.GetEta(), kfCasc.GetEta(), kfV0.GetEta(),
                                 dcaxyV0DauPos, dcaxyV0DauNeg, dcaxyBach,
-                                dcazV0DauPos, dcazV0DauNeg, dcazBach,
+                                // dcazV0DauPos, dcazV0DauNeg, dcazBach,
                                 kfDcaCascDaughters, kfDcaV0Daughters, kfDcaCharmBaryonDaughters,
-                                decayLCharmBaryon, decayLCasc, decayLV0, errDecayLCharmBaryon, errDecayLXYCharmBaryon,
+                                // decayLCharmBaryon, decayLCasc, decayLV0, errDecayLCharmBaryon, errDecayLXYCharmBaryon,
                                 kfDcaXYCharmBachelorToPv, kfDcaXYCascToPv,
                                 casc.kfV0Chi2(), kfCasc.GetChi2(), kfCharmBaryon.GetChi2(),
                                 /*FIXME chi2 of mass constrained, V0 and casc*/ kfV0.GetChi2(), kfCasc.GetChi2(),
-                                ldlV0, ldlCasc, ldlCharmBaryon,
+                                ldlV0, ldlCasc, // ldlCharmBaryon,
                                 chi2NdfTopoV0ToPv, chi2NdfTopoCascToPv, chi2NdfTopoCharmBachelorToPv, chi2NdfTopoCharmBaryonToPv,
                                 chi2NdfTopoV0ToCasc, chi2NdfTopoCascToCharmBaryon,
                                 decayLXYV0, decayLXYCasc, decayLXYCharmBaryon,
-                                cosPaV0ToCasc, cosPaCascToCharmBaryon, cosPaXYV0ToCasc, cosPaXYCascToCharmBaryon,
-                                yCharmBaryon, ptCharmBachelor, ptCharmBaryon,
+                                cosPaV0ToCasc, cosPaCascToCharmBaryon, // cosPaXYV0ToCasc, cosPaXYCascToCharmBaryon,
+                                yCharmBaryon,                          // ptCharmBachelor, ptCharmBaryon,
                                 cosThetaStarCharmBachelorXic0,
                                 kfV0.GetNDF(), kfCasc.GetNDF(), kfCharmBaryon.GetNDF(), /*FIXME chi2, NDF of mass constrained V0/casc*/ kfV0.GetNDF(), kfCasc.GetNDF(),
                                 kfV0.GetChi2() / kfV0.GetNDF(), kfCasc.GetChi2() / kfCasc.GetNDF(), kfCharmBaryon.GetChi2() / kfCharmBaryon.GetNDF(), /*FIXME chi2, NDF of mass constrained V0/casc*/ kfV0.GetChi2() / kfV0.GetNDF(), kfV0.GetChi2() / kfV0.GetNDF());
@@ -1100,7 +1099,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithDCAFitter<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToXiPiWithDCAFitterNoCent, "Charm candidte reconstruction with Xi Pi via DcaFitter method, no centrality", true);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToXiPiWithDCAFitterNoCent, "Charm candidte reconstruction with Xi Pi via DcaFitter method, no centrality", true);
 
   void processToXiPiWithDCAFitterNoCentWithTrackedCasc(SelectedCollisions const& collisions,
                                                        aod::HfCascLf2Prongs const& candidates,
@@ -1111,7 +1110,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithDCAFitter<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, trackedCascFull, trackedCascLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToXiPiWithDCAFitterNoCentWithTrackedCasc, "Charm candidte reconstruction with Xi Pi via DcaFitter method with tracked cascade, no centrality", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToXiPiWithDCAFitterNoCentWithTrackedCasc, "Charm candidte reconstruction with Xi Pi via DcaFitter method with tracked cascade, no centrality", false);
 
   void processToXiPiWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                           aod::HfCascLf2Prongs const& candidates,
@@ -1122,7 +1121,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithDCAFitter<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToXiPiWithDCAFitterCentFT0C, "Charm candidate reconstruction with Xi Pi via DcaFitter method, centrality selection on FT0C", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToXiPiWithDCAFitterCentFT0C, "Charm candidate reconstruction with Xi Pi via DcaFitter method, centrality selection on FT0C", false);
 
   void processToXiPiWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                           aod::HfCascLf2Prongs const& candidates,
@@ -1133,7 +1132,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToXiPiWithDCAFitterCentFT0M, "Charm candidate reconstruction with Xi Pi via DcaFitter method, centrality selection on FT0M", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToXiPiWithDCAFitterCentFT0M, "Charm candidate reconstruction with Xi Pi via DcaFitter method, centrality selection on FT0M", false);
 
   /*~~~~~~~~~~~~~~~~~*/
   /*~~~To Omega Pi~~~*/
@@ -1147,7 +1146,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithDCAFitter<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToOmegaPiWithDCAFitterNoCent, "Charm candidte reconstruction with Omega Pi via DcaFitter method, no centrality", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToOmegaPiWithDCAFitterNoCent, "Charm candidte reconstruction with Omega Pi via DcaFitter method, no centrality", false);
 
   void processToOmegaPiWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                              aod::HfCascLf2Prongs const& candidates,
@@ -1158,7 +1157,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithDCAFitter<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToOmegaPiWithDCAFitterCentFT0C, "Charm candidate reconstruction with Omega Pi via DcaFitter method, centrality selection on FT0C", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToOmegaPiWithDCAFitterCentFT0C, "Charm candidate reconstruction with Omega Pi via DcaFitter method, centrality selection on FT0C", false);
 
   void processToOmegaPiWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                              aod::HfCascLf2Prongs const& candidates,
@@ -1169,7 +1168,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hInvMassCharmBaryonToOmegaPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToOmegaPiWithDCAFitterCentFT0M, "Charm candidate reconstruction with Omega Pi via DcaFitter method, centrality selection on FT0M", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToOmegaPiWithDCAFitterCentFT0M, "Charm candidate reconstruction with Omega Pi via DcaFitter method, centrality selection on FT0M", false);
 
   /*~~~~~~~~~~~~~~~~~*/
   /*~~~To Omega Ka~~~*/
@@ -1183,7 +1182,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithDCAFitter<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToOmegaKaWithDCAFitterNoCent, "Charm candidte reconstruction with Omega Ka via DcaFitter method, no centrality", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToOmegaKaWithDCAFitterNoCent, "Charm candidte reconstruction with Omega Ka via DcaFitter method, no centrality", false);
 
   void processToOmegaKaWithDCAFitterCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                              aod::HfCascLf2Prongs const& candidates,
@@ -1194,7 +1193,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithDCAFitter<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToOmegaKaWithDCAFitterCentFT0C, "Charm candidate reconstruction with Omega Ka via DcaFitter method, centrality selection on FT0C", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToOmegaKaWithDCAFitterCentFT0C, "Charm candidate reconstruction with Omega Ka via DcaFitter method, centrality selection on FT0C", false);
 
   void processToOmegaKaWithDCAFitterCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                              aod::HfCascLf2Prongs const& candidates,
@@ -1205,7 +1204,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithDCAFitter<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, cascFull, cascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToOmegaKaWithDCAFitterCentFT0M, "Charm candidate reconstruction with Omega Ka via DcaFitter method, centrality selection on FT0M", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToOmegaKaWithDCAFitterCentFT0M, "Charm candidate reconstruction with Omega Ka via DcaFitter method, centrality selection on FT0M", false);
 
   /////////////////////////////////////////////////////
   ///                                               ///
@@ -1225,7 +1224,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithKfParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToXiPiWithKFParticleNoCent, "Charm Baryon decaying to Xi Pi reconstruction via KFParticle method, no centrality", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToXiPiWithKFParticleNoCent, "Charm Baryon decaying to Xi Pi reconstruction via KFParticle method, no centrality", false);
 
   void processToXiPiWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                            aod::HfCascLf2Prongs const& candidates,
@@ -1236,7 +1235,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithKfParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToXiPiWithKFParticleCentFT0C, "Charm Baryon decaying to Xi Pi reconstruction via KFParticle method, centrality on FT0C", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToXiPiWithKFParticleCentFT0C, "Charm Baryon decaying to Xi Pi reconstruction via KFParticle method, centrality on FT0C", false);
 
   void processToXiPiWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                            aod::HfCascLf2Prongs const& candidates,
@@ -1247,7 +1246,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithKfParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::XiczeroOmegaczeroToXiPi>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToXiPi, hCandidateCounterToXiPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToXiPiWithKFParticleCentFT0M, "Charm Baryon decaying to Xi Pireconstruction via KFParticle method, centrality on FT0M", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToXiPiWithKFParticleCentFT0M, "Charm Baryon decaying to Xi Pireconstruction via KFParticle method, centrality on FT0M", false);
 
   /*~~~~~~~~~~~~~~~~~*/
   /*~~~To Omega Pi~~~*/
@@ -1261,7 +1260,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithKfParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToOmegaPiWithKFParticleNoCent, "Charm Baryon decaying to Omega Pi reconstruction via KFParticle method, no centrality", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToOmegaPiWithKFParticleNoCent, "Charm Baryon decaying to Omega Pi reconstruction via KFParticle method, no centrality", false);
 
   void processToOmegaPiWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                               aod::HfCascLf2Prongs const& candidates,
@@ -1272,7 +1271,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithKfParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToOmegaPiWithKFParticleCentFT0C, "Charm Baryon decaying to Omega Pi reconstruction via KFParticle method, centrality on FT0C", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToOmegaPiWithKFParticleCentFT0C, "Charm Baryon decaying to Omega Pi reconstruction via KFParticle method, centrality on FT0C", false);
 
   void processToOmegaPiWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                               aod::HfCascLf2Prongs const& candidates,
@@ -1283,7 +1282,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithKfParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaPi, hCandidateCounterToOmegaPi);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToOmegaPiWithKFParticleCentFT0M, "Charm Baryong decaying to Omega Pi reconstruction via KFParticle method, centrality on FT0M", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToOmegaPiWithKFParticleCentFT0M, "Charm Baryong decaying to Omega Pi reconstruction via KFParticle method, centrality on FT0M", false);
 
   /*~~~~~~~~~~~~~~~~~*/
   /*~~~To Omega Ka~~~*/
@@ -1297,7 +1296,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithKfParticle<CentralityEstimator::None, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToOmegaKaWithKFParticleNoCent, "Charm Baryon decaying to Omega Ka reconstruction via KFParticle method, no centrality", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToOmegaKaWithKFParticleNoCent, "Charm Baryon decaying to Omega Ka reconstruction via KFParticle method, no centrality", false);
 
   void processToOmegaKaWithKFParticleCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                               aod::HfCascLf2Prongs const& candidates,
@@ -1308,7 +1307,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithKfParticle<CentralityEstimator::FT0C, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToOmegaKaWithKFParticleCentFT0C, "Charm Baryon decaying to Omega Ka reconstruction via KFParticle method, centrality on FT0C", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToOmegaKaWithKFParticleCentFT0C, "Charm Baryon decaying to Omega Ka reconstruction via KFParticle method, centrality on FT0C", false);
 
   void processToOmegaKaWithKFParticleCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                               aod::HfCascLf2Prongs const& candidates,
@@ -1319,7 +1318,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
   {
     runCreatorWithKfParticle<CentralityEstimator::FT0M, hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaK>(collisions, candidates, kfCascFull, kfCascadesLinked, tracks, bcsWithTimestamps, hInvMassCharmBaryonToOmegaKa, hCandidateCounterToOmegaKa);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processToOmegaKaWithKFParticleCentFT0M, "Charm Baryong decaying to Omega Ka reconstruction via KFParticle method, centrality on FT0M", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processToOmegaKaWithKFParticleCentFT0M, "Charm Baryong decaying to Omega Ka reconstruction via KFParticle method, centrality on FT0M", false);
 
   ///////////////////////////////////////////////////////////////
   ///                                                         ///
@@ -1341,7 +1340,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
       hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
     }
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processCollisionsNoCent, "Collision monitoring - No Centrality", true);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processCollisionsNoCent, "Collision monitoring - No Centrality", true);
 
   void processCollisionsCentFT0C(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs> const& collisions,
                                  aod::BCsWithTimestamps const&)
@@ -1357,7 +1356,7 @@ struct HfCandidateCreatorXic0XicpToHadronic {
       hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
     }
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processCollisionsCentFT0C, "Collision monitoring - Centrality selection with FT0C", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processCollisionsCentFT0C, "Collision monitoring - Centrality selection with FT0C", false);
 
   void processCollisionsCentFT0M(soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms> const& collisions,
                                  aod::BCsWithTimestamps const&)
@@ -1373,10 +1372,10 @@ struct HfCandidateCreatorXic0XicpToHadronic {
       hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
     }
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronic, processCollisionsCentFT0M, "Collision monitoring - Centrality selection with FT0M", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QA, processCollisionsCentFT0M, "Collision monitoring - Centrality selection with FT0M", false);
 };
 
-struct HfCandidateCreatorXic0XicpToHadronicMc {
+struct HfCandidateCreatorXic0Omegac0QAMc {
 
   Spawns<aod::HfCandXic0Ext> rowCandXic0Ext;
 
@@ -1710,7 +1709,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   void processMcEmpty(aod::Collisions const&)
   {
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcEmpty, "Empty process function to prevent workflow from getting stuck", true);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcEmpty, "Empty process function to prevent workflow from getting stuck", true);
 
   /////////////////////////////////////////////////////
   ///                                               ///
@@ -1730,7 +1729,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcXicToXiPiWithDCAFitterNoCent, "Perform MC matching of DCAFitter reconstructed Xic0 to Xi Pi. No cents", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcXicToXiPiWithDCAFitterNoCent, "Perform MC matching of DCAFitter reconstructed Xic0 to Xi Pi. No cents", false);
 
   void processMcXicToXiPiWithDCAFitterCentFT0C(aod::HfCandToXiPi const& candidates,
                                                aod::TracksWMc const& tracks,
@@ -1741,7 +1740,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcXicToXiPiWithDCAFitterCentFT0C, "Perform MC matching of DCAFitter reconstructed Xic0 to Xi Pi. Cents with FT0C", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcXicToXiPiWithDCAFitterCentFT0C, "Perform MC matching of DCAFitter reconstructed Xic0 to Xi Pi. Cents with FT0C", false);
 
   void processMcXicToXiPiWithDCAFitterCentFT0M(aod::HfCandToXiPi const& candidates,
                                                aod::TracksWMc const& tracks,
@@ -1752,7 +1751,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcXicToXiPiWithDCAFitterCentFT0M, "Perform MC matching of DCAFitter reconstructed Xic0 to Xi Pi. Cents with FT0M", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcXicToXiPiWithDCAFitterCentFT0M, "Perform MC matching of DCAFitter reconstructed Xic0 to Xi Pi. Cents with FT0M", false);
 
   void processMcOmegacToXiPiWithDCAFitterNoCent(aod::HfCandToXiPi const& candidates,
                                                 aod::TracksWMc const& tracks,
@@ -1763,7 +1762,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcOmegacToXiPiWithDCAFitterNoCent, "Perform MC matching of DCAFitter reconstructed Omegac0 to Xi Pi. No cents", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcOmegacToXiPiWithDCAFitterNoCent, "Perform MC matching of DCAFitter reconstructed Omegac0 to Xi Pi. No cents", false);
 
   void processMcOmegacToXiPiWithDCAFitterCentFT0C(aod::HfCandToXiPi const& candidates,
                                                   aod::TracksWMc const& tracks,
@@ -1774,7 +1773,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcOmegacToXiPiWithDCAFitterCentFT0C, "Perform MC matching of DCAFitter reconstructed Omeagc0 to Xi Pi. Cents with FT0C", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcOmegacToXiPiWithDCAFitterCentFT0C, "Perform MC matching of DCAFitter reconstructed Omeagc0 to Xi Pi. Cents with FT0C", false);
 
   void processMcOmegacToXiPiWithDCAFitterCentFT0M(aod::HfCandToXiPi const& candidates,
                                                   aod::TracksWMc const& tracks,
@@ -1785,7 +1784,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcOmegacToXiPiWithDCAFitterCentFT0M, "Perform MC matching of DCAFitter reconstructed Omegac0 to Xi Pi. Cents with FT0M", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcOmegacToXiPiWithDCAFitterCentFT0M, "Perform MC matching of DCAFitter reconstructed Omegac0 to Xi Pi. Cents with FT0M", false);
 
   //~~~~~~~~~~~~~~~~~~~//
   //~~~~To Omega Pi~~~~//
@@ -1799,7 +1798,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcOmegacToOmegaPiWithDCAFitterNoCent, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Pi. No cents", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcOmegacToOmegaPiWithDCAFitterNoCent, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Pi. No cents", false);
 
   void processMcOmegacToOmegaPiWithDCAFitterCentFT0C(aod::HfCandToOmegaPi const& candidates,
                                                      aod::TracksWMc const& tracks,
@@ -1810,7 +1809,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcOmegacToOmegaPiWithDCAFitterCentFT0C, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Pi. Cents with FT0C", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcOmegacToOmegaPiWithDCAFitterCentFT0C, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Pi. Cents with FT0C", false);
 
   void processMcOmegacToOmegaPiWithDCAFitterCentFT0M(aod::HfCandToOmegaPi const& candidates,
                                                      aod::TracksWMc const& tracks,
@@ -1821,7 +1820,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcOmegacToOmegaPiWithDCAFitterCentFT0M, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Pi. Cents with FT0M", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcOmegacToOmegaPiWithDCAFitterCentFT0M, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Pi. Cents with FT0M", false);
 
   //~~~~~~~~~~~~~~~~~~//
   //~~~~To Omega Ka~~~~//
@@ -1835,7 +1834,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcOmegacToOmegaKaWithDCAFitterNoCent, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Ka. No cents", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcOmegacToOmegaKaWithDCAFitterNoCent, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Ka. No cents", false);
 
   void processMcOmegacToOmegaKaWithDCAFitterCentFT0C(aod::HfCandToOmegaK const& candidates,
                                                      aod::TracksWMc const& tracks,
@@ -1846,7 +1845,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0C, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcOmegacToOmegaKaWithDCAFitterCentFT0C, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Ka. Cents with FT0C", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcOmegacToOmegaKaWithDCAFitterCentFT0C, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Ka. Cents with FT0C", false);
 
   void processMcOmegacToOmegaKaWithDCAFitterCentFT0M(aod::HfCandToOmegaK const& candidates,
                                                      aod::TracksWMc const& tracks,
@@ -1857,7 +1856,7 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::FT0M, aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaK>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcOmegacToOmegaKaWithDCAFitterCentFT0M, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Ka. Cents with FT0M", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcOmegacToOmegaKaWithDCAFitterCentFT0M, "Perform MC matching of DCAFitter reconstructed Omegac0 to Omega Ka. Cents with FT0M", false);
 
   /////////////////////////////////////////////////////
   ///                                               ///
@@ -1873,12 +1872,12 @@ struct HfCandidateCreatorXic0XicpToHadronicMc {
   {
     runXic0Omegac0Mc<o2::hf_centrality::CentralityEstimator::None, aod::hf_cand_xic0_omegac0::DecayType::XiczeroToXiPi>(candidates, tracks, mcParticles, collsWithMcLabels, mcCollisions, bcs);
   }
-  PROCESS_SWITCH(HfCandidateCreatorXic0XicpToHadronicMc, processMcXicToXiPiWithKFParticleNoCent, "Perform MC matching of DCAFitter reconstructed Xic0 to Xi Pi. No cents", false);
+  PROCESS_SWITCH(HfCandidateCreatorXic0Omegac0QAMc, processMcXicToXiPiWithKFParticleNoCent, "Perform MC matching of DCAFitter reconstructed Xic0 to Xi Pi. No cents", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateCreatorXic0XicpToHadronic>(cfgc),
-    adaptAnalysisTask<HfCandidateCreatorXic0XicpToHadronicMc>(cfgc)};
+    adaptAnalysisTask<HfCandidateCreatorXic0Omegac0QA>(cfgc),
+    adaptAnalysisTask<HfCandidateCreatorXic0Omegac0QAMc>(cfgc)};
 }

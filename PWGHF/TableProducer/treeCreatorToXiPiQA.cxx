@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file treeCreatorToXiPi.cxx
+/// \file treeCreatorToXiPiQA.cxx
 /// \brief Writer of the omegac0 or xic0 to Xi Pi candidates in the form of flat tables to be stored in TTrees.
 ///        In this file are defined and filled the output tables
 ///
@@ -267,21 +267,22 @@ DECLARE_SOA_TABLE(HfToXiPiLites, "AOD", "HFTOXIPILITE",
 
 DECLARE_SOA_TABLE(HfKfXicFulls, "AOD", "HFKFXICFULL",
                   full::Centrality,
-                  full::StatusPidLambda, full::StatusPidCascade, full::StatusPidCharmBaryon,
-                  full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassCharmBaryon, full::ResultSelections,
+                  // full::StatusPidLambda, full::StatusPidCascade, full::StatusPidCharmBaryon,
+                  // full::StatusInvMassLambda, full::StatusInvMassCascade, full::StatusInvMassCharmBaryon,
+                  full::ResultSelections,
                   full::TpcNSigmaPiFromCharmBaryon, full::TofNSigmaPiFromCharmBaryon, full::TpcNSigmaPiFromCasc, full::TofNSigmaPiFromCasc,
                   full::TpcNSigmaPiFromLambda, full::TofNSigmaPiFromLambda, full::TpcNSigmaPrFromLambda, full::TofNSigmaPrFromLambda,
                   full::KfDcaXYPiFromXic, full::DcaCascDau, full::DcaCharmBaryonDau, full::KfDcaXYCascToPv,
                   full::DcaXYToPvV0Dau0, full::DcaXYToPvV0Dau1, full::DcaXYToPvCascDau,
                   full::Chi2GeoV0, full::Chi2GeoCasc, full::Chi2GeoXic,
                   full::Chi2MassV0, full::Chi2MassCasc,
-                  full::V0ldl, full::Cascldl, full::Xicldl,
+                  full::V0ldl, full::Cascldl, // full::Xicldl,
                   full::Chi2TopoV0ToPv, full::Chi2TopoCascToPv, full::Chi2TopoPiFromXicToPv, full::Chi2TopoXicToPv,
                   full::Chi2TopoV0ToCasc, full::Chi2TopoCascToXic,
                   full::DecayLenXYLambda, full::DecayLenXYCasc, full::DecayLenXYXic,
-                  full::CosPaV0ToCasc, full::CosPaV0ToPv, full::CosPaCascToXic, full::CosPaCascToPv, full::CosPaXicToPv,
+                  full::CosPaV0ToCasc, full::CosPaV0ToPv, full::CosPaCascToXic, full::CosPaCascToPv, // full::CosPaXicToPv,
                   full::InvMassLambda, full::InvMassCascade, full::InvMassCharmBaryon,
-                  full::KfRapXic, full::KfptPiFromXic, full::KfptXic,
+                  full::KfRapXic, // full::KfptPiFromXic, full::KfptXic,
                   full::CosThetaStarPiFromXic, full::CtXic, full::EtaXic,
                   full::V0Ndf, full::CascNdf, full::XicNdf,
                   full::MassV0Ndf, full::MassCascNdf,
@@ -292,7 +293,7 @@ DECLARE_SOA_TABLE(HfKfXicFulls, "AOD", "HFKFXICFULL",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct HfTreeCreatorXic0XicpToHadronic {
+struct HfTreeCreatorToXiPiQA {
 
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
   Produces<o2::aod::HfToXiPiLites> rowCandidateLite;
@@ -550,12 +551,12 @@ struct HfTreeCreatorXic0XicpToHadronic {
 
     rowKfCandidate(
       centrality,
-      candidate.statusPidLambda(),
-      candidate.statusPidCascade(),
-      candidate.statusPidCharmBaryon(),
-      candidate.statusInvMassLambda(),
-      candidate.statusInvMassCascade(),
-      candidate.statusInvMassCharmBaryon(),
+      // candidate.statusPidLambda(),
+      // candidate.statusPidCascade(),
+      // candidate.statusPidCharmBaryon(),
+      // candidate.statusInvMassLambda(),
+      // candidate.statusInvMassCascade(),
+      // candidate.statusInvMassCharmBaryon(),
       candidate.resultSelections(),
       candidate.tpcNSigmaPiFromCharmBaryon(),
       candidate.tofNSigmaPiFromCharmBaryon(),
@@ -579,7 +580,7 @@ struct HfTreeCreatorXic0XicpToHadronic {
       candidate.chi2MassCasc(),
       candidate.v0ldl(),
       candidate.cascldl(),
-      candidate.xicldl(),
+      // candidate.xicldl(),
       candidate.chi2TopoV0ToPv(),
       candidate.chi2TopoCascToPv(),
       candidate.chi2TopoPiFromXicToPv(),
@@ -593,13 +594,13 @@ struct HfTreeCreatorXic0XicpToHadronic {
       candidate.cosPAV0(),
       candidate.cosPaCascToXic(),
       candidate.cosPACasc(),
-      candidate.cosPACharmBaryon(),
+      // candidate.cosPACharmBaryon(),
       candidate.invMassLambda(),
       candidate.invMassCascade(),
       candidate.invMassCharmBaryon(),
       candidate.kfRapXic(),
-      candidate.kfptPiFromXic(),
-      candidate.kfptXic(),
+      // candidate.kfptPiFromXic(),
+      // candidate.kfptXic(),
       candidate.cosThetaStarPiFromXic(),
       candidate.cTauXic(),
       candidate.etaCharmBaryon(),
@@ -709,11 +710,11 @@ struct HfTreeCreatorXic0XicpToHadronic {
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataFull, "Process data with full information w/o centrality", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataLite, "Process data and produce lite table version", true);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataLiteWithFT0M, "Process data and produce lite table version with FT0M", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataLiteWithFT0C, "Process data and produce lite table version with FT0C", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processDataLiteWithNTracksPV, "Process data and produce lite table version with NTracksPV", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processDataFull, "Process data with full information w/o centrality", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processDataLite, "Process data and produce lite table version", true);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processDataLiteWithFT0M, "Process data and produce lite table version with FT0M", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processDataLiteWithFT0C, "Process data and produce lite table version with FT0C", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processDataLiteWithNTracksPV, "Process data and produce lite table version with NTracksPV", false);
 
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
   //*~~~~~~~Data with KFParticle~~~~~~~~*//
@@ -782,10 +783,10 @@ struct HfTreeCreatorXic0XicpToHadronic {
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfData, "Process KF data, no cent", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfDataWithFT0M, "Process KF data, with FT0M", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfDataWithFT0C, "Process KF data, with FT0C", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfDataWithNTracksPV, "Process KF data, with NTracksPV", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfData, "Process KF data, no cent", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfDataWithFT0M, "Process KF data, with FT0M", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfDataWithFT0C, "Process KF data, with FT0C", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfDataWithNTracksPV, "Process KF data, with NTracksPV", false);
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
   //*~~~~~~~MC with DCAFitter~~~~~~~~*//
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
@@ -802,7 +803,7 @@ struct HfTreeCreatorXic0XicpToHadronic {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidate<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
 
@@ -818,7 +819,7 @@ struct HfTreeCreatorXic0XicpToHadronic {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidate<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidate<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
 
@@ -834,7 +835,7 @@ struct HfTreeCreatorXic0XicpToHadronic {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidateLite<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
 
@@ -850,7 +851,7 @@ struct HfTreeCreatorXic0XicpToHadronic {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite<true, MyEventTableWithFT0C>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidateLite<true, MyEventTableWithFT0C>(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
 
@@ -866,7 +867,7 @@ struct HfTreeCreatorXic0XicpToHadronic {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite<true, MyEventTableWithFT0M>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidateLite<true, MyEventTableWithFT0M>(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
 
@@ -882,7 +883,7 @@ struct HfTreeCreatorXic0XicpToHadronic {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite<true, MyEventTableWithNTracksPV>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidateLite<true, MyEventTableWithNTracksPV>(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
 
@@ -898,17 +899,17 @@ struct HfTreeCreatorXic0XicpToHadronic {
     // Filling candidate properties
     rowCandidateLite.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillCandidateLite<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.originRec(), candidate.collisionMatched());
+      fillCandidateLite<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcFullXic0, "Process MC with full information for xic0 w/o centrality", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcFullOmegac0, "Process MC with full information for omegac0", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcLiteXic0, "Process MC and produce lite table version for xic0", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcLiteXic0WithFT0C, "Process MC and produce lite table version for Xic0 with FT0C", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcLiteXic0WithFT0M, "Process MC and produce lite table version for Xic0 with FT0M", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcLiteXic0WithNTracksPV, "Process MC and produce lite table version for Xic0 with NTracksPV", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processMcLiteOmegac0, "Process MC and produce lite table version for omegac0", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcFullXic0, "Process MC with full information for xic0 w/o centrality", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcFullOmegac0, "Process MC with full information for omegac0", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcLiteXic0, "Process MC and produce lite table version for xic0", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcLiteXic0WithFT0C, "Process MC and produce lite table version for Xic0 with FT0C", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcLiteXic0WithFT0M, "Process MC and produce lite table version for Xic0 with FT0M", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcLiteXic0WithNTracksPV, "Process MC and produce lite table version for Xic0 with NTracksPV", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcLiteOmegac0, "Process MC and produce lite table version for omegac0", false);
 
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
   //*~~~~~~~MC with KFParticle~~~~~~~~*//
@@ -925,7 +926,7 @@ struct HfTreeCreatorXic0XicpToHadronic {
     // Filling candidate properties
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillKfCandidate<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+      fillKfCandidate<false, MyEventTable>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
 
@@ -941,7 +942,7 @@ struct HfTreeCreatorXic0XicpToHadronic {
     // Filling candidate properties
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillKfCandidate<true, MyEventTableWithFT0C>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+      fillKfCandidate<true, MyEventTableWithFT0C>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
 
@@ -957,7 +958,7 @@ struct HfTreeCreatorXic0XicpToHadronic {
     // Filling candidate properties
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillKfCandidate<true, MyEventTableWithFT0M>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+      fillKfCandidate<true, MyEventTableWithFT0M>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
 
@@ -973,17 +974,17 @@ struct HfTreeCreatorXic0XicpToHadronic {
     // Filling candidate table
     rowKfCandidate.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      fillKfCandidate<true, MyEventTableWithNTracksPV>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originRec(), candidate.collisionMatched());
+      fillKfCandidate<true, MyEventTableWithNTracksPV>(candidate, candidate.flagMcMatchRec(), candidate.debugMcRec(), candidate.originMcRec(), candidate.collisionMatched());
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfMcXic0, "Process MC with information for xic0", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfMcXic0WithFT0C, "Process MC with information for xic0 at FT0C", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfMcXic0WithFT0M, "Process MC with information for xic0 at FT0M", false);
-  PROCESS_SWITCH(HfTreeCreatorXic0XicpToHadronic, processKfMcXic0WithNTracksPV, "Process MC with information for xic0 at Ntrack", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfMcXic0, "Process MC with information for xic0", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfMcXic0WithFT0C, "Process MC with information for xic0 at FT0C", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfMcXic0WithFT0M, "Process MC with information for xic0 at FT0M", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfMcXic0WithNTracksPV, "Process MC with information for xic0 at Ntrack", false);
 }; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTreeCreatorXic0XicpToHadronic>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTreeCreatorToXiPiQA>(cfgc)};
 }
