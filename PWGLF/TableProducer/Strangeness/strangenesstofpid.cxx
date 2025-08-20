@@ -94,7 +94,7 @@ struct strangenesstofpid {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // master switches
-  Configurable<int> calculationMethod{"calculationMethod", 0, "algorithm for TOF calculation. 0: fast analytical withouot eloss, 1: O2 Propagator/ + trackLTIntegral"};
+  Configurable<int> calculationMethod{"calculationMethod", 0, "algorithm for TOF calculation. 0: fast analytical withouot eloss, 1: O2 Propagator + trackLTIntegral (slow), 2: both methods and do comparison studies (slow)"};
   Configurable<int> calculateV0s{"calculateV0s", -1, "calculate V0-related TOF PID (0: no, 1: yes, -1: auto)"};
   Configurable<int> calculateCascades{"calculateCascades", -1, "calculate cascade-related TOF PID (0: no, 1: yes, -1: auto)"};
 
@@ -326,9 +326,10 @@ struct strangenesstofpid {
 
   /// function to calculate track length of this track up to a certain segmented detector
   /// \param track the input track
-  void calculateTOF(o2::track::TrackPar track, float& timePion, float& timeKaon, float& timeProton)
+  /// \param time returned time (with PID given by track PID)
+  void calculateTOF(o2::track::TrackPar track, float& time)
   {
-    timePion = timeKaon = timeProton = -1e+6;
+    time = -1e+6;
 
     o2::track::TrackLTIntegral ltIntegral;
 
@@ -347,10 +348,10 @@ struct strangenesstofpid {
       std::array<float, 3> xyz;
       track.getXYZGlo(xyz);
       float segmentedR = segmentedRadius(xyz[0], xyz[1]); 
-      float currentTimeProton = ltIntegral.getTOF(o2::track::PID::Proton);  
-      float currentTimeKaon = ltIntegral.getTOF(o2::track::PID::Kaon);
-      float currentTimePion = ltIntegral.getTOF(o2::track::PID::Pion); 
-      histos.fill(HIST("hTOFPosition"), xyz[0], xyz[1]); // for debugging purposes
+      float currentTime = ltIntegral.getTOF(track.getPID());
+      if(calculationMethod.value==2){
+        histos.fill(HIST("hTOFPosition"), xyz[0], xyz[1]); // for debugging purposes
+      }
 
       // correct for TOF segmentation
       float trackXextra = trackX;
@@ -360,7 +361,7 @@ struct strangenesstofpid {
         trackXextra += MAX_STEP_FINAL_STAGE;
         trackOKextra = o2::base::Propagator::Instance()->propagateToX(track, trackXextra, d_bz, MAX_SIN_PHI, MAX_STEP, o2::base::Propagator::MatCorrType::USEMatCorrLUT, &ltIntegral);
         if(!trackOKextra){
-          timePion = timeKaon = timeProton = -1e+6;
+          time = -1e+6;
           return; // propagation failed, skip, won't look reasonable
         }
 
@@ -370,22 +371,18 @@ struct strangenesstofpid {
         if(segmentedRadius(xyz[0], xyz[1]) > tofPosition){
           // crossed boundary -> do proportional scaling with how much we actually crossed the boundary
           float segmentedRFinal = segmentedRadius(xyz[0], xyz[1]);
-          float timeProtonFinal = ltIntegral.getTOF(o2::track::PID::Proton);  
-          float timeKaonFinal = ltIntegral.getTOF(o2::track::PID::Kaon);  
-          float timePionFinal = ltIntegral.getTOF(o2::track::PID::Pion);  
+          float timeFinal = ltIntegral.getTOF(track.getPID());  
           float fraction = (tofPosition - segmentedR)/(segmentedRFinal-segmentedR+1e-6); // proportional fraction
-          timeProton = currentTimeProton + (timeProtonFinal-currentTimeProton)*fraction;
-          timeKaon = currentTimeKaon + (timeKaonFinal-currentTimeKaon)*fraction;
-          timePion = currentTimePion + (timePionFinal-currentTimePion)*fraction;
-          histos.fill(HIST("hTOFPositionFinal"), previousX+fraction*(xyz[0]-previousX), previousY+fraction*(xyz[1]-previousY)); // for debugging purposes
+          time = currentTime + (timeFinal-currentTime)*fraction;
+          if(calculationMethod.value==2){
+            histos.fill(HIST("hTOFPositionFinal"), previousX+fraction*(xyz[0]-previousX), previousY+fraction*(xyz[1]-previousY)); // for debugging purposes
+          }
           return; // get out of the entire function and return (don't just break)
         }
 
         // prepare for next step by setting current position and desired variables
         segmentedR = segmentedRadius(xyz[0], xyz[1]); 
-        currentTimeProton = ltIntegral.getTOF(o2::track::PID::Proton);  
-        currentTimeKaon = ltIntegral.getTOF(o2::track::PID::Kaon);
-        currentTimePion = ltIntegral.getTOF(o2::track::PID::Pion); 
+        currentTime = ltIntegral.getTOF(track.getPID());  
       }
     }
   }
@@ -443,10 +440,6 @@ struct strangenesstofpid {
       histos.add("h2dProtonMeasuredVsExpected", "h2dProtonMeasuredVsExpected", {HistType::kTH3F, {axisSmallP, axisExpectedOverMeasured, axisEta}});
       histos.add("h2dPionMeasuredVsExpected", "h2dPionMeasuredVsExpected", {HistType::kTH3F, {axisSmallP, axisExpectedOverMeasured, axisEta}});
 
-      histos.add("hArcDebug", "hArcDebug", kTH2F, {axisTime, axisTime});
-      histos.add("hTOFPosition", "hTOFPosition", kTH2F, {axisPosition, axisPosition});
-      histos.add("hTOFPositionFinal", "hTOFPositionFinal", kTH2F, {axisPosition, axisPosition});
-
       // standard deltaTime values
       if (calculateV0s.value > 0) {
         histos.add("h2dDeltaTimePositiveLambdaPi", "h2dDeltaTimePositiveLambdaPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
@@ -496,6 +489,36 @@ struct strangenesstofpid {
 
       // delta lambda decay time
       histos.add("h2dLambdaDeltaDecayTime", "h2dLambdaDeltaDecayTime", {HistType::kTH2F, {axisP, axisDeltaTime}});
+    }
+
+    if(calculationMethod.value==2){ 
+      //_____________________________________________________________________
+      // special mode in which comparison histograms are required
+      
+      // base ArcDebug: comparison between times of arrival in different methods 
+      histos.add("hArcDebug", "hArcDebug", kTH2F, {axisTime, axisTime});
+
+      // Position of TrackLTIntegral method: intermediate (getXatLabR) and final (reach segmented detector)
+      histos.add("hTOFPosition", "hTOFPosition", kTH2F, {axisPosition, axisPosition});
+      histos.add("hTOFPositionFinal", "hTOFPositionFinal", kTH2F, {axisPosition, axisPosition});
+
+      // Delta-times of each method for the various species
+      histos.add("hDeltaTimeMethodsVsP_posPr", "hDeltaTimeMethodsVsP_posPr", kTH3F, {axisP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_posPi", "hDeltaTimeMethodsVsP_posPi", kTH3F, {axisP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_negPr", "hDeltaTimeMethodsVsP_negPr", kTH3F, {axisP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_negPi", "hDeltaTimeMethodsVsP_negPi", kTH3F, {axisP, axisEta, axisDeltaTime});
+
+      histos.add("hDeltaTimeMethodsVsP_posPi", "hDeltaTimeMethodsVsP_posPi", kTH3F, {axisP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_posPr", "hDeltaTimeMethodsVsP_posPr", kTH3F, {axisP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_negPi", "hDeltaTimeMethodsVsP_negPi", kTH3F, {axisP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_negPr", "hDeltaTimeMethodsVsP_negPr", kTH3F, {axisP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_bachXiPi", "hDeltaTimeMethodsVsP_bachXiPi", kTH3F, {axisP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_bachOmPi", "hDeltaTimeMethodsVsP_bachOmPi", kTH3F, {axisP, axisEta, axisDeltaTime});
+    }
+
+    // list memory consumption at start if running in modes with more output
+    if(calculationMethod.value==2 || doQA){
+      histos.print();
     }
   }
 
@@ -645,6 +668,10 @@ struct strangenesstofpid {
     o2::track::TrackPar posTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxpos(), v0.pypos(), v0.pzpos()}, +1);
     o2::track::TrackPar negTrack = o2::track::TrackPar({v0.x(), v0.y(), v0.z()}, {v0.pxneg(), v0.pyneg(), v0.pzneg()}, -1);
 
+    // at minimum
+    float positiveP = std::hypot(v0.pxpos(), v0.pypos(), v0.pzpos());
+    float negativeP = std::hypot(v0.pxneg(), v0.pyneg(), v0.pzneg());
+
     float deltaTimePositiveLambdaPi = o2::aod::v0data::kNoTOFValue;
     float deltaTimeNegativeLambdaPi = o2::aod::v0data::kNoTOFValue;
     float deltaTimePositiveLambdaPr = o2::aod::v0data::kNoTOFValue;
@@ -664,7 +691,7 @@ struct strangenesstofpid {
     float timeNegativePr = -1e+6;
     float timeNegativePi = -1e+6;
 
-    if(calculationMethod.value==0){
+    if(calculationMethod.value==0 || calculationMethod.value==2){
       float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
       float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
       float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
@@ -683,15 +710,38 @@ struct strangenesstofpid {
       }
     }
 
-    if(calculationMethod.value==1){
+    if(calculationMethod.value>0){
       // method to calculate the time and length via Propagator TrackLTIntegral 
-      float timeKaon; // will go unused
-      if(pTra.hasTOF()){ // calculate if signal at all present, otherwise skip
-        posTrack.setPID(o2::track::PID::Proton); // force test
-        calculateTOF(posTrack, timePositivePi, timeKaon, timePositivePr);
+      float tPosPi, tPosPr, tNegPi, tNegPr; 
+      if(pTra.hasTOF()){ // calculate if signal present, otherwise skip
+        o2::track::TrackPar posTrackAsProton(posTrack); 
+        posTrackAsProton.setPID(o2::track::PID::Proton);
+        calculateTOF(posTrackAsProton, tPosPr);
+
+        o2::track::TrackPar posTrackAsPion(posTrack); 
+        posTrackAsPion.setPID(o2::track::PID::Pion);
+        calculateTOF(posTrackAsPion, tPosPi);
+
+        if(calculationMethod.value==2){ 
+          // fill comparison histograms
+          histos.fill(HIST("hDeltaTimeMethodsVsP_posPr"), positiveP, v0.positiveeta(), timePositivePr - tPosPr);
+          histos.fill(HIST("hDeltaTimeMethodsVsP_posPi"), positiveP, v0.positiveeta(), timePositivePi - tPosPi);
+        }
       }
-      if(nTra.hasTOF()){ // calculate if signal at all present, otherwise skip
-        calculateTOF(negTrack, timeNegativePi, timeKaon, timeNegativePr);
+      if(nTra.hasTOF()){ // calculate if signal present, otherwise skip
+        o2::track::TrackPar negTrackAsProton(negTrack); 
+        negTrackAsProton.setPID(o2::track::PID::Proton);
+        calculateTOF(negTrackAsProton, tNegPr);
+
+        o2::track::TrackPar negTrackAsPion(negTrack); 
+        negTrackAsPion.setPID(o2::track::PID::Pion);
+        calculateTOF(negTrackAsPion, tNegPi);
+
+        if(calculationMethod.value==2){ 
+          // fill comparison histograms
+          histos.fill(HIST("hDeltaTimeMethodsVsP_negPr"), negativeP, v0.negativeeta(), timeNegativePr - tNegPr);
+          histos.fill(HIST("hDeltaTimeMethodsVsP_negPi"), negativeP, v0.negativeeta(), timeNegativePi - tNegPi);
+        }
       }
     }
 
@@ -778,9 +828,6 @@ struct strangenesstofpid {
         nSigmaNegativeLambdaPr, nSigmaPositiveLambdaPi,
         nSigmaPositiveK0ShortPi, nSigmaNegativeK0ShortPi);
     }
-
-    float positiveP = std::hypot(v0.pxpos(), v0.pypos(), v0.pzpos());
-    float negativeP = std::hypot(v0.pxneg(), v0.pyneg(), v0.pzneg());
 
     if (doQA) {
       if (pTra.hasTOF()) {
@@ -926,17 +973,11 @@ struct strangenesstofpid {
       posDeltaTimeAsOmPi, posDeltaTimeAsOmPr, negDeltaTimeAsOmPi, negDeltaTimeAsOmPr, bachDeltaTimeAsOmKa);
 
     float nSigmaXiLaPr = o2::aod::cascdata::kNoTOFValue;
-    ;
     float nSigmaXiLaPi = o2::aod::cascdata::kNoTOFValue;
-    ;
     float nSigmaXiPi = o2::aod::cascdata::kNoTOFValue;
-    ;
     float nSigmaOmLaPr = o2::aod::cascdata::kNoTOFValue;
-    ;
     float nSigmaOmLaPi = o2::aod::cascdata::kNoTOFValue;
-    ;
     float nSigmaOmKa = o2::aod::cascdata::kNoTOFValue;
-    ;
 
     // go for Nsigma values if requested
     if (doNSigmas && nSigmaCalibLoaded) {
