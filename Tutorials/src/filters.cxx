@@ -10,8 +10,8 @@
 // or submit itself to any jurisdiction.
 ///
 /// \brief Filters are used to select specific rows of a table.
-/// \author
-/// \since
+/// \author Anton Alkin (anton.alkin@cern.ch)
+/// \file filters.cxx
 
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
@@ -21,18 +21,18 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // Apply filters on Collisions, Tracks, and TPhi
-struct FilteringDemo {
-  Configurable<float> ptlow{"ptlow", 0.5f, ""};
-  Configurable<float> ptup{"ptup", 2.0f, ""};
-  Filter ptFilter_a = aod::track::pt > ptlow;
-  Filter ptFilter_b = aod::track::pt < ptup;
+struct Filters {
+  Configurable<float> ptLow{"ptLow", 0.5f, ""};
+  Configurable<float> ptUp{"ptUp", 2.0f, ""};
+  Filter ptFilterA = aod::track::pt > ptLow;
+  Filter ptFilterB = aod::track::pt < ptUp;
 
-  Configurable<float> etalow{"etalow", -1.0f, ""};
-  Configurable<float> etaup{"etaup", 1.0f, ""};
-  Filter etafilter = (aod::track::eta < etaup) && (aod::track::eta > etalow);
+  Configurable<float> etaLow{"etaLow", -1.0f, ""};
+  Configurable<float> etaUp{"etaUp", 1.0f, ""};
+  Filter etafilter = (aod::track::eta < etaUp) && (aod::track::eta > etaLow);
 
-  Configurable<float> philow{"phiLow", 1.0f, "Phi lower limit"};
-  Configurable<float> phiup{"phiUp", 2.0f, "Phi upper limit"};
+  Configurable<float> phiLow{"phiLow", 1.0f, "Phi lower limit"};
+  Configurable<float> phiUp{"phiUp", 2.0f, "Phi upper limit"};
 
   Configurable<float> vtxZ{"vtxZ", 10.f, ""};
   Filter posZfilter = nabs(aod::collision::posZ) < vtxZ;
@@ -43,7 +43,7 @@ struct FilteringDemo {
   // configurables can be used with ncfg(type, value, name)
   // where value is the default value
   // name is the full name in JSON, with prefix if there is any
-  Configurable<std::string> extraFilter{"extra-filter","(o2::aod::track::phi < ncfg(float,2.0,phiUp)) && (o2::aod::track::phi > ncfg(float,1.0,phiLow))","extra filter string"};
+  Configurable<std::string> extraFilter{"extraFilter","(o2::aod::track::phi < ncfg(float,2.0,phiUp)) && (o2::aod::track::phi > ncfg(float,1.0,phiLow))","extra filter string"};
   Filter extraF;
 
   void init(InitContext&)
@@ -59,9 +59,9 @@ struct FilteringDemo {
   {
     LOGF(info, "Collision: %d [N = %d out of %d], -%.1f < %.3f < %.1f",
          collision.globalIndex(), tracks.size(), tracks.tableSize(), (float)vtxZ, collision.posZ(), (float)vtxZ);
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       LOGP(info, "id = {}; eta:  {} < {} < {}; phi: {} < {} < {}; pt: {} < {} < {}",
-           track.collisionId(), (float)etalow, track.eta(), (float)etaup, (float)philow, track.phi(), (float)phiup, (float)ptlow, track.pt(), (float)ptup);
+           track.collisionId(), (float)etaLow, track.eta(), (float)etaUp, (float)phiLow, track.phi(), (float)phiUp, (float)ptLow, track.pt(), (float)ptUp);
     }
   }
 };
@@ -69,6 +69,6 @@ struct FilteringDemo {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<FilteringDemo>(cfgc)
+    adaptAnalysisTask<Filters>(cfgc)
   };
 }
