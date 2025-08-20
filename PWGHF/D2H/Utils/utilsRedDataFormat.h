@@ -82,6 +82,30 @@ float getTpcTofNSigmaPi1(const T1& prong1)
   return defaultNSigma;
 }
 
+/// Helper function to retrive PID information of bachelor pion from b-hadron decay
+/// \param prongSoftPi soft pion track
+template <typename T1>
+float getTpcTofNSigmaSoftPi(const T1& prongSoftPi)
+{
+  float defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+
+  bool hasTpc = prongSoftPi.hasTPC();
+  bool hasTof = prongSoftPi.hasTOF();
+
+  if (hasTpc && hasTof) {
+    float tpcNSigma = prongSoftPi.tpcNSigmaPiSoftPi();
+    float tofNSigma = prongSoftPi.tofNSigmaPiSoftPi();
+    return std::sqrt(.5f * tpcNSigma * tpcNSigma + .5f * tofNSigma * tofNSigma);
+  }
+  if (hasTpc) {
+    return std::abs(prongSoftPi.tpcNSigmaPiSoftPi());
+  }
+  if (hasTof) {
+    return std::abs(prongSoftPi.tofNSigmaPiSoftPi());
+  }
+  return defaultNSigma;
+}
+
 /// Helper function to retrive PID information of bachelor kaon from b-hadron decay
 /// \param prong1 kaon track from reduced data format, aod::HfRedBachProng0Tracks
 /// \return the combined TPC and TOF n-sigma for kaon

@@ -723,7 +723,7 @@ struct alice3multicharmTable {
             histos.fill(HIST("hDCAxyXiCC"), std::fabs(xiccdcaXY * 1e+4));
             histos.fill(HIST("hDCAzXiCC"), std::fabs(xiccdcaZ * 1e+4));
 
-            if (std::fabs(thisXiCcandidate.eta) > xiccMaxEta)
+            if (std::fabs(thisXiCCcandidate.eta) > xiccMaxEta)
               continue; // not in central barrel
 
             histos.fill(HIST("hCharmBuilding"), 3.0f);

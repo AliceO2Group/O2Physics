@@ -18,34 +18,37 @@
 #ifndef COMMON_TOOLS_TRACKTUNER_H_
 #define COMMON_TOOLS_TRACKTUNER_H_
 
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/GeomConstants.h>
+#include <CommonUtils/NameConf.h>
+#include <DataFormatsCalibration/MeanVertexObject.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/Track.h>
+
+#include <TGraphErrors.h>
+
+#include <fmt/core.h>
+
+#include <algorithm>
 #include <map>
 #include <memory>
+#include <numbers>
 #include <string>
 #include <utility>
 #include <vector>
-#include <algorithm>
-#include <numbers>
-#include <fmt/core.h>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/GeomConstants.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include <TGraphErrors.h>
 
 namespace o2::aod
 {
@@ -246,7 +249,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
 
     LOG(info) << "[TrackTuner]";
     LOG(info) << "[TrackTuner] >>> String slices:";
-    for (std::string& s : slices)
+    for (const std::string& s : slices)
       LOG(info) << "[TrackTuner]     " << s;
 
     /// check if the number of input parameters is correct
@@ -260,7 +263,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     /// lambda expression to search for the parameter value (as string) in the configuration string
     auto getValueString = [&](uint8_t iPar) {
       /// this allows to search the parameter configuration even if they are not written in order
-      auto it = std::find_if(slices.begin(), slices.end(), [&](std::string s) { return s.find(mapParNames[iPar]) != std::string::npos; });
+      auto it = std::find_if(slices.begin(), slices.end(), [&](const std::string& s) { return s.find(mapParNames[iPar]) != std::string::npos; });
       if (it == std::end(slices)) {
         // parameter not found
         LOG(fatal) << "\"" << mapParNames[iPar] << "\" not found in the configuration string";
@@ -274,7 +277,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     };
 
     /// further lambda expression to handle bool initialization
-    auto setBoolFromString = [=](bool& b, std::string str) {
+    auto setBoolFromString = [=](bool& b, const std::string& str) {
       if (!str.compare("1") || str.find("true") != std::string::npos || str.find("True") != std::string::npos || str.find("TRUE") != std::string::npos) {
         b = true;
       } else if (!str.compare("0") || str.find("false") != std::string::npos || str.find("False") != std::string::npos || str.find("FALSE") != std::string::npos) {

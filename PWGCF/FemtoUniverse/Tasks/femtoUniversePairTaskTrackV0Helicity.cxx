@@ -237,6 +237,8 @@ struct FemtoUniversePairTaskTrackV0Helicity {
 
     // Helicity angle
     thetaRegistry.add("Theta/hTheta", " ; p (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
+    thetaRegistry.add("Theta/hTheta3D_PosChild", " ; p_{V0} (GeV/#it{c}); cos(#theta); p_{Positive Child} (GeV/#it{c})", kTH3F, {{100, 0, 10}, {110, -1.1, 1.1}, {100, 0, 10}});
+    thetaRegistry.add("Theta/hTheta3D_NegChild", " ; p_{V0} (GeV/#it{c}); cos(#theta); p_{Negative Child} (GeV/#it{c})", kTH3F, {{100, 0, 10}, {110, -1.1, 1.1}, {100, 0, 10}});
     thetaRegistry.add("Theta/PositiveChild/hThetaPt", " ; p_{T} (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/PositiveChild/hThetaEta", " ; #eta; cos(#theta)", kTH2F, {{100, -1, 1}, {110, -1.1, 1.1}});
     thetaRegistry.add("Theta/PositiveChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
@@ -264,7 +266,12 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     registryMCtruth.add("minus/MCtruthPiPt", "MC truth pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryMCtruth.add("minus/MCtruthPrPt", "MC truth protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
 
+    registryMCtruth.add("PosChildMCTruth/hPt", " ; p_{T} (GeV/#it{c}); ", {HistType::kTH1F, {{100, 0, 5}}});
+    registryMCtruth.add("NegChildMCTruth/hPt", " ; p_{T} (GeV/#it{c}); ", {HistType::kTH1F, {{100, 0, 5}}});
+
     registryMCtruth.add("ThetaMCTruth/hTheta", " ; p (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
+    registryMCtruth.add("ThetaMCTruth/hTheta3D_PosChild", " ; p_{V0} (GeV/#it{c}); cos(#theta); p_{Positive Child} (GeV/#it{c})", kTH3F, {{100, 0, 10}, {110, -1.1, 1.1}, {100, 0, 10}});
+    registryMCtruth.add("ThetaMCTruth/hTheta3D_NegChild", " ; p_{V0} (GeV/#it{c}); cos(#theta); p_{Negative Child} (GeV/#it{c})", kTH3F, {{100, 0, 10}, {110, -1.1, 1.1}, {100, 0, 10}});
     registryMCtruth.add("ThetaMCTruth/PositiveChild/hThetaPt", " ; p_{T} (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
     registryMCtruth.add("ThetaMCTruth/PositiveChild/hThetaEta", " ; #eta; cos(#theta)", kTH2F, {{100, -1, 1}, {110, -1.1, 1.1}});
     registryMCtruth.add("ThetaMCTruth/PositiveChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
@@ -293,6 +300,14 @@ struct FemtoUniversePairTaskTrackV0Helicity {
     registryMCreco.add("plus/MCrecoPrPt", "MC reco protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryMCreco.add("minus/MCrecoPiPt", "MC reco pions;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
     registryMCreco.add("minus/MCrecoPrPt", "MC reco protons;#it{p}_{T} (GeV/c)", {HistType::kTH1F, {{500, 0, 5}}});
+
+    registryMCreco.add("ThetaMCReco/hTheta", " ; p (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
+    registryMCreco.add("ThetaMCReco/PositiveChild/hThetaPt", " ; p_{T} (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
+    registryMCreco.add("ThetaMCReco/PositiveChild/hThetaEta", " ; #eta; cos(#theta)", kTH2F, {{100, -1, 1}, {110, -1.1, 1.1}});
+    registryMCreco.add("ThetaMCReco/PositiveChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
+    registryMCreco.add("ThetaMCReco/NegativeChild/hThetaPt", " ; p_{T} (GeV/#it{c}); cos(#theta)", kTH2F, {{100, 0, 10}, {110, -1.1, 1.1}});
+    registryMCreco.add("ThetaMCReco/NegativeChild/hThetaEta", " ; #eta; cos(#theta)", kTH2F, {{100, -1, 1}, {110, -1.1, 1.1}});
+    registryMCreco.add("ThetaMCReco/NegativeChild/hThetaPhi", " ; #phi; cos(#theta)", kTH2F, {{100, -1, 7}, {110, -1.1, 1.1}});
 
     sameEventCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     sameEventCont.setPDGCodes(confTrkPDGCodePartOne, confV0PDGCodePartTwo);
@@ -351,6 +366,8 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       negChildHistos.fillQA<false, true>(negChild);
 
       thetaRegistry.fill(HIST("Theta/hTheta"), part.p(), cosineTheta);
+      thetaRegistry.fill(HIST("Theta/hTheta3D_PosChild"), part.p(), cosineTheta, posChild.p());
+      thetaRegistry.fill(HIST("Theta/hTheta3D_NegChild"), part.p(), cosineTheta, negChild.p());
       thetaRegistry.fill(HIST("Theta/PositiveChild/hThetaPt"), posChild.pt(), cosineTheta);
       thetaRegistry.fill(HIST("Theta/PositiveChild/hThetaEta"), posChild.eta(), cosineTheta);
       thetaRegistry.fill(HIST("Theta/PositiveChild/hThetaPhi"), posChild.phi(), cosineTheta);
@@ -881,12 +898,17 @@ struct FemtoUniversePairTaskTrackV0Helicity {
       const auto& posChild = parts.iteratorAt(part.index() - 2);
       const auto& negChild = parts.iteratorAt(part.index() - 1);
 
+      registryMCtruth.fill(HIST("PosChildMCTruth/hPt"), posChild.pt());
+      registryMCtruth.fill(HIST("NegChildMCTruth/hPt"), negChild.pt());
+
       auto posChildMass = pdg->Mass(confPDGCodePosChild);
       auto negChildMass = pdg->Mass(confPDGCodeNegChild);
       auto posChildBoosted = FemtoUniverseMath::boostPRF<decltype(posChild)>(posChild, posChildMass, negChild, negChildMass);
       auto cosineTheta = (posChildBoosted.Px() * part.px() + posChildBoosted.Py() * part.py() + posChildBoosted.Pz() * part.pz()) / (posChildBoosted.P() * part.p());
 
       registryMCtruth.fill(HIST("ThetaMCTruth/hTheta"), part.p(), cosineTheta);
+      registryMCtruth.fill(HIST("ThetaMCTruth/hTheta3D_PosChild"), part.p(), cosineTheta, posChild.p());
+      registryMCtruth.fill(HIST("ThetaMCTruth/hTheta3D_NegChild"), part.p(), cosineTheta, negChild.p());
       registryMCtruth.fill(HIST("ThetaMCTruth/PositiveChild/hThetaPt"), posChild.pt(), cosineTheta);
       registryMCtruth.fill(HIST("ThetaMCTruth/PositiveChild/hThetaEta"), posChild.eta(), cosineTheta);
       registryMCtruth.fill(HIST("ThetaMCTruth/PositiveChild/hThetaPhi"), posChild.phi(), cosineTheta);
