@@ -511,6 +511,7 @@ struct cascadeFlow {
     resolution.fill(HIST("QVectorsT0CTPCA_Shifted"), coll.centFT0C(), TMath::Cos(static_cast<float>(nmode) * (psiT0C + deltapsiFT0C - psiTPCA - deltapsiTPCA)));
     resolution.fill(HIST("QVectorsT0CTPCC_Shifted"), coll.centFT0C(), TMath::Cos(static_cast<float>(nmode) * (psiT0C + deltapsiFT0C - psiTPCC - deltapsiTPCC)));
     resolution.fill(HIST("QVectorsTPCAC_Shifted"), coll.centFT0C(), TMath::Cos(static_cast<float>(nmode) * (psiTPCA + deltapsiTPCA - psiTPCC - deltapsiTPCC)));
+    return true;
   }
 
   // objects to use for acceptance correction
