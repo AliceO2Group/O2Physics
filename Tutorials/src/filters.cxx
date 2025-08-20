@@ -43,7 +43,7 @@ struct Filters {
   // configurables can be used with ncfg(type, value, name)
   // where value is the default value
   // name is the full name in JSON, with prefix if there is any
-  Configurable<std::string> extraFilter{"extraFilter","(o2::aod::track::phi < ncfg(float,2.0,phiUp)) && (o2::aod::track::phi > ncfg(float,1.0,phiLow))","extra filter string"};
+  Configurable<std::string> extraFilter{"extraFilter", "(o2::aod::track::phi < ncfg(float,2.0,phiUp)) && (o2::aod::track::phi > ncfg(float,1.0,phiLow))", "extra filter string"};
   Filter extraF;
 
   void init(InitContext&)
@@ -68,7 +68,5 @@ struct Filters {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<Filters>(cfgc)
-  };
+  return {adaptAnalysisTask<Filters>(cfgc)};
 }
