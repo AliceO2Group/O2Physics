@@ -917,7 +917,7 @@ struct femtoDreamProducerTasknewv1 {
       fillCollisionsAndTracksAndV0<false, false, true, false>(col, tracks, tracks, fullV0s);
     }
   }
-  PROCESS_SWITCH(femtoDreamProducerTask, processData,
+  PROCESS_SWITCH(femtoDreamProducerTasknewv1, processData,
                  "Provide experimental data", true);
 
   void
@@ -938,7 +938,7 @@ struct femtoDreamProducerTasknewv1 {
       fillCollisionsAndTracksAndV0<false, false, false, false>(col, tracks, tracks, fullV0s);
     }
   }
-  PROCESS_SWITCH(femtoDreamProducerTask, processData_noCentrality,
+  PROCESS_SWITCH(femtoDreamProducerTasknewv1, processData_noCentrality,
                  "Provide experimental data without centrality information", false);
 
   void processData_CentPbPb(aod::FemtoFullCollision_CentPbPb const& col,
@@ -958,7 +958,7 @@ struct femtoDreamProducerTasknewv1 {
       fillCollisionsAndTracksAndV0<false, false, true, true>(col, tracks, tracks, fullV0s);
     }
   }
-  PROCESS_SWITCH(femtoDreamProducerTask, processData_CentPbPb,
+  PROCESS_SWITCH(femtoDreamProducerTasknewv1, processData_CentPbPb,
                  "Provide experimental data with centrality information for PbPb collisions", false);
 
   void processMC(aod::FemtoFullCollisionMC const& col,
@@ -973,7 +973,7 @@ struct femtoDreamProducerTasknewv1 {
     // fill the tables
     fillCollisionsAndTracksAndV0<false, false, true, false>(col, tracks, tracks, fullV0s);
   }
-  PROCESS_SWITCH(femtoDreamProducerTask, processMC, "Provide MC data", false);
+  PROCESS_SWITCH(femtoDreamProducerTasknewv1, processMC, "Provide MC data", false);
 
   void processMC_noCentrality(aod::FemtoFullCollision_noCent_MC const& col,
                               aod::BCsWithTimestamps const&,
@@ -987,7 +987,7 @@ struct femtoDreamProducerTasknewv1 {
     // fill the tables
     fillCollisionsAndTracksAndV0<true, false, false, false>(col, tracks, tracks, fullV0s);
   }
-  PROCESS_SWITCH(femtoDreamProducerTask, processMC_noCentrality, "Provide MC data without requiring a centrality calibration", false);
+  PROCESS_SWITCH(femtoDreamProducerTasknewv1, processMC_noCentrality, "Provide MC data without requiring a centrality calibration", false);
 
   void processMC_CentPbPb(aod::FemtoFullCollisionMC_CentPbPb const& col,
                           aod::BCsWithTimestamps const&,
@@ -1001,7 +1001,7 @@ struct femtoDreamProducerTasknewv1 {
     // fill the tables
     fillCollisionsAndTracksAndV0<true, false, true, true>(col, tracks, tracks, fullV0s);
   }
-  PROCESS_SWITCH(femtoDreamProducerTask, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
+  PROCESS_SWITCH(femtoDreamProducerTasknewv1, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
