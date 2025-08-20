@@ -13,10 +13,10 @@
 /// \author Anton Alkin (anton.alkin@cern.ch)
 /// \file filters.cxx
 
-#include <string>
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
+
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
