@@ -299,7 +299,7 @@ struct BjetTaggingGnn {
       return;
     }
 
-    registry.fill(HIST("h_vertexZ"), collision.posZ());
+    registry.fill(HIST("h_vertexZ"), collision.posZ(), useEventWeight ? collision.weight() : 1.f);
 
     for (const auto& analysisJet : MCDjets) {
 
