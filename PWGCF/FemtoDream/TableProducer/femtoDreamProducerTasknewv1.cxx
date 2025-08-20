@@ -97,7 +97,7 @@ int getRowDaughters(int daughID, T const& vecID)
   return rowInPrimaryTrackTableDaugh;
 }
 
-struct femtoDreamProducerTask {
+struct femtoDreamProducerTasknewv1 {
 
   SliceCache cache;                                                        // o2::framework, included in ASoAHelpers.h
   Preslice<aod::FemtoFullTracks> perCol = aod::track::collisionId;         // o2::framework included in ASoAHelpers.h
@@ -1005,6 +1005,6 @@ struct femtoDreamProducerTask {
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<femtoDreamProducerTask>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<femtoDreamProducerTasknewv1>(cfgc)};
   return workflow;
 }

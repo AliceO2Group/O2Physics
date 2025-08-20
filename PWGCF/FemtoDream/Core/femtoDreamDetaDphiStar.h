@@ -157,7 +157,7 @@ class FemtoDreamDetaDphiStar
     if constexpr (mPartOneType == o2::aod::femtodreamparticle::ParticleType::kV0 && mPartTwoType == o2::aod::femtodreamparticle::ParticleType::kReso) {
 
       for (int i = 0; i < 4; i++) {
-        std::string dirName = static_cast<std::string>(dirNames[5]);
+        std::string dirName = static_cast<std::string>(dirNames[4]);
         histdetadpi[i][0] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[0][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         histdetadpi[i][1] = mHistogramRegistry->add<TH2>((dirName + static_cast<std::string>(histNames[1][i]) + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
         histdetadpi[i][2] = mHistogramRegistry->add<TH2>((dirName + "at_PV_" + std::to_string(i) + "_before" + static_cast<std::string>(histNameSEorME[meORse])).c_str(), "; #Delta #eta; #Delta #phi^{*}", kTH2F, {{100, -0.15, 0.15}, {100, -0.15, 0.15}});
