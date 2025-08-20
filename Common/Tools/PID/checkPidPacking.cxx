@@ -19,12 +19,12 @@
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
+#include <Framework/Logger.h>
+
 #include "TCanvas.h"
 #include "TRandom.h"
 #include <TH1.h>
 #include <TString.h>
-
-#include <fairlogger/Logger.h>
 
 #include <cstdint>
 #include <string>

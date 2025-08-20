@@ -19,8 +19,7 @@
 
 #include <Framework/ConfigContext.h>
 #include <Framework/InitContext.h>
-
-#include <fairlogger/Logger.h>
+#include <Framework/Logger.h>
 
 #include <array>
 #include <string>

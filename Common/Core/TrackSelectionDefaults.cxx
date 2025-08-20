@@ -20,8 +20,7 @@
 #include "Common/Core/TrackSelection.h"
 
 #include "Framework/DataTypes.h"
-
-#include <fairlogger/Logger.h>
+#include <Framework/Logger.h>
 
 #include <cmath>
 

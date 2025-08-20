@@ -23,8 +23,7 @@
 #include <CommonConstants/LHCConstants.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/DataTypes.h>
-
-#include <fairlogger/Logger.h>
+#include <Framework/Logger.h>
 
 #include <Rtypes.h>
 

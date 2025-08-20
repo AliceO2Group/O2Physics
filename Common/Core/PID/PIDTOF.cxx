@@ -18,12 +18,12 @@
 
 #include "PIDTOF.h"
 
+#include <Framework/Logger.h>
+
 #include <TF2.h>
 #include <TFile.h>
 #include <TGraph.h>
 #include <TString.h>
-
-#include <fairlogger/Logger.h>
 
 #include <array>
 #include <cstdint>

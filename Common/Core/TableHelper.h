@@ -21,9 +21,8 @@
 #include <Framework/Array2D.h>
 #include <Framework/ConfigParamSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/RunningWorkflowInfo.h>
-
-#include <fairlogger/Logger.h>
 
 #include <string>
 

@@ -26,6 +26,7 @@
 #include <Framework/DataSpecUtils.h>
 #include <Framework/DataTypes.h>
 #include <Framework/DeviceSpec.h>
+#include <Framework/Logger.h>
 #include <Framework/RunningWorkflowInfo.h>
 
 #include <TFile.h>
@@ -34,8 +35,6 @@
 #include <TList.h>
 #include <TProfile.h>
 #include <TString.h>
-
-#include <fairlogger/Logger.h>
 
 #include <cmath>
 #include <cstdint>

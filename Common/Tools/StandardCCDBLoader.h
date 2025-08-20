@@ -21,8 +21,7 @@
 #include "DetectorsBase/Propagator.h"
 #include <DetectorsBase/MatLayerCylSet.h>
 #include <Framework/Configurable.h>
-
-#include <fairlogger/Logger.h>
+#include <Framework/Logger.h>
 
 #include <cmath>
 #include <cstdlib>
