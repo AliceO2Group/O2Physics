@@ -2825,22 +2825,22 @@ DECLARE_SOA_TABLE(HfD0FromDstarBase, "AOD", "HFD0FRMDSTR",
 DECLARE_SOA_EXTENDED_TABLE_USER(HfD0FromDstarExt, HfD0FromDstarBase, "HFD0FRMDSTREXT",
                                 hf_cand_dstar::PxD0, hf_cand_dstar::PyD0, hf_cand_dstar::PzD0);
 
-DECLARE_SOA_TABLE(HfCandDstarProng0PidPi, "AOD", "HFCANDDSTRP0PIDPI", //!
+DECLARE_SOA_TABLE(HfCandDstarProng0PidPi, "AOD", "HFDSTRP0PIDPI", //!
                   hf_cand::NSigTpcPi0, hf_cand::NSigTofPi0,
                   hf_cand::TpcTofNSigmaPi0<hf_cand::NSigTpcPi0, hf_cand::NSigTofPi0>);
-DECLARE_SOA_TABLE(HfCandDstarProng1PidPi, "AOD", "HFCANDDSTRP1PIDPI", //!
+DECLARE_SOA_TABLE(HfCandDstarProng1PidPi, "AOD", "HFDSTRP1PIDPI", //!
                   hf_cand::NSigTpcPi1, hf_cand::NSigTofPi1,
                   hf_cand::TpcTofNSigmaPi1<hf_cand::NSigTpcPi1, hf_cand::NSigTofPi1>);
-DECLARE_SOA_TABLE(HfCandDstarProng2PidPi, "AOD", "HFCANDDSTRP2PIDPI", //!
+DECLARE_SOA_TABLE(HfCandDstarProng2PidPi, "AOD", "HFDSTRP2PIDPI", //!
                   hf_cand::NSigTpcPi2, hf_cand::NSigTofPi2,
                   hf_cand::TpcTofNSigmaPi2<hf_cand::NSigTpcPi2, hf_cand::NSigTofPi2>);
-DECLARE_SOA_TABLE(HfCandDstarProng0PidKa, "AOD", "HFCANDDSTRP0PIDKA", //!
+DECLARE_SOA_TABLE(HfCandDstarProng0PidKa, "AOD", "HFDSTRP0PIDKA", //!
                   hf_cand::NSigTpcKa0, hf_cand::NSigTofKa0,
                   hf_cand::TpcTofNSigmaKa0<hf_cand::NSigTpcKa0, hf_cand::NSigTofKa0>);
-DECLARE_SOA_TABLE(HfCandDstarProng1PidKa, "AOD", "HFCANDDSTRP1PIDKA", //!
+DECLARE_SOA_TABLE(HfCandDstarProng1PidKa, "AOD", "HFDSTRP1PIDKA", //!
                   hf_cand::NSigTpcKa1, hf_cand::NSigTofKa1,
                   hf_cand::TpcTofNSigmaKa1<hf_cand::NSigTpcKa1, hf_cand::NSigTofKa1>);
-DECLARE_SOA_TABLE(HfCandDstarProng2PidKa, "AOD", "HFCANDDSTRP2PIDKA", //!
+DECLARE_SOA_TABLE(HfCandDstarProng2PidKa, "AOD", "HFDSTRP2PIDKA", //!
                   hf_cand::NSigTpcKa2, hf_cand::NSigTofKa2,
                   hf_cand::TpcTofNSigmaKa2<hf_cand::NSigTpcKa2, hf_cand::NSigTofKa2>);
 
