@@ -18,17 +18,18 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTION_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTION_H_
 
-#include <iostream>
-#include <string>
-#include <vector>
-
 #include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
 
 #include "Common/Core/RecoDecay.h"
+
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/PID.h"
+
+#include <iostream>
+#include <string>
+#include <vector>
 
 using namespace o2::framework;
 
@@ -248,7 +249,7 @@ class FemtoDreamV0Selection
   float fInvMassKaonUpLimit;
 
   float nSigmaPIDOffsetTPC;
-    
+
   bool fMotherIsLambda;
 
   FemtoDreamTrackSelection PosDaughTrack;
@@ -299,7 +300,7 @@ void FemtoDreamV0Selection::init(HistogramRegistry* QAregistry, HistogramRegistr
     fillSelectionHistogram<part>();
     fillSelectionHistogram<daugh>();
 
-    AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "m_{#Lambda} (GeV/#it{c}^{2})"};    ///paramters for K0Short
+    AxisSpec massAxisLambda = {600, 0.0f, 3.0f, "m_{#Lambda} (GeV/#it{c}^{2})"}; /// paramters for K0Short
     AxisSpec massAxisAntiLambda = {600, 0.0f, 3.0f,
                                    "m_{#bar{#Lambda}} (GeV/#it{c}^{2})"};
 
@@ -436,10 +437,10 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& /*col*/, V const& v0,
 
   const float invMassKaon = v0.mK0Short();
 
-  if (fMotherIsLambda){     ///Lambda
+  if (fMotherIsLambda) { /// Lambda
     if ((invMassLambda < fInvMassLowLimit || invMassLambda > fInvMassUpLimit) &&
         (invMassAntiLambda < fInvMassLowLimit ||
-        invMassAntiLambda > fInvMassUpLimit)) {
+         invMassAntiLambda > fInvMassUpLimit)) {
       return false;
     }
     if (fRejectKaon) {
@@ -448,15 +449,15 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& /*col*/, V const& v0,
         return false;
       }
     }
-  } else {      ///K0Short
+  } else { /// K0Short
     if ((invMassKaon < fInvMassKaonLowLimit || invMassKaon > fInvMassKaonUpLimit)) {
       return false;
     }
     if (fRejectLambda) {
-      if ((invMassLambda > fInvMassLowLimit && 
-          invMassLambda < fInvMassUpLimit) || 
+      if ((invMassLambda > fInvMassLowLimit &&
+           invMassLambda < fInvMassUpLimit) ||
           (invMassAntiLambda > fInvMassLowLimit &&
-          invMassAntiLambda < fInvMassUpLimit)){
+           invMassAntiLambda < fInvMassUpLimit)) {
         return false;
       }
     }
@@ -497,7 +498,7 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& /*col*/, V const& v0,
 
   // check that track combinations for V0 or antiV0 would be fulfilling PID
   int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
-  if (fMotherIsLambda){     ///Lambda
+  if (fMotherIsLambda) { /// Lambda
     // antiV0
     auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
     auto nSigmaPiPos = posTrack.tpcNSigmaPi();
@@ -510,7 +511,7 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& /*col*/, V const& v0,
           std::abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax)) {
       return false;
     }
-  } else {    ///K0SHort
+  } else { /// K0SHort
     auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
     auto nSigmaPiPos = posTrack.tpcNSigmaPi();
     if (!(std::abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax &&
@@ -543,7 +544,7 @@ void FemtoDreamV0Selection::fillLambdaQA(C const& /*col*/, V const& v0,
   const float invMassKaon = v0.mK0Short();
 
   float fillMass = 0.;
-  if (fMotherIsLambda){
+  if (fMotherIsLambda) {
     fillMass = v0.mLambda();
   } else {
     fillMass = v0.mK0Short();
@@ -551,44 +552,44 @@ void FemtoDreamV0Selection::fillLambdaQA(C const& /*col*/, V const& v0,
 
   mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaNoCuts"), fillMass);
 
-  if (fMotherIsLambda){       ///Lambda
+  if (fMotherIsLambda) { /// Lambda
     if (invMassLambda > fInvMassLowLimit && invMassLambda < fInvMassUpLimit) {
       mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaInvMassCut"),
-                                v0.mLambda());
+                                 v0.mLambda());
     }
-  } else {                    ///K0Short
+  } else { /// K0Short
     if (invMassKaon > fInvMassKaonLowLimit && invMassKaon < fInvMassKaonUpLimit) {
       mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaInvMassCut"),
-                                v0.mK0Short());
+                                 v0.mK0Short());
     }
   }
 
   if (pT > pTV0Min) {
-   mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaPtMin"),
-                              fillMass);
+    mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaPtMin"),
+                               fillMass);
   }
   if (pT < pTV0Max) {
     mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaPtMax"),
-                              fillMass);
+                               fillMass);
   }
   if (std::abs(eta) < etaV0Max) {
     mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaEtaMax"),
-                              fillMass);
+                               fillMass);
   }
   if (dcaDaughv0 < DCAV0DaughMax) {
     mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaDCAV0Daugh"),
-                              fillMass);
+                               fillMass);
   }
   if (cpav0 > CPAV0Min) {
     mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaCPA"), fillMass);
   }
   if (tranRad > TranRadV0Min) {
     mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaTranRadMin"),
-                              fillMass);
+                               fillMass);
   }
   if (tranRad < TranRadV0Max) {
     mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaTranRadMax"),
-                              fillMass);
+                               fillMass);
   }
   bool write = true;
   for (size_t i = 0; i < decVtx.size(); i++) {
@@ -596,10 +597,9 @@ void FemtoDreamV0Selection::fillLambdaQA(C const& /*col*/, V const& v0,
   }
   if (write) {
     mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaDecVtxMax"),
-                              fillMass);
+                               fillMass);
   }
 }
-
 
 /// the CosPA of V0 needs as argument the posXYZ of collisions vertex so we need
 /// to pass the collsion as well
@@ -607,41 +607,41 @@ template <typename cutContainerType, typename C, typename V, typename T>
 std::array<cutContainerType, 5>
   FemtoDreamV0Selection::getCutContainer(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
-      auto outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, v0.positivept(), v0.positiveeta(), v0.dcapostopv());
-      auto outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, v0.negativept(), v0.negativeeta(), v0.dcanegtopv());
-      cutContainerType output = 0;
-      size_t counter = 0;
-      
-      float sign = 0.;
-      ///Lambda
-      if (fMotherIsLambda){
-          auto lambdaMassNominal = o2::constants::physics::MassLambda;
-          auto lambdaMassHypothesis = v0.mLambda();
-          auto antiLambdaMassHypothesis = v0.mAntiLambda();
-          auto diffLambda = std::abs(lambdaMassNominal - lambdaMassHypothesis);
-          auto diffAntiLambda = std::abs(antiLambdaMassHypothesis - lambdaMassHypothesis);
-          
-          int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
-          auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
-          auto nSigmaPiPos = posTrack.tpcNSigmaPi();
-          auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
-          auto nSigmaPrPos = posTrack.tpcNSigmaPr();
-          // check the mass and the PID of daughters
-          if (std::abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda > diffLambda) {
-              sign = -1.;
-          } else if (std::abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
-              sign = 1.;
-          } else {
-              // if it happens that none of these are true, ignore the invariant mass
-              if (std::abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
-                  sign = -1.;
-              } else if (std::abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
-                  sign = 1.;
-              }
-          }
-      } else {
-          sign = 1.;    // for the K0Short arbitrarily set the sign to 1
+  auto outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, v0.positivept(), v0.positiveeta(), v0.dcapostopv());
+  auto outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, v0.negativept(), v0.negativeeta(), v0.dcanegtopv());
+  cutContainerType output = 0;
+  size_t counter = 0;
+
+  float sign = 0.;
+  /// Lambda
+  if (fMotherIsLambda) {
+    auto lambdaMassNominal = o2::constants::physics::MassLambda;
+    auto lambdaMassHypothesis = v0.mLambda();
+    auto antiLambdaMassHypothesis = v0.mAntiLambda();
+    auto diffLambda = std::abs(lambdaMassNominal - lambdaMassHypothesis);
+    auto diffAntiLambda = std::abs(antiLambdaMassHypothesis - lambdaMassHypothesis);
+
+    int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
+    auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
+    auto nSigmaPiPos = posTrack.tpcNSigmaPi();
+    auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
+    auto nSigmaPrPos = posTrack.tpcNSigmaPr();
+    // check the mass and the PID of daughters
+    if (std::abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda > diffLambda) {
+      sign = -1.;
+    } else if (std::abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && diffAntiLambda < diffLambda) {
+      sign = 1.;
+    } else {
+      // if it happens that none of these are true, ignore the invariant mass
+      if (std::abs(nSigmaPrNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
+        sign = -1.;
+      } else if (std::abs(nSigmaPrPos - nSigmaPIDOffsetTPC) < nSigmaPIDMax && std::abs(nSigmaPiNeg - nSigmaPIDOffsetTPC) < nSigmaPIDMax) {
+        sign = 1.;
       }
+    }
+  } else {
+    sign = 1.; // for the K0Short arbitrarily set the sign to 1
+  }
 
   const auto pT = v0.pt();
   const auto eta = v0.eta();
@@ -746,7 +746,7 @@ void FemtoDreamV0Selection::fillQA(C const& /*col*/, V const& v0, T const& posTr
         HIST("/hCPAvsPt"),
       v0.pt(), v0.v0cosPA());
 
-    if (fMotherIsLambda){         ///Lambda
+    if (fMotherIsLambda) { /// Lambda
       mQAHistogramRegistry->fill(
         HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) +
           HIST("/hInvMassLambda"),
@@ -759,7 +759,7 @@ void FemtoDreamV0Selection::fillQA(C const& /*col*/, V const& v0, T const& posTr
         HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) +
           HIST("/hInvMassLambdaAntiLambda"),
         v0.mLambda(), v0.mAntiLambda());
-    } else {                  ///K0Short
+    } else { /// K0Short
       mQAHistogramRegistry->fill(
         HIST(o2::aod::femtodreamparticle::ParticleTypeName[part]) +
           HIST("/hInvMassLambda"),
