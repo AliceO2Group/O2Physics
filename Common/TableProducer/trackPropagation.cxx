@@ -14,6 +14,7 @@
 //
 
 #include "TableHelper.h"
+
 #include "Common/Tools/TrackTuner.h"
 
 // The Run 3 AO2D stores the tracks at the point of innermost update. For a track with ITS this is the innermost (or second innermost)
@@ -133,7 +134,20 @@ struct TrackPropagation {
           break;
       }
 
-      trackTunerObj.getDcaGraphs();
+      /// see if other track-propagation devices are present
+      int counter = 0;
+      LOG(info) << "  ---> looking for track-propagation devices";
+      const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+      for (const DeviceSpec& device : workflows.devices) {
+        if (device.name.compare("track-propagation") == 0) {
+          // init HF event selection helper
+          LOG(info) << "    FOUND!";
+          counter++;
+        }
+      }
+
+      std::string tmpDirName = std::string("./") + std::to_string(counter);
+      trackTunerObj.getDcaGraphs(tmpDirName);
       trackTunedTracks->SetTitle(outputStringParams.c_str());
       trackTunedTracks->GetXaxis()->SetBinLabel(1, "all tracks");
     }

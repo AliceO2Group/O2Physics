@@ -447,7 +447,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     return outputString;
   }
 
-  void getDcaGraphs()
+  void getDcaGraphs(std::string tmpDir = ".")
   {
     std::string fullNameInputFile = "";
     std::string fullNameFileQoverPt = "";
@@ -456,7 +456,6 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       /// use input correction file from CCDB
 
       // properly init the ccdb
-      std::string tmpDir = ".";
       ccdbApi.init("http://alice-ccdb.cern.ch");
 
       // get the DCA correction file from CCDB
