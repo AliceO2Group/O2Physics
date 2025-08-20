@@ -12,18 +12,21 @@
 #ifndef PWGCF_DATAMODEL_FEMTODERIVED_H_
 #define PWGCF_DATAMODEL_FEMTODERIVED_H_
 
-#include <cmath>
-#include "Framework/ASoA.h"
-#include "MathUtils/Utils.h"
-#include "Framework/DataTypes.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
 #include "Common/DataModel/Multiplicity.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Expressions.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/DataTypes.h"
+#include "Framework/Expressions.h"
+#include "MathUtils/Utils.h"
+
+#include <cmath>
 
 namespace o2::aod
 {
@@ -90,11 +93,11 @@ namespace femtodreamparticle
 {
 /// Distinguishes the different particle types
 enum ParticleType {
-  kTrack,   //! Track
-  kV0,      //! V0 
-  kReso,    //! Resonances (phi) 
-  kResoChild, // Child track of a Resonance
-  kV0Child, //! Child track of a V0
+  kTrack,                      //! Track
+  kV0,                         //! V0
+  kReso,                       //! Resonances (phi)
+  kResoChild,                  // Child track of a Resonance
+  kV0Child,                    //! Child track of a V0
   kPhiPosdaughTPC_NegdaughTPC, /// cases for Phi-daughters for TPC or TOF combinations
   kPhiPosdaughTPC_NegdaughTOF,
   kPhiPosdaughTOF_NegdaughTPC,
@@ -113,10 +116,10 @@ enum MomentumType {
   kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "Reso", "ResoChild", "V0Child", "PhiPosdaughTPC_NegdaughTPC", "PhiPosdaughTPC_NegdaughTOF", "PhiPosdaughTOF_NegdaughTPC", "PhiPosdaughTOF_NegdaughTOF", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron"};//! Naming of the different particle types
-//static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA"};
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "Reso", "ResoChild", "V0Child", "PhiPosdaughTPC_NegdaughTPC", "PhiPosdaughTPC_NegdaughTOF", "PhiPosdaughTOF_NegdaughTPC", "PhiPosdaughTOF_NegdaughTOF", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron"}; //! Naming of the different particle types
+// static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA"};
 
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA"};// change later!! check for DCAXY for RESO!!
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA"}; // change later!! check for DCAXY for RESO!!
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 

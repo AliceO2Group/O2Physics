@@ -16,14 +16,15 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMOBJECTSELECTION_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMOBJECTSELECTION_H_
 
+#include "PWGCF/DataModel/FemtoDerived.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
+
+#include "Framework/HistogramRegistry.h"
+#include "ReconstructionDataFormats/PID.h"
+
 #include <algorithm>
 #include <string>
 #include <vector>
-
-#include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "Framework/HistogramRegistry.h"
-#include "PWGCF/DataModel/FemtoDerived.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -59,14 +60,13 @@ class FemtoDreamObjectSelection
     }
   }
 
-  ///assigns value from configurbale to protected class member 
-  /// \param selVals o2 configurable containing the values employed for the selection
-  template<typename V>
+  /// assigns value from configurbale to protected class member
+  ///  \param selVals o2 configurable containing the values employed for the selection
+  template <typename V>
   void assign(V& selVals)
   {
-    assignedValue = static_cast<selValDataType>(selVals);   
+    assignedValue = static_cast<selValDataType>(selVals);
   }
-
 
   /// Pass the Configurable of selection values in the analysis task to the selection class
   /// \tparam T Type of the configurable passed to the function
@@ -199,7 +199,7 @@ class FemtoDreamObjectSelection
   HistogramRegistry* mHistogramRegistry;                                     ///< For Analysis QA output
   HistogramRegistry* mQAHistogramRegistry;                                   ///< For QA output
   std::vector<FemtoDreamSelection<selValDataType, selVariable>> mSelections; ///< Vector containing all selections
-  selValDataType assignedValue; 
+  selValDataType assignedValue;
 };
 
 } // namespace femtoDream
