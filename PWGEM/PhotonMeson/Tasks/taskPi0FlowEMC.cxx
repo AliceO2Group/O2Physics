@@ -311,7 +311,7 @@ struct TaskPi0FlowEMC {
     const AxisSpec thAxisAlpha{100, -1., +1, "#alpha"};
     const AxisSpec thAxisMult{1000, 0., +1000, "#it{N}_{ch}"};
     const AxisSpec thAxisEnergy{1000, 0., 100., "#it{E}_{clus} (GeV)"};
-    const AxisSpec thAxisEnergyCalib{100, 0., 20., "#it{E}_{clus} (GeV)"};
+    const AxisSpec thAxisEnergyCalib{400, 0., 20., "#it{E}_{clus} (GeV)"};
     const AxisSpec thAxisTime{1500, -600, 900, "#it{t}_{cl} (ns)"};
     const AxisSpec thAxisEta{320, -0.8, 0.8, "#eta"};
     const AxisSpec thAxisPhi{500, 0, 2 * 3.14159, "phi"};
