@@ -53,7 +53,6 @@
 #include <TH1.h>
 #include <TH2.h>
 #include <TH3.h>
-#include <TJAlienCredentials.h>
 #include <TMath.h>
 
 #include <GPU/GPUROOTCartesianFwd.h>

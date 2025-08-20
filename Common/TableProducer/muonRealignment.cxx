@@ -36,7 +36,6 @@
 #include <MathUtils/Cartesian.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
 
-#include <TJAlienCredentials.h>
 #include <TMath.h>
 
 #include <GPUROOTCartesianFwd.h>

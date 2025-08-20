@@ -30,7 +30,6 @@
 #include <Math/SVector.h>
 #include <TDatabasePDG.h>
 #include <TGeoGlobalMagField.h>
-#include <TJAlienCredentials.h>
 #include <TLorentzVector.h>
 #include <TVector2.h>
 
@@ -635,7 +634,7 @@ struct match_mft_mch_data_mc {
       return;
 
     mRunNumber = bc.runNumber();
-    std::map<string, string> metadata;
+    std::map<std::string, std::string> metadata;
     auto soreor = o2::ccdb::BasicCCDBManager::getRunDuration(ccdbApi, mRunNumber);
     auto ts = soreor.first;
     auto grpmag = ccdbApi.retrieveFromTFileAny<o2::parameters::GRPMagField>(grpmagPath, metadata, ts);
