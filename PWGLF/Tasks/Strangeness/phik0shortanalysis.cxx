@@ -224,7 +224,8 @@ struct Phik0shortanalysis {
 
   // Configurables for dN/deta with phi computation
   Configurable<bool> furtherCheckonMcCollision{"furtherCheckonMcCollision", true, "Further check on MC collisions"};
-  Configurable<bool> filterOnMcPhi{"filterOnMcPhi", true, "Filter on MC Phi"};
+  Configurable<bool> filterOnGenPhi{"filterOnGenPhi", true, "Filter on MC Phi"};
+  Configurable<bool> filterOnRecoPhiWPDG{"filterOnRecoPhiWPDG", true, "Filter on Reco Phi with WPDG"};
 
   // Configurable for event mixing
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
@@ -2601,7 +2602,7 @@ struct Phik0shortanalysis {
 
     if (furtherCheckonMcCollision && (std::abs(mcCollision.posZ()) > cutZVertex || !pwglf::isINELgtNmc(mcParticlesThisColl, 0, pdgDB)))
       return;
-    if (filterOnMcPhi && !eventHasGenPhi(mcParticlesThisColl))
+    if (filterOnGenPhi && !eventHasGenPhi(mcParticlesThisColl))
       return;
 
     mcEventHist.fill(HIST("hRecoMCMultiplicityPercent"), mcCollision.centFT0M());
@@ -2653,15 +2654,12 @@ struct Phik0shortanalysis {
   {
     if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB))
       return;
-    if (filterOnMcPhi && !eventHasGenPhi(mcParticles))
+    if (filterOnGenPhi && !eventHasGenPhi(mcParticles))
       return;
 
     uint64_t numberAssocColl = 0;
     for (const auto& collision : collisions) {
       if (acceptEventQA<true>(collision, false)) {
-        // mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), mcCollision.centFT0M());
-        // mcEventHist.fill(HIST("h2GenMCRecoVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
-
         auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
 
         Partition<FilteredMCTracks> posFiltMCTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
@@ -2669,7 +2667,7 @@ struct Phik0shortanalysis {
         Partition<FilteredMCTracks> negFiltMCTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
         negFiltMCTracks.bindTable(filteredMCTracksThisColl);
 
-        if (!eventHasRecoPhiWPDG(posFiltMCTracks, negFiltMCTracks))
+        if (filterOnRecoPhiWPDG && !eventHasRecoPhiWPDG(posFiltMCTracks, negFiltMCTracks))
           continue;
 
         mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), mcCollision.centFT0M());
