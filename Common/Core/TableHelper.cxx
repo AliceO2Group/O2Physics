@@ -20,6 +20,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/RunningWorkflowInfo.h>
 
+#include <fairlogger/Logger.h>
+
 #include <string>
 
 /// Function to print the table required in the full workflow

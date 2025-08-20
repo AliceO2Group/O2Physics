@@ -15,9 +15,15 @@
 /// \since 20-10-2020
 ///
 
-#include "Framework/DataTypes.h"
-#include "Common/Core/TrackSelection.h"
 #include "TrackSelectionDefaults.h"
+
+#include "Common/Core/TrackSelection.h"
+
+#include "Framework/DataTypes.h"
+
+#include <fairlogger/Logger.h>
+
+#include <cmath>
 
 // Default track selection requiring one hit in the SPD
 TrackSelection getGlobalTrackSelection()

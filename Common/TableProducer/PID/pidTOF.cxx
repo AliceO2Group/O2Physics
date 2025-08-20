@@ -17,14 +17,34 @@
 ///
 
 // O2 includes
-#include <CCDB/BasicCCDBManager.h>
-#include "TOFBase/EventTimeMaker.h"
+#include "PID/PIDTOF.h"
+
 #include "Framework/AnalysisTask.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsTOF/ParameterContainers.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Variant.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TGraph.h>
+#include <TString.h>
+
+#include <chrono>
+#include <cstdint>
+#include <string>
+#include <utility>
+#include <vector>
 
 // O2Physics includes
 #include "TableHelper.h"
 #include "pidTOFBase.h"
+
+#include "Common/DataModel/PIDResponseTOF.h"
 
 using namespace o2;
 using namespace o2::framework;

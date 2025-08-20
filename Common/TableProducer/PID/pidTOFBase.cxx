@@ -15,14 +15,27 @@
 /// \brief  Base to build tasks for TOF PID tasks.
 ///
 
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
-#include <utility>
 #include <vector>
 
 // O2 includes
+#include "PID/PIDTOF.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsTOF/ParameterContainers.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <ReconstructionDataFormats/Track.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <ReconstructionDataFormats/PID.h>
 #include <TOFBase/EventTimeMaker.h>
 
 // O2Physics includes
@@ -31,8 +44,7 @@
 
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 
 #include <Framework/HistogramRegistry.h>
 #include <Framework/runDataProcessing.h>

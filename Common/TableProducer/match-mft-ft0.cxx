@@ -9,40 +9,47 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// \file   match-mft-ft0.cxx
-// \author Sarah Herrmann <sarah.herrmann@cern.ch>
-//
-// \brief This code loops over every MFT tracks (except orphan tracks) and propagates
-//        them to the FT0-C, matching the signals in some BC to reduce track ambiguity
-//        It produces a table containing for each MFT track a list of BCs with an FT0C match
-//        called aod::BCofMFT
-// \date 03/09/24
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-
-#include "MathUtils/Utils.h"
-#include "CommonConstants/LHCConstants.h"
-#include "Common/Core/trackUtilities.h"         //for getTrackPar()
-#include "ReconstructionDataFormats/TrackFwd.h" //for propagate
-// https://github.com/AliceO2Group/AliceO2/blob/dev/DataFormats/Reconstruction/include/ReconstructionDataFormats/TrackFwd.h
-#include "CommonConstants/LHCConstants.h"
-#include "Math/MatrixFunctions.h"
-#include "Math/SMatrix.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "Field/MagneticField.h"
-#include "TGeoGlobalMagField.h"
-
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
+/// \file   match-mft-ft0.cxx
+/// \author Sarah Herrmann <sarah.herrmann@cern.ch>
+///
+/// \brief This code loops over every MFT tracks (except orphan tracks) and propagates
+///        them to the FT0-C, matching the signals in some BC to reduce track ambiguity
+///        It produces a table containing for each MFT track a list of BCs with an FT0C match
+///        called aod::BCofMFT
+/// \date 03/09/24
+/// \note https://github.com/AliceO2Group/AliceO2/blob/dev/DataFormats/Reconstruction/include/ReconstructionDataFormats/TrackFwd.h
 
 #include "Common/DataModel/MatchMFTFT0.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/LHCConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/TrackFwd.h" //for propagate
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+
+#include "Math/MatrixFunctions.h"
+#include "Math/SMatrix.h"
+#include "TGeoGlobalMagField.h"
+#include <Math/MatrixRepresentationsStatic.h>
+
+#include <RtypesCore.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdio>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
@@ -247,7 +254,7 @@ struct matchmftft0 {
 
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
+  Configurable<string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
   std::vector<std::vector<float>> channelCoord = {{103.2, 17.8, -813.1}, {76.9, 17.8, -815.9}, {103.1, 44.2, -812.1}, {76.8, 44.2, -814.9}, {103.2, 78.7, -810}, {76.8, 79, -812.9}, {103.2, 105, -807.1}, {76.8, 105.3, -810}, {43.2, 78.8, -815}, {43.2, 105.1, -812.1}, {16.8, 78.9, -815.9}, {16.8, 105.2, -813}, {-16.8, 105.2, -813}, {-16.8, 78.9, -815.9}, {-43.2, 105.1, -812.1}, {-43.2, 78.8, -815}, {-76.8, 105.3, -810}, {-76.8, 79, -812.9}, {-103.2, 105, -807.1}, {-103.2, 78.7, -810}, {-76.8, 44.2, -814.9}, {-103.1, 44.2, -812.1}, {-76.9, 17.8, -815.9}, {-103.2, 17.8, -813.1}, {-103.2, -17.8, -813.1}, {-76.9, -17.8, -815.9}, {-103.1, -44.2, -812.1}, {-76.8, -44.2, -814.9}, {-103.2, -78.7, -810}, {-76.8, -79, -812.9}, {-103.2, -105, -807.1}, {-76.8, -105.3, -810}, {-43.2, -78.8, -815}, {-43.2, -105.1, -812.1}, {-16.8, -78.9, -815.9}, {-16.8, -105.2, -813}, {16.8, -105.2, -813}, {16.8, -78.9, -815.9}, {43.2, -105.1, -812.1}, {43.2, -78.8, -815}, {76.8, -105.3, -810}, {76.8, -79, -812.9}, {103.2, -105, -807.1}, {103.2, -78.7, -810}, {76.8, -44.2, -814.9}, {103.1, -44.2, -812.1}, {76.9, -17.8, -815.9}, {103.2, -17.8, -813.1}, {163, 18.7, -804.1}, {137, 18.9, -808.9}, {163, 45.2, -803.1}, {137, 45.3, -807.9}, {163, 78.6, -800.1}, {137, 79.1, -804.9}, {163, 104.9, -797.2}, {137, 105.4, -801.9}, {103.4, 138, -802}, {102.9, 164, -797.2}, {77.1, 138, -804.9}, {76.6, 164, -800}, {43.3, 139, -807}, {43.2, 165, -802.1}, {16.9, 139, -807.9}, {16.7, 165, -803}, {-16.7, 165, -803}, {-16.9, 139, -807.9}, {-43.2, 165, -802.1}, {-43.3, 139, -807}, {-76.6, 164, -800}, {-77.1, 138, -804.9}, {-102.9, 164, -797.2}, {-103.4, 138, -802}, {-137, 105.4, -801.9}, {-163, 104.9, -797.2}, {-137, 79.1, -804.9}, {-163, 78.6, -800.1}, {-137, 45.3, -807.9}, {-163, 45.2, -803.1}, {-137, 18.9, -808.9}, {-163, 18.7, -804.1}, {-163, -18.7, -804.1}, {-137, -18.9, -808.9}, {-163, -45.2, -803.1}, {-137, -45.3, -807.9}, {-163, -78.6, -800.1}, {-137, -79.1, -804.9}, {-163, -104.9, -797.2}, {-137, -105.4, -801.9}, {-103.4, -138, -802}, {-102.9, -164, -797.2}, {-77.1, -138, -804.9}, {-76.6, -164, -800}, {-43.3, -139, -807}, {-43.2, -165, -802.1}, {-16.9, -139, -807.9}, {-16.7, -165, -803}, {16.7, -165, -803}, {16.9, -139, -807.9}, {43.2, -165, -802.1}, {43.3, -139, -807}, {76.6, -164, -800}, {77.1, -138, -804.9}, {102.9, -164, -797.2}, {103.4, -138, -802}, {137, -105.4, -801.9}, {163, -104.9, -797.2}, {137, -79.1, -804.9}, {163, -78.6, -800.1}, {137, -45.3, -807.9}, {163, -45.2, -803.1}, {137, -18.9, -808.9}, {163, -18.7, -804.1}};
 

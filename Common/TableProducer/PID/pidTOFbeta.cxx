@@ -16,14 +16,29 @@
 ///
 
 // O2 includes
+#include "TableHelper.h"
+
+#include "Common/DataModel/PIDResponseTOF.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "pidTOFBase.h"
-#include "TableHelper.h"
 
 // O2Physics includes
 #include "PID/PIDTOF.h"
+#include <DataFormatsTOF/ParameterContainers.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Variant.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <chrono>
+#include <cstdint>
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::pid;

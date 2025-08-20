@@ -17,9 +17,12 @@
 
 #include "Common/Core/MetadataHelper.h"
 
+#include <Framework/ConfigContext.h>
 #include <Framework/InitContext.h>
-#include <Framework/RunningWorkflowInfo.h>
 
+#include <fairlogger/Logger.h>
+
+#include <array>
 #include <string>
 
 using namespace o2::common::core;

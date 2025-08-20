@@ -17,7 +17,13 @@
 #include <DataFormatsCTP/Scalers.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 
+#include <fairlogger/Logger.h>
+
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <map>
+#include <ostream>
 #include <string>
 #include <vector>
 
