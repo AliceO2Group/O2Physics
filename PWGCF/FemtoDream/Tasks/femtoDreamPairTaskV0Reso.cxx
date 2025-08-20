@@ -51,13 +51,6 @@ struct femtoDreamPairTaskV0Reso {
   SliceCache cache;
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
-  Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax;
-  Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.MultPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.MultPercentileMax;
-
-  using FilteredCollisions = soa::Filtered<FDCollisions>;
-  using FilteredCollision = FilteredCollisions::iterator;
-  // no masked yet
-
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto; // are my cases included check & add!
 
@@ -203,6 +196,13 @@ struct femtoDreamPairTaskV0Reso {
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinningMult{{Mixing.BinVztx, Mixing.BinMult}, true};
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultV0M> colBinningMultPercentile{{Mixing.BinVztx, Mixing.BinMultPercentile}, true};
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr, aod::femtodreamcollision::MultV0M> colBinningMultMultPercentile{{Mixing.BinVztx, Mixing.BinMult, Mixing.BinMultPercentile}, true};
+
+  Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax;
+  Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.MultPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.MultPercentileMax;
+
+  using FilteredCollisions = soa::Filtered<FDCollisions>;
+  using FilteredCollision = FilteredCollisions::iterator;
+  // no masked yet
 
   /// Histogramming for particle 1
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kV0, 1> V0HistoPartOne;
