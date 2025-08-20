@@ -19,12 +19,15 @@
 #ifndef COMMON_TOOLS_PID_HANDLEPARAMBASE_H_
 #define COMMON_TOOLS_PID_HANDLEPARAMBASE_H_
 
+#include <CCDB/CcdbApi.h>
+#include <Framework/Logger.h>
+
+#include <TFile.h>
+
+#include <boost/program_options.hpp>
+
 #include <map>
 #include <string>
-#include "CCDB/CcdbApi.h"
-#include <boost/program_options.hpp>
-#include "Framework/Logger.h"
-#include "TFile.h"
 
 // Global executable arguments
 namespace bpo = boost::program_options;
@@ -79,9 +82,9 @@ void setStandardOpt(bpo::options_description& options)
 }
 
 template <typename T>
-T* retrieveFromCCDB(const std::string path,
+T* retrieveFromCCDB(const std::string& path,
                     const int64_t timestamp,
-                    std::map<std::string, std::string> metadata)
+                    const std::map<std::string, std::string>& metadata)
 {
   std::map<std::string, std::string> headers;
   LOG(info) << "Object " << path << " for timestamp " << timestamp << " -> " << timeStampToHReadble(timestamp);
@@ -99,7 +102,7 @@ T* retrieveFromCCDB(const std::string path,
 }
 
 template <typename T>
-T* retrieveFromCCDB(const std::string path,
+T* retrieveFromCCDB(const std::string& path,
                     const int64_t timestamp)
 {
   std::map<std::string, std::string> metadata;

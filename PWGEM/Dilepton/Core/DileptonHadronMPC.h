@@ -453,8 +453,6 @@ struct DileptonHadronMPC {
 
     used_trackIds.clear();
     used_trackIds.shrink_to_fit();
-    used_refTrackIds.clear();
-    used_refTrackIds.shrink_to_fit();
   }
 
   void addhistograms()
@@ -525,7 +523,7 @@ struct DileptonHadronMPC {
       // fRegistry.addClone("DileptonHadron/same/", "DileptonHadron/mix/");
 
       // hadron-hadron
-      const AxisSpec axis_dphi_hh{cfgNbinsDPhi, -M_PI / 2, 3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
+      const AxisSpec axis_dphi_hh{90, -M_PI / 2, 3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
       fRegistry.add("HadronHadron/same/hDEtaDPhi", "hadron-hadron 2PC", kTH2D, {axis_dphi_hh, axis_deta_hh}, true);
       fRegistry.addClone("HadronHadron/same/", "HadronHadron/mix/");
       fRegistry.add("HadronHadron/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
@@ -1063,7 +1061,6 @@ struct DileptonHadronMPC {
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
   std::vector<std::pair<int, int>> used_trackIds;
-  std::vector<std::pair<int, int>> used_refTrackIds;
   int ndf = 0;
 
   template <bool isTriggerAnalysis, typename TCollisions, typename TLeptons, typename TPresilce, typename TCut, typename TAllTracks, typename TRefTracks>
@@ -1142,12 +1139,8 @@ struct DileptonHadronMPC {
 
             // store ref tracks for mixed event in case of kAzimuthalCorrelation
             if (cfgDoMix && cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonHadronAnalysisType::kAzimuthalCorrelation)) {
-              std::pair<int, int> pair_tmp_refTrack = std::make_pair(ndf, track.globalIndex());
-              if (std::find(used_refTrackIds.begin(), used_refTrackIds.end(), pair_tmp_refTrack) == used_refTrackIds.end()) {
-                used_refTrackIds.emplace_back(pair_tmp_refTrack);
-                emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(ndf, track.globalIndex(), collision.globalIndex(), track.trackId(), track.pt(), track.eta(), track.phi(), 0.139));
-              } // store ref tracks
-            }
+              emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(ndf, track.globalIndex(), collision.globalIndex(), track.trackId(), track.pt(), track.eta(), track.phi(), 0.139));
+            } // store ref tracks
           }
         }
         for (const auto& [ref1, ref2] : combinations(CombinationsStrictlyUpperIndexPolicy(refTracks_per_coll, refTracks_per_coll))) {
