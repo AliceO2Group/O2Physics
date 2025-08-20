@@ -293,14 +293,7 @@ class FemtoDreamDetaDphiStar
               histdetadpi_eta[nhist]->Fill(deta, dphiAvg, daughterPart1.eta(), daughterPart2.eta());
               histdetadpi_phi[nhist]->Fill(deta, dphiAvg, daughterPart1.phi(), daughterPart2.phi());
             }
-          } /* else if (Q3 < upperQ3LimitForPlotting) {
-            histdetadpi[i][0]->Fill(deta, dphiAvg);
-            histdetadpi[i][2]->Fill(deta, dphi_AT_PV);
-            if (fillQA) {
-              histdetadpi_eta[i]->Fill(deta, dphiAvg, part1.eta(), daughter.eta());
-              histdetadpi_phi[i]->Fill(deta, dphiAvg, part1.phi(), daughter.phi());
-            }
-          } */
+          }
           if (sameCharge) {
             if (atWhichRadiiToSelect == 1) {
               if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
