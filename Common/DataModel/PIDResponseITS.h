@@ -28,6 +28,11 @@
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/Logger.h"
 #include "ReconstructionDataFormats/PID.h"
+#include <Framework/Array2D.h>
+#include <Framework/InitContext.h>
+
+#include <cmath>
+#include <cstdint>
 
 namespace o2::aod
 {

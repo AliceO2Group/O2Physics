@@ -11,6 +11,8 @@
 #ifndef COMMON_DATAMODEL_MATCHMFTMUONDATA_H_
 #define COMMON_DATAMODEL_MATCHMFTMUONDATA_H_
 #include "Framework/AnalysisDataModel.h"
+
+#include <cstdint>
 #endif // COMMON_DATAMODEL_MATCHMFTMUONDATA_H_
 
 namespace o2::aod

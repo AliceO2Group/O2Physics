@@ -18,9 +18,10 @@
 #define COMMON_CORE_PID_TPCPIDRESPONSE_H_
 
 #include "DataFormatsTPC/BetheBlochAleph.h"
-#include "Framework/DataTypes.h"
 #include "Framework/Logger.h"
 #include "ReconstructionDataFormats/PID.h"
+
+#include <Rtypes.h>
 
 #include <array>
 #include <cmath>

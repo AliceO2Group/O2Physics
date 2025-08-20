@@ -18,9 +18,6 @@
 #define COMMON_DATAMODEL_EVENTSELECTION_H_
 
 #include "Framework/AnalysisDataModel.h"
-#include "Common/CCDB/TriggerAliases.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/CCDB/RCTSelectionFlags.h"
 
 namespace o2::aod
 {

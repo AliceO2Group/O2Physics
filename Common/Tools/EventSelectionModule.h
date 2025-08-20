@@ -16,12 +16,31 @@
 #ifndef COMMON_TOOLS_EVENTSELECTIONTOOLS_H_
 #define COMMON_TOOLS_EVENTSELECTIONTOOLS_H_
 
+#include "Common/CCDB/RCTSelectionFlags.h"
+
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
+#include <TString.h>
+
+#include <fairlogger/Logger.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <algorithm>
+#include <bitset>
+#include <cstdint>
+#include <iterator>
+#include <utility>
 #define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
 #define bitcheck64(var, nbit) ((var) & (static_cast<uint64_t>(1) << (nbit)))
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include "Common/Core/MetadataHelper.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 
@@ -30,22 +49,18 @@
 #include <DataFormatsCTP/Configuration.h>
 #include <DataFormatsCTP/Scalers.h>
 #include <DataFormatsFT0/Digit.h>
-#include <DataFormatsITSMFT/NoiseMap.h> // missing include in TimeDeadMap.h
 #include <DataFormatsITSMFT/TimeDeadMap.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
-#include <DataFormatsParameters/GRPECSObject.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/HistogramRegistry.h>
 #include <ITSMFTBase/DPLAlpideParam.h>
 #include <ITSMFTReconstruction/ChipMappingITS.h>
 
-#include <array>
 #include <cmath>
 #include <cstdlib>
 #include <limits>
 #include <map>
-#include <memory>
 #include <string>
 #include <vector>
 

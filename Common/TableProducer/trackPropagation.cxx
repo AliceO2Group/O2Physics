@@ -15,6 +15,7 @@
 
 #include "TableHelper.h"
 
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Tools/TrackTuner.h"
 

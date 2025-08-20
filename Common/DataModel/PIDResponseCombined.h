@@ -21,10 +21,9 @@
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/Logger.h"
 #include "ReconstructionDataFormats/PID.h"
 
-#include <experimental/type_traits>
+#include <cstdint>
 
 namespace o2::aod
 {

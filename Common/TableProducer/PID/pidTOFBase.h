@@ -18,12 +18,9 @@
 #ifndef COMMON_TABLEPRODUCER_PID_PIDTOFBASE_H_
 #define COMMON_TABLEPRODUCER_PID_PIDTOFBASE_H_
 
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/PIDResponseTOF.h"
+#include <Framework/ASoA.h>
 
-#include "PID/PIDTOF.h"
-#include "PID/ParamBase.h"
-
+#include <cstdint>
 #include <string>
 #include <vector>
 

@@ -23,10 +23,8 @@
 #include "Common/Core/PID/ParamBase.h"
 
 #include <Framework/Logger.h>
-#include <ReconstructionDataFormats/PID.h>
 
 #include <TFile.h>
-#include <TMath.h>
 
 #include <Rtypes.h>
 

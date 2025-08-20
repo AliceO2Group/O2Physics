@@ -18,6 +18,8 @@
 
 #include "Framework/AnalysisDataModel.h"
 
+#include <cstdint>
+
 namespace o2::aod
 {
 namespace znoutput // o2-linter: disable=name/workflow-file

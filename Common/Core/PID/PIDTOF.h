@@ -28,10 +28,12 @@
 #include <TF2.h>
 #include <TFile.h>
 #include <TGraph.h>
-#include <TMath.h>
+#include <TString.h>
 
-#include <Rtypes.h>
-
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <unordered_map>
 #include <vector>

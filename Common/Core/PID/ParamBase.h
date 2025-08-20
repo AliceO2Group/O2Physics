@@ -24,6 +24,10 @@
 
 #include <TFile.h>
 #include <TNamed.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 #include <algorithm> // std::copy
 #include <map>       // std::map

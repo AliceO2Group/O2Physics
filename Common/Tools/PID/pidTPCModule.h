@@ -21,33 +21,32 @@
 #ifndef COMMON_TABLEPRODUCER_PID_PIDTPCMODULE_H_
 #define COMMON_TABLEPRODUCER_PID_PIDTPCMODULE_H_
 
-#include "MetadataHelper.h"
 #include "TableHelper.h"
+#include "pidTPCBase.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/model.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <ReconstructionDataFormats/PID.h>
 
-#include "TFile.h"
+#include "TMatrixD.h" // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
 #include "TRandom.h"
-#include "TSystem.h"
+#include <TMatrixDfwd.h>
 
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <memory>
+#include <ratio>
 #include <string>
-#include <utility>
 #include <vector>
 
 namespace o2::aod

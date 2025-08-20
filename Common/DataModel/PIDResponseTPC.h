@@ -25,6 +25,7 @@
 #include "Framework/Logger.h"
 #include "ReconstructionDataFormats/PID.h"
 
+#include <cstdint>
 #include <experimental/type_traits>
 
 namespace o2::aod
