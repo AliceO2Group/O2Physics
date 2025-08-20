@@ -13,35 +13,37 @@
 /// \brief QA for the event-loss and signal-loss correction at the generator level for the ResonanceInitializer in pp collisions (referred to TableProducer/Strangeness/cascqaanalysis.cxx)
 ///
 ///  Following the discussions at the two PAG meetings (https://indico.cern.ch/event/1518979, https://indico.cern.ch/event/1575984)
-///  we have introduced an auxiliary task that, when the resonanceInitializer.cxx is used, 
+///  we have introduced an auxiliary task that, when the resonanceInitializer.cxx is used,
 ///  computes the event-loss and signal-loss correction factors at the generator level.
-///  With minor configuration tuning for a truth-tagging, 
+///  With minor configuration tuning for a truth-tagging,
 ///  we expect it to be applicable to most analyses that rely on the initializer.
 ///
 /// \author Minjae Kim (minjae.kim@cern.ch)
 
-#include <algorithm>
-#include <vector>
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/cascqaanalysis.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TRandom2.h"
 #include <TPDGCode.h>
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "PWGLF/DataModel/cascqaanalysis.h"
-#include "TRandom2.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "PWGLF/Utils/inelGt.h"
-#include "PWGLF/DataModel/mcCentrality.h"
+#include <algorithm>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
 
 using TrkPidInfo = soa::Join<aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTOFPi, aod::pidTOFPr, aod::pidTOFKa>;
 using DauTracks = soa::Join<aod::TracksIU, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, TrkPidInfo>;
@@ -58,7 +60,7 @@ struct Initializereventqa {
   ConfigurableAxis ptAxis{"ptAxis", {400, 0.0f, 20.0f}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis rapidityAxis{"rapidityAxis", {200, -2.0f, 2.0f}, "y"};
   ConfigurableAxis centFT0MAxis{"centFT0MAxis",
-                               {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0, 110.0},
+                                {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 15.0, 20.0, 30.0, 40.0, 50.0, 70.0, 100.0, 110.0},
                                 "FT0M (%)"};
   ConfigurableAxis eventTypeAxis{"eventTypeAxis", {2, -0.5f, 1.5f}, "Event Type"};
 
@@ -117,7 +119,6 @@ struct Initializereventqa {
     }
     registry.add("hZCollision", "hZCollision", {HistType::kTH1D, {{200, -20.f, 20.f}}});
 
-
     registry.add("fakeEvents", "fakeEvents", {HistType::kTH1F, {{1, -0.5f, 0.5f}}});
 
     registry.add("hNEventsMC", "hNEventsMC", {HistType::kTH1D, {{5, 0.0f, 5.0f}}});
@@ -125,17 +126,16 @@ struct Initializereventqa {
       registry.get<TH1>(HIST("hNEventsMC"))->GetXaxis()->SetBinLabel(n, hNEventsMCLabels[n - 1]);
     }
     registry.add("hZCollisionGen", "hZCollisionGen", {HistType::kTH1D, {{200, -20.f, 20.f}}});
-    registry.add("hCentFT0MNAssocMCCollisions", "hCentFT0MNAssocMCCollisions", {HistType::kTH3D, {centFT0MAxis, nAssocCollAxis, eventTypeAxis}}); 
+    registry.add("hCentFT0MNAssocMCCollisions", "hCentFT0MNAssocMCCollisions", {HistType::kTH3D, {centFT0MAxis, nAssocCollAxis, eventTypeAxis}});
     registry.add("hCentFT0MNAssocMCCollisionsSameType", "hCentFT0MNAssocMCCollisionsSameType", {HistType::kTH3D, {centFT0MAxis, nAssocCollAxis, eventTypeAxis}});
     registry.add("hNchFT0MNAssocMCCollisions", "hNchFT0MNAssocMCCollisions", {HistType::kTH3D, {nChargedFT0MGenAxis, nAssocCollAxis, eventTypeAxis}});
     registry.add("hNchFT0MNAssocMCCollisionsSameType", "hNchFT0MNAssocMCCollisionsSameType", {HistType::kTH3D, {nChargedFT0MGenAxis, nAssocCollAxis, eventTypeAxis}});
     registry.add("hNContributorsCorrelation", "hNContributorsCorrelation", {HistType::kTH2F, {{250, -0.5f, 249.5f, "Secondary Contributor"}, {250, -0.5f, 249.5f, "Main Contributor"}}});
     registry.add("hNchFT0MGenEvType", "hNchFT0MGenEvType", {HistType::kTH2D, {nChargedFT0MGenAxis, eventTypeAxis}});
     registry.add("hCentFT0M_genMC", "hCentFT0M_genMC", {HistType::kTH2D, {centFT0MAxis, eventTypeAxis}});
-  
+
     registry.add("hCentFT0M_rec", "hCentFT0M_rec", {HistType::kTH2D, {centFT0MAxis, eventTypeAxis}});
     registry.add("hCentFT0M_corr", "hCentFT0M_Corr", {HistType::kTH2D, {centFT0MAxis, centFT0MAxis}});
-
 
     if (multQA) {
       registry.add("hNchFT0Mglobal", "hNchFT0Mglobal", {HistType::kTH3D, {nChargedFT0MGenAxis, multNTracksAxis, eventTypeAxis}});
@@ -145,15 +145,14 @@ struct Initializereventqa {
       registry.add("hFT0MsignalPVContr", "hFT0MsignalPVContr", {HistType::kTH3D, {signalFT0MAxis, multNTracksAxis, eventTypeAxis}});
     }
 
-      registry.add("h3ResonanceTruth", "pT distribution of True Resonance", kTHnSparseF, {eventTypeAxis, ptAxis, centFT0MAxis});
-      registry.add("h3ResonanceTruthAnti", "pT distribution of True Resonance Anti", kTHnSparseF, {eventTypeAxis, ptAxis, centFT0MAxis});
+    registry.add("h3ResonanceTruth", "pT distribution of True Resonance", kTHnSparseF, {eventTypeAxis, ptAxis, centFT0MAxis});
+    registry.add("h3ResonanceTruthAnti", "pT distribution of True Resonance Anti", kTHnSparseF, {eventTypeAxis, ptAxis, centFT0MAxis});
   }
-float pvEta1 = 1.0f;
+  float pvEta1 = 1.0f;
   float globalEta05 = 0.5f;
 
   Partition<DauTracks> pvContribTracksIUEta1 = (nabs(aod::track::eta) < pvEta1) && ((aod::track::flags & static_cast<uint32_t>(o2::aod::track::PVContributor)) == static_cast<uint32_t>(o2::aod::track::PVContributor));
   Partition<DauTracks> globalTracksIUEta05 = (nabs(aod::track::eta) < globalEta05) && (requireGlobalTrackInFilter());
-
 
   template <typename TMcParticles>
   uint16_t getGenNchInFT0Mregion(TMcParticles particles)
@@ -161,7 +160,7 @@ float pvEta1 = 1.0f;
     float region1FT0 = -3.3f;
     float region2FT0 = -2.1f;
     float region3FT0 = 3.5f;
-    float region4FT0 = 4.9f;  
+    float region4FT0 = 4.9f;
     // Particle counting in FITFT0: -3.3<η<-2.1; 3.5<η<4.9
     uint16_t nchFT0 = 0;
     for (const auto& mcParticle : particles) {
@@ -264,7 +263,6 @@ float pvEta1 = 1.0f;
 
     return true;
   }
-  
 
   template <typename TotalMCParts, typename MultMCGen, typename evtType>
   void fillMCParticles(TotalMCParts const& mcParticles, MultMCGen const& multiplicity, evtType const& eventType)
@@ -282,24 +280,24 @@ float pvEta1 = 1.0f;
         daughterPDGs = {-1, -1};
       }
 
-    if(isDaughterCheck){
-      bool pass1 = std::abs(daughterPDGs[0]) == pdgTruthDaughter1 || std::abs(daughterPDGs[1]) == pdgTruthDaughter1;
-      bool pass2 = std::abs(daughterPDGs[0]) == pdgTruthDaughter2 || std::abs(daughterPDGs[1]) == pdgTruthDaughter2;
-      if (!pass1 || !pass2)
-        continue;
+      if (isDaughterCheck) {
+        bool pass1 = std::abs(daughterPDGs[0]) == pdgTruthDaughter1 || std::abs(daughterPDGs[1]) == pdgTruthDaughter1;
+        bool pass2 = std::abs(daughterPDGs[0]) == pdgTruthDaughter2 || std::abs(daughterPDGs[1]) == pdgTruthDaughter2;
+        if (!pass1 || !pass2)
+          continue;
       }
       if (mcPart.pdgCode() > 0) // Consider INELt0 or INEL
         registry.fill(HIST("h3ResonanceTruth"), eventType, mcPart.pt(), multiplicity);
       else
         registry.fill(HIST("h3ResonanceTruthAnti"), eventType, mcPart.pt(), multiplicity);
 
-    daughterPDGs.clear();
+      daughterPDGs.clear();
     }
   }
-    void processData(soa::Join<aod::Collisions, aod::EvSels,
+  void processData(soa::Join<aod::Collisions, aod::EvSels,
                              aod::PVMults, aod::FT0Mults, aod::FV0Mults,
                              aod::CentFT0Ms, aod::CentFV0As>::iterator const& collision,
-                             DauTracks const&)
+                   DauTracks const&)
   {
     if (!acceptEvent(collision, 1)) {
       return;
@@ -325,7 +323,6 @@ float pvEta1 = 1.0f;
       registry.fill(HIST("hFT0Mglobal"), collision.centFT0M(), nTracksGlobal, evType);
       registry.fill(HIST("hFT0MsignalPVContr"), collision.multFT0A() + collision.multFT0C(), nTracksPVcontr, evType);
     }
-
   }
 
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
@@ -354,8 +351,8 @@ float pvEta1 = 1.0f;
     int nTracksGlobal = tracksGroupedGlobal.size();
 
     // N charged in FT0M region in corresponding gen. MC collision
-   auto mcPartSlice = mcParticles.sliceBy(perMcCollision, collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>().globalIndex());
-   uint16_t nchFT0 = getGenNchInFT0Mregion(mcPartSlice);
+    auto mcPartSlice = mcParticles.sliceBy(perMcCollision, collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>().globalIndex());
+    uint16_t nchFT0 = getGenNchInFT0Mregion(mcPartSlice);
 
     int evType = 0;
     registry.fill(HIST("hNEvents"), 10.5); // reco INEL
@@ -374,19 +371,18 @@ float pvEta1 = 1.0f;
       registry.fill(HIST("hNchFT0Mglobal"), nchFT0, nTracksGlobal, evType);
       registry.fill(HIST("hFT0MsignalPVContr"), collision.multFT0A() + collision.multFT0C(), nTracksPVcontr, evType);
     }
-
   }
 
   void processMCgen(soa::Join<aod::McCollisions, aod::McCentFT0Ms>::iterator const& mcCollision,
                     aod::McParticles const& mcParticles,
-                    const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels, 
-                    o2::aod::EvSels, aod::PVMults, aod::FV0Mults, aod::FT0Mults, aod::CentFT0Ms, aod::CentFV0As>>& collisions)
+                    const soa::SmallGroups<o2::soa::Join<o2::aod::Collisions, o2::aod::McCollisionLabels,
+                                                         o2::aod::EvSels, aod::PVMults, aod::FV0Mults, aod::FT0Mults, aod::CentFT0Ms, aod::CentFV0As>>& collisions)
   {
     auto cent = mcCollision.centFT0M();
 
     registry.fill(HIST("hNEventsMC"), 0.5);
 
-    if (isZvtxcut && std::fabs(mcCollision.posZ()) > cutzvertex) { 
+    if (isZvtxcut && std::fabs(mcCollision.posZ()) > cutzvertex) {
       return;
     }
     registry.fill(HIST("hZCollisionGen"), mcCollision.posZ());
@@ -399,7 +395,7 @@ float pvEta1 = 1.0f;
       registry.fill(HIST("hNEventsMC"), 3.5);
     }
 
-    fillMCParticles(mcParticles,cent, evType);
+    fillMCParticles(mcParticles, cent, evType);
 
     registry.fill(HIST("hCentFT0M_genMC"), cent, evType);
 
@@ -423,16 +419,16 @@ float pvEta1 = 1.0f;
         collWithType.typeFlag |= o2::aod::myMCcascades::EvFlags::EvINELgt0;
       }
       selectedEvents[nevts++] = collWithType;
-      if (collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>().globalIndex() == mcCollision.globalIndex()) { 
+      if (collision.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>().globalIndex() == mcCollision.globalIndex()) {
         nAssocColl++;
         numberOfContributors.push_back(collision.numContrib());
       }
     }
     selectedEvents.resize(nevts);
 
-    registry.fill(HIST("hCentFT0MNAssocMCCollisions"),cent, nAssocColl, evType);
+    registry.fill(HIST("hCentFT0MNAssocMCCollisions"), cent, nAssocColl, evType);
     registry.fill(HIST("hNchFT0MNAssocMCCollisions"), nchFT0, nAssocColl, evType);
-    
+
     if (numberOfContributors.size() == nContSize) {
       std::sort(numberOfContributors.begin(), numberOfContributors.end());
       registry.fill(HIST("hNContributorsCorrelation"), numberOfContributors[0], numberOfContributors[1]);
@@ -473,5 +469,5 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<Initializereventqa>(cfgc),
-    };
+  };
 }
