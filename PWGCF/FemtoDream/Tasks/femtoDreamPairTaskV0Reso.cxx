@@ -9,14 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-
-
 /// \file femtoDreamPairTaskV0Reso.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Christopher Klumm, TU München, christopher.klumm@cern.ch
 /// \author Anton Riedel, TU München, anton.riedel@cern.ch
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@cern.ch
-
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamContainer.h"
