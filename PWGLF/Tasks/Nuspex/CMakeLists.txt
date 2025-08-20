@@ -79,8 +79,8 @@ o2physics_add_dpl_workflow(spectra-tpc-tiny-pikapr
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(spectra-charged
-    SOURCES spectraCharged.cxx
+o2physics_add_dpl_workflow(charged-particles
+    SOURCES chargedParticles.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -137,12 +137,22 @@ o2physics_add_dpl_workflow(angular-correlations-in-jets
 
 o2physics_add_dpl_workflow(antinuclei-in-jets
     SOURCES antinucleiInJets.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils O2Physics::PWGJECore FastJet::FastJet FastJet::Contrib
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(kink-pika
     SOURCES spectraKinkPiKa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(he3-lambda-derived-analysis
+    SOURCES he3LambdaDerivedAnalysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(dedx-pid-analysis
+                    SOURCES dedxPidAnalysis.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
 
 endif()

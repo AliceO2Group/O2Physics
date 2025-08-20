@@ -193,12 +193,6 @@ void V0PhotonCut::SetMeanClusterSizeITSob(float min, float max)
   LOG(info) << "V0 Photon Cut, set mean cluster size ITS range: " << mMinMeanClusterSizeITS << " - " << mMaxMeanClusterSizeITS;
 }
 
-void V0PhotonCut::SetIsWithinBeamPipe(bool flag)
-{
-  mIsWithinBP = flag;
-  LOG(info) << "V0 Photon Cut, propagated to within beam pipe: " << mIsWithinBP;
-}
-
 void V0PhotonCut::SetRequireITSTPC(bool flag)
 {
   mRequireITSTPC = flag;

@@ -45,7 +45,7 @@ struct ThreeParticleCorrelations {
 
   // Track PID parameters
   double pionID = 0.0, kaonID = 1.0, protonID = 2.0;
-  float nSigma0 = 0.0, nSigma2 = 2.0, nSigma4 = 4.0, nSigma5 = 5.0;
+  float nSigma0 = 0.0, nSigma1 = 1.0, nSigma2 = 2.0, nSigma4 = 4.0, nSigma5 = 5.0;
 
   // V0 filter parameters
   float tpcNCrossedRowsMin = 70.0;
@@ -55,8 +55,8 @@ struct ThreeParticleCorrelations {
   int dcaV0DauMax = 1;
 
   // Track filter parameters
-  float pionPtMin = 0.3, pionPtMax = 2.3, kaonPtMin = 0.5, kaonPtMax = 2.5, protonPtMin = 0.5, protonPtMax = 2.5;
-  float pionPtMid = 1.5, kaonPtMid1 = 1.5, kaonPtMid2 = 2.0, protonPtMid = 0.7;
+  float pionPtMin = 0.3, pionPtMax = 2.3, kaonPtMin = 0.5, kaonPtMax = 2.3, protonPtMin = 0.6;
+  float pionPtMid1 = 1.6, pionPtMid2 = 2.0, kaonPtMid1 = 1.5, kaonPtMid2 = 2.0, protonPtMid = 2.3;
 
   // RD filter parameters
   float dEtaMax = 0.05, dEtaMin = 0.023;
@@ -179,10 +179,14 @@ struct ThreeParticleCorrelations {
     rQARegistry.add("hTrackPhi", "hTrackPhi", {HistType::kTH1D, {{100, (-1. / 2) * constants::math::PI, (5. / 2) * constants::math::PI}}});
     rQARegistry.add("hTrackNSharedClusters", "hTrackNSharedClusters", {HistType::kTH1D, {{200, 0, 200}}});
 
-    rQARegistry.add("hPtPion", "hPtPion", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtKaon", "hPtKaon", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtProton", "hPtProton", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
-    rQARegistry.add("hPtV0", "hPtV0", {HistType::kTH3D, {{v0PtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtPion_Uncorrected", "hPtPion_Uncorrected", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtKaon_Uncorrected", "hPtKaon_Uncorrected", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtProton_Uncorrected", "hPtProton_Uncorrected", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtV0_Uncorrected", "hPtV0_Uncorrected", {HistType::kTH3D, {{v0PtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtPion_Corrected", "hPtPion_Corrected", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtKaon_Corrected", "hPtKaon_Corrected", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtProton_Corrected", "hPtProton_Corrected", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
+    rQARegistry.add("hPtV0_Corrected", "hPtV0_Corrected", {HistType::kTH3D, {{v0PtAxis}, {centralityAxis}, {2, -2, 2}}});
     rQARegistry.add("hPtPion_MC", "hPtPion_MC", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
     rQARegistry.add("hPtKaon_MC", "hPtKaon_MC", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
     rQARegistry.add("hPtProton_MC", "hPtProton_MC", {HistType::kTH3D, {{trackPtAxis}, {centralityAxis}, {2, -2, 2}}});
@@ -197,12 +201,12 @@ struct ThreeParticleCorrelations {
     rQARegistry.add("hBetaKaon", "hBetaKaon", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
     rQARegistry.add("hBetaProton", "hBetaProton", {HistType::kTH2D, {{56, 0.2, 3.0}, {70, 0.4, 1.1}}});
 
-    rQARegistry.add("hTPCPion", "hTPCPion", {HistType::kTH2D, {{trackPtAxis}, {241, -6, 6}}});
-    rQARegistry.add("hTPCKaon", "hTPCKaon", {HistType::kTH2D, {{trackPtAxis}, {241, -6, 6}}});
-    rQARegistry.add("hTPCProton", "hTPCProton", {HistType::kTH2D, {{trackPtAxis}, {241, -6, 6}}});
-    rQARegistry.add("hTOFPion", "hTOFPion", {HistType::kTH2D, {{trackPtAxis}, {1000, -50, 50}}});
-    rQARegistry.add("hTOFKaon", "hTOFKaon", {HistType::kTH2D, {{trackPtAxis}, {1000, -50, 50}}});
-    rQARegistry.add("hTOFProton", "hTOFProton", {HistType::kTH2D, {{trackPtAxis}, {1000, -50, 50}}});
+    rQARegistry.add("hTPCPion", "hTPCPion", {HistType::kTH2D, {{trackPtAxis}, {1001, -50.05, 50.05}}});
+    rQARegistry.add("hTPCKaon", "hTPCKaon", {HistType::kTH2D, {{trackPtAxis}, {1001, -50.05, 50.05}}});
+    rQARegistry.add("hTPCProton", "hTPCProton", {HistType::kTH2D, {{trackPtAxis}, {1001, -50.05, 50.05}}});
+    rQARegistry.add("hTOFPion", "hTOFPion", {HistType::kTH2D, {{trackPtAxis}, {1001, -50.05, 50.05}}});
+    rQARegistry.add("hTOFKaon", "hTOFKaon", {HistType::kTH2D, {{trackPtAxis}, {1001, -50.05, 50.05}}});
+    rQARegistry.add("hTOFProton", "hTOFProton", {HistType::kTH2D, {{trackPtAxis}, {1001, -50.05, 50.05}}});
 
     rQARegistry.add("hInvMassLambda", "hInvMassLambda", {HistType::kTH3D, {{lambdaInvMassAxis}, {v0PtAxis}, {centralityAxis}}});
     rQARegistry.add("hInvMassAntiLambda", "hInvMassAntiLambda", {HistType::kTH3D, {{lambdaInvMassAxis}, {v0PtAxis}, {centralityAxis}}});
@@ -353,15 +357,18 @@ struct ThreeParticleCorrelations {
         rQARegistry.fill(HIST("hdEdx"), track.pt(), track.tpcSignal());
         rQARegistry.fill(HIST("hBeta"), track.pt(), track.beta());
         if (assocPID[0] == pionID) { // Pions
-          rQARegistry.fill(HIST("hPtPion"), track.pt(), collision.centFT0C(), track.sign(), 1. / trackEff(hEffPions, track, collision.centFT0C()));
+          rQARegistry.fill(HIST("hPtPion_Uncorrected"), track.pt(), collision.centFT0C(), track.sign());
+          rQARegistry.fill(HIST("hPtPion_Corrected"), track.pt(), collision.centFT0C(), track.sign(), 1. / trackEff(hEffPions, track, collision.centFT0C()));
           rQARegistry.fill(HIST("hdEdxPion"), track.pt(), track.tpcSignal());
           rQARegistry.fill(HIST("hBetaPion"), track.pt(), track.beta());
         } else if (assocPID[0] == kaonID) { // Kaons
-          rQARegistry.fill(HIST("hPtKaon"), track.pt(), collision.centFT0C(), track.sign(), 1. / trackEff(hEffKaons, track, collision.centFT0C()));
+          rQARegistry.fill(HIST("hPtKaon_Uncorrected"), track.pt(), collision.centFT0C(), track.sign());
+          rQARegistry.fill(HIST("hPtKaon_Corrected"), track.pt(), collision.centFT0C(), track.sign(), 1. / trackEff(hEffKaons, track, collision.centFT0C()));
           rQARegistry.fill(HIST("hdEdxKaon"), track.pt(), track.tpcSignal());
           rQARegistry.fill(HIST("hBetaKaon"), track.pt(), track.beta());
         } else if (assocPID[0] == protonID) { // Protons
-          rQARegistry.fill(HIST("hPtProton"), track.pt(), collision.centFT0C(), track.sign(), 1. / trackEff(hEffProtons, track, collision.centFT0C()));
+          rQARegistry.fill(HIST("hPtProton_Uncorrected"), track.pt(), collision.centFT0C(), track.sign());
+          rQARegistry.fill(HIST("hPtProton_Corrected"), track.pt(), collision.centFT0C(), track.sign(), 1. / trackEff(hEffProtons, track, collision.centFT0C()));
           rQARegistry.fill(HIST("hdEdxProton"), track.pt(), track.tpcSignal());
           rQARegistry.fill(HIST("hBetaProton"), track.pt(), track.beta());
         }
@@ -376,7 +383,8 @@ struct ThreeParticleCorrelations {
         triggSign = v0Sign(trigger);
         v0Efficiency = v0Eff(hEffLambdas, trigger, collision.centFT0C());
 
-        rQARegistry.fill(HIST("hPtV0"), trigger.pt(), collision.centFT0C(), triggSign, 1. / v0Efficiency);
+        rQARegistry.fill(HIST("hPtV0_Uncorrected"), trigger.pt(), collision.centFT0C(), triggSign);
+        rQARegistry.fill(HIST("hPtV0_Corrected"), trigger.pt(), collision.centFT0C(), triggSign, 1. / v0Efficiency);
         if (triggSign == 1) {
           candMass = trigger.mLambda();
           rQARegistry.fill(HIST("hInvMassLambda"), trigger.mLambda(), trigger.pt(), collision.centFT0C(), 1. / v0Efficiency);
@@ -994,11 +1002,15 @@ struct ThreeParticleCorrelations {
       }
       if (track.pt() < pionPtMin) {
         return false;
-      } else if (track.pt() > pionPtMin && track.pt() < pionPtMid) {
+      } else if (track.pt() > pionPtMin && track.pt() < pionPtMid1) {
         if (std::abs(track.tofNSigmaPi()) >= nSigma4) {
           return false;
         }
-      } else if (track.pt() > pionPtMid && track.pt() < pionPtMax) {
+      } else if (track.pt() > pionPtMid1 && track.pt() < pionPtMid2) {
+        if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= nSigma2) {
+          return false;
+        }
+      } else if (track.pt() > pionPtMid2 && track.pt() < pionPtMax) {
         if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= nSigma0) {
           return false;
         }
@@ -1017,7 +1029,7 @@ struct ThreeParticleCorrelations {
           return false;
         }
       } else if (track.pt() > kaonPtMid1 && track.pt() < kaonPtMid2) {
-        if (track.tofNSigmaKa() <= -nSigma2 || track.tofNSigmaKa() >= nSigma4) {
+        if (track.tofNSigmaKa() <= -nSigma1 || track.tofNSigmaKa() >= nSigma4) {
           return false;
         }
       } else if (track.pt() > kaonPtMid2 && track.pt() < kaonPtMax) {
@@ -1035,14 +1047,10 @@ struct ThreeParticleCorrelations {
       if (track.pt() < protonPtMin) {
         return false;
       } else if (track.pt() > protonPtMin && track.pt() < protonPtMid) {
-        if (track.tofNSigmaPr() <= -nSigma2 || track.tofNSigmaPr() >= nSigma4) {
-          return false;
-        }
-      } else if (track.pt() > protonPtMid && track.pt() < protonPtMax) {
         if (std::abs(track.tofNSigmaPr()) >= nSigma4) {
           return false;
         }
-      } else if (track.pt() > protonPtMax) {
+      } else if (track.pt() > protonPtMid) {
         if (track.tofNSigmaPr() <= -nSigma2 || track.tofNSigmaPr() >= nSigma4) {
           return false;
         }

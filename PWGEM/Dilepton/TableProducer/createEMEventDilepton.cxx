@@ -32,6 +32,7 @@
 #include <string>
 
 using namespace o2;
+using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -54,6 +55,7 @@ using MyCollisionsMC_Cent_Qvec = soa::Join<MyCollisionsMC_Cent, MyQvectors>;
 struct CreateEMEventDilepton {
   Produces<o2::aod::EMBCs> embc;
   Produces<o2::aod::EMEvents> event;
+  Produces<o2::aod::EMEventsXY> eventXY;
   // Produces<o2::aod::EMEventsCov> eventcov;
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
@@ -188,8 +190,10 @@ struct CreateEMEventDilepton {
       registry.fill(HIST("hEventCounter"), 2);
 
       event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), bc.timestamp(),
-            collision.posX(), collision.posY(), collision.posZ(),
+            collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
+
+      eventXY(collision.posX(), collision.posY());
 
       // eventcov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
@@ -303,7 +307,8 @@ struct AssociateDileptonToEMEvent {
   Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
-  PresliceUnsorted<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
+  Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
+  // Preslice<aod::EMPrimaryTrackEMEventIdsTMP> perCollision_track = aod::track::collisionId;
 
   void init(o2::framework::InitContext&) {}
 
@@ -339,6 +344,7 @@ struct AssociateDileptonToEMEvent {
   }
 
   void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  // void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTrackEMEventIdsTMP const& tracks)
   {
     fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
   }

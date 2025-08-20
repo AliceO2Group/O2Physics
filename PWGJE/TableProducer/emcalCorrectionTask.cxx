@@ -18,48 +18,55 @@
 /// \author Raymond Ehlers (raymond.ehlers@cern.ch) ORNL, Florian Jonas (florian.jonas@cern.ch)
 ///
 
-#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/Core/emcalCrossTalkEmulation.h"
+#include "PWGJE/Core/utilsTrackMatchingEMC.h"
 #include "PWGJE/DataModel/EMCALClusterDefinition.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/DataModel/EMCALMatchedCollisions.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
-#include "DataFormatsEMCAL/Cell.h"
-#include "DataFormatsEMCAL/CellLabel.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "EMCALBase/ClusterFactory.h"
-#include "EMCALBase/Geometry.h"
-#include "EMCALBase/NonlinearityHandler.h"
-#include "EMCALCalib/GainCalibrationFactors.h"
-#include "EMCALCalibration/EMCALTempCalibExtractor.h"
-#include "EMCALReconstruction/Clusterizer.h"
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsEMCAL/AnalysisCluster.h>
+#include <DataFormatsEMCAL/Cell.h>
+#include <DataFormatsEMCAL/CellLabel.h>
 #include <DataFormatsEMCAL/ClusterLabel.h>
+#include <DataFormatsEMCAL/Constants.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <EMCALBase/ClusterFactory.h>
+#include <EMCALBase/Geometry.h>
+#include <EMCALBase/NonlinearityHandler.h>
+#include <EMCALCalib/GainCalibrationFactors.h>
+#include <EMCALCalibration/EMCALTempCalibExtractor.h>
+#include <EMCALReconstruction/Clusterizer.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/Logger.h>
+#include <Framework/WorkflowSpec.h>
 #include <Framework/runDataProcessing.h>
 
-#include "TVector2.h"
 #include <TH1.h>
+#include <TVector2.h>
+
+#include <fairlogger/Logger.h>
 
 #include <GPUROOTCartesianFwd.h>
 
 #include <cmath>
 #include <cstddef>
 #include <cstdint>
+#include <gsl/span>
 #include <memory>
 #include <random>
+#include <span>
 #include <sstream>
 #include <string>
 #include <tuple>
@@ -70,12 +77,21 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::emccrosstalk;
+using namespace tmemcutilities;
 using MyGlobTracks = o2::soa::Join<o2::aod::FullTracks, o2::aod::TrackSelection>;
 using BcEvSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 using CollEventSels = o2::soa::Join<o2::aod::Collisions, o2::aod::EvSels>;
 using FilteredCells = o2::soa::Filtered<aod::Calos>;
 using McCells = o2::soa::Join<aod::Calos, aod::McCaloLabels_001>;
 using FilteredMcCells = o2::soa::Filtered<McCells>;
+
+enum CellScaleMode {
+  ModeNone = 0,
+  ModeSMWise = 1,
+  ModeColumnWise = 2,
+  NumberModes = 3
+};
 
 struct EmcalCorrectionTask {
   Produces<o2::aod::EMCALClusters> clusters;
@@ -122,6 +138,12 @@ struct EmcalCorrectionTask {
   Configurable<float> mcCellEnergyResolutionBroadening{"mcCellEnergyResolutionBroadening", 0., "Relative widening of the MC cell energy resolution. 0 for no widening, 0.1 for 10% widening, etc. Only applied to MC."};
   Configurable<bool> applyGainCalibShift{"applyGainCalibShift", false, "Apply shift for cell gain calibration to use values before cell format change (Sept. 2023)"};
 
+  // cross talk emulation configs
+  EmcCrossTalkConf emcCrossTalkConf;
+
+  // cross talk emulation class for handling the cross talk
+  emccrosstalk::EMCCrossTalk emcCrossTalk;
+
   // Require EMCAL cells (CALO type 1)
   Filter emccellfilter = aod::calo::caloType == selectedCellType;
 
@@ -161,6 +183,8 @@ struct EmcalCorrectionTask {
 
   // Current run number
   int runNumber{0};
+
+  static constexpr float TrackNotOnEMCal = -900.f;
 
   void init(InitContext const&)
   {
@@ -239,12 +263,15 @@ struct EmcalCorrectionTask {
 
     // Define the cell energy binning
     std::vector<double> cellEnergyBins;
-    for (int i = 0; i < 51; i++)
+    for (int i = 0; i < 51; i++) {                      // o2-linter: disable=magic-number (just numbers for binning)
       cellEnergyBins.emplace_back(0.1 * (i - 0) + 0.0); // from 0 to 5 GeV/c, every 0.1 GeV
-    for (int i = 51; i < 76; i++)
+    }
+    for (int i = 51; i < 76; i++) {                      // o2-linter: disable=magic-number (just numbers for binning)
       cellEnergyBins.emplace_back(0.2 * (i - 51) + 5.2); // from 5.2 to 10.0 GeV, every 0.2 GeV
-    for (int i = 76; i < 166; i++)
+    }
+    for (int i = 76; i < 166; i++) {                    // o2-linter: disable=magic-number (just numbers for binning)
       cellEnergyBins.emplace_back(1. * (i - 76) + 11.); // from 11.0 to 100. GeV, every 1 GeV
+    }
 
     // Setup QA hists.
     // NOTE: This is not comprehensive.
@@ -257,7 +284,8 @@ struct EmcalCorrectionTask {
       fCrossAxis{100, 0., 1., "F_{+}"},
       sigmaLongAxis{100, 0., 1.0, "#sigma^{2}_{long}"},
       sigmaShortAxis{100, 0., 1.0, "#sigma^{2}_{short}"},
-      nCellAxis{60, -0.5, 59.5, "#it{n}_{cells}"};
+      nCellAxis{60, -0.5, 59.5, "#it{n}_{cells}"},
+      energyDenseAxis = {7000, 0.f, 70.f, "#it{E}_{cell} (GeV)"};
     mHistManager.add("hCellE", "hCellE", O2HistType::kTH1D, {energyAxis});
     mHistManager.add("hCellTowerID", "hCellTowerID", O2HistType::kTH1D, {{20000, 0, 20000}});
     mHistManager.add("hCellEtaPhi", "hCellEtaPhi", O2HistType::kTH2F, {etaAxis, phiAxis});
@@ -308,6 +336,14 @@ struct EmcalCorrectionTask {
       mHistManager.add("hClusterFCrossE", "hClusterFCrossE", O2HistType::kTH2D, {energyAxis, fCrossAxis});
       mHistManager.add("hClusterFCrossSigmaLongE", "hClusterFCrossSigmaLongE", O2HistType::kTH3F, {energyAxis, fCrossAxis, sigmaLongAxis});
       mHistManager.add("hClusterFCrossSigmaShortE", "hClusterFCrossSigmaShortE", O2HistType::kTH3F, {energyAxis, fCrossAxis, sigmaShortAxis});
+    }
+
+    if (isMC.value && emcCrossTalkConf.enableCrossTalk.value) {
+      emcCrossTalk.initObjects(emcCrossTalkConf);
+      if (emcCrossTalkConf.createHistograms.value) {
+        mHistManager.add<TH1>("hCellEnergyDistBefore", "Cell energy before cross-talk emulation", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
+        mHistManager.add<TH1>("hCellEnergyDistAfter", "Cell energy after cross-talk emulation", {o2::framework::HistType::kTH1D, {energyDenseAxis}});
+      }
     }
 
     // For some runs, LG cells require an extra time shift of 2 * 8.8ns due to problems in the time calibration
@@ -416,9 +452,9 @@ struct EmcalCorrectionTask {
 
               std::vector<std::vector<int>> clusterToTrackIndexMap;
               std::vector<std::vector<int>> trackToClusterIndexMap;
-              std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> indexMapPair{clusterToTrackIndexMap, trackToClusterIndexMap};
+              MatchResult indexMapPair;
               std::vector<int64_t> trackGlobalIndex;
-              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, vertexPos, trackGlobalIndex);
+              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, trackGlobalIndex);
 
               // Store the clusters in the table where a matching collision could
               // be identified.
@@ -500,6 +536,13 @@ struct EmcalCorrectionTask {
         mHistManager.fill(HIST("hContributors"), cell.mcParticle_as<aod::StoredMcParticles_001>().size());
         auto cellParticles = cell.mcParticle_as<aod::StoredMcParticles_001>();
         for (const auto& cellparticle : cellParticles) {
+          const auto& ids = cell.mcParticleIds();
+          const auto& amps = cell.amplitudeA();
+
+          if (ids.empty() || amps.empty()) {
+            LOGF(warning, "Skipping cell with empty MC info: absId=%d", cell.cellNumber());
+            continue;
+          }
           mHistManager.fill(HIST("hMCParticleEnergy"), cellparticle.e());
         }
         auto amplitude = cell.amplitude();
@@ -517,7 +560,38 @@ struct EmcalCorrectionTask {
                              cell.time() + getCellTimeShift(cell.cellNumber(), amplitude, o2::emcal::intToChannelType(cell.cellType()), runNumber),
                              o2::emcal::intToChannelType(cell.cellType()));
         cellIndicesBC.emplace_back(cell.globalIndex());
-        cellLabels.emplace_back(cell.mcParticleIds(), cell.amplitudeA());
+        cellLabels.emplace_back(std::vector<int>{cell.mcParticleIds().begin(), cell.mcParticleIds().end()}, std::vector<float>{cell.amplitudeA().begin(), cell.amplitudeA().end()});
+      }
+      if (isMC.value && emcCrossTalkConf.enableCrossTalk.value) {
+        if (emcCrossTalkConf.createHistograms.value) {
+          for (const auto& cell : cellsBC) {
+            mHistManager.fill(HIST("hCellEnergyDistBefore"), cell.getAmplitude());
+          }
+        }
+        emcCrossTalk.setCells(cellsBC, cellLabels);
+        bool isOkCrossTalk = emcCrossTalk.run();
+        if (!isOkCrossTalk) {
+          LOG(info) << "Cross talk emulation failed!";
+        } else {
+          // When we get new cells we also need to add additional entries into cellIndicesBC.
+          // Adding -1 and later when filling the clusterID<->cellID table skip all cases where this is -1
+          if (cellIndicesBC.size() < cellsBC.size()) {
+            cellIndicesBC.reserve(cellsBC.size());
+            size_t nMissing = cellsBC.size() - cellIndicesBC.size();
+            cellIndicesBC.insert(cellIndicesBC.end(), nMissing, -1);
+          }
+          if (emcCrossTalkConf.createHistograms.value) {
+            for (const auto& cell : cellsBC) {
+              mHistManager.fill(HIST("hCellEnergyDistAfter"), cell.getAmplitude());
+            }
+          }
+        } // cross talk emulation was okay
+      } // if (isMC.value && emcCrossTalkConf.enableCrossTalk.value)
+      // shaper correction has to come AFTER cross talk
+      for (auto& cell : cellsBC) { // o2-linter: disable=const-ref-in-for-loop (we are changing a value here)
+        if (cell.getLowGain()) {
+          cell.setAmplitude(o2::emcal::NonlinearityHandler::evaluateShaperCorrectionCellEnergy(cell.getAmplitude()));
+        }
       }
       LOG(detail) << "Number of cells for BC (CF): " << cellsBC.size();
       nCellsProcessed += cellsBC.size();
@@ -547,9 +621,9 @@ struct EmcalCorrectionTask {
 
               std::vector<std::vector<int>> clusterToTrackIndexMap;
               std::vector<std::vector<int>> trackToClusterIndexMap;
-              std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>> indexMapPair{clusterToTrackIndexMap, trackToClusterIndexMap};
+              MatchResult indexMapPair;
               std::vector<int64_t> trackGlobalIndex;
-              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, vertexPos, trackGlobalIndex);
+              doTrackMatching<CollEventSels::filtered_iterator>(col, tracks, indexMapPair, trackGlobalIndex);
 
               // Store the clusters in the table where a matching collision could
               // be identified.
@@ -733,16 +807,16 @@ struct EmcalCorrectionTask {
   }
 
   template <typename Collision>
-  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, const std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr)
+  void fillClusterTable(Collision const& col, math_utils::Point3D<float> const& vertexPos, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, MatchResult* indexMapPair = nullptr, const std::vector<int64_t>* trackGlobalIndex = nullptr)
   {
     // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
-    const size_t NAvgNcells = 3;
+    const size_t nAvgNcells = 3;
     // we found a collision, put the clusters into the none ambiguous table
     clusters.reserve(mAnalysisClusters.size());
     if (!mClusterLabels.empty()) {
       mcclusters.reserve(mClusterLabels.size());
     }
-    clustercells.reserve(mAnalysisClusters.size() * NAvgNcells);
+    clustercells.reserve(mAnalysisClusters.size() * nAvgNcells);
 
     // get the clusterType once
     const auto clusterType = static_cast<int>(mClusterDefinitions[iClusterizer]);
@@ -786,7 +860,9 @@ struct EmcalCorrectionTask {
       for (int ncell = 0; ncell < cluster.getNCells(); ncell++) {
         cellindex = cluster.getCellIndex(ncell);
         LOG(debug) << "trying to find cell index " << cellindex << " in map";
-        clustercells(clusters.lastIndex(), cellIndicesBC[cellindex]);
+        if (cellIndicesBC[cellindex] >= 0) {
+          clustercells(clusters.lastIndex(), cellIndicesBC[cellindex]);
+        }
       } // end of cells of cluser loop
       // fill histograms
       mHistManager.fill(HIST("hClusterE"), energy);
@@ -800,10 +876,12 @@ struct EmcalCorrectionTask {
         mHistManager.fill(HIST("hClusterFCrossSigmaShortE"), cluster.E(), cluster.getFCross(), cluster.getM20());
       }
       if (indexMapPair && trackGlobalIndex) {
-        for (unsigned int iTrack = 0; iTrack < std::get<0>(*indexMapPair)[iCluster].size(); iTrack++) {
-          if (std::get<0>(*indexMapPair)[iCluster][iTrack] >= 0) {
-            LOG(debug) << "Found track " << (*trackGlobalIndex)[std::get<0>(*indexMapPair)[iCluster][iTrack]] << " in cluster " << cluster.getID();
-            matchedTracks(clusters.lastIndex(), (*trackGlobalIndex)[std::get<0>(*indexMapPair)[iCluster][iTrack]]);
+        if (iCluster < indexMapPair->matchIndexTrack.size() && indexMapPair->matchIndexTrack.size() > 0) {
+          for (unsigned int iTrack = 0; iTrack < indexMapPair->matchIndexTrack[iCluster].size(); iTrack++) {
+            if (indexMapPair->matchIndexTrack[iCluster][iTrack] >= 0) {
+              LOG(debug) << "Found track " << (*trackGlobalIndex)[indexMapPair->matchIndexTrack[iCluster][iTrack]] << " in cluster " << cluster.getID();
+              matchedTracks(clusters.lastIndex(), (*trackGlobalIndex)[indexMapPair->matchIndexTrack[iCluster][iTrack]], indexMapPair->matchDeltaPhi[iCluster][iTrack], indexMapPair->matchDeltaEta[iCluster][iTrack]);
+            }
           }
         }
       }
@@ -815,13 +893,13 @@ struct EmcalCorrectionTask {
   void fillAmbigousClusterTable(BC const& bc, size_t iClusterizer, const gsl::span<int64_t> cellIndicesBC, bool hasCollision)
   {
     // average number of cells per cluster, only used the reseve a reasonable amount for the clustercells table
-    const size_t NAvgNcells = 3;
+    const size_t nAvgNcells = 3;
     int cellindex = -1;
     clustersAmbiguous.reserve(mAnalysisClusters.size());
     if (mClusterLabels.size() > 0) {
       mcclustersAmbiguous.reserve(mClusterLabels.size());
     }
-    clustercellsambiguous.reserve(mAnalysisClusters.size() * NAvgNcells);
+    clustercellsambiguous.reserve(mAnalysisClusters.size() * nAvgNcells);
     unsigned int iCluster = 0;
     float energy = 0.f;
     for (const auto& cluster : mAnalysisClusters) {
@@ -866,12 +944,12 @@ struct EmcalCorrectionTask {
   }
 
   template <typename Collision>
-  void doTrackMatching(Collision const& col, MyGlobTracks const& tracks, std::tuple<std::vector<std::vector<int>>, std::vector<std::vector<int>>>& indexMapPair, math_utils::Point3D<float>& vertexPos, std::vector<int64_t>& trackGlobalIndex)
+  void doTrackMatching(Collision const& col, MyGlobTracks const& tracks, MatchResult& indexMapPair, std::vector<int64_t>& trackGlobalIndex)
   {
     auto groupedTracks = tracks.sliceBy(perCollision, col.globalIndex());
     int nTracksInCol = groupedTracks.size();
-    std::vector<double> trackPhi;
-    std::vector<double> trackEta;
+    std::vector<float> trackPhi;
+    std::vector<float> trackEta;
     // reserve memory to reduce on the fly memory allocation
     trackPhi.reserve(nTracksInCol);
     trackEta.reserve(nTracksInCol);
@@ -879,8 +957,8 @@ struct EmcalCorrectionTask {
     fillTrackInfo<decltype(groupedTracks)>(groupedTracks, trackPhi, trackEta, trackGlobalIndex);
 
     int nClusterInCol = mAnalysisClusters.size();
-    std::vector<double> clusterPhi;
-    std::vector<double> clusterEta;
+    std::vector<float> clusterPhi;
+    std::vector<float> clusterEta;
     clusterPhi.reserve(nClusterInCol);
     clusterEta.reserve(nClusterInCol);
 
@@ -890,40 +968,33 @@ struct EmcalCorrectionTask {
       // Determine the cluster eta, phi, correcting for the vertex
       // position.
       auto pos = cluster.getGlobalPosition();
-      pos = pos - vertexPos;
-      // Normalize the vector and rescale by energy.
-      pos *= (cluster.E() / std::sqrt(pos.Mag2()));
       clusterPhi.emplace_back(TVector2::Phi_0_2pi(pos.Phi()));
       clusterEta.emplace_back(pos.Eta());
     }
-    indexMapPair =
-      jetutilities::MatchClustersAndTracks(clusterPhi, clusterEta,
-                                           trackPhi, trackEta,
-                                           maxMatchingDistance, 20);
+    indexMapPair = matchTracksToCluster(clusterPhi, clusterEta, trackPhi, trackEta, maxMatchingDistance, 20);
   }
 
   template <typename Tracks>
-  void fillTrackInfo(Tracks const& tracks, std::vector<double>& trackPhi, std::vector<double>& trackEta, std::vector<int64_t>& trackGlobalIndex)
+  void fillTrackInfo(Tracks const& tracks, std::vector<float>& trackPhi, std::vector<float>& trackEta, std::vector<int64_t>& trackGlobalIndex)
   {
     int nTrack = 0;
     for (const auto& track : tracks) {
-      // TODO only consider tracks in current emcal/dcal acceptanc
       if (!track.isGlobalTrack()) { // only global tracks
         continue;
       }
       // Tracks that do not point to the EMCal/DCal/PHOS get default values of -999
       // This way we can cut out tracks that do not point to the EMCal+DCal
-      if (track.trackEtaEmcal() < -900 || track.trackPhiEmcal() < -900) {
+      if (track.trackEtaEmcal() < TrackNotOnEMCal || track.trackPhiEmcal() < TrackNotOnEMCal) {
         continue;
       }
       if (trackMinPt > 0 && track.pt() < trackMinPt) {
         continue;
       }
       nTrack++;
-      trackPhi.emplace_back(TVector2::Phi_0_2pi(track.trackPhiEmcal()));
+      trackPhi.emplace_back(RecoDecay::constrainAngle(track.trackPhiEmcal()));
       trackEta.emplace_back(track.trackEtaEmcal());
       mHistManager.fill(HIST("hGlobalTrackEtaPhi"), track.trackEtaEmcal(),
-                        TVector2::Phi_0_2pi(track.trackPhiEmcal()));
+                        RecoDecay::constrainAngle(track.trackPhiEmcal()));
       trackGlobalIndex.emplace_back(track.globalIndex());
     }
     mHistManager.fill(HIST("hGlobalTrackMult"), nTrack);
@@ -974,12 +1045,12 @@ struct EmcalCorrectionTask {
   {
     // Apply cell scale based on SM types (Full, Half (not used), EMC 1/3, DCal, DCal 1/3)
     // Same as in Run2 data
-    if (applyCellAbsScale == 1) {
+    if (applyCellAbsScale == CellScaleMode::ModeSMWise) {
       int iSM = mClusterizers.at(0)->getGeometry()->GetSuperModuleNumber(cellID);
       return cellAbsScaleFactors.value[mClusterizers.at(0)->getGeometry()->GetSMType(iSM)];
 
       // Apply cell scale based on columns to accoutn for material of TRD structures
-    } else if (applyCellAbsScale == 2) {
+    } else if (applyCellAbsScale == CellScaleMode::ModeColumnWise) {
       auto res = mClusterizers.at(0)->getGeometry()->GlobalRowColFromIndex(cellID);
       return cellAbsScaleFactors.value[std::get<1>(res)];
     } else {
@@ -997,6 +1068,9 @@ struct EmcalCorrectionTask {
     }
     float timeshift = 0.f;
     float timesmear = 0.f;
+    const float minLeaderEnergy = 0.3f;
+    const float lowEnergyRegime = 4.f;
+    const float highEnergyRegime = 30.f;
     if (isMC) { // ---> MC
       // Shift the time to 0, as the TOF was simulated -> eta dependent shift (as larger eta values are further away from collision point)
       // Use distance between vertex and EMCal (at eta = 0) and distance on EMCal surface (cell size times column) to calculate distance to cell
@@ -1005,7 +1079,7 @@ struct EmcalCorrectionTask {
       timeshift = -std::sqrt(215.f + timeCol * timeCol);            // 215 is 14.67ns^2 (time it takes to get the cell at eta = 0)
 
       // Also smear the time to account for the broader time resolution in data than in MC
-      if (cellEnergy < 0.3)                                                       // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
+      if (cellEnergy < minLeaderEnergy)                                           // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
         timesmear = 0.;                                                           // They will therefore not be smeared and only get their shift
       else if (cellType == emcal::ChannelType_t::HIGH_GAIN)                       // High gain cells -> Low energies
         timesmear = normalgaus(rdgen) * (1.6 + 9.5 * std::exp(-3. * cellEnergy)); // Parameters extracted from LHC24f3b & LHC22o (pp), but also usable for other periods
@@ -1013,15 +1087,15 @@ struct EmcalCorrectionTask {
         timesmear = normalgaus(rdgen) * (5.0);                                    // Parameters extracted from LHC24g4 & LHC24aj (pp), but also usable for other periods
 
     } else {                                                    // ---> Data
-      if (cellEnergy < 0.3) {                                   // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
+      if (cellEnergy < minLeaderEnergy) {                       // Cells with tless than 300 MeV cannot be the leading cell in the cluster, so their time does not require precise calibration
         timeshift = 0.;                                         // In data they will not be shifted (they are close to 0 anyways)
       } else if (cellType == emcal::ChannelType_t::HIGH_GAIN) { // High gain cells -> Low energies
-        if (cellEnergy < 4.)                                    // Low energy regime
+        if (cellEnergy < lowEnergyRegime)                       // Low energy regime
           timeshift = 0.8 * std::log(2.7 * cellEnergy);         // Parameters extracted from LHC22o (pp), but also usable for other periods
         else                                                    // Medium energy regime
           timeshift = 1.5 * std::log(0.9 * cellEnergy);         // Parameters extracted from LHC22o (pp), but also usable for other periods
       } else if (cellType == emcal::ChannelType_t::LOW_GAIN) {  // Low gain cells -> High energies
-        if (cellEnergy < 30.)                                   // High energy regime
+        if (cellEnergy < highEnergyRegime)                      // High energy regime
           timeshift = 1.9 * std::log(0.09 * cellEnergy);        // Parameters extracted from LHC24aj (pp), but also usable for other periods
         else                                                    // Very high energy regime
           timeshift = 1.9;                                      // Parameters extracted from LHC24aj (pp), but also usable for other periods

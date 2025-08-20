@@ -14,18 +14,18 @@
 // This code runs loop over v0 photons for PCM QC.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
+#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
 #include <string>
 #include <vector>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-
-#include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Core/V0PhotonCut.h"
-#include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 
 using namespace o2;
 using namespace o2::aod;
@@ -81,16 +81,15 @@ struct PCMQC {
     Configurable<float> cfg_max_v0radius{"cfg_max_v0radius", 90.0, "max v0 radius"};
     Configurable<float> cfg_max_alpha_ap{"cfg_max_alpha_ap", 0.95, "max alpha for AP cut"};
     Configurable<float> cfg_max_qt_ap{"cfg_max_qt_ap", 0.01, "max qT for AP cut"};
-    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.997, "min V0 CosPA"};
-    Configurable<float> cfg_max_pca{"cfg_max_pca", 3.0, "max distance btween 2 legs"};
+    Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.999, "min V0 CosPA"};
+    Configurable<float> cfg_max_pca{"cfg_max_pca", 1.5, "max distance btween 2 legs"};
     Configurable<float> cfg_max_chi2kf{"cfg_max_chi2kf", 1e+10, "max chi2/ndf with KF"};
-    Configurable<bool> cfg_require_v0_with_correct_xz{"cfg_require_v0_with_correct_xz", true, "flag to select V0s with correct xz"};
     Configurable<bool> cfg_reject_v0_on_itsib{"cfg_reject_v0_on_itsib", true, "flag to reject V0s on ITSib"};
     Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
     Configurable<int> cfg_min_ncrossedrows{"cfg_min_ncrossedrows", 40, "min ncrossed rows"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
-    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
+    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -3.0, "min. TPC n sigma for electron"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3.0, "max. TPC n sigma for electron"};
     Configurable<bool> cfg_disable_itsonly_track{"cfg_disable_itsonly_track", false, "flag to disable ITSonly tracks"};
@@ -172,9 +171,9 @@ struct PCMQC {
     fRegistry.add("V0Leg/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("V0Leg/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
     fRegistry.add("V0Leg/hMeanClusterSizeITS", "mean cluster size ITS;<cluster size> on ITS #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {160, 0, 16}}, false);
-    fRegistry.add("V0Leg/hXY", "X vs. Y;X (cm);Y (cm)", kTH2F, {{100, 0, 100}, {80, -20, 20}}, false);
-    fRegistry.add("V0Leg/hZX", "Z vs. X;Z (cm);X (cm)", kTH2F, {{200, -100, 100}, {100, 0, 100}}, false);
-    fRegistry.add("V0Leg/hZY", "Z vs. Y;Z (cm);Y (cm)", kTH2F, {{200, -100, 100}, {80, -20, 20}}, false);
+    // fRegistry.add("V0Leg/hXY", "X vs. Y;X (cm);Y (cm)", kTH2F, {{100, 0, 100}, {80, -20, 20}}, false);
+    // fRegistry.add("V0Leg/hZX", "Z vs. X;Z (cm);X (cm)", kTH2F, {{200, -100, 100}, {100, 0, 100}}, false);
+    // fRegistry.add("V0Leg/hZY", "Z vs. Y;Z (cm);Y (cm)", kTH2F, {{200, -100, 100}, {80, -20, 20}}, false);
   }
 
   void DefineEMEventCut()
@@ -219,7 +218,6 @@ struct PCMQC {
     fV0PhotonCut.SetChi2PerClusterITS(-1e+10, pcmcuts.cfg_max_chi2its);
     fV0PhotonCut.SetNClustersITS(0, 7);
     fV0PhotonCut.SetMeanClusterSizeITSob(0.0, 16.0);
-    fV0PhotonCut.SetIsWithinBeamPipe(pcmcuts.cfg_require_v0_with_correct_xz);
     fV0PhotonCut.SetDisableITSonly(pcmcuts.cfg_disable_itsonly_track);
     fV0PhotonCut.SetDisableTPConly(pcmcuts.cfg_disable_tpconly_track);
     fV0PhotonCut.SetRequireITSTPC(pcmcuts.cfg_require_v0_with_itstpc);
@@ -316,9 +314,9 @@ struct PCMQC {
     fRegistry.fill(HIST("V0Leg/hTPCdEdx"), leg.tpcInnerParam(), leg.tpcSignal());
     fRegistry.fill(HIST("V0Leg/hTPCNsigmaEl"), leg.tpcInnerParam(), leg.tpcNSigmaEl());
     fRegistry.fill(HIST("V0Leg/hTPCNsigmaPi"), leg.tpcInnerParam(), leg.tpcNSigmaPi());
-    fRegistry.fill(HIST("V0Leg/hXY"), leg.x(), leg.y());
-    fRegistry.fill(HIST("V0Leg/hZX"), leg.z(), leg.x());
-    fRegistry.fill(HIST("V0Leg/hZY"), leg.z(), leg.y());
+    // fRegistry.fill(HIST("V0Leg/hXY"), leg.x(), leg.y());
+    // fRegistry.fill(HIST("V0Leg/hZX"), leg.z(), leg.x());
+    // fRegistry.fill(HIST("V0Leg/hZY"), leg.z(), leg.y());
   }
 
   Preslice<MyV0Photons> perCollision = aod::v0photonkf::emeventId;

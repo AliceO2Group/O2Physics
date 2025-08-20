@@ -798,7 +798,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -815,7 +815,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -832,7 +832,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -1071,7 +1071,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
       float centrality{-1.f};
-      uint32_t rejectionMask{0u};
+      o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       int nSplitColl = 0;
       if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());

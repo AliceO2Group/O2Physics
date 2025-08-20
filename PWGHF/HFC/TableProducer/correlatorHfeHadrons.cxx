@@ -152,12 +152,20 @@ struct HfCorrelatorHfeHadrons {
     int gCollisionId = collision.globalIndex();
     int64_t timeStamp = bc.timestamp();
 
+    // Add hadron Table For Mix Event Electron Hadron correlation
+    for (const auto& hTrack : tracks) {
+      if (!selAssoHadron(hTrack)) {
+        continue;
+      }
+      registry.fill(HIST("hTracksBin"), poolBin);
+      entryHadron(hTrack.phi(), hTrack.eta(), hTrack.pt(), poolBin, gCollisionId, timeStamp);
+    }
+
     //  Construct Deta Phi between electrons and hadrons
 
     double ptElectron = -999;
     double phiElectron = -999;
     double etaElectron = -999;
-    int nElectron = 0;
 
     for (const auto& eTrack : electron) {
       ptElectron = eTrack.ptTrack();
@@ -209,10 +217,7 @@ struct HfCorrelatorHfeHadrons {
         if (ptCondition && (ptElectron < ptHadron)) {
           continue;
         }
-        if (nElectron == 0) {
-          registry.fill(HIST("hTracksBin"), poolBin);
-          entryHadron(phiHadron, etaHadron, ptHadron, poolBin, gCollisionId, timeStamp);
-        }
+
         deltaPhi = RecoDecay::constrainAngle(phiElectron - phiHadron, -o2::constants::math::PIHalf);
         deltaEta = etaElectron - etaHadron;
         registry.fill(HIST("hInclusiveEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
@@ -236,7 +241,7 @@ struct HfCorrelatorHfeHadrons {
         entryElectronHadronPair(deltaPhi, deltaEta, ptElectron, ptHadron, poolBin, nElHadLSCorr, nElHadUSCorr);
 
       } // end Hadron Track loop
-      nElectron++;
+
     } // end Electron loop
   }
 

@@ -43,6 +43,11 @@ o2physics_add_dpl_workflow(pid-tof-full
 
 # TPC
 
+o2physics_add_dpl_workflow(pid-tpc-service
+                    SOURCES pidTPCService.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(pid-tpc-base
                     SOURCES pidTPCBase.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
@@ -50,7 +55,7 @@ o2physics_add_dpl_workflow(pid-tpc-base
 
 o2physics_add_dpl_workflow(pid-tpc
                     SOURCES pidTPC.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DetectorsBase O2Physics::AnalysisCCDB O2Physics::MLCore
                     COMPONENT_NAME Analysis)
 
 # HMPID

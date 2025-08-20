@@ -135,6 +135,7 @@ struct F0980pbpbanalysis {
   ConfigurableAxis massAxis{"massAxis", {400, 0.2, 2.2}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5, 4.0, 4.5, 5.0, 6.0, 7.0, 8.0, 10.0, 13.0, 20.0}, "Transverse momentum Binning"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 100}, "Centrality interval"};
+  ConfigurableAxis epAxis{"epAxis", {6, 0.0, o2::constants::math::TwoPI}, "EP axis"};
 
   // for event mixing
   SliceCache cache;
@@ -548,11 +549,11 @@ struct F0980pbpbanalysis {
 
           if (trk1.sign() * trk2.sign() < 0) {
             histos.fill(HIST("hInvMass_f0980_MixedUS_EPA"), recoPtl.M(), recoPtl.Pt(), centrality, relPhiMix);
-          } else if (trk1.sign() > 0 && trk2.sign() > 0) {
-            histos.fill(HIST("hInvMass_f0980_MixedLSpp_EPA"), recoPtl.M(), recoPtl.Pt(), centrality, relPhiMix);
-          } else if (trk1.sign() < 0 && trk2.sign() < 0) {
-            histos.fill(HIST("hInvMass_f0980_MixedLSmm_EPA"), recoPtl.M(), recoPtl.Pt(), centrality, relPhiMix);
-          }
+          } // else if (trk1.sign() > 0 && trk2.sign() > 0) {
+          //   histos.fill(HIST("hInvMass_f0980_MixedLSpp_EPA"), recoPtl.M(), recoPtl.Pt(), centrality, relPhiMix);
+          // } else if (trk1.sign() < 0 && trk2.sign() < 0) {
+          //   histos.fill(HIST("hInvMass_f0980_MixedLSmm_EPA"), recoPtl.M(), recoPtl.Pt(), centrality, relPhiMix);
+          // }
         }
       }
       // for (auto& [trk1, trk2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(t1, t2))) {
@@ -591,7 +592,6 @@ struct F0980pbpbanalysis {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec epAxis = {6, 0.0, o2::constants::math::TwoPI};
     AxisSpec qaCentAxis = {110, 0, 110};
     AxisSpec qaVzAxis = {100, -20, 20};
     AxisSpec qaPIDAxis = {100, -10, 10};
@@ -622,6 +622,8 @@ struct F0980pbpbanalysis {
     histos.add("hInvMass_f0980_LSmm_EPA", "-- invariant mass",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     histos.add("hInvMass_f0980_USRot_EPA", "unlike invariant mass Rotation",
+               {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
+    histos.add("hInvMass_f0980_MixedUS_EPA", "unlike invariant mass EventMixing",
                {HistType::kTHnSparseF, {massAxis, ptAxis, centAxis, epAxis}});
     //    if (doprocessMCLight) {
     //      histos.add("MCL/hpT_f0980_GEN", "generated f0 signals", HistType::kTH1F, {qaPtAxis});

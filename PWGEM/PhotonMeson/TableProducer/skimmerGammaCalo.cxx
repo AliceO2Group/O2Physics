@@ -51,7 +51,6 @@ struct SkimmerGammaCalo {
   Produces<aod::SkimEMCClusters> tableGammaEMCReco;
   Produces<aod::EMCClusterMCLabels> tableEMCClusterMCLabels;
   Produces<aod::SkimEMCCells> tableCellEMCReco;
-  Produces<aod::SkimEMCMTs> tableTrackEMCReco;
 
   // Configurable for filter/cuts
   Configurable<float> minTime{"minTime", -200., "Minimum cluster time for time cut"};
@@ -155,26 +154,28 @@ struct SkimmerGammaCalo {
       vP.reserve(groupedMTs.size());
       vPt.reserve(groupedMTs.size());
       for (const auto& emcmatchedtrack : groupedMTs) {
-        if (std::abs(emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal()) >= maxdEta || std::abs(emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal()) >= maxdPhi) {
+        if (std::abs(emcmatchedtrack.deltaEta()) >= maxdEta || std::abs(emcmatchedtrack.deltaPhi()) >= maxdPhi) {
           continue;
         }
         historeg.fill(HIST("MTEtaPhi"), emccluster.eta() - emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emccluster.phi() - emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
         vTrackIds.emplace_back(emcmatchedtrack.trackId());
-        vEta.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal());
-        vPhi.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal());
+        vEta.emplace_back(emcmatchedtrack.deltaEta());
+        vPhi.emplace_back(emcmatchedtrack.deltaPhi());
         vP.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().p());
         vPt.emplace_back(emcmatchedtrack.track_as<aod::FullTracks>().pt());
-        tableTrackEMCReco(emcmatchedtrack.emcalclusterId(), emcmatchedtrack.track_as<aod::FullTracks>().trackEtaEmcal(), emcmatchedtrack.track_as<aod::FullTracks>().trackPhiEmcal(),
-                          emcmatchedtrack.track_as<aod::FullTracks>().p(), emcmatchedtrack.track_as<aod::FullTracks>().pt());
       }
 
       tableGammaEMCReco(emccluster.collisionId(), emccluster.definition(), emccluster.energy(), emccluster.eta(), emccluster.phi(), emccluster.m02(),
-                        emccluster.nCells(), emccluster.time(), emccluster.isExotic(), vEta, vPhi, vP, vPt);
+                        emccluster.nCells(), emccluster.time(), emccluster.isExotic(), vPhi, vEta, vP, vPt);
     }
   }
   void processMC(soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>::iterator const& collision, soa::Join<aod::EMCALClusters, aod::EMCALMCClusters> const& emcclusters, aod::McParticles const&)
   {
     if (!collision.isSelected()) {
+      return;
+    }
+
+    if (needEMCTrigger.value && !collision.alias_bit(kTVXinEMC)) {
       return;
     }
 

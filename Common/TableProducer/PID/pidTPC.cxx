@@ -24,28 +24,29 @@
 #include <utility>
 #include <vector>
 // ROOT includes
-#include "TFile.h"
-#include "TRandom.h"
-#include "TSystem.h"
+#include <TFile.h>
+#include <TRandom.h>
+#include <TSystem.h>
 
 // O2 includes
 #include "MetadataHelper.h"
 #include "TableHelper.h"
 #include "pidTPCBase.h"
 
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/model.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -150,9 +151,12 @@ struct tpcPid {
   Configurable<int> useNetworkHe{"useNetworkHe", 1, {"Switch for applying neural network on the helium3 mass hypothesis (if network enabled) (set to 0 to disable)"}};
   Configurable<int> useNetworkAl{"useNetworkAl", 1, {"Switch for applying neural network on the alpha mass hypothesis (if network enabled) (set to 0 to disable)"}};
   Configurable<float> networkBetaGammaCutoff{"networkBetaGammaCutoff", 0.45, {"Lower value of beta-gamma to override the NN application"}};
-
+  Configurable<float> networkInputBatchedMode{"networkInputBatchedMode", -1, {"-1: Takes all tracks, >0: Takes networkInputBatchedMode number of tracks at once"}};
+  Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
+  ctpRateFetcher mRateFetcher;
   // Parametrization configuration
   bool useCCDBParam = false;
+  std::vector<float> track_properties;
 
   void init(o2::framework::InitContext& initContext)
   {
@@ -164,7 +168,7 @@ struct tpcPid {
     }
     response = new o2::pid::tpc::Response();
     // Checking the tables are requested in the workflow and enabling them
-    auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
+    auto enableFlag = [&](const std::string& particle, Configurable<int>& flag) {
       enableFlagIfTableRequired(initContext, "pidTPC" + particle, flag);
     };
     enableFlag("FullEl", pidFullEl);
@@ -298,8 +302,6 @@ struct tpcPid {
   std::vector<float> createNetworkPrediction(C const& collisions, T const& tracks, B const& bcs, const size_t size)
   {
 
-    std::vector<float> network_prediction;
-
     auto start_network_total = std::chrono::high_resolution_clock::now();
     if (autofetchNetworks) {
       const auto& bc = bcs.begin();
@@ -345,20 +347,24 @@ struct tpcPid {
     // Defining some network parameters
     int input_dimensions = network.getNumInputNodes();
     int output_dimensions = network.getNumOutputNodes();
-    const uint64_t track_prop_size = input_dimensions * size;
     const uint64_t prediction_size = output_dimensions * size;
+    const uint8_t numSpecies = 9;
+    const uint64_t total_eval_size = size * numSpecies; // 9 species
 
-    network_prediction = std::vector<float>(prediction_size * 9); // For each mass hypotheses
     const float nNclNormalization = response->GetNClNormalization();
     float duration_network = 0;
 
-    std::vector<float> track_properties(track_prop_size);
-    uint64_t counter_track_props = 0;
-    int loop_counter = 0;
+    uint64_t counter_track_props = 0, exec_counter = 0, in_batch_counter = 0, total_input_count = 0;
+    uint64_t track_prop_size = networkInputBatchedMode.value;
+    if (networkInputBatchedMode.value <= 0) {
+      track_prop_size = size; // If the networkInputBatchedMode is not set, we use all tracks at once
+    }
+    track_properties.resize(track_prop_size * input_dimensions);         // If the networkInputBatchedMode is set, we use the number of tracks specified in the config
+    std::vector<float> network_prediction(prediction_size * numSpecies); // For each mass hypotheses
 
     // Filling a std::vector<float> to be evaluated by the network
     // Evaluation on single tracks brings huge overhead: Thus evaluation is done on one large vector
-    for (int i = 0; i < 9; i++) { // Loop over particle number for which network correction is used
+    for (int species = 0; species < numSpecies; species++) { // Loop over particle number for which network correction is used
       for (auto const& trk : tracks) {
         if (!trk.hasTPC()) {
           continue;
@@ -368,30 +374,48 @@ struct tpcPid {
             continue;
           }
         }
-        track_properties[counter_track_props] = trk.tpcInnerParam();
+
+        if ((in_batch_counter == track_prop_size) || (total_input_count == total_eval_size)) { // If the batch size is reached, reset the counter
+          int32_t fill_shift = (exec_counter * track_prop_size - ((total_input_count == total_eval_size) ? (total_input_count % track_prop_size) : 0)) * output_dimensions;
+          auto start_network_eval = std::chrono::high_resolution_clock::now();
+          const float* output_network = network.evalModel(track_properties);
+          auto stop_network_eval = std::chrono::high_resolution_clock::now();
+          duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
+
+          for (uint64_t i = 0; i < (in_batch_counter * output_dimensions); i += output_dimensions) {
+            for (int j = 0; j < output_dimensions; j++) {
+              network_prediction[i + j + fill_shift] = output_network[i + j];
+            }
+          }
+          counter_track_props = 0;
+          in_batch_counter = 0;
+          exec_counter++;
+        }
+
+        // LOG(info) << "counter_tracks_props: " << counter_track_props << "; in_batch_counter: " << in_batch_counter << "; total_input_count: " << total_input_count << "; exec_counter: " << exec_counter << "; track_prop_size: " << track_prop_size << "; size: " << size << "; track_properties.size(): " << track_properties.size();
+        track_properties[counter_track_props] = trk.tpcInnerParam(); // (tracks.asArrowTable()->GetColumn<float>("tpcInnerParam")).GetData();
         track_properties[counter_track_props + 1] = trk.tgl();
         track_properties[counter_track_props + 2] = trk.signed1Pt();
-        track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[i];
+        track_properties[counter_track_props + 3] = o2::track::pid_constants::sMasses[species];
         track_properties[counter_track_props + 4] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).multTPC() / 11000. : 1.;
         track_properties[counter_track_props + 5] = std::sqrt(nNclNormalization / trk.tpcNClsFound());
         if (input_dimensions == 7 && networkVersion == "2") {
           track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
         }
-        counter_track_props += input_dimensions;
-      }
-
-      auto start_network_eval = std::chrono::high_resolution_clock::now();
-      float* output_network = network.evalModel(track_properties);
-      auto stop_network_eval = std::chrono::high_resolution_clock::now();
-      duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
-      for (uint64_t i = 0; i < prediction_size; i += output_dimensions) {
-        for (int j = 0; j < output_dimensions; j++) {
-          network_prediction[i + j + prediction_size * loop_counter] = output_network[i + j];
+        if (input_dimensions == 8 && networkVersion == "3") {
+          if (trk.has_collision()) {
+            auto trk_bc = (collisions.iteratorAt(trk.collisionId())).template bc_as<B>();
+            float hadronicRate = mRateFetcher.fetch(ccdb.service, trk_bc.timestamp(), trk_bc.runNumber(), irSource) * 1.e-3;
+            track_properties[counter_track_props + 7] = hadronicRate / 50.;
+          } else {
+            track_properties[counter_track_props + 7] = 1;
+          }
         }
-      }
 
-      counter_track_props = 0;
-      loop_counter += 1;
+        counter_track_props += input_dimensions;
+        in_batch_counter++;
+        total_input_count++;
+      }
     }
     track_properties.clear();
 
@@ -425,8 +449,8 @@ struct tpcPid {
       }
     }
     auto expSignal = response->GetExpectedSignal(trk, pid);
-    auto expSigma = trk.has_collision() ? response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid) : 0.07 * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
-    if (expSignal < 0. || expSigma < 0.) {                                                                                                   // skip if expected signal invalid
+    auto expSigma = trk.has_collision() ? response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid) : 0.07f * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
+    if (expSignal < 0. || expSigma < 0.) {                                                                                                    // skip if expected signal invalid
       if (flagFull)
         tableFull(-999.f, -999.f);
       if (flagTiny)
@@ -435,6 +459,11 @@ struct tpcPid {
     }
 
     float nSigma = -999.f;
+    int multTPC = 0;
+    if (trk.has_collision()) {
+      auto collision = collisions.rawIteratorAt(trk.collisionId());
+      multTPC = collision.multTPC();
+    }
     float bg = trk.tpcInnerParam() / o2::track::pid_constants::sMasses[pid]; // estimated beta-gamma for network cutoff
     if (useNetworkCorrection && speciesNetworkFlags[pid] && trk.has_collision() && bg > networkBetaGammaCutoff) {
 
@@ -457,7 +486,7 @@ struct tpcPid {
         LOGF(fatal, "Network output-dimensions incompatible!");
       }
     } else {
-      nSigma = response->GetNumberOfSigmaMCTuned(collisions.iteratorAt(trk.collisionId()), trk, pid, tpcSignal);
+      nSigma = response->GetNumberOfSigmaMCTunedAtMultiplicity(multTPC, trk, pid, tpcSignal);
     }
     if (flagFull)
       tableFull(expSigma, nSigma);

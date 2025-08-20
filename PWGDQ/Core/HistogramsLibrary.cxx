@@ -915,12 +915,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
     hm->AddHistogram(histClass, "Rapidity", "", false, 400, -4.0, 4.0, VarManager::kRap);
   }
   if (!groupStr.CompareTo("mctruth_pair")) {
-    hm->AddHistogram(histClass, "Mass_Pt", "", false, 500, 0.0, 5.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt);
+    hm->AddHistogram(histClass, "Mass_Pt", "", false, 500, 0.0, 15.0, VarManager::kMass, 40, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Pt", "", false, 200, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Pt_Dilepton", "", false, 200, 0.0, 20.0, VarManager::kPairPtDau);
     hm->AddHistogram(histClass, "Eta_Pt_lepton1", "", false, 100, -2.0, 2.0, VarManager::kEta1, 200, 0.0, 20.0, VarManager::kPt1);
     hm->AddHistogram(histClass, "Eta_Pt_lepton2", "", false, 100, -2.0, 2.0, VarManager::kEta2, 200, 0.0, 20.0, VarManager::kPt2);
-    hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 5.0, VarManager::kMass);
+    hm->AddHistogram(histClass, "Mass", "", false, 500, 0.0, 15.0, VarManager::kMass);
     hm->AddHistogram(histClass, "Eta_Pt", "", false, 40, -2.0, 2.0, VarManager::kEta, 200, 0.0, 20.0, VarManager::kPt);
     hm->AddHistogram(histClass, "Phi_Eta", "#phi vs #eta distribution", false, 200, -5.0, 5.0, VarManager::kEta, 200, -2. * o2::constants::math::PI, 2. * o2::constants::math::PI, VarManager::kPhi);
     int varspTHE[3] = {VarManager::kMCPt, VarManager::kMCCosThetaHE, VarManager::kMCPhiHE};
@@ -1075,6 +1075,22 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "CosPointingAngle", "", false, 200, -1.0, 1.0, VarManager::kCosPointingAngle);
         hm->AddHistogram(histClass, "VtxingChi2PCA", "", false, 100, 0.0, 10.0, VarManager::kVertexingChi2PCA);
       }
+      if (subGroupStr.Contains("tauxy-midy-pol-he")) {
+        int varspTHE[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kVertexingTauxyProjectedPoleJPsiMass};
+        int binspT[4] = {50, 10, 20, 1000};
+        double xminpT[4] = {2., 0., -1., -0.03};
+        double xmaxpT[4] = {4., 20., 1., 0.03};
+        hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaHE", "", 4, varspTHE, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+      }
+
+      if (subGroupStr.Contains("tauxy-midy-pol-rand")) {
+        int varspTRand[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaRM, VarManager::kVertexingTauxyProjectedPoleJPsiMass};
+
+        int binspT[4] = {50, 10, 20, 1000};
+        double xminpT[4] = {2., 0., -1., -0.03};
+        double xmaxpT[4] = {4., 20., 1., 0.03};
+        hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaRand", "", 4, varspTRand, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+      }
 
       if (subGroupStr.Contains("kalman-filter")) {
         hm->AddHistogram(histClass, "LxyErr", "", false, 100, 0.0, 10.0, VarManager::kVertexingLxyErr);
@@ -1158,6 +1174,10 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       hm->AddHistogram(histClass, "Mass_Pt", "", false, 750, 0.0, 15.0, VarManager::kMass, 120, 0.0, 30.0, VarManager::kPt);
       hm->AddHistogram(histClass, "Mass_Rapidity", "", false, 750, 0.0, 15.0, VarManager::kMass, 150, 2.5, 4.0, VarManager::kRap);
       hm->AddHistogram(histClass, "Mass_Phi", "", false, 750, 0.0, 15.0, VarManager::kMass, 180, constants::math::PI, 2 * constants::math::PI, VarManager::kPhi);
+      if (subGroupStr.Contains("dimuon-tag-and-probe")) {
+        hm->AddHistogram(histClass, "Mass_PtProbe", "mass vs probe pT", false, 750, 0.0, 15.0, VarManager::kMass, 120, 0.0, 30.0, VarManager::kPt2);    // Warning: in the tag-and-probe task t2 is always the probe
+        hm->AddHistogram(histClass, "Mass_EtaProbe", "mass vs probe eta", false, 750, 0.0, 15.0, VarManager::kMass, 120, 0.0, 30.0, VarManager::kEta2); // Warning: in the tag-and-probe task t2 is always the probe
+      }
       if (subGroupStr.Contains("dimuon-multi-diff")) {
         int varsKine[3] = {VarManager::kMass, VarManager::kPt, VarManager::kRap};
         int binsKine[3] = {250, 120, 60};
@@ -1600,6 +1620,12 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("dimuon-vtxncontrib")) {
         hm->AddHistogram(histClass, "MassMult", "", false, 750, 0.0, 15.0, VarManager::kMass, 301, -0.5, 300.5, VarManager::kVtxNcontrib);
         hm->AddHistogram(histClass, "MassVtxZMult", "", false, 300, 0.0, 6.0, VarManager::kMass, 60, -15.0, 15.0, VarManager::kVtxZ, 100, 0.0, 100.0, VarManager::kVtxNcontrib);
+      }
+      if (subGroupStr.Contains("dimuon-drellyan")) {
+        hm->AddHistogram(histClass, "DY_mass", "", false, 5000, 0.0, 50.0, VarManager::kMass); // 10 MeV mass res
+        hm->AddHistogram(histClass, "DY_pT", "", false, 2000, 0.0, 100.0, VarManager::kPt);    // 50 MeV pT res
+        hm->AddHistogram(histClass, "DY_y", "", false, 20, 2.0, 4.0, VarManager::kRap);
+        hm->AddHistogram(histClass, "DY_phi", "", false, 180, constants::math::PI, 2 * constants::math::PI, VarManager::kPhi);
       }
     } else if (subGroupStr.Contains("electronmuon")) {
       hm->AddHistogram(histClass, "Mass", "", false, 750, 0.0, 30.0, VarManager::kMass);

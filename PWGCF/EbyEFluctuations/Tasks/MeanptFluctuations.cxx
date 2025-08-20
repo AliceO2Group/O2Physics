@@ -46,16 +46,16 @@
 
 namespace o2::aod
 {
-namespace ptQn
+namespace pt_qn
 {
 DECLARE_SOA_COLUMN(Q1, q1, float);                 //! sum of pT of tracks in an event
 DECLARE_SOA_COLUMN(Q2, q2, float);                 //! sum of (pT)^2 of tracks in an event
 DECLARE_SOA_COLUMN(Q3, q3, float);                 //! sum of (pT)^3 of tracks in an event
 DECLARE_SOA_COLUMN(Q4, q4, float);                 //! sum of (pT)^4 of tracks in an event
-DECLARE_SOA_COLUMN(N_ch, n_ch, float);             //! no of charged particles/multiplicity in an event
+DECLARE_SOA_COLUMN(Nch, nch, float);               //! no of charged particles/multiplicity in an event
 DECLARE_SOA_COLUMN(Centrality, centrality, float); //! Centrality of event
-} // namespace ptQn
-DECLARE_SOA_TABLE(MultPtQn, "AOD", "PTQN", ptQn::Q1, ptQn::Q2, ptQn::Q3, ptQn::Q4, ptQn::N_ch, ptQn::Centrality); //! table to store e-by-e sum of pT, (pT)^2, (pT)^3, (pT)^4 of tracks, multiplicity and centrality
+} // namespace pt_qn
+DECLARE_SOA_TABLE(MultPtQn, "AOD", "PTQN", pt_qn::Q1, pt_qn::Q2, pt_qn::Q3, pt_qn::Q4, pt_qn::Nch, pt_qn::Centrality); //! table to store e-by-e sum of pT, (pT)^2, (pT)^3, (pT)^4 of tracks, multiplicity and centrality
 } // namespace o2::aod
 
 using namespace o2;
@@ -64,9 +64,11 @@ using namespace o2::framework::expressions;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-struct MeanptFluctuations_QA_QnTable {
+struct MeanptFluctuationsQAQnTable {
 
   Configurable<float> cfgCutVertex{"cfgCutVertex", 10.0f, "Accepted z-vertex range"};
+  Configurable<float> cfgCutPreSelEta{"cfgCutPreSelEta", 0.8f, "|eta|<x; choose x value"};
+  Configurable<float> cfgCutPreSelPt{"cfgCutPreSelPt", 5.0f, "Maximum allowed pT"};
   Configurable<float> cfgCutPtLower{"cfgCutPtLower", 0.2f, "Lower pT cut"};
   Configurable<float> cfgCutPtUpper{"cfgCutPtUpper", 3.0f, "Higher pT cut"};
   Configurable<float> cfgCutTpcChi2NCl{"cfgCutTpcChi2NCl", 2.5f, "Maximum TPCchi2NCl"};
@@ -75,27 +77,71 @@ struct MeanptFluctuations_QA_QnTable {
   Configurable<int> cfgITScluster{"cfgITScluster", 1, "Minimum Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 80, "Minimum Number of TPC cluster"};
   Configurable<int> cfgTPCnCrossedRows{"cfgTPCnCrossedRows", 70, "Minimum Number of TPC crossed-rows"};
-  ConfigurableAxis nchAxis{"nchAxis", {5000, 0.5, 5000.5}, ""};
+  ConfigurableAxis nchAxis{"nchAxis", {500, 0.5, 500.5}, "Axis for multiplicity of GlobalTracks/PVTracks"};
+  ConfigurableAxis nchAxis2{"nchAxis2", {1000, 0.5, 30000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
+  ConfigurableAxis nchAxis3{"nchAxis3", {1000, 0.5, 100000.5}, "Axis for multiplicity of FT0A/FT0C/FV0A"};
+  ConfigurableAxis centAxis{"centAxis", {90, 0., 90.0}, ""};
   Configurable<bool> cfgEvSelkNoSameBunchPileup{"cfgEvSelkNoSameBunchPileup", true, "Pileup removal"};
   Configurable<bool> cfgUseGoodITSLayerAllCut{"cfgUseGoodITSLayerAllCut", true, "Remove time interval with dead ITS zone"};
+  Configurable<bool> cfgEvSelkNoITSROFrameBorder{"cfgEvSelkNoITSROFrameBorder", true, "ITSROFrame border event selection cut"};
+  Configurable<bool> cfgEvSelkNoTimeFrameBorder{"cfgEvSelkNoTimeFrameBorder", true, "TimeFrame border event selection cut"};
+  Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 1, "Centrlaity estimatore choice: 1-->FT0C, 2-->FT0A; 3-->FT0M, 4-->FV0A"};
+
+  O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
+  O2_DEFINE_CONFIGURABLE(cfgEvSelV0AT0ACut, bool, true, "V0A T0A 5 sigma cut")
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgMultCentHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 10.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultCentLowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultT0CCutEnabled, bool, false, "Enable Global multiplicity vs T0C centrality cut")
+    Configurable<std::vector<double>> cfgMultT0CCutPars{"cfgMultT0CCutPars", std::vector<double>{143.04, -4.58368, 0.0766055, -0.000727796, 2.86153e-06, 23.3108, -0.36304, 0.00437706, -4.717e-05, 1.98332e-07}, "Global multiplicity vs T0C centrality cut parameter values"};
+    O2_DEFINE_CONFIGURABLE(cfgMultPVT0CCutEnabled, bool, false, "Enable PV multiplicity vs T0C centrality cut")
+    Configurable<std::vector<double>> cfgMultPVT0CCutPars{"cfgMultPVT0CCutPars", std::vector<double>{195.357, -6.15194, 0.101313, -0.000955828, 3.74793e-06, 30.0326, -0.43322, 0.00476265, -5.11206e-05, 2.13613e-07}, "PV multiplicity vs T0C centrality cut parameter values"};
+
+    O2_DEFINE_CONFIGURABLE(cfgMultMultPVHighCutFunction, std::string, "[0]+[1]*x + 5.*([2]+[3]*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultMultPVLowCutFunction, std::string, "[0]+[1]*x - 5.*([2]+[3]*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCutEnabled, bool, false, "Enable global multiplicity vs PV multiplicity cut")
+    Configurable<std::vector<double>> cfgMultGlobalPVCutPars{"cfgMultGlobalPVCutPars", std::vector<double>{-0.140809, 0.734344, 2.77495, 0.0165935}, "PV multiplicity vs T0C centrality cut parameter values"};
+
+    O2_DEFINE_CONFIGURABLE(cfgMultMultV0AHighCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x + 4.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultMultV0ALowCutFunction, std::string, "[0] + [1]*x + [2]*x*x + [3]*x*x*x + [4]*x*x*x*x - 3.*([5] + [6]*x + [7]*x*x + [8]*x*x*x + [9]*x*x*x*x)", "Functional for multiplicity correlation cut");
+    O2_DEFINE_CONFIGURABLE(cfgMultMultV0ACutEnabled, bool, false, "Enable global multiplicity vs V0A multiplicity cut")
+    Configurable<std::vector<double>> cfgMultMultV0ACutPars{"cfgMultMultV0ACutPars", std::vector<double>{534.893, 184.344, 0.423539, -0.00331436, 5.34622e-06, 871.239, 53.3735, -0.203528, 0.000122758, 5.41027e-07}, "Global multiplicity vs V0A multiplicity cut parameter values"};
+
+    std::vector<double> multT0CCutPars;
+    std::vector<double> multPVT0CCutPars;
+    std::vector<double> multGlobalPVCutPars;
+    std::vector<double> multMultV0ACutPars;
+    TF1* fMultPVT0CCutLow = nullptr;
+    TF1* fMultPVT0CCutHigh = nullptr;
+    TF1* fMultT0CCutLow = nullptr;
+    TF1* fMultT0CCutHigh = nullptr;
+    TF1* fMultGlobalPVCutLow = nullptr;
+    TF1* fMultGlobalPVCutHigh = nullptr;
+    TF1* fMultMultV0ACutLow = nullptr;
+    TF1* fMultMultV0ACutHigh = nullptr;
+    TF1* fT0AV0AMean = nullptr;
+    TF1* fT0AV0ASigma = nullptr;
+
+  } cfgFuncParas;
 
   O2_DEFINE_CONFIGURABLE(cfgUse22sEventCut, bool, true, "Use 22s event cut on mult correlations")
+  O2_DEFINE_CONFIGURABLE(cfgUseSmallIonAdditionalEventCut, bool, true, "Use additional event cut on mult correlations for small ions")
 
   // Filter command***********
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < 0.8f) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < 5.0f) && (requireGlobalTrackInFilter()) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (aod::track::itsChi2NCl < cfgCutItsChi2NCl) && (nabs(aod::track::dcaZ) < cfgCutTrackDcaZ);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutPreSelEta) && (aod::track::pt > cfgCutPtLower) && (aod::track::pt < cfgCutPreSelPt) && (requireGlobalTrackInFilter()) && (aod::track::tpcChi2NCl < cfgCutTpcChi2NCl) && (aod::track::itsChi2NCl < cfgCutItsChi2NCl) && (nabs(aod::track::dcaZ) < cfgCutTrackDcaZ);
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<int64_t> ccdbnolaterthan{"ccdbnolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> ccdburl{"ccdburl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // filtering collisions and tracks***********
-  using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
+  using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As, aod::Mults>>;
   // using aodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels>>;
-  using aodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
+  using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
   // Event selection cuts - Alex
   TF1* fMultPVCutLow = nullptr;
@@ -113,8 +159,6 @@ struct MeanptFluctuations_QA_QnTable {
     // Variable bin width axis
     std::vector<double> ptBinning = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.8, 2.0, 2.2, 2.4, 2.8, 3.2, 3.6, 4.};
     AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-    std::vector<double> centBining = {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90};
-    AxisSpec centAxis = {centBining, "centrality (%)"};
 
     // Add histograms to histogram manager (as in the output object of in AliPhysics)
     histos.add("hZvtx_after_sel", ";Z (cm)", kTH1F, {vtxZAxis});
@@ -128,6 +172,22 @@ struct MeanptFluctuations_QA_QnTable {
     histos.add("hMeanPt", "", kTProfile, {centAxis});
     histos.add("Hist2D_globalTracks_PVTracks", "", {HistType::kTH2D, {nchAxis, nchAxis}});
     histos.add("Hist2D_cent_nch", "", {HistType::kTH2D, {nchAxis, centAxis}});
+    // before selection
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_PVTracks_beforeSel", "", {HistType::kTH2D, {nchAxis, nchAxis}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_centFT0C_beforeSel", "", {HistType::kTH2D, {centAxis, nchAxis}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_PVTracks_centFT0C_beforeSel", "", {HistType::kTH2D, {centAxis, nchAxis}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_V0ATracks_beforeSel", "", {HistType::kTH2D, {nchAxis3, nchAxis}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_T0ATracks_beforeSel", "", {HistType::kTH2D, {nchAxis2, nchAxis}});
+    histos.add("MultCorrelationPlots/BeforeSelection/His2D_V0ATracks_T0CTracks_beforeSel", "", {HistType::kTH2D, {nchAxis2, nchAxis3}});
+    // after selection
+    if (cfgUseSmallIonAdditionalEventCut) {
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_PVTracks_afterSel", "", {HistType::kTH2D, {nchAxis, nchAxis}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_centFT0C_afterSel", "", {HistType::kTH2D, {centAxis, nchAxis}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_PVTracks_centFT0C_afterSel", "", {HistType::kTH2D, {centAxis, nchAxis}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_V0ATracks_afterSel", "", {HistType::kTH2D, {nchAxis3, nchAxis}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_globalTracks_T0ATracks_afterSel", "", {HistType::kTH2D, {nchAxis2, nchAxis}});
+      histos.add("MultCorrelationPlots/AfterSelection/His2D_V0ATracks_T0CTracks_afterSel", "", {HistType::kTH2D, {nchAxis2, nchAxis3}});
+    }
 
     // Event selection - Alex
     if (cfgUse22sEventCut) {
@@ -144,6 +204,33 @@ struct MeanptFluctuations_QA_QnTable {
       fMultMultPVCut->SetParameters(-0.1, 0.785, -4.7e-05);
     }
 
+    if (cfgEvSelMultCorrelation) {
+      cfgFuncParas.multT0CCutPars = cfgFuncParas.cfgMultT0CCutPars;
+      cfgFuncParas.multPVT0CCutPars = cfgFuncParas.cfgMultPVT0CCutPars;
+      cfgFuncParas.multGlobalPVCutPars = cfgFuncParas.cfgMultGlobalPVCutPars;
+      cfgFuncParas.multMultV0ACutPars = cfgFuncParas.cfgMultMultV0ACutPars;
+      cfgFuncParas.fMultPVT0CCutLow = new TF1("fMultPVT0CCutLow", cfgFuncParas.cfgMultCentLowCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fMultPVT0CCutLow->SetParameters(&(cfgFuncParas.multPVT0CCutPars[0]));
+      cfgFuncParas.fMultPVT0CCutHigh = new TF1("fMultPVT0CCutHigh", cfgFuncParas.cfgMultCentHighCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fMultPVT0CCutHigh->SetParameters(&(cfgFuncParas.multPVT0CCutPars[0]));
+      cfgFuncParas.fMultT0CCutLow = new TF1("fMultT0CCutLow", cfgFuncParas.cfgMultCentLowCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fMultT0CCutLow->SetParameters(&(cfgFuncParas.multT0CCutPars[0]));
+      cfgFuncParas.fMultT0CCutHigh = new TF1("fMultT0CCutHigh", cfgFuncParas.cfgMultCentHighCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fMultT0CCutHigh->SetParameters(&(cfgFuncParas.multT0CCutPars[0]));
+      cfgFuncParas.fMultGlobalPVCutLow = new TF1("fMultGlobalPVCutLow", cfgFuncParas.cfgMultMultPVLowCutFunction->c_str(), 0, 4000);
+      cfgFuncParas.fMultGlobalPVCutLow->SetParameters(&(cfgFuncParas.multGlobalPVCutPars[0]));
+      cfgFuncParas.fMultGlobalPVCutHigh = new TF1("fMultGlobalPVCutHigh", cfgFuncParas.cfgMultMultPVHighCutFunction->c_str(), 0, 4000);
+      cfgFuncParas.fMultGlobalPVCutHigh->SetParameters(&(cfgFuncParas.multGlobalPVCutPars[0]));
+      cfgFuncParas.fMultMultV0ACutLow = new TF1("fMultMultV0ACutLow", cfgFuncParas.cfgMultMultV0ALowCutFunction->c_str(), 0, 4000);
+      cfgFuncParas.fMultMultV0ACutLow->SetParameters(&(cfgFuncParas.multMultV0ACutPars[0]));
+      cfgFuncParas.fMultMultV0ACutHigh = new TF1("fMultMultV0ACutHigh", cfgFuncParas.cfgMultMultV0AHighCutFunction->c_str(), 0, 4000);
+      cfgFuncParas.fMultMultV0ACutHigh->SetParameters(&(cfgFuncParas.multMultV0ACutPars[0]));
+      cfgFuncParas.fT0AV0AMean = new TF1("fT0AV0AMean", "[0]+[1]*x", 0, 200000);
+      cfgFuncParas.fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
+      cfgFuncParas.fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
+      cfgFuncParas.fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
+    }
+
   } //! end init function
 
   template <typename TCollision>
@@ -157,7 +244,9 @@ struct MeanptFluctuations_QA_QnTable {
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
       float zRes = std::sqrt(collision.covZZ());
-      if (zRes > 0.25 && collision.numContrib() < 20)
+      float zResMax = 0.25;
+      float numContribMin = 20;
+      if (zRes > zResMax && collision.numContrib() < numContribMin)
         vtxz = -999;
     }
     auto multNTracksPV = collision.multNTracksPV();
@@ -178,10 +267,52 @@ struct MeanptFluctuations_QA_QnTable {
     return 1;
   }
 
-  Produces<aod::MultPtQn> mult_ptQn;
+  template <typename TCollision>
+  bool eventSelectedSmallion(TCollision collision, const int multTrk, const float centrality)
+  {
+    auto multNTracksPV = collision.multNTracksPV();
+
+    if (cfgEvSelMultCorrelation) {
+      if (cfgFuncParas.cfgMultPVT0CCutEnabled) {
+        if (multNTracksPV < cfgFuncParas.fMultPVT0CCutLow->Eval(centrality))
+          return 0;
+        if (multNTracksPV > cfgFuncParas.fMultPVT0CCutHigh->Eval(centrality))
+          return 0;
+      }
+
+      if (cfgFuncParas.cfgMultT0CCutEnabled) {
+        if (multTrk < cfgFuncParas.fMultT0CCutLow->Eval(centrality))
+          return 0;
+        if (multTrk > cfgFuncParas.fMultT0CCutHigh->Eval(centrality))
+          return 0;
+      }
+
+      if (cfgFuncParas.cfgMultGlobalPVCutEnabled) {
+        if (multTrk < cfgFuncParas.fMultGlobalPVCutLow->Eval(multNTracksPV))
+          return 0;
+        if (multTrk > cfgFuncParas.fMultGlobalPVCutHigh->Eval(multNTracksPV))
+          return 0;
+      }
+
+      if (cfgFuncParas.cfgMultMultV0ACutEnabled) {
+        if (collision.multFV0A() < cfgFuncParas.fMultMultV0ACutLow->Eval(multTrk))
+          return 0;
+        if (collision.multFV0A() > cfgFuncParas.fMultMultV0ACutHigh->Eval(multTrk))
+          return 0;
+      }
+    }
+
+    float sigma = 5.0;
+    if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - cfgFuncParas.fT0AV0AMean->Eval(collision.multFT0A())) > sigma * cfgFuncParas.fT0AV0ASigma->Eval(collision.multFT0A())))
+      return 0;
+
+    return 1;
+  }
+
+  Produces<aod::MultPtQn> multPtQn;
 
   // void process(aod::Collision const& coll, aod::Tracks const& inputTracks)
-  void process(aodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, aodTracks const& inputTracks)
+  void process(AodCollisions::iterator const& coll, aod::BCsWithTimestamps const&, AodTracks const& inputTracks)
   {
     if (!coll.sel8()) {
       return;
@@ -192,26 +323,65 @@ struct MeanptFluctuations_QA_QnTable {
     if (cfgEvSelkNoSameBunchPileup && !(coll.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
       return;
     }
+    if (cfgEvSelkNoITSROFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoITSROFrameBorder))) {
+      return;
+    }
+    if (cfgEvSelkNoTimeFrameBorder && !(coll.selection_bit(o2::aod::evsel::kNoTimeFrameBorder))) {
+      return;
+    }
 
-    const auto CentralityFT0C = coll.centFT0C();
-    if (cfgUse22sEventCut && !eventSelected(coll, inputTracks.size(), CentralityFT0C))
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_PVTracks_beforeSel"), coll.multNTracksPV(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_centFT0C_beforeSel"), coll.centFT0C(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_PVTracks_centFT0C_beforeSel"), coll.centFT0C(), coll.multNTracksPV());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_V0ATracks_beforeSel"), coll.multFV0A(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_globalTracks_T0ATracks_beforeSel"), coll.multFT0A(), inputTracks.size());
+    histos.fill(HIST("MultCorrelationPlots/BeforeSelection/His2D_V0ATracks_T0CTracks_beforeSel"), coll.multFT0C(), coll.multFV0A());
+
+    const auto centralityFT0C = coll.centFT0C();
+    if (cfgUse22sEventCut && !eventSelected(coll, inputTracks.size(), centralityFT0C))
+      return;
+    if (cfgUseSmallIonAdditionalEventCut && !eventSelectedSmallion(coll, inputTracks.size(), centralityFT0C))
       return;
 
+    if (cfgUseSmallIonAdditionalEventCut) {
+      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_PVTracks_afterSel"), coll.multNTracksPV(), inputTracks.size());
+      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_centFT0C_afterSel"), coll.centFT0C(), inputTracks.size());
+      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_PVTracks_centFT0C_afterSel"), coll.centFT0C(), coll.multNTracksPV());
+      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_V0ATracks_afterSel"), coll.multFV0A(), inputTracks.size());
+      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_globalTracks_T0ATracks_afterSel"), coll.multFT0A(), inputTracks.size());
+      histos.fill(HIST("MultCorrelationPlots/AfterSelection/His2D_V0ATracks_T0CTracks_afterSel"), coll.multFT0C(), coll.multFV0A());
+    }
+
     histos.fill(HIST("hZvtx_after_sel"), coll.posZ());
-    histos.fill(HIST("hCentrality"), coll.centFT0C());
+
+    double cent = 0.0;
+    int centChoiceFT0C = 1;
+    int centChoiceFT0A = 2;
+    int centChoiceFT0M = 3;
+    int centChoiceFV0A = 4;
+    if (cfgCentralityEstimator == centChoiceFT0C)
+      cent = coll.centFT0C();
+    else if (cfgCentralityEstimator == centChoiceFT0A)
+      cent = coll.centFT0A();
+    else if (cfgCentralityEstimator == centChoiceFT0M)
+      cent = coll.centFT0M();
+    else if (cfgCentralityEstimator == centChoiceFV0A)
+      cent = coll.centFV0A();
+
+    histos.fill(HIST("hCentrality"), cent);
+
     histos.fill(HIST("Hist2D_globalTracks_PVTracks"), coll.multNTracksPV(), inputTracks.size());
-    histos.fill(HIST("Hist2D_cent_nch"), inputTracks.size(), CentralityFT0C);
+    histos.fill(HIST("Hist2D_cent_nch"), inputTracks.size(), centralityFT0C);
 
     // variables
-    double cent = coll.centFT0C();
-    double pT_sum = 0.0;
-    double N = 0.0;
+    double pTsum = 0.0;
+    double nN = 0.0;
 
     float q1 = 0.0;
     float q2 = 0.0;
     float q3 = 0.0;
     float q4 = 0.0;
-    float n_ch = 0.0;
+    float nCh = 0.0;
 
     for (const auto& track : inputTracks) { // Loop over tracks
 
@@ -234,44 +404,45 @@ struct MeanptFluctuations_QA_QnTable {
       histos.fill(HIST("hDcaXY"), track.dcaXY());
       histos.fill(HIST("hDcaZ"), track.dcaZ());
 
-      pT_sum += track.pt();
-      N += 1.0;
+      pTsum += track.pt();
+      nN += 1.0;
 
       float pT = track.pt();
-      // calculating Q1, Q2, Q3, Q4. N_ch
+      // calculating Q1, Q2, Q3, Q4. Nch
       if (track.pt() > cfgCutPtLower && track.pt() < cfgCutPtUpper && track.sign() != 0) {
         q1 = q1 + std::pow(pT, 1.0);
         q2 = q2 + std::pow(pT, 2.0);
         q3 = q3 + std::pow(pT, 3.0);
         q4 = q4 + std::pow(pT, 4.0);
-        n_ch = n_ch + 1;
+        nCh = nCh + 1;
       }
     }
-    mult_ptQn(q1, q2, q3, q4, n_ch, cent);
+    multPtQn(q1, q2, q3, q4, nCh, cent);
     // MeanPt
-    if (N > 0.0f)
-      histos.fill(HIST("hMeanPt"), cent, pT_sum / N);
+    if (nN > 0.0f)
+      histos.fill(HIST("hMeanPt"), cent, pTsum / nN);
   }
 };
 
-struct MeanptFluctuations_analysis {
+struct MeanptFluctuationsAnalysis {
 
-  Configurable<int> cfgNSubsample{"cfgNSubsample", 10, "Number of subsamples"};
+  Configurable<int> cfgNsubSample{"cfgNsubSample", 10, "Number of subsamples"};
   ConfigurableAxis centAxis{"centAxis", {90, 0, 90}, ""};
   ConfigurableAxis multAxis{"multAxis", {5000, 0.5, 5000.5}, ""};
   ConfigurableAxis meanpTAxis{"meanpTAxis", {500, 0, 5.0}, ""};
 
-  expressions::Filter Nch_filter = aod::ptQn::n_ch > 3.0f;
+  float minNch = 3.0f;
+  expressions::Filter nchFilter = aod::pt_qn::nch > minNch;
   using FilteredMultPtQn = soa::Filtered<aod::MultPtQn>;
 
   // Connect to ccdb
   Service<ccdb::BasicCCDBManager> ccdb;
-  Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
-  Configurable<std::string> url{"ccdb-url", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
+  Configurable<int64_t> ccdbnolaterthan{"ccdbnolaterthan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<std::string> ccdburl{"ccdburl", "http://ccdb-test.cern.ch:8080", "url of the ccdb repository"};
 
   // Define output
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
-  std::vector<std::vector<std::shared_ptr<TProfile2D>>> Subsample;
+  std::vector<std::vector<std::shared_ptr<TProfile2D>>> subSample;
   TRandom3* fRndm = new TRandom3(0);
 
   void init(o2::framework::InitContext&)
@@ -287,49 +458,49 @@ struct MeanptFluctuations_analysis {
     registry.add("Hist2D_meanpt_centrality", "", {HistType::kTH2D, {centAxis, meanpTAxis}});
 
     // initial array
-    Subsample.resize(cfgNSubsample);
-    for (int i = 0; i < cfgNSubsample; i++) {
-      Subsample[i].resize(4);
+    subSample.resize(cfgNsubSample);
+    for (int i = 0; i < cfgNsubSample; i++) {
+      subSample[i].resize(4);
     }
-    for (int i = 0; i < cfgNSubsample; i++) {
-      Subsample[i][0] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_mean_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      Subsample[i][1] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_var_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      Subsample[i][2] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_skew_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
-      Subsample[i][3] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("Subsample_%d/Prof_kurt_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+    for (int i = 0; i < cfgNsubSample; i++) {
+      subSample[i][0] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("subSample_%d/Prof_mean_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+      subSample[i][1] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("subSample_%d/Prof_var_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+      subSample[i][2] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("subSample_%d/Prof_skew_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
+      subSample[i][3] = std::get<std::shared_ptr<TProfile2D>>(registry.add(Form("subSample_%d/Prof_kurt_t1", i), "", {HistType::kTProfile2D, {centAxis, multAxis}}));
     }
   }
 
-  float mean_term1;
-  float variance_term1;
-  float skewness_term1;
-  float kurtosis_term1;
+  float meanTerm1;
+  float varianceTerm1;
+  float skewnessTerm1;
+  float kurtosisTerm1;
 
   // void process(aod::MultPtQn::iterator const& event_ptqn)
   void process(FilteredMultPtQn::iterator const& event_ptqn)
   {
-    // LOGF(info, "Centrality= %f Nch= %f Q1= %f Q2= %f", event_ptqn.centrality(), event_ptqn.n_ch(), event_ptqn.q1(), event_ptqn.q2());
+    // LOGF(info, "Centrality= %f Nch= %f Q1= %f Q2= %f", event_ptqn.centrality(), event_ptqn.nch(), event_ptqn.q1(), event_ptqn.q2());
 
     // calculating observables
-    mean_term1 = event_ptqn.q1() / event_ptqn.n_ch();
-    variance_term1 = (std::pow(event_ptqn.q1(), 2.0f) - event_ptqn.q2()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f));
-    skewness_term1 = (std::pow(event_ptqn.q1(), 3.0f) - 3.0f * event_ptqn.q2() * event_ptqn.q1() + 2.0f * event_ptqn.q3()) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f));
-    kurtosis_term1 = (std::pow(event_ptqn.q1(), 4.0f) - (6.0f * event_ptqn.q4()) + (8.0f * event_ptqn.q1() * event_ptqn.q3()) - (6.0f * std::pow(event_ptqn.q1(), 2.0f) * event_ptqn.q2()) + (3.0f * std::pow(event_ptqn.q2(), 2.0f))) / (event_ptqn.n_ch() * (event_ptqn.n_ch() - 1.0f) * (event_ptqn.n_ch() - 2.0f) * (event_ptqn.n_ch() - 3.0f));
+    meanTerm1 = event_ptqn.q1() / event_ptqn.nch();
+    varianceTerm1 = (std::pow(event_ptqn.q1(), 2.0f) - event_ptqn.q2()) / (event_ptqn.nch() * (event_ptqn.nch() - 1.0f));
+    skewnessTerm1 = (std::pow(event_ptqn.q1(), 3.0f) - 3.0f * event_ptqn.q2() * event_ptqn.q1() + 2.0f * event_ptqn.q3()) / (event_ptqn.nch() * (event_ptqn.nch() - 1.0f) * (event_ptqn.nch() - 2.0f));
+    kurtosisTerm1 = (std::pow(event_ptqn.q1(), 4.0f) - (6.0f * event_ptqn.q4()) + (8.0f * event_ptqn.q1() * event_ptqn.q3()) - (6.0f * std::pow(event_ptqn.q1(), 2.0f) * event_ptqn.q2()) + (3.0f * std::pow(event_ptqn.q2(), 2.0f))) / (event_ptqn.nch() * (event_ptqn.nch() - 1.0f) * (event_ptqn.nch() - 2.0f) * (event_ptqn.nch() - 3.0f));
 
     // filling profiles and histograms for central values
-    registry.get<TProfile2D>(HIST("Prof_mean_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), mean_term1);
-    registry.get<TProfile2D>(HIST("Prof_var_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), variance_term1);
-    registry.get<TProfile2D>(HIST("Prof_skew_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), skewness_term1);
-    registry.get<TProfile2D>(HIST("Prof_kurt_t1"))->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term1);
-    registry.fill(HIST("Hist2D_Nch_centrality"), event_ptqn.centrality(), event_ptqn.n_ch());
-    registry.fill(HIST("Hist2D_meanpt_centrality"), event_ptqn.centrality(), mean_term1);
+    registry.get<TProfile2D>(HIST("Prof_mean_t1"))->Fill(event_ptqn.centrality(), event_ptqn.nch(), meanTerm1);
+    registry.get<TProfile2D>(HIST("Prof_var_t1"))->Fill(event_ptqn.centrality(), event_ptqn.nch(), varianceTerm1);
+    registry.get<TProfile2D>(HIST("Prof_skew_t1"))->Fill(event_ptqn.centrality(), event_ptqn.nch(), skewnessTerm1);
+    registry.get<TProfile2D>(HIST("Prof_kurt_t1"))->Fill(event_ptqn.centrality(), event_ptqn.nch(), kurtosisTerm1);
+    registry.fill(HIST("Hist2D_Nch_centrality"), event_ptqn.centrality(), event_ptqn.nch());
+    registry.fill(HIST("Hist2D_meanpt_centrality"), event_ptqn.centrality(), meanTerm1);
 
     // selecting subsample and filling profiles
-    float l_Random = fRndm->Rndm();
-    int SampleIndex = static_cast<int>(cfgNSubsample * l_Random);
-    Subsample[SampleIndex][0]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), mean_term1);
-    Subsample[SampleIndex][1]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), variance_term1);
-    Subsample[SampleIndex][2]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), skewness_term1);
-    Subsample[SampleIndex][3]->Fill(event_ptqn.centrality(), event_ptqn.n_ch(), kurtosis_term1);
+    float lRandom = fRndm->Rndm();
+    int sampleIndex = static_cast<int>(cfgNsubSample * lRandom);
+    subSample[sampleIndex][0]->Fill(event_ptqn.centrality(), event_ptqn.nch(), meanTerm1);
+    subSample[sampleIndex][1]->Fill(event_ptqn.centrality(), event_ptqn.nch(), varianceTerm1);
+    subSample[sampleIndex][2]->Fill(event_ptqn.centrality(), event_ptqn.nch(), skewnessTerm1);
+    subSample[sampleIndex][3]->Fill(event_ptqn.centrality(), event_ptqn.nch(), kurtosisTerm1);
   }
 };
 
@@ -337,7 +508,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   // Equivalent to the AddTask in AliPhysics
   return WorkflowSpec{
-    adaptAnalysisTask<MeanptFluctuations_QA_QnTable>(cfgc),
-    adaptAnalysisTask<MeanptFluctuations_analysis>(cfgc),
+    adaptAnalysisTask<MeanptFluctuationsQAQnTable>(cfgc),
+    adaptAnalysisTask<MeanptFluctuationsAnalysis>(cfgc),
   };
 }
