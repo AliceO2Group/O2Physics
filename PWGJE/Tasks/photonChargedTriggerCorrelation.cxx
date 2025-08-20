@@ -648,6 +648,7 @@ struct PhotonChargedTriggerCorrelation {
       return (mgg > etaPCMLowSideMassRange.value[0] && mgg < etaPCMLowSideMassRange.value[1]) ||
              (mgg > etaPCMHighSideMassRange.value[0] && mgg < etaPCMHighSideMassRange.value[1]);
     }
+    return false;
   }
 
   // analysis /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -969,7 +970,9 @@ struct PhotonChargedTriggerCorrelation {
                       trigger.eta() - associated.eta(),
                       trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
                       getInvEff<EffParticleType::Trigger>(trigger.pt()));
-        } else if (checkMassRange<MassRange::pi0PCMSide>(associated.mgg())) {
+          return;
+        }
+        if (checkMassRange<MassRange::pi0PCMSide>(associated.mgg())) {
           histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_pi0PCMSide"),
                       associated.pt(), associated.phi(), associated.eta(),
                       getInvEff<EffParticleType::Trigger>(trigger.pt()));
@@ -978,9 +981,10 @@ struct PhotonChargedTriggerCorrelation {
                       trigger.eta() - associated.eta(),
                       trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
                       getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          return;
         }
         // eta
-        else if (checkMassRange<MassRange::etaPCMPeak>(associated.mgg())) {
+        if (checkMassRange<MassRange::etaPCMPeak>(associated.mgg())) {
           histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_etaPCMPeak"),
                       associated.pt(), associated.phi(), associated.eta(),
                       getInvEff<EffParticleType::Trigger>(trigger.pt()));
@@ -989,7 +993,9 @@ struct PhotonChargedTriggerCorrelation {
                       trigger.eta() - associated.eta(),
                       trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
                       getInvEff<EffParticleType::Trigger>(trigger.pt()));
-        } else if (checkMassRange<MassRange::etaPCMSide>(associated.mgg())) {
+          return;
+        }
+        if (checkMassRange<MassRange::etaPCMSide>(associated.mgg())) {
           histos.fill(HIST("reco/corr/h3_ptPhiEta_assoc_etaPCMSide"),
                       associated.pt(), associated.phi(), associated.eta(),
                       getInvEff<EffParticleType::Trigger>(trigger.pt()));
@@ -998,6 +1004,7 @@ struct PhotonChargedTriggerCorrelation {
                       trigger.eta() - associated.eta(),
                       trigger.pt(), associated.pt(), collision.posZ(), collision.nGlobalTracks(),
                       getInvEff<EffParticleType::Trigger>(trigger.pt()));
+          return;
         }
       };
       corrProcessCorrelation(collision, triggersThisEvent, photonPCMPairsThisEvent, funcCorrelation);
@@ -1011,26 +1018,32 @@ struct PhotonChargedTriggerCorrelation {
                       mixingTriggerEta - associated.eta(),
                       mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
                       perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
-        } else if (checkMassRange<MassRange::pi0PCMSide>(associated.mgg())) {
+          return;
+        }
+        if (checkMassRange<MassRange::pi0PCMSide>(associated.mgg())) {
           histos.fill(HIST("reco/corr/h6_mix_pi0PCMSide"),
                       getDeltaPhi(mixingTriggerPhi, associated.phi()),
                       mixingTriggerEta - associated.eta(),
                       mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
                       perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
+          return;
         }
         // eta
-        else if (checkMassRange<MassRange::etaPCMPeak>(associated.mgg())) {
+        if (checkMassRange<MassRange::etaPCMPeak>(associated.mgg())) {
           histos.fill(HIST("reco/corr/h6_mix_etaPCMPeak"),
                       getDeltaPhi(mixingTriggerPhi, associated.phi()),
                       mixingTriggerEta - associated.eta(),
                       mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
                       perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
-        } else if (checkMassRange<MassRange::etaPCMSide>(associated.mgg())) {
+          return;
+        }
+        if (checkMassRange<MassRange::etaPCMSide>(associated.mgg())) {
           histos.fill(HIST("reco/corr/h6_mix_etaPCMSide"),
                       getDeltaPhi(mixingTriggerPhi, associated.phi()),
                       mixingTriggerEta - associated.eta(),
                       mixingTriggerPt, associated.pt(), collision.posZ(), collision.nGlobalTracks(),
                       perTriggerWeight * getInvEff<EffParticleType::Trigger>(mixingTriggerPt));
+          return;
         }
       };
       corrProcessMixing(collision, photonPCMPairsThisEvent, funcMixing, nTriggerMixingH0PCM, nTriggersThisDataFrame);
@@ -1147,7 +1160,6 @@ struct PhotonChargedTriggerCorrelation {
                     trigger.pt(), associated.pt(), mcCollision.posZ(), mcCollision.nChargedInEtaRange(),
                     weight);
       }
-
       // pipm selection
       if (std::abs(associated.pdgCode()) == PDG_t::kPiPlus) {
         histos.fill(HIST(getMcHistPath(eventType, correlationType, McCorrAssociatedType::Pipm)),
@@ -1155,20 +1167,21 @@ struct PhotonChargedTriggerCorrelation {
                     trigger.eta() - associated.eta(),
                     trigger.pt(), associated.pt(), mcCollision.posZ(), mcCollision.nChargedInEtaRange(),
                     weight);
+        return;
       }
-
       // photon selection
-      else if (associated.pdgCode() == PDG_t::kGamma) {
+      if (associated.pdgCode() == PDG_t::kGamma) {
         histos.fill(HIST(getMcHistPath(eventType, correlationType, McCorrAssociatedType::Photon)),
                     getDeltaPhi(trigger.phi(), associated.phi()),
                     trigger.eta() - associated.eta(),
                     trigger.pt(), associated.pt(), mcCollision.posZ(), mcCollision.nChargedInEtaRange(),
                     weight);
+        return;
       }
+      return;
     }
-
     // decaying particles (not marked physical primary)
-    else if ((std::abs(associated.eta()) < etaMax)) {
+    if ((std::abs(associated.eta()) < etaMax)) {
       // pi0 selection
       if (checkH0Primary(associated, PDG_t::kPi0)) {
         histos.fill(HIST(getMcHistPath(eventType, correlationType, McCorrAssociatedType::Pi0)),
@@ -1176,14 +1189,16 @@ struct PhotonChargedTriggerCorrelation {
                     trigger.eta() - associated.eta(),
                     trigger.pt(), associated.pt(), mcCollision.posZ(), mcCollision.nChargedInEtaRange(),
                     weight);
+        return;
       }
       // eta selection
-      else if (checkH0Primary(associated, 221)) {
+      if (checkH0Primary(associated, 221)) {
         histos.fill(HIST(getMcHistPath(eventType, correlationType, McCorrAssociatedType::Eta)),
                     getDeltaPhi(trigger.phi(), associated.phi()),
                     trigger.eta() - associated.eta(),
                     trigger.pt(), associated.pt(), mcCollision.posZ(), mcCollision.nChargedInEtaRange(),
                     weight);
+        return;
       }
     }
   }
