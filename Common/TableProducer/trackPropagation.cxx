@@ -134,19 +134,7 @@ struct TrackPropagation {
           break;
       }
 
-      /// see if other track-propagation devices are present
-      int counter = 0;
-      LOG(info) << "  ---> looking for track-propagation devices";
-      const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
-      for (const DeviceSpec& device : workflows.devices) {
-        if (device.name.compare("track-propagation") == 0) {
-          counter++;
-        }
-      }
-      LOGF(info, "Number of track propagation tasks detected: %i", counter);
-
-      std::string tmpDirName = std::string("./") + std::to_string(counter);
-      trackTunerObj.getDcaGraphs(tmpDirName);
+      trackTunerObj.getDcaGraphs();
       trackTunedTracks->SetTitle(outputStringParams.c_str());
       trackTunedTracks->GetXaxis()->SetBinLabel(1, "all tracks");
     }

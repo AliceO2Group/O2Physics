@@ -41,6 +41,7 @@
 #include <TGraphErrors.h>
 
 #include <fmt/core.h>
+#include <sys/stat.h>
 
 #include <algorithm>
 #include <map>
@@ -458,18 +459,31 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       // properly init the ccdb
       ccdbApi.init("http://alice-ccdb.cern.ch");
 
-      // get the DCA correction file from CCDB
-      if (!ccdbApi.retrieveBlob(pathInputFile.data(), tmpDir, metadata, 0, false, nameInputFile.data())) {
-        LOG(fatal) << "[TrackTuner] input file for DCA corrections not found on CCDB, please check the pathInputFile and nameInputFile!";
-      }
-
-      // get the Q/Pt correction file from CCDB
-      if (!ccdbApi.retrieveBlob(pathFileQoverPt.data(), tmpDir, metadata, 0, false, nameFileQoverPt.data())) {
-        LOG(fatal) << "[TrackTuner] input file for Q/Pt corrections not found on CCDB, please check the pathFileQoverPt and nameFileQoverPt!";
-      }
-      // point to the file in the tmp local folder
+      // name of the file in the tmp local folder
       fullNameInputFile = tmpDir + std::string("/") + nameInputFile;
       fullNameFileQoverPt = tmpDir + std::string("/") + nameFileQoverPt;
+
+      // get the DCA correction file from CCDB if not yet downloaded before
+      struct stat sbDca; // search utility
+      if (stat(fullNameInputFile.c_str(), &sbDca) == 0) {
+        LOG(info) << " [TrackTuner] File " << fullNameInputFile << " already downloaded. Not downloading it anymore";
+      } else {
+        LOG(info) << "[TrackTuner] downloading input file " << nameInputFile << " from CCDB...";
+        if (!ccdbApi.retrieveBlob(pathInputFile.data(), tmpDir, metadata, 0, false, nameInputFile.data())) {
+          LOG(fatal) << "[TrackTuner] input file for DCA corrections not found on CCDB, please check the pathInputFile and nameInputFile!";
+        }
+      }
+
+      // get the Q/Pt correction file from CCDB if not yet downloaded before
+      struct stat sbQoverPt; // search utility
+      if (stat(fullNameFileQoverPt.c_str(), &sbQoverPt) == 0) {
+        LOG(info) << " [TrackTuner] File " << fullNameFileQoverPt << " already downloaded. Not downloading it anymore";
+      } else {
+        LOG(info) << "[TrackTuner] downloading input file " << nameFileQoverPt << " from CCDB...";
+        if (!ccdbApi.retrieveBlob(pathFileQoverPt.data(), tmpDir, metadata, 0, false, nameFileQoverPt.data())) {
+          LOG(fatal) << "[TrackTuner] input file for Q/Pt corrections not found on CCDB, please check the pathFileQoverPt and nameFileQoverPt!";
+        }
+      }
     } else {
       /// use input correction file from local filesystem
       fullNameInputFile = pathInputFile + std::string("/") + nameInputFile;
