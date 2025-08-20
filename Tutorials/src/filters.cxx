@@ -13,6 +13,8 @@
 /// \author Anton Alkin (anton.alkin@cern.ch)
 /// \file filters.cxx
 
+#include <string>
+
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 
