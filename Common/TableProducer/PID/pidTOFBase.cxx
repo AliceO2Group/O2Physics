@@ -15,10 +15,9 @@
 /// \brief  Base to build tasks for TOF PID tasks.
 ///
 
-#include "pidTOFBase.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "TableHelper.h"
-
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/PIDResponseTOF.h"

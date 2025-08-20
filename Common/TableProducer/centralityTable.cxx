@@ -15,9 +15,8 @@
 /// \author ALICE
 //
 
-#include "MetadataHelper.h"
-#include "TableHelper.h"
-
+#include "Common/Core/MetadataHelper.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"

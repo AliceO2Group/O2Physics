@@ -18,8 +18,7 @@
 //
 // Warning: expected resolution is NOT provided.
 
-#include "TableHelper.h"
-
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 
 #include <Framework/AnalysisDataModel.h>

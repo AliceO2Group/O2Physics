@@ -8,6 +8,7 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 #include "Common/DataModel/MatchMFTFT0.h"
 #include "Common/DataModel/MatchMFTMuonData.h"
 
@@ -18,9 +19,13 @@
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
 #include <Field/MagneticField.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
 #include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 #include <GlobalTracking/MatchGlobalFwd.h>
 #include <MCHTracking/TrackExtrap.h>
 #include <ReconstructionDataFormats/TrackFwd.h>
@@ -50,11 +55,6 @@ using namespace o2::soa;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisTask.h>
-#include <Framework/DataTypes.h>
-#include <Framework/runDataProcessing.h>
 
 using MyCollisions = aod::Collisions;
 using MyBCs = soa::Join<aod::BCs, aod::Timestamps, aod::MatchedToFT0>;

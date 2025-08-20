@@ -13,8 +13,7 @@
 // Task to add a table of track parameters propagated to the primary vertex
 //
 
-#include "TableHelper.h"
-
+#include "Common/Core/TableHelper.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Tools/TrackTuner.h"

@@ -20,10 +20,9 @@
 //
 //===============================================================
 
-#include "MetadataHelper.h"
-
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
+#include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Tools/MultModule.h"

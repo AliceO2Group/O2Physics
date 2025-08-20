@@ -22,7 +22,7 @@
 #ifndef COMMON_DATAMODEL_PIDRESPONSEITS_H_
 #define COMMON_DATAMODEL_PIDRESPONSEITS_H_
 
-#include "TableHelper.h"
+#include "Common/Core/TableHelper.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>

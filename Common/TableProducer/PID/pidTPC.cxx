@@ -18,14 +18,13 @@
 /// \brief  Task to produce PID tables for TPC split for each particle.
 ///         Only the tables for the mass hypotheses requested are filled, and only for the requested table size ("Full" or "Tiny"). The others are sent empty.
 ///
-#include "MetadataHelper.h"
-#include "TableHelper.h"
-#include "pidTPCBase.h"
-
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/TableProducer/PID/pidTPCBase.h"
 #include "Tools/ML/model.h"
 
 #include <CCDB/BasicCCDBManager.h>

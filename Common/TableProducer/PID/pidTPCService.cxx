@@ -19,9 +19,9 @@
 //
 //===============================================================
 
-#include "MetadataHelper.h"
 #include "pidTPCModule.h"
 
+#include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
 
 #include <CCDB/BasicCCDBManager.h>

@@ -15,8 +15,7 @@
 /// \brief  Task to produce TOF beta and TOF mass tables
 ///
 
-#include "TableHelper.h"
-
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTOF.h"
 
 #include <CCDB/BasicCCDBManager.h>

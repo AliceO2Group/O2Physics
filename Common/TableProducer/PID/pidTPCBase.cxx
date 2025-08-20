@@ -15,11 +15,10 @@
 /// \brief  Base to build tasks for TPC PID tasks.
 ///
 
-#include "pidTPCBase.h"
-
-#include "TableHelper.h"
+#include "Common/TableProducer/PID/pidTPCBase.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 

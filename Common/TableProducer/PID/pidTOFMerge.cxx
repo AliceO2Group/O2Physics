@@ -15,14 +15,13 @@
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 ///
 
-#include "CollisionTypeHelper.h"
-#include "MetadataHelper.h"
-#include "TableHelper.h"
-#include "pidTOFBase.h"
-
+#include "Common/Core/CollisionTypeHelper.h"
+#include "Common/Core/MetadataHelper.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>

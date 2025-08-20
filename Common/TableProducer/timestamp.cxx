@@ -16,7 +16,7 @@
 /// \brief  A task to fill the timestamp table from run number.
 ///         Uses headers from CCDB
 ///
-#include "MetadataHelper.h"
+#include "Common/Core/MetadataHelper.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
