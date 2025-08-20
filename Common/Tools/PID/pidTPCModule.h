@@ -21,11 +21,12 @@
 #ifndef COMMON_TABLEPRODUCER_PID_PIDTPCMODULE_H_
 #define COMMON_TABLEPRODUCER_PID_PIDTPCMODULE_H_
 
+#include "pidTPCBase.h"
+
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/TableProducer/PID/pidTPCBase.h"
 #include "Tools/ML/model.h"
 
 #include <Framework/AnalysisDataModel.h>

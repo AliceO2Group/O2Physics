@@ -16,9 +16,10 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
+#include "pidTOFBase.h"
+
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsTOF/ParameterContainers.h>
