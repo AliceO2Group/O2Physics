@@ -93,7 +93,7 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     return signal;
   }
   if (!nameStr.compare("protonPrimary")) {
-    MCProng prong(1, {2212}, {true}, {false}, {0}, {0}, {false}); // define 1-generation prong using the full const     ructor
+    MCProng prong(1, {2212}, {true}, {false}, {0}, {0}, {false}); // define 1-generation prong using the full constructor
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);             // set source to be ALICE primary particles
     signal = new MCSignal(name, "Primary Proton", {prong}, {-1}); // define the signal using the full constructor
     return signal;
