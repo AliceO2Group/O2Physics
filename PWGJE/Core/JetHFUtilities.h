@@ -480,7 +480,7 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
       return false;
     }
   } else if constexpr (isXicToXiPiPiCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchRec()) == aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) {
+    if (std::abs(candidate.flagMcMatchRec()) == o2::aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) {
       return true;
     } else {
       return false;
@@ -528,7 +528,7 @@ constexpr bool isMatchedHFCandidate(T const& candidate)
       return false;
     }
   } else if constexpr (isXicToXiPiPiMcCandidate<T>()) {
-    if (std::abs(candidate.flagMcMatchGen()) == aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) {
+    if (std::abs(candidate.flagMcMatchGen()) == o2::aod::hf_cand_xic_to_xi_pi_pi::DecayType::XicToXiPiPi) {
       return true;
     } else {
       return false;

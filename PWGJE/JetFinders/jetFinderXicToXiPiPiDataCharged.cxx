@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-// jet finder D+ data charged task
+// jet finder XicToXiPiPi data charged task
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
