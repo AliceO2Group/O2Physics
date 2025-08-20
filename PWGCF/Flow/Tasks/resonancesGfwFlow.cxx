@@ -66,13 +66,11 @@ namespace
 {
 std::vector<std::shared_ptr<TProfile>> refV2;
 std::vector<std::shared_ptr<TProfile3D>> phiV2;
-std::vector<std::shared_ptr<TProfile3D>> lsPhiV2;
 std::vector<std::shared_ptr<TProfile3D>> k0V2;
 std::vector<std::shared_ptr<TProfile3D>> lambdaV2;
 
 std::vector<std::vector<std::shared_ptr<TProfile>>> refBoot;
 std::vector<std::vector<std::shared_ptr<TProfile3D>>> phiBoot;
-std::vector<std::vector<std::shared_ptr<TProfile3D>>> lsPhiBoot;
 std::vector<std::vector<std::shared_ptr<TProfile3D>>> k0Boot;
 std::vector<std::vector<std::shared_ptr<TProfile3D>>> lambdaBoot;
 } // namespace
@@ -232,7 +230,7 @@ struct ResonancesGfwFlow {
   ConfigurableAxis axisParticles{"axisParticles", {3, 0, 3}, "axis for different hadrons"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
+  Filter trackFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtPOIMin) && (aod::track::pt < cfgCutPtPOIMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls);
 
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>>;
   using AodTracksWithoutBayes = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
@@ -316,7 +314,6 @@ struct ResonancesGfwFlow {
 
     refBoot.resize(cfgNbootstrap);
     phiBoot.resize(cfgNbootstrap);
-    lsPhiBoot.resize(cfgNbootstrap);
     k0Boot.resize(cfgNbootstrap);
     lambdaBoot.resize(cfgNbootstrap);
 
@@ -331,14 +328,6 @@ struct ResonancesGfwFlow {
         } // end of bootstrap condition
       } // end of phi loop
 
-      if (cfgUseLsPhi && configs.GetHeads()[i].starts_with("LsPhi")) {
-        lsPhiV2.push_back(histos.add<TProfile3D>(Form("h%spt", configs.GetHeads()[i].c_str()), "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}}));
-        if (cfgUseBootStrap) {
-          for (int j = 0; j < cfgNbootstrap; ++j) {
-            phiBoot[j].push_back(histos.add<TProfile3D>(Form("BootStrap/h%spt_boot_%d", configs.GetHeads()[i].c_str(), j), "", {HistType::kTProfile3D, {axisPt, axisPhiMass, axisMultiplicity}}));
-          }
-        } // end of bootstrap condition
-      }
       if (resoSwitchVals[K0][kUseParticle] && configs.GetHeads()[i].starts_with("K0")) {
         k0V2.push_back(histos.add<TProfile3D>(Form("h%spt", configs.GetHeads()[i].c_str()), "", {HistType::kTProfile3D, {axisPt, axisK0Mass, axisMultiplicity}}));
         if (cfgUseBootStrap) {
@@ -1000,20 +989,11 @@ struct ResonancesGfwFlow {
       double pt = mom.Pt();
       double invMass = mom.M();
       double phi = mom.Phi();
-      bool withinPtPOI = (cfgCutPtPOIMin < pt) && (pt < cfgCutPtPOIMax); // within POI pT range
-      bool withinPtRef = (cfgCutPtMin < pt) && (pt < cfgCutPtMax);
 
       phi = RecoDecay::constrainAngle(phi, 0.0, 1); // constrain azimuthal angle to [0,2pi]
 
       if (std::abs(mom.Rapidity()) < resoCutVals[PHI][kRapidity]) {
         histos.fill(hist, invMass, pt, collision.centFT0C());
-        double weff = 1;
-        double waccPOI = 1;
-
-        if (withinPtPOI)
-          fGFW->Fill(mom.Eta(), ((fPtAxis->FindBin(pt) - 1) * fPhiMassAxis->GetNbins()) + (fPhiMassAxis->FindBin(invMass) - 1), phi, weff * waccPOI, 512);
-        if (withinPtPOI && withinPtRef)
-          fGFW->Fill(mom.Eta(), ((fPtAxis->FindBin(pt) - 1) * fPhiMassAxis->GetNbins()) + (fPhiMassAxis->FindBin(invMass) - 1), phi, weff * waccPOI, 1024);
       }
     } // end of positive combinations loop
     return;
@@ -1409,7 +1389,7 @@ struct ResonancesGfwFlow {
       }
     } // End of v0 loop
 
-    // Filling the cumulant profiles
+    // Filling cumulant profiles
     double r = fRndm->Rndm();
     int bootId = static_cast<int>(r * 10);
 
@@ -1422,15 +1402,6 @@ struct ResonancesGfwFlow {
           fillProfileBoot3D(corrconfigs.at(i), phiBoot[bootId][pIndex], cent, fPhiMassAxis);
         }
       } // end of phi condition
-
-      if (cfgUseLsPhi && corrconfigs.at(i).Head.starts_with("LsPhi")) {
-        int pIndex = findComponent(lsPhiV2, Form("h%spt", corrconfigs.at(i).Head.c_str()));
-        fillProfileBoot3D(corrconfigs.at(i), lsPhiV2[pIndex], cent, fPhiMassAxis);
-
-        if (cfgUseBootStrap) {
-          fillProfileBoot3D(corrconfigs.at(i), phiBoot[bootId][pIndex], cent, fPhiMassAxis);
-        }
-      } // end of LikeSign phi condition
 
       if (resoSwitchVals[K0][kUseParticle] && corrconfigs.at(i).Head.starts_with("K0")) {
         int pIndex = findComponent(k0V2, Form("h%spt", corrconfigs.at(i).Head.c_str()));
