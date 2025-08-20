@@ -59,7 +59,7 @@ struct BjetTaggingGnn {
 
   Configurable<float> trackNppCrit{"trackNppCrit", 0.95, "track not physical primary ratio"};
 
-  // track level configurables
+  // sv level configurables
   Configurable<float> svPtMin{"svPtMin", 0.5, "minimum SV pT"};
 
   // jet level configurables
@@ -70,8 +70,14 @@ struct BjetTaggingGnn {
 
   Configurable<std::vector<double>> jetRadii{"jetRadii", std::vector<double>{0.4}, "jet resolution parameters"};
 
+  Configurable<double> dbMin{"dbMin", -10., "minimum GNN Db"};
+  Configurable<double> dbMax{"dbMax", 20., "maximum GNN Db"};
+  Configurable<int> dbNbins{"dbNbins", 3000, "number of bins in axisDbFine"};
+
   Configurable<bool> doDataDriven{"doDataDriven", false, "Flag whether to use fill THnSpase for data driven methods"};
   Configurable<bool> callSumw2{"callSumw2", false, "Flag whether to call THnSparse::Sumw2() for error calculation"};
+
+  Configurable<int> trainingDatasetRatioParam{"trainingDatasetRatioParam", 0, "Parameter for splitting training/evaluation datasets by collisionId"};
 
   std::vector<int> eventSelectionBits;
 
@@ -83,11 +89,11 @@ struct BjetTaggingGnn {
 
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(static_cast<std::string>(eventSelections));
 
-    registry.add("h_vertexZ", "Vertex Z;#it{Z} (cm)", {HistType::kTH1F, {{40, -20.0, 20.0}}});
+    registry.add("h_vertexZ", "Vertex Z;#it{Z} (cm)", {HistType::kTH1F, {{100, -20.0, 20.0}}});
 
     const AxisSpec axisJetpT{200, 0., 200., "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec axisDb{200, -10., 20., "#it{D}_{b}"};
-    const AxisSpec axisDbFine{3000, -10., 20., "#it{D}_{b}"};
+    const AxisSpec axisDb{200, dbMin, dbMax, "#it{D}_{b}"};
+    const AxisSpec axisDbFine{dbNbins, dbMin, dbMax, "#it{D}_{b}"};
     const AxisSpec axisSVMass{200, 0., 10., "#it{m}_{SV} (GeV/#it{c}^{2})"};
     const AxisSpec axisSVEnergy{200, 0., 100., "#it{E}_{SV} (GeV)"};
     const AxisSpec axisSLxy{200, 0., 100., "#it{SL}_{xy}"};
@@ -95,7 +101,7 @@ struct BjetTaggingGnn {
     const AxisSpec axisJetProb{200, 0., 40., "-ln(JP)"};
     const AxisSpec axisNTracks{42, 0, 42, "#it{n}_{tracks}"};
 
-    registry.add("h_jetpT", "", {HistType::kTH1F, {axisJetpT}});
+    registry.add("h_jetpT", "", {HistType::kTH1F, {axisJetpT}}, callSumw2);
     registry.add("h_Db", "", {HistType::kTH1F, {axisDbFine}});
     registry.add("h2_jetpT_Db", "", {HistType::kTH2F, {axisJetpT, axisDb}});
     registry.add("h2_jetpT_SVMass", "", {HistType::kTH2F, {axisJetpT, axisSVMass}});
@@ -104,9 +110,9 @@ struct BjetTaggingGnn {
     registry.add("h2_jetpT_nTracks", "", {HistType::kTH2F, {axisJetpT, axisNTracks}});
 
     if (doprocessMCJets) {
-      registry.add("h_jetpT_b", "b-jet", {HistType::kTH1F, {axisJetpT}});
-      registry.add("h_jetpT_c", "c-jet", {HistType::kTH1F, {axisJetpT}});
-      registry.add("h_jetpT_lf", "lf-jet", {HistType::kTH1F, {axisJetpT}});
+      registry.add("h_jetpT_b", "b-jet", {HistType::kTH1F, {axisJetpT}}, callSumw2);
+      registry.add("h_jetpT_c", "c-jet", {HistType::kTH1F, {axisJetpT}}, callSumw2);
+      registry.add("h_jetpT_lf", "lf-jet", {HistType::kTH1F, {axisJetpT}}, callSumw2);
       registry.add("h_Db_b", "b-jet", {HistType::kTH1F, {axisDbFine}});
       registry.add("h_Db_c", "c-jet", {HistType::kTH1F, {axisDbFine}});
       registry.add("h_Db_lf", "lf-jet", {HistType::kTH1F, {axisDbFine}});
@@ -125,10 +131,10 @@ struct BjetTaggingGnn {
       registry.add("h2_jetpT_nTracks_b", "b-jet", {HistType::kTH2F, {axisJetpT, axisNTracks}});
       registry.add("h2_jetpT_nTracks_c", "c-jet", {HistType::kTH2F, {axisJetpT, axisNTracks}});
       registry.add("h2_jetpT_nTracks_lf", "lf-jet", {HistType::kTH2F, {axisJetpT, axisNTracks}});
-      registry.add("h2_Response_DetjetpT_PartjetpT", "", {HistType::kTH2F, {axisJetpT, axisJetpT}});
-      registry.add("h2_Response_DetjetpT_PartjetpT_b", "b-jet", {HistType::kTH2F, {axisJetpT, axisJetpT}});
-      registry.add("h2_Response_DetjetpT_PartjetpT_c", "c-jet", {HistType::kTH2F, {axisJetpT, axisJetpT}});
-      registry.add("h2_Response_DetjetpT_PartjetpT_lf", "lf-jet", {HistType::kTH2F, {axisJetpT, axisJetpT}});
+      registry.add("h2_Response_DetjetpT_PartjetpT", "", {HistType::kTH2F, {axisJetpT, axisJetpT}}, callSumw2);
+      registry.add("h2_Response_DetjetpT_PartjetpT_b", "b-jet", {HistType::kTH2F, {axisJetpT, axisJetpT}}, callSumw2);
+      registry.add("h2_Response_DetjetpT_PartjetpT_c", "c-jet", {HistType::kTH2F, {axisJetpT, axisJetpT}}, callSumw2);
+      registry.add("h2_Response_DetjetpT_PartjetpT_lf", "lf-jet", {HistType::kTH2F, {axisJetpT, axisJetpT}, callSumw2});
       registry.add("h2_jetpT_Db_lf_none", "lf-jet (none)", {HistType::kTH2F, {axisJetpT, axisDb}});
       registry.add("h2_jetpT_Db_lf_matched", "lf-jet (matched)", {HistType::kTH2F, {axisJetpT, axisDb}});
       registry.add("h2_jetpT_Db_npp", "NotPhysPrim", {HistType::kTH2F, {axisJetpT, axisDb}});
@@ -146,10 +152,10 @@ struct BjetTaggingGnn {
     }
 
     if (doprocessMCTruthJets) {
-      registry.add("h_jetpT_particle", "", {HistType::kTH1F, {axisJetpT}});
-      registry.add("h_jetpT_particle_b", "particle b-jet", {HistType::kTH1F, {axisJetpT}});
-      registry.add("h_jetpT_particle_c", "particle c-jet", {HistType::kTH1F, {axisJetpT}});
-      registry.add("h_jetpT_particle_lf", "particle lf-jet", {HistType::kTH1F, {axisJetpT}});
+      registry.add("h_jetpT_particle", "", {HistType::kTH1F, {axisJetpT}}, callSumw2);
+      registry.add("h_jetpT_particle_b", "particle b-jet", {HistType::kTH1F, {axisJetpT}}, callSumw2);
+      registry.add("h_jetpT_particle_c", "particle c-jet", {HistType::kTH1F, {axisJetpT}}, callSumw2);
+      registry.add("h_jetpT_particle_lf", "particle lf-jet", {HistType::kTH1F, {axisJetpT}}, callSumw2);
     }
 
     if (doDataDriven) {
@@ -285,6 +291,11 @@ struct BjetTaggingGnn {
   void processMCJets(FilteredCollisionMCD::iterator const& collision, MCDJetTable const& MCDjets, MCPJetTable const& /*MCPjets*/, JetTracksMCDwID const& /*allTracks*/, MCDSVTable const& allSVs, aod::JetParticles const& /*MCParticles*/)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
+      return;
+    }
+    
+    // Uses only collisionId % trainingDatasetRaioParam != 0 for evaluation dataset
+    if (trainingDatasetRatioParam && collision.collisionId() % trainingDatasetRatioParam == 0) {
       return;
     }
 
