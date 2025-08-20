@@ -293,7 +293,7 @@ struct BjetTaggingGnn {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
     }
-    
+
     // Uses only collisionId % trainingDatasetRaioParam != 0 for evaluation dataset
     if (trainingDatasetRatioParam && collision.collisionId() % trainingDatasetRatioParam == 0) {
       return;
