@@ -938,7 +938,7 @@ struct Phik0shortanalysis {
   }
 
   template <typename T1, typename T2>
-  bool eventHasPhi(const T1& posTracks, const T2& negTracks)
+  bool eventHasRecoPhi(const T1& posTracks, const T2& negTracks)
   {
     int nPhi = 0;
 
@@ -957,7 +957,7 @@ struct Phik0shortanalysis {
           continue; // condition to avoid double counting of pair
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-        if (recPhi.Pt() < minPhiPt || recPhi.Pt() > maxPhiPt)
+        if (recPhi.Pt() < minPhiPt)
           continue;
         if (recPhi.M() < lowMPhi || recPhi.M() > upMPhi)
           continue;
@@ -973,17 +973,93 @@ struct Phik0shortanalysis {
     return false;
   }
 
+  template <typename T1, typename T2>
+  bool eventHasRecoPhiWPDG(const T1& posTracks, const T2& negTracks)
+  {
+    int nPhi = 0;
+
+    for (const auto& track1 : posTracks) {
+      if (!selectionTrackResonance<true>(track1, false) || !selectionPIDKaonpTdependent(track1))
+        continue; // topological and PID selection
+
+      auto track1ID = track1.globalIndex();
+
+      if (!track1.has_mcParticle())
+        continue;
+      auto mcTrack1 = track1.template mcParticle_as<aod::McParticles>();
+      if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
+        continue;
+
+      for (const auto& track2 : negTracks) {
+        if (!selectionTrackResonance<true>(track2, false) || !selectionPIDKaonpTdependent(track2))
+          continue; // topological and PID selection
+
+        auto track2ID = track2.globalIndex();
+        if (track2ID == track1ID)
+          continue; // condition to avoid double counting of pair
+
+        if (!track2.has_mcParticle())
+          continue;
+        auto mcTrack2 = track2.template mcParticle_as<aod::McParticles>();
+        if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
+          continue;
+
+        float pTMother = -1.0f;
+        float yMother = -1.0f;
+        bool isMCMotherPhi = false;
+        for (const auto& motherOfMcTrack1 : mcTrack1.template mothers_as<aod::McParticles>()) {
+          for (const auto& motherOfMcTrack2 : mcTrack2.template mothers_as<aod::McParticles>()) {
+            if (motherOfMcTrack1.pdgCode() != motherOfMcTrack2.pdgCode())
+              continue;
+            if (motherOfMcTrack1.globalIndex() != motherOfMcTrack2.globalIndex())
+              continue;
+            if (motherOfMcTrack1.pdgCode() != o2::constants::physics::Pdg::kPhi)
+              continue;
+
+            pTMother = motherOfMcTrack1.pt();
+            yMother = motherOfMcTrack1.y();
+            isMCMotherPhi = true;
+          }
+        }
+
+        if (!isMCMotherPhi)
+          continue;
+        if (pTMother < minPhiPt || std::abs(yMother) > deltaYConfigs.cfgYAcceptance)
+          continue;
+
+        nPhi++;
+      }
+    }
+
+    if (nPhi > 0)
+      return true;
+    return false;
+  }
+
   template <typename T>
-  bool eventHasMCPhi(const T& mcParticles)
+  bool eventHasGenPhi(const T& mcParticles)
   {
     int nPhi = 0;
 
     for (const auto& mcParticle : mcParticles) {
       if (mcParticle.pdgCode() != o2::constants::physics::Pdg::kPhi)
         continue;
-      if (mcParticle.pt() < minPhiPt || mcParticle.pt() > maxPhiPt)
+      if (mcParticle.pt() < minPhiPt)
         continue;
       if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
+        continue;
+
+      auto kDaughters = mcParticle.template daughters_as<aod::McParticles>();
+      if (kDaughters.size() != 2)
+        continue;
+      bool isPosKaon = false, isNegKaon = false;
+      for (const auto& kDaughter : kDaughters) {
+        if (kDaughter.pdgCode() == PDG_t::kKPlus)
+          isPosKaon = true;
+        if (kDaughter.pdgCode() == PDG_t::kKMinus)
+          isNegKaon = true;
+      }
+      if (!isPosKaon || !isNegKaon)
         continue;
 
       nPhi++;
@@ -2489,7 +2565,7 @@ struct Phik0shortanalysis {
     auto negThisColl = negFiltTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     // Check if the event contains a phi candidate
-    if (!eventHasPhi(posThisColl, negThisColl))
+    if (!eventHasRecoPhi(posThisColl, negThisColl))
       return;
 
     dataEventHist.fill(HIST("hMultiplicityPercent"), collision.centFT0M());
@@ -2523,7 +2599,7 @@ struct Phik0shortanalysis {
 
     if (furtherCheckonMcCollision && (std::abs(mcCollision.posZ()) > cutZVertex || !pwglf::isINELgtNmc(mcParticlesThisColl, 0, pdgDB)))
       return;
-    if (filterOnMcPhi && !eventHasMCPhi(mcParticlesThisColl))
+    if (filterOnMcPhi && !eventHasGenPhi(mcParticlesThisColl))
       return;
 
     mcEventHist.fill(HIST("hRecoMCMultiplicityPercent"), mcCollision.centFT0M());
@@ -2577,7 +2653,7 @@ struct Phik0shortanalysis {
       return;
     if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB))
       return;
-    if (filterOnMcPhi && !eventHasMCPhi(mcParticles))
+    if (filterOnMcPhi && !eventHasGenPhi(mcParticles))
       return;
 
     uint64_t numberAssocColl = 0;
