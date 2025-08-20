@@ -15,15 +15,14 @@
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 ///
 
-#include <array>
-#include <chrono>
-#include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <map>
-#include <memory>
-#include <string>
-#include <vector>
+#include "CollisionTypeHelper.h"
+#include "MetadataHelper.h"
+#include "TableHelper.h"
+#include "pidTOFBase.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 
 #include "PID/PIDTOF.h"
 #include <CCDB/BasicCCDBManager.h>
@@ -48,14 +47,15 @@
 #include <TH2.h>
 #include <TString.h>
 
-#include "CollisionTypeHelper.h"
-#include "MetadataHelper.h"
-#include "TableHelper.h"
-#include "pidTOFBase.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/PIDResponseTOF.h"
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

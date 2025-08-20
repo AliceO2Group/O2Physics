@@ -19,10 +19,9 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
-#include <chrono>
-#include <cstdint>
-#include <string>
-#include <vector>
+#include "MetadataHelper.h"
+
+#include "Common/DataModel/PIDResponseITS.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
@@ -34,9 +33,10 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 
-#include "MetadataHelper.h"
-
-#include "Common/DataModel/PIDResponseITS.h"
+#include <chrono>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

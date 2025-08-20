@@ -15,12 +15,13 @@
 /// \brief  Base to build tasks for TOF PID tasks.
 ///
 
-#include <chrono>
-#include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <string>
-#include <vector>
+#include "pidTOFBase.h"
+
+#include "TableHelper.h"
+
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 
 #include "PID/PIDTOF.h"
 #include <CCDB/BasicCCDBManager.h>
@@ -31,21 +32,20 @@
 #include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 #include <TOFBase/EventTimeMaker.h>
 
-#include "TableHelper.h"
-#include "pidTOFBase.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-
-#include <Framework/HistogramRegistry.h>
-#include <Framework/runDataProcessing.h>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

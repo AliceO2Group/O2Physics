@@ -16,20 +16,6 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
-#include <algorithm>
-#include <array>
-#include <chrono>
-#include <cmath>
-#include <cstdint>
-#include <cstdlib>
-#include <iterator>
-#include <memory>
-#include <string>
-#include <string_view>
-#include <utility>
-#include <vector>
-
-
 #include "Common/Core/PID/DetectorResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/ParamBase.h"
@@ -57,6 +43,19 @@
 #include <TFile.h>
 #include <TMath.h>
 #include <TString.h>
+
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <iterator>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

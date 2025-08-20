@@ -16,6 +16,11 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
+#include "TableHelper.h"
+#include "pidTOFBase.h"
+
+#include "Common/DataModel/PIDResponseTOF.h"
+
 #include "Framework/AnalysisTask.h"
 #include "PID/PIDTOF.h"
 #include <CCDB/BasicCCDBManager.h>
@@ -37,11 +42,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "TableHelper.h"
-#include "pidTOFBase.h"
-
-#include "Common/DataModel/PIDResponseTOF.h"
 
 using namespace o2;
 using namespace o2::framework;

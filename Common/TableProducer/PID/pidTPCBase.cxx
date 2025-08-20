@@ -15,13 +15,9 @@
 /// \brief  Base to build tasks for TPC PID tasks.
 ///
 
-#include <cstdint>
-#include <cstdlib>
-#include <string>
-#include <vector>
+#include "pidTPCBase.h"
 
 #include "TableHelper.h"
-#include "pidTPCBase.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/DataModel/EventSelection.h"
@@ -36,6 +32,11 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/SliceCache.h>
+
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;

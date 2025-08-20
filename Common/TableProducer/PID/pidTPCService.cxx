@@ -19,10 +19,6 @@
 //
 //===============================================================
 
-#include <chrono>
-#include <string>
-#include <TObject.h>
-
 #include "MetadataHelper.h"
 #include "pidTPCModule.h"
 
@@ -36,6 +32,11 @@
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
+
+#include <TObject.h>
+
+#include <chrono>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;

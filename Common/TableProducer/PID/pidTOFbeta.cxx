@@ -21,7 +21,6 @@
 
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
-
 #include "PID/PIDTOF.h"
 #include <DataFormatsTOF/ParameterContainers.h>
 #include <Framework/ASoA.h>

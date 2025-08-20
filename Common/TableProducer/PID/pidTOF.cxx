@@ -18,6 +18,11 @@
 
 #include "PID/PIDTOF.h"
 
+#include "TableHelper.h"
+#include "pidTOFBase.h"
+
+#include "Common/DataModel/PIDResponseTOF.h"
+
 #include "Framework/AnalysisTask.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsTOF/ParameterContainers.h>
@@ -38,11 +43,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-
-#include "TableHelper.h"
-#include "pidTOFBase.h"
-
-#include "Common/DataModel/PIDResponseTOF.h"
 
 using namespace o2;
 using namespace o2::framework;

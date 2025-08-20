@@ -18,13 +18,14 @@
 #ifndef COMMON_TABLEPRODUCER_PID_PIDTOFBASE_H_
 #define COMMON_TABLEPRODUCER_PID_PIDTOFBASE_H_
 
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+
+#include "PID/PIDTOF.h"
+#include "PID/ParamBase.h"
+
 #include <string>
 #include <vector>
-
-#include "PID/ParamBase.h"
-#include "PID/PIDTOF.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponse.h"
 
 static constexpr int nSpecies = 9;
 static constexpr int nParameters = 1;

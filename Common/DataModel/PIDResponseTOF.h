@@ -20,13 +20,14 @@
 #ifndef COMMON_DATAMODEL_PIDRESPONSETOF_H_
 #define COMMON_DATAMODEL_PIDRESPONSETOF_H_
 
-#include <experimental/type_traits>
+#include "Common/Core/PID/PIDTOF.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/PID.h"
 #include "Framework/Logger.h"
-#include "Common/Core/PID/PIDTOF.h"
+#include "ReconstructionDataFormats/PID.h"
+
+#include <experimental/type_traits>
 
 namespace o2::aod
 {

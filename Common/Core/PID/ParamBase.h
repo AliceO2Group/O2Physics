@@ -20,15 +20,15 @@
 #ifndef COMMON_CORE_PID_PARAMBASE_H_
 #define COMMON_CORE_PID_PARAMBASE_H_
 
-#include <algorithm> // std::copy
-#include <map>       // std::map
-#include <string>    // std::string
-#include <vector>    // std::vector
-
 #include <Framework/Logger.h>
 
 #include <TFile.h>
 #include <TNamed.h>
+
+#include <algorithm> // std::copy
+#include <map>       // std::map
+#include <string>    // std::string
+#include <vector>    // std::vector
 
 namespace o2::pid
 {

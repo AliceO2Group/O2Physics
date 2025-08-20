@@ -19,9 +19,11 @@
 #ifndef COMMON_CORE_PID_PIDTOF_H_
 #define COMMON_CORE_PID_PIDTOF_H_
 
-#include <string>
-#include <unordered_map>
-#include <vector>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsTOF/ParameterContainers.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <TF2.h>
 #include <TFile.h>
@@ -30,11 +32,9 @@
 
 #include <Rtypes.h>
 
-#include <CommonConstants/PhysicsConstants.h>
-#include <DataFormatsTOF/ParameterContainers.h>
-#include <Framework/DataTypes.h>
-#include <Framework/Logger.h>
-#include <ReconstructionDataFormats/PID.h>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace o2::pid::tof
 {
