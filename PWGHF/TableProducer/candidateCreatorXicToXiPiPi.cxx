@@ -1137,8 +1137,8 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
           origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
           // Calculate the decay length of the generated particle
           auto dau0 = particle.template daughters_as<aod::McParticles>().begin();
-          double vtxDau[3] = {dau0.vx(), dau0.vy(), dau0.vz()};
-          double vtxPV[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
+          std::array<double, 3> vtxDau = {dau0.vx(), dau0.vy(), dau0.vz()};
+          std::array<double, 3> vtxPV = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
           decayLengthGen = RecoDecay::distance(vtxPV, vtxDau);
         }
         // Fill table
