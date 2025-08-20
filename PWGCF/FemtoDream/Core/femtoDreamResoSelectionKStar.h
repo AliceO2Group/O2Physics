@@ -1,10 +1,10 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
-// kPhiPosdaughTOF_NegdaughTPC
+//
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
@@ -15,8 +15,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTION_H_
-#define PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTION_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTIONKSTAR_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTIONKSTAR_H_
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
@@ -37,6 +37,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <utility>
 
 using namespace o2;
 using namespace o2::framework;
@@ -282,7 +283,7 @@ void FemtoDreamResoSelection::setDaughterCuts(femtoDreamResoSelection::Daughtert
 {
   if (daugh == femtoDreamResoSelection::kPosdaugh) {
     PosDaughTrack.setSelection(selVal, selVar, selType);
-  };
+  }
   if (daugh == femtoDreamResoSelection::kNegdaugh) {
     NegDaughTrack.setSelection(selVal, selVar, selType);
   }
@@ -411,4 +412,4 @@ std::array<cutContainerType, 5> FemtoDreamResoSelection::getCutContainer(V const
 }
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTION_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTIONKSTAR_H_

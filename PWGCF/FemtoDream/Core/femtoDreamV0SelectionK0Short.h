@@ -15,8 +15,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTION_H_
-#define PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTION_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTIONK0SHORT_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTIONK0SHORT_H_
 
 #include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
@@ -775,4 +775,4 @@ void FemtoDreamV0Selection::fillQA(C const& /*col*/, V const& v0, T const& posTr
 
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTION_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTIONK0SHORT_H_

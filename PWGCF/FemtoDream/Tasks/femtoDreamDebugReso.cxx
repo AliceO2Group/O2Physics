@@ -32,6 +32,7 @@
 #include <cstdint>
 #include <iostream>
 #include <vector>
+#include <string>
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
