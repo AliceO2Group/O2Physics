@@ -467,6 +467,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       // get the DCA correction file from CCDB if not yet downloaded before
       struct stat sbDca; // search utility
       if (stat(fullNameInputFile.c_str(), &sbDca) == 0) {
+        // file found
         LOG(info) << " [TrackTuner] File " << fullNameInputFile << " already downloaded. Not downloading it anymore";
       } else {
         LOG(info) << "[TrackTuner] downloading input file " << nameInputFile << " from CCDB...";
@@ -478,6 +479,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       // get the Q/Pt correction file from CCDB if not yet downloaded before
       struct stat sbQoverPt; // search utility
       if (stat(fullNameFileQoverPt.c_str(), &sbQoverPt) == 0) {
+        // file found
         LOG(info) << " [TrackTuner] File " << fullNameFileQoverPt << " already downloaded. Not downloading it anymore";
       } else {
         LOG(info) << "[TrackTuner] downloading input file " << nameFileQoverPt << " from CCDB...";
