@@ -12,7 +12,7 @@
 #ifndef COMMON_DATAMODEL_CALOCLUSTERS_H_
 #define COMMON_DATAMODEL_CALOCLUSTERS_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
 #include <cstdint>
 #include <vector>

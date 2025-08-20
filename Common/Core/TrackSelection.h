@@ -16,7 +16,7 @@
 #ifndef COMMON_CORE_TRACKSELECTION_H_
 #define COMMON_CORE_TRACKSELECTION_H_
 
-#include "Framework/DataTypes.h"
+#include <Framework/DataTypes.h>
 
 #include <Rtypes.h>
 

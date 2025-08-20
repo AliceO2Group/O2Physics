@@ -11,18 +11,18 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
-#include "CCDB/CcdbApi.h"
-#include "CommonDataFormat/BunchFilling.h"
-#include "DataFormatsFIT/Triggers.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h> // megalinter thinks this is a C header...
+#include <CCDB/CcdbApi.h>
 #include <CommonConstants/LHCConstants.h>
+#include <CommonDataFormat/BunchFilling.h>
+#include <DataFormatsFIT/Triggers.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
 
 #include <bitset>
 #include <chrono>

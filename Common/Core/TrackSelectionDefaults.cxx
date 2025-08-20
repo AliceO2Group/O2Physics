@@ -19,7 +19,7 @@
 
 #include "Common/Core/TrackSelection.h"
 
-#include "Framework/DataTypes.h"
+#include <Framework/DataTypes.h>
 #include <Framework/Logger.h>
 
 #include <cmath>

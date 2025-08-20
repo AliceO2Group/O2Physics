@@ -23,7 +23,7 @@
 #include <Framework/ASoA.h>
 #include <ReconstructionDataFormats/PID.h>
 
-#include "TMatrixD.h" // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
+#include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
 #include <TMatrixDfwd.h>
 
 #include <cstdlib>

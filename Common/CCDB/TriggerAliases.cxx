@@ -11,7 +11,7 @@
 
 #include "Common/CCDB/TriggerAliases.h"
 
-#include "Framework/Logger.h"
+#include <Framework/Logger.h>
 
 #include <cstdint>
 #include <string>

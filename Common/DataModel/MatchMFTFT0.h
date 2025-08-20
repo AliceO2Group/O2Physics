@@ -15,7 +15,7 @@
 // \brief  Declaration of tables useful for the matching of MFT tracks to FT0-C signals
 // \date   03/09/24
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {

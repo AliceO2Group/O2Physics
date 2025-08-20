@@ -19,9 +19,9 @@
 #ifndef COMMON_DATAMODEL_PIDRESPONSECOMBINED_H_
 #define COMMON_DATAMODEL_PIDRESPONSECOMBINED_H_
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <cstdint>
 

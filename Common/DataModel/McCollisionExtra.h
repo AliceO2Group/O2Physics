@@ -14,7 +14,7 @@
 #ifndef COMMON_DATAMODEL_MCCOLLISIONEXTRA_H_
 #define COMMON_DATAMODEL_MCCOLLISIONEXTRA_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
 #include <cmath>
 #include <cstdint>

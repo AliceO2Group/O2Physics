@@ -22,10 +22,10 @@
 
 #include "Common/Core/PID/PIDTOF.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Logger.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <cstdint>
 #include <experimental/type_traits>

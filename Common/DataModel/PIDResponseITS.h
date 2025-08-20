@@ -24,12 +24,12 @@
 
 #include "TableHelper.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Logger.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/Array2D.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
 
 #include <cmath>
 #include <cstdint>

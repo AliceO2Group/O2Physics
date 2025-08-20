@@ -16,10 +16,10 @@
 #ifndef COMMON_TOOLS_STANDARDCCDBLOADER_H_
 #define COMMON_TOOLS_STANDARDCCDBLOADER_H_
 
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
+#include <DataFormatsCalibration/MeanVertexObject.h>
+#include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
 #include <Framework/Configurable.h>
 #include <Framework/Logger.h>
 

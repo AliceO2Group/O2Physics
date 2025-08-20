@@ -29,15 +29,15 @@
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/model.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/runDataProcessing.h"
+#include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
+#include <Framework/runDataProcessing.h>
 #include <ReconstructionDataFormats/PID.h>
 
-#include "TMatrixD.h" // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
-#include "TRandom.h"
+#include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
 #include <TMatrixDfwd.h>
+#include <TRandom.h>
 
 #include <chrono>
 #include <cstddef>

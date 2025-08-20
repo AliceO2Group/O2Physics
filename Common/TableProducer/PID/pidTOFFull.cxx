@@ -21,17 +21,17 @@
 
 #include "Common/DataModel/PIDResponseTOF.h"
 
-#include "Framework/AnalysisTask.h"
-#include "PID/PIDTOF.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsTOF/ParameterContainers.h>
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
 #include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 #include <Framework/Variant.h>
+#include <PID/PIDTOF.h>
 #include <ReconstructionDataFormats/PID.h>
 
 #include <TGraph.h>
@@ -55,7 +55,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
   std::swap(workflowOptions, options);
 }
 
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 /// Task to produce the response table
 struct tofPidFull {

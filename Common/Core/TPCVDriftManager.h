@@ -12,12 +12,12 @@
 #ifndef COMMON_CORE_TPCVDRIFTMANAGER_H_
 #define COMMON_CORE_TPCVDRIFTMANAGER_H_
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsTPC/VDriftCorrFact.h"
-#include "Framework/DataTypes.h"
-#include "Framework/Logger.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsTPC/VDriftCorrFact.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/Track.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
 
 #include <cstdint>

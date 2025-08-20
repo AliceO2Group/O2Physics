@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 #ifndef COMMON_DATAMODEL_MATCHMFTMUONDATA_H_
 #define COMMON_DATAMODEL_MATCHMFTMUONDATA_H_
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
 #include <cstdint>
 #endif // COMMON_DATAMODEL_MATCHMFTMUONDATA_H_

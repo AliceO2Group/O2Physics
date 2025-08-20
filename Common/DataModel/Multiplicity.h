@@ -18,7 +18,7 @@
 
 #include "Common/DataModel/EventSelection.h"
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
 #include <cstdint>
 
