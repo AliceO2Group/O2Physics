@@ -489,7 +489,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       }
       if (confIsCPR.value) {
         if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
-          return;
+          continue;
         }
       }
 
@@ -723,8 +723,8 @@ struct femtoUniversePairTaskTrackCascadeExtended {
           continue;
         }
         if (confIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::same)) {
-            return;
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+            continue;
           }
         }
 
@@ -792,14 +792,14 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         /// Child particles must pass this condition to be selected
         if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
           if (!isParticleTPC(posChild1, CascChildTable[confCascType1][0]) || !isParticleTPC(negChild1, CascChildTable[confCascType1][1]) || !isParticleTPC(bachelor1, CascChildTable[confCascType1][2]))
-            return;
+            continue;
           if ((!confCheckTOFBachelorOnly && (!isParticleTOF(posChild1, CascChildTable[confCascType1][0]) || !isParticleTOF(negChild1, CascChildTable[confCascType1][1]))) || !isParticleTOF(bachelor1, CascChildTable[confCascType1][2]))
-            return;
+            continue;
         } else {
           if ((posChild1.pidCut() & (1u << CascChildTable[confCascType1][0])) == 0 || (negChild1.pidCut() & (1u << CascChildTable[confCascType1][1])) == 0 || (bachelor1.pidCut() & (1u << CascChildTable[confCascType1][2])) == 0)
-            return;
+            continue;
           if ((!confCheckTOFBachelorOnly && ((posChild1.pidCut() & (8u << CascChildTable[confCascType1][0])) == 0 || (negChild1.pidCut() & (8u << CascChildTable[confCascType1][1])) == 0)) || (bachelor1.pidCut() & (8u << CascChildTable[confCascType1][2])) == 0)
-            return;
+            continue;
         }
 
         const auto& posChild2 = parts.iteratorAt(p2.globalIndex() - 3 - parts.begin().globalIndex());
@@ -808,14 +808,14 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         /// Child particles must pass this condition to be selected
         if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
           if (!isParticleTPC(posChild2, CascChildTable[confCascType2][0]) || !isParticleTPC(negChild2, CascChildTable[confCascType2][1]) || !isParticleTPC(bachelor2, CascChildTable[confCascType2][2]))
-            return;
+            continue;
           if ((!confCheckTOFBachelorOnly && (!isParticleTOF(posChild2, CascChildTable[confCascType2][0]) || !isParticleTOF(negChild2, CascChildTable[confCascType2][1]))) || !isParticleTOF(bachelor2, CascChildTable[confCascType2][2]))
-            return;
+            continue;
         } else {
           if ((posChild2.pidCut() & (1u << CascChildTable[confCascType1][0])) == 0 || (negChild2.pidCut() & (1u << CascChildTable[confCascType1][1])) == 0 || (bachelor2.pidCut() & (1u << CascChildTable[confCascType1][2])) == 0)
-            return;
+            continue;
           if ((!confCheckTOFBachelorOnly && ((posChild2.pidCut() & (8u << CascChildTable[confCascType1][0])) == 0 || (negChild2.pidCut() & (8u << CascChildTable[confCascType1][1])) == 0)) || (bachelor2.pidCut() & (8u << CascChildTable[confCascType1][2])) == 0)
-            return;
+            continue;
         }
         // track cleaning
         if (!pairCleanerCasc.isCleanPair(p1, p2, parts)) {
