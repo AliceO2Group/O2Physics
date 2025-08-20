@@ -386,10 +386,12 @@ struct Phik0shortanalysis {
     mcEventHist.add("hRecoMCMultiplicityPercent", "RecoMC Multiplicity Percentile", kTH1F, {binnedmultAxis});
     mcEventHist.add("hRecoMCMultiplicityPercentWithPhi", "RecoMC Multiplicity Percentile in Events with a Phi Candidate", kTH1F, {binnedmultAxis});
     mcEventHist.add("h2RecoMCVertexZvsMult", "RecoMC Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
+    mcEventHist.add("hSplitVertexZ", "Split in z-vtx", kTH1F, {{100, -5.0f, 5.0f}});
 
     mcEventHist.add("hGenMCVertexZ", "hGenMCVertexZ", kTH1F, {vertexZAxis});
     mcEventHist.add("hGenMCMultiplicityPercent", "GenMC Multiplicity Percentile", kTH1F, {binnedmultAxis});
     mcEventHist.add("hGenMCAssocRecoMultiplicityPercent", "GenMC AssocReco Multiplicity Percentile", kTH1F, {binnedmultAxis});
+    mcEventHist.add("h2GenMCAssocRecoVertexZvsMult", "GenMC AssocReco Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
     mcEventHist.add("hGenMCRecoMultiplicityPercent", "GenMCReco Multiplicity Percentile", kTH1F, {binnedmultAxis});
     mcEventHist.add("h2GenMCRecoVertexZvsMult", "GenMCReco Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
 
@@ -397,8 +399,8 @@ struct Phik0shortanalysis {
     mcEventHist.add("h6RecoMCEtaDistribution", "Eta vs multiplicity in MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
     mcEventHist.add("h6RecoCheckMCEtaDistribution", "Eta vs multiplicity in MCReco Check", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
 
-    mcEventHist.add("h2GenMCEtaDistribution", "Eta vs multiplicity in MCGen", kTH2F, {binnedmultAxis, etaAxis});
-    mcEventHist.add("h2GenMCEtaDistributionAssocReco", "Eta vs multiplicity in MCGen Assoc Reco", kTH2F, {binnedmultAxis, etaAxis});
+    mcEventHist.add("h5GenMCEtaDistribution", "Eta vs multiplicity in MCGen", kTHnSparseF, {binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
+    mcEventHist.add("h6GenMCEtaDistributionAssocReco", "Eta vs multiplicity in MCGen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
     mcEventHist.add("h6GenMCEtaDistributionReco", "Eta vs multiplicity in MCGen Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
     mcEventHist.add("h6GenMCEtaDistributionRecoCheck", "Eta vs multiplicity in MCGen Reco Check", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
 
@@ -2658,6 +2660,8 @@ struct Phik0shortanalysis {
       return;
 
     uint64_t numberAssocColl = 0;
+    std::vector<float> zVtxs;
+
     for (const auto& collision : collisions) {
       if (acceptEventQA<true>(collision, false)) {
         auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
@@ -2672,6 +2676,8 @@ struct Phik0shortanalysis {
 
         mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), mcCollision.centFT0M());
         mcEventHist.fill(HIST("h2GenMCRecoVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
+
+        zVtxs.push_back(collision.posZ());
 
         for (const auto& track : filteredMCTracksThisColl) {
           if (trackConfigs.applyExtraPhiCuts && ((track.phi() > trackConfigs.extraPhiCuts->at(0) && track.phi() < trackConfigs.extraPhiCuts->at(1)) ||
@@ -2717,16 +2723,48 @@ struct Phik0shortanalysis {
     }
 
     mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), mcCollision.centFT0M());
-    if (numberAssocColl > 0)
+
+    if (numberAssocColl > 0) {
+      float zVtxRef = zVtxs[0];
+      if (zVtxs.size() > 1) {
+        for (size_t i = 1; i < zVtxs.size(); ++i) {
+          mcEventHist.fill(HIST("hSplitVertexZ"), zVtxs[i] - zVtxRef);
+        }
+      }
+
       mcEventHist.fill(HIST("hGenMCAssocRecoMultiplicityPercent"), mcCollision.centFT0M());
+      mcEventHist.fill(HIST("h2GenMCAssocRecoVertexZvsMult"), zVtxRef, mcCollision.centFT0M());
+    }
 
     for (const auto& mcParticle : mcParticles) {
       if (!isGenParticleCharged(mcParticle))
         continue;
 
-      mcEventHist.fill(HIST("h2GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta());
-      if (numberAssocColl > 0)
-        mcEventHist.fill(HIST("h2GenMCEtaDistributionAssocReco"), mcCollision.centFT0M(), mcParticle.eta());
+      int pid = fromPDGToEnum(mcParticle.pdgCode());
+
+      mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
+      if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
+        mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
+        mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
+      } else {
+        mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
+        mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
+      }
+      mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
+
+      if (numberAssocColl > 0) {
+        float zVtxRef = zVtxs[0];
+
+        mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
+        if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
+          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
+          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
+        } else {
+          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
+          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
+        }
+        mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
+      }
     }
   }
 
