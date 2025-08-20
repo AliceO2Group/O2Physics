@@ -25,7 +25,6 @@
 #include <string>    // std::string
 #include <vector>    // std::vector
 
-// ROOT includes
 #include <Framework/Logger.h>
 
 #include <TFile.h>

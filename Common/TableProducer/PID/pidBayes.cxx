@@ -29,7 +29,6 @@
 #include <utility>
 #include <vector>
 
-// O2 includes
 
 #include "Common/Core/PID/DetectorResponse.h"
 #include "Common/Core/PID/PIDTOF.h"

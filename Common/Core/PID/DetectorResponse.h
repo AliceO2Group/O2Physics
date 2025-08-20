@@ -25,13 +25,11 @@
 #include <array>
 #include <string>
 #include <vector>
-// ROOT includes
 #include <TFile.h>
 #include <TMath.h>
 
 #include <Rtypes.h>
 
-// O2 includes
 #include "Common/Core/PID/ParamBase.h"
 
 #include <ReconstructionDataFormats/PID.h>

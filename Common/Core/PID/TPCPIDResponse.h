@@ -21,7 +21,6 @@
 #include <vector>
 #include <cmath>
 #include "Framework/Logger.h"
-// O2 includes
 #include "ReconstructionDataFormats/PID.h"
 #include "Framework/DataTypes.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"

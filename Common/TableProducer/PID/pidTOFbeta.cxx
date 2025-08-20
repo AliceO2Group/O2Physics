@@ -15,7 +15,6 @@
 /// \brief  Task to produce TOF beta and TOF mass tables
 ///
 
-// O2 includes
 #include "TableHelper.h"
 
 #include "Common/DataModel/PIDResponseTOF.h"
@@ -23,7 +22,6 @@
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 
-// O2Physics includes
 #include "PID/PIDTOF.h"
 #include <DataFormatsTOF/ParameterContainers.h>
 #include <Framework/ASoA.h>

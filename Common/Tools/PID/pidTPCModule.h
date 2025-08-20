@@ -26,12 +26,10 @@
 #include <string>
 #include <utility>
 #include <vector>
-// ROOT includes
 #include "TFile.h"
 #include "TRandom.h"
 #include "TSystem.h"
 
-// O2 includes
 #include "MetadataHelper.h"
 #include "TableHelper.h"
 

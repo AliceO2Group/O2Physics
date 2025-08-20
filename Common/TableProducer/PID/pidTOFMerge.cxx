@@ -25,7 +25,6 @@
 #include <string>
 #include <vector>
 
-// O2 includes
 #include "PID/PIDTOF.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
@@ -49,7 +48,6 @@
 #include <TH2.h>
 #include <TString.h>
 
-// O2Physics includes
 #include "CollisionTypeHelper.h"
 #include "MetadataHelper.h"
 #include "TableHelper.h"

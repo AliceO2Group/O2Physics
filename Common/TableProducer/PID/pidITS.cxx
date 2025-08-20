@@ -24,7 +24,6 @@
 #include <string>
 #include <vector>
 
-// O2 includes
 #include "CCDB/BasicCCDBManager.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
@@ -35,7 +34,6 @@
 #include <Framework/Configurable.h>
 #include <Framework/InitContext.h>
 
-// O2Physics includes
 #include "MetadataHelper.h"
 
 #include "Common/DataModel/PIDResponseITS.h"

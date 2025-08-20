@@ -22,7 +22,6 @@
 #include <string>
 #include <vector>
 
-// O2 includes
 #include "PID/PIDTOF.h"
 #include <CCDB/BasicCCDBManager.h>
 #include <DataFormatsTOF/ParameterContainers.h>
@@ -38,7 +37,6 @@
 #include <ReconstructionDataFormats/PID.h>
 #include <TOFBase/EventTimeMaker.h>
 
-// O2Physics includes
 #include "TableHelper.h"
 #include "pidTOFBase.h"
 

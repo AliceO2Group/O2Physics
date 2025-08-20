@@ -22,7 +22,6 @@
 
 #include <experimental/type_traits>
 
-// O2 includes
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "ReconstructionDataFormats/PID.h"

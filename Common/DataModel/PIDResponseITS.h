@@ -22,7 +22,6 @@
 #ifndef COMMON_DATAMODEL_PIDRESPONSEITS_H_
 #define COMMON_DATAMODEL_PIDRESPONSEITS_H_
 
-// O2 includes
 #include "TableHelper.h"
 
 #include "Framework/ASoA.h"

@@ -23,7 +23,6 @@
 #include <unordered_map>
 #include <vector>
 
-// ROOT includes
 #include <TF2.h>
 #include <TFile.h>
 #include <TGraph.h>
@@ -31,7 +30,6 @@
 
 #include <Rtypes.h>
 
-// O2 includes
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsTOF/ParameterContainers.h>
 #include <Framework/DataTypes.h>

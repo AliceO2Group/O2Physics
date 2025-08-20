@@ -19,35 +19,23 @@
 //
 //===============================================================
 
-#include <map>
-#include <memory>
+#include <chrono>
 #include <string>
-#include <utility>
-#include <vector>
-// ROOT includes
-#include "TFile.h"
-#include "TRandom.h"
-#include "TSystem.h"
+#include <TObject.h>
 
-// O2 includes
 #include "MetadataHelper.h"
-#include "TableHelper.h"
-#include "pidTPCBase.h"
+#include "pidTPCModule.h"
 
-#include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/Tools/PID/pidTPCModule.h"
-#include "Tools/ML/model.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
 
 using namespace o2;
 using namespace o2::framework;

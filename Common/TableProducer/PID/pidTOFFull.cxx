@@ -16,7 +16,6 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
-// O2 includes
 #include "Framework/AnalysisTask.h"
 #include "PID/PIDTOF.h"
 #include <CCDB/BasicCCDBManager.h>
@@ -39,7 +38,6 @@
 #include <utility>
 #include <vector>
 
-// O2Physics includes
 #include "TableHelper.h"
 #include "pidTOFBase.h"
 

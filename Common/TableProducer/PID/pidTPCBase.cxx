@@ -20,7 +20,6 @@
 #include <string>
 #include <vector>
 
-// O2 includes
 #include "TableHelper.h"
 #include "pidTPCBase.h"
 
