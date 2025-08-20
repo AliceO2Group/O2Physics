@@ -16,25 +16,31 @@
 #ifndef COMMON_TOOLS_MULTMODULE_H_
 #define COMMON_TOOLS_MULTMODULE_H_
 
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
-
-#include "Common/Core/TPCVDriftManager.h"
-#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
+#include <Framework/Array2D.h>
 #include <Framework/Configurable.h>
-#include <Framework/HistogramSpec.h>
+#include <Framework/DataSpecUtils.h>
+#include <Framework/DataTypes.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/RunningWorkflowInfo.h>
 
+#include <TFile.h>
 #include <TFormula.h>
+#include <TH1.h>
+#include <TList.h>
+#include <TProfile.h>
+#include <TString.h>
 
-#include <array>
+#include <fairlogger/Logger.h>
+
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <map>
-#include <memory>
 #include <string>
 #include <vector>
 
