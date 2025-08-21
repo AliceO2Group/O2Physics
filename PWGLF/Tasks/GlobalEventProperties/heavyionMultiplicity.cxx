@@ -893,7 +893,7 @@ struct HeavyionMultiplicity {
       // All generated particles
       histos.fill(HIST("hgendndetaBeforeEvtSel"), particle.eta());
       histos.fill(HIST("hgendndetaVscentBeforeEvtSel"), particle.eta(), mcCollision.impactParameter());
-      
+
       if (atLeastOne) {
         // All generated particles with at least one reconstructed collision (signal loss estimation)
         histos.fill(HIST("hgendndetaAfterEvtSel"), particle.eta());
