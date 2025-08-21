@@ -638,7 +638,7 @@ struct PseudorapidityDensityMFT {
           float dcaxy_cut = retrack.bestDCAXY();
           if (useDCAxyCut) {
             if (dcaxy_cut > maxDCAxy)
-            continue;
+              continue;
           }
           if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0 && chi2ndf < cfgChi2NDFMax && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
             registry.fill(HIST("Tracks/Control/Chi2NDF"), chi2ndf);
@@ -667,7 +667,7 @@ struct PseudorapidityDensityMFT {
               }
               if (useDCAxyCut) {
                 if (dcaxy_cut > maxDCAxy)
-                 continue;
+                  continue;
               }
               registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
               if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
