@@ -41,6 +41,7 @@
 #include <cstdlib>
 #include <unordered_set>
 #include <vector>
+#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
