@@ -196,7 +196,7 @@ struct HfCorrelatorDstarHadrons {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
 
-    AxisSpec axisSpecMultFT0M{binsMultiplicity, "Multiplicity in FT0M", "multFT0M"}; // 200 bins from 0 to 2000
+    AxisSpec axisSpecMultFT0M{binsMultiplicity, "Multiplicity in FT0M", "multFT0M"};
 
     invMassDstarParticle = -999.0;
     invMassD0Particle = -999.0;
