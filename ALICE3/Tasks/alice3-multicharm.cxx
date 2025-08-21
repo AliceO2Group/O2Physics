@@ -255,7 +255,7 @@ struct alice3multicharm {
       histos.add("hBDTScoreVsXiccPt", "hBDTScoreVsXiccPt", kTH2D, {axisPt, axisBDTScore});
       histos.add("h3dBDTScore", "h3dBDTScore", kTH3D, {axisPt, axisXiccMass, axisBDTScore});
       for (const auto& score : bdt.requiredScores.value) {
-        histPath = std::format("MLQA/RequiredBDTScore_{}/", static_cast<int>(score * 100));
+        histPath = std::format("MLQA/RequiredBDTScore_{}/", static_cast<int>(score * 10000));
         histPointers.insert({histPath + "hDCAXicDaughters", histos.add((histPath + "hDCAXicDaughters").c_str(), "hDCAXicDaughters", {kTH1D, {{axisDcaDaughters}}})});
         histPointers.insert({histPath + "hDCAXiccDaughters", histos.add((histPath + "hDCAXiccDaughters").c_str(), "hDCAXiccDaughters", {kTH1D, {{axisDcaDaughters}}})});
         histPointers.insert({histPath + "hDCAxyXi", histos.add((histPath + "hDCAxyXi").c_str(), "hDCAxyXi", {kTH1D, {{axisDCA}}})});
@@ -329,7 +329,7 @@ struct alice3multicharm {
 
         for (const auto& requiredScore : bdt.requiredScores.value) {
           if (bdtScore > requiredScore) {
-            histPath = std::format("MLQA/RequiredBDTScore_{}/", static_cast<int>(requiredScore * 100));
+            histPath = std::format("MLQA/RequiredBDTScore_{}/", static_cast<int>(requiredScore * 10000));
             getHist(TH1, histPath + "hDCAXicDaughters")->Fill(xiccCand.xicDauDCA() * 1e+4);
             getHist(TH1, histPath + "hDCAXiccDaughters")->Fill(xiccCand.xiccDauDCA() * 1e+4);
             getHist(TH1, histPath + "hDCAxyXi")->Fill(std::fabs(xiccCand.xiDCAxy() * 1e+4));
@@ -349,13 +349,13 @@ struct alice3multicharm {
             getHist(TH1, histPath + "hPi2cDCAz")->Fill(xiccCand.pi2cDCAz() * 1e+4);
             getHist(TH1, histPath + "hPiccDCAxy")->Fill(xiccCand.piccDCAxy() * 1e+4);
             getHist(TH1, histPath + "hPiccDCAz")->Fill(xiccCand.piccDCAz() * 1e+4);
-            getHist(TH1, histPath + "hPi1cDCAz")->Fill(xiccCand.pi1cPt());
-            getHist(TH1, histPath + "hPi2cDCAz")->Fill(xiccCand.pi2cPt());
-            getHist(TH1, histPath + "hPiccDCAz")->Fill(xiccCand.piccPt());
+            getHist(TH1, histPath + "hPi1cPt")->Fill(xiccCand.pi1cPt());
+            getHist(TH1, histPath + "hPi2cPt")->Fill(xiccCand.pi2cPt());
+            getHist(TH1, histPath + "hPiccPt")->Fill(xiccCand.piccPt());
             getHist(TH1, histPath + "hXiccMass")->Fill(xiccCand.xiccMass());
             getHist(TH1, histPath + "hXicMass")->Fill(xiccCand.xicMass());
-            getHist(TH1, histPath + "hXiccPt")->Fill(xiccCand.xiccPt());
             getHist(TH1, histPath + "hXicPt")->Fill(xiccCand.xicPt());
+            getHist(TH1, histPath + "hXiccPt")->Fill(xiccCand.xiccPt());
             getHist(TH3, histPath + "h3dXicc")->Fill(xiccCand.xiccPt(), xiccCand.xiccEta(), xiccCand.xiccMass());
           }
         }

@@ -144,6 +144,34 @@ void FastTracker::AddSiliconALICE3v2(std::vector<float> pixelResolution)
   AddLayer("B10", 80., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
 }
 
+void FastTracker::AddSiliconALICE3(std::vector<float> pixelResolution)
+{
+  float x0IT = 0.001;        // 0.1%
+  float x0OT = 0.01;         // 1.0%
+  float xrhoIB = 2.3292e-02; // 100 mum Si
+  float xrhoOT = 2.3292e-01; // 1000 mum Si
+  float eff = 1.00;
+
+  float resRPhiIT = pixelResolution[0];
+  float resZIT = pixelResolution[1];
+  float resRPhiOT = pixelResolution[2];
+  float resZOT = pixelResolution[3];
+
+  AddLayer("bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f, 0); // 150 mum Be
+  AddLayer("B00", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
+  AddLayer("B01", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
+  AddLayer("B02", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
+  AddLayer("bpipe1", 3.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f, 0); // 500 mum Be
+  AddLayer("B03", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B04", 9., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B05", 12., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B06", 20., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B07", 30., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B08", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B09", 60., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("B10", 80., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+}
+
 void FastTracker::AddTPC(float phiResMean, float zResMean)
 {
   LOG(info) << " Adding standard time projection chamber";
@@ -307,7 +335,7 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
       break;
     }
   }
-  if (firstActiveLayer <= 0) {
+  if (firstActiveLayer < 0) {
     LOG(fatal) << "No active layers found in FastTracker, check layer setup";
     return -2; // no active layers
   }
