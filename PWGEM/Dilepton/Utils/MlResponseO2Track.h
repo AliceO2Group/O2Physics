@@ -26,10 +26,9 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_O2_TRACK(FEATURE)                                \
-  {                                                               \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesO2Track::FEATURE) \
-  }
+#define FILL_MAP_O2_TRACK(FEATURE) \
+  {                                \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesO2Track::FEATURE)}
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
@@ -161,6 +160,7 @@ enum class InputFeaturesO2Track : uint8_t {
   tpctofNSigmaPr,
   tpcNClsFound,
   tpcNClsCrossedRows,
+  tpcChi2NCl,
   hasITS,
   hasTPC,
   hasTRD,
@@ -215,6 +215,7 @@ class MlResponseO2Track : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_O2_TRACK_TPCTOF(tpctofNSigmaPr, tpcNSigmaPr, tofNSigmaPr, hasTOF);
       CHECK_AND_FILL_O2_TRACK(tpcNClsFound);
       CHECK_AND_FILL_O2_TRACK(tpcNClsCrossedRows);
+      CHECK_AND_FILL_O2_TRACK(tpcChi2NCl);
       CHECK_AND_FILL_O2_TRACK(hasITS);
       CHECK_AND_FILL_O2_TRACK(hasTPC);
       CHECK_AND_FILL_O2_TRACK(hasTRD);
@@ -295,6 +296,7 @@ class MlResponseO2Track : public MlResponse<TypeOutputScore>
       FILL_MAP_O2_TRACK(tpctofNSigmaPr),
       FILL_MAP_O2_TRACK(tpcNClsFound),
       FILL_MAP_O2_TRACK(tpcNClsCrossedRows),
+      FILL_MAP_O2_TRACK(tpcChi2NCl),
       FILL_MAP_O2_TRACK(hasITS),
       FILL_MAP_O2_TRACK(hasTPC),
       FILL_MAP_O2_TRACK(hasTRD),
