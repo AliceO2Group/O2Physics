@@ -1470,6 +1470,15 @@ struct lambdapolsp {
           }
         }
       } else {
+
+        int binxwgt;
+        double wgtvalue;
+        if (useyldwgt) {
+          binxwgt = hwgtAL->GetXaxis()->FindBin(v0.pt());
+          wgtvalue = hwgtAL->GetBinContent(binxwgt);
+        } else {
+          wgtvalue = 1.0;
+        }
         if (analyzeLambda && LambdaTag) {
           Lambda = Proton + AntiPion;
           tagb = 0;
@@ -1488,7 +1497,7 @@ struct lambdapolsp {
           int biny = accprofileAL->GetYaxis()->FindBin(v0.pt());
           double acvalue = accprofileAL->GetBinContent(binx, biny);
           // double acvalue = 1.0;
-          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, 1.0);
+          fillHistograms(taga, tagb, AntiLambda, AntiProton, psiZDCC, psiZDCA, psiZDC, centrality, v0.mAntiLambda(), v0.pt(), v0.eta(), acvalue, wgtvalue);
         }
       }
     }
