@@ -45,7 +45,7 @@ o2::vertexing::FwdDCAFitterN<3> VarManager::fgFitterThreeProngFwd;
 o2::globaltracking::MatchGlobalFwd VarManager::mMatching;
 std::map<VarManager::CalibObjects, TObject*> VarManager::fgCalibs;
 bool VarManager::fgRunTPCPostCalibration[4] = {false, false, false, false};
-int VarManager::fgCalibrationType = 0; // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
+int VarManager::fgCalibrationType = 0;                // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
 bool VarManager::fgUseInterpolatedCalibration = true; // use interpolated calibration histograms (default: true)
 
 //__________________________________________________________________
@@ -213,7 +213,8 @@ float VarManager::calculateCosPA(KFParticle kfp, KFParticle PV)
 }
 
 //__________________________________________________________________
-double VarManager::ComputePIDcalibration(int species, double nSigmaValue) {
+double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
+{
   // species: 0 - electron, 1 - pion, 2 - kaon, 3 - proton
   // Depending on the PID calibration type, we use different types of calibration histograms
 
@@ -263,8 +264,7 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue) {
     double mean = calibMeanHist->GetBinContent(binTPCncls, binPin, binEta);
     double sigma = calibSigmaHist->GetBinContent(binTPCncls, binPin, binEta);
     return (nSigmaValue - mean) / sigma; // Return the calibrated nSigma value
-  }
-  else if (fgCalibrationType == 2) {
+  } else if (fgCalibrationType == 2) {
     // get the calibration histograms
     CalibObjects calibMean, calibSigma, calibStatus;
     switch (species) {
@@ -323,12 +323,12 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue) {
       case 0:
         // good calibration, return the calibrated nSigma value
         return (nSigmaValue - mean) / sigma;
-      break;
+        break;
       case 1:
         // calibration not valid, return the original nSigma value
         return nSigmaValue;
-      break;
-      case 2:  // calibration constant has poor stat uncertainty, consider the user option for what to do
+        break;
+      case 2: // calibration constant has poor stat uncertainty, consider the user option for what to do
       case 3:
         // calibration constants have been interpolated
         if (fgUseInterpolatedCalibration) {
@@ -337,14 +337,14 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue) {
           // return the original nSigma value
           return nSigmaValue;
         }
-      break;
+        break;
       case 4:
         // calibration constants interpolation failed, return the original nSigma value
         return nSigmaValue;
-      break; 
+        break;
       default:
         return nSigmaValue; // unknown status, return the original nSigma value
-      break;
+        break;
     };
   } else {
     // unknown calibration type, return the original nSigma value
