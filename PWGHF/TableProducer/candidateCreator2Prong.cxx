@@ -89,11 +89,11 @@ using namespace o2::aod::pid_tpc_tof_utils;
 /// Reconstruction of heavy-flavour 2-prong decay candidates
 struct HfCandidateCreator2Prong {
   Produces<aod::HfCand2ProngBase> rowCandidateBase;
-  Produces<aod::HfProng0PidPi> rowProng0PidPi;
-  Produces<aod::HfProng0PidKa> rowProng0PidKa;
-  Produces<aod::HfProng1PidPi> rowProng1PidPi;
-  Produces<aod::HfProng1PidKa> rowProng1PidKa;
   Produces<aod::HfCand2ProngKF> rowCandidateKF;
+  Produces<aod::HfCand2Prong0PidPi> rowProng0PidPi;
+  Produces<aod::HfCand2Prong0PidKa> rowProng0PidKa;
+  Produces<aod::HfCand2Prong1PidPi> rowProng1PidPi;
+  Produces<aod::HfCand2Prong1PidKa> rowProng1PidKa;
 
   // vertexing
   Configurable<bool> constrainKfToPv{"constrainKfToPv", true, "constraint KFParticle to PV"};

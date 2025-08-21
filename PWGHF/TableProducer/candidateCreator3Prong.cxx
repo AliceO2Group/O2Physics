@@ -91,15 +91,15 @@ using namespace o2::aod::pid_tpc_tof_utils;
 struct HfCandidateCreator3Prong {
   Produces<aod::HfCand3ProngBase> rowCandidateBase;
   Produces<aod::HfCand3ProngKF> rowCandidateKF;
-  Produces<aod::HfProng0PidPi> rowProng0PidPi;
-  Produces<aod::HfProng0PidKa> rowProng0PidKa;
-  Produces<aod::HfProng0PidPr> rowProng0PidPr;
-  Produces<aod::HfProng1PidPi> rowProng1PidPi;
-  Produces<aod::HfProng1PidKa> rowProng1PidKa;
-  Produces<aod::HfProng1PidPr> rowProng1PidPr;
-  Produces<aod::HfProng2PidPi> rowProng2PidPi;
-  Produces<aod::HfProng2PidKa> rowProng2PidKa;
-  Produces<aod::HfProng2PidPr> rowProng2PidPr;
+  Produces<aod::HfCand3Prong0PidPi> rowProng0PidPi;
+  Produces<aod::HfCand3Prong0PidKa> rowProng0PidKa;
+  Produces<aod::HfCand3Prong0PidPr> rowProng0PidPr;
+  Produces<aod::HfCand3Prong1PidPi> rowProng1PidPi;
+  Produces<aod::HfCand3Prong1PidKa> rowProng1PidKa;
+  Produces<aod::HfCand3Prong1PidPr> rowProng1PidPr;
+  Produces<aod::HfCand3Prong2PidPi> rowProng2PidPi;
+  Produces<aod::HfCand3Prong2PidKa> rowProng2PidKa;
+  Produces<aod::HfCand3Prong2PidPr> rowProng2PidPr;
 
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};

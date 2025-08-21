@@ -77,12 +77,12 @@ using HfDstarsWithPvRefitInfo = soa::Join<aod::HfDstars, aod::HfPvRefitDstar>;
 struct HfCandidateCreatorDstar {
   Produces<aod::HfD0FromDstarBase> rowCandD0Base;
   Produces<aod::HfCandDstarBase> rowCandDstarBase;
-  Produces<aod::HfProng0PidPi> rowProng0PidPi;
-  Produces<aod::HfProng0PidKa> rowProng0PidKa;
-  Produces<aod::HfProng1PidPi> rowProng1PidPi;
-  Produces<aod::HfProng1PidKa> rowProng1PidKa;
-  Produces<aod::HfProng2PidPi> rowProngSoftPiPidPi;
-  Produces<aod::HfProng2PidKa> rowProngSoftPiPidKa;
+  Produces<aod::HfCandDstarProng0PidPi> rowProng0PidPi;
+  Produces<aod::HfCandDstarProng0PidKa> rowProng0PidKa;
+  Produces<aod::HfCandDstarProng1PidPi> rowProng1PidPi;
+  Produces<aod::HfCandDstarProng1PidKa> rowProng1PidKa;
+  Produces<aod::HfCandDstarProng2PidPi> rowProngSoftPiPidPi;
+  Produces<aod::HfCandDstarProng2PidKa> rowProngSoftPiPidKa;
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
 
