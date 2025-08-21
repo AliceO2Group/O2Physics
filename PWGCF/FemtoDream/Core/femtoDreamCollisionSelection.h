@@ -188,7 +188,7 @@ class FemtoDreamCollisionSelection
   float computeSphericity(T1 const& col, T2 const& tracks)
   {
     double ptTot = 0.;
-    double s00 = 0.;  //elements of the sphericity matrix taken form EPJC72:2124
+    double s00 = 0.; // elements of the sphericity matrix taken form EPJC72:2124
     double s01 = 0.;
     double s10 = 0.;
     double s11 = 0.;
@@ -196,7 +196,6 @@ class FemtoDreamCollisionSelection
     int numOfTracks = col.numContrib();
     if (numOfTracks < 3)
       return -9999.;
-
 
     for (auto& track : tracks) {
       double pt = track.pt();
@@ -213,22 +212,21 @@ class FemtoDreamCollisionSelection
       s01 += px * py / pt;
       s10 = s01;
       s11 += py * py / pt;
-
     }
 
-    //normalize to total Pt to obtain a linear form:
+    // normalize to total Pt to obtain a linear form:
     if (ptTot == 0.)
       return -9999.;
     s00 /= ptTot;
     s11 /= ptTot;
     s10 /= ptTot;
 
-    //Calculate the trace of the sphericity matrix:
+    // Calculate the trace of the sphericity matrix:
     double T = s00 + s11;
-    //Calculate the determinant of the sphericity matrix:
-    double D = s00 * s11 - s10 * s10;  //S10 = S01
+    // Calculate the determinant of the sphericity matrix:
+    double D = s00 * s11 - s10 * s10; // S10 = S01
 
-    //Calculate the eigenvalues of the sphericity matrix:
+    // Calculate the eigenvalues of the sphericity matrix:
     double lambda1 = 0.5 * (T + std::sqrt(T * T - 4. * D));
     double lambda2 = 0.5 * (T - std::sqrt(T * T - 4. * D));
 
@@ -242,7 +240,6 @@ class FemtoDreamCollisionSelection
     } else {
       spt = 2. * lambda2 / (lambda1 + lambda2);
     }
-
 
     mHistogramRegistry->fill(HIST("Event/Sphericity"), spt);
 

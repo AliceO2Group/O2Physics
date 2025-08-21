@@ -30,7 +30,6 @@
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/Zorro.h"
 
-
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "Framework/ASoAHelpers.h"
