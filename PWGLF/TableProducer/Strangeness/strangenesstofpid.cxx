@@ -754,12 +754,12 @@ struct strangenesstofpid {
       timePositivePr = timePositivePr_Method0;
       timePositivePi = timePositivePi_Method0;
       timeNegativePr = timeNegativePr_Method0;
-      timeNegativePr = timeNegativePi_Method0;
+      timeNegativePi = timeNegativePi_Method0;
     }else{
       timePositivePr = timePositivePr_Method1;
       timePositivePi = timePositivePi_Method1;
       timeNegativePr = timeNegativePr_Method1;
-      timeNegativePr = timeNegativePi_Method1;
+      timeNegativePi = timeNegativePi_Method1;
     }
 
     if (pTra.hasTOF() && timePositivePr > 0) {
@@ -1037,7 +1037,7 @@ struct strangenesstofpid {
         bachTrackAsPion.setPID(o2::track::PID::Pion);
         calculateTOF(bachTrackAsPion, bachFlightPi_Method1);
 
-        o2::track::TrackPar bachTrackAsKaon(negTrack); 
+        o2::track::TrackPar bachTrackAsKaon(bachTrack); 
         bachTrackAsKaon.setPID(o2::track::PID::Kaon);
         calculateTOF(bachTrackAsKaon, bachFlightKa_Method1);
       }
