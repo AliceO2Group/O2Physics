@@ -147,6 +147,7 @@ struct HeavyionMultiplicity {
   ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
   ConfigurableAxis occupancyBin{"occupancyBin", {VARIABLE_WIDTH, 0, 500, 1000, 2000, 5000, 10000}, ""};
   ConfigurableAxis centBinGen{"centBinGen", {VARIABLE_WIDTH, 0, 500, 1000, 2000, 5000, 10000}, ""};
+  ConfigurableAxis binsImpactPar{"binsImpactPar", {VARIABLE_WIDTH, 0.0, 3.00065, 4.28798, 6.14552, 7.6196, 8.90942, 10.0897, 11.2002, 12.2709, 13.3167, 14.4173, 23.2518}, "Binning of the impact parameter axis"};
 
   Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", true, "Enable SameBunchPileup cut"};
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", true, "Enable GoodZvtxFT0vsPV cut"};
@@ -178,6 +179,7 @@ struct HeavyionMultiplicity {
     AxisSpec axisPt = {ptHistBin, "pT", "pTAxis"};
     AxisSpec axisOccupancy = {occupancyBin, "occupancy", "OccupancyAxis"};
     AxisSpec axisCentBinGen = {centBinGen, "GenCentrality", "CentGenAxis"};
+    AxisSpec impactParAxis = {binsImpactPar, "Impact Parameter"};
 
     histos.add("EventHist", "EventHist", kTH1D, {axisEvent}, false);
     histos.add("VtxZHist", "VtxZHist", kTH1D, {axisVtxZ}, false);
@@ -268,6 +270,21 @@ struct HeavyionMultiplicity {
       histos.add("dndeta10_vs_FT0A", "dndeta10_vs_FT0A", kTH2F, {axisEta, axisCentBinGen}, true);
       histos.add("mult10_vs_FT0C", "mult10_vs_FT0C", kTH2F, {axisMult, axisCentBinGen}, true);
       histos.add("mult10_vs_FT0A", "mult10_vs_FT0A", kTH2F, {axisMult, axisCentBinGen}, true);
+    }
+
+    if (doprocessEvtLossSigLossMC) {
+      histos.add("MCEventHist", "MCEventHist", kTH1F, {axisEvent}, false);
+      auto hstat = histos.get<TH1>(HIST("MCEventHist"));
+      auto* x = hstat->GetXaxis();
+      x->SetBinLabel(1, "All MC events");
+      x->SetBinLabel(2, "MC events with atleast one reco event");
+      histos.add("hImpactParameterGen", "Impact parameter of generated MC events", kTH1F, {impactParAxis});
+      histos.add("hImpactParameterRec", "Impact parameter of selected MC events", kTH1F, {impactParAxis});
+      histos.add("hImpactParvsCentrRec", "Impact parameter of selected MC events vs centrality", kTH2F, {axisCent, impactParAxis});
+      histos.add("hgendndetaBeforeEvtSel", "Eta of all generated particles", kTH1F, {axisEta});
+      histos.add("hgendndetaAfterEvtSel", "Eta of generated particles after EvtSel", kTH1F, {axisEta});
+      histos.add("hgendndetaVscentBeforeEvtSel", "hgendndetaBeforeEvtSel vs centrality", kTH2F, {axisEta, impactParAxis});
+      histos.add("hgendndetaVscentAfterEvtSel", "hgendndetaAfterEvtSel vs centrality", kTH2F, {axisEta, impactParAxis});
     }
   }
 
@@ -416,7 +433,6 @@ struct HeavyionMultiplicity {
       }
     }
   }
-  PROCESS_SWITCH(HeavyionMultiplicity, processData, "process data CentFT0C", false);
 
   void processCorrelation(CollisionDataTable::iterator const& cols, FilTrackDataTable const& tracks)
   {
@@ -441,7 +457,6 @@ struct HeavyionMultiplicity {
     histos.fill(HIST("GlobalMult_vs_FV0A"), nchTracks, cols.multFV0A());
     histos.fill(HIST("NPVtracks_vs_GlobalMult"), cols.multNTracksPV(), nchTracks);
   }
-  PROCESS_SWITCH(HeavyionMultiplicity, processCorrelation, "do correlation study in data", false);
 
   void processMonteCarlo(CollisionMCTrueTable::iterator const&, CollisionMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
@@ -541,7 +556,6 @@ struct HeavyionMultiplicity {
       } // track (mcgen) loop
     } // collision loop
   }
-  PROCESS_SWITCH(HeavyionMultiplicity, processMonteCarlo, "process MC CentFT0C", false);
 
   void processMCpTefficiency(CollisionMCTrueTable::iterator const&, CollisionMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
@@ -589,7 +603,6 @@ struct HeavyionMultiplicity {
       }
     }
   }
-  PROCESS_SWITCH(HeavyionMultiplicity, processMCpTefficiency, "process MC pTefficiency", false);
 
   void processMCcheckFakeTracks(CollisionMCTrueTable::iterator const&, CollisionMCRecTable const& RecCols, FilTrackMCRecTable const& RecTracks)
   {
@@ -628,7 +641,6 @@ struct HeavyionMultiplicity {
       }
     }
   }
-  PROCESS_SWITCH(HeavyionMultiplicity, processMCcheckFakeTracks, "Check Fake tracks", false);
 
   void processStrangeYield(CollisionDataTable::iterator const& cols, V0TrackCandidates const&, aod::V0Datas const& v0data)
   {
@@ -671,7 +683,6 @@ struct HeavyionMultiplicity {
       histos.fill(HIST("AntiLambdaCentEtaMass"), selColCent(cols), v0track.eta(), v0track.mAntiLambda());
     }
   }
-  PROCESS_SWITCH(HeavyionMultiplicity, processStrangeYield, "Strange particle yield", false);
 
   void processppData(ColDataTablepp::iterator const& cols, FilTrackDataTable const& tracks)
   {
@@ -696,7 +707,6 @@ struct HeavyionMultiplicity {
       }
     } // track loop
   }
-  PROCESS_SWITCH(HeavyionMultiplicity, processppData, "process pp data", false);
 
   void processppMonteCarlo(CollisionMCTrueTable::iterator const&, ColMCRecTablepp const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
   {
@@ -796,7 +806,6 @@ struct HeavyionMultiplicity {
       } // track (mcgen) loop
     } // collision loop
   }
-  PROCESS_SWITCH(HeavyionMultiplicity, processppMonteCarlo, "process pp MC", false);
 
   void processGen(aod::McCollisions::iterator const&, aod::McParticles const& GenParticles)
   {
@@ -836,7 +845,73 @@ struct HeavyionMultiplicity {
       histos.fill(HIST("dndeta10_vs_FT0C"), particle.eta(), multFT0C);
     }
   }
+
+  void processEvtLossSigLossMC(soa::Join<CollisionMCTrueTable, aod::MultMCExtras>::iterator const& mcCollision, CollisionMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles)
+  {
+    if (isApplyInelgt0 && !mcCollision.isInelGt0()) {
+      return;
+    }
+    if (std::abs(mcCollision.posZ()) >= vtxRange) {
+      return;
+    }
+    // All generated events
+    histos.fill(HIST("MCEventHist"), 1);
+    histos.fill(HIST("hImpactParameterGen"), mcCollision.impactParameter());
+
+    bool atLeastOne = false;
+    auto centrality = -999.;
+    auto numcontributors = -999;
+    for (const auto& RecCol : RecCols) {
+      if (!isEventSelected(RecCol)) {
+        continue;
+      }
+      if (std::abs(RecCol.posZ()) >= vtxRange) {
+        continue;
+      }
+      if (RecCol.numContrib() <= numcontributors) {
+        continue;
+      } else {
+        numcontributors = RecCol.numContrib();
+      }
+      centrality = selColCent(RecCol);
+      atLeastOne = true;
+    }
+
+    // Generated events with at least one reconstructed collision (event loss estimation)
+    if (atLeastOne) {
+      histos.fill(HIST("MCEventHist"), 2);
+      histos.fill(HIST("hImpactParameterRec"), mcCollision.impactParameter());
+      histos.fill(HIST("hImpactParvsCentrRec"), centrality, mcCollision.impactParameter());
+    }
+
+    for (const auto& particle : GenParticles) {
+
+      if (!isGenTrackSelected(particle)) {
+        continue;
+      }
+
+      // All generated particles
+      histos.fill(HIST("hgendndetaBeforeEvtSel"), particle.eta());
+      histos.fill(HIST("hgendndetaVscentBeforeEvtSel"), particle.eta(), mcCollision.impactParameter());
+
+      if (atLeastOne) {
+        // All generated particles with at least one reconstructed collision (signal loss estimation)
+        histos.fill(HIST("hgendndetaAfterEvtSel"), particle.eta());
+        histos.fill(HIST("hgendndetaVscentAfterEvtSel"), particle.eta(), mcCollision.impactParameter());
+      }
+    }
+  }
+
+  PROCESS_SWITCH(HeavyionMultiplicity, processData, "process data CentFT0C", false);
+  PROCESS_SWITCH(HeavyionMultiplicity, processCorrelation, "do correlation study in data", false);
+  PROCESS_SWITCH(HeavyionMultiplicity, processMonteCarlo, "process MC CentFT0C", false);
+  PROCESS_SWITCH(HeavyionMultiplicity, processMCpTefficiency, "process MC pTefficiency", false);
+  PROCESS_SWITCH(HeavyionMultiplicity, processMCcheckFakeTracks, "Check Fake tracks", false);
+  PROCESS_SWITCH(HeavyionMultiplicity, processStrangeYield, "Strange particle yield", false);
+  PROCESS_SWITCH(HeavyionMultiplicity, processppData, "process pp data", false);
+  PROCESS_SWITCH(HeavyionMultiplicity, processppMonteCarlo, "process pp MC", false);
   PROCESS_SWITCH(HeavyionMultiplicity, processGen, "process pure MC gen", false);
+  PROCESS_SWITCH(HeavyionMultiplicity, processEvtLossSigLossMC, "process Signal Loss, Event Loss", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
