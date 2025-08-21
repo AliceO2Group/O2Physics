@@ -157,6 +157,7 @@ struct kstarInOO {
       histos.add("QA_nSigma_kaon_TPC_BC", "QA_nSigma_kaon_TPC_BC", {HistType::kTH2F, {ptAxis, pidAxis}});
       histos.add("QA_nSigma_kaon_TOF_BC", "QA_nSigma_kaon_TOF_BC", {HistType::kTH2F, {ptAxis, pidAxis}});
       histos.add("QA_kaon_TPC_TOF_BC", "QA_kaon_TPC_TOF_BC", {HistType::kTH2F, {pidAxis, pidAxis}});
+      histos.add("QA_track_pT_BC", "QA_track_pT_BC", kTH1F, {{13, 0.0, 13.0}});
 
       histos.add("hDCArToPv_AC", "DCArToPv_AC", kTH1F, {axisDCAxy});
       histos.add("hDCAzToPv_AC", "DCAzToPv_AC", kTH1F, {axisDCAz});
@@ -173,11 +174,11 @@ struct kstarInOO {
       histos.add("QA_nSigma_kaon_TPC_AC", "QA_nSigma_kaon_TPC_AC", {HistType::kTH2F, {ptAxis, pidAxis}});
       histos.add("QA_nSigma_kaon_TOF_AC", "QA_nSigma_kaon_TOF_AC", {HistType::kTH2F, {ptAxis, pidAxis}});
       histos.add("QA_kaon_TPC_TOF_AC", "QA_kaon_TPC_TOF_AC", {HistType::kTH2F, {pidAxis, pidAxis}});
+      histos.add("QA_track_pT_AC", "QA_track_pT_AC", kTH1F, {{13, 0.0, 13.0}});
     }
 
     if (cfgDataHistos) {
       histos.add("nEvents", "nEvents", kTH1F, {{4, 0.0, 4.0}});
-
       histos.add("hUSS", "hUSS", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hLSS", "hLSS", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hUSS_Mix", "hUSS_Mix", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
@@ -195,10 +196,6 @@ struct kstarInOO {
       histos.add("hMC_USS_True", "hMC_USS_True", kTHnSparseF, {cfgCentAxis, ptAxis, minvAxis});
       histos.add("hMC_kstar_True", "hMC_kstar_True", kTHnSparseF, {cfgCentAxis, ptAxis});
     }
-
-    histos.add("QA_track_pT_BC", "QA_track_pT_BC", kTH1F, {{13, 0.0, 13.0}});
-    histos.add("QA_track_pT_AC", "QA_track_pT_AC", kTH1F, {{13, 0.0, 13.0}});
-
   } // end of init
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::MultZeqs, aod::CentFT0Cs>; //, aod::CentFT0Ms, aod::CentFT0As
