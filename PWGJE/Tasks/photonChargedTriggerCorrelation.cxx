@@ -398,7 +398,7 @@ struct PhotonChargedTriggerCorrelation {
     // photonPCM pairs
     histos.add("reco/plain/h4_ptMggZPvMult_photonPCMPair", "h4_ptMggZPvMult_photonPCMPair", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
     histos.add("reco/plain/h4_ptMggZPvMult_trigEv_photonPCMPair", "h4_ptMggZPvMult_trigEv_photonPCMPair", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
-    histos.add("reco/corr/h4_ptMggZPvMult_assoc_photonPCMPair", "h4_ptMggZPvMult_assoc_photonPCMPair", kTHnSparseD, {axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
+    histos.add("reco/corr/h5_ptTrigPtAssocMggZPvMult_assoc_photonPCMPair", "h5_ptTrigPtAssocMggZPvMult_assoc_photonPCMPair", kTHnSparseD, {axisPtTrig, axisPtAssoc, axisMgg, axisZPvBinning, axisMultBinning}, true);
     // pi0PCM
     add_corrHists("pi0PCMPeak");
     add_corrHists("pi0PCMSide");
@@ -956,8 +956,8 @@ struct PhotonChargedTriggerCorrelation {
             trigger.jetTrackId() == associated.negTrack2Id() || trigger.jetTrackId() == associated.posTrack2Id())
           return;
 
-        histos.fill(HIST("reco/corr/h4_ptMggZPvMult_assoc_photonPCMPair"),
-                    associated.pt(), associated.mgg(), collision.posZ(), collision.nGlobalTracks(),
+        histos.fill(HIST("reco/corr/h5_ptTrigPtAssocMggZPvMult_assoc_photonPCMPair"),
+                    trigger.pt(), associated.pt(), associated.mgg(), collision.posZ(), collision.nGlobalTracks(),
                     getInvEff<EffParticleType::Trigger>(trigger.pt()));
 
         // pi0
