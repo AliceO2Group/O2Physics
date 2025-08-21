@@ -190,7 +190,7 @@ class FemtoDreamCollisionSelection
     double ptTot = 0.;
     double s00 = 0.; // elements of the sphericity matrix taken form EPJC72:2124
     double s01 = 0.;
-    double s10 = 0.;
+    // double s10 = 0.;
     double s11 = 0.;
 
     int numOfTracks = col.numContrib();
