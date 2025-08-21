@@ -162,7 +162,8 @@ struct alice3multicharmTable {
   Partition<alice3tracks> tracksPiFromXiC =
     ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiC) == trackSelectionPiFromXiC) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > minPiCPt&& nabs(aod::track::dcaXY) > piFromXiC_dcaXYconstant + piFromXiC_dcaXYpTdep* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > piFromXiC_dcaZconstant + piFromXiC_dcaZpTdep* nabs(aod::track::signed1Pt);
 
-  Partition<alice3tracks> tracksPiFromXiCC = ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiCC) == trackSelectionPiFromXiCC) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > minPiCCPt&& nabs(aod::track::dcaXY) > piFromXiCC_dcaXYconstant + piFromXiCC_dcaXYpTdep* nabs(aod::track::signed1Pt);
+  Partition<alice3tracks> tracksPiFromXiCC =
+    ((aod::a3DecayMap::decayMap & trackSelectionPiFromXiCC) == trackSelectionPiFromXiCC) && aod::track::signed1Pt > 0.0f && 1.0f / nabs(aod::track::signed1Pt) > minPiCCPt&& nabs(aod::track::dcaXY) > piFromXiCC_dcaXYconstant + piFromXiCC_dcaXYpTdep* nabs(aod::track::signed1Pt) && nabs(aod::track::dcaZ) > piFromXiCC_dcaZconstant + piFromXiCC_dcaZpTdep* nabs(aod::track::signed1Pt);
 
   // Helper struct to pass candidate information
   struct {
@@ -445,6 +446,13 @@ struct alice3multicharmTable {
     histos.add("hPi1cPt", "hPi1cPt", kTH1D, {axisPt});
     histos.add("hPi2cPt", "hPi2cPt", kTH1D, {axisPt});
     histos.add("hPiccPt", "hPiccPt", kTH1D, {axisPt});
+
+    histos.add("hPi1cDCAxy", "hPi1cDCAxy", kTH1D, {axisDCA});
+    histos.add("hPi1cDCAz", "hPi1cDCAz", kTH1D, {axisDCA});
+    histos.add("hPi2cDCAxy", "hPi2cDCAxy", kTH1D, {axisDCA});
+    histos.add("hPi2cDCAz", "hPi2cDCAz", kTH1D, {axisDCA});
+    histos.add("hPiccDCAxy", "hPiccDCAxy", kTH1D, {axisDCA});
+    histos.add("hPiccDCAz", "hPiccDCAz", kTH1D, {axisDCA});
 
     histos.add("hMinXiDecayRadius", "hMinXiDecayRadius", kTH1D, {axisRadius2DXi});
     histos.add("hMinXiCDecayRadius", "hMinXiCDecayRadius", kTH1D, {axisRadius});
@@ -780,6 +788,13 @@ struct alice3multicharmTable {
                 piFromLa.pt(), piFromLa.eta(),
                 piFromLa.dcaXY(), piFromLa.dcaZ(),
                 pi1c.eta(), pi2c.eta(), picc.eta());
+
+              histos.fill(HIST("hPi1cDCAxy"), std::abs(pi1c.dcaXY() * 1e+4));
+              histos.fill(HIST("hPi1cDCAz"), std::abs(pi1c.dcaZ() * 1e+4));
+              histos.fill(HIST("hPi2cDCAxy"), std::abs(pi2c.dcaXY() * 1e+4));
+              histos.fill(HIST("hPi2cDCAz"), std::abs(pi2c.dcaZ() * 1e+4));
+              histos.fill(HIST("hPiccDCAxy"), std::abs(picc.dcaXY() * 1e+4));
+              histos.fill(HIST("hPiccDCAz"), std::abs(picc.dcaZ() * 1e+4));
             }
           }
           histos.fill(HIST("hCombinationsXiCC"), nCombinationsCC);
