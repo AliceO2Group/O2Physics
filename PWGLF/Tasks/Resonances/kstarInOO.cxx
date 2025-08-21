@@ -327,15 +327,27 @@ struct kstarInOO {
 
     if (track.tpcCrossedRowsOverFindableCls() > cfgTracknRowsOverFindable)
       return false;
+    if (cfgTrackCutQA && QA) {
+      histos.fill(HIST("QA_track_pT_BC"), track.pt());
+    }
 
     if (track.tpcChi2NCl() > cfgTracknTPCChi2)
       return false;
+    if (cfgTrackCutQA && QA) {
+      histos.fill(HIST("QA_track_pT_BC"), track.pt());
+    }
 
     if (track.itsChi2NCl() > cfgTracknITSChi2)
       return false;
+    if (cfgTrackCutQA && QA) {
+      histos.fill(HIST("QA_track_pT_BC"), track.pt());
+    }
 
     if (cfgTrackConnectedToPV && !track.isPVContributor())
       return false;
+    if (cfgTrackCutQA && QA) {
+      histos.fill(HIST("QA_track_pT_BC"), track.pt());
+    }
 
     if (cfgTrackCutQA && QA) {
       histos.fill(HIST("hDCArToPv_AC"), track.dcaXY());
