@@ -519,9 +519,9 @@ class DielectronCut : public TNamed
     }
     mMLBins = bins;
     mMLCuts = cuts;
-    for (int i = 0; i < static_cast<int>(mMLBins.size()) - 1; i++) {
-      printf("Dielectron cut: mMLBins[%d] = %3.2f, mMLBins[%d] = %3.2f, mMLCuts[%d] = %3.2f\n", i, mMLBins[i], i + 1, mMLBins[i + 1], i, mMLCuts[i]);
-    }
+    // for (int i = 0; i < static_cast<int>(mMLBins.size()) - 1; i++) {
+    //   printf("Dielectron cut: mMLBins[%d] = %3.2f, mMLBins[%d] = %3.2f, mMLCuts[%d] = %3.2f\n", i, mMLBins[i], i + 1, mMLBins[i + 1], i, mMLCuts[i]);
+    // }
   }
 
   // Getters
