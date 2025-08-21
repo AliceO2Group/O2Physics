@@ -1918,6 +1918,7 @@ DECLARE_SOA_COLUMN(FlagMcMatchRec, flagMcMatchRec, int8_t); // reconstruction le
 DECLARE_SOA_COLUMN(FlagMcMatchGen, flagMcMatchGen, int8_t); // generator level
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
+DECLARE_SOA_COLUMN(DecayLengthMcGen, decayLengthMcGen, float);
 // Residuals and pulls
 DECLARE_SOA_COLUMN(PtResidual, ptResidual, float);
 DECLARE_SOA_COLUMN(PResidual, pResidual, float);
@@ -2025,7 +2026,8 @@ DECLARE_SOA_TABLE(HfCandXicMcRec, "AOD", "HFCANDXICMCREC",
 DECLARE_SOA_TABLE(HfCandXicMcGen, "AOD", "HFCANDXICMCGEN",
                   hf_cand_xic_to_xi_pi_pi::FlagMcMatchGen,
                   hf_cand_xic_to_xi_pi_pi::OriginMcGen,
-                  hf_cand::PdgBhadMotherPart);
+                  hf_cand::PdgBhadMotherPart,
+                  hf_cand_xic_to_xi_pi_pi::DecayLengthMcGen);
 
 // table with residuals and pulls of PV
 DECLARE_SOA_TABLE(HfCandXicResid, "AOD", "HFCANDXICRESID",
