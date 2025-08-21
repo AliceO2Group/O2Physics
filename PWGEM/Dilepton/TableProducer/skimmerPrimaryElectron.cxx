@@ -370,33 +370,15 @@ struct skimmerPrimaryElectron {
     return true;
   }
 
-  template <typename TCollision, typename TTrack>
-  bool isElectron(TCollision const& collision, TTrack const& track)
+  template <typename TTrack>
+  bool isElectron(TTrack const& track)
   {
     if (includeITSsa && (track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF())) {
       return true;
     }
 
     if (usePIDML) {
-      if (track.tpcNSigmaEl() < minTPCNsigmaEl || maxTPCNsigmaEl < track.tpcNSigmaEl()) {
-        return false;
-      }
-      if (track.hasTOF() && (maxTOFNsigmaEl < std::fabs(track.tofNSigmaEl()))) {
-        return false;
-      }
-
-      // return false;
-      o2::dataformats::DCA mDcaInfoCov;
-      mDcaInfoCov.set(999, 999, 999, 999, 999);
-      auto trackParCov = getTrackParCov(track);
-      trackParCov.setPID(o2::track::PID::Electron);
-      mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
-      mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-      o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-
-      std::vector<float> inputFeatures = mlResponseSingleTrack.getInputFeatures(track, trackParCov, collision);
-      float binningFeature = mlResponseSingleTrack.getBinningFeature(track, trackParCov, collision);
-      return mlResponseSingleTrack.isSelectedMl(inputFeatures, binningFeature);
+      return true;
     } else {
       return isElectron_TPChadrej(track) || isElectron_TOFreq(track);
     }
@@ -457,6 +439,13 @@ struct skimmerPrimaryElectron {
         mcTunedTPCSignal = track.mcTunedTPCSignal();
       }
 
+      float probaEl = 1.0;
+      if (usePIDML) {
+        std::vector<float> inputFeatures = mlResponseSingleTrack.getInputFeatures(track, trackParCov, collision);
+        float binningFeature = mlResponseSingleTrack.getBinningFeature(track, trackParCov, collision);
+        probaEl = mlResponseSingleTrack.isSelectedMl(inputFeatures, binningFeature);
+      }
+
       emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
                          pt_recalc, eta_recalc, phi_recalc,
                          dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
@@ -467,7 +456,7 @@ struct skimmerPrimaryElectron {
                          track.itsClusterSizes(),
                          track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
                          // trackParCov.getTgl(),
-                         isAssociatedToMPC, false, 1.f, mcTunedTPCSignal);
+                         isAssociatedToMPC, false, probaEl, mcTunedTPCSignal);
 
       emprimaryelectronscov(
         trackParCov.getX(),
@@ -584,7 +573,7 @@ struct skimmerPrimaryElectron {
 
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
-        if (!checkTrack<false>(collision, track) || !isElectron(collision, track)) {
+        if (!checkTrack<false>(collision, track) || !isElectron(track)) {
           continue;
         }
         fillTrackTable<false>(collision, track);
@@ -613,7 +602,7 @@ struct skimmerPrimaryElectron {
 
       for (const auto& trackId : trackIdsThisCollision) {
         auto track = trackId.template track_as<MyTracks>();
-        if (!checkTrack<false>(collision, track) || !isElectron(collision, track)) {
+        if (!checkTrack<false>(collision, track) || !isElectron(track)) {
           continue;
         }
         fillTrackTable<false>(collision, track);
@@ -643,7 +632,7 @@ struct skimmerPrimaryElectron {
 
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
-        if (!checkTrack<false>(collision, track) || !isElectron(collision, track)) {
+        if (!checkTrack<false>(collision, track) || !isElectron(track)) {
           continue;
         }
         fillTrackTable<false>(collision, track);
@@ -675,7 +664,7 @@ struct skimmerPrimaryElectron {
 
       for (const auto& trackId : trackIdsThisCollision) {
         auto track = trackId.template track_as<MyTracks>();
-        if (!checkTrack<false>(collision, track) || !isElectron(collision, track)) {
+        if (!checkTrack<false>(collision, track) || !isElectron(track)) {
           continue;
         }
         fillTrackTable<false>(collision, track);
@@ -709,7 +698,7 @@ struct skimmerPrimaryElectron {
 
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
-        if (!checkTrack<true>(collision, track) || !isElectron(collision, track)) {
+        if (!checkTrack<true>(collision, track) || !isElectron(track)) {
           continue;
         }
         fillTrackTable<true>(collision, track);
@@ -740,7 +729,7 @@ struct skimmerPrimaryElectron {
 
       for (const auto& trackId : trackIdsThisCollision) {
         auto track = trackId.template track_as<MyTracksMC>();
-        if (!checkTrack<true>(collision, track) || !isElectron(collision, track)) {
+        if (!checkTrack<true>(collision, track) || !isElectron(track)) {
           continue;
         }
         fillTrackTable<true>(collision, track);

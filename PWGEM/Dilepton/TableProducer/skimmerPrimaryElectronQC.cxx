@@ -420,26 +420,15 @@ struct skimmerPrimaryElectronQC {
   template <typename TTrack>
   bool isElectron(TTrack const& track)
   {
-    if (track.hasTPC() && (trackcut.minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < trackcut.maxTPCNsigmaEl)) {
-      return true; // accept ITSsa too
-    } else {
-      return false;
+    if (track.hasTPC()) {
+      if (trackcut.minTPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < trackcut.maxTPCNsigmaEl) {
+        return true;
+      } else {
+        return false;
+      }
+    } else { // accept ITSsa too
+      return true;
     }
-
-    // if (usePIDML) {
-    //   mDcaInfoCov.set(999, 999, 999, 999, 999);
-    //   auto trackParCov = getTrackParCov(track);
-    //   trackParCov.setPID(o2::track::PID::Electron);
-    //   mVtx.setPos({collision.posX(), collision.posY(), collision.posZ()});
-    //   mVtx.setCov(collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ());
-    //   o2::base::Propagator::Instance()->propagateToDCABxByBz(mVtx, trackParCov, 2.f, matCorr, &mDcaInfoCov);
-
-    //   std::vector<float> inputFeatures = mlResponseSingleTrack.getInputFeatures(track, trackParCov, collision);
-    //   float binningFeature = mlResponseSingleTrack.getBinningFeature(track, trackParCov, collision);
-    //   return mlResponseSingleTrack.isSelectedMl(inputFeatures, binningFeature);
-    // } else {
-    //   return isElectronTPC(track);
-    // }
   }
 
   template <typename TTrack>
@@ -474,6 +463,13 @@ struct skimmerPrimaryElectronQC {
         mcTunedTPCSignal = track.mcTunedTPCSignal();
       }
 
+      float probaEl = 1.0;
+      if (usePIDML) {
+        std::vector<float> inputFeatures = mlResponseSingleTrack.getInputFeatures(track, trackParCov, collision);
+        float binningFeature = mlResponseSingleTrack.getBinningFeature(track, trackParCov, collision);
+        probaEl = mlResponseSingleTrack.isSelectedMl(inputFeatures, binningFeature);
+      }
+
       emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
                          pt_recalc, eta_recalc, phi_recalc,
                          dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZY(), trackParCov.getSigmaZ2(),
@@ -484,7 +480,7 @@ struct skimmerPrimaryElectronQC {
                          track.itsClusterSizes(),
                          track.itsChi2NCl(), track.tofChi2(), track.detectorMap(),
                          // trackParCov.getTgl(),
-                         isAssociatedToMPC, false, 1.f, mcTunedTPCSignal);
+                         isAssociatedToMPC, false, probaEl, mcTunedTPCSignal);
 
       emprimaryelectronscov(
         trackParCov.getX(),
