@@ -1239,8 +1239,8 @@ class VarManager : public TObject
 
   static std::map<CalibObjects, TObject*> fgCalibs; // map of calibration histograms
   static bool fgRunTPCPostCalibration[4];           // 0-electron, 1-pion, 2-kaon, 3-proton
-  static int fgCalibrationType; // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
-  static bool fgUseInterpolatedCalibration; // use interpolated calibration histograms (default: true)
+  static int fgCalibrationType;                     // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
+  static bool fgUseInterpolatedCalibration;         // use interpolated calibration histograms (default: true)
 
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
@@ -1379,7 +1379,6 @@ o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C
   }
   return propmuon;
 }
-
 
 template <uint32_t fillMap, typename T, typename C>
 void VarManager::FillMuonPDca(const T& muon, const C& collision, float* values)
@@ -2480,7 +2479,7 @@ void VarManager::FillTrack(T const& track, float* values)
         values[kTPCnSigmaPr_Corr] = track.tpcNSigmaPr();
       }
     }
-    
+
     if constexpr ((fillMap & TrackPID) > 0 || (fillMap & ReducedTrackBarrelPID) > 0) {
       values[kTOFnSigmaEl] = track.tofNSigmaEl();
       values[kTOFnSigmaPi] = track.tofNSigmaPi();
