@@ -35,13 +35,13 @@
 
 #include "TFile.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
 #include <unordered_set>
 #include <vector>
-#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
