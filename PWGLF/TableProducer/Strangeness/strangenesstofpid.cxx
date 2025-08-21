@@ -1170,7 +1170,7 @@ struct strangenesstofpid {
             if(calculationMethod.value==2){ 
               histos.fill(HIST("hDeltaTimeMethodsVsP_posOmPr"), positiveP, cascade.positiveeta(), posFlightPr_Method0 - posFlightPr_Method1);
               histos.fill(HIST("hDeltaTimeMethodsVsP_negOmPi"), negativeP, cascade.negativeeta(), negFlightPi_Method0 - negFlightPi_Method1);
-              histos.fill(HIST("hDeltaTimeMethodsVsP_bachOmPi"), bachelorP, cascade.bacheloreta(), bachFlightPi_Method0 - bachFlightPi_Method1);
+              histos.fill(HIST("hDeltaTimeMethodsVsP_bachOmKa"), bachelorP, cascade.bacheloreta(), bachFlightPi_Method0 - bachFlightPi_Method1);
             }
             if (doQANSigma) {
               histos.fill(HIST("h2dNSigmaXiLaPi"), cascade.p(), nSigmaXiLaPi);
@@ -1185,7 +1185,7 @@ struct strangenesstofpid {
             if(calculationMethod.value==2){ 
               histos.fill(HIST("hDeltaTimeMethodsVsP_posOmPi"), positiveP, cascade.positiveeta(), posFlightPi_Method0 - posFlightPi_Method1);
               histos.fill(HIST("hDeltaTimeMethodsVsP_negOmPr"), negativeP, cascade.negativeeta(), negFlightPr_Method0 - negFlightPr_Method1);
-              histos.fill(HIST("hDeltaTimeMethodsVsP_bachOmPi"), bachelorP, cascade.bacheloreta(), bachFlightPi_Method0 - bachFlightPi_Method1);
+              histos.fill(HIST("hDeltaTimeMethodsVsP_bachOmKa"), bachelorP, cascade.bacheloreta(), bachFlightPi_Method0 - bachFlightPi_Method1);
             }
             if (doQANSigma) {
               histos.fill(HIST("h2dNSigmaOmLaPi"), cascade.p(), nSigmaOmLaPi);
