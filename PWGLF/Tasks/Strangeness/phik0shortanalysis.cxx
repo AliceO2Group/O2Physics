@@ -226,6 +226,7 @@ struct Phik0shortanalysis {
   Configurable<bool> furtherCheckonMcCollision{"furtherCheckonMcCollision", true, "Further check on MC collisions"};
   Configurable<bool> filterOnGenPhi{"filterOnGenPhi", true, "Filter on MC Phi"};
   Configurable<bool> filterOnRecoPhiWPDG{"filterOnRecoPhiWPDG", true, "Filter on Reco Phi with WPDG"};
+  Configurable<bool> fillMcPartsForAllReco{"fillMcPartsForAllReco", false, "Fill MC particles for all associated reco collisions"};
 
   // Configurable for event mixing
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 5, "Number of mixed events per event"};
@@ -2652,118 +2653,137 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiMCReco, "Process function for dN/deta values in MCReco", false);
 
-  void processdNdetaWPhiMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, FilteredMCTracks const& filteredMCTracks, aod::McParticles const& mcParticles)
+  void processdNdetaWPhiMCGen(MCCollisions const& mcCollisions, SimCollisions const& collisions, FilteredMCTracks const& filteredMCTracks, aod::McParticles const& mcParticles)
   {
-    if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB))
-      return;
-    if (filterOnGenPhi && !eventHasGenPhi(mcParticles))
-      return;
-
-    uint64_t numberAssocColl = 0;
-    std::vector<float> zVtxs;
+    std::vector<std::vector<int>> collsGrouped(mcCollisions.size());
 
     for (const auto& collision : collisions) {
-      if (acceptEventQA<true>(collision, false)) {
-        auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
-
-        Partition<FilteredMCTracks> posFiltMCTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
-        posFiltMCTracks.bindTable(filteredMCTracksThisColl);
-        Partition<FilteredMCTracks> negFiltMCTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
-        negFiltMCTracks.bindTable(filteredMCTracksThisColl);
-
-        if (filterOnRecoPhiWPDG && !eventHasRecoPhiWPDG(posFiltMCTracks, negFiltMCTracks))
-          continue;
-
-        mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), mcCollision.centFT0M());
-        mcEventHist.fill(HIST("h2GenMCRecoVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
-
-        zVtxs.push_back(collision.posZ());
-
-        for (const auto& track : filteredMCTracksThisColl) {
-          if (trackConfigs.applyExtraPhiCuts && ((track.phi() > trackConfigs.extraPhiCuts->at(0) && track.phi() < trackConfigs.extraPhiCuts->at(1)) ||
-                                                 track.phi() <= trackConfigs.extraPhiCuts->at(2) || track.phi() >= trackConfigs.extraPhiCuts->at(3)))
-            continue;
-          if (!track.has_mcParticle())
-            continue;
-
-          auto mcTrack = track.mcParticle();
-          if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
-            continue;
-
-          mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalplusITSonly);
-          if (track.hasTPC()) {
-            mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalonly);
-          } else {
-            mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kITSonly);
-          }
-
-          int pid = fromPDGToEnum(mcTrack.pdgCode());
-          mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), pid, kGlobalplusITSonly);
-        }
-
-        for (const auto& mcParticle : mcParticles) {
-          if (!isGenParticleCharged(mcParticle))
-            continue;
-
-          mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
-          if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
-            mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
-            mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
-          } else {
-            mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
-            mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
-          }
-
-          int pid = fromPDGToEnum(mcParticle.pdgCode());
-          mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
-        }
-
-        numberAssocColl++;
-      }
-    }
-
-    mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), mcCollision.centFT0M());
-
-    if (numberAssocColl > 0) {
-      float zVtxRef = zVtxs[0];
-      if (zVtxs.size() > 1) {
-        for (size_t i = 1; i < zVtxs.size(); ++i) {
-          mcEventHist.fill(HIST("hSplitVertexZ"), zVtxs[i] - zVtxRef);
-        }
-      }
-
-      mcEventHist.fill(HIST("hGenMCAssocRecoMultiplicityPercent"), mcCollision.centFT0M());
-      mcEventHist.fill(HIST("h2GenMCAssocRecoVertexZvsMult"), zVtxRef, mcCollision.centFT0M());
-    }
-
-    for (const auto& mcParticle : mcParticles) {
-      if (!isGenParticleCharged(mcParticle))
+      if (!collision.has_mcCollision())
         continue;
+      const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
+      collsGrouped[mcCollision.globalIndex()].push_back(collision.globalIndex());
+    }
 
-      int pid = fromPDGToEnum(mcParticle.pdgCode());
+    for (const auto& mcCollision : mcCollisions) {
+      auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.perMCColl, mcCollision.globalIndex());
 
-      mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
-      if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
-        mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
-        mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
-      } else {
-        mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
-        mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
+      if (!pwglf::isINELgtNmc(mcParticlesThisMcColl, 0, pdgDB))
+        return;
+      if (filterOnGenPhi && !eventHasGenPhi(mcParticlesThisMcColl))
+        return;
+
+      uint64_t numberAssocColl = 0;
+      std::vector<float> zVtxs;
+
+      auto& collIndexesThisMcColl = collsGrouped[mcCollision.globalIndex()];
+
+      for (const auto& collisionIndex : collIndexesThisMcColl) {
+        auto collision = collisions.rawIteratorAt(collisionIndex);
+
+        if (acceptEventQA<true>(collision, false)) {
+          auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
+
+          Partition<FilteredMCTracks> posFiltMCTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
+          posFiltMCTracks.bindTable(filteredMCTracksThisColl);
+          Partition<FilteredMCTracks> negFiltMCTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
+          negFiltMCTracks.bindTable(filteredMCTracksThisColl);
+
+          if (filterOnRecoPhiWPDG && !eventHasRecoPhiWPDG(posFiltMCTracks, negFiltMCTracks))
+            continue;
+
+          mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), mcCollision.centFT0M());
+          mcEventHist.fill(HIST("h2GenMCRecoVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
+
+          zVtxs.push_back(collision.posZ());
+
+          for (const auto& track : filteredMCTracksThisColl) {
+            if (trackConfigs.applyExtraPhiCuts && ((track.phi() > trackConfigs.extraPhiCuts->at(0) && track.phi() < trackConfigs.extraPhiCuts->at(1)) ||
+                                                   track.phi() <= trackConfigs.extraPhiCuts->at(2) || track.phi() >= trackConfigs.extraPhiCuts->at(3)))
+              continue;
+            if (!track.has_mcParticle())
+              continue;
+
+            auto mcTrack = track.mcParticle();
+            if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
+              continue;
+
+            mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalplusITSonly);
+            if (track.hasTPC()) {
+              mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalonly);
+            } else {
+              mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kITSonly);
+            }
+
+            int pid = fromPDGToEnum(mcTrack.pdgCode());
+            mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), pid, kGlobalplusITSonly);
+          }
+
+          if (fillMcPartsForAllReco) {
+            for (const auto& mcParticle : mcParticlesThisMcColl) {
+              if (!isGenParticleCharged(mcParticle))
+                continue;
+
+              mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
+              if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
+                mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
+                mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
+              } else {
+                mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
+                mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
+              }
+
+              int pid = fromPDGToEnum(mcParticle.pdgCode());
+              mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
+            }
+          }
+
+          numberAssocColl++;
+        }
       }
-      mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
+
+      mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), mcCollision.centFT0M());
 
       if (numberAssocColl > 0) {
         float zVtxRef = zVtxs[0];
-
-        mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
-        if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
-          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
-          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
-        } else {
-          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
-          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
+        if (zVtxs.size() > 1) {
+          for (size_t i = 1; i < zVtxs.size(); ++i) {
+            mcEventHist.fill(HIST("hSplitVertexZ"), zVtxs[i] - zVtxRef);
+          }
         }
-        mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
+
+        mcEventHist.fill(HIST("hGenMCAssocRecoMultiplicityPercent"), mcCollision.centFT0M());
+        mcEventHist.fill(HIST("h2GenMCAssocRecoVertexZvsMult"), zVtxRef, mcCollision.centFT0M());
+      }
+
+      for (const auto& mcParticle : mcParticlesThisMcColl) {
+        if (!isGenParticleCharged(mcParticle))
+          continue;
+
+        int pid = fromPDGToEnum(mcParticle.pdgCode());
+
+        mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
+        if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
+          mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
+          mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
+        } else {
+          mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
+          mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
+        }
+        mcEventHist.fill(HIST("h5GenMCEtaDistribution"), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
+
+        if (numberAssocColl > 0) {
+          float zVtxRef = zVtxs[0];
+
+          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
+          if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
+            mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
+            mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
+          } else {
+            mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
+            mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
+          }
+          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
+        }
       }
     }
   }
