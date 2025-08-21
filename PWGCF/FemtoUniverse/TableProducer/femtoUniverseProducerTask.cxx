@@ -28,6 +28,7 @@
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
@@ -472,6 +473,31 @@ struct FemtoUniverseProducerTask {
     return mask;
   }
 
+  template <class T>
+  using hasStrangeTOF = decltype(std::declval<T&>().tofNSigmaXiLaPi());
+
+  /// bitmask to save strangeness TOF for cascade analysis
+  template <typename CascType>
+  aod::femtouniverseparticle::CutContainerType PIDStrangeTOFBitmask(const CascType& casc)
+  {
+    aod::femtouniverseparticle::CutContainerType mask = 0u;
+    if constexpr (std::experimental::is_detected<hasStrangeTOF, CascType>::value) {
+      if (casc.tofNSigmaXiLaPi() < ConfPIDBitmask.confNsigmaTOFParticleChild)
+        mask |= (1u);
+      if (casc.tofNSigmaXiLaPr() < ConfPIDBitmask.confNsigmaTOFParticleChild)
+        mask |= (2u);
+      if (casc.tofNSigmaXiPi() < ConfPIDBitmask.confNsigmaTOFParticleChild)
+        mask |= (4u);
+      if (casc.tofNSigmaOmLaPi() < ConfPIDBitmask.confNsigmaTOFParticleChild)
+        mask |= (8u);
+      if (casc.tofNSigmaOmLaPr() < ConfPIDBitmask.confNsigmaTOFParticleChild)
+        mask |= (16u);
+      if (casc.tofNSigmaOmKa() < ConfPIDBitmask.confNsigmaTOFParticleChild)
+        mask |= (32u);
+    }
+    return mask;
+  }
+
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
   int mRunNumberZorro = 0;
@@ -683,7 +709,7 @@ struct FemtoUniverseProducerTask {
     mRunNumber = bc.runNumber();
   }
 
-  template <bool isTrackOrV0, bool isPhiOrD0, bool isXi, typename ParticleType>
+  template <bool isTrackOrV0, bool isPhiOrD0, bool isCasc, typename ParticleType>
   void fillDebugParticle(ParticleType const& particle)
   {
     if constexpr (isTrackOrV0) {
@@ -706,13 +732,15 @@ struct FemtoUniverseProducerTask {
                        -999., -999.,
                        -999., -999., -999.,
                        -999.); // QA for phi or D0/D0bar children
-    } else if constexpr (isXi) {
-      outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999., -999.,
-                       -999., -999., -999., -999., -999., -999., -999., -999.,
-                       -999., -999., -999., -999., -999.,
-                       particle.dcacascdaughters(), particle.cascradius(),
-                       particle.x(), particle.y(), particle.z(),
-                       particle.mOmega()); // QA for Xi Cascades (later do the same for Omegas)
+    } else if constexpr (isCasc) {
+      if constexpr (std::experimental::is_detected<hasStrangeTOF, ParticleType>::value) {
+        outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999., -999.,
+                         -999., -999., -999., -999., -999., -999., -999., particle.tofNSigmaXiLaPi(),
+                         particle.tofNSigmaXiLaPr(), particle.tofNSigmaXiPi(), particle.tofNSigmaOmLaPi(),
+                         particle.tofNSigmaOmLaPr(), particle.tofNSigmaOmKa(),
+                         particle.dcacascdaughters(), particle.cascradius(),
+                         particle.x(), particle.y(), particle.z(), -999.);
+      }
     } else {
       // LOGF(info, "isTrack0orV0: %d, isPhi: %d", isTrackOrV0, isPhiOrD0);
       outputDebugParts(-999., -999., -999., -999., -999., -999., -999., -999., -999.,
@@ -1246,8 +1274,8 @@ struct FemtoUniverseProducerTask {
                   casc.positiveeta(),
                   casc.positivephi(),
                   aod::femtouniverseparticle::ParticleType::kV0Child,
-                  0,                        // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosCuts),
-                  PIDBitmask(posTrackCasc), // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kPosPID),
+                  0,
+                  PIDBitmask(posTrackCasc),
                   hasTOF,
                   childIDs,
                   0,
@@ -1268,8 +1296,8 @@ struct FemtoUniverseProducerTask {
                   casc.negativeeta(),
                   casc.negativephi(),
                   aod::femtouniverseparticle::ParticleType::kV0Child,
-                  0,                        // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegCuts),
-                  PIDBitmask(negTrackCasc), // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegPID),
+                  0,
+                  PIDBitmask(negTrackCasc),
                   hasTOF,
                   childIDs,
                   0,
@@ -1291,8 +1319,8 @@ struct FemtoUniverseProducerTask {
                   casc.bacheloreta(),
                   casc.bachelorphi(),
                   aod::femtouniverseparticle::ParticleType::kCascadeBachelor,
-                  0,                         // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegCuts),
-                  PIDBitmask(bachTrackCasc), // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kNegPID),
+                  0,
+                  PIDBitmask(bachTrackCasc),
                   hasTOF,
                   childIDs,
                   0,
@@ -1308,8 +1336,8 @@ struct FemtoUniverseProducerTask {
                   casc.eta(),
                   casc.phi(),
                   aod::femtouniverseparticle::ParticleType::kCascade,
-                  0, // cutContainerV0.at(femto_universe_v0_selection::V0ContainerPosition::kV0),
                   0,
+                  PIDStrangeTOFBitmask(casc),
                   0,
                   indexCascChildID,
                   casc.mXi(),
@@ -2112,7 +2140,7 @@ struct FemtoUniverseProducerTask {
                              aod::BCsWithTimestamps const&,
                              soa::Filtered<aod::FemtoFullTracks> const& tracks,
                              o2::aod::V0Datas const& fullV0s,
-                             o2::aod::CascDatas const& fullCascades)
+                             soa::Join<o2::aod::CascDatas, o2::aod::CascTOFNSigmas> const& fullCascades)
   {
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
     const auto colcheck = fillCollisions<false>(col, tracks);
