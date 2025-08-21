@@ -1058,7 +1058,7 @@ struct Xi1530Analysisqa {
                    aod::ResoTracks const& resoTracks,
                    aod::ResoCascades const& cascTracks)
   {
-    if(cRecoINELgt0){
+    if (cRecoINELgt0) {
       auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
       auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
 
@@ -1082,7 +1082,7 @@ struct Xi1530Analysisqa {
                  soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&)
   {
     float multiplicity;
-    if(cMCCent && cRecoINELgt0){
+    if (cMCCent && cRecoINELgt0) {
       auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
       auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
 
@@ -1093,8 +1093,7 @@ struct Xi1530Analysisqa {
 
       auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
       multiplicity = mcColl.centFT0M();
-    }
-    else if(!cMCCent && cRecoINELgt0){
+    } else if (!cMCCent && cRecoINELgt0) {
       auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
       auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
 
@@ -1104,8 +1103,7 @@ struct Xi1530Analysisqa {
         return;
 
       multiplicity = resoCollision.cent();
-    }
-    else if(cMCCent && !cRecoINELgt0){
+    } else if (cMCCent && !cRecoINELgt0) {
       auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
       auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
 
@@ -1113,13 +1111,12 @@ struct Xi1530Analysisqa {
 
       auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
       multiplicity = mcColl.centFT0M();
-    }
-    else {
+    } else {
       multiplicity = resoCollision.cent();
     }
 
     if (!resoCollision.isInAfterAllCuts() || (std::abs(resoCollision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
-    return;
+      return;
 
     fillHistograms<false, true, false>(resoCollision, multiplicity, resoTracks, cascTracks);
   }
@@ -1132,7 +1129,7 @@ struct Xi1530Analysisqa {
                      soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&)
   {
     float multiplicity;
-    if(cMCCent && cRecoINELgt0){
+    if (cMCCent && cRecoINELgt0) {
       auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
       auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
 
@@ -1143,8 +1140,7 @@ struct Xi1530Analysisqa {
 
       auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
       multiplicity = mcColl.centFT0M();
-    }
-    else if(!cMCCent && cRecoINELgt0){
+    } else if (!cMCCent && cRecoINELgt0) {
       auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
       auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
 
@@ -1154,8 +1150,7 @@ struct Xi1530Analysisqa {
         return;
 
       multiplicity = resoCollision.cent();
-    }
-    else if(cMCCent && !cRecoINELgt0){
+    } else if (cMCCent && !cRecoINELgt0) {
       auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
       auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
 
@@ -1163,8 +1158,7 @@ struct Xi1530Analysisqa {
 
       auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
       multiplicity = mcColl.centFT0M();
-    }
-    else {
+    } else {
       multiplicity = resoCollision.cent();
     }
 
@@ -1219,7 +1213,7 @@ struct Xi1530Analysisqa {
                         aod::ResoMicroTracks const& resomicrotracks,
                         aod::ResoCascades const& cascTracks)
   {
-    if(cRecoINELgt0){
+    if (cRecoINELgt0) {
       auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
       auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
 
@@ -1272,16 +1266,16 @@ struct Xi1530Analysisqa {
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
 
-      if(cRecoINELgt0){
-      const auto rcIdx = collision1.globalIndex();
-      auto linkRow = collisionIndex.iteratorAt(rcIdx);
-      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+      if (cRecoINELgt0) {
+        const auto rcIdx = collision1.globalIndex();
+        auto linkRow = collisionIndex.iteratorAt(rcIdx);
+        auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
 
-      auto coll = collisions.iteratorAt(collId); // Take original collision matched with resoCollision
+        auto coll = collisions.iteratorAt(collId); // Take original collision matched with resoCollision
 
-      if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
-        continue;
-    }
+        if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+          continue;
+      }
       histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
       auto multiplicity = collision1.cent();
       fillHistograms<true, false, true>(collision1, multiplicity, tracks1, tracks2);
