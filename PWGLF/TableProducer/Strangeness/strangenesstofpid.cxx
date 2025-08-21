@@ -641,7 +641,7 @@ struct strangenesstofpid {
       }
     }
     
-    if (calculationMethod.value==1 && !lut) {
+    if (calculationMethod.value>0 && !lut) {
       // setMatLUT only after magfield has been initalized
       // (setMatLUT has implicit and problematic init field call if not)
       LOG(info) << "Loading full (all-radius) material look-up table for run number: " << runNumber;
