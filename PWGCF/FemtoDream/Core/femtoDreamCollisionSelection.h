@@ -197,7 +197,7 @@ class FemtoDreamCollisionSelection
     if (numOfTracks < 3)
       return -9999.;
 
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       double pt = track.pt();
       double eta = track.eta();
       double px = track.px();
@@ -210,7 +210,7 @@ class FemtoDreamCollisionSelection
 
       s00 += px * px / pt;
       s01 += px * py / pt;
-      s10 = s01;
+      //s10 = s01;
       s11 += py * py / pt;
     }
 
@@ -219,12 +219,12 @@ class FemtoDreamCollisionSelection
       return -9999.;
     s00 /= ptTot;
     s11 /= ptTot;
-    s10 /= ptTot;
+    s01 /= ptTot;
 
     // Calculate the trace of the sphericity matrix:
     double T = s00 + s11;
     // Calculate the determinant of the sphericity matrix:
-    double D = s00 * s11 - s10 * s10; // S10 = S01
+    double D = s00 * s11 - s01 * s01; // S10 = S01
 
     // Calculate the eigenvalues of the sphericity matrix:
     double lambda1 = 0.5 * (T + std::sqrt(T * T - 4. * D));
