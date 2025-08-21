@@ -35,6 +35,7 @@
 
 #include "TFile.h"
 
+#include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <cstdint>
@@ -91,6 +92,7 @@ struct PseudorapidityDensityMFT {
     "max allowed Z difference for reconstructed collisions (cm)"};
 
   Configurable<bool> usePhiCut{"usePhiCut", true, "use azimuthal angle cut"};
+  Configurable<bool> useDCAxyCut{"useDCAxyCut", false, "use DCAxy cut"};
   Configurable<float> cfgPhiCut{"cfgPhiCut", 0.1f,
                                 "Cut on azimuthal angle of MFT tracks"};
   Configurable<float> cfgPhiCut1{"cfgPhiCut1", 0.0f,
@@ -108,6 +110,7 @@ struct PseudorapidityDensityMFT {
   Configurable<float> cfgnEta2{"cfgnEta2", -1.0f,
                                "Cut on eta1"};
   Configurable<float> cfgChi2NDFMax{"cfgChi2NDFMax", 2000.0f, "Max allowed chi2/NDF for MFT tracks"};
+  Configurable<float> maxDCAxy{"maxDCAxy", 2.0f, "Cut on dcaXY"};
 
   HistogramRegistry registry{
     "registry",
@@ -588,6 +591,11 @@ struct PseudorapidityDensityMFT {
           if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
             continue;
         }
+        float dcaxy_cut = retrack.bestDCAXY();
+        if (useDCAxyCut) {
+          if (dcaxy_cut > maxDCAxy)
+            continue;
+        }
         if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0 && chi2ndf < cfgChi2NDFMax && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
           registry.fill(HIST("Tracks/2Danalysis/EtaZvtx"), track.eta(), z);
         }
@@ -628,6 +636,11 @@ struct PseudorapidityDensityMFT {
             if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
               continue;
           }
+          float dcaxy_cut = retrack.bestDCAXY();
+          if (useDCAxyCut) {
+            if (dcaxy_cut > maxDCAxy)
+              continue;
+          }
           if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && retrack.ambDegree() > 0 && chi2ndf < cfgChi2NDFMax && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
             registry.fill(HIST("Tracks/Control/Chi2NDF"), chi2ndf);
             registry.fill(HIST("Tracks/2Danalysis/EtaZvtx_sel8"), track.eta(), z);
@@ -646,10 +659,15 @@ struct PseudorapidityDensityMFT {
             float ndf = std::max(2.0f * track.nClusters() - 5.0f, 1.0f);
             float chi2ndf = track.chi2() / ndf;
             float phi = track.phi();
+            float dcaxy_cut = retrack.bestDCAXY();
             o2::math_utils::bringTo02Pi(phi);
             if ((cfgnEta1 < track.eta()) && (track.eta() < cfgnEta2) && track.nClusters() >= cfgnCluster && chi2ndf < cfgChi2NDFMax && (phi > cfgPhiCut1 && phi < cfgPhiCut2)) {
               if (usePhiCut) {
                 if ((phi <= 0.02) || ((phi >= 3.10) && (phi <= 3.23)) || (phi >= 6.21))
+                  continue;
+              }
+              if (useDCAxyCut) {
+                if (dcaxy_cut > maxDCAxy)
                   continue;
               }
               registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
