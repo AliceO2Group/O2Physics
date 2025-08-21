@@ -40,7 +40,7 @@ using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-namespace o2::aod
+namespace o2
 {
 namespace charm_polarisation
 {
@@ -57,13 +57,12 @@ enum DecayChannel : uint8_t {
   NChannels
 };
 } // namespace charm_polarisation
-} // namespace o2::aod
+} // namespace o2
 
 struct HfTaskDstarPolarisationInJet {
 
   float massPi{0.f};
   float massKaon{0.f};
-  float massProton{0.f};
   float massDstar{0.f};
 
   float bkgRotationAngleStep{0.f};
@@ -129,13 +128,8 @@ struct HfTaskDstarPolarisationInJet {
     eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections.value);
 
     /// check process functions
-    const int nProcesses =
-      static_cast<int>(doprocessDstar) +
-      static_cast<int>(doprocessDstarWithMl) +
-      static_cast<int>(doprocessDstarMc) +
-      static_cast<int>(doprocessDstarMcWithMl);
-    // std::array<int, 4> processes = {doprocessDstar, doprocessDstarWithMl, doprocessDstarMc, doprocessDstarMcWithMl};
-    // const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
+    std::array<int, 4> processes = {doprocessDstar, doprocessDstarWithMl, doprocessDstarMc, doprocessDstarMcWithMl};
+    const int nProcesses = std::accumulate(processes.begin(), processes.end(), 0);
     if (nProcesses > 1) {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
     }
@@ -168,7 +162,6 @@ struct HfTaskDstarPolarisationInJet {
     }
 
     massPi = o2::constants::physics::MassPiPlus;
-    massProton = o2::constants::physics::MassProton;
     massKaon = o2::constants::physics::MassKaonCharged;
     massDstar = o2::constants::physics::MassDStar;
     bkgRotationAngleStep = (nBkgRotations > 1) ? (maxRotAngleMultByPi - minRotAngleMultByPi) * constants::math::PI / (nBkgRotations - 1) : 0.;
@@ -699,7 +692,7 @@ struct HfTaskDstarPolarisationInJet {
         ptBhadMother = candidate.ptBhadMotherPart();
         int pdgBhadMother = candidate.pdgBhadMotherPart();
         // For unknown reasons there are charm hadrons coming directly from beauty diquarks without an intermediate B-hadron which have an unreasonable correlation between the pT of the charm hadron and the beauty mother. We also remove charm hadrons from quarkonia.
-        if (origin == RecoDecay::OriginType::NonPrompt && (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 553 || pdgBhadMother == 557)) { // o2-linter: disable=pdg/explicit-code, magic-number (constants not in the PDG header)
+        if (origin == RecoDecay::OriginType::NonPrompt && (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 557)) { // o2-linter: disable=pdg/explicit-code, magic-number (constants not in the PDG header)
           return isCandidateInSignalRegion;
         }
       }
