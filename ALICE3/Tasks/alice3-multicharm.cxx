@@ -157,10 +157,6 @@ struct alice3multicharm {
     histos.add("SelectionQA/hPi2cPt", "hPi2cPt; Pi2c pT (Gev/#it(c))", kTH1D, {axisPt});
     histos.add("SelectionQA/hPiccPt", "hPiccPt; Picc pT (Gev/#it(c))", kTH1D, {axisPt});
 
-    histos.add("Debugging/hPi1cDCAz", "hPi1cDCAz", kTH1D, {axisDCA});
-    histos.add("Debugging/hPi2cDCAz", "hPi1cDCAz", kTH1D, {axisDCA});
-    histos.add("Debugging/hPiccDCAz", "hPi1cDCAz", kTH1D, {axisDCA});
-
     auto hMCharmBuilding = histos.add<TH1>("hMCharmBuilding", "hMCharmBuilding", kTH1D, {{22, -0.5, 21.5}});
     hMCharmBuilding->GetXaxis()->SetBinLabel(1, "nTotalCandidates");
     hMCharmBuilding->GetXaxis()->SetBinLabel(2, "xicMaxDauDCA");
