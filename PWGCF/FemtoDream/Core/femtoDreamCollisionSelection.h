@@ -210,7 +210,7 @@ class FemtoDreamCollisionSelection
 
       s00 += px * px / pt;
       s01 += px * py / pt;
-      //s10 = s01;
+      // s10 = s01;
       s11 += py * py / pt;
     }
 
