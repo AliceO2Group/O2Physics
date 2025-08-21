@@ -115,7 +115,6 @@ AxisSpec axisMassLambda = {200, 1.07, 1.17, "Lambda/AntiLamda Mass", "Lambda/Ant
 AxisSpec axisTracks{9, 0.5, 9.5, "#tracks", "TrackAxis"};
 auto static constexpr kMinCharge = 3.f;
 auto static constexpr kMinpTcut = 0.1f;
-auto static constexpr kEtaInelgt0 = 1.0f;
 auto static constexpr kNItslayers = 7;
 
 struct HeavyionMultiplicity {
