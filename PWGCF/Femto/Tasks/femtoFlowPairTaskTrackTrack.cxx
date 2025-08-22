@@ -18,24 +18,25 @@
 /// \author Wenya Wu, TUM, wenya.wu@cern.ch
 /// \NOTE:  The femtoflow framework borrows and copies the framework of femtouniverse and femtodream
 
-#include <vector>
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "PWGCF/Femto/DataModel/FemtoDerived.h"
-#include "PWGCF/Femto/Core/FemtoFlowParticleHisto.h"
-#include "PWGCF/Femto/Core/FemtoFlowEventHisto.h"
-#include "PWGCF/Femto/Core/FemtoFlowPairCleaner.h"
-#include "PWGCF/Femto/Core/FemtoFlowFemtoContainer.h"
 #include "PWGCF/Femto/Core/FemtoFlowAngularContainer.h"
 #include "PWGCF/Femto/Core/FemtoFlowDetaDphiStar.h"
-#include "PWGCF/Femto/Core/femtoUtils.h"
+#include "PWGCF/Femto/Core/FemtoFlowEventHisto.h"
+#include "PWGCF/Femto/Core/FemtoFlowFemtoContainer.h"
+#include "PWGCF/Femto/Core/FemtoFlowPairCleaner.h"
+#include "PWGCF/Femto/Core/FemtoFlowParticleHisto.h"
 #include "PWGCF/Femto/Core/FemtoFlowTrackSelection.h"
+#include "PWGCF/Femto/Core/femtoUtils.h"
+#include "PWGCF/Femto/DataModel/FemtoDerived.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::femto_flow;
@@ -102,12 +103,12 @@ struct FemtoFlowPairTaskTrackTrack {
   FemtoFlowParticleHisto<aod::femtoflowparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
 
   // Particle for debug
-  Partition<FemtoFullParticles> partsDebug = (aod::femtoflowparticle::partType == uint8_t(aod::femtoflowparticle::ParticleType::kTrack)) && 
+  Partition<FemtoFullParticles> partsDebug = (aod::femtoflowparticle::partType == uint8_t(aod::femtoflowparticle::ParticleType::kTrack)) &&
                                              (aod::femtoflowparticle::sign == int8_t(1)) &&
                                              ((aod::femtoflowparticle::cut & confCutPartOne) == confCutPartOne); // Bit_mask for partOne or partTwo
 
-  /// Histogramming for debug particle 
-  FemtoFlowParticleHisto<aod::femtoflowparticle::ParticleType::kTrack> trackHistoPartDebug; //FolderSuffixType name set as 0 = "_debug"
+  /// Histogramming for debug particle
+  FemtoFlowParticleHisto<aod::femtoflowparticle::ParticleType::kTrack> trackHistoPartDebug; // FolderSuffixType name set as 0 = "_debug"
 
   /// Histogramming for Event
   FemtoFlowEventHisto eventHisto;
@@ -164,7 +165,8 @@ struct FemtoFlowPairTaskTrackTrack {
       trackHistoPartTwo.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, confIsMC, confPDGCodePartTwo, false);
     }
 
-    if (confIsDebug) trackHistoPartDebug.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, confIsMC, confPDGCodePartOne, true);
+    if (confIsDebug)
+      trackHistoPartDebug.init(&qaRegistry, confTempFitVarpTBins, confTempFitVarBins, confIsMC, confPDGCodePartOne, true);
 
     mixQaRegistry.add("MixingQA/hSECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
     mixQaRegistry.add("MixingQA/hMECollisionBins", ";bin;Entries", kTH1F, {{120, -0.5, 119.5}});
@@ -299,8 +301,8 @@ struct FemtoFlowPairTaskTrackTrack {
     auto thegroupPartsTwo = partsTwo->sliceByCached(aod::femtoflowparticle::fdCollisionId, col.globalIndex(), cache);
 
     doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), col.qnbin());
-  
-    if(confIsDebug){   
+
+    if (confIsDebug) {
       auto thegroupPartsDebug = partsDebug->sliceByCached(aod::femtoflowparticle::fdCollisionId, col.globalIndex(), cache);
       for (const auto& partDebug : thegroupPartsDebug) {
         if (partDebug.p() > confCutTable->get("PartTwo", "MaxP") || partDebug.pt() > confCutTable->get("PartTwo", "MaxPt")) {

@@ -18,17 +18,19 @@
 #ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWTRACKSELECTION_H_
 #define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWTRACKSELECTION_H_
 
-#include <string>
-#include <vector>
-#include <cmath>
-
+#include "PWGCF/Femto/Core/FemtoFlowObjectSelection.h"
 #include "PWGCF/Femto/DataModel/FemtoDerived.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "PWGCF/Femto/Core/FemtoFlowObjectSelection.h"
-#include "ReconstructionDataFormats/PID.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "Framework/HistogramRegistry.h"
+#include "ReconstructionDataFormats/PID.h"
+
+#include <cmath>
+#include <string>
+#include <vector>
 
 // using namespace o2::framework;
 
@@ -67,33 +69,33 @@ class FemtoFlowTrackSelection : public FemtoFlowObjectSelection<float, femto_flo
 {
  public:
   FemtoFlowTrackSelection() : nRejectNotPropagatedTracks(false),
-                                  nPtMinSel(0),
-                                  nPtMaxSel(0),
-                                  nEtaSel(0),
-                                  nTPCnMinSel(0),
-                                  nTPCfMinSel(0),
-                                  nTPCcMinSel(0),
-                                  nTPCsMaxSel(0),
-                                  nITScMinSel(0),
-                                  nITScIbMinSel(0),
-                                  nDCAxyMaxSel(0),
-                                  nDCAzMaxSel(0),
-                                  nDCAMinSel(0),
-                                  nPIDnSigmaSel(0),
-                                  pTMin(9999999.),
-                                  pTMax(-9999999.),
-                                  etaMax(-9999999.),
-                                  nClsMin(9999999.),
-                                  fClsMin(9999999.),
-                                  cTPCMin(9999999.),
-                                  sTPCMax(-9999999.),
-                                  fracsTPCMax(-9999999.),
-                                  dcaXYMax(-9999999.),
-                                  dcaZMax(-9999999.),
-                                  dcaMin(9999999.),
-                                  nSigmaPIDMax(9999999.),
-                                  nSigmaPIDOffsetTPC(0.),
-                                  nSigmaPIDOffsetTOF(0.) {}
+                              nPtMinSel(0),
+                              nPtMaxSel(0),
+                              nEtaSel(0),
+                              nTPCnMinSel(0),
+                              nTPCfMinSel(0),
+                              nTPCcMinSel(0),
+                              nTPCsMaxSel(0),
+                              nITScMinSel(0),
+                              nITScIbMinSel(0),
+                              nDCAxyMaxSel(0),
+                              nDCAzMaxSel(0),
+                              nDCAMinSel(0),
+                              nPIDnSigmaSel(0),
+                              pTMin(9999999.),
+                              pTMax(-9999999.),
+                              etaMax(-9999999.),
+                              nClsMin(9999999.),
+                              fClsMin(9999999.),
+                              cTPCMin(9999999.),
+                              sTPCMax(-9999999.),
+                              fracsTPCMax(-9999999.),
+                              dcaXYMax(-9999999.),
+                              dcaZMax(-9999999.),
+                              dcaMin(9999999.),
+                              nSigmaPIDMax(9999999.),
+                              nSigmaPIDOffsetTPC(0.),
+                              nSigmaPIDOffsetTOF(0.) {}
 
   /// Initializes histograms for the task
   /// \tparam part Type of the particle for proper naming of the folders for QA
@@ -264,20 +266,20 @@ class FemtoFlowTrackSelection : public FemtoFlowObjectSelection<float, femto_flo
                                                                          "PIDnSigmaMax"}; ///< Name of the different selections
 
   static constexpr femto_flow_selection::SelectionType kSelectionTypes[kNtrackSelection]{femto_flow_selection::kEqual,
-                                                                                             femto_flow_selection::kLowerLimit,
-                                                                                             femto_flow_selection::kUpperLimit,
-                                                                                             femto_flow_selection::kAbsUpperLimit,
-                                                                                             femto_flow_selection::kLowerLimit,
-                                                                                             femto_flow_selection::kLowerLimit,
-                                                                                             femto_flow_selection::kLowerLimit,
-                                                                                             femto_flow_selection::kUpperLimit,
-                                                                                             femto_flow_selection::kUpperLimit,
-                                                                                             femto_flow_selection::kLowerLimit,
-                                                                                             femto_flow_selection::kLowerLimit,
-                                                                                             femto_flow_selection::kAbsUpperLimit,
-                                                                                             femto_flow_selection::kAbsUpperLimit,
-                                                                                             femto_flow_selection::kAbsUpperLimit,
-                                                                                             femto_flow_selection::kAbsUpperLimit}; ///< Map to match a variable with its type
+                                                                                         femto_flow_selection::kLowerLimit,
+                                                                                         femto_flow_selection::kUpperLimit,
+                                                                                         femto_flow_selection::kAbsUpperLimit,
+                                                                                         femto_flow_selection::kLowerLimit,
+                                                                                         femto_flow_selection::kLowerLimit,
+                                                                                         femto_flow_selection::kLowerLimit,
+                                                                                         femto_flow_selection::kUpperLimit,
+                                                                                         femto_flow_selection::kUpperLimit,
+                                                                                         femto_flow_selection::kLowerLimit,
+                                                                                         femto_flow_selection::kLowerLimit,
+                                                                                         femto_flow_selection::kAbsUpperLimit,
+                                                                                         femto_flow_selection::kAbsUpperLimit,
+                                                                                         femto_flow_selection::kAbsUpperLimit,
+                                                                                         femto_flow_selection::kAbsUpperLimit}; ///< Map to match a variable with its type
 
   static constexpr std::string_view kSelectionHelper[kNtrackSelection] = {"Sign of the track",
                                                                           "Minimal pT (GeV/c)",

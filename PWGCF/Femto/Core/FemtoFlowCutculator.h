@@ -18,18 +18,19 @@
 #ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWCUTCULATOR_H_
 #define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWCUTCULATOR_H_
 
-#include <bitset>
-#include <iostream>
-#include <random>
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <iterator>
+#include "PWGCF/Femto/Core/FemtoFlowSelection.h"
+#include "PWGCF/Femto/Core/FemtoFlowTrackSelection.h"
+
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-#include "PWGCF/Femto/Core/FemtoFlowSelection.h"
-#include "PWGCF/Femto/Core/FemtoFlowTrackSelection.h"
+#include <algorithm>
+#include <bitset>
+#include <iostream>
+#include <iterator>
+#include <random>
+#include <string>
+#include <vector>
 // #include "PWGCF/Femto/Core/FemtoFlowV0Selection.h"
 
 namespace o2::analysis::femto_flow
@@ -311,7 +312,7 @@ class FemtoFlowCutculator
   {
     aod::femtoflowparticle::CutContainerType output = -1;
     // if (choice == std::string("T")) {
-      output = iterateSelection(mTrackSel, SysChecks, sign);
+    output = iterateSelection(mTrackSel, SysChecks, sign);
     // } else if (choice == std::string("V")) {
     //   output = iterateSelection(mV0Sel, SysChecks, sign);
     // } else {
@@ -353,7 +354,7 @@ class FemtoFlowCutculator
   FemtoFlowTrackSelection
     mTrackSel; ///< for setting up the bit-wise selection container for tracks
   // FemtoFlowV0Selection
-    // mV0Sel; ///< for setting up the bit-wise selection container for V0s
+  // mV0Sel; ///< for setting up the bit-wise selection container for V0s
   std::vector<o2::track::PID::ID>
     mPIDspecies; ///< list of particle species for which PID is stored
   std::vector<float>

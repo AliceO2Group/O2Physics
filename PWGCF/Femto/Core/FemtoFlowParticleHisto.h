@@ -20,11 +20,13 @@
 #ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWPARTICLEHISTO_H_
 #define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWPARTICLEHISTO_H_
 
-#include <string>
-#include <optional>
 #include "PWGCF/Femto/DataModel/FemtoDerived.h"
-#include "Framework/HistogramRegistry.h"
+
 #include "CommonConstants/MathConstants.h"
+#include "Framework/HistogramRegistry.h"
+
+#include <optional>
+#include <string>
 
 using namespace o2::framework; // o2-linter: disable=using-directive
 
@@ -241,7 +243,7 @@ class FemtoFlowParticleHisto
       // Fill here the actual histogramms by calling init_base and init_MC
       init_base<o2::aod::femtoflow_mc_particle::MCType::kRecon>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
       if (isDebug) {
-        init_debug<o2::aod::femtoflow_mc_particle::MCType::kRecon>(folderName);       
+        init_debug<o2::aod::femtoflow_mc_particle::MCType::kRecon>(folderName);
       }
       if (isMC) {
         init_base<o2::aod::femtoflow_mc_particle::MCType::kTruth>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
@@ -519,12 +521,12 @@ class FemtoFlowParticleHisto
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry;                                                      ///< For QA output
-  static constexpr o2::aod::femtoflowparticle::ParticleType mParticleType = particleType; ///< Type of the particle under analysis // o2-linter: disable=name/constexpr-constant
-  static constexpr int mFolderSuffixType = suffixType;                                        ///< Counter for the folder suffix specified below // o2-linter: disable=name/constexpr-constant
-  static constexpr std::string_view mFolderSuffix[5] = {"_debug", "_one", "_two", "_pos", "_neg"};  ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C) // o2-linter: disable=name/constexpr-constant
-  int mConfPDGCodePart[4] = {211, 321, 2212, 9999};                                           ///< PDG code as per analysis
-  int mPDG = 0;                                                                               ///< PDG code of the selected particle
+  HistogramRegistry* mHistogramRegistry;                                                           ///< For QA output
+  static constexpr o2::aod::femtoflowparticle::ParticleType mParticleType = particleType;          ///< Type of the particle under analysis // o2-linter: disable=name/constexpr-constant
+  static constexpr int mFolderSuffixType = suffixType;                                             ///< Counter for the folder suffix specified below // o2-linter: disable=name/constexpr-constant
+  static constexpr std::string_view mFolderSuffix[5] = {"_debug", "_one", "_two", "_pos", "_neg"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C) // o2-linter: disable=name/constexpr-constant
+  int mConfPDGCodePart[4] = {211, 321, 2212, 9999};                                                ///< PDG code as per analysis
+  int mPDG = 0;                                                                                    ///< PDG code of the selected particle
   int binPDG = 0;
 };
 } // namespace o2::analysis::femto_flow

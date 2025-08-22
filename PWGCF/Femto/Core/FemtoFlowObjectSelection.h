@@ -17,14 +17,15 @@
 #ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWOBJECTSELECTION_H_
 #define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWOBJECTSELECTION_H_
 
+#include "PWGCF/Femto/Core/FemtoFlowSelection.h"
+#include "PWGCF/Femto/DataModel/FemtoDerived.h"
+
+#include "Framework/HistogramRegistry.h"
+#include "ReconstructionDataFormats/PID.h"
+
 #include <algorithm>
 #include <string>
 #include <vector>
-
-#include "PWGCF/Femto/Core/FemtoFlowSelection.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "Framework/HistogramRegistry.h"
-#include "PWGCF/Femto/DataModel/FemtoDerived.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -189,7 +190,7 @@ class FemtoFlowObjectSelection
   }
 
  protected:
-  HistogramRegistry* mHistogramRegistry;                                        ///< For QA output
+  HistogramRegistry* mHistogramRegistry;                                    ///< For QA output
   std::vector<FemtoFlowSelection<selValDataType, selVariable>> mSelections; ///< Vector containing all selections
 };
 
