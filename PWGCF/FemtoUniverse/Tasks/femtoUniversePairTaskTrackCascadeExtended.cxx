@@ -57,8 +57,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   Configurable<float> confCascInvMassLowLimit{"confCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};
   Configurable<float> confCascInvMassUpLimit{"confCascInvMassUpLimit", 1.325, "Upper limit of the Casc invariant mass"};
 
-  Configurable<float> confNSigmaTPCPion{"confNSigmaTPCPion", 4, "NSigmaTPCPion"};
-  Configurable<float> confNSigmaTPCProton{"confNSigmaTPCProton", 4, "NSigmaTPCProton"};
+  // TODO: Add seperate selection for daughter particles
+  // Configurable<float> confNSigmaTPCPion{"confNSigmaTPCPion", 4, "NSigmaTPCPion"};
+  // Configurable<float> confNSigmaTPCProton{"confNSigmaTPCProton", 4, "NSigmaTPCProton"};
 
   /// applying narrow cut
   Configurable<float> confZVertexCut{"confZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
@@ -350,25 +351,12 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
 
-      //  nSigma selection for daughter and bachelor tracks
-      if (part.sign() < 0) {
-        if (std::abs(posChild.tpcNSigmaPr()) > confNSigmaTPCProton) {
-          continue;
-        }
-        if (std::abs(negChild.tpcNSigmaPi()) > confNSigmaTPCPion) {
-          continue;
-        }
-      } else {
-        if (std::abs(negChild.tpcNSigmaPr()) > confNSigmaTPCProton) {
-          continue;
-        }
-        if (std::abs(posChild.tpcNSigmaPi()) > confNSigmaTPCPion) {
-          continue;
-        }
-      }
-      if (std::abs(bachelor.tpcNSigmaPi()) > confNSigmaTPCPion) {
+      float posChildTPC, negChildTPC, bachelorTPC, posChildTOF, negChildTOF, bachelorTOF;
+      if (!isParticleTPC(posChild, CascChildTable[confCascType1][0], &posChildTPC) || !isParticleTPC(negChild, CascChildTable[confCascType1][1], &negChildTPC) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2], &bachelorTPC))
         continue;
-      }
+
+      if ((!confCheckTOFBachelorOnly && (!isParticleTOF(posChild, CascChildTable[confCascType1][0], &posChildTOF) || !isParticleTOF(negChild, CascChildTable[confCascType1][1], &negChildTOF))) || !isParticleTOF(bachelor, CascChildTable[confCascType1][2], &bachelorTOF))
+        continue;
 
       rXiQA.fill(HIST("hPtXi"), part.pt());
       rXiQA.fill(HIST("hEtaXi"), part.eta());
