@@ -613,10 +613,10 @@ struct DedxPidAnalysis {
         continue;
 
       // phi and Ncl cut
-        if (additionalCuts) {
-            if (!passedPhiCut(trk, magField, *fphiCutLow, *fphiCutHigh))
-                continue;
-        }
+      if (additionalCuts) {
+        if (!passedPhiCut(trk, magField, *fphiCutLow, *fphiCutHigh))
+          continue;
+      }
 
       float signedP = trk.sign() * trk.tpcInnerParam();
 
@@ -727,13 +727,13 @@ struct DedxPidAnalysis {
         if (!negTrack.passedTPCRefit())
           continue;
         // phi and Ncl cut
-          if (additionalCuts) {
-              if (!passedPhiCutSecondaries(posTrack, magField, *fphiCutLow, *fphiCutHigh))
-                  continue;
-              
-              if (!passedPhiCutSecondaries(negTrack, magField, *fphiCutLow, *fphiCutHigh))
-                  continue;
-          }
+        if (additionalCuts) {
+          if (!passedPhiCutSecondaries(posTrack, magField, *fphiCutLow, *fphiCutHigh))
+            continue;
+
+          if (!passedPhiCutSecondaries(negTrack, magField, *fphiCutLow, *fphiCutHigh))
+            continue;
+        }
 
         float signedPpos = posTrack.sign() * posTrack.tpcInnerParam();
         float signedPneg = negTrack.sign() * negTrack.tpcInnerParam();
