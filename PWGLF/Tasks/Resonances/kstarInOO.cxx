@@ -472,7 +472,7 @@ struct kstarInOO {
     auto centrality = collision1.centFT0C();
 
     for (const auto& [trk1, trk2] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-      auto [KstarPt, Minv] = minvReconstruction(trk1, trk2, false);
+      auto [KstarPt, Minv] = minvReconstruction(trk1, trk2, QA);
       if (Minv < 0)
         continue;
 
