@@ -342,10 +342,13 @@ struct sigma0builder {
     int V0PairPDGCodeMother = 0;
     int V0PairMCProcess = -1;
     int V0PairMCParticleID = -1;
-    float V01MCpT = -999.f;
-    float V02MCpT = -999.f;
-    float V0PairMCRadius = -999.f;
-    float V0PairMCpT = -999.f;
+    float V01MCpx = -999.f;
+    float V01MCpy = -999.f;
+    float V01MCpz = -999.f;
+    float V02MCpx = -999.f;
+    float V02MCpy = -999.f;
+    float V02MCpz = -999.f;
+    float V0PairMCRadius = -999.f;    
   };
 
   // ______________________________________________________
@@ -430,6 +433,13 @@ struct sigma0builder {
       MCinfo.fIsV02CorrectlyAssign = (v02MC.straMCCollisionId() == MCCollision.globalIndex());
     }
 
+    MCinfo.V01MCpx = v01MC.pxMC();
+    MCinfo.V01MCpy = v01MC.pyMC(); 
+    MCinfo.V01MCpz = v01MC.pzMC();
+    MCinfo.V02MCpx = v02MC.pxMC();
+    MCinfo.V02MCpy = v02MC.pyMC(); 
+    MCinfo.V02MCpz = v02MC.pzMC();
+
     // Get corresponding entries in MCParticles table
     auto MCParticle_v01 = mcparticles.rawIteratorAt(v01MC.particleIdMC());
     auto MCParticle_v02 = mcparticles.rawIteratorAt(v02MC.particleIdMC());
@@ -449,8 +459,7 @@ struct sigma0builder {
         MCinfo.V0PairPDGCode = MCMother_v01.pdgCode();
         MCinfo.V0PairMCProcess = MCMother_v01.getProcess();
         MCinfo.V0PairMCParticleID = MCMother_v01.globalIndex();
-        MCinfo.V0PairMCRadius = std::hypot(MCMother_v01.vx(), MCMother_v01.vy()); // production position radius
-        MCinfo.V0PairMCpT = MCMother_v01.pt();
+        MCinfo.V0PairMCRadius = std::hypot(MCMother_v01.vx(), MCMother_v01.vy()); // production position radius        
 
         auto const& v0pairmothers = MCMother_v01.template mothers_as<aod::McParticles>(); // Get mothers
         if (!v0pairmothers.empty()) {
@@ -466,9 +475,6 @@ struct sigma0builder {
     MCinfo.V02PDGCode = v02MC.pdgCode();
     MCinfo.V01PDGCodeMother = v01MC.pdgCodeMother();
     MCinfo.V02PDGCodeMother = v02MC.pdgCodeMother();
-
-    MCinfo.V01MCpT = RecoDecay::pt(array{v01MC.pxMC(), v01MC.pyMC()});
-    MCinfo.V02MCpT = RecoDecay::pt(array{v02MC.pxMC(), v02MC.pyMC()});
 
     return MCinfo;
   }
@@ -841,9 +847,11 @@ struct sigma0builder {
     if constexpr (requires { gamma1.motherMCPartId(); gamma2.motherMCPartId(); }) {
       auto pi0MCInfo = getV0PairMCInfo(gamma1, gamma2, collision, mcparticles);
 
-      pi0coresmc(pi0MCInfo.V0PairMCpT, pi0MCInfo.V0PairMCRadius, pi0MCInfo.V0PairPDGCode, pi0MCInfo.V0PairPDGCodeMother, pi0MCInfo.V0PairMCProcess, pi0MCInfo.fV0PairProducedByGenerator,
-                 pi0MCInfo.V01MCpT, pi0MCInfo.fIsV01Primary, pi0MCInfo.V01PDGCode, pi0MCInfo.V01PDGCodeMother, pi0MCInfo.fIsV01CorrectlyAssign,
-                 pi0MCInfo.V02MCpT, pi0MCInfo.fIsV02Primary, pi0MCInfo.V02PDGCode, pi0MCInfo.V02PDGCodeMother, pi0MCInfo.fIsV02CorrectlyAssign);
+      pi0coresmc(pi0MCInfo.V0PairMCRadius, pi0MCInfo.V0PairPDGCode, pi0MCInfo.V0PairPDGCodeMother, pi0MCInfo.V0PairMCProcess, pi0MCInfo.fV0PairProducedByGenerator,
+                 pi0MCInfo.V01MCpx, pi0MCInfo.V01MCpy, pi0MCInfo.V01MCpz,
+                 pi0MCInfo.fIsV01Primary, pi0MCInfo.V01PDGCode, pi0MCInfo.V01PDGCodeMother, pi0MCInfo.fIsV01CorrectlyAssign,
+                 pi0MCInfo.V02MCpx, pi0MCInfo.V02MCpy, pi0MCInfo.V02MCpz,
+                 pi0MCInfo.fIsV02Primary, pi0MCInfo.V02PDGCode, pi0MCInfo.V02PDGCodeMother, pi0MCInfo.fIsV02CorrectlyAssign);
     }
 
     pi0cores(pi0TopoInfo.X, pi0TopoInfo.Y, pi0TopoInfo.Z, pi0TopoInfo.DCADau, pi0TopoInfo.CosPA,
@@ -905,9 +913,11 @@ struct sigma0builder {
     if constexpr (requires { gamma.motherMCPartId(); lambda.motherMCPartId(); }) {
       auto sigma0MCInfo = getV0PairMCInfo(gamma, lambda, collision, mcparticles);
 
-      sigma0mccores(sigma0MCInfo.V0PairMCpT, sigma0MCInfo.V0PairMCRadius, sigma0MCInfo.V0PairPDGCode, sigma0MCInfo.V0PairPDGCodeMother, sigma0MCInfo.V0PairMCProcess, sigma0MCInfo.fV0PairProducedByGenerator,
-                    sigma0MCInfo.V01MCpT, sigma0MCInfo.fIsV01Primary, sigma0MCInfo.V01PDGCode, sigma0MCInfo.V01PDGCodeMother, sigma0MCInfo.fIsV01CorrectlyAssign,
-                    sigma0MCInfo.V02MCpT, sigma0MCInfo.fIsV02Primary, sigma0MCInfo.V02PDGCode, sigma0MCInfo.V02PDGCodeMother, sigma0MCInfo.fIsV02CorrectlyAssign);
+      sigma0mccores(sigma0MCInfo.V0PairMCRadius, sigma0MCInfo.V0PairPDGCode, sigma0MCInfo.V0PairPDGCodeMother, sigma0MCInfo.V0PairMCProcess, sigma0MCInfo.fV0PairProducedByGenerator,
+                    sigma0MCInfo.V01MCpx, sigma0MCInfo.V01MCpy, sigma0MCInfo.V01MCpz,
+                    sigma0MCInfo.fIsV01Primary, sigma0MCInfo.V01PDGCode, sigma0MCInfo.V01PDGCodeMother, sigma0MCInfo.fIsV01CorrectlyAssign,
+                    sigma0MCInfo.V02MCpx, sigma0MCInfo.V02MCpy, sigma0MCInfo.V02MCpz,
+                    sigma0MCInfo.fIsV02Primary, sigma0MCInfo.V02PDGCode, sigma0MCInfo.V02PDGCodeMother, sigma0MCInfo.fIsV02CorrectlyAssign);
     }
 
     // Sigma0s -> stracollisions link

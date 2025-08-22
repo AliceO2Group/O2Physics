@@ -1357,10 +1357,16 @@ struct sigmaanalysis {
       return false;
 
     // Sigma0 specific selections
-    // Rapidity
-    if (TMath::Abs(cand.sigma0Y()) > sigma0Selections.Sigma0MaxRap)
-      return false;
-
+    // Rapidity 
+    if constexpr (requires { cand.sigma0MCY();}) { // MC
+      if (TMath::Abs(cand.sigma0MCY()) > sigma0Selections.Sigma0MaxRap)
+        return false;
+    }
+    else{ // Real data
+      if (TMath::Abs(cand.sigma0Y()) > sigma0Selections.Sigma0MaxRap)
+        return false;
+    }
+    
     // V0Pair Radius
     if (cand.radius() > sigma0Selections.Sigma0MaxRadius)
       return false;
@@ -1483,9 +1489,15 @@ struct sigmaanalysis {
       return false;
 
     // Pi0 specific selections
-    if (TMath::Abs(cand.pi0Y()) > pi0Selections.Pi0MaxRap)
-      return false;
-
+    if constexpr (requires { cand.pi0MCY();}) { // MC
+      if (TMath::Abs(cand.pi0MCY()) > pi0Selections.Pi0MaxRap)
+        return false;
+    }
+    else{ // DATA
+      if (TMath::Abs(cand.pi0Y()) > pi0Selections.Pi0MaxRap)
+        return false;
+    }
+    
     // V0Pair Radius
     if (cand.radius() > pi0Selections.Pi0MaxRadius)
       return false;

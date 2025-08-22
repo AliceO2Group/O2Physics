@@ -14,6 +14,8 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
 
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -303,20 +305,23 @@ DECLARE_SOA_TABLE(Sigma0LambdaExtras, "AOD", "SIGMA0LAMBDA",
 // for MC
 namespace sigma0MCCore
 {
-DECLARE_SOA_COLUMN(MCpt, mcpt, float);
 DECLARE_SOA_COLUMN(MCradius, mcradius, float);
 DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);
 DECLARE_SOA_COLUMN(PDGCodeMother, pdgCodeMother, int);
 DECLARE_SOA_COLUMN(MCprocess, mcprocess, int);
 DECLARE_SOA_COLUMN(IsProducedByGenerator, isProducedByGenerator, bool);
 
-DECLARE_SOA_COLUMN(PhotonMCpt, photonmcpt, float);
+DECLARE_SOA_COLUMN(PhotonMCPx, photonmcpx, float);
+DECLARE_SOA_COLUMN(PhotonMCPy, photonmcpy, float);
+DECLARE_SOA_COLUMN(PhotonMCPz, photonmcpz, float);
 DECLARE_SOA_COLUMN(IsPhotonPrimary, isPhotonPrimary, bool);
 DECLARE_SOA_COLUMN(PhotonPDGCode, photonPDGCode, int);
 DECLARE_SOA_COLUMN(PhotonPDGCodeMother, photonPDGCodeMother, int);
 DECLARE_SOA_COLUMN(PhotonIsCorrectlyAssoc, photonIsCorrectlyAssoc, bool);
 
-DECLARE_SOA_COLUMN(LambdaMCpt, lambdamcpt, float);
+DECLARE_SOA_COLUMN(LambdaMCPx, lambdamcpx, float);
+DECLARE_SOA_COLUMN(LambdaMCPy, lambdamcpy, float);
+DECLARE_SOA_COLUMN(LambdaMCPz, lambdamcpz, float);
 DECLARE_SOA_COLUMN(IsLambdaPrimary, isLambdaPrimary, bool);
 DECLARE_SOA_COLUMN(LambdaPDGCode, lambdaPDGCode, int);
 DECLARE_SOA_COLUMN(LambdaPDGCodeMother, lambdaPDGCodeMother, int);
@@ -328,17 +333,141 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsSigma0, isSigma0, //! IsSigma0
 DECLARE_SOA_DYNAMIC_COLUMN(IsAntiSigma0, isAntiSigma0, //! IsASigma0
                            [](int pdgCode) -> bool { return pdgCode == -3212; });
 
+DECLARE_SOA_DYNAMIC_COLUMN(MCPx, mcpx, //! Sigma0 px
+                           [](float photonMCPx, float lambdaMCPx) -> float { return photonMCPx + lambdaMCPx; });
+DECLARE_SOA_DYNAMIC_COLUMN(MCPy, mcpy, //! Sigma0 py
+                           [](float photonMCPy, float lambdaMCPy) -> float { return photonMCPy + lambdaMCPy; });
+DECLARE_SOA_DYNAMIC_COLUMN(MCPz, mcpz, //! Sigma0 pz
+                           [](float photonMCPz, float lambdaMCPz) -> float { return photonMCPz + lambdaMCPz; });
+
+DECLARE_SOA_DYNAMIC_COLUMN(MCPt, mcpt,
+                           [](float photonMCPx, float photonMCPy, float lambdaMCPx, float lambdaMCPy) -> float {
+                             return RecoDecay::pt(array{photonMCPx + lambdaMCPx, photonMCPy + lambdaMCPy});
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(MCP, mcp, //! Total momentum in GeV/c
+                           [](float photonMCPx, float photonMCPy, float photonMCPz, float lambdaMCPx, float lambdaMCPy, float lambdaMCPz) -> float {
+                             return RecoDecay::sqrtSumOfSquares(photonMCPx + lambdaMCPx, photonMCPy + lambdaMCPy, photonMCPz + lambdaMCPz);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Sigma0MCMass, sigma0MCMass,
+                           [](float photonMCPx, float photonMCPy, float photonMCPz, float lambdaMCPx, float lambdaMCPy, float lambdaMCPz) -> float {
+                             std::array<float, 3> pVecPhotons{photonMCPx, photonMCPy, photonMCPz};
+                             std::array<float, 3> pVecLambda{lambdaMCPx, lambdaMCPy, lambdaMCPz};
+                             auto arrMom = std::array{pVecPhotons, pVecLambda};
+                             return RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Sigma0MCY, sigma0MCY,
+                           [](float photonMCPx, float photonMCPy, float photonMCPz, float lambdaMCPx, float lambdaMCPy, float lambdaMCPz) -> float {
+                             return RecoDecay::y(std::array{photonMCPx + lambdaMCPx, photonMCPy + lambdaMCPy, photonMCPz + lambdaMCPz}, o2::constants::physics::MassSigma0);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(MCPhi, mcphi, //! Phi in the range [0, 2pi)
+                           [](float photonMCPx, float photonMCPy, float lambdaMCPx, float lambdaMCPy) -> float { return RecoDecay::phi(photonMCPx + lambdaMCPx, photonMCPy + lambdaMCPy); });
+
+DECLARE_SOA_DYNAMIC_COLUMN(MCEta, mceta, //! Pseudorapidity
+                           [](float photonMCPx, float photonMCPy, float photonMCPz, float lambdaMCPx, float lambdaMCPy, float lambdaMCPz) -> float {
+                             return RecoDecay::eta(std::array{photonMCPx + lambdaMCPx, photonMCPy + lambdaMCPy, photonMCPz + lambdaMCPz});
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(MCOPAngle, mcopAngle,
+                           [](float photonMCPx, float photonMCPy, float photonMCPz, float lambdaMCPx, float lambdaMCPy, float lambdaMCPz) {
+                             TVector3 v1(photonMCPx, photonMCPy, photonMCPz);
+                             TVector3 v2(lambdaMCPx, lambdaMCPy, lambdaMCPz);
+                             return v1.Angle(v2);
+                           });   
+
+// Photon
+DECLARE_SOA_DYNAMIC_COLUMN(PhotonMCPt, photonmcpt, //! Transverse momentum in GeV/c
+                           [](float photonMCPx, float photonMCPy) -> float {
+                             return RecoDecay::sqrtSumOfSquares(photonMCPx, photonMCPy);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(PhotonMCP, photonmcp, //! Total momentum in GeV/c
+                           [](float photonMCPx, float photonMCPy, float photonMCPz) -> float {
+                             return RecoDecay::sqrtSumOfSquares(photonMCPx, photonMCPy, photonMCPz);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(PhotonMCEta, photonMCEta, //! Pseudorapidity, conditionally defined to avoid FPEs
+                           [](float photonMCPx, float photonMCPy, float photonMCPz) -> float {
+                             return RecoDecay::eta(std::array{photonMCPx, photonMCPy, photonMCPz});
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(PhotonMCY, photonMCY, //! Rapidity
+                           [](float photonMCPx, float photonMCPy, float photonMCPz) -> float {
+                             return RecoDecay::y(std::array{photonMCPx, photonMCPy, photonMCPz}, o2::constants::physics::MassGamma);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(PhotonMCPhi, photonMCPhi, //! Phi in the range [0, 2pi)
+                           [](float photonMCPx, float photonMCPy) -> float { return RecoDecay::phi(photonMCPx, photonMCPy); });
+
+// Lambda/ALambda
+DECLARE_SOA_DYNAMIC_COLUMN(LambdaMCPt, lambdamcpt, //! Transverse momentum in GeV/c
+                           [](float lambdaMCPx, float lambdaMCPy) -> float {
+                             return RecoDecay::sqrtSumOfSquares(lambdaMCPx, lambdaMCPy);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(LambdaMCP, lambdamcp, //! Total momentum in GeV/c
+                           [](float lambdaMCPx, float lambdaMCPy, float lambdaMCPz) -> float {
+                             return RecoDecay::sqrtSumOfSquares(lambdaMCPx, lambdaMCPy, lambdaMCPz);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(LambdaMCEta, lambdaMCEta, //! Pseudorapidity, conditionally defined to avoid FPEs
+                           [](float lambdaMCPx, float lambdaMCPy, float lambdaMCPz) -> float {
+                             return RecoDecay::eta(std::array{lambdaMCPx, lambdaMCPy, lambdaMCPz});
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(LambdaMCY, lambdaMCY, //! Rapidity
+                           [](float lambdaMCPx, float lambdaMCPy, float lambdaMCPz) -> float {
+                             return RecoDecay::y(std::array{lambdaMCPx, lambdaMCPy, lambdaMCPz}, o2::constants::physics::MassLambda);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(LambdaMCPhi, lambdaMCPhi, //! Phi in the range [0, 2pi)
+                           [](float lambdaMCPx, float lambdaMCPy) -> float { return RecoDecay::phi(lambdaMCPx, lambdaMCPy); });
+                          
+
 } // namespace sigma0MCCore
 
 DECLARE_SOA_TABLE(Sigma0MCCores, "AOD", "SIGMA0MCCORES",
                   // Basic properties
-                  sigma0MCCore::MCpt, sigma0MCCore::MCradius, sigma0MCCore::PDGCode, sigma0MCCore::PDGCodeMother, sigma0MCCore::MCprocess, sigma0MCCore::IsProducedByGenerator,
-                  sigma0MCCore::PhotonMCpt, sigma0MCCore::IsPhotonPrimary, sigma0MCCore::PhotonPDGCode, sigma0MCCore::PhotonPDGCodeMother, sigma0MCCore::PhotonIsCorrectlyAssoc,
-                  sigma0MCCore::LambdaMCpt, sigma0MCCore::IsLambdaPrimary, sigma0MCCore::LambdaPDGCode, sigma0MCCore::LambdaPDGCodeMother, sigma0MCCore::LambdaIsCorrectlyAssoc,
+                  sigma0MCCore::MCradius, sigma0MCCore::PDGCode, sigma0MCCore::PDGCodeMother, sigma0MCCore::MCprocess, sigma0MCCore::IsProducedByGenerator,
 
+                  sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz,
+                  sigma0MCCore::IsPhotonPrimary, sigma0MCCore::PhotonPDGCode, sigma0MCCore::PhotonPDGCodeMother, sigma0MCCore::PhotonIsCorrectlyAssoc,
+
+                  sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz,                 
+                  sigma0MCCore::IsLambdaPrimary, sigma0MCCore::LambdaPDGCode, sigma0MCCore::LambdaPDGCodeMother, sigma0MCCore::LambdaIsCorrectlyAssoc,
+                                    
                   // Dynamic columns
                   sigma0MCCore::IsSigma0<sigma0MCCore::PDGCode>,
-                  sigma0MCCore::IsAntiSigma0<sigma0MCCore::PDGCode>);
+                  sigma0MCCore::IsAntiSigma0<sigma0MCCore::PDGCode>,
+
+                  sigma0MCCore::MCPx<sigma0MCCore::PhotonMCPx, sigma0MCCore::LambdaMCPx>,
+                  sigma0MCCore::MCPy<sigma0MCCore::PhotonMCPy, sigma0MCCore::LambdaMCPy>,
+                  sigma0MCCore::MCPz<sigma0MCCore::PhotonMCPz, sigma0MCCore::LambdaMCPz>,
+                  sigma0MCCore::MCPt<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy>,
+                  sigma0MCCore::MCP<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
+                  sigma0MCCore::Sigma0MCMass<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
+                  sigma0MCCore::Sigma0MCY<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
+                  sigma0MCCore::MCPhi<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy>,
+                  sigma0MCCore::MCEta<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,                  
+                  sigma0MCCore::MCOPAngle<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
+
+                  sigma0MCCore::PhotonMCPt<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy>,
+                  sigma0MCCore::PhotonMCP<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz>,
+                  sigma0MCCore::PhotonMCEta<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz>,
+                  sigma0MCCore::PhotonMCY<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz>,
+                  sigma0MCCore::PhotonMCPhi<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy>,
+
+                  sigma0MCCore::LambdaMCPt<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy>,
+                  sigma0MCCore::LambdaMCP<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
+                  sigma0MCCore::LambdaMCEta<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
+                  sigma0MCCore::LambdaMCY<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
+                  sigma0MCCore::LambdaMCPhi<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy>
+                );
+                  
+                  
 
 namespace sigma0Gen
 {
@@ -412,12 +541,11 @@ DECLARE_SOA_COLUMN(Photon2V0Type, photon2V0Type, uint8_t);
 
 //______________________________________________________
 // DYNAMIC COLUMNS
-// Sigma0
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! Sigma0 px
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //! Pi0 px
                            [](float photon1Px, float photon2Px) -> float { return photon1Px + photon2Px; });
-DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! Sigma0 py
+DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //! Pi0 py
                            [](float photon1Py, float photon2Py) -> float { return photon1Py + photon2Py; });
-DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! Sigma0 pz
+DECLARE_SOA_DYNAMIC_COLUMN(Pz, pz, //! Pi0 pz
                            [](float photon1Pz, float photon2Pz) -> float { return photon1Pz + photon2Pz; });
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt,
@@ -552,24 +680,29 @@ DECLARE_SOA_TABLE(Pi0Cores, "AOD", "PI0CORES",
 // for MC
 namespace Pi0CoreMC
 {
-DECLARE_SOA_COLUMN(MCpt, mcpt, float);
+
 DECLARE_SOA_COLUMN(MCradius, mcradius, float);
 DECLARE_SOA_COLUMN(PDGCode, pdgCode, int);
 DECLARE_SOA_COLUMN(PDGCodeMother, pdgCodeMother, int);
 DECLARE_SOA_COLUMN(MCprocess, mcprocess, int);
 DECLARE_SOA_COLUMN(IsProducedByGenerator, isProducedByGenerator, bool);
 
-DECLARE_SOA_COLUMN(Photon1MCpt, photon1mcpt, float);
+DECLARE_SOA_COLUMN(Photon1MCPx, photon1mcpx, float);
+DECLARE_SOA_COLUMN(Photon1MCPy, photon1mcpy, float);
+DECLARE_SOA_COLUMN(Photon1MCPz, photon1mcpz, float);
 DECLARE_SOA_COLUMN(IsPhoton1Primary, isPhoton1Primary, bool);
 DECLARE_SOA_COLUMN(Photon1PDGCode, photon1PDGCode, int);
 DECLARE_SOA_COLUMN(Photon1PDGCodeMother, photon1PDGCodeMother, int);
 DECLARE_SOA_COLUMN(Photon1IsCorrectlyAssoc, photon1IsCorrectlyAssoc, bool);
 
-DECLARE_SOA_COLUMN(Photon2MCpt, photon2mcpt, float);
+DECLARE_SOA_COLUMN(Photon2MCPx, photon2mcpx, float);
+DECLARE_SOA_COLUMN(Photon2MCPy, photon2mcpy, float);
+DECLARE_SOA_COLUMN(Photon2MCPz, photon2mcpz, float);
 DECLARE_SOA_COLUMN(IsPhoton2Primary, isPhoton2Primary, bool);
 DECLARE_SOA_COLUMN(Photon2PDGCode, photon2PDGCode, int);
 DECLARE_SOA_COLUMN(Photon2PDGCodeMother, photon2PDGCodeMother, int);
 DECLARE_SOA_COLUMN(Photon2IsCorrectlyAssoc, photon2IsCorrectlyAssoc, bool);
+
 
 DECLARE_SOA_DYNAMIC_COLUMN(IsPi0, isPi0, //! IsPi0
                            [](int pdgCode) -> bool { return pdgCode == 111; });
@@ -577,17 +710,136 @@ DECLARE_SOA_DYNAMIC_COLUMN(IsPi0, isPi0, //! IsPi0
 DECLARE_SOA_DYNAMIC_COLUMN(IsFromXi0, isFromXi0, //! Pi0 from Xi0
                            [](int pdgCodeMother) -> bool { return pdgCodeMother == 3322; });
 
+DECLARE_SOA_DYNAMIC_COLUMN(MCPx, mcpx, //! Pi0 MC px
+                           [](float photon1MCPx, float photon2MCPx) -> float { return photon1MCPx + photon2MCPx; });
+DECLARE_SOA_DYNAMIC_COLUMN(MCPy, mcpy, //! Pi0 MC py
+                           [](float photon1MCPy, float photon2MCPy) -> float { return photon1MCPy + photon2MCPy; });
+DECLARE_SOA_DYNAMIC_COLUMN(MCPz, mcpz, //! Pi0 MC pz
+                           [](float photon1MCPz, float photon2MCPz) -> float { return photon1MCPz + photon2MCPz; });
+
+DECLARE_SOA_DYNAMIC_COLUMN(MCPt, mcpt,
+                           [](float photon1MCPx, float photon1MCPy, float photon2MCPx, float photon2MCPy) -> float {
+                             return RecoDecay::pt(array{photon1MCPx + photon2MCPx, photon1MCPy + photon2MCPy});
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(MCP, mcp, //! Total momentum in GeV/c
+                           [](float photon1MCPx, float photon1MCPy, float photon1MCPz, float photon2MCPx, float photon2MCPy, float photon2MCPz) -> float {
+                             return RecoDecay::sqrtSumOfSquares(photon1MCPx + photon2MCPx, photon1MCPy + photon2MCPy, photon1MCPz + photon2MCPz);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Pi0MCMass, pi0MCMass,
+                           [](float photon1MCPx, float photon1MCPy, float photon1MCPz, float photon2MCPx, float photon2MCPy, float photon2MCPz) -> float {
+                             std::array<float, 3> pVecPhoton1{photon1MCPx, photon1MCPy, photon1MCPz};
+                             std::array<float, 3> pVecPhoton2{photon2MCPx, photon2MCPy, photon2MCPz};
+                             auto arrMom = std::array{pVecPhoton1, pVecPhoton2};
+                             return RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassPhoton});
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Pi0MCY, pi0MCY,
+                           [](float photon1MCPx, float photon1MCPy, float photon1MCPz, float photon2MCPx, float photon2MCPy, float photon2MCPz) -> float {
+                             return RecoDecay::y(std::array{photon1MCPx + photon2MCPx, photon1MCPy + photon2MCPy, photon1MCPz + photon2MCPz}, o2::constants::physics::MassPi0);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(MCPhi, mcphi, //! Phi in the range [0, 2pi)
+                           [](float photon1MCPx, float photon1MCPy, float photon2MCPx, float photon2MCPy) -> float { return RecoDecay::phi(photon1MCPx + photon2MCPx, photon1MCPy + photon2MCPy); });
+
+DECLARE_SOA_DYNAMIC_COLUMN(MCEta, mceta, //! Pseudorapidity
+                           [](float photon1MCPx, float photon1MCPy, float photon1MCPz, float photon2MCPx, float photon2MCPy, float photon2MCPz) -> float {
+                             return RecoDecay::eta(std::array{photon1MCPx + photon2MCPx, photon1MCPy + photon2MCPy, photon1MCPz + photon2MCPz});
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(MCOPAngle, mcopAngle,
+                           [](float photon1MCPx, float photon1MCPy, float photon1MCPz, float photon2MCPx, float photon2MCPy, float photon2MCPz) {
+                             TVector3 v1(photon1MCPx, photon1MCPy, photon1MCPz);
+                             TVector3 v2(photon2MCPx, photon2MCPy, photon2MCPz);
+                             return v1.Angle(v2);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Photon1MCPt, photon1MCPt, //! Transverse momentum in GeV/c
+                           [](float photon1MCPx, float photon1MCPy) -> float {
+                             return RecoDecay::sqrtSumOfSquares(photon1MCPx, photon1MCPy);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Photon1MCP, photon1MCp, //! Total momentum in GeV/c
+                           [](float photon1MCPx, float photon1MCPy, float photon1MCPz) -> float {
+                             return RecoDecay::sqrtSumOfSquares(photon1MCPx, photon1MCPy, photon1MCPz);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Photon1MCEta, photon1MCEta, //! Pseudorapidity, conditionally defined to avoid FPEs
+                           [](float photon1MCPx, float photon1MCPy, float photon1MCPz) -> float {
+                             return RecoDecay::eta(std::array{photon1MCPx, photon1MCPy, photon1MCPz});
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Photon1MCY, photon1MCY, //! Rapidity
+                           [](float photon1MCPx, float photon1MCPy, float photon1MCPz) -> float {
+                             return RecoDecay::y(std::array{photon1MCPx, photon1MCPy, photon1MCPz}, o2::constants::physics::MassGamma);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Photon1MCPhi, photon1MCPhi, //! Phi in the range [0, 2pi)
+                           [](float photon1MCPx, float photon1MCPy) -> float { return RecoDecay::phi(photon1MCPx, photon1MCPy); });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Photon2MCPt, photon2MCPt, //! Transverse momentum in GeV/c
+                           [](float photon2MCPx, float photon2MCPy) -> float {
+                             return RecoDecay::sqrtSumOfSquares(photon2MCPx, photon2MCPy);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Photon2MCP, photon2MCp, //! Total momentum in GeV/c
+                           [](float photon2MCPx, float photon2MCPy, float photon2MCPz) -> float {
+                             return RecoDecay::sqrtSumOfSquares(photon2MCPx, photon2MCPy, photon2MCPz);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Photon2MCEta, photon2MCEta, //! Pseudorapidity, conditionally defined to avoid FPEs
+                           [](float photon2MCPx, float photon2MCPy, float photon2MCPz) -> float {
+                             return RecoDecay::eta(std::array{photon2MCPx, photon2MCPy, photon2MCPz});
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Photon2MCY, photon2MCY, //! Rapidity
+                           [](float photon2MCPx, float photon2MCPy, float photon2MCPz) -> float {
+                             return RecoDecay::y(std::array{photon2MCPx, photon2MCPy, photon2MCPz}, o2::constants::physics::MassGamma);
+                           });
+
+DECLARE_SOA_DYNAMIC_COLUMN(Photon2MCPhi, photon2MCPhi, //! Phi in the range [0, 2pi)
+                           [](float photon2MCPx, float photon2MCPy) -> float { return RecoDecay::phi(photon2MCPx, photon2MCPy); });
+
 } // namespace Pi0CoreMC
 
 DECLARE_SOA_TABLE(Pi0CoresMC, "AOD", "PI0CORESMC",
                   // Basic properties
-                  Pi0CoreMC::MCpt, Pi0CoreMC::MCradius, Pi0CoreMC::PDGCode, Pi0CoreMC::PDGCodeMother, Pi0CoreMC::MCprocess, Pi0CoreMC::IsProducedByGenerator,
-                  Pi0CoreMC::Photon1MCpt, Pi0CoreMC::IsPhoton1Primary, Pi0CoreMC::Photon1PDGCode, Pi0CoreMC::Photon1PDGCodeMother, Pi0CoreMC::Photon1IsCorrectlyAssoc,
-                  Pi0CoreMC::Photon2MCpt, Pi0CoreMC::IsPhoton2Primary, Pi0CoreMC::Photon2PDGCode, Pi0CoreMC::Photon2PDGCodeMother, Pi0CoreMC::Photon2IsCorrectlyAssoc,
+                  Pi0CoreMC::MCradius, Pi0CoreMC::PDGCode, Pi0CoreMC::PDGCodeMother, Pi0CoreMC::MCprocess, Pi0CoreMC::IsProducedByGenerator,
+
+                  Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz,
+                  Pi0CoreMC::IsPhoton1Primary, Pi0CoreMC::Photon1PDGCode, Pi0CoreMC::Photon1PDGCodeMother, Pi0CoreMC::Photon1IsCorrectlyAssoc,
+
+                  Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz,
+                  Pi0CoreMC::IsPhoton2Primary, Pi0CoreMC::Photon2PDGCode, Pi0CoreMC::Photon2PDGCodeMother, Pi0CoreMC::Photon2IsCorrectlyAssoc,
 
                   // Dynamic columns
                   Pi0CoreMC::IsPi0<Pi0CoreMC::PDGCode>,
-                  Pi0CoreMC::IsFromXi0<Pi0CoreMC::PDGCodeMother>);
+                  Pi0CoreMC::IsFromXi0<Pi0CoreMC::PDGCodeMother>,
+                
+                  Pi0CoreMC::MCPx<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon2MCPx>,
+                  Pi0CoreMC::MCPy<Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon2MCPy>,
+                  Pi0CoreMC::MCPz<Pi0CoreMC::Photon1MCPz, Pi0CoreMC::Photon2MCPz>,
+                  Pi0CoreMC::MCPt<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy>,
+                  Pi0CoreMC::MCP<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
+                  Pi0CoreMC::Pi0MCMass<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
+                  Pi0CoreMC::Pi0MCY<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
+                  Pi0CoreMC::MCPhi<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy>,
+                  Pi0CoreMC::MCEta<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,                  
+                  Pi0CoreMC::MCOPAngle<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
+
+                  Pi0CoreMC::Photon1MCPt<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy>,
+                  Pi0CoreMC::Photon1MCP<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz>,
+                  Pi0CoreMC::Photon1MCEta<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz>,
+                  Pi0CoreMC::Photon1MCY<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz>,
+                  Pi0CoreMC::Photon1MCPhi<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy>,
+
+                  Pi0CoreMC::Photon2MCPt<Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy>,
+                  Pi0CoreMC::Photon2MCP<Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
+                  Pi0CoreMC::Photon2MCEta<Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
+                  Pi0CoreMC::Photon2MCY<Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
+                  Pi0CoreMC::Photon2MCPhi<Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy>                
+                );
 
 DECLARE_SOA_TABLE(Pi0CollRef, "AOD", "PI0COLLREF", //! optional table to refer back to a collision
                   o2::soa::Index<>, v0data::StraCollisionId);
