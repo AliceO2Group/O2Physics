@@ -1166,15 +1166,15 @@ struct strangenesstofpid {
             histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), negDeltaTimeAsXiPi);
             histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), bachDeltaTimeAsXiPi);
             if(calculationMethod.value==2){ 
-              if(std::abs(posFlightPr_Method0)>o2::aod::cascdata::kEpsilon && std::abs(posFlightPr_Method1)>o2::aod::cascdata::kEpsilon){
+              if(std::abs(posFlightPr_Method0-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon && std::abs(posFlightPr_Method1-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon){
                 histos.fill(HIST("hMethodComparison_posXiPr"), posFlightPr_Method0, posFlightPr_Method1);
                 histos.fill(HIST("hDeltaTimeMethodsVsP_posXiPr"), positiveP, cascade.positiveeta(), (posFlightPr_Method0 - posFlightPr_Method1)*positiveCosine);
               }
-              if(std::abs(negFlightPi_Method0)>o2::aod::cascdata::kEpsilon && std::abs(negFlightPi_Method1)>o2::aod::cascdata::kEpsilon){
+              if(std::abs(negFlightPi_Method0-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon && std::abs(negFlightPi_Method1-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon){
                 histos.fill(HIST("hMethodComparison_negXiPi"), negFlightPi_Method0, negFlightPi_Method1);
-                histos.fill(HIST("hDeltaTimeMethodsVsP_negXiPi"), negativeP, cascade.negativeeta(), (negFlightPi_Method0 - negFlightPi_Method1)*negativeCosine);
+                histos.fill(HIST("hDeltaTimeMethodsVsP_negXiPi"), negativeP, cascade.negativeeta(), (negFlightPi_Method0 - negFlightPi_Method1-o2::aod::cascdata::kNoTOFValue)*negativeCosine);
               }
-              if(std::abs(bachFlightPi_Method0)>o2::aod::cascdata::kEpsilon && std::abs(bachFlightPi_Method1)>o2::aod::cascdata::kEpsilon){
+              if(std::abs(bachFlightPi_Method0-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon && std::abs(bachFlightPi_Method1-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon){
                 histos.fill(HIST("hDeltaTimeMethodsVsP_bachXiPi"), bachelorP, cascade.bacheloreta(), (bachFlightPi_Method0 - bachFlightPi_Method1)*bachelorCosine);
               }
             }
