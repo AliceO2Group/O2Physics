@@ -78,11 +78,11 @@ struct sigma0builder {
 
   //__________________________________________________
   // Pi0 specific
-  Produces<aod::Pi0Cores> pi0cores;                    // pi0 candidates info for analysis  
-  Produces<aod::Pi0CollRef> pi0coresRefs;          // references collisions from photonpair
-  Produces<aod::Pi0CoresMC> pi0coresmc;                 // Reco pi0 MC properties
-  Produces<aod::Pi0Gens> pi0Gens;                            // Generated pi0s
-  Produces<aod::Pi0GenCollRef> pi0GenCollRefs;               // references collisions from pi0Gens
+  Produces<aod::Pi0Cores> pi0cores;                               // pi0 candidates info for analysis  
+  Produces<aod::Pi0CollRef> pi0coresRefs;                         // references collisions from photonpair
+  Produces<aod::Pi0CoresMC> pi0coresmc;                           // Reco pi0 MC properties
+  Produces<aod::Pi0Gens> pi0Gens;                                 // Generated pi0s
+  Produces<aod::Pi0GenCollRef> pi0GenCollRefs;                    // references collisions from pi0Gens
 
   //__________________________________________________
   // pack track quality but separte also afterburner
@@ -125,7 +125,7 @@ struct sigma0builder {
   Configurable<float> LambdaMaxv0radius{"LambdaMaxv0radius", 60, "Max V0 radius (cm)"};
   Configurable<float> LambdaWindow{"LambdaWindow", 0.05, "Mass window around expected (in GeV/c2)"};
 
-  //// Photon criteria:
+  //// Photon criteria (for sigma0s and pi0s):
   Configurable<float> PhotonMaxDauPseudoRap{"PhotonMaxDauPseudoRap", 1.5, "Max pseudorapidity of daughter tracks"};
   Configurable<float> PhotonMinDCAToPv{"PhotonMinDCAToPv", 0.0, "Min DCA daughter To PV (cm)"};
   Configurable<float> PhotonMaxDCAV0Dau{"PhotonMaxDCAV0Dau", 3.5, "Max DCA V0 Daughters (cm)"};
