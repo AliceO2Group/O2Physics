@@ -888,7 +888,12 @@ struct sigma0builder {
 
     auto arrMom = std::array{pVecPhotons, pVecLambda};
     float sigmaMass = RecoDecay::m(arrMom, std::array{o2::constants::physics::MassPhoton, o2::constants::physics::MassLambda0});
-    float sigmaY = RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0);
+    float sigmaY = -999.f; 
+    
+    if constexpr (requires { gamma.pxMC(); lambda.pxMC(); }) // If MC
+      sigmaY = RecoDecay::y(std::array{gamma.pxMC() + lambda.pxMC(), gamma.pyMC() + lambda.pyMC(), gamma.pzMC() + lambda.pzMC()}, o2::constants::physics::MassSigma0);
+    else  // If DATA
+      sigmaY = RecoDecay::y(std::array{gamma.px() + lambda.px(), gamma.py() + lambda.py(), gamma.pz() + lambda.pz()}, o2::constants::physics::MassSigma0);
 
     histos.fill(HIST("SigmaSel/hSelectionStatistics"), 1.);
     if (TMath::Abs(sigmaMass - o2::constants::physics::MassSigma0) > Sigma0Window)
