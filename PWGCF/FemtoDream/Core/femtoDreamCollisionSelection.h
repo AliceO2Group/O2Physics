@@ -41,7 +41,7 @@ class FemtoDreamCollisionSelection
   /// \param checkTrigger whether or not to check for the trigger alias
   /// \param trig Requested trigger alias
   /// \param checkOffline whether or not to check for offline selection criteria
-  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool addCheckOffline, bool checkRun3)
+  void setCuts(float zvtxMax, bool checkTrigger, int trig, bool checkOffline, bool addCheckOffline, bool checkRun3, float minSphericity, float sphericityPtmin)
   {
     mCutsSet = true;
     mZvtxMax = zvtxMax;
@@ -50,6 +50,8 @@ class FemtoDreamCollisionSelection
     mCheckOffline = checkOffline;
     mAddCheckOffline = addCheckOffline;
     mCheckIsRun3 = checkRun3;
+    mMinSphericity = minSphericity;
+    mSphericityPtmin = sphericityPtmin;
   }
 
   /// Initializes histograms for the task
@@ -66,6 +68,7 @@ class FemtoDreamCollisionSelection
     mHistogramRegistry->add("Event/MultNTracksPV", "; MultNTracksPV; Entries", kTH1F, {{200, 0, 200}});
     mHistogramRegistry->add("Event/MultNTracklets", "; MultNTrackslets; Entries", kTH1F, {{300, 0, 300}});
     mHistogramRegistry->add("Event/MultTPC", "; MultTPC; Entries", kTH1F, {{600, 0, 600}});
+    mHistogramRegistry->add("Event/Sphericity", "; Sphericity; Entries", kTH1F, {{100, 0, 1}});
   }
 
   /// Print some debug information
@@ -76,6 +79,8 @@ class FemtoDreamCollisionSelection
     LOG(info) << "Check trigger: " << mCheckTrigger;
     LOG(info) << "Trigger: " << mTrigger;
     LOG(info) << " Check offline: " << mCheckOffline;
+    LOG(info) << "Min sphericity: " << mMinSphericity;
+    LOG(info) << "Min Pt (sphericity): " << mSphericityPtmin;
   }
 
   /// Check whether the collisions fulfills the specified selections
@@ -180,9 +185,65 @@ class FemtoDreamCollisionSelection
   /// \param tracks All tracks
   /// \return value of the sphericity of the event
   template <typename T1, typename T2>
-  float computeSphericity(T1 const& /*col*/, T2 const& /*tracks*/)
+  float computeSphericity(T1 const& col, T2 const& tracks)
   {
-    return 2.f;
+    double ptTot = 0.;
+    double s00 = 0.; // elements of the sphericity matrix taken form EPJC72:2124
+    double s01 = 0.;
+    // double s10 = 0.;
+    double s11 = 0.;
+
+    int numOfTracks = col.numContrib();
+    if (numOfTracks < 3)
+      return -9999.;
+
+    for (auto const& track : tracks) {
+      double pt = track.pt();
+      double eta = track.eta();
+      double px = track.px();
+      double py = track.py();
+      if (TMath::Abs(pt) < mSphericityPtmin || TMath::Abs(eta) > 0.8) {
+        continue;
+      }
+
+      ptTot += pt;
+
+      s00 += px * px / pt;
+      s01 += px * py / pt;
+      // s10 = s01;
+      s11 += py * py / pt;
+    }
+
+    // normalize to total Pt to obtain a linear form:
+    if (ptTot == 0.)
+      return -9999.;
+    s00 /= ptTot;
+    s11 /= ptTot;
+    s01 /= ptTot;
+
+    // Calculate the trace of the sphericity matrix:
+    double T = s00 + s11;
+    // Calculate the determinant of the sphericity matrix:
+    double D = s00 * s11 - s01 * s01; // S10 = S01
+
+    // Calculate the eigenvalues of the sphericity matrix:
+    double lambda1 = 0.5 * (T + std::sqrt(T * T - 4. * D));
+    double lambda2 = 0.5 * (T - std::sqrt(T * T - 4. * D));
+
+    if ((lambda1 + lambda2) == 0.)
+      return -9999.;
+
+    double spt = -1.;
+
+    if (lambda2 > lambda1) {
+      spt = 2. * lambda1 / (lambda1 + lambda2);
+    } else {
+      spt = 2. * lambda2 / (lambda1 + lambda2);
+    }
+
+    mHistogramRegistry->fill(HIST("Event/Sphericity"), spt);
+
+    return spt;
   }
 
  private:
@@ -194,6 +255,8 @@ class FemtoDreamCollisionSelection
   bool mCheckIsRun3 = false;                       ///< Check if running on Pilot Beam
   triggerAliases mTrigger = kINT7;                 ///< Trigger to check for
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
+  float mMinSphericity = 0.f;
+  float mSphericityPtmin = 0.f;
 };
 } // namespace o2::analysis::femtoDream
 
