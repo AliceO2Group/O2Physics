@@ -80,7 +80,7 @@ struct kstarInOO {
   Configurable<double> cfgTrackMaxDCAzToPVcut{"cfgTrackMaxDCAzToPVcut", 2.0, "Track DCAz cut to PV Maximum"};
   Configurable<bool> cfgTrackPrimaryTrack{"cfgTrackPrimaryTrack", true, "Primary track selection"};                    // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgTrackConnectedToPV{"cfgTrackConnectedToPV", true, "PV contributor track selection"};           // PV Contriuibutor
-  Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", true, "Global track selection"};                                // kGoldenChi2 | kDCAxy | kDCAz
+  Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", true, "Global track selection"};                                 // kGoldenChi2 | kDCAxy | kDCAz
   Configurable<bool> cfgTrackGlobalWoDCATrack{"cfgTrackGlobalWoDCATrack", true, "Global track selection without DCA"}; // kQualityTracks (kTrackType | kTPCNCls | kTPCCrossedRows | kTPCCrossedRowsOverNCls | kTPCChi2NDF | kTPCRefit | kITSNCls | kITSChi2NDF | kITSRefit | kITSHits) | kInAcceptanceTracks (kPtRange | kEtaRange)
   // TPC
   Configurable<double> cfgTracknFindableTPCClusters{"cfgTrackFindableTPCClusters", 50, "nFindable TPC Clusters"};
@@ -548,7 +548,7 @@ struct kstarInOO {
       return {-1.0, -1.0};
     if (!trackPIDKaon(trk1, QA) || !trackPIDPion(trk2, QA))
       return {-1.0, -1.0};
-    
+
     if (trk1.globalIndex() == trk2.globalIndex()) {
       return {-1.0, -1.0}; // For Kstar, we need to run (0,1), (1,0) pairs as well. but same id pairs are not need.
     }
@@ -596,7 +596,7 @@ struct kstarInOO {
     }
     if (!INELgt0)
       return;
-    
+
     if (cfgDataHistos) {
       histos.fill(HIST("nEvents"), 1.5);
     }
