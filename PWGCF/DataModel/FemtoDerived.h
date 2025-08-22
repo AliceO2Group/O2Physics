@@ -92,21 +92,21 @@ namespace femtodreamparticle
 {
 /// Distinguishes the different particle types
 enum ParticleType {
-  kTrack,                      //! Track
-  kV0,                         //! V0
-  kReso,                       //! Resonances (phi)
-  kResoChild,                  // Child track of a Resonance
-  kV0Child,                    //! Child track of a V0
-  kCascade, //! Cascade
+  kTrack,     //! Track
+  kV0,        //! V0
+  kReso,      //! Resonances (phi)
+  kResoChild, // Child track of a Resonance
+  kV0Child,   //! Child track of a V0
+  kCascade,   //! Cascade
   kCascadeV0,
   kCascadeV0Child,
-  kCascadeBachelor, //! Bachelor track of a cascade
-  kCharmHadron,     //! Bachelor track of a cascade
+  kCascadeBachelor,            //! Bachelor track of a cascade
+  kCharmHadron,                //! Bachelor track of a cascade
   kPhiPosdaughTPC_NegdaughTPC, /// cases for Phi-daughters for TPC or TOF combinations
   kPhiPosdaughTPC_NegdaughTOF,
   kPhiPosdaughTOF_NegdaughTPC,
   kPhiPosdaughTOF_NegdaughTOF,
-  kNParticleTypes   //! Number of particle types
+  kNParticleTypes //! Number of particle types
 };
 
 enum MomentumType {

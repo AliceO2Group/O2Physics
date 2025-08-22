@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -9,14 +9,14 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FemtoDreamResoSelection.h
+/// \file FemtoDreamResoSelectionK0Short.h
 /// \brief Definition of the FemtoDreamResoSelection
 /// \author Valentina Mantovani Sarti, TU München valentina.mantovani-sarti@tum.de
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 
-#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTION_H_
-#define PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTION_H_
+#ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTIONK0SHORT_H_
+#define PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTIONK0SHORT_H_
 
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
@@ -409,4 +409,4 @@ std::array<cutContainerType, 5> FemtoDreamResoSelection::getCutContainer(V const
 }
 } // namespace o2::analysis::femtoDream
 
-#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTION_H_
+#endif // PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTIONK0SHORT_H_
