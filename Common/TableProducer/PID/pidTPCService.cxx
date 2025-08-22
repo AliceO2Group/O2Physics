@@ -47,7 +47,6 @@ struct pidTpcService {
   // CCDB boilerplate declarations
   o2::framework::Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::ccdb::CcdbApi ccdbApi;
 
   o2::aod::pid::pidTPCProducts products;
   o2::aod::pid::pidTPCConfigurables pidTPCopts;
@@ -61,25 +60,24 @@ struct pidTpcService {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-    ccdbApi.init(ccdburl.value);
 
     // task-specific
-    pidTPC.init(ccdb, ccdbApi, initContext, pidTPCopts, metadataInfo);
+    pidTPC.init(ccdb, initContext, pidTPCopts, metadataInfo);
   }
 
   void processTracksIU(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs)
   {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
+    pidTPC.process(ccdb, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
   }
 
   void processTracksMCIU(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const&)
   {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
+    pidTPC.process(ccdb, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
   }
 
   void processTracksIUWithTracksQA(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::TracksIU, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs, aod::TracksQAVersion const& tracksQA)
   {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, tracksQA, products);
+    pidTPC.process(ccdb, bcs, collisions, tracks, tracksQA, products);
   }
 
   PROCESS_SWITCH(pidTpcService, processTracksIU, "Process TracksIU (Run 3)", true);
