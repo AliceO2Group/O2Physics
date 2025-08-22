@@ -67,7 +67,6 @@ struct skimmerOTS {
     }
 
     registry.add("hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
-
   }
 
   ~skimmerOTS()
