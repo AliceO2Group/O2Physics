@@ -37,6 +37,7 @@
 #include "ReconstructionDataFormats/PID.h"
 
 using namespace o2::framework;
+using namespace o2::analysis::femtoDream::femtoDreamSelection;
 
 namespace o2::analysis::femtoDream
 {
@@ -346,8 +347,8 @@ class FemtoDreamCascadeSelection
   }; ///< Helper information for the
      ///< different selections
 
-  static constexpr int kNcutStages = 2;
-  static constexpr std::string_view mCutStage[kNcutStages] = {"BeforeSel", "AfterSel"};
+  //static constexpr int kNcutStages = 2;
+  //static constexpr std::string_view mCutStage[kNcutStages] = {"BeforeSel", "AfterSel"};
 }; // namespace femtoDream
 
 template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::ParticleType daugh, o2::aod::femtodreamparticle::ParticleType bach, typename cutContainerType>

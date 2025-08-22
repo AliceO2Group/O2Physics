@@ -35,6 +35,9 @@ enum SelectionType { kUpperLimit,    ///< simple upper limit for the value, e.g.
                      kAbsLowerLimit, ///< lower limit of the absolute value, e.g. |DCA_xyz| > 0.05 cm
                      kEqual          ///< values need to be equal, e.g. sign = 1
 };
+  
+static constexpr int kNcutStages = 2;
+static constexpr std::string_view mCutStage[kNcutStages] = {"BeforeSel", "AfterSel"};
 
 } // namespace femtoDreamSelection
 
