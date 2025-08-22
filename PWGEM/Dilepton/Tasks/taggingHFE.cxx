@@ -125,28 +125,10 @@ struct taggingHFE {
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
     Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 1.0, "max dca XY for single track in cm"};
     Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 1.0, "max dca Z for single track in cm"};
-    Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2, "min n sigma el in TPC"};
-    Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +3, "max n sigma el in TPC"};
-    Configurable<float> cfg_min_TOFNsigmaEl{"cfg_min_TOFNsigmaEl", -3, "min n sigma el in TOF"};
-    Configurable<float> cfg_max_TOFNsigmaEl{"cfg_max_TOFNsigmaEl", +3, "max n sigma el in TOF"};
   } loose_electroncut;
 
   struct : ConfigurableGroup {
     std::string prefix = "kaoncut";
-    Configurable<float> cfg_min_pt_track{"cfg_min_pt_track", 0.05, "min pT for single track"};
-    Configurable<float> cfg_max_pt_track{"cfg_max_pt_track", 1e+10, "max pT for single track"};
-    Configurable<float> cfg_min_eta_track{"cfg_min_eta_track", -1.2, "min eta for single track"};
-    Configurable<float> cfg_max_eta_track{"cfg_max_eta_track", +1.2, "max eta for single track"};
-    Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
-    Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
-    Configurable<int> cfg_min_ncrossedrows_tpc{"cfg_min_ncrossedrows_tpc", 40, "min ncrossed rows"};
-    Configurable<int> cfg_min_ncluster_tpc{"cfg_min_ncluster_tpc", 0, "min ncluster tpc"};
-    Configurable<int> cfg_min_ncluster_its{"cfg_min_ncluster_its", 4, "min ncluster its"};
-    Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 1, "min ncluster itsib"};
-    Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
-    Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_max_dcaxy{"cfg_max_dcaxy", 0.5, "max dca XY for single track in cm"};
-    Configurable<float> cfg_max_dcaz{"cfg_max_dcaz", 0.5, "max dca Z for single track in cm"};
     Configurable<float> cfg_min_TPCNsigmaKa{"cfg_min_TPCNsigmaKa", -3, "min n sigma ka in TPC"};
     Configurable<float> cfg_max_TPCNsigmaKa{"cfg_max_TPCNsigmaKa", +3, "max n sigma ka in TPC"};
     Configurable<float> cfg_min_TOFNsigmaKa{"cfg_min_TOFNsigmaKa", -3, "min n sigma ka in TOF"};
@@ -215,7 +197,7 @@ struct taggingHFE {
     Configurable<int> cfgEventGeneratorType{"cfgEventGeneratorType", -1, "if positive, select event generator type. i.e. gap or signal"};
   } eventcut;
 
-  Configurable<float> cfgMeeMaxPF{"cfgMeeMaxPF", 0.08, "max mee for prefilter to reject pi0->ee and gamma->ee in LMR"};
+  Configurable<float> cfgMeeMaxPF{"cfgMeeMaxPF", 0.04, "max mee for prefilter to reject pi0->ee and gamma->ee in LMR"};
 
   HistogramRegistry fRegistry{"fRegistry"};
   static constexpr std::string_view hadron_names[6] = {"LF/", "Jpsi/", "D0/", "Dpm/", "Ds/", "Lc/"};
@@ -368,7 +350,7 @@ struct taggingHFE {
     fRegistry.add("Data/V0/hYPhi", "rapidity vs. #varphi of V0;#varphi (rad.);rapidity_{#Lambda}", kTH2F, {{90, 0, 2 * M_PI}, {80, -2, +2}}, false);
     fRegistry.add("Data/V0/hAP", "Ap plot;#alpha;q_{T} (GeV/c)", kTH2F, {{200, -1, 1}, {250, 0, 0.25}}, false);
     fRegistry.add("Data/V0/hLxy", "decay length from PV;L_{xy} (cm)", kTH1F, {{100, 0, 10}}, false);
-    fRegistry.add("Data/V0/hCosPA", "cosPA;cosine of pointing angle", kTH1F, {{100, 0.99, 1}}, false);
+    fRegistry.add("Data/V0/hCosPA", "cosPA;cosine of pointing angle", kTH1F, {{200, -1, 1}}, false);
     fRegistry.add("Data/V0/hDCA2Legs", "distance between 2 legs at PCA;distance between 2 legs (cm)", kTH1F, {{100, 0, 1}}, false);
     fRegistry.add("Data/V0/hMassK0S", "K0S mass;m_{#pi#pi} (GeV/c^{2})", kTH1F, {{100, 0.45, 0.55}}, false);
     fRegistry.add("Data/V0/hMassLambda", "Lambda mass;m_{p#pi^{-}} (GeV/c^{2})", kTH1F, {{100, 1.08, 1.18}}, false);
@@ -377,7 +359,7 @@ struct taggingHFE {
     // for cascade
     fRegistry.add("Data/Cascade/hPt", "pT of V0;p_{T} (GeV/c)", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("Data/Cascade/hYPhi", "rapidity vs. #varphi of V0;#varphi (rad.);rapidity_{#Lambda}", kTH2F, {{90, 0, 2 * M_PI}, {80, -2, +2}}, false);
-    fRegistry.add("Data/Cascade/hCosPA", "cosPA;cosine of pointing angle", kTH1F, {{100, 0.99, 1}}, false);
+    fRegistry.add("Data/Cascade/hCosPA", "cosPA;cosine of pointing angle", kTH1F, {{200, -1, 1}}, false);
     fRegistry.add("Data/Cascade/hDCA2Legs", "distance between 2 legs at PCA;distance between 2 legs (cm)", kTH1F, {{100, 0, 1}}, false);
     fRegistry.add("Data/Cascade/hV0CosPA", "cosPA of V0 in cascade;cosine of pointing angle", kTH1F, {{100, 0.99, 1}}, false);
     fRegistry.add("Data/Cascade/hV0DCA2Legs", "distance between 2 legs at PCA of V0 in cascade;distance between 2 legs (cm)", kTH1F, {{100, 0, 1}}, false);
@@ -387,31 +369,31 @@ struct taggingHFE {
     fRegistry.add("Data/Cascade/hMassOmega", "#Omega mass;m_{#LambdaK} (GeV/c^{2})", kTH1F, {{100, 1.62, 1.72}}, false);
 
     // for e-L pair
-    fRegistry.add("Data/eL/RS/hs", "hs;m_{e#Lambda} (GeV/c^{2});p_{T,e} (GeV/c);DCA_{e}^{3D} (#sigma);L_{xy} (cm);", kTHnSparseF, {{20, 1.1, 3.1}, {100, 0, 10}, {100, 0, 10}, {500, 0, 0.5}}, false);
-    fRegistry.add("Data/eL/RS/hCosPA", "cos PA;cosPA", kTH1F, {{100, 0.99, 1.0}}, false);
+    fRegistry.add("Data/eL/RS/hs", "hs;m_{e#Lambda} (GeV/c^{2});p_{T,e} (GeV/c);DCA_{e}^{3D} (#sigma);L_{xy} (cm);", kTHnSparseF, {{20, 1.1, 3.1}, {100, 0, 10}, {100, 0, 10}, {100, 0, 1.0}}, false);
+    fRegistry.add("Data/eL/RS/hCosPA", "cos PA;cosPA", kTH1F, {{200, -1, 1}}, false);
     fRegistry.add("Data/eL/RS/hDCA2Legs", "distance between 2 legs at PCA;distance between 2 legs at PCA (cm)", kTH1F, {{500, 0.0, 0.5}}, false);
-    fRegistry.add("Data/eL/RS/hLxy", "distance between PV and SV in XY;L_{xy} (cm)", kTH1F, {{500, 0.0, 0.5}}, false);
-    fRegistry.add("Data/eL/RS/hLz", "distance between PV and SV in Z;L_{z} (cm)", kTH1F, {{500, 0.0, 0.5}}, false);
+    fRegistry.add("Data/eL/RS/hLxy", "distance between PV and SV in XY;L_{xy} (cm)", kTH1F, {{100, 0.0, 1}}, false);
+    fRegistry.add("Data/eL/RS/hLz", "distance between PV and SV in Z;L_{z} (cm)", kTH1F, {{100, 0.0, 1}}, false);
     fRegistry.addClone("Data/eL/RS/", "Data/eL/WS/"); // right and wrong sign
     fRegistry.addClone("Data/eL/RS/", "MC/eLfromPromptLcpm/");
     fRegistry.addClone("Data/eL/RS/", "MC/eLfromNonPromptLcpm/");
 
     // for e-Xi pair
-    fRegistry.add("Data/eXi/RS/hs", "hs;m_{e#Xi} (GeV/c^{2});p_{T,e} (GeV/c);DCA_{e}^{3D} (#sigma);L_{xy} (cm);", kTHnSparseF, {{20, 1.1, 3.1}, {100, 0, 10}, {100, 0, 10}, {500, 0, 0.5}}, false);
-    fRegistry.add("Data/eXi/RS/hCosPA", "cos PA;cosPA", kTH1F, {{100, 0.99, 1.0}}, false);
+    fRegistry.add("Data/eXi/RS/hs", "hs;m_{e#Xi} (GeV/c^{2});p_{T,e} (GeV/c);DCA_{e}^{3D} (#sigma);L_{xy} (cm);", kTHnSparseF, {{20, 1.3, 3.3}, {100, 0, 10}, {100, 0, 10}, {100, 0, 1.0}}, false);
+    fRegistry.add("Data/eXi/RS/hCosPA", "cos PA;cosPA", kTH1F, {{200, -1, 1}}, false);
     fRegistry.add("Data/eXi/RS/hDCA2Legs", "distance between 2 legs at PCA;distance between 2 legs at PCA (cm)", kTH1F, {{500, 0.0, 0.5}}, false);
-    fRegistry.add("Data/eXi/RS/hLxy", "distance between PV and SV in XY;L_{xy} (cm)", kTH1F, {{500, 0.0, 0.5}}, false);
-    fRegistry.add("Data/eXi/RS/hLz", "distance between PV and SV in Z;L_{z} (cm)", kTH1F, {{500, 0.0, 0.5}}, false);
+    fRegistry.add("Data/eXi/RS/hLxy", "distance between PV and SV in XY;L_{xy} (cm)", kTH1F, {{100, 0.0, 1}}, false);
+    fRegistry.add("Data/eXi/RS/hLz", "distance between PV and SV in Z;L_{z} (cm)", kTH1F, {{100, 0.0, 1}}, false);
     fRegistry.addClone("Data/eXi/RS/", "Data/eXi/WS/"); // right and wrong sign
     fRegistry.addClone("Data/eXi/RS/", "MC/eXifromPromptXic0/");
     fRegistry.addClone("Data/eXi/RS/", "MC/eXifromNonPromptXic0/");
 
     // for e-Omega pair
-    fRegistry.add("Data/eOmega/RS/hs", "hs;m_{e#Omega} (GeV/c^{2});p_{T,e} (GeV/c);DCA_{e}^{3D} (#sigma);L_{xy} (cm);", kTHnSparseF, {{20, 1.1, 3.1}, {100, 0, 10}, {100, 0, 10}, {500, 0, 0.5}}, false);
-    fRegistry.add("Data/eOmega/RS/hCosPA", "cos PA;cosPA", kTH1F, {{100, 0.99, 1.0}}, false);
+    fRegistry.add("Data/eOmega/RS/hs", "hs;m_{e#Omega} (GeV/c^{2});p_{T,e} (GeV/c);DCA_{e}^{3D} (#sigma);L_{xy} (cm);", kTHnSparseF, {{20, 1.6, 3.6}, {100, 0, 10}, {100, 0, 10}, {100, 0, 1.0}}, false);
+    fRegistry.add("Data/eOmega/RS/hCosPA", "cos PA;cosPA", kTH1F, {{200, -1, 1}}, false);
     fRegistry.add("Data/eOmega/RS/hDCA2Legs", "distance between 2 legs at PCA;distance between 2 legs at PCA (cm)", kTH1F, {{500, 0.0, 0.5}}, false);
-    fRegistry.add("Data/eOmega/RS/hLxy", "distance between PV and SV in XY;L_{xy} (cm)", kTH1F, {{500, 0.0, 0.5}}, false);
-    fRegistry.add("Data/eOmega/RS/hLz", "distance between PV and SV in Z;L_{z} (cm)", kTH1F, {{500, 0.0, 0.5}}, false);
+    fRegistry.add("Data/eOmega/RS/hLxy", "distance between PV and SV in XY;L_{xy} (cm)", kTH1F, {{100, 0.0, 1}}, false);
+    fRegistry.add("Data/eOmega/RS/hLz", "distance between PV and SV in Z;L_{z} (cm)", kTH1F, {{100, 0.0, 1}}, false);
     fRegistry.addClone("Data/eOmega/RS/", "Data/eOmega/WS/"); // right and wrong sign
     fRegistry.addClone("Data/eOmega/RS/", "MC/eOmegafromPromptOmegac0/");
     fRegistry.addClone("Data/eOmega/RS/", "MC/eOmegafromNonPromptOmegac0/");
@@ -703,9 +685,10 @@ struct taggingHFE {
     float dcaZ = mDcaInfoCov.getZ();
     float dca3DinSigma = dca3DinSigmaOTF(dcaXY, dcaZ, trackParCov.getSigmaY2(), trackParCov.getSigmaZ2(), trackParCov.getSigmaZY());
 
-    if (isSelectedElectron(track, trackParCov, dcaXY, dcaZ)) {
+    if (!isSelectedElectron(track, trackParCov, dcaXY, dcaZ)) {
       return;
     }
+    fRegistry.fill(HIST("Data/electron/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
 
     if constexpr (isMC) {
       const auto& mctrack = track.template mcParticle_as<aod::McParticles>();
@@ -777,8 +760,6 @@ struct taggingHFE {
       } else if (pdg_mother == 5122) { // Lb0
         fRegistry.fill(HIST("MC/eFromLb0/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
       }
-    } else {
-      fRegistry.fill(HIST("Data/electron/hs"), trackParCov.getPt(), trackParCov.getEta(), trackParCov.getPhi(), dca3DinSigma);
     }
   }
 
@@ -995,8 +976,6 @@ struct taggingHFE {
       const auto& trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, collision.globalIndex());
       electronIds.reserve(trackIdsThisCollision.size());
       positronIds.reserve(trackIdsThisCollision.size());
-      negKaonIds.reserve(trackIdsThisCollision.size());
-      posKaonIds.reserve(trackIdsThisCollision.size());
 
       for (const auto& trackId : trackIdsThisCollision) {
         const auto& track = trackId.template track_as<TTracks>();
@@ -1284,8 +1263,16 @@ struct taggingHFE {
                 const auto& mcLambdac0 = mcParticles.rawIteratorAt(mcLambdacId);
                 if (IsFromBeauty(mcLambdac0, mcParticles) < 0) {
                   fRegistry.fill(HIST("MC/eLfromPromptLcpm/hs"), eLpair.mass, eLpair.ptepv, eLpair.dca3dinsigma, eLpair.lxy);
+                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hCosPA"), eLpair.cospa);
+                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hDCA2Legs"), eLpair.dca2legs);
+                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hLxy"), eLpair.lxy);
+                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hLz"), eLpair.lz);
                 } else {
                   fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hs"), eLpair.mass, eLpair.ptepv, eLpair.dca3dinsigma, eLpair.lxy);
+                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hCosPA"), eLpair.cospa);
+                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hDCA2Legs"), eLpair.dca2legs);
+                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hLxy"), eLpair.lxy);
+                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hLz"), eLpair.lz);
                 }
               }
             }
@@ -1340,8 +1327,16 @@ struct taggingHFE {
                 const auto& mcLambdac0 = mcParticles.rawIteratorAt(mcLambdacId);
                 if (IsFromBeauty(mcLambdac0, mcParticles) < 0) {
                   fRegistry.fill(HIST("MC/eLfromPromptLcpm/hs"), eLpair.mass, eLpair.ptepv, eLpair.dca3dinsigma, eLpair.lxy);
+                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hCosPA"), eLpair.cospa);
+                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hDCA2Legs"), eLpair.dca2legs);
+                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hLxy"), eLpair.lxy);
+                  fRegistry.fill(HIST("MC/eLfromPromptLcpm/hLz"), eLpair.lz);
                 } else {
                   fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hs"), eLpair.mass, eLpair.ptepv, eLpair.dca3dinsigma, eLpair.lxy);
+                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hCosPA"), eLpair.cospa);
+                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hDCA2Legs"), eLpair.dca2legs);
+                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hLxy"), eLpair.lxy);
+                  fRegistry.fill(HIST("MC/eLfromNonPromptLcpm/hLz"), eLpair.lz);
                 }
               }
             }
@@ -1383,8 +1378,16 @@ struct taggingHFE {
                   const auto& mcXic0 = mcParticles.rawIteratorAt(mcXic0Id);
                   if (IsFromBeauty(mcXic0, mcParticles) < 0) {
                     fRegistry.fill(HIST("MC/eXifromPromptXic0/hs"), eXipair.mass, eXipair.ptepv, eXipair.dca3dinsigma, eXipair.lxy);
+                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hCosPA"), eXipair.cospa);
+                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hDCA2Legs"), eXipair.dca2legs);
+                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hLxy"), eXipair.lxy);
+                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hLz"), eXipair.lz);
                   } else {
                     fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hs"), eXipair.mass, eXipair.ptepv, eXipair.dca3dinsigma, eXipair.lxy);
+                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hCosPA"), eXipair.cospa);
+                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hDCA2Legs"), eXipair.dca2legs);
+                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hLxy"), eXipair.lxy);
+                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hLz"), eXipair.lz);
                   }
                 }
               }
@@ -1445,8 +1448,16 @@ struct taggingHFE {
                   const auto& mcXic0 = mcParticles.rawIteratorAt(mcXic0Id);
                   if (IsFromBeauty(mcXic0, mcParticles) < 0) {
                     fRegistry.fill(HIST("MC/eXifromPromptXic0/hs"), eXipair.mass, eXipair.ptepv, eXipair.dca3dinsigma, eXipair.lxy);
+                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hCosPA"), eXipair.cospa);
+                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hDCA2Legs"), eXipair.dca2legs);
+                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hLxy"), eXipair.lxy);
+                    fRegistry.fill(HIST("MC/eXifromPromptXic0/hLz"), eXipair.lz);
                   } else {
                     fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hs"), eXipair.mass, eXipair.ptepv, eXipair.dca3dinsigma, eXipair.lxy);
+                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hCosPA"), eXipair.cospa);
+                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hDCA2Legs"), eXipair.dca2legs);
+                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hLxy"), eXipair.lxy);
+                    fRegistry.fill(HIST("MC/eXifromNonPromptXic0/hLz"), eXipair.lz);
                   }
                 }
               }
@@ -1480,16 +1491,24 @@ struct taggingHFE {
             int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 2212, -211, 3122, mcParticles);
             if (mcLambdaId > 0) { // true Lambda
               const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
-              int mcOmegaId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, 3122, -211, 3312, mcParticles);
+              int mcOmegaId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, 3122, -321, 3334, mcParticles);
               if (mcOmegaId > 0) { // true omegaMinus
                 const auto& mcOmega = mcParticles.rawIteratorAt(mcOmegaId);
-                int mcOmegac0Id = FindCommonMotherFrom2Prongs(mcpos, mcOmega, -11, 3312, 4132, mcParticles);
+                int mcOmegac0Id = FindCommonMotherFrom2Prongs(mcpos, mcOmega, -11, 3334, 4332, mcParticles);
                 if (mcOmegac0Id > 0) { // true Omegac0
                   const auto& mcOmegac0 = mcParticles.rawIteratorAt(mcOmegac0Id);
                   if (IsFromBeauty(mcOmegac0, mcParticles) < 0) {
                     fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hs"), eOmegapair.mass, eOmegapair.ptepv, eOmegapair.dca3dinsigma, eOmegapair.lxy);
+                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hCosPA"), eOmegapair.cospa);
+                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hDCA2Legs"), eOmegapair.dca2legs);
+                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hLxy"), eOmegapair.lxy);
+                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hLz"), eOmegapair.lz);
                   } else {
                     fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hs"), eOmegapair.mass, eOmegapair.ptepv, eOmegapair.dca3dinsigma, eOmegapair.lxy);
+                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hCosPA"), eOmegapair.cospa);
+                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hDCA2Legs"), eOmegapair.dca2legs);
+                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hLxy"), eOmegapair.lxy);
+                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hLz"), eOmegapair.lz);
                   }
                 }
               }
@@ -1542,16 +1561,24 @@ struct taggingHFE {
             int mcLambdaId = FindCommonMotherFrom2Prongs(mcposLeg, mcnegLeg, 211, -2212, -3122, mcParticles);
             if (mcLambdaId > 0) { // true AntiLambda
               const auto& mcLambda = mcParticles.rawIteratorAt(mcLambdaId);
-              int mcOmegaId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, -3122, 211, -3312, mcParticles);
+              int mcOmegaId = FindCommonMotherFrom2Prongs(mcLambda, mcbachelor, -3122, 321, -3334, mcParticles);
               if (mcOmegaId > 0) { // true omegaPlus
                 const auto& mcOmega = mcParticles.rawIteratorAt(mcOmegaId);
-                int mcOmegac0Id = FindCommonMotherFrom2Prongs(mcele, mcOmega, 11, -3312, 4132, mcParticles);
+                int mcOmegac0Id = FindCommonMotherFrom2Prongs(mcele, mcOmega, 11, -3334, 4332, mcParticles);
                 if (mcOmegac0Id > 0) { // true Omegac0
                   const auto& mcOmegac0 = mcParticles.rawIteratorAt(mcOmegac0Id);
                   if (IsFromBeauty(mcOmegac0, mcParticles) < 0) {
                     fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hs"), eOmegapair.mass, eOmegapair.ptepv, eOmegapair.dca3dinsigma, eOmegapair.lxy);
+                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hCosPA"), eOmegapair.cospa);
+                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hDCA2Legs"), eOmegapair.dca2legs);
+                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hLxy"), eOmegapair.lxy);
+                    fRegistry.fill(HIST("MC/eOmegafromPromptOmegac0/hLz"), eOmegapair.lz);
                   } else {
                     fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hs"), eOmegapair.mass, eOmegapair.ptepv, eOmegapair.dca3dinsigma, eOmegapair.lxy);
+                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hCosPA"), eOmegapair.cospa);
+                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hDCA2Legs"), eOmegapair.dca2legs);
+                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hLxy"), eOmegapair.lxy);
+                    fRegistry.fill(HIST("MC/eOmegafromNonPromptOmegac0/hLz"), eOmegapair.lz);
                   }
                 }
               }
@@ -1569,10 +1596,6 @@ struct taggingHFE {
       electronIds.shrink_to_fit();
       positronIds.clear();
       positronIds.shrink_to_fit();
-      negKaonIds.clear();
-      negKaonIds.shrink_to_fit();
-      posKaonIds.clear();
-      posKaonIds.shrink_to_fit();
 
       lambdaIds.clear();
       lambdaIds.shrink_to_fit();
@@ -1625,8 +1648,6 @@ struct taggingHFE {
   std::vector<int> positronIdsLoose;
   std::vector<int> electronIds;
   std::vector<int> positronIds;
-  std::vector<int> negKaonIds;
-  std::vector<int> posKaonIds;
 
   std::vector<int> lambdaIds;
   std::vector<int> antilambdaIds;
