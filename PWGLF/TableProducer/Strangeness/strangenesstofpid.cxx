@@ -97,6 +97,7 @@ struct strangenesstofpid {
   Configurable<int> calculationMethod{"calculationMethod", 0, "algorithm for TOF calculation. 0: fast analytical withouot eloss, 1: O2 Propagator + trackLTIntegral (slow), 2: both methods and do comparison studies (slow)"};
   Configurable<int> calculateV0s{"calculateV0s", -1, "calculate V0-related TOF PID (0: no, 1: yes, -1: auto)"};
   Configurable<int> calculateCascades{"calculateCascades", -1, "calculate cascade-related TOF PID (0: no, 1: yes, -1: auto)"};
+  Configurable<bool> correctELossInclination{"correctELossInclination", true, "factor out inclination when doing effective e-loss correction (0: no, 1: yes)"};
 
   // Operation and minimisation criteria
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
@@ -850,6 +851,9 @@ struct strangenesstofpid {
       // length factor due to eta (to offset e-loss)
       float positiveCosine = 1.0f/sqrt(1.0f + posTrack.getTgl() * posTrack.getTgl());
       float negativeCosine = 1.0f/sqrt(1.0f + posTrack.getTgl() * posTrack.getTgl());
+      if(correctELossInclination.value==false){
+        negativeCosine = positiveCosine = 1.0f;
+      }
 
       if (pTra.hasTOF()) {
         if (v0.v0cosPA() > v0Group.qaCosPA && v0.dcaV0daughters() < v0Group.qaDCADau) {
@@ -1138,6 +1142,9 @@ struct strangenesstofpid {
       float positiveCosine = 1.0f/sqrt(1.0f + posTrack.getTgl() * posTrack.getTgl());
       float negativeCosine = 1.0f/sqrt(1.0f + posTrack.getTgl() * posTrack.getTgl());
       float bachelorCosine = 1.0f/sqrt(1.0f + bachTrack.getTgl() * bachTrack.getTgl());
+      if(correctELossInclination.value==false){
+        negativeCosine = positiveCosine = bachelorCosine = 1.0f;
+      }
 
       if (cascade.dcaV0daughters() < cascadeGroup.qaV0DCADau && cascade.dcacascdaughters() < cascadeGroup.qaCascDCADau && cascade.v0cosPA(collision.getX(), collision.getY(), collision.getZ()) > cascadeGroup.qaV0CosPA && cascade.casccosPA(collision.getX(), collision.getY(), collision.getZ()) > cascadeGroup.qaCascCosPA) {
         if (cascade.sign() < 0) {
