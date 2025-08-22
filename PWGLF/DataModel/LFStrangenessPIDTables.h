@@ -48,7 +48,7 @@ DECLARE_SOA_TABLE(DauTrackTOFPIDs, "AOD", "DAUTRACKTOFPID", // raw table (for po
 namespace v0data
 {
 // define constants for NSigma operation
-const float kNoTOFValue = -1.0f;
+const float kNoTOFValue = -1000.0f;
 const float kEpsilon = 1e-4;
 
 // ==== TOF INFORMATION ===
@@ -171,7 +171,7 @@ DECLARE_SOA_TABLE(V0TOFNSigmas, "AOD", "V0TOFNSIGMA", // processed NSigma table 
 namespace cascdata
 {
 // define constants for NSigma operation
-const float kNoTOFValue = -1.0f;
+const float kNoTOFValue = -1000.0f;
 const float kEpsilon = 1e-4;
 
 // lengths as stored in the AO2D for TOF calculations

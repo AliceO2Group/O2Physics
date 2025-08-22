@@ -1020,7 +1020,6 @@ struct strangenesstofpid {
       float lengthNegative = findInterceptLength(negTrack, d_bz);  // FIXME: tofPosition ok? adjust?
       float lengthBachelor = findInterceptLength(bachTrack, d_bz); // FIXME: tofPosition ok? adjust?
 
-
       if(lengthPositive > 0){
         posFlightPi_Method0 = lengthPositive / velocityPositivePi;
         posFlightPr_Method0 = lengthPositive / velocityPositivePr;
