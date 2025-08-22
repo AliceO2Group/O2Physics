@@ -193,19 +193,19 @@ struct PidDiHadron {
 
     // Event Counter
     if (doprocessSame && cfgUseAdditionalEventCut) {
-      registry.add("hEventCountSpecific", "Number of Event;; Count", {HistType::kTH1D, {{12, 0, 12}}});
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(1, "after sel8");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(3, "kNoITSROFrameBorder");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(4, "kNoTimeFrameBorder");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(5, "kIsGoodZvtxFT0vsPV");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(6, "kNoCollInTimeRangeStandard");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(7, "kIsGoodITSLayersAll");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(8, "kNoCollInRofStandard");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(9, "kNoHighMultCollInPrevRof");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(10, "occupancy");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(11, "MultCorrelation");
-      registry.get<TH1>(HIST("hEventCountSpecific"))->GetXaxis()->SetBinLabel(12, "cfgEvSelV0AT0ACut");
+      registry.add("hEventCount", "Number of Event;; Count", {HistType::kTH1D, {{12, 0, 12}}});
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "after sel8");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(2, "kNoSameBunchPileup");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(3, "kNoITSROFrameBorder");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(4, "kNoTimeFrameBorder");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(5, "kIsGoodZvtxFT0vsPV");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(6, "kNoCollInTimeRangeStandard");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(7, "kIsGoodITSLayersAll");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(8, "kNoCollInRofStandard");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(9, "kNoHighMultCollInPrevRof");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(10, "occupancy");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(11, "MultCorrelation");
+      registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(12, "cfgEvSelV0AT0ACut");
     }
 
     if (cfgUseAdditionalEventCut) {
@@ -311,9 +311,6 @@ struct PidDiHadron {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgPIDParticle && getNsigmaPID(track) != cfgPIDParticle) {
-      return false;
-    }
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
   }
 
@@ -363,6 +360,8 @@ struct PidDiHadron {
     for (auto const& track1 : tracks) {
       if (!trackSelected(track1))
         continue;
+      if (cfgPIDParticle && getNsigmaPID(track1) != cfgPIDParticle)
+        continue; // if PID is selected, check if the track has the right PID
       if (!getEfficiencyCorrection(weff1, track1.eta(), track1.pt(), vtxz))
         continue;
       registry.fill(HIST("Phi"), RecoDecay::constrainAngle(track1.phi(), 0.0));
@@ -426,6 +425,8 @@ struct PidDiHadron {
 
       if (!trackSelected(track1))
         continue;
+      if (cfgPIDParticle && getNsigmaPID(track1) != cfgPIDParticle)
+        continue; // if PID is selected, check if the track has the right PID
       if (!getEfficiencyCorrection(triggerWeight, track1.eta(), track1.pt(), posZ))
         continue;
       if (system == SameEvent) {
@@ -489,61 +490,61 @@ struct PidDiHadron {
   template <typename TCollision>
   bool eventSelected(TCollision collision, const int multTrk, const float centrality, const bool fillCounter)
   {
-    registry.fill(HIST("hEventCountSpecific"), 0.5);
+    registry.fill(HIST("hEventCount"), 0.5);
     if (cfgEvSelkNoSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
       // rejects collisions which are associated with the same "found-by-T0" bunch crossing
       // https://indico.cern.ch/event/1396220/#1-event-selection-with-its-rof
       return 0;
     }
     if (fillCounter && cfgEvSelkNoSameBunchPileup)
-      registry.fill(HIST("hEventCountSpecific"), 1.5);
+      registry.fill(HIST("hEventCount"), 1.5);
     if (cfgEvSelkNoITSROFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return 0;
     }
     if (fillCounter && cfgEvSelkNoITSROFrameBorder)
-      registry.fill(HIST("hEventCountSpecific"), 2.5);
+      registry.fill(HIST("hEventCount"), 2.5);
     if (cfgEvSelkNoTimeFrameBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
       return 0;
     }
     if (fillCounter && cfgEvSelkNoTimeFrameBorder)
-      registry.fill(HIST("hEventCountSpecific"), 3.5);
+      registry.fill(HIST("hEventCount"), 3.5);
     if (cfgEvSelkIsGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       // removes collisions with large differences between z of PV by tracks and z of PV from FT0 A-C time difference
       // use this cut at low multiplicities with caution
       return 0;
     }
     if (fillCounter && cfgEvSelkIsGoodZvtxFT0vsPV)
-      registry.fill(HIST("hEventCountSpecific"), 4.5);
+      registry.fill(HIST("hEventCount"), 4.5);
     if (cfgEvSelkNoCollInTimeRangeStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       // no collisions in specified time range
       return 0;
     }
     if (fillCounter && cfgEvSelkNoCollInTimeRangeStandard)
-      registry.fill(HIST("hEventCountSpecific"), 5.5);
+      registry.fill(HIST("hEventCount"), 5.5);
     if (cfgEvSelkIsGoodITSLayersAll && !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       // from Jan 9 2025 AOT meeting
       // cut time intervals with dead ITS staves
       return 0;
     }
     if (fillCounter && cfgEvSelkIsGoodITSLayersAll)
-      registry.fill(HIST("hEventCountSpecific"), 6.5);
+      registry.fill(HIST("hEventCount"), 6.5);
     if (cfgEvSelkNoCollInRofStandard && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
       // no other collisions in this Readout Frame with per-collision multiplicity above threshold
       return 0;
     }
     if (fillCounter && cfgEvSelkNoCollInRofStandard)
-      registry.fill(HIST("hEventCountSpecific"), 7.5);
+      registry.fill(HIST("hEventCount"), 7.5);
     if (cfgEvSelkNoHighMultCollInPrevRof && !collision.selection_bit(o2::aod::evsel::kNoHighMultCollInPrevRof)) {
       // veto an event if FT0C amplitude in previous ITS ROF is above threshold
       return 0;
     }
     if (fillCounter && cfgEvSelkNoHighMultCollInPrevRof)
-      registry.fill(HIST("hEventCountSpecific"), 8.5);
+      registry.fill(HIST("hEventCount"), 8.5);
     auto occupancy = collision.trackOccupancyInTimeRange();
     if (cfgEvSelOccupancy && (occupancy < cfgCutOccupancyLow || occupancy > cfgCutOccupancyHigh))
       return 0;
     if (fillCounter && cfgEvSelOccupancy)
-      registry.fill(HIST("hEventCountSpecific"), 9.5);
+      registry.fill(HIST("hEventCount"), 9.5);
 
     auto multNTracksPV = collision.multNTracksPV();
     if (cfgEvSelMultCorrelation) {
@@ -557,14 +558,14 @@ struct PidDiHadron {
         return 0;
     }
     if (fillCounter && cfgEvSelMultCorrelation)
-      registry.fill(HIST("hEventCountSpecific"), 10.5);
+      registry.fill(HIST("hEventCount"), 10.5);
 
     // V0A T0A 5 sigma cut
     float sigma = 5.0;
     if (cfgEvSelV0AT0ACut && (std::fabs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > sigma * fT0AV0ASigma->Eval(collision.multFT0A())))
       return 0;
     if (fillCounter && cfgEvSelV0AT0ACut)
-      registry.fill(HIST("hEventCountSpecific"), 11.5);
+      registry.fill(HIST("hEventCount"), 11.5);
 
     return 1;
   }

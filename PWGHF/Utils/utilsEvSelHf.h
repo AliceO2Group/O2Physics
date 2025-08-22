@@ -55,16 +55,16 @@ enum OccupancyEstimator { None = 0,
 /// Get the occupancy
 /// \param collision is the collision with the occupancy information
 /// \return collision occupancy
-template <typename Coll>
-float getOccupancyColl(Coll const& collision, int occEstimator)
+template <typename TCollision>
+float getOccupancyColl(TCollision const& collision, const int occEstimator)
 {
   switch (occEstimator) {
     case OccupancyEstimator::Its:
-      return collision.trackOccupancyInTimeRange();
+      return static_cast<float>(collision.trackOccupancyInTimeRange());
     case OccupancyEstimator::Ft0c:
-      return collision.ft0cOccupancyInTimeRange();
+      return static_cast<float>(collision.ft0cOccupancyInTimeRange());
     default:
-      LOG(fatal) << "Occupancy estimator not valid. Possible values are ITS or FT0C.";
+      LOG(fatal) << "Occupancy estimator not valid. See OccupancyEstimator for valid values.";
       break;
   }
   return -999.f;
@@ -73,14 +73,14 @@ float getOccupancyColl(Coll const& collision, int occEstimator)
 /// \brief Function to get MC collision occupancy
 /// \param collSlice collection of reconstructed collisions associated to a generated one
 /// \return generated MC collision occupancy
-template <typename CCs>
-int getOccupancyGenColl(CCs const& collSlice, int occEstimator)
+template <typename TCollisions>
+float getOccupancyGenColl(TCollisions const& collSlice, const int occEstimator)
 {
-  float multiplicity{0.f};
-  int occupancy = 0;
+  using TMult = uint16_t; // type of numContrib
+  TMult multiplicity{};
+  float occupancy{0.f};
   for (const auto& collision : collSlice) {
-    float collMult{0.f};
-    collMult = collision.numContrib();
+    const TMult collMult = collision.numContrib();
     if (collMult > multiplicity) {
       occupancy = getOccupancyColl(collision, occEstimator);
       multiplicity = collMult;
@@ -115,14 +115,16 @@ enum EventRejection {
   NEventRejection
 };
 
-o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
-o2::framework::AxisSpec axisUpcEvents = {o2::aod::sgselector::DoubleGap + 1, -0.5f, +o2::aod::sgselector::DoubleGap + 0.5f, ""};
+using HfCollisionRejectionMask = uint32_t; // 32 bits, in case new ev. selections will be added
+
+const o2::framework::AxisSpec axisEvents = {EventRejection::NEventRejection, -0.5f, +EventRejection::NEventRejection - 0.5f, ""};
+const o2::framework::AxisSpec axisUpcEvents = {o2::aod::sgselector::DoubleGap + 1, -0.5f, +o2::aod::sgselector::DoubleGap + 0.5f, ""};
 
 /// \brief Function to put labels on monitoring histogram
 /// \param hRejection monitoring histogram
 /// \param softwareTriggerLabel bin label for software trigger rejection
 template <typename Histo>
-void setEventRejectionLabels(Histo& hRejection, std::string softwareTriggerLabel = "")
+void setEventRejectionLabels(Histo& hRejection, std::string const& softwareTriggerLabel = "")
 {
   // Puts labels on the collision monitoring histogram.
   hRejection->GetXaxis()->SetBinLabel(EventRejection::None + 1, "All");
@@ -148,8 +150,8 @@ void setEventRejectionLabels(Histo& hRejection, std::string softwareTriggerLabel
 struct HfEventSelection : o2::framework::ConfigurableGroup {
   std::string prefix = "hfEvSel"; // JSON group name
   // event selection parameters (in chronological order of application)
-  o2::framework::Configurable<float> centralityMin{"centralityMin", 0., "Minimum centrality"};
-  o2::framework::Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality"};
+  o2::framework::Configurable<float> centralityMin{"centralityMin", 0.f, "Minimum centrality"};
+  o2::framework::Configurable<float> centralityMax{"centralityMax", 100.f, "Maximum centrality"};
   o2::framework::Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "Apply the sel8 event selection"};
   o2::framework::Configurable<int> triggerClass{"triggerClass", -1, "Trigger class different from sel8 (e.g. kINT7 for Run2) used only if useSel8Trigger is false"};
   o2::framework::Configurable<bool> useTvxTrigger{"useTvxTrigger", true, "Apply TVX trigger sel"};
@@ -170,7 +172,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> useNoCollInRofStandard{"useNoCollInRofStandard", false, "Reject collisions in ROF standard"};
   o2::framework::Configurable<std::string> softwareTrigger{"softwareTrigger", "", "Label of software trigger. Multiple triggers can be selected dividing them by a comma. Set None if you want bcs that are not selected by any trigger"};
   o2::framework::Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
-  o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "Users/m/mpuccio/EventFiltering/OTS/Chunked/", "ccdb path for ZORRO objects"};
+  o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
   o2::framework::ConfigurableAxis th2ConfigAxisCent{"th2ConfigAxisCent", {100, 0., 100.}, ""};
   o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {100, 0, 100000}, ""};
   o2::framework::Configurable<bool> requireGoodRct{"requireGoodRct", false, "Flag to require good RCT"};
@@ -262,10 +264,13 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param ccdb ccdb service needed to retrieve the needed info for zorro
   /// \param registry reference to the histogram registry needed for zorro
   /// \return bitmask with the event selection criteria not satisfied by the collision
-  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCsType, typename Coll>
-  uint32_t getHfCollisionRejectionMask(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry)
+  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename TBcs, typename TCollision>
+  HfCollisionRejectionMask getHfCollisionRejectionMask(TCollision const& collision,
+                                                       float& centrality,
+                                                       o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb,
+                                                       o2::framework::HistogramRegistry& registry)
   {
-    uint32_t rejectionMask{0}; // 32 bits, in case new ev. selections will be added
+    HfCollisionRejectionMask rejectionMask{};
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
       centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
@@ -317,7 +322,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
         SETBIT(rejectionMask, EventRejection::NoCollInRofStandard);
       }
       if (useOccupancyCut) {
-        float occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
+        const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
         if (occupancy < occupancyMin || occupancy > occupancyMax) {
           SETBIT(rejectionMask, EventRejection::Occupancy);
         }
@@ -341,9 +346,8 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
     if (softwareTrigger.value != "") {
       // we might have to update it from CCDB
-      auto bc = collision.template bc_as<BCsType>();
-
-      int runNumber = bc.runNumber();
+      const auto bc = collision.template bc_as<TBcs>();
+      const auto runNumber = bc.runNumber();
       if (runNumber != currentRun) { // We might need to update Zorro from CCDB if the run number changes
         zorro.setCCDBpath(ccdbPathSoftwareTrigger);
         zorro.setBCtolerance(bcMarginForSoftwareTrigger);
@@ -366,17 +370,21 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     return rejectionMask;
   }
 
-  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename BCsType, typename Coll>
-  uint32_t getHfCollisionRejectionMaskWithUpc(const Coll& collision, float& centrality, o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb, o2::framework::HistogramRegistry& registry, const BCsType& bcs)
+  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename TBcs, typename TCollision>
+  HfCollisionRejectionMask getHfCollisionRejectionMaskWithUpc(TCollision const& collision,
+                                                              float& centrality,
+                                                              o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb,
+                                                              o2::framework::HistogramRegistry& registry,
+                                                              TBcs const& bcs)
   {
-    auto rejectionMaskWithUpc = getHfCollisionRejectionMask<useEvSel, centEstimator, BCsType>(collision, centrality, ccdb, registry);
+    auto rejectionMaskWithUpc = getHfCollisionRejectionMask<useEvSel, centEstimator, TBcs>(collision, centrality, ccdb, registry);
 
     if (useEvSel) {
-      SGCutParHolder sgCuts = setSgPreselection();
-      auto bc = collision.template foundBC_as<BCsType>();
-      auto bcRange = udhelpers::compatibleBCs(collision, sgCuts.NDtcoll(), bcs, sgCuts.minNBCs());
-      auto sgSelectionResult = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
-      int upcEventType = sgSelectionResult.value;
+      const SGCutParHolder sgCuts = setSgPreselection();
+      const auto bc = collision.template foundBC_as<TBcs>();
+      const auto bcRange = udhelpers::compatibleBCs(collision, sgCuts.NDtcoll(), bcs, sgCuts.minNBCs());
+      const auto sgSelectionResult = sgSelector.IsSelected(sgCuts, collision, bcRange, bc);
+      const int upcEventType = sgSelectionResult.value;
       if (upcEventType > o2::aod::sgselector::DoubleGap) {
         SETBIT(rejectionMaskWithUpc, EventRejection::UpcEventCut);
       } else {
@@ -390,11 +398,14 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \brief Fills histograms for monitoring event selections satisfied by the collision.
   /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
-  template <typename Coll>
-  void fillHistograms(Coll const& collision, const uint32_t rejectionMask, float& centrality, float occupancy = -1)
+  template <typename TCollision>
+  void fillHistograms(TCollision const& collision,
+                      const HfCollisionRejectionMask rejectionMask,
+                      const float centrality,
+                      const float occupancy = -1.f)
   {
     hCollisions->Fill(EventRejection::None);
-    const float posZ = collision.posZ();
+    const auto posZ = collision.posZ();
     hPosZBeforeEvSel->Fill(posZ);
 
     for (std::size_t reason = 1; reason < EventRejection::NEventRejection; reason++) {
@@ -415,30 +426,31 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
 
 struct HfEventSelectionMc {
   // event selection parameters (in chronological order of application)
-  bool useSel8Trigger{false};          // Apply the Sel8 selection
-  bool useTvxTrigger{false};           // Apply the TVX trigger
-  bool useTimeFrameBorderCut{true};    // Apply TF border cut
-  bool useItsRofBorderCut{false};      // Apply the ITS RO frame border cut
-  float zPvPosMin{-1000.f};            // Minimum PV posZ (cm)
-  float zPvPosMax{1000.f};             // Maximum PV posZ (cm)
-  float centralityMin{0.f};            // Minimum centrality
-  float centralityMax{100.f};          // Maximum centrality
-  bool requireGoodRct{false};          // Apply RCT selection
-  std::string rctLabel{""};            // RCT selection flag
-  bool rctCheckZDC;                    // require ZDC from RCT
-  bool rctTreatLimitedAcceptanceAsBad; // RCT flag to reject events with limited acceptance for selected detectors
+  bool useSel8Trigger{false};                 // Apply the Sel8 selection
+  bool useTvxTrigger{false};                  // Apply the TVX trigger
+  bool useTimeFrameBorderCut{true};           // Apply TF border cut
+  bool useItsRofBorderCut{false};             // Apply the ITS RO frame border cut
+  float zPvPosMin{-1000.f};                   // Minimum PV posZ (cm)
+  float zPvPosMax{1000.f};                    // Maximum PV posZ (cm)
+  float centralityMin{0.f};                   // Minimum centrality
+  float centralityMax{100.f};                 // Maximum centrality
+  bool requireGoodRct{false};                 // Apply RCT selection
+  std::string rctLabel{""};                   // RCT selection flag
+  bool rctCheckZDC{false};                    // require ZDC from RCT
+  bool rctTreatLimitedAcceptanceAsBad{false}; // RCT flag to reject events with limited acceptance for selected detectors
 
   // util to retrieve the RCT info from CCDB
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
 
   // histogram names
   static constexpr char NameHistGenCollisionsCent[] = "hGenCollisionsCent";
-  std::shared_ptr<TH1> hGenCollisionsCent;
   static constexpr char NameHistRecCollisionsCentMc[] = "hRecCollisionsCentMc";
-  std::shared_ptr<TH1> hRecCollisionsCentMc;
   static constexpr char NameHistNSplitVertices[] = "hNSplitVertices";
-  std::shared_ptr<TH1> hNSplitVertices;
   static constexpr char NameHistGenCollisions[] = "hGenCollisions";
+
+  std::shared_ptr<TH1> hGenCollisionsCent;
+  std::shared_ptr<TH1> hRecCollisionsCentMc;
+  std::shared_ptr<TH1> hNSplitVertices;
   std::shared_ptr<TH1> hGenCollisions;
 
   /// \brief Adds collision monitoring histograms in the histogram registry.
@@ -456,7 +468,7 @@ struct HfEventSelectionMc {
   /// \brief Configures the object from the reco workflow
   /// \param registry reference to the histogram registry
   /// \param device device spec to get the configs from the reco workflow
-  void configureFromDevice(const o2::framework::DeviceSpec& device)
+  void configureFromDevice(o2::framework::DeviceSpec const& device)
   {
     for (const auto& option : device.options) {
       if (option.name.compare("hfEvSel.useSel8Trigger") == 0) {
@@ -490,7 +502,8 @@ struct HfEventSelectionMc {
   /// \brief Inits the HF event selection object
   /// \param device device spec to get the configs from the reco workflow
   /// \param registry reference to the histogram registry
-  void init(const o2::framework::DeviceSpec& device, o2::framework::HistogramRegistry& registry)
+  void init(o2::framework::DeviceSpec const& device,
+            o2::framework::HistogramRegistry& registry)
   {
     // we get the configuration from the reco workflow
     configureFromDevice(device);
@@ -509,12 +522,14 @@ struct HfEventSelectionMc {
   /// \param collSlice collection of reconstructed collisions
   /// \param centrality centrality variable to be set in this function
   /// \return a bitmask with the event selections not satisfied by the analysed collision
-  template <typename TBc, o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename TMcColl>
-  uint32_t getHfMcCollisionRejectionMask(TMcColl const& mcCollision, CCs const& collSlice, float& centrality)
+  template <typename TBcs, o2::hf_centrality::CentralityEstimator centEstimator, typename TCollisions, typename TMcCollision>
+  HfCollisionRejectionMask getHfMcCollisionRejectionMask(TMcCollision const& mcCollision,
+                                                         TCollisions const& collSlice,
+                                                         float& centrality)
   {
-    uint32_t rejectionMask{0};
-    float zPv = mcCollision.posZ();
-    auto bc = mcCollision.template bc_as<TBc>();
+    HfCollisionRejectionMask rejectionMask{};
+    const auto zPv = mcCollision.posZ();
+    const auto bc = mcCollision.template bc_as<TBcs>();
 
     if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
       centrality = o2::hf_centrality::getCentralityGenColl(collSlice, centEstimator);
@@ -560,8 +575,10 @@ struct HfEventSelectionMc {
   /// \brief Fills histogram for monitoring event selections satisfied by the collision.
   /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Coll>
-  void fillHistograms(Coll const& mcCollision, const uint32_t rejectionMask, int nSplitColl = 0)
+  template <o2::hf_centrality::CentralityEstimator centEstimator, typename TMcCollision>
+  void fillHistograms(TMcCollision const& mcCollision,
+                      const HfCollisionRejectionMask rejectionMask,
+                      const int nSplitColl = 0)
   {
     hGenCollisions->Fill(EventRejection::None);
 

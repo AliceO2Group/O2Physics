@@ -94,10 +94,12 @@ struct McOutlierRejectorTask {
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::FullMCDetectorLevelJets>, processSelectingFullMCDetectorLevelJets, "process mc detector level full jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::D0ChargedMCDetectorLevelJets>, processSelectingD0ChargedMCDetectorLevelJets, "process mc detector level D0 charged jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::DplusChargedMCDetectorLevelJets>, processSelectingDplusChargedMCDetectorLevelJets, "process mc detector level Dplus charged jets", false);
-  // PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::DstarChargedMCDetectorLevelJets>, processSelectingDstarChargedMCDetectorLevelJets, "process mc detector level Dstar charged jets", false);
+  PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::DsChargedMCDetectorLevelJets>, processSelectingDsChargedMCDetectorLevelJets, "process mc detector level Ds charged jets", false);
+  PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::DstarChargedMCDetectorLevelJets>, processSelectingDstarChargedMCDetectorLevelJets, "process mc detector level Dstar charged jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::LcChargedMCDetectorLevelJets>, processSelectingLcChargedMCDetectorLevelJets, "process mc detector level Lc charged jets", false);
-  // PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::B0ChargedMCDetectorLevelJets>, processSelectingB0ChargedMCDetectorLevelJets, "process mc detector level B0 charged jets", false);
+  PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::B0ChargedMCDetectorLevelJets>, processSelectingB0ChargedMCDetectorLevelJets, "process mc detector level B0 charged jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::BplusChargedMCDetectorLevelJets>, processSelectingBplusChargedMCDetectorLevelJets, "process mc detector level Bplus charged jets", false);
+  PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::XicToXiPiPiChargedMCDetectorLevelJets>, processSelectingXicToXiPiPiChargedMCDetectorLevelJets, "process mc detector level XicToXiPiPi charged jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::DielectronChargedMCDetectorLevelJets>, processSelectingDielectronChargedMCDetectorLevelJets, "process mc detector level Dielectron charged jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionObjects<aod::JetTracks>, processSelectingTracks, "process tracks", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::ChargedMCParticleLevelJets>, processSelectingChargedMCParticleLevelJets, "process mc particle level charged jets", true);
@@ -105,10 +107,12 @@ struct McOutlierRejectorTask {
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::FullMCParticleLevelJets>, processSelectingFullMCParticleLevelJets, "process mc particle level full jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::D0ChargedMCParticleLevelJets>, processSelectingD0ChargedMCParticleLevelJets, "process mc particle level D0 charged jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::DplusChargedMCParticleLevelJets>, processSelectingDplusChargedMCParticleLevelJets, "process mc particle level Dplus charged jets", false);
-  // PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::DstarChargedMCParticleLevelJets>, processSelectingDstarChargedMCParticleLevelJets, "process mc particle level Dstar charged jets", false);
+  PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::DsChargedMCParticleLevelJets>, processSelectingDsChargedMCParticleLevelJets, "process mc particle level Ds charged jets", false);
+  PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::DstarChargedMCParticleLevelJets>, processSelectingDstarChargedMCParticleLevelJets, "process mc particle level Dstar charged jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::LcChargedMCParticleLevelJets>, processSelectingLcChargedMCParticleLevelJets, "process mc particle level Lc charged jets", false);
-  // PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::B0ChargedMCParticleLevelJets>, processSelectingB0ChargedMCParticleLevelJets, "process mc particle level B0 charged jets", false);
+  PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::B0ChargedMCParticleLevelJets>, processSelectingB0ChargedMCParticleLevelJets, "process mc particle level B0 charged jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::BplusChargedMCParticleLevelJets>, processSelectingBplusChargedMCParticleLevelJets, "process mc particle level Bplus charged jets", false);
+  PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::XicToXiPiPiChargedMCParticleLevelJets>, processSelectingXicToXiPiPiChargedMCParticleLevelJets, "process mc particle level XicToXiPiPi charged jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::DielectronChargedMCParticleLevelJets>, processSelectingDielectronChargedMCParticleLevelJets, "process mc particle level Dielectron charged jets", false);
   PROCESS_SWITCH_FULL(McOutlierRejectorTask, processSelectionMcObjects<aod::JetParticles>, processSelectingParticles, "process mc particles", false);
 

@@ -506,7 +506,7 @@ struct HfTaskDplus {
             cent = getCentralityColl(collision, centEstimator);
           }
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = getOccupancyColl(collision, occEstimator);
+            occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
           }
           if (storePvContributors) {
             numPvContr = collision.numContrib();
@@ -563,7 +563,7 @@ struct HfTaskDplus {
             cent = getCentralityColl(collision, centEstimator);
           }
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = getOccupancyColl(collision, occEstimator);
+            occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
           }
           if (storePvContributors) {
             numPvContr = collision.numContrib();
@@ -587,7 +587,7 @@ struct HfTaskDplus {
             cent = getCentralityColl(collision, centEstimator);
           }
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = getOccupancyColl(collision, occEstimator);
+            occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
           }
           if (storePvContributors) {
             numPvContr = collision.numContrib();
@@ -622,7 +622,7 @@ struct HfTaskDplus {
         cent = getCentralityGenColl(recoCollsPerGenMcColl, centEstimator);
       }
       if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-        occ = getOccupancyGenColl(recoCollsPerGenMcColl, occEstimator);
+        occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerGenMcColl, occEstimator);
       }
 
       for (const auto& particle : mcParticlesPerGenMcColl) {
