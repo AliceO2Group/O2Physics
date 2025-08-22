@@ -500,24 +500,24 @@ struct strangenesstofpid {
       histos.add("hTOFPositionFinal", "hTOFPositionFinal", kTH2F, {axisPosition, axisPosition});
 
       // Delta-times of each method for the various species
-      histos.add("hDeltaTimeMethodsVsP_posLaPr", "hDeltaTimeMethodsVsP_posLaPr", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_posLaPi", "hDeltaTimeMethodsVsP_posLaPi", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_posK0Pi", "hDeltaTimeMethodsVsP_posK0Pi", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_negLaPr", "hDeltaTimeMethodsVsP_negLaPr", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_negLaPi", "hDeltaTimeMethodsVsP_negLaPi", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_negK0Pi", "hDeltaTimeMethodsVsP_negK0Pi", kTH3F, {axisP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_posLaPr", "hDeltaTimeMethodsVsP_posLaPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_posLaPi", "hDeltaTimeMethodsVsP_posLaPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_posK0Pi", "hDeltaTimeMethodsVsP_posK0Pi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_negLaPr", "hDeltaTimeMethodsVsP_negLaPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_negLaPi", "hDeltaTimeMethodsVsP_negLaPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_negK0Pi", "hDeltaTimeMethodsVsP_negK0Pi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
       
-      histos.add("hDeltaTimeMethodsVsP_posXiPi", "hDeltaTimeMethodsVsP_posXiPi", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_posXiPr", "hDeltaTimeMethodsVsP_posXiPr", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_negXiPi", "hDeltaTimeMethodsVsP_negXiPi", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_negXiPr", "hDeltaTimeMethodsVsP_negXiPr", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_bachXiPi", "hDeltaTimeMethodsVsP_bachXiPi", kTH3F, {axisP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_posXiPi", "hDeltaTimeMethodsVsP_posXiPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_posXiPr", "hDeltaTimeMethodsVsP_posXiPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_negXiPi", "hDeltaTimeMethodsVsP_negXiPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_negXiPr", "hDeltaTimeMethodsVsP_negXiPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_bachXiPi", "hDeltaTimeMethodsVsP_bachXiPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
       
-      histos.add("hDeltaTimeMethodsVsP_posOmPi", "hDeltaTimeMethodsVsP_posOmPi", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_posOmPr", "hDeltaTimeMethodsVsP_posOmPr", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_negOmPi", "hDeltaTimeMethodsVsP_negOmPi", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_negOmPr", "hDeltaTimeMethodsVsP_negOmPr", kTH3F, {axisP, axisEta, axisDeltaTime});
-      histos.add("hDeltaTimeMethodsVsP_bachOmKa", "hDeltaTimeMethodsVsP_bachOmKa", kTH3F, {axisP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_posOmPi", "hDeltaTimeMethodsVsP_posOmPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_posOmPr", "hDeltaTimeMethodsVsP_posOmPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_negOmPi", "hDeltaTimeMethodsVsP_negOmPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_negOmPr", "hDeltaTimeMethodsVsP_negOmPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hDeltaTimeMethodsVsP_bachOmKa", "hDeltaTimeMethodsVsP_bachOmKa", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
 
       histos.add("hRatioTimeMethodsVsP_posLaPr", "hRatioTimeMethodsVsP_posLaPr", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
       histos.add("hRatioTimeMethodsVsP_posLaPi", "hRatioTimeMethodsVsP_posLaPi", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
