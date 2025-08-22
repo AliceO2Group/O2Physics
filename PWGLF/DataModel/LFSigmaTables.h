@@ -9,12 +9,12 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 #include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Qvectors.h"
-
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
 #include "Framework/ASoAHelpers.h"
@@ -376,7 +376,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(MCOPAngle, mcopAngle,
                              TVector3 v1(photonMCPx, photonMCPy, photonMCPz);
                              TVector3 v2(lambdaMCPx, lambdaMCPy, lambdaMCPz);
                              return v1.Angle(v2);
-                           });   
+                           });
 
 // Photon
 DECLARE_SOA_DYNAMIC_COLUMN(PhotonMCPt, photonmcpt, //! Transverse momentum in GeV/c
@@ -425,7 +425,6 @@ DECLARE_SOA_DYNAMIC_COLUMN(LambdaMCY, lambdaMCY, //! Rapidity
 
 DECLARE_SOA_DYNAMIC_COLUMN(LambdaMCPhi, lambdaMCPhi, //! Phi in the range [0, 2pi)
                            [](float lambdaMCPx, float lambdaMCPy) -> float { return RecoDecay::phi(lambdaMCPx, lambdaMCPy); });
-                          
 
 } // namespace sigma0MCCore
 
@@ -436,9 +435,9 @@ DECLARE_SOA_TABLE(Sigma0MCCores, "AOD", "SIGMA0MCCORES",
                   sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz,
                   sigma0MCCore::IsPhotonPrimary, sigma0MCCore::PhotonPDGCode, sigma0MCCore::PhotonPDGCodeMother, sigma0MCCore::PhotonIsCorrectlyAssoc,
 
-                  sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz,                 
+                  sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz,
                   sigma0MCCore::IsLambdaPrimary, sigma0MCCore::LambdaPDGCode, sigma0MCCore::LambdaPDGCodeMother, sigma0MCCore::LambdaIsCorrectlyAssoc,
-                                    
+
                   // Dynamic columns
                   sigma0MCCore::IsSigma0<sigma0MCCore::PDGCode>,
                   sigma0MCCore::IsAntiSigma0<sigma0MCCore::PDGCode>,
@@ -451,7 +450,7 @@ DECLARE_SOA_TABLE(Sigma0MCCores, "AOD", "SIGMA0MCCORES",
                   sigma0MCCore::Sigma0MCMass<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
                   sigma0MCCore::Sigma0MCY<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
                   sigma0MCCore::MCPhi<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy>,
-                  sigma0MCCore::MCEta<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,                  
+                  sigma0MCCore::MCEta<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
                   sigma0MCCore::MCOPAngle<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy, sigma0MCCore::PhotonMCPz, sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
 
                   sigma0MCCore::PhotonMCPt<sigma0MCCore::PhotonMCPx, sigma0MCCore::PhotonMCPy>,
@@ -464,10 +463,7 @@ DECLARE_SOA_TABLE(Sigma0MCCores, "AOD", "SIGMA0MCCORES",
                   sigma0MCCore::LambdaMCP<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
                   sigma0MCCore::LambdaMCEta<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
                   sigma0MCCore::LambdaMCY<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy, sigma0MCCore::LambdaMCPz>,
-                  sigma0MCCore::LambdaMCPhi<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy>
-                );
-                  
-                  
+                  sigma0MCCore::LambdaMCPhi<sigma0MCCore::LambdaMCPx, sigma0MCCore::LambdaMCPy>);
 
 namespace sigma0Gen
 {
@@ -703,7 +699,6 @@ DECLARE_SOA_COLUMN(Photon2PDGCode, photon2PDGCode, int);
 DECLARE_SOA_COLUMN(Photon2PDGCodeMother, photon2PDGCodeMother, int);
 DECLARE_SOA_COLUMN(Photon2IsCorrectlyAssoc, photon2IsCorrectlyAssoc, bool);
 
-
 DECLARE_SOA_DYNAMIC_COLUMN(IsPi0, isPi0, //! IsPi0
                            [](int pdgCode) -> bool { return pdgCode == 111; });
 
@@ -816,7 +811,7 @@ DECLARE_SOA_TABLE(Pi0CoresMC, "AOD", "PI0CORESMC",
                   // Dynamic columns
                   Pi0CoreMC::IsPi0<Pi0CoreMC::PDGCode>,
                   Pi0CoreMC::IsFromXi0<Pi0CoreMC::PDGCodeMother>,
-                
+
                   Pi0CoreMC::MCPx<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon2MCPx>,
                   Pi0CoreMC::MCPy<Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon2MCPy>,
                   Pi0CoreMC::MCPz<Pi0CoreMC::Photon1MCPz, Pi0CoreMC::Photon2MCPz>,
@@ -825,7 +820,7 @@ DECLARE_SOA_TABLE(Pi0CoresMC, "AOD", "PI0CORESMC",
                   Pi0CoreMC::Pi0MCMass<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
                   Pi0CoreMC::Pi0MCY<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
                   Pi0CoreMC::MCPhi<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy>,
-                  Pi0CoreMC::MCEta<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,                  
+                  Pi0CoreMC::MCEta<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
                   Pi0CoreMC::MCOPAngle<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy, Pi0CoreMC::Photon1MCPz, Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
 
                   Pi0CoreMC::Photon1MCPt<Pi0CoreMC::Photon1MCPx, Pi0CoreMC::Photon1MCPy>,
@@ -838,8 +833,7 @@ DECLARE_SOA_TABLE(Pi0CoresMC, "AOD", "PI0CORESMC",
                   Pi0CoreMC::Photon2MCP<Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
                   Pi0CoreMC::Photon2MCEta<Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
                   Pi0CoreMC::Photon2MCY<Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy, Pi0CoreMC::Photon2MCPz>,
-                  Pi0CoreMC::Photon2MCPhi<Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy>                
-                );
+                  Pi0CoreMC::Photon2MCPhi<Pi0CoreMC::Photon2MCPx, Pi0CoreMC::Photon2MCPy>);
 
 DECLARE_SOA_TABLE(Pi0CollRef, "AOD", "PI0COLLREF", //! optional table to refer back to a collision
                   o2::soa::Index<>, v0data::StraCollisionId);

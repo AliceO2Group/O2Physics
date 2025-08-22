@@ -348,7 +348,7 @@ struct sigma0builder {
     float V02MCpx = -999.f;
     float V02MCpy = -999.f;
     float V02MCpz = -999.f;
-    float V0PairMCRadius = -999.f;    
+    float V0PairMCRadius = -999.f;
   };
 
   // ______________________________________________________
@@ -434,10 +434,10 @@ struct sigma0builder {
     }
 
     MCinfo.V01MCpx = v01MC.pxMC();
-    MCinfo.V01MCpy = v01MC.pyMC(); 
+    MCinfo.V01MCpy = v01MC.pyMC();
     MCinfo.V01MCpz = v01MC.pzMC();
     MCinfo.V02MCpx = v02MC.pxMC();
-    MCinfo.V02MCpy = v02MC.pyMC(); 
+    MCinfo.V02MCpy = v02MC.pyMC();
     MCinfo.V02MCpz = v02MC.pzMC();
 
     // Get corresponding entries in MCParticles table
@@ -459,7 +459,7 @@ struct sigma0builder {
         MCinfo.V0PairPDGCode = MCMother_v01.pdgCode();
         MCinfo.V0PairMCProcess = MCMother_v01.getProcess();
         MCinfo.V0PairMCParticleID = MCMother_v01.globalIndex();
-        MCinfo.V0PairMCRadius = std::hypot(MCMother_v01.vx(), MCMother_v01.vy()); // production position radius        
+        MCinfo.V0PairMCRadius = std::hypot(MCMother_v01.vx(), MCMother_v01.vy()); // production position radius
 
         auto const& v0pairmothers = MCMother_v01.template mothers_as<aod::McParticles>(); // Get mothers
         if (!v0pairmothers.empty()) {
