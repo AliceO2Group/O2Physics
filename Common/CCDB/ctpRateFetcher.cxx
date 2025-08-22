@@ -11,18 +11,19 @@
 
 #include "ctpRateFetcher.h"
 
-#include <map>
-#include <vector>
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsCTP/Configuration.h>
+#include <DataFormatsCTP/Scalers.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
 
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsCTP/Configuration.h"
-#include "DataFormatsCTP/Scalers.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "CCDB/BasicCCDBManager.h"
+#include <map>
+#include <string>
+#include <vector>
 
 namespace o2
 {
-double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName, bool fCrashOnNull)
+double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& sourceName, bool fCrashOnNull)
 {
   setupRun(runNumber, ccdb, timeStamp);
   if (sourceName.find("ZNC") != std::string::npos) {
@@ -109,7 +110,7 @@ void ctpRateFetcher::setupRun(int runNumber, o2::ccdb::BasicCCDBManager* ccdb, u
     delete mScalers;
     delete mLHCIFdata;
   }
-  std::map<string, string> metadata;
+  std::map<std::string, std::string> metadata;
   mLHCIFdata = ccdb->getSpecific<parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
   if (mLHCIFdata == nullptr) {
     LOG(fatal) << "GRPLHCIFData not in database, timestamp:" << timeStamp;

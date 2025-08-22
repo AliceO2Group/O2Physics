@@ -19,33 +19,35 @@
 #define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
 #define bitcheck64(var, nbit) ((var) & (static_cast<uint64_t>(1) << (nbit)))
 
-#include "MetadataHelper.h"
-#include "TableHelper.h"
-
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/MetadataHelper.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsCTP/Configuration.h"
-#include "DataFormatsCTP/Scalers.h"
-#include "DataFormatsFT0/Digit.h"
-#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
-#include "DataFormatsITSMFT/TimeDeadMap.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "ITSMFTReconstruction/ChipMappingITS.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsCTP/Configuration.h>
+#include <DataFormatsCTP/Scalers.h>
+#include <DataFormatsFT0/Digit.h>
+#include <DataFormatsITSMFT/NoiseMap.h> // missing include in TimeDeadMap.h
+#include <DataFormatsITSMFT/TimeDeadMap.h>
+#include <DataFormatsParameters/AggregatedRunInfo.h>
+#include <DataFormatsParameters/GRPECSObject.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/HistogramRegistry.h>
+#include <ITSMFTBase/DPLAlpideParam.h>
+#include <ITSMFTReconstruction/ChipMappingITS.h>
 
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <limits>
+#include <map>
 #include <memory>
 #include <string>
+#include <vector>
 
 //__________________________________________
 // MultModule
@@ -106,6 +108,13 @@ struct evselConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> confEpsilonVzDiffVetoInROF{"EpsilonVzDiffVetoInROF", 0.3, "Minumum distance to nearby collisions along z inside this ITS ROF, cm"};                            // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<bool> confUseWeightsForOccupancyVariable{"UseWeightsForOccupancyEstimator", 1, "Use or not the delta-time weights for the occupancy estimator"};                      // o2-linter: disable=name/configurable (temporary fix)
   o2::framework::Configurable<int> confNumberOfOrbitsPerTF{"NumberOfOrbitsPerTF", -1, "Number of orbits per Time Frame. Take from CCDB if -1"};                                                     // o2-linter: disable=name/configurable (temporary fix)
+
+  // configurables for light-ion event selection (testing mode)
+  o2::framework::Configurable<int> confLightIonsAlternativeBcMatching{"TestAlternativeBcMatching", 0, "0 - use standard matching, 1 - try alternative for light ions"}; // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confLightIonsModifyTimeVetoOnNearbyColl{"TestModifyTimeVetoOnNearbyColl", 0, "0 - use standard time veto, 1 - modify time range"};   // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<int> confLightIonsVetoOnTRDinPast{"TestVetoOnTRDinPast", 0, "0 - use standard time veto, 1 - use veto on TRD in the past events"};        // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<float> confLightIonsNsigmaOnVzDiff{"TestVzDiffNsigma", 3.0, "+/- nSigma on vZ difference by FT0 and by tracks"};                          // o2-linter: disable=name/configurable (temporary fix)
+  o2::framework::Configurable<float> confLightIonsMarginVzDiff{"TestVzDiffMargin", 0.2, "margin for +/- nSigma on vZ difference by FT0 and by tracks"};                 // o2-linter: disable=name/configurable (temporary fix)
 };
 
 // luminosity configurables
@@ -184,8 +193,9 @@ class BcSelectionModule
   template <typename TCCDB, typename TBCs>
   bool configure(TCCDB& ccdb, TBCs const& bcs)
   {
-    if (bcs.size() == 0)
+    if (bcs.size() == 0) {
       return false;
+    }
     int run = bcs.iteratorAt(0).runNumber();
     if (run != lastRun) {
       lastRun = run;
@@ -259,7 +269,7 @@ class BcSelectionModule
       if (mapRCT == nullptr) {
         LOGP(info, "rct object missing... inserting dummy rct flags");
         mapRCT = new std::map<uint64_t, uint32_t>;
-        uint32_t dummyValue = 1 << 31; // setting bit 31 to indicate that rct object is missing
+        uint32_t dummyValue = 1u << 31; // setting bit 31 to indicate that rct object is missing
         mapRCT->insert(std::pair<uint64_t, uint32_t>(sorTimestamp, dummyValue));
       }
     }
@@ -602,6 +612,7 @@ class EventSelectionModule
   int run3min = 500000;
   int lastRun = -1;                     // last run number (needed to access ccdb only if run!=lastRun)
   std::bitset<nBCsPerOrbit> bcPatternB; // bc pattern of colliding bunches
+  std::vector<int> bcsPattern;          // pattern of colliding BCs
 
   int64_t bcSOR = -1;                   // global bc of the start of the first orbit
   int64_t nBCsPerTF = -1;               // duration of TF in bcs, should be 128*3564 or 32*3564
@@ -609,7 +620,13 @@ class EventSelectionModule
   int rofLength = -1;                   // ITS ROF length, in bc
   std::string strLPMProductionTag = ""; // MC production tag to be retrieved from AO2D metadata
 
-  int32_t findClosest(int64_t globalBC, std::map<int64_t, int32_t>& bcs)
+  // temporary (?) parameterizations for light ion runs
+  int runLightIons = -1;
+  int runListLightIons[11] = {564356, 564359, 564373, 564374, 564387, 564400, 564414, 564430, 564445, 564468, 564472};
+  std::vector<float> diffVzParMean;  // parameterization for mean of diff vZ by FT0 vs by tracks
+  std::vector<float> diffVzParSigma; // parameterization for stddev of diff vZ by FT0 vs by tracks
+
+  int32_t findClosest(const int64_t globalBC, const std::map<int64_t, int32_t>& bcs)
   {
     auto it = bcs.lower_bound(globalBC);
     int64_t bc1 = it->first;
@@ -702,6 +719,9 @@ class EventSelectionModule
   template <typename TCCDB, typename TTimestamps, typename TBCs>
   bool configure(TCCDB& ccdb, TTimestamps const& timestamps, TBCs const& bcs)
   {
+    if (bcs.size() == 0) {
+      return false;
+    }
     int run = bcs.iteratorAt(0).runNumber();
     // extract bc pattern from CCDB for data or anchored MC only
     if (run != lastRun && run >= run3min) {
@@ -718,12 +738,38 @@ class EventSelectionModule
       // avoids crash related to specific run number
       auto grplhcif = ccdb->template getSpecific<o2::parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", ts);
       bcPatternB = grplhcif->getBunchFilling().getBCPattern();
+      bcsPattern = grplhcif->getBunchFilling().getFilledBCs();
 
       // extract ITS ROF parameters
       auto alppar = ccdb->template getForTimeStamp<o2::itsmft::DPLAlpideParam<0>>("ITS/Config/AlpideParam", ts);
       rofOffset = alppar->roFrameBiasInBC;
       rofLength = alppar->roFrameLengthInBC;
       LOGP(debug, "ITS ROF Offset={} ITS ROF Length={}", rofOffset, rofLength);
+      if (evselOpts.confLightIonsAlternativeBcMatching) {
+        for (unsigned long i = 0; i < bcsPattern.size(); i++)
+          LOGP(info, "bcsPattern: i={} bc={}", i, bcsPattern.at(i));
+      }
+
+      // special treatment of light ion runs
+      if (lastRun >= 564356 && lastRun <= 564472) {
+        for (unsigned long i = 0; i < sizeof(runListLightIons) / sizeof(*runListLightIons); i++) {
+          if (runListLightIons[i] == lastRun) {
+            runLightIons = lastRun;
+            // extract parameterization for diff of vZ by FT0 vs by tracks
+            auto parMeans = ccdb->template getForTimeStamp<std::vector<float>>("Users/a/altsybee/diffVzCollVsFTOmeanPar", ts);
+            auto parSigmas = ccdb->template getForTimeStamp<std::vector<float>>("Users/a/altsybee/diffVzCollVsFTOsigmaPar", ts);
+            diffVzParMean = *parMeans;
+            diffVzParSigma = *parSigmas;
+            LOGP(info, ">>> special treatment for diffVz for light ion run {}", runLightIons);
+            for (int i = 0; i < 5; i++)
+              LOGP(info, " mean par {} = {}", i, diffVzParMean[i]);
+            for (int i = 0; i < 5; i++)
+              LOGP(info, " sigma par {} = {}", i, diffVzParSigma[i]);
+            break;
+          }
+        }
+      }
+
     } // if run != lastRun
     return true;
   }
@@ -824,6 +870,7 @@ class EventSelectionModule
     // create maps from globalBC to bc index for TVX-fired bcs
     // to be used for closest TVX searches
     std::map<int64_t, int32_t> mapGlobalBcWithTVX;
+    std::map<int64_t, int32_t> mapGlobalBcWithOrInFT0;
     std::map<int64_t, float> mapGlobalBcVtxZ;
     for (const auto& bc : bcs) {
       int64_t globalBC = bc.globalBC();
@@ -831,6 +878,11 @@ class EventSelectionModule
       if (run >= run3min && bcPatternB[globalBC % nBCsPerOrbit] == 0) {
         continue;
       }
+
+      if (bc.has_ft0()) {
+        mapGlobalBcWithOrInFT0[globalBC] = bc.globalIndex();
+      }
+
       auto selection = bcselbuffer[bc.globalIndex()].selection;
       if (bitcheck64(selection, aod::evsel::kIsTriggerTVX)) {
         mapGlobalBcWithTVX[globalBC] = bc.globalIndex();
@@ -863,9 +915,11 @@ class EventSelectionModule
     std::vector<bool> vIsVertexTOFmatched(cols.size(), 0);                                              // at least one of vertex contributors is matched to TOF
     std::vector<bool> vIsVertexTRDmatched(cols.size(), 0);                                              // at least one of vertex contributors is matched to TRD
 
-    std::vector<int> vCollisionsPerBc(bcs.size(), 0);    // counter of collisions per found bc for pileup checks
-    std::vector<int> vFoundBCindex(cols.size(), -1);     // indices of found bcs
-    std::vector<int64_t> vFoundGlobalBC(cols.size(), 0); // global BCs for collisions
+    std::vector<int> vCollisionsPerBc(bcs.size(), 0);          // counter of collisions per found bc for pileup checks
+    std::vector<int> vCollisionsPileupPerColl(cols.size(), 0); // counter of pileup in the same bc as a given collision
+    std::vector<int64_t> vBCinPatternPerColl(cols.size(), 0);  // found nominal BCs for collisions
+    std::vector<int> vFoundBCindex(cols.size(), -1);           // indices of found bcs
+    std::vector<int64_t> vFoundGlobalBC(cols.size(), 0);       // global BCs for collisions
 
     std::vector<bool> vIsVertexTOF(cols.size(), 0);
     std::vector<bool> vIsVertexTRD(cols.size(), 0);
@@ -937,7 +991,67 @@ class EventSelectionModule
       int64_t foundGlobalBC = 0;
       int32_t foundBCindex = -1;
 
-      if (nPvTracksTOF > 0) {
+      // alternative collision-BC matching (currently: test mode, the aim is to improve pileup rejection)
+      if (evselOpts.confLightIonsAlternativeBcMatching) {
+        foundGlobalBC = globalBC;
+        // find closest nominal bc in pattern
+        for (unsigned long i = 0; i < bcsPattern.size(); i++) {
+          int32_t localBC = globalBC % nBCsPerOrbit;
+          int32_t bcFromPattern = bcsPattern.at(i);
+          int64_t bcDiff = bcFromPattern - localBC;
+          if (std::abs(bcDiff) <= 20) {
+            foundGlobalBC = (globalBC / nBCsPerOrbit) * nBCsPerOrbit + bcFromPattern;
+            break; // the bc in pattern is found
+          }
+        }
+
+        // matched with TOF --> precise time, match to TVX, but keep the nominal foundGlobalBC from pattern
+        if (vIsVertexTOFmatched[colIndex]) {
+          std::map<int64_t, int32_t>::iterator it = mapGlobalBcWithTVX.find(foundGlobalBC);
+          if (it != mapGlobalBcWithTVX.end()) {
+            foundBCindex = it->second;                       // TVX at foundGlobalBC is found
+          } else {                                           // check if TVX is in nearby bcs
+            it = mapGlobalBcWithTVX.find(foundGlobalBC + 1); // next bc
+            if (it != mapGlobalBcWithTVX.end()) {
+              // foundGlobalBC += 1;
+              foundBCindex = it->second;
+            } else {
+              it = mapGlobalBcWithTVX.find(foundGlobalBC - 1); // previous bc
+              if (it != mapGlobalBcWithTVX.end()) {
+                // foundGlobalBC -= 1;
+                foundBCindex = it->second;
+              } else {
+                foundBCindex = bc.globalIndex(); // keep original BC index
+              }
+            }
+          }
+        } // end of if TOF-matched vertex
+        else { // for non-TOF and low-mult vertices, consider nearby nominal bcs
+          int64_t meanBC = globalBC + TMath::Nint(sumHighPtTime / sumHighPtW / bcNS);
+          int64_t bestGlobalBC = findBestGlobalBC(meanBC, evselOpts.confSigmaBCforHighPtTracks, vNcontributors[colIndex], col.posZ(), mapGlobalBcVtxZ);
+          if (bestGlobalBC > 0) {
+            foundGlobalBC = bestGlobalBC;
+            // find closest nominal bc in pattern
+            for (unsigned long j = 0; j < bcsPattern.size(); j++) {
+              int32_t bcFromPatternBest = bcsPattern.at(j);
+              int64_t bcDiff = bcFromPatternBest - (bestGlobalBC % nBCsPerOrbit);
+              if (std::abs(bcDiff) <= 20) {
+                foundGlobalBC = (bestGlobalBC / nBCsPerOrbit) * nBCsPerOrbit + bcFromPatternBest;
+                break; // the bc in pattern is found
+              }
+            }
+            foundBCindex = mapGlobalBcWithTVX[bestGlobalBC];
+          } else {                           // failed to find a proper TVX with small vZ difference
+            foundBCindex = bc.globalIndex(); // keep original BC index
+          }
+        } // end of non-TOF matched vertices
+        //  sanitity check: if BC was not found
+        if (foundBCindex == -1) {
+          foundBCindex = bc.globalIndex();
+        }
+        vBCinPatternPerColl[colIndex] = foundGlobalBC;
+        // end of alternative coll-BC matching (test)
+      } else if (nPvTracksTOF > 0) { // "standard matching":
         // for collisions with TOF tracks:
         // take bc corresponding to TOF track with median time
         int64_t tofGlobalBC = globalBC + TMath::Nint(getMedian(vTrackTimesTOF) / bcNS);
@@ -975,23 +1089,34 @@ class EventSelectionModule
       if (foundBCindex >= 0)
         mapGlobalBcVtxZ.erase(foundGlobalBC);
     }
-
-    // second loop to match remaining low-pt TPCnoTOFnoTRD collisions
-    for (const auto& col : cols) {
-      int32_t colIndex = col.globalIndex();
-      if (vIsVertexTPC[colIndex] > 0 && vIsVertexTOF[colIndex] == 0 && vIsVertexHighPtTPC[colIndex] == 0) {
-        float weightedTime = vWeightedTimesTPCnoTOFnoTRD[colIndex];
-        float weightedSigma = vWeightedSigmaTPCnoTOFnoTRD[colIndex];
-        auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>>();
-        int64_t globalBC = bc.globalBC();
-        int64_t meanBC = globalBC + TMath::Nint(weightedTime / bcNS);
-        int64_t sigmaBC = TMath::CeilNint(weightedSigma / bcNS);
-        int64_t bestGlobalBC = findBestGlobalBC(meanBC, sigmaBC, vNcontributors[colIndex], col.posZ(), mapGlobalBcVtxZ);
-        vFoundGlobalBC[colIndex] = bestGlobalBC > 0 ? bestGlobalBC : globalBC;
-        vFoundBCindex[colIndex] = bestGlobalBC > 0 ? mapGlobalBcWithTVX[bestGlobalBC] : bc.globalIndex();
+    // alternative matching: looking for collisions with the same nominal BC
+    if (evselOpts.confLightIonsAlternativeBcMatching) {
+      for (unsigned long iCol = 0; iCol < vBCinPatternPerColl.size(); iCol++) {
+        int64_t foundNominalBC = vBCinPatternPerColl[iCol];
+        for (unsigned long jCol = 0; jCol < vBCinPatternPerColl.size(); jCol++) {
+          int64_t foundNominalBC2 = vBCinPatternPerColl[jCol];
+          if (foundNominalBC2 == foundNominalBC) {
+            vCollisionsPileupPerColl[iCol]++;
+          }
+        }
       }
-      // fill pileup counter
-      vCollisionsPerBc[vFoundBCindex[colIndex]]++;
+    } else { // continue standard matching: second loop to match remaining low-pt TPCnoTOFnoTRD collisions
+      for (const auto& col : cols) {
+        int32_t colIndex = col.globalIndex();
+        if (vIsVertexTPC[colIndex] > 0 && vIsVertexTOF[colIndex] == 0 && vIsVertexHighPtTPC[colIndex] == 0) {
+          float weightedTime = vWeightedTimesTPCnoTOFnoTRD[colIndex];
+          float weightedSigma = vWeightedSigmaTPCnoTOFnoTRD[colIndex];
+          auto bc = col.template bc_as<soa::Join<aod::BCs, aod::Run3MatchedToBCSparse>>();
+          int64_t globalBC = bc.globalBC();
+          int64_t meanBC = globalBC + TMath::Nint(weightedTime / bcNS);
+          int64_t sigmaBC = TMath::CeilNint(weightedSigma / bcNS);
+          int64_t bestGlobalBC = findBestGlobalBC(meanBC, sigmaBC, vNcontributors[colIndex], col.posZ(), mapGlobalBcVtxZ);
+          vFoundGlobalBC[colIndex] = bestGlobalBC > 0 ? bestGlobalBC : globalBC;
+          vFoundBCindex[colIndex] = bestGlobalBC > 0 ? mapGlobalBcWithTVX[bestGlobalBC] : bc.globalIndex();
+        }
+        // fill pileup counter
+        vCollisionsPerBc[vFoundBCindex[colIndex]]++;
+      }
     }
 
     // save indices of collisions for occupancy calculation (both in ROF and in time range)
@@ -1188,10 +1313,24 @@ class EventSelectionModule
         sumAmpFT0CInFullTimeWindow += wOccup * vAmpFT0CperColl[thisColIndex];
 
         // counting tracks from other collisions in fixed time windows
-        if (std::fabs(dt) < evselOpts.confTimeRangeVetoOnCollNarrow)
-          nITS567tracksForVetoNarrow += vTracksITS567perColl[thisColIndex];
-        if (std::fabs(dt) < evselOpts.confTimeRangeVetoOnCollStandard)
-          nITS567tracksForVetoStrict += vTracksITS567perColl[thisColIndex];
+        if (!evselOpts.confLightIonsModifyTimeVetoOnNearbyColl) {
+          if (std::fabs(dt) < evselOpts.confTimeRangeVetoOnCollNarrow)
+            nITS567tracksForVetoNarrow += vTracksITS567perColl[thisColIndex];
+          if (std::fabs(dt) < evselOpts.confTimeRangeVetoOnCollStandard)
+            nITS567tracksForVetoStrict += vTracksITS567perColl[thisColIndex];
+        } else {                     // special veto ranges (tests for light ion runs)
+          if (dt > -4.5 && dt < 2.5) // avoid TOF- and TRD-related structures, with 0.5 us margin
+            nITS567tracksForVetoNarrow += vTracksITS567perColl[thisColIndex];
+
+          if (!evselOpts.confLightIonsVetoOnTRDinPast) {
+            if (dt > -25.5 && dt < 2.5) // test effect from TRD triggers in the past
+              nITS567tracksForVetoStrict += vTracksITS567perColl[thisColIndex];
+          } else {
+            // counting TRD-matched vertices in a long time interval in the past
+            if (dt > -25.5 && dt < 2.5)
+              nITS567tracksForVetoStrict += vIsVertexTRDmatched[thisColIndex];
+          }
+        }
 
         // standard cut on other collisions vs delta-times
         const float driftV = 2.5;  // drift velocity in cm/us, TPC drift_length / drift_time = 250 cm / 100 us
@@ -1210,7 +1349,11 @@ class EventSelectionModule
       vSumAmpFT0CinFullTimeWin[colIndex] = sumAmpFT0CInFullTimeWindow;         // occupancy by a sum of FT0C amplitudes (without a current collision)
       // occupancy flags based on nearby collisions
       vNoCollInTimeRangeNarrow[colIndex] = (nITS567tracksForVetoNarrow == 0);
-      vNoCollInTimeRangeStrict[colIndex] = (nITS567tracksForVetoStrict == 0);
+      if (!evselOpts.confLightIonsVetoOnTRDinPast)
+        vNoCollInTimeRangeStrict[colIndex] = (nITS567tracksForVetoStrict == 0);
+      else
+        vNoCollInTimeRangeStrict[colIndex] = (nITS567tracksForVetoStrict == 0 && nITS567tracksForVetoNarrow == 0);
+
       vNoHighMultCollInTimeRange[colIndex] = (nCollsWithFT0CAboveVetoStandard == 0);
     }
 
@@ -1227,8 +1370,24 @@ class EventSelectionModule
       // compare zVtx from FT0 and from PV
       bool isGoodZvtxFT0vsPV = 0;
       if (bcselEntry.foundFT0Id > -1) {
-        auto foundFT0 = ft0s.rawIteratorAt(bcselEntry.foundFT0Id);
-        isGoodZvtxFT0vsPV = std::fabs(foundFT0.posZ() - col.posZ()) < evselOpts.maxDiffZvtxFT0vsPV;
+        auto foundFT0Inner = ft0s.rawIteratorAt(bcselEntry.foundFT0Id);
+        float diffVz = foundFT0Inner.posZ() - col.posZ();
+        if (runLightIons == -1) {
+          isGoodZvtxFT0vsPV = std::fabs(diffVz) < evselOpts.maxDiffZvtxFT0vsPV;
+        } else { // special treatment of light ion runs
+          float multT0A = bc.ft0().sumAmpA();
+          float multT0C = bc.ft0().sumAmpC();
+          float T0M = multT0A + multT0C;
+          // calc mean at this T0 ampl.
+          float x = (T0M < 50 ? 50 : T0M);
+          double diffMean = diffVzParMean[0] + diffVzParMean[1] * pow(x, diffVzParMean[2]) + diffVzParMean[3] * pow(x, diffVzParMean[4]);
+          // calc sigma at this T0 ampl.
+          x = (T0M < 20 ? 20 : (T0M > 1.2e4 ? 1.2e4 : T0M));
+          double diffSigma = diffVzParSigma[0] + diffVzParSigma[1] * pow(x, diffVzParSigma[2]) + diffVzParSigma[3] * pow(x, diffVzParSigma[4]);
+          float nSigma = evselOpts.confLightIonsNsigmaOnVzDiff;
+          float margin = evselOpts.confLightIonsMarginVzDiff;
+          isGoodZvtxFT0vsPV = (diffVz > diffMean - nSigma * diffSigma - margin && diffVz < diffMean + nSigma * diffSigma + margin);
+        }
       }
 
       // copy alias decisions from bcsel table
@@ -1236,7 +1395,10 @@ class EventSelectionModule
 
       // copy selection decisions from bcsel table
       uint64_t selection = bcselbuffer[bc.globalIndex()].selection;
-      selection |= vCollisionsPerBc[foundBC] <= 1 ? BIT(aod::evsel::kNoSameBunchPileup) : 0;
+      if (evselOpts.confLightIonsAlternativeBcMatching)
+        selection |= vCollisionsPileupPerColl[colIndex] <= 1 ? BIT(aod::evsel::kNoSameBunchPileup) : 0;
+      else
+        selection |= vCollisionsPerBc[foundBC] <= 1 ? BIT(aod::evsel::kNoSameBunchPileup) : 0;
       selection |= vIsVertexITSTPC[colIndex] ? BIT(aod::evsel::kIsVertexITSTPC) : 0;
       selection |= vIsVertexTOFmatched[colIndex] ? BIT(aod::evsel::kIsVertexTOFmatched) : 0;
       selection |= vIsVertexTRDmatched[colIndex] ? BIT(aod::evsel::kIsVertexTRDmatched) : 0;
@@ -1384,11 +1546,13 @@ class LumiModule
   template <typename TCCDB, typename TTimestamps, typename TBCs>
   bool configure(TCCDB& ccdb, TTimestamps const& timestamps, TBCs const& bcs)
   {
-    if (bcs.size() == 0)
+    if (bcs.size() == 0) {
       return false;
+    }
     int run = bcs.iteratorAt(0).runNumber();
-    if (run < 500000) // o2-linter: disable=magic-number (skip for unanchored MCs)
+    if (run < 500000) { // o2-linter: disable=magic-number (skip for unanchored MCs)
       return false;
+    }
     if (run != lastRun && run >= 520259) { // o2-linter: disable=magic-number (scalers available for runs above 520120)
       lastRun = run;
       int64_t ts = timestamps[0];

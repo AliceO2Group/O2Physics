@@ -32,6 +32,7 @@
 #include <string>
 
 using namespace o2;
+using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
@@ -307,6 +308,7 @@ struct AssociateDileptonToEMEvent {
   PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
   Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
+  // Preslice<aod::EMPrimaryTrackEMEventIdsTMP> perCollision_track = aod::track::collisionId;
 
   void init(o2::framework::InitContext&) {}
 
@@ -342,6 +344,7 @@ struct AssociateDileptonToEMEvent {
   }
 
   void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  // void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTrackEMEventIdsTMP const& tracks)
   {
     fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
   }

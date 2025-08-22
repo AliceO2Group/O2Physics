@@ -104,6 +104,12 @@ struct RecoilJets {
                                      "applied at the jet finder level, here rejection is applied for "
                                      "collision and track process functions"};
 
+  Configurable<float> meanFT0A{"meanFT0A", -1.0, "Mean value of FT0A"};
+
+  Configurable<float> meanFT0C{"meanFT0C", -1.0, "Mean value of FT0C"};
+
+  Configurable<float> meanFT0M{"meanFT0M", -1.0, "Mean value of FT0M"};
+
   // List of configurable parameters for MC
   Configurable<float> pTHatExponent{"pTHatExponent", 4.0,
                                     "Exponent of the event weight for the calculation of pTHat"};
@@ -119,6 +125,9 @@ struct RecoilJets {
   Configurable<float> ptTTsigMax{"ptTTsigMax", 50., "Maximum pT of signal TT"};
   Configurable<float> recoilRegion{"recoilRegion", 0.6,
                                    "Width of recoil acceptance"};
+
+  Configurable<float> maxJetConstituentPt{"maxJetConstituentPt", 100.,
+                                          "Remove jets with constituent above this pt cut"};
 
   // List of configurable parameters for histograms
   Configurable<uint16_t> histJetPt{"histJetPt", 100,
@@ -405,6 +414,15 @@ struct RecoilJets {
       spectra.add("hMultFT0M", "Total mult. signal from FT0A & FTOC", kTH1F,
                   {{3000, 0.0, 60000.}});
 
+      spectra.add("hScaleMultFT0A", "Scaled mult. signal from FTOA", kTH1F,
+                  {{200, 0.0, 20.}});
+      spectra.add("hScaleMultFT0C", "Scaled mult. signal from FTOC", kTH1F,
+                  {{200, 0.0, 20.}});
+      spectra.add("hScaleMultFT0M", "Scaled total mult. signal from FT0A & FTOC", kTH1F,
+                  {{2000, 0.0, 20.}});
+      spectra.add("hScaleMultFT0M_v2", "Scaled total mult. signal from FT0A & FTOC", kTH1F,
+                  {{2000, 0.0, 20.}});
+
       spectra.add("hMultZNA", "Mult. signal from ZDC A-side", kTH1F,
                   {{500, 0.0, 10000.}});
       spectra.add("hMultZNC", "Mult. signal from ZDC C-side", kTH1F,
@@ -419,6 +437,14 @@ struct RecoilJets {
                   kTH2F, {{1500, 0.0, 30000.}, {500, 0.0, 10000.}});
       spectra.add("hMultFT0M_vs_ZNM", "Correlation of signals FTOM vs ZNM",
                   kTH2F, {{3000, 0.0, 60000.}, {1000, 0.0, 20000.}});
+      spectra.add("hScaleMultFT0A_vs_ZNA", "Correlation of signals FT0A/meanFT0A vs ZNA",
+                  kTH2F, {{200, 0.0, 20.}, {500, 0.0, 10000.}});
+      spectra.add("hScaleMultFT0C_vs_ZNC", "Correlation of signals FT0C/meanFT0C vs ZNC",
+                  kTH2F, {{200, 0.0, 20.}, {500, 0.0, 10000.}});
+      spectra.add("hScaleMultFT0M_vs_ZNM", "Correlation of signals FT0M/meanTF0M vs ZNM",
+                  kTH2F, {{200, 0.0, 20.}, {1000, 0.0, 20000.}});
+      spectra.add("hScaleMultFT0Mv2_vs_ZNM", "Correlation of signals FT0M/meanTF0M v2 vs ZNM",
+                  kTH2F, {{200, 0.0, 20.}, {1000, 0.0, 20000.}});
     }
   }
 
@@ -482,6 +508,10 @@ struct RecoilJets {
     }
 
     for (const auto& jet : jets) {
+      // skip jets which have a constituent with pT above specified cut
+      if (isJetWithHighPtConstituent(jet, tracks))
+        continue;
+
       spectra.fill(HIST("hJetPtEtaPhiRhoArea"), jet.pt(), jet.eta(), jet.phi(),
                    collision.rho(), jet.area(), weight);
 
@@ -651,18 +681,26 @@ struct RecoilJets {
     for (const auto& jetBase : jetsBase) {
       bool bIsBaseJetRecoil =
         get<1>(isRecoilJet(jetBase, phiTTSig)) && bIsThereTTSig;
-      dataForUnfolding(jetBase, jetsTag, bIsBaseJetRecoil, weight);
+      dataForUnfolding(jetBase, jetsTag, bIsBaseJetRecoil, tracks, weight);
     }
   }
 
   template <typename Collision>
   void fillMultiplicityHistograms(Collision const& collision,
-                                  float weight = 1.0)
+                                  float weight = 1.)
   {
 
     spectra.fill(HIST("hMultFT0A"), collision.multFT0A(), weight);
     spectra.fill(HIST("hMultFT0C"), collision.multFT0C(), weight);
     spectra.fill(HIST("hMultFT0M"), collision.multFT0M(), weight);
+
+    float scaledFT0Mv2 = 0.5 * (collision.multFT0A() / meanFT0A + collision.multFT0C() / meanFT0C);
+
+    spectra.fill(HIST("hScaleMultFT0A"), collision.multFT0A() / meanFT0A, weight);
+    spectra.fill(HIST("hScaleMultFT0C"), collision.multFT0C() / meanFT0C, weight);
+    spectra.fill(HIST("hScaleMultFT0M"), collision.multFT0M() / meanFT0M, weight);
+    spectra.fill(HIST("hScaleMultFT0M_v2"), scaledFT0Mv2,
+                 weight);
 
     spectra.fill(HIST("hMultZNA"), collision.multZNA(), weight);
     spectra.fill(HIST("hMultZNC"), collision.multZNC(), weight);
@@ -675,6 +713,14 @@ struct RecoilJets {
     spectra.fill(HIST("hMultFT0C_vs_ZNC"), collision.multFT0C(),
                  collision.multZNC(), weight);
     spectra.fill(HIST("hMultFT0M_vs_ZNM"), collision.multFT0M(),
+                 collision.multZNA() + collision.multZNC(), weight);
+    spectra.fill(HIST("hScaleMultFT0A_vs_ZNA"), collision.multFT0A() / meanFT0A,
+                 collision.multZNA(), weight);
+    spectra.fill(HIST("hScaleMultFT0C_vs_ZNC"), collision.multFT0C() / meanFT0C,
+                 collision.multZNC(), weight);
+    spectra.fill(HIST("hScaleMultFT0M_vs_ZNM"), collision.multFT0M() / meanFT0M,
+                 collision.multZNA() + collision.multZNC(), weight);
+    spectra.fill(HIST("hScaleMultFT0Mv2_vs_ZNM"), scaledFT0Mv2,
                  collision.multZNA() + collision.multZNC(), weight);
   }
 
@@ -791,12 +837,11 @@ struct RecoilJets {
   PROCESS_SWITCH(RecoilJets, processJetsMatched,
                  "process matching of MC jets (no weight)", false);
 
-  void
-    processJetsMatchedWeighted(FilteredCollDetLevelGetWeight const& collision,
-                               aod::JetMcCollisions const&,
-                               FilteredTracks const& tracks,
-                               FilteredMatchedJetsDetLevel const& mcdjets,
-                               FilteredMatchedJetsPartLevel const& mcpjets)
+  void processJetsMatchedWeighted(FilteredCollDetLevelGetWeight const& collision,
+                                  aod::JetMcCollisions const&,
+                                  FilteredTracks const& tracks,
+                                  FilteredMatchedJetsDetLevel const& mcdjets,
+                                  FilteredMatchedJetsPartLevel const& mcpjets)
   {
     if (skipEvent(collision) || skipMBGapEvent(collision))
       return;
@@ -864,9 +909,22 @@ struct RecoilJets {
     return 10. / (std::pow(weight, 1.0 / pTHatExponent));
   }
 
-  template <typename PartJet, typename DetJet>
+  template <typename Jet, typename Tracks>
+  bool isJetWithHighPtConstituent(Jet const& jet, Tracks const&)
+  {
+    bool bIsJetWithHighPtConstituent = false;
+    for (const auto& jetConstituent : jet.template tracks_as<Tracks>()) {
+      if (jetConstituent.pt() > maxJetConstituentPt) {
+        bIsJetWithHighPtConstituent = true;
+        break;
+      }
+    }
+    return bIsJetWithHighPtConstituent;
+  }
+
+  template <typename PartJet, typename DetJet, typename TracksTable>
   void dataForUnfolding(PartJet const& partJet, DetJet const& detJets,
-                        bool bIsBaseJetRecoil, float weight = 1.0)
+                        bool bIsBaseJetRecoil, TracksTable const& tracks, float weight = 1.)
   {
 
     bool bIsThereMatchedJet = partJet.has_matchedJetGeo();
@@ -876,24 +934,35 @@ struct RecoilJets {
         partJet.template matchedJetGeo_as<std::decay_t<DetJet>>();
 
       for (const auto& jetMatched : jetsMatched) {
-        spectra.fill(HIST("hNumberMatchedJetsPerOneBaseJet"),
-                     jetsMatched.size(), jetMatched.pt(), weight);
-        spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel"), jetMatched.pt(),
-                     partJet.pt(), weight);
-        spectra.fill(HIST("hJetPt_resolution"),
-                     (partJet.pt() - jetMatched.pt()) / partJet.pt(),
-                     partJet.pt(), weight);
-        spectra.fill(HIST("hJetPhi_resolution"),
-                     partJet.phi() - jetMatched.phi(), partJet.pt(), weight);
 
-        if (bIsBaseJetRecoil) {
-          spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel_RecoilJets"),
-                       jetMatched.pt(), partJet.pt(), weight);
-          spectra.fill(HIST("hJetPt_resolution_RecoilJets"),
+        // skip matches where detector level jets have a constituent with pT above specified cut
+        bool skipMatchedDetJet = isJetWithHighPtConstituent(jetMatched, tracks);
+
+        if (skipMatchedDetJet) {
+          // Miss jets
+          spectra.fill(HIST("hMissedJets_pT"), partJet.pt(), weight);
+          if (bIsBaseJetRecoil)
+            spectra.fill(HIST("hMissedJets_pT_RecoilJets"), partJet.pt(), weight);
+        } else {
+          spectra.fill(HIST("hNumberMatchedJetsPerOneBaseJet"),
+                       jetsMatched.size(), jetMatched.pt(), weight);
+          spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel"), jetMatched.pt(),
+                       partJet.pt(), weight);
+          spectra.fill(HIST("hJetPt_resolution"),
                        (partJet.pt() - jetMatched.pt()) / partJet.pt(),
                        partJet.pt(), weight);
-          spectra.fill(HIST("hJetPhi_resolution_RecoilJets"),
+          spectra.fill(HIST("hJetPhi_resolution"),
                        partJet.phi() - jetMatched.phi(), partJet.pt(), weight);
+
+          if (bIsBaseJetRecoil) {
+            spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel_RecoilJets"),
+                         jetMatched.pt(), partJet.pt(), weight);
+            spectra.fill(HIST("hJetPt_resolution_RecoilJets"),
+                         (partJet.pt() - jetMatched.pt()) / partJet.pt(),
+                         partJet.pt(), weight);
+            spectra.fill(HIST("hJetPhi_resolution_RecoilJets"),
+                         partJet.phi() - jetMatched.phi(), partJet.pt(), weight);
+          }
         }
       }
     } else {
@@ -905,6 +974,9 @@ struct RecoilJets {
 
     // Fake jets
     for (const auto& detJet : detJets) {
+      if (isJetWithHighPtConstituent(detJet, tracks))
+        continue;
+
       bIsThereMatchedJet = detJet.has_matchedJetGeo();
       if (!bIsThereMatchedJet) {
         spectra.fill(HIST("hFakeJets_pT"), detJet.pt(), weight);

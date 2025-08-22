@@ -493,10 +493,12 @@ struct JetFinderHFQATask {
 
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perD0CandidateTracks = aod::bkgd0::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perDplusCandidateTracks = aod::bkgdplus::candidateId;
+  PresliceOptional<soa::Filtered<JetTracksDataSub>> perDsCandidateTracks = aod::bkgds::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perDstarCandidateTracks = aod::bkgdstar::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perLcCandidateTracks = aod::bkglc::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perB0CandidateTracks = aod::bkgb0::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perBplusCandidateTracks = aod::bkgbplus::candidateId;
+  PresliceOptional<soa::Filtered<JetTracksDataSub>> perXicToXiPiPiCandidateTracks = aod::bkgxictoxipipi::candidateId;
   PresliceOptional<soa::Filtered<JetTracksDataSub>> perDielectronCandidateTracks = aod::bkgdielectron::candidateId;
 
   template <typename T, typename U, typename V>
@@ -1523,7 +1525,7 @@ struct JetFinderHFQATask {
     }
     for (auto const& candidate : candidates) {
 
-      for (auto const& track : jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0CandidateTracks, perDplusCandidateTracks, perDstarCandidateTracks, perLcCandidateTracks, perB0CandidateTracks, perBplusCandidateTracks, perDielectronCandidateTracks)) {
+      for (auto const& track : jetcandidateutilities::slicedPerCandidate(tracks, candidate, perD0CandidateTracks, perDplusCandidateTracks, perDsCandidateTracks, perDstarCandidateTracks, perLcCandidateTracks, perB0CandidateTracks, perBplusCandidateTracks, perXicToXiPiPiCandidateTracks, perDielectronCandidateTracks)) {
         registry.fill(HIST("h3_centrality_track_pt_track_phi_eventwiseconstituentsubtracted"), collision.centFT0M(), track.pt(), track.phi());
         registry.fill(HIST("h3_centrality_track_pt_track_eta_eventwiseconstituentsubtracted"), collision.centFT0M(), track.pt(), track.eta());
         registry.fill(HIST("h3_track_pt_track_eta_track_phi_eventwiseconstituentsubtracted"), track.pt(), track.eta(), track.phi());

@@ -91,15 +91,15 @@ using namespace o2::aod::pid_tpc_tof_utils;
 struct HfCandidateCreator3Prong {
   Produces<aod::HfCand3ProngBase> rowCandidateBase;
   Produces<aod::HfCand3ProngKF> rowCandidateKF;
-  Produces<aod::HfProng0PidPi> rowProng0PidPi;
-  Produces<aod::HfProng0PidKa> rowProng0PidKa;
-  Produces<aod::HfProng0PidPr> rowProng0PidPr;
-  Produces<aod::HfProng1PidPi> rowProng1PidPi;
-  Produces<aod::HfProng1PidKa> rowProng1PidKa;
-  Produces<aod::HfProng1PidPr> rowProng1PidPr;
-  Produces<aod::HfProng2PidPi> rowProng2PidPi;
-  Produces<aod::HfProng2PidKa> rowProng2PidKa;
-  Produces<aod::HfProng2PidPr> rowProng2PidPr;
+  Produces<aod::HfCand3Prong0PidPi> rowProng0PidPi;
+  Produces<aod::HfCand3Prong0PidKa> rowProng0PidKa;
+  Produces<aod::HfCand3Prong0PidPr> rowProng0PidPr;
+  Produces<aod::HfCand3Prong1PidPi> rowProng1PidPi;
+  Produces<aod::HfCand3Prong1PidKa> rowProng1PidKa;
+  Produces<aod::HfCand3Prong1PidPr> rowProng1PidPr;
+  Produces<aod::HfCand3Prong2PidPi> rowProng2PidPi;
+  Produces<aod::HfCand3Prong2PidKa> rowProng2PidKa;
+  Produces<aod::HfCand3Prong2PidPr> rowProng2PidPr;
 
   // vertexing
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -276,7 +276,7 @@ struct HfCandidateCreator3Prong {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexProng3.template collision_as<Coll>();
       float centrality{-1.f};
-      uint32_t rejectionMask{0};
+      o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       if constexpr (applyUpcSel) {
         rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, centEstimator, BCsType>(collision, centrality, ccdb, registry, bcs);
       } else {
@@ -394,7 +394,7 @@ struct HfCandidateCreator3Prong {
       if (indexCollision == track2.collisionId() && track2.isPVContributor()) {
         SETBIT(bitmapProngsContributorsPV, 2);
       }
-      uint8_t nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
+      const auto nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
 
       // fill candidate table rows
       rowCandidateBase(indexCollision,
@@ -447,7 +447,7 @@ struct HfCandidateCreator3Prong {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexProng3.template collision_as<Coll>();
       float centrality{-1.f};
-      uint32_t rejectionMask{0};
+      o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       if constexpr (applyUpcSel) {
         rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, centEstimator, BCsType>(collision, centrality, ccdb, registry, bcs);
       } else {
@@ -635,7 +635,7 @@ struct HfCandidateCreator3Prong {
       if (indexCollision == track2.collisionId() && track2.isPVContributor()) {
         SETBIT(bitmapProngsContributorsPV, 2);
       }
-      uint8_t nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
+      const auto nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
 
       // fill candidate table rows
       rowCandidateBase(indexCollision,
@@ -894,7 +894,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, hfEvSel.occEstimator);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -912,7 +912,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, hfEvSel.occEstimator);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -930,7 +930,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, hfEvSel.occEstimator);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -953,7 +953,7 @@ struct HfCandidateCreator3Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, hfEvSel.occEstimator);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, aod::BcFullInfos>(collision, centrality, ccdb, registry, bcs);
 
       /// monitor the satisfied event selections
@@ -1316,7 +1316,7 @@ struct HfCandidateCreator3ProngExpressions {
       const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
       float centrality{-1.f};
-      uint32_t rejectionMask{0u};
+      o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       int nSplitColl = 0;
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());

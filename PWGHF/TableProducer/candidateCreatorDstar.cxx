@@ -77,12 +77,12 @@ using HfDstarsWithPvRefitInfo = soa::Join<aod::HfDstars, aod::HfPvRefitDstar>;
 struct HfCandidateCreatorDstar {
   Produces<aod::HfD0FromDstarBase> rowCandD0Base;
   Produces<aod::HfCandDstarBase> rowCandDstarBase;
-  Produces<aod::HfProng0PidPi> rowProng0PidPi;
-  Produces<aod::HfProng0PidKa> rowProng0PidKa;
-  Produces<aod::HfProng1PidPi> rowProng1PidPi;
-  Produces<aod::HfProng1PidKa> rowProng1PidKa;
-  Produces<aod::HfProng2PidPi> rowProngSoftPiPidPi;
-  Produces<aod::HfProng2PidKa> rowProngSoftPiPidKa;
+  Produces<aod::HfCandDstarProng0PidPi> rowProng0PidPi;
+  Produces<aod::HfCandDstarProng0PidKa> rowProng0PidKa;
+  Produces<aod::HfCandDstarProng1PidPi> rowProng1PidPi;
+  Produces<aod::HfCandDstarProng1PidKa> rowProng1PidKa;
+  Produces<aod::HfCandDstarProng2PidPi> rowProngSoftPiPidPi;
+  Produces<aod::HfCandDstarProng2PidKa> rowProngSoftPiPidKa;
 
   Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
 
@@ -732,7 +732,7 @@ struct HfCandidateCreatorDstarExpressions {
       const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
       float centrality{-1.f};
-      uint32_t rejectionMask{0u};
+      o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       int nSplitColl = 0;
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());

@@ -69,19 +69,22 @@ using SimTracks = soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, 
 
 static constexpr int kSizeBootStrapEnsemble{8};
 
-std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNch{};
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hPoisson{};
+std::array<std::shared_ptr<TH2>, kSizeBootStrapEnsemble> hNchVsT0M{};
+std::array<std::shared_ptr<TH2>, kSizeBootStrapEnsemble> hNchVsV0A{};
+std::array<std::shared_ptr<TH2>, kSizeBootStrapEnsemble> hNchVsZN{};
+
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsOneParCorrVsZN{};
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsTwoParCorrVsZN{};
 std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsThreeParCorrVsZN{};
 
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsT0M{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsT0M{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsT0M{};
+std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsOneParCorrVsT0M{};
+std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsTwoParCorrVsT0M{};
+std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsThreeParCorrVsT0M{};
 
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsV0A{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsV0A{};
-std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsV0A{};
+std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsOneParCorrVsV0A{};
+std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsTwoParCorrVsV0A{};
+std::array<std::shared_ptr<TProfile2D>, kSizeBootStrapEnsemble> pNchVsThreeParCorrVsV0A{};
 
 std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsNch{};
 std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsNch{};
@@ -89,14 +92,7 @@ std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsNch
 
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hPoissonMC{};
 std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNchGen{};
-
-// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsT0MGen{};
-// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsT0MGen{};
-// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsT0MGen{};
-//
-// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsV0AGen{};
-// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsV0AGen{};
-// std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pThreeParCorrVsV0AGen{};
+std::array<std::shared_ptr<TH1>, kSizeBootStrapEnsemble> hNch{};
 
 std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pOneParCorrVsNchGen{};
 std::array<std::shared_ptr<TProfile>, kSizeBootStrapEnsemble> pTwoParCorrVsNchGen{};
@@ -119,13 +115,13 @@ struct UccZdc {
   Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut"};
   Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut"};
-  Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut"};
   Configurable<bool> useMidRapNchSel{"useMidRapNchSel", true, "Use mid-rapidit Nch selection"};
   Configurable<bool> applyEff{"applyEff", true, "Apply track-by-track efficiency correction"};
   Configurable<bool> applyFD{"applyFD", false, "Apply track-by-track feed down correction"};
   Configurable<bool> correctNch{"correctNch", true, "Correct also Nch"};
   Configurable<bool> skipRecoColGTOne{"skipRecoColGTOne", true, "Remove collisions if reconstructed more than once"};
   Configurable<std::string> detector4Calibration{"detector4Calibration", "T0M", "Detector for nSigma-Nch rejection"};
+  Configurable<std::string> detectorZDC{"detectorZDC", "ZN", "Detector for Cent. Selec. based on spectator neutrons"};
 
   // Event selection
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
@@ -150,6 +146,7 @@ struct UccZdc {
   Configurable<float> minNch{"minNch", 0, "Min Nch (|eta|<0.8)"};
   Configurable<float> minZN{"minZN", -0.5, "Min ZN signal"};
   Configurable<float> minTdc{"minTdc", -15.0, "minimum TDC"};
+  Configurable<float> arbScale{"arbScale", 100.0, "Scale factor for forward multiplicity"};
 
   Configurable<float> maxNch{"maxNch", 3000, "Max Nch (|eta|<0.8)"};
   Configurable<float> maxITSTrack{"maxITSTrack", 6000., "Min ITS tracks"};
@@ -230,6 +227,7 @@ struct UccZdc {
     const char* tiT0C{"T0C (#times 1/100, -3.3 < #eta < -2.1)"};
     const char* tiT0M{"T0A+T0C (#times 1/100, -3.3 < #eta < -2.1 and 3.5 < #eta < 4.9)"};
     const char* tiNch{"#it{N}_{ch} (|#eta| < 0.8)"};
+    const char* tiNPV{"#it{N}_{PV} (|#eta|<1)"};
     const char* tiV0A{"V0A (#times 1/100, 2.2 < #eta < 5)"};
     const char* tiZNs{"ZNA + ZNC"};
     const char* tiZPs{"ZPA + ZPC"};
@@ -253,8 +251,11 @@ struct UccZdc {
     registry.add("ExcludedEvtVsFT0M", Form(";%s;Entries;", tiT0M), kTH1F, {{nBinsAmpFT0, 0., maxAmpFT0}});
     registry.add("ExcludedEvtVsFV0A", Form(";%s;Entries;", tiT0M), kTH1F, {{nBinsAmpV0A, 0., maxAmpV0A}});
     registry.add("ExcludedEvtVsNch", Form(";%s;Entries;", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
+    registry.add("ExcludedEvtVsNPV", Form(";%s;Entries;", tiNPV), kTH1F, {{nBinsITSTrack, 0, maxITSTrack}});
     registry.add("Nch", Form(";%s;Entries;", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
     registry.add("NchVsOneParCorr", Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+    registry.add("NchVsTwoParCorr", Form(";%s;#LT[#it{p}_{T}^{(2)}]#GT;", tiNch), kTProfile, {{nBinsNch, minNch, maxNch}});
+    registry.add("NchVsThreeParCorr", Form(";%s;#LT[#it{p}_{T}^{(3)}]#GT;", tiNch), kTProfile, {{nBinsNch, minNch, maxNch}});
 
     auto hstat = registry.get<TH1>(HIST("hEventCounter"));
     auto* x = hstat->GetXaxis();
@@ -277,35 +278,41 @@ struct UccZdc {
     x->SetBinLabel(17, "Within ZEM cut?");
 
     if (doprocessZdcCollAss) {
-      registry.add("NchVsT0Mamp", Form(";%s;%s;", tiNch, tiT0M), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
-      registry.add("NchVsV0Aamp", Form(";%s;%s;", tiNch, tiV0A), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+      registry.add("NchVsT0M", Form(";%s;%s;", tiNch, tiT0M), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+      registry.add("NchVsV0A", Form(";%s;%s;", tiNch, tiV0A), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
       registry.add("NchVsZN", Form(";%s;%s;", tiNch, tiZNs), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
       registry.add("NchVsZP", Form(";%s;%s;", tiNch, tiZPs), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZP, minZN, maxZP}}});
       registry.add("NchVsZNVsPt", Form(";%s;%s;%s", tiNch, tiZNs, tiPt), kTH3F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}, {axisPt}}});
+
       registry.add("NchVsOneParCorrVsZN", Form(";%s;%s;%s", tiNch, tiZNs, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
       registry.add("NchVsTwoParCorrVsZN", Form(";%s;%s;%s", tiNch, tiZNs, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
       registry.add("NchVsThreeParCorrVsZN", Form(";%s;%s;%s", tiNch, tiZNs, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
-      registry.add("OneParCorrVsT0M", Form(";%s;%s;", tiT0M, tiOneParCorr), kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
-      registry.add("TwoParCorrVsT0M", Form(";%s;%s;", tiT0M, tiTwoParCorr), kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
-      registry.add("ThreeParCorrVsT0M", Form(";%s;%s;", tiT0M, tiThreeParCorr), kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
-      registry.add("OneParCorrVsV0A", Form(";%s;%s;", tiV0A, tiOneParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
-      registry.add("TwoParCorrVsV0A", Form(";%s;%s;", tiV0A, tiTwoParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
-      registry.add("ThreeParCorrVsV0A", Form(";%s;%s;", tiV0A, tiThreeParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
+
+      registry.add("NchVsOneParCorrVsT0M", Form(";%s;%s;%s", tiNch, tiT0M, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+      registry.add("NchVsTwoParCorrVsT0M", Form(";%s;%s;%s", tiNch, tiT0M, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+      registry.add("NchVsThreeParCorrVsT0M", Form(";%s;%s;%s", tiNch, tiT0M, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+
+      registry.add("NchVsOneParCorrVsV0A", Form(";%s;%s;%s", tiNch, tiV0A, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+      registry.add("NchVsTwoParCorrVsV0A", Form(";%s;%s;%s", tiNch, tiV0A, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+      registry.add("NchVsThreeParCorrVsV0A", Form(";%s;%s;%s", tiNch, tiV0A, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
 
       for (int i = 0; i < kSizeBootStrapEnsemble; i++) {
-        hNch[i] = registry.add<TH1>(Form("Nch_Replica%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
-        hPoisson[i] = registry.add<TH1>(Form("Poisson_Replica%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
-        pNchVsOneParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsOneParCorrVsZN_Replica%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
-        pNchVsTwoParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsTwoParCorrVsZN_Replica%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
-        pNchVsThreeParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsThreeParCorrVsZN_Replica%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
+        hNchVsZN[i] = registry.add<TH2>(Form("NchVsZN_Rep%d", i), Form(";%s;%s", tiNch, tiZNs), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
+        hNchVsV0A[i] = registry.add<TH2>(Form("NchVsV0A_Rep%d", i), Form(";%s;%s", tiNch, tiV0A), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+        hNchVsT0M[i] = registry.add<TH2>(Form("NchVsT0M_Rep%d", i), Form(";%s;%s", tiNch, tiT0M), kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+        hPoisson[i] = registry.add<TH1>(Form("Poisson_Rep%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
 
-        pOneParCorrVsT0M[i] = registry.add<TProfile>(Form("OneParCorrVsT0M_Replica%d", i), Form(";%s;%s;", tiT0M, tiOneParCorr), kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
-        pTwoParCorrVsT0M[i] = registry.add<TProfile>(Form("TwoParCorrVsT0M_Replica%d", i), Form(";%s;%s;", tiT0M, tiTwoParCorr), kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
-        pThreeParCorrVsT0M[i] = registry.add<TProfile>(Form("ThreeParCorrVsT0M_Replica%d", i), Form(";%s;%s;", tiT0M, tiThreeParCorr), kTProfile, {{nBinsAmpFT0, 0., maxAmpFT0}});
+        pNchVsOneParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsOneParCorrVsZN_Rep%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
+        pNchVsTwoParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsTwoParCorrVsZN_Rep%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
+        pNchVsThreeParCorrVsZN[i] = registry.add<TProfile2D>(Form("NchVsThreeParCorrVsZN_Rep%d", i), Form(";%s;%s;%s", tiNch, tiZNs, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsZN, minZN, maxZN}}});
 
-        pOneParCorrVsV0A[i] = registry.add<TProfile>(Form("OneParCorrVsV0A_Replica%d", i), Form(";%s;%s;", tiV0A, tiOneParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
-        pTwoParCorrVsV0A[i] = registry.add<TProfile>(Form("TwoParCorrVsV0A_Replica%d", i), Form(";%s;%s;", tiV0A, tiTwoParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
-        pThreeParCorrVsV0A[i] = registry.add<TProfile>(Form("ThreeParCorrVsV0A_Replica%d", i), Form(";%s;%s;", tiV0A, tiThreeParCorr), kTProfile, {{nBinsAmpV0A, 0., maxAmpV0A}});
+        pNchVsOneParCorrVsT0M[i] = registry.add<TProfile2D>(Form("NchVsOneParCorrVsT0M_Rep%d", i), Form(";%s;%s;%s", tiNch, tiT0M, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+        pNchVsTwoParCorrVsT0M[i] = registry.add<TProfile2D>(Form("NchVsTwoParCorrVsT0M_Rep%d", i), Form(";%s;%s;%s", tiNch, tiT0M, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+        pNchVsThreeParCorrVsT0M[i] = registry.add<TProfile2D>(Form("NchVsThreeParCorrVsT0M_Rep%d", i), Form(";%s;%s;%s", tiNch, tiT0M, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpFT0, 0., maxAmpFT0}}});
+
+        pNchVsOneParCorrVsV0A[i] = registry.add<TProfile2D>(Form("NchVsOneParCorrVsV0A_Rep%d", i), Form(";%s;%s;%s", tiNch, tiV0A, tiOneParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+        pNchVsTwoParCorrVsV0A[i] = registry.add<TProfile2D>(Form("NchVsTwoParCorrVsV0A_Rep%d", i), Form(";%s;%s;%s", tiNch, tiV0A, tiTwoParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
+        pNchVsThreeParCorrVsV0A[i] = registry.add<TProfile2D>(Form("NchVsThreeParCorrVsV0A_Rep%d", i), Form(";%s;%s;%s", tiNch, tiV0A, tiThreeParCorr), kTProfile2D, {{{nBinsNch, minNch, maxNch}, {nBinsAmpV0A, 0., maxAmpV0A}}});
       }
     }
 
@@ -327,8 +334,6 @@ struct UccZdc {
       registry.add("NchvsOneParCorrGen", Form("MC Closure;%s;%s", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchvsTwoParCorrGen", Form("MC Closure;%s;%s", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
       registry.add("NchvsThreeParCorrGen", Form("MC Closure;%s;%s", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchVsTwoParCorr", Form("MC Closure;%s;%s", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-      registry.add("NchVsThreeParCorr", Form("MC Closure;%s;%s", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
       // Corrections
       registry.add("zPosMC", "Filled at MC closure + Corrections;;Entries;", kTH1F, {axisZpos});
       registry.add("hEventCounterMC", "Event counter", kTH1F, {axisEvent});
@@ -357,38 +362,20 @@ struct UccZdc {
 
       for (int i = 0; i < kSizeBootStrapEnsemble; i++) {
 
-        hPoissonMC[i] = registry.add<TH1>(Form("PoissonMC_Replica%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
-        hNchGen[i] = registry.add<TH1>(Form("NchGen_Replica%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
+        hPoissonMC[i] = registry.add<TH1>(Form("PoissonMC_Rep%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
+        hNchGen[i] = registry.add<TH1>(Form("NchGen_Rep%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
+        pOneParCorrVsNchGen[i] = registry.add<TProfile>(Form("OneParCorrVsNchGen_Rep%d", i), Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        pTwoParCorrVsNchGen[i] = registry.add<TProfile>(Form("TwoParCorrVsNchGen_Rep%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        pThreeParCorrVsNchGen[i] = registry.add<TProfile>(Form("ThreeParCorrVsNchGen_Rep%d", i), Form(";%s;%s;", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
 
-        pOneParCorrVsNchGen[i] = registry.add<TProfile>(Form("OneParCorrVsNchGen_Replica%d", i), Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-        pTwoParCorrVsNchGen[i] = registry.add<TProfile>(Form("TwoParCorrVsNchGen_Replica%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-        pThreeParCorrVsNchGen[i] = registry.add<TProfile>(Form("ThreeParCorrVsNchGen_Replica%d", i), Form(";%s;%s;", tiNch, tiThreeParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        hNch[i] = registry.add<TH1>(Form("Nch_Rep%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
+        hPoisson[i] = registry.add<TH1>(Form("Poisson_Rep%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
 
-        //                pOneParCorrVsT0MGen[i] = registry.add<TProfile>(Form("OneParCorrVsT0MGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiOneParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //                pTwoParCorrVsT0MGen[i] = registry.add<TProfile>(Form("TwoParCorrVsT0MGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiTwoParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //                pThreeParCorrVsT0MGen[i] = registry.add<TProfile>(Form("ThreeParCorrVsT0MGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiThreeParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-
-        //                pOneParCorrVsV0AGen[i] = registry.add<TProfile>(Form("OneParCorrVsV0AGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiOneParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //                pTwoParCorrVsV0AGen[i] = registry.add<TProfile>(Form("TwoParCorrVsV0AGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiTwoParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //                pThreeParCorrVsV0AGen[i] = registry.add<TProfile>(Form("ThreeParCorrVsV0AGen_Replica%d",i),Form(";%s;%s;",tiT0M,tiThreeParCorr), kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-
-        hNch[i] = registry.add<TH1>(Form("Nch_Replica%d", i), Form(";%s;Entries", tiNch), kTH1F, {{nBinsNch, minNch, maxNch}});
-        hPoisson[i] = registry.add<TH1>(Form("Poisson_Replica%d", i), ";#it{k};Entries", kTH1F, {{11, -0.5, 10.5}});
-
-        pOneParCorrVsNch[i] = registry.add<TProfile>(Form("OneParCorrVsNch_Replica%d", i), Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-        pTwoParCorrVsNch[i] = registry.add<TProfile>(Form("TwoParCorrVsNch_Replica%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-        pThreeParCorrVsNch[i] = registry.add<TProfile>(Form("ThreeParCorrVsNch_Replica%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
-
-        //                pOneParCorrVsT0M[i] = registry.add<TProfile>(Form("OneParCorrVsT0M_Replica%d",i),Form(";%s;%s;",tiT0M,tiOneParCorr),kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //                pTwoParCorrVsT0M[i] = registry.add<TProfile>(Form("TwoParCorrVsT0M_Replica%d",i),Form(";%s;%s;",tiT0M,tiTwoParCorr),kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //                pThreeParCorrVsT0M[i] = registry.add<TProfile>(Form("ThreeParCorrVsT0M_Replica%d",i),Form(";%s;%s;",tiT0M,tiThreeParCorr),kTProfile,{{nBinsAmpFT0,0.,maxAmpFT0}});
-        //
-        //                pOneParCorrVsV0A[i] = registry.add<TProfile>(Form("OneParCorrVsV0A_Replica%d",i),Form(";%s;%s;",tiV0A,tiOneParCorr),kTProfile,{{nBinsAmpV0A,0.,maxAmpV0A}});
-        //                pTwoParCorrVsV0A[i] = registry.add<TProfile>(Form("TwoParCorrVsV0A_Replica%d",i),Form(";%s;%s;",tiV0A,tiTwoParCorr),kTProfile,{{nBinsAmpV0A,0.,maxAmpV0A}});
-        //                pThreeParCorrVsV0A[i] = registry.add<TProfile>(Form("ThreeParCorrVsV0A_Replica%d",i),Form(";%s;%s;",tiV0A,tiThreeParCorr),kTProfile,{{nBinsAmpV0A,0.,maxAmpV0A}});
+        pOneParCorrVsNch[i] = registry.add<TProfile>(Form("OneParCorrVsNch_Rep%d", i), Form(";%s;%s;", tiNch, tiOneParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        pTwoParCorrVsNch[i] = registry.add<TProfile>(Form("TwoParCorrVsNch_Rep%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
+        pThreeParCorrVsNch[i] = registry.add<TProfile>(Form("ThreeParCorrVsNch_Rep%d", i), Form(";%s;%s;", tiNch, tiTwoParCorr), kTProfile, {{nBinsNch, minNch, maxNch}});
       }
     }
-
     if (doprocessQA) {
       registry.add("zPos", ";;Entries;", kTH1F, {axisZpos});
       registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
@@ -427,6 +414,7 @@ struct UccZdc {
     LOG(info) << "\tcorrectNch=" << correctNch.value;
     LOG(info) << "\tpaTHEff=" << paTHEff.value;
     LOG(info) << "\tpaTHFD=" << paTHFD.value;
+    LOG(info) << "\tdetectorZDC=" << detectorZDC.value;
     LOG(info) << "\tuseMidRapNchSel=" << useMidRapNchSel.value;
     LOG(info) << "\tdetector4Calibration=" << detector4Calibration.value;
     LOG(info) << "\tnSigmaNchCut=" << nSigmaNchCut.value;
@@ -510,8 +498,8 @@ struct UccZdc {
       if (occuValue < minOccCut || occuValue > maxOccCut) {
         return false;
       }
+      registry.fill(HIST("hEventCounter"), EvCutLabel::OccuCut);
     }
-    registry.fill(HIST("hEventCounter"), EvCutLabel::OccuCut);
 
     if (col.centFT0C() < minT0CcentCut || col.centFT0C() > maxT0CcentCut) {
       return false;
@@ -542,8 +530,8 @@ struct UccZdc {
     registry.fill(HIST("hEventCounter"), EvCutLabel::Zdc);
     auto zdc = foundBC.zdc();
 
-    double aT0A{-999.};
-    double aT0C{-999.};
+    double aT0A{0.};
+    double aT0C{0.};
     if (foundBC.has_ft0()) {
       for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
         aT0A += amplitude;
@@ -556,17 +544,18 @@ struct UccZdc {
     }
     registry.fill(HIST("hEventCounter"), EvCutLabel::TZero);
 
-    double aV0A{-999.};
+    double aV0A{0.};
     if (foundBC.has_fv0a()) {
       for (const auto& amplitude : foundBC.fv0a().amplitude()) {
         aV0A += amplitude;
       }
     }
 
-    const double normT0M{(aT0A + aT0C) / 100.};
-    const double normV0A{aV0A / 100.};
-    const double normT0A{aT0A / 100.};
-    const double normT0C{aT0C / 100.};
+    const double nPV{collision.multNTracksPVeta1() / 1.};
+    const double normT0M{(aT0A + aT0C) / arbScale};
+    const double normV0A{aV0A / arbScale};
+    const double normT0A{aT0A / arbScale};
+    const double normT0C{aT0C / arbScale};
     float znA{zdc.amplitudeZNA()};
     float znC{zdc.amplitudeZNC()};
     float zpA{zdc.amplitudeZPA()};
@@ -591,14 +580,6 @@ struct UccZdc {
         return;
       }
       registry.fill(HIST("hEventCounter"), EvCutLabel::Tdc);
-    }
-
-    // ZEM cut
-    if (isZEMcut) {
-      if (sumZEMs < zemCut) {
-        return;
-      }
-      registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
     }
 
     int itsTracks = 0, glbTracks = 0;
@@ -633,6 +614,9 @@ struct UccZdc {
       if (s1 == "V0A") {
         xEval = normV0A;
       }
+      if (s1 == "NPV") {
+        xEval = nPV;
+      }
 
       const int bin4Calibration{cfgNch.hMeanNch->FindBin(xEval)};
       const double meanNch{cfgNch.hMeanNch->GetBinContent(bin4Calibration)};
@@ -644,6 +628,7 @@ struct UccZdc {
         registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
         registry.fill(HIST("ExcludedEvtVsFV0A"), normV0A);
         registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
+        registry.fill(HIST("ExcludedEvtVsNPV"), nPV);
         skipEvent = true;
       }
     }
@@ -652,7 +637,7 @@ struct UccZdc {
       return;
     }
 
-    double meanpt{0.};
+    double sumpt{0.};
     for (const auto& track : tracks) {
       // Track Selection
       if (!track.isGlobalTrack()) {
@@ -669,24 +654,12 @@ struct UccZdc {
       registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
       registry.fill(HIST("sigma1Pt"), track.pt(), track.sigma1Pt());
       registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
-      meanpt += track.pt();
+      sumpt += track.pt();
     }
 
     registry.fill(HIST("zPos"), collision.posZ());
     registry.fill(HIST("T0Ccent"), collision.centFT0C());
-    registry.fill(HIST("ZNAamp"), znA);
-    registry.fill(HIST("ZNCamp"), znC);
-    registry.fill(HIST("ZPAamp"), zpA);
-    registry.fill(HIST("ZPCamp"), zpC);
-    registry.fill(HIST("ZNAVsZNC"), znC, znA);
-    registry.fill(HIST("ZNAVsZPA"), zpA, znA);
-    registry.fill(HIST("ZNCVsZPC"), zpC, znC);
-    registry.fill(HIST("ZPAVsZPC"), zpC, zpA);
-    registry.fill(HIST("ZNVsZEM"), sumZEMs, sumZNs);
     registry.fill(HIST("Debunch"), tZDCdif, tZDCsum);
-    registry.fill(HIST("ZNVsFT0A"), normT0A, sumZNs);
-    registry.fill(HIST("ZNVsFT0C"), normT0C, sumZNs);
-    registry.fill(HIST("ZNVsFT0M"), normT0M, sumZNs);
     registry.fill(HIST("NchVsFV0A"), normV0A, glbTracks);
     registry.fill(HIST("NchVsFT0A"), normT0A, glbTracks);
     registry.fill(HIST("NchVsFT0C"), normT0C, glbTracks);
@@ -695,12 +668,29 @@ struct UccZdc {
     registry.fill(HIST("Nch"), glbTracks);
     registry.fill(HIST("NchVsNPV"), collision.multNTracksPVeta1(), glbTracks);
     registry.fill(HIST("NchVsITStracks"), itsTracks, glbTracks);
-    registry.fill(HIST("ZNAVsNch"), glbTracks, znA);
-    registry.fill(HIST("ZNCVsNch"), glbTracks, znC);
-    registry.fill(HIST("ZNVsNch"), glbTracks, sumZNs);
-    registry.fill(HIST("ZNDifVsNch"), glbTracks, znA - znC);
     if (glbTracks >= minNchSel)
-      registry.fill(HIST("NchVsOneParCorr"), glbTracks, meanpt / glbTracks);
+      registry.fill(HIST("NchVsOneParCorr"), glbTracks, sumpt / glbTracks);
+
+    // ZEM cut
+    if (sumZEMs > zemCut) {
+      registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
+      registry.fill(HIST("ZNAamp"), znA);
+      registry.fill(HIST("ZNCamp"), znC);
+      registry.fill(HIST("ZPAamp"), zpA);
+      registry.fill(HIST("ZPCamp"), zpC);
+      registry.fill(HIST("ZNAVsZNC"), znC, znA);
+      registry.fill(HIST("ZNAVsZPA"), zpA, znA);
+      registry.fill(HIST("ZNCVsZPC"), zpC, znC);
+      registry.fill(HIST("ZPAVsZPC"), zpC, zpA);
+      registry.fill(HIST("ZNVsZEM"), sumZEMs, sumZNs);
+      registry.fill(HIST("ZNVsFT0A"), normT0A, sumZNs);
+      registry.fill(HIST("ZNVsFT0C"), normT0C, sumZNs);
+      registry.fill(HIST("ZNVsFT0M"), normT0M, sumZNs);
+      registry.fill(HIST("ZNAVsNch"), glbTracks, znA);
+      registry.fill(HIST("ZNCVsNch"), glbTracks, znC);
+      registry.fill(HIST("ZNVsNch"), glbTracks, sumZNs);
+      registry.fill(HIST("ZNDifVsNch"), glbTracks, znA - znC);
+    }
   }
   PROCESS_SWITCH(UccZdc, processQA, "Process QA", true);
   void processZdcCollAss(o2::aod::ColEvSels::iterator const& collision, o2::aod::BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcs*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, TheFilteredTracks const& tracks)
@@ -718,8 +708,8 @@ struct UccZdc {
     }
     registry.fill(HIST("hEventCounter"), EvCutLabel::Zdc);
 
-    double aT0A{-999.};
-    double aT0C{-999.};
+    double aT0A{0.};
+    double aT0C{0.};
     if (foundBC.has_ft0()) {
       for (const auto& amplitude : foundBC.ft0().amplitudeA()) {
         aT0A += amplitude;
@@ -732,15 +722,16 @@ struct UccZdc {
     }
     registry.fill(HIST("hEventCounter"), EvCutLabel::TZero);
 
-    double aV0A{-999.};
+    double aV0A{0.};
     if (foundBC.has_fv0a()) {
       for (const auto& amplitude : foundBC.fv0a().amplitude()) {
         aV0A += amplitude;
       }
     }
 
-    const double normT0M{(aT0A + aT0C) / 100.};
-    const double normV0A{aV0A / 100.};
+    const double nPV{collision.multNTracksPVeta1() / 1.};
+    const double normT0M{(aT0A + aT0C) / arbScale};
+    const double normV0A{aV0A / arbScale};
     float znA{foundBC.zdc().amplitudeZNA()};
     float znC{foundBC.zdc().amplitudeZNC()};
     float zpA{foundBC.zdc().amplitudeZPA()};
@@ -757,9 +748,18 @@ struct UccZdc {
     znC /= kCollEnergy;
     zpA /= kCollEnergy;
     zpC /= kCollEnergy;
-    const double sumZNs{znA + znC};
+    double sumZNs{-999.};
     const double sumZPs{zpA + zpC};
     const double sumZEMs{aZEM1 + aZEM2};
+
+    TString sZDC = TString(detectorZDC.value);
+    if (sZDC == "ZNA") {
+      sumZNs = znA;
+    } else if (sZDC == "ZNC") {
+      sumZNs = znC;
+    } else {
+      sumZNs = (znA + znC);
+    }
 
     // TDC cut
     if (isTDCcut) {
@@ -769,16 +769,8 @@ struct UccZdc {
       registry.fill(HIST("hEventCounter"), EvCutLabel::Tdc);
     }
 
-    // ZEM cut
-    if (isZEMcut) {
-      if (sumZEMs < zemCut) {
-        return;
-      }
-      registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
-    }
-
     // Nch-based selection
-    int glbTracks{0};
+    double glbTracks{0.0};
     for (const auto& track : tracks) {
       // Track Selection
       if (!track.isGlobalTrack()) {
@@ -790,11 +782,7 @@ struct UccZdc {
       if ((track.eta() < minEta) || (track.eta() > maxEta)) {
         continue;
       }
-      glbTracks++;
-    }
-
-    if (glbTracks < minNchSel) {
-      return;
+      glbTracks += 1.0;
     }
 
     bool skipEvent{false};
@@ -811,6 +799,9 @@ struct UccZdc {
       if (s1 == "V0A") {
         xEval = normV0A;
       }
+      if (s1 == "NPV") {
+        xEval = nPV;
+      }
 
       const int bin4Calibration{cfgNch.hMeanNch->FindBin(xEval)};
       const double meanNch{cfgNch.hMeanNch->GetBinContent(bin4Calibration)};
@@ -822,6 +813,7 @@ struct UccZdc {
         registry.fill(HIST("ExcludedEvtVsFT0M"), normT0M);
         registry.fill(HIST("ExcludedEvtVsFV0A"), normV0A);
         registry.fill(HIST("ExcludedEvtVsNch"), glbTracks);
+        registry.fill(HIST("ExcludedEvtVsNPV"), nPV);
         skipEvent = true;
       }
     }
@@ -831,10 +823,15 @@ struct UccZdc {
       return;
     }
 
-    double nchMult{static_cast<double>(glbTracks)};
-    std::vector<float> pTs;
-    std::vector<float> vecFD;
-    std::vector<float> vecEff;
+    // Reject low-multiplcicity events
+    if (glbTracks < minNchSel) {
+      return;
+    }
+
+    double nchMult{glbTracks};
+    std::vector<double> pTs;
+    std::vector<double> vecFD;
+    std::vector<double> vecEff;
 
     // apply corrections
     if (applyEff || applyFD) {
@@ -871,8 +868,14 @@ struct UccZdc {
         }
       }
 
-      if (applyEff && !correctNch)
-        nchMult = static_cast<double>(glbTracks);
+      if (applyEff && !correctNch) {
+        nchMult = glbTracks;
+      }
+
+      // Reject low-multiplcicity events
+      if (nchMult < minNchSel) {
+        return;
+      }
 
       // Fill vectors for [pT] measurement
       for (const auto& track : tracks) {
@@ -930,48 +933,47 @@ struct UccZdc {
     getPTpowers(pTs, vecEff, vecFD, p1, w1, p2, w2, p3, w3, p4, w4);
 
     // EbE one-particle pT correlation
-    double oneParCorr{p1 / w1};
+    const double oneParCorr{p1 / w1};
 
     // EbE two-particle pT correlation
-    double denTwoParCorr{std::pow(w1, 2.) - w2};
-    double numTwoParCorr{std::pow(p1, 2.) - p2};
-    double twoParCorr{numTwoParCorr / denTwoParCorr};
+    const double denTwoParCorr{std::pow(w1, 2.) - w2};
+    const double numTwoParCorr{std::pow(p1, 2.) - p2};
+    const double twoParCorr{numTwoParCorr / denTwoParCorr};
 
     // EbE three-particle pT correlation
-    double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
-    double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
-    double threeParCorr{numThreeParCorr / denThreeParCorr};
-
-    // EbE four-particle pT correlation
-    // double denFourParCorr{std::pow(w1, 4.) - 6. * w2 * std::pow(w1, 2.) + 3. * std::pow(w2, 2.) + 8 * w3 * w1 - 6. * w4};
-    // double numFourParCorr{std::pow(p1, 4.) - 6. * p2 * std::pow(p1, 2.) + 3. * std::pow(p2, 2.) + 8 * p3 * p1 - 6. * p4};
-    // double fourParCorr{numFourParCorr / denFourParCorr};
+    const double denThreeParCorr{std::pow(w1, 3.) - (3. * w2 * w1) + (2. * w3)};
+    const double numThreeParCorr{std::pow(p1, 3.) - (3. * p2 * p1) + (2. * p3)};
+    const double threeParCorr{numThreeParCorr / denThreeParCorr};
 
     // One-dimensional distributions
     registry.fill(HIST("Nch"), nchMult);
     registry.fill(HIST("NchUncorrected"), glbTracks);
+    registry.fill(HIST("NchVsV0A"), nchMult, normV0A);
+    registry.fill(HIST("NchVsT0M"), nchMult, normT0M);
 
-    registry.fill(HIST("NchVsV0Aamp"), nchMult, normV0A);
-    registry.fill(HIST("NchVsT0Mamp"), nchMult, normT0M);
-    registry.fill(HIST("NchVsZN"), nchMult, sumZNs);
-    registry.fill(HIST("NchVsZP"), nchMult, sumZPs);
+    registry.fill(HIST("NchVsOneParCorr"), nchMult, oneParCorr);
+    registry.fill(HIST("NchVsTwoParCorr"), nchMult, twoParCorr);
+    registry.fill(HIST("NchVsThreeParCorr"), nchMult, threeParCorr);
 
-    registry.fill(HIST("NchVsOneParCorr"), nchMult, oneParCorr, w1);
+    registry.fill(HIST("NchVsOneParCorrVsT0M"), nchMult, normT0M, oneParCorr);
+    registry.fill(HIST("NchVsTwoParCorrVsT0M"), nchMult, normT0M, twoParCorr);
+    registry.fill(HIST("NchVsThreeParCorrVsT0M"), nchMult, normT0M, threeParCorr);
 
-    registry.fill(HIST("NchVsOneParCorrVsZN"), nchMult, sumZNs, oneParCorr, w1);
-    registry.fill(HIST("NchVsTwoParCorrVsZN"), nchMult, sumZNs, twoParCorr, denTwoParCorr);
-    registry.fill(HIST("NchVsThreeParCorrVsZN"), nchMult, sumZNs, threeParCorr, denThreeParCorr);
+    registry.fill(HIST("NchVsOneParCorrVsV0A"), nchMult, normV0A, oneParCorr);
+    registry.fill(HIST("NchVsTwoParCorrVsV0A"), nchMult, normV0A, twoParCorr);
+    registry.fill(HIST("NchVsThreeParCorrVsV0A"), nchMult, normV0A, threeParCorr);
 
-    registry.fill(HIST("OneParCorrVsT0M"), normT0M, oneParCorr, w1);
-    registry.fill(HIST("TwoParCorrVsT0M"), normT0M, twoParCorr, denTwoParCorr);
-    registry.fill(HIST("ThreeParCorrVsT0M"), normT0M, threeParCorr, denThreeParCorr);
-
-    registry.fill(HIST("OneParCorrVsV0A"), normV0A, oneParCorr, w1);
-    registry.fill(HIST("TwoParCorrVsV0A"), normV0A, twoParCorr, denTwoParCorr);
-    registry.fill(HIST("ThreeParCorrVsV0A"), normV0A, threeParCorr, denThreeParCorr);
+    if (sumZEMs > zemCut) {
+      registry.fill(HIST("hEventCounter"), EvCutLabel::Zem);
+      registry.fill(HIST("NchVsZN"), nchMult, sumZNs);
+      registry.fill(HIST("NchVsZP"), nchMult, sumZPs);
+      registry.fill(HIST("NchVsOneParCorrVsZN"), nchMult, sumZNs, oneParCorr);
+      registry.fill(HIST("NchVsTwoParCorrVsZN"), nchMult, sumZNs, twoParCorr);
+      registry.fill(HIST("NchVsThreeParCorrVsZN"), nchMult, sumZNs, threeParCorr);
+    }
 
     const uint64_t timeStamp{foundBC.timestamp()};
-    eventSampling(tracks, normV0A, normT0M, sumZNs, timeStamp);
+    eventSampling(tracks, normV0A, normT0M, sumZNs, sumZEMs, timeStamp);
   }
   PROCESS_SWITCH(UccZdc, processZdcCollAss, "Process ZDC W/Coll Ass.", true);
 
@@ -1011,17 +1013,10 @@ struct UccZdc {
           aT0C += amplitude;
         }
       } else {
-        return;
+        continue;
       }
 
-      // double aV0A{-999.};
-      // if (foundBC.has_fv0a()) {
-      //     for (const auto& amplitude : foundBC.fv0a().amplitude()) { aV0A += amplitude; }
-      // }
-
-      const double normT0M{(aT0A + aT0C) / 100.};
-      // const double normV0A{aV0A/100.};
-
+      const double normT0M{(aT0A + aT0C) / arbScale};
       double nchRaw{0.};
       double nchMult{0.};
       double nchMC{0.};
@@ -1073,18 +1068,18 @@ struct UccZdc {
 
         // Reject event if nchRaw less than a lower cutoff
         if (nchRaw < minNchSel) {
-          return;
+          continue;
         }
 
-        // Calculates the event weight, W_k
         const int foundNchBin{cfg.hEfficiency->GetXaxis()->FindBin(nchRaw)};
 
+        // Calculates the event weight, W_k
         for (const auto& track : groupedTracks) {
           // Track Selection
           if (track.eta() < minEta || track.eta() > maxEta) {
             continue;
           }
-          if (track.pt() < minPt || track.pt() > maxPt) {
+          if (track.pt() < minPt || track.pt() > maxPtSpectra) {
             continue;
           }
           if (!track.isGlobalTrack()) {
@@ -1108,8 +1103,6 @@ struct UccZdc {
           if (std::abs(charge) < kMinCharge) {
             continue;
           }
-          // Is it a primary particle?
-          // if (!particle.isPhysicalPrimary()) { continue; }
 
           const double pt{static_cast<double>(track.pt())};
           const int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
@@ -1132,10 +1125,8 @@ struct UccZdc {
 
         const double denTwoParCorr{std::pow(w1, 2.) - w2};
         const double numTwoParCorr{std::pow(p1, 2.) - p2};
-        const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
-        const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
-        // const double denFourParCorr{std::pow(w1, 4.) - 6. * w2 * std::pow(w1, 2.) + 3. * std::pow(w2, 2.) + 8 * w3 * w1 - 6. * w4};
-        // const double numFourParCorr{std::pow(p1, 4.) - 6. * p2 * std::pow(p1, 2.) + 3. * std::pow(p2, 2.) + 8 * p3 * p1 - 6. * p4};
+        const double denThreeParCorr{std::pow(w1, 3.) - (3. * w2 * w1) + (2. * w3)};
+        const double numThreeParCorr{std::pow(p1, 3.) - (3. * p2 * p1) + (2. * p3)};
 
         const double oneParCorr{p1 / w1};
         const double twoParCorr{numTwoParCorr / denTwoParCorr};
@@ -1143,16 +1134,16 @@ struct UccZdc {
 
         registry.fill(HIST("Nch"), nchMult);
         registry.fill(HIST("NchUncorrected"), nchRaw);
-        registry.fill(HIST("NchVsOneParCorr"), nchMult, oneParCorr, w1);
-        registry.fill(HIST("NchVsTwoParCorr"), nchMult, twoParCorr, denTwoParCorr);
-        registry.fill(HIST("NchVsThreeParCorr"), nchMult, threeParCorr, denThreeParCorr);
+        registry.fill(HIST("NchVsOneParCorr"), nchMult, oneParCorr);
+        registry.fill(HIST("NchVsTwoParCorr"), nchMult, twoParCorr);
+        registry.fill(HIST("NchVsThreeParCorr"), nchMult, threeParCorr);
 
         //--------------------------- Generated MC ---------------------------
         std::vector<float> pTsMC;
         std::vector<float> vecFullEff;
         std::vector<float> vecFDEqualOne;
 
-        // Calculates the event weight, W_k
+        // calculates the  true Nch
         for (const auto& particle : mcParticles) {
           if (particle.eta() < minEta || particle.eta() > maxEta) {
             continue;
@@ -1178,18 +1169,45 @@ struct UccZdc {
           if (!particle.isPhysicalPrimary()) {
             continue;
           }
-
-          float pt{particle.pt()};
-          pTsMC.emplace_back(pt);
-          vecFullEff.emplace_back(1.);
-          vecFDEqualOne.emplace_back(1.);
           nchMC++;
         }
 
         if (nchMC < minNchSel) {
           continue;
         }
-        // printf("nchMult = %f  | nchMC = %f  | nchMult/nchMc = %f\n",nchMult,nchMC,nchMult/nchMC);
+
+        // Calculates the event weight, W_k
+        for (const auto& particle : mcParticles) {
+          if (particle.eta() < minEta || particle.eta() > maxEta) {
+            continue;
+          }
+          if (particle.pt() < minPt || particle.pt() > maxPtSpectra) {
+            continue;
+          }
+
+          auto charge{0.};
+          // Get the MC particle
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // Is it a primary particle?
+          if (!particle.isPhysicalPrimary()) {
+            continue;
+          }
+
+          const float pt{particle.pt()};
+          pTsMC.emplace_back(pt);
+          vecFullEff.emplace_back(1.);
+          vecFDEqualOne.emplace_back(1.);
+        }
 
         double p1MC, p2MC, p3MC, p4MC, w1MC, w2MC, w3MC, w4MC;
         p1MC = p2MC = p3MC = p4MC = w1MC = w2MC = w3MC = w4MC = 0.0;
@@ -1197,20 +1215,17 @@ struct UccZdc {
 
         const double denTwoParCorrMC{std::pow(w1MC, 2.) - w2MC};
         const double numTwoParCorrMC{std::pow(p1MC, 2.) - p2MC};
-        const double denThreeParCorrMC{std::pow(w1MC, 3.) - 3. * w2MC * w1MC + 2. * w3MC};
-        const double numThreeParCorrMC{std::pow(p1MC, 3.) - 3. * p2MC * p1MC + 2. * p3MC};
-        // const double denFourParCorrMC{std::pow(w1MC, 4.) - 6. * w2MC * std::pow(w1MC, 2.) + 3. * std::pow(w2MC, 2.) + 8 * w3MC * w1MC - 6. * w4MC};
-        // const double numFourParCorrMC{std::pow(p1MC, 4.) - 6. * p2MC * std::pow(p1MC, 2.) + 3. * std::pow(p2MC, 2.) + 8 * p3MC * p1MC - 6. * p4MC};
+        const double denThreeParCorrMC{std::pow(w1MC, 3.) - (3. * w2MC * w1MC) + (2. * w3MC)};
+        const double numThreeParCorrMC{std::pow(p1MC, 3.) - (3. * p2MC * p1MC) + (2. * p3MC)};
 
         const double oneParCorrMC{p1MC / w1MC};
         const double twoParCorrMC{numTwoParCorrMC / denTwoParCorrMC};
         const double threeParCorrMC{numThreeParCorrMC / denThreeParCorrMC};
-        // const double fourParCorrMC{numFourParCorrMC / denFourParCorrMC};
 
         registry.fill(HIST("NchGen"), nchMC);
-        registry.fill(HIST("NchvsOneParCorrGen"), nchMC, oneParCorrMC, w1MC);
-        registry.fill(HIST("NchvsTwoParCorrGen"), nchMC, twoParCorrMC, denTwoParCorrMC);
-        registry.fill(HIST("NchvsThreeParCorrGen"), nchMC, threeParCorrMC, denThreeParCorrMC);
+        registry.fill(HIST("NchvsOneParCorrGen"), nchMC, oneParCorrMC);
+        registry.fill(HIST("NchvsTwoParCorrGen"), nchMC, twoParCorrMC);
+        registry.fill(HIST("NchvsThreeParCorrGen"), nchMC, threeParCorrMC);
 
         //------------------ Poisson sampling
         eventSamplingMC(mcParticles, timeStamp);
@@ -1218,7 +1233,6 @@ struct UccZdc {
       } else { // Correction with the remaining half of the sample
         registry.fill(HIST("EvtsDivided"), 1);
         //----- MC reconstructed -----//
-        //                const auto& groupedTracks{simTracks.sliceBy(perCollision, collision.globalIndex())};
         for (const auto& track : groupedTracks) {
           // Track Selection
           if (track.eta() < minEta || track.eta() > maxEta) {
@@ -1230,9 +1244,6 @@ struct UccZdc {
           if (!track.isGlobalTrack()) {
             continue;
           }
-          registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
-          registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
-          registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
           nchRaw++;
         }
 
@@ -1241,7 +1252,7 @@ struct UccZdc {
           if (track.eta() < minEta || track.eta() > maxEta) {
             continue;
           }
-          if (track.pt() < minPt || track.pt() > maxPt) {
+          if (track.pt() < minPt || track.pt() > maxPtSpectra) {
             continue;
           }
           if (!track.isGlobalTrack()) {
@@ -1265,8 +1276,13 @@ struct UccZdc {
           if (std::abs(charge) < kMinCharge) {
             continue;
           }
+
           // All charged particles
           registry.fill(HIST("Pt_all_ch"), nchRaw, track.pt());
+          registry.fill(HIST("ZposVsEta"), collision.posZ(), track.eta());
+          registry.fill(HIST("EtaVsPhi"), track.eta(), track.phi());
+          registry.fill(HIST("dcaXYvspT"), track.dcaXY(), track.pt());
+
           // Is it a primary particle?
           if (!particle.isPhysicalPrimary()) {
             continue;
@@ -1293,7 +1309,7 @@ struct UccZdc {
           if (particle.eta() < minEta || particle.eta() > maxEta) {
             continue;
           }
-          if (particle.pt() < minPt || particle.pt() > maxPt) {
+          if (particle.pt() < minPt || particle.pt() > maxPtSpectra) {
             continue;
           }
 
@@ -1375,7 +1391,7 @@ struct UccZdc {
         std::vector<float> vecFD;
         std::vector<float> vecEff;
 
-        // Calculates the event weight, W_k
+        // Calculates the true Nch
         for (const auto& particle : mcParticles) {
           if (particle.eta() < minEta || particle.eta() > maxEta) {
             continue;
@@ -1401,18 +1417,45 @@ struct UccZdc {
           if (!particle.isPhysicalPrimary()) {
             continue;
           }
-
-          float pt{particle.pt()};
-          pTs.emplace_back(pt);
-          vecEff.emplace_back(1.);
-          vecFD.emplace_back(1.);
           nchMult++;
         }
 
         if (nchMult < minNchSel) {
           continue;
         }
-        // printf("nchMult = %f  | nchMC = %f  | nchMult/nchMc = %f\n",nchMult,nchMC,nchMult/nchMC);
+
+        // Calculates the event weight, W_k
+        for (const auto& particle : mcParticles) {
+          if (particle.eta() < minEta || particle.eta() > maxEta) {
+            continue;
+          }
+          if (particle.pt() < minPt || particle.pt() > maxPtSpectra) {
+            continue;
+          }
+
+          auto charge{0.};
+          // Get the MC particle
+          auto* pdgParticle = pdg->GetParticle(particle.pdgCode());
+          if (pdgParticle != nullptr) {
+            charge = pdgParticle->Charge();
+          } else {
+            continue;
+          }
+
+          // Is it a charged particle?
+          if (std::abs(charge) < kMinCharge) {
+            continue;
+          }
+          // Is it a primary particle?
+          if (!particle.isPhysicalPrimary()) {
+            continue;
+          }
+
+          const float pt{particle.pt()};
+          pTs.emplace_back(pt);
+          vecEff.emplace_back(1.);
+          vecFD.emplace_back(1.);
+        }
 
         double p1, p2, p3, p4, w1, w2, w3, w4;
         p1 = p2 = p3 = p4 = w1 = w2 = w3 = w4 = 0.0;
@@ -1427,23 +1470,14 @@ struct UccZdc {
         const double twoParCorr{numTwoParCorr / denTwoParCorr};
 
         // EbE three-particle pT correlation
-        const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
-        const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
+        const double denThreeParCorr{std::pow(w1, 3.) - (3. * w2 * w1) + (2. * w3)};
+        const double numThreeParCorr{std::pow(p1, 3.) - (3. * p2 * p1) + (2. * p3)};
         const double threeParCorr{numThreeParCorr / denThreeParCorr};
 
         hNchGen[replica]->Fill(nchMult);
-
-        pOneParCorrVsNchGen[replica]->Fill(nchMult, oneParCorr, w1);
-        pTwoParCorrVsNchGen[replica]->Fill(nchMult, twoParCorr, denTwoParCorr);
-        pThreeParCorrVsNchGen[replica]->Fill(nchMult, threeParCorr, denThreeParCorr);
-
-        //                pOneParCorrVsV0AGen[replica]->Fill(normV0A, oneParCorr, w1);
-        //                pTwoParCorrVsV0AGen[replica]->Fill(normV0A, twoParCorr, denTwoParCorr);
-        //                pThreeParCorrVsV0AGen[replica]->Fill(normV0A, threeParCorr, denThreeParCorr);
-
-        //                pOneParCorrVsT0MGen[replica]->Fill(normT0M, oneParCorr, w1);
-        //                pTwoParCorrVsT0MGen[replica]->Fill(normT0M, twoParCorr, denTwoParCorr);
-        //                pThreeParCorrVsT0MGen[replica]->Fill(normT0M, threeParCorr, denThreeParCorr);
+        pOneParCorrVsNchGen[replica]->Fill(nchMult, oneParCorr);
+        pTwoParCorrVsNchGen[replica]->Fill(nchMult, twoParCorr);
+        pThreeParCorrVsNchGen[replica]->Fill(nchMult, threeParCorr);
       } // event per replica
     } // replica's loop
   }
@@ -1468,7 +1502,7 @@ struct UccZdc {
         std::vector<float> vecFD;
         std::vector<float> vecEff;
 
-        // Calculates the uncorrected Nch multiplicity
+        // Calculates the uncorrected Nch
         for (const auto& track : tracks) {
           // Track Selection
           if (!track.isGlobalTrack()) {
@@ -1502,10 +1536,10 @@ struct UccZdc {
               continue;
             }
 
-            float pt{track.pt()};
+            const float pt{track.pt()};
             double fdValue{1.};
-            int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
-            double effValue{cfg.hEfficiency->GetBinContent(foundNchBin, foundPtBin)};
+            const int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
+            const double effValue{cfg.hEfficiency->GetBinContent(foundNchBin, foundPtBin)};
 
             if (applyFD)
               fdValue = cfg.hFeedDown->GetBinContent(foundNchBin, foundPtBin);
@@ -1536,10 +1570,10 @@ struct UccZdc {
               continue;
             }
 
-            float pt{track.pt()};
+            const float pt{track.pt()};
             double fdValue{1.};
-            int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
-            double effValue{cfg.hEfficiency->GetBinContent(foundNchBin, foundPtBin)};
+            const int foundPtBin{cfg.hEfficiency->GetYaxis()->FindBin(pt)};
+            const double effValue{cfg.hEfficiency->GetBinContent(foundNchBin, foundPtBin)};
 
             if (applyFD)
               fdValue = cfg.hFeedDown->GetBinContent(foundNchBin, foundPtBin);
@@ -1579,29 +1613,20 @@ struct UccZdc {
         const double twoParCorr{numTwoParCorr / denTwoParCorr};
 
         // EbE three-particle pT correlation
-        const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
-        const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
+        const double denThreeParCorr{std::pow(w1, 3.) - (3. * w2 * w1) + (2. * w3)};
+        const double numThreeParCorr{std::pow(p1, 3.) - (3. * p2 * p1) + (2. * p3)};
         const double threeParCorr{numThreeParCorr / denThreeParCorr};
 
         hNch[replica]->Fill(nchMult);
-
-        pOneParCorrVsNch[replica]->Fill(nchMult, oneParCorr, w1);
-        pTwoParCorrVsNch[replica]->Fill(nchMult, twoParCorr, denTwoParCorr);
-        pThreeParCorrVsNch[replica]->Fill(nchMult, threeParCorr, denThreeParCorr);
-
-        //                pOneParCorrVsV0A[replica]->Fill(normV0A, oneParCorr, w1);
-        //                pTwoParCorrVsV0A[replica]->Fill(normV0A, twoParCorr, denTwoParCorr);
-        //                pThreeParCorrVsV0A[replica]->Fill(normV0A, threeParCorr, denThreeParCorr);
-        //
-        //                pOneParCorrVsT0M[replica]->Fill(normT0M, oneParCorr, w1);
-        //                pTwoParCorrVsT0M[replica]->Fill(normT0M, twoParCorr, denTwoParCorr);
-        //                pThreeParCorrVsT0M[replica]->Fill(normT0M, threeParCorr, denThreeParCorr);
+        pOneParCorrVsNch[replica]->Fill(nchMult, oneParCorr);
+        pTwoParCorrVsNch[replica]->Fill(nchMult, twoParCorr);
+        pThreeParCorrVsNch[replica]->Fill(nchMult, threeParCorr);
       } // event per replica
     } // replica's loop
   }
 
   template <typename T, typename U, typename V>
-  void eventSampling(const T& tracks, const U& normV0A, const U& normT0M, const U& sumZNs, const V& timeStamp)
+  void eventSampling(const T& tracks, const U& normV0A, const U& normT0M, const U& sumZNs, const U& sumZEMs, const V& timeStamp)
   {
     TRandom3 rndGen(timeStamp);
     std::vector<uint64_t> vPoisson;
@@ -1700,8 +1725,6 @@ struct UccZdc {
               pTs.emplace_back(pt);
               vecEff.emplace_back(effValue);
               vecFD.emplace_back(fdValue);
-              // To calculate event-averaged <pt>
-              registry.fill(HIST("NchVsZNVsPt"), nchMult, sumZNs, pt * (fdValue / effValue));
             }
           }
         } else {
@@ -1717,9 +1740,6 @@ struct UccZdc {
             pTs.emplace_back(track.pt());
             vecEff.emplace_back(1.);
             vecFD.emplace_back(1.);
-
-            // To calculate event-averaged <pt>
-            registry.fill(HIST("NchVsZNVsPt"), nchMult, sumZNs, track.pt());
           }
         }
 
@@ -1736,30 +1756,33 @@ struct UccZdc {
         const double twoParCorr{numTwoParCorr / denTwoParCorr};
 
         // EbE three-particle pT correlation
-        const double denThreeParCorr{std::pow(w1, 3.) - 3. * w2 * w1 + 2. * w3};
-        const double numThreeParCorr{std::pow(p1, 3.) - 3. * p2 * p1 + 2. * p3};
+        const double denThreeParCorr{std::pow(w1, 3.) - (3. * w2 * w1) + (2. * w3)};
+        const double numThreeParCorr{std::pow(p1, 3.) - (3. * p2 * p1) + (2. * p3)};
         const double threeParCorr{numThreeParCorr / denThreeParCorr};
 
-        hNch[replica]->Fill(nchMult);
-        pNchVsOneParCorrVsZN[replica]->Fill(nchMult, sumZNs, oneParCorr, w1);
-        pNchVsTwoParCorrVsZN[replica]->Fill(nchMult, sumZNs, twoParCorr, denTwoParCorr);
-        pNchVsThreeParCorrVsZN[replica]->Fill(nchMult, sumZNs, threeParCorr, denThreeParCorr);
+        hNchVsV0A[replica]->Fill(nchMult, normV0A);
+        hNchVsT0M[replica]->Fill(nchMult, normT0M);
 
-        pOneParCorrVsV0A[replica]->Fill(normV0A, oneParCorr, w1);
-        pTwoParCorrVsV0A[replica]->Fill(normV0A, twoParCorr, denTwoParCorr);
-        pThreeParCorrVsV0A[replica]->Fill(normV0A, threeParCorr, denThreeParCorr);
+        pNchVsOneParCorrVsT0M[replica]->Fill(nchMult, normT0M, oneParCorr);
+        pNchVsTwoParCorrVsT0M[replica]->Fill(nchMult, normT0M, twoParCorr);
+        pNchVsThreeParCorrVsT0M[replica]->Fill(nchMult, normT0M, threeParCorr);
 
-        pOneParCorrVsT0M[replica]->Fill(normT0M, oneParCorr, w1);
-        pTwoParCorrVsT0M[replica]->Fill(normT0M, twoParCorr, denTwoParCorr);
-        pThreeParCorrVsT0M[replica]->Fill(normT0M, threeParCorr, denThreeParCorr);
+        pNchVsOneParCorrVsV0A[replica]->Fill(nchMult, normV0A, oneParCorr);
+        pNchVsTwoParCorrVsV0A[replica]->Fill(nchMult, normV0A, twoParCorr);
+        pNchVsThreeParCorrVsV0A[replica]->Fill(nchMult, normV0A, threeParCorr);
+
+        if (sumZEMs > zemCut) {
+          hNchVsZN[replica]->Fill(nchMult, sumZNs);
+          pNchVsOneParCorrVsZN[replica]->Fill(nchMult, sumZNs, oneParCorr);
+          pNchVsTwoParCorrVsZN[replica]->Fill(nchMult, sumZNs, twoParCorr);
+          pNchVsThreeParCorrVsZN[replica]->Fill(nchMult, sumZNs, threeParCorr);
+        }
       } // event per replica
     } // replica's loop
   }
 
   void loadCorrections(uint64_t timeStamp)
   {
-    //        if (cfg.correctionsLoaded) return;
-
     if (paTHEff.value.empty() == false) {
       cfg.hEfficiency = ccdb->getForTimeStamp<TH2F>(paTHEff, timeStamp);
       if (cfg.hEfficiency == nullptr) {

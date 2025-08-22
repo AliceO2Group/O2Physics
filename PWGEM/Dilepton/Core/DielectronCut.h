@@ -101,7 +101,7 @@ class DielectronCut : public TNamed
   }
 
   template <bool dont_require_rapidity = false, typename TTrack1, typename TTrack2>
-  bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2, const float bz) const
+  bool IsSelectedPair(TTrack1 const& t1, TTrack2 const& t2, const float bz, const float refR) const
   {
     ROOT::Math::PtEtaPhiMVector v1(t1.pt(), t1.eta(), t1.phi(), o2::constants::physics::MassElectron);
     ROOT::Math::PtEtaPhiMVector v2(t2.pt(), t2.eta(), t2.phi(), o2::constants::physics::MassElectron);
@@ -137,6 +137,10 @@ class DielectronCut : public TNamed
       return false;
     }
 
+    if (mApplydEtadPhi && mApplydEtadPhiPosition) { // applying both cuts is not allowed.
+      return false;
+    }
+
     float deta = v1.Eta() - v2.Eta();
     float dphi = v1.Phi() - v2.Phi();
     o2::math_utils::bringToPMPi(dphi);
@@ -144,11 +148,22 @@ class DielectronCut : public TNamed
       return false;
     }
 
+    float phiPosition1 = t1.phi() + std::asin(t1.sign() * 0.30282 * (bz * 0.1) * refR / (2.f * t1.pt()));
+    float phiPosition2 = t2.phi() + std::asin(t2.sign() * 0.30282 * (bz * 0.1) * refR / (2.f * t2.pt()));
+
+    phiPosition1 = RecoDecay::constrainAngle(phiPosition1, 0, 1); // 0-2pi
+    phiPosition2 = RecoDecay::constrainAngle(phiPosition2, 0, 1); // 0-2pi
+    float dphiPosition = phiPosition1 - phiPosition2;
+    o2::math_utils::bringToPMPi(dphiPosition);
+    if (mApplydEtadPhiPosition && std::pow(deta / mMinDeltaEta, 2) + std::pow(dphiPosition / mMinDeltaPhi, 2) < 1.f) {
+      return false;
+    }
+
     return true;
   }
 
-  template <bool dont_require_pteta = false, bool isML = false, typename TTrack, typename TCollision = int>
-  bool IsSelectedTrack(TTrack const& track, TCollision const& collision = 0) const
+  template <bool dont_require_pteta = false, typename TTrack>
+  bool IsSelectedTrack(TTrack const& track) const
   {
     if (!track.hasITS()) {
       return false;
@@ -237,36 +252,31 @@ class DielectronCut : public TNamed
     }
 
     // PID cuts
-    if constexpr (isML) {
-      if (!PassPIDML(track, collision)) {
+    if (track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) { // ITSsa
+      float meanClusterSizeITS = track.meanClusterSizeITS() * std::cos(std::atan(track.tgl()));
+      if (meanClusterSizeITS < mMinMeanClusterSizeITS || mMaxMeanClusterSizeITS < meanClusterSizeITS) {
         return false;
       }
-    } else {
-      if (track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) { // ITSsa
-        float meanClusterSizeITS = track.meanClusterSizeITS() * std::cos(std::atan(track.tgl()));
-        if (meanClusterSizeITS < mMinMeanClusterSizeITS || mMaxMeanClusterSizeITS < meanClusterSizeITS) {
-          return false;
-        }
-      } else { // not ITSsa
-        if (!PassPID(track)) {
-          return false;
-        }
+    } else { // not ITSsa
+      if (!PassPID(track)) {
+        return false;
       }
     }
 
     return true;
   }
 
-  template <typename TTrack, typename TCollision>
-  bool PassPIDML(TTrack const&, TCollision const&) const
+  template <typename TTrack>
+  bool PassPIDML(TTrack const& track) const
   {
-    return false;
-    /*if (!PassTOFif(track)) { // Allows for pre-selection. But potentially dangerous if analyzers are not aware of it
-      return false;
-    }*/
-    // std::vector<float> inputFeatures = mPIDMlResponse->getInputFeatures(track, collision);
-    // float binningFeature = mPIDMlResponse->getBinningFeature(track, collision);
-    // return mPIDMlResponse->isSelectedMl(inputFeatures, binningFeature);
+    int pbin = lower_bound(mMLBins.begin(), mMLBins.end(), track.tpcInnerParam()) - mMLBins.begin() - 1;
+    if (pbin < 0) {
+      pbin = 0;
+    } else if (static_cast<int>(mMLBins.size()) - 2 < pbin) {
+      pbin = static_cast<int>(mMLBins.size()) - 2;
+    }
+    // LOGF(info, "track.tpcInnerParam() = %f, pbin = %d, track.probElBDT() = %f, mMLCuts[pbin] = %f", track.tpcInnerParam(), pbin, track.probElBDT(), mMLCuts[pbin]);
+    return track.probElBDT() > mMLCuts[pbin];
   }
 
   template <typename T>
@@ -292,7 +302,7 @@ class DielectronCut : public TNamed
         return PassTOFif(track);
 
       case static_cast<int>(PIDSchemes::kPIDML):
-        return true; // don't use kPIDML here.
+        return PassPIDML(track);
 
       case static_cast<int>(PIDSchemes::kTPChadrejORTOFreq_woTOFif):
         return PassTPConlyhadrej(track) || PassTOFreq(track);
@@ -444,7 +454,7 @@ class DielectronCut : public TNamed
   void SetPairOpAng(float minOpAng = 0.f, float maxOpAng = 1e10f);
   void SetMaxMeePhiVDep(std::function<float(float)> phivDepCut, float min_phiv, float max_phiv);
   void SelectPhotonConversion(bool flag);
-  void SetMindEtadPhi(bool flag, float min_deta, float min_dphi);
+  void SetMindEtadPhi(bool applydEtadPhi, bool applydEtadPhiPosition, float min_deta, float min_dphi);
   void SetRequireDifferentSides(bool flag);
 
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
@@ -502,6 +512,18 @@ class DielectronCut : public TNamed
     mPIDMlResponse = mlResponse;
   }
 
+  void SetMLThresholds(const std::vector<float> bins, const std::vector<float> cuts)
+  {
+    if (bins.size() != cuts.size() + 1) {
+      LOG(fatal) << "cuts.size() + 1 mutst be exactly the same as bins.size(). Check your bins and thresholds.";
+    }
+    mMLBins = bins;
+    mMLCuts = cuts;
+    // for (int i = 0; i < static_cast<int>(mMLBins.size()) - 1; i++) {
+    //   printf("Dielectron cut: mMLBins[%d] = %3.2f, mMLBins[%d] = %3.2f, mMLCuts[%d] = %3.2f\n", i, mMLBins[i], i + 1, mMLBins[i + 1], i, mMLCuts[i]);
+    // }
+  }
+
   // Getters
   bool IsPhotonConversionSelected() const { return mSelectPC; }
 
@@ -517,6 +539,7 @@ class DielectronCut : public TNamed
   std::function<float(float)> mMaxMeePhiVDep{}; // max mee as a function of phiv
   bool mSelectPC{false};                        // flag to select photon conversion used in mMaxPhivPairMeeDep
   bool mApplydEtadPhi{false};                   // flag to apply deta, dphi cut between 2 tracks
+  bool mApplydEtadPhiPosition{false};           // flag to apply deta, dphi cut between 2 tracks
   float mMinDeltaEta{0.f};
   float mMinDeltaPhi{0.f};
   float mMinOpAng{0.f}, mMaxOpAng{1e10f};
@@ -581,6 +604,8 @@ class DielectronCut : public TNamed
   // float mMinP_ITSNsigmaPr{0.0}, mMaxP_ITSNsigmaPr{0.0};
 
   o2::analysis::MlResponseDielectronSingleTrack<float>* mPIDMlResponse{nullptr};
+  std::vector<float> mMLBins{}; // binning for a feature variable. e.g. tpcInnerParam
+  std::vector<float> mMLCuts{}; // threshold for each bin. mMLCuts.size() must be mMLBins.size()-1.
 
   ClassDef(DielectronCut, 1);
 };

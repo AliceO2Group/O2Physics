@@ -165,6 +165,7 @@ DECLARE_SOA_COLUMN(DecayLengthXYCasc, decayLengthXYCasc, float);
 DECLARE_SOA_INDEX_COLUMN_FULL(MotherCasc, motherCasc, int, HfStChBarGens, "_Casc");
 DECLARE_SOA_INDEX_COLUMN_FULL(MotherPionOrKaon, motherPionOrKaon, int, HfStChBarGens, "_PionOrKaon");
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int);
+DECLARE_SOA_COLUMN(ToiMask, toiMask, uint32_t);
 } // namespace hf_st_charmed_baryon
 
 DECLARE_SOA_TABLE(HfStChBars, "AOD", "HFSTCHBAR",
@@ -220,7 +221,8 @@ DECLARE_SOA_TABLE(HfStChBars, "AOD", "HFSTCHBAR",
                   hf_st_charmed_baryon::DecayLengthXYCasc,
                   hf_st_charmed_baryon::MotherCascId,
                   hf_st_charmed_baryon::MotherPionOrKaonId,
-                  hf_st_charmed_baryon::OriginMcRec);
+                  hf_st_charmed_baryon::OriginMcRec,
+                  hf_st_charmed_baryon::ToiMask);
 } // namespace o2::aod
 
 struct HfTreeCreatorOmegacSt {
@@ -256,6 +258,7 @@ struct HfTreeCreatorOmegacSt {
   Configurable<float> maxNSigmaPion{"maxNSigmaPion", 5., "Max Nsigma for pion to be paired with Omega"};
   Configurable<float> maxNSigmaKaon{"maxNSigmaKaon", 5., "Max Nsigma for kaon to be paired with Omega"};
   Configurable<bool> bzOnly{"bzOnly", true, "Use B_z instead of full field map"};
+  Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fHfCharmBarToXiBach", "Triggers of interest, comma separated for Zorro"};
 
   const int itsNClsMin = 4;
   const float tpcNclsFindableFraction = 0.8;
@@ -446,7 +449,7 @@ struct HfTreeCreatorOmegacSt {
           if (runNumber == 0) {
             zorroSummary.setObject(zorro.getZorroSummary());
           }
-          zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), "fTrackedOmega");
+          zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgTriggersOfInterest.value);
           zorro.populateHistRegistry(registry, bc.runNumber());
         }
         runNumber = bc.runNumber();
@@ -463,8 +466,15 @@ struct HfTreeCreatorOmegacSt {
         }
         df2.setBz(bz);
       }
+      uint32_t toiMask = 0;
       if (skimmedProcessing) {
-        zorro.isSelected(collision.bc().globalBC());
+        bool sel = zorro.isSelected(bc.globalBC());
+        if (sel) {
+          std::vector<bool> toivect = zorro.getTriggerOfInterestResults();
+          for (size_t i{0}; i < toivect.size(); i++) {
+            toiMask |= static_cast<uint32_t>(toivect[i]) << i;
+          }
+        }
       }
 
       const auto primaryVertex = getPrimaryVertex(collision);
@@ -770,7 +780,8 @@ struct HfTreeCreatorOmegacSt {
                                   decayLengthCascXY,
                                   trackCascMotherId,
                                   trackMotherId,
-                                  origin);
+                                  origin,
+                                  toiMask);
                     }
                   } else {
                     continue;
