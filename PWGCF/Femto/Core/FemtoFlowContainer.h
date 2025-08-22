@@ -93,8 +93,8 @@ class FemtoFlowContainer
       mHistogramRegistry->add((folderName + "/relPairkstarmTMult").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); Multiplicity").c_str(), kTH3F, {femtoObsAxis, mTAxis3D, multAxis3D});
     }
 
-    if (useqnDivide){
-      for (int iqn(0); iqn<numqnBins; ++iqn){
+    if (useqnDivide) {
+      for (int iqn(0); iqn < numqnBins; ++iqn) {
         mHistogramRegistry->add((folderName + std::to_string(iqn) + "/relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
         mHistogramRegistry->add((folderName + std::to_string(iqn) + "/relPairkstarmT").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
       }
@@ -208,9 +208,9 @@ class FemtoFlowContainer
       mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarmTMult"), femtoObs, mT, mult, weight);
     }
 
-    if (useqnDivide && mybinNum < numqnBins && mybinNum>=0) {
+    if (useqnDivide && mybinNum < numqnBins && mybinNum >= 0) {
       mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + std::to_string(mybinNum) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairDist"), femtoObs, weight);
-      mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + std::to_string(mybinNum) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarmT"), femtoObs, mT, weight);      
+      mHistogramRegistry->fill(HIST(FolderSuffix[EventType]) + std::to_string(mybinNum) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarmT"), femtoObs, mT, weight);
     }
   }
 
@@ -287,7 +287,7 @@ class FemtoFlowContainer
  protected:
   HistogramRegistry* mHistogramRegistry = nullptr;                                 ///< For QA output
   static constexpr std::string_view FolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to EventType
-  static constexpr femto_flow_container::Observable FemtoObs = obs;            ///< Femtoscopic observable to be computed (according to femto_flow_container::Observable)
+  static constexpr femto_flow_container::Observable FemtoObs = obs;                ///< Femtoscopic observable to be computed (according to femto_flow_container::Observable)
   static constexpr int EventType = eventType;                                      ///< Type of the event (same/mixed, according to femto_flow_container::EventType)
   float mMassOne = 0.f;                                                            ///< PDG mass of particle 1
   float mMassTwo = 0.f;                                                            ///< PDG mass of particle 2

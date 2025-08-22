@@ -17,13 +17,14 @@
 #ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWCOLLISIONSELECTION_H_
 #define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWCOLLISIONSELECTION_H_
 
-#include <string>
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/DataModel/Qvectors.h"
+
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
 
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/DataModel/Qvectors.h"
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -143,7 +144,7 @@ class FemtoFlowCollisionSelection
   /// \param col Collision
   template <typename T>
   void fillQA(T const& col)
-  {    
+  {
 
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/zvtxhist"), col.posZ());
@@ -212,32 +213,34 @@ class FemtoFlowCollisionSelection
     return spher;
   }
 
-  //Qn-vector calculation
+  // Qn-vector calculation
   template <typename T>
   float computeqnVec(T const& col)
   {
     double qn = std::sqrt(col.qvecFT0CReVec()[0] * col.qvecFT0CReVec()[0] + col.qvecFT0CImVec()[0] * col.qvecFT0CImVec()[0]) * std::sqrt(col.sumAmplFT0C());
-    if (mHistogramRegistry){
-      mHistogramRegistry->fill(HIST("Event/qnvector"), col.centFT0C(), qn);  
-      mHistogramRegistry->fill(HIST("Event/SphrVsqn"), qn, mSphericity);  
+    if (mHistogramRegistry) {
+      mHistogramRegistry->fill(HIST("Event/qnvector"), col.centFT0C(), qn);
+      mHistogramRegistry->fill(HIST("Event/SphrVsqn"), qn, mSphericity);
     }
     return qn;
   }
 
-  //Qn-vector calculation
+  // Qn-vector calculation
   template <typename T>
-  int myqnBin(T const& col, float centBinLength=10.f)
-  { 
+  int myqnBin(T const& col, float centBinLength = 10.f)
+  {
     int qnBin = -999;
     float qn = computeqnVec(col);
     int mycentBin = (int)(col.centFT0C() / centBinLength);
-    if (mycentBin >= (int)(mCentMax / centBinLength)) return qnBin;
+    if (mycentBin >= (int)(mCentMax / centBinLength))
+      return qnBin;
 
-    for (int iqn(0); iqn < static_cast<int>(std::size(mqnBinSeparator[mycentBin]))-1; ++iqn){
-      if (qn>mqnBinSeparator[mycentBin][iqn] && qn<=mqnBinSeparator[mycentBin][iqn+1]){
+    for (int iqn(0); iqn < static_cast<int>(std::size(mqnBinSeparator[mycentBin])) - 1; ++iqn) {
+      if (qn > mqnBinSeparator[mycentBin][iqn] && qn <= mqnBinSeparator[mycentBin][iqn + 1]) {
         qnBin = iqn;
         break;
-      }else continue;
+      } else
+        continue;
     }
 
     return qnBin;
@@ -254,14 +257,13 @@ class FemtoFlowCollisionSelection
   float mCentMin = 0.0;                            ///< Minimum centrality value
   float mCentMax = 100.0;                          ///< Maximum centrality value
   float mSphericity = 2.;
-  float mqnBinSeparator [7][11] = {{ 0.0,  63.50,  92.50,  116.50,  139.50,  162.50,  185.50,  212.50,  245.50,  292.50,  877.50},
-                                   { 0.0,  57.50,  82.50,  102.50,  121.50,  139.50,  158.50,  178.50,  203.50,  238.50,  616.50},
-                                   { 0.0,  49.50,  70.50,  86.50,  102.50,  116.50,  131.50,  148.50,  168.50,  195.50,  483.50},
-                                   { 0.0,  38.50,  55.50,  69.50,  82.50,  94.50,  106.50,  120.50,  137.50,  160.50,  375.50},
-                                   { 0.0,  29.50,  42.50,  53.50,  63.50,  73.50,  83.50,  95.50,  109.50,  128.50,  322.50},
-                                   { 0.0,  21.50,  31.50,  39.50,  47.50,  55.50,  63.50,  72.50,  83.50,  99.50,  266.50},
-                                   { 0.0,  15.50,  22.50,  28.50,  33.50,  39.50,  45.50,  52.50,  60.50,  72.50,  232.50}
-                                  }; ///< qn bin edge from qn vector distributions, for per 10% centrality, 0-70%
+  float mqnBinSeparator[7][11] = {{0.0, 63.50, 92.50, 116.50, 139.50, 162.50, 185.50, 212.50, 245.50, 292.50, 877.50},
+                                  {0.0, 57.50, 82.50, 102.50, 121.50, 139.50, 158.50, 178.50, 203.50, 238.50, 616.50},
+                                  {0.0, 49.50, 70.50, 86.50, 102.50, 116.50, 131.50, 148.50, 168.50, 195.50, 483.50},
+                                  {0.0, 38.50, 55.50, 69.50, 82.50, 94.50, 106.50, 120.50, 137.50, 160.50, 375.50},
+                                  {0.0, 29.50, 42.50, 53.50, 63.50, 73.50, 83.50, 95.50, 109.50, 128.50, 322.50},
+                                  {0.0, 21.50, 31.50, 39.50, 47.50, 55.50, 63.50, 72.50, 83.50, 99.50, 266.50},
+                                  {0.0, 15.50, 22.50, 28.50, 33.50, 39.50, 45.50, 52.50, 60.50, 72.50, 232.50}}; ///< qn bin edge from qn vector distributions, for per 10% centrality, 0-70%
 };
 } // namespace o2::analysis::femto_flow
 

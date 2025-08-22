@@ -20,6 +20,7 @@
 #define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWPAIRCLEANER_H_
 
 #include "PWGCF/Femto/DataModel/FemtoDerived.h"
+
 #include "Framework/HistogramRegistry.h"
 
 namespace o2::analysis::femto_flow
@@ -184,7 +185,7 @@ class FemtoFlowPairCleaner
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry;                                                ///< For QA output
+  HistogramRegistry* mHistogramRegistry;                                            ///< For QA output
   static constexpr o2::aod::femtoflowparticle::ParticleType kPartOneType = partOne; ///< Type of particle 1
   static constexpr o2::aod::femtoflowparticle::ParticleType kPartTwoType = partTwo; ///< Type of particle 2
 };

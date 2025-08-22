@@ -20,17 +20,20 @@
 #ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWANGULARCONTAINER_H_
 #define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWANGULARCONTAINER_H_
 
-#include <fairlogger/Logger.h>
-#include <vector>
-#include <string>
-
-#include "Framework/HistogramRegistry.h"
-#include "Common/Core/RecoDecay.h"
 #include "PWGCF/Femto/Core/FemtoFlowMath.h"
 
+#include "Common/Core/RecoDecay.h"
+
+#include "Framework/HistogramRegistry.h"
+
 #include "Math/Vector4D.h"
-#include "TMath.h"
 #include "TDatabasePDG.h"
+#include "TMath.h"
+
+#include <fairlogger/Logger.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2::framework;
 
@@ -231,7 +234,7 @@ class FemtoFlowAngularContainer
  protected:
   HistogramRegistry* mHistogramRegistry = nullptr;                                 ///< For QA output
   static constexpr std::string_view FolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to EventType
-  static constexpr femto_flow_angular_container::Observable FemtoObs = obs;    ///< Femtoscopic observable to be computed (according to femto_flow_angular_container::Observable)
+  static constexpr femto_flow_angular_container::Observable FemtoObs = obs;        ///< Femtoscopic observable to be computed (according to femto_flow_angular_container::Observable)
   static constexpr int EventType = eventType;                                      ///< Type of the event (same/mixed, according to femto_flow_angular_container::EventType)
   float mMassOne = 0.f;                                                            ///< PDG mass of particle 1
   float mMassTwo = 0.f;                                                            ///< PDG mass of particle 2

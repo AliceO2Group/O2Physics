@@ -14,13 +14,15 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#include <filesystem>
-#include <iostream>
-#include <random>
 #include "PWGCF/Femto/Core/FemtoFlowCutculator.h"
+
 #include "PWGCF/Femto/Core/FemtoFlowSelection.h"
 #include "PWGCF/Femto/Core/FemtoFlowTrackSelection.h"
 #include "PWGCF/Femto/DataModel/FemtoDerived.h"
+
+#include <filesystem>
+#include <iostream>
+#include <random>
 
 using namespace o2::analysis::femto_flow;
 
@@ -42,8 +44,8 @@ int main(int /*argc*/, char* argv[])
     std::cin >> choice;
 
     // if (choice == std::string("T")) {
-      cut.setTrackSelectionFromFile("ConfTrk");
-      cut.setPIDSelectionFromFile("ConfTrk");
+    cut.setTrackSelectionFromFile("ConfTrk");
+    cut.setPIDSelectionFromFile("ConfTrk");
     // } else if (choice == std::string("V")) {
     //   std::cout << "Do you want to select V0s or one of its children (V/T)? >";
     //   std::cin >> choice;

@@ -73,7 +73,7 @@ namespace o2::aod
 
 using FemtoFullCollision =
   soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator;
-using FemtoFullCollision_CentPbPb = 
+using FemtoFullCollision_CentPbPb =
   soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFV0As, aod::QvectorFT0CVecs>::iterator;
 using FemtoFullTracks =
   soa::Join<aod::FullTracks, aod::TracksDCA, aod::TOFSignal, aod::pidTOFbeta, aod::pidTPCEl, aod::TrackSelection,
@@ -169,7 +169,7 @@ struct FemtoFlowProducerTask {
     Configurable<bool> ConfDcaXYCustom1Cut{"ConfDcaXYCustom1Cut", true, "Enable Custom |DCAxy| < [1] + [2]/pt cut."};
     Configurable<float> ConfDcaXYCustom11FilterCut{"ConfDcaXYCustom11FilterCut", 0.004, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
     Configurable<float> ConfDcaXYCustom12FilterCut{"ConfDcaXYCustom12FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
-    Configurable<float> ConfDcaZFilterCut{"ConfDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"};    // max dca to vertex Z
+    Configurable<float> ConfDcaZFilterCut{"ConfDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"}; // max dca to vertex Z
     Configurable<float> ConfTrkMinChi2PerClusterTPC{"ConfTrkMinChi2PerClusterTPC", 0.f, "Lower limit for chi2 of TPC; currently for testing only"};
     Configurable<float> ConfTrkMaxChi2PerClusterTPC{"ConfTrkMaxChi2PerClusterTPC", 4.f, "Upper limit for chi2 of TPC; currently for testing only"};
     Configurable<float> ConfTrkMaxChi2PerClusterITS{"ConfTrkMaxChi2PerClusterITS", 10.0f, "Minimal track selection: max allowed chi2 per ITS cluster"}; // 36.0 is default
@@ -182,7 +182,7 @@ struct FemtoFlowProducerTask {
 
   int mRunNumber = 0;
   float mMagField;
-  std::string zorroTriggerNames = "";  
+  std::string zorroTriggerNames = "";
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
 
   void init(InitContext&)
@@ -258,18 +258,18 @@ struct FemtoFlowProducerTask {
   template <typename ParticleType>
   void fillDebugParticle(ParticleType const& particle)
   {
-      outputDebugParts(particle.sign(), (uint8_t)particle.tpcNClsFound(),
-                       particle.tpcNClsFindable(),
-                       (uint8_t)particle.tpcNClsCrossedRows(),
-                       particle.tpcNClsShared(), particle.tpcFractionSharedCls(), particle.tpcInnerParam(),
-                       particle.itsNCls(), particle.itsNClsInnerBarrel(),
-                       particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(), particle.beta(),
-                       particle.tpcNSigmaStoreEl(), particle.tpcNSigmaStorePi(),
-                       particle.tpcNSigmaStoreKa(), particle.tpcNSigmaStorePr(),
-                       particle.tpcNSigmaStoreDe(), particle.tofNSigmaStoreEl(),
-                       particle.tofNSigmaStorePi(), particle.tofNSigmaStoreKa(),
-                       particle.tofNSigmaStorePr(), particle.tofNSigmaStoreDe(),
-                       -999., -999., -999., -999., -999., -999.);
+    outputDebugParts(particle.sign(), (uint8_t)particle.tpcNClsFound(),
+                     particle.tpcNClsFindable(),
+                     (uint8_t)particle.tpcNClsCrossedRows(),
+                     particle.tpcNClsShared(), particle.tpcFractionSharedCls(), particle.tpcInnerParam(),
+                     particle.itsNCls(), particle.itsNClsInnerBarrel(),
+                     particle.dcaXY(), particle.dcaZ(), particle.tpcSignal(), particle.beta(),
+                     particle.tpcNSigmaStoreEl(), particle.tpcNSigmaStorePi(),
+                     particle.tpcNSigmaStoreKa(), particle.tpcNSigmaStorePr(),
+                     particle.tpcNSigmaStoreDe(), particle.tofNSigmaStoreEl(),
+                     particle.tofNSigmaStorePi(), particle.tofNSigmaStoreKa(),
+                     particle.tofNSigmaStorePr(), particle.tofNSigmaStoreDe(),
+                     -999., -999., -999., -999., -999., -999.);
   }
 
   template <bool isMC, typename CollisionType, typename TrackType>
@@ -304,18 +304,13 @@ struct FemtoFlowProducerTask {
     int qnbin = colCuts.myqnBin(col);
 
     if (!confIsUsePileUp) {
-      outputCollision(vtxZ, mult, multNtr, confDoSpher ? sphericity : 2, (confDoqnVec && qnbin>=0 && qnbin<10)? qnbin: -999, mMagField); 
+      outputCollision(vtxZ, mult, multNtr, confDoSpher ? sphericity : 2, (confDoqnVec && qnbin >= 0 && qnbin < 10) ? qnbin : -999, mMagField);
       colCuts.fillQA(col);
       return true;
-    } else if ((!confEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) 
-            && (!confEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) 
-            && (!confEvIsGoodITSLayersAll || col.selection_bit(aod::evsel::kIsGoodITSLayersAll))
-            && (!confEvNoCollInRofStandard || col.selection_bit(aod::evsel::kNoCollInRofStandard))
-            && (!confEvNoHighMultCollInPrevRof || col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof))
-            && (!confEvNoCollInTimeRangeStandard || col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard))
-            // && (!confEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))
-                ) {
-      outputCollision(vtxZ, mult, multNtr, confDoSpher ? sphericity : 2, (confDoqnVec && qnbin>=0 && qnbin<10)? qnbin: -999, mMagField); 
+    } else if ((!confEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!confEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!confEvIsGoodITSLayersAll || col.selection_bit(aod::evsel::kIsGoodITSLayersAll)) && (!confEvNoCollInRofStandard || col.selection_bit(aod::evsel::kNoCollInRofStandard)) && (!confEvNoHighMultCollInPrevRof || col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof)) && (!confEvNoCollInTimeRangeStandard || col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard))
+               // && (!confEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))
+    ) {
+      outputCollision(vtxZ, mult, multNtr, confDoSpher ? sphericity : 2, (confDoqnVec && qnbin >= 0 && qnbin < 10) ? qnbin : -999, mMagField);
       colCuts.fillQA(col);
       return true;
     } else {
@@ -369,13 +364,13 @@ struct FemtoFlowProducerTask {
           continue;
         }
       }
-      if (ConfTrackSpecialFilters.ConfDcaXYCustom0Cut && fabs(track.dcaXY())>ConfTrackSpecialFilters.ConfDcaXYFilterCut){
+      if (ConfTrackSpecialFilters.ConfDcaXYCustom0Cut && fabs(track.dcaXY()) > ConfTrackSpecialFilters.ConfDcaXYFilterCut) {
         continue;
       }
-      if (ConfTrackSpecialFilters.ConfDcaXYCustom1Cut && fabs(track.dcaXY())>ConfTrackSpecialFilters.ConfDcaXYCustom11FilterCut + ConfTrackSpecialFilters.ConfDcaXYCustom12FilterCut / track.pt() ){
+      if (ConfTrackSpecialFilters.ConfDcaXYCustom1Cut && fabs(track.dcaXY()) > ConfTrackSpecialFilters.ConfDcaXYCustom11FilterCut + ConfTrackSpecialFilters.ConfDcaXYCustom12FilterCut / track.pt()) {
         continue;
       }
-      if(fabs(track.dcaZ())>ConfTrackSpecialFilters.ConfDcaZFilterCut){
+      if (fabs(track.dcaZ()) > ConfTrackSpecialFilters.ConfDcaZFilterCut) {
         continue;
       }
       if (track.tpcChi2NCl() < ConfTrackSpecialFilters.ConfTrkMinChi2PerClusterTPC || track.tpcChi2NCl() > ConfTrackSpecialFilters.ConfTrkMaxChi2PerClusterTPC) {
@@ -390,7 +385,6 @@ struct FemtoFlowProducerTask {
       if (!trackCuts.isSelectedMinimal(track)) {
         continue;
       }
-
 
       trackCuts.fillQA<aod::femtoflowparticle::ParticleType::kTrack,
                        aod::femtoflowparticle::TrackType::kNoChild>(track);
@@ -420,7 +414,8 @@ struct FemtoFlowProducerTask {
   void fillCollisionsAndTracks(CollisionType const& col, TrackType const& tracks)
   {
     const auto colcheck = fillCollisions<isMC>(col, tracks);
-    if (colcheck) fillTracks<isMC>(tracks);
+    if (colcheck)
+      fillTracks<isMC>(tracks);
   }
 
   void processFullData(aod::FemtoFullCollision_CentPbPb const& col,

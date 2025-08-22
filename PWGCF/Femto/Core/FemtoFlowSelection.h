@@ -123,8 +123,8 @@ class FemtoFlowSelection
   }
 
  private:
-  selValDataType mSelVal{0.f};                      ///< Value used for the selection
-  selVariableDataType mSelVar;                      ///< Variable used for the selection
+  selValDataType mSelVal{0.f};                  ///< Value used for the selection
+  selVariableDataType mSelVar;                  ///< Variable used for the selection
   femto_flow_selection::SelectionType mSelType; ///< Type of selection employed
 };
 
