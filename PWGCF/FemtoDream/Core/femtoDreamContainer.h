@@ -235,7 +235,7 @@ class FemtoDreamContainer
     if (extendedplots) {
       mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/relPairkstarmTPtPart1PtPart2MultPercentile"), femtoObs, mT, part1.pt(), part2.pt(), multPercentile);
 
-      if constexpr (std::is_same_v<T1, FDParticle> && std::is_same_v<T2, FDParticle>) {
+      if constexpr (requires { part1.mLambda(); part2.mLambda(); }) {
         mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("/pT1pT2kstarinvMassPart1invMassPart2"), part1.pt(), part2.pt(), femtoObs, part1.mLambda(), part2.mLambda());
       }
     }

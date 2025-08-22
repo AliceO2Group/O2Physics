@@ -97,7 +97,7 @@ int getRowDaughters(int daughID, T const& vecID)
   return rowInPrimaryTrackTableDaugh;
 }
 
-struct femtoDreamProducerTasknewv1 {
+struct femtoDreamProducerTaskReso {
 
   SliceCache cache;                                                        // o2::framework, included in ASoAHelpers.h
   Preslice<aod::FemtoFullTracks> perCol = aod::track::collisionId;         // o2::framework included in ASoAHelpers.h
@@ -887,7 +887,7 @@ struct femtoDreamProducerTasknewv1 {
 
           // Phi
           std::vector<int> IndexChildIds = {rowPosTrk, rowNegTrk};
-          outputParts(outputCollision.lastIndex(), tempPhi.pt(), tempPhi.eta(), tempPhi.phi(), Type, 0, Bitmask[0], -999.f, IndexChildIds, tempPhi.M(), tempPhi.M());
+          outputParts(outputCollision.lastIndex(), tempPhi.pt(), tempPhi.eta(), tempPhi.phi(), Type, Bitmask[0], Bitmask[2], -999.f, IndexChildIds, tempPhi.M(), tempPhi.M());
 
           if (ConfIsDebug.value) {
             fillDebugParticle<true, false>(track1); // QA for positive daughter
@@ -917,7 +917,7 @@ struct femtoDreamProducerTasknewv1 {
       fillCollisionsAndTracksAndV0<false, false, true, false>(col, tracks, tracks, fullV0s);
     }
   }
-  PROCESS_SWITCH(femtoDreamProducerTasknewv1, processData,
+  PROCESS_SWITCH(femtoDreamProducerTaskReso, processData,
                  "Provide experimental data", true);
 
   void
@@ -938,7 +938,7 @@ struct femtoDreamProducerTasknewv1 {
       fillCollisionsAndTracksAndV0<false, false, false, false>(col, tracks, tracks, fullV0s);
     }
   }
-  PROCESS_SWITCH(femtoDreamProducerTasknewv1, processData_noCentrality,
+  PROCESS_SWITCH(femtoDreamProducerTaskReso, processData_noCentrality,
                  "Provide experimental data without centrality information", false);
 
   void processData_CentPbPb(aod::FemtoFullCollision_CentPbPb const& col,
@@ -958,7 +958,7 @@ struct femtoDreamProducerTasknewv1 {
       fillCollisionsAndTracksAndV0<false, false, true, true>(col, tracks, tracks, fullV0s);
     }
   }
-  PROCESS_SWITCH(femtoDreamProducerTasknewv1, processData_CentPbPb,
+  PROCESS_SWITCH(femtoDreamProducerTaskReso, processData_CentPbPb,
                  "Provide experimental data with centrality information for PbPb collisions", false);
 
   void processMC(aod::FemtoFullCollisionMC const& col,
@@ -973,7 +973,7 @@ struct femtoDreamProducerTasknewv1 {
     // fill the tables
     fillCollisionsAndTracksAndV0<false, false, true, false>(col, tracks, tracks, fullV0s);
   }
-  PROCESS_SWITCH(femtoDreamProducerTasknewv1, processMC, "Provide MC data", false);
+  PROCESS_SWITCH(femtoDreamProducerTaskReso, processMC, "Provide MC data", false);
 
   void processMC_noCentrality(aod::FemtoFullCollision_noCent_MC const& col,
                               aod::BCsWithTimestamps const&,
@@ -987,7 +987,7 @@ struct femtoDreamProducerTasknewv1 {
     // fill the tables
     fillCollisionsAndTracksAndV0<true, false, false, false>(col, tracks, tracks, fullV0s);
   }
-  PROCESS_SWITCH(femtoDreamProducerTasknewv1, processMC_noCentrality, "Provide MC data without requiring a centrality calibration", false);
+  PROCESS_SWITCH(femtoDreamProducerTaskReso, processMC_noCentrality, "Provide MC data without requiring a centrality calibration", false);
 
   void processMC_CentPbPb(aod::FemtoFullCollisionMC_CentPbPb const& col,
                           aod::BCsWithTimestamps const&,
@@ -1001,10 +1001,10 @@ struct femtoDreamProducerTasknewv1 {
     // fill the tables
     fillCollisionsAndTracksAndV0<true, false, true, true>(col, tracks, tracks, fullV0s);
   }
-  PROCESS_SWITCH(femtoDreamProducerTasknewv1, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
+  PROCESS_SWITCH(femtoDreamProducerTaskReso, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<femtoDreamProducerTasknewv1>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<femtoDreamProducerTaskReso>(cfgc)};
   return workflow;
 }

@@ -272,7 +272,7 @@ void FemtoDreamResoSelection::setDaughterCuts(femtoDreamResoSelection::Daughtert
 {
   if (daugh == femtoDreamResoSelection::kPosdaugh) {
     PosDaughTrack.setSelection(selVal, selVar, selType);
-  };
+  }
   if (daugh == femtoDreamResoSelection::kNegdaugh) {
     NegDaughTrack.setSelection(selVal, selVar, selType);
   }
@@ -346,6 +346,7 @@ template <typename cutContainerType, typename V>
 std::array<cutContainerType, 5> FemtoDreamResoSelection::getCutContainer(V const& track1, V const& track2, float sign)
 {
   cutContainerType outputSign = 0;
+  cutContainerType outputPID = 0;
   size_t counter = 0;
   for (auto& sel : mSelections) { /// it should just be a 1D vector with sign
     const auto selVariable = sel.getSelectionVariable();
@@ -353,7 +354,6 @@ std::array<cutContainerType, 5> FemtoDreamResoSelection::getCutContainer(V const
       sel.checkSelectionSetBit(sign, outputSign, counter, nullptr);
     }
   }
-  cutContainerType outputPID = 0;
 
   const auto DCA1 = std::sqrt(track1.dcaXY() * track1.dcaXY() + track1.dcaZ() * track1.dcaZ());
   const auto DCA2 = std::sqrt(track2.dcaXY() * track2.dcaXY() + track2.dcaZ() * track2.dcaZ());
@@ -361,10 +361,8 @@ std::array<cutContainerType, 5> FemtoDreamResoSelection::getCutContainer(V const
   auto outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(track1, track1.pt(), track1.eta(), DCA1); // false for useItsPid
   auto outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(track2, track2.pt(), track2.eta(), DCA2);
 
-  const auto shiftvalue = numBitsUsed(outputNegTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID));
-  outputPID = (outputPosTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID) << shiftvalue) | outputNegTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID);
-  /// combine both outputs
-  outputPID = (outputPID << counter) | outputSign;
+  const auto shiftvalue = numBitsUsed(outputSign);
+  outputPID = (outputNegTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID) << shiftvalue) | outputSign;
 
   std::array<cutContainerType, 5> bitmask = {outputPID,
                                              outputPosTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),

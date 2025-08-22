@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
 #ifndef PWGCF_DATAMODEL_FEMTODERIVED_H_
 #define PWGCF_DATAMODEL_FEMTODERIVED_H_
 
@@ -98,15 +97,15 @@ enum ParticleType {
   kReso,                       //! Resonances (phi)
   kResoChild,                  // Child track of a Resonance
   kV0Child,                    //! Child track of a V0
-  kPhiPosdaughTPC_NegdaughTPC, /// cases for Phi-daughters for TPC or TOF combinations
-  kPhiPosdaughTPC_NegdaughTOF,
-  kPhiPosdaughTOF_NegdaughTPC,
-  kPhiPosdaughTOF_NegdaughTOF,
   kCascade, //! Cascade
   kCascadeV0,
   kCascadeV0Child,
   kCascadeBachelor, //! Bachelor track of a cascade
   kCharmHadron,     //! Bachelor track of a cascade
+  kPhiPosdaughTPC_NegdaughTPC, /// cases for Phi-daughters for TPC or TOF combinations
+  kPhiPosdaughTPC_NegdaughTOF,
+  kPhiPosdaughTOF_NegdaughTPC,
+  kPhiPosdaughTOF_NegdaughTOF,
   kNParticleTypes   //! Number of particle types
 };
 
