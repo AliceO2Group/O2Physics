@@ -599,7 +599,7 @@ struct v0selector {
           }
         };
 
-        if (cascid == kOmega) {
+        if (cascid == kOmega && v0id == kLambda) {
           if (fillhisto) {
             registry.fill(HIST("hMassOmega"), cascRadius, mOmega);
           }
@@ -607,7 +607,7 @@ struct v0selector {
             pidmap[casc.bachelorId()] |= (uint8_t(1) << kOmega);
             storeCascAddID(casc.globalIndex(), kOmega);
           }
-        } else if (cascid == kAntiOmega) {
+        } else if (cascid == kAntiOmega && v0id == kAntiLambda) {
           if (fillhisto) {
             registry.fill(HIST("hMassAntiOmega"), cascRadius, mOmega);
           }
