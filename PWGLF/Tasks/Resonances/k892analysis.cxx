@@ -15,19 +15,23 @@
 ///
 /// \author Bong-Hwi Lim <bong-hwi.lim@cern.ch>, Sawan Sawan <sawan.sawan@cern.ch>
 
-#include <TLorentzVector.h>
-#include "TF1.h"
-#include "TRandom3.h"
+#include "PWGLF/DataModel/LFResonanceTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
 
-#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/LFResonanceTables.h"
-#include "DataFormatsParameters/GRPObject.h"
+#include "Common/DataModel/PIDResponse.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TF1.h"
+#include "TRandom3.h"
+#include <TLorentzVector.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -59,6 +63,9 @@ struct K892analysis {
   Configurable<bool> invmass1D{"invmass1D", false, "Invariant mass 1D"};
   Configurable<bool> studyAntiparticle{"studyAntiparticle", false, "Study anti-particles separately"};
   Configurable<bool> fillPidPlots{"fillPidPlots", false, "Make TPC and TOF PID plots"};
+  Configurable<bool> cisInelGt0{"cisInelGt0", true, "check if INEL>0"};
+  Configurable<bool> cMCCent{"cMCCent", true, "Using calibrated MC centrality (for FT0M)"};
+
   // Configurable<bool> applyOccupancyCut{"applyOccupancyCut", false, "Apply occupancy cut"};
   // Configurable<int> occupancyCut{"occupancyCut", 1000, "Mimimum Occupancy cut"};
 
@@ -426,11 +433,11 @@ struct K892analysis {
     return false;
   }
 
-  template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType>
-  void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2)
+  template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType, typename Multdatamc>
+  void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksType& dTracks2, const Multdatamc& multiplicity)
   {
     // auto multNTracksPV = collision.multNTracksPV();
-    auto multiplicity = collision.cent();
+    // auto multiplicity = collision.cent();
     if (additionalEvsel && !eventSelected(collision, multiplicity)) {
       return;
     }
@@ -703,28 +710,105 @@ struct K892analysis {
     }
   }
 
-  void processDataLight(aod::ResoCollision const& collision,
-                        aod::ResoTracks const& resotracks)
+  void processDataLight(aod::ResoCollision const& resocollisions, aod::ResoCollisionColls const& collisionIndex, soa::Join<aod::Collisions, aod::PVMults> const& collisions, aod::ResoTracks const& resotracks)
   {
     // LOG(info) << "new collision, zvtx: " << collision.posZ();
+    if (cisInelGt0) {
+      auto linkRow = collisionIndex.iteratorAt(resocollisions.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisions.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+    }
     if (additionalQAeventPlots)
       histos.fill(HIST("QAevent/hEvtCounterSameE"), 1.0);
-    fillHistograms<false, false>(collision, resotracks, resotracks);
+    auto multiplicity = resocollisions.cent();
+    fillHistograms<false, false>(resocollisions, resotracks, resotracks, multiplicity);
   }
   PROCESS_SWITCH(K892analysis, processDataLight, "Process Event for data", false);
 
-  void processMCLight(ResoMCCols::iterator const& collision,
-                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resotracks)
+  void processMCLight(ResoMCCols::iterator const& resoCollision,
+                      aod::ResoCollisionColls const& collisionIndex,
+                      soa::Join<aod::ResoCollisionCandidatesMC, aod::PVMults> const& collisionsMC,
+                      soa::Join<aod::ResoTracks, aod::ResoMCTracks> const& resoTracks,
+                      soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&)
   {
-    if (!collision.isInAfterAllCuts() || (std::abs(collision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
+    float multiplicity;
+    if (cMCCent && cisInelGt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+
+      auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+      multiplicity = mcColl.centFT0M();
+    } else if (!cMCCent && cisInelGt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+
+      multiplicity = resoCollision.cent();
+    } else if (cMCCent && !cisInelGt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+      multiplicity = mcColl.centFT0M();
+    } else {
+      multiplicity = resoCollision.cent();
+    }
+    if (!resoCollision.isInAfterAllCuts() || (std::abs(resoCollision.posZ()) > cZvertCutMC)) // MC event selection, all cuts missing vtx cut
       return;
-    fillHistograms<true, false>(collision, resotracks, resotracks);
+    fillHistograms<true, false>(resoCollision, resoTracks, resoTracks, multiplicity);
   }
   PROCESS_SWITCH(K892analysis, processMCLight, "Process Event for MC (Reconstructed)", false);
 
-  void processMCTrue(ResoMCCols::iterator const& collision, aod::ResoMCParents const& resoParents)
+  void processMCTrue(ResoMCCols::iterator const& resoCollision, aod::ResoCollisionColls const& collisionIndex, aod::ResoMCParents const& resoParents, aod::ResoCollisionCandidatesMC const& collisionsMC, soa::Join<aod::McCollisions, aod::McCentFT0Ms> const&)
   {
-    auto multiplicity = collision.cent();
+    float multiplicity;
+    if (cMCCent && cisInelGt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+
+      auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+      multiplicity = mcColl.centFT0M();
+    } else if (!cMCCent && cisInelGt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      if (!coll.isInelGt0()) // Check reco INELgt0 (at least one PV track in |eta| < 1) about the collision
+        return;
+
+      multiplicity = resoCollision.cent();
+    } else if (cMCCent && !cisInelGt0) {
+      auto linkRow = collisionIndex.iteratorAt(resoCollision.globalIndex());
+      auto collId = linkRow.collisionId(); // Take original collision global index matched with resoCollision
+
+      auto coll = collisionsMC.iteratorAt(collId); // Take original collision matched with resoCollision
+
+      auto mcColl = coll.mcCollision_as<soa::Join<aod::McCollisions, aod::McCentFT0Ms>>();
+      multiplicity = mcColl.centFT0M();
+    } else {
+      multiplicity = resoCollision.cent();
+    }
     for (const auto& part : resoParents) { // loop over all pre-filtered MC particles
       if (std::abs(part.pdgCode()) != 313 || std::abs(part.y()) >= 0.5)
         continue;
@@ -734,28 +818,28 @@ struct K892analysis {
       if (!pass1 || !pass2)
         continue;
 
-      if (collision.isVtxIn10()) // INEL10
+      if (resoCollision.isVtxIn10()) // INEL10
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("k892Gen"), 0, part.pt(), multiplicity);
         else
           histos.fill(HIST("k892GenAnti"), 0, part.pt(), multiplicity);
       }
-      if (collision.isVtxIn10() && collision.isInSel8()) // INEL>10, vtx10
+      if (resoCollision.isVtxIn10() && resoCollision.isInSel8()) // INEL>10, vtx10
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("k892Gen"), 1, part.pt(), multiplicity);
         else
           histos.fill(HIST("k892GenAnti"), 1, part.pt(), multiplicity);
       }
-      if (collision.isVtxIn10() && collision.isTriggerTVX()) // vtx10, TriggerTVX
+      if (resoCollision.isVtxIn10() && resoCollision.isTriggerTVX()) // vtx10, TriggerTVX
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("k892Gen"), 2, part.pt(), multiplicity);
         else
           histos.fill(HIST("k892GenAnti"), 2, part.pt(), multiplicity);
       }
-      if (collision.isInAfterAllCuts()) // after all event selection
+      if (resoCollision.isInAfterAllCuts()) // after all event selection
       {
         if (part.pdgCode() > 0)
           histos.fill(HIST("k892Gen"), 3, part.pt(), multiplicity);
@@ -775,9 +859,10 @@ struct K892analysis {
     SameKindPair<aod::ResoCollisions, aod::ResoTracks, BinningTypeVtxZT0M> pairs{colBinning, nEvtMixing, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pairs) {
+      auto multiplicity = collision1.cent();
       if (additionalQAeventPlots)
         histos.fill(HIST("QAevent/hEvtCounterMixedE"), 1.0);
-      fillHistograms<false, true>(collision1, tracks1, tracks2);
+      fillHistograms<false, true>(collision1, tracks1, tracks2, multiplicity);
     }
   };
   PROCESS_SWITCH(K892analysis, processMELight, "Process EventMixing light without partition", false);
