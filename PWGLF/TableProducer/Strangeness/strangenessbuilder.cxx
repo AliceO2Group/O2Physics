@@ -1002,11 +1002,10 @@ struct StrangenessBuilder {
       V0DuplicateExtras[bestPointingAngleIndex].isBestPA = true;
     if (bestDCADaughtersIndex != static_cast<size_t>(-1))
       V0DuplicateExtras[bestDCADaughtersIndex].isBestDCADau = true;
-    if (bestMLScoreIndex != static_cast<size_t>(-1)){
+    if (bestMLScoreIndex != static_cast<size_t>(-1)) {
       V0DuplicateExtras[bestMLScoreIndex].isBestMLScore = true;
       histos.fill(HIST("DeduplicationQA/hPAOfBestMLScore"), V0DuplicateExtras[bestMLScoreIndex].PA);
     }
-      
 
     // return vector with duplicates info
     return V0DuplicateExtras;
