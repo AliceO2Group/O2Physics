@@ -13,10 +13,14 @@
 /// \author Yuto Nishida <yuto.nishida@cern.ch>
 /// \brief Task for measuring the dependence of the jet shape function rho(r) on the distance r from the jet axis.
 
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
+#include <string>
+#include <vector>
+#include <cmath>
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -24,15 +28,12 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
 
-#include <cmath>
-#include <string>
-#include <vector>
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,7 +59,7 @@ struct JetShapeTask {
   Configurable<float> tpcNSigmaPiMax{"tpcNSigmaPiMax", 3.5f, "Max value of tpcNsigmaPion"};
 
   HistogramRegistry registry{"registry",
-                             {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsDistance, 0, distanceMax}}}},
+                             {{"tpcTofPi", "tpcTofPi", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax},{nBinsDistance, 0, distanceMax}}}},
                               {"tpcTofPr", "tpcTofPr", {HistType::kTHnSparseD, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}, {nBinsDistance, 0, distanceMax}}}},
                               {"tpcTofPiOutOfJet", "tpcTofPiOutOfJet", {HistType::kTH2F, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
                               {"tpcTofPrOutOfJet", "tpcTofPrOutOfJet", {HistType::kTH2F, {{35, 0, pMax}, {nBinsNSigma, nSigmaMin, nSigmaMax}}}},
@@ -78,7 +79,7 @@ struct JetShapeTask {
                               {"trackEta", "trackEta", {HistType::kTH1F, {{100, -1, 1}}}},
                               {"trackTpcNClsCrossedRows", "trackTpcNClsCrossedRows", {HistType::kTH1F, {{50, 0, 200}}}},
                               {"trackDcaXY", "trackDcaXY", {HistType::kTH1F, {{40, -10, 10}}}},
-                              {"trackItsChi2NCl", "trackItsChi2NCl", {HistType::kTH1F, {{60, 0, 30}}}},
+                              {"trackItsChi2NCl", "trackItsChi2NCl", {HistType::kTH1F, { {60, 0, 30}}}},
                               {"trackTpcChi2NCl", "trackTpcChi2NCl", {HistType::kTH1F, {{100, 0, 50}}}},
                               {"trackTpcNClsFound", "trackTpcNClsFound", {HistType::kTH1F, {{100, 0, 200}}}},
                               {"trackItsNCls", "trackItsNCls", {HistType::kTH1F, {{10, 0, 10}}}},
@@ -183,6 +184,7 @@ struct JetShapeTask {
   void processJetShape(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, aod::JetTracks const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
 
+
     std::vector<float> ptDensity(distanceCategory->size() - 1, 0.f);
     std::vector<float> ptDensityBg1(distanceCategory->size() - 1, 0.f);
     std::vector<float> ptDensityBg2(distanceCategory->size() - 1, 0.f);
@@ -268,37 +270,39 @@ struct JetShapeTask {
 
     registry.fill(HIST("event/vertexz"), collision.posZ());
 
+    std::vector<typename std::decay_t<decltype(tracks)>::iterator> goodTracks;
+    for (auto it = tracks.begin(); it != tracks.end() ; ++it){
+      const auto& track = *it;
+
+      registry.fill(HIST("trackTpcNClsCrossedRows"), track.tpcNClsCrossedRows());
+      registry.fill(HIST("trackDcaXY"), track.dcaXY());
+      registry.fill(HIST("trackItsChi2NCl"), track.itsChi2NCl());
+      registry.fill(HIST("trackTpcChi2NCl"), track.tpcChi2NCl());
+      registry.fill(HIST("trackTpcNClsFound"), track.tpcNClsFound());
+      registry.fill(HIST("trackItsNCls"), track.itsNCls());
+      registry.fill(HIST("trackEta"),track.eta());
+      registry.fill(HIST("trackPhi"),track.phi());
+
+      if (std::abs(track.eta()) > etaTrUp) continue;
+      if (track.tpcNClsCrossedRows() < nclcrossTpcMin) continue;
+      if (std::abs(track.dcaXY()) > dcaxyMax) continue;
+      if (track.itsChi2NCl() > chi2ItsMax) continue;
+      if (track.tpcChi2NCl() > chi2TpcMax) continue;
+      if (track.tpcNClsFound() < nclTpcMin) continue;
+      if (track.itsNCls() < nclItsMin) continue;
+
+      goodTracks.push_back(it);
+    }
+
     for (auto const& jet : jets) {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
 
       // tracks conditions
-      for (const auto& track : tracks) {
-
-        registry.fill(HIST("trackTpcNClsCrossedRows"), track.tpcNClsCrossedRows());
-        registry.fill(HIST("trackDcaXY"), track.dcaXY());
-        registry.fill(HIST("trackItsChi2NCl"), track.itsChi2NCl());
-        registry.fill(HIST("trackTpcChi2NCl"), track.tpcChi2NCl());
-        registry.fill(HIST("trackTpcNClsFound"), track.tpcNClsFound());
-        registry.fill(HIST("trackItsNCls"), track.itsNCls());
-        registry.fill(HIST("trackEta"), track.eta());
-        registry.fill(HIST("trackPhi"), track.phi());
-
-        if (std::abs(track.eta()) > etaTrUp)
-          continue;
-        if (track.tpcNClsCrossedRows() < nclcrossTpcMin)
-          continue;
-        if (std::abs(track.dcaXY()) > dcaxyMax)
-          continue;
-        if (track.itsChi2NCl() > chi2ItsMax)
-          continue;
-        if (track.tpcChi2NCl() > chi2TpcMax)
-          continue;
-        if (track.tpcNClsFound() < nclTpcMin)
-          continue;
-        if (track.itsNCls() < nclItsMin)
-          continue;
+      for (const auto& track_it : goodTracks) {
+        
+        const auto& track = *track_it;
 
         // PID check
         registry.fill(HIST("tofMass"), track.mass());
@@ -333,15 +337,15 @@ struct JetShapeTask {
         if (distanceBg1 < jetR || distanceBg2 < jetR) {
           registry.fill(HIST("tpcDedxOutOfJet"), track.p(), track.tpcSignal());
 
-          if (std::abs(track.tofNSigmaPi()) < nSigmaTofCut) {
+          if(std::abs(track.tofNSigmaPi()) < nSigmaTofCut){
             registry.fill(HIST("tpcTofPiOutOfJet"), track.p(), track.tpcNSigmaPi());
-            if (track.tpcNSigmaPi() > tpcNSigmaPiMin && track.tpcNSigmaPi() < tpcNSigmaPiMax) {
-              registry.fill(HIST("pVsPtForPiOutOfJet"), track.p(), track.pt());
-            }
+             if(track.tpcNSigmaPi()>tpcNSigmaPiMin && track.tpcNSigmaPi()<tpcNSigmaPiMax){
+                registry.fill(HIST("pVsPtForPiOutOfJet"), track.p(), track.pt());
+              }
           }
-          if (std::abs(track.tofNSigmaPr()) < nSigmaTofCut) {
+          if(std::abs(track.tofNSigmaPr()) < nSigmaTofCut){
             registry.fill(HIST("tpcTofPrOutOfJet"), track.p(), track.tpcNSigmaPr());
-            if (track.tpcNSigmaPr() > tpcNSigmaPrMin && track.tpcNSigmaPr() < tpcNSigmaPrMax) {
+            if(track.tpcNSigmaPr()>tpcNSigmaPrMin && track.tpcNSigmaPr()<tpcNSigmaPrMax){
               registry.fill(HIST("pVsPtForPrOutOfJet"), track.p(), track.pt());
             }
           }
@@ -351,16 +355,16 @@ struct JetShapeTask {
         registry.fill(HIST("tpcDedx"), track.p(), track.tpcSignal(), distance);
         registry.fill(HIST("tofBeta"), track.p(), track.beta());
 
-        if (std::abs(track.tofNSigmaPr()) < nSigmaTofCut) {
+        if(std::abs(track.tofNSigmaPr()) < nSigmaTofCut){
           registry.fill(HIST("tpcTofPr"), track.p(), track.tpcNSigmaPr(), distance);
-          if (track.tpcNSigmaPr() > tpcNSigmaPrMin && track.tpcNSigmaPr() < tpcNSigmaPrMax) {
+          if(track.tpcNSigmaPr()>tpcNSigmaPrMin && track.tpcNSigmaPr()<tpcNSigmaPrMax){
             registry.fill(HIST("pVsPtForPr"), track.p(), track.pt(), distance);
           }
         }
 
-        if (std::abs(track.tofNSigmaPi()) < nSigmaTofCut) {
+        if(std::abs(track.tofNSigmaPi()) < nSigmaTofCut){
           registry.fill(HIST("tpcTofPi"), track.p(), track.tpcNSigmaPi(), distance);
-          if (track.tpcNSigmaPi() > tpcNSigmaPiMin && track.tpcNSigmaPi() < tpcNSigmaPiMax) {
+          if(track.tpcNSigmaPi()>tpcNSigmaPiMin && track.tpcNSigmaPi()<tpcNSigmaPiMax){
             registry.fill(HIST("pVsPtForPi"), track.p(), track.pt(), distance);
           }
         }
@@ -371,3 +375,4 @@ struct JetShapeTask {
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetShapeTask>(cfgc)}; }
+
