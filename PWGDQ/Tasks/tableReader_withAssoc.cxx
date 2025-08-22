@@ -563,6 +563,8 @@ struct AnalysisTrackSelection {
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
 
   Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas"};
+  Configurable<int> fConfigTPCpostCalibType{"cfgTPCpostCalibType", 1, "1: (TPCncls,pIN,eta) calibration typically for pp, 2: (eta,nPV,nLong,tLong) calibration typically for PbPb"};
+  Configurable<bool> fConfigTPCuseInterpolatedCalib{"cfgTPCpostCalibUseInterpolation", true, "If true, use interpolated calibration values (default: true)"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   // Track related options
   Configurable<bool> fPropTrack{"cfgPropTrack", true, "Propgate tracks to associated collision to recalculate DCA and momentum vector"};
@@ -648,6 +650,12 @@ struct AnalysisTrackSelection {
         VarManager::SetCalibrationObject(VarManager::kTPCPionSigma, calibList->FindObject("sigma_map_pion"));
         VarManager::SetCalibrationObject(VarManager::kTPCProtonMean, calibList->FindObject("mean_map_proton"));
         VarManager::SetCalibrationObject(VarManager::kTPCProtonSigma, calibList->FindObject("sigma_map_proton"));
+        if (fConfigTPCpostCalibType == 2) {
+          VarManager::SetCalibrationObject(VarManager::kTPCElectronStatus, calibList->FindObject("status_map_electron"));
+          VarManager::SetCalibrationObject(VarManager::kTPCPionStatus, calibList->FindObject("status_map_pion"));
+          VarManager::SetCalibrationObject(VarManager::kTPCProtonStatus, calibList->FindObject("status_map_proton"));
+        }
+        VarManager::SetCalibrationType(fConfigTPCpostCalibType, fConfigTPCuseInterpolatedCalib);
       }
 
       o2::parameters::GRPMagField* grpmag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, events.begin().timestamp());

@@ -50,6 +50,7 @@
 #include "Math/VectorUtil.h"
 #include "TGeoGlobalMagField.h"
 #include "TH3F.h"
+#include "THn.h"
 #include "TRandom.h"
 #include <TObject.h>
 #include <TString.h>
@@ -506,8 +507,6 @@ class VarManager : public TObject
     kTPCnCRoverFindCls,
     kTPCchi2,
     kTPCsignal,
-    kTPCsignalRandomized,
-    kTPCsignalRandomizedDelta,
     kPhiTPCOuter,
     kTrackIsInsideTPCModule,
     kTRDsignal,
@@ -531,20 +530,14 @@ class VarManager : public TObject
     kTrackCTglTgl,
     kTrackC1Pt21Pt2,
     kTPCnSigmaEl,
-    kTPCnSigmaElRandomized,
-    kTPCnSigmaElRandomizedDelta,
     kTPCnSigmaMu,
     kTPCnSigmaPi,
-    kTPCnSigmaPiRandomized,
-    kTPCnSigmaPiRandomizedDelta,
     kTPCnSigmaKa,
     kTPCnSigmaPr,
     kTPCnSigmaEl_Corr,
     kTPCnSigmaPi_Corr,
     kTPCnSigmaKa_Corr,
     kTPCnSigmaPr_Corr,
-    kTPCnSigmaPrRandomized,
-    kTPCnSigmaPrRandomizedDelta,
     kTOFnSigmaEl,
     kTOFnSigmaMu,
     kTOFnSigmaPi,
@@ -866,12 +859,16 @@ class VarManager : public TObject
   enum CalibObjects {
     kTPCElectronMean = 0,
     kTPCElectronSigma,
+    kTPCElectronStatus,
     kTPCPionMean,
     kTPCPionSigma,
+    kTPCPionStatus,
     kTPCKaonMean,
     kTPCKaonSigma,
+    kTPCKaonStatus,
     kTPCProtonMean,
     kTPCProtonSigma,
+    kTPCProtonStatus,
     kNCalibObjects
   };
 
@@ -1156,6 +1153,17 @@ class VarManager : public TObject
       fgUsedVars[kTPCnSigmaPr_Corr] = true;
     }
   }
+
+  static void SetCalibrationType(int type, bool useInterpolation = true)
+  {
+    if (type < 0 || type > 2) {
+      LOG(fatal) << "Invalid calibration type. Must be 0, 1, or 2.";
+    }
+    fgCalibrationType = type;
+    fgUseInterpolatedCalibration = useInterpolation;
+  }
+  static double ComputePIDcalibration(int species, double nSigmaValue);
+
   static TObject* GetCalibrationObject(CalibObjects calib)
   {
     auto obj = fgCalibs.find(calib);
@@ -1231,11 +1239,13 @@ class VarManager : public TObject
 
   static std::map<CalibObjects, TObject*> fgCalibs; // map of calibration histograms
   static bool fgRunTPCPostCalibration[4];           // 0-electron, 1-pion, 2-kaon, 3-proton
+  static int fgCalibrationType;                     // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
+  static bool fgUseInterpolatedCalibration;         // use interpolated calibration histograms (default: true)
 
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
 
-  ClassDef(VarManager, 3);
+  ClassDef(VarManager, 4);
 };
 
 template <typename T, typename U, typename V>
@@ -2434,92 +2444,38 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     // compute TPC postcalibrated electron nsigma based on calibration histograms from CCDB
     if (fgUsedVars[kTPCnSigmaEl_Corr] && fgRunTPCPostCalibration[0]) {
-      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronMean]);
-      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronSigma]);
-
-      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
-      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
-      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
-      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
-      binPin = (binPin == 0 ? 1 : binPin);
-      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
-      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
-      binEta = (binEta == 0 ? 1 : binEta);
-      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
-
-      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
-      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
       if (!isTPCCalibrated) {
-        values[kTPCnSigmaEl_Corr] = (values[kTPCnSigmaEl] - mean) / width;
+        values[kTPCnSigmaEl_Corr] = ComputePIDcalibration(0, values[kTPCnSigmaEl]);
       } else {
+        LOG(fatal) << "TPC PID postcalibration is configured but the tracks are already postcalibrated. This is not allowed. Please check your configuration.";
         values[kTPCnSigmaEl_Corr] = track.tpcNSigmaEl();
       }
     }
+
     // compute TPC postcalibrated pion nsigma if required
     if (fgUsedVars[kTPCnSigmaPi_Corr] && fgRunTPCPostCalibration[1]) {
-      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCPionMean]);
-      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCPionSigma]);
-
-      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
-      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
-      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
-      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
-      binPin = (binPin == 0 ? 1 : binPin);
-      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
-      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
-      binEta = (binEta == 0 ? 1 : binEta);
-      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
-
-      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
-      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
       if (!isTPCCalibrated) {
-        values[kTPCnSigmaPi_Corr] = (values[kTPCnSigmaPi] - mean) / width;
+        values[kTPCnSigmaPi_Corr] = ComputePIDcalibration(1, values[kTPCnSigmaPi]);
       } else {
+        LOG(fatal) << "TPC PID postcalibration is configured but the tracks are already postcalibrated. This is not allowed. Please check your configuration.";
         values[kTPCnSigmaPi_Corr] = track.tpcNSigmaPi();
       }
     }
     if (fgUsedVars[kTPCnSigmaKa_Corr] && fgRunTPCPostCalibration[2]) {
-      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCKaonMean]);
-      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCKaonSigma]);
-
-      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
-      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
-      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
-      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
-      binPin = (binPin == 0 ? 1 : binPin);
-      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
-      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
-      binEta = (binEta == 0 ? 1 : binEta);
-      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
-
-      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
-      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
+      // compute TPC postcalibrated kaon nsigma if required
       if (!isTPCCalibrated) {
-        values[kTPCnSigmaKa_Corr] = (values[kTPCnSigmaKa] - mean) / width;
+        values[kTPCnSigmaKa_Corr] = ComputePIDcalibration(2, values[kTPCnSigmaKa]);
       } else {
+        LOG(fatal) << "TPC PID postcalibration is configured but the tracks are already postcalibrated. This is not allowed. Please check your configuration.";
         values[kTPCnSigmaKa_Corr] = track.tpcNSigmaKa();
       }
     }
     // compute TPC postcalibrated proton nsigma if required
     if (fgUsedVars[kTPCnSigmaPr_Corr] && fgRunTPCPostCalibration[3]) {
-      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCProtonMean]);
-      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCProtonSigma]);
-
-      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
-      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
-      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
-      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
-      binPin = (binPin == 0 ? 1 : binPin);
-      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
-      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
-      binEta = (binEta == 0 ? 1 : binEta);
-      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
-
-      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
-      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
       if (!isTPCCalibrated) {
-        values[kTPCnSigmaPr_Corr] = (values[kTPCnSigmaPr] - mean) / width;
+        values[kTPCnSigmaPr_Corr] = ComputePIDcalibration(3, values[kTPCnSigmaPr]);
       } else {
+        LOG(fatal) << "TPC PID postcalibration is configured but the tracks are already postcalibrated. This is not allowed. Please check your configuration.";
         values[kTPCnSigmaPr_Corr] = track.tpcNSigmaPr();
       }
     }
@@ -2529,22 +2485,6 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTOFnSigmaPi] = track.tofNSigmaPi();
       values[kTOFnSigmaKa] = track.tofNSigmaKa();
       values[kTOFnSigmaPr] = track.tofNSigmaPr();
-    }
-
-    if (fgUsedVars[kTPCsignalRandomized] || fgUsedVars[kTPCnSigmaElRandomized] || fgUsedVars[kTPCnSigmaPiRandomized] || fgUsedVars[kTPCnSigmaPrRandomized]) {
-      // NOTE: this is needed temporarily for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
-      //     This study involves a degradation from a dE/dx resolution of 5% to one of 6% (20% worsening)
-      //     For this we smear the dE/dx and n-sigmas using a gaus distribution with a width of 3.3%
-      //         which is approx the needed amount to get dE/dx to a resolution of 6%
-      double randomX = gRandom->Gaus(0.0, 0.033);
-      values[kTPCsignalRandomized] = values[kTPCsignal] * (1.0 + randomX);
-      values[kTPCsignalRandomizedDelta] = values[kTPCsignal] * randomX;
-      values[kTPCnSigmaElRandomized] = values[kTPCnSigmaEl] * (1.0 + randomX);
-      values[kTPCnSigmaElRandomizedDelta] = values[kTPCnSigmaEl] * randomX;
-      values[kTPCnSigmaPiRandomized] = values[kTPCnSigmaPi] * (1.0 + randomX);
-      values[kTPCnSigmaPiRandomizedDelta] = values[kTPCnSigmaPi] * randomX;
-      values[kTPCnSigmaPrRandomized] = values[kTPCnSigmaPr] * (1.0 + randomX);
-      values[kTPCnSigmaPrRandomizedDelta] = values[kTPCnSigmaPr] * randomX;
     }
 
     if constexpr ((fillMap & ReducedTrackBarrelPID) > 0) {
