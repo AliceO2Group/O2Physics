@@ -1431,8 +1431,8 @@ struct DileptonHadronMPC {
   }
   PROCESS_SWITCH(DileptonHadronMPC, processAnalysis, "run dilepton analysis", true);
 
-  using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
-  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, FilteredRefTracks const& refTracks, Types const&... args)
+  // using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
+  void processTriggerAnalysis(MyCollisionsWithSWT const& collisions, FilteredRefTracks const& refTracks, Types const&... args)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));
