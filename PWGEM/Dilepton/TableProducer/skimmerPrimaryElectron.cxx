@@ -821,7 +821,6 @@ struct prefilterPrimaryElectron {
   Configurable<float> slope{"slope", 0.0185, "slope for m vs. phiv"};
   Configurable<float> intercept{"intercept", -0.0280, "intercept for m vs. phiv"};
   Configurable<bool> includeITSsa{"includeITSsa", false, "Flag to include ITSsa tracks"};
-  Configurable<float> maxpt_itssa{"maxpt_itssa", 0.15, "mix pt for ITSsa track"};
   Configurable<float> maxMeanITSClusterSize{"maxMeanITSClusterSize", 16, "max <ITS cluster size> x cos(lambda)"};
 
   Configurable<std::vector<float>> max_mee_vec{"max_mee_vec", std::vector<float>{0.06, 0.08, 0.10}, "vector fo max mee for prefilter in ULS. Please sort this by increasing order."}; // currently, 3 thoresholds are allowed.
@@ -980,10 +979,6 @@ struct prefilterPrimaryElectron {
       return false;
     }
 
-    if ((track.hasITS() && !track.hasTPC() && !track.hasTOF() && !track.hasTRD()) && maxpt_itssa < trackParCov.getPt()) {
-      return false;
-    }
-
     if (track.hasITS() && !track.hasTPC() && !track.hasTOF() && !track.hasTRD()) {
       int total_cluster_size = 0, nl = 0;
       for (unsigned int layer = 0; layer < 7; layer++) {
@@ -1045,7 +1040,7 @@ struct prefilterPrimaryElectron {
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
 
-  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
+  Filter trackFilter = o2::aod::track::itsChi2NCl < maxchi2its && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
   Partition<MyFilteredTracks> negTracks = o2::aod::track::signed1Pt < 0.f;
