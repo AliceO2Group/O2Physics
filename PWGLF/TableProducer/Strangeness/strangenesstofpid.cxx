@@ -850,7 +850,7 @@ struct strangenesstofpid {
     if (doQA) {
       // length factor due to eta (to offset e-loss)
       float positiveCosine = 1.0f/sqrt(1.0f + posTrack.getTgl() * posTrack.getTgl());
-      float negativeCosine = 1.0f/sqrt(1.0f + posTrack.getTgl() * posTrack.getTgl());
+      float negativeCosine = 1.0f/sqrt(1.0f + negTrack.getTgl() * negTrack.getTgl());
       if(correctELossInclination.value==false){
         negativeCosine = positiveCosine = 1.0f;
       }
@@ -1140,7 +1140,7 @@ struct strangenesstofpid {
     if (doQA) {
       // length factor due to eta (to offset e-loss)
       float positiveCosine = 1.0f/sqrt(1.0f + posTrack.getTgl() * posTrack.getTgl());
-      float negativeCosine = 1.0f/sqrt(1.0f + posTrack.getTgl() * posTrack.getTgl());
+      float negativeCosine = 1.0f/sqrt(1.0f + negTrack.getTgl() * negTrack.getTgl());
       float bachelorCosine = 1.0f/sqrt(1.0f + bachTrack.getTgl() * bachTrack.getTgl());
       if(correctELossInclination.value==false){
         negativeCosine = positiveCosine = bachelorCosine = 1.0f;
