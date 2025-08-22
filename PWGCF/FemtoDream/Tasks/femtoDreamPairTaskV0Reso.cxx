@@ -150,24 +150,20 @@ struct femtoDreamPairTaskV0Reso {
   struct : ConfigurableGroup {
     std::string prefix = std::string("Reso2");
     Configurable<int> PDGCode{"PDGCode", 333, "PDG code of particle 2 (V0)"};
-    Configurable<femtodreamparticle::cutContainerType> mask_TPC_TPC{"mask_TPC_TPC", 136, "bitmask for TPC and TPC selection for the reconstructd particle"}; // selection masks for the 4 types
-    Configurable<femtodreamparticle::cutContainerType> mask_TOF_TOF{"mask_TOF_TOF", 528, "bitmask for TOF and TOF selection for the reconstructd particle"};
-    Configurable<femtodreamparticle::cutContainerType> mask_TOF_TPC{"mask_TOF_TPC", 144, "bitmask for TOF and TPC selection for the reconstructd particle"};
-    Configurable<femtodreamparticle::cutContainerType> mask_TPC_TOF{"mask_TPC_TOF", 520, "bitmask for TPC and TOF selection for the reconstructd particle"};
 
-    Configurable<float> InvMassMin{"InvMassMin", 1.017, "Minimum invariant mass of Partricle 2 (particle) (V0)"}; // phi values  ofr inv mass
+    Configurable<float> InvMassMin{"InvMassMin", 1.017, "Minimum invariant mass of Partricle 2 (particle) (V0)"}; // phi values  for inv mass
     Configurable<float> InvMassMax{"InvMassMax", 1.027, "Maximum invariant mass of Partricle 2 (particle) (V0)"};
     Configurable<float> PtMin{"PtMin", 0., "Minimum pT of Partricle 2 (V0)"};
     Configurable<float> PtMax{"PtMax", 999., "Maximum pT of Partricle 2 (V0)"};
     Configurable<float> EtaMin{"EtaMin", -10., "Minimum eta of Partricle 2 (V0)"}; // change values
     Configurable<float> EtaMax{"EtaMax", 10., "Maximum eta of Partricle 2 (V0)"};  // change values
 
-    Configurable<femtodreamparticle::cutContainerType> DaughPos_CutBit{"DaughPos_CutBit", 4860458, "Selection bit for positive child of V02"}; // K+
-    Configurable<femtodreamparticle::cutContainerType> DaughPos_TPCBit{"DaughPos_TPCBit", 16, "PID TPC bit for positive child of V02"};        // NSigma_TPC = 2.5
-    Configurable<femtodreamparticle::cutContainerType> DaughPos_TPCTOFBit{"DaughPos_TOFBit", 8, "PID TOF bit for positive child of V02"};      // NSigma_TOF = 2.5
-    Configurable<femtodreamparticle::cutContainerType> DaughNeg_CutBit{"DaughNeg_CutBit", 4860457, "Selection bit for negative child of V02"}; // K-
-    Configurable<femtodreamparticle::cutContainerType> DaughNeg_TPCBit{"DaughNeg_TPCBit", 16, "PID TPC bit for negative child of V02"};        // NSigma_TPC = 2.5
-    Configurable<femtodreamparticle::cutContainerType> DaughNeg_TPCTOFBit{"DaughNeg_TOFBit", 8, "PID TOF bit for negative child of V02"};      // NSigma_TOF = 2.5
+    Configurable<femtodreamparticle::cutContainerType> DaughPos_CutBit{"DaughPos_CutBit", 4860458, "Selection bit for positive child of V02"};            // K+
+    Configurable<femtodreamparticle::cutContainerType> DaughPos_TPCBit{"DaughPos_TPCBit", 64, "PID TPC bit for positive child of V02"};                   // NSigma_TPC = 2.5
+    Configurable<femtodreamparticle::cutContainerType> DaughPos_TPCTOFBit{"DaughPos_TOFBit", 32, "PID TOF bit for positive child of V02"};                // NSigma_TOF = 2.5
+    Configurable<femtodreamparticle::cutContainerType> DaughNeg_CutBit{"DaughNeg_CutBit", 4860457, "Selection bit for negative child of V02"};            // K-
+    Configurable<femtodreamparticle::cutContainerType> DaughNegMerged_TPCBit{"DaughNegMerged_TPCBit", 64, "PID TPC bit for negative child of V02"};       // NSigma_TPC = 2.5
+    Configurable<femtodreamparticle::cutContainerType> DaughNegMerged_TPCTOFBit{"DaughNegMerged_TPCTOFBit", 32, "PID TOF bit for negative child of V02"}; // NSigma_TOF = 2.5
   } Reso2;
 
   /// Partition for particle 1
@@ -183,10 +179,10 @@ struct femtoDreamPairTaskV0Reso {
                                              (aod::femtodreamparticle::mAntiLambda < V01.InvMassAntiMax);
 
   /// Partition for particle 2
-  Partition<aod::FDParticles> PartitionReso2 = ((ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kPhiPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.mask_TPC_TPC), false)) ||
-                                                (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kPhiPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.mask_TOF_TOF), false)) ||
-                                                (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kPhiPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.mask_TOF_TPC), false)) ||
-                                                (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kPhiPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.mask_TPC_TOF), false))) &&
+  Partition<aod::FDParticles> PartitionReso2 = (ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kPhiPosdaughTPC_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.DaughPos_TPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.DaughNegMerged_TPCBit), false) ||
+                                                ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kPhiPosdaughTOF_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.DaughPos_TPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.DaughNegMerged_TPCTOFBit), false) ||
+                                                ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kPhiPosdaughTOF_NegdaughTPC), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.DaughPos_TPCTOFBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.DaughNegMerged_TPCBit), false) ||
+                                                ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kPhiPosdaughTPC_NegdaughTOF), ncheckbit(aod::femtodreamparticle::pidcut, Reso2.DaughPos_TPCBit) && ncheckbit(aod::femtodreamparticle::cut, Reso2.DaughNegMerged_TPCTOFBit), false)) &&
                                                (aod::femtodreamparticle::pt < Reso2.PtMax) &&
                                                (aod::femtodreamparticle::eta > Reso2.EtaMin) &&
                                                (aod::femtodreamparticle::eta < Reso2.EtaMax) &&
@@ -292,11 +288,11 @@ struct femtoDreamPairTaskV0Reso {
 
       if (((posresoChild.cut() & Reso2.DaughPos_CutBit) == Reso2.DaughPos_CutBit) &&
           ((negresoChild.cut() & Reso2.DaughNeg_CutBit) == Reso2.DaughNeg_CutBit)) {
-        ResoHistoPartTwo.fillQA<false, false>(reso, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        ResoHistoPartTwo.fillQA<false, false>(reso, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M()); // improve
       }
     }
 
-    /// Now build particle combinations vorerst nur not Samespecies!!!
+    /// build particle combinations
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceV01, SliceReso2))) {
 
       const auto& posChild = parts.iteratorAt(p1.index() - 2);
@@ -305,15 +301,14 @@ struct femtoDreamPairTaskV0Reso {
       const auto& posresoChild = parts.iteratorAt(p2.index() - 2);
       const auto& negresoChild = parts.iteratorAt(p2.index() - 1);
 
-      // cuts on V0 children still need to be applied
       if (((posChild.cut() & V01.ChildPos_CutBit) == V01.ChildPos_CutBit) &&
           ((posChild.pidcut() & V01.ChildPos_TPCBit) == V01.ChildPos_TPCBit) &&
           ((negChild.cut() & V01.ChildNeg_CutBit) == V01.ChildNeg_CutBit) &&
           ((negChild.pidcut() & V01.ChildNeg_TPCBit) == V01.ChildNeg_TPCBit) &&
 
           ((posresoChild.cut() & Reso2.DaughPos_CutBit) == Reso2.DaughPos_CutBit) &&
-          ((negresoChild.cut() & Reso2.DaughNeg_CutBit) == Reso2.DaughNeg_CutBit) // TPC & TOF checked in partition...
-      ) {
+          ((negresoChild.cut() & Reso2.DaughNeg_CutBit) == Reso2.DaughNeg_CutBit)) {
+
         if (Option.CPROn.value) {
           if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
             continue;
@@ -335,8 +330,8 @@ struct femtoDreamPairTaskV0Reso {
           continue;
         }
 
-        auto SliceV01 = part1->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache);
-        auto SliceReso2 = part2->sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
+        auto SliceV01 = part1.sliceByCached(aod::femtodreamparticle::fdCollisionId, collision1.globalIndex(), cache); // maybe use .
+        auto SliceReso2 = part2.sliceByCached(aod::femtodreamparticle::fdCollisionId, collision2.globalIndex(), cache);
 
         if (SliceV01.size() == 0 || SliceReso2.size() == 0) {
           continue;
@@ -357,12 +352,7 @@ struct femtoDreamPairTaskV0Reso {
               ((negChild.pidcut() & V01.ChildNeg_TPCBit) == V01.ChildNeg_TPCBit) &&
 
               ((posresoChild.cut() & Reso2.DaughPos_CutBit) == Reso2.DaughPos_CutBit) &&
-              ((posresoChild.pidcut() & Reso2.DaughPos_TPCBit) == Reso2.DaughPos_TPCBit) &&
-              ((posresoChild.pidcut() & Reso2.DaughPos_TPCTOFBit) == Reso2.DaughPos_TPCTOFBit) && // not really needed already sleceted in partition..
-              ((negresoChild.cut() & Reso2.DaughNeg_CutBit) == Reso2.DaughNeg_CutBit) &&
-              ((negresoChild.pidcut() & Reso2.DaughNeg_TPCBit) == Reso2.DaughNeg_TPCBit) &&
-              ((negresoChild.pidcut() & Reso2.DaughNeg_TPCTOFBit) == Reso2.DaughNeg_TPCTOFBit)) // not really needed already sleceted in partition..
-          {
+              ((negresoChild.cut() & Reso2.DaughNeg_CutBit) == Reso2.DaughNeg_CutBit)) {
             continue;
           }
           if (Option.CPROn.value) {
@@ -380,8 +370,8 @@ struct femtoDreamPairTaskV0Reso {
   void processSameEvent(FilteredCollision& col, FDParticles& parts) // try this.
   {
     // fillCollision<false>(col);
-    auto SliceV01 = PartitionV01->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    auto SliceReso2 = PartitionReso2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    auto SliceV01 = PartitionV01.sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache); // maybe use .
+    auto SliceReso2 = PartitionReso2.sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
 
     if (SliceV01.size() == 0 && SliceReso2.size() == 0) {
       return;
