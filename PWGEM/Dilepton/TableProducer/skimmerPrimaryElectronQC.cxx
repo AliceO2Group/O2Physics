@@ -187,6 +187,7 @@ struct skimmerPrimaryElectronQC {
       fRegistry.add("Track/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<ITS cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
       fRegistry.add("Track/hMeanClusterSizeITSib", "mean cluster size ITSib;p_{pv} (GeV/c);<ITSib cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
       fRegistry.add("Track/hMeanClusterSizeITSob", "mean cluster size ITSob;p_{pv} (GeV/c);<ITSob cluster size> #times cos(#lambda)", kTH2F, {{1000, 0, 10}, {150, 0, 15}}, false);
+      fRegistry.add("Track/hProbElBDT", "probability to be e from BDT;p_{in} (GeV/c);BDT score;", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
       fRegistry.add("Pair/hMvsPhiV", "m_{ee} vs. #varphi_{V} ULS;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{180, 0.f, M_PI}, {100, 0, 0.1}});
     }
 
@@ -467,7 +468,14 @@ struct skimmerPrimaryElectronQC {
       if (usePIDML) {
         std::vector<float> inputFeatures = mlResponseSingleTrack.getInputFeatures(track, trackParCov, collision);
         float binningFeature = mlResponseSingleTrack.getBinningFeature(track, trackParCov, collision);
-        probaEl = mlResponseSingleTrack.isSelectedMl(inputFeatures, binningFeature);
+
+        int pbin = lower_bound(binsMl.value.begin(), binsMl.value.end(), binningFeature) - binsMl.value.begin() - 1;
+        if (pbin < 0) {
+          pbin = 0;
+        } else if (static_cast<int>(binsMl.value.size()) - 2 < pbin) {
+          pbin = static_cast<int>(binsMl.value.size()) - 2;
+        }
+        probaEl = mlResponseSingleTrack.getModelOutput(inputFeatures, pbin)[1]; // 0: hadron, 1:electron
       }
 
       emprimaryelectrons(collision.globalIndex(), track.globalIndex(), track.sign(),
@@ -566,6 +574,7 @@ struct skimmerPrimaryElectronQC {
         fRegistry.fill(HIST("Track/hMeanClusterSizeITS"), trackParCov.getP(), static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(trackParCov.getTgl())));
         fRegistry.fill(HIST("Track/hMeanClusterSizeITSib"), trackParCov.getP(), static_cast<float>(total_cluster_size_ib) / static_cast<float>(nl_ib) * std::cos(std::atan(trackParCov.getTgl())));
         fRegistry.fill(HIST("Track/hMeanClusterSizeITSob"), trackParCov.getP(), static_cast<float>(total_cluster_size_ob) / static_cast<float>(nl_ob) * std::cos(std::atan(trackParCov.getTgl())));
+        fRegistry.fill(HIST("Track/hProbElBDT"), track.tpcInnerParam(), probaEl);
       }
     }
   }
@@ -607,7 +616,6 @@ struct skimmerPrimaryElectronQC {
 
   std::vector<std::pair<int, int>> stored_trackIds;
   Filter trackFilter = trackcut.minpt < o2::aod::track::pt && nabs(o2::aod::track::eta) < trackcut.maxeta && o2::aod::track::itsChi2NCl < trackcut.maxchi2its && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
-  Filter pidFilter = trackcut.minTPCNsigmaEl < o2::aod::pidtpc::tpcNSigmaEl && o2::aod::pidtpc::tpcNSigmaEl < trackcut.maxTPCNsigmaEl;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -641,15 +649,6 @@ struct skimmerPrimaryElectronQC {
             fillTrackTable<false>(collision, pos);
           }
         }
-
-        // if (isDielectronFromPi0<false>(collision, pos, ele)) {
-        //   if ((checkTrackTight<false>(collision, pos) && isElectronTight(pos)) && (checkTrack<false>(collision, ele) && isElectron(ele)) ) {
-        //     fillTrackTable<false>(collision, ele);
-        //   }
-        //   if ((checkTrackTight<false>(collision, ele) && isElectronTight(ele)) && (checkTrack<false>(collision, pos) && isElectron(pos)) ) {
-        //     fillTrackTable<false>(collision, pos);
-        //   }
-        // }
 
       } // end of ULS pairing
     } // end of collision loop
@@ -689,15 +688,6 @@ struct skimmerPrimaryElectronQC {
             fillTrackTable<false>(collision, pos);
           }
         }
-
-        // if (isDielectronFromPi0<false>(collision, pos, ele)) {
-        //   if ((checkTrackTight<false>(collision, pos) && isElectronTight(pos)) && (checkTrack<false>(collision, ele) && isElectron(ele)) ) {
-        //     fillTrackTable<false>(collision, ele);
-        //   }
-        //   if ((checkTrackTight<false>(collision, ele) && isElectronTight(ele)) && (checkTrack<false>(collision, pos) && isElectron(pos)) ) {
-        //     fillTrackTable<false>(collision, pos);
-        //   }
-        // }
 
       } // end of ULS pairing
 
@@ -740,15 +730,6 @@ struct skimmerPrimaryElectronQC {
             fillTrackTable<true>(collision, pos);
           }
         }
-
-        // if (isDielectronFromPi0<true>(collision, pos, ele)) {
-        //   if ((checkTrackTight<true>(collision, pos) && isElectronTight(pos)) && (checkTrack<true>(collision, ele) && isElectron(ele)) ) {
-        //     fillTrackTable<true>(collision, ele);
-        //   }
-        //   if ((checkTrackTight<true>(collision, ele) && isElectronTight(ele)) && (checkTrack<true>(collision, pos) && isElectron(pos)) ) {
-        //     fillTrackTable<true>(collision, pos);
-        //   }
-        // }
 
       } // end of ULS pairing
 

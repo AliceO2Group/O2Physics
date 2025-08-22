@@ -161,6 +161,7 @@ enum class InputFeaturesO2Track : uint8_t {
   tpctofNSigmaPr,
   tpcNClsFound,
   tpcNClsCrossedRows,
+  tpcChi2NCl,
   hasITS,
   hasTPC,
   hasTRD,
@@ -215,6 +216,7 @@ class MlResponseO2Track : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_O2_TRACK_TPCTOF(tpctofNSigmaPr, tpcNSigmaPr, tofNSigmaPr, hasTOF);
       CHECK_AND_FILL_O2_TRACK(tpcNClsFound);
       CHECK_AND_FILL_O2_TRACK(tpcNClsCrossedRows);
+      CHECK_AND_FILL_O2_TRACK(tpcChi2NCl);
       CHECK_AND_FILL_O2_TRACK(hasITS);
       CHECK_AND_FILL_O2_TRACK(hasTPC);
       CHECK_AND_FILL_O2_TRACK(hasTRD);
@@ -295,6 +297,7 @@ class MlResponseO2Track : public MlResponse<TypeOutputScore>
       FILL_MAP_O2_TRACK(tpctofNSigmaPr),
       FILL_MAP_O2_TRACK(tpcNClsFound),
       FILL_MAP_O2_TRACK(tpcNClsCrossedRows),
+      FILL_MAP_O2_TRACK(tpcChi2NCl),
       FILL_MAP_O2_TRACK(hasITS),
       FILL_MAP_O2_TRACK(hasTPC),
       FILL_MAP_O2_TRACK(hasTRD),
