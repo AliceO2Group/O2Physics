@@ -522,6 +522,16 @@ struct strangenesstofpid {
       histos.add("hDeltaTimeMethodsVsP_negOmPi", "hDeltaTimeMethodsVsP_negOmPi", kTH3F, {axisP, axisEta, axisDeltaTime});
       histos.add("hDeltaTimeMethodsVsP_negOmPr", "hDeltaTimeMethodsVsP_negOmPr", kTH3F, {axisP, axisEta, axisDeltaTime});
       histos.add("hDeltaTimeMethodsVsP_bachOmKa", "hDeltaTimeMethodsVsP_bachOmKa", kTH3F, {axisP, axisEta, axisDeltaTime});
+
+      histos.add("hMethodComparison_posLaPi", "hMethodComparison_posLaPi", kTH2F, {axisTime, axisTime});
+      histos.add("hMethodComparison_posLaPr", "hMethodComparison_posLaPr", kTH2F, {axisTime, axisTime});
+      histos.add("hMethodComparison_negLaPi", "hMethodComparison_negLaPi", kTH2F, {axisTime, axisTime});
+      histos.add("hMethodComparison_negLaPr", "hMethodComparison_negLaPr", kTH2F, {axisTime, axisTime});
+
+      histos.add("hMethodComparison_posXiPi", "hMethodComparison_posXiPi", kTH2F, {axisTime, axisTime});
+      histos.add("hMethodComparison_posXiPr", "hMethodComparison_posXiPr", kTH2F, {axisTime, axisTime});
+      histos.add("hMethodComparison_negXiPi", "hMethodComparison_negXiPi", kTH2F, {axisTime, axisTime});
+      histos.add("hMethodComparison_negXiPr", "hMethodComparison_negXiPr", kTH2F, {axisTime, axisTime});
     }
 
     // list memory consumption at start if running in modes with more output
@@ -863,6 +873,7 @@ struct strangenesstofpid {
                         (timeLambda + timePositivePr) / (pTra.tofSignal() - pTra.tofEvTime()),
                         positiveP, v0.positiveeta());
             if(calculationMethod.value==2 && std::abs(timePositivePr_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timePositivePr_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
+              histos.fill(HIST("hMethodComparison_posLaPr"), timePositivePr_Method0, timePositivePr_Method1);
               histos.fill(HIST("hDeltaTimeMethodsVsP_posLaPr"), positiveP, v0.positiveeta(), (timePositivePr_Method0 - timePositivePr_Method1)*positiveCosine);
             }
             if (doQANSigma)
@@ -871,6 +882,7 @@ struct strangenesstofpid {
           if (std::abs(v0.mAntiLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma) {
             histos.fill(HIST("h2dDeltaTimePositiveLambdaPi"), v0.p(), v0.eta(), deltaTimePositiveLambdaPi);
             if(calculationMethod.value==2 && std::abs(timePositivePi_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timePositivePi_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
+              histos.fill(HIST("hMethodComparison_posLaPi"), timePositivePi_Method0, timePositivePi_Method1);
               histos.fill(HIST("hDeltaTimeMethodsVsP_posLaPi"), positiveP, v0.positiveeta(), (timePositivePi_Method0 - timePositivePi_Method1)*positiveCosine);
             }
             if (doQANSigma)
@@ -895,6 +907,7 @@ struct strangenesstofpid {
                         (timeLambda + timeNegativePi) / (nTra.tofSignal() - nTra.tofEvTime()),
                         negativeP, v0.negativeeta());
             if(calculationMethod.value==2 && std::abs(timeNegativePi_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timeNegativePi_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
+              histos.fill(HIST("hMethodComparison_negLaPi"), timeNegativePi_Method0, timeNegativePi_Method1);
               histos.fill(HIST("hDeltaTimeMethodsVsP_negLaPi"), negativeP, v0.negativeeta(), (timeNegativePi_Method0 - timeNegativePi_Method1)*negativeCosine);
             }
             if (doQANSigma)
@@ -903,6 +916,7 @@ struct strangenesstofpid {
           if (std::abs(v0.mAntiLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma) {
             histos.fill(HIST("h2dDeltaTimeNegativeLambdaPr"), v0.p(), v0.eta(), deltaTimeNegativeLambdaPr);
             if(calculationMethod.value==2 && std::abs(timeNegativePr_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timeNegativePr_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
+              histos.fill(HIST("hMethodComparison_negLaPr"), timeNegativePr_Method0, timeNegativePr_Method1);
               histos.fill(HIST("hDeltaTimeMethodsVsP_negLaPr"), negativeP, v0.negativeeta(), (timeNegativePr_Method0 - timeNegativePr_Method1)*negativeCosine);
             }
             if (doQANSigma)
@@ -1154,9 +1168,11 @@ struct strangenesstofpid {
             histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), bachDeltaTimeAsXiPi);
             if(calculationMethod.value==2){ 
               if(std::abs(posFlightPr_Method0)>o2::aod::cascdata::kEpsilon && std::abs(posFlightPr_Method1)>o2::aod::cascdata::kEpsilon){
+                histos.fill(HIST("hMethodComparison_posXiPr"), posFlightPr_Method0, posFlightPr_Method1);
                 histos.fill(HIST("hDeltaTimeMethodsVsP_posXiPr"), positiveP, cascade.positiveeta(), (posFlightPr_Method0 - posFlightPr_Method1)*positiveCosine);
               }
               if(std::abs(negFlightPi_Method0)>o2::aod::cascdata::kEpsilon && std::abs(negFlightPi_Method1)>o2::aod::cascdata::kEpsilon){
+                histos.fill(HIST("hMethodComparison_negXiPi"), negFlightPi_Method0, negFlightPi_Method1);
                 histos.fill(HIST("hDeltaTimeMethodsVsP_negXiPi"), negativeP, cascade.negativeeta(), (negFlightPi_Method0 - negFlightPi_Method1)*negativeCosine);
               }
               if(std::abs(bachFlightPi_Method0)>o2::aod::cascdata::kEpsilon && std::abs(bachFlightPi_Method1)>o2::aod::cascdata::kEpsilon){
@@ -1197,9 +1213,11 @@ struct strangenesstofpid {
             histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), bachDeltaTimeAsXiPi);
             if(calculationMethod.value==2){ 
               if(std::abs(posFlightPi_Method0-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon && std::abs(posFlightPi_Method1-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon){
+                histos.fill(HIST("hMethodComparison_posXiPr"), posFlightPi_Method0, posFlightPi_Method1);
                 histos.fill(HIST("hDeltaTimeMethodsVsP_posXiPi"), positiveP, cascade.positiveeta(), (posFlightPi_Method0 - posFlightPi_Method1)*positiveCosine);
               }
               if(std::abs(negFlightPr_Method0-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon && std::abs(negFlightPr_Method1-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon){
+                histos.fill(HIST("hMethodComparison_negXiPr"), negFlightPr_Method0, negFlightPr_Method1);
                 histos.fill(HIST("hDeltaTimeMethodsVsP_negXiPr"), negativeP, cascade.negativeeta(), (negFlightPr_Method0 - negFlightPr_Method1)*negativeCosine);
               }
               if(std::abs(bachFlightPi_Method0-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon && std::abs(bachFlightPi_Method1-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon){
