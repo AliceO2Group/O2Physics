@@ -58,7 +58,7 @@ using std::array;
 using MCSigma0s = soa::Join<aod::Sigma0Cores, aod::Sigma0PhotonExtras, aod::Sigma0LambdaExtras, aod::Sigma0MCCores, aod::SigmaCollRef>;
 using Sigma0s = soa::Join<aod::Sigma0Cores, aod::Sigma0PhotonExtras, aod::Sigma0LambdaExtras, aod::SigmaCollRef>;
 
-static const std::vector<std::string> PhotonSels = {"NoSel", "V0Type", "DaupT", "DCADauToPV",
+static const std::vector<std::string> PhotonSels = {"NoSel", "V0Type", "DCADauToPV",
                                                     "DCADau", "DauTPCCR", "TPCNSigmaEl", "V0pT",
                                                     "Y", "V0Radius", "RZCut", "Armenteros", "CosPA",
                                                     "PsiPair", "Phi", "Mass"};
@@ -119,14 +119,15 @@ struct sigmaanalysis {
   } eventSelections;
 
   // Generated Sigma0s  
-  Configurable<bool> fskipInvalidDecay{"fskipInvalidDecay", true, "if true, select only the channel sigma0 -> photon+lambda for efficiency calculation"};
-    
-  Configurable<bool> fillBkgQAhistos{"fillBkgQAhistos", false, "if true, fill MC QA histograms for Bkg study. Only works with MC."};
-  Configurable<bool> fillpTResoQAhistos{"fillpTResoQAhistos", false, "if true, fill MC QA histograms for pT resolution study. Only works with MC."};
+  Configurable<bool> mc_keepOnlyFromGenerator{"mc_keepOnlyFromGenerator", true, "if true, consider only particles from generator to calculate efficiency."};
 
-  // Analysis strategy:
-  Configurable<bool> fUseMLSel{"fUseMLSel", false, "Flag to use ML selection. If False, the standard selection is applied."};  
+  // QA
+  Configurable<bool> fillBkgQAhistos{"fillBkgQAhistos", false, "if true, fill MC QA histograms for Bkg study. Only works with MC."};
+  Configurable<bool> fillResoQAhistos{"fillResoQAhistos", false, "if true, fill MC QA histograms for pT resolution study. Only works with MC."};
+
+  // Analysis strategy:  
   Configurable<bool> doMCAssociation{"doMCAssociation", false, "Flag to process only signal candidates. Use only with processMonteCarlo!"};
+  Configurable<bool> selRecoFromGenerator{"selRecoFromGenerator", false, "Flag to process only signal candidates from generator"};
   Configurable<bool> doPhotonLambdaSelQA{"doPhotonLambdaSelQA", false, "Flag to fill photon and lambda QA histos!"};
 
   // For Selection:
@@ -165,8 +166,7 @@ struct sigmaanalysis {
   //// Photon criteria:
   struct : ConfigurableGroup {
     Configurable<float> Gamma_MLThreshold{"Gamma_MLThreshold", 0.1, "Decision Threshold value to select gammas"};
-    Configurable<int> Photonv0TypeSel{"Photonv0TypeSel", 7, "select on a certain V0 type (leave negative if no selection desired)"};
-    Configurable<float> PhotonDauMinPt{"PhotonDauMinPt", 0.0, "Min daughter pT (GeV/c)"};
+    Configurable<int> Photonv0TypeSel{"Photonv0TypeSel", 7, "select on a certain V0 type (leave negative if no selection desired)"};    
     Configurable<float> PhotonMinDCADauToPv{"PhotonMinDCADauToPv", 0.0, "Min DCA daughter To PV (cm)"};
     Configurable<float> PhotonMaxDCAV0Dau{"PhotonMaxDCAV0Dau", 3.5, "Max DCA V0 Daughters (cm)"};
     Configurable<int> PhotonMinTPCCrossedRows{"PhotonMinTPCCrossedRows", 30, "Min daughter TPC Crossed Rows"};
@@ -191,7 +191,10 @@ struct sigmaanalysis {
     Configurable<float> PhotonPhiMax2{"PhotonPhiMax2", -1, "Phi min value to reject photons, region 2 (leave negative if no selection desired)"};
   } photonSelections;
 
-  Configurable<float> SigmaMaxRap{"SigmaMaxRap", 0.5, "Max sigma0 rapidity"};
+  Configurable<float> Sigma0MaxRap{"Sigma0MaxRap", 0.5, "Max sigma0 rapidity"};
+  Configurable<float> Sigma0MaxRadius{"Sigma0MaxRadius", 200, "Max sigma0 decay radius"};
+  Configurable<float> Sigma0MaxDCADau{"Sigma0MaxDCADau", 50, "Max sigma0 DCA between daughters"};
+  Configurable<float> Sigma0MaxOPAngle{"Sigma0MaxOPAngle", 7, "Max sigma0 OP Angle between daughters"};
   Configurable<float> Pi0MaxRap{"Pi0MaxRap", 0.5, "Max sigma0 rapidity"};
 
   // Axis
@@ -224,7 +227,8 @@ struct sigmaanalysis {
   ConfigurableAxis axisLifetime{"axisLifetime", {100, 0, 100}, "Chi2 Per Ncl"};
 
   // topological variable QA axes
-  ConfigurableAxis axisRadius{"axisRadius", {240, 0.0f, 120.0f}, "V0 radius (cm)"};
+  ConfigurableAxis axisV0Radius{"axisV0Radius", {240, 0.0f, 120.0f}, "V0 radius (cm)"};
+  ConfigurableAxis axisV0PairRadius{"axisV0PairRadius", {200, 0.0f, 20.0f}, "V0Pair radius (cm)"};
   ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {500, 0.0f, 50.0f}, "DCA (cm)"};
   ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA (cm)"};
   ConfigurableAxis axisCosPA{"axisCosPA", {200, 0.5f, 1.0f}, "Cosine of pointing angle"};
@@ -284,155 +288,165 @@ struct sigmaanalysis {
 
     if (fGetIR) {
       histos.add("GeneralQA/hRunNumberNegativeIR", "", kTH1D, {{1, 0., 1.}});
-      histos.add("GeneralQA/hInteractionRate", "hInteractionRate", kTH1F, {axisIRBinning});
-      histos.add("GeneralQA/hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2F, {axisCentrality, axisIRBinning});
+      histos.add("GeneralQA/hInteractionRate", "hInteractionRate", kTH1D, {axisIRBinning});
+      histos.add("GeneralQA/hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2D, {axisCentrality, axisIRBinning});
     }
 
     for (const auto& histodir : DirList) {
 
-      histos.add(histodir + "/Photon/hTrackCode", "hTrackCode", kTH1F, {{11, 0.5f, 11.5f}});
-      histos.add(histodir + "/Photon/hV0Type", "hV0Type", kTH1F, {{8, 0.5f, 8.5f}});
-      histos.add(histodir + "/Photon/hNegpT", "hNegpT", kTH1F, {axisPt});
-      histos.add(histodir + "/Photon/hPospT", "hPospT", kTH1F, {axisPt});
-      histos.add(histodir + "/Photon/hDCANegToPV", "hDCANegToPV", kTH1F, {axisDCAtoPV});
-      histos.add(histodir + "/Photon/hDCAPosToPV", "hDCAPosToPV", kTH1F, {axisDCAtoPV});
-      histos.add(histodir + "/Photon/hDCADau", "hDCADau", kTH1F, {axisDCAdau});
-      histos.add(histodir + "/Photon/hPosTPCCR", "hPosTPCCR", kTH1F, {axisTPCrows});
-      histos.add(histodir + "/Photon/hNegTPCCR", "hNegTPCCR", kTH1F, {axisTPCrows});
-      histos.add(histodir + "/Photon/h2dPosTPCNSigmaEl", "h2dPosTPCNSigmaEl", kTH2F, {axisPt, axisTPCNSigma});
-      histos.add(histodir + "/Photon/h2dNegTPCNSigmaEl", "h2dNegTPCNSigmaEl", kTH2F, {axisPt, axisTPCNSigma});
-      histos.add(histodir + "/Photon/h2dPosTPCNSigmaPi", "h2dPosTPCNSigmaPi", kTH2F, {axisPt, axisTPCNSigma});
-      histos.add(histodir + "/Photon/h2dNegTPCNSigmaPi", "h2dNegTPCNSigmaPi", kTH2F, {axisPt, axisTPCNSigma});
-      histos.add(histodir + "/Photon/hpT", "hpT", kTH1F, {axisPt});
-      histos.add(histodir + "/Photon/hY", "hY", kTH1F, {axisRapidity});
-      histos.add(histodir + "/Photon/hPosEta", "hPosEta", kTH1F, {axisRapidity});
-      histos.add(histodir + "/Photon/hNegEta", "hNegEta", kTH1F, {axisRapidity});
-      histos.add(histodir + "/Photon/hRadius", "hRadius", kTH1F, {axisRadius});
-      histos.add(histodir + "/Photon/hZ", "hZ", kTH1F, {axisZ});
-      histos.add(histodir + "/Photon/h2dRZCut", "h2dRZCut", kTH2F, {axisZ, axisRadius});
-      histos.add(histodir + "/Photon/h2dRZPlane", "h2dRZPlane", kTH2F, {axisZ, axisRadius});
-      histos.add(histodir + "/Photon/hCosPA", "hCosPA", kTH1F, {axisCosPA});
-      histos.add(histodir + "/Photon/hPsiPair", "hPsiPair", kTH1F, {axisPsiPair});
-      histos.add(histodir + "/Photon/hPhi", "hPhi", kTH1F, {axisPhi});
-      histos.add(histodir + "/Photon/h3dMass", "h3dMass", kTH3F, {axisCentrality, axisPt, axisPhotonMass});
-      histos.add(histodir + "/Photon/hMass", "hMass", kTH1F, {axisPhotonMass});
+      histos.add(histodir + "/Photon/hTrackCode", "hTrackCode", kTH1D, {{11, 0.5f, 11.5f}});
+      histos.add(histodir + "/Photon/hV0Type", "hV0Type", kTH1D, {{8, 0.5f, 8.5f}});      
+      histos.add(histodir + "/Photon/hDCANegToPV", "hDCANegToPV", kTH1D, {axisDCAtoPV});
+      histos.add(histodir + "/Photon/hDCAPosToPV", "hDCAPosToPV", kTH1D, {axisDCAtoPV});
+      histos.add(histodir + "/Photon/hDCADau", "hDCADau", kTH1D, {axisDCAdau});
+      histos.add(histodir + "/Photon/hPosTPCCR", "hPosTPCCR", kTH1D, {axisTPCrows});
+      histos.add(histodir + "/Photon/hNegTPCCR", "hNegTPCCR", kTH1D, {axisTPCrows});      
+      histos.add(histodir + "/Photon/hPosTPCNSigmaEl", "hPosTPCNSigmaEl", kTH1D, {axisTPCNSigma});
+      histos.add(histodir + "/Photon/hNegTPCNSigmaEl", "hNegTPCNSigmaEl", kTH1D, {axisTPCNSigma});
+      
+      histos.add(histodir + "/Photon/hpT", "hpT", kTH1D, {axisPt});
+      histos.add(histodir + "/Photon/hY", "hY", kTH1D, {axisRapidity});
+      histos.add(histodir + "/Photon/hPosEta", "hPosEta", kTH1D, {axisRapidity});
+      histos.add(histodir + "/Photon/hNegEta", "hNegEta", kTH1D, {axisRapidity});
+      histos.add(histodir + "/Photon/hRadius", "hRadius", kTH1D, {axisV0Radius});
+      histos.add(histodir + "/Photon/hZ", "hZ", kTH1D, {axisZ});
+      histos.add(histodir + "/Photon/h2dRZCut", "h2dRZCut", kTH2D, {axisZ, axisV0Radius});
+      histos.add(histodir + "/Photon/h2dRZPlane", "h2dRZPlane", kTH2D, {axisZ, axisV0Radius});
+      histos.add(histodir + "/Photon/hCosPA", "hCosPA", kTH1D, {axisCosPA});
+      histos.add(histodir + "/Photon/hPsiPair", "hPsiPair", kTH1D, {axisPsiPair});
+      histos.add(histodir + "/Photon/hPhi", "hPhi", kTH1D, {axisPhi});
+      histos.add(histodir + "/Photon/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisPhotonMass});
+      histos.add(histodir + "/Photon/hMass", "hMass", kTH1D, {axisPhotonMass});
 
-      histos.add(histodir + "/Lambda/hTrackCode", "hTrackCode", kTH1F, {{11, 0.5f, 11.5f}});
-      histos.add(histodir + "/Lambda/hRadius", "hRadius", kTH1F, {axisRadius});
-      histos.add(histodir + "/Lambda/hDCADau", "hDCADau", kTH1F, {axisDCAdau});
-      histos.add(histodir + "/Lambda/hCosPA", "hCosPA", kTH1F, {axisCosPA});
-      histos.add(histodir + "/Lambda/hY", "hY", kTH1F, {axisRapidity});
-      histos.add(histodir + "/Lambda/hPosEta", "hPosEta", kTH1F, {axisRapidity});
-      histos.add(histodir + "/Lambda/hNegEta", "hNegEta", kTH1F, {axisRapidity});
-      histos.add(histodir + "/Lambda/hPosTPCCR", "hPosTPCCR", kTH1F, {axisTPCrows});
-      histos.add(histodir + "/Lambda/hNegTPCCR", "hNegTPCCR", kTH1F, {axisTPCrows});
-      histos.add(histodir + "/Lambda/hPosITSCls", "hPosITSCls", kTH1F, {axisNCls});
-      histos.add(histodir + "/Lambda/hNegITSCls", "hNegITSCls", kTH1F, {axisNCls});
-      histos.add(histodir + "/Lambda/hPosChi2PerNc", "hPosChi2PerNc", kTH1F, {axisChi2PerNcl});
-      histos.add(histodir + "/Lambda/hNegChi2PerNc", "hNegChi2PerNc", kTH1F, {axisChi2PerNcl});
-      histos.add(histodir + "/Lambda/hLifeTime", "hLifeTime", kTH1F, {axisLifetime});
-      histos.add(histodir + "/Lambda/h2dTPCvsTOFNSigma_LambdaPr", "h2dTPCvsTOFNSigma_LambdaPr", kTH2F, {axisTPCNSigma, axisTOFNSigma});
-      histos.add(histodir + "/Lambda/h2dTPCvsTOFNSigma_LambdaPi", "h2dTPCvsTOFNSigma_LambdaPi", kTH2F, {axisTPCNSigma, axisTOFNSigma});
-      histos.add(histodir + "/Lambda/hLambdaDCANegToPV", "hLambdaDCANegToPV", kTH1F, {axisDCAtoPV});
-      histos.add(histodir + "/Lambda/hLambdaDCAPosToPV", "hLambdaDCAPosToPV", kTH1F, {axisDCAtoPV});
-      histos.add(histodir + "/Lambda/hLambdapT", "hLambdapT", kTH1F, {axisPt});
-      histos.add(histodir + "/Lambda/hLambdaMass", "hLambdaMass", kTH1F, {axisLambdaMass});
-      histos.add(histodir + "/Lambda/h3dLambdaMass", "h3dLambdaMass", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add(histodir + "/Lambda/h2dTPCvsTOFNSigma_ALambdaPr", "h2dTPCvsTOFNSigma_ALambdaPr", kTH2F, {axisTPCNSigma, axisTOFNSigma});
-      histos.add(histodir + "/Lambda/h2dTPCvsTOFNSigma_ALambdaPi", "h2dTPCvsTOFNSigma_ALambdaPi", kTH2F, {axisTPCNSigma, axisTOFNSigma});
-      histos.add(histodir + "/Lambda/hALambdaDCANegToPV", "hALambdaDCANegToPV", kTH1F, {axisDCAtoPV});
-      histos.add(histodir + "/Lambda/hALambdaDCAPosToPV", "hALambdaDCAPosToPV", kTH1F, {axisDCAtoPV});
-      histos.add(histodir + "/Lambda/hALambdapT", "hALambdapT", kTH1F, {axisPt});
-      histos.add(histodir + "/Lambda/hAntiLambdaMass", "hAntiLambdaMass", kTH1F, {axisLambdaMass});
-      histos.add(histodir + "/Lambda/h3dAntiLambdaMass", "h3dAntiLambdaMass", kTH3F, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add(histodir + "/Lambda/hTrackCode", "hTrackCode", kTH1D, {{11, 0.5f, 11.5f}});
+      histos.add(histodir + "/Lambda/hRadius", "hRadius", kTH1D, {axisV0Radius});
+      histos.add(histodir + "/Lambda/hDCADau", "hDCADau", kTH1D, {axisDCAdau});
+      histos.add(histodir + "/Lambda/hCosPA", "hCosPA", kTH1D, {axisCosPA});
+      histos.add(histodir + "/Lambda/hY", "hY", kTH1D, {axisRapidity});
+      histos.add(histodir + "/Lambda/hPosEta", "hPosEta", kTH1D, {axisRapidity});
+      histos.add(histodir + "/Lambda/hNegEta", "hNegEta", kTH1D, {axisRapidity});
+      histos.add(histodir + "/Lambda/hPosTPCCR", "hPosTPCCR", kTH1D, {axisTPCrows});
+      histos.add(histodir + "/Lambda/hNegTPCCR", "hNegTPCCR", kTH1D, {axisTPCrows});
+      histos.add(histodir + "/Lambda/hPosITSCls", "hPosITSCls", kTH1D, {axisNCls});
+      histos.add(histodir + "/Lambda/hNegITSCls", "hNegITSCls", kTH1D, {axisNCls});
+      histos.add(histodir + "/Lambda/hPosChi2PerNc", "hPosChi2PerNc", kTH1D, {axisChi2PerNcl});
+      histos.add(histodir + "/Lambda/hNegChi2PerNc", "hNegChi2PerNc", kTH1D, {axisChi2PerNcl});
+      histos.add(histodir + "/Lambda/hLifeTime", "hLifeTime", kTH1D, {axisLifetime});
+      histos.add(histodir + "/Lambda/h2dTPCvsTOFNSigma_LambdaPr", "h2dTPCvsTOFNSigma_LambdaPr", kTH2D, {axisTPCNSigma, axisTOFNSigma});
+      histos.add(histodir + "/Lambda/h2dTPCvsTOFNSigma_LambdaPi", "h2dTPCvsTOFNSigma_LambdaPi", kTH2D, {axisTPCNSigma, axisTOFNSigma});
+      histos.add(histodir + "/Lambda/hLambdaDCANegToPV", "hLambdaDCANegToPV", kTH1D, {axisDCAtoPV});
+      histos.add(histodir + "/Lambda/hLambdaDCAPosToPV", "hLambdaDCAPosToPV", kTH1D, {axisDCAtoPV});
+      histos.add(histodir + "/Lambda/hLambdapT", "hLambdapT", kTH1D, {axisPt});
+      histos.add(histodir + "/Lambda/hLambdaMass", "hLambdaMass", kTH1D, {axisLambdaMass});
+      histos.add(histodir + "/Lambda/h3dLambdaMass", "h3dLambdaMass", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add(histodir + "/Lambda/h2dTPCvsTOFNSigma_ALambdaPr", "h2dTPCvsTOFNSigma_ALambdaPr", kTH2D, {axisTPCNSigma, axisTOFNSigma});
+      histos.add(histodir + "/Lambda/h2dTPCvsTOFNSigma_ALambdaPi", "h2dTPCvsTOFNSigma_ALambdaPi", kTH2D, {axisTPCNSigma, axisTOFNSigma});
+      histos.add(histodir + "/Lambda/hALambdaDCANegToPV", "hALambdaDCANegToPV", kTH1D, {axisDCAtoPV});
+      histos.add(histodir + "/Lambda/hALambdaDCAPosToPV", "hALambdaDCAPosToPV", kTH1D, {axisDCAtoPV});
+      histos.add(histodir + "/Lambda/hALambdapT", "hALambdapT", kTH1D, {axisPt});
+      histos.add(histodir + "/Lambda/hAntiLambdaMass", "hAntiLambdaMass", kTH1D, {axisLambdaMass});
+      histos.add(histodir + "/Lambda/h3dAntiLambdaMass", "h3dAntiLambdaMass", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
 
-      histos.add(histodir + "/h2dArmenteros", "h2dArmenteros", kTH2F, {axisAPAlpha, axisAPQt});
+      histos.add(histodir + "/h2dArmenteros", "h2dArmenteros", kTH2D, {axisAPAlpha, axisAPQt});
 
-      histos.add(histodir + "/Sigma0/hMass", "hMass", kTH1F, {axisSigmaMass});
-      histos.add(histodir + "/Sigma0/hPt", "hPt", kTH1F, {axisPt});
-      histos.add(histodir + "/Sigma0/hY", "hY", kTH1F, {axisRapidity});
-      histos.add(histodir + "/Sigma0/h3dMass", "h3dMass", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
-      histos.add(histodir + "/Sigma0/h3dPhotonRadiusVsMassSigma", "h3dPhotonRadiusVsMassSigma", kTH3F, {axisCentrality, axisRadius, axisSigmaMass});
-      histos.add(histodir + "/Sigma0/h2dpTVsOPAngle", "h2dpTVsOPAngle", kTH2F, {axisPt, {140, 0.0f, +7.0f}});
-
-      histos.add(histodir + "/ASigma0/hMass", "hMass", kTH1F, {axisSigmaMass});
-      histos.add(histodir + "/ASigma0/hPt", "hPt", kTH1F, {axisPt});
-      histos.add(histodir + "/ASigma0/hY", "hY", kTH1F, {axisRapidity});
-      histos.add(histodir + "/ASigma0/h3dMass", "h3dMass", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
-      histos.add(histodir + "/ASigma0/h3dPhotonRadiusVsMassSigma", "h3dPhotonRadiusVsMassSigma", kTH3F, {axisCentrality, axisRadius, axisSigmaMass});
-      histos.add(histodir + "/ASigma0/h2dpTVsOPAngle", "h2dpTVsOPAngle", kTH2F, {axisPt, {140, 0.0f, +7.0f}});
+      histos.add(histodir + "/Sigma0/hMass", "hMass", kTH1D, {axisSigmaMass});
+      histos.add(histodir + "/Sigma0/hPt", "hPt", kTH1D, {axisPt});
+      histos.add(histodir + "/Sigma0/hY", "hY", kTH1D, {axisRapidity});
+      histos.add(histodir + "/Sigma0/hRadius", "hRadius", kTH1D, {axisV0PairRadius});
+      histos.add(histodir + "/Sigma0/h2dRadiusVspT", "h2dRadiusVspT", kTH2D, {axisV0PairRadius, axisPt});
+      histos.add(histodir + "/Sigma0/hDCAPairDau", "hDCAPairDau", kTH1D, {axisDCAdau});      
+      histos.add(histodir + "/Sigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});      
+      histos.add(histodir + "/Sigma0/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {{140, 0.0f, +7.0f}, axisPt, axisSigmaMass});
+      
+      histos.add(histodir + "/ASigma0/hMass", "hMass", kTH1D, {axisSigmaMass});
+      histos.add(histodir + "/ASigma0/hPt", "hPt", kTH1D, {axisPt});
+      histos.add(histodir + "/ASigma0/hY", "hY", kTH1D, {axisRapidity});      
+      histos.add(histodir + "/ASigma0/hRadius", "hRadius", kTH1D, {axisV0PairRadius});
+      histos.add(histodir + "/ASigma0/h2dRadiusVspT", "h2dRadiusVspT", kTH2D, {axisV0PairRadius, axisPt});
+      histos.add(histodir + "/ASigma0/hDCAPairDau", "hDCAPairDau", kTH1D, {axisDCAdau});      
+      histos.add(histodir + "/ASigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});      
+      histos.add(histodir + "/ASigma0/h3dOPAngleVsMass", "h3dOPAngleVsMass", kTH3D, {{140, 0.0f, +7.0f}, axisPt, axisSigmaMass});
+      
 
       // Process MC
       if (doprocessMonteCarlo) {
-        histos.add(histodir + "/MC/Photon/hV0ToCollAssoc", "hV0ToCollAssoc", kTH1F, {{2, 0.0f, 2.0f}});
-        histos.add(histodir + "/MC/Photon/hPt", "hPt", kTH1F, {axisPt});
-        histos.add(histodir + "/MC/Photon/hMCPt", "hMCPt", kTH1F, {axisPt});
-        histos.add(histodir + "/MC/Photon/h2dPosTPCNSigmaEl", "h2dPosTPCNSigmaEl", kTH2F, {axisPt, axisTPCNSigma});
-        histos.add(histodir + "/MC/Photon/h2dNegTPCNSigmaEl", "h2dNegTPCNSigmaEl", kTH2F, {axisPt, axisTPCNSigma});
-        histos.add(histodir + "/MC/Photon/h2dPosTPCNSigmaPi", "h2dPosTPCNSigmaPi", kTH2F, {axisPt, axisTPCNSigma});
-        histos.add(histodir + "/MC/Photon/h2dNegTPCNSigmaPi", "h2dNegTPCNSigmaPi", kTH2F, {axisPt, axisTPCNSigma});
-        histos.add(histodir + "/MC/Photon/h2dPAVsPt", "h2dPAVsPt", kTH2F, {axisPA, axisPt});
-        histos.add(histodir + "/MC/Photon/hPt_BadCollAssig", "hPt_BadCollAssig", kTH1F, {axisPt});
-        histos.add(histodir + "/MC/Photon/h2dPAVsPt_BadCollAssig", "h2dPAVsPt_BadCollAssig", kTH2F, {axisPA, axisPt});
+        histos.add(histodir + "/MC/Photon/hV0ToCollAssoc", "hV0ToCollAssoc", kTH1D, {{2, 0.0f, 2.0f}});
+        histos.add(histodir + "/MC/Photon/hPt", "hPt", kTH1D, {axisPt});
+        histos.add(histodir + "/MC/Photon/hMCPt", "hMCPt", kTH1D, {axisPt});        
+        histos.add(histodir + "/MC/Photon/hPosTPCNSigmaEl", "hPosTPCNSigmaEl", kTH1D, {axisTPCNSigma});
+        histos.add(histodir + "/MC/Photon/hNegTPCNSigmaEl", "hNegTPCNSigmaEl", kTH1D, {axisTPCNSigma});        
+        histos.add(histodir + "/MC/Photon/h2dPAVsPt", "h2dPAVsPt", kTH2D, {axisPA, axisPt});
+        histos.add(histodir + "/MC/Photon/hPt_BadCollAssig", "hPt_BadCollAssig", kTH1D, {axisPt});
+        histos.add(histodir + "/MC/Photon/h2dPAVsPt_BadCollAssig", "h2dPAVsPt_BadCollAssig", kTH2D, {axisPA, axisPt});
 
-        histos.add(histodir + "/MC/Lambda/hV0ToCollAssoc", "hV0ToCollAssoc", kTH1F, {{2, 0.0f, 2.0f}});
-        histos.add(histodir + "/MC/Lambda/hPt", "hPt", kTH1F, {axisPt});
-        histos.add(histodir + "/MC/Lambda/hMCPt", "hMCPt", kTH1F, {axisPt});
-        histos.add(histodir + "/MC/Lambda/h3dTPCvsTOFNSigma_Pr", "h3dTPCvsTOFNSigma_Pr", kTH3F, {axisTPCNSigma, axisTOFNSigma, axisPt});
-        histos.add(histodir + "/MC/Lambda/h3dTPCvsTOFNSigma_Pi", "h3dTPCvsTOFNSigma_Pi", kTH3F, {axisTPCNSigma, axisTOFNSigma, axisPt});
+        histos.add(histodir + "/MC/Lambda/hV0ToCollAssoc", "hV0ToCollAssoc", kTH1D, {{2, 0.0f, 2.0f}});
+        histos.add(histodir + "/MC/Lambda/hPt", "hPt", kTH1D, {axisPt});
+        histos.add(histodir + "/MC/Lambda/hMCPt", "hMCPt", kTH1D, {axisPt});
+        histos.add(histodir + "/MC/Lambda/h3dTPCvsTOFNSigma_Pr", "h3dTPCvsTOFNSigma_Pr", kTH3D, {axisTPCNSigma, axisTOFNSigma, axisPt});
+        histos.add(histodir + "/MC/Lambda/h3dTPCvsTOFNSigma_Pi", "h3dTPCvsTOFNSigma_Pi", kTH3D, {axisTPCNSigma, axisTOFNSigma, axisPt});
 
-        histos.add(histodir + "/MC/ALambda/hV0ToCollAssoc", "hV0ToCollAssoc", kTH1F, {{2, 0.0f, 2.0f}});
-        histos.add(histodir + "/MC/ALambda/hPt", "hPt", kTH1F, {axisPt});
-        histos.add(histodir + "/MC/ALambda/hMCPt", "hMCPt", kTH1F, {axisPt});
-        histos.add(histodir + "/MC/ALambda/h3dTPCvsTOFNSigma_Pr", "h3dTPCvsTOFNSigma_Pr", kTH3F, {axisTPCNSigma, axisTOFNSigma, axisPt});
-        histos.add(histodir + "/MC/ALambda/h3dTPCvsTOFNSigma_Pi", "h3dTPCvsTOFNSigma_Pi", kTH3F, {axisTPCNSigma, axisTOFNSigma, axisPt});
+        histos.add(histodir + "/MC/ALambda/hV0ToCollAssoc", "hV0ToCollAssoc", kTH1D, {{2, 0.0f, 2.0f}});
+        histos.add(histodir + "/MC/ALambda/hPt", "hPt", kTH1D, {axisPt});
+        histos.add(histodir + "/MC/ALambda/hMCPt", "hMCPt", kTH1D, {axisPt});
+        histos.add(histodir + "/MC/ALambda/h3dTPCvsTOFNSigma_Pr", "h3dTPCvsTOFNSigma_Pr", kTH3D, {axisTPCNSigma, axisTOFNSigma, axisPt});
+        histos.add(histodir + "/MC/ALambda/h3dTPCvsTOFNSigma_Pi", "h3dTPCvsTOFNSigma_Pi", kTH3D, {axisTPCNSigma, axisTOFNSigma, axisPt});
 
-        histos.add(histodir + "/MC/h2dArmenteros", "h2dArmenteros", kTH2F, {axisAPAlpha, axisAPQt});
+        histos.add(histodir + "/MC/h2dArmenteros", "h2dArmenteros", kTH2D, {axisAPAlpha, axisAPQt});
 
-        histos.add(histodir + "/MC/Sigma0/hPt", "hPt", kTH1F, {axisPt});
-        histos.add(histodir + "/MC/Sigma0/hMCPt", "hMCPt", kTH1F, {axisPt});
-        histos.add(histodir + "/MC/Sigma0/h2dMCPtVsLambdaMCPt", "h2dMCPtVsLambdaMCPt", kTH2F, {axisPt, axisPt});
-        histos.add(histodir + "/MC/Sigma0/h2dMCPtVsGammaMCPt", "h2dMCPtVsGammaMCPt", kTH2F, {axisPt, axisPt});
-        histos.add(histodir + "/MC/Sigma0/hMass", "hMass", kTH1F, {axisSigmaMass});
-        histos.add(histodir + "/MC/Sigma0/h3dMass", "h3dMass", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
+        histos.add(histodir + "/MC/Sigma0/hPt", "hPt", kTH1D, {axisPt});
+        histos.add(histodir + "/MC/Sigma0/hMCPt", "hMCPt", kTH1D, {axisPt});        
+        histos.add(histodir + "/MC/Sigma0/hMass", "hMass", kTH1D, {axisSigmaMass});
+        histos.add(histodir + "/MC/Sigma0/hMCProcess", "hMCProcess", kTH1D, {{50, -0.5f, 49.5f}});
+        histos.add(histodir + "/MC/Sigma0/hGenRadius", "hGenRadius", kTH1D, {axisV0PairRadius});
+        histos.add(histodir + "/MC/Sigma0/h2dMCPtVsLambdaMCPt", "h2dMCPtVsLambdaMCPt", kTH2D, {axisPt, axisPt});
+        histos.add(histodir + "/MC/Sigma0/h2dMCPtVsPhotonMCPt", "h2dMCPtVsPhotonMCPt", kTH2D, {axisPt, axisPt});
+        histos.add(histodir + "/MC/Sigma0/h2dMCProcessVsGenRadius", "h2dMCProcessVsGenRadius", kTH2D, {{50, -0.5f, 49.5f}, axisV0PairRadius});
+        histos.add(histodir + "/MC/Sigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});                
+        histos.add(histodir + "/MC/Sigma0/h3dMCProcess", "h3dMCProcess", kTH3D, {{50, -0.5f, 49.5f}, axisPt, axisSigmaMass});
 
-        histos.add(histodir + "/MC/ASigma0/hPt", "hPt", kTH1F, {axisPt});
-        histos.add(histodir + "/MC/ASigma0/hMCPt", "hMCPt", kTH1F, {axisPt});
-        histos.add(histodir + "/MC/ASigma0/h2dMCPtVsLambdaMCPt", "h2dMCPtVsLambdaMCPt", kTH2F, {axisPt, axisPt});
-        histos.add(histodir + "/MC/ASigma0/h2dMCPtVsPhotonMCPt", "h2dMCPtVsPhotonMCPt", kTH2F, {axisPt, axisPt});
-        histos.add(histodir + "/MC/ASigma0/hMass", "hMass", kTH1F, {axisSigmaMass});
-        histos.add(histodir + "/MC/ASigma0/h3dMass", "h3dMass", kTH3F, {axisCentrality, axisPt, axisSigmaMass});
-
+        histos.add(histodir + "/MC/ASigma0/hPt", "hPt", kTH1D, {axisPt});
+        histos.add(histodir + "/MC/ASigma0/hMCPt", "hMCPt", kTH1D, {axisPt});        
+        histos.add(histodir + "/MC/ASigma0/hMass", "hMass", kTH1D, {axisSigmaMass});
+        histos.add(histodir + "/MC/ASigma0/hMCProcess", "hMCProcess", kTH1D, {{50, -0.5f, 49.5f}});
+        histos.add(histodir + "/MC/ASigma0/hGenRadius", "hGenRadius", kTH1D, {axisV0PairRadius});
+        histos.add(histodir + "/MC/ASigma0/h2dMCPtVsLambdaMCPt", "h2dMCPtVsLambdaMCPt", kTH2D, {axisPt, axisPt});
+        histos.add(histodir + "/MC/ASigma0/h2dMCPtVsPhotonMCPt", "h2dMCPtVsPhotonMCPt", kTH2D, {axisPt, axisPt});
+        histos.add(histodir + "/MC/ASigma0/h2dMCProcessVsGenRadius", "h2dMCProcessVsGenRadius", kTH2D, {{50, -0.5f, 49.5f}, axisV0PairRadius});
+        histos.add(histodir + "/MC/ASigma0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisSigmaMass});                
+        histos.add(histodir + "/MC/ASigma0/h3dMCProcess", "h3dMCProcess", kTH3D, {{50, -0.5f, 49.5f}, axisPt, axisSigmaMass});
+        
         // 1/pT Resolution:
-        if (fillpTResoQAhistos && histodir == "BeforeSel") {
-          histos.add(histodir + "/MC/pTReso/h3dGammaPtResoVsTPCCR", "h3dGammaPtResoVsTPCCR", kTH3F, {axisInvPt, axisDeltaPt, axisTPCrows});
-          histos.add(histodir + "/MC/pTReso/h3dGammaPtResoVsTPCCR", "h3dGammaPtResoVsTPCCR", kTH3F, {axisInvPt, axisDeltaPt, axisTPCrows});
-          histos.add(histodir + "/MC/pTReso/h2dGammaPtResolution", "h2dGammaPtResolution", kTH2F, {axisInvPt, axisDeltaPt});
-          histos.add(histodir + "/MC/pTReso/h2dLambdaPtResolution", "h2dLambdaPtResolution", kTH2F, {axisInvPt, axisDeltaPt});
-          histos.add(histodir + "/MC/pTReso/h3dLambdaPtResoVsTPCCR", "h3dLambdaPtResoVsTPCCR", kTH3F, {axisInvPt, axisDeltaPt, axisTPCrows});
-          histos.add(histodir + "/MC/pTReso/h3dLambdaPtResoVsTPCCR", "h3dLambdaPtResoVsTPCCR", kTH3F, {axisInvPt, axisDeltaPt, axisTPCrows});
-          histos.add(histodir + "/MC/pTReso/h2dAntiLambdaPtResolution", "h2dAntiLambdaPtResolution", kTH2F, {axisInvPt, axisDeltaPt});
-          histos.add(histodir + "/MC/pTReso/h3dAntiLambdaPtResoVsTPCCR", "h3dAntiLambdaPtResoVsTPCCR", kTH3F, {axisInvPt, axisDeltaPt, axisTPCrows});
-          histos.add(histodir + "/MC/pTReso/h3dAntiLambdaPtResoVsTPCCR", "h3dAntiLambdaPtResoVsTPCCR", kTH3F, {axisInvPt, axisDeltaPt, axisTPCrows});
-          histos.add(histodir + "/MC/pTReso/h2dSigma0PtResolution", "h2dSigma0PtResolution", kTH2F, {axisInvPt, axisDeltaPt});
-          histos.add(histodir + "/MC/pTReso/h2dAntiSigma0PtResolution", "h2dAntiSigma0PtResolution", kTH2F, {axisInvPt, axisDeltaPt});
+        if (fillResoQAhistos && histodir == "BeforeSel") {
+          histos.add(histodir + "/MC/Reso/h3dGammaPtResoVsTPCCR", "h3dGammaPtResoVsTPCCR", kTH3D, {axisInvPt, axisDeltaPt, axisTPCrows});
+          histos.add(histodir + "/MC/Reso/h3dGammaPtResoVsTPCCR", "h3dGammaPtResoVsTPCCR", kTH3D, {axisInvPt, axisDeltaPt, axisTPCrows});
+          histos.add(histodir + "/MC/Reso/h2dGammaPtResolution", "h2dGammaPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
+          histos.add(histodir + "/MC/Reso/h2dLambdaPtResolution", "h2dLambdaPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
+          histos.add(histodir + "/MC/Reso/h3dLambdaPtResoVsTPCCR", "h3dLambdaPtResoVsTPCCR", kTH3D, {axisInvPt, axisDeltaPt, axisTPCrows});
+          histos.add(histodir + "/MC/Reso/h3dLambdaPtResoVsTPCCR", "h3dLambdaPtResoVsTPCCR", kTH3D, {axisInvPt, axisDeltaPt, axisTPCrows});
+          histos.add(histodir + "/MC/Reso/h2dAntiLambdaPtResolution", "h2dAntiLambdaPtResolution", kTH2D, {axisInvPt, axisDeltaPt});
+          histos.add(histodir + "/MC/Reso/h3dAntiLambdaPtResoVsTPCCR", "h3dAntiLambdaPtResoVsTPCCR", kTH3D, {axisInvPt, axisDeltaPt, axisTPCrows});
+          histos.add(histodir + "/MC/Reso/h3dAntiLambdaPtResoVsTPCCR", "h3dAntiLambdaPtResoVsTPCCR", kTH3D, {axisInvPt, axisDeltaPt, axisTPCrows});
+          histos.add(histodir + "/MC/Reso/h2dSigma0PtResolution", "h2dSigma0PtResolution", kTH2D, {axisInvPt, axisDeltaPt});
+          histos.add(histodir + "/MC/Reso/h2dAntiSigma0PtResolution", "h2dAntiSigma0PtResolution", kTH2D, {axisInvPt, axisDeltaPt});
+          histos.add(histodir + "/MC/Reso/h2dSigma0RadiusResolution", "h2dSigma0RadiusResolution", kTH2D, {axisPt, axisDeltaPt});
+          histos.add(histodir + "/MC/Reso/h2dASigma0RadiusResolution", "h2dASigma0RadiusResolution", kTH2D, {axisPt, axisDeltaPt});          
         }
 
         // For background decomposition study
         if (fillBkgQAhistos) {
-          histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassSigma_All", "h2dPtVsMassSigma_All", kTH2F, {axisPt, axisSigmaMass});
-          histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassSigma_TrueDaughters", "h2dPtVsMassSigma_TrueDaughters", kTH2F, {axisPt, axisSigmaMass});
+          histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassSigma_All", "h2dPtVsMassSigma_All", kTH2D, {axisPt, axisSigmaMass});
+          histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassSigma_TrueDaughters", "h2dPtVsMassSigma_TrueDaughters", kTH2D, {axisPt, axisSigmaMass});
           histos.add(histodir + "/MC/BkgStudy/h2dTrueDaughtersMatrix", "h2dTrueDaughtersMatrix", kTHnSparseD, {{10001, -5000.5f, +5000.5f}, {10001, -5000.5f, +5000.5f}});
-          histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassSigma_TrueGammaFakeLambda", "h2dPtVsMassSigma_TrueGammaFakeLambda", kTH2F, {axisPt, axisSigmaMass});
-          histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassSigma_FakeGammaTrueLambda", "h2dPtVsMassSigma_FakeGammaTrueLambda", kTH2F, {axisPt, axisSigmaMass});
-          histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassSigma_FakeDaughters", "h2dPtVsMassSigma_FakeDaughters", kTH2F, {axisPt, axisSigmaMass});
+          histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassSigma_TrueGammaFakeLambda", "h2dPtVsMassSigma_TrueGammaFakeLambda", kTH2D, {axisPt, axisSigmaMass});
+          histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassSigma_FakeGammaTrueLambda", "h2dPtVsMassSigma_FakeGammaTrueLambda", kTH2D, {axisPt, axisSigmaMass});
+          histos.add(histodir + "/MC/BkgStudy/h2dPtVsMassSigma_FakeDaughters", "h2dPtVsMassSigma_FakeDaughters", kTH2D, {axisPt, axisSigmaMass});
         }
       }
     }
 
     // Selections
-    histos.add("Selection/Photon/hCandidateSel", "hCandidateSel", kTH1F, {axisCandSel});
-    histos.add("Selection/Lambda/hCandidateSel", "hCandidateSel", kTH1F, {axisCandSel});
+    histos.add("Selection/Photon/hCandidateSel", "hCandidateSel", kTH1D, {axisCandSel});
+    histos.add("Selection/Lambda/hCandidateSel", "hCandidateSel", kTH1D, {axisCandSel});
 
     // For background decomposition study
     if (fillBkgQAhistos && doprocessMonteCarlo) {
@@ -450,40 +464,40 @@ struct sigmaanalysis {
     for (size_t i = 0; i < PhotonSels.size(); ++i) {
       const auto& sel = PhotonSels[i];
 
-      histos.add(Form("Selection/Photon/h2d%s", sel.c_str()), ("h2d" + sel).c_str(), kTH2F, {axisPt, axisPhotonMass});
+      histos.add(Form("Selection/Photon/h2d%s", sel.c_str()), ("h2d" + sel).c_str(), kTH2D, {axisPt, axisPhotonMass});
       histos.get<TH1>(HIST("Selection/Photon/hCandidateSel"))->GetXaxis()->SetBinLabel(i + 1, sel.c_str());
-      histos.add(Form("Selection/Sigma0/h2dPhoton%s", sel.c_str()), ("h2dPhoton" + sel).c_str(), kTH2F, {axisPt, axisSigmaMass});
+      histos.add(Form("Selection/Sigma0/h2dPhoton%s", sel.c_str()), ("h2dPhoton" + sel).c_str(), kTH2D, {axisPt, axisSigmaMass});
     }
 
     for (size_t i = 0; i < LambdaSels.size(); ++i) {
       const auto& sel = LambdaSels[i];
 
-      histos.add(Form("Selection/Lambda/h2d%s", sel.c_str()), ("h2d" + sel).c_str(), kTH2F, {axisPt, axisLambdaMass});
+      histos.add(Form("Selection/Lambda/h2d%s", sel.c_str()), ("h2d" + sel).c_str(), kTH2D, {axisPt, axisLambdaMass});
       histos.get<TH1>(HIST("Selection/Lambda/hCandidateSel"))->GetXaxis()->SetBinLabel(i + 1, sel.c_str());
-      histos.add(Form("Selection/Sigma0/h2dLambda%s", sel.c_str()), ("h2dLambda" + sel).c_str(), kTH2F, {axisPt, axisSigmaMass});
+      histos.add(Form("Selection/Sigma0/h2dLambda%s", sel.c_str()), ("h2dLambda" + sel).c_str(), kTH2D, {axisPt, axisSigmaMass});
     }
 
     if (doprocessPi0RealData || doprocessPi0MonteCarlo) {
-      histos.add("Pi0/hMass", "hMass", kTH1F, {axisPi0Mass});
-      histos.add("Pi0/hPt", "hPt", kTH1F, {axisPt});
-      histos.add("Pi0/hY", "hY", kTH1F, {axisRapidity});
-      histos.add("Pi0/h3dMass", "h3dMass", kTH3F, {axisCentrality, axisPt, axisPi0Mass});      
-      histos.add("Pi0/h3dMass_MCAssociated", "h3dMass_MCAssociated", kTH3F, {axisCentrality, axisPt, axisPi0Mass}); 
+      histos.add("Pi0/hMass", "hMass", kTH1D, {axisPi0Mass});
+      histos.add("Pi0/hPt", "hPt", kTH1D, {axisPt});
+      histos.add("Pi0/hY", "hY", kTH1D, {axisRapidity});
+      histos.add("Pi0/h3dMass", "h3dMass", kTH3D, {axisCentrality, axisPt, axisPi0Mass});      
+      histos.add("Pi0/h3dMass_MCAssociated", "h3dMass_MCAssociated", kTH3D, {axisCentrality, axisPt, axisPi0Mass}); 
     }
 
     if (doprocessGeneratedRun3 || doprocessPi0GeneratedRun3) {
 
-      histos.add("Gen/hGenEvents", "hGenEvents", kTH2F, {{axisNch}, {2, -0.5f, +1.5f}});
+      histos.add("Gen/hGenEvents", "hGenEvents", kTH2D, {{axisNch}, {2, -0.5f, +1.5f}});
       histos.get<TH2>(HIST("Gen/hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
       histos.get<TH2>(HIST("Gen/hGenEvents"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
 
-      histos.add("Gen/hGenEventCentrality", "hGenEventCentrality", kTH1F, {axisCentrality});
-      histos.add("Gen/hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", kTH2F, {axisCentrality, {50, -0.5f, 49.5f}});
-      histos.add("Gen/hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", kTH2F, {axisCentrality, {50, -0.5f, 49.5f}});
-      histos.add("Gen/hCentralityVsMultMC", "hCentralityVsMultMC", kTH2F, {axisCentrality, axisNch});
+      histos.add("Gen/hGenEventCentrality", "hGenEventCentrality", kTH1D, {axisCentrality});
+      histos.add("Gen/hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", kTH2D, {axisCentrality, {50, -0.5f, 49.5f}});
+      histos.add("Gen/hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", kTH2D, {axisCentrality, {50, -0.5f, 49.5f}});
+      histos.add("Gen/hCentralityVsMultMC", "hCentralityVsMultMC", kTH2D, {axisCentrality, axisNch});
 
-      histos.add("Gen/hEventPVzMC", "hEventPVzMC", kTH1F, {{100, -20.0f, +20.0f}});
-      histos.add("Gen/hCentralityVsPVzMC", "hCentralityVsPVzMC", kTH2F, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
+      histos.add("Gen/hEventPVzMC", "hEventPVzMC", kTH1D, {{100, -20.0f, +20.0f}});
+      histos.add("Gen/hCentralityVsPVzMC", "hCentralityVsPVzMC", kTH2D, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
     
       // Sigma0 specific
       if (doprocessGeneratedRun3){
@@ -493,18 +507,7 @@ struct sigmaanalysis {
         histos.add("Gen/h2dGenAntiSigma0VsMultMC_RecoedEvt", "h2dGenAntiSigma0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
         histos.add("Gen/h2dGenSigma0VsMultMC", "h2dGenSigma0VsMultMC", kTH2D, {axisNch, axisPt});
         histos.add("Gen/h2dGenAntiSigma0VsMultMC", "h2dGenAntiSigma0VsMultMC", kTH2D, {axisNch, axisPt});      
-
-        auto hGenSigma0Type = histos.add<TH1>("Gen/hGenSigma0Type", "hGenSigma0Type", kTH1D, {{4, -0.5f, 3.5f}});
-        hGenSigma0Type->GetXaxis()->SetBinLabel(1, "All Sigma0s");
-        hGenSigma0Type->GetXaxis()->SetBinLabel(2, "Sterile");
-        hGenSigma0Type->GetXaxis()->SetBinLabel(3, "Lambda+Gamma");
-        hGenSigma0Type->GetXaxis()->SetBinLabel(4, "Others");
-
-        auto h2DGenSigma0Type = histos.add<TH2>("Gen/h2DGenSigma0Type", "h2DGenSigma0Type", kTH2D, {{4, -0.5f, 3.5f}, axisGeneratorIds});
-        h2DGenSigma0Type->GetXaxis()->SetBinLabel(1, "All Sigma0s");
-        h2DGenSigma0Type->GetXaxis()->SetBinLabel(2, "Sterile");
-        h2DGenSigma0Type->GetXaxis()->SetBinLabel(3, "Lambda+Gamma");
-        h2DGenSigma0Type->GetXaxis()->SetBinLabel(4, "Others");
+      
       }
       else{ // Pi0 specific        
         histos.add("Gen/h2dGenPi0VsMultMC_RecoedEvt", "h2dGenPi0VsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
@@ -631,7 +634,7 @@ struct sigmaanalysis {
         histos.get<TH1>(HIST("GeneralQA/hRunNumberNegativeIR"))->Fill(Form("%d", collision.runNumber()), 1); // This lists all run numbers without IR info!
 
       histos.fill(HIST("GeneralQA/hInteractionRate"), interactionRate);
-      histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), centrality, interactionRate); // TODO: declare centrality here!
+      histos.fill(HIST("GeneralQA/hCentralityVsInteractionRate"), centrality, interactionRate); 
     }
 
     if (eventSelections.minIR >= 0 && interactionRate < eventSelections.minIR) {
@@ -757,6 +760,10 @@ struct sigmaanalysis {
       // Has MC collision
       if (!genParticle.has_straMCCollision())
         continue;
+      
+      // Selection on the source (generator/transport)      
+      if (!genParticle.producedByGenerator() && mc_keepOnlyFromGenerator)
+        continue;
               
       // Select corresponding mc collision && Basic event selection    
       auto mcCollision = genParticle.template straMCCollision_as<soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>>();
@@ -776,25 +783,6 @@ struct sigmaanalysis {
       //______________________________________________________________________________
       // Generated Sigma0 processing
       if constexpr (requires { genParticle.sigma0MCPt();}) {
-        // Checking sigma0 decay mode
-        histos.fill(HIST("Gen/hGenSigma0Type"), 0);
-        histos.fill(HIST("Gen/h2DGenSigma0Type"), 0, mcCollision.generatorsID()); 
-        if (genParticle.sigma0Type()==0) {
-          histos.fill(HIST("Gen/hGenSigma0Type"), 1); // sterile
-          histos.fill(HIST("Gen/h2DGenSigma0Type"), 1, mcCollision.generatorsID()); 
-        }
-        if (genParticle.sigma0Type()==1){
-          histos.fill(HIST("Gen/hGenSigma0Type"), 2); // gamma + lambda
-          histos.fill(HIST("Gen/h2DGenSigma0Type"), 2, mcCollision.generatorsID()); 
-        } 
-        if (genParticle.sigma0Type()==2){
-          histos.fill(HIST("Gen/hGenSigma0Type"), 3); // others
-          histos.fill(HIST("Gen/h2DGenSigma0Type"), 3, mcCollision.generatorsID()); 
-        } 
-
-        // Optionally skip other sigma0 decay modes:
-        if (genParticle.sigma0Type()!=1 && fskipInvalidDecay)
-          continue;
         
         float ptmc = genParticle.sigma0MCPt();                
         
@@ -866,48 +854,50 @@ struct sigmaanalysis {
   }
 
   template <typename TSigma0Object>
-  void getpTResolution(TSigma0Object const& sigma)
+  void getResolution(TSigma0Object const& sigma)
   {
 
     //_______________________________________
     // Gamma MC association
-    if (sigma.photonCandPDGCode() == 22) {
-      if (sigma.photonMCPt() > 0) {
-        histos.fill(HIST("BeforeSel/MC/pTReso/h3dGammaPtResoVsTPCCR"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt(), -1 * sigma.photonNegTPCCrossedRows()); // 1/pT resolution
-        histos.fill(HIST("BeforeSel/MC/pTReso/h3dGammaPtResoVsTPCCR"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt(), sigma.photonPosTPCCrossedRows());      // 1/pT resolution
-        histos.fill(HIST("BeforeSel/MC/pTReso/h2dGammaPtResolution"), 1.f / sigma.photonMCPt(), 1.f / sigma.photonPt() - 1.f / sigma.photonMCPt());                                        // pT resolution
+    if (sigma.photonPDGCode() == 22) {
+      if (sigma.photonmcpt() > 0) {
+        histos.fill(HIST("BeforeSel/MC/Reso/h3dGammaPtResoVsTPCCR"), 1.f / sigma.lambdamcpt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdamcpt(), -1 * sigma.photonNegTPCCrossedRows()); // 1/pT resolution
+        histos.fill(HIST("BeforeSel/MC/Reso/h3dGammaPtResoVsTPCCR"), 1.f / sigma.lambdamcpt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdamcpt(), sigma.photonPosTPCCrossedRows());      // 1/pT resolution
+        histos.fill(HIST("BeforeSel/MC/Reso/h2dGammaPtResolution"), 1.f / sigma.photonmcpt(), 1.f / sigma.photonPt() - 1.f / sigma.photonmcpt());                                        // pT resolution
       }
     }
 
     //_______________________________________
     // Lambda MC association
-    if (sigma.lambdaCandPDGCode() == 3122) {
-      if (sigma.lambdaMCPt() > 0) {
-        histos.fill(HIST("BeforeSel/MC/pTReso/h2dLambdaPtResolution"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt());                                        // 1/pT resolution
-        histos.fill(HIST("BeforeSel/MC/pTReso/h3dLambdaPtResoVsTPCCR"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt(), -1 * sigma.lambdaNegTPCCrossedRows()); // 1/pT resolution
-        histos.fill(HIST("BeforeSel/MC/pTReso/h3dLambdaPtResoVsTPCCR"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt(), sigma.lambdaPosTPCCrossedRows());      // 1/pT resolution
+    if (sigma.lambdaPDGCode() == 3122) {
+      if (sigma.lambdamcpt() > 0) {
+        histos.fill(HIST("BeforeSel/MC/Reso/h2dLambdaPtResolution"), 1.f / sigma.lambdamcpt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdamcpt());                                        // 1/pT resolution
+        histos.fill(HIST("BeforeSel/MC/Reso/h3dLambdaPtResoVsTPCCR"), 1.f / sigma.lambdamcpt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdamcpt(), -1 * sigma.lambdaNegTPCCrossedRows()); // 1/pT resolution
+        histos.fill(HIST("BeforeSel/MC/Reso/h3dLambdaPtResoVsTPCCR"), 1.f / sigma.lambdamcpt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdamcpt(), sigma.lambdaPosTPCCrossedRows());      // 1/pT resolution
       }
     }
 
     //_______________________________________
     // AntiLambda MC association
-    if (sigma.lambdaCandPDGCode() == -3122) {
-      if (sigma.lambdaMCPt() > 0) {
-        histos.fill(HIST("BeforeSel/MC/pTReso/h2dAntiLambdaPtResolution"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt());                                        // pT resolution
-        histos.fill(HIST("BeforeSel/MC/pTReso/h3dAntiLambdaPtResoVsTPCCR"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt(), -1 * sigma.lambdaNegTPCCrossedRows()); // 1/pT resolution
-        histos.fill(HIST("BeforeSel/MC/pTReso/h3dAntiLambdaPtResoVsTPCCR"), 1.f / sigma.lambdaMCPt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdaMCPt(), sigma.lambdaPosTPCCrossedRows());      // 1/pT resolution
+    if (sigma.lambdaPDGCode() == -3122) {
+      if (sigma.lambdamcpt() > 0) {
+        histos.fill(HIST("BeforeSel/MC/Reso/h2dAntiLambdaPtResolution"), 1.f / sigma.lambdamcpt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdamcpt());                                        // pT resolution
+        histos.fill(HIST("BeforeSel/MC/Reso/h3dAntiLambdaPtResoVsTPCCR"), 1.f / sigma.lambdamcpt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdamcpt(), -1 * sigma.lambdaNegTPCCrossedRows()); // 1/pT resolution
+        histos.fill(HIST("BeforeSel/MC/Reso/h3dAntiLambdaPtResoVsTPCCR"), 1.f / sigma.lambdamcpt(), 1.f / sigma.lambdaPt() - 1.f / sigma.lambdamcpt(), sigma.lambdaPosTPCCrossedRows());      // 1/pT resolution
       }
     }
 
     //_______________________________________
     // Sigma and AntiSigma MC association
-    if (sigma.isSigma()) {
-      if (sigma.sigmaMCPt() > 0)
-        histos.fill(HIST("BeforeSel/MC/pTReso/h2dSigma0PtResolution"), 1.f / sigma.sigmaMCPt(), 1.f / sigma.sigmapT() - 1.f / sigma.sigmaMCPt()); // pT resolution
+    if (sigma.isSigma0()) {
+      histos.fill(HIST("BeforeSel/MC/Reso/h2dSigma0RadiusResolution"), sigma.mcpt(), sigma.radius() - sigma.mcradius()); // pT resolution
+      if (sigma.mcpt() > 0) 
+        histos.fill(HIST("BeforeSel/MC/Reso/h2dSigma0PtResolution"), 1.f / sigma.mcpt(), 1.f / sigma.pt() - 1.f / sigma.mcpt()); // pT resolution
     }
-    if (sigma.isAntiSigma()) {
-      if (sigma.sigmaMCPt() > 0)
-        histos.fill(HIST("BeforeSel/MC/pTReso/h2dAntiSigma0PtResolution"), 1.f / sigma.sigmaMCPt(), 1.f / sigma.sigmapT() - 1.f / sigma.sigmaMCPt()); // pT resolution
+    if (sigma.isAntiSigma0()) {
+      histos.fill(HIST("BeforeSel/MC/Reso/h2dASigma0RadiusResolution"), sigma.mcpt(), sigma.radius() - sigma.mcradius()); // pT resolution
+      if (sigma.mcpt() > 0)
+        histos.fill(HIST("BeforeSel/MC/Reso/h2dAntiSigma0PtResolution"), 1.f / sigma.mcpt(), 1.f / sigma.pt() - 1.f / sigma.mcpt()); // pT resolution
     }
   }
 
@@ -918,14 +908,14 @@ struct sigmaanalysis {
     // Check whether it is before or after selections
     static constexpr std::string_view MainDir[] = {"BeforeSel", "AfterSel"};
 
-    bool fIsSigma = sigma.isSigma();
-    bool fIsAntiSigma = sigma.isAntiSigma();
-    int PhotonPDGCode = sigma.photonCandPDGCode();
-    int PhotonPDGCodeMother = sigma.photonCandPDGCodeMother();
-    int LambdaPDGCode = sigma.lambdaCandPDGCode();
-    int LambdaPDGCodeMother = sigma.lambdaCandPDGCodeMother();
-    float sigmapT = sigma.sigmapT();
-    float sigmaMass = sigma.sigmaMass();
+    bool fIsSigma = sigma.isSigma0();
+    bool fIsAntiSigma = sigma.isAntiSigma0();
+    int PhotonPDGCode = sigma.photonPDGCode();
+    int PhotonPDGCodeMother = sigma.photonPDGCodeMother();
+    int LambdaPDGCode = sigma.lambdaPDGCode();
+    int LambdaPDGCodeMother = sigma.lambdaPDGCodeMother();
+    float sigmapT = sigma.pt();
+    float sigmaMass = sigma.sigma0Mass();
 
     histos.fill(HIST(MainDir[mode]) + HIST("/MC/BkgStudy/h2dPtVsMassSigma_All"), sigmapT, sigmaMass);
 
@@ -969,17 +959,14 @@ struct sigmaanalysis {
     // Photon
     histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hTrackCode"), GammaTrkCode);
     histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hV0Type"), sigma.photonV0Type());
-    histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hNegpT"), sigma.photonNegPt());
-    histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hPospT"), sigma.photonPosPt());
+    
     histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hDCANegToPV"), sigma.photonDCANegPV());
     histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hDCAPosToPV"), sigma.photonDCAPosPV());
     histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hDCADau"), sigma.photonDCADau());
     histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hPosTPCCR"), sigma.photonPosTPCCrossedRows());
     histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hNegTPCCR"), sigma.photonNegTPCCrossedRows());
-    histos.fill(HIST(MainDir[mode]) + HIST("/Photon/h2dPosTPCNSigmaEl"), sigma.photonPosPt(), sigma.photonPosTPCNSigmaEl());
-    histos.fill(HIST(MainDir[mode]) + HIST("/Photon/h2dNegTPCNSigmaEl"), sigma.photonNegPt(), sigma.photonNegTPCNSigmaEl());
-    histos.fill(HIST(MainDir[mode]) + HIST("/Photon/h2dPosTPCNSigmaPi"), sigma.photonPosPt(), sigma.photonPosTPCNSigmaPi());
-    histos.fill(HIST(MainDir[mode]) + HIST("/Photon/h2dNegTPCNSigmaPi"), sigma.photonNegPt(), sigma.photonNegTPCNSigmaPi());
+    histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hPosTPCNSigmaEl"), sigma.photonPosTPCNSigmaEl());
+    histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hNegTPCNSigmaEl"), sigma.photonNegTPCNSigmaEl());          
     histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hpT"), sigma.photonPt());
     histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hY"), sigma.photonY());
     histos.fill(HIST(MainDir[mode]) + HIST("/Photon/hPosEta"), sigma.photonPosEta());
@@ -1025,12 +1012,14 @@ struct sigmaanalysis {
       histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/hLambdaMass"), sigma.lambdaMass());
       histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/h3dLambdaMass"), centrality, sigma.lambdaPt(), sigma.lambdaMass());
 
-      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hMass"), sigma.sigmaMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hPt"), sigma.sigmapT());
-      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hY"), sigma.sigmaRapidity());
-      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dMass"), centrality, sigma.sigmapT(), sigma.sigmaMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dPhotonRadiusVsMassSigma"), centrality, sigma.photonRadius(), sigma.sigmaMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h2dpTVsOPAngle"), sigma.sigmapT(), sigma.sigmaOPAngle());
+      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hMass"), sigma.sigma0Mass());
+      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hPt"), sigma.pt());
+      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hY"), sigma.sigma0Y());      
+      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hRadius"), sigma.radius());
+      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h2dRadiusVspT"), sigma.radius(), sigma.pt());
+      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/hDCAPairDau"), sigma.dcadaughters());
+      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dMass"), centrality, sigma.pt(), sigma.sigma0Mass());      
+      histos.fill(HIST(MainDir[mode]) + HIST("/Sigma0/h3dOPAngleVsMass"), sigma.opAngle(), sigma.pt(), sigma.sigma0Mass());      
     } else {
       histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/h2dTPCvsTOFNSigma_ALambdaPr"), sigma.lambdaNegPrTPCNSigma(), sigma.aLambdaPrTOFNSigma());
       histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/h2dTPCvsTOFNSigma_ALambdaPi"), sigma.lambdaPosPiTPCNSigma(), sigma.aLambdaPiTOFNSigma());
@@ -1040,85 +1029,96 @@ struct sigmaanalysis {
       histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/hAntiLambdaMass"), sigma.antilambdaMass());
       histos.fill(HIST(MainDir[mode]) + HIST("/Lambda/h3dAntiLambdaMass"), centrality, sigma.lambdaPt(), sigma.antilambdaMass());
 
-      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hMass"), sigma.sigmaMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hPt"), sigma.sigmapT());
-      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hY"), sigma.sigmaRapidity());
-      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h3dMass"), centrality, sigma.sigmapT(), sigma.sigmaMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h3dPhotonRadiusVsMassSigma"), centrality, sigma.photonRadius(), sigma.sigmaMass());
-      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h2dpTVsOPAngle"), sigma.sigmapT(), sigma.sigmaOPAngle());
+      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hMass"), sigma.sigma0Mass());
+      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hPt"), sigma.pt());
+      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hY"), sigma.sigma0Y());
+      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hRadius"), sigma.radius());
+      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h2dRadiusVspT"), sigma.radius(), sigma.pt());
+      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/hDCAPairDau"), sigma.dcadaughters());
+      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h3dMass"), centrality, sigma.pt(), sigma.sigma0Mass());      
+      histos.fill(HIST(MainDir[mode]) + HIST("/ASigma0/h3dOPAngleVsMass"), sigma.opAngle(), sigma.pt(), sigma.sigma0Mass());            
     }
 
     //_______________________________________
     // MC specific
     if (doprocessMonteCarlo) {
-      if constexpr (requires { sigma.lambdaCandPDGCode(); sigma.photonCandPDGCode(); }) {
+      if constexpr (requires { sigma.lambdaPDGCode(); sigma.photonPDGCode(); }) {
 
         //_______________________________________
         // Gamma MC association
-        if (sigma.photonCandPDGCode() == 22) {
+        if (sigma.photonPDGCode() == 22) {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hV0ToCollAssoc"), sigma.photonIsCorrectlyAssoc());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hPt"), sigma.photonPt());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hMCPt"), sigma.photonMCPt());
-
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPosTPCNSigmaEl"), sigma.photonPosPt(), sigma.photonPosTPCNSigmaEl());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dNegTPCNSigmaEl"), sigma.photonNegPt(), sigma.photonNegTPCNSigmaEl());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPosTPCNSigmaPi"), sigma.photonPosPt(), sigma.photonPosTPCNSigmaPi());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dNegTPCNSigmaPi"), sigma.photonNegPt(), sigma.photonNegTPCNSigmaPi());
-
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPAVsPt"), TMath::ACos(sigma.photonCosPA()), sigma.photonMCPt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hMCPt"), sigma.photonmcpt());                
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hPosTPCNSigmaEl"), sigma.photonPosTPCNSigmaEl());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hNegTPCNSigmaEl"), sigma.photonNegTPCNSigmaEl());
+          
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPAVsPt"), TMath::ACos(sigma.photonCosPA()), sigma.photonmcpt());
 
           if (!sigma.photonIsCorrectlyAssoc()) {
-            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hPt_BadCollAssig"), sigma.photonMCPt());
-            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPAVsPt_BadCollAssig"), TMath::ACos(sigma.photonCosPA()), sigma.photonMCPt());
+            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/hPt_BadCollAssig"), sigma.photonmcpt());
+            histos.fill(HIST(MainDir[mode]) + HIST("/MC/Photon/h2dPAVsPt_BadCollAssig"), TMath::ACos(sigma.photonCosPA()), sigma.photonmcpt());
           }
         }
 
         //_______________________________________
         // Lambda MC association
-        if (sigma.lambdaCandPDGCode() == 3122) {
+        if (sigma.lambdaPDGCode() == 3122) {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Lambda/hV0ToCollAssoc"), sigma.lambdaIsCorrectlyAssoc());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Lambda/hPt"), sigma.lambdaPt());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Lambda/hMCPt"), sigma.lambdaMCPt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Lambda/hMCPt"), sigma.lambdamcpt());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Lambda/h3dTPCvsTOFNSigma_Pr"), sigma.lambdaPosPrTPCNSigma(), sigma.lambdaPrTOFNSigma(), sigma.lambdaPt());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/Lambda/h3dTPCvsTOFNSigma_Pi"), sigma.lambdaNegPiTPCNSigma(), sigma.lambdaPiTOFNSigma(), sigma.lambdaPt());
         }
 
         //_______________________________________
         // AntiLambda MC association
-        if (sigma.lambdaCandPDGCode() == -3122) {
+        if (sigma.lambdaPDGCode() == -3122) {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/ALambda/hV0ToCollAssoc"), sigma.lambdaIsCorrectlyAssoc());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/ALambda/hPt"), sigma.lambdaPt());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ALambda/hMCPt"), sigma.lambdaMCPt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ALambda/hMCPt"), sigma.lambdamcpt());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/ALambda/h3dTPCvsTOFNSigma_Pr"), sigma.lambdaNegPrTPCNSigma(), sigma.aLambdaPrTOFNSigma(), sigma.lambdaPt());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/ALambda/h3dTPCvsTOFNSigma_Pi"), sigma.lambdaPosPiTPCNSigma(), sigma.aLambdaPiTOFNSigma(), sigma.lambdaPt());
         }
 
         //_______________________________________
         // Sigma0 MC association
-        if (sigma.isSigma()) {
+        if (sigma.isSigma0()) {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/h2dArmenteros"), sigma.photonAlpha(), sigma.photonQt());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/h2dArmenteros"), sigma.lambdaAlpha(), sigma.lambdaQt());
 
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/hPt"), sigma.sigmapT());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/hMCPt"), sigma.sigmaMCPt());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/h2dMCPtVsLambdaMCPt"), sigma.sigmaMCPt(), sigma.lambdaMCPt());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/h2dMCPtVsGammaMCPt"), sigma.sigmaMCPt(), sigma.photonMCPt());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/hMass"), sigma.sigmaMass());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/h3dMass"), centrality, sigma.sigmapT(), sigma.sigmaMass());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/hPt"), sigma.pt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/hMCPt"), sigma.mcpt());          
+                      
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/h2dMCPtVsLambdaMCPt"), sigma.mcpt(), sigma.lambdamcpt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/h2dMCPtVsPhotonMCPt"), sigma.mcpt(), sigma.photonmcpt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/hMass"), sigma.sigma0Mass());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/h3dMass"), centrality, sigma.mcpt(), sigma.sigma0Mass());
+        
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/hMCProcess"), sigma.mcprocess());          
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/hGenRadius"), sigma.mcradius()); 
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/h2dMCProcessVsGenRadius"), sigma.mcprocess(), sigma.mcradius()); 
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/Sigma0/h3dMCProcess"), sigma.mcprocess(), sigma.mcpt(), sigma.sigma0Mass());          
         }
 
-        //_______________________________________s
+        //_______________________________________
         // AntiSigma0 MC association
-        if (sigma.isAntiSigma()) {
+        if (sigma.isAntiSigma0()) {
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/h2dArmenteros"), sigma.photonAlpha(), sigma.photonQt());
           histos.fill(HIST(MainDir[mode]) + HIST("/MC/h2dArmenteros"), sigma.lambdaAlpha(), sigma.lambdaQt());
 
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/hPt"), sigma.sigmapT());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/hMCPt"), sigma.sigmaMCPt());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/h2dMCPtVsLambdaMCPt"), sigma.sigmaMCPt(), sigma.lambdaMCPt());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/h2dMCPtVsPhotonMCPt"), sigma.sigmaMCPt(), sigma.photonMCPt());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/hMass"), sigma.sigmaMass());
-          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/h3dMass"), centrality, sigma.sigmapT(), sigma.sigmaMass());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/hPt"), sigma.pt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/hMCPt"), sigma.mcpt());
+                    
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/h2dMCPtVsLambdaMCPt"), sigma.mcpt(), sigma.lambdamcpt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/h2dMCPtVsPhotonMCPt"), sigma.mcpt(), sigma.photonmcpt());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/hMass"), sigma.sigma0Mass());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/h3dMass"), centrality, sigma.mcpt(), sigma.sigma0Mass());
+          
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/hMCProcess"), sigma.mcprocess());
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/hGenRadius"), sigma.mcradius());           
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/h2dMCProcessVsGenRadius"), sigma.mcprocess(), sigma.mcradius()); 
+          histos.fill(HIST(MainDir[mode]) + HIST("/MC/ASigma0/h3dMCProcess"), sigma.mcprocess(), sigma.mcpt(), sigma.sigma0Mass());            
         }
 
         // For background studies:
@@ -1127,8 +1127,8 @@ struct sigmaanalysis {
 
         //_______________________________________
         // pT resolution histos
-        if ((mode == 0) && fillpTResoQAhistos)
-          getpTResolution(sigma);
+        if ((mode == 0) && fillResoQAhistos)
+          getResolution(sigma);
       }
     }
   }
@@ -1137,7 +1137,7 @@ struct sigmaanalysis {
   void fillSelHistos(TSigma0Object const& sigma, int PDGRequired)
   {
 
-    static constexpr std::string_view PhotonSelsLocal[] = {"NoSel", "V0Type", "DaupT", "DCADauToPV",
+    static constexpr std::string_view PhotonSelsLocal[] = {"NoSel", "V0Type", "DCADauToPV",
                                                            "DCADau", "DauTPCCR", "TPCNSigmaEl", "V0pT",
                                                            "Y", "V0Radius", "RZCut", "Armenteros", "CosPA",
                                                            "PsiPair", "Phi", "Mass"};
@@ -1150,7 +1150,7 @@ struct sigmaanalysis {
       if constexpr (selection_index >= 0 && selection_index < (int)std::size(PhotonSelsLocal)) {
         histos.fill(HIST("Selection/Photon/hCandidateSel"), selection_index);
         histos.fill(HIST("Selection/Photon/h2d") + HIST(PhotonSelsLocal[selection_index]), sigma.photonPt(), sigma.photonMass());
-        histos.fill(HIST("Selection/Sigma0/h2dPhoton") + HIST(PhotonSelsLocal[selection_index]), sigma.sigmapT(), sigma.sigmaMass());
+        histos.fill(HIST("Selection/Sigma0/h2dPhoton") + HIST(PhotonSelsLocal[selection_index]), sigma.pt(), sigma.sigma0Mass());
       }
     }
 
@@ -1158,7 +1158,7 @@ struct sigmaanalysis {
       if constexpr (selection_index >= 0 && selection_index < (int)std::size(LambdaSelsLocal)) {
         histos.fill(HIST("Selection/Lambda/hCandidateSel"), selection_index);
         histos.fill(HIST("Selection/Lambda/h2d") + HIST(LambdaSelsLocal[selection_index]), sigma.lambdaPt(), sigma.lambdaMass());
-        histos.fill(HIST("Selection/Sigma0/h2dLambda") + HIST(LambdaSelsLocal[selection_index]), sigma.sigmapT(), sigma.sigmaMass());
+        histos.fill(HIST("Selection/Sigma0/h2dLambda") + HIST(LambdaSelsLocal[selection_index]), sigma.pt(), sigma.sigma0Mass());
       }
     }
   }
@@ -1170,71 +1170,67 @@ struct sigmaanalysis {
     fillSelHistos<0>(cand, 22);
     if (cand.photonV0Type() != photonSelections.Photonv0TypeSel && photonSelections.Photonv0TypeSel > -1)
       return false;
-
+        
     fillSelHistos<1>(cand, 22);
-    if ((cand.photonPosPt() < photonSelections.PhotonDauMinPt) || (cand.photonNegPt() < photonSelections.PhotonDauMinPt))
-      return false;
-
-    fillSelHistos<2>(cand, 22);
     if ((TMath::Abs(cand.photonDCAPosPV()) < photonSelections.PhotonMinDCADauToPv) || (TMath::Abs(cand.photonDCANegPV()) < photonSelections.PhotonMinDCADauToPv))
       return false;
 
-    fillSelHistos<3>(cand, 22);
+    fillSelHistos<2>(cand, 22);
     if (TMath::Abs(cand.photonDCADau()) > photonSelections.PhotonMaxDCAV0Dau)
       return false;
 
-    fillSelHistos<4>(cand, 22);
+    fillSelHistos<3>(cand, 22);
     if ((cand.photonPosTPCCrossedRows() < photonSelections.PhotonMinTPCCrossedRows) || (cand.photonNegTPCCrossedRows() < photonSelections.PhotonMinTPCCrossedRows))
       return false;
 
-    fillSelHistos<5>(cand, 22);
+    fillSelHistos<4>(cand, 22);
     if (((cand.photonPosTPCNSigmaEl() < photonSelections.PhotonMinTPCNSigmas) || (cand.photonPosTPCNSigmaEl() > photonSelections.PhotonMaxTPCNSigmas)))
       return false;
 
     if (((cand.photonNegTPCNSigmaEl() < photonSelections.PhotonMinTPCNSigmas) || (cand.photonNegTPCNSigmaEl() > photonSelections.PhotonMaxTPCNSigmas)))
       return false;
 
-    fillSelHistos<6>(cand, 22);
+    fillSelHistos<5>(cand, 22);
     if ((cand.photonPt() < photonSelections.PhotonMinPt) || (cand.photonPt() > photonSelections.PhotonMaxPt))
       return false;
 
-    fillSelHistos<7>(cand, 22);
+    fillSelHistos<6>(cand, 22);
     if ((TMath::Abs(cand.photonY()) > photonSelections.PhotonMaxRap) || (TMath::Abs(cand.photonPosEta()) > photonSelections.PhotonMaxDauEta) || (TMath::Abs(cand.photonNegEta()) > photonSelections.PhotonMaxDauEta))
       return false;
 
-    fillSelHistos<8>(cand, 22);
+    fillSelHistos<7>(cand, 22);
     if ((cand.photonRadius() < photonSelections.PhotonMinRadius) || (cand.photonRadius() > photonSelections.PhotonMaxRadius))
       return false;
 
-    fillSelHistos<9>(cand, 22);
+    fillSelHistos<8>(cand, 22);
     float photonRZLineCut = TMath::Abs(cand.photonZconv()) * TMath::Tan(2 * TMath::ATan(TMath::Exp(-photonSelections.PhotonMaxDauEta))) - photonSelections.PhotonLineCutZ0;
     if ((TMath::Abs(cand.photonRadius()) < photonRZLineCut) || (TMath::Abs(cand.photonZconv()) > photonSelections.PhotonMaxZ))
       return false;
 
-    fillSelHistos<10>(cand, 22);
+    fillSelHistos<9>(cand, 22);
     if (cand.photonQt() > photonSelections.PhotonMaxQt)
       return false;
 
     if (TMath::Abs(cand.photonAlpha()) > photonSelections.PhotonMaxAlpha)
       return false;
 
-    fillSelHistos<11>(cand, 22);
+    fillSelHistos<10>(cand, 22);
     if (cand.photonCosPA() < photonSelections.PhotonMinV0cospa)
       return false;
 
-    fillSelHistos<12>(cand, 22);
+    fillSelHistos<11>(cand, 22);
     if (TMath::Abs(cand.photonPsiPair()) > photonSelections.PhotonPsiPairMax)
       return false;
 
-    fillSelHistos<13>(cand, 22);
+    fillSelHistos<12>(cand, 22);
     if ((((cand.photonPhi() > photonSelections.PhotonPhiMin1) && (cand.photonPhi() < photonSelections.PhotonPhiMax1)) || ((cand.photonPhi() > photonSelections.PhotonPhiMin2) && (cand.photonPhi() < photonSelections.PhotonPhiMax2))) && ((photonSelections.PhotonPhiMin1 != -1) && (photonSelections.PhotonPhiMax1 != -1) && (photonSelections.PhotonPhiMin2 != -1) && (photonSelections.PhotonPhiMax2 != -1)))
       return false;
 
-    fillSelHistos<14>(cand, 22);
+    fillSelHistos<13>(cand, 22);
     if (TMath::Abs(cand.photonMass()) > photonSelections.PhotonMaxMass)
       return false;
 
-    fillSelHistos<15>(cand, 22);
+    fillSelHistos<14>(cand, 22);
     return true;
   }
 
@@ -1343,42 +1339,31 @@ struct sigmaanalysis {
   template <typename TSigma0Object>
   bool processSigma0Candidate(TSigma0Object const& cand)
   {
+    // Photon specific selections
+    if (!selectPhoton(cand))
+      return false;
 
-    // Do ML analysis
-    if (fUseMLSel) {
-      if ((cand.gammaBDTScore() == -1) || (cand.lambdaBDTScore() == -1) || (cand.antilambdaBDTScore() == -1)) {
-        LOGF(fatal, "ML Score is not available! Please, enable gamma and lambda selection with ML in sigmabuilder!");
-      }
-      // Photon selection:
-      if (cand.gammaBDTScore() <= photonSelections.Gamma_MLThreshold)
-        return false;
+    // Lambda specific selections
+    if (!selectLambda(cand))
+      return false;
 
-      // Lambda selection:
-      if (cand.lambdaBDTScore() <= lambdaSelections.Lambda_MLThreshold)
-        return false;
+    // Sigma0 specific selections    
+    // Rapidity 
+    if (TMath::Abs(cand.sigma0Y()) > Sigma0MaxRap)
+      return false;
 
-      // AntiLambda selection:
-      if (cand.antilambdaBDTScore() <= lambdaSelections.AntiLambda_MLThreshold)
-        return false;
+    // V0Pair Radius
+    if (cand.radius() > Sigma0MaxRadius)
+      return false;
 
-    }
+    // DCA V0Pair Daughters 
+    if (cand.dcadaughters() > Sigma0MaxDCADau)
+      return false;
 
-    // Go for standard analysis
-    else {
-
-      // Photon specific selections
-      if (!selectPhoton(cand))
-        return false;
-
-      // Lambda specific selections
-      if (!selectLambda(cand))
-        return false;
-
-      // Sigma0 specific selections
-      if (TMath::Abs(cand.sigmaRapidity()) > SigmaMaxRap)
-        return false;
-    }
-
+    // Opening Angle
+    if (cand.opAngle() > Sigma0MaxOPAngle)
+      return false;
+     
     return true;
   }
 
@@ -1405,9 +1390,12 @@ struct sigmaanalysis {
         auto sigma0 = fullSigma0s.rawIteratorAt(sigma0grouped[coll.globalIndex()][i]);
 
         // if MC
-        if constexpr (requires { sigma0.isSigma(); sigma0.isAntiSigma();}) {
-          if (doMCAssociation && !(sigma0.isSigma() || sigma0.isAntiSigma())) 
+        if constexpr (requires { sigma0.isSigma0(); sigma0.isAntiSigma0();}) {
+          if (doMCAssociation && !(sigma0.isSigma0() || sigma0.isAntiSigma0())) 
             continue;      
+
+          if (selRecoFromGenerator && !sigma0.isProducedByGenerator())
+            continue;
         }
         
         // Fill histos before any selection
@@ -1519,16 +1507,19 @@ struct sigmaanalysis {
         if (!processPi0Candidate(pi0))
           continue;
         
-        // Fill histos after all selections
-        histos.fill(HIST("Pi0/hMass"), pi0.pi0Mass());
-        histos.fill(HIST("Pi0/hPt"), pi0.pi0Pt());
-        histos.fill(HIST("Pi0/hY"), pi0.pi0Y());
-        histos.fill(HIST("Pi0/h3dMass"), centrality, pi0.pi0Pt(), pi0.pi0Mass());        
-
         // If MC
         if constexpr (requires { pi0.isPi0();}) {
-          if (pi0.isPi0()) histos.fill(HIST("Pi0/h3dMass_MCAssociated"), centrality, pi0.pi0Pt(), pi0.pi0Mass());              
-        }        
+          if (selRecoFromGenerator && !pi0.isProducedByGenerator())
+            continue;
+
+          if (pi0.isPi0()) histos.fill(HIST("Pi0/h3dMass_MCAssociated"), centrality, pi0.mcpt(), pi0.pi0Mass());              
+        }
+        
+        // Fill histos after all selections
+        histos.fill(HIST("Pi0/hMass"), pi0.pi0Mass());
+        histos.fill(HIST("Pi0/hPt"), pi0.pt());
+        histos.fill(HIST("Pi0/hY"), pi0.pi0Y());
+        histos.fill(HIST("Pi0/h3dMass"), centrality, pi0.pt(), pi0.pi0Mass());        
       }
     }
   }
