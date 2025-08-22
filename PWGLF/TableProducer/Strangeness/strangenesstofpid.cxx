@@ -894,7 +894,7 @@ struct strangenesstofpid {
             histos.fill(HIST("h2dPionMeasuredVsExpected"),
                         (timeLambda + timeNegativePi) / (nTra.tofSignal() - nTra.tofEvTime()),
                         negativeP, v0.negativeeta());
-            if(calculationMethod.value==2 && std::abs(timePositivePr_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timePositivePr_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
+            if(calculationMethod.value==2 && std::abs(timeNegativePi_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timeNegativePi_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
               histos.fill(HIST("hDeltaTimeMethodsVsP_negLaPi"), negativeP, v0.negativeeta(), (timeNegativePi_Method0 - timeNegativePi_Method1)*negativeCosine);
             }
             if (doQANSigma)
@@ -902,7 +902,7 @@ struct strangenesstofpid {
           }
           if (std::abs(v0.mAntiLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma) {
             histos.fill(HIST("h2dDeltaTimeNegativeLambdaPr"), v0.p(), v0.eta(), deltaTimeNegativeLambdaPr);
-            if(calculationMethod.value==2 && std::abs(timePositivePi_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timePositivePi_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
+            if(calculationMethod.value==2 && std::abs(timeNegativePr_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timeNegativePr_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
               histos.fill(HIST("hDeltaTimeMethodsVsP_negLaPr"), negativeP, v0.negativeeta(), (timeNegativePr_Method0 - timeNegativePr_Method1)*negativeCosine);
             }
             if (doQANSigma)
@@ -910,7 +910,7 @@ struct strangenesstofpid {
           }
           if (std::abs(v0.mK0Short() - 0.497) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma) {
             histos.fill(HIST("h2dDeltaTimeNegativeK0ShortPi"), v0.p(), v0.eta(), deltaTimeNegativeK0ShortPi);
-            if(calculationMethod.value==2 && std::abs(timePositivePi_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timePositivePi_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
+            if(calculationMethod.value==2 && std::abs(timeNegativePi_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timeNegativePi_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
               histos.fill(HIST("hDeltaTimeMethodsVsP_negK0Pi"), negativeP, v0.negativeeta(), (timeNegativePi_Method0 - timeNegativePi_Method1)*negativeCosine);
             }
             if (doQANSigma)
