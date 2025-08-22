@@ -709,8 +709,8 @@ struct derivedlambdakzeroanalysis {
       }
       if (doEtaPhiQA) {
         histos.add("K0Short/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisPhi, axisEta});
-        histos.add("K0Short/h5dPosPhiVsNegPhi", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisPhi, axisPhi});
-        histos.add("K0Short/h5dPosEtaVsNegEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisEta, axisEta});
+        histos.add("K0Short/h5dPosPhiVsEta", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisPhi, axisEta});
+        histos.add("K0Short/h5dNegPhiVsEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisPhi, axisEta});
       }
     }
     if (analyseLambda) {
@@ -781,8 +781,8 @@ struct derivedlambdakzeroanalysis {
       }
       if (doEtaPhiQA) {
         histos.add("Lambda/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisEta});
-        histos.add("Lambda/h5dPosPhiVsNegPhi", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisPhi});
-        histos.add("Lambda/h5dPosEtaVsNegEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisEta, axisEta});
+        histos.add("Lambda/h5dPosPhiVsEta", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisEta});
+        histos.add("Lambda/h5dNegPhiVsEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisEta});
       }
     }
     if (analyseAntiLambda) {
@@ -853,8 +853,8 @@ struct derivedlambdakzeroanalysis {
       }
       if (doEtaPhiQA) {
         histos.add("AntiLambda/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisEta});
-        histos.add("AntiLambda/h5dPosPhiVsNegPhi", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisPhi});
-        histos.add("AntiLambda/h5dPosEtaVsNegEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisEta, axisEta});
+        histos.add("AntiLambda/h5dPosPhiVsEta", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisEta});
+        histos.add("AntiLambda/h5dNegPhiVsEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisEta});
       }
     }
 
@@ -1483,8 +1483,8 @@ struct derivedlambdakzeroanalysis {
       }
       if (doEtaPhiQA) {
         histos.fill(HIST("K0Short/h5dV0PhiVsEta"), centrality, pt, v0.mK0Short(), v0.phi(), v0.eta());
-        histos.fill(HIST("K0Short/h5dPosPhiVsNegPhi"), centrality, pt, v0.mK0Short(), v0.positivephi(), v0.negativephi());
-        histos.fill(HIST("K0Short/h5dPosEtaVsNegEta"), centrality, pt, v0.mK0Short(), v0.positiveeta(), v0.negativeeta());
+        histos.fill(HIST("K0Short/h5dPosPhiVsEta"), centrality, v0.positivept(), v0.mK0Short(), v0.positivephi(), v0.positiveeta());
+        histos.fill(HIST("K0Short/h5dNegPhiVsEta"), centrality, v0.negativept(), v0.mK0Short(), v0.negativephi(), v0.negativeeta());
       }
       nK0Shorts++;
     }
@@ -1562,8 +1562,8 @@ struct derivedlambdakzeroanalysis {
       }
       if (doEtaPhiQA) {
         histos.fill(HIST("Lambda/h5dV0PhiVsEta"), centrality, pt, v0.mLambda(), v0.phi(), v0.eta());
-        histos.fill(HIST("Lambda/h5dPosPhiVsNegPhi"), centrality, pt, v0.mLambda(), v0.positivephi(), v0.negativephi());
-        histos.fill(HIST("Lambda/h5dPosEtaVsNegEta"), centrality, pt, v0.mLambda(), v0.positiveeta(), v0.negativeeta());
+        histos.fill(HIST("Lambda/h5dPosPhiVsEta"), centrality, v0.positivept(), v0.mLambda(), v0.positivephi(), v0.positiveeta());
+        histos.fill(HIST("Lambda/h5dNegPhiVsEta"), centrality, v0.negativept(), v0.mLambda(), v0.negativephi(), v0.negativeeta());
       }
       nLambdas++;
     }
@@ -1641,8 +1641,8 @@ struct derivedlambdakzeroanalysis {
       }
       if (doEtaPhiQA) {
         histos.fill(HIST("AntiLambda/h5dV0PhiVsEta"), centrality, pt, v0.mAntiLambda(), v0.phi(), v0.eta());
-        histos.fill(HIST("AntiLambda/h5dPosPhiVsNegPhi"), centrality, pt, v0.mAntiLambda(), v0.positivephi(), v0.negativephi());
-        histos.fill(HIST("AntiLambda/h5dPosEtaVsNegEta"), centrality, pt, v0.mAntiLambda(), v0.positiveeta(), v0.negativeeta());
+        histos.fill(HIST("AntiLambda/h5dPosPhiVsEta"), centrality, v0.positivept(), v0.mAntiLambda(), v0.positivephi(), v0.positiveeta());
+        histos.fill(HIST("AntiLambda/h5dNegPhiVsEta"), centrality, v0.negativept(), v0.mAntiLambda(), v0.negativephi(), v0.negativeeta());
       }
       nAntiLambdas++;
     }
