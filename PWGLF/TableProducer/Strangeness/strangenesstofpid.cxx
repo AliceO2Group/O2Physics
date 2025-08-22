@@ -147,7 +147,7 @@ struct strangenesstofpid {
   ConfigurableAxis axisDeltaTime{"axisDeltaTime", {2000, -1000.0f, +1000.0f}, "delta-time (ps)"};
   ConfigurableAxis axisTime{"axisTime", {400, 10000.0f, +50000.0f}, "T (ps)"};
   ConfigurableAxis axisNSigma{"axisNSigma", {200, -10.0f, +10.0f}, "N(#sigma)"};
-  ConfigurableAxis axisRatioMethods{"axisRatioMethods", {200, 0.9f, 2.9f}, "T_{method 1}/T_{method 0}"};
+  ConfigurableAxis axisRatioMethods{"axisRatioMethods", {400, 0.9f, 1.9f}, "T_{method 1}/T_{method 0}"};
 
   // master p axis
   ConfigurableAxis axisP{"axisP", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "p_{T} (GeV/c)"};
@@ -1224,7 +1224,7 @@ struct strangenesstofpid {
               }
               if(std::abs(negFlightPr_Method0-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon && std::abs(negFlightPr_Method1-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon){
                 histos.fill(HIST("hDeltaTimeMethodsVsP_negXiPr"), negativeP, cascade.negativeeta(), (negFlightPr_Method0 - negFlightPr_Method1)*negativeCosine);
-                histos.fill(HIST("hRatioTimeMethodsVsP_negXiPr"), negativeP, cascade.negativeeta(), (negFlightPr_Method1/negFlightPr_Method1)*negativeCosine);
+                histos.fill(HIST("hRatioTimeMethodsVsP_negXiPr"), negativeP, cascade.negativeeta(), (negFlightPr_Method1/negFlightPr_Method0)*negativeCosine);
               }
               if(std::abs(bachFlightPi_Method0-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon && std::abs(bachFlightPi_Method1-o2::aod::cascdata::kNoTOFValue)>o2::aod::cascdata::kEpsilon){
                 histos.fill(HIST("hDeltaTimeMethodsVsP_bachXiPi"), bachelorP, cascade.bacheloreta(), (bachFlightPi_Method0 - bachFlightPi_Method1)*bachelorCosine);
