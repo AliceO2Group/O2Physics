@@ -202,7 +202,7 @@ class FemtoDreamCollisionSelection
       double eta = track.eta();
       double px = track.px();
       double py = track.py();
-      if (TMath::Abs(pt) < /*lowerPtbound*/ 0.5 || TMath::Abs(eta) > 0.8) {
+      if (TMath::Abs(pt) < mSphericityPtmin || TMath::Abs(eta) > 0.8) {
         continue;
       }
 
