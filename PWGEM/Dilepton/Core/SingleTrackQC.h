@@ -802,8 +802,8 @@ struct SingleTrackQC {
   }
   PROCESS_SWITCH(SingleTrackQC, processQC, "run single track QC", true);
 
-  using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
-  void processQC_TriggeredData(FilteredMyCollisionsWithSWT const& collisions, Types const&... args)
+  // using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
+  void processQC_TriggeredData(MyCollisionsWithSWT const& collisions, Types const&... args)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));

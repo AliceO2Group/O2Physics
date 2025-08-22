@@ -33,7 +33,7 @@ namespace pwgem::dilepton::swt
 {
 enum class swtAliases : int { // software trigger aliases for EM
   kHighTrackMult = 0,
-  kHighFt0Mult,
+  kHighFt0cFv0Mult,
   kSingleE,
   kLMeeIMR,
   kLMeeHMR,
@@ -41,13 +41,12 @@ enum class swtAliases : int { // software trigger aliases for EM
   kSingleMuLow,
   kSingleMuHigh,
   kDiMuon,
-  kHighFt0cFv0Mult,
   kNaliases
 };
 
 const std::unordered_map<std::string, int> aliasLabels = {
   {"fHighTrackMult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighTrackMult)},
-  {"fHighFt0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0Mult)},
+  {"fHighFt0cFv0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0cFv0Mult)},
   {"fSingleE", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleE)},
   {"fLMeeIMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeIMR)},
   {"fLMeeHMR", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kLMeeHMR)},
@@ -55,19 +54,8 @@ const std::unordered_map<std::string, int> aliasLabels = {
   {"fSingleMuLow", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuLow)},
   {"fSingleMuHigh", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kSingleMuHigh)},
   {"fDiMuon", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kDiMuon)},
-  {"fHighFt0cFv0Mult", static_cast<int>(o2::aod::pwgem::dilepton::swt::swtAliases::kHighFt0cFv0Mult)},
 };
 } // namespace pwgem::dilepton::swt
-
-// namespace embc
-// {
-// DECLARE_SOA_COLUMN(IsTriggerTVX, isTriggerTVX, bool);                 //! kIsTriggerTVX
-// DECLARE_SOA_COLUMN(IsNoTimeFrameBorder, isNoTimeFrameBorder, bool);   //! kIsNoTimeFrameBorder
-// DECLARE_SOA_COLUMN(IsNoITSROFrameBorder, isNoITSROFrameBorder, bool); //! kNoITSROFrameBorder
-// DECLARE_SOA_COLUMN(IsCollisionFound, isCollisionFound, bool);         //! at least 1 collision is found in this BC.
-// } // namespace embc
-// DECLARE_SOA_TABLE(EMBCs, "AOD", "EMBC", //! bc information for normalization
-//                  o2::soa::Index<>, embc::IsTriggerTVX, embc::IsNoTimeFrameBorder, embc::IsNoITSROFrameBorder, embc::IsCollisionFound);
 
 DECLARE_SOA_TABLE(EMBCs, "AOD", "EMBC", //! bc information for normalization
                   o2::soa::Index<>, evsel::Alias, evsel::Selection, evsel::Rct);
