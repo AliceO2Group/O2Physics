@@ -61,10 +61,6 @@ enum DecayChannel : uint8_t {
 
 struct HfTaskDstarPolarisationInJet {
 
-  float massPi{0.f};
-  float massKaon{0.f};
-  float massDstar{0.f};
-
   float bkgRotationAngleStep{0.f};
 
   uint8_t nMassHypos{0u};
@@ -161,9 +157,6 @@ struct HfTaskDstarPolarisationInJet {
       LOGP(fatal, "No background rotation supported for MC.");
     }
 
-    massPi = o2::constants::physics::MassPiPlus;
-    massKaon = o2::constants::physics::MassKaonCharged;
-    massDstar = o2::constants::physics::MassDStar;
     bkgRotationAngleStep = (nBkgRotations > 1) ? (maxRotAngleMultByPi - minRotAngleMultByPi) * constants::math::PI / (nBkgRotations - 1) : 0.;
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
@@ -713,7 +706,7 @@ struct HfTaskDstarPolarisationInJet {
         // Dstar analysis
         // polarization measured from the soft-pion daughter (*)
 
-        massDau = massPi; // (*)
+        massDau = o2::constants::physics::MassPiPlus; // (*)
         const float bkgRotAngle = (bkgRotationId > 0) ? minRotAngleMultByPi * constants::math::PI + bkgRotationAngleStep * (bkgRotationId - 1) : 0;
 
         std::array<float, 3> threeVecSoftPi{candidate.pxProng1() * std::cos(bkgRotAngle) - candidate.pyProng1() * std::sin(bkgRotAngle), candidate.pxProng1() * std::sin(bkgRotAngle) + candidate.pyProng1() * std::cos(bkgRotAngle), candidate.pzProng1()}; // we rotate the soft pion
@@ -729,13 +722,13 @@ struct HfTaskDstarPolarisationInJet {
           pyCharmHad = threeVecCand[1];
           pzCharmHad = threeVecCand[2];
           if (candidate.signProng1() > 0) {
-            invMassCharmHad = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1, threeVecSoftPi}, std::array{massPi, massKaon, massPi});
-            invMassD0 = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1}, std::array{massPi, massKaon});
+            invMassCharmHad = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1, threeVecSoftPi}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus});
+            invMassD0 = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1}, std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKaonCharged});
           } else {
-            invMassCharmHad = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1, threeVecSoftPi}, std::array{massKaon, massPi, massPi});
-            invMassD0 = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1}, std::array{massKaon, massPi});
+            invMassCharmHad = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1, threeVecSoftPi}, std::array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiPlus});
+            invMassD0 = RecoDecay::m(std::array{threeVecD0Prong0, threeVecD0Prong1}, std::array{o2::constants::physics::MassKaonCharged, o2::constants::physics::MassPiPlus});
           }
-          rapidity = RecoDecay::y(threeVecCand, massDstar);
+          rapidity = RecoDecay::y(threeVecCand, o2::constants::physics::MassDStar);
         } else {
           isRotatedCandidate = 0;
           pxDau = candidate.pxProng1();
