@@ -1688,7 +1688,7 @@ struct Kstarqa {
   }
   PROCESS_SWITCH(Kstarqa, processEvtLossSigLossMC, "Process Signal Loss, Event Loss", false);
 
-  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, aod::McCollisions const&)
+  void processRec(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, EventMCGenerated const&)
   {
 
     if (!collision.has_mcCollision()) {
@@ -1704,8 +1704,6 @@ struct Kstarqa {
       return;
     }
     // multiplicity = collision.centFT0M();
-
-    multiplicity = -1.0;
 
     if (cSelectMultEstimator == kFT0M) {
       multiplicity = collision.centFT0M();
@@ -1934,19 +1932,21 @@ struct Kstarqa {
   }
   PROCESS_SWITCH(Kstarqa, processRec, "Process Reconstructed", false);
 
-  void processRec2(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, aod::McCollisions const& /*mcCollisions*/)
+  void processRec2(EventCandidatesMC::iterator const& collision, TrackCandidatesMC const& tracks, aod::McParticles const&, EventMCGenerated const&)
   {
 
     if (!collision.has_mcCollision()) {
       return;
     }
 
+    double multiplicityRec = -1.0;
+    const auto& mcCollisionRec = collision.mcCollision_as<EventMCGenerated>();
+    multiplicityRec = mcCollisionRec.centFT0M();
+
     if (selectionConfig.isINELgt0 && !collision.isInelGt0()) {
       return;
     }
     // multiplicity = collision.centFT0M();
-
-    multiplicity = -1.0;
 
     if (cSelectMultEstimator == kFT0M) {
       multiplicity = collision.centFT0M();
@@ -1961,50 +1961,14 @@ struct Kstarqa {
     }
 
     hInvMass.fill(HIST("hAllRecCollisions"), multiplicity);
+    hInvMass.fill(HIST("hAllRecCollisionsCalib"), multiplicityRec);
 
     if (!selectionEvent(collision, false)) {
       return;
     }
 
-    // // if (std::abs(collision.mcCollision().posZ()) > selectionConfig.cutzvertex || !collision.sel8()) {
-    // if (std::abs(collision.mcCollision().posZ()) > selectionConfig.cutzvertex) {
-    //   return;
-    // }
-
-    // if (selectionConfig.isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
-    //   return;
-    // }
-
-    // if (selectionConfig.isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
-    //   return;
-    // }
-
-    // if (!collision.sel8()) {
-    //   return;
-    // }
-
-    // if (selectionConfig.isNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
-    //   return;
-    // }
-    // if (selectionConfig.isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
-    //   return;
-    // }
-
-    // multiplicity = collision.centFT0M();
-
-    multiplicity = -1.0;
-
-    if (cSelectMultEstimator == kFT0M) {
-      multiplicity = collision.centFT0M();
-    } else if (cSelectMultEstimator == kFT0A) {
-      multiplicity = collision.centFT0A();
-    } else if (cSelectMultEstimator == kFT0C) {
-      multiplicity = collision.centFT0C();
-    } else if (cSelectMultEstimator == kFV0A) {
-      multiplicity = collision.centFV0A();
-    } else {
-      multiplicity = collision.centFT0M(); // default
-    }
+    hInvMass.fill(HIST("h1RecMult"), multiplicity);
+    hInvMass.fill(HIST("h1RecMult2"), multiplicityRec);
 
     hInvMass.fill(HIST("h1RecMult"), multiplicity);
 
@@ -2169,6 +2133,7 @@ struct Kstarqa {
               mother = daughter1 + daughter2; // Kstar meson
 
               hInvMass.fill(HIST("h2KstarRecpt2"), mothertrack1.pt(), multiplicity, std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p()));
+              hInvMass.fill(HIST("h2KstarRecptCalib2"), mothertrack1.pt(), multiplicityRec, std::sqrt(mothertrack1.e() * mothertrack1.e() - mothertrack1.p() * mothertrack1.p()));
 
               if (applyRecMotherRapidity && mother.Rapidity() >= selectionConfig.rapidityMotherData) {
                 continue;
@@ -2176,6 +2141,7 @@ struct Kstarqa {
 
               hInvMass.fill(HIST("h1KstarRecMass"), mother.M());
               hInvMass.fill(HIST("h2KstarRecpt1"), mother.Pt(), multiplicity, mother.M());
+              hInvMass.fill(HIST("h2KstarRecptCalib1"), mother.Pt(), multiplicityRec, mother.M());
             }
           }
         }
