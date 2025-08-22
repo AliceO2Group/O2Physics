@@ -52,9 +52,6 @@ inline float getMass(int pdgCode)
     case o2::constants::physics::Pdg::kPhi:
       mass = o2::constants::physics::MassPhi;
       break;
-    case o2::constants::physics::Pdg::kDPlus:
-      mass = o2::constants::physics::MassDPlus;
-      break;
     case o2::constants::physics::Pdg::kLambdaCPlus:
       mass = o2::constants::physics::MassLambdaCPlus;
       break;
@@ -66,6 +63,12 @@ inline float getMass(int pdgCode)
       break;
     case o2::constants::physics::Pdg::kHelium3:
       mass = o2::constants::physics::MassHelium3;
+      break;
+    case o2::constants::physics::Pdg::kK0Star892:
+      mass = o2::constants::physics::MassK0Star892;
+      break;
+    case 310:       ///K0Short is not implemented in o2::physics::constants::Pdg
+      mass = o2::constants::physics::MassK0Short;
       break;
     default:
       LOG(fatal) << "PDG code is not suppored";
