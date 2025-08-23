@@ -588,7 +588,7 @@ struct skimmerPrimaryElectron {
 
   Preslice<aod::TrackAssoc> trackIndicesPerCollision = aod::track_association::collisionId;
   std::vector<std::pair<int, int>> stored_trackIds;
-  Filter trackFilter = o2::aod::track::pt > minpt&& nabs(o2::aod::track::eta) < maxeta&& o2::aod::track::itsChi2NCl < maxchi2its&& ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
+  Filter trackFilter = o2::aod::track::itsChi2NCl < maxchi2its && ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) == true;
   using MyFilteredTracks = soa::Filtered<MyTracks>;
 
   Partition<MyFilteredTracks> posTracks = o2::aod::track::signed1Pt > 0.f;
@@ -611,9 +611,13 @@ struct skimmerPrimaryElectron {
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
         float probaEl = 1.0;
-        if (!checkTrack<false>(collision, track) || !isElectron(collision, track, probaEl)) {
+        if (!checkTrack<false>(collision, track)) {
           continue;
         }
+        if (!isElectron(collision, track, probaEl)) {
+          continue;
+        }
+
         fillTrackTable<false>(collision, track, probaEl);
       }
 
@@ -641,7 +645,10 @@ struct skimmerPrimaryElectron {
       for (const auto& trackId : trackIdsThisCollision) {
         auto track = trackId.template track_as<MyTracks>();
         float probaEl = 1.0;
-        if (!checkTrack<false>(collision, track) || !isElectron(collision, track, probaEl)) {
+        if (!checkTrack<false>(collision, track)) {
+          continue;
+        }
+        if (!isElectron(collision, track, probaEl)) {
           continue;
         }
         fillTrackTable<false>(collision, track, probaEl);
@@ -672,7 +679,10 @@ struct skimmerPrimaryElectron {
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
         float probaEl = 1.0;
-        if (!checkTrack<false>(collision, track) || !isElectron(collision, track, probaEl)) {
+        if (!checkTrack<false>(collision, track)) {
+          continue;
+        }
+        if (!isElectron(collision, track, probaEl)) {
           continue;
         }
         fillTrackTable<false>(collision, track, probaEl);
@@ -705,7 +715,10 @@ struct skimmerPrimaryElectron {
       for (const auto& trackId : trackIdsThisCollision) {
         auto track = trackId.template track_as<MyTracks>();
         float probaEl = 1.0;
-        if (!checkTrack<false>(collision, track) || !isElectron(collision, track, probaEl)) {
+        if (!checkTrack<false>(collision, track)) {
+          continue;
+        }
+        if (!isElectron(collision, track, probaEl)) {
           continue;
         }
         fillTrackTable<false>(collision, track, probaEl);
@@ -740,7 +753,10 @@ struct skimmerPrimaryElectron {
       auto tracks_per_coll = tracks.sliceBy(perCol, collision.globalIndex());
       for (const auto& track : tracks_per_coll) {
         float probaEl = 1.0;
-        if (!checkTrack<true>(collision, track) || !isElectron(collision, track, probaEl)) {
+        if (!checkTrack<true>(collision, track)) {
+          continue;
+        }
+        if (!isElectron(collision, track, probaEl)) {
           continue;
         }
         fillTrackTable<true>(collision, track, probaEl);
@@ -772,7 +788,10 @@ struct skimmerPrimaryElectron {
       for (const auto& trackId : trackIdsThisCollision) {
         auto track = trackId.template track_as<MyTracksMC>();
         float probaEl = 1.0;
-        if (!checkTrack<true>(collision, track) || !isElectron(collision, track, probaEl)) {
+        if (!checkTrack<true>(collision, track)) {
+          continue;
+        }
+        if (!isElectron(collision, track, probaEl)) {
           continue;
         }
         fillTrackTable<true>(collision, track, probaEl);
