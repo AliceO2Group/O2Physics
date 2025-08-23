@@ -246,7 +246,7 @@ struct strangenessderivedbinnedinfo {
   ConfigurableAxis axisOccupancy{"axisOccupancy", {VARIABLE_WIDTH, 0.0f, 1000.0f, 3000.0f, 10000.0f, 30000.0f}, "Occupancy"};
 
   // topological variable QA axes
-  ConfigurableAxis axisMass{"axisV0Mass", {25, 0.45, 0.55f}, "Invariant mass (GeV/#it{c}^{2})"};
+  ConfigurableAxis axisMass{"axisV0Mass", {25, -0.05f, 0.05f}, "Invariant mass (GeV/#it{c}^{2})"};
   ConfigurableAxis axisPhi{"axisPhi", {36, 0.0f, constants::math::TwoPI}, "#varphi (rad)"};
   ConfigurableAxis axisEta{"axisEta", {10, -1.0f, 1.0f}, "Pseudo-rapidity #eta"};
   ConfigurableAxis axisRadius{"axisRadius", {10, 0.0f, 250.0f}, "Decay radius (cm)"};
@@ -805,13 +805,13 @@ struct strangenessderivedbinnedinfo {
         float decayRadius = encodingOpts.useSqrtEncodingForRadius ? std::sqrt(v0.v0radius()) : v0.v0radius();
 
         if (analyseK0Short && isV0Selected(v0, collision, v0.yK0Short())) {
-          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mK0Short(), pT, v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), decayRadius, centrality, occupancy);
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mK0Short() - o2::constants::physics::MassK0Short, pT, v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), decayRadius, centrality, occupancy);
         }
         if (analyseLambda && isV0Selected(v0, collision, v0.yLambda())) {
-          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mLambda(), pT, v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), decayRadius, centrality, occupancy);
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mLambda() - o2::constants::physics::MassLambda0, pT, v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), decayRadius, centrality, occupancy);
         }
         if (analyseAntiLambda && isV0Selected(v0, collision, v0.yLambda())) {
-          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mAntiLambda(), pT, v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), decayRadius, centrality, occupancy);
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), v0.mAntiLambda() - o2::constants::physics::MassLambda0, pT, v0.phi(), v0.eta(), v0.qtarm(), v0.alpha(), decayRadius, centrality, occupancy);
         }
       } // end v0 loop
     }
@@ -827,10 +827,10 @@ struct strangenessderivedbinnedinfo {
         float decayRadius = encodingOpts.useSqrtEncodingForRadius ? std::sqrt(cascade.cascradius()) : cascade.cascradius();
 
         if (analyseXi && isCascadeSelected(cascade, collision, cascade.yXi())) {
-          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), cascade.m(1), pT, cascade.phi(), cascade.eta(), 0., 0., decayRadius, centrality, occupancy);
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), cascade.m(1) - o2::constants::physics::MassXiMinus, pT, cascade.phi(), cascade.eta(), 0., 0., decayRadius, centrality, occupancy);
         }
         if (analyseOmega && isCascadeSelected(cascade, collision, cascade.yOmega())) {
-          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), cascade.m(2), pT, cascade.phi(), cascade.eta(), 0., 0., decayRadius, centrality, occupancy);
+          histos.fill(HIST("h9dMassPtPhiEtaPtArmV0AlphaV0RadiusCentOcc"), cascade.m(2) - o2::constants::physics::MassOmegaMinus, pT, cascade.phi(), cascade.eta(), 0., 0., decayRadius, centrality, occupancy);
         }
       } // end cascade loop
     }
