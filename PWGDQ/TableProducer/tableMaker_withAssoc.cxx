@@ -240,6 +240,8 @@ struct TableMaker {
   // TPC postcalibration related options
   struct : ConfigurableGroup {
     Configurable<bool> fConfigComputeTPCpostCalib{"cfgTPCpostCalib", false, "If true, compute TPC post-calibrated n-sigmas(electrons, pions, protons)"};
+    Configurable<int> fConfigTPCpostCalibType{"cfgTPCpostCalibType", 1, "1: (TPCncls,pIN,eta) calibration typically for pp, 2: (eta,nPV,nLong,tLong) calibration typically for PbPb"};
+    Configurable<bool> fConfigTPCuseInterpolatedCalib{"cfgTPCpostCalibUseInterpolation", true, "If true, use interpolated calibration values (default: true)"};
     Configurable<bool> fConfigComputeTPCpostCalibKaon{"cfgTPCpostCalibKaon", false, "If true, compute TPC post-calibrated n-sigmas for kaons"};
     Configurable<bool> fConfigIsOnlyforMaps{"cfgIsforMaps", false, "If true, run for postcalibration maps only"};
     Configurable<bool> fConfigSaveElectronSample{"cfgSaveElectronSample", false, "If true, only save electron sample"};
@@ -1013,6 +1015,7 @@ struct TableMaker {
             (reinterpret_cast<TH1D*>(fStatsList->At(kStatsTracks)))->Fill(fTrackCuts.size() + static_cast<float>(iv0));
           }
         }
+        // TODO: this part should be removed since the calibration histogram can be filled as any other histogram
         if (fConfigPostCalibTPC.fConfigIsOnlyforMaps) {
           if (trackFilteringTag & (static_cast<uint64_t>(1) << VarManager::kIsConversionLeg)) { // for electron
             fHistMan->FillHistClass("TrackBarrel_PostCalibElectron", VarManager::fgValues);
@@ -1305,6 +1308,15 @@ struct TableMaker {
           VarManager::SetCalibrationObject(VarManager::kTPCKaonMean, calibList->FindObject("mean_map_kaon"));
           VarManager::SetCalibrationObject(VarManager::kTPCKaonSigma, calibList->FindObject("sigma_map_kaon"));
         }
+        if (fConfigPostCalibTPC.fConfigTPCpostCalibType == 2) {
+          VarManager::SetCalibrationObject(VarManager::kTPCElectronStatus, calibList->FindObject("status_map_electron"));
+          VarManager::SetCalibrationObject(VarManager::kTPCPionStatus, calibList->FindObject("status_map_pion"));
+          VarManager::SetCalibrationObject(VarManager::kTPCProtonStatus, calibList->FindObject("status_map_proton"));
+          if (fConfigPostCalibTPC.fConfigComputeTPCpostCalibKaon) {
+            VarManager::SetCalibrationObject(VarManager::kTPCKaonStatus, calibList->FindObject("status_map_kaon"));
+          }
+        }
+        VarManager::SetCalibrationType(fConfigPostCalibTPC.fConfigTPCpostCalibType, fConfigPostCalibTPC.fConfigTPCuseInterpolatedCalib);
       }
       if (fIsRun2 == true) {
         fGrpMagRun2 = fCCDB->getForTimeStamp<o2::parameters::GRPObject>(fConfigCCDB.fConfigGrpMagPathRun2, bcs.begin().timestamp());

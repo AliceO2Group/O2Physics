@@ -241,6 +241,8 @@ struct BJetTreeCreator {
 
   Configurable<float> vtxRes{"vtxRes", 0.01, "Vertex position resolution (cluster size) for GNN vertex predictions (cm)"};
 
+  Configurable<int> trainingDatasetRatioParam{"trainingDatasetRatioParam", 0, "Parameter for splitting training/evaluation datasets by collisionId"};
+
   std::vector<int> eventSelectionBits;
 
   std::vector<double> jetRadiiValues;
@@ -488,7 +490,7 @@ struct BJetTreeCreator {
 
       trkIdx++;
 
-      if (constituent.pt() < trackPtMin) {
+      if (constituent.pt() < trackPtMin || !jettaggingutilities::trackAcceptanceWithDca(constituent, maxIPxy, maxIPz)) {
         continue;
       }
 
@@ -707,7 +709,7 @@ struct BJetTreeCreator {
   }
   PROCESS_SWITCH(BJetTreeCreator, processMCJets, "jet information in MC", false);
 
-  using MCDJetTableNoSV = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetEventWeights>>;
+  using MCDJetTableNoSV = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCDetectorLevelJetFlavourDef, aod::ChargedMCDetectorLevelJetEventWeights>>;
   using JetParticleswID = soa::Join<aod::JetParticles, aod::JMcParticlePIs>;
 
   void processMCJetsForGNN(FilteredCollisionMCD::iterator const& collision, aod::JMcCollisions const&, MCDJetTableNoSV const& MCDjets, MCPJetTable const& MCPjets, JetTracksMCDwID const& allTracks, JetParticleswID const& MCParticles, OriginalTracks const& origTracks, aod::McParticles const& origParticles)
@@ -716,7 +718,12 @@ struct BJetTreeCreator {
       return;
     }
 
-    registry.fill(HIST("h_vertexZ"), collision.posZ());
+    // Uses only collisionId % trainingDatasetRaioParam == 0 for training dataset
+    if (trainingDatasetRatioParam && collision.collisionId() % trainingDatasetRatioParam != 0) {
+      return;
+    }
+
+    registry.fill(HIST("h_vertexZ"), collision.posZ(), collision.weight());
 
     auto const mcParticlesPerColl = MCParticles.sliceBy(mcParticlesPerCollision, collision.mcCollisionId());
     auto const mcPJetsPerColl = MCPjets.sliceBy(mcpJetsPerCollision, collision.mcCollisionId());
@@ -738,15 +745,7 @@ struct BJetTreeCreator {
       std::vector<int> indicesTracks;
       std::vector<int> indicesSVs;
 
-      int16_t jetFlavor = 0;
-
-      for (const auto& mcpjet : analysisJet.template matchedJetGeo_as<MCPJetTable>()) {
-        if (useQuarkDef) {
-          jetFlavor = jettaggingutilities::getJetFlavor(mcpjet, mcParticlesPerColl);
-        } else {
-          jetFlavor = jettaggingutilities::getJetFlavorHadron(mcpjet, mcParticlesPerColl);
-        }
-      }
+      int16_t jetFlavor = analysisJet.origin();
 
       if ((jetFlavor != JetTaggingSpecies::charm && jetFlavor != JetTaggingSpecies::beauty) && (static_cast<double>(std::rand()) / RAND_MAX < getReductionFactor(analysisJet.pt()))) {
         continue;
@@ -760,7 +759,7 @@ struct BJetTreeCreator {
       analyzeJetTrackInfoForGNN(collision, analysisJet, allTracks, origTracks, indicesTracks, jetFlavor, eventWeight, &trkLabels);
 
       registry.fill(HIST("h2_jetMass_jetpT"), analysisJet.pt(), analysisJet.mass(), eventWeight);
-      registry.fill(HIST("h2_nTracks_jetpT"), analysisJet.pt(), indicesTracks.size());
+      registry.fill(HIST("h2_nTracks_jetpT"), analysisJet.pt(), indicesTracks.size(), eventWeight);
 
       //+jet
       registry.fill(HIST("h_jet_pt"), analysisJet.pt());
