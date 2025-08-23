@@ -979,8 +979,8 @@ struct Phik0shortanalysis {
     return false;
   }
 
-  template <typename T1, typename T2>
-  bool eventHasRecoPhiWPDG(const T1& posTracks, const T2& negTracks)
+  template <typename T1, typename T2, typename T3>
+  bool eventHasRecoPhiWPDG(const T1& posTracks, const T2& negTracks, const T3& mcParticles)
   {
     int nPhi = 0;
 
@@ -992,7 +992,7 @@ struct Phik0shortanalysis {
 
       if (!track1.has_mcParticle())
         continue;
-      auto mcTrack1 = track1.template mcParticle_as<aod::McParticles>();
+      auto mcTrack1 = mcParticles.rawIteratorAt(track1.mcParticleId());
       if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
         continue;
 
@@ -1006,24 +1006,28 @@ struct Phik0shortanalysis {
 
         if (!track2.has_mcParticle())
           continue;
-        auto mcTrack2 = track2.template mcParticle_as<aod::McParticles>();
+        auto mcTrack2 = mcParticles.rawIteratorAt(track2.mcParticleId());
         if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
           continue;
+
+        const auto mcTrack1MotherIndexes = mcTrack1.mothersIds();
+        const auto mcTrack2MotherIndexes = mcTrack2.mothersIds();
 
         float pTMother = -1.0f;
         float yMother = -1.0f;
         bool isMCMotherPhi = false;
-        for (const auto& motherOfMcTrack1 : mcTrack1.template mothers_as<aod::McParticles>()) {
-          for (const auto& motherOfMcTrack2 : mcTrack2.template mothers_as<aod::McParticles>()) {
-            if (motherOfMcTrack1.pdgCode() != motherOfMcTrack2.pdgCode())
-              continue;
-            if (motherOfMcTrack1.globalIndex() != motherOfMcTrack2.globalIndex())
-              continue;
-            if (motherOfMcTrack1.pdgCode() != o2::constants::physics::Pdg::kPhi)
+
+        for (const auto& mcTrack1MotherIndex : mcTrack1MotherIndexes) {
+          for (const auto& mcTrack2MotherIndex : mcTrack2MotherIndexes) {
+            if (mcTrack1MotherIndex != mcTrack2MotherIndex)
               continue;
 
-            pTMother = motherOfMcTrack1.pt();
-            yMother = motherOfMcTrack1.y();
+            const auto mother = mcParticles.rawIteratorAt(mcTrack1MotherIndex);
+            if (mother.pdgCode() != o2::constants::physics::Pdg::kPhi)
+              continue;
+
+            pTMother = mother.pt();
+            yMother = mother.y();
             isMCMotherPhi = true;
           }
         }
@@ -2668,9 +2672,9 @@ struct Phik0shortanalysis {
       auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.perMCColl, mcCollision.globalIndex());
 
       if (!pwglf::isINELgtNmc(mcParticlesThisMcColl, 0, pdgDB))
-        return;
+        continue;
       if (filterOnGenPhi && !eventHasGenPhi(mcParticlesThisMcColl))
-        return;
+        continue;
 
       uint64_t numberAssocColl = 0;
       std::vector<float> zVtxs;
@@ -2688,7 +2692,7 @@ struct Phik0shortanalysis {
           Partition<FilteredMCTracks> negFiltMCTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
           negFiltMCTracks.bindTable(filteredMCTracksThisColl);
 
-          if (filterOnRecoPhiWPDG && !eventHasRecoPhiWPDG(posFiltMCTracks, negFiltMCTracks))
+          if (filterOnRecoPhiWPDG && !eventHasRecoPhiWPDG(posFiltMCTracks, negFiltMCTracks, mcParticles))
             continue;
 
           mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), mcCollision.centFT0M());
