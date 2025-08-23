@@ -1434,7 +1434,7 @@ struct HfCandidateCreatorXic0Omegac0QAMc {
   {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-xic0-xicp-to-hadronic") == 0) {
+      if (device.name.compare("hf-candidate-creator-xic0-omegac0-q-a") == 0) {
         hfEvSelMc.init(device, registry);
         break;
       }
