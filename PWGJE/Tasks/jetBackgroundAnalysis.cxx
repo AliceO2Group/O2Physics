@@ -82,6 +82,7 @@ struct JetBackgroundAnalysisTask {
     // histogram definitions
 
     if (doprocessRho) {
+      registry.add("h2_leadingjet_pt_rho", "; #it{p}_{T, leading jet} (GeV/#it{c});  #it{rho} (GeV/area);", {HistType::kTH2F, {{200, 0., 200.0}, {400, 0.0, 400.0}}});
       registry.add("h2_centrality_ntracks", "; centrality; N_{tracks};", {HistType::kTH2F, {{1100, 0., 110.0}, {10000, 0.0, 10000.0}}});
       registry.add("h2_ntracks_rho", "; N_{tracks}; #it{rho} (GeV/area);", {HistType::kTH2F, {{10000, 0.0, 10000.0}, {400, 0.0, 400.0}}});
       registry.add("h2_ntracks_rhom", "; N_{tracks}; #it{rho}_{m} (GeV/area);", {HistType::kTH2F, {{10000, 0.0, 10000.0}, {100, 0.0, 100.0}}});
@@ -90,9 +91,14 @@ struct JetBackgroundAnalysisTask {
     }
 
     if (doprocessBkgFluctuationsData || doprocessBkgFluctuationsMCD) {
+      registry.add("h2_leadingjet_pt_rhorandomcone", "; #it{p}_{T, leading jet} (GeV/#it{c});  #it{rho} (GeV/area);", {HistType::kTH2F, {{200, 0., 200.0}, {400, 0.0, 400.0}}});
       registry.add("h2_centrality_rhorandomcone", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, bkgFluctuationsAxis}});
+      registry.add("h2_leadingjet_pt_rhorandomconerandomtrackdirection", "; #it{p}_{T, leading jet} (GeV/#it{c});  #it{rho} (GeV/area);", {HistType::kTH2F, {{200, 0., 200.0}, {400, 0.0, 400.0}}});
       registry.add("h2_centrality_rhorandomconerandomtrackdirection", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, bkgFluctuationsAxis}});
+      registry.add("h2_leadingjet_pt_rhorandomconewithoutleadingjet", "; #it{p}_{T, leading jet} (GeV/#it{c});  #it{rho} (GeV/area);", {HistType::kTH2F, {{200, 0., 200.0}, {400, 0.0, 400.0}}});
       registry.add("h2_centrality_rhorandomconewithoutleadingjet", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, bkgFluctuationsAxis}});
+      registry.add("h2_leadingjet_pt_rhorandomconerandomtrackdirectionwithoutoneleadingjets", "; #it{p}_{T, leading jet} (GeV/#it{c});  #it{rho} (GeV/area);", {HistType::kTH2F, {{200, 0., 200.0}, {400, 0.0, 400.0}}});
+      registry.add("h2_leadingjet_pt_rhorandomconerandomtrackdirectionwithouttwoleadingjets", "; #it{p}_{T, leading jet} (GeV/#it{c});  #it{rho} (GeV/area);", {HistType::kTH2F, {{200, 0., 200.0}, {400, 0.0, 400.0}}});
       registry.add("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, bkgFluctuationsAxis}});
       registry.add("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets", "; centrality; #it{p}_{T,random cone} - #it{area, random cone} * #it{rho} (GeV/c);", {HistType::kTH2F, {{1100, 0., 110.}, bkgFluctuationsAxis}});
     }
@@ -128,6 +134,13 @@ struct JetBackgroundAnalysisTask {
         }
       }
     }
+    
+    // Check if jets exist before accessing them
+    std::cout << "bkg fluctuations jets size: " << jets.size() << std::endl;
+    if (jets.size() > 0) {
+      std::cout << "leading jet pt random cone: " << jets.iteratorAt(0).pt() << std::endl;
+      registry.fill(HIST("h2_leadingjet_pt_rhorandomcone"), jets.iteratorAt(0).pt(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
+    }
     registry.fill(HIST("h2_centrality_rhorandomcone"), collision.centFT0M(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
     // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles
@@ -140,6 +153,9 @@ struct JetBackgroundAnalysisTask {
           randomConePt += track.pt();
         }
       }
+    }
+    if (jets.size() > 0) {
+      registry.fill(HIST("h2_leadingjet_pt_rhorandomconerandomtrackdirection"), jets.iteratorAt(0).pt(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
     }
     registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirection"), collision.centFT0M(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
@@ -169,6 +185,9 @@ struct JetBackgroundAnalysisTask {
         }
       }
     }
+    if (jets.size() > 0) {
+      registry.fill(HIST("h2_leadingjet_pt_rhorandomconewithoutleadingjet"), jets.iteratorAt(0).pt(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
+    }
     registry.fill(HIST("h2_centrality_rhorandomconewithoutleadingjet"), collision.centFT0M(), randomConePt - M_PI * randomConeR * randomConeR * collision.rho());
 
     // randomised eta,phi for tracks, to assess part of fluctuations coming from statistically independently emitted particles, removing tracks from 2 leading jets
@@ -190,11 +209,15 @@ struct JetBackgroundAnalysisTask {
         }
       }
     }
+    if (jets.size() > 0) {
+      registry.fill(HIST("h2_leadingjet_pt_rhorandomconerandomtrackdirectionwithoutoneleadingjets"), jets.iteratorAt(0).pt(), randomConePtWithoutOneLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
+      registry.fill(HIST("h2_leadingjet_pt_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), jets.iteratorAt(0).pt(), randomConePtWithoutTwoLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
+    }
     registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithoutoneleadingjets"), collision.centFT0M(), randomConePtWithoutOneLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
     registry.fill(HIST("h2_centrality_rhorandomconerandomtrackdirectionwithouttwoleadingjets"), collision.centFT0M(), randomConePtWithoutTwoLeadJet - M_PI * randomConeR * randomConeR * collision.rho());
   }
 
-  void processRho(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks)
+  void processRho(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Filtered<aod::JetTracks> const& tracks, aod::ChargedJets const& jets)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits, skipMBGapEvents)) {
       return;
@@ -207,6 +230,11 @@ struct JetBackgroundAnalysisTask {
       if (jetderiveddatautilities::selectTrack(track, trackSelection)) {
         nTracks++;
       }
+    }
+    std::cout << "process rho jets size: " << jets.size() << std::endl;
+    if (jets.size() > 0) {
+      std::cout << "leading jet pt rho: " << jets.iteratorAt(0).pt() << std::endl;
+      registry.fill(HIST("h2_leadingjet_pt_rho"), jets.iteratorAt(0).pt(), collision.rho());
     }
     registry.fill(HIST("h2_centrality_ntracks"), collision.centFT0M(), nTracks);
     registry.fill(HIST("h2_ntracks_rho"), nTracks, collision.rho());
