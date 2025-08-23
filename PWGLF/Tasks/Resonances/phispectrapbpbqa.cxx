@@ -213,7 +213,7 @@ struct phispectrapbpbqa {
   template <typename T>
   bool selectionPIDpTdependent(const T& candidate, double nsigmaTPC, double nsigmaTOF)
   {
-    if (candidate.p() < 0.7 && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
+    if(candidate.p() < 0.7 && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
       return true;
     }
     if (candidate.p() > 0.7 && candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
