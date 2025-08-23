@@ -213,30 +213,30 @@ struct phispectrapbpbqa {
   template <typename T>
   bool selectionPIDpTdependent(const T& candidate, double nsigmaTPC, double nsigmaTOF)
   {
-    if(candidate.p() < 0.7 && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
+    if (candidate.p() < 0.7 && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
       return true;
     }
     if (candidate.p() > 0.7 && candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
-      if(candidate.p() > 0.7 && candidate.p() < 1.6 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -5.0 && nsigmaTOF < 10.0) {
-	return true;
+      if (candidate.p() > 0.7 && candidate.p() < 1.6 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -5.0 && nsigmaTOF < 10.0) {
+        return true;
       }
-      if(candidate.p() >= 1.6 && candidate.p() < 2.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 10.0) {
-	return true;
+      if (candidate.p() >= 1.6 && candidate.p() < 2.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 10.0) {
+        return true;
       }
-      if(candidate.p() >= 2.0 && candidate.p() < 2.5 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 6.0) {
-	return true;
+      if (candidate.p() >= 2.0 && candidate.p() < 2.5 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 6.0) {
+        return true;
       }
-      if(candidate.p() >= 2.5 && candidate.p() < 4.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -2.5 && nsigmaTOF < 4.0) {
-	return true;
+      if (candidate.p() >= 2.5 && candidate.p() < 4.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -2.5 && nsigmaTOF < 4.0) {
+        return true;
       }
-      if(candidate.p() >= 4.0 && candidate.p() < 5.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 3.0) {
-	return true;
+      if (candidate.p() >= 4.0 && candidate.p() < 5.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 3.0) {
+        return true;
       }
-      if(candidate.p() >= 5.0 && candidate.p() < 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 2.5) {
-	return true;
+      if (candidate.p() >= 5.0 && candidate.p() < 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 2.5) {
+        return true;
       }
-      if(candidate.p() >= 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 3.0) {
-	return true;
+      if (candidate.p() >= 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 3.0) {
+        return true;
       }
     }
     return false;
@@ -245,32 +245,32 @@ struct phispectrapbpbqa {
   template <typename T>
   bool selectionPID(const T& candidate, double nsigmaTPC, double nsigmaTOF)
   {
-    if (applyTOF) { 
-      if(!candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
-	return true;
+    if (applyTOF) {
+      if (!candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
+        return true;
       }
       if (candidate.p() > 0.5 && candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
-	if(candidate.p() > 0.5 && candidate.p() < 1.6 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -5.0 && nsigmaTOF < 10.0) {
-	  return true;
-	}
-	if(candidate.p() >= 1.6 && candidate.p() < 2.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 10.0) {
-	  return true;
-	}
-	if(candidate.p() >= 2.0 && candidate.p() < 2.5 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 6.0) {
-	  return true;
-	}
-	if(candidate.p() >= 2.5 && candidate.p() < 4.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -2.5 && nsigmaTOF < 4.0) {
-	  return true;
-	}
-	if(candidate.p() >= 4.0 && candidate.p() < 5.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 3.0) {
-	  return true;
-	}
-	if(candidate.p() >= 5.0 && candidate.p() < 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 2.5) {
-	  return true;
-	}
-	if(candidate.p() >= 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 3.0) {
-	  return true;
-	}
+        if (candidate.p() > 0.5 && candidate.p() < 1.6 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -5.0 && nsigmaTOF < 10.0) {
+          return true;
+        }
+        if (candidate.p() >= 1.6 && candidate.p() < 2.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 10.0) {
+          return true;
+        }
+        if (candidate.p() >= 2.0 && candidate.p() < 2.5 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 6.0) {
+          return true;
+        }
+        if (candidate.p() >= 2.5 && candidate.p() < 4.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -2.5 && nsigmaTOF < 4.0) {
+          return true;
+        }
+        if (candidate.p() >= 4.0 && candidate.p() < 5.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 3.0) {
+          return true;
+        }
+        if (candidate.p() >= 5.0 && candidate.p() < 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 2.5) {
+          return true;
+        }
+        if (candidate.p() >= 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 3.0) {
+          return true;
+        }
       }
     } else if (TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
       return true;
@@ -605,32 +605,32 @@ struct phispectrapbpbqa {
           continue;
         }
         auto track1ID = track1.index();
-	// PID track 1
-	double nSigmaTPC = track1.tpcNSigmaKa();
-	double nSigmaTOF = track1.tofNSigmaKa();
-          if (!track1.hasTOF()) {
-            nSigmaTOF = -9999.99;
+        // PID track 1
+        double nSigmaTPC = track1.tpcNSigmaKa();
+        double nSigmaTOF = track1.tofNSigmaKa();
+        if (!track1.hasTOF()) {
+          nSigmaTOF = -9999.99;
+        }
+        if (cfgUpdatePID) {
+          nSigmaTPC = (nSigmaTPC - hTPCCallib->GetBinContent(hTPCCallib->FindBin(track1.p(), centrality, occupancy))) / hTPCCallib->GetBinError(hTPCCallib->FindBin(track1.p(), centrality, occupancy));
+          if (track1.hasTOF()) {
+            nSigmaTOF = (nSigmaTOF - hTOFCallib->GetBinContent(hTOFCallib->FindBin(track1.p(), centrality, occupancy))) / hTOFCallib->GetBinError(hTOFCallib->FindBin(track1.p(), centrality, occupancy));
           }
-          if (cfgUpdatePID) {
-            nSigmaTPC = (nSigmaTPC - hTPCCallib->GetBinContent(hTPCCallib->FindBin(track1.p(), centrality, occupancy))) / hTPCCallib->GetBinError(hTPCCallib->FindBin(track1.p(), centrality, occupancy));
-            if (track1.hasTOF()) {
-              nSigmaTOF = (nSigmaTOF - hTOFCallib->GetBinContent(hTOFCallib->FindBin(track1.p(), centrality, occupancy))) / hTOFCallib->GetBinError(hTOFCallib->FindBin(track1.p(), centrality, occupancy));
-            }
-          }
-	histos.fill(HIST("hNsigmaTPCBeforeCut"), nSigmaTPC, track1.p(), occupancy);
-	histos.fill(HIST("hNsigmaTOFBeforeCut"), nSigmaTOF, track1.p(), occupancy);
+        }
+        histos.fill(HIST("hNsigmaTPCBeforeCut"), nSigmaTPC, track1.p(), occupancy);
+        histos.fill(HIST("hNsigmaTOFBeforeCut"), nSigmaTOF, track1.p(), occupancy);
 
-	if (applyPID) {
-	  if (ispTdepPID && !selectionPIDpTdependent(track1, nSigmaTPC, nSigmaTOF)) {
-	    continue;
-	  }
-	  if (!ispTdepPID && !selectionPID(track1, nSigmaTPC, nSigmaTOF)) {
-	    continue;
-	  }
-	  histos.fill(HIST("hNsigmaTPCAfterCut"), nSigmaTPC, track1.p(), occupancy);
-	  histos.fill(HIST("hNsigmaTOFAfterCut"), nSigmaTOF, track1.p(), occupancy);
-	}
-	ntrack1 = ntrack1+1;
+        if (applyPID) {
+          if (ispTdepPID && !selectionPIDpTdependent(track1, nSigmaTPC, nSigmaTOF)) {
+            continue;
+          }
+          if (!ispTdepPID && !selectionPID(track1, nSigmaTPC, nSigmaTOF)) {
+            continue;
+          }
+          histos.fill(HIST("hNsigmaTPCAfterCut"), nSigmaTPC, track1.p(), occupancy);
+          histos.fill(HIST("hNsigmaTOFAfterCut"), nSigmaTOF, track1.p(), occupancy);
+        }
+        ntrack1 = ntrack1 + 1;
         for (auto track2 : Rectrackspart) {
           auto track2ID = track2.index();
           if (track2ID <= track1ID) {
@@ -648,7 +648,7 @@ struct phispectrapbpbqa {
           if (track1.sign() * track2.sign() > 0) {
             continue;
           }
-	  
+
           // PID track 2
           double nSigmaTPC2 = track2.tpcNSigmaKa();
           double nSigmaTOF2 = track2.tofNSigmaKa();
@@ -661,23 +661,23 @@ struct phispectrapbpbqa {
               nSigmaTOF2 = (nSigmaTOF2 - hTOFCallib->GetBinContent(hTOFCallib->FindBin(track2.p(), centrality, occupancy))) / hTOFCallib->GetBinError(hTOFCallib->FindBin(track2.p(), centrality, occupancy));
             }
           }
-	  if (ntrack1 ==1) {
-	    histos.fill(HIST("hNsigmaTPCBeforeCut"), nSigmaTPC2, track2.p(), occupancy);
-	    histos.fill(HIST("hNsigmaTOFBeforeCut"), nSigmaTOF2, track2.p(), occupancy);
-	  }
+          if (ntrack1 == 1) {
+            histos.fill(HIST("hNsigmaTPCBeforeCut"), nSigmaTPC2, track2.p(), occupancy);
+            histos.fill(HIST("hNsigmaTOFBeforeCut"), nSigmaTOF2, track2.p(), occupancy);
+          }
           if (applyPID) {
-	    if (ispTdepPID && !selectionPIDpTdependent(track2, nSigmaTPC2, nSigmaTOF2)) {
+            if (ispTdepPID && !selectionPIDpTdependent(track2, nSigmaTPC2, nSigmaTOF2)) {
               continue;
             }
             if (!ispTdepPID && !selectionPID(track2, nSigmaTPC2, nSigmaTOF2)) {
               continue;
             }
           }
-	  if (ntrack1 ==1) {
-	    histos.fill(HIST("hNsigmaTPCAfterCut"), nSigmaTPC2, track2.p(), occupancy);
-	    histos.fill(HIST("hNsigmaTOFAfterCut"), nSigmaTOF2, track2.p(), occupancy);
-	  }
-	  
+          if (ntrack1 == 1) {
+            histos.fill(HIST("hNsigmaTPCAfterCut"), nSigmaTPC2, track2.p(), occupancy);
+            histos.fill(HIST("hNsigmaTOFAfterCut"), nSigmaTOF2, track2.p(), occupancy);
+          }
+
           const auto mctrack1 = track1.mcParticle();
           const auto mctrack2 = track2.mcParticle();
           int track1PDG = TMath::Abs(mctrack1.pdgCode());
