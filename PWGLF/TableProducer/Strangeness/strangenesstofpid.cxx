@@ -72,7 +72,9 @@ using TracksWithAllExtras = soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidT
 // For derived data analysis
 using dauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs, aod::DauTrackTOFPIDs>;
 using V0DerivedDatas = soa::Join<aod::V0Cores, aod::V0Extras, aod::V0CollRefs>;
+using V0DerivedDatasMC = soa::Join<aod::V0Cores, aod::V0Extras, aod::V0CollRefs, aod::V0CoreMCLabels>;
 using CascDerivedDatas = soa::Join<aod::CascCores, aod::CascExtras, aod::CascCollRefs>;
+using CascDerivedDatasMC = soa::Join<aod::CascCores, aod::CascExtras, aod::CascCollRefs, aod::CascCoreMCLabels>;
 
 struct strangenesstofpid {
   // TOF pid for strangeness (recalculated with topology)
@@ -679,7 +681,7 @@ struct strangenesstofpid {
 
   // templatized process function for symmetric operation in derived and original AO2D
   template <class TCollision, typename TV0, typename TTrack>
-  void processV0Candidate(TCollision const& collision, TV0 const& v0, TTrack const& pTra, TTrack const& nTra)
+  void processV0Candidate(TCollision const& collision, TV0 const& v0, TTrack const& pTra, TTrack const& nTra, int v0pdg)
   {
     // time of V0 segment
     float lengthV0 = std::hypot(v0.x() - collision.getX(), v0.y() - collision.getY(), v0.z() - collision.getZ());
@@ -873,7 +875,7 @@ struct strangenesstofpid {
 
       if (pTra.hasTOF()) {
         if (v0.v0cosPA() > v0Group.qaCosPA && v0.dcaV0daughters() < v0Group.qaDCADau) {
-          if (std::abs(v0.mLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma) {
+          if (std::abs(v0.mLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && ((v0pdg==0)||(v0pdg==3122))) {
             histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.p(), v0.eta(), deltaTimePositiveLambdaPr);
             if(calculationMethod.value==2 && std::abs(timePositivePr_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timePositivePr_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
               histos.fill(HIST("hDeltaTimeMethodsVsP_posLaPr"), positiveP, v0.positiveeta(), (timePositivePr_Method0 - timePositivePr_Method1)*positiveCosine);
@@ -882,7 +884,7 @@ struct strangenesstofpid {
             if (doQANSigma)
               histos.fill(HIST("h2dNSigmaPositiveLambdaPr"), v0.p(), nSigmaPositiveLambdaPr);
           }
-          if (std::abs(v0.mAntiLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma) {
+          if (std::abs(v0.mAntiLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma && ((v0pdg==0)||(v0pdg==-3122))) {
             histos.fill(HIST("h2dDeltaTimePositiveLambdaPi"), v0.p(), v0.eta(), deltaTimePositiveLambdaPi);
             if(calculationMethod.value==2 && std::abs(timePositivePi_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timePositivePi_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
               histos.fill(HIST("hDeltaTimeMethodsVsP_posLaPi"), positiveP, v0.positiveeta(), (timePositivePi_Method0 - timePositivePi_Method1)*positiveCosine);
@@ -891,7 +893,7 @@ struct strangenesstofpid {
             if (doQANSigma)
               histos.fill(HIST("h2dNSigmaPositiveLambdaPi"), v0.p(), nSigmaPositiveLambdaPi);
           }
-          if (std::abs(v0.mK0Short() - 0.497) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma) {
+          if (std::abs(v0.mK0Short() - 0.497) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && ((v0pdg==0)||(v0pdg==310))) {
             histos.fill(HIST("h2dDeltaTimePositiveK0ShortPi"), v0.p(), v0.eta(), deltaTimePositiveK0ShortPi);
             if(calculationMethod.value==2 && std::abs(timePositivePi_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timePositivePi_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
               histos.fill(HIST("hDeltaTimeMethodsVsP_posK0Pi"), positiveP, v0.positiveeta(), (timePositivePi_Method0 - timePositivePi_Method1)*positiveCosine);
@@ -905,7 +907,7 @@ struct strangenesstofpid {
 
       if (nTra.hasTOF()) {
         if (v0.v0cosPA() > v0Group.qaCosPA && v0.dcaV0daughters() < v0Group.qaDCADau) {
-          if (std::abs(v0.mLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma) {
+          if (std::abs(v0.mLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && ((v0pdg==0)||(v0pdg==3122))) {
             histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.p(), v0.eta(), deltaTimeNegativeLambdaPi);
             if(calculationMethod.value==2 && std::abs(timeNegativePi_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timeNegativePi_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
               histos.fill(HIST("hDeltaTimeMethodsVsP_negLaPi"), negativeP, v0.negativeeta(), (timeNegativePi_Method0 - timeNegativePi_Method1)*negativeCosine);
@@ -914,7 +916,7 @@ struct strangenesstofpid {
             if (doQANSigma)
               histos.fill(HIST("h2dNSigmaNegativeLambdaPi"), v0.p(), nSigmaNegativeLambdaPi);
           }
-          if (std::abs(v0.mAntiLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma) {
+          if (std::abs(v0.mAntiLambda() - 1.115683) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < v0Group.qaTPCNSigma && ((v0pdg==0)||(v0pdg==-3122))) {
             histos.fill(HIST("h2dDeltaTimeNegativeLambdaPr"), v0.p(), v0.eta(), deltaTimeNegativeLambdaPr);
             if(calculationMethod.value==2 && std::abs(timeNegativePr_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timeNegativePr_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
               histos.fill(HIST("hDeltaTimeMethodsVsP_negLaPr"), negativeP, v0.negativeeta(), (timeNegativePr_Method0 - timeNegativePr_Method1)*negativeCosine);
@@ -923,7 +925,7 @@ struct strangenesstofpid {
             if (doQANSigma)
               histos.fill(HIST("h2dNSigmaNegativeLambdaPr"), v0.p(), nSigmaNegativeLambdaPr);
           }
-          if (std::abs(v0.mK0Short() - 0.497) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma) {
+          if (std::abs(v0.mK0Short() - 0.497) < v0Group.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < v0Group.qaTPCNSigma && ((v0pdg==0)||(v0pdg==310))) {
             histos.fill(HIST("h2dDeltaTimeNegativeK0ShortPi"), v0.p(), v0.eta(), deltaTimeNegativeK0ShortPi);
             if(calculationMethod.value==2 && std::abs(timeNegativePi_Method0-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon && std::abs(timeNegativePi_Method1-o2::aod::v0data::kNoTOFValue)>o2::aod::v0data::kEpsilon){ 
               histos.fill(HIST("hDeltaTimeMethodsVsP_negK0Pi"), negativeP, v0.negativeeta(), (timeNegativePi_Method0 - timeNegativePi_Method1)*negativeCosine);
@@ -940,7 +942,7 @@ struct strangenesstofpid {
   }
 
   template <class TCollision, typename TCascade, typename TTrack>
-  void processCascadeCandidate(TCollision const& collision, TCascade const& cascade, TTrack const& pTra, TTrack const& nTra, TTrack const& bTra)
+  void processCascadeCandidate(TCollision const& collision, TCascade const& cascade, TTrack const& pTra, TTrack const& nTra, TTrack const& bTra, int cascpdg)
   {
     // initialize from positions and momenta as needed
     o2::track::TrackPar posTrack = o2::track::TrackPar({cascade.xlambda(), cascade.ylambda(), cascade.zlambda()}, {cascade.pxpos(), cascade.pypos(), cascade.pzpos()}, +1);
@@ -1163,7 +1165,7 @@ struct strangenesstofpid {
 
       if (cascade.dcaV0daughters() < cascadeGroup.qaV0DCADau && cascade.dcacascdaughters() < cascadeGroup.qaCascDCADau && cascade.v0cosPA(collision.getX(), collision.getY(), collision.getZ()) > cascadeGroup.qaV0CosPA && cascade.casccosPA(collision.getX(), collision.getY(), collision.getZ()) > cascadeGroup.qaCascCosPA) {
         if (cascade.sign() < 0) {
-          if (std::abs(cascade.mXi() - 1.32171) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma) {
+          if (std::abs(cascade.mXi() - 1.32171) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && ((cascpdg==0)||(cascpdg==3312))) {
             histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.p(), cascade.eta(), posDeltaTimeAsXiPr);
             histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), negDeltaTimeAsXiPi);
             histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), bachDeltaTimeAsXiPi);
@@ -1187,7 +1189,7 @@ struct strangenesstofpid {
               histos.fill(HIST("h2dNSigmaXiPi"), cascade.p(), nSigmaXiPi);
             }
           }
-          if (std::abs(cascade.mOmega() - 1.67245) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaKa()) < cascadeGroup.qaTPCNSigma) {
+          if (std::abs(cascade.mOmega() - 1.67245) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaKa()) < cascadeGroup.qaTPCNSigma && ((cascpdg==0)||(cascpdg==3334))) {
             histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.p(), cascade.eta(), posDeltaTimeAsOmPr);
             histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.p(), cascade.eta(), negDeltaTimeAsOmPi);
             histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.p(), cascade.eta(), bachDeltaTimeAsOmKa);
@@ -1213,7 +1215,7 @@ struct strangenesstofpid {
             }
           }
         } else {
-          if (std::abs(cascade.mXi() - 1.32171) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma) {
+          if (std::abs(cascade.mXi() - 1.32171) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && ((cascpdg==0)||(cascpdg==-3312))) {
             histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), posDeltaTimeAsXiPi);
             histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.p(), cascade.eta(), negDeltaTimeAsXiPr);
             histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), bachDeltaTimeAsXiPi);
@@ -1237,7 +1239,7 @@ struct strangenesstofpid {
               histos.fill(HIST("h2dNSigmaXiPi"), cascade.p(), nSigmaXiPi);
             }
           }
-          if (std::abs(cascade.mOmega() - 1.67245) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaKa()) < cascadeGroup.qaTPCNSigma) {
+          if (std::abs(cascade.mOmega() - 1.67245) < cascadeGroup.qaMassWindow && fabs(pTra.tpcNSigmaPi()) < cascadeGroup.qaTPCNSigma && fabs(nTra.tpcNSigmaPr()) < cascadeGroup.qaTPCNSigma && fabs(bTra.tpcNSigmaKa()) < cascadeGroup.qaTPCNSigma && ((cascpdg==0)||(cascpdg==-3334))) {
             histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.p(), cascade.eta(), posDeltaTimeAsOmPi);
             histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.p(), cascade.eta(), negDeltaTimeAsOmPr);
             histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.p(), cascade.eta(), bachDeltaTimeAsOmKa);
@@ -1291,7 +1293,7 @@ struct strangenesstofpid {
 
         auto pTra = V0.posTrack_as<TracksWithAllExtras>();
         auto nTra = V0.negTrack_as<TracksWithAllExtras>();
-        processV0Candidate(primaryVertex, V0, pTra, nTra);
+        processV0Candidate(primaryVertex, V0, pTra, nTra, 0);
       }
     }
 
@@ -1310,7 +1312,7 @@ struct strangenesstofpid {
         auto pTra = cascade.posTrack_as<TracksWithAllExtras>();
         auto nTra = cascade.negTrack_as<TracksWithAllExtras>();
         auto bTra = cascade.bachelor_as<TracksWithAllExtras>();
-        processCascadeCandidate(primaryVertex, cascade, pTra, nTra, bTra);
+        processCascadeCandidate(primaryVertex, cascade, pTra, nTra, bTra, 0);
       }
     }
   }
@@ -1340,7 +1342,7 @@ struct strangenesstofpid {
 
         auto pTra = V0.posTrackExtra_as<dauTracks>();
         auto nTra = V0.negTrackExtra_as<dauTracks>();
-        processV0Candidate(primaryVertex, V0, pTra, nTra);
+        processV0Candidate(primaryVertex, V0, pTra, nTra, 0);
       }
     }
 
@@ -1359,13 +1361,83 @@ struct strangenesstofpid {
         auto pTra = cascade.posTrackExtra_as<dauTracks>();
         auto nTra = cascade.negTrackExtra_as<dauTracks>();
         auto bTra = cascade.bachTrackExtra_as<dauTracks>();
-        processCascadeCandidate(primaryVertex, cascade, pTra, nTra, bTra);
+        processCascadeCandidate(primaryVertex, cascade, pTra, nTra, bTra, 0);
+      }
+    }
+  }
+
+  void processDerivedDataMCTest(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, V0DerivedDatasMC const& V0s, CascDerivedDatasMC const& cascades, dauTracks const&, aod::V0MCCores const& v0mcs, aod::CascMCCores const& cascmcs)
+  {
+    // Fire up CCDB with first collision in record. If no collisions, bypass
+    if (useCustomRunNumber || collisions.size() < 1) {
+      initCCDB(manualRunNumber);
+    } else {
+      auto collision = collisions.begin();
+      initCCDB(collision.runNumber());
+    }
+
+    if (calculateV0s.value) {
+      for (const auto& V0 : V0s) {
+        // for storing whatever is the relevant quantity for the PV
+        o2::dataformats::VertexBase primaryVertex;
+        if (V0.has_straCollision()) {
+          auto const& collision = V0.straCollision_as<soa::Join<aod::StraCollisions, aod::StraStamps>>();
+          primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
+          // cov: won't be used anyways, all fine
+          primaryVertex.setCov(1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6);
+        } else {
+          primaryVertex.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
+        }
+
+        // check association 
+        int v0pdg = 0; 
+        if(V0.v0MCCoreId()>-1){
+          auto v0mc = v0mcs.rawIteratorAt(V0.v0MCCoreId());
+          v0pdg = v0mc.pdgCode(); 
+          if(std::abs(v0pdg)!=3122&&v0pdg!=310){
+            continue; // only associated from this point on
+          }
+        }
+
+        auto pTra = V0.posTrackExtra_as<dauTracks>();
+        auto nTra = V0.negTrackExtra_as<dauTracks>();
+        processV0Candidate(primaryVertex, V0, pTra, nTra, v0pdg);
+      }
+    }
+
+    if (calculateCascades.value) {
+      for (const auto& cascade : cascades) {
+        // for storing whatever is the relevant quantity for the PV
+        o2::dataformats::VertexBase primaryVertex;
+        if (cascade.has_straCollision()) {
+          auto const& collision = cascade.straCollision_as<soa::Join<aod::StraCollisions, aod::StraStamps>>();
+          primaryVertex.setPos({collision.posX(), collision.posY(), collision.posZ()});
+          primaryVertex.setCov(1e-6, 1e-6, 1e-6, 1e-6, 1e-6, 1e-6);
+        } else {
+          primaryVertex.setPos({mVtx->getX(), mVtx->getY(), mVtx->getZ()});
+        }
+
+        // check association 
+        int cascpdg = 0; 
+        if(cascade.cascMCCoreId()>-1){
+          auto cascmc = cascmcs.rawIteratorAt(cascade.cascMCCoreId());
+          cascpdg = cascmc.pdgCode(); 
+          if(std::abs(cascpdg)!=3312&&std::abs(cascpdg)!=3334){
+            continue; // only associated from this point on
+          }
+        }
+
+        auto pTra = cascade.posTrackExtra_as<dauTracks>();
+        auto nTra = cascade.negTrackExtra_as<dauTracks>();
+        auto bTra = cascade.bachTrackExtra_as<dauTracks>();
+        processCascadeCandidate(primaryVertex, cascade, pTra, nTra, bTra, cascpdg);
       }
     }
   }
 
   PROCESS_SWITCH(strangenesstofpid, processStandardData, "Process standard data", false);
   PROCESS_SWITCH(strangenesstofpid, processDerivedData, "Process derived data", true);
+  PROCESS_SWITCH(strangenesstofpid, processDerivedDataMCTest, "Process derived data / MC with assoc / not for analysis", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
