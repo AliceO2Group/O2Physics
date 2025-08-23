@@ -846,7 +846,6 @@ struct TreeCreatorElectronMLDDA {
             } // end of AntiLambda
           }
 
-
         } // end of stangeness
 
         if (isElectronTight(pos) && isSelectedV0LegTight(collision, pos) && isElectron(neg) && isSelectedV0Leg(collision, neg)) {
