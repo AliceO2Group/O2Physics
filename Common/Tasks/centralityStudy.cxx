@@ -688,7 +688,7 @@ struct centralityStudy {
 
     if constexpr (requires { collision.multMCExtraId(); }) {
       // requires monte carlo information
-      if(collision.multMCExtraId()>-1){
+      if (collision.multMCExtraId() > -1) {
         auto mcCollision = collision.template multMCExtra_as<soa::Join<aod::MultMCExtras, aod::MultHepMCHIs>>();
         histos.fill(HIST("hImpactParameterVsFT0A"), multFT0A, mcCollision.impactParameter());
         histos.fill(HIST("hImpactParameterVsFT0C"), multFT0C, mcCollision.impactParameter());
