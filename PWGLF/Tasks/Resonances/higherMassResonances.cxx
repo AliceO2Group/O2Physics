@@ -237,8 +237,8 @@ struct HigherMassResonances {
     if (config.qAevents) {
       rEventSelection.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
       rEventSelection.add("hmultiplicity", "multiplicity percentile distribution", {HistType::kTH1F, {{150, 0.0f, 150.0f}}});
-      hglue.add("htrackscheck_v0", "htrackscheck_v0", kTH1I, {{15, 0, 15}});
-      hglue.add("htrackscheck_v0_daughters", "htrackscheck_v0_daughters", kTH1I, {{15, 0, 15}});
+      rEventSelection.add("htrackscheck_v0", "htrackscheck_v0", kTH1I, {{15, 0, 15}});
+      rEventSelection.add("htrackscheck_v0_daughters", "htrackscheck_v0_daughters", kTH1I, {{15, 0, 15}});
       hMChists.add("events_check", "No. of events in the generated MC", kTH1I, {{20, 0, 20}});
       hMChists.add("events_checkrec", "No. of events in the reconstructed MC", kTH1I, {{25, 0, 25}});
 
@@ -282,7 +282,7 @@ struct HigherMassResonances {
       hv0DauLabel->GetXaxis()->SetBinLabel(7, "Eta");
       hv0DauLabel->GetXaxis()->SetBinLabel(8, "PID TPC");
 
-      std::shared_ptr<TH1> hv0labelmcrec = rEventSelection.get<TH1>(HIST("events_checkrec"));
+      std::shared_ptr<TH1> hv0labelmcrec = hMChists.get<TH1>(HIST("events_checkrec"));
       hv0labelmcrec->GetXaxis()->SetBinLabel(1, "All Tracks");
       hv0labelmcrec->GetXaxis()->SetBinLabel(2, "V0Daughter Sel.");
       hv0labelmcrec->GetXaxis()->SetBinLabel(3, "V0 Sel.");
@@ -455,52 +455,52 @@ struct HigherMassResonances {
     if (config.correlation2Dhist)
       rKzeroShort.fill(HIST("mass_lambda_kshort_before"), candidate.mK0Short(), candidate.mLambda());
 
-    hglue.fill(HIST("htrackscheck_v0"), 0.5);
+    rEventSelection.fill(HIST("htrackscheck_v0"), 0.5);
 
     if (config.isApplyDCAv0topv && std::fabs(candidate.dcav0topv()) > config.cMaxV0DCA) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 1.5);
+    rEventSelection.fill(HIST("htrackscheck_v0"), 1.5);
 
     if (std::abs(candidate.rapidity(0)) >= config.confKsrapidity) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 2.5);
+    rEventSelection.fill(HIST("htrackscheck_v0"), 2.5);
 
     if (pT < config.confV0PtMin) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 3.5);
+    rEventSelection.fill(HIST("htrackscheck_v0"), 3.5);
 
     if (dcaDaughv0 > config.confV0DCADaughMax) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 4.5);
+    rEventSelection.fill(HIST("htrackscheck_v0"), 4.5);
 
     if (cpav0 < config.confV0CPAMin) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 5.5);
+    rEventSelection.fill(HIST("htrackscheck_v0"), 5.5);
 
     if (tranRad < config.confV0TranRadV0Min) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 6.5);
+    rEventSelection.fill(HIST("htrackscheck_v0"), 6.5);
 
     if (tranRad > config.confV0TranRadV0Max) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 7.5);
+    rEventSelection.fill(HIST("htrackscheck_v0"), 7.5);
 
     if (std::fabs(ctauK0s) > config.cMaxV0LifeTime) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 8.5);
+    rEventSelection.fill(HIST("htrackscheck_v0"), 8.5);
 
     if (config.isapplyCompetingcut && (std::abs(candidate.mLambda() - o2::constants::physics::MassLambda0) <= config.competingcascrejlambda || std::abs(candidate.mAntiLambda() - o2::constants::physics::MassLambda0) <= config.competingcascrejlambda)) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 9.5);
+    rEventSelection.fill(HIST("htrackscheck_v0"), 9.5);
 
     if (config.correlation2Dhist)
       rKzeroShort.fill(HIST("mass_lambda_kshort_after10"), candidate.mK0Short(), candidate.mLambda());
@@ -512,12 +512,12 @@ struct HigherMassResonances {
     if (config.isStandardV0 && candidate.v0Type() != 1) {
       return false; // Only standard V0s are selected
     }
-    hglue.fill(HIST("htrackscheck_v0"), 10.5);
+    rEventSelection.fill(HIST("htrackscheck_v0"), 10.5);
 
     if (candidate.mK0Short() < lowmasscutks0 || candidate.mK0Short() > highmasscutks0) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0"), 11.5);
+    rEventSelection.fill(HIST("htrackscheck_v0"), 11.5);
 
     return true;
   }
@@ -533,44 +533,44 @@ struct HigherMassResonances {
     const auto tpcNClsF = track.tpcNClsFound();
     const auto sign = track.sign();
 
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 0.5);
+    rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 0.5);
 
     if (config.hasTPC && !track.hasTPC())
       return false;
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 1.5);
+    rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 1.5);
 
     if (track.tpcNClsCrossedRows() < config.tpcCrossedrows)
       return false;
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 2.5);
+    rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 2.5);
 
     if (track.tpcCrossedRowsOverFindableCls() < config.tpcCrossedrowsOverfcls)
       return false;
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 3.5);
+    rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 3.5);
 
     if (tpcNClsF < config.confDaughTPCnclsMin) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 4.5);
+    rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 4.5);
 
     if (charge < 0 && sign > 0) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 5.5);
+    rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 5.5);
 
     if (charge > 0 && sign < 0) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 6.5);
+    rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 6.5);
 
     if (std::abs(eta) > config.confDaughEta) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 7.5);
+    rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 7.5);
 
     if (std::abs(nsigmaV0DaughterTPC) > config.confDaughPIDCutTPC) {
       return false;
     }
-    hglue.fill(HIST("htrackscheck_v0_daughters"), 8.5);
+    rEventSelection.fill(HIST("htrackscheck_v0_daughters"), 8.5);
 
     // if (std::abs())
 
@@ -887,8 +887,12 @@ struct HigherMassResonances {
   }
   PROCESS_SWITCH(HigherMassResonances, processSE, "same event process", true);
 
-  using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps, aod::StraZDCSP>;
-  using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFNSigmas>;
+  // using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::Mults, aod::PVMults>>;
+  // using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
+  // using V0TrackCandidate = aod::V0Datas;
+
+  using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>;
+  using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
   using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for ME mixing"};
@@ -1280,7 +1284,7 @@ struct HigherMassResonances {
   }
   PROCESS_SWITCH(HigherMassResonances, processRec, "Process Reconstructed", false);
 
-  void processSEderived(EventCandidatesDerivedData::iterator const& collision, TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s)
+  void processSEderived(EventCandidatesDerivedData::iterator const& collision, V0CandidatesDerivedData const& V0s)
   {
     if (config.cSelectMultEstimator == kFT0M) {
       multiplicity = collision.centFT0M();
@@ -1319,22 +1323,22 @@ struct HigherMassResonances {
         continue;
       }
 
-      auto postrack1 = v1.template posTrack_as<TrackCandidates>();
-      auto negtrack1 = v1.template negTrack_as<TrackCandidates>();
-      auto postrack2 = v2.template posTrack_as<TrackCandidates>();
-      auto negtrack2 = v2.template negTrack_as<TrackCandidates>();
+      // auto postrack1 = v1.template posTrack_as<DauTracks>();
+      // auto negtrack1 = v1.template negTrack_as<DauTracks>();
+      // auto postrack2 = v2.template posTrack_as<DauTracks>();
+      // auto negtrack2 = v2.template negTrack_as<DauTracks>();
 
-      double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
-      double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
-      double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
-      double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
+      // double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
+      // double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
+      // double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
+      // double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
 
-      if (!(isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, v1) && isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, v1))) {
-        continue;
-      }
-      if (!(isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, v2) && isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2))) {
-        continue;
-      }
+      // if (!(isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, v1) && isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, v1))) {
+      //   continue;
+      // }
+      // if (!(isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, v2) && isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2))) {
+      //   continue;
+      // }
 
       if (std::find(v0indexes.begin(), v0indexes.end(), v1.globalIndex()) == v0indexes.end()) {
         v0indexes.push_back(v1.globalIndex());
@@ -1356,12 +1360,12 @@ struct HigherMassResonances {
       //   rKzeroShort.fill(HIST("positive_phi"), postrack1.phi());
       // }
 
-      if (postrack1.globalIndex() == postrack2.globalIndex()) {
-        continue;
-      }
-      if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
-        continue;
-      }
+      // if (postrack1.globalIndex() == postrack2.globalIndex()) {
+      //   continue;
+      // }
+      // if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
+      //   continue;
+      // }
 
       if (!applyAngSep(v1, v2)) {
         continue;
