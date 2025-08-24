@@ -258,7 +258,8 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_gen_ue", "antiproton_gen_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
 
       // Normalization histogram
-      registryMC.add("antiproton_y_phi", "antiproton_y_phi", HistType::kTH2F, {{2000, -1.0, 1.0, "#it{y}"}, {2000, 0.0, TwoPI, "#Delta#phi"}});
+      registryMC.add("antiproton_y_phi_jet", "antiproton_y_phi_jet", HistType::kTH2F, {{2000, -1.0, 1.0, "#it{y}"}, {2000, 0.0, TwoPI, "#Delta#phi"}});
+      registryMC.add("antiproton_y_phi_ue", "antiproton_y_phi_ue", HistType::kTH2F, {{2000, -1.0, 1.0, "#it{y}"}, {2000, 0.0, TwoPI, "#Delta#phi"}});
     }
 
     // Reconstructed antiproton spectra in jets and UE (MC-matched) with TPC/TOF PID
@@ -1463,7 +1464,12 @@ struct AntinucleiInJets {
             continue;
 
           // Fill normalization histogram
-          registryMC.fill(HIST("antiproton_y_phi"), particle.y(), getDeltaPhi(particle.phi(), jet.phi()));
+          double px = particle.px();
+          double py = particle.py();
+          double pz = particle.pz();
+          double E = std::sqrt(MassProton * MassProton + px * px + py * py + pz * pz);
+          double y = 0.5 * std::log((E + pz) / (E - pz));
+          registryMC.fill(HIST("antiproton_y_phi_jet"), y, getDeltaPhi(particle.phi(), jet.phi()));
 
           // Fill histogram for generated antiprotons
           registryMC.fill(HIST("antiproton_gen_jet"), particle.pt());
@@ -1496,6 +1502,20 @@ struct AntinucleiInJets {
           // Reject tracks that lie outside the maxConeRadius from both UE axes
           if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius)
             continue;
+
+          // Fill normalization histogram
+          double px = protonVec.Px();
+          double py = protonVec.Py();
+          double pz = protonVec.Pz();
+          double E = std::sqrt(MassProton * MassProton + px * px + py * py + pz * pz);
+          double y = 0.5 * std::log((E + pz) / (E - pz));
+
+          if (deltaRUe1 < maxConeRadius) {
+            registryMC.fill(HIST("antiproton_y_phi_ue"), y, getDeltaPhi(protonVec.Phi(), ueAxis1.Phi()));
+          }
+          if (deltaRUe2 < maxConeRadius) {
+            registryMC.fill(HIST("antiproton_y_phi_ue"), y, getDeltaPhi(protonVec.Phi(), ueAxis2.Phi()));
+          }
 
           // Fill histogram for antiprotons in the UE
           registryMC.fill(HIST("antiproton_gen_ue"), protonVec.Pt());
