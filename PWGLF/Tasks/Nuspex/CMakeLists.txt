@@ -155,4 +155,9 @@ o2physics_add_dpl_workflow(dedx-pid-analysis
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pikp-raa-analysis
+    SOURCES piKpRAA.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 endif()
