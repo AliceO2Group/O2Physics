@@ -260,6 +260,7 @@ struct JetChargedV2 {
       histosQA.add("histCent", "Centrality TrkProcess", HistType::kTH1F, {axisCent});
       //< Track efficiency plots >//
       registry.add("h_collisions", "event status;event status;entries", {HistType::kTH1F, {{4, 0.0, 4.0}}});
+      registry.add("h_collisions_Zvertex", "position of collision ;#it{Z} (cm)", {HistType::kTH1F, {{300, -15.0, 15.0}}});
       //< fit quality >//
       registry.add("h_PvalueCDF_CombinFit", "cDF #chi^{2}; entries", {HistType::kTH1F, {{50, 0, 1}}});
       registry.add("h2_PvalueCDFCent_CombinFit", "p-value cDF vs centrality; centrality; p-value", {HistType::kTH2F, {{100, 0, 100}, {40, 0, 1}}});
@@ -367,6 +368,7 @@ struct JetChargedV2 {
       registry.get<TH1>(HIST("h_mcColl_counts"))->GetXaxis()->SetBinLabel(6, "centralitycut");
       registry.get<TH1>(HIST("h_mcColl_counts"))->GetXaxis()->SetBinLabel(7, "occupancycut");
       registry.add("h_mcColl_rho", "mc collision rho;#rho (GeV/#it{c}); counts", {HistType::kTH1F, {{500, 0.0, 500.0}}});
+      registry.add("h_mc_zvertex", "position of collision ;#it{Z} (cm)", {HistType::kTH1F, {{300, -15.0, 15.0}}});
     }
 
     if (doprocessJetsMatched) {
@@ -1057,7 +1059,7 @@ struct JetChargedV2 {
       return;
     }
     registry.fill(HIST("h_collisions"), 2.5);
-
+    registry.fill(HIST("h_collisions_Zvertex"), collision.posZ());
     double leadingJetPt = -1;
     double leadingJetPhi = -1;
     double leadingJetEta = -1;
@@ -1608,7 +1610,7 @@ struct JetChargedV2 {
     }
     registry.fill(HIST("h_mcColl_counts"), 6.5);
     registry.fill(HIST("h_mcColl_rho"), mccollision.rho());
-
+    registry.fill(HIST("h_mc_zvertex"), mccollision.posZ());
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
@@ -1717,7 +1719,7 @@ struct JetChargedV2 {
       return;
     }
     registry.fill(HIST("h_mcColl_counts"), 6.5);
-
+    registry.fill(HIST("h_mc_zvertex"), mccollision.posZ());
     for (auto const& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
         continue;
