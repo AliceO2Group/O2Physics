@@ -136,7 +136,7 @@ struct CreateEMEventDilepton {
     mRunNumber = bc.runNumber();
   }
 
-  Preslice<aod::Collisions> perBC = aod::collision::bcId;
+  // Preslice<aod::Collisions> perBC = aod::collision::bcId;
   // Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
   // PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
   // PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
@@ -163,16 +163,18 @@ struct CreateEMEventDilepton {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
-      if (!collision.isSelected()) { // minimal cut for MB
-        continue;
+      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        if constexpr (eventtype == EMEventType::kEvent) {
+          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+        } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
+          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
+        } else {
+          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+        }
       }
 
-      if constexpr (eventtype == EMEventType::kEvent) {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
-      } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
-      } else {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+      if (!collision.isSelected()) { // minimal cut for MB
+        continue;
       }
 
       if (!collision.isEoI()) { // events with at least 1 lepton for data reduction.

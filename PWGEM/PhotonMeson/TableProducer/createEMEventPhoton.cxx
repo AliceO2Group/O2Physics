@@ -154,9 +154,6 @@ struct CreateEMEventPhoton {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
-      if (!collision.isSelected()) {
-        continue;
-      }
       if (needEMCTrigger && !collision.alias_bit(kTVXinEMC)) {
         continue;
       }
@@ -164,12 +161,18 @@ struct CreateEMEventPhoton {
         continue;
       }
 
-      if constexpr (eventtype == EMEventType::kEvent) {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
-      } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
-      } else {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        if constexpr (eventtype == EMEventType::kEvent) {
+          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+        } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
+          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
+        } else {
+          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+        }
+      }
+
+      if (!collision.isSelected()) {
+        continue;
       }
 
       if (!collision.isEoI()) { // events with at least 1 photon for data reduction.
