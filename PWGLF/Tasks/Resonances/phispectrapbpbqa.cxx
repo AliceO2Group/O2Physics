@@ -64,6 +64,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
+using namespace o2::aod::rctsel;
 struct phispectrapbpbqa {
   double bz = 0.;
 
@@ -75,6 +76,13 @@ struct phispectrapbpbqa {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
     Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
+
+  struct : ConfigurableGroup {
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+  } rctCut;
+
   TH3D* hTPCCallib;
   TH3D* hTOFCallib;
 
@@ -141,13 +149,13 @@ struct phispectrapbpbqa {
   Partition<TrackCandidates> negTracks = aod::track::signed1Pt < cfgCutCharge;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
+  RCTFlagsChecker rctChecker;
   // Event selection cuts - Alex
   // TF1* fMultPVCutLow = nullptr;
 
   void init(o2::framework::InitContext&)
   {
-
+    rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
     histos.add("hphiSE", "hphiSE", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisCentrality, axisOccupancy, cnfgaxis.configThnAxisSector}, true);
     histos.add("hphiME", "hphiME", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisCentrality, axisOccupancy, cnfgaxis.configThnAxisSector}, true);
     histos.add("hphiGen", "hphiGen", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisCentrality, axisOccupancy}, true);
@@ -325,6 +333,11 @@ struct phispectrapbpbqa {
     if (!collision.sel8() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
       return;
     }
+    if (rctCut.requireRCTFlagChecker) {
+      if (!rctChecker(collision)) {
+        return;
+      }
+    }
     auto centrality = collision.centFT0C();
     int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hCentrality"), centrality);
@@ -481,6 +494,11 @@ struct phispectrapbpbqa {
       if (!collision2.sel8() || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
         continue;
       }
+      if (rctCut.requireRCTFlagChecker) {
+        if (!rctChecker(collision1) || !rctChecker(collision2)) {
+          continue;
+        }
+      }
       int occupancy = collision1.trackOccupancyInTimeRange();
       auto centrality = collision1.centFT0C();
       for (auto& [track1, track2] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
@@ -587,8 +605,13 @@ struct phispectrapbpbqa {
         histos.fill(HIST("hMC"), 8);
         continue;
       }
-
       histos.fill(HIST("hMC"), 9);
+      if (rctCut.requireRCTFlagChecker) {
+        if (!rctChecker(RecCollision)) {
+          continue;
+        }
+      }
+      histos.fill(HIST("hMC"), 10);
       auto centrality = RecCollision.centFT0C();
       int occupancy = RecCollision.trackOccupancyInTimeRange();
       histos.fill(HIST("hOccupancy"), occupancy, centrality);
