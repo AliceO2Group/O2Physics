@@ -85,6 +85,7 @@ struct Kstarqa {
     Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", true, "kNoTimeFrameBorder"};
     Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", true, "kNoITSROFrameBorder"};
     Configurable<bool> isApplyParticleMID{"isApplyParticleMID", true, "Apply particle misidentification"};
+    Configurable<bool> checkVzEvSigLoss{"checkVzEvSigLoss", false, "Check Vz event signal loss"};
 
     Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
     Configurable<float> configOccCut{"configOccCut", 1000., "Occupancy cut"};
@@ -328,7 +329,8 @@ struct Kstarqa {
     hInvMass.add("hAllRecCollisions", "All reconstructed events", kTH1F, {multiplicityAxis});
     hInvMass.add("hAllRecCollisionsCalib", "All reconstructed events", kTH1F, {multiplicityAxis});
     hInvMass.add("MCcorrections/hImpactParameterRec", "Impact parameter in reconstructed MC", kTH1F, {impactParAxis});
-    hInvMass.add("MCcorrections/MultiplicityRec", "Multiplicity in reconstructed MC", kTH1F, {multiplicityAxis});
+    hInvMass.add("MCcorrections/MultiplicityRec", "Multiplicity in generated MC with at least 1 reconstruction", kTH1F, {multiplicityAxis});
+    hInvMass.add("MCcorrections/MultiplicityRec2", "Multiplicity in reconstructed MC", kTH1F, {multiplicityAxis});
     hInvMass.add("MCcorrections/hImpactParameterGen", "Impact parameter in generated MC", kTH1F, {impactParAxis});
     hInvMass.add("MCcorrections/MultiplicityGen", "Multiplicity in generated MC", kTH1F, {multiplicityAxis});
     hInvMass.add("MCcorrections/hImpactParametervsMultiplicity", "Impact parameter vs multiplicity in reconstructed MC", kTH2F, {{impactParAxis}, {multiplicityAxis}});
@@ -1639,18 +1641,27 @@ struct Kstarqa {
       return;
     }
 
+    if (selectionConfig.checkVzEvSigLoss && (std::abs(mcCollision.posZ()) >= selectionConfig.cutzvertex)) {
+      return;
+    }
+
     auto impactPar = mcCollision.impactParameter();
-    multiplicity = -1;
-    multiplicity = mcCollision.centFT0M();
+    auto multiplicityRec = -1;
+    auto multiplicityGen = -1;
+    multiplicityGen = mcCollision.centFT0M();
     hInvMass.fill(HIST("MCcorrections/hImpactParameterGen"), impactPar);
-    hInvMass.fill(HIST("MCcorrections/MultiplicityGen"), multiplicity);
+    hInvMass.fill(HIST("MCcorrections/MultiplicityGen"), multiplicityGen);
 
     bool isSelectedEvent = false;
     auto multiplicity1 = -999.;
     for (const auto& RecCollision : recCollisions) {
+      if (!RecCollision.has_mcCollision())
+        continue;
       if (!selectionEvent(RecCollision, false))
         continue;
       // multiplicity1 = RecCollision.centFT0M();
+      const auto& mcCollisionRec = RecCollision.mcCollision_as<EventMCGenerated>();
+      multiplicityRec = mcCollisionRec.centFT0M();
 
       if (cSelectMultEstimator == kFT0M) {
         multiplicity1 = RecCollision.centFT0M();
@@ -1670,7 +1681,8 @@ struct Kstarqa {
     // Event loss
     if (isSelectedEvent) {
       hInvMass.fill(HIST("MCcorrections/hImpactParameterRec"), impactPar);
-      hInvMass.fill(HIST("MCcorrections/MultiplicityRec"), multiplicity);
+      hInvMass.fill(HIST("MCcorrections/MultiplicityRec"), multiplicityGen);
+      hInvMass.fill(HIST("MCcorrections/MultiplicityRec2"), multiplicityRec);
       hInvMass.fill(HIST("MCcorrections/hImpactParametervsMultiplicity"), impactPar, multiplicity1);
     }
 
@@ -1680,9 +1692,9 @@ struct Kstarqa {
         continue;
 
       // signal loss estimation
-      hInvMass.fill(HIST("MCcorrections/hSignalLossDenominator"), mcPart.pt(), multiplicity);
+      hInvMass.fill(HIST("MCcorrections/hSignalLossDenominator"), mcPart.pt(), multiplicityGen);
       if (isSelectedEvent) {
-        hInvMass.fill(HIST("MCcorrections/hSignalLossNumerator"), mcPart.pt(), multiplicity);
+        hInvMass.fill(HIST("MCcorrections/hSignalLossNumerator"), mcPart.pt(), multiplicityGen);
       }
     } // end loop on gen particles
   }
