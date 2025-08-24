@@ -2006,8 +2006,7 @@ void processTracksWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& coll
     // Verify jet-collision association
     for (auto const& jet : jets) {
       if (jet.collisionId() != collision.globalIndex()) {
-        std::cout << "WARNING: Jet with pT " << jet.pt() << " belongs to collision " << jet.collisionId()
-        << " but processing collision " << collision.globalIndex() << std::endl;
+        LOGF(warn, "Jet with pT %.2f belongs to collision %d but processing collision %d", jet.pt(), jet.collisionId(), collision.globalIndex());
         continue;
       }
 
@@ -2075,8 +2074,9 @@ void processTracksWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& coll
       for (const auto& jettrack : jet.tracks_as<aod::JetTracks>()) {
         if (jetderiveddatautilities::selectTrack(jettrack, trackSelection)) {
           numberOfChargedParticles++;
-        } else
-        continue;
+        } else {
+          continue;
+        }
       }
 
       // Calculate neutral energy fraction for this jet
@@ -2165,8 +2165,7 @@ void processTracksWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& coll
     // Verify jet-collision association
     for (auto const& mcdjet : mcdjets) {
       if (mcdjet.collisionId() != collision.globalIndex()) {
-        std::cout << "WARNING: Jet with pT " << mcdjet.pt() << " belongs to collision " << mcdjet.collisionId()
-        << " but processing collision " << collision.globalIndex() << std::endl;
+        LOGF(warn, "Jet with pT %.2f belongs to collision %d but processing collision %d", mcdjet.pt(), mcdjet.collisionId(), collision.globalIndex());
         continue;
       }
 
@@ -2219,8 +2218,9 @@ void processTracksWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& coll
       for (const auto& jettrack : jet.tracks_as<aod::JetTracks>()) {
         if (jetderiveddatautilities::selectTrack(jettrack, trackSelection)) {
           numberOfChargedParticles++;
-        } else
-        continue;
+        } else {
+          continue;
+        }
       }
 
       // Calculate neutral energy fraction for this jet
@@ -2321,8 +2321,7 @@ void processTracksWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& coll
       float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
 
       if (mcdjet.collisionId() != collision.globalIndex()) {
-        std::cout << "WARNING: Jet with pT " << mcdjet.pt() << " belongs to collision " << mcdjet.collisionId()
-        << " but processing collision " << collision.globalIndex() << std::endl;
+        LOGF(warn, "Jet with pT %.2f belongs to collision %d but processing collision %d", mcdjet.pt(), mcdjet.collisionId(), collision.globalIndex());
         continue;
       }
 
@@ -2378,8 +2377,9 @@ void processTracksWeighted(soa::Filtered<EMCCollisionsMCD>::iterator const& coll
       for (const auto& jettrack : jet.tracks_as<aod::JetTracks>()) {
         if (jetderiveddatautilities::selectTrack(jettrack, trackSelection)) {
           numberOfChargedParticles++;
-        } else
-        continue;
+        } else {
+          continue;
+        }
       }
 
       // Calculate neutral energy fraction for this jet
