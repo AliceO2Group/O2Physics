@@ -1464,7 +1464,7 @@ struct AntinucleiInJets {
 
           // Fill normalization histogram
           registryMC.fill(HIST("antiproton_y_phi"), particle.y(), getDeltaPhi(particle.phi(), jet.phi()));
-  
+
           // Fill histogram for generated antiprotons
           registryMC.fill(HIST("antiproton_gen_jet"), particle.pt());
         }
