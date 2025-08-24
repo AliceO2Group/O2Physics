@@ -79,7 +79,7 @@ struct DedxPidAnalysis {
   Configurable<float> etaMin{"etaMin", -0.8f, "etaMin"};
   Configurable<float> etaMax{"etaMax", +0.8f, "etaMax"};
   Configurable<float> minNCrossedRowsOverFindableClustersTPC{"minNCrossedRowsOverFindableClustersTPC", 0.8f, "Additional cut on the minimum value of the ratio between crossed rows and findable clusters in the TPC"};
-  Configurable<float> maxDCAz{"maxDCAz", 2.f, "maxDCAz"};
+  Configurable<float> maxDCAz{"maxDCAz", 0.1f, "maxDCAz"};
   // v0 cuts
   Configurable<float> v0cospaMin{"v0cospaMin", 0.998f, "Minimum V0 CosPA"};
   Configurable<float> minimumV0Radius{"minimumV0Radius", 0.5f,
@@ -201,11 +201,11 @@ struct DedxPidAnalysis {
 
       // pt vs p
       registryDeDx.add(
-        "hp_vs_pt_all_Neg", "p_vs_pT", HistType::kTH2F,
-        {{ptAxis}, {pAxis}});
+        "heta_vs_p_vs_pt_all_Neg", "eta_vs_p_vs_pT", HistType::kTH3F,
+        {{etaAxis}, {ptAxis}, {pAxis}});
       registryDeDx.add(
-        "hp_vs_pt_all_Pos", "p_vs_pT", HistType::kTH2F,
-        {{ptAxis}, {pAxis}});
+        "heta_vs_p_vs_pt_all_Pos", "eta_vs_p_vs_pT", HistType::kTH3F,
+        {{etaAxis}, {ptAxis}, {pAxis}});
 
       // De/Dx for ch and v0 particles
       for (int i = 0; i < kParticlesType; ++i) {
@@ -596,19 +596,8 @@ struct DedxPidAnalysis {
     if (!collision.sel8())
       return;
 
-    if (additionalCuts) {
-      if (!collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))
-        return;
-
-      if (!collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV))
-        return;
-
-      if (std::abs(collision.posZ()) >= maxZDistanceToIP)
-        return;
-
-      if (!collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard))
-        return;
-    }
+    if (std::abs(collision.posZ()) > maxZDistanceToIP)
+      return;
 
     // Event Counter
     registryDeDx.fill(HIST("histRecVtxZData"), collision.posZ());
@@ -624,8 +613,10 @@ struct DedxPidAnalysis {
         continue;
 
       // phi and Ncl cut
-      if (!passedPhiCut(trk, magField, *fphiCutLow, *fphiCutHigh))
-        continue;
+      if (additionalCuts) {
+        if (!passedPhiCut(trk, magField, *fphiCutLow, *fphiCutHigh))
+          continue;
+      }
 
       float signedP = trk.sign() * trk.tpcInnerParam();
 
@@ -704,10 +695,10 @@ struct DedxPidAnalysis {
           if (trk.eta() > EtaCut[i] && trk.eta() < EtaCut[i + 1]) {
             if (signedP > 0) {
               registryDeDx.fill(HIST(kDedxvsMomentumPos[0]), signedP, trk.tpcSignal() * 50 / calibrationFactorPos->at(i), trk.eta());
-              registryDeDx.fill(HIST("hp_vs_pt_all_Pos"), trk.pt(), signedP);
+              registryDeDx.fill(HIST("heta_vs_p_vs_pt_all_Pos"), trk.eta(), trk.pt(), signedP);
             } else {
               registryDeDx.fill(HIST(kDedxvsMomentumNeg[0]), std::abs(signedP), trk.tpcSignal() * 50 / calibrationFactorNeg->at(i), trk.eta());
-              registryDeDx.fill(HIST("hp_vs_pt_all_Neg"), trk.pt(), std::abs(signedP));
+              registryDeDx.fill(HIST("heta_vs_p_vs_pt_all_Neg"), trk.eta(), trk.pt(), std::abs(signedP));
             }
           }
         }
@@ -736,11 +727,13 @@ struct DedxPidAnalysis {
         if (!negTrack.passedTPCRefit())
           continue;
         // phi and Ncl cut
-        if (!passedPhiCutSecondaries(posTrack, magField, *fphiCutLow, *fphiCutHigh))
-          continue;
+        if (additionalCuts) {
+          if (!passedPhiCutSecondaries(posTrack, magField, *fphiCutLow, *fphiCutHigh))
+            continue;
 
-        if (!passedPhiCutSecondaries(negTrack, magField, *fphiCutLow, *fphiCutHigh))
-          continue;
+          if (!passedPhiCutSecondaries(negTrack, magField, *fphiCutLow, *fphiCutHigh))
+            continue;
+        }
 
         float signedPpos = posTrack.sign() * posTrack.tpcInnerParam();
         float signedPneg = negTrack.sign() * negTrack.tpcInnerParam();

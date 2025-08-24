@@ -107,7 +107,7 @@ struct phispectrapbpbqa {
   Configurable<bool> ispTdepPID{"ispTdepPID", false, "pT dependent PID"};
   Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.5, "cut TOF beta"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 2.0, "Value of the TPC Nsigma cut"};
-  Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 2.0, "Value of the Combined TPC-TOF Nsigma cut"};
+  Configurable<bool> applyTOF{"applyTOF", true, "Apply TOF"};
   ConfigurableAxis axisOccupancy{"axisOccupancy", {VARIABLE_WIDTH, -1.0, 200.0, 500.0, 1000.0, 2000.0f, 4000.0, 10000.0f, 100000.0f}, "occupancy axis"};
   struct : ConfigurableGroup {
     ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {90, 0.98, 1.07}, "#it{M} (GeV/#it{c}^{2})"};
@@ -157,6 +157,8 @@ struct phispectrapbpbqa {
 
     histos.add("hPhiMommentum", "hPhiMommentum", kTH3F, {{36, 0, 6.283}, {200, -10.0, 10.0}, axisOccupancy});
 
+    histos.add("hNsigmaTPCBeforeCut", "NsigmaKaon TPC Before Cut", kTH3F, {{200, -10.0f, 10.0f}, {100, 0.0, 10.0}, axisOccupancy});
+    histos.add("hNsigmaTOFBeforeCut", "NsigmaKaon TOF Before Cut", kTH3F, {{200, -10.0f, 10.0f}, {100, 0.0, 10.0}, axisOccupancy});
     histos.add("hNsigmaTPCAfterCut", "NsigmaKaon TPC After Cut", kTH3F, {{200, -10.0f, 10.0f}, {100, 0.0, 10.0}, axisOccupancy});
     histos.add("hNsigmaTOFAfterCut", "NsigmaKaon TOF After Cut", kTH3F, {{200, -10.0f, 10.0f}, {100, 0.0, 10.0}, axisOccupancy});
 
@@ -214,8 +216,28 @@ struct phispectrapbpbqa {
     if (candidate.p() < 0.7 && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.p() >= 0.7 && candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Sqrt(nsigmaTPC * nsigmaTPC + nsigmaTOF * nsigmaTOF) < nsigmaCutCombined) {
-      return true;
+    if (candidate.p() > 0.7 && candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
+      if (candidate.p() > 0.7 && candidate.p() < 1.6 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -5.0 && nsigmaTOF < 10.0) {
+        return true;
+      }
+      if (candidate.p() >= 1.6 && candidate.p() < 2.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 10.0) {
+        return true;
+      }
+      if (candidate.p() >= 2.0 && candidate.p() < 2.5 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 6.0) {
+        return true;
+      }
+      if (candidate.p() >= 2.5 && candidate.p() < 4.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -2.5 && nsigmaTOF < 4.0) {
+        return true;
+      }
+      if (candidate.p() >= 4.0 && candidate.p() < 5.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 3.0) {
+        return true;
+      }
+      if (candidate.p() >= 5.0 && candidate.p() < 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 2.5) {
+        return true;
+      }
+      if (candidate.p() >= 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 3.0) {
+        return true;
+      }
     }
     return false;
   }
@@ -223,13 +245,34 @@ struct phispectrapbpbqa {
   template <typename T>
   bool selectionPID(const T& candidate, double nsigmaTPC, double nsigmaTOF)
   {
-    if (candidate.p() < 0.7 && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
-      return true;
-    }
-    if (candidate.p() >= 0.7 && candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Sqrt(nsigmaTPC * nsigmaTPC + nsigmaTOF * nsigmaTOF) < nsigmaCutCombined) {
-      return true;
-    }
-    if (candidate.p() >= 0.7 && !candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
+    if (applyTOF) {
+      if (!candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
+        return true;
+      }
+      if (candidate.p() > 0.5 && candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
+        if (candidate.p() > 0.5 && candidate.p() < 1.6 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -5.0 && nsigmaTOF < 10.0) {
+          return true;
+        }
+        if (candidate.p() >= 1.6 && candidate.p() < 2.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 10.0) {
+          return true;
+        }
+        if (candidate.p() >= 2.0 && candidate.p() < 2.5 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 6.0) {
+          return true;
+        }
+        if (candidate.p() >= 2.5 && candidate.p() < 4.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -2.5 && nsigmaTOF < 4.0) {
+          return true;
+        }
+        if (candidate.p() >= 4.0 && candidate.p() < 5.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 3.0) {
+          return true;
+        }
+        if (candidate.p() >= 5.0 && candidate.p() < 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 2.5) {
+          return true;
+        }
+        if (candidate.p() >= 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 3.0) {
+          return true;
+        }
+      }
+    } else if (TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
       return true;
     }
     return false;
@@ -324,6 +367,8 @@ struct phispectrapbpbqa {
       if (track1.hasTOF()) {
         histos.fill(HIST("hNsigmaTOF"), nSigmaTOF, track1.p(), occupancy, centrality);
       }
+      histos.fill(HIST("hNsigmaTPCBeforeCut"), nSigmaTPC, track1.p(), occupancy);
+      histos.fill(HIST("hNsigmaTOFBeforeCut"), nSigmaTOF, track1.p(), occupancy);
       if (applyPID) {
         if (ispTdepPID && !selectionPIDpTdependent(track1, nSigmaTPC, nSigmaTOF)) {
           continue;
@@ -374,6 +419,8 @@ struct phispectrapbpbqa {
           if (track2.hasTOF()) {
             histos.fill(HIST("hNsigmaTOF"), nSigmaTOF2, track2.p(), occupancy, centrality);
           }
+          histos.fill(HIST("hNsigmaTPCBeforeCut"), nSigmaTPC2, track2.p(), occupancy);
+          histos.fill(HIST("hNsigmaTOFBeforeCut"), nSigmaTOF2, track2.p(), occupancy);
         }
         if (applyPID) {
           if (ispTdepPID && !selectionPIDpTdependent(track2, nSigmaTPC2, nSigmaTOF2)) {
@@ -549,6 +596,7 @@ struct phispectrapbpbqa {
       auto oldindex = -999;
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       // loop over reconstructed particle
+      int ntrack1 = 0;
       for (auto track1 : Rectrackspart) {
         if (!selectionTrack(track1)) {
           continue;
@@ -557,6 +605,32 @@ struct phispectrapbpbqa {
           continue;
         }
         auto track1ID = track1.index();
+        // PID track 1
+        double nSigmaTPC = track1.tpcNSigmaKa();
+        double nSigmaTOF = track1.tofNSigmaKa();
+        if (!track1.hasTOF()) {
+          nSigmaTOF = -9999.99;
+        }
+        if (cfgUpdatePID) {
+          nSigmaTPC = (nSigmaTPC - hTPCCallib->GetBinContent(hTPCCallib->FindBin(track1.p(), centrality, occupancy))) / hTPCCallib->GetBinError(hTPCCallib->FindBin(track1.p(), centrality, occupancy));
+          if (track1.hasTOF()) {
+            nSigmaTOF = (nSigmaTOF - hTOFCallib->GetBinContent(hTOFCallib->FindBin(track1.p(), centrality, occupancy))) / hTOFCallib->GetBinError(hTOFCallib->FindBin(track1.p(), centrality, occupancy));
+          }
+        }
+        histos.fill(HIST("hNsigmaTPCBeforeCut"), nSigmaTPC, track1.p(), occupancy);
+        histos.fill(HIST("hNsigmaTOFBeforeCut"), nSigmaTOF, track1.p(), occupancy);
+
+        if (applyPID) {
+          if (ispTdepPID && !selectionPIDpTdependent(track1, nSigmaTPC, nSigmaTOF)) {
+            continue;
+          }
+          if (!ispTdepPID && !selectionPID(track1, nSigmaTPC, nSigmaTOF)) {
+            continue;
+          }
+          histos.fill(HIST("hNsigmaTPCAfterCut"), nSigmaTPC, track1.p(), occupancy);
+          histos.fill(HIST("hNsigmaTOFAfterCut"), nSigmaTOF, track1.p(), occupancy);
+        }
+        ntrack1 = ntrack1 + 1;
         for (auto track2 : Rectrackspart) {
           auto track2ID = track2.index();
           if (track2ID <= track1ID) {
@@ -574,18 +648,7 @@ struct phispectrapbpbqa {
           if (track1.sign() * track2.sign() > 0) {
             continue;
           }
-          // PID track 1
-          double nSigmaTPC = track1.tpcNSigmaKa();
-          double nSigmaTOF = track1.tofNSigmaKa();
-          if (!track1.hasTOF()) {
-            nSigmaTOF = -9999.99;
-          }
-          if (cfgUpdatePID) {
-            nSigmaTPC = (nSigmaTPC - hTPCCallib->GetBinContent(hTPCCallib->FindBin(track1.p(), centrality, occupancy))) / hTPCCallib->GetBinError(hTPCCallib->FindBin(track1.p(), centrality, occupancy));
-            if (track1.hasTOF()) {
-              nSigmaTOF = (nSigmaTOF - hTOFCallib->GetBinContent(hTOFCallib->FindBin(track1.p(), centrality, occupancy))) / hTOFCallib->GetBinError(hTOFCallib->FindBin(track1.p(), centrality, occupancy));
-            }
-          }
+
           // PID track 2
           double nSigmaTPC2 = track2.tpcNSigmaKa();
           double nSigmaTOF2 = track2.tofNSigmaKa();
@@ -598,20 +661,21 @@ struct phispectrapbpbqa {
               nSigmaTOF2 = (nSigmaTOF2 - hTOFCallib->GetBinContent(hTOFCallib->FindBin(track2.p(), centrality, occupancy))) / hTOFCallib->GetBinError(hTOFCallib->FindBin(track2.p(), centrality, occupancy));
             }
           }
+          if (ntrack1 == 1) {
+            histos.fill(HIST("hNsigmaTPCBeforeCut"), nSigmaTPC2, track2.p(), occupancy);
+            histos.fill(HIST("hNsigmaTOFBeforeCut"), nSigmaTOF2, track2.p(), occupancy);
+          }
           if (applyPID) {
-            if (ispTdepPID && !selectionPIDpTdependent(track1, nSigmaTPC, nSigmaTOF)) {
-              continue;
-            }
-            if (!ispTdepPID && !selectionPID(track1, nSigmaTPC, nSigmaTOF)) {
-              continue;
-            }
-
             if (ispTdepPID && !selectionPIDpTdependent(track2, nSigmaTPC2, nSigmaTOF2)) {
               continue;
             }
             if (!ispTdepPID && !selectionPID(track2, nSigmaTPC2, nSigmaTOF2)) {
               continue;
             }
+          }
+          if (ntrack1 == 1) {
+            histos.fill(HIST("hNsigmaTPCAfterCut"), nSigmaTPC2, track2.p(), occupancy);
+            histos.fill(HIST("hNsigmaTOFAfterCut"), nSigmaTOF2, track2.p(), occupancy);
           }
 
           const auto mctrack1 = track1.mcParticle();

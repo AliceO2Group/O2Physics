@@ -851,31 +851,30 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         continue;
 
       cascQAHistos.fillQA<false, false>(part);
-
-      for (const auto& part : groupPartsOne) {
-        int pdgCode = static_cast<int>(part.pidCut());
-        if (pdgCode != confTrkPDGCodePartOne)
-          continue;
-        const auto& pdgTrackParticle = pdgMC->GetParticle(pdgCode);
-        if (!pdgTrackParticle) {
-          continue;
-        }
-
-        if (pdgTrackParticle->Charge() > 0) {
-          trackHistoPartOnePos.fillQA<false, false>(part);
-        } else if (pdgTrackParticle->Charge() < 0) {
-          trackHistoPartOneNeg.fillQA<false, false>(part);
-        }
+    }
+    for (const auto& part : groupPartsOne) {
+      int pdgCode = static_cast<int>(part.pidCut());
+      if (pdgCode != confTrkPDGCodePartOne)
+        continue;
+      const auto& pdgTrackParticle = pdgMC->GetParticle(pdgCode);
+      if (!pdgTrackParticle) {
+        continue;
       }
 
-      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if (static_cast<int>(p1.pidCut()) != confTrkPDGCodePartOne)
-          continue;
-        int pdgCodeCasc = static_cast<int>(p2.pidCut());
-        if ((confCascType1 == 0 && pdgCodeCasc != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc != kXiPlusBar))
-          continue;
-        sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+      if (pdgTrackParticle->Charge() > 0) {
+        trackHistoPartOnePos.fillQA<false, false>(part);
+      } else if (pdgTrackParticle->Charge() < 0) {
+        trackHistoPartOneNeg.fillQA<false, false>(part);
       }
+    }
+
+    for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      if (static_cast<int>(p1.pidCut()) != confTrkPDGCodePartOne)
+        continue;
+      int pdgCodeCasc = static_cast<int>(p2.pidCut());
+      if ((confCascType1 == 0 && pdgCodeCasc != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc != kXiPlusBar))
+        continue;
+      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEventMCgen, "Enable processing same event MC truth for track - cascade", false);
@@ -895,24 +894,24 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         continue;
 
       cascQAHistos.fillQA<false, false>(part);
+    }
 
-      auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
-        int pdgCodeCasc1 = static_cast<int>(p1.pidCut());
-        if ((confCascType1 == 0 && pdgCodeCasc1 != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc1 != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc1 != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc1 != kXiPlusBar))
-          return;
-        int pdgCodeCasc2 = static_cast<int>(p2.pidCut());
-        if ((confCascType2 == 0 && pdgCodeCasc2 != kOmegaMinus) || (confCascType2 == 2 && pdgCodeCasc2 != kOmegaPlusBar) || (confCascType2 == 1 && pdgCodeCasc2 != kXiMinus) || (confCascType2 == 3 && pdgCodeCasc2 != kXiPlusBar))
-          return;
-        sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
-      };
+    auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
+      int pdgCodeCasc1 = static_cast<int>(p1.pidCut());
+      if ((confCascType1 == 0 && pdgCodeCasc1 != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc1 != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc1 != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc1 != kXiPlusBar))
+        return;
+      int pdgCodeCasc2 = static_cast<int>(p2.pidCut());
+      if ((confCascType2 == 0 && pdgCodeCasc2 != kOmegaMinus) || (confCascType2 == 2 && pdgCodeCasc2 != kOmegaPlusBar) || (confCascType2 == 1 && pdgCodeCasc2 != kXiMinus) || (confCascType2 == 3 && pdgCodeCasc2 != kXiPlusBar))
+        return;
+      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+    };
 
-      if (confCascType1 == confCascType2) {
-        for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo)))
-          pairProcessFunc(p1, p2);
-      } else {
-        for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo)))
-          pairProcessFunc(p1, p2);
-      }
+    if (confCascType1 == confCascType2) {
+      for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo)))
+        pairProcessFunc(p1, p2);
+    } else {
+      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo)))
+        pairProcessFunc(p1, p2);
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEventCascMCgen, "Enable processing same event MC truth for cascade - cascade", false);
