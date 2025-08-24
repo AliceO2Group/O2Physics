@@ -256,6 +256,9 @@ struct AntinucleiInJets {
       // Generated spectra of antiprotons
       registryMC.add("antiproton_gen_jet", "antiproton_gen_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_gen_ue", "antiproton_gen_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      // Normalization histogram
+      registryMC.add("antiproton_y_phi", "antiproton_y_phi", HistType::kTH2F, {{2000, -1.0, 1.0, "#it{y}"}, {2000, 0.0, TwoPI, "#Delta#phi"}});
     }
 
     // Reconstructed antiproton spectra in jets and UE (MC-matched) with TPC/TOF PID
@@ -1459,6 +1462,9 @@ struct AntinucleiInJets {
           if (particle.eta() < minEta || particle.eta() > maxEta)
             continue;
 
+          // Fill normalization histogram
+          registryMC.fill(HIST("antiproton_y_phi"), particle.y(), getDeltaPhi(particle.phi(), jet.phi()));
+  
           // Fill histogram for generated antiprotons
           registryMC.fill(HIST("antiproton_gen_jet"), particle.pt());
         }
