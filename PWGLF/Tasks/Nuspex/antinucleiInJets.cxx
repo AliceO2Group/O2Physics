@@ -1467,8 +1467,8 @@ struct AntinucleiInJets {
           double px = particle.px();
           double py = particle.py();
           double pz = particle.pz();
-          double E = std::sqrt(MassProton * MassProton + px * px + py * py + pz * pz);
-          double y = 0.5 * std::log((E + pz) / (E - pz));
+          double energy = std::sqrt(MassProton * MassProton + px * px + py * py + pz * pz);
+          double y = 0.5 * std::log((energy + pz) / (energy - pz));
           registryMC.fill(HIST("antiproton_y_phi_jet"), y, getDeltaPhi(particle.phi(), jet.phi()));
 
           // Fill histogram for generated antiprotons
@@ -1507,8 +1507,8 @@ struct AntinucleiInJets {
           double px = protonVec.Px();
           double py = protonVec.Py();
           double pz = protonVec.Pz();
-          double E = std::sqrt(MassProton * MassProton + px * px + py * py + pz * pz);
-          double y = 0.5 * std::log((E + pz) / (E - pz));
+          double energy = std::sqrt(MassProton * MassProton + px * px + py * py + pz * pz);
+          double y = 0.5 * std::log((energy + pz) / (energy - pz));
 
           if (deltaRUe1 < maxConeRadius) {
             registryMC.fill(HIST("antiproton_y_phi_ue"), y, getDeltaPhi(protonVec.Phi(), ueAxis1.Phi()));
