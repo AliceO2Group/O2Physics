@@ -132,6 +132,7 @@ struct centralityStudy {
   ConfigurableAxis axisMultPVContributors{"axisMultPVContributors", {200, 0, 6000}, "Number of PV Contributors"};
   ConfigurableAxis axisMultGlobalTracks{"axisMultGlobalTracks", {500, 0, 5000}, "Number of global tracks"};
   ConfigurableAxis axisMultMFTTracks{"axisMultMFTTracks", {500, 0, 5000}, "Number of MFT tracks"};
+  ConfigurableAxis axisMultMCCounts{"axisMultMCCounts", {1000, 0, 5000}, "N_{ch}"};
 
   ConfigurableAxis axisTrackOccupancy{"axisTrackOccupancy", {50, 0, 5000}, "Track occupancy"};
   ConfigurableAxis axisFT0COccupancy{"axisFT0COccupancy", {50, 0, 80000}, "FT0C occupancy"};
@@ -242,12 +243,19 @@ struct centralityStudy {
     }
 
     if (doprocessCollisionsWithResolutionStudy) {
+      // histograms with detector signals
       histos.add("hImpactParameterVsFT0A", "hImpactParameterVsFT0A", kTH2F, {axisMultFT0A, axisImpactParameter});
       histos.add("hImpactParameterVsFT0C", "hImpactParameterVsFT0C", kTH2F, {axisMultFT0C, axisImpactParameter});
       histos.add("hImpactParameterVsFT0M", "hImpactParameterVsFT0M", kTH2F, {axisMultFT0M, axisImpactParameter});
       histos.add("hImpactParameterVsFV0A", "hImpactParameterVsFV0A", kTH2F, {axisMultFV0A, axisImpactParameter});
       histos.add("hImpactParameterVsNMFTTracks", "hImpactParameterVsNMFTTracks", kTH2F, {axisMultMFTTracks, axisImpactParameter});
       histos.add("hImpactParameterVsNTPV", "hImpactParameterVsNTPV", kTH2F, {axisMultPVContributors, axisImpactParameter});
+
+      // histograms with actual MC counts in each region
+      histos.add("hImpactParameterVsMCFT0A", "hImpactParameterVsMCFT0A", kTH2F, {axisMultMCCounts, axisImpactParameter});
+      histos.add("hImpactParameterVsMCFT0C", "hImpactParameterVsMCFT0C", kTH2F, {axisMultMCCounts, axisImpactParameter});
+      histos.add("hImpactParameterVsMCFT0M", "hImpactParameterVsMCFT0M", kTH2F, {axisMultMCCounts, axisImpactParameter});
+      histos.add("hImpactParameterVsMCFV0A", "hImpactParameterVsMCFV0A", kTH2F, {axisMultMCCounts, axisImpactParameter});
     }
 
     if (doOccupancyStudyVsRawValues2d) {
@@ -696,6 +704,11 @@ struct centralityStudy {
         histos.fill(HIST("hImpactParameterVsFV0A"), multFV0A, mcCollision.impactParameter());
         histos.fill(HIST("hImpactParameterVsNMFTTracks"), mftNtracks, mcCollision.impactParameter());
         histos.fill(HIST("hImpactParameterVsNTPV"), multNTracksPV, mcCollision.impactParameter());
+
+        histos.fill(HIST("hImpactParameterVsMCFT0A"), mcCollision.multMCFT0A(), mcCollision.impactParameter());
+        histos.fill(HIST("hImpactParameterVsMCFT0C"), mcCollision.multMCFT0C(), mcCollision.impactParameter());
+        histos.fill(HIST("hImpactParameterVsMCFT0M"), (mcCollision.multMCFT0A() + mcCollision.multMCFT0C()), mcCollision.impactParameter());
+        histos.fill(HIST("hImpactParameterVsMCFV0A"), mcCollision.multMCFV0A(), mcCollision.impactParameter());
       }
     }
 
