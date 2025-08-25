@@ -872,19 +872,11 @@ struct RecoilJets {
                         bool bIsBaseJetRecoil, TracksTable const& tracks, float weight = 1.)
   {
 
-<<<<<<< HEAD
-    bool bIsThereMatchedJet = partJet.has_matchedJetGeo();
-
-    if (bIsThereMatchedJet) {
-      const auto& jetsMatched =
-        partJet.template matchedJetGeo_as<std::decay_t<DetJet>>();
-=======
     float partJetPt = partJet.pt();
     bool bIsThereMatchedJet = partJet.has_matchedJetGeo();
 
     if (bIsThereMatchedJet) {
       const auto& jetsMatched = partJet.template matchedJetGeo_as<std::decay_t<DetJet>>();
->>>>>>> 31538b807 (PWGJE: add selection of events based on multiplicity)
 
       for (const auto& jetMatched : jetsMatched) {
 
@@ -897,26 +889,6 @@ struct RecoilJets {
           if (bIsBaseJetRecoil)
             spectra.fill(HIST("hMissedJets_pT_RecoilJets"), partJetPt, weight);
         } else {
-<<<<<<< HEAD
-          spectra.fill(HIST("hNumberMatchedJetsPerOneBaseJet"),
-                       jetsMatched.size(), jetMatched.pt(), weight);
-          spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel"), jetMatched.pt(),
-                       partJet.pt(), weight);
-          spectra.fill(HIST("hJetPt_resolution"),
-                       (partJet.pt() - jetMatched.pt()) / partJet.pt(),
-                       partJet.pt(), weight);
-          spectra.fill(HIST("hJetPhi_resolution"),
-                       partJet.phi() - jetMatched.phi(), partJet.pt(), weight);
-
-          if (bIsBaseJetRecoil) {
-            spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel_RecoilJets"),
-                         jetMatched.pt(), partJet.pt(), weight);
-            spectra.fill(HIST("hJetPt_resolution_RecoilJets"),
-                         (partJet.pt() - jetMatched.pt()) / partJet.pt(),
-                         partJet.pt(), weight);
-            spectra.fill(HIST("hJetPhi_resolution_RecoilJets"),
-                         partJet.phi() - jetMatched.phi(), partJet.pt(), weight);
-=======
           float detJetPt = jetMatched.pt();
 
           spectra.fill(HIST("hNumberMatchedJetsPerOneBaseJet"), jetsMatched.size(), detJetPt, weight);
@@ -928,7 +900,6 @@ struct RecoilJets {
             spectra.fill(HIST("hJetPt_DetLevel_vs_PartLevel_RecoilJets"), detJetPt, partJetPt, weight);
             spectra.fill(HIST("hJetPt_resolution_RecoilJets"), (partJetPt - detJetPt) / partJetPt, partJetPt, weight);
             spectra.fill(HIST("hJetPhi_resolution_RecoilJets"), partJet.phi() - jetMatched.phi(), partJetPt, weight);
->>>>>>> 31538b807 (PWGJE: add selection of events based on multiplicity)
           }
         }
       }
