@@ -233,8 +233,11 @@ struct HeavyionMultiplicity {
     if (doprocessCorrelation) {
       histos.add("GlobalMult_vs_FT0A", "GlobalMult_vs_FT0A", kTH2F, {axisMult, axisFt0aMult}, true);
       histos.add("GlobalMult_vs_FT0C", "GlobalMult_vs_FT0C", kTH2F, {axisMult, axisFt0cMult}, true);
+      histos.add("Centrality_vs_FT0C", "Centrality_vs_FT0C", kTH2F, {centAxis, axisFt0cMult}, true);
       histos.add("NPVtracks_vs_FT0C", "NPVtracks_vs_FT0C", kTH2F, {axisPV, axisFt0cMult}, true);
       histos.add("GlobalMult_vs_FV0A", "GlobalMult_vs_FV0A", kTH2F, {axisMult, axisFv0aMult}, true);
+      histos.add("Centrality_vs_FV0A", "Centrality_vs_FV0A", kTH2F, {centAxis, axisFv0aMult}, true);
+      histos.add("CentFT0Ccentrality_vs_GlobalMult", "CentFT0Ccentrality_vs_GlobalMult", kTH2F, {centAxis, axisMult}, true);
       histos.add("NPVtracks_vs_GlobalMult", "NPVtracks_vs_GlobalMult", kTH2F, {axisPV, axisMult}, true);
     }
 
@@ -451,10 +454,14 @@ struct HeavyionMultiplicity {
       }
       nchTracks++;
     }
+
     histos.fill(HIST("GlobalMult_vs_FT0A"), nchTracks, cols.multFT0A());
     histos.fill(HIST("GlobalMult_vs_FT0C"), nchTracks, cols.multFT0C());
+    histos.fill(HIST("Centrality_vs_FT0C"), cols.centFT0C(), cols.multFT0C());
     histos.fill(HIST("NPVtracks_vs_FT0C"), cols.multNTracksPV(), cols.multFT0C());
     histos.fill(HIST("GlobalMult_vs_FV0A"), nchTracks, cols.multFV0A());
+    histos.fill(HIST("Centrality_vs_FV0A"), cols.centFV0A(), cols.multFV0A());
+    histos.fill(HIST("CentFT0Ccentrality_vs_GlobalMult"), cols.centFT0C(), nchTracks);
     histos.fill(HIST("NPVtracks_vs_GlobalMult"), cols.multNTracksPV(), nchTracks);
   }
 
