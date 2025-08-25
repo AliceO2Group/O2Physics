@@ -664,7 +664,6 @@ struct kstarInOO {
     for (const auto& track : tracks) {
       if (std::fabs(track.eta()) < cfgTrackMaxEta) {
         INELgt0 = true;
-        break;
       }
     }
     if (!INELgt0)
