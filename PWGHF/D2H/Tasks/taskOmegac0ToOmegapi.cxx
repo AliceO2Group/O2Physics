@@ -113,18 +113,10 @@ struct HfTaskOmegac0ToOmegapi {
 
   void init(InitContext&)
   {
-    std::array<bool, 6> doprocess{doprocessDataWithKFParticle, doprocessDataWithKFParticleMl, doprocessDataWithKFParticleFT0C, doprocessDataWithKFParticleMlFT0C, doprocessDataWithKFParticleFT0M, doprocessDataWithKFParticleMlFT0M};
-    if (std::accumulate(doprocess.begin(), doprocess.end(), 0) > 1) {
-      LOGP(fatal, "At most one data process function should be enabled at a time.");
-    }
-
-    std::array<bool, 2> doprocessMc{doprocessMcWithKFParticle, doprocessMcWithKFParticleMl};
-    if (std::accumulate(doprocessMc.begin(), doprocessMc.end(), 0) > 1) {
-      LOGP(fatal, "At most one MC process function should be enabled at a time.");
-    }
-
-    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0) + std::accumulate(doprocessMc.begin(), doprocessMc.end(), 0)) == 0) {
-      LOGP(fatal, "At least one process function should be enabled.");
+    std::array<bool, 8> doprocess{doprocessDataWithKFParticle, doprocessDataWithKFParticleMl, doprocessDataWithKFParticleFT0C, doprocessDataWithKFParticleMlFT0C,
+                                  doprocessDataWithKFParticleFT0M, doprocessDataWithKFParticleMlFT0M, doprocessMcWithKFParticle, doprocessMcWithKFParticleMl};
+    if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
+      LOGP(fatal, "One and only one process function should be enabled at a time.");
     }
 
     const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#Omega#pi) (GeV/#it{c}^{2})"};
@@ -244,10 +236,10 @@ struct HfTaskOmegac0ToOmegapi {
       auto numPvContributors = candidate.template collision_as<CollType>().numContrib();
 
       if constexpr (applyMl) {
-        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), numPvContributors);
+        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), numPvContributors, candidate.mlProbOmegac()[0]);
 
       } else {
-        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), numPvContributors, candidate.mlProbOmegac()[0]);
+        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), numPvContributors);
       }
     }
 
