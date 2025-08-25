@@ -251,7 +251,7 @@ struct centralityStudy {
       histos.add("hImpactParameterVsNMFTTracks", "hImpactParameterVsNMFTTracks", kTH2F, {axisMultMFTTracks, axisImpactParameter});
       histos.add("hImpactParameterVsNTPV", "hImpactParameterVsNTPV", kTH2F, {axisMultPVContributors, axisImpactParameter});
 
-      // histograms with actual MC counts in each region 
+      // histograms with actual MC counts in each region
       histos.add("hImpactParameterVsMCFT0A", "hImpactParameterVsMCFT0A", kTH2F, {axisMultMCCounts, axisImpactParameter});
       histos.add("hImpactParameterVsMCFT0C", "hImpactParameterVsMCFT0C", kTH2F, {axisMultMCCounts, axisImpactParameter});
       histos.add("hImpactParameterVsMCFT0M", "hImpactParameterVsMCFT0M", kTH2F, {axisMultMCCounts, axisImpactParameter});
