@@ -23,7 +23,6 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -865,81 +864,6 @@ struct UpcPhotonuclearAnalysisJMG {
       histos.fill(HIST("Tracks/hTracksAfterCuts"), 16);
 
       if (isTrackCut(track) == false) {
-        continue;
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 1);
-      if (track.pt() < cutMyptMin || track.pt() > cutMyptMax) {
-        continue;
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 2);
-      if (eta(track.px(), track.py(), track.pz()) < cutMyetaMin || eta(track.px(), track.py(), track.pz()) > cutMyetaMax) {
-        continue;
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 3);
-      if (std::abs(track.dcaZ()) > cutMydcaZmax) {
-        continue;
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 4);
-      if (cutMydcaXYusePt) {
-        float maxDCA = 0.0105f + 0.0350f / std::pow(track.pt(), 1.1f);
-        if (std::abs(track.dcaXY()) > maxDCA) {
-          continue;
-        }
-      } else {
-        if (std::abs(track.dcaXY()) > cutMydcaXYmax) {
-          continue;
-        }
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 5);
-      if (track.isPVContributor() == false) {
-        continue;
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 6);
-      // Quality Track
-      // ITS
-      if (cutMyHasITS && !track.hasITS()) {
-        continue; // ITS refit
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 7);
-      if (track.itsNCls() < cutMyITSNClsMin) {
-        continue;
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 8);
-      if (track.itsChi2NCl() > cutMyITSChi2NClMax) {
-        continue;
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 9);
-      // TPC
-      if (cutMyHasTPC && !track.hasTPC()) {
-        continue; // TPC refit
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 10);
-      if (track.tpcNClsCrossedRows() < cutMyTPCNClsCrossedRowsMin) {
-        continue;
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 11);
-      if ((track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) < cutMyTPCNClsMin) {
-        continue; // tpcNClsFound()
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 12);
-      if (track.tpcNClsFindable() < cutMyTPCNClsFindableMin) {
-        continue;
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 13);
-      if ((static_cast<float>(track.tpcNClsCrossedRows()) / static_cast<float>(track.tpcNClsFindable())) < cutMyTPCNClsCrossedRowsOverNClsFindableMin) {
-        continue; //
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 14);
-      if ((static_cast<float>(track.tpcNClsFindable() - track.tpcNClsFindableMinusFound()) / static_cast<float>(track.tpcNClsFindable())) < cutMyTPCNClsCrossedRowsOverNClsFindableMin) {
-        continue; //
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 15);
-      if (track.tpcChi2NCl() > cutMyTPCChi2NclMax) {
-        continue; // TPC chi2
-      }
-      histos.fill(HIST("Tracks/hTracksAfterCuts"), 16);
-
-      /*if (isTrackCut(track) == false) {
         continue;
       }
       ++multiplicity;
