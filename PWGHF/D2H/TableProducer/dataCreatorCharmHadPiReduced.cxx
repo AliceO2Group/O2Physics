@@ -1241,7 +1241,7 @@ struct HfDataCreatorCharmHadPiReduced {
         trackParCov1.propagateTo(secondaryVertexCharm[0], bz);
         df2.getTrack(0).getPxPyPzGlo(pVec0);
         df2.getTrack(1).getPxPyPzGlo(pVec1);
-        pVecCharm = RecoDecay::pVec(pVec0, pVec1);
+        pVecCharm = RecoDecay::pVec(pVec0, pVec1, pVec2);
         trackParCovCharmHad = df2.createParentTrackParCov();
         trackParCovCharmHad.setAbsCharge(0); // to be sure
       }
@@ -1279,12 +1279,16 @@ struct HfDataCreatorCharmHadPiReduced {
         }
 
         // reject pi D with same sign as D
-        if constexpr (decChannel == DecayChannel::B0ToDminusPi || decChannel == DecayChannel::BsToDsminusPi || decChannel == DecayChannel::LbToLcplusPi || decChannel == DecayChannel::B0ToDstarPi) { // D∓ → π∓ K± π∓ and Ds∓ → K∓ K± π∓ and Lc∓ → p∓ K± π∓ and D*+ → D0 π+
+        if constexpr (decChannel == DecayChannel::B0ToDminusPi || decChannel == DecayChannel::BsToDsminusPi || decChannel == DecayChannel::LbToLcplusPi) { // D∓ → π∓ K± π∓ and Ds∓ → K∓ K± π∓ and Lc∓ → p∓ K± π∓
           if (trackPion.sign() * charmHadDauTracks[0].sign() > 0) {
             continue;
           }
         } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
           if (!((candC.isSelD0() >= hfflagConfigurations.selectionFlagD0 && trackPion.sign() < 0) || (candC.isSelD0bar() >= hfflagConfigurations.selectionFlagD0bar && trackPion.sign() > 0))) {
+            continue;
+          }
+        } else if constexpr (decChannel == DecayChannel::B0ToDstarPi) { // D*+ → D0 π+
+          if (trackPion.sign() * charmHadDauTracks.back().sign() > 0) {
             continue;
           }
         }
