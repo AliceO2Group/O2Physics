@@ -98,7 +98,7 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
 static constexpr float CFGPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
 constexpr float kThreeHalfPi = 1.5f * PI;
 
-struct upcPhotonuclearAnalysisJMG {
+struct UpcPhotonuclearAnalysisJMG {
 
   Produces<aod::TREE> tree;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -661,7 +661,7 @@ struct upcPhotonuclearAnalysisJMG {
     // nTracksChargedSideA = nTracksChargedSideC = multiplicitySideA = multiplicitySideC = 0;
   }
 
-  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSG, "Process in UD tables", true);
+  PROCESS_SWITCH(UpcPhotonuclearAnalysisJMG, processSG, "Process in UD tables", true);
 
   void processMixed(FullSGUDCollision const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
   {
@@ -762,7 +762,7 @@ struct upcPhotonuclearAnalysisJMG {
     }
   }
 
-  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processMixed, "Process mixed events", true);
+  PROCESS_SWITCH(UpcPhotonuclearAnalysisJMG, processMixed, "Process mixed events", true);
 
   void processSame(FullSGUDCollision::iterator const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
   {
@@ -899,10 +899,10 @@ struct upcPhotonuclearAnalysisJMG {
     }*/
   }
 
-  PROCESS_SWITCH(upcPhotonuclearAnalysisJMG, processSame, "Process same event", true);
+  PROCESS_SWITCH(UpcPhotonuclearAnalysisJMG, processSame, "Process same event", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<upcPhotonuclearAnalysisJMG>(cfgc, TaskName{"upcPhotonuclearAnalysisJMG"})};
+  return WorkflowSpec{adaptAnalysisTask<UpcPhotonuclearAnalysisJMG>(cfgc, TaskName{"UpcPhotonuclearAnalysisJMG"})};
 }
