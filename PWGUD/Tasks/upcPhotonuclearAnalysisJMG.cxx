@@ -8,10 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
-/// \brief
-/// \author Josué Martínez García, josuem@cern.ch
-/// \file   upcPhotonuclearAnalysisJMG.cxx
+
+/**
+ \file   upcPhotonuclearAnalysisJMG.cxx
+ \author Josué Martínez García <josuem@cern.ch>
+ \brief  Task for photonuclear UPC analysis for azimuthal correlation: selection, histograms and observables.
+*/
 
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGUD/Core/UPCPairCuts.h"
@@ -19,10 +21,10 @@
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
-#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
