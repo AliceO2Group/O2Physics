@@ -13,3 +13,11 @@ o2physics_add_dpl_workflow(pideuteronfemto
           SOURCES PiDeuteronFemto.cxx
           PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
           COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(femtoflow-producer
+          SOURCES femtoFlowProducerTask.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::AnalysisCCDB O2Physics::EventFilteringUtils
+          COMPONENT_NAME Analysis)
+o2physics_add_executable(femtoflow-cutculator
+          SOURCES femtoFlowCutCulator.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
