@@ -904,5 +904,5 @@ struct UpcPhotonuclearAnalysisJMG {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<UpcPhotonuclearAnalysisJMG>(cfgc, TaskName{"UpcPhotonuclearAnalysisJMG"})};
+  return WorkflowSpec{adaptAnalysisTask<UpcPhotonuclearAnalysisJMG>(cfgc)};
 }
