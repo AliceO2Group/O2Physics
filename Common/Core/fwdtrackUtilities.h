@@ -42,6 +42,7 @@ enum class propagationPoint : int {
   kToRabs = 2,
 };
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
+using SMatrix55Std = ROOT::Math::SMatrix<double, 5>;
 using SMatrix5 = ROOT::Math::SVector<double, 5>;
 
 /// propagate fwdtrack to a certain point.
@@ -98,6 +99,48 @@ o2::dataformats::GlobalFwdTrack propagateMuon(TFwdTrack const& muon, TCollision 
 
   return propmuon;
 }
+
+template <typename TFwdTrack, typename TMFTTrack>
+o2::dataformats::GlobalFwdTrack refitGlobalMuonCov(TFwdTrack const& muon, TMFTTrack const& mft)
+{
+  auto muonCov = muon.getCovariances();
+  auto mftCov = mft.getCovariances();
+
+  SMatrix55Std jacob = ROOT::Math::SMatrixIdentity();
+  auto tl = muon.getTgl();
+  auto invQPt = muon.getInvQPt();
+  jacob(4, 3) = tl / (invQPt * std::sqrt(1 + tl * tl));
+  jacob(4, 4) = -std::sqrt(1 + tl * tl) / (invQPt * invQPt);
+
+  auto covQP = ROOT::Math::Similarity(jacob, muonCov);
+  mftCov(4, 0) = 0;
+  mftCov(4, 1) = 0;
+  mftCov(4, 2) = 0;
+  mftCov(4, 3) = 0;
+
+  mftCov(0, 4) = 0;
+  mftCov(1, 4) = 0;
+  mftCov(2, 4) = 0;
+  mftCov(3, 4) = 0;
+  mftCov(4, 4) = covQP(4, 4);
+
+  SMatrix55Std jacobInv = ROOT::Math::SMatrixIdentity();
+  auto qp = std::sqrt(1 + tl * tl) / invQPt;
+  auto tlMFT = mft.getTgl();
+  jacobInv(4, 3) = tlMFT / (qp * std::sqrt(1 + tlMFT * tlMFT));
+  jacobInv(4, 4) = -std::sqrt(1 + tlMFT * tlMFT) / (qp * qp);
+  auto globalCov = ROOT::Math::Similarity(jacobInv, mftCov);
+
+  auto invQPtGlob = std::sqrt(1 + tlMFT * tlMFT) / qp;
+
+  o2::dataformats::GlobalFwdTrack globalTrack;
+  globalTrack.setParameters(mft.getParameters());
+  globalTrack.setInvQPt(invQPtGlob);
+  globalTrack.setCovariances(globalCov);
+
+  return globalTrack;
+}
+
 } // namespace fwdtrackutils
 } // namespace o2::aod
 
