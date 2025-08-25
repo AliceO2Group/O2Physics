@@ -658,9 +658,9 @@ struct tofEventTime {
       float t0A = DefaultValue;
       float t0C = DefaultValue;
       const float vertexPV = collision.posZ();
-      static constexpr float invLightSpeedCm2NS = 1.f / o2::constants::physics::LightSpeedCm2NS;
-      const float vertexCorr = vertexPV * invLightSpeedCm2NS;
-      constexpr float dummyTime = 30.f; // Due to HW limitations time can be only within range (-25,25) ns, dummy time is around 32 ns
+      static constexpr float kInvLightSpeedCm2NS = 1.f / o2::constants::physics::LightSpeedCm2NS;
+      const float vertexCorr = vertexPV * kInvLightSpeedCm2NS;
+      constexpr float DummyTime = 30.f; // Due to HW limitations time can be only within range (-25,25) ns, dummy time is around 32 ns
       if (collision.has_foundFT0()) {
         const auto& ft0 = collision.foundFT0();
         const std::bitset<8>& triggers = ft0.triggerMask();
@@ -668,10 +668,10 @@ struct tofEventTime {
         const bool orc = triggers[o2::fit::Triggers::bitC];
         LOGF(debug, "triggers OrA %i OrC %i ", ora, orc);
         LOGF(debug, " T0A = %f, T0C %f, vertexCorr %f", ft0.timeA(), ft0.timeC(), vertexCorr);
-        if (ora && ft0.timeA() < dummyTime) {
+        if (ora && ft0.timeA() < DummyTime) {
           t0A = ft0.timeA() + vertexCorr;
         }
-        if (orc && ft0.timeC() < dummyTime) {
+        if (orc && ft0.timeC() < DummyTime) {
           t0C = ft0.timeC() - vertexCorr;
         }
       }
