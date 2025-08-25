@@ -112,6 +112,7 @@ struct sigmaminustask {
     const AxisSpec alphaAPAxis{200, -1.0, 1.0, "#alpha_{AP}"};
     const AxisSpec qtAPAxis{200, 0.0, 0.5, "q_{T,AP}"};
     const AxisSpec cosPointingAngleAxis{100, -1.0, 1.0, "Cos#theta_{PA}"};
+    const AxisSpec kinkAngleAxis{100, 0, 100, "Kink angle (deg)"};
 
     const AxisSpec ptResolutionAxis{100, -1.0, 1.0, "(#it{p}_{T}^{rec} - #it{p}_{T}^{gen}) / #it{p}_{T}^{gen}"};
     const AxisSpec massResolutionAxis{100, -0.5, 0.5, "(m_{rec} - m_{gen}) / m_{gen}"};
@@ -137,6 +138,7 @@ struct sigmaminustask {
       // Add MC histograms if needed
       rSigmaMinus.add("h2MassPtMCRec", "h2MassPtMCRec", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
       rSigmaMinus.add("h2MassPtMCGen", "h2MassPtMCGen", {HistType::kTH2F, {ptAxis, sigmaMassAxis}});
+      rSigmaMinus.add("h2KinkAngleVsPtMothMC", "h2KinkAngleVsPtMothMC", {HistType::kTH2F, {ptAxis, kinkAngleAxis}});
 
       rSigmaMinus.add("h2MassResolution", "h2MassResolution", {HistType::kTH2F, {ptAxis, massResolutionAxis}});
       rSigmaMinus.add("h2PtResolution", "h2PtResolution", {HistType::kTH2F, {ptAxis, ptResolutionAxis}});
@@ -227,6 +229,14 @@ struct sigmaminustask {
     float pMother = std::sqrt(std::inner_product(momMother.begin(), momMother.end(), momMother.begin(), 0.f));
     float vMotherNorm = std::sqrt(std::inner_product(vMother.begin(), vMother.end(), vMother.begin(), 0.f));
     return (std::inner_product(momMother.begin(), momMother.end(), vMother.begin(), 0.f)) / (pMother * vMotherNorm);
+  }
+
+  float kinkAngle(std::array<float, 3> const& p_moth, std::array<float, 3> const& p_daug)
+  {
+    float dot_product = std::inner_product(p_moth.begin(), p_moth.end(), p_daug.begin(), 0.0f);
+    float mag_moth = std::hypot(p_moth[0], p_moth[1], p_moth[2]);
+    float mag_daug = std::hypot(p_daug[0], p_daug[1], p_daug[2]);
+    return std::acos(dot_product / (mag_moth * mag_daug)) * 180.0 / M_PI;
   }
 
   void processData(CollisionsFull::iterator const& collision, aod::KinkCands const& KinkCands, TracksFull const&)
@@ -326,6 +336,7 @@ struct sigmaminustask {
 
             float MotherMassMC = std::sqrt(piMother.e() * piMother.e() - piMother.p() * piMother.p());
             float MotherpTMC = piMother.pt();
+            float MotherpZMC = piMother.pz();
             float deltaXMother = mcTrackPiDau.vx() - piMother.vx();
             float deltaYMother = mcTrackPiDau.vy() - piMother.vy();
             float decayRadiusMC = std::sqrt(deltaXMother * deltaXMother + deltaYMother * deltaYMother);
@@ -373,7 +384,7 @@ struct sigmaminustask {
                                 dauTrack.tpcNSigmaPi(), dauTrack.tpcNSigmaPr(), dauTrack.tpcNSigmaKa(),
                                 dauTrack.tofNSigmaPi(), dauTrack.tofNSigmaPr(), dauTrack.tofNSigmaKa(),
                                 mcTrackSigma.pdgCode(), mcTrackPiDau.pdgCode(),
-                                MotherpTMC, MotherMassMC, decayRadiusMC, mcCollisionIdCheck);
+                                MotherpTMC, MotherpZMC, MotherMassMC, decayRadiusMC, mcCollisionIdCheck);
             }
           }
         } // MC association and selection
@@ -412,7 +423,9 @@ struct sigmaminustask {
       float mcMass = std::sqrt(mcPart.e() * mcPart.e() - mcPart.p() * mcPart.p());
       float mcDecayRadius = std::sqrt((secVtx[0] - mcPart.vx()) * (secVtx[0] - mcPart.vx()) + (secVtx[1] - mcPart.vy()) * (secVtx[1] - mcPart.vy()));
       int sigmaSign = mcPart.pdgCode() > 0 ? 1 : -1; // Determine the sign of the Sigma
+      float kinkAngleMC = kinkAngle({mcPart.px(), mcPart.py(), mcPart.pz()}, momDaug);
       rSigmaMinus.fill(HIST("h2MassPtMCGen"), sigmaSign * mcPart.pt(), mcMass);
+      rSigmaMinus.fill(HIST("h2KinkAngleVsPtMothMC"), sigmaSign * mcPart.pt(), kinkAngleMC);
 
       // Fill output table with non reconstructed MC candidates
       if (fillOutputTree) {
@@ -424,7 +437,7 @@ struct sigmaminustask {
                           -999, -999, -999,
                           -999, -999, -999,
                           mcPart.pdgCode(), daug_pdg,
-                          mcPart.pt(), mcMass, mcDecayRadius, false);
+                          mcPart.pt(), mcPart.pz(), mcMass, mcDecayRadius, false);
       }
     }
   }
