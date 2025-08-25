@@ -1287,7 +1287,7 @@ struct HfDataCreatorCharmHadPiReduced {
           if (!((candC.isSelD0() >= hfflagConfigurations.selectionFlagD0 && trackPion.sign() < 0) || (candC.isSelD0bar() >= hfflagConfigurations.selectionFlagD0bar && trackPion.sign() > 0))) {
             continue;
           }
-        } else if constexpr (decChannel == DecayChannel::B0ToDstarPi) { // D*+ → D0 π+
+        } else if constexpr (decChannel == DecayChannel::B0ToDstarPi) {  // D*+ → D0 π+
           if (trackPion.sign() * charmHadDauTracks.back().sign() > 0) {
             continue;
           }
