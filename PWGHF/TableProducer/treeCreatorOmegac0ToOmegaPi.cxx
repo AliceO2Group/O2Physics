@@ -211,7 +211,7 @@ DECLARE_SOA_TABLE(HfKfOmegacFulls, "AOD", "HFKFOMEGACFULL",
                   full::MassV0Ndf, full::MassCascNdf,
                   full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf,
                   full::MassV0Chi2OverNdf, full::MassCascChi2OverNdf, full::CascRejectInvmass,
-                  full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched, hf_track_index::HFflag);
+                  full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched, hf_track_index::HFflag, collision::NumContrib);
 
 DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
                   full::NSigmaTPCPiFromOmegac, full::NSigmaTOFPiFromOmegac, full::NSigmaTPCKaFromCasc, full::NSigmaTOFKaFromCasc,
@@ -225,7 +225,7 @@ DECLARE_SOA_TABLE(HfKfOmegacLites, "AOD", "HFKFOMEGACLITE",
                   full::CosThetaStarPiFromOmegac, full::CtOmegac, full::EtaOmegac,
                   full::V0Chi2OverNdf, full::CascChi2OverNdf, full::OmegacChi2OverNdf,
                   full::CascRejectInvmass,
-                  full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched, hf_track_index::HFflag);
+                  full::FlagMcMatchRec, full::OriginMcRec, full::CollisionMatched, hf_track_index::HFflag, collision::NumContrib);
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
@@ -396,7 +396,8 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
         flagMc,
         originMc,
         collisionMatched,
-        candidate.hfflag());
+        candidate.hfflag(),
+        candidate.template collision_as<Colls>().numContrib());
     }
   }
 
@@ -439,7 +440,8 @@ struct HfTreeCreatorOmegac0ToOmegaPi {
         flagMc,
         originMc,
         collisionMatched,
-        candidate.hfflag());
+        candidate.hfflag(),
+        candidate.template collision_as<Colls>().numContrib());
     }
   } // fillKfCandidateLite end
 

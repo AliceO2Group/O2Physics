@@ -165,3 +165,9 @@ o2physics_add_dpl_workflow(mc-particle-predictions-otf
                     SOURCES mcParticlePredictionsOTF.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(study-dcafitter
+                    SOURCES studyDCAFitter.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2::DCAFitter O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
