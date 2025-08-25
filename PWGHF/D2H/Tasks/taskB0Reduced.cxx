@@ -101,7 +101,7 @@ DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);             
 } // namespace hf_cand_b0_lite
 
 DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with some B0 properties
-                                                              // B meson features                  hf_cand_b0_lite::M,
+                                                              // B meson features
                   hf_cand_b0_lite::M,
                   hf_cand_b0_lite::Pt,
                   hf_cand_b0_lite::Eta,
