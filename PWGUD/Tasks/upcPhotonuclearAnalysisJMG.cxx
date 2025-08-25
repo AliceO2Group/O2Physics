@@ -23,6 +23,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -993,9 +994,5 @@ struct UpcPhotonuclearAnalysisJMG {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-<<<<<<< HEAD
   return WorkflowSpec{adaptAnalysisTask<UpcPhotonuclearAnalysisJMG>(cfgc)};
-=======
-  return WorkflowSpec{adaptAnalysisTask<upcPhotonuclearAnalysisJMG>(cfgc, TaskName{"upcPhotonuclearAnalysisJMG"})};
->>>>>>> 91f09006b (resolving formatting issues)
 }
