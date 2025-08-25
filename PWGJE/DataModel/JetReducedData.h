@@ -98,8 +98,14 @@ DECLARE_SOA_COLUMN(FullTriggerSel, fullTriggerSel, uint32_t);
 DECLARE_SOA_COLUMN(ChargedHFTriggerSel, chargedHFTriggerSel, uint8_t);
 DECLARE_SOA_COLUMN(ReadCounts, readCounts, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVX, readCountsWithTVX, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSel8, readCountsWithTVXAndSel8, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSel8AndIsGoodZvtxFT0vsPV, readCountsWithTVXAndSel8AndIsGoodZvtxFT0vsPV, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSel8Full, readCountsWithTVXAndSel8Full, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndSel8FullAndIsGoodZvtxFT0vsPV, readCountsWithTVXAndSel8FullAndIsGoodZvtxFT0vsPV, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8, readCountsWithTVXAndZVertexAndSel8, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8AndIsGoodZvtxFT0vsPV, readCountsWithTVXAndZVertexAndSel8AndIsGoodZvtxFT0vsPV, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8Full, readCountsWithTVXAndZVertexAndSel8Full, std::vector<int>);
+DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8FullAndIsGoodZvtxFT0vsPV, readCountsWithTVXAndZVertexAndSel8FullAndIsGoodZvtxFT0vsPV, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel8FullPbPb, readCountsWithTVXAndZVertexAndSel8FullPbPb, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMC, readCountsWithTVXAndZVertexAndSelMC, std::vector<int>);
 DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSelMCFull, readCountsWithTVXAndZVertexAndSelMCFull, std::vector<int>);
@@ -171,8 +177,14 @@ DECLARE_SOA_TABLE(JChHFTrigSels, "AOD", "JCHHFTRIGSEL",
 DECLARE_SOA_TABLE_STAGED(CollisionCounts, "COLLCOUNT",
                          jcollision::ReadCounts,
                          jcollision::ReadCountsWithTVX,
+                         jcollision::ReadCountsWithTVXAndSel8,
+                         jcollision::ReadCountsWithTVXAndSel8AndIsGoodZvtxFT0vsPV,
+                         jcollision::ReadCountsWithTVXAndSel8Full,
+                         jcollision::ReadCountsWithTVXAndSel8FullAndIsGoodZvtxFT0vsPV,
                          jcollision::ReadCountsWithTVXAndZVertexAndSel8,
+                         jcollision::ReadCountsWithTVXAndZVertexAndSel8AndIsGoodZvtxFT0vsPV,
                          jcollision::ReadCountsWithTVXAndZVertexAndSel8Full,
+                         jcollision::ReadCountsWithTVXAndZVertexAndSel8FullAndIsGoodZvtxFT0vsPV,
                          jcollision::ReadCountsWithTVXAndZVertexAndSel8FullPbPb,
                          jcollision::ReadCountsWithTVXAndZVertexAndSelMC,
                          jcollision::ReadCountsWithTVXAndZVertexAndSelMCFull,
