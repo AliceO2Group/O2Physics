@@ -1070,7 +1070,7 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
     auto origConstit = constituent.template track_as<AnyOriginalTracks>();
 
     if (static_cast<int64_t>(tracksParams.size()) < nMaxConstit) {
-      tracksParams.emplace_back(std::vector<float>{constituent.pt(), origConstit.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), static_cast<float>(origConstit.itsNCls()), static_cast<float>(origConstit.tpcNClsFound()), static_cast<float>(origConstit.tpcNClsCrossedRows()), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl()});
+      tracksParams.emplace_back(std::vector<float>{constituent.pt(), origConstit.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), static_cast<float>(origConstit.itsNCls()), static_cast<float>(origConstit.tpcNClsFound()), static_cast<float>(origConstit.tpcNClsCrossedRows()), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl()});
     } else {
       // If there are more than nMaxConstit constituents in the jet, select only nMaxConstit constituents with the highest DCA_XY significance.
       size_t minIdx = 0;
@@ -1079,7 +1079,7 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
           minIdx = i;
       }
       if (std::abs(constituent.dcaXY()) * sign / constituent.sigmadcaXY() > tracksParams[minIdx][4] / tracksParams[minIdx][5])
-        tracksParams[minIdx] = std::vector<float>{constituent.pt(), origConstit.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), static_cast<float>(origConstit.itsNCls()), static_cast<float>(origConstit.tpcNClsFound()), static_cast<float>(origConstit.tpcNClsCrossedRows()), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl()};
+        tracksParams[minIdx] = std::vector<float>{constituent.pt(), origConstit.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), static_cast<float>(origConstit.itsNCls()), static_cast<float>(origConstit.tpcNClsFound()), static_cast<float>(origConstit.tpcNClsCrossedRows()), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl()};
     }
   }
 }
