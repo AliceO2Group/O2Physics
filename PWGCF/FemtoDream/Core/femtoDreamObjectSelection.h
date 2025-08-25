@@ -60,12 +60,12 @@ class FemtoDreamObjectSelection
     }
   }
 
-  ///assigns value from configurbale to protected class member 
-  /// \param selVals o2 configurable containing the values employed for the selection
-  template<typename V>
+  /// assigns value from configurbale to protected class member
+  ///  \param selVals o2 configurable containing the values employed for the selection
+  template <typename V>
   void assign(V& selVals)
   {
-    assignedValue = static_cast<selValDataType>(selVals);   
+    assignedValue = static_cast<selValDataType>(selVals);
   }
 
   /// Pass the Configurable of selection values in the analysis task to the selection class
@@ -78,7 +78,7 @@ class FemtoDreamObjectSelection
   {
     std::vector<selValDataType> tmpSelVals = selVals; // necessary due to some features of the Configurable
     std::vector<FemtoDreamSelection<selValDataType, selVariable>> tempVec;
-    for (const selValDataType selVal : tmpSelVals) {
+    for (const selValDataType& selVal : tmpSelVals) {
       tempVec.push_back(FemtoDreamSelection<selValDataType, selVariable>(selVal, selVar, selType));
     }
     setSelection(tempVec);
@@ -106,7 +106,7 @@ class FemtoDreamObjectSelection
     }
 
     /// Then, the sorted selections are added to the overall container of cuts
-    for (auto& sel : sels) {
+    for (const auto& sel : sels) {
       mSelections.push_back(sel);
     }
   }
@@ -130,7 +130,7 @@ class FemtoDreamObjectSelection
         break;
     }
 
-    for (auto sel : mSelections) {
+    for (auto& sel : mSelections) {
       if (sel.getSelectionVariable() == selVar) {
         switch (sel.getSelectionType()) {
           case (femtoDreamSelection::SelectionType::kUpperLimit):
@@ -173,7 +173,7 @@ class FemtoDreamObjectSelection
   std::vector<FemtoDreamSelection<selValDataType, selVariable>> getSelections(selVariable selVar)
   {
     std::vector<FemtoDreamSelection<selValDataType, selVariable>> selValVec;
-    for (auto it : mSelections) {
+    for (auto& it : mSelections) {
       if (it.getSelectionVariable() == selVar) {
         selValVec.push_back(it);
       }
@@ -186,7 +186,7 @@ class FemtoDreamObjectSelection
   std::vector<selVariable> getSelectionVariables()
   {
     std::vector<selVariable> selVarVec;
-    for (auto it : mSelections) {
+    for (auto& it : mSelections) {
       auto selVar = it.getSelectionVariable();
       if (std::none_of(selVarVec.begin(), selVarVec.end(), [selVar](selVariable a) { return a == selVar; })) {
         selVarVec.push_back(selVar);
@@ -199,7 +199,7 @@ class FemtoDreamObjectSelection
   HistogramRegistry* mHistogramRegistry;                                     ///< For Analysis QA output
   HistogramRegistry* mQAHistogramRegistry;                                   ///< For QA output
   std::vector<FemtoDreamSelection<selValDataType, selVariable>> mSelections; ///< Vector containing all selections
-  selValDataType assignedValue; 
+  selValDataType assignedValue;
 };
 
 } // namespace femtoDream

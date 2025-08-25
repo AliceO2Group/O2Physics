@@ -210,7 +210,7 @@ class FemtoDreamDetaDphiStar
       }
       if (sameCharge) {
         if (atWhichRadiiToSelect == 1) {
-          if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
             return true;
           } else {
             if (Q3 == 999) {
@@ -223,7 +223,7 @@ class FemtoDreamDetaDphiStar
             return false;
           }
         } else if (atWhichRadiiToSelect == 0) {
-          if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
             return true;
           } else {
             if (Q3 == 999) {
@@ -236,7 +236,7 @@ class FemtoDreamDetaDphiStar
             return false;
           }
         } else if (atWhichRadiiToSelect == 2) {
-          if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
             return true;
           } else {
             if (Q3 == 999) {
@@ -296,7 +296,7 @@ class FemtoDreamDetaDphiStar
           }
           if (sameCharge) {
             if (atWhichRadiiToSelect == 1) {
-              if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
                 pass = true;
               } else {
                 if (Q3 == 999) {
@@ -308,7 +308,7 @@ class FemtoDreamDetaDphiStar
                 }
               }
             } else if (atWhichRadiiToSelect == 0) {
-              if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
                 pass = true;
               } else {
                 if (Q3 == 999) {
@@ -320,7 +320,7 @@ class FemtoDreamDetaDphiStar
                 }
               }
             } else if (atWhichRadiiToSelect == 2) {
-              if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
                 pass = true;
               } else {
                 if (Q3 == 999) {
@@ -376,7 +376,7 @@ class FemtoDreamDetaDphiStar
         }
         if (sameCharge) {
           if (atWhichRadiiToSelect == 1) {
-            if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
               pass = true;
             } else {
               if (Q3 == 999) {
@@ -388,7 +388,7 @@ class FemtoDreamDetaDphiStar
               }
             }
           } else if (atWhichRadiiToSelect == 0) {
-            if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
               pass = true;
             } else {
               if (Q3 == 999) {
@@ -400,7 +400,7 @@ class FemtoDreamDetaDphiStar
               }
             }
           } else if (atWhichRadiiToSelect == 2) {
-            if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
               pass = true;
             } else {
               if (Q3 == 999) {
@@ -453,7 +453,7 @@ class FemtoDreamDetaDphiStar
           }
           if (sameCharge) {
             if (atWhichRadiiToSelect == 1) {
-              if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
                 pass = true;
               } else {
                 if (Q3 == 999) {
@@ -465,7 +465,7 @@ class FemtoDreamDetaDphiStar
                 }
               }
             } else if (atWhichRadiiToSelect == 0) {
-              if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
                 pass = true;
               } else {
                 if (Q3 == 999) {
@@ -477,7 +477,7 @@ class FemtoDreamDetaDphiStar
                 }
               }
             } else if (atWhichRadiiToSelect == 2) {
-              if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+              if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
                 pass = true;
               } else {
                 if (Q3 == 999) {
@@ -556,7 +556,7 @@ class FemtoDreamDetaDphiStar
         }
 
         if (atWhichRadiiToSelect == 1) {
-          if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
             pass = true;
           } else {
             if (Q3 == 999) {
@@ -568,7 +568,7 @@ class FemtoDreamDetaDphiStar
             }
           }
         } else if (atWhichRadiiToSelect == 0) {
-          if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
             pass = true;
           } else {
             if (Q3 == 999) {
@@ -580,7 +580,7 @@ class FemtoDreamDetaDphiStar
             }
           }
         } else if (atWhichRadiiToSelect == 2) {
-          if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+          if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
             pass = true;
           } else {
             if (Q3 == 999) {
@@ -635,7 +635,7 @@ class FemtoDreamDetaDphiStar
         }
         if (sameCharge) {
           if (atWhichRadiiToSelect == 1) {
-            if (pow(dphiAvg, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            if (std::pow(dphiAvg, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
               pass = true;
             } else {
               if (Q3 == 999) {
@@ -648,7 +648,7 @@ class FemtoDreamDetaDphiStar
             }
 
           } else if (atWhichRadiiToSelect == 0) {
-            if (pow(dphi_AT_PV, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            if (std::pow(dphi_AT_PV, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
               pass = true;
             } else {
               if (Q3 == 999) {
@@ -660,7 +660,7 @@ class FemtoDreamDetaDphiStar
               }
             }
           } else if (atWhichRadiiToSelect == 2) {
-            if (pow(dphi_AT_SpecificRadii, 2) / pow(deltaPhiMax, 2) + pow(deta, 2) / pow(deltaEtaMax, 2) < 1.) {
+            if (std::pow(dphi_AT_SpecificRadii, 2) / std::pow(deltaPhiMax, 2) + std::pow(deta, 2) / std::pow(deltaEtaMax, 2) < 1.) {
               pass = true;
             } else {
               if (Q3 == 999) {

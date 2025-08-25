@@ -1,19 +1,20 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+
+
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
-// kPhiPosdaughTOF_NegdaughTPC
+//
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file FemtoDreamResoSelection.h
+/// \file femtoDreamResoSelection.h
 /// \brief Definition of the FemtoDreamResoSelection
-/// \author Valentina Mantovani Sarti, TU München valentina.mantovani-sarti@tum.de
-/// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
-/// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
+/// \author Christopher Klumm, TU München, christopher.klumm@cern.ch
+/// \author Nils Fabian Konert, TU München, nils.fabian.konert@cern.ch
 
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTION_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMRESOSELECTION_H_
@@ -34,7 +35,6 @@
 #include <array>
 #include <cstdint>
 #include <fstream>
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -96,10 +96,10 @@ class FemtoDreamResoSelection
   void setDaughterPIDSpecies(T const& daugh, V& pids);
 
   template <typename V>
-  bool DaughterSelectionPos(V const& track1, bool UseThreshold);
+  bool daughterSelectionPos(V const& track1, bool useThreshold);
 
   template <typename V>
-  bool DaughterSelectionNeg(V const& track2, bool UseThreshold);
+  bool daughterSelectionNeg(V const& track2, bool useThreshold);
 
   template <typename cutContainerType, typename V>
   std::array<cutContainerType, 5> getCutContainer(V const& track1, V const& track2, float sign);
@@ -120,9 +120,9 @@ class FemtoDreamResoSelection
   void setDaughternSigmaPIDOffset(femtoDreamResoSelection::Daughtertype daugh, float offsetTPC, float offsetTOF)
   {
     if (daugh == femtoDreamResoSelection::kPosdaugh) {
-      PosDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
+      posDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
     } else if (daugh == femtoDreamResoSelection::kNegdaugh) {
-      NegDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
+      negDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
     }
     mPIDoffsetTPC = offsetTPC;
     mPIDoffsetTOF = offsetTOF;
@@ -156,7 +156,7 @@ class FemtoDreamResoSelection
                                       std::string_view suffix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
-    outString += static_cast<std::string>(mSelectionNames[iSel]);
+    outString += static_cast<std::string>(kSelectionNames[iSel]);
     outString += suffix;
     return outString;
   }
@@ -169,7 +169,7 @@ class FemtoDreamResoSelection
   {
     for (int index = 0; index < kNresoSelection; index++) {
       std::string comp = static_cast<std::string>(prefix) +
-                         static_cast<std::string>(mSelectionNames[index]);
+                         static_cast<std::string>(kSelectionNames[index]);
       std::string_view cmp{comp};
       if (obs.compare(cmp) == 0)
         return index;
@@ -183,7 +183,7 @@ class FemtoDreamResoSelection
   static femtoDreamSelection::SelectionType
     getSelectionType(femtoDreamResoSelection::ResoSel iSel)
   {
-    return mSelectionTypes[iSel];
+    return kSelectionTypes[iSel];
   }
 
   /// for consistent description of the configurables
@@ -193,7 +193,7 @@ class FemtoDreamResoSelection
                                         std::string_view prefix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
-    outString += static_cast<std::string>(mSelectionHelper[iSel]);
+    outString += static_cast<std::string>(kSelectionHelper[iSel]);
     return outString;
   }
 
@@ -202,17 +202,17 @@ class FemtoDreamResoSelection
   float mPIDoffsetTPC;
   float mPIDoffsetTOF;
 
-  FemtoDreamTrackSelection PosDaughTrack;
-  FemtoDreamTrackSelection NegDaughTrack;
+  FemtoDreamTrackSelection posDaughTrack;
+  FemtoDreamTrackSelection negDaughTrack;
 
   static constexpr int kNresoSelection = 1;
 
-  static constexpr std::string_view mSelectionNames[kNresoSelection] = {"Sign"};
+  static constexpr std::string_view kSelectionNames[kNresoSelection] = {"Sign"};
 
-  static constexpr femtoDreamSelection::SelectionType mSelectionTypes[kNresoSelection]{
+  static constexpr femtoDreamSelection::SelectionType kSelectionTypes[kNresoSelection]{
     femtoDreamSelection::kEqual};
 
-  static constexpr std::string_view mSelectionHelper[kNresoSelection] = {
+  static constexpr std::string_view kSelectionHelper[kNresoSelection] = {
     "+1 for Reso, -1 for AntiReso"};
 
 }; // namespace femtoDream
@@ -255,12 +255,12 @@ void FemtoDreamResoSelection::init(HistogramRegistry* QAregistry, HistogramRegis
     this->mHistogramRegistry = Registry;
     this->mQAHistogramRegistry = QAregistry;
 
-    PosDaughTrack.init<PartDaugh,
+    posDaughTrack.init<PartDaugh,
                        aod::femtodreamparticle::kPosChild,
                        aod::femtodreamparticle::cutContainerType>(
       mQAHistogramRegistry, mHistogramRegistry);
 
-    NegDaughTrack.init<PartDaugh,
+    negDaughTrack.init<PartDaugh,
                        aod::femtodreamparticle::kNegChild,
                        aod::femtodreamparticle::cutContainerType>(
       mQAHistogramRegistry, mHistogramRegistry);
@@ -272,8 +272,8 @@ template <aod::femtodreamparticle::ParticleType part,
           aod::femtodreamparticle::TrackType trackType2, typename T>
 void FemtoDreamResoSelection::fillQA(T const& track1, T const& track2)
 {
-  PosDaughTrack.fillQA<part, trackType1>(track1);
-  NegDaughTrack.fillQA<part, trackType2>(track2);
+  posDaughTrack.fillQA<part, trackType1>(track1);
+  negDaughTrack.fillQA<part, trackType2>(track2);
 }
 
 template <typename T, typename V>
@@ -281,10 +281,10 @@ void FemtoDreamResoSelection::setDaughterCuts(femtoDreamResoSelection::Daughtert
                                               V selVar, femtoDreamSelection::SelectionType selType)
 {
   if (daugh == femtoDreamResoSelection::kPosdaugh) {
-    PosDaughTrack.setSelection(selVal, selVar, selType);
+    posDaughTrack.setSelection(selVal, selVar, selType);
   };
   if (daugh == femtoDreamResoSelection::kNegdaugh) {
-    NegDaughTrack.setSelection(selVal, selVar, selType);
+    negDaughTrack.setSelection(selVal, selVar, selType);
   }
 }
 
@@ -292,23 +292,23 @@ template <typename T, typename V>
 void FemtoDreamResoSelection::setDaughterPIDSpecies(T const& daugh, V& pids)
 {
   if (daugh == femtoDreamResoSelection::kPosdaugh) {
-    PosDaughTrack.setPIDSpecies(pids);
+    posDaughTrack.setPIDSpecies(pids);
   }
   if (daugh == femtoDreamResoSelection::kNegdaugh) {
-    NegDaughTrack.setPIDSpecies(pids);
+    negDaughTrack.setPIDSpecies(pids);
   }
 }
 
 template <typename V>
-bool FemtoDreamResoSelection::DaughterSelectionPos(V const& track1, bool UseThreshold)
+bool FemtoDreamResoSelection::daughterSelectionPos(V const& track1, bool useThreshold)
 {
-  return PosDaughTrack.isSelectedMinimal(track1, UseThreshold);
+  return posDaughTrack.isSelectedMinimal(track1, useThreshold);
 }
 
 template <typename V>
-bool FemtoDreamResoSelection::DaughterSelectionNeg(V const& track2, bool UseThreshold)
+bool FemtoDreamResoSelection::daughterSelectionNeg(V const& track2, bool useThreshold)
 {
-  return NegDaughTrack.isSelectedMinimal(track2, UseThreshold);
+  return negDaughTrack.isSelectedMinimal(track2, useThreshold);
 }
 
 template <typename T>
@@ -320,13 +320,13 @@ std::pair<bool, bool> FemtoDreamResoSelection::checkCombination(T const& PosTrac
   auto [part1, part2] = getPIDPairFromMother(mother);
 
   float nSigPosTPC1 = o2::aod::pidutils::tpcNSigma(part1, PosTrack) - mPIDoffsetTPC;
-  float nSigPosTOF1 = PosDaughTrack.getNsigmaTOF(PosTrack, part1) - mPIDoffsetTOF; /// for TOF use function in TrackSelection, because it also checks hasTOF()
+  float nSigPosTOF1 = posDaughTrack.getNsigmaTOF(PosTrack, part1) - mPIDoffsetTOF; /// for TOF use function in TrackSelection, because it also checks hasTOF()
   float nSigPosTPC2 = o2::aod::pidutils::tpcNSigma(part2, PosTrack) - mPIDoffsetTPC;
-  float nSigPosTOF2 = PosDaughTrack.getNsigmaTOF(PosTrack, part2) - mPIDoffsetTOF;
+  float nSigPosTOF2 = posDaughTrack.getNsigmaTOF(PosTrack, part2) - mPIDoffsetTOF;
   float nSigNegTPC1 = o2::aod::pidutils::tpcNSigma(part1, NegTrack) - mPIDoffsetTPC;
-  float nSigNegTOF1 = NegDaughTrack.getNsigmaTOF(NegTrack, part1) - mPIDoffsetTOF;
+  float nSigNegTOF1 = negDaughTrack.getNsigmaTOF(NegTrack, part1) - mPIDoffsetTOF;
   float nSigNegTPC2 = o2::aod::pidutils::tpcNSigma(part2, NegTrack) - mPIDoffsetTPC;
-  float nSigNegTOF2 = NegDaughTrack.getNsigmaTOF(NegTrack, part2) - mPIDoffsetTOF;
+  float nSigNegTOF2 = negDaughTrack.getNsigmaTOF(NegTrack, part2) - mPIDoffsetTOF;
 
   if (checkPID(PosTrack, nSigPosTPC1, nSigPosTOF1, nSigPosTPC2, nSigPosTOF2) && checkPID(NegTrack, nSigNegTPC2, nSigNegTOF2, nSigNegTPC1, nSigNegTOF1)) {
     return {true, false};
@@ -391,11 +391,11 @@ std::array<cutContainerType, 5> FemtoDreamResoSelection::getCutContainer(V const
     }
   }
 
-  const auto DCA1 = std::sqrt(track1.dcaXY() * track1.dcaXY() + track1.dcaZ() * track1.dcaZ());
-  const auto DCA2 = std::sqrt(track2.dcaXY() * track2.dcaXY() + track2.dcaZ() * track2.dcaZ());
+  const auto dCA1 = std::sqrt(track1.dcaXY() * track1.dcaXY() + track1.dcaZ() * track1.dcaZ());
+  const auto dCA2 = std::sqrt(track2.dcaXY() * track2.dcaXY() + track2.dcaZ() * track2.dcaZ());
 
-  auto outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(track1, track1.pt(), track1.eta(), DCA1); // false for useItsPid
-  auto outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(track2, track2.pt(), track2.eta(), DCA2);
+  auto outputPosTrack = posDaughTrack.getCutContainer<false, cutContainerType>(track1, track1.pt(), track1.eta(), dCA1); // false for useItsPid
+  auto outputNegTrack = negDaughTrack.getCutContainer<false, cutContainerType>(track2, track2.pt(), track2.eta(), dCA2);
 
   const auto shiftvalue = numBitsUsed(outputSign);
   outputPID = (outputNegTrack.at(femtoDreamTrackSelection::TrackContainerPosition::kPID) << shiftvalue) | outputSign;

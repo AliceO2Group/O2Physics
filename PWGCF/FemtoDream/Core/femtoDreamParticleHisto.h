@@ -447,7 +447,7 @@ class FemtoDreamParticleHisto
         float pidTPC = 0.;
         float pidTOF = 0.;
 
-        switch (abs(mPDG)) {
+        switch (std::abs(mPDG)) {
           case kElectron:
             pidTPC = part.tpcNSigmaEl();
             pidTOF = part.tofNSigmaEl();
@@ -553,7 +553,7 @@ class FemtoDreamParticleHisto
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hEta_DiffTruthReco"), MCpart.eta(), (part.eta() - MCpart.eta()));
       mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hPhi_DiffTruthReco"), MCpart.phi(), (part.phi() - MCpart.phi()));
 
-      if (abs(pdgcode) == mPDG) { // fill this histogramm only for TRUE protons (independently of their origin) for the track purity estimation
+      if (std::abs(pdgcode) == mPDG) { // fill this histogramm only for TRUE protons (independently of their origin) for the track purity estimation
         mHistogramRegistry->fill(HIST(o2::aod::femtodreamparticle::ParticleTypeName[mParticleType]) + HIST(mFolderSuffix[mFolderSuffixType]) + HIST("_MC/hPt_ReconNoFake"), part.pt());
       }
       if constexpr (mParticleType == o2::aod::femtodreamparticle::ParticleType::kTrack || mParticleType == o2::aod::femtodreamparticle::ParticleType::kV0Child) {

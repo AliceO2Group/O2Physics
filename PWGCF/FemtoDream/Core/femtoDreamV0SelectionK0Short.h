@@ -27,7 +27,6 @@
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/PID.h"
 
-#include <iostream>
 #include <string>
 #include <vector>
 
@@ -103,9 +102,9 @@ class FemtoDreamV0Selection
                     T2 selVar, femtoDreamSelection::SelectionType selType)
   {
     if (child == femtoDreamV0Selection::kPosTrack) {
-      PosDaughTrack.setSelection(selVal, selVar, selType);
+      posDaughTrack.setSelection(selVal, selVar, selType);
     } else if (child == femtoDreamV0Selection::kNegTrack) {
-      NegDaughTrack.setSelection(selVal, selVar, selType);
+      negDaughTrack.setSelection(selVal, selVar, selType);
     }
   }
   template <typename T>
@@ -113,9 +112,9 @@ class FemtoDreamV0Selection
                           T& pids)
   {
     if (child == femtoDreamV0Selection::kPosTrack) {
-      PosDaughTrack.setPIDSpecies(pids);
+      posDaughTrack.setPIDSpecies(pids);
     } else if (child == femtoDreamV0Selection::kNegTrack) {
-      NegDaughTrack.setPIDSpecies(pids);
+      negDaughTrack.setPIDSpecies(pids);
     }
   }
 
@@ -197,24 +196,24 @@ class FemtoDreamV0Selection
   void setChildRejectNotPropagatedTracks(femtoDreamV0Selection::ChildTrackType child, bool reject)
   {
     if (child == femtoDreamV0Selection::kPosTrack) {
-      PosDaughTrack.setRejectNotPropagatedTracks(reject);
+      posDaughTrack.setRejectNotPropagatedTracks(reject);
     } else if (child == femtoDreamV0Selection::kNegTrack) {
-      NegDaughTrack.setRejectNotPropagatedTracks(reject);
+      negDaughTrack.setRejectNotPropagatedTracks(reject);
     }
   }
 
   void setChildnSigmaPIDOffset(femtoDreamV0Selection::ChildTrackType child, float offsetTPC, float offsetTOF)
   {
     if (child == femtoDreamV0Selection::kPosTrack) {
-      PosDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
+      posDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
     } else if (child == femtoDreamV0Selection::kNegTrack) {
-      NegDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
+      negDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
     }
   }
 
-  void setIsMother(bool IsMother)
+  void setIsMother(bool isMother)
   {
-    fMotherIsLambda = IsMother;
+    fMotherIsLambda = isMother;
   }
 
   void setRejectLambda(bool reject)
@@ -252,8 +251,8 @@ class FemtoDreamV0Selection
 
   bool fMotherIsLambda;
 
-  FemtoDreamTrackSelection PosDaughTrack;
-  FemtoDreamTrackSelection NegDaughTrack;
+  FemtoDreamTrackSelection posDaughTrack;
+  FemtoDreamTrackSelection negDaughTrack;
 
   static constexpr int kNv0Selection = 9;
 
@@ -350,11 +349,11 @@ void FemtoDreamV0Selection::init(HistogramRegistry* QAregistry, HistogramRegistr
     mQAHistogramRegistry->add((folderName + "/hInvMassLambdaAntiLambda").c_str(),
                               "", kTH2F, {massAxisLambda, massAxisAntiLambda});
 
-    PosDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child,
+    posDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child,
                        aod::femtodreamparticle::TrackType::kPosChild,
                        aod::femtodreamparticle::cutContainerType>(
       mQAHistogramRegistry, mHistogramRegistry);
-    NegDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child,
+    negDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child,
                        aod::femtodreamparticle::TrackType::kNegChild,
                        aod::femtodreamparticle::cutContainerType>(
       mQAHistogramRegistry, mHistogramRegistry);
@@ -489,15 +488,15 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& /*col*/, V const& v0,
       return false;
     }
   }
-  if (!PosDaughTrack.isSelectedMinimal(posTrack)) {
+  if (!posDaughTrack.isSelectedMinimal(posTrack)) {
     return false;
   }
-  if (!NegDaughTrack.isSelectedMinimal(negTrack)) {
+  if (!negDaughTrack.isSelectedMinimal(negTrack)) {
     return false;
   }
 
   // check that track combinations for V0 or antiV0 would be fulfilling PID
-  int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
+  int nSigmaPIDMax = posDaughTrack.getSigmaPIDMax();
   if (fMotherIsLambda) { /// Lambda
     // antiV0
     auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
@@ -607,8 +606,8 @@ template <typename cutContainerType, typename C, typename V, typename T>
 std::array<cutContainerType, 5>
   FemtoDreamV0Selection::getCutContainer(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
-  auto outputPosTrack = PosDaughTrack.getCutContainer<false, cutContainerType>(posTrack, v0.positivept(), v0.positiveeta(), v0.dcapostopv());
-  auto outputNegTrack = NegDaughTrack.getCutContainer<false, cutContainerType>(negTrack, v0.negativept(), v0.negativeeta(), v0.dcanegtopv());
+  auto outputPosTrack = posDaughTrack.getCutContainer<false, cutContainerType>(posTrack, v0.positivept(), v0.positiveeta(), v0.dcapostopv());
+  auto outputNegTrack = negDaughTrack.getCutContainer<false, cutContainerType>(negTrack, v0.negativept(), v0.negativeeta(), v0.dcanegtopv());
   cutContainerType output = 0;
   size_t counter = 0;
 
@@ -621,7 +620,7 @@ std::array<cutContainerType, 5>
     auto diffLambda = std::abs(lambdaMassNominal - lambdaMassHypothesis);
     auto diffAntiLambda = std::abs(antiLambdaMassHypothesis - lambdaMassHypothesis);
 
-    int nSigmaPIDMax = PosDaughTrack.getSigmaPIDMax();
+    int nSigmaPIDMax = posDaughTrack.getSigmaPIDMax();
     auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
     auto nSigmaPiPos = posTrack.tpcNSigmaPi();
     auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
@@ -652,7 +651,7 @@ std::array<cutContainerType, 5>
 
   float observable = 0.;
   for (auto& sel : mSelections) {
-    const auto selVariable = sel.getSelectionVariable();
+    auto selVariable = sel.getSelectionVariable();
     if (selVariable == femtoDreamV0Selection::kV0DecVtxMax) {
       for (size_t i = 0; i < decVtx.size(); ++i) {
         auto decVtxValue = decVtx.at(i);
@@ -767,9 +766,9 @@ void FemtoDreamV0Selection::fillQA(C const& /*col*/, V const& v0, T const& posTr
     }
   }
 
-  PosDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child,
+  posDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child,
                        aod::femtodreamparticle::TrackType::kPosChild>(posTrack);
-  NegDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child,
+  negDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child,
                        aod::femtodreamparticle::TrackType::kNegChild>(negTrack);
 }
 
