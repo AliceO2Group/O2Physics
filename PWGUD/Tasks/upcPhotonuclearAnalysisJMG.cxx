@@ -22,6 +22,7 @@
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
@@ -95,6 +96,7 @@ DECLARE_SOA_TABLE(TREE, "AOD", "Tree",
 } // namespace o2::aod
 
 static constexpr float CFGPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
+constexpr float kThreeHalfPi = 1.5f * PI;
 
 struct upcPhotonuclearAnalysisJMG {
 
@@ -447,12 +449,7 @@ struct upcPhotonuclearAnalysisJMG {
           continue;
         }*/
         float deltaPhi = phi(track1.px(), track1.py()) - phi(track2.px(), track2.py());
-        if (deltaPhi > 1.5f * PI) {
-          deltaPhi -= TwoPI;
-        }
-        if (deltaPhi < -PIHalf) {
-          deltaPhi += TwoPI;
-        }
+        deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf, kThreeHalfPi);
         target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed, eta(track1.px(), track1.py(), track1.pz()) - eta(track2.px(), track2.py(), track2.pz()), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, 1.0);
       }
     }
@@ -505,8 +502,7 @@ struct upcPhotonuclearAnalysisJMG {
   float getNUAWeight(float vz, float eta, float phi)
   {
     auto hWeight = histos.get<TH3>(HIST("weightNUA"));
-    if (phi < 0)
-      phi += TwoPI;
+    phi = RecoDecay::constrainAngle(phi, 0.f, TwoPI);
     int iPhi = hWeight->GetZaxis()->FindBin(phi);
     int iEta = hWeight->GetYaxis()->FindBin(eta);
     int iVz = hWeight->GetXaxis()->FindBin(vz);
