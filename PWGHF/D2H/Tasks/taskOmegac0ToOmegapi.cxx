@@ -113,8 +113,8 @@ struct HfTaskOmegac0ToOmegapi {
 
   void init(InitContext&)
   {
-    std::array<bool, 8> doprocess{doprocessDataWithKFParticle, doprocessDataWithKFParticleMl, doprocessDataWithKFParticleFT0C, doprocessDataWithKFParticleMlFT0C,
-                                  doprocessDataWithKFParticleFT0M, doprocessDataWithKFParticleMlFT0M, doprocessMcWithKFParticle, doprocessMcWithKFParticleMl};
+    std::array<bool, 8> doprocess{doprocessDataKFParticle, doprocessDataKFParticleMl, doprocessDataKFParticleFT0C, doprocessDataKFParticleMlFT0C,
+                                  doprocessDataKFParticleFT0M, doprocessDataKFParticleMlFT0M, doprocessMcKFParticle, doprocessMcKFParticleMl};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "One and only one process function should be enabled at a time.");
     }
@@ -133,12 +133,12 @@ struct HfTaskOmegac0ToOmegapi {
 
     std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt, thnAxisY};
 
-    if (doprocessDataWithKFParticleFT0C || doprocessDataWithKFParticleMlFT0C || doprocessDataWithKFParticleFT0M || doprocessDataWithKFParticleMlFT0M) {
+    if (doprocessDataKFParticleFT0C || doprocessDataKFParticleMlFT0C || doprocessDataKFParticleFT0M || doprocessDataKFParticleMlFT0M) {
       axes.push_back(thnAxisCent);
       axes.push_back(thnConfigAxisNumPvContr);
     }
 
-    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl) {
+    if (doprocessMcKFParticle || doprocessMcKFParticleMl) {
       std::vector<AxisSpec> axesMcGen = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
       registry.add("hMcGen", "Thn for generated #Omega_{c}^{0} from charm and beauty", HistType::kTHnSparseD, axesMcGen);
       registry.get<THnSparse>(HIST("hMcGen"))->Sumw2();
@@ -148,7 +148,7 @@ struct HfTaskOmegac0ToOmegapi {
       axes.push_back(thnAxisMatchFlag);
     }
 
-    if (doprocessDataWithKFParticleMl || doprocessDataWithKFParticleMlFT0C || doprocessDataWithKFParticleMlFT0M || doprocessMcWithKFParticleMl) {
+    if (doprocessDataKFParticleMl || doprocessDataKFParticleMlFT0C || doprocessDataKFParticleMlFT0M || doprocessMcKFParticleMl) {
       axes.push_back(thnAxisPromptScore);
     }
 
@@ -256,59 +256,59 @@ struct HfTaskOmegac0ToOmegapi {
     }
   }
 
-  void processDataWithKFParticle(Omegac0CandsKF const& candidates)
+  void processDataKFParticle(Omegac0CandsKF const& candidates)
   {
     processData<false>(candidates);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticle, "process HfTaskOmegac0ToOmegapi with KFParticle", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticle, "process HfTaskOmegac0ToOmegapi with KFParticle", false);
 
-  void processDataWithKFParticleMl(Omegac0CandsMlKF const& candidates)
+  void processDataKFParticleMl(Omegac0CandsMlKF const& candidates)
   {
     processData<true>(candidates);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleMl, "process HfTaskOmegac0ToOmegapi with KFParticle and ML selections", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleMl, "process HfTaskOmegac0ToOmegapi with KFParticle and ML selections", false);
 
-  void processDataWithKFParticleFT0C(Omegac0CandsKF const& candidates,
-                                     CollisionsWithFT0C const& collisions)
+  void processDataKFParticleFT0C(Omegac0CandsKF const& candidates,
+                                 CollisionsWithFT0C const& collisions)
   {
     processDataCent<false>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleFT0C, "process HfTaskOmegac0ToOmegapi with KFParticle and with FT0C centrality", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleFT0C, "process HfTaskOmegac0ToOmegapi with KFParticle and with FT0C centrality", false);
 
-  void processDataWithKFParticleMlFT0C(Omegac0CandsMlKF const& candidates,
-                                       CollisionsWithFT0C const& collisions)
+  void processDataKFParticleMlFT0C(Omegac0CandsMlKF const& candidates,
+                                   CollisionsWithFT0C const& collisions)
   {
     processDataCent<true>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleMlFT0C, "process HfTaskOmegac0ToOmegapi with KFParticle and ML selections and with FT0C centrality", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleMlFT0C, "process HfTaskOmegac0ToOmegapi with KFParticle and ML selections and with FT0C centrality", false);
 
-  void processDataWithKFParticleFT0M(Omegac0CandsKF const& candidates,
-                                     CollisionsWithFT0M const& collisions)
+  void processDataKFParticleFT0M(Omegac0CandsKF const& candidates,
+                                 CollisionsWithFT0M const& collisions)
   {
     processDataCent<false>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleFT0M, "process HfTaskOmegac0ToOmegapi with KFParticle and with FT0M centrality", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleFT0M, "process HfTaskOmegac0ToOmegapi with KFParticle and with FT0M centrality", false);
 
-  void processDataWithKFParticleMlFT0M(Omegac0CandsMlKF const& candidates,
-                                       CollisionsWithFT0M const& collisions)
+  void processDataKFParticleMlFT0M(Omegac0CandsMlKF const& candidates,
+                                   CollisionsWithFT0M const& collisions)
   {
     processDataCent<true>(candidates, collisions);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleMlFT0M, "process HfTaskOmegac0ToOmegapi with KFParticle and ML selections and with FT0M centrality", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleMlFT0M, "process HfTaskOmegac0ToOmegapi with KFParticle and ML selections and with FT0M centrality", false);
 
-  void processMcWithKFParticle(OmegaC0CandsMcKF const& omegaC0CandidatesMcKF,
-                               Omegac0Gen const& mcParticles)
+  void processMcKFParticle(OmegaC0CandsMcKF const& omegaC0CandidatesMcKF,
+                           Omegac0Gen const& mcParticles)
   {
     processMc<false>(omegaC0CandidatesMcKF, mcParticles);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcWithKFParticle, "Process MC with KFParticle", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcKFParticle, "Process MC with KFParticle", false);
 
-  void processMcWithKFParticleMl(Omegac0CandsMlMcKF const& omegac0CandidatesMlMcKF,
-                                 Omegac0Gen const& mcParticles)
+  void processMcKFParticleMl(Omegac0CandsMlMcKF const& omegac0CandidatesMlMcKF,
+                             Omegac0Gen const& mcParticles)
   {
     processMc<true>(omegac0CandidatesMlMcKF, mcParticles);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcKFParticleMl, "Process MC with KFParticle and ML selections", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
