@@ -455,7 +455,7 @@ struct HeavyionMultiplicity {
       }
       nchTracks++;
     }
-    
+
     histos.fill(HIST("GlobalMult_vs_FT0A"), nchTracks, cols.multFT0A());
     histos.fill(HIST("GlobalMult_vs_FT0C"), nchTracks, cols.multFT0C());
     histos.fill(HIST("Centrality_vs_FT0A"), cols.centFT0A(), cols.multFT0A());
