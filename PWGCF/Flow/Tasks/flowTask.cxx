@@ -36,6 +36,7 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 #include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsParameters/GRPMagField.h>
 
 #include "TList.h"
 #include <TF1.h>
@@ -141,6 +142,13 @@ struct FlowTask {
     TF1* fMultMultV0ACutHigh = nullptr;
     TF1* fT0AV0AMean = nullptr;
     TF1* fT0AV0ASigma = nullptr;
+    // for TPC sector boundary
+    O2_DEFINE_CONFIGURABLE(cfgShowTPCsectorOverlap, bool, true, "Draw TPC sector overlap")
+    O2_DEFINE_CONFIGURABLE(cfgRejectionTPCsectorOverlap, bool, false, "rejection for TPC sector overlap")
+    O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
+    ConfigurableAxis axisPhiMod{"axisPhiMod", {100, 0, constants::math::PI / 9}, "fmod(#varphi,#pi/9)"};
+    TF1* fPhiCutLow = nullptr;
+    TF1* fPhiCutHigh = nullptr;
   } cfgFuncParas;
 
   ConfigurableAxis axisPtHist{"axisPtHist", {100, 0., 10.}, "pt axis for histograms"};
@@ -283,6 +291,8 @@ struct FlowTask {
     registry.add("hEta", "#eta distribution", {HistType::kTH1D, {axisEta}});
     registry.add("hPt", "p_{T} distribution before cut", {HistType::kTH1D, {axisPtHist}});
     registry.add("hPtRef", "p_{T} distribution after cut", {HistType::kTH1D, {axisPtHist}});
+    registry.add("pt_phi_bef", "before cut;p_{T};#phi_{modn}", {HistType::kTH2D, {axisPt, cfgFuncParas.axisPhiMod}});
+    registry.add("pt_phi_aft", "after cut;p_{T};#phi_{modn}", {HistType::kTH2D, {axisPt, cfgFuncParas.axisPhiMod}});
     registry.add("hChi2prTPCcls", "#chi^{2}/cluster for the TPC track segment", {HistType::kTH1D, {{100, 0., 5.}}});
     registry.add("hChi2prITScls", "#chi^{2}/cluster for the ITS track", {HistType::kTH1D, {{100, 0., 50.}}});
     registry.add("hnTPCClu", "Number of found TPC clusters", {HistType::kTH1D, {{100, 40, 180}}});
@@ -499,6 +509,11 @@ struct FlowTask {
       cfgFuncParas.fT0AV0AMean->SetParameters(-1601.0581, 9.417652e-01);
       cfgFuncParas.fT0AV0ASigma = new TF1("fT0AV0ASigma", "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x", 0, 200000);
       cfgFuncParas.fT0AV0ASigma->SetParameters(463.4144, 6.796509e-02, -9.097136e-07, 7.971088e-12, -2.600581e-17);
+    }
+
+    if (cfgFuncParas.cfgShowTPCsectorOverlap) {
+      cfgFuncParas.fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
+      cfgFuncParas.fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
     }
 
     if (cfgTrackDensityCorrUse) {
@@ -730,10 +745,47 @@ struct FlowTask {
     return 1;
   }
 
+  int getMagneticField(uint64_t timestamp)
+  {
+    static o2::parameters::GRPMagField* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(cfgFuncParas.cfgMagnetField, timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found in %s for timestamp %llu", cfgFuncParas.cfgMagnetField.value.c_str(), timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP from %s for timestamp %llu with magnetic field of %d kG", cfgFuncParas.cfgMagnetField.value.c_str(), timestamp, grpo->getNominalL3Field());
+    }
+    return grpo->getNominalL3Field();
+  }
+
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
     return ((track.tpcNClsFound() >= cfgCutTPCclu) && (track.tpcNClsCrossedRows() >= cfgCutTPCCrossedRows) && (track.itsNCls() >= cfgCutITSclu));
+  }
+
+  template <typename TTrack>
+  bool rejectionTPCoverlap(TTrack track, const int field)
+  {
+    double phimodn = track.phi();
+    if (field < 0) // for negative polarity field
+      phimodn = o2::constants::math::TwoPI - phimodn;
+    if (track.sign() < 0) // for negative charge
+      phimodn = o2::constants::math::TwoPI - phimodn;
+    if (phimodn < 0)
+      LOGF(warning, "phi < 0: %g", phimodn);
+
+    float middle = o2::constants::math::TwoPI / 18.0;
+    phimodn += middle; // to center gap in the middle
+    phimodn = fmod(phimodn, o2::constants::math::TwoPI / 9.0);
+    registry.fill(HIST("pt_phi_bef"), track.pt(), phimodn);
+    if (cfgFuncParas.cfgRejectionTPCsectorOverlap) {
+      if (phimodn < cfgFuncParas.fPhiCutHigh->Eval(track.pt()) && phimodn > cfgFuncParas.fPhiCutLow->Eval(track.pt()))
+        return false; // reject track
+    }
+    registry.fill(HIST("pt_phi_aft"), track.pt(), phimodn);
+    return true;
   }
 
   void initHadronicRate(aod::BCsWithTimestamps::iterator const& bc)
@@ -844,9 +896,14 @@ struct FlowTask {
     // track weights
     float weff = 1, wacc = 1;
     double nTracksCorrected = 0;
+    int magnetfield = 0;
     float independent = cent;
     if (cfgUseNch)
       independent = static_cast<float>(tracks.size());
+    if (cfgFuncParas.cfgShowTPCsectorOverlap) {
+      // magnet field dependence cut
+      magnetfield = getMagneticField(bc.timestamp());
+    }
 
     double psi2Est = 0, psi3Est = 0, psi4Est = 0;
     float wEPeff = 1;
@@ -878,6 +935,8 @@ struct FlowTask {
 
     for (const auto& track : tracks) {
       if (!trackSelected(track))
+        continue;
+      if (cfgFuncParas.cfgShowTPCsectorOverlap && !rejectionTPCoverlap(track, magnetfield))
         continue;
       bool withinPtPOI = (cfgCutPtPOIMin < track.pt()) && (track.pt() < cfgCutPtPOIMax); // within POI pT range
       bool withinPtRef = (cfgCutPtRefMin < track.pt()) && (track.pt() < cfgCutPtRefMax); // within RF pT range
