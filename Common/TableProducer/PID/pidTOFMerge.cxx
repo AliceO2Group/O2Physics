@@ -654,9 +654,9 @@ struct tofEventTime {
     std::map<uint64_t, std::pair<float, float>> collisionFt0Map;
     tableFt0.reserve(collisions.size());
     for (const auto& collision : collisions) {
-      static constexpr float defaultValue = 1e10f;
-      float t0A = defaultValue;
-      float t0C = defaultValue;
+      static constexpr float DefaultValue = 1e10f;
+      float t0A = DefaultValue;
+      float t0C = DefaultValue;
       const float vertexPV = collision.posZ();
       static constexpr float invLightSpeedCm2NS = 1.f / o2::constants::physics::LightSpeedCm2NS;
       const float vertexCorr = vertexPV * invLightSpeedCm2NS;
@@ -760,8 +760,8 @@ struct tofEventTime {
           float t0A = collisionFt0Map[t.collisionId()].first;  // T0A for the collision
           float t0C = collisionFt0Map[t.collisionId()].second; // T0C for the collision
 
-          static constexpr float thresholdValue = 1e9f; // I the value of the FT0s are defined, the values are lower than 10e9
-          if ((t0A < thresholdValue) && (t0C < thresholdValue)) {
+          static constexpr float ThresholdValue = 1e9f; // I the value of the FT0s are defined, the values are lower than 10e9
+          if ((t0A < ThresholdValue) && (t0C < ThresholdValue)) {
             t0AC[0] = 0.5 * (t0A + t0C) * 1000.f;
             t0AC[1] = 0.5 * std::abs(t0A - t0C) * 1000.f;
             flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC;
@@ -843,10 +843,10 @@ struct tofEventTime {
         float t0A = collisionFt0Map[t.collisionId()].first;  // T0A for the collision
         float t0C = collisionFt0Map[t.collisionId()].second; // T0C for the collision
 
-        static constexpr float thresholdValue = 1e9f; // I the value of the FT0s are defined, the values are lower than 10e9
+        static constexpr float ThresholdValue = 1e9f; // I the value of the FT0s are defined, the values are lower than 10e9
         float t0AC[2] = {.0f, 999.f};
         uint8_t flags = 0;
-        if ((t0A < thresholdValue) && (t0C < thresholdValue)) {
+        if ((t0A < ThresholdValue) && (t0C < ThresholdValue)) {
           t0AC[0] = 0.5 * (t0A + t0C) * 1000.f;
           t0AC[1] = 0.5 * std::abs(t0A - t0C) * 1000.f;
           flags = o2::aod::pidflags::enums::PIDFlags::EvTimeT0AC;
