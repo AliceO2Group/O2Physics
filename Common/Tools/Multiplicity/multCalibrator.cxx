@@ -27,6 +27,7 @@
 #include <TList.h>
 #include <TProfile.h>
 #include <TStopwatch.h>
+#include <TMath.h>
 
 #include <iostream> // FIXME
 
