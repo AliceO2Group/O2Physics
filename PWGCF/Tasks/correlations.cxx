@@ -36,12 +36,14 @@
 
 #include <TDirectory.h>
 #include <TFile.h>
+#include <TFormula.h>
 #include <TH1F.h>
 #include <THn.h>
 #include <TVector2.h>
 
 #include <cmath>
 #include <experimental/type_traits>
+#include <memory>
 #include <string>
 #include <tuple>
 #include <utility>
@@ -87,6 +89,8 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgCentBinsForMC, int, 0, "0 = OFF and 1 = ON for data like multiplicity/centrality bins for MC steps");
   O2_DEFINE_CONFIGURABLE(cfgTrackBitMask, uint16_t, 0, "BitMask for track selection systematics; refer to the enum TrackSelectionCuts in filtering task");
   O2_DEFINE_CONFIGURABLE(cfgMultCorrelationsMask, uint16_t, 0, "Selection bitmask for the multiplicity correlations. This should match the filter selection cfgEstimatorBitMask.")
+  O2_DEFINE_CONFIGURABLE(cfgMultCutFormula, std::string, "", "Multiplicity correlations cut formula. A result greater than zero results in accepted event. Parameters: [cFT0C] FT0C centrality, [mFV0A] V0A multiplicity, [mGlob] global track multiplicity, [mPV] PV track multiplicity")
+
   // Suggested values: Photon: 0.004; K0 and Lambda: 0.005
   Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut", {kCfgPairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
 
@@ -142,6 +146,9 @@ struct CorrelationTask {
   std::vector<float> efficiencyAssociatedCache;
   std::vector<int> p2indexCache;
 
+  std::unique_ptr<TFormula> multCutFormula;
+  std::array<uint, 4> multCutFormulaParamIndex;
+
   struct Config {
     bool mPairCuts = false;
     THn* mEfficiencyTrigger = nullptr;
@@ -184,7 +191,7 @@ struct CorrelationTask {
       if (cfgMultCorrelationsMask & aod::cfmultset::CentFT0C)
         multAxes.emplace_back(100, 0, 100, "FT0C centrality");
       if (cfgMultCorrelationsMask & aod::cfmultset::MultFV0A)
-        multAxes.emplace_back(100, 0, 100000, "V0A multiplicity");
+        multAxes.emplace_back(1000, 0, 100000, "V0A multiplicity");
       if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksPV)
         multAxes.emplace_back(100, 0, 1000, "Nch PV");
       if (cfgMultCorrelationsMask & aod::cfmultset::MultNTracksGlobal)
@@ -217,6 +224,26 @@ struct CorrelationTask {
     }
 
     // --- OBJECT INIT ---
+
+    if (!cfgMultCutFormula.value.empty()) {
+      multCutFormula = std::make_unique<TFormula>("multCutFormula", cfgMultCutFormula.value.c_str());
+      std::fill_n(multCutFormulaParamIndex.begin(), std::size(multCutFormulaParamIndex), ~0u);
+      std::array<std::string, 4> pars = {"cFT0C", "mFV0A", "mPV", "mGlob"}; // must correspond the order of MultiplicityEstimators
+      for (uint i = 0, n = multCutFormula->GetNpar(); i < n; ++i) {
+        auto m = std::find(pars.begin(), pars.end(), multCutFormula->GetParName(i));
+        if (m == pars.end()) {
+
+          LOGF(warning, "Unknown parameter in cfgMultCutFormula: %s", multCutFormula->GetParName(i));
+          continue;
+        }
+        if ((cfgMultCorrelationsMask.value & (1u << i)) == 0) {
+          LOGF(warning, "The centrality/multiplicity estimator %s is not available to be used in cfgMultCutFormula. Ensure cfgMultCorrelationsMask is correct and matches the CFMultSets in derived data.");
+        } else {
+          multCutFormulaParamIndex[std::distance(pars.begin(), m)] = i;
+          LOGF(info, "Multiplicity cut parameter %s in use.", m->c_str());
+        }
+      }
+    }
 
     std::vector<AxisSpec> corrAxis = {{axisDeltaEta, "#Delta#eta"},
                                       {axisPtAssoc, "p_{T} (GeV/c)"},
@@ -425,6 +452,24 @@ struct CorrelationTask {
   using HasPartDaugh0Id = decltype(std::declval<T&>().cfParticleDaugh0Id());
   template <class T>
   using HasPartDaugh1Id = decltype(std::declval<T&>().cfParticleDaugh1Id());
+
+  /*
+  OO outlier cut (requires mask 15):
+(567.785+172.715*[mGlob]+0.77888*[mGlob]*[mGlob]+-0.00693466*[mGlob]*[mGlob]*[mGlob]+1.40564e-05*[mGlob]*[mGlob]*[mGlob]*[mGlob] + 3.5*(679.853+66.8068*[mGlob]+-0.444332*[mGlob]*[mGlob]+0.00115002*[mGlob]*[mGlob]*[mGlob]+-4.92064e-07*[mGlob]*[mGlob]*[mGlob]*[mGlob])) > [mFV0A] && (567.785+172.715*[mGlob]+0.77888*[mGlob]*[mGlob]+-0.00693466*[mGlob]*[mGlob]*[mGlob]+1.40564e-05*[mGlob]*[mGlob]*[mGlob]*[mGlob] - 3.0*(679.853+66.8068*[mGlob]+-0.444332*[mGlob]*[mGlob]+0.00115002*[mGlob]*[mGlob]*[mGlob]+-4.92064e-07*[mGlob]*[mGlob]*[mGlob]*[mGlob])) < [mFV0A] && (172.406 + -4.50219*[cFT0C] + 0.0543038*[cFT0C]*[cFT0C] + -0.000373213*[cFT0C]*[cFT0C]*[cFT0C] + 1.15322e-06*[cFT0C]*[cFT0C]*[cFT0C]*[cFT0C] + 4.0*(49.7503 + -1.29008*[cFT0C] + 0.0160059*[cFT0C]*[cFT0C] + -7.86846e-05*[cFT0C]*[cFT0C]*[cFT0C])) > [mPV] && (172.406 + -4.50219*[cFT0C] + 0.0543038*[cFT0C]*[cFT0C] + -0.000373213*[cFT0C]*[cFT0C]*[cFT0C] + 1.15322e-06*[cFT0C]*[cFT0C]*[cFT0C]*[cFT0C] - 2.5*(49.7503 + -1.29008*[cFT0C] + 0.0160059*[cFT0C]*[cFT0C] + -7.86846e-05*[cFT0C]*[cFT0C]*[cFT0C])) < [mPV] && (125.02 + -3.30255*[cFT0C] + 0.0398663*[cFT0C]*[cFT0C] + -0.000271942*[cFT0C]*[cFT0C]*[cFT0C] + 8.34098e-07*[cFT0C]*[cFT0C]*[cFT0C]*[cFT0C] + 4.0*(37.0244 + -0.949883*[cFT0C] + 0.0116622*[cFT0C]*[cFT0C] + -5.71117e-05*[cFT0C]*[cFT0C]*[cFT0C])) > [mGlob] && (125.02 + -3.30255*[cFT0C] + 0.0398663*[cFT0C]*[cFT0C] + -0.000271942*[cFT0C]*[cFT0C]*[cFT0C] + 8.34098e-07*[cFT0C]*[cFT0C]*[cFT0C]*[cFT0C] - 2.5*(37.0244 + -0.949883*[cFT0C] + 0.0116622*[cFT0C]*[cFT0C] + -5.71117e-05*[cFT0C]*[cFT0C]*[cFT0C])) < [mGlob] && (-0.223013 + 0.715849*[mPV] + 3*(0.664242 + 0.0829653*[mPV] + -0.000503733*[mPV]*[mPV] + 1.21185e-06*[mPV]*[mPV]*[mPV])) > [mGlob]
+*/
+  template <class CollType>
+  bool passOutlier(CollType const& collision)
+  {
+    if (cfgMultCutFormula.value.empty())
+      return true;
+    for (uint i = 0; i < 4; ++i) {
+      if ((cfgMultCorrelationsMask.value & (1u << i)) == 0 || multCutFormulaParamIndex[i] == ~0u)
+        continue;
+      auto estIndex = std::popcount(cfgMultCorrelationsMask.value & ((1u << i) - 1));
+      multCutFormula->SetParameter(multCutFormulaParamIndex[i], collision.multiplicities()[estIndex]);
+    }
+    return multCutFormula->Eval() > 0.0f;
+  }
 
   template <typename T>
   std::tuple<bool, float> getV0Rapidity(const T& track)
@@ -770,6 +815,7 @@ struct CorrelationTask {
   template <class CollType, class TTracks1, class TTracks2>
   void processSameDerivedT(CollType const& collision, TTracks1 const& tracks1, TTracks2 const& tracks2)
   {
+    using BinningTypeDerived = ColumnBinningPolicy<aod::collision::PosZ, aod::cfcollision::Multiplicity>;
     BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
     if (cfgVerbosity > 0) {
       LOGF(info, "processSameDerivedT: Tracks for collision: %d/%d | Vertex: %.1f | Multiplicity/Centrality: %.1f", tracks1.size(), tracks2.size(), collision.posZ(), collision.multiplicity());
@@ -807,6 +853,8 @@ struct CorrelationTask {
 
   void processSameDerivedMultSet(soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>>::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
   {
+    if (!passOutlier(collision))
+      return;
     processSameDerivedT(collision, tracks, tracks);
   }
   PROCESS_SWITCH(CorrelationTask, processSameDerivedMultSet, "Process same event on derived data with multiplicity sets", false);
@@ -878,21 +926,32 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processMixedAOD, "Process mixed events on AOD", false);
 
-  using BinningTypeDerived = ColumnBinningPolicy<aod::collision::PosZ, aod::cfcollision::Multiplicity>;
-
-  template <typename... TrackTypes>
-  void processMixedDerivedT(DerivedCollisions const& collisions, TrackTypes&&... tracks)
+  template <class CollType, typename... TrackTypes>
+  void processMixedDerivedT(CollType const& collisions, TrackTypes&&... tracks)
   {
-    BinningTypeDerived configurableBinningDerived{{axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
-    // Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
+    auto getMultiplicity =
+      [this](auto& col) {
+        if constexpr (std::experimental::is_detected<HasMultSet, CollType>::value) {
+          if (!passOutlier(col))
+            return -1.0f;
+        } else {
+          (void)this; // fix compile error on unused 'this' capture
+        }
+        return col.multiplicity();
+      };
+
+    using BinningTypeDerived = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
+    BinningTypeDerived configurableBinningDerived{{getMultiplicity}, {axisVertex, axisMultiplicity}, true}; // true is for 'ignore overflows' (true by default). Underflows and overflows will have bin -1.
+    //  Strictly upper categorised collisions, for cfgNoMixedEvents combinations per bin, skipping those in entry -1
     auto tracksTuple = std::make_tuple(std::forward<TrackTypes>(tracks)...);
     using TA = std::tuple_element<0, decltype(tracksTuple)>::type;
     using TB = std::tuple_element<std::tuple_size_v<decltype(tracksTuple)> - 1, decltype(tracksTuple)>::type;
-    Pair<DerivedCollisions, TA, TB, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
+    Pair<CollType, TA, TB, BinningTypeDerived> pairs{configurableBinningDerived, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache}; // -1 is the number of the bin to skip
 
     for (auto it = pairs.begin(); it != pairs.end(); it++) {
       auto& [collision1, tracks1, collision2, tracks2] = *it;
-      int bin = configurableBinningDerived.getBin({collision1.posZ(), collision1.multiplicity()});
+      float multiplicity = getMultiplicity(collision1);
+      int bin = configurableBinningDerived.getBin(std::tuple(collision1.posZ(), multiplicity));
       float eventWeight = 1.0f / it.currentWindowNeighbours();
       int field = 0;
       if (cfgTwoTrackCut > 0) {
@@ -929,6 +988,12 @@ struct CorrelationTask {
     processMixedDerivedT(collisions, tracks);
   }
   PROCESS_SWITCH(CorrelationTask, processMixedDerived, "Process mixed events on derived data", false);
+
+  void processMixedDerivedMultSet(soa::Filtered<soa::Join<aod::CFCollisions, aod::CFMultSets>> const& collisions, DerivedTracks const& tracks)
+  {
+    processMixedDerivedT(collisions, tracks);
+  }
+  PROCESS_SWITCH(CorrelationTask, processMixedDerivedMultSet, "Process mixed events on derived data with multiplicity sets", false);
 
   void processMixed2ProngDerived(DerivedCollisions const& collisions, DerivedTracks const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
   {

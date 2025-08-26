@@ -113,17 +113,19 @@ struct DileptonMC {
   ConfigurableAxis ConfDCAllNarrowBins{"ConfDCAllNarrowBins", {200, 0.0, 10.0}, "narrow DCAll bins for output histograms"};
   ConfigurableAxis ConfTrackDCA{"ConfTrackDCA", {VARIABLE_WIDTH, -10, -9, -8, -7, -6, -5, -4.5, -4, -3.5, -3, -2.5, -2, -1.9, -1.8, -1.7, -1.6, -1.5, -1.4, -1.3, -1.2, -1.1, -1, -0.9, -0.8, -0.7, -0.6, -0.5, -0.4, -0.3, -0.2, -0.1, 0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.5, 3, 3.5, 4, 4.5, 5, 6, 7, 8, 9, 10}, "DCA binning for single tacks"};
 
-  ConfigurableAxis ConfYllBins{"ConfYllBins", {VARIABLE_WIDTH, -10.f, +10.f}, "yll bins for output histograms"};
+  ConfigurableAxis ConfYllBins{"ConfYllBins", {1, -1.f, +1.f}, "yll bins for output histograms"};
 
   // ConfigurableAxis ConfMmumuBins{"ConfMmumuBins", {VARIABLE_WIDTH, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11,1.12,1.13,1.14,1.15,1.16,1.17,1.18,1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.10, 5.20, 5.30, 5.40, 5.50, 5.60, 5.70, 5.80, 5.90, 6.00, 6.10, 6.20, 6.30, 6.40, 6.50, 6.60, 6.70, 6.80, 6.90, 7.00, 7.10, 7.20, 7.30, 7.40, 7.50, 7.60, 7.70, 7.80, 7.90, 8.00, 8.10, 8.20, 8.30, 8.40, 8.50, 8.60, 8.70, 8.80, 8.90, 9.00, 9.10, 9.20, 9.30, 9.40, 9.50, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10, 10.20, 10.30, 10.40, 10.50, 10.60, 10.70, 10.80, 10.90, 11.00, 11.50, 12.00}, "mmumu bins for output histograms"}; // for dimuon. one can copy bins here to hyperloop page.
 
-  Configurable<int> cfg_nbin_dphi_ee{"cfg_nbin_dphi_ee", 1, "number of bins for dphi_ee"};                // 36
-  Configurable<int> cfg_nbin_deta_ee{"cfg_nbin_deta_ee", 1, "number of bins for deta_ee"};                // 40
-  Configurable<int> cfg_nbin_cos_theta_cs{"cfg_nbin_cos_theta_cs", 1, "number of bins for cos theta cs"}; // 10
-  Configurable<int> cfg_nbin_phi_cs{"cfg_nbin_phi_cs", 1, "number of bins for phi cs"};                   // 18
-  Configurable<int> cfg_nbin_aco{"cfg_nbin_aco", 1, "number of bins for acoplanarity"};                   // 10
-  Configurable<int> cfg_nbin_asym_pt{"cfg_nbin_asym_pt", 1, "number of bins for pt asymmetry"};           // 10
-  Configurable<int> cfg_nbin_dphi_e_ee{"cfg_nbin_dphi_e_ee", 1, "number of bins for dphi_ee_e"};          // 18
+  Configurable<int> cfg_nbin_dphi_ee{"cfg_nbin_dphi_ee", 1, "number of bins for dphi_ee"}; // 36
+  Configurable<int> cfg_nbin_deta_ee{"cfg_nbin_deta_ee", 1, "number of bins for deta_ee"}; // 40
+  // Configurable<int> cfg_nbin_cos_theta_cs{"cfg_nbin_cos_theta_cs", 1, "number of bins for cos theta cs"}; // 10
+  // Configurable<int> cfg_nbin_phi_cs{"cfg_nbin_phi_cs", 1, "number of bins for phi cs"};                   // 10
+  Configurable<int> cfg_nbin_aco{"cfg_nbin_aco", 1, "number of bins for acoplanarity"};          // 10
+  Configurable<int> cfg_nbin_asym_pt{"cfg_nbin_asym_pt", 1, "number of bins for pt asymmetry"};  // 10
+  Configurable<int> cfg_nbin_dphi_e_ee{"cfg_nbin_dphi_e_ee", 1, "number of bins for dphi_ee_e"}; // 18
+  ConfigurableAxis ConfPolarizationPhiBins{"ConfPolarizationPhiBins", {6, 0.f, M_PI}, "phi bins for polarization analysis"};
+  ConfigurableAxis ConfPolarizationCosThetaBins{"ConfPolarizationCosThetaBins", {5, 0.f, 1.f}, "phi bins for polarization analysis"};
 
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -345,7 +347,6 @@ struct DileptonMC {
     const AxisSpec axis_y{ConfYllBins, pair_y_axis_title};
     const AxisSpec axis_dca{ConfDCAllBins, pair_dca_axis_title};
     const AxisSpec axis_pt_meson{ConfPtllBins, "p_{T} (GeV/c)"}; // for omega, phi meson pT spectra
-    const AxisSpec axis_y_meson{ConfYllBins, "y"};               // rapidity of meson
 
     const AxisSpec axis_dca_narrow{ConfDCAllNarrowBins, pair_dca_axis_title};
     const AxisSpec axis_dpt{ConfDPtBins, "#Delta p_{T,1}^{gen-rec} + #Delta p_{T,2}^{gen-rec} (GeV/c)"};
@@ -354,8 +355,8 @@ struct DileptonMC {
 
     const AxisSpec axis_dphi_ee{cfg_nbin_dphi_ee, -M_PI / 2., 3. / 2. * M_PI, "#Delta#varphi = #varphi_{l1} - #varphi_{l2} (rad.)"}; // for kHFll
     const AxisSpec axis_deta_ee{cfg_nbin_deta_ee, -2., 2., "#Delta#eta = #eta_{l1} - #eta_{l2}"};                                    // for kHFll
-    const AxisSpec axis_cos_theta_cs{cfg_nbin_cos_theta_cs, 0.f, 1.f, "|cos(#theta_{CS})|"};                                         // for kPolarization, kUPC
-    const AxisSpec axis_phi_cs{cfg_nbin_phi_cs, 0.f, M_PI, "|#varphi_{CS}| (rad.)"};                                                 // for kPolarization
+    const AxisSpec axis_cos_theta_cs{ConfPolarizationCosThetaBins, "|cos(#theta^{CS})|"};                                            // for kPolarization, kUPC
+    const AxisSpec axis_phi_cs{ConfPolarizationPhiBins, "|#varphi^{CS}| (rad.)"};                                                    // for kPolarization
     const AxisSpec axis_aco{cfg_nbin_aco, 0, 1.f, "#alpha = 1 - #frac{|#varphi_{l^{+}} - #varphi_{l^{-}}|}{#pi}"};                   // for kUPC
     const AxisSpec axis_asym_pt{cfg_nbin_asym_pt, 0, 1.f, "A = #frac{|p_{T,l^{+}} - p_{T,l^{-}}|}{|p_{T,l^{+}} + p_{T,l^{-}}|}"};    // for kUPC
     const AxisSpec axis_dphi_e_ee{cfg_nbin_dphi_e_ee, 0, M_PI, "#Delta#varphi = #varphi_{l} - #varphi_{ll} (rad.)"};                 // for kUPC
@@ -374,8 +375,8 @@ struct DileptonMC {
     fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/NonPromptJPsi/");
     fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/PromptPsi2S/");
     fRegistry.addClone("Generated/sm/PromptPi0/", "Generated/sm/NonPromptPsi2S/");
-    fRegistry.add("Generated/sm/Omega2ll/hPtY", "pT of #omega meson", kTH2F, {axis_y_meson, axis_pt_meson}, true);
-    fRegistry.add("Generated/sm/Phi2ll/hPtY", "pT of #phi meson", kTH2F, {axis_y_meson, axis_pt_meson}, true);
+    fRegistry.add("Generated/sm/Omega2ll/hPtY", "pT of #omega meson", kTH2F, {axis_y, axis_pt_meson}, true);
+    fRegistry.add("Generated/sm/Phi2ll/hPtY", "pT of #phi meson", kTH2F, {axis_y, axis_pt_meson}, true);
 
     fRegistry.add("Generated/ccbar/c2l_c2l/hadron_hadron/hs", "generated dilepton signal", kTHnSparseD, {axis_mass, axis_pt, axis_y, axis_dphi_ee, axis_deta_ee, axis_cos_theta_cs, axis_phi_cs, axis_aco, axis_asym_pt, axis_dphi_e_ee}, true);
     fRegistry.addClone("Generated/ccbar/c2l_c2l/hadron_hadron/", "Generated/ccbar/c2l_c2l/meson_meson/");
@@ -692,30 +693,42 @@ struct DileptonMC {
     // fDielectronCut.SetPRangeForITSNsigmaPr(dielectroncuts.cfg_min_p_ITSNsigmaPr, dielectroncuts.cfg_max_p_ITSNsigmaPr);
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
-      static constexpr int nClassesMl = 2;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
-      const std::vector<std::string> labelsClasses = {"Background", "Signal"};
-      const uint32_t nBinsMl = dielectroncuts.binsMl.value.size() - 1;
-      const std::vector<std::string> labelsBins(nBinsMl, "bin");
-      double cutsMlArr[nBinsMl][nClassesMl];
-      for (uint32_t i = 0; i < nBinsMl; i++) {
-        cutsMlArr[i][0] = 0.;
-        cutsMlArr[i][1] = dielectroncuts.cutsMl.value[i];
+      std::vector<float> binsML{};
+      binsML.reserve(dielectroncuts.binsMl.value.size());
+      for (size_t i = 0; i < dielectroncuts.binsMl.value.size(); i++) {
+        binsML.emplace_back(dielectroncuts.binsMl.value[i]);
       }
-      o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
-
-      mlResponseSingleTrack.configure(dielectroncuts.binsMl.value, cutsMl, cutDirMl, nClassesMl);
-      if (dielectroncuts.loadModelsFromCCDB) {
-        ccdbApi.init(ccdburl);
-        mlResponseSingleTrack.setModelPathsCCDB(dielectroncuts.onnxFileNames.value, ccdbApi, dielectroncuts.onnxPathsCCDB.value, dielectroncuts.timestampCCDB.value);
-      } else {
-        mlResponseSingleTrack.setModelPathsLocal(dielectroncuts.onnxFileNames.value);
+      std::vector<float> thresholdsML{};
+      thresholdsML.reserve(dielectroncuts.cutsMl.value.size());
+      for (size_t i = 0; i < dielectroncuts.cutsMl.value.size(); i++) {
+        thresholdsML.emplace_back(dielectroncuts.cutsMl.value[i]);
       }
-      mlResponseSingleTrack.cacheInputFeaturesIndices(dielectroncuts.namesInputFeatures);
-      mlResponseSingleTrack.cacheBinningIndex(dielectroncuts.nameBinningFeature);
-      mlResponseSingleTrack.init(dielectroncuts.enableOptimizations.value);
+      fDielectronCut.SetMLThresholds(binsML, thresholdsML);
 
-      fDielectronCut.SetPIDMlResponse(&mlResponseSingleTrack);
+      // static constexpr int nClassesMl = 2;
+      // const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
+      // const std::vector<std::string> labelsClasses = {"Background", "Signal"};
+      // const uint32_t nBinsMl = dielectroncuts.binsMl.value.size() - 1;
+      // const std::vector<std::string> labelsBins(nBinsMl, "bin");
+      // double cutsMlArr[nBinsMl][nClassesMl];
+      // for (uint32_t i = 0; i < nBinsMl; i++) {
+      //   cutsMlArr[i][0] = 0.;
+      //   cutsMlArr[i][1] = dielectroncuts.cutsMl.value[i];
+      // }
+      // o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
+
+      // mlResponseSingleTrack.configure(dielectroncuts.binsMl.value, cutsMl, cutDirMl, nClassesMl);
+      // if (dielectroncuts.loadModelsFromCCDB) {
+      //   ccdbApi.init(ccdburl);
+      //   mlResponseSingleTrack.setModelPathsCCDB(dielectroncuts.onnxFileNames.value, ccdbApi, dielectroncuts.onnxPathsCCDB.value, dielectroncuts.timestampCCDB.value);
+      // } else {
+      //   mlResponseSingleTrack.setModelPathsLocal(dielectroncuts.onnxFileNames.value);
+      // }
+      // mlResponseSingleTrack.cacheInputFeaturesIndices(dielectroncuts.namesInputFeatures);
+      // mlResponseSingleTrack.cacheBinningIndex(dielectroncuts.nameBinningFeature);
+      // mlResponseSingleTrack.init(dielectroncuts.enableOptimizations.value);
+
+      // fDielectronCut.SetPIDMlResponse(&mlResponseSingleTrack);
     } // end of PID ML
   }
 
@@ -822,11 +835,11 @@ struct DileptonMC {
 
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-        if (!cut.template IsSelectedTrack<false, true>(t1, collision) || !cut.template IsSelectedTrack<false, true>(t2, collision)) {
+        if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
           return false;
         }
       } else { // cut-based
-        if (!cut.template IsSelectedTrack<false, false>(t1) || !cut.template IsSelectedTrack<false, false>(t2)) {
+        if (!cut.template IsSelectedTrack<false>(t1) || !cut.template IsSelectedTrack<false>(t2)) {
           return false;
         }
       }
@@ -1871,16 +1884,16 @@ struct DileptonMC {
     } // end of collision loop
   }
 
-  template <bool is_wo_acc = false, typename TCollision, typename TTrack1, typename TTrack2, typename TCut, typename TAllTracks>
-  bool isPairOK(TCollision const& collision, TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TAllTracks const& tracks)
+  template <bool is_wo_acc = false, typename TTrack1, typename TTrack2, typename TCut, typename TAllTracks>
+  bool isPairOK(TTrack1 const& t1, TTrack2 const& t2, TCut const& cut, TAllTracks const& tracks)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-        if (!cut.template IsSelectedTrack<is_wo_acc, true>(t1, collision) || !cut.template IsSelectedTrack<is_wo_acc, true>(t2, collision)) {
+        if (!cut.template IsSelectedTrack<is_wo_acc>(t1) || !cut.template IsSelectedTrack<is_wo_acc>(t2)) {
           return false;
         }
       } else { // cut-based
-        if (!cut.template IsSelectedTrack<is_wo_acc, false>(t1) || !cut.template IsSelectedTrack<is_wo_acc, false>(t2)) {
+        if (!cut.template IsSelectedTrack<is_wo_acc>(t1) || !cut.template IsSelectedTrack<is_wo_acc>(t2)) {
           return false;
         }
       }
@@ -1949,7 +1962,7 @@ struct DileptonMC {
           continue;
         }
 
-        if (isPairOK(collision, pos, neg, cut, tracks)) {
+        if (isPairOK(pos, neg, cut, tracks)) {
           passed_pairIds.emplace_back(std::make_pair(pos.globalIndex(), neg.globalIndex()));
         }
       }
@@ -1965,7 +1978,7 @@ struct DileptonMC {
           continue;
         }
 
-        if (isPairOK(collision, pos1, pos2, cut, tracks)) {
+        if (isPairOK(pos1, pos2, cut, tracks)) {
           passed_pairIds.emplace_back(std::make_pair(pos1.globalIndex(), pos2.globalIndex()));
         }
       }
@@ -1980,7 +1993,7 @@ struct DileptonMC {
         if (cfgEventGeneratorType >= 0 && mccollision_from_neg2.getSubGeneratorId() != cfgEventGeneratorType) {
           continue;
         }
-        if (isPairOK(collision, neg1, neg2, cut, tracks)) {
+        if (isPairOK(neg1, neg2, cut, tracks)) {
           passed_pairIds.emplace_back(std::make_pair(neg1.globalIndex(), neg2.globalIndex()));
         }
       }
@@ -2104,7 +2117,7 @@ struct DileptonMC {
           continue;
         }
 
-        if (!isPairOK<true>(collision, pos, neg, cut, tracks)) { // without acceptance
+        if (!isPairOK<true>(pos, neg, cut, tracks)) { // without acceptance
           continue;
         }
 
@@ -2242,7 +2255,7 @@ struct DileptonMC {
           continue;
         }
 
-        if (!isPairOK<true>(collision, pos1, pos2, cut, tracks)) { // without acceptance
+        if (!isPairOK<true>(pos1, pos2, cut, tracks)) { // without acceptance
           continue;
         }
 
@@ -2299,7 +2312,7 @@ struct DileptonMC {
         if (cfgEventGeneratorType >= 0 && mccollision_from_neg2.getSubGeneratorId() != cfgEventGeneratorType) {
           continue;
         }
-        if (!isPairOK<true>(collision, neg1, neg2, cut, tracks)) { // without acceptance
+        if (!isPairOK<true>(neg1, neg2, cut, tracks)) { // without acceptance
           continue;
         }
         if ((std::abs(mcneg1.pdgCode()) != pdg_lepton || std::abs(mcneg2.pdgCode()) != pdg_lepton) || (mcneg1.emmceventId() != mcneg2.emmceventId())) {
@@ -2316,7 +2329,7 @@ struct DileptonMC {
           continue;
         }
 
-        if (!isPairOK<true>(collision, neg1, neg2, cut, tracks)) { // without acceptance
+        if (!isPairOK<true>(neg1, neg2, cut, tracks)) { // without acceptance
           continue;
         }
 

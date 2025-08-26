@@ -87,10 +87,31 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Primary Kaons", {prong}, {-1}); // define the signal using the full constructor
     return signal;
   }
+  if (!nameStr.compare("proton")) {
+    MCProng prong(1, {2212}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "proton", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("protonPrimary")) {
     MCProng prong(1, {2212}, {true}, {false}, {0}, {0}, {false}); // define 1-generation prong using the full constructor
     prong.SetSourceBit(0, MCProng::kPhysicalPrimary);             // set source to be ALICE primary particles
     signal = new MCSignal(name, "Primary Proton", {prong}, {-1}); // define the signal using the full constructor
+    return signal;
+  }
+  if (!nameStr.compare("protonFromTransport")) {
+    MCProng prong(1, {2212}, {true}, {false}, {0}, {0}, {false});
+    prong.SetSourceBit(0, MCProng::kProducedInTransport);
+    signal = new MCSignal(name, "ProtonFromTransport", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("protonFromLambda0")) {
+    MCProng prong(2, {2212, 3122}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Proton from Lambda0 decays", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("protonFromSigmaPlus")) {
+    MCProng prong(2, {2212, 3222}, {true, true}, {false, false}, {0, 0}, {0, 0}, {false, false});
+    signal = new MCSignal(name, "Proton from Sigma+ decays", {prong}, {-1});
     return signal;
   }
   if (!nameStr.compare("phiMeson")) {

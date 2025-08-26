@@ -269,6 +269,7 @@ struct SingleTrackQC {
       // fRegistry.add("Track/positive/hTOFNsigmaKa", "TOF n sigma ka;p_{pv} (GeV/c);n #sigma_{K}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
       // fRegistry.add("Track/positive/hTOFNsigmaPr", "TOF n sigma pr;p_{pv} (GeV/c);n #sigma_{p}^{TOF}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
 
+      fRegistry.add("Track/positive/hProbElBDT", "probability to be e from BDT;p_{in} (GeV/c);BDT score;", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
       fRegistry.add("Track/positive/hMeanClusterSizeITS", "mean cluster size ITS;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
       fRegistry.add("Track/positive/hMeanClusterSizeITSib", "mean cluster size ITS inner barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
       fRegistry.add("Track/positive/hMeanClusterSizeITSob", "mean cluster size ITS outer barrel;p_{pv} (GeV/c);<cluster size> on ITS #times cos(#lambda);", kTH2F, {{1000, 0.f, 10.f}, {150, 0, 15}}, false);
@@ -417,30 +418,42 @@ struct SingleTrackQC {
     // fDielectronCut.SetPRangeForITSNsigmaPr(dielectroncuts.cfg_min_p_ITSNsigmaPr, dielectroncuts.cfg_max_p_ITSNsigmaPr);
 
     if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) { // please call this at the end of DefineDileptonCut
-      static constexpr int nClassesMl = 2;
-      const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
-      const std::vector<std::string> labelsClasses = {"Background", "Signal"};
-      const uint32_t nBinsMl = dielectroncuts.binsMl.value.size() - 1;
-      const std::vector<std::string> labelsBins(nBinsMl, "bin");
-      double cutsMlArr[nBinsMl][nClassesMl];
-      for (uint32_t i = 0; i < nBinsMl; i++) {
-        cutsMlArr[i][0] = 0.;
-        cutsMlArr[i][1] = dielectroncuts.cutsMl.value[i];
+      std::vector<float> binsML{};
+      binsML.reserve(dielectroncuts.binsMl.value.size());
+      for (size_t i = 0; i < dielectroncuts.binsMl.value.size(); i++) {
+        binsML.emplace_back(dielectroncuts.binsMl.value[i]);
       }
-      o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
-
-      mlResponseSingleTrack.configure(dielectroncuts.binsMl.value, cutsMl, cutDirMl, nClassesMl);
-      if (dielectroncuts.loadModelsFromCCDB) {
-        ccdbApi.init(ccdburl);
-        mlResponseSingleTrack.setModelPathsCCDB(dielectroncuts.onnxFileNames.value, ccdbApi, dielectroncuts.onnxPathsCCDB.value, dielectroncuts.timestampCCDB.value);
-      } else {
-        mlResponseSingleTrack.setModelPathsLocal(dielectroncuts.onnxFileNames.value);
+      std::vector<float> thresholdsML{};
+      thresholdsML.reserve(dielectroncuts.cutsMl.value.size());
+      for (size_t i = 0; i < dielectroncuts.cutsMl.value.size(); i++) {
+        thresholdsML.emplace_back(dielectroncuts.cutsMl.value[i]);
       }
-      mlResponseSingleTrack.cacheInputFeaturesIndices(dielectroncuts.namesInputFeatures);
-      mlResponseSingleTrack.cacheBinningIndex(dielectroncuts.nameBinningFeature);
-      mlResponseSingleTrack.init(dielectroncuts.enableOptimizations.value);
+      fDielectronCut.SetMLThresholds(binsML, thresholdsML);
 
-      fDielectronCut.SetPIDMlResponse(&mlResponseSingleTrack);
+      // static constexpr int nClassesMl = 2;
+      // const std::vector<int> cutDirMl = {o2::cuts_ml::CutNot, o2::cuts_ml::CutSmaller};
+      // const std::vector<std::string> labelsClasses = {"Background", "Signal"};
+      // const uint32_t nBinsMl = dielectroncuts.binsMl.value.size() - 1;
+      // const std::vector<std::string> labelsBins(nBinsMl, "bin");
+      // double cutsMlArr[nBinsMl][nClassesMl];
+      // for (uint32_t i = 0; i < nBinsMl; i++) {
+      //   cutsMlArr[i][0] = 0.;
+      //   cutsMlArr[i][1] = dielectroncuts.cutsMl.value[i];
+      // }
+      // o2::framework::LabeledArray<double> cutsMl = {cutsMlArr[0], nBinsMl, nClassesMl, labelsBins, labelsClasses};
+
+      // mlResponseSingleTrack.configure(dielectroncuts.binsMl.value, cutsMl, cutDirMl, nClassesMl);
+      // if (dielectroncuts.loadModelsFromCCDB) {
+      //   ccdbApi.init(ccdburl);
+      //   mlResponseSingleTrack.setModelPathsCCDB(dielectroncuts.onnxFileNames.value, ccdbApi, dielectroncuts.onnxPathsCCDB.value, dielectroncuts.timestampCCDB.value);
+      // } else {
+      //   mlResponseSingleTrack.setModelPathsLocal(dielectroncuts.onnxFileNames.value);
+      // }
+      // mlResponseSingleTrack.cacheInputFeaturesIndices(dielectroncuts.namesInputFeatures);
+      // mlResponseSingleTrack.cacheBinningIndex(dielectroncuts.nameBinningFeature);
+      // mlResponseSingleTrack.init(dielectroncuts.enableOptimizations.value);
+
+      // fDielectronCut.SetPIDMlResponse(&mlResponseSingleTrack);
     } // end of PID ML
   }
 
@@ -499,6 +512,7 @@ struct SingleTrackQC {
 
       fRegistry.fill(HIST("Track/positive/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/positive/hTOFbeta"), track.p(), track.beta());
+      fRegistry.fill(HIST("Track/positive/hProbElBDT"), track.tpcInnerParam(), track.probElBDT());
       fRegistry.fill(HIST("Track/positive/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
       fRegistry.fill(HIST("Track/positive/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
       fRegistry.fill(HIST("Track/positive/hMeanClusterSizeITSob"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
@@ -539,6 +553,7 @@ struct SingleTrackQC {
 
       fRegistry.fill(HIST("Track/negative/hTPCdEdx"), track.tpcInnerParam(), track.tpcSignal());
       fRegistry.fill(HIST("Track/negative/hTOFbeta"), track.p(), track.beta());
+      fRegistry.fill(HIST("Track/negative/hProbElBDT"), track.tpcInnerParam(), track.probElBDT());
       fRegistry.fill(HIST("Track/negative/hMeanClusterSizeITS"), track.p(), track.meanClusterSizeITS() * std::cos(std::atan(track.tgl())));
       fRegistry.fill(HIST("Track/negative/hMeanClusterSizeITSib"), track.p(), track.meanClusterSizeITSib() * std::cos(std::atan(track.tgl())));
       fRegistry.fill(HIST("Track/negative/hMeanClusterSizeITSob"), track.p(), track.meanClusterSizeITSob() * std::cos(std::atan(track.tgl())));
@@ -643,11 +658,11 @@ struct SingleTrackQC {
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
         for (const auto& track : tracks_per_coll) {
           if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-            if (!cut.template IsSelectedTrack<false, true>(track, collision)) {
+            if (!cut.template IsSelectedTrack<false>(track)) {
               continue;
             }
           } else { // cut-based
-            if (!cut.template IsSelectedTrack<false, false>(track)) {
+            if (!cut.template IsSelectedTrack<false>(track)) {
               continue;
             }
           }
@@ -698,11 +713,11 @@ struct SingleTrackQC {
       if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
         for (const auto& track : tracks_per_coll) {
           if (dielectroncuts.cfg_pid_scheme == static_cast<int>(DielectronCut::PIDSchemes::kPIDML)) {
-            if (!cut.template IsSelectedTrack<false, true>(track, collision)) {
+            if (!cut.template IsSelectedTrack<false>(track)) {
               continue;
             }
           } else { // cut-based
-            if (!cut.template IsSelectedTrack<false, false>(track)) {
+            if (!cut.template IsSelectedTrack<false>(track)) {
               continue;
             }
           }
@@ -787,8 +802,8 @@ struct SingleTrackQC {
   }
   PROCESS_SWITCH(SingleTrackQC, processQC, "run single track QC", true);
 
-  using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
-  void processQC_TriggeredData(FilteredMyCollisionsWithSWT const& collisions, Types const&... args)
+  // using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
+  void processQC_TriggeredData(MyCollisionsWithSWT const& collisions, Types const&... args)
   {
     if constexpr (pairtype == o2::aod::pwgem::dilepton::utils::pairutil::DileptonPairType::kDielectron) {
       auto electrons = std::get<0>(std::tie(args...));
