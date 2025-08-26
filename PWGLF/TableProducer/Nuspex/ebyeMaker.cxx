@@ -201,7 +201,7 @@ struct EbyeMaker {
   Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
   Configurable<float> outerPIDMin{"outerPIDMin", -4.f, "minimum outer PID"};
 
-  Configurable<short> cutChargeNtracks{"cutChargeNtracks", "-2", "lower value of the track charge to add in the output counter variable"};
+  Configurable<int8_t> cutChargeNtracks{"cutChargeNtracks", "-2", "lower value of the track charge to add in the output counter variable"};
   Configurable<bool> useAllEvSel{"useAllEvSel", false, "use additional event selections fo run 3 analyses"};
   Configurable<uint8_t> triggerCut{"triggerCut", 0x0, "trigger cut to select"};
   Configurable<bool> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
