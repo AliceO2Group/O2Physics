@@ -75,8 +75,6 @@ struct HfTaskOmegac0ToOmegapi {
   HfHelper hfHelper;
   SliceCache cache;
 
-  // using TracksMc = soa::Join<aod::Tracks, aod::TracksIU, aod::McTrackLabels>;
-
   using Omegac0Cands = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi>>;
   using Omegac0CandsKF = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfOmegacKf>>;
   using OmegaC0CandsMcKF = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfOmegacKf, aod::HfToOmegaPiMCRec>>;
