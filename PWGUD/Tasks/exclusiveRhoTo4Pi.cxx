@@ -402,7 +402,7 @@ struct ExclusiveRhoTo4Pi {
   HistogramRegistry histosData{"Data", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry histosCounter{"counters", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   // Configurable Event parameters
-  Configurable<bool> ifCheckUPCmode{"ifCheckUPCmode", false, "Enable UPC reconstruction only"};
+  Configurable<int> ifUPC{"ifUPC", 1, "Enable UPC reconstruction only"};
   Configurable<float> vZCut{"vZCut", 10., "Vertex Cut"};
   Configurable<float> fv0Cut{"fv0Cut", 50., "FV0A threshold"};
   Configurable<float> ft0aCut{"ft0aCut", 50., "FT0A threshold"};
@@ -444,8 +444,8 @@ struct ExclusiveRhoTo4Pi {
   void init(InitContext const&)
   {
     // QA plots: Event and Track Counter
-    histosCounter.add("EventsCounts_vs_runNo", "Number of Selected 4-Pion Events per Run; Run Number; Number of Events", kTH2F, {{113, 0, 113}, {12, 0, 12}});
-    histosCounter.add("TracksCounts_vs_runNo", "Number of Selected Tracks per Run; Run Number; Number of Tracks", kTH2F, {{113, 0, 113}, {14, 0, 14}});
+    histosCounter.add("EventsCounts_vs_runNo", "Event Counter Run by Run; Run Number; Number of Events", kTH2F, {{113, 0, 113}, {14, 0, 14}});
+    histosCounter.add("TracksCounts_vs_runNo", "Track Counter Run by Run; Run Number; Number of Tracks", kTH2F, {{113, 0, 113}, {14, 0, 14}});
     histosCounter.add("fourPionCounts_0c", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
     histosCounter.add("fourPionCounts_0c_within_mass", "Four Pion Counts within mass range; Run Number; Events", kTH1F, {{113, 0, 113}});
     histosCounter.add("fourPionCounts_0c_within_rap", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
@@ -456,18 +456,22 @@ struct ExclusiveRhoTo4Pi {
     histosCounter.add("fourPionCounts_n0c_selected", "Four Pion Counts; Run Number; Events", kTH1F, {{113, 0, 113}});
     // QA plots: event selection
     histosData.add("UPCmode", "UPC mode; Events", kTH1F, {{5, 0, 5}});
+    histosData.add("GapSide", "Gap Side;Gap Side; Events", kTH1F, {{4, 0, 4}});
+    histosData.add("TrueGapSide", "True Gap Side; True Gap Side; Events", kTH1F, {{4, 0, 4}});
+    histosData.add("isCBTOk", "isCBTOk; bool; Events", kTH1F, {{4, 0, 4}});
+    histosData.add("isCBTHadronOk", "isCBTHadronOk; bool; Events", kTH1F, {{4, 0, 4}});
+    histosData.add("isCBTZdcOk", "isCBTZdcOk; bool; Events", kTH1F, {{4, 0, 4}});
+    histosData.add("isCBTHadronZdcOk", "isCBTHadronZdcOk; bool; Events", kTH1F, {{4, 0, 4}});
     histosData.add("FT0A", "T0A amplitude", kTH1F, {{500, 0.0, 500.0}});
     histosData.add("FT0C", "T0C amplitude", kTH1F, {{500, 0.0, 500.0}});
     histosData.add("FV0A", "V0A amplitude", kTH1F, {{100, 0.0, 100}});
-    histosData.add("ZDC_A", "ZDC amplitude", kTH1F, {{1000, 0.0, 15}});
-    histosData.add("ZDC_C", "ZDC amplitude", kTH1F, {{1000, 0.0, 15}});
-    histosData.add("FDDA", "FDD A signal; FDD A signal; Counts", kTH1F, {{500, 0.0, 500}});
-    histosData.add("FDDC", "FDD C signal; FDD C signal; Counts", kTH1F, {{500, 0.0, 500}});
+    histosData.add("ZDC_A", "ZDC amplitude", kTH1F, {{10000, 0.0, 10000}});
+    histosData.add("ZDC_C", "ZDC amplitude", kTH1F, {{10000, 0.0, 10000}});
+    histosData.add("FDDA", "FDD A signal; FDD A signal; Counts", kTH1F, {{500, 0.0, 2000}});
+    histosData.add("FDDC", "FDD C signal; FDD C signal; Counts", kTH1F, {{500, 0.0, 2000}});
     histosData.add("vertexX", "Vertex X; Vertex X [cm]; Counts", kTH1F, {{2000, -0.05, 0.05}});
     histosData.add("vertexY", "Vertex Y; Vertex Y [cm]; Counts", kTH1F, {{2000, -0.05, 0.05}});
     histosData.add("vertexZ", "Vertex Z; Vertex Z [cm]; Counts", kTH1F, {{2000, -15, 15}});
-    histosData.add("GapSide", "Gap Side;Gap Side; Events", kTH1F, {{4, 0, 4}});
-    histosData.add("TrueGapSide", "True Gap Side; True Gap Side; Events", kTH1F, {{4, 0, 4}});
     histosData.add("occupancy", "Occupancy; Occupancy; Counts", kTH1F, {{20000, 0, 20000}});
     // QA plots: tracks
     histosData.add("dcaXY_all", "dcaXY; dcaXY [cm]; Counts", kTH1F, {{2000, -0.1, 0.1}});
@@ -573,15 +577,24 @@ struct ExclusiveRhoTo4Pi {
   void processData(soa::Filtered<UDCollisions>::iterator const& collision, soa::Filtered<UDtracks> const& tracks)
   {
 
-    int runIndex = getRunNumberIndex(collision.runNumber());
-
     // Check if the Event is reconstructed in UPC mode
-    if (ifCheckUPCmode && (collision.flags() != 1)) {
+    if (collision.flags() != ifUPC) {
       return;
     }
 
+    // RCT flag
+    if (!sgSelector.isCBTHadronZdcOk(collision)) {
+      return;
+    }
+
+    int runIndex = getRunNumberIndex(collision.runNumber());
+
     histosData.fill(HIST("GapSide"), collision.gapSide());
     histosData.fill(HIST("TrueGapSide"), sgSelector.trueGap(collision, fv0Cut, ft0aCut, ft0cCut, zdcCut));
+    histosData.fill(HIST("isCBTOk"), sgSelector.isCBTOk(collision));
+    histosData.fill(HIST("isCBTHadronOk"), sgSelector.isCBTHadronOk(collision));
+    histosData.fill(HIST("isCBTZdcOk"), sgSelector.isCBTZdcOk(collision));
+    histosData.fill(HIST("isCBTHadronZdcOk"), sgSelector.isCBTHadronZdcOk(collision));
     histosData.fill(HIST("vertexX"), collision.posX());
     histosData.fill(HIST("vertexY"), collision.posY());
     histosData.fill(HIST("vertexZ"), collision.posZ());
@@ -940,79 +953,74 @@ struct ExclusiveRhoTo4Pi {
 
   void processEventCounter(UDCollisions::iterator const& collision)
   {
-
     histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 0);
-
-    // UPC mode
-    if (ifCheckUPCmode && collision.flags() != 1) {
+    // RCT flag
+    if (!sgSelector.isCBTHadronZdcOk(collision)) {
       return;
     }
     histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 1);
-
+    // UPC mode
+    if (collision.flags() != ifUPC) {
+      return;
+    }
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 2);
     // vtxITSTPC
     if (collision.vtxITSTPC() != vtxITSTPCcut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 2);
-
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 3);
     // sbp
     if (collision.sbp() != sbpCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 3);
-
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 4);
     // itsROFb
     if (collision.itsROFb() != itsROFbCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 4);
-
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 5);
     // tfb
     if (collision.tfb() != tfbCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 5);
-
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 6);
     // FT0A
     if (collision.totalFT0AmplitudeA() > ft0aCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 6);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 7);
     // FT0C
     if (collision.totalFT0AmplitudeC() > ft0cCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 7);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 8);
     // FV0A
     if (collision.totalFV0AmplitudeA() > fv0Cut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 8);
-
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 9);
     // ZDC
     if (collision.energyCommonZNA() > zdcCut || collision.energyCommonZNC() > zdcCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 9);
-
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 10);
     // numContributors
     if (collision.numContrib() != numPVContrib) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 10);
-
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 11);
     // vertexZ
     if (std::abs(collision.posZ()) > vZCut) {
       return;
     }
-    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 11);
+    histosCounter.fill(HIST("EventsCounts_vs_runNo"), getRunNumberIndex(collision.runNumber()), 12);
   } // End of processCounter function
 
   void processTrackCounter(soa::Filtered<UDCollisions>::iterator const& collision, UDtracks const& tracks)
   {
     int runIndex = getRunNumberIndex(collision.runNumber());
     // Check if the Event is reconstructed in UPC mode
-    if (ifCheckUPCmode && (collision.flags() != 1)) {
+    if (collision.flags() != ifUPC) {
       return;
     }
     for (const auto& track : tracks) {
@@ -1194,20 +1202,49 @@ struct ExclusiveRhoTo4Pi {
     return -1; // Not found
   } // End of getRunNumberIndex function
 
+  std::string strFormat(double value, int precision = 2)
+  {
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(precision) << value;
+    return oss.str();
+  }
+
   void setHistBinLabels()
   {
 
-    std::string eventLabels[12] = {
-      "No Cuts", "UPC mode", "vtxITSTPC=1", "sbp=1", "itsROFb=1", "tfb=1",
-      "FT0A <= 50", "FT0C <= 50", "FV0A <= 50", "ZDC <= 0",
-      "n PV Contrib = 4", "V_{z} < 10cm"};
+    std::string eventLabels[13] = {
+      "No Cuts",
+      "isCBTHadronOk",
+      "UPC or STD",
+      "vtxITSTPC=" + strFormat(vtxITSTPCcut, 0),
+      "sbp=" + strFormat(sbpCut, 0),
+      "itsROFb=" + strFormat(itsROFbCut, 0),
+      "tfb=" + strFormat(tfbCut, 0),
+      "FT0A<=" + strFormat(fv0Cut),
+      "FT0C<=" + strFormat(ft0cCut),
+      "FV0A<=" + strFormat(ft0aCut),
+      "ZDC",
+      "n PV Contrib = 4",
+      "V_{z} < " + strFormat(vZCut) + " cm"};
 
-    int numEventCuts = 12;
+    int numEventCuts = 13;
 
     std::string trackLabels[14] = {
-      "No Cuts", "isPVContributor", "pT > 0.15 GeV/c", "|#eta| < 0.9", "DCA Z < 2 cm",
-      "DCA XY cut", "hasITS", "hasTPC", "itsChi2NCl < 36", "tpcChi2NCl < 4",
-      "tpcNClsFindable < 70", "#pi tracks", "#pi^{+} tracks", "#pi^{-} tracks"};
+      "No Cuts",
+      "isPVContributor",
+      "pT>" + strFormat(pTcut) + " GeV/c",
+      "|#eta|<" + strFormat(etaCut),
+      "DCA Z<" + strFormat(dcaZcut) + " cm",
+      "DCA XY cut",
+      "hasITS",
+      "hasTPC",
+      "itsChi2NCl<" + strFormat(itsChi2NClsCut),
+      "tpcChi2NCl<" + strFormat(tpcChi2NClsCut),
+      "tpcNClsFindable>" + strFormat(tpcNClsFindableCut),
+      "#pi tracks",
+      "#pi^{+} tracks",
+      "#pi^{-} tracks"};
+
     int numTrackCuts = 14;
 
     auto h1 = histosCounter.get<TH2>(HIST("EventsCounts_vs_runNo"));
@@ -1218,6 +1255,8 @@ struct ExclusiveRhoTo4Pi {
     auto h6 = histosCounter.get<TH1>(HIST("fourPionCounts_n0c"));
     auto h7 = histosCounter.get<TH1>(HIST("fourPionCounts_n0c_within_rap"));
     auto h8 = histosCounter.get<TH1>(HIST("fourPionCounts_n0c_selected"));
+    auto h9 = histosCounter.get<TH1>(HIST("fourPionCounts_0c_within_mass"));
+    auto h10 = histosCounter.get<TH1>(HIST("fourPionCounts_n0c_within_mass"));
 
     for (int i = 0; i < numRunNums; ++i) {
       h1->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
@@ -1228,6 +1267,8 @@ struct ExclusiveRhoTo4Pi {
       h6->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
       h7->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
       h8->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
+      h9->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
+      h10->GetXaxis()->SetBinLabel(i + 1, std::to_string(runNos[i]).c_str());
     }
     for (int i = 0; i < numEventCuts; ++i) {
       h1->GetYaxis()->SetBinLabel(i + 1, eventLabels[i].c_str());
