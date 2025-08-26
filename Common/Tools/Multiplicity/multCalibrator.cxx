@@ -25,6 +25,7 @@
 #include <TH1D.h>
 #include <TH1F.h>
 #include <TList.h>
+#include <TMath.h>
 #include <TProfile.h>
 #include <TStopwatch.h>
 
