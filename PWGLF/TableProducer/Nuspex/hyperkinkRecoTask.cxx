@@ -336,6 +336,9 @@ struct HypKinkCandidate {
   float chi2ITSMoth = 0.0f;
   uint32_t itsClusterSizeMoth = 0u;
   uint32_t itsClusterSizeDaug = 0u;
+  float tpcMomDaug = -999.f;
+  float tpcSignalDaug = -999.f;
+  int16_t tpcNClsPIDDaug = 0u;
   float nSigmaTPCDaug = -999.f;
   float nSigmaITSDaug = -999.f;
   float nSigmaTOFDaug = -999.f; // recalculated TOF NSigma
@@ -555,6 +558,9 @@ struct HyperkinkRecoTask {
     fillCandidateRecoMoth(hypkinkCand, collision, trackMoth);
 
     hypkinkCand.itsClusterSizeDaug = trackDaug.itsClusterSizes();
+    hypkinkCand.tpcMomDaug = trackDaug.tpcInnerParam() * trackDaug.sign();
+    hypkinkCand.tpcSignalDaug = trackDaug.tpcSignal();
+    hypkinkCand.tpcNClsPIDDaug = trackDaug.tpcNClsPID();
     hypkinkCand.nSigmaTPCDaug = getTPCNSigma(trackDaug, pidTypeDaug);
     hypkinkCand.nSigmaITSDaug = getITSNSigma(trackDaug, itsResponse, pidTypeDaug);
 
@@ -641,10 +647,7 @@ struct HyperkinkRecoTask {
       if (std::abs(tpcNSigmaDaug) > cutTPCNSigmaDaug) {
         continue;
       }
-      float invMass = RecoDecay::m(std::array{std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()}, std::array{kinkCand.pxDaugNeut(), kinkCand.pyDaugNeut(), kinkCand.pzDaugNeut()}}, std::array{massChargedDaug, massNeutralDaug});
       registry.fill(HIST("hCandidateCounter"), 2);
-      registry.fill(HIST("h2MothMassPt"), kinkCand.mothSign() * kinkCand.ptMoth(), invMass);
-      registry.fill(HIST("h2DaugTPCNSigmaPt"), kinkCand.mothSign() * kinkCand.ptDaug(), tpcNSigmaDaug);
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -683,6 +686,10 @@ struct HyperkinkRecoTask {
       }
       registry.fill(HIST("hCandidateCounter"), 7);
 
+      float invMass = RecoDecay::m(std::array{std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()}, std::array{kinkCand.pxDaugNeut(), kinkCand.pyDaugNeut(), kinkCand.pzDaugNeut()}}, std::array{massChargedDaug, massNeutralDaug});
+      registry.fill(HIST("h2MothMassPt"), kinkCand.mothSign() * kinkCand.ptMoth(), invMass);
+      registry.fill(HIST("h2DaugTPCNSigmaPt"), kinkCand.mothSign() * kinkCand.ptDaug(), tpcNSigmaDaug);
+
       HypKinkCandidate hypkinkCand;
       fillCandidate(hypkinkCand, collision, kinkCand, motherTrack, daugTrack);
       hypkinkCand.nSigmaTOFDaug = nSigmaTOF;
@@ -697,6 +704,7 @@ struct HyperkinkRecoTask {
         hypkinkCand.momDaugSV[0], hypkinkCand.momDaugSV[1], hypkinkCand.momDaugSV[2],
         hypkinkCand.dcaXYMothPv, hypkinkCand.dcaXYDaugPv, hypkinkCand.dcaKinkTopo,
         hypkinkCand.chi2ITSMoth, hypkinkCand.itsClusterSizeMoth, hypkinkCand.itsClusterSizeDaug,
+        hypkinkCand.tpcMomDaug, hypkinkCand.tpcSignalDaug, hypkinkCand.tpcNClsPIDDaug,
         hypkinkCand.nSigmaTPCDaug, hypkinkCand.nSigmaITSDaug, hypkinkCand.nSigmaTOFDaug,
         hypkinkCand.momMothPV[0], hypkinkCand.momMothPV[1], hypkinkCand.momMothPV[2],
         hypkinkCand.updateMomMothPV[0], hypkinkCand.updateMomMothPV[1], hypkinkCand.updateMomMothPV[2]);
@@ -766,7 +774,6 @@ struct HyperkinkRecoTask {
       if (std::abs(tpcNSigmaDaug) > cutTPCNSigmaDaug) {
         continue;
       }
-      float invMass = RecoDecay::m(std::array{std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()}, std::array{kinkCand.pxDaugNeut(), kinkCand.pyDaugNeut(), kinkCand.pzDaugNeut()}}, std::array{massChargedDaug, massNeutralDaug});
       registry.fill(HIST("hCandidateCounter"), 2);
       if (isKinkSignal) {
         registry.fill(HIST("hTrueCandidateCounter"), 2);
@@ -831,6 +838,7 @@ struct HyperkinkRecoTask {
         registry.fill(HIST("hTrueCandidateCounter"), 7);
       }
 
+      float invMass = RecoDecay::m(std::array{std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()}, std::array{kinkCand.pxDaugNeut(), kinkCand.pyDaugNeut(), kinkCand.pzDaugNeut()}}, std::array{massChargedDaug, massNeutralDaug});
       registry.fill(HIST("h2MothMassPt"), kinkCand.mothSign() * kinkCand.ptMoth(), invMass);
       registry.fill(HIST("h2DaugTPCNSigmaPt"), kinkCand.mothSign() * kinkCand.ptDaug(), tpcNSigmaDaug);
 
@@ -897,6 +905,7 @@ struct HyperkinkRecoTask {
         hypkinkCand.momDaugSV[0], hypkinkCand.momDaugSV[1], hypkinkCand.momDaugSV[2],
         hypkinkCand.dcaXYMothPv, hypkinkCand.dcaXYDaugPv, hypkinkCand.dcaKinkTopo,
         hypkinkCand.chi2ITSMoth, hypkinkCand.itsClusterSizeMoth, hypkinkCand.itsClusterSizeDaug,
+        hypkinkCand.tpcMomDaug, hypkinkCand.tpcSignalDaug, hypkinkCand.tpcNClsPIDDaug,
         hypkinkCand.nSigmaTPCDaug, hypkinkCand.nSigmaITSDaug, hypkinkCand.nSigmaTOFDaug,
         hypkinkCand.isSignal, hypkinkCand.isSignalReco, hypkinkCand.isCollReco, hypkinkCand.isSurvEvSelection,
         hypkinkCand.truePosSV[0], hypkinkCand.truePosSV[1], hypkinkCand.truePosSV[2],
@@ -949,6 +958,7 @@ struct HyperkinkRecoTask {
         -1, -1, -1,
         -1, -1, -1,
         -1,
+        -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
