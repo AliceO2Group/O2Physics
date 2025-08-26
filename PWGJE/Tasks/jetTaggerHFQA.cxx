@@ -113,9 +113,6 @@ struct JetTaggerHFQA {
   ConfigurableAxis binSigmaLxyz{"binSigmaLxyz", {100, 0., 0.1}, ""};
 
   int numberOfJetFlavourSpecies = 6;
-  std::size_t firstTaggerForTrackCounting = 0;
-  std::size_t secondTaggerForTrackCounting = 1;
-  std::size_t thirdTaggerForTrackCounting = 2;
   float kUnsetJetAreaFraction = -98.0;
   float kUnsetConstituentPtMin = -98.0;
   float kUnsetConstituentPtMax = 9998.0;
@@ -537,6 +534,9 @@ struct JetTaggerHFQA {
   template <typename T, typename U>
   void fillHistogramIPsData(T const& jet, U const& /*tracks*/)
   {
+    std::size_t firstTaggerForTrackCounting = 0;
+    std::size_t secondTaggerForTrackCounting = 1;
+    std::size_t thirdTaggerForTrackCounting = 2;
     float eventWeight = 1.0;
     float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCD * pTHat) {
@@ -655,6 +655,9 @@ struct JetTaggerHFQA {
   template <typename T, typename U>
   void fillHistogramIPsMCD(T const& mcdjet, U const& /*tracks*/, float eventWeight = 1.0)
   {
+    std::size_t firstTaggerForTrackCounting = 0;
+    std::size_t secondTaggerForTrackCounting = 1;
+    std::size_t thirdTaggerForTrackCounting = 2;
     float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
       return;
@@ -1640,6 +1643,5 @@ using JetTaggerhfQaCharged = JetTaggerHFQA<JetTaggerQAChargedDataJets, aod::Char
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    // adaptAnalysisTask<JetTaggerhfQaCharged>(cfgc, TaskName{"jet-taggerhf-qa-charged"})}; // it will be added when full jets are updated
-    adaptAnalysisTask<JetTaggerhfQaCharged>(cfgc)};
+    adaptAnalysisTask<JetTaggerhfQaCharged>(cfgc, TaskName{"jet-taggerhf-qa-charged"})}; // o2-linter: disable=name/o2-task (wrong hyphenation)
 }
