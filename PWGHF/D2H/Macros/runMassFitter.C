@@ -353,6 +353,7 @@ int runMassFitter(const TString& configFileName)
   const Int_t nCanvases = std::ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
   std::vector<TCanvas*> canvasMass(nCanvases);
   std::vector<TCanvas*> canvasResiduals(nCanvases);
+  std::vector<TCanvas*> canvasRatio(nCanvases);
   std::vector<TCanvas*> canvasRefl(nCanvases);
   for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
     const int nPads = (nCanvases == 1) ? nSliceVarBins : nCanvasesMax;
@@ -363,9 +364,16 @@ int runMassFitter(const TString& configFileName)
     canvasResiduals[iCanvas] =
       new TCanvas(Form("canvasResiduals%d", iCanvas), Form("canvasResiduals%d", iCanvas), canvasSize[0], canvasSize[1]);
     divideCanvas(canvasResiduals[iCanvas], nPads);
-    canvasRefl[iCanvas] = new TCanvas(Form("canvasRefl%d", iCanvas), Form("canvasRefl%d", iCanvas),
-                                      canvasSize[0], canvasSize[1]);
-    divideCanvas(canvasRefl[iCanvas], nPads);
+
+    canvasRatio[iCanvas] = new TCanvas(Form("canvasRatio%d", iCanvas), Form("canvasRatio%d", iCanvas),
+                                       canvasSize[0], canvasSize[1]);
+    divideCanvas(canvasRatio[iCanvas], nPads);
+
+    if (enableRefl) {
+      canvasRefl[iCanvas] = new TCanvas(Form("canvasRefl%d", iCanvas), Form("canvasRefl%d", iCanvas),
+                                        canvasSize[0], canvasSize[1]);
+      divideCanvas(canvasRefl[iCanvas], nPads);
+    }
   }
 
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
@@ -532,6 +540,15 @@ int runMassFitter(const TString& configFileName)
       massFitter->drawResidual(gPad);
       canvasResiduals[iCanvas]->Modified();
       canvasResiduals[iCanvas]->Update();
+
+      if (nSliceVarBins > 1) {
+        canvasRatio[iCanvas]->cd(iSliceVar - nCanvasesMax * iCanvas + 1);
+      } else {
+        canvasRatio[iCanvas]->cd();
+      }
+      massFitter->drawRatio(gPad);
+      canvasRatio[iCanvas]->Modified();
+      canvasRatio[iCanvas]->Update();
     }
 
     hFitConfig->SetBinContent(1, iSliceVar + 1, massMin[iSliceVar]);
@@ -554,7 +571,10 @@ int runMassFitter(const TString& configFileName)
     canvasMass[iCanvas]->Write();
     if (!isMc) {
       canvasResiduals[iCanvas]->Write();
-      canvasRefl[iCanvas]->Write();
+      canvasRatio[iCanvas]->Write();
+      if (enableRefl) {
+        canvasRefl[iCanvas]->Write();
+      }
     }
   }
 
@@ -613,13 +633,9 @@ void setHistoStyle(TH1* histo, Color_t color, Size_t markerSize)
 
 void divideCanvas(TCanvas* canvas, int nSliceVarBins)
 {
-  const int rectangularSideMin = std::floor(std::sqrt(nSliceVarBins));
-  constexpr int RectangularSidesDiffMax = 2;
-  for (int rectangularSidesDiff = 0; rectangularSidesDiff < RectangularSidesDiffMax; ++rectangularSidesDiff) {
-    if (rectangularSideMin * (rectangularSideMin + rectangularSidesDiff) >= nSliceVarBins) {
-      canvas->Divide(rectangularSideMin + rectangularSidesDiff, rectangularSideMin);
-    }
-  }
+  int nCols = std::ceil(std::sqrt(nSliceVarBins));
+  int nRows = std::ceil(double(nSliceVarBins) / nCols);
+  canvas->Divide(nCols, nRows);
 }
 
 int main(int argc, const char* argv[])

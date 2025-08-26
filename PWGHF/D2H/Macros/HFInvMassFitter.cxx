@@ -356,6 +356,7 @@ void HFInvMassFitter::doFit()
       mTotalPdf->plotOn(mInvMassFrame, Name("Tot_c"), LineColor(kBlue));
       mSgnPdf->plotOn(mInvMassFrame, Normalization(1.0, RooAbsReal::RelativeExpected), DrawOption("F"), FillColor(TColor::GetColorTransparent(kBlue, 0.2)), VLines());
       mChiSquareOverNdfTotal = mInvMassFrame->chiSquare("Tot_c", "data_c"); // calculate reduced chi2 / DNF
+
       // plot residual distribution
       mResidualFrame = mass->frame(Title("Residual Distribution"));
       RooHist* residualHistogram = mInvMassFrame->residHist("data_c", "Bkg_c");
@@ -372,6 +373,7 @@ void HFInvMassFitter::doFit()
     calculateSignal(mRawYield, mRawYieldErr);
     countSignal(mRawYieldCounted, mRawYieldCountedErr);
     calculateSignificance(mSignificance, mSignificanceErr);
+    calculateFitToDataRatio();
   }
 }
 
@@ -637,6 +639,37 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
   highlightPeakRegion(mResidualFrame);
 }
 
+// draw ratio on canvas
+void HFInvMassFitter::drawRatio(TVirtualPad* pad)
+{
+  pad->cd();
+  mRatioFrame->GetYaxis()->SetTitle("");
+  TPaveText* textInfo = new TPaveText(0.12, 0.65, 0.47, .89, "NDC");
+  textInfo->SetBorderSize(0);
+  textInfo->SetFillStyle(0);
+  textInfo->SetTextColor(kBlue);
+  textInfo->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
+  textInfo->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
+  textInfo->AddText(Form("mean = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
+  if (mTypeOfSgnPdf == DoubleGaus) {
+    auto const& baseSigmaSgn = mWorkspace->var("sigma");
+    textInfo->AddText(Form("sigma = %.3f #pm %.3f", baseSigmaSgn->getVal(), baseSigmaSgn->getError()));
+    textInfo->AddText(Form("sigma 2 = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+  } else {
+    textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+  }
+  mRatioFrame->addObject(textInfo);
+  double xMin = mRatioFrame->GetXaxis()->GetXmin();
+  double xMax = mRatioFrame->GetXaxis()->GetXmax();
+  TLine* line = new TLine(xMin, 1.0, xMax, 1.0);
+  line->SetLineColor(kGray);
+  line->SetLineStyle(2);
+  line->SetLineWidth(2);
+  mRatioFrame->addObject(line);
+  mRatioFrame->Draw();
+  highlightPeakRegion(mRatioFrame);
+}
+
 // draw peak region with vertical lines
 void HFInvMassFitter::highlightPeakRegion(const RooPlot* plot, Color_t color, Width_t width, Style_t style) const
 {
@@ -816,6 +849,42 @@ void HFInvMassFitter::plotRefl(RooAbsPdf* pdf)
     throw std::runtime_error("plotRefl(): mTypeOfReflPdf must be within [0; " + std::to_string(NTypesOfReflPdf) + ") range");
   }
   pdf->plotOn(mInvMassFrame, Components(namesOfReflPdf.at(mTypeOfReflPdf).c_str()), Name("Refl_c"), LineColor(kGreen));
+}
+
+// Calculate fit to data ratio
+void HFInvMassFitter::calculateFitToDataRatio()
+{
+  if (!mInvMassFrame)
+    return;
+  // Create a new RooPlot for the ratio
+  mRatioFrame = mWorkspace->var("mass")->frame(Title("Fit/Data Ratio"));
+
+  // Get the data and fit curves from the frame
+  auto* dataHist = dynamic_cast<RooHist*>(mInvMassFrame->findObject("data_c"));
+  auto* fitCurve = dynamic_cast<RooCurve*>(mInvMassFrame->findObject("Tot_c")); // or the relevant fit curve
+
+  if (!dataHist || !fitCurve)
+    return;
+
+  RooHist* ratioHist = new RooHist();
+
+  for (int i = 0; i < dataHist->GetN(); ++i) {
+    double x, dataY, dataErr;
+    dataHist->GetPoint(i, x, dataY);
+    dataErr = dataHist->GetErrorY(i);
+
+    double fitY = fitCurve->Eval(x);
+
+    double ratio = dataY != 0 ? fitY / dataY : 0;
+    double err = dataY != 0 ? ratio * dataErr / dataY : 0;
+
+    ratioHist->SetPoint(i, x, ratio);
+    ratioHist->SetPointError(i, 0, 0, err, err);
+  }
+
+  mRatioFrame->SetMinimum(0.0);
+  mRatioFrame->SetMaximum(2.0);
+  mRatioFrame->addPlotable(ratioHist, "P");
 }
 
 // Fix reflection pdf

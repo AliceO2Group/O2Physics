@@ -224,8 +224,10 @@ class HFInvMassFitter : public TNamed
   void calculateBackground(Double_t& bkg, Double_t& bkgErr) const;
   void calculateSignificance(Double_t& significance, Double_t& significanceErr) const;
   void checkForSignal(Double_t& estimatedSignal);
+  void calculateFitToDataRatio();
   void drawFit(TVirtualPad* c, Int_t writeFitInfo = 2);
   void drawResidual(TVirtualPad* c);
+  void drawRatio(TVirtualPad* c);
   void drawReflection(TVirtualPad* c);
 
  private:
@@ -293,6 +295,7 @@ class HFInvMassFitter : public TNamed
   RooPlot* mReflFrame;               /// reflection frame
   RooPlot* mReflOnlyFrame;           /// reflection frame plot on reflection only
   RooPlot* mResidualFrame;           /// residual frame
+  RooPlot* mRatioFrame;              /// fit/data ratio frame
   RooPlot* mResidualFrameForCalculation;
   RooWorkspace* mWorkspace;    /// workspace
   Double_t mIntegralHisto;     /// integral of histogram to fit
