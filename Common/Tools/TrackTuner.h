@@ -447,10 +447,16 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     return outputString;
   }
 
+  std::string getFullNameInputPath() {
+    return pathInputFile + std::string("/") + nameInputFile;
+  }
+
   void getDcaGraphs()
   {
-    std::string fullNameInputFile = "";
+    std::string fullNameInputFile = pathInputFile + std::string("/") + nameInputFile;
+    //std::string fullNameFileQoverPt = pathFileQoverPt + std::string("/") + nameFileQoverPt;
     std::string fullNameFileQoverPt = "";
+    TDirectoryFile* ccdb_object = nullptr;
 
     if (isInputFileFromCCDB) {
       /// use input correction file from CCDB
@@ -458,29 +464,42 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       // properly init the ccdb
       std::string tmpDir = ".";
       ccdbApi.init("http://alice-ccdb.cern.ch");
+      LOG(info) << "[TrackTuner] CCDB Api OK!";
 
-      // get the DCA correction file from CCDB
-      if (!ccdbApi.retrieveBlob(pathInputFile.data(), tmpDir, metadata, 0, false, nameInputFile.data())) {
-        LOG(fatal) << "[TrackTuner] input file for DCA corrections not found on CCDB, please check the pathInputFile and nameInputFile!";
-      }
+      //o2::ccdb::BasicCCDBManager::instance().setURL("http://alice-ccdb.cern.ch");  LOG(info) << "[Tracktuner] address to CCDB service ...";
+      //o2::ccdb::BasicCCDBManager::instance().setCaching(true);
+      //o2::ccdb::BasicCCDBManager::instance().setLocalObjectValidityChecking();
+      //o2::ccdb::BasicCCDBManager::instance().setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      //o2::ccdb::BasicCCDBManager::instance().setFatalWhenNull(false);
+      //LOG(info) << " [TrackTuner] CCDB service OK!";
+
+      // get the directory from the DCA correction file present in CCDB
+      
+      ccdb_object = o2::ccdb::BasicCCDBManager::instance().get<TDirectoryFile>(fullNameInputFile);      
+      LOG(info) << " [TrackTuner] ccdb_object " << ccdb_object;
 
       // get the Q/Pt correction file from CCDB
       if (!ccdbApi.retrieveBlob(pathFileQoverPt.data(), tmpDir, metadata, 0, false, nameFileQoverPt.data())) {
         LOG(fatal) << "[TrackTuner] input file for Q/Pt corrections not found on CCDB, please check the pathFileQoverPt and nameFileQoverPt!";
       }
+
       // point to the file in the tmp local folder
-      fullNameInputFile = tmpDir + std::string("/") + nameInputFile;
+      //fullNameInputFile = tmpDir + std::string("/") + nameInputFile;
       fullNameFileQoverPt = tmpDir + std::string("/") + nameFileQoverPt;
     } else {
       /// use input correction file from local filesystem
-      fullNameInputFile = pathInputFile + std::string("/") + nameInputFile;
       fullNameFileQoverPt = pathFileQoverPt + std::string("/") + nameFileQoverPt;
+      
+      /// open the input correction file
+      TFile* inputFile = TFile::Open(fullNameInputFile.c_str(), "READ");
+      if (!inputFile) {
+        LOG(fatal) << "[TrackTuner] Something wrong with the local input file" << fullNameInputFile << " for dca correction. Fix it!";
+      }
+
+      ccdb_object = dynamic_cast<TDirectoryFile*>(inputFile->Get("ccdb_object"));
+      
     }
-    /// open the input correction file
-    std::unique_ptr<TFile> inputFile(TFile::Open(fullNameInputFile.c_str(), "READ"));
-    if (!inputFile.get()) {
-      LOG(fatal) << "Something wrong with the input file" << fullNameInputFile << " for dca correction. Fix it!";
-    }
+    
     std::unique_ptr<TFile> inputFileQoverPt(TFile::Open(fullNameFileQoverPt.c_str(), "READ"));
     if (!inputFileQoverPt.get() && (updateCurvature || updateCurvatureIU)) {
       LOG(fatal) << "Something wrong with the Q/Pt input file" << fullNameFileQoverPt << " for Q/Pt correction. Fix it!";
@@ -491,9 +510,9 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     if (usePvRefitCorrections) {
       dir = "withPvRefit";
     }
-    TDirectory* td = dynamic_cast<TDirectory*>(inputFile->Get(dir.c_str()));
+    TDirectory* td = dynamic_cast<TDirectory*>(ccdb_object->Get(dir.c_str()));
     if (!td) {
-      LOG(fatal) << "TDirectory " << td << " not found in input file" << inputFile->GetName() << ". Fix it!";
+      LOG(fatal) << "[TrackTuner] TDirectory " << td << " not found in ccdb_object. Fix it!";
     }
 
     int inputNphiBins = nPhiBins;
