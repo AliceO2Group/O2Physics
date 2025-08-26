@@ -448,16 +448,20 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     return outputString;
   }
 
-  std::string getFullNameInputPath() {
+  std::string getFullNameInputPath()
+  {
     return pathInputFile + std::string("/") + nameInputFile;
   }
 
   void getDcaGraphs()
   {
-    std::string fullNameInputFile = pathInputFile; // + std::string("/") + nameInputFile;
-    //std::string fullNameFileQoverPt = pathFileQoverPt + std::string("/") + nameFileQoverPt;
-    std::string fullNameFileQoverPt = "";
-    TList* ccdb_object = nullptr;
+    std::string fullNameInputFile = pathInputFile + std::string("/") + nameInputFile;
+    std::string fullNameFileQoverPt = pathFileQoverPt + std::string("/") + nameFileQoverPt;
+    TList* ccdb_object_dca = nullptr;
+    TList* ccdb_object_qoverpt = nullptr;
+
+    std::string grOneOverPtPionNameMC = "sigmaVsPtMc";
+    std::string grOneOverPtPionNameData = "sigmaVsPtData";
 
     if (isInputFileFromCCDB) {
       /// use input correction file from CCDB
@@ -467,49 +471,41 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       ccdbApi.init("http://alice-ccdb.cern.ch");
       LOG(info) << "[TrackTuner] CCDB Api OK!";
 
-      //o2::ccdb::BasicCCDBManager::instance().setURL("http://alice-ccdb.cern.ch");  LOG(info) << "[Tracktuner] address to CCDB service ...";
-      //o2::ccdb::BasicCCDBManager::instance().setCaching(true);
-      //o2::ccdb::BasicCCDBManager::instance().setLocalObjectValidityChecking();
-      //o2::ccdb::BasicCCDBManager::instance().setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-      //o2::ccdb::BasicCCDBManager::instance().setFatalWhenNull(false);
-      //LOG(info) << " [TrackTuner] CCDB service OK!";
+      // get the TList from the DCA correction file present in CCDB
+      ccdb_object_dca = o2::ccdb::BasicCCDBManager::instance().get<TList>(pathInputFile);
+      LOG(info) << " [TrackTuner] ccdb_object_dca " << ccdb_object_dca;
 
-      // get the directory from the DCA correction file present in CCDB
-      
-      ccdb_object = o2::ccdb::BasicCCDBManager::instance().get<TList>(fullNameInputFile);
-      LOG(info) << " [TrackTuner] ccdb_object " << ccdb_object;
-
+      // get the TList from the Q/Pt correction file from CCDB
+      if (updateCurvature || updateCurvatureIU) {
+        ccdb_object_qoverpt = o2::ccdb::BasicCCDBManager::instance().get<TList>(pathFileQoverPt);
+        LOG(info) << " [TrackTuner] ccdb_object_qoverpt " << ccdb_object_qoverpt;
       }
-      // point to the file in the tmp local folder
-      //fullNameInputFile = tmpDir + std::string("/") + nameInputFile;
-      fullNameFileQoverPt = tmpDir + std::string("/") + nameFileQoverPt;
     } else {
       /// use input correction file from local filesystem
-      fullNameFileQoverPt = pathFileQoverPt + std::string("/") + nameFileQoverPt;
-      
-      /// open the input correction file
+
+      /// open the input correction file - dca correction
       TFile* inputFile = TFile::Open(fullNameInputFile.c_str(), "READ");
       if (!inputFile) {
         LOG(fatal) << "[TrackTuner] Something wrong with the local input file" << fullNameInputFile << " for dca correction. Fix it!";
       }
+      ccdb_object_dca = dynamic_cast<TList*>(inputFile->Get("ccdb_object"));
 
-
-      ccdb_object = dynamic_cast<TList*>(inputFile->Get("ccdb_object"));
-      
-    }
-    
-    std::unique_ptr<TFile> inputFileQoverPt(TFile::Open(fullNameFileQoverPt.c_str(), "READ"));
-    if (!inputFileQoverPt.get() && (updateCurvature || updateCurvatureIU)) {
-      LOG(fatal) << "Something wrong with the Q/Pt input file" << fullNameFileQoverPt << " for Q/Pt correction. Fix it!";
+      /// open the input correction file - q/pt correction
+      TFile* inputFileQoverPt = TFile::Open(fullNameFileQoverPt.c_str(), "READ");
+      if (!inputFileQoverPt && (updateCurvature || updateCurvatureIU)) {
+        LOG(fatal) << "Something wrong with the Q/Pt input file" << fullNameFileQoverPt << " for Q/Pt correction. Fix it!";
+      }
+      ccdb_object_qoverpt = dynamic_cast<TList*>(inputFileQoverPt->Get("ccdb_object"));
     }
 
     // choose wheter to use corrections w/ PV refit or w/o it, and retrieve the proper TList
     std::string dir = "woPvRefit";
-
-    TList* td = dynamic_cast<TList*>(ccdb_object->FindObject(dir.c_str()));
+    if (usePvRefitCorrections) {
+      dir = "withPvRefit";
+    }
+    TList* td = dynamic_cast<TList*>(ccdb_object_dca->FindObject(dir.c_str()));
     if (!td) {
-      LOG(fatal) << "[TrackTuner] TList " << td << " not found in ccdb_object. Fix it!";
-
+      LOG(fatal) << "[TrackTuner] TList " << td << " not found in ccdb_object_dca. Fix it!";
     }
 
     int inputNphiBins = nPhiBins;
@@ -580,12 +576,9 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       }
     }
 
-    std::string grOneOverPtPionNameMC = "sigmaVsPtMc";
-    std::string grOneOverPtPionNameData = "sigmaVsPtData";
-
     if (updateCurvature || updateCurvatureIU) {
-      grOneOverPtPionMC.reset(dynamic_cast<TGraphErrors*>(inputFileQoverPt->Get(grOneOverPtPionNameMC.c_str())));
-      grOneOverPtPionData.reset(dynamic_cast<TGraphErrors*>(inputFileQoverPt->Get(grOneOverPtPionNameData.c_str())));
+      grOneOverPtPionMC.reset(dynamic_cast<TGraphErrors*>(ccdb_object_qoverpt->FindObject(grOneOverPtPionNameMC.c_str())));
+      grOneOverPtPionData.reset(dynamic_cast<TGraphErrors*>(ccdb_object_qoverpt->FindObject(grOneOverPtPionNameData.c_str())));
     }
   } // getDcaGraphs() ends here
 
