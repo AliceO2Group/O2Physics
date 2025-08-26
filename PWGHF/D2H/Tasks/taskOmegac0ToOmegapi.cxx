@@ -103,15 +103,13 @@ struct HfTaskOmegac0ToOmegapi {
 
   ConfigurableAxis thnConfigAxisPromptScore{"thnConfigAxisPromptScore", {100, 0, 1}, "Prompt score"};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {700, 2.4, 3.1}, "Cand. inv. mass"};
-  ConfigurableAxis thnConfigAxisPtB{"thnConfigAxisPtB", {500, 0, 50}, "Cand. beauty mother pT"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {500, 0, 50}, "Cand. pT"};
+  ConfigurableAxis thnConfigAxisPtB{"thnConfigAxisPtB", {500, 0, 50}, "Cand. beauty mother pT"};
   ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity"};
   ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {100, 0, 100}, "Centrality"};
   ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin"};
   ConfigurableAxis thnConfigAxisMatchFlag{"thnConfigAxisMatchFlag", {15, -7.5, 7.5}, "Cand. MC match flag"};
-  ConfigurableAxis thnConfigAxisGenPtD{"thnConfigAxisGenPtD", {500, 0, 50}, "Gen pT"};
-  ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {500, 0, 50}, "Gen beauty mother pT"};
-  ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
+  ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "PV contributors"};
   HistogramRegistry registry{"registry", {}};
 
   void init(InitContext&)
@@ -129,14 +127,12 @@ struct HfTaskOmegac0ToOmegapi {
     const AxisSpec thnAxisY{thnConfigAxisY, "y"};
     const AxisSpec thnAxisOrigin{thnConfigAxisOrigin, "Origin"};
     const AxisSpec thnAxisMatchFlag{thnConfigAxisMatchFlag, "MC match flag"};
-    const AxisSpec thnAxisGenPtD{thnConfigAxisGenPtD, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec thnAxisGenPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
-    const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "Number of PV contributors"};
+    const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "PV contributors"};
     const AxisSpec thnAxisPromptScore{thnConfigAxisPromptScore, "BDT score prompt"};
     const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality"};
 
     std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt, thnAxisY};
-    std::vector<AxisSpec> axesMcGen = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin};
+    std::vector<AxisSpec> axesMcGen = {thnAxisPt, thnAxisPtB, thnAxisY, thnAxisOrigin};
 
     if (doprocessDataKFParticleFT0C || doprocessDataKFParticleMlFT0C || doprocessDataKFParticleFT0M || doprocessDataKFParticleMlFT0M || doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
       axes.push_back(thnAxisCent);
@@ -151,6 +147,7 @@ struct HfTaskOmegac0ToOmegapi {
 
       if (doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
         registry.add("hMcGenWithRecoColl", "Gen. #Omega_{c}^{0} from charm and beauty (associated to a reco collision)", HistType::kTHnSparseD, axesMcGen);
+        registry.add("hNumRecoCollPerMcColl", "Number of reco collisions associated to a mc collision;Num. reco. coll. per Mc coll.;", {HistType::kTH1D, {{10, -1.5, 8.5}}});
         registry.get<THnSparse>(HIST("hMcGenWithRecoColl"))->Sumw2();
       }
 
@@ -316,6 +313,8 @@ struct HfTaskOmegac0ToOmegapi {
         float ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
         registry.fill(HIST("hMcGen"), ptGen, ptGenB, yGen, RecoDecay::OriginType::NonPrompt, mcCent, maxNumContrib);
       }
+
+      registry.fill(HIST("hNumRecoCollPerMcColl"), recoCollsPerMcColl.size());
 
       // fill sparse only for gen particles associated to a reconstructed collision
       if (recoCollsPerMcColl.size() >= 1) {
