@@ -425,6 +425,11 @@ struct HfTreeCreatorLcToK0sP {
                  TracksWPid const&)
   {
 
+    if (applyMl && candidateMlScores.size() == 0) {
+      LOG(fatal) << "ML enabled but table with the ML scores is empty! Please check your configurables.";
+      return;
+    }
+
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
     for (const auto& collision : collisions) {
@@ -476,6 +481,11 @@ struct HfTreeCreatorLcToK0sP {
                    aod::HfMlLcToK0sP const& candidateMlScores,
                    TracksWPid const&)
   {
+
+    if (applyMl && candidateMlScores.size() == 0) {
+      LOG(fatal) << "ML enabled but table with the ML scores is empty! Please check your configurables.";
+      return;
+    }
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
