@@ -130,6 +130,8 @@ struct lambdaTwoPartPolarization {
   ConfigurableAxis cosSigAxis{"cosSigAxis", {110, -1.05, 1.05}, "Signal cosine axis"};
   ConfigurableAxis cosAccAxis{"cosAccAxis", {110, -7.05, 7.05}, "Accepatance cosine axis"};
 
+  ConfigurableAxis vertexAxis{"vertexAxis", {5, -10, 10}, "vertex axis for mixing"};
+
   TF1* fMultPVCutLow = nullptr;
   TF1* fMultPVCutHigh = nullptr;
 
@@ -403,6 +405,57 @@ struct lambdaTwoPartPolarization {
     FillHistograms(collision, collision, V0s, V0s);
   }
   PROCESS_SWITCH(lambdaTwoPartPolarization, processDataSame, "Process Event for same data", true);
+
+  SliceCache cache;
+  using BinningTypeVertexContributorFT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  using BinningTypeVertexContributorFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  void processDataMixedT0C(EventCandidates const& collisions,
+                           TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  {
+    auto tracksTuple = std::make_tuple(V0s);
+    BinningTypeVertexContributorFT0C binningOnPositions{{vertexAxis, centAxis}, true};
+    SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeVertexContributorFT0C> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+      centrality = c1.centFT0C();
+      auto bc = c1.bc_as<aod::BCsWithTimestamps>();
+      if (cfgAccCor) {
+        AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
+      }
+      if (!eventSelected(c1))
+        continue;
+      if (!eventSelected(c2))
+        continue;
+      if (c1.bcId() == c2.bcId())
+        continue;
+
+      FillHistograms(c1, c2, tracks1, tracks2);
+    }
+  }
+  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0C, "Process Event for mixed data in PbPb", false);
+
+  void processDataMixedT0M(EventCandidates const& collisions,
+                           TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  {
+    auto tracksTuple = std::make_tuple(V0s);
+    BinningTypeVertexContributorFT0M binningOnPositions{{vertexAxis, centAxis}, true};
+    SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeVertexContributorFT0M> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
+    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+      centrality = c1.centFT0M();
+      auto bc = c1.bc_as<aod::BCsWithTimestamps>();
+      if (cfgAccCor) {
+        AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
+      }
+      if (!eventSelected(c1))
+        continue;
+      if (!eventSelected(c2))
+        continue;
+      if (c1.bcId() == c2.bcId())
+        continue;
+
+      FillHistograms(c1, c2, tracks1, tracks2);
+    }
+  }
+  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0M, "Process Event for mixed data in pp", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
