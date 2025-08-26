@@ -17,7 +17,9 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
+#include "Common/Core/TableHelper.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -224,8 +226,8 @@ struct Phik0shortanalysis {
 
   // Configurables for dN/deta with phi computation
   Configurable<bool> furtherCheckonMcCollision{"furtherCheckonMcCollision", true, "Further check on MC collisions"};
-  Configurable<bool> filterOnGenPhi{"filterOnGenPhi", true, "Filter on MC Phi"};
-  Configurable<bool> filterOnRecoPhiWPDG{"filterOnRecoPhiWPDG", true, "Filter on Reco Phi with WPDG"};
+  Configurable<int> filterOnGenPhi{"filterOnGenPhi", 1, "Filter on Gen Phi (0: K+K- pair like Phi, 1: proper Phi)"};
+  Configurable<int> filterOnRecoPhi{"filterOnRecoPhi", 1, "Filter on Reco Phi (0: without PDG, 1: with PDG)"};
   Configurable<bool> fillMcPartsForAllReco{"fillMcPartsForAllReco", false, "Fill MC particles for all associated reco collisions"};
 
   // Configurable for event mixing
@@ -306,6 +308,9 @@ struct Phik0shortanalysis {
 
   Partition<FullMCTracks> posMCTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
   Partition<FullMCTracks> negMCTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
+
+  Partition<FilteredMCTracks> posFiltMCTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
+  Partition<FilteredMCTracks> negFiltMCTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
 
   // Necessary to flag INEL>0 events in GenMC
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -1042,6 +1047,40 @@ struct Phik0shortanalysis {
     }
 
     if (nPhi > 0)
+      return true;
+    return false;
+  }
+
+  template <typename T>
+  bool eventHasGenKPair(const T& mcParticles)
+  {
+    int nKPair = 0;
+
+    for (const auto& mcParticle1 : mcParticles) {
+      if (!mcParticle1.isPhysicalPrimary() || std::abs(mcParticle1.eta()) > trackConfigs.etaMax)
+        continue;
+
+      for (const auto& mcParticle2 : mcParticles) {
+        if (!mcParticle2.isPhysicalPrimary() || std::abs(mcParticle2.eta()) > trackConfigs.etaMax)
+          continue;
+
+        if ((mcParticle1.pdgCode() != PDG_t::kKPlus || mcParticle2.pdgCode() != PDG_t::kKMinus) &&
+            (mcParticle1.pdgCode() != PDG_t::kKMinus || mcParticle2.pdgCode() != PDG_t::kKPlus))
+          continue;
+
+        ROOT::Math::PxPyPzMVector genKPair = recMother(mcParticle1, mcParticle2, massKa, massKa);
+        if (genKPair.Pt() < phiConfigs.minPhiPt)
+          continue;
+        if (genKPair.M() < phiConfigs.lowMPhi || genKPair.M() > phiConfigs.upMPhi)
+          continue;
+        if (std::abs(genKPair.Rapidity()) > deltaYConfigs.cfgYAcceptance)
+          continue;
+
+        nKPair++;
+      }
+    }
+
+    if (nKPair > 0)
       return true;
     return false;
   }
@@ -2673,8 +2712,18 @@ struct Phik0shortanalysis {
 
       if (!pwglf::isINELgtNmc(mcParticlesThisMcColl, 0, pdgDB))
         continue;
-      if (filterOnGenPhi && !eventHasGenPhi(mcParticlesThisMcColl))
-        continue;
+      switch (filterOnGenPhi) {
+        case 0:
+          if (!eventHasGenKPair(mcParticlesThisMcColl))
+            continue;
+          break;
+        case 1:
+          if (!eventHasGenPhi(mcParticlesThisMcColl))
+            continue;
+          break;
+        default:
+          break;
+      }
 
       uint64_t numberAssocColl = 0;
       std::vector<float> zVtxs;
@@ -2687,13 +2736,21 @@ struct Phik0shortanalysis {
         if (acceptEventQA<true>(collision, false)) {
           auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
 
-          Partition<FilteredMCTracks> posFiltMCTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
           posFiltMCTracks.bindTable(filteredMCTracksThisColl);
-          Partition<FilteredMCTracks> negFiltMCTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
           negFiltMCTracks.bindTable(filteredMCTracksThisColl);
 
-          if (filterOnRecoPhiWPDG && !eventHasRecoPhiWPDG(posFiltMCTracks, negFiltMCTracks, mcParticles))
-            continue;
+          switch (filterOnRecoPhi) {
+            case 0:
+              if (!eventHasRecoPhi(posFiltMCTracks, negFiltMCTracks))
+                continue;
+              break;
+            case 1:
+              if (!eventHasRecoPhiWPDG(posFiltMCTracks, negFiltMCTracks, mcParticles))
+                continue;
+              break;
+            default:
+              break;
+          }
 
           mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), mcCollision.centFT0M());
           mcEventHist.fill(HIST("h2GenMCRecoVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
