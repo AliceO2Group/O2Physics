@@ -220,7 +220,7 @@ struct ZdcQVectors {
           registry.add(Form("QA/before/hQ%s%s_vs_vx", coord, side), Form("hQ%s%s_vs_vx", coord, side), {HistType::kTProfile, {axisVx}});
           registry.add(Form("QA/before/hQ%s%s_vs_vy", coord, side), Form("hQ%s%s_vs_vy", coord, side), {HistType::kTProfile, {axisVy}});
           registry.add(Form("QA/before/hQ%s%s_vs_vz", coord, side), Form("hQ%s%s_vs_vz", coord, side), {HistType::kTProfile, {axisVz}});
-          registry.add(Form("QA/Q%s%s_vs_iteration", coord, side), Form("hQ%s%s_vs_iteration", coord, side), {HistType::kTH2D, {{25,0,25}, axisQ}});
+          registry.add(Form("QA/Q%s%s_vs_iteration", coord, side), Form("hQ%s%s_vs_iteration", coord, side), {HistType::kTH2D, {{25, 0, 25}, axisQ}});
 
           names[0].push_back(TString::Format("hQ%s%s_mean_Cent_V_run", coord, side));
           names[1].push_back(TString::Format("hQ%s%s_mean_cent_run", coord, side));

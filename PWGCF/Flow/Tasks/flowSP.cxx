@@ -136,7 +136,7 @@ struct FlowSP {
   using ZDCCollisions = soa::Filtered<soa::Join<GeneralCollisions, aod::SPTableZDC>>;
 
   // For MC Reco and Gen
-  using CCs = soa::Filtered<soa::Join<GeneralCollisions, aod::McCollisionLabels>>; //without SPTableZDC
+  using CCs = soa::Filtered<soa::Join<GeneralCollisions, aod::McCollisionLabels>>; // without SPTableZDC
   using CC = CCs::iterator;
   using TCs = soa::Join<UnfilteredTracks, aod::McTrackLabels>;
   using FilteredTCs = soa::Filtered<TCs>;
@@ -178,7 +178,6 @@ struct FlowSP {
 
   HistogramRegistry registry{"registry"};
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::QAObject};
-
 
   // Event selection cuts
   TF1* fPhiCutLow = nullptr;
@@ -340,22 +339,22 @@ struct FlowSP {
       histos.add("QA/after/CentFT0C_vs_CentFV0A", " ; Cent FT0C (%); Cent FV0A (%) ", {HistType::kTH2D, {axisCent, axisCent}});
       histos.add("QA/after/CentFT0C_vs_CentNGlobal", " ; Cent FT0C (%); Cent NGlobal (%) ", {HistType::kTH2D, {axisCent, axisCent}});
 
-      if(cfgFillEventPlaneQA && doprocessData){
-          histos.add("QA/after/PsiA_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
-          histos.add("QA/after/PsiC_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
-          histos.add("QA/after/PsiFull_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
-          histos.add("QA/after/PsiA_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
-          histos.add("QA/after/PsiC_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
-          histos.add("QA/after/PsiFull_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
-          histos.add("QA/after/PsiA_vs_Vy", "", {HistType::kTH2D, {axisPhiPlane, axisVy}});
-          histos.add("QA/after/PsiC_vs_Vy", "", {HistType::kTH2D, {axisPhiPlane, axisVy}});
-          histos.add("QA/after/PsiFull_vs_Vy", "", {HistType::kTH2D, {axisPhiPlane, axisVy}});
-          histos.add("QA/after/PsiA_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
-          histos.add("QA/after/PsiC_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
-          histos.add("QA/after/PsiFull_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
+      if (cfgFillEventPlaneQA && doprocessData) {
+        histos.add("QA/after/PsiA_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
+        histos.add("QA/after/PsiC_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
+        histos.add("QA/after/PsiFull_vs_Cent", "", {HistType::kTH2D, {axisPhiPlane, axisCent}});
+        histos.add("QA/after/PsiA_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
+        histos.add("QA/after/PsiC_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
+        histos.add("QA/after/PsiFull_vs_Vx", "", {HistType::kTH2D, {axisPhiPlane, axisVx}});
+        histos.add("QA/after/PsiA_vs_Vy", "", {HistType::kTH2D, {axisPhiPlane, axisVy}});
+        histos.add("QA/after/PsiC_vs_Vy", "", {HistType::kTH2D, {axisPhiPlane, axisVy}});
+        histos.add("QA/after/PsiFull_vs_Vy", "", {HistType::kTH2D, {axisPhiPlane, axisVy}});
+        histos.add("QA/after/PsiA_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
+        histos.add("QA/after/PsiC_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
+        histos.add("QA/after/PsiFull_vs_Vz", "", {HistType::kTH2D, {axisPhiPlane, axisVz}});
       }
 
-      if (cfgFillQABefore){
+      if (cfgFillQABefore) {
         histos.addClone("QA/after/", "QA/before/");
       }
     }
@@ -371,7 +370,7 @@ struct FlowSP {
         histos.add("incl/QA/after/hSharedClusters_pt", "", {HistType::kTH2D, {axisPt, axisShCl}});
         histos.add("incl/QA/after/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
         histos.add("incl/QA/after/hCrossedRows_vs_SharedClusters", "", {HistType::kTH2D, {axisCl, axisShCl}});
-       
+
         if (cfgTrackSelDoTrackQAvsCent) {
           histos.add<TH3>("incl/QA/after/hPt_Eta", "", kTH3D, {axisPt, axisEta, axisCent});
           histos.add<TH3>("incl/QA/after/hPt_Eta_uncorrected", "", kTH3D, {axisPt, axisEta, axisCent});
@@ -380,7 +379,6 @@ struct FlowSP {
         } else {
           histos.add<TH3>("incl/QA/after/hPhi_Eta_Pt", "", kTH3D, {axisPhi, axisEta, axisPt});
           histos.add<TH3>("incl/QA/after/hPhi_Eta_Pt_corrected", "", kTH3D, {axisPhi, axisEta, axisPt});
-
         }
 
         if (cfgFillQABefore)
@@ -388,7 +386,7 @@ struct FlowSP {
       }
 
       if (cfgFillPIDQA) {
-         histos.add<TH2>("hPIDcounts", "", kTH2D, {{{4, 0, 4}, axisPt}});
+        histos.add<TH2>("hPIDcounts", "", kTH2D, {{{4, 0, 4}, axisPt}});
         histos.get<TH2>(HIST("hPIDcounts"))->GetXaxis()->SetBinLabel(1, "UFO");
         histos.get<TH2>(HIST("hPIDcounts"))->GetXaxis()->SetBinLabel(2, "Pion");
         histos.get<TH2>(HIST("hPIDcounts"))->GetXaxis()->SetBinLabel(3, "Kaon");
@@ -398,10 +396,10 @@ struct FlowSP {
         histos.add("incl/QA/after/hBetaTOF_pt", "", {HistType::kTH2D, {axisPt, axisBeta}});
         histos.add("incl/QA/before/hdEdxTPC_pt", "", {HistType::kTH2D, {axisPt, axisdEdx}});
         histos.add("incl/QA/before/hBetaTOF_pt", "", {HistType::kTH2D, {axisPt, axisBeta}});
-       
+
         histos.add("incl/pion/QA/after/hNsigmaTPC_pt", "", {HistType::kTH2D, {axisPt, axisNsigma}});
         histos.add("incl/pion/QA/after/hNsigmaTOF_pt", "", {HistType::kTH2D, {axisPt, axisNsigma}});
-         
+
         histos.add<TH3>("incl/pion/QA/after/hPhi_Eta_vz", "", kTH3D, {axisPhi, axisEta, axisVz});
         histos.add<TH3>("incl/pion/QA/after/hPhi_Eta_vz_corrected", "", kTH3D, {axisPhi, axisEta, axisVz});
         histos.add<TH3>("incl/pion/QA/after/hPhi_Eta_Pt", "", kTH3D, {axisPhi, axisEta, axisPt});
@@ -412,7 +410,7 @@ struct FlowSP {
         histos.add("incl/pion/QA/after/hCrossedRows_pt", "", {HistType::kTH2D, {axisPt, axisCl}});
         histos.add("incl/pion/QA/after/hCrossedRows_vs_SharedClusters", "", {HistType::kTH2D, {axisCl, axisShCl}});
 
-        if (cfgFillQABefore){
+        if (cfgFillQABefore) {
           histos.addClone("incl/pion/QA/after/", "incl/pion/QA/before/");
         }
 
@@ -442,7 +440,7 @@ struct FlowSP {
         registry.add<TProfile>("QQCorrelations/qAXqCY", "", kTProfile, {axisCent});
         registry.add<TProfile>("QQCorrelations/qAYqCX", "", kTProfile, {axisCent});
         registry.add<TProfile>("QQCorrelations/qAXYqCXY", "", kTProfile, {axisCent});
-        
+
         if (cfgFillGeneralV1Histos) {
           // track properties per centrality and per eta, pt bin
           registry.add<TProfile2D>("incl/vnC_eta", "", kTProfile2D, {axisEtaVn, axisCentrality});
@@ -557,7 +555,7 @@ struct FlowSP {
         registry.addClone("incl/", "pos/");
         registry.addClone("incl/", "neg/");
       }
-      if (cfgFillPIDQA){ 
+      if (cfgFillPIDQA) {
         histos.addClone("incl/", "pos/");
         histos.addClone("incl/", "neg/");
       }
@@ -1032,7 +1030,7 @@ struct FlowSP {
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCy_pt"), track.pt(), centrality, (uy * qyC) / std::sqrt(std::fabs(corrQQy)), weight);
     }
 
-    if (cfgFillEventPlane && pt==0) { //only fill for inclusive! 
+    if (cfgFillEventPlane && pt == 0) { // only fill for inclusive!
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnA_eta_EP"), track.eta(), centrality, vnA, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnC_eta_EP"), track.eta(), centrality, vnC, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnFull_eta_EP"), track.eta(), centrality, vnFull, weight);
@@ -1111,7 +1109,6 @@ struct FlowSP {
     histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_Eta_uncorrected"), track.pt(), track.eta(), centrality);
     histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta"), track.phi(), track.eta(), centrality, wacc * weff);
     histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_uncorrected"), track.phi(), track.eta(), centrality);
-  
 
     histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz"), track.phi(), track.eta(), vz);
     histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz_corrected"), track.phi(), track.eta(), vz, wacc);
@@ -1231,7 +1228,8 @@ struct FlowSP {
       LOGF(info, "Size of mAcceptance: %i (should be 0)", (int)cfg.mAcceptance.size());
     }
 
-    if (cfgFillQABefore) fillEventQA<kBefore>(collision, tracks);
+    if (cfgFillQABefore)
+      fillEventQA<kBefore>(collision, tracks);
 
     loadCorrections(bc.timestamp());
 
@@ -1265,7 +1263,7 @@ struct FlowSP {
       // https://twiki.cern.ch/twiki/pub/ALICE/DirectedFlowAnalysisNote/vn_ZDC_ALICE_INT_NOTE_version02.pdf
       double psiFull = 1.0 * std::atan2(qyA + qyC, qxA + qxC);
 
-      // always fill these histograms! 
+      // always fill these histograms!
       registry.fill(HIST("QQCorrelations/qAqCXY"), centrality, qxA * qxC + qyA * qyC);
       registry.fill(HIST("QQCorrelations/qAXqCY"), centrality, qxA * qyC);
       registry.fill(HIST("QQCorrelations/qAYqCX"), centrality, qyA * qxC);
@@ -1375,7 +1373,7 @@ struct FlowSP {
         auto phi = RecoDecay::constrainAngle(track.phi(), 0);
 
         // Fill NUA weights (last 0 is for Data see GFWWeights class (not a weight))
-        // ToDo: Add pi, ka, proton here! 
+        // ToDo: Add pi, ka, proton here!
         if (cfgFillWeights) {
           fWeights->fill(phi, track.eta(), vtxz, track.pt(), centrality, 0);
           registry.fill(HIST("weights2D/hPhi_Eta_vz"), phi, track.eta(), vtxz, 1);
@@ -1431,22 +1429,27 @@ struct FlowSP {
 
         fillHistograms<kInclusive, kUnidentified>(track, wacc, weff, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
 
-
-        // NOTE: these are not the right wacc and weff!! Need to do for each particle species! This is just to test for now. 
-        if(cfgFillPID){
-          if(trackPID== kPions){
+        // NOTE: these are not the right wacc and weff!! Need to do for each particle species! This is just to test for now.
+        if (cfgFillPID) {
+          if (trackPID == kPions) {
             fillHistograms<kInclusive, kPions>(track, wacc, weff, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            if (pos) fillHistograms<kPositive, kPions>(track, waccP, weffP, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            else fillHistograms<kNegative, kPions>(track, waccN, weffN, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-          } else if(trackPID== kKaons){
-             fillHistograms<kInclusive, kKaons>(track, wacc, weff, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            if (pos) fillHistograms<kPositive, kKaons>(track, waccP, weffP, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            else fillHistograms<kNegative, kKaons>(track, waccN, weffN, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-          } else if (trackPID==kProtons){
-             fillHistograms<kInclusive, kProtons>(track, wacc, weff, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            if (pos) fillHistograms<kPositive, kProtons>(track, waccP, weffP, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            else fillHistograms<kNegative, kProtons>(track, waccN, weffN, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-          } 
+            if (pos)
+              fillHistograms<kPositive, kPions>(track, waccP, weffP, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
+            else
+              fillHistograms<kNegative, kPions>(track, waccN, weffN, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
+          } else if (trackPID == kKaons) {
+            fillHistograms<kInclusive, kKaons>(track, wacc, weff, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
+            if (pos)
+              fillHistograms<kPositive, kKaons>(track, waccP, weffP, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
+            else
+              fillHistograms<kNegative, kKaons>(track, waccN, weffN, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
+          } else if (trackPID == kProtons) {
+            fillHistograms<kInclusive, kProtons>(track, wacc, weff, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
+            if (pos)
+              fillHistograms<kPositive, kProtons>(track, waccP, weffP, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
+            else
+              fillHistograms<kNegative, kProtons>(track, waccN, weffN, centWeight, ux, uy, uxMH, uyMH, uxMH2, uyMH2, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
+          }
         }
 
         if (cfgFillChargeDependence) {
@@ -1479,7 +1482,8 @@ struct FlowSP {
     if (cfgCentNGlobal)
       centrality = collision.centNGlobal();
 
-    if (cfgFillQABefore) fillEventQA<kBefore>(collision, filteredTracks);
+    if (cfgFillQABefore)
+      fillEventQA<kBefore>(collision, filteredTracks);
 
     if (!eventSelected(collision, filteredTracks.size()))
       return;
@@ -1506,26 +1510,26 @@ struct FlowSP {
       histos.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
 
       fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode(), centrality);
-       bool pos = (track.sign() > 0) ? true : false;
+      bool pos = (track.sign() > 0) ? true : false;
 
-       fillPrimaryHistos<kBefore>(mcParticle, centrality); 
+      fillPrimaryHistos<kBefore>(mcParticle, centrality);
 
-      // This neglects PID (for now) later use getPID like in data. 
+      // This neglects PID (for now) later use getPID like in data.
       if (cfgFillQABefore) {
-          switch (std::abs(mcParticle.pdgCode())) {
-            case kPions:
-              fillAllQA<kBefore, kPions>(track, vtxz, centrality, pos);
-              break;
-            case kKaons:
-              fillAllQA<kBefore, kKaons>(track, vtxz, centrality, pos);
-              break;
-            case kProtons:
-              fillAllQA<kBefore, kProtons>(track, vtxz, centrality, pos);
-              break;
-            default:
-              fillAllQA<kBefore, kUnidentified>(track, vtxz, centrality, pos);
-          }
+        switch (std::abs(mcParticle.pdgCode())) {
+          case kPions:
+            fillAllQA<kBefore, kPions>(track, vtxz, centrality, pos);
+            break;
+          case kKaons:
+            fillAllQA<kBefore, kKaons>(track, vtxz, centrality, pos);
+            break;
+          case kProtons:
+            fillAllQA<kBefore, kProtons>(track, vtxz, centrality, pos);
+            break;
+          default:
+            fillAllQA<kBefore, kUnidentified>(track, vtxz, centrality, pos);
         }
+      }
 
       if (!trackSelected(track, field))
         continue;
@@ -1533,7 +1537,7 @@ struct FlowSP {
       fillMCPtHistos<kAfter, kReco>(track, mcParticle.pdgCode(), centrality);
 
       fillTrackQA<kAfter, kInclusive, kUnidentified>(track, vtxz);
-      fillPrimaryHistos<kAfter>(mcParticle, centrality); 
+      fillPrimaryHistos<kAfter>(mcParticle, centrality);
 
     } // end of track loop
   }
@@ -1572,7 +1576,8 @@ struct FlowSP {
         if (cfgCentNGlobal)
           centrality = col.centNGlobal();
 
-        if(cfgFillQABefore) fillEventQA<kBefore>(col, filteredTrackSlice);
+        if (cfgFillQABefore)
+          fillEventQA<kBefore>(col, filteredTrackSlice);
 
         if (trackSlice.size() < 1) {
           colSelected = false;
