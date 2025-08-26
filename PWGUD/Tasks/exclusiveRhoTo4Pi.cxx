@@ -1202,20 +1202,49 @@ struct ExclusiveRhoTo4Pi {
     return -1; // Not found
   } // End of getRunNumberIndex function
 
+  std::string strFormat(double value, int precision = 2)
+  {
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(precision) << value;
+    return oss.str();
+  }
+
   void setHistBinLabels()
   {
 
     std::string eventLabels[13] = {
-      "No Cuts", "isCBTHadronOk", "UPC or STD", "vtxITSTPC=" + std::to_string(vtxITSTPCcut), "sbp=" + std::to_string(sbpCut), "itsROFb=" + std::to_string(itsROFbCut), "tfb=" + std::to_string(tfbCut),
-      "FT0A<=" + std::to_string(fv0Cut), "FT0C<=" + std::to_string(ft0cCut), "FV0A<=" + std::to_string(ft0aCut), "ZDC <=0",
-      "n PV Contrib = 4", "V_{z} < cm" + std::to_string(vZCut) + "cm"};
+      "No Cuts",
+      "isCBTHadronOk",
+      "UPC or STD",
+      "vtxITSTPC=" + strFormat(vtxITSTPCcut, 0),
+      "sbp=" + strFormat(sbpCut, 0),
+      "itsROFb=" + strFormat(itsROFbCut, 0),
+      "tfb=" + strFormat(tfbCut, 0),
+      "FT0A<=" + strFormat(fv0Cut),
+      "FT0C<=" + strFormat(ft0cCut),
+      "FV0A<=" + strFormat(ft0aCut),
+      "ZDC",
+      "n PV Contrib = 4",
+      "V_{z} < " + strFormat(vZCut) + " cm"};
 
     int numEventCuts = 13;
 
     std::string trackLabels[14] = {
-      "No Cuts", "isPVContributor", "pT>" + std::to_string(pTcut) + " GeV/c", "|#eta|<" + std::to_string(etaCut), "DCA Z<" + std::to_string(dcaZcut) + " cm",
-      "DCA XY cut", "hasITS", "hasTPC", "itsChi2NCl<" + std::to_string(itsChi2NClsCut), "tpcChi2NCl<" + std::to_string(tpcChi2NClsCut),
-      "tpcNClsFindable>" + std::to_string(tpcNClsFindableCut), "#pi tracks", "#pi^{+} tracks", "#pi^{-} tracks"};
+      "No Cuts",
+      "isPVContributor",
+      "pT>" + strFormat(pTcut) + " GeV/c",
+      "|#eta|<" + strFormat(etaCut),
+      "DCA Z<" + strFormat(dcaZcut) + " cm",
+      "DCA XY cut",
+      "hasITS",
+      "hasTPC",
+      "itsChi2NCl<" + strFormat(itsChi2NClsCut),
+      "tpcChi2NCl<" + strFormat(tpcChi2NClsCut),
+      "tpcNClsFindable>" + strFormat(tpcNClsFindableCut),
+      "#pi tracks",
+      "#pi^{+} tracks",
+      "#pi^{-} tracks"};
+
     int numTrackCuts = 14;
 
     auto h1 = histosCounter.get<TH2>(HIST("EventsCounts_vs_runNo"));
