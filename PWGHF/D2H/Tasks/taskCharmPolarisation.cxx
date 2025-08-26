@@ -2315,7 +2315,7 @@ struct HfTaskCharmPolarisation {
       float centrality = {-1.f};
       centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
-        return; // skip this collision if outside of the centrality range
+        continue; // skip this collision if outside of the centrality range
       }
       registry.fill(HIST("hCentrality"), centrality);
 
@@ -2345,7 +2345,7 @@ struct HfTaskCharmPolarisation {
       float centrality = {-1.f};
       centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
-        return; // skip this collision if outside of the centrality range
+        continue; // skip this collision if outside of the centrality range
       }
       registry.fill(HIST("hCentrality"), centrality);
 
@@ -2379,7 +2379,7 @@ struct HfTaskCharmPolarisation {
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
       centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
-        return; // skip this collision if outside of the centrality range
+        continue; // skip this collision if outside of the centrality range
       }
       registry.fill(HIST("hCentrality"), centrality);
 
@@ -2420,7 +2420,7 @@ struct HfTaskCharmPolarisation {
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
       centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
-        return; // skip this collision if outside of the centrality range
+        continue; // skip this collision if outside of the centrality range
       }
       registry.fill(HIST("hCentrality"), centrality);
 
