@@ -1,4 +1,4 @@
-// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
+// See https://alice-o2.web.cern.ch/copyright for details of the copyright holders of ALICE O2.
 // All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
@@ -55,6 +55,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2;
@@ -130,7 +131,7 @@ struct HfTaskElectronWeakBoson {
   Configurable<bool> enableCentralityAnalysis{"enableCentralityAnalysis", true, "Enable centrality-dependent analysis"};
   Configurable<float> centralityMin{"centralityMin", -1, "minimum cut on centrality selection"};
   Configurable<float> centralityMax{"centralityMax", 101, "maximum cut on centrality selection"};
-  Configurable<std::vector<double>> centralityBins{"centalityBins", {0, 20, 60, 100}, "centrality bins"};
+  Configurable<std::vector<double>> centralityBins{"centralityBins", {0, 20, 60, 100}, "centrality bins"};
 
   // QA for Z->ee
   Configurable<bool> enableZeeRecoQA{"enableZeeRecoQA", false, "Enable QA for Z->ee reconstruction"};
