@@ -410,7 +410,7 @@ struct lambdaTwoPartPolarization {
   using BinningTypeVertexContributorFT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
   using BinningTypeVertexContributorFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   void processDataMixedT0C(EventCandidates const& collisions,
-                        TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+                           TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     auto tracksTuple = std::make_tuple(V0s);
     BinningTypeVertexContributorFT0C binningOnPositions{{vertexAxis, centAxis}, true};
@@ -434,13 +434,13 @@ struct lambdaTwoPartPolarization {
   PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0C, "Process Event for mixed data in PbPb", false);
 
   void processDataMixedT0M(EventCandidates const& collisions,
-                        TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+                           TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     auto tracksTuple = std::make_tuple(V0s);
     BinningTypeVertexContributorFT0M binningOnPositions{{vertexAxis, centAxis}, true};
     SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeVertexContributorFT0M> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [c1, tracks1, c2, tracks2] : pair) {
-	  centrality = c1.centFT0M();
+      centrality = c1.centFT0M();
       auto bc = c1.bc_as<aod::BCsWithTimestamps>();
       if (cfgAccCor) {
         AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
