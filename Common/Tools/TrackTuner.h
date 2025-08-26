@@ -39,6 +39,7 @@
 #include <ReconstructionDataFormats/Track.h>
 
 #include <TGraphErrors.h>
+#include <TList.h>
 
 #include <fmt/core.h>
 
@@ -453,10 +454,10 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
 
   void getDcaGraphs()
   {
-    std::string fullNameInputFile = pathInputFile + std::string("/") + nameInputFile;
+    std::string fullNameInputFile = pathInputFile; // + std::string("/") + nameInputFile;
     //std::string fullNameFileQoverPt = pathFileQoverPt + std::string("/") + nameFileQoverPt;
     std::string fullNameFileQoverPt = "";
-    TDirectoryFile* ccdb_object = nullptr;
+    TList* ccdb_object = nullptr;
 
     if (isInputFileFromCCDB) {
       /// use input correction file from CCDB
@@ -475,14 +476,10 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
 
       // get the directory from the DCA correction file present in CCDB
       
-      ccdb_object = o2::ccdb::BasicCCDBManager::instance().get<TDirectoryFile>(fullNameInputFile);      
+      ccdb_object = o2::ccdb::BasicCCDBManager::instance().get<TList>(fullNameInputFile);
       LOG(info) << " [TrackTuner] ccdb_object " << ccdb_object;
 
-      // get the Q/Pt correction file from CCDB
-      if (!ccdbApi.retrieveBlob(pathFileQoverPt.data(), tmpDir, metadata, 0, false, nameFileQoverPt.data())) {
-        LOG(fatal) << "[TrackTuner] input file for Q/Pt corrections not found on CCDB, please check the pathFileQoverPt and nameFileQoverPt!";
       }
-
       // point to the file in the tmp local folder
       //fullNameInputFile = tmpDir + std::string("/") + nameInputFile;
       fullNameFileQoverPt = tmpDir + std::string("/") + nameFileQoverPt;
@@ -496,7 +493,8 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
         LOG(fatal) << "[TrackTuner] Something wrong with the local input file" << fullNameInputFile << " for dca correction. Fix it!";
       }
 
-      ccdb_object = dynamic_cast<TDirectoryFile*>(inputFile->Get("ccdb_object"));
+
+      ccdb_object = dynamic_cast<TList*>(inputFile->Get("ccdb_object"));
       
     }
     
@@ -505,14 +503,13 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       LOG(fatal) << "Something wrong with the Q/Pt input file" << fullNameFileQoverPt << " for Q/Pt correction. Fix it!";
     }
 
-    // choose wheter to use corrections w/ PV refit or w/o it, and retrieve the proper TDirectory
+    // choose wheter to use corrections w/ PV refit or w/o it, and retrieve the proper TList
     std::string dir = "woPvRefit";
-    if (usePvRefitCorrections) {
-      dir = "withPvRefit";
-    }
-    TDirectory* td = dynamic_cast<TDirectory*>(ccdb_object->Get(dir.c_str()));
+
+    TList* td = dynamic_cast<TList*>(ccdb_object->FindObject(dir.c_str()));
     if (!td) {
-      LOG(fatal) << "[TrackTuner] TDirectory " << td << " not found in ccdb_object. Fix it!";
+      LOG(fatal) << "[TrackTuner] TList " << td << " not found in ccdb_object. Fix it!";
+
     }
 
     int inputNphiBins = nPhiBins;
@@ -541,7 +538,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     /// Lambda expression to get the TGraphErrors from file
     auto loadGraph = [&](int phiBin, const std::string& strBaseName) -> TGraphErrors* {
       std::string strGraphName = inputNphiBins != 0 ? fmt::format("{}_{}", strBaseName, phiBin) : strBaseName;
-      TObject* obj = td->Get(strGraphName.c_str());
+      TObject* obj = td->FindObject(strGraphName.c_str());
       if (!obj) {
         LOG(fatal) << "[TrackTuner]     TGraphErrors not found in the Input Root file: " << strGraphName;
         td->ls();
