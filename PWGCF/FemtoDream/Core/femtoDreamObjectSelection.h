@@ -188,7 +188,9 @@ class FemtoDreamObjectSelection
     std::vector<selVariable> selVarVec;
     for (auto& it : mSelections) {
       auto selVar = it.getSelectionVariable();
-      if (std::none_of(selVarVec.begin(), selVarVec.end(), [selVar](selVariable a) { return a == selVar; })) {
+      if (std::none_of(selVarVec.begin(),
+                       selVarVec.end(),
+                       [selVar](selVariable a) { return a == selVar; })) {
         selVarVec.push_back(selVar);
       }
     }
