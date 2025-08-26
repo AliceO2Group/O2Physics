@@ -105,7 +105,6 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
   bool isConfigFromConfigurables = false;
   int nPhiBins = 1;
 
-  o2::ccdb::CcdbApi ccdbApi;
   std::map<std::string, std::string> metadata;
 
   std::vector<std::unique_ptr<TGraphErrors>> grDcaXYResVsPtPionMC;
@@ -465,11 +464,6 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
 
     if (isInputFileFromCCDB) {
       /// use input correction file from CCDB
-
-      // properly init the ccdb
-      std::string tmpDir = ".";
-      ccdbApi.init("http://alice-ccdb.cern.ch");
-      LOG(info) << "[TrackTuner] CCDB Api OK!";
 
       // get the TList from the DCA correction file present in CCDB
       ccdb_object_dca = o2::ccdb::BasicCCDBManager::instance().get<TList>(pathInputFile);
