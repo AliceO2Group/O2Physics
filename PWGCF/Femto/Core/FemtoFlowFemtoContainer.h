@@ -318,7 +318,7 @@ class FemtoFlowFemtoContainer
   }
 
  protected:
-  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;                   ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;                  ///< For QA output
   static constexpr std::string_view FolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to kEventType
   static constexpr femto_flow_femto_container::Observable FemtoObs = obs;          ///< Femtoscopic observable to be computed (according to femto_flow_femto_container::Observable)
   static constexpr int kEventType = eventType;                                     ///< Type of the event (same/mixed, according to femto_flow_femto_container::EventType)
