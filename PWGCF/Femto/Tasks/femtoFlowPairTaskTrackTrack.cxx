@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoUniversePairTaskTrackTrack.cxx
+/// \file femtoFlowPairTaskTrackTrack.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two tracks
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Georgios Mantzaridis, TU München, georgios.mantzaridis@tum.de
@@ -61,10 +61,10 @@ struct FemtoFlowPairTaskTrackTrack {
   Service<o2::framework::O2DatabasePDG> pdg;
 
   SliceCache cache;
-  Preslice<aod::FDParticles> perCol = aod::femtoflowparticle::fdCollisionId;
+  Preslice<aod::FDParticles> perCol = aod::femtoflowparticle::fDCollisionId;
 
   using FemtoFullParticles = soa::Join<aod::FDParticles, aod::FDExtParticles>;
-  Preslice<FemtoFullParticles> perColReco = aod::femtoflowparticle::fdCollisionId;
+  Preslice<FemtoFullParticles> perColReco = aod::femtoflowparticle::fDCollisionId;
 
   /// Particle selection part
 
@@ -297,17 +297,17 @@ struct FemtoFlowPairTaskTrackTrack {
   /// \param parts subscribe to the femtoUniverseParticleTable
   void processSameEvent(const o2::aod::FDCollision& col,
                         const o2::aod::FDParticles& parts,
-                        FemtoFullParticles&)
+                        const FemtoFullParticles&)
   {
     fillCollision(col);
 
-    auto thegroupPartsOne = partsOne->sliceByCached(aod::femtoflowparticle::fdCollisionId, col.globalIndex(), cache);
-    auto thegroupPartsTwo = partsTwo->sliceByCached(aod::femtoflowparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsOne = partsOne->sliceByCached(aod::femtoflowparticle::fDCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsTwo = partsTwo->sliceByCached(aod::femtoflowparticle::fDCollisionId, col.globalIndex(), cache);
 
-    doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), col.qnbin());
+    doSameEvent<false>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), col.qnBin());
 
     if (confIsDebug) {
-      auto thegroupPartsDebug = partsDebug->sliceByCached(aod::femtoflowparticle::fdCollisionId, col.globalIndex(), cache);
+      auto thegroupPartsDebug = partsDebug->sliceByCached(aod::femtoflowparticle::fDCollisionId, col.globalIndex(), cache);
       for (const auto& partDebug : thegroupPartsDebug) {
         if (partDebug.p() > confCutTable->get("PartTwo", "MaxP") || partDebug.pt() > confCutTable->get("PartTwo", "MaxPt")) {
           continue;
@@ -338,10 +338,10 @@ struct FemtoFlowPairTaskTrackTrack {
   {
     fillCollision(col);
 
-    auto thegroupPartsOne = partsOneMC->sliceByCached(aod::femtoflowparticle::fdCollisionId, col.globalIndex(), cache);
-    auto thegroupPartsTwo = partsTwoMC->sliceByCached(aod::femtoflowparticle::fdCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsOne = partsOneMC->sliceByCached(aod::femtoflowparticle::fDCollisionId, col.globalIndex(), cache);
+    auto thegroupPartsTwo = partsTwoMC->sliceByCached(aod::femtoflowparticle::fDCollisionId, col.globalIndex(), cache);
 
-    doSameEvent<true>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), col.qnbin());
+    doSameEvent<true>(thegroupPartsOne, thegroupPartsTwo, parts, col.magField(), col.multNtr(), col.qnBin());
   }
   PROCESS_SWITCH(FemtoFlowPairTaskTrackTrack, processSameEventMC, "Enable processing same event for Monte Carlo", false);
 
@@ -404,8 +404,8 @@ struct FemtoFlowPairTaskTrackTrack {
       const int multiplicityCol = collision1.multNtr();
       mixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
 
-      auto groupPartsOne = partsOne->sliceByCached(aod::femtoflowparticle::fdCollisionId, collision1.globalIndex(), cache);
-      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoflowparticle::fdCollisionId, collision2.globalIndex(), cache);
+      auto groupPartsOne = partsOne->sliceByCached(aod::femtoflowparticle::fDCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwo->sliceByCached(aod::femtoflowparticle::fDCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -434,8 +434,8 @@ struct FemtoFlowPairTaskTrackTrack {
       const int multiplicityCol = collision1.multNtr();
       mixQaRegistry.fill(HIST("MixingQA/hMECollisionBins"), colBinning.getBin({collision1.posZ(), multiplicityCol}));
 
-      auto groupPartsOne = partsOneMC->sliceByCached(aod::femtoflowparticle::fdCollisionId, collision1.globalIndex(), cache);
-      auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtoflowparticle::fdCollisionId, collision2.globalIndex(), cache);
+      auto groupPartsOne = partsOneMC->sliceByCached(aod::femtoflowparticle::fDCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsTwo = partsTwoMC->sliceByCached(aod::femtoflowparticle::fDCollisionId, collision2.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();

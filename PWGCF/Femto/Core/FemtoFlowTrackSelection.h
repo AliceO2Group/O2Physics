@@ -111,7 +111,7 @@ class FemtoFlowTrackSelection : public FemtoFlowObjectSelection<float, femto_flo
   void setPIDSpecies(T& pids)
   {
     std::vector<int> tmpPids = pids; /// necessary due to some features of the configurable
-    for (const o2::track::PID pid : tmpPids) {
+    for (const auto& pid : tmpPids) {
       kPIDspecies.push_back(pid);
     }
   }
@@ -307,7 +307,8 @@ void FemtoFlowTrackSelection::init(o2::framework::HistogramRegistry* registry)
 
     /// check whether the number of selection exceeds the bitmap size
     unsigned int nSelections = getNSelections() - getNSelections(femto_flow_track_selection::kPIDnSigmaMax);
-    if (nSelections > 8 * sizeof(cutContainerType)) {
+    const int multiple = 8;
+    if (nSelections > multiple * sizeof(cutContainerType)) {
       LOG(fatal) << "FemtoFlowTrackCuts: Number of selections too large for your container - quitting!";
     }
 
@@ -411,6 +412,8 @@ bool FemtoFlowTrackSelection::isSelectedMinimal(T const& track)
   const auto dca = track.dcaXY(); // Accordingly to FemtoUniverse in AliPhysics  as well as LF analysis,
                                   // only dcaXY should be checked; NOT std::sqrt(pow(dcaXY, 2.) + pow(dcaZ, 2.))
   std::vector<float> pidTPC, pidTOF;
+  const double dcaNan = 1e3;
+
   for (const auto& it : kPIDspecies) {
     pidTPC.push_back(getNsigmaTPC(track, it));
     pidTOF.push_back(getNsigmaTOF(track, it));
@@ -455,7 +458,7 @@ bool FemtoFlowTrackSelection::isSelectedMinimal(T const& track)
   if (nDCAMinSel > 0 && std::abs(dca) < dcaMin) {
     return false;
   }
-  if (nRejectNotPropagatedTracks && std::abs(dca) > 1e3) {
+  if (nRejectNotPropagatedTracks && std::abs(dca) > dcaNan) {
     return false;
   }
 
@@ -501,7 +504,7 @@ std::array<cutContainerType, 2> FemtoFlowTrackSelection::getCutContainer(T const
   }
 
   float observable = 0.;
-  for (auto& sel : mSelections) {
+  for (const auto& sel : mSelections) {
     const auto selVariable = sel.getSelectionVariable();
     if (selVariable == femto_flow_track_selection::kPIDnSigmaMax) {
       /// PID needs to be handled a bit differently since we may need more than one species

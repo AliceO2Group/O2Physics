@@ -53,7 +53,7 @@ class FemtoFlowParticleHisto
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
   /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <o2::aod::femtoflow_mc_particle::MCType mc, typename T>
-  void init_base(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis) // o2-linter: disable=name/function-variable
+  void initBase(std::string folderName, std::string tempFitVarAxisTitle, T& tempFitVarpTAxis, T& tempFitVarAxis) // o2-linter: disable=name/function-variable
   {
     using namespace o2::framework;
 
@@ -72,7 +72,7 @@ class FemtoFlowParticleHisto
 
   // comment
   template <o2::aod::femtoflow_mc_particle::MCType mc>
-  void init_debug(std::string folderName) // o2-linter: disable=name/function-variable
+  void initDebug(std::string folderName) // o2-linter: disable=name/function-variable
   {
     using namespace o2::framework;
 
@@ -137,7 +137,7 @@ class FemtoFlowParticleHisto
   /// \param tempFitVarpTAxis axis object for the pT axis in the pT vs. tempFitVar plots
   /// \param tempFitVarAxis axis object for the tempFitVar axis
   template <typename T>
-  void init_MC(std::string folderName, std::string /*tempFitVarAxisTitle*/, T& tempFitVarpTAxis, T& tempFitVarAxis, bool isDebug) // o2-linter: disable=name/function-variable
+  void initMC(std::string folderName, std::string /*tempFitVarAxisTitle*/, T& tempFitVarpTAxis, T& tempFitVarAxis, bool isDebug) // o2-linter: disable=name/function-variable
   {
     using namespace o2::framework;
 
@@ -203,8 +203,8 @@ class FemtoFlowParticleHisto
   }
 
   /// Templated function for the initialization of the QA histograms
-  /// Always calls init_base to initialize the histograms with data/ Monte Carlo reconstructed
-  /// In case of Monte Carlo, calls init_base again for Monte Carlo truth and the specialized function init_MC for additional Monte Carlo histogramms
+  /// Always calls initBase to initialize the histograms with data/ Monte Carlo reconstructed
+  /// In case of Monte Carlo, calls initBase again for Monte Carlo truth and the specialized function initMC for additional Monte Carlo histogramms
   /// \tparam T type of the axis binning
   /// \param registry Histogram registry to be passed
   /// \param tempFitVarpTBins binning of the pT axis in the pT vs. tempFitVar
@@ -248,14 +248,14 @@ class FemtoFlowParticleHisto
       // std::string folderName = (static_cast<std::string>(o2::aod::femtoflowparticle::ParticleTypeName[kParticleType]).c_str() + static_cast<std::string>(kFolderSuffix[kFolderSuffixType])).c_str();
       std::string folderName = flexibleFolder.value_or((static_cast<std::string>(o2::aod::femtoflowparticle::ParticleTypeName[kParticleType]) + static_cast<std::string>(kFolderSuffix[kFolderSuffixType])));
 
-      // Fill here the actual histogramms by calling init_base and init_MC
-      init_base<o2::aod::femtoflow_mc_particle::MCType::kRecon>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
+      // Fill here the actual histogramms by calling initBase and initMC
+      initBase<o2::aod::femtoflow_mc_particle::MCType::kRecon>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
       if (isDebug) {
-        init_debug<o2::aod::femtoflow_mc_particle::MCType::kRecon>(folderName);
+        initDebug<o2::aod::femtoflow_mc_particle::MCType::kRecon>(folderName);
       }
       if (isMC) {
-        init_base<o2::aod::femtoflow_mc_particle::MCType::kTruth>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
-        init_MC(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis, isDebug);
+        initBase<o2::aod::femtoflow_mc_particle::MCType::kTruth>(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis);
+        initMC(folderName, tempFitVarAxisTitle, tempFitVarpTAxis, tempFitVarAxis, isDebug);
       }
     }
   }
@@ -265,7 +265,7 @@ class FemtoFlowParticleHisto
   /// \tparam T Data type of the particle
   /// \param part Particle
   template <o2::aod::femtoflow_mc_particle::MCType mc, typename T, typename H>
-  void fillQA_base(T const& part, H const& histFolder) // o2-linter: disable=name/function-variable
+  void fillQABase(T const& part, H const& histFolder) // o2-linter: disable=name/function-variable
   {
     using namespace o2::framework;
 
@@ -282,7 +282,7 @@ class FemtoFlowParticleHisto
   }
 
   template <o2::aod::femtoflow_mc_particle::MCType mc, typename T, typename H>
-  void fillQA_debug(T const& part, H const& histFolder) // o2-linter: disable=name/function-variable
+  void fillQADebug(T const& part, H const& histFolder) // o2-linter: disable=name/function-variable
   {
     using namespace o2::framework;
 
@@ -347,7 +347,7 @@ class FemtoFlowParticleHisto
   /// \param mctruthorigin Origin of the associated mc Truth particle
   /// \param pdgcode PDG of the associated mc Truth particle associated to the reconstructed particle part
   template <bool isDebug, typename T, typename H>
-  void fillQA_MC(T const& part, int mctruthorigin, int pdgcode, H const& histFolder) // o2-linter: disable=name/function-variable
+  void fillQAMC(T const& part, int mctruthorigin, int pdgcode, H const& histFolder) // o2-linter: disable=name/function-variable
   {
     using namespace o2::framework;
 
@@ -363,35 +363,35 @@ class FemtoFlowParticleHisto
         if constexpr (isDebug) {
           switch (mctruthorigin) {
             case (o2::aod::femtoflow_mc_particle::kPrimary):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_Primary"), part.fdMCParticle().motherPDG());
+              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_Primary"), part.fDMCParticle().motherPDG());
               mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_Primary"), part.pt(), part.tempFitVar());
               break;
             case (o2::aod::femtoflow_mc_particle::kDaughter):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_Daughter"), part.fdMCParticle().motherPDG());
+              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_Daughter"), part.fDMCParticle().motherPDG());
               mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_Daughter"), part.pt(), part.tempFitVar());
               break;
             case (o2::aod::femtoflow_mc_particle::kMaterial):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_Material"), part.fdMCParticle().motherPDG());
+              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_Material"), part.fDMCParticle().motherPDG());
               mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_Material"), part.pt(), part.tempFitVar());
               break;
             case (o2::aod::femtoflow_mc_particle::kWrongCollision):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_WrongCollision"), part.fdMCParticle().motherPDG());
+              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_WrongCollision"), part.fDMCParticle().motherPDG());
               mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_WrongCollision"), part.pt(), part.tempFitVar());
               break;
             case (o2::aod::femtoflow_mc_particle::kFake):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_Fake"), part.fdMCParticle().motherPDG());
+              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_Fake"), part.fDMCParticle().motherPDG());
               mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_Fake"), part.pt(), part.tempFitVar());
               break;
             case (o2::aod::femtoflow_mc_particle::kDaughterLambda):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterLambda"), part.fdMCParticle().motherPDG());
+              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterLambda"), part.fDMCParticle().motherPDG());
               mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterLambda"), part.pt(), part.tempFitVar());
               break;
             case (o2::aod::femtoflow_mc_particle::kDaughterSigmaplus):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterSigmaplus"), part.fdMCParticle().motherPDG());
+              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_DaughterSigmaplus"), part.fDMCParticle().motherPDG());
               mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_DaughterSigmaplus"), part.pt(), part.tempFitVar());
               break;
             case (o2::aod::femtoflow_mc_particle::kElse):
-              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_Else"), part.fdMCParticle().motherPDG());
+              // mHistogramRegistry->fill(histFolder + HIST("_MC/Debug/hPDGmother_Else"), part.fDMCParticle().motherPDG());
               mHistogramRegistry->fill(histFolder + HIST("_MC/hDCAxy_Else"), part.pt(), part.tempFitVar());
               break;
             default:
@@ -445,33 +445,33 @@ class FemtoFlowParticleHisto
   }
 
   template <typename T, typename H>
-  void fillQA_MC_MisIden(T const& part, int pdgcode, int confPDG, H const& histFolder) // o2-linter: disable=name/function-variable
+  void fillQAMCMisIden(T const& part, int pdgcode, int confPDG, H const& histFolder) // o2-linter: disable=name/function-variable
   {
     using namespace o2::framework;
 
     if (mHistogramRegistry) {
       if constexpr (kParticleType == o2::aod::femtoflowparticle::ParticleType::kTrack) {
         if (confPDG == mConfPDGCodePart[0]) {
-          binPDG = 0;
+          binPart = 0;
         } else if (confPDG == mConfPDGCodePart[1]) {
-          binPDG = 1;
+          binPart = 1;
         } else if (confPDG == mConfPDGCodePart[2]) {
-          binPDG = 2;
+          binPart = 2;
         } else {
-          binPDG = 3;
+          binPart = 3;
         }
         if (std::abs(pdgcode) == PDG_t::kPiPlus) {
           mHistogramRegistry->fill(histFolder + HIST("_MC/hMisidentification"),
-                                   binPDG, 0, part.pt());
+                                   binPart, 0, part.pt());
         } else if (std::abs(pdgcode) == PDG_t::kKPlus) {
           mHistogramRegistry->fill(histFolder + HIST("_MC/hMisidentification"),
-                                   binPDG, 1, part.pt());
+                                   binPart, 1, part.pt());
         } else if (std::abs(pdgcode) == PDG_t::kProton) {
           mHistogramRegistry->fill(histFolder + HIST("_MC/hMisidentification"),
-                                   binPDG, 2, part.pt());
+                                   binPart, 2, part.pt());
         } else {
           mHistogramRegistry->fill(histFolder + HIST("_MC/hMisidentification"),
-                                   binPDG, 3, part.pt());
+                                   binPart, 3, part.pt());
         }
       }
     } else {
@@ -480,8 +480,8 @@ class FemtoFlowParticleHisto
   }
 
   /// Templated function to fill particle histograms for data/ Monte Carlo reconstructed and Monte Carlo truth
-  /// Always calls fillQA_base fill histogramms with data/ Monte Carlo reconstructed
-  /// In case of Monte Carlo, calls fillQA_base with Monte Carlo truth info and specialized function fillQA_MC for additional histogramms
+  /// Always calls fillQABase fill histogramms with data/ Monte Carlo reconstructed
+  /// In case of Monte Carlo, calls fillQABase with Monte Carlo truth info and specialized function fillQAMC for additional histogramms
   /// \tparam T particle type
   /// \tparam isMC fills the additional histograms for Monte Carlo truth
   /// \param part particle for which the histograms should be filled
@@ -500,14 +500,14 @@ class FemtoFlowParticleHisto
 
     std::string tempFitVarName;
     if (mHistogramRegistry) {
-      fillQA_base<o2::aod::femtoflow_mc_particle::MCType::kRecon>(part, histFolder);
+      fillQABase<o2::aod::femtoflow_mc_particle::MCType::kRecon>(part, histFolder);
       if constexpr (isDebug) {
-        fillQA_debug<o2::aod::femtoflow_mc_particle::MCType::kRecon>(part, histFolder);
+        fillQADebug<o2::aod::femtoflow_mc_particle::MCType::kRecon>(part, histFolder);
       }
       if constexpr (isMC) {
-        if (part.has_fdMCParticle()) {
-          fillQA_base<o2::aod::femtoflow_mc_particle::MCType::kTruth>(part.fdMCParticle(), histFolder);
-          fillQA_MC<isDebug>(part, (part.fdMCParticle()).partOriginMCTruth(), (part.fdMCParticle()).pdgMCTruth(), histFolder);
+        if (part.has_fDMCParticle()) {
+          fillQABase<o2::aod::femtoflow_mc_particle::MCType::kTruth>(part.fDMCParticle(), histFolder);
+          fillQAMC<isDebug>(part, (part.fDMCParticle()).partOriginMCTruth(), (part.fDMCParticle()).pdgMCTruth(), histFolder);
         } else {
           mHistogramRegistry->fill(histFolder + HIST("_MC/hNoMCtruthCounter"), 0);
         }
@@ -516,8 +516,8 @@ class FemtoFlowParticleHisto
   }
 
   /// Templated function to fill particle histograms for data/ Monte Carlo reconstructed and Monte Carlo truth
-  /// Always calls fillQA_base fill histogramms with data/ Monte Carlo reconstructed
-  /// In case of Monte Carlo, calls fillQA_base with Monte Carlo truth info and specialized function fillQA_MC for additional histogramms
+  /// Always calls fillQABase fill histogramms with data/ Monte Carlo reconstructed
+  /// In case of Monte Carlo, calls fillQABase with Monte Carlo truth info and specialized function fillQAMC for additional histogramms
   /// \tparam T particle type
   /// \tparam isMC fills the additional histograms for Monte Carlo truth
   /// \param part particle for which the histograms should be filled
@@ -537,8 +537,8 @@ class FemtoFlowParticleHisto
     std::string tempFitVarName;
     if (mHistogramRegistry) {
       if constexpr (isMC) {
-        if (part.has_fdMCParticle()) {
-          fillQA_MC_MisIden(part, (part.fdMCParticle()).pdgMCTruth(), confPDG, histFolder);
+        if (part.has_fDMCParticle()) {
+          fillQAMCMisIden(part, (part.fDMCParticle()).pdgMCTruth(), confPDG, histFolder);
         }
       }
     }
@@ -551,7 +551,7 @@ class FemtoFlowParticleHisto
   static constexpr std::string_view kFolderSuffix[5] = {"_debug", "_one", "_two", "_pos", "_neg"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C) // o2-linter: disable=name/constexpr-constant
   int mConfPDGCodePart[4] = {211, 321, 2212, 9999};                                                ///< PDG code as per analysis
   int mPDG = 0;                                                                                    ///< PDG code of the selected particle
-  int binPDG = 0;
+  int binPart = 0;
 };
 } // namespace o2::analysis::femto_flow
 

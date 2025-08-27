@@ -36,7 +36,7 @@ namespace femtoflowcollision
 DECLARE_SOA_COLUMN(MultV0M, multV0M, float);                 //! V0M multiplicity
 DECLARE_SOA_COLUMN(MultNtr, multNtr, int);                   //! multiplicity of charged tracks as defined in the producer
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float);           //! Sphericity of the event
-DECLARE_SOA_COLUMN(qnBin, qnbin, int);                       //! Bin of qn-vector of the event
+DECLARE_SOA_COLUMN(QnBin, qnBin, int);                       //! Bin of qn-vector of the event
 DECLARE_SOA_COLUMN(MagField, magField, float);               //! Magnetic field of the event
 DECLARE_SOA_COLUMN(InteractionRate, interactionRate, float); //! Interaction rate
 DECLARE_SOA_COLUMN(Occupancy, occupancy, int);               //! TPC occupancy
@@ -49,7 +49,7 @@ DECLARE_SOA_TABLE(FDCollisions, "AOD", "FDCOLLISION",
                   femtoflowcollision::MultV0M,
                   femtoflowcollision::MultNtr,
                   femtoflowcollision::Sphericity,
-                  femtoflowcollision::qnBin,
+                  femtoflowcollision::QnBin,
                   femtoflowcollision::MagField);
 using FDCollision = FDCollisions::iterator;
 
@@ -91,7 +91,7 @@ enum TrackType {
 
 static constexpr std::string_view TrackTypeName[kNTrackTypes] = {"Trk", "Pos", "Neg", "Bach"}; //! Naming of the different particle types
 
-DECLARE_SOA_INDEX_COLUMN(FDCollision, fdCollision);
+DECLARE_SOA_INDEX_COLUMN(FDCollision, fDCollision);
 DECLARE_SOA_COLUMN(Pt, pt, float);                       //! p_T (GeV/c)
 DECLARE_SOA_COLUMN(Eta, eta, float);                     //! Eta
 DECLARE_SOA_COLUMN(Phi, phi, float);                     //! Phi
@@ -166,7 +166,7 @@ using FDParticle = FDParticles::iterator;
 /// FemtoFlowCascadeTrack
 namespace femtoflowcascparticle
 {
-DECLARE_SOA_INDEX_COLUMN(FDParticle, fdParticle);
+DECLARE_SOA_INDEX_COLUMN(FDParticle, fDParticle);
 DECLARE_SOA_COLUMN(DcaV0daughters, dcaV0daughters, float);     //! DCA between V0 daughters
 DECLARE_SOA_COLUMN(Cpav0, cpav0, float);                       //! V0 cos of pointing angle
 DECLARE_SOA_COLUMN(V0radius, v0radius, float);                 //! V0 transverse radius*/
@@ -306,7 +306,7 @@ using FDExtMCParticle = FDExtMCParticles::iterator;
 
 namespace mcfdlabel
 {
-DECLARE_SOA_INDEX_COLUMN(FDMCParticle, fdMCParticle); //! MC particle for femtoflowparticle
+DECLARE_SOA_INDEX_COLUMN(FDMCParticle, fDMCParticle); //! MC particle for femtoflowparticle
 } // namespace mcfdlabel
 DECLARE_SOA_TABLE(FDMCLabels, "AOD", "FDMCLabel", //! Table joinable to FemtoFlowParticle containing the MC labels
                   mcfdlabel::FDMCParticleId);

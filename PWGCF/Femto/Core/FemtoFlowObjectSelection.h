@@ -130,7 +130,7 @@ class FemtoFlowObjectSelection
         break;
     }
 
-    for (auto& sel : mSelections) {
+    for (const auto& sel : mSelections) {
       if (sel.getSelectionVariable() == selVar) {
         switch (sel.getSelectionType()) {
           case (femto_flow_selection::SelectionType::kUpperLimit):
@@ -173,7 +173,7 @@ class FemtoFlowObjectSelection
   std::vector<FemtoFlowSelection<selValDataType, selVariable>> getSelections(selVariable selVar)
   {
     std::vector<FemtoFlowSelection<selValDataType, selVariable>> selValVec;
-    for (auto& it : mSelections) {
+    for (const auto& it : mSelections) {
       if (it.getSelectionVariable() == selVar) {
         selValVec.push_back(it);
       }
@@ -186,7 +186,7 @@ class FemtoFlowObjectSelection
   std::vector<selVariable> getSelectionVariables()
   {
     std::vector<selVariable> selVarVec;
-    for (auto& it : mSelections) {
+    for (const auto& it : mSelections) {
       auto selVar = it.getSelectionVariable();
       if (std::none_of(
             selVarVec.begin(),

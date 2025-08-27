@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file femtoUniverseProducerTask.cxx
+/// \file femtoFlowProducerTask.cxx
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
@@ -53,7 +53,6 @@
 #include <CCDB/BasicCCDBManager.h>
 
 #include "Math/Vector4D.h"
-#include "TLorentzVector.h"
 #include "TMath.h"
 #include <TPDGCode.h>
 
@@ -83,13 +82,13 @@ using FemtoFullTracks =
             aod::pidTOFKa, aod::pidTOFPr, aod::pidTOFDe>;
 } // namespace o2::aod
 
-namespace softwareTriggers
+namespace software_triggers
 {
 static const int nTriggers = 6;
 static const std::vector<std::string> triggerNames{"fPPP", "fPPL", "fPLL", "fLLL", "fPD", "fLD"};
 static const float triggerSwitches[1][nTriggers]{
   {0, 0, 0, 0, 0, 0}};
-} // namespace softwareTriggers
+} // namespace software_triggers
 
 /// \todo fix how to pass array to setSelection, getRow() passing a different
 /// type!
@@ -113,12 +112,9 @@ struct FemtoFlowProducerTask {
   /// Event cuts
   FemtoFlowCollisionSelection colCuts;
   // Event cuts - Triggers
-  Configurable<bool> ConfEnableTriggerSelection{"ConfEnableTriggerSelection", false, "Should the trigger selection be enabled for collisions?"};
-  Configurable<LabeledArray<float>> ConfTriggerSwitches{
-    "ConfTriggerSwitches",
-    {softwareTriggers::triggerSwitches[0], 1, softwareTriggers::nTriggers, std::vector<std::string>{"Switch"}, softwareTriggers::triggerNames},
-    "Turn on which trigger should be checked for recorded events to pass selection"};
-  Configurable<std::string> ConfBaseCCDBPathForTriggers{"ConfBaseCCDBPathForTriggers", "Users/m/mpuccio/EventFiltering/OTS/Chunked/", "Provide ccdb path for trigger table; default - trigger coordination"};
+  Configurable<bool> confEnableTriggerSelection{"confEnableTriggerSelection", false, "Should the trigger selection be enabled for collisions?"};
+  Configurable<LabeledArray<float>> confTriggerSwitches{"confTriggerSwitches", {software_triggers::triggerSwitches[0], 1, software_triggers::nTriggers, std::vector<std::string>{"Switch"}, software_triggers::triggerNames}, "Turn on which trigger should be checked for recorded events to pass selection"};
+  Configurable<std::string> confBaseCCDBPathForTriggers{"confBaseCCDBPathForTriggers", "Users/m/mpuccio/EventFiltering/OTS/Chunked/", "Provide ccdb path for trigger table; default - trigger coordination"};
 
   // Event cuts - usual selection criteria
   Configurable<bool> confEvtUseTPCmult{"confEvtUseTPCmult", false, "Use multiplicity based on the number of tracks with TPC information"};
@@ -166,21 +162,21 @@ struct FemtoFlowProducerTask {
   Configurable<float> confTOFpTmin{"confTOFpTmin", 500, "TOF pT min"};
 
   struct : o2::framework::ConfigurableGroup {
-    Configurable<bool> ConfDcaXYCustom0Cut{"ConfDcaXYCustom0Cut", false, "Enable Custom Dcaxy < [0] cut."};
-    Configurable<float> ConfDcaXYFilterCut{"ConfDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"}; // max dca to vertex XY
-    Configurable<bool> ConfDcaXYCustom1Cut{"ConfDcaXYCustom1Cut", true, "Enable Custom |DCAxy| < [1] + [2]/pt cut."};
-    Configurable<float> ConfDcaXYCustom11FilterCut{"ConfDcaXYCustom11FilterCut", 0.004, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
-    Configurable<float> ConfDcaXYCustom12FilterCut{"ConfDcaXYCustom12FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
-    Configurable<float> ConfDcaZFilterCut{"ConfDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"}; // max dca to vertex Z
-    Configurable<float> ConfTrkMinChi2PerClusterTPC{"ConfTrkMinChi2PerClusterTPC", 0.f, "Lower limit for chi2 of TPC; currently for testing only"};
-    Configurable<float> ConfTrkMaxChi2PerClusterTPC{"ConfTrkMaxChi2PerClusterTPC", 4.f, "Upper limit for chi2 of TPC; currently for testing only"};
-    Configurable<float> ConfTrkMaxChi2PerClusterITS{"ConfTrkMaxChi2PerClusterITS", 10.0f, "Minimal track selection: max allowed chi2 per ITS cluster"}; // 36.0 is default
-    Configurable<bool> ConfTrkTPCRefit{"ConfTrkTPCRefit", false, "True: require TPC refit"};
-    Configurable<bool> ConfTrkITSRefit{"ConfTrkITSRefit", false, "True: require ITS refit"};
+    Configurable<bool> confDcaXYCustom0Cut{"confDcaXYCustom0Cut", false, "Enable Custom Dcaxy < [0] cut."};
+    Configurable<float> confDcaXYFilterCut{"confDcaXYFilterCut", 2.4, "Value for DCA_XY for the global track"}; // max dca to vertex XY
+    Configurable<bool> confDcaXYCustom1Cut{"confDcaXYCustom1Cut", true, "Enable Custom |DCAxy| < [1] + [2]/pt cut."};
+    Configurable<float> confDcaXYCustom11FilterCut{"confDcaXYCustom11FilterCut", 0.004, "Value for [1] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<float> confDcaXYCustom12FilterCut{"confDcaXYCustom12FilterCut", 0.013, "Value for [2] custom DCAxy cut -> |DCAxy| < [1] + [2]/pT"};
+    Configurable<float> confDcaZFilterCut{"confDcaZFilterCut", 3.2, "Value for DCA_Z for the global track"}; // max dca to vertex Z
+    Configurable<float> confTrkMinChi2PerClusterTPC{"confTrkMinChi2PerClusterTPC", 0.f, "Lower limit for chi2 of TPC; currently for testing only"};
+    Configurable<float> confTrkMaxChi2PerClusterTPC{"confTrkMaxChi2PerClusterTPC", 4.f, "Upper limit for chi2 of TPC; currently for testing only"};
+    Configurable<float> confTrkMaxChi2PerClusterITS{"confTrkMaxChi2PerClusterITS", 10.0f, "Minimal track selection: max allowed chi2 per ITS cluster"}; // 36.0 is default
+    Configurable<bool> confTrkTPCRefit{"confTrkTPCRefit", false, "True: require TPC refit"};
+    Configurable<bool> confTrkITSRefit{"confTrkITSRefit", false, "True: require ITS refit"};
   } ConfTrackSpecialFilters;
 
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::QAObject};
-  HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry trackRegistry{"Tracks", {}, OutputObjHandlingPolicy::QAObject};
 
   int mRunNumber = 0;
   float mMagField;
@@ -208,7 +204,7 @@ struct FemtoFlowProducerTask {
     trackCuts.setSelection(ConfTrkSelection.confTrkPIDnSigmaMax, femto_flow_track_selection::kPIDnSigmaMax, femto_flow_selection::kAbsUpperLimit);
     trackCuts.setPIDSpecies(ConfTrkSelection.confTrkPIDspecies);
     trackCuts.setnSigmaPIDOffset(confTrkPIDnSigmaOffsetTPC, confTrkPIDnSigmaOffsetTOF);
-    trackCuts.init<aod::femtoflowparticle::ParticleType::kTrack, aod::femtoflowparticle::TrackType::kNoChild, aod::femtoflowparticle::CutContainerType>(&TrackRegistry);
+    trackCuts.init<aod::femtoflowparticle::ParticleType::kTrack, aod::femtoflowparticle::TrackType::kNoChild, aod::femtoflowparticle::CutContainerType>(&trackRegistry);
 
     mRunNumber = 0;
     mMagField = 0.0;
@@ -303,16 +299,20 @@ struct FemtoFlowProducerTask {
     }
 
     float sphericity = colCuts.computeSphericity(col, tracks);
+    float sphrDefault = 2;
     int qnbin = colCuts.myqnBin(col);
+    int qnBinBug = -999;
+    int qnBinMin = 0;
+    int qnBinMax = 10;
 
     if (!confIsUsePileUp) {
-      outputCollision(vtxZ, mult, multNtr, confDoSpher ? sphericity : 2, (confDoqnVec && qnbin >= 0 && qnbin < 10) ? qnbin : -999, mMagField);
+      outputCollision(vtxZ, mult, multNtr, confDoSpher ? sphericity : sphrDefault, (confDoqnVec && qnbin >= qnBinMin && qnbin < qnBinMax) ? qnbin : qnBinBug, mMagField);
       colCuts.fillQA(col);
       return true;
     } else if ((!confEvNoSameBunchPileup || col.selection_bit(aod::evsel::kNoSameBunchPileup)) && (!confEvIsGoodZvtxFT0vsPV || col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) && (!confEvIsGoodITSLayersAll || col.selection_bit(aod::evsel::kIsGoodITSLayersAll)) && (!confEvNoCollInRofStandard || col.selection_bit(aod::evsel::kNoCollInRofStandard)) && (!confEvNoHighMultCollInPrevRof || col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof)) && (!confEvNoCollInTimeRangeStandard || col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard))
                // && (!confEvIsVertexITSTPC || col.selection_bit(aod::evsel::kIsVertexITSTPC))
     ) {
-      outputCollision(vtxZ, mult, multNtr, confDoSpher ? sphericity : 2, (confDoqnVec && qnbin >= 0 && qnbin < 10) ? qnbin : -999, mMagField);
+      outputCollision(vtxZ, mult, multNtr, confDoSpher ? sphericity : sphrDefault, (confDoqnVec && qnbin >= qnBinMin && qnbin < qnBinMax) ? qnbin : qnBinBug, mMagField);
       colCuts.fillQA(col);
       return true;
     } else {
@@ -366,22 +366,22 @@ struct FemtoFlowProducerTask {
           continue;
         }
       }
-      if (ConfTrackSpecialFilters.ConfDcaXYCustom0Cut && fabs(track.dcaXY()) > ConfTrackSpecialFilters.ConfDcaXYFilterCut) {
+      if (ConfTrackSpecialFilters.confDcaXYCustom0Cut && std::fabs(track.dcaXY()) > ConfTrackSpecialFilters.confDcaXYFilterCut) {
         continue;
       }
-      if (ConfTrackSpecialFilters.ConfDcaXYCustom1Cut && fabs(track.dcaXY()) > ConfTrackSpecialFilters.ConfDcaXYCustom11FilterCut + ConfTrackSpecialFilters.ConfDcaXYCustom12FilterCut / track.pt()) {
+      if (ConfTrackSpecialFilters.confDcaXYCustom1Cut && std::fabs(track.dcaXY()) > ConfTrackSpecialFilters.confDcaXYCustom11FilterCut + ConfTrackSpecialFilters.confDcaXYCustom12FilterCut / track.pt()) {
         continue;
       }
-      if (fabs(track.dcaZ()) > ConfTrackSpecialFilters.ConfDcaZFilterCut) {
+      if (std::fabs(track.dcaZ()) > ConfTrackSpecialFilters.confDcaZFilterCut) {
         continue;
       }
-      if (track.tpcChi2NCl() < ConfTrackSpecialFilters.ConfTrkMinChi2PerClusterTPC || track.tpcChi2NCl() > ConfTrackSpecialFilters.ConfTrkMaxChi2PerClusterTPC) {
+      if (track.tpcChi2NCl() < ConfTrackSpecialFilters.confTrkMinChi2PerClusterTPC || track.tpcChi2NCl() > ConfTrackSpecialFilters.confTrkMaxChi2PerClusterTPC) {
         continue;
       }
-      if (track.itsChi2NCl() > ConfTrackSpecialFilters.ConfTrkMaxChi2PerClusterITS) {
+      if (track.itsChi2NCl() > ConfTrackSpecialFilters.confTrkMaxChi2PerClusterITS) {
         continue;
       }
-      if ((ConfTrackSpecialFilters.ConfTrkTPCRefit && !track.hasTPC()) || (ConfTrackSpecialFilters.ConfTrkITSRefit && !track.hasITS())) {
+      if ((ConfTrackSpecialFilters.confTrkTPCRefit && !track.hasTPC()) || (ConfTrackSpecialFilters.confTrkITSRefit && !track.hasITS())) {
         continue;
       }
       if (!trackCuts.isSelectedMinimal(track)) {

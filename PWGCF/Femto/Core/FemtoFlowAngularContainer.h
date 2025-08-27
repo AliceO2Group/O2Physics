@@ -223,15 +223,15 @@ class FemtoFlowAngularContainer
       setPairBase<o2::aod::femtoflow_mc_particle::MCType::kRecon>(femtoObs, mT, part1, part2, mult, use3dplots, weight);
 
       if constexpr (isMC) {
-        if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
+        if (part1.has_fDMCParticle() && part2.has_fDMCParticle()) {
           // calculate the femto observable and the mT with MC truth information
           if constexpr (FemtoObs == femto_flow_angular_container::Observable::kstar) {
-            femtoObsMC = FemtoFlowMath::getkstar(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
+            femtoObsMC = FemtoFlowMath::getkstar(part1.fDMCParticle(), mMassOne, part2.fDMCParticle(), mMassTwo);
           }
-          const float mTMC = FemtoFlowMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
+          const float mTMC = FemtoFlowMath::getmT(part1.fDMCParticle(), mMassOne, part2.fDMCParticle(), mMassTwo);
 
-          if (std::abs(part1.fdMCParticle().pdgMCTruth()) == std::abs(mPDGOne) && std::abs(part2.fdMCParticle().pdgMCTruth()) == std::abs(mPDGTwo)) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            setPairBase<o2::aod::femtoflow_mc_particle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, use3dplots, weight);
+          if (std::abs(part1.fDMCParticle().pdgMCTruth()) == std::abs(mPDGOne) && std::abs(part2.fDMCParticle().pdgMCTruth()) == std::abs(mPDGTwo)) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
+            setPairBase<o2::aod::femtoflow_mc_particle::MCType::kTruth>(femtoObsMC, mTMC, part1.fDMCParticle(), part2.fDMCParticle(), mult, use3dplots, weight);
             setPairMC(femtoObsMC, femtoObs, mT, mult);
           } else {
           }

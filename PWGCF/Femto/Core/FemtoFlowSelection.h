@@ -61,20 +61,20 @@ class FemtoFlowSelection
 
   /// Get the value used for the selection
   /// \return Value used for the selection
-  selValDataType getSelectionValue() { return mSelVal; }
+  selValDataType getSelectionValue() const { return mSelVal; }
 
   /// Get the variable used for the selection
   /// \return variable used for the selection
-  selVariableDataType getSelectionVariable() { return mSelVar; }
+  selVariableDataType getSelectionVariable() const { return mSelVar; }
 
   /// Get the type of selection to be employed
   /// \return Type of selection to be employed
-  femto_flow_selection::SelectionType getSelectionType() { return mSelType; }
+  femto_flow_selection::SelectionType getSelectionType() const { return mSelType; }
 
   /// Check whether the selection is fulfilled or not
   /// \param observable Value of the variable to be checked
   /// \return Whether the selection is fulfilled or not
-  bool isSelected(selValDataType observable)
+  bool isSelected(selValDataType observable) const
   {
     switch (mSelType) {
       case (femto_flow_selection::SelectionType::kUpperLimit):
@@ -101,7 +101,7 @@ class FemtoFlowSelection
   /// \param cutContainer Bit-wise container for the systematic variations
   /// \param counter Position in the bit-wise container for the systematic variations to be modified
   template <typename T>
-  void checkSelectionSetBit(selValDataType observable, T& cutContainer, size_t& counter)
+  void checkSelectionSetBit(selValDataType observable, T& cutContainer, size_t& counter) const
   {
     /// If the selection is fulfilled the bit at the specified position (counter) within the bit-wise container is set to 1
     if (isSelected(observable)) {
@@ -111,7 +111,7 @@ class FemtoFlowSelection
   }
 
   template <typename T>
-  void checkSelectionSetBitPID(selValDataType observable, T& cutContainer)
+  void checkSelectionSetBitPID(selValDataType observable, T& cutContainer) const
   {
     /// If the selection is fulfilled the bit at the specified position (counter) within the bit-wise container is set to 1
     if (isSelected(observable)) {

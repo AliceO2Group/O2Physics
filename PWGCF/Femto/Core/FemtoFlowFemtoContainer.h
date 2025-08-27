@@ -77,24 +77,24 @@ class FemtoFlowFemtoContainer
   {
     using namespace o2::framework;
 
-    HistogramRegistry->add((folderName + "/relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
-    HistogramRegistry->add((folderName + "/relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
-    HistogramRegistry->add((folderName + "/relPairkstarkT").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, kTAxis});
-    HistogramRegistry->add((folderName + "/relPairkstarmT").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
-    HistogramRegistry->add((folderName + "/relPairkstarMult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
-    HistogramRegistry->add((folderName + "/kstarPtPart1").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 1 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
-    HistogramRegistry->add((folderName + "/kstarPtPart2").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 2 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
-    HistogramRegistry->add((folderName + "/MultPtPart1").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
-    HistogramRegistry->add((folderName + "/MultPtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
-    HistogramRegistry->add((folderName + "/PtPart1PtPart2").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
+    mHistogramRegistry->add((folderName + "/relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/relPairkT").c_str(), "; #it{k}_{T} (GeV/#it{c}); Entries", kTH1F, {kTAxis});
+    mHistogramRegistry->add((folderName + "/relPairkstarkT").c_str(), ("; " + femtoObs + "; #it{k}_{T} (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, kTAxis});
+    mHistogramRegistry->add((folderName + "/relPairkstarmT").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
+    mHistogramRegistry->add((folderName + "/relPairkstarMult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
+    mHistogramRegistry->add((folderName + "/kstarPtPart1").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 1 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
+    mHistogramRegistry->add((folderName + "/kstarPtPart2").c_str(), ("; " + femtoObs + "; #it{p} _{T} Particle 2 (GeV/#it{c})").c_str(), kTH2F, {femtoObsAxis, {375, 0., 7.5}});
+    mHistogramRegistry->add((folderName + "/MultPtPart1").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
+    mHistogramRegistry->add((folderName + "/MultPtPart2").c_str(), "; #it{p} _{T} Particle 2 (GeV/#it{c}); Multiplicity", kTH2F, {{375, 0., 7.5}, multAxis});
+    mHistogramRegistry->add((folderName + "/PtPart1PtPart2").c_str(), "; #it{p} _{T} Particle 1 (GeV/#it{c}); #it{p} _{T} Particle 2 (GeV/#it{c})", kTH2F, {{375, 0., 7.5}, {375, 0., 7.5}});
     if (use3dplots) {
-      HistogramRegistry->add((folderName + "/relPairkstarmTMult").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); Multiplicity").c_str(), kTH3F, {femtoObsAxis, mTAxis3D, multAxis3D});
+      mHistogramRegistry->add((folderName + "/relPairkstarmTMult").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2}); Multiplicity").c_str(), kTH3F, {femtoObsAxis, mTAxis3D, multAxis3D});
     }
     if (useqnDivide) {
       for (int iqn(0); iqn < numqnBins; ++iqn) {
-        HistogramRegistry->add((folderName + std::to_string(iqn) + "/relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
-        HistogramRegistry->add((folderName + std::to_string(iqn) + "/relPairkstarmT").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
-        HistogramRegistry->add((folderName + std::to_string(iqn) + "/relPairkstarMult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
+        mHistogramRegistry->add((folderName + std::to_string(iqn) + "/relPairDist").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
+        mHistogramRegistry->add((folderName + std::to_string(iqn) + "/relPairkstarmT").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
+        mHistogramRegistry->add((folderName + std::to_string(iqn) + "/relPairkstarMult").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
       }
     }
   }
@@ -109,12 +109,12 @@ class FemtoFlowFemtoContainer
   {
     using namespace o2::framework;
 
-    HistogramRegistry->add((folderName + "/relPairDist_ReconNoFake").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
-    HistogramRegistry->add((folderName + "/relPairkstarmT_ReconNoFake").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
-    HistogramRegistry->add((folderName + "/relPairkstarMult_ReconNoFake").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
-    HistogramRegistry->add((folderName + "/hNoMCtruthPairsCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
-    HistogramRegistry->add((folderName + "/hFakePairsCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
-    HistogramRegistry->add((folderName + "/kstar_resolution").c_str(), "; #it{k} _{T} reconstructed (GeV/#it{c}); #it{k} _{T} truth (GeV/#it{c})", kTH2F, {femtoObsAxis, femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/relPairDist_ReconNoFake").c_str(), ("; " + femtoObs + "; Entries").c_str(), kTH1F, {femtoObsAxis});
+    mHistogramRegistry->add((folderName + "/relPairkstarmT_ReconNoFake").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}^{2})").c_str(), kTH2F, {femtoObsAxis, mTAxis});
+    mHistogramRegistry->add((folderName + "/relPairkstarMult_ReconNoFake").c_str(), ("; " + femtoObs + "; Multiplicity").c_str(), kTH2F, {femtoObsAxis, multAxis});
+    mHistogramRegistry->add((folderName + "/hNoMCtruthPairsCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
+    mHistogramRegistry->add((folderName + "/hFakePairsCounter").c_str(), "; Counter; Entries", kTH1I, {{1, 0, 1}});
+    mHistogramRegistry->add((folderName + "/kstar_resolution").c_str(), "; #it{k} _{T} reconstructed (GeV/#it{c}); #it{k} _{T} truth (GeV/#it{c})", kTH2F, {femtoObsAxis, femtoObsAxis});
   }
 
   /// Templated function to initialize the histograms for the task
@@ -132,7 +132,7 @@ class FemtoFlowFemtoContainer
   {
     using namespace o2::framework;
 
-    HistogramRegistry = registry;
+    mHistogramRegistry = registry;
     std::string femtoObs;
     if constexpr (FemtoObs == femto_flow_femto_container::Observable::kstar) {
       femtoObs = "#it{k*} (GeV/#it{c})";
@@ -180,70 +180,70 @@ class FemtoFlowFemtoContainer
 
     const float kT = FemtoFlowMath::getkT(part1, kMassOne, part2, kMassTwo);
 
-    HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairDist"), femtoObs);
-    HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkT"), kT);
-    HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarkT"), femtoObs, kT);
-    HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarmT"), femtoObs, mT);
-    HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarMult"), femtoObs, mult);
-    HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/kstarPtPart1"), femtoObs, part1.pt());
-    HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/kstarPtPart2"), femtoObs, part2.pt());
-    HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/MultPtPart1"), part1.pt(), mult);
-    HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/MultPtPart2"), part2.pt(), mult);
-    HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/PtPart1PtPart2"), part1.pt(), part2.pt());
+    mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairDist"), femtoObs);
+    mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkT"), kT);
+    mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarkT"), femtoObs, kT);
+    mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarmT"), femtoObs, mT);
+    mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarMult"), femtoObs, mult);
+    mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/kstarPtPart1"), femtoObs, part1.pt());
+    mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/kstarPtPart2"), femtoObs, part2.pt());
+    mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/MultPtPart1"), part1.pt(), mult);
+    mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/MultPtPart2"), part2.pt(), mult);
+    mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/PtPart1PtPart2"), part1.pt(), part2.pt());
     if (use3dplots) {
-      HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarmTMult"), femtoObs, mT, mult);
+      mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("/relPairkstarmTMult"), femtoObs, mT, mult);
     }
     if (useqnDivide && mybinNum >= 0 && mybinNum < numqnBins) {
       switch (mybinNum) {
         case 0:
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("0") + HIST("/relPairDist"), femtoObs);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("0") + HIST("/relPairkstarmT"), femtoObs, mT);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("0") + HIST("/relPairkstarMult"), femtoObs, mult);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("0") + HIST("/relPairDist"), femtoObs);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("0") + HIST("/relPairkstarmT"), femtoObs, mT);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("0") + HIST("/relPairkstarMult"), femtoObs, mult);
           break;
         case 1:
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("1") + HIST("/relPairDist"), femtoObs);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("1") + HIST("/relPairkstarmT"), femtoObs, mT);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("1") + HIST("/relPairkstarMult"), femtoObs, mult);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("1") + HIST("/relPairDist"), femtoObs);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("1") + HIST("/relPairkstarmT"), femtoObs, mT);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("1") + HIST("/relPairkstarMult"), femtoObs, mult);
           break;
         case 2:
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("2") + HIST("/relPairDist"), femtoObs);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("2") + HIST("/relPairkstarmT"), femtoObs, mT);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("2") + HIST("/relPairkstarMult"), femtoObs, mult);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("2") + HIST("/relPairDist"), femtoObs);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("2") + HIST("/relPairkstarmT"), femtoObs, mT);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("2") + HIST("/relPairkstarMult"), femtoObs, mult);
           break;
         case 3:
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("3") + HIST("/relPairDist"), femtoObs);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("3") + HIST("/relPairkstarmT"), femtoObs, mT);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("3") + HIST("/relPairkstarMult"), femtoObs, mult);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("3") + HIST("/relPairDist"), femtoObs);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("3") + HIST("/relPairkstarmT"), femtoObs, mT);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("3") + HIST("/relPairkstarMult"), femtoObs, mult);
           break;
         case 4:
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("4") + HIST("/relPairDist"), femtoObs);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("4") + HIST("/relPairkstarmT"), femtoObs, mT);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("4") + HIST("/relPairkstarMult"), femtoObs, mult);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("4") + HIST("/relPairDist"), femtoObs);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("4") + HIST("/relPairkstarmT"), femtoObs, mT);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("4") + HIST("/relPairkstarMult"), femtoObs, mult);
           break;
         case 5:
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("5") + HIST("/relPairDist"), femtoObs);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("5") + HIST("/relPairkstarmT"), femtoObs, mT);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("5") + HIST("/relPairkstarMult"), femtoObs, mult);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("5") + HIST("/relPairDist"), femtoObs);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("5") + HIST("/relPairkstarmT"), femtoObs, mT);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("5") + HIST("/relPairkstarMult"), femtoObs, mult);
           break;
         case 6:
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("6") + HIST("/relPairDist"), femtoObs);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("6") + HIST("/relPairkstarmT"), femtoObs, mT);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("6") + HIST("/relPairkstarMult"), femtoObs, mult);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("6") + HIST("/relPairDist"), femtoObs);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("6") + HIST("/relPairkstarmT"), femtoObs, mT);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("6") + HIST("/relPairkstarMult"), femtoObs, mult);
           break;
         case 7:
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("7") + HIST("/relPairDist"), femtoObs);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("7") + HIST("/relPairkstarmT"), femtoObs, mT);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("7") + HIST("/relPairkstarMult"), femtoObs, mult);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("7") + HIST("/relPairDist"), femtoObs);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("7") + HIST("/relPairkstarmT"), femtoObs, mT);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("7") + HIST("/relPairkstarMult"), femtoObs, mult);
           break;
         case 8:
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("8") + HIST("/relPairDist"), femtoObs);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("8") + HIST("/relPairkstarmT"), femtoObs, mT);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("8") + HIST("/relPairkstarMult"), femtoObs, mult);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("8") + HIST("/relPairDist"), femtoObs);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("8") + HIST("/relPairkstarmT"), femtoObs, mT);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("8") + HIST("/relPairkstarMult"), femtoObs, mult);
           break;
         case 9:
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("9") + HIST("/relPairDist"), femtoObs);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("9") + HIST("/relPairkstarmT"), femtoObs, mT);
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("9") + HIST("/relPairkstarMult"), femtoObs, mult);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("9") + HIST("/relPairDist"), femtoObs);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("9") + HIST("/relPairkstarmT"), femtoObs, mT);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[mc]) + HIST("9") + HIST("/relPairkstarMult"), femtoObs, mult);
           break;
         default:
           return; // invalid qn bin
@@ -263,13 +263,13 @@ class FemtoFlowFemtoContainer
   {
     using namespace o2::framework;
 
-    if (HistogramRegistry) {
+    if (mHistogramRegistry) {
       // Fill the kstar distributions with the reconstructed information but only for particles with the right PDG code
-      HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[o2::aod::femtoflow_mc_particle::MCType::kTruth]) + HIST("/relPairDist_ReconNoFake"), femtoObs);
-      HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[o2::aod::femtoflow_mc_particle::MCType::kTruth]) + HIST("/relPairkstarmT_ReconNoFake"), femtoObs, mT);
-      HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[o2::aod::femtoflow_mc_particle::MCType::kTruth]) + HIST("/relPairkstarMult_ReconNoFake"), femtoObs, mult);
+      mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[o2::aod::femtoflow_mc_particle::MCType::kTruth]) + HIST("/relPairDist_ReconNoFake"), femtoObs);
+      mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[o2::aod::femtoflow_mc_particle::MCType::kTruth]) + HIST("/relPairkstarmT_ReconNoFake"), femtoObs, mT);
+      mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[o2::aod::femtoflow_mc_particle::MCType::kTruth]) + HIST("/relPairkstarMult_ReconNoFake"), femtoObs, mult);
 
-      HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[o2::aod::femtoflow_mc_particle::MCType::kTruth]) + HIST("/kstar_resolution"), femtoObsMC, femtoObs);
+      mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[o2::aod::femtoflow_mc_particle::MCType::kTruth]) + HIST("/kstar_resolution"), femtoObsMC, femtoObs);
     }
   }
 
@@ -292,33 +292,33 @@ class FemtoFlowFemtoContainer
     }
     const float mT = FemtoFlowMath::getmT(part1, kMassOne, part2, kMassTwo);
 
-    if (HistogramRegistry) {
+    if (mHistogramRegistry) {
       setPairBase<o2::aod::femtoflow_mc_particle::MCType::kRecon>(femtoObs, mT, part1, part2, mult, use3dplots, useqnDivide, mybinNum);
 
       if constexpr (isMC) {
-        if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
+        if (part1.has_fDMCParticle() && part2.has_fDMCParticle()) {
           // calculate the femto observable and the mT with MC truth information
           if constexpr (FemtoObs == femto_flow_femto_container::Observable::kstar) {
-            femtoObsMC = FemtoFlowMath::getkstar(part1.fdMCParticle(), kMassOne, part2.fdMCParticle(), kMassTwo);
+            femtoObsMC = FemtoFlowMath::getkstar(part1.fDMCParticle(), kMassOne, part2.fDMCParticle(), kMassTwo);
           }
-          const float mTMC = FemtoFlowMath::getmT(part1.fdMCParticle(), kMassOne, part2.fdMCParticle(), kMassTwo);
+          const float mTMC = FemtoFlowMath::getmT(part1.fDMCParticle(), kMassOne, part2.fDMCParticle(), kMassTwo);
 
-          if (std::abs(part1.fdMCParticle().pdgMCTruth()) == std::abs(kPDGOne) && std::abs(part2.fdMCParticle().pdgMCTruth()) == std::abs(kPDGTwo)) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
-            setPairBase<o2::aod::femtoflow_mc_particle::MCType::kTruth>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, use3dplots, useqnDivide, mybinNum);
+          if (std::abs(part1.fDMCParticle().pdgMCTruth()) == std::abs(kPDGOne) && std::abs(part2.fDMCParticle().pdgMCTruth()) == std::abs(kPDGTwo)) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
+            setPairBase<o2::aod::femtoflow_mc_particle::MCType::kTruth>(femtoObsMC, mTMC, part1.fDMCParticle(), part2.fDMCParticle(), mult, use3dplots, useqnDivide, mybinNum);
             setPairMC(femtoObsMC, femtoObs, mT, mult);
           } else {
-            HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[o2::aod::femtoflow_mc_particle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
+            mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[o2::aod::femtoflow_mc_particle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
           }
 
         } else {
-          HistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[o2::aod::femtoflow_mc_particle::MCType::kTruth]) + HIST("/hNoMCtruthPairsCounter"), 0);
+          mHistogramRegistry->fill(HIST(FolderSuffix[kEventType]) + HIST(o2::aod::femtoflow_mc_particle::MCTypeName[o2::aod::femtoflow_mc_particle::MCType::kTruth]) + HIST("/hNoMCtruthPairsCounter"), 0);
         }
       }
     }
   }
 
  protected:
-  o2::framework::HistogramRegistry* HistogramRegistry = nullptr;                   ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;                   ///< For QA output
   static constexpr std::string_view FolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to kEventType
   static constexpr femto_flow_femto_container::Observable FemtoObs = obs;          ///< Femtoscopic observable to be computed (according to femto_flow_femto_container::Observable)
   static constexpr int kEventType = eventType;                                     ///< Type of the event (same/mixed, according to femto_flow_femto_container::EventType)
