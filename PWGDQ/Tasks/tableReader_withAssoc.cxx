@@ -2303,7 +2303,7 @@ struct AnalysisSameEventPairing {
   }
 
   void processMixingBarrelWithQvectorCentrSkimmedNoCov(soa::Filtered<MyEventsHashSelectedQvectorCentr>& events,
-                                                         soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& trackAssocs, MyBarrelTracksWithAmbiguities const& tracks)
+                                                       soa::Join<aod::ReducedTracksAssoc, aod::BarrelTrackCuts, aod::Prefilter> const& trackAssocs, MyBarrelTracksWithAmbiguities const& tracks)
   {
     runSameSideMixing<pairTypeEE, gkEventFillMapWithQvectorCentr>(events, trackAssocs, tracks, trackAssocsPerCollision);
   }
