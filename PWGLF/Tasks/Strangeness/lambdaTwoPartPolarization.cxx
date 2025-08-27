@@ -11,30 +11,12 @@
 
 /// \author Junlee Kim (jikim1290@gmail.com)
 
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 #include "Math/GenVector/Boost.h"
 #include "Math/Vector3D.h"
@@ -45,12 +27,36 @@
 #include "TVector3.h"
 #include <TMath.h>
 
-#include <array>
-#include <chrono>
-#include <cmath>
-#include <cstdlib>
-#include <string>
-#include <vector>
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+
+#include "ReconstructionDataFormats/Track.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
 
 using namespace o2;
 using namespace o2::framework;
@@ -404,58 +410,37 @@ struct lambdaTwoPartPolarization {
 
     FillHistograms(collision, collision, V0s, V0s);
   }
-  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataSame, "Process Event for same data", true);
+  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataSame, "Process event for same data", true);
 
   SliceCache cache;
-  using BinningTypeVertexContributorFT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  using BinningTypeVertexContributorFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
-  void processDataMixedT0C(EventCandidates const& collisions,
-                           TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  BinningType colBinning{{vertexAxis, centAxis}, true};
+
+  Preslice<aod::V0Datas> tracksPerCollisionV0 = aod::v0data::collisionId;
+  void processDataMixed(EventCandidates const& collisions,
+                        TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
-    auto tracksTuple = std::make_tuple(V0s);
-    BinningTypeVertexContributorFT0C binningOnPositions{{vertexAxis, centAxis}, true};
-    SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeVertexContributorFT0C> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+    for (auto& [c1, c2] : selfCombinations(colBinning, cfgNoMixedEvents, -1, collisions, collisions)) {
+
+      if (c1.index() == c2.index()) continue;
+
       centrality = c1.centFT0C();
-      auto bc = c1.bc_as<aod::BCsWithTimestamps>();
       if (cfgAccCor) {
+        auto bc = c1.bc_as<aod::BCsWithTimestamps>();
         AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
       }
       if (!eventSelected(c1))
         continue;
       if (!eventSelected(c2))
         continue;
-      if (c1.bcId() == c2.bcId())
-        continue;
+
+      auto tracks1 = V0s.sliceBy(tracksPerCollisionV0, c1.globalIndex());
+      auto tracks2 = V0s.sliceBy(tracksPerCollisionV0, c2.globalIndex());
 
       FillHistograms(c1, c2, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0C, "Process Event for mixed data in PbPb", false);
-
-  void processDataMixedT0M(EventCandidates const& collisions,
-                           TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
-  {
-    auto tracksTuple = std::make_tuple(V0s);
-    BinningTypeVertexContributorFT0M binningOnPositions{{vertexAxis, centAxis}, true};
-    SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeVertexContributorFT0M> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      centrality = c1.centFT0M();
-      auto bc = c1.bc_as<aod::BCsWithTimestamps>();
-      if (cfgAccCor) {
-        AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
-      }
-      if (!eventSelected(c1))
-        continue;
-      if (!eventSelected(c2))
-        continue;
-      if (c1.bcId() == c2.bcId())
-        continue;
-
-      FillHistograms(c1, c2, tracks1, tracks2);
-    }
-  }
-  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0M, "Process Event for mixed data in pp", false);
+  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixed, "Process event for mixed data in PbPb", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
