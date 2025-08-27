@@ -201,6 +201,7 @@ struct EbyeMaker {
   Configurable<float> etaMaxV0dau{"etaMaxV0dau", 0.8f, "maximum eta V0 daughters"};
   Configurable<float> outerPIDMin{"outerPIDMin", -4.f, "minimum outer PID"};
 
+  Configurable<bool> countOnlyNegTrk{"countOnlyNegTrk", false, "count only negative tracks in Ntracks"};
   Configurable<bool> useAllEvSel{"useAllEvSel", false, "use additional event selections fo run 3 analyses"};
   Configurable<uint8_t> triggerCut{"triggerCut", 0x0, "trigger cut to select"};
   Configurable<bool> kINT7Intervals{"kINT7Intervals", false, "toggle kINT7 trigger selection in the 10-30% and 50-90% centrality intervals (2018 Pb-Pb)"};
@@ -256,7 +257,6 @@ struct EbyeMaker {
   Configurable<float> antidItsClsSizeCut{"antidItsClsSizeCut", 1.e-10f, "cluster size cut for antideuterons"};
   Configurable<float> antidPtItsClsSizeCut{"antidPtItsClsSizeCut", 10.f, "pt for cluster size cut for antideuterons"};
 
-  Configurable<float> trklEtaMax{"trklEtaMax", 0.8f, "maximum eta for run 2 tracklets"};
   Configurable<LabeledArray<float>> cfgTrackSels{"cfgTrackSels", {kTrackSels, 1, 12, particleName, trackSelsNames}, "Track selections"};
 
   std::array<float, kNpart> ptMin;
@@ -553,9 +553,9 @@ struct EbyeMaker {
 
     std::array<float, 2> dcaInfo;
     for (const auto& track : tracks) {
-      if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < trklEtaMax && !(doprocessRun3 || doprocessMcRun3)) { // tracklet
+      if (track.trackType() == o2::aod::track::TrackTypeEnum::Run2Tracklet && std::abs(track.eta()) < etaMax && !(doprocessRun3 || doprocessMcRun3)) { // tracklet
         nTrackletsColl++;
-      } else if (std::abs(track.eta()) < trklEtaMax && track.itsNCls() > 3 && (doprocessRun3 || doprocessMcRun3)) { // ITS only + global tracks
+      } else if (std::abs(track.eta()) < etaMax && track.itsNCls() > 3 && (doprocessRun3 || doprocessMcRun3)) { // ITS only + global tracks
         nTrackletsColl++;
       }
       if (!selectTrack(track)) {
@@ -571,7 +571,7 @@ struct EbyeMaker {
         continue;
       }
       histos.fill(HIST("QA/tpcSignal"), track.tpcInnerParam(), track.tpcSignal());
-      if (trackPt > ptMin[0] && trackPt < ptMax[0])
+      if (trackPt > ptMin[0] && trackPt < ptMax[0] && ((track.sign() < 0 && countOnlyNegTrk) || !countOnlyNegTrk))
         nTracksColl++;
 
       for (int iP{0}; iP < kNpart; ++iP) {

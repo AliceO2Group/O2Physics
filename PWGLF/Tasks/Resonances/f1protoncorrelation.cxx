@@ -13,24 +13,32 @@
 /// \author sourav kundu
 /// \since 02/11/2023
 
+#include "PWGLF/DataModel/ReducedF1ProtonTables.h"
+
+#include "Common/Core/trackUtilities.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include <Framework/Configurable.h>
-#include <TLorentzVector.h>
+
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h>
+#include <TLorentzVector.h>
 #include <TMath.h>
+
 #include <fairlogger/Logger.h>
+
 #include <iostream>
 #include <iterator>
 #include <string>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/StepTHn.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/ReducedF1ProtonTables.h"
-#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -38,6 +46,18 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 
 struct f1protoncorrelation {
+
+  double bz = 0.;
+  double bz2 = 0.;
+
+  // Enable access to the CCDB for the offset and correction constants and save them in dedicated variables.
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
+  struct : ConfigurableGroup {
+    Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
+    Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+  } cfgCcdbParam;
+
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   // PID selection
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 3.0, "Value of the TPC Nsigma cut"};
@@ -70,6 +90,7 @@ struct f1protoncorrelation {
   ConfigurableAxis configThnAxisKstar{"configThnAxisKstar", {100, 0.0, 1.0}, "#it{k}^{*} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisPtProton{"configThnAxisPtProton", {20, 0.0, 4.}, "#it{p}_{T} (GeV/#it{c})"};
   ConfigurableAxis configThnAxisNsigma{"configThnAxisNsigma", {90, -9.0, 9.0}, "NsigmaCombined"};
+  ConfigurableAxis configThnAxisCharge{"configThnAxisCharge", {5, -2.5, 2.5}, "Charge"};
 
   // mix event bining policy
   ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib> colBinningFemto{{CfgVtxBins, CfgMultBins}, true};
@@ -83,31 +104,89 @@ struct f1protoncorrelation {
     const AxisSpec thnAxisPtProton{configThnAxisPtProton, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisKstar{configThnAxisKstar, "#it{k}^{*} (GeV/#it{c})"};
     const AxisSpec thnAxisNsigma{configThnAxisNsigma, "NsigmaCombined"};
+    const AxisSpec thnAxisCharge{configThnAxisCharge, "Charge"};
 
     // register histograms
+    histos.add("hPhaseSpaceProtonKaonSame", "hPhaseSpaceProtonKaonSame", kTH2F, {{200, -2.0f, 2.0f}, {360, -4.0 * TMath::Pi(), 4.0 * TMath::Pi()}});
+    histos.add("hPhaseSpaceProtonPionSame", "hPhaseSpaceProtonPionSame", kTH2F, {{200, -2.0f, 2.0f}, {360, -4.0 * TMath::Pi(), 4.0 * TMath::Pi()}});
+    histos.add("hPhaseSpaceProtonKaonMix", "hPhaseSpaceProtonKaonMix", kTH2F, {{200, -2.0f, 2.0f}, {360, -4.0 * TMath::Pi(), 4.0 * TMath::Pi()}});
+    histos.add("hPhaseSpaceProtonPionMix", "hPhaseSpaceProtonPionMix", kTH2F, {{200, -2.0f, 2.0f}, {360, -4.0 * TMath::Pi(), 4.0 * TMath::Pi()}});
     histos.add("hNsigmaProtonTPC", "Nsigma Proton TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 10.0f}});
     histos.add("hNsigmaKaonTPC", "Nsigma Kaon TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 10.0f}});
     histos.add("hNsigmaPionTPC", "Nsigma Pion TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 10.0f}});
     histos.add("hNsigmaPionKaonTPC", "Nsigma Pion Kaon TPC correlation", kTH2F, {{100, -5.0f, 5.0f}, {100, -5.0f, 5.0f}});
     histos.add("h2SameEventPtCorrelation", "Pt correlation of F1 and proton", kTH3F, {{100, 0.0f, 1.0f}, {100, 0.0, 10.0}, {100, 0.0, 10.0}});
 
-    histos.add("h2SameEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 same event", kTH3F, {thnAxisKstar, thnAxisPt, thnAxisInvMass});
-    histos.add("h2SameEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 same event", kTH3F, {thnAxisKstar, thnAxisPt, thnAxisInvMass});
-    histos.add("h2SameEventInvariantMassRot_mass", "Rotational Invariant mass of f1 same event", kTH3F, {thnAxisKstar, thnAxisPt, thnAxisInvMass});
+    histos.add("h2SameEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 same event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
+    histos.add("h2SameEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 same event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
+    histos.add("h2SameEventInvariantMassRot_mass", "Rotational Invariant mass of f1 same event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
 
-    histos.add("h2MixEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 mix event", kTH3F, {thnAxisKstar, thnAxisPt, thnAxisInvMass});
-    histos.add("h2MixEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 mix event", kTH3F, {thnAxisKstar, thnAxisPt, thnAxisInvMass});
-    histos.add("h2MixEventInvariantMassRot_mass", "Rotational Sign Invariant mass of f1 mix event", kTH3F, {thnAxisKstar, thnAxisPt, thnAxisInvMass});
+    histos.add("h2MixEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 mix event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
+    histos.add("h2MixEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 mix event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
+    histos.add("h2MixEventInvariantMassRot_mass", "Rotational Sign Invariant mass of f1 mix event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
 
     if (fillSparse) {
-      histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
-      histos.add("SEMassLike", "SEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
-      histos.add("SEMassRot", "SEMassRot", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
+      histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma, thnAxisCharge});
+      histos.add("SEMassLike", "SEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma, thnAxisCharge});
+      histos.add("SEMassRot", "SEMassRot", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma, thnAxisCharge});
 
-      histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
-      histos.add("MEMassLike", "MEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
-      histos.add("MEMassRot", "MEMassRot", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma});
+      histos.add("MEMassUnlike", "MEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma, thnAxisCharge});
+      histos.add("MEMassLike", "MEMassLike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma, thnAxisCharge});
+      histos.add("MEMassRot", "MEMassRot", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma, thnAxisCharge});
     }
+
+    ccdb->setURL(cfgCcdbParam.cfgURL);
+    ccdbApi.init("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+  }
+
+  int getMagneticField(uint64_t timestamp)
+  {
+    // Get the magnetic field
+    static o2::parameters::GRPMagField* grpo = nullptr;
+    if (grpo == nullptr) {
+      grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>("/GLO/Config/GRPMagField", timestamp);
+      if (grpo == nullptr) {
+        LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
+        return 0;
+      }
+      LOGF(info, "Retrieved GRP for timestamp %llu with magnetic field of %2.2f kG", timestamp, 0.1 * grpo->getNominalL3Field());
+    }
+    return 0.1 * grpo->getNominalL3Field();
+  }
+
+  /// Magnetic field to be provided in Tesla
+  static constexpr float tmpRadiiTPC[9] = {85., 105., 125., 145., 165., 185., 205., 225., 245.};
+  float PhiAtSpecificRadiiTPC(const TLorentzVector part1, const TLorentzVector part2, float charge1 = 0, int charge2 = 0, float magfield1 = 0.0, float magfield2 = 0.0)
+  {
+    float pt1 = part1.Pt();
+    float phi1 = part1.Phi();
+    float value1 = 0.0;
+    float count1 = 0.0;
+    for (size_t i = 0; i < 9; i++) {
+      auto arg1 = 0.3 * charge1 * magfield1 * tmpRadiiTPC[i] * 0.01 / (2. * pt1);
+      if (std::fabs(arg1) < 1) {
+        value1 = value1 + (phi1 - std::asin(arg1));
+        count1 = count1 + 1.0;
+      }
+    }
+    value1 = value1 / count1;
+
+    float pt2 = part2.Pt();
+    float phi2 = part2.Phi();
+    float value2 = 0.0;
+    float count2 = 0.0;
+    for (size_t i = 0; i < 9; i++) {
+      auto arg2 = 0.3 * charge2 * magfield2 * tmpRadiiTPC[i] * 0.01 / (2. * pt2);
+      if (std::fabs(arg2) < 1) {
+        value2 = value2 + (phi2 - std::asin(arg2));
+        count2 = count2 + 1.0;
+      }
+    }
+    value2 = value2 / count2;
+    return value1 - value2;
   }
 
   // get kstar
@@ -136,8 +215,21 @@ struct f1protoncorrelation {
   TLorentzVector F1, Proton, F1ProtonPair, Pion, Kaon, Kshort;
   TLorentzVector F1Rot, PionRot, KaonKshortPair, KaonKshortPairRot;
   // Process the data in same event
-  void process(aod::RedF1PEvents::iterator const& /*collision*/, aod::F1Tracks const& f1tracks, aod::ProtonTracks const& protontracks)
+
+  int currentRunNumber = -999;
+  int lastRunNumber = -999;
+
+  void process(aod::RedF1PEvents::iterator const& collision, aod::F1Tracks const& f1tracks, aod::ProtonTracks const& protontracks)
   {
+
+    // auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+    // currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
+    currentRunNumber = collision.runNumber();
+    if (currentRunNumber != lastRunNumber) {
+      bz = getMagneticField(collision.timestamp());
+    }
+    lastRunNumber = currentRunNumber;
+
     for (auto f1track : f1tracks) {
       if (f1track.f1MassKaonKshort() > maxKKS0Mass) {
         continue;
@@ -207,16 +299,24 @@ struct f1protoncorrelation {
           histos.fill(HIST("hNsigmaProtonTPC"), protontrack.protonNsigmaTPC(), Proton.Pt());
         }
         histos.fill(HIST("h2SameEventPtCorrelation"), relative_momentum, F1.Pt(), Proton.Pt());
-        if (f1track.f1SignalStat() == 1) {
-          histos.fill(HIST("h2SameEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+        if (f1track.f1SignalStat() > 0) {
+          int f1Charge = f1track.f1SignalStat();
+          if (f1Charge == 2) {
+            f1Charge = -1;
+          }
+          int pionCharge = -1.0 * f1Charge;
+          float pairCharge = f1Charge * protontrack.protonCharge();
+          histos.fill(HIST("hPhaseSpaceProtonKaonSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, protontrack.protonCharge(), f1Charge, bz, bz));   // Phase Space Proton kaon
+          histos.fill(HIST("hPhaseSpaceProtonPionSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, protontrack.protonCharge(), pionCharge, bz, bz)); // Phase Space Proton Pion
+          histos.fill(HIST("h2SameEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge);                                                       // F1 sign = 1 unlike, F1 sign = -1 like
           if (fillSparse) {
-            histos.fill(HIST("SEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC);
+            histos.fill(HIST("SEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, pairCharge);
           }
         }
         if (f1track.f1SignalStat() == -1) {
-          histos.fill(HIST("h2SameEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M());
+          histos.fill(HIST("h2SameEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M(), protontrack.protonCharge());
           if (fillSparse) {
-            histos.fill(HIST("SEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC);
+            histos.fill(HIST("SEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, protontrack.protonCharge());
           }
         }
         if (fillRotation) {
@@ -230,10 +330,10 @@ struct f1protoncorrelation {
             KaonKshortPairRot.SetXYZM(rotKKPx, rotKKPy, KaonKshortPair.Pz(), KaonKshortPair.M());
             F1Rot = Pion + KaonKshortPairRot;
             auto relative_momentum_rot = getkstar(F1Rot, Proton);
-            if (f1track.f1SignalStat() == 1) {
-              histos.fill(HIST("h2SameEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M());
+            if (f1track.f1SignalStat() > 0) {
+              histos.fill(HIST("h2SameEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M(), protontrack.protonCharge());
               if (fillSparse) {
-                histos.fill(HIST("SEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC);
+                histos.fill(HIST("SEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC, protontrack.protonCharge());
               }
             }
           }
@@ -317,16 +417,16 @@ struct f1protoncorrelation {
           continue;
         }
         auto relative_momentum = getkstar(F1, Proton);
-        if (t1.f1SignalStat() == 1) {
-          histos.fill(HIST("h2MixEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+        if (t1.f1SignalStat() > 0) {
+          histos.fill(HIST("h2MixEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), 1.0); // F1 sign = 1 unlike, F1 sign = -1 like
           if (fillSparse) {
-            histos.fill(HIST("MEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC);
+            histos.fill(HIST("MEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, 1.0);
           }
         }
         if (t1.f1SignalStat() == -1) {
-          histos.fill(HIST("h2MixEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M());
+          histos.fill(HIST("h2MixEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M(), 1.0);
           if (fillSparse) {
-            histos.fill(HIST("MEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC);
+            histos.fill(HIST("MEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, 1.0);
           }
         }
         if (fillRotation) {
@@ -340,10 +440,10 @@ struct f1protoncorrelation {
             KaonKshortPairRot.SetXYZM(rotKKPx, rotKKPy, KaonKshortPair.Pz(), KaonKshortPair.M());
             F1Rot = Pion + KaonKshortPairRot;
             auto relative_momentum_rot = getkstar(F1Rot, Proton);
-            if (t1.f1SignalStat() == 1) {
-              histos.fill(HIST("h2MixEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M());
+            if (t1.f1SignalStat() > 0) {
+              histos.fill(HIST("h2MixEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M(), 1.0);
               if (fillSparse) {
-                histos.fill(HIST("MEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC);
+                histos.fill(HIST("MEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC, 1.0);
               }
             }
           }
@@ -360,6 +460,12 @@ struct f1protoncorrelation {
       if (collision1.index() == collision2.index()) {
         continue;
       }
+      currentRunNumber = collision1.runNumber();
+      if (currentRunNumber != lastRunNumber) {
+        bz = getMagneticField(collision1.timestamp());
+        bz2 = getMagneticField(collision2.timestamp());
+      }
+      lastRunNumber = currentRunNumber;
       auto groupF1 = f1tracks.sliceBy(tracksPerCollisionPresliceF1, collision1.globalIndex());
       auto groupProton = protontracks.sliceBy(tracksPerCollisionPresliceP, collision2.globalIndex());
       // auto groupF1 = f1tracks.sliceByCached(aod::f1protondaughter::redF1PEventId, collision1.globalIndex(), cache);
@@ -419,16 +525,24 @@ struct f1protoncorrelation {
           continue;
         }
         auto relative_momentum = getkstar(F1, Proton);
-        if (t1.f1SignalStat() == 1) {
-          histos.fill(HIST("h2MixEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M()); // F1 sign = 1 unlike, F1 sign = -1 like
+        if (t1.f1SignalStat() > 0) {
+          int f1Charge = t1.f1SignalStat();
+          if (f1Charge == 2) {
+            f1Charge = -1;
+          }
+          int pionCharge = -1.0 * f1Charge;
+          float pairCharge = f1Charge * t2.protonCharge();
+          histos.fill(HIST("h2MixEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge);                                               // F1 sign = 1 unlike, F1 sign = -1 like
+          histos.fill(HIST("hPhaseSpaceProtonKaonMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, t2.protonCharge(), f1Charge, bz, bz2));   // Phase Space Proton kaon
+          histos.fill(HIST("hPhaseSpaceProtonPionMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, t2.protonCharge(), pionCharge, bz, bz2)); // Phase Space Proton Pion
           if (fillSparse) {
-            histos.fill(HIST("MEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC);
+            histos.fill(HIST("MEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, pairCharge);
           }
         }
         if (t1.f1SignalStat() == -1) {
-          histos.fill(HIST("h2MixEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M());
+          histos.fill(HIST("h2MixEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M(), t2.protonCharge());
           if (fillSparse) {
-            histos.fill(HIST("MEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC);
+            histos.fill(HIST("MEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, t2.protonCharge());
           }
         }
         if (fillRotation) {
@@ -442,10 +556,10 @@ struct f1protoncorrelation {
             KaonKshortPairRot.SetXYZM(rotKKPx, rotKKPy, KaonKshortPair.Pz(), KaonKshortPair.M());
             F1Rot = Pion + KaonKshortPairRot;
             auto relative_momentum_rot = getkstar(F1Rot, Proton);
-            if (t1.f1SignalStat() == 1) {
-              histos.fill(HIST("h2MixEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M());
+            if (t1.f1SignalStat() > 0) {
+              histos.fill(HIST("h2MixEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M(), t2.protonCharge());
               if (fillSparse) {
-                histos.fill(HIST("MEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC);
+                histos.fill(HIST("MEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC, t2.protonCharge());
               }
             }
           }
