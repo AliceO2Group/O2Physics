@@ -14,12 +14,8 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Tao Fang <tao.fang@cern.ch>, Central China Normal University
 
-#include <string>
-#include <vector>
-
 #include "PWGHF/Core/HfMlResponseXic0ToXiPi.h"
 #include "PWGHF/Core/SelectorCuts.h"
-
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
@@ -45,6 +41,8 @@
 
 #include <cstdint>
 #include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -144,14 +142,14 @@ struct HfCandidateSelectorToXiPi {
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
-  
+
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<std::string>> modelPathsCCDB{"modelPathsCCDB", std::vector<std::string>{"EventFiltering/PWGHF/BDTXic0ToXipiKf"}, "Paths of models on CCDB"};
   Configurable<std::vector<std::string>> onnxFileNames{"onnxFileNames", std::vector<std::string>{"ModelHandler_onnx_Xic0ToXipiKf.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
-  
+
   o2::analysis::HfMlResponseXic0ToXiPi<float> hfMlResponse;
   std::vector<float> outputMlXic0ToXiPi = {};
   o2::ccdb::CcdbApi ccdbApi;
@@ -558,7 +556,7 @@ struct HfCandidateSelectorToXiPi {
       } else {
         registry.fill(HIST("hSelMassCharmBaryon"), 0);
       }
-      
+
       // ML selections
       if (applyMl) {
         bool isSelectedMlXic0 = false;
