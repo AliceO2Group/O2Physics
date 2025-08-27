@@ -387,7 +387,7 @@ struct Kstarqa {
   double massKa = o2::constants::physics::MassKPlus;
 
   template <typename Coll>
-  bool selectionEvent(const Coll& collision, bool fillHist = false)
+  bool selectionEvent(const Coll& collision, bool fillHist = false) // default to false
   {
     if (fillHist)
       rEventSelection.fill(HIST("hEventCut"), 0);
@@ -937,7 +937,7 @@ struct Kstarqa {
     int occupancy = collision.trackOccupancyInTimeRange();
     rEventSelection.fill(HIST("hOccupancy"), occupancy);
 
-    if (!selectionEvent(collision, true)) {
+    if (!selectionEvent(collision, true)) { // fill event cut histogram
       return;
     }
 
@@ -1148,7 +1148,7 @@ struct Kstarqa {
         // if (!c1.sel8() || !c2.sel8())
         //   continue;
 
-        if (!selectionEvent(c1, false) || !selectionEvent(c2, false)) {
+        if (!selectionEvent(c1, false) || !selectionEvent(c2, false)) { // don't fill event cut histogram
           continue;
         }
 
@@ -1214,7 +1214,7 @@ struct Kstarqa {
     auto runMixing = [&](auto& pair, auto multiplicityGetter) {
       for (const auto& [c1, tracks1, c2, tracks2] : pair) {
 
-        if (!selectionEvent(c1, false) || !selectionEvent(c2, false)) {
+        if (!selectionEvent(c1, false) || !selectionEvent(c2, false)) { // don't fill event cut histogram
           continue;
         }
 
@@ -1297,7 +1297,7 @@ struct Kstarqa {
     int occupancy = collision.trackOccupancyInTimeRange();
     rEventSelection.fill(HIST("hOccupancy"), occupancy);
 
-    if (!selectionEvent(collision, false)) {
+    if (!selectionEvent(collision, false)) { // don't fill event cut histogram
       return;
     }
 
@@ -1533,7 +1533,7 @@ struct Kstarqa {
     rEventSelection.fill(HIST("eventsCheckGen"), 2.5);
 
     for (const auto& collision : collisions) {
-      if (!selectionEvent(collision, false)) {
+      if (!selectionEvent(collision, false)) { // don't fill event cut histogram
         continue;
       }
       multiplicity = collision.centFT0M();
@@ -1657,7 +1657,7 @@ struct Kstarqa {
     for (const auto& RecCollision : recCollisions) {
       if (!RecCollision.has_mcCollision())
         continue;
-      if (!selectionEvent(RecCollision, false))
+      if (!selectionEvent(RecCollision, false)) // don't fill event cut histogram
         continue;
       // multiplicity1 = RecCollision.centFT0M();
       const auto& mcCollisionRec = RecCollision.mcCollision_as<EventMCGenerated>();
@@ -1732,7 +1732,7 @@ struct Kstarqa {
     hInvMass.fill(HIST("hAllRecCollisions"), multiplicity);
     hInvMass.fill(HIST("hAllRecCollisionsCalib"), multiplicityRec);
 
-    if (!selectionEvent(collision, false)) {
+    if (!selectionEvent(collision, false)) { // don't fill event cut histogram
       return;
     }
 
@@ -1995,7 +1995,7 @@ struct Kstarqa {
     hInvMass.fill(HIST("hAllRecCollisions"), multiplicity);
     hInvMass.fill(HIST("hAllRecCollisionsCalib"), multiplicityRec);
 
-    if (!selectionEvent(collision, false)) {
+    if (!selectionEvent(collision, false)) { // don't fill event cut histogram
       return;
     }
 
