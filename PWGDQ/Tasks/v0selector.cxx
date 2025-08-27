@@ -101,6 +101,8 @@ struct v0selector {
   Configurable<float> cutAlphaOmegaLow{"cutAlphaOmegaLow", 0., "cutAlphaOmegaLow"};
   Configurable<float> cutMassOmegaHigh{"cutMassOmegaHigh", 1.677, "cutMassOmegaHigh"};
   Configurable<float> cutMassOmegaLow{"cutMassOmegaLow", 1.667, "cutMassOmegaLow"};
+  Configurable<float> cutMassCascV0Low{"cutMassCascV0Low", 1.110, "cutMassCascV0Low"};
+  Configurable<float> cutMassCascV0High{"cutMassCascV0High", 1.120, "cutMassCascV0High"};
 
   Configurable<bool> produceV0ID{"produceV0ID", false, "Produce additional V0ID table"};
   Configurable<bool> selectCascades{"selectCascades", false, "Select cascades in addition to v0s"};
@@ -556,6 +558,7 @@ struct v0selector {
         }
 
         const float mOmega = casc.mOmega();
+        const float mV0Lambda = casc.mLambda();
         const float alpha = casc.alpha();
         const float qt = casc.qtarm();
         const float v0Alpha = casc.v0Alpha();
@@ -603,7 +606,7 @@ struct v0selector {
           if (fillhisto) {
             registry.fill(HIST("hMassOmega"), cascRadius, mOmega);
           }
-          if (cutMassOmegaLow < mOmega && mOmega < cutMassOmegaHigh && std::abs(casc.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC && std::abs(casc.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < cutNsigmaKaTPC) {
+          if (cutMassOmegaLow < mOmega && mOmega < cutMassOmegaHigh && cutMassCascV0Low < mV0Lambda && mV0Lambda < cutMassCascV0High && std::abs(casc.posTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC && std::abs(casc.negTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < cutNsigmaKaTPC) {
             pidmap[casc.bachelorId()] |= (uint8_t(1) << kOmega);
             storeCascAddID(casc.globalIndex(), kOmega);
           }
@@ -611,7 +614,7 @@ struct v0selector {
           if (fillhisto) {
             registry.fill(HIST("hMassAntiOmega"), cascRadius, mOmega);
           }
-          if (cutMassOmegaLow < mOmega && mOmega < cutMassOmegaHigh && std::abs(casc.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(casc.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC && std::abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < cutNsigmaKaTPC) {
+          if (cutMassOmegaLow < mOmega && mOmega < cutMassOmegaHigh && cutMassCascV0Low < mV0Lambda && mV0Lambda < cutMassCascV0High && std::abs(casc.posTrack_as<FullTracksExt>().tpcNSigmaPi()) < cutNsigmaPiTPC && std::abs(casc.negTrack_as<FullTracksExt>().tpcNSigmaPr()) < cutNsigmaPrTPC && std::abs(casc.bachelor_as<FullTracksExt>().tpcNSigmaKa()) < cutNsigmaKaTPC) {
             pidmap[casc.bachelorId()] |= (uint8_t(1) << kAntiOmega);
             storeCascAddID(casc.globalIndex(), kAntiOmega);
           }
