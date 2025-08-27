@@ -14,8 +14,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#ifndef PWGCF_FEMTOUFLOW_CORE_FEMTOUFLOWEVENTHISTO_H_
-#define PWGCF_FEMTOUFLOW_CORE_FEMTOUFLOWEVENTHISTO_H_
+#ifndef PWGCF_FEMTO_CORE_FEMTOUFLOWEVENTHISTO_H_
+#define PWGCF_FEMTO_CORE_FEMTOUFLOWEVENTHISTO_H_
 
 #include "PWGCF/Femto/DataModel/FemtoDerived.h"
 
@@ -67,4 +67,4 @@ class FemtoFlowEventHisto
 };
 } // namespace o2::analysis::femto_flow
 
-#endif // PWGCF_FEMTOUFLOW_CORE_FEMTOUFLOWEVENTHISTO_H_
+#endif // PWGCF_FEMTO_CORE_FEMTOUFLOWEVENTHISTO_H_

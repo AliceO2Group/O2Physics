@@ -17,8 +17,8 @@
 /// \author Anton Riedel, TU München, anton.riedel@tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWANGULARCONTAINER_H_
-#define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWANGULARCONTAINER_H_
+#ifndef PWGCF_FEMTO_CORE_FEMTOFLOWANGULARCONTAINER_H_
+#define PWGCF_FEMTO_CORE_FEMTOFLOWANGULARCONTAINER_H_
 
 #include "PWGCF/Femto/Core/FemtoFlowMath.h"
 #include "PWGCF/Femto/DataModel/FemtoDerived.h"
@@ -259,4 +259,4 @@ class FemtoFlowAngularContainer
 
 } // namespace o2::analysis::femto_flow
 
-#endif // PWGCF_FEMTOFLOW_CORE_FEMTOFLOWANGULARCONTAINER_H_
+#endif // PWGCF_FEMTO_CORE_FEMTOFLOWANGULARCONTAINER_H_

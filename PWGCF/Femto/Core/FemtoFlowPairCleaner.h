@@ -16,8 +16,8 @@
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira@cern.ch
 
-#ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWPAIRCLEANER_H_
-#define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWPAIRCLEANER_H_
+#ifndef PWGCF_FEMTO_CORE_FEMTOFLOWPAIRCLEANER_H_
+#define PWGCF_FEMTO_CORE_FEMTOFLOWPAIRCLEANER_H_
 
 #include "PWGCF/Femto/DataModel/FemtoDerived.h"
 
@@ -193,4 +193,4 @@ class FemtoFlowPairCleaner
 };
 } // namespace o2::analysis::femto_flow
 
-#endif // PWGCF_FEMTOFLOW_CORE_FEMTOFLOWPAIRCLEANER_H_
+#endif // PWGCF_FEMTO_CORE_FEMTOFLOWPAIRCLEANER_H_

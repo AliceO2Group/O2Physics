@@ -16,8 +16,8 @@
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@cern.ch
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira@cern.ch
 
-#ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWDETADPHISTAR_H_
-#define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWDETADPHISTAR_H_
+#ifndef PWGCF_FEMTO_CORE_FEMTOFLOWDETADPHISTAR_H_
+#define PWGCF_FEMTO_CORE_FEMTOFLOWDETADPHISTAR_H_
 
 #include "PWGCF/Femto/Core/FemtoFlowAngularContainer.h"
 #include "PWGCF/Femto/Core/FemtoFlowFemtoContainer.h"
@@ -515,4 +515,4 @@ class FemtoFlowDetaDphiStar
 } /* namespace femto_flow */
 } /* namespace o2::analysis */
 
-#endif // PWGCF_FEMTOFLOW_CORE_FEMTOFLOWDETADPHISTAR_H_
+#endif // PWGCF_FEMTO_CORE_FEMTOFLOWDETADPHISTAR_H_

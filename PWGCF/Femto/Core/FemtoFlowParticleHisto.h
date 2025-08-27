@@ -17,8 +17,8 @@
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Shirajum Monira, WUT Warsaw, shirajum.monira.dokt@pw.edu.pl
 
-#ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWPARTICLEHISTO_H_
-#define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWPARTICLEHISTO_H_
+#ifndef PWGCF_FEMTO_CORE_FEMTOFLOWPARTICLEHISTO_H_
+#define PWGCF_FEMTO_CORE_FEMTOFLOWPARTICLEHISTO_H_
 
 #include "PWGCF/Femto/DataModel/FemtoDerived.h"
 
@@ -555,4 +555,4 @@ class FemtoFlowParticleHisto
 };
 } // namespace o2::analysis::femto_flow
 
-#endif // PWGCF_FEMTOFLOW_CORE_FEMTOFLOWPARTICLEHISTO_H_
+#endif // PWGCF_FEMTO_CORE_FEMTOFLOWPARTICLEHISTO_H_

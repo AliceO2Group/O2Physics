@@ -14,8 +14,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWSELECTION_H_
-#define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWSELECTION_H_
+#ifndef PWGCF_FEMTO_CORE_FEMTOFLOWSELECTION_H_
+#define PWGCF_FEMTO_CORE_FEMTOFLOWSELECTION_H_
 
 #include <cmath>
 
@@ -130,4 +130,4 @@ class FemtoFlowSelection
 
 } // namespace o2::analysis::femto_flow
 
-#endif // PWGCF_FEMTOFLOW_CORE_FEMTOFLOWSELECTION_H_
+#endif // PWGCF_FEMTO_CORE_FEMTOFLOWSELECTION_H_

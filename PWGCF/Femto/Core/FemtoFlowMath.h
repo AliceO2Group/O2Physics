@@ -16,8 +16,8 @@
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 /// \author Pritam Chakraborty, WUT Warsaw, pritam.chakraborty@pw.edu.pl
 
-#ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWMATH_H_
-#define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWMATH_H_
+#ifndef PWGCF_FEMTO_CORE_FEMTOFLOWMATH_H_
+#define PWGCF_FEMTO_CORE_FEMTOFLOWMATH_H_
 
 #include "Math/Boost.h"
 #include "Math/Vector4D.h"
@@ -254,4 +254,4 @@ class FemtoFlowMath
 
 } // namespace o2::analysis::femto_flow
 
-#endif // PWGCF_FEMTOFLOW_CORE_FEMTOFLOWMATH_H_
+#endif // PWGCF_FEMTO_CORE_FEMTOFLOWMATH_H_

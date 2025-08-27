@@ -14,8 +14,8 @@
 /// \author Andi Mathis, TU München, andreas.mathis@ph.tum.de
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWOBJECTSELECTION_H_
-#define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWOBJECTSELECTION_H_
+#ifndef PWGCF_FEMTO_CORE_FEMTOFLOWOBJECTSELECTION_H_
+#define PWGCF_FEMTO_CORE_FEMTOFLOWOBJECTSELECTION_H_
 
 #include "PWGCF/Femto/Core/FemtoFlowSelection.h"
 #include "PWGCF/Femto/DataModel/FemtoDerived.h"
@@ -188,7 +188,8 @@ class FemtoFlowObjectSelection
     std::vector<selVariable> selVarVec;
     for (auto& it : mSelections) {
       auto selVar = it.getSelectionVariable();
-      if (std::none_of(selVarVec.begin(), selVarVec.end(), [selVar](selVariable a) { return a == selVar; })) {
+      if (std::none_of(selVarVec.begin(), selVarVec.end(), [selVar](selVariable a) 
+        { return a == selVar; })) {
         selVarVec.push_back(selVar);
       }
     }
@@ -203,4 +204,4 @@ class FemtoFlowObjectSelection
 } // namespace femto_flow
 } // namespace o2::analysis
 
-#endif // PWGCF_FEMTOFLOW_CORE_FEMTOFLOWOBJECTSELECTION_H_
+#endif // PWGCF_FEMTO_CORE_FEMTOFLOWOBJECTSELECTION_H_

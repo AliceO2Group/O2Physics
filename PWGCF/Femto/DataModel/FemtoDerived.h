@@ -13,8 +13,8 @@
 /// \brief Declaration of FemtoFlow tables
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#ifndef PWGCF_FEMTOFLOW_DATAMODEL_FEMTODERIVED_H_
-#define PWGCF_FEMTOFLOW_DATAMODEL_FEMTODERIVED_H_
+#ifndef PWGCF_FEMTO_DATAMODEL_FEMTODERIVED_H_
+#define PWGCF_FEMTO_DATAMODEL_FEMTODERIVED_H_
 
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
@@ -321,4 +321,4 @@ using MixingHash = MixingHashes::iterator;
 
 } // namespace o2::aod
 
-#endif // PWGCF_FEMTOFLOW_DATAMODEL_FEMTODERIVED_H_
+#endif // PWGCF_FEMTO_DATAMODEL_FEMTODERIVED_H_

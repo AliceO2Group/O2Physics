@@ -14,8 +14,8 @@
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#ifndef PWGCF_FEMTOFLOW_CORE_FEMTOUTILS_H_
-#define PWGCF_FEMTOFLOW_CORE_FEMTOUTILS_H_
+#ifndef PWGCF_FEMTO_CORE_FEMTOUTILS_H_
+#define PWGCF_FEMTO_CORE_FEMTOUTILS_H_
 
 #include "PWGCF/Femto/DataModel/FemtoDerived.h"
 
@@ -130,4 +130,4 @@ int checkDaughterType(o2::aod::femtoflowparticle::ParticleType partType, int mot
 };
 
 } // namespace o2::analysis::femto_flow
-#endif // PWGCF_FEMTOFLOW_CORE_FEMTOUTILS_H_
+#endif // PWGCF_FEMTO_CORE_FEMTOUTILS_H_

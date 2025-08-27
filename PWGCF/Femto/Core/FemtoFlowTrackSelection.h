@@ -15,8 +15,8 @@
 /// \author Luca Barioglio, TU München, luca.barioglio@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw & CTU Prague, zchochul@cern.ch
 
-#ifndef PWGCF_FEMTOFLOW_CORE_FEMTOFLOWTRACKSELECTION_H_
-#define PWGCF_FEMTOFLOW_CORE_FEMTOFLOWTRACKSELECTION_H_
+#ifndef PWGCF_FEMTO_CORE_FEMTOFLOWTRACKSELECTION_H_
+#define PWGCF_FEMTO_CORE_FEMTOFLOWTRACKSELECTION_H_
 
 #include "PWGCF/Femto/Core/FemtoFlowObjectSelection.h"
 #include "PWGCF/Femto/DataModel/FemtoDerived.h"
@@ -607,4 +607,4 @@ void FemtoFlowTrackSelection::fillQA(T const& track)
 
 } // namespace o2::analysis::femto_flow
 
-#endif // PWGCF_FEMTOFLOW_CORE_FEMTOFLOWTRACKSELECTION_H_
+#endif // PWGCF_FEMTO_CORE_FEMTOFLOWTRACKSELECTION_H_
