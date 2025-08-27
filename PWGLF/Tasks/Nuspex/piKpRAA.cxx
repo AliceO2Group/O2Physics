@@ -10,6 +10,10 @@
 // or submit itself to any jurisdiction.
 
 /// \file piKpRAA.cxx
+///
+/// \brief task for analysis of piKp RAA
+/// \author Omar Vazquez (omar.vazquez.rueda@cern.ch)
+/// \since August 10, 2025
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
@@ -49,7 +53,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
-#include <iostream>
 #include <numeric>
 #include <string>
 #include <string_view>
@@ -68,18 +71,19 @@ using BCsRun3 = soa::Join<aod::BCsWithTimestamps, aod::BcSels, aod::Run3MatchedT
 
 using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TrackSelectionExtension, aod::TracksDCA, aod::TrackSelection, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCEl, aod::pidTOFFlags, aod::pidTOFbeta, aod::TOFSignal, aod::pidTOFFullPi, aod::pidTOFFullEl, aod::pidTOFFullMu>;
 
-static constexpr int knEtaHists{9};
+static constexpr int kNEtaHists{9};
 
-std::array<std::shared_ptr<TH2>, knEtaHists> dEdxPiV0{};
-std::array<std::shared_ptr<TH2>, knEtaHists> dEdxPrV0{};
-std::array<std::shared_ptr<TH2>, knEtaHists> dEdxElV0{};
-std::array<std::shared_ptr<TH2>, knEtaHists> dEdxPiTOF{};
-std::array<std::shared_ptr<TH2>, knEtaHists> dEdxElTOF{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxPiV0{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxPrV0{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxElV0{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxPiTOF{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxElTOF{};
 
 struct piKpRAA {
 
   static constexpr float kZero{0.0f};
   static constexpr float kOne{1.0f};
+  static constexpr float kTenToMinusNine{1e-9};
   static constexpr float kMinCharge{3.f};
   static constexpr float kMinPMIP{0.4f};
   static constexpr float kMaxPMIP{0.6f};
@@ -88,8 +92,8 @@ struct piKpRAA {
   static constexpr float kMindEdxMIPPlateau{65.0f};
   static constexpr float kMaxdEdxMIPPlateau{95.0f};
 
-  static constexpr float lowEta[knEtaHists] = {-0.8, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6};
-  static constexpr float highEta[knEtaHists] = {0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
+  static constexpr float kLowEta[kNEtaHists] = {-0.8, -0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6};
+  static constexpr float kHighEta[kNEtaHists] = {0.8, -0.6, -0.4, -0.2, 0.0, 0.2, 0.4, 0.6, 0.8};
 
   static constexpr float DefaultLifetimeCuts[1][2] = {{30., 20.}};
   Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {DefaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
@@ -231,8 +235,8 @@ struct piKpRAA {
     const AxisSpec axisPtPhiCut{binsPtPhiCut, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPtV0s{binsPtV0s, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisCent{binsCent, "T0C centrality"};
-    const char* endingEta[knEtaHists] = {"88", "86", "64", "42", "20", "02", "24", "46", "68"};
-    const char* latexEta[knEtaHists] = {"|#eta|<0.8", "-0.8<#eta<-0.6", "-0.6<#eta<-0.4", "-0.4<#eta<-0.2", "-0.2<#eta<0", "0<#eta<0.2", "0.2<#eta<0.4", "0.4<#eta<0.6", "0.6<#eta<0.8"};
+    const char* endingEta[kNEtaHists] = {"88", "86", "64", "42", "20", "02", "24", "46", "68"};
+    const char* latexEta[kNEtaHists] = {"|#eta|<0.8", "-0.8<#eta<-0.6", "-0.6<#eta<-0.4", "-0.4<#eta<-0.2", "-0.2<#eta<0", "0<#eta<0.2", "0.2<#eta<0.4", "0.4<#eta<0.6", "0.6<#eta<0.8"};
 
     registry.add("EventCounter", ";;Events", kTH1F, {axisEvent});
 
@@ -314,7 +318,7 @@ struct piKpRAA {
       registry.add("dEdxVsEtaElMIPV0", "e^{+} + e^{-} (0.4 < #it{p} < 0.6 GeV/#it{c});#eta; dE/dx", kTH2F, {{{axisEta}, {100, 0, 100}}});
       registry.add("dEdxVsEtaElMIPV0p", "e^{+} + e^{-} (0.4 < #it{p} < 0.6 GeV/#it{c});#eta; #LTdE/dx#GT", kTProfile, {axisEta});
 
-      for (int i = 0; i < knEtaHists; ++i) {
+      for (int i = 0; i < kNEtaHists; ++i) {
         dEdxPiV0[i] = registry.add<TH2>(Form("dEdxPiV0_%s", endingEta[i]), Form("#pi^{+} + #pi^{-}, %s;Momentum (GeV/#it{c}); dE/dx", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
         dEdxPrV0[i] = registry.add<TH2>(Form("dEdxPrV0_%s", endingEta[i]), Form("p + #bar{p}, %s;Momentum (GeV/#it{c}); dE/dx", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
         dEdxElV0[i] = registry.add<TH2>(Form("dEdxElV0_%s", endingEta[i]), Form("e^{+} + e^{-}, %s;Momentum (GeV/#it{c}); dE/dx", latexEta[i]), kTH2F, {axisPtV0s, axisdEdx});
@@ -392,7 +396,7 @@ struct piKpRAA {
       const int charge{track.sign()};
 
       float phiPrime{phi};
-      PhiPrime(phiPrime, magField, charge);
+      phiPrimeFunc(phiPrime, magField, charge);
       registry.fill(HIST("NclFoundVsPVsPhipBeforeCut"), momentum, phiPrime, track.tpcNClsFound());
       registry.fill(HIST("NclFoundVsPtVsPhipBeforeCut"), pt, phiPrime, track.tpcNClsFound());
 
@@ -425,8 +429,8 @@ struct piKpRAA {
       registry.fill(HIST("dEdxVsMomentum"), momentum, dedx);
 
       int indexEta{0};
-      for (int i = 1; i < knEtaHists; ++i) {
-        if (eta >= lowEta[i] && eta < highEta[i]) {
+      for (int i = 1; i < kNEtaHists; ++i) {
+        if (eta >= kLowEta[i] && eta < kHighEta[i]) {
           indexEta = i;
           break;
         }
@@ -483,8 +487,8 @@ struct piKpRAA {
       float negTrkdEdx{negTrack.tpcSignal()};
       float posTrackPhiPrime{posTrack.phi()};
       float negTrackPhiPrime{negTrack.phi()};
-      PhiPrime(posTrackPhiPrime, magField, posTrackCharge);
-      PhiPrime(negTrackPhiPrime, magField, negTrackCharge);
+      phiPrimeFunc(posTrackPhiPrime, magField, posTrackCharge);
+      phiPrimeFunc(negTrackPhiPrime, magField, negTrackCharge);
 
       // Skip v0s with like-sig daughters
       if (posTrack.sign() == negTrack.sign())
@@ -521,7 +525,7 @@ struct piKpRAA {
       const TVector3 pneg(negTrack.px(), negTrack.py(), negTrack.pz());
       double alpha, qT;
 
-      GetArmeterosVariables(ppos, pneg, alpha, qT);
+      getArmeterosVariables(ppos, pneg, alpha, qT);
       registry.fill(HIST("ArmAll"), alpha, qT);
 
       // Passes V0 topological cuts?
@@ -546,15 +550,15 @@ struct piKpRAA {
 
       int posIndexEta{0};
       int negIndexEta{0};
-      for (int i = 1; i < knEtaHists; ++i) {
-        if (posTrkEta >= lowEta[i] && posTrkEta < highEta[i]) {
+      for (int i = 1; i < kNEtaHists; ++i) {
+        if (posTrkEta >= kLowEta[i] && posTrkEta < kHighEta[i]) {
           posIndexEta = i;
           break;
         }
       }
 
-      for (int i = 1; i < knEtaHists; ++i) {
-        if (negTrkEta >= lowEta[i] && negTrkEta < highEta[i]) {
+      for (int i = 1; i < kNEtaHists; ++i) {
+        if (negTrkEta >= kLowEta[i] && negTrkEta < kHighEta[i]) {
           negIndexEta = i;
           break;
         }
@@ -685,13 +689,13 @@ struct piKpRAA {
   PROCESS_SWITCH(piKpRAA, processCalibrationAndV0s, "Process QA", true);
 
   template <typename T, typename U>
-  void GetArmeterosVariables(const T& ppos, const T& pneg, U& alpha, U& qT)
+  void getArmeterosVariables(const T& ppos, const T& pneg, U& alpha, U& qT)
   {
 
     alpha = 0., qT = 0.;
     TVector3 pV0 = ppos + pneg;
     double pV0mag = pV0.Mag();
-    if (pV0mag < 1e-9)
+    if (pV0mag < kTenToMinusNine)
       return; // protect against zero momentum
 
     const TVector3 u = pV0 * (1.0 / pV0mag);
@@ -705,7 +709,7 @@ struct piKpRAA {
 
     // α: longitudinal asymmetry (uses + and − labels by charge)
     double denom = pLpos + pLneg;
-    if (std::abs(denom) < 1e-9)
+    if (std::abs(denom) < kTenToMinusNine)
       return; // avoid 0 division (unphysical for V0s)
 
     alpha = (pLpos - pLneg) / denom; // equivalently / pV0mag
@@ -863,7 +867,7 @@ struct piKpRAA {
     return grpo->getNominalL3Field();
   }
 
-  void PhiPrime(float& phi, const int& magField, const int& charge)
+  void phiPrimeFunc(float& phi, const int& magField, const int& charge)
   {
 
     if (magField < 0) // for negatve polarity field
