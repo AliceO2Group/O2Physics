@@ -21,7 +21,6 @@
 
 #include "Math/Boost.h"
 #include "Math/Vector4D.h"
-#include "TLorentzVector.h"
 #include "TMath.h"
 
 #include <algorithm>

@@ -27,11 +27,9 @@
 #include <string>
 #include <vector>
 
-using namespace o2;
-using namespace o2::framework;
-
 namespace o2::analysis
 {
+
 namespace femto_flow
 {
 
@@ -52,6 +50,8 @@ class FemtoFlowObjectSelection
   template <o2::aod::femtoflowparticle::ParticleType part>
   void fillSelectionHistogram()
   {
+    using namespace o2::framework;
+
     int nBins = mSelections.size();
     LOGF(info, "%s", (static_cast<std::string>(o2::aod::femtoflowparticle::ParticleTypeName[part]) + "/cuthist").c_str());
     mHistogramRegistry->add((static_cast<std::string>(o2::aod::femtoflowparticle::ParticleTypeName[part]) + "/cuthist").c_str(), "; Cut; Value", kTH1F, {{nBins, 0, static_cast<double>(nBins)}});
@@ -70,9 +70,11 @@ class FemtoFlowObjectSelection
   template <typename T>
   void setSelection(T& selVals, selVariable selVar, femto_flow_selection::SelectionType selType)
   {
+    using namespace o2::framework;
+
     std::vector<selValDataType> tmpSelVals = selVals; // necessary due to some features of the Configurable
     std::vector<FemtoFlowSelection<selValDataType, selVariable>> tempVec;
-    for (const selValDataType selVal : tmpSelVals) {
+    for (const selValDataType& selVal : tmpSelVals) {
       tempVec.push_back(FemtoFlowSelection<selValDataType, selVariable>(selVal, selVar, selType));
     }
     setSelection(tempVec);
@@ -82,6 +84,8 @@ class FemtoFlowObjectSelection
   /// \param sels std::vector containing FemtoFlowSelections
   void setSelection(std::vector<FemtoFlowSelection<selValDataType, selVariable>>& sels)
   {
+    using namespace o2::framework;
+
     /// First the selection is sorted so that the most open cuts are conducted first
     switch (sels.at(0).getSelectionType()) {
       case (femto_flow_selection::SelectionType::kUpperLimit):
@@ -100,7 +104,7 @@ class FemtoFlowObjectSelection
     }
 
     /// Then, the sorted selections are added to the overall container of cuts
-    for (auto& sel : sels) {
+    for (const auto& sel : sels) {
       mSelections.push_back(sel);
     }
   }
@@ -111,6 +115,8 @@ class FemtoFlowObjectSelection
   /// \return The most open selection of the selection variable given to the class
   selValDataType getMinimalSelection(selVariable selVar, femto_flow_selection::SelectionType selType)
   {
+    using namespace o2::framework;
+
     selValDataType minimalSel{};
     switch (selType) {
       case (femto_flow_selection::SelectionType::kUpperLimit):
@@ -124,7 +130,7 @@ class FemtoFlowObjectSelection
         break;
     }
 
-    for (auto sel : mSelections) {
+    for (auto& sel : mSelections) {
       if (sel.getSelectionVariable() == selVar) {
         switch (sel.getSelectionType()) {
           case (femto_flow_selection::SelectionType::kUpperLimit):
@@ -167,7 +173,7 @@ class FemtoFlowObjectSelection
   std::vector<FemtoFlowSelection<selValDataType, selVariable>> getSelections(selVariable selVar)
   {
     std::vector<FemtoFlowSelection<selValDataType, selVariable>> selValVec;
-    for (auto it : mSelections) {
+    for (auto& it : mSelections) {
       if (it.getSelectionVariable() == selVar) {
         selValVec.push_back(it);
       }
@@ -180,7 +186,7 @@ class FemtoFlowObjectSelection
   std::vector<selVariable> getSelectionVariables()
   {
     std::vector<selVariable> selVarVec;
-    for (auto it : mSelections) {
+    for (auto& it : mSelections) {
       auto selVar = it.getSelectionVariable();
       if (std::none_of(selVarVec.begin(), selVarVec.end(), [selVar](selVariable a) { return a == selVar; })) {
         selVarVec.push_back(selVar);
@@ -190,7 +196,7 @@ class FemtoFlowObjectSelection
   }
 
  protected:
-  HistogramRegistry* mHistogramRegistry;                                    ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry;                                    ///< For QA output
   std::vector<FemtoFlowSelection<selValDataType, selVariable>> mSelections; ///< Vector containing all selections
 };
 

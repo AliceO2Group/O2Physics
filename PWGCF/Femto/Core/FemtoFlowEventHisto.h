@@ -21,9 +21,9 @@
 
 #include "Framework/HistogramRegistry.h"
 
-using namespace o2::framework;
 namespace o2::analysis::femto_flow
 {
+
 /// \class FemtoFlowEventHisto
 /// \brief Class for histogramming event properties
 class FemtoFlowEventHisto
@@ -33,8 +33,10 @@ class FemtoFlowEventHisto
   virtual ~FemtoFlowEventHisto() = default;
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
-  void init(HistogramRegistry* registry)
+  void init(o2::framework::HistogramRegistry* registry)
   {
+    using namespace o2::framework;
+
     mHistogramRegistry = registry;
     mHistogramRegistry->add("Event/zvtxhist", "; vtx_{z} (cm); Entries", kTH1F, {{250, -12.5, 12.5}});
     mHistogramRegistry->add("Event/MultV0M", "; vMultV0M; Entries", kTH1F, {{2000, 0, 20000}});
@@ -49,6 +51,8 @@ class FemtoFlowEventHisto
   template <typename T>
   void fillQA(T const& col)
   {
+    using namespace o2::framework;
+
     if (mHistogramRegistry) {
       mHistogramRegistry->fill(HIST("Event/zvtxhist"), col.posZ());
       mHistogramRegistry->fill(HIST("Event/MultV0M"), col.multV0M());
@@ -59,7 +63,7 @@ class FemtoFlowEventHisto
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry; ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry; ///< For QA output
 };
 } // namespace o2::analysis::femto_flow
 

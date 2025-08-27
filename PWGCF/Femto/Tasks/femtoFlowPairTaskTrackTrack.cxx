@@ -56,6 +56,9 @@ static const float cutsTable[NPart][NCuts]{
 } // namespace
 
 struct FemtoFlowPairTaskTrackTrack {
+
+  Service<o2::framework::O2DatabasePDG> pdg;
+
   SliceCache cache;
   Preslice<aod::FDParticles> perCol = aod::femtoflowparticle::fdCollisionId;
 
@@ -176,10 +179,10 @@ struct FemtoFlowPairTaskTrackTrack {
     sameEventAngularCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
     mixedEventAngularCont.init(&resultRegistry, confkstarBins, confMultBins, confkTBins, confmTBins, confMultBins3D, confmTBins3D, confEtaBins, confPhiBins, confIsMC, confUse3D);
 
-    sameEventFemtoCont.setPDGCodes(confPDGCodePartOne, confPDGCodePartTwo);
-    mixedEventFemtoCont.setPDGCodes(confPDGCodePartOne, confPDGCodePartTwo);
-    sameEventAngularCont.setPDGCodes(confPDGCodePartOne, confPDGCodePartTwo);
-    mixedEventAngularCont.setPDGCodes(confPDGCodePartOne, confPDGCodePartTwo);
+    sameEventFemtoCont.setPDGCodesMass(confPDGCodePartOne, confPDGCodePartTwo, pdg->Mass(confPDGCodePartOne), pdg->Mass(confPDGCodePartTwo));
+    mixedEventFemtoCont.setPDGCodesMass(confPDGCodePartOne, confPDGCodePartTwo, pdg->Mass(confPDGCodePartOne), pdg->Mass(confPDGCodePartTwo));
+    sameEventAngularCont.setPDGCodesMass(confPDGCodePartOne, confPDGCodePartTwo, pdg->Mass(confPDGCodePartOne), pdg->Mass(confPDGCodePartTwo));
+    mixedEventAngularCont.setPDGCodesMass(confPDGCodePartOne, confPDGCodePartTwo, pdg->Mass(confPDGCodePartOne), pdg->Mass(confPDGCodePartTwo));
 
     pairCleaner.init(&qaRegistry);
     if (confIsCPR.value) {

@@ -98,6 +98,7 @@ static const float triggerSwitches[1][nTriggers]{
 // sizeof(arrayV0Sel[0][0]);
 
 struct FemtoFlowProducerTask {
+
   Produces<aod::FDCollisions> outputCollision;
   Produces<aod::FDParticles> outputParts;
   Produces<aod::FDExtParticles> outputDebugParts;

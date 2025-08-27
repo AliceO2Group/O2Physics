@@ -32,10 +32,9 @@
 #include <string>
 #include <vector>
 
-// using namespace o2::framework;
-
 namespace o2::analysis::femto_flow
 {
+
 namespace femto_flow_track_selection
 {
 /// The different selections this task is capable of doing
@@ -103,7 +102,7 @@ class FemtoFlowTrackSelection : public FemtoFlowObjectSelection<float, femto_flo
   /// \tparam cutContainerType Data type of the bit-wise container for the selections
   /// \param registry HistogramRegistry for QA output
   template <o2::aod::femtoflowparticle::ParticleType part, o2::aod::femtoflowparticle::TrackType tracktype, typename cutContainerType>
-  void init(HistogramRegistry* registry);
+  void init(o2::framework::HistogramRegistry* registry);
 
   /// Passes the species to the task for which PID needs to be stored
   /// \tparam T Data type of the configurable passed to the functions
@@ -299,8 +298,9 @@ class FemtoFlowTrackSelection : public FemtoFlowObjectSelection<float, femto_flo
 }; // namespace femto_flow
 
 template <o2::aod::femtoflowparticle::ParticleType part, o2::aod::femtoflowparticle::TrackType tracktype, typename cutContainerType>
-void FemtoFlowTrackSelection::init(HistogramRegistry* registry)
+void FemtoFlowTrackSelection::init(o2::framework::HistogramRegistry* registry)
 {
+  using namespace o2::framework;
   if (registry) {
     mHistogramRegistry = registry;
     std::string folderName = static_cast<std::string>(o2::aod::femtoflowparticle::ParticleTypeName[part]) + "/" + static_cast<std::string>(o2::aod::femtoflowparticle::TrackTypeName[tracktype]);
@@ -411,7 +411,7 @@ bool FemtoFlowTrackSelection::isSelectedMinimal(T const& track)
   const auto dca = track.dcaXY(); // Accordingly to FemtoUniverse in AliPhysics  as well as LF analysis,
                                   // only dcaXY should be checked; NOT std::sqrt(pow(dcaXY, 2.) + pow(dcaZ, 2.))
   std::vector<float> pidTPC, pidTOF;
-  for (const auto it : kPIDspecies) {
+  for (const auto& it : kPIDspecies) {
     pidTPC.push_back(getNsigmaTPC(track, it));
     pidTOF.push_back(getNsigmaTOF(track, it));
   }
@@ -495,7 +495,7 @@ std::array<cutContainerType, 2> FemtoFlowTrackSelection::getCutContainer(T const
   const auto dca = std::sqrt(std::pow(dcaXY, 2.) + std::pow(dcaZ, 2.));
 
   std::vector<float> pidTPC, pidTOF;
-  for (auto it : kPIDspecies) {
+  for (const auto& it : kPIDspecies) {
     pidTPC.push_back(getNsigmaTPC(track, it));
     pidTOF.push_back(getNsigmaTOF(track, it));
   }

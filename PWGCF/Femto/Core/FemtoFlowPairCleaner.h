@@ -39,7 +39,7 @@ class FemtoFlowPairCleaner
 
   /// Initialization of the QA histograms
   /// \param registry HistogramRegistry
-  void init(HistogramRegistry* registry)
+  void init(o2::framework::HistogramRegistry* registry)
   {
     if (registry) {
       mHistogramRegistry = registry;
@@ -57,6 +57,8 @@ class FemtoFlowPairCleaner
   template <typename Part, typename Parts>
   bool isCleanPair(Part const& part1, Part const& part2, Parts const& particles)
   {
+    using namespace o2::framework;
+
     if constexpr (kPartOneType == o2::aod::femtoflowparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtoflowparticle::ParticleType::kTrack) {
       /// Track-Track combination
       if (part1.partType() != o2::aod::femtoflowparticle::ParticleType::kTrack || part2.partType() != o2::aod::femtoflowparticle::ParticleType::kTrack) {
@@ -185,7 +187,7 @@ class FemtoFlowPairCleaner
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry;                                            ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry;                                            ///< For QA output
   static constexpr o2::aod::femtoflowparticle::ParticleType kPartOneType = partOne; ///< Type of particle 1
   static constexpr o2::aod::femtoflowparticle::ParticleType kPartTwoType = partTwo; ///< Type of particle 2
 };
