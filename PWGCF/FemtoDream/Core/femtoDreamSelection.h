@@ -16,11 +16,9 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMSELECTION_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMSELECTION_H_
 
-#include "PWGCF/DataModel/FemtoDerived.h"
-
-#include "Framework/HistogramRegistry.h"
-
 #include <cmath>
+#include "Framework/HistogramRegistry.h"
+#include "PWGCF/DataModel/FemtoDerived.h"
 
 using namespace o2;
 using namespace o2::framework;
