@@ -60,8 +60,8 @@
 #include <algorithm>
 #include <experimental/type_traits>
 #include <set>
-#include <vector>
 #include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis::femto_flow;
