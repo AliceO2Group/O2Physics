@@ -79,7 +79,7 @@ std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxElV0{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxPiTOF{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> dEdxElTOF{};
 
-struct piKpRAA {
+struct PiKpRAA {
 
   static constexpr float kZero{0.0f};
   static constexpr float kOne{1.0f};
@@ -686,7 +686,7 @@ struct piKpRAA {
       }
     }
   }
-  PROCESS_SWITCH(piKpRAA, processCalibrationAndV0s, "Process QA", true);
+  PROCESS_SWITCH(PiKpRAA, processCalibrationAndV0s, "Process QA", true);
 
   template <typename T, typename U>
   void getArmeterosVariables(const T& ppos, const T& pneg, U& alpha, U& qT)
@@ -1038,5 +1038,5 @@ struct piKpRAA {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<piKpRAA>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<PiKpRAA>(cfgc)};
 }
