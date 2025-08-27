@@ -3788,6 +3788,9 @@ struct AnalysisDileptonTrack {
           VarManager::FillDileptonHadron(dilepton, track, fValuesHadron);
           VarManager::FillDileptonTrackVertexing<TCandidateType, TEventFillMap, TTrackFillMap>(event, lepton1, lepton2, track, fValuesHadron);
 
+          if (!track.has_reducedMCTrack()) {
+            continue;
+          }
           auto trackMC = track.reducedMCTrack();
           mcDecision = 0;
           isig = 0;
