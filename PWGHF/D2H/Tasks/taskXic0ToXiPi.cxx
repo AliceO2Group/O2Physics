@@ -166,14 +166,14 @@ struct HfTaskXic0ToXiPi {
       if (candidate.resultSelections() != true) {
         continue;
       }
-      if (yCandRecMax >= 0. && std::abs(candidate.kfRapXic()) > yCandRecMax) {
+      if (yCandRecMax >= 0. && std::abs(candidate.etaCharmBaryon()) > yCandRecMax) {
         continue;
       }
 
       if constexpr (applyMl) {
-        registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsXic0Type"), candidate.mlProbToXiPi()[0], candidate.invMassCharmBaryon(), candidate.ptXic(), candidate.kfRapXic());
+        registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsXic0Type"), candidate.mlProbToXiPi()[0], candidate.invMassCharmBaryon(), candidate.ptXic(), candidate.etaCharmBaryon());
       } else {
-        registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsXic0Type"), candidate.invMassCharmBaryon(), candidate.ptXic(), candidate.kfRapXic());
+        registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsXic0Type"), candidate.invMassCharmBaryon(), candidate.ptXic(), candidate.etaCharmBaryon());
       }
     }
   }
@@ -194,7 +194,7 @@ struct HfTaskXic0ToXiPi {
       centrality = o2::hf_centrality::getCentralityColl(collision);
     }
     double ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
-    double kfptPiFromXic = RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
+    double ptPiFromXic = RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
     if constexpr (applyMl) {
       registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
                     candidate.mlProbToXiPi()[0],
@@ -202,7 +202,7 @@ struct HfTaskXic0ToXiPi {
                     ptXic,
                     candidate.etaCharmBaryon(),
                     centrality,
-                    kfptPiFromXic,
+                    ptPiFromXic,
                     numPvContributors);
     } else {
       registry.fill(HIST("hMassVsPtVsYVsCentVsPtPion"),
@@ -210,7 +210,7 @@ struct HfTaskXic0ToXiPi {
                     ptXic,
                     candidate.etaCharmBaryon(),
                     centrality,
-                    kfptPiFromXic,
+                    ptPiFromXic,
                     numPvContributors);
     }
   }
