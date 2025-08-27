@@ -15,12 +15,6 @@ o2physics_add_dpl_workflow(femtodream-producer
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::EventFilteringUtils
           COMPONENT_NAME Analysis)
 
-
-o2physics_add_dpl_workflow(femtodream-producer-reso
-          SOURCES femtoDreamProducerTaskReso.cxx
-          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::EventFilteringUtils
-          COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(femtodream-producer-reso-kshort
           SOURCES femtoDreamProducerTaskResoKshort.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::EventFilteringUtils
