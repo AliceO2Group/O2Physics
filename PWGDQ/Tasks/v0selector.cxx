@@ -310,55 +310,21 @@ struct v0selector {
       if (fillhisto) {
         registry.fill(HIST("hV0Candidate"), 1);
       }
-      if (std::fabs(V0.posTrack_as<FullTracksExt>().eta()) > 0.9) {
-        continue;
-      }
-      if (std::fabs(V0.negTrack_as<FullTracksExt>().eta()) > 0.9) {
-        continue;
-      }
 
-      if (V0.posTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
-        continue;
-      }
-      if (V0.negTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
-        continue;
-      }
-      if (V0.posTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
-        continue;
-      }
-      if (V0.negTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
-        continue;
-      }
-      if (std::fabs(V0.posTrack_as<FullTracksExt>().dcaXY()) < dcamin) {
-        continue;
-      }
-      if (std::fabs(V0.negTrack_as<FullTracksExt>().dcaXY()) < dcamin) {
-        continue;
-      }
-      if (std::fabs(V0.posTrack_as<FullTracksExt>().dcaXY()) > dcamax) {
-        continue;
-      }
-      if (std::fabs(V0.negTrack_as<FullTracksExt>().dcaXY()) > dcamax) {
-        continue;
-      }
+      const auto& posTrack = casc.posTrack_as<FullTracksExt>();
+      const auto& negTrack = casc.negTrack_as<FullTracksExt>();
 
-      if (V0.posTrack_as<FullTracksExt>().sign() * V0.negTrack_as<FullTracksExt>().sign() > 0) { // reject same sign pair
-        continue;
+      bool isRejectV0{false};
+      for(const auto& prong : std::array<FullTracksExt, 2>{posTrack, negTrack}) {
+        isRejectV0 = isRejectV0 || std::fabs(prong.eta()) > 0.9;
+        isRejectV0 = isRejectV0 || prong.tpcNClsCrossedRows() < mincrossedrows;
+        isRejectV0 = isRejectV0 || prong.tpcChi2NCl() > maxchi2tpc;
+        isRejectV0 = isRejectV0 || std::fabs(prong.dcaXY()) < dcamin;
+        isRejectV0 = isRejectV0 || std::fabs(prong.dcaXY()) > dcamax;
       }
+      isRejectV0 = isRejectV0 || (posTrack.sign() * negTrack.sign() > 0);
 
-      // if (V0.posTrack_as<FullTracksExt>().collisionId() != V0.negTrack_as<FullTracksExt>().collisionId()) {
-      //   continue;
-      // }
-
-      // if (!V0.posTrack_as<FullTracksExt>().has_collision() || !V0.negTrack_as<FullTracksExt>().has_collision()) {
-      //   continue;
-      // }
-
-      // auto const& collision = V0.collision_as<aod::Collisions>();
-
-      //      if (V0.collisionId() != collision.globalIndex()) {
-      //        continue;
-      //      }
+      if (isRejectV0) continue;
 
       float V0dca = V0.dcaV0daughters();
       float V0CosinePA = V0.v0cosPA();
@@ -471,56 +437,21 @@ struct v0selector {
           registry.fill(HIST("hCascCandidate"), 1);
         }
 
-        if (std::fabs(casc.posTrack_as<FullTracksExt>().eta()) > 0.9) {
-          continue;
-        }
-        if (std::fabs(casc.negTrack_as<FullTracksExt>().eta()) > 0.9) {
-          continue;
-        }
-        if (std::fabs(casc.negTrack_as<FullTracksExt>().eta()) > 0.9) {
-          continue;
-        }
+        const auto& posTrack = casc.posTrack_as<FullTracksExt>();
+        const auto& negTrack = casc.negTrack_as<FullTracksExt>();
+        const auto& bachelor = casc.bachelor_as<FullTracksExt>();
 
-        if (casc.posTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
-          continue;
+        bool isRejectCascade{false};
+        for(const auto& prong : std::array<FullTracksExt, 3>{posTrack, negTrack, bachelor}) {
+          isRejectCascade = isRejectCascade || std::fabs(prong.eta()) > 0.9;
+          isRejectCascade = isRejectCascade || prong.tpcNClsCrossedRows() < mincrossedrows;
+          isRejectCascade = isRejectCascade || prong.tpcChi2NCl() > maxchi2tpc;
+          isRejectCascade = isRejectCascade || std::fabs(prong.dcaXY()) < dcamin;
+          isRejectCascade = isRejectCascade || std::fabs(prong.dcaXY()) > dcamax;
         }
-        if (casc.negTrack_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
-          continue;
-        }
-        if (casc.bachelor_as<FullTracksExt>().tpcNClsCrossedRows() < mincrossedrows) {
-          continue;
-        }
-        if (casc.posTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
-          continue;
-        }
-        if (casc.negTrack_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
-          continue;
-        }
-        if (casc.bachelor_as<FullTracksExt>().tpcChi2NCl() > maxchi2tpc) {
-          continue;
-        }
-        if (std::fabs(casc.posTrack_as<FullTracksExt>().dcaXY()) < dcamin) {
-          continue;
-        }
-        if (std::fabs(casc.negTrack_as<FullTracksExt>().dcaXY()) < dcamin) {
-          continue;
-        }
-        if (std::fabs(casc.bachelor_as<FullTracksExt>().dcaXY()) < dcamin) {
-          continue;
-        }
-        if (std::fabs(casc.posTrack_as<FullTracksExt>().dcaXY()) > dcamax) {
-          continue;
-        }
-        if (std::fabs(casc.negTrack_as<FullTracksExt>().dcaXY()) > dcamax) {
-          continue;
-        }
-        if (std::fabs(casc.bachelor_as<FullTracksExt>().dcaXY()) > dcamax) {
-          continue;
-        }
+        isRejectCascade = isRejectCascade || (posTrack.sign() * negTrack.sign() > 0);
 
-        if (casc.posTrack_as<FullTracksExt>().sign() * casc.negTrack_as<FullTracksExt>().sign() > 0) { // reject same sign pair
-          continue;
-        }
+        if (isRejectCascade) continue;
 
         if (fillhisto) {
           registry.fill(HIST("hCascCandidate"), 2);
