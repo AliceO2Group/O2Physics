@@ -27,7 +27,7 @@
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
 #define FILL_MAP_XIC0TOXIPI(FEATURE)                                 \
-  {                                                                    \
+  {                                                                  \
     #FEATURE, static_cast<uint8_t>(InputFeaturesXic0ToXiPi::FEATURE) \
   }
 
@@ -37,15 +37,15 @@
 // by calling the corresponding GETTER from OBJECT
 #define CHECK_AND_FILL_VEC_XIC0TOXIPI_FULL(OBJECT, FEATURE, GETTER) \
   case static_cast<uint8_t>(InputFeaturesXic0ToXiPi::FEATURE): {    \
-    inputFeatures.emplace_back(OBJECT.GETTER());                      \
-    break;                                                            \
+    inputFeatures.emplace_back(OBJECT.GETTER());                    \
+    break;                                                          \
   }
 
 // where OBJECT is named candidate and FEATURE = GETTER
 #define CHECK_AND_FILL_VEC_XIC0TOXIPI(GETTER)                   \
   case static_cast<uint8_t>(InputFeaturesXic0ToXiPi::GETTER): { \
-    inputFeatures.emplace_back(candidate.GETTER());               \
-    break;                                                        \
+    inputFeatures.emplace_back(candidate.GETTER());             \
+    break;                                                      \
   }
 
 namespace o2::analysis
@@ -115,8 +115,7 @@ class HfMlResponseXic0ToXiPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XIC0TOXIPI(cosPACharmBaryon),
       FILL_MAP_XIC0TOXIPI(cosPAV0),
       FILL_MAP_XIC0TOXIPI(impactParBachFromCharmBaryonXY),
-      FILL_MAP_XIC0TOXIPI(impactParCascXY)
-    };
+      FILL_MAP_XIC0TOXIPI(impactParCascXY)};
   }
 };
 
