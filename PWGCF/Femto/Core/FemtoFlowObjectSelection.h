@@ -189,13 +189,12 @@ class FemtoFlowObjectSelection
     for (auto& it : mSelections) {
       auto selVar = it.getSelectionVariable();
       if (std::none_of(
-              selVarVec.begin(),
-              selVarVec.end(),
-              [selVar](selVariable a) {
-                  return a == selVar;
-              })) 
-      {
-          selVarVec.push_back(selVar);
+            selVarVec.begin(),
+            selVarVec.end(),
+            [selVar](selVariable a) {
+              return a == selVar;
+            })) {
+        selVarVec.push_back(selVar);
       }
     }
     return selVarVec;
