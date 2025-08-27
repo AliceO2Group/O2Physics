@@ -11,12 +11,30 @@
 
 /// \author Junlee Kim (jikim1290@gmail.com)
 
-#include <array>
-#include <chrono>
-#include <cmath>
-#include <cstdlib>
-#include <string>
-#include <vector>
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
 #include "Math/GenVector/Boost.h"
 #include "Math/Vector3D.h"
@@ -27,36 +45,12 @@
 #include "TVector3.h"
 #include <TMath.h>
 
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/StaticFor.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-
-#include "CommonConstants/PhysicsConstants.h"
-
-#include "ReconstructionDataFormats/Track.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -419,11 +413,12 @@ struct lambdaTwoPartPolarization {
   BinningTypeT0C colBinningT0C{{vertexAxis, centAxis}, true};
 
   void processDataMixedT0C(EventCandidates const& collisions,
-                        TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+                           TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     for (auto& [c1, c2] : selfCombinations(colBinningT0C, cfgNoMixedEvents, -1, collisions, collisions)) {
 
-      if (c1.index() == c2.index()) continue;
+      if (c1.index() == c2.index())
+        continue;
 
       centrality = c1.centFT0C();
       if (cfgAccCor) {
@@ -447,11 +442,12 @@ struct lambdaTwoPartPolarization {
   BinningTypeT0M colBinningT0M{{vertexAxis, centAxis}, true};
 
   void processDataMixedT0M(EventCandidates const& collisions,
-                        TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
+                           TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
     for (auto& [c1, c2] : selfCombinations(colBinningT0M, cfgNoMixedEvents, -1, collisions, collisions)) {
 
-      if (c1.index() == c2.index()) continue;
+      if (c1.index() == c2.index())
+        continue;
 
       centrality = c1.centFT0M();
       if (cfgAccCor) {
