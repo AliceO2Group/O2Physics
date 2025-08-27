@@ -288,7 +288,7 @@ struct TableMaker {
   std::map<uint32_t, uint32_t> fMftIndexMap;              // key: MFT tracklet global index, value: new MFT tracklet global index
 
   std::map<uint32_t, bool> fBestMatch;
-  std::unordered_map<int64_t,int32_t> map_mfttrackcovs;
+  std::unordered_map<int64_t, int32_t> map_mfttrackcovs;
   // FIXME: For now, the skimming is done using the Common track-collision association task, which does not allow to use
   //       our own Filtered tracks. If the filter is very selective, then it may be worth to run the association in this workflow
   //       using the Common/CollisionAssociation class
@@ -1209,12 +1209,12 @@ struct TableMaker {
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
         // NOTE: the MFT track originally associated to the MUON track is currently used in the global muon refit
         //       Should MUON - MFT time ambiguities be taken into account ?
-	if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-	  auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+        if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+          auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
           VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
-	}else{
+        } else {
           VarManager::FillGlobalMuonRefit<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision);
-	}
+        }
       } else {
         VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
       }
@@ -1301,12 +1301,12 @@ struct TableMaker {
         auto mfttrack = muon.template matchMFTTrack_as<MFTTracks>();
         globalClusters += mfttrack.nClusters();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
-	if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-	  auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+        if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+          auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
           VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
-	}else{
+        } else {
           VarManager::FillGlobalMuonRefit<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision);
-	}
+        }
       } else {
         VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
       }
@@ -1422,7 +1422,7 @@ struct TableMaker {
     }
 
     if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-      for (auto &mfttrackConv : mftCovs) {
+      for (auto& mfttrackConv : mftCovs) {
         map_mfttrackcovs[mfttrackConv.matchMFTTrackId()] = mfttrackConv.globalIndex();
       }
     }
@@ -1444,14 +1444,14 @@ struct TableMaker {
       if constexpr (static_cast<bool>(TMuonFillMap)) {
         if constexpr (static_cast<bool>(TMFTFillMap)) {
           auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
-            if (fConfigVariousOptions.fKeepBestMatch) {
-              skimBestMuonMatches(muons);
-            }
-	    if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-              skimMuons<TMuonFillMap, TMFTFillMap>(collision, bcs, muons, groupedMuonIndices, mftTracks, mftCovs);
-	    }else{
-              skimMuons<TMuonFillMap, TMFTFillMap>(collision, bcs, muons, groupedMuonIndices, mftTracks, nullptr);
-	    }
+          if (fConfigVariousOptions.fKeepBestMatch) {
+            skimBestMuonMatches(muons);
+          }
+          if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+            skimMuons<TMuonFillMap, TMFTFillMap>(collision, bcs, muons, groupedMuonIndices, mftTracks, mftCovs);
+          } else {
+            skimMuons<TMuonFillMap, TMFTFillMap>(collision, bcs, muons, groupedMuonIndices, mftTracks, nullptr);
+          }
         } else {
           auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
           skimMuons<TMuonFillMap, 0u>(collision, bcs, muons, groupedMuonIndices, nullptr, nullptr);
