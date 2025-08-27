@@ -13,10 +13,14 @@
 /// \author Yuto Nishida <yuto.nishida@cern.ch>
 /// \brief Task for measuring the dependence of the jet shape function rho(r) on the distance r from the jet axis.
 
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
-#include "PWGJE/DataModel/Jet.h"
+#include <string>
+#include <vector>
+#include <cmath>
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -24,15 +28,12 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGJE/Core/FastJetUtilities.h"
+#include "PWGJE/Core/JetUtilities.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
 
-#include <cmath>
-#include <string>
-#include <vector>
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -260,7 +261,7 @@ struct JetShapeTask {
   }
   PROCESS_SWITCH(JetShapeTask, processJetShape, "JetShape", true);
 
-  void processProductionRatio(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::JetTracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass> const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
+  void processProductionRatio(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass> const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
@@ -268,46 +269,36 @@ struct JetShapeTask {
 
     registry.fill(HIST("event/vertexz"), collision.posZ());
 
-    std::vector<typename std::decay_t<decltype(tracks)>::iterator> goodTracks;
-    for (auto it = tracks.begin(); it != tracks.end(); ++it) {
-      const auto& track = *it;
-
-      registry.fill(HIST("trackTpcNClsCrossedRows"), track.tpcNClsCrossedRows());
-      registry.fill(HIST("trackDcaXY"), track.dcaXY());
-      registry.fill(HIST("trackItsChi2NCl"), track.itsChi2NCl());
-      registry.fill(HIST("trackTpcChi2NCl"), track.tpcChi2NCl());
-      registry.fill(HIST("trackTpcNClsFound"), track.tpcNClsFound());
-      registry.fill(HIST("trackItsNCls"), track.itsNCls());
-      registry.fill(HIST("trackEta"), track.eta());
-      registry.fill(HIST("trackPhi"), track.phi());
-
-      if (std::abs(track.eta()) > etaTrUp)
-        continue;
-      if (track.tpcNClsCrossedRows() < nclcrossTpcMin)
-        continue;
-      if (std::abs(track.dcaXY()) > dcaxyMax)
-        continue;
-      if (track.itsChi2NCl() > chi2ItsMax)
-        continue;
-      if (track.tpcChi2NCl() > chi2TpcMax)
-        continue;
-      if (track.tpcNClsFound() < nclTpcMin)
-        continue;
-      if (track.itsNCls() < nclItsMin)
-        continue;
-
-      goodTracks.push_back(it);
-    }
-
     for (auto const& jet : jets) {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
 
       // tracks conditions
-      for (const auto& track_it : goodTracks) {
+      for (const auto& track : tracks) {
+        registry.fill(HIST("trackTpcNClsCrossedRows"), track.tpcNClsCrossedRows());
+        registry.fill(HIST("trackDcaXY"), track.dcaXY());
+        registry.fill(HIST("trackItsChi2NCl"), track.itsChi2NCl());
+        registry.fill(HIST("trackTpcChi2NCl"), track.tpcChi2NCl());
+        registry.fill(HIST("trackTpcNClsFound"), track.tpcNClsFound());
+        registry.fill(HIST("trackItsNCls"), track.itsNCls());
+        registry.fill(HIST("trackEta"), track.eta());
+        registry.fill(HIST("trackPhi"), track.phi());
 
-        const auto& track = *track_it;
+        if (std::abs(track.eta()) > etaTrUp)
+          continue;
+        if (track.tpcNClsCrossedRows() < nclcrossTpcMin)
+          continue;
+        if (std::abs(track.dcaXY()) > dcaxyMax)
+          continue;
+        if (track.itsChi2NCl() > chi2ItsMax)
+          continue;
+        if (track.tpcChi2NCl() > chi2TpcMax)
+          continue;
+        if (track.tpcNClsFound() < nclTpcMin)
+          continue;
+        if (track.itsNCls() < nclItsMin)
+          continue;
 
         // PID check
         registry.fill(HIST("tofMass"), track.mass());
@@ -380,3 +371,4 @@ struct JetShapeTask {
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<JetShapeTask>(cfgc)}; }
+
