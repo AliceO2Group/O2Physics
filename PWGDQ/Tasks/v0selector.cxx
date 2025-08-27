@@ -311,8 +311,8 @@ struct v0selector {
         registry.fill(HIST("hV0Candidate"), 1);
       }
 
-      const auto& posTrack = casc.posTrack_as<FullTracksExt>();
-      const auto& negTrack = casc.negTrack_as<FullTracksExt>();
+      const auto& posTrack = V0.posTrack_as<FullTracksExt>();
+      const auto& negTrack = V0.negTrack_as<FullTracksExt>();
 
       bool isRejectV0{false};
       for(const auto& prong : std::array<FullTracksExt, 2>{posTrack, negTrack}) {
