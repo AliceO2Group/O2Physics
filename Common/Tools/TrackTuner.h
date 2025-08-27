@@ -447,11 +447,6 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     return outputString;
   }
 
-  std::string getFullNameInputPath()
-  {
-    return pathInputFile + std::string("/") + nameInputFile;
-  }
-
   void getDcaGraphs()
   {
     std::string fullNameInputFile = pathInputFile + std::string("/") + nameInputFile;
