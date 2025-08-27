@@ -187,7 +187,7 @@ class FemtoFlowPairCleaner
   }
 
  private:
-  o2::framework::HistogramRegistry* mHistogramRegistry;                                            ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry;                             ///< For QA output
   static constexpr o2::aod::femtoflowparticle::ParticleType kPartOneType = partOne; ///< Type of particle 1
   static constexpr o2::aod::femtoflowparticle::ParticleType kPartTwoType = partTwo; ///< Type of particle 2
 };

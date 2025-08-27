@@ -25,13 +25,12 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 #include "Math/Vector4D.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/AnalysisTask.h"
-
 #include "TMath.h"
 
 #include <fairlogger/Logger.h>
@@ -156,8 +155,6 @@ class FemtoFlowAngularContainer
     mPDGTwo = pdg2;
   }
 
-
-
   /// Pass a pair to the container and compute all the relevant observables
   /// Called by setPair both in case of data/ and Monte Carlo reconstructed and for Monte Carlo truth
   /// \tparam T type of the femtoflowparticle
@@ -174,7 +171,7 @@ class FemtoFlowAngularContainer
     deltaPhi = part1.phi() - part2.phi();
 
     deltaPhi = RecoDecay::constrainAngle(deltaPhi, mPhiLow, 1);
-    
+
     // while (deltaPhi < mPhiLow) {
     //   deltaPhi += o2::constants::math::TwoPI;
     // }
@@ -246,7 +243,7 @@ class FemtoFlowAngularContainer
   }
 
  protected:
-  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;                                 ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;                  ///< For QA output
   static constexpr std::string_view FolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to EventType
   static constexpr femto_flow_angular_container::Observable FemtoObs = obs;        ///< Femtoscopic observable to be computed (according to femto_flow_angular_container::Observable)
   static constexpr int EventType = eventType;                                      ///< Type of the event (same/mixed, according to femto_flow_angular_container::EventType)

@@ -196,7 +196,7 @@ class FemtoFlowObjectSelection
   }
 
  protected:
-  o2::framework::HistogramRegistry* mHistogramRegistry;                                    ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry;                     ///< For QA output
   std::vector<FemtoFlowSelection<selValDataType, selVariable>> mSelections; ///< Vector containing all selections
 };
 

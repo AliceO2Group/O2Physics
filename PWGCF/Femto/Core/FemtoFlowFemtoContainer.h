@@ -22,13 +22,12 @@
 
 #include "PWGCF/Femto/Core/FemtoFlowMath.h"
 
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 
 #include "Math/Vector4D.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/AnalysisTask.h"
-
 #include "TMath.h"
 
 #include <fairlogger/Logger.h>
@@ -319,13 +318,13 @@ class FemtoFlowFemtoContainer
   }
 
  protected:
-  o2::framework::HistogramRegistry* HistogramRegistry = nullptr;                                  ///< For QA output
+  o2::framework::HistogramRegistry* HistogramRegistry = nullptr;                   ///< For QA output
   static constexpr std::string_view FolderSuffix[2] = {"SameEvent", "MixedEvent"}; ///< Folder naming for the output according to kEventType
   static constexpr femto_flow_femto_container::Observable FemtoObs = obs;          ///< Femtoscopic observable to be computed (according to femto_flow_femto_container::Observable)
-  static constexpr int kEventType = eventType;                                      ///< Type of the event (same/mixed, according to femto_flow_femto_container::EventType)
-  float kMassOne = 0.f;                                                             ///< PDG mass of particle 1
-  float kMassTwo = 0.f;                                                             ///< PDG mass of particle 2
-  int kPDGOne = 0;                                                                  ///< PDG code of particle 1
+  static constexpr int kEventType = eventType;                                     ///< Type of the event (same/mixed, according to femto_flow_femto_container::EventType)
+  float kMassOne = 0.f;                                                            ///< PDG mass of particle 1
+  float kMassTwo = 0.f;                                                            ///< PDG mass of particle 2
+  int kPDGOne = 0;                                                                 ///< PDG code of particle 1
   int kPDGTwo = 0;
   int numqnBins = 10; ///< Max num of devided qn bins
 };

@@ -523,7 +523,7 @@ class FemtoFlowParticleHisto
   /// \param part particle for which the histograms should be filled
   template <bool isMC, bool isDebug, typename T>
   void fillQAMisIden(T const& part, int confPDG)
-  { 
+  {
     using namespace o2::framework;
 
     fillQABaseMisiden<isMC, isDebug, T>(part, HIST(o2::aod::femtoflowparticle::ParticleTypeName[kParticleType]) + HIST(kFolderSuffix[kFolderSuffixType]), confPDG);
@@ -545,7 +545,7 @@ class FemtoFlowParticleHisto
   }
 
  private:
-  o2::framework::HistogramRegistry* mHistogramRegistry;                                                           ///< For QA output
+  o2::framework::HistogramRegistry* mHistogramRegistry;                                            ///< For QA output
   static constexpr o2::aod::femtoflowparticle::ParticleType kParticleType = particleType;          ///< Type of the particle under analysis // o2-linter: disable=name/constexpr-constant
   static constexpr int kFolderSuffixType = suffixType;                                             ///< Counter for the folder suffix specified below // o2-linter: disable=name/constexpr-constant
   static constexpr std::string_view kFolderSuffix[5] = {"_debug", "_one", "_two", "_pos", "_neg"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C) // o2-linter: disable=name/constexpr-constant
