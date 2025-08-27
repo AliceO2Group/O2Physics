@@ -143,7 +143,7 @@ struct lambdalambda {
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 10, "Number of mixed events per event"};
 
   Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Enable processing of skimmed data"};
-  Configurable<std::string> triggerName{"triggerName", "fLambdaLambda", "Software trigger name"};
+  Configurable<std::string> cfgTriggerName{"cfgTriggerName", "fLambdaLambda", "Software trigger name"};
 
   ConfigurableAxis massAxis{"massAxis", {110, 2.22, 2.33}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "Transverse momentum bins"};
@@ -169,7 +169,7 @@ struct lambdalambda {
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (cfgSkimmedProcessing) {
-      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerName.value);
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfgTriggerName.value);
       zorro.populateHistRegistry(histos, bc.runNumber());
     }
   }
@@ -585,7 +585,7 @@ struct lambdalambda {
       FillHistograms(c1, c2, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(lambdalambda, processDataMixed, "Process Event for mixed data", true);
+  PROCESS_SWITCH(lambdalambda, processDataMixed, "Process Event for mixed data", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
