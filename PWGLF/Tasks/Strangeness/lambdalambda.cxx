@@ -45,6 +45,9 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
 
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
+
 #include "CommonConstants/PhysicsConstants.h"
 
 #include "ReconstructionDataFormats/Track.h"
@@ -67,6 +70,9 @@ struct lambdalambda {
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::MultZeqs, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr>;
   using V0TrackCandidate = aod::V0Datas;
+
+  Zorro zorro;
+  OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
 
   HistogramRegistry histos{
     "histos",
@@ -136,6 +142,9 @@ struct lambdalambda {
   Configurable<int> cfgNRotBkg{"cfgNRotBkg", 10, "the number of rotational backgrounds"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 10, "Number of mixed events per event"};
 
+  Configurable<bool> cfgSkimmedProcessing{"cfgSkimmedProcessing", false, "Enable processing of skimmed data"};
+  Configurable<std::string> triggerName{"triggerName", "fLambdaLambda", "Software trigger name"};
+
   ConfigurableAxis massAxis{"massAxis", {110, 2.22, 2.33}, "Invariant mass axis"};
   ConfigurableAxis ptAxis{"ptAxis", {VARIABLE_WIDTH, 0.2, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 4.0, 5.0, 6.5, 8.0, 10.0, 100.0}, "Transverse momentum bins"};
   ConfigurableAxis centAxis{"centAxis", {VARIABLE_WIDTH, 0, 10, 20, 50, 100}, "Centrality interval"};
@@ -157,8 +166,20 @@ struct lambdalambda {
   bool IsTriggered;
   bool IsSelected;
 
+  void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    if (cfgSkimmedProcessing) {
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), triggerName.value);
+      zorro.populateHistRegistry(histos, bc.runNumber());
+    }
+  }
+
   void init(o2::framework::InitContext&)
   {
+    if (cfgSkimmedProcessing) {
+      zorroSummary.setObject(zorro.getZorroSummary());
+    }
+
     AxisSpec centQaAxis = {80, 0.0, 80.0};
     AxisSpec PVzQaAxis = {300, -15.0, 15.0};
     AxisSpec combAxis = {3, -0.5, 2.5};
@@ -506,8 +527,15 @@ struct lambdalambda {
     histos.fill(HIST("QA/CentDist"), centrality, 1.0);
     histos.fill(HIST("QA/PVzDist"), collision.posZ(), 1.0);
 
+    auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    if (cfgSkimmedProcessing) {
+      initCCDB(bc);
+      if (!zorro.isSelected(collision.template bc_as<aod::BCsWithTimestamps>().globalBC())) {
+        return;
+      }
+    }
+
     if (cfgEffCor) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       EffMap = ccdb->getForTimeStamp<TProfile2D>(cfgEffCorPath.value, bc.timestamp());
     }
     FillHistograms(collision, collision, V0s, V0s);
@@ -520,26 +548,39 @@ struct lambdalambda {
   PROCESS_SWITCH(lambdalambda, processDataSame, "Process Event for same data", true);
 
   SliceCache cache;
-  using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  BinningType colBinning{{vertexAxis, centAxis}, true};
 
+  Preslice<aod::V0Datas> tracksPerCollisionV0 = aod::v0data::collisionId;
   void processDataMixed(EventCandidates const& collisions,
-                        TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s)
+                        TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
-    auto tracksTuple = std::make_tuple(V0s);
-    BinningTypeVertexContributor binningOnPositions{{vertexAxis, centAxis}, true};
-    SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
-      if (cfgCentEst == 1) {
-        centrality = c1.centFT0C();
-      } else if (cfgCentEst == 2) {
-        centrality = c1.centFT0M();
+    int currentRun = -1;
+    for (auto& [c1, c2] : selfCombinations(colBinning, cfgNoMixedEvents, -1, collisions, collisions)) {
+      if (c1.index() == c2.index()) continue;
+
+      auto bc1 = c1.bc_as<aod::BCsWithTimestamps>();
+      auto bc2 = c2.bc_as<aod::BCsWithTimestamps>();
+
+      if (bc1.runNumber() != bc2.runNumber() ) continue;
+
+      if (bc1.runNumber() != currentRun) {
+        if (cfgSkimmedProcessing) {
+          initCCDB(bc1);
+          if (!zorro.isSelected(bc1.globalBC()) || !zorro.isSelected(bc2.globalBC())) {
+            continue;
+          }
+        }
       }
+
+      centrality = c1.centFT0M();
       if (!eventSelected(c1))
         continue;
       if (!eventSelected(c2))
         continue;
-      if (c1.bcId() == c2.bcId())
-        continue;
+
+      auto tracks1 = V0s.sliceBy(tracksPerCollisionV0, c1.globalIndex());
+      auto tracks2 = V0s.sliceBy(tracksPerCollisionV0, c2.globalIndex());
 
       FillHistograms(c1, c2, tracks1, tracks2);
     }
