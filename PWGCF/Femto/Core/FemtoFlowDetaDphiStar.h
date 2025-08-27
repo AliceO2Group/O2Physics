@@ -21,17 +21,18 @@
 
 #include "PWGCF/Femto/Core/FemtoFlowAngularContainer.h"
 #include "PWGCF/Femto/Core/FemtoFlowFemtoContainer.h"
+#include "PWGCF/Femto/Core/FemtoFlowTrackSelection.h"
 #include "PWGCF/Femto/DataModel/FemtoDerived.h"
+
 #include "Common/Core/RecoDecay.h"
+
+#include "Framework/HistogramRegistry.h"
 
 #include "TMath.h"
 
 #include <memory>
 #include <string>
 #include <vector>
-#include "PWGCF/Femto/Core/FemtoFlowTrackSelection.h"
-
-#include "Framework/HistogramRegistry.h"
 
 namespace o2::analysis
 {
@@ -173,7 +174,7 @@ class FemtoFlowDetaDphiStar
     magfield = lmagfield;
 
     const int numEvtType = 2;
-    
+
     if constexpr (kPartOneType == o2::aod::femtoflowparticle::ParticleType::kTrack && kPartTwoType == o2::aod::femtoflowparticle::ParticleType::kTrack) {
       /// Track-Track combination
       // check if provided particles are in agreement with the class instantiation
@@ -299,7 +300,7 @@ class FemtoFlowDetaDphiStar
         auto daughter = particles.begin() + indexOfDaughter;
         auto deta = part1.eta() - daughter.eta();
         auto dphiAvg = averagePhiStar(part1, *daughter, i); // auto dphiAvg = calculateDphiStar(part1, *daughter);
-        dphiAvg = RecoDecay::constrainAngle(dphiAvg, -1*o2::constants::math::PI, 1);
+        dphiAvg = RecoDecay::constrainAngle(dphiAvg, -1 * o2::constants::math::PI, 1);
         if (ChosenEventType == femto_flow_femto_container::EventType::same) {
           histdetadpisame[i][0]->Fill(deta, dphiAvg);
         } else if (ChosenEventType == femto_flow_femto_container::EventType::mixed) {
@@ -419,7 +420,7 @@ class FemtoFlowDetaDphiStar
   /// Magnetic field to be provided in Tesla
   template <typename T>
   void phiAtRadiiTPC(const T& part, std::vector<float>& tmpVec)
-  { 
+  {
 
     float phi0 = part.phi();
     // Start: Get the charge from cutcontainer using masks
@@ -465,7 +466,7 @@ class FemtoFlowDetaDphiStar
       } else {
         dphi = 0;
       }
-      dphi = RecoDecay::constrainAngle(dphi, -1*o2::constants::math::PI, 1);
+      dphi = RecoDecay::constrainAngle(dphi, -1 * o2::constants::math::PI, 1);
       dPhiAvg += dphi;
       if (plotForEveryRadii) {
         histdetadpiRadii[iHist][i]->Fill(part1.eta() - part2.eta(), dphi);
