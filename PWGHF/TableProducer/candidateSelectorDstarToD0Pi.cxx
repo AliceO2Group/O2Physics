@@ -97,8 +97,6 @@ struct HfCandidateSelectorDstarToD0Pi {
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
-  // ML inference D0
-  Configurable<bool> applyMlD0Daug{"applyMlD0Daug", false, "Flag to apply ML selections on D0 daughter"};
 
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -149,14 +147,14 @@ struct HfCandidateSelectorDstarToD0Pi {
         registry.get<TH2>(HIST("QA/hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
       }
 
-      if (applyMl || applyMlD0Daug) {
+      if (applyMl) {
         registry.add("QA/hBdtScore1VsStatus", ";BDT score", {HistType::kTH1F, {axisBdtScore}});
         registry.add("QA/hBdtScore2VsStatus", ";BDT score", {HistType::kTH1F, {axisBdtScore}});
         registry.add("QA/hBdtScore3VsStatus", ";BDT score", {HistType::kTH1F, {axisBdtScore}});
       }
     }
 
-    if (applyMl || applyMlD0Daug) {
+    if (applyMl) {
       hfMlResponse.configure(binsPtMl, cutsMl, cutDirMl, nClassesMl);
       if (loadModelsFromCCDB) {
         ccdbApi.init(ccdbUrl);
@@ -368,7 +366,7 @@ struct HfCandidateSelectorDstarToD0Pi {
 
       if (!TESTBIT(candDstar.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
-        if (applyMl || applyMlD0Daug) {
+        if (applyMl) {
           hfMlDstarCandidate(outputMlDstarToD0Pi);
         }
         if (activateQA) {
@@ -384,7 +382,7 @@ struct HfCandidateSelectorDstarToD0Pi {
 
       if (!selectionDstar(candDstar)) {
         hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
-        if (applyMl || applyMlD0Daug) {
+        if (applyMl) {
           hfMlDstarCandidate(outputMlDstarToD0Pi);
         }
         continue;
@@ -397,7 +395,7 @@ struct HfCandidateSelectorDstarToD0Pi {
       bool topoDstar = selectionTopolConjugate(candDstar);
       if (!topoDstar) {
         hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
-        if (applyMl || applyMlD0Daug) {
+        if (applyMl) {
           hfMlDstarCandidate(outputMlDstarToD0Pi);
         }
         continue;
@@ -445,7 +443,7 @@ struct HfCandidateSelectorDstarToD0Pi {
 
       if (pidDstar == 0) {
         hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
-        if (applyMl || applyMlD0Daug) {
+        if (applyMl) {
           hfMlDstarCandidate(outputMlDstarToD0Pi);
         }
         continue;
@@ -460,16 +458,10 @@ struct HfCandidateSelectorDstarToD0Pi {
       }
       statusPID = true;
 
-      if (applyMl || applyMlD0Daug) {
+      if (applyMl) {
         // ML selections
         bool isSelectedMlDstar = false;
-
-        std::vector<float> inputFeatures{};
-        if (applyMlD0Daug) {
-          inputFeatures = hfMlResponse.getInputFeaturesTrigger(candDstar);
-        } else {
-          inputFeatures = hfMlResponse.getInputFeatures(candDstar);
-        }
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candDstar);
         isSelectedMlDstar = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMlDstarToD0Pi);
 
         hfMlDstarCandidate(outputMlDstarToD0Pi);
