@@ -216,7 +216,7 @@ struct HfCorrelatorFlowCharmHadrons {
       if (!track.isGlobalTrackWoDCA()) {
         continue;
       }
-      rowAssocTrackReduced(indexRedColl, track.globalIndex(), track.phi(), track.eta(), track.pt() * track.sign());
+      rowAssocTrackReduced(indexRedColl, track.globalIndex(), track.phi(), track.eta(), track.pt());
       rowAssocTrackSelInfo(indexRedColl, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
     }
   }
