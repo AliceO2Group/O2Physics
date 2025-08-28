@@ -85,23 +85,17 @@ struct HfCorrelatorFlowCharmHadrons {
 
   using CollsWithCentMult = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
   using CandDsDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
-  using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi>>;
   using CandDplusDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
-  using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
   using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;
 
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterSelectTrackData = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
 
-  Preslice<CandDsData> candsDsPerColl = aod::hf_cand::collisionId;
   Preslice<CandDsDataWMl> candsDsPerCollWMl = aod::hf_cand::collisionId;
-  Preslice<CandDplusData> candsDplusPerColl = aod::hf_cand::collisionId;
   Preslice<CandDplusDataWMl> candsDplusPerCollWMl = aod::hf_cand::collisionId;
   Preslice<TracksData> trackIndicesPerColl = aod::track::collisionId;
 
-  Partition<CandDsData> selectedDsToKKPi = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag;
-  Partition<CandDsData> selectedDsToPiKK = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
   Partition<CandDsDataWMl> selectedDsToKKPiWMl = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag;
   Partition<CandDsDataWMl> selectedDsToPiKKWMl = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
 
@@ -109,9 +103,9 @@ struct HfCorrelatorFlowCharmHadrons {
 
   void init(InitContext&)
   {
-    if (doprocessDplus || doprocessDplusWithMl) {
+    if (doprocessDplusWithMl) {
       massCharm = o2::constants::physics::MassDPlus;
-    } else if (doprocessDs || doprocessDsWithMl) {
+    } else if (doprocessDsWithMl) {
       massCharm = o2::constants::physics::MassDS;
     }
 
@@ -122,7 +116,7 @@ struct HfCorrelatorFlowCharmHadrons {
   }; // end init
 
   /// Check event selections for collision and fill the collision table
-  /// \param collision is the collision with the Q vector information and event plane
+  /// \param collision is the collision
   template <typename Coll>
   bool checkAndFillCollision(Coll const& collision)
   {
@@ -196,7 +190,7 @@ struct HfCorrelatorFlowCharmHadrons {
 
   /// Fill charm hadron tables
   /// \param candidates are the selected charm hadron candidates
-  template <DecayChannel channel, bool applyMl, typename TCand>
+  template <DecayChannel channel, typename TCand>
   void fillCharmHadronTables(TCand const& candidates)
   {
     int indexRedColl = rowCollisions.lastIndex();
@@ -207,10 +201,8 @@ struct HfCorrelatorFlowCharmHadrons {
       double massCand = getCandMass<channel>(candidate);
       rowCharmCandidates(indexRedColl, candidate.phi(), candidate.eta(), candidate.pt(), massCand, candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
 
-      if constexpr (applyMl) {
-        std::vector<float> outputMl = getCandMlScores<channel>(candidate);
-        rowCharmCandidatesMl(indexRedColl, outputMl[0], outputMl[1]);
-      }
+      std::vector<float> outputMl = getCandMlScores<channel>(candidate);
+      rowCharmCandidatesMl(indexRedColl, outputMl[0], outputMl[1]);
     }
   }
 
@@ -229,27 +221,6 @@ struct HfCorrelatorFlowCharmHadrons {
     }
   }
 
-  // Dplus with rectangular cuts
-  void processDplus(CollsWithCentMult const& colls,
-                    CandDplusData const& candsDplus,
-                    TracksData const& tracks)
-  {
-    for (const auto& coll : colls) {
-      auto thisCollId = coll.globalIndex();
-      auto candsCThisColl = candsDplus.sliceBy(candsDplusPerColl, thisCollId);
-      if (forceCharmInCollision && candsCThisColl.size() < 1) {
-        continue;
-      }
-      if (!checkAndFillCollision(coll)) {
-        continue;
-      }
-      auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
-      fillCharmHadronTables<DecayChannel::DplusToPiKPi, false>(candsCThisColl);
-      fillTracksTables(trackIdsThisColl);
-    }
-  }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
-
   // Dplus with ML selections
   void processDplusWithMl(CollsWithCentMult const& colls,
                           CandDplusDataWMl const& candsDplus,
@@ -257,7 +228,7 @@ struct HfCorrelatorFlowCharmHadrons {
   {
     for (const auto& coll : colls) {
       auto thisCollId = coll.globalIndex();
-      auto candsCThisColl = candsDplus.sliceBy(candsDplusPerColl, thisCollId);
+      auto candsCThisColl = candsDplus.sliceBy(candsDplusPerCollWMl, thisCollId);
       if (forceCharmInCollision && candsCThisColl.size() < 1) {
         continue;
       }
@@ -265,34 +236,11 @@ struct HfCorrelatorFlowCharmHadrons {
         continue;
       }
       auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
-      fillCharmHadronTables<DecayChannel::DplusToPiKPi, true>(candsCThisColl);
+      fillCharmHadronTables<DecayChannel::DplusToPiKPi>(candsCThisColl);
       fillTracksTables(trackIdsThisColl);
     }
   }
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processDplusWithMl, "Process Dplus candidates with ML info", false);
-
-  // Ds with rectangular cuts
-  void processDs(CollsWithCentMult const& colls,
-                 TracksData const& tracks,
-                 CandDsData const&)
-  {
-    for (const auto& coll : colls) {
-      auto thisCollId = coll.globalIndex();
-      auto candsDsToKKPi = selectedDsToKKPi->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
-      auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
-      if (forceCharmInCollision && candsDsToKKPi.size() < 1 && candsDsToPiKK.size() < 1) {
-        continue;
-      }
-      if (!checkAndFillCollision(coll)) {
-        continue;
-      }
-      auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
-      fillCharmHadronTables<DecayChannel::DsToPiKK, false>(candsDsToPiKK);
-      fillCharmHadronTables<DecayChannel::DsToKKPi, false>(candsDsToKKPi);
-      fillTracksTables(trackIdsThisColl);
-    }
-  }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processDs, "Process Ds candidates", false);
 
   // Ds with ML selections
   void processDsWithMl(CollsWithCentMult const& colls,
@@ -310,8 +258,8 @@ struct HfCorrelatorFlowCharmHadrons {
         continue;
       }
       auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
-      fillCharmHadronTables<DecayChannel::DsToPiKK, true>(candsDsToPiKKWMl);
-      fillCharmHadronTables<DecayChannel::DsToKKPi, true>(candsDsToKKPiWMl);
+      fillCharmHadronTables<DecayChannel::DsToPiKK>(candsDsToPiKKWMl);
+      fillCharmHadronTables<DecayChannel::DsToKKPi>(candsDsToKKPiWMl);
       fillTracksTables(trackIdsThisColl);
     }
   }
