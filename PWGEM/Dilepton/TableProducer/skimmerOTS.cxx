@@ -44,6 +44,7 @@ struct skimmerOTS {
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> cfgCcdbPathZorro{"ccdb-path-zorro", "/Users/m/mpuccio/EventFiltering/OTS/Chunked/", "base path to the ccdb object for zorro"};
   Configurable<std::string> cfg_swt_names{"cfg_swt_names", "fHighTrackMult,fHighFt0Mult", "comma-separated software trigger names"}; // !trigger names have to be pre-registered in dileptonTable.h for bit operation!
   Configurable<uint64_t> cfgBcTolerance{"cfgBcTolerance", 100, "Number of BCs of margin for software triggers"};
 
@@ -99,6 +100,7 @@ struct skimmerOTS {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
+    zorro.setBaseCCDBPath(cfgCcdbPathZorro.value);
     zorro.setBCtolerance(cfgBcTolerance);
     mTOIidx = zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
     for (auto& idx : mTOIidx) {
