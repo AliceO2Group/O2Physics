@@ -47,7 +47,7 @@ using namespace o2;
 using namespace o2::hf_centrality;
 using namespace o2::hf_evsel;
 
-enum DecayChannel { 
+enum DecayChannel {
   DplusToPiKPi = 0,
   DsToKKPi,
   DsToPiKK
@@ -106,7 +106,8 @@ struct HfCorrelatorFlowCharmHadrons {
 
   HistogramRegistry registry{"registry", {}};
 
-  void init(InitContext&) {
+  void init(InitContext&)
+  {
     if (doprocessDplus || doprocessDplusWithMl) {
       massCharm = o2::constants::physics::MassDPlus;
     } else if (doprocessDs || doprocessDsWithMl) {
@@ -159,32 +160,32 @@ struct HfCorrelatorFlowCharmHadrons {
     if constexpr (channel == DecayChannel::DsToKKPi) {
       return hfHelper.invMassDsToKKPi(candidate);
     }
-    if constexpr (channel == DecayChannel::DsToPiKK){
+    if constexpr (channel == DecayChannel::DsToPiKK) {
       return hfHelper.invMassDsToPiKK(candidate);
     }
-    if constexpr (channel == DecayChannel::DplusToPiKPi){
+    if constexpr (channel == DecayChannel::DplusToPiKPi) {
       return hfHelper.invMassDplusToPiKPi(candidate);
     }
     return -1.;
   }
-  
+
   /// Get charm hadron bdt scores
   /// \param candidate is the charm hadron candidate
   template <DecayChannel channel, typename TCand>
   std::vector<float> getCandMlScores(const TCand& candidate)
   {
-    std::vector<float> outputMl{ -999., -999. };
+    std::vector<float> outputMl{-999., -999.};
     if constexpr (channel == DecayChannel::DsToKKPi) {
       for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
         outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
       }
     }
-    if constexpr (channel == DecayChannel::DsToPiKK){
+    if constexpr (channel == DecayChannel::DsToPiKK) {
       for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
         outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
       }
     }
-    if constexpr (channel == DecayChannel::DplusToPiKPi){
+    if constexpr (channel == DecayChannel::DplusToPiKPi) {
       for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
         outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
       }
@@ -204,7 +205,7 @@ struct HfCorrelatorFlowCharmHadrons {
       }
       double massCand = getCandMass<channel>(candidate);
       rowCharmCandidates(indexRedColl, candidate.phi(), candidate.eta(), candidate.pt(), massCand, candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
-      
+
       if constexpr (applyMl) {
         std::vector<float> outputMl = getCandMlScores<channel>(candidate);
         rowCharmCandidatesMl(indexRedColl, outputMl[0], outputMl[1]);
@@ -236,10 +237,10 @@ struct HfCorrelatorFlowCharmHadrons {
       auto thisCollId = coll.globalIndex();
       auto candsCThisColl = candsDplus.sliceBy(candsDplusPerColl, thisCollId);
       if (forceCharmInCollision && candsCThisColl.size() < 1) {
-          continue;
+        continue;
       }
       if (!checkAndFillCollision(coll)) {
-          continue;
+        continue;
       }
       auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
       fillCharmHadronTables<DecayChannel::DplusToPiKPi, false>(candsCThisColl);
@@ -247,21 +248,21 @@ struct HfCorrelatorFlowCharmHadrons {
     }
   }
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processDplus, "Process Dplus candidates", true);
-  
+
   // Dplus with ML selections
   void processDplusWithMl(CollsWithCentMult const& colls,
                           CandDplusDataWMl const& candsDplus,
                           TracksData const& tracks)
-    {
-      for (const auto& coll : colls) {
-        auto thisCollId = coll.globalIndex();
-        auto candsCThisColl = candsDplus.sliceBy(candsDplusPerColl, thisCollId);
-        if (forceCharmInCollision && candsCThisColl.size() < 1) {
-          continue;
-        }
-        if (!checkAndFillCollision(coll)) {
-          continue;
-        }
+  {
+    for (const auto& coll : colls) {
+      auto thisCollId = coll.globalIndex();
+      auto candsCThisColl = candsDplus.sliceBy(candsDplusPerColl, thisCollId);
+      if (forceCharmInCollision && candsCThisColl.size() < 1) {
+        continue;
+      }
+      if (!checkAndFillCollision(coll)) {
+        continue;
+      }
       auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
       fillCharmHadronTables<DecayChannel::DplusToPiKPi, true>(candsCThisColl);
       fillTracksTables(trackIdsThisColl);
@@ -279,10 +280,10 @@ struct HfCorrelatorFlowCharmHadrons {
       auto candsDsToKKPi = selectedDsToKKPi->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
       auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
       if (forceCharmInCollision && candsDsToKKPi.size() < 1 && candsDsToPiKK.size() < 1) {
-          continue;
+        continue;
       }
       if (!checkAndFillCollision(coll)) {
-          continue;
+        continue;
       }
       auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
       fillCharmHadronTables<DecayChannel::DsToPiKK, false>(candsDsToPiKK);
@@ -314,7 +315,6 @@ struct HfCorrelatorFlowCharmHadrons {
     }
   }
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processDsWithMl, "Process Ds candidates with ML info", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
