@@ -28,8 +28,8 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/Core/fwdtrackUtilities.h"
+#include "Common/Core/trackUtilities.h"
 
 #include "CommonConstants/LHCConstants.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -1481,12 +1481,6 @@ void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, co
   }
 }
 
-
-
-
-
-
-
 template <uint32_t MuonfillMap, uint32_t MFTfillMap, typename T1, typename T2, typename C, typename C2>
 void VarManager::FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack, const C& collision, C2 const& mftcov, float* values)
 {
@@ -1498,12 +1492,12 @@ void VarManager::FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack,
       o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muontrack, collision);
       SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
       std::vector<double> v1{mftcov.cXX(), mftcov.cXY(), mftcov.cYY(), mftcov.cPhiX(), mftcov.cPhiY(),
-  	    mftcov.cPhiPhi(), mftcov.cTglX(), mftcov.cTglY(), mftcov.cTglPhi(), mftcov.cTglTgl(),
-  	    mftcov.c1PtX(), mftcov.c1PtY(), mftcov.c1PtPhi(), mftcov.c1PtTgl(), mftcov.c1Pt21Pt2()};
+                             mftcov.cPhiPhi(), mftcov.cTglX(), mftcov.cTglY(), mftcov.cTglPhi(), mftcov.cTglTgl(),
+                             mftcov.c1PtX(), mftcov.c1PtY(), mftcov.c1PtPhi(), mftcov.c1PtTgl(), mftcov.c1Pt21Pt2()};
       SMatrix55 tcovs(v1.begin(), v1.end());
       o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
 
-      o2::dataformats::GlobalFwdTrack globalRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon,mft);
+      o2::dataformats::GlobalFwdTrack globalRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
       values[kX] = globalRefit.getX();
       values[kY] = globalRefit.getY();
       values[kZ] = globalRefit.getZ();

@@ -238,14 +238,14 @@ struct TableMakerMC {
   std::map<uint32_t, uint32_t> fMftIndexMap;              // key: MFT tracklet global index, value: new MFT tracklet global index
 
   std::map<uint32_t, bool> fBestMatch;
-  std::unordered_map<int64_t,int32_t> map_mfttrackcovs;
+  std::unordered_map<int64_t, int32_t> map_mfttrackcovs;
 
   void init(o2::framework::InitContext& context)
   {
     // Check whether barrel or muon are enabled
     bool isProcessBCenabled = context.mOptions.get<bool>("processPP");
     bool isBarrelEnabled = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPBarrelOnly") || context.mOptions.get<bool>("processPbPbBarrelOnly") || context.mOptions.get<bool>("processPbPbWithFilterBarrelOnly"));
-    bool isMuonEnabled = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPMuonOnlyBasic") || context.mOptions.get<bool>("processPPMuonOnly") || context.mOptions.get<bool>("processPPRealignedMuonOnly") || context.mOptions.get<bool>("processPbPbMuonOnly") || context.mOptions.get<bool>("processPbPbRealignedMuonOnly")) ||context.mOptions.get<bool>("processPPMuonRefit");
+    bool isMuonEnabled = (context.mOptions.get<bool>("processPP") || context.mOptions.get<bool>("processPPMuonOnlyBasic") || context.mOptions.get<bool>("processPPMuonOnly") || context.mOptions.get<bool>("processPPRealignedMuonOnly") || context.mOptions.get<bool>("processPbPbMuonOnly") || context.mOptions.get<bool>("processPbPbRealignedMuonOnly")) || context.mOptions.get<bool>("processPPMuonRefit");
     // Make sure at least one process function is enabled
     if (!(isProcessBCenabled || isBarrelEnabled || isMuonEnabled)) {
       LOG(fatal) << "No process function was enabled for TableMakerMC. Check it out!!!";
@@ -944,12 +944,12 @@ struct TableMakerMC {
         }
         auto mfttrack = muon.template matchMFTTrack_as<TMFTTracks>();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
-	if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-	  auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+        if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+          auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
           VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
-	}else{
+        } else {
           VarManager::FillGlobalMuonRefit<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision);
-	}
+        }
       } else {
         VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
       }
@@ -1072,12 +1072,12 @@ struct TableMakerMC {
         auto mfttrack = muon.template matchMFTTrack_as<TMFTTracks>();
         globalClusters += mfttrack.nClusters();
         VarManager::FillTrackCollision<TMuonFillMap>(muontrack, collision);
-	if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-	  auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+        if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+          auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
           VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
-	}else{
+        } else {
           VarManager::FillGlobalMuonRefit<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision);
-	}
+        }
       } else {
         VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
       }
@@ -1189,7 +1189,7 @@ struct TableMakerMC {
     }
 
     if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-      for (auto &mfttrackConv : mftCovs) {
+      for (auto& mfttrackConv : mftCovs) {
         map_mfttrackcovs[mfttrackConv.matchMFTTrackId()] = mfttrackConv.globalIndex();
       }
     }
@@ -1213,11 +1213,11 @@ struct TableMakerMC {
             if (fConfigVariousOptions.fKeepBestMatch) {
               skimBestMuonMatches(muons);
             }
-	    if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+            if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
               skimMuons<TMuonFillMap, TMFTFillMap>(collision, muons, groupedMuonIndices, mcParticles, mftTracks, mftCovs);
-	    }else{
+            } else {
               skimMuons<TMuonFillMap, TMFTFillMap>(collision, muons, groupedMuonIndices, mcParticles, mftTracks, nullptr);
-	    }
+            }
           } else {
             auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
             skimMuons<TMuonFillMap, 0u>(collision, muons, groupedMuonIndices, mcParticles, nullptr, nullptr);
@@ -1396,9 +1396,9 @@ struct TableMakerMC {
   }
 
   void processPPMuonRefit(MyEventsWithMults const& collisions, aod::BCsWithTimestamps const& bcs,
-                         MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
-                         aod::FwdTrackAssoc const& fwdTrackAssocs, aod::MFTTrackAssoc const& mftAssocs,
-                         aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles, aod::MFTTracksCov const& mftCovs)
+                          MyMuonsWithCov const& tracksMuon, MFTTrackLabeled const& mftTracks,
+                          aod::FwdTrackAssoc const& fwdTrackAssocs, aod::MFTTrackAssoc const& mftAssocs,
+                          aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles, aod::MFTTracksCov const& mftCovs)
   {
     fullSkimming<gkEventFillMapWithMults, 0u, gkMuonFillMapWithCov, gkMFTCovFillMap>(collisions, bcs, nullptr, tracksMuon, mftTracks, nullptr, fwdTrackAssocs, mftAssocs, mcCollisions, mcParticles, mftCovs);
   }
