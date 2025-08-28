@@ -49,20 +49,20 @@ using HfcRedCollision = HfcRedCollisions::iterator;
 
 namespace hf_candidate_reduced
 {
-DECLARE_SOA_INDEX_COLUMN(HfcRedCollision, hfcRedCollision);   //! ReducedCollision index
-DECLARE_SOA_INDEX_COLUMN(HfcRedFlowColl, hfcRedFlowColl);   //! ReducedCollision index
-DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                  //! Prong 0 index
-DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                  //! Prong 1 index
-DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                  //! Prong2 index
-DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                  //! Phi of the candidate
-DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                  //! Eta of the candidate
-DECLARE_SOA_COLUMN(PtCand, ptCand, float);                    //! Pt of the candidate
-DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);              //! Invariant mass of Ds candidate
-DECLARE_SOA_COLUMN(InvMassCharmHad, invMassCharmHad, float);  //! Invariant mass of CharmHad candidate
-DECLARE_SOA_COLUMN(BdtScorePrompt, bdtScorePrompt, float);    //! BDT output score for prompt hypothesis
-DECLARE_SOA_COLUMN(BdtScoreBkg, bdtScoreBkg, float);          //! BDT output score for backgronud hypothesis
-DECLARE_SOA_COLUMN(BdtScore0, bdtScore0, float);              //! First BDT output score
-DECLARE_SOA_COLUMN(BdtScore1, bdtScore1, float);              //! Second BDT output score
+DECLARE_SOA_INDEX_COLUMN(HfcRedCollision, hfcRedCollision);  //! ReducedCollision index
+DECLARE_SOA_INDEX_COLUMN(HfcRedFlowColl, hfcRedFlowColl);    //! ReducedCollision index
+DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                 //! Prong 0 index
+DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                 //! Prong 1 index
+DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                 //! Prong2 index
+DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                 //! Phi of the candidate
+DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                 //! Eta of the candidate
+DECLARE_SOA_COLUMN(PtCand, ptCand, float);                   //! Pt of the candidate
+DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);             //! Invariant mass of Ds candidate
+DECLARE_SOA_COLUMN(InvMassCharmHad, invMassCharmHad, float); //! Invariant mass of CharmHad candidate
+DECLARE_SOA_COLUMN(BdtScorePrompt, bdtScorePrompt, float);   //! BDT output score for prompt hypothesis
+DECLARE_SOA_COLUMN(BdtScoreBkg, bdtScoreBkg, float);         //! BDT output score for backgronud hypothesis
+DECLARE_SOA_COLUMN(BdtScore0, bdtScore0, float);             //! First BDT output score
+DECLARE_SOA_COLUMN(BdtScore1, bdtScore1, float);             //! Second BDT output score
 } // namespace hf_candidate_reduced
 DECLARE_SOA_TABLE(DsCandReduceds, "AOD", "DSCANDREDUCED", //! Table with Ds candidate info
                   soa::Index<>,
