@@ -33,16 +33,25 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 
+// Enum containing the ordering of statistics histograms for the zorro information
+enum SkimStatsHists {
+  kStatsZorroInfo = 0,
+  kStatsZorroSel
+};
+
 struct skimmerOTS {
   Produces<o2::aod::EMSWTriggerInfosTMP> swt_tmp;
 
   // CCDB options
   Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> cfg_swt_names{"cfg_swt_names", "fHighTrackMult,fHighFt0Mult", "comma-separated software trigger names"}; // !trigger names have to be pre-registered in dileptonTable.h for bit operation!
+  Configurable<uint64_t> cfgBcTolerance{"cfgBcTolerance", 100, "Number of BCs of margin for software triggers"};
 
   std::vector<std::string> swt_names;
   int mRunNumber;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
+
+  OutputObj<TList> fStatsList{"Zorro"}; //! Info from Zorro
 
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
@@ -66,7 +75,12 @@ struct skimmerOTS {
       hEventCounter->GetXaxis()->SetBinLabel(idx + 2, swt_names[idx].data());
     }
 
-    registry.add("hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
+    fStatsList.setObject(new TList());
+    fStatsList->SetOwner(kTRUE);
+    TH2D* histZorroInfo = new TH2D("ZorroInfo", "Zorro information", 1, -0.5, 0.5, 1, -0.5, 0.5);
+    fStatsList->AddAt(histZorroInfo, kStatsZorroInfo);
+    TH2D* histZorroSel = new TH2D("ZorroSel", "trigger of interested", 1, -0.5, 0.5, 1, -0.5, 0.5);
+    fStatsList->AddAt(histZorroSel, kStatsZorroSel);
   }
 
   ~skimmerOTS()
@@ -85,14 +99,14 @@ struct skimmerOTS {
     if (mRunNumber == bc.runNumber()) {
       return;
     }
-
+    zorro.setBCtolerance(cfgBcTolerance);
     mTOIidx = zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
     for (auto& idx : mTOIidx) {
       LOGF(info, "Trigger of Interest : index = %d", idx);
     }
     mNinspectedTVX = zorro.getInspectedTVX()->GetBinContent(1);
     LOGF(info, "total inspected TVX events = %d in run number %d", mNinspectedTVX, bc.runNumber());
-    registry.fill(HIST("hNInspectedTVX"), bc.runNumber(), mNinspectedTVX);
+    zorro.populateExternalHists(bc.runNumber(), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
 
     mRunNumber = bc.runNumber();
   }
@@ -107,11 +121,12 @@ struct skimmerOTS {
       initCCDB(bc);
 
       uint16_t trigger_bitmap = 0;
-      registry.fill(HIST("hEventCounter"), 1);   // all
-      zorro.populateHistRegistry(registry, bc.runNumber());
+      registry.fill(HIST("hEventCounter"), 1); // all
+      // zorro.populateHistRegistry(registry, bc.runNumber());
 
-      if (zorro.isSelected(bc.globalBC())) {     // triggered event
-        auto swt_bitset = zorro.getLastResult(); // this has to be called after zorro::isSelected, or simply call zorro.fetch
+      // if (zorro.isSelected(bc.globalBC())) {     // triggered event
+      if (zorro.isSelected(bc.globalBC(), cfgBcTolerance, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)))) { // triggered event
+        auto swt_bitset = zorro.getLastResult();                                                                      // this has to be called after zorro::isSelected, or simply call zorro.fetch
         // LOGF(info, "swt_bitset.to_string().c_str() = %s", swt_bitset.to_string().c_str());
         for (size_t idx = 0; idx < mTOIidx.size(); idx++) {
           if (swt_bitset.test(mTOIidx[idx])) {
