@@ -19,6 +19,7 @@ o2physics_add_header_only_library(DataModel
                                           PIDResponseITS.h
                                           PIDResponseTOF.h
                                           PIDResponseTPC.h
+                                          PIDResponseCombined.h
                                           CollisionAssociationTables.h
                                           TrackSelectionTables.h
                                           McCollisionExtra.h
