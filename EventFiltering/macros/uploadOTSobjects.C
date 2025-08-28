@@ -31,13 +31,10 @@
 
 constexpr uint32_t chunkSize = 1000000;
 
-void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien, bool chunkedProcessing)
+void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien, bool chunkedProcessing = true)
 {
-  const std::string kBaseCCDBPath = "Users/m/mpuccio/EventFiltering/OTS/";
+  const std::string kBaseCCDBPath = "EventFiltering/Zorro/";
   std::string baseCCDBpath = passName.empty() ? kBaseCCDBPath : kBaseCCDBPath + passName + "/";
-  if (chunkedProcessing) {
-    baseCCDBpath += "Chunked/";
-  }
   if (useAlien) {
     TGrid::Connect("alien://");
   }
@@ -141,9 +138,9 @@ void uploadOTSobjects(std::string inputList, std::string passName, bool useAlien
   }
 }
 
-void uploadOTSobjects(std::string periodName, bool chunkedProcessing)
+void uploadOTSobjects(std::string periodName)
 {
   int year = 2000 + std::stoi(periodName.substr(3, 2));
   gSystem->Exec(Form("alien_find /alice/data/%i/%s/ ctf_skim_full/AnalysisResults_fullrun.root | sed 's:/AnalysisResults_fullrun\\.root::' > list_%s.txt", year, periodName.data(), periodName.data()));
-  uploadOTSobjects(Form("list_%s.txt", periodName.data()), "", true, chunkedProcessing);
+  uploadOTSobjects(Form("list_%s.txt", periodName.data()), "", true, true);
 }

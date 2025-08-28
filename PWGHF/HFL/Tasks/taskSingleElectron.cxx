@@ -18,19 +18,22 @@
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisTask.h>
 #include <Framework/runDataProcessing.h>
 
+#include <map>
+
 using namespace o2;
 using namespace o2::constants::math;
+using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 enum PdgCode {
   kEta = 221,
   kOmega = 223,
-  kPhi = 333,
   kEtaPrime = 331
 };
 
@@ -79,6 +82,7 @@ struct HfTaskSingleElectron {
   Configurable<float> tpcNClsFoundOverFindableMin{"tpcNClsFoundOverFindableMin", 0.8, "min # of TPC found/findable clusters"};
   Configurable<float> tpcChi2perNClMax{"tpcChi2perNClMax", 4., "min # of tpc chi2 per clusters"};
   Configurable<int> itsIBClsMin{"itsIBClsMin", 3, "min # of its clusters in IB"};
+  Configurable<float> itsChi2perNClMax{"itsChi2perNClMax", 6., "min # of tpc chi2 per clusters"};
   Configurable<float> dcaxyMax{"dcaxyMax", 1., "max of track dca in xy"};
   Configurable<float> dcazMax{"dcazMax", 2., "max of track dca in z"};
   Configurable<float> tofNSigmaMax{"tofNSigmaMax", 3., "max of tof nsigma"};
@@ -92,7 +96,7 @@ struct HfTaskSingleElectron {
 
   // using declarations
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
-  using TracksEl = soa::Join<aod::Tracks, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl>;
+  using TracksEl = soa::Join<aod::Tracks, aod::TrackSelection, aod::TrackSelectionExtension, aod::TracksExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl>;
   using McTracksEl = soa::Join<aod::Tracks, aod::TrackExtra, aod::TracksDCA, aod::pidTOFFullEl, aod::pidTPCFullEl, aod::McTrackLabels>;
 
   // Filter
@@ -118,38 +122,39 @@ struct HfTaskSingleElectron {
   void init(InitContext const&)
   {
     // create histograms
-    histos.add("nEvents", "Number of events", kTH1F, {{1, 0., 1.}});
-    histos.add("VtxZ", "VtxZ; cm; entries", kTH1F, {axisPosZ});
-    histos.add("etaTrack", "etaTrack; #eta; entries", kTH1F, {axisEta});
-    histos.add("ptTrack", "#it{p}_{T} distribution of selected tracks; #it{p}_{T} (GeV/#it{c}); entries", kTH1F, {axisPt});
+    histos.add("nEvents", "Number of events", kTH1D, {{1, 0., 1.}});
+    histos.add("VtxZ", "VtxZ; cm; entries", kTH1D, {axisPosZ});
+    histos.add("etaTrack", "etaTrack; #eta; entries", kTH1D, {axisEta});
+    histos.add("ptTrack", "#it{p}_{T} distribution of selected tracks; #it{p}_{T} (GeV/#it{c}); entries", kTH1D, {axisPt});
 
     // QA plots for trigger track selection
-    histos.add("tpcNClsTrack", "tpcNClsTrack", kTH1F, {{200, 0, 200}});
-    histos.add("tpcFoundFindableTrack", "", kTH1F, {{10, 0, 1}});
-    histos.add("tpcChi2Track", "", kTH1F, {{100, 0, 10}});
-    histos.add("itsIBClsTrack", "", kTH1F, {{10, 0, 10}});
-    histos.add("dcaXYTrack", "", kTH1F, {{600, -3, 3}});
-    histos.add("dcaZTrack", "", kTH1F, {{600, -3, 3}});
+    histos.add("tpcNClsTrack", "tpcNClsTrack", kTH1D, {{200, 0, 200}});
+    histos.add("tpcFoundFindableTrack", "", kTH1D, {{10, 0, 1}});
+    histos.add("tpcChi2Track", "", kTH1D, {{100, 0, 10}});
+    histos.add("itsIBClsTrack", "", kTH1D, {{10, 0, 10}});
+    histos.add("itsChi2Track", "", kTH1D, {{50, 0, 50}});
+    histos.add("dcaXYTrack", "", kTH1D, {{600, -3, 3}});
+    histos.add("dcaZTrack", "", kTH1D, {{600, -3, 3}});
 
     // pid
-    histos.add("tofNSigPt", "", kTH2F, {{axisPtEl}, {axisNsig}});
-    histos.add("tofNSigPtQA", "", kTH2F, {{axisPtEl}, {axisNsig}});
-    histos.add("tpcNSigPt", "", kTH2F, {{axisPtEl}, {axisNsig}});
-    histos.add("tpcNSigPtAfterTofCut", "", kTH2F, {{axisPtEl}, {axisNsig}});
-    histos.add("tpcNSigPtQA", "", kTH2F, {{axisPtEl}, {axisNsig}});
+    histos.add("tofNSigPt", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tofNSigPtQA", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tpcNSigPt", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tpcNSigPtAfterTofCut", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tpcNSigPtQA", "", kTH2D, {{axisPtEl}, {axisNsig}});
 
     // track impact parameter
-    histos.add("dcaTrack", "", kTH2F, {{axisPtEl}, {axisTrackIp}});
-    histos.add("dcaBeauty", "", kTH2F, {{axisPtEl}, {axisTrackIp}});
-    histos.add("dcaCharm", "", kTH2F, {{axisPtEl}, {axisTrackIp}});
-    histos.add("dcaDalitz", "", kTH2F, {{axisPtEl}, {axisTrackIp}});
-    histos.add("dcaConv", "", kTH2F, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaTrack", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaBeauty", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaCharm", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaDalitz", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
+    histos.add("dcaConv", "", kTH2D, {{axisPtEl}, {axisTrackIp}});
 
     // QA plots for MC
-    histos.add("hPdgC", "", kTH1F, {{10001, -0.5, 10000.5}});
-    histos.add("hPdgB", "", kTH1F, {{10001, -0.5, 10000.5}});
-    histos.add("hPdgDa", "", kTH1F, {{10001, -0.5, 10000.5}});
-    histos.add("hPdgCo", "", kTH1F, {{10001, -0.5, 10000.5}});
+    histos.add("hPdgC", "", kTH1D, {{10001, -0.5, 10000.5}});
+    histos.add("hPdgB", "", kTH1D, {{10001, -0.5, 10000.5}});
+    histos.add("hPdgDa", "", kTH1D, {{10001, -0.5, 10000.5}});
+    histos.add("hPdgCo", "", kTH1D, {{10001, -0.5, 10000.5}});
   }
 
   template <typename TrackType>
@@ -165,9 +170,11 @@ struct HfTaskSingleElectron {
     if (track.tpcNClsCrossedRows() < tpcNCrossedRowMin) {
       return false;
     }
+
     if (track.tpcCrossedRowsOverFindableCls() < tpcNClsFoundOverFindableMin) {
       return false;
     }
+
     if (track.tpcChi2NCl() > tpcChi2perNClMax) {
       return false;
     }
@@ -176,9 +183,14 @@ struct HfTaskSingleElectron {
       return false;
     }
 
+    if (track.itsChi2NCl() > itsChi2perNClMax) {
+      return false;
+    }
+
     if (std::abs(track.dcaXY()) > dcaxyMax) {
       return false;
     }
+
     if (std::abs(track.dcaZ()) > dcazMax) {
       return false;
     }
@@ -319,25 +331,22 @@ struct HfTaskSingleElectron {
       if (mctrack.size()) {
         auto const& grmothersIdsVec = mctrack.front().mothersIds();
         if (grmothersIdsVec.empty()) {
-          if (motherPdg == kPi0) {
-            return Pi0;
-          } else if (motherPdg == kEta) {
-            return Eta;
-          } else if (motherPdg == kOmega) {
-            return Omega;
-          } else if (motherPdg == kPhi) {
-            return Phi;
-          } else if (motherPdg == kEtaPrime) {
-            return EtaPrime;
-          } else if (motherPdg == kRho770_0) {
-            return Rho0;
-          } else if (motherPdg == kKPlus) {
-            return Ke3;
-          } else if (motherPdg == kK0Long) {
-            return K0l;
-          } else {
-            return Else;
+          static const std::map<int, SourceType> pdgToSource = {
+            {kPi0, Pi0},
+            {kEta, Eta},
+            {kOmega, Omega},
+            {kPhi, Phi},
+            {kEtaPrime, EtaPrime},
+            {kRho770_0, Rho0},
+            {kKPlus, Ke3},
+            {kK0Long, K0l}};
+
+          auto it = pdgToSource.find(motherPdg);
+          if (it != pdgToSource.end()) {
+            return it->second;
           }
+          return Else;
+
         } else {
           if (motherPdg == kPi0) {
             grmotherPt = mctrack.front().pt();
@@ -405,6 +414,10 @@ struct HfTaskSingleElectron {
         continue;
       }
 
+      if (!(track.passedITSRefit() && track.passedTPCRefit())) {
+        continue;
+      }
+
       histos.fill(HIST("etaTrack"), track.eta());
       histos.fill(HIST("ptTrack"), track.pt());
 
@@ -412,6 +425,7 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("tpcFoundFindableTrack"), track.tpcCrossedRowsOverFindableCls());
       histos.fill(HIST("tpcChi2Track"), track.tpcChi2NCl());
       histos.fill(HIST("itsIBClsTrack"), track.itsNClsInnerBarrel());
+      histos.fill(HIST("itsChi2Track"), track.itsChi2NCl());
       histos.fill(HIST("dcaXYTrack"), track.dcaXY());
       histos.fill(HIST("dcaZTrack"), track.dcaZ());
 
