@@ -418,7 +418,7 @@ class DielectronCut : public TNamed
         return track.tpcFractionSharedCls() < mMaxFracSharedClustersTPC;
 
       case DielectronCuts::kRelDiffPin:
-        return mMinRelDiffPin < (track.tpcInnerParam() - track.p()) / track.p() && (track.tpcInnerParam() - track.p()) / track.p() < mMaxRelDiffPin;
+        return mMinRelDiffPin < (track.p() - track.tpcInnerParam()) / track.tpcInnerParam() && (track.p() - track.tpcInnerParam()) / track.tpcInnerParam() < mMaxRelDiffPin;
 
       case DielectronCuts::kTPCChi2NDF:
         return mMinChi2PerClusterTPC < track.tpcChi2NCl() && track.tpcChi2NCl() < mMaxChi2PerClusterTPC;
