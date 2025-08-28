@@ -106,7 +106,6 @@ struct skimmerOTS {
     }
     mNinspectedTVX = zorro.getInspectedTVX()->GetBinContent(1);
     LOGF(info, "total inspected TVX events = %d in run number %d", mNinspectedTVX, bc.runNumber());
-    zorro.populateExternalHists(bc.runNumber(), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
 
     mRunNumber = bc.runNumber();
   }
@@ -122,7 +121,7 @@ struct skimmerOTS {
 
       uint16_t trigger_bitmap = 0;
       registry.fill(HIST("hEventCounter"), 1); // all
-      // zorro.populateHistRegistry(registry, bc.runNumber());
+      zorro.populateExternalHists(bc.runNumber(), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroInfo)), reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
 
       // if (zorro.isSelected(bc.globalBC())) {     // triggered event
       if (zorro.isSelected(bc.globalBC(), cfgBcTolerance, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)))) { // triggered event
