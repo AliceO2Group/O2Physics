@@ -41,6 +41,7 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <string>
 #include <vector>
 
 using namespace o2;
