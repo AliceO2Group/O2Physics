@@ -42,9 +42,11 @@ class FastTracker
   // Layer and layer configuration
   void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
   DetLayer GetLayer(const int layer, bool ignoreBarrelLayers = true) const;
+  std::vector<DetLayer> GetLayers() const { return layers; }
   int GetLayerIndex(const std::string& name) const;
   size_t GetNLayers() const { return layers.size(); }
   bool IsLayerInert(const int layer) const { return layers[layer].isInert(); }
+  void ClearLayers() { layers.clear(); }
   void SetRadiationLength(const std::string layerName, float x0) { layers[GetLayerIndex(layerName)].setRadiationLength(x0); }
   void SetRadius(const std::string layerName, float r) { layers[GetLayerIndex(layerName)].setRadius(r); }
   void SetResolutionRPhi(const std::string layerName, float resRPhi) { layers[GetLayerIndex(layerName)].setResolutionRPhi(resRPhi); }
@@ -57,6 +59,7 @@ class FastTracker
 
   void AddSiliconALICE3v4(std::vector<float> pixelResolution);
   void AddSiliconALICE3v2(std::vector<float> pixelResolution);
+  void AddSiliconALICE3(std::vector<float> pixelResolution);
   void AddTPC(float phiResMean, float zResMean);
 
   void Print();

@@ -34,6 +34,7 @@
 #include <CCDB/BasicCCDBManager.h>
 
 #include <TF1.h>
+#include <TFormula.h>
 #include <TList.h>
 #include <TMCProcess.h>
 #include <TPDGCode.h>
@@ -47,6 +48,7 @@
 #include <ranges>
 #include <sstream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 namespace o2
@@ -84,7 +86,7 @@ enum SystemType {
 
 /// \std::map systemInternalCodesMap
 /// \brief maps system names to internal system codes
-static const std::map<std::string, int> systemInternalCodesMap{
+static const std::map<std::string_view, int> systemInternalCodesMap{
   {"", SystemNoSystem},
   {"pp", SystemPp},
   {"pPb", SystemPPb},
@@ -99,7 +101,7 @@ static const std::map<std::string, int> systemInternalCodesMap{
 
 /// \std::map systemExternalNamesMap
 /// \brief maps system internal codes to system external names
-static const std::map<int, std::string> systemExternalNamesMap{
+static const std::map<int, std::string_view> systemExternalNamesMap{
   {SystemNoSystem, ""},
   {SystemPp, "pp"},
   {SystemPPb, "pPb"},
@@ -140,7 +142,7 @@ enum CentMultEstimatorType {
 
 /// \std::map estimatorInternalCodesMap
 /// \brief maps centrality/multiplicity estimator names to internal estimator codes
-static const std::map<std::string, int> estimatorInternalCodesMap{
+static const std::map<std::string_view, int> estimatorInternalCodesMap{
   {"NOCM", CentMultNOCM},
   {"V0M", CentMultV0M},
   {"CL0", CentMultCL0},
@@ -153,7 +155,7 @@ static const std::map<std::string, int> estimatorInternalCodesMap{
 
 /// \std::map estimatorExternalNamesMap
 /// \brief maps internal estimator codes to centrality/multiplicity estimator external names
-static const std::map<int, std::string> estimatorExternalNamesMap{
+static const std::map<int, std::string_view> estimatorExternalNamesMap{
   {CentMultNOCM, "NOCM"},
   {CentMultV0M, "V0M"},
   {CentMultCL0, "CL0"},
@@ -216,7 +218,7 @@ static const std::map<int, int> estimatorMultiplicitySourceMap{
 
 /// \std::vector<std::map> multiplicitySourceExternalNamesMap
 /// \brief maps internal multiplicity source to external names for the LHC runs
-static const std::vector<std::map<int, std::string>> multiplicitySourceExternalNamesMap{
+static const std::vector<std::map<int, std::string_view>> multiplicitySourceExternalNamesMap{
   /* Run 1 and Run 2 */
   {
     {MultSourceT0A, "T0A multiplicity"},
@@ -225,7 +227,7 @@ static const std::vector<std::map<int, std::string>> multiplicitySourceExternalN
     {MultSourceV0A, "V0A multiplicity"},
     {MultSourceV0C, "V0C multiplicity"},
     {MultSourceV0M, "V0M multiplicity"},
-    {MultSourceNtracks, "Number of tracks"},
+    {MultSourceNtracks, "Global tracks"},
     {MultSourcePvContributors, "PV contributors"}},
   /* Run 3 */
   {
@@ -235,21 +237,93 @@ static const std::vector<std::map<int, std::string>> multiplicitySourceExternalN
     {MultSourceV0A, "FV0A multiplicity"},
     {MultSourceV0C, "WRONG SOURCE"},
     {MultSourceV0M, "FV0M multiplicity"},
-    {MultSourceNtracks, "Number of tracks"},
+    {MultSourceNtracks, "Global tracks"},
     {MultSourcePvContributors, "PV contributors"}}};
 
 /// \std::map multiplicitySourceConfigNamesMap
 /// \brief maps internal multiplicity source to external configuration names
 /// At configuration time neither the system nor the lhc run is known
-static const std::map<int, std::string> multiplicitySourceConfigNamesMap{
-  {MultSourceT0A, "FT0A"},
-  {MultSourceT0C, "FT0C"},
-  {MultSourceT0M, "FT0M"},
-  {MultSourceV0A, "FV0A"},
-  {MultSourceV0C, "V0C"},
-  {MultSourceV0M, "FV0M"},
-  {MultSourceNtracks, "Number of tracks"},
+static const std::map<int, std::string_view> multiplicitySourceConfigNamesMap{
+  {MultSourceT0A, "FT0A (T0A)"},
+  {MultSourceT0C, "FT0C (T0C)"},
+  {MultSourceT0M, "FT0M (T0M)"},
+  {MultSourceV0A, "FV0A (V0A)"},
+  {MultSourceV0C, "WRONG (V0C)"},
+  {MultSourceV0M, "FV0M (V0M)"},
+  {MultSourceNtracks, "Global tracks"},
   {MultSourcePvContributors, "PV contributors"}};
+
+/// \enum CentMultCorrelationsParams
+/// \brief internal codes for the supported parameters for centrality/multiplicity correlations exclusion cuts
+enum CentMultCorrelationsParams {
+  CentMultCorrelationsMT0A = 0,  ///< multiplicity from T0A
+  CentMultCorrelationsMT0C,      ///< multiplicity from T0C
+  CentMultCorrelationsMT0M,      ///< multiplicity from T0M
+  CentMultCorrelationsMV0A,      ///< multiplicity from V0A
+  CentMultCorrelationsMV0C,      ///< multiplicity from V0C (only Run 1 & Run 2)
+  CentMultCorrelationsMV0M,      ///< multiplicity from V0M
+  CentMultCorrelationsMNGLTRK,   ///< multiplicity from number of global tracks
+  CentMultCorrelationsMNPVC,     ///< multiplicity from number of PV contributors
+  CentMultCorrelationsCT0A,      ///< centrality from T0A
+  CentMultCorrelationsCT0C,      ///< centrality from T0C
+  CentMultCorrelationsCT0M,      ///< centrality from T0M
+  CentMultCorrelationsCV0A,      ///< centrality from V0A
+  CentMultCorrelationsCNTPV,     ///< centrality from number of PV contributors
+  CentMultCorrelationsNOOFPARAMS ///< the number of parameters supported
+};
+
+/// @brief prefix increment operator
+/// @param ipar value
+/// @return the incremented value
+inline CentMultCorrelationsParams& operator++(CentMultCorrelationsParams& ipar)
+{
+  return ipar = static_cast<CentMultCorrelationsParams>(static_cast<int>(ipar) + 1);
+}
+
+/// @brief postfix increment operator
+/// @param ipar the value
+/// @param empty
+/// @return the same value
+inline CentMultCorrelationsParams operator++(CentMultCorrelationsParams& ipar, int)
+{
+  CentMultCorrelationsParams iparTmp(ipar);
+  ++ipar;
+  return iparTmp;
+}
+
+/// \std::map centMultCorrelationsParamsMap
+/// \brief maps centrality/multiplicity correlations parameters names to internal codes
+static const std::map<std::string_view, CentMultCorrelationsParams> centMultCorrelationsParamsMap{
+  {"MT0A", CentMultCorrelationsMT0A},
+  {"MT0C", CentMultCorrelationsMT0C},
+  {"MT0M", CentMultCorrelationsMT0M},
+  {"MV0A", CentMultCorrelationsMV0A},
+  {"MV0C", CentMultCorrelationsMV0C},
+  {"MV0M", CentMultCorrelationsMV0M},
+  {"MNGLTRK", CentMultCorrelationsMNGLTRK},
+  {"MNPVC", CentMultCorrelationsMNPVC},
+  {"CT0A", CentMultCorrelationsCT0A},
+  {"CT0C", CentMultCorrelationsCT0C},
+  {"CT0M", CentMultCorrelationsCT0M},
+  {"CV0A", CentMultCorrelationsCV0A},
+  {"CNTPV", CentMultCorrelationsCNTPV}};
+
+/// \std::map centMultCorrelationsParamsNamesMap
+/// \brief maps centrality/multiplicity correlations parameters internal codes to their external names
+static const std::map<CentMultCorrelationsParams, std::string_view> centMultCorrelationsParamsNamesMap{
+  {CentMultCorrelationsMT0A, "MT0A"},
+  {CentMultCorrelationsMT0C, "MT0C"},
+  {CentMultCorrelationsMT0M, "MT0M"},
+  {CentMultCorrelationsMV0A, "MV0A"},
+  {CentMultCorrelationsMV0C, "MV0C"},
+  {CentMultCorrelationsMV0M, "MV0M"},
+  {CentMultCorrelationsMNGLTRK, "MNGLTRK"},
+  {CentMultCorrelationsMNPVC, "MNPVC"},
+  {CentMultCorrelationsCT0A, "CT0A"},
+  {CentMultCorrelationsCT0C, "CT0C"},
+  {CentMultCorrelationsCT0M, "CT0M"},
+  {CentMultCorrelationsCV0A, "CV0A"},
+  {CentMultCorrelationsCNTPV, "CNTPV"}};
 
 /// \enum TriggerSelectionTags
 /// \brief The potential trigger tags to apply for event selection
@@ -275,7 +349,7 @@ enum TriggerSelectionTags {
 
 /// \std::map triggerSelectionBitsMap
 /// \brief maps trigger selection tags to internal trigger selection bits
-static const std::map<std::string, int> triggerSelectionBitsMap{
+static const std::map<std::string_view, int> triggerSelectionBitsMap{
   {"none", TriggSelNONE},
   {"mb", TriggSelMB},
   {"nosamebunchpup", TriggSelNOSAMEBUNCHPUP},
@@ -295,7 +369,7 @@ static const std::map<std::string, int> triggerSelectionBitsMap{
 
 /// \std::map triggerSelectionExternalNamesMap
 /// \brief maps trigger selection bits to external names
-static const std::map<int, std::string> triggerSelectionExternalNamesMap{
+static const std::map<int, std::string_view> triggerSelectionExternalNamesMap{
   {TriggSelNONE, "none"},
   {TriggSelMB, "Sel8"}, ///< Sel8 includes kIsTriggerTVX, kNoTimeFrameBorder, and kNoITSROFrameBorder
   {TriggSelNOSAMEBUNCHPUP, "No same bunch pileup"},
@@ -325,22 +399,23 @@ enum OccupancyEstimationType {
 /// \enum CollisionSelectionFlags
 /// \brief The different criteria for selecting/rejecting collisions
 enum CollisionSelectionFlags {
-  CollSelIN = 0,        ///< new unhandled, yet, event
-  CollSelMBBIT,         ///< minimum  bias
-  CollSelINT7BIT,       ///< INT7 Run 1/2
-  CollSelSEL7BIT,       ///< Sel7 Run 1/2
-  CollSelTRIGGSELBIT,   ///< Accepted by trigger selection
-  CollSelRCTBIT,        ///< Accetped by the RCT information
-  CollSelOCCUPANCYBIT,  ///< occupancy within limits
-  CollSelCENTRALITYBIT, ///< centrality cut passed
-  CollSelZVERTEXBIT,    ///< zvtx cut passed
-  CollSelSELECTED,      ///< the event has passed all selections
-  CollSelNOOFFLAGS      ///< number of flags
+  CollSelIN = 0,           ///< new unhandled, yet, event
+  CollSelMBBIT,            ///< minimum  bias
+  CollSelINT7BIT,          ///< INT7 Run 1/2
+  CollSelSEL7BIT,          ///< Sel7 Run 1/2
+  CollSelTRIGGSELBIT,      ///< Accepted by trigger selection
+  CollSelRCTBIT,           ///< Accetped by the RCT information
+  CollSelOCCUPANCYBIT,     ///< occupancy within limits
+  CollSelCENTRALITYBIT,    ///< centrality cut passed
+  CollSelZVERTEXBIT,       ///< zvtx cut passed
+  CollSelMULTCORRELATIONS, ///< multiplicities correlations passed
+  CollSelSELECTED,         ///< the event has passed all selections
+  CollSelNOOFFLAGS         ///< number of flags
 };
 
 /// \std::mag collisionSelectionExternalNamesMap
 /// \brief maps collision selection bits to external names
-static const std::map<int, std::string> collisionSelectionExternalNamesMap{
+static const std::map<int, std::string_view> collisionSelectionExternalNamesMap{
   {CollSelIN, "In"},
   {CollSelMBBIT, "MB"},
   {CollSelINT7BIT, "INT7"},
@@ -350,6 +425,7 @@ static const std::map<int, std::string> collisionSelectionExternalNamesMap{
   {CollSelOCCUPANCYBIT, "Occupancy"},
   {CollSelCENTRALITYBIT, "Centrality"},
   {CollSelZVERTEXBIT, "z vertex"},
+  {CollSelMULTCORRELATIONS, "Multiplicities correlations"},
   {CollSelSELECTED, "Selected"}};
 
 /// \enum StrongDebugging
@@ -384,6 +460,14 @@ std::bitset<32> collisionFlags;
 std::bitset<32> collisionSelectionFlags;
 std::bitset<32> triggerFlags;
 std::bitset<32> triggerSelectionFlags;
+
+//============================================================================================
+// The collision exclusion using correlations between multiplicity/centrality observables
+//============================================================================================
+bool useCentralityMultiplicityCorrelationsExclusion = false;
+std::vector<float> collisionMultiplicityCentralityObservables = {};
+std::vector<int> observableIndexForCentralityMultiplicityParameter = {};
+TFormula* multiplicityCentralityCorrelationsExclusion = nullptr;
 
 //============================================================================================
 // The input data metadata access helper
@@ -736,17 +820,17 @@ float particleMaxDCAxy = 999.9f;
 float particleMaxDCAZ = 999.9f;
 bool traceCollId0 = false;
 
-inline std::bitset<32> getTriggerSelection(std::string const& triggstr)
+inline std::bitset<32> getTriggerSelection(std::string_view const& triggstr)
 {
   std::bitset<32> flags;
 
   auto split = [](const auto s) {
-    std::vector<std::string> tokens;
-    std::string token;
+    std::vector<std::string_view> tokens;
+    std::string_view token;
 
     size_t posStart = 0;
     size_t posEnd;
-    while ((posEnd = s.find("+", posStart)) != std::string::npos) {
+    while ((posEnd = s.find("+", posStart)) != std::string_view::npos) {
       token = s.substr(posStart, posEnd - posStart);
       posStart = posEnd + 1;
       tokens.push_back(token);
@@ -755,13 +839,13 @@ inline std::bitset<32> getTriggerSelection(std::string const& triggstr)
     return tokens;
   };
 
-  std::vector<std::string> tags = split(triggstr);
+  std::vector<std::string_view> tags = split(triggstr);
 
   for (const auto& tag : tags) {
     if (triggerSelectionBitsMap.contains(tag)) {
       flags.set(triggerSelectionBitsMap.at(tag), true);
     } else {
-      LOGF(fatal, "Wrong trigger selection tag: %s", tag.c_str());
+      LOGF(fatal, "Wrong trigger selection tag: %s", tag.data());
     }
   }
   return flags;
@@ -770,15 +854,16 @@ inline std::bitset<32> getTriggerSelection(std::string const& triggstr)
 inline SystemType getSytemTypeFromMetaData()
 {
   auto period = metadataInfo.get("LPMProductionTag");
+  auto anchoredPeriod = metadataInfo.get("AnchorProduction");
 
-  if (period == "LHC25ad" || period == "LHC25g5") {
-    LOGF(info, "Configuring for p-O LHC25ad period");
+  if (period == "LHC25ad" || anchoredPeriod == "LHC25ad") {
+    LOGF(info, "Configuring for p-O (anchored to) LHC25ad period");
     return SystemPORun3;
-  } else if (period == "LHC25ae" || period == "LHC25g6") {
-    LOGF(info, "Configuring for O-O LHC25ae period");
+  } else if (period == "LHC25ae" || anchoredPeriod == "LHC25ae") {
+    LOGF(info, "Configuring for O-O (anchored to) LHC25ae period");
     return SystemOORun3;
-  } else if (period == "LHC25af" || period == "LHC25g7") {
-    LOGF(info, "Configuring for Ne-Ne LHC25af period");
+  } else if (period == "LHC25af" || anchoredPeriod == "LHC25af") {
+    LOGF(info, "Configuring for Ne-Ne (anchored to) LHC25af period");
     return SystemNeNeRun3;
   } else {
     LOGF(fatal, "DptDptCorrelations::getSystemTypeFromMetadata(). No automatic system type configuration for %s period", period.c_str());
@@ -786,7 +871,7 @@ inline SystemType getSytemTypeFromMetaData()
   return SystemPbPb;
 }
 
-inline SystemType getSystemType(std::string const& sysstr)
+inline SystemType getSystemType(std::string_view const& sysstr)
 {
   /* we have to figure out how extract the system type */
   if (sysstr == "Auto") {
@@ -797,7 +882,7 @@ inline SystemType getSystemType(std::string const& sysstr)
     if (systemInternalCodesMap.contains(sysstr)) {
       return static_cast<SystemType>(systemInternalCodesMap.at(sysstr));
     } else {
-      LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %s", sysstr.c_str());
+      LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %s", sysstr.data());
     }
   }
   return SystemPbPb;
@@ -825,17 +910,17 @@ inline DataType getDataType(std::string const& datastr)
   return kData;
 }
 
-inline CentMultEstimatorType getCentMultEstimator(std::string const& datastr)
+inline CentMultEstimatorType getCentMultEstimator(std::string_view const& datastr)
 {
   if (estimatorInternalCodesMap.contains(datastr)) {
     return static_cast<CentMultEstimatorType>(estimatorInternalCodesMap.at(datastr));
   } else {
-    LOGF(fatal, "Centrality/Multiplicity estimator %s not supported yet", datastr.c_str());
+    LOGF(fatal, "Centrality/Multiplicity estimator %s not supported yet", datastr.data());
   }
   return CentMultNOCM;
 }
 
-inline std::string getCentMultEstimatorName(CentMultEstimatorType est)
+inline std::string_view getCentMultEstimatorName(CentMultEstimatorType est)
 {
   if (estimatorExternalNamesMap.contains(est)) {
     return estimatorExternalNamesMap.at(est);
@@ -845,7 +930,7 @@ inline std::string getCentMultEstimatorName(CentMultEstimatorType est)
   return "WRONG";
 }
 
-inline OccupancyEstimationType getOccupancyEstimator(const std::string& estimator)
+inline OccupancyEstimationType getOccupancyEstimator(const std::string_view& estimator)
 {
   if (estimator == "None") {
     return OccupancyNOOCC;
@@ -854,8 +939,35 @@ inline OccupancyEstimationType getOccupancyEstimator(const std::string& estimato
   } else if (estimator == "FT0C") {
     return OccupancyFT0COCC;
   } else {
-    LOGF(fatal, "Occupancy estimator %s not supported yet", estimator.c_str());
+    LOGF(fatal, "Occupancy estimator %s not supported yet", estimator.data());
     return OccupancyNOOCC;
+  }
+}
+
+/// @brief  gets the exclusion formula from the corresponding expression and initializes the exclusion machinery
+/// @param  std::string_view with the formula expression
+/// @return the expression TFormula
+inline TFormula* getExclusionFormula(std::string_view formula)
+{
+  if (formula.length() != 0) {
+    useCentralityMultiplicityCorrelationsExclusion = true;
+    TFormula* f = new TFormula("Exclussion expression", formula.data());
+    int nParameters = f->GetNpar();
+    collisionMultiplicityCentralityObservables.resize(CentMultCorrelationsNOOFPARAMS);
+    observableIndexForCentralityMultiplicityParameter.resize(nParameters);
+    LOGF(info, "Configuring outliers exclusion with the formula %s which has %d parameters", formula.data(), nParameters);
+    for (int iPar = 0; iPar < nParameters; ++iPar) {
+      if (centMultCorrelationsParamsMap.contains(std::string(f->GetParName(iPar)))) {
+        observableIndexForCentralityMultiplicityParameter[iPar] = centMultCorrelationsParamsMap.at(std::string(f->GetParName(iPar)));
+        LOGF(info, "\tAssigned observable %s with index %d to the parameter %s with parameter index %d", centMultCorrelationsParamsNamesMap.at(centMultCorrelationsParamsMap.at(std::string(f->GetParName(iPar)))).data(), static_cast<int>(centMultCorrelationsParamsMap.at(std::string(f->GetParName(iPar)))), f->GetParName(iPar), iPar);
+      } else {
+        LOGF(fatal, "Exclusion expression contains parameter %s which is still not supported. Please, fix it!", f->GetParName(iPar));
+      }
+    }
+    return f;
+  } else {
+    useCentralityMultiplicityCorrelationsExclusion = false;
+    return nullptr;
   }
 }
 
@@ -1172,6 +1284,25 @@ inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float
   }
 }
 
+/// @brief evalues the exclusion formula for the current multiplicity / centrality parameters
+/// @return true if the collision is not excluded according to the formula false otherwise
+/// WARNING: it has always to be called after filling the multiplicity / centrality observables
+inline bool isCollisionNotExcluded()
+{
+  bool notExcluded = true;
+  if (useCentralityMultiplicityCorrelationsExclusion) {
+    [&]() {
+      /* set the formula parameter values */
+      for (size_t iPar = 0; iPar < observableIndexForCentralityMultiplicityParameter.size(); ++iPar) {
+        multiplicityCentralityCorrelationsExclusion->SetParameter(iPar, collisionMultiplicityCentralityObservables[observableIndexForCentralityMultiplicityParameter[iPar]]);
+      }
+    }();
+    notExcluded = multiplicityCentralityCorrelationsExclusion->Eval() != 0;
+  }
+  collisionFlags.set(CollSelMULTCORRELATIONS, notExcluded);
+  return notExcluded;
+}
+
 //////////////////////////////////////////////////////////////////////////////////
 /// Occupancy selection
 //////////////////////////////////////////////////////////////////////////////////
@@ -1308,7 +1439,9 @@ inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 
   bool centmultsel = centralitySelection(collision, centormult);
 
-  bool accepted = trigsel && rctsel && occupancysel && zvtxsel && centmultsel;
+  bool centmultexclusion = isCollisionNotExcluded();
+
+  bool accepted = trigsel && rctsel && occupancysel && zvtxsel && centmultsel && centmultexclusion;
 
   if (accepted) {
     collisionFlags.set(CollSelSELECTED);

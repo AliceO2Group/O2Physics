@@ -1476,34 +1476,6 @@ AnalysisCompositeCut* o2::aod::dqcuts::GetCompositeCut(const char* cutName)
     }
   }
 
-  //---------------------------------------------------------------------------------------
-  // NOTE: Below there are several TPC pid cuts used for studies of the dE/dx degradation
-  //    and its impact on the high lumi pp quarkonia triggers
-  //  To be removed when not needed anymore
-  if (!nameStr.compare("jpsiPID1Randomized")) {
-    cut->AddCut(GetAnalysisCut("jpsiStandardKine")); // standard kine cuts usually are applied via Filter in the task
-    cut->AddCut(GetAnalysisCut("electronStandardQuality"));
-    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
-    cut->AddCut(GetAnalysisCut("electronPID1randomized"));
-    return cut;
-  }
-
-  if (!nameStr.compare("jpsiPID2Randomized")) {
-    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
-    cut->AddCut(GetAnalysisCut("electronStandardQuality"));
-    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
-    cut->AddCut(GetAnalysisCut("electronPID2randomized"));
-    return cut;
-  }
-
-  if (!nameStr.compare("jpsiPIDnsigmaRandomized")) {
-    cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
-    cut->AddCut(GetAnalysisCut("electronStandardQuality"));
-    cut->AddCut(GetAnalysisCut("standardPrimaryTrack"));
-    cut->AddCut(GetAnalysisCut("electronPIDnsigmaRandomized"));
-    return cut;
-  }
-
   if (!nameStr.compare("jpsiPIDworseRes")) {
     cut->AddCut(GetAnalysisCut("jpsiStandardKine"));
     cut->AddCut(GetAnalysisCut("electronStandardQuality"));
@@ -5136,13 +5108,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     return cut;
   }
 
-  if (!nameStr.compare("electronPID1randomized")) {
-    cutLow1->SetParameters(130., -40.0);
-    cut->AddCut(VarManager::kTPCsignalRandomized, 70., 100.);
-    cut->AddCut(VarManager::kTPCsignalRandomized, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
-    return cut;
-  }
-
   if (!nameStr.compare("electronPID2")) {
     cutLow1->SetParameters(130., -40.0);
     cut->AddCut(VarManager::kTPCsignal, 73., 100.);
@@ -5154,13 +5119,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
     cutLow1->SetParameters(130., -40.0);
     cut->AddCut(VarManager::kTPCsignal, 60., 110.);
     cut->AddCut(VarManager::kTPCsignal, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
-    return cut;
-  }
-
-  if (!nameStr.compare("electronPID2randomized")) {
-    cutLow1->SetParameters(130., -40.0);
-    cut->AddCut(VarManager::kTPCsignalRandomized, 73., 100.);
-    cut->AddCut(VarManager::kTPCsignalRandomized, cutLow1, 100.0, false, VarManager::kPin, 0.5, 3.0);
     return cut;
   }
 
@@ -5642,13 +5600,6 @@ AnalysisCut* o2::aod::dqcuts::GetAnalysisCut(const char* cutName)
   if (!nameStr.compare("AssocKine")) {
     cut->AddCut(VarManager::kPt, 1.0, 1000.0);
     cut->AddCut(VarManager::kEta, -0.9, 0.9);
-    return cut;
-  }
-
-  if (!nameStr.compare("electronPIDnsigmaRandomized")) {
-    cut->AddCut(VarManager::kTPCnSigmaElRandomized, -3.0, 3.0);
-    cut->AddCut(VarManager::kTPCnSigmaPrRandomized, 3.0, 3000.0);
-    cut->AddCut(VarManager::kTPCnSigmaPiRandomized, 3.0, 3000.0);
     return cut;
   }
 

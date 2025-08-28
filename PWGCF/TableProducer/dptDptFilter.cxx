@@ -49,6 +49,7 @@
 #include <algorithm>
 #include <cmath>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -112,17 +113,31 @@ static const std::vector<std::string> beforeAfterSufix = {"B", "A"};
 static constexpr float MultiplicityUpperLimitBase[11][8] = {
   /* T0A, T0C, T0M, V0A, V0C, V0M, tracks, PV contr. tracks */
   {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 100e3f, 10e3f, 400.0f}, /* no system */
-  {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 100e3f, 10e3f, 400.0f}, /* pp Run2 */
+  {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 50e3f, 5e3f, 400.0f},   /* pp Run2 */
   {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 100e3f, 10e3f, 400.0f}, /* pPb Run2 */
   {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 100e3f, 10e3f, 400.0f}, /* Pbp Run2 */
   {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 100e3f, 10e3f, 400.0f}, /* PbPb Run2 */
   {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 100e3f, 10e3f, 400.0f}, /* XeXe Run2 */
-  {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 100e3f, 10e3f, 400.0f}, /* pp Run3 */
+  {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 50e3f, 5e3f, 400.0f},   /* pp Run3 */
   {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 100e3f, 10e3f, 400.0f}, /* PbPb Run3 */
-  {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 100e3f, 10e3f, 400.0f}, /* NeNe Run3 */
-  {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 100e3f, 10e3f, 400.0f}, /* OO Run3 */
-  {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 100e3f, 10e3f, 400.0f}  /* pO Run3 */
+  {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 50e3f, 5e3f, 400.0f},   /* NeNe Run3 */
+  {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 50e3f, 5e3f, 400.0f},   /* OO Run3 */
+  {30e3f, 10e3f, 40e3f, 50e3f, 70e3f, 50e3f, 5e3f, 400.0f}    /* pO Run3 */
 };
+
+/* helpers for the multiplicity/centrality correlations exclusion formulae */
+static const std::string multiplicityCentralityCorrelationsFormulaBase[11][1] = {
+  /* no system */ {""},
+  /* pp Run2   */ {""},
+  /* pPb Run2  */ {""},
+  /* Pbp Run2  */ {""},
+  /* PbPb Run2 */ {""},
+  /* XeXe Run2 */ {""},
+  /* pp Run3   */ {""},
+  /* PbPb Run3 */ {""},
+  /* NeNe Run3 */ {"((221.987-0.706581*[CT0C]+0.00906828*[CT0C]*[CT0C]-23.5275*sqrt([CT0C])-2.5*(38.5823+2.00054*[CT0C]+0.0125088*[CT0C]*[CT0C]-8.47825*sqrt([CT0C])-0.273493*[CT0C]*sqrt([CT0C])))<=[MNGLTRK])&&((-0.0729502+0.79403*[MNPVC]+5.0*(0.032005+0.00372503*[MNPVC]-7.18977e-06*[MNPVC]*[MNPVC]+0.412714*sqrt([MNPVC])))>[MNGLTRK])&&((-0.0729502+0.79403*[MNPVC]-5.0*(0.032005+0.00372503*[MNPVC]-7.18977e-06*[MNPVC]*[MNPVC]+0.412714*sqrt([MNPVC])))<=[MNGLTRK])"},
+  /* OO Run3   */ {"((180.584-0.211625*[CT0C]+0.00568101*[CT0C]*[CT0C]-20.9838*sqrt([CT0C])-2.5*(32.665+1.67341*[CT0C]+0.0113878*[CT0C]*[CT0C]-6.83271*sqrt([CT0C])-0.239428*[CT0C]*sqrt([CT0C])))<=[MNGLTRK])&&((-0.0533229+0.79235*[MNPVC]+5.0*(0.031512+0.0045874*[MNPVC]-1.06374e-05*[MNPVC]*[MNPVC]+0.407526*sqrt([MNPVC])))>[MNGLTRK])&&((-0.0533229+0.79235*[MNPVC]-5.0*(0.031512+0.0045874*[MNPVC]-1.06374e-05*[MNPVC]*[MNPVC]+0.407526*sqrt([MNPVC])))<=[MNGLTRK])"},
+  /* pO Run3   */ {""}};
 
 //============================================================================================
 // The DptDptFilter histogram objects
@@ -393,6 +408,79 @@ struct Multiplicity {
   }
 };
 
+//////////////////////////////////////////////////////////////////////////////////
+/// Centrality/multiplicity correlations exclusion
+/// TODO: adaptation to Run 1/Run 2
+//////////////////////////////////////////////////////////////////////////////////
+template <typename CollisionObject, typename TrackListObject>
+inline void storeMultiplicitiesAndCentralities(CollisionObject const& collision, TrackListObject const& tracks)
+{
+  /* only do it if we are tracking the centrality / multiplicity correlations */
+  if (useCentralityMultiplicityCorrelationsExclusion) {
+    int nGlobalTracks = 0;
+    for (auto const& track : tracks) {
+      if (track.isGlobalTrack()) {
+        nGlobalTracks++;
+      }
+    }
+    for (CentMultCorrelationsParams ipar = CentMultCorrelationsMT0A; ipar < CentMultCorrelationsNOOFPARAMS; ++ipar) {
+      switch (ipar) {
+        case CentMultCorrelationsMT0A:
+          collisionMultiplicityCentralityObservables[ipar] = collision.multFT0A();
+          break;
+        case CentMultCorrelationsMT0C:
+          collisionMultiplicityCentralityObservables[ipar] = collision.multFT0C();
+          break;
+        case CentMultCorrelationsMT0M:
+          collisionMultiplicityCentralityObservables[ipar] = collision.multFT0M();
+          break;
+        case CentMultCorrelationsMV0A:
+          collisionMultiplicityCentralityObservables[ipar] = collision.multFV0A();
+          break;
+        case CentMultCorrelationsMV0C:
+          collisionMultiplicityCentralityObservables[ipar] = collision.multFV0C();
+          break;
+        case CentMultCorrelationsMV0M:
+          collisionMultiplicityCentralityObservables[ipar] = collision.multFV0M();
+          break;
+        case CentMultCorrelationsMNGLTRK:
+          collisionMultiplicityCentralityObservables[ipar] = nGlobalTracks;
+          break;
+        case CentMultCorrelationsMNPVC:
+          collisionMultiplicityCentralityObservables[ipar] = collision.multNTracksPV();
+          break;
+        case CentMultCorrelationsCT0A:
+          if constexpr (framework::has_type_v<aod::cent::CentFT0A, typename CollisionObject::all_columns>) {
+            collisionMultiplicityCentralityObservables[ipar] = collision.centFT0A();
+          }
+          break;
+        case CentMultCorrelationsCT0C:
+          if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>) {
+            collisionMultiplicityCentralityObservables[ipar] = collision.centFT0C();
+          }
+          break;
+        case CentMultCorrelationsCT0M:
+          if constexpr (framework::has_type_v<aod::cent::CentFT0M, typename CollisionObject::all_columns>) {
+            collisionMultiplicityCentralityObservables[ipar] = collision.centFT0M();
+          }
+          break;
+        case CentMultCorrelationsCV0A:
+          if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns>) {
+            collisionMultiplicityCentralityObservables[ipar] = collision.centFV0A();
+          }
+          break;
+        case CentMultCorrelationsCNTPV:
+          if constexpr (framework::has_type_v<aod::cent::CentNTPV, typename CollisionObject::all_columns>) {
+            collisionMultiplicityCentralityObservables[ipar] = collision.centNTPV();
+          }
+          break;
+        default:
+          break;
+      }
+    }
+  }
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // The filter class
 //////////////////////////////////////////////////////////////////////////////
@@ -414,7 +502,10 @@ struct DptDptFilter {
     Configurable<int64_t> minOrbit{"minOrbit", -1, "Lowest orbit to track"};
     Configurable<int64_t> maxOrbit{"maxOrbit", INT64_MAX, "Highest orbit to track"};
     Configurable<std::string> rctSource{"rctSource", "None", "RCT selection source: None,CBT,CBT_hadronPID,CBT_electronPID,CBT_calo,CBT_muon,CBT_muon_glo. Default: None"};
-    Configurable<LabeledArray<float>> multiplicityUpperLimit{"multiplicityUpperLimit", {&MultiplicityUpperLimitBase[0][0], 11, 8, {systemExternalNamesMap.at(0), systemExternalNamesMap.at(1), systemExternalNamesMap.at(2), systemExternalNamesMap.at(3), systemExternalNamesMap.at(4), systemExternalNamesMap.at(5), systemExternalNamesMap.at(6), systemExternalNamesMap.at(7), systemExternalNamesMap.at(8), systemExternalNamesMap.at(9), systemExternalNamesMap.at(10)}, {multiplicitySourceConfigNamesMap.at(0), multiplicitySourceConfigNamesMap.at(1), multiplicitySourceConfigNamesMap.at(2), multiplicitySourceConfigNamesMap.at(3), multiplicitySourceConfigNamesMap.at(4), multiplicitySourceConfigNamesMap.at(5), multiplicitySourceConfigNamesMap.at(6), multiplicitySourceConfigNamesMap.at(7)}}, "Upper limits for the multiplicity observables"};
+#define SYSTEMNAME(sysid) systemExternalNamesMap.at(sysid).data()
+#define MULTSRCNAME(msrcid) multiplicitySourceConfigNamesMap.at(msrcid).data()
+    Configurable<LabeledArray<float>> multiplicityUpperLimit{"multiplicityUpperLimit", {MultiplicityUpperLimitBase[0], 11, 8, {SYSTEMNAME(0), SYSTEMNAME(1), SYSTEMNAME(2), SYSTEMNAME(3), SYSTEMNAME(4), SYSTEMNAME(5), SYSTEMNAME(6), SYSTEMNAME(7), SYSTEMNAME(8), SYSTEMNAME(9), SYSTEMNAME(10)}, {MULTSRCNAME(0), MULTSRCNAME(1), MULTSRCNAME(2), MULTSRCNAME(3), MULTSRCNAME(4), MULTSRCNAME(5), MULTSRCNAME(6), MULTSRCNAME(7)}}, "Upper limits for the multiplicity observables"};
+    Configurable<LabeledArray<std::string>> multiplicitiesExclusionFormula{"multiplicitiesExclusionFormula", {multiplicityCentralityCorrelationsFormulaBase[0], 11, 1, {SYSTEMNAME(0), SYSTEMNAME(1), SYSTEMNAME(2), SYSTEMNAME(3), SYSTEMNAME(4), SYSTEMNAME(5), SYSTEMNAME(6), SYSTEMNAME(7), SYSTEMNAME(8), SYSTEMNAME(9), SYSTEMNAME(10)}, {"Exclusion formula"}}, "Formula for excluding outliers of the multiplicities correlations. Use any parameter from centMultCorrelationsParamsMap"};
     struct : ConfigurableGroup {
       std::string prefix = "cfgEventSelection.occupancySelection";
       Configurable<std::string> occupancyEstimation{"occupancyEstimation", "None", "Occupancy estimation: None, Tracks, FT0C. Default None"};
@@ -475,7 +566,7 @@ struct DptDptFilter {
     } else if (doprocessOnTheFlyGeneratorLevel) {
       fCentMultEstimator = CentMultFV0A;
     } else {
-      fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator);
+      fCentMultEstimator = getCentMultEstimator(cfgCentMultEstimator.value.c_str());
     }
     /* RCT information usage */
     if (cfgEventSelection.rctSource.value == "None") {
@@ -487,18 +578,21 @@ struct DptDptFilter {
     }
 
     /* the occupancy selection */
-    fOccupancyEstimation = getOccupancyEstimator(cfgEventSelection.occupancySelection.occupancyEstimation);
+    fOccupancyEstimation = getOccupancyEstimator(cfgEventSelection.occupancySelection.occupancyEstimation.value.c_str());
     fMinOccupancy = cfgEventSelection.occupancySelection.minOccupancy;
     fMaxOccupancy = cfgEventSelection.occupancySelection.maxOccupancy;
 
     /* the trigger selection */
-    triggerSelectionFlags = getTriggerSelection(cfgTriggSel);
+    triggerSelectionFlags = getTriggerSelection(cfgTriggSel.value.c_str());
     traceCollId0 = cfgTraceCollId0;
 
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
-    fSystem = getSystemType(cfgSystem);
+    fSystem = getSystemType(cfgSystem.value.c_str());
     fLhcRun = multRunForSystemMap.at(fSystem);
     fDataType = getDataType(cfgDataType);
+
+    /* the multiplicities outliers exclusion */
+    multiplicityCentralityCorrelationsExclusion = getExclusionFormula(cfgEventSelection.multiplicitiesExclusionFormula->getData()[fSystem][0].c_str());
 
     /* create the output list which will own the task histograms */
     TList* fOutputList = new TList();
@@ -509,18 +603,18 @@ struct DptDptFilter {
       /* create the reconstructed data histograms */
       fhEventSelection = new TH1D("EventSelection", ";;counts", CollSelNOOFFLAGS, -0.5f, static_cast<float>(CollSelNOOFFLAGS) - 0.5f);
       for (int ix = 0; ix < CollSelNOOFFLAGS; ++ix) {
-        fhEventSelection->GetXaxis()->SetBinLabel(ix + 1, collisionSelectionExternalNamesMap.at(ix).c_str());
+        fhEventSelection->GetXaxis()->SetBinLabel(ix + 1, collisionSelectionExternalNamesMap.at(ix).data());
       }
       fhTriggerSelection = new TH1D("TriggerSelection", ";;counts", TriggSelNOOFTRIGGERS, -0.5f, static_cast<float>(TriggSelNOOFTRIGGERS) - 0.5f);
       for (int ix = 0; ix < TriggSelNOOFTRIGGERS; ++ix) {
-        fhTriggerSelection->GetXaxis()->SetBinLabel(ix + 1, TString::Format("#color[%d]{%s}", triggerSelectionFlags.test(ix) ? 2 : 1, triggerSelectionExternalNamesMap.at(ix).c_str()).Data());
+        fhTriggerSelection->GetXaxis()->SetBinLabel(ix + 1, TString::Format("#color[%d]{%s}", triggerSelectionFlags.test(ix) ? 2 : 1, triggerSelectionExternalNamesMap.at(ix).data()).Data());
       }
       fhTriggerSelectionCorrelations = new TH2D("TriggerSelectionCorrelations", ";;;counts",
                                                 TriggSelNOOFTRIGGERS, -0.5f, static_cast<float>(TriggSelNOOFTRIGGERS) - 0.5f,
                                                 TriggSelNOOFTRIGGERS, -0.5f, static_cast<float>(TriggSelNOOFTRIGGERS) - 0.5f);
       for (int ixy = 0; ixy < TriggSelNOOFTRIGGERS; ++ixy) {
-        fhTriggerSelectionCorrelations->GetXaxis()->SetBinLabel(ixy + 1, TString::Format("#color[%d]{%s}", triggerSelectionFlags.test(ixy) ? 2 : 1, triggerSelectionExternalNamesMap.at(ixy).c_str()).Data());
-        fhTriggerSelectionCorrelations->GetYaxis()->SetBinLabel(ixy + 1, TString::Format("#color[%d]{%s}", triggerSelectionFlags.test(ixy) ? 2 : 1, triggerSelectionExternalNamesMap.at(ixy).c_str()).Data());
+        fhTriggerSelectionCorrelations->GetXaxis()->SetBinLabel(ixy + 1, TString::Format("#color[%d]{%s}", triggerSelectionFlags.test(ixy) ? 2 : 1, triggerSelectionExternalNamesMap.at(ixy).data()).Data());
+        fhTriggerSelectionCorrelations->GetYaxis()->SetBinLabel(ixy + 1, TString::Format("#color[%d]{%s}", triggerSelectionFlags.test(ixy) ? 2 : 1, triggerSelectionExternalNamesMap.at(ixy).data()).Data());
       }
 
       fhVertexZB = new TH1F("VertexZB", "Vertex Z; z_{vtx}", 60, -15, 15);
@@ -530,32 +624,32 @@ struct DptDptFilter {
 #define DPTDPTCENTRALITYAXIS 105, -0.5f, 104.5f
 #define DPTDPTMULTIPLICITYAXIS(est) 1001, -0.5f, cfgEventSelection.multiplicityUpperLimit->getData()[fSystem][est] - 0.5f
 
-      std::string multestimator = getCentMultEstimatorName(fCentMultEstimator);
+      std::string_view multestimator = getCentMultEstimatorName(fCentMultEstimator);
       fhCentMultB = new TH1F("CentralityB", "Centrality before cut; centrality (%)", DPTDPTCENTRALITYAXIS);
       fhCentMultA = new TH1F("CentralityA", "Centrality; centrality (%)", DPTDPTCENTRALITYAXIS);
-      fhMultB = new TH1F("MultB", TString::Format("%s Multiplicity before cut;%s Multiplicity;Collisions", multestimator.c_str(), multestimator.c_str()), DPTDPTMULTIPLICITYAXIS(estimatorMultiplicitySourceMap.at(fCentMultEstimator)));
-      fhMultA = new TH1F("MultA", TString::Format("%s Multiplicity;%s Multiplicity;Collisions", multestimator.c_str(), multestimator.c_str()), DPTDPTMULTIPLICITYAXIS(estimatorMultiplicitySourceMap.at(fCentMultEstimator)));
+      fhMultB = new TH1F("MultB", TString::Format("%s Multiplicity before cut;%s Multiplicity;Collisions", multestimator.data(), multestimator.data()), DPTDPTMULTIPLICITYAXIS(estimatorMultiplicitySourceMap.at(fCentMultEstimator)));
+      fhMultA = new TH1F("MultA", TString::Format("%s Multiplicity;%s Multiplicity;Collisions", multestimator.data(), multestimator.data()), DPTDPTMULTIPLICITYAXIS(estimatorMultiplicitySourceMap.at(fCentMultEstimator)));
 
       if (cfgEventSelection.fillQc) {
         /* the quality control histograms */
         for (int i = 0; i < BeforeAfterNOOFTIMES; ++i) {
-          fhMultiplicityVsCentrality[i] = new TH2F(TString::Format("MultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);Number of tracks", beforeAfterName[i].c_str(), multestimator.c_str()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
+          fhMultiplicityVsCentrality[i] = new TH2F(TString::Format("MultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);Number of tracks", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
           fhMultiplicityVsT0cMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsT0cMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0C Multiplicity;Number of tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0C), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
           fhMultiplicityVsT0aMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsT0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0A Multiplicity;Number of tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0A), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
           fhMultiplicityVsV0aMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsV0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;V0A Multiplicity;Number of tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceV0A), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
           fhMultiplicityVsPvMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsPvMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;PV contributors;Number of tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
-          fhPvMultiplicityVsCentrality[i] = new TH2F(TString::Format("PvMultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);PV contributors", beforeAfterName[i].c_str(), multestimator.c_str()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors));
+          fhPvMultiplicityVsCentrality[i] = new TH2F(TString::Format("PvMultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);PV contributors", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors));
           fhPvMultiplicityVsT0cMultiplicity[i] = new TH2F(TString::Format("PvMultiplicityVsT0cMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0C multiplicity;PV contributors", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0C), DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors));
           fhPvMultiplicityVsT0aMultiplicity[i] = new TH2F(TString::Format("PvMultiplicityVsT0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0A multiplicity;PV contributors", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0A), DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors));
           fhPvMultiplicityVsV0aMultiplicity[i] = new TH2F(TString::Format("PvMultiplicityVsV0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;V0A multiplicity;PV contributors", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceV0A), DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors));
-          fhV0aMultiplicityVsCentrality[i] = new TH2F(TString::Format("V0aMultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);V0A multiplicity", beforeAfterName[i].c_str(), multestimator.c_str()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourceV0A));
+          fhV0aMultiplicityVsCentrality[i] = new TH2F(TString::Format("V0aMultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);V0A multiplicity", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourceV0A));
           fhV0aMultiplicityVsT0cMultiplicity[i] = new TH2F(TString::Format("V0aMultiplicityVsT0cMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0C multiplicity;V0A multiplicity", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0C), DPTDPTMULTIPLICITYAXIS(MultSourceV0A));
           fhV0aMultiplicityVsT0aMultiplicity[i] = new TH2F(TString::Format("V0aMultiplicityVsT0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0A multiplicity;V0A multiplicity", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0A), DPTDPTMULTIPLICITYAXIS(MultSourceV0A));
-          fhT0cMultiplicityVsCentrality[i] = new TH2F(TString::Format("T0cMultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);T0C multiplicity", beforeAfterName[i].c_str(), multestimator.c_str()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourceT0C));
+          fhT0cMultiplicityVsCentrality[i] = new TH2F(TString::Format("T0cMultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);T0C multiplicity", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourceT0C));
           fhT0cMultiplicityVsT0aMultiplicity[i] = new TH2F(TString::Format("T0cMultiplicityVsT0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0A multiplicity;T0C multiplicity", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0A), DPTDPTMULTIPLICITYAXIS(MultSourceT0C));
-          fhT0CentralityVsCentrality[i] = new TH2F(TString::Format("T0CentralityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);T0 centrality(%%)", beforeAfterName[i].c_str(), multestimator.c_str()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTCENTRALITYAXIS);
-          fhV0aCentralityVsCentrality[i] = new TH2F(TString::Format("V0aCentralityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);V0A centrality (%%)", beforeAfterName[i].c_str(), multestimator.c_str()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTCENTRALITYAXIS);
-          fhNtpvCentralityVsCentrality[i] = new TH2F(TString::Format("NtpvCentralityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);NTPV centrality (%%)", beforeAfterName[i].c_str(), multestimator.c_str()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTCENTRALITYAXIS);
+          fhT0CentralityVsCentrality[i] = new TH2F(TString::Format("T0CentralityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);T0 centrality(%%)", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTCENTRALITYAXIS);
+          fhV0aCentralityVsCentrality[i] = new TH2F(TString::Format("V0aCentralityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);V0A centrality (%%)", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTCENTRALITYAXIS);
+          fhNtpvCentralityVsCentrality[i] = new TH2F(TString::Format("NtpvCentralityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);NTPV centrality (%%)", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTCENTRALITYAXIS);
         }
       }
 
@@ -693,6 +787,7 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
   float centormult = tentativecentmult;
   int64_t orbit = collision.template bc_as<aod::BCsWithTimestamps>().globalBC() / nBCsPerOrbit;
   bool withinOrbitOfInterest = (cfgEventSelection.minOrbit <= orbit) && (orbit < cfgEventSelection.maxOrbit);
+  storeMultiplicitiesAndCentralities(collision, ftracks);
   if (withinOrbitOfInterest && isEventSelected(collision, centormult)) {
     acceptedevent = true;
     fhCentMultA->Fill(centormult);
