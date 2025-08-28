@@ -1213,7 +1213,7 @@ struct TableMaker {
           auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
           VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
         } else {
-          VarManager::FillGlobalMuonRefit<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision);
+          VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
         }
       } else {
         VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
@@ -1305,7 +1305,7 @@ struct TableMaker {
           auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
           VarManager::FillGlobalMuonRefitCov<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision, mfttrackcov);
         } else {
-          VarManager::FillGlobalMuonRefit<TMuonFillMap, TMFTFillMap>(muontrack, mfttrack, collision);
+          VarManager::FillGlobalMuonRefit<TMuonFillMap>(muontrack, mfttrack, collision);
         }
       } else {
         VarManager::FillTrackCollision<TMuonFillMap>(muon, collision);
