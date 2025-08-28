@@ -1221,7 +1221,7 @@ struct strangenesstofpid {
             if (calculationMethod.value == 2) {
               if (std::abs(posFlightPi_Method0 - o2::aod::cascdata::kNoTOFValue) > o2::aod::cascdata::kEpsilon && std::abs(posFlightPi_Method1 - o2::aod::cascdata::kNoTOFValue) > o2::aod::cascdata::kEpsilon) {
                 histos.fill(HIST("hDeltaTimeMethodsVsP_posXiPi"), positiveP, cascade.positiveeta(), (posFlightPi_Method0 - posFlightPi_Method1) * positiveCosine);
-                histos.fill(HIST("hRatioTimeMethodsVsP_posXiPi"), positiveP, cascade.positiveeta(), (posFlightPi_Method1 / posFlightPi_Method1) * positiveCosine);
+                histos.fill(HIST("hRatioTimeMethodsVsP_posXiPi"), positiveP, cascade.positiveeta(), (posFlightPi_Method1 / posFlightPi_Method0) * positiveCosine);
               }
               if (std::abs(negFlightPr_Method0 - o2::aod::cascdata::kNoTOFValue) > o2::aod::cascdata::kEpsilon && std::abs(negFlightPr_Method1 - o2::aod::cascdata::kNoTOFValue) > o2::aod::cascdata::kEpsilon) {
                 histos.fill(HIST("hDeltaTimeMethodsVsP_negXiPr"), negativeP, cascade.negativeeta(), (negFlightPr_Method0 - negFlightPr_Method1) * negativeCosine);
@@ -1245,7 +1245,7 @@ struct strangenesstofpid {
             if (calculationMethod.value == 2) {
               if (std::abs(posFlightPi_Method0 - o2::aod::cascdata::kNoTOFValue) > o2::aod::cascdata::kEpsilon && std::abs(posFlightPi_Method1 - o2::aod::cascdata::kNoTOFValue) > o2::aod::cascdata::kEpsilon) {
                 histos.fill(HIST("hDeltaTimeMethodsVsP_posOmPi"), positiveP, cascade.positiveeta(), (posFlightPi_Method0 - posFlightPi_Method1) * positiveCosine);
-                histos.fill(HIST("hRatioTimeMethodsVsP_posOmPi"), positiveP, cascade.positiveeta(), (posFlightPi_Method1 / posFlightPi_Method1) * positiveCosine);
+                histos.fill(HIST("hRatioTimeMethodsVsP_posOmPi"), positiveP, cascade.positiveeta(), (posFlightPi_Method1 / posFlightPi_Method0) * positiveCosine);
               }
               if (std::abs(negFlightPr_Method0 - o2::aod::cascdata::kNoTOFValue) > o2::aod::cascdata::kEpsilon && std::abs(negFlightPr_Method1 - o2::aod::cascdata::kNoTOFValue) > o2::aod::cascdata::kEpsilon) {
                 histos.fill(HIST("hDeltaTimeMethodsVsP_negOmPr"), negativeP, cascade.negativeeta(), (negFlightPr_Method0 - negFlightPr_Method1) * negativeCosine);
@@ -1253,7 +1253,7 @@ struct strangenesstofpid {
               }
               if (std::abs(bachFlightKa_Method0 - o2::aod::cascdata::kNoTOFValue) > o2::aod::cascdata::kEpsilon && std::abs(bachFlightKa_Method1 - o2::aod::cascdata::kNoTOFValue) > o2::aod::cascdata::kEpsilon) {
                 histos.fill(HIST("hDeltaTimeMethodsVsP_bachOmKa"), bachelorP, cascade.bacheloreta(), (bachFlightKa_Method0 - bachFlightKa_Method1) * bachelorCosine);
-                histos.fill(HIST("hRatioTimeMethodsVsP_bachOmKa"), bachelorP, cascade.bacheloreta(), (bachFlightKa_Method1 / bachFlightKa_Method1) * bachelorCosine);
+                histos.fill(HIST("hRatioTimeMethodsVsP_bachOmKa"), bachelorP, cascade.bacheloreta(), (bachFlightKa_Method1 / bachFlightKa_Method0) * bachelorCosine);
               }
             }
             if (doQANSigma) {
