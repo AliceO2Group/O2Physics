@@ -183,8 +183,8 @@ struct PiKpRAA {
   Configurable<int> nBinsNPV{"nBinsNPV", 600, "N bins ITS tracks"};
   Configurable<float> minNch{"minNch", 0, "Min Nch (|eta|<0.8)"};
   Configurable<float> maxNch{"maxNch", 400, "Max Nch (|eta|<0.8)"};
-  Configurable<float> minNPV{"minNPV}", 0, "Min Nch (|eta|<0.8)"};
-  Configurable<float> maxNPV{"maxNPV}", 600, "Max Nch (|eta|<0.8)"};
+  Configurable<float> minNpv{"minNpv", 0, "Min NPV"};
+  Configurable<float> maxNpv{"maxNpv", 600, "Max NPV"};
 
   // CCDB paths
   Configurable<std::string> pathMeanNch{"pathMeanNch", "Users/o/omvazque/MeanNch/OO/Pass2/PerTimeStamp/Aug20", "base path to the ccdb object"};
@@ -283,9 +283,9 @@ struct PiKpRAA {
     if (doprocessCalibrationAndV0s) {
       registry.add("zPos", ";;Entries;", kTH1F, {axisZpos});
       registry.add("T0Ccent", ";;Entries", kTH1F, {axisCent});
-      registry.add("NchVsNPV", ";Nch; NPV;", kTH2F, {{{nBinsNPV, minNPV, maxNPV}, {nBinsNch, minNch, maxNch}}});
+      registry.add("NchVsNPV", ";Nch; NPV;", kTH2F, {{{nBinsNPV, minNpv, maxNpv}, {nBinsNch, minNch, maxNch}}});
       registry.add("ExcludedEvtVsNch", ";Nch;Entries;", kTH1F, {{nBinsNch, minNch, maxNch}});
-      registry.add("ExcludedEvtVsNPV", ";NPV;Entries;", kTH1F, {{nBinsNPV, minNPV, maxNPV}});
+      registry.add("ExcludedEvtVsNPV", ";NPV;Entries;", kTH1F, {{nBinsNPV, minNpv, maxNpv}});
 
       registry.add("dcaDauVsPt", ";V0 #it{p}_{T} (GeV/#it{c});DCA_{xy} (cm) daughters;", kTH2F, {{{axisPtV0s}, {200, -10., 10.}}});
       registry.add("nSigPiFromK0s", ";#it{n#sigma};;", kTH2F, {axisPtV0s, axisNsigmaTPC});
