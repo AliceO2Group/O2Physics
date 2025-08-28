@@ -177,7 +177,7 @@ struct FlowSP {
   OutputObj<GFWWeights> fWeightsNEG{GFWWeights("weights_negative")};
 
   HistogramRegistry registry{"registry"};
-  HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::QAObject};
+  HistogramRegistry histos{"QAhistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   // Event selection cuts
   TF1* fPhiCutLow = nullptr;
