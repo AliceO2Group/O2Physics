@@ -129,7 +129,8 @@ struct RecoilJets {
   AxisSpec scaledFT0M{histMultBins, 0.0, 20., "FT0M^{*}"};
   ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0, 0.2, 0.3, 0.4, 0.6, 0.8, 1., 1.4, 1.8, 2.4, 3.6, 5., 20.}, "Percentiles of scaled FT0C: 100-90%, 90-80%, 80-70%, 70-60%, 60-50%, 50-40%, 40-30%, 30-20%, 20-10%, 10-1%, 1-0.1%"}; // to adjust the boarders
   ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0, 0.2, 0.3, 0.4, 0.6, 0.8, 1., 1.4, 1.8, 2.4, 3.6, 5., 20.}, "Percentiles of scaled FT0M: 100-90%, 90-80%, 80-70%, 70-60%, 60-50%, 50-40%, 40-30%, 30-20%, 20-10%, 10-1%, 1-0.1%"};
-
+  
+  // Auxiliary variables
   TRandom3* rand = new TRandom3(0);
 
   // Declare filter on collision Z vertex
@@ -181,12 +182,12 @@ struct RecoilJets {
       spectra.add("hTTSig_pT", "pT spectrum of all found TT_{Sig} cand.", kTH1F, {{40, 10., 50.}}); // needed to distinguish merged data from diff. wagons
 
       spectra.add("hScaledFT0C_vs_Ntrig", "Total number of selected triggers per class vs scaled FT0C", kTH2F, {{multFT0CThresh}, {2, 0.0, 2.}});
-      spectra.get<TH1>(HIST("hScaledFT0C_vs_Ntrig"))->GetYaxis()->SetBinLabel(1, "TT_{ref}");
-      spectra.get<TH1>(HIST("hScaledFT0C_vs_Ntrig"))->GetYaxis()->SetBinLabel(2, "TT_{sig}");
+      spectra.get<TH2>(HIST("hScaledFT0C_vs_Ntrig"))->GetYaxis()->SetBinLabel(1, "TT_{ref}");
+      spectra.get<TH2>(HIST("hScaledFT0C_vs_Ntrig"))->GetYaxis()->SetBinLabel(2, "TT_{sig}");
 
       spectra.add("hScaledFT0M_vs_Ntrig", "Total number of selected triggers per class vs scaled FT0M", kTH2F, {{multFT0MThresh}, {2, 0.0, 2.}});
-      spectra.get<TH1>(HIST("hScaledFT0M_vs_Ntrig"))->GetYaxis()->SetBinLabel(1, "TT_{ref}");
-      spectra.get<TH1>(HIST("hScaledFT0M_vs_Ntrig"))->GetYaxis()->SetBinLabel(2, "TT_{sig}");
+      spectra.get<TH2>(HIST("hScaledFT0M_vs_Ntrig"))->GetYaxis()->SetBinLabel(1, "TT_{ref}");
+      spectra.get<TH2>(HIST("hScaledFT0M_vs_Ntrig"))->GetYaxis()->SetBinLabel(2, "TT_{sig}");
 
       spectra.add("hScaledFT0C_vs_TTRef_per_event", "Number of TT_{Ref} per event vs scaled FT0C", kTH2F, {{multFT0CThresh}, {15, 0.5, 15.5}});
       spectra.add("hScaledFT0M_vs_TTRef_per_event", "Number of TT_{Ref} per event vs scaled FT0M", kTH2F, {{multFT0MThresh}, {15, 0.5, 15.5}});
