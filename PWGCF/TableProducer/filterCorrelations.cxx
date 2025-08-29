@@ -582,13 +582,13 @@ struct EventShapeProducer {
   O2_DEFINE_CONFIGURABLE(AbsEtaTrack, float, 0.8, "Maximum |eta| of tracks required to estimate spherocity");
   O2_DEFINE_CONFIGURABLE(usePtWeighted, bool, false, "Use pt-weighted spherocity");
   O2_DEFINE_CONFIGURABLE(outputQAHistos, bool, false, "Whether to output QA histograms for spherocity");
-  
+
   HistogramRegistry QAhistos{"QAhistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAhistosCent{"QAhistosCent", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
   HistogramRegistry QAhistosSpherocity{"QAhistosSpherocity", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
-  
+
   std::vector<float> nx, ny, px, py;
-  
+
   void init(InitContext const&)
   {
     AxisSpec axisPt = {100, 0.0, 50.0};
@@ -598,10 +598,11 @@ struct EventShapeProducer {
     AxisSpec axisMult = {100, 0.0, 100.0};
     AxisSpec axisSpherocity = {1000, 0.0, 1.0};
 
-    QAhistos.add("multS0", "",{HistType::kTH2F,{axisMult, axisSpherocity}});
+    QAhistos.add("multS0", "", {HistType::kTH2F, {axisMult, axisSpherocity}});
     QAhistos.add("spherocity", "", {HistType::kTH1F, {axisSpherocity}});
 
-    if(!outputQAHistos) return;
+    if (!outputQAHistos)
+      return;
     QAhistos.add("pt", "", {HistType::kTH1F, {axisPt}});
     QAhistos.add("eta", "", {HistType::kTH1F, {axisEta}});
     QAhistos.add("phi", "", {HistType::kTH1F, {axisPhi}});
@@ -613,7 +614,7 @@ struct EventShapeProducer {
     QAhistosCent.add("ntracks_20_40", "", {HistType::kTH1F, {axisNtracks}});
     QAhistosCent.add("ntracks_40_60", "", {HistType::kTH1F, {axisNtracks}});
     QAhistosCent.add("ntracks_60_100", "", {HistType::kTH1F, {axisNtracks}});
-    
+
     QAhistosSpherocity.add("spherocity_0_20", "", {HistType::kTH1F, {axisSpherocity}});
     QAhistosSpherocity.add("spherocity_20_40", "", {HistType::kTH1F, {axisSpherocity}});
     QAhistosSpherocity.add("spherocity_40_60", "", {HistType::kTH1F, {axisSpherocity}});
@@ -621,11 +622,12 @@ struct EventShapeProducer {
   }
 
   // Spherocity calculation based on the central barrel tracks
-  template<typename TTracks>
+  template <typename TTracks>
   float CalculateSpherocity(TTracks const& tracks, bool usePtWeighted, bool outputQAHistos)
-  {  
+  {
     const size_t nTracks = tracks.size();
-    if (nTracks < static_cast<size_t>(minTracks)) return -2.0f;
+    if (nTracks < static_cast<size_t>(minTracks))
+      return -2.0f;
 
     if (nx.size() < nTracks) {
       nx.resize(nTracks);
@@ -641,10 +643,10 @@ struct EventShapeProducer {
     for (auto& track : tracks) {
       const float cosPhi = std::cos(track.phi());
       const float sinPhi = std::sin(track.phi());
-      
+
       nx[idx] = cosPhi;
       ny[idx] = sinPhi;
-      
+
       if (usePtWeighted) {
         const float pt = track.pt();
         px[idx] = pt * cosPhi;
@@ -664,8 +666,9 @@ struct EventShapeProducer {
       idx++;
     }
 
-    if (sumPt == 0.0f) return -1.5f; // no tracks -- avoid division by zero
-    
+    if (sumPt == 0.0f)
+      return -1.5f; // no tracks -- avoid division by zero
+
     // Validation check for non-weighted case
     if (!usePtWeighted && std::abs(static_cast<float>(nTracks) - sumPt) > 0.01f) {
       LOGF(info, "Spherocity calculation: number of tracks (%zu) does not match sum of pT (%f)", nTracks, sumPt);
@@ -676,35 +679,41 @@ struct EventShapeProducer {
       float numerator = 0.0f;
       const float nyi = ny[i];
       const float nxi = nx[i];
-      
+
       for (size_t j = 0; j < nTracks; j++) {
         numerator += std::abs(nyi * px[j] - nxi * py[j]);
       }
-      
+
       const float sFull = std::pow(numerator / sumPt, 2);
-      if (sFull < retval) retval = sFull;
+      if (sFull < retval)
+        retval = sFull;
     }
 
     retval = retval * M_PI * M_PI / 4.0f; // normalization factor
-    
+
     if (retval < 0.0f || retval > 1.0f) {
       LOGF(info, "Spherocity value is out of range: %f", retval);
       return -0.5f;
     }
-    
+
     return retval;
-  }//spherocity calculation ends
-  
+  } // spherocity calculation ends
+
   Filter cftrackFilter = (aod::cftrack::pt > minPtTrack) && (nabs(aod::cftrack::eta) < AbsEtaTrack);
 
   using myCollisions = aod::CFCollisions;
   using myTracks = soa::Filtered<aod::CFTracks>;
 
-  inline int getCentralityBin(float multiplicity) {
-    if (multiplicity < 20.0f) return 0;
-    else if (multiplicity < 40.0f) return 1;
-    else if (multiplicity < 60.0f) return 2;
-    else if (multiplicity < 100.0f) return 3;
+  inline int getCentralityBin(float multiplicity)
+  {
+    if (multiplicity < 20.0f)
+      return 0;
+    else if (multiplicity < 40.0f)
+      return 1;
+    else if (multiplicity < 60.0f)
+      return 2;
+    else if (multiplicity < 100.0f)
+      return 3;
     return -1; // outside range
   }
 
@@ -715,12 +724,13 @@ struct EventShapeProducer {
     const float multiplicity = coll.multiplicity();
     QAhistos.fill(HIST("multS0"), multiplicity, spherocity);
     QAhistos.fill(HIST("spherocity"), spherocity);
-    
-    if (!outputQAHistos) return;
-    
+
+    if (!outputQAHistos)
+      return;
+
     const size_t nTracks = tracks.size();
     const int centralityBin = getCentralityBin(multiplicity);
-    
+
     QAhistos.fill(HIST("ntracks"), nTracks);
     QAhistos.fill(HIST("mult"), multiplicity);
 
