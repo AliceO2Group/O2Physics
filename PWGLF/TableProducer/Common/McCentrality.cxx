@@ -10,15 +10,14 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   mcCentrality.cxx
+/// \file   McCentrality.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \author Francesca Ercolessi francesca.ercolessi@cern.ch
 /// \since  2024-06-05
 /// \brief  Task to produce the table for the equalized multiplicity into centrality bins
 ///
 
-// O2 includes
-#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/DataModel/McCentrality.h"
 
 #include "TableHelper.h"
 
@@ -46,7 +45,7 @@ using namespace o2::framework::expressions;
 using namespace o2::track;
 
 /// Task to produce the response table
-struct mcCentrality {
+struct McCentrality {
 
   // Tables to produce
   Produces<aod::McCentFV0As> centFV0A;
@@ -58,8 +57,8 @@ struct mcCentrality {
 
   // Input parameters
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  Configurable<std::string> url{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<int64_t> ccdbTimestamp{"ccdb-timestamp", -1, "timestamp of the object used to query in CCDB the detector response. If 0 the object corresponding to the run number is used, if < 0 the latest object is used"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<int64_t> ccdbTimestamp{"ccdbTimestamp", -1, "timestamp of the object used to query in CCDB the detector response. If 0 the object corresponding to the run number is used, if < 0 the latest object is used"};
   Configurable<std::string> path{"path", "/tmp/InputCalibMC.root", "path to calib file or ccdb path if begins with ccdb://"};
   Configurable<bool> selectPrimaries{"selectPrimaries", true, "Select only primary particles"};
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -81,7 +80,7 @@ struct mcCentrality {
   void init(o2::framework::InitContext& /*initContext*/)
   {
     // Set up the CCDB
-    ccdb->setURL(url.value);
+    ccdb->setURL(ccdbUrl.value);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
@@ -130,7 +129,7 @@ struct mcCentrality {
       }
       return hist;
     };
-    h1dFT0M = getHist(lOfInput, "h1dFT0M");
+    h1dFT0M = getHist("h1dFT0M");
     if (fillFt0A) {
       h1dFT0A = getHist("h1dFT0A");
     }
@@ -166,4 +165,4 @@ struct mcCentrality {
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<mcCentrality>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<McCentrality>(cfgc)}; }
