@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   McCentrality.cxx
+/// \file   mcCentrality.cxx
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 /// \author Francesca Ercolessi francesca.ercolessi@cern.ch
 /// \since  2024-06-05
