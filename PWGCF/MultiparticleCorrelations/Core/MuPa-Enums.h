@@ -41,6 +41,7 @@ enum eConfiguration {
   eUseSetBinLabel, // Use or not setter SetBinLabel(...)
   eUseClone,       // Use or not ->Clone()
   eUseFormula,     // Use or not class TFormula
+  eUseDatabasePDG, // Use or not class TDatabasePDG
   eConfiguration_N
 };
 
@@ -92,11 +93,13 @@ enum eDefaultColors { eColor = kBlack,
 enum eWeights { wPHI = 0,
                 wPT = 1,
                 wETA = 2,
+                wCHARGE = 3,
                 eWeights_N };
 
 enum eDiffWeights { // TBI 20250215 this is now obsolete, superseeded with more general implementation, see enums eDiffWeightCategory, eDiffPhiWeights, etc.
   wPHIPT = 0,
   wPHIETA,
+  wPHICHARGE,
   eDiffWeights_N
 };
 
@@ -120,13 +123,15 @@ enum eDiffPhiWeights {
 
 enum eDiffPtWeights {
   wPtPtAxis = 0,
-  // ... TBI 20250222 add all other axes on which differential pt weight could have non-trivial dependence, in the same spirit I did it above for phi weights in enum eDiffPhiWeights
+  wPtChargeAxis,
+  wPtCentralityAxis,
   eDiffPtWeights_N
 };
 
 enum eDiffEtaWeights {
   wEtaEtaAxis = 0,
-  // ... TBI 20250222 add all other axes on which differential eta weight could have non-trivial dependence, in the same spirit I did it above for phi weights in enum eDiffPhiWeights
+  wEtaChargeAxis,
+  wEtaCentralityAxis,
   eDiffEtaWeights_N
 };
 
@@ -195,6 +200,18 @@ enum eEventCuts {
   eRefMultVsNContrUp,              // formula for upper boundary cut in eReferenceMultiplicity_vs_NContributors (remember that I use naming convention "x_vs_y")
   eRefMultVsNContrLow,             // formula for lower boundary cut in eReferenceMultiplicity_vs_NContributors (remember that I use naming convention "x_vs_y")
   eCentralityCorrelationsCut,      // port of void SetCentralityCorrelationsCuts(...) from MuPa class. Example format: "CentFT0C_CentFT0M", so IFS is "_", until proven otherwise
+
+  // RCT flags, see https://indico.cern.ch/event/1545907/ + up-to-date code in Common/CCDB/RCTSelectionFlags.h
+  // Remark 1: For the time being, I support here differentially 6 flags used to define the combined "CBT" flag, see if (label == "CBT") in Common/CCDB/RCTSelectionFlags.h
+  // Remark 2: If I want to use directly the combined "CBT" flag, see how it can be done using RCTFlagsChecker in
+  //           https://github.com/AliceO2Group/O2Physics/blob/master/DPG/Tasks/AOTEvent/timeDependentQa.cxx#L115
+  //           But check before the memory status after RCTFlagsChecker is used.
+  eFT0Bad,
+  eITSBad,
+  eITSLimAccMCRepr,
+  eTPCBadTracking,
+  eTPCLimAccMCRepr,
+  eTPCBadPID,
   // ...
   eCentralityWeights, // used for centrality flattening. Remember that this event cut must be implemented very last,
                       // therefore I have it separately implemented for Run 3,2,1 in EventCuts() at the very end in each case.
@@ -296,7 +313,8 @@ enum eParticleCuts {
   eParticleCuts_N
 };
 
-enum eAsFunctionOf {
+enum eAsFunctionOf { // this is a specific enum only for 1D dependence
+  // 1D:
   AFO_INTEGRATED = 0,
   AFO_MULTIPLICITY, // vs. default multiplicity, which is (at the moment) fSelectedTracks, i.e. number of tracks in Q-vector
   AFO_CENTRALITY,   // vs. default centrality estimator, see how it's calculated in DetermineCentrality(...)
@@ -306,8 +324,36 @@ enum eAsFunctionOf {
   AFO_INTERACTIONRATE,    // vs. "interation rate"
   AFO_CURRENTRUNDURATION, // vs. "current run duration", i.e. vs "seconds since start of run"
   AFO_VZ,                 // vs. "vertex z position"
+  AFO_CHARGE,             // vs. "particle charge"
+  // ...
   eAsFunctionOf_N
 }; // prefix is needed, to avoid conflict with enum eKinematics
+
+enum eAsFunctionOf2D { // this is a specific enum only for 2D dependence
+  // 2D:
+  AFO_CENTRALITY_PT = 0,
+  AFO_CENTRALITY_ETA,
+  AFO_CENTRALITY_CHARGE,
+  AFO_CENTRALITY_VZ,
+  AFO_PT_ETA,
+  AFO_PT_CHARGE,
+  AFO_ETA_CHARGE,
+  // ...
+  eAsFunctionOf2D_N
+};
+
+enum eAsFunctionOf3D { // this is a specific enum only for 3D dependence
+  // 3D:
+  AFO_CENTRALITY_PT_ETA = 0,
+  AFO_CENTRALITY_PT_CHARGE,
+  AFO_CENTRALITY_PT_VZ,
+  AFO_CENTRALITY_ETA_VZ,
+  AFO_CENTRALITY_ETA_CHARGE,
+  AFO_CENTRALITY_VZ_CHARGE,
+  AFO_PT_ETA_CHARGE,
+  // ...
+  eAsFunctionOf3D_N
+};
 
 enum eNUAPDF {
   ePhiNUAPDF = 0,
@@ -317,8 +363,21 @@ enum eNUAPDF {
 };
 
 enum eqvectorKine { // Here "kine" originally meant "kinematic", i.e. vs. pt or vs. eta, now it's general.
+  // 1D:
   PTq = 0,
   ETAq,
+  CHARGEq,
+  // ...
+
+  // 2D: // Yes, I linearize 2D case, in an analogy with "global bin" structure for multidimensional histograms.
+  PT_ETAq,
+  PT_CHARGEq,
+  ETA_CHARGEq,
+  // ...
+
+  // 3D: // Yes, I linearize 3D case, in an analogy with "global bin" structure for multidimensional histograms.
+  PT_ETA_CHARGEq,
+  // ...
   eqvectorKine_N
 };
 

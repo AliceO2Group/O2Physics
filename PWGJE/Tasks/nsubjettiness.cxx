@@ -181,7 +181,7 @@ struct NSubjettinessTask {
   }
 
   Filter jetCuts = aod::jet::r == nround(jetR.node() * 100.0f);
-  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centrality >= centralityMin && aod::jcollision::centrality < centralityMax);
+  Filter collisionFilter = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
 
   template <bool isMCP, typename T, typename U>
   void processJet(T const& jet, U const& tracks, float weight = 1.0)

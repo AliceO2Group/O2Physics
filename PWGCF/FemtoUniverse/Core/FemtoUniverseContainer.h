@@ -20,17 +20,20 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSECONTAINER_H_
 
-#include <fairlogger/Logger.h>
-#include <vector>
-#include <string>
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
+#include "Common/Core/RecoDecay.h"
 
 #include "Framework/HistogramRegistry.h"
-#include "Common/Core/RecoDecay.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
+#include <Framework/Logger.h>
 
 #include "Math/Vector4D.h"
-#include "TMath.h"
 #include "TDatabasePDG.h"
+#include "TMath.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2::framework;
 
@@ -53,7 +56,7 @@ enum EventType { same, ///< Pair from same event
 /// \brief Container for all histogramming related to the correlation function. The two
 /// particles of the pair are passed here, and the correlation function and QA histograms
 /// are filled according to the specified observable
-/// \tparam eventType Type of the event (same/mixed)
+/// \tparam eventType Type of the event (same or mixed)
 /// \tparam obs Observable to be computed (k*/Q_inv/...)
 template <femto_universe_container::EventType eventType, femto_universe_container::Observable obs>
 class FemtoUniverseContainer

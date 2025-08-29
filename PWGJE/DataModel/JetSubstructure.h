@@ -260,8 +260,12 @@ DECLARE_SOA_COLUMN(JetNConstituents, jetNConstituents, int); //!
 JETSUBSTRUCTURE_TABLES_DEF(C, "C", Charged, charged, JTracks, CJetCOs, "CJETCO", JTrackSubs, CEWSJetCOs, "CEWSJETCO", JTracks, CMCDJetCOs, "CMCDJETCO", JMcParticles, CMCPJetCOs, "CMCPJETCO");
 JETSUBSTRUCTURE_TABLES_DEF(D0C, "D0C", D0Charged, d0charged, JTracks, HfD0Bases, "HFD0BASE", JTrackD0Subs, HfD0Bases, "HFD0BASE", JTracks, HfD0Bases, "HFD0BASE", JMcParticles, HfD0PBases, "HFD0PBASE");
 JETSUBSTRUCTURE_TABLES_DEF(DplusC, "DPC", DplusCharged, dpluscharged, JTracks, HfDplusBases, "HFDPBASE", JTrackDplusSubs, HfDplusBases, "HFDPBASE", JTracks, HfDplusBases, "HFDPBASE", JMcParticles, HfDplusPBases, "HFDPPBASE");
+JETSUBSTRUCTURE_TABLES_DEF(DsC, "DSC", DsCharged, dscharged, JTracks, HfDsBases, "HFDSBASE", JTrackDsSubs, HfDsBases, "HFDSBASE", JTracks, HfDsBases, "HFDSBASE", JMcParticles, HfDsPBases, "HFDSPBASE");
+JETSUBSTRUCTURE_TABLES_DEF(DstarC, "DSTC", DstarCharged, dstarcharged, JTracks, HfDstarBases, "HFDSTBASE", JTrackDstarSubs, HfDstarBases, "HFDSTBASE", JTracks, HfDstarBases, "HFDSTBASE", JMcParticles, HfDstarPBases, "HFDSTPBASE");
 JETSUBSTRUCTURE_TABLES_DEF(LcC, "LCC", LcCharged, lccharged, JTracks, HfLcBases, "HFLCBASE", JTrackLcSubs, HfLcBases, "HFLCBASE", JTracks, HfLcBases, "HFLCBASE", JMcParticles, HfLcPBases, "HFLCPBASE");
+JETSUBSTRUCTURE_TABLES_DEF(B0C, "B0C", B0Charged, b0charged, JTracks, HfB0Bases, "HFB0BASE", JTrackB0Subs, HfB0Bases, "HFB0BASE", JTracks, HfB0Bases, "HFB0BASE", JMcParticles, HfB0PBases, "HFB0PBASE");
 JETSUBSTRUCTURE_TABLES_DEF(BplusC, "BPC", BplusCharged, bpluscharged, JTracks, HfBplusBases, "HFBPBASE", JTrackBplusSubs, HfBplusBases, "HFBPBASE", JTracks, HfBplusBases, "HFBPBASE", JMcParticles, HfBplusPBases, "HFBPPBASE");
+JETSUBSTRUCTURE_TABLES_DEF(XicToXiPiPiC, "XICXPPC", XicToXiPiPiCharged, xictoxipipicharged, JTracks, HfXicToXiPiPiBases, "HFXICXPPBASE", JTrackXicToXiPiPiSubs, HfXicToXiPiPiBases, "HFXICXPPBASE", JTracks, HfXicToXiPiPiBases, "HFXICXPPBASE", JMcParticles, HfXicToXiPiPiPBases, "HFXICXPPPBASE");
 JETSUBSTRUCTURE_TABLES_DEF(DielectronC, "DIELC", DielectronCharged, dielectroncharged, JTracks, Dielectrons, "RTDIELECTRON", JTrackDielectronSubs, Dielectrons, "RTDIELECTRON", JTracks, Dielectrons, "RTDIELECTRON", JMcParticles, JDielectronMcs, "JDIELMC");
 
 } // namespace o2::aod

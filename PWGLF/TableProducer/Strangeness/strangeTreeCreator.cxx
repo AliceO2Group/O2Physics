@@ -457,14 +457,16 @@ struct StrangeTreeCreator {
       }
 
       float ptPos = std::hypot(momPos[0], momPos[1]);
+      float pPos = std::hypot(momPos[0], momPos[1], momPos[2]);
+      float etaPos = 0.5 * std::log((pPos + momPos[2]) / (pPos - momPos[2]));
       float deltaMass = mK0Short - o2::constants::physics::MassK0;
       float massKineBias = deltaMass / kineFactor(momV0, momPos, momNeg, o2::constants::physics::MassPiMinus, o2::constants::physics::MassPiMinus, false);
       float massKineReso = deltaMass / kineFactor(momV0, momPos, momNeg, o2::constants::physics::MassPiMinus, o2::constants::physics::MassPiMinus, true);
 
       histos.fill(HIST("QA/massLambda"), centrality, ptV0, mLambda);
       histos.fill(HIST("QA/massK0s"), ptV0, mK0Short);
-      histos.fill(HIST("massKineBias"), ptPos, massKineBias);
-      histos.fill(HIST("massKineReso"), ptPos, massKineReso);
+      histos.fill(HIST("massKineBias"), etaPos, ptPos, massKineBias);
+      histos.fill(HIST("massKineReso"), etaPos, ptPos, massKineReso);
 
       CandidateV0 candV0;
       candV0.pt = matter > 0. ? ptV0 : -ptV0;
