@@ -89,6 +89,7 @@ struct HfTaskSingleElectron {
   Configurable<float> tpcNSigmaMin{"tpcNSigmaMin", -1., "min of tpc nsigma"};
   Configurable<float> tpcNSigmaMax{"tpcNSigmaMax", 3., "max of tpc nsigma"};
 
+  Configurable<int> nBinsP{"nBinsP", 1500, "number of bins of particle momentum"};
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pT histo"};
 
   // SliceCache
@@ -112,6 +113,7 @@ struct HfTaskSingleElectron {
   const AxisSpec axisNCont{100, 0., 100., "nCont"};
   const AxisSpec axisPosZ{600, -30., 30., "Z_{pos}"};
   const AxisSpec axisEta{30, -1.5, +1.5, "#eta"};
+  const AxisSpec axisP{nBinsP, 0., 15., "p_{T}"};
   const AxisSpec axisPt{nBinsPt, 0., 15., "p_{T}"};
   const AxisSpec axisNsig{800, -20., 20.};
   const AxisSpec axisTrackIp{4000, -0.2, 0.2, "dca"};
@@ -139,7 +141,9 @@ struct HfTaskSingleElectron {
     // pid
     histos.add("tofNSigPt", "", kTH2D, {{axisPtEl}, {axisNsig}});
     histos.add("tofNSigPtQA", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tpcNSigP", "", kTH2D, {{axisP}, {axisNsig}});
     histos.add("tpcNSigPt", "", kTH2D, {{axisPtEl}, {axisNsig}});
+    histos.add("tpcNSigPAfterTofCut", "", kTH2D, {{axisP}, {axisNsig}});
     histos.add("tpcNSigPtAfterTofCut", "", kTH2D, {{axisPtEl}, {axisNsig}});
     histos.add("tpcNSigPtQA", "", kTH2D, {{axisPtEl}, {axisNsig}});
 
@@ -430,12 +434,14 @@ struct HfTaskSingleElectron {
       histos.fill(HIST("dcaZTrack"), track.dcaZ());
 
       histos.fill(HIST("tofNSigPt"), track.pt(), track.tofNSigmaEl());
+      histos.fill(HIST("tpcNSigP"), track.p(), track.tpcNSigmaEl());
       histos.fill(HIST("tpcNSigPt"), track.pt(), track.tpcNSigmaEl());
 
       if (std::abs(track.tofNSigmaEl()) > tofNSigmaMax) {
         continue;
       }
       histos.fill(HIST("tofNSigPtQA"), track.pt(), track.tofNSigmaEl());
+      histos.fill(HIST("tpcNSigPAfterTofCut"), track.p(), track.tpcNSigmaEl());
       histos.fill(HIST("tpcNSigPtAfterTofCut"), track.pt(), track.tpcNSigmaEl());
 
       if (track.tpcNSigmaEl() < tpcNSigmaMin || track.tpcNSigmaEl() > tpcNSigmaMax) {
