@@ -810,12 +810,12 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hPtCandAfterCut"), candidate1.pt());
 
       if (isDCand1) {
-        if (applyMl) {
-          registry.fill(HIST("hnDMesonMl"), outputMlD0Cand1[0], outputMlD0Cand1[1], hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
-        } else {
-          registry.fill(HIST("hnDMeson"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
-        }
         if (isTrueDCand1) {
+          if (applyMl) {
+            registry.fill(HIST("hnDMesonMl"), outputMlD0Cand1[0], outputMlD0Cand1[1], hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
+          } else {
+            registry.fill(HIST("hnDMeson"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
+          }
           registry.fill(HIST("hMass"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
           registry.fill(HIST("hPtVsYVsNContribMcRec"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           registry.fill(HIST("hNContribMcRec"), collision.numContrib());
@@ -827,16 +827,21 @@ struct HfCorrelatorDMesonPairs {
             registry.fill(HIST("hPtVsYVsNContribMcRecNonPrompt"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           }
         } else if (isTrueDbarCand1) {
+          if (applyMl) {
+            registry.fill(HIST("hnDMesonMl"), outputMlD0Cand1[0], outputMlD0Cand1[1], hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
+          } else {
+            registry.fill(HIST("hnDMeson"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
+          }
           registry.fill(HIST("hMassMcRecReflections"), hfHelper.invMassD0ToPiK(candidate1), candidate1.pt());
         }
       }
       if (isDbarCand1) {
-        if (applyMl) {
-          registry.fill(HIST("hnDMesonMl"), outputMlD0barCand1[0], outputMlD0barCand1[1], hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
-        } else {
-          registry.fill(HIST("hnDMeson"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
-        }
         if (isTrueDbarCand1) {
+          if (applyMl) {
+            registry.fill(HIST("hnDMesonMl"), outputMlD0barCand1[0], outputMlD0barCand1[1], hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
+          } else {
+            registry.fill(HIST("hnDMeson"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
+          }
           registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
           registry.fill(HIST("hPtVsYVsNContribMcRec"), candidate1.pt(), hfHelper.yD0(candidate1), collision.numContrib());
           registry.fill(HIST("hNContribMcRec"), collision.numContrib());
@@ -846,6 +851,11 @@ struct HfCorrelatorDMesonPairs {
             registry.fill(HIST("hMassMcRecNonPrompt"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
           }
         } else if (isTrueDCand1) {
+          if (applyMl) {
+            registry.fill(HIST("hnDMesonMl"), outputMlD0barCand1[0], outputMlD0barCand1[1], hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
+          } else {
+            registry.fill(HIST("hnDMeson"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt(), candidate1.y(MassD0), collision.numContrib(), originRec1, candidateType1);
+          }
           registry.fill(HIST("hMassMcRecReflections"), hfHelper.invMassD0barToKPi(candidate1), candidate1.pt());
         }
       }
