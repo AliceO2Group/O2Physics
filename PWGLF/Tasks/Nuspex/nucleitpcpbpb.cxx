@@ -644,7 +644,8 @@ struct NucleitpcPbPb {
     if (!track.hasTOF() || !cfgFillmass)
       return;
     float beta{o2::pid::tof::Beta::GetBeta(track)};
-    if (beta <= 0.f || beta >= 1.f)
+    const float eps = 1e-6f;
+    if (beta < eps || beta > 1.0f - eps)
       return;
     float charge = (species == he3 || species == he4) ? 2.f : 1.f;
     float p = getRigidity(track); // assuming this is the momentum from inner TPC
@@ -669,7 +670,8 @@ struct NucleitpcPbPb {
     if (!track.hasTOF() || !cfgFillmassnsigma)
       return;
     float beta{o2::pid::tof::Beta::GetBeta(track)};
-    if (beta <= 0.f || beta >= 1.f)
+    const float eps = 1e-6f;
+    if (beta < eps || beta > 1.0f - eps)
       return;
     float charge = (species == he3 || species == he4) ? 2.f : 1.f;
     float p = getRigidity(track); // assuming this is the momentum from inner TPC
