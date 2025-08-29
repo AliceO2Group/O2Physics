@@ -1627,7 +1627,6 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithMults, 0u, gkMuonFillMapWithCov, gkMFTCovFillMap>(collisions, bcs, nullptr, nullptr, muons, mftTracks, nullptr, fwdTrackAssocs, mftAssocs, mftCovs);
   }
 
-
   // Process the BCs and store stats for luminosity retrieval -----------------------------------------------------------------------------------
   void processOnlyBCs(soa::Join<aod::BCs, aod::BcSels>::iterator const& bc)
   {
