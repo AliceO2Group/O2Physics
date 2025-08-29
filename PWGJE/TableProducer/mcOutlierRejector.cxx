@@ -35,7 +35,8 @@ struct McOutlierRejectorTask {
   Produces<aod::JMcCollisionOutliers> mcCollisionOutliers;
 
   Configurable<bool> checkmcCollisionForCollision{"checkmcCollisionForCollision", true, "additionally reject collision based on mcCollision"};
-  Configurable<float> ptHatMax{"ptHatMax", 4.0, "maximum factor of pt hat the leading jet in the event is allowed"};
+  Configurable<float> ptHatMaxJet{"ptHatMaxJet", 4.0, "maximum factor of pt hat the leading jet in the event is allowed"};
+  Configurable<float> ptHatMaxParticle{"ptHatMaxParticle", 4.0, "maximum factor of pt hat the leading particle or track in the event is allowed"};
 
   std::vector<bool> collisionFlag;
   std::vector<bool> mcCollisionFlag;
@@ -57,22 +58,24 @@ struct McOutlierRejectorTask {
   template <typename T>
   void collisionSelection(int32_t collisionIndex, T const& selectionObjects, float ptHard, std::vector<bool>& flagArray)
   {
-
-    if (selectionObjects.size() != 0) {
-      float maxSelectionObjectPt = 0.0;
-      if constexpr (std::is_same_v<std::decay_t<T>, aod::JetTracks> || std::is_same_v<std::decay_t<T>, aod::JetParticles>) {
-        for (auto selectionObject : selectionObjects) {
-          if (selectionObject.pt() > maxSelectionObjectPt) {
-            maxSelectionObjectPt = selectionObject.pt();
-          }
+    if (selectionObjects.size() == 0) {
+      return;
+    }
+    float ptHatMax = ptHatMaxJet;
+    float maxSelectionObjectPt = 0.0;
+    if constexpr (std::is_same_v<std::decay_t<T>, aod::JetTracks> || std::is_same_v<std::decay_t<T>, aod::JetParticles>) {
+      ptHatMax = ptHatMaxParticle;
+      for (auto selectionObject : selectionObjects) {
+        if (selectionObject.pt() > maxSelectionObjectPt) {
+          maxSelectionObjectPt = selectionObject.pt();
         }
-      } else {
-        maxSelectionObjectPt = selectionObjects.iteratorAt(0).pt();
       }
+    } else {
+      maxSelectionObjectPt = selectionObjects.iteratorAt(0).pt();
+    }
 
-      if (maxSelectionObjectPt > ptHatMax * ptHard) {
-        flagArray[collisionIndex] = true; // Currently if running multiple different jet finders, then a single type of jet can veto an event for others. Decide if this is the best way
-      }
+    if (maxSelectionObjectPt > ptHatMax * ptHard) {
+      flagArray[collisionIndex] = true; // Currently if running multiple different jet finders, then a single type of jet can veto an event for others. Decide if this is the best way
     }
   }
 
