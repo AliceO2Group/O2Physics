@@ -1618,6 +1618,16 @@ struct TableMaker {
     fullSkimming<gkEventFillMapWithCentAndMults, 0u, gkMuonFillMapWithCov, gkMFTFillMap>(collisions, bcs, nullptr, nullptr, muons, mftTracks, nullptr, fwdTrackAssocs, mftAssocs, nullptr);
   }
 
+  // produce the muon+mft DQ skimmed data model typically including MFT covariances
+  void processPPMuonRefit(MyEventsWithMults const& collisions, BCsWithTimestamps const& bcs,
+                          MyMuonsWithCov const& muons, MFTTracks const& mftTracks,
+                          FwdTrackAssoc const& fwdTrackAssocs, MFTTrackAssoc const& mftAssocs,
+                          aod::MFTTracksCov const& mftCovs)
+  {
+    fullSkimming<gkEventFillMapWithMults, 0u, gkMuonFillMapWithCov, gkMFTCovFillMap>(collisions, bcs, nullptr, nullptr, muons, mftTracks, nullptr, fwdTrackAssocs, mftAssocs, mftCovs);
+  }
+
+
   // Process the BCs and store stats for luminosity retrieval -----------------------------------------------------------------------------------
   void processOnlyBCs(soa::Join<aod::BCs, aod::BcSels>::iterator const& bc)
   {
