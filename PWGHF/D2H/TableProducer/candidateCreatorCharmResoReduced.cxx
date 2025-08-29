@@ -353,7 +353,7 @@ struct HfCandidateCreatorCharmResoReduced {
 
     int numFills = (cfgTrackRotation.enable) ? cfgTrackRotation.numRotations : 1; // number of times we fil the tables: default 1, but more in case of track rotation
 
-    for (int iFill{0}; iFill<numFills; ++iFill) {
+    for (int iFill{0}; iFill < numFills; ++iFill) {
 
       std::array<float, 3> pVecV0Tr = candV0Tr.pVector();
       if (cfgTrackRotation.enable) { // let's rotate
