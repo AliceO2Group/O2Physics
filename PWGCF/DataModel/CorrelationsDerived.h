@@ -62,6 +62,16 @@ using CFCollLabel = CFCollLabels::iterator;
 using CFCollisionsWithLabel = soa::Join<CFCollisions, CFCollLabels>;
 using CFCollisionWithLabel = CFCollisionsWithLabel::iterator;
 
+namespace cfeventshape
+{
+DECLARE_SOA_INDEX_COLUMN(CFCollision, cfCollision); //! Index to collision
+DECLARE_SOA_COLUMN(Spherocity, spherocity, float); //! Spherocity
+} // namespace cfeventshape
+DECLARE_SOA_TABLE(CFEventShapes, "AOD", "CFEVENTSHAPE", //! Event shape table
+                  o2::soa::Index<>,
+                  cfeventshape::Spherocity);
+using CFEventShape = CFEventShapes::iterator;
+
 namespace cftrack
 {
 DECLARE_SOA_INDEX_COLUMN(CFCollision, cfCollision);   //! Index to collision

@@ -574,9 +574,177 @@ struct MultiplicitySelector {
   PROCESS_SWITCH(MultiplicitySelector, processMCGen, "Select MC particle count as multiplicity", false);
 };
 
+struct EventShapeProducer {
+  Produces<aod::CFEventShapes> OutputEventShape;
+
+  O2_DEFINE_CONFIGURABLE(minTracks, int, 10, "Minimum number of tracks per collision required to estimate spherocity");
+  O2_DEFINE_CONFIGURABLE(minPtTrack, float, 0.2, "Minimum pT of tracks required to estimate spherocity");
+  O2_DEFINE_CONFIGURABLE(AbsEtaTrack, float, 0.8, "Maximum |eta| of tracks required to estimate spherocity");
+  O2_DEFINE_CONFIGURABLE(usePtWeighted, bool, false, "Use pt-weighted spherocity");
+  O2_DEFINE_CONFIGURABLE(outputQAHistos, bool, false, "Whether to output QA histograms for spherocity");
+  
+  HistogramRegistry QAhistos{"QAhistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry QAhistosCent{"QAhistosCent", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  HistogramRegistry QAhistosSpherocity{"QAhistosSpherocity", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
+  
+  std::vector<float> nx, ny, px, py;
+  
+  void init(InitContext const&)
+  {
+    AxisSpec axisPt = {100, 0.0, 50.0};
+    AxisSpec axisEta = {100, -1.2, 1.2};
+    AxisSpec axisPhi = {100, 0.0, 2.0 * M_PI};
+    AxisSpec axisNtracks = {100, 0.0, 200.0};
+    AxisSpec axisMult = {100, 0.0, 100.0};
+    AxisSpec axisSpherocity = {1000, 0.0, 1.0};
+
+    QAhistos.add("multS0", "",{HistType::kTH2F,{axisMult, axisSpherocity}});
+    QAhistos.add("spherocity", "", {HistType::kTH1F, {axisSpherocity}});
+
+    if(!outputQAHistos) return;
+    QAhistos.add("pt", "", {HistType::kTH1F, {axisPt}});
+    QAhistos.add("eta", "", {HistType::kTH1F, {axisEta}});
+    QAhistos.add("phi", "", {HistType::kTH1F, {axisPhi}});
+    QAhistos.add("ntracks", "", {HistType::kTH1F, {axisNtracks}});
+    QAhistos.add("mult", "", {HistType::kTH1F, {axisMult}});
+    QAhistos.add("etaphi", "", {HistType::kTH2F, {axisPhi, axisEta}});
+
+    QAhistosCent.add("ntracks_0_20", "", {HistType::kTH1F, {axisNtracks}});
+    QAhistosCent.add("ntracks_20_40", "", {HistType::kTH1F, {axisNtracks}});
+    QAhistosCent.add("ntracks_40_60", "", {HistType::kTH1F, {axisNtracks}});
+    QAhistosCent.add("ntracks_60_100", "", {HistType::kTH1F, {axisNtracks}});
+    
+    QAhistosSpherocity.add("spherocity_0_20", "", {HistType::kTH1F, {axisSpherocity}});
+    QAhistosSpherocity.add("spherocity_20_40", "", {HistType::kTH1F, {axisSpherocity}});
+    QAhistosSpherocity.add("spherocity_40_60", "", {HistType::kTH1F, {axisSpherocity}});
+    QAhistosSpherocity.add("spherocity_60_100", "", {HistType::kTH1F, {axisSpherocity}});
+  }
+
+  // Spherocity calculation based on the central barrel tracks
+  template<typename TTracks>
+  float CalculateSpherocity(TTracks const& tracks, bool usePtWeighted, bool outputQAHistos)
+  {  
+    const size_t nTracks = tracks.size();
+    if (nTracks < static_cast<size_t>(minTracks)) return -2.0f;
+
+    if (nx.size() < nTracks) {
+      nx.resize(nTracks);
+      ny.resize(nTracks);
+      px.resize(nTracks);
+      py.resize(nTracks);
+    }
+
+    float sumPt = 0.0f;
+    float retval = 999.0f;
+
+    size_t idx = 0;
+    for (auto& track : tracks) {
+      const float cosPhi = std::cos(track.phi());
+      const float sinPhi = std::sin(track.phi());
+      
+      nx[idx] = cosPhi;
+      ny[idx] = sinPhi;
+      
+      if (usePtWeighted) {
+        const float pt = track.pt();
+        px[idx] = pt * cosPhi;
+        py[idx] = pt * sinPhi;
+        sumPt += pt;
+      } else {
+        px[idx] = cosPhi;
+        py[idx] = sinPhi;
+        sumPt += 1.0f;
+      }
+      if (outputQAHistos) {
+        QAhistos.fill(HIST("pt"), track.pt());
+        QAhistos.fill(HIST("eta"), track.eta());
+        QAhistos.fill(HIST("phi"), track.phi());
+        QAhistos.fill(HIST("etaphi"), track.phi(), track.eta());
+      }
+      idx++;
+    }
+
+    if (sumPt == 0.0f) return -1.5f; // no tracks -- avoid division by zero
+    
+    // Validation check for non-weighted case
+    if (!usePtWeighted && std::abs(static_cast<float>(nTracks) - sumPt) > 0.01f) {
+      LOGF(info, "Spherocity calculation: number of tracks (%zu) does not match sum of pT (%f)", nTracks, sumPt);
+      return -1.0f;
+    }
+
+    for (size_t i = 0; i < nTracks; i++) {
+      float numerator = 0.0f;
+      const float nyi = ny[i];
+      const float nxi = nx[i];
+      
+      for (size_t j = 0; j < nTracks; j++) {
+        numerator += std::abs(nyi * px[j] - nxi * py[j]);
+      }
+      
+      const float sFull = std::pow(numerator / sumPt, 2);
+      if (sFull < retval) retval = sFull;
+    }
+
+    retval = retval * M_PI * M_PI / 4.0f; // normalization factor
+    
+    if (retval < 0.0f || retval > 1.0f) {
+      LOGF(info, "Spherocity value is out of range: %f", retval);
+      return -0.5f;
+    }
+    
+    return retval;
+  }//spherocity calculation ends
+  
+  Filter cftrackFilter = (aod::cftrack::pt > minPtTrack) && (nabs(aod::cftrack::eta) < AbsEtaTrack);
+
+  using myCollisions = aod::CFCollisions;
+  using myTracks = soa::Filtered<aod::CFTracks>;
+
+  inline int getCentralityBin(float multiplicity) {
+    if (multiplicity < 20.0f) return 0;
+    else if (multiplicity < 40.0f) return 1;
+    else if (multiplicity < 60.0f) return 2;
+    else if (multiplicity < 100.0f) return 3;
+    return -1; // outside range
+  }
+
+  void processSpherocityData(myCollisions::iterator const& coll, myTracks const& tracks)
+  {
+    float spherocity = CalculateSpherocity(tracks, usePtWeighted, outputQAHistos);
+    OutputEventShape(spherocity);
+    const float multiplicity = coll.multiplicity();
+    QAhistos.fill(HIST("multS0"), multiplicity, spherocity);
+    QAhistos.fill(HIST("spherocity"), spherocity);
+    
+    if (!outputQAHistos) return;
+    
+    const size_t nTracks = tracks.size();
+    const int centralityBin = getCentralityBin(multiplicity);
+    
+    QAhistos.fill(HIST("ntracks"), nTracks);
+    QAhistos.fill(HIST("mult"), multiplicity);
+
+    if (centralityBin == 0) {
+      QAhistosCent.fill(HIST("ntracks_0_20"), nTracks);
+      QAhistosSpherocity.fill(HIST("spherocity_0_20"), spherocity);
+    } else if (centralityBin == 1) {
+      QAhistosCent.fill(HIST("ntracks_20_40"), nTracks);
+      QAhistosSpherocity.fill(HIST("spherocity_20_40"), spherocity);
+    } else if (centralityBin == 2) {
+      QAhistosCent.fill(HIST("ntracks_40_60"), nTracks);
+      QAhistosSpherocity.fill(HIST("spherocity_40_60"), spherocity);
+    } else if (centralityBin == 3) {
+      QAhistosCent.fill(HIST("ntracks_60_100"), nTracks);
+      QAhistosSpherocity.fill(HIST("spherocity_60_100"), spherocity);
+    }
+  }
+  PROCESS_SWITCH(EventShapeProducer, processSpherocityData, "Spherocity analysis for Data", false);
+};
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
     adaptAnalysisTask<FilterCF>(cfgc),
-    adaptAnalysisTask<MultiplicitySelector>(cfgc)};
+    adaptAnalysisTask<MultiplicitySelector>(cfgc),
+    adaptAnalysisTask<EventShapeProducer>(cfgc)};
 }

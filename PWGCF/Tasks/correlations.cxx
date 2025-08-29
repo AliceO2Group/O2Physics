@@ -109,6 +109,9 @@ struct CorrelationTask {
   O2_DEFINE_CONFIGURABLE(cfgPtDepMLbkg, std::vector<float>, {}, "pT interval for ML training")
   O2_DEFINE_CONFIGURABLE(cfgPtCentDepMLbkgSel, std::vector<float>, {}, "Bkg ML selection")
 
+  O2_DEFINE_CONFIGURABLE(cfgS0CutLow, float, 0.0, "Lower cut for spherocity");
+  O2_DEFINE_CONFIGURABLE(cfgS0CutUp, float, 1.0, "Upper cut for spherocity");
+
   ConfigurableAxis axisVertex{"axisVertex", {7, -7, 7}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
@@ -126,7 +129,9 @@ struct CorrelationTask {
   Filter collisionZVtxFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   // This filter is only applied to AOD
   Filter collisionVertexTypeFilter = (aod::collision::flags & static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks)) == static_cast<uint16_t>(aod::collision::CollisionFlagsRun2::Run2VertexerTracks);
-
+  
+  Filter collisionSpherocityFilter = (aod::cfeventshape::spherocity > cfgS0CutLow) && (aod::cfeventshape::spherocity < cfgS0CutUp);
+  
   // Track filters
   Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPt) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true));
   Filter cfTrackFilter = (nabs(aod::cftrack::eta) < cfgCutEta) && (aod::cftrack::pt > cfgCutPt) && ((aod::track::trackType & (uint8_t)cfgTrackBitMask) == (uint8_t)cfgTrackBitMask);
@@ -166,6 +171,8 @@ struct CorrelationTask {
 
   using DerivedCollisions = soa::Filtered<aod::CFCollisions>;
   using DerivedTracks = soa::Filtered<aod::CFTracks>;
+
+  using DerivedCollisionsWithSpherocity = soa::Filtered<soa::Join<aod::CFCollisions, aod::CFEventShapes>>;
 
   void init(o2::framework::InitContext&)
   {
@@ -859,6 +866,12 @@ struct CorrelationTask {
   }
   PROCESS_SWITCH(CorrelationTask, processSameDerivedMultSet, "Process same event on derived data with multiplicity sets", false);
 
+  void processSameDerivedWithSpherocity(DerivedCollisionsWithSpherocity::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks)
+  {
+    processSameDerivedT(collision, tracks, tracks);
+  }
+  PROCESS_SWITCH(CorrelationTask, processSameDerivedWithSpherocity, "Process same event on derived data with spherocity", false);
+
   void processSame2ProngDerived(DerivedCollisions::iterator const& collision, soa::Filtered<aod::CFTracks> const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
   {
     processSameDerivedT(collision, p2tracks, tracks);
@@ -994,6 +1007,12 @@ struct CorrelationTask {
     processMixedDerivedT(collisions, tracks);
   }
   PROCESS_SWITCH(CorrelationTask, processMixedDerivedMultSet, "Process mixed events on derived data with multiplicity sets", false);
+
+  void processMixedDerivedWithSpherocity(DerivedCollisionsWithSpherocity const& collisions, DerivedTracks const& tracks)
+  {
+    processMixedDerivedT(collisions, tracks);
+  }
+  PROCESS_SWITCH(CorrelationTask, processMixedDerivedWithSpherocity, "Process mixed events on derived data with spherocity", false);
 
   void processMixed2ProngDerived(DerivedCollisions const& collisions, DerivedTracks const& tracks, soa::Filtered<aod::CF2ProngTracks> const& p2tracks)
   {
