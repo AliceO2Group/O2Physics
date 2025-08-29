@@ -9,6 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
+// \file  ft0Qa.cxx
+// \brief FT0 QA task
+//
+// \author Uliana Dmitrieva <uliana.dmitrieva@cern.ch>, Andreas Molander <andreas.molander@cern.ch>
+
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -32,7 +37,14 @@ using namespace o2::framework;
 using BCsWithRun3Matchings = soa::Join<aod::BCs, aod::BcSels, aod::Timestamps,
                                        aod::Run3MatchedToBCSparse>;
 
-struct ft0QaTask {
+struct FT0QaTask {
+  /// Event selection options
+  enum sel {
+    kNoSel = 0,
+    kSel8 = 8
+  };
+
+  static constexpr int nContribLimit20 = 20; ///< Limit on number of contributors for some histos
 
   // Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Configurable<int> selection{"selection", 0, "trigger: 0 - no sel, 8 - sel8"};
@@ -84,6 +96,10 @@ struct ft0QaTask {
     histos.add("hT0AC", "T0AC;T0AC time (ns);counts", kTH1F, {axisTime});
     histos.add("hT0res", "FT0 resolution", kTH1F, {axisColTimeRes});
     histos.add("hColTime", "", kTH1F, {axisTime});
+    histos.add("hT0res_nContrib", "FT0 resolution vs. Ncontributors", kTH2F,
+               {axisColTimeRes, axisNcontrib});
+    histos.add("hT0res_MultT0AC", "FT0 resolution vs. T0AC multiplicity", kTH2F,
+               {axisColTimeRes, axisMultT0AC});
 
     // FT0 vertex
     histos.add("hT0vertex", "FT0 vertex;FT0 vertex (cm);counts", kTH1F,
@@ -109,6 +125,11 @@ struct ft0QaTask {
     histos.add("hPV_nContrib",
                "PV vs. Ncontributers;primary vertex (cm);(# contrubutors)",
                kTH2F, {axisVertex, axisNcontrib});
+    histos.add("hT0vertexDiff_vs_nContrib", "FT0V - PV vs. Ncontributors;FT0 vertex -  PV (cm);# contrubutors",
+               kTH2F, {axisVertex, axisNcontrib});
+    histos.add("hT0vertexDiff_vs_MultT0AC",
+               "FT0V - PV vs. T0AC multiplicity;FT0 vertex -  PV (cm);T0AC multiplicity (# ADC channels)",
+               kTH2F, {axisVertex, axisMultT0AC});
 
     // FT0 amplitude and multiplicity
     histos.add("hAmpT0A", "amplitude T0A;#ADC channels;counts", kTH1F,
@@ -240,8 +261,7 @@ struct ft0QaTask {
                                 aod::FT0sCorrected>::iterator const& collision,
                       aod::FT0s const&, aod::FV0As const&)
   {
-
-    if (selection == 8 && !collision.sel8()) {
+    if (selection == kSel8 && !collision.sel8()) {
       return;
     }
 
@@ -369,9 +389,13 @@ struct ft0QaTask {
         histos.fill(HIST("hVertex_T0_PV"), ft0.posZ(), collision.posZ());
         histos.fill(HIST("hPV"), collision.posZ());
         histos.fill(HIST("hT0res"), collision.t0resolution());
+        histos.fill(HIST("hT0res_nContrib"), collision.t0resolution(), nContrib);
+        histos.fill(HIST("hT0res_MultT0AC"), collision.t0resolution(), multFT0M);
         histos.fill(HIST("hT0vertexDiff"), ft0.posZ() - collision.posZ());
+        histos.fill(HIST("hT0vertexDiff_vs_nContrib"), ft0.posZ() - collision.posZ(), nContrib);
+        histos.fill(HIST("hT0vertexDiff_vs_MultT0AC"), ft0.posZ() - collision.posZ(), multFT0M);
 
-        if (nContrib > 20) {
+        if (nContrib > nContribLimit20) {
 
           histos.fill(HIST("hVertex_T0_PV_nC20"), ft0.posZ(), collision.posZ());
           histos.fill(HIST("hT0vertexDiff_nC20"),
@@ -400,7 +424,7 @@ struct ft0QaTask {
 
   } // end of processCollsions()
 
-  PROCESS_SWITCH(ft0QaTask, processCollisions, "per-collision analysis", true);
+  PROCESS_SWITCH(FT0QaTask, processCollisions, "per-collision analysis", true);
 
   // soa::Join<aod::BCs, aod::BcSels, aod::Mults >::iterator const &collision,
   // aod::FT0s const &ft0s, aod::FV0As const &fv0s
@@ -439,11 +463,11 @@ struct ft0QaTask {
       cent = triggers[o2::ft0::Triggers::bitCen];
       semicent = triggers[o2::ft0::Triggers::bitSCen];
 
-      for (auto amplitude : ft0.amplitudeA()) {
+      for (const auto amplitude : ft0.amplitudeA()) {
         multFT0A += amplitude;
         histos.fill(HIST("hBcAmpT0A"), amplitude);
       }
-      for (auto amplitude : ft0.amplitudeC()) {
+      for (const auto amplitude : ft0.amplitudeC()) {
         multFT0C += amplitude;
         histos.fill(HIST("hBcAmpT0C"), amplitude);
       }
@@ -516,11 +540,11 @@ struct ft0QaTask {
     //   }
     // }
   }
-  PROCESS_SWITCH(ft0QaTask, processBCs, "per-BC analysis", true);
+  PROCESS_SWITCH(FT0QaTask, processBCs, "per-BC analysis", true);
 
 }; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<ft0QaTask>(cfgc, TaskName{"ft0-qa"})};
+  return WorkflowSpec{adaptAnalysisTask<FT0QaTask>(cfgc)};
 }
