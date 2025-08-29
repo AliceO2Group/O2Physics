@@ -108,6 +108,8 @@ struct skimmerOTS {
 
       uint16_t trigger_bitmap = 0;
       registry.fill(HIST("hEventCounter"), 1);   // all
+      zorro.populateHistRegistry(registry, bc.runNumber());
+
       if (zorro.isSelected(bc.globalBC())) {     // triggered event
         auto swt_bitset = zorro.getLastResult(); // this has to be called after zorro::isSelected, or simply call zorro.fetch
         // LOGF(info, "swt_bitset.to_string().c_str() = %s", swt_bitset.to_string().c_str());

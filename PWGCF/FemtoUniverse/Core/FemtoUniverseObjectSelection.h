@@ -17,14 +17,15 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEOBJECTSELECTION_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEOBJECTSELECTION_H_
 
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
+#include "Framework/HistogramRegistry.h"
+#include "ReconstructionDataFormats/PID.h"
+
 #include <algorithm>
 #include <string>
 #include <vector>
-
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseSelection.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "Framework/HistogramRegistry.h"
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -181,7 +182,8 @@ class FemtoUniverseObjectSelection
     std::vector<selVariable> selVarVec;
     for (auto it : mSelections) {
       auto selVar = it.getSelectionVariable();
-      if (std::none_of(selVarVec.begin(), selVarVec.end(), [selVar](selVariable a) { return a == selVar; })) {
+      if (std::none_of(selVarVec.begin(), selVarVec.end(),
+                       [selVar](selVariable a) { return a == selVar; })) {
         selVarVec.push_back(selVar);
       }
     }

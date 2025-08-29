@@ -151,6 +151,16 @@ struct JetSubstructureHFOutputTask {
     PresliceOptional<soa::Join<aod::DplusChargedMCDetectorLevelPRs, aod::DplusChargedMCDetectorLevelPRsMatchedToDplusChargedMCParticleLevelPRs>> DplusPairsPerJetMCD = aod::dpluschargedmcdetectorlevelpair::jetId;
     PresliceOptional<soa::Join<aod::DplusChargedMCParticleLevelPRs, aod::DplusChargedMCParticleLevelPRsMatchedToDplusChargedMCDetectorLevelPRs>> DplusPairsPerJetMCP = aod::dpluschargedmcparticlelevelpair::jetId;
 
+    PresliceOptional<soa::Join<aod::DsChargedSPs, aod::DsChargedSPsMatchedToDsChargedEventWiseSubtractedSPs>> DsSplittingsPerJetData = aod::dschargedsplitting::jetId;
+    PresliceOptional<soa::Join<aod::DsChargedEventWiseSubtractedSPs, aod::DsChargedEventWiseSubtractedSPsMatchedToDsChargedSPs>> DsSplittingsPerJetDataSub = aod::dschargedeventwisesubtractedsplitting::jetId;
+    PresliceOptional<soa::Join<aod::DsChargedMCDetectorLevelSPs, aod::DsChargedMCDetectorLevelSPsMatchedToDsChargedMCParticleLevelSPs>> DsSplittingsPerJetMCD = aod::dschargedmcdetectorlevelsplitting::jetId;
+    PresliceOptional<soa::Join<aod::DsChargedMCParticleLevelSPs, aod::DsChargedMCParticleLevelSPsMatchedToDsChargedMCDetectorLevelSPs>> DsSplittingsPerJetMCP = aod::dschargedmcparticlelevelsplitting::jetId;
+
+    PresliceOptional<soa::Join<aod::DsChargedPRs, aod::DsChargedPRsMatchedToDsChargedEventWiseSubtractedPRs>> DsPairsPerJetData = aod::dschargedpair::jetId;
+    PresliceOptional<soa::Join<aod::DsChargedEventWiseSubtractedPRs, aod::DsChargedEventWiseSubtractedPRsMatchedToDsChargedPRs>> DsPairsPerJetDataSub = aod::dschargedeventwisesubtractedpair::jetId;
+    PresliceOptional<soa::Join<aod::DsChargedMCDetectorLevelPRs, aod::DsChargedMCDetectorLevelPRsMatchedToDsChargedMCParticleLevelPRs>> DsPairsPerJetMCD = aod::dschargedmcdetectorlevelpair::jetId;
+    PresliceOptional<soa::Join<aod::DsChargedMCParticleLevelPRs, aod::DsChargedMCParticleLevelPRsMatchedToDsChargedMCDetectorLevelPRs>> DsPairsPerJetMCP = aod::dschargedmcparticlelevelpair::jetId;
+
     PresliceOptional<soa::Join<aod::DstarChargedSPs, aod::DstarChargedSPsMatchedToDstarChargedEventWiseSubtractedSPs>> DstarSplittingsPerJetData = aod::dstarchargedsplitting::jetId;
     PresliceOptional<soa::Join<aod::DstarChargedEventWiseSubtractedSPs, aod::DstarChargedEventWiseSubtractedSPsMatchedToDstarChargedSPs>> DstarSplittingsPerJetDataSub = aod::dstarchargedeventwisesubtractedsplitting::jetId;
     PresliceOptional<soa::Join<aod::DstarChargedMCDetectorLevelSPs, aod::DstarChargedMCDetectorLevelSPsMatchedToDstarChargedMCParticleLevelSPs>> DstarSplittingsPerJetMCD = aod::dstarchargedmcdetectorlevelsplitting::jetId;
@@ -190,6 +200,16 @@ struct JetSubstructureHFOutputTask {
     PresliceOptional<soa::Join<aod::BplusChargedEventWiseSubtractedPRs, aod::BplusChargedEventWiseSubtractedPRsMatchedToBplusChargedPRs>> BplusPairsPerJetDataSub = aod::bpluschargedeventwisesubtractedpair::jetId;
     PresliceOptional<soa::Join<aod::BplusChargedMCDetectorLevelPRs, aod::BplusChargedMCDetectorLevelPRsMatchedToBplusChargedMCParticleLevelPRs>> BplusPairsPerJetMCD = aod::bpluschargedmcdetectorlevelpair::jetId;
     PresliceOptional<soa::Join<aod::BplusChargedMCParticleLevelPRs, aod::BplusChargedMCParticleLevelPRsMatchedToBplusChargedMCDetectorLevelPRs>> BplusPairsPerJetMCP = aod::bpluschargedmcparticlelevelpair::jetId;
+
+    PresliceOptional<soa::Join<aod::XicToXiPiPiChargedSPs, aod::XicToXiPiPiChargedSPsMatchedToXicToXiPiPiChargedEventWiseSubtractedSPs>> XicToXiPiPiSplittingsPerJetData = aod::xictoxipipichargedsplitting::jetId;
+    PresliceOptional<soa::Join<aod::XicToXiPiPiChargedEventWiseSubtractedSPs, aod::XicToXiPiPiChargedEventWiseSubtractedSPsMatchedToXicToXiPiPiChargedSPs>> XicToXiPiPiSplittingsPerJetDataSub = aod::xictoxipipichargedeventwisesubtractedsplitting::jetId;
+    PresliceOptional<soa::Join<aod::XicToXiPiPiChargedMCDetectorLevelSPs, aod::XicToXiPiPiChargedMCDetectorLevelSPsMatchedToXicToXiPiPiChargedMCParticleLevelSPs>> XicToXiPiPiSplittingsPerJetMCD = aod::xictoxipipichargedmcdetectorlevelsplitting::jetId;
+    PresliceOptional<soa::Join<aod::XicToXiPiPiChargedMCParticleLevelSPs, aod::XicToXiPiPiChargedMCParticleLevelSPsMatchedToXicToXiPiPiChargedMCDetectorLevelSPs>> XicToXiPiPiSplittingsPerJetMCP = aod::xictoxipipichargedmcparticlelevelsplitting::jetId;
+
+    PresliceOptional<soa::Join<aod::XicToXiPiPiChargedPRs, aod::XicToXiPiPiChargedPRsMatchedToXicToXiPiPiChargedEventWiseSubtractedPRs>> XicToXiPiPiPairsPerJetData = aod::xictoxipipichargedpair::jetId;
+    PresliceOptional<soa::Join<aod::XicToXiPiPiChargedEventWiseSubtractedPRs, aod::XicToXiPiPiChargedEventWiseSubtractedPRsMatchedToXicToXiPiPiChargedPRs>> XicToXiPiPiPairsPerJetDataSub = aod::xictoxipipichargedeventwisesubtractedpair::jetId;
+    PresliceOptional<soa::Join<aod::XicToXiPiPiChargedMCDetectorLevelPRs, aod::XicToXiPiPiChargedMCDetectorLevelPRsMatchedToXicToXiPiPiChargedMCParticleLevelPRs>> XicToXiPiPiPairsPerJetMCD = aod::xictoxipipichargedmcdetectorlevelpair::jetId;
+    PresliceOptional<soa::Join<aod::XicToXiPiPiChargedMCParticleLevelPRs, aod::XicToXiPiPiChargedMCParticleLevelPRsMatchedToXicToXiPiPiChargedMCDetectorLevelPRs>> XicToXiPiPiPairsPerJetMCP = aod::xictoxipipichargedmcparticlelevelpair::jetId;
 
     PresliceOptional<soa::Join<aod::DielectronChargedSPs, aod::DielectronChargedSPsMatchedToDielectronChargedEventWiseSubtractedSPs>> DielectronSplittingsPerJetData = aod::dielectronchargedsplitting::jetId;
     PresliceOptional<soa::Join<aod::DielectronChargedEventWiseSubtractedSPs, aod::DielectronChargedEventWiseSubtractedSPsMatchedToDielectronChargedSPs>> DielectronSplittingsPerJetDataSub = aod::dielectronchargedeventwisesubtractedsplitting::jetId;
@@ -383,8 +403,8 @@ struct JetSubstructureHFOutputTask {
     }
   }
 
-  template <typename CandidateTableType, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q, typename R, typename S, typename A, typename B, typename C, typename D, typename E, typename F, typename G>
-  void analyseSubstructureMatched(T const& jets, U const& allSplittings, V const& allPairs, M const& D0SplittingsPerJet, N const DplusSplittingsPerJet, O const DstarSplittingsPerJet, P const& LcSplittingsPerJet, Q const& B0SplittingsPerJet, R const& BplusSplittingsPerJet, S const& DielectronSplittingsPerJet, A const& D0PairsPerJet, B const DplusPairsPerJet, C const& DstarPairsPerJet, D const& LcPairsPerJet, E const& B0PairsPerJet, F const& BplusPairsPerJet, G const& DielectronPairsPerJet, std::vector<std::vector<int32_t>>& splittingMatchesGeoVecVec, std::vector<std::vector<int32_t>>& splittingMatchesPtVecVec, std::vector<std::vector<int32_t>>& splittingMatchesHFVecVec, std::vector<std::vector<int32_t>>& pairMatchesVecVec, float jetPtMin)
+  template <typename CandidateTableType, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q, typename R, typename S, typename A, typename B, typename C, typename D, typename E, typename F, typename G, typename H, typename I, typename J, typename K>
+  void analyseSubstructureMatched(T const& jets, U const& allSplittings, V const& allPairs, M const& D0SplittingsPerJet, N const DplusSplittingsPerJet, O const& DsSplittingsPerJet, P const DstarSplittingsPerJet, Q const& LcSplittingsPerJet, R const& B0SplittingsPerJet, S const& BplusSplittingsPerJet, A const& XicToXiPiPiSplittingsPerJet, B const& DielectronSplittingsPerJet, C const& D0PairsPerJet, D const DplusPairsPerJet, E const& DsPairsPerJet, F const& DstarPairsPerJet, G const& LcPairsPerJet, H const& B0PairsPerJet, I const& BplusPairsPerJet, J const& XicToXiPiPiPairsPerJet, K const& DielectronPairsPerJet, std::vector<std::vector<int32_t>>& splittingMatchesGeoVecVec, std::vector<std::vector<int32_t>>& splittingMatchesPtVecVec, std::vector<std::vector<int32_t>>& splittingMatchesHFVecVec, std::vector<std::vector<int32_t>>& pairMatchesVecVec, float jetPtMin)
   {
     for (const auto& jet : jets) {
       if (jet.pt() < jetPtMin) {
@@ -395,9 +415,9 @@ struct JetSubstructureHFOutputTask {
       }
       for (const auto& jetRadiiValue : jetRadiiValues) {
         if (jet.r() == round(jetRadiiValue * 100.0f)) {
-          auto splittings = jetcandidateutilities::slicedPerJet<CandidateTableType>(allSplittings, jet, D0SplittingsPerJet, DplusSplittingsPerJet, DstarSplittingsPerJet, LcSplittingsPerJet, B0SplittingsPerJet, BplusSplittingsPerJet, DielectronSplittingsPerJet);
+          auto splittings = jetcandidateutilities::slicedPerJet<CandidateTableType>(allSplittings, jet, D0SplittingsPerJet, DplusSplittingsPerJet, DsSplittingsPerJet, DstarSplittingsPerJet, LcSplittingsPerJet, B0SplittingsPerJet, BplusSplittingsPerJet, XicToXiPiPiSplittingsPerJet, DielectronSplittingsPerJet);
           fillSplittingMatchingVectors(splittings, jet.globalIndex(), splittingMatchesGeoVecVec, splittingMatchesPtVecVec, splittingMatchesHFVecVec);
-          auto pairs = jetcandidateutilities::slicedPerJet<CandidateTableType>(allPairs, jet, D0PairsPerJet, DplusPairsPerJet, DstarPairsPerJet, LcPairsPerJet, B0PairsPerJet, BplusPairsPerJet, DielectronPairsPerJet);
+          auto pairs = jetcandidateutilities::slicedPerJet<CandidateTableType>(allPairs, jet, D0PairsPerJet, DplusPairsPerJet, DsPairsPerJet, DstarPairsPerJet, LcPairsPerJet, B0PairsPerJet, BplusPairsPerJet, XicToXiPiPiPairsPerJet, DielectronPairsPerJet);
           fillPairMatchingVectors(pairs, jet.globalIndex(), pairMatchesVecVec);
         }
       }
@@ -656,12 +676,12 @@ struct JetSubstructureHFOutputTask {
     splittingMatchesPtVecVecData.assign(jets.size(), {});
     splittingMatchesHFVecVecData.assign(jets.size(), {});
     pairMatchesVecVecData.assign(jets.size(), {});
-    analyseSubstructureMatched<CandidateTable>(jets, splittingsData, pairsData, preslices.D0SplittingsPerJetData, preslices.DplusSplittingsPerJetData, preslices.DstarSplittingsPerJetData, preslices.LcSplittingsPerJetData, preslices.B0SplittingsPerJetData, preslices.BplusSplittingsPerJetData, preslices.DielectronSplittingsPerJetData, preslices.D0PairsPerJetData, preslices.DplusPairsPerJetData, preslices.DstarPairsPerJetData, preslices.LcPairsPerJetData, preslices.B0PairsPerJetData, preslices.BplusPairsPerJetData, preslices.DielectronPairsPerJetData, splittingMatchesGeoVecVecData, splittingMatchesPtVecVecData, splittingMatchesHFVecVecData, pairMatchesVecVecData, configs.jetPtMinData);
+    analyseSubstructureMatched<CandidateTable>(jets, splittingsData, pairsData, preslices.D0SplittingsPerJetData, preslices.DplusSplittingsPerJetData, preslices.DsSplittingsPerJetData, preslices.DstarSplittingsPerJetData, preslices.LcSplittingsPerJetData, preslices.B0SplittingsPerJetData, preslices.BplusSplittingsPerJetData, preslices.XicToXiPiPiSplittingsPerJetData, preslices.DielectronSplittingsPerJetData, preslices.D0PairsPerJetData, preslices.DplusPairsPerJetData, preslices.DsPairsPerJetData, preslices.DstarPairsPerJetData, preslices.LcPairsPerJetData, preslices.B0PairsPerJetData, preslices.BplusPairsPerJetData, preslices.XicToXiPiPiPairsPerJetData, preslices.DielectronPairsPerJetData, splittingMatchesGeoVecVecData, splittingMatchesPtVecVecData, splittingMatchesHFVecVecData, pairMatchesVecVecData, configs.jetPtMinData);
     splittingMatchesGeoVecVecDataSub.assign(jetsSub.size(), {});
     splittingMatchesPtVecVecDataSub.assign(jetsSub.size(), {});
     splittingMatchesHFVecVecDataSub.assign(jetsSub.size(), {});
     pairMatchesVecVecDataSub.assign(jetsSub.size(), {});
-    analyseSubstructureMatched<CandidateTable>(jetsSub, splittingsDataSub, pairsDataSub, preslices.D0SplittingsPerJetDataSub, preslices.DplusSplittingsPerJetDataSub, preslices.DstarSplittingsPerJetDataSub, preslices.LcSplittingsPerJetDataSub, preslices.B0SplittingsPerJetDataSub, preslices.BplusSplittingsPerJetDataSub, preslices.DielectronSplittingsPerJetDataSub, preslices.D0PairsPerJetDataSub, preslices.DplusPairsPerJetDataSub, preslices.DstarPairsPerJetDataSub, preslices.LcPairsPerJetDataSub, preslices.B0PairsPerJetDataSub, preslices.BplusPairsPerJetDataSub, preslices.DielectronPairsPerJetDataSub, splittingMatchesGeoVecVecDataSub, splittingMatchesPtVecVecDataSub, splittingMatchesHFVecVecDataSub, pairMatchesVecVecDataSub, configs.jetPtMinDataSub);
+    analyseSubstructureMatched<CandidateTable>(jetsSub, splittingsDataSub, pairsDataSub, preslices.D0SplittingsPerJetDataSub, preslices.DplusSplittingsPerJetDataSub, preslices.DsSplittingsPerJetDataSub, preslices.DstarSplittingsPerJetDataSub, preslices.LcSplittingsPerJetDataSub, preslices.B0SplittingsPerJetDataSub, preslices.BplusSplittingsPerJetDataSub, preslices.XicToXiPiPiSplittingsPerJetDataSub, preslices.DielectronSplittingsPerJetDataSub, preslices.D0PairsPerJetDataSub, preslices.DplusPairsPerJetDataSub, preslices.DsPairsPerJetDataSub, preslices.DstarPairsPerJetDataSub, preslices.LcPairsPerJetDataSub, preslices.B0PairsPerJetDataSub, preslices.BplusPairsPerJetDataSub, preslices.XicToXiPiPiPairsPerJetDataSub, preslices.DielectronPairsPerJetDataSub, splittingMatchesGeoVecVecDataSub, splittingMatchesPtVecVecDataSub, splittingMatchesHFVecVecDataSub, pairMatchesVecVecDataSub, configs.jetPtMinDataSub);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputSubstructureMatchingData, "jet substructure matching output Data", false);
 
@@ -702,12 +722,12 @@ struct JetSubstructureHFOutputTask {
     splittingMatchesPtVecVecMCD.assign(jetsMCD.size(), {});
     splittingMatchesHFVecVecMCD.assign(jetsMCD.size(), {});
     pairMatchesVecVecMCD.assign(jetsMCD.size(), {});
-    analyseSubstructureMatched<CandidateTableMCD>(jetsMCD, splittingsMCD, pairsMCD, preslices.D0SplittingsPerJetMCD, preslices.DplusSplittingsPerJetMCD, preslices.DstarSplittingsPerJetMCD, preslices.LcSplittingsPerJetMCD, preslices.B0SplittingsPerJetMCD, preslices.BplusSplittingsPerJetMCD, preslices.DielectronSplittingsPerJetMCD, preslices.D0PairsPerJetMCD, preslices.DplusPairsPerJetMCD, preslices.DstarPairsPerJetMCD, preslices.LcPairsPerJetMCD, preslices.B0PairsPerJetMCD, preslices.BplusPairsPerJetMCD, preslices.DielectronPairsPerJetMCD, splittingMatchesGeoVecVecMCD, splittingMatchesPtVecVecMCD, splittingMatchesHFVecVecMCD, pairMatchesVecVecMCD, configs.jetPtMinMCD);
+    analyseSubstructureMatched<CandidateTableMCD>(jetsMCD, splittingsMCD, pairsMCD, preslices.D0SplittingsPerJetMCD, preslices.DplusSplittingsPerJetMCD, preslices.DsSplittingsPerJetMCD, preslices.DstarSplittingsPerJetMCD, preslices.LcSplittingsPerJetMCD, preslices.B0SplittingsPerJetMCD, preslices.BplusSplittingsPerJetMCD, preslices.XicToXiPiPiSplittingsPerJetMCD, preslices.DielectronSplittingsPerJetMCD, preslices.D0PairsPerJetMCD, preslices.DplusPairsPerJetMCD, preslices.DsPairsPerJetMCD, preslices.DstarPairsPerJetMCD, preslices.LcPairsPerJetMCD, preslices.B0PairsPerJetMCD, preslices.BplusPairsPerJetMCD, preslices.XicToXiPiPiPairsPerJetMCD, preslices.DielectronPairsPerJetMCD, splittingMatchesGeoVecVecMCD, splittingMatchesPtVecVecMCD, splittingMatchesHFVecVecMCD, pairMatchesVecVecMCD, configs.jetPtMinMCD);
     splittingMatchesGeoVecVecMCP.assign(jetsMCP.size(), {});
     splittingMatchesPtVecVecMCP.assign(jetsMCP.size(), {});
     splittingMatchesHFVecVecMCP.assign(jetsMCP.size(), {});
     pairMatchesVecVecMCP.assign(jetsMCP.size(), {});
-    analyseSubstructureMatched<CandidateTableMCP>(jetsMCP, splittingsMCP, pairsMCP, preslices.D0SplittingsPerJetMCP, preslices.DplusSplittingsPerJetMCP, preslices.DstarSplittingsPerJetMCP, preslices.LcSplittingsPerJetMCP, preslices.B0SplittingsPerJetMCP, preslices.BplusSplittingsPerJetMCP, preslices.DielectronSplittingsPerJetMCP, preslices.D0PairsPerJetMCP, preslices.DplusPairsPerJetMCP, preslices.DstarPairsPerJetMCP, preslices.LcPairsPerJetMCP, preslices.B0PairsPerJetMCP, preslices.BplusPairsPerJetMCP, preslices.DielectronPairsPerJetMCP, splittingMatchesGeoVecVecMCP, splittingMatchesPtVecVecMCP, splittingMatchesHFVecVecMCP, pairMatchesVecVecMCP, configs.jetPtMinMCP);
+    analyseSubstructureMatched<CandidateTableMCP>(jetsMCP, splittingsMCP, pairsMCP, preslices.D0SplittingsPerJetMCP, preslices.DplusSplittingsPerJetMCP, preslices.DsSplittingsPerJetMCP, preslices.DstarSplittingsPerJetMCP, preslices.LcSplittingsPerJetMCP, preslices.B0SplittingsPerJetMCP, preslices.BplusSplittingsPerJetMCP, preslices.XicToXiPiPiSplittingsPerJetMCP, preslices.DielectronSplittingsPerJetMCP, preslices.D0PairsPerJetMCP, preslices.DplusPairsPerJetMCP, preslices.DsPairsPerJetMCP, preslices.DstarPairsPerJetMCP, preslices.LcPairsPerJetMCP, preslices.B0PairsPerJetMCP, preslices.BplusPairsPerJetMCP, preslices.XicToXiPiPiPairsPerJetMCP, preslices.DielectronPairsPerJetMCP, splittingMatchesGeoVecVecMCP, splittingMatchesPtVecVecMCP, splittingMatchesHFVecVecMCP, pairMatchesVecVecMCP, configs.jetPtMinMCP);
   }
   PROCESS_SWITCH(JetSubstructureHFOutputTask, processOutputSubstructureMatchingMC, "jet substructure matching output MC", false);
 

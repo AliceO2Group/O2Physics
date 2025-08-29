@@ -26,12 +26,11 @@
 #include "Common/Core/RecoDecay.h"
 
 #include "Framework/HistogramRegistry.h"
+#include <Framework/Logger.h>
 
 #include "Math/Vector4D.h"
 #include "TDatabasePDG.h"
 #include "TMath.h"
-
-#include <fairlogger/Logger.h>
 
 #include <string>
 #include <vector>
