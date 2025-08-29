@@ -129,7 +129,7 @@ struct RecoilJets {
   AxisSpec scaledFT0M{histMultBins, 0.0, 20., "FT0M^{*}"};
   ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0, 0.2, 0.3, 0.4, 0.6, 0.8, 1., 1.4, 1.8, 2.4, 3.6, 5., 20.}, "Percentiles of scaled FT0C: 100-90%, 90-80%, 80-70%, 70-60%, 60-50%, 50-40%, 40-30%, 30-20%, 20-10%, 10-1%, 1-0.1%"}; // to adjust the boarders
   ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0, 0.2, 0.3, 0.4, 0.6, 0.8, 1., 1.4, 1.8, 2.4, 3.6, 5., 20.}, "Percentiles of scaled FT0M: 100-90%, 90-80%, 80-70%, 70-60%, 60-50%, 50-40%, 40-30%, 30-20%, 20-10%, 10-1%, 1-0.1%"};
-  
+
   // Auxiliary variables
   TRandom3* rand = new TRandom3(0);
 
