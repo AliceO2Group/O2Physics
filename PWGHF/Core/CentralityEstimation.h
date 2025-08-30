@@ -107,7 +107,7 @@ float getCentralityColl(const TCollision& collision)
 template <typename TCollision>
 float getCentralityColl(const TCollision&)
 {
-  return 105.0f;
+  return -1.f;
 }
 
 /// Get the centrality
@@ -146,7 +146,7 @@ float getCentralityColl(const TCollision& collision, const int centEstimator)
       LOG(fatal) << "Centrality estimator not valid. See CentralityEstimator for valid values.";
       break;
   }
-  return -999.f;
+  return -1.f;
 }
 
 /// \brief Function to get MC collision centrality
@@ -155,11 +155,10 @@ float getCentralityColl(const TCollision& collision, const int centEstimator)
 template <typename TCollisions>
 float getCentralityGenColl(TCollisions const& collSlice)
 {
-  using TMult = uint16_t; // type of numContrib
+  uint16_t multiplicity{}; // type of numContrib
   float centrality{-1.f};
-  TMult multiplicity{};
   for (const auto& collision : collSlice) {
-    const TMult collMult = collision.numContrib();
+    const uint16_t collMult = collision.numContrib();
     if (collMult > multiplicity) {
       centrality = getCentralityColl(collision);
       multiplicity = collMult;
@@ -175,11 +174,10 @@ float getCentralityGenColl(TCollisions const& collSlice)
 template <typename TCollisions>
 float getCentralityGenColl(TCollisions const& collSlice, const int centEstimator)
 {
-  using TMult = uint16_t; // type of numContrib
+  uint16_t multiplicity{}; // type of numContrib
   float centrality{-1.f};
-  TMult multiplicity{};
   for (const auto& collision : collSlice) {
-    const TMult collMult = collision.numContrib();
+    const uint16_t collMult = collision.numContrib();
     if (collMult > multiplicity) {
       centrality = getCentralityColl(collision, centEstimator);
       multiplicity = collMult;
