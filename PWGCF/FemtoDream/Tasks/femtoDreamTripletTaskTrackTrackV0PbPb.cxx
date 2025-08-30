@@ -14,20 +14,6 @@
 /// \main author: Laura Serksnyte, laura.serksnyte@tum.de
 /// \further modifications: Wioleta Rzęsa, wioleta.rzesa@cern.ch
 
-
-#include <vector>
-#include <bitset>
-#include <string>
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "TDatabasePDG.h"
-
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
@@ -35,6 +21,21 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamContainerThreeBody.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamDetaDphiStar.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+
+#include "TDatabasePDG.h"
+
+#include <vector>
+#include <bitset>
+#include <string>
 
 using namespace o2;
 using namespace o2::analysis::femtoDream;
@@ -69,7 +70,7 @@ struct femtoDreamTripletTaskTrackTrackV0PbPb {
   Configurable<float> ConfAtWhichTPCRadii{"ConfAtWhichTPCRadii", 85., "If ConfAtWhichRadiiToCut = 2; this allows to select at which TPC radii to cut"};
 
   /// First 2 tracks of the triplet
-  Configurable<int> ConfPDGCodePart{"ConfPDGCodePart", 2212, "Particle PDG code"}; //proton
+  Configurable<int> ConfPDGCodePart{"ConfPDGCodePart", 2212, "Particle PDG code"}; // proton
   Configurable<o2::aod::femtodreamparticle::cutContainerType> ConfCutPart{"ConfCutPart", 5542474, "Track - Selection bit from cutCulator"};
   Configurable<o2::aod::femtodreamparticle::cutContainerType> ConfTPCPIDBit{"ConfTPCPIDBit", 16, "PID TPC bit from cutCulator "};
   Configurable<o2::aod::femtodreamparticle::cutContainerType> ConfTPCTOFPIDBit{"ConfTPCTOFPIDBit", 8, "PID TPCTOF bit from cutCulator"};
