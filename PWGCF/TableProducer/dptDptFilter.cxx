@@ -539,6 +539,7 @@ struct DptDptFilter {
   Produces<aod::DptDptCFGenCollisionsInfo> gencollisionsinfo;
 
   Multiplicity multiplicity;
+  Preslice<DptDptFullTracksDetLevel> perCollision = aod::track::collisionId;
 
   void init(InitContext const&)
   {
@@ -737,29 +738,33 @@ struct DptDptFilter {
   template <typename CollisionObject, typename ParticlesList>
   bool processGenerated(CollisionObject const& mccollision, ParticlesList const& mcparticles, float centormult);
 
-  template <typename CollisionsGroup, typename AllCollisions>
+  template <typename CollisionsGroup, typename AllCollisions, typename AllTracks>
   void processGeneratorLevel(aod::McCollision const& mccollision,
                              CollisionsGroup const& collisions,
                              aod::McParticles const& mcparticles,
                              AllCollisions const& allcollisions,
+                             AllTracks const& alltracks,
                              float defaultcent);
 
   void processWithCentGeneratorLevel(aod::McCollision const& mccollision,
                                      soa::SmallGroups<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>> const& collisions,
                                      aod::McParticles const& mcparticles,
-                                     aod::CollisionsEvSelCent const& allcollisions);
+                                     aod::CollisionsEvSelCent const& allcollisions,
+                                     DptDptFullTracksDetLevel const& alltracks);
   PROCESS_SWITCH(DptDptFilter, processWithCentGeneratorLevel, "Process generated with centrality", false);
 
   void processWithRun2CentGeneratorLevel(aod::McCollision const& mccollision,
                                          soa::SmallGroups<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>> const& collisions,
                                          aod::McParticles const& mcparticles,
-                                         aod::CollisionsEvSelRun2Cent const& allcollisions);
+                                         aod::CollisionsEvSelRun2Cent const& allcollisions,
+                                         DptDptFullTracksDetLevel const& alltracks);
   PROCESS_SWITCH(DptDptFilter, processWithRun2CentGeneratorLevel, "Process generated with centrality", false);
 
   void processWithoutCentGeneratorLevel(aod::McCollision const& mccollision,
                                         soa::SmallGroups<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>> const& collisions,
                                         aod::McParticles const& mcparticles,
-                                        aod::CollisionsEvSel const& allcollisions);
+                                        aod::CollisionsEvSel const& allcollisions,
+                                        DptDptFullTracksDetLevel const& alltracks);
   PROCESS_SWITCH(DptDptFilter, processWithoutCentGeneratorLevel, "Process generated without centrality", false);
 
   void processOnTheFlyGeneratorLevel(aod::McCollision const& mccollision,
@@ -908,11 +913,12 @@ bool DptDptFilter::processGenerated(CollisionObject const& mccollision, Particle
   return static_cast<bool>(acceptedevent);
 }
 
-template <typename CollisionsGroup, typename AllCollisions>
+template <typename CollisionsGroup, typename AllCollisions, typename AllTracks>
 void DptDptFilter::processGeneratorLevel(aod::McCollision const& mccollision,
                                          CollisionsGroup const& collisions,
                                          aod::McParticles const& mcparticles,
                                          AllCollisions const& allcollisions,
+                                         AllTracks const& alltracks,
                                          float defaultcent)
 {
   using namespace dptdptfilter;
@@ -928,6 +934,8 @@ void DptDptFilter::processGeneratorLevel(aod::McCollision const& mccollision,
     if (tmpcollision.has_mcCollision()) {
       if (tmpcollision.mcCollisionId() == mccollision.globalIndex()) {
         typename AllCollisions::iterator const& collision = allcollisions.iteratorAt(tmpcollision.globalIndex());
+        auto collisionTracks = alltracks.sliceBy(perCollision, collision.globalIndex());
+        storeMultiplicitiesAndCentralities(collision, collisionTracks);
         if (isEventSelected(collision, defaultcent)) {
           if (processGenerated(mccollision, mcparticles, defaultcent)) {
             fhTrueVertexZAA->Fill((mccollision.posZ()));
@@ -946,25 +954,28 @@ void DptDptFilter::processGeneratorLevel(aod::McCollision const& mccollision,
 void DptDptFilter::processWithCentGeneratorLevel(aod::McCollision const& mccollision,
                                                  soa::SmallGroups<soa::Join<aod::CollisionsEvSelCent, aod::McCollisionLabels>> const& collisions,
                                                  aod::McParticles const& mcparticles,
-                                                 aod::CollisionsEvSelCent const& allcollisions)
+                                                 aod::CollisionsEvSelCent const& allcollisions,
+                                                 DptDptFullTracksDetLevel const& alltracks)
 {
-  processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, 50.0);
+  processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, alltracks, 50.0);
 }
 
 void DptDptFilter::processWithRun2CentGeneratorLevel(aod::McCollision const& mccollision,
                                                      soa::SmallGroups<soa::Join<aod::CollisionsEvSelRun2Cent, aod::McCollisionLabels>> const& collisions,
                                                      aod::McParticles const& mcparticles,
-                                                     aod::CollisionsEvSelRun2Cent const& allcollisions)
+                                                     aod::CollisionsEvSelRun2Cent const& allcollisions,
+                                                     DptDptFullTracksDetLevel const& alltracks)
 {
-  processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, 50.0);
+  processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, alltracks, 50.0);
 }
 
 void DptDptFilter::processWithoutCentGeneratorLevel(aod::McCollision const& mccollision,
                                                     soa::SmallGroups<soa::Join<aod::CollisionsEvSel, aod::McCollisionLabels>> const& collisions,
                                                     aod::McParticles const& mcparticles,
-                                                    aod::CollisionsEvSel const& allcollisions)
+                                                    aod::CollisionsEvSel const& allcollisions,
+                                                    DptDptFullTracksDetLevel const& alltracks)
 {
-  processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, 50.0);
+  processGeneratorLevel(mccollision, collisions, mcparticles, allcollisions, alltracks, 50.0);
 }
 
 void DptDptFilter::processOnTheFlyGeneratorLevel(aod::McCollision const& mccollision,
@@ -1016,7 +1027,6 @@ T computeRMS(std::vector<T>& vec)
 }
 
 struct DptDptFilterTracks {
-
   Produces<aod::ScannedTracks> scannedtracks;
   Produces<aod::DptDptCFTracksInfo> tracksinfo;
   Produces<aod::ScannedTrueTracks> scannedgentracks;
