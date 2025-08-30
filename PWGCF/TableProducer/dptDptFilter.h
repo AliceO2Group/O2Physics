@@ -1287,17 +1287,21 @@ inline bool centralitySelection<aod::McCollision>(aod::McCollision const&, float
 /// @brief evalues the exclusion formula for the current multiplicity / centrality parameters
 /// @return true if the collision is not excluded according to the formula false otherwise
 /// WARNING: it has always to be called after filling the multiplicity / centrality observables
+/// NOTE: for MC generator level does nothing, as expected
+template <typename CollisionObject>
 inline bool isCollisionNotExcluded()
 {
   bool notExcluded = true;
-  if (useCentralityMultiplicityCorrelationsExclusion) {
-    [&]() {
-      /* set the formula parameter values */
-      for (size_t iPar = 0; iPar < observableIndexForCentralityMultiplicityParameter.size(); ++iPar) {
-        multiplicityCentralityCorrelationsExclusion->SetParameter(iPar, collisionMultiplicityCentralityObservables[observableIndexForCentralityMultiplicityParameter[iPar]]);
-      }
-    }();
-    notExcluded = multiplicityCentralityCorrelationsExclusion->Eval() != 0;
+  if constexpr (!framework::has_type_v<aod::mccollision::GeneratorsID, typename CollisionObject::all_columns>) {
+    if (useCentralityMultiplicityCorrelationsExclusion) {
+      [&]() {
+        /* set the formula parameter values */
+        for (size_t iPar = 0; iPar < observableIndexForCentralityMultiplicityParameter.size(); ++iPar) {
+          multiplicityCentralityCorrelationsExclusion->SetParameter(iPar, collisionMultiplicityCentralityObservables[observableIndexForCentralityMultiplicityParameter[iPar]]);
+        }
+      }();
+      notExcluded = multiplicityCentralityCorrelationsExclusion->Eval() != 0;
+    }
   }
   collisionFlags.set(CollSelMULTCORRELATIONS, notExcluded);
   return notExcluded;
@@ -1405,20 +1409,22 @@ inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 
   bool trigsel = triggerSelection(collision);
 
-  bool rctsel = false;
+  /* run condition table information */
+  bool rctsel = true;
   if (useRctInformation) {
-    if constexpr (framework::has_type_v<aod::evsel::Rct, typename CollisionObject::all_columns>) {
-      if (rctChecker.checkTable(collision)) {
-        rctsel = true;
-        collisionFlags.set(CollSelRCTBIT);
-      }
+    if constexpr (framework::has_type_v<aod::mccollision::GeneratorsID, typename CollisionObject::all_columns>) {
+      /* RCT condition not considered for generator level */
     } else {
-      LOGF(fatal, "RCT check required but the dataset does not have RCT information associated. Please, fix it");
+      if constexpr (framework::has_type_v<aod::evsel::Rct, typename CollisionObject::all_columns>) {
+        if (!rctChecker.checkTable(collision)) {
+          rctsel = false;
+        }
+      } else {
+        LOGF(fatal, "RCT check required but the dataset does not have RCT information associated. Please, fix it");
+      }
     }
-  } else {
-    collisionFlags.set(CollSelRCTBIT);
-    rctsel = true;
   }
+  collisionFlags.set(CollSelRCTBIT, rctsel);
 
   bool occupancysel = occupancySelection(collision);
 
@@ -1439,7 +1445,7 @@ inline bool isEventSelected(CollisionObject const& collision, float& centormult)
 
   bool centmultsel = centralitySelection(collision, centormult);
 
-  bool centmultexclusion = isCollisionNotExcluded();
+  bool centmultexclusion = isCollisionNotExcluded<CollisionObject>();
 
   bool accepted = trigsel && rctsel && occupancysel && zvtxsel && centmultsel && centmultexclusion;
 
