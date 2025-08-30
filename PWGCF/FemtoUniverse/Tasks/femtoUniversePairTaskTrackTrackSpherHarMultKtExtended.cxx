@@ -68,6 +68,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   struct : o2::framework::ConfigurableGroup {
     Configurable<float> ConfNsigmaCombined{"ConfNsigmaCombined", 3.0f, "TPC and TOF Pion Sigma (combined) for momentum > ConfTOFPtMin"};
     Configurable<float> ConfNsigmaTPC{"ConfNsigmaTPC", 3.0f, "TPC Pion Sigma for momentum < ConfTOFPtMin"};
+    Configurable<bool> ConfIsElReject{"ConfIsElReject", false, "Is electron rejection activated"};
     Configurable<float> ConfNsigmaTPCElReject{"ConfNsigmaTPCElReject", 2.0f, "TPC Electron Sigma for momentum < ConfTOFPtMin"};
     Configurable<float> ConfTOFPtMin{"ConfTOFPtMin", 0.5f, "Min. Pt for which TOF is required for PID."};
     Configurable<float> ConfEtaMax{"ConfEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
@@ -318,10 +319,18 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     // ConfNsigmaCombined -> TPC and TOF Pion Sigma (combined) for momentum > 0.5
     if (true) {
       if (mom < twotracksconfigs.ConfTOFPtMin) {
-        if ((std::abs(nsigmaTPCPi) < twotracksconfigs.ConfNsigmaTPC) && (std::abs(nsigmaTPCElReject) > twotracksconfigs.ConfNsigmaTPCElReject)) {
-          return true;
+        if (twotracksconfigs.ConfIsElReject) {
+          if ((std::abs(nsigmaTPCPi) < twotracksconfigs.ConfNsigmaTPC) && (std::abs(nsigmaTPCElReject) > twotracksconfigs.ConfNsigmaTPCElReject)) {
+            return true;
+          } else {
+            return false;
+          }
         } else {
-          return false;
+          if ((std::abs(nsigmaTPCPi) < twotracksconfigs.ConfNsigmaTPC)) {
+            return true;
+          } else {
+            return false;
+          }
         }
       } else {
         if (std::hypot(nsigmaTOFPi, nsigmaTPCPi) < twotracksconfigs.ConfNsigmaCombined) {
