@@ -52,11 +52,11 @@
 /PWGLF/TableProducer/Strangeness @alibuild @sustripathy @skundu692 @ercolessi @romainschotter
 /PWGLF/Utils @alibuild @sustripathy @skundu692 @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
 
-# PWG-MM
+# PWG-MM (fused with LF, LF conveners included. Directories to be merged in the future)
 /PWGMM      @alibuild @sustripathy @skundu692 @aalkin @jgcn
 /PWGMM/Mult @alibuild @sustripathy @skundu692 @aalkin @aortizve @ddobrigk @gbencedi @jgcn
-/PWGMM/Lumi @alibuild @aalkin @jgcn
-/PWGMM/UE   @alibuild @aalkin @aortizve @jgcn
+/PWGMM/Lumi @alibuild @sustripathy @skundu692 @aalkin @jgcn @gbencedi @abmodak
+/PWGMM/UE   @alibuild @sustripathy @skundu692 @aalkin @aortizve @jgcn
 
 /PWGUD @alibuild @pbuehler @nystrand @rolavick
 /PWGJE @alibuild @lhavener @maoyx @nzardosh @fjonasALICE @mfasDa @mhemmer-cern
