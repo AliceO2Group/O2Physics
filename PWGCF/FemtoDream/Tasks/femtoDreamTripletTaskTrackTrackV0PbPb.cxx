@@ -48,8 +48,8 @@ struct femtoDreamTripletTaskTrackTrackV0PbPb {
   Configurable<float> ConfCentralityMin{"ConfCentralityMin", 0, "Event sel: Minimum Centrality Percentile"};
   Configurable<float> ConfCentralityMax{"ConfCentralityMax", 10, "Event sel: Maximum Centrality Percentile"};
   Configurable<float> ConfZVertexCut{"confZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
-  Filter EventCentrality = aod::femtodreamcollision::multV0M >= ConfCentralityMin && aod::femtodreamcollision::multV0M <= ConfCentralityMax; 
-  Filter EventVertex = (nabs(aod::collision::posZ) < ConfZVertexCut);    
+  Filter EventCentrality = aod::femtodreamcollision::multV0M >= ConfCentralityMin && aod::femtodreamcollision::multV0M <= ConfCentralityMax;
+  Filter EventVertex = (nabs(aod::collision::posZ) < ConfZVertexCut);
   using FilteredFDCollisions = soa::Filtered<aod::FDCollisions>;
   using FilteredFDCollision = FilteredFDCollisions::iterator;
   using MaskedCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDColMasks>>;
@@ -58,7 +58,7 @@ struct femtoDreamTripletTaskTrackTrackV0PbPb {
   aod::femtodreamcollision::BitMaskType MaskBit = -1;
   float mMassOne = -999, mMassTwo = -999, mMassThree = -999;
 
-  //Pair/triplet cuts 
+  // Pair/triplet cuts
   Configurable<bool> ConfMixIfTripletPresent{"ConfMixIfTripletPresent", true, "Use for mixing only events which have a TTV0 triplet"};
   Configurable<bool> ConfMixIfTVOPairPresent{"ConfMixIfTVOPairPresent", false, "Use for mixing only events which have a TV0 pair (at least one track and one V0)"};
   Configurable<bool> ConfMixIfTOrVOPartsPresent{"ConfMixIfTOrVOPartsPresent", false, "Use for mixing only events which have at least one particle of interest"};
@@ -162,7 +162,7 @@ struct femtoDreamTripletTaskTrackTrackV0PbPb {
   ConfigurableAxis ConfInvMassBins{"ConfInvMassBins", {200, 1, 1.2}, "InvMass binning"};
 
   /// Correlations
-  ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 23.0f, 38.0f, 53.0f, 81.0f, 110.0f, 157.0f, 205.0f, 278.0f, 351.0f, 455.0f, 559.0f, 703.0f, 848.0f, 1050.0f, 1253.0f, 1530.0f,1668.0f, 1857.0f, 2047.0f, 99999.f}, "Mixing bins - multiplicity"};
+  ConfigurableAxis ConfMultBins{"ConfMultBins", {VARIABLE_WIDTH, 0.0f, 23.0f, 38.0f, 53.0f, 81.0f, 110.0f, 157.0f, 205.0f, 278.0f, 351.0f, 455.0f, 559.0f, 703.0f, 848.0f, 1050.0f, 1253.0f, 1530.0f, 1668.0f, 1857.0f, 2047.0f, 99999.f}, "Mixing bins - multiplicity"};
   ConfigurableAxis ConfVtxBins{"ConfVtxBins", {VARIABLE_WIDTH, -10.0f, -8.f, -6.f, -4.f, -2.f, 0.f, 2.f, 4.f, 6.f, 8.f, 10.f}, "Mixing bins - z-vertex"};
 
   ColumnBinningPolicy<aod::collision::PosZ, aod::femtodreamcollision::MultNtr> colBinning{{ConfVtxBins, ConfMultBins}, true};
