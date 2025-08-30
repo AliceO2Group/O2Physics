@@ -18,6 +18,11 @@ o2physics_add_dpl_workflow(femtodream-triplet-track-track-track
           SOURCES femtoDreamTripletTaskTrackTrackTrack.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
+          
+o2physics_add_dpl_workflow(femtodream-triplet-track-track-track-pb-pb
+          SOURCES femtoDreamTripletTaskTrackTrackTrackPbPb.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)         
 
 o2physics_add_dpl_workflow(femtodream-pair-track-v0
           SOURCES femtoDreamPairTaskTrackV0.cxx
@@ -39,6 +44,11 @@ o2physics_add_dpl_workflow(femtodream-triplet-track-track-v0
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femtodream-triplet-track-track-v0-pb-pb
+          SOURCES femtoDreamTripletTaskTrackTrackV0PbPb.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis) 
+          
 o2physics_add_dpl_workflow(femtodream-debug-track
           SOURCES femtoDreamDebugTrack.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
