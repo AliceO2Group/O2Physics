@@ -693,11 +693,11 @@ struct NonPromptCascadeTask {
     fillMultHistos(collisions);
     std::map<uint64_t, uint32_t> toiMap;
     zorroAccounting(collisions, toiMap);
-    if(mZorro.isInTOIS("fOmegaHighMult")) {
+    if (mZorro.isInTOIS("fOmegaHighMult")) {
       fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT, toiMap);
       fillDataTable<aod::Cascades>(gCandidatesNT);
     }
-    if(mZorro.isInTOIS("fTrackedOmega")) {
+    if (mZorro.isInTOIS("fTrackedOmega")) {
       fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates, toiMap);
       fillDataTable<aod::AssignedTrackedCascades>(gCandidates);
     }
