@@ -68,7 +68,7 @@ struct strangepidqa {
   // TOF cut axis
   ConfigurableAxis axisTOFCut{"axisTOFCut", {100, 0.0f, +10000.0f}, "TOF compat. cut (ps)"};
 
-  // nsigma axis 
+  // nsigma axis
   ConfigurableAxis axisNSigma{"axisNSigma", {60, -3.0f, +3.0f}, "NSigma"};
 
   //*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*+-+*
@@ -155,7 +155,7 @@ struct strangepidqa {
       histos.add("h3dNSigmasXiLaPr", "h3dNSigmasXiLaPr", {HistType::kTH3F, {axisNSigma, axisNSigma, axisPt}});
       histos.add("h3dNSigmasXiLaPi", "h3dNSigmasXiLaPi", {HistType::kTH3F, {axisNSigma, axisNSigma, axisPt}});
       histos.add("h3dNSigmasXiPi", "h3dNSigmasXiPi", {HistType::kTH3F, {axisNSigma, axisNSigma, axisPt}});
-      
+
       histos.add("h3dNSigmasOmLaPr", "h3dNSigmasOmLaPr", {HistType::kTH3F, {axisNSigma, axisNSigma, axisPt}});
       histos.add("h3dNSigmasOmLaPi", "h3dNSigmasOmLaPi", {HistType::kTH3F, {axisNSigma, axisNSigma, axisPt}});
       histos.add("h3dNSigmasOmKa", "h3dNSigmasOmKa", {HistType::kTH3F, {axisNSigma, axisNSigma, axisPt}});
@@ -213,7 +213,7 @@ struct strangepidqa {
   {
     for (auto& casc : Cascades) {
       auto col = collisions.rawIteratorAt(casc.straCollisionId());
-      
+
       // major selections here
       if (casc.v0radius() > v0setting_radius &&
           casc.cascradius() > cascadesetting_cascradius &&
@@ -271,11 +271,11 @@ struct strangepidqa {
 
   void processRealNonDerived(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions, soa::Join<aod::V0Datas, aod::V0TOFPIDs, aod::V0TOFBetas, aod::V0TOFDebugs, aod::V0TOFNSigmas> const& v0s, soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr> const&)
   {
-    for(auto const& col : collisions){ 
+    for (auto const& col : collisions) {
       histos.fill(HIST("hEventCentrality"), col.centFT0C());
     }
 
-    for (auto& lambda : v0s) { 
+    for (auto& lambda : v0s) {
       auto coll = collisions.rawIteratorAt(lambda.collisionId());
 
       if (TMath::Abs(lambda.eta()) > 0.5)
@@ -284,17 +284,17 @@ struct strangepidqa {
       auto negExtra = lambda.negTrack_as<soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>>();
       auto posExtra = lambda.posTrack_as<soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>>();
 
-      bool primaryTOFcompatible_Lambda = 
-      (!posExtra.hasTOF() || (posExtra.tofNSigmaPr() < tofNsigmaCompatibilityCascades.value)) &&
-      (!negExtra.hasTOF() || (negExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value));
+      bool primaryTOFcompatible_Lambda =
+        (!posExtra.hasTOF() || (posExtra.tofNSigmaPr() < tofNsigmaCompatibilityCascades.value)) &&
+        (!negExtra.hasTOF() || (negExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value));
 
-      bool primaryTOFcompatible_AntiLambda = 
-      (!posExtra.hasTOF() || (posExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)) &&
-      (!negExtra.hasTOF() || (negExtra.tofNSigmaPr() < tofNsigmaCompatibilityCascades.value));
+      bool primaryTOFcompatible_AntiLambda =
+        (!posExtra.hasTOF() || (posExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)) &&
+        (!negExtra.hasTOF() || (negExtra.tofNSigmaPr() < tofNsigmaCompatibilityCascades.value));
 
-      bool primaryTOFcompatible_K0Short = 
-      (!posExtra.hasTOF() || (posExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)) &&
-      (!negExtra.hasTOF() || (negExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value));
+      bool primaryTOFcompatible_K0Short =
+        (!posExtra.hasTOF() || (posExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)) &&
+        (!negExtra.hasTOF() || (negExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value));
 
       if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion) {
         // lambda case
@@ -304,10 +304,10 @@ struct strangepidqa {
           histos.fill(HIST("h3dMassCompatibleLambda"), coll.centFT0C(), lambda.pt(), lambda.mLambda());
           histos.fill(HIST("h1dMassCompatibleLambda"), lambda.mLambda());
         }
-        if (primaryTOFcompatible_Lambda){ 
+        if (primaryTOFcompatible_Lambda) {
           histos.fill(HIST("h3dPrimaryTOFMassCompatibleLambda"), coll.centFT0C(), lambda.pt(), lambda.mLambda());
         }
-        if(std::abs(lambda.mLambda()-o2::constants::physics::MassLambda)<massWindowForNSigmaPlots.value){ 
+        if (std::abs(lambda.mLambda() - o2::constants::physics::MassLambda) < massWindowForNSigmaPlots.value) {
           histos.fill(HIST("h3dNSigmasLaPr"), lambda.tofNSigmaLaPr(), posExtra.tofNSigmaPr(), lambda.pt());
           histos.fill(HIST("h3dNSigmasLaPi"), lambda.tofNSigmaLaPi(), negExtra.tofNSigmaPi(), lambda.pt());
         }
@@ -321,7 +321,7 @@ struct strangepidqa {
           histos.fill(HIST("h3dMassCompatibleAntiLambda"), coll.centFT0C(), lambda.pt(), lambda.mAntiLambda());
           histos.fill(HIST("h1dMassCompatibleAntiLambda"), lambda.mAntiLambda());
         }
-        if (primaryTOFcompatible_AntiLambda){ 
+        if (primaryTOFcompatible_AntiLambda) {
           histos.fill(HIST("h3dPrimaryTOFMassCompatibleAntiLambda"), coll.centFT0C(), lambda.pt(), lambda.mAntiLambda());
         }
       }
@@ -334,10 +334,10 @@ struct strangepidqa {
           histos.fill(HIST("h3dMassCompatibleK0Short"), coll.centFT0C(), lambda.pt(), lambda.mK0Short());
           histos.fill(HIST("h1dMassCompatibleK0Short"), lambda.mK0Short());
         }
-        if (primaryTOFcompatible_K0Short){ 
+        if (primaryTOFcompatible_K0Short) {
           histos.fill(HIST("h3dPrimaryTOFMassCompatibleK0Short"), coll.centFT0C(), lambda.pt(), lambda.mK0Short());
         }
-        if(std::abs(lambda.mK0Short()-o2::constants::physics::MassK0Short)<massWindowForNSigmaPlots.value){ 
+        if (std::abs(lambda.mK0Short() - o2::constants::physics::MassK0Short) < massWindowForNSigmaPlots.value) {
           histos.fill(HIST("h3dNSigmasK0Pi"), lambda.tofNSigmaLaPi(), posExtra.tofNSigmaPi(), lambda.pt());
           histos.fill(HIST("h3dNSigmasK0Pi"), lambda.tofNSigmaLaPi(), negExtra.tofNSigmaPi(), lambda.pt());
         }
@@ -346,7 +346,7 @@ struct strangepidqa {
   }
 
   // to test original data (not derived) as well, compare with primary TOF Nsigmas
-  // don't do grouping, faster to simply stream through 
+  // don't do grouping, faster to simply stream through
   void processCascadesNonDerived(soa::Join<aod::Collisions, aod::CentFT0Cs> const& collisions, soa::Filtered<soa::Join<aod::CascDatas, aod::CascTOFNSigmas>> const& Cascades, soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr> const&)
   {
     for (auto& casc : Cascades) {
@@ -364,29 +364,29 @@ struct strangepidqa {
         auto posExtra = casc.posTrack_as<soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>>();
         auto bachExtra = casc.bachelor_as<soa::Join<aod::TracksIU, aod::TracksExtra, aod::pidTPCPi, aod::pidTPCKa, aod::pidTPCPr, aod::pidTOFPi, aod::pidTOFKa, aod::pidTOFPr>>();
 
-        if (negExtra.tpcNClsCrossedRows() < tpcCrossedRows || posExtra.tpcNClsCrossedRows() < tpcCrossedRows || bachExtra.tpcNClsCrossedRows() < tpcCrossedRows){
+        if (negExtra.tpcNClsCrossedRows() < tpcCrossedRows || posExtra.tpcNClsCrossedRows() < tpcCrossedRows || bachExtra.tpcNClsCrossedRows() < tpcCrossedRows) {
           continue;
         }
 
-        bool primaryTOFcompatible_XiMinus = 
-        (!posExtra.hasTOF() || (posExtra.tofNSigmaPr() < tofNsigmaCompatibilityCascades.value)) &&
-        (!negExtra.hasTOF() || (negExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)) && 
-        (!bachExtra.hasTOF() || (bachExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)); 
+        bool primaryTOFcompatible_XiMinus =
+          (!posExtra.hasTOF() || (posExtra.tofNSigmaPr() < tofNsigmaCompatibilityCascades.value)) &&
+          (!negExtra.hasTOF() || (negExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)) &&
+          (!bachExtra.hasTOF() || (bachExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value));
 
-        bool primaryTOFcompatible_XiPlus = 
-        (!posExtra.hasTOF() || (posExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)) &&
-        (!negExtra.hasTOF() || (negExtra.tofNSigmaPr() < tofNsigmaCompatibilityCascades.value)) && 
-        (!bachExtra.hasTOF() || (bachExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)); 
+        bool primaryTOFcompatible_XiPlus =
+          (!posExtra.hasTOF() || (posExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)) &&
+          (!negExtra.hasTOF() || (negExtra.tofNSigmaPr() < tofNsigmaCompatibilityCascades.value)) &&
+          (!bachExtra.hasTOF() || (bachExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value));
 
-        bool primaryTOFcompatible_OmegaMinus = 
-        (!posExtra.hasTOF() || (posExtra.tofNSigmaPr() < tofNsigmaCompatibilityCascades.value)) &&
-        (!negExtra.hasTOF() || (negExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)) && 
-        (!bachExtra.hasTOF() || (bachExtra.tofNSigmaKa() < tofNsigmaCompatibilityCascades.value)); 
+        bool primaryTOFcompatible_OmegaMinus =
+          (!posExtra.hasTOF() || (posExtra.tofNSigmaPr() < tofNsigmaCompatibilityCascades.value)) &&
+          (!negExtra.hasTOF() || (negExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)) &&
+          (!bachExtra.hasTOF() || (bachExtra.tofNSigmaKa() < tofNsigmaCompatibilityCascades.value));
 
-        bool primaryTOFcompatible_OmegaPlus = 
-        (!posExtra.hasTOF() || (posExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)) &&
-        (!negExtra.hasTOF() || (negExtra.tofNSigmaPr() < tofNsigmaCompatibilityCascades.value)) && 
-        (!bachExtra.hasTOF() || (bachExtra.tofNSigmaKa() < tofNsigmaCompatibilityCascades.value)); 
+        bool primaryTOFcompatible_OmegaPlus =
+          (!posExtra.hasTOF() || (posExtra.tofNSigmaPi() < tofNsigmaCompatibilityCascades.value)) &&
+          (!negExtra.hasTOF() || (negExtra.tofNSigmaPr() < tofNsigmaCompatibilityCascades.value)) &&
+          (!bachExtra.hasTOF() || (bachExtra.tofNSigmaKa() < tofNsigmaCompatibilityCascades.value));
 
         if (casc.sign() < 0) {
           if (TMath::Abs(posExtra.tpcNSigmaPr()) < tpcNsigmaProton && TMath::Abs(negExtra.tpcNSigmaPi()) < tpcNsigmaPion && TMath::Abs(bachExtra.tpcNSigmaPi()) < tpcNsigmaBachelor) {
@@ -396,10 +396,10 @@ struct strangepidqa {
               histos.fill(HIST("h3dMassCompatibleXiMinus"), col.centFT0C(), casc.pt(), casc.mXi());
               histos.fill(HIST("h1dMassCompatibleXiMinus"), casc.mXi());
             }
-            if (primaryTOFcompatible_XiMinus){ 
+            if (primaryTOFcompatible_XiMinus) {
               histos.fill(HIST("h3dPrimaryTOFMassCompatibleXiMinus"), col.centFT0C(), casc.pt(), casc.mXi());
             }
-            if(std::abs(casc.mXi()-o2::constants::physics::MassXiMinus)<massWindowForNSigmaPlots.value){ 
+            if (std::abs(casc.mXi() - o2::constants::physics::MassXiMinus) < massWindowForNSigmaPlots.value) {
               histos.fill(HIST("h3dNSigmasXiLaPr"), casc.tofNSigmaXiLaPr(), posExtra.tofNSigmaPr(), casc.pt());
               histos.fill(HIST("h3dNSigmasXiLaPi"), casc.tofNSigmaXiLaPi(), negExtra.tofNSigmaPi(), casc.pt());
               histos.fill(HIST("h3dNSigmasXiPi"), casc.tofNSigmaXiPi(), bachExtra.tofNSigmaPi(), casc.pt());
@@ -412,10 +412,10 @@ struct strangepidqa {
               histos.fill(HIST("h3dMassCompatibleOmegaMinus"), col.centFT0C(), casc.pt(), casc.mOmega());
               histos.fill(HIST("h1dMassCompatibleOmegaMinus"), casc.mOmega());
             }
-            if (primaryTOFcompatible_OmegaMinus){ 
+            if (primaryTOFcompatible_OmegaMinus) {
               histos.fill(HIST("h3dPrimaryTOFMassCompatibleOmegaMinus"), col.centFT0C(), casc.pt(), casc.mOmega());
             }
-            if(std::abs(casc.mOmega()-o2::constants::physics::MassOmegaMinus)<massWindowForNSigmaPlots.value){ 
+            if (std::abs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < massWindowForNSigmaPlots.value) {
               histos.fill(HIST("h3dNSigmasOmLaPr"), casc.tofNSigmaOmLaPr(), posExtra.tofNSigmaPr(), casc.pt());
               histos.fill(HIST("h3dNSigmasOmLaPi"), casc.tofNSigmaOmLaPi(), negExtra.tofNSigmaPi(), casc.pt());
               histos.fill(HIST("h3dNSigmasOmKa"), casc.tofNSigmaOmKa(), bachExtra.tofNSigmaKa(), casc.pt());
@@ -429,7 +429,7 @@ struct strangepidqa {
               histos.fill(HIST("h3dMassCompatibleXiPlus"), col.centFT0C(), casc.pt(), casc.mXi());
               histos.fill(HIST("h1dMassCompatibleXiPlus"), casc.mXi());
             }
-            if (primaryTOFcompatible_XiPlus){ 
+            if (primaryTOFcompatible_XiPlus) {
               histos.fill(HIST("h3dPrimaryTOFMassCompatibleXiPlus"), col.centFT0C(), casc.pt(), casc.mXi());
             }
           }
@@ -441,7 +441,7 @@ struct strangepidqa {
               histos.fill(HIST("h3dMassCompatibleOmegaPlus"), col.centFT0C(), casc.pt(), casc.mOmega());
               histos.fill(HIST("h1dMassCompatibleOmegaPlus"), casc.mOmega());
             }
-            if (primaryTOFcompatible_OmegaPlus){ 
+            if (primaryTOFcompatible_OmegaPlus) {
               histos.fill(HIST("h3dPrimaryTOFMassCompatibleOmegaPlus"), col.centFT0C(), casc.pt(), casc.mOmega());
             }
           }
@@ -453,7 +453,7 @@ struct strangepidqa {
   PROCESS_SWITCH(strangepidqa, processReal, "Produce real information", true);
   PROCESS_SWITCH(strangepidqa, processCascades, "Process real cascades", true);
 
-  // non-derived options 
+  // non-derived options
   PROCESS_SWITCH(strangepidqa, processRealNonDerived, "Process real cascades from non-derived data", true);
   PROCESS_SWITCH(strangepidqa, processCascadesNonDerived, "Process real cascades from non-derived data", true);
 };
