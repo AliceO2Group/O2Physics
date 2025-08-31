@@ -664,7 +664,7 @@ struct CreateResolutionMap {
       if (muoncuts.cfg_max_dcaxy_gl < dcaXY) {
         return false;
       }
-      if (chi2 < 0.f || muoncuts.cfg_max_chi2_gl < chi2) {
+      if (chi2 < 0.f || muoncuts.cfg_max_chi2_gl < chi2) { // chi2/ndf
         return false;
       }
       if (rAtAbsorberEnd < muoncuts.cfg_min_rabs_gl || muoncuts.cfg_max_rabs_gl < rAtAbsorberEnd) {
