@@ -107,6 +107,7 @@ struct strangenesstofpid {
 
     Configurable<bool> correctELossInclination{"correctELossInclination", false, "factor out inclination when doing effective e-loss correction (0: no, 1: yes)"};
     Configurable<int> numberOfStepsFirstStage{"numberOfStepsFirstStage", 500, "Max number of alpha rotations to attempt in first stage"};
+    Configurable<int> numberOfStepsFirstStage{"numberOfStepsSecondStage", 500, "Max number of steps rotations to attempt in second stage"};
     Configurable<float> stepSizeFirstStage{"stepSizeFirstStage", 2.0f, "Max number of alpha rotations to attempt in first stage"};
     Configurable<float> firstApproximationThreshold{"firstApproximationThreshold",4.0f, "be satisfied if first approach to TOF radius is OK within this threshold (cm)"};
 
@@ -367,7 +368,7 @@ struct strangenesstofpid {
     static constexpr float MAX_SIN_PHI = 0.85f;
     static constexpr float MAX_STEP = 2.0f;
     static constexpr float MAX_STEP_FINAL_STAGE = 0.5f;
-    static constexpr float MAX_FINAL_X = 390.0f; // maximum extra X on top of TOF X for correcting value
+    static constexpr float MAX_FINAL_X = 450.0f; // maximum extra X on top of TOF X for correcting value
 
     //____________________________________________________________
     // stage 1: propagate to TOF-inscribed circle at tofPosition
@@ -415,7 +416,7 @@ struct strangenesstofpid {
     float trackXextra = track.getX();
     bool trackOKextra = true;
     int propagationSteps = 0;
-    while (trackXextra < MAX_FINAL_X && propagationSteps < 1000) {
+    while (trackXextra < MAX_FINAL_X && propagationSteps < propagationConfiguration.numberOfStepsSecondStage.value) {
       // continue with alpha aligned with pT
       track.getPxPyPzGlo(pxpypz);
       track.rotateParam(std::atan2(pxpypz[1], pxpypz[0]));
@@ -1060,6 +1061,8 @@ struct strangenesstofpid {
               histos.fill(HIST("hDeltaTimeMethodsVsP_negLaPi"), negativeP, v0.negativeeta(), (timeNegativePi_Method0 - timeNegativePi_Method1) * negativeCosine);
               histos.fill(HIST("hRatioTimeMethodsVsP_negLaPi"), negativeP, v0.negativeeta(), (timeNegativePi_Method1 / timeNegativePi_Method0));
             }
+            // delta lambda decay time
+            histos.fill(HIST("h2dLambdaDeltaDecayTime"), v0.p(), deltaDecayTimeLambda);
             if (doQANSigma)
               histos.fill(HIST("h2dNSigmaNegativeLambdaPi"), v0.p(), nSigmaNegativeLambdaPi);
           }
@@ -1083,8 +1086,6 @@ struct strangenesstofpid {
           }
         }
       }
-      // delta lambda decay time
-      histos.fill(HIST("h2dLambdaDeltaDecayTime"), v0.p(), deltaDecayTimeLambda);
     }
   }
 
