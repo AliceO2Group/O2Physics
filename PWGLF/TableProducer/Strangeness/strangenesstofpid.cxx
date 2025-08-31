@@ -364,7 +364,6 @@ struct strangenesstofpid {
 
     o2::track::TrackLTIntegral ltIntegral;
 
-    float trackX = -100;
     static constexpr float MAX_SIN_PHI = 0.85f;
     static constexpr float MAX_STEP = 2.0f;
     static constexpr float MAX_STEP_FINAL_STAGE = 0.5f;
@@ -379,12 +378,12 @@ struct strangenesstofpid {
     track.getXYZGlo(xyz);
     float segmentedRstart = segmentedRadius(xyz[0], xyz[1]);
 
-    bool firstPropag;
+    bool firstPropag = true;
     for (int iRot = 0; iRot < propagationConfiguration.numberOfStepsFirstStage.value; iRot++) {
       track.rotateParam(track.getPhi()); // start rotated
       float currentX = track.getX();
       float tofX = currentX;
-      bool getXatLabRok = track.getXatLabR(propagationConfiguration.tofPosition, tofX, d_bz, o2::track::DirOutward);
+      track.getXatLabR(propagationConfiguration.tofPosition, tofX, d_bz, o2::track::DirOutward);
       if (std::abs(tofX - currentX) < propagationConfiguration.firstApproximationThreshold.value) {
         // signal conclusion
         if (calculationMethod.value == 2) {
@@ -415,10 +414,11 @@ struct strangenesstofpid {
     }
 
     // correct for TOF segmentation
-    float trackXextra = track.getX();
     bool trackOKextra = true;
+    float trackXextra = track.getX();
     int propagationSteps = 0;
-    while (trackXextra < MAX_FINAL_X && propagationSteps < propagationConfiguration.numberOfStepsSecondStage.value) {
+    int maxPropagationSteps = propagationConfiguration.numberOfStepsSecondStage.value;
+    while ((trackXextra < MAX_FINAL_X) && (propagationSteps < maxPropagationSteps)) {
       // continue with alpha aligned with pT
       track.getPxPyPzGlo(pxpypz);
       track.rotateParam(std::atan2(pxpypz[1], pxpypz[0]));
