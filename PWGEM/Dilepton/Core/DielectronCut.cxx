@@ -324,11 +324,6 @@ void DielectronCut::SetTOFNsigmaPrRange(float min, float max)
 //   LOG(info) << "Dielectron Cut, set p range for ITS n sigma Pr: " << mMinP_ITSNsigmaPr << " - " << mMaxP_ITSNsigmaPr;
 // }
 
-void DielectronCut::SetMaxPinMuonTPConly(float max)
-{
-  mMaxPinMuonTPConly = max;
-  LOG(info) << "Dielectron Cut, set max pin for Muon ID with TPC only: " << mMaxPinMuonTPConly;
-}
 void DielectronCut::SetPinRangeForPionRejectionTPC(float min, float max)
 {
   mMinPinForPionRejectionTPC = min;
