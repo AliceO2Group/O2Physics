@@ -209,6 +209,7 @@ struct NonPromptCascadeTask {
   int mRunNumber = 0;
   float mBz = 0.f;
   o2::vertexing::DCAFitterN<2> mDCAFitter;
+  std::array<int, 2> mProcessCounter = {0, 0}; // {Tracked, All}
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
@@ -300,7 +301,7 @@ struct NonPromptCascadeTask {
 
   void zorroAccounting(const auto& collisions, auto& toiMap)
   {
-    if (cfgSkimmedProcessing) {
+    if (cfgSkimmedProcessing && mProcessCounter[0] != mProcessCounter[1]) {
       int runNumber{-1};
       for (const auto& coll : collisions) {
         auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
@@ -691,6 +692,7 @@ struct NonPromptCascadeTask {
                                   aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                                   aod::BCsWithTimestamps const&)
   {
+    mProcessCounter[0]++;
     fillMultHistos(collisions);
     std::map<uint64_t, uint32_t> toiMap;
     zorroAccounting(collisions, toiMap);
@@ -703,6 +705,7 @@ struct NonPromptCascadeTask {
                            aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                            aod::BCsWithTimestamps const&)
   {
+    mProcessCounter[1]++;
     std::map<uint64_t, uint32_t> toiMap;
     zorroAccounting(collisions, toiMap);
     fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT, toiMap);
