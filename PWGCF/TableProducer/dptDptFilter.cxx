@@ -101,13 +101,14 @@ const char* speciesTitle[kDptDptNoOfSpecies] = {"", "e", "#mu", "#pi", "K", "p"}
 /// \enum BeforeAfter
 /// \brief when filling the histograms
 enum BeforeAfter {
-  BeforeAfterBEFORE = 0, ///< filling the histograms before selections
-  BeforeAfterAFTER,      ///< filling the histograms after selections
-  BeforeAfterNOOFTIMES   ///< how many times fill the histograms
+  BeforeAfterBEFORE = 0,     ///< filling the histograms before selections
+  BeforeAfterBEFOREMULTCORR, ///< filling the histograms before outliers exclusion
+  BeforeAfterAFTER,          ///< filling the histograms after selections
+  BeforeAfterNOOFTIMES       ///< how many times fill the histograms
 };
 
-static const std::vector<std::string> beforeAfterName = {"before", ""};
-static const std::vector<std::string> beforeAfterSufix = {"B", "A"};
+static const std::vector<std::string> beforeAfterName = {"before", "before outliers exclusion", ""};
+static const std::vector<std::string> beforeAfterSufix = {"B", "BO", "A"};
 
 /* helpers for the multiplicity axes definition */
 static constexpr float MultiplicityUpperLimitBase[11][8] = {
@@ -506,6 +507,7 @@ struct DptDptFilter {
 #define MULTSRCNAME(msrcid) multiplicitySourceConfigNamesMap.at(msrcid).data()
     Configurable<LabeledArray<float>> multiplicityUpperLimit{"multiplicityUpperLimit", {MultiplicityUpperLimitBase[0], 11, 8, {SYSTEMNAME(0), SYSTEMNAME(1), SYSTEMNAME(2), SYSTEMNAME(3), SYSTEMNAME(4), SYSTEMNAME(5), SYSTEMNAME(6), SYSTEMNAME(7), SYSTEMNAME(8), SYSTEMNAME(9), SYSTEMNAME(10)}, {MULTSRCNAME(0), MULTSRCNAME(1), MULTSRCNAME(2), MULTSRCNAME(3), MULTSRCNAME(4), MULTSRCNAME(5), MULTSRCNAME(6), MULTSRCNAME(7)}}, "Upper limits for the multiplicity observables"};
     Configurable<LabeledArray<std::string>> multiplicitiesExclusionFormula{"multiplicitiesExclusionFormula", {multiplicityCentralityCorrelationsFormulaBase[0], 11, 1, {SYSTEMNAME(0), SYSTEMNAME(1), SYSTEMNAME(2), SYSTEMNAME(3), SYSTEMNAME(4), SYSTEMNAME(5), SYSTEMNAME(6), SYSTEMNAME(7), SYSTEMNAME(8), SYSTEMNAME(9), SYSTEMNAME(10)}, {"Exclusion formula"}}, "Formula for excluding outliers of the multiplicities correlations. Use any parameter from centMultCorrelationsParamsMap"};
+    Configurable<std::string> triggSel{"triggSel", "mb+nocollintrstd+nocollinrofstd+nosamebunchpup+isvtxitstpc+gooditslayerall", "Trigger selection: check \'triggerSelectionBitsMap\' for options. Default: mb+nocollintrstd+nocollinrofstd+nosamebunchpup+isvtxitstpc+gooditslayerall"};
     struct : ConfigurableGroup {
       std::string prefix = "cfgEventSelection.occupancySelection";
       Configurable<std::string> occupancyEstimation{"occupancyEstimation", "None", "Occupancy estimation: None, Tracks, FT0C. Default None"};
@@ -515,7 +517,6 @@ struct DptDptFilter {
   } cfgEventSelection;
   Configurable<std::string> cfgSystem{"cfgSystem", "PbPb", "System: Auto, pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
   Configurable<std::string> cfgDataType{"cfgDataType", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
-  Configurable<std::string> cfgTriggSel{"cfgTriggSel", "MB", "Trigger selection: MB,VTXTOFMATCHED,VTXTRDMATCHED,VTXTRDTOFMATCHED,None. Default MB"};
   Configurable<std::string> cfgCentSpec{"cfgCentSpec", "00-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
   Configurable<float> cfgOverallMinP{"cfgOverallMinP", 0.0f, "The overall minimum momentum for the analysis. Default: 0.0"};
   struct : ConfigurableGroup {
@@ -584,7 +585,7 @@ struct DptDptFilter {
     fMaxOccupancy = cfgEventSelection.occupancySelection.maxOccupancy;
 
     /* the trigger selection */
-    triggerSelectionFlags = getTriggerSelection(cfgTriggSel.value.c_str());
+    triggerSelectionFlags = getTriggerSelection(cfgEventSelection.triggSel.value.c_str());
     traceCollId0 = cfgTraceCollId0;
 
     /* if the system type is not known at this time, we have to put the initialization somewhere else */
@@ -832,32 +833,46 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
   }
   /* report QC information if required */
   if (cfgEventSelection.fillQc) {
-    [&](bool accepted) {
-      for (int i = 0; i < BeforeAfterNOOFTIMES; ++i) {
-        fhMultiplicityVsCentrality[i]->Fill(centormult, ftracks.size());
-        fhMultiplicityVsT0cMultiplicity[i]->Fill(collision.multFT0C(), ftracks.size());
-        fhMultiplicityVsT0aMultiplicity[i]->Fill(collision.multFT0A(), ftracks.size());
-        fhMultiplicityVsV0aMultiplicity[i]->Fill(collision.multFV0A(), ftracks.size());
-        fhMultiplicityVsPvMultiplicity[i]->Fill(collision.multNTracksPV(), ftracks.size());
-        fhPvMultiplicityVsCentrality[i]->Fill(centormult, collision.multNTracksPV());
-        fhPvMultiplicityVsT0cMultiplicity[i]->Fill(collision.multFT0C(), collision.multNTracksPV());
-        fhPvMultiplicityVsT0aMultiplicity[i]->Fill(collision.multFT0A(), collision.multNTracksPV());
-        fhPvMultiplicityVsV0aMultiplicity[i]->Fill(collision.multFV0A(), collision.multNTracksPV());
-        fhV0aMultiplicityVsCentrality[i]->Fill(centormult, collision.multFV0A());
-        fhV0aMultiplicityVsT0cMultiplicity[i]->Fill(collision.multFT0C(), collision.multFV0A());
-        fhV0aMultiplicityVsT0aMultiplicity[i]->Fill(collision.multFT0A(), collision.multFV0A());
-        fhT0cMultiplicityVsCentrality[i]->Fill(centormult, collision.multFT0C());
-        fhT0cMultiplicityVsT0aMultiplicity[i]->Fill(collision.multFT0A(), collision.multFT0C());
-        if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns>) {
-          fhT0CentralityVsCentrality[i]->Fill(centormult, collision.centFT0M());
-          fhV0aCentralityVsCentrality[i]->Fill(centormult, collision.centFV0A());
-          fhNtpvCentralityVsCentrality[i]->Fill(centormult, collision.centNTPV());
-        }
-        /* if not accepted only before is filled */
-        if (!accepted)
+    auto fillHistograms = [&](int step) {
+      fhMultiplicityVsCentrality[step]->Fill(centormult, ftracks.size());
+      fhMultiplicityVsT0cMultiplicity[step]->Fill(collision.multFT0C(), ftracks.size());
+      fhMultiplicityVsT0aMultiplicity[step]->Fill(collision.multFT0A(), ftracks.size());
+      fhMultiplicityVsV0aMultiplicity[step]->Fill(collision.multFV0A(), ftracks.size());
+      fhMultiplicityVsPvMultiplicity[step]->Fill(collision.multNTracksPV(), ftracks.size());
+      fhPvMultiplicityVsCentrality[step]->Fill(centormult, collision.multNTracksPV());
+      fhPvMultiplicityVsT0cMultiplicity[step]->Fill(collision.multFT0C(), collision.multNTracksPV());
+      fhPvMultiplicityVsT0aMultiplicity[step]->Fill(collision.multFT0A(), collision.multNTracksPV());
+      fhPvMultiplicityVsV0aMultiplicity[step]->Fill(collision.multFV0A(), collision.multNTracksPV());
+      fhV0aMultiplicityVsCentrality[step]->Fill(centormult, collision.multFV0A());
+      fhV0aMultiplicityVsT0cMultiplicity[step]->Fill(collision.multFT0C(), collision.multFV0A());
+      fhV0aMultiplicityVsT0aMultiplicity[step]->Fill(collision.multFT0A(), collision.multFV0A());
+      fhT0cMultiplicityVsCentrality[step]->Fill(centormult, collision.multFT0C());
+      fhT0cMultiplicityVsT0aMultiplicity[step]->Fill(collision.multFT0A(), collision.multFT0C());
+      if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns>) {
+        fhT0CentralityVsCentrality[step]->Fill(centormult, collision.centFT0M());
+        fhV0aCentralityVsCentrality[step]->Fill(centormult, collision.centFV0A());
+        fhNtpvCentralityVsCentrality[step]->Fill(centormult, collision.centNTPV());
+      }
+    };
+    for (int i = 0; i < BeforeAfterNOOFTIMES; ++i) {
+      switch (static_cast<BeforeAfter>(i)) {
+        case BeforeAfterBEFORE:
+          fillHistograms(i);
+          break;
+        case BeforeAfterBEFOREMULTCORR:
+          if ((collisionFlags & CollSelPREMULTACCEPTEDRUN3) == CollSelPREMULTACCEPTEDRUN3) {
+            fillHistograms(i);
+          }
+          break;
+        case BeforeAfterAFTER:
+          if (acceptedevent) {
+            fillHistograms(i);
+          }
+          break;
+        default:
           break;
       }
-    }(acceptedevent);
+    }
   }
 }
 
