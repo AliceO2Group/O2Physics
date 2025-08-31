@@ -377,8 +377,8 @@ struct Kstarqa {
       // hInvMass.add("multdist_FT0A", "FT0A Multiplicity distribution", kTH1F, {axisMultdist});
       // hInvMass.add("multdist_FT0C", "FT0C Multiplicity distribution", kTH1F, {axisMultdist});
       // hInvMass.add("hNcontributor", "Number of primary vertex contributor", kTH1F, {{2000, 0.0f, 10000.0f}});
-      rEventSelection.add("hDcaxy", "Dcaxy distribution", kTH1F, {{200, -1.0f, 1.0f}});
-      rEventSelection.add("hDcaz", "Dcaz distribution", kTH1F, {{200, -1.0f, 1.0f}});
+      rEventSelection.add("hDcaxy_cent_pt", "Dcaxy distribution", kTH3F, {{200, -1.0f, 1.0f}, multiplicityAxis, ptAxis});
+      rEventSelection.add("hDcaz_cent_pt", "Dcaz distribution", kTH3F, {{200, -1.0f, 1.0f}, multiplicityAxis, ptAxis});
     }
   }
 
@@ -937,7 +937,7 @@ struct Kstarqa {
     int occupancy = collision.trackOccupancyInTimeRange();
     rEventSelection.fill(HIST("hOccupancy"), occupancy);
 
-    if (!selectionEvent(collision, true)) { // fill event cut histogram
+    if (!selectionEvent(collision, true)) { // fill data event cut histogram
       return;
     }
 
@@ -1019,8 +1019,8 @@ struct Kstarqa {
       }
 
       if (cQAevents) {
-        rEventSelection.fill(HIST("hDcaxy"), track1.dcaXY());
-        rEventSelection.fill(HIST("hDcaz"), track1.dcaZ());
+        rEventSelection.fill(HIST("hDcaxy_cent_pt"), track1.dcaXY(), multiplicity, track1.pt());
+        rEventSelection.fill(HIST("hDcaz_cent_pt"), track1.dcaZ(), multiplicity, track1.pt());
       }
 
       // since we are using combinations full index policy, so repeated pairs are allowed, so we can check one with Kaon and other with pion
@@ -1381,8 +1381,8 @@ struct Kstarqa {
       }
 
       if (cQAevents) {
-        rEventSelection.fill(HIST("hDcaxy"), track1.dcaXY());
-        rEventSelection.fill(HIST("hDcaz"), track1.dcaZ());
+        rEventSelection.fill(HIST("hDcaxy_cent_pt"), track1.dcaXY(), multiplicity, track1.pt());
+        rEventSelection.fill(HIST("hDcaz_cent_pt"), track1.dcaZ(), multiplicity, track1.pt());
       }
 
       // since we are using combinations full index policy, so repeated pairs are allowed, so we can check one with Kaon and other with pion
@@ -1483,8 +1483,8 @@ struct Kstarqa {
               continue;
           }
 
-          hOthers.fill(HIST("hKstar_Rap"), mother.Rapidity());
-          hOthers.fill(HIST("hKstar_Eta"), mother.Eta());
+          hOthers.fill(HIST("hKstar_rap_pt"), mother.Rapidity(), mother.Pt());
+          hOthers.fill(HIST("hKstar_eta_pt"), mother.Eta(), mother.Pt());
 
           isMix = false;
           fillInvMass(daughter1, daughter2, mother, multiplicity, isMix, track1, track2);
@@ -1732,7 +1732,7 @@ struct Kstarqa {
     hInvMass.fill(HIST("hAllRecCollisions"), multiplicity);
     hInvMass.fill(HIST("hAllRecCollisionsCalib"), multiplicityRec);
 
-    if (!selectionEvent(collision, false)) { // don't fill event cut histogram
+    if (!selectionEvent(collision, true)) { // fill MC event cut histogram
       return;
     }
 
@@ -1754,8 +1754,8 @@ struct Kstarqa {
       }
 
       if (cQAevents) {
-        rEventSelection.fill(HIST("hDcaxy"), track1.dcaXY());
-        rEventSelection.fill(HIST("hDcaz"), track1.dcaZ());
+        rEventSelection.fill(HIST("hDcaxy_cent_pt"), track1.dcaXY(), multiplicity, track1.pt());
+        rEventSelection.fill(HIST("hDcaz_cent_pt"), track1.dcaZ(), multiplicity, track1.pt());
       }
 
       auto track1ID = track1.index();
