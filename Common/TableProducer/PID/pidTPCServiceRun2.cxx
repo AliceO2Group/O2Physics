@@ -54,7 +54,7 @@ using namespace o2::framework;
 
 o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
-struct pidTpcService {
+struct pidTpcServiceRun2 {
 
   // CCDB boilerplate declarations
   o2::framework::Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -93,20 +93,8 @@ struct pidTpcService {
     pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
   }
 
-  void processTracksIU(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs)
-  {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
-  }
-
-  void processTracksMCIU(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const&)
-  {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
-  }
-
-  PROCESS_SWITCH(pidTpcService, processTracks, "Process Tracks", false);
-  PROCESS_SWITCH(pidTpcService, processTracksMC, "Process Tracks in MC (enables tune-on-data)", false);
-  PROCESS_SWITCH(pidTpcService, processTracksIU, "Process TracksIU (Run 3)", true);
-  PROCESS_SWITCH(pidTpcService, processTracksMCIU, "Process TracksIUMC (Run 3)", false);
+  PROCESS_SWITCH(pidTpcServiceRun2, processTracks, "Process Tracks", true);
+  PROCESS_SWITCH(pidTpcServiceRun2, processTracksMC, "Process Tracks in MC (enables tune-on-data)", false);
 };
 
 //****************************************************************************************
@@ -119,6 +107,6 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   // Parse the metadata for later too
   metadataInfo.initMetadata(cfgc);
 
-  WorkflowSpec workflow{adaptAnalysisTask<pidTpcService>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<pidTpcServiceRun2>(cfgc)};
   return workflow;
 }
