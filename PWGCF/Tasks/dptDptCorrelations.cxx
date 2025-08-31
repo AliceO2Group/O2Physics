@@ -971,10 +971,10 @@ struct DptDptCorrelations {
     nNoOfDimensions = static_cast<HistoDimensions>(cfgNoOfDimensions.value);
 
     /* self configure the CCDB access to the input file */
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBUrl", cfgCCDBUrl, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBPathName", cfgCCDBPathName, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBDate", cfgCCDBDate, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDBPeriod", cfgCCDBPeriod, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.url", cfgCCDBUrl, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.pathName", cfgCCDBPathName, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.date", cfgCCDBDate, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.period", cfgCCDBPeriod, false);
     loadfromccdb = cfgCCDBPathName.length() > 0;
 
     /* update the potential binning change */
