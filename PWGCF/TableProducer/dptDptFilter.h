@@ -39,6 +39,8 @@
 #include <TMCProcess.h>
 #include <TPDGCode.h>
 
+#include <Rtypes.h>
+
 #include <bitset>
 #include <fstream>
 #include <functional>
@@ -412,6 +414,9 @@ enum CollisionSelectionFlags {
   CollSelSELECTED,         ///< the event has passed all selections
   CollSelNOOFFLAGS         ///< number of flags
 };
+
+constexpr std::bitset<32> CollSelACCEPTEDRUN3 = BIT(CollSelTRIGGSELBIT) | BIT(CollSelRCTBIT) | BIT(CollSelOCCUPANCYBIT) | BIT(CollSelCENTRALITYBIT) | BIT(CollSelZVERTEXBIT) | BIT(CollSelMULTCORRELATIONS);
+constexpr std::bitset<32> CollSelPREMULTACCEPTEDRUN3 = BIT(CollSelTRIGGSELBIT) | BIT(CollSelRCTBIT) | BIT(CollSelOCCUPANCYBIT) | BIT(CollSelCENTRALITYBIT) | BIT(CollSelZVERTEXBIT);
 
 /// \std::mag collisionSelectionExternalNamesMap
 /// \brief maps collision selection bits to external names
