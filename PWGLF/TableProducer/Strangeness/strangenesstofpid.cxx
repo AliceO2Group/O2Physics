@@ -122,9 +122,9 @@ struct strangenesstofpid {
     Configurable<float> tpcNsigmaThreshold{"tpcNsigmaThreshold", 6.0f, "require TPC compatibility to attempt eloss propagation (otherwise, don't calculate)"};
   } propagationConfiguration; 
 
-  Configurable<bool> doQA{"doQA", true, "create QA histos"};
-  Configurable<bool> doNSigmas{"doNSigmas", false, "calculate TOF N-sigma"};
-  Configurable<bool> doQANSigma{"doQANSigma", true, "create QA of Nsigma histos"};
+  Configurable<bool> doQA{"doQA", false, "create QA histos"};
+  Configurable<bool> doNSigmas{"doNSigmas", true, "calculate TOF N-sigma"};
+  Configurable<bool> doQANSigma{"doQANSigma", false, "create QA of Nsigma histos"};
 
   // configurables related to V0s
   struct : ConfigurableGroup {
