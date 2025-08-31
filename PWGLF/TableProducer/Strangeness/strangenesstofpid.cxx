@@ -626,24 +626,24 @@ struct strangenesstofpid {
       histos.add("hDeltaTimeMethodsVsP_negOmPr", "hDeltaTimeMethodsVsP_negOmPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
       histos.add("hDeltaTimeMethodsVsP_bachOmKa", "hDeltaTimeMethodsVsP_bachOmKa", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
 
-      histos.add("hRatioTimeMethodsVsP_posLaPr", "hRatioTimeMethodsVsP_posLaPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_posLaPi", "hRatioTimeMethodsVsP_posLaPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_posK0Pi", "hRatioTimeMethodsVsP_posK0Pi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_negLaPr", "hRatioTimeMethodsVsP_negLaPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_negLaPi", "hRatioTimeMethodsVsP_negLaPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_negK0Pi", "hRatioTimeMethodsVsP_negK0Pi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hRatioTimeMethodsVsP_posLaPr", "hRatioTimeMethodsVsP_posLaPr", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_posLaPi", "hRatioTimeMethodsVsP_posLaPi", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_posK0Pi", "hRatioTimeMethodsVsP_posK0Pi", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_negLaPr", "hRatioTimeMethodsVsP_negLaPr", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_negLaPi", "hRatioTimeMethodsVsP_negLaPi", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_negK0Pi", "hRatioTimeMethodsVsP_negK0Pi", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
 
-      histos.add("hRatioTimeMethodsVsP_posXiPi", "hRatioTimeMethodsVsP_posXiPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_posXiPr", "hRatioTimeMethodsVsP_posXiPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_negXiPi", "hRatioTimeMethodsVsP_negXiPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_negXiPr", "hRatioTimeMethodsVsP_negXiPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_bachXiPi", "hRatioTimeMethodsVsP_bachXiPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hRatioTimeMethodsVsP_posXiPi", "hRatioTimeMethodsVsP_posXiPi", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_posXiPr", "hRatioTimeMethodsVsP_posXiPr", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_negXiPi", "hRatioTimeMethodsVsP_negXiPi", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_negXiPr", "hRatioTimeMethodsVsP_negXiPr", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_bachXiPi", "hRatioTimeMethodsVsP_bachXiPi", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
 
-      histos.add("hRatioTimeMethodsVsP_posOmPi", "hRatioTimeMethodsVsP_posOmPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_posOmPr", "hRatioTimeMethodsVsP_posOmPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_negOmPi", "hRatioTimeMethodsVsP_negOmPi", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_negOmPr", "hRatioTimeMethodsVsP_negOmPr", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
-      histos.add("hRatioTimeMethodsVsP_bachOmKa", "hRatioTimeMethodsVsP_bachOmKa", kTH3F, {axisSmallP, axisEta, axisDeltaTime});
+      histos.add("hRatioTimeMethodsVsP_posOmPi", "hRatioTimeMethodsVsP_posOmPi", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_posOmPr", "hRatioTimeMethodsVsP_posOmPr", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_negOmPi", "hRatioTimeMethodsVsP_negOmPi", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_negOmPr", "hRatioTimeMethodsVsP_negOmPr", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
+      histos.add("hRatioTimeMethodsVsP_bachOmKa", "hRatioTimeMethodsVsP_bachOmKa", kTH3F, {axisSmallP, axisEta, axisRatioMethods});
     }
 
     // list memory consumption at start if running in modes with more output
