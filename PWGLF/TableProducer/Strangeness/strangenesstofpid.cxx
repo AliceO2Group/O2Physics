@@ -107,7 +107,7 @@ struct strangenesstofpid {
 
     Configurable<bool> correctELossInclination{"correctELossInclination", false, "factor out inclination when doing effective e-loss correction (0: no, 1: yes)"};
     Configurable<int> numberOfStepsFirstStage{"numberOfStepsFirstStage", 500, "Max number of alpha rotations to attempt in first stage"};
-    Configurable<int> numberOfStepsFirstStage{"numberOfStepsSecondStage", 500, "Max number of steps rotations to attempt in second stage"};
+    Configurable<int> numberOfStepsSecondStage{"numberOfStepsSecondStage", 500, "Max number of steps rotations to attempt in second stage"};
     Configurable<float> stepSizeFirstStage{"stepSizeFirstStage", 2.0f, "Max number of alpha rotations to attempt in first stage"};
     Configurable<float> firstApproximationThreshold{"firstApproximationThreshold",4.0f, "be satisfied if first approach to TOF radius is OK within this threshold (cm)"};
 
@@ -387,7 +387,9 @@ struct strangenesstofpid {
       bool getXatLabRok = track.getXatLabR(propagationConfiguration.tofPosition, tofX, d_bz, o2::track::DirOutward);
       if(std::abs(tofX-currentX)<propagationConfiguration.firstApproximationThreshold.value){
         // signal conclusion
-        histos.fill(HIST("hInitialPropagationSteps"), iRot); // store number of steps
+        if(calculationMethod.value==2){
+          histos.fill(HIST("hInitialPropagationSteps"), iRot); // store number of steps
+        }
         break;
       }
       float nextX = std::min(currentX + propagationConfiguration.stepSizeFirstStage.value,tofX); 
