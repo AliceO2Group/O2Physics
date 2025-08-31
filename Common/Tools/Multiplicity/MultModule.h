@@ -24,6 +24,7 @@
 #include "Common/DataModel/Multiplicity.h"
 
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramSpec.h>
 

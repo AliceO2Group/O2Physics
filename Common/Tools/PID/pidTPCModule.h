@@ -34,7 +34,6 @@
 // O2 includes
 #include "MetadataHelper.h"
 #include "TableHelper.h"
-#include "pidTPCBase.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
@@ -50,6 +49,7 @@
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
+#include <Framework/AnalysisHelpers.h>
 
 namespace o2::aod
 {
