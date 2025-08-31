@@ -33,7 +33,7 @@
 #include "MetadataHelper.h"
 #include "TableHelper.h"
 #include "pidTPCBase.h"
-#include "pidTPCModule.h"
+#include "Common/Tools/PID/pidTPCModule.h"
 
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/EventSelection.h"

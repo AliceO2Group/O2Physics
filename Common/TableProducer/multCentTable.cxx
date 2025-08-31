@@ -40,7 +40,7 @@
 #include "Common/Tools/StandardCCDBLoader.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "MetadataHelper.h"
-#include "Common/Tools/MultModule.h"
+#include "Common/Tools/Multiplicity/MultModule.h"
 
 using namespace o2;
 using namespace o2::framework;

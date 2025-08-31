@@ -34,7 +34,6 @@
 // O2 includes
 #include "MetadataHelper.h"
 #include "TableHelper.h"
-#include "pidTPCBase.h"
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
