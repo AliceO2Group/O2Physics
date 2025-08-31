@@ -686,27 +686,21 @@ struct NonPromptCascadeTask {
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processGenParticles, "process gen cascades: MC analysis", false);
 
-  void processTrackedCascadesData(CollisionCandidatesRun3 const& collisions,
-                                  aod::AssignedTrackedCascades const& trackedCascades, aod::Cascades const& /*cascades*/,
-                                  aod::V0s const& /*v0s*/, TracksExtData const& tracks,
-                                  aod::BCsWithTimestamps const&)
+  void processCascadesData(CollisionCandidatesRun3 const& collisions, aod::Cascades const& cascades, aod::AssignedTrackedCascades const& trackedCascades,
+                           aod::V0s const& /*v0s*/, TracksExtData const& tracks,
+                           aod::BCsWithTimestamps const&)
   {
     fillMultHistos(collisions);
     std::map<uint64_t, uint32_t> toiMap;
     zorroAccounting(collisions, toiMap);
-    fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates, toiMap);
-    fillDataTable<aod::AssignedTrackedCascades>(gCandidates);
-  }
-  PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesData, "process cascades from strangeness tracking: Data analysis", false);
-
-  void processCascadesData(CollisionCandidatesRun3 const& collisions, aod::Cascades const& cascades,
-                           aod::V0s const& /*v0s*/, TracksExtData const& tracks,
-                           aod::BCsWithTimestamps const&)
-  {
-    std::map<uint64_t, uint32_t> toiMap;
-    zorroAccounting(collisions, toiMap);
-    fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT, toiMap);
-    fillDataTable<aod::Cascades>(gCandidatesNT);
+    if(mZorro.isInTOIS("fOmegaHighMult")) {
+      fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT, toiMap);
+      fillDataTable<aod::Cascades>(gCandidatesNT);
+    }
+    if(mZorro.isInTOIS("fTrackedOmega")) {
+      fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates, toiMap);
+      fillDataTable<aod::AssignedTrackedCascades>(gCandidates);
+    }
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesData, "process cascades: Data analysis", false);
 };

@@ -319,3 +319,13 @@ void Zorro::setupHelpers(int64_t timestamp)
   }
   mAccountedBCranges.resize(mBCranges.size(), false);
 }
+
+bool Zorro::isInTOIS(const std::string& thistoi) const
+{
+  for(auto const& toi: mTOIs) {
+    if(thistoi == toi) {
+      return true;
+    }
+  }
+  return false;
+}

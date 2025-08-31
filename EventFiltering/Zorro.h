@@ -62,6 +62,8 @@ class Zorro
   std::vector<bool> getTriggerOfInterestResults(uint64_t bcGlobalId, uint64_t tolerance = 100);
   std::vector<bool> getTriggerOfInterestResults() const;
   int getNTOIs() const { return mTOIs.size(); }
+  const auto& getTOIs() const { return mTOIs; }
+  bool isInTOIS(const std::string& thistoi) const;
 
   void setCCDBpath(const std::string& path) { mBaseCCDBPath = path; }
   void setBaseCCDBPath(const std::string& path) { mBaseCCDBPath = path; }

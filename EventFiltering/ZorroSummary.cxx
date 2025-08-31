@@ -69,6 +69,6 @@ double ZorroSummary::getNormalisationFactor(int toiId) const
   for (const auto& [runNumber, analysedTOIcounters] : mAnalysedTOIcounters) {
     totalAnalysedTOI += analysedTOIcounters.at(toiId);
   }
-
+  // std::cout << "totalTVX:" << totalTVX << " totalAnalysedTOI:" << totalAnalysedTOI << " totalTOI:" << totalTOI << std::endl;
   return totalTVX * totalAnalysedTOI / totalTOI;
 }
