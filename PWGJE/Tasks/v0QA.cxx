@@ -507,7 +507,7 @@ struct V0QA {
     return true;
   }
   template <typename T>
-  bool recV0PassesEfficiencyCuts(T const& pv0)
+  bool recV0PassesEfficiencyCuts(T const& v0)
   {
     if (!v0.has_mcParticle() || v0.isRejectedCandidate())
       return false;
@@ -564,7 +564,7 @@ struct V0QA {
   template <typename T, typename U, typename V>
   void fillMcDV0InJets(T const& mcdjet, U const& v0, V const& pv0, bool correctCollision, double weight)
   {
-    int pdg = pv0.pdgCode();
+    int pdg = v0.mcParticle().pdgCode();
     double pt = pv0.pt();
     double ptjet = mcdjet.pt();
     double eta = mcdjet.eta();
@@ -597,7 +597,7 @@ struct V0QA {
   template <typename T, typename U, typename V, typename W>
   void fillMcDV0InMatchedJets(T const& mcpjet, U const& mcdjet, V const& v0, W const& pv0, bool correctCollision, double weight)
   {
-    int pdg = pv0.pdgCode();
+    int pdg = v0.mcParticle().pdgCode();
     double ptjetmcp = mcpjet.pt();
     double ptjetmcd = mcdjet.pt();
     double eta = mcdjet.eta();
