@@ -164,7 +164,7 @@ class HfMlResponseDstarToD0Pi : public HfMlResponse<TypeOutputScore>
   /// \param prongSoftPi is the candidate's prongSoftPi
   /// \return inputFeatures vector
   template <typename T1>
-  std::vector<float> getInputFeatures(T1 const& candidate, bool swapDzeroDaus=true)
+  std::vector<float> getInputFeatures(T1 const& candidate, bool swapDzeroDaus = true)
   {
     std::vector<float> inputFeatures;
 
