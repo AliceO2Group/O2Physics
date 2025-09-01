@@ -329,7 +329,7 @@ struct ThreeParticleCorrelations {
 
   void processSame(MyFilteredCollision const& collision, aod::V0Datas const& v0s, MyFilteredTracks const& tracks, aod::BCsWithTimestamps const&)
   {
-    
+
     if (!acceptEvent(collision, true)) {
       return;
     }
@@ -338,10 +338,10 @@ struct ThreeParticleCorrelations {
     auto bField = getMagneticField(bc.timestamp());
     if (confBfieldSwitch != 0) {
       if (std::signbit(static_cast<double>(confBfieldSwitch)) != std::signbit(bField)) {
-	return;
+        return;
       }
     }
-    
+
     rQARegistry.fill(HIST("hEventCentrality"), collision.centFT0C());
     rQARegistry.fill(HIST("hEventZvtx"), collision.posZ());
     rQARegistry.fill(HIST("hEventBfield"), bField);
@@ -465,11 +465,11 @@ struct ThreeParticleCorrelations {
       auto bc = coll_1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
       if (confBfieldSwitch != 0) {
-	if (std::signbit(static_cast<double>(confBfieldSwitch)) != std::signbit(bField)) {
-	  return;
-	}
+        if (std::signbit(static_cast<double>(confBfieldSwitch)) != std::signbit(bField)) {
+          return;
+        }
       }
-      
+
       for (const auto& [trigger, associate] : soa::combinations(soa::CombinationsFullIndexPolicy(v0_1, track_2))) {
         if (v0Filters(coll_1, trigger, tracks) && trackFilters(associate)) {
           if (radialDistanceFilter(trigger, associate, bField, true) && fakeV0Filter(trigger, associate)) {
