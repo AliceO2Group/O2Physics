@@ -260,7 +260,7 @@ struct JetShapeTask {
   }
   PROCESS_SWITCH(JetShapeTask, processJetShape, "JetShape", true);
 
-  void processProductionRatio(soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator const& collision, soa::Join<aod::JetTracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass> const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
+  void processProductionRatio(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<aod::JetTracks, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullPr, aod::pidTOFFullPr, aod::TracksExtra, aod::TracksDCA, aod::pidTOFbeta, aod::pidTOFmass> const& tracks, soa::Join<aod::ChargedJets, aod::ChargedJetConstituents> const& jets)
   {
     if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
       return;
@@ -268,46 +268,36 @@ struct JetShapeTask {
 
     registry.fill(HIST("event/vertexz"), collision.posZ());
 
-    std::vector<typename std::decay_t<decltype(tracks)>::iterator> goodTracks;
-    for (auto it = tracks.begin(); it != tracks.end(); ++it) {
-      const auto& track = *it;
-
-      registry.fill(HIST("trackTpcNClsCrossedRows"), track.tpcNClsCrossedRows());
-      registry.fill(HIST("trackDcaXY"), track.dcaXY());
-      registry.fill(HIST("trackItsChi2NCl"), track.itsChi2NCl());
-      registry.fill(HIST("trackTpcChi2NCl"), track.tpcChi2NCl());
-      registry.fill(HIST("trackTpcNClsFound"), track.tpcNClsFound());
-      registry.fill(HIST("trackItsNCls"), track.itsNCls());
-      registry.fill(HIST("trackEta"), track.eta());
-      registry.fill(HIST("trackPhi"), track.phi());
-
-      if (std::abs(track.eta()) > etaTrUp)
-        continue;
-      if (track.tpcNClsCrossedRows() < nclcrossTpcMin)
-        continue;
-      if (std::abs(track.dcaXY()) > dcaxyMax)
-        continue;
-      if (track.itsChi2NCl() > chi2ItsMax)
-        continue;
-      if (track.tpcChi2NCl() > chi2TpcMax)
-        continue;
-      if (track.tpcNClsFound() < nclTpcMin)
-        continue;
-      if (track.itsNCls() < nclItsMin)
-        continue;
-
-      goodTracks.push_back(it);
-    }
-
     for (auto const& jet : jets) {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
 
       // tracks conditions
-      for (const auto& track_it : goodTracks) {
+      for (const auto& track : tracks) {
+        registry.fill(HIST("trackTpcNClsCrossedRows"), track.tpcNClsCrossedRows());
+        registry.fill(HIST("trackDcaXY"), track.dcaXY());
+        registry.fill(HIST("trackItsChi2NCl"), track.itsChi2NCl());
+        registry.fill(HIST("trackTpcChi2NCl"), track.tpcChi2NCl());
+        registry.fill(HIST("trackTpcNClsFound"), track.tpcNClsFound());
+        registry.fill(HIST("trackItsNCls"), track.itsNCls());
+        registry.fill(HIST("trackEta"), track.eta());
+        registry.fill(HIST("trackPhi"), track.phi());
 
-        const auto& track = *track_it;
+        if (std::abs(track.eta()) > etaTrUp)
+          continue;
+        if (track.tpcNClsCrossedRows() < nclcrossTpcMin)
+          continue;
+        if (std::abs(track.dcaXY()) > dcaxyMax)
+          continue;
+        if (track.itsChi2NCl() > chi2ItsMax)
+          continue;
+        if (track.tpcChi2NCl() > chi2TpcMax)
+          continue;
+        if (track.tpcNClsFound() < nclTpcMin)
+          continue;
+        if (track.itsNCls() < nclItsMin)
+          continue;
 
         // PID check
         registry.fill(HIST("tofMass"), track.mass());
