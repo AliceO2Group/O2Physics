@@ -28,6 +28,11 @@
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 
+#include <cstdio>
+#include <iostream>
+#include <string>
+#include <vector>
+
 using namespace std;
 using namespace rapidjson;
 
@@ -85,9 +90,9 @@ void FitCorrel_Ds(const TString cfgFileName = "config_CorrAnalysis.json")
   bool shiftBaseUp = config["ShiftBaseUp"].GetBool();
   bool shiftBaseDown = config["ShiftBaseDown"].GetBool();
 
-  vector<double> binsPtCandIntervalsVec;
-  vector<double> binsPtHadIntervals;
-  vector<int> fitFunc;
+  std::vector<double> binsPtCandIntervalsVec;
+  std::vector<double> binsPtHadIntervals;
+  std::vector<int> fitFunc;
 
   const Value& PtCandValue = config["binsPtCandIntervals"];
   readArray(PtCandValue, binsPtCandIntervalsVec);

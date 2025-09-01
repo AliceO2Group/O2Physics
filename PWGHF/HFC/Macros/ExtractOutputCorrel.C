@@ -25,6 +25,11 @@
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 
+#include <cstdio>
+#include <iostream>
+#include <string>
+#include <vector>
+
 using namespace rapidjson;
 
 template <typename ValueType>
