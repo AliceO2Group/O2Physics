@@ -9,25 +9,28 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 /// \file femtoDreamPairTaskCascadeCascade.cxx
-/// \brief Tasks that reads the track tables used for the pairing and builds pairs of two cascades 
+/// \brief Tasks that reads the track tables used for the pairing and builds pairs of two cascades
 /// \author Andi Mathis, Anton Riedel, Georgios Mantzaridis, Oton Vazquez Doce.
-#include <sys/stat.h>
-#include <cstdint>
-#include <vector>
-#include <string>
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/Expressions.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
-#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamContainer.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamDetaDphiStar.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamEventHisto.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
+#include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/Expressions.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+
+#include <sys/stat.h>
+
+#include <cstdint>
+#include <string>
+#include <vector>
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::soa;
@@ -57,7 +60,6 @@ struct FemtoDreamPairTaskCascadeCascade {
     ConfigurableAxis dummy{"dummy", {1, 0, 1}, "dummy axis"};
   } Option;
 
-
   /// Event selection
   struct : ConfigurableGroup {
     std::string prefix = std::string("EventSel");
@@ -67,10 +69,8 @@ struct FemtoDreamPairTaskCascadeCascade {
     Configurable<float> multPercentileMax{"multPercentileMax", 100, "Maximum Multiplicity Percentile"};
   } EventSel;
 
-
   // Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.multMin && aod::femtodreamcollision::multNtr <= EventSel.multMax;
   // Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.multPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.multPercentileMax;
-
 
   /// Histogramming for Event
   FemtoDreamEventHisto eventHisto;
@@ -79,9 +79,7 @@ struct FemtoDreamPairTaskCascadeCascade {
   using FilteredCollision = FilteredCollisions::iterator;
   using FDMCParts = soa::Join<aod::FDParticles, aod::FDMCLabels>;
   using FDMCPart = FDMCParts::iterator;
-  femtodreamcollision::BitMaskType bitMask = 1;   //???????????????????
-
-
+  femtodreamcollision::BitMaskType bitMask = 1; //???????????????????
 
   /// Cascade 1 (Cascade)
   struct : ConfigurableGroup {
@@ -95,7 +93,6 @@ struct FemtoDreamPairTaskCascadeCascade {
     Configurable<femtodreamparticle::cutContainerType> childBachCutBit{"childBachCutBit", 277, "Selection bit for bachelor child of Cascade"};
     Configurable<femtodreamparticle::cutContainerType> childBachTPCBit{"childBachTPCBit", 64, "PID TPC bit for bachelor child of Cascade"};
 
-
     Configurable<float> invMassMin{"invMassMin", 1.6, "Minimum invariant mass of Partricle 1 (Cascade)"};
     Configurable<float> invMassMax{"invMassMax", 1.8, "Maximum invariant mass of Partricle 1 (Cascade)"};
     Configurable<float> invMassV0DaughMin{"invMassV0DaughMin", 0., "Minimum invariant mass of the V0 Daughter"};
@@ -107,7 +104,6 @@ struct FemtoDreamPairTaskCascadeCascade {
     Configurable<bool> useChildCuts{"useChildCuts", true, "Use cuts on the children of the Cascades additional to those of the selection of the cascade builder (for debugging purposes)"};
     Configurable<bool> useChildPIDCuts{"useChildPIDCuts", true, "Use PID cuts on the children of the Cascades additional to those of the selection of the cascade builder (for debugging purposes)"};
   } Cascade1;
-
 
   /// Partition for particle 1
   Partition<FDParticles> partitionCascade1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade)) &&
@@ -126,8 +122,6 @@ struct FemtoDreamPairTaskCascadeCascade {
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kCascadeV0Child, 4> negChildHistosPartOne;
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kCascadeBachelor, 8> bachChildHistosPartOne;
 
-
-
   /// Particle 2 (Cascade)
   struct : ConfigurableGroup {
     std::string prefix = std::string("Cascade2");
@@ -141,7 +135,7 @@ struct FemtoDreamPairTaskCascadeCascade {
     Configurable<femtodreamparticle::cutContainerType> childBachTPCBit{"childBachTPCBit", 64, "PID TPC bit for bachelor child of Cascade"};
     Configurable<float> invMassMin{"invMassMin", 1.2, "Minimum invariant mass of Particle 2 (Cascade)"};
     Configurable<float> invMassMax{"invMassMax", 1.4, "Maximum invariant mass of Particle 2 (Cascade)"};
-    Configurable<float> invMassV0DaughMin{"invMassV0DaughMin", 0., "Minimum invariant mass of the V0 Daughter"}; // (???????)
+    Configurable<float> invMassV0DaughMin{"invMassV0DaughMin", 0., "Minimum invariant mass of the V0 Daughter"};   // (???????)
     Configurable<float> invMassV0DaughMax{"invMassV0DaughMax", 999., "Maximum invariant mass of the V0 Daughter"}; // (???????)
     Configurable<float> ptMin{"ptMin", 0., "Minimum pT of Particle 2 (Cascade)"};
     Configurable<float> ptMax{"ptMax", 999., "Maximum pT of Particle 2 (Cascade)"};
@@ -150,8 +144,6 @@ struct FemtoDreamPairTaskCascadeCascade {
     Configurable<bool> useChildCuts{"useChildCuts", true, "Use cuts on the children of the Cascades additional to those of the selection of the cascade builder (for debugging purposes)"};
     Configurable<bool> useChildPIDCuts{"useChildPIDCuts", true, "Use PID cuts on the children of the Cascades additional to those of the selection of the cascade builder (for debugging purposes)"};
   } Cascade2;
-
-
 
   /// Partition for particle 2
   Partition<FDParticles> partitionCascade2 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kCascade)) &&
@@ -169,8 +161,6 @@ struct FemtoDreamPairTaskCascadeCascade {
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kCascadeV0Child, 9> posChildHistosPartTwo;
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kCascadeV0Child, 10> negChildHistosPartTwo;
   FemtoDreamParticleHisto<aod::femtodreamparticle::ParticleType::kCascadeBachelor, 11> bachChildHistosPartTwo;
-
-
 
   /// Binning configurables
   struct : ConfigurableGroup {
@@ -194,8 +184,6 @@ struct FemtoDreamPairTaskCascadeCascade {
     ConfigurableAxis multPercentile{"multPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning for the 4Dimensional plot: k* vs multiplicity vs multiplicity percentile vs mT (set <<ConfUse4D>> to true in order to use)"};
   } Binning4D;
 
-
-
   // Mixing configurables
   struct : ConfigurableGroup {
     std::string prefix = std::string("Mixing");
@@ -216,8 +204,6 @@ struct FemtoDreamPairTaskCascadeCascade {
 
   static constexpr uint32_t kSignPlusMask = 1 << 1;
 
-
-
   /// Histogram output
   HistogramRegistry registry{"Output", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(InitContext&)
@@ -233,7 +219,7 @@ struct FemtoDreamPairTaskCascadeCascade {
     negChildHistosPartOne.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTCascadeChild, Option.dummy, Option.dummy, Binning.tempFitVarCascadeChild, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, false, 0);
     bachChildHistosPartOne.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTCascadeChild, Option.dummy, Option.dummy, Binning.tempFitVarCascadeChild, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, false, 0);
 
-    if(!Option.sameSpecies){
+    if (!Option.sameSpecies) {
       cascHistoPartTwo.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTCascade, Option.dummy, Option.dummy, Binning.tempFitVarCascade, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Binning.invMass, Option.dummy, Option.isMC, Cascade2.pdgCode);
       posChildHistosPartTwo.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTCascadeChild, Option.dummy, Option.dummy, Binning.tempFitVarCascadeChild, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, false, 0);
       negChildHistosPartTwo.init(&registry, Binning.multTempFit, Option.dummy, Binning.pTCascadeChild, Option.dummy, Option.dummy, Binning.tempFitVarCascadeChild, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, Option.dummy, false, 0);
@@ -299,9 +285,8 @@ struct FemtoDreamPairTaskCascadeCascade {
       posChildHistosPartOne.fillQA<false, false>(posChild1, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
       negChildHistosPartOne.fillQA<false, false>(negChild1, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
       bachChildHistosPartOne.fillQA<false, false>(bachChild1, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
-
     }
-    if(!Option.sameSpecies){
+    if (!Option.sameSpecies) {
       for (auto const& casc : sliceCascade2) {
         const auto& posChild2 = parts.iteratorAt(casc.index() - 3);
         const auto& negChild2 = parts.iteratorAt(casc.index() - 2);
@@ -332,7 +317,7 @@ struct FemtoDreamPairTaskCascadeCascade {
         negChildHistosPartTwo.fillQA<false, false>(negChild2, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
         bachChildHistosPartTwo.fillQA<false, false>(bachChild2, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
       }
-    } 
+    }
 
     /// Now build particle combinations
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceCascade1, sliceCascade2))) {
@@ -374,31 +359,31 @@ struct FemtoDreamPairTaskCascadeCascade {
         }
       }
 
-      //CPR cuts // HERE I NEED HELP FROM GEORGIOS. This was for track-cascade:
-      // we can start with no CPR for Cascade-Cascade for the moment
-      //if (Option.cprOn.value) {
-      //  if ((p1.cut() & kSignPlusMask) == kSignPlusMask) {
-      //    if (pairCloseRejectionSE.isClosePair(p1, posChild, parts, col.magField())) {
-      //      continue;
-      //    }
-      //  } else {
-      //    if (pairCloseRejectionSE.isClosePair(p1, posChild, parts, col.magField())) {
-      //      continue;
-      //    }
-      //  }
-      //}
+      // CPR cuts // HERE I NEED HELP FROM GEORGIOS. This was for track-cascade:
+      //  we can start with no CPR for Cascade-Cascade for the moment
+      // if (Option.cprOn.value) {
+      //   if ((p1.cut() & kSignPlusMask) == kSignPlusMask) {
+      //     if (pairCloseRejectionSE.isClosePair(p1, posChild, parts, col.magField())) {
+      //       continue;
+      //     }
+      //   } else {
+      //     if (pairCloseRejectionSE.isClosePair(p1, posChild, parts, col.magField())) {
+      //       continue;
+      //     }
+      //   }
+      // }
 
-      //Pair Cleaner //-> This should now work for cascades!
-      //if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-      //  continue;
-      //}
+      // Pair Cleaner //-> This should now work for cascades!
+      // if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+      //   continue;
+      // }
 
-      //SE pair set:
+      // SE pair set:
       sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.use4D, Option.extendedPlots, Option.smearingByOrigin);
     }
   }
 
-  //process Same Event
+  // process Same Event
   void processSameEvent(FilteredCollision const& col, FDParticles const& parts)
   {
     // if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
@@ -411,8 +396,7 @@ struct FemtoDreamPairTaskCascadeCascade {
   }
   PROCESS_SWITCH(FemtoDreamPairTaskCascadeCascade, processSameEvent, "Enable processing same event", true);
 
-
-  //Mixed events
+  // Mixed events
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
   void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, BinningType binPolicy)
   {
@@ -467,19 +451,19 @@ struct FemtoDreamPairTaskCascadeCascade {
           }
         }
 
-        //CPR cuts // HERE I NEED HELP FROM GEORGIOS. This was for track-cascade:
-        // we can start with no CPR for Cascade-Cascade for the moment
-        //if (Option.cprOn.value) {
-        //  if ((p1.cut() & kSignPlusMask) == kSignPlusMask) {
-        //    if (pairCloseRejectionME.isClosePair(p1, posChild, parts, collision1.magField())) {
-        //      continue;
-        //    }
-        //  } else {
-        //    if (pairCloseRejectionME.isClosePair(p1, negChild, parts, collision1.magField())) {
-        //      continue;
-        //    }
-        //  }
-        //}
+        // CPR cuts // HERE I NEED HELP FROM GEORGIOS. This was for track-cascade:
+        //  we can start with no CPR for Cascade-Cascade for the moment
+        // if (Option.cprOn.value) {
+        //   if ((p1.cut() & kSignPlusMask) == kSignPlusMask) {
+        //     if (pairCloseRejectionME.isClosePair(p1, posChild, parts, collision1.magField())) {
+        //       continue;
+        //     }
+        //   } else {
+        //     if (pairCloseRejectionME.isClosePair(p1, negChild, parts, collision1.magField())) {
+        //       continue;
+        //     }
+        //   }
+        // }
 
         // Pair cleaner not needed in the mixing
         // if (!pairCleaner.isCleanPair(p1, p2, parts)) {
@@ -491,7 +475,7 @@ struct FemtoDreamPairTaskCascadeCascade {
     }
   }
 
-  //process Mixed Event
+  // process Mixed Event
   void processMixedEvent(FilteredCollisions const& cols, FDParticles const& parts)
   {
     switch (Mixing.binPolicy.value) {

@@ -18,17 +18,18 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTION_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMV0SELECTION_H_
 
-#include <iostream>
-#include <string>
-#include <vector>
-
 #include "PWGCF/FemtoDream/Core/femtoDreamObjectSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamTrackSelection.h"
 
 #include "Common/Core/RecoDecay.h"
+
 #include "Framework/HistogramRegistry.h"
 #include "ReconstructionDataFormats/PID.h"
+
+#include <iostream>
+#include <string>
+#include <vector>
 
 using namespace o2::framework;
 using namespace o2::analysis::femtoDream::femtoDreamSelection;
@@ -298,10 +299,10 @@ void FemtoDreamV0Selection::init(HistogramRegistry* QAregistry, HistogramRegistr
       LOG(fatal) << "FemtoDreamV0Cuts: Number of selections to large for your "
                     "container - quitting!";
     }
-    for (int istage = 0; istage < kNcutStages; istage++){
+    for (int istage = 0; istage < kNcutStages; istage++) {
       std::string folderName =
-      static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]) + "/" +
-      static_cast<std::string>(mCutStage[istage]);
+        static_cast<std::string>(o2::aod::femtodreamparticle::ParticleTypeName[part]) + "/" +
+        static_cast<std::string>(mCutStage[istage]);
       /// \todo initialize histograms for children tracks of v0s
       mQAHistogramRegistry->add((folderName + "/hPt").c_str(),
                                 "; #it{p}_{T} (GeV/#it{c}); Entries", kTH1F,

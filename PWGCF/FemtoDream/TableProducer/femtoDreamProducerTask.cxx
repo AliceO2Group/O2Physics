@@ -245,7 +245,7 @@ struct femtoDreamProducerTask {
     Configurable<std::vector<float>> ConfDaughterPIDnSigmaMax{"ConfDaughterPIDnSigmaMax", std::vector<float>{3.00, 3.00}, "Reso Daughter sel: Max. PID nSigma TPC"};                        // 3.0
     Configurable<std::vector<int>> ConfDaughterPIDspecies{"ConfDaughterPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Kaon}, "Reso Daughter sel: Particles species for PID"};
     Configurable<std::vector<float>> ConfDaug1Daugh2ResoMass{"ConfDaug1Daugh2ResoMass", std::vector<float>{o2::constants::physics::MassKPlus, o2::constants::physics::MassKMinus, o2::constants::physics::MassPhi}, "Masses: Daughter1 - Daughter2 - Resonance"};
-  }ConfResoSel;
+  } ConfResoSel;
 
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
   /*Filter v0Filter = (nabs(aod::v0data::x) < V0DecVtxMax.value) &&
@@ -713,7 +713,7 @@ struct femtoDreamProducerTask {
     if (!colCuts.isSelectedCollision(col)) {
       return;
     }
-    //bool emptyCollision = false;
+    // bool emptyCollision = false;
     if (ConfIsActivateCascade.value) {
       if (colCuts.isEmptyCollision(col, tracks, trackCuts) && colCuts.isCollisionWithoutTrkCasc(col, fullCascades, cascadeCuts, tracks)) {
         return;
@@ -825,7 +825,7 @@ struct femtoDreamProducerTask {
         // const auto dcaXYpos = postrack.dcaXY();
         // const auto dcaZpos = postrack.dcaZ();
         // const auto dcapos = std::sqrt(pow(dcaXYpos, 2.) + pow(dcaZpos, 2.));
-        
+
         v0Cuts.fillQA<0, aod::femtodreamparticle::ParticleType::kV0, aod::femtodreamparticle::ParticleType::kV0Child>(col, v0, postrack, negtrack);
         v0Cuts.fillLambdaQA(col, v0, postrack, negtrack);
 
@@ -987,6 +987,7 @@ struct femtoDreamProducerTask {
         //------
 
         // Fill cascades
+        float invMassCasc = ConfCascIsSelectedOmega.value() ? casc.mOmega() : casc.mXi();
         std::vector<int> indexCascadeChildID = {rowOfPosCascadeTrack, rowOfNegCascadeTrack, rowOfBachelorCascadeTrack};
         outputParts(outputCollision.lastIndex(),
                     casc.pt(),
@@ -997,7 +998,7 @@ struct femtoDreamProducerTask {
                     0,
                     casc.casccosPA(col.posX(), col.posY(), col.posZ()),
                     indexCascadeChildID,
-                    casc.mXi(),
+                    invMassCasc,
                     casc.mLambda());
         // TODO: include here MC filling
         //------
