@@ -97,6 +97,7 @@ struct HfCandidateSelectorDstarToD0Pi {
   Configurable<LabeledArray<double>> cutsMl{"cutsMl", {hf_cuts_ml::Cuts[0], hf_cuts_ml::NBinsPt, hf_cuts_ml::NCutScores, hf_cuts_ml::labelsPt, hf_cuts_ml::labelsCutScore}, "ML selections per pT bin"};
   Configurable<int> nClassesMl{"nClassesMl", static_cast<int>(hf_cuts_ml::NCutScores), "Number of classes in ML model"};
   Configurable<std::vector<std::string>> namesInputFeatures{"namesInputFeatures", std::vector<std::string>{"feature1", "feature2"}, "Names of ML model input features"};
+  Configurable<bool> isTriggerBDT{"isTriggerBDT", false, "Flag to enable / disable features for software trigger BDTs"};
 
   // CCDB configuration
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
@@ -461,7 +462,7 @@ struct HfCandidateSelectorDstarToD0Pi {
       if (applyMl) {
         // ML selections
         bool isSelectedMlDstar = false;
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candDstar);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candDstar, !isTriggerBDT);
         isSelectedMlDstar = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMlDstarToD0Pi);
 
         hfMlDstarCandidate(outputMlDstarToD0Pi);
