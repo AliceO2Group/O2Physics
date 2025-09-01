@@ -805,11 +805,6 @@ struct HfTaskSigmac {
     /// reconstructed Σc0,++ matched to MC
     for (const auto& candSc : candidatesSc) {
 
-      /// Candidate selected as Σc0 and/or Σc++
-      if (!(candSc.hfflag() & BIT(aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi)) && !(candSc.hfflag() & BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi)) &&         // Σc0,++(2455)
-          !(candSc.hfflag() & BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi)) && !(candSc.hfflag() & BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi))) { // Σc0,++(2520)
-        continue;
-      }
       /// rapidity selection on Σc0,++
       /// NB: since in data we cannot tag Sc(2455) and Sc(2520), then we use only Sc(2455) for y selection on reconstructed signal
       if (yCandRecoMax >= 0. && std::abs(hfHelper.ySc0(candSc)) > yCandRecoMax && std::abs(hfHelper.yScPlusPlus(candSc)) > yCandRecoMax) {
