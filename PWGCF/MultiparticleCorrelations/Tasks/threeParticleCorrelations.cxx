@@ -337,7 +337,7 @@ struct ThreeParticleCorrelations {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     auto bField = getMagneticField(bc.timestamp());
     if (confBfieldSwitch != 0) {
-      if (std::signbit(double(confBfieldSwitch)) != std::signbit(bField)) {
+      if (std::signbit(static_cast<double>(confBfieldSwitch)) != std::signbit(bField)) {
 	return;
       }
     }
@@ -465,7 +465,7 @@ struct ThreeParticleCorrelations {
       auto bc = coll_1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
       if (confBfieldSwitch != 0) {
-	if (std::signbit(double(confBfieldSwitch)) != std::signbit(bField)) {
+	if (std::signbit(static_cast<double>(confBfieldSwitch)) != std::signbit(bField)) {
 	  return;
 	}
       }
