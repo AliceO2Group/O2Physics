@@ -260,12 +260,7 @@ struct FemtoDreamPairTaskCascadeCascade {
       const auto& posChild1 = parts.iteratorAt(casc.index() - 3);
       const auto& negChild1 = parts.iteratorAt(casc.index() - 2);
       const auto& bachChild1 = parts.iteratorAt(casc.index() - 1);
-      // This is how it is supposed to work but there seems to be an issue
-      // with partitions and accessing elements in tables that have been declared
-      // with an SELF_INDEX column. Under investigation. Maybe need to change
-      // femtdream dataformat to take special care of v0 candidates
-      // auto posChild = v0.template children_as<S>().front();
-      // auto negChild = v0.template children_as<S>().back();
+
       // check cuts on V0 children
       if (Cascade1.useChildCuts) {
         if (!(((posChild1.cut() & Cascade1.childPosCutBit) == Cascade1.childPosCutBit) &&
@@ -291,12 +286,7 @@ struct FemtoDreamPairTaskCascadeCascade {
         const auto& posChild2 = parts.iteratorAt(casc.index() - 3);
         const auto& negChild2 = parts.iteratorAt(casc.index() - 2);
         const auto& bachChild2 = parts.iteratorAt(casc.index() - 1);
-        // This is how it is supposed to work but there seems to be an issue
-        // with partitions and accessing elements in tables that have been declared
-        // with an SELF_INDEX column. Under investigation. Maybe need to change
-        // femtdream dataformat to take special care of v0 candidates
-        // auto posChild = v0.template children_as<S>().front();
-        // auto negChild = v0.template children_as<S>().back();
+
         // check cuts on V0 children
         if (Cascade2.useChildCuts) {
           if (!(((posChild2.cut() & Cascade2.childPosCutBit) == Cascade2.childPosCutBit) &&
@@ -359,25 +349,6 @@ struct FemtoDreamPairTaskCascadeCascade {
         }
       }
 
-      // CPR cuts // HERE I NEED HELP FROM GEORGIOS. This was for track-cascade:
-      //  we can start with no CPR for Cascade-Cascade for the moment
-      // if (Option.cprOn.value) {
-      //   if ((p1.cut() & kSignPlusMask) == kSignPlusMask) {
-      //     if (pairCloseRejectionSE.isClosePair(p1, posChild, parts, col.magField())) {
-      //       continue;
-      //     }
-      //   } else {
-      //     if (pairCloseRejectionSE.isClosePair(p1, posChild, parts, col.magField())) {
-      //       continue;
-      //     }
-      //   }
-      // }
-
-      // Pair Cleaner //-> This should now work for cascades!
-      // if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-      //   continue;
-      // }
-
       // SE pair set:
       sameEventCont.setPair<isMC>(p1, p2, col.multNtr(), col.multV0M(), Option.use4D, Option.extendedPlots, Option.smearingByOrigin);
     }
@@ -386,9 +357,6 @@ struct FemtoDreamPairTaskCascadeCascade {
   // process Same Event
   void processSameEvent(FilteredCollision const& col, FDParticles const& parts)
   {
-    // if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
-    //   return;
-    // }
     eventHisto.fillQA<false>(col);
     auto sliceCascade1 = partitionCascade1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto sliceCascade2 = partitionCascade2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
@@ -400,12 +368,6 @@ struct FemtoDreamPairTaskCascadeCascade {
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
   void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType& part1, PartitionType& part2, BinningType binPolicy)
   {
-    // Partition<CollisionType> PartitionMaskedCol = ncheckbit(aod::femtodreamcollision::bitmaskTrackOne, bitMask) && ncheckbit(aod::femtodreamcollision::bitmaskTrackTwo, bitMask);// && aod::femtodreamcollision::downsample == true;
-    // PartitionMaskedCol.bindTable(cols);
-
-    // use *Partition.mFiltered when passing the partition to mixing object
-    // there is an issue when the partition is passed directly
-    // workaround for now, change back once it is fixed
     for (auto const& [collision1, collision2] : soa::selfCombinations(binPolicy, Mixing.depth.value, -1, cols, cols)) {
       // make sure that tracks in same events are not mixed
       if (collision1.globalIndex() == collision2.globalIndex()) {
@@ -450,25 +412,6 @@ struct FemtoDreamPairTaskCascadeCascade {
             continue;
           }
         }
-
-        // CPR cuts // HERE I NEED HELP FROM GEORGIOS. This was for track-cascade:
-        //  we can start with no CPR for Cascade-Cascade for the moment
-        // if (Option.cprOn.value) {
-        //   if ((p1.cut() & kSignPlusMask) == kSignPlusMask) {
-        //     if (pairCloseRejectionME.isClosePair(p1, posChild, parts, collision1.magField())) {
-        //       continue;
-        //     }
-        //   } else {
-        //     if (pairCloseRejectionME.isClosePair(p1, negChild, parts, collision1.magField())) {
-        //       continue;
-        //     }
-        //   }
-        // }
-
-        // Pair cleaner not needed in the mixing
-        // if (!pairCleaner.isCleanPair(p1, p2, parts)) {
-        //  continue;
-        //}
 
         mixedEventCont.setPair<isMC>(p1, p2, collision1.multNtr(), collision1.multV0M(), Option.use4D, Option.extendedPlots, Option.smearingByOrigin);
       }
