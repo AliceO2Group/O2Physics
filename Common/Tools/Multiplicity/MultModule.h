@@ -1262,8 +1262,8 @@ class MultModule
       auto populateTable = [&](auto& table, struct CalibrationInfo& estimator, float multiplicity, bool isInelGt0) {
         const bool assignOutOfRange = internalOpts.embedINELgtZEROselection && !isInelGt0;
         auto scaleMC = [](float x, const float pars[6]) {
-          float core = ((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4]; 
-          if(core<0.0f){ 
+          float core = ((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4];
+          if (core < 0.0f) {
             return 0.0f; // this should be marked as low multiplicity and not mapped, core^pars[5] would be NaN
           }
           return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
@@ -1351,8 +1351,8 @@ class MultModule
       ConfigureCentralityRun2(ccdb, metadataInfo, firstbc);
 
       auto scaleMC = [](float x, const float pars[6]) {
-        float core = ((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4]; 
-        if(core<0.0f){ 
+        float core = ((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4];
+        if (core < 0.0f) {
           return 0.0f; // this should be marked as low multiplicity and not mapped, core^pars[5] would be NaN
         }
         return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
