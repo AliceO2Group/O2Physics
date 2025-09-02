@@ -1362,6 +1362,17 @@ struct cascadeFlow {
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
     float psiT0CCorr = psiT0C;
+    for (int ishift = 1; ishift <= 10; ishift++) {
+      histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
+      histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiT0C));
+
+      histos.fill(HIST("ShiftTPCL"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiTPCA));
+      histos.fill(HIST("ShiftTPCL"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCA));
+
+      histos.fill(HIST("ShiftTPCR"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiTPCC));
+      histos.fill(HIST("ShiftTPCR"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCC));
+    }
+
     if (cfgShiftCorr) {
       currentRunNumber = coll.runNumber();
       if (currentRunNumber != lastRunNumber) {
@@ -1652,6 +1663,17 @@ struct cascadeFlow {
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
     float psiT0CCorr = psiT0C;
+    for (int ishift = 1; ishift <= 10; ishift++) {
+      histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
+      histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiT0C));
+
+      histos.fill(HIST("ShiftTPCL"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiTPCA));
+      histos.fill(HIST("ShiftTPCL"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCA));
+
+      histos.fill(HIST("ShiftTPCR"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiTPCC));
+      histos.fill(HIST("ShiftTPCR"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCC));
+    }
+
     if (cfgShiftCorr) {
       currentRunNumber = coll.runNumber();
       if (currentRunNumber != lastRunNumber) {
@@ -1869,6 +1891,17 @@ struct cascadeFlow {
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
     float psiT0CCorr = psiT0C;
+    for (int ishift = 1; ishift <= 10; ishift++) {
+      histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiT0C));
+      histos.fill(HIST("ShiftFT0C"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiT0C));
+
+      histos.fill(HIST("ShiftTPCL"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiTPCA));
+      histos.fill(HIST("ShiftTPCL"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCA));
+
+      histos.fill(HIST("ShiftTPCR"), coll.centFT0C(), 0.5, ishift - 0.5, std::sin(ishift * 2 * psiTPCC));
+      histos.fill(HIST("ShiftTPCR"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCC));
+    }
+
     if (cfgShiftCorr) {
       currentRunNumber = coll.runNumber();
       if (currentRunNumber != lastRunNumber) {
