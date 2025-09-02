@@ -121,7 +121,7 @@ struct hyperCandidate {
   uint32_t clusterSizeITSPi = 0u;
 
   // collision information
-  unsigned int collisionID = 0;
+  int64_t collisionID = 0;
 
   bool isMatter = false;
   bool isSignal = false;          // true MC signal
