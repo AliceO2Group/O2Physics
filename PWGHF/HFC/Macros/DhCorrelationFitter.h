@@ -17,18 +17,24 @@
 #ifndef PWGHF_HFC_MACROS_DHCORRELATIONFITTER_H_
 #define PWGHF_HFC_MACROS_DHCORRELATIONFITTER_H_
 
-#include <cstdio>
-
-#include <RtypesCore.h>
 #include <TF1.h>
 #include <TH1.h>
+
+#include <RtypesCore.h>
+
+#include <cstdio>
 
 class DhCorrelationFitter
 {
 
  public:
   enum FunctionType { kConstwoGaus = 1,
-                      kTwoGausPeriodicity = 2 };
+                      kTwoGausPeriodicity = 2,
+                      kSingleGaus = 3,
+                      kGenGaus = 4,
+                      kVonMises = 5,
+                      kSingleVonMises = 6,
+                      kTwoGausPeriodicityPlusV2modulation = 7 };
 
   /// Constructors
   DhCorrelationFitter();
@@ -51,11 +57,25 @@ class DhCorrelationFitter
   }
   void SetExternalValsAndBounds(Int_t nPars, Double_t* vals, Double_t* lowBounds, Double_t* uppBounds);
   void SetPointsForBaseline(Int_t nBaselinePoints, Int_t* binsBaseline);
+  void SetReflectedCorrHisto(Bool_t isReflected) { fIsTotal = !isReflected; }
+  void SetBaselineUpOrDown(Bool_t baseUp, Bool_t baseDown)
+  {
+    fShiftBaselineUp = baseUp;
+    fShiftBaselineDown = baseDown;
+  }
+  void Setv2(Double_t v2AssocPart, Double_t v2Dmeson)
+  {
+    fv2AssocPart = v2AssocPart;
+    fv2Dmeson = v2Dmeson;
+  }
 
   /// Functions for fitting
   void Fitting(Bool_t drawSplitTerm = kTRUE, Bool_t useExternalPars = kFALSE);
   void SetFitFunction();
   void CalculateYieldsAboveBaseline();
+  void FitBaselineWv2();
+  Double_t CalculateBaseline(TH1F*& histo, Bool_t totalRange = kTRUE);
+  Double_t CalculateBaselineError(TH1F*& histo, Bool_t totalRange = kTRUE);
   void SetSingleTermsForDrawing(Bool_t draw);
   Double_t FindBaseline();
 
@@ -92,13 +112,17 @@ class DhCorrelationFitter
  private:
   TH1F* fHist; // 1D azimuthal correlation histogram
 
-  TF1* fFit;    // Total fit function
-  TF1* fGausNS; // Near-Side (NS) Gaussian
-  TF1* fGausAS; // Away-Side (AS) Gaussian
-  TF1* fPed;    // Baseline function
+  TF1* fFit;           // Total fit function
+  TF1* fGausNS;        // Near-Side (NS) Gaussian
+  TF1* fGausAS;        // Away-Side (AS) Gaussian
+  TF1* fPed;           // Baseline function
+  TF1* fBaseTransvReg; // Baseline function with v2
 
-  Bool_t fIsReflected;
-  Bool_t fUseExternalPars; // To use external fit parameters initial values and bounds
+  Bool_t fIsReflected;       // To use if reflected azimuthal correlation are given as input
+  Bool_t fUseExternalPars;   // To use external fit parameters initial values and bounds
+  Bool_t fShiftBaselineUp;   // To shift the baseline up of its statistical uncertainty
+  Bool_t fShiftBaselineDown; // To shift baseline down of its statistical uncertainty
+  Bool_t fIsTotal;           // Total range of 2*pi in the azimuthal correlation distribution
 
   FunctionType fTypeOfFitFunc; // Type of fit function
 
@@ -121,6 +145,8 @@ class DhCorrelationFitter
   Double_t fErrNSyieldBinCount; // NS Yield error from bin counting
   Double_t fASyieldBinCount;    // AS Yield from bin counting
   Double_t fErrASyieldBinCount; // AS Yield error from bin counting
+  Double_t fv2AssocPart;        // v2 associated particles
+  Double_t fv2Dmeson;           // v2 of D mesons
 
   Double_t* fExtParsVals;      // Fit parameters initial values
   Double_t* fExtParsLowBounds; // Fit parameters lower bounds

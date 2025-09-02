@@ -9,19 +9,26 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file ExtractOutputCorrel.C
-/// \brief Macro to perform the correlation extraction
+/// \file DhCorrelationExtraction.cxx
+/// \brief class for D-h correlation extraction
 /// \usage .L DhCorrelationExtraction.cxx+
 /// \usage .x ExtractOutputCorrel.C("config-file-name")
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 /// \author Swapnesh Santosh Khade <swapnesh.santosh.khade@cern.ch>
 
+#include "DhCorrelationExtraction.h"
 #include "Riostream.h"
+
 #include <TROOT.h>
 #include <TStyle.h>
+
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
-#include "DhCorrelationExtraction.h"
+
+#include <cstdio>
+#include <iostream>
+#include <string>
+#include <vector>
 
 using namespace rapidjson;
 
@@ -34,7 +41,7 @@ void readArray(const Value& jsonArray, std::vector<ValueType>& output)
   }
 }
 
-void parseStringArray(const Value& jsonArray, std::vector<string>& output)
+void parseStringArray(const Value& jsonArray, std::vector<std::string>& output)
 {
   size_t arrayLength = jsonArray.Size();
   for (size_t i = 0; i < arrayLength; i++) {
@@ -44,10 +51,13 @@ void parseStringArray(const Value& jsonArray, std::vector<string>& output)
   }
 }
 
-void SetInputCorrelNames(DhCorrelationExtraction* plotter, TString pathFileMass, TString pathFileSE, TString pathFileME, TString dirSE, TString dirME, TString histoNameCorrSignal, TString histoNameCorrSideba);
-void SetInputHistoInvMassNames(DhCorrelationExtraction* plotter, std::vector<string> inputMassNames);
+void SetInputCorrelNames(DhCorrelationExtraction* plotter, TString pathFileSE, TString pathFileME, TString dirSE, TString dirME, TString histoNameCorrSignal, TString histoNameCorrSideba, TString histoNameCorrSidebaLeft, TString histoNameCorrSidebaRight);
+void SetInputHistoInvMassNames(DhCorrelationExtraction* plotter, TString pathFileMass, std::vector<std::string> inputMassNames);
+void SetInputHistoFDSubtraction(DhCorrelationExtraction* plotter, TString pathFileFDTemplate, TString pathFileFDPromptFrac, TString histoNameFDTemplatePrompt, TString histoNameFDTemplateNonPrompt, TString histoNameRawFracPrompt);
+void SetInputHistoSecPart(DhCorrelationExtraction* plotter, TString pathFileSecPart, TString dirSecPartName, TString histoNamePrimaryPart, TString histoNameAllPart);
+void SetInputHistoBiasBtoD(DhCorrelationExtraction* plotter, TString pathfFilePromptMcRec, TString pathfFileNonPromptMcRec);
 
-void ExtractOutputCorrel(TString cfgFileName = "config_CorrAnalysis.json")
+void ExtractOutputCorrel_Ds(const TString cfgFileName = "config_CorrAnalysis.json")
 {
   // gStyle -> SetOptStat(0);
   gStyle->SetPadLeftMargin(0.15);
@@ -72,24 +82,37 @@ void ExtractOutputCorrel(TString cfgFileName = "config_CorrAnalysis.json")
   string pathFileSE = config["pathFileSE"].GetString();
   string pathFileME = config["pathFileME"].GetString();
   string pathFileMass = config["pathFileMass"].GetString();
+  string pathFileFDTemplate = config["pathFileFDTemplate"].GetString();
+  string pathFileFDPromptFrac = config["pathFileFDPromptFrac"].GetString();
+  string pathFileSecPart = config["pathFileSecPart"].GetString();
+  string pathfFilePromptMcRec = config["pathfFilePromptMcRec"].GetString();
+  string pathfFileNonPromptMcRec = config["pathfFileNonPromptMcRec"].GetString();
 
   string dirSE = config["InputDirSE"].GetString();
   string dirME = config["InputDirME"].GetString();
+  string dirSecPart = config["InputDirSecPart"].GetString();
   string histoNameCorrSignal = config["InputHistoCorrSignalName"].GetString();
   string histoNameCorrSideba = config["InputHistoCorrSidebaName"].GetString();
+  string histoNameCorrSidebaLeft = config["InputHistoCorrSidebaLeftName"].GetString();
+  string histoNameCorrSidebaRight = config["InputHistoCorrSidebaRightName"].GetString();
+  string histoNameFDTemplatePrompt = config["InputHistoFDTemplatePrompt"].GetString();
+  string histoNameFDTemplateNonPrompt = config["InputHistoFDTemplateNonPrompt"].GetString();
+  string histoNameRawFracPrompt = config["InputHistoFDPromptFrac"].GetString();
+  string histoNamePrimaryPart = config["InputHistoPrimaryPart"].GetString();
+  string histoNameAllPart = config["InputHistoAllPart"].GetString();
 
-  vector<string> InputHistoMassName;
+  std::vector<std::string> InputHistoMassName;
 
   const Value& inputMassNames = config["InputHistoMassName"];
   parseStringArray(inputMassNames, InputHistoMassName);
 
-  cout << InputHistoMassName[0].data() << endl;
-  cout << InputHistoMassName[1].data() << endl;
-  cout << InputHistoMassName[2].data() << endl;
+  std::cout << InputHistoMassName[0].data() << std::endl;
+  std::cout << InputHistoMassName[1].data() << std::endl;
+  std::cout << InputHistoMassName[2].data() << std::endl;
 
-  vector<double> binsPtCandIntervals;
-  vector<double> binsPtHadIntervals;
-  vector<double> deltaEtaInterval;
+  std::vector<double> binsPtCandIntervals;
+  std::vector<double> binsPtHadIntervals;
+  std::vector<double> deltaEtaInterval;
 
   const Value& PtCandValue = config["binsPtCandIntervals"];
   readArray(PtCandValue, binsPtCandIntervals);
@@ -103,9 +126,24 @@ void ExtractOutputCorrel(TString cfgFileName = "config_CorrAnalysis.json")
   double deltaEtaMax = deltaEtaInterval[1];
 
   int specie = config["DmesonSpecie"].GetInt();
+  bool rebinAngCorr = config["RebinAngCorr"].GetBool();
+  bool rebinFDCorr = config["RebinFDCorr"].GetBool();
+  bool rebinSecPart = config["RebinSecPart"].GetBool();
+  int rebinDeltaPhi = config["nRebinDeltaPhi"].GetInt();
+  int rebinDeltaEta = config["nRebinDeltaEta"].GetInt();
 
   int npools = config["NumberOfPools"].GetInt();
   bool poolByPool = config["CorrectPoolsSeparately"].GetBool();
+  bool applySecPartCorr = config["ApplySecPartCorr"].GetBool();
+  bool applyBiasBtoDCorr = config["ApplyBiasBtoDCorr"].GetBool();
+  bool applyFDCorr = config["ApplyFDCorr"].GetBool();
+  bool isDividedSideb = config["IsDividedSideb"].GetBool();
+  bool useSidebLeft = config["UseSidebLeft"].GetBool();
+  bool useSidebRight = config["UseSidebRight"].GetBool();
+
+  if (useSidebLeft && useSidebLeft) {
+    std::cout << "Using left and right" << std::endl;
+  }
 
   std::cout << "=========================== " << std::endl;
   std::cout << "Input variables from config" << std::endl;
@@ -121,6 +159,9 @@ void ExtractOutputCorrel(TString cfgFileName = "config_CorrAnalysis.json")
   const int nBinsPtHad = binsPtHadIntervals.size() - 1;
 
   TH1D* hCorrectedCorrel[nBinsPtCand][nBinsPtHad];
+  TH1D* hCorrectedCorrel_BaselineSubtr[nBinsPtCand][nBinsPtHad];
+  TH1D* hCorrectedCorrel_Reflected[nBinsPtCand][nBinsPtHad];
+  TH1D* hCorrectedCorrel_Reflected_BaselineSubtr[nBinsPtCand][nBinsPtHad];
 
   // Create and set the correlation plotter class
   DhCorrelationExtraction* plotter = new DhCorrelationExtraction();
@@ -128,30 +169,55 @@ void ExtractOutputCorrel(TString cfgFileName = "config_CorrAnalysis.json")
   Bool_t flagSpecie = plotter->SetDmesonSpecie(static_cast<DhCorrelationExtraction::DmesonSpecie>(specie));
   plotter->SetNpools(npools);
   plotter->SetCorrectPoolsSeparately(poolByPool); // kTRUE = pool.by-pool extraction and correction; kFALSE = merged ME pools
+  plotter->SetFDSubtraction(applyFDCorr);
+  plotter->SetSecPartContamination(applySecPartCorr);
   plotter->SetDeltaEtaRange(deltaEtaMin, deltaEtaMax);
   plotter->SetSubtractSoftPiInMEdistr(kFALSE);
-  plotter->SetRebin2DcorrelHisto(2, 2); // Xaxis: deltaEta, Yaxis: deltaPhi
+  plotter->SetRebinOptions(rebinAngCorr, rebinFDCorr, rebinSecPart);
+  plotter->SetRebin2DcorrelHisto(rebinDeltaEta, rebinDeltaPhi); // Xaxis: deltaEta, Yaxis: deltaPhi
+  plotter->SetCorrBiasBtoD(applyBiasBtoDCorr);
   plotter->SetDebugLevel(1);
 
   if (!flagSpecie)
-    cout << "[ERROR] Wrong D meson flag" << endl;
+    std::cout << "[ERROR] Wrong D meson flag" << std::endl;
 
   // Set the input file config
-  SetInputCorrelNames(plotter, pathFileMass, pathFileSE, pathFileME, dirSE, dirME, histoNameCorrSignal, histoNameCorrSideba);
-  SetInputHistoInvMassNames(plotter, InputHistoMassName);
+  SetInputCorrelNames(plotter, pathFileSE, pathFileME, dirSE, dirME, histoNameCorrSignal, histoNameCorrSideba, histoNameCorrSidebaLeft, histoNameCorrSidebaRight);
+  SetInputHistoInvMassNames(plotter, pathFileMass, InputHistoMassName);
+  if (applyFDCorr)
+    SetInputHistoFDSubtraction(plotter, pathFileFDTemplate, pathFileFDPromptFrac, histoNameFDTemplatePrompt, histoNameFDTemplateNonPrompt, histoNameRawFracPrompt);
+  if (applySecPartCorr)
+    SetInputHistoSecPart(plotter, pathFileSecPart, dirSecPart, histoNamePrimaryPart, histoNameAllPart);
+  if (applyBiasBtoDCorr)
+    SetInputHistoBiasBtoD(plotter, pathfFilePromptMcRec, pathfFileNonPromptMcRec);
   Bool_t readSEandME = plotter->ReadInputSEandME();
-  Bool_t readInvMass = plotter->ReadInputInvMass();
   if (readSEandME)
-    cout << "Files SE and ME read correctly" << endl;
+    std::cout << "Files SE and ME read correctly" << std::endl;
+  Bool_t readInvMass = plotter->ReadInputInvMass();
   if (readInvMass)
-    cout << "Files inv. mass read correctly" << endl;
+    std::cout << "Files inv. mass read correctly" << std::endl;
+  if (applyFDCorr) {
+    Bool_t readFDSubtr = plotter->ReadInputFDSubtr();
+    if (readFDSubtr)
+      std::cout << "Files for FD subtr. read correctly" << std::endl;
+  }
+  if (applySecPartCorr) {
+    Bool_t readSecPart = plotter->ReadInputSecondaryPartContamination();
+    if (readSecPart)
+      std::cout << "Files for secondary part. contamination read correctly" << std::endl;
+  }
 
   // Loop over candidate pt and assoc. particle pt
   for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
+    plotter->SetDividedSidebands(isDividedSideb, useSidebLeft, useSidebRight);
     plotter->GetSignalAndBackgroundForNorm(binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1]);
     for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
+      plotter->SetBinCandAndHad(iBinPtCand + 1, iBinPtHad + 1);
       plotter->ExtractCorrelations(binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1], binsPtHadIntervals[iBinPtHad], binsPtHadIntervals[iBinPtHad + 1], CodeNameAnalysis);
-      hCorrectedCorrel[iBinPtCand][iBinPtHad] = reinterpret_cast<TH1D*>(plotter->GetCorrectedCorrHisto());
+      hCorrectedCorrel[iBinPtCand][iBinPtHad] = (TH1D*)plotter->GetCorrectedCorrHisto();
+      hCorrectedCorrel_BaselineSubtr[iBinPtCand][iBinPtHad] = (TH1D*)plotter->GetCorrectedCorrHisto_BaselineSubtr();
+      hCorrectedCorrel_Reflected[iBinPtCand][iBinPtHad] = (TH1D*)plotter->GetCorrectedCorrHisto_Reflected();
+      hCorrectedCorrel_Reflected_BaselineSubtr[iBinPtCand][iBinPtHad] = (TH1D*)plotter->GetCorrectedCorrHisto_Reflected_BaselineSubtr();
     }
   }
 
@@ -165,14 +231,43 @@ void ExtractOutputCorrel(TString cfgFileName = "config_CorrAnalysis.json")
   }
   outFile->Close();
 
+  // output file baseline subtr.
+  TFile* outFile_BaselineSubtr = new TFile(Form("Output_CorrelationExtraction_%s_Root/ExtractCorrelationsResults_BaselineSubtr.root", CodeNameAnalysis.data()), "RECREATE");
+  outFile_BaselineSubtr->cd();
+  for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
+    for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
+      hCorrectedCorrel_BaselineSubtr[iBinPtCand][iBinPtHad]->Write();
+    }
+  }
+  outFile_BaselineSubtr->Close();
+
+  // output file reflected
+  TFile* outFile_Reflected = new TFile(Form("Output_CorrelationExtraction_%s_Root/ExtractCorrelationsResults_Reflected.root", CodeNameAnalysis.data()), "RECREATE");
+  outFile_Reflected->cd();
+  for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
+    for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
+      hCorrectedCorrel_Reflected[iBinPtCand][iBinPtHad]->Write();
+    }
+  }
+  outFile_Reflected->Close();
+
+  // output file reflected baseline subtr.
+  TFile* outFile_Reflected_BaselineSubtr = new TFile(Form("Output_CorrelationExtraction_%s_Root/ExtractCorrelationsResults_Reflected_BaselineSubtr.root", CodeNameAnalysis.data()), "RECREATE");
+  outFile_Reflected_BaselineSubtr->cd();
+  for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
+    for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
+      hCorrectedCorrel_Reflected_BaselineSubtr[iBinPtCand][iBinPtHad]->Write();
+    }
+  }
+  outFile_Reflected_BaselineSubtr->Close();
+
   return;
 }
 
-void SetInputCorrelNames(DhCorrelationExtraction* plotter, TString pathFileMass, TString pathFileSE, TString pathFileME, TString dirSE, TString dirME, TString histoNameCorrSignal, TString histoNameCorrSideba)
+void SetInputCorrelNames(DhCorrelationExtraction* plotter, TString pathFileSE, TString pathFileME, TString dirSE, TString dirME, TString histoNameCorrSignal, TString histoNameCorrSideba, TString histoNameCorrSidebaLeft, TString histoNameCorrSidebaRight)
 {
 
-  // paths
-  plotter->SetInputFilenameMass(pathFileMass.Data());
+  // Ds paths
   plotter->SetInputFilenameSE(pathFileSE.Data());
   plotter->SetInputFilenameME(pathFileME.Data());
   plotter->SetDirNameSE(dirSE.Data());
@@ -181,16 +276,51 @@ void SetInputCorrelNames(DhCorrelationExtraction* plotter, TString pathFileMass,
   plotter->SetSECorrelHistoSidebandName(histoNameCorrSideba.Data());
   plotter->SetMECorrelHistoSignalName(histoNameCorrSignal.Data());
   plotter->SetMECorrelHistoSidebandName(histoNameCorrSideba.Data());
+  plotter->SetSECorrelHistoSidebandLeftName(histoNameCorrSidebaLeft.Data());
+  plotter->SetMECorrelHistoSidebandLeftName(histoNameCorrSidebaLeft.Data());
+  plotter->SetSECorrelHistoSidebandRightName(histoNameCorrSidebaRight.Data());
+  plotter->SetMECorrelHistoSidebandRightName(histoNameCorrSidebaRight.Data());
 
   return;
 }
 
-void SetInputHistoInvMassNames(DhCorrelationExtraction* plotter, std::vector<std::string> inputMassNames)
+void SetInputHistoInvMassNames(DhCorrelationExtraction* plotter, TString pathFileMass, std::vector<std::string> inputMassNames)
 { // to use if sgn and bkg extraction is done apart
 
+  plotter->SetInputFilenameMass(pathFileMass.Data());
   plotter->SetMassHistoNameSgn(inputMassNames[0].data());
   plotter->SetMassHistoNameBkg(inputMassNames[1].data());
   plotter->SetMassHistoNameSBs(inputMassNames[2].data());
+
+  return;
+}
+
+void SetInputHistoFDSubtraction(DhCorrelationExtraction* plotter, TString pathFileFDTemplate, TString pathFileFDPromptFrac, TString histoNameFDTemplatePrompt, TString histoNameFDTemplateNonPrompt, TString histoNameRawFracPrompt)
+{
+
+  plotter->SetInputFilenameFDTemplate(pathFileFDTemplate.Data());
+  plotter->SetInputFilenameFDPromptFrac(pathFileFDPromptFrac.Data());
+  plotter->SetInputHistoNameFDTemplatePrompt(histoNameFDTemplatePrompt.Data());
+  plotter->SetInputHistoNameFDTemplateNonPrompt(histoNameFDTemplateNonPrompt.Data());
+  plotter->SetInputHistoNameFDPromptFrac(histoNameRawFracPrompt.Data());
+
+  return;
+}
+
+void SetInputHistoSecPart(DhCorrelationExtraction* plotter, TString pathFileSecPart, TString dirSecPartName, TString histoNamePrimaryPart, TString histoNameAllPart)
+{
+
+  plotter->SetInputFilenameSecPart(pathFileSecPart.Data());
+  plotter->SetDirNameSecPart(dirSecPartName.Data());
+  plotter->SetHistoSecPartName(histoNamePrimaryPart.Data(), histoNameAllPart.Data());
+
+  return;
+}
+
+void SetInputHistoBiasBtoD(DhCorrelationExtraction* plotter, TString pathfFilePromptMcRec, TString pathfFileNonPromptMcRec)
+{
+
+  plotter->SetInputFilenameBiasBtoD(pathfFilePromptMcRec.Data(), pathfFileNonPromptMcRec.Data());
 
   return;
 }
