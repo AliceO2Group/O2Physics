@@ -885,8 +885,8 @@ struct AnalysisMuonSelection {
         o2::base::Propagator::initFieldFromGRP(grpmag);
         VarManager::SetMagneticField(grpmag->getNominalL3Field());
       } else {
-        //LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
-        // If the magnetic field is not found it is configured by had by the user
+        // LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+        //  If the magnetic field is not found it is configured by had by the user
         VarManager::SetMagneticField(fConfigMagField.value);
       }
       fCurrentRun = events.begin().runNumber();
