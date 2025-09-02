@@ -59,11 +59,6 @@ o2physics_add_dpl_workflow(timestamp
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(timestamptester
-                    SOURCES timestampTester.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(weak-decay-indices
                     SOURCES weakDecayIndices.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
@@ -82,11 +77,6 @@ o2physics_add_dpl_workflow(track-propagation
 o2physics_add_dpl_workflow(track-dca-cov-filler-run2
                     SOURCES trackDcaCovFillerRun2.cxx
                     PUBLIC_LINK_LIBRARIES O2::DetectorsBase O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(track-propagation-tester
-                    SOURCES trackPropagationTester.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::trackSelectionRequest
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(calo-clusters

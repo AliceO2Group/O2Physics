@@ -132,6 +132,7 @@ struct ThreeParticleCorrelations {
   SameKindPair<MyFilteredMCGenCollisions, MyFilteredMCParticles, BinningTypeMC> pairMC{collBinningMC, 5, -1, &cache};
 
   // Process configurables
+  Configurable<int> confBfieldSwitch{"confBfieldSwitch", 0, "Switch for the detector magnetic field (1 if Pos, -1 if Neg, 0 if both)"};
   Configurable<bool> confFakeV0Switch{"confFakeV0Switch", false, "Switch for the fakeV0Filter function"};
   Configurable<bool> confRDSwitch{"confRDSwitch", true, "Switch for the radialDistanceFilter function"};
 
@@ -174,6 +175,7 @@ struct ThreeParticleCorrelations {
     rQARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{centralityAxis}}});
     rQARegistry.add("hEventCentrality_MC", "hEventCentrality_MC", {HistType::kTH1D, {{centralityAxis}}});
     rQARegistry.add("hEventZvtx", "hEventZvtx", {HistType::kTH1D, {{zvtxAxis}}});
+    rQARegistry.add("hEventBfield", "hEventBfield", {HistType::kTH1D, {{2, -1, 1}}});
     rQARegistry.add("hTrackPt", "hTrackPt", {HistType::kTH1D, {{100, 0, 4}}});
     rQARegistry.add("hTrackEta", "hTrackEta", {HistType::kTH1D, {{100, -1, 1}}});
     rQARegistry.add("hTrackPhi", "hTrackPhi", {HistType::kTH1D, {{100, (-1. / 2) * constants::math::PI, (5. / 2) * constants::math::PI}}});
@@ -334,8 +336,15 @@ struct ThreeParticleCorrelations {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     auto bField = getMagneticField(bc.timestamp());
+    if (confBfieldSwitch != 0) {
+      if (std::signbit(static_cast<double>(confBfieldSwitch)) != std::signbit(bField)) {
+        return;
+      }
+    }
+
     rQARegistry.fill(HIST("hEventCentrality"), collision.centFT0C());
     rQARegistry.fill(HIST("hEventZvtx"), collision.posZ());
+    rQARegistry.fill(HIST("hEventBfield"), bField);
 
     // Start of the Track QA
     for (const auto& track : tracks) {
@@ -455,6 +464,12 @@ struct ThreeParticleCorrelations {
 
       auto bc = coll_1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
+      if (confBfieldSwitch != 0) {
+        if (std::signbit(static_cast<double>(confBfieldSwitch)) != std::signbit(bField)) {
+          return;
+        }
+      }
+
       for (const auto& [trigger, associate] : soa::combinations(soa::CombinationsFullIndexPolicy(v0_1, track_2))) {
         if (v0Filters(coll_1, trigger, tracks) && trackFilters(associate)) {
           if (radialDistanceFilter(trigger, associate, bField, true) && fakeV0Filter(trigger, associate)) {

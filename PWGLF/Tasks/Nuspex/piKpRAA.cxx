@@ -241,10 +241,12 @@ struct PiKpRAA {
     return selectedTracks;
   }
 
-  void
-    init(InitContext const&)
+  int currentRunNumberNchSel;
+  int currentRunNumberPhiSel;
+  void init(InitContext const&)
   {
-
+    currentRunNumberNchSel = -1;
+    currentRunNumberPhiSel = -1;
     trkSelDaugthers = trkSelDaugthersV0s();
     trkSelGlobal = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
 
@@ -362,6 +364,8 @@ struct PiKpRAA {
     LOG(info) << "\tapplyPhiCut=" << v0Selections.applyPhiCut;
     LOG(info) << "\tusePinPhiSelection=" << v0Selections.usePinPhiSelection;
     LOG(info) << "\ttitlePorPt=" << titlePorPt;
+    LOG(info) << "\tcurrentRunNumberNchSel=" << currentRunNumberNchSel;
+    LOG(info) << "\tcurrentRunNumberPhiSel=" << currentRunNumberPhiSel;
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -406,7 +410,14 @@ struct PiKpRAA {
     const double nPV{collision.multNTracksPVeta1() / 1.};
 
     if (applyNchSel) {
-      loadNchCalibrations(timeStamp);
+      const int nextRunNumber{foundBC.runNumber()};
+      if (currentRunNumberNchSel != nextRunNumber) {
+        loadNchCalibrations(timeStamp);
+        currentRunNumberNchSel = nextRunNumber;
+        LOG(info) << "\tcurrentRunNumberNchSel= " << currentRunNumberNchSel << " timeStamp = " << timeStamp;
+      }
+
+      // return if Nch selection objects are nullptr
       if (!(cfgNch.hMeanNch && cfgNch.hSigmaNch))
         return;
     }
@@ -454,8 +465,18 @@ struct PiKpRAA {
     registry.fill(HIST("T0Ccent"), collision.centFT0C());
     const float centrality{collision.centFT0C()};
 
-    if (v0Selections.applyPhiCut)
-      loadPhiCutSelections(timeStamp);
+    if (v0Selections.applyPhiCut) {
+      const int nextRunNumber{foundBC.runNumber()};
+      if (currentRunNumberPhiSel != nextRunNumber) {
+        loadPhiCutSelections(timeStamp);
+        currentRunNumberPhiSel = nextRunNumber;
+        LOG(info) << "\tcurrentRunNumberPhiSel= " << currentRunNumberPhiSel << " timeStamp = " << timeStamp;
+      }
+
+      // return if phi cut objects are nullptr
+      if (!(phiCut.hPhiCutHigh && phiCut.hPhiCutLow))
+        return;
+    }
 
     for (const auto& track : tracks) {
 
@@ -1069,7 +1090,8 @@ struct PiKpRAA {
         LOGF(fatal, "Could not load hSigmaNch histogram from %s", pathSigmaNch.value.c_str());
       }
     }
-    cfgNch.calibrationsLoaded = true;
+    if (cfgNch.hMeanNch && cfgNch.hSigmaNch)
+      cfgNch.calibrationsLoaded = true;
   }
 
   void loadPhiCutSelections(const uint64_t& timeStamp)
