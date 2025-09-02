@@ -33,8 +33,10 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -68,8 +70,8 @@ DECLARE_SOA_COLUMN(DecayLength, decayLength, float);
 DECLARE_SOA_COLUMN(DecayLengthXY, decayLengthXY, float);
 DECLARE_SOA_COLUMN(DecayLengthNormalised, decayLengthNormalised, float);
 DECLARE_SOA_COLUMN(DecayLengthXYNormalised, decayLengthXYNormalised, float);
-DECLARE_SOA_COLUMN(CPA, cpa, float);
-DECLARE_SOA_COLUMN(CPAXY, cpaXY, float);
+DECLARE_SOA_COLUMN(Cpa, cpa, float);
+DECLARE_SOA_COLUMN(CpaXY, cpaXY, float);
 DECLARE_SOA_COLUMN(Ct, ct, float);
 DECLARE_SOA_COLUMN(PtV0Pos, ptV0Pos, float);
 DECLARE_SOA_COLUMN(PtV0Neg, ptV0Neg, float);
@@ -84,6 +86,9 @@ DECLARE_SOA_COLUMN(V0CtLambda, v0CtLambda, float);
 DECLARE_SOA_COLUMN(FlagMc, flagMc, int8_t);
 DECLARE_SOA_COLUMN(OriginMcRec, originMcRec, int8_t);
 DECLARE_SOA_COLUMN(OriginMcGen, originMcGen, int8_t);
+DECLARE_SOA_COLUMN(MlScoreFirstClass, mlScoreFirstClass, float);
+DECLARE_SOA_COLUMN(MlScoreSecondClass, mlScoreSecondClass, float);
+DECLARE_SOA_COLUMN(MlScoreThirdClass, mlScoreThirdClass, float);
 // Events
 DECLARE_SOA_COLUMN(IsEventReject, isEventReject, int);
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
@@ -118,15 +123,18 @@ DECLARE_SOA_TABLE(HfCandCascLites, "AOD", "HFCANDCASCLITE",
                   full::NSigmaTOFPr0,
                   full::M,
                   full::Pt,
-                  full::CPA,
-                  full::CPAXY,
+                  full::Cpa,
+                  full::CpaXY,
                   full::Ct,
                   full::Eta,
                   full::Phi,
                   full::Y,
                   full::E,
                   full::FlagMc,
-                  full::OriginMcRec);
+                  full::OriginMcRec,
+                  full::MlScoreFirstClass,
+                  full::MlScoreSecondClass,
+                  full::MlScoreThirdClass);
 
 DECLARE_SOA_TABLE(HfCandCascFulls, "AOD", "HFCANDCASCFULL",
                   collision::BCId,
@@ -188,15 +196,18 @@ DECLARE_SOA_TABLE(HfCandCascFulls, "AOD", "HFCANDCASCFULL",
                   full::M,
                   full::Pt,
                   full::P,
-                  full::CPA,
-                  full::CPAXY,
+                  full::Cpa,
+                  full::CpaXY,
                   full::Ct,
                   full::Eta,
                   full::Phi,
                   full::Y,
                   full::E,
                   full::FlagMc,
-                  full::OriginMcRec);
+                  full::OriginMcRec,
+                  full::MlScoreFirstClass,
+                  full::MlScoreSecondClass,
+                  full::MlScoreThirdClass);
 
 DECLARE_SOA_TABLE(HfCandCascFullEs, "AOD", "HFCANDCASCFULLE",
                   collision::BCId,
@@ -228,23 +239,56 @@ struct HfTreeCreatorLcToK0sP {
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 24., "Maximum pt for the application of the downsampling factor"};
   Configurable<bool> fillOnlySignal{"fillOnlySignal", false, "Flag to fill derived tables with signal for ML trainings"};
   Configurable<bool> fillOnlyBackground{"fillOnlyBackground", false, "Flag to fill derived tables with background for ML trainings"};
+  Configurable<bool> applyMl{"applyMl", false, "Whether ML was used in candidateSelectorLc"};
+
+  constexpr static float UndefValueFloat = -999.f;
 
   HfHelper hfHelper;
 
-  Filter filterSelectCandidates = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= 1;
   using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPr>;
   using SelectedCandidatesMc = soa::Filtered<soa::Join<aod::HfCandCascade, aod::HfCandCascadeMcRec, aod::HfSelLcToK0sP>>;
-
-  Partition<SelectedCandidatesMc> recSig = nabs(aod::hf_cand_casc::flagMcMatchRec) != int8_t(0);
-  Partition<SelectedCandidatesMc> recBkg = nabs(aod::hf_cand_casc::flagMcMatchRec) == int8_t(0);
+  Filter filterSelectCandidates = aod::hf_sel_candidate_lc_to_k0s_p::isSelLcToK0sP >= 1;
 
   void init(InitContext const&)
   {
   }
 
-  template <typename T, typename U>
-  void fillCandidate(const T& candidate, const U& bach, int8_t flagMc, int8_t originMcRec)
+  /// \brief function to get ML score values for the current candidate and assign them to input parameters
+  /// \param candidate candidate instance
+  /// \param candidateMlScore instance of handler of vectors with ML scores associated with the current candidate
+  /// \param mlScoreFirstClass ML score for belonging to the first class
+  /// \param mlScoreSecondClass ML score for belonging to the second class
+  /// \param mlScoreThirdClass ML score for belonging to the third class
+  void assignMlScores(aod::HfMlLcToK0sP::iterator const& candidateMlScore, float& mlScoreFirstClass, float& mlScoreSecondClass, float& mlScoreThirdClass)
   {
+    std::vector<float> mlScores;
+    std::copy(candidateMlScore.mlProbLcToK0sP().begin(), candidateMlScore.mlProbLcToK0sP().end(), std::back_inserter(mlScores));
+
+    constexpr int IndexFirstClass{0};
+    constexpr int IndexSecondClass{1};
+    constexpr int IndexThirdClass{2};
+    if (mlScores.size() == 0) {
+      return; // when candidateSelectorLcK0sP rejects a candidate by "usual", non-ML cut, the ml score vector remains empty
+    }
+    mlScoreFirstClass = mlScores.at(IndexFirstClass);
+    mlScoreSecondClass = mlScores.at(IndexSecondClass);
+    if (mlScores.size() > IndexThirdClass) {
+      mlScoreThirdClass = mlScores.at(IndexThirdClass);
+    }
+  }
+
+  template <typename T, typename U>
+  void fillCandidate(const T& candidate, const U& bach, int8_t flagMc, int8_t originMcRec, aod::HfMlLcToK0sP::iterator const& candidateMlScore)
+  {
+
+    float mlScoreFirstClass{UndefValueFloat};
+    float mlScoreSecondClass{UndefValueFloat};
+    float mlScoreThirdClass{UndefValueFloat};
+
+    if (applyMl) {
+      assignMlScores(candidateMlScore, mlScoreFirstClass, mlScoreSecondClass, mlScoreThirdClass);
+    }
+
     if (fillCandidateLiteTable) {
       rowCandidateLite(
         candidate.chi2PCA(),
@@ -283,7 +327,10 @@ struct HfTreeCreatorLcToK0sP {
         hfHelper.yLc(candidate),
         hfHelper.eLc(candidate),
         flagMc,
-        originMcRec);
+        originMcRec,
+        mlScoreFirstClass,
+        mlScoreSecondClass,
+        mlScoreThirdClass);
     } else {
       rowCandidateFull(
         bach.collision().bcId(),
@@ -353,7 +400,10 @@ struct HfTreeCreatorLcToK0sP {
         hfHelper.yLc(candidate),
         hfHelper.eLc(candidate),
         flagMc,
-        originMcRec);
+        originMcRec,
+        mlScoreFirstClass,
+        mlScoreSecondClass,
+        mlScoreThirdClass);
     }
   }
   template <typename T>
@@ -370,9 +420,15 @@ struct HfTreeCreatorLcToK0sP {
   void processMc(aod::Collisions const& collisions,
                  aod::McCollisions const&,
                  SelectedCandidatesMc const& candidates,
+                 aod::HfMlLcToK0sP const& candidateMlScores,
                  soa::Join<aod::McParticles, aod::HfCandCascadeMcGen> const& particles,
                  TracksWPid const&)
   {
+
+    if (applyMl && candidateMlScores.size() == 0) {
+      LOG(fatal) << "ML enabled but table with the ML scores is empty! Please check your configurables.";
+      return;
+    }
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -380,42 +436,25 @@ struct HfTreeCreatorLcToK0sP {
       fillEvent(collision);
     }
 
-    if (fillOnlySignal) {
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(recSig.size());
-      } else {
-        rowCandidateFull.reserve(recSig.size());
-      }
-      for (const auto& candidate : recSig) {
-        auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
-        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec());
-      }
-    } else if (fillOnlyBackground) {
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(recBkg.size());
-      } else {
-        rowCandidateFull.reserve(recBkg.size());
-      }
-      for (const auto& candidate : recBkg) {
-        if (downSampleBkgFactor < 1.) {
-          float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
-          if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
-            continue;
-          }
-        }
-        auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
-        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec());
-      }
+    if (fillCandidateLiteTable) {
+      rowCandidateLite.reserve(candidates.size());
     } else {
-      // Filling candidate properties
-      if (fillCandidateLiteTable) {
-        rowCandidateLite.reserve(candidates.size());
+      rowCandidateFull.reserve(candidates.size());
+    }
+
+    int iCand{0};
+    for (const auto& candidate : candidates) {
+      auto candidateMlScore = candidateMlScores.rawIteratorAt(iCand);
+      ++iCand;
+      auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
+      const int flag = candidate.flagMcMatchRec();
+
+      if (fillOnlySignal && flag != 0) {
+        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
+      } else if (fillOnlyBackground && flag == 0) {
+        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
       } else {
-        rowCandidateFull.reserve(candidates.size());
-      }
-      for (const auto& candidate : candidates) {
-        auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
-        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec());
+        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
       }
     }
 
@@ -439,8 +478,14 @@ struct HfTreeCreatorLcToK0sP {
 
   void processData(aod::Collisions const& collisions,
                    soa::Join<aod::HfCandCascade, aod::HfSelLcToK0sP> const& candidates,
+                   aod::HfMlLcToK0sP const& candidateMlScores,
                    TracksWPid const&)
   {
+
+    if (applyMl && candidateMlScores.size() == 0) {
+      LOG(fatal) << "ML enabled but table with the ML scores is empty! Please check your configurables.";
+      return;
+    }
 
     // Filling event properties
     rowCandidateFullEvents.reserve(collisions.size());
@@ -454,11 +499,15 @@ struct HfTreeCreatorLcToK0sP {
     } else {
       rowCandidateFull.reserve(candidates.size());
     }
+
+    int iCand{0};
     for (const auto& candidate : candidates) {
+      auto candidateMlScore = candidateMlScores.rawIteratorAt(iCand);
+      ++iCand;
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
       double pseudoRndm = bach.pt() * 1000. - static_cast<int16_t>(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
-        fillCandidate(candidate, bach, 0, 0);
+        fillCandidate(candidate, bach, 0, 0, candidateMlScore);
       }
     }
   }

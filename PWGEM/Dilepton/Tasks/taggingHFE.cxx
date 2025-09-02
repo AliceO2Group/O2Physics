@@ -818,8 +818,9 @@ struct taggingHFE {
     eLpair.ptepv = trackParCov.getPt();
     eLpair.dca3dinsigma = dca3DinSigma;
 
-    const std::array<float, 3> vertex = {v0.x(), v0.y(), v0.z()};
-    const std::array<float, 3> momentum = {v0.px(), v0.py(), v0.pz()};
+    const std::array<float, 3> vertex = {collision.posX(), collision.posY(), collision.posZ()};
+    const std::array<float, 3> vertexV0 = {v0.x(), v0.y(), v0.z()};
+    const std::array<float, 3> momV0 = {v0.px(), v0.py(), v0.pz()};
     std::array<float, 21> covV0 = {0.f};
 
     constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
@@ -828,7 +829,7 @@ struct taggingHFE {
       covV0[i] = v0.positionCovMat()[i];
     }
 
-    auto v0ParCov = o2::track::TrackParCov(vertex, momentum, covV0, 0, true);
+    auto v0ParCov = o2::track::TrackParCov(vertexV0, momV0, covV0, 0, true);
     v0ParCov.setAbsCharge(0);
     v0ParCov.setPID(o2::track::PID::Lambda);
 
@@ -887,8 +888,9 @@ struct taggingHFE {
     eCascPair.ptepv = trackParCov.getPt();
     eCascPair.dca3dinsigma = dca3DinSigma;
 
-    const std::array<float, 3> vertex = {cascade.x(), cascade.y(), cascade.z()};
-    const std::array<float, 3> momentum = {cascade.px(), cascade.py(), cascade.pz()};
+    const std::array<float, 3> vertex = {collision.posX(), collision.posY(), collision.posZ()};
+    const std::array<float, 3> vertexCasc = {cascade.x(), cascade.y(), cascade.z()};
+    const std::array<float, 3> momCasc = {cascade.px(), cascade.py(), cascade.pz()};
 
     std::array<float, 21> covCasc = {0.};
     constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
@@ -897,7 +899,7 @@ struct taggingHFE {
       covCasc[i] = cascade.positionCovMat()[i];
     }
 
-    auto cascParCov = o2::track::TrackParCov(vertex, momentum, covCasc, cascade.sign(), true);
+    auto cascParCov = o2::track::TrackParCov(vertexCasc, momCasc, covCasc, cascade.sign(), true);
     cascParCov.setAbsCharge(1);
     if constexpr (cascType == 0) {
       cascParCov.setPID(o2::track::PID::XiMinus);

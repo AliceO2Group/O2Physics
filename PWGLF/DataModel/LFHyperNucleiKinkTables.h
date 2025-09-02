@@ -47,6 +47,9 @@ DECLARE_SOA_COLUMN(DcaKinkTopo, dcaKinkTopo, float);                    //! DCA 
 DECLARE_SOA_COLUMN(ItsChi2Moth, itsChi2Moth, float);                    //! ITS chi2 of the mother track
 DECLARE_SOA_COLUMN(ItsClusterSizesMoth, itsClusterSizesMoth, uint32_t); //! ITS cluster size of the mother track
 DECLARE_SOA_COLUMN(ItsClusterSizesDaug, itsClusterSizesDaug, uint32_t); //! ITS cluster size of the daughter track
+DECLARE_SOA_COLUMN(TpcMomDaug, tpcMomDaug, float);                      //! TPC momentum of the daughter track
+DECLARE_SOA_COLUMN(TpcSignalDaug, tpcSignalDaug, float);                //! TPC signal of the daughter track
+DECLARE_SOA_COLUMN(TpcNClsPIDDaug, tpcNClsPIDDaug, int16_t);            //! Number of TPC clusters used for PID of the daughter track
 DECLARE_SOA_COLUMN(NSigmaTPCDaug, nSigmaTPCDaug, float);                //! Number of tpc sigmas of the daughter track
 DECLARE_SOA_COLUMN(NSigmaITSDaug, nSigmaITSDaug, float);                //! Number of ITS sigmas of the daughter track
 DECLARE_SOA_COLUMN(NSigmaTOFDaug, nSigmaTOFDaug, float);                //! Number of TOF sigmas of the daughter track
@@ -87,6 +90,7 @@ DECLARE_SOA_TABLE(HypKinkCand, "AOD", "HYPKINKCANDS",
                   hyperkink::PxDaugSV, hyperkink::PyDaugSV, hyperkink::PzDaugSV,
                   hyperkink::DcaMothPv, hyperkink::DcaDaugPv, hyperkink::DcaKinkTopo,
                   hyperkink::ItsChi2Moth, hyperkink::ItsClusterSizesMoth, hyperkink::ItsClusterSizesDaug,
+                  hyperkink::TpcMomDaug, hyperkink::TpcSignalDaug, hyperkink::TpcNClsPIDDaug,
                   hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug, hyperkink::NSigmaTOFDaug,
                   hyperkink::PxMothPV, hyperkink::PyMothPV, hyperkink::PzMothPV,
                   hyperkink::UpdatePxMothPV, hyperkink::UpdatePyMothPV, hyperkink::UpdatePzMothPV);
@@ -102,6 +106,7 @@ DECLARE_SOA_TABLE(MCHypKinkCand, "AOD", "MCHYPKINKCANDS",
                   hyperkink::PxDaugSV, hyperkink::PyDaugSV, hyperkink::PzDaugSV,
                   hyperkink::DcaMothPv, hyperkink::DcaDaugPv, hyperkink::DcaKinkTopo,
                   hyperkink::ItsChi2Moth, hyperkink::ItsClusterSizesMoth, hyperkink::ItsClusterSizesDaug,
+                  hyperkink::TpcMomDaug, hyperkink::TpcSignalDaug, hyperkink::TpcNClsPIDDaug,
                   hyperkink::NSigmaTPCDaug, hyperkink::NSigmaITSDaug, hyperkink::NSigmaTOFDaug,
                   hyperkink::IsSignal, hyperkink::IsSignalReco, hyperkink::IsCollReco, hyperkink::IsSurvEvSelection,
                   hyperkink::TrueXSV, hyperkink::TrueYSV, hyperkink::TrueZSV,
