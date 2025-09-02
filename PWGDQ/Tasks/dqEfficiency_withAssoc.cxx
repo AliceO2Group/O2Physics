@@ -768,6 +768,7 @@ struct AnalysisMuonSelection {
   Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
   Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   Configurable<std::string> fConfigMCSignals{"cfgMuonMCSignals", "", "Comma separated list of MC signals"};
@@ -884,7 +885,9 @@ struct AnalysisMuonSelection {
         o2::base::Propagator::initFieldFromGRP(grpmag);
         VarManager::SetMagneticField(grpmag->getNominalL3Field());
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+        // LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+        //  If the magnetic field is not found it is configured by had by the user
+        VarManager::SetMagneticField(fConfigMagField.value);
       }
       fCurrentRun = events.begin().runNumber();
     }
@@ -2173,9 +2176,12 @@ struct AnalysisSameEventPairing {
 
   PresliceUnsorted<ReducedMCTracks> perReducedMcGenEvent = aod::reducedtrackMC::reducedMCeventId;
 
-  void processMCGen(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
+  void processMCGen(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
     // Fill Generated histograms taking into account all generated tracks
+    uint32_t mcDecision = 0;
+    int isig = 0;
+
     for (auto& mctrack : mcTracks) {
       VarManager::FillTrackMC(mcTracks, mctrack);
       // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
@@ -2209,9 +2215,15 @@ struct AnalysisSameEventPairing {
         // auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
+            if (useMiniTree.fConfigMiniTree) {
+              auto mcEvent = mcEvents.rawIteratorAt(track_raw.reducedMCeventId());
+              dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), track_raw.pt(), track_raw.eta(), track_raw.phi(), -999, -999, -999);
+            }
           }
         }
+        isig++;
       }
     } // end loop over reconstructed events
     if (fHasTwoProngGenMCsignals) {
@@ -2224,12 +2236,17 @@ struct AnalysisSameEventPairing {
               continue;
             }
             if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-              // mcDecision |= (static_cast<uint32_t>(1) << isig);
+              mcDecision |= (static_cast<uint32_t>(1) << isig);
               VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
+              if (useMiniTree.fConfigMiniTree) {
+                // WARNING! To be checked
+                dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
+              }
             }
           }
         }
+        isig++;
       }
     }
   }
