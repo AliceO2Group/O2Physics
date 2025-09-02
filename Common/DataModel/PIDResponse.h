@@ -19,6 +19,9 @@
 #ifndef COMMON_DATAMODEL_PIDRESPONSE_H_
 #define COMMON_DATAMODEL_PIDRESPONSE_H_
 
+#include "Common/DataModel/PIDResponseTOF.h" // FIXME: remove
+#include "Common/DataModel/PIDResponseTPC.h" // FIXME: remove
+
 namespace o2::aod
 {
 namespace pidutils

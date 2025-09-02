@@ -17,6 +17,10 @@
 #ifndef COMMON_DATAMODEL_EVENTSELECTION_H_
 #define COMMON_DATAMODEL_EVENTSELECTION_H_
 
+#include "Common/CCDB/EventSelectionParams.h" // FIXME: remove
+#include "Common/CCDB/RCTSelectionFlags.h"    // FIXME: remove
+#include "Common/CCDB/TriggerAliases.h"       // FIXME: remove
+
 #include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
