@@ -614,7 +614,7 @@ struct HigherMassResonances {
       return false;
     }
 
-    if (config.isApplyDCAv0topv && (TMath::Abs(v0.dcapostopv()) < config.cMaxV0DCA || TMath::Abs(v0.dcanegtopv()) < config.cMaxV0DCA)) {
+    if (config.isApplyDCAv0topv && (std::abs(v0.dcapostopv()) < config.cMaxV0DCA || std::abs(v0.dcanegtopv()) < config.cMaxV0DCA)) {
       return false;
     }
 
