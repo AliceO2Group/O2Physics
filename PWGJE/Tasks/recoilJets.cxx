@@ -327,7 +327,7 @@ struct RecoilJets {
       spectra.add("hScaleMultFT0A_vs_ZNA", "Correlation of signals FT0A/meanFT0A vs ZNA", kTH2F, {{scaledFT0A}, {1000, 0.0, 5000., "ZNA"}});
       spectra.add("hScaleMultFT0C_vs_ZNC", "Correlation of signals FT0C/meanFT0C vs ZNC", kTH2F, {{scaledFT0C}, {1000, 0.0, 5000., "ZNC"}});
       spectra.add("hScaleMultFT0M_vs_ZNM", "Correlation of signals FT0M^{*} vs ZNM", kTH2F, {{scaledFT0M}, {4000, 0.0, 8000., "ZNM"}});
-      spectra.add("hScaleMultFT0M_vs_ZNA_vs_ZNC", "Correlation of signals FT0M^{*} vs ZNA vs ZNC", kTH3F, {{scaledFT0M}, {600, 0.0, 3000., "ZNA"}, {600, 0.0, 3000., "ZNC"}});    
+      spectra.add("hScaleMultFT0M_vs_ZNA_vs_ZNC", "Correlation of signals FT0M^{*} vs ZNA vs ZNC", kTH3F, {{scaledFT0M}, {600, 0.0, 3000., "ZNA"}, {600, 0.0, 3000., "ZNC"}});
     }
   }
 
