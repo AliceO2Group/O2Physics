@@ -1622,8 +1622,8 @@ struct FlowSP {
         if (std::fabs(charge) < 1)
           continue;
 
-        int minPDG = 100; 
-        if(cfgFilterLeptons && std::fabs(pdgCode) < minPDG) { 
+        int minVal = 100; 
+        if(cfgFilterLeptons && std::fabs(pdgCode) < minVal) { 
           continue; 
         }
 
