@@ -440,6 +440,7 @@ class MultModule
     internalOpts.mEnabledTables.resize(nTablesConst, 0);
 
     LOGF(info, "Configuring tables to generate");
+    LOGF(info, "Metadata information: isMC? %i", metadataInfo.isMC());
     const auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
 
     TString listOfRequestors[nTablesConst];
