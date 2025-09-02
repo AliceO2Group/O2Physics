@@ -310,7 +310,7 @@ struct FemtoDreamPairTaskCascadeCascade {
     }
 
     /// Now build particle combinations
-    for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceCascade1, sliceCascade2))) {
+    for (auto const& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(sliceCascade1, sliceCascade2))) {
       const auto& posChild1 = parts.iteratorAt(p1.index() - 3);
       const auto& negChild1 = parts.iteratorAt(p1.index() - 2);
       const auto& bachChild1 = parts.iteratorAt(p1.index() - 1);
