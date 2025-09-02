@@ -715,56 +715,6 @@ struct FlowGfwOmegaXi {
     return;
   }
 
-  // // remove auto-corr
-  // template <char... chars>
-  // void fillProfilepTMass(const GFW::CorrConfig& corrconf, const GFW::CorrConfig& corrconfol, const ConstStr<chars...>& tarName, const int& ptbin, const int& PDGCode, const float& cent)
-  // {
-  //   int nMassBins = 0;
-  //   int nptbins = 0;
-  //   TAxis* fMass = nullptr;
-  //   TAxis* fpt = nullptr;
-  //   if (PDGCode == kXiMinus) {
-  //     nMassBins = cfgmassbins[2];
-  //     nptbins = nXiPtBins;
-  //     fpt = fXiPtAxis;
-  //     fMass = fXiMass;
-  //   } else if (PDGCode == kOmegaMinus) {
-  //     nMassBins = cfgmassbins[3];
-  //     nptbins = nOmegaPtBins;
-  //     fpt = fOmegaPtAxis;
-  //     fMass = fOmegaMass;
-  //   } else if (PDGCode == kK0Short) {
-  //     nMassBins = cfgmassbins[0];
-  //     nptbins = nK0sPtBins;
-  //     fpt = fK0sPtAxis;
-  //     fMass = fK0sMass;
-  //   } else if (PDGCode == kLambda0) {
-  //     nMassBins = cfgmassbins[1];
-  //     nptbins = nLambdaPtBins;
-  //     fpt = fLambdaPtAxis;
-  //     fMass = fLambdaMass;
-  //   } else {
-  //     LOGF(error, "Error, please put in correct PDGCode of K0s, Lambda, Xi or Omega");
-  //     return;
-  //   }
-  //   for (int massbin = 1; massbin <= nMassBins; massbin++) {
-  //     float dnx = 0;
-  //     float val = 0;
-  //     float dnxol = 0;
-  //     dnx = fGFW->Calculate(corrconf, (ptbin - 1) + ((massbin - 1) * nptbins), kTRUE).real();
-  //     dnxol = fGFW->Calculate(corrconfol, (ptbin - 1) + ((massbin - 1) * nptbins), kTRUE).real();
-  //     dnx = dnx - dnxol;
-  //     if (dnx == 0)
-  //       continue;
-  //     val = (fGFW->Calculate(corrconf, (ptbin - 1) + ((massbin - 1) * nptbins), kFALSE).real() - fGFW->Calculate(corrconfol, (ptbin - 1) + ((massbin - 1) * nptbins), kFALSE).real()) / dnx;
-
-  //     if (std::fabs(val) < 1) {
-  //       registry.fill(tarName, fpt->GetBinCenter(ptbin), fMass->GetBinCenter(massbin), cent, val, dnx);
-  //     }
-  //   }
-  //   return;
-  // }
-
   // input shared_ptr<TProfile3D>
   void fillProfilepTMass(const GFW::CorrConfig& corrconf, std::shared_ptr<TProfile3D> TProfile3D, const int& ptbin, const int& PDGCode, const float& cent)
   {
@@ -809,54 +759,6 @@ struct FlowGfwOmegaXi {
     }
     return;
   }
-
-  // remove auto-corr
-  // void fillProfilepTMass(const GFW::CorrConfig& corrconf, const GFW::CorrConfig& corrconfol, std::shared_ptr<TProfile3D> TProfile3D, const int& ptbin, const int& PDGCode, const float& cent)
-  // {
-  //   int nMassBins = 0;
-  //   int nptbins = 0;
-  //   TAxis* fMass = nullptr;
-  //   TAxis* fpt = nullptr;
-  //   if (PDGCode == kXiMinus) {
-  //     nMassBins = cfgmassbins[2];
-  //     nptbins = nXiPtBins;
-  //     fpt = fXiPtAxis;
-  //     fMass = fXiMass;
-  //   } else if (PDGCode == kOmegaMinus) {
-  //     nMassBins = cfgmassbins[3];
-  //     nptbins = nOmegaPtBins;
-  //     fpt = fOmegaPtAxis;
-  //     fMass = fOmegaMass;
-  //   } else if (PDGCode == kK0Short) {
-  //     nMassBins = cfgmassbins[0];
-  //     nptbins = nK0sPtBins;
-  //     fpt = fK0sPtAxis;
-  //     fMass = fK0sMass;
-  //   } else if (PDGCode == kLambda0) {
-  //     nMassBins = cfgmassbins[1];
-  //     nptbins = nLambdaPtBins;
-  //     fpt = fLambdaPtAxis;
-  //     fMass = fLambdaMass;
-  //   } else {
-  //     LOGF(error, "Error, please put in correct PDGCode of K0s, Lambda, Xi or Omega");
-  //     return;
-  //   }
-  //   for (int massbin = 1; massbin <= nMassBins; massbin++) {
-  //     float dnx = 0;
-  //     float val = 0;
-  //     float dnxol = 0;
-  //     dnx = fGFW->Calculate(corrconf, (ptbin - 1) + ((massbin - 1) * nptbins), kTRUE).real();
-  //     dnxol = fGFW->Calculate(corrconfol, (ptbin - 1) + ((massbin - 1) * nptbins), kTRUE).real();
-  //     dnx = dnx - dnxol;
-  //     if (dnx == 0)
-  //       continue;
-  //     val = (fGFW->Calculate(corrconf, (ptbin - 1) + ((massbin - 1) * nptbins), kFALSE).real() - fGFW->Calculate(corrconfol, (ptbin - 1) + ((massbin - 1) * nptbins), kFALSE).real()) / dnx;
-  //     if (std::fabs(val) < 1) {
-  //       TProfile3D->Fill(fpt->GetBinCenter(ptbin), fMass->GetBinCenter(massbin), cent, val, dnx);
-  //     }
-  //   }
-  //   return;
-  // }
 
   void loadCorrections(uint64_t timestamp)
   {
