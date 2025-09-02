@@ -45,6 +45,7 @@
 #include <cstdint>
 #include <exception>
 #include <iterator>
+#include <map>
 #include <string>
 
 using namespace std;
