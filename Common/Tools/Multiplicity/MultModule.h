@@ -13,8 +13,8 @@
 /// \brief combined multiplicity + centrality module with autodetect features
 /// \author ALICE
 
-#ifndef COMMON_TOOLS_MULTMODULE_H_
-#define COMMON_TOOLS_MULTMODULE_H_
+#ifndef COMMON_TOOLS_MULTIPLICITY_MULTMODULE_H_
+#define COMMON_TOOLS_MULTIPLICITY_MULTMODULE_H_
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/Multiplicity.h"
@@ -1439,4 +1439,4 @@ class MultModule
 } // namespace common
 } // namespace o2
 
-#endif // COMMON_TOOLS_MULTMODULE_H_
+#endif // COMMON_TOOLS_MULTIPLICITY_MULTMODULE_H_

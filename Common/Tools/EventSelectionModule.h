@@ -13,8 +13,8 @@
 /// \brief
 /// \author ALICE
 
-#ifndef COMMON_TOOLS_EVENTSELECTIONTOOLS_H_
-#define COMMON_TOOLS_EVENTSELECTIONTOOLS_H_
+#ifndef COMMON_TOOLS_EVENTSELECTIONMODULE_H_
+#define COMMON_TOOLS_EVENTSELECTIONMODULE_H_
 
 #include "Common/CCDB/RCTSelectionFlags.h"
 
@@ -1816,4 +1816,4 @@ class LumiModule
 } // namespace common
 } // namespace o2
 
-#endif // COMMON_TOOLS_EVENTSELECTIONTOOLS_H_
+#endif // COMMON_TOOLS_EVENTSELECTIONMODULE_H_
