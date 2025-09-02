@@ -64,9 +64,13 @@ using EMBC = EMBCs::iterator;
 namespace emevent
 {
 DECLARE_SOA_COLUMN(CollisionId, collisionId, int);
-DECLARE_SOA_BITMAP_COLUMN(SWTAliasTmp, swtaliastmp, 16); //! Bitmask of fired trigger aliases (see above for definitions) to be join to aod::Collisions for skimming
-DECLARE_SOA_BITMAP_COLUMN(SWTAlias, swtalias, 16);       //! Bitmask of fired trigger aliases (see above for definitions) to be join to aod::EMEvents for analysis
-DECLARE_SOA_COLUMN(NInspectedTVX, nInspectedTVX, uint64_t);
+DECLARE_SOA_BITMAP_COLUMN(SWTAliasTmp, swtaliastmp, 16);             //! Bitmask of fired trigger aliases (see above for definitions) to be join to aod::Collisions for skimming
+DECLARE_SOA_BITMAP_COLUMN(SWTAlias, swtalias, 16);                   //! Bitmask of fired trigger aliases (see above for definitions) to be join to aod::EMEvents for analysis
+DECLARE_SOA_COLUMN(NInspectedTVX, nInspectedTVX, uint64_t);          //! the number of inspected TVX bcs per run
+DECLARE_SOA_COLUMN(NScalars, nScalers, std::vector<uint64_t>);       //! the number of triggered bcs before down scaling per run
+DECLARE_SOA_COLUMN(NSelections, nSelections, std::vector<uint64_t>); //! the number of triggered bcs after down scaling per run
+DECLARE_SOA_BITMAP_COLUMN(IsAnalyzed, isAnalyzed, 16);
+DECLARE_SOA_BITMAP_COLUMN(IsAnalyzedToI, isAnalyzedToI, 16);
 DECLARE_SOA_COLUMN(NeeULS, neeuls, int);
 DECLARE_SOA_COLUMN(NeeLSpp, neelspp, int);
 DECLARE_SOA_COLUMN(NeeLSmm, neelsmm, int);
@@ -204,13 +208,23 @@ DECLARE_SOA_TABLE(EMEventsQvec, "AOD", "EMEVENTQVEC", //!   event q vector table
 // emevent::EP4BTot<emevent::Q4xBTot, emevent::Q4yBTot>
 using EMEventQvec = EMEventsQvec::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerInfos, "AOD", "EMSWTRIGGERINFO", //! joinable to EMEvents
-                  emevent::SWTAlias, emevent::NInspectedTVX);
+DECLARE_SOA_TABLE(EMSWTriggerBits, "AOD", "EMSWTBIT", emevent::SWTAlias, o2::soa::Marker<1>); //! joinable to EMEvents
+using EMSWTriggerBit = EMSWTriggerBits::iterator;
+
+DECLARE_SOA_TABLE(EMSWTriggerInfos, "AOD", "EMSWTINFO", bc::RunNumber, emevent::NInspectedTVX, emevent::NScalars, emevent::NSelections, o2::soa::Marker<1>); //! independent table. Don't join anything.
 using EMSWTriggerInfo = EMSWTriggerInfos::iterator;
 
-DECLARE_SOA_TABLE(EMSWTriggerInfosTMP, "AOD", "EMSWTTMP", //! joinable to aod::Collisions
-                  emevent::SWTAliasTmp, emevent::NInspectedTVX);
+DECLARE_SOA_TABLE(EMSWTriggerCounters, "AOD", "EMSWTCOUNTER", emevent::IsAnalyzed, emevent::IsAnalyzedToI, o2::soa::Marker<1>); //! independent table. Don't join anything.
+using EMSWTriggerCounter = EMSWTriggerCounters::iterator;
+
+DECLARE_SOA_TABLE(EMSWTriggerBitsTMP, "AOD", "EMSWTBITTMP", emevent::SWTAliasTmp, o2::soa::Marker<2>); //! joinable to aod::Collisions
+using EMSWTriggerBitTMP = EMSWTriggerBitsTMP::iterator;
+
+DECLARE_SOA_TABLE(EMSWTriggerInfosTMP, "AOD", "EMSWTINFOTMP", bc::RunNumber, emevent::NInspectedTVX, emevent::NScalars, emevent::NSelections, o2::soa::Marker<2>);
 using EMSWTriggerInfoTMP = EMSWTriggerInfosTMP::iterator;
+
+DECLARE_SOA_TABLE(EMSWTriggerCountersTMP, "AOD", "EMSWTCOUNTERTMP", emevent::IsAnalyzed, emevent::IsAnalyzedToI, o2::soa::Marker<2>); //! independent table. Don't join anything.
+using EMSWTriggerCounterTMP = EMSWTriggerCountersTMP::iterator;
 
 DECLARE_SOA_TABLE(EMEventsProperty, "AOD", "EMEVENTPROP", //! joinable to EMEvents
                   emevent::SpherocityPtWeighted, emevent::SpherocityPtUnWeighted, emevent::NtrackSpherocity);

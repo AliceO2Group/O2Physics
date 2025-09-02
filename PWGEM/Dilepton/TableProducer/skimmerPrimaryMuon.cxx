@@ -52,7 +52,7 @@ using namespace o2::aod::fwdtrackutils;
 
 struct skimmerPrimaryMuon {
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels>;
-  using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
+  using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 
   using MyFwdTracks = soa::Join<aod::FwdTracks, aod::FwdTracksCov>; // muon tracks are repeated. i.e. not exclusive.
   using MyFwdTrack = MyFwdTracks::iterator;
