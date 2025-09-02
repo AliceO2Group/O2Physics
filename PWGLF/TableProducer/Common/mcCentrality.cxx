@@ -17,7 +17,7 @@
 /// \brief  Task to produce the table for the equalized multiplicity into centrality bins
 ///
 
-#include "PWGLF/DataModel/McCentrality.h"
+#include "PWGLF/DataModel/mcCentrality.h"
 
 #include "TableHelper.h"
 
