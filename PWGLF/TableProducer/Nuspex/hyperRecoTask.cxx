@@ -137,6 +137,7 @@ struct hyperRecoTask {
   Produces<aod::DataHypCands> outputDataTable;
   Produces<aod::DataHypCandsFlow> outputDataTableWithFlow;
   Produces<aod::MCHypCands> outputMCTable;
+  Produces<aod::DataHypCandsWColl> outputDataTableWithCollID;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Zorro zorro;
   OutputObj<ZorroSummary> zorroSummary{"zorroSummary"};
@@ -732,6 +733,34 @@ struct hyperRecoTask {
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processDataWithFlow, "Data analysis with flow", false);
+
+  void processDataWithCollID(CollisionsFull const& collisions, aod::V0s const& V0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs)
+  {
+    goodCollision.clear();
+    goodCollision.resize(collisions.size(), false);
+    hyperCandidates.clear();
+
+    selectGoodCollisions(collisions);
+    useCustomVertexer ? fillCustomV0s(collisions, tracks, ambiTracks, bcs) : fillV0s(collisions, tracks, V0s);
+
+    for (auto& hypCand : hyperCandidates) {
+      auto collision = collisions.rawIteratorAt(hypCand.collisionID);
+      float trackedHypClSize = !trackedClSize.empty() ? trackedClSize[hypCand.v0ID] : 0;
+      outputDataTableWithCollID(hypCand.collisionID, collision.centFT0A(), collision.centFT0C(), collision.centFT0M(),
+                      collision.posX(), collision.posY(), collision.posZ(),
+                      hypCand.isMatter,
+                      hypCand.recoPtHe3(), hypCand.recoPhiHe3(), hypCand.recoEtaHe3(),
+                      hypCand.recoPtPi(), hypCand.recoPhiPi(), hypCand.recoEtaPi(),
+                      hypCand.decVtx[0], hypCand.decVtx[1], hypCand.decVtx[2],
+                      hypCand.dcaV0dau, hypCand.he3DCAXY, hypCand.piDCAXY,
+                      hypCand.nSigmaHe3, hypCand.nTPCClustersHe3, hypCand.nTPCClustersPi,
+                      hypCand.nTPCpidClusHe3, hypCand.nTPCpidClusPi,
+                      hypCand.momHe3TPC, hypCand.momPiTPC, hypCand.tpcSignalHe3, hypCand.tpcSignalPi, hypCand.tpcChi2He3, hypCand.itsChi2He3, hypCand.itsChi2Pi,
+                      hypCand.massTOFHe3,
+                      hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize);
+    }
+  }
+  PROCESS_SWITCH(hyperRecoTask, processDataWithCollID, "Data analysis with collision ID", false);
 
   void processMC(CollisionsFullMC const& collisions, aod::McCollisions const& mcCollisions, aod::V0s const& V0s, TracksFull const& tracks, aod::AmbiguousTracks const& ambiTracks, aod::BCsWithTimestamps const& bcs, aod::McTrackLabels const& trackLabelsMC, aod::McParticles const& particlesMC)
   {
