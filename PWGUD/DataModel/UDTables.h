@@ -22,16 +22,12 @@
 #define PWGUD_DATAMODEL_UDTABLES_H_
 
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/DataTypes.h"
 #include "MathUtils/Utils.h"
-
-#include <Rtypes.h>
 
 #include <cmath>
 #include <vector>
