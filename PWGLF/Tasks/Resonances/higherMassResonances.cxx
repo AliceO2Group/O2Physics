@@ -120,7 +120,7 @@ struct HigherMassResonances {
     Configurable<float> confV0DCADaughMax{"confV0DCADaughMax", 1.0f, "DCA b/w V0 daughters"};
     Configurable<float> v0settingDcapostopv{"v0settingDcapostopv", 0.06, "DCA Pos To PV"};
     Configurable<float> v0settingDcanegtopv{"v0settingDcanegtopv", 0.06, "DCA Neg To PV"};
-    Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.3, "DCA V0 to PV"};
+    Configurable<double> cMaxV0DCA{"cMaxV0DCA", 0.5, "DCA V0 to PV"};
     Configurable<float> confV0PtMin{"confV0PtMin", 0.f, "Minimum transverse momentum of V0"};
     Configurable<float> confV0CPAMin{"confV0CPAMin", 0.97f, "Minimum CPA of V0"};
     Configurable<float> confV0TranRadV0Min{"confV0TranRadV0Min", 0.5f, "Minimum transverse radius"};
@@ -581,6 +581,52 @@ struct HigherMassResonances {
     return true;
   }
 
+  using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>;
+  using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
+  using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+
+  template <typename TV0>
+  bool isSelectedK0sDaughtersDerived(TV0 const& v0)
+  {
+    // Fpr derived dataset
+
+    // de-ref track extras
+    auto posTrackExtra = v0.template posTrackExtra_as<DauTracks>();
+    auto negTrackExtra = v0.template negTrackExtra_as<DauTracks>();
+
+    if (std::abs(v0.positiveeta()) > config.confDaughEta || std::abs(v0.negativeeta()) > config.confDaughEta) {
+      return false;
+    }
+
+    if (posTrackExtra.tpcNClsCrossedRows() < config.tpcCrossedrows || negTrackExtra.tpcNClsCrossedRows() < config.tpcCrossedrows) {
+      return false;
+    }
+
+    if (posTrackExtra.tpcNClsFound() < config.confDaughTPCnclsMin || negTrackExtra.tpcNClsFound() < config.confDaughTPCnclsMin) {
+      return false;
+    }
+    if (posTrackExtra.tpcCrossedRowsOverFindableCls() < config.tpcCrossedrowsOverfcls || negTrackExtra.tpcCrossedRowsOverFindableCls() < config.tpcCrossedrowsOverfcls) {
+      return false;
+    }
+
+    // check TPC PID
+    if (((std::abs(posTrackExtra.tpcNSigmaPi()) > config.confDaughPIDCutTPC) || (std::abs(negTrackExtra.tpcNSigmaPi()) > config.confDaughPIDCutTPC))) {
+      return false;
+    }
+
+    if (config.isApplyDCAv0topv && (std::abs(v0.dcapostopv()) < config.cMaxV0DCA || std::abs(v0.dcanegtopv()) < config.cMaxV0DCA)) {
+      return false;
+    }
+
+    // rKzeroShort.fill(HIST("negative_pt"), negTrackExtra.pt());
+    // rKzeroShort.fill(HIST("positive_pt"), posTrackExtra.pt());
+    // rKzeroShort.fill(HIST("negative_eta"), negTrackExtra.eta());
+    // rKzeroShort.fill(HIST("positive_eta"), posTrackExtra.eta());
+    // rKzeroShort.fill(HIST("negative_phi"), negTrackExtra.phi());
+    // rKzeroShort.fill(HIST("positive_phi"), posTrackExtra.phi());
+    return true;
+  }
+
   // Angular separation cut on KsKs pairs
   template <typename T1, typename T2>
   bool applyAngSep(const T1& candidate1, const T2& candidate2)
@@ -886,14 +932,6 @@ struct HigherMassResonances {
     v0indexes.clear();
   }
   PROCESS_SWITCH(HigherMassResonances, processSE, "same event process", true);
-
-  // using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::MultZeqs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As, aod::Mults, aod::PVMults>>;
-  // using TrackCandidates = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTOFFullPi>>;
-  // using V0TrackCandidate = aod::V0Datas;
-
-  using EventCandidatesDerivedData = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>;
-  using V0CandidatesDerivedData = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
-  using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for ME mixing"};
   // ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {10, 0, 100}, "multiplicity percentile for ME mixing"};
@@ -1284,8 +1322,9 @@ struct HigherMassResonances {
   }
   PROCESS_SWITCH(HigherMassResonances, processRec, "Process Reconstructed", false);
 
-  void processSEderived(EventCandidatesDerivedData::iterator const& collision, V0CandidatesDerivedData const& V0s)
+  void processSEderived(EventCandidatesDerivedData::iterator const& collision, V0CandidatesDerivedData const& V0s, DauTracks const&)
   {
+    multiplicity = 0.0;
     if (config.cSelectMultEstimator == kFT0M) {
       multiplicity = collision.centFT0M();
     } else if (config.cSelectMultEstimator == kFT0A) {
@@ -1323,49 +1362,17 @@ struct HigherMassResonances {
         continue;
       }
 
-      // auto postrack1 = v1.template posTrack_as<DauTracks>();
-      // auto negtrack1 = v1.template negTrack_as<DauTracks>();
-      // auto postrack2 = v2.template posTrack_as<DauTracks>();
-      // auto negtrack2 = v2.template negTrack_as<DauTracks>();
-
-      // double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
-      // double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
-      // double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
-      // double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
-
-      // if (!(isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, v1) && isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, v1))) {
-      //   continue;
-      // }
-      // if (!(isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, v2) && isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, v2))) {
-      //   continue;
-      // }
+      if (!isSelectedK0sDaughtersDerived(v1) || !isSelectedK0sDaughtersDerived(v2)) {
+        continue;
+      }
 
       if (std::find(v0indexes.begin(), v0indexes.end(), v1.globalIndex()) == v0indexes.end()) {
         v0indexes.push_back(v1.globalIndex());
       }
-      // if (!(std::find(v0indexes.begin(), v0indexes.end(), v2.globalIndex()) != v0indexes.end())) {
-      //   v0indexes.push_back(v2.globalIndex());
-      // }
 
       if (v2.globalIndex() <= v1.globalIndex()) {
         continue;
       }
-
-      // if (config.qAv0Daughters) {
-      //   rKzeroShort.fill(HIST("negative_pt"), negtrack1.pt());
-      //   rKzeroShort.fill(HIST("positive_pt"), postrack1.pt());
-      //   rKzeroShort.fill(HIST("negative_eta"), negtrack1.eta());
-      //   rKzeroShort.fill(HIST("positive_eta"), postrack1.eta());
-      //   rKzeroShort.fill(HIST("negative_phi"), negtrack1.phi());
-      //   rKzeroShort.fill(HIST("positive_phi"), postrack1.phi());
-      // }
-
-      // if (postrack1.globalIndex() == postrack2.globalIndex()) {
-      //   continue;
-      // }
-      // if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
-      //   continue;
-      // }
 
       if (!applyAngSep(v1, v2)) {
         continue;
@@ -1393,7 +1400,7 @@ struct HigherMassResonances {
   }
   PROCESS_SWITCH(HigherMassResonances, processSEderived, "same event process in strangeness derived data", false);
 
-  void processMEderived(EventCandidatesDerivedData const& collisions, TrackCandidates const& /*tracks*/, V0CandidatesDerivedData const& v0s)
+  void processMEderived(EventCandidatesDerivedData const& collisions, TrackCandidates const& /*tracks*/, V0CandidatesDerivedData const& v0s, DauTracks const&)
   {
 
     for (const auto& [c1, c2] : selfCombinations(colBinning, config.cfgNmixedEvents, -1, collisions, collisions)) // two different centrality c1 and c2 and tracks corresponding to them
@@ -1419,32 +1426,7 @@ struct HigherMassResonances {
         if (!selectionV0(c2, t2, multiplicity))
           continue;
 
-        auto postrack1 = t1.template posTrackExtra_as<TrackCandidates>();
-        auto negtrack1 = t1.template negTrackExtra_as<TrackCandidates>();
-        auto postrack2 = t2.template posTrackExtra_as<TrackCandidates>();
-        auto negtrack2 = t2.template negTrackExtra_as<TrackCandidates>();
-
-        if (postrack1.globalIndex() == postrack2.globalIndex()) {
-          continue;
-        }
-        if (negtrack1.globalIndex() == negtrack2.globalIndex()) {
-          continue;
-        }
-        double nTPCSigmaPos1{postrack1.tpcNSigmaPi()};
-        double nTPCSigmaNeg1{negtrack1.tpcNSigmaPi()};
-        double nTPCSigmaPos2{postrack2.tpcNSigmaPi()};
-        double nTPCSigmaNeg2{negtrack2.tpcNSigmaPi()};
-
-        if (!isSelectedV0Daughter(postrack1, 1, nTPCSigmaPos1, t1)) {
-          continue;
-        }
-        if (!isSelectedV0Daughter(postrack2, 1, nTPCSigmaPos2, t2)) {
-          continue;
-        }
-        if (!isSelectedV0Daughter(negtrack1, -1, nTPCSigmaNeg1, t1)) {
-          continue;
-        }
-        if (!isSelectedV0Daughter(negtrack2, -1, nTPCSigmaNeg2, t2)) {
+        if (!isSelectedK0sDaughtersDerived(t1) || !isSelectedK0sDaughtersDerived(t2)) {
           continue;
         }
 
