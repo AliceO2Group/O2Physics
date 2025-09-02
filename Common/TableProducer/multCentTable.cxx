@@ -25,7 +25,7 @@
 #include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Tools/MultModule.h"
+#include "Common/Tools/Multiplicity/MultModule.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisDataModel.h>
@@ -42,7 +42,6 @@
 
 using namespace o2;
 using namespace o2::framework;
-// using namespace o2::framework::expressions;
 
 o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 

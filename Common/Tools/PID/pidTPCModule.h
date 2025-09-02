@@ -18,15 +18,14 @@
 /// \author Annalena Kalteyer annalena.sophie.kalteyer@cern.ch
 /// \author Jeremy Wilkinson jeremy.wilkinson@cern.ch
 
-#ifndef COMMON_TABLEPRODUCER_PID_PIDTPCMODULE_H_
-#define COMMON_TABLEPRODUCER_PID_PIDTPCMODULE_H_
-
-#include "pidTPCBase.h"
+#ifndef COMMON_TOOLS_PID_PIDTPCMODULE_H_
+#define COMMON_TOOLS_PID_PIDTPCMODULE_H_
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/TableProducer/PID/pidTPCBase.h"
 #include "Tools/ML/model.h"
 
 #include <Framework/AnalysisDataModel.h>
@@ -788,4 +787,4 @@ class pidTPCModule
 } // namespace pid
 } // namespace o2::aod
 
-#endif // COMMON_TABLEPRODUCER_PID_PIDTPCMODULE_H_
+#endif // COMMON_TOOLS_PID_PIDTPCMODULE_H_

@@ -18,6 +18,7 @@
 #ifndef COMMON_TOOLS_TRACKTUNER_H_
 #define COMMON_TOOLS_TRACKTUNER_H_
 
+#include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
 #include <CommonConstants/MathConstants.h>
 #include <DetectorsBase/Propagator.h>

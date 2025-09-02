@@ -19,10 +19,9 @@
 //
 //===============================================================
 
-#include "pidTPCModule.h"
-
 #include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/Tools/PID/pidTPCModule.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
