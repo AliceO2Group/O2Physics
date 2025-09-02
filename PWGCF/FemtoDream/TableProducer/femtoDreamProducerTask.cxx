@@ -987,7 +987,7 @@ struct femtoDreamProducerTask {
         //------
 
         // Fill cascades
-        float invMassCasc = ConfCascIsSelectedOmega.value() ? casc.mOmega() : casc.mXi();
+        float invMassCasc = ConfCascSel.ConfCascIsSelectedOmega ? casc.mOmega() : casc.mXi();
         std::vector<int> indexCascadeChildID = {rowOfPosCascadeTrack, rowOfNegCascadeTrack, rowOfBachelorCascadeTrack};
         outputParts(outputCollision.lastIndex(),
                     casc.pt(),
