@@ -1497,9 +1497,9 @@ struct FlowSP {
 
       fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode(), centrality);
 
-      if (!mcParticle.isPhysicalPrimary()) 
-        continue; 
-        
+      if (!mcParticle.isPhysicalPrimary())
+        continue;
+
       bool pos = (track.sign() > 0) ? true : false;
 
       fillPrimaryHistos<kBefore>(mcParticle, centrality);
