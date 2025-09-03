@@ -1543,7 +1543,7 @@ struct derivedlambdakzeroanalysis {
     // Fill first bin: all candidates
     histos.fill(HIST("GeneralQA/hSelectionV0s"), 0);
     // Loop over all bits in the enum and fill if passed
-    for (int i = 0; i <= selPhysPrimAntiLambda; i++) {
+    for (uint64_t i = 0; i <= selPhysPrimAntiLambda; i++) {
       if (BITCHECK(selMap, i)) {
         histos.fill(HIST("GeneralQA/hSelectionV0s"), i + 1); // +1 because bin 0 = "All"
       }
