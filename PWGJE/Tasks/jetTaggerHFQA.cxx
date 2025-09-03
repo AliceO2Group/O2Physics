@@ -1643,5 +1643,5 @@ using JetTaggerhfQaCharged = JetTaggerHFQA<JetTaggerQAChargedDataJets, aod::Char
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetTaggerhfQaCharged>(cfgc, TaskName{"jet-taggerhf-qa-charged"})}; // o2-linter: disable=name/o2-task (wrong hyphenation)
+    adaptAnalysisTask<JetTaggerhfQaCharged>(cfgc, TaskName{"jet-taggerhf-qa-charged"})}; // o2-linter: disable=name/o2-task (templated struct)
 }
