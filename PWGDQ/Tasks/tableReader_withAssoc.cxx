@@ -542,7 +542,7 @@ struct AnalysisEventSelection {
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtra, "Run event selection on DQ skimmed events, with mult extra", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithMultExtraZdc, "Run event selection on DQ skimmed events, with mult extra and ZDC", false);
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmedWithQvectorCentr, "Run event selection on DQ skimmed events, with Q-vector", false);
-  PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
 
 // Produces a table with barrel track decisions (joinable to the ReducedTracksAssociations)
@@ -802,7 +802,7 @@ struct AnalysisTrackSelection {
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmed, "Run barrel track selection on DQ skimmed track associations", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmedWithMultExtra, "Run barrel track selection on DQ skimmed track associations, with extra multiplicity tables", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmedWithCov, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations", false);
-  PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy function", true);
 };
 
 // Produces a table with muon decisions (joinable to the ReducedMuonsAssociations)
@@ -1013,7 +1013,7 @@ struct AnalysisMuonSelection {
   }
 
   PROCESS_SWITCH(AnalysisMuonSelection, processSkimmed, "Run muon selection on DQ skimmed muons", false);
-  PROCESS_SWITCH(AnalysisMuonSelection, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(AnalysisMuonSelection, processDummy, "Dummy function", true);
 };
 
 // Run the prefilter selection (e.g. electron prefiltering for photon conversions)
@@ -1197,7 +1197,7 @@ struct AnalysisPrefilterSelection {
   }
 
   PROCESS_SWITCH(AnalysisPrefilterSelection, processBarrelSkimmed, "Run Prefilter selection on reduced tracks", false);
-  PROCESS_SWITCH(AnalysisPrefilterSelection, processDummy, "Do nothing", false);
+  PROCESS_SWITCH(AnalysisPrefilterSelection, processDummy, "Do nothing", true);
 };
 
 // Run the same-event pairing
@@ -2342,7 +2342,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingBarrelSkimmedFlow, "Run barrel type mixing pairing, with flow, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingBarrelWithQvectorCentrSkimmedNoCov, "Run barrel type mixing pairing, with skimmed tracks and with Qvector from central framework", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMixingMuonSkimmed, "Run muon type mixing pairing, with skimmed muons", false);
-  PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", true);
 };
 
 // Run pairing for resonance with legs fulfilling separate cuts (asymmetric decay channel)
@@ -3722,7 +3722,7 @@ struct AnalysisDileptonTrack {
   PROCESS_SWITCH(AnalysisDileptonTrack, processMuonSkimmed, "Run muon dilepton-track pairing, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processBarrelMixedEvent, "Run barrel dilepton-hadron mixed event pairing", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMuonMixedEvent, "Run muon dilepton-hadron mixed event pairing", false);
-  PROCESS_SWITCH(AnalysisDileptonTrack, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(AnalysisDileptonTrack, processDummy, "Dummy function", true);
 };
 
 struct AnalysisDileptonTrackTrack {

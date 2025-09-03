@@ -2010,12 +2010,12 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist)
 
   // check that the histClass field is an array of strings
   if (!hist->FindMember("histClass")->value.IsArray()) {
-    LOG(fatal) << "histClass field should be an array of strings, e.g. ["class1", "class2"]";
+    LOG(fatal) << "histClass field should be an array of strings, e.g. [class1, class2]";
     return false;
   }
   for (auto& v : hist->FindMember("histClass")->value.GetArray()) {
     if (!v.IsString()) {
-      LOG(fatal) << "histClass field should be an array of strings, e.g. ["class1", "class2"]";
+      LOG(fatal) << "histClass field should be an array of strings, e.g. [class1, class2]";
       return false;
     }
   }
