@@ -800,11 +800,6 @@ struct derivedlambdakzeroanalysis {
         histos.add("K0Short/h5dPosPhiVsEta", "h5dPosPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
         histos.add("K0Short/h5dNegPhiVsEta", "h5dNegPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
       }
-      if (doEtaPhiQA) {
-        histos.add("K0Short/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisPhi, axisEta});
-        histos.add("K0Short/h5dPosPhiVsNegPhi", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisPhi, axisPhi});
-        histos.add("K0Short/h5dPosEtaVsNegEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisEta, axisEta});
-      }
     }
     if (analyseLambda) {
       histos.add("h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
@@ -877,11 +872,6 @@ struct derivedlambdakzeroanalysis {
         histos.add("Lambda/h5dPosPhiVsEta", "h5dPosPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
         histos.add("Lambda/h5dNegPhiVsEta", "h5dNegPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
       }
-      if (doEtaPhiQA) {
-        histos.add("Lambda/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisEta});
-        histos.add("Lambda/h5dPosPhiVsNegPhi", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisPhi});
-        histos.add("Lambda/h5dPosEtaVsNegEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisEta, axisEta});
-      }
     }
     if (analyseAntiLambda) {
       histos.add("h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
@@ -953,11 +943,6 @@ struct derivedlambdakzeroanalysis {
         histos.add("AntiLambda/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
         histos.add("AntiLambda/h5dPosPhiVsEta", "h5dPosPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
         histos.add("AntiLambda/h5dNegPhiVsEta", "h5dNegPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
-      }
-      if (doEtaPhiQA) {
-        histos.add("AntiLambda/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisEta});
-        histos.add("AntiLambda/h5dPosPhiVsNegPhi", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisPhi});
-        histos.add("AntiLambda/h5dPosEtaVsNegEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisEta, axisEta});
       }
     }
 
