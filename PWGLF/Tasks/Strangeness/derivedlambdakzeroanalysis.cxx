@@ -673,10 +673,6 @@ struct derivedlambdakzeroanalysis {
       hRawCentrality->SetBinContent(ii, value);
     }
 
-    auto hPrimaryV0s = histos.add<TH1>("hPrimaryV0s", "hPrimaryV0s", kTH1D, {{2, -0.5f, 1.5f}});
-    hPrimaryV0s->GetXaxis()->SetBinLabel(1, "All V0s");
-    hPrimaryV0s->GetXaxis()->SetBinLabel(2, "Primary V0s");
-
     auto hSelectionV0s = histos.add<TH1>("GeneralQA/hSelectionV0s", "hSelectionV0s", kTH1D, {{static_cast<int>(selPhysPrimAntiLambda) + 3, -0.5f, static_cast<double>(selPhysPrimAntiLambda) + 2.5f}});
     hSelectionV0s->GetXaxis()->SetBinLabel(1, "All");
     hSelectionV0s->GetXaxis()->SetBinLabel(selCosPA+2, "cosPA");
@@ -2496,11 +2492,8 @@ struct derivedlambdakzeroanalysis {
       if (!v0MC.has_straMCCollision())
         continue;
 
-      histos.fill(HIST("hPrimaryV0s"), 0);
       if (!v0MC.isPhysicalPrimary())
         continue;
-
-      histos.fill(HIST("hPrimaryV0s"), 1);
 
       float ptmc = v0MC.ptMC();
       float ymc = 1e3;
