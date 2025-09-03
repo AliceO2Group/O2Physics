@@ -751,10 +751,17 @@ struct f1protonreducedtable {
                   continue;
 
                 // check if the pair is unlike or wrongsign
-                auto pairsign = 1;
+                auto pairsign = 100;
                 if (PionCharge.at(i1) * KaonCharge.at(i2) > 0) {
                   qaRegistry.fill(HIST("hInvMassf1Like"), F1Vector.M(), F1Vector.Pt());
                   pairsign = -1;
+                } else if (PionCharge.at(i1) * KaonCharge.at(i2) < 0) {
+                  if (KaonCharge.at(i2) > 0) {
+                    pairsign = 1;
+                  }
+                  if (KaonCharge.at(i2) < 0) {
+                    pairsign = 2;
+                  }
                 }
                 ROOT::Math::PtEtaPhiMVector temp(F1Vector.Pt(), F1Vector.Eta(), F1Vector.Phi(), F1Vector.M());
                 f1resonance.push_back(temp);

@@ -752,7 +752,7 @@ DECLARE_SOA_COLUMN(CosThetaRM, costhetaRM, float);             //! Cosine in the
 DECLARE_SOA_COLUMN(CosThetaStarTPC, costhetaStarTPC, float);   //! global polarization, event plane reconstructed from TPC tracks
 DECLARE_SOA_COLUMN(CosThetaStarFT0A, costhetaStarFT0A, float); //! global polarization, event plane reconstructed from FT0A tracks
 DECLARE_SOA_COLUMN(CosThetaStarFT0C, costhetaStarFT0C, float); //! global polarization, event plane reconstructed from FT0C tracks
-DECLARE_SOA_DYNAMIC_COLUMN(Px, px, //!
+DECLARE_SOA_DYNAMIC_COLUMN(Px, px,                             //!
                            [](float pt, float phi) -> float { return pt * std::cos(phi); });
 DECLARE_SOA_DYNAMIC_COLUMN(Py, py, //!
                            [](float pt, float phi) -> float { return pt * std::sin(phi); });
@@ -832,7 +832,10 @@ DECLARE_SOA_TABLE(DielectronsAll, "AOD", "RTDIELECTRONALL", //!
                   dilepton_track_index::DeviationTrk0KF, dilepton_track_index::DeviationTrk1KF, dilepton_track_index::DeviationxyTrk0KF, dilepton_track_index::DeviationxyTrk1KF,
                   reducedpair::MassKFGeo, reducedpair::Chi2OverNDFKFGeo, reducedpair::DecayLengthKFGeo, reducedpair::DecayLengthOverErrKFGeo, reducedpair::DecayLengthXYKFGeo, reducedpair::DecayLengthXYOverErrKFGeo, reducedpair::PseudoproperDecayTimeKFGeo, reducedpair::PseudoproperDecayTimeErrKFGeo, reducedpair::CosPAKFGeo, reducedpair::PairDCAxyz, reducedpair::PairDCAxy,
                   reducedpair::DeviationPairKF, reducedpair::DeviationxyPairKF,
-                  reducedpair::MassKFGeoTop, reducedpair::Chi2OverNDFKFGeoTop);
+                  reducedpair::MassKFGeoTop, reducedpair::Chi2OverNDFKFGeoTop,
+                  reducedpair::Tauz, reducedpair::Tauxy,
+                  reducedpair::Lz,
+                  reducedpair::Lxy);
 
 DECLARE_SOA_TABLE(DimuonsAll, "AOD", "RTDIMUONALL", //!
                   collision::PosX, collision::PosY, collision::PosZ, collision::NumContrib,
