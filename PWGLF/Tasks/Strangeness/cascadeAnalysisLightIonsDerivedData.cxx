@@ -51,8 +51,8 @@ using namespace o2::constants::math;
 using namespace o2::constants::physics;
 using std::array;
 
-using SelCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels_001, aod::StraCents, aod::StraStamps>;
-using SimCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels_001, aod::StraCents, aod::StraStamps, aod::StraCollLabels>;
+using SelCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents, aod::StraStamps>;
+using SimCollisions = soa::Join<aod::StraCollisions, aod::StraEvSels, aod::StraCents, aod::StraStamps, aod::StraCollLabels>;
 using CascadeCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascTOFPIDs, aod::CascTOFNSigmas>;
 using CascadeMCCandidates = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascTOFPIDs, aod::CascTOFNSigmas, aod::CascCoreMCLabels>;
 using DaughterTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
