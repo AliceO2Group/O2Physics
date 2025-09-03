@@ -60,7 +60,7 @@ struct sigmaminustask {
 
   Configurable<std::vector<int>> mothPdgCodes{"mothPdgCodes", std::vector<int>{3112, 3222}, "PDG codes of the selected mother particles"};
   Configurable<std::vector<int>> daugPdgCodes{"daugPdgCodes", std::vector<int>{211, 2212}, "PDG codes of the selected charged daughter particles"};
-  
+
   Configurable<bool> fillOutputTree{"fillOutputTree", true, "If true, fill the output tree with Kink candidates"};
 
   // Configurables for findable tracks (kinkBuilder.cxx efficiency)
@@ -393,10 +393,9 @@ struct sigmaminustask {
             rSigmaMinus.fill(HIST("h2DCADaugPt"), kinkCand.mothSign() * kinkCand.ptMoth(), kinkCand.dcaDaugPv());
             rSigmaMinus.fill(HIST("h2CosPointingAnglePt"), kinkCand.mothSign() * kinkCand.ptMoth(), cosPointingAngleRec);
             rSigmaMinus.fill(HIST("h2ArmenterosPostCuts"), alphaAPValue, qtValue);
-            
+
             rSigmaMinus.fill(HIST("h2NSigmaTOFPiPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tofNSigmaPi());
             rSigmaMinus.fill(HIST("h2NSigmaTOFPrPt"), kinkCand.mothSign() * kinkCand.ptMoth(), dauTrack.tofNSigmaPr());
-            
 
             // fill the output table with Mc information
             if (fillOutputTree) {
