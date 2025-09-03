@@ -278,7 +278,7 @@ struct cascademlselection {
       initCCDB(collision);
 
       histos.fill(HIST("hEventVertexZ"), collision.posZ());
-      for (std::size_t i = 0 ; i < cascadesGrouped[collision.globalIndex()].size() ; i++) {
+      for (std::size_t i = 0; i < cascadesGrouped[collision.globalIndex()].size(); i++) {
         auto casc = cascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
         nCandidates++;
         if (nCandidates % 50000 == 0) {
@@ -302,7 +302,7 @@ struct cascademlselection {
       initCCDB(collision);
 
       histos.fill(HIST("hEventVertexZ"), collision.posZ());
-      for (std::size_t i = 0 ; i < cascadesGrouped[collision.globalIndex()].size() ; i++) {
+      for (std::size_t i = 0; i < cascadesGrouped[collision.globalIndex()].size(); i++) {
         auto casc = cascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
         nCandidates++;
         if (nCandidates % 50000 == 0) {
