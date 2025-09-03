@@ -176,7 +176,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis th2ConfigAxisCent{"th2ConfigAxisCent", {100, 0., 100.}, ""};
   o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {100, 0, 100000}, ""};
   o2::framework::Configurable<bool> requireGoodRct{"requireGoodRct", false, "Flag to require good RCT"};
-  o2::framework::Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "RCT selection flag (CBT, CBT_hadronPID, CBT_electronPID, CCBT_calo, CBT_muon, CBT_muon_glo)"};
+  o2::framework::Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "RCT selection flag (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
   o2::framework::Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "RCT flag to check whether the ZDC is present or not"};
   o2::framework::Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "RCT flag to reject events with limited acceptance for selected detectors"};
 
