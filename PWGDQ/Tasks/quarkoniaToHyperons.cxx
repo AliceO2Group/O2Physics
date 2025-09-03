@@ -1914,11 +1914,11 @@ struct QuarkoniaToHyperons {
   void buildHyperonAntiHyperonPairs(TCollision const& collision, THyperons const& fullHyperons, std::vector<int> selHypIndices, std::vector<int> selAntiHypIndices, float centrality, uint8_t gapSide, int type)
   {
     // 1st loop over all v0s/cascades
-    for (int iHyp = 0 ; iHyp < selHypIndices.size() ; iHyp++) {
+    for (std::size_t iHyp = 0 ; iHyp < selHypIndices.size() ; iHyp++) {
       auto hyperon = fullHyperons.rawIteratorAt(selHypIndices[iHyp]);
 
       // 2nd loop over all v0s/cascade
-      for (int iAntiHyp = 0 ; iAntiHyp < selAntiHypIndices.size() ; iAntiHyp++) {
+      for (std::size_t iAntiHyp = 0 ; iAntiHyp < selAntiHypIndices.size() ; iAntiHyp++) {
         // check we don't look at the same v0s/cascades
         if (selHypIndices[iHyp] == selAntiHypIndices[iAntiHyp]) {
           continue;
