@@ -98,6 +98,7 @@ struct derivedlambdakzeroanalysis {
   Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true"};
   Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
 
+  Configurable<bool> doEventQA{"doEventQA", false, "do event QA histograms"};
   Configurable<bool> doCompleteTopoQA{"doCompleteTopoQA", false, "do topological variable QA histograms"};
   Configurable<bool> doTPCQA{"doTPCQA", false, "do TPC QA histograms"};
   Configurable<bool> doTOFQA{"doTOFQA", false, "do TOF QA histograms"};
@@ -294,6 +295,9 @@ struct derivedlambdakzeroanalysis {
     ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "Centrality"};
     ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +5000.0f}, "Number of charged particles"};
     ConfigurableAxis axisIRBinning{"axisIRBinning", {500, 0, 50}, "Binning for the interaction rate (kHz)"};
+    ConfigurableAxis axisMultFT0M{"axisMultFT0M", {500, 0.0f, +100000.0f}, "Multiplicity FT0M"};
+    ConfigurableAxis axisMultFT0C{"axisMultFT0C", {500, 0.0f, +10000.0f}, "Multiplicity FT0C"};
+    ConfigurableAxis axisMultFV0A{"axisMultFV0A", {500, 0.0f, +100000.0f}, "Multiplicity FV0A"};
 
     ConfigurableAxis axisRawCentrality{"axisRawCentrality", {VARIABLE_WIDTH, 0.000f, 52.320f, 75.400f, 95.719f, 115.364f, 135.211f, 155.791f, 177.504f, 200.686f, 225.641f, 252.645f, 281.906f, 313.850f, 348.302f, 385.732f, 426.307f, 470.146f, 517.555f, 568.899f, 624.177f, 684.021f, 748.734f, 818.078f, 892.577f, 973.087f, 1058.789f, 1150.915f, 1249.319f, 1354.279f, 1465.979f, 1584.790f, 1710.778f, 1844.863f, 1985.746f, 2134.643f, 2291.610f, 2456.943f, 2630.653f, 2813.959f, 3006.631f, 3207.229f, 3417.641f, 3637.318f, 3865.785f, 4104.997f, 4354.938f, 4615.786f, 4885.335f, 5166.555f, 5458.021f, 5762.584f, 6077.881f, 6406.834f, 6746.435f, 7097.958f, 7462.579f, 7839.165f, 8231.629f, 8635.640f, 9052.000f, 9484.268f, 9929.111f, 10389.350f, 10862.059f, 11352.185f, 11856.823f, 12380.371f, 12920.401f, 13476.971f, 14053.087f, 14646.190f, 15258.426f, 15890.617f, 16544.433f, 17218.024f, 17913.465f, 18631.374f, 19374.983f, 20136.700f, 20927.783f, 21746.796f, 22590.880f, 23465.734f, 24372.274f, 25314.351f, 26290.488f, 27300.899f, 28347.512f, 29436.133f, 30567.840f, 31746.818f, 32982.664f, 34276.329f, 35624.859f, 37042.588f, 38546.609f, 40139.742f, 41837.980f, 43679.429f, 45892.130f, 400000.000f}, "raw centrality signal"}; // for QA
 
@@ -627,6 +631,20 @@ struct derivedlambdakzeroanalysis {
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
+    if (doEventQA) {
+      if (isRun3) {
+        histos.add("hCentralityVsNGlobal", "hCentralityVsNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
+        histos.add("hEventCentVsMultFT0M", "hEventCentVsMultFT0M", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0M});
+        histos.add("hEventCentVsMultFT0C", "hEventCentVsMultFT0C", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0C});
+        histos.add("hEventCentVsMultNGlobal", "hEventCentVsMultNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
+        histos.add("hEventCentVsMultFV0A", "hEventCentVsMultFV0A", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFV0A});
+        histos.add("hEventMultFT0MvsMultNGlobal", "hEventMultFT0MvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFT0M, axisConfigurations.axisNch});
+        histos.add("hEventMultFT0CvsMultNGlobal", "hEventMultFT0CvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisNch});
+        histos.add("hEventMultFV0AvsMultNGlobal", "hEventMultFV0AvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFV0A, axisConfigurations.axisNch});
+        histos.add("hEventMultPVvsMultNGlobal", "hEventMultPVvsMultNGlobal", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisNch});
+        histos.add("hEventMultFT0CvsMultFV0A", "hEventMultFT0CvsMultFV0A", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisMultFV0A});
+      }
+    }
 
     histos.add("hEventPVz", "hEventPVz", kTH1D, {{100, -20.0f, +20.0f}});
     histos.add("hCentralityVsPVz", "hCentralityVsPVz", kTH2D, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
@@ -2203,6 +2221,20 @@ struct derivedlambdakzeroanalysis {
     histos.fill(HIST("hEventCentrality"), centrality);
 
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
+    if (doEventQA) {
+      if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
+        histos.fill(HIST("hCentralityVsNGlobal"), centrality, collision.multNTracksGlobal());
+        histos.fill(HIST("hEventCentVsMultFT0M"), collision.centFT0M(), collision.multFT0A() + collision.multFT0C());
+        histos.fill(HIST("hEventCentVsMultFT0C"), collision.centFT0C(), collision.multFT0C());
+        histos.fill(HIST("hEventCentVsMultNGlobal"), collision.centNGlobal(), collision.multNTracksGlobal());
+        histos.fill(HIST("hEventCentVsMultFV0A"), collision.centFV0A(), collision.multFV0A());
+        histos.fill(HIST("hEventMultFT0MvsMultNGlobal"), collision.multFT0A() + collision.multFT0C(), collision.multNTracksGlobal());
+        histos.fill(HIST("hEventMultFT0CvsMultNGlobal"), collision.multFT0C(), collision.multNTracksGlobal());
+        histos.fill(HIST("hEventMultFV0AvsMultNGlobal"), collision.multFV0A(), collision.multNTracksGlobal());
+        histos.fill(HIST("hEventMultPVvsMultNGlobal"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
+        histos.fill(HIST("hEventMultFT0CvsMultFV0A"), collision.multFT0C(), collision.multFV0A());
+      }
+    }
 
     histos.fill(HIST("hCentralityVsPVz"), centrality, collision.posZ());
     histos.fill(HIST("hEventPVz"), collision.posZ());
