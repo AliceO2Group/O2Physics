@@ -2234,7 +2234,7 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
     std::vector<const char*> histClasses;
     for (auto& v : hist.FindMember("histClass")->value.GetArray()) {
       histClasses.push_back(v.GetString());
-    }    
+    }
     const char* title = hist.FindMember("title")->value.GetString();
 
     if (isTHn) {
