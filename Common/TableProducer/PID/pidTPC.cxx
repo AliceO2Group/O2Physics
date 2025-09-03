@@ -24,28 +24,29 @@
 #include <utility>
 #include <vector>
 // ROOT includes
-#include "TFile.h"
-#include "TRandom.h"
-#include "TSystem.h"
+#include <TFile.h>
+#include <TRandom.h>
+#include <TSystem.h>
 
 // O2 includes
 #include "MetadataHelper.h"
 #include "TableHelper.h"
 #include "pidTPCBase.h"
 
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
 #include "Tools/ML/model.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
 
 using namespace o2;
 using namespace o2::framework;
@@ -151,7 +152,8 @@ struct tpcPid {
   Configurable<int> useNetworkAl{"useNetworkAl", 1, {"Switch for applying neural network on the alpha mass hypothesis (if network enabled) (set to 0 to disable)"}};
   Configurable<float> networkBetaGammaCutoff{"networkBetaGammaCutoff", 0.45, {"Lower value of beta-gamma to override the NN application"}};
   Configurable<float> networkInputBatchedMode{"networkInputBatchedMode", -1, {"-1: Takes all tracks, >0: Takes networkInputBatchedMode number of tracks at once"}};
-
+  Configurable<std::string> irSource{"irSource", "ZNC hadronic", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
+  ctpRateFetcher mRateFetcher;
   // Parametrization configuration
   bool useCCDBParam = false;
   std::vector<float> track_properties;
@@ -166,7 +168,7 @@ struct tpcPid {
     }
     response = new o2::pid::tpc::Response();
     // Checking the tables are requested in the workflow and enabling them
-    auto enableFlag = [&](const std::string particle, Configurable<int>& flag) {
+    auto enableFlag = [&](const std::string& particle, Configurable<int>& flag) {
       enableFlagIfTableRequired(initContext, "pidTPC" + particle, flag);
     };
     enableFlag("FullEl", pidFullEl);
@@ -376,7 +378,7 @@ struct tpcPid {
         if ((in_batch_counter == track_prop_size) || (total_input_count == total_eval_size)) { // If the batch size is reached, reset the counter
           int32_t fill_shift = (exec_counter * track_prop_size - ((total_input_count == total_eval_size) ? (total_input_count % track_prop_size) : 0)) * output_dimensions;
           auto start_network_eval = std::chrono::high_resolution_clock::now();
-          float* output_network = network.evalModel(track_properties);
+          const float* output_network = network.evalModel(track_properties);
           auto stop_network_eval = std::chrono::high_resolution_clock::now();
           duration_network += std::chrono::duration<float, std::ratio<1, 1000000000>>(stop_network_eval - start_network_eval).count();
 
@@ -400,6 +402,16 @@ struct tpcPid {
         if (input_dimensions == 7 && networkVersion == "2") {
           track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
         }
+        if (input_dimensions == 8 && networkVersion == "3") {
+          if (trk.has_collision()) {
+            auto trk_bc = (collisions.iteratorAt(trk.collisionId())).template bc_as<B>();
+            float hadronicRate = mRateFetcher.fetch(ccdb.service, trk_bc.timestamp(), trk_bc.runNumber(), irSource) * 1.e-3;
+            track_properties[counter_track_props + 7] = hadronicRate / 50.;
+          } else {
+            track_properties[counter_track_props + 7] = 1;
+          }
+        }
+
         counter_track_props += input_dimensions;
         in_batch_counter++;
         total_input_count++;
@@ -437,8 +449,8 @@ struct tpcPid {
       }
     }
     auto expSignal = response->GetExpectedSignal(trk, pid);
-    auto expSigma = trk.has_collision() ? response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid) : 0.07 * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
-    if (expSignal < 0. || expSigma < 0.) {                                                                                                   // skip if expected signal invalid
+    auto expSigma = trk.has_collision() ? response->GetExpectedSigma(collisions.iteratorAt(trk.collisionId()), trk, pid) : 0.07f * expSignal; // use default sigma value of 7% if no collision information to estimate resolution
+    if (expSignal < 0. || expSigma < 0.) {                                                                                                    // skip if expected signal invalid
       if (flagFull)
         tableFull(-999.f, -999.f);
       if (flagTiny)

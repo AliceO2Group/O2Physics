@@ -19,6 +19,7 @@
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
 
 #include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
@@ -171,10 +172,10 @@ struct FemtoUniverseProducerMCTruthTask {
       if (confAnalysisWithPID) {
         bool pass = false;
         std::vector<int> tmpPDGCodes = confPDGCodes; // necessary due to some features of the Configurable
-        for (const int& pdg : tmpPDGCodes) {
+        for (auto const& pdg : tmpPDGCodes) {
           if (pdgCode == Pdg::kPhi) { // phi meson
             pass = true;
-          } else if (pdgCode == Pdg::kD0) { // D0 meson
+          } else if (std::abs(pdgCode) == Pdg::kD0) { // D0(bar) meson
             pass = true;
           } else if (pdgCode == Pdg::kDPlus) { // D+ meson
             pass = true;
@@ -185,6 +186,13 @@ struct FemtoUniverseProducerMCTruthTask {
         }
         if (!pass)
           continue;
+      }
+
+      /// check if we end-up with the correct final state using MC info
+      int8_t sign = 0;
+      if (std::abs(pdgCode) == Pdg::kD0 && !RecoDecay::isMatchedMCGen(tracks, particle, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign)) {
+        /// check if we have D0(bar) → π± K∓
+        continue;
       }
 
       // we cannot use isSelectedMinimal since it takes Ncls

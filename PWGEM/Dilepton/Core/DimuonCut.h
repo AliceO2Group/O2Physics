@@ -194,7 +194,7 @@ class DimuonCut : public TNamed
         return track.nClusters() >= mMinNClustersMCHMID;
 
       case DimuonCuts::kChi2:
-        return (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2()) < mMaxChi2;
+        return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) < mMaxChi2 : track.chi2() < mMaxChi2;
 
       case DimuonCuts::kMatchingChi2MCHMFT:
         return track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFT;
@@ -265,11 +265,11 @@ class DimuonCut : public TNamed
 
   // track quality cuts
   int mTrackType{3};
-  int mMinNClustersMFT{0}, mMaxNClustersMFT{10};                    // min number of TPC clusters
-  int mMinNClustersMCHMID{0}, mMaxNClustersMCHMID{16};              // min number of TPC clusters
+  int mMinNClustersMFT{0}, mMaxNClustersMFT{10};                    // min number of MFT clusters
+  int mMinNClustersMCHMID{0}, mMaxNClustersMCHMID{20};              // min number of MCH-MID clusters
   float mMinChi2{0.f}, mMaxChi2{1e10f};                             // max tpc fit chi2 per TPC cluster
-  float mMinMatchingChi2MCHMFT{0.f}, mMaxMatchingChi2MCHMFT{1e10f}; // max tpc fit chi2 per TPC cluster
-  float mMinMatchingChi2MCHMID{0.f}, mMaxMatchingChi2MCHMID{1e10f}; // max tpc fit chi2 per TPC cluster
+  float mMinMatchingChi2MCHMFT{0.f}, mMaxMatchingChi2MCHMFT{1e10f}; // max matching chi2 between MCH-MFT
+  float mMinMatchingChi2MCHMID{0.f}, mMaxMatchingChi2MCHMID{1e10f}; // max matching chi2 between MCH-MID
   std::function<float(float)> mMaxPDCARabsDep{};                    // max pdca in xy plane as function of Rabs
 
   float mMinRabs{17.6}, mMaxRabs{89.5};
