@@ -317,7 +317,7 @@ struct HfTaskDplus {
           } else if (!storeCentrality && storeOccupancy) {
             registry.fill(HIST("hSparseMassFD"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy, ptbhad, flagBHad);
           } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
-            registry.fill(HIST("hSparseMassFD"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
+            registry.fill(HIST("hSparseMassFD"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors, ptbhad, flagBHad);
           } else {
             registry.fill(HIST("hSparseMassFD"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], ptbhad, flagBHad);
           }
