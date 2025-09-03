@@ -1496,13 +1496,12 @@ struct FlowSP {
       histos.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
 
       fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode(), centrality);
+      fillPrimaryHistos<kBefore>(mcParticle, centrality);
 
       if (!mcParticle.isPhysicalPrimary())
         continue;
 
       bool pos = (track.sign() > 0) ? true : false;
-
-      fillPrimaryHistos<kBefore>(mcParticle, centrality);
 
       // This neglects PID (for now) later use getPID like in data.
       if (cfgFillQABefore) {
