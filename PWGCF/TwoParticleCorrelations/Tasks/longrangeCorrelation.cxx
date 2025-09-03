@@ -12,50 +12,54 @@
 /// \file longrangeCorrelation.cxx
 ///
 /// \brief task for long range correlation analysis
-/// \author Abhi Modak (abhi.modak@cern.ch) and Debojit sarkar (debojit.sarkar@cern.ch)
+/// \author Abhi Modak (abhi.modak@cern.ch) and Debojit Sarkar (debojit.sarkar@cern.ch)
 /// \since April 22, 2025
 
-#include <TH1F.h>
-#include <chrono>
-#include <string>
-#include <vector>
-#include <TComplex.h>
-#include <TMath.h>
-#include <cstdio>
-
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Common/Core/RecoDecay.h"
-#include "CommonConstants/MathConstants.h"
-#include "FT0Base/Geometry.h"
-#include "FV0Base/Geometry.h"
-#include "PWGCF/DataModel/CorrelationsDerived.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
+#include "PWGCF/DataModel/CorrelationsDerived.h"
+#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
-#include "CCDB/CcdbApi.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "DetectorsCommonDataFormats/AlignParam.h"
+#include "FT0Base/Geometry.h"
+#include "FV0Base/Geometry.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <TComplex.h>
+#include <TH1F.h>
+#include <TMath.h>
+
+#include <chrono>
+#include <cstdio>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::track;
+using namespace o2::aod::fwdtrack;
 using namespace o2::aod::evsel;
 using namespace o2::constants::math;
 
@@ -71,9 +75,23 @@ static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
 static constexpr TrackSelectionFlags::flagtype TrackSelectionDcaxyOnly =
   TrackSelectionFlags::kDCAxy;
 
+enum KindOfEvntType {
+  kSE,
+  kME
+};
+
+enum KindOfCorrType {
+  kFT0AGLOBAL,
+  kFT0CGLOBAL,
+  kFV0GLOBAL,
+  kMFTGLOBAL,
+  kFV0MFT
+};
+
+static constexpr std::string_view kCorrType[] = {"Ft0aGlobal/", "Ft0cGlobal/", "Fv0Global/", "MftGlobal/", "Fv0Mft/"};
+static constexpr std::string_view kEvntType[] = {"SE/", "ME/"};
+
 AxisSpec axisEvent{10, 0.5, 9.5, "#Event", "EventAxis"};
-AxisSpec amplitudeFT0{5000, 0, 10000, "FT0 amplitude"};
-AxisSpec channelFT0Axis{96, 0.0, 96.0, "FT0 channel"};
 
 struct LongrangeCorrelation {
 
@@ -86,6 +104,7 @@ struct LongrangeCorrelation {
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
   std::vector<o2::detectors::AlignParam>* offsetFT0;
+  std::vector<o2::detectors::AlignParam>* offsetFV0;
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   Configurable<float> cfgVtxCut{"cfgVtxCut", 10.0f, "Vertex Z range to consider"};
   Configurable<float> cfgEtaCut{"cfgEtaCut", 1.0f, "Eta range to consider"};
@@ -95,7 +114,14 @@ struct LongrangeCorrelation {
   Configurable<int> mixingParameter{"mixingParameter", 5, "how many events are mixed"};
   Configurable<int> cfgMinMult{"cfgMinMult", 0, "Minimum multiplicity for collision"};
   Configurable<int> cfgMaxMult{"cfgMaxMult", 10, "Maximum multiplicity for collision"};
+  Configurable<float> cfigMftEtaMax{"cfigMftEtaMax", -2.5f, "Maximum MFT eta cut"};
+  Configurable<float> cfigMftEtaMin{"cfigMftEtaMin", -3.6f, "Minimum MFT eta cut"};
+  Configurable<float> cfigMftDcaxy{"cfigMftDcaxy", 2.0f, "cut on DCA xy for MFT tracks"};
+  Configurable<int> cfigMftCluster{"cfigMftCluster", 5, "cut on MFT Cluster"};
   Configurable<double> cfgSampleSize{"cfgSampleSize", 10, "Sample size for mixed event"};
+  Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
+  Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
+  Configurable<bool> isReadoutCenter{"isReadoutCenter", false, "Enable Readout Center"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -6, -2}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
@@ -111,13 +137,45 @@ struct LongrangeCorrelation {
   ConfigurableAxis axisEtaAssoc{"axisEtaAssoc", {96, 3.5, 4.9}, "#eta assoc axis"};
   ConfigurableAxis axisSample{"axisSample", {cfgSampleSize, 0, cfgSampleSize}, "sample axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 50, 60, 80, 100}, "multiplicity / centrality axis for histograms"};
+  ConfigurableAxis amplitudeFt0a{"amplitudeFt0a", {5000, 0, 10000}, "FT0A amplitude"};
+  ConfigurableAxis channelFt0aAxis{"channelFt0aAxis", {96, 0.0, 96.0}, "FT0A channel"};
 
   using CollTable = soa::Join<aod::Collisions, aod::EvSels>;
   using TrksTable = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
-  Preslice<TrksTable> perCollision = aod::track::collisionId;
+  using MftTrkTable = soa::Filtered<aod::MFTTracks>;
+  Preslice<TrksTable> perColGlobal = aod::track::collisionId;
+  Preslice<MftTrkTable> perColMft = aod::fwdtrack::collisionId;
 
-  OutputObj<CorrelationContainer> same{Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
-  OutputObj<CorrelationContainer> mixed{Form("mixedEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  o2::ft0::Geometry ft0Det;
+  o2::fv0::Geometry* fv0Det;
+
+  OutputObj<CorrelationContainer> sameFt0aGlobal{Form("sameEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  OutputObj<CorrelationContainer> mixedFt0aGlobal{Form("mixedEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  OutputObj<CorrelationContainer> sameFt0cGlobal{Form("sameEventFt0cGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  OutputObj<CorrelationContainer> mixedFt0cGlobal{Form("mixedEventFt0cGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  OutputObj<CorrelationContainer> sameMftGlobal{Form("sameEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  OutputObj<CorrelationContainer> mixedMftGlobal{Form("mixedEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  OutputObj<CorrelationContainer> sameFv0Global{Form("sameEventFv0Global_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  OutputObj<CorrelationContainer> mixedFv0Global{Form("mixedEventFv0Global_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  OutputObj<CorrelationContainer> sameFv0Mft{Form("sameEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  OutputObj<CorrelationContainer> mixedFv0Mft{Form("mixedEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+
+  template <KindOfCorrType corrType, KindOfEvntType evntType>
+  void addHistos()
+  {
+    histos.add(Form("%s%shMult", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1D, {axisMultiplicity});
+    histos.add(Form("%s%sTrig_etavsphi", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH2D, {axisPhi, axisEtaTrig});
+    histos.add(Form("%s%sTrig_eta", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1D, {axisEtaTrig});
+    histos.add(Form("%s%sTrig_phi", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1D, {axisPhi});
+    histos.add(Form("%s%sTrig_pt", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1D, {axisPtTrigger});
+    histos.add(Form("%s%shMult_used", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1F, {axisMultiplicity});
+    histos.add(Form("%s%sTrig_hist", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTHnSparseF, {axisSample, axisVtxZ, axisPtTrigger});
+    histos.add(Form("%s%sAssoc_amp", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH2D, {channelFt0aAxis, amplitudeFt0a});
+    histos.add(Form("%s%sAssoc_eta", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1D, {axisEtaAssoc});
+    histos.add(Form("%s%sAssoc_phi", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH1D, {axisPhi});
+    histos.add(Form("%s%sAssoc_etavsphi", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH2D, {axisPhi, axisEtaAssoc});
+    histos.add(Form("%s%sdeltaEta_deltaPhi", kCorrType[corrType].data(), kEvntType[evntType].data()), "", kTH2D, {axisDeltaPhi, axisDeltaEta});
+  }
 
   void init(InitContext const&)
   {
@@ -128,45 +186,11 @@ struct LongrangeCorrelation {
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     LOGF(info, "Getting alignment offsets from the CCDB...");
     offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", cfgCcdbParam.noLaterThan.value);
+    offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", cfgCcdbParam.noLaterThan.value);
     LOGF(info, "Offset for FT0A: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[0].getX(), (*offsetFT0)[0].getY(), (*offsetFT0)[0].getZ());
     LOGF(info, "Offset for FT0C: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY(), (*offsetFT0)[1].getZ());
-
-    // QA histos
-    histos.add("QA/EventHist", "events", kTH1F, {axisEvent}, false);
-    histos.add("QA/VtxZHist", "v_{z} (cm)", kTH1F, {axisVtxZ}, false);
-    histos.add("QA/hMEpvz1", ";pvz;Entries", kTH1F, {{30, -15, 15}});
-    histos.add("QA/hMEpvz2", ";pvz;Entries", kTH1F, {{30, -15, 15}});
-    histos.add("QA/hMixingQA", "events", kTH1F, {axisEvent}, false);
-
-    auto hstat = histos.get<TH1>(HIST("QA/EventHist"));
-    auto* x = hstat->GetXaxis();
-    x->SetBinLabel(1, "All events");
-    x->SetBinLabel(2, "sel8");
-    x->SetBinLabel(3, "|vz|<10");
-
-    histos.add("SE/hMult", "event multiplicity", kTH1D, {axisMultiplicity});
-    histos.add("SE/Trig_etavsphi", ";#eta;#phi", kTH2D, {axisPhi, axisEtaTrig});
-    histos.add("SE/Trig_eta", "#eta", kTH1D, {axisEtaTrig});
-    histos.add("SE/Trig_phi", "#eta", kTH1D, {axisPhi});
-    histos.add("SE/Trig_pt", "p_{T}", kTH1D, {axisPtTrigger});
-    histos.add("SE/hMult_used", "event multiplicity", kTH1F, {axisMultiplicity});
-    histos.add("SE/Trig_hist", "trig hist", kTHnSparseF, {axisSample, axisVtxZ, axisPtTrigger});
-    histos.add("SE/FT0Amp", "ftoamult", kTH2D, {channelFT0Axis, amplitudeFT0});
-    histos.add("SE/FT0Aeta", "ft0a;#eta", kTH1D, {axisEtaAssoc});
-    histos.add("SE/FT0Aphi", "ft0a;#phi", kTH1D, {axisPhi});
-    histos.add("SE/FT0Aetavsphi", ";ft0a;#eta;#phi", kTH2D, {axisPhi, axisEtaAssoc});
-    histos.add("SE/deltaEta_deltaPhi", ";#delta#eta;#delta#phi", kTH2D, {axisDeltaPhi, axisDeltaEta});
-
-    histos.add("ME/hMult", "event multiplicity", kTH1D, {axisMultiplicity});
-    histos.add("ME/Trig_etavsphi", ";#eta;#phi", kTH2D, {axisPhi, axisEtaTrig});
-    histos.add("ME/Trig_eta", "#eta", kTH1D, {axisEtaTrig});
-    histos.add("ME/Trig_phi", "#eta", kTH1D, {axisPhi});
-    histos.add("ME/Trig_pt", "p_{T}", kTH1D, {axisPtTrigger});
-    histos.add("ME/FT0Amp", "ftoamult", kTH2D, {channelFT0Axis, amplitudeFT0});
-    histos.add("ME/FT0Aeta", "ft0a;#eta", kTH1D, {axisEtaAssoc});
-    histos.add("ME/FT0Aphi", "ft0a;#phi", kTH1D, {axisPhi});
-    histos.add("ME/FT0Aetavsphi", ";ft0a;#eta;#phi", kTH2D, {axisPhi, axisEtaAssoc});
-    histos.add("ME/deltaEta_deltaPhi", ";#delta#eta;#delta#phi", kTH2D, {axisDeltaPhi, axisDeltaEta});
+    LOGF(info, "Offset for FV0-left: x = %.3f y = %.3f z = %.3f\n", (*offsetFV0)[0].getX(), (*offsetFV0)[0].getY(), (*offsetFV0)[0].getZ());
+    LOGF(info, "Offset for FV0-right: x = %.3f y = %.3f z = %.3f\n", (*offsetFV0)[1].getX(), (*offsetFV0)[1].getY(), (*offsetFV0)[1].getZ());
 
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVtxZ, "z-vtx (cm)"},
@@ -180,29 +204,55 @@ struct LongrangeCorrelation {
 
     std::vector<AxisSpec> userAxis;
 
-    same.setObject(new CorrelationContainer(Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
-    mixed.setObject(new CorrelationContainer(Form("mixedEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEvent_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
-  }
+    fv0Det = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
 
-  double getPhiFT0(int chno, double offsetX, double offsetY)
-  {
-    o2::ft0::Geometry ft0Det;
-    ft0Det.calculateChannelCenter();
-    auto chPos = ft0Det.getChannelCenter(chno);
-    return RecoDecay::phi(chPos.X() + offsetX, chPos.Y() + offsetY);
-  }
+    if (doprocessEventStat) {
+      histos.add("QA/EventHist", "events", kTH1F, {axisEvent}, false);
+      histos.add("QA/VtxZHist", "v_{z} (cm)", kTH1F, {axisVtxZ}, false);
 
-  double getEtaFT0(int chno, double offsetX, double offsetY, double offsetZ)
-  {
-    o2::ft0::Geometry ft0Det;
-    ft0Det.calculateChannelCenter();
-    auto chPos = ft0Det.getChannelCenter(chno);
-    auto x = chPos.X() + offsetX;
-    auto y = chPos.Y() + offsetY;
-    auto z = chPos.Z() + offsetZ;
-    auto r = std::sqrt(x * x + y * y);
-    auto theta = std::atan2(r, z);
-    return -std::log(std::tan(0.5 * theta));
+      auto hstat = histos.get<TH1>(HIST("QA/EventHist"));
+      auto* x = hstat->GetXaxis();
+      x->SetBinLabel(1, "All events");
+      x->SetBinLabel(2, "sel8");
+      x->SetBinLabel(3, "kNoSameBunchPileup"); // reject collisions in case of pileup with another collision in the same foundBC
+      x->SetBinLabel(4, "kIsGoodZvtxFT0vsPV"); // small difference between z-vertex from PV and from FT0
+      x->SetBinLabel(5, "|vz|<10");
+    }
+
+    if (doprocessFt0aGlobalSE || doprocessFt0aGlobalME) {
+      addHistos<kFT0AGLOBAL, kSE>();
+      addHistos<kFT0AGLOBAL, kME>();
+      sameFt0aGlobal.setObject(new CorrelationContainer(Form("sameEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+      mixedFt0aGlobal.setObject(new CorrelationContainer(Form("mixedEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+    }
+
+    if (doprocessFt0cGlobalSE || doprocessFt0cGlobalME) {
+      addHistos<kFT0CGLOBAL, kSE>();
+      addHistos<kFT0CGLOBAL, kME>();
+      sameFt0cGlobal.setObject(new CorrelationContainer(Form("sameEventFt0cGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventFt0cGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+      mixedFt0cGlobal.setObject(new CorrelationContainer(Form("mixedEventFt0cGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventFt0cGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+    }
+
+    if (doprocessFv0GlobalSE || doprocessFv0GlobalME) {
+      addHistos<kFV0GLOBAL, kSE>();
+      addHistos<kFV0GLOBAL, kME>();
+      sameFv0Global.setObject(new CorrelationContainer(Form("sameEventFv0Global_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventFv0Global_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+      mixedFv0Global.setObject(new CorrelationContainer(Form("mixedEventFv0Global_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventFv0Global_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+    }
+
+    if (doprocessMftGlobalSE || doprocessMftGlobalME) {
+      addHistos<kMFTGLOBAL, kSE>();
+      addHistos<kMFTGLOBAL, kME>();
+      sameMftGlobal.setObject(new CorrelationContainer(Form("sameEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+      mixedMftGlobal.setObject(new CorrelationContainer(Form("mixedEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+    }
+
+    if (doprocessFv0MftSE || doprocessFv0MftME) {
+      addHistos<kFV0MFT, kSE>();
+      addHistos<kFV0MFT, kME>();
+      sameFv0Mft.setObject(new CorrelationContainer(Form("sameEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+      mixedFv0Mft.setObject(new CorrelationContainer(Form("mixedEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+    }
   }
 
   Filter fTrackSelectionITS = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
@@ -214,111 +264,440 @@ struct LongrangeCorrelation {
   Filter fTracksEta = nabs(aod::track::eta) < cfgEtaCut;
   Filter fTracksPt = (aod::track::pt > cfgPtCutMin) && (aod::track::pt < cfgPtCutMax);
 
+  Filter fMftTrackEta = (aod::fwdtrack::eta < cfigMftEtaMax) && (aod::fwdtrack::eta > cfigMftEtaMin);
+  Filter fMftTrackColID = (aod::fwdtrack::bestCollisionId >= 0);
+  Filter fMftTrackDca = (nabs(aod::fwdtrack::bestDCAXY) < cfigMftDcaxy);
+
+  double getPhiFT0(UInt_t chno, int i)
+  {
+    ft0Det.calculateChannelCenter();
+    auto chPos = ft0Det.getChannelCenter(chno);
+    return RecoDecay::phi(chPos.X() + (*offsetFT0)[i].getX(), chPos.Y() + (*offsetFT0)[i].getY());
+  }
+
+  double getPhiFV0(UInt_t chno)
+  {
+    int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
+    bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
+    float offsetX, offsetY;
+    if (isChnoInLeft) {
+      offsetX = (*offsetFV0)[0].getX();
+      offsetY = (*offsetFV0)[0].getY();
+    } else {
+      offsetX = (*offsetFV0)[1].getX();
+      offsetY = (*offsetFV0)[1].getY();
+    }
+
+    o2::fv0::Point3Dsimple chPos;
+    if (isReadoutCenter)
+      chPos = fv0Det->getReadoutCenter(chno);
+    else
+      chPos = fv0Det->getCellCenter(chno);
+    return RecoDecay::phi(chPos.x + offsetX, chPos.y + offsetY);
+  }
+
+  double getEtaFT0(UInt_t chno, int i)
+  {
+    ft0Det.calculateChannelCenter();
+    auto chPos = ft0Det.getChannelCenter(chno);
+    auto x = chPos.X() + (*offsetFT0)[i].getX();
+    auto y = chPos.Y() + (*offsetFT0)[i].getY();
+    auto z = chPos.Z() + (*offsetFT0)[i].getZ();
+    auto r = std::sqrt(x * x + y * y);
+    auto theta = std::atan2(r, z);
+    return -std::log(std::tan(0.5 * theta));
+  }
+
+  double getEtaFV0(UInt_t chno)
+  {
+    int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
+    bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
+    float offsetX, offsetY, offsetZ;
+    if (isChnoInLeft) {
+      offsetX = (*offsetFV0)[0].getX();
+      offsetY = (*offsetFV0)[0].getY();
+      offsetZ = (*offsetFV0)[0].getZ();
+    } else {
+      offsetX = (*offsetFV0)[1].getX();
+      offsetY = (*offsetFV0)[1].getY();
+      offsetZ = (*offsetFV0)[1].getZ();
+    }
+
+    o2::fv0::Point3Dsimple chPos;
+    if (isReadoutCenter)
+      chPos = fv0Det->getReadoutCenter(chno);
+    else
+      chPos = fv0Det->getCellCenter(chno);
+
+    auto x = chPos.x + offsetX;
+    auto y = chPos.y + offsetY;
+    auto z = chPos.z + offsetZ;
+    auto r = std::sqrt(x * x + y * y);
+    auto theta = std::atan2(r, z);
+    return -std::log(std::tan(0.5 * theta));
+  }
+
   template <typename CheckCol>
   bool isEventSelected(CheckCol const& col)
   {
-    histos.fill(HIST("QA/EventHist"), 1);
     if (!col.sel8()) {
       return false;
     }
-    histos.fill(HIST("QA/EventHist"), 2);
+    if (isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+    if (isApplyGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
     if (std::abs(col.posZ()) >= cfgVtxCut) {
       return false;
     }
-    histos.fill(HIST("QA/EventHist"), 3);
-    histos.fill(HIST("QA/VtxZHist"), col.posZ());
     return true;
   }
 
-  template <typename TTracks>
-  void fillYield(TTracks tracks, bool mixing)
+  template <typename CheckMftTrack>
+  bool isMftTrackSelected(CheckMftTrack const& track)
   {
-    if (mixing) {
-      histos.fill(HIST("ME/hMult"), tracks.size());
-      for (auto const& triggerTrack : tracks) {
-        histos.fill(HIST("ME/Trig_etavsphi"), triggerTrack.phi(), triggerTrack.eta());
-        histos.fill(HIST("ME/Trig_eta"), triggerTrack.eta());
-        histos.fill(HIST("ME/Trig_phi"), triggerTrack.phi());
-        histos.fill(HIST("ME/Trig_pt"), triggerTrack.pt());
+    if (track.nClusters() < cfigMftCluster) {
+      return false;
+    }
+    return true;
+  }
+
+  template <KindOfCorrType corrType, KindOfEvntType evntType, typename TTracks>
+  void fillYield(TTracks tracks)
+  {
+    if (evntType == 1) {
+      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("hMult"), tracks.size());
+      for (auto const& iTrk : tracks) {
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_etavsphi"), iTrk.phi(), iTrk.eta());
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_eta"), iTrk.eta());
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_phi"), iTrk.phi());
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_pt"), iTrk.pt());
       }
     } else {
-      histos.fill(HIST("SE/hMult"), tracks.size());
-      for (auto const& triggerTrack : tracks) {
-        histos.fill(HIST("SE/Trig_etavsphi"), triggerTrack.phi(), triggerTrack.eta());
-        histos.fill(HIST("SE/Trig_eta"), triggerTrack.eta());
-        histos.fill(HIST("SE/Trig_phi"), triggerTrack.phi());
-        histos.fill(HIST("SE/Trig_pt"), triggerTrack.pt());
+      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("hMult"), tracks.size());
+      for (auto const& iTrk : tracks) {
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_etavsphi"), iTrk.phi(), iTrk.eta());
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_eta"), iTrk.eta());
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_phi"), iTrk.phi());
+        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_pt"), iTrk.pt());
       }
     }
   }
 
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TFT0s>
-  void fillCorrelation(TTarget target, TTriggers const& triggers, TFT0s const& ft0, bool mixing, float vz)
+  void fillCorrFt0aGlobal(TTarget target, TTriggers const& triggers, TFT0s const& ft0, bool mixing, float vz)
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
     if (!mixing)
-      histos.fill(HIST("SE/hMult_used"), triggers.size());
+      histos.fill(HIST("Ft0aGlobal/SE/hMult_used"), triggers.size());
     for (auto const& triggerTrack : triggers) {
       if (!mixing)
-        histos.fill(HIST("SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
+        histos.fill(HIST("Ft0aGlobal/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
 
-      auto offsetFT0Ax = (*offsetFT0)[0].getX();
-      auto offsetFT0Ay = (*offsetFT0)[0].getY();
-      auto offsetFT0Az = (*offsetFT0)[0].getZ();
-      for (std::size_t iChA = 0; iChA < ft0.channelA().size(); iChA++) {
-        auto chanelid = ft0.channelA()[iChA];
-        float ampl = ft0.amplitudeA()[iChA];
-        if (ampl <= 0)
-          continue;
+      for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
+        auto chanelid = ft0.channelA()[iCh];
+        float ampl = ft0.amplitudeA()[iCh];
+
         if (mixing)
-          histos.fill(HIST("ME/FT0Amp"), chanelid, ampl);
+          histos.fill(HIST("Ft0aGlobal/ME/Assoc_amp"), chanelid, ampl);
         else
-          histos.fill(HIST("SE/FT0Amp"), chanelid, ampl);
+          histos.fill(HIST("Ft0aGlobal/SE/Assoc_amp"), chanelid, ampl);
 
-        auto phiA = getPhiFT0(chanelid, offsetFT0Ax, offsetFT0Ay);
-        auto etaA = getEtaFT0(chanelid, offsetFT0Ax, offsetFT0Ay, offsetFT0Az);
+        auto phi = getPhiFT0(chanelid, 0);
+        auto eta = getEtaFT0(chanelid, 0);
 
         if (mixing) {
-          histos.fill(HIST("ME/FT0Aeta"), etaA);
-          histos.fill(HIST("ME/FT0Aphi"), phiA);
-          histos.fill(HIST("ME/FT0Aetavsphi"), phiA, etaA);
+          histos.fill(HIST("Ft0aGlobal/ME/Assoc_eta"), eta);
+          histos.fill(HIST("Ft0aGlobal/ME/Assoc_phi"), phi);
+          histos.fill(HIST("Ft0aGlobal/ME/Assoc_etavsphi"), phi, eta);
         } else {
-          histos.fill(HIST("SE/FT0Aeta"), etaA);
-          histos.fill(HIST("SE/FT0Aphi"), phiA);
-          histos.fill(HIST("SE/FT0Aetavsphi"), phiA, etaA);
+          histos.fill(HIST("Ft0aGlobal/SE/Assoc_eta"), eta);
+          histos.fill(HIST("Ft0aGlobal/SE/Assoc_phi"), phi);
+          histos.fill(HIST("Ft0aGlobal/SE/Assoc_etavsphi"), phi, eta);
         }
-        float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - phiA, -PIHalf);
-        float deltaEta = triggerTrack.eta() - etaA;
+        float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - phi, -PIHalf);
+        float deltaEta = triggerTrack.eta() - eta;
         if (mixing)
-          histos.fill(HIST("ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+          histos.fill(HIST("Ft0aGlobal/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
         else
-          histos.fill(HIST("SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+          histos.fill(HIST("Ft0aGlobal/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
         target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta);
       } // associated ft0 tracks
     } // trigger tracks
-  } // fillCorrelation
+  } // fillCorrFt0aGlobal
 
-  void processSE(CollTable::iterator const& col, aod::FT0s const&, TrksTable const& tracks)
+  template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TFT0s>
+  void fillCorrFt0cGlobal(TTarget target, TTriggers const& triggers, TFT0s const& ft0, bool mixing, float vz)
+  {
+    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    if (!mixing)
+      histos.fill(HIST("Ft0cGlobal/SE/hMult_used"), triggers.size());
+    for (auto const& triggerTrack : triggers) {
+      if (!mixing)
+        histos.fill(HIST("Ft0cGlobal/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
+
+      for (std::size_t iCh = 0; iCh < ft0.channelC().size(); iCh++) {
+        auto chanelid = ft0.channelC()[iCh];
+        float ampl = ft0.amplitudeC()[iCh];
+
+        if (mixing)
+          histos.fill(HIST("Ft0cGlobal/ME/Assoc_amp"), chanelid, ampl);
+        else
+          histos.fill(HIST("Ft0cGlobal/SE/Assoc_amp"), chanelid, ampl);
+
+        auto phi = getPhiFT0(chanelid, 1);
+        auto eta = getEtaFT0(chanelid, 1);
+
+        if (mixing) {
+          histos.fill(HIST("Ft0cGlobal/ME/Assoc_eta"), eta);
+          histos.fill(HIST("Ft0cGlobal/ME/Assoc_phi"), phi);
+          histos.fill(HIST("Ft0cGlobal/ME/Assoc_etavsphi"), phi, eta);
+        } else {
+          histos.fill(HIST("Ft0cGlobal/SE/Assoc_eta"), eta);
+          histos.fill(HIST("Ft0cGlobal/SE/Assoc_phi"), phi);
+          histos.fill(HIST("Ft0cGlobal/SE/Assoc_etavsphi"), phi, eta);
+        }
+        float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - phi, -PIHalf);
+        float deltaEta = triggerTrack.eta() - eta;
+        if (mixing)
+          histos.fill(HIST("Ft0cGlobal/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+        else
+          histos.fill(HIST("Ft0cGlobal/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta);
+      } // associated ft0 tracks
+    } // trigger tracks
+  } // fillCorrFt0cGlobal
+
+  template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TMFTs>
+  void fillCorrMftGlobal(TTarget target, TTriggers const& triggers, TMFTs const& mft, bool mixing, float vz)
+  {
+    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    if (!mixing)
+      histos.fill(HIST("MftGlobal/SE/hMult_used"), triggers.size());
+    for (auto const& triggerTrack : triggers) {
+      if (!mixing)
+        histos.fill(HIST("MftGlobal/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
+
+      for (auto const& assoTrack : mft) {
+        if (!isMftTrackSelected(assoTrack)) {
+          continue;
+        }
+        auto phi = assoTrack.phi();
+        o2::math_utils::bringTo02Pi(phi);
+        if (mixing) {
+          histos.fill(HIST("MftGlobal/ME/Assoc_eta"), assoTrack.eta());
+          histos.fill(HIST("MftGlobal/ME/Assoc_phi"), phi);
+          histos.fill(HIST("MftGlobal/ME/Assoc_etavsphi"), phi, assoTrack.eta());
+        } else {
+          histos.fill(HIST("MftGlobal/SE/Assoc_eta"), assoTrack.eta());
+          histos.fill(HIST("MftGlobal/SE/Assoc_phi"), phi);
+          histos.fill(HIST("MftGlobal/SE/Assoc_etavsphi"), phi, assoTrack.eta());
+        }
+        float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - phi, -PIHalf);
+        float deltaEta = triggerTrack.eta() - assoTrack.eta();
+        if (mixing)
+          histos.fill(HIST("MftGlobal/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+        else
+          histos.fill(HIST("MftGlobal/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), assoTrack.pt(), deltaPhi, deltaEta);
+      } // associated mft tracks
+    } // trigger tracks
+  } // fillCorrMftGlobal
+
+  template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TFV0s>
+  void fillCorrFv0Global(TTarget target, TTriggers const& triggers, TFV0s const& fv0, bool mixing, float vz)
+  {
+    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    if (!mixing)
+      histos.fill(HIST("Fv0Global/SE/hMult_used"), triggers.size());
+    for (auto const& triggerTrack : triggers) {
+      if (!mixing)
+        histos.fill(HIST("Fv0Global/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
+
+      for (std::size_t iCh = 0; iCh < fv0.channel().size(); iCh++) {
+        auto chanelid = fv0.channel()[iCh];
+        float ampl = fv0.amplitude()[iCh];
+
+        if (mixing)
+          histos.fill(HIST("Fv0Global/ME/Assoc_amp"), chanelid, ampl);
+        else
+          histos.fill(HIST("Fv0Global/SE/Assoc_amp"), chanelid, ampl);
+
+        auto phi = getPhiFV0(chanelid);
+        auto eta = getEtaFV0(chanelid);
+
+        if (mixing) {
+          histos.fill(HIST("Fv0Global/ME/Assoc_eta"), eta);
+          histos.fill(HIST("Fv0Global/ME/Assoc_phi"), phi);
+          histos.fill(HIST("Fv0Global/ME/Assoc_etavsphi"), phi, eta);
+        } else {
+          histos.fill(HIST("Fv0Global/SE/Assoc_eta"), eta);
+          histos.fill(HIST("Fv0Global/SE/Assoc_phi"), phi);
+          histos.fill(HIST("Fv0Global/SE/Assoc_etavsphi"), phi, eta);
+        }
+        float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - phi, -PIHalf);
+        float deltaEta = triggerTrack.eta() - eta;
+        if (mixing)
+          histos.fill(HIST("Fv0Global/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+        else
+          histos.fill(HIST("Fv0Global/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta);
+      } // associated fv0 tracks
+    } // trigger tracks
+  } // fillCorrFv0Global
+
+  template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks, typename TTriggers, typename TFV0s>
+  void fillCorrFv0Mft(TTarget target, TTracks const& tracks, TTriggers const& triggers, TFV0s const& fv0, bool mixing, float vz)
+  {
+    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    if (!mixing)
+      histos.fill(HIST("Fv0Mft/SE/hMult_used"), tracks.size());
+    for (auto const& triggerTrack : triggers) {
+      if (!isMftTrackSelected(triggerTrack)) {
+        continue;
+      }
+      if (!mixing)
+        histos.fill(HIST("Fv0Mft/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
+
+      auto trigphi = triggerTrack.phi();
+      o2::math_utils::bringTo02Pi(trigphi);
+
+      for (std::size_t iCh = 0; iCh < fv0.channel().size(); iCh++) {
+        auto chanelid = fv0.channel()[iCh];
+        float ampl = fv0.amplitude()[iCh];
+
+        if (mixing)
+          histos.fill(HIST("Fv0Mft/ME/Assoc_amp"), chanelid, ampl);
+        else
+          histos.fill(HIST("Fv0Mft/SE/Assoc_amp"), chanelid, ampl);
+
+        auto phi = getPhiFV0(chanelid);
+        auto eta = getEtaFV0(chanelid);
+
+        if (mixing) {
+          histos.fill(HIST("Fv0Mft/ME/Assoc_eta"), eta);
+          histos.fill(HIST("Fv0Mft/ME/Assoc_phi"), phi);
+          histos.fill(HIST("Fv0Mft/ME/Assoc_etavsphi"), phi, eta);
+        } else {
+          histos.fill(HIST("Fv0Mft/SE/Assoc_eta"), eta);
+          histos.fill(HIST("Fv0Mft/SE/Assoc_phi"), phi);
+          histos.fill(HIST("Fv0Mft/SE/Assoc_etavsphi"), phi, eta);
+        }
+
+        float deltaPhi = RecoDecay::constrainAngle(trigphi - phi, -PIHalf);
+        float deltaEta = triggerTrack.eta() - eta;
+        if (mixing)
+          histos.fill(HIST("Fv0Mft/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+        else
+          histos.fill(HIST("Fv0Mft/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta);
+      } // associated fv0 tracks
+    } // trigger tracks
+  } // fillCorrFv0Mft
+
+  void processEventStat(CollTable::iterator const& col)
+  {
+    histos.fill(HIST("QA/EventHist"), 1);
+    if (!col.sel8()) {
+      return;
+    }
+    histos.fill(HIST("QA/EventHist"), 2);
+    if (isApplySameBunchPileup && !col.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return;
+    }
+    histos.fill(HIST("QA/EventHist"), 3);
+    if (isApplyGoodZvtxFT0vsPV && !col.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return;
+    }
+    histos.fill(HIST("QA/EventHist"), 4);
+    if (std::abs(col.posZ()) >= cfgVtxCut) {
+      return;
+    }
+    histos.fill(HIST("QA/EventHist"), 5);
+    histos.fill(HIST("QA/VtxZHist"), col.posZ());
+  }
+
+  void processFt0aGlobalSE(CollTable::iterator const& col, aod::FT0s const&, TrksTable const& tracks)
   {
     if (!isEventSelected(col)) {
       return;
     }
     if (col.has_foundFT0()) {
-      fillYield(tracks, false);
+      fillYield<kFT0AGLOBAL, kSE>(tracks);
       const auto& ft0 = col.foundFT0();
       if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
         return;
       }
-      fillCorrelation<CorrelationContainer::kCFStepReconstructed>(same, tracks, ft0, false, col.posZ());
+      fillCorrFt0aGlobal<CorrelationContainer::kCFStepReconstructed>(sameFt0aGlobal, tracks, ft0, false, col.posZ());
     }
   } // same event
 
-  void processME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks)
+  void processFt0cGlobalSE(CollTable::iterator const& col, aod::FT0s const&, TrksTable const& tracks)
+  {
+    if (!isEventSelected(col)) {
+      return;
+    }
+    if (col.has_foundFT0()) {
+      fillYield<kFT0CGLOBAL, kSE>(tracks);
+      const auto& ft0 = col.foundFT0();
+      if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
+        return;
+      }
+      fillCorrFt0cGlobal<CorrelationContainer::kCFStepReconstructed>(sameFt0cGlobal, tracks, ft0, false, col.posZ());
+    }
+  } // same event
+
+  void processMftGlobalSE(CollTable::iterator const& col, MftTrkTable const& mfttracks, TrksTable const& tracks)
+  {
+    if (!isEventSelected(col)) {
+      return;
+    }
+    fillYield<kMFTGLOBAL, kSE>(tracks);
+    if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
+      return;
+    }
+    fillCorrMftGlobal<CorrelationContainer::kCFStepReconstructed>(sameMftGlobal, tracks, mfttracks, false, col.posZ());
+  } // same event
+
+  void processFv0GlobalSE(CollTable::iterator const& col, aod::FV0As const&, TrksTable const& tracks)
+  {
+    if (!isEventSelected(col)) {
+      return;
+    }
+    if (col.has_foundFV0()) {
+      fillYield<kFV0GLOBAL, kSE>(tracks);
+      const auto& fv0 = col.foundFV0();
+      if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
+        return;
+      }
+      fillCorrFv0Global<CorrelationContainer::kCFStepReconstructed>(sameFv0Global, tracks, fv0, false, col.posZ());
+    }
+  } // same event
+
+  void processFv0MftSE(CollTable::iterator const& col, aod::FV0As const&, TrksTable const& tracks, MftTrkTable const& mfttracks)
+  {
+    if (!isEventSelected(col)) {
+      return;
+    }
+    if (col.has_foundFV0()) {
+      fillYield<kFV0MFT, kSE>(mfttracks);
+      const auto& fv0 = col.foundFV0();
+      if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
+        return;
+      }
+      fillCorrFv0Mft<CorrelationContainer::kCFStepReconstructed>(sameFv0Mft, tracks, mfttracks, fv0, false, col.posZ());
+    }
+  } // same event
+
+  void processFt0aGlobalME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks)
   {
     auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
       return associatedTracks.size();
     };
+
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
     MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}, true};
     for (auto const& [col1, col2] : soa::selfCombinations(binningOnVtxAndMult, mixingParameter, -1, col, col)) {
@@ -326,25 +705,138 @@ struct LongrangeCorrelation {
         continue;
       }
       if (col1.globalIndex() == col2.globalIndex()) {
-        histos.fill(HIST("QA/hMixingQA"), 1.0); // same-collision pair counting
         continue;
       }
       if (col1.has_foundFT0() && col2.has_foundFT0()) {
-        histos.fill(HIST("QA/hMEpvz1"), col1.posZ());
-        histos.fill(HIST("QA/hMEpvz2"), col2.posZ());
-        auto slicedTriggerTracks = tracks.sliceBy(perCollision, col1.globalIndex());
-        fillYield(slicedTriggerTracks, true);
+        auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
+        fillYield<kFT0AGLOBAL, kME>(slicedTriggerTracks);
         const auto& ft0 = col2.foundFT0();
         if (slicedTriggerTracks.size() < cfgMinMult || slicedTriggerTracks.size() >= cfgMaxMult) {
           continue;
         }
-        fillCorrelation<CorrelationContainer::kCFStepReconstructed>(mixed, slicedTriggerTracks, ft0, true, col1.posZ());
+        fillCorrFt0aGlobal<CorrelationContainer::kCFStepReconstructed>(mixedFt0aGlobal, slicedTriggerTracks, ft0, true, col1.posZ());
       }
     }
   } // mixed event
 
-  PROCESS_SWITCH(LongrangeCorrelation, processSE, "process same event", false);
-  PROCESS_SWITCH(LongrangeCorrelation, processME, "process mixed event", false);
+  void processFt0cGlobalME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks)
+  {
+    auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+      return associatedTracks.size();
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}, true};
+    for (auto const& [col1, col2] : soa::selfCombinations(binningOnVtxAndMult, mixingParameter, -1, col, col)) {
+      if (!isEventSelected(col1) || !isEventSelected(col2)) {
+        continue;
+      }
+      if (col1.globalIndex() == col2.globalIndex()) {
+        continue;
+      }
+      if (col1.has_foundFT0() && col2.has_foundFT0()) {
+        auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
+        fillYield<kFT0CGLOBAL, kME>(slicedTriggerTracks);
+        const auto& ft0 = col2.foundFT0();
+        if (slicedTriggerTracks.size() < cfgMinMult || slicedTriggerTracks.size() >= cfgMaxMult) {
+          continue;
+        }
+        fillCorrFt0cGlobal<CorrelationContainer::kCFStepReconstructed>(mixedFt0cGlobal, slicedTriggerTracks, ft0, true, col1.posZ());
+      }
+    }
+  } // mixed event
+
+  void processMftGlobalME(CollTable const& col, MftTrkTable const& mfttracks, TrksTable const& tracks)
+  {
+    auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+      return associatedTracks.size();
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}, true};
+    auto tracksTuple = std::make_tuple(tracks, mfttracks);
+    Pair<CollTable, TrksTable, MftTrkTable, MixedBinning> pairs{binningOnVtxAndMult, mixingParameter, -1, col, tracksTuple, &cache};
+    for (auto const& [col1, tracks1, col2, tracks2] : pairs) {
+      if (!isEventSelected(col1) || !isEventSelected(col2)) {
+        continue;
+      }
+      if ((tracks1.size() < cfgMinMult || tracks1.size() >= cfgMaxMult)) {
+        continue;
+      }
+      fillCorrMftGlobal<CorrelationContainer::kCFStepReconstructed>(mixedMftGlobal, tracks1, tracks2, true, col1.posZ());
+    }
+  } // mixed event
+
+  void processFv0GlobalME(CollTable const& col, aod::FV0As const&, TrksTable const& tracks)
+  {
+    auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+      return associatedTracks.size();
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}, true};
+    for (auto const& [col1, col2] : soa::selfCombinations(binningOnVtxAndMult, mixingParameter, -1, col, col)) {
+      if (!isEventSelected(col1) || !isEventSelected(col2)) {
+        continue;
+      }
+      if (col1.globalIndex() == col2.globalIndex()) {
+        continue;
+      }
+      if (col1.has_foundFV0() && col2.has_foundFV0()) {
+        auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
+        fillYield<kFV0GLOBAL, kME>(slicedTriggerTracks);
+        const auto& fv0 = col2.foundFV0();
+        if (slicedTriggerTracks.size() < cfgMinMult || slicedTriggerTracks.size() >= cfgMaxMult) {
+          continue;
+        }
+        fillCorrFv0Global<CorrelationContainer::kCFStepReconstructed>(mixedFv0Global, slicedTriggerTracks, fv0, true, col1.posZ());
+      }
+    }
+  } // mixed event
+
+  void processFv0MftME(CollTable const& col, aod::FV0As const&, TrksTable const& tracks, MftTrkTable const& mfttracks)
+  {
+    auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+      return associatedTracks.size();
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}, true};
+    for (auto const& [col1, col2] : soa::selfCombinations(binningOnVtxAndMult, mixingParameter, -1, col, col)) {
+      if (!isEventSelected(col1) || !isEventSelected(col2)) {
+        continue;
+      }
+      if (col1.globalIndex() == col2.globalIndex()) {
+        continue;
+      }
+      if (col1.has_foundFV0() && col2.has_foundFV0()) {
+        auto slicedGlobalTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
+        auto slicedTriggerMftTracks = mfttracks.sliceBy(perColMft, col1.globalIndex());
+        fillYield<kFV0MFT, kME>(slicedTriggerMftTracks);
+        const auto& fv0 = col2.foundFV0();
+        if (slicedGlobalTracks.size() < cfgMinMult || slicedGlobalTracks.size() >= cfgMaxMult) {
+          continue;
+        }
+        fillCorrFv0Mft<CorrelationContainer::kCFStepReconstructed>(mixedFv0Mft, slicedGlobalTracks, slicedTriggerMftTracks, fv0, true, col1.posZ());
+      }
+    }
+  } // mixed event
+
+  PROCESS_SWITCH(LongrangeCorrelation, processEventStat, "event stat", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processFt0aGlobalSE, "same event FT0a vs global", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processFt0aGlobalME, "mixed event FT0a vs global", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processFt0cGlobalSE, "same event FT0c vs global", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processFt0cGlobalME, "mixed event FT0c vs global", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processMftGlobalSE, "same event MFT vs global", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processMftGlobalME, "mixed event MFT vs global", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processFv0GlobalSE, "same event FV0 vs global", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processFv0GlobalME, "mixed event FV0 vs global", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processFv0MftSE, "same event FV0 vs MFT", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processFv0MftME, "mixed event FV0 vs MFT", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

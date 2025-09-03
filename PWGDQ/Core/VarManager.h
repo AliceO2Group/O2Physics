@@ -24,49 +24,50 @@
 #define HomogeneousField
 #endif
 
-#include <vector>
-#include <map>
-#include <cmath>
-#include <iostream>
-#include <utility>
-#include <complex>
-#include <algorithm>
-
-#include <TObject.h>
-#include <TString.h>
-#include "TRandom.h"
-#include "TH3F.h"
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/GenVector/Boost.h"
-#include "Math/VectorUtil.h"
-
-#include "Framework/DataTypes.h"
-#include "TGeoGlobalMagField.h"
-#include "Field/MagneticField.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/Vertex.h"
-#include "DCAFitter/DCAFitterN.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "DetectorsBase/Propagator.h"
+#include "Common/Core/CollisionTypeHelper.h"
+#include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/trackUtilities.h"
 
-#include "Math/SMatrix.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
-#include "DCAFitter/FwdDCAFitterN.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "CommonConstants/PhysicsConstants.h"
 #include "CommonConstants/LHCConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DCAFitter/FwdDCAFitterN.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/DataTypes.h"
+#include "GlobalTracking/MatchGlobalFwd.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/TrackFwd.h"
+#include "ReconstructionDataFormats/Vertex.h"
 
-#include "KFParticle.h"
+#include "Math/GenVector/Boost.h"
+#include "Math/SMatrix.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "Math/VectorUtil.h"
+#include "TGeoGlobalMagField.h"
+#include "TH3F.h"
+#include "THn.h"
+#include "TRandom.h"
+#include <TObject.h>
+#include <TString.h>
+
 #include "KFPTrack.h"
 #include "KFPVertex.h"
+#include "KFParticle.h"
 #include "KFParticleBase.h"
 #include "KFVertex.h"
 
-#include "Common/Core/EventPlaneHelper.h"
+#include <algorithm>
+#include <cmath>
+#include <complex>
+#include <iostream>
+#include <map>
+#include <utility>
+#include <vector>
 
 using std::complex;
 using std::cout;
@@ -506,8 +507,6 @@ class VarManager : public TObject
     kTPCnCRoverFindCls,
     kTPCchi2,
     kTPCsignal,
-    kTPCsignalRandomized,
-    kTPCsignalRandomizedDelta,
     kPhiTPCOuter,
     kTrackIsInsideTPCModule,
     kTRDsignal,
@@ -531,20 +530,14 @@ class VarManager : public TObject
     kTrackCTglTgl,
     kTrackC1Pt21Pt2,
     kTPCnSigmaEl,
-    kTPCnSigmaElRandomized,
-    kTPCnSigmaElRandomizedDelta,
     kTPCnSigmaMu,
     kTPCnSigmaPi,
-    kTPCnSigmaPiRandomized,
-    kTPCnSigmaPiRandomizedDelta,
     kTPCnSigmaKa,
     kTPCnSigmaPr,
     kTPCnSigmaEl_Corr,
     kTPCnSigmaPi_Corr,
     kTPCnSigmaKa_Corr,
     kTPCnSigmaPr_Corr,
-    kTPCnSigmaPrRandomized,
-    kTPCnSigmaPrRandomizedDelta,
     kTOFnSigmaEl,
     kTOFnSigmaMu,
     kTOFnSigmaPi,
@@ -855,18 +848,27 @@ class VarManager : public TObject
     // deltaMass_jpsi = kPairMass - kPairMassDau +3.096900
     kDeltaMass_jpsi,
 
+    // BDT score
+    kBdtBackground,
+    kBdtPrompt,
+    kBdtNonprompt,
+
     kNVars
   }; // end of Variables enumeration
 
   enum CalibObjects {
     kTPCElectronMean = 0,
     kTPCElectronSigma,
+    kTPCElectronStatus,
     kTPCPionMean,
     kTPCPionSigma,
+    kTPCPionStatus,
     kTPCKaonMean,
     kTPCKaonSigma,
+    kTPCKaonStatus,
     kTPCProtonMean,
     kTPCProtonSigma,
+    kTPCProtonStatus,
     kNCalibObjects
   };
 
@@ -927,6 +929,7 @@ class VarManager : public TObject
 
   // Setup the collision system
   static void SetCollisionSystem(TString system, float energy);
+  static void SetCollisionSystem(o2::parameters::GRPLHCIFData* grplhcif);
 
   static void SetMagneticField(float magField)
   {
@@ -1126,6 +1129,8 @@ class VarManager : public TObject
   static void FillDileptonTrackTrackVertexing(C const& collision, T1 const& lepton1, T1 const& lepton2, T1 const& track1, T1 const& track2, float* values);
   template <typename T>
   static void FillZDC(const T& zdc, float* values = nullptr);
+  template <typename T>
+  static void FillBdtScore(const T& bdtScore, float* values = nullptr);
 
   static void SetCalibrationObject(CalibObjects calib, TObject* obj)
   {
@@ -1148,6 +1153,17 @@ class VarManager : public TObject
       fgUsedVars[kTPCnSigmaPr_Corr] = true;
     }
   }
+
+  static void SetCalibrationType(int type, bool useInterpolation = true)
+  {
+    if (type < 0 || type > 2) {
+      LOG(fatal) << "Invalid calibration type. Must be 0, 1, or 2.";
+    }
+    fgCalibrationType = type;
+    fgUseInterpolatedCalibration = useInterpolation;
+  }
+  static double ComputePIDcalibration(int species, double nSigmaValue);
+
   static TObject* GetCalibrationObject(CalibObjects calib)
   {
     auto obj = fgCalibs.find(calib);
@@ -1197,6 +1213,8 @@ class VarManager : public TObject
   static int fgITSROFBorderMarginHigh;    // ITS ROF border high margin
   static uint64_t fgSOR;                  // Timestamp for start of run
   static uint64_t fgEOR;                  // Timestamp for end of run
+  static ROOT::Math::PxPyPzEVector fgBeamA; // beam from A-side 4-momentum vector
+  static ROOT::Math::PxPyPzEVector fgBeamC; // beam from C-side 4-momentum vector
 
   // static void FillEventDerived(float* values = nullptr);
   static void FillTrackDerived(float* values = nullptr);
@@ -1221,11 +1239,13 @@ class VarManager : public TObject
 
   static std::map<CalibObjects, TObject*> fgCalibs; // map of calibration histograms
   static bool fgRunTPCPostCalibration[4];           // 0-electron, 1-pion, 2-kaon, 3-proton
+  static int fgCalibrationType;                     // 0 - no calibration, 1 - calibration vs (TPCncls,pIN,eta) typically for pp, 2 - calibration vs (eta,nPV,nLong,tLong) typically for PbPb
+  static bool fgUseInterpolatedCalibration;         // use interpolated calibration histograms (default: true)
 
   VarManager& operator=(const VarManager& c);
   VarManager(const VarManager& c);
 
-  ClassDef(VarManager, 3);
+  ClassDef(VarManager, 4);
 };
 
 template <typename T, typename U, typename V>
@@ -2424,92 +2444,38 @@ void VarManager::FillTrack(T const& track, float* values)
     }
     // compute TPC postcalibrated electron nsigma based on calibration histograms from CCDB
     if (fgUsedVars[kTPCnSigmaEl_Corr] && fgRunTPCPostCalibration[0]) {
-      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronMean]);
-      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCElectronSigma]);
-
-      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
-      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
-      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
-      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
-      binPin = (binPin == 0 ? 1 : binPin);
-      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
-      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
-      binEta = (binEta == 0 ? 1 : binEta);
-      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
-
-      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
-      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
       if (!isTPCCalibrated) {
-        values[kTPCnSigmaEl_Corr] = (values[kTPCnSigmaEl] - mean) / width;
+        values[kTPCnSigmaEl_Corr] = ComputePIDcalibration(0, values[kTPCnSigmaEl]);
       } else {
+        LOG(fatal) << "TPC PID postcalibration is configured but the tracks are already postcalibrated. This is not allowed. Please check your configuration.";
         values[kTPCnSigmaEl_Corr] = track.tpcNSigmaEl();
       }
     }
+
     // compute TPC postcalibrated pion nsigma if required
     if (fgUsedVars[kTPCnSigmaPi_Corr] && fgRunTPCPostCalibration[1]) {
-      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCPionMean]);
-      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCPionSigma]);
-
-      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
-      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
-      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
-      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
-      binPin = (binPin == 0 ? 1 : binPin);
-      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
-      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
-      binEta = (binEta == 0 ? 1 : binEta);
-      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
-
-      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
-      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
       if (!isTPCCalibrated) {
-        values[kTPCnSigmaPi_Corr] = (values[kTPCnSigmaPi] - mean) / width;
+        values[kTPCnSigmaPi_Corr] = ComputePIDcalibration(1, values[kTPCnSigmaPi]);
       } else {
+        LOG(fatal) << "TPC PID postcalibration is configured but the tracks are already postcalibrated. This is not allowed. Please check your configuration.";
         values[kTPCnSigmaPi_Corr] = track.tpcNSigmaPi();
       }
     }
     if (fgUsedVars[kTPCnSigmaKa_Corr] && fgRunTPCPostCalibration[2]) {
-      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCKaonMean]);
-      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCKaonSigma]);
-
-      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
-      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
-      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
-      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
-      binPin = (binPin == 0 ? 1 : binPin);
-      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
-      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
-      binEta = (binEta == 0 ? 1 : binEta);
-      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
-
-      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
-      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
+      // compute TPC postcalibrated kaon nsigma if required
       if (!isTPCCalibrated) {
-        values[kTPCnSigmaKa_Corr] = (values[kTPCnSigmaKa] - mean) / width;
+        values[kTPCnSigmaKa_Corr] = ComputePIDcalibration(2, values[kTPCnSigmaKa]);
       } else {
+        LOG(fatal) << "TPC PID postcalibration is configured but the tracks are already postcalibrated. This is not allowed. Please check your configuration.";
         values[kTPCnSigmaKa_Corr] = track.tpcNSigmaKa();
       }
     }
     // compute TPC postcalibrated proton nsigma if required
     if (fgUsedVars[kTPCnSigmaPr_Corr] && fgRunTPCPostCalibration[3]) {
-      TH3F* calibMean = reinterpret_cast<TH3F*>(fgCalibs[kTPCProtonMean]);
-      TH3F* calibSigma = reinterpret_cast<TH3F*>(fgCalibs[kTPCProtonSigma]);
-
-      int binTPCncls = calibMean->GetXaxis()->FindBin(values[kTPCncls]);
-      binTPCncls = (binTPCncls == 0 ? 1 : binTPCncls);
-      binTPCncls = (binTPCncls > calibMean->GetXaxis()->GetNbins() ? calibMean->GetXaxis()->GetNbins() : binTPCncls);
-      int binPin = calibMean->GetYaxis()->FindBin(values[kPin]);
-      binPin = (binPin == 0 ? 1 : binPin);
-      binPin = (binPin > calibMean->GetYaxis()->GetNbins() ? calibMean->GetYaxis()->GetNbins() : binPin);
-      int binEta = calibMean->GetZaxis()->FindBin(values[kEta]);
-      binEta = (binEta == 0 ? 1 : binEta);
-      binEta = (binEta > calibMean->GetZaxis()->GetNbins() ? calibMean->GetZaxis()->GetNbins() : binEta);
-
-      double mean = calibMean->GetBinContent(binTPCncls, binPin, binEta);
-      double width = calibSigma->GetBinContent(binTPCncls, binPin, binEta);
       if (!isTPCCalibrated) {
-        values[kTPCnSigmaPr_Corr] = (values[kTPCnSigmaPr] - mean) / width;
+        values[kTPCnSigmaPr_Corr] = ComputePIDcalibration(3, values[kTPCnSigmaPr]);
       } else {
+        LOG(fatal) << "TPC PID postcalibration is configured but the tracks are already postcalibrated. This is not allowed. Please check your configuration.";
         values[kTPCnSigmaPr_Corr] = track.tpcNSigmaPr();
       }
     }
@@ -2519,22 +2485,6 @@ void VarManager::FillTrack(T const& track, float* values)
       values[kTOFnSigmaPi] = track.tofNSigmaPi();
       values[kTOFnSigmaKa] = track.tofNSigmaKa();
       values[kTOFnSigmaPr] = track.tofNSigmaPr();
-    }
-
-    if (fgUsedVars[kTPCsignalRandomized] || fgUsedVars[kTPCnSigmaElRandomized] || fgUsedVars[kTPCnSigmaPiRandomized] || fgUsedVars[kTPCnSigmaPrRandomized]) {
-      // NOTE: this is needed temporarily for the study of the impact of TPC pid degradation on the quarkonium triggers in high lumi pp
-      //     This study involves a degradation from a dE/dx resolution of 5% to one of 6% (20% worsening)
-      //     For this we smear the dE/dx and n-sigmas using a gaus distribution with a width of 3.3%
-      //         which is approx the needed amount to get dE/dx to a resolution of 6%
-      double randomX = gRandom->Gaus(0.0, 0.033);
-      values[kTPCsignalRandomized] = values[kTPCsignal] * (1.0 + randomX);
-      values[kTPCsignalRandomizedDelta] = values[kTPCsignal] * randomX;
-      values[kTPCnSigmaElRandomized] = values[kTPCnSigmaEl] * (1.0 + randomX);
-      values[kTPCnSigmaElRandomizedDelta] = values[kTPCnSigmaEl] * randomX;
-      values[kTPCnSigmaPiRandomized] = values[kTPCnSigmaPi] * (1.0 + randomX);
-      values[kTPCnSigmaPiRandomizedDelta] = values[kTPCnSigmaPi] * randomX;
-      values[kTPCnSigmaPrRandomized] = values[kTPCnSigmaPr] * (1.0 + randomX);
-      values[kTPCnSigmaPrRandomizedDelta] = values[kTPCnSigmaPr] * randomX;
     }
 
     if constexpr ((fillMap & ReducedTrackBarrelPID) > 0) {
@@ -2807,21 +2757,12 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   double Ptot2 = TMath::Sqrt(v2.Px() * v2.Px() + v2.Py() * v2.Py() + v2.Pz() * v2.Pz());
   values[kDeltaPtotTracks] = Ptot1 - Ptot2;
 
-  if (t1.sign() > 0) {
-    values[kPt1] = t1.pt();
-    values[kEta1] = t1.eta();
-    values[kPhi1] = t1.phi();
-    values[kPt2] = t2.pt();
-    values[kEta2] = t2.eta();
-    values[kPhi2] = t2.phi();
-  } else {
-    values[kPt1] = t2.pt();
-    values[kEta1] = t2.eta();
-    values[kPhi1] = t2.phi();
-    values[kPt2] = t1.pt();
-    values[kEta2] = t1.eta();
-    values[kPhi2] = t1.phi();
-  }
+  values[kPt1] = t1.pt();
+  values[kEta1] = t1.eta();
+  values[kPhi1] = t1.phi();
+  values[kPt2] = t2.pt();
+  values[kEta2] = t2.eta();
+  values[kPhi2] = t2.phi();
 
   if (fgUsedVars[kDeltaPhiPair2]) {
     double phipair2 = v1.Phi() - v2.Phi();
@@ -2866,16 +2807,11 @@ void VarManager::FillPair(T1 const& t1, T2 const& t2, float* values)
   bool useRM = fgUsedVars[kCosThetaRM];                       // Random frame
 
   if (useHE || useCS || usePP || useRM) {
-    // TO DO: get the correct values from CCDB
-    double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
-    ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
-    ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, fgCenterOfMassEnergy / 2);
-
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
     ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(fgBeamA).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(fgBeamC).Vect()).Unit()};
 
     // using positive sign convention for the first track
     ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM);
@@ -3266,6 +3202,125 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
     values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
   }
 
+  // polarization parameters
+  bool useHE = fgUsedVars[kCosThetaHE] || fgUsedVars[kPhiHE]; // helicity frame
+  bool useCS = fgUsedVars[kCosThetaCS] || fgUsedVars[kPhiCS]; // Collins-Soper frame
+  bool usePP = fgUsedVars[kCosThetaPP];                       // production plane frame
+  bool useRM = fgUsedVars[kCosThetaRM];                       // Random frame
+
+  if (useHE || useCS || usePP || useRM) {
+    ROOT::Math::Boost boostv12{v12.BoostToCM()};
+    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(fgBeamA).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(fgBeamC).Vect()).Unit()};
+
+    // using positive sign convention for the first track
+    ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM);
+
+    if (useHE) {
+      ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
+      ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+      ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
+      if (fgUsedVars[kCosThetaHE])
+        values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
+      if (fgUsedVars[kPhiHE]) {
+        values[kPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
+        if (values[kPhiHE] < 0) {
+          values[kPhiHE] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+        }
+      }
+      if (fgUsedVars[kPhiTildeHE]) {
+        if (fgUsedVars[kCosThetaHE] && fgUsedVars[kPhiHE]) {
+          if (values[kCosThetaHE] > 0) {
+            values[kPhiTildeHE] = values[kPhiHE] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
+            if (values[kPhiTildeHE] < 0) {
+              values[kPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          } else {
+            values[kPhiTildeHE] = values[kPhiHE] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
+            if (values[kPhiTildeHE] < 0) {
+              values[kPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          }
+        } else {
+          values[kPhiTildeHE] = -999; // not computable
+        }
+      }
+    }
+
+    if (useCS) {
+      ROOT::Math::XYZVectorF zaxis_CS{(Beam1_CM - Beam2_CM).Unit()};
+      ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+      ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
+      if (fgUsedVars[kCosThetaCS])
+        values[kCosThetaCS] = zaxis_CS.Dot(v_CM);
+      if (fgUsedVars[kPhiCS]) {
+        values[kPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
+        if (values[kPhiCS] < 0) {
+          values[kPhiCS] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+        }
+      }
+      if (fgUsedVars[kPhiTildeCS]) {
+        if (fgUsedVars[kCosThetaCS] && fgUsedVars[kPhiCS]) {
+          if (values[kCosThetaCS] > 0) {
+            values[kPhiTildeCS] = values[kPhiCS] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
+            if (values[kPhiTildeCS] < 0) {
+              values[kPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          } else {
+            values[kPhiTildeCS] = values[kPhiCS] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
+            if (values[kPhiTildeCS] < 0) {
+              values[kPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          }
+        } else {
+          values[kPhiTildeCS] = -999; // not computable
+        }
+      }
+    }
+
+    if (usePP) {
+      ROOT::Math::XYZVector zaxis_PP = ROOT::Math::XYZVector(v12.Py(), -v12.Px(), 0.f);
+      ROOT::Math::XYZVector yaxis_PP{(v12.Vect()).Unit()};
+      ROOT::Math::XYZVector xaxis_PP{(yaxis_PP.Cross(zaxis_PP)).Unit()};
+      if (fgUsedVars[kCosThetaPP]) {
+        values[kCosThetaPP] = zaxis_PP.Dot(v_CM) / std::sqrt(zaxis_PP.Mag2());
+      }
+      if (fgUsedVars[kPhiPP]) {
+        values[kPhiPP] = TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM));
+        if (values[kPhiPP] < 0) {
+          values[kPhiPP] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+        }
+      }
+      if (fgUsedVars[kPhiTildePP]) {
+        if (fgUsedVars[kCosThetaPP] && fgUsedVars[kPhiPP]) {
+          if (values[kCosThetaPP] > 0) {
+            values[kPhiTildePP] = values[kPhiPP] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
+            if (values[kPhiTildePP] < 0) {
+              values[kPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          } else {
+            values[kPhiTildePP] = values[kPhiPP] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
+            if (values[kPhiTildePP] < 0) {
+              values[kPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          }
+        } else {
+          values[kPhiTildePP] = -999; // not computable
+        }
+      }
+    }
+
+    if (useRM) {
+      double randomCostheta = gRandom->Uniform(-1., 1.);
+      double randomPhi = gRandom->Uniform(0., 2. * TMath::Pi());
+      ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
+      if (fgUsedVars[kCosThetaRM])
+        values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
+    }
+  }
+
   if constexpr ((fillMap & ReducedEventQvector) > 0 || (fillMap & CollisionQvect) > 0) {
     // TODO: provide different computations for vn
     // Compute the scalar product UQ for two muon from different event using Q-vector from A, for second and third harmonic
@@ -3381,16 +3436,11 @@ void VarManager::FillPairMC(T1 const& t1, T2 const& t2, float* values)
   bool useRM = fgUsedVars[kMCCosThetaRM];                         // Random frame
 
   if (useHE || useCS || usePP || useRM) {
-    // TO DO: get the correct values from CCDB
-    double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
-    ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
-    ROOT::Math::PxPyPzEVector Beam2(0., 0., BeamMomentum, fgCenterOfMassEnergy / 2);
-
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
     ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(Beam1).Vect()).Unit()};
-    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(Beam2).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(fgBeamA).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(fgBeamC).Vect()).Unit()};
 
     // using positive sign convention for the first track
     ROOT::Math::XYZVectorF v_CM = (t1.pdgCode() > 0 ? v1_CM : v2_CM);
@@ -4848,9 +4898,6 @@ void VarManager::FillPairVn(T1 const& t1, T2 const& t2, float* values)
   // global polarization parameters
   bool useGlobalPolarizatiobSpinOne = fgUsedVars[kCosThetaStarTPC] || fgUsedVars[kCosThetaStarFT0A] || fgUsedVars[kCosThetaStarFT0C];
   if (useGlobalPolarizatiobSpinOne) {
-    double BeamMomentum = TMath::Sqrt(fgCenterOfMassEnergy * fgCenterOfMassEnergy / 4 - fgMassofCollidingParticle * fgMassofCollidingParticle); // GeV
-    ROOT::Math::PxPyPzEVector Beam1(0., 0., -BeamMomentum, fgCenterOfMassEnergy / 2);
-
     ROOT::Math::Boost boostv12{v12.BoostToCM()};
     ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
     ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
@@ -5296,7 +5343,7 @@ void VarManager::FillDileptonTrackTrackVertexing(C const& collision, T1 const& l
 
       KFGeoTwoTracks.SetConstructMethod(2);
       KFGeoTwoTracks.AddDaughter(trk1KF);
-      KFGeoTwoTracks.AddDaughter(trk1KF);
+      KFGeoTwoTracks.AddDaughter(trk2KF);
 
       if (fgUsedVars[kDitrackMass] || fgUsedVars[kDitrackPt]) {
         values[VarManager::kDitrackMass] = KFGeoTwoTracks.GetMass();
@@ -5541,6 +5588,26 @@ float VarManager::calculatePhiV(T1 const& t1, T2 const& t2)
   // The angle between them should be small if the pair is conversion. This function then returns values close to pi!
   pairPhiV = TMath::ACos(wx * ax + wy * ay); // phiv in [0,pi] //cosPhiV = wx * ax + wy * ay;
   return pairPhiV;
+}
+
+/// Fill BDT score values.
+/// Supports binary (1 output) and multiclass (3 outputs) models.
+template <typename T1>
+void VarManager::FillBdtScore(T1 const& bdtScore, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+
+  if (bdtScore.size() == 1) {
+    values[kBdtBackground] = bdtScore[0];
+  } else if (bdtScore.size() == 3) {
+    values[kBdtBackground] = bdtScore[0];
+    values[kBdtPrompt] = bdtScore[1];
+    values[kBdtNonprompt] = bdtScore[2];
+  } else {
+    LOG(warning) << "Unexpected number of BDT outputs: " << bdtScore.size();
+  }
 }
 
 #endif // PWGDQ_CORE_VARMANAGER_H_

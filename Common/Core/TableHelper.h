@@ -18,11 +18,14 @@
 #ifndef COMMON_CORE_TABLEHELPER_H_
 #define COMMON_CORE_TABLEHELPER_H_
 
-#include "Framework/Configurable.h"
-#include "Framework/InitContext.h"
-#include "Framework/RunningWorkflowInfo.h"
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/RunningWorkflowInfo.h>
 
 #include <string>
+
+namespace o2::common::core
+{
 
 /// Function to print the table required in the full workflow
 /// @param initContext initContext of the init function
@@ -67,7 +70,7 @@ bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::stri
   if (verbose) {
     LOG(info) << "Checking for option '" << optName << "' in task '" << taskName << "'";
   }
-  auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
+  const auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
   int deviceCounter = 0;
   bool found = false;
   for (auto const& device : workflows.devices) {
@@ -108,5 +111,12 @@ bool getTaskOptionValue(o2::framework::InitContext& initContext, const std::stri
 {
   return getTaskOptionValue(initContext, taskName, configurable.name, configurable.value, verbose);
 }
+
+} // namespace o2::common::core
+
+using o2::common::core::enableFlagIfTableRequired;
+using o2::common::core::getTaskOptionValue;
+using o2::common::core::isTableRequiredInWorkflow;
+using o2::common::core::printTablesInWorkflow;
 
 #endif // COMMON_CORE_TABLEHELPER_H_

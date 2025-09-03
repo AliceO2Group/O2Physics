@@ -18,11 +18,10 @@
 
 #ifndef HomogeneousField
 #define HomogeneousField // o2-linter: disable=name/macro (required by KFParticle)
+#include "PWGHF/Core/DecayChannels.h"
 #endif
 
 #include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/Core/DecayChannels.h"
-#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
@@ -32,26 +31,45 @@
 #include "PWGHF/Utils/utilsTrkCandHf.h"
 #include "PWGLF/DataModel/mcCentrality.h"
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Tools/KFparticle/KFUtilities.h"
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
 
+#include <TH1.h>
 #include <TPDGCode.h>
 
 #include <KFPTrack.h>
 #include <KFPVertex.h>
 #include <KFParticle.h>
-#include <KFParticleBase.h>
-#include <KFVertex.h>
 
+#include <Rtypes.h>
+
+#include <array>
+#include <cstddef>
+#include <cstdint>
 #include <memory>
+#include <numeric>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -71,11 +89,11 @@ using namespace o2::aod::pid_tpc_tof_utils;
 /// Reconstruction of heavy-flavour 2-prong decay candidates
 struct HfCandidateCreator2Prong {
   Produces<aod::HfCand2ProngBase> rowCandidateBase;
-  Produces<aod::HfProng0PidPi> rowProng0PidPi;
-  Produces<aod::HfProng0PidKa> rowProng0PidKa;
-  Produces<aod::HfProng1PidPi> rowProng1PidPi;
-  Produces<aod::HfProng1PidKa> rowProng1PidKa;
   Produces<aod::HfCand2ProngKF> rowCandidateKF;
+  Produces<aod::HfCand2Prong0PidPi> rowProng0PidPi;
+  Produces<aod::HfCand2Prong0PidKa> rowProng0PidKa;
+  Produces<aod::HfCand2Prong1PidPi> rowProng1PidPi;
+  Produces<aod::HfCand2Prong1PidKa> rowProng1PidKa;
 
   // vertexing
   Configurable<bool> constrainKfToPv{"constrainKfToPv", true, "constraint KFParticle to PV"};
@@ -103,11 +121,18 @@ struct HfCandidateCreator2Prong {
   float toMicrometers = 10000.; // from cm to µm
   double massPi{0.};
   double massK{0.};
+  double massE{0.};
+  double massMu{0.};
   double massPiK{0.};
   double massKPi{0.};
+  double massEE{0.};
+  double massMuMu{0.};
   double bz{0.};
 
   std::shared_ptr<TH1> hCandidates;
+
+  ConfigurableAxis axisMass{"axisMass", {500, 1.6, 2.1}, "axis for mass (GeV/c^2)"};
+
   HistogramRegistry registry{"registry"};
 
   void init(InitContext const&)
@@ -148,7 +173,9 @@ struct HfCandidateCreator2Prong {
     }
 
     // histograms
-    registry.add("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {{500, 1.6, 2.1}}});
+    registry.add("hMass2", "2-prong candidates;inv. mass (#pi K) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMass}});
+    registry.add("hMassEE", "2-prong candidates;inv. mass (e e) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMass}});
+    registry.add("hMassMuMu", "2-prong candidates;inv. mass (#mu #mu) (GeV/#it{c}^{2});entries", {HistType::kTH1F, {axisMass}});
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     registry.add("hCovPVYY", "2-prong candidates;YY element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
@@ -167,6 +194,8 @@ struct HfCandidateCreator2Prong {
 
     massPi = MassPiPlus;
     massK = MassKPlus;
+    massE = MassElectron;
+    massMu = MassMuon;
 
     if (std::accumulate(doprocessDF.begin(), doprocessDF.end(), 0) == 1) {
       registry.fill(HIST("hVertexerType"), aod::hf_cand::VertexerType::DCAFitter);
@@ -205,7 +234,7 @@ struct HfCandidateCreator2Prong {
       /// reject candidates not satisfying the event selections
       auto collision = rowTrackIndexProng2.template collision_as<Coll>();
       float centrality{-1.f};
-      uint32_t rejectionMask{0};
+      o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       if constexpr (applyUpcSel) {
         rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, centEstimator, BCsType>(collision, centrality, ccdb, registry, bcs);
       } else {
@@ -311,7 +340,7 @@ struct HfCandidateCreator2Prong {
       if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
         SETBIT(bitmapProngsContributorsPV, 1);
       }
-      uint8_t nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
+      const auto nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
 
       // fill candidate table rows
       rowCandidateBase(indexCollision,
@@ -340,8 +369,12 @@ struct HfCandidateCreator2Prong {
         auto arrayMomenta = std::array{pvec0, pvec1};
         massPiK = RecoDecay::m(arrayMomenta, std::array{massPi, massK});
         massKPi = RecoDecay::m(arrayMomenta, std::array{massK, massPi});
+        massEE = RecoDecay::m(arrayMomenta, std::array{massE, massE});
+        massMuMu = RecoDecay::m(arrayMomenta, std::array{massMu, massMu});
         registry.fill(HIST("hMass2"), massPiK);
         registry.fill(HIST("hMass2"), massKPi);
+        registry.fill(HIST("hMassEE"), massEE);
+        registry.fill(HIST("hMassMuMu"), massMuMu);
       }
     }
   }
@@ -358,7 +391,7 @@ struct HfCandidateCreator2Prong {
       /// reject candidates in collisions not satisfying the event selections
       auto collision = rowTrackIndexProng2.template collision_as<Coll>();
       float centrality{-1.f};
-      uint32_t rejectionMask{0};
+      o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       if constexpr (applyUpcSel) {
         rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, centEstimator, BCsType>(collision, centrality, ccdb, registry, bcs);
       } else {
@@ -468,7 +501,7 @@ struct HfCandidateCreator2Prong {
       if (indexCollision == track1.collisionId() && track1.isPVContributor()) {
         SETBIT(bitmapProngsContributorsPV, 1);
       }
-      uint8_t nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
+      const auto nProngsContributorsPV = hf_trkcandsel::countOnesInBinary(bitmapProngsContributorsPV);
 
       // fill candidate table rows
       rowCandidateBase(indexCollision,
@@ -717,7 +750,7 @@ struct HfCandidateCreator2Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -735,7 +768,7 @@ struct HfCandidateCreator2Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0C, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -753,7 +786,7 @@ struct HfCandidateCreator2Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentralityEstimator::FT0M, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
 
       /// monitor the satisfied event selections
@@ -776,7 +809,7 @@ struct HfCandidateCreator2Prong {
 
       /// bitmask with event. selection info
       float centrality{-1.f};
-      float occupancy = getOccupancyColl(collision, OccupancyEstimator::Its);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, hfEvSel.occEstimator);
       const auto rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<true, CentralityEstimator::None, aod::BcFullInfos>(collision, centrality, ccdb, registry, bcs);
 
       /// monitor the satisfied event selections
@@ -797,7 +830,7 @@ struct HfCandidateCreator2ProngExpressions {
   Configurable<bool> rejectBackground{"rejectBackground", true, "Reject particles from background events"};
   Configurable<bool> matchKinkedDecayTopology{"matchKinkedDecayTopology", false, "Match also candidates with tracks that decay with kinked topology"};
   Configurable<bool> matchInteractionsWithMaterial{"matchInteractionsWithMaterial", false, "Match also candidates with tracks that interact with material"};
-  Configurable<bool> matchCorrelatedBackgrounds{"matchCorrelatedBackgrounds", false, "Match correlated background candidates"};
+  Configurable<bool> matchCorrelatedBackground{"matchCorrelatedBackground", false, "Match correlated background candidates"};
 
   HfEventSelectionMc hfEvSelMc; // mc event selection and monitoring
 
@@ -844,8 +877,8 @@ struct HfCandidateCreator2ProngExpressions {
 
     int indexRec = -1;
     int8_t sign = 0;
-    int8_t flag = 0;
-    int8_t channel = 0;
+    int8_t flagChannelMain = 0;
+    int8_t flagChannelResonant = 0;
     int8_t origin = 0;
     int8_t nKinkedTracks = 0;
     int8_t nInteractionsWithMaterial = 0;
@@ -854,9 +887,9 @@ struct HfCandidateCreator2ProngExpressions {
     // Match reconstructed candidates.
     // Spawned table can be used directly
     for (const auto& candidate : *rowCandidateProng2) {
-      flag = 0;
+      flagChannelMain = 0;
+      flagChannelResonant = 0;
       origin = 0;
-      channel = 0;
       auto arrayDaughters = std::array{candidate.prong0_as<aod::TracksWMc>(), candidate.prong1_as<aod::TracksWMc>()};
 
       // Check whether the particle is from background events. If so, reject it.
@@ -872,66 +905,66 @@ struct HfCandidateCreator2ProngExpressions {
           }
         }
         if (fromBkg) {
-          rowMcMatchRec(flag, origin, channel, -1.f, 0, 0, 0);
+          rowMcMatchRec(flagChannelMain, origin, flagChannelResonant, -1.f, 0, 0, 0);
           continue;
         }
       }
       std::vector<int> idxBhadMothers{};
 
-      if (matchCorrelatedBackgrounds) {
+      if (matchCorrelatedBackground) {
         indexRec = -1; // Index of the matched reconstructed candidate
         constexpr int FinalStateDepth = 2;
         constexpr int ResoDepth = 1;
 
         // D0(bar) → π+ K−, π+ K− π0, π+ π−, π+ π− π0, K+ K−
-        for (const auto& [chn, finalState] : hf_cand_2prong::daughtersD0Main) {
-          std::array<int, 2> finalStateParts2Prong = std::array{finalState[0], finalState[1]};
-          if (finalState.size() == 3) { // o2-linter: disable=magic-number (Partly Reco 3-prong decays)
+        for (const auto& [channelMain, finalState] : daughtersD0Main) {
+          std::array<int, 2> arrPdgDaughtersMain2Prongs = std::array{finalState[0], finalState[1]};
+          if (finalState.size() == 3) { // o2-linter: disable=magic-number (partially reconstructed 3-prong decays)
             if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-              indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, &nKinkedTracks, &nInteractionsWithMaterial);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughters, Pdg::kD0, arrPdgDaughtersMain2Prongs, true, &sign, FinalStateDepth, &nKinkedTracks, &nInteractionsWithMaterial);
             } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
-              indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, &nKinkedTracks);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, false>(mcParticles, arrayDaughters, Pdg::kD0, arrPdgDaughtersMain2Prongs, true, &sign, FinalStateDepth, &nKinkedTracks);
             } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-              indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, nullptr, &nInteractionsWithMaterial);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, true>(mcParticles, arrayDaughters, Pdg::kD0, arrPdgDaughtersMain2Prongs, true, &sign, FinalStateDepth, nullptr, &nInteractionsWithMaterial);
             } else {
-              indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, true, false, false>(mcParticles, arrayDaughters, Pdg::kD0, arrPdgDaughtersMain2Prongs, true, &sign, FinalStateDepth);
             }
 
             if (indexRec > -1) {
               auto motherParticle = mcParticles.rawIteratorAt(indexRec);
-              std::array<int, 3> finalStateParts2ProngAll = std::array{finalState[0], finalState[1], finalState[2]};
-              changeFinalStatePdgSign(motherParticle.pdgCode(), +kPi0, finalStateParts2ProngAll);
-              if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, Pdg::kD0, finalStateParts2ProngAll, true, &sign, FinalStateDepth)) {
-                indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one does not match the reconstructed one
+              std::array<int, 3> arrPdgDaughtersMain3Prongs = std::array{finalState[0], finalState[1], finalState[2]};
+              flipPdgSign(motherParticle.pdgCode(), +kPi0, arrPdgDaughtersMain3Prongs);
+              if (!RecoDecay::isMatchedMCGen(mcParticles, motherParticle, Pdg::kD0, arrPdgDaughtersMain3Prongs, true, &sign, FinalStateDepth)) {
+                indexRec = -1; // Reset indexRec if the generated decay does not match the reconstructed one
               }
             }
-          } else if (finalState.size() == 2) { // o2-linter: disable=magic-number (Fully Reco 2-prong decays)
+          } else if (finalState.size() == 2) { // o2-linter: disable=magic-number (fully reconstructed 2-prong decays)
             if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-              indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, &nKinkedTracks, &nInteractionsWithMaterial);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, Pdg::kD0, arrPdgDaughtersMain2Prongs, true, &sign, FinalStateDepth, &nKinkedTracks, &nInteractionsWithMaterial);
             } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
-              indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, &nKinkedTracks);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, false>(mcParticles, arrayDaughters, Pdg::kD0, arrPdgDaughtersMain2Prongs, true, &sign, FinalStateDepth, &nKinkedTracks);
             } else if (!matchKinkedDecayTopology && matchInteractionsWithMaterial) {
-              indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth, nullptr, &nInteractionsWithMaterial);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kD0, arrPdgDaughtersMain2Prongs, true, &sign, FinalStateDepth, nullptr, &nInteractionsWithMaterial);
             } else {
-              indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, Pdg::kD0, finalStateParts2Prong, true, &sign, FinalStateDepth);
+              indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, false>(mcParticles, arrayDaughters, Pdg::kD0, arrPdgDaughtersMain2Prongs, true, &sign, FinalStateDepth);
             }
           } else {
             LOG(fatal) << "Final state size not supported: " << finalState.size();
-            continue;
+            return;
           }
           if (indexRec > -1) {
-            flag = sign * (1 << chn);
+            flagChannelMain = sign * channelMain;
 
             // Flag the resonant decay channel
             std::vector<int> arrResoDaughIndex = {};
             RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrResoDaughIndex, std::array{0}, ResoDepth);
-            std::array<int, NDaughtersResonant> arrPDGDaugh = {};
+            std::array<int, NDaughtersResonant> arrPdgDaughters = {};
             if (arrResoDaughIndex.size() == NDaughtersResonant) {
               for (auto iProng = 0u; iProng < arrResoDaughIndex.size(); ++iProng) {
                 auto daughI = mcParticles.rawIteratorAt(arrResoDaughIndex[iProng]);
-                arrPDGDaugh[iProng] = daughI.pdgCode();
+                arrPdgDaughters[iProng] = daughI.pdgCode();
               }
-              channel = flagResonantDecay(Pdg::kD0, arrPDGDaugh);
+              flagChannelResonant = getDecayChannelResonant(Pdg::kD0, arrPdgDaughters);
             }
             break;
           }
@@ -948,44 +981,44 @@ struct HfCandidateCreator2ProngExpressions {
           indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &sign);
         }
         if (indexRec > -1) {
-          flag = sign * (1 << DecayType::D0ToPiK);
+          flagChannelMain = sign * DecayChannelMain::D0ToPiK;
         }
 
         // J/ψ → e+ e−
-        if (flag == 0) {
+        if (flagChannelMain == 0) {
           if (matchInteractionsWithMaterial) {
-            indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, +kPositron}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
           } else {
-            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, -kElectron}, true);
+            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kElectron, +kPositron}, true);
           }
           if (indexRec > -1) {
-            flag = 1 << DecayType::JpsiToEE;
+            flagChannelMain = DecayChannelMain::JpsiToEE;
           }
         }
 
         // J/ψ → μ+ μ−
-        if (flag == 0) {
+        if (flagChannelMain == 0) {
           if (matchInteractionsWithMaterial) {
-            indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
+            indexRec = RecoDecay::getMatchedMCRec<false, false, false, false, true>(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonMinus, +kMuonPlus}, true, &sign, 1, nullptr, &nInteractionsWithMaterial);
           } else {
-            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonPlus, -kMuonPlus}, true);
+            indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughters, Pdg::kJPsi, std::array{+kMuonMinus, +kMuonPlus}, true);
           }
           if (indexRec > -1) {
-            flag = 1 << DecayType::JpsiToMuMu;
+            flagChannelMain = DecayChannelMain::JpsiToMuMu;
           }
         }
       }
 
       // Check whether the particle is non-prompt (from a b quark).
-      if (flag != 0) {
+      if (flagChannelMain != 0) {
         auto particle = mcParticles.rawIteratorAt(indexRec);
         origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
       }
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-        rowMcMatchRec(flag, origin, channel, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
+        rowMcMatchRec(flagChannelMain, origin, flagChannelResonant, bHadMother.pt(), bHadMother.pdgCode(), nKinkedTracks, nInteractionsWithMaterial);
       } else {
-        rowMcMatchRec(flag, origin, channel, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
+        rowMcMatchRec(flagChannelMain, origin, flagChannelResonant, -1.f, 0, nKinkedTracks, nInteractionsWithMaterial);
       }
     }
 
@@ -995,7 +1028,7 @@ struct HfCandidateCreator2ProngExpressions {
       const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
       float centrality{-1.f};
-      uint16_t rejectionMask{0};
+      o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       int nSplitColl = 0;
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
@@ -1016,7 +1049,7 @@ struct HfCandidateCreator2ProngExpressions {
         }
         continue;
       }
-      hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground, matchCorrelatedBackgrounds);
+      hf_mc_gen::fillMcMatchGen2Prong(mcParticles, mcParticlesPerMcColl, rowMcMatchGen, rejectBackground, matchCorrelatedBackground);
     }
   }
 

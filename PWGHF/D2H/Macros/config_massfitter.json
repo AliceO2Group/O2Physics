@@ -32,7 +32,8 @@
         "Ds",
         "LcToPKPi",
         "LcToPK0s",
-        "Dstar"
+        "Dstar",
+        "XicToXiPiPi"
     ],
     "EnableRefl": false,
     "FixSigma": false,
@@ -49,6 +50,25 @@
     "FixMean": false,
     "MeanFile": "",
     "_MeanFile": "fix mean from file",
+    "FixMeanManual": [
+        0,
+        0,
+        0,
+        0,
+        0
+    ],
+    "_FixMeanManual": "fix mean mannually",
+    "FixSecondSigma": false,
+    "SecondSigmaFile": "",
+    "_SecondSigmaFile": "fix second sigma for double gauss from file",
+    "FixSecondSigmaManual": [
+        0,
+        0,
+        0,
+        0,
+        0
+    ],
+    "_FixSecondSigmaManual": "fix second sigma for double gauss manually",
     "SliceVarName": "T",
     "SliceVarUnit": "ps",
     "_SliceVarName, _SliceVarUnit": "e.g. pT, GeV/c or something else depending on user's needs",

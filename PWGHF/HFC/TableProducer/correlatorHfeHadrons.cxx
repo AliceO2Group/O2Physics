@@ -14,37 +14,45 @@
 /// \author Rashi Gupta <rashi.gupta@cern.ch>, IIT Indore
 /// \author Ravindra Singh <ravindra.singh@cern.ch>, IIT Indore
 
-#include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/HFL/DataModel/ElectronSelectionTable.h"
+
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <cstdint>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::hf_sel_electron;
+
 std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
 std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500.0, 5000.};
 std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MCGen multiplicity is defined by counting primaries
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
 BinningType corrBinning{{zBins, multBins}, true};
 using BinningTypeMcGen = ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mult::MultMCFT0A>;
-struct HfCorrelatorHfeHadrons {
 
+struct HfCorrelatorHfeHadrons {
   Produces<aod::HfEHadronPair> entryElectronHadronPair;
   Produces<aod::HfEHadronMcPair> entryElectronHadronPairmcGen;
   Produces<aod::HfElectron> entryElectron;
@@ -144,12 +152,20 @@ struct HfCorrelatorHfeHadrons {
     int gCollisionId = collision.globalIndex();
     int64_t timeStamp = bc.timestamp();
 
+    // Add hadron Table For Mix Event Electron Hadron correlation
+    for (const auto& hTrack : tracks) {
+      if (!selAssoHadron(hTrack)) {
+        continue;
+      }
+      registry.fill(HIST("hTracksBin"), poolBin);
+      entryHadron(hTrack.phi(), hTrack.eta(), hTrack.pt(), poolBin, gCollisionId, timeStamp);
+    }
+
     //  Construct Deta Phi between electrons and hadrons
 
     double ptElectron = -999;
     double phiElectron = -999;
     double etaElectron = -999;
-    int nElectron = 0;
 
     for (const auto& eTrack : electron) {
       ptElectron = eTrack.ptTrack();
@@ -191,10 +207,9 @@ struct HfCorrelatorHfeHadrons {
         if (!selAssoHadron(hTrack)) {
           continue;
         }
-        if (nElectron == 0) {
-          registry.fill(HIST("hTracksBin"), poolBin);
-          entryHadron(phiHadron, etaHadron, ptHadron, poolBin, gCollisionId, timeStamp);
-        }
+        ptHadron = hTrack.pt();
+        phiHadron = hTrack.phi();
+        etaHadron = hTrack.eta();
         if (hTrack.globalIndex() == eTrack.trackId()) {
           continue;
         }
@@ -202,9 +217,6 @@ struct HfCorrelatorHfeHadrons {
         if (ptCondition && (ptElectron < ptHadron)) {
           continue;
         }
-        ptHadron = hTrack.pt();
-        phiHadron = hTrack.phi();
-        etaHadron = hTrack.eta();
 
         deltaPhi = RecoDecay::constrainAngle(phiElectron - phiHadron, -o2::constants::math::PIHalf);
         deltaEta = etaElectron - etaHadron;
@@ -229,7 +241,7 @@ struct HfCorrelatorHfeHadrons {
         entryElectronHadronPair(deltaPhi, deltaEta, ptElectron, ptHadron, poolBin, nElHadLSCorr, nElHadUSCorr);
 
       } // end Hadron Track loop
-      nElectron++;
+
     } // end Electron loop
   }
 

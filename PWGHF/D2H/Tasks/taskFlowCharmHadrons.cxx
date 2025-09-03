@@ -15,23 +15,42 @@
 /// \author S. Politanò, INFN Torino, Italy
 /// \author Wu Chuntai, CUG, China
 /// \author Ran Tu, Fudan University, China
+/// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Polytechnic University of Turin and INFN
 
-#include <string>
-#include <vector>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/DataModel/CandidateSelectionTables.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
 
 #include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Qvectors.h"
 
-#include "PWGHF/Core/HfHelper.h"
-#include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TString.h>
+
+#include <Rtypes.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -40,6 +59,23 @@ using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_occupancy;
 using namespace o2::hf_evsel;
+
+namespace o2::aod
+{
+namespace full
+{
+DECLARE_SOA_COLUMN(M, m, float);   //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float); //! Transverse momentum of candidate (GeV/c)
+// ML scores
+DECLARE_SOA_COLUMN(MlScore0, mlScore0, float); //! ML score of the first configured index
+DECLARE_SOA_COLUMN(MlScore1, mlScore1, float); //! ML score of the second configured index
+} // namespace full
+DECLARE_SOA_TABLE(HfCandPtCent, "AOD", "HFCANDPTCENT",
+                  full::M,
+                  full::Pt,
+                  full::MlScore0,
+                  full::MlScore1);
+} // namespace o2::aod
 
 enum DecayChannel { DplusToPiKPi = 0,
                     DsToKKPi,
@@ -62,6 +98,8 @@ enum QvecEstimator { FV0A = 0,
                      TPCTot };
 
 struct HfTaskFlowCharmHadrons {
+  Produces<o2::aod::HfCandPtCent> rowCandidateMassPtMlScores;
+
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qvecDetector{"qvecDetector", 3, "Detector for Q vector estimation (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3, TPC Pos: 4, TPC Neg: 5, TPC Tot: 6)"};
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
@@ -70,6 +108,9 @@ struct HfTaskFlowCharmHadrons {
   Configurable<float> centralityMax{"centralityMax", 100., "Maximum centrality accepted in SP/EP computation (not applied in resolution process)"};
   Configurable<bool> storeEP{"storeEP", false, "Flag to store EP-related axis"};
   Configurable<bool> storeMl{"storeMl", false, "Flag to store ML scores"};
+  Configurable<bool> fillMassPtMlTree{"fillMassPtMlTree", false, "Flag to fill mass and pt tree"};
+  Configurable<float> downSampleFactor{"downSampleFactor", 1., "Fraction of candidates to keep in TTree"};
+  Configurable<float> ptDownSampleMax{"ptDownSampleMax", 10., "Maximum pt for the application of the downsampling factor"};
   Configurable<bool> storeResoOccu{"storeResoOccu", false, "Flag to store Occupancy in resolution ThnSparse"};
   Configurable<bool> storeEpCosSin{"storeEpCosSin", false, "Flag to store cos and sin of EP angle in ThnSparse"};
   Configurable<int> occEstimator{"occEstimator", 0, "Occupancy estimation (0: None, 1: ITS, 2: FT0C)"};
@@ -256,16 +297,30 @@ struct HfTaskFlowCharmHadrons {
     }
   }; // end init
 
+  /// Fill the mass, pt and ML scores of a candidate
+  /// \param mass is the candidate mass
+  /// \param pt is the candidate transverse momentum
+  /// \param mlscore0 is the first ML score
+  /// \param mlscore1 is the second ML score
+  void fillMassPt(const float mass, const float pt, const float mlscore0, const float mlscore1)
+  {
+    rowCandidateMassPtMlScores(
+      mass,
+      pt,
+      mlscore0,
+      mlscore1);
+  }
+
   /// Compute the Q vector for the candidate's tracks
   /// \param cand is the candidate
   /// \param tracksQx is the X component of the Q vector for the tracks
   /// \param tracksQy is the Y component of the Q vector for the tracks
   /// \param channel is the decay channel
   template <DecayChannel channel, typename T1>
-  void getQvecDtracks(const T1& cand,
+  void getQvecDtracks(T1 const& cand,
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
-                      float& ampl)
+                      const float ampl)
   {
     // TODO: add possibility to consider different weights for the tracks, at the moment only pT is considered;
     float pXTrack0 = cand.pxProng0();
@@ -343,7 +398,7 @@ struct HfTaskFlowCharmHadrons {
 
   /// Get the event selection flags
   /// \param hfevselflag is the event selection flag
-  std::vector<int> getEventSelectionFlags(uint32_t hfevselflag)
+  std::vector<int> getEventSelectionFlags(const o2::hf_evsel::HfCollisionRejectionMask hfevselflag)
   {
     return {
       TESTBIT(hfevselflag, o2::hf_evsel::EventRejection::NoSameBunchPileup),
@@ -364,16 +419,16 @@ struct HfTaskFlowCharmHadrons {
   /// \param outputMl are the ML scores
   /// \param occupancy is the occupancy of the collision using the track estimator
   /// \param hfevselflag flag of the collision associated to utilsEvSelHf.h
-  void fillThn(float& mass,
-               float& pt,
-               float& cent,
-               float& cosNPhi,
-               float& sinNPhi,
-               float& cosDeltaPhi,
-               float& sp,
-               std::vector<float>& outputMl,
-               float& occupancy,
-               uint32_t& hfevselflag)
+  void fillThn(const float mass,
+               const float pt,
+               const float cent,
+               const float cosNPhi,
+               const float sinNPhi,
+               const float cosDeltaPhi,
+               const float sp,
+               const std::vector<float>& outputMl,
+               const float occupancy,
+               const o2::hf_evsel::HfCollisionRejectionMask hfevselflag)
   {
     if (occEstimator != 0) {
       std::vector<int> evtSelFlags = getEventSelectionFlags(hfevselflag);
@@ -421,7 +476,7 @@ struct HfTaskFlowCharmHadrons {
                       aod::BCsWithTimestamps const&,
                       float& centrality)
   {
-    float occupancy = getOccupancyColl(collision, occEstimator);
+    const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
     const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
     centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
 
@@ -491,9 +546,9 @@ struct HfTaskFlowCharmHadrons {
       return;
     }
     float occupancy = 0.;
-    uint32_t hfevflag{};
+    o2::hf_evsel::HfCollisionRejectionMask hfevflag{};
     if (occEstimator != 0) {
-      occupancy = getOccupancyColl(collision, occEstimator);
+      occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
       hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, cent, ccdb, registry);
     }
@@ -604,7 +659,7 @@ struct HfTaskFlowCharmHadrons {
       float phiCand = 0.;
 
       if constexpr (std::is_same_v<T1, CandXic0Data> || std::is_same_v<T1, CandXic0DataWMl>) {
-        ptCand = candidate.kfptXic();
+        ptCand = RecoDecay::sqrtSumOfSquares(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
         phiCand = std::atan2(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
       } else {
         ptCand = candidate.pt();
@@ -613,7 +668,7 @@ struct HfTaskFlowCharmHadrons {
 
       // If TPC is used for the SP estimation, the tracks of the hadron candidate must be removed from the TPC Q vector to avoid double counting
       if (qvecDetector == QvecEstimator::TPCNeg || qvecDetector == QvecEstimator::TPCPos) {
-        float ampl = amplQVec - static_cast<float>(nProngs);
+        float const ampl = amplQVec - static_cast<float>(nProngs);
         std::vector<float> tracksQx = {};
         std::vector<float> tracksQy = {};
         if constexpr (std::is_same_v<T1, CandXic0Data> || std::is_same_v<T1, CandXic0DataWMl>) {
@@ -633,7 +688,17 @@ struct HfTaskFlowCharmHadrons {
       float scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
       float cosDeltaPhi = std::cos(harmonic * (phiCand - evtPl));
 
-      fillThn(massCand, ptCand, cent, cosNPhi, sinNPhi, cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag);
+      if (fillMassPtMlTree && storeMl) {
+        if (downSampleFactor < 1.) {
+          float pseudoRndm = ptCand * 1000. - static_cast<int64_t>(ptCand * 1000);
+          if (ptCand < ptDownSampleMax && pseudoRndm >= downSampleFactor) {
+            continue;
+          }
+        }
+        fillMassPt(massCand, ptCand, outputMl[0], outputMl[1]);
+      } else {
+        fillThn(massCand, ptCand, cent, cosNPhi, sinNPhi, cosDeltaPhi, scalprodCand, outputMl, occupancy, hfevflag);
+      }
     }
   }
 
@@ -781,11 +846,10 @@ struct HfTaskFlowCharmHadrons {
 
     centrality = o2::hf_centrality::getCentralityColl(collision, o2::hf_centrality::CentralityEstimator::FT0C);
     if (storeResoOccu) {
-      float occupancy{-1.f};
-      occupancy = getOccupancyColl(collision, occEstimator);
+      const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
       registry.fill(HIST("trackOccVsFT0COcc"), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
-      uint32_t hfevflag = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-      std::vector<int> evtSelFlags = getEventSelectionFlags(hfevflag);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      std::vector<int> evtSelFlags = getEventSelectionFlags(rejectionMask);
       registry.fill(HIST("spReso/hSparseReso"), centrality, xQVecFT0c * xQVecFV0a + yQVecFT0c * yQVecFV0a,
                     xQVecFT0c * xQVecBTot + yQVecFT0c * yQVecBTot,
                     xQVecFV0a * xQVecBTot + yQVecFV0a * yQVecBTot,

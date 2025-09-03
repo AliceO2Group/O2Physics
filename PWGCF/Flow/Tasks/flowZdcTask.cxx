@@ -56,19 +56,14 @@ struct FlowZdcTask {
   SliceCache cache;
 
   O2_DEFINE_CONFIGURABLE(cfgCutVertex, float, 10.0f, "Accepted z-vertex range")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtMin, float, 0.2f, "Minimal pT for ref tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutPtMax, float, 10.0f, "Maximal pT for ref tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutEta, float, 0.8f, "Eta range for tracks")
-  O2_DEFINE_CONFIGURABLE(cfgCutChi2prTPCcls, float, 2.5, "Chi2 per TPC clusters")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2, "DCA Z cut")
-  O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "DCA XY cut")
 
   Configurable<int> eventSelection{"eventSelection", 1, "event selection"};
-  Configurable<float> maxZp{"maxZp", 3099.5, "Max ZP signal"};
+  Configurable<float> maxZp{"maxZp", 125.5, "Max ZP signal"};
   Configurable<float> maxZem{"maxZem", 3099.5, "Max ZEM signal"};
   // for ZDC info and analysis
   Configurable<int> nBinsAmp{"nBinsAmp", 1025, "nbinsAmp"};
-  Configurable<float> maxZn{"maxZn", 4099.5, "Max ZN signal"};
+  Configurable<int> nBinsCent{"nBinsCent", 90, "nBinsCent"};
+  Configurable<float> maxZn{"maxZn", 125.5, "Max ZN signal"};
   Configurable<float> vtxRange{"vtxRange", 10.0f, "Vertex Z range to consider"};
   Configurable<float> etaRange{"etaRange", 1.0f, "Eta range to consider"};
   // configs for process QA
@@ -82,6 +77,7 @@ struct FlowZdcTask {
   Configurable<int> nBinsZP{"nBinsZP", 160, "N bins ZP"};
   Configurable<float> minNch{"minNch", 0, "Min Nch (|eta|<0.8)"};
   Configurable<float> maxNch{"maxNch", 2500, "Max Nch (|eta|<0.8)"};
+  Configurable<float> oneNeutron{"oneNeutron", 1.0, "one neutron, energy or integer"};
   Configurable<int> nBinsTDC{"nBinsTDC", 150, "nbinsTDC"};
   Configurable<float> minTdc{"minTdc", -15.0, "minimum TDC"};
   Configurable<float> maxTdc{"maxTdc", 15.0, "maximum TDC"};
@@ -96,11 +92,12 @@ struct FlowZdcTask {
   Configurable<bool> isOccupancyCut{"isOccupancyCut", true, "Occupancy cut?"};
   Configurable<bool> isApplyFT0CbasedOccupancy{"isApplyFT0CbasedOccupancy", false, "T0C Occu cut?"};
   Configurable<bool> isTDCcut{"isTDCcut", false, "Use TDC cut?"};
-  Configurable<bool> isZEMcut{"isZEMcut", true, "Use ZEM cut?"};
-  Configurable<bool> useMidRapNchSel{"useMidRapNchSel", true, "Use mid-rapidit Nch selection"};
+  Configurable<bool> isZEMcut{"isZEMcut", false, "Use ZEM cut?"};
+  Configurable<bool> useMidRapNchSel{"useMidRapNchSel", false, "Use mid-rapidity Nch selection"};
   Configurable<bool> applyEff{"applyEff", true, "Apply track-by-track efficiency correction"};
   Configurable<bool> applyFD{"applyFD", false, "Apply track-by-track feed down correction"};
   Configurable<bool> correctNch{"correctNch", true, "Correct also Nch"};
+  Configurable<bool> isOneNeutronFound{"isOneNeutronFound", true, "Require at least 1 neutron in ZNA/ZNC to fill ZPA/ZPC"};
 
   Configurable<float> nSigmaNchCut{"nSigmaNchCut", 1., "nSigma Nch selection"};
   Configurable<double> minNchSel{"minNchSel", 5., "min Nch Selection"};
@@ -125,12 +122,14 @@ struct FlowZdcTask {
   ConfigurableAxis ft0cMultHistBin{"ft0cMultHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.12}, "pT binning"};
   Configurable<float> posZcut{"posZcut", +10.0, "z-vertex position cut"};
+  Configurable<float> minEta{"minEta", -0.8, "minimum eta"};
+  Configurable<float> maxEta{"maxEta", +0.8, "maximum eta"};
   Configurable<float> minT0CcentCut{"minT0CcentCut", 0.0, "Min T0C Cent. cut"};
   Configurable<float> maxT0CcentCut{"maxT0CcentCut", 90.0, "Max T0C Cent. cut"};
 
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz) && (nabs(aod::track::dcaXY) < cfgCutDCAxy);
-  using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Cs>;
+  Filter trackFilter = ((aod::track::eta > minEta) && (aod::track::eta < maxEta));
+  using ColEvSels = soa::Join<aod::Collisions, aod::EvSels, o2::aod::CentFT0Cs, aod::TPCMults, o2::aod::BarrelMults, aod::FT0MultZeqs>;
   using AodCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::Mults>>;
   using AodTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
   Partition<AodTracks> tracksIUWithTPC = (aod::track::tpcNClsFindable > (uint8_t)0);
@@ -140,6 +139,7 @@ struct FlowZdcTask {
   using CollisionDataTable = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms>;
   using TrackDataTable = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
   using FilTrackDataTable = soa::Filtered<TrackDataTable>;
+  using TheFilteredTracks = soa::Filtered<TracksSel>;
 
   // CCDB paths
   Configurable<std::string> paTH{"paTH", "Users/s/sahernan/test", "base path to the ccdb object"};
@@ -269,10 +269,14 @@ struct FlowZdcTask {
       histos.add("ZNVsFT0C", ";T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC;", kTH2F, {{{nBinsAmpFT0, 0., 3000.}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZN", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
-      histos.add("ZNA", ";ZNA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
-      histos.add("ZPA", ";ZPA;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
-      histos.add("ZNC", ";ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
-      histos.add("ZPC", ";ZPC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
+      histos.add("ZNA", ";ZNA Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
+      histos.add("ZPA", ";ZPA Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
+      histos.add("ZNC", ";ZNC Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
+      histos.add("ZPC", ";ZPC Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
+      histos.add("ZNACommon", ";ZNA Common Energy;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
+      histos.add("ZPACommon", ";ZPA Common Energy;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
+      histos.add("ZNCCommon", ";ZNC Common Energy;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
+      histos.add("ZPCCommon", ";ZPC Common Energy;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
       histos.add("ZNAVsZNC", ";ZNC;ZNA", kTH2F, {{{30, -0.5, maxZn}, {30, -0.5, maxZn}}});
       histos.add("ZPAVsZPC", ";ZPC;ZPA;", kTH2F, {{{100, -0.5, maxZp}, {100, -0.5, maxZp}}});
       histos.add("ZNAVsZPA", ";ZPA;ZNA;", kTH2F, {{{20, -0.5, maxZp}, {30, -0.5, maxZn}}});
@@ -308,6 +312,12 @@ struct FlowZdcTask {
       histos.add("ZNAVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZn}}});
       histos.add("ZNVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA+ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZn}}});
       histos.add("ZNDifVsNch", ";#it{N}_{ch} (|#eta|<0.8);ZNA-ZNC;", kTH2F, {{{nBinsNch, minNch, maxNch}, {100, -50., 50.}}});
+      histos.add("ZPAvsCent", ";centFT0C;ZPA", kTH2F, {{{axisCent}, {nBinsZDC, -0.5, maxZp}}});
+      histos.add("ZPCvsCent", ";centFT0C;ZPC", kTH2F, {{{axisCent}, {nBinsZDC, -0.5, maxZp}}});
+      histos.add("pZPAvsFT0Ccent", ";FT0C centrality;ZPA Amplitude", kTProfile, {{nBinsCent, minT0CcentCut, maxT0CcentCut}});
+      histos.add("pZPCvsFT0Ccent", ";FT0C centrality;ZPC Amplitude", kTProfile, {{nBinsCent, minT0CcentCut, maxT0CcentCut}});
+      histos.add("pZPAvsGlbTrack", ";Global Tracks (ITS + TPC);ZPA Amplitude", kTProfile, {{nBinsNch, minNch, maxNch}});
+      histos.add("pZPCvsGlbTrack", ";Global Tracks (ITS + TPC);ZPC Amplitude", kTProfile, {{nBinsNch, minNch, maxNch}});
     }
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -403,9 +413,10 @@ struct FlowZdcTask {
     return true;
   }
 
-  void processQA(ColEvSels::iterator const& collision, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, AodTracks const& tracks)
+  void processQA(ColEvSels::iterator const& collision, BCsRun3 const& /*bcs*/, aod::Zdcs const& /*zdcsData*/, aod::FV0As const& /*fv0as*/, aod::FT0s const& /*ft0s*/, TheFilteredTracks const& tracks)
   {
     const auto& foundBC = collision.foundBC_as<BCsRun3>();
+    const auto cent = collision.centFT0C();
     if (!isEventSelected(collision)) {
       return;
     }
@@ -445,6 +456,10 @@ struct FlowZdcTask {
     float znC = zdc.amplitudeZNC() / cfgCollisionEnergy;
     float zpA = zdc.amplitudeZPA() / cfgCollisionEnergy;
     float zpC = zdc.amplitudeZPC() / cfgCollisionEnergy;
+    float commonSumZnc = zdc.energyCommonZNC() / cfgCollisionEnergy;
+    float commonSumZna = zdc.energyCommonZNA() / cfgCollisionEnergy;
+    float commonSumZpc = zdc.energyCommonZPC() / cfgCollisionEnergy;
+    float commonSumZpa = zdc.energyCommonZPA() / cfgCollisionEnergy;
     float aZEM1{zdc.amplitudeZEM1()};
     float aZEM2{zdc.amplitudeZEM2()};
     float sumZEMs{aZEM1 + aZEM2};
@@ -512,6 +527,8 @@ struct FlowZdcTask {
       } else {
         skipEvent = true;
       }
+    } else {
+      skipEvent = true;
     }
     if (!skipEvent) {
       return;
@@ -534,38 +551,61 @@ struct FlowZdcTask {
     }
     histos.fill(HIST("zPos"), collision.posZ());
     histos.fill(HIST("T0Ccent"), collision.centFT0C());
-
     histos.fill(HIST("ZNCcvsZNCsum"), sumZNC / cfgCollisionEnergy, zdc.energyCommonZNC() / cfgCollisionEnergy);
     histos.fill(HIST("ZNAcvsZNAsum"), sumZNA / cfgCollisionEnergy, zdc.energyCommonZNA() / cfgCollisionEnergy);
     histos.fill(HIST("ZPCcvsZPCsum"), sumZPC / cfgCollisionEnergy, zdc.energyCommonZPC() / cfgCollisionEnergy);
     histos.fill(HIST("ZPAcvsZPAsum"), sumZPA / cfgCollisionEnergy, zdc.energyCommonZPA() / cfgCollisionEnergy);
-
     histos.fill(HIST("GlbTracks"), glbTracks);
+
+    // Neutron ZDC
     histos.fill(HIST("ZNA"), znA);
     histos.fill(HIST("ZNC"), znC);
-    histos.fill(HIST("ZPA"), zpA);
-    histos.fill(HIST("ZPC"), zpC);
+    histos.fill(HIST("ZNACommon"), commonSumZna);
+    histos.fill(HIST("ZNCCommon"), commonSumZnc);
     histos.fill(HIST("ZNASector"), sumZNA / cfgCollisionEnergy);
     histos.fill(HIST("ZNCSector"), sumZNC / cfgCollisionEnergy);
-    histos.fill(HIST("ZPASector"), sumZPA / cfgCollisionEnergy);
-    histos.fill(HIST("ZPCSector"), sumZPC / cfgCollisionEnergy);
     histos.fill(HIST("ZN"), znA + znC);
-    histos.fill(HIST("ZNAVsZNC"), znC, znA);
-    histos.fill(HIST("ZNAVsZPA"), zpA, znA);
-    histos.fill(HIST("ZNCVsZPC"), zpC, znC);
-    histos.fill(HIST("ZPAVsZPC"), zpC, zpA);
     histos.fill(HIST("ZNVsZEM"), sumZEMs, sumZNs);
     histos.fill(HIST("ZNCVstdc"), tZNC, znC);
     histos.fill(HIST("ZNAVstdc"), tZNA, znA);
     histos.fill(HIST("ZPCVstdc"), tZPC, zpC);
-    histos.fill(HIST("ZPAVstdc"), tZPA, zpA);
-    histos.fill(HIST("ZEM1Vstdc"), tZEM1, aZEM1);
-    histos.fill(HIST("ZEM2Vstdc"), tZEM2, aZEM2);
-    histos.fill(HIST("debunch"), tZDCdif, tZDCsum);
-
     histos.fill(HIST("ZNVsFT0A"), aT0A / 100., sumZNs);
     histos.fill(HIST("ZNVsFT0C"), aT0C / 100., sumZNs);
     histos.fill(HIST("ZNVsFT0M"), (aT0A + aT0C) / 100., sumZNs);
+
+    // Proton ZDC
+    if (!isOneNeutronFound || znA >= oneNeutron) {
+      histos.fill(HIST("ZPA"), zpA);
+      histos.fill(HIST("ZPACommon"), commonSumZpa);
+      histos.fill(HIST("ZPASector"), sumZPA / cfgCollisionEnergy);
+      histos.fill(HIST("ZPAVstdc"), tZPA, zpA);
+      histos.fill(HIST("ZPAvsCent"), cent, zpA);
+      if (std::isfinite(zpA) && !std::isnan(zpA) &&
+          cent >= minT0CcentCut && cent < maxT0CcentCut && glbTracks >= minNch && glbTracks < maxNch) {
+        histos.fill(HIST("pZPAvsFT0Ccent"), cent, zpA);
+        histos.fill(HIST("pZPAvsGlbTrack"), glbTracks, zpA);
+      }
+    }
+    if (!isOneNeutronFound || znC >= oneNeutron) {
+      histos.fill(HIST("ZPC"), zpC);
+      histos.fill(HIST("ZPCCommon"), commonSumZpc);
+      histos.fill(HIST("ZPCSector"), sumZPC / cfgCollisionEnergy);
+      histos.fill(HIST("ZPCvsCent"), cent, zpC);
+      if (std::isfinite(zpC) && !std::isnan(zpC) &&
+          cent >= minT0CcentCut && cent < maxT0CcentCut && glbTracks >= minNch && glbTracks < maxNch) {
+        histos.fill(HIST("pZPCvsFT0Ccent"), cent, zpC);
+        histos.fill(HIST("pZPCvsGlbTrack"), glbTracks, zpC);
+      }
+    }
+
+    // ZDC Correlations
+    histos.fill(HIST("ZNAVsZNC"), znC, znA);
+    histos.fill(HIST("ZNAVsZPA"), zpA, znA);
+    histos.fill(HIST("ZNCVsZPC"), zpC, znC);
+    histos.fill(HIST("ZPAVsZPC"), zpC, zpA);
+    histos.fill(HIST("ZEM1Vstdc"), tZEM1, aZEM1);
+    histos.fill(HIST("ZEM2Vstdc"), tZEM2, aZEM2);
+    histos.fill(HIST("debunch"), tZDCdif, tZDCsum);
 
     if (sumZNs > znBasedCut) {
       return;
@@ -795,7 +835,7 @@ struct FlowZdcTask {
     histos.fill(HIST("GlobalMult_vs_FT0C"), nchTracks, collision.multFT0C());
   }
 
-  PROCESS_SWITCH(FlowZdcTask, processZdcCollAssoc, "Processing ZDC w. collision association", true);
+  PROCESS_SWITCH(FlowZdcTask, processZdcCollAssoc, "Processing ZDC w. collision association", false);
   PROCESS_SWITCH(FlowZdcTask, processQA, "Process QA", true);
   PROCESS_SWITCH(FlowZdcTask, processCorrelation, "Process correlations", true);
 

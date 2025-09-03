@@ -27,10 +27,16 @@
 
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
 
 #include <array>
 #include <cmath>
 #include <vector>
+
+template <typename T>
+concept IsB0ToDstarPiChannel = requires(T candidate) {
+  candidate.prongD0Id();
+};
 
 class HfHelper
 {
@@ -633,6 +639,12 @@ class HfHelper
     return candidate.m(std::array{o2::constants::physics::MassDMinus, o2::constants::physics::MassPiPlus});
   }
 
+  template <IsB0ToDstarPiChannel T>
+  auto invMassB0ToDPi(const T& candidate)
+  {
+    return candidate.m(std::array{o2::constants::physics::MassD0, o2::constants::physics::MassPiPlus, o2::constants::physics::MassPiPlus});
+  }
+
   template <typename T>
   auto cosThetaStarB0(const T& candidate)
   {
@@ -1205,7 +1217,7 @@ class HfHelper
     }
 
     // Lc pt
-    if (ptLc < cuts->get(pTBin, "pT Lc")) {
+    if (ptLc < cuts->get(pTBin, "pT Lc+")) {
       return false;
     }
 
@@ -1235,7 +1247,7 @@ class HfHelper
     }
 
     // d0 of Lc
-    if (std::abs(candLb.impactParameter0()) < cuts->get(pTBin, "d0 Lc")) {
+    if (std::abs(candLb.impactParameter0()) < cuts->get(pTBin, "d0 Lc+")) {
       return false;
     }
 
