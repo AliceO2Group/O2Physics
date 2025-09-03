@@ -416,8 +416,9 @@ struct UpcPhotonuclearAnalysisJMG {
       if (isTrackCut(track) == false) {
         continue;
       }
+      float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f, TwoPI);
       histos.fill(HIST("yields"), multiplicity, track.pt(), eta(track.px(), track.py(), track.pz()));
-      histos.fill(HIST("etaphi"), multiplicity, eta(track.px(), track.py(), track.pz()), phi(track.px(), track.py()));
+      histos.fill(HIST("etaphi"), multiplicity, eta(track.px(), track.py(), track.pz()), phiVal);
     }
   }
 
@@ -529,8 +530,9 @@ struct UpcPhotonuclearAnalysisJMG {
       if (isTrackCut(track) == false) {
         continue;
       }
-      histos.fill(HIST("etaphiVtx"), reconstructedCollision.posZ(), eta(track.px(), track.py(), track.pz()), phi(track.px(), track.py()));
-      histos.fill(HIST("Tracks/hTrackPhiBeforeCorr"), phi(track.px(), track.py()));
+      float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f, TwoPI);
+      histos.fill(HIST("etaphiVtx"), reconstructedCollision.posZ(), eta(track.px(), track.py(), track.pz()), phiVal);
+      histos.fill(HIST("Tracks/hTrackPhiBeforeCorr"), phiVal);
     }
 
     switch (sgSide) {
@@ -559,14 +561,15 @@ struct UpcPhotonuclearAnalysisJMG {
           }
           nTracksCharged++;
           sumPt += track.pt();
+          float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f, TwoPI);
           histos.fill(HIST("Tracks/SGsideA/hTrackPt"), track.pt());
-          histos.fill(HIST("Tracks/SGsideA/hTrackPhi"), phi(track.px(), track.py()));
+          histos.fill(HIST("Tracks/SGsideA/hTrackPhi"), phiVal);
           histos.fill(HIST("Tracks/SGsideA/hTrackEta"), eta(track.px(), track.py(), track.pz()));
           histos.fill(HIST("Tracks/SGsideA/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tpcSignal());
           histos.fill(HIST("Tracks/SGsideA/hTrackTOFSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tofSignal());
           vTrackPtSideA.push_back(track.pt());
           vTrackEtaSideA.push_back(eta(track.px(), track.py(), track.pz()));
-          vTrackPhiSideA.push_back(phi(track.px(), track.py()));
+          vTrackPhiSideA.push_back(phiVal);
           vTrackTPCSignalSideA.push_back(track.tpcSignal());
           vTrackTOFSignalSideA.push_back(track.tofSignal());
           vTrackTPCNSigmaPiSideA.push_back(track.tpcNSigmaPi());
@@ -618,14 +621,15 @@ struct UpcPhotonuclearAnalysisJMG {
           }
           nTracksCharged++;
           sumPt += track.pt();
+          float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f, TwoPI);
           histos.fill(HIST("Tracks/SGsideC/hTrackPt"), track.pt());
-          histos.fill(HIST("Tracks/SGsideC/hTrackPhi"), phi(track.px(), track.py()));
+          histos.fill(HIST("Tracks/SGsideC/hTrackPhi"), phiVal);
           histos.fill(HIST("Tracks/SGsideC/hTrackEta"), eta(track.px(), track.py(), track.pz()));
           histos.fill(HIST("Tracks/SGsideC/hTrackTPCSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tpcSignal());
           histos.fill(HIST("Tracks/SGsideC/hTrackTOFSignnalP"), momentum(track.px(), track.py(), track.pz()) * track.sign(), track.tofSignal());
           vTrackPtSideC.push_back(track.pt());
           vTrackEtaSideC.push_back(eta(track.px(), track.py(), track.pz()));
-          vTrackPhiSideC.push_back(phi(track.px(), track.py()));
+          vTrackPhiSideC.push_back(phiVal);
           vTrackTPCSignalSideC.push_back(track.tpcSignal());
           vTrackTOFSignalSideC.push_back(track.tofSignal());
           vTrackTPCNSigmaPiSideC.push_back(track.tpcNSigmaPi());
@@ -855,8 +859,8 @@ struct UpcPhotonuclearAnalysisJMG {
       ++multiplicity;
 
       float weightNUA = getNUAWeight(reconstructedCollision.posZ(), eta(track.px(), track.py(), track.pz()), phi(track.px(), track.py()));
-
-      histos.fill(HIST("Tracks/hTrackPhiAfterCorr"), phi(track.px(), track.py()), weightNUA);
+      float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f, TwoPI);
+      histos.fill(HIST("Tracks/hTrackPhiAfterCorr"), phiVal, weightNUA);
     }
     // multiplicity = reconstructedTracks.size();
     if (fillCollisionUD(same, multiplicity) == false) {
