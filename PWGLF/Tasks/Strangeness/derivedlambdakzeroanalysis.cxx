@@ -1127,10 +1127,10 @@ struct derivedlambdakzeroanalysis {
   {
     double phiModn = computePhiMod(trackPhi, sign);
     if (phiModn > fPhiCutHigh->Eval(trackPt))
-      return false; // reject track
+      return true; // keep track
     if (phiModn < fPhiCutLow->Eval(trackPt))
-      return false; // reject track
-    return true;
+      return true; // keep track
+    return false; // reject track
   }
 
   template <typename TV0, typename TCollision>
