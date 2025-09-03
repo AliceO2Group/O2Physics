@@ -148,7 +148,7 @@ struct UpcPhotonuclearAnalysisJMG {
                                                "Pair cuts on various particles"};
   Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, {"Two track cut"}};
   ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
-  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -constants::math::PIHalf, constants::math::PIHalf * 3}, "delta phi axis for histograms"};
+  ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, kThreeHalfPi}, "delta phi axis for histograms"};
   ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
@@ -450,7 +450,7 @@ struct UpcPhotonuclearAnalysisJMG {
           continue;
         }*/
         float deltaPhi = phi(track1.px(), track1.py()) - phi(track2.px(), track2.py());
-        deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf, kThreeHalfPi);
+        deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf);
         target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed, eta(track1.px(), track1.py(), track1.pz()) - eta(track2.px(), track2.py(), track2.pz()), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, 1.0);
       }
     }
