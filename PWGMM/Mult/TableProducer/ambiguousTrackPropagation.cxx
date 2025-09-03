@@ -8,33 +8,38 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+///
+/// \file   ambiguousTrackPropagation.cxx
+/// \brief This code loops over central and MFT tracks and among the compatible
+/// collisions to this track, picks the one with the smallest DCAxy/DCAz and puts it
+/// in a table
+/// \author Anton Alkin <anton.alkin@cern.ch>
+/// \author Sarah Herrmann <sarah.herrmann@cern.ch>
+/// \author Gyula Bencedi <gyula.bencedi@cern.ch>
+/// \author Tulika Tripathy <tulika.tripathy@cern.ch>
 
-// \file   trackPropagation.cxx
-// \author Anton Alkin <anton.alkin@cern.ch>
-// \author Sarah Herrmann <sarah.herrmann@cern.ch>
-//
-// \brief This code loops over central and MFT tracks and among the compatible
-// collisions to this track, picks the one with the smallest DCAxy and puts it
-// in a table
+#include "bestCollisionTable.h"
+
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "CommonConstants/GeomConstants.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/TrackFwd.h"
+
 #include "Math/MatrixFunctions.h"
 #include "Math/SMatrix.h"
-
-#include "Field/MagneticField.h"
 #include "TGeoGlobalMagField.h"
 
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "bestCollisionTable.h"
+#include <string>
+#include <vector>
 
 using SMatrix55 = ROOT::Math::SMatrix<double, 5, 5, ROOT::Math::MatRepSym<double, 5>>;
 using SMatrix5 = ROOT::Math::SVector<Double_t, 5>;
@@ -46,32 +51,34 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::track;
 
-AxisSpec DCAxyAxis = {500, -1, 50};
-
 struct AmbiguousTrackPropagation {
-  //  Produces<aod::BestCollisions> tracksBestCollisions;
   Produces<aod::BestCollisionsFwd> fwdtracksBestCollisions;
+  Produces<aod::BestCollisionsFwd3d> fwdtracksBestCollisions3d;
+  Produces<aod::BestCollisionsFwd3dExtra> fwdtracksBestCollisions3dExtra;
   Produces<aod::BestCollFwdExtra> fwdtracksBestCollExtra;
   Produces<aod::ReassignedTracksCore> tracksReassignedCore;
   Produces<aod::ReassignedTracksExtra> tracksReassignedExtra;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   int runNumber = -1;
-  float Bz = 0;                                         // Magnetic field for MFT
-  static constexpr double centerMFT[3] = {0, 0, -61.4}; // Field at center of MFT
+  float bZ = 0;                                          // Magnetic field for MFT
+  static constexpr double kCenterMFT[3] = {0, 0, -61.4}; // Field at center of MFT
 
   o2::base::Propagator::MatCorrType matCorr =
     o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   o2::parameters::GRPMagField* grpmag = nullptr;
 
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
 
   Configurable<bool> produceExtra{"produceExtra", false, "Produce table with refitted track parameters"};
   Configurable<bool> produceHistos{"produceHistos", false, "Produce control histograms"};
+
+  ConfigurableAxis binsDCAxy{"binsDCAxy", {200, -1., 1.}, ""};
+  ConfigurableAxis binsDCAz{"binsDCAz", {200, -1., 1.}, ""};
 
   HistogramRegistry registry{
     "registry",
@@ -84,18 +91,27 @@ struct AmbiguousTrackPropagation {
 
   void init(o2::framework::InitContext& /*initContext*/)
   {
+
+    AxisSpec dcaXYAxis = {binsDCAxy, "dcaXYAxis", "dcaXYAxis"};
+    AxisSpec dcaZAxis = {binsDCAz, "dcaZAxis", "dcaZAxis"};
+
     ccdb->setURL(ccdburl);
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
     if (produceHistos) {
-      if (doprocessMFT || doprocessMFTReassoc) {
+      if (doprocessMFT || doprocessMFTReassoc || doprocessMFTReassoc3D) {
         registry.add({"DeltaZ", " ; #Delta#it{z}", {HistType::kTH1F, {{201, -10.1, 10.1}}}});
-        registry.add({"TracksDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}});
-        registry.add({"ReassignedDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {DCAxyAxis}}});
-        registry.add({"TracksOrigDCAXY", " ; DCA_{XY} (wrt orig coll) (cm)", {HistType::kTH1F, {DCAxyAxis}}});
+        registry.add({"TracksDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {dcaXYAxis}}});
+        registry.add({"ReassignedDCAXY", " ; DCA_{XY} (cm)", {HistType::kTH1F, {dcaXYAxis}}});
+        registry.add({"TracksOrigDCAXY", " ; DCA_{XY} (wrt orig coll) (cm)", {HistType::kTH1F, {dcaXYAxis}}});
         registry.add({"TracksAmbDegree", " ; N_{coll}^{comp}", {HistType::kTH1D, {{41, -0.5, 40.5}}}});
         registry.add({"TrackIsAmb", " ; isAmbiguous", {HistType::kTH1D, {{2, -0.5, 1.5}}}});
+        if (doprocessMFTReassoc3D) {
+          registry.add({"TracksDCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcaZAxis}}});
+          registry.add({"ReassignedDCAZ", " ; DCA_{Z} (cm)", {HistType::kTH1F, {dcaZAxis}}});
+          registry.add({"TracksOrigDCAZ", " ; DCA_{Z} (wrt orig coll) (cm)", {HistType::kTH1F, {dcaZAxis}}});
+        }
       }
       if (doprocessCentral) {
         registry.add({"PropagationFailures", "", {HistType::kTH1F, {{5, 0.5, 5.5}}}});
@@ -122,18 +138,18 @@ struct AmbiguousTrackPropagation {
     o2::base::Propagator::initFieldFromGRP(grpmag);
     runNumber = bc.runNumber();
 
-    if (doprocessMFT || doprocessMFTReassoc) {
+    if (doprocessMFT || doprocessMFTReassoc || doprocessMFTReassoc3D) {
       o2::field::MagneticField* field = static_cast<o2::field::MagneticField*>(TGeoGlobalMagField::Instance()->GetField());
-      Bz = field->getBz(centerMFT);
-      LOG(info) << "The field at the center of the MFT is Bz = " << Bz;
+      bZ = field->getBz(kCenterMFT);
+      LOG(info) << "The field at the center of the MFT is bZ = " << bZ;
     }
   }
 
-  static constexpr TrackSelectionFlags::flagtype trackSelectionITS =
+  static constexpr TrackSelectionFlags::flagtype kTrackSelectionITS =
     TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
     TrackSelectionFlags::kITSHits;
 
-  static constexpr TrackSelectionFlags::flagtype trackSelectionTPC =
+  static constexpr TrackSelectionFlags::flagtype kTrackSelectionTPC =
     TrackSelectionFlags::kTPCNCls |
     TrackSelectionFlags::kTPCCrossedRowsOverNCls |
     TrackSelectionFlags::kTPCChi2NDF;
@@ -153,18 +169,18 @@ struct AmbiguousTrackPropagation {
     std::array<float, 2> dcaInfo;
     float bestDCA[2];
     o2::track::TrackParametrization<float> bestTrackPar;
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       dcaInfo[0] = track.dcaXY(); // DCAxy
       dcaInfo[1] = track.dcaZ();  // DCAz
       bestDCA[0] = dcaInfo[0];
       bestDCA[1] = dcaInfo[1];
 
       auto bestCol = track.has_collision() ? track.collisionId() : -1;
-      if ((track.trackCutFlag() & trackSelectionITS) != trackSelectionITS) {
+      if ((track.trackCutFlag() & kTrackSelectionITS) != kTrackSelectionITS) {
         continue;
       }
       if ((track.detectorMap() & (uint8_t)o2::aod::track::TPC) == (uint8_t)o2::aod::track::TPC) {
-        if ((track.trackCutFlag() & trackSelectionTPC) != trackSelectionTPC) {
+        if ((track.trackCutFlag() & kTrackSelectionTPC) != kTrackSelectionTPC) {
           continue;
         }
       }
@@ -181,7 +197,7 @@ struct AmbiguousTrackPropagation {
         }
         auto compatibleColls = track.compatibleColl();
         int failures = 0;
-        for (auto& collision : compatibleColls) {
+        for (auto const& collision : compatibleColls) {
           auto propagated = o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPar, 2.f, matCorr, &dcaInfo);
           if (!propagated) {
             ++failures;
@@ -239,7 +255,7 @@ struct AmbiguousTrackPropagation {
     float bestDCA = 0.f, bestDCAx = 0.f, bestDCAy = 0.f;
     o2::track::TrackParCovFwd bestTrackPar;
 
-    for (auto& atrack : atracks) {
+    for (auto const& atrack : atracks) {
       dcaInfo = 999; // DCAxy
       bestDCA = 999;
 
@@ -254,14 +270,14 @@ struct AmbiguousTrackPropagation {
       int degree = 0; // degree of ambiguity of the track
 
       auto compatibleBCs = atrack.bc_as<ExtBCs>();
-      for (auto& bc : compatibleBCs) {
+      for (auto const& bc : compatibleBCs) {
         if (!bc.has_collisions()) {
           continue;
         }
         auto collisions = bc.collisions();
         for (auto const& collision : collisions) {
           degree++;
-          trackPar.propagateToZhelix(collision.posZ(), Bz); // track parameters propagation to the position of the z vertex
+          trackPar.propagateToZhelix(collision.posZ(), bZ); // track parameters propagation to the position of the z vertex
 
           const auto dcaX(trackPar.getX() - collision.posX());
           const auto dcaY(trackPar.getY() - collision.posY());
@@ -325,7 +341,7 @@ struct AmbiguousTrackPropagation {
     float bestDCA = 0.f, bestDCAx = 0.f, bestDCAy = 0.f;
     o2::track::TrackParCovFwd bestTrackPar;
 
-    for (auto& track : tracks) {
+    for (auto const& track : tracks) {
       dcaInfo = 999; // DCAxy
       bestDCA = 999;
 
@@ -345,9 +361,9 @@ struct AmbiguousTrackPropagation {
       SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
       o2::track::TrackParCovFwd trackPar{track.z(), tpars, tcovs, track.chi2()};
 
-      for (auto& collision : compatibleColls) {
+      for (auto const& collision : compatibleColls) {
 
-        trackPar.propagateToZhelix(collision.posZ(), Bz); // track parameters propagation to the position of the z vertex
+        trackPar.propagateToZhelix(collision.posZ(), bZ); // track parameters propagation to the position of the z vertex
 
         const auto dcaX(trackPar.getX() - collision.posX());
         const auto dcaY(trackPar.getY() - collision.posY());
@@ -394,6 +410,88 @@ struct AmbiguousTrackPropagation {
     }
   }
   PROCESS_SWITCH(AmbiguousTrackPropagation, processMFTReassoc, "Fill BestCollisionsFwd for MFT ambiguous tracks with the new data model", false);
+
+  void processMFTReassoc3D(MFTTracksWColls const& tracks, aod::Collisions const&, ExtBCs const& bcs)
+  {
+    if (bcs.size() == 0) {
+      return;
+    }
+    if (tracks.size() == 0) {
+      return;
+    }
+    auto bc = bcs.begin();
+    initCCDB(bc);
+
+    std::array<double, 3> dcaInfOrig;
+    std::array<double, 2> dcaInfo;
+    double bestDCA[2];
+    o2::track::TrackParCovFwd bestTrackPar;
+
+    for (auto const& track : tracks) {
+      dcaInfOrig[0] = 999.f; // original DCAx from propagation
+      dcaInfOrig[1] = 999.f; // original DCAy from propagation
+      dcaInfOrig[2] = 999.f; // original DCAz from propagation
+      dcaInfo[0] = 999.f;    // calcualted DCAxy
+      dcaInfo[1] = 999.f;    // calculated DCAz - same as original
+      bestDCA[0] = 999.f;    // minimal DCAxy
+      bestDCA[1] = 999.f;    // minimal DCAz
+
+      auto bestCol = track.has_collision() ? track.collisionId() : -1;
+      auto compatibleColls = track.compatibleColl();
+
+      std::vector<double> v1; // Temporary null vector for the computation of the covariance matrix
+      SMatrix55 tcovs(v1.begin(), v1.end());
+      SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
+      o2::track::TrackParCovFwd trackPar{track.z(), tpars, tcovs, track.chi2()};
+
+      for (auto const& collision : compatibleColls) {
+
+        trackPar.propagateToDCAhelix(bZ, {collision.posX(), collision.posY(), collision.posZ()}, dcaInfOrig);
+        dcaInfo[0] = std::sqrt(dcaInfOrig[0] * dcaInfOrig[0] + dcaInfOrig[1] * dcaInfOrig[1]);
+        dcaInfo[1] = dcaInfOrig[2];
+
+        if ((std::abs(dcaInfo[0]) < std::abs(bestDCA[0])) && (std::abs(dcaInfo[1]) < std::abs(bestDCA[1]))) {
+          bestCol = collision.globalIndex();
+          bestDCA[0] = dcaInfo[0];
+          bestDCA[1] = dcaInfo[1];
+          bestTrackPar = trackPar;
+        }
+        if ((track.collisionId() != collision.globalIndex()) && produceHistos) {
+          registry.fill(HIST("DeltaZ"), track.collision().posZ() - collision.posZ()); // deltaZ between the 1st coll zvtx and the other compatible ones
+        }
+        if (produceHistos) {
+          registry.fill(HIST("TracksDCAXY"), dcaInfo[0]);
+          registry.fill(HIST("TracksDCAZ"), dcaInfo[1]);
+        }
+
+        if ((collision.globalIndex() == track.collisionId()) && produceHistos) {
+          registry.fill(HIST("TracksOrigDCAXY"), dcaInfo[0]);
+          registry.fill(HIST("TracksOrigDCAZ"), dcaInfo[1]);
+        }
+      }
+      if ((bestCol != track.collisionId()) && produceHistos) {
+        // reassigned
+        registry.fill(HIST("ReassignedDCAXY"), bestDCA[0]);
+        registry.fill(HIST("ReassignedDCAZ"), bestDCA[1]);
+      }
+      if (produceHistos) {
+        int isAmbiguous = 0;
+        registry.fill(HIST("TracksAmbDegree"), compatibleColls.size());
+        if (compatibleColls.size() > 1) {
+          isAmbiguous = 1;
+        }
+        registry.fill(HIST("TrackIsAmb"), isAmbiguous);
+      }
+
+      fwdtracksBestCollisions3d(track.globalIndex(), compatibleColls.size(), bestCol, bestDCA[0], bestDCA[1]);
+      if (produceExtra) {
+        fwdtracksBestCollisions3dExtra(bestTrackPar.getX(), bestTrackPar.getY(), bestTrackPar.getZ(),
+                                       bestTrackPar.getTgl(), bestTrackPar.getInvQPt(), bestTrackPar.getPt(),
+                                       bestTrackPar.getP(), bestTrackPar.getEta(), bestTrackPar.getPhi());
+      }
+    }
+  }
+  PROCESS_SWITCH(AmbiguousTrackPropagation, processMFTReassoc3D, "Fill ReassignedTracks for MFT ambiguous tracks", false);
 };
 
 //****************************************************************************************
