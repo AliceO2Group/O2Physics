@@ -1400,7 +1400,7 @@ struct HigherMassResonances {
   }
   PROCESS_SWITCH(HigherMassResonances, processSEderived, "same event process in strangeness derived data", false);
 
-  void processMEderived(EventCandidatesDerivedData const& collisions, TrackCandidates const& /*tracks*/, V0CandidatesDerivedData const& v0s, DauTracks const&)
+  void processMEderived(EventCandidatesDerivedData const& collisions, V0CandidatesDerivedData const& v0s, DauTracks const&)
   {
 
     for (const auto& [c1, c2] : selfCombinations(colBinning, config.cfgNmixedEvents, -1, collisions, collisions)) // two different centrality c1 and c2 and tracks corresponding to them
