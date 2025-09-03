@@ -28,44 +28,45 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
-#include <Math/Vector4D.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <string>
-#include <map>
-#include <algorithm>
-#include <vector>
-
-#include <TFile.h>
-#include <TH2D.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/DataModel/EventSelection.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGUD/Core/SGSelector.h"
+
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "PWGUD/Core/SGSelector.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
+
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <Math/Vector4D.h>
+#include <TFile.h>
+#include <TH2D.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <TProfile.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -684,48 +685,48 @@ struct derivedlambdakzeroanalysis {
 
     auto hSelectionV0s = histos.add<TH1>("GeneralQA/hSelectionV0s", "hSelectionV0s", kTH1D, {{static_cast<int>(selPhysPrimAntiLambda) + 3, -0.5f, static_cast<double>(selPhysPrimAntiLambda) + 2.5f}});
     hSelectionV0s->GetXaxis()->SetBinLabel(1, "All");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selCosPA+2, "cosPA");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selRadius+2, "Radius min.");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selRadiusMax+2, "Radius max.");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selDCANegToPV+2, "DCA neg. to PV");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selDCAPosToPV+2, "DCA pos. to PV");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selDCAV0Dau+2, "DCA V0 dau.");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortRapidity+2, "K^{0}_{S} rapidity");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selLambdaRapidity+2, "#Lambda rapidity");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDPositivePion+2, "TPC PID #pi^{+}");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDNegativePion+2, "TPC PID #pi^{-}");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDPositiveProton+2, "TPC PID p");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDNegativeProton+2, "TPC PID #bar{p}");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTPositiveProtonLambda+2, "TOF #Delta t p from #Lambda");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTPositivePionLambda+2, "TOF #Delta t #pi^{+} from #Lambda");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTPositivePionK0Short+2, "TOF #Delta t #pi^{+} from K^{0}_{S}");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTNegativeProtonLambda+2, "TOF #Delta t #bar{p} from #Lambda");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTNegativePionLambda+2, "TOF #Delta t #pi^{-} from #Lambda");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTNegativePionK0Short+2, "TOF #Delta t #pi^{-} from K^{0}_{S}");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaPositiveProtonLambda+2, "TOF PID p from #Lambda");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaPositivePionLambda+2, "TOF PID #pi^{+} from #Lambda");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaPositivePionK0Short+2, "TOF PID #pi^{+} from K^{0}_{S}");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaNegativeProtonLambda+2, "TOF PID #bar{p} from #Lambda");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaNegativePionLambda+2, "TOF PID #pi^{-} from #Lambda");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaNegativePionK0Short+2, "TOF PID #pi^{-} from K^{0}_{S}");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortCTau+2, "K^{0}_{S} lifetime");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selLambdaCTau+2, "#Lambda lifetime");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortArmenteros+2, "Arm. pod. cut");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selPosGoodTPCTrack+2, "Pos. good TPC track");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selNegGoodTPCTrack+2, "Neg. good TPC track");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selPosGoodITSTrack+2, "Pos. good ITS track");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selNegGoodITSTrack+2, "Neg. good ITS track");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selPosItsOnly+2, "Pos. ITS-only");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selNegItsOnly+2, "Neg. ITS-only");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selPosNotTPCOnly+2, "Pos. not TPC-only");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selNegNotTPCOnly+2, "Neg. not TPC-only");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderK0Short+2, "True K^{0}_{S}");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderLambda+2, "True #Lambda");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderAntiLambda+2, "True #bar{#Lambda}");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selPhysPrimK0Short+2, "Phys. prim. K^{0}_{S}");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selPhysPrimLambda+2, "Phys. prim. #Lambda");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selPhysPrimAntiLambda+2, "Phys. prim. #bar{#Lambda}");
-    hSelectionV0s->GetXaxis()->SetBinLabel(selPhysPrimAntiLambda+3, "Cand. selected");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selCosPA + 2, "cosPA");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selRadius + 2, "Radius min.");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selRadiusMax + 2, "Radius max.");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selDCANegToPV + 2, "DCA neg. to PV");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selDCAPosToPV + 2, "DCA pos. to PV");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selDCAV0Dau + 2, "DCA V0 dau.");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortRapidity + 2, "K^{0}_{S} rapidity");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selLambdaRapidity + 2, "#Lambda rapidity");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDPositivePion + 2, "TPC PID #pi^{+}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDNegativePion + 2, "TPC PID #pi^{-}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDPositiveProton + 2, "TPC PID p");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDNegativeProton + 2, "TPC PID #bar{p}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTPositiveProtonLambda + 2, "TOF #Delta t p from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTPositivePionLambda + 2, "TOF #Delta t #pi^{+} from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTPositivePionK0Short + 2, "TOF #Delta t #pi^{+} from K^{0}_{S}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTNegativeProtonLambda + 2, "TOF #Delta t #bar{p} from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTNegativePionLambda + 2, "TOF #Delta t #pi^{-} from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTNegativePionK0Short + 2, "TOF #Delta t #pi^{-} from K^{0}_{S}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaPositiveProtonLambda + 2, "TOF PID p from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaPositivePionLambda + 2, "TOF PID #pi^{+} from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaPositivePionK0Short + 2, "TOF PID #pi^{+} from K^{0}_{S}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaNegativeProtonLambda + 2, "TOF PID #bar{p} from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaNegativePionLambda + 2, "TOF PID #pi^{-} from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaNegativePionK0Short + 2, "TOF PID #pi^{-} from K^{0}_{S}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortCTau + 2, "K^{0}_{S} lifetime");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selLambdaCTau + 2, "#Lambda lifetime");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortArmenteros + 2, "Arm. pod. cut");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPosGoodTPCTrack + 2, "Pos. good TPC track");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selNegGoodTPCTrack + 2, "Neg. good TPC track");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPosGoodITSTrack + 2, "Pos. good ITS track");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selNegGoodITSTrack + 2, "Neg. good ITS track");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPosItsOnly + 2, "Pos. ITS-only");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selNegItsOnly + 2, "Neg. ITS-only");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPosNotTPCOnly + 2, "Pos. not TPC-only");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selNegNotTPCOnly + 2, "Neg. not TPC-only");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderK0Short + 2, "True K^{0}_{S}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderLambda + 2, "True #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderAntiLambda + 2, "True #bar{#Lambda}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPhysPrimK0Short + 2, "Phys. prim. K^{0}_{S}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPhysPrimLambda + 2, "Phys. prim. #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPhysPrimAntiLambda + 2, "Phys. prim. #bar{#Lambda}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPhysPrimAntiLambda + 3, "Cand. selected");
 
     // histograms versus mass
     if (analyseK0Short) {
@@ -1172,7 +1173,7 @@ struct derivedlambdakzeroanalysis {
       phi = TMath::TwoPi() - phi;
     if (sign < 0) // for negative charge
       phi = TMath::TwoPi() - phi;
-    if (phi < 0) 
+    if (phi < 0)
       LOGF(warning, "phi < 0: %g", phi);
 
     phi += TMath::Pi() / 18.0; // to center gap in the middle
@@ -1187,7 +1188,7 @@ struct derivedlambdakzeroanalysis {
       return true; // keep track
     if (phiModn < fPhiCutLow->Eval(trackPt))
       return true; // keep track
-    return false; // reject track
+    return false;  // reject track
   }
 
   template <typename TV0, typename TCollision>
@@ -1242,12 +1243,12 @@ struct derivedlambdakzeroanalysis {
         posTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters &&                         // check the maximum fraction of allowed shared TPC clusters
         (!v0Selections.rejectTPCsectorBoundary || isTrackFarFromTPCBoundary(v0.positivept(), v0.positivephi(), 1))) // reject track far from TPC sector boundary or not
       BITSET(bitMap, selPosGoodTPCTrack);
-    if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                                // check minimum TPC crossed rows
-        negTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                              // check maximum TPC chi2 per clusters
-        negTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters &&             // check minimum fraction of TPC rows over findable
-        negTrackExtra.tpcFoundOverFindableCls() >= v0Selections.minTPCfoundOverFindableClusters &&                  // check minimum fraction of found over findable TPC clusters
-        negTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters &&                         // check the maximum fraction of allowed shared TPC clusters
-        (!v0Selections.rejectTPCsectorBoundary || isTrackFarFromTPCBoundary(v0.negativept(), v0.negativephi(), -1)))// reject track far from TPC sector boundary or not
+    if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                                 // check minimum TPC crossed rows
+        negTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                               // check maximum TPC chi2 per clusters
+        negTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters &&              // check minimum fraction of TPC rows over findable
+        negTrackExtra.tpcFoundOverFindableCls() >= v0Selections.minTPCfoundOverFindableClusters &&                   // check minimum fraction of found over findable TPC clusters
+        negTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters &&                          // check the maximum fraction of allowed shared TPC clusters
+        (!v0Selections.rejectTPCsectorBoundary || isTrackFarFromTPCBoundary(v0.negativept(), v0.negativephi(), -1))) // reject track far from TPC sector boundary or not
       BITSET(bitMap, selNegGoodTPCTrack);
 
     // TPC PID
@@ -1595,7 +1596,7 @@ struct derivedlambdakzeroanalysis {
     // __________________________________________
     // main analysis
     if (passK0ShortSelections && analyseK0Short) {
-      histos.fill(HIST("GeneralQA/hSelectionV0s"), selPhysPrimAntiLambda+2); //
+      histos.fill(HIST("GeneralQA/hSelectionV0s"), selPhysPrimAntiLambda + 2);      //
       histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
       histos.fill(HIST("h3dMassK0Short"), centrality, pt, v0.mK0Short());
       if (gapSide == 0)
@@ -1679,7 +1680,7 @@ struct derivedlambdakzeroanalysis {
       nK0Shorts++;
     }
     if (passLambdaSelections && analyseLambda) {
-      histos.fill(HIST("GeneralQA/hSelectionV0s"), selPhysPrimAntiLambda+2); //
+      histos.fill(HIST("GeneralQA/hSelectionV0s"), selPhysPrimAntiLambda + 2); //
       histos.fill(HIST("h3dMassLambda"), centrality, pt, v0.mLambda());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassLambdaSGA"), centrality, pt, v0.mLambda());
@@ -1762,7 +1763,7 @@ struct derivedlambdakzeroanalysis {
       nLambdas++;
     }
     if (passAntiLambdaSelections && analyseAntiLambda) {
-      histos.fill(HIST("GeneralQA/hSelectionV0s"), selPhysPrimAntiLambda+2); //
+      histos.fill(HIST("GeneralQA/hSelectionV0s"), selPhysPrimAntiLambda + 2); //
       histos.fill(HIST("h3dMassAntiLambda"), centrality, pt, v0.mAntiLambda());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassAntiLambdaSGA"), centrality, pt, v0.mAntiLambda());
