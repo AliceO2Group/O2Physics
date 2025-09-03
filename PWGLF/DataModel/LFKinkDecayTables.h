@@ -58,6 +58,7 @@ DECLARE_SOA_COLUMN(NSigmaTOFKa, nSigmaTOFKa, float); //! Number of sigmas for th
 DECLARE_SOA_COLUMN(MothPdgCode, mothPdgCode, int);            //! PDG code of the Sigma daughter
 DECLARE_SOA_COLUMN(DaugPdgCode, daugPdgCode, int);            //! PDG code of the kink daughter
 DECLARE_SOA_COLUMN(PtMC, ptMC, float);                        //! pT of the candidate in MC
+DECLARE_SOA_COLUMN(PzMC, pzMC, float);                        //! pZ of the candidate in MC
 DECLARE_SOA_COLUMN(MassMC, massMC, float);                    //! Invariant mass of the candidate in MC
 DECLARE_SOA_COLUMN(DecayRadiusMC, decayRadiusMC, float);      //! Decay radius of the candidate in MC
 DECLARE_SOA_COLUMN(CollisionIdCheck, collisionIdCheck, bool); //! Check if mcDaughter collision ID matches the reconstructed collision ID
@@ -153,7 +154,7 @@ DECLARE_SOA_TABLE(SlimKinkCandsMC, "AOD", "SLIMKINKCANDSMC",
                   kinkcand::NSigmaTPCPi, kinkcand::NSigmaTPCPr, kinkcand::NSigmaTPCKa,
                   kinkcand::NSigmaTOFPi, kinkcand::NSigmaTOFPr, kinkcand::NSigmaTOFKa,
                   kinkcand::MothPdgCode, kinkcand::DaugPdgCode,
-                  kinkcand::PtMC, kinkcand::MassMC, kinkcand::DecayRadiusMC, kinkcand::CollisionIdCheck);
+                  kinkcand::PtMC, kinkcand::PzMC, kinkcand::MassMC, kinkcand::DecayRadiusMC, kinkcand::CollisionIdCheck);
 
 } // namespace o2::aod
 
