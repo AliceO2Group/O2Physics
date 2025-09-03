@@ -133,7 +133,7 @@ o2physics_add_dpl_workflow(lambdak0sflattenicity
 
 o2physics_add_dpl_workflow(lambdalambda
     SOURCES lambdalambda.cxx
-    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::EventFilteringUtils
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(lambdajetpolarization
@@ -153,5 +153,10 @@ o2physics_add_dpl_workflow(strangenessderivedbinnedinfo
 
 o2physics_add_dpl_workflow(lambdatwopartpolarization
     SOURCES lambdaTwoPartPolarization.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(cascadeanalysislightions
+    SOURCES cascadeAnalysisLightIonsDerivedData.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)

@@ -284,9 +284,11 @@ struct decay3bodyBuilder {
     ccdb->setFatalWhenNull(false);
 
     // TOF PID parameters initialization
-    mTOFCalibConfig.metadataInfo = metadataInfo;
-    mTOFCalibConfig.inheritFromBaseTask(initContext);
-    mTOFCalibConfig.initSetup(mRespParamsV3, ccdb);
+    if (doprocessRealData == true || doprocessMonteCarlo == true) {
+      mTOFCalibConfig.metadataInfo = metadataInfo;
+      mTOFCalibConfig.inheritFromBaseTask(initContext);
+      mTOFCalibConfig.initSetup(mRespParamsV3, ccdb);
+    }
 
     // Set material correction
     if (useMatCorrType == 1) {
@@ -499,7 +501,8 @@ struct decay3bodyBuilder {
 
     auto timestamp = bc.timestamp();
     o2::parameters::GRPMagField* grpmag = 0x0;
-    grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, timestamp);
+    ccdb->clearCache(ccdbConfigurations.grpmagPath);
+    grpmag = ccdb->getSpecific<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, timestamp);
     if (!grpmag) {
       LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpmagPath << " of object GRPMagField for timestamp " << timestamp;
     }

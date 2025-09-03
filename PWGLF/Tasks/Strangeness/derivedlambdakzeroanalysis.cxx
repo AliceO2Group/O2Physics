@@ -84,6 +84,14 @@ using V0McCandidates = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras, a
 #define BITSET(var, nbit) ((var) |= (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 #define BITCHECK(var, nbit) ((var) & (static_cast<uint64_t>(1) << static_cast<uint64_t>(nbit)))
 
+enum CentEstimator {
+  kCentFT0C = 0,
+  kCentFT0M,
+  kCentFT0CVariant1,
+  kCentMFT,
+  kCentNGlobal
+};
+
 struct derivedlambdakzeroanalysis {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -97,6 +105,7 @@ struct derivedlambdakzeroanalysis {
 
   Configurable<bool> doPPAnalysis{"doPPAnalysis", false, "if in pp, set to true"};
   Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
+  Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0C, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 3:CentFT0CVariant1, 4:CentMFT, 5:CentNGlobal)"};
 
   Configurable<bool> doEventQA{"doEventQA", false, "do event QA histograms"};
   Configurable<bool> doCompleteTopoQA{"doCompleteTopoQA", false, "do topological variable QA histograms"};
@@ -790,6 +799,11 @@ struct derivedlambdakzeroanalysis {
         histos.add("K0Short/h5dPosPhiVsEta", "h5dPosPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
         histos.add("K0Short/h5dNegPhiVsEta", "h5dNegPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
       }
+      if (doEtaPhiQA) {
+        histos.add("K0Short/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisPhi, axisEta});
+        histos.add("K0Short/h5dPosPhiVsNegPhi", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisPhi, axisPhi});
+        histos.add("K0Short/h5dPosEtaVsNegEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisEta, axisEta});
+      }
     }
     if (analyseLambda) {
       histos.add("h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
@@ -862,6 +876,11 @@ struct derivedlambdakzeroanalysis {
         histos.add("Lambda/h5dPosPhiVsEta", "h5dPosPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
         histos.add("Lambda/h5dNegPhiVsEta", "h5dNegPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
       }
+      if (doEtaPhiQA) {
+        histos.add("Lambda/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisEta});
+        histos.add("Lambda/h5dPosPhiVsNegPhi", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisPhi});
+        histos.add("Lambda/h5dPosEtaVsNegEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisEta, axisEta});
+      }
     }
     if (analyseAntiLambda) {
       histos.add("h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
@@ -933,6 +952,11 @@ struct derivedlambdakzeroanalysis {
         histos.add("AntiLambda/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
         histos.add("AntiLambda/h5dPosPhiVsEta", "h5dPosPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
         histos.add("AntiLambda/h5dNegPhiVsEta", "h5dNegPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
+      }
+      if (doEtaPhiQA) {
+        histos.add("AntiLambda/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisEta});
+        histos.add("AntiLambda/h5dPosPhiVsNegPhi", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisPhi});
+        histos.add("AntiLambda/h5dPosEtaVsNegEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisEta, axisEta});
       }
     }
 
@@ -1072,6 +1096,25 @@ struct derivedlambdakzeroanalysis {
 
     // inspect histogram sizes, please
     histos.print();
+  }
+
+  // ______________________________________________________
+  // Return slicing output
+  template <typename TCollision>
+  auto getCentralityRun3(TCollision const& collision)
+  {
+    if (centralityEstimator == kCentFT0C)
+      return collision.centFT0C();
+    else if (centralityEstimator == kCentFT0M)
+      return collision.centFT0M();
+    else if (centralityEstimator == kCentFT0CVariant1)
+      return collision.centFT0CVariant1();
+    else if (centralityEstimator == kCentMFT)
+      return collision.centMFT();
+    else if (centralityEstimator == kCentNGlobal)
+      return collision.centNGlobal();
+
+    return -1.f;
   }
 
   // ______________________________________________________
@@ -1219,34 +1262,34 @@ struct derivedlambdakzeroanalysis {
 
     // TOF PID in DeltaT
     // Positive track
-    if (std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+    if (!posTrackExtra.hasTOF() || std::fabs(v0.posTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
       BITSET(bitMap, selTOFDeltaTPositiveProtonLambda);
-    if (std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+    if (!posTrackExtra.hasTOF() || std::fabs(v0.posTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
       BITSET(bitMap, selTOFDeltaTPositivePionLambda);
-    if (std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+    if (!posTrackExtra.hasTOF() || std::fabs(v0.posTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
       BITSET(bitMap, selTOFDeltaTPositivePionK0Short);
     // Negative track
-    if (std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
+    if (!negTrackExtra.hasTOF() || std::fabs(v0.negTOFDeltaTLaPr()) < v0Selections.maxDeltaTimeProton)
       BITSET(bitMap, selTOFDeltaTNegativeProtonLambda);
-    if (std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
+    if (!negTrackExtra.hasTOF() || std::fabs(v0.negTOFDeltaTLaPi()) < v0Selections.maxDeltaTimePion)
       BITSET(bitMap, selTOFDeltaTNegativePionLambda);
-    if (std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
+    if (!negTrackExtra.hasTOF() || std::fabs(v0.negTOFDeltaTK0Pi()) < v0Selections.maxDeltaTimePion)
       BITSET(bitMap, selTOFDeltaTNegativePionK0Short);
 
     // TOF PID in NSigma
     // Positive track
-    if (std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
+    if (!posTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaLaPr()) < v0Selections.tofPidNsigmaCutLaPr)
       BITSET(bitMap, selTOFNSigmaPositiveProtonLambda);
-    if (std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
+    if (!posTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaALaPi()) < v0Selections.tofPidNsigmaCutLaPi)
       BITSET(bitMap, selTOFNSigmaPositivePionLambda);
-    if (std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
+    if (!posTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaK0PiPlus()) < v0Selections.tofPidNsigmaCutK0Pi)
       BITSET(bitMap, selTOFNSigmaPositivePionK0Short);
     // Negative track
-    if (std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
+    if (!negTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaALaPr()) < v0Selections.tofPidNsigmaCutLaPr)
       BITSET(bitMap, selTOFNSigmaNegativeProtonLambda);
-    if (std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
+    if (!negTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaLaPi()) < v0Selections.tofPidNsigmaCutLaPi)
       BITSET(bitMap, selTOFNSigmaNegativePionLambda);
-    if (std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
+    if (!negTrackExtra.hasTOF() || std::fabs(v0.tofNSigmaK0PiMinus()) < v0Selections.tofPidNsigmaCutK0Pi)
       BITSET(bitMap, selTOFNSigmaNegativePionK0Short);
 
     // ITS only tag
@@ -2189,7 +2232,7 @@ struct derivedlambdakzeroanalysis {
   void fillReconstructedEventProperties(TCollision const& collision, float& centrality, float& collisionOccupancy, double& interactionRate, int& gapSide, int& selGapSide)
   {
     if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
-      centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+      centrality = getCentralityRun3(collision);
       collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
       // Fetch interaction rate only if required (in order to limit ccdb calls)
       interactionRate = !irSource.value.empty() ? rateFetcher.fetch(ccdb.service, collision.timestamp(), collision.runNumber(), irSource) * 1.e-3 : -1;
@@ -2285,7 +2328,7 @@ struct derivedlambdakzeroanalysis {
         if constexpr (run3) { // check if we are in Run 3
           if (biggestNContribs < collision.multPVTotalContributors()) {
             biggestNContribs = collision.multPVTotalContributors();
-            centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+            centrality = getCentralityRun3(collision);
           }
         } else { // we are in Run 2: there should be only one collision in groupedCollisions
           centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
@@ -2523,7 +2566,7 @@ struct derivedlambdakzeroanalysis {
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
         auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
         if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
-          centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+          centrality = getCentralityRun3(collision);
         } else { // no, we are in Run 2
           centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
         }
@@ -2588,7 +2631,7 @@ struct derivedlambdakzeroanalysis {
       if (listBestCollisionIdx[mcCollision.globalIndex()] > -1) {
         auto collision = collisions.iteratorAt(listBestCollisionIdx[mcCollision.globalIndex()]);
         if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
-          centrality = doPPAnalysis ? collision.centFT0M() : collision.centFT0C();
+          centrality = getCentralityRun3(collision);
         } else { // no, we are in Run 2
           centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
         }

@@ -45,7 +45,7 @@ struct ThreeParticleCorrelations {
 
   // Track PID parameters
   double pionID = 0.0, kaonID = 1.0, protonID = 2.0;
-  float nSigma0 = 0.0, nSigma2 = 2.0, nSigma4 = 4.0, nSigma5 = 5.0;
+  float nSigma0 = 0.0, nSigma1 = 1.0, nSigma2 = 2.0, nSigma4 = 4.0, nSigma5 = 5.0;
 
   // V0 filter parameters
   float tpcNCrossedRowsMin = 70.0;
@@ -55,8 +55,8 @@ struct ThreeParticleCorrelations {
   int dcaV0DauMax = 1;
 
   // Track filter parameters
-  float pionPtMin = 0.3, pionPtMax = 2.3, kaonPtMin = 0.5, kaonPtMax = 2.5, protonPtMin = 0.5, protonPtMax = 2.5;
-  float pionPtMid = 1.5, kaonPtMid1 = 1.5, kaonPtMid2 = 2.0, protonPtMid = 0.7;
+  float pionPtMin = 0.3, pionPtMax = 2.3, kaonPtMin = 0.5, kaonPtMax = 2.3, protonPtMin = 0.6;
+  float pionPtMid1 = 1.6, pionPtMid2 = 2.0, kaonPtMid1 = 1.5, kaonPtMid2 = 2.0, protonPtMid = 2.3;
 
   // RD filter parameters
   float dEtaMax = 0.05, dEtaMin = 0.023;
@@ -132,6 +132,7 @@ struct ThreeParticleCorrelations {
   SameKindPair<MyFilteredMCGenCollisions, MyFilteredMCParticles, BinningTypeMC> pairMC{collBinningMC, 5, -1, &cache};
 
   // Process configurables
+  Configurable<int> confBfieldSwitch{"confBfieldSwitch", 0, "Switch for the detector magnetic field (1 if Pos, -1 if Neg, 0 if both)"};
   Configurable<bool> confFakeV0Switch{"confFakeV0Switch", false, "Switch for the fakeV0Filter function"};
   Configurable<bool> confRDSwitch{"confRDSwitch", true, "Switch for the radialDistanceFilter function"};
 
@@ -174,6 +175,7 @@ struct ThreeParticleCorrelations {
     rQARegistry.add("hEventCentrality", "hEventCentrality", {HistType::kTH1D, {{centralityAxis}}});
     rQARegistry.add("hEventCentrality_MC", "hEventCentrality_MC", {HistType::kTH1D, {{centralityAxis}}});
     rQARegistry.add("hEventZvtx", "hEventZvtx", {HistType::kTH1D, {{zvtxAxis}}});
+    rQARegistry.add("hEventBfield", "hEventBfield", {HistType::kTH1D, {{2, -1, 1}}});
     rQARegistry.add("hTrackPt", "hTrackPt", {HistType::kTH1D, {{100, 0, 4}}});
     rQARegistry.add("hTrackEta", "hTrackEta", {HistType::kTH1D, {{100, -1, 1}}});
     rQARegistry.add("hTrackPhi", "hTrackPhi", {HistType::kTH1D, {{100, (-1. / 2) * constants::math::PI, (5. / 2) * constants::math::PI}}});
@@ -334,8 +336,15 @@ struct ThreeParticleCorrelations {
 
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     auto bField = getMagneticField(bc.timestamp());
+    if (confBfieldSwitch != 0) {
+      if (std::signbit(static_cast<double>(confBfieldSwitch)) != std::signbit(bField)) {
+        return;
+      }
+    }
+
     rQARegistry.fill(HIST("hEventCentrality"), collision.centFT0C());
     rQARegistry.fill(HIST("hEventZvtx"), collision.posZ());
+    rQARegistry.fill(HIST("hEventBfield"), bField);
 
     // Start of the Track QA
     for (const auto& track : tracks) {
@@ -455,6 +464,12 @@ struct ThreeParticleCorrelations {
 
       auto bc = coll_1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
+      if (confBfieldSwitch != 0) {
+        if (std::signbit(static_cast<double>(confBfieldSwitch)) != std::signbit(bField)) {
+          return;
+        }
+      }
+
       for (const auto& [trigger, associate] : soa::combinations(soa::CombinationsFullIndexPolicy(v0_1, track_2))) {
         if (v0Filters(coll_1, trigger, tracks) && trackFilters(associate)) {
           if (radialDistanceFilter(trigger, associate, bField, true) && fakeV0Filter(trigger, associate)) {
@@ -1002,11 +1017,15 @@ struct ThreeParticleCorrelations {
       }
       if (track.pt() < pionPtMin) {
         return false;
-      } else if (track.pt() > pionPtMin && track.pt() < pionPtMid) {
+      } else if (track.pt() > pionPtMin && track.pt() < pionPtMid1) {
         if (std::abs(track.tofNSigmaPi()) >= nSigma4) {
           return false;
         }
-      } else if (track.pt() > pionPtMid && track.pt() < pionPtMax) {
+      } else if (track.pt() > pionPtMid1 && track.pt() < pionPtMid2) {
+        if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= nSigma2) {
+          return false;
+        }
+      } else if (track.pt() > pionPtMid2 && track.pt() < pionPtMax) {
         if (track.tofNSigmaPi() <= -nSigma4 || track.tofNSigmaPi() >= nSigma0) {
           return false;
         }
@@ -1025,7 +1044,7 @@ struct ThreeParticleCorrelations {
           return false;
         }
       } else if (track.pt() > kaonPtMid1 && track.pt() < kaonPtMid2) {
-        if (track.tofNSigmaKa() <= -nSigma2 || track.tofNSigmaKa() >= nSigma4) {
+        if (track.tofNSigmaKa() <= -nSigma1 || track.tofNSigmaKa() >= nSigma4) {
           return false;
         }
       } else if (track.pt() > kaonPtMid2 && track.pt() < kaonPtMax) {
@@ -1043,14 +1062,10 @@ struct ThreeParticleCorrelations {
       if (track.pt() < protonPtMin) {
         return false;
       } else if (track.pt() > protonPtMin && track.pt() < protonPtMid) {
-        if (track.tofNSigmaPr() <= -nSigma2 || track.tofNSigmaPr() >= nSigma4) {
-          return false;
-        }
-      } else if (track.pt() > protonPtMid && track.pt() < protonPtMax) {
         if (std::abs(track.tofNSigmaPr()) >= nSigma4) {
           return false;
         }
-      } else if (track.pt() > protonPtMax) {
+      } else if (track.pt() > protonPtMid) {
         if (track.tofNSigmaPr() <= -nSigma2 || track.tofNSigmaPr() >= nSigma4) {
           return false;
         }

@@ -47,7 +47,7 @@ using namespace o2::constants::physics;
 using namespace o2::aod::pwgem::dilepton::utils::emtrackutil;
 
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEoIs>;
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 
 using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU>;
 using MyTrack = MyTracks::iterator;
@@ -331,7 +331,7 @@ struct skimmerPrimaryTrack {
         trackBit |= static_cast<uint16_t>(RefTrackBit::kDCAxy03cm);
       }
 
-      emprimarytracks(collision.globalIndex(), track.globalIndex(), track.sign(), pt, eta, phi, trackBit);
+      emprimarytracks(collision.globalIndex(), track.globalIndex(), track.sign() / pt, eta, phi, trackBit);
       // prmtrackeventidtmp(collision.globalIndex());
 
       stored_trackIds.emplace_back(std::pair<int, int>{collision.globalIndex(), track.globalIndex()});

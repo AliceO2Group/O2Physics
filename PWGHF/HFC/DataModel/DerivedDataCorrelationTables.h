@@ -24,6 +24,7 @@ namespace hf_collisions_reduced
 {
 DECLARE_SOA_COLUMN(NumPvContrib, numPvContrib, int);   //! Event multiplicity from PV contributors
 DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float); //! Event multiplicity
+DECLARE_SOA_COLUMN(Centrality, centrality, float);     //! Event centrality
 DECLARE_SOA_COLUMN(PosZ, posZ, float);                 //! Primary vertex z position
 
 } // namespace hf_collisions_reduced
@@ -34,6 +35,13 @@ DECLARE_SOA_TABLE(HfcRedCollisions, "AOD", "HFCREDCOLLISION", //! Table with col
                   aod::hf_collisions_reduced::NumPvContrib,
                   aod::hf_collisions_reduced::PosZ);
 
+DECLARE_SOA_TABLE(HfcRedFlowColls, "AOD", "HFCREDFLOWCOLL", //! Table with collision info
+                  soa::Index<>,
+                  aod::hf_collisions_reduced::Multiplicity,
+                  aod::hf_collisions_reduced::NumPvContrib,
+                  aod::hf_collisions_reduced::Centrality,
+                  aod::hf_collisions_reduced::PosZ);
+
 using HfcRedCollision = HfcRedCollisions::iterator;
 
 // DECLARE_SOA_TABLE(HfCandColCounts, "AOD", "HFCANDCOLCOUNT", //! Table with number of collisions which contain at least one candidate
@@ -41,16 +49,20 @@ using HfcRedCollision = HfcRedCollisions::iterator;
 
 namespace hf_candidate_reduced
 {
-DECLARE_SOA_INDEX_COLUMN(HfcRedCollision, hfcRedCollision); //! ReducedCollision index
-DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                //! Prong 0 index
-DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                //! Prong 1 index
-DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                //! Prong2 index
-DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                //! Phi of the candidate
-DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                //! Eta of the candidate
-DECLARE_SOA_COLUMN(PtCand, ptCand, float);                  //! Pt of the candidate
-DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);            //! Invariant mass of Ds candidate
-DECLARE_SOA_COLUMN(BdtScorePrompt, bdtScorePrompt, float);  //! BDT output score for prompt hypothesis
-DECLARE_SOA_COLUMN(BdtScoreBkg, bdtScoreBkg, float);        //! BDT output score for backgronud hypothesis
+DECLARE_SOA_INDEX_COLUMN(HfcRedCollision, hfcRedCollision);  //! ReducedCollision index
+DECLARE_SOA_INDEX_COLUMN(HfcRedFlowColl, hfcRedFlowColl);    //! ReducedCollision index
+DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                 //! Prong 0 index
+DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                 //! Prong 1 index
+DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                 //! Prong2 index
+DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                 //! Phi of the candidate
+DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                 //! Eta of the candidate
+DECLARE_SOA_COLUMN(PtCand, ptCand, float);                   //! Pt of the candidate
+DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);             //! Invariant mass of Ds candidate
+DECLARE_SOA_COLUMN(InvMassCharmHad, invMassCharmHad, float); //! Invariant mass of CharmHad candidate
+DECLARE_SOA_COLUMN(BdtScorePrompt, bdtScorePrompt, float);   //! BDT output score for prompt hypothesis
+DECLARE_SOA_COLUMN(BdtScoreBkg, bdtScoreBkg, float);         //! BDT output score for backgronud hypothesis
+DECLARE_SOA_COLUMN(BdtScore0, bdtScore0, float);             //! First BDT output score
+DECLARE_SOA_COLUMN(BdtScore1, bdtScore1, float);             //! Second BDT output score
 } // namespace hf_candidate_reduced
 DECLARE_SOA_TABLE(DsCandReduceds, "AOD", "DSCANDREDUCED", //! Table with Ds candidate info
                   soa::Index<>,
@@ -68,6 +80,23 @@ DECLARE_SOA_TABLE(DsCandSelInfos, "AOD", "DSCANDSELINFO", //! Table with Ds cand
                   aod::hf_candidate_reduced::HfcRedCollisionId,
                   aod::hf_candidate_reduced::BdtScorePrompt,
                   aod::hf_candidate_reduced::BdtScoreBkg);
+
+DECLARE_SOA_TABLE(HfcRedCharmHads, "AOD", "HFCREDCHARMHAD", //! Table with charm hadron candidate info
+                  soa::Index<>,
+                  aod::hf_candidate_reduced::HfcRedFlowCollId,
+                  aod::hf_candidate_reduced::PhiCand,
+                  aod::hf_candidate_reduced::EtaCand,
+                  aod::hf_candidate_reduced::PtCand,
+                  aod::hf_candidate_reduced::InvMassCharmHad,
+                  aod::hf_candidate_reduced::Prong0Id,
+                  aod::hf_candidate_reduced::Prong1Id,
+                  aod::hf_candidate_reduced::Prong2Id);
+
+DECLARE_SOA_TABLE(HfcRedCharmMls, "AOD", "HFCREDCHARMML", //! Table with charm hadron candidate selection info
+                  soa::Index<>,
+                  aod::hf_candidate_reduced::HfcRedFlowCollId,
+                  aod::hf_candidate_reduced::BdtScore0,
+                  aod::hf_candidate_reduced::BdtScore1);
 
 namespace hf_assoc_track_reduced
 {
@@ -92,6 +121,23 @@ DECLARE_SOA_TABLE(AssocTrackReds, "AOD", "ASSOCTRACKRED", //! Table with associa
 DECLARE_SOA_TABLE(AssocTrackSels, "AOD", "ASSOCTRACKSEL", //! Table with associated track info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedCollisionId,
+                  aod::hf_assoc_track_reduced::NTpcCrossedRows,
+                  aod::hf_assoc_track_reduced::ItsClusterMap,
+                  aod::hf_assoc_track_reduced::ItsNCls,
+                  aod::hf_assoc_track_reduced::DcaXY,
+                  aod::hf_assoc_track_reduced::DcaZ)
+
+DECLARE_SOA_TABLE(HfcRedTrkAssoc, "AOD", "HFCREDTRKASSOC", //! Table with associated track info
+                  soa::Index<>,
+                  aod::hf_candidate_reduced::HfcRedFlowCollId,
+                  aod::hf_assoc_track_reduced::OriginTrackId,
+                  aod::hf_assoc_track_reduced::PhiAssocTrack,
+                  aod::hf_assoc_track_reduced::EtaAssocTrack,
+                  aod::hf_assoc_track_reduced::PtAssocTrack);
+
+DECLARE_SOA_TABLE(HfcRedTrkSels, "AOD", "HFCREDTRKSELS", //! Table with associated track info
+                  soa::Index<>,
+                  aod::hf_candidate_reduced::HfcRedFlowCollId,
                   aod::hf_assoc_track_reduced::NTpcCrossedRows,
                   aod::hf_assoc_track_reduced::ItsClusterMap,
                   aod::hf_assoc_track_reduced::ItsNCls,

@@ -102,6 +102,7 @@ struct HfFemtoDreamProducer {
   Produces<aod::FDHfCandMC> rowCandMcCharmHad;
   Produces<aod::FDHfCandMCGen> rowCandCharmHadGen;
   Produces<aod::FDParticlesIndex> outputPartsIndex;
+  Produces<aod::FDTrkTimeStamp> outputPartsTime;
   Produces<aod::FDMCCollisions> outputMcCollision;
   Produces<aod::FDMCCollLabels> outputCollsMcLabels;
   Produces<aod::FDParticles> outputParts;
@@ -391,9 +392,11 @@ struct HfFemtoDreamProducer {
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild, true>(track);
       // the bit-wise container of the systematic variations is obtained
       auto cutContainer = trackCuts.getCutContainer<false, aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
-
+      auto bc = col.template bc_as<aod::BCsWithTimestamps>();
+      int64_t timeStamp = bc.timestamp();
       // track global index
       outputPartsIndex(track.globalIndex());
+      outputPartsTime(timeStamp);
       // now the table is filled
 
       outputParts(outputCollision.lastIndex(),
