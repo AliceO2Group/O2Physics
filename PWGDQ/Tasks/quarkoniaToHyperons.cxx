@@ -1373,7 +1373,7 @@ struct QuarkoniaToHyperons {
   }
 
   template <typename TV0>
-  void analyseV0Candidate(TV0 v0, float pt, uint64_t selMap, std::vector<int>& selK0ShortIndices, std::vector<int>& selLambdaIndices, std::vector<int>& selAntiLambdaIndices/*, int v0TableOffset*/)
+  void analyseV0Candidate(TV0 v0, float pt, uint64_t selMap, std::vector<int>& selK0ShortIndices, std::vector<int>& selLambdaIndices, std::vector<int>& selAntiLambdaIndices /*, int v0TableOffset*/)
   // precalculate this information so that a check is one mask operation, not many
   {
     bool passK0ShortSelections = false;
@@ -1914,11 +1914,11 @@ struct QuarkoniaToHyperons {
   void buildHyperonAntiHyperonPairs(TCollision const& collision, THyperons const& fullHyperons, std::vector<int> selHypIndices, std::vector<int> selAntiHypIndices, float centrality, uint8_t gapSide, int type)
   {
     // 1st loop over all v0s/cascades
-    for (std::size_t iHyp = 0 ; iHyp < selHypIndices.size() ; iHyp++) {
+    for (std::size_t iHyp = 0; iHyp < selHypIndices.size(); iHyp++) {
       auto hyperon = fullHyperons.rawIteratorAt(selHypIndices[iHyp]);
 
       // 2nd loop over all v0s/cascade
-      for (std::size_t iAntiHyp = 0 ; iAntiHyp < selAntiHypIndices.size() ; iAntiHyp++) {
+      for (std::size_t iAntiHyp = 0; iAntiHyp < selAntiHypIndices.size(); iAntiHyp++) {
         // check we don't look at the same v0s/cascades
         if (selHypIndices[iHyp] == selAntiHypIndices[iAntiHyp]) {
           continue;
@@ -2012,7 +2012,7 @@ struct QuarkoniaToHyperons {
         selK0ShortIndices.clear();
         selLambdaIndices.clear();
         selAntiLambdaIndices.clear();
-        for (std::size_t i = 0 ; i < nV0sThisColl ; i++) {
+        for (std::size_t i = 0; i < nV0sThisColl; i++) {
           auto v0 = fullV0s.rawIteratorAt(v0sGrouped[collision.globalIndex()][i]);
 
           if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
@@ -2027,7 +2027,7 @@ struct QuarkoniaToHyperons {
           selMap = selMap | (static_cast<uint64_t>(1) << selConsiderK0Short) | (static_cast<uint64_t>(1) << selConsiderLambda) | (static_cast<uint64_t>(1) << selConsiderAntiLambda);
           selMap = selMap | (static_cast<uint64_t>(1) << selPhysPrimK0Short) | (static_cast<uint64_t>(1) << selPhysPrimLambda) | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
 
-          analyseV0Candidate(v0, v0.pt(), selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices/*, fullV0s.offset()*/);
+          analyseV0Candidate(v0, v0.pt(), selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices /*, fullV0s.offset()*/);
         } // end v0 loop
 
         // count the number of K0s, Lambda and AntiLambdas passsing the selections
@@ -2072,7 +2072,7 @@ struct QuarkoniaToHyperons {
         selAntiXiIndices.clear();
         selOmIndices.clear();
         selAntiOmIndices.clear();
-        for (std::size_t i = 0 ; i < nCascadesThisColl ; i++) {
+        for (std::size_t i = 0; i < nCascadesThisColl; i++) {
           auto cascade = fullCascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
 
           if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
@@ -2188,7 +2188,7 @@ struct QuarkoniaToHyperons {
         selK0ShortIndices.clear();
         selLambdaIndices.clear();
         selAntiLambdaIndices.clear();
-        for (std::size_t i = 0 ; i < nV0sThisColl ; i++) {
+        for (std::size_t i = 0; i < nV0sThisColl; i++) {
           auto v0 = fullV0s.rawIteratorAt(v0sGrouped[collision.globalIndex()][i]);
 
           if (std::abs(v0.negativeeta()) > v0Selections.daughterEtaCut || std::abs(v0.positiveeta()) > v0Selections.daughterEtaCut)
@@ -2215,7 +2215,7 @@ struct QuarkoniaToHyperons {
             selMap = selMap | (static_cast<uint64_t>(1) << selPhysPrimK0Short) | (static_cast<uint64_t>(1) << selPhysPrimLambda) | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
           }
 
-          analyseV0Candidate(v0, ptmc, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices/*, fullV0s.offset()*/);
+          analyseV0Candidate(v0, ptmc, selMap, selK0ShortIndices, selLambdaIndices, selAntiLambdaIndices /*, fullV0s.offset()*/);
         } // end v0 loop
 
         /// count the number of K0s, Lambda and AntiLambdas passsing the selections
@@ -2258,7 +2258,7 @@ struct QuarkoniaToHyperons {
         selAntiXiIndices.clear();
         selOmIndices.clear();
         selAntiOmIndices.clear();
-        for (std::size_t i = 0 ; i < nCascadesThisColl ; i++) {
+        for (std::size_t i = 0; i < nCascadesThisColl; i++) {
           auto cascade = fullCascades.rawIteratorAt(cascadesGrouped[collision.globalIndex()][i]);
 
           if (std::abs(cascade.negativeeta()) > cascSelections.daughterEtaCut ||
