@@ -631,7 +631,7 @@ struct UpcPhotonuclearAnalysisJMG {
           }
           nTracksCharged++;
           sumPt += track.pt();
-            float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
+          float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
           histos.fill(HIST("Tracks/SGsideC/hTrackPt"), track.pt());
           histos.fill(HIST("Tracks/SGsideC/hTrackPhi"), phiVal);
           histos.fill(HIST("Tracks/SGsideC/hTrackEta"), eta(track.px(), track.py(), track.pz()));
