@@ -16,29 +16,8 @@
 #ifndef COMMON_TOOLS_EVENTSELECTIONMODULE_H_
 #define COMMON_TOOLS_EVENTSELECTIONMODULE_H_
 
-#include "Common/CCDB/RCTSelectionFlags.h"
-
-#include <Framework/Configurable.h>
-#include <Framework/HistogramSpec.h>
-#include <Framework/Logger.h>
-
-#include <TH1.h>
-#include <TH2.h>
-#include <TMath.h>
-#include <TString.h>
-
-#include <Rtypes.h>
-#include <RtypesCore.h>
-
-#include <algorithm>
-#include <bitset>
-#include <cstdint>
-#include <iterator>
-#include <utility>
-#define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
-#define bitcheck64(var, nbit) ((var) & (static_cast<uint64_t>(1) << (nbit)))
-
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
@@ -52,16 +31,35 @@
 #include <DataFormatsParameters/AggregatedRunInfo.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 #include <ITSMFTBase/DPLAlpideParam.h>
 #include <ITSMFTReconstruction/ChipMappingITS.h>
 
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <algorithm>
+#include <bitset>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <iterator>
 #include <limits>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
+
+#define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
+#define bitcheck64(var, nbit) ((var) & (static_cast<uint64_t>(1) << (nbit)))
 
 //__________________________________________
 // MultModule
