@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 ///
-/// \file   trackPropagation.cxx
+/// \file   ambiguousTrackPropagation.cxx
 /// \brief This code loops over central and MFT tracks and among the compatible
 /// collisions to this track, picks the one with the smallest DCAxy/DCAz and puts it
 /// in a table
@@ -51,7 +51,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::track;
 
-struct TrackPropagation {
+struct AmbiguousTrackPropagation {
   Produces<aod::BestCollisionsFwd> fwdtracksBestCollisions;
   Produces<aod::BestCollisionsFwd3d> fwdtracksBestCollisions3d;
   Produces<aod::BestCollisionsFwd3dExtra> fwdtracksBestCollisions3dExtra;
@@ -235,7 +235,7 @@ struct TrackPropagation {
       }
     }
   }
-  PROCESS_SWITCH(TrackPropagation, processCentral, "Fill ReassignedTracks for central ambiguous tracks", true);
+  PROCESS_SWITCH(AmbiguousTrackPropagation, processCentral, "Fill ReassignedTracks for central ambiguous tracks", true);
 
   void processMFT(aod::MFTTracks const&,
                   aod::Collisions const&, ExtBCs const& bcs,
@@ -321,7 +321,7 @@ struct TrackPropagation {
       }
     }
   }
-  PROCESS_SWITCH(TrackPropagation, processMFT, "Fill BestCollisionsFwd for MFT ambiguous tracks", false);
+  PROCESS_SWITCH(AmbiguousTrackPropagation, processMFT, "Fill BestCollisionsFwd for MFT ambiguous tracks", false);
 
   using MFTTracksWColls = soa::Join<o2::aod::MFTTracks, aod::MFTTrkCompColls>;
 
@@ -409,7 +409,7 @@ struct TrackPropagation {
       }
     }
   }
-  PROCESS_SWITCH(TrackPropagation, processMFTReassoc, "Fill BestCollisionsFwd for MFT ambiguous tracks with the new data model", false);
+  PROCESS_SWITCH(AmbiguousTrackPropagation, processMFTReassoc, "Fill BestCollisionsFwd for MFT ambiguous tracks with the new data model", false);
 
   void processMFTReassoc3D(MFTTracksWColls const& tracks, aod::Collisions const&, ExtBCs const& bcs)
   {
@@ -491,7 +491,7 @@ struct TrackPropagation {
       }
     }
   }
-  PROCESS_SWITCH(TrackPropagation, processMFTReassoc3D, "Fill ReassignedTracks for MFT ambiguous tracks", false);
+  PROCESS_SWITCH(AmbiguousTrackPropagation, processMFTReassoc3D, "Fill ReassignedTracks for MFT ambiguous tracks", false);
 };
 
 //****************************************************************************************
@@ -501,5 +501,5 @@ struct TrackPropagation {
 //****************************************************************************************
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return {adaptAnalysisTask<TrackPropagation>(cfgc)};
+  return {adaptAnalysisTask<AmbiguousTrackPropagation>(cfgc)};
 }
