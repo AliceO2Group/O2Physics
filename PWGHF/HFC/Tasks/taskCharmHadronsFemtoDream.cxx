@@ -310,21 +310,21 @@ struct HfTaskCharmHadronsFemtoDream {
     auto pVecProng1 = RecoDecayPtEtaPhi::pVector(cand.prong1Pt(), cand.prong1Eta(), cand.prong1Phi());
     auto pVecProng2 = RecoDecayPtEtaPhi::pVector(cand.prong2Pt(), cand.prong2Eta(), cand.prong2Phi());
     auto pVecTrack = RecoDecayPtEtaPhi::pVector(trk.pt(), trk.eta(), trk.phi());
-    const auto moms4 = std::array{pVecProng0, pVecProng1, pVecProng2, pVecTrack};
+    const auto pVecCharmTrk = std::array{pVecProng0, pVecProng1, pVecProng2, pVecTrack};
 
-    std::array<double, 4> mass4{};
+    std::array<double, 4> massCharmTrk{};
 
     if (charmHadPDGCode == o2::constants::physics::Pdg::kLambdaCPlus) {
       // Λc⁺ → p K π
       if (cand.candidateSelFlag() == 1) {
-        mass4 = {
+        massCharmTrk = {
           o2::constants::physics::MassProton,
           o2::constants::physics::MassKPlus,
           o2::constants::physics::MassPiPlus,
           trackMassHyp};
       } else {
         // prong0=π, prong1=K, prong2=p
-        mass4 = {
+        massCharmTrk = {
           o2::constants::physics::MassPiPlus,
           o2::constants::physics::MassKPlus,
           o2::constants::physics::MassProton,
@@ -332,7 +332,7 @@ struct HfTaskCharmHadronsFemtoDream {
       }
     } else if (charmHadPDGCode == o2::constants::physics::Pdg::kDPlus) {
       // D⁺ → π K π
-      mass4 = {
+      massCharmTrk = {
         o2::constants::physics::MassPiPlus,
         o2::constants::physics::MassKPlus,
         o2::constants::physics::MassPiPlus,
@@ -340,7 +340,7 @@ struct HfTaskCharmHadronsFemtoDream {
     } else {
       return -1.f;
     }
-    return static_cast<float>(RecoDecay::m(moms4, mass4));
+    return static_cast<float>(RecoDecay::m(pVecCharmTrk, massCharmTrk));
   }
 
   /// This function processes the same event and takes care of all the histogramming
