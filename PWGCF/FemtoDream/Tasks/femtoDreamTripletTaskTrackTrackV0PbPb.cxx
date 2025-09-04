@@ -61,7 +61,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   Configurable<bool> confMixIfTVOPairPresent{"confMixIfTVOPairPresent", false, "Use for mixing only events which have a TV0 pair (at least one track and one V0)"};
   Configurable<bool> confMixIfTOrVOPartsPresent{"confMixIfTOrVOPartsPresent", false, "Use for mixing only events which have at least one particle of interest"};
   Configurable<int> confMinTrackNumber{"confMinTrackNumber", 2, "Minimum number of tracks in the event"};
-  Configurable<int> confMinV0Number{"confMinV0Number", 1, "Minimum number of V0 in the event"};    
+  Configurable<int> confMinV0Number{"confMinV0Number", 1, "Minimum number of V0 in the event"};
 
   // which CPR to use, old is with a possible bug and new is fixed
   Configurable<bool> confUseOLDPossiblyWrongCPR{"confUseOLDPossiblyWrongCPR", true, "Use for old CPR, which possibly has a bug. This is implemented only for debugging reasons to compare old and new code on hyperloop datasets."};
@@ -404,8 +404,7 @@ struct FemtoDreamTripletTaskTrackTrackV0PbPb {
   /// process function to call doSameEvent with Data
   /// \param col subscribe to the collision table (Data)
   /// \param parts subscribe to the femtoDreamParticleTable
-  void processSameEvent(const FilteredFDCollision& col, const
-                        o2::aod::FDParticles& parts)
+  void processSameEvent(const FilteredFDCollision& col, const o2::aod::FDParticles& parts)
   {
     fillCollision<false>(col);
     auto thegroupSelectedTracks = selectedParts->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
