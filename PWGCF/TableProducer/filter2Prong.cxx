@@ -553,9 +553,9 @@ struct Filter2Prong {
     if (cfcollisions.size() <= 0)
       return; // rejected collision
 
-    LOG(info) << "****************************************";
-    LOG(info) << "STARTING EVENT LOOP";
-    LOG(info) << "****************************************";
+    
+    
+    
 
     // V0
     for (const auto& v0 : V0s) {    // Loop over V0 candidates
