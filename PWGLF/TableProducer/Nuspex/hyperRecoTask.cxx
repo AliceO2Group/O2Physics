@@ -410,10 +410,10 @@ struct hyperRecoTask {
     hypCand.nSigmaHe3 = computeNSigmaHe3(heTrack);
     hypCand.nTPCClustersHe3 = heTrack.tpcNClsFound();
     hypCand.tpcSignalHe3 = heTrack.tpcSignal();
-    hypCand.nTPCpidClusHe3 = static_cast<int16_t>(heTrack.tpcNClsFindable() - heTrack.tpcNClsFindableMinusPID());
+    hypCand.nTPCpidClusHe3 = static_cast<int16_t>(heTrack.tpcNClsFindable()) - heTrack.tpcNClsFindableMinusPID();
     hypCand.clusterSizeITSHe3 = heTrack.itsClusterSizes();
     hypCand.nTPCClustersPi = piTrack.tpcNClsFound();
-    hypCand.nTPCpidClusPi = static_cast<int16_t>(piTrack.tpcNClsFindable() - piTrack.tpcNClsFindableMinusPID());
+    hypCand.nTPCpidClusPi = static_cast<int16_t>(piTrack.tpcNClsFindable()) - piTrack.tpcNClsFindableMinusPID();
     hypCand.tpcSignalPi = piTrack.tpcSignal();
     hypCand.tpcChi2He3 = heTrack.tpcChi2NCl();
     hypCand.itsChi2He3 = heTrack.itsChi2NCl();
