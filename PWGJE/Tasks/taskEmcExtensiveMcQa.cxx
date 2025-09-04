@@ -84,7 +84,7 @@ struct TaskEmcExtensiveMcQa {
   o2::emcal::Geometry* mGeometry = nullptr;
   o2::framework::Service<o2::ccdb::BasicCCDBManager> ccdb;
 
-  ctpRateFetcher rateFetcher;
+  o2::ctpRateFetcher rateFetcher;
   HfEventSelection hfEvSel;
   HfEventSelectionMc hfEvSelMc;
 
@@ -148,7 +148,7 @@ struct TaskEmcExtensiveMcQa {
   template <typename Coll>
   bool isCollSelected(const Coll& coll, float& cent)
   {
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, aod::BCsWithTimestamps>(coll, cent, ccdb, mHistManager);
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, o2::hf_centrality::CentralityEstimator::None, o2::aod::BCsWithTimestamps>(coll, cent, ccdb, mHistManager);
     /// monitor the satisfied event selections
     hfEvSel.fillHistograms(coll, rejectionMask, cent);
     return rejectionMask == 0;
