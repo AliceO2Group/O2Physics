@@ -8,9 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-/// \file femtoDreamPairTaskCascadeCascade.cxx
+
+/// \file femtoDreamPairCascadeCascade.cxx
 /// \brief Tasks that reads the track tables used for the pairing and builds pairs of two cascades
 /// \author Andi Mathis, Anton Riedel, Georgios Mantzaridis, Oton Vazquez Doce.
+
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamContainer.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamDetaDphiStar.h"
@@ -37,7 +39,7 @@ using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoDream;
-struct FemtoDreamPairTaskCascadeCascade {
+struct FemtoDreamPairCascadeCascade {
   SliceCache cache;
   Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
 
@@ -362,7 +364,7 @@ struct FemtoDreamPairTaskCascadeCascade {
     auto sliceCascade2 = partitionCascade2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     doSameEvent<false>(sliceCascade1, sliceCascade2, parts, col);
   }
-  PROCESS_SWITCH(FemtoDreamPairTaskCascadeCascade, processSameEvent, "Enable processing same event", true);
+  PROCESS_SWITCH(FemtoDreamPairCascadeCascade, processSameEvent, "Enable processing same event", true);
 
   // Mixed events
   template <bool isMC, typename CollisionType, typename PartType, typename PartitionType, typename BinningType>
@@ -435,12 +437,12 @@ struct FemtoDreamPairTaskCascadeCascade {
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
     }
   }
-  PROCESS_SWITCH(FemtoDreamPairTaskCascadeCascade, processMixedEvent, "Enable processing mixed events", true);
+  PROCESS_SWITCH(FemtoDreamPairCascadeCascade, processMixedEvent, "Enable processing mixed events", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{
-    adaptAnalysisTask<FemtoDreamPairTaskCascadeCascade>(cfgc),
+    adaptAnalysisTask<FemtoDreamPairCascadeCascade>(cfgc),
   };
   return workflow;
 }
