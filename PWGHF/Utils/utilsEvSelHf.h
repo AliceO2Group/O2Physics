@@ -150,7 +150,7 @@ void setEventRejectionLabels(Histo& hRejection, std::string const& softwareTrigg
 struct HfEventSelection : o2::framework::ConfigurableGroup {
   std::string prefix = "hfEvSel"; // JSON group name
   // event selection parameters (in chronological order of application)
-  o2::framework::Configurable<float> centralityMin{"centralityMin", 0.f, "Minimum centrality"};
+  o2::framework::Configurable<float> centralityMin{"centralityMin", -10.f, "Minimum centrality (0 rejects gen. collisions with no reco. collision)"};
   o2::framework::Configurable<float> centralityMax{"centralityMax", 100.f, "Maximum centrality"};
   o2::framework::Configurable<bool> useSel8Trigger{"useSel8Trigger", true, "Apply the sel8 event selection"};
   o2::framework::Configurable<int> triggerClass{"triggerClass", -1, "Trigger class different from sel8 (e.g. kINT7 for Run2) used only if useSel8Trigger is false"};
@@ -176,7 +176,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis th2ConfigAxisCent{"th2ConfigAxisCent", {100, 0., 100.}, ""};
   o2::framework::ConfigurableAxis th2ConfigAxisOccupancy{"th2ConfigAxisOccupancy", {100, 0, 100000}, ""};
   o2::framework::Configurable<bool> requireGoodRct{"requireGoodRct", false, "Flag to require good RCT"};
-  o2::framework::Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "RCT selection flag (CBT, CBT_hadronPID, CBT_electronPID, CCBT_calo, CBT_muon, CBT_muon_glo)"};
+  o2::framework::Configurable<std::string> rctLabel{"rctLabel", "CBT_hadronPID", "RCT selection flag (CBT, CBT_hadronPID, CBT_electronPID, CBT_calo, CBT_muon, CBT_muon_glo)"};
   o2::framework::Configurable<bool> rctCheckZDC{"rctCheckZDC", false, "RCT flag to check whether the ZDC is present or not"};
   o2::framework::Configurable<bool> rctTreatLimitedAcceptanceAsBad{"rctTreatLimitedAcceptanceAsBad", false, "RCT flag to reject events with limited acceptance for selected detectors"};
 
@@ -432,7 +432,7 @@ struct HfEventSelectionMc {
   bool useItsRofBorderCut{false};             // Apply the ITS RO frame border cut
   float zPvPosMin{-1000.f};                   // Minimum PV posZ (cm)
   float zPvPosMax{1000.f};                    // Maximum PV posZ (cm)
-  float centralityMin{0.f};                   // Minimum centrality
+  float centralityMin{-10.f};                 // Minimum centrality
   float centralityMax{100.f};                 // Maximum centrality
   bool requireGoodRct{false};                 // Apply RCT selection
   std::string rctLabel{""};                   // RCT selection flag

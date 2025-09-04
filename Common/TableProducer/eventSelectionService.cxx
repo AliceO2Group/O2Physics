@@ -23,7 +23,7 @@
 
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Tools/EventSelectionTools.h"
+#include "Common/Tools/EventSelectionModule.h"
 #include "Common/Tools/timestampModule.h"
 
 #include "CCDB/BasicCCDBManager.h"
