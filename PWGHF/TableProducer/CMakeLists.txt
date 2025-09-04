@@ -249,6 +249,11 @@ o2physics_add_dpl_workflow(tree-creator-lc-to-p-k-pi
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(tree-creator-sigmac-corr-bkg
+                    SOURCES treeCreatorSigmacCorrBkg.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(tree-creator-omegac-st
                     SOURCES treeCreatorOmegacSt.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2::DCAFitter O2Physics::EventFilteringUtils
