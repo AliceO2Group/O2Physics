@@ -79,11 +79,11 @@ struct HfTreeCreatorSigmacCorrBkg {
   Configurable<int> selectionFlagLc{"selectionFlagLc", 1, "Selection Flag for Lc"};
   Configurable<float> yCandRecoMax{"yCandRecoMax", -1, "Maximum Sc candidate rapidity"};
 
+  HfHelper hfHelper;
+
   using RecoLcMc = soa::Join<aod::HfCand3Prong, aod::HfCand3ProngMcRec, aod::HfSelLc, aod::HfMlLcToPKPi>;
   using RecoScMc = soa::Join<aod::HfCandSc, aod::HfCandScMcRec>;
   using ParticlesLcSigmac = soa::Join<aod::McParticles, aod::HfCand3ProngMcGen, aod::HfCandScMcGen>;
-
-  HfHelper hfHelper;
 
   /// @brief init function
   void init(InitContext&) {}
@@ -134,7 +134,7 @@ struct HfTreeCreatorSigmacCorrBkg {
                aod::TracksWMc const&)
   {
     /// loop over reconstructed Σc candidates
-    for (auto& candidateSc : candidatesSc) {
+    for (auto const& candidateSc : candidatesSc) {
 
       auto candLcDauSc = candidateSc.template prongLc_as<RecoLcMc>();
       auto candSoftPiDauSc = candidateSc.template prong1_as<aod::TracksWMc>();
