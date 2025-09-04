@@ -2232,6 +2232,7 @@ struct LFNucleiBATask {
 
     tracks.copyIndexBindings(tracksWithITS);
 
+    // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
     for (auto& track : tracksWithITS) {
       if constexpr (!IsFilteredData) {
         if (!track.isGlobalTrackWoDCA() && filterOptions.enableIsGlobalTrack) {
@@ -2278,7 +2279,7 @@ struct LFNucleiBATask {
 
       if (enablePtShiftHe && !fShiftPtHe) {
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, modernize-make-unique)
-        fShiftPtHe = new TF1("fShiftPtHe", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
+        fShiftPtHe = new TF1("fShiftPtHe", "[0] * exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
         auto parHe = (std::vector<float>)parShiftPtHe;
         fShiftPtHe->SetParameters(parHe[0], parHe[1], parHe[2], parHe[3], parHe[4]);
@@ -2286,7 +2287,7 @@ struct LFNucleiBATask {
 
       if (enablePtShiftHe && !fShiftPtantiHe) {
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, modernize-make-unique)
-        fShiftPtantiHe = new TF1("fShiftPtantiHe", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
+        fShiftPtantiHe = new TF1("fShiftPtantiHe", "[0] * exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
         auto parAntiHe = (std::vector<float>)parShiftPtAntiHe;
         fShiftPtantiHe->SetParameters(parAntiHe[0], parAntiHe[1], parAntiHe[2], parAntiHe[3], parAntiHe[4]);
@@ -2294,7 +2295,7 @@ struct LFNucleiBATask {
 
       if (enablePtShiftAntiD && !fShiftAntiD) {
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, modernize-make-unique)
-        fShiftAntiD = new TF1("fShiftAntiD", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
+        fShiftAntiD = new TF1("fShiftAntiD", "[0] * exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
         auto parAntiD = (std::vector<float>)parShiftPtAntiD;
         fShiftAntiD->SetParameters(parAntiD[0], parAntiD[1], parAntiD[2], parAntiD[3], parAntiD[4]);
@@ -2314,7 +2315,7 @@ struct LFNucleiBATask {
 
       if (enablePtShiftD && !fShiftD) {
         // NOLINTNEXTLINE(cppcoreguidelines-owning-memory, modernize-make-unique)
-        fShiftD = new TF1("fShiftD", "[0] * TMath::Exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
+        fShiftD = new TF1("fShiftD", "[0] * exp([1] + [2] * x) + [3] + [4] * x", 0.f, 8.f);
         // NOLINTNEXTLINE(cppcoreguidelines-pro-type-cstyle-cast)
         auto parD = (std::vector<float>)parShiftPtD;
         fShiftD->SetParameters(parD[0], parD[1], parD[2], parD[3], parD[4]);
@@ -2663,6 +2664,7 @@ struct LFNucleiBATask {
         if constexpr (IsFilteredData) {
           isPhysPrim = track.isPhysicalPrimary();
           isProdByGen = track.producedByGenerator();
+          // NOLINTNEXTLINE(readability-magic-numbers)
           isWeakDecay = track.getProcess() == 4;
           pdgCode = track.pdgCode();
         } else {
@@ -2671,6 +2673,7 @@ struct LFNucleiBATask {
           }
           isPhysPrim = track.mcParticle().isPhysicalPrimary();
           isProdByGen = track.mcParticle().producedByGenerator();
+          // NOLINTNEXTLINE(readability-magic-numbers)
           isWeakDecay = track.mcParticle().getProcess() == 4;
           pdgCode = track.mcParticle().pdgCode();
         }
@@ -3175,6 +3178,7 @@ struct LFNucleiBATask {
         if constexpr (IsFilteredData) {
           isPhysPrim = track.isPhysicalPrimary();
           isProdByGen = track.producedByGenerator();
+          // NOLINTNEXTLINE(readability-magic-numbers)
           isWeakDecay = track.getProcess() == 4;
           pdgCode = track.pdgCode();
           genPt = std::sqrt(std::pow(track.px(), 2) + std::pow(track.py(), 2));
@@ -3185,6 +3189,7 @@ struct LFNucleiBATask {
           }
           isPhysPrim = track.mcParticle().isPhysicalPrimary();
           isProdByGen = track.mcParticle().producedByGenerator();
+          // NOLINTNEXTLINE(readability-magic-numbers)
           isWeakDecay = track.mcParticle().getProcess() == 4;
           pdgCode = track.mcParticle().pdgCode();
 
@@ -6068,6 +6073,7 @@ struct LFNucleiBATask {
     spectraGen.fill(HIST("histGenVetxZ"), mcCollision.posZ());
     if (mcCollision.centFT0M() < cfgMultCutLow || mcCollision.centFT0M() > cfgMultCutHigh)
       return;
+    // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
     for (auto& mcParticleGen : mcParticles) {
       if (mcParticleGen.y() > kinemOptions.cfgRapidityCutHigh || mcParticleGen.y() < kinemOptions.cfgRapidityCutLow) {
         continue;
