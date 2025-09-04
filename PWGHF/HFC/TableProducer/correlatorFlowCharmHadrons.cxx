@@ -326,3 +326,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<HfCorrelatorFlowCharmHadrons>(cfgc)};
 }
+ 
