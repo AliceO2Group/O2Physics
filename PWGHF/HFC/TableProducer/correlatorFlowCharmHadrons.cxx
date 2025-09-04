@@ -120,7 +120,6 @@ struct HfCorrelatorFlowCharmHadrons {
       massCharm = o2::constants::physics::MassD0;
     } else {
       LOG(fatal) << "No decay channel selected to process";
-      std::abort();
     }
 
     hfEvSel.addHistograms(registry); // collision monitoring
@@ -307,7 +306,7 @@ struct HfCorrelatorFlowCharmHadrons {
       auto thisCollId = coll.globalIndex();
       auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
       auto candsD0ToKPiWMl = selectedD0ToKPiWMl->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
-      if (forceCharmInCollision && candsD0ToPiKWMl.size() < 1 && candsD0ToKPiWMl.size() < 1) {
+      if (forceCharmInCollision && candsD0ToPiKWMl.empty() && candsD0ToKPiWMl.empty()) {
         continue;
       }
       if (!checkAndFillCollision(coll)) {
