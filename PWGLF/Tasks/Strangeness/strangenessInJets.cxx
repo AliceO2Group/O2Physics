@@ -1020,11 +1020,11 @@ struct StrangenessInJets {
         fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
         fourMomentum.set_user_index(particle.pdgCode());
         fjParticles.emplace_back(fourMomentum);
-          
+
         // Store properties of strange hadrons
         int pdgAbs = std::abs(particle.pdgCode());
         if (pdgAbs == kK0Short || pdgAbs == kLambda0 || pdgAbs == kXiMinus || pdgAbs == kOmegaMinus) {
-          pdg.push_back(particle.pdgCode());
+          pdg.emplace_back(particle.pdgCode());
           strHadronMomentum.emplace_back(particle.px(), particle.py(), particle.pz());
         }
       }
