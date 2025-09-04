@@ -2256,6 +2256,40 @@ struct AnalysisSameEventPairing {
         isig++;
       }
     }
+    // Fill Generated PAIR histograms taking into account selected collisions
+    for (auto& event : events) {
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (!event.has_reducedMCevent()) {
+        continue;
+      }
+
+      if (fHasTwoProngGenMCsignals) {
+        for (auto& [t1, t2] : combinations(mcTracks, mcTracks)) {
+          if (t1.reducedMCeventId() != event.reducedMCeventId()) {
+            continue;
+          }
+          if (t2.reducedMCeventId() != event.reducedMCeventId()) {
+            continue;
+          }
+          auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
+          auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
+          if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
+            for (auto& sig : fGenMCSignals) {
+              if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
+                continue;
+              }
+              if (sig->CheckSignal(true, t1_raw, t2_raw)) {
+                // mcDecision |= (static_cast<uint32_t>(1) << isig);
+                VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
+                fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
+              }
+            }
+          }
+        }
+      }
+    } // end loop over reconstructed events
   }
 
   void processDummy(MyEvents&)
