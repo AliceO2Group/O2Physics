@@ -115,10 +115,10 @@ enum CorrelatedParticles {
   LcChPart
 };
 
-static constexpr std::string_view whatDataType[] = {"Data/", "MC/"};
+static constexpr std::string_view WhatDataType[] = {"Data/", "MC/"};
 // static constexpr std::string_view whatEventType[] = {"SameEvent/", "MixedEvent/"};
-static constexpr std::string_view whatCorrelationCase[] = {"TpcTpc/", "TpcMft/", "TpcFv0a/", "MftFv0a/"};
-static constexpr std::string_view whatParticles[] = {"ChPartChPart/", "D0ChPart/", "LcChPart/"};
+static constexpr std::string_view WhatCorrelationCase[] = {"TpcTpc/", "TpcMft/", "TpcFv0a/", "MftFv0a/"};
+static constexpr std::string_view WhatParticles[] = {"ChPartChPart/", "D0ChPart/", "LcChPart/"};
 
 // static constexpr float kPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
 
@@ -310,15 +310,15 @@ struct HfTaskFlow {
   template <DataType dataType, CorrelationCase correlationCase, CorrelatedParticles correlatedParticles>
   void addHistograms()
   {
-    registry.add(Form("%s%s%shEtaTrigger", whatDataType[dataType].data(), whatCorrelationCase[correlationCase].data(), whatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisEtaTrigger}});
-    registry.add(Form("%s%s%shPhiTrigger", whatDataType[dataType].data(), whatCorrelationCase[correlationCase].data(), whatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisPhi}});
-    registry.add(Form("%s%s%shPtTrigger", whatDataType[dataType].data(), whatCorrelationCase[correlationCase].data(), whatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisPt}});
-    registry.add(Form("%s%s%shYieldsTrigger", whatDataType[dataType].data(), whatCorrelationCase[correlationCase].data(), whatParticles[correlatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaTrigger}});
-    registry.add(Form("%s%s%shEtaPhiTrigger", whatDataType[dataType].data(), whatCorrelationCase[correlationCase].data(), whatParticles[correlatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisEtaTrigger, axisPhi}});
-    registry.add(Form("%s%s%shEtaAssociated", whatDataType[dataType].data(), whatCorrelationCase[correlationCase].data(), whatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisEtaAssociated}});
-    registry.add(Form("%s%s%shPhiAssociated", whatDataType[dataType].data(), whatCorrelationCase[correlationCase].data(), whatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisPhi}});
-    registry.add(Form("%s%s%shEtaPhiAssociated", whatDataType[dataType].data(), whatCorrelationCase[correlationCase].data(), whatParticles[correlatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisEtaAssociated, axisPhi}});
-    registry.add(Form("%s%s%shMultiplicity", whatDataType[dataType].data(), whatCorrelationCase[correlationCase].data(), whatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisMultiplicity}});
+    registry.add(Form("%s%s%shEtaTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisEtaTrigger}});
+    registry.add(Form("%s%s%shPhiTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisPhi}});
+    registry.add(Form("%s%s%shPtTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisPt}});
+    registry.add(Form("%s%s%shYieldsTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaTrigger}});
+    registry.add(Form("%s%s%shEtaPhiTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisEtaTrigger, axisPhi}});
+    registry.add(Form("%s%s%shEtaAssociated", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisEtaAssociated}});
+    registry.add(Form("%s%s%shPhiAssociated", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisPhi}});
+    registry.add(Form("%s%s%shEtaPhiAssociated", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisEtaAssociated, axisPhi}});
+    registry.add(Form("%s%s%shMultiplicity", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisMultiplicity}});
   }
 
   //  =========================
@@ -747,7 +747,7 @@ struct HfTaskFlow {
     }
   }
 
-  double getPhiFV0(UInt_t chno)
+  double getPhiFV0(unsigned int chno)
   {
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
@@ -771,7 +771,7 @@ struct HfTaskFlow {
     return RecoDecay::phi(chPos.x + offsetX, chPos.y + offsetY);
   }
 
-  double getEtaFV0(UInt_t chno)
+  double getEtaFV0(unsigned int chno)
   {
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
@@ -1649,7 +1649,7 @@ struct HfTaskFlow {
         }
       }
 
-      auto binningValues = binningWithTracksSize.getBinningValues(collision1, collisions);
+      // auto binningValues = binningWithTracksSize.getBinningValues(collision1, collisions);
       // int bin = binningWithTracksSize.getBin(binningValues);
 
       const auto multiplicityTracks1 = getPartsSize(collision1);
@@ -1755,8 +1755,8 @@ struct HfTaskFlow {
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
-      auto binningValues = binningWithTracksSize.getBinningValues(collision1, mcCollisions);
-      // int bin = binningWithTracksSize.getBin(binningValues);
+      // auto binningValues = binningWithTracksSize.getBinningValues(collision1, mcCollisions);
+      //  int bin = binningWithTracksSize.getBin(binningValues);
 
       const auto multiplicity = getPartsSize(collision1); // get multiplicity of charged hadrons, which is used for slicing in mixing
 
