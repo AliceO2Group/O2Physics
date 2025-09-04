@@ -30,7 +30,7 @@ o2physics_add_dpl_workflow(femtodream-pair-track-cascade
           COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(femtodream-pair-casdcade-cascade
-          SOURCES femtoDreamPairCascadeCascade.cxx
+          SOURCES femtodreamPairCascadeCascade.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
