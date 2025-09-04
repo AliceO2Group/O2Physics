@@ -41,8 +41,8 @@ namespace o2::aod
 {
 namespace hf_sigmac_bkg
 {
-const int pdgCodeLambdac2595 = 14122;
-const int pdgCodeLambdac2625 = 4124;
+const int pdgCodeLambdac2595 = 14122; // o2-linter: disable=pdg/explicit-code (PDG code needed only for this study)
+const int pdgCodeLambdac2625 = 4124;  // o2-linter: disable=pdg/explicit-code (PDG code needed only for this study)
 enum Decays { Sigmac2455Pi = 0,
               LambdacPiPi };
 enum DecaysLambdac { PKPi = 0,
