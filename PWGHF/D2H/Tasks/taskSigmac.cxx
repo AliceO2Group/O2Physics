@@ -17,6 +17,7 @@
 
 #include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/D2H/Utils/utilsSigmac.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 
@@ -340,27 +341,6 @@ struct HfTaskSigmac {
 
   }; /// end init
 
-  /// @brief Function to determine if the reconstructed candidate Σc0,++ decays into Λc+ → pK-π+, Λc+ → π+K-p or both
-  /// @tparam L template for Lc daughter of Sc candidate
-  /// @tparam S template for Sc candidate
-  /// @param candidateLc Lc daughter of Sc candidate
-  /// @param candSc Sc candidate
-  /// @return 0: none; 1: only Λc+ → pK-π+ possible; 2: Λc+ → π+K-p possible; 3: both possible
-  template <typename L, typename S>
-  int8_t isDecayToPKPiToPiKP(L& candidateLc, S& candSc)
-  {
-    int8_t channel = 0;
-    if ((candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG()) {
-      // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
-      SETBIT(channel, o2::aod::hf_cand_sigmac::Decays::PKPi);
-    }
-    if ((candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG()) {
-      // Λc+ → π+K-p and within the requested mass to build the Σc0,++
-      SETBIT(channel, o2::aod::hf_cand_sigmac::Decays::PiKP);
-    }
-    return channel; /// 0: none; 1: pK-π+ only; 2: π+K-p only; 3: both possible
-  }
-
   /// @brief function to fill the histograms needed in analysis (data)
   /// @param candidatesSc are the reconstructed candidate Σc0,++
   /// @param
@@ -386,7 +366,7 @@ struct HfTaskSigmac {
       const auto& candidateLc = candSc.prongLc_as<CandsLc>();
       // const int iscandidateLcpKpi = (candidateLc.isSelLcToPKPi() >= 1) && candSc.statusSpreadLcMinvPKPiFromPDG(); // Λc+ → pK-π+ and within the requested mass to build the Σc0,++
       // const int iscandidateLcpiKp = (candidateLc.isSelLcToPiKP() >= 1) && candSc.statusSpreadLcMinvPiKPFromPDG(); // Λc+ → π+K-p and within the requested mass to build the Σc0,++
-      const int8_t isCandPKPiPiKP = isDecayToPKPiToPiKP(candidateLc, candSc);
+      const int8_t isCandPKPiPiKP = hf_sigmac_utils::isDecayToPKPiToPiKP(candidateLc, candSc);
       double massSc(-1.), massLc(-1.), deltaMass(-1.);
       double ptSc(candSc.pt()), ptLc(candidateLc.pt());
       double etaSc(candSc.eta()), etaLc(candidateLc.eta());
@@ -817,7 +797,7 @@ struct HfTaskSigmac {
       /// get the candidate Λc+ used to build the Σc0
       /// and understand which mass hypotheses are possible
       const auto& candidateLc = candSc.prongLc_as<CandsLc>();
-      const int8_t isCandPKPiPiKP = isDecayToPKPiToPiKP(candidateLc, candSc);
+      const int8_t isCandPKPiPiKP = hf_sigmac_utils::isDecayToPKPiToPiKP(candidateLc, candSc);
 
       // candidateLc.flagMcDecayChanRec();
 
