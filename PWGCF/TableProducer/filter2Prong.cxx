@@ -553,10 +553,6 @@ struct Filter2Prong {
     if (cfcollisions.size() <= 0)
       return; // rejected collision
 
-    
-    
-    
-
     // V0
     for (const auto& v0 : V0s) {    // Loop over V0 candidates
       if (!isV0TrackSelected(v0)) { // Quality selection for V0 prongs
