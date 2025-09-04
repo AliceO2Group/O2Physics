@@ -340,7 +340,6 @@ struct HfTaskCharmHadronsFemtoDream {
     } else {
       return -1.f;
     }
-
     return static_cast<float>(RecoDecay::m(moms4, mass4));
   }
 
@@ -369,9 +368,7 @@ struct HfTaskCharmHadronsFemtoDream {
       if (kstar > highkstarCut) {
         continue;
       }
-
       float invMass = getCharmHadronMass(p2);
-      float deltaInvMassPair = getCharmHadronTrackMass(p2, p1, pdgCodeTrack1) - invMass;
 
       if (invMass < charmHadMinInvMass || invMass > charmHadMaxInvMass) {
         continue;
@@ -380,6 +377,8 @@ struct HfTaskCharmHadronsFemtoDream {
       if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
         continue;
       }
+
+      float deltaInvMassPair = getCharmHadronTrackMass(p2, p1, o2::constants::physics::MassProton) - invMass;
 
       // proton track charge
       float chargeTrack = 0.;
@@ -467,7 +466,6 @@ struct HfTaskCharmHadronsFemtoDream {
         }
 
         float invMass = getCharmHadronMass(p2);
-        float deltaInvMassPair = getCharmHadronTrackMass(p2, p1, pdgCodeTrack1) - invMass;
 
         if (invMass < charmHadMinInvMass || invMass > charmHadMaxInvMass) {
           continue;
@@ -476,6 +474,9 @@ struct HfTaskCharmHadronsFemtoDream {
         if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
           continue;
         }
+
+        float deltaInvMassPair = getCharmHadronTrackMass(p2, p1, o2::constants::physics::MassProton) - invMass;
+
         // proton track charge
         float chargeTrack = 0.;
         if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
