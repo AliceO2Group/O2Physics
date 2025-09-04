@@ -3476,9 +3476,9 @@ struct LFNucleiBATask {
               }
               if (!isPhysPrim && !isProdByGen && outFlagOptions.makeDCABeforeCutPlots) {
                 histos.fill(HIST("tracks/helium/dca/before/hDCAxyVsPtHeliumTrueTransport"), hePt, track.dcaXY());
-                if (isWeakDecay)
+                if (isWeakDecay) {
                   histos.fill(HIST("tracks/helium/dca/before/hDCAxyVsPtHeliumTrueSec"), hePt, track.dcaXY());
-                else {
+                } else {
                   histos.fill(HIST("tracks/helium/dca/before/hDCAxyVsPtHeliumTrueMaterial"), hePt, track.dcaXY());
                   if (!IsFilteredData) {
                     if (nSaved > 0) {
