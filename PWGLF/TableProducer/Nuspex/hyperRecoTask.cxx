@@ -91,7 +91,7 @@ struct hyperCandidate {
   float genPhi() const { return std::atan2(gMom[1], gMom[0]); }
   float genEta() const { return std::asinh(gMom[2] / genPt()); }
 
-  int v0ID;
+  int v0ID = -1;
   int heTrackID;
   int piTrackID;
   float dcaV0dau = -10;
