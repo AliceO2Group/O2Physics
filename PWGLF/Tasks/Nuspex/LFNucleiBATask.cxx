@@ -44,6 +44,7 @@
 #include <TF1.h>
 
 #include <gsl/span>
+#include <memory>
 #include <string>
 
 using namespace o2;
@@ -1145,7 +1146,7 @@ struct LFNucleiBATask {
           histos.add<TH2>("tracks/helium/dca/before/hDCAxyVsPtHeliumTrueSec", "DCAxy vs Pt (He); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
           histos.add<TH2>("tracks/helium/dca/before/hDCAxyVsPtHeliumTrueMaterial", "DCAxy vs Pt (He); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
 
-          histos.add<TH2>("tracks/helium/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother PDG", HistType::kTH2I, {{kMaxNumMom + 2, -0.5, (double)kMaxNumMom + 1.5}, {kNumMotherlist + 2, -1.5, (double)kNumMotherlist + 0.5}});
+          histos.add<TH2>("tracks/helium/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother PDG", HistType::kTH2I, {{kMaxNumMom + 2, -0.5, static_cast<double>(kMaxNumMom) + 1.5}, {kNumMotherlist + 2, -1.5, static_cast<double>(kNumMotherlist) + 0.5}});
 
           // Fix for getting TH2 pointer
           std::shared_ptr<TH2> hTemp = histos.get<TH2>(HIST("tracks/helium/dca/before/hMomTrueMaterial"));
