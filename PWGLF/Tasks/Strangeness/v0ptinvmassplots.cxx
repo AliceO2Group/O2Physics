@@ -91,7 +91,7 @@ struct V0PtInvMassPlots {
   // Configurables switches for v0 selection
   Configurable<bool> doRapidityCut{"doRapidityCut", true, "Enable rapidity v0 selection"};
   Configurable<bool> doDaughterPseudorapidityCut{"doDaughterPseudorapidityCut", true, "Enable Daughter pseudorapidity v0 selection"};
-  Configurable<bool> doisITSAfterburner{"doisITSAfterburner", true, "Enable ITS Afterburner"};
+  Configurable<bool> doisNotITSAfterburner{"doisNotITSAfterburner", true, "Enable Tracks do not come from Afterburner"};
   Configurable<bool> doitsMinHits{"doitsMinHits", true, "Enable ITS Minimum hits"};
 
   // Configurables switches for K0sh selection
@@ -228,7 +228,6 @@ struct V0PtInvMassPlots {
     rPtAnalysis.add("hNK0sh", "hNK0sh", {HistType::kTH1D, {{11, 0.f, 11.f}}});
     rPtAnalysis.add("hNLambda", "hNLambda", {HistType::kTH1D, {{11, 0.f, 11.f}}});
     rPtAnalysis.add("hNAntilambda", "hNAntilambda", {HistType::kTH1D, {{11, 0.f, 11.f}}});
-
     rPtAnalysis.add("hVertexZRec", "hVertexZRec", {HistType::kTH1F, {vertexZAxis}});
     rPtAnalysis.add("hArmenterosPodolanskiPlot", "hArmenterosPodolanskiPlot", {HistType::kTH2F, {{armenterosasymAxis}, {armenterosQtAxis}}});
     rPtAnalysis.add("hV0EtaDaughters", "hV0EtaDaughters", {HistType::kTH1F, {{nBins, -1.2f, 1.2f}}});
@@ -334,47 +333,47 @@ struct V0PtInvMassPlots {
   {
     rPtAnalysis.fill(HIST("hNEvents"), 0.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
-    if (!(collision.sel8() && dosel8)) {
+    if (dosel8 && !collision.sel8()) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 1.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel 8");
-    if (!(doNoTimeFrameBorder && collision.selection_bit(aod::evsel::kNoTimeFrameBorder))) {
+    if (doNoTimeFrameBorder && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 2.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "NoTimeFrameBorder");
-    if (!(doNoITSROFrameBorder && collision.selection_bit(aod::evsel::kNoITSROFrameBorder))) {
+    if (doNoITSROFrameBorder && collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 3.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "NoITSROFrameBorder");
-    if (!(doIsTriggerTVX && collision.selection_bit(aod::evsel::kIsTriggerTVX))) {
+    if (doIsTriggerTVX && collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 4.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "IsTriggerTVX");
-    if (!(docutZVertex && std::abs(collision.posZ()) < cutZVertex)) {
+    if (docutZVertex && std::abs(collision.posZ()) < cutZVertex) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 5.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "cutZVertex");
-    if (!(doIsVertexTOFmatched && collision.selection_bit(aod::evsel::kIsVertexTOFmatched))) {
+    if (doIsVertexTOFmatched && !collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 6.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "IsVertexTOFmatched");
-    if (!(doNoSameBunchPileup && collision.selection_bit(aod::evsel::kNoSameBunchPileup))) {
+    if (doNoSameBunchPileup && collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 7.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(8, "NoSameBunchPileup");
-    if (!(doIsVertexITSTPC && collision.selection_bit(aod::evsel::kIsVertexITSTPC))) {
+    if (doIsVertexITSTPC && collision.selection_bit(aod::evsel::kIsVertexITSTPC)) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 8.5);
     rPtAnalysis.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(9, "IsVertexITSTPC");
-    if (!(doisInelGt0 && collision.isInelGt0())) {
+    if (doisInelGt0 && collision.isInelGt0()) {
       return false;
     }
     rPtAnalysis.fill(HIST("hNEvents"), 9.5);
@@ -399,7 +398,7 @@ struct V0PtInvMassPlots {
     }
     rPtAnalysis.fill(HIST("hNV0s"), 1.5);
     rPtAnalysis.get<TH1>(HIST("hNV0s"))->GetXaxis()->SetBinLabel(2, "Dau Pseudorapidity");
-    if (!doisITSAfterburner && (posDaughterTrack.isITSAfterburner() || negDaughterTrack.isITSAfterburner())) { // ITS After Burner on daughter tracks
+    if (doisNotITSAfterburner && (posDaughterTrack.isITSAfterburner() || negDaughterTrack.isITSAfterburner())) { // ITS After Burner on daughter tracks
       return false;
     }
     rPtAnalysis.fill(HIST("hNV0s"), 2.5);
@@ -411,6 +410,7 @@ struct V0PtInvMassPlots {
       // Cut Plots
       rPtAnalysis.fill(HIST("hV0EtaDaughters"), v0.template posTrack_as<DaughterTracks>().eta());
       rPtAnalysis.fill(HIST("hV0EtaDaughters"), v0.template negTrack_as<DaughterTracks>().eta());
+      rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlot"), v0.alpha(), v0.qtarm());
     }
     return true;
   }
@@ -793,7 +793,6 @@ struct V0PtInvMassPlots {
         if (!acceptV0(v0)) { // V0 Selections
           continue;
         }
-        rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlot"), v0.alpha(), v0.qtarm());
         // kzero analysis
         if (kzeroAnalysis == true) {
           if (v0mcParticle.pdgCode() == kK0Short) { // kzero matched
@@ -918,7 +917,6 @@ struct V0PtInvMassPlots {
       if (!acceptV0(v0)) { // V0 Selection
         continue;
       }
-      rPtAnalysis.fill(HIST("hArmenterosPodolanskiPlot"), v0.alpha(), v0.qtarm());
       // kzero analysis
       if (kzeroAnalysis == true) {
         if (!acceptK0sh(v0)) { // K0sh Selection

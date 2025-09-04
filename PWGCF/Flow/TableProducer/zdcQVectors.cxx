@@ -220,6 +220,7 @@ struct ZdcQVectors {
           registry.add(Form("QA/before/hQ%s%s_vs_vx", coord, side), Form("hQ%s%s_vs_vx", coord, side), {HistType::kTProfile, {axisVx}});
           registry.add(Form("QA/before/hQ%s%s_vs_vy", coord, side), Form("hQ%s%s_vs_vy", coord, side), {HistType::kTProfile, {axisVy}});
           registry.add(Form("QA/before/hQ%s%s_vs_vz", coord, side), Form("hQ%s%s_vs_vz", coord, side), {HistType::kTProfile, {axisVz}});
+          registry.add(Form("QA/Q%s%s_vs_iteration", coord, side), Form("hQ%s%s_vs_iteration", coord, side), {HistType::kTH2D, {{25, 0, 25}, axisQ}});
 
           names[0].push_back(TString::Format("hQ%s%s_mean_Cent_V_run", coord, side));
           names[1].push_back(TString::Format("hQ%s%s_mean_cent_run", coord, side));
@@ -444,8 +445,9 @@ struct ZdcQVectors {
     // iteration = 0 (Energy calibration) -> step 0 only
     // iteration 1,2,3,4,5 = recentering -> 5 steps per iteration (1x 4D + 4x 1D)
 
-    if (cal.calibfilesLoaded[cm])
+    if (cal.calibfilesLoaded[cm]) {
       return;
+    }
 
     if (ccdb_dir.empty() == false) {
       cal.calibList[cm] = ccdb->getForTimeStamp<TList>(ccdb_dir, timestamp);
@@ -548,7 +550,6 @@ struct ZdcQVectors {
 
     isSelected = true;
 
-    // TODO Implement other ZDC estimators
     auto cent = collision.centFT0C();
     if (cfgFT0Cvariant1)
       cent = collision.centFT0CVariant1();
@@ -588,10 +589,16 @@ struct ZdcQVectors {
     runnumber = foundBC.runNumber();
 
     // load new calibrations for new runs only
-    // UPLOAD Energy calibration and vmean in 1 histogram!
     if (runnumber != lastRunNumber) {
+      cal.calibfilesLoaded[0] = false;
+      cal.calibList[0] = nullptr;
+
+      cal.calibfilesLoaded[1] = false;
+      cal.calibList[1] = nullptr;
+
       cal.calibfilesLoaded[2] = false;
       cal.calibList[2] = nullptr;
+
       lastRunNumber = runnumber;
     }
 
@@ -844,6 +851,11 @@ struct ZdcQVectors {
         qRec[1] -= corrQyA[cor];
         qRec[2] -= corrQxC[cor];
         qRec[3] -= corrQyC[cor];
+
+        registry.get<TH2>(HIST("QA/QXA_vs_iteration"))->Fill(cor, qRec[0]);
+        registry.get<TH2>(HIST("QA/QYA_vs_iteration"))->Fill(cor, qRec[1]);
+        registry.get<TH2>(HIST("QA/QXC_vs_iteration"))->Fill(cor, qRec[2]);
+        registry.get<TH2>(HIST("QA/QYC_vs_iteration"))->Fill(cor, qRec[3]);
       }
 
       if (isSelected && cfgFillCommonRegistry) {
