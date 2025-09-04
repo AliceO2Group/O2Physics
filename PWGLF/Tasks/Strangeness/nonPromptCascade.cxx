@@ -695,7 +695,6 @@ struct NonPromptCascadeTask {
                                   aod::BCsWithTimestamps const&)
   {
     mProcessCounter[0]++;
-    fillMultHistos(collisions);
     zorroAccounting(collisions);
     fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates);
     fillDataTable<aod::AssignedTrackedCascades>(gCandidates);
@@ -707,6 +706,7 @@ struct NonPromptCascadeTask {
                            aod::BCsWithTimestamps const&)
   {
     mProcessCounter[1]++;
+    fillMultHistos(collisions);
     zorroAccounting(collisions);
     fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT);
     fillDataTable<aod::Cascades>(gCandidatesNT);
