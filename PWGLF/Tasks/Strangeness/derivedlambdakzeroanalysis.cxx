@@ -28,43 +28,45 @@
 //    david.dobrigkeit.chinellato@cern.ch
 //
 
-#include <Math/Vector4D.h>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <string>
-#include <map>
-#include <algorithm>
-#include <vector>
-
-#include <TFile.h>
-#include <TH2D.h>
-#include <TProfile.h>
-#include <TLorentzVector.h>
-#include <TPDGCode.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/CCDB/ctpRateFetcher.h"
-#include "Common/DataModel/EventSelection.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessMLTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGUD/Core/SGSelector.h"
+
+#include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "PWGUD/Core/SGSelector.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "Tools/ML/MlResponse.h"
 #include "Tools/ML/model.h"
+
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include <Math/Vector4D.h>
+#include <TFile.h>
+#include <TH2D.h>
+#include <TLorentzVector.h>
+#include <TPDGCode.h>
+#include <TProfile.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdlib>
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -106,7 +108,25 @@ struct derivedlambdakzeroanalysis {
   Configurable<std::string> irSource{"irSource", "T0VTX", "Estimator of the interaction rate (Recommended: pp --> T0VTX, Pb-Pb --> ZNC hadronic)"};
   Configurable<int> centralityEstimator{"centralityEstimator", kCentFT0C, "Run 3 centrality estimator (0:CentFT0C, 1:CentFT0M, 3:CentFT0CVariant1, 4:CentMFT, 5:CentNGlobal)"};
 
+  Configurable<bool> doEventQA{"doEventQA", false, "do event QA histograms"};
+  Configurable<bool> doCompleteTopoQA{"doCompleteTopoQA", false, "do topological variable QA histograms"};
+  Configurable<bool> doTPCQA{"doTPCQA", false, "do TPC QA histograms"};
+  Configurable<bool> doTOFQA{"doTOFQA", false, "do TOF QA histograms"};
+  Configurable<int> doDetectPropQA{"doDetectPropQA", 0, "do Detector/ITS map QA: 0: no, 1: 4D, 2: 5D with mass; 3: plain in 3D"};
+  Configurable<bool> doEtaPhiQA{"doEtaPhiQA", false, "do Eta/Phi QA histograms"};
+
+  Configurable<bool> doPlainTopoQA{"doPlainTopoQA", true, "do simple 1D QA of candidates"};
+  Configurable<float> qaMinPt{"qaMinPt", 0.0f, "minimum pT for QA plots"};
+  Configurable<float> qaMaxPt{"qaMaxPt", 1000.0f, "maximum pT for QA plots"};
+  Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
+
+  // for MC
+  Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
+  Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", false, "Take pi decay into muon into account in MC"};
+  Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", true, "check collision association"};
+
   struct : ConfigurableGroup {
+    std::string prefix = "eventSelections"; // JSON group name
     Configurable<bool> requireSel8{"requireSel8", true, "require sel8 event selection"};
     Configurable<bool> requireTriggerTVX{"requireTriggerTVX", true, "require FT0 vertex (acceptable FT0C-FT0A time difference) at trigger level"};
     Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border (Run 3 only)"};
@@ -153,7 +173,10 @@ struct derivedlambdakzeroanalysis {
     Configurable<bool> useSPDTrackletsCent{"useSPDTrackletsCent", false, "Use SPD tracklets for estimating centrality? If not, use V0M-based centrality (Run 2 only)"};
   } eventSelections;
 
+  static constexpr float DefaultLifetimeCuts[1][2] = {{30., 20.}};
+
   struct : ConfigurableGroup {
+    std::string prefix = "v0Selections"; // JSON group name
     Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
 
     // Selection criteria: acceptance
@@ -167,6 +190,7 @@ struct derivedlambdakzeroanalysis {
     Configurable<float> dcapostopv{"dcapostopv", .05, "min DCA Pos To PV (cm)"};
     Configurable<float> v0radius{"v0radius", 1.2, "minimum V0 radius (cm)"};
     Configurable<float> v0radiusMax{"v0radiusMax", 1E5, "maximum V0 radius (cm)"};
+    Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {DefaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
 
     // Additional selection on the AP plot (exclusive for K0Short)
     // original equation: lArmPt*5>TMath::Abs(lArmAlpha)
@@ -187,6 +211,9 @@ struct derivedlambdakzeroanalysis {
     Configurable<bool> rejectNegITSafterburner{"rejectNegITSafterburner", false, "reject negative track formed out of afterburner ITS tracks"};
     Configurable<bool> requirePosITSafterburnerOnly{"requirePosITSafterburnerOnly", false, "require positive track formed out of afterburner ITS tracks"};
     Configurable<bool> requireNegITSafterburnerOnly{"requireNegITSafterburnerOnly", false, "require negative track formed out of afterburner ITS tracks"};
+    Configurable<bool> rejectTPCsectorBoundary{"rejectTPCsectorBoundary", false, "reject tracks close to the TPC sector boundaries"};
+    Configurable<std::string> phiLowCut{"phiLowCut", "0.06/x+pi/18.0-0.06", "Low azimuth cut parametrisation"};
+    Configurable<std::string> phiHighCut{"phiHighCut", "0.1/x+pi/18.0+0.06", "High azimuth cut parametrisation"};
 
     // PID (TPC/TOF)
     Configurable<float> tpcPidNsigmaCut{"tpcPidNsigmaCut", 5, "tpcPidNsigmaCut"};
@@ -199,21 +226,8 @@ struct derivedlambdakzeroanalysis {
     Configurable<float> maxDeltaTimePion{"maxDeltaTimePion", 1e+9, "check maximum allowed time"};
   } v0Selections;
 
-  Configurable<bool> doCompleteTopoQA{"doCompleteTopoQA", false, "do topological variable QA histograms"};
-  Configurable<bool> doTPCQA{"doTPCQA", false, "do TPC QA histograms"};
-  Configurable<bool> doTOFQA{"doTOFQA", false, "do TOF QA histograms"};
-  Configurable<int> doDetectPropQA{"doDetectPropQA", 0, "do Detector/ITS map QA: 0: no, 1: 4D, 2: 5D with mass; 3: plain in 3D"};
-  Configurable<bool> doEtaPhiQA{"doEtaPhiQA", false, "do Eta/Phi QA histograms"};
-
-  Configurable<bool> doPlainTopoQA{"doPlainTopoQA", true, "do simple 1D QA of candidates"};
-  Configurable<float> qaMinPt{"qaMinPt", 0.0f, "minimum pT for QA plots"};
-  Configurable<float> qaMaxPt{"qaMaxPt", 1000.0f, "maximum pT for QA plots"};
-  Configurable<bool> qaCentrality{"qaCentrality", false, "qa centrality flag: check base raw values"};
-
-  // for MC
-  Configurable<bool> doMCAssociation{"doMCAssociation", true, "if MC, do MC association"};
-  Configurable<bool> doTreatPiToMuon{"doTreatPiToMuon", false, "Take pi decay into muon into account in MC"};
-  Configurable<bool> doCollisionAssociationQA{"doCollisionAssociationQA", true, "check collision association"};
+  TF1* fPhiCutLow = new TF1("fPhiCutLow", v0Selections.phiLowCut.value.data(), 0, 100);
+  TF1* fPhiCutHigh = new TF1("fPhiCutHigh", v0Selections.phiHighCut.value.data(), 0, 100);
 
   struct : ConfigurableGroup {
     std::string prefix = "rctConfigurations"; // JSON group name
@@ -267,49 +281,74 @@ struct derivedlambdakzeroanalysis {
     Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUT", "Path of the Lut parametrization"};
     Configurable<std::string> geoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> mVtxPath{"mVtxPath", "GLO/Calib/MeanVertex", "Path of the mean vertex file"};
+
+    // manual
+    Configurable<bool> useCustomMagField{"useCustomMagField", false, "Use custom magnetic field value"};
+    Configurable<float> customMagField{"customMagField", 5.0f, "Manually set magnetic field"};
   } ccdbConfigurations;
 
   o2::ccdb::CcdbApi ccdbApi;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   ctpRateFetcher rateFetcher;
   int mRunNumber;
+  float magField;
   std::map<std::string, std::string> metadata;
+  o2::parameters::GRPMagField* grpmag = nullptr;
 
-  static constexpr float DefaultLifetimeCuts[1][2] = {{30., 20.}};
-  Configurable<LabeledArray<float>> lifetimecut{"lifetimecut", {DefaultLifetimeCuts[0], 2, {"lifetimecutLambda", "lifetimecutK0S"}}, "lifetimecut"};
+  // CCDB options
+  struct : ConfigurableGroup {
+    ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
+    ConfigurableAxis axisPtXi{"axisPtXi", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for feeddown from Xi"};
+    ConfigurableAxis axisPtCoarse{"axisPtCoarse", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
+    ConfigurableAxis axisK0Mass{"axisK0Mass", {200, 0.4f, 0.6f}, ""};
+    ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
+    ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "Centrality"};
+    ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +5000.0f}, "Number of charged particles"};
+    ConfigurableAxis axisIRBinning{"axisIRBinning", {500, 0, 50}, "Binning for the interaction rate (kHz)"};
+    ConfigurableAxis axisMultFT0M{"axisMultFT0M", {500, 0.0f, +100000.0f}, "Multiplicity FT0M"};
+    ConfigurableAxis axisMultFT0C{"axisMultFT0C", {500, 0.0f, +10000.0f}, "Multiplicity FT0C"};
+    ConfigurableAxis axisMultFV0A{"axisMultFV0A", {500, 0.0f, +100000.0f}, "Multiplicity FV0A"};
 
-  ConfigurableAxis axisPt{"axisPt", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for analysis"};
-  ConfigurableAxis axisPtXi{"axisPtXi", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "pt axis for feeddown from Xi"};
-  ConfigurableAxis axisPtCoarse{"axisPtCoarse", {VARIABLE_WIDTH, 0.0f, 1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 7.0f, 10.0f, 15.0f}, "pt axis for QA"};
-  ConfigurableAxis axisK0Mass{"axisK0Mass", {200, 0.4f, 0.6f}, ""};
-  ConfigurableAxis axisLambdaMass{"axisLambdaMass", {200, 1.101f, 1.131f}, ""};
-  ConfigurableAxis axisCentrality{"axisCentrality", {VARIABLE_WIDTH, 0.0f, 5.0f, 10.0f, 20.0f, 30.0f, 40.0f, 50.0f, 60.0f, 70.0f, 80.0f, 90.0f}, "Centrality (%)"};
-  ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +5000.0f}, "Number of charged particles"};
-  ConfigurableAxis axisIRBinning{"axisIRBinning", {500, 0, 50}, "Binning for the interaction rate (kHz)"};
+    ConfigurableAxis axisRawCentrality{"axisRawCentrality", {VARIABLE_WIDTH, 0.000f, 52.320f, 75.400f, 95.719f, 115.364f, 135.211f, 155.791f, 177.504f, 200.686f, 225.641f, 252.645f, 281.906f, 313.850f, 348.302f, 385.732f, 426.307f, 470.146f, 517.555f, 568.899f, 624.177f, 684.021f, 748.734f, 818.078f, 892.577f, 973.087f, 1058.789f, 1150.915f, 1249.319f, 1354.279f, 1465.979f, 1584.790f, 1710.778f, 1844.863f, 1985.746f, 2134.643f, 2291.610f, 2456.943f, 2630.653f, 2813.959f, 3006.631f, 3207.229f, 3417.641f, 3637.318f, 3865.785f, 4104.997f, 4354.938f, 4615.786f, 4885.335f, 5166.555f, 5458.021f, 5762.584f, 6077.881f, 6406.834f, 6746.435f, 7097.958f, 7462.579f, 7839.165f, 8231.629f, 8635.640f, 9052.000f, 9484.268f, 9929.111f, 10389.350f, 10862.059f, 11352.185f, 11856.823f, 12380.371f, 12920.401f, 13476.971f, 14053.087f, 14646.190f, 15258.426f, 15890.617f, 16544.433f, 17218.024f, 17913.465f, 18631.374f, 19374.983f, 20136.700f, 20927.783f, 21746.796f, 22590.880f, 23465.734f, 24372.274f, 25314.351f, 26290.488f, 27300.899f, 28347.512f, 29436.133f, 30567.840f, 31746.818f, 32982.664f, 34276.329f, 35624.859f, 37042.588f, 38546.609f, 40139.742f, 41837.980f, 43679.429f, 45892.130f, 400000.000f}, "raw centrality signal"}; // for QA
 
-  ConfigurableAxis axisRawCentrality{"axisRawCentrality", {VARIABLE_WIDTH, 0.000f, 52.320f, 75.400f, 95.719f, 115.364f, 135.211f, 155.791f, 177.504f, 200.686f, 225.641f, 252.645f, 281.906f, 313.850f, 348.302f, 385.732f, 426.307f, 470.146f, 517.555f, 568.899f, 624.177f, 684.021f, 748.734f, 818.078f, 892.577f, 973.087f, 1058.789f, 1150.915f, 1249.319f, 1354.279f, 1465.979f, 1584.790f, 1710.778f, 1844.863f, 1985.746f, 2134.643f, 2291.610f, 2456.943f, 2630.653f, 2813.959f, 3006.631f, 3207.229f, 3417.641f, 3637.318f, 3865.785f, 4104.997f, 4354.938f, 4615.786f, 4885.335f, 5166.555f, 5458.021f, 5762.584f, 6077.881f, 6406.834f, 6746.435f, 7097.958f, 7462.579f, 7839.165f, 8231.629f, 8635.640f, 9052.000f, 9484.268f, 9929.111f, 10389.350f, 10862.059f, 11352.185f, 11856.823f, 12380.371f, 12920.401f, 13476.971f, 14053.087f, 14646.190f, 15258.426f, 15890.617f, 16544.433f, 17218.024f, 17913.465f, 18631.374f, 19374.983f, 20136.700f, 20927.783f, 21746.796f, 22590.880f, 23465.734f, 24372.274f, 25314.351f, 26290.488f, 27300.899f, 28347.512f, 29436.133f, 30567.840f, 31746.818f, 32982.664f, 34276.329f, 35624.859f, 37042.588f, 38546.609f, 40139.742f, 41837.980f, 43679.429f, 45892.130f, 400000.000f}, "raw centrality signal"}; // for QA
+    ConfigurableAxis axisOccupancy{"axisOccupancy", {VARIABLE_WIDTH, 0.0f, 250.0f, 500.0f, 750.0f, 1000.0f, 1500.0f, 2000.0f, 3000.0f, 4500.0f, 6000.0f, 8000.0f, 10000.0f, 50000.0f}, "Occupancy"};
 
-  ConfigurableAxis axisOccupancy{"axisOccupancy", {VARIABLE_WIDTH, 0.0f, 250.0f, 500.0f, 750.0f, 1000.0f, 1500.0f, 2000.0f, 3000.0f, 4500.0f, 6000.0f, 8000.0f, 10000.0f, 50000.0f}, "Occupancy"};
+    // topological variable QA axes
+    ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {20, 0.0f, 1.0f}, "DCA (cm)"};
+    ConfigurableAxis axisDCAdau{"axisDCAdau", {20, 0.0f, 2.0f}, "DCA (cm)"};
+    ConfigurableAxis axisPointingAngle{"axisPointingAngle", {20, 0.0f, 2.0f}, "pointing angle (rad)"};
+    ConfigurableAxis axisV0Radius{"axisV0Radius", {20, 0.0f, 60.0f}, "V0 2D radius (cm)"};
+    ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "N sigma TPC"};
+    ConfigurableAxis axisTPCsignal{"axisTPCsignal", {200, 0.0f, 200.0f}, "TPC signal"};
+    ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {200, -10.0f, 10.0f}, "N sigma TOF"};
+    ConfigurableAxis axisTOFdeltaT{"axisTOFdeltaT", {200, -5000.0f, 5000.0f}, "TOF Delta T (ps)"};
+    ConfigurableAxis axisPhi{"axisPhi", {18, 0.0f, constants::math::TwoPI}, "Azimuth angle (rad)"};
+    ConfigurableAxis axisPhiMod{"axisPhiMod", {100, 0.0f, constants::math::TwoPI / 18}, "Azimuth angle wrt TPC sector (rad.)"};
+    ConfigurableAxis axisEta{"axisEta", {10, -1.0f, 1.0f}, "#eta"};
+    ConfigurableAxis axisITSchi2{"axisITSchi2", {100, 0.0f, 100.0f}, "#chi^{2} per ITS clusters"};
+    ConfigurableAxis axisTPCchi2{"axisTPCchi2", {100, 0.0f, 100.0f}, "#chi^{2} per TPC clusters"};
+    ConfigurableAxis axisTPCrowsOverFindable{"axisTPCrowsOverFindable", {120, 0.0f, 1.2f}, "Fraction of TPC crossed rows over findable clusters"};
+    ConfigurableAxis axisTPCfoundOverFindable{"axisTPCfoundOverFindable", {120, 0.0f, 1.2f}, "Fraction of TPC found over findable clusters"};
+    ConfigurableAxis axisTPCsharedClusters{"axisTPCsharedClusters", {101, -0.005f, 1.005f}, "Fraction of TPC shared clusters"};
 
-  // topological variable QA axes
-  ConfigurableAxis axisDCAtoPV{"axisDCAtoPV", {20, 0.0f, 1.0f}, "DCA (cm)"};
-  ConfigurableAxis axisDCAdau{"axisDCAdau", {20, 0.0f, 2.0f}, "DCA (cm)"};
-  ConfigurableAxis axisPointingAngle{"axisPointingAngle", {20, 0.0f, 2.0f}, "pointing angle (rad)"};
-  ConfigurableAxis axisV0Radius{"axisV0Radius", {20, 0.0f, 60.0f}, "V0 2D radius (cm)"};
-  ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10.0f, 10.0f}, "N sigma TPC"};
-  ConfigurableAxis axisTPCsignal{"axisTPCsignal", {200, 0.0f, 200.0f}, "TPC signal"};
-  ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {200, -10.0f, 10.0f}, "N sigma TOF"};
-  ConfigurableAxis axisTOFdeltaT{"axisTOFdeltaT", {200, -5000.0f, 5000.0f}, "TOF Delta T (ps)"};
-  ConfigurableAxis axisPhi{"axisPhi", {18, 0.0f, constants::math::TwoPI}, "Azimuth angle (rad)"};
-  ConfigurableAxis axisEta{"axisEta", {10, -1.0f, 1.0f}, "#eta"};
-  ConfigurableAxis axisITSchi2{"axisITSchi2", {100, 0.0f, 100.0f}, "#chi^{2} per ITS clusters"};
-  ConfigurableAxis axisTPCchi2{"axisTPCchi2", {100, 0.0f, 100.0f}, "#chi^{2} per TPC clusters"};
-  ConfigurableAxis axisTPCrowsOverFindable{"axisTPCrowsOverFindable", {120, 0.0f, 1.2f}, "Fraction of TPC crossed rows over findable clusters"};
-  ConfigurableAxis axisTPCfoundOverFindable{"axisTPCfoundOverFindable", {120, 0.0f, 1.2f}, "Fraction of TPC found over findable clusters"};
-  ConfigurableAxis axisTPCsharedClusters{"axisTPCsharedClusters", {101, -0.005f, 1.005f}, "Fraction of TPC shared clusters"};
+    // UPC axes
+    ConfigurableAxis axisSelGap{"axisSelGap", {4, -1.5, 2.5}, "Gap side"};
 
-  // UPC axes
-  ConfigurableAxis axisSelGap{"axisSelGap", {4, -1.5, 2.5}, "Gap side"};
+    // AP plot axes
+    ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
+    ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
+
+    // Track quality axes
+    ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
+    ConfigurableAxis axisITSclus{"axisITSclus", {7, 0.0f, 7.0f}, "N ITS Clusters"};
+    ConfigurableAxis axisITScluMap{"axisITScluMap", {128, -0.5f, 127.5f}, "ITS Cluster map"};
+    ConfigurableAxis axisDetMap{"axisDetMap", {16, -0.5f, 15.5f}, "Detector use map"};
+    ConfigurableAxis axisITScluMapCoarse{"axisITScluMapCoarse", {16, -3.5f, 12.5f}, "ITS Coarse cluster map"};
+    ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {5, -0.5f, 4.5f}, "Detector Coarse user map"};
+
+    // MC coll assoc QA axis
+    ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
+  } axisConfigurations;
 
   // UPC selections
   SGSelector sgSelector;
@@ -321,21 +360,6 @@ struct derivedlambdakzeroanalysis {
     Configurable<float> zdcCut{"zdcCut", 10., "ZDC threshold"};
     // Configurable<float> gapSel{"gapSel", 2, "Gap selection"};
   } upcCuts;
-
-  // AP plot axes
-  ConfigurableAxis axisAPAlpha{"axisAPAlpha", {220, -1.1f, 1.1f}, "V0 AP alpha"};
-  ConfigurableAxis axisAPQt{"axisAPQt", {220, 0.0f, 0.5f}, "V0 AP alpha"};
-
-  // Track quality axes
-  ConfigurableAxis axisTPCrows{"axisTPCrows", {160, 0.0f, 160.0f}, "N TPC rows"};
-  ConfigurableAxis axisITSclus{"axisITSclus", {7, 0.0f, 7.0f}, "N ITS Clusters"};
-  ConfigurableAxis axisITScluMap{"axisITScluMap", {128, -0.5f, 127.5f}, "ITS Cluster map"};
-  ConfigurableAxis axisDetMap{"axisDetMap", {16, -0.5f, 15.5f}, "Detector use map"};
-  ConfigurableAxis axisITScluMapCoarse{"axisITScluMapCoarse", {16, -3.5f, 12.5f}, "ITS Coarse cluster map"};
-  ConfigurableAxis axisDetMapCoarse{"axisDetMapCoarse", {5, -0.5f, 4.5f}, "Detector Coarse user map"};
-
-  // MC coll assoc QA axis
-  ConfigurableAxis axisMonteCarloNch{"axisMonteCarloNch", {300, 0.0f, 3000.0f}, "N_{ch} MC"};
 
   // For manual sliceBy
   // Preslice<soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraCollLabels>> perMcCollision = aod::v0data::straMCCollisionId;
@@ -548,9 +572,9 @@ struct derivedlambdakzeroanalysis {
     }
 
     // Primary particle selection, central to analysis
-    maskSelectionK0Short = maskTopological | maskTrackProperties | maskK0ShortSpecific | (static_cast<uint64_t>(1) << selPhysPrimK0Short);
-    maskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific | (static_cast<uint64_t>(1) << selPhysPrimLambda);
-    maskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific | (static_cast<uint64_t>(1) << selPhysPrimAntiLambda);
+    maskSelectionK0Short = maskTopological | maskTrackProperties | maskK0ShortSpecific;
+    maskSelectionLambda = maskTopological | maskTrackProperties | maskLambdaSpecific;
+    maskSelectionAntiLambda = maskTopological | maskTrackProperties | maskAntiLambdaSpecific;
 
     BITSET(maskSelectionK0Short, selPhysPrimK0Short);
     BITSET(maskSelectionLambda, selPhysPrimLambda);
@@ -616,7 +640,21 @@ struct derivedlambdakzeroanalysis {
     }
 
     histos.add("hEventCentrality", "hEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
-    histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2D, {{101, 0.0f, 101.0f}, axisNch});
+    histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
+    if (doEventQA) {
+      if (isRun3) {
+        histos.add("hCentralityVsNGlobal", "hCentralityVsNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
+        histos.add("hEventCentVsMultFT0M", "hEventCentVsMultFT0M", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0M});
+        histos.add("hEventCentVsMultFT0C", "hEventCentVsMultFT0C", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0C});
+        histos.add("hEventCentVsMultNGlobal", "hEventCentVsMultNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
+        histos.add("hEventCentVsMultFV0A", "hEventCentVsMultFV0A", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFV0A});
+        histos.add("hEventMultFT0MvsMultNGlobal", "hEventMultFT0MvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFT0M, axisConfigurations.axisNch});
+        histos.add("hEventMultFT0CvsMultNGlobal", "hEventMultFT0CvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisNch});
+        histos.add("hEventMultFV0AvsMultNGlobal", "hEventMultFV0AvsMultNGlobal", kTH2D, {axisConfigurations.axisMultFV0A, axisConfigurations.axisNch});
+        histos.add("hEventMultPVvsMultNGlobal", "hEventMultPVvsMultNGlobal", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisNch});
+        histos.add("hEventMultFT0CvsMultFV0A", "hEventMultFT0CvsMultFV0A", kTH2D, {axisConfigurations.axisMultFT0C, axisConfigurations.axisMultFV0A});
+      }
+    }
 
     histos.add("hEventPVz", "hEventPVz", kTH1D, {{100, -20.0f, +20.0f}});
     histos.add("hCentralityVsPVz", "hCentralityVsPVz", kTH2D, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
@@ -625,368 +663,421 @@ struct derivedlambdakzeroanalysis {
       histos.add("hCentralityVsPVzMC", "hCentralityVsPVzMC", kTH2D, {{101, 0.0f, 101.0f}, {100, -20.0f, +20.0f}});
     }
 
-    histos.add("hEventOccupancy", "hEventOccupancy", kTH1D, {axisOccupancy});
-    histos.add("hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2D, {{101, 0.0f, 101.0f}, axisOccupancy});
+    histos.add("hEventOccupancy", "hEventOccupancy", kTH1D, {axisConfigurations.axisOccupancy});
+    histos.add("hCentralityVsOccupancy", "hCentralityVsOccupancy", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisOccupancy});
 
     histos.add("hGapSide", "Gap side; Entries", kTH1D, {{5, -0.5, 4.5}});
-    histos.add("hSelGapSide", "Selected gap side; Entries", kTH1D, {axisSelGap});
-    histos.add("hEventCentralityVsSelGapSide", ";Centrality (%); Selected gap side", kTH2D, {{101, 0.0f, 101.0f}, axisSelGap});
+    histos.add("hSelGapSide", "Selected gap side; Entries", kTH1D, {axisConfigurations.axisSelGap});
+    histos.add("hEventCentralityVsSelGapSide", ";Centrality (%); Selected gap side", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisSelGap});
 
-    histos.add("hInteractionRate", "hInteractionRate", kTH1D, {axisIRBinning});
-    histos.add("hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2D, {{101, 0.0f, 101.0f}, axisIRBinning});
+    histos.add("hInteractionRate", "hInteractionRate", kTH1D, {axisConfigurations.axisIRBinning});
+    histos.add("hCentralityVsInteractionRate", "hCentralityVsInteractionRate", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisIRBinning});
 
-    histos.add("hInteractionRateVsOccupancy", "hInteractionRateVsOccupancy", kTH2D, {axisIRBinning, axisOccupancy});
+    histos.add("hInteractionRateVsOccupancy", "hInteractionRateVsOccupancy", kTH2D, {axisConfigurations.axisIRBinning, axisConfigurations.axisOccupancy});
 
     // for QA and test purposes
-    auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1D, {axisRawCentrality});
+    auto hRawCentrality = histos.add<TH1>("hRawCentrality", "hRawCentrality", kTH1D, {axisConfigurations.axisRawCentrality});
 
     for (int ii = 1; ii < 101; ii++) {
       float value = 100.5f - static_cast<float>(ii);
       hRawCentrality->SetBinContent(ii, value);
     }
 
-    auto hPrimaryV0s = histos.add<TH1>("hPrimaryV0s", "hPrimaryV0s", kTH1D, {{2, -0.5f, 1.5f}});
-    hPrimaryV0s->GetXaxis()->SetBinLabel(1, "All V0s");
-    hPrimaryV0s->GetXaxis()->SetBinLabel(2, "Primary V0s");
+    auto hSelectionV0s = histos.add<TH1>("GeneralQA/hSelectionV0s", "hSelectionV0s", kTH1D, {{static_cast<int>(selPhysPrimAntiLambda) + 3, -0.5f, static_cast<double>(selPhysPrimAntiLambda) + 2.5f}});
+    hSelectionV0s->GetXaxis()->SetBinLabel(1, "All");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selCosPA + 2, "cosPA");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selRadius + 2, "Radius min.");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selRadiusMax + 2, "Radius max.");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selDCANegToPV + 2, "DCA neg. to PV");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selDCAPosToPV + 2, "DCA pos. to PV");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selDCAV0Dau + 2, "DCA V0 dau.");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortRapidity + 2, "K^{0}_{S} rapidity");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selLambdaRapidity + 2, "#Lambda rapidity");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDPositivePion + 2, "TPC PID #pi^{+}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDNegativePion + 2, "TPC PID #pi^{-}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDPositiveProton + 2, "TPC PID p");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTPCPIDNegativeProton + 2, "TPC PID #bar{p}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTPositiveProtonLambda + 2, "TOF #Delta t p from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTPositivePionLambda + 2, "TOF #Delta t #pi^{+} from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTPositivePionK0Short + 2, "TOF #Delta t #pi^{+} from K^{0}_{S}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTNegativeProtonLambda + 2, "TOF #Delta t #bar{p} from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTNegativePionLambda + 2, "TOF #Delta t #pi^{-} from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFDeltaTNegativePionK0Short + 2, "TOF #Delta t #pi^{-} from K^{0}_{S}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaPositiveProtonLambda + 2, "TOF PID p from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaPositivePionLambda + 2, "TOF PID #pi^{+} from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaPositivePionK0Short + 2, "TOF PID #pi^{+} from K^{0}_{S}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaNegativeProtonLambda + 2, "TOF PID #bar{p} from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaNegativePionLambda + 2, "TOF PID #pi^{-} from #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selTOFNSigmaNegativePionK0Short + 2, "TOF PID #pi^{-} from K^{0}_{S}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortCTau + 2, "K^{0}_{S} lifetime");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selLambdaCTau + 2, "#Lambda lifetime");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selK0ShortArmenteros + 2, "Arm. pod. cut");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPosGoodTPCTrack + 2, "Pos. good TPC track");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selNegGoodTPCTrack + 2, "Neg. good TPC track");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPosGoodITSTrack + 2, "Pos. good ITS track");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selNegGoodITSTrack + 2, "Neg. good ITS track");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPosItsOnly + 2, "Pos. ITS-only");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selNegItsOnly + 2, "Neg. ITS-only");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPosNotTPCOnly + 2, "Pos. not TPC-only");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selNegNotTPCOnly + 2, "Neg. not TPC-only");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderK0Short + 2, "True K^{0}_{S}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderLambda + 2, "True #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selConsiderAntiLambda + 2, "True #bar{#Lambda}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPhysPrimK0Short + 2, "Phys. prim. K^{0}_{S}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPhysPrimLambda + 2, "Phys. prim. #Lambda");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPhysPrimAntiLambda + 2, "Phys. prim. #bar{#Lambda}");
+    hSelectionV0s->GetXaxis()->SetBinLabel(selPhysPrimAntiLambda + 3, "Cand. selected");
 
     // histograms versus mass
     if (analyseK0Short) {
-      histos.add("h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2D, {axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3D, {axisCentrality, axisPt, axisK0Mass});
+      histos.add("h2dNbrOfK0ShortVsCentrality", "h2dNbrOfK0ShortVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("h3dMassK0Short", "h3dMassK0Short", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
       // Non-UPC info
-      histos.add("h3dMassK0ShortHadronic", "h3dMassK0ShortHadronic", kTH3D, {axisCentrality, axisPt, axisK0Mass});
+      histos.add("h3dMassK0ShortHadronic", "h3dMassK0ShortHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
       // UPC info
-      histos.add("h3dMassK0ShortSGA", "h3dMassK0ShortSGA", kTH3D, {axisCentrality, axisPt, axisK0Mass});
-      histos.add("h3dMassK0ShortSGC", "h3dMassK0ShortSGC", kTH3D, {axisCentrality, axisPt, axisK0Mass});
-      histos.add("h3dMassK0ShortDG", "h3dMassK0ShortDG", kTH3D, {axisCentrality, axisPt, axisK0Mass});
+      histos.add("h3dMassK0ShortSGA", "h3dMassK0ShortSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
+      histos.add("h3dMassK0ShortSGC", "h3dMassK0ShortSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
+      histos.add("h3dMassK0ShortDG", "h3dMassK0ShortDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisK0Mass});
       if (doTPCQA) {
-        histos.add("K0Short/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("K0Short/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("K0Short/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("K0Short/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("K0Short/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("K0Short/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("K0Short/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("K0Short/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("K0Short/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("K0Short/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("K0Short/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("K0Short/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("K0Short/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("K0Short/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("K0Short/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("K0Short/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("K0Short/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("K0Short/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("K0Short/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("K0Short/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("K0Short/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("K0Short/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("K0Short/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("K0Short/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
       }
       if (doTOFQA) {
-        histos.add("K0Short/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("K0Short/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("K0Short/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("K0Short/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("K0Short/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("K0Short/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("K0Short/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("K0Short/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("K0Short/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("K0Short/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("K0Short/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("K0Short/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("K0Short/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("K0Short/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("K0Short/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("K0Short/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("K0Short/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("K0Short/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("K0Short/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("K0Short/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("K0Short/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("K0Short/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("K0Short/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("K0Short/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
       }
       if (doCollisionAssociationQA) {
-        histos.add("K0Short/h2dPtVsNch", "h2dPtVsNch", kTH2D, {axisMonteCarloNch, axisPt});
-        histos.add("K0Short/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2D, {axisMonteCarloNch, axisPt});
+        histos.add("K0Short/h2dPtVsNch", "h2dPtVsNch", kTH2D, {axisConfigurations.axisMonteCarloNch, axisConfigurations.axisPt});
+        histos.add("K0Short/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2D, {axisConfigurations.axisMonteCarloNch, axisConfigurations.axisPt});
       }
       if (doDetectPropQA == 1) {
-        histos.add("K0Short/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
-        histos.add("K0Short/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
-        histos.add("K0Short/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+        histos.add("K0Short/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMapCoarse, axisConfigurations.axisITScluMapCoarse, axisConfigurations.axisDetMapCoarse, axisConfigurations.axisITScluMapCoarse, axisConfigurations.axisPtCoarse});
+        histos.add("K0Short/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMap, axisConfigurations.axisITScluMap, axisConfigurations.axisPtCoarse});
+        histos.add("K0Short/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMap, axisConfigurations.axisITScluMap, axisConfigurations.axisPtCoarse});
       }
       if (doDetectPropQA == 2) {
-        histos.add("K0Short/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisK0Mass});
-        histos.add("K0Short/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisK0Mass});
-        histos.add("K0Short/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisK0Mass});
+        histos.add("K0Short/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMapCoarse, axisConfigurations.axisITScluMapCoarse, axisConfigurations.axisDetMapCoarse, axisConfigurations.axisITScluMapCoarse, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass});
+        histos.add("K0Short/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMap, axisConfigurations.axisITScluMap, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass});
+        histos.add("K0Short/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMap, axisConfigurations.axisITScluMap, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass});
       }
       if (doDetectPropQA == 3) {
-        histos.add("K0Short/h3dITSchi2", "h3dMaxITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("K0Short/h3dTPCchi2", "h3dMaxTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("K0Short/h3dTPCFoundOverFindable", "h3dTPCFoundOverFindable", kTH3D, {axisCentrality, axisPtCoarse, axisTPCfoundOverFindable});
-        histos.add("K0Short/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrowsOverFindable});
-        histos.add("K0Short/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsharedClusters});
-        histos.add("K0Short/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("K0Short/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("K0Short/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("K0Short/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("K0Short/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3D, {axisCentrality, axisPtCoarse, axisITSclus});
-        histos.add("K0Short/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3D, {axisCentrality, axisPtCoarse, axisITSclus});
-        histos.add("K0Short/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrows});
-        histos.add("K0Short/h3dNegativeTPCcrossedRows", "h3dNegativeTPCcrossedRows", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrows});
+        histos.add("K0Short/h3dITSchi2", "h3dMaxITSchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSchi2});
+        histos.add("K0Short/h3dTPCchi2", "h3dMaxTPCchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCchi2});
+        histos.add("K0Short/h3dTPCFoundOverFindable", "h3dTPCFoundOverFindable", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCfoundOverFindable});
+        histos.add("K0Short/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCrowsOverFindable});
+        histos.add("K0Short/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsharedClusters});
+        histos.add("K0Short/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSchi2});
+        histos.add("K0Short/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSchi2});
+        histos.add("K0Short/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCchi2});
+        histos.add("K0Short/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCchi2});
+        histos.add("K0Short/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSclus});
+        histos.add("K0Short/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSclus});
+        histos.add("K0Short/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCrows});
+        histos.add("K0Short/h3dNegativeTPCcrossedRows", "h3dNegativeTPCcrossedRows", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCrows});
       }
       if (doEtaPhiQA) {
-        histos.add("K0Short/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisPhi, axisEta});
-        histos.add("K0Short/h5dPosPhiVsNegPhi", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisPhi, axisPhi});
-        histos.add("K0Short/h5dPosEtaVsNegEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisEta, axisEta});
+        histos.add("K0Short/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
+        histos.add("K0Short/h5dPosPhiVsEta", "h5dPosPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
+        histos.add("K0Short/h5dNegPhiVsEta", "h5dNegPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
       }
     }
     if (analyseLambda) {
-      histos.add("h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("h3dMassLambda", "h3dMassLambda", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h2dNbrOfLambdaVsCentrality", "h2dNbrOfLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("h3dMassLambda", "h3dMassLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       // Non-UPC info
-      histos.add("h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassLambdaHadronic", "h3dMassLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       // UPC info
-      histos.add("h3dMassLambdaSGA", "h3dMassLambdaSGA", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add("h3dMassLambdaSGC", "h3dMassLambdaSGC", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add("h3dMassLambdaDG", "h3dMassLambdaDG", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassLambdaSGA", "h3dMassLambdaSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      histos.add("h3dMassLambdaSGC", "h3dMassLambdaSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      histos.add("h3dMassLambdaDG", "h3dMassLambdaDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       if (doTPCQA) {
-        histos.add("Lambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("Lambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("Lambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("Lambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("Lambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("Lambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("Lambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("Lambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("Lambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("Lambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("Lambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("Lambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("Lambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("Lambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("Lambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("Lambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("Lambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("Lambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
       }
       if (doTOFQA) {
-        histos.add("Lambda/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("Lambda/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("Lambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("Lambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("Lambda/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("Lambda/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("Lambda/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("Lambda/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("Lambda/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("Lambda/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("Lambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("Lambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("Lambda/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("Lambda/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("Lambda/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("Lambda/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("Lambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("Lambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
       }
       if (doCollisionAssociationQA) {
-        histos.add("Lambda/h2dPtVsNch", "h2dPtVsNch", kTH2D, {axisMonteCarloNch, axisPt});
-        histos.add("Lambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2D, {axisMonteCarloNch, axisPt});
+        histos.add("Lambda/h2dPtVsNch", "h2dPtVsNch", kTH2D, {axisConfigurations.axisMonteCarloNch, axisConfigurations.axisPt});
+        histos.add("Lambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2D, {axisConfigurations.axisMonteCarloNch, axisConfigurations.axisPt});
       }
       if (doDetectPropQA == 1) {
-        histos.add("Lambda/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
-        histos.add("Lambda/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
-        histos.add("Lambda/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+        histos.add("Lambda/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMapCoarse, axisConfigurations.axisITScluMapCoarse, axisConfigurations.axisDetMapCoarse, axisConfigurations.axisITScluMapCoarse, axisConfigurations.axisPtCoarse});
+        histos.add("Lambda/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMap, axisConfigurations.axisITScluMap, axisConfigurations.axisPtCoarse});
+        histos.add("Lambda/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMap, axisConfigurations.axisITScluMap, axisConfigurations.axisPtCoarse});
       }
       if (doDetectPropQA == 2) {
-        histos.add("Lambda/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisLambdaMass});
-        histos.add("Lambda/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
-        histos.add("Lambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
+        histos.add("Lambda/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMapCoarse, axisConfigurations.axisITScluMapCoarse, axisConfigurations.axisDetMapCoarse, axisConfigurations.axisITScluMapCoarse, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass});
+        histos.add("Lambda/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMap, axisConfigurations.axisITScluMap, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass});
+        histos.add("Lambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMap, axisConfigurations.axisITScluMap, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass});
       }
       if (doDetectPropQA == 3) {
-        histos.add("Lambda/h3dITSchi2", "h3dMaxITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("Lambda/h3dTPCchi2", "h3dMaxTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("Lambda/h3dTPCFoundOverFindable", "h3dTPCFoundOverFindable", kTH3D, {axisCentrality, axisPtCoarse, axisTPCfoundOverFindable});
-        histos.add("Lambda/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrowsOverFindable});
-        histos.add("Lambda/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsharedClusters});
-        histos.add("Lambda/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("Lambda/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("Lambda/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("Lambda/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("Lambda/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3D, {axisCentrality, axisPtCoarse, axisITSclus});
-        histos.add("Lambda/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3D, {axisCentrality, axisPtCoarse, axisITSclus});
-        histos.add("Lambda/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrows});
-        histos.add("Lambda/h3dNegativeTPCcrossedRows", "h3dNegativeTPCcrossedRows", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrows});
+        histos.add("Lambda/h3dITSchi2", "h3dMaxITSchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSchi2});
+        histos.add("Lambda/h3dTPCchi2", "h3dMaxTPCchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCchi2});
+        histos.add("Lambda/h3dTPCFoundOverFindable", "h3dTPCFoundOverFindable", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCfoundOverFindable});
+        histos.add("Lambda/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCrowsOverFindable});
+        histos.add("Lambda/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsharedClusters});
+        histos.add("Lambda/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSchi2});
+        histos.add("Lambda/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSchi2});
+        histos.add("Lambda/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCchi2});
+        histos.add("Lambda/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCchi2});
+        histos.add("Lambda/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSclus});
+        histos.add("Lambda/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSclus});
+        histos.add("Lambda/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCrows});
+        histos.add("Lambda/h3dNegativeTPCcrossedRows", "h3dNegativeTPCcrossedRows", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCrows});
       }
       if (doEtaPhiQA) {
-        histos.add("Lambda/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisEta});
-        histos.add("Lambda/h5dPosPhiVsNegPhi", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisPhi});
-        histos.add("Lambda/h5dPosEtaVsNegEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisEta, axisEta});
+        histos.add("Lambda/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
+        histos.add("Lambda/h5dPosPhiVsEta", "h5dPosPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
+        histos.add("Lambda/h5dNegPhiVsEta", "h5dNegPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
       }
     }
     if (analyseAntiLambda) {
-      histos.add("h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisCentrality, {10, -0.5f, 9.5f}});
-      histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h2dNbrOfAntiLambdaVsCentrality", "h2dNbrOfAntiLambdaVsCentrality", kTH2D, {axisConfigurations.axisCentrality, {10, -0.5f, 9.5f}});
+      histos.add("h3dMassAntiLambda", "h3dMassAntiLambda", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       // Non-UPC info
-      histos.add("h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassAntiLambdaHadronic", "h3dMassAntiLambdaHadronic", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       // UPC info
-      histos.add("h3dMassAntiLambdaSGA", "h3dMassAntiLambdaSGA", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add("h3dMassAntiLambdaSGC", "h3dMassAntiLambdaSGC", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
-      histos.add("h3dMassAntiLambdaDG", "h3dMassAntiLambdaDG", kTH3D, {axisCentrality, axisPt, axisLambdaMass});
+      histos.add("h3dMassAntiLambdaSGA", "h3dMassAntiLambdaSGA", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      histos.add("h3dMassAntiLambdaSGC", "h3dMassAntiLambdaSGC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
+      histos.add("h3dMassAntiLambdaDG", "h3dMassAntiLambdaDG", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisLambdaMass});
       if (doTPCQA) {
-        histos.add("AntiLambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("AntiLambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("AntiLambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("AntiLambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTPC});
-        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
-        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsignal});
+        histos.add("AntiLambda/h3dPosNsigmaTPC", "h3dPosNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("AntiLambda/h3dNegNsigmaTPC", "h3dNegNsigmaTPC", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("AntiLambda/h3dPosTPCsignal", "h3dPosTPCsignal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("AntiLambda/h3dNegTPCsignal", "h3dNegTPCsignal", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPtot", "h3dPosNsigmaTPCvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPtot", "h3dNegNsigmaTPCvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPtot", "h3dPosTPCsignalVsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPtot", "h3dNegTPCsignalVsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("AntiLambda/h3dPosNsigmaTPCvsTrackPt", "h3dPosNsigmaTPCvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("AntiLambda/h3dNegNsigmaTPCvsTrackPt", "h3dNegNsigmaTPCvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTPC});
+        histos.add("AntiLambda/h3dPosTPCsignalVsTrackPt", "h3dPosTPCsignalVsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
+        histos.add("AntiLambda/h3dNegTPCsignalVsTrackPt", "h3dNegTPCsignalVsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsignal});
       }
       if (doTOFQA) {
-        histos.add("AntiLambda/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("AntiLambda/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("AntiLambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("AntiLambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("AntiLambda/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("AntiLambda/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("AntiLambda/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("AntiLambda/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisNsigmaTOF});
-        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
-        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3D, {axisCentrality, axisPtCoarse, axisTOFdeltaT});
+        histos.add("AntiLambda/h3dPosNsigmaTOF", "h3dPosNsigmaTOF", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("AntiLambda/h3dNegNsigmaTOF", "h3dNegNsigmaTOF", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("AntiLambda/h3dPosTOFdeltaT", "h3dPosTOFdeltaT", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("AntiLambda/h3dNegTOFdeltaT", "h3dNegTOFdeltaT", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("AntiLambda/h3dPosNsigmaTOFvsTrackPtot", "h3dPosNsigmaTOFvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("AntiLambda/h3dNegNsigmaTOFvsTrackPtot", "h3dNegNsigmaTOFvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPtot", "h3dPosTOFdeltaTvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPtot", "h3dNegTOFdeltaTvsTrackPtot", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("AntiLambda/h3dPosNsigmaTOFvsTrackPt", "h3dPosNsigmaTOFvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("AntiLambda/h3dNegNsigmaTOFvsTrackPt", "h3dNegNsigmaTOFvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisNsigmaTOF});
+        histos.add("AntiLambda/h3dPosTOFdeltaTvsTrackPt", "h3dPosTOFdeltaTvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
+        histos.add("AntiLambda/h3dNegTOFdeltaTvsTrackPt", "h3dNegTOFdeltaTvsTrackPt", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTOFdeltaT});
       }
       if (doCollisionAssociationQA) {
-        histos.add("AntiLambda/h2dPtVsNch", "h2dPtVsNch", kTH2D, {axisMonteCarloNch, axisPt});
-        histos.add("AntiLambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2D, {axisMonteCarloNch, axisPt});
+        histos.add("AntiLambda/h2dPtVsNch", "h2dPtVsNch", kTH2D, {axisConfigurations.axisMonteCarloNch, axisConfigurations.axisPt});
+        histos.add("AntiLambda/h2dPtVsNch_BadCollAssig", "h2dPtVsNch_BadCollAssig", kTH2D, {axisConfigurations.axisMonteCarloNch, axisConfigurations.axisPt});
       }
       if (doDetectPropQA == 1) {
-        histos.add("AntiLambda/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse});
-        histos.add("AntiLambda/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
-        histos.add("AntiLambda/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse});
+        histos.add("AntiLambda/h6dDetectPropVsCentrality", "h6dDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMapCoarse, axisConfigurations.axisITScluMapCoarse, axisConfigurations.axisDetMapCoarse, axisConfigurations.axisITScluMapCoarse, axisConfigurations.axisPtCoarse});
+        histos.add("AntiLambda/h4dPosDetectPropVsCentrality", "h4dPosDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMap, axisConfigurations.axisITScluMap, axisConfigurations.axisPtCoarse});
+        histos.add("AntiLambda/h4dNegDetectPropVsCentrality", "h4dNegDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMap, axisConfigurations.axisITScluMap, axisConfigurations.axisPtCoarse});
       }
       if (doDetectPropQA == 2) {
-        histos.add("AntiLambda/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMapCoarse, axisITScluMapCoarse, axisDetMapCoarse, axisITScluMapCoarse, axisPtCoarse, axisLambdaMass});
-        histos.add("AntiLambda/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
-        histos.add("AntiLambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnD, {axisCentrality, axisDetMap, axisITScluMap, axisPtCoarse, axisLambdaMass});
+        histos.add("AntiLambda/h7dDetectPropVsCentrality", "h7dDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMapCoarse, axisConfigurations.axisITScluMapCoarse, axisConfigurations.axisDetMapCoarse, axisConfigurations.axisITScluMapCoarse, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass});
+        histos.add("AntiLambda/h5dPosDetectPropVsCentrality", "h5dPosDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMap, axisConfigurations.axisITScluMap, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass});
+        histos.add("AntiLambda/h5dNegDetectPropVsCentrality", "h5dNegDetectPropVsCentrality", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisDetMap, axisConfigurations.axisITScluMap, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass});
       }
       if (doDetectPropQA == 3) {
-        histos.add("AntiLambda/h3dITSchi2", "h3dMaxITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("AntiLambda/h3dTPCchi2", "h3dMaxTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("AntiLambda/h3dTPCFoundOverFindable", "h3dTPCFoundOverFindable", kTH3D, {axisCentrality, axisPtCoarse, axisTPCfoundOverFindable});
-        histos.add("AntiLambda/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrowsOverFindable});
-        histos.add("AntiLambda/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3D, {axisCentrality, axisPtCoarse, axisTPCsharedClusters});
-        histos.add("AntiLambda/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("AntiLambda/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3D, {axisCentrality, axisPtCoarse, axisITSchi2});
-        histos.add("AntiLambda/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("AntiLambda/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3D, {axisCentrality, axisPtCoarse, axisTPCchi2});
-        histos.add("AntiLambda/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3D, {axisCentrality, axisPtCoarse, axisITSclus});
-        histos.add("AntiLambda/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3D, {axisCentrality, axisPtCoarse, axisITSclus});
-        histos.add("AntiLambda/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrows});
-        histos.add("AntiLambda/h3dNegativeTPCcrossedRows", "h3dNegativeTPCcrossedRows", kTH3D, {axisCentrality, axisPtCoarse, axisTPCrows});
+        histos.add("AntiLambda/h3dITSchi2", "h3dMaxITSchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSchi2});
+        histos.add("AntiLambda/h3dTPCchi2", "h3dMaxTPCchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCchi2});
+        histos.add("AntiLambda/h3dTPCFoundOverFindable", "h3dTPCFoundOverFindable", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCfoundOverFindable});
+        histos.add("AntiLambda/h3dTPCrowsOverFindable", "h3dTPCrowsOverFindable", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCrowsOverFindable});
+        histos.add("AntiLambda/h3dTPCsharedCls", "h3dTPCsharedCls", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCsharedClusters});
+        histos.add("AntiLambda/h3dPositiveITSchi2", "h3dPositiveITSchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSchi2});
+        histos.add("AntiLambda/h3dNegativeITSchi2", "h3dNegativeITSchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSchi2});
+        histos.add("AntiLambda/h3dPositiveTPCchi2", "h3dPositiveTPCchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCchi2});
+        histos.add("AntiLambda/h3dNegativeTPCchi2", "h3dNegativeTPCchi2", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCchi2});
+        histos.add("AntiLambda/h3dPositiveITSclusters", "h3dPositiveITSclusters", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSclus});
+        histos.add("AntiLambda/h3dNegativeITSclusters", "h3dNegativeITSclusters", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisITSclus});
+        histos.add("AntiLambda/h3dPositiveTPCcrossedRows", "h3dPositiveTPCcrossedRows", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCrows});
+        histos.add("AntiLambda/h3dNegativeTPCcrossedRows", "h3dNegativeTPCcrossedRows", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisTPCrows});
       }
       if (doEtaPhiQA) {
-        histos.add("AntiLambda/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisEta});
-        histos.add("AntiLambda/h5dPosPhiVsNegPhi", "h5dPosPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPhi, axisPhi});
-        histos.add("AntiLambda/h5dPosEtaVsNegEta", "h5dNegPhiVsEta", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisEta, axisEta});
+        histos.add("AntiLambda/h5dV0PhiVsEta", "h5dV0PhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
+        histos.add("AntiLambda/h5dPosPhiVsEta", "h5dPosPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
+        histos.add("AntiLambda/h5dNegPhiVsEta", "h5dNegPhiVsEta", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPhi, axisConfigurations.axisEta});
       }
     }
 
     if (analyseLambda && calculateFeeddownMatrix && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2))
-      histos.add("h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3D, {axisCentrality, axisPt, axisPtXi});
+      histos.add("h3dLambdaFeeddown", "h3dLambdaFeeddown", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
     if (analyseAntiLambda && calculateFeeddownMatrix && (doprocessMonteCarloRun3 || doprocessMonteCarloRun2))
-      histos.add("h3dAntiLambdaFeeddown", "h3dAntiLambdaFeeddown", kTH3D, {axisCentrality, axisPt, axisPtXi});
+      histos.add("h3dAntiLambdaFeeddown", "h3dAntiLambdaFeeddown", kTH3D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt, axisConfigurations.axisPtXi});
 
-    // demo // fast
-    histos.add("hMassK0Short", "hMassK0Short", kTH1D, {axisK0Mass});
+    if (analyseK0Short)
+      histos.add("hMassK0Short", "hMassK0Short", kTH1D, {axisConfigurations.axisK0Mass});
+    if (analyseLambda)
+      histos.add("hMassLambda", "hMassLambda", kTH1D, {axisConfigurations.axisLambdaMass});
+    if (analyseAntiLambda)
+      histos.add("hMassAntiLambda", "hMassAntiLambda", kTH1D, {axisConfigurations.axisLambdaMass});
 
     // QA histograms if requested
     if (doCompleteTopoQA) {
       // initialize for K0short...
       if (analyseK0Short) {
-        histos.add("K0Short/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
-        histos.add("K0Short/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAtoPV});
-        histos.add("K0Short/h4dDCADaughters", "h4dDCADaughters", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisDCAdau});
-        histos.add("K0Short/h4dPointingAngle", "h4dPointingAngle", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisPointingAngle});
-        histos.add("K0Short/h4dV0Radius", "h4dV0Radius", kTHnD, {axisCentrality, axisPtCoarse, axisK0Mass, axisV0Radius});
+        histos.add("K0Short/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass, axisConfigurations.axisDCAtoPV});
+        histos.add("K0Short/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass, axisConfigurations.axisDCAtoPV});
+        histos.add("K0Short/h4dDCADaughters", "h4dDCADaughters", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass, axisConfigurations.axisDCAdau});
+        histos.add("K0Short/h4dPointingAngle", "h4dPointingAngle", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass, axisConfigurations.axisPointingAngle});
+        histos.add("K0Short/h4dV0Radius", "h4dV0Radius", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisK0Mass, axisConfigurations.axisV0Radius});
       }
       if (analyseLambda) {
-        histos.add("Lambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
-        histos.add("Lambda/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
-        histos.add("Lambda/h4dDCADaughters", "h4dDCADaughters", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
-        histos.add("Lambda/h4dPointingAngle", "h4dPointingAngle", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
-        histos.add("Lambda/h4dV0Radius", "h4dV0Radius", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
+        histos.add("Lambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisDCAtoPV});
+        histos.add("Lambda/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisDCAtoPV});
+        histos.add("Lambda/h4dDCADaughters", "h4dDCADaughters", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisDCAdau});
+        histos.add("Lambda/h4dPointingAngle", "h4dPointingAngle", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPointingAngle});
+        histos.add("Lambda/h4dV0Radius", "h4dV0Radius", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisV0Radius});
       }
       if (analyseAntiLambda) {
-        histos.add("AntiLambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
-        histos.add("AntiLambda/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAtoPV});
-        histos.add("AntiLambda/h4dDCADaughters", "h4dDCADaughters", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisDCAdau});
-        histos.add("AntiLambda/h4dPointingAngle", "h4dPointingAngle", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisPointingAngle});
-        histos.add("AntiLambda/h4dV0Radius", "h4dV0Radius", kTHnD, {axisCentrality, axisPtCoarse, axisLambdaMass, axisV0Radius});
+        histos.add("AntiLambda/h4dPosDCAToPV", "h4dPosDCAToPV", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisDCAtoPV});
+        histos.add("AntiLambda/h4dNegDCAToPV", "h4dNegDCAToPV", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisDCAtoPV});
+        histos.add("AntiLambda/h4dDCADaughters", "h4dDCADaughters", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisDCAdau});
+        histos.add("AntiLambda/h4dPointingAngle", "h4dPointingAngle", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisPointingAngle});
+        histos.add("AntiLambda/h4dV0Radius", "h4dV0Radius", kTHnD, {axisConfigurations.axisCentrality, axisConfigurations.axisPtCoarse, axisConfigurations.axisLambdaMass, axisConfigurations.axisV0Radius});
       }
     }
 
     if (doPlainTopoQA) {
       // All candidates received
-      histos.add("hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisDCAtoPV});
-      histos.add("hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisDCAtoPV});
-      histos.add("hDCADaughters", "hDCADaughters", kTH1D, {axisDCAdau});
-      histos.add("hPointingAngle", "hPointingAngle", kTH1D, {axisPointingAngle});
-      histos.add("hV0Radius", "hV0Radius", kTH1D, {axisV0Radius});
-      histos.add("h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
-      histos.add("h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
+      histos.add("hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
+      histos.add("hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
+      histos.add("hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
+      histos.add("hPointingAngle", "hPointingAngle", kTH1D, {axisConfigurations.axisPointingAngle});
+      histos.add("hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
+      histos.add("h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+      histos.add("h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+      histos.add("h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+      histos.add("h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
       if (analyseK0Short) {
-        histos.add("K0Short/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisDCAtoPV});
-        histos.add("K0Short/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisDCAtoPV});
-        histos.add("K0Short/hDCADaughters", "hDCADaughters", kTH1D, {axisDCAdau});
-        histos.add("K0Short/hPointingAngle", "hPointingAngle", kTH1D, {axisPointingAngle});
-        histos.add("K0Short/hV0Radius", "hV0Radius", kTH1D, {axisV0Radius});
-        histos.add("K0Short/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
-        histos.add("K0Short/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
+        histos.add("K0Short/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
+        histos.add("K0Short/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
+        histos.add("K0Short/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
+        histos.add("K0Short/hPointingAngle", "hPointingAngle", kTH1D, {axisConfigurations.axisPointingAngle});
+        histos.add("K0Short/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
+        histos.add("K0Short/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+        histos.add("K0Short/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+        histos.add("K0Short/h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+        histos.add("K0Short/h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
       }
       if (analyseLambda) {
-        histos.add("Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisDCAtoPV});
-        histos.add("Lambda/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisDCAtoPV});
-        histos.add("Lambda/hDCADaughters", "hDCADaughters", kTH1D, {axisDCAdau});
-        histos.add("Lambda/hPointingAngle", "hPointingAngle", kTH1D, {axisPointingAngle});
-        histos.add("Lambda/hV0Radius", "hV0Radius", kTH1D, {axisV0Radius});
-        histos.add("Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
-        histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
+        histos.add("Lambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
+        histos.add("Lambda/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
+        histos.add("Lambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
+        histos.add("Lambda/hPointingAngle", "hPointingAngle", kTH1D, {axisConfigurations.axisPointingAngle});
+        histos.add("Lambda/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
+        histos.add("Lambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+        histos.add("Lambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+        histos.add("Lambda/h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+        histos.add("Lambda/h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
       }
       if (analyseAntiLambda) {
-        histos.add("AntiLambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisDCAtoPV});
-        histos.add("AntiLambda/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisDCAtoPV});
-        histos.add("AntiLambda/hDCADaughters", "hDCADaughters", kTH1D, {axisDCAdau});
-        histos.add("AntiLambda/hPointingAngle", "hPointingAngle", kTH1D, {axisPointingAngle});
-        histos.add("AntiLambda/hV0Radius", "hV0Radius", kTH1D, {axisV0Radius});
-        histos.add("AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
-        histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisTPCrows, axisITSclus});
+        histos.add("AntiLambda/hPosDCAToPV", "hPosDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
+        histos.add("AntiLambda/hNegDCAToPV", "hNegDCAToPV", kTH1D, {axisConfigurations.axisDCAtoPV});
+        histos.add("AntiLambda/hDCADaughters", "hDCADaughters", kTH1D, {axisConfigurations.axisDCAdau});
+        histos.add("AntiLambda/hPointingAngle", "hPointingAngle", kTH1D, {axisConfigurations.axisPointingAngle});
+        histos.add("AntiLambda/hV0Radius", "hV0Radius", kTH1D, {axisConfigurations.axisV0Radius});
+        histos.add("AntiLambda/h2dPositiveITSvsTPCpts", "h2dPositiveITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+        histos.add("AntiLambda/h2dNegativeITSvsTPCpts", "h2dNegativeITSvsTPCpts", kTH2D, {axisConfigurations.axisTPCrows, axisConfigurations.axisITSclus});
+        histos.add("AntiLambda/h2dPositivePtVsPhi", "h2dPositivePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
+        histos.add("AntiLambda/h2dNegativePtVsPhi", "h2dNegativePtVsPhi", kTH2D, {axisConfigurations.axisPtCoarse, axisConfigurations.axisPhiMod});
       }
     }
 
     // Check if doing the right thing in AP space please
-    histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2D, {axisAPAlpha, axisAPQt});
-    histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2D, {axisAPAlpha, axisAPQt});
+    histos.add("GeneralQA/h2dArmenterosAll", "h2dArmenterosAll", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
+    histos.add("GeneralQA/h2dArmenterosSelected", "h2dArmenterosSelected", kTH2D, {axisConfigurations.axisAPAlpha, axisConfigurations.axisAPQt});
 
     // Creation of histograms: MC generated
     if ((doprocessGeneratedRun3 || doprocessGeneratedRun2)) {
-      histos.add("hGenEvents", "hGenEvents", kTH2D, {{axisNch}, {2, -0.5f, +1.5f}});
+      histos.add("hGenEvents", "hGenEvents", kTH2D, {{axisConfigurations.axisNch}, {2, -0.5f, +1.5f}});
       histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
       histos.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
       histos.add("hGenEventCentrality", "hGenEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
 
-      histos.add("hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", kTH2D, {axisCentrality, {50, -0.5f, 49.5f}});
-      histos.add("hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", kTH2D, {axisCentrality, {50, -0.5f, 49.5f}});
+      histos.add("hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", kTH2D, {axisConfigurations.axisCentrality, {50, -0.5f, 49.5f}});
+      histos.add("hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", kTH2D, {axisConfigurations.axisCentrality, {50, -0.5f, 49.5f}});
 
-      histos.add("hCentralityVsMultMC", "hCentralityVsMultMC", kTH2D, {{101, 0.0f, 101.0f}, axisNch});
+      histos.add("hCentralityVsMultMC", "hCentralityVsMultMC", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
 
-      histos.add("h2dGenK0Short", "h2dGenK0Short", kTH2D, {axisCentrality, axisPt});
-      histos.add("h2dGenLambda", "h2dGenLambda", kTH2D, {axisCentrality, axisPt});
-      histos.add("h2dGenAntiLambda", "h2dGenAntiLambda", kTH2D, {axisCentrality, axisPt});
-      histos.add("h2dGenXiMinus", "h2dGenXiMinus", kTH2D, {axisCentrality, axisPt});
-      histos.add("h2dGenXiPlus", "h2dGenXiPlus", kTH2D, {axisCentrality, axisPt});
-      histos.add("h2dGenOmegaMinus", "h2dGenOmegaMinus", kTH2D, {axisCentrality, axisPt});
-      histos.add("h2dGenOmegaPlus", "h2dGenOmegaPlus", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGenK0Short", "h2dGenK0Short", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+      histos.add("h2dGenLambda", "h2dGenLambda", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+      histos.add("h2dGenAntiLambda", "h2dGenAntiLambda", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+      histos.add("h2dGenXiMinus", "h2dGenXiMinus", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+      histos.add("h2dGenXiPlus", "h2dGenXiPlus", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+      histos.add("h2dGenOmegaMinus", "h2dGenOmegaMinus", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+      histos.add("h2dGenOmegaPlus", "h2dGenOmegaPlus", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
 
-      histos.add("h2dGenK0ShortVsMultMC_RecoedEvt", "h2dGenK0ShortVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenLambdaVsMultMC_RecoedEvt", "h2dGenLambdaVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenAntiLambdaVsMultMC_RecoedEvt", "h2dGenAntiLambdaVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenXiMinusVsMultMC_RecoedEvt", "h2dGenXiMinusVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", kTH2D, {axisNch, axisPt});
+      histos.add("h2dGenK0ShortVsMultMC_RecoedEvt", "h2dGenK0ShortVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      histos.add("h2dGenLambdaVsMultMC_RecoedEvt", "h2dGenLambdaVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      histos.add("h2dGenAntiLambdaVsMultMC_RecoedEvt", "h2dGenAntiLambdaVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      histos.add("h2dGenXiMinusVsMultMC_RecoedEvt", "h2dGenXiMinusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      histos.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      histos.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      histos.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
 
-      histos.add("h2dGenK0ShortVsMultMC", "h2dGenK0ShortVsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenLambdaVsMultMC", "h2dGenLambdaVsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenAntiLambdaVsMultMC", "h2dGenAntiLambdaVsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenXiMinusVsMultMC", "h2dGenXiMinusVsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", kTH2D, {axisNch, axisPt});
-      histos.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", kTH2D, {axisNch, axisPt});
+      histos.add("h2dGenK0ShortVsMultMC", "h2dGenK0ShortVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      histos.add("h2dGenLambdaVsMultMC", "h2dGenLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      histos.add("h2dGenAntiLambdaVsMultMC", "h2dGenAntiLambdaVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      histos.add("h2dGenXiMinusVsMultMC", "h2dGenXiMinusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      histos.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      histos.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
+      histos.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", kTH2D, {axisConfigurations.axisNch, axisConfigurations.axisPt});
     }
     if (doprocessBinnedGenerated) {
-      histos.add("h2dGeneratedK0Short", "h2dGeneratedK0Short", kTH2D, {axisCentrality, axisPt});
-      histos.add("h2dGeneratedLambda", "h2dGeneratedLambda", kTH2D, {axisCentrality, axisPt});
-      histos.add("h2dGeneratedAntiLambda", "h2dGeneratedAntiLambda", kTH2D, {axisCentrality, axisPt});
-      histos.add("h2dGeneratedXiMinus", "h2dGeneratedXiMinus", kTH2D, {axisCentrality, axisPt});
-      histos.add("h2dGeneratedXiPlus", "h2dGeneratedXiPlus", kTH2D, {axisCentrality, axisPt});
-      histos.add("h2dGeneratedOmegaMinus", "h2dGeneratedOmegaMinus", kTH2D, {axisCentrality, axisPt});
-      histos.add("h2dGeneratedOmegaPlus", "h2dGeneratedOmegaPlus", kTH2D, {axisCentrality, axisPt});
+      histos.add("h2dGeneratedK0Short", "h2dGeneratedK0Short", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+      histos.add("h2dGeneratedLambda", "h2dGeneratedLambda", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+      histos.add("h2dGeneratedAntiLambda", "h2dGeneratedAntiLambda", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+      histos.add("h2dGeneratedXiMinus", "h2dGeneratedXiMinus", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+      histos.add("h2dGeneratedXiPlus", "h2dGeneratedXiPlus", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+      histos.add("h2dGeneratedOmegaMinus", "h2dGeneratedOmegaMinus", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
+      histos.add("h2dGeneratedOmegaPlus", "h2dGeneratedOmegaPlus", kTH2D, {axisConfigurations.axisCentrality, axisConfigurations.axisPt});
     }
 
     // inspect histogram sizes, please
@@ -1042,6 +1133,47 @@ struct derivedlambdakzeroanalysis {
         timeStampML = mlConfigurations.timestampCCDB.value;
       loadMachines(timeStampML);
     }
+    // Fetching magnetic field if requested
+    if (v0Selections.rejectTPCsectorBoundary) {
+      // In case override, don't proceed, please - no CCDB access required
+      if (ccdbConfigurations.useCustomMagField) {
+        magField = ccdbConfigurations.customMagField;
+      } else {
+        grpmag = ccdb->getForRun<o2::parameters::GRPMagField>(ccdbConfigurations.grpmagPath, mRunNumber);
+        if (!grpmag) {
+          LOG(fatal) << "Got nullptr from CCDB for path " << ccdbConfigurations.grpmagPath << " of object GRPMagField and " << ccdbConfigurations.grpPath << " of object GRPObject for run " << mRunNumber;
+        }
+        // Fetch magnetic field from ccdb for current collision
+        magField = std::lround(5.f * grpmag->getL3Current() / 30000.f);
+        LOG(info) << "Retrieved GRP for run " << mRunNumber << " with magnetic field of " << magField << " kZG";
+      }
+    }
+  }
+
+  double computePhiMod(double phi, int sign)
+  // Compute phi wrt to a TPC sector
+  // Calculation taken from CF: https://github.com/AliceO2Group/O2Physics/blob/376392cb87349886a300c75fa2492b50b7f46725/PWGCF/Flow/Tasks/flowAnalysisGF.cxx#L470
+  {
+    if (magField < 0) // for negative polarity field
+      phi = TMath::TwoPi() - phi;
+    if (sign < 0) // for negative charge
+      phi = TMath::TwoPi() - phi;
+    if (phi < 0)
+      LOGF(warning, "phi < 0: %g", phi);
+
+    phi += TMath::Pi() / 18.0; // to center gap in the middle
+    return fmod(phi, TMath::Pi() / 9.0);
+  }
+
+  bool isTrackFarFromTPCBoundary(double trackPt, double trackPhi, int sign)
+  // check whether the track passes close to a TPC sector boundary
+  {
+    double phiModn = computePhiMod(trackPhi, sign);
+    if (phiModn > fPhiCutHigh->Eval(trackPt))
+      return true; // keep track
+    if (phiModn < fPhiCutLow->Eval(trackPt))
+      return true; // keep track
+    return false;  // reject track
   }
 
   template <typename TV0, typename TCollision>
@@ -1089,17 +1221,19 @@ struct derivedlambdakzeroanalysis {
       BITSET(bitMap, selNegGoodITSTrack);
 
     // TPC quality flags
-    if (posTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                    // check minimum TPC crossed rows
-        posTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                  // check maximum TPC chi2 per clusters
-        posTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters && // check minimum fraction of TPC rows over findable
-        posTrackExtra.tpcFoundOverFindableCls() >= v0Selections.minTPCfoundOverFindableClusters &&      // check minimum fraction of found over findable TPC clusters
-        posTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters)               // check the maximum fraction of allowed shared TPC clusters
+    if (posTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                                // check minimum TPC crossed rows
+        posTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                              // check maximum TPC chi2 per clusters
+        posTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters &&             // check minimum fraction of TPC rows over findable
+        posTrackExtra.tpcFoundOverFindableCls() >= v0Selections.minTPCfoundOverFindableClusters &&                  // check minimum fraction of found over findable TPC clusters
+        posTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters &&                         // check the maximum fraction of allowed shared TPC clusters
+        (!v0Selections.rejectTPCsectorBoundary || isTrackFarFromTPCBoundary(v0.positivept(), v0.positivephi(), 1))) // reject track far from TPC sector boundary or not
       BITSET(bitMap, selPosGoodTPCTrack);
-    if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                    // check minimum TPC crossed rows
-        negTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                  // check maximum TPC chi2 per clusters
-        negTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters && // check minimum fraction of TPC rows over findable
-        negTrackExtra.tpcFoundOverFindableCls() >= v0Selections.minTPCfoundOverFindableClusters &&      // check minimum fraction of found over findable TPC clusters
-        negTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters)               // check the maximum fraction of allowed shared TPC clusters
+    if (negTrackExtra.tpcCrossedRows() >= v0Selections.minTPCrows &&                                                 // check minimum TPC crossed rows
+        negTrackExtra.tpcChi2NCl() < v0Selections.maxTPCchi2PerNcls &&                                               // check maximum TPC chi2 per clusters
+        negTrackExtra.tpcCrossedRowsOverFindableCls() >= v0Selections.minTPCrowsOverFindableClusters &&              // check minimum fraction of TPC rows over findable
+        negTrackExtra.tpcFoundOverFindableCls() >= v0Selections.minTPCfoundOverFindableClusters &&                   // check minimum fraction of found over findable TPC clusters
+        negTrackExtra.tpcFractionSharedCls() < v0Selections.maxFractionTPCSharedClusters &&                          // check the maximum fraction of allowed shared TPC clusters
+        (!v0Selections.rejectTPCsectorBoundary || isTrackFarFromTPCBoundary(v0.negativept(), v0.negativephi(), -1))) // reject track far from TPC sector boundary or not
       BITSET(bitMap, selNegGoodTPCTrack);
 
     // TPC PID
@@ -1157,9 +1291,9 @@ struct derivedlambdakzeroanalysis {
       BITSET(bitMap, selNegNotTPCOnly);
 
     // proper lifetime
-    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < lifetimecut->get("lifetimecutLambda"))
+    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0 < v0Selections.lifetimecut->get("lifetimecutLambda"))
       BITSET(bitMap, selLambdaCTau);
-    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < lifetimecut->get("lifetimecutK0S"))
+    if (v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassK0Short < v0Selections.lifetimecut->get("lifetimecutK0S"))
       BITSET(bitMap, selK0ShortCTau);
 
     // armenteros
@@ -1431,11 +1565,23 @@ struct derivedlambdakzeroanalysis {
       histos.fill(HIST("hV0Radius"), v0.v0radius());
       histos.fill(HIST("h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
       histos.fill(HIST("h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
+      histos.fill(HIST("h2dPositivePtVsPhi"), v0.positivept(), computePhiMod(v0.positivephi(), 1));
+      histos.fill(HIST("h2dNegativePtVsPhi"), v0.negativept(), computePhiMod(v0.negativephi(), -1));
+    }
+
+    // Fill first bin: all candidates
+    histos.fill(HIST("GeneralQA/hSelectionV0s"), 0);
+    // Loop over all bits in the enum and fill if passed
+    for (uint64_t i = 0; i <= selPhysPrimAntiLambda; i++) {
+      if (BITCHECK(selMap, i)) {
+        histos.fill(HIST("GeneralQA/hSelectionV0s"), i + 1); // +1 because bin 0 = "All"
+      }
     }
 
     // __________________________________________
     // main analysis
     if (passK0ShortSelections && analyseK0Short) {
+      histos.fill(HIST("GeneralQA/hSelectionV0s"), selPhysPrimAntiLambda + 2);      //
       histos.fill(HIST("GeneralQA/h2dArmenterosSelected"), v0.alpha(), v0.qtarm()); // cross-check
       histos.fill(HIST("h3dMassK0Short"), centrality, pt, v0.mK0Short());
       if (gapSide == 0)
@@ -1455,6 +1601,8 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("K0Short/hV0Radius"), v0.v0radius());
         histos.fill(HIST("K0Short/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
         histos.fill(HIST("K0Short/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
+        histos.fill(HIST("K0Short/h2dPositivePtVsPhi"), v0.positivept(), computePhiMod(v0.positivephi(), 1));
+        histos.fill(HIST("K0Short/h2dNegativePtVsPhi"), v0.negativept(), computePhiMod(v0.negativephi(), -1));
       }
       if (doDetectPropQA == 1) {
         histos.fill(HIST("K0Short/h6dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pt);
@@ -1511,12 +1659,13 @@ struct derivedlambdakzeroanalysis {
       }
       if (doEtaPhiQA) {
         histos.fill(HIST("K0Short/h5dV0PhiVsEta"), centrality, pt, v0.mK0Short(), v0.phi(), v0.eta());
-        histos.fill(HIST("K0Short/h5dPosPhiVsNegPhi"), centrality, pt, v0.mK0Short(), v0.positivephi(), v0.negativephi());
-        histos.fill(HIST("K0Short/h5dPosEtaVsNegEta"), centrality, pt, v0.mK0Short(), v0.positiveeta(), v0.negativeeta());
+        histos.fill(HIST("K0Short/h5dPosPhiVsEta"), centrality, v0.positivept(), v0.mK0Short(), v0.positivephi(), v0.positiveeta());
+        histos.fill(HIST("K0Short/h5dNegPhiVsEta"), centrality, v0.negativept(), v0.mK0Short(), v0.negativephi(), v0.negativeeta());
       }
       nK0Shorts++;
     }
     if (passLambdaSelections && analyseLambda) {
+      histos.fill(HIST("GeneralQA/hSelectionV0s"), selPhysPrimAntiLambda + 2); //
       histos.fill(HIST("h3dMassLambda"), centrality, pt, v0.mLambda());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassLambdaSGA"), centrality, pt, v0.mLambda());
@@ -1526,6 +1675,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("h3dMassLambdaDG"), centrality, pt, v0.mLambda());
       else
         histos.fill(HIST("h3dMassLambdaHadronic"), centrality, pt, v0.mLambda());
+      histos.fill(HIST("hMassLambda"), v0.mLambda());
       if (doPlainTopoQA) {
         histos.fill(HIST("Lambda/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("Lambda/hNegDCAToPV"), v0.dcanegtopv());
@@ -1534,6 +1684,8 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("Lambda/hV0Radius"), v0.v0radius());
         histos.fill(HIST("Lambda/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
         histos.fill(HIST("Lambda/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
+        histos.fill(HIST("Lambda/h2dPositivePtVsPhi"), v0.positivept(), computePhiMod(v0.positivephi(), 1));
+        histos.fill(HIST("Lambda/h2dNegativePtVsPhi"), v0.negativept(), computePhiMod(v0.negativephi(), -1));
       }
       if (doDetectPropQA == 1) {
         histos.fill(HIST("Lambda/h6dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pt);
@@ -1590,12 +1742,13 @@ struct derivedlambdakzeroanalysis {
       }
       if (doEtaPhiQA) {
         histos.fill(HIST("Lambda/h5dV0PhiVsEta"), centrality, pt, v0.mLambda(), v0.phi(), v0.eta());
-        histos.fill(HIST("Lambda/h5dPosPhiVsNegPhi"), centrality, pt, v0.mLambda(), v0.positivephi(), v0.negativephi());
-        histos.fill(HIST("Lambda/h5dPosEtaVsNegEta"), centrality, pt, v0.mLambda(), v0.positiveeta(), v0.negativeeta());
+        histos.fill(HIST("Lambda/h5dPosPhiVsEta"), centrality, v0.positivept(), v0.mLambda(), v0.positivephi(), v0.positiveeta());
+        histos.fill(HIST("Lambda/h5dNegPhiVsEta"), centrality, v0.negativept(), v0.mLambda(), v0.negativephi(), v0.negativeeta());
       }
       nLambdas++;
     }
     if (passAntiLambdaSelections && analyseAntiLambda) {
+      histos.fill(HIST("GeneralQA/hSelectionV0s"), selPhysPrimAntiLambda + 2); //
       histos.fill(HIST("h3dMassAntiLambda"), centrality, pt, v0.mAntiLambda());
       if (gapSide == 0)
         histos.fill(HIST("h3dMassAntiLambdaSGA"), centrality, pt, v0.mAntiLambda());
@@ -1605,6 +1758,7 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("h3dMassAntiLambdaDG"), centrality, pt, v0.mAntiLambda());
       else
         histos.fill(HIST("h3dMassAntiLambdaHadronic"), centrality, pt, v0.mAntiLambda());
+      histos.fill(HIST("hMassAntiLambda"), v0.mAntiLambda());
       if (doPlainTopoQA) {
         histos.fill(HIST("AntiLambda/hPosDCAToPV"), v0.dcapostopv());
         histos.fill(HIST("AntiLambda/hNegDCAToPV"), v0.dcanegtopv());
@@ -1613,6 +1767,8 @@ struct derivedlambdakzeroanalysis {
         histos.fill(HIST("AntiLambda/hV0Radius"), v0.v0radius());
         histos.fill(HIST("AntiLambda/h2dPositiveITSvsTPCpts"), posTrackExtra.tpcCrossedRows(), posTrackExtra.itsNCls());
         histos.fill(HIST("AntiLambda/h2dNegativeITSvsTPCpts"), negTrackExtra.tpcCrossedRows(), negTrackExtra.itsNCls());
+        histos.fill(HIST("AntiLambda/h2dPositivePtVsPhi"), v0.positivept(), computePhiMod(v0.positivephi(), 1));
+        histos.fill(HIST("AntiLambda/h2dNegativePtVsPhi"), v0.negativept(), computePhiMod(v0.negativephi(), -1));
       }
       if (doDetectPropQA == 1) {
         histos.fill(HIST("AntiLambda/h6dDetectPropVsCentrality"), centrality, posDetMap, posITSclusMap, negDetMap, negITSclusMap, pt);
@@ -1669,8 +1825,8 @@ struct derivedlambdakzeroanalysis {
       }
       if (doEtaPhiQA) {
         histos.fill(HIST("AntiLambda/h5dV0PhiVsEta"), centrality, pt, v0.mAntiLambda(), v0.phi(), v0.eta());
-        histos.fill(HIST("AntiLambda/h5dPosPhiVsNegPhi"), centrality, pt, v0.mAntiLambda(), v0.positivephi(), v0.negativephi());
-        histos.fill(HIST("AntiLambda/h5dPosEtaVsNegEta"), centrality, pt, v0.mAntiLambda(), v0.positiveeta(), v0.negativeeta());
+        histos.fill(HIST("AntiLambda/h5dPosPhiVsEta"), centrality, v0.positivept(), v0.mAntiLambda(), v0.positivephi(), v0.positiveeta());
+        histos.fill(HIST("AntiLambda/h5dNegPhiVsEta"), centrality, v0.negativept(), v0.mAntiLambda(), v0.negativephi(), v0.negativeeta());
       }
       nAntiLambdas++;
     }
@@ -2090,6 +2246,20 @@ struct derivedlambdakzeroanalysis {
     histos.fill(HIST("hEventCentrality"), centrality);
 
     histos.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
+    if (doEventQA) {
+      if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
+        histos.fill(HIST("hCentralityVsNGlobal"), centrality, collision.multNTracksGlobal());
+        histos.fill(HIST("hEventCentVsMultFT0M"), collision.centFT0M(), collision.multFT0A() + collision.multFT0C());
+        histos.fill(HIST("hEventCentVsMultFT0C"), collision.centFT0C(), collision.multFT0C());
+        histos.fill(HIST("hEventCentVsMultNGlobal"), collision.centNGlobal(), collision.multNTracksGlobal());
+        histos.fill(HIST("hEventCentVsMultFV0A"), collision.centFV0A(), collision.multFV0A());
+        histos.fill(HIST("hEventMultFT0MvsMultNGlobal"), collision.multFT0A() + collision.multFT0C(), collision.multNTracksGlobal());
+        histos.fill(HIST("hEventMultFT0CvsMultNGlobal"), collision.multFT0C(), collision.multNTracksGlobal());
+        histos.fill(HIST("hEventMultFV0AvsMultNGlobal"), collision.multFV0A(), collision.multNTracksGlobal());
+        histos.fill(HIST("hEventMultPVvsMultNGlobal"), collision.multNTracksPVeta1(), collision.multNTracksGlobal());
+        histos.fill(HIST("hEventMultFT0CvsMultFV0A"), collision.multFT0C(), collision.multFV0A());
+      }
+    }
 
     histos.fill(HIST("hCentralityVsPVz"), centrality, collision.posZ());
     histos.fill(HIST("hEventPVz"), collision.posZ());
@@ -2178,7 +2348,8 @@ struct derivedlambdakzeroanalysis {
     // Fire up CCDB
     if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
         (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
-        (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
+        (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores) ||
+        v0Selections.rejectTPCsectorBoundary) {
       initCCDB(collision);
     }
 
@@ -2246,7 +2417,8 @@ struct derivedlambdakzeroanalysis {
     // Fire up CCDB
     if ((mlConfigurations.useK0ShortScores && mlConfigurations.calculateK0ShortScores) ||
         (mlConfigurations.useLambdaScores && mlConfigurations.calculateLambdaScores) ||
-        (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores)) {
+        (mlConfigurations.useAntiLambdaScores && mlConfigurations.calculateAntiLambdaScores) ||
+        v0Selections.rejectTPCsectorBoundary) {
       initCCDB(collision);
     }
 
@@ -2349,11 +2521,8 @@ struct derivedlambdakzeroanalysis {
       if (!v0MC.has_straMCCollision())
         continue;
 
-      histos.fill(HIST("hPrimaryV0s"), 0);
       if (!v0MC.isPhysicalPrimary())
         continue;
-
-      histos.fill(HIST("hPrimaryV0s"), 1);
 
       float ptmc = v0MC.ptMC();
       float ymc = 1e3;
