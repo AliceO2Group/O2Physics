@@ -93,7 +93,7 @@ struct CascadeAnalysisLightIonsDerivedData {
   Configurable<bool> rejectITSROFBorder{"rejectITSROFBorder", true, "reject events at ITS ROF border"};
   Configurable<bool> rejectTFBorder{"rejectTFBorder", true, "reject events at TF border"};
   Configurable<bool> requireVertexITSTPC{"requireVertexITSTPC", false, "require events with at least one ITS-TPC track"};
-  Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", false, "require is good Zvtx FT0 vs PV"};
+  Configurable<bool> requireIsGoodZvtxFT0VsPV{"requireIsGoodZvtxFT0VsPV", true, "require is good Zvtx FT0 vs PV"};
   Configurable<bool> requireIsVertexTOFmatched{"requireIsVertexTOFmatched", false, "require events with at least one of vertex contributors matched to TOF"};
   Configurable<bool> requireIsVertexTRDmatched{"requireIsVertexTRDmatched", false, "require events with at least one of vertex contributors matched to TRD"};
   Configurable<bool> rejectSameBunchPileup{"rejectSameBunchPileup", true, "reject collisions in case of pileup with another collision in the same foundBC"};
@@ -134,6 +134,7 @@ struct CascadeAnalysisLightIonsDerivedData {
   ConfigurableAxis centEstimatorHistBin{"centEstimatorHistBin", {501, -0.5, 500.5}, ""};
   ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
   ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +1000.0f}, "Number of charged particles"};
+  ConfigurableAxis axisMult{"axisMult", {500, 0.0f, +1000.0f}, "Multiplicity"};
 
   // Centrality estimator
   Configurable<int> centralityEstimator{"centralityEstimator", 0, "0 = FT0C, 1 = FTOM, 2 = FV0A, 3 = NGlobal"};
@@ -200,6 +201,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       // Multiplicity Histograms
       registryData.add("hCentEstimator", "hCentEstimator", HistType::kTH1D, {axisCentEstimator});
       registryData.add("hCentralityVsNch", "hCentralityVsNch", HistType::kTH2D, {axisCentEstimator, axisNch});
+      registryData.add("hCentralityVsMultiplicity", "hCentralityVsMultiplicity", HistType::kTH2D, {axisCentEstimator, axisMult});
 
       // Histograms for xi (data)
       registryData.add("hMassXipos", "hMassXipos", HistType::kTH3F, {centAxis, ptAxis, invMassXiAxis});
@@ -244,6 +246,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       // Multiplicity Histograms
       registryMC.add("hCentEstimator_truerec", "hCentEstimator_truerec", HistType::kTH1D, {axisCentEstimator});
       registryMC.add("hCentralityVsNch_truerec", "hCentralityVsNch_truerec", HistType::kTH2D, {axisCentEstimator, axisNch});
+      registryMC.add("hCentralityVsMultiplicity_truerec", "hCentralityVsMultiplicity_truerec", HistType::kTH2D, {axisCentEstimator, axisMult});
 
       // Histograms for xi (mc)
       registryMC.add("hMassXipos_truerec", "hMassXipos_truerec", HistType::kTH3F, {centAxis, ptAxis, invMassXiAxis});
@@ -623,7 +626,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       bool atLeastOne = false;
       int biggestNContribs = -1;
       int nCollisions = 0;
-      float multiplicitydata = -1.0f;
+      float centralitydata = -1.0f;
       for (auto const& collision : groupedCollisions) {
         // event selections
         if (applySel8 && !collision.sel8())
@@ -663,29 +666,29 @@ struct CascadeAnalysisLightIonsDerivedData {
         if (biggestNContribs < collision.multPVTotalContributors()) {
           biggestNContribs = collision.multPVTotalContributors();
           if (centralityEstimator == Option::kFT0C)
-            multiplicitydata = collision.centFT0C();
+            centralitydata = collision.centFT0C();
           if (centralityEstimator == Option::kFT0M)
-            multiplicitydata = collision.centFT0M();
+            centralitydata = collision.centFT0M();
           if (centralityEstimator == Option::kFV0A)
-            multiplicitydata = collision.centFV0A();
+            centralitydata = collision.centFV0A();
           if (centralityEstimator == Option::kNGlobal)
-            multiplicitydata = collision.centNGlobal();
+            centralitydata = collision.centNGlobal();
         }
         nCollisions++;
 
         atLeastOne = true;
       }
 
-      registryMC.fill(HIST("hCentralityVsNcoll_beforeEvSel"), multiplicitydata, groupedCollisions.size());
-      registryMC.fill(HIST("hCentralityVsNcoll_afterEvSel"), multiplicitydata, nCollisions);
-      registryMC.fill(HIST("hCentralityVsMultMC"), multiplicitydata, mcCollisions.multMCNParticlesEta05());
+      registryMC.fill(HIST("hCentralityVsNcoll_beforeEvSel"), centralitydata, groupedCollisions.size());
+      registryMC.fill(HIST("hCentralityVsNcoll_afterEvSel"), centralitydata, nCollisions);
+      registryMC.fill(HIST("hCentralityVsMultMC"), centralitydata, mcCollisions.multMCNParticlesEta05());
 
       registryQC.fill(HIST("hVertexZGen"), mcCollisions.posZ());
 
       if (atLeastOne) {
         registryMC.fill(HIST("hGenEvents"), mcCollisions.multMCNParticlesEta05(), 1 /* at least 1 rec. event*/);
 
-        registryMC.fill(HIST("hGenEventCentrality"), multiplicitydata);
+        registryMC.fill(HIST("hGenEventCentrality"), centralitydata);
       }
     }
     return;
@@ -747,20 +750,30 @@ struct CascadeAnalysisLightIonsDerivedData {
     // Store the Zvtx
     registryQC.fill(HIST("hVertexZdata"), std::fabs(collision.posZ()));
 
-    // Store the event multiplicity using different estimators
+    // Store the event centrality using different estimators
+    float centrality = -1.0f;
     float multiplicity = -1.0f;
 
-    if (centralityEstimator == Option::kFT0C)
-      multiplicity = collision.centFT0C();
-    if (centralityEstimator == Option::kFT0M)
-      multiplicity = collision.centFT0M();
-    if (centralityEstimator == Option::kFV0A)
-      multiplicity = collision.centFV0A();
-    if (centralityEstimator == Option::kNGlobal)
-      multiplicity = collision.centNGlobal();
+    if (centralityEstimator == Option::kFT0C) {
+      centrality = collision.centFT0C();
+      multiplicity = collision.multFT0C();
+    }
+    if (centralityEstimator == Option::kFT0M) {
+      centrality = collision.centFT0M();
+      multiplicity = collision.multFT0C() + collision.multFT0A();
+    }
+    if (centralityEstimator == Option::kFV0A) {
+      centrality = collision.centFV0A();
+      multiplicity = collision.multFV0A();
+    }
+    if (centralityEstimator == Option::kNGlobal) {
+      centrality = collision.centNGlobal();
+      multiplicity = collision.multNTracksGlobal();
+    }
 
-    registryData.fill(HIST("hCentEstimator"), multiplicity);
-    registryData.fill(HIST("hCentralityVsNch"), multiplicity, collision.multNTracksPVeta1());
+    registryData.fill(HIST("hCentEstimator"), centrality);
+    registryData.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
+    registryData.fill(HIST("hCentralityVsMultiplicity"), centrality, multiplicity);
 
     // Loop over cascades
     for (const auto& casc : fullCascades) {
@@ -788,25 +801,25 @@ struct CascadeAnalysisLightIonsDerivedData {
 
       // ------------------------------------- Store selctions distribution for analysis
       if (casc.sign() < 0) {
-        registryData.fill(HIST("hMassXineg"), multiplicity, casc.pt(), casc.mXi());
-        registryData.fill(HIST("hMassOmeganeg"), multiplicity, casc.pt(), casc.mOmega());
+        registryData.fill(HIST("hMassXineg"), centrality, casc.pt(), casc.mXi());
+        registryData.fill(HIST("hMassOmeganeg"), centrality, casc.pt(), casc.mOmega());
       }
       if (casc.sign() > 0) {
-        registryData.fill(HIST("hMassXipos"), multiplicity, casc.pt(), casc.mXi());
-        registryData.fill(HIST("hMassOmegapos"), multiplicity, casc.pt(), casc.mOmega());
+        registryData.fill(HIST("hMassXipos"), centrality, casc.pt(), casc.mXi());
+        registryData.fill(HIST("hMassOmegapos"), centrality, casc.pt(), casc.mOmega());
       }
 
       if (casc.sign() < 0 && passedXiSelection(casc, pos, neg, bach, collision)) {
-        registryData.fill(HIST("hMassXinegSelected"), multiplicity, casc.pt(), casc.mXi());
+        registryData.fill(HIST("hMassXinegSelected"), centrality, casc.pt(), casc.mXi());
       }
       if (casc.sign() < 0 && passedOmegaSelection(casc, pos, neg, bach, collision)) {
-        registryData.fill(HIST("hMassOmeganegSelected"), multiplicity, casc.pt(), casc.mOmega());
+        registryData.fill(HIST("hMassOmeganegSelected"), centrality, casc.pt(), casc.mOmega());
       }
       if (casc.sign() > 0 && passedXiSelection(casc, pos, neg, bach, collision)) {
-        registryData.fill(HIST("hMassXiposSelected"), multiplicity, casc.pt(), casc.mXi());
+        registryData.fill(HIST("hMassXiposSelected"), centrality, casc.pt(), casc.mXi());
       }
       if (casc.sign() > 0 && passedOmegaSelection(casc, pos, neg, bach, collision)) {
-        registryData.fill(HIST("hMassOmegaposSelected"), multiplicity, casc.pt(), casc.mOmega());
+        registryData.fill(HIST("hMassOmegaposSelected"), centrality, casc.pt(), casc.mOmega());
       }
     }
   }
@@ -869,20 +882,30 @@ struct CascadeAnalysisLightIonsDerivedData {
       // Store the Zvtx
       registryQC.fill(HIST("hVertexZRec"), RecCol.posZ());
 
-      // Store the event multiplicity using different estimators
+      // Store the event centrality using different estimators
+      float centralityMcRec = -1.0f;
       float multiplicityMcRec = -1.0f;
 
-      if (centralityEstimator == Option::kFT0C)
-        multiplicityMcRec = RecCol.centFT0C();
-      if (centralityEstimator == Option::kFT0M)
-        multiplicityMcRec = RecCol.centFT0M();
-      if (centralityEstimator == Option::kFV0A)
-        multiplicityMcRec = RecCol.centFV0A();
-      if (centralityEstimator == Option::kNGlobal)
-        multiplicityMcRec = RecCol.centNGlobal();
+      if (centralityEstimator == Option::kFT0C) {
+        centralityMcRec = RecCol.centFT0C();
+        multiplicityMcRec = RecCol.multFT0C();
+      }
+      if (centralityEstimator == Option::kFT0M) {
+        centralityMcRec = RecCol.centFT0M();
+        multiplicityMcRec = RecCol.multFT0C() + RecCol.multFT0A();
+      }
+      if (centralityEstimator == Option::kFV0A) {
+        centralityMcRec = RecCol.centFV0A();
+        multiplicityMcRec = RecCol.multFV0A();
+      }
+      if (centralityEstimator == Option::kNGlobal) {
+        centralityMcRec = RecCol.centNGlobal();
+        multiplicityMcRec = RecCol.multNTracksGlobal();
+      }
 
-      registryMC.fill(HIST("hCentEstimator_truerec"), multiplicityMcRec);
-      registryMC.fill(HIST("hCentralityVsNch_truerec"), multiplicityMcRec, RecCol.multNTracksPVeta1());
+      registryMC.fill(HIST("hCentEstimator_truerec"), centralityMcRec);
+      registryMC.fill(HIST("hCentralityVsNch_truerec"), centralityMcRec, RecCol.multNTracksPVeta1());
+      registryMC.fill(HIST("hCentralityVsMultiplicity_truerec"), centralityMcRec, multiplicityMcRec);
 
       for (const auto& casc : fullCascades) {
         if (etaMin > casc.bacheloreta() || casc.bacheloreta() > etaMax ||
@@ -923,33 +946,33 @@ struct CascadeAnalysisLightIonsDerivedData {
         // ------------------------------------- Store selctions distribution for analysis
         if (casc.sign() < 0) {
           if (pdgParent == kXiMinus) {
-            registryMC.fill(HIST("hMassXineg_truerec"), multiplicityMcRec, ptmc, casc.mXi());
+            registryMC.fill(HIST("hMassXineg_truerec"), centralityMcRec, ptmc, casc.mXi());
           }
           if (pdgParent == kOmegaMinus) {
-            registryMC.fill(HIST("hMassOmeganeg_truerec"), multiplicityMcRec, ptmc, casc.mOmega());
+            registryMC.fill(HIST("hMassOmeganeg_truerec"), centralityMcRec, ptmc, casc.mOmega());
           }
         }
 
         if (casc.sign() > 0) {
           if (pdgParent == kXiPlusBar) {
-            registryMC.fill(HIST("hMassXipos_truerec"), multiplicityMcRec, ptmc, casc.mXi());
+            registryMC.fill(HIST("hMassXipos_truerec"), centralityMcRec, ptmc, casc.mXi());
           }
           if (pdgParent == kOmegaPlusBar) {
-            registryMC.fill(HIST("hMassOmegapos_truerec"), multiplicityMcRec, ptmc, casc.mOmega());
+            registryMC.fill(HIST("hMassOmegapos_truerec"), centralityMcRec, ptmc, casc.mOmega());
           }
         }
 
         if (casc.sign() < 0 && pdgParent == kXiMinus && passedXiSelection(casc, pos, neg, bach, RecCol)) {
-          registryMC.fill(HIST("hMassXinegSelected_truerec"), multiplicityMcRec, ptmc, casc.mXi());
+          registryMC.fill(HIST("hMassXinegSelected_truerec"), centralityMcRec, ptmc, casc.mXi());
         }
         if (casc.sign() < 0 && pdgParent == kOmegaMinus && passedOmegaSelection(casc, pos, neg, bach, RecCol)) {
-          registryMC.fill(HIST("hMassOmeganegSelected_truerec"), multiplicityMcRec, ptmc, casc.mOmega());
+          registryMC.fill(HIST("hMassOmeganegSelected_truerec"), centralityMcRec, ptmc, casc.mOmega());
         }
         if (casc.sign() > 0 && pdgParent == kXiPlusBar && passedXiSelection(casc, pos, neg, bach, RecCol)) {
-          registryMC.fill(HIST("hMassXiposSelected_truerec"), multiplicityMcRec, ptmc, casc.mXi());
+          registryMC.fill(HIST("hMassXiposSelected_truerec"), centralityMcRec, ptmc, casc.mXi());
         }
         if (casc.sign() > 0 && pdgParent == kOmegaPlusBar && passedOmegaSelection(casc, pos, neg, bach, RecCol)) {
-          registryMC.fill(HIST("hMassOmegaposSelected_truerec"), multiplicityMcRec, ptmc, casc.mOmega());
+          registryMC.fill(HIST("hMassOmegaposSelected_truerec"), centralityMcRec, ptmc, casc.mOmega());
         }
       } // casc loop
     } // rec.collision loop
