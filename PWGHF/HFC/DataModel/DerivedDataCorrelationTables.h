@@ -81,7 +81,7 @@ DECLARE_SOA_TABLE(DsCandSelInfos, "AOD", "DSCANDSELINFO", //! Table with Ds cand
                   aod::hf_candidate_reduced::BdtScorePrompt,
                   aod::hf_candidate_reduced::BdtScoreBkg);
 
-DECLARE_SOA_TABLE(HfcRedCharmHads2P, "AOD", "HFCREDCHARMHAD2P", //! Table with charm hadron candidate info
+DECLARE_SOA_TABLE(HfcRedCharmHads2P, "AOD", "HFCREDCHARMHAD2P", //! Table with 2-prong charm hadron candidate info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedFlowCollId,
                   aod::hf_candidate_reduced::PhiCand,
@@ -91,7 +91,7 @@ DECLARE_SOA_TABLE(HfcRedCharmHads2P, "AOD", "HFCREDCHARMHAD2P", //! Table with c
                   aod::hf_candidate_reduced::Prong0Id,
                   aod::hf_candidate_reduced::Prong1Id);
 
-DECLARE_SOA_TABLE(HfcRedCharmHads3P, "AOD", "HFCREDCHARMHAD3P", //! Table with charm hadron candidate info
+DECLARE_SOA_TABLE(HfcRedCharmHads3P, "AOD", "HFCREDCHARMHAD3P", //! Table with 3-prong charm hadron candidate info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedFlowCollId,
                   aod::hf_candidate_reduced::PhiCand,

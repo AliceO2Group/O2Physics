@@ -13,6 +13,7 @@
 /// \brief CharmHadrons-Hadrons correlator tree creator for data and MC-reco analyses
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Politecnico and INFN Torino
 /// \author Stefano Politanò <stefano.politano@cern.ch>, CERN
+/// \author Wu Chuntai <chuntai.wu@cern.ch>, CCNU, INFN Padova, and Padova University
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
