@@ -113,9 +113,6 @@ struct JetTaggerHFQA {
   ConfigurableAxis binSigmaLxyz{"binSigmaLxyz", {100, 0., 0.1}, ""};
 
   int numberOfJetFlavourSpecies = 6;
-  float kUnsetJetAreaFraction = -98.0;
-  float kUnsetConstituentPtMin = -98.0;
-  float kUnsetConstituentPtMax = 9998.0;
   std::vector<int> eventSelectionBits;
   int trackSelection = -1;
 
@@ -449,14 +446,17 @@ struct JetTaggerHFQA {
   template <typename T, typename U>
   bool isAcceptedJet(U const& jet)
   {
-    if (jetAreaFractionMin > kUnsetJetAreaFraction) {
+    const float noJetAreaFractionFilter = -98.0;
+    const float noConstituentPtMinFilter = -98.0;
+    const float noConstituentPtMaxFilter = 9998.0;
+    if (jetAreaFractionMin > noJetAreaFractionFilter) {
       if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
     bool checkConstituentPt = true;
-    bool checkConstituentMinPt = (leadingConstituentPtMin > kUnsetConstituentPtMin);
-    bool checkConstituentMaxPt = (leadingConstituentPtMax < kUnsetConstituentPtMax);
+    bool checkConstituentMinPt = (leadingConstituentPtMin > noConstituentPtMinFilter);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < noConstituentPtMaxFilter);
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
     }
