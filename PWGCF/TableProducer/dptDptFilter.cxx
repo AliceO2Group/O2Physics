@@ -635,11 +635,11 @@ struct DptDptFilter {
       if (cfgEventSelection.fillQc) {
         /* the quality control histograms */
         for (int i = 0; i < BeforeAfterNOOFTIMES; ++i) {
-          fhMultiplicityVsCentrality[i] = new TH2F(TString::Format("MultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);Number of tracks", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
-          fhMultiplicityVsT0cMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsT0cMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0C Multiplicity;Number of tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0C), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
-          fhMultiplicityVsT0aMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsT0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0A Multiplicity;Number of tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0A), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
-          fhMultiplicityVsV0aMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsV0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;V0A Multiplicity;Number of tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceV0A), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
-          fhMultiplicityVsPvMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsPvMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;PV contributors;Number of tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
+          fhMultiplicityVsCentrality[i] = new TH2F(TString::Format("MultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);Global tracks", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
+          fhMultiplicityVsT0cMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsT0cMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0C Multiplicity;Global tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0C), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
+          fhMultiplicityVsT0aMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsT0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0A Multiplicity;Global tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0A), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
+          fhMultiplicityVsV0aMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsV0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;V0A Multiplicity;Global tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceV0A), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
+          fhMultiplicityVsPvMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsPvMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;PV contributors;Global tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
           fhPvMultiplicityVsCentrality[i] = new TH2F(TString::Format("PvMultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);PV contributors", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors));
           fhPvMultiplicityVsT0cMultiplicity[i] = new TH2F(TString::Format("PvMultiplicityVsT0cMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0C multiplicity;PV contributors", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0C), DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors));
           fhPvMultiplicityVsT0aMultiplicity[i] = new TH2F(TString::Format("PvMultiplicityVsT0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0A multiplicity;PV contributors", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0A), DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors));
@@ -834,24 +834,24 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
   /* report QC information if required */
   if (cfgEventSelection.fillQc) {
     auto fillHistograms = [&](int step) {
-      fhMultiplicityVsCentrality[step]->Fill(centormult, ftracks.size());
-      fhMultiplicityVsT0cMultiplicity[step]->Fill(collision.multFT0C(), ftracks.size());
-      fhMultiplicityVsT0aMultiplicity[step]->Fill(collision.multFT0A(), ftracks.size());
-      fhMultiplicityVsV0aMultiplicity[step]->Fill(collision.multFV0A(), ftracks.size());
-      fhMultiplicityVsPvMultiplicity[step]->Fill(collision.multNTracksPV(), ftracks.size());
-      fhPvMultiplicityVsCentrality[step]->Fill(centormult, collision.multNTracksPV());
-      fhPvMultiplicityVsT0cMultiplicity[step]->Fill(collision.multFT0C(), collision.multNTracksPV());
-      fhPvMultiplicityVsT0aMultiplicity[step]->Fill(collision.multFT0A(), collision.multNTracksPV());
-      fhPvMultiplicityVsV0aMultiplicity[step]->Fill(collision.multFV0A(), collision.multNTracksPV());
-      fhV0aMultiplicityVsCentrality[step]->Fill(centormult, collision.multFV0A());
-      fhV0aMultiplicityVsT0cMultiplicity[step]->Fill(collision.multFT0C(), collision.multFV0A());
-      fhV0aMultiplicityVsT0aMultiplicity[step]->Fill(collision.multFT0A(), collision.multFV0A());
-      fhT0cMultiplicityVsCentrality[step]->Fill(centormult, collision.multFT0C());
-      fhT0cMultiplicityVsT0aMultiplicity[step]->Fill(collision.multFT0A(), collision.multFT0C());
+      fhMultiplicityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsMNGLTRK]);
+      fhMultiplicityVsT0cMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0C], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNGLTRK]);
+      fhMultiplicityVsT0aMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0A], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNGLTRK]);
+      fhMultiplicityVsV0aMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMV0A], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNGLTRK]);
+      fhMultiplicityVsPvMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMNPVC], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNGLTRK]);
+      fhPvMultiplicityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsMNPVC]);
+      fhPvMultiplicityVsT0cMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0C], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNPVC]);
+      fhPvMultiplicityVsT0aMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0A], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNPVC]);
+      fhPvMultiplicityVsV0aMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMV0A], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNPVC]);
+      fhV0aMultiplicityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsMV0A]);
+      fhV0aMultiplicityVsT0cMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0C], collisionMultiplicityCentralityObservables[CentMultCorrelationsMV0A]);
+      fhV0aMultiplicityVsT0aMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0A], collisionMultiplicityCentralityObservables[CentMultCorrelationsMV0A]);
+      fhT0cMultiplicityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0C]);
+      fhT0cMultiplicityVsT0aMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0A], collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0C]);
       if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns>) {
-        fhT0CentralityVsCentrality[step]->Fill(centormult, collision.centFT0M());
-        fhV0aCentralityVsCentrality[step]->Fill(centormult, collision.centFV0A());
-        fhNtpvCentralityVsCentrality[step]->Fill(centormult, collision.centNTPV());
+        fhT0CentralityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsCT0M]);
+        fhV0aCentralityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsCV0A]);
+        fhNtpvCentralityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsCNTPV]);
       }
     };
     for (int i = 0; i < BeforeAfterNOOFTIMES; ++i) {
