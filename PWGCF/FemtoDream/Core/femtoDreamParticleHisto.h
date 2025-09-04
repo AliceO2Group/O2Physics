@@ -18,11 +18,14 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMPARTICLEHISTO_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMPARTICLEHISTO_H_
 
-#include <TMath.h>
-#include <string>
 #include "PWGCF/DataModel/FemtoDerived.h"
-#include "Framework/HistogramRegistry.h"
+
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/HistogramRegistry.h"
+
+#include <TMath.h>
+
+#include <string>
 
 using namespace o2::framework;
 
@@ -690,11 +693,13 @@ class FemtoDreamParticleHisto
   }
 
  private:
-  HistogramRegistry* mHistogramRegistry;                                                                                                                      ///< For QA output
-  static constexpr o2::aod::femtodreamparticle::ParticleType mParticleType = particleType;                                                                    ///< Type of the particle under analysis
-  static constexpr int mFolderSuffixType = suffixType;                                                                                                        ///< Counter for the folder suffix specified below
-  static constexpr std::string_view mFolderSuffix[9] = {"", "_one", "_two", "_pos", "_neg", "_allSelected", "_allSelected_pos", "_allSelected_neg", "_bach"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
-  int mPDG = 0;                                                                                                                                               ///< PDG code of the selected particle
+  HistogramRegistry* mHistogramRegistry;                                                   ///< For QA output
+  static constexpr o2::aod::femtodreamparticle::ParticleType mParticleType = particleType; ///< Type of the particle under analysis
+  static constexpr int mFolderSuffixType = suffixType;                                     ///< Counter for the folder suffix specified below
+  static constexpr std::string_view mFolderSuffix[12] = {"", "_one", "_two", "_pos", "_neg",
+                                                         "_allSelected", "_allSelected_pos", "_allSelected_neg", "_bach",
+                                                         "_two_pos", "_two_neg", "_two_bach"}; ///< Suffix for the folder name in case of analyses of pairs of the same kind (T-T, V-V, C-C)
+  int mPDG = 0;                                                                                ///< PDG code of the selected particle
 };
 } // namespace o2::analysis::femtoDream
 

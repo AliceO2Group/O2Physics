@@ -16,10 +16,12 @@
 #ifndef PWGCF_FEMTODREAM_CORE_FEMTODREAMUTILS_H_
 #define PWGCF_FEMTODREAM_CORE_FEMTODREAMUTILS_H_
 
-#include <vector>
-#include <string>
-#include "CommonConstants/PhysicsConstants.h"
 #include "PWGCF/DataModel/FemtoDerived.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+
+#include <string>
+#include <vector>
 
 namespace o2::analysis::femtoDream
 {
@@ -67,8 +69,12 @@ inline float getMass(int pdgCode)
     case o2::constants::physics::Pdg::kHelium3:
       mass = o2::constants::physics::MassHelium3;
       break;
+    // case o2::constants::physics::Pdg::kOmegaMinus:
+    case kOmegaMinus:
+      mass = o2::constants::physics::MassOmegaMinus;
+      break;
     default:
-      LOG(fatal) << "PDG code is not suppored";
+      LOG(fatal) << "PDG code is not supported";
   }
   return mass;
 }
