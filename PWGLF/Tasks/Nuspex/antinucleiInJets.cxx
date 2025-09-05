@@ -252,6 +252,7 @@ struct AntinucleiInJets {
 
       // Event counter
       registryMC.add("genEvents", "number of generated events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
+      registryMC.add("genJets", "number of generated jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
       // Generated spectra of antiprotons
       registryMC.add("antiproton_gen_jet", "antiproton_gen_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -267,6 +268,7 @@ struct AntinucleiInJets {
 
       // Event counter
       registryMC.add("recEvents", "number of reconstructed events in mc", HistType::kTH1F, {{20, 0, 20, "counter"}});
+      registryMC.add("recJets", "number of reconstructed jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
       // Reconstructed spectra of antiprotons
       registryMC.add("antiproton_rec_tpc_jet", "antiproton_rec_tpc_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -1454,6 +1456,9 @@ struct AntinucleiInJets {
           continue;
         isAtLeastOneJetSelected = true;
 
+        // Generated jets
+        registryMC.fill(HIST("genJets"), 0.5);
+
         // Analyze jet constituents
         std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
         for (const auto& particle : jetConstituents) {
@@ -1621,6 +1626,9 @@ struct AntinucleiInJets {
         if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
           continue;
         isAtLeastOneJetSelected = true;
+
+        // Reconstructed jets
+        registryMC.fill(HIST("recJets"), 0.5);
 
         // Set up two perpendicular cone axes for underlying event estimation
         double coneRadius = std::sqrt(jet.area() / PI);
