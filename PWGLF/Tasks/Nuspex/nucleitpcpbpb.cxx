@@ -521,7 +521,7 @@ struct NucleitpcPbPb {
           flags |= kIsPhysicalPrimary;
           decayType = 0;
           if (mcParticle.has_mothers()) {
-            for (auto& motherparticle : mcParticle.mothers_as<aod::McParticles>()) {
+            for (const auto& motherparticle : mcParticle.mothers_as<aod::McParticles>()) {
               if (std::find(hfMothCodes.begin(), hfMothCodes.end(),
                             std::abs(motherparticle.pdgCode())) != hfMothCodes.end()) {
                 flags |= kIsSecondaryFromWeakDecay;
@@ -617,7 +617,7 @@ struct NucleitpcPbPb {
           flags |= kIsPhysicalPrimary;
           decayType = 0;
           if (mcParticle.has_mothers()) {
-            for (auto& motherparticle : mcParticle.mothers_as<aod::McParticles>()) {
+            for (const auto& motherparticle : mcParticle.mothers_as<aod::McParticles>()) {
               if (std::find(hfMothCodes.begin(), hfMothCodes.end(),
                             std::abs(motherparticle.pdgCode())) != hfMothCodes.end()) {
                 flags |= kIsSecondaryFromWeakDecay;
@@ -736,7 +736,7 @@ struct NucleitpcPbPb {
           flags |= kIsPhysicalPrimary;
           decayType = 0;
           if (matchedMCParticle.has_mothers()) {
-            for (auto& motherparticle : matchedMCParticle.mothers_as<aod::McParticles>()) {
+            for (const auto& motherparticle : matchedMCParticle.mothers_as<aod::McParticles>()) {
               if (std::find(hfMothCodes.begin(), hfMothCodes.end(),
                             std::abs(motherparticle.pdgCode())) != hfMothCodes.end()) {
                 flags |= kIsSecondaryFromWeakDecay;
