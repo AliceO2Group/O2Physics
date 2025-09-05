@@ -21,9 +21,15 @@
 #define COMMON_CORE_COLLISIONASSOCIATION_H_
 
 #include <CommonConstants/LHCConstants.h>
-#include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
 
+#include <Rtypes.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <memory>
 #include <utility>
 #include <vector>

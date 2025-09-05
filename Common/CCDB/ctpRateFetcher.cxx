@@ -16,8 +16,13 @@
 #include <DataFormatsCTP/Configuration.h>
 #include <DataFormatsCTP/Scalers.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/Logger.h>
 
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <map>
+#include <ostream>
 #include <string>
 #include <vector>
 

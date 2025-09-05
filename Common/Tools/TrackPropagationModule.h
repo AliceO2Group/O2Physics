@@ -17,6 +17,7 @@
 #define COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_
 
 #include "Common/Core/TableHelper.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Tools/TrackTuner.h"
 

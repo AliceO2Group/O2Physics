@@ -9,14 +9,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#ifndef COMMON_TOOLS_TIMESTAMPMODULEH_
-#define COMMON_TOOLS_TIMESTAMPMODULEH_
+#ifndef COMMON_TOOLS_TIMESTAMPMODULE_H_
+#define COMMON_TOOLS_TIMESTAMPMODULE_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <CommonConstants/LHCConstants.h>
+#include <Framework/Configurable.h>
+#include <Framework/Logger.h>
 
-#include <array>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace o2
 {
@@ -148,4 +154,4 @@ class TimestampModule
 } // namespace common
 } // namespace o2
 
-#endif // COMMON_TOOLS_TIMESTAMPMODULEH_
+#endif // COMMON_TOOLS_TIMESTAMPMODULE_H_

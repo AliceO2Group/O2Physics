@@ -14,12 +14,13 @@
 
 #include <TF1.h>
 #include <TH1.h>
-#include <TH1D.h>
 #include <TH2.h>
 #include <TNamed.h>
 #include <TProfile.h>
+#include <TString.h>
 
-#include <iostream>
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 class multGlauberNBDFitter : public TNamed
 {

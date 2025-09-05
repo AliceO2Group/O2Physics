@@ -14,11 +14,12 @@
 ///
 /// \author Dmitri Peresunko <Dmitri.Peresunko@cern.ch>
 
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/CaloClusters.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonDataFormat/InteractionRecord.h>
 #include <CommonUtils/NameConf.h>
 #include <DataFormatsPHOS/BadChannelsMap.h>
 #include <DataFormatsPHOS/CalibParams.h>
@@ -29,18 +30,26 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/ConfigParamSpec.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 #include <PHOSBase/Geometry.h>
 #include <PHOSReconstruction/Clusterer.h>
 #include <ReconstructionDataFormats/TrackParametrization.h>
 #include <SimulationDataFormat/MCTruthContainer.h>
 
+#include <TVector3.h>
+
 #include <algorithm>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace o2::framework;

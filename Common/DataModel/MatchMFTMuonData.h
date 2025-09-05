@@ -8,10 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 #ifndef COMMON_DATAMODEL_MATCHMFTMUONDATA_H_
 #define COMMON_DATAMODEL_MATCHMFTMUONDATA_H_
-#include "Framework/AnalysisDataModel.h"
-#endif // COMMON_DATAMODEL_MATCHMFTMUONDATA_H_
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <cstdint>
 
 namespace o2::aod
 {
@@ -133,3 +136,4 @@ DECLARE_SOA_TABLE(MuonPair, "AOD", "MUONPAIR",
                   muon_pair::Rap);
 
 } // namespace o2::aod
+#endif // COMMON_DATAMODEL_MATCHMFTMUONDATA_H_

@@ -18,7 +18,6 @@
 #ifndef COMMON_CORE_TRACKSELECTIONDEFAULTS_H_
 #define COMMON_CORE_TRACKSELECTIONDEFAULTS_H_
 
-#include "Framework/DataTypes.h"
 #include "Common/Core/TrackSelection.h"
 
 // Default track selection requiring one hit in the SPD

@@ -13,44 +13,69 @@
 /// \author Paul Veen <paul.veen@cern.ch>
 /// \author Chi Zhang <chi.zhang@cern.ch>
 
-#include "Common/DataModel/CollisionAssociationTables.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FwdTrackReAlignTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CCDBTimeStampUtils.h"
-#include "CommonUtils/ConfigurableParam.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsMCH/Cluster.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GRPGeomHelper.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "Field/MagneticField.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "MCHBase/TrackerParam.h"
-#include "MCHGeometryTransformer/Transformations.h"
-#include "MCHTracking/Track.h"
-#include "MCHTracking/TrackExtrap.h"
-#include "MCHTracking/TrackFitter.h"
-#include "MCHTracking/TrackParam.h"
-#include "MathUtils/Cartesian.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsMCH/Cluster.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GRPGeomHelper.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Field/MagneticField.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
+#include <MCHBase/TrackerParam.h>
+#include <MCHGeometryTransformer/Transformations.h>
+#include <MCHTracking/Track.h>
+#include <MCHTracking/TrackExtrap.h>
+#include <MCHTracking/TrackFitter.h>
+#include <MCHTracking/TrackParam.h>
+#include <MFTTracking/Constants.h>
+#include <MathUtils/Cartesian.h>
+#include <ReconstructionDataFormats/GlobalFwdTrack.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
 
-#include "Math/Vector4D.h"
-#include "TGeoGlobalMagField.h"
+#include <Math/MatrixRepresentationsStatic.h>
+#include <Math/SMatrix.h>
+#include <Math/SVector.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep (do not replace with Math/Vector4Dfwd.h)
+#include <Math/Vector4Dfwd.h>
+#include <TGeoGlobalMagField.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TMath.h>
+
+#include <GPU/GPUROOTCartesianFwd.h>
+
+#include <RtypesCore.h>
 
 #include <algorithm>
+#include <array>
 #include <chrono>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <exception>
+#include <format>
+#include <iterator>
 #include <map>
+#include <memory>
 #include <string>
+#include <unordered_map>
 #include <utility>
 #include <vector>
+
+#include <math.h> // FIXME: Replace M_PI
 
 using namespace std;
 using namespace o2;

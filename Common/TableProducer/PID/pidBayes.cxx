@@ -16,15 +16,6 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
-#include <algorithm>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-
-// O2 includes
-#include "pidTOFBase.h"
-
 #include "Common/Core/PID/DetectorResponse.h"
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/ParamBase.h"
@@ -32,14 +23,39 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseCombined.h"
 #include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/RunningWorkflowInfo.h>
+#include <Framework/Variant.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TFile.h>
+#include <TMath.h>
+#include <TString.h>
+
+#include <algorithm>
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <iterator>
+#include <memory>
+#include <string>
+#include <string_view>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
