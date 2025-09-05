@@ -315,7 +315,7 @@ struct v0selector {
       const auto& negTrack = V0.negTrack_as<FullTracksExt>();
 
       bool isRejectV0{false};
-      for(const auto& prong : std::array<FullTracksExt, 2>{posTrack, negTrack}) {
+      for(const auto& prong : {posTrack, negTrack}) {
         isRejectV0 = isRejectV0 || std::fabs(prong.eta()) > 0.9;
         isRejectV0 = isRejectV0 || prong.tpcNClsCrossedRows() < mincrossedrows;
         isRejectV0 = isRejectV0 || prong.tpcChi2NCl() > maxchi2tpc;
@@ -442,7 +442,7 @@ struct v0selector {
         const auto& bachelor = casc.bachelor_as<FullTracksExt>();
 
         bool isRejectCascade{false};
-        for(const auto& prong : std::array<FullTracksExt, 3>{posTrack, negTrack, bachelor}) {
+        for(const auto& prong : {posTrack, negTrack, bachelor}) {
           isRejectCascade = isRejectCascade || std::fabs(prong.eta()) > 0.9;
           isRejectCascade = isRejectCascade || prong.tpcNClsCrossedRows() < mincrossedrows;
           isRejectCascade = isRejectCascade || prong.tpcChi2NCl() > maxchi2tpc;
