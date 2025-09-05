@@ -287,8 +287,8 @@ struct HfTaskDstarPolarisationInJet {
   {
 
     if (cosThetaStarType == charm_polarisation::CosThetaStarType::Helicity) { // Helicity
-      if constexpr (!doMc) {                                                            // data
-        if constexpr (withMl) {                                                         // with ML
+      if constexpr (!doMc) {                                                  // data
+        if constexpr (withMl) {                                               // with ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
               registry.fill(HIST("hHelicity"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
@@ -382,8 +382,8 @@ struct HfTaskDstarPolarisationInJet {
         }
       }
     } else if (cosThetaStarType == charm_polarisation::CosThetaStarType::Production) { // Production
-      if constexpr (!doMc) {                                                                     // data
-        if constexpr (withMl) {                                                                  // with ML
+      if constexpr (!doMc) {                                                           // data
+        if constexpr (withMl) {                                                        // with ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
               registry.fill(HIST("hProduction"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
@@ -477,8 +477,8 @@ struct HfTaskDstarPolarisationInJet {
         }
       }
     } else if (cosThetaStarType == charm_polarisation::CosThetaStarType::JetAxis) { // JetAxis
-      if constexpr (!doMc) {                                                                  // data
-        if constexpr (withMl) {                                                               // with ML
+      if constexpr (!doMc) {                                                        // data
+        if constexpr (withMl) {                                                     // with ML
           if (activateTrackingSys) {
             if (nBkgRotations > 0) {
               registry.fill(HIST("hJetAxis"), invMassCharmHad, ptCharmHad, rapCharmHad, invMassD0, cosThetaStar, absEtaMin, numItsClsMin, numTpcClsMin, isRotatedCandidate, outputMl[0], /*outputMl[1],*/ outputMl[2], zParallel, jetPt);
@@ -735,8 +735,8 @@ struct HfTaskDstarPolarisationInJet {
           pyDau = candidate.pyProng1();
           pzDau = candidate.pzProng1();
           threeVecCand = RecoDecay::pVec(std::array{candidate.pxProng1(), candidate.pyProng1(), candidate.pzProng1()},
-                                                              std::array{candidate.pyProng0Charm(), candidate.pxProng0Charm(), candidate.pzProng0Charm()},
-                                                              std::array{candidate.pxProng1Charm(), candidate.pyProng1Charm(), candidate.pzProng1Charm()});
+                                         std::array{candidate.pyProng0Charm(), candidate.pxProng0Charm(), candidate.pzProng0Charm()},
+                                         std::array{candidate.pxProng1Charm(), candidate.pyProng1Charm(), candidate.pzProng1Charm()});
           pxCharmHad = threeVecCand[0];
           pyCharmHad = threeVecCand[1];
           pzCharmHad = threeVecCand[2];
