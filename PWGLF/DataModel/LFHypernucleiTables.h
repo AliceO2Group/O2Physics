@@ -14,8 +14,8 @@
 /// \brief Slim hypernuclei tables
 ///
 
-#include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
 
 #ifndef PWGLF_DATAMODEL_LFHYPERNUCLEITABLES_H_
 #define PWGLF_DATAMODEL_LFHYPERNUCLEITABLES_H_
@@ -81,6 +81,7 @@ DECLARE_SOA_COLUMN(GenXDecVtx, genXDecVtx, float);                    // Decay v
 DECLARE_SOA_COLUMN(GenYDecVtx, genYDecVtx, float);                    // Decay vertex of the candidate (y direction)
 DECLARE_SOA_COLUMN(GenZDecVtx, genZDecVtx, float);                    // Decay vertex of the candidate (z direction)
 DECLARE_SOA_COLUMN(IsReco, isReco, bool);                             // bool: true for reco
+DECLARE_SOA_COLUMN(IsFakeHeOnITSLayer, isFakeHeOnITSLayer, uint8_t);  // uint8_t: bit map for fake He on ITS layers
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                         // bool: true for signal
 DECLARE_SOA_COLUMN(IsRecoMCCollision, isRecoMCCollision, bool);       // bool: true for reco MC collision
 DECLARE_SOA_COLUMN(IsSurvEvSel, isSurvEvSel, bool);                   // bool: true for survived event selection
@@ -144,6 +145,7 @@ DECLARE_SOA_TABLE(MCHypCands, "AOD", "MCHYPCANDS",
                   hyperrec::GenYDecVtx,
                   hyperrec::GenZDecVtx,
                   hyperrec::IsReco,
+                  hyperrec::IsFakeHeOnITSLayer,
                   hyperrec::IsSignal,
                   hyperrec::IsRecoMCCollision,
                   hyperrec::IsSurvEvSel);

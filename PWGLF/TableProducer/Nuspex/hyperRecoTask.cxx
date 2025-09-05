@@ -124,8 +124,10 @@ struct hyperCandidate {
   int64_t collisionID = 0;
 
   bool isMatter = false;
-  bool isSignal = false;          // true MC signal
-  bool isReco = false;            // true if the candidate is actually reconstructed
+  bool isSignal = false;           // true MC signal
+  bool isReco = false;             // true if the candidate is actually reconstructed
+  uint8_t isFakeHeOnITSLayer = 0u; // bit map for fake He on ITS layers
+
   bool isRecoMCCollision = false; // true if the corresponding MC collision has been reconstructed
   bool isSurvEvSelection = false; // true if the corresponding event passed the event selection
   int pdgCode = 0;                // PDG code of the hypernucleus
@@ -649,6 +651,7 @@ struct hyperRecoTask {
                 hypCand.gDecVtx[i] = secVtx[i] - primVtx[i];
               }
               hypCand.isSignal = true;
+              hypCand.isFakeHeOnITSLayer = mcLabHe.mcMask() & 0x7F; // check if any of the first 7 bits is set
               hypCand.pdgCode = heMother.pdgCode();
               hypCand.isRecoMCCollision = recoCollisionIds[heMother.mcCollisionId()] > 0;
               hypCand.isSurvEvSelection = isSurvEvSelCollision[heMother.mcCollisionId()];
@@ -795,7 +798,7 @@ struct hyperRecoTask {
                     hypCand.clusterSizeITSHe3, hypCand.clusterSizeITSPi, hypCand.flags, trackedHypClSize,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
-                    hypCand.isReco, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection);
+                    hypCand.isReco, hypCand.isFakeHeOnITSLayer, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection);
     }
 
     // now we fill only the signal candidates that were not reconstructed
@@ -868,7 +871,7 @@ struct hyperRecoTask {
                     -1, -1, -1, false,
                     chargeFactor * hypCand.genPt(), hypCand.genPhi(), hypCand.genEta(), hypCand.genPtHe3(),
                     hypCand.gDecVtx[0], hypCand.gDecVtx[1], hypCand.gDecVtx[2],
-                    hypCand.isReco, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection);
+                    hypCand.isReco, -1, hypCand.isSignal, hypCand.isRecoMCCollision, hypCand.isSurvEvSelection);
     }
   }
   PROCESS_SWITCH(hyperRecoTask, processMC, "MC analysis", false);
