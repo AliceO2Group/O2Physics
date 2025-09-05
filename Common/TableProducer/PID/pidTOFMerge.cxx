@@ -724,7 +724,7 @@ struct tofEventTime {
         lastCollisionId = t.collisionId(); /// Cache last collision ID
 
         const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
-        const auto& collision = t.collision_as<EvTimeCollisions>();
+        // const auto& collision = t.collision_as<EvTimeCollisions>();
 
         // Compute the TOF event time
         const auto evTimeMakerTOF = evTimeMakerForTracks<Run3TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, kDiamond);
