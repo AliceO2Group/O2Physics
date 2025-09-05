@@ -767,7 +767,7 @@ struct HfTaskDstarPolarisationInJet {
       ROOT::Math::PxPyPzMVector fourVecJet = ROOT::Math::PxPyPzMVector(jet.px(), jet.py(), jet.pz(), jet.mass());
       ROOT::Math::PxPyPzMVector fourVecJetCM = boost(fourVecJet);
 
-      float ptCharmHad = std::sqrt(pxCharmHad * pxCharmHad + pyCharmHad * pyCharmHad); // this definition is valid for both rotated and original candidates
+      float ptCharmHad = RecoDecay::pt(threeVecCand); // this definition is valid for both rotated and original candidates
 
       if (!isCandidateInSignalRegion) { // it could be that only one mass hypothesis is in signal region
         isCandidateInSignalRegion = isInSignalRegion<channel>(invMassCharmHadForSparse);
