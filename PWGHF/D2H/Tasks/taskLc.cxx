@@ -66,6 +66,9 @@ struct HfTaskLc {
   Configurable<bool> storeOccupancy{"storeOccupancy", true, "Flag to store occupancy information"};
   Configurable<int> occEstimator{"occEstimator", 2, "Occupancy estimation (None: 0, ITS: 1, FT0C: 2)"};
 
+  constexpr static float CtToProperLifetimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
+  constexpr static float NanoToPico = 1000.f;
+
   HfHelper hfHelper;
   SliceCache cache;
 
@@ -100,6 +103,7 @@ struct HfTaskLc {
   ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
   ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
   ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for centrality"};
+  ConfigurableAxis thnConfigAxisProperLifetime{"thnConfigAxisProperLifetime", {200, 0, 2}, "Proper lifetime, ps"};
 
   HistogramRegistry registry{
     "registry",
@@ -317,6 +321,7 @@ struct HfTaskLc {
       const AxisSpec thnAxisPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
       const AxisSpec thnAxisTracklets{thnConfigAxisNumPvContr, "Number of PV contributors"};
       const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
+      const AxisSpec thnAxisProperLifetime{thnConfigAxisProperLifetime, "T_{proper} (ps)"};
 
       bool isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
       bool isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
@@ -332,13 +337,13 @@ struct HfTaskLc {
         axesStd = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisPtProng0, thnAxisPtProng1, thnAxisPtProng2, thnAxisChi2PCA, thnAxisDecLength, thnAxisCPA, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
       }
       if (isMcStd || isMcWithMl) {
-        axesGen = {thnAxisPt, thnAxisCentrality, thnAxisY, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
+        axesGen = {thnAxisPt, thnAxisCentrality, thnAxisY, thnAxisTracklets, thnAxisPtB, thnAxisCanType, thnAxisProperLifetime};
       }
       if (isDataWithMl) {
-        axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets};
+        axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisProperLifetime};
       }
       if (isMcWithMl) {
-        axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
+        axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisPtB, thnAxisCanType, thnAxisProperLifetime};
       }
 
       if (storeOccupancy) {
@@ -542,6 +547,7 @@ struct HfTaskLc {
           }
           double massLc(-1);
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+          const float properLifetime = hfHelper.ctLc(candidate) * CtToProperLifetimePs;
           if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
             massLc = hfHelper.invMassLcToPKPi(candidate);
 
@@ -553,9 +559,9 @@ struct HfTaskLc {
               }
               /// Fill the ML outputScores and variables of candidate
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-                registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, ptRecB, originType, occ);
+                registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, ptRecB, originType, properLifetime, occ);
               } else {
-                registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, ptRecB, originType);
+                registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, ptRecB, originType, properLifetime);
               }
 
             } else {
@@ -580,10 +586,10 @@ struct HfTaskLc {
               }
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-                registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, ptRecB, originType, occ);
+                registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, ptRecB, originType, properLifetime, occ);
 
               } else {
-                registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, ptRecB, originType);
+                registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, ptRecB, originType, properLifetime);
               }
             } else {
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
@@ -624,6 +630,11 @@ struct HfTaskLc {
           occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
         }
 
+        const auto mcDaughter0 = particle.template daughters_as<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>().begin();
+        const float p2m = particle.p() / o2::constants::physics::MassLambdaCPlus;
+        const float gamma = std::sqrt(1 + p2m * p2m);                       // mother's particle Lorentz factor
+        const float properLifetime = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
+
         registry.fill(HIST("MC/generated/signal/hPtGen"), ptGen);
         registry.fill(HIST("MC/generated/signal/hEtaGen"), particle.eta());
         registry.fill(HIST("MC/generated/signal/hYGen"), yGen);
@@ -635,10 +646,10 @@ struct HfTaskLc {
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           if (fillTHn) {
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, cent, yGen, numPvContributors, ptGenB, originType, occ);
+              registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, cent, yGen, numPvContributors, ptGenB, originType, properLifetime, occ);
 
             } else {
-              registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, cent, yGen, numPvContributors, ptGenB, originType);
+              registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, cent, yGen, numPvContributors, ptGenB, originType, properLifetime);
             }
           }
           registry.fill(HIST("MC/generated/prompt/hPtGenPrompt"), ptGen);
@@ -653,10 +664,10 @@ struct HfTaskLc {
           ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
           if (fillTHn) {
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, cent, yGen, numPvContributors, ptGenB, originType, occ);
+              registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, cent, yGen, numPvContributors, ptGenB, originType, properLifetime, occ);
 
             } else {
-              registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, cent, yGen, numPvContributors, ptGenB, originType);
+              registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(ptGen, cent, yGen, numPvContributors, ptGenB, originType, properLifetime);
             }
           }
           registry.fill(HIST("MC/generated/nonprompt/hPtGenNonPrompt"), ptGen);
@@ -748,6 +759,7 @@ struct HfTaskLc {
         }
         double massLc(-1);
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
+        const float properLifetime = hfHelper.ctLc(candidate) * CtToProperLifetimePs;
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
           massLc = hfHelper.invMassLcToPKPi(candidate);
 
@@ -759,10 +771,10 @@ struct HfTaskLc {
             }
             /// Fill the ML outputScores and variables of candidate
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, occ);
+              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, properLifetime, occ);
 
             } else {
-              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors);
+              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, properLifetime);
             }
           } else {
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
@@ -785,9 +797,9 @@ struct HfTaskLc {
             }
             /// Fill the ML outputScores and variables of candidate
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, occ);
+              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, properLifetime, occ);
             } else {
-              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors);
+              registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(massLc, pt, cent, outputBkg, outputPrompt, outputFD, numPvContributors, properLifetime);
             }
           } else {
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
