@@ -88,6 +88,7 @@ DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float);
 DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);
 DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
 DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
+DECLARE_SOA_COLUMN(Ptassoc, ptassoc, float);
 DECLARE_SOA_COLUMN(PINassoc, pINassoc, float);
 DECLARE_SOA_COLUMN(Etaassoc, etaassoc, float);
 DECLARE_SOA_COLUMN(Ptpair, ptpair, float);
@@ -135,6 +136,8 @@ DECLARE_SOA_COLUMN(Lzee, lzee, float);
 DECLARE_SOA_COLUMN(AmbiguousInBunchPairs, AmbiguousJpsiPairsInBunch, bool);
 DECLARE_SOA_COLUMN(AmbiguousOutOfBunchPairs, AmbiguousJpsiPairsOutOfBunch, bool);
 DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);                                                            //!  joinable to ReducedEvents
@@ -158,6 +161,10 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
                   dqanalysisflags::TPCNclsassoc, dqanalysisflags::TPCNclsleg1, dqanalysisflags::TPCNclsleg2,
                   dqanalysisflags::TPCChi2assoc, dqanalysisflags::TPCChi2leg1, dqanalysisflags::TPCChi2leg2,
                   dqanalysisflags::IsJpsiFromBSelected, dqanalysisflags::IsBarrelSelected, dqanalysisflags::McFlag);
+DECLARE_SOA_TABLE(JPsiMuonCandidates, "AOD", "DQJPSIMUONA",
+                  dqanalysisflags::DeltaEta, dqanalysisflags::DeltaPhi,
+                  dqanalysisflags::MassDileptonCandidate, dqanalysisflags::Ptpair, dqanalysisflags::Etapair, dqanalysisflags::Ptassoc, dqanalysisflags::Etaassoc,
+                  dqanalysisflags::McFlag);
 DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER", dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Lxyee, dqanalysisflags::LxyeePoleMass, dqanalysisflags::Lzee, dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::Corrassoc);
 } // namespace o2::aod
 
@@ -2249,6 +2256,40 @@ struct AnalysisSameEventPairing {
         isig++;
       }
     }
+    // Fill Generated PAIR histograms taking into account selected collisions
+    for (auto& event : events) {
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (!event.has_reducedMCevent()) {
+        continue;
+      }
+
+      if (fHasTwoProngGenMCsignals) {
+        for (auto& [t1, t2] : combinations(mcTracks, mcTracks)) {
+          if (t1.reducedMCeventId() != event.reducedMCeventId()) {
+            continue;
+          }
+          if (t2.reducedMCeventId() != event.reducedMCeventId()) {
+            continue;
+          }
+          auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
+          auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
+          if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
+            for (auto& sig : fGenMCSignals) {
+              if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
+                continue;
+              }
+              if (sig->CheckSignal(true, t1_raw, t2_raw)) {
+                // mcDecision |= (static_cast<uint32_t>(1) << isig);
+                VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
+                fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
+              }
+            }
+          }
+        }
+      }
+    } // end loop over reconstructed events
   }
 
   void processDummy(MyEvents&)
@@ -3274,6 +3315,7 @@ struct AnalysisAsymmetricPairing {
 //   tracks passing the fConfigTrackCut cut. The dileptons cuts from the same-event pairing task are auto-detected
 struct AnalysisDileptonTrack {
   Produces<aod::BmesonCandidates> BmesonsTable;
+  Produces<aod::JPsiMuonCandidates> DileptonTrackTable;
   OutputObj<THashList> fOutputList{"output"};
 
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "kaonPID", "Comma separated list of track cuts to be correlated with the dileptons"};
@@ -3789,6 +3831,8 @@ struct AnalysisDileptonTrack {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
+          // Fill table for correlation analysis
+          DileptonTrackTable(fValuesHadron[VarManager::kDeltaEta], fValuesHadron[VarManager::kDeltaPhi], dilepton.mass(), dilepton.pt(), dilepton.eta(), track.pt(), track.eta(), mcDecision);
         }
 
         if constexpr (TCandidateType == VarManager::kBcToThreeMuons) {

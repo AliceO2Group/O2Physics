@@ -417,6 +417,7 @@ struct UpcPhotonuclearAnalysisJMG {
         continue;
       }
       float phiVal = RecoDecay::constrainAngle(phi(track.px(), track.py()), 0.f);
+
       histos.fill(HIST("yields"), multiplicity, track.pt(), eta(track.px(), track.py(), track.pz()));
       histos.fill(HIST("etaphi"), multiplicity, eta(track.px(), track.py(), track.pz()), phiVal);
     }

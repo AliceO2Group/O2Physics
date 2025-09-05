@@ -177,7 +177,7 @@ namespace hf_track_vars_reduced
 DECLARE_SOA_COLUMN(Px, px, float);                                               //! x-component of momentum
 DECLARE_SOA_COLUMN(Py, py, float);                                               //! y-component of momentum
 DECLARE_SOA_COLUMN(Pz, pz, float);                                               //! z-component of momentum
-DECLARE_SOA_COLUMN(Sign, sign, uint8_t);                                         //! charge sign
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);                                          //! charge sign
 DECLARE_SOA_COLUMN(HasTPC, hasTPC, bool);                                        //! Flag to check if track has a TPC match
 DECLARE_SOA_COLUMN(HasTOF, hasTOF, bool);                                        //! Flag to check if track has a TOF match
 DECLARE_SOA_COLUMN(HasTPCProng0, hasTPCProng0, bool);                            //! Flag to check if prong0 has a TPC match
