@@ -86,6 +86,25 @@ enum SystemType {
   SystemNoOfSystems   ///< number of handled systems
 };
 
+/// @brief SystemType prefix increment operator
+/// @param ipar value
+/// @return the incremented value
+inline SystemType& operator++(SystemType& ipar)
+{
+  return ipar = static_cast<SystemType>(static_cast<int>(ipar) + 1);
+}
+
+/// @brief SystemType postfix increment operator
+/// @param ipar the value
+/// @param empty
+/// @return the same value
+inline SystemType operator++(SystemType& ipar, int)
+{
+  SystemType iparTmp(ipar);
+  ++ipar;
+  return iparTmp;
+}
+
 /// \std::map systemInternalCodesMap
 /// \brief maps system names to internal system codes
 static const std::map<std::string_view, int> systemInternalCodesMap{
@@ -856,40 +875,28 @@ inline std::bitset<32> getTriggerSelection(std::string_view const& triggstr)
   return flags;
 }
 
-inline SystemType getSytemTypeFromMetaData()
+inline SystemType getSystemType(auto const& periodsForSysType)
 {
   auto period = metadataInfo.get("LPMProductionTag");
   auto anchoredPeriod = metadataInfo.get("AnchorProduction");
+  bool checkAnchor = anchoredPeriod.length() > 0;
 
-  if (period == "LHC25ad" || anchoredPeriod == "LHC25ad") {
-    LOGF(info, "Configuring for p-O (anchored to) LHC25ad period");
-    return SystemPORun3;
-  } else if (period == "LHC25ae" || anchoredPeriod == "LHC25ae") {
-    LOGF(info, "Configuring for O-O (anchored to) LHC25ae period");
-    return SystemOORun3;
-  } else if (period == "LHC25af" || anchoredPeriod == "LHC25af") {
-    LOGF(info, "Configuring for Ne-Ne (anchored to) LHC25af period");
-    return SystemNeNeRun3;
-  } else {
-    LOGF(fatal, "DptDptCorrelations::getSystemTypeFromMetadata(). No automatic system type configuration for %s period", period.c_str());
-  }
-  return SystemPbPb;
-}
-
-inline SystemType getSystemType(std::string_view const& sysstr)
-{
-  /* we have to figure out how extract the system type */
-  if (sysstr == "Auto") {
-    /* special treatment for self configuration */
-    /* TODO: expand it to all systems */
-    return getSytemTypeFromMetaData();
-  } else {
-    if (systemInternalCodesMap.contains(sysstr)) {
-      return static_cast<SystemType>(systemInternalCodesMap.at(sysstr));
-    } else {
-      LOGF(fatal, "DptDptCorrelations::getSystemType(). Wrong system type: %s", sysstr.data());
+  for (SystemType sT = SystemNoSystem; sT < SystemNoOfSystems; ++sT) {
+    const std::string& periods = periodsForSysType[static_cast<int>(sT)][0];
+    auto contains = [periods](auto const& period) {
+      if (periods.find(period) != std::string::npos) {
+        return true;
+      }
+      return false;
+    };
+    if (periods.length() > 0) {
+      if (contains(period) || (checkAnchor && contains(anchoredPeriod))) {
+        LOGF(info, "DptDptCorrelations::getSystemType(). Assigned system type %s for period %s", systemExternalNamesMap.at(static_cast<int>(sT)).data(), period.c_str());
+        return sT;
+      }
     }
   }
+  LOGF(fatal, "DptDptCorrelations::getSystemType(). No system type for period: %s", period.c_str());
   return SystemPbPb;
 }
 
@@ -954,11 +961,11 @@ inline OccupancyEstimationType getOccupancyEstimator(const std::string_view& est
 /// @return the expression TFormula
 inline TFormula* getExclusionFormula(std::string_view formula)
 {
+  collisionMultiplicityCentralityObservables.resize(CentMultCorrelationsNOOFPARAMS);
   if (formula.length() != 0) {
     useCentralityMultiplicityCorrelationsExclusion = true;
     TFormula* f = new TFormula("Exclussion expression", formula.data());
     int nParameters = f->GetNpar();
-    collisionMultiplicityCentralityObservables.resize(CentMultCorrelationsNOOFPARAMS);
     observableIndexForCentralityMultiplicityParameter.resize(nParameters);
     LOGF(info, "Configuring outliers exclusion with the formula %s which has %d parameters", formula.data(), nParameters);
     for (int iPar = 0; iPar < nParameters; ++iPar) {
