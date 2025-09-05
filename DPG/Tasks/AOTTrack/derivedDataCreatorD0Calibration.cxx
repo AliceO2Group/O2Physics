@@ -169,7 +169,7 @@ struct DerivedDataCreatorD0Calibration {
   }
 
   // main function
-  template<bool withTrackQa, typename TTrackQa>
+  template <bool withTrackQa, typename TTrackQa>
   void runDataCreation(CollisionsWEvSel const& collisions,
                        aod::TrackAssoc const& trackIndices,
                        TracksWCovExtraPid const&,
@@ -421,7 +421,7 @@ struct DerivedDataCreatorD0Calibration {
               // apply BDT models
               if (cfgMl.apply) {
                 std::vector<float> featuresCandD0 = {dcaPos.getY(), dcaNeg.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi())};
-                if(!mlResponse.isSelectedMl(featuresCandD0, ptD0, bdtScoresD0)) {
+                if (!mlResponse.isSelectedMl(featuresCandD0, ptD0, bdtScoresD0)) {
                   massHypo -= D0MassHypo::D0;
                 }
               }
@@ -436,7 +436,7 @@ struct DerivedDataCreatorD0Calibration {
               // apply BDT models
               if (cfgMl.apply) {
                 std::vector<float> featuresCandD0bar = {dcaPos.getY(), dcaNeg.getY(), chi2PCA, cosPaD0, cosPaXYD0, decLenXYD0, decLenD0, dcaPos.getY() * dcaNeg.getY(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaPi(), trackNeg.tofNSigmaPi()), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaKa(), trackPos.tofNSigmaKa()), trackNeg.tpcNSigmaPi(), trackNeg.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackNeg.tpcNSigmaKa(), trackNeg.tofNSigmaKa()), trackPos.tpcNSigmaPi(), trackPos.tpcNSigmaKa(), aod::pid_tpc_tof_utils::combineNSigma<false>(trackPos.tpcNSigmaPi(), trackPos.tofNSigmaPi())};
-                if(!mlResponse.isSelectedMl(featuresCandD0bar, ptD0, bdtScoresD0bar)) {
+                if (!mlResponse.isSelectedMl(featuresCandD0bar, ptD0, bdtScoresD0bar)) {
                   massHypo -= D0MassHypo::D0Bar;
                 }
               }
@@ -832,11 +832,11 @@ struct DerivedDataCreatorD0Calibration {
 
   // process functions
   void processWithTrackQa(CollisionsWEvSel const& collisions,
-                        aod::TrackAssoc const& trackIndices,
-                        TracksWCovExtraPid const& tracks,
-                        aod::BCsWithTimestamps const& bcs,
-                        TrackMeanOccs const& occ,
-                        aod::TracksQAVersion const& trackQa)
+                          aod::TrackAssoc const& trackIndices,
+                          TracksWCovExtraPid const& tracks,
+                          aod::BCsWithTimestamps const& bcs,
+                          TrackMeanOccs const& occ,
+                          aod::TracksQAVersion const& trackQa)
   {
     runDataCreation<true>(collisions, trackIndices, tracks, bcs, occ, trackQa);
   }
