@@ -563,8 +563,8 @@ struct LfTreeCreatorClusterStudies {
 
   template <typename McPart>
   void fillMcHistogramsV0(const float massLambda, const float massAntiLambda,
-                           const std::array<float, 3>& momMother,
-                           const McPart& posDaughter, const McPart& negDaughter)
+                          const std::array<float, 3>& momMother,
+                          const McPart& posDaughter, const McPart& negDaughter)
   {
     if ((std::abs(posDaughter.pdgCode()) != 2212 && std::abs(posDaughter.pdgCode()) != 211) ||
         (std::abs(negDaughter.pdgCode()) != 2212 && std::abs(negDaughter.pdgCode()) != 211)) {
@@ -589,8 +589,8 @@ struct LfTreeCreatorClusterStudies {
 
   template <typename McPart>
   void fillMcHistogramsCascade(const float massOmega,
-                           const std::array<float, 3>& momMother,
-                           const McPart& bachelorDaughter, const McPart& posV0Daughter)
+                               const std::array<float, 3>& momMother,
+                               const McPart& bachelorDaughter, const McPart& posV0Daughter)
   {
     McPart v0Daughter;
     for (const auto& iterV0Daughter : posV0Daughter.template mothers_as<aod::McParticles>()) {
@@ -618,7 +618,7 @@ struct LfTreeCreatorClusterStudies {
       m_hAnalysis.fill(HIST("massOmegaMc"), std::hypot(momMother[0], momMother[1], momMother[2]) * -1.f, massOmega);
     }
   }
-    
+
   template <bool isMC = false>
   void fillTable(const Candidate& candidate)
   {
@@ -655,8 +655,9 @@ struct LfTreeCreatorClusterStudies {
     }
     if (track.tpcNClsFound() < 90) {
       return false;
-    } if ((track.tpcChi2NCl() > 4.0f) || 
-          (track.tpcChi2NCl() < track_tpcChi2Min)) {  
+    }
+    if ((track.tpcChi2NCl() > 4.0f) ||
+        (track.tpcChi2NCl() < track_tpcChi2Min)) {
       return false;
     }
     return true;
@@ -1007,7 +1008,6 @@ struct LfTreeCreatorClusterStudies {
       }
       auto mcPosParticleV0 = posV0Daughter.mcParticle();
       fillMcHistogramsCascade(massOmega, momMother, mcParticle, mcPosParticleV0);
-
     }
 
     m_hAnalysis.fill(HIST("isPositive"), bachelorTrack.p() > 0);
