@@ -2008,6 +2008,18 @@ bool o2::aod::dqhistograms::ValidateJSONHistogram(T hist)
     return false;
   }
 
+  // check that the histClass field is an array of strings
+  if (!hist->FindMember("histClass")->value.IsArray()) {
+    LOG(fatal) << "histClass field should be an array of strings, e.g. [class1, class2]";
+    return false;
+  }
+  for (auto& v : hist->FindMember("histClass")->value.GetArray()) {
+    if (!v.IsString()) {
+      LOG(fatal) << "histClass field should be an array of strings, e.g. [class1, class2]";
+      return false;
+    }
+  }
+
   TString histTypeStr = hist->FindMember("type")->value.GetString();
   bool isTH1 = (histTypeStr.CompareTo("TH1") == 0);
   bool isTH2 = (histTypeStr.CompareTo("TH2") == 0);
@@ -2218,7 +2230,11 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
       isConstantBinning = false;
     }
 
-    const char* histClass = hist.FindMember("histClass")->value.GetString();
+    // create an array of strings to store the different histogram classes
+    std::vector<const char*> histClasses;
+    for (auto& v : hist.FindMember("histClass")->value.GetArray()) {
+      histClasses.push_back(v.GetString());
+    }
     const char* title = hist.FindMember("title")->value.GetString();
 
     if (isTHn) {
@@ -2282,9 +2298,13 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
       bool isDouble = (hist.HasMember("isDouble") ? hist.FindMember("isDouble")->value.GetBool() : false);
 
       if (isConstantBinning) {
-        hm->AddHistogram(histClass, histName, title, nDimensions, vars, nBins, xmin, xmax, axLabels, varW, useSparse, isDouble);
+        for (auto histClass : histClasses) {
+          hm->AddHistogram(histClass, histName, title, nDimensions, vars, nBins, xmin, xmax, axLabels, varW, useSparse, isDouble);
+        }
       } else {
-        hm->AddHistogram(histClass, histName, title, nDimensions, vars, binLimits, axLabels, varW, useSparse, isDouble);
+        for (auto histClass : histClasses) {
+          hm->AddHistogram(histClass, histName, title, nDimensions, vars, binLimits, axLabels, varW, useSparse, isDouble);
+        }
       }
 
     } else { // TH1, TH2 or TH3
@@ -2379,12 +2399,14 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
       LOG(debug) << "isFillLabelx: " << isFillLabelx;
 
       if (isConstantBinning) {
-        hm->AddHistogram(histClass, histName, title, isProfile,
-                         nXbins, xmin, xmax, VarManager::fgVarNamesMap[varX],
-                         nYbins, ymin, ymax, VarManager::fgVarNamesMap[varY],
-                         nZbins, zmin, zmax, VarManager::fgVarNamesMap[varZ],
-                         xLabels, yLabels, zLabels,
-                         VarManager::fgVarNamesMap[varT], VarManager::fgVarNamesMap[varW], isdouble, isFillLabelx);
+        for (auto histClass : histClasses) {
+          hm->AddHistogram(histClass, histName, title, isProfile,
+                           nXbins, xmin, xmax, VarManager::fgVarNamesMap[varX],
+                           nYbins, ymin, ymax, VarManager::fgVarNamesMap[varY],
+                           nZbins, zmin, zmax, VarManager::fgVarNamesMap[varZ],
+                           xLabels, yLabels, zLabels,
+                           VarManager::fgVarNamesMap[varT], VarManager::fgVarNamesMap[varW], isdouble, isFillLabelx);
+        }
       } else {
         int xBinsSize = xbinsVec.size();
         if (xBinsSize != (nXbins + 1)) {
@@ -2413,12 +2435,14 @@ void o2::aod::dqhistograms::AddHistogramsFromJSON(HistogramManager* hm, const ch
           zbins = new double[zbinsVec.size()];
           std::copy(zbinsVec.begin(), zbinsVec.end(), zbins);
         }
-        hm->AddHistogram(histClass, histName, title, isProfile,
-                         nXbins, xbins, VarManager::fgVarNamesMap[varX],
-                         nYbins, ybins, VarManager::fgVarNamesMap[varY],
-                         nZbins, zbins, VarManager::fgVarNamesMap[varZ],
-                         xLabels, yLabels, zLabels,
-                         VarManager::fgVarNamesMap[varT], VarManager::fgVarNamesMap[varW], isdouble, isFillLabelx);
+        for (auto histClass : histClasses) {
+          hm->AddHistogram(histClass, histName, title, isProfile,
+                           nXbins, xbins, VarManager::fgVarNamesMap[varX],
+                           nYbins, ybins, VarManager::fgVarNamesMap[varY],
+                           nZbins, zbins, VarManager::fgVarNamesMap[varZ],
+                           xLabels, yLabels, zLabels,
+                           VarManager::fgVarNamesMap[varT], VarManager::fgVarNamesMap[varW], isdouble, isFillLabelx);
+        }
       } // end if (!isTHn)
     }
   }
