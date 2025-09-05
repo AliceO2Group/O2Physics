@@ -293,7 +293,7 @@ DECLARE_SOA_TABLE(HfKfXicFulls, "AOD", "HFKFXICFULL",
 } // namespace o2::aod
 
 /// Writes the full information in an output TTree
-struct HfTreeCreatorToXiPiQA {
+struct HfTreeCreatorToXiPiQa {
 
   Produces<o2::aod::HfToXiPiFulls> rowCandidateFull;
   Produces<o2::aod::HfToXiPiLites> rowCandidateLite;
@@ -710,11 +710,11 @@ struct HfTreeCreatorToXiPiQA {
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processDataFull, "Process data with full information w/o centrality", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processDataLite, "Process data and produce lite table version", true);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processDataLiteWithFT0M, "Process data and produce lite table version with FT0M", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processDataLiteWithFT0C, "Process data and produce lite table version with FT0C", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processDataLiteWithNTracksPV, "Process data and produce lite table version with NTracksPV", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processDataFull, "Process data with full information w/o centrality", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processDataLite, "Process data and produce lite table version", true);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processDataLiteWithFT0M, "Process data and produce lite table version with FT0M", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processDataLiteWithFT0C, "Process data and produce lite table version with FT0C", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processDataLiteWithNTracksPV, "Process data and produce lite table version with NTracksPV", false);
 
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
   //*~~~~~~~Data with KFParticle~~~~~~~~*//
@@ -783,10 +783,10 @@ struct HfTreeCreatorToXiPiQA {
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfData, "Process KF data, no cent", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfDataWithFT0M, "Process KF data, with FT0M", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfDataWithFT0C, "Process KF data, with FT0C", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfDataWithNTracksPV, "Process KF data, with NTracksPV", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processKfData, "Process KF data, no cent", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processKfDataWithFT0M, "Process KF data, with FT0M", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processKfDataWithFT0C, "Process KF data, with FT0C", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processKfDataWithNTracksPV, "Process KF data, with NTracksPV", false);
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
   //*~~~~~~~MC with DCAFitter~~~~~~~~*//
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
@@ -903,13 +903,13 @@ struct HfTreeCreatorToXiPiQA {
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcFullXic0, "Process MC with full information for xic0 w/o centrality", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcFullOmegac0, "Process MC with full information for omegac0", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcLiteXic0, "Process MC and produce lite table version for xic0", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcLiteXic0WithFT0C, "Process MC and produce lite table version for Xic0 with FT0C", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcLiteXic0WithFT0M, "Process MC and produce lite table version for Xic0 with FT0M", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcLiteXic0WithNTracksPV, "Process MC and produce lite table version for Xic0 with NTracksPV", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processMcLiteOmegac0, "Process MC and produce lite table version for omegac0", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processMcFullXic0, "Process MC with full information for xic0 w/o centrality", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processMcFullOmegac0, "Process MC with full information for omegac0", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processMcLiteXic0, "Process MC and produce lite table version for xic0", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processMcLiteXic0WithFT0C, "Process MC and produce lite table version for Xic0 with FT0C", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processMcLiteXic0WithFT0M, "Process MC and produce lite table version for Xic0 with FT0M", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processMcLiteXic0WithNTracksPV, "Process MC and produce lite table version for Xic0 with NTracksPV", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processMcLiteOmegac0, "Process MC and produce lite table version for omegac0", false);
 
   //*~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~*//
   //*~~~~~~~MC with KFParticle~~~~~~~~*//
@@ -978,13 +978,13 @@ struct HfTreeCreatorToXiPiQA {
     }
   }
 
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfMcXic0, "Process MC with information for xic0", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfMcXic0WithFT0C, "Process MC with information for xic0 at FT0C", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfMcXic0WithFT0M, "Process MC with information for xic0 at FT0M", false);
-  PROCESS_SWITCH(HfTreeCreatorToXiPiQA, processKfMcXic0WithNTracksPV, "Process MC with information for xic0 at Ntrack", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processKfMcXic0, "Process MC with information for xic0", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processKfMcXic0WithFT0C, "Process MC with information for xic0 at FT0C", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processKfMcXic0WithFT0M, "Process MC with information for xic0 at FT0M", false);
+  PROCESS_SWITCH(HfTreeCreatorToXiPiQa, processKfMcXic0WithNTracksPV, "Process MC with information for xic0 at Ntrack", false);
 }; // end of struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfTreeCreatorToXiPiQA>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTreeCreatorToXiPiQa>(cfgc)};
 }

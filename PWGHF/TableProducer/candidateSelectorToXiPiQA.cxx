@@ -60,7 +60,7 @@ enum PidInfoStored {
 };
 
 /// Struct for applying Omegac0/Xic0 selection cuts
-struct HfCandidateSelectorToXiPiQA {
+struct HfCandidateSelectorToXiPiQa {
 
   // DCAFitter
   Produces<aod::HfSelToXiPi> hfSelToXiPi;
@@ -619,7 +619,7 @@ struct HfCandidateSelectorToXiPiQA {
   {
     runSelection<false>(candidates, tracks);
   }
-  PROCESS_SWITCH(HfCandidateSelectorToXiPiQA, processSelectionDCAFitter, "Xic0 candidate selection with DCAFitter output", true);
+  PROCESS_SWITCH(HfCandidateSelectorToXiPiQa, processSelectionDCAFitter, "Xic0 candidate selection with DCAFitter output", true);
 
   ////////////////////////////////////
   ///    Process with KFParticle    //
@@ -628,12 +628,12 @@ struct HfCandidateSelectorToXiPiQA {
   {
     runSelection<true>(candidates, tracks);
   }
-  PROCESS_SWITCH(HfCandidateSelectorToXiPiQA, processSelectionKFParticle, "Xic0 candidate selection with KFParticle output", false);
+  PROCESS_SWITCH(HfCandidateSelectorToXiPiQa, processSelectionKFParticle, "Xic0 candidate selection with KFParticle output", false);
 
 }; // end struct
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<HfCandidateSelectorToXiPiQA>(cfgc)};
+    adaptAnalysisTask<HfCandidateSelectorToXiPiQa>(cfgc)};
 }
