@@ -243,6 +243,7 @@ DECLARE_SOA_COLUMN(Kstar, kstar, float);                            //! Relative
 DECLARE_SOA_COLUMN(KT, kT, float);                                  //! kT distribution of particle pairs
 DECLARE_SOA_COLUMN(MT, mT, float);                                  //! Transverse mass distribution
 DECLARE_SOA_COLUMN(CharmM, charmM, float);                          //! Charm hadron mass
+DECLARE_SOA_COLUMN(CharmTrkM, charmtrkM, float);                    //! Charm hadron track mass
 DECLARE_SOA_COLUMN(CharmPt, charmPt, float);                        //! Transverse momentum of charm hadron for result task
 DECLARE_SOA_COLUMN(CharmEta, charmEta, float);                      //! Eta of charm hadron for result task
 DECLARE_SOA_COLUMN(CharmPhi, charmPhi, float);                      //! Phi of charm hadron for result task
@@ -327,6 +328,7 @@ DECLARE_SOA_TABLE(FDHfPairs, "AOD", "FDHFPAIRS", //! table to store results for 
                   fdhf::MultPercentile,
                   fdhf::Charge,
                   fdhf::PairSign,
+                  fdhf::CharmTrkM,
                   fdhf::ProcessType,
                   fdhf::FlagMc,
                   fdhf::OriginMcRec);
