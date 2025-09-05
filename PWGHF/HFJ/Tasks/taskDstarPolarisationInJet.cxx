@@ -630,10 +630,9 @@ struct HfTaskDstarPolarisationInJet {
 
   /// \param invMass is the invariant mass
   /// \return true if candidate in signal region
-  template <charm_polarisation::DecayChannel channel>
-  bool isInSignalRegion(float invMass)
+  bool isInSignalRegion(charm_polarisation::DecayChannel channel, float invMass)
   {
-    if constexpr (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
+    if (channel == charm_polarisation::DecayChannel::DstarToDzeroPi) { // D*+
       float invMassSigMin = 0.142f;
       float invMassSigMax = 0.15f;
       if (invMassSigMin < invMass && invMass < invMassSigMax) {
@@ -769,7 +768,7 @@ struct HfTaskDstarPolarisationInJet {
       float ptCharmHad = RecoDecay::pt(threeVecCand); // this definition is valid for both rotated and original candidates
 
       if (!isCandidateInSignalRegion) { // it could be that only one mass hypothesis is in signal region
-        isCandidateInSignalRegion = isInSignalRegion<channel>(invMassCharmHadForSparse);
+        isCandidateInSignalRegion = isInSignalRegion(channel, invMassCharmHadForSparse);
       }
       float absEtaTrackMin = candidate.absEtaTrackMin();
       int numItsClsMin = candidate.numItsClsMin();
