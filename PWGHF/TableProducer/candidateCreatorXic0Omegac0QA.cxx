@@ -67,9 +67,6 @@ struct HfCandidateCreatorXic0Omegac0QA {
 
   // Cursor to fill tables
   struct : ProducesGroup {
-    Produces<aod::HfCandXic0Base> rowCandXic0Base;
-    Produces<aod::HfCandXic0KF> rowCandXic0KF;
-    // Producers for the xic0omegac0 candidate creator
     // Candidates created with DCAFitter
     Produces<aod::HfCandToXiPi> rowCandToXiPi;
     Produces<aod::HfCandToOmegaPi> rowCandToOmegaPi;
@@ -1377,8 +1374,6 @@ struct HfCandidateCreatorXic0Omegac0QA {
 
 struct HfCandidateCreatorXic0Omegac0QAMc {
 
-  Spawns<aod::HfCandXic0Ext> rowCandXic0Ext;
-
   struct : ProducesGroup {
 
     Produces<aod::HfXicToXiPiMCRec> rowMcMatchRecXicToXiPi;
@@ -1669,7 +1664,7 @@ struct HfCandidateCreatorXic0Omegac0QAMc {
             if (RecoDecay::isMatchedMCGen<false, true>(mcParticles, daughterCharm, pdgOfCascade[decayChannel], std::array{+kLambda0, pdgOfBachelor[decayChannel]}, true)) {
               debugGenCasc = 1; // -> Matched Xi-
               for (auto const& daughterCascade : daughterCharm.template daughters_as<aod::McParticles>()) {
-                if (std::abs(daughterCascade.pdgCode() != +kLambda0)) {
+                if (std::abs(daughterCascade.pdgCode()) != +kLambda0) {
                   continue;
                 }
 
@@ -1687,10 +1682,10 @@ struct HfCandidateCreatorXic0Omegac0QAMc {
         if (flag != 0) {
           origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
         }
-        if (std::abs(yCharmBaryonGen < kYCutTight)) {
+        if (std::abs(yCharmBaryonGen) < kYCutTight) {
           // Fill in some QA histogram. Will be implemented later
         }
-        if (std::abs(yCharmBaryonGen < kYCutLoose)) {
+        if (std::abs(yCharmBaryonGen) < kYCutLoose) {
           // Fill in some QA histograms. Will be implemented later
         }
 
