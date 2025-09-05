@@ -60,11 +60,6 @@ static const std::vector<double> particleMasses{o2::constants::physics::MassPion
 static const std::vector<int> particleCharge{1, 1, 1, 1, 2, 2};
 const int nBetheParams = 6;
 std::vector<int> hfMothCodes = {511, 521, 531, 541, 5122}; // b-mesons + Lambda_b
-enum NucleiFlags {
-  kIsPhysicalPrimary = BIT(0),
-  kIsSecondaryFromMaterial = BIT(1),
-  kIsSecondaryFromWeakDecay = BIT(2)
-};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
 constexpr double kBetheBlochDefault[nParticles][nBetheParams]{
   {13.611469, 3.598765, -0.021138, 2.039562, 0.651040, 0.09},    // pion
@@ -160,6 +155,7 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgFillmassnsigma{"cfgFillmassnsigma", true, "Fill mass vs nsigma histograms"};
   Configurable<float> centcut{"centcut", 80.0f, "centrality cut"};
   Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5f, "Rapidity range"};
+  Configurable<float> cfgtpcNClsFindable{"cfgtpcNClsFindable", 0.8f, "tpcNClsFindable over crossedRows"}; /////////////
   Configurable<float> cfgZvertex{"cfgZvertex", 10, "Min Z Vertex"};
   Configurable<bool> cfgZvertexRequire{"cfgZvertexRequire", true, "Pos Z cut require"};
   Configurable<bool> cfgZvertexRequireMC{"cfgZvertexRequireMC", true, "Pos Z cut require for generated particles"};
@@ -203,6 +199,7 @@ struct NucleitpcPbPb {
   TRandom3 rand;
   float he3 = 4;
   float he4 = 5;
+  float processmaterial = 23;
   //----------------------------------------------------------------------------------------------------------------
   void init(InitContext const&)
   {
@@ -361,7 +358,7 @@ struct NucleitpcPbPb {
             continue;
           if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && cfgTPCNClsfoundRequire)
             continue;
-          if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire) // o2-linter: disable=magic-number (To be checked)
+          if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < cfgtpcNClsFindable * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire)
             continue;
           if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && cfgmaxTPCchi2Require)
             continue;
@@ -478,14 +475,15 @@ struct NucleitpcPbPb {
             isMaterialSecondary = true;
           } else {
             auto mother = mcParticle.mothers_as<aod::McParticles>().front();
-            if (std::abs(mother.pdgCode()) < 1000000000) {
+            float notmother = 1000000000;
+            if (std::abs(mother.pdgCode()) < notmother) {
               isMaterialSecondary = true;
             }
           }
         }
         if (isHe3 || isHe4) {
           histomc.fill(HIST("histProcessCodeHe"), mcParticle.getProcess());
-          if (mcParticle.getProcess() == 23) {
+          if (mcParticle.getProcess() == processmaterial) {
             histomc.fill(HIST("histProcess23Details"), std::abs(pdgCode), mcParticle.pt());
           }
         }
@@ -513,32 +511,27 @@ struct NucleitpcPbPb {
         if (!isHe3 && !isHe4)
           continue;
 
-        uint16_t flags = 0;
         int decayType = 0;
         int particleAnti = (pdgCode > 0) ? 0 : 1;
 
         if (mcParticle.isPhysicalPrimary()) {
-          flags |= kIsPhysicalPrimary;
           decayType = 0;
           if (mcParticle.has_mothers()) {
             for (const auto& motherparticle : mcParticle.mothers_as<aod::McParticles>()) {
               if (std::find(hfMothCodes.begin(), hfMothCodes.end(),
                             std::abs(motherparticle.pdgCode())) != hfMothCodes.end()) {
-                flags |= kIsSecondaryFromWeakDecay;
                 decayType = 1;
                 break;
               }
             }
           }
         } else if (mcParticle.has_mothers()) {
-          flags |= kIsSecondaryFromWeakDecay;
           decayType = 1;
         } else {
-          flags |= kIsSecondaryFromMaterial;
           decayType = 2;
           continue;
         }
-        bool isFromWeakDecay = (flags & kIsSecondaryFromWeakDecay) != 0;
+        bool isFromWeakDecay = (decayType == 1);
 
         if (!mcParticle.isPhysicalPrimary() && !isFromWeakDecay)
           continue;
@@ -609,32 +602,27 @@ struct NucleitpcPbPb {
         if (std::abs(mcParticle.y()) > cfgCutRapidity)
           continue;
 
-        uint16_t flags = 0;
         int decayType = 0;
         int particleAnti = (pdgCode > 0) ? 0 : 1;
 
         if (mcParticle.isPhysicalPrimary()) {
-          flags |= kIsPhysicalPrimary;
           decayType = 0;
           if (mcParticle.has_mothers()) {
             for (const auto& motherparticle : mcParticle.mothers_as<aod::McParticles>()) {
               if (std::find(hfMothCodes.begin(), hfMothCodes.end(),
                             std::abs(motherparticle.pdgCode())) != hfMothCodes.end()) {
-                flags |= kIsSecondaryFromWeakDecay;
                 decayType = 1;
                 break;
               }
             }
           }
         } else if (mcParticle.has_mothers()) {
-          flags |= kIsSecondaryFromWeakDecay;
           decayType = 1;
         } else {
-          flags |= kIsSecondaryFromMaterial;
           decayType = 2;
           continue;
         }
-        bool isFromWeakDecay = (flags & kIsSecondaryFromWeakDecay) != 0;
+        bool isFromWeakDecay = (decayType == 1);
 
         if (!mcParticle.isPhysicalPrimary() && !isFromWeakDecay)
           continue;
@@ -699,7 +687,7 @@ struct NucleitpcPbPb {
         bool isMaterialSecondary = false;
         if ((isHe3 || isHe4) && !matchedMCParticle.isPhysicalPrimary()) {
 
-          if (matchedMCParticle.getProcess() == 23) { // kPMaterial
+          if (matchedMCParticle.getProcess() == processmaterial) { // kPMaterial
             isMaterialSecondary = true;
           } else if (!matchedMCParticle.has_mothers()) {
             isMaterialSecondary = true;
@@ -728,18 +716,15 @@ struct NucleitpcPbPb {
             continue;
           }
         }
-        uint16_t flags = 0;
         int decayType = 0;
         bool isFromWeakDecay = false;
 
         if (matchedMCParticle.isPhysicalPrimary()) {
-          flags |= kIsPhysicalPrimary;
           decayType = 0;
           if (matchedMCParticle.has_mothers()) {
             for (const auto& motherparticle : matchedMCParticle.mothers_as<aod::McParticles>()) {
               if (std::find(hfMothCodes.begin(), hfMothCodes.end(),
                             std::abs(motherparticle.pdgCode())) != hfMothCodes.end()) {
-                flags |= kIsSecondaryFromWeakDecay;
                 isFromWeakDecay = true;
                 decayType = 1;
                 break;
@@ -747,11 +732,9 @@ struct NucleitpcPbPb {
             }
           }
         } else if (matchedMCParticle.has_mothers()) {
-          flags |= kIsSecondaryFromWeakDecay;
           isFromWeakDecay = true;
           decayType = 1;
         } else {
-          flags |= kIsSecondaryFromMaterial;
           decayType = 2;
         }
 
@@ -788,7 +771,7 @@ struct NucleitpcPbPb {
             continue;
           if (track.tpcNClsFound() < cfgTrackPIDsettings->get(i, "minTPCnCls") && cfgTPCNClsfoundRequire)
             continue;
-          if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire)
+          if (((track.tpcNClsCrossedRows() < cfgTrackPIDsettings->get(i, "minTPCnClsCrossedRows")) || track.tpcNClsCrossedRows() < cfgtpcNClsFindable * track.tpcNClsFindable()) && cfgTPCNClsCrossedRowsRequire)
             continue;
           if (track.tpcChi2NCl() > cfgTrackPIDsettings->get(i, "maxTPCchi2") && cfgmaxTPCchi2Require)
             continue;
