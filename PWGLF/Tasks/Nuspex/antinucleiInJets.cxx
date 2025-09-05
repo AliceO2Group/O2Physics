@@ -252,10 +252,15 @@ struct AntinucleiInJets {
 
       // Event counter
       registryMC.add("genEvents", "number of generated events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
+      registryMC.add("genJets", "number of generated jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
       // Generated spectra of antiprotons
       registryMC.add("antiproton_gen_jet", "antiproton_gen_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antiproton_gen_ue", "antiproton_gen_ue", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      // Normalization histogram
+      registryMC.add("antiproton_deltay_deltaphi_jet", "antiproton_deltay_deltaphi_jet", HistType::kTH2F, {{2000, -1.0, 1.0, "#Delta#it{y}"}, {2000, 0.0, 2.0, "#Delta#phi"}});
+      registryMC.add("antiproton_deltay_deltaphi_ue", "antiproton_deltay_deltaphi_ue", HistType::kTH2F, {{2000, -1.0, 1.0, "#Delta#it{y}"}, {2000, 0.0, 2.0, "#Delta#phi"}});
     }
 
     // Reconstructed antiproton spectra in jets and UE (MC-matched) with TPC/TOF PID
@@ -263,6 +268,7 @@ struct AntinucleiInJets {
 
       // Event counter
       registryMC.add("recEvents", "number of reconstructed events in mc", HistType::kTH1F, {{20, 0, 20, "counter"}});
+      registryMC.add("recJets", "number of reconstructed jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
       // Reconstructed spectra of antiprotons
       registryMC.add("antiproton_rec_tpc_jet", "antiproton_rec_tpc_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -1450,6 +1456,9 @@ struct AntinucleiInJets {
           continue;
         isAtLeastOneJetSelected = true;
 
+        // Generated jets
+        registryMC.fill(HIST("genJets"), 0.5);
+
         // Analyze jet constituents
         std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
         for (const auto& particle : jetConstituents) {
@@ -1458,6 +1467,9 @@ struct AntinucleiInJets {
 
           if (particle.eta() < minEta || particle.eta() > maxEta)
             continue;
+
+          // Fill normalization histogram
+          registryMC.fill(HIST("antiproton_deltay_deltaphi_jet"), particle.eta() - jet.eta(), getDeltaPhi(particle.phi(), jet.phi()));
 
           // Fill histogram for generated antiprotons
           registryMC.fill(HIST("antiproton_gen_jet"), particle.pt());
@@ -1490,6 +1502,14 @@ struct AntinucleiInJets {
           // Reject tracks that lie outside the maxConeRadius from both UE axes
           if (deltaRUe1 > maxConeRadius && deltaRUe2 > maxConeRadius)
             continue;
+
+          // Fill normalization histogram
+          if (deltaRUe1 < maxConeRadius) {
+            registryMC.fill(HIST("antiproton_deltay_deltaphi_ue"), protonVec.Eta() - ueAxis1.Eta(), getDeltaPhi(protonVec.Phi(), ueAxis1.Phi()));
+          }
+          if (deltaRUe2 < maxConeRadius) {
+            registryMC.fill(HIST("antiproton_deltay_deltaphi_ue"), protonVec.Eta() - ueAxis2.Eta(), getDeltaPhi(protonVec.Phi(), ueAxis2.Phi()));
+          }
 
           // Fill histogram for antiprotons in the UE
           registryMC.fill(HIST("antiproton_gen_ue"), protonVec.Pt());
@@ -1606,6 +1626,9 @@ struct AntinucleiInJets {
         if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
           continue;
         isAtLeastOneJetSelected = true;
+
+        // Reconstructed jets
+        registryMC.fill(HIST("recJets"), 0.5);
 
         // Set up two perpendicular cone axes for underlying event estimation
         double coneRadius = std::sqrt(jet.area() / PI);

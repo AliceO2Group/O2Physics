@@ -85,12 +85,12 @@ struct eventQC {
 
   struct : ConfigurableGroup {
     std::string prefix = "eventcut_group";
-    Configurable<float> cfgZvtxMin{"cfgZvtxMin", -10.f, "min. Zvtx"};
-    Configurable<float> cfgZvtxMax{"cfgZvtxMax", 10.f, "max. Zvtx"};
-    Configurable<bool> cfgRequireSel8{"cfgRequireSel8", true, "require sel8 in event cut"};
-    Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", true, "require FT0AND in event cut"};
-    Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", true, "require No time frame border in event cut"};
-    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", true, "require no ITS readout frame border in event cut"};
+    Configurable<float> cfgZvtxMin{"cfgZvtxMin", -1e+10, "min. Zvtx"};
+    Configurable<float> cfgZvtxMax{"cfgZvtxMax", 1e+10, "max. Zvtx"};
+    Configurable<bool> cfgRequireSel8{"cfgRequireSel8", false, "require sel8 in event cut"};
+    Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", false, "require FT0AND in event cut"};
+    Configurable<bool> cfgRequireNoTFB{"cfgRequireNoTFB", false, "require No time frame border in event cut"};
+    Configurable<bool> cfgRequireNoITSROFB{"cfgRequireNoITSROFB", false, "require no ITS readout frame border in event cut"};
     Configurable<bool> cfgRequireVertexITSTPC{"cfgRequireVertexITSTPC", false, "require Vertex ITSTPC in event cut"};             // ITS-TPC matched track contributes PV.
     Configurable<bool> cfgRequireVertexTOFmatched{"cfgRequireVertexTOFmatched", false, "require Vertex TOFmatched in event cut"}; // ITS-TPC-TOF matched track contributes PV.
     Configurable<bool> cfgRequireNoSameBunchPileup{"cfgRequireNoSameBunchPileup", false, "require no same bunch pileup in event cut"};
@@ -201,13 +201,14 @@ struct eventQC {
 
     if (doprocessEventQC_SWT) {
       fRegistry.add("BC/hNcoll", "Number of collisions per triggered BC;N_{collision} per triggered BC", kTH1F, {{11, -0.5, +10.5}}, false);
-      fRegistry.add("BC/hDeltaT", "diff. in collision time per BC;#DeltaT_{coll} (ns)", kTH1F, {{500, -25, +25}}, false);
-      fRegistry.add("BC/hDeltaZ", "diff. in collision Z_{vtx} per BC;#DeltaZ_{vtx} (cm)", kTH1F, {{1000, -5, +5}}, false);
-      fRegistry.add("BC/hCorrNcontrib", "hMultNTracksPV;", kTH2F, {{axis_mult_ncontrib}, {axis_mult_ncontrib}}, false);
-      fRegistry.add("BC/Collision/hMultNTracksPV", "hMultNTracksPV;N_{track} to PV in |#eta| < 0.8", kTH1F, {{axis_mult_ncontrib08}}, false);
+      fRegistry.add("BC/Collision/hMultNTracksPV", "hMultNTracksPV;N_{track} to PV", kTH1F, {{axis_mult_ncontrib}}, false);
       fRegistry.add("BC/Collision/hMultFT0AFT0C", "hMultFT0AFT0C;mult. FT0A;mult. FT0C", kTH2F, {{axis_mult_ft0a}, {axis_mult_ft0c}}, false);
       fRegistry.add("BC/Collision/hMultFT0AFV0A", "hMultFT0AFV0A;mult. FT0A;mult. FV0A", kTH2F, {{axis_mult_ft0a}, {axis_mult_fv0a}}, false);
       fRegistry.add("BC/Collision/hMultFT0CFV0A", "hMultFT0CFV0A;mult. FT0C;mult. FV0A", kTH2F, {{axis_mult_ft0c}, {axis_mult_fv0a}}, false);
+
+      fRegistry.add("perBC/hDeltaTZ", "#DeltaZ_{vtx} vs. #DeltaT of collisions per BC;#DeltaZ_{vtx} (cm);#DeltaT (ns)", kTH2F, {{100, -5, +5}, {50, -25, +25}}, false);
+      fRegistry.add("perBC/hCorrNcontrib", "hMultNTracksPV;", kTH2F, {{axis_mult_ncontrib}, {axis_mult_ncontrib}}, false);
+      // fRegistry.addClone("perBC/", "beyondBC/");
     }
 
     // event info
@@ -238,7 +239,8 @@ struct eventQC {
 
     if (cfgFillEvent) {
       fRegistry.add("Event/before/hZvtx", "vertex z; Z_{vtx} (cm)", kTH1F, {{100, -50, +50}}, false);
-      fRegistry.add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV in |#eta| < 0.8", kTH1F, {{axis_mult_ncontrib08}}, false);
+      fRegistry.add("Event/before/hMultNTracksPV", "hMultNTracksPV; N_{track} to PV", kTH1F, {{axis_mult_ncontrib}}, false);
+      fRegistry.add("Event/before/hMultNTracksPV08", "hMultNTracksPV08; N_{track} to PV in |#eta| < 0.8", kTH1F, {{axis_mult_ncontrib08}}, false);
       fRegistry.add("Event/before/hMultFT0AFT0C", "hMultFT0AFT0C;mult. FT0A;mult. FT0C", kTH2F, {{axis_mult_ft0a}, {axis_mult_ft0c}}, false);
       fRegistry.add("Event/before/hMultFT0AFV0A", "hMultFT0AFV0A;mult. FT0A;mult. FV0A", kTH2F, {{axis_mult_ft0a}, {axis_mult_fv0a}}, false);
       fRegistry.add("Event/before/hMultFT0CFV0A", "hMultFT0CFV0A;mult. FT0C;mult. FV0A", kTH2F, {{axis_mult_ft0c}, {axis_mult_fv0a}}, false);
@@ -479,7 +481,8 @@ struct eventQC {
     }
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hZvtx"), collision.posZ());
 
-    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPV"), collision.multNTracksPV());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPV"), collision.numContrib());
+    fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultNTracksPV08"), collision.multNTracksPV());
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0AFT0C"), collision.multFT0A(), collision.multFT0C());
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0AFV0A"), collision.multFT0A(), collision.multFV0A());
     fRegistry.fill(HIST("Event/") + HIST(event_types[ev_id]) + HIST("hMultFT0CFV0A"), collision.multFT0C(), collision.multFV0A());
@@ -740,7 +743,7 @@ struct eventQC {
   }
 
   template <typename TCollision>
-  bool isSelectedEvent(TCollision const& collision)
+  bool isSelectedCollision(TCollision const& collision)
   {
     if (eventcuts.cfgRequireSel8 && !collision.sel8()) {
       return false;
@@ -838,38 +841,66 @@ struct eventQC {
 
   SliceCache cache;
   Preslice<aod::Tracks> perCol = o2::aod::track::collisionId;
-  Preslice<aod::Collisions> perBC = o2::aod::collision::bcId;
+  // Preslice<aod::Collisions> perBC = o2::aod::collision::bcId;
+  PresliceUnsorted<MyCollisions> perFoundBC = aod::evsel::foundBCId;
 
   template <bool isTriggerAnalysis, typename TBCs, typename TCollisions, typename TTracks>
   void runQC(TBCs const& bcs, TCollisions const& collisions, TTracks const& tracks)
   {
     if constexpr (isTriggerAnalysis) {
+      // std::vector<int> selectedCollisionIds;
+      // selectedCollisionIds.reserve(collisions.size());
+
       for (const auto& bc : bcs) {
         initCCDB(bc);
         if (!zorro.isSelected(bc.globalBC())) { // triggered BC
           continue;
         }
 
-        // if (!bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
-        //   continue;
-        // }
-
-        const auto& collisions_per_bc = collisions.sliceBy(perBC, bc.globalIndex());
+        // const auto& collisions_per_bc = collisions.sliceBy(perBC, bc.globalIndex());
+        const auto& collisions_per_bc = collisions.sliceBy(perFoundBC, bc.globalIndex());
         fRegistry.fill(HIST("BC/hNcoll"), collisions_per_bc.size());
         for (const auto& collision : collisions_per_bc) {
-          fRegistry.fill(HIST("BC/Collision/hMultNTracksPV"), collision.multNTracksPV());
+          if (!isSelectedCollision(collision)) {
+            continue;
+          }
+
+          fRegistry.fill(HIST("BC/Collision/hMultNTracksPV"), collision.numContrib());
           fRegistry.fill(HIST("BC/Collision/hMultFT0AFT0C"), collision.multFT0A(), collision.multFT0C());
           fRegistry.fill(HIST("BC/Collision/hMultFT0AFV0A"), collision.multFT0A(), collision.multFV0A());
           fRegistry.fill(HIST("BC/Collision/hMultFT0CFV0A"), collision.multFT0C(), collision.multFV0A());
+          // selectedCollisionIds.emplace_back(collision.globalIndex());
         }
 
         for (const auto& [col1, col2] : combinations(CombinationsStrictlyUpperIndexPolicy(collisions_per_bc, collisions_per_bc))) {
-          fRegistry.fill(HIST("BC/hDeltaZ"), col1.posZ() - col2.posZ());
-          fRegistry.fill(HIST("BC/hDeltaT"), col1.collisionTime() - col2.collisionTime());
-          fRegistry.fill(HIST("BC/hCorrNcontrib"), col1.numContrib(), col2.numContrib());
+          if (!isSelectedCollision(col1) || !isSelectedCollision(col2)) {
+            continue;
+          }
+          fRegistry.fill(HIST("perBC/hDeltaTZ"), col1.posZ() - col2.posZ(), col1.collisionTime() - col2.collisionTime());
+          fRegistry.fill(HIST("perBC/hCorrNcontrib"), col1.numContrib(), col2.numContrib());
         } // end of pairing
       } // end of bc loop
-    }
+
+      // for (const auto& collisionId1 : selectedCollisionIds) {
+      //   const auto& col1 = collisions.rawIteratorAt(collisionId1);
+      //   for (const auto& col2 : collisions) {
+      //     if (!isSelectedCollision(col2)) {
+      //       continue;
+      //     }
+
+      //     const auto& bc1 = col1.template bc_as<TBCs>(); // don't use foundBC for CEFP.
+      //     const auto& bc2 = col2.template bc_as<TBCs>(); // don't use foundBC for CEFP.
+      //     if (bc1.globalBC() == bc2.globalBC()) {
+      //       continue;
+      //     }
+      //     fRegistry.fill(HIST("beyondBC/hDeltaTZ"), col1.posZ() - col2.posZ(), col1.collisionTime() - col2.collisionTime());
+      //     fRegistry.fill(HIST("beyondBC/hCorrNcontrib"), col1.numContrib(), col2.numContrib());
+      //   } // end of all collision loop
+      // } // end of selected collision loop
+
+      // selectedCollisionIds.clear();
+      // selectedCollisionIds.shrink_to_fit();
+    } // end of trigger QC
 
     for (const auto& collision : collisions) {
       if constexpr (isTriggerAnalysis) {
@@ -892,7 +923,7 @@ struct eventQC {
       if (cfgFillEvent) {
         fillEventInfo<0>(collision);
       }
-      if (!isSelectedEvent(collision)) {
+      if (!isSelectedCollision(collision)) {
         continue;
       }
       if (cfgFillEvent) {

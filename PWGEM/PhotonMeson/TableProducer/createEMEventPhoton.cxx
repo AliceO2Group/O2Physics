@@ -43,7 +43,7 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod:
 using MyCollisionsCent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsCentQvec = soa::Join<MyCollisionsCent, MyQvectors>;
 
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT_Cent, MyQvectors>;
 
@@ -58,7 +58,7 @@ struct CreateEMEventPhoton {
   Produces<o2::aod::EMEventsMult> eventMult;
   Produces<o2::aod::EMEventsCent> eventCent;
   Produces<o2::aod::EMEventsQvec> eventQvec;
-  Produces<o2::aod::EMSWTriggerInfos> emswtbit;
+  Produces<o2::aod::EMSWTriggerBits> emswtbit;
   Produces<o2::aod::EMEventNormInfos> event_norm_info;
   Produces<o2::aod::EMEventsWeight> eventWeights;
 
@@ -154,9 +154,6 @@ struct CreateEMEventPhoton {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
-      if (!collision.isSelected()) {
-        continue;
-      }
       if (needEMCTrigger && !collision.alias_bit(kTVXinEMC)) {
         continue;
       }
@@ -164,12 +161,18 @@ struct CreateEMEventPhoton {
         continue;
       }
 
-      if constexpr (eventtype == EMEventType::kEvent) {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
-      } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
-      } else {
-        event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        if constexpr (eventtype == EMEventType::kEvent) {
+          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+        } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
+          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
+        } else {
+          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+        }
+      }
+
+      if (!collision.isSelected()) {
+        continue;
       }
 
       if (!collision.isEoI()) { // events with at least 1 photon for data reduction.
@@ -180,7 +183,7 @@ struct CreateEMEventPhoton {
         if (collision.swtaliastmp_raw() == 0) {
           continue;
         } else {
-          emswtbit(collision.swtaliastmp_raw(), collision.nInspectedTVX());
+          emswtbit(collision.swtaliastmp_raw());
         }
       }
 

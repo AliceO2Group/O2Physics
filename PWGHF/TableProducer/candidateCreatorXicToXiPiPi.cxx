@@ -912,6 +912,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
     int8_t sign = 0;
     int8_t flag = 0;
     int8_t origin = RecoDecay::OriginType::None;
+    float decayLengthGen = -999.f;
     int8_t nPionsDecayed = 0;
     int8_t nInteractionsWithMaterial = 0;
     // for resonance matching
@@ -1088,7 +1089,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {
-          rowMcMatchGen(-99, -99, -99);
+          rowMcMatchGen(-99, -99, -99, decayLengthGen);
         }
         continue;
       }
@@ -1134,13 +1135,18 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
         // Check whether the charm baryon is non-prompt (from a b quark).
         if (flag != 0) {
           origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
+          // Calculate the decay length of the generated particle
+          auto dau0 = particle.template daughters_as<aod::McParticles>().begin();
+          const std::array vtxDau{dau0.vx(), dau0.vy(), dau0.vz()};
+          const std::array vtxPV{mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
+          decayLengthGen = RecoDecay::distance(vtxPV, vtxDau);
         }
         // Fill table
         if (origin == RecoDecay::OriginType::NonPrompt) {
           auto bHadMother = mcParticles.rawIteratorAt(idxBhadMothers[0]);
-          rowMcMatchGen(flag, origin, bHadMother.pdgCode());
+          rowMcMatchGen(flag, origin, bHadMother.pdgCode(), decayLengthGen);
         } else {
-          rowMcMatchGen(flag, origin, 0);
+          rowMcMatchGen(flag, origin, 0, decayLengthGen);
         }
       } // close loop over generated particles
     } // close loop over McCollisions

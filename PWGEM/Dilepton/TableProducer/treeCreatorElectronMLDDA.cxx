@@ -183,7 +183,8 @@ struct TreeCreatorElectronMLDDA {
 
     Configurable<float> cfg_min_cospa{"cfg_min_cospa", 0.9998, "min cospa for v0"};
     Configurable<float> cfg_max_dcadau{"cfg_max_dcadau", 0.1, "max distance between 2 legs for v0"};
-    Configurable<float> cfg_min_qt_strangeness{"cfg_min_qt_strangeness", 0.015, "min qt for Lambda and K0S"};
+    Configurable<float> cfg_min_qt_strangeness{"cfg_min_qt_strangeness", 0.02, "min qt for Lambda and K0S"};
+    Configurable<float> cfg_min_qt_k0s{"cfg_min_qt_k0s", 0.11, "min qt for K0S"};
 
     Configurable<float> cfg_min_cr2findable_ratio_tpc{"cfg_min_cr2findable_ratio_tpc", 0.8, "min. TPC Ncr/Nf ratio"};
     Configurable<float> cfg_max_frac_shared_clusters_tpc{"cfg_max_frac_shared_clusters_tpc", 0.7, "max fraction of shared clusters in TPC"};
@@ -228,7 +229,6 @@ struct TreeCreatorElectronMLDDA {
     Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
-    Configurable<bool> requireTOF_for_tagging{"requireTOF_for_tagging", false, "flag to require TOF for tagging 1 leg from V0"};
 
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2, "min n sigma e in TPC for pc->ee"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +2, "max n sigma e in TPC for pc->ee"};
@@ -263,7 +263,6 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY for v0 legs in cm"};
     Configurable<float> cfg_min_dcaxy_bachelor{"cfg_min_dcaxy_bachelor", 0.05, "min dca XY for bachelor in cm"};
     Configurable<float> cfg_min_dcaxy_v0{"cfg_min_dcaxy_v0", 0.05, "min dca XY for V0 in cm"};
-    Configurable<bool> requireTOF_for_tagging{"requireTOF_for_tagging", false, "flag to require TOF for tagging 1 leg from V0"};
   } cascadecuts;
 
   // for RCT
@@ -576,6 +575,15 @@ struct TreeCreatorElectronMLDDA {
     return is_Pr_TPC && is_Pr_TOF;
   }
 
+  template <typename TTrack>
+  bool isPionTightTOFreq(TTrack const& track)
+  {
+    // only for K0S-> pi+ pi-
+    bool is_Pi_TPC = tightv0cuts.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < tightv0cuts.cfg_max_TPCNsigmaPi;
+    bool is_Pi_TOF = tightv0cuts.cfg_min_TOFNsigmaPi < track.tofNSigmaPi() && track.tofNSigmaPi() < tightv0cuts.cfg_max_TOFNsigmaPi; // TOFreq
+    return is_Pi_TPC && is_Pi_TOF;
+  }
+
   template <typename TCollision, typename TTrack>
   void fillTrackTable(TCollision const& collision, TTrack const& track, const uint8_t pidlabel)
   {
@@ -797,9 +805,9 @@ struct TreeCreatorElectronMLDDA {
         registry.fill(HIST("V0/hAP"), v0.alpha(), v0.qtarm());
 
         if (v0cuts.cfg_min_qt_strangeness < v0.qtarm()) {
-          if (!(v0cuts.cfg_min_mass_lambda_veto < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda_veto) && !(v0cuts.cfg_min_mass_lambda_veto < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda_veto)) {
-            if ((isPionTight(pos) && isSelectedV0LegTight(collision, pos)) && (isPion(neg) && isSelectedV0Leg(collision, neg))) {
-              if (!tightv0cuts.requireTOF_for_tagging || pos.hasTOF()) {
+          if (v0cuts.cfg_min_qt_k0s < v0.qtarm()) {
+            if (!(v0cuts.cfg_min_mass_lambda_veto < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda_veto) && !(v0cuts.cfg_min_mass_lambda_veto < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda_veto)) {
+              if ((isPionTightTOFreq(pos) && isSelectedV0LegTight(collision, pos)) && (isPion(neg) && isSelectedV0Leg(collision, neg))) {
                 registry.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
                 if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
                   registry.fill(HIST("V0/hTPCdEdx_P_Pi"), neg.tpcInnerParam(), neg.tpcSignal());
@@ -807,9 +815,7 @@ struct TreeCreatorElectronMLDDA {
                   fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion));
                 }
               }
-            }
-            if (isPion(pos) && isSelectedV0Leg(collision, pos) && isPionTight(neg) && isSelectedV0LegTight(collision, neg)) {
-              if (!tightv0cuts.requireTOF_for_tagging || neg.hasTOF()) {
+              if (isPion(pos) && isSelectedV0Leg(collision, pos) && isPionTightTOFreq(neg) && isSelectedV0LegTight(collision, neg)) {
                 registry.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
                 if (v0cuts.cfg_min_mass_k0s < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s) {
                   registry.fill(HIST("V0/hTPCdEdx_P_Pi"), pos.tpcInnerParam(), pos.tpcSignal());
@@ -817,56 +823,49 @@ struct TreeCreatorElectronMLDDA {
                   fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kPion));
                 }
               }
-            }
-          } // end of K0S
+            } // end of K0S
+          }
 
           if (!(v0cuts.cfg_min_mass_k0s_veto < v0.mK0Short() && v0.mK0Short() < v0cuts.cfg_max_mass_k0s_veto)) {
             if (isProton(pos) && isSelectedV0Leg(collision, pos) && isPionTight(neg) && isSelectedV0LegTight(collision, neg)) {
-              if (!tightv0cuts.requireTOF_for_tagging || (neg.hasTOF() || neg.tpcInnerParam() < 0.4)) {
-                registry.fill(HIST("V0/hMassLambda"), v0.mLambda());
-                if (v0cuts.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda) {
-                  fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton));
-                  registry.fill(HIST("V0/hTPCdEdx_P_Pr"), pos.tpcInnerParam(), pos.tpcSignal());
-                  registry.fill(HIST("V0/hTOFbeta_P_Pr"), pos.tpcInnerParam(), pos.beta());
-                }
+              registry.fill(HIST("V0/hMassLambda"), v0.mLambda());
+              if (v0cuts.cfg_min_mass_lambda < v0.mLambda() && v0.mLambda() < v0cuts.cfg_max_mass_lambda) {
+                fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton));
+                registry.fill(HIST("V0/hTPCdEdx_P_Pr"), pos.tpcInnerParam(), pos.tpcSignal());
+                registry.fill(HIST("V0/hTOFbeta_P_Pr"), pos.tpcInnerParam(), pos.beta());
               }
             } // end of Lambda
             if (isPionTight(pos) && isSelectedV0LegTight(collision, pos) && isProton(neg) && isSelectedV0Leg(collision, neg)) {
-              if (!tightv0cuts.requireTOF_for_tagging || (pos.hasTOF() || pos.tpcInnerParam() < 0.4)) {
-                registry.fill(HIST("V0/hMassAntiLambda"), v0.mAntiLambda());
-                if (v0cuts.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda) {
-                  fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton));
-                  registry.fill(HIST("V0/hTPCdEdx_P_Pr"), neg.tpcInnerParam(), neg.tpcSignal());
-                  registry.fill(HIST("V0/hTOFbeta_P_Pr"), neg.tpcInnerParam(), neg.beta());
-                }
+              registry.fill(HIST("V0/hMassAntiLambda"), v0.mAntiLambda());
+              if (v0cuts.cfg_min_mass_lambda < v0.mAntiLambda() && v0.mAntiLambda() < v0cuts.cfg_max_mass_lambda) {
+                fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kProton));
+                registry.fill(HIST("V0/hTPCdEdx_P_Pr"), neg.tpcInnerParam(), neg.tpcSignal());
+                registry.fill(HIST("V0/hTOFbeta_P_Pr"), neg.tpcInnerParam(), neg.beta());
               }
             } // end of AntiLambda
           }
+
         } // end of stangeness
 
         if (isElectronTight(pos) && isSelectedV0LegTight(collision, pos) && isElectron(neg) && isSelectedV0Leg(collision, neg)) {
-          if (!tightv0cuts.requireTOF_for_tagging || pos.hasTOF()) {
-            registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
-            registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
-            if (v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon) {
-              registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
-              fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron));
-              registry.fill(HIST("V0/hTPCdEdx_P_El"), neg.tpcInnerParam(), neg.tpcSignal());
-              registry.fill(HIST("V0/hTOFbeta_P_El"), neg.tpcInnerParam(), neg.beta());
-            }
+          registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
+          registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
+          if (v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon) {
+            registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
+            fillTrackTable(collision, neg, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron));
+            registry.fill(HIST("V0/hTPCdEdx_P_El"), neg.tpcInnerParam(), neg.tpcSignal());
+            registry.fill(HIST("V0/hTOFbeta_P_El"), neg.tpcInnerParam(), neg.beta());
           }
         } // end of photon conversion
 
         if (isElectron(pos) && isSelectedV0Leg(collision, pos) && isElectronTight(neg) && isSelectedV0LegTight(collision, neg)) {
-          if (!tightv0cuts.requireTOF_for_tagging || neg.hasTOF()) {
-            registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
-            registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
-            if (v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon) {
-              registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
-              fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron));
-              registry.fill(HIST("V0/hTPCdEdx_P_El"), pos.tpcInnerParam(), pos.tpcSignal());
-              registry.fill(HIST("V0/hTOFbeta_P_El"), pos.tpcInnerParam(), pos.beta());
-            }
+          registry.fill(HIST("V0/hMassGamma"), v0.mGamma());
+          registry.fill(HIST("V0/hMassGamma_Rxy"), v0.v0radius(), v0.mGamma());
+          if (v0cuts.cfg_min_mass_photon < v0.mGamma() && v0.mGamma() < v0cuts.cfg_max_mass_photon) {
+            registry.fill(HIST("V0/hXY_Gamma"), v0.x(), v0.y());
+            fillTrackTable(collision, pos, static_cast<uint8_t>(o2::aod::pwgem::dilepton::ml::PID_Label::kElectron));
+            registry.fill(HIST("V0/hTPCdEdx_P_El"), pos.tpcInnerParam(), pos.tpcSignal());
+            registry.fill(HIST("V0/hTOFbeta_P_El"), pos.tpcInnerParam(), pos.beta());
           }
         } // end of photon conversion
 
@@ -886,14 +885,8 @@ struct TreeCreatorElectronMLDDA {
           if (!isProtonTight(pos) || !isPionTight(neg)) {
             continue;
           }
-          if (cascadecuts.requireTOF_for_tagging && (!pos.hasTOF() && !neg.hasTOF())) { // require TOF to proton candidates. // pion from L is soft. Don't require TOF for soft pions.
-            continue;
-          }
         } else { // Omegabar+ -> Lbar + K+ -> pbar + pi+ + K+
           if (!isProtonTight(neg) || !isPionTight(pos)) {
-            continue;
-          }
-          if (cascadecuts.requireTOF_for_tagging && (!pos.hasTOF() && !neg.hasTOF())) { // require TOF to anti-proton candidates. // pion from L is soft. Don't require TOF for soft pions.
             continue;
           }
         }

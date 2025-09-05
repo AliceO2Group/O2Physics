@@ -101,7 +101,7 @@ DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);             
 } // namespace hf_cand_b0_lite
 
 DECLARE_SOA_TABLE(HfRedCandB0Lites, "AOD", "HFREDCANDB0LITE", //! Table with some B0 properties
-                                                              // B meson features                  hf_cand_b0_lite::M,
+                                                              // B meson features
                   hf_cand_b0_lite::M,
                   hf_cand_b0_lite::Pt,
                   hf_cand_b0_lite::Eta,
@@ -616,7 +616,7 @@ struct HfTaskB0Reduced {
           candidate.decayLengthXY(),
           candidate.decayLengthNormalised(),
           candidate.decayLengthXYNormalised(),
-          candidate.impactParameterProngSqSum(),
+          candidate.impactParameterProduct(),
           candidate.maxNormalisedDeltaIP(),
           candidateMlScoreSig,
           candidate.isSelB0ToDPi(),
@@ -644,12 +644,12 @@ struct HfTaskB0Reduced {
           prong0MlScorePrompt,
           prong0MlScoreNonprompt,
           // pion features
-          candidate.ptProng1(),
+          candidate.ptProng2(),
           std::abs(RecoDecay::eta(prongBachPi.pVector())),
           prongBachPi.itsNCls(),
           prongBachPi.tpcNClsCrossedRows(),
           prongBachPi.tpcChi2NCl(),
-          candidate.impactParameter1(),
+          candidate.impactParameter2(),
           prongBachPi.tpcNSigmaPi(),
           prongBachPi.tofNSigmaPi(),
           prongBachPi.tpcTofNSigmaPi(),
