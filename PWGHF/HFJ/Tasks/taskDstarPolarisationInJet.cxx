@@ -61,10 +61,6 @@ enum DecayChannel : uint8_t {
 
 struct HfTaskDstarPolarisationInJet {
 
-  float bkgRotationAngleStep{0.f};
-
-  uint8_t nMassHypos{0u};
-
   Configurable<bool> selectionFlagDstarToD0Pi{"selectionFlagDstarToD0Pi", true, "Selection Flag for D* decay to D0 Pi"};
   Configurable<std::string> eventSelections{"eventSelections", "sel8", "choose event selection"};
 
@@ -81,11 +77,14 @@ struct HfTaskDstarPolarisationInJet {
   Configurable<bool> activateTHnSparseCosThStarJetAxis{"activateTHnSparseCosThStarJetAxis", true, "Activate the THnSparse with cosThStar w.r.t. production axis"};
   Configurable<bool> activateTHnSparseCosThStarProduction{"activateTHnSparseCosThStarProduction", true, "Activate the THnSparse with cosThStar w.r.t. production axis"};
   Configurable<bool> activatePartRecoDstar{"activatePartRecoDstar", false, "Activate the study of partly reconstructed D*+ -> D0 (-> KPiPi0) Pi decays"};
-  float invMassMin{0.f};
-  float invMassMax{1000.f};
 
   /// Application of rapidity cut for reconstructed candidates
-  Configurable<float> maxAbsRapidityCut{"maxAbsRapidityCut", 999.f, "Max. value of reconstructed candidate rapidity (abs. value)"};
+  Configurable<float> absRapidityCandMax{"absRapidityCandMax", 999.f, "Max. value of reconstructed candidate rapidity (abs. value)"};
+
+  float invMassMin{0.f};
+  float invMassMax{1000.f};
+  float bkgRotationAngleStep{0.f};
+  uint8_t nMassHypos{0u};
 
   // Tables for MC jet matching
   using DstarJets = soa::Join<aod::DstarChargedJets, aod::DstarChargedJetConstituents>;
@@ -120,9 +119,6 @@ struct HfTaskDstarPolarisationInJet {
 
   void init(InitContext&)
   {
-    // initialise event selection:
-    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections.value);
-
     /// check process functions
     if (doprocessDstar + doprocessDstarWithMl + doprocessDstarMc + doprocessDstarMcWithMl > 1) {
       LOGP(fatal, "Only one process function should be enabled at a time, please check your configuration");
@@ -130,6 +126,9 @@ struct HfTaskDstarPolarisationInJet {
     if (doprocessDstar + doprocessDstarWithMl + doprocessDstarMc + doprocessDstarMcWithMl == 0) {
       LOGP(fatal, "No process function enabled");
     }
+
+    // initialise event selection:
+    eventSelectionBits = jetderiveddatautilities::initialiseEventSelectionBits(eventSelections.value);
 
     /// check output THnSparses
     std::array<int, 3> sparses = {activateTHnSparseCosThStarHelicity, activateTHnSparseCosThStarJetAxis, activateTHnSparseCosThStarProduction};
@@ -755,7 +754,7 @@ struct HfTaskDstarPolarisationInJet {
       }
 
       /// apply rapidity selection on the reconstructed candidate
-      if (std::abs(rapidity) > maxAbsRapidityCut) {
+      if (std::abs(rapidity) > absRapidityCandMax) {
         continue;
       }
 

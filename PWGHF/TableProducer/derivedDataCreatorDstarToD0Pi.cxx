@@ -133,13 +133,13 @@ struct HfDerivedDataCreatorDstarToD0Pi {
   void getTrackingInfos(std::array<Trk, 3> const& prongTracks, float& etaMin, int& nItsClsMin, int& nTpcClsMin)
   {
     etaMin = 10.f;
-    nItsClsMin = 10;
+    nItsClsMin = 100;
     nTpcClsMin = 1000;
 
     for (const auto& track : prongTracks) {
       etaMin = std::min(etaMin, std::abs(track.eta()));
-      nItsClsMin = std::min(nItsClsMin, static_cast<int>(track.itsNCls()));
-      nTpcClsMin = std::min(nTpcClsMin, static_cast<int>(track.tpcNClsCrossedRows()));
+      nItsClsMin = std::min(nItsClsMin, std::abs(track.itsNCls()));
+      nTpcClsMin = std::min(nTpcClsMin, std::abs(track.tpcNClsCrossedRows()));
     }
   }
 
