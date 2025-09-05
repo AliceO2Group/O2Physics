@@ -303,6 +303,8 @@ struct SingleTrackQCMC {
       fRegistry.addClone("Track/lf/", "Track/c2l/");
       fRegistry.addClone("Track/lf/", "Track/b2l/");
       fRegistry.addClone("Track/lf/", "Track/b2c2l/");
+      fRegistry.add("Track/Photon/positive/hProdVtx", "production vertex of e from #gamma;p_{T,e}^{rec} (GeV/c);r_{xy}^{gen} (cm);", kTH2F, {axis_pt, {100, 0, 100}}, false);
+      fRegistry.addClone("Track/Photon/positive/hProdVtx", "Track/Photon/negative/hProdVtx");
 
       if (cfgFillQA) {
         fRegistry.add("Track/PID/positive/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
@@ -605,6 +607,10 @@ struct SingleTrackQCMC {
 
     if (track.sign() > 0) {
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      if constexpr (lepton_source_id == 2) { // for electron from photon conversion
+        fRegistry.fill(HIST("Track/Photon/positive/hProdVtx"), track.pt(), std::sqrt(std::pow(mctrack.vx(), 2) + std::pow(mctrack.vy(), 2)), weight);
+      }
+
       if (fillGenValuesForRec) {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
       }
@@ -655,6 +661,9 @@ struct SingleTrackQCMC {
       }
     } else {
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      if constexpr (lepton_source_id == 2) { // for electron from photon conversion
+        fRegistry.fill(HIST("Track/Photon/negative/hProdVtx"), track.pt(), std::sqrt(std::pow(mctrack.vx(), 2) + std::pow(mctrack.vy(), 2)), weight);
+      }
       if (fillGenValuesForRec) {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
       }
