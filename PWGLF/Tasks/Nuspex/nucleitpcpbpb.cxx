@@ -150,7 +150,7 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgmaxGetMeanItsClsSizeRequire{"cfgmaxGetMeanItsClsSizeRequire", true, "Require maxGetMeanItsClsSize Cut"};
   Configurable<bool> cfgDCAwithptRequire{"cfgDCAwithptRequire", true, "Require DCA cuts with pt dependance"};
   Configurable<bool> cfgRequirebetaplot{"cfgRequirebetaplot", true, "Require beta plot"};
-  Configurable<bool> cfgIncludeMaterialInEfficiency{"cfgIncludeMaterialInEfficiency", false, "Require from material in efficiency"};
+  Configurable<bool> cfgIncludeMaterialInEfficiency{"cfgIncludeMaterialInEfficiency", true, "Require from material in efficiency"};
 
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgTrackPIDsettings{"cfgTrackPIDsettings", {kTrackPIDSettings[0], nParticles, nTrkSettings, particleNames, trackPIDsettingsNames}, "track selection and PID criteria"};
@@ -465,8 +465,8 @@ struct NucleitpcPbPb {
           continue;
 
         int pdgCode = mcParticle.pdgCode();
-        bool isHe3 = (std::abs(pdgCode) == 1000020030);
-        bool isHe4 = (std::abs(pdgCode) == 1000020040);
+        bool isHe3 = (std::abs(pdgCode) == particlePdgCodes.at(4));
+        bool isHe4 = (std::abs(pdgCode) == particlePdgCodes.at(5));
 
         if (std::abs(mcParticle.eta()) > cfgCutEta)
           continue;
@@ -493,19 +493,19 @@ struct NucleitpcPbPb {
         if (isMaterialSecondary) {
           float centrality = mcCollInfos[idx].passedEvSel ? mcCollInfos[idx].centrality : -1.0f;
 
-          if (pdgCode == 1000020030) {
+          if (pdgCode == particlePdgCodes.at(4)) {
             histomc.fill(HIST("histSecondaryMaterialHe3"), mcParticle.pt(), centrality);
-          } else if (pdgCode == -1000020030) {
+          } else if (pdgCode == -particlePdgCodes.at(4)) {
             histomc.fill(HIST("histSecondaryMaterialAntiHe3"), mcParticle.pt(), centrality);
-          } else if (pdgCode == 1000020040) {
+          } else if (pdgCode == particlePdgCodes.at(5)) {
             histomc.fill(HIST("histSecondaryMaterialHe4"), mcParticle.pt(), centrality);
-          } else if (pdgCode == -1000020040) {
+          } else if (pdgCode == -particlePdgCodes.at(5)) {
             histomc.fill(HIST("histSecondaryMaterialAntiHe4"), mcParticle.pt(), centrality);
           }
           int type = 0;
-          if (std::abs(pdgCode) == 1000020030)
+          if (std::abs(pdgCode) == particlePdgCodes.at(4))
             type = (pdgCode > 0) ? 1 : 2;
-          else if (std::abs(pdgCode) == 1000020040)
+          else if (std::abs(pdgCode) == particlePdgCodes.at(5))
             type = (pdgCode > 0) ? 3 : 4;
           histomc.fill(HIST("histAllMaterialSecondariesGen"), mcParticle.pt(), mcParticle.y(), type);
         }
@@ -514,8 +514,6 @@ struct NucleitpcPbPb {
           continue;
 
         uint16_t flags = 0;
-        int motherPdgCode = 0;
-        float motherDecRadius = -1;
         int decayType = 0;
         int particleAnti = (pdgCode > 0) ? 0 : 1;
 
@@ -528,9 +526,6 @@ struct NucleitpcPbPb {
                             std::abs(motherparticle.pdgCode())) != hfMothCodes.end()) {
                 flags |= kIsSecondaryFromWeakDecay;
                 decayType = 1;
-                motherPdgCode = motherparticle.pdgCode();
-                motherDecRadius = std::hypot(mcParticle.vx() - motherparticle.vx(),
-                                             mcParticle.vy() - motherparticle.vy());
                 break;
               }
             }
@@ -538,11 +533,6 @@ struct NucleitpcPbPb {
         } else if (mcParticle.has_mothers()) {
           flags |= kIsSecondaryFromWeakDecay;
           decayType = 1;
-          for (auto& motherparticle : mcParticle.mothers_as<aod::McParticles>()) {
-            motherPdgCode = motherparticle.pdgCode();
-            motherDecRadius = std::hypot(mcParticle.vx() - motherparticle.vx(),
-                                         mcParticle.vy() - motherparticle.vy());
-          }
         } else {
           flags |= kIsSecondaryFromMaterial;
           decayType = 2;
@@ -554,9 +544,9 @@ struct NucleitpcPbPb {
           continue;
 
         int particleType = -1;
-        if (std::abs(pdgCode) == 1000020030)
+        if (std::abs(pdgCode) == particlePdgCodes.at(4))
           particleType = he3;
-        else if (std::abs(pdgCode) == 1000020040)
+        else if (std::abs(pdgCode) == particlePdgCodes.at(5))
           particleType = he4;
 
         if (particleType >= 0) {
@@ -570,23 +560,23 @@ struct NucleitpcPbPb {
 
         if (isFromWeakDecay) {
           float centrality = mcCollInfos[idx].passedEvSel ? mcCollInfos[idx].centrality : -1.0f;
-          if (pdgCode == 1000020030) {
+          if (pdgCode == particlePdgCodes.at(4)) {
             histomc.fill(HIST("histWeakDecayPtHe3"), mcParticle.pt(), centrality);
-          } else if (pdgCode == -1000020030) {
+          } else if (pdgCode == -particlePdgCodes.at(4)) {
             histomc.fill(HIST("histWeakDecayPtAntiHe3"), mcParticle.pt(), centrality);
-          } else if (pdgCode == 1000020040) {
+          } else if (pdgCode == particlePdgCodes.at(5)) {
             histomc.fill(HIST("histWeakDecayPtHe4"), mcParticle.pt(), centrality);
-          } else if (pdgCode == -1000020040) {
+          } else if (pdgCode == -particlePdgCodes.at(5)) {
             histomc.fill(HIST("histWeakDecayPtAntiHe4"), mcParticle.pt(), centrality);
           }
         }
-        if (pdgCode == 1000020030) {
+        if (pdgCode == particlePdgCodes.at(4)) {
           histomc.fill(HIST("histPtgenHe3"), mcParticle.pt());
-        } else if (pdgCode == -1000020030) {
+        } else if (pdgCode == -particlePdgCodes.at(4)) {
           histomc.fill(HIST("histPtgenAntiHe3"), mcParticle.pt());
-        } else if (pdgCode == 1000020040) {
+        } else if (pdgCode == particlePdgCodes.at(5)) {
           histomc.fill(HIST("histPtgenHe4"), mcParticle.pt());
-        } else if (pdgCode == -1000020040) {
+        } else if (pdgCode == -particlePdgCodes.at(5)) {
           histomc.fill(HIST("histPtgenAntiHe4"), mcParticle.pt());
         }
       }
@@ -609,8 +599,8 @@ struct NucleitpcPbPb {
           continue;
 
         int pdgCode = mcParticle.pdgCode();
-        bool isHe3 = (std::abs(pdgCode) == 1000020030);
-        bool isHe4 = (std::abs(pdgCode) == 1000020040);
+        bool isHe3 = (std::abs(pdgCode) == particlePdgCodes.at(4));
+        bool isHe4 = (std::abs(pdgCode) == particlePdgCodes.at(5));
 
         if (!isHe3 && !isHe4)
           continue;
@@ -620,8 +610,6 @@ struct NucleitpcPbPb {
           continue;
 
         uint16_t flags = 0;
-        int motherPdgCode = 0;
-        float motherDecRadius = -1;
         int decayType = 0;
         int particleAnti = (pdgCode > 0) ? 0 : 1;
 
@@ -634,9 +622,6 @@ struct NucleitpcPbPb {
                             std::abs(motherparticle.pdgCode())) != hfMothCodes.end()) {
                 flags |= kIsSecondaryFromWeakDecay;
                 decayType = 1;
-                motherPdgCode = motherparticle.pdgCode();
-                motherDecRadius = std::hypot(mcParticle.vx() - motherparticle.vx(),
-                                             mcParticle.vy() - motherparticle.vy());
                 break;
               }
             }
@@ -644,11 +629,6 @@ struct NucleitpcPbPb {
         } else if (mcParticle.has_mothers()) {
           flags |= kIsSecondaryFromWeakDecay;
           decayType = 1;
-          for (auto& motherparticle : mcParticle.mothers_as<aod::McParticles>()) {
-            motherPdgCode = motherparticle.pdgCode();
-            motherDecRadius = std::hypot(mcParticle.vx() - motherparticle.vx(),
-                                         mcParticle.vy() - motherparticle.vy());
-          }
         } else {
           flags |= kIsSecondaryFromMaterial;
           decayType = 2;
@@ -660,9 +640,9 @@ struct NucleitpcPbPb {
           continue;
 
         int particleType = -1;
-        if (std::abs(pdgCode) == 1000020030)
+        if (std::abs(pdgCode) == particlePdgCodes.at(4))
           particleType = he3;
-        else if (std::abs(pdgCode) == 1000020040)
+        else if (std::abs(pdgCode) == particlePdgCodes.at(5))
           particleType = he4;
 
         if (particleType >= 0) {
@@ -713,8 +693,8 @@ struct NucleitpcPbPb {
         auto const& matchedMCParticle = particlesMC.iteratorAt(label);
 
         int pdg = matchedMCParticle.pdgCode();
-        bool isHe3 = (std::abs(pdg) == 1000020030);
-        bool isHe4 = (std::abs(pdg) == 1000020040);
+        bool isHe3 = (std::abs(pdg) == particlePdgCodes.at(4));
+        bool isHe4 = (std::abs(pdg) == particlePdgCodes.at(5));
 
         bool isMaterialSecondary = false;
         if ((isHe3 || isHe4) && !matchedMCParticle.isPhysicalPrimary()) {
@@ -727,20 +707,20 @@ struct NucleitpcPbPb {
         }
 
         if (isMaterialSecondary) {
-          if (pdg == 1000020030) {
+          if (pdg == particlePdgCodes.at(4)) {
             histomc.fill(HIST("histRecoSecondaryMaterialHe3"), track.pt(), collision.centFT0C());
-          } else if (pdg == -1000020030) {
+          } else if (pdg == -particlePdgCodes.at(4)) {
             histomc.fill(HIST("histRecoSecondaryMaterialAntiHe3"), track.pt(), collision.centFT0C());
-          } else if (pdg == 1000020040) {
+          } else if (pdg == particlePdgCodes.at(5)) {
             histomc.fill(HIST("histRecoSecondaryMaterialHe4"), track.pt(), collision.centFT0C());
-          } else if (pdg == -1000020040) {
+          } else if (pdg == -particlePdgCodes.at(5)) {
             histomc.fill(HIST("histRecoSecondaryMaterialAntiHe4"), track.pt(), collision.centFT0C());
           }
 
           int type = 0;
-          if (std::abs(pdg) == 1000020030)
+          if (std::abs(pdg) == particlePdgCodes.at(4))
             type = (pdg > 0) ? 1 : 2;
-          else if (std::abs(pdg) == 1000020040)
+          else if (std::abs(pdg) == particlePdgCodes.at(5))
             type = (pdg > 0) ? 3 : 4;
           histomc.fill(HIST("histAllMaterialSecondariesReco"), track.pt(), getRapidity(track, he3), type);
 
@@ -749,8 +729,6 @@ struct NucleitpcPbPb {
           }
         }
         uint16_t flags = 0;
-        int motherPdgCode = 0;
-        float motherDecRadius = -1;
         int decayType = 0;
         bool isFromWeakDecay = false;
 
@@ -764,9 +742,6 @@ struct NucleitpcPbPb {
                 flags |= kIsSecondaryFromWeakDecay;
                 isFromWeakDecay = true;
                 decayType = 1;
-                motherPdgCode = motherparticle.pdgCode();
-                motherDecRadius = std::hypot(matchedMCParticle.vx() - motherparticle.vx(),
-                                             matchedMCParticle.vy() - motherparticle.vy());
                 break;
               }
             }
@@ -775,11 +750,6 @@ struct NucleitpcPbPb {
           flags |= kIsSecondaryFromWeakDecay;
           isFromWeakDecay = true;
           decayType = 1;
-          for (auto& motherparticle : matchedMCParticle.mothers_as<aod::McParticles>()) {
-            motherPdgCode = motherparticle.pdgCode();
-            motherDecRadius = std::hypot(matchedMCParticle.vx() - motherparticle.vx(),
-                                         matchedMCParticle.vy() - motherparticle.vy());
-          }
         } else {
           flags |= kIsSecondaryFromMaterial;
           decayType = 2;
@@ -858,9 +828,9 @@ struct NucleitpcPbPb {
             histomc.fill(HIST("hNumerEffAcc"), i, matchedMCParticle.pt(), matchedMCParticle.y(), collision.centFT0C(), particleAnti, decayType);
           }
           if (isFromWeakDecay) {
-            if (std::abs(pdg) == 1000020030) {
+            if (std::abs(pdg) == particlePdgCodes.at(4)) {
               histomc.fill(HIST("histRecoWeakDecayPtHe3"), ptReco, collision.centFT0C());
-            } else if (std::abs(pdg) == 1000020040) {
+            } else if (std::abs(pdg) == particlePdgCodes.at(5)) {
               histomc.fill(HIST("histRecoWeakDecayPtHe4"), ptReco, collision.centFT0C());
             }
           }
