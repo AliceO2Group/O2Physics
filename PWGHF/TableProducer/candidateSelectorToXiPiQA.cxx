@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateSelectorToXiPiQA.cxx
+/// \file candidateSelectorToXiPiQa.cxx
 /// \brief Selection of Xic0 and Xicp candidates
 ///
 /// \author Jinhyun Park <jinhyun.park@cern.ch>, Pusan National University

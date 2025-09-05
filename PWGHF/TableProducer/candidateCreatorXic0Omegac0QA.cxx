@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file candidateCreatorXic0Omegac0QA.cxx
+/// \file candidateCreatorXic0Omegac0Qa.cxx
 /// \brief Reconstruction of Xic0 and Xicp candiates with hadronic decay chain
 ///
 /// \author Jinhyun Park <jinhyun.park@cern.ch>, Pusan National University
