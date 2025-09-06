@@ -229,6 +229,7 @@ struct TreeCreatorElectronMLDDA {
     Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
+    Configurable<float> cfg_max_chi2tof{"cfg_max_chi2tof", 1e+10, "max chi2 TOF"}; // distance in cm
 
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2, "min n sigma e in TPC for pc->ee"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +2, "max n sigma e in TPC for pc->ee"};
@@ -555,7 +556,7 @@ struct TreeCreatorElectronMLDDA {
   bool isElectronTight(TTrack const& track)
   {
     bool is_El_TPC = tightv0cuts.cfg_min_TPCNsigmaEl < track.tpcNSigmaEl() && track.tpcNSigmaEl() < tightv0cuts.cfg_max_TPCNsigmaEl;
-    bool is_El_TOF = track.hasTOF() ? tightv0cuts.cfg_min_TOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tightv0cuts.cfg_max_TOFNsigmaEl : true; // TOFif
+    bool is_El_TOF = track.hasTOF() ? tightv0cuts.cfg_min_TOFNsigmaEl < track.tofNSigmaEl() && track.tofNSigmaEl() < tightv0cuts.cfg_max_TOFNsigmaEl && std::fabs(track.tofChi2()) < tightv0cuts.cfg_max_chi2tof : true; // TOFif
     return is_El_TPC && is_El_TOF;
   }
 
@@ -563,7 +564,7 @@ struct TreeCreatorElectronMLDDA {
   bool isPionTight(TTrack const& track)
   {
     bool is_Pi_TPC = tightv0cuts.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < tightv0cuts.cfg_max_TPCNsigmaPi;
-    bool is_Pi_TOF = track.hasTOF() ? tightv0cuts.cfg_min_TOFNsigmaPi < track.tofNSigmaPi() && track.tofNSigmaPi() < tightv0cuts.cfg_max_TOFNsigmaPi : true; // TOFif
+    bool is_Pi_TOF = track.hasTOF() ? tightv0cuts.cfg_min_TOFNsigmaPi < track.tofNSigmaPi() && track.tofNSigmaPi() < tightv0cuts.cfg_max_TOFNsigmaPi && std::fabs(track.tofChi2()) < tightv0cuts.cfg_max_chi2tof : true; // TOFif
     return is_Pi_TPC && is_Pi_TOF;
   }
 
@@ -571,7 +572,7 @@ struct TreeCreatorElectronMLDDA {
   bool isProtonTight(TTrack const& track)
   {
     bool is_Pr_TPC = tightv0cuts.cfg_min_TPCNsigmaPr < track.tpcNSigmaPr() && track.tpcNSigmaPr() < tightv0cuts.cfg_max_TPCNsigmaPr;
-    bool is_Pr_TOF = track.hasTOF() ? tightv0cuts.cfg_min_TOFNsigmaPr < track.tofNSigmaPr() && track.tofNSigmaPr() < tightv0cuts.cfg_max_TOFNsigmaPr : true; // TOFif
+    bool is_Pr_TOF = track.hasTOF() ? tightv0cuts.cfg_min_TOFNsigmaPr < track.tofNSigmaPr() && track.tofNSigmaPr() < tightv0cuts.cfg_max_TOFNsigmaPr && std::fabs(track.tofChi2()) < tightv0cuts.cfg_max_chi2tof : true; // TOFif
     return is_Pr_TPC && is_Pr_TOF;
   }
 
@@ -580,7 +581,7 @@ struct TreeCreatorElectronMLDDA {
   {
     // only for K0S-> pi+ pi-
     bool is_Pi_TPC = tightv0cuts.cfg_min_TPCNsigmaPi < track.tpcNSigmaPi() && track.tpcNSigmaPi() < tightv0cuts.cfg_max_TPCNsigmaPi;
-    bool is_Pi_TOF = tightv0cuts.cfg_min_TOFNsigmaPi < track.tofNSigmaPi() && track.tofNSigmaPi() < tightv0cuts.cfg_max_TOFNsigmaPi; // TOFreq
+    bool is_Pi_TOF = tightv0cuts.cfg_min_TOFNsigmaPi < track.tofNSigmaPi() && track.tofNSigmaPi() < tightv0cuts.cfg_max_TOFNsigmaPi && std::fabs(track.tofChi2()) < tightv0cuts.cfg_max_chi2tof; // TOFreq
     return is_Pi_TPC && is_Pi_TOF;
   }
 
