@@ -1199,9 +1199,9 @@ struct DptDptFilterTracks {
     tpcExcluder.setCuts(pLowCut, pUpCut, nLowCut, nUpCut);
 
     /* self configure system type and data type */
-    o2::framework::LabeledArray<std::string> tmpArray = {periodsOnSystemType[0], 11, 1, {SYSTEMNAME(0), SYSTEMNAME(1), SYSTEMNAME(2), SYSTEMNAME(3), SYSTEMNAME(4), SYSTEMNAME(5), SYSTEMNAME(6), SYSTEMNAME(7), SYSTEMNAME(8), SYSTEMNAME(9), SYSTEMNAME(10)}, {"Periods separated by commas"}};
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgSystem", tmpArray, false);
-    fSystem = getSystemType(tmpArray);
+    o2::framework::LabeledArray<std::string> tmpLabeledArray = {};
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgSystemForPeriod", tmpLabeledArray, false);
+    fSystem = getSystemType(tmpLabeledArray);
     std::string tmpstr;
     getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgDataType", tmpstr, false);
     fDataType = getDataType(tmpstr);
