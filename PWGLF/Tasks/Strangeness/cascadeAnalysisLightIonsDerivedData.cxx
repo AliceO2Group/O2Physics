@@ -826,7 +826,7 @@ struct CascadeAnalysisLightIonsDerivedData {
 
   PROCESS_SWITCH(CascadeAnalysisLightIonsDerivedData, processData, "Process data", true);
 
-  void processMonteCarloRec(SimCollisions const& RecCols, CascadeMCCandidates const& fullCascades, DaughterTracks const&)
+  void processMonteCarloRec(SimCollisions const& RecCols, CascadeMCCandidates const& fullCascades, DaughterTracks const&, CascadeMCCores const&)
   {
     for (const auto& RecCol : RecCols) {
       // Fill event counter before event selection
