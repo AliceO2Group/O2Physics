@@ -140,6 +140,20 @@ static const std::string multiplicityCentralityCorrelationsFormulaBase[11][1] = 
   /* OO Run3   */ {"((180.584-0.211625*[CT0C]+0.00568101*[CT0C]*[CT0C]-20.9838*sqrt([CT0C])-2.5*(32.665+1.67341*[CT0C]+0.0113878*[CT0C]*[CT0C]-6.83271*sqrt([CT0C])-0.239428*[CT0C]*sqrt([CT0C])))<=[MNGLTRK])&&((-0.0533229+0.79235*[MNPVC]+5.0*(0.031512+0.0045874*[MNPVC]-1.06374e-05*[MNPVC]*[MNPVC]+0.407526*sqrt([MNPVC])))>[MNGLTRK])&&((-0.0533229+0.79235*[MNPVC]-5.0*(0.031512+0.0045874*[MNPVC]-1.06374e-05*[MNPVC]*[MNPVC]+0.407526*sqrt([MNPVC])))<=[MNGLTRK])"},
   /* pO Run3   */ {""}};
 
+/* helpers for the system type assignment */
+static const std::string periodsOnSystemType[11][1] = {
+  /* no system */ {""},
+  /* pp Run2   */ {""},
+  /* pPb Run2  */ {""},
+  /* Pbp Run2  */ {""},
+  /* PbPb Run2 */ {"LHC18q,LHC18r"},
+  /* XeXe Run2 */ {""},
+  /* pp Run3   */ {"LHC22o"},
+  /* PbPb Run3 */ {"LHC23zzh"},
+  /* NeNe Run3 */ {"LHC25af"},
+  /* OO Run3   */ {"LHC25ae"},
+  /* pO Run3   */ {"LHC25ad"}};
+
 //============================================================================================
 // The DptDptFilter histogram objects
 // TODO: consider registering in the histogram registry
@@ -247,6 +261,43 @@ std::vector<int> partMultNeg; // multiplicity of negative particles
 } // namespace o2::analysis::dptdptfilter
 
 using namespace dptdptfilter;
+
+/* we need this for the time being from TableHelper.h */
+/// Function to check for a specific configurable from another task in the current workflow and fetch its value. Useful for tasks that need to know the value of a configurable in another task.
+/// @param initContext initContext of the init function
+/// @param taskName name of the task to check for
+/// @param optName name of the option to check for
+/// @param value value of the option to set
+/// @param verbose if true, print debug messages
+template <>
+bool o2::common::core::getTaskOptionValue(o2::framework::InitContext& initContext, const std::string& taskName, const std::string& optName, o2::framework::LabeledArray<std::string>& value, const bool verbose)
+{
+  if (verbose) {
+    LOG(info) << "Checking for option '" << optName << "' in task '" << taskName << "'";
+  }
+  const auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
+  int deviceCounter = 0;
+  bool found = false;
+  for (auto const& device : workflows.devices) {
+    if (verbose) {
+      LOG(info) << " Device " << deviceCounter++ << " " << device.name;
+    }
+    if (device.name == taskName) { // Found the mother task
+      int optionCounter = 0;
+      for (o2::framework::ConfigParamSpec const& option : device.options) {
+        if (verbose) {
+          LOG(info) << "  Option " << optionCounter++ << " " << option.name << " of type " << static_cast<int>(option.type) << " = '" << option.defaultValue.asString() << "'";
+        }
+        if (option.name == optName) {
+          value = option.defaultValue.get<o2::framework::LabeledArray<std::string>>();
+          return true;
+        }
+      }
+      return found;
+    }
+  }
+  return false;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 // Multiplicity in principle for on the fly generated events
@@ -416,68 +467,65 @@ struct Multiplicity {
 template <typename CollisionObject, typename TrackListObject>
 inline void storeMultiplicitiesAndCentralities(CollisionObject const& collision, TrackListObject const& tracks)
 {
-  /* only do it if we are tracking the centrality / multiplicity correlations */
-  if (useCentralityMultiplicityCorrelationsExclusion) {
-    int nGlobalTracks = 0;
-    for (auto const& track : tracks) {
-      if (track.isGlobalTrack()) {
-        nGlobalTracks++;
-      }
+  int nGlobalTracks = 0;
+  for (auto const& track : tracks) {
+    if (track.isGlobalTrack()) {
+      nGlobalTracks++;
     }
-    for (CentMultCorrelationsParams ipar = CentMultCorrelationsMT0A; ipar < CentMultCorrelationsNOOFPARAMS; ++ipar) {
-      switch (ipar) {
-        case CentMultCorrelationsMT0A:
-          collisionMultiplicityCentralityObservables[ipar] = collision.multFT0A();
-          break;
-        case CentMultCorrelationsMT0C:
-          collisionMultiplicityCentralityObservables[ipar] = collision.multFT0C();
-          break;
-        case CentMultCorrelationsMT0M:
-          collisionMultiplicityCentralityObservables[ipar] = collision.multFT0M();
-          break;
-        case CentMultCorrelationsMV0A:
-          collisionMultiplicityCentralityObservables[ipar] = collision.multFV0A();
-          break;
-        case CentMultCorrelationsMV0C:
-          collisionMultiplicityCentralityObservables[ipar] = collision.multFV0C();
-          break;
-        case CentMultCorrelationsMV0M:
-          collisionMultiplicityCentralityObservables[ipar] = collision.multFV0M();
-          break;
-        case CentMultCorrelationsMNGLTRK:
-          collisionMultiplicityCentralityObservables[ipar] = nGlobalTracks;
-          break;
-        case CentMultCorrelationsMNPVC:
-          collisionMultiplicityCentralityObservables[ipar] = collision.multNTracksPV();
-          break;
-        case CentMultCorrelationsCT0A:
-          if constexpr (framework::has_type_v<aod::cent::CentFT0A, typename CollisionObject::all_columns>) {
-            collisionMultiplicityCentralityObservables[ipar] = collision.centFT0A();
-          }
-          break;
-        case CentMultCorrelationsCT0C:
-          if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>) {
-            collisionMultiplicityCentralityObservables[ipar] = collision.centFT0C();
-          }
-          break;
-        case CentMultCorrelationsCT0M:
-          if constexpr (framework::has_type_v<aod::cent::CentFT0M, typename CollisionObject::all_columns>) {
-            collisionMultiplicityCentralityObservables[ipar] = collision.centFT0M();
-          }
-          break;
-        case CentMultCorrelationsCV0A:
-          if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns>) {
-            collisionMultiplicityCentralityObservables[ipar] = collision.centFV0A();
-          }
-          break;
-        case CentMultCorrelationsCNTPV:
-          if constexpr (framework::has_type_v<aod::cent::CentNTPV, typename CollisionObject::all_columns>) {
-            collisionMultiplicityCentralityObservables[ipar] = collision.centNTPV();
-          }
-          break;
-        default:
-          break;
-      }
+  }
+  for (CentMultCorrelationsParams ipar = CentMultCorrelationsMT0A; ipar < CentMultCorrelationsNOOFPARAMS; ++ipar) {
+    switch (ipar) {
+      case CentMultCorrelationsMT0A:
+        collisionMultiplicityCentralityObservables[ipar] = collision.multFT0A();
+        break;
+      case CentMultCorrelationsMT0C:
+        collisionMultiplicityCentralityObservables[ipar] = collision.multFT0C();
+        break;
+      case CentMultCorrelationsMT0M:
+        collisionMultiplicityCentralityObservables[ipar] = collision.multFT0M();
+        break;
+      case CentMultCorrelationsMV0A:
+        collisionMultiplicityCentralityObservables[ipar] = collision.multFV0A();
+        break;
+      case CentMultCorrelationsMV0C:
+        collisionMultiplicityCentralityObservables[ipar] = collision.multFV0C();
+        break;
+      case CentMultCorrelationsMV0M:
+        collisionMultiplicityCentralityObservables[ipar] = collision.multFV0M();
+        break;
+      case CentMultCorrelationsMNGLTRK:
+        collisionMultiplicityCentralityObservables[ipar] = nGlobalTracks;
+        break;
+      case CentMultCorrelationsMNPVC:
+        collisionMultiplicityCentralityObservables[ipar] = collision.multNTracksPV();
+        break;
+      case CentMultCorrelationsCT0A:
+        if constexpr (framework::has_type_v<aod::cent::CentFT0A, typename CollisionObject::all_columns>) {
+          collisionMultiplicityCentralityObservables[ipar] = collision.centFT0A();
+        }
+        break;
+      case CentMultCorrelationsCT0C:
+        if constexpr (framework::has_type_v<aod::cent::CentFT0C, typename CollisionObject::all_columns>) {
+          collisionMultiplicityCentralityObservables[ipar] = collision.centFT0C();
+        }
+        break;
+      case CentMultCorrelationsCT0M:
+        if constexpr (framework::has_type_v<aod::cent::CentFT0M, typename CollisionObject::all_columns>) {
+          collisionMultiplicityCentralityObservables[ipar] = collision.centFT0M();
+        }
+        break;
+      case CentMultCorrelationsCV0A:
+        if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns>) {
+          collisionMultiplicityCentralityObservables[ipar] = collision.centFV0A();
+        }
+        break;
+      case CentMultCorrelationsCNTPV:
+        if constexpr (framework::has_type_v<aod::cent::CentNTPV, typename CollisionObject::all_columns>) {
+          collisionMultiplicityCentralityObservables[ipar] = collision.centNTPV();
+        }
+        break;
+      default:
+        break;
     }
   }
 }
@@ -515,7 +563,7 @@ struct DptDptFilter {
       Configurable<float> maxOccupancy{"maxOccupancy", 1e6f, "Maximum allowed occupancy. Depends on the occupancy estimation"};
     } occupancySelection;
   } cfgEventSelection;
-  Configurable<std::string> cfgSystem{"cfgSystem", "PbPb", "System: Auto, pp, PbPb, Pbp, pPb, XeXe, ppRun3, PbPbRun3. Default PbPb"};
+  Configurable<LabeledArray<std::string>> cfgSystemForPeriod{"cfgSystemForPeriod", {periodsOnSystemType[0], 11, 1, {SYSTEMNAME(0), SYSTEMNAME(1), SYSTEMNAME(2), SYSTEMNAME(3), SYSTEMNAME(4), SYSTEMNAME(5), SYSTEMNAME(6), SYSTEMNAME(7), SYSTEMNAME(8), SYSTEMNAME(9), SYSTEMNAME(10)}, {"Periods separated by commas"}}, "List of periods associated to each system type"};
   Configurable<std::string> cfgDataType{"cfgDataType", "data", "Data type: data, datanoevsel, MC, FastMC, OnTheFlyMC. Default data"};
   Configurable<std::string> cfgCentSpec{"cfgCentSpec", "00-10,10-20,20-30,30-40,40-50,50-60,60-70,70-80", "Centrality/multiplicity ranges in min-max separated by commas"};
   Configurable<float> cfgOverallMinP{"cfgOverallMinP", 0.0f, "The overall minimum momentum for the analysis. Default: 0.0"};
@@ -588,8 +636,8 @@ struct DptDptFilter {
     triggerSelectionFlags = getTriggerSelection(cfgEventSelection.triggSel.value.c_str());
     traceCollId0 = cfgTraceCollId0;
 
-    /* if the system type is not known at this time, we have to put the initialization somewhere else */
-    fSystem = getSystemType(cfgSystem.value.c_str());
+    /* get the system type */
+    fSystem = getSystemType(cfgSystemForPeriod.value);
     fLhcRun = multRunForSystemMap.at(fSystem);
     fDataType = getDataType(cfgDataType);
 
@@ -635,11 +683,11 @@ struct DptDptFilter {
       if (cfgEventSelection.fillQc) {
         /* the quality control histograms */
         for (int i = 0; i < BeforeAfterNOOFTIMES; ++i) {
-          fhMultiplicityVsCentrality[i] = new TH2F(TString::Format("MultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);Number of tracks", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
-          fhMultiplicityVsT0cMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsT0cMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0C Multiplicity;Number of tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0C), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
-          fhMultiplicityVsT0aMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsT0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0A Multiplicity;Number of tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0A), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
-          fhMultiplicityVsV0aMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsV0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;V0A Multiplicity;Number of tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceV0A), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
-          fhMultiplicityVsPvMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsPvMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;PV contributors;Number of tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
+          fhMultiplicityVsCentrality[i] = new TH2F(TString::Format("MultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);Global tracks", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
+          fhMultiplicityVsT0cMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsT0cMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0C Multiplicity;Global tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0C), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
+          fhMultiplicityVsT0aMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsT0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0A Multiplicity;Global tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0A), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
+          fhMultiplicityVsV0aMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsV0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;V0A Multiplicity;Global tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceV0A), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
+          fhMultiplicityVsPvMultiplicity[i] = new TH2F(TString::Format("MultiplicityVsPvMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;PV contributors;Global tracks", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors), DPTDPTMULTIPLICITYAXIS(MultSourceNtracks));
           fhPvMultiplicityVsCentrality[i] = new TH2F(TString::Format("PvMultiplicityVsCentrality%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;%s centrality (%%);PV contributors", beforeAfterName[i].c_str(), multestimator.data()).Data(), DPTDPTCENTRALITYAXIS, DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors));
           fhPvMultiplicityVsT0cMultiplicity[i] = new TH2F(TString::Format("PvMultiplicityVsT0cMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0C multiplicity;PV contributors", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0C), DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors));
           fhPvMultiplicityVsT0aMultiplicity[i] = new TH2F(TString::Format("PvMultiplicityVsT0aMultiplicity%s", beforeAfterSufix[i].c_str()).Data(), TString::Format("%s;T0A multiplicity;PV contributors", beforeAfterName[i].c_str()).Data(), DPTDPTMULTIPLICITYAXIS(MultSourceT0A), DPTDPTMULTIPLICITYAXIS(MultSourcePvContributors));
@@ -834,24 +882,24 @@ void DptDptFilter::processReconstructed(CollisionObject const& collision, Tracks
   /* report QC information if required */
   if (cfgEventSelection.fillQc) {
     auto fillHistograms = [&](int step) {
-      fhMultiplicityVsCentrality[step]->Fill(centormult, ftracks.size());
-      fhMultiplicityVsT0cMultiplicity[step]->Fill(collision.multFT0C(), ftracks.size());
-      fhMultiplicityVsT0aMultiplicity[step]->Fill(collision.multFT0A(), ftracks.size());
-      fhMultiplicityVsV0aMultiplicity[step]->Fill(collision.multFV0A(), ftracks.size());
-      fhMultiplicityVsPvMultiplicity[step]->Fill(collision.multNTracksPV(), ftracks.size());
-      fhPvMultiplicityVsCentrality[step]->Fill(centormult, collision.multNTracksPV());
-      fhPvMultiplicityVsT0cMultiplicity[step]->Fill(collision.multFT0C(), collision.multNTracksPV());
-      fhPvMultiplicityVsT0aMultiplicity[step]->Fill(collision.multFT0A(), collision.multNTracksPV());
-      fhPvMultiplicityVsV0aMultiplicity[step]->Fill(collision.multFV0A(), collision.multNTracksPV());
-      fhV0aMultiplicityVsCentrality[step]->Fill(centormult, collision.multFV0A());
-      fhV0aMultiplicityVsT0cMultiplicity[step]->Fill(collision.multFT0C(), collision.multFV0A());
-      fhV0aMultiplicityVsT0aMultiplicity[step]->Fill(collision.multFT0A(), collision.multFV0A());
-      fhT0cMultiplicityVsCentrality[step]->Fill(centormult, collision.multFT0C());
-      fhT0cMultiplicityVsT0aMultiplicity[step]->Fill(collision.multFT0A(), collision.multFT0C());
+      fhMultiplicityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsMNGLTRK]);
+      fhMultiplicityVsT0cMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0C], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNGLTRK]);
+      fhMultiplicityVsT0aMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0A], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNGLTRK]);
+      fhMultiplicityVsV0aMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMV0A], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNGLTRK]);
+      fhMultiplicityVsPvMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMNPVC], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNGLTRK]);
+      fhPvMultiplicityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsMNPVC]);
+      fhPvMultiplicityVsT0cMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0C], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNPVC]);
+      fhPvMultiplicityVsT0aMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0A], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNPVC]);
+      fhPvMultiplicityVsV0aMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMV0A], collisionMultiplicityCentralityObservables[CentMultCorrelationsMNPVC]);
+      fhV0aMultiplicityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsMV0A]);
+      fhV0aMultiplicityVsT0cMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0C], collisionMultiplicityCentralityObservables[CentMultCorrelationsMV0A]);
+      fhV0aMultiplicityVsT0aMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0A], collisionMultiplicityCentralityObservables[CentMultCorrelationsMV0A]);
+      fhT0cMultiplicityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0C]);
+      fhT0cMultiplicityVsT0aMultiplicity[step]->Fill(collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0A], collisionMultiplicityCentralityObservables[CentMultCorrelationsMT0C]);
       if constexpr (framework::has_type_v<aod::cent::CentFV0A, typename CollisionObject::all_columns>) {
-        fhT0CentralityVsCentrality[step]->Fill(centormult, collision.centFT0M());
-        fhV0aCentralityVsCentrality[step]->Fill(centormult, collision.centFV0A());
-        fhNtpvCentralityVsCentrality[step]->Fill(centormult, collision.centNTPV());
+        fhT0CentralityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsCT0M]);
+        fhV0aCentralityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsCV0A]);
+        fhNtpvCentralityVsCentrality[step]->Fill(centormult, collisionMultiplicityCentralityObservables[CentMultCorrelationsCNTPV]);
       }
     };
     for (int i = 0; i < BeforeAfterNOOFTIMES; ++i) {
@@ -1151,10 +1199,10 @@ struct DptDptFilterTracks {
     tpcExcluder.setCuts(pLowCut, pUpCut, nLowCut, nUpCut);
 
     /* self configure system type and data type */
-    /* if the system type is not known at this time, we have to put the initialization somewhere else */
+    o2::framework::LabeledArray<std::string> tmpArray = {periodsOnSystemType[0], 11, 1, {SYSTEMNAME(0), SYSTEMNAME(1), SYSTEMNAME(2), SYSTEMNAME(3), SYSTEMNAME(4), SYSTEMNAME(5), SYSTEMNAME(6), SYSTEMNAME(7), SYSTEMNAME(8), SYSTEMNAME(9), SYSTEMNAME(10)}, {"Periods separated by commas"}};
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgSystem", tmpArray, false);
+    fSystem = getSystemType(tmpArray);
     std::string tmpstr;
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgSystem", tmpstr, false);
-    fSystem = getSystemType(tmpstr);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgDataType", tmpstr, false);
     fDataType = getDataType(tmpstr);
 
