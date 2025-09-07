@@ -306,7 +306,7 @@ struct HfCorrelatorFlowCharmHadrons {
       auto thisCollId = coll.globalIndex();
       auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
       auto candsD0ToKPiWMl = selectedD0ToKPiWMl->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
-      if (forceCharmInCollision && candsD0ToPiKWMl.empty() && candsD0ToKPiWMl.empty()) {
+      if (forceCharmInCollision && candsD0ToPiKWMl.size() < 1 && candsD0ToKPiWMl.size() < 1) {
         continue;
       }
       if (!checkAndFillCollision(coll)) {
