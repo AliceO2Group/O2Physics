@@ -80,7 +80,7 @@ DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);     //! track TPC signal
 DECLARE_SOA_COLUMN(PackedTPCNSigmaEl, packedTpcNSigmaEl, int8_t); //! Nsigma proton
 DECLARE_SOA_COLUMN(PackedTPCNSigmaPi, packedTpcNSigmaPi, int8_t); //! Nsigma proton
 DECLARE_SOA_COLUMN(PackedTPCNSigmaKa, packedTpcNSigmaKa, int8_t); //! Nsigma proton
-DECLARE_SOA_COLUMN(PackedTPCNSigmaPr, packgedTpcNSigmaPr, int8_t); //! Nsigma proton
+DECLARE_SOA_COLUMN(PackedTPCNSigmaPr, packedTpcNSigmaPr, int8_t); //! Nsigma proton
 
 DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaEl, tpcNSigmaEl, //! unpacked TPC nsigma
                            [](int8_t nsigma_packed) -> float { return o2::aod::dautrack::packing::unpackInt8(nsigma_packed); });
