@@ -169,7 +169,7 @@ struct DerivedDataCreatorD0Calibration {
   }
 
   // main function
-  template<bool withTrackQa, typename TTrackQa>
+  template <bool withTrackQa, typename TTrackQa>
   void runDataCreation(CollisionsWEvSel const& collisions,
                        aod::TrackAssoc const& trackIndices,
                        TracksWCovExtraPid const&,
