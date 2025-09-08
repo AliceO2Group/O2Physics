@@ -726,7 +726,7 @@ struct FlowGfwTask {
       registry.fill(HIST("hEventCount"), kISGOODITSLAYERSALL);
     }
 
-    float vtxz = -999, zResmin=0.25, maxContrib=20;
+    float vtxz = -999, zResmin = 0.25, maxContrib = 20;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
       float zRes = std::sqrt(collision.covZZ());
@@ -752,7 +752,7 @@ struct FlowGfwTask {
     }
 
     // V0A T0A 5 sigma cut
-    float five=5;
+    float five = 5;
     if (cfgV0AT0A5Sigma) {
       if (std::abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > five * fT0AV0ASigma->Eval(collision.multFT0A()))
         return false;
@@ -934,7 +934,7 @@ struct FlowGfwTask {
 
       registry.fill(HIST("ZNvsZEMcoll"), aZEM1 + aZEM2, aZNA + aZNC);
 
-        // Draft notation for centrality limits
+      // Draft notation for centrality limits
       float zero = 0, five = 5, ten = 10, twenty = 20, thirty = 30;
       if (centrality >= zero && centrality <= five) {
         registry.fill(HIST("ZNvsZEMcoll05"), aZEM1 + aZEM2, aZNA + aZNC);
