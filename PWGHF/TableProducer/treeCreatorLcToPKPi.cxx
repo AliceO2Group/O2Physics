@@ -566,7 +566,7 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidate candidate instance
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
   template <typename CandType>
-  std::pair<float, float> evaluateInvariantMasses(CandType const& candidate, int candFlag)
+  std::pair<float, float> evaluateInvariantMassesDCAFitter(CandType const& candidate, int candFlag)
   {
     const float invMass = candFlag == 0 ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
     const float invMassKPi = candFlag == 0 ? hfHelper.invMassKPiPairLcToPKPi(candidate) : hfHelper.invMassKPiPairLcToPiKP(candidate);
@@ -609,7 +609,7 @@ struct HfTreeCreatorLcToPKPi {
   template <bool isMc, typename CandType>
   void fillLiteTable(CandType const& candidate, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
   {
-    auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses(candidate, candFlag);
+    auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMassesDCAFitter(candidate, candFlag);
     const float functionCt = hfHelper.ctLc(candidate);
     const float functionY = hfHelper.yLc(candidate);
 
@@ -694,7 +694,7 @@ struct HfTreeCreatorLcToPKPi {
   template <bool isMc, typename CandType>
   void fillFullTable(CandType const& candidate, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
   {
-    auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses(candidate, candFlag);
+    auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMassesDCAFitter(candidate, candFlag);
     const float functionCt = hfHelper.ctLc(candidate);
     const float functionY = hfHelper.yLc(candidate);
     const float functionE = hfHelper.eLc(candidate);
