@@ -71,7 +71,7 @@ struct LFNucleiBATask {
   Configurable<bool> enableAl{"enableAl", true, "Flag to enable alpha analysis."};
 
   Configurable<bool> enableTrackingEff{"enableTrackingEff", 0, "Flag to enable tracking efficiency hitos."};
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"}; // NOLINT
 
   // Set the triggered events skimming scheme
   struct : ConfigurableGroup {
@@ -214,6 +214,9 @@ struct LFNucleiBATask {
 
   Configurable<bool> enableCentrality{"enableCentrality", true, "Flag to enable centrality 3D histos)"};
 
+  // Weak-decay flag
+  static constexpr int kProcessWeakDecay = 4;
+
   // PDG codes and masses used in this analysis
   static constexpr int PDGPion = PDG_t::kPiPlus;
   static constexpr int PDGKaon = PDG_t::kKPlus;
@@ -231,19 +234,32 @@ struct LFNucleiBATask {
 
   // PDG of Mothers
   static constexpr int kPdgMotherlist[] = {
-    PDGProton,   // proton
-    PDGPion,     // pi+
-    PDGKaon,     // K+
-    311,         // K0
-    PDGDeuteron, // deuteron
-    PDGTriton,   // triton
-    PDGHelium,   // He-3
-    PDGAlpha,    // Alpha
-    1000130270,  // Aluminium
-    1000140280,  // Silicon
-    1000260560   // Iron
-  };
+    PDGPion,
+    PDGKaon,
+    311,
+    PDGProton,
+    PDGDeuteron,
+    PDGTriton,
+    PDGHelium,
+    PDGAlpha,
+    1000130270,
+    1000140280,
+    1000260560};
   static constexpr int kNumMotherlist = sizeof(kPdgMotherlist) / sizeof(kPdgMotherlist[0]);
+
+  static constexpr const char* kMomtherNames[kNumMotherlist] = {
+    "#pi",
+    "K+",
+    "K0",
+    "p",
+    "d",
+    "t",
+    "He3",
+    "#alpha",
+    "Al",
+    "Si",
+    "Fe"};
+
   static constexpr int kMaxNumMom = 4; // X: 0..4, overflow=5
 
   template <typename TrackType>
@@ -1146,20 +1162,22 @@ struct LFNucleiBATask {
           histos.add<TH2>("tracks/helium/dca/before/hDCAxyVsPtHeliumTrueSec", "DCAxy vs Pt (He); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
           histos.add<TH2>("tracks/helium/dca/before/hDCAxyVsPtHeliumTrueMaterial", "DCAxy vs Pt (He); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
 
-          histos.add<TH2>("tracks/helium/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother PDG", HistType::kTH2I, {{kMaxNumMom + 2, -0.5, static_cast<double>(kMaxNumMom) + 1.5}, {kNumMotherlist + 2, -1.5, static_cast<double>(kNumMotherlist) + 0.5}});
+          histos.add<TH1>("tracks/helium/dca/before/hNumMothers", "N mothers per particle; N mothers;counts", HistType::kTH1I, {{7, 1.0, 8.0}});
+          histos.add<TH3>("tracks/helium/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{kMaxNumMom + 2, -0.5, static_cast<double>(kMaxNumMom) + 1.5}, {kNumMotherlist + 2, -1.5, static_cast<double>(kNumMotherlist) + 0.5}, {200, 0.0, 8.0}});
 
-          // Fix for getting TH2 pointer
-          std::shared_ptr<TH2> hTemp = histos.get<TH2>(HIST("tracks/helium/dca/before/hMomTrueMaterial"));
-          TH2* hPDG = hTemp.get();
+          // Fix for getting TH3 pointer
+          std::shared_ptr<TH3> hTemp = histos.get<TH3>(HIST("tracks/helium/dca/before/hMomTrueMaterial"));
+          TH3* hPDG = hTemp.get();
 
           TAxis* axPDG = hPDG->GetXaxis();
           for (int i = 0; i <= kMaxNumMom; ++i) {
             axPDG->SetBinLabel(i + 1, Form("%d", i));
           }
           axPDG->SetBinLabel(kMaxNumMom + 2, ">=5");
+
           TAxis* ayPDG = hPDG->GetYaxis();
-          ayPDG->SetBinLabel(1, "-1"); // undefined
-          ayPDG->SetBinLabel(2, "0");  // other
+          ayPDG->SetBinLabel(1, "undef.");
+          ayPDG->SetBinLabel(2, "other");
           for (int i = 0; i < kNumMotherlist; ++i) {
             ayPDG->SetBinLabel(i + 3, Form("%d", kPdgMotherlist[i]));
           }
@@ -2655,7 +2673,7 @@ struct LFNucleiBATask {
         if constexpr (IsFilteredData) {
           isPhysPrim = track.isPhysicalPrimary();
           isProdByGen = track.producedByGenerator();
-          isWeakDecay = track.getProcess() == 4; // NOLINT
+          isWeakDecay = (track.getProcess() == kProcessWeakDecay);
           pdgCode = track.pdgCode();
         } else {
           if (!track.has_mcParticle()) {
@@ -2663,7 +2681,7 @@ struct LFNucleiBATask {
           }
           isPhysPrim = track.mcParticle().isPhysicalPrimary();
           isProdByGen = track.mcParticle().producedByGenerator();
-          isWeakDecay = track.mcParticle().getProcess() == 4; // NOLINT
+          isWeakDecay = (track.mcParticle().getProcess() == kProcessWeakDecay);
           pdgCode = track.mcParticle().pdgCode();
         }
 
@@ -3158,16 +3176,19 @@ struct LFNucleiBATask {
         int pdgMom = 0;
         // gen Pt
         float genPt = 0;
+        float ptMom = 0;
         // Mothers variables
         [[maybe_unused]] int firstMotherId = -1;
         [[maybe_unused]] int firstMotherPdg = -1;
-        [[maybe_unused]] int pdgList[8];
+        [[maybe_unused]] float firstMotherPt = -1.f;
+        [[maybe_unused]] int pdgMomList[8];
+        [[maybe_unused]] float ptMomList[8];
         [[maybe_unused]] int nSaved = 0;
 
         if constexpr (IsFilteredData) {
           isPhysPrim = track.isPhysicalPrimary();
           isProdByGen = track.producedByGenerator();
-          isWeakDecay = track.getProcess() == 4; // NOLINT
+          isWeakDecay = (track.getProcess() == kProcessWeakDecay);
           pdgCode = track.pdgCode();
           genPt = std::sqrt(std::pow(track.px(), 2) + std::pow(track.py(), 2));
 
@@ -3177,7 +3198,7 @@ struct LFNucleiBATask {
           }
           isPhysPrim = track.mcParticle().isPhysicalPrimary();
           isProdByGen = track.mcParticle().producedByGenerator();
-          isWeakDecay = track.mcParticle().getProcess() == 4; // NOLINT
+          isWeakDecay = (track.mcParticle().getProcess() == kProcessWeakDecay);
           pdgCode = track.mcParticle().pdgCode();
 
           // Access to MC particles mother
@@ -3186,7 +3207,7 @@ struct LFNucleiBATask {
           const int nMothers = static_cast<int>(motherIds.size());
           firstMotherId = -1;
           firstMotherPdg = -1;
-
+          firstMotherPt = -1.f;
           nSaved = 0;
 
           for (int iMom = 0; iMom < nMothers; ++iMom) {
@@ -3196,13 +3217,17 @@ struct LFNucleiBATask {
             }
             o2::aod::McParticles::iterator mother = particles.iteratorAt(motherId);
             pdgMom = mother.pdgCode();
+            ptMom = mother.pt();
 
             if (iMom == 0) {
               firstMotherId = motherId;
               firstMotherPdg = pdgMom;
+              firstMotherPt = ptMom;
             }
             if (nSaved < 8) {
-              pdgList[nSaved++] = pdgMom;
+              pdgMomList[nSaved] = pdgMom;
+              ptMomList[nSaved] = ptMom;
+              ++nSaved;
             }
           }
 
@@ -3472,21 +3497,23 @@ struct LFNucleiBATask {
                 } else {
                   histos.fill(HIST("tracks/helium/dca/before/hDCAxyVsPtHeliumTrueMaterial"), hePt, track.dcaXY());
                   if (!IsFilteredData) {
+                    histos.fill(HIST("tracks/helium/dca/before/hNumMothers"), nSaved);
                     if (nSaved > 0) {
-                      for (int i = 0; i < nSaved; ++i) {
-                        int idxComp = (i <= kMaxNumMom) ? i : (kMaxNumMom + 1);
-                        int pdgMom = pdgList[i];
-                        int yVal = -1;
+                      for (int iMom = 0; iMom < nSaved; iMom++) {
+                        int motherIndexBin = (iMom <= kMaxNumMom) ? iMom : (kMaxNumMom + 1);
+                        int pdgMom = pdgMomList[iMom];
+                        float ptMom = ptMomList[iMom];
+                        int motherSpeciesBin = -1;
                         if (pdgMom != -1) {
-                          yVal = 0;
-                          for (int j = 0; j < kNumMotherlist; ++j) {
+                          motherSpeciesBin = 0;
+                          for (int j = 0; j < kNumMotherlist; j++) {
                             if (kPdgMotherlist[j] == pdgMom) {
-                              yVal = j + 1;
+                              motherSpeciesBin = j + 1;
                               break;
                             }
                           }
                         }
-                        histos.fill(HIST("tracks/helium/dca/before/hMomTrueMaterial"), idxComp, yVal);
+                        histos.fill(HIST("tracks/helium/dca/before/hMomTrueMaterial"), motherIndexBin, motherSpeciesBin, ptMom);
                       }
                     }
                   }
@@ -4908,7 +4935,7 @@ struct LFNucleiBATask {
         if constexpr (IsFilteredData) {
           isPhysPrim = track.isPhysicalPrimary();
           isProdByGen = track.producedByGenerator();
-          isWeakDecay = track.getProcess() == 4;
+          isWeakDecay = (track.getProcess() == kProcessWeakDecay);
           pdgCode = track.pdgCode();
           isItsPassed = track.itsPassed();
           isTpcPassed = track.tpcPassed();
@@ -4920,7 +4947,7 @@ struct LFNucleiBATask {
           }
           isPhysPrim = track.mcParticle().isPhysicalPrimary();
           isProdByGen = track.mcParticle().producedByGenerator();
-          isWeakDecay = track.mcParticle().getProcess() == 4;
+          isWeakDecay = (track.mcParticle().getProcess() == kProcessWeakDecay);
           pdgCode = track.mcParticle().pdgCode();
           isItsPassed = track.passedITSNCls() &&
                         track.passedITSChi2NDF() &&
@@ -6066,7 +6093,7 @@ struct LFNucleiBATask {
 
       bool isPhysPrim = mcParticleGen.isPhysicalPrimary();
       bool isProdByGen = mcParticleGen.producedByGenerator();
-      bool isWeakDecay = mcParticleGen.getProcess() == 4;
+      bool isWeakDecay = (mcParticleGen.getProcess() == kProcessWeakDecay);
 
       if (mcParticleGen.pdgCode() == PDGPion) {
         spectraGen.fill(HIST("pion/histGenPtPion"), mcParticleGen.pt());
