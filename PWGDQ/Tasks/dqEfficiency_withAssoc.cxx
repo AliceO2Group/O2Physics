@@ -3730,6 +3730,9 @@ struct AnalysisDileptonTrack {
       // get full track info of tracks based on the index
       auto lepton1 = tracks.rawIteratorAt(dilepton.index0Id());
       auto lepton2 = tracks.rawIteratorAt(dilepton.index1Id());
+      if (!lepton1.has_reducedMCTrack() || !lepton2.has_reducedMCTrack()) {
+        continue;
+      }
       auto lepton1MC = lepton1.reducedMCTrack();
       auto lepton2MC = lepton2.reducedMCTrack();
       // Check that the dilepton has zero charge
