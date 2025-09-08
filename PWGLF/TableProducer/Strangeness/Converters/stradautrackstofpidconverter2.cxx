@@ -8,11 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -24,7 +25,7 @@ struct stradautrackstofpidconverter2 {
   void process(aod::DauTrackTOFPIDs_000 const& dauTrackTOFPIDs)
   {
     for (int ii = 0; ii < dauTrackTOFPIDs.size(); ii++) {
-      auto dauTrackTOFPID = dauTrackTOFPIDs.rawIteratorAt(ii); 
+      auto dauTrackTOFPID = dauTrackTOFPIDs.rawIteratorAt(ii);
       dautracktofpids(-1, -1, dauTrackTOFPID.tofSignal(), dauTrackTOFPID.tofEvTime(), dauTrackTOFPID.length(), 0.0f);
     }
   }
@@ -35,3 +36,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<stradautrackstofpidconverter2>(cfgc)};
 }
+ 

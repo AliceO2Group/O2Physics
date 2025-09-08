@@ -8,11 +8,12 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -24,10 +25,10 @@ struct stradautrackstpcpidconverter {
   void process(aod::DauTrackTPCPIDs_000 const& v000s)
   {
     for (int ii = 0; ii < v000s.size(); ii++) {
-      auto dauTrackTPCPID = v000s.rawIteratorAt(ii); 
-      dautrackpcpids(dauTrackTPCPID.tpcSignal(), 
+      auto dauTrackTPCPID = v000s.rawIteratorAt(ii);
+      dautrackpcpids(dauTrackTPCPID.tpcSignal(),
                      aod::dautrack::packing::packInInt8(dauTrackTPCPID.tpcNSigmaEl()),
-                     aod::dautrack::packing::packInInt8(dauTrackTPCPID.tpcNSigmaPi()), 
+                     aod::dautrack::packing::packInInt8(dauTrackTPCPID.tpcNSigmaPi()),
                      aod::dautrack::packing::packInInt8(dauTrackTPCPID.tpcNSigmaKa()),
                      aod::dautrack::packing::packInInt8(dauTrackTPCPID.tpcNSigmaPr()));
     }
@@ -39,3 +40,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<stradautrackstpcpidconverter>(cfgc)};
 }
+ 

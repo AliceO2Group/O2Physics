@@ -553,7 +553,7 @@ struct strangenesstofpid {
   }
 
   // structs to hold information
-  struct v0TofInfo {  // holds processed information regarding TOF for V0s
+  struct v0TofInfo { // holds processed information regarding TOF for V0s
     float timePositivePr = o2::aod::v0data::kNoTOFValue;
     float timePositivePi = o2::aod::v0data::kNoTOFValue;
     float timeNegativePr = o2::aod::v0data::kNoTOFValue;
@@ -574,8 +574,8 @@ struct strangenesstofpid {
     float nSigmaNegativeK0ShortPi = o2::aod::v0data::kNoTOFValue;
   };
 
-    // structs to hold information
-  struct cascTofInfo {  // holds processed information regarding TOF for Cascades
+  // structs to hold information
+  struct cascTofInfo { // holds processed information regarding TOF for Cascades
     float posFlightPi = o2::aod::cascdata::kNoTOFValue;
     float posFlightPr = o2::aod::cascdata::kNoTOFValue;
     float negFlightPi = o2::aod::cascdata::kNoTOFValue;
@@ -598,10 +598,10 @@ struct strangenesstofpid {
     float nSigmaOmKa = o2::aod::cascdata::kNoTOFValue;
   };
 
-  struct trackTofInfo {  // holds input track info
-    bool hasITS = false; 
-    bool hasTPC = false; 
-    bool hasTOF = false; 
+  struct trackTofInfo { // holds input track info
+    bool hasITS = false;
+    bool hasTPC = false;
+    bool hasTOF = false;
     int collisionId = -1;
     float tofExpMom = 0.0f;
     float tofSignal = 0.0f;
@@ -616,7 +616,7 @@ struct strangenesstofpid {
 
   // templatized process function for symmetric operation in derived and original AO2D
   /// \param collisions the collisions table (needed for de-referencing V0 and progns)
-  /// \param v0 the V0 being processed 
+  /// \param v0 the V0 being processed
   /// \param pTof the TOF information for the positive track
   /// \param nTof the TOF information for the negative track
   template <class TCollisions, typename TV0, typename TTOFInfo>
@@ -640,24 +640,24 @@ struct strangenesstofpid {
 
     //_____________________________________________________________________________________________
     // define simple checks
-    bool passesQAcuts = (v0.v0cosPA() > v0Group.qaCosPA && v0.dcaV0daughters() < v0Group.qaDCADau); 
-    bool lambdaCandidate = std::abs(v0.mLambda() - o2::constants::physics::MassLambda) < v0Group.qaMassWindow && 
-                           std::abs(pTof.tpcNSigmaPr) < v0Group.qaTPCNSigma && 
-                           std::abs(nTof.tpcNSigmaPi) < v0Group.qaTPCNSigma; 
-    bool antiLambdaCandidate = std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda) < v0Group.qaMassWindow && 
-                               std::abs(pTof.tpcNSigmaPi) < v0Group.qaTPCNSigma && 
-                               std::abs(nTof.tpcNSigmaPr) < v0Group.qaTPCNSigma; 
-    bool k0ShortCandidate = std::abs(v0.mK0Short() - o2::constants::physics::MassKaonNeutral) < v0Group.qaMassWindow && 
-                            std::abs(pTof.tpcNSigmaPi) < v0Group.qaTPCNSigma && 
-                            std::abs(nTof.tpcNSigmaPi) < v0Group.qaTPCNSigma; 
+    bool passesQAcuts = (v0.v0cosPA() > v0Group.qaCosPA && v0.dcaV0daughters() < v0Group.qaDCADau);
+    bool lambdaCandidate = std::abs(v0.mLambda() - o2::constants::physics::MassLambda) < v0Group.qaMassWindow &&
+                           std::abs(pTof.tpcNSigmaPr) < v0Group.qaTPCNSigma &&
+                           std::abs(nTof.tpcNSigmaPi) < v0Group.qaTPCNSigma;
+    bool antiLambdaCandidate = std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda) < v0Group.qaMassWindow &&
+                               std::abs(pTof.tpcNSigmaPi) < v0Group.qaTPCNSigma &&
+                               std::abs(nTof.tpcNSigmaPr) < v0Group.qaTPCNSigma;
+    bool k0ShortCandidate = std::abs(v0.mK0Short() - o2::constants::physics::MassKaonNeutral) < v0Group.qaMassWindow &&
+                            std::abs(pTof.tpcNSigmaPi) < v0Group.qaTPCNSigma &&
+                            std::abs(nTof.tpcNSigmaPi) < v0Group.qaTPCNSigma;
 
     //_____________________________________________________________________________________________
     // Actual calculation
-    if(pTof.hasTOF && pTof.hasITS){ 
+    if (pTof.hasTOF && pTof.hasITS) {
       float velocityPositivePr, velocityPositivePi, lengthPositive;
       velocityPositivePr = velocityPositivePi = lengthPositive = o2::aod::v0data::kNoTOFValue;
       // method 0: legacy standalone without use of primary particle TOF
-      if(calculationMethod.value == 0){ 
+      if (calculationMethod.value == 0) {
         velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
         velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
         lengthPositive = findInterceptLength(posTrack, d_bz);
@@ -665,55 +665,55 @@ struct strangenesstofpid {
         v0tof.timePositivePi = lengthPositive / velocityPositivePi;
       }
       // method 1: correct primary particle TOF information
-      // length -> revise by removing travel length to primary vertex 
-      // expected momentum -> kept as is for now, could correct at second stage 
+      // length -> revise by removing travel length to primary vertex
+      // expected momentum -> kept as is for now, could correct at second stage
       // use main method from TOF to calculate expected time
-      if(calculationMethod.value == 1){ 
-        if(pTof.collisionId >= 0){ 
-          auto trackCollision = collisions.rawIteratorAt(pTof.collisionId); 
+      if (calculationMethod.value == 1) {
+        if (pTof.collisionId >= 0) {
+          auto trackCollision = collisions.rawIteratorAt(pTof.collisionId);
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, posTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          if(successPropag){ 
+          if (successPropag) {
             lengthPositive = pTof.length - ltIntegral.getL();
-            v0tof.timePositivePr = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, lengthPositive, o2::constants::physics::MassProton * o2::constants::physics::MassProton); 
-            v0tof.timePositivePi = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, lengthPositive, o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged); 
+            v0tof.timePositivePr = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, lengthPositive, o2::constants::physics::MassProton * o2::constants::physics::MassProton);
+            v0tof.timePositivePi = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, lengthPositive, o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged);
           }
         }
       }
-      if(lengthPositive>0.0f){ 
+      if (lengthPositive > 0.0f) {
         v0tof.deltaTimePositiveLambdaPr = (pTof.tofSignal - pTof.tofEvTime) - (timeLambda + v0tof.timePositivePr);
         v0tof.deltaTimePositiveLambdaPi = (pTof.tofSignal - pTof.tofEvTime) - (timeLambda + v0tof.timePositivePi);
         v0tof.deltaTimePositiveK0ShortPi = (pTof.tofSignal - pTof.tofEvTime) - (timeK0Short + v0tof.timePositivePi);
 
         // de facto nsigma
-        if(nSigmaCalibLoaded){
+        if (nSigmaCalibLoaded) {
           v0tof.nSigmaPositiveLambdaPi = (v0tof.deltaTimePositiveLambdaPi - hMeanPosLaPi->Interpolate(v0.p())) / hSigmaPosLaPi->Interpolate(v0.p());
           v0tof.nSigmaPositiveLambdaPr = (v0tof.deltaTimePositiveLambdaPr - hMeanPosLaPr->Interpolate(v0.p())) / hSigmaPosLaPr->Interpolate(v0.p());
           v0tof.nSigmaPositiveK0ShortPi = (v0tof.deltaTimePositiveK0ShortPi - hMeanPosK0Pi->Interpolate(v0.p())) / hSigmaPosK0Pi->Interpolate(v0.p());
         }
 
         // do QA histograms (calibration / QC)
-        if(doQA){ 
-          if(passesQAcuts){ 
-            if(lambdaCandidate){ 
+        if (doQA) {
+          if (passesQAcuts) {
+            if (lambdaCandidate) {
               histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.p(), v0.eta(), v0tof.deltaTimePositiveLambdaPr);
             }
-            if(antiLambdaCandidate){ 
+            if (antiLambdaCandidate) {
               histos.fill(HIST("h2dDeltaTimePositiveLambdaPi"), v0.p(), v0.eta(), v0tof.deltaTimePositiveLambdaPi);
             }
-            if(k0ShortCandidate){ 
+            if (k0ShortCandidate) {
               histos.fill(HIST("h2dDeltaTimePositiveK0ShortPi"), v0.p(), v0.eta(), v0tof.deltaTimePositiveK0ShortPi);
             }
           }
         }
       }
     }
-    if(nTof.hasTOF && nTof.hasITS){ 
-      float velocityNegativePr, velocityNegativePi, lengthNegative; 
+    if (nTof.hasTOF && nTof.hasITS) {
+      float velocityNegativePr, velocityNegativePi, lengthNegative;
       velocityNegativePr = velocityNegativePi = lengthNegative = o2::aod::v0data::kNoTOFValue;
       // method 0: legacy standalone without use of primary particle TOF
-      if(calculationMethod.value == 0){ 
+      if (calculationMethod.value == 0) {
         velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
         velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
         lengthNegative = findInterceptLength(negTrack, d_bz);
@@ -721,23 +721,23 @@ struct strangenesstofpid {
         v0tof.timeNegativePi = lengthNegative / velocityNegativePi;
       }
       // method 1: correct primary particle TOF information
-      // length -> revise by removing travel length to primary vertex 
-      // expected momentum -> kept as is for now, could correct at second stage 
+      // length -> revise by removing travel length to primary vertex
+      // expected momentum -> kept as is for now, could correct at second stage
       // use main method from TOF to calculate expected time
-      if(calculationMethod.value == 1){ 
-        if(nTof.collisionId >= 0){ 
-          auto trackCollision = collisions.rawIteratorAt(nTof.collisionId); 
+      if (calculationMethod.value == 1) {
+        if (nTof.collisionId >= 0) {
+          auto trackCollision = collisions.rawIteratorAt(nTof.collisionId);
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, negTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          if(successPropag){ 
+          if (successPropag) {
             lengthNegative = nTof.length - ltIntegral.getL();
-            v0tof.timeNegativePr = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length-ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton); 
-            v0tof.timeNegativePi = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length-ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged); 
+            v0tof.timeNegativePr = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length - ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton);
+            v0tof.timeNegativePi = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length - ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged);
           }
         }
       }
-      if(lengthNegative>0.0f){
+      if (lengthNegative > 0.0f) {
         v0tof.timeNegativePr = lengthNegative / velocityNegativePr;
         v0tof.timeNegativePi = lengthNegative / velocityNegativePi;
         v0tof.deltaTimeNegativeLambdaPr = (nTof.tofSignal - nTof.tofEvTime) - (timeLambda + v0tof.timeNegativePr);
@@ -745,23 +745,22 @@ struct strangenesstofpid {
         v0tof.deltaTimeNegativeK0ShortPi = (nTof.tofSignal - nTof.tofEvTime) - (timeK0Short + v0tof.timeNegativePi);
 
         // de facto nsigma
-        if(nSigmaCalibLoaded){
+        if (nSigmaCalibLoaded) {
           v0tof.nSigmaNegativeLambdaPi = (v0tof.deltaTimeNegativeLambdaPi - hMeanNegLaPi->Interpolate(v0.p())) / hSigmaNegLaPi->Interpolate(v0.p());
           v0tof.nSigmaNegativeLambdaPr = (v0tof.deltaTimeNegativeLambdaPr - hMeanNegLaPr->Interpolate(v0.p())) / hSigmaNegLaPr->Interpolate(v0.p());
           v0tof.nSigmaNegativeK0ShortPi = (v0tof.deltaTimeNegativeK0ShortPi - hMeanNegK0Pi->Interpolate(v0.p())) / hSigmaNegK0Pi->Interpolate(v0.p());
         }
 
-
         // do QA histograms (calibration / QC)
-        if(doQA){ 
-          if(passesQAcuts){ 
-            if(lambdaCandidate){ 
+        if (doQA) {
+          if (passesQAcuts) {
+            if (lambdaCandidate) {
               histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.p(), v0.eta(), v0tof.deltaTimeNegativeLambdaPi);
             }
-            if(antiLambdaCandidate){ 
+            if (antiLambdaCandidate) {
               histos.fill(HIST("h2dDeltaTimeNegativeLambdaPr"), v0.p(), v0.eta(), v0tof.deltaTimeNegativeLambdaPr);
             }
-            if(k0ShortCandidate){ 
+            if (k0ShortCandidate) {
               histos.fill(HIST("h2dDeltaTimeNegativeK0ShortPi"), v0.p(), v0.eta(), v0tof.deltaTimeNegativeK0ShortPi);
             }
           }
@@ -793,7 +792,7 @@ struct strangenesstofpid {
     float lengthV0 = std::hypot(cascade.xlambda() - cascade.x(), cascade.ylambda() - cascade.y(), cascade.zlambda() - cascade.z());
     float lengthCascade = o2::aod::cascdata::kNoTOFValue;
 
-    // cascade length (N.B. could be simpler via trackLTIntegral, kept with legacy calculation) 
+    // cascade length (N.B. could be simpler via trackLTIntegral, kept with legacy calculation)
     const o2::math_utils::Point3D<float> collVtx{collision.posX(), collision.posY(), collision.posZ()};
     bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(collVtx, cascTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE);
     float d = -1.0f;
@@ -824,34 +823,34 @@ struct strangenesstofpid {
 
     //_____________________________________________________________________________________________
     // define simple checks
-    bool passesQAcuts = (cascade.dcaV0daughters() < cascadeGroup.qaV0DCADau && cascade.dcacascdaughters() < cascadeGroup.qaCascDCADau && cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > cascadeGroup.qaV0CosPA && cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > cascadeGroup.qaCascCosPA); 
-    bool xiMinusCandidate = cascade.sign()<0 &&
-                            std::abs(cascade.mXi() - o2::constants::physics::MassXiMinus) < cascadeGroup.qaMassWindow && 
-                            std::abs(pTof.tpcNSigmaPr) < cascadeGroup.qaTPCNSigma && 
-                            std::abs(nTof.tpcNSigmaPi) < cascadeGroup.qaTPCNSigma && 
-                            std::abs(bTof.tpcNSigmaPi) < cascadeGroup.qaTPCNSigma; 
-    bool xiPlusCandidate = cascade.sign()>0 &&
-                           std::abs(cascade.mXi() - o2::constants::physics::MassXiMinus) < cascadeGroup.qaMassWindow && 
-                           std::abs(pTof.tpcNSigmaPi) < cascadeGroup.qaTPCNSigma && 
-                           std::abs(nTof.tpcNSigmaPr) < cascadeGroup.qaTPCNSigma && 
-                           std::abs(bTof.tpcNSigmaPi) < cascadeGroup.qaTPCNSigma; 
-    bool omegaMinusCandidate = cascade.sign()<0 &&
-                               std::abs(cascade.mOmega() - o2::constants::physics::MassOmegaMinus) < cascadeGroup.qaMassWindow && 
-                               std::abs(pTof.tpcNSigmaPr) < cascadeGroup.qaTPCNSigma && 
-                               std::abs(nTof.tpcNSigmaPi) < cascadeGroup.qaTPCNSigma && 
-                               std::abs(bTof.tpcNSigmaKa) < cascadeGroup.qaTPCNSigma; 
-    bool omegaPlusCandidate = cascade.sign()>0 &&
-                              std::abs(cascade.mOmega() - o2::constants::physics::MassOmegaMinus) < cascadeGroup.qaMassWindow && 
-                              std::abs(pTof.tpcNSigmaPi) < cascadeGroup.qaTPCNSigma && 
-                              std::abs(nTof.tpcNSigmaPr) < cascadeGroup.qaTPCNSigma && 
-                              std::abs(bTof.tpcNSigmaKa) < cascadeGroup.qaTPCNSigma; 
+    bool passesQAcuts = (cascade.dcaV0daughters() < cascadeGroup.qaV0DCADau && cascade.dcacascdaughters() < cascadeGroup.qaCascDCADau && cascade.v0cosPA(collision.posX(), collision.posY(), collision.posZ()) > cascadeGroup.qaV0CosPA && cascade.casccosPA(collision.posX(), collision.posY(), collision.posZ()) > cascadeGroup.qaCascCosPA);
+    bool xiMinusCandidate = cascade.sign() < 0 &&
+                            std::abs(cascade.mXi() - o2::constants::physics::MassXiMinus) < cascadeGroup.qaMassWindow &&
+                            std::abs(pTof.tpcNSigmaPr) < cascadeGroup.qaTPCNSigma &&
+                            std::abs(nTof.tpcNSigmaPi) < cascadeGroup.qaTPCNSigma &&
+                            std::abs(bTof.tpcNSigmaPi) < cascadeGroup.qaTPCNSigma;
+    bool xiPlusCandidate = cascade.sign() > 0 &&
+                           std::abs(cascade.mXi() - o2::constants::physics::MassXiMinus) < cascadeGroup.qaMassWindow &&
+                           std::abs(pTof.tpcNSigmaPi) < cascadeGroup.qaTPCNSigma &&
+                           std::abs(nTof.tpcNSigmaPr) < cascadeGroup.qaTPCNSigma &&
+                           std::abs(bTof.tpcNSigmaPi) < cascadeGroup.qaTPCNSigma;
+    bool omegaMinusCandidate = cascade.sign() < 0 &&
+                               std::abs(cascade.mOmega() - o2::constants::physics::MassOmegaMinus) < cascadeGroup.qaMassWindow &&
+                               std::abs(pTof.tpcNSigmaPr) < cascadeGroup.qaTPCNSigma &&
+                               std::abs(nTof.tpcNSigmaPi) < cascadeGroup.qaTPCNSigma &&
+                               std::abs(bTof.tpcNSigmaKa) < cascadeGroup.qaTPCNSigma;
+    bool omegaPlusCandidate = cascade.sign() > 0 &&
+                              std::abs(cascade.mOmega() - o2::constants::physics::MassOmegaMinus) < cascadeGroup.qaMassWindow &&
+                              std::abs(pTof.tpcNSigmaPi) < cascadeGroup.qaTPCNSigma &&
+                              std::abs(nTof.tpcNSigmaPr) < cascadeGroup.qaTPCNSigma &&
+                              std::abs(bTof.tpcNSigmaKa) < cascadeGroup.qaTPCNSigma;
 
     //_____________________________________________________________________________________________
     // Actual calculation
-    if(pTof.hasTOF && pTof.hasITS){ 
+    if (pTof.hasTOF && pTof.hasITS) {
       float velocityPositivePr, velocityPositivePi, lengthPositive;
       velocityPositivePr = velocityPositivePi = lengthPositive = o2::aod::v0data::kNoTOFValue;
-      if(calculationMethod.value==0){
+      if (calculationMethod.value == 0) {
         velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
         velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
         lengthPositive = findInterceptLength(posTrack, d_bz);
@@ -859,52 +858,52 @@ struct strangenesstofpid {
         casctof.posFlightPi = lengthPositive / velocityPositivePi;
       }
       // method 1: correct primary particle TOF information
-      // length -> revise by removing travel length to primary vertex 
-      // expected momentum -> kept as is for now, could correct at second stage 
+      // length -> revise by removing travel length to primary vertex
+      // expected momentum -> kept as is for now, could correct at second stage
       // use main method from TOF to calculate expected time
-      if(calculationMethod.value == 1){ 
-        if(pTof.collisionId >= 0){ 
-          auto trackCollision = collisions.rawIteratorAt(pTof.collisionId); 
+      if (calculationMethod.value == 1) {
+        if (pTof.collisionId >= 0) {
+          auto trackCollision = collisions.rawIteratorAt(pTof.collisionId);
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, posTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          if(successPropag){ 
+          if (successPropag) {
             lengthPositive = pTof.length - ltIntegral.getL();
-            casctof.posFlightPr = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, pTof.length-ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton); 
-            casctof.posFlightPi = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, pTof.length-ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged); 
+            casctof.posFlightPr = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, pTof.length - ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton);
+            casctof.posFlightPi = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, pTof.length - ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged);
           }
         }
       }
-      if(lengthPositive>0.0f){ 
+      if (lengthPositive > 0.0f) {
         casctof.posDeltaTimeAsXiPi = (pTof.tofSignal - pTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.posFlightPi);
         casctof.posDeltaTimeAsXiPr = (pTof.tofSignal - pTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.posFlightPr);
         casctof.posDeltaTimeAsOmPi = (pTof.tofSignal - pTof.tofEvTime) - (omFlight + lambdaFlight + casctof.posFlightPi);
         casctof.posDeltaTimeAsOmPr = (pTof.tofSignal - pTof.tofEvTime) - (omFlight + lambdaFlight + casctof.posFlightPr);
 
         // de facto nsigma
-        if(nSigmaCalibLoaded){
-          if(cascade.sign()<0){
+        if (nSigmaCalibLoaded) {
+          if (cascade.sign() < 0) {
             casctof.nSigmaXiLaPr = (casctof.posDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.p())) / hSigmaPosXiPr->Interpolate(cascade.p());
             casctof.nSigmaOmLaPr = (casctof.posDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.p())) / hSigmaPosOmPr->Interpolate(cascade.p());
-          }else{
+          } else {
             casctof.nSigmaXiLaPi = (casctof.posDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.p())) / hSigmaPosXiPi->Interpolate(cascade.p());
             casctof.nSigmaOmLaPi = (casctof.posDeltaTimeAsOmPi - hMeanPosOmPi->Interpolate(cascade.p())) / hSigmaPosOmPi->Interpolate(cascade.p());
           }
         }
 
         // do QA histograms (calibration / QC)
-        if(doQA){ 
-          if(passesQAcuts){ 
-            if(xiMinusCandidate){ 
+        if (doQA) {
+          if (passesQAcuts) {
+            if (xiMinusCandidate) {
               histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.p(), cascade.eta(), casctof.posDeltaTimeAsXiPr);
             }
-            if(xiPlusCandidate){ 
+            if (xiPlusCandidate) {
               histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), casctof.posDeltaTimeAsXiPi);
             }
-            if(omegaMinusCandidate){ 
+            if (omegaMinusCandidate) {
               histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.p(), cascade.eta(), casctof.posDeltaTimeAsOmPr);
             }
-            if(omegaPlusCandidate){
+            if (omegaPlusCandidate) {
               histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.p(), cascade.eta(), casctof.posDeltaTimeAsOmPi);
             }
           }
@@ -912,11 +911,11 @@ struct strangenesstofpid {
       }
     } // end positive
 
-    if(nTof.hasTOF && nTof.hasITS){ 
-      float velocityNegativePr, velocityNegativePi, lengthNegative; 
+    if (nTof.hasTOF && nTof.hasITS) {
+      float velocityNegativePr, velocityNegativePi, lengthNegative;
       velocityNegativePr = velocityNegativePi = lengthNegative = o2::aod::v0data::kNoTOFValue;
       // method 0: legacy standalone without use of primary particle TOF
-      if(calculationMethod.value == 0){ 
+      if (calculationMethod.value == 0) {
         velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
         velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
         lengthNegative = findInterceptLength(negTrack, d_bz);
@@ -924,64 +923,64 @@ struct strangenesstofpid {
         casctof.negFlightPi = lengthNegative / velocityNegativePi;
       }
       // method 1: correct primary particle TOF information
-      // length -> revise by removing travel length to primary vertex 
-      // expected momentum -> kept as is for now, could correct at second stage 
+      // length -> revise by removing travel length to primary vertex
+      // expected momentum -> kept as is for now, could correct at second stage
       // use main method from TOF to calculate expected time
-      if(calculationMethod.value == 1){ 
-        if(nTof.collisionId >= 0){ 
-          auto trackCollision = collisions.rawIteratorAt(nTof.collisionId); 
+      if (calculationMethod.value == 1) {
+        if (nTof.collisionId >= 0) {
+          auto trackCollision = collisions.rawIteratorAt(nTof.collisionId);
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, negTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          if(successPropag){ 
+          if (successPropag) {
             lengthNegative = nTof.length - ltIntegral.getL();
-            casctof.negFlightPr = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length-ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton); 
-            casctof.negFlightPi = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length-ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged); 
+            casctof.negFlightPr = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length - ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton);
+            casctof.negFlightPi = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length - ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged);
           }
         }
       }
-      if(lengthNegative>0.0f){ 
+      if (lengthNegative > 0.0f) {
         casctof.negDeltaTimeAsXiPi = (nTof.tofSignal - nTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.negFlightPi);
         casctof.negDeltaTimeAsXiPr = (nTof.tofSignal - nTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.negFlightPr);
         casctof.negDeltaTimeAsOmPi = (nTof.tofSignal - nTof.tofEvTime) - (omFlight + lambdaFlight + casctof.negFlightPi);
         casctof.negDeltaTimeAsOmPr = (nTof.tofSignal - nTof.tofEvTime) - (omFlight + lambdaFlight + casctof.negFlightPr);
 
         // de facto nsigma
-        if(nSigmaCalibLoaded){
-          if(cascade.sign()<0){
+        if (nSigmaCalibLoaded) {
+          if (cascade.sign() < 0) {
             casctof.nSigmaXiLaPr = (casctof.negDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.p())) / hSigmaPosXiPr->Interpolate(cascade.p());
             casctof.nSigmaOmLaPr = (casctof.negDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.p())) / hSigmaPosOmPr->Interpolate(cascade.p());
-          }else{
+          } else {
             casctof.nSigmaXiLaPi = (casctof.negDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.p())) / hSigmaPosXiPi->Interpolate(cascade.p());
             casctof.nSigmaOmLaPi = (casctof.negDeltaTimeAsOmPi - hMeanPosOmPi->Interpolate(cascade.p())) / hSigmaPosOmPi->Interpolate(cascade.p());
           }
         }
 
         // do QA histograms (calibration / QC)
-        if(doQA){ 
-          if(passesQAcuts){ 
-            if(xiMinusCandidate){ 
+        if (doQA) {
+          if (passesQAcuts) {
+            if (xiMinusCandidate) {
               histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), casctof.negDeltaTimeAsXiPi);
             }
-            if(xiPlusCandidate){ 
+            if (xiPlusCandidate) {
               histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.p(), cascade.eta(), casctof.negDeltaTimeAsXiPr);
             }
-            if(omegaMinusCandidate){ 
+            if (omegaMinusCandidate) {
               histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.p(), cascade.eta(), casctof.negDeltaTimeAsOmPi);
             }
-            if(omegaPlusCandidate){
+            if (omegaPlusCandidate) {
               histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.p(), cascade.eta(), casctof.negDeltaTimeAsOmPr);
             }
           }
         }
       }
-    } //end negative
+    } // end negative
 
-    if(bTof.hasTOF && bTof.hasITS){ 
-      float velocityBachelorKa, velocityBachelorPi, lengthBachelor; 
+    if (bTof.hasTOF && bTof.hasITS) {
+      float velocityBachelorKa, velocityBachelorPi, lengthBachelor;
       velocityBachelorKa = velocityBachelorPi = lengthBachelor = o2::aod::v0data::kNoTOFValue;
       // method 0: legacy standalone without use of primary particle TOF
-      if(calculationMethod.value == 0){ 
+      if (calculationMethod.value == 0) {
         velocityBachelorPi = velocity(bachTrack.getP(), o2::constants::physics::MassPionCharged);
         velocityBachelorKa = velocity(bachTrack.getP(), o2::constants::physics::MassKaonCharged);
         lengthBachelor = findInterceptLength(bachTrack, d_bz);
@@ -989,50 +988,50 @@ struct strangenesstofpid {
         casctof.bachFlightKa = lengthBachelor / velocityBachelorKa;
       }
       // method 1: correct primary particle TOF information
-      // length -> revise by removing travel length to primary vertex 
-      // expected momentum -> kept as is for now, could correct at second stage 
+      // length -> revise by removing travel length to primary vertex
+      // expected momentum -> kept as is for now, could correct at second stage
       // use main method from TOF to calculate expected time
-      if(calculationMethod.value == 1){ 
-        if(bTof.collisionId >= 0){ 
-          auto trackCollision = collisions.rawIteratorAt(bTof.collisionId); 
+      if (calculationMethod.value == 1) {
+        if (bTof.collisionId >= 0) {
+          auto trackCollision = collisions.rawIteratorAt(bTof.collisionId);
           const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
           o2::track::TrackLTIntegral ltIntegral;
           bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, bachTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
-          if(successPropag){ 
+          if (successPropag) {
             lengthBachelor = bTof.length - ltIntegral.getL();
-            casctof.bachFlightPi = o2::framework::pid::tof::MassToExpTime(bTof.tofExpMom, bTof.length-ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged); 
-            casctof.bachFlightKa = o2::framework::pid::tof::MassToExpTime(bTof.tofExpMom, bTof.length-ltIntegral.getL(), o2::constants::physics::MassKaonCharged * o2::constants::physics::MassKaonCharged); 
+            casctof.bachFlightPi = o2::framework::pid::tof::MassToExpTime(bTof.tofExpMom, bTof.length - ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged);
+            casctof.bachFlightKa = o2::framework::pid::tof::MassToExpTime(bTof.tofExpMom, bTof.length - ltIntegral.getL(), o2::constants::physics::MassKaonCharged * o2::constants::physics::MassKaonCharged);
           }
         }
       }
-      if(lengthBachelor>0.0f){    
+      if (lengthBachelor > 0.0f) {
         casctof.bachDeltaTimeAsXiPi = (bTof.tofSignal - bTof.tofEvTime) - (xiFlight + casctof.bachFlightPi);
         casctof.bachDeltaTimeAsOmKa = (bTof.tofSignal - bTof.tofEvTime) - (omFlight + casctof.bachFlightKa);
 
         // de facto nsigma
-        if(nSigmaCalibLoaded){
-          if(cascade.sign()<0){
+        if (nSigmaCalibLoaded) {
+          if (cascade.sign() < 0) {
             casctof.nSigmaXiPi = (casctof.bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.p())) / hSigmaBachXiPi->Interpolate(cascade.p());
             casctof.nSigmaOmKa = (casctof.bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.p())) / hSigmaBachOmKa->Interpolate(cascade.p());
-          }else{
+          } else {
             casctof.nSigmaXiPi = (casctof.bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.p())) / hSigmaBachXiPi->Interpolate(cascade.p());
             casctof.nSigmaOmKa = (casctof.bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.p())) / hSigmaBachOmKa->Interpolate(cascade.p());
           }
         }
 
         // do QA histograms (calibration / QC)
-        if(doQA){ 
-          if(passesQAcuts){ 
-            if(xiMinusCandidate){ 
+        if (doQA) {
+          if (passesQAcuts) {
+            if (xiMinusCandidate) {
               histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), casctof.bachDeltaTimeAsXiPi);
             }
-            if(xiPlusCandidate){ 
+            if (xiPlusCandidate) {
               histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), casctof.bachDeltaTimeAsXiPi);
             }
-            if(omegaMinusCandidate){ 
+            if (omegaMinusCandidate) {
               histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.p(), cascade.eta(), casctof.bachDeltaTimeAsOmKa);
             }
-            if(omegaPlusCandidate){
+            if (omegaPlusCandidate) {
               histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.p(), cascade.eta(), casctof.bachDeltaTimeAsOmKa);
             }
           }
@@ -1063,30 +1062,30 @@ struct strangenesstofpid {
         auto nTra = V0.negTrack_as<TracksWithAllExtras>();
 
         pTof.collisionId = pTra.collisionId();
-        pTof.hasITS = pTra.hasITS(); 
-        pTof.hasTPC = pTra.hasTPC(); 
+        pTof.hasITS = pTra.hasITS();
+        pTof.hasTPC = pTra.hasTPC();
         pTof.hasTOF = pTra.hasTOF();
-        pTof.tofExpMom = pTra.tofExpMom(); 
-        pTof.tofEvTime = pTra.tofEvTime(); 
-        pTof.tofSignal = pTra.tofSignal(); 
+        pTof.tofExpMom = pTra.tofExpMom();
+        pTof.tofEvTime = pTra.tofEvTime();
+        pTof.tofSignal = pTra.tofSignal();
         pTof.length = pTra.length();
         pTof.tpcNSigmaPi = pTra.tpcNSigmaPi();
         pTof.tpcNSigmaPr = pTra.tpcNSigmaPr();
-        
+
         nTof.collisionId = nTra.collisionId();
-        nTof.hasITS = nTra.hasITS(); 
-        nTof.hasTPC = nTra.hasTPC(); 
+        nTof.hasITS = nTra.hasITS();
+        nTof.hasTPC = nTra.hasTPC();
         nTof.hasTOF = nTra.hasTOF();
-        nTof.tofExpMom = nTra.tofExpMom(); 
-        nTof.tofEvTime = nTra.tofEvTime(); 
-        nTof.tofSignal = nTra.tofSignal(); 
+        nTof.tofExpMom = nTra.tofExpMom();
+        nTof.tofEvTime = nTra.tofEvTime();
+        nTof.tofSignal = nTra.tofSignal();
         nTof.length = nTra.length();
         nTof.tpcNSigmaPi = nTra.tpcNSigmaPi();
         nTof.tpcNSigmaPr = nTra.tpcNSigmaPr();
 
         v0TofInfo v0tof = calculateTofInfoV0(collisions, V0.collisionId(), V0, pTof, nTof);
 
-        if(doNSigmas){ 
+        if (doNSigmas) {
           v0tofnsigmas(
             v0tof.nSigmaPositiveLambdaPr, v0tof.nSigmaNegativeLambdaPi,
             v0tof.nSigmaNegativeLambdaPr, v0tof.nSigmaPositiveLambdaPi,
@@ -1104,43 +1103,43 @@ struct strangenesstofpid {
         auto bTra = cascade.bachelor_as<TracksWithAllExtras>();
 
         pTof.collisionId = pTra.collisionId();
-        pTof.hasITS = pTra.hasITS(); 
-        pTof.hasTPC = pTra.hasTPC(); 
+        pTof.hasITS = pTra.hasITS();
+        pTof.hasTPC = pTra.hasTPC();
         pTof.hasTOF = pTra.hasTOF();
-        pTof.tofExpMom = pTra.tofExpMom(); 
-        pTof.tofEvTime = pTra.tofEvTime(); 
-        pTof.tofSignal = pTra.tofSignal(); 
+        pTof.tofExpMom = pTra.tofExpMom();
+        pTof.tofEvTime = pTra.tofEvTime();
+        pTof.tofSignal = pTra.tofSignal();
         pTof.length = pTra.length();
         pTof.tpcNSigmaPi = pTra.tpcNSigmaPi();
         pTof.tpcNSigmaPr = pTra.tpcNSigmaPr();
-        
+
         nTof.collisionId = nTra.collisionId();
-        nTof.hasITS = nTra.hasITS(); 
-        nTof.hasTPC = nTra.hasTPC(); 
+        nTof.hasITS = nTra.hasITS();
+        nTof.hasTPC = nTra.hasTPC();
         nTof.hasTOF = nTra.hasTOF();
         nTof.tofExpMom = nTra.tofExpMom();
-        nTof.tofEvTime = nTra.tofEvTime();  
-        nTof.tofSignal = nTra.tofSignal(); 
+        nTof.tofEvTime = nTra.tofEvTime();
+        nTof.tofSignal = nTra.tofSignal();
         nTof.length = nTra.length();
         nTof.tpcNSigmaPi = nTra.tpcNSigmaPi();
         nTof.tpcNSigmaPr = nTra.tpcNSigmaPr();
 
         bTof.collisionId = bTra.collisionId();
-        bTof.hasITS = bTra.hasITS(); 
-        bTof.hasTPC = bTra.hasTPC(); 
+        bTof.hasITS = bTra.hasITS();
+        bTof.hasTPC = bTra.hasTPC();
         bTof.hasTOF = bTra.hasTOF();
-        bTof.tofExpMom = bTra.tofExpMom(); 
-        bTof.tofEvTime = bTra.tofEvTime(); 
-        bTof.tofSignal = bTra.tofSignal(); 
+        bTof.tofExpMom = bTra.tofExpMom();
+        bTof.tofEvTime = bTra.tofEvTime();
+        bTof.tofSignal = bTra.tofSignal();
         bTof.length = bTra.length();
         bTof.tpcNSigmaPi = bTra.tpcNSigmaPi();
         bTof.tpcNSigmaKa = bTra.tpcNSigmaKa();
 
         cascTofInfo casctof = calculateTofInfoCascade(collisions, cascade.collisionId(), cascade, pTof, nTof, bTof);
 
-        if(doNSigmas){ 
+        if (doNSigmas) {
           casctofnsigmas(
-            casctof.nSigmaXiLaPi, casctof.nSigmaXiLaPr, casctof.nSigmaXiPi, 
+            casctof.nSigmaXiLaPi, casctof.nSigmaXiLaPr, casctof.nSigmaXiPi,
             casctof.nSigmaOmLaPi, casctof.nSigmaOmLaPr, casctof.nSigmaOmKa);
         }
       }
@@ -1149,12 +1148,12 @@ struct strangenesstofpid {
 
   void processDerivedData(soa::Join<aod::StraCollisions, aod::StraStamps> const& collisions, V0DerivedDatas const& V0s, CascDerivedDatas const& cascades, dauTracks const& dauTrackTable, aod::DauTrackTOFPIDs const& dauTrackTOFPIDs)
   {
-    // auto-determine if current or old generation of dauTrackTOFPIDs 
-    if(dauTrackTOFPIDs.size()==0){ 
-      return; 
+    // auto-determine if current or old generation of dauTrackTOFPIDs
+    if (dauTrackTOFPIDs.size() == 0) {
+      return;
     }
-    auto firstTOFPID = dauTrackTOFPIDs.rawIteratorAt(0); 
-    bool isNewTOFFOrmat = firstTOFPID.straCollisionId() < 0? false : true; 
+    auto firstTOFPID = dauTrackTOFPIDs.rawIteratorAt(0);
+    bool isNewTOFFOrmat = firstTOFPID.straCollisionId() < 0 ? false : true;
 
     // Fire up CCDB with first collision in record. If no collisions, bypass
     if (useCustomRunNumber || collisions.size() < 1) {
@@ -1167,12 +1166,12 @@ struct strangenesstofpid {
     // hold indices
     std::vector<int> tofIndices(dauTrackTable.size(), -1);
 
-    if(isNewTOFFOrmat){ 
+    if (isNewTOFFOrmat) {
       // re-index
-      for(const auto& dauTrackTOFPID : dauTrackTOFPIDs){ 
-        tofIndices[dauTrackTOFPID.dauTrackExtraId()] = dauTrackTOFPID.globalIndex(); 
+      for (const auto& dauTrackTOFPID : dauTrackTOFPIDs) {
+        tofIndices[dauTrackTOFPID.dauTrackExtraId()] = dauTrackTOFPID.globalIndex();
       }
-    }else{ 
+    } else {
       // they are actually joinable
       std::iota(tofIndices.begin(), tofIndices.end(), 0);
     }
@@ -1184,37 +1183,37 @@ struct strangenesstofpid {
         auto pTra = V0.posTrackExtra_as<dauTracks>();
         auto nTra = V0.negTrackExtra_as<dauTracks>();
 
-        pTof.hasITS = pTra.hasITS(); 
-        pTof.hasTPC = pTra.hasTPC(); 
+        pTof.hasITS = pTra.hasITS();
+        pTof.hasTPC = pTra.hasTPC();
         pTof.hasTOF = pTra.hasTOF();
         pTof.tpcNSigmaPi = pTra.tpcNSigmaPi();
         pTof.tpcNSigmaPr = pTra.tpcNSigmaPr();
-        if(tofIndices[V0.posTrackExtraId()]>=0){ 
+        if (tofIndices[V0.posTrackExtraId()] >= 0) {
           auto pTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[V0.posTrackExtraId()]);
           pTof.collisionId = pTofExt.straCollisionId();
-          pTof.tofExpMom = pTofExt.tofExpMom(); 
-          pTof.tofEvTime = pTofExt.tofEvTime(); 
-          pTof.tofSignal = pTofExt.tofSignal(); 
+          pTof.tofExpMom = pTofExt.tofExpMom();
+          pTof.tofEvTime = pTofExt.tofEvTime();
+          pTof.tofSignal = pTofExt.tofSignal();
           pTof.length = pTofExt.length();
         }
-        
-        nTof.hasITS = nTra.hasITS(); 
-        nTof.hasTPC = nTra.hasTPC(); 
+
+        nTof.hasITS = nTra.hasITS();
+        nTof.hasTPC = nTra.hasTPC();
         nTof.hasTOF = nTra.hasTOF();
         nTof.tpcNSigmaPi = nTra.tpcNSigmaPi();
         nTof.tpcNSigmaPr = nTra.tpcNSigmaPr();
-        if(tofIndices[V0.negTrackExtraId()]>=0){ 
+        if (tofIndices[V0.negTrackExtraId()] >= 0) {
           auto nTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[V0.negTrackExtraId()]);
           nTof.collisionId = nTofExt.straCollisionId();
-          nTof.tofExpMom = nTofExt.tofExpMom(); 
-          nTof.tofEvTime = nTofExt.tofEvTime(); 
-          nTof.tofSignal = nTofExt.tofSignal(); 
+          nTof.tofExpMom = nTofExt.tofExpMom();
+          nTof.tofEvTime = nTofExt.tofEvTime();
+          nTof.tofSignal = nTofExt.tofSignal();
           nTof.length = nTofExt.length();
         }
-        
+
         v0TofInfo v0tof = calculateTofInfoV0(collisions, V0.straCollisionId(), V0, pTof, nTof);
-        
-        if(doNSigmas){ 
+
+        if (doNSigmas) {
           v0tofnsigmas(
             v0tof.nSigmaPositiveLambdaPr, v0tof.nSigmaNegativeLambdaPi,
             v0tof.nSigmaNegativeLambdaPr, v0tof.nSigmaPositiveLambdaPi,
@@ -1230,54 +1229,54 @@ struct strangenesstofpid {
         auto pTra = cascade.posTrackExtra_as<dauTracks>();
         auto nTra = cascade.negTrackExtra_as<dauTracks>();
         auto bTra = cascade.bachTrackExtra_as<dauTracks>();
-        
-        pTof.hasITS = pTra.hasITS(); 
-        pTof.hasTPC = pTra.hasTPC(); 
+
+        pTof.hasITS = pTra.hasITS();
+        pTof.hasTPC = pTra.hasTPC();
         pTof.hasTOF = pTra.hasTOF();
         pTof.tpcNSigmaPi = pTra.tpcNSigmaPi();
         pTof.tpcNSigmaPr = pTra.tpcNSigmaPr();
-        if(tofIndices[cascade.posTrackExtraId()]>=0){ 
+        if (tofIndices[cascade.posTrackExtraId()] >= 0) {
           auto pTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[cascade.posTrackExtraId()]);
           pTof.collisionId = pTofExt.straCollisionId();
-          pTof.tofExpMom = pTofExt.tofExpMom(); 
-          pTof.tofEvTime = pTofExt.tofEvTime(); 
-          pTof.tofSignal = pTofExt.tofSignal(); 
+          pTof.tofExpMom = pTofExt.tofExpMom();
+          pTof.tofEvTime = pTofExt.tofEvTime();
+          pTof.tofSignal = pTofExt.tofSignal();
           pTof.length = pTofExt.length();
         }
-        
-        nTof.hasITS = nTra.hasITS(); 
-        nTof.hasTPC = nTra.hasTPC(); 
+
+        nTof.hasITS = nTra.hasITS();
+        nTof.hasTPC = nTra.hasTPC();
         nTof.hasTOF = nTra.hasTOF();
         nTof.tpcNSigmaPi = nTra.tpcNSigmaPi();
         nTof.tpcNSigmaPr = nTra.tpcNSigmaPr();
-        if(tofIndices[cascade.negTrackExtraId()]>=0){ 
+        if (tofIndices[cascade.negTrackExtraId()] >= 0) {
           auto nTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[cascade.negTrackExtraId()]);
           nTof.collisionId = nTofExt.straCollisionId();
-          nTof.tofExpMom = nTofExt.tofExpMom(); 
-          nTof.tofEvTime = nTofExt.tofEvTime(); 
-          nTof.tofSignal = nTofExt.tofSignal(); 
+          nTof.tofExpMom = nTofExt.tofExpMom();
+          nTof.tofEvTime = nTofExt.tofEvTime();
+          nTof.tofSignal = nTofExt.tofSignal();
           nTof.length = nTofExt.length();
         }
 
-        bTof.hasITS = bTra.hasITS(); 
-        bTof.hasTPC = bTra.hasTPC(); 
+        bTof.hasITS = bTra.hasITS();
+        bTof.hasTPC = bTra.hasTPC();
         bTof.hasTOF = bTra.hasTOF();
         bTof.tpcNSigmaPi = bTra.tpcNSigmaPi();
         bTof.tpcNSigmaKa = bTra.tpcNSigmaKa();
-        if(tofIndices[cascade.bachTrackExtraId()]>=0){ 
+        if (tofIndices[cascade.bachTrackExtraId()] >= 0) {
           auto bTofExt = dauTrackTOFPIDs.rawIteratorAt(tofIndices[cascade.bachTrackExtraId()]);
           bTof.collisionId = bTofExt.straCollisionId();
-          bTof.tofExpMom = bTofExt.tofExpMom(); 
-          bTof.tofEvTime = bTofExt.tofEvTime(); 
-          bTof.tofSignal = bTofExt.tofSignal(); 
+          bTof.tofExpMom = bTofExt.tofExpMom();
+          bTof.tofEvTime = bTofExt.tofEvTime();
+          bTof.tofSignal = bTofExt.tofSignal();
           bTof.length = bTofExt.length();
         }
 
         cascTofInfo casctof = calculateTofInfoCascade(collisions, cascade.straCollisionId(), cascade, pTof, nTof, bTof);
 
-        if(doNSigmas){ 
+        if (doNSigmas) {
           casctofnsigmas(
-            casctof.nSigmaXiLaPi, casctof.nSigmaXiLaPr, casctof.nSigmaXiPi, 
+            casctof.nSigmaXiLaPi, casctof.nSigmaXiLaPr, casctof.nSigmaXiPi,
             casctof.nSigmaOmLaPi, casctof.nSigmaOmLaPr, casctof.nSigmaOmKa);
         }
       }

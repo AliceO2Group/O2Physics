@@ -15,11 +15,14 @@
 #ifndef PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
 #define PWGLF_DATAMODEL_LFSTRANGENESSPIDTABLES_H_
 
-#include <cmath>
-#include "Framework/AnalysisDataModel.h"
-#include "Common/Core/RecoDecay.h"
-#include "CommonConstants/PhysicsConstants.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/AnalysisDataModel.h"
+
+#include <cmath>
 
 namespace o2::aod
 {
@@ -39,30 +42,34 @@ static constexpr float underflow_return = -100.0f;
 static constexpr float overflow_return = +100.0f;
 
 // define helper function to do packing
-int8_t packInInt8(float nSigma){
+int8_t packInInt8(float nSigma)
+{
   // calculate
-  if(nSigma<=binned_min) return underflowBin;
-  if(nSigma>=binned_max) return overflowBin;
-  if(nSigma>=0){
-    return static_cast<int8_t>((nSigma/bin_width)+0.5f);
+  if (nSigma <= binned_min)
+    return underflowBin;
+  if (nSigma >= binned_max)
+    return overflowBin;
+  if (nSigma >= 0) {
+    return static_cast<int8_t>((nSigma / bin_width) + 0.5f);
   }
   // automatic: this is the case in which nSigma < 0
-  return static_cast<int8_t>((nSigma/bin_width)-0.5f);
+  return static_cast<int8_t>((nSigma / bin_width) - 0.5f);
 }
 
 // define helper function to do unpacking
-float unpackInt8(int8_t nSigma){
-  if(nSigma == underflowBin){
+float unpackInt8(int8_t nSigma)
+{
+  if (nSigma == underflowBin) {
     return underflow_return;
   }
-  if(nSigma == overflowBin){
+  if (nSigma == overflowBin) {
     return overflow_return;
   }
-  return bin_width*nSigma;
+  return bin_width * nSigma;
 }
 
-} // end packing namespace 
-} // end dautrack namespace 
+} // namespace packing
+} // namespace dautrack
 
 namespace dautrack_legacy
 {
@@ -72,11 +79,12 @@ DECLARE_SOA_COLUMN(TPCNSigmaPi, tpcNSigmaPi, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaKa, tpcNSigmaKa, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaPr, tpcNSigmaPr, float); //! Nsigma proton
 DECLARE_SOA_COLUMN(TPCNSigmaHe, tpcNSigmaHe, float); //! Nsigma proton
-}
+} // namespace dautrack_legacy
 
-namespace dautrack{
-  // ==== COMPACT TPC INFORMATION (full size tables) ===
-DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);     //! track TPC signal
+namespace dautrack
+{
+// ==== COMPACT TPC INFORMATION (full size tables) ===
+DECLARE_SOA_COLUMN(TPCSignal, tpcSignal, float);                  //! track TPC signal
 DECLARE_SOA_COLUMN(PackedTPCNSigmaEl, packedTpcNSigmaEl, int8_t); //! Nsigma proton
 DECLARE_SOA_COLUMN(PackedTPCNSigmaPi, packedTpcNSigmaPi, int8_t); //! Nsigma proton
 DECLARE_SOA_COLUMN(PackedTPCNSigmaKa, packedTpcNSigmaKa, int8_t); //! Nsigma proton
@@ -92,7 +100,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(TPCNSigmaPr, tpcNSigmaPr, //! unpacked TPC nsigma
                            [](int8_t nsigma_packed) -> float { return o2::aod::dautrack::packing::unpackInt8(nsigma_packed); });
 
 // ==== TOF INFORMATION ===
-DECLARE_SOA_INDEX_COLUMN(DauTrackExtra, dauTrackExtra); //! point to daughter this TOF info belongs to 
+DECLARE_SOA_INDEX_COLUMN(DauTrackExtra, dauTrackExtra); //! point to daughter this TOF info belongs to
 DECLARE_SOA_INDEX_COLUMN(StraCollision, straCollision); //! point to collision associated with this track (not the V0/Casc)
 DECLARE_SOA_COLUMN(TOFSignal, tofSignal, float); //! track TOF signal
 DECLARE_SOA_COLUMN(TOFEvTime, tofEvTime, float); //! event time
@@ -132,13 +140,13 @@ DECLARE_SOA_TABLE(DauTrackTPCPIDs_000, "AOD", "DAUTRACKTPCPID", // nsigma table 
                   dautrack_legacy::TPCNSigmaPr, dautrack_legacy::TPCNSigmaHe);
 
 DECLARE_SOA_TABLE_VERSIONED(DauTrackTPCPIDs_001, "AOD", "DAUTRACKTPCPID", 1, // nsigma table (for analysis)
-                  dautrack::TPCSignal, 
-                  dautrack::PackedTPCNSigmaEl, dautrack::PackedTPCNSigmaPi, 
-                  dautrack::PackedTPCNSigmaKa, dautrack::PackedTPCNSigmaPr, 
-                  dautrack::TPCNSigmaEl<dautrack::PackedTPCNSigmaEl>, 
-                  dautrack::TPCNSigmaPi<dautrack::PackedTPCNSigmaPi>, 
-                  dautrack::TPCNSigmaKa<dautrack::PackedTPCNSigmaKa>, 
-                  dautrack::TPCNSigmaPr<dautrack::PackedTPCNSigmaPr>);
+                            dautrack::TPCSignal,
+                            dautrack::PackedTPCNSigmaEl, dautrack::PackedTPCNSigmaPi,
+                            dautrack::PackedTPCNSigmaKa, dautrack::PackedTPCNSigmaPr,
+                            dautrack::TPCNSigmaEl<dautrack::PackedTPCNSigmaEl>,
+                            dautrack::TPCNSigmaPi<dautrack::PackedTPCNSigmaPi>,
+                            dautrack::TPCNSigmaKa<dautrack::PackedTPCNSigmaKa>,
+                            dautrack::TPCNSigmaPr<dautrack::PackedTPCNSigmaPr>);
 
 using DauTrackTPCPIDs = DauTrackTPCPIDs_001; // second gen: packed Nsigma, no He
 
@@ -148,8 +156,8 @@ DECLARE_SOA_TABLE(DauTrackTOFPIDs_000, "AOD", "DAUTRACKTOFPID", // raw table (fo
 DECLARE_SOA_TABLE_VERSIONED(DauTrackTOFPIDs_001, "AOD", "DAUTRACKTOFPID", 1, // raw table (for posterior TOF calculation)
                             o2::soa::Index<>,
                             dautrack::StraCollisionId, dautrack::DauTrackExtraId,
-                            dautrack::TOFSignal, dautrack::TOFEvTime, 
-                            dautrack::Length, dautrack::TOFExpMom, 
+                            dautrack::TOFSignal, dautrack::TOFEvTime,
+                            dautrack::Length, dautrack::TOFExpMom,
                             dautrack::TOFExpTimeEl<dautrack::Length, dautrack::TOFExpMom>,
                             dautrack::TOFExpTimePi<dautrack::Length, dautrack::TOFExpMom>,
                             dautrack::TOFExpTimeKa<dautrack::Length, dautrack::TOFExpMom>,

@@ -498,63 +498,63 @@ struct strangederivedbuilder {
           }
 
           products.strangeCents(collision.centFT0M(), collision.centFT0A(),
-                       centrality, collision.centFV0A(), collision.centFT0CVariant1(),
-                       collision.centMFT(), collision.centNGlobal());
+                                centrality, collision.centFV0A(), collision.centFT0CVariant1(),
+                                collision.centMFT(), collision.centNGlobal());
           products.strangeEvSels(collision.sel8(), collision.selection_raw(),
-                        collision.multFT0A() * static_cast<float>(fillTruncationOptions.fillRawFT0A),
-                        collision.multFT0C() * static_cast<float>(fillTruncationOptions.fillRawFT0C),
-                        collision.multFV0A() * static_cast<float>(fillTruncationOptions.fillRawFV0A),
-                        collision.multFDDA() * static_cast<float>(fillTruncationOptions.fillRawFDDA),
-                        collision.multFDDC() * static_cast<float>(fillTruncationOptions.fillRawFDDC),
-                        collision.multNTracksPVeta1() * static_cast<int>(fillTruncationOptions.fillRawNTracksEta1),
-                        collision.multPVTotalContributors() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                        collision.multNTracksGlobal() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                        collision.multNTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                        collision.multAllTracksTPCOnly() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                        collision.multAllTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
-                        collision.multZNA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                        collision.multZNC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                        collision.multZEM1() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                        collision.multZEM2() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                        collision.multZPA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                        collision.multZPC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                        collision.trackOccupancyInTimeRange(),
-                        collision.ft0cOccupancyInTimeRange(),
-                        // UPC info
-                        gapSide,
-                        totalFT0AmplitudeA, totalFT0AmplitudeC, totalFV0AmplitudeA,
-                        totalFDDAmplitudeA, totalFDDAmplitudeC,
-                        energyCommonZNA, energyCommonZNC,
-                        // Collision flags
-                        collision.flags(),
-                        collision.alias_raw(),
-                        collision.rct_raw());
+                                 collision.multFT0A() * static_cast<float>(fillTruncationOptions.fillRawFT0A),
+                                 collision.multFT0C() * static_cast<float>(fillTruncationOptions.fillRawFT0C),
+                                 collision.multFV0A() * static_cast<float>(fillTruncationOptions.fillRawFV0A),
+                                 collision.multFDDA() * static_cast<float>(fillTruncationOptions.fillRawFDDA),
+                                 collision.multFDDC() * static_cast<float>(fillTruncationOptions.fillRawFDDC),
+                                 collision.multNTracksPVeta1() * static_cast<int>(fillTruncationOptions.fillRawNTracksEta1),
+                                 collision.multPVTotalContributors() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                                 collision.multNTracksGlobal() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                                 collision.multNTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                                 collision.multAllTracksTPCOnly() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                                 collision.multAllTracksITSTPC() * static_cast<int>(fillTruncationOptions.fillRawNTracksForCorrelation),
+                                 collision.multZNA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                 collision.multZNC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                 collision.multZEM1() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                 collision.multZEM2() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                 collision.multZPA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                 collision.multZPC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                 collision.trackOccupancyInTimeRange(),
+                                 collision.ft0cOccupancyInTimeRange(),
+                                 // UPC info
+                                 gapSide,
+                                 totalFT0AmplitudeA, totalFT0AmplitudeC, totalFV0AmplitudeA,
+                                 totalFDDAmplitudeA, totalFDDAmplitudeC,
+                                 energyCommonZNA, energyCommonZNC,
+                                 // Collision flags
+                                 collision.flags(),
+                                 collision.alias_raw(),
+                                 collision.rct_raw());
         } else { // We are in Run 2
           products.strangeCentsRun2(collision.centRun2V0M(), collision.centRun2V0A(),
-                           collision.centRun2SPDTracklets(), collision.centRun2SPDClusters());
+                                    collision.centRun2SPDTracklets(), collision.centRun2SPDClusters());
           products.strangeEvSelsRun2(collision.sel8(), collision.sel7(), collision.selection_raw(),
-                            collision.multFT0A() * static_cast<float>(fillTruncationOptions.fillRawFT0A),
-                            collision.multFT0C() * static_cast<float>(fillTruncationOptions.fillRawFT0C),
-                            collision.multFV0A() * static_cast<float>(fillTruncationOptions.fillRawFV0A),
-                            collision.multFV0C() * static_cast<float>(fillTruncationOptions.fillRawFV0C),
-                            collision.multFDDA() * static_cast<float>(fillTruncationOptions.fillRawFDDA),
-                            collision.multFDDC() * static_cast<float>(fillTruncationOptions.fillRawFDDC),
-                            bc.spdClustersL0() * static_cast<float>(fillTruncationOptions.fillRawSPDclsL0Run2),
-                            bc.spdClustersL1() * static_cast<float>(fillTruncationOptions.fillRawSPDclsL1Run2),
-                            collision.multNTracksPVeta1() * static_cast<int>(fillTruncationOptions.fillRawNTracksEta1),
-                            collision.multTracklets() * static_cast<int>(fillTruncationOptions.fillRawTrackletsRun2),
-                            -1, /* dummy number of PV contribs total while waiting for the multiplicity task to produce it */
-                            -1, /* dummy global track multiplicities while waiting for the multiplicity task to produce it */
-                            -1, /* dummy track multiplicities, PV contribs, no eta cut while waiting for the multiplicity task to produce it */
-                            -1, /* dummy TPConly track multiplicities, all, no eta cut while waiting for the multiplicity task to produce it */
-                            -1, /* dummy ITSTPC track multiplicities, all, no eta cut waiting for the multiplicity task to produce it */
-                            collision.multZNA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                            collision.multZNC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                            collision.multZEM1() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                            collision.multZEM2() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                            collision.multZPA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                            collision.multZPC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
-                            collision.alias_raw());
+                                     collision.multFT0A() * static_cast<float>(fillTruncationOptions.fillRawFT0A),
+                                     collision.multFT0C() * static_cast<float>(fillTruncationOptions.fillRawFT0C),
+                                     collision.multFV0A() * static_cast<float>(fillTruncationOptions.fillRawFV0A),
+                                     collision.multFV0C() * static_cast<float>(fillTruncationOptions.fillRawFV0C),
+                                     collision.multFDDA() * static_cast<float>(fillTruncationOptions.fillRawFDDA),
+                                     collision.multFDDC() * static_cast<float>(fillTruncationOptions.fillRawFDDC),
+                                     bc.spdClustersL0() * static_cast<float>(fillTruncationOptions.fillRawSPDclsL0Run2),
+                                     bc.spdClustersL1() * static_cast<float>(fillTruncationOptions.fillRawSPDclsL1Run2),
+                                     collision.multNTracksPVeta1() * static_cast<int>(fillTruncationOptions.fillRawNTracksEta1),
+                                     collision.multTracklets() * static_cast<int>(fillTruncationOptions.fillRawTrackletsRun2),
+                                     -1, /* dummy number of PV contribs total while waiting for the multiplicity task to produce it */
+                                     -1, /* dummy global track multiplicities while waiting for the multiplicity task to produce it */
+                                     -1, /* dummy track multiplicities, PV contribs, no eta cut while waiting for the multiplicity task to produce it */
+                                     -1, /* dummy TPConly track multiplicities, all, no eta cut while waiting for the multiplicity task to produce it */
+                                     -1, /* dummy ITSTPC track multiplicities, all, no eta cut waiting for the multiplicity task to produce it */
+                                     collision.multZNA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                     collision.multZNC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                     collision.multZEM1() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                     collision.multZEM2() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                     collision.multZPA() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                     collision.multZPC() * static_cast<float>(fillTruncationOptions.fillRawZDC),
+                                     collision.alias_raw());
         }
       }
       for (const auto& v0 : V0Table_thisColl)
@@ -614,12 +614,12 @@ struct strangederivedbuilder {
       }
 
       products.strangeMCColl(mccollision.posX(), mccollision.posY(), mccollision.posZ(),
-                    mccollision.impactParameter(), mccollision.eventPlaneAngle(), mccollision.generatorsID());
+                             mccollision.impactParameter(), mccollision.eventPlaneAngle(), mccollision.generatorsID());
       products.strangeMCMults(mccollision.multMCFT0A(), mccollision.multMCFT0C(),
-                     mccollision.multMCNParticlesEta05(),
-                     mccollision.multMCNParticlesEta08(),
-                     mccollision.multMCNParticlesEta10(),
-                     totalMult);
+                              mccollision.multMCNParticlesEta05(),
+                              mccollision.multMCNParticlesEta08(),
+                              mccollision.multMCNParticlesEta10(),
+                              totalMult);
     }
   }
 
@@ -802,13 +802,13 @@ struct strangederivedbuilder {
         }
 
         if constexpr (requires { tr.tpcNSigmaEl(); }) {
-          products.dauTrackTPCPIDs(tr.tpcSignal(), 
+          products.dauTrackTPCPIDs(tr.tpcSignal(),
                                    aod::dautrack::packing::packInInt8(tr.tpcNSigmaEl()),
-                                   aod::dautrack::packing::packInInt8(tr.tpcNSigmaPi()), 
+                                   aod::dautrack::packing::packInInt8(tr.tpcNSigmaPi()),
                                    aod::dautrack::packing::packInInt8(tr.tpcNSigmaKa()),
                                    aod::dautrack::packing::packInInt8(tr.tpcNSigmaPr()));
           // populate daughter-level TOF information
-          if(tr.hasTOF()){
+          if (tr.hasTOF()) {
             products.dauTrackTOFPIDs(tr.collisionId(), products.dauTrackExtras.lastIndex(), tr.tofSignal(), tr.tofEvTime(), tr.length(), tr.tofExpMom());
           }
         } else {
@@ -1045,7 +1045,7 @@ struct strangederivedbuilder {
   void processZDCSP(soa::Join<aod::Collisions, aod::SPCalibrationTables>::iterator const& collision)
   {
     products.StraZDCSP(collision.triggereventsp(),
-              collision.psiZDCA(), collision.psiZDCC(), collision.qxZDCA(), collision.qxZDCC(), collision.qyZDCA(), collision.qyZDCC());
+                       collision.psiZDCA(), collision.psiZDCC(), collision.qxZDCA(), collision.qxZDCC(), collision.qyZDCA(), collision.qyZDCC());
   }
   void processFT0MQVectors(soa::Join<aod::Collisions, aod::QvectorFT0Ms>::iterator const& collision)
   {
