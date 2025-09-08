@@ -362,7 +362,7 @@ struct HfTaskLc {
         }
       }
       if (storeProperLifetime) {
-        for (const auto& axes : std::array<std::vector<AxisSpec>*, 2>{&axesGen, &axesWithBdt}) {
+        for (const auto& axes : std::array<std::vector<AxisSpec>*, 3>{&axesWithBdt, &axesStd, &axesGen}) {
           if (!axes->empty()) {
             axes->push_back(thnAxisProperLifetime);
           }
@@ -585,6 +585,9 @@ struct HfTaskLc {
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
                 valuesToFill.push_back(occ);
               }
+              if (storeProperLifetime) {
+                valuesToFill.push_back(properLifetime);
+              }
               registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
             }
           }
@@ -610,6 +613,9 @@ struct HfTaskLc {
               std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
                 valuesToFill.push_back(occ);
+              }
+              if (storeProperLifetime) {
+                valuesToFill.push_back(properLifetime);
               }
               registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
             }
@@ -802,6 +808,9 @@ struct HfTaskLc {
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
             }
+            if (storeProperLifetime) {
+              valuesToFill.push_back(properLifetime);
+            }
             registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
           }
         }
@@ -827,6 +836,9 @@ struct HfTaskLc {
             std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors)};
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
+            }
+            if (storeProperLifetime) {
+              valuesToFill.push_back(properLifetime);
             }
             registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
           }
