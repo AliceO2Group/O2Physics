@@ -99,15 +99,15 @@ struct HfTaskOmegac0ToOmegapi {
   Preslice<Omegac0CandsMlKF> candOmegacKFMlPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
   PresliceUnsorted<CollisionsWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
-  ConfigurableAxis thnConfigAxisPromptScore{"thnConfigAxisPromptScore", {100, 0, 1}, "Prompt score"};
   ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {700, 2.4, 3.1}, "Cand. inv. mass"};
   ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {500, 0, 50}, "Cand. pT"};
   ConfigurableAxis thnConfigAxisPtB{"thnConfigAxisPtB", {500, 0, 50}, "Cand. beauty mother pT"};
   ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity"};
-  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {100, 0, 100}, "Centrality"};
   ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin"};
   ConfigurableAxis thnConfigAxisMatchFlag{"thnConfigAxisMatchFlag", {15, -7.5, 7.5}, "Cand. MC match flag"};
-  ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "PV contributors"};
+  ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Coll. num. PV contributors"};
+  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {100, 0, 100}, "Coll. centrality precentile"};
+  ConfigurableAxis thnConfigAxisPromptScore{"thnConfigAxisPromptScore", {100, 0, 1}, "Prompt score"};
   HistogramRegistry registry{"registry", {}};
 
   void init(InitContext&)
@@ -119,23 +119,29 @@ struct HfTaskOmegac0ToOmegapi {
       LOGP(fatal, "One and only one process function should be enabled at a time.");
     }
 
-    const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#Omega#pi) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisMass{thnConfigAxisMass, "Inv. mass (#Omega#pi) (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisPtB{thnConfigAxisPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
     const AxisSpec thnAxisY{thnConfigAxisY, "y"};
     const AxisSpec thnAxisOrigin{thnConfigAxisOrigin, "Origin"};
     const AxisSpec thnAxisMatchFlag{thnConfigAxisMatchFlag, "MC match flag"};
-    const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "PV contributors"};
+    const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "Number of primary vtx. contributors"};
+    const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality percentile"};
+    const AxisSpec thnAxisCentMc{thnConfigAxisCent, "Centrality percentile (from gen. MC info)"};
     const AxisSpec thnAxisPromptScore{thnConfigAxisPromptScore, "BDT score prompt"};
-    const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality"};
 
     std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt, thnAxisY};
     std::vector<AxisSpec> axesMcGen = {thnAxisPt, thnAxisPtB, thnAxisY, thnAxisOrigin};
 
-    if (doprocessDataKFParticleFT0C || doprocessDataKFParticleMlFT0C || doprocessDataKFParticleFT0M || doprocessDataKFParticleMlFT0M || doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
+    if (doprocessDataKFParticleFT0C || doprocessDataKFParticleMlFT0C || doprocessDataKFParticleFT0M || doprocessDataKFParticleMlFT0M) {
       axes.push_back(thnAxisCent);
       axes.push_back(thnConfigAxisNumPvContr);
-      axesMcGen.push_back(thnAxisCent);
+    }
+
+    if (doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
+      axes.push_back(thnAxisCentMc);
+      axes.push_back(thnConfigAxisNumPvContr);
+      axesMcGen.push_back(thnAxisCentMc);
       axesMcGen.push_back(thnConfigAxisNumPvContr);
     }
 
@@ -145,7 +151,7 @@ struct HfTaskOmegac0ToOmegapi {
 
       if (doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
         registry.add("hMcGenWithRecoColl", "Gen. #Omega_{c}^{0} from charm and beauty (associated to a reco collision)", HistType::kTHnSparseD, axesMcGen);
-        registry.add("hNumRecoCollPerMcColl", "Number of reco collisions associated to a mc collision;Num. reco. coll. per Mc coll.;", {HistType::kTH1D, {{10, -1.5, 8.5}}});
+        registry.add("hNumRecoCollPerMcColl", "Number of reco collisions associated to a mc collision;Num. reco. coll. per Mc coll.;", {HistType::kTH1D, {{10, -0.5, 9.5}}});
         registry.get<THnSparse>(HIST("hMcGenWithRecoColl"))->Sumw2();
       }
 

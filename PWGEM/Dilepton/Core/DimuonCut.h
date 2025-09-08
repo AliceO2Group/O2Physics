@@ -194,7 +194,7 @@ class DimuonCut : public TNamed
         return track.nClusters() >= mMinNClustersMCHMID;
 
       case DimuonCuts::kChi2:
-        return (track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) : track.chi2()) < mMaxChi2;
+        return track.trackType() == static_cast<uint8_t>(o2::aod::fwdtrack::ForwardTrackTypeEnum::GlobalMuonTrack) ? track.chi2() / (2.f * (track.nClusters() + track.nClustersMFT()) - 5.f) < mMaxChi2 : track.chi2() < mMaxChi2;
 
       case DimuonCuts::kMatchingChi2MCHMFT:
         return track.chi2MatchMCHMFT() < mMaxMatchingChi2MCHMFT;

@@ -24,6 +24,8 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 
+#include "Common/Core/RecoDecay.h"
+
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
@@ -298,6 +300,49 @@ struct HfTaskCharmHadronsFemtoDream {
     return invMass;
   }
 
+  template <typename Candidate, typename Track>
+  float getCharmHadronTrackMass(const Candidate& cand,
+                                const Track& trk,
+                                double trackMassHyp = o2::constants::physics::MassProton)
+  {
+
+    auto pVecProng0 = RecoDecayPtEtaPhi::pVector(cand.prong0Pt(), cand.prong0Eta(), cand.prong0Phi());
+    auto pVecProng1 = RecoDecayPtEtaPhi::pVector(cand.prong1Pt(), cand.prong1Eta(), cand.prong1Phi());
+    auto pVecProng2 = RecoDecayPtEtaPhi::pVector(cand.prong2Pt(), cand.prong2Eta(), cand.prong2Phi());
+    auto pVecTrack = RecoDecayPtEtaPhi::pVector(trk.pt(), trk.eta(), trk.phi());
+    const auto pVecCharmTrk = std::array{pVecProng0, pVecProng1, pVecProng2, pVecTrack};
+
+    std::array<double, 4> massCharmTrk{};
+
+    if (charmHadPDGCode == o2::constants::physics::Pdg::kLambdaCPlus) {
+      // Λc⁺ → p K π
+      if (cand.candidateSelFlag() == 1) {
+        massCharmTrk = {
+          o2::constants::physics::MassProton,
+          o2::constants::physics::MassKPlus,
+          o2::constants::physics::MassPiPlus,
+          trackMassHyp};
+      } else {
+        // prong0=π, prong1=K, prong2=p
+        massCharmTrk = {
+          o2::constants::physics::MassPiPlus,
+          o2::constants::physics::MassKPlus,
+          o2::constants::physics::MassProton,
+          trackMassHyp};
+      }
+    } else if (charmHadPDGCode == o2::constants::physics::Pdg::kDPlus) {
+      // D⁺ → π K π
+      massCharmTrk = {
+        o2::constants::physics::MassPiPlus,
+        o2::constants::physics::MassKPlus,
+        o2::constants::physics::MassPiPlus,
+        trackMassHyp};
+    } else {
+      return -1.f;
+    }
+    return static_cast<float>(RecoDecay::m(pVecCharmTrk, massCharmTrk));
+  }
+
   /// This function processes the same event and takes care of all the histogramming
   template <bool isMc, typename PartitionType, typename CandType, typename TableTracks, typename Collision>
   void doSameEvent(PartitionType& sliceTrk1, CandType& sliceCharmHad, TableTracks const& parts, Collision const& col)
@@ -323,7 +368,6 @@ struct HfTaskCharmHadronsFemtoDream {
       if (kstar > highkstarCut) {
         continue;
       }
-
       float invMass = getCharmHadronMass(p2);
 
       if (invMass < charmHadMinInvMass || invMass > charmHadMaxInvMass) {
@@ -333,6 +377,8 @@ struct HfTaskCharmHadronsFemtoDream {
       if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
         continue;
       }
+
+      float deltaInvMassPair = getCharmHadronTrackMass(p2, p1, o2::constants::physics::MassProton) - invMass;
 
       // proton track charge
       float chargeTrack = 0.;
@@ -372,6 +418,7 @@ struct HfTaskCharmHadronsFemtoDream {
         col.multV0M(),
         p2.charge(),
         pairSign,
+        deltaInvMassPair,
         processType,
         charmHadMc,
         originType);
@@ -427,6 +474,9 @@ struct HfTaskCharmHadronsFemtoDream {
         if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
           continue;
         }
+
+        float deltaInvMassPair = getCharmHadronTrackMass(p2, p1, o2::constants::physics::MassProton) - invMass;
+
         // proton track charge
         float chargeTrack = 0.;
         if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
@@ -462,6 +512,7 @@ struct HfTaskCharmHadronsFemtoDream {
           collision1.multV0M(),
           p2.charge(),
           pairSign,
+          deltaInvMassPair,
           processType,
           charmHadMc,
           originType);
