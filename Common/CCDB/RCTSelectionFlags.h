@@ -19,14 +19,12 @@
 
 #include <CommonUtils/EnumFlags.h>
 
-#include <TMath.h>
-
-#include <Rtypes.h>
-
 #include <algorithm>
+#include <concepts>
+#include <cstdint>
+#include <initializer_list>
 #include <stdexcept>
 #include <string>
-#include <vector>
 
 namespace o2::aod::rctsel
 {

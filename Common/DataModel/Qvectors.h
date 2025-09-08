@@ -21,8 +21,9 @@
 #ifndef COMMON_DATAMODEL_QVECTORS_H_
 #define COMMON_DATAMODEL_QVECTORS_H_
 
+#include <Framework/AnalysisDataModel.h>
+
 #include <vector>
-#include "Framework/AnalysisDataModel.h"
 
 namespace o2::aod
 {

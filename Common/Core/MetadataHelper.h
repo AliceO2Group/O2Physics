@@ -16,7 +16,7 @@
 #ifndef COMMON_CORE_METADATAHELPER_H_
 #define COMMON_CORE_METADATAHELPER_H_
 
-#include "Framework/ConfigContext.h"
+#include <Framework/ConfigContext.h>
 
 #include <map>
 #include <string>

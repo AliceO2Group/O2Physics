@@ -13,10 +13,19 @@
 /// \author
 /// \since
 
-#include "Framework/ConfigParamSpec.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigParamSpec.h>
+#include <Framework/Variant.h>
+
+#include <TH1.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
+using namespace o2::framework::expressions;
 
 // custom configurable for switching between run2 and run3 selection types
 void customize(std::vector<ConfigParamSpec>& workflowOptions)
@@ -25,9 +34,7 @@ void customize(std::vector<ConfigParamSpec>& workflowOptions)
   // workflowOptions.push_back(ConfigParamSpec{"isMC", VariantType::Bool, false, {"Check also MC tables if set"}});
 }
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-using namespace o2::framework::expressions;
+#include <Framework/runDataProcessing.h>
 
 template <typename Table>
 struct LoadTable {

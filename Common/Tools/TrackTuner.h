@@ -18,35 +18,28 @@
 #ifndef COMMON_TOOLS_TRACKTUNER_H_
 #define COMMON_TOOLS_TRACKTUNER_H_
 
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
 #include <CCDB/BasicCCDBManager.h>
 #include <CCDB/CcdbApi.h>
-#include <CommonConstants/GeomConstants.h>
-#include <CommonUtils/NameConf.h>
-#include <DataFormatsCalibration/MeanVertexObject.h>
-#include <DataFormatsParameters/GRPMagField.h>
-#include <DetectorsBase/GeometryManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <DataFormatsParameters/GRPMagField.h> // FIXME: remove
 #include <DetectorsBase/Propagator.h>
 #include <Framework/AnalysisDataModel.h>
-#include <Framework/AnalysisTask.h>
 #include <Framework/Configurable.h>
-#include <Framework/HistogramRegistry.h>
-#include <Framework/RunningWorkflowInfo.h>
 #include <Framework/runDataProcessing.h>
-#include <ReconstructionDataFormats/DCA.h>
-#include <ReconstructionDataFormats/Track.h>
+#include <ReconstructionDataFormats/Vertex.h>
 
+#include <TDirectory.h>
+#include <TFile.h>
 #include <TGraphErrors.h>
-#include <TList.h>
+#include <TObject.h>
 
 #include <fmt/core.h>
+#include <fmt/format.h>
 
 #include <algorithm>
+#include <cstdint>
 #include <map>
 #include <memory>
-#include <numbers>
 #include <string>
 #include <utility>
 #include <vector>

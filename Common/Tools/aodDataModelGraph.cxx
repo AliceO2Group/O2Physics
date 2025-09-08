@@ -9,19 +9,23 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <fmt/printf.h>
-#include <utility>
-#include <string>
-#include <cstdio>
-#include "Framework/AnalysisDataModel.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponseTPC.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "PWGJE/DataModel/Jet.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/AnalysisDataModel.h>
+
+#include <fmt/printf.h>
+
+#include <cstdio>
+#include <string>
+#include <utility>
 
 using namespace o2::framework;
 using namespace o2::aod;

@@ -30,10 +30,18 @@
 #include <TF1.h>
 #include <TFile.h>
 #include <TFitResult.h>
-#include <TList.h>
+#include <TFitResultPtr.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
+#include <TMathBase.h>
+#include <TNamed.h>
 #include <TProfile.h>
 #include <TStopwatch.h>
 #include <TVirtualFitter.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 #include <iostream> // FIXME
 

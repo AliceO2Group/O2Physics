@@ -13,15 +13,12 @@
 /// \brief
 /// \author ALICE
 
-#ifndef COMMON_TOOLS_EVENTSELECTIONTOOLS_H_
-#define COMMON_TOOLS_EVENTSELECTIONTOOLS_H_
-
-#define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
-#define bitcheck64(var, nbit) ((var) & (static_cast<uint64_t>(1) << (nbit)))
+#ifndef COMMON_TOOLS_EVENTSELECTIONMODULE_H_
+#define COMMON_TOOLS_EVENTSELECTIONMODULE_H_
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "Common/CCDB/TriggerAliases.h"
-#include "Common/Core/MetadataHelper.h"
 #include "Common/Core/TableHelper.h"
 #include "Common/DataModel/EventSelection.h"
 
@@ -30,24 +27,39 @@
 #include <DataFormatsCTP/Configuration.h>
 #include <DataFormatsCTP/Scalers.h>
 #include <DataFormatsFT0/Digit.h>
-#include <DataFormatsITSMFT/NoiseMap.h> // missing include in TimeDeadMap.h
 #include <DataFormatsITSMFT/TimeDeadMap.h>
 #include <DataFormatsParameters/AggregatedRunInfo.h>
-#include <DataFormatsParameters/GRPECSObject.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
 #include <ITSMFTBase/DPLAlpideParam.h>
 #include <ITSMFTReconstruction/ChipMappingITS.h>
 
-#include <array>
+#include <TH1.h>
+#include <TH2.h>
+#include <TMath.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <algorithm>
+#include <bitset>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
+#include <iterator>
 #include <limits>
 #include <map>
-#include <memory>
 #include <string>
+#include <utility>
 #include <vector>
+
+#define bitcheck(var, nbit) ((var) & (static_cast<uint32_t>(1) << (nbit)))
+#define bitcheck64(var, nbit) ((var) & (static_cast<uint64_t>(1) << (nbit)))
 
 //__________________________________________
 // MultModule
@@ -1802,4 +1814,4 @@ class LumiModule
 } // namespace common
 } // namespace o2
 
-#endif // COMMON_TOOLS_EVENTSELECTIONTOOLS_H_
+#endif // COMMON_TOOLS_EVENTSELECTIONMODULE_H_
