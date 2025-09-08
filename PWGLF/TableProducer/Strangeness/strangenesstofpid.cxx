@@ -654,12 +654,34 @@ struct strangenesstofpid {
     //_____________________________________________________________________________________________
     // Actual calculation
     if(pTof.hasTOF && pTof.hasITS){ 
-      float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
-      float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
-      float lengthPositive = findInterceptLength(posTrack, d_bz);
-      if(lengthPositive>0.0f){ 
+      float velocityPositivePr, velocityPositivePi, lengthPositive;
+      velocityPositivePr = velocityPositivePi = lengthPositive = o2::aod::v0data::kNoTOFValue;
+      // method 0: legacy standalone without use of primary particle TOF
+      if(calculationMethod.value == 0){ 
+        velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
+        velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
+        lengthPositive = findInterceptLength(posTrack, d_bz);
         v0tof.timePositivePr = lengthPositive / velocityPositivePr;
         v0tof.timePositivePi = lengthPositive / velocityPositivePi;
+      }
+      // method 1: correct primary particle TOF information
+      // length -> revise by removing travel length to primary vertex 
+      // expected momentum -> kept as is for now, could correct at second stage 
+      // use main method from TOF to calculate expected time
+      if(calculationMethod.value == 1){ 
+        if(pTof.collisionId >= 0){ 
+          auto trackCollision = collisions.rawIteratorAt(pTof.collisionId); 
+          const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
+          o2::track::TrackLTIntegral ltIntegral;
+          bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, posTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
+          if(successPropag){ 
+            lengthPositive = pTof.length - ltIntegral.getL();
+            v0tof.timePositivePr = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, lengthPositive, o2::constants::physics::MassProton * o2::constants::physics::MassProton); 
+            v0tof.timePositivePi = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, lengthPositive, o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged); 
+          }
+        }
+      }
+      if(lengthPositive>0.0f){ 
         v0tof.deltaTimePositiveLambdaPr = (pTof.tofSignal - pTof.tofEvTime) - (timeLambda + v0tof.timePositivePr);
         v0tof.deltaTimePositiveLambdaPi = (pTof.tofSignal - pTof.tofEvTime) - (timeLambda + v0tof.timePositivePi);
         v0tof.deltaTimePositiveK0ShortPi = (pTof.tofSignal - pTof.tofEvTime) - (timeK0Short + v0tof.timePositivePi);
@@ -688,9 +710,33 @@ struct strangenesstofpid {
       }
     }
     if(nTof.hasTOF && nTof.hasITS){ 
-      float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
-      float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
-      float lengthNegative = findInterceptLength(negTrack, d_bz);
+      float velocityNegativePr, velocityNegativePi, lengthNegative; 
+      velocityNegativePr = velocityNegativePi = lengthNegative = o2::aod::v0data::kNoTOFValue;
+      // method 0: legacy standalone without use of primary particle TOF
+      if(calculationMethod.value == 0){ 
+        velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
+        velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
+        lengthNegative = findInterceptLength(negTrack, d_bz);
+        v0tof.timeNegativePr = lengthNegative / velocityNegativePr;
+        v0tof.timeNegativePi = lengthNegative / velocityNegativePi;
+      }
+      // method 1: correct primary particle TOF information
+      // length -> revise by removing travel length to primary vertex 
+      // expected momentum -> kept as is for now, could correct at second stage 
+      // use main method from TOF to calculate expected time
+      if(calculationMethod.value == 1){ 
+        if(nTof.collisionId >= 0){ 
+          auto trackCollision = collisions.rawIteratorAt(nTof.collisionId); 
+          const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
+          o2::track::TrackLTIntegral ltIntegral;
+          bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, negTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
+          if(successPropag){ 
+            lengthNegative = nTof.length - ltIntegral.getL();
+            v0tof.timeNegativePr = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length-ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton); 
+            v0tof.timeNegativePi = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length-ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged); 
+          }
+        }
+      }
       if(lengthNegative>0.0f){
         v0tof.timeNegativePr = lengthNegative / velocityNegativePr;
         v0tof.timeNegativePi = lengthNegative / velocityNegativePi;
@@ -803,12 +849,33 @@ struct strangenesstofpid {
     //_____________________________________________________________________________________________
     // Actual calculation
     if(pTof.hasTOF && pTof.hasITS){ 
-      float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
-      float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
-      float lengthPositive = findInterceptLength(posTrack, d_bz);
-      if(lengthPositive>0.0f){ 
+      float velocityPositivePr, velocityPositivePi, lengthPositive;
+      velocityPositivePr = velocityPositivePi = lengthPositive = o2::aod::v0data::kNoTOFValue;
+      if(calculationMethod.value==0){
+        velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
+        velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
+        lengthPositive = findInterceptLength(posTrack, d_bz);
         casctof.posFlightPr = lengthPositive / velocityPositivePr;
         casctof.posFlightPi = lengthPositive / velocityPositivePi;
+      }
+      // method 1: correct primary particle TOF information
+      // length -> revise by removing travel length to primary vertex 
+      // expected momentum -> kept as is for now, could correct at second stage 
+      // use main method from TOF to calculate expected time
+      if(calculationMethod.value == 1){ 
+        if(pTof.collisionId >= 0){ 
+          auto trackCollision = collisions.rawIteratorAt(pTof.collisionId); 
+          const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
+          o2::track::TrackLTIntegral ltIntegral;
+          bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, posTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
+          if(successPropag){ 
+            lengthPositive = pTof.length - ltIntegral.getL();
+            casctof.posFlightPr = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, pTof.length-ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton); 
+            casctof.posFlightPi = o2::framework::pid::tof::MassToExpTime(pTof.tofExpMom, pTof.length-ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged); 
+          }
+        }
+      }
+      if(lengthPositive>0.0f){ 
         casctof.posDeltaTimeAsXiPi = (pTof.tofSignal - pTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.posFlightPi);
         casctof.posDeltaTimeAsXiPr = (pTof.tofSignal - pTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.posFlightPr);
         casctof.posDeltaTimeAsOmPi = (pTof.tofSignal - pTof.tofEvTime) - (omFlight + lambdaFlight + casctof.posFlightPi);
@@ -846,18 +913,38 @@ struct strangenesstofpid {
     } // end positive
 
     if(nTof.hasTOF && nTof.hasITS){ 
-      float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
-      float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
-      float lengthNegative = findInterceptLength(negTrack, d_bz);
-      if(lengthNegative>0.0f){ 
+      float velocityNegativePr, velocityNegativePi, lengthNegative; 
+      velocityNegativePr = velocityNegativePi = lengthNegative = o2::aod::v0data::kNoTOFValue;
+      // method 0: legacy standalone without use of primary particle TOF
+      if(calculationMethod.value == 0){ 
+        velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
+        velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
+        lengthNegative = findInterceptLength(negTrack, d_bz);
         casctof.negFlightPr = lengthNegative / velocityNegativePr;
         casctof.negFlightPi = lengthNegative / velocityNegativePi;
+      }
+      // method 1: correct primary particle TOF information
+      // length -> revise by removing travel length to primary vertex 
+      // expected momentum -> kept as is for now, could correct at second stage 
+      // use main method from TOF to calculate expected time
+      if(calculationMethod.value == 1){ 
+        if(nTof.collisionId >= 0){ 
+          auto trackCollision = collisions.rawIteratorAt(nTof.collisionId); 
+          const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
+          o2::track::TrackLTIntegral ltIntegral;
+          bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, negTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
+          if(successPropag){ 
+            lengthNegative = nTof.length - ltIntegral.getL();
+            casctof.negFlightPr = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length-ltIntegral.getL(), o2::constants::physics::MassProton * o2::constants::physics::MassProton); 
+            casctof.negFlightPi = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length-ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged); 
+          }
+        }
+      }
+      if(lengthNegative>0.0f){ 
         casctof.negDeltaTimeAsXiPi = (nTof.tofSignal - nTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.negFlightPi);
         casctof.negDeltaTimeAsXiPr = (nTof.tofSignal - nTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.negFlightPr);
         casctof.negDeltaTimeAsOmPi = (nTof.tofSignal - nTof.tofEvTime) - (omFlight + lambdaFlight + casctof.negFlightPi);
         casctof.negDeltaTimeAsOmPr = (nTof.tofSignal - nTof.tofEvTime) - (omFlight + lambdaFlight + casctof.negFlightPr);
-
-        LOGF(info, "cascade %i nTofSignal %.2f negFlightPr %.2f negFlightPi %.2f xiFlight %.2f lambdaFlight %.2f lengthNegative %.2f velocityNegativePr %.2f", cascade.globalIndex(), nTof.tofSignal, casctof.negFlightPr, casctof.negFlightPi, xiFlight, lambdaFlight, lengthNegative, velocityNegativePr);
 
         // de facto nsigma
         if(nSigmaCalibLoaded){
@@ -891,12 +978,34 @@ struct strangenesstofpid {
     } //end negative
 
     if(bTof.hasTOF && bTof.hasITS){ 
-      float velocityBachelorPi = velocity(bachTrack.getP(), o2::constants::physics::MassPionCharged);
-      float velocityBachelorKa = velocity(bachTrack.getP(), o2::constants::physics::MassKaonCharged);
-      float lengthBachelor = findInterceptLength(bachTrack, d_bz);
-      if(lengthBachelor>0.0f){ 
+      float velocityBachelorKa, velocityBachelorPi, lengthBachelor; 
+      velocityBachelorKa = velocityBachelorPi = lengthBachelor = o2::aod::v0data::kNoTOFValue;
+      // method 0: legacy standalone without use of primary particle TOF
+      if(calculationMethod.value == 0){ 
+        velocityBachelorPi = velocity(bachTrack.getP(), o2::constants::physics::MassPionCharged);
+        velocityBachelorKa = velocity(bachTrack.getP(), o2::constants::physics::MassKaonCharged);
+        lengthBachelor = findInterceptLength(bachTrack, d_bz);
         casctof.bachFlightPi = lengthBachelor / velocityBachelorPi;
         casctof.bachFlightKa = lengthBachelor / velocityBachelorKa;
+      }
+      // method 1: correct primary particle TOF information
+      // length -> revise by removing travel length to primary vertex 
+      // expected momentum -> kept as is for now, could correct at second stage 
+      // use main method from TOF to calculate expected time
+      if(calculationMethod.value == 1){ 
+        if(bTof.collisionId >= 0){ 
+          auto trackCollision = collisions.rawIteratorAt(bTof.collisionId); 
+          const o2::math_utils::Point3D<float> trackVertex{trackCollision.posX(), trackCollision.posY(), trackCollision.posZ()};
+          o2::track::TrackLTIntegral ltIntegral;
+          bool successPropag = o2::base::Propagator::Instance()->propagateToDCA(trackVertex, bachTrack, d_bz, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrNONE, nullptr, &ltIntegral);
+          if(successPropag){ 
+            lengthBachelor = bTof.length - ltIntegral.getL();
+            casctof.bachFlightPi = o2::framework::pid::tof::MassToExpTime(bTof.tofExpMom, bTof.length-ltIntegral.getL(), o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged); 
+            casctof.bachFlightKa = o2::framework::pid::tof::MassToExpTime(bTof.tofExpMom, bTof.length-ltIntegral.getL(), o2::constants::physics::MassKaonCharged * o2::constants::physics::MassKaonCharged); 
+          }
+        }
+      }
+      if(lengthBachelor>0.0f){    
         casctof.bachDeltaTimeAsXiPi = (bTof.tofSignal - bTof.tofEvTime) - (xiFlight + casctof.bachFlightPi);
         casctof.bachDeltaTimeAsOmKa = (bTof.tofSignal - bTof.tofEvTime) - (omFlight + casctof.bachFlightKa);
 
