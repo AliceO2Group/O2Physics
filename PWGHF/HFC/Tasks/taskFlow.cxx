@@ -61,6 +61,7 @@
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::aod::pid_tpc_tof_utils;
+using namespace o2::aod::track;
 using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -120,45 +121,77 @@ static constexpr std::string_view WhatDataType[] = {"Data/", "MC/"};
 static constexpr std::string_view WhatCorrelationCase[] = {"TpcTpc/", "TpcMft/", "TpcFv0a/", "MftFv0a/"};
 static constexpr std::string_view WhatParticles[] = {"ChPartChPart/", "D0ChPart/", "LcChPart/"};
 
+static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
+  TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
+  TrackSelectionFlags::kITSHits;
+static constexpr TrackSelectionFlags::flagtype TrackSelectionTpc =
+  TrackSelectionFlags::kTPCNCls |
+  TrackSelectionFlags::kTPCCrossedRowsOverNCls |
+  TrackSelectionFlags::kTPCChi2NDF;
+static constexpr TrackSelectionFlags::flagtype TrackSelectionDca =
+  TrackSelectionFlags::kDCAz | TrackSelectionFlags::kDCAxy;
+static constexpr TrackSelectionFlags::flagtype TrackSelectionDcaxyOnly =
+  TrackSelectionFlags::kDCAxy;
+
 // static constexpr float kPairCutDefaults[1][5] = {{-1, -1, -1, -1, -1}};
 
 struct HfTaskFlow {
 
-  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
-  Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+  struct : ConfigurableGroup {
+    std::string prefix = "ConfigCcdb_group";
+    Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
+    Configurable<int64_t> noLaterThan{"noLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
+  } configCcdb;
 
   //  configurables for processing options
 
-  Configurable<bool> centralityBinsForMc{"centralityBinsForMc", false, "false = OFF, true = ON for data like multiplicity/centrality bins for MC steps"};
-  Configurable<float> mftMaxDCAxy{"mftMaxDCAxy", 2.0f, "Cut on dcaXY for MFT tracks"};
-  Configurable<bool> doHeavyFlavor{"doHeavyFlavor", false, "Flag to know we in the heavy flavor case or not"};
-  Configurable<bool> doReferenceFlow{"doReferenceFlow", false, "Flag to know if reference flow should be done"};
-  Configurable<bool> isReadoutCenter{"isReadoutCenter", false, "Enable Readout Center"};
-  // Configurable<float> doTwoTrackCut{"doTwoTrackCut", -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)"};
-  Configurable<bool> processRun2{"processRun2", false, "Flag to run on Run 2 data"};
-  Configurable<bool> processRun3{"processRun3", true, "Flag to run on Run 3 data"};
-  Configurable<bool> processMc{"processMc", false, "Flag to run on MC"};
-  Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
-  // Configurable<float> twoTrackCutMinRadius{"twoTrackCutMinRadius", 0.8f, "Two track cut : radius in m from which two tracks cuts are applied"};
+  struct : ConfigurableGroup {
+    std::string prefix = "ConfigTask_group";
+    Configurable<bool> centralityBinsForMc{"centralityBinsForMc", false, "false = OFF, true = ON for data like multiplicity/centrality bins for MC steps"};
+    Configurable<float> mftMaxDCAxy{"mftMaxDCAxy", 2.0f, "Cut on dcaXY for MFT tracks"};
+    Configurable<bool> doHeavyFlavor{"doHeavyFlavor", false, "Flag to know we in the heavy flavor case or not"};
+    Configurable<bool> doReferenceFlow{"doReferenceFlow", false, "Flag to know if reference flow should be done"};
+    Configurable<bool> isReadoutCenter{"isReadoutCenter", false, "Enable Readout Center"};
+    // Configurable<float> doTwoTrackCut{"doTwoTrackCut", -1, "Two track cut: -1 = off; >0 otherwise distance value (suggested: 0.02)"};
+    Configurable<bool> processMc{"processMc", false, "Flag to run on MC"};
+    Configurable<int> nMixedEvents{"nMixedEvents", 5, "Number of mixed events per event"};
+    // Configurable<float> twoTrackCutMinRadius{"twoTrackCutMinRadius", 0.8f, "Two track cut : radius in m from which two tracks cuts are applied"};
+  } configTask;
+
   //   configurables for collisions
-  Configurable<float> zVertexMax{"zVertexMax", 7.0f, "Accepted z-vertex range"};
-  //  configurables for TPC tracks
-  Configurable<float> etaTpcTrackMax{"etaTpcTrackMax", 0.8f, "max. eta of TPC tracks"};
-  Configurable<float> ptTpcTrackMin{"ptTpcTrackMin", 0.5f, "min. pT of TPC tracks"};
+  struct : ConfigurableGroup {
+    std::string prefix = "ConfigCollision_group";
+    Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
+    Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
+    Configurable<bool> isApplyNoCollInTimeRangeStrict{"isApplyNoCollInTimeRangeStrict", false, ""};
+    Configurable<float> zVertexMax{"zVertexMax", 7.0f, "Accepted z-vertex range"};
+  } configCollision;
+
+  //  configurables for central barrel tracks
+  struct : ConfigurableGroup {
+    std::string prefix = "ConfigCentralTracks_group";
+    Configurable<float> etaCentralTrackMax{"etaCentralTrackMax", 0.8f, "max. eta of central tracks"};
+    Configurable<float> ptCentralTrackMin{"ptCentralTrackMin", 0.5f, "min. pT of central tracks"};
+    Configurable<float> dcaZCentralTrackMax{"dcaZCentralTrackMax", 0.2f, "max dcaZ of central tracks"};
+  } configCentral;
+
   //  configurables for HF candidates
-  Configurable<float> etaCandidateMax{"etaCandidateMax", 0.8f, "max. eta of HF candidate"};
-  Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for Hf candidates"};
-  // Configurable<int> selectionFlagD0{"selectionFlagD0", 1, "Selection Flag for D0"};
-  // Configurable<int> selectionFlagD0bar{"selectionFlagD0bar", 1, "Selection Flag for D0bar"};
-  // Configurable<int> selectionFlagLcToPKPi{"selectionFlagLcToPKPi", 1, "Selection Flag for LambdaC"};
-  // Configurable<int> selectionFlagLcToPiKP{"selectionFlagLcToPiKP", 1, "Selection Flag for LambdaC bar"};
+  struct : ConfigurableGroup {
+    std::string prefix = "ConfigCandidates_group";
+    Configurable<float> etaCandidateMax{"etaCandidateMax", 0.8f, "max. eta of HF candidate"};
+    Configurable<std::vector<int>> mcTriggerPdgs{"mcTriggerPdgs", {421, -421}, "MC PDG codes to use exclusively as trigger particles. D0= +-421, Lc = +-4122"};
+    Configurable<int> selectionFlagHf{"selectionFlagHf", 1, "Selection Flag for Hf candidates"};
+    Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
+    Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
+  } configCandidates;
+
   //   configurables for MFT tracks
-  Configurable<float> etaMftTrackMax{"etaMftTrackMax", -2.4f, "Maximum value for the eta of MFT tracks"};
-  Configurable<float> etaMftTrackMin{"etaMftTrackMin", -3.36f, "Minimum value for the eta of MFT tracks"};
-  Configurable<std::vector<int>> mcTriggerPdgs{"mcTriggerPdgs", {421, -421}, "MC PDG codes to use exclusively as trigger particles. D0= +-421, Lc = +-4122"};
-  Configurable<int> nClustersMftTrack{"nClustersMftTrack", 5, "Minimum number of clusters for the reconstruction of MFT tracks"};
-  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
-  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
+  struct : ConfigurableGroup {
+    std::string prefix = "ConfigMft_group";
+    Configurable<float> etaMftTrackMax{"etaMftTrackMax", -2.4f, "Maximum value for the eta of MFT tracks"};
+    Configurable<float> etaMftTrackMin{"etaMftTrackMin", -3.36f, "Minimum value for the eta of MFT tracks"};
+    Configurable<int> nClustersMftTrack{"nClustersMftTrack", 5, "Minimum number of clusters for the reconstruction of MFT tracks"};
+  } configMft;
 
   HfHelper hfHelper;
   SliceCache cache;
@@ -208,53 +241,59 @@ struct HfTaskFlow {
 
   //  HF candidate filter
   //  TODO: use Partition instead of filter
-  Filter candidateFilterD0 = (aod::hf_sel_candidate_d0::isSelD0 >= selectionFlagHf) ||
-                             (aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlagHf);
+  Filter candidateFilterD0 = (aod::hf_sel_candidate_d0::isSelD0 >= configCandidates.selectionFlagHf) ||
+                             (aod::hf_sel_candidate_d0::isSelD0bar >= configCandidates.selectionFlagHf);
 
-  Filter candidateFilterLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagHf) ||
-                             (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagHf);
+  Filter candidateFilterLc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= configCandidates.selectionFlagHf) ||
+                             (aod::hf_sel_candidate_lc::isSelLcToPiKP >= configCandidates.selectionFlagHf);
 
   //  Collision filters
   //  FIXME: The filter is applied also on the candidates! Beware!
-  Filter collisionVtxZFilter = nabs(aod::collision::posZ) < zVertexMax;
+  Filter collisionVtxZFilter = nabs(aod::collision::posZ) < configCollision.zVertexMax;
 
-  Filter trackFilter = (nabs(aod::track::eta) < etaTpcTrackMax) &&
-                       (aod::track::pt > ptTpcTrackMin) &&
-                       requireGlobalTrackWoPtEtaInFilter();
+  Filter centralTrackItsFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
+                                 ncheckbit(aod::track::trackCutFlag, TrackSelectionIts);
+  Filter centralTrackTpcFilter = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
+                                        ncheckbit(aod::track::trackCutFlag, TrackSelectionTpc), true);
+  Filter centralTrackDcaFilter = ifnode(configCentral.dcaZCentralTrackMax.node() > 0.f, nabs(aod::track::dcaZ) <= configCentral.dcaZCentralTrackMax && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly),
+                                        ncheckbit(aod::track::trackCutFlag, TrackSelectionDca));
 
-  // Filter mftTrackEtaFilter = (aod::fwdtrack::eta < etaMftTrackMax) &&
-  //                            (aod::fwdtrack::eta > etaMftTrackMin);
+  // Filter trackFilter = (nabs(aod::track::eta) < configCentral.etaCentralTrackMax) && (aod::track::pt > configCentral.ptCentralTrackMin) && requireGlobalTrackWoPtEtaInFilter();
+  Filter trackFilter = (nabs(aod::track::eta) < configCentral.etaCentralTrackMax) && (aod::track::pt > configCentral.ptCentralTrackMin);
+
+  // Filter mftTrackEtaFilter = (aod::fwdtrack::eta < configMft.etaMftTrackMax) &&
+  //                            (aod::fwdtrack::eta > configMft.etaMftTrackMin);
 
   // Filter mftTrackHasCollision = aod::fwdtrack::collisionId > 0;
 
   // Filters below will be used for uncertainties
   // Filter mftTrackCollisionIdFilter = (aod::fwdtrack::bestCollisionId >= 0);
-  // Filter mftTrackDcaFilter = (nabs(aod::fwdtrack::bestDCAXY) < mftMaxDCAxy);
+  // Filter mftTrackDcaFilter = (nabs(aod::fwdtrack::bestDCAXY) < configTask.mftMaxDCAxy);
 
   // =========================
   //      Filters & partitions : MC
   // =========================
 
-  Filter candidateFilterD0Mc = (aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf) ||
-                               (aod::hf_sel_candidate_d0::isRecoHfFlag >= selectionFlagHf);
+  Filter candidateFilterD0Mc = (aod::hf_sel_candidate_d0::isRecoHfFlag >= configCandidates.selectionFlagHf) ||
+                               (aod::hf_sel_candidate_d0::isRecoHfFlag >= configCandidates.selectionFlagHf);
 
-  Filter candidateFilterLcMc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagHf) ||
-                               (aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagHf);
+  Filter candidateFilterLcMc = (aod::hf_sel_candidate_lc::isSelLcToPKPi >= configCandidates.selectionFlagHf) ||
+                               (aod::hf_sel_candidate_lc::isSelLcToPiKP >= configCandidates.selectionFlagHf);
 
   // From Katarina's code, but not sure if I use it
-  Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < zVertexMax;
+  Filter mcCollisionFilter = nabs(aod::mccollision::posZ) < configCollision.zVertexMax;
 
-  // Filter mcParticlesFilter = (nabs(aod::mcparticle::eta) < etaTpcTrackMax) &&
-  //                            (aod::mcparticle::pt > ptTpcTrackMin);
+  // Filter mcParticlesFilter = (nabs(aod::mcparticle::eta) < configCentral.etaCentralTrackMax) &&
+  //                            (aod::mcparticle::pt > configCentral.ptCentralTrackMin);
 
   // I didn't manage to make partitions work with my mixed event, as I am pair my tracks BEFORE looping over collisions
   // I am thus not able to group tracks with sliceBy and can't use this method
   // For now I am fine as I am doing only TPC-MFT correlations and using only McParticles with MFT acceptance
   // However at some point I will have to use tracks from the other side (FV0, FT0-A) and I will have to do something about it
   // TO-DO : either change how I do mixed event, or implement isAcceptedTpcMcParticle, isAcceptedMftMcParticle
-  // Partition<aod::McParticles> mcParticlesMft = (aod::mcparticle::eta > etaMftTrackMin) && (aod::mcparticle::eta < etaMftTrackMax);
-  // Partition<aod::McParticles> mcParticlesTpc = (nabs(aod::mcparticle::eta) < etaTpcTrackMax) &&
-  //                                             (aod::mcparticle::pt > ptTpcTrackMin);
+  // Partition<aod::McParticles> mcParticlesMft = (aod::mcparticle::eta > configMft.etaMftTrackMin) && (aod::mcparticle::eta < configMft.etaMftTrackMax);
+  // Partition<aod::McParticles> mcParticlesTpc = (nabs(aod::mcparticle::eta) < configCentral.etaCentralTrackMax) &&
+  //                                             (aod::mcparticle::pt > configCentral.ptCentralTrackMin);
 
   // =========================
   //      Preslice : DATA
@@ -327,13 +366,13 @@ struct HfTaskFlow {
   void init(InitContext&)
   {
     // const int nBinsMix = axisMultiplicity->size() * axisVertex->size();
-    ccdb->setURL(ccdbUrl);
+    ccdb->setURL(configCcdb.ccdbUrl);
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
     LOGF(info, "Getting alignment offsets from the CCDB...");
-    offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", noLaterThan.value);
+    offsetFV0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FV0/Calib/Align", configCcdb.noLaterThan.value);
     LOGF(info, "Offset for FV0-left: x = %.3f y = %.3f z = %.3f\n", (*offsetFV0)[0].getX(), (*offsetFV0)[0].getY(), (*offsetFV0)[0].getZ());
     LOGF(info, "Offset for FV0-right: x = %.3f y = %.3f z = %.3f\n", (*offsetFV0)[1].getX(), (*offsetFV0)[1].getY(), (*offsetFV0)[1].getZ());
 
@@ -763,7 +802,7 @@ struct HfTaskFlow {
     o2::fv0::Point3Dsimple chPos;
     chPos = fv0Det->getReadoutCenter(chno);
 
-    // if (isReadoutCenter)
+    // if (configTask.isReadoutCenter)
     //   chPos = fv0Det->getReadoutCenter(chno);
     // else
     //   chPos = fv0Det->getCellCenter(chno);
@@ -788,7 +827,7 @@ struct HfTaskFlow {
 
     o2::fv0::Point3Dsimple chPos;
     chPos = fv0Det->getReadoutCenter(chno);
-    // if (isReadoutCenter)
+    // if (configTask.isReadoutCenter)
     //   chPos = fv0Det->getReadoutCenter(chno);
     // else
     //   chPos = fv0Det->getCellCenter(chno);
@@ -813,7 +852,7 @@ struct HfTaskFlow {
       registry.fill(HIST("Data/hEventCounter"), EventSelectionStep::AllEvents);
     }
 
-    if (processMc == false) {
+    if (configTask.processMc == false) {
       if (!collision.sel8()) {
         return false;
       }
@@ -836,10 +875,10 @@ struct HfTaskFlow {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
         return false;
       }
-      if (etaCandidateMax >= 0. && std::abs(etaCandidate) > etaCandidateMax) {
+      if (configCandidates.etaCandidateMax >= 0. && std::abs(etaCandidate) > configCandidates.etaCandidateMax) {
         return false;
       }
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandRecoMax) {
+      if (configCandidates.yCandRecoMax >= 0. && std::abs(hfHelper.yLc(candidate)) > configCandidates.yCandRecoMax) {
         return false;
       }
       return true;
@@ -848,10 +887,10 @@ struct HfTaskFlow {
       if (!(candidate.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         return false;
       }
-      if (etaCandidateMax >= 0. && std::abs(etaCandidate) > etaCandidateMax) {
+      if (configCandidates.etaCandidateMax >= 0. && std::abs(etaCandidate) > configCandidates.etaCandidateMax) {
         return false;
       }
-      if (yCandRecoMax >= 0. && std::abs(hfHelper.yD0(candidate)) > yCandRecoMax) {
+      if (configCandidates.yCandRecoMax >= 0. && std::abs(hfHelper.yD0(candidate)) > configCandidates.yCandRecoMax) {
         return false;
       }
       return true;
@@ -865,7 +904,7 @@ struct HfTaskFlow {
   bool isAcceptedMftTrack(TTrack const& mftTrack, bool fillHistograms)
   {
     // cut on the eta of MFT tracks
-    if (mftTrack.eta() > etaMftTrackMax || mftTrack.eta() < etaMftTrackMin) {
+    if (mftTrack.eta() > configMft.etaMftTrackMax || mftTrack.eta() < configMft.etaMftTrackMin) {
       return false;
     }
 
@@ -874,7 +913,7 @@ struct HfTaskFlow {
     }
 
     // cut on the number of clusters of the reconstructed MFT track
-    if (mftTrack.nClusters() < nClustersMftTrack) {
+    if (mftTrack.nClusters() < configMft.nClustersMftTrack) {
       return false;
     }
 
@@ -911,11 +950,11 @@ struct HfTaskFlow {
     if constexpr (std::is_same_v<McParticles2ProngMatched, TMcTrack>) { // For now, that means we do D0
       if (std::abs(mcCandidate.flagMcMatchGen()) == 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) {
 
-        if (etaCandidateMax >= 0. && std::abs(etaCandidate) > etaCandidateMax) {
+        if (configCandidates.etaCandidateMax >= 0. && std::abs(etaCandidate) > configCandidates.etaCandidateMax) {
           return false;
         }
 
-        if (yCandGenMax >= 0. && std::abs(RecoDecay::y(mcCandidate.pVector(), o2::constants::physics::MassD0)) > yCandGenMax) {
+        if (configCandidates.yCandGenMax >= 0. && std::abs(RecoDecay::y(mcCandidate.pVector(), o2::constants::physics::MassD0)) > configCandidates.yCandGenMax) {
           return false;
         }
 
@@ -927,11 +966,11 @@ struct HfTaskFlow {
     } else { // For now, that means we do LambdaC
       if (std::abs(mcCandidate.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) {
 
-        if (etaCandidateMax >= 0. && std::abs(etaCandidate) > etaCandidateMax) {
+        if (configCandidates.etaCandidateMax >= 0. && std::abs(etaCandidate) > configCandidates.etaCandidateMax) {
           return false;
         }
 
-        if (yCandGenMax >= 0. && std::abs(RecoDecay::y(mcCandidate.pVector(), o2::constants::physics::MassLambdaCPlus)) > yCandGenMax) {
+        if (configCandidates.yCandGenMax >= 0. && std::abs(RecoDecay::y(mcCandidate.pVector(), o2::constants::physics::MassLambdaCPlus)) > configCandidates.yCandGenMax) {
           return false;
         }
 
@@ -964,7 +1003,7 @@ struct HfTaskFlow {
     }
     */
 
-    if (mcParticle.eta() > etaMftTrackMax || mcParticle.eta() < etaMftTrackMin) {
+    if (mcParticle.eta() > configMft.etaMftTrackMax || mcParticle.eta() < configMft.etaMftTrackMin) {
       return false;
     }
 
@@ -1049,7 +1088,7 @@ struct HfTaskFlow {
 
       // FILL QA PLOTS for trigger particle
       if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
-        if (processMc == false) {                                           // If DATA
+        if (configTask.processMc == false) {                                // If DATA
           if constexpr (!std::is_same_v<aod::MFTTracks, TTracksAssoc>) {    // IF TPC-TPC case
             if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-TPC D0-h
               fillTpcTpcHfChSameEventCandidateQa(multiplicity, track1, true);
@@ -1120,7 +1159,7 @@ struct HfTaskFlow {
         }
 
         //  in case of MC-generated, do additional selection on MCparticles : charge and isPhysicalPrimary
-        // if (processMc) {
+        // if (configTask.processMc) {
         if constexpr (std::is_same_v<McParticles, TTracksTrig> || std::is_same_v<McParticles, TTracksAssoc>) {
           if (!isAcceptedMftMcParticle(track2)) {
             continue;
@@ -1328,7 +1367,7 @@ struct HfTaskFlow {
         }
 
         //  in case of MC-generated, do additional selection on MCparticles : charge and isPhysicalPrimary
-        // if (processMc) {
+        // if (configTask.processMc) {
         if constexpr (std::is_same_v<McParticles, TTracksTrig> || std::is_same_v<McParticles, TTracksAssoc>) {
           if (!isAcceptedMftMcParticle(reassociatedMftTrack)) {
             continue;
@@ -1451,7 +1490,7 @@ struct HfTaskFlow {
 
       // FILL QA PLOTS for trigger particle
       if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
-        if (processMc == false) {                                           // If DATA
+        if (configTask.processMc == false) {                                // If DATA
           if constexpr (!std::is_same_v<aod::MFTTracks, TTracksTrig>) {     // If not aod::MFTTracks as trigger -> TPC-FV0a correlations
             if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-FV0a D0-h
               fillTpcFv0aHfChSameEventCandidateQa(multiplicity, track1, true);
@@ -1586,7 +1625,7 @@ struct HfTaskFlow {
 
       // FILL QA PLOTS for trigger particle
       if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
-        if (processMc == false) { // If DATA
+        if (configTask.processMc == false) { // If DATA
           fillMftFv0aChChSameEventQa(multiplicity, reassociatedMftTrack);
         }
       } // end of if condition to fill QA plots for trigger particle
@@ -1636,7 +1675,7 @@ struct HfTaskFlow {
 
     BinningTypeData binningWithTracksSize{{getPartsSize}, {binsMixingVertex, binsMixingMultiplicity}, true};
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<TCollisions, TTracksTrig, TTracksAssoc, BinningTypeData> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
+    Pair<TCollisions, TTracksTrig, TTracksAssoc, BinningTypeData> pair{binningWithTracksSize, configTask.nMixedEvents, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -1693,7 +1732,7 @@ struct HfTaskFlow {
 
     BinningTypeData binningWithTracksSize{{getPartsSize}, {binsMixingVertex, binsMixingMultiplicity}, true};
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<TCollisions, TTracksTrig, TTracksAssoc, BinningTypeData> pair{binningWithTracksSize, nMixedEvents, -1, collisions, tracksTuple, &cache};
+    Pair<TCollisions, TTracksTrig, TTracksAssoc, BinningTypeData> pair{binningWithTracksSize, configTask.nMixedEvents, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -1751,7 +1790,7 @@ struct HfTaskFlow {
 
     BinningTypeMcTruth binningWithTracksSize{{getPartsSize}, {binsMixingVertex, binsMixingMultiplicity}, true};
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<TMcCollisions, TTracksTrig, TTracksAssoc, BinningTypeMcTruth> pair{binningWithTracksSize, nMixedEvents, -1, mcCollisions, tracksTuple, &cache};
+    Pair<TMcCollisions, TTracksTrig, TTracksAssoc, BinningTypeMcTruth> pair{binningWithTracksSize, configTask.nMixedEvents, -1, mcCollisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -1819,7 +1858,7 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (doReferenceFlow)
+    if (configTask.doReferenceFlow)
       fillEventSelectionPlots = false;
 
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
@@ -1847,7 +1886,7 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (doReferenceFlow)
+    if (configTask.doReferenceFlow)
       fillEventSelectionPlots = false;
 
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
@@ -1950,7 +1989,7 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (doReferenceFlow)
+    if (configTask.doReferenceFlow)
       fillEventSelectionPlots = false;
 
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
@@ -1996,7 +2035,7 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (doReferenceFlow)
+    if (configTask.doReferenceFlow)
       fillEventSelectionPlots = false;
 
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
@@ -2352,7 +2391,7 @@ struct HfTaskFlow {
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
     MixedBinning binningOnVtxAndMult{{getMultiplicity}, {binsMixingVertex, binsMixingMultiplicity}, true};
 
-    for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, nMixedEvents, -1, collisions, collisions)) {
+    for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, configTask.nMixedEvents, -1, collisions, collisions)) {
 
       if (!isAcceptedCollision(collision1) || !isAcceptedCollision(collision2)) {
         continue;
@@ -2392,7 +2431,7 @@ struct HfTaskFlow {
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
     MixedBinning binningOnVtxAndMult{{getMultiplicity}, {binsMixingVertex, binsMixingMultiplicity}, true};
 
-    for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, nMixedEvents, -1, collisions, collisions)) {
+    for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, configTask.nMixedEvents, -1, collisions, collisions)) {
 
       if (!isAcceptedCollision(collision1) || !isAcceptedCollision(collision2)) {
         continue;
@@ -2432,7 +2471,7 @@ struct HfTaskFlow {
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
     MixedBinning binningOnVtxAndMult{{getMultiplicity}, {binsMixingVertex, binsMixingMultiplicity}, true};
 
-    for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, nMixedEvents, -1, collisions, collisions)) {
+    for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, configTask.nMixedEvents, -1, collisions, collisions)) {
 
       if (!isAcceptedCollision(collision1) || !isAcceptedCollision(collision2)) {
         continue;
@@ -2472,7 +2511,7 @@ struct HfTaskFlow {
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
     MixedBinning binningOnVtxAndMult{{getMultiplicity}, {binsMixingVertex, binsMixingMultiplicity}, true};
 
-    for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, nMixedEvents, -1, collisions, collisions)) {
+    for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, configTask.nMixedEvents, -1, collisions, collisions)) {
 
       if (!isAcceptedCollision(collision1) || !isAcceptedCollision(collision2)) {
         continue;
@@ -2548,7 +2587,7 @@ struct HfTaskFlow {
     LOGF(info, "MC collision at vtx-z = %f with %d mc particles and %d reconstructed collisions", mcCollision.posZ(), mcParticles.size(), collisionsMcLabels.size());
 
     auto multiplicity = mcCollision.multMCPVz();
-    if (centralityBinsForMc) {
+    if (configTask.centralityBinsForMc) {
       if (collisionsMcLabels.size() == 0) {
         return;
       }
