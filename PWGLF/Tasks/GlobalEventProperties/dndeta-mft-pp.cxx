@@ -145,14 +145,14 @@ struct PseudorapidityDensityMFT {
   void init(InitContext&)
   {
     if (static_cast<int>(doprocessMult) +
-          static_cast<int>(doprocessMultReassoc) + 
+          static_cast<int>(doprocessMultReassoc) +
           static_cast<int>(doprocessMultReassoc3d) +
           static_cast<int>(doprocessCountingCentrality) >
         1) {
       LOGP(fatal,
            "Exactly one process function between processMult, "
-            "processMultReassoc, processMultReassoc3d, and processCountingCentrality should be "
-            "enabled!");
+           "processMultReassoc, processMultReassoc3d, and processCountingCentrality should be "
+           "enabled!");
     }
     AxisSpec MultAxis = {multBinning, "N_{trk}"};
     auto hstat = registry.get<TH1>(HIST("EventSelection"));
@@ -325,8 +325,7 @@ struct PseudorapidityDensityMFT {
       registry.add({"Tracks/Control/amb/EtaZvtxAmb_gt0",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
-      registry.add({"Tracks/Control/amb/DCAxy_amb", " ; DCA_{xy} (cm) ambiguous",
-                    {HistType::kTH1F, {DCAxyAxis}}});
+      registry.add({"Tracks/Control/amb/DCAxy_amb", " ; DCA_{xy} (cm) ambiguous", {HistType::kTH1F, {DCAxyAxis}}});
 
       registry.add({"Tracks/Control/nonamb/nonAmbTracksEtaZvtx",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
@@ -341,8 +340,7 @@ struct PseudorapidityDensityMFT {
       registry.add({"Tracks/Control/nonamb/EtaZvtxNonAmb_gt0",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
-      registry.add({"Tracks/Control/nonamb/DCAxy_nonamb", " ; DCA_{xy}(cm) non-ambiguous",
-                    {HistType::kTH1F, {{DCAxyAxis}}}}); //
+      registry.add({"Tracks/Control/nonamb/DCAxy_nonamb", " ; DCA_{xy}(cm) non-ambiguous", {HistType::kTH1F, {{DCAxyAxis}}}}); //
 
       registry.add({"Tracks/Control/woOrp/woOrpTracksEtaZvtx",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
@@ -350,8 +348,7 @@ struct PseudorapidityDensityMFT {
       registry.add({"Tracks/Control/woOrp/woOrpEtaZvtx_gt0",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
-      registry.add({"Tracks/Control/woOrp/DCAxy_woOrp", " ; DCA_{xy}(cm) w/o orphan",
-                    {HistType::kTH1F, {{DCAxyAxis}}}}); //
+      registry.add({"Tracks/Control/woOrp/DCAxy_woOrp", " ; DCA_{xy}(cm) w/o orphan", {HistType::kTH1F, {{DCAxyAxis}}}}); //
       registry.add({"Tracks/2Danalysis/EtaZvtx",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
@@ -591,7 +588,7 @@ struct PseudorapidityDensityMFT {
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMult,
                  "Process reco or data info", true);
-// Common implementation for both BestCollisionsFwd and BestCollisionsFwd3d
+  // Common implementation for both BestCollisionsFwd and BestCollisionsFwd3d
   template <typename RetracksT>
   void processMultReassocCommon(CollwEv::iterator const& collision,
                                 o2::aod::MFTTracks const&,
@@ -717,7 +714,7 @@ struct PseudorapidityDensityMFT {
                     continue;
                 }
               }
-              
+
               registry.fill(HIST("TracksEtaZvtx"), track.eta(), z);
               if (midtracks.size() > 0 && retrack.ambDegree() > 0) {
                 registry.fill(HIST("Tracks/EtaZvtx_gt0"), track.eta(), z);
@@ -836,7 +833,7 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/woOrp/DCAxy_woOrp"), retrack.bestDCAXY());
                 if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
                   registry.fill(HIST("Tracks/Control/woOrp/DCAz_woOrp"), retrack.bestDCAZ());
-              }
+                }
             }
           }
           registry.fill(HIST("ambEventCounts"), 1, uniqueEventsAmb.size());
@@ -854,7 +851,7 @@ struct PseudorapidityDensityMFT {
       registry.fill(HIST("EventSelection"), 7);
     }
   }
-void processMultReassoc(CollwEv::iterator const& collision,
+  void processMultReassoc(CollwEv::iterator const& collision,
                           o2::aod::MFTTracks const& mft,
                           soa::SmallGroups<aod::BestCollisionsFwd> const& retracks,
                           FiCentralTracks const& midtracks, aod::Tracks const& trk)
@@ -870,10 +867,10 @@ void processMultReassoc(CollwEv::iterator const& collision,
     processMultReassocCommon(collision, mft, retracks, midtracks, trk);
   }
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMultReassoc,
-                  "Process reco or data info", false);
+                 "Process reco or data info", false);
 
   PROCESS_SWITCH(PseudorapidityDensityMFT, processMultReassoc3d,
-                  "Process reco or data info (3d)", false);
+                 "Process reco or data info (3d)", false);
 
   using ExColsCent = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
 
