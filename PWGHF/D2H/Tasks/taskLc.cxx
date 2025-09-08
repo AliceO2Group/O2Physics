@@ -573,7 +573,7 @@ struct HfTaskLc {
                 outputFD = candidate.mlProbLcToPKPi()[MlClassNonPrompt];   /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate
-              std::vector<Double_t> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<Double_t>(numPvContributors), ptRecB, static_cast<Double_t>(originType)};
+              std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
               if (storeProperLifetime) {
                 valuesToFill.push_back(properLifetime);
               }
@@ -582,7 +582,7 @@ struct HfTaskLc {
               }
               registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
             } else {
-              std::vector<Double_t> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<Double_t>(numPvContributors), ptRecB, static_cast<Double_t>(originType)};
+              std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
                 valuesToFill.push_back(occ);
               }
@@ -599,7 +599,7 @@ struct HfTaskLc {
                 outputFD = candidate.mlProbLcToPiKP()[MlClassNonPrompt];   /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
-              std::vector<Double_t> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<Double_t>(numPvContributors), ptRecB, static_cast<Double_t>(originType)};
+              std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
               if (storeProperLifetime) {
                 valuesToFill.push_back(properLifetime);
               }
@@ -608,7 +608,7 @@ struct HfTaskLc {
               }
               registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
             } else {
-              std::vector<Double_t> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<Double_t>(numPvContributors), ptRecB, static_cast<Double_t>(originType)};
+              std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
                 valuesToFill.push_back(occ);
               }
@@ -661,7 +661,7 @@ struct HfTaskLc {
 
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           if (fillTHn) {
-            std::vector<Double_t> valuesToFill{ptGen, cent, yGen, static_cast<Double_t>(numPvContributors), ptGenB, static_cast<Double_t>(originType)};
+            std::vector<double> valuesToFill{ptGen, cent, yGen, static_cast<double>(numPvContributors), ptGenB, static_cast<double>(originType)};
             if (storeProperLifetime) {
               valuesToFill.push_back(properLifetime);
             }
@@ -681,7 +681,7 @@ struct HfTaskLc {
         if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
           if (fillTHn) {
-            std::vector<Double_t> valuesToFill{ptGen, cent, yGen, static_cast<Double_t>(numPvContributors), ptGenB, static_cast<Double_t>(originType)};
+            std::vector<double> valuesToFill{ptGen, cent, yGen, static_cast<double>(numPvContributors), ptGenB, static_cast<double>(originType)};
             if (storeProperLifetime) {
               valuesToFill.push_back(properLifetime);
             }
@@ -790,7 +790,7 @@ struct HfTaskLc {
               outputFD = candidate.mlProbLcToPKPi()[MlClassNonPrompt];   /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
-            std::vector<Double_t> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<Double_t>(numPvContributors)};
+            std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)};
             if (storeProperLifetime) {
               valuesToFill.push_back(properLifetime);
             }
@@ -799,7 +799,7 @@ struct HfTaskLc {
             }
             registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
           } else {
-            std::vector<Double_t> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<Double_t>(numPvContributors)};
+            std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors)};
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
             }
@@ -816,7 +816,7 @@ struct HfTaskLc {
               outputFD = candidate.mlProbLcToPiKP()[MlClassNonPrompt];   /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
-            std::vector<Double_t> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<Double_t>(numPvContributors)};
+            std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)};
             if (storeProperLifetime) {
               valuesToFill.push_back(properLifetime);
             }
@@ -825,7 +825,7 @@ struct HfTaskLc {
             }
             registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
           } else {
-            std::vector<Double_t> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<Double_t>(numPvContributors)};
+            std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors)};
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
             }
