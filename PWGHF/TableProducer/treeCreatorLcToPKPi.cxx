@@ -565,11 +565,17 @@ struct HfTreeCreatorLcToPKPi {
   /// \brief function to evaluate invariant mass of the Lc candidate and KPi pair
   /// \param candidate candidate instance
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
-  template <typename CandType>
+  template <int reconstructionType, typename CandType>
   std::pair<float, float> evaluateInvariantMasses(CandType const& candidate, int candFlag)
   {
-    const float invMass = candFlag == 0 ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
-    const float invMassKPi = candFlag == 0 ? hfHelper.invMassKPiPairLcToPKPi(candidate) : hfHelper.invMassKPiPairLcToPiKP(candidate);
+    float invMass, invMassKPi;
+    if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
+      invMass = candFlag == 0 ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
+      invMassKPi = candFlag == 0 ? hfHelper.invMassKPiPairLcToPKPi(candidate) : hfHelper.invMassKPiPairLcToPiKP(candidate);
+    } else {
+      invMass = candFlag == 0 ? candidate.kfMassPKPi() : candidate.kfMassPiKP();
+      invMassKPi = candFlag == 0 ? candidate.kfMassKPi() : candidate.kfMassPiK();
+    }
 
     return std::make_pair(invMass, invMassKPi);
   }
@@ -606,10 +612,10 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidate candidate instance
   /// \param candidateMlScore instance of handler of vectors with ML scores associated with the current candidate
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
-  template <bool isMc, typename CandType>
+  template <bool isMc, int reconstructionType, typename CandType>
   void fillLiteTable(CandType const& candidate, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
   {
-    auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses(candidate, candFlag);
+    auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses<reconstructionType>(candidate, candFlag);
     const float functionCt = hfHelper.ctLc(candidate);
     const float functionY = hfHelper.yLc(candidate);
 
@@ -691,10 +697,10 @@ struct HfTreeCreatorLcToPKPi {
   /// \param candidate candidate instance
   /// \param candidateMlScore instance of handler of vectors with ML scores associated with the current candidate
   /// \param candFlag flag indicating if PKPi (0) or PiKP (1) hypothesis is used
-  template <bool isMc, typename CandType>
+  template <bool isMc, int reconstructionType, typename CandType>
   void fillFullTable(CandType const& candidate, aod::HfMlLcToPKPi::iterator const& candidateMlScore, int candFlag)
   {
-    auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses(candidate, candFlag);
+    auto [functionInvMass, functionInvMassKPi] = evaluateInvariantMasses<reconstructionType>(candidate, candFlag);
     const float functionCt = hfHelper.ctLc(candidate);
     const float functionY = hfHelper.yLc(candidate);
     const float functionE = hfHelper.eLc(candidate);
@@ -942,9 +948,9 @@ struct HfTreeCreatorLcToPKPi {
         const bool notSkippedBkg = isMcCandidateSignal || candidate.pt() > downSampleBkgPtMax || pseudoRndm < downSampleBkgFactor;
         if (passSelection && notSkippedBkg && (keepAll || (keepOnlySignalMc && isMcCandidateSignal) || (keepOnlyBkg && !isMcCandidateSignal) || (keepCorrBkgMC && isCorrBkg))) {
           if (fillCandidateLiteTable) {
-            fillLiteTable<IsMc>(candidate, candidateMlScore, candFlag);
+            fillLiteTable<IsMc, reconstructionType>(candidate, candidateMlScore, candFlag);
           } else {
-            fillFullTable<IsMc>(candidate, candidateMlScore, candFlag);
+            fillFullTable<IsMc, reconstructionType>(candidate, candidateMlScore, candFlag);
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
@@ -1124,9 +1130,9 @@ struct HfTreeCreatorLcToPKPi {
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (functionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {
-            fillLiteTable<IsMc>(candidate, candidateMlScore, candFlag);
+            fillLiteTable<IsMc, reconstructionType>(candidate, candidateMlScore, candFlag);
           } else {
-            fillFullTable<IsMc>(candidate, candidateMlScore, candFlag);
+            fillFullTable<IsMc, reconstructionType>(candidate, candidateMlScore, candFlag);
           }
 
           if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
