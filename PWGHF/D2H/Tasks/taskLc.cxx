@@ -69,6 +69,13 @@ struct HfTaskLc {
   constexpr static float CtToProperLifetimePs = 1.f / o2::constants::physics::LightSpeedCm2PS;
   constexpr static float NanoToPico = 1000.f;
 
+  enum MlClasses : int {
+    MlClassBackground = 0,
+    MlClassPrompt,
+    MlClassNonPrompt,
+    NumberOfMlClasses
+  };
+
   HfHelper hfHelper;
   SliceCache cache;
 
@@ -552,10 +559,10 @@ struct HfTaskLc {
             massLc = hfHelper.invMassLcToPKPi(candidate);
 
             if constexpr (fillMl) {
-              if (candidate.mlProbLcToPKPi().size() == 3) {
-                outputBkg = candidate.mlProbLcToPKPi()[0];    /// bkg score
-                outputPrompt = candidate.mlProbLcToPKPi()[1]; /// prompt score
-                outputFD = candidate.mlProbLcToPKPi()[2];     /// non-prompt score
+              if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
+                outputBkg = candidate.mlProbLcToPKPi()[MlClassBackground]; /// bkg score
+                outputPrompt = candidate.mlProbLcToPKPi()[MlClassPrompt];  /// prompt score
+                outputFD = candidate.mlProbLcToPKPi()[MlClassNonPrompt];   /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
@@ -579,10 +586,10 @@ struct HfTaskLc {
             massLc = hfHelper.invMassLcToPiKP(candidate);
 
             if constexpr (fillMl) {
-              if (candidate.mlProbLcToPiKP().size() == 3) {
-                outputBkg = candidate.mlProbLcToPiKP()[0];    /// bkg score
-                outputPrompt = candidate.mlProbLcToPiKP()[1]; /// prompt score
-                outputFD = candidate.mlProbLcToPiKP()[2];     /// non-prompt score
+              if (candidate.mlProbLcToPiKP().size() == NumberOfMlClasses) {
+                outputBkg = candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
+                outputPrompt = candidate.mlProbLcToPiKP()[MlClassPrompt];  /// prompt score
+                outputFD = candidate.mlProbLcToPiKP()[MlClassNonPrompt];   /// non-prompt score
               }
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
@@ -764,10 +771,10 @@ struct HfTaskLc {
           massLc = hfHelper.invMassLcToPKPi(candidate);
 
           if constexpr (fillMl) {
-            if (candidate.mlProbLcToPKPi().size() == 3) {
-              outputBkg = candidate.mlProbLcToPKPi()[0];    /// bkg score
-              outputPrompt = candidate.mlProbLcToPKPi()[1]; /// prompt score
-              outputFD = candidate.mlProbLcToPKPi()[2];     /// non-prompt score
+            if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
+              outputBkg = candidate.mlProbLcToPKPi()[MlClassBackground]; /// bkg score
+              outputPrompt = candidate.mlProbLcToPKPi()[MlClassPrompt];  /// prompt score
+              outputFD = candidate.mlProbLcToPKPi()[MlClassNonPrompt];   /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
@@ -790,10 +797,10 @@ struct HfTaskLc {
           massLc = hfHelper.invMassLcToPiKP(candidate);
 
           if constexpr (fillMl) {
-            if (candidate.mlProbLcToPiKP().size() == 3) {
-              outputBkg = candidate.mlProbLcToPiKP()[0];    /// bkg score
-              outputPrompt = candidate.mlProbLcToPiKP()[1]; /// prompt score
-              outputFD = candidate.mlProbLcToPiKP()[2];     /// non-prompt score
+            if (candidate.mlProbLcToPiKP().size() == NumberOfMlClasses) {
+              outputBkg = candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
+              outputPrompt = candidate.mlProbLcToPiKP()[MlClassPrompt];  /// prompt score
+              outputFD = candidate.mlProbLcToPiKP()[MlClassNonPrompt];   /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
