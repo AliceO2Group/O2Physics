@@ -264,15 +264,13 @@ struct HfCandidateCreatorCharmResoReduced {
       }
 
       if (TESTBIT(candV0.v0Type(), V0Type::Lambda)) {
-        if (candV0.invMassLambda() < invMassLow ||
-            candV0.invMassLambda() > invMassHigh) {
+        if (candV0.invMassLambda() < invMassLow || candV0.invMassLambda() > invMassHigh) {
           return false;
         }
       }
 
       if (TESTBIT(candV0.v0Type(), V0Type::AntiLambda)) {
-        if (candV0.invMassAntiLambda() < invMassLow ||
-            candV0.invMassAntiLambda() > invMassHigh) {
+        if (candV0.invMassAntiLambda() < invMassLow || candV0.invMassAntiLambda() > invMassHigh) {
           return false;
         }
       }
