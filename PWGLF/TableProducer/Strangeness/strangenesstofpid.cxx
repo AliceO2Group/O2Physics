@@ -738,8 +738,6 @@ struct strangenesstofpid {
         }
       }
       if (lengthNegative > 0.0f) {
-        v0tof.timeNegativePr = lengthNegative / velocityNegativePr;
-        v0tof.timeNegativePi = lengthNegative / velocityNegativePi;
         v0tof.deltaTimeNegativeLambdaPr = (nTof.tofSignal - nTof.tofEvTime) - (timeLambda + v0tof.timeNegativePr);
         v0tof.deltaTimeNegativeLambdaPi = (nTof.tofSignal - nTof.tofEvTime) - (timeLambda + v0tof.timeNegativePi);
         v0tof.deltaTimeNegativeK0ShortPi = (nTof.tofSignal - nTof.tofEvTime) - (timeK0Short + v0tof.timeNegativePi);
