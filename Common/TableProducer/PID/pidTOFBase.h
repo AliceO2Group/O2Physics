@@ -18,14 +18,11 @@
 #ifndef COMMON_TABLEPRODUCER_PID_PIDTOFBASE_H_
 #define COMMON_TABLEPRODUCER_PID_PIDTOFBASE_H_
 
+#include <Framework/ASoA.h>
+
+#include <cstdint>
 #include <string>
 #include <vector>
-
-// O2Physics
-#include "PID/ParamBase.h"
-#include "PID/PIDTOF.h"
-#include "Common/DataModel/PIDResponseTOF.h"
-#include "Common/DataModel/PIDResponse.h"
 
 static constexpr int nSpecies = 9;
 static constexpr int nParameters = 1;

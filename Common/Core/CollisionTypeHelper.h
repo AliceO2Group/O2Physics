@@ -18,7 +18,7 @@
 #ifndef COMMON_CORE_COLLISIONTYPEHELPER_H_
 #define COMMON_CORE_COLLISIONTYPEHELPER_H_
 
-#include "DataFormatsParameters/GRPLHCIFData.h"
+#include <DataFormatsParameters/GRPLHCIFData.h>
 
 #include <string>
 
