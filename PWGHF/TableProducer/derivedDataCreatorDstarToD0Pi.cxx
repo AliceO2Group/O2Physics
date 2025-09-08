@@ -130,7 +130,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
   /// nItsClsMin is the minumum number of clusters in ITS
   /// nTpcClsMin is the minumum number of clusters in TPC
   template <typename Trk>
-  void getTrackingInfos(std::array<Trk, 3> const& prongTracks, float& etaMin, int& nItsClsMin, int& nTpcClsMin)
+  void getTrackingInfos(std::array<Trk, 3> const& prongTracks, float& etaMin, uint8_t& nItsClsMin, int16_t& nTpcClsMin)
   {
     etaMin = 10.f;
     nItsClsMin = 100;
@@ -138,8 +138,8 @@ struct HfDerivedDataCreatorDstarToD0Pi {
 
     for (const auto& track : prongTracks) {
       etaMin = std::min(etaMin, std::abs(track.eta()));
-      nItsClsMin = std::min(nItsClsMin, std::abs(track.itsNCls()));
-      nTpcClsMin = std::min(nTpcClsMin, std::abs(track.tpcNClsCrossedRows()));
+      nItsClsMin = std::min(nItsClsMin, track.itsNCls());
+      nTpcClsMin = std::min(nTpcClsMin, track.tpcNClsCrossedRows());
     }
   }
 
@@ -150,7 +150,8 @@ struct HfDerivedDataCreatorDstarToD0Pi {
     rowsCommon.fillTablesCandidate(candidate, invMass, y);
     if (fillCandidatePar) {
       float absEtaTrackMin{-1.f};
-      int numItsClsMin{-1}, numTpcClsMin{-1};
+      uint8_t numItsClsMin{200u};
+      int16_t numTpcClsMin{1000};
       getTrackingInfos(std::array{prong0, prong1, prongSoftPi}, absEtaTrackMin, numItsClsMin, numTpcClsMin);
       rowCandidatePar(
         candidate.pxD0(),

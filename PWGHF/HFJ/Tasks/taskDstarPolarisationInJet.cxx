@@ -29,8 +29,6 @@
 #include <Math/GenVector/Boost.h>
 #include <Math/Vector3D.h>
 #include <Math/Vector4D.h>
-#include <TRandom3.h>
-#include <TVector3.h>
 
 #include <string>
 #include <vector>
