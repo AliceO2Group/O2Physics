@@ -3844,8 +3844,6 @@ struct AnalysisDileptonTrack {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
-          // Fill table for correlation analysis
-          DileptonTrackTable(fValuesHadron[VarManager::kDeltaEta], fValuesHadron[VarManager::kDeltaPhi], dilepton.mass(), dilepton.pt(), dilepton.eta(), track.pt(), track.eta(), mcDecision);
         }
 
         if constexpr (TCandidateType == VarManager::kBcToThreeMuons) {
@@ -3873,6 +3871,8 @@ struct AnalysisDileptonTrack {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
+          // Fill table for correlation analysis
+          DileptonTrackTable(fValuesHadron[VarManager::kDeltaEta], fValuesHadron[VarManager::kDeltaPhi], dilepton.mass(), dilepton.pt(), dilepton.eta(), track.pt(), track.eta(), mcDecision);
         }
 
         // Fill histograms for the triplets
