@@ -336,6 +336,9 @@ struct HypKinkCandidate {
   float chi2ITSMoth = 0.0f;
   uint32_t itsClusterSizeMoth = 0u;
   uint32_t itsClusterSizeDaug = 0u;
+  float tpcMomDaug = -999.f;
+  float tpcSignalDaug = -999.f;
+  int16_t tpcNClsPIDDaug = 0u;
   float nSigmaTPCDaug = -999.f;
   float nSigmaITSDaug = -999.f;
   float nSigmaTOFDaug = -999.f; // recalculated TOF NSigma
@@ -365,8 +368,6 @@ struct HyperkinkRecoTask {
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-
-  std::vector<int> mcPartIndices;
 
   // Histograms are defined with HistogramRegistry
   HistogramRegistry registry{"registry", {}};
@@ -555,6 +556,9 @@ struct HyperkinkRecoTask {
     fillCandidateRecoMoth(hypkinkCand, collision, trackMoth);
 
     hypkinkCand.itsClusterSizeDaug = trackDaug.itsClusterSizes();
+    hypkinkCand.tpcMomDaug = trackDaug.tpcInnerParam() * trackDaug.sign();
+    hypkinkCand.tpcSignalDaug = trackDaug.tpcSignal();
+    hypkinkCand.tpcNClsPIDDaug = trackDaug.tpcNClsPID();
     hypkinkCand.nSigmaTPCDaug = getTPCNSigma(trackDaug, pidTypeDaug);
     hypkinkCand.nSigmaITSDaug = getITSNSigma(trackDaug, itsResponse, pidTypeDaug);
 
@@ -584,17 +588,17 @@ struct HyperkinkRecoTask {
     auto motherTrackPar = getTrackParCov(trackMoth);
     o2::dataformats::VertexBase primaryVtx = {{collision.posX(), collision.posY(), collision.posZ()}, {collision.covXX(), collision.covXY(), collision.covYY(), collision.covXZ(), collision.covYZ(), collision.covZZ()}};
     std::array<float, 3> pMotherPv = {-999.f};
+    std::array<float, 3> updatePMotherPv = {-999.f};
     if (o2::base::Propagator::Instance()->propagateToDCABxByBz(primaryVtx, motherTrackPar, 2.f, o2::base::Propagator::MatCorrType::USEMatCorrLUT)) {
       motherTrackPar.getPxPyPzGlo(pMotherPv);
+      if (motherTrackPar.update(primaryVtx)) {
+        motherTrackPar.getPxPyPzGlo(updatePMotherPv);
+      }
     }
+
     hypkinkCand.momMothPV[0] = pMotherPv[0];
     hypkinkCand.momMothPV[1] = pMotherPv[1];
     hypkinkCand.momMothPV[2] = pMotherPv[2];
-
-    std::array<float, 3> updatePMotherPv = {-999.f};
-    if (motherTrackPar.update(primaryVtx)) {
-      motherTrackPar.getPxPyPzGlo(updatePMotherPv);
-    }
     hypkinkCand.updateMomMothPV[0] = updatePMotherPv[0];
     hypkinkCand.updateMomMothPV[1] = updatePMotherPv[1];
     hypkinkCand.updateMomMothPV[2] = updatePMotherPv[2];
@@ -641,10 +645,7 @@ struct HyperkinkRecoTask {
       if (std::abs(tpcNSigmaDaug) > cutTPCNSigmaDaug) {
         continue;
       }
-      float invMass = RecoDecay::m(std::array{std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()}, std::array{kinkCand.pxDaugNeut(), kinkCand.pyDaugNeut(), kinkCand.pzDaugNeut()}}, std::array{massChargedDaug, massNeutralDaug});
       registry.fill(HIST("hCandidateCounter"), 2);
-      registry.fill(HIST("h2MothMassPt"), kinkCand.mothSign() * kinkCand.ptMoth(), invMass);
-      registry.fill(HIST("h2DaugTPCNSigmaPt"), kinkCand.mothSign() * kinkCand.ptDaug(), tpcNSigmaDaug);
 
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -683,6 +684,10 @@ struct HyperkinkRecoTask {
       }
       registry.fill(HIST("hCandidateCounter"), 7);
 
+      float invMass = RecoDecay::m(std::array{std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()}, std::array{kinkCand.pxDaugNeut(), kinkCand.pyDaugNeut(), kinkCand.pzDaugNeut()}}, std::array{massChargedDaug, massNeutralDaug});
+      registry.fill(HIST("h2MothMassPt"), kinkCand.mothSign() * kinkCand.ptMoth(), invMass);
+      registry.fill(HIST("h2DaugTPCNSigmaPt"), kinkCand.mothSign() * kinkCand.ptDaug(), tpcNSigmaDaug);
+
       HypKinkCandidate hypkinkCand;
       fillCandidate(hypkinkCand, collision, kinkCand, motherTrack, daugTrack);
       hypkinkCand.nSigmaTOFDaug = nSigmaTOF;
@@ -697,6 +702,7 @@ struct HyperkinkRecoTask {
         hypkinkCand.momDaugSV[0], hypkinkCand.momDaugSV[1], hypkinkCand.momDaugSV[2],
         hypkinkCand.dcaXYMothPv, hypkinkCand.dcaXYDaugPv, hypkinkCand.dcaKinkTopo,
         hypkinkCand.chi2ITSMoth, hypkinkCand.itsClusterSizeMoth, hypkinkCand.itsClusterSizeDaug,
+        hypkinkCand.tpcMomDaug, hypkinkCand.tpcSignalDaug, hypkinkCand.tpcNClsPIDDaug,
         hypkinkCand.nSigmaTPCDaug, hypkinkCand.nSigmaITSDaug, hypkinkCand.nSigmaTOFDaug,
         hypkinkCand.momMothPV[0], hypkinkCand.momMothPV[1], hypkinkCand.momMothPV[2],
         hypkinkCand.updateMomMothPV[0], hypkinkCand.updateMomMothPV[1], hypkinkCand.updateMomMothPV[2]);
@@ -706,23 +712,27 @@ struct HyperkinkRecoTask {
 
   void processMC(MCLabeledCollisionsFull const& collisions, aod::KinkCands const& KinkCands, MCLabeledTracksIU const& tracks, aod::McParticles const& particlesMC, aod::McCollisions const& mcCollisions, aod::BCsWithTimestamps const&)
   {
-    mcPartIndices.clear();
     std::vector<int64_t> mcPartIndices;
     setTrackIDForMC(mcPartIndices, particlesMC, tracks);
+    std::vector<int64_t> signalIndicesPool;
     std::vector<bool> isReconstructedMCCollisions(mcCollisions.size(), false);
     std::vector<bool> isSelectedMCCollisions(mcCollisions.size(), false);
     std::vector<bool> isGoodCollisions(collisions.size(), false);
     std::vector<int> dauIDList(2, -1);
 
     for (const auto& collision : collisions) {
-      isReconstructedMCCollisions[collision.mcCollisionId()] = true;
+      if (collision.has_mcCollision()) {
+        isReconstructedMCCollisions[collision.mcCollisionId()] = true;
+      }
       registry.fill(HIST("hEventCounter"), 0);
       if (doEventCut && (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || std::abs(collision.posZ()) > maxZVertex)) {
         continue;
       }
       registry.fill(HIST("hEventCounter"), 1);
       registry.fill(HIST("hVertexZCollision"), collision.posZ());
-      isSelectedMCCollisions[collision.mcCollisionId()] = true;
+      if (collision.has_mcCollision()) {
+        isSelectedMCCollisions[collision.mcCollisionId()] = true;
+      }
       isGoodCollisions[collision.globalIndex()] = true;
     }
 
@@ -766,7 +776,6 @@ struct HyperkinkRecoTask {
       if (std::abs(tpcNSigmaDaug) > cutTPCNSigmaDaug) {
         continue;
       }
-      float invMass = RecoDecay::m(std::array{std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()}, std::array{kinkCand.pxDaugNeut(), kinkCand.pyDaugNeut(), kinkCand.pzDaugNeut()}}, std::array{massChargedDaug, massNeutralDaug});
       registry.fill(HIST("hCandidateCounter"), 2);
       if (isKinkSignal) {
         registry.fill(HIST("hTrueCandidateCounter"), 2);
@@ -831,6 +840,7 @@ struct HyperkinkRecoTask {
         registry.fill(HIST("hTrueCandidateCounter"), 7);
       }
 
+      float invMass = RecoDecay::m(std::array{std::array{kinkCand.pxDaug(), kinkCand.pyDaug(), kinkCand.pzDaug()}, std::array{kinkCand.pxDaugNeut(), kinkCand.pyDaugNeut(), kinkCand.pzDaugNeut()}}, std::array{massChargedDaug, massNeutralDaug});
       registry.fill(HIST("h2MothMassPt"), kinkCand.mothSign() * kinkCand.ptMoth(), invMass);
       registry.fill(HIST("h2DaugTPCNSigmaPt"), kinkCand.mothSign() * kinkCand.ptDaug(), tpcNSigmaDaug);
 
@@ -875,7 +885,7 @@ struct HyperkinkRecoTask {
         hypkinkCand.isSignal = true;
         hypkinkCand.isSignalReco = true;
         fillCandidateMCInfo(hypkinkCand, mcMothTrack, mcDaugTrack, mcNeutTrack);
-        mcPartIndices.push_back(mcMothTrack.globalIndex());
+        signalIndicesPool.push_back(mcMothTrack.globalIndex());
 
         std::array<float, 2> dcaInfo;
         auto mcMothTrackPar = getTrackParFromMC(mcMothTrack, 2);
@@ -897,6 +907,7 @@ struct HyperkinkRecoTask {
         hypkinkCand.momDaugSV[0], hypkinkCand.momDaugSV[1], hypkinkCand.momDaugSV[2],
         hypkinkCand.dcaXYMothPv, hypkinkCand.dcaXYDaugPv, hypkinkCand.dcaKinkTopo,
         hypkinkCand.chi2ITSMoth, hypkinkCand.itsClusterSizeMoth, hypkinkCand.itsClusterSizeDaug,
+        hypkinkCand.tpcMomDaug, hypkinkCand.tpcSignalDaug, hypkinkCand.tpcNClsPIDDaug,
         hypkinkCand.nSigmaTPCDaug, hypkinkCand.nSigmaITSDaug, hypkinkCand.nSigmaTOFDaug,
         hypkinkCand.isSignal, hypkinkCand.isSignalReco, hypkinkCand.isCollReco, hypkinkCand.isSurvEvSelection,
         hypkinkCand.truePosSV[0], hypkinkCand.truePosSV[1], hypkinkCand.truePosSV[2],
@@ -925,7 +936,7 @@ struct HyperkinkRecoTask {
         continue;
       }
 
-      if (std::find(mcPartIndices.begin(), mcPartIndices.end(), mcparticle.globalIndex()) != mcPartIndices.end()) {
+      if (std::find(signalIndicesPool.begin(), signalIndicesPool.end(), mcparticle.globalIndex()) != signalIndicesPool.end()) {
         continue;
       }
 
@@ -949,6 +960,7 @@ struct HyperkinkRecoTask {
         -1, -1, -1,
         -1, -1, -1,
         -1,
+        -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
         -1, -1, -1,
@@ -1233,13 +1245,16 @@ struct HyperkinkQa {
     setTrackIDForMC(mcPartIndices, particlesMC, tracks);
     std::vector<bool> isSelectedMCCollisions(mcCollisions.size(), false);
     std::vector<int> dauIDList(2, -1);
+
     for (const auto& collision : collisions) {
       genQAHist.fill(HIST("hCollCounter"), 0.5);
       if (doEventCut && (!collision.selection_bit(aod::evsel::kIsTriggerTVX) || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || std::abs(collision.posZ()) > maxZVertex)) {
         continue;
       }
       genQAHist.fill(HIST("hCollCounter"), 1.5);
-      isSelectedMCCollisions[collision.mcCollisionId()] = true;
+      if (collision.has_mcCollision()) {
+        isSelectedMCCollisions[collision.mcCollisionId()] = true;
+      }
     }
 
     for (const auto& mcCollision : mcCollisions) {

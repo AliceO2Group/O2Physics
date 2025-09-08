@@ -64,6 +64,7 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using std::array;
+using namespace o2::aod::rctsel;
 struct phispectrapbpbqa {
   double bz = 0.;
 
@@ -75,6 +76,13 @@ struct phispectrapbpbqa {
     Configurable<std::string> cfgURL{"cfgURL", "http://alice-ccdb.cern.ch", "Address of the CCDB to browse"};
     Configurable<int64_t> nolaterthan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "Latest acceptable timestamp of creation for the object"};
   } cfgCcdbParam;
+
+  struct : ConfigurableGroup {
+    Configurable<bool> requireRCTFlagChecker{"requireRCTFlagChecker", true, "Check event quality in run condition table"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+  } rctCut;
+
   TH3D* hTPCCallib;
   TH3D* hTOFCallib;
 
@@ -82,6 +90,8 @@ struct phispectrapbpbqa {
   Configurable<std::string> ConfPathTOF{"ConfPathTOF", "Users/s/skundu/My/Object/PIDcallib/TOF", "Weight path TOF"};
 
   // events
+  Configurable<bool> applyStrictEvSel{"applyStrictEvSel", true, "Apply strict event selection"};
+  Configurable<bool> applyMCsel8{"applyMCsel8", false, "Apply sel8 in MC"};
   Configurable<int> cfgNoMixedEvents{"cfgNoMixedEvents", 10, "Number of event mixing"};
   ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for bin"};
   // ConfigurableAxis axisMultiplicityClass{"axisMultiplicityClass", {8, 0, 80}, "multiplicity percentile for bin"};
@@ -96,10 +106,12 @@ struct phispectrapbpbqa {
 
   Configurable<int> cfgITScluster{"cfgITScluster", 4, "Number of ITS cluster"};
   Configurable<int> cfgTPCcluster{"cfgTPCcluster", 80, "Number of TPC cluster"};
+  Configurable<int> cfgTPCPIDcluster{"cfgTPCPIDcluster", 80, "Number of TPC PID cluster"};
   Configurable<int> cfgTPCcrossedRows{"cfgTPCcrossedRows", 90, "Number of TPC crossed Rows"};
 
   Configurable<bool> cfgUpdatePID{"cfgUpdatePID", false, "Update PID callibration"};
   Configurable<bool> applyPID{"applyPID", true, "Apply PID"};
+  Configurable<bool> applyPIDCluster{"applyPIDCluster", true, "Apply PID cluster"};
   Configurable<bool> isDeepAngle{"isDeepAngle", false, "Deep Angle cut"};
   Configurable<double> cfgDeepAngle{"cfgDeepAngle", 0.04, "Deep Angle cut value"};
   Configurable<bool> timeFrameMC{"timeFrameMC", false, "time frame cut in MC"};
@@ -107,7 +119,7 @@ struct phispectrapbpbqa {
   Configurable<bool> ispTdepPID{"ispTdepPID", false, "pT dependent PID"};
   Configurable<float> cfgCutTOFBeta{"cfgCutTOFBeta", 0.5, "cut TOF beta"};
   Configurable<float> nsigmaCutTPC{"nsigmacutTPC", 2.0, "Value of the TPC Nsigma cut"};
-  Configurable<float> nsigmaCutCombined{"nsigmaCutCombined", 2.0, "Value of the Combined TPC-TOF Nsigma cut"};
+  Configurable<bool> applyTOF{"applyTOF", true, "Apply TOF"};
   ConfigurableAxis axisOccupancy{"axisOccupancy", {VARIABLE_WIDTH, -1.0, 200.0, 500.0, 1000.0, 2000.0f, 4000.0, 10000.0f, 100000.0f}, "occupancy axis"};
   struct : ConfigurableGroup {
     ConfigurableAxis configThnAxisInvMass{"configThnAxisInvMass", {90, 0.98, 1.07}, "#it{M} (GeV/#it{c}^{2})"};
@@ -122,7 +134,7 @@ struct phispectrapbpbqa {
   Filter collisionFilter = nabs(aod::collision::posZ) < cfgCutVertex;
   Filter centralityFilter = nabs(aod::cent::centFT0C) < cfgCutCentrality;
   Filter acceptanceFilter = (nabs(aod::track::eta) < cfgCutEta && nabs(aod::track::pt) > cfgCutPT);
-  // Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < nsigmaCutTPC;
+  Filter PIDcutFilter = nabs(aod::pidtpc::tpcNSigmaKa) < nsigmaCutTPC;
   // Filter DCAcutFilter = (nabs(aod::track::dcaXY) < cfgCutDCAxy) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
 
   using EventCandidates = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::TPCMults, aod::CentFT0Cs, aod::Mults>>;
@@ -141,13 +153,13 @@ struct phispectrapbpbqa {
   Partition<TrackCandidates> negTracks = aod::track::signed1Pt < cfgCutCharge;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-
+  RCTFlagsChecker rctChecker;
   // Event selection cuts - Alex
   // TF1* fMultPVCutLow = nullptr;
 
   void init(o2::framework::InitContext&)
   {
-
+    rctChecker.init(rctCut.cfgEvtRCTFlagCheckerLabel, rctCut.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
     histos.add("hphiSE", "hphiSE", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisCentrality, axisOccupancy, cnfgaxis.configThnAxisSector}, true);
     histos.add("hphiME", "hphiME", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisCentrality, axisOccupancy, cnfgaxis.configThnAxisSector}, true);
     histos.add("hphiGen", "hphiGen", HistType::kTHnSparseF, {cnfgaxis.configThnAxisInvMass, cnfgaxis.configThnAxisPt, cnfgaxis.configThnAxisCentrality, axisOccupancy}, true);
@@ -157,6 +169,8 @@ struct phispectrapbpbqa {
 
     histos.add("hPhiMommentum", "hPhiMommentum", kTH3F, {{36, 0, 6.283}, {200, -10.0, 10.0}, axisOccupancy});
 
+    histos.add("hNsigmaTPCBeforeCut", "NsigmaKaon TPC Before Cut", kTH3F, {{200, -10.0f, 10.0f}, {100, 0.0, 10.0}, axisOccupancy});
+    histos.add("hNsigmaTOFBeforeCut", "NsigmaKaon TOF Before Cut", kTH3F, {{200, -10.0f, 10.0f}, {100, 0.0, 10.0}, axisOccupancy});
     histos.add("hNsigmaTPCAfterCut", "NsigmaKaon TPC After Cut", kTH3F, {{200, -10.0f, 10.0f}, {100, 0.0, 10.0}, axisOccupancy});
     histos.add("hNsigmaTOFAfterCut", "NsigmaKaon TOF After Cut", kTH3F, {{200, -10.0f, 10.0f}, {100, 0.0, 10.0}, axisOccupancy});
 
@@ -170,7 +184,7 @@ struct phispectrapbpbqa {
     histos.add("hOccupancy", "hOccupancy", kTH2F, {axisOccupancy, cnfgaxis.configThnAxisCentrality});
     histos.add("hMC", "hMC", kTH1F, {{20, 0.0f, 20.0f}});
     histos.add("h1PhiRecsplit", "h1PhiRecsplit", kTH1F, {{100, 0.0f, 10.0f}});
-
+    histos.add("hData", "hData", kTH1F, {{20, 0.0f, 20.0f}});
     ccdb->setURL(cfgCcdbParam.cfgURL);
     ccdbApi.init("http://alice-ccdb.cern.ch");
     ccdb->setCaching(true);
@@ -205,6 +219,9 @@ struct phispectrapbpbqa {
     if (!(candidate.isGlobalTrack() && candidate.isPVContributor() && candidate.itsNCls() > cfgITScluster && candidate.tpcNClsFound() > cfgTPCcluster && candidate.tpcNClsCrossedRows() > cfgTPCcrossedRows)) {
       return false;
     }
+    if (applyPIDCluster && candidate.tpcNClsPID() < cfgTPCPIDcluster) {
+      return false;
+    }
     return true;
   }
 
@@ -214,8 +231,28 @@ struct phispectrapbpbqa {
     if (candidate.p() < 0.7 && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
       return true;
     }
-    if (candidate.p() >= 0.7 && candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Sqrt(nsigmaTPC * nsigmaTPC + nsigmaTOF * nsigmaTOF) < nsigmaCutCombined) {
-      return true;
+    if (candidate.p() > 0.7 && candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
+      if (candidate.p() > 0.7 && candidate.p() < 1.6 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -5.0 && nsigmaTOF < 10.0) {
+        return true;
+      }
+      if (candidate.p() >= 1.6 && candidate.p() < 2.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 10.0) {
+        return true;
+      }
+      if (candidate.p() >= 2.0 && candidate.p() < 2.5 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 6.0) {
+        return true;
+      }
+      if (candidate.p() >= 2.5 && candidate.p() < 4.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -2.5 && nsigmaTOF < 4.0) {
+        return true;
+      }
+      if (candidate.p() >= 4.0 && candidate.p() < 5.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 3.0) {
+        return true;
+      }
+      if (candidate.p() >= 5.0 && candidate.p() < 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 2.5) {
+        return true;
+      }
+      if (candidate.p() >= 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 3.0) {
+        return true;
+      }
     }
     return false;
   }
@@ -223,13 +260,34 @@ struct phispectrapbpbqa {
   template <typename T>
   bool selectionPID(const T& candidate, double nsigmaTPC, double nsigmaTOF)
   {
-    if (candidate.p() < 0.7 && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
-      return true;
-    }
-    if (candidate.p() >= 0.7 && candidate.hasTOF() && candidate.beta() > cfgCutTOFBeta && TMath::Sqrt(nsigmaTPC * nsigmaTPC + nsigmaTOF * nsigmaTOF) < nsigmaCutCombined) {
-      return true;
-    }
-    if (candidate.p() >= 0.7 && !candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
+    if (applyTOF) {
+      if (!candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
+        return true;
+      }
+      if (candidate.p() > 0.5 && candidate.hasTOF() && TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
+        if (candidate.p() > 0.5 && candidate.p() < 1.6 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -5.0 && nsigmaTOF < 10.0) {
+          return true;
+        }
+        if (candidate.p() >= 1.6 && candidate.p() < 2.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 10.0) {
+          return true;
+        }
+        if (candidate.p() >= 2.0 && candidate.p() < 2.5 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 6.0) {
+          return true;
+        }
+        if (candidate.p() >= 2.5 && candidate.p() < 4.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -2.5 && nsigmaTOF < 4.0) {
+          return true;
+        }
+        if (candidate.p() >= 4.0 && candidate.p() < 5.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 3.0) {
+          return true;
+        }
+        if (candidate.p() >= 5.0 && candidate.p() < 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -4.0 && nsigmaTOF < 2.5) {
+          return true;
+        }
+        if (candidate.p() >= 6.0 && candidate.beta() > cfgCutTOFBeta && nsigmaTOF > -3.0 && nsigmaTOF < 3.0) {
+          return true;
+        }
+      }
+    } else if (TMath::Abs(nsigmaTPC) < nsigmaCutTPC) {
       return true;
     }
     return false;
@@ -279,19 +337,34 @@ struct phispectrapbpbqa {
   int lastRunNumber = -999;
   void processSameEvent(EventCandidates::iterator const& collision, TrackCandidates const&, aod::BCsWithTimestamps const&)
   {
-    if (!collision.sel8() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+    histos.fill(HIST("hData"), 1);
+    if (!collision.sel8() || !collision.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
       return;
     }
+    histos.fill(HIST("hData"), 2);
+    if (rctCut.requireRCTFlagChecker) {
+      if (!rctChecker(collision)) {
+        return;
+      }
+    }
+    histos.fill(HIST("hData"), 3);
+    if (applyStrictEvSel && (!collision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) || !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow))) {
+      return;
+    }
+    histos.fill(HIST("hData"), 4);
     auto centrality = collision.centFT0C();
     int occupancy = collision.trackOccupancyInTimeRange();
     histos.fill(HIST("hCentrality"), centrality);
     histos.fill(HIST("hVtxZ"), collision.posZ());
-    auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
+
+    /*auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     currentRunNumber = collision.bc_as<aod::BCsWithTimestamps>().runNumber();
     if (currentRunNumber != lastRunNumber) {
       bz = getMagneticField(bc.timestamp());
     }
     lastRunNumber = currentRunNumber;
+    */
+
     auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
@@ -324,6 +397,8 @@ struct phispectrapbpbqa {
       if (track1.hasTOF()) {
         histos.fill(HIST("hNsigmaTOF"), nSigmaTOF, track1.p(), occupancy, centrality);
       }
+      histos.fill(HIST("hNsigmaTPCBeforeCut"), nSigmaTPC, track1.p(), occupancy);
+      histos.fill(HIST("hNsigmaTOFBeforeCut"), nSigmaTOF, track1.p(), occupancy);
       if (applyPID) {
         if (ispTdepPID && !selectionPIDpTdependent(track1, nSigmaTPC, nSigmaTOF)) {
           continue;
@@ -374,6 +449,8 @@ struct phispectrapbpbqa {
           if (track2.hasTOF()) {
             histos.fill(HIST("hNsigmaTOF"), nSigmaTOF2, track2.p(), occupancy, centrality);
           }
+          histos.fill(HIST("hNsigmaTPCBeforeCut"), nSigmaTPC2, track2.p(), occupancy);
+          histos.fill(HIST("hNsigmaTOFBeforeCut"), nSigmaTOF2, track2.p(), occupancy);
         }
         if (applyPID) {
           if (ispTdepPID && !selectionPIDpTdependent(track2, nSigmaTPC2, nSigmaTOF2)) {
@@ -428,11 +505,22 @@ struct phispectrapbpbqa {
     BinningTypeVertexContributor binningOnPositions{{axisVertex, cnfgaxis.configThnAxisCentrality, axisOccupancy}, true};
     SameKindPair<EventCandidates, TrackCandidates, BinningTypeVertexContributor> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
     for (auto& [collision1, tracks1, collision2, tracks2] : pair) {
-      if (!collision1.sel8() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (!collision1.sel8() || !collision1.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision1.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision1.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision1.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         continue;
       }
-      if (!collision2.sel8() || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (!collision2.sel8() || !collision2.selection_bit(aod::evsel::kNoTimeFrameBorder) || !collision2.selection_bit(aod::evsel::kNoITSROFrameBorder) || !collision2.selection_bit(aod::evsel::kNoSameBunchPileup) || !collision2.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         continue;
+      }
+      if (rctCut.requireRCTFlagChecker) {
+        if (!rctChecker(collision1) || !rctChecker(collision2)) {
+          continue;
+        }
+      }
+      if (applyStrictEvSel && (!collision1.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) || !collision1.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow))) {
+        return;
+      }
+      if (applyStrictEvSel && (!collision2.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) || !collision2.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow))) {
+        return;
       }
       int occupancy = collision1.trackOccupancyInTimeRange();
       auto centrality = collision1.centFT0C();
@@ -519,11 +607,15 @@ struct phispectrapbpbqa {
       return;
     }
     for (auto& RecCollision : RecCollisions) {
-      if (!RecCollision.sel8()) {
+      if (applyMCsel8 && !RecCollision.sel8()) {
         histos.fill(HIST("hMC"), 3);
         continue;
       }
-      if (!RecCollision.selection_bit(aod::evsel::kNoSameBunchPileup) || !RecCollision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !RecCollision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) || !RecCollision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)) {
+      if (!applyMCsel8 && !RecCollision.selection_bit(aod::evsel::kIsTriggerTVX)) {
+        histos.fill(HIST("hMC"), 3);
+        continue;
+      }
+      if (!RecCollision.selection_bit(aod::evsel::kNoSameBunchPileup) || !RecCollision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !RecCollision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         histos.fill(HIST("hMC"), 4);
         continue;
       }
@@ -536,12 +628,21 @@ struct phispectrapbpbqa {
         histos.fill(HIST("hMC"), 7);
         continue;
       }
-      if (readOutFrameMC && RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      if (readOutFrameMC && !RecCollision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
         histos.fill(HIST("hMC"), 8);
         continue;
       }
-
       histos.fill(HIST("hMC"), 9);
+      if (rctCut.requireRCTFlagChecker) {
+        if (!rctChecker(RecCollision)) {
+          continue;
+        }
+      }
+      histos.fill(HIST("hMC"), 10);
+      if (applyStrictEvSel && (!RecCollision.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll) || !RecCollision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow))) {
+        return;
+      }
+      histos.fill(HIST("hMC"), 11);
       auto centrality = RecCollision.centFT0C();
       int occupancy = RecCollision.trackOccupancyInTimeRange();
       histos.fill(HIST("hOccupancy"), occupancy, centrality);
@@ -549,6 +650,7 @@ struct phispectrapbpbqa {
       auto oldindex = -999;
       auto Rectrackspart = RecTracks.sliceBy(perCollision, RecCollision.globalIndex());
       // loop over reconstructed particle
+      int ntrack1 = 0;
       for (auto track1 : Rectrackspart) {
         if (!selectionTrack(track1)) {
           continue;
@@ -557,6 +659,32 @@ struct phispectrapbpbqa {
           continue;
         }
         auto track1ID = track1.index();
+        // PID track 1
+        double nSigmaTPC = track1.tpcNSigmaKa();
+        double nSigmaTOF = track1.tofNSigmaKa();
+        if (!track1.hasTOF()) {
+          nSigmaTOF = -9999.99;
+        }
+        if (cfgUpdatePID) {
+          nSigmaTPC = (nSigmaTPC - hTPCCallib->GetBinContent(hTPCCallib->FindBin(track1.p(), centrality, occupancy))) / hTPCCallib->GetBinError(hTPCCallib->FindBin(track1.p(), centrality, occupancy));
+          if (track1.hasTOF()) {
+            nSigmaTOF = (nSigmaTOF - hTOFCallib->GetBinContent(hTOFCallib->FindBin(track1.p(), centrality, occupancy))) / hTOFCallib->GetBinError(hTOFCallib->FindBin(track1.p(), centrality, occupancy));
+          }
+        }
+        histos.fill(HIST("hNsigmaTPCBeforeCut"), nSigmaTPC, track1.p(), occupancy);
+        histos.fill(HIST("hNsigmaTOFBeforeCut"), nSigmaTOF, track1.p(), occupancy);
+
+        if (applyPID) {
+          if (ispTdepPID && !selectionPIDpTdependent(track1, nSigmaTPC, nSigmaTOF)) {
+            continue;
+          }
+          if (!ispTdepPID && !selectionPID(track1, nSigmaTPC, nSigmaTOF)) {
+            continue;
+          }
+          histos.fill(HIST("hNsigmaTPCAfterCut"), nSigmaTPC, track1.p(), occupancy);
+          histos.fill(HIST("hNsigmaTOFAfterCut"), nSigmaTOF, track1.p(), occupancy);
+        }
+        ntrack1 = ntrack1 + 1;
         for (auto track2 : Rectrackspart) {
           auto track2ID = track2.index();
           if (track2ID <= track1ID) {
@@ -574,18 +702,7 @@ struct phispectrapbpbqa {
           if (track1.sign() * track2.sign() > 0) {
             continue;
           }
-          // PID track 1
-          double nSigmaTPC = track1.tpcNSigmaKa();
-          double nSigmaTOF = track1.tofNSigmaKa();
-          if (!track1.hasTOF()) {
-            nSigmaTOF = -9999.99;
-          }
-          if (cfgUpdatePID) {
-            nSigmaTPC = (nSigmaTPC - hTPCCallib->GetBinContent(hTPCCallib->FindBin(track1.p(), centrality, occupancy))) / hTPCCallib->GetBinError(hTPCCallib->FindBin(track1.p(), centrality, occupancy));
-            if (track1.hasTOF()) {
-              nSigmaTOF = (nSigmaTOF - hTOFCallib->GetBinContent(hTOFCallib->FindBin(track1.p(), centrality, occupancy))) / hTOFCallib->GetBinError(hTOFCallib->FindBin(track1.p(), centrality, occupancy));
-            }
-          }
+
           // PID track 2
           double nSigmaTPC2 = track2.tpcNSigmaKa();
           double nSigmaTOF2 = track2.tofNSigmaKa();
@@ -598,20 +715,21 @@ struct phispectrapbpbqa {
               nSigmaTOF2 = (nSigmaTOF2 - hTOFCallib->GetBinContent(hTOFCallib->FindBin(track2.p(), centrality, occupancy))) / hTOFCallib->GetBinError(hTOFCallib->FindBin(track2.p(), centrality, occupancy));
             }
           }
+          if (ntrack1 == 1) {
+            histos.fill(HIST("hNsigmaTPCBeforeCut"), nSigmaTPC2, track2.p(), occupancy);
+            histos.fill(HIST("hNsigmaTOFBeforeCut"), nSigmaTOF2, track2.p(), occupancy);
+          }
           if (applyPID) {
-            if (ispTdepPID && !selectionPIDpTdependent(track1, nSigmaTPC, nSigmaTOF)) {
-              continue;
-            }
-            if (!ispTdepPID && !selectionPID(track1, nSigmaTPC, nSigmaTOF)) {
-              continue;
-            }
-
             if (ispTdepPID && !selectionPIDpTdependent(track2, nSigmaTPC2, nSigmaTOF2)) {
               continue;
             }
             if (!ispTdepPID && !selectionPID(track2, nSigmaTPC2, nSigmaTOF2)) {
               continue;
             }
+          }
+          if (ntrack1 == 1) {
+            histos.fill(HIST("hNsigmaTPCAfterCut"), nSigmaTPC2, track2.p(), occupancy);
+            histos.fill(HIST("hNsigmaTOFAfterCut"), nSigmaTOF2, track2.p(), occupancy);
           }
 
           const auto mctrack1 = track1.mcParticle();

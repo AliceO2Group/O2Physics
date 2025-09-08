@@ -33,12 +33,12 @@
 #include "MetadataHelper.h"
 #include "TableHelper.h"
 #include "pidTPCBase.h"
-#include "pidTPCModule.h"
 
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/Tools/PID/pidTPCModule.h"
 #include "Tools/ML/model.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -98,9 +98,15 @@ struct pidTpcService {
     pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
   }
 
+  void processTracksMCIU(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const&)
+  {
+    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
+  }
+
   PROCESS_SWITCH(pidTpcService, processTracks, "Process Tracks", false);
   PROCESS_SWITCH(pidTpcService, processTracksMC, "Process Tracks in MC (enables tune-on-data)", false);
-  PROCESS_SWITCH(pidTpcService, processTracksIU, "Process TracksIU (experimental)", true);
+  PROCESS_SWITCH(pidTpcService, processTracksIU, "Process TracksIU (Run 3)", true);
+  PROCESS_SWITCH(pidTpcService, processTracksMCIU, "Process TracksIUMC (Run 3)", false);
 };
 
 //****************************************************************************************

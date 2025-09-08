@@ -17,7 +17,9 @@
 #include "PWGLF/DataModel/mcCentrality.h"
 #include "PWGLF/Utils/inelGt.h"
 
+#include "Common/Core/TableHelper.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -224,8 +226,8 @@ struct Phik0shortanalysis {
 
   // Configurables for dN/deta with phi computation
   Configurable<bool> furtherCheckonMcCollision{"furtherCheckonMcCollision", true, "Further check on MC collisions"};
-  Configurable<bool> filterOnGenPhi{"filterOnGenPhi", true, "Filter on MC Phi"};
-  Configurable<bool> filterOnRecoPhiWPDG{"filterOnRecoPhiWPDG", true, "Filter on Reco Phi with WPDG"};
+  Configurable<int> filterOnGenPhi{"filterOnGenPhi", 1, "Filter on Gen Phi (0: K+K- pair like Phi, 1: proper Phi)"};
+  Configurable<int> filterOnRecoPhi{"filterOnRecoPhi", 1, "Filter on Reco Phi (0: without PDG, 1: with PDG)"};
   Configurable<bool> fillMcPartsForAllReco{"fillMcPartsForAllReco", false, "Fill MC particles for all associated reco collisions"};
 
   // Configurable for event mixing
@@ -306,6 +308,9 @@ struct Phik0shortanalysis {
 
   Partition<FullMCTracks> posMCTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
   Partition<FullMCTracks> negMCTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
+
+  Partition<FilteredMCTracks> posFiltMCTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
+  Partition<FilteredMCTracks> negFiltMCTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
 
   // Necessary to flag INEL>0 events in GenMC
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -979,8 +984,8 @@ struct Phik0shortanalysis {
     return false;
   }
 
-  template <typename T1, typename T2>
-  bool eventHasRecoPhiWPDG(const T1& posTracks, const T2& negTracks)
+  template <typename T1, typename T2, typename T3>
+  bool eventHasRecoPhiWPDG(const T1& posTracks, const T2& negTracks, const T3& mcParticles)
   {
     int nPhi = 0;
 
@@ -992,7 +997,7 @@ struct Phik0shortanalysis {
 
       if (!track1.has_mcParticle())
         continue;
-      auto mcTrack1 = track1.template mcParticle_as<aod::McParticles>();
+      auto mcTrack1 = mcParticles.rawIteratorAt(track1.mcParticleId());
       if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
         continue;
 
@@ -1006,24 +1011,28 @@ struct Phik0shortanalysis {
 
         if (!track2.has_mcParticle())
           continue;
-        auto mcTrack2 = track2.template mcParticle_as<aod::McParticles>();
+        auto mcTrack2 = mcParticles.rawIteratorAt(track2.mcParticleId());
         if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
           continue;
+
+        const auto mcTrack1MotherIndexes = mcTrack1.mothersIds();
+        const auto mcTrack2MotherIndexes = mcTrack2.mothersIds();
 
         float pTMother = -1.0f;
         float yMother = -1.0f;
         bool isMCMotherPhi = false;
-        for (const auto& motherOfMcTrack1 : mcTrack1.template mothers_as<aod::McParticles>()) {
-          for (const auto& motherOfMcTrack2 : mcTrack2.template mothers_as<aod::McParticles>()) {
-            if (motherOfMcTrack1.pdgCode() != motherOfMcTrack2.pdgCode())
-              continue;
-            if (motherOfMcTrack1.globalIndex() != motherOfMcTrack2.globalIndex())
-              continue;
-            if (motherOfMcTrack1.pdgCode() != o2::constants::physics::Pdg::kPhi)
+
+        for (const auto& mcTrack1MotherIndex : mcTrack1MotherIndexes) {
+          for (const auto& mcTrack2MotherIndex : mcTrack2MotherIndexes) {
+            if (mcTrack1MotherIndex != mcTrack2MotherIndex)
               continue;
 
-            pTMother = motherOfMcTrack1.pt();
-            yMother = motherOfMcTrack1.y();
+            const auto mother = mcParticles.rawIteratorAt(mcTrack1MotherIndex);
+            if (mother.pdgCode() != o2::constants::physics::Pdg::kPhi)
+              continue;
+
+            pTMother = mother.pt();
+            yMother = mother.y();
             isMCMotherPhi = true;
           }
         }
@@ -1038,6 +1047,40 @@ struct Phik0shortanalysis {
     }
 
     if (nPhi > 0)
+      return true;
+    return false;
+  }
+
+  template <typename T>
+  bool eventHasGenKPair(const T& mcParticles)
+  {
+    int nKPair = 0;
+
+    for (const auto& mcParticle1 : mcParticles) {
+      if (!mcParticle1.isPhysicalPrimary() || std::abs(mcParticle1.eta()) > trackConfigs.etaMax)
+        continue;
+
+      for (const auto& mcParticle2 : mcParticles) {
+        if (!mcParticle2.isPhysicalPrimary() || std::abs(mcParticle2.eta()) > trackConfigs.etaMax)
+          continue;
+
+        if ((mcParticle1.pdgCode() != PDG_t::kKPlus || mcParticle2.pdgCode() != PDG_t::kKMinus) &&
+            (mcParticle1.pdgCode() != PDG_t::kKMinus || mcParticle2.pdgCode() != PDG_t::kKPlus))
+          continue;
+
+        ROOT::Math::PxPyPzMVector genKPair = recMother(mcParticle1, mcParticle2, massKa, massKa);
+        if (genKPair.Pt() < phiConfigs.minPhiPt)
+          continue;
+        if (genKPair.M() < phiConfigs.lowMPhi || genKPair.M() > phiConfigs.upMPhi)
+          continue;
+        if (std::abs(genKPair.Rapidity()) > deltaYConfigs.cfgYAcceptance)
+          continue;
+
+        nKPair++;
+      }
+    }
+
+    if (nKPair > 0)
       return true;
     return false;
   }
@@ -2668,9 +2711,19 @@ struct Phik0shortanalysis {
       auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.perMCColl, mcCollision.globalIndex());
 
       if (!pwglf::isINELgtNmc(mcParticlesThisMcColl, 0, pdgDB))
-        return;
-      if (filterOnGenPhi && !eventHasGenPhi(mcParticlesThisMcColl))
-        return;
+        continue;
+      switch (filterOnGenPhi) {
+        case 0:
+          if (!eventHasGenKPair(mcParticlesThisMcColl))
+            continue;
+          break;
+        case 1:
+          if (!eventHasGenPhi(mcParticlesThisMcColl))
+            continue;
+          break;
+        default:
+          break;
+      }
 
       uint64_t numberAssocColl = 0;
       std::vector<float> zVtxs;
@@ -2683,13 +2736,21 @@ struct Phik0shortanalysis {
         if (acceptEventQA<true>(collision, false)) {
           auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
 
-          Partition<FilteredMCTracks> posFiltMCTracks = aod::track::signed1Pt > trackConfigs.cfgCutCharge;
           posFiltMCTracks.bindTable(filteredMCTracksThisColl);
-          Partition<FilteredMCTracks> negFiltMCTracks = aod::track::signed1Pt < trackConfigs.cfgCutCharge;
           negFiltMCTracks.bindTable(filteredMCTracksThisColl);
 
-          if (filterOnRecoPhiWPDG && !eventHasRecoPhiWPDG(posFiltMCTracks, negFiltMCTracks))
-            continue;
+          switch (filterOnRecoPhi) {
+            case 0:
+              if (!eventHasRecoPhi(posFiltMCTracks, negFiltMCTracks))
+                continue;
+              break;
+            case 1:
+              if (!eventHasRecoPhiWPDG(posFiltMCTracks, negFiltMCTracks, mcParticles))
+                continue;
+              break;
+            default:
+              break;
+          }
 
           mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), mcCollision.centFT0M());
           mcEventHist.fill(HIST("h2GenMCRecoVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());

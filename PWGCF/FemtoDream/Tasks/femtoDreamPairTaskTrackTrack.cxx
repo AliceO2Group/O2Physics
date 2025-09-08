@@ -76,9 +76,10 @@ struct femtoDreamPairTaskTrackTrack {
     Configurable<int> MultMax{"MultMax", 99999, "Maximum Multiplicity (MultNtr)"};
     Configurable<float> MultPercentileMin{"MultPercentileMin", 0, "Maximum Multiplicity Percentile"};
     Configurable<float> MultPercentileMax{"MultPercentileMax", 100, "Minimum Multiplicity Percentile"};
+    Configurable<float> SphericityMin{"SphericityMin", 0, "Minimum event sphericity"};
   } EventSel;
 
-  Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax;
+  Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax && aod::femtodreamcollision::sphericity >= EventSel.SphericityMin;
   Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.MultPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.MultPercentileMax;
 
   using FilteredCollisions = soa::Filtered<FDCollisions>;
