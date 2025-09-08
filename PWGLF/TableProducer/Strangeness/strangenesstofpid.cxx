@@ -532,15 +532,15 @@ struct strangenesstofpid {
       }
     }
 
-    if (calculationMethod.value > 0 && !lut) {
-      // setMatLUT only after magfield has been initalized
-      // (setMatLUT has implicit and problematic init field call if not)
-      LOG(info) << "Loading full (all-radius) material look-up table for run number: " << runNumber;
-      lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForRun<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath, runNumber));
-      o2::base::Propagator::Instance()->setMatLUT(lut);
-      o2::base::Propagator::Instance()->setTGeoFallBackAllowed(false);
-      LOG(info) << "Material look-up table loaded!";
-    }
+    // if (calculationMethod.value > 0 && !lut) {
+    //   // setMatLUT only after magfield has been initalized
+    //   // (setMatLUT has implicit and problematic init field call if not)
+    //   LOG(info) << "Loading full (all-radius) material look-up table for run number: " << runNumber;
+    //   lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->getForRun<o2::base::MatLayerCylSet>(ccdbConfigurations.lutPath, runNumber));
+    //   o2::base::Propagator::Instance()->setMatLUT(lut);
+    //   o2::base::Propagator::Instance()->setTGeoFallBackAllowed(false);
+    //   LOG(info) << "Material look-up table loaded!";
+    // }
     mRunNumber = runNumber;
   }
 
