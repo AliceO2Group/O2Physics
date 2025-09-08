@@ -187,25 +187,25 @@ struct cascadeFlow {
 
   // THN axes
   struct : ConfigurableGroup {
-  ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {8, 0, 80}, "FT0C centrality (%)"};
-  ConfigurableAxis thnConfigAxisEta{"thnConfigAxisEta", {8, -0.8, 0.8}, "pseudorapidity"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5, 6, 8, 10}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis thnConfigAxisPtLambda{"thnConfigAxisPtLambda", {VARIABLE_WIDTH, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5, 6, 8, 10, 20}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis thnConfigAxisCharge{"thnConfigAxisCharge", {2, 0, 2}, ""};
-  ConfigurableAxis thnConfigAxisPsiDiff{"thnConfigAxisPsiDiff", {100, 0, o2::constants::math::TwoPI}, ""};
-  ConfigurableAxis thnConfigAxisMassXi{"thnConfigAxisMassXi", {45, 1.300, 1.345}, ""};
-  ConfigurableAxis thnConfigAxisMassOmega{"thnConfigAxisMassOmega", {45, 1.655, 1.690}, ""};
-  ConfigurableAxis thnConfigAxisMassLambda{"thnConfigAxisMassLambda", {60, 1.1, 1.13}, ""};
-  ConfigurableAxis thnConfigAxisBDTScore{"thnConfigAxisBDTScore", {15, 0.4, 1}, ""};
-  ConfigurableAxis thnConfigAxisV2{"thnConfigAxiV2", {100, -1., 1.}, ""};
-  ConfigurableAxis thnConfigAxisPzs2Xi{"thnConfigAxiPzs2Xi", {200, -2.8, 2.8}, ""};
-  ConfigurableAxis thnConfigAxisPzs2Omega{"thnConfigAxiPzs2Omega", {200, -70, 70}, ""};
-  ConfigurableAxis thnConfigAxisPzs2Lambda{"thnConfigAxiPzs2Lambda", {200, -2, 2}, ""};
-  ConfigurableAxis thnConfigAxisCos2Theta{"thnConfigAxiCos2Theta", {100, 0, 1}, ""};
-  ConfigurableAxis thnConfigAxisCos2ThetaL{"thnConfigAxiCos2ThetaL", {100, 0, 1}, ""};
-  ConfigurableAxis thnConfigAxisCosThetaXiAlpha{"thnConfigAxisCosThetaXiAlpha", {200, -2.8, 2.8}, ""};
-  ConfigurableAxis thnConfigAxisCosThetaOmegaAlpha{"thnConfigAxisCosThetaOmegaAlpha", {200, -70, 70}, ""};
-  ConfigurableAxis thnConfigAxisCosThetaProtonAlpha{"thnConfigAxisCosThetaProtonAlpha", {200, -2, 2}, ""};
+    ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {8, 0, 80}, "FT0C centrality (%)"};
+    ConfigurableAxis thnConfigAxisEta{"thnConfigAxisEta", {8, -0.8, 0.8}, "pseudorapidity"};
+    ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5, 6, 8, 10}, "#it{p}_{T} (GeV/#it{c})"};
+    ConfigurableAxis thnConfigAxisPtLambda{"thnConfigAxisPtLambda", {VARIABLE_WIDTH, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5, 6, 8, 10, 20}, "#it{p}_{T} (GeV/#it{c})"};
+    ConfigurableAxis thnConfigAxisCharge{"thnConfigAxisCharge", {2, 0, 2}, ""};
+    ConfigurableAxis thnConfigAxisPsiDiff{"thnConfigAxisPsiDiff", {100, 0, o2::constants::math::TwoPI}, ""};
+    ConfigurableAxis thnConfigAxisMassXi{"thnConfigAxisMassXi", {45, 1.300, 1.345}, ""};
+    ConfigurableAxis thnConfigAxisMassOmega{"thnConfigAxisMassOmega", {45, 1.655, 1.690}, ""};
+    ConfigurableAxis thnConfigAxisMassLambda{"thnConfigAxisMassLambda", {60, 1.1, 1.13}, ""};
+    ConfigurableAxis thnConfigAxisBDTScore{"thnConfigAxisBDTScore", {15, 0.4, 1}, ""};
+    ConfigurableAxis thnConfigAxisV2{"thnConfigAxiV2", {100, -1., 1.}, ""};
+    ConfigurableAxis thnConfigAxisPzs2Xi{"thnConfigAxiPzs2Xi", {200, -2.8, 2.8}, ""};
+    ConfigurableAxis thnConfigAxisPzs2Omega{"thnConfigAxiPzs2Omega", {200, -70, 70}, ""};
+    ConfigurableAxis thnConfigAxisPzs2Lambda{"thnConfigAxiPzs2Lambda", {200, -2, 2}, ""};
+    ConfigurableAxis thnConfigAxisCos2Theta{"thnConfigAxiCos2Theta", {100, 0, 1}, ""};
+    ConfigurableAxis thnConfigAxisCos2ThetaL{"thnConfigAxiCos2ThetaL", {100, 0, 1}, ""};
+    ConfigurableAxis thnConfigAxisCosThetaXiAlpha{"thnConfigAxisCosThetaXiAlpha", {200, -2.8, 2.8}, ""};
+    ConfigurableAxis thnConfigAxisCosThetaOmegaAlpha{"thnConfigAxisCosThetaOmegaAlpha", {200, -70, 70}, ""};
+    ConfigurableAxis thnConfigAxisCosThetaProtonAlpha{"thnConfigAxisCosThetaProtonAlpha", {200, -2, 2}, ""};
   } thnAxisConfigs;
 
   // Event selection criteria
@@ -1083,18 +1083,18 @@ struct cascadeFlow {
         shiftprofileTPCL.clear();
         shiftprofileTPCR.clear();
         fullCCDBShiftCorrPathFT0C = ShiftConfigs.cfgShiftPathFT0C;
-	fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
+        fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
         fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
         auto objshiftFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
         shiftprofileFT0C.push_back(objshiftFT0C);
         auto objshiftTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
         shiftprofileTPCL.push_back(objshiftTPCL);
-  auto objshiftTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
+        auto objshiftTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
         shiftprofileTPCR.push_back(objshiftTPCR);
         lastRunNumber = currentRunNumber;
       }
     }
-    
+
     if (ShiftConfigs.cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C);
       ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC);
@@ -1402,13 +1402,13 @@ struct cascadeFlow {
         shiftprofileTPCL.clear();
         shiftprofileTPCR.clear();
         fullCCDBShiftCorrPathFT0C = ShiftConfigs.cfgShiftPathFT0C;
-	fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
+        fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
         fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
         auto objshiftFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
         shiftprofileFT0C.push_back(objshiftFT0C);
         auto objshiftTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
         shiftprofileTPCL.push_back(objshiftTPCL);
-  auto objshiftTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
+        auto objshiftTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
         shiftprofileTPCR.push_back(objshiftTPCR);
         lastRunNumber = currentRunNumber;
       }
@@ -1707,13 +1707,13 @@ struct cascadeFlow {
         shiftprofileTPCL.clear();
         shiftprofileTPCR.clear();
         fullCCDBShiftCorrPathFT0C = ShiftConfigs.cfgShiftPathFT0C;
-	fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
+        fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
         fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
         auto objshiftFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
         shiftprofileFT0C.push_back(objshiftFT0C);
         auto objshiftTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
         shiftprofileTPCL.push_back(objshiftTPCL);
-  auto objshiftTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
+        auto objshiftTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
         shiftprofileTPCR.push_back(objshiftTPCR);
         lastRunNumber = currentRunNumber;
       }
@@ -1939,13 +1939,13 @@ struct cascadeFlow {
         shiftprofileTPCL.clear();
         shiftprofileTPCR.clear();
         fullCCDBShiftCorrPathFT0C = ShiftConfigs.cfgShiftPathFT0C;
-	fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
+        fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
         fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
         auto objshiftFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
         shiftprofileFT0C.push_back(objshiftFT0C);
         auto objshiftTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
         shiftprofileTPCL.push_back(objshiftTPCL);
-  auto objshiftTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
+        auto objshiftTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
         shiftprofileTPCR.push_back(objshiftTPCR);
         lastRunNumber = currentRunNumber;
       }
