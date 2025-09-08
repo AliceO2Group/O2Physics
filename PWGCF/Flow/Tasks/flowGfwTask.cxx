@@ -726,11 +726,11 @@ struct FlowGfwTask {
       registry.fill(HIST("hEventCount"), kISGOODITSLAYERSALL);
     }
 
-    float vtxz = -999;
+    float vtxz = -999, zResmin=0.25, maxContrib=20;
     if (collision.numContrib() > 1) {
       vtxz = collision.posZ();
       float zRes = std::sqrt(collision.covZZ());
-      if (zRes > 0.25 && collision.numContrib() < 20)
+      if (zRes > zResmin && collision.numContrib() < maxContrib)
         vtxz = -999;
     }
 
@@ -752,8 +752,9 @@ struct FlowGfwTask {
     }
 
     // V0A T0A 5 sigma cut
+    float five=5;
     if (cfgV0AT0A5Sigma) {
-      if (std::abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > 5 * fT0AV0ASigma->Eval(collision.multFT0A()))
+      if (std::abs(collision.multFV0A() - fT0AV0AMean->Eval(collision.multFT0A())) > five * fT0AV0ASigma->Eval(collision.multFT0A()))
         return false;
     }
 
@@ -933,13 +934,14 @@ struct FlowGfwTask {
 
       registry.fill(HIST("ZNvsZEMcoll"), aZEM1 + aZEM2, aZNA + aZNC);
 
-      if (centrality >= 0 && centrality <= 5) {
+      float zero=0, five=5, ten=10, twenty=20, thirty=30;
+      if (centrality >= zero && centrality <= five) {
         registry.fill(HIST("ZNvsZEMcoll05"), aZEM1 + aZEM2, aZNA + aZNC);
-      } else if (centrality > 5 && centrality <= 10) {
+      } else if (centrality > five && centrality <= ten) {
         registry.fill(HIST("ZNvsZEMcoll510"), aZEM1 + aZEM2, aZNA + aZNC);
-      } else if (centrality > 10 && centrality <= 20) {
+      } else if (centrality > ten && centrality <= twenty) {
         registry.fill(HIST("ZNvsZEMcoll1020"), aZEM1 + aZEM2, aZNA + aZNC);
-      } else if (centrality > 20 && centrality <= 30) {
+      } else if (centrality > twenty && centrality <= thirty) {
         registry.fill(HIST("ZNvsZEMcoll2030"), aZEM1 + aZEM2, aZNA + aZNC);
       } else {
         registry.fill(HIST("ZNvsZEMcollrest"), aZEM1 + aZEM2, aZNA + aZNC);
@@ -1082,7 +1084,8 @@ struct FlowGfwTask {
     fillProfile(corrconfigs.at(7), HIST("c34Nch"), nch);
 
     // 0-5% centrality Nch
-    if (centrality >= 0 && centrality <= 5) {
+    float zero=0, five=5;
+    if (centrality >= zero && centrality <= five) {
       fillProfile(corrconfigs.at(0), HIST("c22Nch05"), nch);
       fillProfile(corrconfigs.at(1), HIST("c24Nch05"), nch);
       fillProfile(corrconfigs.at(2), HIST("c26Nch05"), nch);
@@ -1117,7 +1120,8 @@ struct FlowGfwTask {
     fillProfile(corrconfigs.at(6), bootstrapArray[sampleIndex][kc32Nchetagap], nch);
     fillProfile(corrconfigs.at(7), bootstrapArray[sampleIndex][kc34Nch], nch);
 
-    if (centrality >= 0 && centrality <= 5) {
+
+    if (centrality >= zero && centrality <= five) {
       fillProfile(corrconfigs.at(0), bootstrapArray[sampleIndex][kc22Nch05], nch);
       fillProfile(corrconfigs.at(1), bootstrapArray[sampleIndex][kc24Nch05], nch);
       fillProfile(corrconfigs.at(2), bootstrapArray[sampleIndex][kc26Nch05], nch);
@@ -1193,7 +1197,8 @@ struct FlowGfwTask {
           registry.fill(HIST("hCenMCRec"), centrality);
           registry.fill(HIST("hPtNchMCRec"), track.pt(), track.size());
 
-          if (centrality >= 0 && centrality <= 5) {
+          float zero=0, five=5;
+          if (centrality >= zero && centrality <= five) {
             registry.fill(HIST("hPtMCRec05"), track.pt());
             registry.fill(HIST("hCenMCRec05"), centrality);
             registry.fill(HIST("hPtNchMCRec05"), track.pt(), track.size());
@@ -1257,7 +1262,8 @@ struct FlowGfwTask {
           registry.fill(HIST("hPtMCGen"), particle.pt());
           registry.fill(HIST("hCenMCGen"), centrality);
 
-          if (centrality >= 0 && centrality <= 5) {
+          float zero=0, five=5;
+          if (centrality >= zero && centrality <= five) {
             registry.fill(HIST("hPtMCGen05"), particle.pt());
             registry.fill(HIST("hCenMCGen05"), centrality);
             registry.fill(HIST("hPtNchMCGen05"), particle.pt(), numberOfTracks[0]);
@@ -1271,7 +1277,8 @@ struct FlowGfwTask {
         for (const auto& track : groupedTracksReco) {
 
           registry.fill(HIST("hCorr"), numberOfTracks[0], track.size());
-          if (centrality >= 0 && centrality <= 5) {
+          float zero=0, five=5;
+          if (centrality >= zero && centrality <= five) {
             registry.fill(HIST("hCorr05"), numberOfTracks[0], track.size());
           }
         }
