@@ -354,18 +354,17 @@ struct HfTaskLc {
         axesWithBdt = {thnAxisMass, thnAxisPt, thnAxisCentrality, thnAxisBdtScoreLcBkg, thnAxisBdtScoreLcPrompt, thnAxisBdtScoreLcNonPrompt, thnAxisTracklets, thnAxisPtB, thnAxisCanType};
       }
 
-      if (storeProperLifetime) {
-        for (const auto& axes : std::array<std::vector<AxisSpec>*, 2>{&axesGen, &axesWithBdt}) {
-          if (!axes->empty()) {
-            axes->push_back(thnAxisProperLifetime);
-          }
-        }
-      }
-
       if (storeOccupancy) {
         for (const auto& axes : std::array<std::vector<AxisSpec>*, 3>{&axesWithBdt, &axesStd, &axesGen}) {
           if (!axes->empty()) {
             axes->push_back(thnAxisOccupancy);
+          }
+        }
+      }
+      if (storeProperLifetime) {
+        for (const auto& axes : std::array<std::vector<AxisSpec>*, 2>{&axesGen, &axesWithBdt}) {
+          if (!axes->empty()) {
+            axes->push_back(thnAxisProperLifetime);
           }
         }
       }
@@ -574,11 +573,11 @@ struct HfTaskLc {
               }
               /// Fill the ML outputScores and variables of candidate
               std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
-              if (storeProperLifetime) {
-                valuesToFill.push_back(properLifetime);
-              }
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
                 valuesToFill.push_back(occ);
+              }
+              if (storeProperLifetime) {
+                valuesToFill.push_back(properLifetime);
               }
               registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
             } else {
@@ -600,11 +599,11 @@ struct HfTaskLc {
               }
               /// Fill the ML outputScores and variables of candidate (todo: add multiplicity)
               std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors), ptRecB, static_cast<double>(originType)};
-              if (storeProperLifetime) {
-                valuesToFill.push_back(properLifetime);
-              }
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
                 valuesToFill.push_back(occ);
+              }
+              if (storeProperLifetime) {
+                valuesToFill.push_back(properLifetime);
               }
               registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
             } else {
@@ -662,11 +661,11 @@ struct HfTaskLc {
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           if (fillTHn) {
             std::vector<double> valuesToFill{ptGen, cent, yGen, static_cast<double>(numPvContributors), ptGenB, static_cast<double>(originType)};
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
+            }
+            if (storeProperLifetime) {
+              valuesToFill.push_back(properLifetime);
             }
             registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(valuesToFill.data());
           }
@@ -682,11 +681,11 @@ struct HfTaskLc {
           ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
           if (fillTHn) {
             std::vector<double> valuesToFill{ptGen, cent, yGen, static_cast<double>(numPvContributors), ptGenB, static_cast<double>(originType)};
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
+            }
+            if (storeProperLifetime) {
+              valuesToFill.push_back(properLifetime);
             }
             registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(valuesToFill.data());
           }
@@ -791,11 +790,11 @@ struct HfTaskLc {
             }
             /// Fill the ML outputScores and variables of candidate
             std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)};
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
+            }
+            if (storeProperLifetime) {
+              valuesToFill.push_back(properLifetime);
             }
             registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
           } else {
@@ -817,11 +816,11 @@ struct HfTaskLc {
             }
             /// Fill the ML outputScores and variables of candidate
             std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)};
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
             if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
               valuesToFill.push_back(occ);
+            }
+            if (storeProperLifetime) {
+              valuesToFill.push_back(properLifetime);
             }
             registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
           } else {
