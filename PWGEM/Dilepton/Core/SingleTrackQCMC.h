@@ -286,7 +286,7 @@ struct SingleTrackQCMC {
         fRegistry.add("Track/lf/positive/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
         fRegistry.add("Track/lf/positive/hNclsITS", "number of ITS clusters", kTH1F, {{8, -0.5, 7.5}}, false);
         fRegistry.add("Track/lf/positive/hChi2ITS", "chi2/number of ITS clusters", kTH1F, {{100, 0, 10}}, false);
-        fRegistry.add("Track/lf/positive/hDeltaPin", "p_{in} vs. p_{pv};p_{pv} (GeV/c);(p_{in} - p_{pv})/p_{pv}", kTH2F, {{1000, 0, 10}, {200, -1, +1}}, false);
+        fRegistry.add("Track/lf/positive/hDeltaPin", "p_{in} vs. p_{pv};p_{in} (GeV/c);(p_{pv} - p_{in})/p_{in}", kTH2F, {{1000, 0, 10}, {200, -1, +1}}, false);
         fRegistry.add("Track/lf/positive/hChi2TOF", "TOF Chi2;p_{pv} (GeV/c);chi2", kTH2F, {{1000, 0, 10}, {100, 0, 10}}, false);
         fRegistry.add("Track/lf/positive/hITSClusterMap", "ITS cluster map", kTH1F, {{128, -0.5, 127.5}}, false);
         fRegistry.add("Track/lf/positive/hPtGen_DeltaPtOverPtGen", "electron p_{T} resolution;p_{T}^{gen} (GeV/c);(p_{T}^{rec} - p_{T}^{gen})/p_{T}^{gen}", kTH2F, {{200, 0, 10}, {200, -1.0f, 1.0f}}, true);
@@ -303,6 +303,8 @@ struct SingleTrackQCMC {
       fRegistry.addClone("Track/lf/", "Track/c2l/");
       fRegistry.addClone("Track/lf/", "Track/b2l/");
       fRegistry.addClone("Track/lf/", "Track/b2c2l/");
+      fRegistry.add("Track/Photon/positive/hProdVtx", "production vertex of e from #gamma;p_{T,e}^{rec} (GeV/c);r_{xy}^{gen} (cm);", kTH2F, {axis_pt, {100, 0, 100}}, false);
+      fRegistry.addClone("Track/Photon/positive/hProdVtx", "Track/Photon/negative/hProdVtx");
 
       if (cfgFillQA) {
         fRegistry.add("Track/PID/positive/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
@@ -605,6 +607,10 @@ struct SingleTrackQCMC {
 
     if (track.sign() > 0) {
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      if constexpr (lepton_source_id == 2) { // for electron from photon conversion
+        fRegistry.fill(HIST("Track/Photon/positive/hProdVtx"), track.pt(), std::sqrt(std::pow(mctrack.vx(), 2) + std::pow(mctrack.vy(), 2)), weight);
+      }
+
       if (fillGenValuesForRec) {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
       }
@@ -624,7 +630,9 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TPC"), track.tpcChi2NCl());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2ITS"), track.itsChi2NCl());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hChi2TOF"), track.p(), track.tofChi2());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDeltaPin"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+        if (track.hasTPC()) {
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
+        }
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hITSClusterMap"), track.itsClusterMap());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("positive/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());
@@ -653,6 +661,9 @@ struct SingleTrackQCMC {
       }
     } else {
       fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hs"), track.pt(), track.eta(), track.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
+      if constexpr (lepton_source_id == 2) { // for electron from photon conversion
+        fRegistry.fill(HIST("Track/Photon/negative/hProdVtx"), track.pt(), std::sqrt(std::pow(mctrack.vx(), 2) + std::pow(mctrack.vy(), 2)), weight);
+      }
       if (fillGenValuesForRec) {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hsGenRec"), mctrack.pt(), mctrack.eta(), mctrack.phi(), dca3D, dcaXY, dcaZ, -mctrack.pdgCode() / pdg_lepton, weight);
       }
@@ -672,7 +683,9 @@ struct SingleTrackQCMC {
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2TPC"), track.tpcChi2NCl());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2ITS"), track.itsChi2NCl());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hChi2TOF"), track.p(), track.tofChi2());
-        fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDeltaPin"), track.p(), (track.tpcInnerParam() - track.p()) / track.p());
+        if (track.hasTPC()) {
+          fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hDeltaPin"), track.tpcInnerParam(), (track.p() - track.tpcInnerParam()) / track.tpcInnerParam());
+        }
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hITSClusterMap"), track.itsClusterMap());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaPtOverPtGen"), mctrack.pt(), (track.pt() - mctrack.pt()) / mctrack.pt());
         fRegistry.fill(HIST("Track/") + HIST(lepton_source_types[lepton_source_id]) + HIST("negative/hPtGen_DeltaEta"), mctrack.pt(), track.eta() - mctrack.eta());

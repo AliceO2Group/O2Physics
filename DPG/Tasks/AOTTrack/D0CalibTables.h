@@ -95,7 +95,7 @@ int codeSqrtScaling(float origValue, float sigma0, float sigma1, int clampMin, i
 template <typename T>
 uint8_t getCompressedDecayLength(T decLen)
 {
-  return getCompressedUint8(decLen * hf_calib::toMicrometers, 0.1);
+  return getCompressedUint8(decLen * hf_calib::toMicrometers, 10);
 }
 
 /// It compresses the normalised decay length (0.5 precision)

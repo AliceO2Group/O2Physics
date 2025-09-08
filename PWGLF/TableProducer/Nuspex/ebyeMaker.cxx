@@ -854,8 +854,11 @@ struct EbyeMaker {
         continue;
       auto pdgCode = mcPart.pdgCode();
       auto genPt = std::hypot(mcPart.px(), mcPart.py());
-      if ((std::abs(pdgCode) == PDG_t::kPiPlus || std::abs(pdgCode) == PDG_t::kElectron || std::abs(pdgCode) == PDG_t::kMuonMinus || std::abs(pdgCode) == PDG_t::kKPlus || std::abs(pdgCode) == PDG_t::kProton) && mcPart.isPhysicalPrimary() && genPt > ptMin[0] && genPt < ptMax[0])
-        nChPartGen++;
+      if ((std::abs(pdgCode) == PDG_t::kPiPlus || std::abs(pdgCode) == PDG_t::kElectron || std::abs(pdgCode) == PDG_t::kMuonMinus || std::abs(pdgCode) == PDG_t::kKPlus || std::abs(pdgCode) == PDG_t::kProton) && mcPart.isPhysicalPrimary() && genPt > ptMin[0] && genPt < ptMax[0]) {
+        int ch = (pdgCode == PDG_t::kPiPlus || pdgCode == -PDG_t::kElectron || pdgCode == -PDG_t::kMuonMinus || pdgCode == PDG_t::kKPlus || pdgCode == PDG_t::kProton) ? 1 : -1;
+        if ((ch < 0 && countOnlyNegTrk) || !countOnlyNegTrk)
+          nChPartGen++;
+      }
       if (std::abs(pdgCode) == PDG_t::kLambda0) {
         if (!mcPart.isPhysicalPrimary() && !mcPart.has_mothers())
           continue;

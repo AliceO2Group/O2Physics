@@ -128,6 +128,13 @@ struct HfCandidateCreatorCharmResoReduced {
     ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 45., 60., 75., 95, 250}, "event multiplicity pools (PV contributors for now)"};
     ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -4, -1, 1, 4, 10.0}, "z vertex position pools"};
   } cfgMixedEvent;
+  struct : ConfigurableGroup {
+    std::string prefix = "trackRotation";
+    Configurable<bool> enable{"enable", false, "enable rotation of track/V0 for background estimation"};
+    Configurable<int> numRotations{"numRotations", 12, "number of track/V0 rotations"};
+    Configurable<float> minRotAngleMultByPi{"minRotAngleMultByPi", 5. / 6, "Minimum angle rotation for track rotation, to be multiplied by pi"};
+    Configurable<float> maxRotAngleMultByPi{"maxRotAngleMultByPi", 7. / 6, "Maximum angle rotation for track rotation, to be multiplied by pi"};
+  } cfgTrackRotation;
   // Histogram axes configurables
   struct : ConfigurableGroup {
     std::string prefix = "histAxes";
@@ -151,6 +158,7 @@ struct HfCandidateCreatorCharmResoReduced {
 
   HistogramRegistry registry{"registry"};
 
+  float bkgRotationAngleStep{0.f};
   void init(InitContext const&)
   {
     // histograms
@@ -169,6 +177,7 @@ struct HfCandidateCreatorCharmResoReduced {
     for (int iBin = 0; iBin < kNBinsSelections; ++iBin) {
       registry.get<TH1>(HIST("hSelections"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
+    bkgRotationAngleStep = (cfgTrackRotation.numRotations > 1) ? (cfgTrackRotation.maxRotAngleMultByPi - cfgTrackRotation.minRotAngleMultByPi) * constants::math::PI / (cfgTrackRotation.numRotations - 1) : 0.;
   }
 
   bool isInMassInterval(float invMass, int ptBin)
@@ -341,198 +350,118 @@ struct HfCandidateCreatorCharmResoReduced {
   {
     std::vector<std::array<float, 3>> pVectorCharmProngs = {candD.pVectorProng0(), candD.pVectorProng1()};
     std::array<float, 3> pVecD = candD.pVector();
-    std::array<float, 3> pVecV0Tr = candV0Tr.pVector();
-    float invMassReso{-1}, invMassV0Tr{-1}, invMassD{-1};
-    int8_t signReso{0}, isWrongSign{0};
-    double ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0Tr, pVecD));
 
-    if constexpr (dType == DType::Dplus) {
-      invMassD = candD.invMassDplus();
-      pVectorCharmProngs.push_back(candD.pVectorProng2());
-      if constexpr (bachType == BachelorType::V0) {
-        if (cfgV0Cuts.v0Type == V0Type::K0s) { // K0s
-          invMassV0Tr = candV0Tr.invMassK0s();
-          signReso = candD.sign();
-          if (useDeltaMass) {
-            invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
-          } else {
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassK0Short});
-          }
-        } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
-          if (candV0Tr.v0Type() == V0Type::Lambda) {
-            invMassV0Tr = candV0Tr.invMassLambda();
-            signReso = candD.sign();
-          } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
-            invMassV0Tr = candV0Tr.invMassAntiLambda();
-            signReso = candD.sign();
-            isWrongSign = 1;
-          }
-          if (useDeltaMass) {
-            invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda}) - invMassD;
-          } else {
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassLambda});
-          }
-        }
-        rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                         pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                         invMassReso,
-                         invMassD,
-                         invMassV0Tr,
-                         signReso,
-                         isWrongSign);
-        rowCandidateResoIndices3PrV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
-        registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
-        registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
-        registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
-      } else if constexpr (bachType == BachelorType::Track) {
-        signReso = candD.sign() + candV0Tr.sign();
-        isWrongSign = candD.sign() * candV0Tr.sign() > 0 ? 1 : 0;
-        if (cfgTrackCuts.massHypo == TrackType::Pion) { // Pion
-          invMassV0Tr = MassPiPlus;
-          if (useDeltaMass) {
-            invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassPiPlus}) - invMassD;
-          } else {
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassPiPlus});
-          }
-        } else if (cfgTrackCuts.massHypo == TrackType::Kaon) { // Kaon
-          invMassV0Tr = MassKPlus;
-          if (useDeltaMass) {
-            invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassKPlus}) - invMassD;
-          } else {
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassKPlus});
-          }
-        } else if (cfgTrackCuts.massHypo == TrackType::Proton) { // Proton
-          invMassV0Tr = MassProton;
-          if (useDeltaMass) {
-            invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton}) - invMassD;
-          } else {
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassProton});
-          }
-        }
-        rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                         pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                         invMassReso,
-                         invMassD,
-                         invMassV0Tr,
-                         signReso,
-                         isWrongSign);
-        rowCandidateResoIndices3PrTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
-        registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
-        registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
-        registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
+    int numFills = (cfgTrackRotation.enable) ? cfgTrackRotation.numRotations : 1; // number of times we fil the tables: default 1, but more in case of track rotation
+
+    for (int iFill{0}; iFill < numFills; ++iFill) {
+
+      std::array<float, 3> pVecV0Tr = candV0Tr.pVector();
+      if (cfgTrackRotation.enable) { // let's rotate
+        float bkgRotAngle = cfgTrackRotation.minRotAngleMultByPi * constants::math::PI + bkgRotationAngleStep * iFill;
+        pVecV0Tr = std::array<float, 3>{candV0Tr.px() * std::cos(bkgRotAngle) - candV0Tr.py() * std::sin(bkgRotAngle), candV0Tr.px() * std::sin(bkgRotAngle) + candV0Tr.py() * std::cos(bkgRotAngle), candV0Tr.pz()};
       }
-    } else if constexpr (dType == DType::Dstar) {
-      float invMassD0;
-      if (candD.sign() > 0) {
-        invMassD = candD.invMassDstar();
-        invMassD0 = candD.invMassD0();
-      } else {
-        invMassD = candD.invMassAntiDstar();
-        invMassD0 = candD.invMassD0Bar();
-      }
-      pVectorCharmProngs.push_back(candD.pVectorProng2());
-      if constexpr (bachType == BachelorType::V0) {
-        signReso = candD.sign();
-        if (cfgV0Cuts.v0Type == V0Type::K0s) { // K0s
-          invMassV0Tr = candV0Tr.invMassK0s();
-          if (useDeltaMass) {
-            if (candD.sign() > 0) {
+
+      float invMassReso{-1}, invMassV0Tr{-1}, invMassD{-1};
+      int8_t signReso{0}, isWrongSign{0};
+      double ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0Tr, pVecD));
+
+      if constexpr (dType == DType::Dplus) {
+        invMassD = candD.invMassDplus();
+        pVectorCharmProngs.push_back(candD.pVectorProng2());
+        if constexpr (bachType == BachelorType::V0) {
+          if (cfgV0Cuts.v0Type == V0Type::K0s) { // K0s
+            invMassV0Tr = candV0Tr.invMassK0s();
+            signReso = candD.sign();
+            if (useDeltaMass) {
               invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
             } else {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassK0Short});
             }
-          } else {
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassK0Short});
-          }
-        } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
-          if (candV0Tr.v0Type() == V0Type::Lambda) {
-            invMassV0Tr = candV0Tr.invMassLambda();
-          } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
-            invMassV0Tr = candV0Tr.invMassAntiLambda();
-            isWrongSign = 1;
-          }
-          if (useDeltaMass) {
-            if (candD.sign() > 0) {
+          } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
+            if (candV0Tr.v0Type() == V0Type::Lambda) {
+              invMassV0Tr = candV0Tr.invMassLambda();
+              signReso = candD.sign();
+            } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
+              invMassV0Tr = candV0Tr.invMassAntiLambda();
+              signReso = candD.sign();
+              isWrongSign = 1;
+            }
+            if (useDeltaMass) {
               invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda}) - invMassD;
             } else {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda}) - invMassD;
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassLambda});
             }
-          } else {
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassLambda});
           }
-        }
-        rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                         pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                         invMassReso,
-                         invMassD - invMassD0,
-                         invMassV0Tr,
-                         signReso,
-                         isWrongSign);
-        rowCandidateResoIndicesDstarV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
-        registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
-        registry.fill(HIST("hMassDmesDauVsPt"), invMassD - invMassD0, candD.pt());
-        registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
-      } else if constexpr (bachType == BachelorType::Track) {
-        signReso = candD.sign() + candV0Tr.sign();
-        isWrongSign = candD.sign() * candV0Tr.sign() > 0 ? 1 : 0;
-        if (cfgTrackCuts.massHypo == TrackType::Pion) { // Pion
-          invMassV0Tr = MassPiPlus;
-          if (useDeltaMass) {
-            if (candD.sign() > 0) {
+          rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
+                           pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                           invMassReso,
+                           invMassD,
+                           invMassV0Tr,
+                           signReso,
+                           isWrongSign);
+          rowCandidateResoIndices3PrV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
+          registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
+          registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
+          registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
+        } else if constexpr (bachType == BachelorType::Track) {
+          signReso = candD.sign() + candV0Tr.sign();
+          isWrongSign = candD.sign() * candV0Tr.sign() > 0 ? 1 : 0;
+          if (cfgTrackCuts.massHypo == TrackType::Pion) { // Pion
+            invMassV0Tr = MassPiPlus;
+            if (useDeltaMass) {
               invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassPiPlus}) - invMassD;
             } else {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassPiPlus}) - invMassD;
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassPiPlus});
             }
-          } else {
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassPiPlus});
-          }
-        } else if (cfgTrackCuts.massHypo == TrackType::Kaon) { // Kaon
-          invMassV0Tr = MassKPlus;
-          if (useDeltaMass) {
-            if (candD.sign() > 0) {
+          } else if (cfgTrackCuts.massHypo == TrackType::Kaon) { // Kaon
+            invMassV0Tr = MassKPlus;
+            if (useDeltaMass) {
               invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassKPlus}) - invMassD;
             } else {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassKPlus}) - invMassD;
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassKPlus});
             }
-          } else {
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassKPlus});
-          }
-        } else if (cfgTrackCuts.massHypo == TrackType::Proton) { // Proton
-          invMassV0Tr = MassProton;
-          if (useDeltaMass) {
-            if (candD.sign() > 0) {
+          } else if (cfgTrackCuts.massHypo == TrackType::Proton) { // Proton
+            invMassV0Tr = MassProton;
+            if (useDeltaMass) {
               invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton}) - invMassD;
             } else {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton}) - invMassD;
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassProton});
             }
-          } else {
-            invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassProton});
           }
+          rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
+                           pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                           invMassReso,
+                           invMassD,
+                           invMassV0Tr,
+                           signReso,
+                           isWrongSign);
+          rowCandidateResoIndices3PrTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
+          registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
+          registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
+          registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
         }
-        rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                         pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                         invMassReso,
-                         invMassD - invMassD0,
-                         invMassV0Tr,
-                         signReso,
-                         isWrongSign);
-        rowCandidateResoIndicesDstarTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
-        registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
-        registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
-        registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
-      }
-    } else if constexpr (dType == DType::D0) {
-      // D0
-      if (TESTBIT(selectionFlag, D0Sel::selectedD0)) {
-        invMassD = candD.invMassD0();
+      } else if constexpr (dType == DType::Dstar) {
+        float invMassD0;
+        if (candD.sign() > 0) {
+          invMassD = candD.invMassDstar();
+          invMassD0 = candD.invMassD0();
+        } else {
+          invMassD = candD.invMassAntiDstar();
+          invMassD0 = candD.invMassD0Bar();
+        }
+        pVectorCharmProngs.push_back(candD.pVectorProng2());
         if constexpr (bachType == BachelorType::V0) {
-          signReso = 0;
+          signReso = candD.sign();
           if (cfgV0Cuts.v0Type == V0Type::K0s) { // K0s
             invMassV0Tr = candV0Tr.invMassK0s();
             if (useDeltaMass) {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassK0Short}) - invMassD;
+              if (candD.sign() > 0) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
+              }
             } else {
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0, MassK0Short});
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassK0Short});
             }
           } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
             if (candV0Tr.v0Type() == V0Type::Lambda) {
@@ -542,132 +471,223 @@ struct HfCandidateCreatorCharmResoReduced {
               isWrongSign = 1;
             }
             if (useDeltaMass) {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassLambda}) - invMassD;
+              if (candD.sign() > 0) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda}) - invMassD;
+              }
             } else {
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0, MassLambda});
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassLambda});
             }
           }
           rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
                            pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
                            invMassReso,
-                           invMassD,
+                           invMassD - invMassD0,
                            invMassV0Tr,
                            signReso,
                            isWrongSign);
-          rowCandidateResoIndices2PrV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
+          rowCandidateResoIndicesDstarV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
           registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
-          registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
+          registry.fill(HIST("hMassDmesDauVsPt"), invMassD - invMassD0, candD.pt());
           registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
         } else if constexpr (bachType == BachelorType::Track) {
-          signReso = candV0Tr.sign();
-          isWrongSign = candV0Tr.sign() > 0 ? 0 : 1;
+          signReso = candD.sign() + candV0Tr.sign();
+          isWrongSign = candD.sign() * candV0Tr.sign() > 0 ? 1 : 0;
           if (cfgTrackCuts.massHypo == TrackType::Pion) { // Pion
             invMassV0Tr = MassPiPlus;
             if (useDeltaMass) {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus}) - invMassD;
+              if (candD.sign() > 0) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassPiPlus}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassPiPlus}) - invMassD;
+              }
             } else {
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0, MassPiPlus});
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassPiPlus});
             }
           } else if (cfgTrackCuts.massHypo == TrackType::Kaon) { // Kaon
             invMassV0Tr = MassKPlus;
             if (useDeltaMass) {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassKPlus}) - invMassD;
+              if (candD.sign() > 0) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassKPlus}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassKPlus}) - invMassD;
+              }
             } else {
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0, MassKPlus});
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassKPlus});
             }
           } else if (cfgTrackCuts.massHypo == TrackType::Proton) { // Proton
             invMassV0Tr = MassProton;
             if (useDeltaMass) {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassProton}) - invMassD;
+              if (candD.sign() > 0) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[1], pVectorCharmProngs[0], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassProton}) - invMassD;
+              }
             } else {
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0, MassProton});
+              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassProton});
             }
           }
           rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
                            pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
                            invMassReso,
-                           invMassD,
+                           invMassD - invMassD0,
                            invMassV0Tr,
                            signReso,
                            isWrongSign);
-          rowCandidateResoIndices2PrTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
+          rowCandidateResoIndicesDstarTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
           registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
           registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
           registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
         }
-      }
-      // D0bar
-      if (TESTBIT(selectionFlag, D0Sel::selectedD0Bar)) {
-        invMassD = candD.invMassD0Bar();
-        if constexpr (bachType == BachelorType::V0) {
-          signReso = 0;
-          if (cfgV0Cuts.v0Type == V0Type::K0s) { // K0s
-            invMassV0Tr = candV0Tr.invMassK0s();
-            if (useDeltaMass) {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
-            } else {
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0Bar, MassK0Short});
+      } else if constexpr (dType == DType::D0) {
+        // D0
+        if (TESTBIT(selectionFlag, D0Sel::selectedD0)) {
+          invMassD = candD.invMassD0();
+          if constexpr (bachType == BachelorType::V0) {
+            signReso = 0;
+            if (cfgV0Cuts.v0Type == V0Type::K0s) { // K0s
+              invMassV0Tr = candV0Tr.invMassK0s();
+              if (useDeltaMass) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassK0Short}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0, MassK0Short});
+              }
+            } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
+              if (candV0Tr.v0Type() == V0Type::Lambda) {
+                invMassV0Tr = candV0Tr.invMassLambda();
+              } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
+                invMassV0Tr = candV0Tr.invMassAntiLambda();
+                isWrongSign = 1;
+              }
+              if (useDeltaMass) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassLambda}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0, MassLambda});
+              }
             }
-          } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
-            if (candV0Tr.v0Type() == V0Type::Lambda) {
-              invMassV0Tr = candV0Tr.invMassLambda();
-              isWrongSign = 1;
-            } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
-              invMassV0Tr = candV0Tr.invMassAntiLambda();
+            rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
+                             pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                             invMassReso,
+                             invMassD,
+                             invMassV0Tr,
+                             signReso,
+                             isWrongSign);
+            rowCandidateResoIndices2PrV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
+            registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
+            registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
+            registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
+          } else if constexpr (bachType == BachelorType::Track) {
+            signReso = candV0Tr.sign();
+            isWrongSign = candV0Tr.sign() > 0 ? 0 : 1;
+            if (cfgTrackCuts.massHypo == TrackType::Pion) { // Pion
+              invMassV0Tr = MassPiPlus;
+              if (useDeltaMass) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0, MassPiPlus});
+              }
+            } else if (cfgTrackCuts.massHypo == TrackType::Kaon) { // Kaon
+              invMassV0Tr = MassKPlus;
+              if (useDeltaMass) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassKPlus}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0, MassKPlus});
+              }
+            } else if (cfgTrackCuts.massHypo == TrackType::Proton) { // Proton
+              invMassV0Tr = MassProton;
+              if (useDeltaMass) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassProton}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0, MassProton});
+              }
             }
-            if (useDeltaMass) {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassKPlus, MassPiPlus, MassLambda}) - invMassD;
-            } else {
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0Bar, MassLambda});
-            }
+            rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
+                             pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                             invMassReso,
+                             invMassD,
+                             invMassV0Tr,
+                             signReso,
+                             isWrongSign);
+            rowCandidateResoIndices2PrTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
+            registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
+            registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
+            registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
           }
-          rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                           pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                           invMassReso,
-                           invMassD,
-                           invMassV0Tr,
-                           signReso,
-                           isWrongSign);
-          rowCandidateResoIndices2PrV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
-          registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
-          registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
-          registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
-        } else if constexpr (bachType == BachelorType::Track) {
-          signReso = candV0Tr.sign();
-          isWrongSign = candV0Tr.sign() > 0 ? 1 : 0;
-          if (cfgTrackCuts.massHypo == TrackType::Pion) { // Pion
-            invMassV0Tr = MassPiPlus;
-            if (useDeltaMass) {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassKPlus, MassPiPlus, MassPiPlus}) - invMassD;
-            } else {
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0Bar, MassPiPlus});
+        }
+        // D0bar
+        if (TESTBIT(selectionFlag, D0Sel::selectedD0Bar)) {
+          invMassD = candD.invMassD0Bar();
+          if constexpr (bachType == BachelorType::V0) {
+            signReso = 0;
+            if (cfgV0Cuts.v0Type == V0Type::K0s) { // K0s
+              invMassV0Tr = candV0Tr.invMassK0s();
+              if (useDeltaMass) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassKPlus, MassPiPlus, MassK0Short}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0Bar, MassK0Short});
+              }
+            } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
+              if (candV0Tr.v0Type() == V0Type::Lambda) {
+                invMassV0Tr = candV0Tr.invMassLambda();
+                isWrongSign = 1;
+              } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
+                invMassV0Tr = candV0Tr.invMassAntiLambda();
+              }
+              if (useDeltaMass) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassKPlus, MassPiPlus, MassLambda}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0Bar, MassLambda});
+              }
             }
-          } else if (cfgTrackCuts.massHypo == TrackType::Kaon) { // Kaon
-            invMassV0Tr = MassKPlus;
-            if (useDeltaMass) {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassKPlus, MassPiPlus, MassKPlus}) - invMassD;
-            } else {
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0Bar, MassKPlus});
+            rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
+                             pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                             invMassReso,
+                             invMassD,
+                             invMassV0Tr,
+                             signReso,
+                             isWrongSign);
+            rowCandidateResoIndices2PrV0s(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
+            registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
+            registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
+            registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
+          } else if constexpr (bachType == BachelorType::Track) {
+            signReso = candV0Tr.sign();
+            isWrongSign = candV0Tr.sign() > 0 ? 1 : 0;
+            if (cfgTrackCuts.massHypo == TrackType::Pion) { // Pion
+              invMassV0Tr = MassPiPlus;
+              if (useDeltaMass) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassKPlus, MassPiPlus, MassPiPlus}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0Bar, MassPiPlus});
+              }
+            } else if (cfgTrackCuts.massHypo == TrackType::Kaon) { // Kaon
+              invMassV0Tr = MassKPlus;
+              if (useDeltaMass) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassKPlus, MassPiPlus, MassKPlus}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0Bar, MassKPlus});
+              }
+            } else if (cfgTrackCuts.massHypo == TrackType::Proton) { // Proton
+              invMassV0Tr = MassProton;
+              if (useDeltaMass) {
+                invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassKPlus, MassPiPlus, MassProton}) - invMassD;
+              } else {
+                invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0Bar, MassProton});
+              }
             }
-          } else if (cfgTrackCuts.massHypo == TrackType::Proton) { // Proton
-            invMassV0Tr = MassProton;
-            if (useDeltaMass) {
-              invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVecV0Tr}, std::array{MassKPlus, MassPiPlus, MassProton}) - invMassD;
-            } else {
-              invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0Bar, MassProton});
-            }
+            rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
+                             pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
+                             invMassReso,
+                             invMassD,
+                             invMassV0Tr,
+                             signReso,
+                             isWrongSign);
+            rowCandidateResoIndices2PrTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
+            registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
+            registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
+            registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
           }
-          rowCandidateReso(pVecD[0], pVecD[1], pVecD[2],
-                           pVecV0Tr[0], pVecV0Tr[1], pVecV0Tr[2],
-                           invMassReso,
-                           invMassD,
-                           invMassV0Tr,
-                           signReso,
-                           isWrongSign);
-          rowCandidateResoIndices2PrTrks(collision.globalIndex(), candD.globalIndex(), candV0Tr.globalIndex());
-          registry.fill(HIST("hMassResoVsPt"), invMassReso, ptReso);
-          registry.fill(HIST("hMassDmesDauVsPt"), invMassD, candD.pt());
-          registry.fill(HIST("hMassV0DauVsPt"), invMassV0Tr, candV0Tr.pt());
         }
       }
     }
