@@ -1121,7 +1121,6 @@ struct FlowGfwTask {
     fillProfile(corrconfigs.at(6), bootstrapArray[sampleIndex][kc32Nchetagap], nch);
     fillProfile(corrconfigs.at(7), bootstrapArray[sampleIndex][kc34Nch], nch);
 
-
     if (centrality >= zero && centrality <= five) {
       fillProfile(corrconfigs.at(0), bootstrapArray[sampleIndex][kc22Nch05], nch);
       fillProfile(corrconfigs.at(1), bootstrapArray[sampleIndex][kc24Nch05], nch);
