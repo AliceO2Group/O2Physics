@@ -934,7 +934,8 @@ struct FlowGfwTask {
 
       registry.fill(HIST("ZNvsZEMcoll"), aZEM1 + aZEM2, aZNA + aZNC);
 
-      float zero=0, five=5, ten=10, twenty=20, thirty=30;
+        // Draft notation for centrality limits
+      float zero = 0, five = 5, ten = 10, twenty = 20, thirty = 30;
       if (centrality >= zero && centrality <= five) {
         registry.fill(HIST("ZNvsZEMcoll05"), aZEM1 + aZEM2, aZNA + aZNC);
       } else if (centrality > five && centrality <= ten) {
@@ -1084,7 +1085,7 @@ struct FlowGfwTask {
     fillProfile(corrconfigs.at(7), HIST("c34Nch"), nch);
 
     // 0-5% centrality Nch
-    float zero=0, five=5;
+    float zero = 0, five = 5;
     if (centrality >= zero && centrality <= five) {
       fillProfile(corrconfigs.at(0), HIST("c22Nch05"), nch);
       fillProfile(corrconfigs.at(1), HIST("c24Nch05"), nch);
@@ -1197,7 +1198,7 @@ struct FlowGfwTask {
           registry.fill(HIST("hCenMCRec"), centrality);
           registry.fill(HIST("hPtNchMCRec"), track.pt(), track.size());
 
-          float zero=0, five=5;
+          float zero = 0, five = 5;
           if (centrality >= zero && centrality <= five) {
             registry.fill(HIST("hPtMCRec05"), track.pt());
             registry.fill(HIST("hCenMCRec05"), centrality);
@@ -1262,7 +1263,7 @@ struct FlowGfwTask {
           registry.fill(HIST("hPtMCGen"), particle.pt());
           registry.fill(HIST("hCenMCGen"), centrality);
 
-          float zero=0, five=5;
+          float zero = 0, five = 5;
           if (centrality >= zero && centrality <= five) {
             registry.fill(HIST("hPtMCGen05"), particle.pt());
             registry.fill(HIST("hCenMCGen05"), centrality);
@@ -1277,7 +1278,7 @@ struct FlowGfwTask {
         for (const auto& track : groupedTracksReco) {
 
           registry.fill(HIST("hCorr"), numberOfTracks[0], track.size());
-          float zero=0, five=5;
+          float zero = 0, five = 5;
           if (centrality >= zero && centrality <= five) {
             registry.fill(HIST("hCorr05"), numberOfTracks[0], track.size());
           }
