@@ -179,9 +179,10 @@ struct LfTreeCreatorClusterStudies {
   Configurable<float> track_nClsItsMin{"track_NclsItsMin", 0.f, "Minimum number of ITS clusters for the V0 daughters"};
   Configurable<float> track_nClsTpcMin{"track_NclsTpcMin", 100.f, "Minimum number of TPC clusters for the V0 daughters"};
   Configurable<float> track_nClsTpcMaxShared{"track_NclsTpcMaxShared", 5.f, "Maximum number of shared TPC clusters for the V0 daughters"};
+  Configurable<float> track_etaMax{"etaMax", 0.8f, "Maximum eta"};
+  Configurable<float> track_tpcChi2Min{"track_tpcChi2Min", 0.5f, "Minimum TPC chi2 per cluster"};
 
   // Configurable<float> v0setting_etaMaxV0{"etaMaxV0", 0.8f, "Maximum eta for the V0 daughters"};
-  Configurable<float> v0setting_etaMaxV0dau{"etaMaxV0dau", 0.8f, "Maximum eta for the V0 daughters"};
   Configurable<float> v0setting_dcaV0daughters{"v0setting_dcaV0daughters", 0.5f, "DCA between the V0 daughters"};
   Configurable<float> v0setting_dcaV0toPV{"v0setting_dcaV0fromPV", 1.f, "DCA of the V0 to the primary vertex"};
   Configurable<float> v0setting_dcaDaughtersToPV{"v0setting_dcaDaughtersToPV", 1.f, "DCA of the daughters to the primary vertex"};
@@ -232,7 +233,8 @@ struct LfTreeCreatorClusterStudies {
      {"he3_selections", "He3 track selection; selection; counts", {HistType::kTH1F, {{He3Selections::kHe3All, -0.5, static_cast<double>(He3Selections::kHe3All) - 0.5}}}},
      {"v0_type", "Selected V0; particle; counts", {HistType::kTH1F, {{V0Type::V0TypeAll, -0.5, static_cast<double>(V0Type::V0TypeAll) - 0.5}}}},
      {"radiusV0", "Decay radius (xy) V0; radius (cm); counts", {HistType::kTH1F, {{100, 0., 100.}}}},
-     {"massLambda", "#Lambda invariant mass; signed #it{p} (GeV/#it{c}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {50, 1.08f, 1.18f}}}},
+     {"massLambda", "#Lambda invariant mass; signed #it{p} (GeV/#it{c}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {200, 1.08f, 1.18f}}}},
+     {"massLambdaMc", "#Lambda invariant mass (MC); signed #it{p} (GeV/#it{c}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {200, 1.08f, 1.18f}}}},
      {"Lambda_vs_K0s", "Mass #Lambda vs K^{0}_s; m_{K^{0}_{s}} (GeV/#it{c}^{2}); m_{#Lambda} (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 0.f, 1.f}, {70, 0.6f, 2.f}}}},
      {"armenteros_plot_before_selections", "Armenteros-Podolanski plot; #alpha; q_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
      {"armenteros_plot", "Armenteros-Podolanski plot; #alpha; q_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
@@ -243,7 +245,8 @@ struct LfTreeCreatorClusterStudies {
      {"photon_conversion_position_layer", "Photon conversion position (ITS layers); x (cm); y (cm)", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, -5.f, 5.f}}}},
      {"casc_dca_daughter_pairs", "DCA (xy) for cascade daughter pairs; DCAxy (cm); counts", {HistType::kTH1F, {{100, -0.1, 0.1}}}},
      {"Xi_vs_Omega", "Mass Xi vs Omega; mass Omega (GeV/#it{c}^{2}); mass Xi (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 1.f, 2.f}, {50, 1.f, 2.f}}}},
-     {"massOmega", "Mass #Omega; signed #it{p}_{T} (GeV/#it{c}); mass (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, 1.62f, 1.72f}}}},
+     {"massOmega", "Mass #Omega; signed #it{p}_{T} (GeV/#it{c}); mass (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
+     {"massOmegaMc", "Mass #Omega (MC); signed #it{p}_{T} (GeV/#it{c}); mass (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
      {"massOmegaWithBkg", "Mass Omega with Background; mass Omega (GeV/#it{c}^{2}); counts", {HistType::kTH1F, {{100, 1.62f, 1.72f}}}},
      {"nSigmaTPCEl", "nSigma TPC Electron; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} e", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -2.0f, 2.0f}}}},
      {"nSigmaTPCPi", "nSigma TPC Pion; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} #pi", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -3.0f, 3.0f}}}},
@@ -389,14 +392,16 @@ struct LfTreeCreatorClusterStudies {
   template <typename T>
   bool qualityTrackSelection(const T& track)
   {
-    if (std::abs(track.eta()) > v0setting_etaMaxV0dau) {
+    if (std::abs(track.eta()) > track_etaMax) {
       return false;
     }
     if (track.itsNCls() < track_nClsItsMin ||
         track.tpcNClsFound() < track_nClsTpcMin ||
         track.tpcNClsCrossedRows() < track_nClsTpcMin ||
         track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
-        track.tpcNClsShared() > track_nClsTpcMaxShared) {
+        track.tpcNClsShared() > track_nClsTpcMaxShared ||
+        track.tpcChi2NCl() < track_tpcChi2Min ||
+        track.tpcChi2NCl() > 4.0f) {
       return false;
     }
     return true;
@@ -556,6 +561,64 @@ struct LfTreeCreatorClusterStudies {
     return massV0;
   }
 
+  template <typename McPart>
+  void fillMcHistogramsV0(const float massLambda, const float massAntiLambda,
+                          const std::array<float, 3>& momMother,
+                          const McPart& posDaughter, const McPart& negDaughter)
+  {
+    if ((std::abs(posDaughter.pdgCode()) != 2212 && std::abs(posDaughter.pdgCode()) != 211) ||
+        (std::abs(negDaughter.pdgCode()) != 2212 && std::abs(negDaughter.pdgCode()) != 211)) {
+      return;
+    }
+
+    int motherPdgCode = 0;
+    for (const auto& posMother : posDaughter.template mothers_as<aod::McParticles>()) {
+      for (const auto& negMother : negDaughter.template mothers_as<aod::McParticles>()) {
+        if (negMother.globalIndex() == posMother.globalIndex()) {
+          motherPdgCode = posMother.pdgCode();
+        }
+      }
+    }
+
+    if (motherPdgCode == 3122) {
+      m_hAnalysis.fill(HIST("massLambdaMc"), std::hypot(momMother[0], momMother[1], momMother[2]), massLambda);
+    } else if (motherPdgCode == -3122) {
+      m_hAnalysis.fill(HIST("massLambdaMc"), std::hypot(momMother[0], momMother[1], momMother[2]) * -1.f, massAntiLambda);
+    }
+  }
+
+  template <typename McPart>
+  void fillMcHistogramsCascade(const float massOmega,
+                               const std::array<float, 3>& momMother,
+                               const McPart& bachelorDaughter, const McPart& posV0Daughter)
+  {
+    McPart v0Daughter;
+    for (const auto& iterV0Daughter : posV0Daughter.template mothers_as<aod::McParticles>()) {
+      if (std::abs(iterV0Daughter.pdgCode()) != 3122) {
+        continue;
+      }
+      v0Daughter = iterV0Daughter;
+    }
+    if (std::abs(bachelorDaughter.pdgCode()) != 321) {
+      return;
+    }
+
+    int motherPdgCode = 0;
+    for (const auto& bachelorMother : bachelorDaughter.template mothers_as<aod::McParticles>()) {
+      for (const auto& v0Mother : v0Daughter.template mothers_as<aod::McParticles>()) {
+        if (v0Mother.globalIndex() == bachelorMother.globalIndex()) {
+          motherPdgCode = bachelorMother.pdgCode();
+        }
+      }
+    }
+
+    if (motherPdgCode == 3334) {
+      m_hAnalysis.fill(HIST("massOmegaMc"), std::hypot(momMother[0], momMother[1], momMother[2]), massOmega);
+    } else if (motherPdgCode == -3334) {
+      m_hAnalysis.fill(HIST("massOmegaMc"), std::hypot(momMother[0], momMother[1], momMother[2]) * -1.f, massOmega);
+    }
+  }
+
   template <bool isMC = false>
   void fillTable(const Candidate& candidate)
   {
@@ -587,7 +650,14 @@ struct LfTreeCreatorClusterStudies {
   template <typename T>
   bool nucleiTrackSelection(const T& track)
   {
+    if (std::abs(track.eta()) > track_etaMax) {
+      return false;
+    }
     if (track.tpcNClsFound() < 90) {
+      return false;
+    }
+    if ((track.tpcChi2NCl() > 4.0f) ||
+        (track.tpcChi2NCl() < track_tpcChi2Min)) {
       return false;
     }
     return true;
@@ -837,6 +907,8 @@ struct LfTreeCreatorClusterStudies {
 
       candidatePos.pdgCode = posMcParticle.pdgCode();
       candidateNeg.pdgCode = negMcParticle.pdgCode();
+
+      fillMcHistogramsV0(massLambdaV0, massAntiLambdaV0, momMother, posMcParticle, negMcParticle);
     }
 
     fillTable<isMC>(candidatePos);
@@ -929,6 +1001,13 @@ struct LfTreeCreatorClusterStudies {
 
       m_ClusterStudiesTableMc(
         mcParticle.pdgCode()); // pdgCode_K
+
+      auto posV0Daughter = v0Track.posTrack_as<Track>();
+      if (!posV0Daughter.has_mcParticle()) {
+        return;
+      }
+      auto mcPosParticleV0 = posV0Daughter.mcParticle();
+      fillMcHistogramsCascade(massOmega, momMother, mcParticle, mcPosParticleV0);
     }
 
     m_hAnalysis.fill(HIST("isPositive"), bachelorTrack.p() > 0);

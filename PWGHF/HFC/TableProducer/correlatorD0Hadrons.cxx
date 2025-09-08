@@ -244,6 +244,8 @@ struct HfCorrelatorD0Hadrons {
   Filter particlesFilter = nabs(aod::mcparticle::pdgCode) == static_cast<int>(Pdg::kD0) || ((aod::mcparticle::flags & (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary) == (uint8_t)o2::aod::mcparticle::enums::PhysicalPrimary);
 
   Preslice<aod::HfCand2Prong> perCol = aod::hf_cand::collisionId;
+  Preslice<aod::Tracks> perCollisionID = aod::track::collisionId;
+  Preslice<aod::McParticles> perTrueCollision = o2::aod::mcparticle::mcCollisionId;
 
   ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0f, -2.5f, 2.5f, 10.0f}, "z vertex position pools"};
   ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0.0f, 2000.0f, 6000.0f, 10000.0f}, "event multiplicity pools (FT0M)"};
