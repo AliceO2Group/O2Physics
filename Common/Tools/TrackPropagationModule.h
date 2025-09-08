@@ -115,7 +115,7 @@ class TrackPropagationModule
     fillTracksDCACov = isTableRequiredInWorkflow(initContext, "TracksDCACov");
 
     // enable Tracks in case Tracks have been requested
-    if (fillTracksDCA) {
+    if (fillTracksDCA && !fillTracks) {
       LOGF(info, "******************************************************************");
       LOGF(info, " There is no task subscribed to Tracks, but I have detected a");
       LOGF(info, " subscription to TracksDCA. Now enabling tracks as algorithmic");
