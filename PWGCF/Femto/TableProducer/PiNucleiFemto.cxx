@@ -606,22 +606,22 @@ struct PiNucleiFemto {
   bool fillCandidateInfoHyper(const aod::DataHypCandsWColl::iterator& V0Hyper, const Ttrack& trackPi, PiNucandidate& piHypercand, bool isMixedEvent)
   {
     piHypercand.collisionID = V0Hyper.collisionId();
-    //get hypertriton information
-    //constexpr double mHe3 = o2::constants::physics::MassHelium3;
-    //constexpr double mPi  = o2::constants::physics::MassPiPlus;
-    // --- He3 
+    // get hypertriton information
+    // constexpr double mHe3 = o2::constants::physics::MassHelium3;
+    // constexpr double mPi  = o2::constants::physics::MassPiPlus;
+    //  --- He3
     float pxHe3 = V0Hyper.ptHe3() * std::cos(V0Hyper.phiHe3());
     float pyHe3 = V0Hyper.ptHe3() * std::sin(V0Hyper.phiHe3());
     float pzHe3 = V0Hyper.ptHe3() * std::sinh(V0Hyper.etaHe3());
-    //float pHe3  = V0Hyper.ptHe3() * std::cosh(V0Hyper.etaHe3());
-    //float enHe3 = std::sqrt(pHe3 * pHe3 + mHe3 * mHe3);
-    // --- pi
+    // float pHe3  = V0Hyper.ptHe3() * std::cosh(V0Hyper.etaHe3());
+    // float enHe3 = std::sqrt(pHe3 * pHe3 + mHe3 * mHe3);
+    //  --- pi
     float pxPi = V0Hyper.ptPi() * std::cos(V0Hyper.phiPi());
     float pyPi = V0Hyper.ptPi() * std::sin(V0Hyper.phiPi());
     float pzPi = V0Hyper.ptPi() * std::sinh(V0Hyper.etaPi());
-    //float pPi  = V0Hyper.ptPi() * std::cosh(V0Hyper.etaPi());
-    //float enPi = std::sqrt(pPi * pPi + mPi * mPi);
-    // --- hypertriton
+    // float pPi  = V0Hyper.ptPi() * std::cosh(V0Hyper.etaPi());
+    // float enPi = std::sqrt(pPi * pPi + mPi * mPi);
+    //  --- hypertriton
     float px = pxHe3 + pxPi;
     float py = pyHe3 + pyPi;
     float pz = pzHe3 + pzPi;
@@ -639,12 +639,12 @@ struct PiNucleiFemto {
     }
 
     piHypercand.signPi = trackPi.sign();
-    if(V0Hyper.isMatter()){
+    if (V0Hyper.isMatter()) {
       piHypercand.signNu = 1;
-    }else{
+    } else {
       piHypercand.signNu = -1;
     }
-    
+
     piHypercand.dcaxyPi = trackPi.dcaXY();
     piHypercand.dcazPi = trackPi.dcaZ();
     piHypercand.tpcSignalPi = trackPi.tpcSignal();
@@ -721,14 +721,14 @@ struct PiNucleiFemto {
   void pairTracksSameEventHyper(const Ttrack& piTracks, const Thypers& V0Hypers)
   {
     for (const auto& piTrack : piTracks) {
-  
+
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
-  
+
       if (!selectTrack(piTrack)) {
         continue;
       }
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
-  
+
       if (!selectionPIDPion(piTrack)) {
         continue;
       }
@@ -738,7 +738,7 @@ struct PiNucleiFemto {
 
         SVCand pair;
         pair.tr0Idx = piTrack.globalIndex();
-        pair.tr1Idx = V0Hyper.globalIndex(); 
+        pair.tr1Idx = V0Hyper.globalIndex();
         const int collIdx = V0Hyper.collisionId();
         CollBracket collBracket{collIdx, collIdx};
         pair.collBracket = collBracket;
@@ -971,7 +971,7 @@ struct PiNucleiFemto {
 
       auto v0hyper = V0Hypers.rawIteratorAt(trackPair.tr1Idx);
       auto piTrack = piTracks.rawIteratorAt(trackPair.tr0Idx);
-      //auto collBracket = trackPair.collBracket;
+      // auto collBracket = trackPair.collBracket;
 
       PiNucandidate piNucand;
       if (!fillCandidateInfoHyper(v0hyper, piTrack, piNucand, isMixedEvent)) {
@@ -1033,7 +1033,7 @@ struct PiNucleiFemto {
       mGoodCollisions[collision.globalIndex()] = true;
       const uint64_t collIdx = collision.globalIndex();
       auto trackTableThisCollision = pitracks.sliceBy(mPerCol, collIdx);
-      auto hypdTableThisCollision  = V0Hypers.sliceBy(hypPerCol, collIdx);
+      auto hypdTableThisCollision = V0Hypers.sliceBy(hypPerCol, collIdx);
       trackTableThisCollision.bindExternalIndices(&pitracks);
       hypdTableThisCollision.bindExternalIndices(&V0Hypers);
 
@@ -1043,7 +1043,7 @@ struct PiNucleiFemto {
         continue;
       }
 
-      fillPairsHyper(collisions, pitracks, V0Hypers,/*isMixedEvent*/ false);
+      fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ false);
     }
   }
   PROCESS_SWITCH(PiNucleiFemto, processSameEventHyper, "Process Same event", false);
