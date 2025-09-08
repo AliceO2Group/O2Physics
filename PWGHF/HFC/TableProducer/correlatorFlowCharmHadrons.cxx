@@ -13,6 +13,7 @@
 /// \brief CharmHadrons-Hadrons correlator tree creator for data and MC-reco analyses
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Politecnico and INFN Torino
 /// \author Stefano Politanò <stefano.politano@cern.ch>, CERN
+/// \author Wu Chuntai <chuntai.wu@cern.ch>, CCNU, INFN Padova, and Padova University
 
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
@@ -53,13 +54,16 @@ using namespace o2::hf_evsel;
 enum DecayChannel {
   DplusToPiKPi = 0,
   DsToKKPi,
-  DsToPiKK
+  DsToPiKK,
+  D0ToPiK,
+  D0ToKPi
 };
 
 /// Code to select collisions with at least one Ds meson
 struct HfCorrelatorFlowCharmHadrons {
   Produces<aod::HfcRedFlowColls> rowCollisions;
-  Produces<aod::HfcRedCharmHads> rowCharmCandidates;
+  Produces<aod::HfcRedCharmHads2P> rowCharmCandidates2P;
+  Produces<aod::HfcRedCharmHads3P> rowCharmCandidates3P;
   Produces<aod::HfcRedCharmMls> rowCharmCandidatesMl;
   Produces<aod::HfcRedTrkAssoc> rowAssocTrackReduced;
   Produces<aod::HfcRedTrkSels> rowAssocTrackSelInfo;
@@ -88,18 +92,23 @@ struct HfCorrelatorFlowCharmHadrons {
   using CollsWithCentMult = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
   using CandDsDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandDplusDataWMl = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
+  using CandD0DataWMl = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
   using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;
 
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
+  Filter filterSelectD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
   Filter filterSelectTrackData = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
 
   Preslice<CandDsDataWMl> candsDsPerCollWMl = aod::hf_cand::collisionId;
   Preslice<CandDplusDataWMl> candsDplusPerCollWMl = aod::hf_cand::collisionId;
+  Preslice<CandD0DataWMl> candsD0PerCollWMl = aod::hf_cand::collisionId;
   Preslice<TracksData> trackIndicesPerColl = aod::track::collisionId;
 
   Partition<CandDsDataWMl> selectedDsToKKPiWMl = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag;
   Partition<CandDsDataWMl> selectedDsToPiKKWMl = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
+  Partition<CandD0DataWMl> selectedD0ToPiKWMl = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
+  Partition<CandD0DataWMl> selectedD0ToKPiWMl = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
 
   HistogramRegistry registry{"registry", {}};
 
@@ -109,6 +118,10 @@ struct HfCorrelatorFlowCharmHadrons {
       massCharm = o2::constants::physics::MassDPlus;
     } else if (doprocessDsWithMl) {
       massCharm = o2::constants::physics::MassDS;
+    } else if (doprocessD0WithMl) {
+      massCharm = o2::constants::physics::MassD0;
+    } else {
+      LOG(fatal) << "No decay channel selected to process";
     }
 
     hfEvSel.addHistograms(registry); // collision monitoring
@@ -163,6 +176,12 @@ struct HfCorrelatorFlowCharmHadrons {
     if constexpr (channel == DecayChannel::DplusToPiKPi) {
       return hfHelper.invMassDplusToPiKPi(candidate);
     }
+    if constexpr (channel == DecayChannel::D0ToPiK) {
+      return hfHelper.invMassD0ToPiK(candidate);
+    }
+    if constexpr (channel == DecayChannel::D0ToKPi) {
+      return hfHelper.invMassD0barToKPi(candidate);
+    }
     return -1.;
   }
 
@@ -187,6 +206,16 @@ struct HfCorrelatorFlowCharmHadrons {
         outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
       }
     }
+    if constexpr (channel == DecayChannel::D0ToPiK) {
+      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+        outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
+      }
+    }
+    if constexpr (channel == DecayChannel::D0ToKPi) {
+      for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
+        outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
+      }
+    }
     return outputMl;
   }
 
@@ -201,8 +230,11 @@ struct HfCorrelatorFlowCharmHadrons {
         continue;
       }
       double massCand = getCandMass<channel>(candidate);
-      rowCharmCandidates(indexRedColl, candidate.phi(), candidate.eta(), candidate.pt(), massCand, candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
-
+      if constexpr (channel == DecayChannel::D0ToKPi || channel == DecayChannel::D0ToPiK) {
+        rowCharmCandidates2P(indexRedColl, candidate.phi(), candidate.eta(), candidate.pt(), massCand, candidate.prong0Id(), candidate.prong1Id());
+      } else {
+        rowCharmCandidates3P(indexRedColl, candidate.phi(), candidate.eta(), candidate.pt(), massCand, candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
+      }
       std::vector<float> outputMl = getCandMlScores<channel>(candidate);
       rowCharmCandidatesMl(indexRedColl, outputMl[0], outputMl[1]);
     }
@@ -266,6 +298,29 @@ struct HfCorrelatorFlowCharmHadrons {
     }
   }
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processDsWithMl, "Process Ds candidates with ML info", false);
+
+  // D0 with ML selections
+  void processD0WithMl(CollsWithCentMult const& colls,
+                       TracksData const& tracks,
+                       CandD0DataWMl const&)
+  {
+    for (const auto& coll : colls) {
+      auto thisCollId = coll.globalIndex();
+      auto candsD0ToPiKWMl = selectedD0ToPiKWMl->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
+      auto candsD0ToKPiWMl = selectedD0ToKPiWMl->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
+      if (forceCharmInCollision && candsD0ToPiKWMl.size() < 1 && candsD0ToKPiWMl.size() < 1) {
+        continue;
+      }
+      if (!checkAndFillCollision(coll)) {
+        continue;
+      }
+      auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
+      fillCharmHadronTables<DecayChannel::D0ToPiK>(candsD0ToPiKWMl);
+      fillCharmHadronTables<DecayChannel::D0ToKPi>(candsD0ToKPiWMl);
+      fillTracksTables(trackIdsThisColl);
+    }
+  }
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processD0WithMl, "Process D0 candidates with ML info", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
