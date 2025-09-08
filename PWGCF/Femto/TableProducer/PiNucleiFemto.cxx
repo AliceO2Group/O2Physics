@@ -201,7 +201,7 @@ struct PiNucleiFemto {
   Configurable<int> settingMaterialCorrection{"settingMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Material correction type"};
 
   Preslice<TrackCandidates> mPerCol = aod::track::collisionId;
-  Preslice<o2::aod::DataHypCandsWColl> hypPerCol = o2::aod::hyperrec::collisionId;
+  PresliceUnsorted<o2::aod::DataHypCandsWColl> hypPerCol = o2::aod::hyperrec::collisionId;
 
   // binning for EM background
   ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for multiplicity"};
