@@ -652,79 +652,76 @@ struct strangenesstofpid {
                             std::abs(nTof.tpcNSigmaPi) < v0Group.qaTPCNSigma; 
 
     //_____________________________________________________________________________________________
-    // Legacy calculation method
-    if(calculationMethod.value == 0){ 
+    // Actual calculation
+    if(pTof.hasTOF && pTof.hasITS){ 
       float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
       float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
+      float lengthPositive = findInterceptLength(posTrack, d_bz);
+      if(lengthPositive>0.0f){ 
+        v0tof.timePositivePr = lengthPositive / velocityPositivePr;
+        v0tof.timePositivePi = lengthPositive / velocityPositivePi;
+        v0tof.deltaTimePositiveLambdaPr = (pTof.tofSignal - pTof.tofEvTime) - (timeLambda + v0tof.timePositivePr);
+        v0tof.deltaTimePositiveLambdaPi = (pTof.tofSignal - pTof.tofEvTime) - (timeLambda + v0tof.timePositivePi);
+        v0tof.deltaTimePositiveK0ShortPi = (pTof.tofSignal - pTof.tofEvTime) - (timeK0Short + v0tof.timePositivePi);
+
+        // de facto nsigma
+        if(nSigmaCalibLoaded){
+          v0tof.nSigmaPositiveLambdaPi = (v0tof.deltaTimePositiveLambdaPi - hMeanPosLaPi->Interpolate(v0.p())) / hSigmaPosLaPi->Interpolate(v0.p());
+          v0tof.nSigmaPositiveLambdaPr = (v0tof.deltaTimePositiveLambdaPr - hMeanPosLaPr->Interpolate(v0.p())) / hSigmaPosLaPr->Interpolate(v0.p());
+          v0tof.nSigmaPositiveK0ShortPi = (v0tof.deltaTimePositiveK0ShortPi - hMeanPosK0Pi->Interpolate(v0.p())) / hSigmaPosK0Pi->Interpolate(v0.p());
+        }
+
+        // do QA histograms (calibration / QC)
+        if(doQA){ 
+          if(passesQAcuts){ 
+            if(lambdaCandidate){ 
+              histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.p(), v0.eta(), v0tof.deltaTimePositiveLambdaPr);
+            }
+            if(antiLambdaCandidate){ 
+              histos.fill(HIST("h2dDeltaTimePositiveLambdaPi"), v0.p(), v0.eta(), v0tof.deltaTimePositiveLambdaPi);
+            }
+            if(k0ShortCandidate){ 
+              histos.fill(HIST("h2dDeltaTimePositiveK0ShortPi"), v0.p(), v0.eta(), v0tof.deltaTimePositiveK0ShortPi);
+            }
+          }
+        }
+      }
+    }
+    if(nTof.hasTOF && nTof.hasITS){ 
       float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
       float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
+      float lengthNegative = findInterceptLength(negTrack, d_bz);
+      if(lengthNegative>0.0f){
+        v0tof.timeNegativePr = lengthNegative / velocityNegativePr;
+        v0tof.timeNegativePi = lengthNegative / velocityNegativePi;
+        v0tof.deltaTimeNegativeLambdaPr = (nTof.tofSignal - nTof.tofEvTime) - (timeLambda + v0tof.timeNegativePr);
+        v0tof.deltaTimeNegativeLambdaPi = (nTof.tofSignal - nTof.tofEvTime) - (timeLambda + v0tof.timeNegativePi);
+        v0tof.deltaTimeNegativeK0ShortPi = (nTof.tofSignal - nTof.tofEvTime) - (timeK0Short + v0tof.timeNegativePi);
 
-      if(pTof.hasTOF && pTof.hasITS){ 
-        float lengthPositive = findInterceptLength(posTrack, d_bz);
-        if(lengthPositive>0.0f){ 
-          v0tof.timePositivePr = lengthPositive / velocityPositivePr;
-          v0tof.timePositivePi = lengthPositive / velocityPositivePi;
-          v0tof.deltaTimePositiveLambdaPr = (pTof.tofSignal - pTof.tofEvTime) - (timeLambda + v0tof.timePositivePr);
-          v0tof.deltaTimePositiveLambdaPi = (pTof.tofSignal - pTof.tofEvTime) - (timeLambda + v0tof.timePositivePi);
-          v0tof.deltaTimePositiveK0ShortPi = (pTof.tofSignal - pTof.tofEvTime) - (timeK0Short + v0tof.timePositivePi);
+        // de facto nsigma
+        if(nSigmaCalibLoaded){
+          v0tof.nSigmaNegativeLambdaPi = (v0tof.deltaTimeNegativeLambdaPi - hMeanNegLaPi->Interpolate(v0.p())) / hSigmaNegLaPi->Interpolate(v0.p());
+          v0tof.nSigmaNegativeLambdaPr = (v0tof.deltaTimeNegativeLambdaPr - hMeanNegLaPr->Interpolate(v0.p())) / hSigmaNegLaPr->Interpolate(v0.p());
+          v0tof.nSigmaNegativeK0ShortPi = (v0tof.deltaTimeNegativeK0ShortPi - hMeanNegK0Pi->Interpolate(v0.p())) / hSigmaNegK0Pi->Interpolate(v0.p());
+        }
 
-          // de facto nsigma
-          if(nSigmaCalibLoaded){
-            v0tof.nSigmaPositiveLambdaPi = (v0tof.deltaTimePositiveLambdaPi - hMeanPosLaPi->Interpolate(v0.p())) / hSigmaPosLaPi->Interpolate(v0.p());
-            v0tof.nSigmaPositiveLambdaPr = (v0tof.deltaTimePositiveLambdaPr - hMeanPosLaPr->Interpolate(v0.p())) / hSigmaPosLaPr->Interpolate(v0.p());
-            v0tof.nSigmaPositiveK0ShortPi = (v0tof.deltaTimePositiveK0ShortPi - hMeanPosK0Pi->Interpolate(v0.p())) / hSigmaPosK0Pi->Interpolate(v0.p());
-          }
 
-          // do QA histograms (calibration / QC)
-          if(doQA){ 
-            if(passesQAcuts){ 
-              if(lambdaCandidate){ 
-                histos.fill(HIST("h2dDeltaTimePositiveLambdaPr"), v0.p(), v0.eta(), v0tof.deltaTimePositiveLambdaPr);
-              }
-              if(antiLambdaCandidate){ 
-                histos.fill(HIST("h2dDeltaTimePositiveLambdaPi"), v0.p(), v0.eta(), v0tof.deltaTimePositiveLambdaPi);
-              }
-              if(k0ShortCandidate){ 
-                histos.fill(HIST("h2dDeltaTimePositiveK0ShortPi"), v0.p(), v0.eta(), v0tof.deltaTimePositiveK0ShortPi);
-              }
+        // do QA histograms (calibration / QC)
+        if(doQA){ 
+          if(passesQAcuts){ 
+            if(lambdaCandidate){ 
+              histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.p(), v0.eta(), v0tof.deltaTimeNegativeLambdaPi);
+            }
+            if(antiLambdaCandidate){ 
+              histos.fill(HIST("h2dDeltaTimeNegativeLambdaPr"), v0.p(), v0.eta(), v0tof.deltaTimeNegativeLambdaPr);
+            }
+            if(k0ShortCandidate){ 
+              histos.fill(HIST("h2dDeltaTimeNegativeK0ShortPi"), v0.p(), v0.eta(), v0tof.deltaTimeNegativeK0ShortPi);
             }
           }
         }
       }
-      if(nTof.hasTOF && nTof.hasITS){ 
-        float lengthNegative = findInterceptLength(negTrack, d_bz);
-        if(lengthNegative>0.0f){
-          v0tof.timeNegativePr = lengthNegative / velocityNegativePr;
-          v0tof.timeNegativePi = lengthNegative / velocityNegativePi;
-          v0tof.deltaTimeNegativeLambdaPr = (nTof.tofSignal - nTof.tofEvTime) - (timeLambda + v0tof.timeNegativePr);
-          v0tof.deltaTimeNegativeLambdaPi = (nTof.tofSignal - nTof.tofEvTime) - (timeLambda + v0tof.timeNegativePi);
-          v0tof.deltaTimeNegativeK0ShortPi = (nTof.tofSignal - nTof.tofEvTime) - (timeK0Short + v0tof.timeNegativePi);
-
-          // de facto nsigma
-          if(nSigmaCalibLoaded){
-            v0tof.nSigmaNegativeLambdaPi = (v0tof.deltaTimeNegativeLambdaPi - hMeanNegLaPi->Interpolate(v0.p())) / hSigmaNegLaPi->Interpolate(v0.p());
-            v0tof.nSigmaNegativeLambdaPr = (v0tof.deltaTimeNegativeLambdaPr - hMeanNegLaPr->Interpolate(v0.p())) / hSigmaNegLaPr->Interpolate(v0.p());
-            v0tof.nSigmaNegativeK0ShortPi = (v0tof.deltaTimeNegativeK0ShortPi - hMeanNegK0Pi->Interpolate(v0.p())) / hSigmaNegK0Pi->Interpolate(v0.p());
-          }
-
-
-          // do QA histograms (calibration / QC)
-          if(doQA){ 
-            if(passesQAcuts){ 
-              if(lambdaCandidate){ 
-                histos.fill(HIST("h2dDeltaTimeNegativeLambdaPi"), v0.p(), v0.eta(), v0tof.deltaTimeNegativeLambdaPi);
-              }
-              if(antiLambdaCandidate){ 
-                histos.fill(HIST("h2dDeltaTimeNegativeLambdaPr"), v0.p(), v0.eta(), v0tof.deltaTimeNegativeLambdaPr);
-              }
-              if(k0ShortCandidate){ 
-                histos.fill(HIST("h2dDeltaTimeNegativeK0ShortPi"), v0.p(), v0.eta(), v0tof.deltaTimeNegativeK0ShortPi);
-              }
-            }
-          }
-        }
-      }
-    } // end legacy calculation method 
+    }
 
     return v0tof;
   } // end calculation altogether
@@ -804,138 +801,135 @@ struct strangenesstofpid {
                               std::abs(bTof.tpcNSigmaKa) < cascadeGroup.qaTPCNSigma; 
 
     //_____________________________________________________________________________________________
-    // Legacy calculation method
-    if(calculationMethod.value == 0){ 
+    // Actual calculation
+    if(pTof.hasTOF && pTof.hasITS){ 
       float velocityPositivePr = velocity(posTrack.getP(), o2::constants::physics::MassProton);
       float velocityPositivePi = velocity(posTrack.getP(), o2::constants::physics::MassPionCharged);
+      float lengthPositive = findInterceptLength(posTrack, d_bz);
+      if(lengthPositive>0.0f){ 
+        casctof.posFlightPr = lengthPositive / velocityPositivePr;
+        casctof.posFlightPi = lengthPositive / velocityPositivePi;
+        casctof.posDeltaTimeAsXiPi = (pTof.tofSignal - pTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.posFlightPi);
+        casctof.posDeltaTimeAsXiPr = (pTof.tofSignal - pTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.posFlightPr);
+        casctof.posDeltaTimeAsOmPi = (pTof.tofSignal - pTof.tofEvTime) - (omFlight + lambdaFlight + casctof.posFlightPi);
+        casctof.posDeltaTimeAsOmPr = (pTof.tofSignal - pTof.tofEvTime) - (omFlight + lambdaFlight + casctof.posFlightPr);
+
+        // de facto nsigma
+        if(nSigmaCalibLoaded){
+          if(cascade.sign()<0){
+            casctof.nSigmaXiLaPr = (casctof.posDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.p())) / hSigmaPosXiPr->Interpolate(cascade.p());
+            casctof.nSigmaOmLaPr = (casctof.posDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.p())) / hSigmaPosOmPr->Interpolate(cascade.p());
+          }else{
+            casctof.nSigmaXiLaPi = (casctof.posDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.p())) / hSigmaPosXiPi->Interpolate(cascade.p());
+            casctof.nSigmaOmLaPi = (casctof.posDeltaTimeAsOmPi - hMeanPosOmPi->Interpolate(cascade.p())) / hSigmaPosOmPi->Interpolate(cascade.p());
+          }
+        }
+
+        // do QA histograms (calibration / QC)
+        if(doQA){ 
+          if(passesQAcuts){ 
+            if(xiMinusCandidate){ 
+              histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.p(), cascade.eta(), casctof.posDeltaTimeAsXiPr);
+            }
+            if(xiPlusCandidate){ 
+              histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), casctof.posDeltaTimeAsXiPi);
+            }
+            if(omegaMinusCandidate){ 
+              histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.p(), cascade.eta(), casctof.posDeltaTimeAsOmPr);
+            }
+            if(omegaPlusCandidate){
+              histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.p(), cascade.eta(), casctof.posDeltaTimeAsOmPi);
+            }
+          }
+        }
+      }
+    } // end positive
+
+    if(nTof.hasTOF && nTof.hasITS){ 
       float velocityNegativePr = velocity(negTrack.getP(), o2::constants::physics::MassProton);
       float velocityNegativePi = velocity(negTrack.getP(), o2::constants::physics::MassPionCharged);
+      float lengthNegative = findInterceptLength(negTrack, d_bz);
+      if(lengthNegative>0.0f){ 
+        casctof.negFlightPr = lengthNegative / velocityNegativePr;
+        casctof.negFlightPi = lengthNegative / velocityNegativePi;
+        casctof.negDeltaTimeAsXiPi = (nTof.tofSignal - nTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.negFlightPi);
+        casctof.negDeltaTimeAsXiPr = (nTof.tofSignal - nTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.negFlightPr);
+        casctof.negDeltaTimeAsOmPi = (nTof.tofSignal - nTof.tofEvTime) - (omFlight + lambdaFlight + casctof.negFlightPi);
+        casctof.negDeltaTimeAsOmPr = (nTof.tofSignal - nTof.tofEvTime) - (omFlight + lambdaFlight + casctof.negFlightPr);
+
+        LOGF(info, "cascade %i nTofSignal %.2f negFlightPr %.2f negFlightPi %.2f xiFlight %.2f lambdaFlight %.2f lengthNegative %.2f velocityNegativePr %.2f", cascade.globalIndex(), nTof.tofSignal, casctof.negFlightPr, casctof.negFlightPi, xiFlight, lambdaFlight, lengthNegative, velocityNegativePr);
+
+        // de facto nsigma
+        if(nSigmaCalibLoaded){
+          if(cascade.sign()<0){
+            casctof.nSigmaXiLaPr = (casctof.negDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.p())) / hSigmaPosXiPr->Interpolate(cascade.p());
+            casctof.nSigmaOmLaPr = (casctof.negDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.p())) / hSigmaPosOmPr->Interpolate(cascade.p());
+          }else{
+            casctof.nSigmaXiLaPi = (casctof.negDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.p())) / hSigmaPosXiPi->Interpolate(cascade.p());
+            casctof.nSigmaOmLaPi = (casctof.negDeltaTimeAsOmPi - hMeanPosOmPi->Interpolate(cascade.p())) / hSigmaPosOmPi->Interpolate(cascade.p());
+          }
+        }
+
+        // do QA histograms (calibration / QC)
+        if(doQA){ 
+          if(passesQAcuts){ 
+            if(xiMinusCandidate){ 
+              histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), casctof.negDeltaTimeAsXiPi);
+            }
+            if(xiPlusCandidate){ 
+              histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.p(), cascade.eta(), casctof.negDeltaTimeAsXiPr);
+            }
+            if(omegaMinusCandidate){ 
+              histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.p(), cascade.eta(), casctof.negDeltaTimeAsOmPi);
+            }
+            if(omegaPlusCandidate){
+              histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.p(), cascade.eta(), casctof.negDeltaTimeAsOmPr);
+            }
+          }
+        }
+      }
+    } //end negative
+
+    if(bTof.hasTOF && bTof.hasITS){ 
       float velocityBachelorPi = velocity(bachTrack.getP(), o2::constants::physics::MassPionCharged);
       float velocityBachelorKa = velocity(bachTrack.getP(), o2::constants::physics::MassKaonCharged);
+      float lengthBachelor = findInterceptLength(bachTrack, d_bz);
+      if(lengthBachelor>0.0f){ 
+        casctof.bachFlightPi = lengthBachelor / velocityBachelorPi;
+        casctof.bachFlightKa = lengthBachelor / velocityBachelorKa;
+        casctof.bachDeltaTimeAsXiPi = (bTof.tofSignal - bTof.tofEvTime) - (xiFlight + casctof.bachFlightPi);
+        casctof.bachDeltaTimeAsOmKa = (bTof.tofSignal - bTof.tofEvTime) - (omFlight + casctof.bachFlightKa);
 
-      if(pTof.hasTOF && pTof.hasITS){ 
-        float lengthPositive = findInterceptLength(posTrack, d_bz);
-        if(lengthPositive>0.0f){ 
-          casctof.posFlightPr = lengthPositive / velocityPositivePr;
-          casctof.posFlightPi = lengthPositive / velocityPositivePi;
-          casctof.posDeltaTimeAsXiPi = (pTof.tofSignal - pTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.posFlightPi);
-          casctof.posDeltaTimeAsXiPr = (pTof.tofSignal - pTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.posFlightPr);
-          casctof.posDeltaTimeAsOmPi = (pTof.tofSignal - pTof.tofEvTime) - (omFlight + lambdaFlight + casctof.posFlightPi);
-          casctof.posDeltaTimeAsOmPr = (pTof.tofSignal - pTof.tofEvTime) - (omFlight + lambdaFlight + casctof.posFlightPr);
-
-          // de facto nsigma
-          if(nSigmaCalibLoaded){
-            if(cascade.sign()<0){
-              casctof.nSigmaXiLaPr = (casctof.posDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.p())) / hSigmaPosXiPr->Interpolate(cascade.p());
-              casctof.nSigmaOmLaPr = (casctof.posDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.p())) / hSigmaPosOmPr->Interpolate(cascade.p());
-            }else{
-              casctof.nSigmaXiLaPi = (casctof.posDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.p())) / hSigmaPosXiPi->Interpolate(cascade.p());
-              casctof.nSigmaOmLaPi = (casctof.posDeltaTimeAsOmPi - hMeanPosOmPi->Interpolate(cascade.p())) / hSigmaPosOmPi->Interpolate(cascade.p());
-            }
+        // de facto nsigma
+        if(nSigmaCalibLoaded){
+          if(cascade.sign()<0){
+            casctof.nSigmaXiPi = (casctof.bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.p())) / hSigmaBachXiPi->Interpolate(cascade.p());
+            casctof.nSigmaOmKa = (casctof.bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.p())) / hSigmaBachOmKa->Interpolate(cascade.p());
+          }else{
+            casctof.nSigmaXiPi = (casctof.bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.p())) / hSigmaBachXiPi->Interpolate(cascade.p());
+            casctof.nSigmaOmKa = (casctof.bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.p())) / hSigmaBachOmKa->Interpolate(cascade.p());
           }
+        }
 
-          // do QA histograms (calibration / QC)
-          if(doQA){ 
-            if(passesQAcuts){ 
-              if(xiMinusCandidate){ 
-                histos.fill(HIST("h2dposDeltaTimeAsXiPr"), cascade.p(), cascade.eta(), casctof.posDeltaTimeAsXiPr);
-              }
-              if(xiPlusCandidate){ 
-                histos.fill(HIST("h2dposDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), casctof.posDeltaTimeAsXiPi);
-              }
-              if(omegaMinusCandidate){ 
-                histos.fill(HIST("h2dposDeltaTimeAsOmPr"), cascade.p(), cascade.eta(), casctof.posDeltaTimeAsOmPr);
-              }
-              if(omegaPlusCandidate){
-                histos.fill(HIST("h2dposDeltaTimeAsOmPi"), cascade.p(), cascade.eta(), casctof.posDeltaTimeAsOmPi);
-              }
+        // do QA histograms (calibration / QC)
+        if(doQA){ 
+          if(passesQAcuts){ 
+            if(xiMinusCandidate){ 
+              histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), casctof.bachDeltaTimeAsXiPi);
+            }
+            if(xiPlusCandidate){ 
+              histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), casctof.bachDeltaTimeAsXiPi);
+            }
+            if(omegaMinusCandidate){ 
+              histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.p(), cascade.eta(), casctof.bachDeltaTimeAsOmKa);
+            }
+            if(omegaPlusCandidate){
+              histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.p(), cascade.eta(), casctof.bachDeltaTimeAsOmKa);
             }
           }
         }
-      } // end positive
-
-      if(nTof.hasTOF && nTof.hasITS){ 
-        float lengthNegative = findInterceptLength(negTrack, d_bz);
-        if(lengthNegative>0.0f){ 
-          casctof.negFlightPr = lengthNegative / velocityNegativePr;
-          casctof.negFlightPi = lengthNegative / velocityNegativePi;
-          casctof.negDeltaTimeAsXiPi = (nTof.tofSignal - nTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.negFlightPi);
-          casctof.negDeltaTimeAsXiPr = (nTof.tofSignal - nTof.tofEvTime) - (xiFlight + lambdaFlight + casctof.negFlightPr);
-          casctof.negDeltaTimeAsOmPi = (nTof.tofSignal - nTof.tofEvTime) - (omFlight + lambdaFlight + casctof.negFlightPi);
-          casctof.negDeltaTimeAsOmPr = (nTof.tofSignal - nTof.tofEvTime) - (omFlight + lambdaFlight + casctof.negFlightPr);
-
-          LOGF(info, "cascade %i nTofSignal %.2f negFlightPr %.2f negFlightPi %.2f xiFlight %.2f lambdaFlight %.2f lengthNegative %.2f velocityNegativePr %.2f", cascade.globalIndex(), nTof.tofSignal, casctof.negFlightPr, casctof.negFlightPi, xiFlight, lambdaFlight, lengthNegative, velocityNegativePr);
-
-          // de facto nsigma
-          if(nSigmaCalibLoaded){
-            if(cascade.sign()<0){
-              casctof.nSigmaXiLaPr = (casctof.negDeltaTimeAsXiPr - hMeanPosXiPr->Interpolate(cascade.p())) / hSigmaPosXiPr->Interpolate(cascade.p());
-              casctof.nSigmaOmLaPr = (casctof.negDeltaTimeAsOmPr - hMeanPosOmPr->Interpolate(cascade.p())) / hSigmaPosOmPr->Interpolate(cascade.p());
-            }else{
-              casctof.nSigmaXiLaPi = (casctof.negDeltaTimeAsXiPi - hMeanPosXiPi->Interpolate(cascade.p())) / hSigmaPosXiPi->Interpolate(cascade.p());
-              casctof.nSigmaOmLaPi = (casctof.negDeltaTimeAsOmPi - hMeanPosOmPi->Interpolate(cascade.p())) / hSigmaPosOmPi->Interpolate(cascade.p());
-            }
-          }
-
-          // do QA histograms (calibration / QC)
-          if(doQA){ 
-            if(passesQAcuts){ 
-              if(xiMinusCandidate){ 
-                histos.fill(HIST("h2dnegDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), casctof.negDeltaTimeAsXiPi);
-              }
-              if(xiPlusCandidate){ 
-                histos.fill(HIST("h2dnegDeltaTimeAsXiPr"), cascade.p(), cascade.eta(), casctof.negDeltaTimeAsXiPr);
-              }
-              if(omegaMinusCandidate){ 
-                histos.fill(HIST("h2dnegDeltaTimeAsOmPi"), cascade.p(), cascade.eta(), casctof.negDeltaTimeAsOmPi);
-              }
-              if(omegaPlusCandidate){
-                histos.fill(HIST("h2dnegDeltaTimeAsOmPr"), cascade.p(), cascade.eta(), casctof.negDeltaTimeAsOmPr);
-              }
-            }
-          }
-        }
-      } //end negative
-
-      if(bTof.hasTOF && bTof.hasITS){ 
-        float lengthBachelor = findInterceptLength(bachTrack, d_bz);
-        if(lengthBachelor>0.0f){ 
-          casctof.bachFlightPi = lengthBachelor / velocityBachelorPi;
-          casctof.bachFlightKa = lengthBachelor / velocityBachelorKa;
-          casctof.bachDeltaTimeAsXiPi = (bTof.tofSignal - bTof.tofEvTime) - (xiFlight + casctof.bachFlightPi);
-          casctof.bachDeltaTimeAsOmKa = (bTof.tofSignal - bTof.tofEvTime) - (omFlight + casctof.bachFlightKa);
-
-          // de facto nsigma
-          if(nSigmaCalibLoaded){
-            if(cascade.sign()<0){
-              casctof.nSigmaXiPi = (casctof.bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.p())) / hSigmaBachXiPi->Interpolate(cascade.p());
-              casctof.nSigmaOmKa = (casctof.bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.p())) / hSigmaBachOmKa->Interpolate(cascade.p());
-            }else{
-              casctof.nSigmaXiPi = (casctof.bachDeltaTimeAsXiPi - hMeanBachXiPi->Interpolate(cascade.p())) / hSigmaBachXiPi->Interpolate(cascade.p());
-              casctof.nSigmaOmKa = (casctof.bachDeltaTimeAsOmKa - hMeanBachOmKa->Interpolate(cascade.p())) / hSigmaBachOmKa->Interpolate(cascade.p());
-            }
-          }
-
-          // do QA histograms (calibration / QC)
-          if(doQA){ 
-            if(passesQAcuts){ 
-              if(xiMinusCandidate){ 
-                histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), casctof.bachDeltaTimeAsXiPi);
-              }
-              if(xiPlusCandidate){ 
-                histos.fill(HIST("h2dbachDeltaTimeAsXiPi"), cascade.p(), cascade.eta(), casctof.bachDeltaTimeAsXiPi);
-              }
-              if(omegaMinusCandidate){ 
-                histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.p(), cascade.eta(), casctof.bachDeltaTimeAsOmKa);
-              }
-              if(omegaPlusCandidate){
-                histos.fill(HIST("h2dbachDeltaTimeAsOmKa"), cascade.p(), cascade.eta(), casctof.bachDeltaTimeAsOmKa);
-              }
-            }
-          }
-        }
-      } // end bachelor
-    } // end legacy calculation method 
+      }
+    } // end bachelor
 
     // don't forget to give feedback
     return casctof;
