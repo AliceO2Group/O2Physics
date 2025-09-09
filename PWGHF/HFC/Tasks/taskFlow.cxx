@@ -209,20 +209,15 @@ struct HfTaskFlow {
   using FilteredCollisionsWSelMult = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
   using HfCandidatesSelD0 = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using HfCandidatesSelLc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
+  using FilteredTracksWDcaSel = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
 
   // using FilteredMftTracks = soa::Filtered<aod::MFTTracks>;
   //  using FilteredMftTracksWColls = soa::Filtered<soa::Join<aod::MFTTracks, aod::MFTTrkCompColls>>;
   // using FilteredAndReassociatedMftTracks = soa::Filtered<soa::Join<aod::BestCollisionsFwd, aod::MFTTracks>>;
 
-  using FilteredTracksWDcaSel = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection>>;
-
   // =========================
   //      using declarations : MONTE CARLO
   // =========================
-
-  // Even add McCollisions in the join ?
-  // Kata adds subscribes to it but do not add it in the join
-  // using FilteredCollisionsWSelMultMcLabels = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults, aod::McCollisions>>;
 
   using FilteredCollisionsWSelMultMcLabels = soa::Filtered<soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels, aod::Mults>>;
   using FilteredMcCollisions = soa::Filtered<soa::Join<aod::McCollisions, aod::MultMCExtras, aod::McCollsExtra>>;
@@ -231,9 +226,9 @@ struct HfTaskFlow {
   using McParticles = aod::McParticles;
   using McParticles2ProngMatched = soa::Join<McParticles, aod::HfCand2ProngMcGen>;
   using McParticles3ProngMatched = soa::Join<McParticles, aod::HfCand3ProngMcGen>;
-  // using FilteredMftTracksWCollsMcLabels = soa::Filtered<soa::Join<aod::MFTTracks, aod::MFTTrkCompColls, aod::McMFTTrackLabels>>;
   using MftTracksMcLabels = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
   using FilteredTracksWDcaSelMC = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::McTrackLabels>>;
+  // using FilteredMftTracksWCollsMcLabels = soa::Filtered<soa::Join<aod::MFTTracks, aod::MFTTrkCompColls, aod::McMFTTrackLabels>>;
 
   // =========================
   //      Filters & partitions : DATA
@@ -248,22 +243,24 @@ struct HfTaskFlow {
                              (aod::hf_sel_candidate_lc::isSelLcToPiKP >= configCandidates.selectionFlagHf);
 
   //  Collision filters
-  //  FIXME: The filter is applied also on the candidates! Beware!
   Filter collisionVtxZFilter = nabs(aod::collision::posZ) < configCollision.zVertexMax;
+
+  // Central tracks filter
+
+  Filter centralTrackEtaPtFilter = (nabs(aod::track::eta) < configCentral.etaCentralTrackMax) && (aod::track::pt > configCentral.ptCentralTrackMin);
+
+  Filter centralTrackTpcFilter = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
+                                        ncheckbit(aod::track::trackCutFlag, TrackSelectionTpc), true);
 
   Filter centralTrackItsFilter = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
                                  ncheckbit(aod::track::trackCutFlag, TrackSelectionIts);
-  Filter centralTrackTpcFilter = ifnode(ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::TPC),
-                                        ncheckbit(aod::track::trackCutFlag, TrackSelectionTpc), true);
+
   Filter centralTrackDcaFilter = ifnode(configCentral.dcaZCentralTrackMax.node() > 0.f, nabs(aod::track::dcaZ) <= configCentral.dcaZCentralTrackMax && ncheckbit(aod::track::trackCutFlag, TrackSelectionDcaxyOnly),
                                         ncheckbit(aod::track::trackCutFlag, TrackSelectionDca));
 
   // Filter trackFilter = (nabs(aod::track::eta) < configCentral.etaCentralTrackMax) && (aod::track::pt > configCentral.ptCentralTrackMin) && requireGlobalTrackWoPtEtaInFilter();
-  Filter trackFilter = (nabs(aod::track::eta) < configCentral.etaCentralTrackMax) && (aod::track::pt > configCentral.ptCentralTrackMin);
-
   // Filter mftTrackEtaFilter = (aod::fwdtrack::eta < configMft.etaMftTrackMax) &&
   //                            (aod::fwdtrack::eta > configMft.etaMftTrackMin);
-
   // Filter mftTrackHasCollision = aod::fwdtrack::collisionId > 0;
 
   // Filters below will be used for uncertainties
@@ -309,9 +306,6 @@ struct HfTaskFlow {
   // =========================
 
   Preslice<MftTracksMcLabels> mftTracksPerCollision = aod::fwdtrack::collisionId;
-  // Preslice<HfCandidatesSelD0McRec> d0CandidatesPerCollision = aod::hf_cand::collisionId;
-  // Preslice<McParticles> mcPerCol = aod::mcparticle::mcCollisionId;
-  // PresliceUnsorted<FilteredCollisionsWSelMultMcLabels> collisionsMcLabelPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   //  configurables for containers
   //  TODO: flow of HF will need to be done vs. invariant mass, in the signal and side-band regions
@@ -856,6 +850,18 @@ struct HfTaskFlow {
       if (!collision.sel8()) {
         return false;
       }
+    }
+
+    if (configCollision.isApplySameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+
+    if (configCollision.isApplyGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return false;
+    }
+
+    if (configCollision.isApplyNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
+      return false;
     }
 
     if (fillHistograms) {
