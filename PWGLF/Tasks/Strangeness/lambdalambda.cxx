@@ -11,54 +11,48 @@
 
 /// \author Junlee Kim (jikim1290@gmail.com)
 
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <chrono>
-#include <string>
-#include <vector>
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "TLorentzVector.h"
-#include "TRandom3.h"
-#include "TF1.h"
-#include "TVector3.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-#include <TMath.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/StaticFor.h"
-
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-
-#include "Common/Core/trackUtilities.h"
 #include "Common/Core/TrackSelection.h"
-
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/Zorro.h"
 #include "EventFiltering/ZorroSummary.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
 #include "CommonConstants/PhysicsConstants.h"
-
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TLorentzVector.h"
+#include "TRandom3.h"
+#include "TVector3.h"
+#include <TMath.h>
 
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -557,12 +551,14 @@ struct lambdalambda {
   {
     int currentRun = -1;
     for (auto& [c1, c2] : selfCombinations(colBinning, cfgNoMixedEvents, -1, collisions, collisions)) {
-      if (c1.index() == c2.index()) continue;
+      if (c1.index() == c2.index())
+        continue;
 
       auto bc1 = c1.bc_as<aod::BCsWithTimestamps>();
       auto bc2 = c2.bc_as<aod::BCsWithTimestamps>();
 
-      if (bc1.runNumber() != bc2.runNumber() ) continue;
+      if (bc1.runNumber() != bc2.runNumber())
+        continue;
 
       if (bc1.runNumber() != currentRun) {
         if (cfgSkimmedProcessing) {
