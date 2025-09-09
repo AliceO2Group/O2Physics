@@ -84,6 +84,7 @@ struct strangederivedbuilder {
     Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / centrality / sel8 selection in Run 3
     Produces<aod::StraEvSelsRun2> strangeEvSelsRun2; // characterises collisions / centrality / sel8 selection in Run 2
     Produces<aod::StraStamps> strangeStamps;         // provides timestamps, run numbers
+    Produces<aod::StraEvTimes> straEvTimes;         // provides event times (FT0, TOF)
     Produces<aod::V0CollRefs> v0collref;             // references collisions from V0s
     Produces<aod::CascCollRefs> casccollref;         // references collisions from cascades
     Produces<aod::KFCascCollRefs> kfcasccollref;     // references collisions from KF cascades
@@ -583,6 +584,28 @@ struct strangederivedbuilder {
     }
   }
 
+  // helper function to estimate collision time
+  template <typename coll, typename TTracks>
+  void populateEventTimes(coll const& collisions, TTracks const& tracks)
+  {
+    std::vector<double> collisionEventTime(collisions.size(), 0.0);
+    std::vector<int> collisionNtracks(collisions.size(), 0);
+    for (const auto& track : tracks) {
+      if(track.hasTOF() && track.collisionId()>=0){ 
+        collisionEventTime[track.collisionId()] += track.tofEvTime();
+        collisionNtracks[track.collisionId()] ++;
+      }
+    }
+    for (const auto& collision : collisions){ 
+      if(collisionNtracks[collision.globalIndex()] > 0){ 
+        collisionEventTime[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
+      }else{
+        collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
+      }
+      products.straEvTimes(collisionEventTime[collision.globalIndex()]);
+    }
+  }
+
   // master function to process a collision
   template <typename mccoll, typename mcparts>
   void populateMCCollisionTable(mccoll const& mcCollisions, mcparts const& mcParticlesEntireTable)
@@ -818,6 +841,11 @@ struct strangederivedbuilder {
       }
     }
     // done!
+  }
+
+  void processPopulateEventTimes(aod::Collisions const& collisions, soa::Join<aod::Tracks, aod::TracksExtra, aod::TOFEvTime, aod::TOFSignal> const& tracks)
+  {
+    populateEventTimes(collisions, tracks);
   }
 
   void processTrackExtras(aod::V0Datas const& V0s, aod::CascDatas const& Cascades, aod::KFCascDatas const& KFCascades, aod::TraCascDatas const& TraCascades, soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullHe, aod::TOFEvTime, aod::TOFSignal> const& tracksExtra, aod::V0s const&)
@@ -1107,7 +1135,9 @@ struct strangederivedbuilder {
   // Run 2: collision processing
   PROCESS_SWITCH(strangederivedbuilder, processCollisionsRun2, "Produce collisions (Run2)", false);
   PROCESS_SWITCH(strangederivedbuilder, processCollisionsRun2WithMC, "Produce collisions (Run 2) with MC info", false);
-
+  // Event times 
+  PROCESS_SWITCH(strangederivedbuilder, processPopulateEventTimes, "Populate event times", true);
+  
   // detailed information processing
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasV0sOnly, "Produce track extra information (V0s only)", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information (V0s + casc)", true);
