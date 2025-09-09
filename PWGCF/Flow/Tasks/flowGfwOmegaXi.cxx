@@ -83,18 +83,6 @@ std::shared_ptr<TProfile3D> omegac24[10];
 std::shared_ptr<TProfile3D> omegac22Full[10];
 std::shared_ptr<TProfile3D> omegac32[10];
 
-// std::shared_ptr<TH3D>histosPhi[10];
-// std::shared_ptr<TH3D>histosPhicorr[10];
-// std::shared_ptr<TH3D>histosPhiK0s[10];
-// std::shared_ptr<TH3D>histosPhiLambda[10];
-// std::shared_ptr<TH3D>histosPhiXi[10];
-// std::shared_ptr<TH3D>histosPhiOmega[10];
-// std::shared_ptr<TH3D>histosPhiK0scorr[10];
-// std::shared_ptr<TH3D>histosPhiLambdacorr[10];
-// std::shared_ptr<TH3D>histosPhiXicorr[10];
-// std::shared_ptr<TH3D>histosPhiOmegacorr[10];
-
-// std::shared_ptr<TH3D>nuaTH3[50];
 } // namespace
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
