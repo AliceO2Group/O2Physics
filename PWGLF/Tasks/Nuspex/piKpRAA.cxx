@@ -77,6 +77,9 @@ std::array<std::shared_ptr<TH3>, kNEtaHists> dEdxPrV0{};
 std::array<std::shared_ptr<TH3>, kNEtaHists> dEdxElV0{};
 std::array<std::shared_ptr<TH3>, kNEtaHists> dEdxPiTOF{};
 std::array<std::shared_ptr<TH3>, kNEtaHists> dEdx{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsdEdxPiV0{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsdEdxElV0{};
+std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsdEdxPrV0{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> pTVsP{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsP{};
 std::array<std::shared_ptr<TH2>, kNEtaHists> nClVsPElV0{};
@@ -86,6 +89,9 @@ std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsPp{};
 std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsPpElV0{};
 std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsPpPiV0{};
 std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsPpPrV0{};
+std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsdEdxpPiV0{};
+std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsdEdxpElV0{};
+std::array<std::shared_ptr<TProfile>, kNEtaHists> nClVsdEdxpPrV0{};
 
 struct PiKpRAA {
 
@@ -342,24 +348,25 @@ struct PiKpRAA {
 
       registry.add("NclFindable", ";;Findable Ncl TPC", kTH2F, {axisPtNcl, axisNcl});
       registry.add("NclFindablep", ";;Findable #LTNcl#GT TPC", kTProfile, {axisPtNcl});
-      registry.add("NclFoundVsPhipBeforeCut", Form("Found #LTNcl#GT TPC;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
-      registry.add("NclFoundVsPhipBeforeCutPID", Form("#LTNcl#GT used for PID;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
-      registry.add("NclFoundVsPhipAfterCut", Form("Found #LTNcl#GT TPC;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
-      registry.add("NclFoundVsPhipAfterCutPID", Form("#LTNcl#GT used for PID;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
+      registry.add("NclVsPhipBeforeCut", Form("Found #LTNcl#GT TPC;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
+      registry.add("NclVsPhipBeforeCutPID", Form("#LTNcl#GT used for PID;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
+      registry.add("NclVsPhipAfterCut", Form("Found #LTNcl#GT TPC;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
+      registry.add("NclVsPhipAfterCutPID", Form("#LTNcl#GT used for PID;%s (GeV/#it{c});#varphi", titlePorPt.data()), kTProfile2D, {{{axisXPhiCut}, {350, 0.0, 0.35}}});
       registry.add("NclVsEta", ";#eta;Found Ncl TPC", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
       registry.add("NclVsEtaPID", ";#eta;Ncl used for PID", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
       registry.add("NclVsEtap", ";#eta;Found #LTNcl#GT TPC", kTProfile, {axisEta});
       registry.add("NclVsEtaPIDp", ";#eta;#LTNcl#GT used for PID", kTProfile, {axisEta});
 
-      registry.add("NclVsEtaPiMIP", "MIP #pi^{+} + #pi^{-} (0.4 < #it{p} < 0.6 GeV/#it{c}, 40 < dE/dx < 60);#eta; Found Ncl TPC", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
-      registry.add("NclVsEtaPiMIPp", "MIP #pi^{+} + #pi^{-} (0.4 < #it{p} < 0.6 GeV/#it{c}, 40 < dE/dx < 60);#eta; Found #LTNcl#GT TPC", kTProfile, {axisEta});
-      registry.add("NclVsEtaPiV0", ";#eta; Found Ncl TPC", kTH2F, {axisEta, axisNcl});
-      registry.add("NclVsEtaPiV0p", ";#eta; Found #LTNcl#GT TPC", kTProfile, {axisEta});
-      registry.add("NclVsEtaPrV0", ";#eta; Found Ncl TPC", kTH2F, {axisEta, axisNcl});
-      registry.add("NclVsEtaPrV0p", ";#eta; Found #LTNcl#GT TPC", kTProfile, {axisEta});
-      registry.add("NclVsEtaElV0", ";#eta; Found Ncl TPC", kTH2F, {axisEta, axisNcl});
-      registry.add("NclVsEtaElV0p", ";#eta; Found #LTNcl#GT TPC", kTProfile, {axisEta});
+      registry.add("NclVsEtaPiMIP", "MIP #pi^{+} + #pi^{-} (0.4 < #it{p} < 0.6 GeV/#it{c}, 40 < dE/dx < 60);#eta;Ncl TPC", kTH2F, {{{axisEta}, {161, -0.5, 160.5}}});
+      registry.add("NclVsEtaPiMIPp", "MIP #pi^{+} + #pi^{-} (0.4 < #it{p} < 0.6 GeV/#it{c}, 40 < dE/dx < 60);#eta;#LTNcl#GT TPC", kTProfile, {axisEta});
+      registry.add("NclVsEtaPiV0", ";#eta;Ncl TPC", kTH2F, {axisEta, axisNcl});
+      registry.add("NclVsEtaPiV0p", ";#eta;#LTNcl#GT TPC", kTProfile, {axisEta});
+      registry.add("NclVsEtaPrV0", ";#eta;Ncl TPC", kTH2F, {axisEta, axisNcl});
+      registry.add("NclVsEtaPrV0p", ";#eta;#LTNcl#GT TPC", kTProfile, {axisEta});
+      registry.add("NclVsEtaElV0", ";#eta;Ncl TPC", kTH2F, {axisEta, axisNcl});
+      registry.add("NclVsEtaElV0p", ";#eta;#LTNcl#GT TPC", kTProfile, {axisEta});
 
+      registry.add("EtaVsPhi", ";#eta;#varphi;", kTH2F, {{axisEta}, {100, 0, 2 * PI}});
       registry.add("EtaVsYK0s", ";#eta;#it{y};", kTH2F, {axisEta, axisY});
       registry.add("EtaVsYPiL", ";#eta;#it{y};", kTH2F, {axisEta, axisY});
       registry.add("EtaVsYPrL", ";#eta;#it{y};", kTH2F, {axisEta, axisY});
@@ -387,14 +394,20 @@ struct PiKpRAA {
         dEdxPrV0[i] = registry.add<TH3>(Form("dEdxPrV0_%s", endingEta[i]), Form("p + #bar{p}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH3F, {axisPtV0s, axisdEdx, axisCent});
         dEdxElV0[i] = registry.add<TH3>(Form("dEdxElV0_%s", endingEta[i]), Form("e^{+} + e^{-}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH3F, {axisPtV0s, axisdEdx, axisCent});
         dEdxPiTOF[i] = registry.add<TH3>(Form("dEdxPiTOF_%s", endingEta[i]), Form("#pi^{+} + #pi^{-}, %s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH3F, {axisPtV0s, axisdEdx, axisCent});
-        nClVsP[i] = registry.add<TH2>(Form("NclFound_%s", endingEta[i]), Form("%s;;Found Ncl TPC", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
-        nClVsPElV0[i] = registry.add<TH2>(Form("NclFoundElV0_%s", endingEta[i]), Form("%s;;Found Ncl TPC", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
-        nClVsPPiV0[i] = registry.add<TH2>(Form("NclFoundPiV0_%s", endingEta[i]), Form("%s;;Found Ncl TPC", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
-        nClVsPPrV0[i] = registry.add<TH2>(Form("NclFoundPrV0_%s", endingEta[i]), Form("%s;;Found Ncl TPC", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
-        nClVsPp[i] = registry.add<TProfile>(Form("NclFoundp_%s", endingEta[i]), Form("%s;;Found #LT#it{N}_{cl}#GT TPC", latexEta[i]), kTProfile, {axisPtNcl});
-        nClVsPpElV0[i] = registry.add<TProfile>(Form("NclFoundpElV0_%s", endingEta[i]), Form("%s;;Found #LT#it{N}_{cl}#GT TPC", latexEta[i]), kTProfile, {axisPtNcl});
-        nClVsPpPiV0[i] = registry.add<TProfile>(Form("NclFoundpPiV0_%s", endingEta[i]), Form("%s;;Found #LT#it{N}_{cl}#GT TPC", latexEta[i]), kTProfile, {axisPtNcl});
-        nClVsPpPrV0[i] = registry.add<TProfile>(Form("NclFoundpPrV0_%s", endingEta[i]), Form("%s;;Found #LT#it{N}_{cl}#GT TPC", latexEta[i]), kTProfile, {axisPtNcl});
+        nClVsdEdxPiV0[i] = registry.add<TH2>(Form("NclVsdEdxPiV0_%s", endingEta[i]), Form("%s;#it{N}_{cl} used for PID;dE/dx;", latexEta[i]), kTH2F, {axisNcl, axisdEdx});
+        nClVsdEdxElV0[i] = registry.add<TH2>(Form("NclVsdEdxElV0_%s", endingEta[i]), Form("%s;#it{N}_{cl} used for PID;dE/dx;", latexEta[i]), kTH2F, {axisNcl, axisdEdx});
+        nClVsdEdxPrV0[i] = registry.add<TH2>(Form("NclVsdEdxPrV0_%s", endingEta[i]), Form("%s;#it{N}_{cl} used for PID;dE/dx;", latexEta[i]), kTH2F, {axisNcl, axisdEdx});
+        nClVsP[i] = registry.add<TH2>(Form("NclVsPPrimaries_%s", endingEta[i]), Form("%s;;Ncl TPC", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
+        nClVsPElV0[i] = registry.add<TH2>(Form("NclVsPElV0_%s", endingEta[i]), Form("%s;;Ncl TPC", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
+        nClVsPPiV0[i] = registry.add<TH2>(Form("NclVsPPiV0_%s", endingEta[i]), Form("%s;;Ncl TPC", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
+        nClVsPPrV0[i] = registry.add<TH2>(Form("NclVsPPrV0_%s", endingEta[i]), Form("%s;;Ncl TPC", latexEta[i]), kTH2F, {axisPtNcl, axisNcl});
+        nClVsPp[i] = registry.add<TProfile>(Form("NclVsPrimariesp_%s", endingEta[i]), Form("%s;;#LT#it{N}_{cl}#GT TPC", latexEta[i]), kTProfile, {axisPtNcl});
+        nClVsPpElV0[i] = registry.add<TProfile>(Form("NclVsPElV0p_%s", endingEta[i]), Form("%s;;#LT#it{N}_{cl}#GT TPC", latexEta[i]), kTProfile, {axisPtNcl});
+        nClVsPpPiV0[i] = registry.add<TProfile>(Form("NclVsPPiV0p_%s", endingEta[i]), Form("%s;;#LT#it{N}_{cl}#GT TPC", latexEta[i]), kTProfile, {axisPtNcl});
+        nClVsPpPrV0[i] = registry.add<TProfile>(Form("NclVsPPrV0p_%s", endingEta[i]), Form("%s;;#LT#it{N}_{cl}#GT TPC", latexEta[i]), kTProfile, {axisPtNcl});
+        nClVsdEdxpElV0[i] = registry.add<TProfile>(Form("NclVsdEdxElV0p_%s", endingEta[i]), Form("%s;;#LTd#it{E}/d#it{x}#GT", latexEta[i]), kTProfile, {axisNcl});
+        nClVsdEdxpPiV0[i] = registry.add<TProfile>(Form("NclVsdEdxPiV0p_%s", endingEta[i]), Form("%s;;#LTd#it{E}/d#it{x}#GT", latexEta[i]), kTProfile, {axisNcl});
+        nClVsdEdxpPrV0[i] = registry.add<TProfile>(Form("NclVsdEdxPrV0p_%s", endingEta[i]), Form("%s;;#LTd#it{E}/d#it{x}#GT", latexEta[i]), kTProfile, {axisNcl});
       }
     }
 
@@ -424,19 +437,20 @@ struct PiKpRAA {
 
     if (applyNchSel.value) {
       LOG(info) << "\tLoading Nch-based selections!";
-      LOG(info) << "\t pathMeanNch=" << pathMeanNch.value;
-      LOG(info) << "\t pathSigmaNch=" << pathSigmaNch.value;
+      LOG(info) << "\tpathMeanNch=" << pathMeanNch.value;
+      LOG(info) << "\tpathSigmaNch=" << pathSigmaNch.value;
     }
 
     if (v0Selections.applyPhiCut) {
       LOG(info) << "\tLoading Phi cut!";
-      LOG(info) << "\t pathPhiCutLow=" << pathPhiCutLow.value;
-      LOG(info) << "\t pathPhiCutHigh=" << pathPhiCutHigh.value;
+      LOG(info) << "\tpathPhiCutLow=" << pathPhiCutLow.value;
+      LOG(info) << "\tpathPhiCutHigh=" << pathPhiCutHigh.value;
     }
 
     if (v0Selections.applyEtaCal) {
       LOG(info) << "\tLoading Eta Cal!";
-      LOG(info) << "\t pathEtaCal=" << pathEtaCal.value;
+      LOG(info) << "\tpathEtaCal=" << pathEtaCal.value;
+      LOG(info) << "\tpathEtaCalPlateau=" << pathEtaCalPlateau.value;
       loadEtaCalibration();
     }
 
@@ -551,8 +565,8 @@ struct PiKpRAA {
 
       float phiPrime{phi};
       phiPrimeFunc(phiPrime, magField, charge);
-      registry.fill(HIST("NclFoundVsPhipBeforeCut"), pOrPt, phiPrime, nclFound);
-      registry.fill(HIST("NclFoundVsPhipBeforeCutPID"), pOrPt, phiPrime, nclPID);
+      registry.fill(HIST("NclVsPhipBeforeCut"), pOrPt, phiPrime, nclFound);
+      registry.fill(HIST("NclVsPhipBeforeCutPID"), pOrPt, phiPrime, nclPID);
 
       if (v0Selections.applyPhiCut) {
         if (!passesPhiSelection(pOrPt, phiPrime))
@@ -605,14 +619,15 @@ struct PiKpRAA {
       nClVsP[indexEta]->Fill(pOrPt, ncl);
       nClVsPp[indexEta]->Fill(pOrPt, ncl);
       registry.fill(HIST("dcaVsPt"), pt, track.dcaXY());
+      registry.fill(HIST("EtaVsPhi"), eta, track.phi());
       registry.fill(HIST("NclVsEta"), eta, nclFound);
       registry.fill(HIST("NclVsEtap"), eta, nclFound);
       registry.fill(HIST("NclVsEtaPID"), eta, nclPID);
       registry.fill(HIST("NclVsEtaPIDp"), eta, nclPID);
       registry.fill(HIST("NclFindable"), pOrPt, track.tpcNClsFindable());
       registry.fill(HIST("NclFindablep"), pOrPt, track.tpcNClsFindable());
-      registry.fill(HIST("NclFoundVsPhipAfterCut"), pOrPt, phiPrime, nclFound);
-      registry.fill(HIST("NclFoundVsPhipAfterCutPID"), pOrPt, phiPrime, nclPID);
+      registry.fill(HIST("NclVsPhipAfterCut"), pOrPt, phiPrime, nclFound);
+      registry.fill(HIST("NclVsPhipAfterCutPID"), pOrPt, phiPrime, nclPID);
 
       if (track.hasTOF() && track.goodTOFMatch()) {
         const float tTOF{track.tofSignal()};
@@ -759,6 +774,10 @@ struct PiKpRAA {
                 nClVsPPiV0[posIndexEta]->Fill(posPorPt, posNcl);
                 nClVsPpPiV0[posIndexEta]->Fill(posPorPt, posNcl);
                 nClVsPPiV0[negIndexEta]->Fill(negPorPt, negNcl);
+                nClVsdEdxPiV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
+                nClVsdEdxpPiV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
+                nClVsdEdxPiV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
+                nClVsdEdxpPiV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
                 nClVsPpPiV0[negIndexEta]->Fill(negPorPt, negNcl);
                 dEdxPiV0[posIndexEta]->Fill(posTrkP, posTrkdEdx, centrality);
                 dEdxPiV0[negIndexEta]->Fill(negTrkP, negTrkdEdx, centrality);
@@ -792,6 +811,10 @@ struct PiKpRAA {
               nClVsPpPrV0[posIndexEta]->Fill(posPorPt, posNcl);
               nClVsPPiV0[negIndexEta]->Fill(negPorPt, negNcl);
               nClVsPpPiV0[negIndexEta]->Fill(negPorPt, negNcl);
+              nClVsdEdxPiV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
+              nClVsdEdxpPiV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
+              nClVsdEdxPrV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
+              nClVsdEdxpPrV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
               dEdxPrV0[posIndexEta]->Fill(posTrkP, posTrkdEdx, centrality);
               dEdxPiV0[negIndexEta]->Fill(negTrkP, negTrkdEdx, centrality);
             }
@@ -813,6 +836,10 @@ struct PiKpRAA {
             nClVsPpPrV0[negIndexEta]->Fill(negPorPt, negNcl);
             nClVsPPiV0[posIndexEta]->Fill(posPorPt, posNcl);
             nClVsPpPiV0[posIndexEta]->Fill(posPorPt, posNcl);
+            nClVsdEdxPrV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
+            nClVsdEdxpPrV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
+            nClVsdEdxPiV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
+            nClVsdEdxpPiV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
             dEdxPrV0[negIndexEta]->Fill(negTrkP, negTrkdEdx, centrality);
             dEdxPiV0[posIndexEta]->Fill(posTrkP, posTrkdEdx, centrality);
           }
@@ -838,6 +865,10 @@ struct PiKpRAA {
               nClVsPpElV0[negIndexEta]->Fill(negPorPt, negNcl);
               nClVsPElV0[posIndexEta]->Fill(posPorPt, posNcl);
               nClVsPpElV0[posIndexEta]->Fill(posPorPt, posNcl);
+              nClVsdEdxElV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
+              nClVsdEdxpElV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
+              nClVsdEdxElV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
+              nClVsdEdxpElV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
               if (posTrkP > kMinPMIP && posTrkP < kMaxPMIP) {
                 registry.fill(HIST("dEdxVsEtaElMIPV0"), posTrkEta, posTrkdEdx);
                 registry.fill(HIST("dEdxVsEtaElMIPV0p"), posTrkEta, posTrkdEdx);
