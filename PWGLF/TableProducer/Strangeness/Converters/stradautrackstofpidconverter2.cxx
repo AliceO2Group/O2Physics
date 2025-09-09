@@ -21,12 +21,40 @@ using namespace o2::framework;
 // converts DauTrackTOFPIDs_000 to _001
 struct stradautrackstofpidconverter2 {
   Produces<aod::DauTrackTOFPIDs_001> dautracktofpids;
+  Produces<aod::StraEvTimes> straEvTimes;
 
-  void process(aod::DauTrackTOFPIDs_000 const& dauTrackTOFPIDs)
+  void process(aod::StraCollisions const& collisions, soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs_000> const& dauTracks, soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras> const& v0s)
   {
-    for (int ii = 0; ii < dauTrackTOFPIDs.size(); ii++) {
-      auto dauTrackTOFPID = dauTrackTOFPIDs.rawIteratorAt(ii);
-      dautracktofpids(-1, -1, dauTrackTOFPID.tofSignal(), dauTrackTOFPID.tofEvTime(), dauTrackTOFPID.length(), 0.0f);
+    // create new TOFPIDs 
+    for (int ii = 0; ii < dauTracks.size(); ii++) {
+      auto dauTrack = dauTracks.rawIteratorAt(ii);
+      dautracktofpids(-1, -1, dauTrack.tofSignal(), dauTrack.tofEvTime(), dauTrack.length(), 0.0f);
+    }
+
+    // fill EvTimes (created simultaneously, so done in the same converter)
+    // recover as much as possible from the previous format
+    std::vector<double> collisionEventTime(collisions.size(), 0.0);
+    std::vector<int> collisionNtracks(collisions.size(), 0);
+
+    for (const auto& v0 : v0s) {
+      auto posTrackTOF = dauTracks.rawIteratorAt(v0.posTrackExtraId());
+      auto negTrackTOF = dauTracks.rawIteratorAt(v0.negTrackExtraId());
+      if(posTrackTOF.hasTOF()){
+        collisionEventTime[v0.straCollisionId()] += posTrackTOF.tofEvTime();
+        collisionNtracks[v0.straCollisionId()] ++;
+      }
+      if(negTrackTOF.hasTOF()){
+        collisionEventTime[v0.straCollisionId()] += negTrackTOF.tofEvTime();
+        collisionNtracks[v0.straCollisionId()] ++;
+      }
+    }
+    for (const auto& collision: collisions){
+      if(collisionNtracks[collision.globalIndex()] > 0){
+        collisionEventTime[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
+      }else{
+        collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
+      }
+      straEvTimes(collisionEventTime[collision.globalIndex()]);
     }
   }
 };
