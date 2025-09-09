@@ -237,32 +237,33 @@ struct LFNucleiBATask {
   static constexpr float MassAlphaVal = o2::constants::physics::MassAlpha;
 
   // PDG of Mothers
-  static constexpr int kPdgMotherlist[] = {
+  static constexpr int kPdgMotherList[] = {
     PDG_t::kPiPlus,
     PDG_t::kKPlus,
     PDG_t::kK0Short,
+    PDG_t::kNeutron,
     PDG_t::kProton,
+    PDG_t::kLambda0,
     o2::constants::physics::Pdg::kDeuteron,
-    o2::constants::physics::Pdg::kTriton,
     o2::constants::physics::Pdg::kHelium3,
-    o2::constants::physics::Pdg::kAlpha,
-    1000130270,
-    1000140280,
-    1000260560};
-  static constexpr int kNumMotherlist = sizeof(kPdgMotherlist) / sizeof(kPdgMotherlist[0]);
+    o2::constants::physics::Pdg::kTriton,
+    o2::constants::physics::Pdg::kHyperTriton,
+    o2::constants::physics::Pdg::kAlpha};
 
-  static constexpr const char* kMotherNames[kNumMotherlist] = {
-    "#pi",
-    "K+",
-    "K0",
+  static constexpr int kNumMotherList = sizeof(kPdgMotherList) / sizeof(kPdgMotherList[0]);
+
+  static constexpr const char* kMotherNames[kNumMotherList] = {
+    "#pi^{+}",
+    "K^{+}",
+    "K^{0}_{S}",
+    "n",
     "p",
+    "#Lambda",
     "d",
-    "t",
     "He3",
-    "#alpha",
-    "Al",
-    "Si",
-    "Fe"};
+    "t",
+    "^{3}_{#Lambda}H",
+    "He4"};
 
   static constexpr int kMaxNumMom = 4; // X: 0..4, overflow=5
 
@@ -971,7 +972,7 @@ struct LFNucleiBATask {
           histos.add<TH2>("tracks/deuteron/dca/before/hDCAxyVsPtDeuteronTrueMaterial", "DCAxy vs Pt (d); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptAxis}, {dcaxyAxis}});
 
           histos.add<TH1>("tracks/deuteron/dca/before/hNumMothers", "N mothers per particle; N mothers;counts", HistType::kTH1I, {{7, 1.0, 8.0}});
-          histos.add<TH3>("tracks/deuteron/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{kMaxNumMom + 2, -0.5, static_cast<double>(kMaxNumMom) + 1.5}, {kNumMotherlist + 2, -1.5, static_cast<double>(kNumMotherlist) + 0.5}, {250, 0.0, 10.0}});
+          histos.add<TH3>("tracks/deuteron/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{kMaxNumMom + 2, -0.5, static_cast<double>(kMaxNumMom) + 1.5}, {kNumMotherList + 2, -1.5, static_cast<double>(kNumMotherList) + 0.5}, {250, 0.0, 10.0}});
 
           std::shared_ptr<TH3> hTempDe = histos.get<TH3>(HIST("tracks/deuteron/dca/before/hMomTrueMaterial"));
           TH3* hPdgDe = hTempDe.get();
@@ -985,7 +986,7 @@ struct LFNucleiBATask {
           TAxis* ayPdgDe = hPdgDe->GetYaxis();
           ayPdgDe->SetBinLabel(1, "undef.");
           ayPdgDe->SetBinLabel(2, "other");
-          for (int i = 0; i < kNumMotherlist; i++) {
+          for (int i = 0; i < kNumMotherList; i++) {
             ayPdgDe->SetBinLabel(i + 3, kMotherNames[i]);
           }
 
@@ -1187,7 +1188,7 @@ struct LFNucleiBATask {
           histos.add<TH2>("tracks/helium/dca/before/hDCAxyVsPtHeliumTrueMaterial", "DCAxy vs Pt (He); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
 
           histos.add<TH1>("tracks/helium/dca/before/hNumMothers", "N mothers per particle; N mothers;counts", HistType::kTH1I, {{7, 1.0, 8.0}});
-          histos.add<TH3>("tracks/helium/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{kMaxNumMom + 2, -0.5, static_cast<double>(kMaxNumMom) + 1.5}, {kNumMotherlist + 2, -1.5, static_cast<double>(kNumMotherlist) + 0.5}, {250, 0.0, 10.0}});
+          histos.add<TH3>("tracks/helium/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{kMaxNumMom + 2, -0.5, static_cast<double>(kMaxNumMom) + 1.5}, {kNumMotherList + 2, -1.5, static_cast<double>(kNumMotherList) + 0.5}, {250, 0.0, 10.0}});
 
           // Fix for getting TH3 pointer
           std::shared_ptr<TH3> hTempHe = histos.get<TH3>(HIST("tracks/helium/dca/before/hMomTrueMaterial"));
@@ -1202,7 +1203,7 @@ struct LFNucleiBATask {
           TAxis* ayPdgHe = hPdgHe->GetYaxis();
           ayPdgHe->SetBinLabel(1, "undef.");
           ayPdgHe->SetBinLabel(2, "other");
-          for (int i = 0; i < kNumMotherlist; i++) {
+          for (int i = 0; i < kNumMotherList; i++) {
             ayPdgHe->SetBinLabel(i + 3, kMotherNames[i]);
           }
 
@@ -3371,8 +3372,8 @@ struct LFNucleiBATask {
                           int motherSpeciesBin = -1;
                           if (pdgMom != -1) {
                             motherSpeciesBin = 0;
-                            for (int j = 0; j < kNumMotherlist; j++) {
-                              if (kPdgMotherlist[j] == pdgMom) {
+                            for (int j = 0; j < kNumMotherList; j++) {
+                              if (kPdgMotherList[j] == pdgMom) {
                                 motherSpeciesBin = j + 1;
                                 break;
                               }
@@ -3552,8 +3553,8 @@ struct LFNucleiBATask {
                         int motherSpeciesBin = -1;
                         if (pdgMom != -1) {
                           motherSpeciesBin = 0;
-                          for (int j = 0; j < kNumMotherlist; j++) {
-                            if (kPdgMotherlist[j] == pdgMom) {
+                          for (int j = 0; j < kNumMotherList; j++) {
+                            if (kPdgMotherList[j] == pdgMom) {
                               motherSpeciesBin = j + 1;
                               break;
                             }
