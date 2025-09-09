@@ -139,8 +139,9 @@ struct UpcPhotonuclearAnalysisJMG {
   Configurable<float> cutMyTPCChi2NclMax{"cutMyTPCChi2NclMax", 4.f, {"My Track cut"}};
   Configurable<float> myWeightMin{"myWeightMin", 0.2f, {"My Track cut"}};
   Configurable<float> myWeightMax{"myWeightMax", 5.f, {"My Track cut"}};
-  Configurable<float> myEpsilonToWeight{"myEpsilonToWeight", 1e-6f, {"My Track cut"}};
-  Configurable<bool> useEpsilon{"useEpsilon", false, {"My Track cut"}};
+  Configurable<float> myEpsilonToWeight{"myEpsilonToWeight", 1e-6f, {"NUA correction"}};
+  Configurable<bool> useEpsilon{"useEpsilon", false, {"NUA correction"}};
+  Configurable<bool> useNMax{"useNMax", true, {"NUA correction"}};
   Configurable<LabeledArray<float>> cfgPairCut{"cfgPairCut",
                                                {CFGPairCutDefaults[0],
                                                 5,
@@ -442,11 +443,15 @@ struct UpcPhotonuclearAnalysisJMG {
   template <typename TTarget, typename TTracks>
   void fillCorrelationsUD(TTarget target, const TTracks tracks1, const TTracks tracks2, float multiplicity, float posZ)
   {
-    multiplicity = tracks1.size();
+    // multiplicity = tracks1.size();
     for (const auto& track1 : tracks1) {
       if (isTrackCut(track1) == false) {
         return;
       }
+      // weight NUA for track1
+      float phi1 = phi(track1.px(), track1.py());
+      float eta1 = eta(track1.px(), track1.py(), track1.pz());
+      float w1 = getNUAWeight(posZ, eta1, phi1);
       target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, track1.pt(), multiplicity, posZ, 1.0);
       for (const auto& track2 : tracks2) {
         if (track1 == track2) {
@@ -455,12 +460,24 @@ struct UpcPhotonuclearAnalysisJMG {
         if (isTrackCut(track2) == false) {
           return;
         }
+        // weight NUA for track 2
+        float phi2 = phi(track2.px(), track2.py());
+        float eta2 = eta(track2.px(), track2.py(), track2.pz());
+        float w2 = getNUAWeight(posZ, eta2, phi2);
+        // total weight
+        float wPair = w1 * w2;
         /*if (doPairCuts && mPairCuts.conversionCuts(track1, track2)) {
           continue;
         }*/
         float deltaPhi = phi(track1.px(), track1.py()) - phi(track2.px(), track2.py());
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf);
-        target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed, eta(track1.px(), track1.py(), track1.pz()) - eta(track2.px(), track2.py(), track2.pz()), track2.pt(), track1.pt(), multiplicity, deltaPhi, posZ, 1.0);
+        target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                    eta(track1.px(), track1.py(), track1.pz()) - eta(track2.px(), track2.py(), track2.pz()),
+                                    track2.pt(), track1.pt(),
+                                    multiplicity,
+                                    deltaPhi,
+                                    posZ,
+                                    wPair);
       }
     }
   }
@@ -474,12 +491,23 @@ struct UpcPhotonuclearAnalysisJMG {
     for (int jEtha = 1; jEtha <= nEta; ++jEtha) {
       for (int iVtxZ = 1; iVtxZ <= nVz; ++iVtxZ) {
         // average on phi to (eta_jEtha, vz_iVtxZ)
-        double sum = 0, count = 0;
+        double sum = 0.0;
+        double nMax = 0.0;
+        int count = 0;
         for (int kPhi = 1; kPhi <= nPhi; ++kPhi) {
-          sum += histoRaw3D->GetBinContent(iVtxZ, jEtha, kPhi);
+          double nEntry = histoRaw3D->GetBinContent(iVtxZ, jEtha, kPhi);
+          sum += nEntry;
           count += 1.0;
+          if (nEntry > nMax) {
+            nMax = nEntry;
+          }
         }
-        const double nMean = (count > 0) ? sum / count : 0.0;
+        double nMean;
+        if (useNMax) {
+          nMean = nMax;
+        } else {
+          double nMean = (count > 0) ? sum / count : 0.0;
+        }
 
         for (int kPhi = 1; kPhi <= nPhi; ++kPhi) {
           double nEntry = histoRaw3D->GetBinContent(iVtxZ, jEtha, kPhi);
