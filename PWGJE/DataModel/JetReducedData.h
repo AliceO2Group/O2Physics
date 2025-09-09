@@ -315,12 +315,16 @@ namespace jemctrack
 DECLARE_SOA_INDEX_COLUMN(JTrack, track);
 DECLARE_SOA_COLUMN(EtaEMCAL, etaEmcal, float);
 DECLARE_SOA_COLUMN(PhiEMCAL, phiEmcal, float);
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
 } // namespace jemctrack
 
 DECLARE_SOA_TABLE_STAGED(JEMCTracks, "JEMCTrack",
                          jemctrack::JTrackId,
                          jemctrack::EtaEMCAL,
-                         jemctrack::PhiEMCAL);
+                         jemctrack::PhiEMCAL,
+                         jemctrack::DeltaEta,
+                         jemctrack::DeltaPhi);
 
 namespace jmcparticle
 {
