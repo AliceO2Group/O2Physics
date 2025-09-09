@@ -217,7 +217,8 @@ struct LFNucleiBATask {
   // ITS to TPC - Fake hit loop
   static constexpr int kFakeLoop = 10; // Fixed O2Linter error
   // TPC low/high momentum range
-  static constexpr float cfgTpcClasses[] = {0.5f, 0.1f};
+  static constexpr float kCfgTpcClasses[] = {0.5f, 0.1f};
+  static constexpr float kCfgKaonCut = 5.f;
 
   // Weak-decay flag
   static constexpr int kProcessWeakDecay = 4;
@@ -974,20 +975,20 @@ struct LFNucleiBATask {
           histos.add<TH1>("tracks/deuteron/dca/before/hNumMothers", "N mothers per particle; N mothers;counts", HistType::kTH1I, {{7, 1.0, 8.0}});
           histos.add<TH3>("tracks/deuteron/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{kMaxNumMom + 2, -0.5, static_cast<double>(kMaxNumMom) + 1.5}, {kNumMotherlist + 2, -1.5, static_cast<double>(kNumMotherlist) + 0.5}, {250, 0.0, 10.0}});
 
-          std::shared_ptr<TH3> hTemp_De = histos.get<TH3>(HIST("tracks/deuteron/dca/before/hMomTrueMaterial"));
-          TH3* hPDG_De = hTemp_De.get();
+          std::shared_ptr<TH3> hTempDe = histos.get<TH3>(HIST("tracks/deuteron/dca/before/hMomTrueMaterial"));
+          TH3* hPDG_De = hTempDe.get();
 
-          TAxis* axPDG_De = hPDG_De->GetXaxis();
+          TAxis* axPdgDe = hPDG_De->GetXaxis();
           for (int i = 0; i <= kMaxNumMom; i++) {
-            axPDG_De->SetBinLabel(i + 1, Form("%d", i));
+            axPdgDe->SetBinLabel(i + 1, Form("%d", i));
           }
-          axPDG_De->SetBinLabel(kMaxNumMom + 2, ">=5");
+          axPdgDe->SetBinLabel(kMaxNumMom + 2, ">=5");
 
-          TAxis* ayPDG_De = hPDG_De->GetYaxis();
-          ayPDG_De->SetBinLabel(1, "undef.");
-          ayPDG_De->SetBinLabel(2, "other");
+          TAxis* ayPdgDe = hPDG_De->GetYaxis();
+          ayPdgDe->SetBinLabel(1, "undef.");
+          ayPdgDe->SetBinLabel(2, "other");
           for (int i = 0; i < kNumMotherlist; i++) {
-            ayPDG_De->SetBinLabel(i + 3, kMotherNames[i]);
+            ayPdgDe->SetBinLabel(i + 3, kMotherNames[i]);
           }
 
           histos.add<TH2>("tracks/deuteron/dca/before/hDCAxyVsPtDeuteronTrueTransport", "DCAxy vs Pt (d); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptAxis}, {dcaxyAxis}});
@@ -1191,20 +1192,20 @@ struct LFNucleiBATask {
           histos.add<TH3>("tracks/helium/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{kMaxNumMom + 2, -0.5, static_cast<double>(kMaxNumMom) + 1.5}, {kNumMotherlist + 2, -1.5, static_cast<double>(kNumMotherlist) + 0.5}, {250, 0.0, 10.0}});
 
           // Fix for getting TH3 pointer
-          std::shared_ptr<TH3> hTemp_He = histos.get<TH3>(HIST("tracks/helium/dca/before/hMomTrueMaterial"));
-          TH3* hPDG_He = hTemp_He.get();
+          std::shared_ptr<TH3> hTempHe = histos.get<TH3>(HIST("tracks/helium/dca/before/hMomTrueMaterial"));
+          TH3* hPDG_He = hTempHe.get();
 
-          TAxis* axPDG_He = hPDG_He->GetXaxis();
+          TAxis* axPdgHe = hPDG_He->GetXaxis();
           for (int i = 0; i <= kMaxNumMom; i++) {
-            axPDG_He->SetBinLabel(i + 1, Form("%d", i));
+            axPdgHe->SetBinLabel(i + 1, Form("%d", i));
           }
-          axPDG_He->SetBinLabel(kMaxNumMom + 2, ">=5");
+          axPdgHe->SetBinLabel(kMaxNumMom + 2, ">=5");
 
-          TAxis* ayPDG_He = hPDG_He->GetYaxis();
-          ayPDG_He->SetBinLabel(1, "undef.");
-          ayPDG_He->SetBinLabel(2, "other");
+          TAxis* ayPdgHe = hPDG_He->GetYaxis();
+          ayPdgHe->SetBinLabel(1, "undef.");
+          ayPdgHe->SetBinLabel(2, "other");
           for (int i = 0; i < kNumMotherlist; i++) {
-            ayPDG_He->SetBinLabel(i + 3, kMotherNames[i]);
+            ayPdgHe->SetBinLabel(i + 3, kMotherNames[i]);
           }
 
           histos.add<TH2>("tracks/helium/dca/before/hDCAxyVsPtHeliumTrueTransport", "DCAxy vs Pt (He); #it{p}_{T} (GeV/#it{c}); DCAxy (cm)", HistType::kTH2F, {{ptZHeAxis}, {dcaxyAxis}});
@@ -3976,26 +3977,26 @@ struct LFNucleiBATask {
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsPtPos"), track.tpcInnerParam(), track.tpcNClsCrossedRows());
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsTPCsignalPos"), track.tpcSignal(), track.tpcNClsCrossedRows());
 
-            if (track.tpcInnerParam() < cfgTpcClasses[0]) {
+            if (track.tpcInnerParam() < kCfgTpcClasses[0]) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrLowPPos"), track.tpcNClsCrossedRows());
             }
-            if ((track.tpcInnerParam() >= cfgTpcClasses[0]) && (track.tpcInnerParam() < cfgTpcClasses[1])) {
+            if ((track.tpcInnerParam() >= kCfgTpcClasses[0]) && (track.tpcInnerParam() < kCfgTpcClasses[1])) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrMidPPos"), track.tpcNClsCrossedRows());
             }
-            if (track.tpcInnerParam() >= cfgTpcClasses[1]) {
+            if (track.tpcInnerParam() >= kCfgTpcClasses[1]) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrHighPPos"), track.tpcNClsCrossedRows());
             }
           } else {
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsPtNeg"), track.tpcInnerParam(), track.tpcNClsCrossedRows());
             debugHistos.fill(HIST("debug/qa/h2TPCncrVsTPCsignalNeg"), track.tpcSignal(), track.tpcNClsCrossedRows());
 
-            if (track.tpcInnerParam() < cfgTpcClasses[0]) {
+            if (track.tpcInnerParam() < kCfgTpcClasses[0]) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrLowPNeg"), track.tpcNClsCrossedRows());
             }
-            if ((track.tpcInnerParam() >= cfgTpcClasses[0]) && (track.tpcInnerParam() < cfgTpcClasses[1])) {
+            if ((track.tpcInnerParam() >= kCfgTpcClasses[0]) && (track.tpcInnerParam() < kCfgTpcClasses[1])) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrMidPNeg"), track.tpcNClsCrossedRows());
             }
-            if (track.tpcInnerParam() >= cfgTpcClasses[1]) {
+            if (track.tpcInnerParam() >= kCfgTpcClasses[1]) {
               debugHistos.fill(HIST("debug/qa/h1TPCncrHighPNeg"), track.tpcNClsCrossedRows());
             }
           }
@@ -4008,7 +4009,7 @@ struct LFNucleiBATask {
           histos.fill(HIST("tracks/eff/h2pVsTPCmomentum"), track.tpcInnerParam(), track.p());
 
         if (filterOptions.enableFiltering) {
-          if (track.tpcNSigmaKa() < 5)
+          if (track.tpcNSigmaKa() < kCfgKaonCut)
             continue;
         }
 
@@ -6398,7 +6399,7 @@ struct LFNucleiBATask {
     for (const auto& mcPart : mcParticles) {
       if (!mcPart.isPhysicalPrimary())
         continue;
-      if (std::abs(mcPart.y()) >= 0.5)
+      if (std::abs(mcPart.y()) >= kCfgTpcClasses[0])
         continue;
       if (mcPart.pdgCode() == PDGDeuteron) {
         evLossHistos.fill(HIST("evLoss/pt/hDeuteronGen"), mcPart.pt());
