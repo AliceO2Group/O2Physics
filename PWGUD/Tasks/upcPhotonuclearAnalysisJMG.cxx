@@ -440,7 +440,6 @@ struct UpcPhotonuclearAnalysisJMG {
     return true;
   }
 
-
   void makeNUAWeights(std::shared_ptr<TH3> histoRaw3D)
   {
     const int nPhi = histoRaw3D->GetZaxis()->GetNbins();
