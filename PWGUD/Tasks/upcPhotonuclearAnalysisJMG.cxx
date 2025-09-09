@@ -515,6 +515,7 @@ struct UpcPhotonuclearAnalysisJMG {
       }
       // weight NUA for track1
       float phi1 = phi(track1.px(), track1.py());
+      phi1 = RecoDecay::constrainAngle(phi1, 0.f);
       float eta1 = eta(track1.px(), track1.py(), track1.pz());
       float w1 = getNUAWeight(posZ, eta1, phi1);
       target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, track1.pt(), multiplicity, posZ, 1.0);
@@ -527,6 +528,7 @@ struct UpcPhotonuclearAnalysisJMG {
         }
         // weight NUA for track 2
         float phi2 = phi(track2.px(), track2.py());
+        phi2 = RecoDecay::constrainAngle(phi2, 0.f);
         float eta2 = eta(track2.px(), track2.py(), track2.pz());
         float w2 = getNUAWeight(posZ, eta2, phi2);
         // total weight
