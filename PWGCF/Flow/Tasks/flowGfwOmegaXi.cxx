@@ -53,6 +53,8 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <unordered_map>
+#include <map>
 
 using namespace o2;
 using namespace o2::framework;
@@ -79,6 +81,19 @@ std::shared_ptr<TProfile3D> omegac22[10];
 std::shared_ptr<TProfile3D> omegac24[10];
 std::shared_ptr<TProfile3D> omegac22Full[10];
 std::shared_ptr<TProfile3D> omegac32[10];
+
+// std::shared_ptr<TH3D>histosPhi[10];
+// std::shared_ptr<TH3D>histosPhicorr[10];
+// std::shared_ptr<TH3D>histosPhiK0s[10];
+// std::shared_ptr<TH3D>histosPhiLambda[10];
+// std::shared_ptr<TH3D>histosPhiXi[10];
+// std::shared_ptr<TH3D>histosPhiOmega[10];
+// std::shared_ptr<TH3D>histosPhiK0scorr[10];
+// std::shared_ptr<TH3D>histosPhiLambdacorr[10];
+// std::shared_ptr<TH3D>histosPhiXicorr[10];
+// std::shared_ptr<TH3D>histosPhiOmegacorr[10];
+
+// std::shared_ptr<TH3D>nuaTH3[50];
 } // namespace
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
@@ -166,6 +181,7 @@ struct FlowGfwOmegaXi {
   O2_DEFINE_CONFIGURABLE(cfgLocDenParaOmega, std::vector<double>, (std::vector<double>{-0.000444324, -6.0424, -0.000566208, -5.42168, -0.000580338, -4.96967, -0.000721054, -4.41994, -0.000626394, -4.27934, -0.000652167, -3.9543, -0.000592327, -3.79053, -0.000544721, -3.73292, -0.000613419, -3.43849, -0.000402506, -3.47687, -0.000602687, -3.24491, -0.000460848, -3.056, -0.00039428, -2.35188, -0.00041908, -2.03642}), "Local density efficiency function parameter for Omega, exp(Ax + B)")
   O2_DEFINE_CONFIGURABLE(cfgLocDenParaK0s, std::vector<double>, (std::vector<double>{-0.00043057, -3.2435, -0.000385085, -2.97687, -0.000350298, -2.81502, -0.000326159, -2.71091, -0.000299563, -2.65448, -0.000294284, -2.60865, -0.000277938, -2.589, -0.000277091, -2.56983, -0.000272783, -2.56825, -0.000252706, -2.58996, -0.000247834, -2.63158, -0.00024379, -2.76976, -0.000286468, -2.92484, -0.000310149, -3.27746}), "Local density efficiency function parameter for K0s, exp(Ax + B)")
   O2_DEFINE_CONFIGURABLE(cfgLocDenParaLambda, std::vector<double>, (std::vector<double>{-0.000510948, -4.4846, -0.000460629, -4.14465, -0.000433729, -3.94173, -0.000412751, -3.81839, -0.000411211, -3.72502, -0.000401511, -3.68426, -0.000407461, -3.67005, -0.000379371, -3.71153, -0.000392828, -3.73214, -0.000403996, -3.80717, -0.000403376, -3.90917, -0.000354624, -4.34629, -0.000477606, -4.66307, -0.000541139, -4.61364}), "Local density efficiency function parameter for Lambda, exp(Ax + B)")
+  O2_DEFINE_CONFIGURABLE(cfgRunNumbers, std::vector<int>, (std::vector<int>{544095, 544098, 544116, 544121, 544122, 544123, 544124}), "Preconfigured run numbers")
   // switch
   O2_DEFINE_CONFIGURABLE(cfgDoAccEffCorr, bool, false, "do acc and eff corr")
   O2_DEFINE_CONFIGURABLE(cfgDoLocDenCorr, bool, false, "do local density corr")
@@ -173,6 +189,7 @@ struct FlowGfwOmegaXi {
   O2_DEFINE_CONFIGURABLE(cfgOutputV0, bool, true, "Fill and output V0s flow")
   O2_DEFINE_CONFIGURABLE(cfgOutputCasc, bool, true, "Fill and output cascades flow")
   O2_DEFINE_CONFIGURABLE(cfgOutputNUAWeights, bool, false, "Fill and output NUA weights")
+  O2_DEFINE_CONFIGURABLE(cfgOutputrunbyrun, bool, false, "Fill and output NUA weights run by run")
   O2_DEFINE_CONFIGURABLE(cfgOutputLocDenWeights, bool, false, "Fill and output local density weights")
   O2_DEFINE_CONFIGURABLE(cfgOutputQA, bool, false, "do QA")
 
@@ -221,6 +238,9 @@ struct FlowGfwOmegaXi {
   std::vector<std::string> cfgEfficiency;
   std::vector<float> cfgNSigma;
   std::vector<int> cfgmassbins;
+  std::vector<int> runNumbers;
+  std::map<int, std::vector<std::shared_ptr<TH1>>> th1sList;
+  std::map<int, std::vector<std::shared_ptr<TH3>>> th3sList;
 
   std::vector<GFWWeights*> mAcceptance;
   std::vector<TH1D*> mEfficiency;
@@ -324,6 +344,32 @@ struct FlowGfwOmegaXi {
     registry.add("hEtaPhiVtxzPOIOmega", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
     registry.add("hEtaPhiVtxzPOIK0s", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
     registry.add("hEtaPhiVtxzPOILambda", "", {HistType::kTH3D, {cfgaxisPhi, cfgaxisEta, {20, -10, 10}}});
+
+    if (cfgOutputrunbyrun) {
+      runNumbers = cfgRunNumbers;
+      for (const auto& runNumber : runNumbers) {
+        std::vector<std::shared_ptr<TH1>> histosPhi;
+        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhi", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
+        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhicorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
+        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiK0s", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
+        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiLambda", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
+        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiXi", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
+        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiOmega", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
+        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiK0scorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
+        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiLambdacorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
+        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiXicorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
+        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiOmegacorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
+        th1sList.insert(std::make_pair(runNumber, histosPhi));
+
+        std::vector<std::shared_ptr<TH3>> nuaTH3;
+        nuaTH3.push_back(registry.add<TH3>(Form("%d/hPhiEtaVtxz", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}}));
+        nuaTH3.push_back(registry.add<TH3>(Form("%d/hPhiEtaVtxzK0s", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}}));
+        nuaTH3.push_back(registry.add<TH3>(Form("%d/hPhiEtaVtxzLambda", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}}));
+        nuaTH3.push_back(registry.add<TH3>(Form("%d/hPhiEtaVtxzXi", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}}));
+        nuaTH3.push_back(registry.add<TH3>(Form("%d/hPhiEtaVtxzOmega", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}}));
+        th3sList.insert(std::make_pair(runNumber, nuaTH3));
+      }
+    }
 
     registry.add("hEventCount", "", {HistType::kTH1D, {{12, 0, 12}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(1, "Filtered event");
@@ -446,7 +492,7 @@ struct FlowGfwOmegaXi {
     registry.add("MC/Lambdac22dptMC", ";pt ; C_{2}{2} ", {HistType::kTProfile2D, {cfgaxisPtLambda, axisMultiplicity}});
     // InvMass(GeV) of casc and v0
     AxisSpec axisOmegaMass = {80, 1.63f, 1.71f, "Inv. Mass (GeV)"};
-    AxisSpec axisXiMass = {70, 1.3f, 1.37f, "Inv. Mass (GeV)"};
+    AxisSpec axisXiMass = {80, 1.29f, 1.37f, "Inv. Mass (GeV)"};
     AxisSpec axisK0sMass = {400, 0.4f, 0.6f, "Inv. Mass (GeV)"};
     AxisSpec axisLambdaMass = {160, 1.08f, 1.16f, "Inv. Mass (GeV)"};
     registry.add("InvMassXi_all", "", {HistType::kTHnSparseF, {cfgaxisPtXi, axisXiMass, cfgaxisEta, axisMultiplicity}});
@@ -919,6 +965,7 @@ struct FlowGfwOmegaXi {
       return;
     TH1D* hLocalDensity = new TH1D("hphi", "hphi", 400, -constants::math::TwoPI, constants::math::TwoPI);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+    int runNumber = bc.runNumber();
     loadCorrections(bc.timestamp());
     float vtxz = collision.posZ();
     registry.fill(HIST("hVtxZ"), vtxz);
@@ -954,6 +1001,12 @@ struct FlowGfwOmegaXi {
       }
       if (cfgOutputNUAWeights)
         fWeightsREF->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
+
+      if (cfgOutputrunbyrun) {
+        th1sList[runNumber][0]->Fill(track.phi());
+        th1sList[runNumber][1]->Fill(track.phi(), wacc);
+        th3sList[runNumber][0]->Fill(track.phi(), track.eta(), vtxz);
+      }
     }
     if (cfgDoLocDenCorr) {
       registry.fill(HIST("hCentvsNch"), cent, nch);
@@ -1080,6 +1133,11 @@ struct FlowGfwOmegaXi {
           fGFW->Fill(v0.eta(), fK0sPtAxis->FindBin(v0.pt()) - 1 + ((fK0sMass->FindBin(v0.mK0Short()) - 1) * nK0sPtBins), v0.phi(), wacc * weff * wloc, 8);
           if (cfgOutputNUAWeights)
             fWeightsK0s->fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
+          if (cfgOutputrunbyrun) {
+            th1sList[runNumber][2]->Fill(v0.phi());
+            th1sList[runNumber][6]->Fill(v0.phi(), wacc);
+            th3sList[runNumber][1]->Fill(v0.phi(), v0.eta(), vtxz);
+          }
         }
         if (isLambda) {
           if (cfgDoAccEffCorr)
@@ -1099,6 +1157,11 @@ struct FlowGfwOmegaXi {
           fGFW->Fill(v0.eta(), fK0sPtAxis->FindBin(v0.pt()) - 1 + ((fLambdaMass->FindBin(v0.mLambda()) - 1) * nK0sPtBins), v0.phi(), wacc * weff * wloc, 16);
           if (cfgOutputNUAWeights)
             fWeightsLambda->fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
+          if (cfgOutputrunbyrun) {
+            th1sList[runNumber][3]->Fill(v0.phi());
+            th1sList[runNumber][7]->Fill(v0.phi(), wacc);
+            th3sList[runNumber][2]->Fill(v0.phi(), v0.eta(), vtxz);
+          }
         }
       }
     }
@@ -1222,7 +1285,7 @@ struct FlowGfwOmegaXi {
           isXi = false;
         }
         if (isOmega && std::fabs(casc.mXi() - o2::constants::physics::MassXiMinus) < cascBuilderOpts.cfgcasc_compmassrej.value) {
-          isXi = false;
+          isOmega = false;
         }
         // fill QA
         if (cfgOutputQA) {
@@ -1264,6 +1327,11 @@ struct FlowGfwOmegaXi {
 
           if (cfgOutputNUAWeights)
             fWeightsOmega->fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
+          if (cfgOutputrunbyrun) {
+            th1sList[runNumber][5]->Fill(casc.phi());
+            th1sList[runNumber][9]->Fill(casc.phi(), wacc);
+            th3sList[runNumber][4]->Fill(casc.phi(), casc.eta(), vtxz);
+          }
         }
         if (isXi) {
           if (cfgDoAccEffCorr) {
@@ -1285,6 +1353,11 @@ struct FlowGfwOmegaXi {
 
           if (cfgOutputNUAWeights)
             fWeightsXi->fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
+          if (cfgOutputrunbyrun) {
+            th1sList[runNumber][4]->Fill(casc.phi());
+            th1sList[runNumber][8]->Fill(casc.phi(), wacc);
+            th3sList[runNumber][3]->Fill(casc.phi(), casc.eta(), vtxz);
+          }
         }
       }
     }
