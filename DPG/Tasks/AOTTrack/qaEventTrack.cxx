@@ -1297,7 +1297,6 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
     histos.fill(HIST("Tracks/selection"), 1.f);
     if (track.hasITS()) {
       atLeastITSTracks++;
-      continue;
     }
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
