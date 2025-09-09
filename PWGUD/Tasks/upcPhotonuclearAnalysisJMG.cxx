@@ -148,9 +148,9 @@ struct UpcPhotonuclearAnalysisJMG {
                                                 {"Photon", "K0", "Lambda", "Phi", "Rho"}},
                                                "Pair cuts on various particles"};
   Configurable<float> cfgTwoTrackCut{"cfgTwoTrackCut", -1, {"Two track cut"}};
-  ConfigurableAxis axisVertex{"axisVertex", {10, -10, 10}, "vertex axis for histograms"};
+  ConfigurableAxis axisVertex{"axisVertex", {20, -10, 10}, "vertex axis for histograms"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, kThreeHalfPi}, "delta phi axis for histograms"};
-  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {40, -2, 2}, "delta eta axis for histograms"};
+  ConfigurableAxis axisDeltaEta{"axisDeltaEta", {32, -1.6, 1.6}, "delta eta axis for histograms"};
   ConfigurableAxis axisPtTrigger{"axisPtTrigger", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 10.0}, "pt trigger axis for histograms"};
   ConfigurableAxis axisPtAssoc{"axisPtAssoc", {VARIABLE_WIDTH, 0.5, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0}, "pt associated axis for histograms"};
   ConfigurableAxis axisMultiplicity{"axisMultiplicity", {VARIABLE_WIDTH, 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 60, 70, 80, 90, 100, 110.1}, "multiplicity / multiplicity axis for histograms"};
@@ -440,47 +440,6 @@ struct UpcPhotonuclearAnalysisJMG {
     return true;
   }
 
-  template <typename TTarget, typename TTracks>
-  void fillCorrelationsUD(TTarget target, const TTracks tracks1, const TTracks tracks2, float multiplicity, float posZ)
-  {
-    // multiplicity = tracks1.size();
-    for (const auto& track1 : tracks1) {
-      if (isTrackCut(track1) == false) {
-        return;
-      }
-      // weight NUA for track1
-      float phi1 = phi(track1.px(), track1.py());
-      float eta1 = eta(track1.px(), track1.py(), track1.pz());
-      float w1 = getNUAWeight(posZ, eta1, phi1);
-      target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, track1.pt(), multiplicity, posZ, 1.0);
-      for (const auto& track2 : tracks2) {
-        if (track1 == track2) {
-          continue;
-        }
-        if (isTrackCut(track2) == false) {
-          return;
-        }
-        // weight NUA for track 2
-        float phi2 = phi(track2.px(), track2.py());
-        float eta2 = eta(track2.px(), track2.py(), track2.pz());
-        float w2 = getNUAWeight(posZ, eta2, phi2);
-        // total weight
-        float wPair = w1 * w2;
-        /*if (doPairCuts && mPairCuts.conversionCuts(track1, track2)) {
-          continue;
-        }*/
-        float deltaPhi = phi(track1.px(), track1.py()) - phi(track2.px(), track2.py());
-        deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf);
-        target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                    eta(track1.px(), track1.py(), track1.pz()) - eta(track2.px(), track2.py(), track2.pz()),
-                                    track2.pt(), track1.pt(),
-                                    multiplicity,
-                                    deltaPhi,
-                                    posZ,
-                                    wPair);
-      }
-    }
-  }
 
   void makeNUAWeights(std::shared_ptr<TH3> histoRaw3D)
   {
@@ -545,6 +504,48 @@ struct UpcPhotonuclearAnalysisJMG {
     int iEta = hWeight->GetYaxis()->FindBin(eta);
     int iVz = hWeight->GetXaxis()->FindBin(vz);
     return hWeight->GetBinContent(iVz, iEta, iPhi);
+  }
+
+  template <typename TTarget, typename TTracks>
+  void fillCorrelationsUD(TTarget target, const TTracks tracks1, const TTracks tracks2, float multiplicity, float posZ)
+  {
+    // multiplicity = tracks1.size();
+    for (const auto& track1 : tracks1) {
+      if (isTrackCut(track1) == false) {
+        return;
+      }
+      // weight NUA for track1
+      float phi1 = phi(track1.px(), track1.py());
+      float eta1 = eta(track1.px(), track1.py(), track1.pz());
+      float w1 = getNUAWeight(posZ, eta1, phi1);
+      target->getTriggerHist()->Fill(CorrelationContainer::kCFStepReconstructed, track1.pt(), multiplicity, posZ, 1.0);
+      for (const auto& track2 : tracks2) {
+        if (track1 == track2) {
+          continue;
+        }
+        if (isTrackCut(track2) == false) {
+          return;
+        }
+        // weight NUA for track 2
+        float phi2 = phi(track2.px(), track2.py());
+        float eta2 = eta(track2.px(), track2.py(), track2.pz());
+        float w2 = getNUAWeight(posZ, eta2, phi2);
+        // total weight
+        float wPair = w1 * w2;
+        /*if (doPairCuts && mPairCuts.conversionCuts(track1, track2)) {
+          continue;
+        }*/
+        float deltaPhi = phi(track1.px(), track1.py()) - phi(track2.px(), track2.py());
+        deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf);
+        target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
+                                    eta(track1.px(), track1.py(), track1.pz()) - eta(track2.px(), track2.py(), track2.pz()),
+                                    track2.pt(), track1.pt(),
+                                    multiplicity,
+                                    deltaPhi,
+                                    posZ,
+                                    wPair);
+      }
+    }
   }
 
   void processSG(FullSGUDCollision::iterator const& reconstructedCollision, FullUDTracks const& reconstructedTracks)
