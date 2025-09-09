@@ -230,6 +230,29 @@ struct FlowGfwOmegaXi {
   std::vector<int> runNumbers;
   std::map<int, std::vector<std::shared_ptr<TH1>>> th1sList;
   std::map<int, std::vector<std::shared_ptr<TH3>>> th3sList;
+  enum OutputTH1Names {
+    // here are TProfiles for vn-pt correlations that are not implemented in GFW
+    hPhi = 0,
+    hPhicorr,
+    hPhiK0s,
+    hPhiLambda,
+    hPhiXi,
+    hPhiOmega,
+    hPhiK0scorr,
+    hPhiLambdacorr,
+    hPhiXicorr,
+    hPhiOmegacorr,
+    kCount_TH1Names
+  };
+
+  enum OutputTH3Names {
+    hPhiEtaVtxz = 0,
+    hPhiEtaVtxzK0s,
+    hPhiEtaVtxzLambda,
+    hPhiEtaVtxzXi,
+    hPhiEtaVtxzOmega,
+    kCount_TH3Names
+  };
 
   std::vector<GFWWeights*> mAcceptance;
   std::vector<TH1D*> mEfficiency;
@@ -337,25 +360,25 @@ struct FlowGfwOmegaXi {
     if (cfgOutputrunbyrun) {
       runNumbers = cfgRunNumbers;
       for (const auto& runNumber : runNumbers) {
-        std::vector<std::shared_ptr<TH1>> histosPhi;
-        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhi", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
-        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhicorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
-        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiK0s", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
-        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiLambda", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
-        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiXi", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
-        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiOmega", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
-        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiK0scorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
-        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiLambdacorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
-        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiXicorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
-        histosPhi.push_back(registry.add<TH1>(Form("%d/hPhiOmegacorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}}));
+        std::vector<std::shared_ptr<TH1>> histosPhi(kCount_TH1Names);
+        histosPhi[hPhi] = registry.add<TH1>(Form("%d/hPhi", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
+        histosPhi[hPhicorr] = registry.add<TH1>(Form("%d/hPhicorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
+        histosPhi[hPhiK0s] = registry.add<TH1>(Form("%d/hPhiK0s", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
+        histosPhi[hPhiLambda] = registry.add<TH1>(Form("%d/hPhiLambda", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
+        histosPhi[hPhiXi] = registry.add<TH1>(Form("%d/hPhiXi", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
+        histosPhi[hPhiOmega] = registry.add<TH1>(Form("%d/hPhiOmega", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
+        histosPhi[hPhiK0scorr] = registry.add<TH1>(Form("%d/hPhiK0scorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
+        histosPhi[hPhiLambdacorr] = registry.add<TH1>(Form("%d/hPhiLambdacorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
+        histosPhi[hPhiXicorr] = registry.add<TH1>(Form("%d/hPhiXicorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
+        histosPhi[hPhiOmegacorr] = registry.add<TH1>(Form("%d/hPhiOmegacorr", runNumber), "", {HistType::kTH1D, {cfgaxisPhi}});
         th1sList.insert(std::make_pair(runNumber, histosPhi));
 
-        std::vector<std::shared_ptr<TH3>> nuaTH3;
-        nuaTH3.push_back(registry.add<TH3>(Form("%d/hPhiEtaVtxz", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}}));
-        nuaTH3.push_back(registry.add<TH3>(Form("%d/hPhiEtaVtxzK0s", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}}));
-        nuaTH3.push_back(registry.add<TH3>(Form("%d/hPhiEtaVtxzLambda", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}}));
-        nuaTH3.push_back(registry.add<TH3>(Form("%d/hPhiEtaVtxzXi", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}}));
-        nuaTH3.push_back(registry.add<TH3>(Form("%d/hPhiEtaVtxzOmega", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}}));
+        std::vector<std::shared_ptr<TH3>> nuaTH3(kCount_TH3Names);
+        nuaTH3[hPhiEtaVtxz] = registry.add<TH3>(Form("%d/hPhiEtaVtxz", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}});
+        nuaTH3[hPhiEtaVtxzK0s] = registry.add<TH3>(Form("%d/hPhiEtaVtxzK0s", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}});
+        nuaTH3[hPhiEtaVtxzLambda] = registry.add<TH3>(Form("%d/hPhiEtaVtxzLambda", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}});
+        nuaTH3[hPhiEtaVtxzXi] = registry.add<TH3>(Form("%d/hPhiEtaVtxzXi", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}});
+        nuaTH3[hPhiEtaVtxzOmega] = registry.add<TH3>(Form("%d/hPhiEtaVtxzOmega", runNumber), ";#varphi;#eta;v_{z}", {HistType::kTH3D, {cfgaxisPhi, {64, -1.6, 1.6}, cfgaxisVertex}});
         th3sList.insert(std::make_pair(runNumber, nuaTH3));
       }
     }
@@ -992,9 +1015,9 @@ struct FlowGfwOmegaXi {
         fWeightsREF->fill(track.phi(), track.eta(), vtxz, track.pt(), cent, 0);
 
       if (cfgOutputrunbyrun) {
-        th1sList[runNumber][0]->Fill(track.phi());
-        th1sList[runNumber][1]->Fill(track.phi(), wacc);
-        th3sList[runNumber][0]->Fill(track.phi(), track.eta(), vtxz);
+        th1sList[runNumber][hPhi]->Fill(track.phi());
+        th1sList[runNumber][hPhicorr]->Fill(track.phi(), wacc);
+        th3sList[runNumber][hPhiEtaVtxz]->Fill(track.phi(), track.eta(), vtxz);
       }
     }
     if (cfgDoLocDenCorr) {
@@ -1123,9 +1146,9 @@ struct FlowGfwOmegaXi {
           if (cfgOutputNUAWeights)
             fWeightsK0s->fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
           if (cfgOutputrunbyrun) {
-            th1sList[runNumber][2]->Fill(v0.phi());
-            th1sList[runNumber][6]->Fill(v0.phi(), wacc);
-            th3sList[runNumber][1]->Fill(v0.phi(), v0.eta(), vtxz);
+            th1sList[runNumber][hPhiK0s]->Fill(v0.phi());
+            th1sList[runNumber][hPhiK0scorr]->Fill(v0.phi(), wacc);
+            th3sList[runNumber][hPhiEtaVtxzK0s]->Fill(v0.phi(), v0.eta(), vtxz);
           }
         }
         if (isLambda) {
@@ -1147,9 +1170,9 @@ struct FlowGfwOmegaXi {
           if (cfgOutputNUAWeights)
             fWeightsLambda->fill(v0.phi(), v0.eta(), vtxz, v0.pt(), cent, 0);
           if (cfgOutputrunbyrun) {
-            th1sList[runNumber][3]->Fill(v0.phi());
-            th1sList[runNumber][7]->Fill(v0.phi(), wacc);
-            th3sList[runNumber][2]->Fill(v0.phi(), v0.eta(), vtxz);
+            th1sList[runNumber][hPhiLambda]->Fill(v0.phi());
+            th1sList[runNumber][hPhiLambdacorr]->Fill(v0.phi(), wacc);
+            th3sList[runNumber][hPhiEtaVtxzLambda]->Fill(v0.phi(), v0.eta(), vtxz);
           }
         }
       }
@@ -1317,9 +1340,9 @@ struct FlowGfwOmegaXi {
           if (cfgOutputNUAWeights)
             fWeightsOmega->fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
           if (cfgOutputrunbyrun) {
-            th1sList[runNumber][5]->Fill(casc.phi());
-            th1sList[runNumber][9]->Fill(casc.phi(), wacc);
-            th3sList[runNumber][4]->Fill(casc.phi(), casc.eta(), vtxz);
+            th1sList[runNumber][hPhiOmega]->Fill(casc.phi());
+            th1sList[runNumber][hPhiOmegacorr]->Fill(casc.phi(), wacc);
+            th3sList[runNumber][hPhiEtaVtxzOmega]->Fill(casc.phi(), casc.eta(), vtxz);
           }
         }
         if (isXi) {
@@ -1343,9 +1366,9 @@ struct FlowGfwOmegaXi {
           if (cfgOutputNUAWeights)
             fWeightsXi->fill(casc.phi(), casc.eta(), vtxz, casc.pt(), cent, 0);
           if (cfgOutputrunbyrun) {
-            th1sList[runNumber][4]->Fill(casc.phi());
-            th1sList[runNumber][8]->Fill(casc.phi(), wacc);
-            th3sList[runNumber][3]->Fill(casc.phi(), casc.eta(), vtxz);
+            th1sList[runNumber][hPhiXi]->Fill(casc.phi());
+            th1sList[runNumber][hPhiXicorr]->Fill(casc.phi(), wacc);
+            th3sList[runNumber][hPhiEtaVtxzXi]->Fill(casc.phi(), casc.eta(), vtxz);
           }
         }
       }
