@@ -1057,15 +1057,15 @@ struct strangenesstofpid {
     std::vector<double> collisionEventTime(collisions.size(), 0.0);
     std::vector<int> collisionNtracks(collisions.size(), 0);
     for (const auto& track : tracks) {
-      if(track.hasTOF()){ 
+      if (track.hasTOF()) {
         collisionEventTime[track.collisionId()] += track.tofEvTime();
-        collisionNtracks[track.collisionId()] ++;
+        collisionNtracks[track.collisionId()]++;
       }
     }
-    for (const auto& collision: collisions){ 
-      if(collisionNtracks[collision.globalIndex()] > 0){ 
+    for (const auto& collision : collisions) {
+      if (collisionNtracks[collision.globalIndex()] > 0) {
         collisionEventTime[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
-      }else{
+      } else {
         collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
       }
     }

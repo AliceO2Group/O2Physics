@@ -84,7 +84,7 @@ struct strangederivedbuilder {
     Produces<aod::StraEvSels> strangeEvSels;         // characterises collisions / centrality / sel8 selection in Run 3
     Produces<aod::StraEvSelsRun2> strangeEvSelsRun2; // characterises collisions / centrality / sel8 selection in Run 2
     Produces<aod::StraStamps> strangeStamps;         // provides timestamps, run numbers
-    Produces<aod::StraEvTimes> straEvTimes;         // provides event times (FT0, TOF)
+    Produces<aod::StraEvTimes> straEvTimes;          // provides event times (FT0, TOF)
     Produces<aod::V0CollRefs> v0collref;             // references collisions from V0s
     Produces<aod::CascCollRefs> casccollref;         // references collisions from cascades
     Produces<aod::KFCascCollRefs> kfcasccollref;     // references collisions from KF cascades
@@ -591,15 +591,15 @@ struct strangederivedbuilder {
     std::vector<double> collisionEventTime(collisions.size(), 0.0);
     std::vector<int> collisionNtracks(collisions.size(), 0);
     for (const auto& track : tracks) {
-      if(track.hasTOF() && track.collisionId()>=0){ 
+      if (track.hasTOF() && track.collisionId() >= 0) {
         collisionEventTime[track.collisionId()] += track.tofEvTime();
-        collisionNtracks[track.collisionId()] ++;
+        collisionNtracks[track.collisionId()]++;
       }
     }
-    for (const auto& collision : collisions){ 
-      if(collisionNtracks[collision.globalIndex()] > 0){ 
+    for (const auto& collision : collisions) {
+      if (collisionNtracks[collision.globalIndex()] > 0) {
         collisionEventTime[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
-      }else{
+      } else {
         collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
       }
       products.straEvTimes(collisionEventTime[collision.globalIndex()]);
@@ -1135,9 +1135,9 @@ struct strangederivedbuilder {
   // Run 2: collision processing
   PROCESS_SWITCH(strangederivedbuilder, processCollisionsRun2, "Produce collisions (Run2)", false);
   PROCESS_SWITCH(strangederivedbuilder, processCollisionsRun2WithMC, "Produce collisions (Run 2) with MC info", false);
-  // Event times 
+  // Event times
   PROCESS_SWITCH(strangederivedbuilder, processPopulateEventTimes, "Populate event times", true);
-  
+
   // detailed information processing
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtrasV0sOnly, "Produce track extra information (V0s only)", true);
   PROCESS_SWITCH(strangederivedbuilder, processTrackExtras, "Produce track extra information (V0s + casc)", true);
