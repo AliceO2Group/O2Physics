@@ -15,7 +15,6 @@
 /// \author Alberto Caliva (alberto.caliva@cern.ch), Catalin-Lucian Ristea (catalin.ristea@cern.ch)
 /// \since September 9, 2025
 
-
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
