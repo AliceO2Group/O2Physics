@@ -238,14 +238,14 @@ struct LFNucleiBATask {
 
   // PDG of Mothers
   static constexpr int kPdgMotherlist[] = {
-    PDGPion,
-    PDGKaon,
-    311,
-    PDGProton,
-    PDGDeuteron,
-    PDGTriton,
-    PDGHelium,
-    PDGAlpha,
+    PDG_t::kPiPlus,
+    PDG_t::kKPlus,
+    PDG_t::kK0Short,
+    PDG_t::kProton,
+    o2::constants::physics::Pdg::kDeuteron,
+    o2::constants::physics::Pdg::kTriton,
+    o2::constants::physics::Pdg::kHelium3,
+    o2::constants::physics::Pdg::kAlpha,
     1000130270,
     1000140280,
     1000260560};
