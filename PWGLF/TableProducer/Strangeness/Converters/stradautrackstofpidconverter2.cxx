@@ -25,7 +25,7 @@ struct stradautrackstofpidconverter2 {
 
   void process(aod::StraCollisions const& collisions, soa::Join<aod::DauTrackExtras, aod::DauTrackTOFPIDs_000> const& dauTracks, soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras> const& v0s)
   {
-    // create new TOFPIDs 
+    // create new TOFPIDs
     for (int ii = 0; ii < dauTracks.size(); ii++) {
       auto dauTrack = dauTracks.rawIteratorAt(ii);
       dautracktofpids(-1, -1, dauTrack.tofSignal(), dauTrack.tofEvTime(), dauTrack.length(), 0.0f);
@@ -39,19 +39,19 @@ struct stradautrackstofpidconverter2 {
     for (const auto& v0 : v0s) {
       auto posTrackTOF = dauTracks.rawIteratorAt(v0.posTrackExtraId());
       auto negTrackTOF = dauTracks.rawIteratorAt(v0.negTrackExtraId());
-      if(posTrackTOF.hasTOF()){
+      if (posTrackTOF.hasTOF()) {
         collisionEventTime[v0.straCollisionId()] += posTrackTOF.tofEvTime();
-        collisionNtracks[v0.straCollisionId()] ++;
+        collisionNtracks[v0.straCollisionId()]++;
       }
-      if(negTrackTOF.hasTOF()){
+      if (negTrackTOF.hasTOF()) {
         collisionEventTime[v0.straCollisionId()] += negTrackTOF.tofEvTime();
-        collisionNtracks[v0.straCollisionId()] ++;
+        collisionNtracks[v0.straCollisionId()]++;
       }
     }
-    for (const auto& collision: collisions){
-      if(collisionNtracks[collision.globalIndex()] > 0){
+    for (const auto& collision : collisions) {
+      if (collisionNtracks[collision.globalIndex()] > 0) {
         collisionEventTime[collision.globalIndex()] /= static_cast<double>(collisionNtracks[collision.globalIndex()]);
-      }else{
+      } else {
         collisionEventTime[collision.globalIndex()] = -1e+6; // undefined
       }
       straEvTimes(collisionEventTime[collision.globalIndex()]);
