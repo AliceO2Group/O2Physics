@@ -41,6 +41,7 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
 
+#include "TMCProcess.h"
 #include <TF1.h>
 
 #include <gsl/span>
@@ -71,7 +72,7 @@ struct LFNucleiBATask {
   Configurable<bool> enableAl{"enableAl", true, "Flag to enable alpha analysis."};
 
   Configurable<bool> enableTrackingEff{"enableTrackingEff", 0, "Flag to enable tracking efficiency hitos."};
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"}; // NOLINT
+  Configurable<std::string> ccdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   // Set the triggered events skimming scheme
   struct : ConfigurableGroup {
@@ -219,9 +220,6 @@ struct LFNucleiBATask {
   // TPC low/high momentum range
   static constexpr float kCfgTpcClasses[] = {0.5f, 0.1f};
   static constexpr float kCfgKaonCut = 5.f;
-
-  // Weak-decay flag
-  static constexpr int kProcessWeakDecay = 4;
 
   // PDG codes and masses used in this analysis
   static constexpr int PDGPion = PDG_t::kPiPlus;
@@ -2699,7 +2697,7 @@ struct LFNucleiBATask {
         if constexpr (IsFilteredData) {
           isPhysPrim = track.isPhysicalPrimary();
           isProdByGen = track.producedByGenerator();
-          isWeakDecay = (track.getProcess() == kProcessWeakDecay);
+          isWeakDecay = (track.getProcess() == TMCProcess::kPDecay);
           pdgCode = track.pdgCode();
         } else {
           if (!track.has_mcParticle()) {
@@ -2707,7 +2705,7 @@ struct LFNucleiBATask {
           }
           isPhysPrim = track.mcParticle().isPhysicalPrimary();
           isProdByGen = track.mcParticle().producedByGenerator();
-          isWeakDecay = (track.mcParticle().getProcess() == kProcessWeakDecay);
+          isWeakDecay = (track.mcParticle().getProcess() == TMCProcess::kPDecay);
           pdgCode = track.mcParticle().pdgCode();
         }
 
@@ -3214,7 +3212,7 @@ struct LFNucleiBATask {
         if constexpr (IsFilteredData) {
           isPhysPrim = track.isPhysicalPrimary();
           isProdByGen = track.producedByGenerator();
-          isWeakDecay = (track.getProcess() == kProcessWeakDecay);
+          isWeakDecay = (track.getProcess() == TMCProcess::kPDecay);
           pdgCode = track.pdgCode();
           genPt = std::sqrt(std::pow(track.px(), 2) + std::pow(track.py(), 2));
 
@@ -3224,7 +3222,7 @@ struct LFNucleiBATask {
           }
           isPhysPrim = track.mcParticle().isPhysicalPrimary();
           isProdByGen = track.mcParticle().producedByGenerator();
-          isWeakDecay = (track.mcParticle().getProcess() == kProcessWeakDecay);
+          isWeakDecay = (track.mcParticle().getProcess() == TMCProcess::kPDecay);
           pdgCode = track.mcParticle().pdgCode();
 
           // Access to MC particles mother
@@ -4983,7 +4981,7 @@ struct LFNucleiBATask {
         if constexpr (IsFilteredData) {
           isPhysPrim = track.isPhysicalPrimary();
           isProdByGen = track.producedByGenerator();
-          isWeakDecay = (track.getProcess() == kProcessWeakDecay);
+          isWeakDecay = (track.getProcess() == TMCProcess::kPDecay);
           pdgCode = track.pdgCode();
           isItsPassed = track.itsPassed();
           isTpcPassed = track.tpcPassed();
@@ -4995,7 +4993,7 @@ struct LFNucleiBATask {
           }
           isPhysPrim = track.mcParticle().isPhysicalPrimary();
           isProdByGen = track.mcParticle().producedByGenerator();
-          isWeakDecay = (track.mcParticle().getProcess() == kProcessWeakDecay);
+          isWeakDecay = (track.mcParticle().getProcess() == TMCProcess::kPDecay);
           pdgCode = track.mcParticle().pdgCode();
           isItsPassed = track.passedITSNCls() &&
                         track.passedITSChi2NDF() &&
@@ -6141,7 +6139,7 @@ struct LFNucleiBATask {
 
       bool isPhysPrim = mcParticleGen.isPhysicalPrimary();
       bool isProdByGen = mcParticleGen.producedByGenerator();
-      bool isWeakDecay = (mcParticleGen.getProcess() == kProcessWeakDecay);
+      bool isWeakDecay = (mcParticleGen.getProcess() == TMCProcess::kPDecay);
 
       if (mcParticleGen.pdgCode() == PDGPion) {
         spectraGen.fill(HIST("pion/histGenPtPion"), mcParticleGen.pt());
