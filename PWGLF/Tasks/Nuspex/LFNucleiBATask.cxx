@@ -976,15 +976,15 @@ struct LFNucleiBATask {
           histos.add<TH3>("tracks/deuteron/dca/before/hMomTrueMaterial", "MC mothers;mother index;mother type; mother #it{p}_{T}", HistType::kTH3F, {{kMaxNumMom + 2, -0.5, static_cast<double>(kMaxNumMom) + 1.5}, {kNumMotherlist + 2, -1.5, static_cast<double>(kNumMotherlist) + 0.5}, {250, 0.0, 10.0}});
 
           std::shared_ptr<TH3> hTempDe = histos.get<TH3>(HIST("tracks/deuteron/dca/before/hMomTrueMaterial"));
-          TH3* hPDG_De = hTempDe.get();
+          TH3* hPdgDe = hTempDe.get();
 
-          TAxis* axPdgDe = hPDG_De->GetXaxis();
+          TAxis* axPdgDe = hPdgDe->GetXaxis();
           for (int i = 0; i <= kMaxNumMom; i++) {
             axPdgDe->SetBinLabel(i + 1, Form("%d", i));
           }
           axPdgDe->SetBinLabel(kMaxNumMom + 2, ">=5");
 
-          TAxis* ayPdgDe = hPDG_De->GetYaxis();
+          TAxis* ayPdgDe = hPdgDe->GetYaxis();
           ayPdgDe->SetBinLabel(1, "undef.");
           ayPdgDe->SetBinLabel(2, "other");
           for (int i = 0; i < kNumMotherlist; i++) {
@@ -1193,15 +1193,15 @@ struct LFNucleiBATask {
 
           // Fix for getting TH3 pointer
           std::shared_ptr<TH3> hTempHe = histos.get<TH3>(HIST("tracks/helium/dca/before/hMomTrueMaterial"));
-          TH3* hPDG_He = hTempHe.get();
+          TH3* hPdgHe = hTempHe.get();
 
-          TAxis* axPdgHe = hPDG_He->GetXaxis();
+          TAxis* axPdgHe = hPdgHe->GetXaxis();
           for (int i = 0; i <= kMaxNumMom; i++) {
             axPdgHe->SetBinLabel(i + 1, Form("%d", i));
           }
           axPdgHe->SetBinLabel(kMaxNumMom + 2, ">=5");
 
-          TAxis* ayPdgHe = hPDG_He->GetYaxis();
+          TAxis* ayPdgHe = hPdgHe->GetYaxis();
           ayPdgHe->SetBinLabel(1, "undef.");
           ayPdgHe->SetBinLabel(2, "other");
           for (int i = 0; i < kNumMotherlist; i++) {
