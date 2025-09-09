@@ -15,25 +15,32 @@
 /// \author ALICE
 //
 
-#include "MetadataHelper.h"
-#include "TableHelper.h"
-
+#include "Common/Core/MetadataHelper.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
 #include <CCDB/BasicCCDBManager.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
-#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TFile.h>
 #include <TFormula.h>
-#include <TH1F.h>
+#include <TH1.h>
 #include <TList.h>
 
 #include <algorithm>
+#include <array>
+#include <cmath>
 #include <map>
 #include <string>
 #include <vector>

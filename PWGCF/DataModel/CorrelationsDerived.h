@@ -140,7 +140,9 @@ enum ParticleDecay {
   JPsiToEE,
   JPsiToMuMu,
   Generic2Prong,
-  PhiToKK,
+  PhiToKKPID1,
+  PhiToKKPID2,
+  PhiToKKPID3,
   K0stoPiPi,
   LambdatoPPi,
   AntiLambdatoPiP
