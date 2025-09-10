@@ -9,22 +9,32 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <bitset>
-#include <map>
-#include <string>
-#include <numeric>
-
-#include "TH1.h"
-
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/DataModel/EventSelection.h"
-#include "DataFormatsFT0/Digit.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TAxis.h>
+#include <TH2.h>
+
+#include <bitset>
+#include <cstddef>
+#include <map>
+#include <memory>
+#include <numeric>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::aod::evsel;
+
 struct ft0AnalysisTask {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   constexpr static int sNtriggers = 5; // Number of produced triggers
