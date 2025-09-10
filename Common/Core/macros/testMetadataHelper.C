@@ -25,6 +25,11 @@
 #include <TMap.h>
 #include <TObjString.h>
 
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
+
 // Taken from O2/Framework/AnalysisSupport/src/Plugin.cxx
 auto readMetadata(std::unique_ptr<TFile>& currentFile) -> std::vector<o2::framework::ConfigParamSpec>
 {
