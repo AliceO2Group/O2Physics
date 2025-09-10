@@ -2296,7 +2296,7 @@ struct HfTrackIndexSkimCreator {
                   pvCoord2Prong[2] = pvRefitCoord2Prong[2];
                 }
                 applySelection2Prong(pVecCandProng2, secondaryVertex2, pvCoord2Prong, cutStatus2Prong, isSelected2ProngCand);
-                if (is2ProngCandidateGoodFor3Prong && config.do3Prong == 1) {
+                if (is2ProngCandidateGoodFor3Prong && config.do3Prong) {
                   is2ProngCandidateGoodFor3Prong = isTwoTrackVertexSelectedFor3Prongs(secondaryVertex2, pvCoord2Prong, df2);
                 }
 
@@ -2378,7 +2378,7 @@ struct HfTrackIndexSkimCreator {
           }
 
           // if the cut on the decay length of 3-prongs computed with the first two tracks is enabled and the vertex was not computed for the D0, we compute it now
-          if (config.do3Prong == 1 && is2ProngCandidateGoodFor3Prong && (config.minTwoTrackDecayLengthFor3Prongs > 0.f || config.maxTwoTrackChi2PcaFor3Prongs < 1.e9f) && nVtxFrom2ProngFitter == 0) {
+          if (config.do3Prong && is2ProngCandidateGoodFor3Prong && (config.minTwoTrackDecayLengthFor3Prongs > 0.f || config.maxTwoTrackChi2PcaFor3Prongs < 1.e9f) && nVtxFrom2ProngFitter == 0) {
             try {
               nVtxFrom2ProngFitter = df2.process(trackParVarPos1, trackParVarNeg1);
             } catch (...) {
@@ -2392,7 +2392,7 @@ struct HfTrackIndexSkimCreator {
             }
           }
 
-          if (config.do3Prong == 1 && is2ProngCandidateGoodFor3Prong) { // if 3 prongs are enabled and the first 2 tracks are selected for the 3-prong channels
+          if (config.do3Prong && is2ProngCandidateGoodFor3Prong) { // if 3 prongs are enabled and the first 2 tracks are selected for the 3-prong channels
             // second loop over positive tracks
             for (auto trackIndexPos2 = trackIndexPos1 + 1; trackIndexPos2 != groupedTrackIndicesPos1.end(); ++trackIndexPos2) {
 
