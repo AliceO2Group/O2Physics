@@ -89,7 +89,7 @@ struct HfDerivedDataCreatorD0ToKPi {
 
   HfHelper hfHelper;
   SliceCache cache;
-  static constexpr double mass{o2::constants::physics::MassD0};
+  static constexpr double Mass{o2::constants::physics::MassD0};
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
@@ -363,7 +363,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<aod::hf_cand::VertexerType::DCAFitter, false, true, false, true>(collisions, candidatesMcSig, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterSig, "Process MC with DCAFitterN only for signals", false);
 
@@ -376,7 +376,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<aod::hf_cand::VertexerType::DCAFitter, false, true, true, false>(collisions, candidatesMcBkg, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterBkg, "Process MC with DCAFitterN only for background", false);
 
@@ -389,7 +389,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<aod::hf_cand::VertexerType::DCAFitter, false, true, false, false>(collisions, candidatesMcAll, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterAll, "Process MC with DCAFitterN", false);
 
@@ -402,7 +402,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<aod::hf_cand::VertexerType::KfParticle, false, true, false, true>(collisions, candidatesMcKfSig, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleSig, "Process MC with KFParticle only for signals", false);
 
@@ -415,7 +415,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<aod::hf_cand::VertexerType::KfParticle, false, true, true, false>(collisions, candidatesMcKfBkg, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleBkg, "Process MC with KFParticle only for background", false);
 
@@ -428,7 +428,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<aod::hf_cand::VertexerType::KfParticle, false, true, false, false>(collisions, candidatesMcKfAll, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleAll, "Process MC with KFParticle", false);
 
@@ -461,7 +461,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<aod::hf_cand::VertexerType::DCAFitter, true, true, false, true>(collisions, candidatesMcMlSig, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterMlSig, "Process MC with DCAFitterN and ML only for signals", false);
 
@@ -474,7 +474,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<aod::hf_cand::VertexerType::DCAFitter, true, true, true, false>(collisions, candidatesMcMlBkg, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterMlBkg, "Process MC with DCAFitterN and ML only for background", false);
 
@@ -487,7 +487,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<aod::hf_cand::VertexerType::DCAFitter, true, true, false, false>(collisions, candidatesMcMlAll, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithDCAFitterMlAll, "Process MC with DCAFitterN and ML", false);
 
@@ -500,7 +500,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<aod::hf_cand::VertexerType::KfParticle, true, true, false, true>(collisions, candidatesMcKfMlSig, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleMlSig, "Process MC with KFParticle and ML only for signals", false);
 
@@ -513,7 +513,7 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<aod::hf_cand::VertexerType::KfParticle, true, true, true, false>(collisions, candidatesMcKfMlBkg, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleMlBkg, "Process MC with KFParticle and ML only for background", false);
 
@@ -526,14 +526,14 @@ struct HfDerivedDataCreatorD0ToKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<aod::hf_cand::VertexerType::KfParticle, true, true, false, false>(collisions, candidatesMcKfMlAll, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcWithKFParticleMlAll, "Process MC with KFParticle and ML", false);
 
   void processMcGenOnly(TypeMcCollisions const& mcCollisions,
                         MatchedGenCandidatesMc const& mcParticles)
   {
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorD0ToKPi, processMcGenOnly, "Process MC gen. only", false);
 };

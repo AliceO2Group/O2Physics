@@ -99,7 +99,7 @@ struct HfDerivedDataCreatorDsToKKPi {
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_ds::isSelDsToKKPi & static_cast<int8_t>(BIT(aod::SelectionStep::RecoMl - 1))) != 0; // select candidates which passed all cuts at least up to RecoMl - 1
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_ds::isSelDsToKKPi & static_cast<int>(BIT(aod::SelectionStep::RecoMl - 1))) != 0; // select candidates which passed all cuts at least up to RecoMl - 1
   Filter filterMcGenMatching = nabs(aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK);
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;

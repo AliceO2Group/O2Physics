@@ -87,7 +87,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
 
   HfHelper hfHelper;
   SliceCache cache;
-  static constexpr double mass{o2::constants::physics::MassDPlus};
+  static constexpr double Mass{o2::constants::physics::MassDPlus};
 
   using CollisionsWCentMult = soa::Join<aod::Collisions, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
   using CollisionsWMcCentMult = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::PVMultZeqs>;
@@ -99,7 +99,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   using MatchedGenCandidatesMc = soa::Filtered<soa::Join<aod::McParticles, aod::HfCand3ProngMcGen>>;
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi & static_cast<int8_t>(BIT(aod::SelectionStep::RecoMl - 1))) != 0; // select candidates which passed all cuts at least up to RecoMl - 1
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_dplus::isSelDplusToPiKPi & static_cast<int>(BIT(aod::SelectionStep::RecoMl - 1))) != 0; // select candidates which passed all cuts at least up to RecoMl - 1
   Filter filterMcGenMatching = nabs(aod::hf_cand_3prong::flagMcMatchGen) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi);
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
@@ -312,7 +312,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<false, true, false, true>(collisions, candidatesMcSig, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorDplusToPiKPi, processMcSig, "Process MC only for signals", false);
 
@@ -325,7 +325,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<false, true, true, false>(collisions, candidatesMcBkg, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorDplusToPiKPi, processMcBkg, "Process MC only for background", false);
 
@@ -338,7 +338,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<false, true, false, false>(collisions, candidatesMcAll, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorDplusToPiKPi, processMcAll, "Process MC", false);
 
@@ -362,7 +362,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<true, true, false, true>(collisions, candidatesMcMlSig, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorDplusToPiKPi, processMcMlSig, "Process MC with ML only for signals", false);
 
@@ -375,7 +375,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<true, true, true, false>(collisions, candidatesMcMlBkg, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorDplusToPiKPi, processMcMlBkg, "Process MC with ML only for background", false);
 
@@ -388,14 +388,14 @@ struct HfDerivedDataCreatorDplusToPiKPi {
   {
     rowsCommon.preProcessMcCollisions(mcCollisions, mcParticlesPerMcCollision, mcParticles);
     processCandidates<true, true, false, false>(collisions, candidatesMcMlAll, tracks, bcs);
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorDplusToPiKPi, processMcMlAll, "Process MC with ML", false);
 
   void processMcGenOnly(TypeMcCollisions const& mcCollisions,
                         MatchedGenCandidatesMc const& mcParticles)
   {
-    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, mass);
+    rowsCommon.processMcParticles(mcCollisions, mcParticlesPerMcCollision, mcParticles, Mass);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorDplusToPiKPi, processMcGenOnly, "Process MC gen. only", false);
 };

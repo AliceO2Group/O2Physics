@@ -100,7 +100,7 @@ struct HfDerivedDataCreatorXicToXiPiPi {
   using TypeMcCollisions = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
   using THfCandDaughtersMl = aod::Cascades;
 
-  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToXiPiPi & static_cast<int8_t>(BIT(o2::aod::hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoMl - 1))) != 0;
+  Filter filterSelectCandidates = (aod::hf_sel_candidate_xic::isSelXicToXiPiPi & static_cast<int>(BIT(o2::aod::hf_sel_candidate_xic::XicToXiPiPiSelectionStep::RecoMl - 1))) != 0;
   Filter filterMcGenMatching = aod::hf_cand_xic_to_xi_pi_pi::flagMcMatchGen != 0;
 
   Preslice<SelectedCandidates> candidatesPerCollision = aod::hf_cand::collisionId;
