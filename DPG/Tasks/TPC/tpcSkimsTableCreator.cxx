@@ -165,8 +165,8 @@ struct TreeWriterTpcV0 {
     }
   };
 
-  template <bool doUseCorreceddEdx = false, typename T, typename TQA, typename C, typename V0>
-  void fillSkimmedV0TableWithdEdxTrQA(V0 const& v0, T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate)
+  template <bool doUseCorreceddEdx = false, typename T, typename TQA, typename C, typename V0Casc>
+  void fillSkimmedV0TableWithdEdxTrQA(V0Casc const& v0casc, T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -178,12 +178,12 @@ struct TreeWriterTpcV0 {
     auto trackocc = collision.trackOccupancyInTimeRange();
     auto ft0occ = collision.ft0cOccupancyInTimeRange();
 
-    const float alpha = v0.alpha();
-    const float qt = v0.qtarm();
-    const float cosPA = v0.v0cosPA();
-    const float pT = v0.pt();
-    const float v0radius = v0.v0radius();
-    const float gammapsipair = v0.psipair();
+    const float alpha = v0casc.alpha();
+    const float qt = v0casc.qtarm();
+    const float cosPA = GetCosPA(v0casc, collision);
+    const float pT = v0casc.pt();
+    const float v0radius = GetRadius(v0casc);
+    const float gammapsipair = v0casc.psipair();
 
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
@@ -224,8 +224,8 @@ struct TreeWriterTpcV0 {
   };
 
   /// Function to fill skimmed tables
-  template <bool doUseCorreceddEdx = false, typename T, typename TQA, typename C, typename V0>
-  void fillSkimmedV0TableWithTrQA(V0 const& v0, T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate, int bcGlobalIndex, int bcTimeFrameId, int bcBcInTimeFrame)
+  template <bool doUseCorreceddEdx = false, typename T, typename TQA, typename C, typename V0Casc>
+  void fillSkimmedV0TableWithTrQA(V0Casc const& v0casc, T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate, int bcGlobalIndex, int bcTimeFrameId, int bcBcInTimeFrame)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -237,12 +237,12 @@ struct TreeWriterTpcV0 {
     auto trackocc = collision.trackOccupancyInTimeRange();
     auto ft0occ = collision.ft0cOccupancyInTimeRange();
 
-    const float alpha = v0.alpha();
-    const float qt = v0.qtarm();
-    const float cosPA = v0.v0cosPA();
-    const float pT = v0.pt();
-    const float v0radius = v0.v0radius();
-    const float gammapsipair = v0.psipair();
+    const float alpha = v0casc.alpha();
+    const float qt = v0casc.qtarm();
+    const float cosPA = GetCosPA(v0casc, collision);
+    const float pT = v0casc.pt();
+    const float v0radius = GetRadius(v0casc);
+    const float gammapsipair = v0casc.psipair();
 
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
@@ -454,7 +454,7 @@ struct TreeWriterTpcV0 {
   } /// process Standard
   PROCESS_SWITCH(TreeWriterTpcV0, processStandard, "Standard V0 Samples for PID", true);
 
-  void processStandardWithCorrecteddEdx(Colls::iterator const& collision, soa::Filtered<TrksWithDEdxCorrection> const& tracks, V0sWithID const& v0s, aod::BCsWithTimestamps const&)
+  void processStandardWithCorrecteddEdx(Colls::iterator const& collision, soa::Filtered<TrksWithDEdxCorrection> const& tracks, V0sWithID const& v0s, CascsWithID const& cascs, aod::BCsWithTimestamps const&)
   {
     /// Check event slection
     if (!isEventSelected(collision, tracks)) {
@@ -514,7 +514,21 @@ struct TreeWriterTpcV0 {
         }
       }
     }
-  } /// process Standard
+
+    /// Loop over cascade candidates
+    for (const auto& casc : cascs) {
+      auto bachTrack = casc.bachelor_as<soa::Filtered<TrksWithDEdxCorrection>>();
+      if (casc.cascaddid() == kUndef) {
+        continue;
+      }
+      // Omega and antiomega
+      if (static_cast<bool>(bachTrack.pidbit() & (1 << kOmega)) || static_cast<bool>(bachTrack.pidbit() & (1 << kAntiOmega))) {
+        if (downsampleTsalisCharged(bachTrack.pt(), downsamplingTsalisKaons, sqrtSNN, o2::track::pid_constants::sMasses[o2::track::PID::Kaon], maxPt4dwnsmplTsalisKaons)) {
+          fillSkimmedV0Table<true>(casc, bachTrack, collision, bachTrack.tpcNSigmaKa(), bachTrack.tofNSigmaKa(), bachTrack.tpcExpSignalKa(bachTrack.tpcSignal()), o2::track::PID::Kaon, runnumber, dwnSmplFactor_Ka, hadronicRate);
+        }
+      }
+    }
+  } /// process StandardWithCorrecteddEdx
   PROCESS_SWITCH(TreeWriterTpcV0, processStandardWithCorrecteddEdx, "Standard V0 Samples for PID with corrected dEdx", false);
 
   Preslice<Trks> perCollisionTracks = aod::track::collisionId;
