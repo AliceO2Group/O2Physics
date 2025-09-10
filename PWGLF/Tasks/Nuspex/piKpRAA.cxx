@@ -366,7 +366,7 @@ struct PiKpRAA {
       registry.add("NclVsEtaElV0", ";#eta;Ncl TPC", kTH2F, {axisEta, axisNcl});
       registry.add("NclVsEtaElV0p", ";#eta;#LTNcl#GT TPC", kTProfile, {axisEta});
 
-      registry.add("EtaVsPhi", ";#eta;#varphi;", kTH2F, {{axisEta}, {100, 0, 2 * o2::constants::math::PI}});
+      registry.add("EtaVsPhi", ";#eta;#varphi;", kTH2F, {{axisEta}, {100, 0, o2::constants::math::TwoPI}});
       registry.add("EtaVsYK0s", ";#eta;#it{y};", kTH2F, {axisEta, axisY});
       registry.add("EtaVsYPiL", ";#eta;#it{y};", kTH2F, {axisEta, axisY});
       registry.add("EtaVsYPrL", ";#eta;#it{y};", kTH2F, {axisEta, axisY});
