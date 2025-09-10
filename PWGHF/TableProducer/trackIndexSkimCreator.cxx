@@ -1804,12 +1804,12 @@ struct HfTrackIndexSkimCreator {
   }
 
   /// Method to perform ML selections for 2-prong candidates after the rectangular selections
+  /// \tparam usePidForHfFiltersBdt is the flag to determine whether to use also the PID features for the Lc BDT
   /// \param featuresCand is the vector with the candidate features
   /// \param featuresCandPid is the vector with the candidate PID features
   /// \param outputScores is the array of vectors with the output scores to be filled
   /// \param isSelected ia s bitmap with selection outcome
-  /// \param usePidForHfFiltersBdt is the flag to determine whether to use also the PID features for the Lc BDT
-  template <bool usePidForHfFiltersBdt = false>
+  template <bool usePidForHfFiltersBdt>
   void applyMlSelectionForHfFilters3Prong(std::vector<float> featuresCand, std::vector<float> featuresCandPid, std::array<std::vector<float>, kN3ProngDecays>& outputScores, auto& isSelected)
   {
     if (isSelected == 0) {
@@ -1929,7 +1929,7 @@ struct HfTrackIndexSkimCreator {
   /// \param pvCovMatrix is a vector where to store the covariance matrix values of refitted PV
   void performPvRefitCandProngs(SelectedCollisions::iterator const& collision,
                                 aod::BCsWithTimestamps const&,
-                                std::vector<int64_t> vecPvContributorGlobId,
+                                std::vector<int64_t> const& vecPvContributorGlobId,
                                 std::vector<o2::track::TrackParCov> const& vecPvContributorTrackParCov,
                                 std::vector<int64_t> vecCandPvContributorGlobId,
                                 std::array<float, 3>& pvCoord,
@@ -2055,7 +2055,7 @@ struct HfTrackIndexSkimCreator {
     return;
   } /// end of performPvRefitCandProngs function
 
-  template <bool doPvRefit = false, bool usePidForHfFiltersBdt = false, typename TTracks>
+  template <bool doPvRefit, bool usePidForHfFiltersBdt, typename TTracks>
   void run2And3Prongs(SelectedCollisions const& collisions,
                       aod::BCsWithTimestamps const& bcWithTimeStamps,
                       FilteredTrackAssocSel const&,
@@ -2832,8 +2832,8 @@ struct HfTrackIndexSkimCreator {
               if (config.applyMlForHfFilters) {
                 rowTrackIndexMlScoreProng3(mlScores3Prongs[0], mlScores3Prongs[1], mlScores3Prongs[2], mlScores3Prongs[3]);
               }
-              // fill table row of coordinates of PV refit
               if constexpr (doPvRefit) {
+                // fill table row of coordinates of PV refit
                 rowProng3PVrefit(pvRefitCoord3Prong1Pos2Neg[0], pvRefitCoord3Prong1Pos2Neg[1], pvRefitCoord3Prong1Pos2Neg[2],
                                  pvRefitCovMatrix3Prong1Pos2Neg[0], pvRefitCovMatrix3Prong1Pos2Neg[1], pvRefitCovMatrix3Prong1Pos2Neg[2], pvRefitCovMatrix3Prong1Pos2Neg[3], pvRefitCovMatrix3Prong1Pos2Neg[4], pvRefitCovMatrix3Prong1Pos2Neg[5]);
               }
@@ -3001,7 +3001,7 @@ struct HfTrackIndexSkimCreator {
     FilteredTrackAssocSel const& trackIndices,
     TracksWithPVRefitAndDCA const& tracks)
   {
-    run2And3Prongs<true>(collisions, bcWithTimeStamps, trackIndices, tracks);
+    run2And3Prongs<true, false>(collisions, bcWithTimeStamps, trackIndices, tracks);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreator, process2And3ProngsWithPvRefit, "Process 2-prong and 3-prong skim with PV refit", false);
 
@@ -3011,7 +3011,7 @@ struct HfTrackIndexSkimCreator {
     FilteredTrackAssocSel const& trackIndices,
     aod::TracksWCovDcaExtra const& tracks)
   {
-    run2And3Prongs(collisions, bcWithTimeStamps, trackIndices, tracks);
+    run2And3Prongs<false, false>(collisions, bcWithTimeStamps, trackIndices, tracks);
   }
   PROCESS_SWITCH(HfTrackIndexSkimCreator, process2And3ProngsNoPvRefit, "Process 2-prong and 3-prong skim without PV refit", true);
 
