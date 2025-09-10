@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file correlatorFlowCharmHadrons.cxx
+/// \file derivedDataCreatorCorrelationsReduced.cxx
 /// \brief CharmHadrons-Hadrons correlator tree creator for data and MC-reco analyses
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Politecnico and INFN Torino
 /// \author Stefano Politanò <stefano.politano@cern.ch>, CERN

@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 
 /// \file correlatorFlowCharmHadronsReduced.cxx
-/// \brief CharmHadrons-Hadrons correlator tree creator for data and MC-reco analyses
+/// \brief CharmHadrons-Hadrons correlator tree creator for data analyses
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Politecnico and INFN Torino
 
 #include "PWGHF/Core/HfHelper.h"
