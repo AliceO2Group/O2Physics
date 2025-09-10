@@ -105,16 +105,16 @@ struct DndetaMFTPbPb {
     ConfigurableAxis fv0aMultBins{"fv0aMultBins", {501, -0.5, 500.5}, ""};
     ConfigurableAxis ft0aMultBins{"ft0aMultBins", {501, -0.5, 500.5}, ""};
     ConfigurableAxis ft0cMultBins{"ft0cMultBins", {501, -0.5, 500.5}, ""};
-    ConfigurableAxis PtBins{"PtBins", {101, -0.5, 10.5}, "pT binning (GeV/c)"};
-    ConfigurableAxis MultBins{"MultBins", {701, -0.5, 700.5}, "Multiplicity binning"};
-    ConfigurableAxis ZvtxBins{"ZvtxBins", {60, -30., 30.}, "Z-vtx binning (cm)"};
-    ConfigurableAxis DeltaZBins{"DeltaZBins", {120, -6., 6.}, "Delta Z-vtx binning (cm)"};
-    ConfigurableAxis DCAxyBins{"DCAxyBins", {800, -1., 1.}, "DCAxy binning (cm)"};
-    ConfigurableAxis DCAzBins{"DCAzBins", {800, -1., 1.}, "DCAz binning (cm)"};
-    ConfigurableAxis PhiBins{"PhiBins", {629, 0., TwoPI}, "#varphi binning (rad)"};
-    ConfigurableAxis EtaBins{"EtaBins", {20, -4., -2.}, "#eta binning"};
-    ConfigurableAxis ChiSqPerNclBins{"ChiSqPerNclBins", {100, 0, 100}, "#chi^{2} binning"};
-    ConfigurableAxis NclBins{"NclBins", {10, 0.5, 10.5}, "number of clusters binning"};
+    ConfigurableAxis ptBins{"ptBins", {101, -0.5, 10.5}, "pT binning (GeV/c)"};
+    ConfigurableAxis multBins{"multBins", {701, -0.5, 700.5}, "Multiplicity binning"};
+    ConfigurableAxis zvtxBins{"zvtxBins", {60, -30., 30.}, "Z-vtx binning (cm)"};
+    ConfigurableAxis deltaZBins{"deltaZBins", {120, -6., 6.}, "Delta Z-vtx binning (cm)"};
+    ConfigurableAxis dcaXYBins{"dcaXYBins", {800, -1., 1.}, "DCAxy binning (cm)"};
+    ConfigurableAxis dcaZBins{"dcaZBins", {800, -1., 1.}, "DCAz binning (cm)"};
+    ConfigurableAxis phiBins{"phiBins", {629, 0., TwoPI}, "#varphi binning (rad)"};
+    ConfigurableAxis etaBins{"etaBins", {20, -4., -2.}, "#eta binning"};
+    ConfigurableAxis chiSqPerNclBins{"chiSqPerNclBins", {100, 0, 100}, "#chi^{2} binning"};
+    ConfigurableAxis nClBins{"nClBins", {10, 0.5, 10.5}, "number of clusters binning"};
   } binOpt;
 
   struct : ConfigurableGroup {
@@ -185,16 +185,16 @@ struct DndetaMFTPbPb {
     const AxisSpec centralityAxis = {binOpt.centralityBins, "Centrality", "centrality axis"};
     const AxisSpec occupancyAxis = {binOpt.occupancyBins, "Occupancy", "occupancy axis"};
     const AxisSpec irAxis = {binOpt.interactionRateBins, "Interaction Rate", "IR axis"};
-    const AxisSpec ptAxis = {binOpt.PtBins, "Pt axis (GeV/c)"};
-    const AxisSpec multAxis = {binOpt.MultBins, "N_{trk} axis"};
-    const AxisSpec zAxis = {binOpt.ZvtxBins, "Z-vtx axis"};
-    const AxisSpec deltaZAxis = {binOpt.DeltaZBins, "Delta Z-vtx axis"};
-    const AxisSpec dcaxyAxis = {binOpt.DCAxyBins, "DCA-xy axis"};
-    const AxisSpec dcazAxis = {binOpt.DCAzBins, "DCA-z axis"};
-    const AxisSpec phiAxis = {binOpt.PhiBins, "#phi axis"};
-    const AxisSpec etaAxis = {binOpt.EtaBins, "#eta axis"};
-    const AxisSpec chiSqAxis = {binOpt.ChiSqPerNclBins, "Chi2 axis"};
-    const AxisSpec nclsAxis = {binOpt.NclBins, "Number of clusters axis"};
+    const AxisSpec ptAxis = {binOpt.ptBins, "Pt axis (GeV/c)"};
+    const AxisSpec multAxis = {binOpt.multBins, "N_{trk} axis"};
+    const AxisSpec zAxis = {binOpt.zvtxBins, "Z-vtx axis"};
+    const AxisSpec deltaZAxis = {binOpt.deltaZBins, "Delta Z-vtx axis"};
+    const AxisSpec dcaxyAxis = {binOpt.dcaXYBins, "DCA-xy axis"};
+    const AxisSpec dcazAxis = {binOpt.dcaZBins, "DCA-z axis"};
+    const AxisSpec phiAxis = {binOpt.phiBins, "#phi axis"};
+    const AxisSpec etaAxis = {binOpt.etaBins, "#eta axis"};
+    const AxisSpec chiSqAxis = {binOpt.chiSqPerNclBins, "Chi2 axis"};
+    const AxisSpec nclsAxis = {binOpt.nClBins, "Number of clusters axis"};
 
     rctChecker.init(rctCuts.cfgEvtRCTFlagCheckerLabel, rctCuts.cfgEvtRCTFlagCheckerZDCCheck, rctCuts.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
