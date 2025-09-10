@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file MetaDataHelper.h
+/// \file MetadataHelper.h
 /// \brief Utility to handle the metadata from the AOD
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
 
