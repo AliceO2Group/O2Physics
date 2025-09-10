@@ -82,10 +82,19 @@ struct femtoDreamPairTaskTrackTrack {
   Filter EventMultiplicity = aod::femtodreamcollision::multNtr >= EventSel.MultMin && aod::femtodreamcollision::multNtr <= EventSel.MultMax && aod::femtodreamcollision::sphericity >= EventSel.SphericityMin;
   Filter EventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= EventSel.MultPercentileMin && aod::femtodreamcollision::multV0M <= EventSel.MultPercentileMax;
 
+  /// qn-separator
+  struct : ConfigurableGroup {
+    Configurable<bool> doQnSeparation{"doQnSeparation", false, "Do qn separation"}; 
+    Configurable<bool> storeEvtTrkInfo{"storeEvtTrkInfo", false, "Fill info of track1 and track2 while pariing in divided qn bins"}; 
+    Configurable<int> numQnBins{"numQnBins", 10, "Number of qn bins"};
+  } qnCal;
+
   using FilteredCollisions = soa::Filtered<FDCollisions>;
   using FilteredCollision = FilteredCollisions::iterator;
   using FilteredMCCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDMCCollLabels>>;
   using FilteredMCCollision = FilteredMCCollisions::iterator;
+  using FilteredQnCollisions = soa::Filtered<soa::Join<aod::FDCollisions, aod::FDExtQnCollisions>>;
+  using FilteredQnCollision = FilteredQnCollisions::iterator;
 
   using FilteredMaskedCollisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks, FDDownSample>>;
   using FilteredMaskedCollision = FilteredMaskedCollisions::iterator;
@@ -226,6 +235,11 @@ struct femtoDreamPairTaskTrackTrack {
   FemtoDreamPairCleaner<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCleaner;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejectionSE;
   FemtoDreamDetaDphiStar<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::ParticleType::kTrack> pairCloseRejectionME;
+
+  // Container for correlation functions in devided qn bins
+  FemtoDreamContainer<femtoDreamContainer::EventType::same, femtoDreamContainer::Observable::kstar> sameEventQnCont;
+  // FemtoDreamContainer<femtoDreamContainer::EventType::mixed, femtoDreamContainer::Observable::kstar> mixedEventQnCont;
+
   /// Histogram output
   HistogramRegistry Registry{"Output", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -266,6 +280,12 @@ struct femtoDreamPairTaskTrackTrack {
     if (Option.CPROn.value) {
       pairCloseRejectionSE.init(&Registry, &Registry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 1, Option.CPROld.value);
       pairCloseRejectionME.init(&Registry, &Registry, Option.CPRdeltaPhiMax.value, Option.CPRdeltaEtaMax.value, Option.CPRPlotPerRadii.value, 2, Option.CPROld.value);
+    }
+
+    if (qnCal.doQnSeparation){
+      sameEventQnCont.init_qn(&Registry,
+                            Binning4D.kstar, Binning4D.mT, Binning4D.multPercentile,
+                            Option.IsMC, Option.HighkstarCut);  
     }
 
     // get bit for the collision mask
@@ -618,8 +638,81 @@ struct femtoDreamPairTaskTrackTrack {
     }
   }
   PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processMixedEventMCMasked, "Enable processing mixed events MC with masked collisions", false);
-};
 
+  /// This function processes the same event in divided qn bins
+  /// col.multV0M() get the event centrality from ft0c for PbPb data
+  template <bool isMC, typename PartitionType, typename PartType, typename Collision>
+  void doSameEventQn(PartitionType SliceTrk1, PartitionType SliceTrk2, PartType parts, Collision col)
+  {
+    if (qnCal.storeEvtTrkInfo){   
+      for (auto& part : SliceTrk1) {
+        trackHistoPartOne.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+      }
+
+      if (!Option.SameSpecies.value) {
+        for (auto& part : SliceTrk2) {
+          trackHistoPartTwo.fillQA<isMC, false>(part, aod::femtodreamparticle::kPt, col.multNtr(), col.multV0M());
+        }
+      }
+    }
+
+    /// Now build the combinations
+    float rand = 0.;
+    if (Option.SameSpecies.value) {
+      for (auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(SliceTrk1, SliceTrk2))) {
+        if (Option.CPROn.value) {
+          if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
+            continue;
+          }
+        }
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        if (Option.RandomizePair.value) {
+          rand = random->Rndm();
+        }
+        if (rand <= 0.5) {
+          sameEventQnCont.setPair_qn<isMC>(p1, p2, col.multV0M(), col.qnBin());
+        } else {
+          sameEventQnCont.setPair_qn<isMC>(p2, p1, col.multV0M(), col.qnBin());
+        }
+      }
+    } else {
+      for (auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(SliceTrk1, SliceTrk2))) {
+        if (Option.CPROn.value) {
+          if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
+            continue;
+          }
+        }
+        // track cleaning
+        if (!pairCleaner.isCleanPair(p1, p2, parts)) {
+          continue;
+        }
+        sameEventQnCont.setPair_qn<isMC>(p1, p2, col.multV0M(), col.qnBin());
+      }
+    }
+  }
+
+  /// process function for to call doSameEventQn with Data
+  /// \param col subscribe to the collision table (Data)
+  /// \param parts subscribe to the femtoDreamParticleTable
+  void processSameEventQn(FilteredQnCollision& col, o2::aod::FDParticles& parts)
+  {
+    if (qnCal.storeEvtTrkInfo) {
+      fillCollision<false>(col);
+    }
+    auto SliceTrk1 = PartitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    auto SliceTrk2 = PartitionTrk2->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
+    if (SliceTrk1.size() == 0 && SliceTrk2.size() == 0) {
+      return;
+    }
+    if (qnCal.doQnSeparation){
+      doSameEventQn<false>(SliceTrk1, SliceTrk2, parts, col);
+    }
+  }
+  PROCESS_SWITCH(femtoDreamPairTaskTrackTrack, processSameEventQn, "Enable processing same event in divided qn bins", false);
+};
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{

@@ -18,10 +18,14 @@
 
 #include <string>
 #include <iostream>
+#include <vector>
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
+
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/DataModel/Qvectors.h"
 
 using namespace o2::framework;
 
@@ -156,6 +160,41 @@ class FemtoDreamCollisionSelection
     return true;
   }
 
+  /// Pile-up selection of PbPb collisions
+  /// \tparam T type of the collision
+  /// \param col Collision
+  /// \return whether or not the collisions fulfills the specified selections
+  template <typename C>
+  bool isPileUpCollisionPbPb(C const& col)
+  {
+    int tpcOccupancyMin = 0;
+    int tpcOccupancyMax = 1000;
+    const auto occupancy = col.trackOccupancyInTimeRange();
+    if ((occupancy < tpcOccupancyMin || occupancy > tpcOccupancyMax)) {
+      return false;
+    }
+
+    bool noSameBunchPileup = true;
+    bool isGoodZvtxFT0vsPV = true;
+    bool isGoodITSLayersAll = true;
+    bool noCollInRofStandard = true;
+    bool noHighMultCollInPrevRof = true;
+    bool noCollInTimeRangeStandard = true;
+    // bool isVertexITSTPC = true;
+    if ((noSameBunchPileup && !col.selection_bit(aod::evsel::kNoSameBunchPileup)) 
+          || (isGoodZvtxFT0vsPV && !col.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) 
+          || (isGoodITSLayersAll && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll)) 
+          || (noCollInRofStandard && !col.selection_bit(aod::evsel::kNoCollInRofStandard)) 
+          || (noHighMultCollInPrevRof && !col.selection_bit(aod::evsel::kNoHighMultCollInPrevRof)) 
+          || (noCollInTimeRangeStandard && !col.selection_bit(aod::evsel::kNoCollInTimeRangeStandard))
+          // || (isVertexITSTPC && !col.selection_bit(aod::evsel::kIsVertexITSTPC))
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
   /// Some basic QA of the event
   /// \tparam T type of the collision
   /// \param col Collision
@@ -173,6 +212,37 @@ class FemtoDreamCollisionSelection
         mHistogramRegistry->fill(HIST("Event/MultNTracklets"), col.multTracklets());
       }
     }
+  }
+
+  /// Initializes histograms for the flow calculation
+  /// \param registry Histogram registry to be passed
+  void initFlow(HistogramRegistry* registry, bool doQnSeparation, int mumQnBins = 10, int binPt = 100, int binEta = 32)
+  {
+    if (!mCutsSet) {
+      LOGF(error, "Event selection not set - quitting!");
+    }
+    mReQthisEvt = new TH2D("ReQthisEvt", "", binPt, 0., 5., binEta, -0.8, 0.8);
+    mImQthisEvt = new TH2D("ImQthisEvt", "", binPt, 0., 5., binEta, -0.8, 0.8);
+    mReQ2thisEvt = new TH2D("ReQ2thisEvt", "", binPt, 0., 5., binEta, -0.8, 0.8);
+    mImQ2thisEvt = new TH2D("ImQ2thisEvt", "", binPt, 0., 5., binEta, -0.8, 0.8);
+    mMQthisEvt = new TH2D("MQthisEvt", "", binPt, 0., 5., binEta, -0.8, 0.8);
+    mMQWeightthisEvt = new TH2D("MQWeightthisEvt",  "", binPt, 0., 5., binEta, -0.8, 0.8);
+    mHistogramQn = registry;
+    mHistogramQn->add("Event/centFT0CBefore", "; cent", kTH1F, {{10, 0, 100}});
+    mHistogramQn->add("Event/centFT0CAfter", "; cent", kTH1F, {{10, 0, 100}});
+    mHistogramQn->add("Event/centVsqn", "; cent; qn", kTH2F, {{10, 0, 100}, {100, 0, 1000}});
+    mHistogramQn->add("Event/centVsqnVsSpher", "; cent; qn; Sphericity", kTH3F, {{10, 0, 100}, {100, 0, 1000}, {100, 0, 1}});
+    mHistogramQn->add("Event/qnBin", "; qnBin; entries", kTH1F, {{20, 0, 20}});
+    
+    mHistogramQn->add<TProfile>("Event/profileC22", "; cent; c22", kTProfile, {{10, 0, 100}});
+    mHistogramQn->add<TProfile>("Event/profileC24", "; cent; c24", kTProfile, {{10, 0, 100}});
+    if (doQnSeparation){      
+      for (int iqn(0); iqn < mumQnBins; ++iqn) {
+        mHistogramQn->add<TProfile>(("Qn/profileC22_" + std::to_string(iqn)).c_str(), "; cent; c22", kTProfile, {{10, 0, 100}});
+        mHistogramQn->add(("Qn/mult_" + std::to_string(iqn)).c_str(), "; cent; c22", kTH1F, {{100, 0, 1000}});
+      }
+    }
+    return;
   }
 
   /// \todo to be implemented!
@@ -246,8 +316,241 @@ class FemtoDreamCollisionSelection
     return spt;
   }
 
+  /// \todo to be implemented!
+  /// Compute the qn-vector(FT0C) of an event
+  /// \tparam T type of the collision
+  /// \param col Collision
+  /// \return value of the qn-vector of FT0C of the event
+  template <typename T>
+  float computeqnVec(T const& col)
+  {
+    double qn = std::sqrt(col.qvecFT0CReVec()[0] * col.qvecFT0CReVec()[0] + col.qvecFT0CImVec()[0] * col.qvecFT0CImVec()[0]) * std::sqrt(col.sumAmplFT0C());
+    return qn;
+  }
+
+  /// \todo to be implemented!
+  /// \param col Collision
+  /// \return the 1-d qn-vector separator to 2-d
+  std::vector<std::vector<float>> getQnBinSeparator2D(std::vector<float> flat) 
+  {
+    constexpr size_t nBins = 11;
+
+    if (flat.empty() || flat.size() % nBins != 0) {
+      LOGP(error, "ConfQnBinSeparator size = {} is not divisible by {}", 
+           flat.size(), nBins);
+      return {{-999, -999}}; 
+    }
+
+    size_t nCent = flat.size() / nBins;
+    std::vector<std::vector<float>> res(nCent, std::vector<float>(nBins));
+
+    for (size_t i = 0; i < nCent; ++i) {
+      for (size_t j = 0; j < nBins; ++j) {
+        res[i][j] = flat[i * nBins + j];
+      }
+    }
+    return res;
+  }
+
+  /// \todo to be implemented!
+  /// Get the bin number of qn-vector(FT0C) of an event
+  /// \tparam T type of the collision
+  /// \param col Collision
+  /// \param centBinWidth centrality bin width, example: per 1%, per 10% ...
+  /// \return bin number of qn-vector of the event
+  template <typename T>
+  int myqnBin(T const& col, float centMax, std::vector<float> qnBinSeparator, float fSpher, float fMult, float centBinWidth = 1.f)
+  {
+    auto twoDSeparator = getQnBinSeparator2D(qnBinSeparator);
+    if (twoDSeparator.empty() || twoDSeparator[0][0] == -999.) {
+      LOGP(warning, "ConfQnBinSeparator not set, using default fallback!");
+      return -999; // safe fallback
+    }
+
+    mHistogramQn->fill(HIST("Event/centFT0CBefore"), col.centFT0C());  
+    int qnBin = -999;
+    float qn = computeqnVec(col);
+    int mycentBin = static_cast<int>(col.centFT0C() / centBinWidth);
+    if (mycentBin >= static_cast<int>(centMax / centBinWidth))
+      return qnBin;
+
+    if (mycentBin > static_cast<int>(twoDSeparator.size()) -1)
+      return qnBin;
+
+    for (int iqn(0); iqn < static_cast<int>(twoDSeparator[mycentBin].size()) - 1; ++iqn) {
+      if (qn > twoDSeparator[mycentBin][iqn] && qn <= twoDSeparator[mycentBin][iqn + 1]) {
+        qnBin = iqn;
+        break;
+      } else {
+        continue;
+      }
+    }
+    
+    mHistogramQn->fill(HIST("Event/centFT0CAfter"), col.centFT0C());
+    mHistogramQn->fill(HIST("Event/centVsqn"), col.centFT0C(), qn);
+    mHistogramQn->fill(HIST("Event/centVsqnVsSpher"), col.centFT0C(), qn, fSpher);
+    mHistogramQn->fill(HIST("Event/qnBin"), qnBin);
+    if (qnBin >= 0 && qnBin < 10){
+      switch (qnBin) {
+        case 0:
+          mHistogramQn->fill(HIST("Qn/mult_") + HIST("0"), fMult);
+          break;
+        case 1:
+          mHistogramQn->fill(HIST("Qn/mult_") + HIST("1"), fMult);
+          break;
+        case 2:
+          mHistogramQn->fill(HIST("Qn/mult_") + HIST("2"), fMult); 
+          break;       
+        case 3:
+          mHistogramQn->fill(HIST("Qn/mult_") + HIST("3"), fMult);
+          break;
+        case 4:
+          mHistogramQn->fill(HIST("Qn/mult_") + HIST("4"), fMult);
+          break;
+        case 5:
+          mHistogramQn->fill(HIST("Qn/mult_") + HIST("5"), fMult);
+          break;
+        case 6:
+          mHistogramQn->fill(HIST("Qn/mult_") + HIST("6"), fMult);
+          break;
+        case 7:
+          mHistogramQn->fill(HIST("Qn/mult_") + HIST("7"), fMult);
+          break;
+        case 8:
+          mHistogramQn->fill(HIST("Qn/mult_") + HIST("8"), fMult);
+          break;
+        case 9:
+          mHistogramQn->fill(HIST("Qn/mult_") + HIST("9"), fMult);
+          break; 
+        default:
+          return qnBin; // invalid qn bin       
+      }
+    }
+    return qnBin;
+  }
+
+  /// \todo to be implemented!
+  /// Fill cumulants histo for flow calculation
+  /// Important here is that the filter on tracks does not interfere here!
+  /// In Run 2 we used here global tracks within |eta| < 0.8
+  /// \tparam T1 type of the collision
+  /// \tparam T2 type of the tracks
+  /// \param col Collision
+  /// \param tracks All tracks
+  /// \return value of the sphericity of the event
+  template <typename T1, typename T2>
+  void fillCumulants(T1 const& col, T2 const& tracks, float fHarmonic=2.f)
+  { 
+    int numOfTracks = col.numContrib();
+    if (numOfTracks < 3)
+      return ;
+
+    mReQthisEvt->Reset();
+    mImQthisEvt->Reset();
+    mReQ2thisEvt->Reset(); 
+    mImQ2thisEvt->Reset(); 
+    mMQthisEvt->Reset();
+    mMQWeightthisEvt->Reset(); 
+
+    for (auto const& track : tracks) {
+      double weight=1; // Will implement NUA&NUE correction
+      double phi = track.phi();
+      double pt = track.pt();
+      double eta = track.eta();
+      double cosnphi = weight * TMath::Cos(fHarmonic*phi);
+      double sinnphi = weight * TMath::Sin(fHarmonic*phi);
+      double cos2nphi = weight * TMath::Cos(2*fHarmonic*phi); 
+      double sin2nphi = weight * TMath::Sin(2*fHarmonic*phi); 
+      mReQthisEvt->Fill(pt, eta, cosnphi);
+      mImQthisEvt->Fill(pt, eta, sinnphi);
+      mReQ2thisEvt->Fill(pt,eta,cos2nphi); 
+      mImQ2thisEvt->Fill(pt, eta, sin2nphi); 
+      mMQthisEvt ->Fill(pt, eta);
+      mMQWeightthisEvt ->Fill(pt, eta, weight); 
+    }
+
+    return;
+  }
+
+  /// \todo to be implemented!
+  /// Do cumulants for flow calculation
+  /// Important here is that the filter on tracks does not interfere here!
+  /// In Run 2 we used here global tracks within |eta| < 0.8
+  /// \tparam T1 type of the collision
+  /// \tparam T2 type of the tracks
+  /// \param col Collision
+  /// \param tracks All tracks
+  /// \return value of the sphericity of the event
+  template <typename T>
+  void doCumulants(T const& col, bool doQnSeparation = false, int qnBin = -999, int mumQnBinNum = 10, float fEtaGap = 0.3f, int binPt = 100, int binEta = 32)
+  {
+    if (mMQthisEvt->Integral(1, binPt, 1, binEta) < 2) 
+      return;
+  
+    double allReQ  = mReQthisEvt ->Integral(1, binPt, 1, binEta);
+    double allImQ  = mImQthisEvt ->Integral(1, binPt, 1, binEta);
+    TComplex Q(allReQ, allImQ);
+    TComplex QStar = TComplex::Conjugate(Q);
+  
+    double posEtaRe = mReQthisEvt->Integral(1, binPt, mReQthisEvt->GetYaxis()->FindBin(fEtaGap+1e-6), binEta);
+    double posEtaIm = mImQthisEvt->Integral(1, binPt, mImQthisEvt->GetYaxis()->FindBin(fEtaGap+1e-6), binEta);
+    if (mMQthisEvt->Integral(1, binPt,  mMQthisEvt->GetYaxis()->FindBin(fEtaGap+1e-6), binEta) < 2) 
+      return;
+    float posEtaMQ = mMQWeightthisEvt->Integral(1, binPt, mMQthisEvt->GetYaxis()->FindBin(fEtaGap+1e-6), binEta);
+    TComplex posEtaQ = TComplex(posEtaRe, posEtaIm);
+    TComplex posEtaQStar = TComplex::Conjugate(posEtaQ);
+  
+    double negEtaRe = mReQthisEvt->Integral(1, binPt, 1, mReQthisEvt->GetYaxis()->FindBin(-1*fEtaGap-1e-6));
+    double negEtaIm = mImQthisEvt->Integral(1, binPt, 1, mImQthisEvt->GetYaxis()->FindBin(-1*fEtaGap-1e-6));
+    if (mMQthisEvt->Integral(1, binPt, 1,  mMQthisEvt->GetYaxis()->FindBin(-1*fEtaGap-1e-6)) < 2) 
+      return;
+    float negEtaMQ = mMQWeightthisEvt->Integral(1, binPt, 1, mMQthisEvt->GetYaxis()->FindBin(-1*fEtaGap-1e-6));
+    TComplex negEtaQ = TComplex(negEtaRe, negEtaIm);
+    TComplex negEtaQStar = TComplex::Conjugate(negEtaQ);
+
+    mHistogramQn->get<TProfile>(HIST("Event/profileC22"))->Fill(col.centFT0C(), (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+    if (doQnSeparation && qnBin >= 0 && qnBin < mumQnBinNum){
+      switch (qnBin) {
+        case 0:
+          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("0"))->Fill(col.centFT0C(), (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+          break;
+        case 1:
+          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("1"))->Fill(col.centFT0C(), (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+          break;
+        case 2:
+          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("2"))->Fill(col.centFT0C(), (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));        
+          break;
+        case 3:
+          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("3"))->Fill(col.centFT0C(), (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+          break;
+        case 4:
+          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("4"))->Fill(col.centFT0C(), (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+          break;
+        case 5:
+          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("5"))->Fill(col.centFT0C(), (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+          break;
+        case 6:
+          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("6"))->Fill(col.centFT0C(), (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+          break;
+        case 7:
+          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("7"))->Fill(col.centFT0C(), (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+          break;
+        case 8:
+          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("8"))->Fill(col.centFT0C(), (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+          break;
+        case 9:
+          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("9"))->Fill(col.centFT0C(), (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+          break; 
+        default:
+          return; // invalid qn bin       
+      }
+    }
+    return;
+  }
+
+
  private:
-  HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output
+  HistogramRegistry* mHistogramRegistry = nullptr; ///< For QA output 
   bool mCutsSet = false;                           ///< Protection against running without cuts
   bool mCheckTrigger = false;                      ///< Check for trigger
   bool mCheckOffline = false;                      ///< Check for offline criteria (might change)
@@ -257,6 +560,13 @@ class FemtoDreamCollisionSelection
   float mZvtxMax = 999.f;                          ///< Maximal deviation from nominal z-vertex (cm)
   float mMinSphericity = 0.f;
   float mSphericityPtmin = 0.f;
+  HistogramRegistry* mHistogramQn = nullptr;       ///< For flow cumulant output
+  TH2D* mReQthisEvt = nullptr; ///< For flow cumulant in an event
+  TH2D* mImQthisEvt = nullptr; ///< For flow cumulant in an event
+  TH2D* mReQ2thisEvt = nullptr; ///< For flow cumulant in an event
+  TH2D* mImQ2thisEvt = nullptr; ///< For flow cumulant in an event
+  TH2D* mMQthisEvt = nullptr;
+  TH2D* mMQWeightthisEvt = nullptr; ///< For flow cumulant in an event 
 };
 } // namespace o2::analysis::femtoDream
 
