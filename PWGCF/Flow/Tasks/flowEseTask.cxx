@@ -735,9 +735,9 @@ struct FlowEseTask {
       psi = safeATan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode);
       relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - psi));
 
-      histos.fill(HIST("histPrPtCent"), protonVec.Px(), protonVec.Py(), protonVec.Pz(), centrality);
-      histos.fill(HIST("histPiPtCent"), pionVec.Px(), pionVec.Py(), pionVec.Pz(), centrality);
-      histos.fill(HIST("histPrBoostedPtCent"), protonBoostedVec.Px(), protonBoostedVec.Py(), protonBoostedVec.Pz(), centrality);
+      histos.fill(HIST("histPrPtCent"), protonVec.Px(), protonVec.Py(), protonVec.Pz(), collision.centFT0C());
+      histos.fill(HIST("histPiPtCent"), pionVec.Px(), pionVec.Py(), pionVec.Pz(), collision.centFT0C());
+      histos.fill(HIST("histPrBoostedPtCent"), protonBoostedVec.Px(), protonBoostedVec.Py(), protonBoostedVec.Pz(), collision.centFT0C());
 
       if (cfgShiftCorr) {
         auto deltapsiFT0C = 0.0;
