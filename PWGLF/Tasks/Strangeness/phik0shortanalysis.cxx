@@ -225,7 +225,6 @@ struct Phik0shortanalysis {
   Configurable<bool> applyEfficiency{"applyEfficiency", false, "Use efficiency for filling histograms"};
 
   // Configurables for dN/deta with phi computation
-  Configurable<bool> furtherCheckonMcCollision{"furtherCheckonMcCollision", true, "Further check on MC collisions"};
   Configurable<int> filterOnGenPhi{"filterOnGenPhi", 1, "Filter on Gen Phi (0: K+K- pair like Phi, 1: proper Phi)"};
   Configurable<int> filterOnRecoPhi{"filterOnRecoPhi", 1, "Filter on Reco Phi (0: without PDG, 1: with PDG)"};
   Configurable<bool> fillMcPartsForAllReco{"fillMcPartsForAllReco", false, "Fill MC particles for all associated reco collisions"};
@@ -399,16 +398,13 @@ struct Phik0shortanalysis {
     mcEventHist.add("hGenMCAssocRecoMultiplicityPercent", "GenMC AssocReco Multiplicity Percentile", kTH1F, {binnedmultAxis});
     mcEventHist.add("h2GenMCAssocRecoVertexZvsMult", "GenMC AssocReco Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
     mcEventHist.add("hGenMCRecoMultiplicityPercent", "GenMCReco Multiplicity Percentile", kTH1F, {binnedmultAxis});
-    mcEventHist.add("h2GenMCRecoVertexZvsMult", "GenMCReco Vertex Z vs Multiplicity Percentile", kTH2F, {vertexZAxis, binnedmultAxis});
 
     // Eta distribution for dN/deta values estimation in MC
     mcEventHist.add("h6RecoMCEtaDistribution", "Eta vs multiplicity in MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
-    mcEventHist.add("h6RecoCheckMCEtaDistribution", "Eta vs multiplicity in MCReco Check", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
 
     mcEventHist.add("h5GenMCEtaDistribution", "Eta vs multiplicity in MCGen", kTHnSparseF, {binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
-    mcEventHist.add("h6GenMCEtaDistributionAssocReco", "Eta vs multiplicity in MCGen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
-    mcEventHist.add("h6GenMCEtaDistributionReco", "Eta vs multiplicity in MCGen Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
-    mcEventHist.add("h6GenMCEtaDistributionRecoCheck", "Eta vs multiplicity in MCGen Reco Check", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
+    mcEventHist.add("h6GenMCAssocRecoEtaDistribution", "Eta vs multiplicity in MCGen Assoc Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
+    mcEventHist.add("h6GenMCAllAssocRecoEtaDistribution", "Eta vs multiplicity in MCGen Reco", kTHnSparseF, {vertexZAxis, binnedmultAxis, etaAxis, phiAxis, {6, -0.5f, 5.5f}, {3, -0.5f, 2.5f}});
 
     // Phi topological/PID cuts
     dataPhiHist.add("h2DauTracksPhiDCAxyPreCutData", "Dcaxy distribution vs pt before DCAxy cut", kTH2F, {{100, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {2000, -0.05, 0.05, "DCA_{xy} (cm)"}});
@@ -2636,67 +2632,7 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiData, "Process function for dN/deta values in Data", false);
 
-  void processdNdetaWPhiMCReco(SimCollisions::iterator const& collision, FilteredMCTracks const& filteredMCTracks, MCCollisions const&, aod::McParticles const& mcParticles)
-  {
-    if (!acceptEventQA<true>(collision, true))
-      return;
-    if (!collision.has_mcCollision())
-      return;
-
-    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
-    auto mcParticlesThisColl = mcParticles.sliceBy(preslices.perMCColl, mcCollision.globalIndex());
-
-    if (furtherCheckonMcCollision && (std::abs(mcCollision.posZ()) > cutZVertex || !pwglf::isINELgtNmc(mcParticlesThisColl, 0, pdgDB)))
-      return;
-    if (filterOnGenPhi && !eventHasGenPhi(mcParticlesThisColl))
-      return;
-
-    mcEventHist.fill(HIST("hRecoMCMultiplicityPercent"), mcCollision.centFT0M());
-    mcEventHist.fill(HIST("h2RecoMCVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
-
-    for (const auto& track : filteredMCTracks) {
-      if (trackConfigs.applyExtraPhiCuts && ((track.phi() > trackConfigs.extraPhiCuts->at(0) && track.phi() < trackConfigs.extraPhiCuts->at(1)) ||
-                                             track.phi() <= trackConfigs.extraPhiCuts->at(2) || track.phi() >= trackConfigs.extraPhiCuts->at(3)))
-        continue;
-      if (!track.has_mcParticle())
-        continue;
-
-      auto mcTrack = track.mcParticle_as<aod::McParticles>();
-      if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
-        continue;
-
-      mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalplusITSonly);
-      if (track.hasTPC()) {
-        mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalonly);
-      } else {
-        mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kITSonly);
-      }
-
-      int pid = fromPDGToEnum(mcTrack.pdgCode());
-      mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), pid, kGlobalplusITSonly);
-    }
-
-    for (const auto& mcParticle : mcParticlesThisColl) {
-      if (!isGenParticleCharged(mcParticle))
-        continue;
-
-      mcEventHist.fill(HIST("h6GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
-      if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
-        mcEventHist.fill(HIST("h6GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
-        mcEventHist.fill(HIST("h6GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
-      } else {
-        mcEventHist.fill(HIST("h6GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
-        mcEventHist.fill(HIST("h6GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
-      }
-
-      int pid = fromPDGToEnum(mcParticle.pdgCode());
-      mcEventHist.fill(HIST("h6GenMCEtaDistributionReco"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
-    }
-  }
-
-  PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiMCReco, "Process function for dN/deta values in MCReco", false);
-
-  void processdNdetaWPhiMCGen(MCCollisions const& mcCollisions, SimCollisions const& collisions, FilteredMCTracks const& filteredMCTracks, aod::McParticles const& mcParticles)
+  void processdNdetaWPhiMC(MCCollisions const& mcCollisions, SimCollisions const& collisions, FilteredMCTracks const& filteredMCTracks, aod::McParticles const& mcParticles)
   {
     std::vector<std::vector<int>> collsGrouped(mcCollisions.size());
 
@@ -2752,8 +2688,8 @@ struct Phik0shortanalysis {
               break;
           }
 
-          mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), mcCollision.centFT0M());
-          mcEventHist.fill(HIST("h2GenMCRecoVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
+          mcEventHist.fill(HIST("hRecoMCMultiplicityPercent"), mcCollision.centFT0M());
+          mcEventHist.fill(HIST("h2RecoMCVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
 
           zVtxs.push_back(collision.posZ());
 
@@ -2768,15 +2704,15 @@ struct Phik0shortanalysis {
             if (!mcTrack.isPhysicalPrimary() || std::abs(mcTrack.eta()) > trackConfigs.etaMax)
               continue;
 
-            mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalplusITSonly);
+            mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalplusITSonly);
             if (track.hasTPC()) {
-              mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalonly);
+              mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kGlobalonly);
             } else {
-              mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kITSonly);
+              mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), kSpAll, kITSonly);
             }
 
             int pid = fromPDGToEnum(mcTrack.pdgCode());
-            mcEventHist.fill(HIST("h6RecoCheckMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), pid, kGlobalplusITSonly);
+            mcEventHist.fill(HIST("h6RecoMCEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcTrack.eta(), mcTrack.phi(), pid, kGlobalplusITSonly);
           }
 
           if (fillMcPartsForAllReco) {
@@ -2784,17 +2720,17 @@ struct Phik0shortanalysis {
               if (!isGenParticleCharged(mcParticle))
                 continue;
 
-              mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
+              mcEventHist.fill(HIST("h6GenMCAllAssocRecoEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
               if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
-                mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
-                mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
+                mcEventHist.fill(HIST("h6GenMCAllAssocRecoEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
+                mcEventHist.fill(HIST("h6GenMCAllAssocRecoEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
               } else {
-                mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
-                mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
+                mcEventHist.fill(HIST("h6GenMCAllAssocRecoEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
+                mcEventHist.fill(HIST("h6GenMCAllAssocRecoEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
               }
 
               int pid = fromPDGToEnum(mcParticle.pdgCode());
-              mcEventHist.fill(HIST("h6GenMCEtaDistributionRecoCheck"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
+              mcEventHist.fill(HIST("h6GenMCAllAssocRecoEtaDistribution"), collision.posZ(), mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
             }
           }
 
@@ -2835,21 +2771,21 @@ struct Phik0shortanalysis {
         if (numberAssocColl > 0) {
           float zVtxRef = zVtxs[0];
 
-          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
+          mcEventHist.fill(HIST("h6GenMCAssocRecoEtaDistribution"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kNoGenpTVar);
           if (mcParticle.pt() < trackConfigs.cMinChargedParticlePtcut) {
-            mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
-            mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
+            mcEventHist.fill(HIST("h6GenMCAssocRecoEtaDistribution"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup, -10.0f * mcParticle.pt() + 2.0f);
+            mcEventHist.fill(HIST("h6GenMCAssocRecoEtaDistribution"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown, 5.0f * mcParticle.pt() + 0.5f);
           } else {
-            mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
-            mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
+            mcEventHist.fill(HIST("h6GenMCAssocRecoEtaDistribution"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTup);
+            mcEventHist.fill(HIST("h6GenMCAssocRecoEtaDistribution"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), kSpAll, kGenpTdown);
           }
-          mcEventHist.fill(HIST("h6GenMCEtaDistributionAssocReco"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
+          mcEventHist.fill(HIST("h6GenMCAssocRecoEtaDistribution"), zVtxRef, mcCollision.centFT0M(), mcParticle.eta(), mcParticle.phi(), pid, kNoGenpTVar);
         }
       }
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiMCGen, "Process function for dN/deta values in MCGen", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processdNdetaWPhiMC, "Process function for dN/deta values in MC", false);
 
   // New 2D analysis procedure
   void processPhiK0SPionData2D(SelCollisions::iterator const& collision, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
