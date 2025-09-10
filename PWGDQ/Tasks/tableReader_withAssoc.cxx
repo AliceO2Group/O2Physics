@@ -4058,7 +4058,7 @@ void DefineHistograms(HistogramManager* histMan, TString histClasses, const char
     }
 
     if (classStr.Contains("DileptonTrackME")) {
-      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-track", "mixedevent");
+      dqhistograms::DefineHistograms(histMan, objArray->At(iclass)->GetName(), "dilepton-track", histName);
     }
 
     if (classStr.Contains("HadronsSelected")) {
