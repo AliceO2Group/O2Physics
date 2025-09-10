@@ -52,7 +52,7 @@ using namespace o2::hf_evsel;
 using BinningTypeDerivedCent = ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Centrality>;
 using BinningTypeDerivedMult = ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Multiplicity>;
 
-struct HfCorrelatorFlowCharmHadrons {
+struct HfCorrelatorFlowCharmHadronsReduced {
   Produces<aod::HfcRedChHads> entryCharmHadPair;
   Produces<aod::HfcRedHadHads> entryHadHadPair;
 
@@ -393,7 +393,7 @@ struct HfCorrelatorFlowCharmHadrons {
     ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Centrality> corrBinningCent{{zPoolBins, centPoolBins}, true};
     fillSameEvent(collisions, candidates, tracks, corrBinningCent);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processSameEventCharmHadWCentMix, "Process Same Event for Charm-Had with centrality pools", true);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSameEventCharmHadWCentMix, "Process Same Event for Charm-Had with centrality pools", true);
 
   void processSameEventCharmHadWMultMix(aod::HfcRedFlowColls const& collisions,
                                         soa::Join<aod::HfcRedCharmTrigs, aod::HfcRedCharmMls> const& candidates,
@@ -402,7 +402,7 @@ struct HfCorrelatorFlowCharmHadrons {
     ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Multiplicity> corrBinningMult{{zPoolBins, multPoolBins}, true};
     fillSameEvent(collisions, candidates, tracks, corrBinningMult);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processSameEventCharmHadWMultMix, "Process Same Event for Charm-Had with multiplicity pools", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSameEventCharmHadWMultMix, "Process Same Event for Charm-Had with multiplicity pools", false);
 
   void processMixedEventCharmHadWCentMix(aod::HfcRedFlowColls const& collisions,
                                          soa::Join<aod::HfcRedCharmTrigs, aod::HfcRedCharmMls> const& candidates,
@@ -411,7 +411,7 @@ struct HfCorrelatorFlowCharmHadrons {
     ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Centrality> corrBinningCent{{zPoolBins, centPoolBins}, true};
     fillMixedEvent(collisions, candidates, tracks, corrBinningCent);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processMixedEventCharmHadWCentMix, "Process Mixed Event for Charm-Had with centrality pools", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMixedEventCharmHadWCentMix, "Process Mixed Event for Charm-Had with centrality pools", false);
 
   void processMixedEventCharmHadWMultMix(aod::HfcRedFlowColls const& collisions,
                                          soa::Join<aod::HfcRedCharmTrigs, aod::HfcRedCharmMls> const& candidates,
@@ -420,7 +420,7 @@ struct HfCorrelatorFlowCharmHadrons {
     ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Multiplicity> corrBinningMult{{zPoolBins, multPoolBins}, true};
     fillMixedEvent(collisions, candidates, tracks, corrBinningMult);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processMixedEventCharmHadWMultMix, "Process Mixed Event for Charm-Had with multiplicity pools", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMixedEventCharmHadWMultMix, "Process Mixed Event for Charm-Had with multiplicity pools", false);
 
   void processSameEventHadHadWCentMix(aod::HfcRedFlowColls const& collisions,
                                       soa::Join<aod::HfcRedTrkAssocs, aod::HfcRedTrkSels> const& tracks)
@@ -428,7 +428,7 @@ struct HfCorrelatorFlowCharmHadrons {
     ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Centrality> corrBinningCent{{zPoolBins, centPoolBins}, true};
     fillSameEvent(collisions, tracks, tracks, corrBinningCent);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processSameEventHadHadWCentMix, "Process Same Event for Had-Had with centrality pools", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSameEventHadHadWCentMix, "Process Same Event for Had-Had with centrality pools", false);
 
   void processSameEventHadHadWMultMix(aod::HfcRedFlowColls const& collisions,
                                       soa::Join<aod::HfcRedTrkAssocs, aod::HfcRedTrkSels> const& tracks)
@@ -436,7 +436,7 @@ struct HfCorrelatorFlowCharmHadrons {
     ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Multiplicity> corrBinningMult{{zPoolBins, multPoolBins}, true};
     fillSameEvent(collisions, tracks, tracks, corrBinningMult);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processSameEventHadHadWMultMix, "Process Same Event for Had-Had with multiplicity pools", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSameEventHadHadWMultMix, "Process Same Event for Had-Had with multiplicity pools", false);
 
   void processMixedEventHadHadWCentMix(aod::HfcRedFlowColls const& collisions,
                                        soa::Join<aod::HfcRedTrkAssocs, aod::HfcRedTrkSels> const& tracks)
@@ -444,7 +444,7 @@ struct HfCorrelatorFlowCharmHadrons {
     ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Centrality> corrBinningCent{{zPoolBins, centPoolBins}, true};
     fillMixedEvent(collisions, tracks, tracks, corrBinningCent);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processMixedEventHadHadWCentMix, "Process Mixed Event for Had-Had with centrality pools", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMixedEventHadHadWCentMix, "Process Mixed Event for Had-Had with centrality pools", false);
 
   void processMixedEventHadHadWMultMix(aod::HfcRedFlowColls const& collisions,
                                        soa::Join<aod::HfcRedTrkAssocs, aod::HfcRedTrkSels> const& tracks)
@@ -452,10 +452,10 @@ struct HfCorrelatorFlowCharmHadrons {
     ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Multiplicity> corrBinningMult{{zPoolBins, multPoolBins}, true};
     fillMixedEvent(collisions, tracks, tracks, corrBinningMult);
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processMixedEventHadHadWMultMix, "Process Mixed Event for Had-Had with multiplicity pools", false);
+  PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMixedEventHadHadWMultMix, "Process Mixed Event for Had-Had with multiplicity pools", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfCorrelatorFlowCharmHadrons>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfCorrelatorFlowCharmHadronsReduced>(cfgc)};
 }
