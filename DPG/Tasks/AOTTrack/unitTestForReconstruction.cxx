@@ -67,6 +67,7 @@ struct UnitTestForReconstruction {
   {
     // Event index
     int eventIndex = 0;
+    static constexpr int indexAllEvts = 0;
 
     // Loop over reconstructed events
     for (const auto& collision : collisions) {
@@ -86,7 +87,7 @@ struct UnitTestForReconstruction {
 
         // Loop over reconstructed tracks
         for (auto const& track : tracks) {
-          registryData.fill(HIST("ptChargedTracks"), 0, track.pt());
+          registryData.fill(HIST("ptChargedTracks"), indexAllEvts, track.pt());
           registryData.fill(HIST("ptChargedTracks"), eventIndex, track.pt());
         }
       }
