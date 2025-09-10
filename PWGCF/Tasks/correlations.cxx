@@ -487,7 +487,7 @@ struct CorrelationTask {
       mass = o2::constants::physics::MassK0Short;
     } else if (decayType == aod::cf2prongtrack::LambdatoPPi || decayType == aod::cf2prongtrack::AntiLambdatoPiP) {
       mass = o2::constants::physics::MassLambda;
-    } else if (decayType == aod::cf2prongtrack::PhiToKK) {
+    } else if (decayType == aod::cf2prongtrack::PhiToKKPID1 || decayType == aod::cf2prongtrack::PhiToKKPID2 || decayType == aod::cf2prongtrack::PhiToKKPID3) {
       mass = o2::constants::physics::MassPhi;
     } else {
       return {false, 0.0f}; // unsupported decay type, return dummy rapidity
@@ -640,11 +640,14 @@ struct CorrelationTask {
           if (cfgDecayParticleMask != 0 && (cfgDecayParticleMask & (1u << static_cast<uint32_t>(track2.decay()))) == 0u) {
             continue; // skip particles that do not match the decay mask
           }
-          if (cfgV0RapidityMax > 0) {
+
+          // track2 here is charged hadron so we don't need rapidity cut for this track...this rapidity is only needed for V0
+          /*
+            if (cfgV0RapidityMax > 0) {
             auto [t, y] = getV0Rapidity(track2);
-            if (t && std::abs(y) > cfgV0RapidityMax)
-              continue; // V0s are not allowed to be outside the rapidity range
-          }
+                  if (t && std::abs(y) > cfgV0RapidityMax)
+            continue;
+            }*/
         }
 
         if constexpr (std::experimental::is_detected<HasDecay, typename TTracks1::iterator>::value && std::experimental::is_detected<HasDecay, typename TTracks2::iterator>::value) {

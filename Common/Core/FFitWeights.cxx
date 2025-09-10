@@ -16,7 +16,16 @@
 
 #include "FFitWeights.h"
 
+#include <TCollection.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TNamed.h>
+#include <TObjArray.h>
 #include <TSpline.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 #include <cstdio>
 #include <string>
