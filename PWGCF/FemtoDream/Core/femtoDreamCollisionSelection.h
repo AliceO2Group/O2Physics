@@ -243,7 +243,8 @@ class FemtoDreamCollisionSelection
     }
 
     mHistogramRegistry->fill(HIST("Event/Sphericity_before"), spt);
-    if (spt > mMinSphericity) mHistogramRegistry->fill(HIST("Event/Sphericity_after"), spt);
+    if (spt > mMinSphericity)
+      mHistogramRegistry->fill(HIST("Event/Sphericity_after"), spt);
 
     return spt;
   }
