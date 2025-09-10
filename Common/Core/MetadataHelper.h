@@ -61,6 +61,9 @@ struct MetadataHelper {
   /// @return true if the key is defined, false otherwise. Throws an exception if the key is not found
   bool isKeyDefined(const std::string& key) const;
 
+  /// @brief Function to create a label with the metadata information, useful e.g. for histogram naming
+  std::string makeMetadataLabel() const;
+
  private:
   std::map<std::string, std::string> mMetadata; /// < The metadata map
   bool mIsInitialized = false;                  /// < Flag to check if the metadata has been initialized
