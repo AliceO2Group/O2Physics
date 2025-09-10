@@ -1930,7 +1930,7 @@ struct HfTrackIndexSkimCreator {
   void performPvRefitCandProngs(SelectedCollisions::iterator const& collision,
                                 aod::BCsWithTimestamps const&,
                                 std::vector<int64_t> vecPvContributorGlobId,
-                                std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov,
+                                std::vector<o2::track::TrackParCov> const& vecPvContributorTrackParCov,
                                 std::vector<int64_t> vecCandPvContributorGlobId,
                                 std::array<float, 3>& pvCoord,
                                 std::array<float, 6>& pvCovMatrix)
