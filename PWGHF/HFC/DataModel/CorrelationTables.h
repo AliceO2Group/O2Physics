@@ -240,7 +240,7 @@ DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);                   //! M
 DECLARE_SOA_COLUMN(TrackDcaXY, trackDcaXY, float);                         //! DCA xy of the track
 DECLARE_SOA_COLUMN(TrackDcaZ, trackDcaZ, float);                           //! DCA z of the track
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                 //! Pool Bin for the MixedEvent
-DECLARE_SOA_COLUMN(NumPvContrib, numPvContrib, int);                       //! number PV contributors
+DECLARE_SOA_COLUMN(NumPvContrib, numPvContrib, uint16_t);                  //! number PV contributors
 DECLARE_SOA_COLUMN(TrackTPCNClsCrossedRows, trackTPCNClsCrossedRows, int); //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(TrackOrigin, trackOrigin, int);                         //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(IsSignal, isSignal, bool);                              //! Used in MC-Rec, Ds Signal
