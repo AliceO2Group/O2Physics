@@ -1188,7 +1188,7 @@ struct HfTrackIndexSkimCreator {
 
   struct : ConfigurableGroup {
     Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
-    Configurable<bool> do3Prong{"do3Prong", 0, "do 3 prong"};
+    Configurable<bool> do3Prong{"do3Prong", false, "do 3 prong"};
     Configurable<bool> doDstar{"doDstar", false, "do D* candidates"};
     Configurable<bool> debug{"debug", false, "debug mode"};
     Configurable<bool> debugPvRefit{"debugPvRefit", false, "debug lines for primary vertex refit"};
@@ -2117,8 +2117,8 @@ struct HfTrackIndexSkimCreator {
 
       std::array<std::vector<bool>, kN2ProngDecays> cutStatus2Prong;
       std::array<std::vector<bool>, kN3ProngDecays> cutStatus3Prong;
-      bool nCutStatus2ProngBit[kN2ProngDecays]; // bit value for selection status for each 2-prong candidate where each selection is one bit and they are all set to 1
-      bool nCutStatus3ProngBit[kN3ProngDecays]; // bit value for selection status for each 3-prong candidate where each selection is one bit and they are all set to 1
+      uint8_t nCutStatus2ProngBit[kN2ProngDecays]; // bit value for selection status for each 2-prong candidate where each selection is one bit and they are all set to 1
+      uint8_t nCutStatus3ProngBit[kN3ProngDecays]; // bit value for selection status for each 3-prong candidate where each selection is one bit and they are all set to 1
 
       for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
         nCutStatus2ProngBit[iDecay2P] = BIT(kNCuts2Prong[iDecay2P]) - 1;
@@ -2324,7 +2324,7 @@ struct HfTrackIndexSkimCreator {
                   }
 
                   if (config.debug) {
-                    int prong2CutStatus[kN2ProngDecays];
+                    uint8_t prong2CutStatus[kN2ProngDecays];
                     for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
                       prong2CutStatus[iDecay2P] = nCutStatus2ProngBit[iDecay2P];
                       for (int iCut = 0; iCut < kNCuts2Prong[iDecay2P]; iCut++) {
@@ -2588,7 +2588,7 @@ struct HfTrackIndexSkimCreator {
               }
 
               if (config.debug) {
-                int prong3CutStatus[kN3ProngDecays];
+                uint8_t prong3CutStatus[kN3ProngDecays];
                 for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
                   prong3CutStatus[iDecay3P] = nCutStatus3ProngBit[iDecay3P];
                   for (int iCut = 0; iCut < kNCuts3Prong[iDecay3P]; iCut++) {
