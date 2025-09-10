@@ -1497,16 +1497,15 @@ struct HfTrackIndexSkimCreator {
   {
     whichHypo[kN2ProngDecays] = 0; // D0 for D*
 
-    auto arrMom = std::array{pVecTrack0, pVecTrack1};
     pt2Prong = RecoDecay::pt(pVecTrack0, pVecTrack1);
-    auto pT = pt2Prong + config.ptTolerance; // add tolerance because of no reco decay vertex
+    auto pt = pt2Prong + config.ptTolerance; // add tolerance because of no reco decay vertex
 
     for (int iDecay2P = 0; iDecay2P < kN2ProngDecays; iDecay2P++) {
 
       // pT
-      auto pTBin = findBin(&pTBins2Prong[iDecay2P], pT);
+      auto binPt = findBin(&pTBins2Prong[iDecay2P], pt);
       // return immediately if it is outside the defined pT bins
-      if (pTBin == -1) {
+      if (binPt == -1) {
         CLRBIT(isSelected, iDecay2P);
         if (config.debug) {
           cutStatus[iDecay2P][0] = false;
@@ -1515,26 +1514,29 @@ struct HfTrackIndexSkimCreator {
       }
 
       // invariant mass
-      double massHypos[2] = {0.f, 0.f};
-      whichHypo[iDecay2P] = 3;
-      double minMass = cut2Prong[iDecay2P].get(pTBin, 0u);
-      double maxMass = cut2Prong[iDecay2P].get(pTBin, 1u);
-      double min2 = minMass * minMass;
-      double max2 = maxMass * maxMass;
+      double massHypos[2] = {0., 0.};
+      whichHypo[iDecay2P] = 3; // 2 bits on
 
-      if ((config.debug || TESTBIT(isSelected, iDecay2P)) && minMass >= 0. && maxMass > 0.) {
-        massHypos[0] = RecoDecay::m2(arrMom, arrMass2Prong[iDecay2P][0]);
-        massHypos[1] = (iDecay2P == hf_cand_2prong::DecayType::D0ToPiK) ? RecoDecay::m2(arrMom, arrMass2Prong[iDecay2P][1]) : massHypos[0];
-        if (massHypos[0] < min2 || massHypos[0] >= max2) {
-          CLRBIT(whichHypo[iDecay2P], 0);
-        }
-        if (massHypos[1] < min2 || massHypos[1] >= max2) {
-          CLRBIT(whichHypo[iDecay2P], 1);
-        }
-        if (whichHypo[iDecay2P] == 0) {
-          CLRBIT(isSelected, iDecay2P);
-          if (config.debug) {
-            cutStatus[iDecay2P][1] = false;
+      if (config.debug || TESTBIT(isSelected, iDecay2P)) {
+        double minMass = cut2Prong[iDecay2P].get(binPt, 0u);
+        double maxMass = cut2Prong[iDecay2P].get(binPt, 1u);
+        if (minMass >= 0. && maxMass > 0.) {
+          auto arrMom = std::array{pVecTrack0, pVecTrack1};
+          massHypos[0] = RecoDecay::m2(arrMom, arrMass2Prong[iDecay2P][0]);
+          massHypos[1] = (iDecay2P == hf_cand_2prong::DecayType::D0ToPiK) ? RecoDecay::m2(arrMom, arrMass2Prong[iDecay2P][1]) : massHypos[0];
+          double min2 = minMass * minMass;
+          double max2 = maxMass * maxMass;
+          if (massHypos[0] < min2 || massHypos[0] >= max2) {
+            CLRBIT(whichHypo[iDecay2P], 0);
+          }
+          if (massHypos[1] < min2 || massHypos[1] >= max2) {
+            CLRBIT(whichHypo[iDecay2P], 1);
+          }
+          if (whichHypo[iDecay2P] == 0) {
+            CLRBIT(isSelected, iDecay2P);
+            if (config.debug) {
+              cutStatus[iDecay2P][1] = false;
+            }
           }
         }
       }
@@ -1542,7 +1544,7 @@ struct HfTrackIndexSkimCreator {
       // imp. par. product cut
       if (config.debug || TESTBIT(isSelected, iDecay2P)) {
         auto impParProduct = dcaTrack0 * dcaTrack1;
-        if (impParProduct > cut2Prong[iDecay2P].get(pTBin, 3u)) {
+        if (impParProduct > cut2Prong[iDecay2P].get(binPt, 3u)) {
           CLRBIT(isSelected, iDecay2P);
           if (config.debug) {
             cutStatus[iDecay2P][2] = false;
@@ -1552,7 +1554,7 @@ struct HfTrackIndexSkimCreator {
 
       // additional check for D0 to be used in D* finding
       if (iDecay2P == hf_cand_2prong::DecayType::D0ToPiK && config.doDstar && TESTBIT(isSelected, iDecay2P)) {
-        auto pTBinDstar = findBin(config.binsPtDstarToD0Pi, pT * 1.2); // assuming the D* pT about 20% higher than the one of the D0 to be safe
+        auto pTBinDstar = findBin(config.binsPtDstarToD0Pi, pt * 1.2); // assuming the D* pT about 20% higher than the one of the D0 to be safe
         if (pTBinDstar >= 0) {
           whichHypo[kN2ProngDecays] = whichHypo[hf_cand_2prong::DecayType::D0ToPiK];
           double deltaMass = config.cutsDstarToD0Pi->get(pTBinDstar, 1u);
@@ -1592,7 +1594,6 @@ struct HfTrackIndexSkimCreator {
         CLRBIT(whichHypo[hf_cand_3prong::DecayType::DsToKKPi], 1);
       }
     }
-
     if (whichHypo[hf_cand_3prong::DecayType::DsToKKPi] == 0) {
       CLRBIT(isSelected, hf_cand_3prong::DecayType::DsToKKPi);
       if (config.debug) {
@@ -1613,14 +1614,12 @@ struct HfTrackIndexSkimCreator {
   template <typename T1, typename T2, typename T3>
   void applyPreselection3Prong(T1 const& pVecTrack0, T1 const& pVecTrack1, T1 const& pVecTrack2, int8_t& isIdentifiedPidTrack0, int8_t& isIdentifiedPidTrack2, T2& cutStatus, T3& whichHypo, int& isSelected)
   {
-
-    auto arrMom = std::array{pVecTrack0, pVecTrack1, pVecTrack2};
-    auto pT = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + config.ptTolerance; // add tolerance because of no reco decay vertex
+    auto pt = RecoDecay::pt(pVecTrack0, pVecTrack1, pVecTrack2) + config.ptTolerance; // add tolerance because of no reco decay vertex
 
     for (int iDecay3P = 0; iDecay3P < kN3ProngDecays; iDecay3P++) {
 
       // check proton PID for Lc and Xic
-      whichHypo[iDecay3P] = 3;
+      whichHypo[iDecay3P] = 3; // 2 bits on
       if ((iDecay3P == hf_cand_3prong::DecayType::LcToPKPi && config.applyProtonPidForLcToPKPi) || (iDecay3P == hf_cand_3prong::DecayType::XicToPKPi && config.applyProtonPidForXicToPKPi)) {
         if ((iDecay3P == hf_cand_3prong::DecayType::LcToPKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsProtonPid::LcToPKPi)) || (iDecay3P == hf_cand_3prong::DecayType::XicToPKPi && !TESTBIT(isIdentifiedPidTrack0, ChannelsProtonPid::XicToPKPi))) {
           CLRBIT(whichHypo[iDecay3P], 0);
@@ -1638,9 +1637,9 @@ struct HfTrackIndexSkimCreator {
       }
 
       // pT
-      auto pTBin = findBin(&pTBins3Prong[iDecay3P], pT);
+      auto binPt = findBin(&pTBins3Prong[iDecay3P], pt);
       // return immediately if it is outside the defined pT bins
-      if (pTBin == -1) {
+      if (binPt == -1) {
         CLRBIT(isSelected, iDecay3P);
         whichHypo[iDecay3P] = 0;
         if (config.debug) {
@@ -1650,31 +1649,33 @@ struct HfTrackIndexSkimCreator {
       }
 
       // invariant mass
-      double massHypos[2];
-      double minMass = cut3Prong[iDecay3P].get(pTBin, 0u);
-      double maxMass = cut3Prong[iDecay3P].get(pTBin, 1u);
-      double min2 = minMass * minMass;
-      double max2 = maxMass * maxMass;
-
-      if ((config.debug || TESTBIT(isSelected, iDecay3P)) && minMass >= 0. && maxMass > 0.) { // no need to check isSelected but to avoid mistakes
-        massHypos[0] = RecoDecay::m2(arrMom, arrMass3Prong[iDecay3P][0]);
-        massHypos[1] = (iDecay3P != hf_cand_3prong::DecayType::DplusToPiKPi) ? RecoDecay::m2(arrMom, arrMass3Prong[iDecay3P][1]) : massHypos[0];
-        if (massHypos[0] < min2 || massHypos[0] >= max2) {
-          CLRBIT(whichHypo[iDecay3P], 0);
-        }
-        if (massHypos[1] < min2 || massHypos[1] >= max2) {
-          CLRBIT(whichHypo[iDecay3P], 1);
-        }
-        if (whichHypo[iDecay3P] == 0) {
-          CLRBIT(isSelected, iDecay3P);
-          if (config.debug) {
-            cutStatus[iDecay3P][1] = false;
+      if ((config.debug || TESTBIT(isSelected, iDecay3P))) {
+        double minMass = cut3Prong[iDecay3P].get(binPt, 0u);
+        double maxMass = cut3Prong[iDecay3P].get(binPt, 1u);
+        if (minMass >= 0. && maxMass > 0.) { // no need to check isSelected but to avoid mistakes
+          double massHypos[2] = {0., 0.};
+          auto arrMom = std::array{pVecTrack0, pVecTrack1, pVecTrack2};
+          double min2 = minMass * minMass;
+          double max2 = maxMass * maxMass;
+          massHypos[0] = RecoDecay::m2(arrMom, arrMass3Prong[iDecay3P][0]);
+          massHypos[1] = (iDecay3P != hf_cand_3prong::DecayType::DplusToPiKPi) ? RecoDecay::m2(arrMom, arrMass3Prong[iDecay3P][1]) : massHypos[0];
+          if (massHypos[0] < min2 || massHypos[0] >= max2) {
+            CLRBIT(whichHypo[iDecay3P], 0);
+          }
+          if (massHypos[1] < min2 || massHypos[1] >= max2) {
+            CLRBIT(whichHypo[iDecay3P], 1);
+          }
+          if (whichHypo[iDecay3P] == 0) {
+            CLRBIT(isSelected, iDecay3P);
+            if (config.debug) {
+              cutStatus[iDecay3P][1] = false;
+            }
           }
         }
       }
 
       if ((config.debug || TESTBIT(isSelected, iDecay3P)) && iDecay3P == hf_cand_3prong::DecayType::DsToKKPi) {
-        applyPreselectionPhiDecay(pTBin, pVecTrack0, pVecTrack1, pVecTrack2, cutStatus, whichHypo, isSelected);
+        applyPreselectionPhiDecay(binPt, pVecTrack0, pVecTrack1, pVecTrack2, cutStatus, whichHypo, isSelected);
       }
     }
   }
