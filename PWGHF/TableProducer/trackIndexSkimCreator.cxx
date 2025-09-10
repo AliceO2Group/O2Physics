@@ -139,7 +139,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     }
 
     // set numerical value of the Run 2 trigger class
-    auto triggerAlias = std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data());
+    const auto triggerAlias = std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data());
     if (triggerAlias != aliasLabels + kNaliases) {
       hfEvSel.triggerClass.value = std::distance(aliasLabels, triggerAlias);
     }
@@ -750,7 +750,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
     /// Prepare the vertex refitting
     // set the magnetic field from CCDB
-    auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
+    const auto bc = collision.bc_as<o2::aod::BCsWithTimestamps>();
     initCCDB(bc, runNumber, ccdb, config.isRun2 ? config.ccdbPathGrp : config.ccdbPathGrpMag, lut, config.isRun2);
     /*if (runNumber != bc.runNumber()) {
 
@@ -2170,14 +2170,14 @@ struct HfTrackIndexSkimCreator {
         }
 
         // first loop over negative tracks
-        auto groupedTrackIndicesNeg1 = negativeFor2And3Prongs->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+        const auto groupedTrackIndicesNeg1 = negativeFor2And3Prongs->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
         for (auto trackIndexNeg1 = groupedTrackIndicesNeg1.begin(); trackIndexNeg1 != groupedTrackIndicesNeg1.end(); ++trackIndexNeg1) {
-          auto trackNeg1 = trackIndexNeg1.template track_as<TTracks>();
+          const auto trackNeg1 = trackIndexNeg1.template track_as<TTracks>();
 
           // retrieve the selection flag that corresponds to this collision
-          auto isSelProngNeg1 = trackIndexNeg1.isSelProng();
-          bool const sel2ProngStatusNeg = TESTBIT(isSelProngNeg1, CandidateType::Cand2Prong);
-          bool const sel3ProngStatusNeg1 = TESTBIT(isSelProngNeg1, CandidateType::Cand3Prong);
+          const auto isSelProngNeg1 = trackIndexNeg1.isSelProng();
+          const bool sel2ProngStatusNeg = TESTBIT(isSelProngNeg1, CandidateType::Cand2Prong);
+          const bool sel3ProngStatusNeg1 = TESTBIT(isSelProngNeg1, CandidateType::Cand3Prong);
 
           auto trackParVarNeg1 = getTrackParCov(trackNeg1);
           std::array<float, 3> pVecTrackNeg1{trackNeg1.pVector()};
@@ -2800,14 +2800,14 @@ struct HfTrackIndexSkimCreator {
               std::array<float, 3> pvec0;
               std::array<float, 3> pvec1;
               std::array<float, 3> pvec2;
-              auto trackParVarPcaNeg1 = df3.getTrack(0);
-              auto trackParVarPcaPos1 = df3.getTrack(1);
-              auto trackParVarPcaNeg2 = df3.getTrack(2);
+              const auto trackParVarPcaNeg1 = df3.getTrack(0);
+              const auto trackParVarPcaPos1 = df3.getTrack(1);
+              const auto trackParVarPcaNeg2 = df3.getTrack(2);
               trackParVarPcaNeg1.getPxPyPzGlo(pvec0);
               trackParVarPcaPos1.getPxPyPzGlo(pvec1);
               trackParVarPcaNeg2.getPxPyPzGlo(pvec2);
 
-              auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
+              const auto pVecCandProng3Neg = RecoDecay::pVec(pvec0, pvec1, pvec2);
 
               // 3-prong selections after secondary vertex
               applySelection3Prong(pVecCandProng3Neg, secondaryVertex3, pvRefitCoord3Prong1Pos2Neg, cutStatus3Prong, isSelected3ProngCand);
