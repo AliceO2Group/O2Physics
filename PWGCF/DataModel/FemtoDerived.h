@@ -50,6 +50,8 @@ DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, BitMaskType);     //! Bit f
 DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit for track three
 
 DECLARE_SOA_COLUMN(Downsample, downsample, bool); //! Flag for downsampling
+
+DECLARE_SOA_COLUMN(QnBin, qnBin, int); //! qn bins for dividing events
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE_STAGED(FDCollisions, "FDCOLLISION",
@@ -60,6 +62,10 @@ DECLARE_SOA_TABLE_STAGED(FDCollisions, "FDCOLLISION",
                          femtodreamcollision::Sphericity,
                          femtodreamcollision::MagField);
 using FDCollision = FDCollisions::iterator;
+
+DECLARE_SOA_TABLE(FDExtQnCollisions, "AOD", "FDEXTCOLLISION",
+                  femtodreamcollision::QnBin);
+using FDExtQnCollision = FDExtQnCollisions::iterator;
 
 DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
                   femtodreamcollision::BitMaskTrackOne,
