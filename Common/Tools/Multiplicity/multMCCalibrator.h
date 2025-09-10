@@ -20,12 +20,13 @@
 #define COMMON_TOOLS_MULTIPLICITY_MULTMCCALIBRATOR_H_
 
 #include <TF1.h>
-#include <TH1D.h>
+#include <TH1.h>
 #include <TNamed.h>
 #include <TProfile.h>
+#include <TString.h>
 
-#include <iostream> // FIXME
-#include <map>
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 class multMCCalibrator : public TNamed
 {
