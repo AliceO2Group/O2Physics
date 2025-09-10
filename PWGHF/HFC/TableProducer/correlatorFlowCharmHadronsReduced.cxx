@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file correlatorFlowCharmHadrons.cxx
+/// \file correlatorFlowCharmHadronsReduced.cxx
 /// \brief CharmHadrons-Hadrons correlator tree creator for data and MC-reco analyses
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Politecnico and INFN Torino
 
@@ -17,8 +17,6 @@
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/DerivedDataCorrelationTables.h"
-// #include "PWGHF/HFC/DataModel/CorrelationTables.h"
-// #include "PWGHF/Utils/utilsEvSelHf.h"
 
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
