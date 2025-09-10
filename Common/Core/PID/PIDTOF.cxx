@@ -17,7 +17,18 @@
 ///
 
 #include "PIDTOF.h"
+
+#include <Framework/Logger.h>
+
+#include <TF2.h>
+#include <TFile.h>
+#include <TGraph.h>
+#include <TString.h>
+
+#include <array>
+#include <cstdint>
 #include <string>
+#include <unordered_map>
 
 namespace o2::pid::tof
 {

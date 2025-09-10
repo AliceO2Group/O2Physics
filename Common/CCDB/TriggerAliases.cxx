@@ -10,7 +10,11 @@
 // or submit itself to any jurisdiction.
 
 #include "Common/CCDB/TriggerAliases.h"
-#include "Framework/Logger.h"
+
+#include <Framework/Logger.h>
+
+#include <cstdint>
+#include <string>
 
 std::string aliasLabels[kNaliases] = {
   "kINT7",

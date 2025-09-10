@@ -1002,6 +1002,10 @@ struct StrangenessInJets {
       // MC particles per collision
       auto mcParticlesPerColl = mcParticles.sliceBy(perMCCollision, collision.globalIndex());
 
+      // Store strange hadron pdg code and momentum
+      std::vector<int> pdg;
+      std::vector<TVector3> strHadronMomentum;
+
       // Loop over all MC particles and select physical primaries within acceptance
       std::vector<fastjet::PseudoJet> fjParticles;
       for (const auto& particle : mcParticlesPerColl) {
@@ -1016,6 +1020,13 @@ struct StrangenessInJets {
         fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
         fourMomentum.set_user_index(particle.pdgCode());
         fjParticles.emplace_back(fourMomentum);
+
+        // Store properties of strange hadrons
+        int pdgAbs = std::abs(particle.pdgCode());
+        if (pdgAbs == kK0Short || pdgAbs == kLambda0 || pdgAbs == kXiMinus || pdgAbs == kOmegaMinus) {
+          pdg.emplace_back(particle.pdgCode());
+          strHadronMomentum.emplace_back(particle.px(), particle.py(), particle.pz());
+        }
       }
 
       // Skip events with no particles
@@ -1055,48 +1066,47 @@ struct StrangenessInJets {
         getPerpendicularAxis(jetAxis, ueAxis1, +1);
         getPerpendicularAxis(jetAxis, ueAxis2, -1);
 
-        // Loop over MC particles
-        for (const auto& particle : mcParticlesPerColl) {
-          if (!particle.isPhysicalPrimary())
-            continue;
-          double minPtParticle = 0.1;
-          if (particle.eta() < etaMin || particle.eta() > etaMax || particle.pt() < minPtParticle)
-            continue;
+        // Loop over strange hadrons
+        int index = -1;
+        for (const auto& hadron : strHadronMomentum) {
+
+          // Particle index
+          index++;
 
           // Compute distance of particles from jet and UE axes
-          double deltaEtaJet = particle.eta() - jetAxis.Eta();
-          double deltaPhiJet = getDeltaPhi(particle.phi(), jetAxis.Phi());
+          double deltaEtaJet = hadron.Eta() - jetAxis.Eta();
+          double deltaPhiJet = getDeltaPhi(hadron.Phi(), jetAxis.Phi());
           double deltaRJet = std::sqrt(deltaEtaJet * deltaEtaJet + deltaPhiJet * deltaPhiJet);
-          double deltaEtaUe1 = particle.eta() - ueAxis1.Eta();
-          double deltaPhiUe1 = getDeltaPhi(particle.phi(), ueAxis1.Phi());
+          double deltaEtaUe1 = hadron.Eta() - ueAxis1.Eta();
+          double deltaPhiUe1 = getDeltaPhi(hadron.Phi(), ueAxis1.Phi());
           double deltaRUe1 = std::sqrt(deltaEtaUe1 * deltaEtaUe1 + deltaPhiUe1 * deltaPhiUe1);
-          double deltaEtaUe2 = particle.eta() - ueAxis2.Eta();
-          double deltaPhiUe2 = getDeltaPhi(particle.phi(), ueAxis2.Phi());
+          double deltaEtaUe2 = hadron.Eta() - ueAxis2.Eta();
+          double deltaPhiUe2 = getDeltaPhi(hadron.Phi(), ueAxis2.Phi());
           double deltaRUe2 = std::sqrt(deltaEtaUe2 * deltaEtaUe2 + deltaPhiUe2 * deltaPhiUe2);
 
           // Select particles inside jet
           if (deltaRJet < coneRadius) {
-            switch (particle.pdgCode()) {
+            switch (pdg[index]) {
               case kK0Short:
-                registryMC.fill(HIST("K0s_generated_jet"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("K0s_generated_jet"), genMultiplicity, hadron.Pt());
                 break;
               case kLambda0:
-                registryMC.fill(HIST("Lambda_generated_jet"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("Lambda_generated_jet"), genMultiplicity, hadron.Pt());
                 break;
               case kLambda0Bar:
-                registryMC.fill(HIST("AntiLambda_generated_jet"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("AntiLambda_generated_jet"), genMultiplicity, hadron.Pt());
                 break;
               case kXiMinus:
-                registryMC.fill(HIST("XiNeg_generated_jet"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("XiNeg_generated_jet"), genMultiplicity, hadron.Pt());
                 break;
               case kXiPlusBar:
-                registryMC.fill(HIST("XiPos_generated_jet"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("XiPos_generated_jet"), genMultiplicity, hadron.Pt());
                 break;
               case kOmegaMinus:
-                registryMC.fill(HIST("OmegaNeg_generated_jet"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("OmegaNeg_generated_jet"), genMultiplicity, hadron.Pt());
                 break;
               case kOmegaPlusBar:
-                registryMC.fill(HIST("OmegaPos_generated_jet"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("OmegaPos_generated_jet"), genMultiplicity, hadron.Pt());
                 break;
               default:
                 break;
@@ -1105,27 +1115,27 @@ struct StrangenessInJets {
 
           // Select particles inside UE cones
           if (deltaRUe1 < coneRadius || deltaRUe2 < coneRadius) {
-            switch (particle.pdgCode()) {
+            switch (pdg[index]) {
               case kK0Short:
-                registryMC.fill(HIST("K0s_generated_ue"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("K0s_generated_ue"), genMultiplicity, hadron.Pt());
                 break;
               case kLambda0:
-                registryMC.fill(HIST("Lambda_generated_ue"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("Lambda_generated_ue"), genMultiplicity, hadron.Pt());
                 break;
               case kLambda0Bar:
-                registryMC.fill(HIST("AntiLambda_generated_ue"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("AntiLambda_generated_ue"), genMultiplicity, hadron.Pt());
                 break;
               case kXiMinus:
-                registryMC.fill(HIST("XiNeg_generated_ue"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("XiNeg_generated_ue"), genMultiplicity, hadron.Pt());
                 break;
               case kXiPlusBar:
-                registryMC.fill(HIST("XiPos_generated_ue"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("XiPos_generated_ue"), genMultiplicity, hadron.Pt());
                 break;
               case kOmegaMinus:
-                registryMC.fill(HIST("OmegaNeg_generated_ue"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("OmegaNeg_generated_ue"), genMultiplicity, hadron.Pt());
                 break;
               case kOmegaPlusBar:
-                registryMC.fill(HIST("OmegaPos_generated_ue"), genMultiplicity, particle.pt());
+                registryMC.fill(HIST("OmegaPos_generated_ue"), genMultiplicity, hadron.Pt());
                 break;
               default:
                 break;
