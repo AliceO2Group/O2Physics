@@ -10,9 +10,9 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// \file   MetaDataHelper.h
+/// \file MetaDataHelper.h
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
-/// \brief  Utility to handle the metadata from the AOD
+/// \brief Utility to handle the metadata from the AOD
 ///
 
 #ifndef COMMON_CORE_METADATAHELPER_H_
