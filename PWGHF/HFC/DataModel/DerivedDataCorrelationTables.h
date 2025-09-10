@@ -49,20 +49,20 @@ using HfcRedCollision = HfcRedCollisions::iterator;
 
 namespace hf_candidate_reduced
 {
-DECLARE_SOA_INDEX_COLUMN(HfcRedCollision, hfcRedCollision);     //! ReducedCollision index
-DECLARE_SOA_INDEX_COLUMN(HfcRedFlowColl, hfcRedFlowColl);       //! ReducedCollision index
-DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                    //! Prong 0 index
-DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                    //! Prong 1 index
-DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                    //! Prong2 index
-DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                    //! Phi of the candidate
-DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                    //! Eta of the candidate
-DECLARE_SOA_COLUMN(PtCand, ptCand, float);                      //! Pt of the candidate
-DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);                //! Invariant mass of Ds candidate
-DECLARE_SOA_COLUMN(InvMassCand, invMassCand, float);            //! Invariant mass of Charm candidate
-DECLARE_SOA_COLUMN(BdtScorePrompt, bdtScorePrompt, float);      //! BDT output score for prompt hypothesis
-DECLARE_SOA_COLUMN(BdtScoreBkg, bdtScoreBkg, float);            //! BDT output score for background hypothesis
-DECLARE_SOA_COLUMN(BdtScore0, bdtScore0, float);                //! First BDT output score
-DECLARE_SOA_COLUMN(BdtScore1, bdtScore1, float);                //! Second BDT output score
+DECLARE_SOA_INDEX_COLUMN(HfcRedCollision, hfcRedCollision); //! ReducedCollision index
+DECLARE_SOA_INDEX_COLUMN(HfcRedFlowColl, hfcRedFlowColl);   //! ReducedCollision index
+DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                //! Prong 0 index
+DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                //! Prong 1 index
+DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                //! Prong2 index
+DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                //! Phi of the candidate
+DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                //! Eta of the candidate
+DECLARE_SOA_COLUMN(PtCand, ptCand, float);                  //! Pt of the candidate
+DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);            //! Invariant mass of Ds candidate
+DECLARE_SOA_COLUMN(InvMassCand, invMassCand, float);        //! Invariant mass of Charm candidate
+DECLARE_SOA_COLUMN(BdtScorePrompt, bdtScorePrompt, float);  //! BDT output score for prompt hypothesis
+DECLARE_SOA_COLUMN(BdtScoreBkg, bdtScoreBkg, float);        //! BDT output score for background hypothesis
+DECLARE_SOA_COLUMN(BdtScore0, bdtScore0, float);            //! First BDT output score
+DECLARE_SOA_COLUMN(BdtScore1, bdtScore1, float);            //! Second BDT output score
 } // namespace hf_candidate_reduced
 DECLARE_SOA_TABLE(DsCandReduceds, "AOD", "DSCANDREDUCED", //! Table with Ds candidate info
                   soa::Index<>,
@@ -147,12 +147,12 @@ DECLARE_SOA_TABLE(HfcRedTrkSels, "AOD", "HFCREDTRKSEL", //! Table with associate
 // definition of columns and tables for Charm-Hadron and Hadron-Hadron correlation pairs
 namespace hf_correlation_charm_hadron_reduced
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(CharmTrig, charmTrig, int, HfcRedCharmTrigs, "_0");   //! Reduced charm trigger candidate index
-DECLARE_SOA_INDEX_COLUMN_FULL(HadTrig, hadTrig, int, HfcRedTrkAssocs, "_1");        //! Reduced hadron trigger candidate index
-DECLARE_SOA_INDEX_COLUMN_FULL(TrkAssoc, trkAssoc, int, HfcRedTrkAssocs, "_2");      //! Reduced associated track index
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                //! DeltaPhi between charm hadron and Hadrons
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                //! DeltaEta between charm hadron and Hadrons
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                    //! Pool Bin for the MixedEvent
+DECLARE_SOA_INDEX_COLUMN_FULL(CharmTrig, charmTrig, int, HfcRedCharmTrigs, "_0"); //! Reduced charm trigger candidate index
+DECLARE_SOA_INDEX_COLUMN_FULL(HadTrig, hadTrig, int, HfcRedTrkAssocs, "_1");      //! Reduced hadron trigger candidate index
+DECLARE_SOA_INDEX_COLUMN_FULL(TrkAssoc, trkAssoc, int, HfcRedTrkAssocs, "_2");    //! Reduced associated track index
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                                    //! DeltaPhi between charm hadron and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                                    //! DeltaEta between charm hadron and Hadrons
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                        //! Pool Bin for the MixedEvent
 } // namespace hf_correlation_charm_hadron_reduced
 
 DECLARE_SOA_TABLE(HfcRedChHads, "AOD", "HFCREDCHHAD", //! Charm-Hadron pairs information
