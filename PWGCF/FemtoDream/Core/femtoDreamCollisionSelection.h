@@ -68,7 +68,8 @@ class FemtoDreamCollisionSelection
     mHistogramRegistry->add("Event/MultNTracksPV", "; MultNTracksPV; Entries", kTH1F, {{200, 0, 200}});
     mHistogramRegistry->add("Event/MultNTracklets", "; MultNTrackslets; Entries", kTH1F, {{300, 0, 300}});
     mHistogramRegistry->add("Event/MultTPC", "; MultTPC; Entries", kTH1F, {{600, 0, 600}});
-    mHistogramRegistry->add("Event/Sphericity", "; Sphericity; Entries", kTH1F, {{100, 0, 1}});
+    mHistogramRegistry->add("Event/Sphericity_before", "; Sphericity; Entries", kTH1F, {{100, 0, 1}});
+    mHistogramRegistry->add("Event/Sphericity_after", "; Sphericity; Entries", kTH1F, {{100, 0, 1}});
   }
 
   /// Print some debug information
@@ -241,7 +242,8 @@ class FemtoDreamCollisionSelection
       spt = 2. * lambda2 / (lambda1 + lambda2);
     }
 
-    mHistogramRegistry->fill(HIST("Event/Sphericity"), spt);
+    mHistogramRegistry->fill(HIST("Event/Sphericity_before"), spt);
+    if (spt > mMinSphericity) mHistogramRegistry->fill(HIST("Event/Sphericity_after"), spt);
 
     return spt;
   }
