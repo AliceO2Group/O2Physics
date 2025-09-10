@@ -165,7 +165,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
 
     if constexpr (applyUpcSel) {
-      rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<applyTrigSel, centEstimator, BCsType>(
+      rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<applyTrigSel, centEstimator>(
         collision, centrality, ccdb, registry, bcs);
     } else {
       rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCsType>(
