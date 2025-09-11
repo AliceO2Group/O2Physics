@@ -3027,226 +3027,232 @@ struct Phik0shortanalysis {
 
   PROCESS_SWITCH(Phik0shortanalysis, processPhiK0SPionMCClosure2D, "Process function for Phi-K0S and Phi-Pion Correlations in MCClosure2D", false);
 
-  void processAllPartMCReco(SimCollisions::iterator const& collision, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, MCCollisions const&, aod::McParticles const& mcParticles)
+  void processAllPartMC(MCCollisions const& mcCollisions, SimCollisions const& collisions, FullMCTracks const& fullMCTracks, FullMCV0s const& V0s, V0DauMCTracks const&, aod::McParticles const& mcParticles)
   {
-    if (!acceptEventQA<true>(collision, false))
-      return;
 
-    if (!collision.has_mcCollision())
-      return;
+    std::vector<std::vector<int>> collsGrouped(mcCollisions.size());
 
-    const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
-    float genmultiplicity = mcCollision.centFT0M();
-
-    // Defining positive and negative tracks for phi reconstruction
-    auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-    auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
-    for (const auto& track1 : posThisColl) { // loop over all selected tracks
-      if (!selectionTrackResonance<true>(track1, false) || !selectionPIDKaonpTdependent(track1))
-        continue; // topological and PID selection
-
-      auto track1ID = track1.globalIndex();
-
-      if (!track1.has_mcParticle())
+    for (const auto& collision : collisions) {
+      if (!collision.has_mcCollision())
         continue;
-      auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
-      if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
+      const auto& mcCollision = collision.mcCollision_as<MCCollisions>();
+      collsGrouped[mcCollision.globalIndex()].push_back(collision.globalIndex());
+    }
+
+    for (const auto& mcCollision : mcCollisions) {
+      auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.perMCColl, mcCollision.globalIndex());
+
+      if (!pwglf::isINELgtNmc(mcParticlesThisMcColl, 0, pdgDB))
         continue;
+      switch (filterOnGenPhi) {
+        case 0:
+          if (!eventHasGenKPair(mcParticlesThisMcColl))
+            continue;
+          break;
+        case 1:
+          if (!eventHasGenPhi(mcParticlesThisMcColl))
+            continue;
+          break;
+        default:
+          break;
+      }
 
-      for (const auto& track2 : negThisColl) {
-        if (!selectionTrackResonance<true>(track2, false) || !selectionPIDKaonpTdependent(track2))
-          continue; // topological and PID selection
+      uint64_t numberAssocColl = 0;
+      std::vector<float> zVtxs;
 
-        auto track2ID = track2.globalIndex();
-        if (track2ID == track1ID)
-          continue; // condition to avoid double counting of pair
+      auto& collIndexesThisMcColl = collsGrouped[mcCollision.globalIndex()];
 
-        if (!track2.has_mcParticle())
-          continue;
-        auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
-        if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
-          continue;
+      for (const auto& collisionIndex : collIndexesThisMcColl) {
+        auto collision = collisions.rawIteratorAt(collisionIndex);
 
-        float pTMother = -1.0f;
-        float yMother = -1.0f;
-        bool isMCMotherPhi = false;
-        for (const auto& motherOfMcTrack1 : mcTrack1.mothers_as<aod::McParticles>()) {
-          for (const auto& motherOfMcTrack2 : mcTrack2.mothers_as<aod::McParticles>()) {
-            if (motherOfMcTrack1.pdgCode() != motherOfMcTrack2.pdgCode())
+        if (acceptEventQA<true>(collision, false)) {
+          ////
+          auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
+
+          posFiltMCTracks.bindTable(filteredMCTracksThisColl);
+          negFiltMCTracks.bindTable(filteredMCTracksThisColl);
+          ////
+
+          switch (filterOnRecoPhi) {
+            case 0:
+              if (!eventHasRecoPhi(posFiltMCTracks, negFiltMCTracks))
+                continue;
+              break;
+            case 1:
+              if (!eventHasRecoPhiWPDG(posFiltMCTracks, negFiltMCTracks, mcParticles))
+                continue;
+              break;
+            default:
+              break;
+          }
+
+          mcEventHist.fill(HIST("hRecoMCMultiplicityPercent"), mcCollision.centFT0M());
+          mcEventHist.fill(HIST("h2RecoMCVertexZvsMult"), collision.posZ(), mcCollision.centFT0M());
+
+          zVtxs.push_back(collision.posZ());
+
+          ////
+          // Defining positive and negative tracks for phi reconstruction
+          auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+          auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
+
+          for (const auto& track1 : posThisColl) { // loop over all selected tracks
+            if (!selectionTrackResonance<true>(track1, false) || !selectionPIDKaonpTdependent(track1))
+              continue; // topological and PID selection
+
+            auto track1ID = track1.globalIndex();
+
+            if (!track1.has_mcParticle())
               continue;
-            if (motherOfMcTrack1.globalIndex() != motherOfMcTrack2.globalIndex())
-              continue;
-            if (motherOfMcTrack1.pdgCode() != o2::constants::physics::Pdg::kPhi)
+            auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
+            if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
               continue;
 
-            pTMother = motherOfMcTrack1.pt();
-            yMother = motherOfMcTrack1.y();
-            isMCMotherPhi = true;
+            for (const auto& track2 : negThisColl) {
+              if (!selectionTrackResonance<true>(track2, false) || !selectionPIDKaonpTdependent(track2))
+                continue; // topological and PID selection
+
+              auto track2ID = track2.globalIndex();
+              if (track2ID == track1ID)
+                continue; // condition to avoid double counting of pair
+
+              if (!track2.has_mcParticle())
+                continue;
+              auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
+              if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
+                continue;
+
+              float pTMother = -1.0f;
+              float yMother = -1.0f;
+              bool isMCMotherPhi = false;
+              for (const auto& motherOfMcTrack1 : mcTrack1.mothers_as<aod::McParticles>()) {
+                for (const auto& motherOfMcTrack2 : mcTrack2.mothers_as<aod::McParticles>()) {
+                  if (motherOfMcTrack1.pdgCode() != motherOfMcTrack2.pdgCode())
+                    continue;
+                  if (motherOfMcTrack1.globalIndex() != motherOfMcTrack2.globalIndex())
+                    continue;
+                  if (motherOfMcTrack1.pdgCode() != o2::constants::physics::Pdg::kPhi)
+                    continue;
+
+                  pTMother = motherOfMcTrack1.pt();
+                  yMother = motherOfMcTrack1.y();
+                  isMCMotherPhi = true;
+                }
+              }
+
+              if (!isMCMotherPhi)
+                continue;
+              if (pTMother < phiConfigs.minPhiPt || std::abs(yMother) > deltaYConfigs.cfgYAcceptance)
+                continue;
+
+              mcPhiHist.fill(HIST("h3PhiMCRecoNewProc"), genmultiplicity, pTMother, yMother);
+            }
+          }
+
+          for (const auto& v0 : V0s) {
+            if (!v0.has_mcParticle())
+              continue;
+
+            auto v0mcparticle = v0.mcParticle();
+            if (v0mcparticle.pdgCode() != PDG_t::kK0Short || !v0mcparticle.isPhysicalPrimary())
+              continue;
+
+            const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
+            const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
+
+            if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
+              continue;
+            if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
+              continue;
+            if (std::abs(v0mcparticle.y()) > deltaYConfigs.cfgYAcceptance)
+              continue;
+
+            mcK0SHist.fill(HIST("h3K0SMCRecoNewProc"), genmultiplicity, v0mcparticle.pt(), v0mcparticle.y());
+          }
+
+          for (const auto& track : fullMCTracks) {
+            // Pion selection
+            if (!selectionPion<false, true>(track, false))
+              continue;
+
+            if (!track.has_mcParticle())
+              continue;
+
+            auto mcTrack = track.mcParticle_as<aod::McParticles>();
+            if (std::abs(mcTrack.pdgCode()) != PDG_t::kPiPlus)
+              continue;
+
+            if (std::abs(mcTrack.y()) > deltaYConfigs.cfgYAcceptance)
+              continue;
+
+            // Primary pion selection
+            if (mcTrack.isPhysicalPrimary()) {
+              mcPionHist.fill(HIST("h3RecMCDCAxyPrimPi"), track.pt(), track.dcaXY());
+            } else {
+              if (mcTrack.getProcess() == 4) { // Selection of secondary pions from weak decay
+                mcPionHist.fill(HIST("h3RecMCDCAxySecWeakDecayPi"), track.pt(), track.dcaXY());
+              } else { // Selection of secondary pions from material interactions
+                mcPionHist.fill(HIST("h3RecMCDCAxySecMaterialPi"), track.pt(), track.dcaXY());
+              }
+              continue;
+            }
+
+            mcPionHist.fill(HIST("h3PiMCRecoNewProc"), genmultiplicity, mcTrack.pt(), mcTrack.y());
+
+            if (track.pt() >= trackConfigs.pTToUseTOF && !track.hasTOF())
+              continue;
+
+            mcPionHist.fill(HIST("h3PiMCReco2NewProc"), genmultiplicity, mcTrack.pt(), mcTrack.y());
+          }
+          ////
+
+          numberAssocColl++;
+        }
+      }
+
+      mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), mcCollision.centFT0M());
+
+      if (numberAssocColl > 0) {
+        float zVtxRef = zVtxs[0];
+        if (zVtxs.size() > 1) {
+          for (size_t i = 1; i < zVtxs.size(); ++i) {
+            mcEventHist.fill(HIST("hSplitVertexZ"), zVtxs[i] - zVtxRef);
           }
         }
 
-        if (!isMCMotherPhi)
-          continue;
-        if (pTMother < phiConfigs.minPhiPt || std::abs(yMother) > deltaYConfigs.cfgYAcceptance)
-          continue;
-
-        mcPhiHist.fill(HIST("h3PhiMCRecoNewProc"), genmultiplicity, pTMother, yMother);
-      }
-    }
-
-    for (const auto& v0 : V0s) {
-      if (!v0.has_mcParticle())
-        continue;
-
-      auto v0mcparticle = v0.mcParticle();
-      if (v0mcparticle.pdgCode() != PDG_t::kK0Short || !v0mcparticle.isPhysicalPrimary())
-        continue;
-
-      const auto& posDaughterTrack = v0.posTrack_as<V0DauMCTracks>();
-      const auto& negDaughterTrack = v0.negTrack_as<V0DauMCTracks>();
-
-      if (!selectionV0(v0, posDaughterTrack, negDaughterTrack))
-        continue;
-      if (v0Configs.cfgFurtherV0Selection && !furtherSelectionV0(v0, collision))
-        continue;
-      if (std::abs(v0mcparticle.y()) > deltaYConfigs.cfgYAcceptance)
-        continue;
-
-      mcK0SHist.fill(HIST("h3K0SMCRecoNewProc"), genmultiplicity, v0mcparticle.pt(), v0mcparticle.y());
-    }
-
-    for (const auto& track : fullMCTracks) {
-      // Pion selection
-      if (!selectionPion<false, true>(track, false))
-        continue;
-
-      if (!track.has_mcParticle())
-        continue;
-
-      auto mcTrack = track.mcParticle_as<aod::McParticles>();
-      if (std::abs(mcTrack.pdgCode()) != PDG_t::kPiPlus)
-        continue;
-
-      if (std::abs(mcTrack.y()) > deltaYConfigs.cfgYAcceptance)
-        continue;
-
-      // Primary pion selection
-      if (mcTrack.isPhysicalPrimary()) {
-        mcPionHist.fill(HIST("h3RecMCDCAxyPrimPi"), track.pt(), track.dcaXY());
-      } else {
-        if (mcTrack.getProcess() == 4) { // Selection of secondary pions from weak decay
-          mcPionHist.fill(HIST("h3RecMCDCAxySecWeakDecayPi"), track.pt(), track.dcaXY());
-        } else { // Selection of secondary pions from material interactions
-          mcPionHist.fill(HIST("h3RecMCDCAxySecMaterialPi"), track.pt(), track.dcaXY());
-        }
-        continue;
+        mcEventHist.fill(HIST("hGenMCAssocRecoMultiplicityPercent"), mcCollision.centFT0M());
+        mcEventHist.fill(HIST("h2GenMCAssocRecoVertexZvsMult"), zVtxRef, mcCollision.centFT0M());
       }
 
-      mcPionHist.fill(HIST("h3PiMCRecoNewProc"), genmultiplicity, mcTrack.pt(), mcTrack.y());
+      for (const auto& mcParticle : mcParticlesThisMcColl) {
+        if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
+          continue;
 
-      if (track.pt() >= trackConfigs.pTToUseTOF && !track.hasTOF())
-        continue;
-
-      mcPionHist.fill(HIST("h3PiMCReco2NewProc"), genmultiplicity, mcTrack.pt(), mcTrack.y());
-    }
-
-    // Defining McParticles in the collision
-    auto mcParticlesThisColl = mcParticles.sliceByCached(aod::mcparticle::mcCollisionId, mcCollision.globalIndex(), cache);
-
-    for (const auto& mcParticle : mcParticlesThisColl) {
-      if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
-        continue;
-
-      // Phi selection
-      if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= phiConfigs.minPhiPt)
-        mcPhiHist.fill(HIST("h3PhiMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-
-      // K0S selection
-      if (mcParticle.pdgCode() == PDG_t::kK0Short && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt)
-        mcK0SHist.fill(HIST("h3K0SMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-
-      // Pion selection
-      if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut)
-        mcPionHist.fill(HIST("h3PiMCGenRecoCheckNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-    }
-  }
-
-  PROCESS_SWITCH(Phik0shortanalysis, processAllPartMCReco, "Process function for all particles in MCReco", false);
-
-  void processAllPartMCGen(MCCollisions::iterator const& mcCollision, soa::SmallGroups<SimCollisions> const& collisions, aod::McParticles const& mcParticles)
-  {
-    if (std::abs(mcCollision.posZ()) > cutZVertex)
-      return;
-    if (!pwglf::isINELgtNmc(mcParticles, 0, pdgDB))
-      return;
-
-    float genmultiplicity = mcCollision.centFT0M();
-
-    uint64_t numberAssocColl = 0;
-    for (const auto& collision : collisions) {
-      if (acceptEventQA<true>(collision, false)) {
-        mcEventHist.fill(HIST("hGenMCRecoMultiplicityPercent"), genmultiplicity); // Event split numerator
-
-        for (const auto& mcParticle : mcParticles) {
-          // The inclusive number of particles is the signal loss denominator,
-          //  while the number of associated particles is the signal loss numerator
-          if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
-            continue;
-
-          // Phi selection
-          if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= phiConfigs.minPhiPt)
-            mcPhiHist.fill(HIST("h3PhiMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-
-          // K0S selection
-          if (mcParticle.pdgCode() == PDG_t::kK0Short && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt)
-            mcK0SHist.fill(HIST("h3K0SMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-
-          // Pion selection
-          if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut)
-            mcPionHist.fill(HIST("h3PiMCGenRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+        // Phi selection
+        if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= phiConfigs.minPhiPt) {
+          mcPhiHist.fill(HIST("h3PhiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+          if (numberAssocColl > 0)
+            mcPhiHist.fill(HIST("h3PhiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
         }
 
-        numberAssocColl++;
-      }
-    }
+        // K0S selection
+        if (mcParticle.pdgCode() == PDG_t::kK0Short && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt) {
+          mcK0SHist.fill(HIST("h3K0SMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+          if (numberAssocColl > 0)
+            mcK0SHist.fill(HIST("h3K0SMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+        }
 
-    // The inclusive number of events is the event loss denominator,
-    // while the number of associated events is the event loss numerator
-    mcEventHist.fill(HIST("hGenMCMultiplicityPercent"), genmultiplicity);
-    if (numberAssocColl > 0)
-      mcEventHist.fill(HIST("hGenMCAssocRecoMultiplicityPercent"), genmultiplicity);
-
-    for (const auto& mcParticle : mcParticles) {
-      // The inclusive number of particles is the signal loss denominator,
-      //  while the number of associated particles is the signal loss numerator
-      if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
-        continue;
-
-      // Phi selection
-      if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= phiConfigs.minPhiPt) {
-        mcPhiHist.fill(HIST("h3PhiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-        if (numberAssocColl > 0)
-          mcPhiHist.fill(HIST("h3PhiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-      }
-
-      // K0S selection
-      if (mcParticle.pdgCode() == PDG_t::kK0Short && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt) {
-        mcK0SHist.fill(HIST("h3K0SMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-        if (numberAssocColl > 0)
-          mcK0SHist.fill(HIST("h3K0SMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-      }
-
-      // Pion selection
-      if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut) {
-        mcPionHist.fill(HIST("h3PiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-        if (numberAssocColl > 0)
-          mcPionHist.fill(HIST("h3PiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+        // Pion selection
+        if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut) {
+          mcPionHist.fill(HIST("h3PiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+          if (numberAssocColl > 0)
+            mcPionHist.fill(HIST("h3PiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+        }
       }
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processAllPartMCGen, "Process function for all particles in MCGen", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processAllPartMC, "Process function for all particles in MC", false);
 
   void processPhiK0SMixingEvent(SelCollisions const& collisions, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
