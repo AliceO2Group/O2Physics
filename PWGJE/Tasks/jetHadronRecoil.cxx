@@ -135,6 +135,7 @@ struct JetHadronRecoil {
     jetReclusterer.isReclustering = true;
     jetReclusterer.algorithm = fastjet::JetAlgorithm::cambridge_algorithm;
     jetReclusterer.jetR = 2 * jetR;
+    jetReclusterer.ghostRepeatN = 0;
     jetReclusterer.recombScheme = fastjet::WTA_pt_scheme;
 
     registry.add("hZvtxSelected", "Z vertex position;Z_{vtx};entries", {HistType::kTH1F, {{80, -20, 20}}}, doSumw);
