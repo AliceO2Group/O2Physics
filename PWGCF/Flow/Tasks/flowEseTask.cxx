@@ -226,6 +226,9 @@ struct FlowEseTask {
     histos.add(Form("histQvecV2"), "", {HistType::kTH3F, {qvecAxis, qvecAxis, centAxis}});
     histos.add(Form("histMult_Cent"), "", {HistType::kTH2F, {multNumAxis, centAxis}});
     histos.add(Form("histQvecCent"), "", {HistType::kTH2F, {lowerQAxis, centAxis}});
+    histos.add(Form("histPrPtCent"), "", {HistType::kTHnSparseF, {ptAxis, ptAxis, ptAxis, centAxis}});
+    histos.add(Form("histPiPtCent"), "", {HistType::kTHnSparseF, {ptAxis, ptAxis, ptAxis, centAxis}});
+    histos.add(Form("histPrBoostedPtCent"), "", {HistType::kTHnSparseF, {ptAxis, ptAxis, ptAxis, centAxis}});
 
     for (auto i = 2; i < cfgnMods + 2; i++) {
       histos.add(Form("psi%d/h_lambda_cos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
@@ -680,7 +683,7 @@ struct FlowEseTask {
     qvecRefAInd = refAId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
     qvecRefBInd = refBId * 4 + 3 + (nmode - 2) * cfgNQvec * 4;
 
-    for (auto& v0 : V0s) { // o2-linter: disable=const-ref-in-for-loop(need to modify v0)
+    for (const auto& v0 : V0s) {
       auto postrack = v0.template posTrack_as<TrackCandidates>();
       auto negtrack = v0.template negTrack_as<TrackCandidates>();
 
@@ -731,6 +734,10 @@ struct FlowEseTask {
       angle = protonBoostedVec.Pz() / protonBoostedVec.P();
       psi = safeATan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode);
       relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - psi));
+
+      histos.fill(HIST("histPrPtCent"), protonVec.Px(), protonVec.Py(), protonVec.Pz(), collision.centFT0C());
+      histos.fill(HIST("histPiPtCent"), pionVec.Px(), pionVec.Py(), pionVec.Pz(), collision.centFT0C());
+      histos.fill(HIST("histPrBoostedPtCent"), protonBoostedVec.Px(), protonBoostedVec.Py(), protonBoostedVec.Pz(), collision.centFT0C());
 
       if (cfgShiftCorr) {
         auto deltapsiFT0C = 0.0;
