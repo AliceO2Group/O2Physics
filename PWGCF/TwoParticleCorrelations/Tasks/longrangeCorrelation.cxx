@@ -922,7 +922,7 @@ struct LongrangeCorrelation {
       }
     }
   } // mixed event
-                                
+
   PROCESS_SWITCH(LongrangeCorrelation, processEventStat, "event stat", false);
   PROCESS_SWITCH(LongrangeCorrelation, processFt0aGlobalSE, "same event FT0a vs global", false);
   PROCESS_SWITCH(LongrangeCorrelation, processFt0aGlobalME, "mixed event FT0a vs global", false);
