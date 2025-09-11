@@ -184,7 +184,6 @@ struct NonPromptCascadeTask {
   Preslice<TracksExtMC> perCollisionMC = aod::track::collisionId;
 
   HistogramRegistry mRegistry;
-  std::map<int, OutputObj<TH1D>> mMultPerRunHistos;
 
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> cfgPropToPCA{"cfgPropToPCA", true, "create tracks version propagated to PCA"};
