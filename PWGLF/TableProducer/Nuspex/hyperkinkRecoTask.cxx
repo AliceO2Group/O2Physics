@@ -747,9 +747,7 @@ struct HyperkinkRecoTask {
         if (hypoMoth == kHypertriton) {
           auto dChannel = H3LDecay::getDecayChannel<aod::McParticles>(mcMothTrack, dauIDList);
           if (dChannel == H3LDecay::k2bodyNeutral && dauIDList[0] == mcDaugTrack.globalIndex()) {
-            if (std::hypot(mcDaugTrack.vx(), mcDaugTrack.vy()) > LayerRadii[3]) {
-              isKinkSignal = true;
-            }
+            isKinkSignal = true;
           }
         } else if (hypoMoth == kHyperhelium4sigma) {
           auto dChannel = He4SDecay::getDecayChannel<aod::McParticles>(mcMothTrack, dauIDList);
