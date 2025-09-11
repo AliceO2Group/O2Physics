@@ -585,7 +585,7 @@ struct HfTaskCorrelationDsHadrons {
       } else {
         efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
-      
+
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
         // prompt and non-prompt division
