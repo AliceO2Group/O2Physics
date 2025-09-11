@@ -109,7 +109,7 @@ struct ZdcQVectors {
 
   struct : ConfigurableGroup {
     Configurable<bool> cfgEvtUseRCTFlagChecker{"cfgEvtUseRCTFlagChecker", false, "Evt sel: use RCT flag checker"};
-    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label (CBT, CBT_hadronPID)"}; //all Labels can be found in Common/CCDB/RCTSelectionFlags.h
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label (CBT, CBT_hadronPID)"}; // all Labels can be found in Common/CCDB/RCTSelectionFlags.h
     Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
     Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   } rctFlags;
@@ -161,7 +161,7 @@ struct ZdcQVectors {
 
   enum SelectionCriteria {
     evSel_FilteredEvent,
-    evSel_RCTFlagsZDC, 
+    evSel_RCTFlagsZDC,
     evSel_Zvtx,
     evSel_sel8,
     evSel_occupancy,
@@ -255,8 +255,8 @@ struct ZdcQVectors {
       registry.add<TProfile>("QA/ZNA_Energy", "ZNA_Energy", kTProfile, {{8, 0, 8}});
       registry.add<TProfile>("QA/ZNC_Energy", "ZNC_Energy", kTProfile, {{8, 0, 8}});
 
-      registry.add<TProfile3D>("QA/ShiftZDCC", "ShiftZDCC", kTProfile3D, {{100,0,100}, {2,0,2}, {10,0,10}});
-      registry.add<TProfile3D>("QA/ShiftZDCA", "ShiftZDCA", kTProfile3D, {{100,0,100}, {2,0,2}, {10,0,10}});
+      registry.add<TProfile3D>("QA/ShiftZDCC", "ShiftZDCC", kTProfile3D, {{100, 0, 100}, {2, 0, 2}, {10, 0, 10}});
+      registry.add<TProfile3D>("QA/ShiftZDCA", "ShiftZDCA", kTProfile3D, {{100, 0, 100}, {2, 0, 2}, {10, 0, 10}});
       registry.add<TH1>("QA/psiZDCA", "psiZDCA", kTH1D, {{100, -4, 4}});
       registry.add<TH1>("QA/psiZDCA_shift", "psiZDCA_shift", kTH1D, {{100, -4, 4}});
       registry.add<TH1>("QA/psiZDCC", "psiZDCC", kTH1D, {{100, -4, 4}});
@@ -854,7 +854,7 @@ struct ZdcQVectors {
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0], q[1], q[2], q[3], isSelected, 0, 0);
       counter++;
       lastRunNumber = runnumber;
-        return;
+      return;
     } else {
       if (cfgFillCommonRegistry)
         fillCommonRegistry<kBefore>(q[0], q[1], q[2], q[3], v, centrality);
@@ -907,69 +907,69 @@ struct ZdcQVectors {
         registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qRec[3]);
       }
 
-    // do shift for psi. 
-    double psiZDCA = 1.0 * std::atan2(qRec[1], qRec[0]);
-    double psiZDCC = 1.0 * std::atan2(qRec[3], qRec[2]);
+      // do shift for psi.
+      double psiZDCA = 1.0 * std::atan2(qRec[1], qRec[0]);
+      double psiZDCC = 1.0 * std::atan2(qRec[3], qRec[2]);
 
-    int nshift = 10; // no. of iterations
+      int nshift = 10; // no. of iterations
 
-    if(cfgFillCommonRegistry) {
-      for (int ishift = 1; ishift <= nshift; ishift++) {
-        registry.fill(HIST("QA/ShiftZDCC"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 1.0 * psiZDCC));
-        registry.fill(HIST("QA/ShiftZDCC"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 1.0 * psiZDCC));
-        registry.fill(HIST("QA/ShiftZDCA"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 1.0 * psiZDCA));
-        registry.fill(HIST("QA/ShiftZDCA"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 1.0 * psiZDCA));
-      }
-    }
-
-    double psiZDCAshift = psiZDCA;
-    double psiZDCCshift = psiZDCC;
-
-    double deltaPsiZDCA = 0;
-    double deltaPsiZDCC = 0;
-
-    if (cfgUseShift && !cfgCCDBdir_Shift.value.empty()) {
-      if(lastRunNumber != runnumber){
-        TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
-        shiftprofileC = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
-        shiftprofileA = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
+      if (cfgFillCommonRegistry) {
+        for (int ishift = 1; ishift <= nshift; ishift++) {
+          registry.fill(HIST("QA/ShiftZDCC"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 1.0 * psiZDCC));
+          registry.fill(HIST("QA/ShiftZDCC"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 1.0 * psiZDCC));
+          registry.fill(HIST("QA/ShiftZDCA"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 1.0 * psiZDCA));
+          registry.fill(HIST("QA/ShiftZDCA"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 1.0 * psiZDCA));
+        }
       }
 
-      auto deltaPsiZDCC = 0.0;
-      auto deltaPsiZDCA = 0.0;
+      double psiZDCAshift = psiZDCA;
+      double psiZDCCshift = psiZDCC;
 
-      for (int ishift = 1; ishift <= nshift; ishift++) {
-        auto coeffshiftxZDCC = shiftprofileC->GetBinContent(shiftprofileC->FindBin(centrality, 0.5, ishift - 0.5));
-        auto coeffshiftyZDCC = shiftprofileC->GetBinContent(shiftprofileC->FindBin(centrality, 1.5, ishift - 0.5));
-        auto coeffshiftxZDCA = shiftprofileA->GetBinContent(shiftprofileA->FindBin(centrality, 0.5, ishift - 0.5));
-        auto coeffshiftyZDCA = shiftprofileA->GetBinContent(shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5));
-        deltaPsiZDCC += deltaPsiZDCC + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCC * TMath::Cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * TMath::Sin(ishift * 1.0 * psiZDCC)));
-        deltaPsiZDCA += deltaPsiZDCA + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCA * TMath::Cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * TMath::Sin(ishift * 1.0 * psiZDCA)));
+      double deltaPsiZDCA = 0;
+      double deltaPsiZDCC = 0;
+
+      if (cfgUseShift && !cfgCCDBdir_Shift.value.empty()) {
+        if (lastRunNumber != runnumber) {
+          TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
+          shiftprofileC = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
+          shiftprofileA = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
+        }
+
+        auto deltaPsiZDCC = 0.0;
+        auto deltaPsiZDCA = 0.0;
+
+        for (int ishift = 1; ishift <= nshift; ishift++) {
+          auto coeffshiftxZDCC = shiftprofileC->GetBinContent(shiftprofileC->FindBin(centrality, 0.5, ishift - 0.5));
+          auto coeffshiftyZDCC = shiftprofileC->GetBinContent(shiftprofileC->FindBin(centrality, 1.5, ishift - 0.5));
+          auto coeffshiftxZDCA = shiftprofileA->GetBinContent(shiftprofileA->FindBin(centrality, 0.5, ishift - 0.5));
+          auto coeffshiftyZDCA = shiftprofileA->GetBinContent(shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5));
+          deltaPsiZDCC += deltaPsiZDCC + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCC * TMath::Cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * TMath::Sin(ishift * 1.0 * psiZDCC)));
+          deltaPsiZDCA += deltaPsiZDCA + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCA * TMath::Cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * TMath::Sin(ishift * 1.0 * psiZDCA)));
+        }
       }
-    } 
-     
-    psiZDCCshift += deltaPsiZDCC;
-    psiZDCAshift += deltaPsiZDCA;
 
-    if(cfgFillCommonRegistry) {
-      registry.fill(HIST("QA/psiZDCA"), psiZDCAshift);
-      registry.fill(HIST("QA/psiZDCC"), psiZDCCshift); 
-      registry.fill(HIST("QA/psiZDCA_shift"), psiZDCAshift);
-      registry.fill(HIST("QA/psiZDCC_shift"), psiZDCCshift); 
-    }
+      psiZDCCshift += deltaPsiZDCC;
+      psiZDCAshift += deltaPsiZDCA;
 
-    double qXaShift = std::hypot(qRec[1], qRec[0]) * TMath::Cos(psiZDCAshift); 
-    double qYaShift = std::hypot(qRec[1], qRec[0]) * TMath::Sin(psiZDCAshift); 
-    double qXcShift = std::hypot(qRec[2], qRec[3]) * TMath::Cos(psiZDCCshift); 
-    double qYcShift = std::hypot(qRec[2], qRec[3]) * TMath::Sin(psiZDCCshift); 
+      if (cfgFillCommonRegistry) {
+        registry.fill(HIST("QA/psiZDCA"), psiZDCAshift);
+        registry.fill(HIST("QA/psiZDCC"), psiZDCCshift);
+        registry.fill(HIST("QA/psiZDCA_shift"), psiZDCAshift);
+        registry.fill(HIST("QA/psiZDCC_shift"), psiZDCCshift);
+      }
 
-    spTableZDC(runnumber, centrality, v[0], v[1], v[2], qXaShift, qYaShift, qXcShift, qYcShift, isSelected, cal.atIteration, cal.atStep);
+      double qXaShift = std::hypot(qRec[1], qRec[0]) * TMath::Cos(psiZDCAshift);
+      double qYaShift = std::hypot(qRec[1], qRec[0]) * TMath::Sin(psiZDCAshift);
+      double qXcShift = std::hypot(qRec[2], qRec[3]) * TMath::Cos(psiZDCCshift);
+      double qYcShift = std::hypot(qRec[2], qRec[3]) * TMath::Sin(psiZDCCshift);
 
-    qRec.clear();
+      spTableZDC(runnumber, centrality, v[0], v[1], v[2], qXaShift, qYaShift, qXcShift, qYcShift, isSelected, cal.atIteration, cal.atStep);
 
-    counter++;
-    lastRunNumber = runnumber;
-    return;
+      qRec.clear();
+
+      counter++;
+      lastRunNumber = runnumber;
+      return;
     }
     LOGF(warning, "We return without saving table... -> THis is a problem");
     lastRunNumber = runnumber;
