@@ -69,6 +69,9 @@ struct DedxPidAnalysis {
   float invMassCut = 0.01;
   float invMassCutGamma = 0.0015;
   float pTcut = 2.0;
+  int v0TPC = 1;
+  int v0TOF = 2;
+  int v0TPCTOF = 3;
 
   // Event cut labels
   enum EvCutLabel {
@@ -153,7 +156,7 @@ struct DedxPidAnalysis {
   Configurable<bool> phiVarCut{"phiVarCut", true, "phi var cut"};
   Configurable<bool> nTPCClCut{"nTPCClCut", true, "number of clusters in TPC cut"};
   Configurable<bool> nITSClCut{"nITSClCut", true, "number of clusters in ITS cut"};
-  Configurable<int> V0SelectionMode{"V0SelectionMode", 1, "V0 Selection base on TPC: 1, TOF:2 ,Both:3"};
+  Configurable<int> v0SelectionMode{"v0SelectionMode", 1, "V0 Selection base on TPC: 1, TOF:2 ,Both:3"};
   // Histograms names
   static constexpr std::string_view kDedxvsMomentumPos[kParticlesType] = {"dEdx_vs_Momentum_all_Pos", "dEdx_vs_Momentum_Pi_v0_Pos", "dEdx_vs_Momentum_Pr_v0_Pos", "dEdx_vs_Momentum_El_v0_Pos"};
   static constexpr std::string_view kDedxvsMomentumNeg[kParticlesType] = {"dEdx_vs_Momentum_all_Neg", "dEdx_vs_Momentum_Pi_v0_Neg", "dEdx_vs_Momentum_Pr_v0_Neg", "dEdx_vs_Momentum_El_v0_Neg"};
@@ -200,11 +203,11 @@ struct DedxPidAnalysis {
 
   void init(InitContext const&)
   {
-    if (V0SelectionMode == 1) {
+    if (V0SelectionMode == v0TPC) {
       LOGF(info, "V0 seleccion using TPC only");
-    } else if (V0SelectionMode == 2) {
+    } else if (V0SelectionMode == v0TOF) {
       LOGF(info, "V0 seleccion using TOF only");
-    } else if (V0SelectionMode == 3) {
+    } else if (V0SelectionMode == v0TPCTOF) {
       LOGF(info, "V0 seleccion using TOF + TPC");
     }
 
@@ -448,13 +451,13 @@ struct DedxPidAnalysis {
     double sigmap = 0.0;
     double sigman = 0.0;
 
-    if (V0SelectionMode == 1) {
+    if (V0SelectionMode == v0TPC) {
       sigmap = ptrack.tpcNSigmaPi();
       sigman = ntrack.tpcNSigmaPi();
-    } else if (V0SelectionMode == 2) {
+    } else if (V0SelectionMode == v0TOF) {
       sigmap = ptrack.tofNSigmaPi();
       sigman = ntrack.tofNSigmaPi();
-    } else if (V0SelectionMode == 3) {
+    } else if (V0SelectionMode == v0TPCTOF) {
       sigmap = std::sqrt(std::pow(ptrack.tpcNSigmaPi(), 2) + std::pow(ptrack.tofNSigmaPi(), 2));
       sigman = std::sqrt(std::pow(ntrack.tpcNSigmaPi(), 2) + std::pow(ntrack.tofNSigmaPi(), 2));
     }
@@ -494,13 +497,13 @@ struct DedxPidAnalysis {
     double sigmap = 0.0;
     double sigman = 0.0;
 
-    if (V0SelectionMode == 1) {
+    if (V0SelectionMode == v0TPC) {
       sigmap = ptrack.tpcNSigmaPr();
       sigman = ntrack.tpcNSigmaPi();
-    } else if (V0SelectionMode == 2) {
+    } else if (V0SelectionMode == v0TOF) {
       sigmap = ptrack.tofNSigmaPr();
       sigman = ntrack.tofNSigmaPi();
-    } else if (V0SelectionMode == 3) {
+    } else if (V0SelectionMode == v0TPCTOF) {
       sigmap = std::sqrt(std::pow(ptrack.tpcNSigmaPr(), 2) + std::pow(ptrack.tofNSigmaPr(), 2));
       sigman = std::sqrt(std::pow(ntrack.tpcNSigmaPi(), 2) + std::pow(ntrack.tofNSigmaPi(), 2));
     }
@@ -540,13 +543,13 @@ struct DedxPidAnalysis {
     double sigmap = 0.0;
     double sigman = 0.0;
 
-    if (V0SelectionMode == 1) {
+    if (V0SelectionMode == v0TPC) {
       sigmap = ptrack.tpcNSigmaPi();
       sigman = ntrack.tpcNSigmaPr();
-    } else if (V0SelectionMode == 2) {
+    } else if (V0SelectionMode == v0TOF) {
       sigmap = ptrack.tofNSigmaPi();
       sigman = ntrack.tofNSigmaPr();
-    } else if (V0SelectionMode == 3) {
+    } else if (V0SelectionMode == v0TPCTOF) {
       sigmap = std::sqrt(std::pow(ptrack.tpcNSigmaPi(), 2) + std::pow(ptrack.tofNSigmaPi(), 2));
       sigman = std::sqrt(std::pow(ntrack.tpcNSigmaPr(), 2) + std::pow(ntrack.tofNSigmaPr(), 2));
     }
@@ -585,13 +588,13 @@ struct DedxPidAnalysis {
     double sigmap = 0.0;
     double sigman = 0.0;
 
-    if (V0SelectionMode == 1) {
+    if (V0SelectionMode == v0TPC) {
       sigmap = ptrack.tpcNSigmaEl();
       sigman = ntrack.tpcNSigmaEl();
-    } else if (V0SelectionMode == 2) {
+    } else if (V0SelectionMode == v0TOF) {
       sigmap = ptrack.tofNSigmaEl();
       sigman = ntrack.tofNSigmaEl();
-    } else if (V0SelectionMode == 3) {
+    } else if (V0SelectionMode == v0TPCTOF) {
       sigmap = std::sqrt(std::pow(ptrack.tpcNSigmaEl(), 2) + std::pow(ptrack.tofNSigmaEl(), 2));
       sigman = std::sqrt(std::pow(ntrack.tpcNSigmaEl(), 2) + std::pow(ntrack.tofNSigmaEl(), 2));
     }
