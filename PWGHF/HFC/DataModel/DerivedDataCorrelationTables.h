@@ -158,15 +158,15 @@ DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                      
 DECLARE_SOA_TABLE(HfcRedChHads, "AOD", "HFCREDCHHAD", //! Charm-Hadron pairs information
                   aod::hf_correlation_charm_hadron_reduced::CharmTrigId,
                   aod::hf_correlation_charm_hadron_reduced::TrkAssocId,
-                  aod::hf_correlation_charm_hadron_reduced::DeltaPhi,
                   aod::hf_correlation_charm_hadron_reduced::DeltaEta,
+                  aod::hf_correlation_charm_hadron_reduced::DeltaPhi,
                   aod::hf_correlation_charm_hadron_reduced::PoolBin);
 
 DECLARE_SOA_TABLE(HfcRedHadHads, "AOD", "HFCREDHADHAD", //! Hadron-Hadron pairs information
                   aod::hf_correlation_charm_hadron_reduced::HadTrigId,
                   aod::hf_correlation_charm_hadron_reduced::TrkAssocId,
-                  aod::hf_correlation_charm_hadron_reduced::DeltaPhi,
                   aod::hf_correlation_charm_hadron_reduced::DeltaEta,
+                  aod::hf_correlation_charm_hadron_reduced::DeltaPhi,
                   aod::hf_correlation_charm_hadron_reduced::PoolBin);
 
 } // namespace o2::aod
