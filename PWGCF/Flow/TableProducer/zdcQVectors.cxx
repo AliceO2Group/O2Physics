@@ -915,10 +915,10 @@ struct ZdcQVectors {
 
       if (cfgFillCommonRegistry) {
         for (int ishift = 1; ishift <= nshift; ishift++) {
-          registry.fill(HIST("QA/ShiftZDCC"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 1.0 * psiZDCC));
-          registry.fill(HIST("QA/ShiftZDCC"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 1.0 * psiZDCC));
-          registry.fill(HIST("QA/ShiftZDCA"), centrality, 0.5, ishift - 0.5, TMath::Sin(ishift * 1.0 * psiZDCA));
-          registry.fill(HIST("QA/ShiftZDCA"), centrality, 1.5, ishift - 0.5, TMath::Cos(ishift * 1.0 * psiZDCA));
+          registry.fill(HIST("QA/ShiftZDCC"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCC));
+          registry.fill(HIST("QA/ShiftZDCC"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCC));
+          registry.fill(HIST("QA/ShiftZDCA"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCA));
+          registry.fill(HIST("QA/ShiftZDCA"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCA));
         }
       }
 
@@ -943,8 +943,8 @@ struct ZdcQVectors {
           auto coeffshiftyZDCC = shiftprofileC->GetBinContent(shiftprofileC->FindBin(centrality, 1.5, ishift - 0.5));
           auto coeffshiftxZDCA = shiftprofileA->GetBinContent(shiftprofileA->FindBin(centrality, 0.5, ishift - 0.5));
           auto coeffshiftyZDCA = shiftprofileA->GetBinContent(shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5));
-          deltaPsiZDCC += deltaPsiZDCC + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCC * TMath::Cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * TMath::Sin(ishift * 1.0 * psiZDCC)));
-          deltaPsiZDCA += deltaPsiZDCA + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCA * TMath::Cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * TMath::Sin(ishift * 1.0 * psiZDCA)));
+          deltaPsiZDCC += deltaPsiZDCC + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCC * std::cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * std::sin(ishift * 1.0 * psiZDCC)));
+          deltaPsiZDCA += deltaPsiZDCA + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCA * std::cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * std::sin(ishift * 1.0 * psiZDCA)));
         }
       }
 
@@ -958,10 +958,10 @@ struct ZdcQVectors {
         registry.fill(HIST("QA/psiZDCC_shift"), psiZDCCshift);
       }
 
-      double qXaShift = std::hypot(qRec[1], qRec[0]) * TMath::Cos(psiZDCAshift);
-      double qYaShift = std::hypot(qRec[1], qRec[0]) * TMath::Sin(psiZDCAshift);
-      double qXcShift = std::hypot(qRec[2], qRec[3]) * TMath::Cos(psiZDCCshift);
-      double qYcShift = std::hypot(qRec[2], qRec[3]) * TMath::Sin(psiZDCCshift);
+      double qXaShift = std::hypot(qRec[1], qRec[0]) * std::cos(psiZDCAshift);
+      double qYaShift = std::hypot(qRec[1], qRec[0]) * std::sin(psiZDCAshift);
+      double qXcShift = std::hypot(qRec[2], qRec[3]) * std::cos(psiZDCCshift);
+      double qYcShift = std::hypot(qRec[2], qRec[3]) * std::sin(psiZDCCshift);
 
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], qXaShift, qYaShift, qXcShift, qYcShift, isSelected, cal.atIteration, cal.atStep);
 
