@@ -15,20 +15,20 @@
 /// \author Abhi Modak (abhi.modak@cern.ch)
 /// \since September 10, 2025
 
-#include <cmath>
-#include <cstdlib>
-#include <TPDGCode.h>
-#include <vector>
-
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGMM/Mult/DataModel/Index.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/trackUtilities.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/MathConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -38,9 +38,12 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "PWGMM/Mult/DataModel/Index.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include <TPDGCode.h>
+
+#include <cmath>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -155,7 +158,7 @@ struct StudyPnch {
 
   template <typename CheckCol>
   bool isEventSelected(CheckCol const& col)
-  {  
+  {
     histos.fill(HIST("EventHist"), 1);
     if (!col.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
       return false;
@@ -262,9 +265,9 @@ struct StudyPnch {
       return;
     }
     auto mult = countNTracks(tracks);
-    histos.fill(HIST("hMultiplicityData"), mult); 
+    histos.fill(HIST("hMultiplicityData"), mult);
   }
-  
+
   void processCorrelation(ColDataTable::iterator const& cols, FilTrackDataTable const& tracks)
   {
     if (!isEventSelected(cols)) {
@@ -305,7 +308,7 @@ struct StudyPnch {
     histos.fill(HIST("MCEventHist"), 1);
     auto multAll = countGenTracks(GenParticles);
     histos.fill(HIST("hMultiplicityMCgenAll"), multAll);
-    
+
     bool atLeastOne = false;
     auto numcontributors = -999;
     for (const auto& RecCol : RecCols) {
@@ -319,7 +322,7 @@ struct StudyPnch {
       }
       atLeastOne = true;
     }
-    
+
     if (atLeastOne) {
       histos.fill(HIST("MCEventHist"), 2);
       auto multSel = countGenTracks(GenParticles);
