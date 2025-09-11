@@ -602,7 +602,7 @@ struct LongrangeCorrelation {
   } // fillCorrFv0Mft
 
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks, typename TTriggers, typename TFT0s>
-  void fillCorrFt0aMft(TTarget target, TTracks const& tracks, TTriggers const& triggers, TFV0s const& ft0, bool mixing, float vz)
+  void fillCorrFt0aMft(TTarget target, TTracks const& tracks, TTriggers const& triggers, TFT0s const& ft0, bool mixing, float vz)
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
     if (!mixing)
