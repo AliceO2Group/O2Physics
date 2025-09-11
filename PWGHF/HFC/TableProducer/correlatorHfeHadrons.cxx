@@ -108,7 +108,7 @@ struct HfCorrelatorHfeHadrons {
     registry.add("hULSEHCorrel", "Sparse for Delta phi and Delta eta  UnLike sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMCgenNonHfEHCorrel", "Sparse for Delta phi and Delta eta  for McGen Non Hf Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMCgenInclusiveEHCorrl", "Sparse for Delta phi and Delta eta  for McGen Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hptElectron", "hptElectronMcGen", {HistType::kTH1D, {axisPt}});
+    registry.add("hptElectron", "hptElectron", {HistType::kTH1D, {axisPt}});
     registry.add("hptHadron", "hptHadron", {HistType::kTH1D, {axisPt}});
     registry.add("hMCgenptHadron", "hMCgenptHadron", {HistType::kTH1D, {axisPt}});
     registry.add("hMCgenptHadronprimary", "hMCgenptHadronprimary", {HistType::kTH1D, {axisPt}});
