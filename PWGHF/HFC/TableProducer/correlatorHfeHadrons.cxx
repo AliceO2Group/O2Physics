@@ -108,7 +108,10 @@ struct HfCorrelatorHfeHadrons {
     registry.add("hULSEHCorrel", "Sparse for Delta phi and Delta eta  UnLike sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMCgenNonHfEHCorrel", "Sparse for Delta phi and Delta eta  for McGen Non Hf Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMCgenInclusiveEHCorrl", "Sparse for Delta phi and Delta eta  for McGen Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hptElectron", "hptElectron", {HistType::kTH1D, {axisPt}});
+    registry.add("hptElectron", "hptElectronMcGen", {HistType::kTH1D, {axisPt}});
+    registry.add("hptHadron", "hptHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptHadron", "hMCgenptHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptHadronprimary", "hMCgenptHadronprimary", {HistType::kTH1D, {axisPt}});
 
     registry.add("hMixEventInclusiveEHCorrl", "Sparse for mix event Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMixEventLSEHCorrel", "Sparse for mix event Delta phi and Delta eta Like sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
@@ -158,6 +161,7 @@ struct HfCorrelatorHfeHadrons {
         continue;
       }
       registry.fill(HIST("hTracksBin"), poolBin);
+      registry.fill(HIST("hptHadron"), hTrack.pt());
       entryHadron(hTrack.phi(), hTrack.eta(), hTrack.pt(), poolBin, gCollisionId, timeStamp);
     }
 
@@ -313,7 +317,7 @@ struct HfCorrelatorHfeHadrons {
     fillCorrelation(collision, electron, tracks, bc);
   }
 
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", true);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", false);
 
   // =======  Process starts for McRec, Same event ============
 
@@ -332,9 +336,25 @@ struct HfCorrelatorHfeHadrons {
     BinningTypeMcGen corrBinningMcGen{{zBins, multBinsMcGen}, true};
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
 
+    for (const auto& particleMc : mcParticles) {
+      if (particleMc.eta() < etaTrackMin || particleMc.eta() > etaTrackMax) {
+        continue;
+      }
+      if (particleMc.pt() < ptTrackMin) {
+        continue;
+      }
+
+      registry.fill(HIST("hMCgenptHadron"), particleMc.pt());
+      if (particleMc.isPhysicalPrimary()) {
+
+        registry.fill(HIST("hMCgenptHadronprimary"), particleMc.pt());
+      }
+    }
+
     double ptElectron = 0;
     double phiElectron = 0;
     double etaElectron = 0;
+
     for (const auto& electronMc : electron) {
       double ptHadron = 0;
       double phiHadron = 0;
@@ -382,7 +402,7 @@ struct HfCorrelatorHfeHadrons {
       }
     }
   }
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcGen, "Process MC Gen  mode", false);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcGen, "Process MC Gen  mode", true);
   // ====================== Implement Event mixing on Data ===============================
 
   // ====================== Implement Event mixing on Data ===================================
@@ -465,7 +485,7 @@ struct HfCorrelatorHfeHadrons {
       }
     }
   }
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcGenMixedEvent, "Process Mixed Event MC Gen mode", false);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcGenMixedEvent, "Process Mixed Event MC Gen mode", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
