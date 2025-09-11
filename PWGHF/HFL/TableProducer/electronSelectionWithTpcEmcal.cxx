@@ -550,9 +550,12 @@ struct HfElectronSelectionWithTpcEmcal {
   void processMcGen(McGenTableCollision const& mcCollision, aod::McParticles const& mcParticles)
   {
 
+    ///// electron identification
     bool isNonHfe = false;
     for (const auto& particleMc : mcParticles) {
 
+      if (!particleMc.isPhysicalPrimary())
+        continue;
       if (!mcGensel(particleMc)) {
         continue;
       }
@@ -577,41 +580,30 @@ struct HfElectronSelectionWithTpcEmcal {
 
                 //=================  eta->e ======================================
                 if (std::abs(mother.pdgCode()) == kEta) {
-                  if (mother.isPhysicalPrimary()) {
-                    isEmbEta = true;
-                  }
+                  isEmbEta = true;
                 }
                 //=================  eta->pi0->e ======================================
 
                 if (std::abs(mother.pdgCode()) == kPi0) {
-                  if (mother.isPhysicalPrimary()) {
-                    isEmbPi0 = true; // pi0 -> e
-                  }
+                  isEmbPi0 = true; // pi0 -> e
 
                   if (std::abs(gmother.pdgCode()) == kEta) {
-                    if (gmother.isPhysicalPrimary()) {
-                      isEmbEta = true; // eta->pi0-> e
-                    }
+                    isEmbEta = true; // eta->pi0-> e
                   }
                 }
 
                 /// ====================================  eta->gamma->e  and eta->pi0->gamma->e============
                 if (std::abs(mother.pdgCode()) == kGamma) {
                   if (std::abs(gmother.pdgCode()) == kEta) {
-                    if (gmother.isPhysicalPrimary()) {
-                      isEmbEta = true; // eta->gamma-> e
-                    }
+                    isEmbEta = true; // eta->gamma-> e
                   }
 
                   if (std::abs(gmother.pdgCode()) == kPi0) {
-                    if (gmother.isPhysicalPrimary()) {
-                      isEmbPi0 = true; // pi0-> gamma-> e
-                    }
+                    isEmbPi0 = true; // pi0-> gamma-> e
 
                     if (std::abs(ggmother.pdgCode()) == kEta) {
-                      if (ggmother.isPhysicalPrimary()) {
-                        isEmbEta = true; // eta->pi0->gamma-> e
-                      }
+
+                      isEmbEta = true; // eta->pi0->gamma-> e
                     }
                   }
                 }
@@ -637,6 +629,7 @@ struct HfElectronSelectionWithTpcEmcal {
 
   PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcGen, "Process MC Gen mode", false);
 };
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<HfElectronSelectionWithTpcEmcal>(cfgc)};
