@@ -234,7 +234,7 @@ class FemtoDreamCollisionSelection
     if (doQnSeparation){      
       for (int iqn(0); iqn < mumQnBins; ++iqn) {
         mHistogramQn->add<TProfile>(("Qn/profileC22_" + std::to_string(iqn)).c_str(), "; cent; c22", kTProfile, {{10, 0, 100}});
-        mHistogramQn->add(("Qn/mult_" + std::to_string(iqn)).c_str(), "; cent; c22", kTH1F, {{100, 0, 1000}});
+        mHistogramQn->add(("Qn/mult_" + std::to_string(iqn)).c_str(), "; cent; c22", kTH1F, {{100, 0, 3500}});
       }
     }
     return;

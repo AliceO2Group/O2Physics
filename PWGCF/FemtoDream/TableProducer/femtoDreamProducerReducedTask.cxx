@@ -131,9 +131,17 @@ struct femtoDreamProducerReducedTask {
     Configurable<int> ConfTPCOccupancyMax{"ConfTPCOccupancyMax", 1000, "Maximum value for TPC Occupancy selection"};
   } evtSel_PbPb;
 
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> ConfTrkSpecialCuts{"ConfTrkSpecialCuts", false, "Choose for special track cuts"};
+    Configurable<float> ConfTPCFracsClsMax{"ConfTPCFracsCls", 0.4, "Maximum value for fraction of shared TPC clusters"};
+    Configurable<float> ConfTPCChi2NClMax{"ConfTPCChi2NCl", 2.5, "Maximum value chi2 per cluster for TPC"};
+    Configurable<float> ConfITSChi2NClMax{"ConfITSChi2NCl", 36, "Maximum value chi2 per cluster for ITS"};
+  } specialTrkSel;
+  // Filter globalCutFilter = requireGlobalTrackInFilter();
+
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry Registry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry FlowRegistry{"QnandFlowInfo", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry FlowRegistry{"Qn", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
   float mMagField;
@@ -380,7 +388,6 @@ struct femtoDreamProducerReducedTask {
     if (ConfEvtUseTPCmult) {
       multNtr = col.multTPC();
     }
-    colCuts.fillQA(col, mult);
 
     /// First thing to do is to check whether the basic event selection criteria are fulfilled
     /// That includes checking if there are any usable tracks in a collision
@@ -400,8 +407,10 @@ struct femtoDreamProducerReducedTask {
                                             evtSel_PbPb.ConfTPCOccupancyMin, evtSel_PbPb.ConfTPCOccupancyMax)) {
       return;
     }
+
     // now the table is filled
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);
+    colCuts.fillQA(col, mult);
 
     // these IDs are necessary to keep track of the children
     // since this producer only produces the tables for tracks, there are no children
@@ -411,6 +420,13 @@ struct femtoDreamProducerReducedTask {
       if (!trackCuts.isSelectedMinimal(track)) {
         continue;
       }
+      if (specialTrkSel.ConfTrkSpecialCuts 
+          && track.tpcFractionSharedCls()>specialTrkSel.ConfTPCFracsClsMax
+          && track.tpcChi2NCl()>specialTrkSel.ConfTPCChi2NClMax
+          && track.itsChi2NCl()>specialTrkSel.ConfITSChi2NClMax) {
+        continue;
+      }
+
       trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild>(track);
       // an array of two bit-wise containers of the systematic variations is obtained
       // one container for the track quality cuts and one for the PID cuts
