@@ -672,26 +672,18 @@ struct Phik0shortanalysis {
     }
 
     if (analysisModeConfigs.isMCNewProc) {
-      mcPhiHist.add("h3PhiMCRecoNewProc", "Phi in MCReco", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
-      mcK0SHist.add("h3K0SMCRecoNewProc", "K0S in MCReco", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
-      mcPionHist.add("h3PiMCRecoNewProc", "Pion in MCReco", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
-      mcPionHist.add("h3PiMCReco2NewProc", "Pion in MCReco", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
+      mcPhiHist.add("h4PhiMCRecoNewProc", "Phi in MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTPhiAxis, yAxis});
+      mcK0SHist.add("h4K0SMCRecoNewProc", "K0S in MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTK0SAxis, yAxis});
+      mcPionHist.add("h4PiMCRecoNewProc", "Pion in MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTPiAxis, yAxis});
+      mcPionHist.add("h4PiMCReco2NewProc", "Pion in MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTPiAxis, yAxis});
 
       mcPhiHist.add("h3PhiMCGenNewProc", "Phi in MCGen", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
       mcK0SHist.add("h3K0SMCGenNewProc", "K0S in MCGen", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
       mcPionHist.add("h3PiMCGenNewProc", "Pion in MCGen", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
 
-      mcPhiHist.add("h3PhiMCGenAssocRecoNewProc", "Phi in MCGen Associated MCReco", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
-      mcK0SHist.add("h3K0SMCGenAssocRecoNewProc", "K0S in MCGen Associated MCReco", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
-      mcPionHist.add("h3PiMCGenAssocRecoNewProc", "Pion in MCGen Associated MCReco", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
-
-      mcPhiHist.add("h3PhiMCGenRecoNewProc", "Phi in MCGen MCReco", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
-      mcK0SHist.add("h3K0SMCGenRecoNewProc", "K0S in MCGen MCReco", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
-      mcPionHist.add("h3PiMCGenRecoNewProc", "Pion in MCGen MCReco", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
-
-      mcPhiHist.add("h3PhiMCGenRecoCheckNewProc", "Phi in MCGen MCReco Check", kTH3F, {binnedmultAxis, pTPhiAxis, yAxis});
-      mcK0SHist.add("h3K0SMCGenRecoCheckNewProc", "K0S in MCGen MCReco Check", kTH3F, {binnedmultAxis, pTK0SAxis, yAxis});
-      mcPionHist.add("h3PiMCGenRecoCheckNewProc", "Pion in MCGen MCReco Check", kTH3F, {binnedmultAxis, pTPiAxis, yAxis});
+      mcPhiHist.add("h4PhiMCGenAssocRecoNewProc", "Phi in MCGen Associated MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTPhiAxis, yAxis});
+      mcK0SHist.add("h4K0SMCGenAssocRecoNewProc", "K0S in MCGen Associated MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTK0SAxis, yAxis});
+      mcPionHist.add("h4PiMCGenAssocRecoNewProc", "Pion in MCGen Associated MCReco", kTHnSparseF, {vertexZAxis, binnedmultAxis, pTPiAxis, yAxis});
     }
 
     // Initialize CCDB only if purity or efficiencies are requested in the task
@@ -3066,20 +3058,19 @@ struct Phik0shortanalysis {
         auto collision = collisions.rawIteratorAt(collisionIndex);
 
         if (acceptEventQA<true>(collision, false)) {
-          ////
-          auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
+          auto fullMCTracksThisColl = fullMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
+          auto v0sThisColl = V0s.sliceBy(preslices.perColl, collision.globalIndex());
 
-          posFiltMCTracks.bindTable(filteredMCTracksThisColl);
-          negFiltMCTracks.bindTable(filteredMCTracksThisColl);
-          ////
+          posMCTracks.bindTable(fullMCTracksThisColl);
+          negMCTracks.bindTable(fullMCTracksThisColl);
 
           switch (filterOnRecoPhi) {
             case 0:
-              if (!eventHasRecoPhi(posFiltMCTracks, negFiltMCTracks))
+              if (!eventHasRecoPhi(posMCTracks, negMCTracks))
                 continue;
               break;
             case 1:
-              if (!eventHasRecoPhiWPDG(posFiltMCTracks, negFiltMCTracks, mcParticles))
+              if (!eventHasRecoPhiWPDG(posMCTracks, negMCTracks, mcParticles))
                 continue;
               break;
             default:
@@ -3091,69 +3082,70 @@ struct Phik0shortanalysis {
 
           zVtxs.push_back(collision.posZ());
 
-          ////
-          // Defining positive and negative tracks for phi reconstruction
-          auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-          auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
-
-          for (const auto& track1 : posThisColl) { // loop over all selected tracks
-            if (!selectionTrackResonance<true>(track1, false) || !selectionPIDKaonpTdependent(track1))
-              continue; // topological and PID selection
-
-            auto track1ID = track1.globalIndex();
-
-            if (!track1.has_mcParticle())
-              continue;
-            auto mcTrack1 = track1.mcParticle_as<aod::McParticles>();
-            if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
-              continue;
-
-            for (const auto& track2 : negThisColl) {
-              if (!selectionTrackResonance<true>(track2, false) || !selectionPIDKaonpTdependent(track2))
+          if ((filterOnGenPhi != 0 && filterOnGenPhi != 1) && (filterOnRecoPhi != 0 && filterOnRecoPhi != 1)) {
+            for (const auto& track1 : posMCTracks) { // loop over all selected tracks
+              if (!selectionTrackResonance<true>(track1, false) || !selectionPIDKaonpTdependent(track1))
                 continue; // topological and PID selection
 
-              auto track2ID = track2.globalIndex();
-              if (track2ID == track1ID)
-                continue; // condition to avoid double counting of pair
+              auto track1ID = track1.globalIndex();
 
-              if (!track2.has_mcParticle())
+              if (!track1.has_mcParticle())
                 continue;
-              auto mcTrack2 = track2.mcParticle_as<aod::McParticles>();
-              if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
+              auto mcTrack1 = mcParticles.rawIteratorAt(track1.mcParticleId());
+              if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
                 continue;
 
-              float pTMother = -1.0f;
-              float yMother = -1.0f;
-              bool isMCMotherPhi = false;
-              for (const auto& motherOfMcTrack1 : mcTrack1.mothers_as<aod::McParticles>()) {
-                for (const auto& motherOfMcTrack2 : mcTrack2.mothers_as<aod::McParticles>()) {
-                  if (motherOfMcTrack1.pdgCode() != motherOfMcTrack2.pdgCode())
-                    continue;
-                  if (motherOfMcTrack1.globalIndex() != motherOfMcTrack2.globalIndex())
-                    continue;
-                  if (motherOfMcTrack1.pdgCode() != o2::constants::physics::Pdg::kPhi)
-                    continue;
+              for (const auto& track2 : negMCTracks) {
+                if (!selectionTrackResonance<true>(track2, false) || !selectionPIDKaonpTdependent(track2))
+                  continue; // topological and PID selection
 
-                  pTMother = motherOfMcTrack1.pt();
-                  yMother = motherOfMcTrack1.y();
-                  isMCMotherPhi = true;
+                auto track2ID = track2.globalIndex();
+                if (track2ID == track1ID)
+                  continue; // condition to avoid double counting of pair
+
+                if (!track2.has_mcParticle())
+                  continue;
+                auto mcTrack2 = mcParticles.rawIteratorAt(track2.mcParticleId());
+                if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
+                  continue;
+
+                const auto mcTrack1MotherIndexes = mcTrack1.mothersIds();
+                const auto mcTrack2MotherIndexes = mcTrack2.mothersIds();
+
+                float pTMother = -1.0f;
+                float yMother = -1.0f;
+                bool isMCMotherPhi = false;
+
+                for (const auto& mcTrack1MotherIndex : mcTrack1MotherIndexes) {
+                  for (const auto& mcTrack2MotherIndex : mcTrack2MotherIndexes) {
+                    if (mcTrack1MotherIndex != mcTrack2MotherIndex)
+                      continue;
+
+                    const auto mother = mcParticles.rawIteratorAt(mcTrack1MotherIndex);
+                    if (mother.pdgCode() != o2::constants::physics::Pdg::kPhi)
+                      continue;
+
+                    pTMother = mother.pt();
+                    yMother = mother.y();
+                    isMCMotherPhi = true;
+                  }
                 }
+
+                if (!isMCMotherPhi)
+                  continue;
+                if (pTMother < phiConfigs.minPhiPt || std::abs(yMother) > deltaYConfigs.cfgYAcceptance)
+                  continue;
+
+                mcPhiHist.fill(HIST("h4PhiMCRecoNewProc"), collision.posZ(), mcCollision.centFT0M(), pTMother, yMother);
               }
-
-              if (!isMCMotherPhi)
-                continue;
-              if (pTMother < phiConfigs.minPhiPt || std::abs(yMother) > deltaYConfigs.cfgYAcceptance)
-                continue;
-
-              mcPhiHist.fill(HIST("h3PhiMCRecoNewProc"), genmultiplicity, pTMother, yMother);
             }
           }
 
-          for (const auto& v0 : V0s) {
+          for (const auto& v0 : v0sThisColl) {
             if (!v0.has_mcParticle())
               continue;
 
-            auto v0mcparticle = v0.mcParticle();
+            auto v0mcparticle = mcParticles.rawIteratorAt(v0.mcParticleId());
             if (v0mcparticle.pdgCode() != PDG_t::kK0Short || !v0mcparticle.isPhysicalPrimary())
               continue;
 
@@ -3167,10 +3159,10 @@ struct Phik0shortanalysis {
             if (std::abs(v0mcparticle.y()) > deltaYConfigs.cfgYAcceptance)
               continue;
 
-            mcK0SHist.fill(HIST("h3K0SMCRecoNewProc"), genmultiplicity, v0mcparticle.pt(), v0mcparticle.y());
+            mcK0SHist.fill(HIST("h4K0SMCRecoNewProc"), collision.posZ(), mcCollision.centFT0M(), v0mcparticle.pt(), v0mcparticle.y());
           }
 
-          for (const auto& track : fullMCTracks) {
+          for (const auto& track : fullMCTracksThisColl) {
             // Pion selection
             if (!selectionPion<false, true>(track, false))
               continue;
@@ -3178,7 +3170,7 @@ struct Phik0shortanalysis {
             if (!track.has_mcParticle())
               continue;
 
-            auto mcTrack = track.mcParticle_as<aod::McParticles>();
+            auto mcTrack = mcParticles.rawIteratorAt(track.mcParticleId());
             if (std::abs(mcTrack.pdgCode()) != PDG_t::kPiPlus)
               continue;
 
@@ -3197,14 +3189,13 @@ struct Phik0shortanalysis {
               continue;
             }
 
-            mcPionHist.fill(HIST("h3PiMCRecoNewProc"), genmultiplicity, mcTrack.pt(), mcTrack.y());
+            mcPionHist.fill(HIST("h4PiMCRecoNewProc"), collision.posZ(), mcCollision.centFT0M(), mcTrack.pt(), mcTrack.y());
 
             if (track.pt() >= trackConfigs.pTToUseTOF && !track.hasTOF())
               continue;
 
-            mcPionHist.fill(HIST("h3PiMCReco2NewProc"), genmultiplicity, mcTrack.pt(), mcTrack.y());
+            mcPionHist.fill(HIST("h4PiMCReco2NewProc"), collision.posZ(), mcCollision.centFT0M(), mcTrack.pt(), mcTrack.y());
           }
-          ////
 
           numberAssocColl++;
         }
@@ -3228,31 +3219,39 @@ struct Phik0shortanalysis {
         if (std::abs(mcParticle.y()) > deltaYConfigs.cfgYAcceptance)
           continue;
 
-        // Phi selection
-        if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= phiConfigs.minPhiPt) {
-          mcPhiHist.fill(HIST("h3PhiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-          if (numberAssocColl > 0)
-            mcPhiHist.fill(HIST("h3PhiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+        if (filterOnGenPhi != 0 && filterOnGenPhi != 1) {
+          // Phi selection
+          if (mcParticle.pdgCode() == o2::constants::physics::Pdg::kPhi && mcParticle.pt() >= phiConfigs.minPhiPt) {
+            mcPhiHist.fill(HIST("h3PhiMCGenNewProc"), mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+            if (numberAssocColl > 0) {
+              float zVtxRef = zVtxs[0];
+              mcPhiHist.fill(HIST("h4PhiMCGenAssocRecoNewProc"), zVtxRef, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+            }
+          }
         }
 
         // K0S selection
         if (mcParticle.pdgCode() == PDG_t::kK0Short && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= v0Configs.v0SettingMinPt) {
-          mcK0SHist.fill(HIST("h3K0SMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-          if (numberAssocColl > 0)
-            mcK0SHist.fill(HIST("h3K0SMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+          mcK0SHist.fill(HIST("h3K0SMCGenNewProc"), mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+          if (numberAssocColl > 0) {
+            float zVtxRef = zVtxs[0];
+            mcK0SHist.fill(HIST("h4K0SMCGenAssocRecoNewProc"), zVtxRef, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+          }
         }
 
         // Pion selection
         if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus && mcParticle.isPhysicalPrimary() && mcParticle.pt() >= trackConfigs.cMinPionPtcut) {
-          mcPionHist.fill(HIST("h3PiMCGenNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
-          if (numberAssocColl > 0)
-            mcPionHist.fill(HIST("h3PiMCGenAssocRecoNewProc"), genmultiplicity, mcParticle.pt(), mcParticle.y());
+          mcPionHist.fill(HIST("h3PiMCGenNewProc"), mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+          if (numberAssocColl > 0) {
+            float zVtxRef = zVtxs[0];
+            mcPionHist.fill(HIST("h4PiMCGenAssocRecoNewProc"), zVtxRef, mcCollision.centFT0M(), mcParticle.pt(), mcParticle.y());
+          }
         }
       }
     }
   }
 
-  PROCESS_SWITCH(Phik0shortanalysis, processAllPartMC, "Process function for all particles in MC", false);
+  PROCESS_SWITCH(Phik0shortanalysis, processAllPartMC, "Process function for all particles (not for phi if triggered on it) in MC", false);
 
   void processPhiK0SMixingEvent(SelCollisions const& collisions, FullTracks const& fullTracks, FullV0s const& V0s, V0DauTracks const&)
   {
