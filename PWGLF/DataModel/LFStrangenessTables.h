@@ -63,6 +63,9 @@ DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNA, energyCommonZNA, //! get the total s
                            [](float value) -> float { return value; });
 DECLARE_SOA_DYNAMIC_COLUMN(EnergyCommonZNC, energyCommonZNC, //! get the total sum of the ZN A amplitudes
                            [](float value) -> float { return value; });
+
+// event time
+DECLARE_SOA_COLUMN(EventTime, eventTime, float); //! event time (FT0, TOF) for TOF PID (stored once per event)
 } // namespace stracollision
 
 //______________________________________________________
@@ -308,6 +311,8 @@ DECLARE_SOA_TABLE(StraStamps_000, "AOD", "STRASTAMPS", //! information for ID-in
                   bc::RunNumber, timestamp::Timestamp);
 DECLARE_SOA_TABLE_VERSIONED(StraStamps_001, "AOD", "STRASTAMPS", 1, //! information for ID-ing mag field if needed
                             bc::RunNumber, timestamp::Timestamp, bc::GlobalBC);
+DECLARE_SOA_TABLE(StraEvTimes, "AOD", "STRAEVTIMES", //! event time (FT0, TOF)
+                  stracollision::EventTime);
 
 using StraRawCents = StraRawCents_004;
 using StraCents = StraCents_001;
