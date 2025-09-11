@@ -262,7 +262,7 @@ struct FlattenictyPikp {
     ConfigurableAxis axisDedx{"axisDedx", {100, 0, 100}, "dE/dx binning"};
     ConfigurableAxis axisNsigmaTPC{"axisNsigmaTPC", {200, -10, 10}, "nsigmaTPC binning"};
     ConfigurableAxis axisNsigmaTOF{"axisNsigmaTOF", {200, -10, 10}, "nsigmaTOF binning"};
-    ConfigurableAxis axisAmplFV0{"axsAmplFV0", {4096, 0, 4096}, "FV0 amplitude (ADC) binning"};
+    ConfigurableAxis axisAmplFV0{"axisAmplFV0", {4096, 0, 4096}, "FV0 amplitude (ADC) binning"};
     ConfigurableAxis axisAmplFV0Sum{"axisAmplFV0Sum", {4096, 0, 4096 * 49}, "FV0 amplitude sum (ADC) binning"};
     ConfigurableAxis axisChannelFV0{"axisChannelFV0", {49, 0., 49.}, "FV0 channel ID binning"};
   } binOpt;
