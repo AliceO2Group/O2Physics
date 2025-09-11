@@ -779,7 +779,7 @@ struct f1protonreducedtable {
                 PionTPCFinal.push_back(PionTPC.at(i1));       // Pion TPC
                 KaonTPCFinal.push_back(KaonTPC.at(i2));       // Kaon TPC
                 KaonTPCPionHypoFinal.push_back(KaonTPCPionHypo.at(i2)); // Kaon TPC
-                if (pairsign == 1) {
+                if (pairsign > 0) {
                   qaRegistry.fill(HIST("hInvMassf1"), F1Vector.M(), F1Vector.Pt());
                   numberF1 = numberF1 + 1;
                   for (auto iproton = protons.begin(); iproton != protons.end(); ++iproton) {
