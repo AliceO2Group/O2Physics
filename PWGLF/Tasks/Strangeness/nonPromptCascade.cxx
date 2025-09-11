@@ -225,7 +225,6 @@ struct NonPromptCascadeTask {
   AxisSpec multAxisZoom = {7000, 3000, 10000, "Multiplicity FT0M"};
   AxisSpec nTracksAxis = {100, 0., 100., "NTracksGlobal"};
 
-
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
     if (mRunNumber == bc.runNumber()) {
@@ -262,7 +261,7 @@ struct NonPromptCascadeTask {
 
     std::vector<double> ptBinning = {0.4, 0.8, 1.2, 1.6, 2.0, 2.4, 2.8, 3.2, 3.6, 4.0, 4.4, 4.8, 5.2, 5.6, 6.0};
     // AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
-   
+
     std::array<std::string, 7> cutsNames{"# candidates", "hasTOF", "nClusTPC", "nSigmaTPCbach", "nSigmaTPCprotontrack", "nSigmaTPCpiontrack", "cosPA"};
     auto cutsOmega{std::get<std::shared_ptr<TH2>>(mRegistry.add("h_PIDcutsOmega", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{cutsNames.size(), -0.5, -0.5 + cutsNames.size()}, {125, 1.650, 1.700}}))};
     auto cutsXi{std::get<std::shared_ptr<TH2>>(mRegistry.add("h_PIDcutsXi", ";;Invariant mass (GeV/#it{c}^{2})", HistType::kTH2D, {{6, -0.5, 5.5}, {125, 1.296, 1.346}}))};
@@ -275,7 +274,6 @@ struct NonPromptCascadeTask {
       cutsOmega->GetYaxis()->SetBinLabel(iBin + 1, cutsNames[iBin].c_str());
       cutsXi->GetYaxis()->SetBinLabel(iBin + 1, cutsNames[iBin].c_str());
     }
-
   }
 
   template <typename CollisionType, typename TrackType>
@@ -341,23 +339,22 @@ struct NonPromptCascadeTask {
   {
     // std::cout << "Filling mult histos" << std::endl;
     for (const auto& coll : collisions) {
-      if(!mRuns.count(mRunNumber)) {
+      if (!mRuns.count(mRunNumber)) {
         std::string histName = "mult/hMultVsCent_run" + std::to_string(mRunNumber);
-        mHistPointer1= std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxis, multAxis}));
+        mHistPointer1 = std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxis, multAxis}));
         histName = "mult/hMultVsCentZoom_run" + std::to_string(mRunNumber);
-        mHistPointer2= std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxisZoom, multAxisZoom}));
+        mHistPointer2 = std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxisZoom, multAxisZoom}));
         histName = "mult/hNTracksVsCent_run" + std::to_string(mRunNumber);
-        mHistPointer3= std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxis, nTracksAxis}));
+        mHistPointer3 = std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxis, nTracksAxis}));
         histName = "mult/hNTracksVsCentZoom_run" + std::to_string(mRunNumber);
-        mHistPointer4= std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxisZoom, nTracksAxis}));
+        mHistPointer4 = std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxisZoom, nTracksAxis}));
         mRuns.insert(mRunNumber);
       }
-      //std::cout << coll.selection_bit(aod::evsel::kNoSameBunchPileup) << std::endl;
+      // std::cout << coll.selection_bit(aod::evsel::kNoSameBunchPileup) << std::endl;
       mHistPointer1->Fill(coll.centFT0M(), coll.multFT0M());
       mHistPointer2->Fill(coll.centFT0M(), coll.multFT0M());
       mHistPointer3->Fill(coll.centFT0M(), coll.multNTracksGlobal());
       mHistPointer4->Fill(coll.centFT0M(), coll.multNTracksGlobal());
-
 
       mRegistry.fill(HIST("hMultVsCent"), coll.centFT0M(), coll.multFT0M());
       mRegistry.fill(HIST("hMultVsCentZoom"), coll.centFT0M(), coll.multFT0M());
@@ -575,7 +572,7 @@ struct NonPromptCascadeTask {
       if (mToiMap.count(bc.globalBC())) {
         toiMask = mToiMap[bc.globalBC()];
       }
-      candidates.emplace_back(NPCascCandidate{mRunNumber ,mcParticleID, trackedCascGlobalIndex, itsTrackGlobalIndex, candidate.collisionId(), matchingChi2, deltaPtITSCascade, deltaPtCascade, cascITSclsSize, hasReassociatedClusters, hasFakeReassociation, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
+      candidates.emplace_back(NPCascCandidate{mRunNumber, mcParticleID, trackedCascGlobalIndex, itsTrackGlobalIndex, candidate.collisionId(), matchingChi2, deltaPtITSCascade, deltaPtCascade, cascITSclsSize, hasReassociatedClusters, hasFakeReassociation, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
                                               collision.numContrib(), cascPVContribs, collision.collisionTimeRes(), primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
                                               cascadeLvector.pt(), cascadeLvector.eta(), cascadeLvector.phi(),
                                               protonTrack.pt(), protonTrack.eta(), pionTrack.pt(), pionTrack.eta(), bachelor.pt(), bachelor.eta(),
