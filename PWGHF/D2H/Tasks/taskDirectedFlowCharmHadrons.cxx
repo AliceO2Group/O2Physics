@@ -152,6 +152,8 @@ struct HfTaskDirectedFlowCharmHadrons {
       registry.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
       registry.add("hpQxtQypvscent", "hpQxtQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
       registry.add("hpQxpQytvscent", "hpQxpQytvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
+      registry.add("hpQxtQxpvsmass", "hpQxtQxpvsmass", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisScalarProd}, true);
+      registry.add("hpQytQypvsmass", "hpQytQypvsmass", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisScalarProd}, true);
       registry.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, axes, true);
@@ -336,6 +338,8 @@ struct HfTaskDirectedFlowCharmHadrons {
           registry.fill(HIST("hpuyQypvscentpteta"), massCand, cent, ptCand, etaCand, uyQyp, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign, outputMl[0], outputMl[1]);
+          registry.fill(HIST("hpQxtQxpvsmass"), massCand, qxtQxp);
+          registry.fill(HIST("hpQytQypvsmass"), massCand, qytQyp);
 
           registry.fill(HIST("hpuxvscentpteta"), massCand, cent, ptCand, etaCand, ux, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpuyvscentpteta"), massCand, cent, ptCand, etaCand, uy, sign, outputMl[0], outputMl[1]);
