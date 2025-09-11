@@ -351,10 +351,10 @@ struct HfTaskCorrelationDsHadrons {
       case EfficiencyMode::DsOnly:
         if (loadAccXEffFromCCDB) {
           if (useHighDimHistoForEff) {
-            if (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, multPvContrib)) <= epsilon) {
+            if (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(multPvContrib))) <= epsilon) {
               LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
             }
-            weight = 1. / hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, multPvContrib));
+            weight = 1. / hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(multPvContrib)));
           } else {
             if (hEfficiencyD->GetBinContent(hEfficiencyD->FindBin(ptD)) <= epsilon) {
               LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
@@ -376,12 +376,12 @@ struct HfTaskCorrelationDsHadrons {
                 if (hEfficiencyAssociatedDeltaPhiCorr->GetBinContent(hEfficiencyAssociatedDeltaPhiCorr->FindBin(*ptAssoc, ptD, deltaPhi)) <= epsilon) {
                   LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
                 }
-                weight = 1. / (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, multPvContrib)) * hEfficiencyAssociatedDeltaPhiCorr->GetBinContent(hEfficiencyAssociatedDeltaPhiCorr->FindBin(*ptAssoc, ptD, deltaPhi)));
+                weight = 1. / (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(multPvContrib))) * hEfficiencyAssociatedDeltaPhiCorr->GetBinContent(hEfficiencyAssociatedDeltaPhiCorr->FindBin(*ptAssoc, ptD, deltaPhi)));
               } else {
-                if (hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, multPvContrib)) <= epsilon) {
+                if (hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, static_cast<double>(multPvContrib))) <= epsilon) {
                   LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
                 }
-                weight = 1. / (hEfficiencyDMult->GetBinContent(hEfficiencyD->FindBin(ptD, multPvContrib)) * hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, multPvContrib)));
+                weight = 1. / (hEfficiencyDMult->GetBinContent(hEfficiencyD->FindBin(ptD, static_cast<double>(multPvContrib))) * hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, static_cast<double>(multPvContrib))));
               }
             } else {
               if (hEfficiencyAssociated->GetBinContent(hEfficiencyAssociated->FindBin(*ptAssoc)) <= epsilon) {
@@ -462,7 +462,7 @@ struct HfTaskCorrelationDsHadrons {
       if (useHighDimHistoForEff) {
         efficiencyWeight = getEfficiencyWeight(std::abs(ptD), multPvContrib, std::abs(ptHadron), deltaPhi, EfficiencyMode::DsHadronPair);
       } else {
-        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::abs(ptHadron), EfficiencyMode::DsHadronPair);
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
 
       // in signal region
@@ -583,9 +583,9 @@ struct HfTaskCorrelationDsHadrons {
       if (useHighDimHistoForEff) {
         efficiencyWeight = getEfficiencyWeight(std::abs(ptD), multPvContrib, std::abs(ptHadron), deltaPhi, EfficiencyMode::DsHadronPair);
       } else {
-        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::abs(ptHadron), EfficiencyMode::DsHadronPair);
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
-
+      
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
         // prompt and non-prompt division
@@ -680,7 +680,7 @@ struct HfTaskCorrelationDsHadrons {
       if (useHighDimHistoForEff) {
         efficiencyWeight = getEfficiencyWeight(std::abs(ptD), multPvContrib, std::abs(ptHadron), deltaPhi, EfficiencyMode::DsHadronPair);
       } else {
-        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::abs(ptHadron), EfficiencyMode::DsHadronPair);
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
 
       // in signal region
@@ -752,7 +752,7 @@ struct HfTaskCorrelationDsHadrons {
       if (useHighDimHistoForEff) {
         efficiencyWeight = getEfficiencyWeight(std::abs(ptD), multPvContrib, std::abs(ptHadron), deltaPhi, EfficiencyMode::DsHadronPair);
       } else {
-        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::abs(ptHadron), EfficiencyMode::DsHadronPair);
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
 
       // in signal region
@@ -841,7 +841,7 @@ struct HfTaskCorrelationDsHadrons {
       if (useHighDimHistoForEff) {
         efficiencyWeight = getEfficiencyWeight(std::abs(ptD), multPvContrib, std::abs(ptHadron), deltaPhi, EfficiencyMode::DsHadronPair);
       } else {
-        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::abs(ptHadron), EfficiencyMode::DsHadronPair);
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
 
       // in signal region
