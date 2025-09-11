@@ -140,8 +140,8 @@ struct HfCorrelatorDsHadronsReduced {
                             track.etaAssocTrack() - candidate.etaCand(),
                             candidate.ptCand(),
                             track.ptAssocTrack(),
-                            poolBin
-                              collision.numPvContrib());
+                            poolBin,
+                            collision.numPvContrib());
           entryDsHadronRecoInfo(candidate.invMassDs(), false, false);
           entryDsHadronMlInfo(candidate.bdtScorePrompt(), candidate.bdtScoreBkg());
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.nTpcCrossedRows());
@@ -203,8 +203,8 @@ struct HfCorrelatorDsHadronsReduced {
                           pAssoc.etaAssocTrack() - cand.etaCand(),
                           cand.ptCand(),
                           pAssoc.ptAssocTrack(),
-                          poolBin
-                            c1.numPvContrib());
+                          poolBin,
+                          c1.numPvContrib());
         entryDsHadronRecoInfo(cand.invMassDs(), false, false);
         // entryDsHadronGenInfo(false, false, 0);
       }
