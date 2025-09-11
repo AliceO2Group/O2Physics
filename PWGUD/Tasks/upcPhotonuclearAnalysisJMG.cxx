@@ -536,10 +536,11 @@ struct UpcPhotonuclearAnalysisJMG {
         /*if (doPairCuts && mPairCuts.conversionCuts(track1, track2)) {
           continue;
         }*/
-        float deltaPhi = phi(track1.px(), track1.py()) - phi(track2.px(), track2.py());
+        float deltaPhi = phi1 - phi2;
+        float deltaEta = eta1 - eta2;
         deltaPhi = RecoDecay::constrainAngle(deltaPhi, -PIHalf);
         target->getPairHist()->Fill(CorrelationContainer::kCFStepReconstructed,
-                                    eta(track1.px(), track1.py(), track1.pz()) - eta(track2.px(), track2.py(), track2.pz()),
+                                    deltaEta,
                                     track2.pt(), track1.pt(),
                                     multiplicity,
                                     deltaPhi,
