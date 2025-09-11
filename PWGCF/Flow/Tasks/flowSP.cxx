@@ -15,17 +15,18 @@
 /// \brief  task to evaluate flow with respect to spectator plane.
 
 #include "GFWWeights.h"
+
 #include "PWGCF/DataModel/SPTableZDC.h"
 
+#include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
-#include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
@@ -57,11 +58,11 @@ using namespace o2::aod::rctsel;
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct FlowSP {
-    RCTFlagsChecker rctChecker;
+  RCTFlagsChecker rctChecker;
 
   struct : ConfigurableGroup {
     O2_DEFINE_CONFIGURABLE(cfgEvtUseRCTFlagChecker, bool, false, "Evt sel: use RCT flag checker");
-    O2_DEFINE_CONFIGURABLE(cfgEvtRCTFlagCheckerLabel, std::string, "CBT_hadronPID", "Evt sel: RCT flag checker label (CBT, CBT_hadronPID)"); //all Labels can be found in Common/CCDB/RCTSelectionFlags.h
+    O2_DEFINE_CONFIGURABLE(cfgEvtRCTFlagCheckerLabel, std::string, "CBT_hadronPID", "Evt sel: RCT flag checker label (CBT, CBT_hadronPID)"); // all Labels can be found in Common/CCDB/RCTSelectionFlags.h
     O2_DEFINE_CONFIGURABLE(cfgEvtRCTFlagCheckerZDCCheck, bool, false, "Evt sel: RCT flag checker ZDC check");
     O2_DEFINE_CONFIGURABLE(cfgEvtRCTFlagCheckerLimitAcceptAsBad, bool, false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad");
   } rctFlags;
@@ -184,12 +185,12 @@ struct FlowSP {
 
   } cfg;
 
-  struct SPMvars { 
-    std::vector<std::map<int, float>> wacc = {{{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}}; //int for part species, float for weight vector for kIncl, kPos, kNeg
-    std::vector<std::map<int, float>> weff = {{{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}}; //int for part species, float for weight vector for kIncl, kPos, kNeg
-    double centWeight = 1.0; 
-    double ux = 0; 
-    double uy = 0; 
+  struct SPMvars {
+    std::vector<std::map<int, float>> wacc = {{{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}}; // int for part species, float for weight vector for kIncl, kPos, kNeg
+    std::vector<std::map<int, float>> weff = {{{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}}; // int for part species, float for weight vector for kIncl, kPos, kNeg
+    double centWeight = 1.0;
+    double ux = 0;
+    double uy = 0;
     double uxMH = 0;
     double uyMH = 0;
     double qxA = 0;
@@ -203,12 +204,12 @@ struct FlowSP {
     double vnC = 0;
     double vnFull = 0;
     float centrality = 0;
-    float vtxz = 0; 
-    double vx = 0; 
-    double vy = 0; 
-    double vz = 0; 
+    float vtxz = 0;
+    double vx = 0;
+    double vy = 0;
+    double vz = 0;
     int charge = 0;
-  } spm; 
+  } spm;
 
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   OutputObj<GFWWeights> fWeightsPOS{GFWWeights("weights_positive")};
@@ -229,7 +230,7 @@ struct FlowSP {
   enum SelectionCriteria {
     evSel_FilteredEvent,
     evSel_sel8,
-    evSel_RCTFlagsZDC, 
+    evSel_RCTFlagsZDC,
     evSel_occupancy,
     evSel_kTVXinTRD,
     evSel_kNoSameBunchPileup,
@@ -1101,17 +1102,17 @@ struct FlowSP {
     fillTrackQA<ft, kInclusive, pt>(track, cfgTrackSelDoTrackQAvsCent);
     fillPIDQA<ft, kInclusive>(track);
 
-    if (cfgFillChargeDependenceQA){
-      switch(spm.charge) {
+    if (cfgFillChargeDependenceQA) {
+      switch (spm.charge) {
         case kPositive: {
-          fillTrackQA<ft, kPositive , pt>(track, cfgTrackSelDoTrackQAvsCent);
-          fillPIDQA<ft, kPositive >(track);
-          break; 
+          fillTrackQA<ft, kPositive, pt>(track, cfgTrackSelDoTrackQAvsCent);
+          fillPIDQA<ft, kPositive>(track);
+          break;
         }
         case kNegative: {
-            fillTrackQA<ft, kNegative , pt>(track, cfgTrackSelDoTrackQAvsCent);
-            fillPIDQA<ft, kNegative >(track);
-            break; 
+          fillTrackQA<ft, kNegative, pt>(track, cfgTrackSelDoTrackQAvsCent);
+          fillPIDQA<ft, kNegative>(track);
+          break;
         }
       }
     }
@@ -1250,17 +1251,24 @@ struct FlowSP {
 
       histos.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
 
-      spm.charge = ((track.sign() > 0)) ? kPositive : kNegative; 
+      spm.charge = ((track.sign() > 0)) ? kPositive : kNegative;
 
       if (cfgFillQABefore) {
         fillAllQA<kBefore, kUnidentified>(track);
         if (cfgFillPIDQA) {
-              switch (trackPID) {
-                case kPions:   fillAllQA<kBefore, kPions>(track); break;
-                case kKaons:   fillAllQA<kBefore, kKaons>(track); break;
-                case kProtons: fillAllQA<kBefore, kProtons>(track); break;
-                default:       /* do nothing */ break;
-              }
+          switch (trackPID) {
+            case kPions:
+              fillAllQA<kBefore, kPions>(track);
+              break;
+            case kKaons:
+              fillAllQA<kBefore, kKaons>(track);
+              break;
+            case kProtons:
+              fillAllQA<kBefore, kProtons>(track);
+              break;
+            default: /* do nothing */
+              break;
+          }
         }
       }
 
@@ -1290,17 +1298,23 @@ struct FlowSP {
         continue;
       if (!setCurrentParticleWeights(spm.charge, kUnidentified, phi, track.eta(), track.pt(), vtxz))
         continue;
-  
 
       histos.fill(HIST("hTrackCount"), trackSel_ParticleWeights);
 
       fillAllQA<kAfter, kUnidentified>(track);
       if (cfgFillPIDQA) {
         switch (trackPID) {
-          case kPions:   fillAllQA<kAfter, kPions>(track); break;
-          case kKaons:   fillAllQA<kAfter, kKaons>(track); break;
-          case kProtons: fillAllQA<kAfter, kProtons>(track); break;
-          default:       /* do nothing */ break;
+          case kPions:
+            fillAllQA<kAfter, kPions>(track);
+            break;
+          case kKaons:
+            fillAllQA<kAfter, kKaons>(track);
+            break;
+          case kProtons:
+            fillAllQA<kAfter, kProtons>(track);
+            break;
+          default: /* do nothing */
+            break;
         }
       }
 
@@ -1320,36 +1334,61 @@ struct FlowSP {
 
       if (cfgFillChargeDependence) {
         switch (spm.charge) {
-          case kPositive: fillHistograms<kPositive, kUnidentified>(track); break;
-          case kNegative: fillHistograms<kNegative, kUnidentified>(track); break;
+          case kPositive:
+            fillHistograms<kPositive, kUnidentified>(track);
+            break;
+          case kNegative:
+            fillHistograms<kNegative, kUnidentified>(track);
+            break;
         }
       }
 
       if (cfgFillPID) {
         switch (trackPID) {
-          case kPions:   fillHistograms<kInclusive, kPions>(track); break;
-          case kKaons:   fillHistograms<kInclusive, kKaons>(track); break;
-          case kProtons: fillHistograms<kInclusive, kProtons>(track); break;
-          default:       /* do nothing */ break;
+          case kPions:
+            fillHistograms<kInclusive, kPions>(track);
+            break;
+          case kKaons:
+            fillHistograms<kInclusive, kKaons>(track);
+            break;
+          case kProtons:
+            fillHistograms<kInclusive, kProtons>(track);
+            break;
+          default: /* do nothing */
+            break;
         }
         if (cfgFillChargeDependence) {
           switch (spm.charge) {
             case kPositive: {
               switch (trackPID) {
-                case kPions:   fillHistograms<kPositive, kPions>(track); break;
-                case kKaons:   fillHistograms<kPositive, kKaons>(track); break;
-                case kProtons: fillHistograms<kPositive, kProtons>(track); break;
-                default:       /* do nothing */ break;
+                case kPions:
+                  fillHistograms<kPositive, kPions>(track);
+                  break;
+                case kKaons:
+                  fillHistograms<kPositive, kKaons>(track);
+                  break;
+                case kProtons:
+                  fillHistograms<kPositive, kProtons>(track);
+                  break;
+                default: /* do nothing */
+                  break;
               }
               break;
             }
-            case kNegative:{
+            case kNegative: {
               switch (trackPID) {
-                case kPions:   fillHistograms<kNegative, kPions>(track); break;
-                case kKaons:   fillHistograms<kNegative, kKaons>(track); break;
-                case kProtons: fillHistograms<kNegative, kProtons>(track); break;
-                default:       /* do nothing */ break;
-              }       
+                case kPions:
+                  fillHistograms<kNegative, kPions>(track);
+                  break;
+                case kKaons:
+                  fillHistograms<kNegative, kKaons>(track);
+                  break;
+                case kProtons:
+                  fillHistograms<kNegative, kProtons>(track);
+                  break;
+                default: /* do nothing */
+                  break;
+              }
               break;
             }
           }
@@ -1528,7 +1567,7 @@ struct FlowSP {
         if (std::abs(pdgInfo->Charge()) < 1)
           continue;
 
-          spm.charge = (pdgInfo->Charge() > 0) ? kPositive : kNegative;
+        spm.charge = (pdgInfo->Charge() > 0) ? kPositive : kNegative;
 
         int minVal = 100;
         if (cfgFilterLeptons && std::abs(pdgCode) < minVal) {
