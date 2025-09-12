@@ -14,6 +14,7 @@
 
 #include <CCDB/BasicCCDBManager.h>
 
+#include <cstdint>
 #include <string>
 
 namespace o2

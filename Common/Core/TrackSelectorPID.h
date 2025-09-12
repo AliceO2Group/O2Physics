@@ -17,10 +17,12 @@
 #ifndef COMMON_CORE_TRACKSELECTORPID_H_
 #define COMMON_CORE_TRACKSELECTORPID_H_
 
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
+
 #include <TPDGCode.h>
 
-#include "Framework/Logger.h"
-#include "ReconstructionDataFormats/PID.h"
+#include <cstdint>
 
 /// Class for track selection using PID detectors
 

@@ -147,6 +147,9 @@ struct FlowTask {
     O2_DEFINE_CONFIGURABLE(cfgRejectionTPCsectorOverlap, bool, false, "rejection for TPC sector overlap")
     O2_DEFINE_CONFIGURABLE(cfgMagnetField, std::string, "GLO/Config/GRPMagField", "CCDB path to Magnet field object")
     ConfigurableAxis axisPhiMod{"axisPhiMod", {100, 0, constants::math::PI / 9}, "fmod(#varphi,#pi/9)"};
+    O2_DEFINE_CONFIGURABLE(cfgTPCPhiCutLowCutFunction, std::string, "0.1/x-0.005", "Function for TPC mod phi-pt cut");
+    O2_DEFINE_CONFIGURABLE(cfgTPCPhiCutHighCutFunction, std::string, "0.1/x+0.01", "Function for TPC mod phi-pt cut");
+    O2_DEFINE_CONFIGURABLE(cfgTPCPhiCutPtMin, float, 2.0f, "start point of phi-pt cut")
     TF1* fPhiCutLow = nullptr;
     TF1* fPhiCutHigh = nullptr;
   } cfgFuncParas;
@@ -512,8 +515,8 @@ struct FlowTask {
     }
 
     if (cfgFuncParas.cfgShowTPCsectorOverlap) {
-      cfgFuncParas.fPhiCutLow = new TF1("fPhiCutLow", "0.06/x+pi/18.0-0.06", 0, 100);
-      cfgFuncParas.fPhiCutHigh = new TF1("fPhiCutHigh", "0.1/x+pi/18.0+0.06", 0, 100);
+      cfgFuncParas.fPhiCutLow = new TF1("fPhiCutLow", cfgFuncParas.cfgTPCPhiCutLowCutFunction->c_str(), 0, 100);
+      cfgFuncParas.fPhiCutHigh = new TF1("fPhiCutHigh", cfgFuncParas.cfgTPCPhiCutHighCutFunction->c_str(), 0, 100);
     }
 
     if (cfgTrackDensityCorrUse) {
@@ -781,7 +784,7 @@ struct FlowTask {
     phimodn = fmod(phimodn, o2::constants::math::TwoPI / 9.0);
     registry.fill(HIST("pt_phi_bef"), track.pt(), phimodn);
     if (cfgFuncParas.cfgRejectionTPCsectorOverlap) {
-      if (phimodn < cfgFuncParas.fPhiCutHigh->Eval(track.pt()) && phimodn > cfgFuncParas.fPhiCutLow->Eval(track.pt()))
+      if (track.pt() >= cfgFuncParas.cfgTPCPhiCutPtMin && phimodn < cfgFuncParas.fPhiCutHigh->Eval(track.pt()) && phimodn > cfgFuncParas.fPhiCutLow->Eval(track.pt()))
         return false; // reject track
     }
     registry.fill(HIST("pt_phi_aft"), track.pt(), phimodn);

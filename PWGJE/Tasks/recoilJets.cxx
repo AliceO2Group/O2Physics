@@ -116,8 +116,6 @@ struct RecoilJets {
   Configurable<uint16_t> histMultBins{"histMultBins", 1000, "Number of bins for scaled FT0M multiplicity"};
 
   // Axes specification
-  AxisSpec pT{histJetPt, 0.0, histJetPt * 1., "#it{p}_{T} (GeV/#it{c})"};
-  AxisSpec jetPTcorr{histJetPt + 20, -20., histJetPt * 1.0, "#it{p}_{T, jet}^{ch, corr} (GeV/#it{c})"};
   AxisSpec phiAngle{40, 0.0, constants::math::TwoPI, "#it{#varphi} (rad)"};
   AxisSpec deltaPhiAngle{52, 0.0, constants::math::PI, "#Delta#it{#varphi} (rad)"};
   AxisSpec pseudorap{40, -1., 1., "#it{#eta}"};
@@ -125,8 +123,6 @@ struct RecoilJets {
   AxisSpec jetArea{50, 0.0, 5., "Area_{jet}"};
   AxisSpec rhoArea{60, 0.0, 60., "#it{#rho} #times Area_{jet}"};
   AxisSpec rho{50, 0.0, 50., "#it{#rho}"};
-  AxisSpec scaledFT0C{histMultBins, 0.0, 20., "FT0C / #LT FT0C #GT"};
-  AxisSpec scaledFT0M{histMultBins, 0.0, 20., "FT0M^{*}"};
   ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0, 0.2, 0.3, 0.4, 0.6, 0.8, 1., 1.4, 1.8, 2.4, 3.6, 5., 20.}, "Percentiles of scaled FT0C: 100-90%, 90-80%, 80-70%, 70-60%, 60-50%, 50-40%, 40-30%, 30-20%, 20-10%, 10-1%, 1-0.1%"}; // to adjust the boarders
   ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0, 0.2, 0.3, 0.4, 0.6, 0.8, 1., 1.4, 1.8, 2.4, 3.6, 5., 20.}, "Percentiles of scaled FT0M: 100-90%, 90-80%, 80-70%, 70-60%, 60-50%, 50-40%, 40-30%, 30-20%, 20-10%, 10-1%, 1-0.1%"};
 
@@ -155,6 +151,14 @@ struct RecoilJets {
 
   void init(InitContext const&)
   {
+    // Initialize histogram axes
+    AxisSpec pT{histJetPt, 0.0, histJetPt * 1., "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec jetPTcorr{histJetPt + 20, -20., histJetPt * 1.0, "#it{p}_{T, jet}^{ch, corr} (GeV/#it{c})"};
+    AxisSpec scaledFT0A{histMultBins, 0.0, 20., "FT0A / #LT FT0A #GT"};
+    AxisSpec scaledFT0C{histMultBins, 0.0, 20., "FT0C / #LT FT0C #GT"};
+    AxisSpec scaledFT0M{histMultBins, 0.0, 20., "FT0M^{*}"};
+
+    // Convert configurable strings to std::string
     std::string evSelToString = static_cast<std::string>(evSel);
     std::string trkSelToString = static_cast<std::string>(trkSel);
 
@@ -303,27 +307,27 @@ struct RecoilJets {
     }
 
     if (doprocessMultiplicity) {
-      spectra.add("hMultFT0A", "Mult. signal from FTOA", kTH1F, {{2000, 0.0, 40000.}});
-      spectra.add("hMultFT0C", "Mult. signal from FTOC", kTH1F, {{2000, 0.0, 40000.}});
-      spectra.add("hMultFT0M", "Total mult. signal from FT0A & FTOC", kTH1F, {{3000, 0.0, 60000.}});
+      spectra.add("hMultFT0A", "Mult. signal from FTOA", kTH1F, {{2000, 0.0, 40000., "FT0A"}});
+      spectra.add("hMultFT0C", "Mult. signal from FTOC", kTH1F, {{2000, 0.0, 40000., "FT0C"}});
+      spectra.add("hMultFT0M", "Total mult. signal from FT0A & FTOC", kTH1F, {{3000, 0.0, 60000., "FT0M"}});
 
-      spectra.add("hScaleMultFT0A", "Scaled mult. signal from FTOA", kTH1F, {{200, 0.0, 20., "FT0A / #LT FT0A #GT"}});
+      spectra.add("hScaleMultFT0A", "Scaled mult. signal from FTOA", kTH1F, {scaledFT0A});
       spectra.add("hScaleMultFT0C", "Scaled mult. signal from FTOC", kTH1F, {scaledFT0C});
       spectra.add("hScaleMultFT0M", "Scaled total mult. signal from FT0A & FTOC", kTH1F, {scaledFT0M});
 
-      spectra.add("hMultZNA", "Mult. signal from ZDC A-side", kTH1F, {{1000, 0.0, 5000.}});
-      spectra.add("hMultZNC", "Mult. signal from ZDC C-side", kTH1F, {{1000, 0.0, 5000.}});
-      spectra.add("hMultZNM", "Total mult. signal from ZDCs", kTH1F, {{4000, 0.0, 8000.}});
+      spectra.add("hMultZNA", "Mult. signal from ZDC A-side", kTH1F, {{1000, 0.0, 5000., "ZNA"}});
+      spectra.add("hMultZNC", "Mult. signal from ZDC C-side", kTH1F, {{1000, 0.0, 5000., "ZNC"}});
+      spectra.add("hMultZNM", "Total mult. signal from ZDCs", kTH1F, {{4000, 0.0, 8000., "ZNM"}});
 
       // Correlations
-      spectra.add("hMultFT0A_vs_ZNA", "Correlation of signals FTOA vs ZNA", kTH2F, {{2000, 0.0, 40000.}, {1000, 0.0, 5000.}});
-      spectra.add("hMultFT0C_vs_ZNC", "Correlation of signals FTOC vs ZNC", kTH2F, {{2000, 0.0, 40000.}, {1000, 0.0, 5000.}});
-      spectra.add("hMultFT0M_vs_ZNM", "Correlation of signals FTOM vs ZNM", kTH2F, {{3000, 0.0, 60000.}, {4000, 0.0, 8000.}});
+      spectra.add("hMultFT0A_vs_ZNA", "Correlation of signals FTOA vs ZNA", kTH2F, {{2000, 0.0, 40000., "FT0A"}, {1000, 0.0, 5000., "ZNA"}});
+      spectra.add("hMultFT0C_vs_ZNC", "Correlation of signals FTOC vs ZNC", kTH2F, {{2000, 0.0, 40000., "FT0C"}, {1000, 0.0, 5000., "ZNC"}});
+      spectra.add("hMultFT0M_vs_ZNM", "Correlation of signals FTOM vs ZNM", kTH2F, {{3000, 0.0, 60000., "FT0M"}, {4000, 0.0, 8000., "ZNM"}});
 
-      spectra.add("hScaleMultFT0A_vs_ZNA", "Correlation of signals FT0A/meanFT0A vs ZNA", kTH2F, {{200, 0.0, 20., "FT0A / #LT FT0A #GT"}, {1000, 0.0, 5000.}});
-      spectra.add("hScaleMultFT0C_vs_ZNC", "Correlation of signals FT0C/meanFT0C vs ZNC", kTH2F, {{scaledFT0C}, {1000, 0.0, 5000.}});
-      spectra.add("hScaleMultFT0M_vs_ZNM", "Correlation of signals FT0M^{*} vs ZNM", kTH2F, {{scaledFT0M}, {4000, 0.0, 8000.}});
-      spectra.add("hScaleMultFT0M_vs_ZNA_vs_ZNC", "Correlation of signals FT0M^{*} vs ZNA vs ZNC", kTH3F, {{scaledFT0M}, {1000, 0.0, 5000.}, {1000, 0.0, 5000.}});
+      spectra.add("hScaleMultFT0A_vs_ZNA", "Correlation of signals FT0A/meanFT0A vs ZNA", kTH2F, {{scaledFT0A}, {1000, 0.0, 5000., "ZNA"}});
+      spectra.add("hScaleMultFT0C_vs_ZNC", "Correlation of signals FT0C/meanFT0C vs ZNC", kTH2F, {{scaledFT0C}, {1000, 0.0, 5000., "ZNC"}});
+      spectra.add("hScaleMultFT0M_vs_ZNM", "Correlation of signals FT0M^{*} vs ZNM", kTH2F, {{scaledFT0M}, {4000, 0.0, 8000., "ZNM"}});
+      spectra.add("hScaleMultFT0M_vs_ZNA_vs_ZNC", "Correlation of signals FT0M^{*} vs ZNA vs ZNC", kTH3F, {{scaledFT0M}, {600, 0.0, 3000., "ZNA"}, {600, 0.0, 3000., "ZNC"}});
     }
   }
 

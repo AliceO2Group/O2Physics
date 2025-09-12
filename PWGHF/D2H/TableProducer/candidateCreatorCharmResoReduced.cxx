@@ -246,6 +246,8 @@ struct HfCandidateCreatorCharmResoReduced {
   bool isV0Selected(V0RedTable const& candV0)
   {
     int ptBin = findBin(cfgV0Cuts.binsPtV0, candV0.pt());
+    const float invMassLow = cfgV0Cuts.cutsV0->get(ptBin, "invMassLow");
+    const float invMassHigh = cfgV0Cuts.cutsV0->get(ptBin, "invMassHigh");
     if (ptBin == -1) {
       return false;
     }
@@ -253,18 +255,24 @@ struct HfCandidateCreatorCharmResoReduced {
       if (!TESTBIT(candV0.v0Type(), V0Type::K0s)) {
         return false;
       }
-      if ((candV0.invMassK0s() - MassK0Short) > cfgV0Cuts.cutsV0->get(ptBin, "invMassLow") && (MassK0Short - candV0.invMassK0s()) < cfgV0Cuts.cutsV0->get(ptBin, "invMassLow")) {
+      if (candV0.invMassK0s() < invMassLow || candV0.invMassK0s() > invMassHigh) {
         return false;
       }
     } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
       if (!TESTBIT(candV0.v0Type(), V0Type::Lambda) && !TESTBIT(candV0.v0Type(), V0Type::AntiLambda)) {
         return false;
       }
-      if ((candV0.invMassLambda() - MassLambda) > cfgV0Cuts.cutsV0->get(ptBin, "invMassLow") && (MassLambda - candV0.invMassLambda()) < cfgV0Cuts.cutsV0->get(ptBin, "invMassLow")) {
-        return false;
+
+      if (TESTBIT(candV0.v0Type(), V0Type::Lambda)) {
+        if (candV0.invMassLambda() < invMassLow || candV0.invMassLambda() > invMassHigh) {
+          return false;
+        }
       }
-      if ((candV0.invMassAntiLambda() - MassLambda) > cfgV0Cuts.cutsV0->get(ptBin, "invMassLow") && (MassLambda - candV0.invMassAntiLambda()) < cfgV0Cuts.cutsV0->get(ptBin, "invMassLow")) {
-        return false;
+
+      if (TESTBIT(candV0.v0Type(), V0Type::AntiLambda)) {
+        if (candV0.invMassAntiLambda() < invMassLow || candV0.invMassAntiLambda() > invMassHigh) {
+          return false;
+        }
       }
     } else {
       LOG(error) << "Unsupported V0 type for selection: " << cfgV0Cuts.v0Type;
@@ -378,10 +386,10 @@ struct HfCandidateCreatorCharmResoReduced {
               invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDPlus, MassK0Short});
             }
           } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
-            if (candV0Tr.v0Type() == V0Type::Lambda) {
+            if (TESTBIT(candV0Tr.v0Type(), V0Type::Lambda)) {
               invMassV0Tr = candV0Tr.invMassLambda();
               signReso = candD.sign();
-            } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
+            } else if (TESTBIT(candV0Tr.v0Type(), V0Type::AntiLambda)) {
               invMassV0Tr = candV0Tr.invMassAntiLambda();
               signReso = candD.sign();
               isWrongSign = 1;
@@ -464,9 +472,9 @@ struct HfCandidateCreatorCharmResoReduced {
               invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassDStar, MassK0Short});
             }
           } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
-            if (candV0Tr.v0Type() == V0Type::Lambda) {
+            if (TESTBIT(candV0Tr.v0Type(), V0Type::Lambda)) {
               invMassV0Tr = candV0Tr.invMassLambda();
-            } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
+            } else if (TESTBIT(candV0Tr.v0Type(), V0Type::AntiLambda)) {
               invMassV0Tr = candV0Tr.invMassAntiLambda();
               isWrongSign = 1;
             }
@@ -554,9 +562,9 @@ struct HfCandidateCreatorCharmResoReduced {
                 invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0, MassK0Short});
               }
             } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
-              if (candV0Tr.v0Type() == V0Type::Lambda) {
+              if (TESTBIT(candV0Tr.v0Type(), V0Type::Lambda)) {
                 invMassV0Tr = candV0Tr.invMassLambda();
-              } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
+              } else if (TESTBIT(candV0Tr.v0Type(), V0Type::AntiLambda)) {
                 invMassV0Tr = candV0Tr.invMassAntiLambda();
                 isWrongSign = 1;
               }
@@ -628,10 +636,10 @@ struct HfCandidateCreatorCharmResoReduced {
                 invMassReso = RecoDecay::m(std::array{pVecD, pVecV0Tr}, std::array{MassD0Bar, MassK0Short});
               }
             } else if (cfgV0Cuts.v0Type == V0Type::Lambda) { // Lambda
-              if (candV0Tr.v0Type() == V0Type::Lambda) {
+              if (TESTBIT(candV0Tr.v0Type(), V0Type::Lambda)) {
                 invMassV0Tr = candV0Tr.invMassLambda();
                 isWrongSign = 1;
-              } else if (candV0Tr.v0Type() == V0Type::AntiLambda) {
+              } else if (TESTBIT(candV0Tr.v0Type(), V0Type::AntiLambda)) {
                 invMassV0Tr = candV0Tr.invMassAntiLambda();
               }
               if (useDeltaMass) {

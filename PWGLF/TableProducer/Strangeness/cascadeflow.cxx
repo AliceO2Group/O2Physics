@@ -15,25 +15,29 @@
 /// \author Chiara De Martin (chiara.de.martin@cern.ch)
 /// \author Maximiliano Puccio (maximiliano.puccio@cern.ch)
 
-#include <vector>
-#include <string>
-#include <memory>
-#include "Math/Vector3D.h"
-#include "TRandom3.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/cascqaanalysis.h"
+
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Framework/AnalysisTask.h"
+#include "Tools/ML/MlResponse.h"
+
+#include "CCDB/BasicCCDBManager.h"
 #include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
-#include "PWGLF/DataModel/cascqaanalysis.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "Tools/ML/MlResponse.h"
-#include "CCDB/BasicCCDBManager.h"
+
+#include "Math/Vector3D.h"
+#include "TRandom3.h"
+
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -171,31 +175,38 @@ struct cascadeFlow {
   ConfigurableAxis axisQVsNorm{"axisQVsNorm", {200, -1.f, 1.f}, "axisQVsNorm"};
 
   // Configurable for shift correction
-  Configurable<bool> cfgShiftCorr{"cfgShiftCorr", 0, ""};
-  Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
-  Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
+  struct : ConfigurableGroup {
+    Configurable<bool> cfgShiftCorr{"cfgShiftCorr", 0, ""};
+    Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
+    Configurable<std::string> cfgShiftPathFT0C{"cfgShiftPathFT0C", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
+    Configurable<std::string> cfgShiftPathTPCL{"cfgShiftPathTPCL", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
+    Configurable<std::string> cfgShiftPathTPCR{"cfgShiftPathTPCR", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
+    Configurable<int> cfgnMods{"cfgnMods", 1, "The number of modulations of interest starting from 2"};
+  } ShiftConfigs;
   //  Configurable<float> cfgHarmonic{"cfgHarmonic", 2, "Harmonic for event plane calculation"};
 
   // THN axes
-  ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {8, 0, 80}, "FT0C centrality (%)"};
-  ConfigurableAxis thnConfigAxisEta{"thnConfigAxisEta", {8, -0.8, 0.8}, "pseudorapidity"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5, 6, 8, 10}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis thnConfigAxisPtLambda{"thnConfigAxisPtLambda", {VARIABLE_WIDTH, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5, 6, 8, 10, 20}, "#it{p}_{T} (GeV/#it{c})"};
-  ConfigurableAxis thnConfigAxisCharge{"thnConfigAxisCharge", {2, 0, 2}, ""};
-  ConfigurableAxis thnConfigAxisPsiDiff{"thnConfigAxisPsiDiff", {100, 0, o2::constants::math::TwoPI}, ""};
-  ConfigurableAxis thnConfigAxisMassXi{"thnConfigAxisMassXi", {45, 1.300, 1.345}, ""};
-  ConfigurableAxis thnConfigAxisMassOmega{"thnConfigAxisMassOmega", {45, 1.655, 1.690}, ""};
-  ConfigurableAxis thnConfigAxisMassLambda{"thnConfigAxisMassLambda", {60, 1.1, 1.13}, ""};
-  ConfigurableAxis thnConfigAxisBDTScore{"thnConfigAxisBDTScore", {15, 0.4, 1}, ""};
-  ConfigurableAxis thnConfigAxisV2{"thnConfigAxiV2", {100, -1., 1.}, ""};
-  ConfigurableAxis thnConfigAxisPzs2Xi{"thnConfigAxiPzs2Xi", {200, -2.8, 2.8}, ""};
-  ConfigurableAxis thnConfigAxisPzs2Omega{"thnConfigAxiPzs2Omega", {200, -70, 70}, ""};
-  ConfigurableAxis thnConfigAxisPzs2Lambda{"thnConfigAxiPzs2Lambda", {200, -2, 2}, ""};
-  ConfigurableAxis thnConfigAxisCos2Theta{"thnConfigAxiCos2Theta", {100, 0, 1}, ""};
-  ConfigurableAxis thnConfigAxisCos2ThetaL{"thnConfigAxiCos2ThetaL", {100, 0, 1}, ""};
-  ConfigurableAxis thnConfigAxisCosThetaXiAlpha{"thnConfigAxisCosThetaXiAlpha", {200, -2.8, 2.8}, ""};
-  ConfigurableAxis thnConfigAxisCosThetaOmegaAlpha{"thnConfigAxisCosThetaOmegaAlpha", {200, -70, 70}, ""};
-  ConfigurableAxis thnConfigAxisCosThetaProtonAlpha{"thnConfigAxisCosThetaProtonAlpha", {200, -2, 2}, ""};
+  struct : ConfigurableGroup {
+    ConfigurableAxis thnConfigAxisFT0C{"thnConfigAxisFT0C", {8, 0, 80}, "FT0C centrality (%)"};
+    ConfigurableAxis thnConfigAxisEta{"thnConfigAxisEta", {8, -0.8, 0.8}, "pseudorapidity"};
+    ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {VARIABLE_WIDTH, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5, 6, 8, 10}, "#it{p}_{T} (GeV/#it{c})"};
+    ConfigurableAxis thnConfigAxisPtLambda{"thnConfigAxisPtLambda", {VARIABLE_WIDTH, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2, 2.25, 2.5, 2.75, 3, 3.5, 4, 5, 6, 8, 10, 20}, "#it{p}_{T} (GeV/#it{c})"};
+    ConfigurableAxis thnConfigAxisCharge{"thnConfigAxisCharge", {2, 0, 2}, ""};
+    ConfigurableAxis thnConfigAxisPsiDiff{"thnConfigAxisPsiDiff", {100, 0, o2::constants::math::TwoPI}, ""};
+    ConfigurableAxis thnConfigAxisMassXi{"thnConfigAxisMassXi", {45, 1.300, 1.345}, ""};
+    ConfigurableAxis thnConfigAxisMassOmega{"thnConfigAxisMassOmega", {45, 1.655, 1.690}, ""};
+    ConfigurableAxis thnConfigAxisMassLambda{"thnConfigAxisMassLambda", {60, 1.1, 1.13}, ""};
+    ConfigurableAxis thnConfigAxisBDTScore{"thnConfigAxisBDTScore", {15, 0.4, 1}, ""};
+    ConfigurableAxis thnConfigAxisV2{"thnConfigAxiV2", {100, -1., 1.}, ""};
+    ConfigurableAxis thnConfigAxisPzs2Xi{"thnConfigAxiPzs2Xi", {200, -2.8, 2.8}, ""};
+    ConfigurableAxis thnConfigAxisPzs2Omega{"thnConfigAxiPzs2Omega", {200, -70, 70}, ""};
+    ConfigurableAxis thnConfigAxisPzs2Lambda{"thnConfigAxiPzs2Lambda", {200, -2, 2}, ""};
+    ConfigurableAxis thnConfigAxisCos2Theta{"thnConfigAxiCos2Theta", {100, 0, 1}, ""};
+    ConfigurableAxis thnConfigAxisCos2ThetaL{"thnConfigAxiCos2ThetaL", {100, 0, 1}, ""};
+    ConfigurableAxis thnConfigAxisCosThetaXiAlpha{"thnConfigAxisCosThetaXiAlpha", {200, -2.8, 2.8}, ""};
+    ConfigurableAxis thnConfigAxisCosThetaOmegaAlpha{"thnConfigAxisCosThetaOmegaAlpha", {200, -70, 70}, ""};
+    ConfigurableAxis thnConfigAxisCosThetaProtonAlpha{"thnConfigAxisCosThetaProtonAlpha", {200, -2, 2}, ""};
+  } thnAxisConfigs;
 
   // Event selection criteria
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
@@ -473,7 +484,13 @@ struct cascadeFlow {
   int currentRunNumber = -999;
   int lastRunNumber = -999;
   std::vector<TProfile3D*> shiftprofile{};
+  std::vector<TProfile3D*> shiftprofileFT0C{};
+  std::vector<TProfile3D*> shiftprofileTPCL{};
+  std::vector<TProfile3D*> shiftprofileTPCR{};
   std::string fullCCDBShiftCorrPath;
+  std::string fullCCDBShiftCorrPathFT0C;
+  std::string fullCCDBShiftCorrPathTPCL;
+  std::string fullCCDBShiftCorrPathTPCR;
 
   template <typename TCollision>
   double ApplyShiftCorrection(TCollision coll, double psiT0C)
@@ -775,25 +792,25 @@ struct cascadeFlow {
     histos.add("hv1EPvsv1SP", "hV1EPvsV1SP", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
     histos.add("hv1SP_ZDCA_vs_ZDCC", "hv1SP_ZDCA_vs_ZDCC", HistType::kTH2F, {{100, -1, 1}, {100, -1, 1}});
 
-    const AxisSpec thnAxisFT0C{thnConfigAxisFT0C, "FT0C (%)"};
-    const AxisSpec thnAxisEta{thnConfigAxisEta, "#eta"};
-    const AxisSpec thnAxisPt{thnConfigAxisPt, "p_{T}"};
-    const AxisSpec thnAxisPtLambda{thnConfigAxisPtLambda, "p_{T, #Lambda}"};
-    const AxisSpec thnAxisCharge{thnConfigAxisCharge, "Charge"};
-    const AxisSpec thnAxisPsiDiff{thnConfigAxisPsiDiff, "2(phi-Psi)"};
-    const AxisSpec thnAxisMassXi{thnConfigAxisMassXi, "inv. mass (#Lambda #pi) (GeV/#it{c}^{2})"};
-    const AxisSpec thnAxisMassOmega{thnConfigAxisMassOmega, "inv. mass (#Lambda K) (GeV/#it{c}^{2})"};
-    const AxisSpec thnAxisMassLambda{thnConfigAxisMassLambda, "inv. mass (p #pi) (GeV/#it{c}^{2})"};
-    const AxisSpec thnAxisBDTScore{thnConfigAxisBDTScore, "BDT score"};
-    const AxisSpec thnAxisV2{thnConfigAxisV2, "v_{2}"};
-    const AxisSpec thnAxisPzs2Xi{thnConfigAxisPzs2Xi, "Pzs2Xi"};
-    const AxisSpec thnAxisPzs2Omega{thnConfigAxisPzs2Omega, "Pzs2Omega"};
-    const AxisSpec thnAxisPzs2Lambda{thnConfigAxisPzs2Lambda, "Pzs2Lambda"};
-    const AxisSpec thnAxisCos2Theta{thnConfigAxisCos2Theta, "Cos2Theta"};
-    const AxisSpec thnAxisCos2ThetaL{thnConfigAxisCos2ThetaL, "Cos2ThetaL"};
-    const AxisSpec thnAxisCosThetaXiAlpha{thnConfigAxisCosThetaXiAlpha, "CosThetaXiWithAlpha"};
-    const AxisSpec thnAxisCosThetaOmegaAlpha{thnConfigAxisCosThetaOmegaAlpha, "CosThetaOmegaWithAlpha"};
-    const AxisSpec thnAxisCosThetaProtonAlpha{thnConfigAxisCosThetaProtonAlpha, "CosThetaProtonWithAlpha"};
+    const AxisSpec thnAxisFT0C{thnAxisConfigs.thnConfigAxisFT0C, "FT0C (%)"};
+    const AxisSpec thnAxisEta{thnAxisConfigs.thnConfigAxisEta, "#eta"};
+    const AxisSpec thnAxisPt{thnAxisConfigs.thnConfigAxisPt, "p_{T}"};
+    const AxisSpec thnAxisPtLambda{thnAxisConfigs.thnConfigAxisPtLambda, "p_{T, #Lambda}"};
+    const AxisSpec thnAxisCharge{thnAxisConfigs.thnConfigAxisCharge, "Charge"};
+    const AxisSpec thnAxisPsiDiff{thnAxisConfigs.thnConfigAxisPsiDiff, "2(phi-Psi)"};
+    const AxisSpec thnAxisMassXi{thnAxisConfigs.thnConfigAxisMassXi, "inv. mass (#Lambda #pi) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisMassOmega{thnAxisConfigs.thnConfigAxisMassOmega, "inv. mass (#Lambda K) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisMassLambda{thnAxisConfigs.thnConfigAxisMassLambda, "inv. mass (p #pi) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisBDTScore{thnAxisConfigs.thnConfigAxisBDTScore, "BDT score"};
+    const AxisSpec thnAxisV2{thnAxisConfigs.thnConfigAxisV2, "v_{2}"};
+    const AxisSpec thnAxisPzs2Xi{thnAxisConfigs.thnConfigAxisPzs2Xi, "Pzs2Xi"};
+    const AxisSpec thnAxisPzs2Omega{thnAxisConfigs.thnConfigAxisPzs2Omega, "Pzs2Omega"};
+    const AxisSpec thnAxisPzs2Lambda{thnAxisConfigs.thnConfigAxisPzs2Lambda, "Pzs2Lambda"};
+    const AxisSpec thnAxisCos2Theta{thnAxisConfigs.thnConfigAxisCos2Theta, "Cos2Theta"};
+    const AxisSpec thnAxisCos2ThetaL{thnAxisConfigs.thnConfigAxisCos2ThetaL, "Cos2ThetaL"};
+    const AxisSpec thnAxisCosThetaXiAlpha{thnAxisConfigs.thnConfigAxisCosThetaXiAlpha, "CosThetaXiWithAlpha"};
+    const AxisSpec thnAxisCosThetaOmegaAlpha{thnAxisConfigs.thnConfigAxisCosThetaOmegaAlpha, "CosThetaOmegaWithAlpha"};
+    const AxisSpec thnAxisCosThetaProtonAlpha{thnAxisConfigs.thnConfigAxisCosThetaProtonAlpha, "CosThetaProtonWithAlpha"};
 
     histos.add("massXi_ProtonAcc", "massXi", HistType::kTH1F, {thnAxisMassXi});
     histos.add("massOmega_ProtonAcc", "massOmega", HistType::kTH1F, {thnAxisMassOmega});
@@ -1059,21 +1076,26 @@ struct cascadeFlow {
       histos.fill(HIST("ShiftTPCR"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCC));
     }
 
-    if (cfgShiftCorr) {
+    if (ShiftConfigs.cfgShiftCorr) {
       currentRunNumber = coll.runNumber();
       if (currentRunNumber != lastRunNumber) {
-        shiftprofile.clear();
-        for (int i = 2; i < cfgnMods + 2; i++) {
-          fullCCDBShiftCorrPath = cfgShiftPath;
-          fullCCDBShiftCorrPath += "/v";
-          fullCCDBShiftCorrPath += std::to_string(i);
-          auto objshift = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPath, coll.timestamp());
-          shiftprofile.push_back(objshift);
-        }
+        shiftprofileFT0C.clear();
+        shiftprofileTPCL.clear();
+        shiftprofileTPCR.clear();
+        fullCCDBShiftCorrPathFT0C = ShiftConfigs.cfgShiftPathFT0C;
+        fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
+        fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
+        auto objshiftFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
+        shiftprofileFT0C.push_back(objshiftFT0C);
+        auto objshiftTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
+        shiftprofileTPCL.push_back(objshiftTPCL);
+        auto objshiftTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
+        shiftprofileTPCR.push_back(objshiftTPCR);
         lastRunNumber = currentRunNumber;
       }
     }
-    if (cfgShiftCorr) {
+
+    if (ShiftConfigs.cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C);
       ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC);
     }
@@ -1373,21 +1395,25 @@ struct cascadeFlow {
       histos.fill(HIST("ShiftTPCR"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCC));
     }
 
-    if (cfgShiftCorr) {
+    if (ShiftConfigs.cfgShiftCorr) {
       currentRunNumber = coll.runNumber();
       if (currentRunNumber != lastRunNumber) {
-        shiftprofile.clear();
-        for (int i = 2; i < cfgnMods + 2; i++) {
-          fullCCDBShiftCorrPath = cfgShiftPath;
-          fullCCDBShiftCorrPath += "/v";
-          fullCCDBShiftCorrPath += std::to_string(i);
-          auto objshift = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPath, coll.timestamp());
-          shiftprofile.push_back(objshift);
-        }
+        shiftprofileFT0C.clear();
+        shiftprofileTPCL.clear();
+        shiftprofileTPCR.clear();
+        fullCCDBShiftCorrPathFT0C = ShiftConfigs.cfgShiftPathFT0C;
+        fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
+        fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
+        auto objshiftFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
+        shiftprofileFT0C.push_back(objshiftFT0C);
+        auto objshiftTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
+        shiftprofileTPCL.push_back(objshiftTPCL);
+        auto objshiftTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
+        shiftprofileTPCR.push_back(objshiftTPCR);
         lastRunNumber = currentRunNumber;
       }
     }
-    if (cfgShiftCorr) {
+    if (ShiftConfigs.cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C);
       ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC);
     }
@@ -1674,21 +1700,25 @@ struct cascadeFlow {
       histos.fill(HIST("ShiftTPCR"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCC));
     }
 
-    if (cfgShiftCorr) {
+    if (ShiftConfigs.cfgShiftCorr) {
       currentRunNumber = coll.runNumber();
       if (currentRunNumber != lastRunNumber) {
-        shiftprofile.clear();
-        for (int i = 2; i < cfgnMods + 2; i++) {
-          fullCCDBShiftCorrPath = cfgShiftPath;
-          fullCCDBShiftCorrPath += "/v";
-          fullCCDBShiftCorrPath += std::to_string(i);
-          auto objshift = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPath, coll.timestamp());
-          shiftprofile.push_back(objshift);
-        }
+        shiftprofileFT0C.clear();
+        shiftprofileTPCL.clear();
+        shiftprofileTPCR.clear();
+        fullCCDBShiftCorrPathFT0C = ShiftConfigs.cfgShiftPathFT0C;
+        fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
+        fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
+        auto objshiftFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
+        shiftprofileFT0C.push_back(objshiftFT0C);
+        auto objshiftTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
+        shiftprofileTPCL.push_back(objshiftTPCL);
+        auto objshiftTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
+        shiftprofileTPCR.push_back(objshiftTPCR);
         lastRunNumber = currentRunNumber;
       }
     }
-    if (cfgShiftCorr) {
+    if (ShiftConfigs.cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C);
       ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC);
     }
@@ -1902,21 +1932,25 @@ struct cascadeFlow {
       histos.fill(HIST("ShiftTPCR"), coll.centFT0C(), 1.5, ishift - 0.5, std::cos(ishift * 2 * psiTPCC));
     }
 
-    if (cfgShiftCorr) {
+    if (ShiftConfigs.cfgShiftCorr) {
       currentRunNumber = coll.runNumber();
       if (currentRunNumber != lastRunNumber) {
-        shiftprofile.clear();
-        for (int i = 2; i < cfgnMods + 2; i++) {
-          fullCCDBShiftCorrPath = cfgShiftPath;
-          fullCCDBShiftCorrPath += "/v";
-          fullCCDBShiftCorrPath += std::to_string(i);
-          auto objshift = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPath, coll.timestamp());
-          shiftprofile.push_back(objshift);
-        }
+        shiftprofileFT0C.clear();
+        shiftprofileTPCL.clear();
+        shiftprofileTPCR.clear();
+        fullCCDBShiftCorrPathFT0C = ShiftConfigs.cfgShiftPathFT0C;
+        fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
+        fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
+        auto objshiftFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
+        shiftprofileFT0C.push_back(objshiftFT0C);
+        auto objshiftTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
+        shiftprofileTPCL.push_back(objshiftTPCL);
+        auto objshiftTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
+        shiftprofileTPCR.push_back(objshiftTPCR);
         lastRunNumber = currentRunNumber;
       }
     }
-    if (cfgShiftCorr) {
+    if (ShiftConfigs.cfgShiftCorr) {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C);
       ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC);
     }
