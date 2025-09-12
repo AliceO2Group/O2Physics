@@ -77,7 +77,6 @@ AxisSpec axisVtxZ{40, -20, 20, "Vertex Z", "VzAxis"};
 AxisSpec axisEta{40, -2, 2, "#eta", "EtaAxis"};
 AxisSpec axisPhi{629, 0, o2::constants::math::TwoPI, "#phi"};
 auto static constexpr kMinCharge = 3.f;
-auto static constexpr kMinpTcut = 0.1f;
 
 struct StudyPnch {
 
