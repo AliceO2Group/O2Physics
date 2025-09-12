@@ -152,8 +152,8 @@ struct HfTaskDirectedFlowCharmHadrons {
       registry.add("hpQytQypvscent", "hpQytQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
       registry.add("hpQxtQypvscent", "hpQxtQypvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
       registry.add("hpQxpQytvscent", "hpQxpQytvscent", HistType::kTHnSparseF, {thnAxisCent, thnAxisScalarProd}, true);
-      registry.add("hpQxtQxpvsmass", "hpQxtQxpvsmass", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisScalarProd}, true);
-      registry.add("hpQytQypvsmass", "hpQytQypvsmass", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisScalarProd}, true);
+      registry.add("hpQxtQxpvscentpteta", "hpQxtQxpvscentpteta", HistType::kTHnSparseF, axes, true);
+      registry.add("hpQytQypvscentpteta", "hpQytQypvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpuxQxpvscentpteta", "hpuxQxpvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpuyQypvscentpteta", "hpuyQypvscentpteta", HistType::kTHnSparseF, axes, true);
       registry.add("hpuxQxtvscentpteta", "hpuxQxtvscentpteta", HistType::kTHnSparseF, axes, true);
