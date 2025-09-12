@@ -898,6 +898,12 @@ struct FemtoUniverseProducerTask {
     outputPartsMC(particleOrigin, pdgCode, mcparticle.pt(), mcparticle.eta(), mcparticle.phi());
     fillDebugParticleMC(mcparticle);
     outputPartsMCLabels(outputPartsMC.lastIndex());
+
+    // Artificial fill of a debug table -- solves conflicts between FDParticles and FDExtParticles tables
+    outputDebugParts(-111., -111., -111., -111., -111., -111., -111., -111., -111.,
+                     -111., -111., -111., -111., -111., -111., -111., -111.,
+                     -111., -111., -111., -111., -111.,
+                     -111., -111., -111., -111., -111., -111.);
   }
 
   template <typename ParticleType>
