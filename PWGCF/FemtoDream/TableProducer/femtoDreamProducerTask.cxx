@@ -60,6 +60,7 @@ namespace o2::aod
 using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
 using FemtoFullCollision_noCent = soa::Join<aod::Collisions, aod::EvSels, aod::Mults>::iterator;
 using FemtoFullCollision_CentPbPb = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs>::iterator;
+using FemtoFullCollision_CentPbPb_qvec = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFV0As, aod::QvectorFT0CVecs>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
 using FemtoFullCollision_noCent_MC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
 using FemtoFullCollisionMC_CentPbPb = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::McCollisionLabels>::iterator;
@@ -100,6 +101,7 @@ struct femtoDreamProducerTask {
   Zorro zorro;
 
   Produces<aod::FDCollisions> outputCollision;
+  Produces<aod::FDExtQnCollisions> outputExtQnCollision;
   Produces<aod::FDMCCollisions> outputMCCollision;
   Produces<aod::FDMCCollLabels> outputCollsMCLabels;
   Produces<aod::FDParticles> outputParts;
@@ -261,7 +263,8 @@ struct femtoDreamProducerTask {
     Configurable<float> ConfTrkMaxChi2PerClusterITS{"ConfTrkMaxChi2PerClusterITS", 1000.0f, "Minimal track selection: max allowed chi2 per ITS cluster"}; // 36.0 is default
     Configurable<bool> ConfTrkTPCRefit{"ConfTrkTPCRefit", false, "True: require TPC refit"};
     Configurable<bool> ConfTrkITSRefit{"ConfTrkITSRefit", false, "True: require ITS refit"};
-
+    Configurable<bool> ConfTPCFracsClsCut{"ConfTPCFracsClsCut", false, "Cut fraction of shared TPC clusters"};
+    Configurable<float> ConfTPCFracsClsMax{"ConfTPCFracsCls", 1000.f, "Maximum value for fraction of shared TPC clusters"};
   } OptionTrackSpecialSelections;
 
   struct : o2::framework::ConfigurableGroup {
@@ -270,11 +273,31 @@ struct femtoDreamProducerTask {
     Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", true, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
   } rctCut;
 
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> ConfFlowCalculate{"ConfFlowCalculate", false, "Evt sel: Cumulant of flow"}; // To do
+    Configurable<bool> ConfQnSeparation{"ConfQnSeparation", false, "Evt sel: Qn of event"};
+    Configurable<std::vector<float>> ConfQnBinSeparator{"ConfQnBinSeparator", std::vector<float>{-999.f, -999.f, -999.f}, "Qn bin separator"};    
+    Configurable<bool> ConfdoFillHisto{"ConfdoFillHisto", false, "Fill histos for Qn and sphericity and mult "};
+    Configurable<float> ConfCentralityMax{"ConfCentralityMax", 80.f, "Evt sel: Maximum Centrality cut"};    
+    Configurable<float> ConfCentBinWidth{"ConfCentBinWidth", 1.f, "Centrality bin length for qn separator"};
+    Configurable<int> ConfQnBinMin{"ConfQnBinMin", 0, "Minimum qn bin"};
+    Configurable<int> ConfNumQnBins{"ConfNumQnBins", 10, "Number of qn bins"};
+  } qnCal;
+
+  struct : o2::framework::ConfigurableGroup {
+    Configurable<bool> ConfIsUsePileUp{"ConfIsUsePileUp", false, "Required for choosing whether to run the pile-up cuts"};
+    Configurable<bool> ConfEvNoSameBunchPileup{"ConfEvNoSameBunchPileup", false, "Require kNoSameBunchPileup selection on Events."};
+    Configurable<bool> ConfEvIsGoodITSLayersAll{"ConfEvIsGoodITSLayersAll", false, "Require kIsGoodITSLayersAll selection on Events."};
+    Configurable<int> ConfTPCOccupancyMin{"ConfTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
+    Configurable<int> ConfTPCOccupancyMax{"ConfTPCOccupancyMax", 5000, "Maximum value for TPC Occupancy selection"};
+  } OptionEvtSpecialSelections;
+
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry TrackRegistry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry V0Registry{"V0", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry ResoRegistry{"Reso", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry CascadeRegistry{"Cascade", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry FlowRegistry{"Qn", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
   float mMagField;
@@ -284,10 +307,12 @@ struct femtoDreamProducerTask {
 
   void init(InitContext&)
   {
-    if (doprocessData == false && doprocessData_noCentrality == false && doprocessData_CentPbPb == false && doprocessMC == false && doprocessMC_noCentrality == false && doprocessMC_CentPbPb == false) {
+    if (doprocessData == false && doprocessData_noCentrality == false && doprocessData_CentPbPb == false && doprocessData_CentPbPb_qvec == false && doprocessMC == false && doprocessMC_noCentrality == false && doprocessMC_CentPbPb == false) {
       LOGF(fatal, "Neither processData nor processMC enabled. Please choose one.");
     }
-    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true) || (doprocessData_noCentrality == true && doprocessData == true) || (doprocessData_noCentrality == true && doprocessMC == true) || (doprocessData_noCentrality == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessData == true) || (doprocessData_CentPbPb == true && doprocessData_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessMC == true) || (doprocessData_CentPbPb == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessMC_CentPbPb == true)) {
+    if ((doprocessData == true && doprocessMC == true) || (doprocessData == true && doprocessMC_noCentrality == true) || (doprocessMC == true && doprocessMC_noCentrality == true) || (doprocessData_noCentrality == true && doprocessData == true) || (doprocessData_noCentrality == true && doprocessMC == true) || (doprocessData_noCentrality == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessData == true) || (doprocessData_CentPbPb == true && doprocessData_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessMC == true) || (doprocessData_CentPbPb == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb == true && doprocessMC_CentPbPb == true)
+      || (doprocessData_CentPbPb_qvec == true && doprocessData == true) || (doprocessData_CentPbPb_qvec == true && doprocessData_noCentrality == true) || (doprocessData_CentPbPb_qvec == true && doprocessMC == true) || (doprocessData_CentPbPb_qvec == true && doprocessMC_noCentrality == true) || (doprocessData_CentPbPb_qvec == true && doprocessMC_CentPbPb == true) || (doprocessData_CentPbPb_qvec == true && doprocessData_CentPbPb == true)
+      ) {
       LOGF(fatal,
            "Cannot enable more than one process switch at the same time. "
            "Please choose one.");
@@ -437,6 +462,12 @@ struct femtoDreamProducerTask {
       if (ConfCascSel.ConfCascRejectCompetingMass) {
         cascadeCuts.setCompetingInvMassLimits(ConfCascSel.ConfCascInvCompetingMassLowLimit, ConfCascSel.ConfCascInvCompetingMassUpLimit);
       }
+    }
+
+    if (qnCal.ConfFlowCalculate) {
+      colCuts.initFlow(&FlowRegistry, qnCal.ConfQnSeparation);
+      if (qnCal.ConfQnSeparation)
+        colCuts.initQn(&FlowRegistry, qnCal.ConfNumQnBins);
     }
 
     mRunNumber = 0;
@@ -733,6 +764,15 @@ struct femtoDreamProducerTask {
       return;
     }
 
+    // Pileup rejection in PbPb data
+    if constexpr (analysePbPb) {
+      if (OptionEvtSpecialSelections.ConfIsUsePileUp && 
+            !colCuts.isPileUpCollisionPbPb(col, OptionEvtSpecialSelections.ConfEvNoSameBunchPileup, OptionEvtSpecialSelections.ConfEvIsGoodITSLayersAll, 
+                                                OptionEvtSpecialSelections.ConfTPCOccupancyMin, OptionEvtSpecialSelections.ConfTPCOccupancyMax)) {
+          return;
+      }
+    }
+
     outputCollision(vtxZ, mult, multNtr, spher, mMagField);
     if constexpr (isMC) {
       fillMCCollision(col);
@@ -760,6 +800,12 @@ struct femtoDreamProducerTask {
 
       if (!trackCuts.isSelectedMinimal(track)) {
         continue;
+      }
+
+      if constexpr (analysePbPb) {
+        if (OptionTrackSpecialSelections.ConfTPCFracsClsCut && track.tpcFractionSharedCls() > OptionTrackSpecialSelections.ConfTPCFracsClsMax) {
+          continue;
+        }
       }
 
       TrackRegistry.fill(HIST("AnalysisQA/Chi2ITSTPCperCluster"), track.itsChi2NCl(), track.tpcChi2NCl());
@@ -1080,6 +1126,74 @@ struct femtoDreamProducerTask {
     }
   }
 
+  // Separate function for fill flow and qn
+  template <bool isMC, bool useCentrality, bool analysePbPb, typename CollisionType, typename TrackType>
+  void fillCollisionsFlow(CollisionType const& col, TrackType const& tracks)
+  {
+    // If triggering is enabled, select only events which were triggered wit our triggers
+    if (ConfEnableTriggerSelection) {
+      bool zorroSelected = zorro.isSelected(col.template bc_as<aod::BCsWithTimestamps>().globalBC()); /// check if event was selected by triggers of interest
+      if (!zorroSelected) {
+        return;
+      }
+    }
+
+    const auto spher = colCuts.computeSphericity(col, tracks);
+    float mult = 0;
+    int multNtr = 0;
+    if (ConfIsRun3) {
+      if constexpr (useCentrality) {
+        if constexpr (analysePbPb) {
+          mult = col.centFT0C();
+        } else {
+          mult = col.centFT0M();
+        }
+      } else {
+        mult = 0;
+      }
+      multNtr = col.multNTracksPV();
+    } else {
+      mult = 1; // multiplicity percentile is know in Run 2
+      multNtr = col.multTracklets();
+    }
+
+    // check whether the basic event selection criteria are fulfilled
+    // that included checking if there is at least on usable track or V0
+    if (!colCuts.isSelectedCollision(col)) {
+      return;
+    }
+    // bool emptyCollision = false;
+    if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
+      return;
+    }
+    
+    if (rctCut.requireRCTFlagChecker && !rctChecker(col)) {
+      return;
+    }
+
+    // Pileup rejection in PbPb data
+    if constexpr (analysePbPb) {
+      if (OptionEvtSpecialSelections.ConfIsUsePileUp && 
+            !colCuts.isPileUpCollisionPbPb(col, OptionEvtSpecialSelections.ConfEvNoSameBunchPileup, OptionEvtSpecialSelections.ConfEvIsGoodITSLayersAll, 
+                                                OptionEvtSpecialSelections.ConfTPCOccupancyMin, OptionEvtSpecialSelections.ConfTPCOccupancyMax)) {
+          return;
+      }
+    }
+
+    // Calculate and fill qn values 
+    float myqn = colCuts.computeqnVec(col);
+    outputExtQnCollision(myqn, col.trackOccupancyInTimeRange());
+       
+    // Calculate flow via cumulant
+    if (qnCal.ConfFlowCalculate) {
+      int qnBin = colCuts.myqnBin(mult, qnCal.ConfCentralityMax, qnCal.ConfQnBinSeparator, qnCal.ConfdoFillHisto, spher, myqn, qnCal.ConfNumQnBins, multNtr, qnCal.ConfCentBinWidth);
+      if (qnBin < qnCal.ConfQnBinMin || qnBin > qnCal.ConfNumQnBins){
+        qnBin = -999;
+      }
+      colCuts.doCumulants(col, tracks, mult, qnCal.ConfQnSeparation);
+    }
+  }
+
   void
     processData(aod::FemtoFullCollision const& col,
                 aod::BCsWithTimestamps const&,
@@ -1134,13 +1248,37 @@ struct femtoDreamProducerTask {
     auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
                                         aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
     if (ConfUseItsPid.value) {
-      fillCollisionsAndTracksAndV0AndCascade<false, true, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
+        fillCollisionsAndTracksAndV0AndCascade<false, true, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
     } else {
-      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true>(col, tracks, tracks, fullV0s, fullCascades);
+        fillCollisionsAndTracksAndV0AndCascade<false, false, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);  
     }
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData_CentPbPb,
                  "Provide experimental data with centrality information for PbPb collisions", false);
+
+  void processData_CentPbPb_qvec(aod::FemtoFullCollision_CentPbPb_qvec const& col,
+                            aod::BCsWithTimestamps const&,
+                            aod::FemtoFullTracks const& tracks,
+                            o2::aod::V0Datas const& fullV0s,
+                            o2::aod::CascDatas const& fullCascades)
+  {
+    // get magnetic field for run
+    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
+    // fill the tables
+    auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
+                                        aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
+    if (ConfUseItsPid.value) {
+        fillCollisionsAndTracksAndV0AndCascade<false, true, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
+    } else {
+        fillCollisionsAndTracksAndV0AndCascade<false, false, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);  
+    }
+
+    if (qnCal.ConfQnSeparation){
+      fillCollisionsFlow<false,true,true>(col, tracks);
+    }
+  }
+  PROCESS_SWITCH(femtoDreamProducerTask, processData_CentPbPb_qvec,
+                 "Provide experimental data with centrality and q-vector table for PbPb collisions", false);
 
   void processMC(aod::FemtoFullCollisionMC const& col,
                  aod::BCsWithTimestamps const&,
@@ -1183,7 +1321,7 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0AndCascade<true, false, true, true>(col, tracks, tracks, fullV0s, fullCascades);
+    fillCollisionsAndTracksAndV0AndCascade<true, false, true, true>(col, tracks, tracks, fullV0s, fullCascades);    
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
 };

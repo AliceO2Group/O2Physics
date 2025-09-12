@@ -366,7 +366,7 @@ class FemtoDreamContainer
   }
 
   template <bool isMC, typename T1, typename T2>
-  void setPair_qn(T1 const& part1, T2 const& part2, const float multPercentile, const int myQnBin)
+  void setPair_qn(T1 const& part1, T2 const& part2, const float multPercentile, const int myQnBin, const int numQnBins = 10)
   {
     float femtoObs, femtoObsMC;
     // Calculate femto observable and the mT with reconstructed information
@@ -379,8 +379,7 @@ class FemtoDreamContainer
       }
     }
     const float mT = FemtoDreamMath::getmT(part1, mMassOne, part2, mMassTwo);
-    const int numQnBins = 10;
-
+    
     if (mHistogramRegistry) {
       setPair_qn_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(femtoObs, mT, multPercentile, myQnBin, numQnBins);
 
