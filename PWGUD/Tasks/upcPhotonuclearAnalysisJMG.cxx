@@ -177,15 +177,6 @@ struct UpcPhotonuclearAnalysisJMG {
   UPCPairCuts mPairCuts;
   bool doPairCuts = false;
 
-  // Output definitions
-  // OutputObj<CorrelationContainer> sameGapSideA{"sameEventGapSideA"};
-  // OutputObj<CorrelationContainer> mixedGapSideA{"mixedEventGapSideA"};
-  // OutputObj<CorrelationContainer> sameGapSideC{"sameEventGapSideC"};
-  // OutputObj<CorrelationContainer> mixedGapSideC{"mixedEventGapSideC"};
-
-  UPCPairCuts mPairCuts;
-  bool doPairCuts = false;
-
   void init(InitContext const&)
   {
     const AxisSpec axisCollision{4, -0.5, 3.5};
@@ -819,23 +810,23 @@ struct UpcPhotonuclearAnalysisJMG {
 
     // Configure track flow histogram labels
     auto hFlow = histos.get<TH1>(HIST("Tracks/hTracksAfterCuts"));
-    hFlow->GetXaxis()->SetBinLabel(0, "All tracks");
-    hFlow->GetXaxis()->SetBinLabel(1, "Track sign");
-    hFlow->GetXaxis()->SetBinLabel(2, "p_{T} range");
-    hFlow->GetXaxis()->SetBinLabel(3, "#eta range");
-    hFlow->GetXaxis()->SetBinLabel(4, "dcaZ");
-    hFlow->GetXaxis()->SetBinLabel(5, "dcaXY");
-    hFlow->GetXaxis()->SetBinLabel(6, "PV contrib cut");
-    hFlow->GetXaxis()->SetBinLabel(7, "has ITS cut");
-    hFlow->GetXaxis()->SetBinLabel(8, "N clusters ITS cut");
-    hFlow->GetXaxis()->SetBinLabel(9, "#chi^{2} N cluster ITS cut");
-    hFlow->GetXaxis()->SetBinLabel(10, "has TPC cut");
-    hFlow->GetXaxis()->SetBinLabel(11, "N clusters crossed row TPC cut");
-    hFlow->GetXaxis()->SetBinLabel(12, "(N cluster findable - N cluster minus findable) TPC cut");
-    hFlow->GetXaxis()->SetBinLabel(13, "N cluster findable TPC cut");
-    hFlow->GetXaxis()->SetBinLabel(14, "(N cluster crossed row / N cluster findable) TPC cut");
-    hFlow->GetXaxis()->SetBinLabel(15, "(N cluster findable - N cluster minus findable) / N cluster findable cut");
-    hFlow->GetXaxis()->SetBinLabel(16, "#chi^{2} N cluster TPC cut");
+    hFlow->GetXaxis()->SetBinLabel(1, "All tracks");
+    hFlow->GetXaxis()->SetBinLabel(2, "Track sign");
+    hFlow->GetXaxis()->SetBinLabel(3, "p_{T} range");
+    hFlow->GetXaxis()->SetBinLabel(4, "#eta range");
+    hFlow->GetXaxis()->SetBinLabel(5, "dcaZ");
+    hFlow->GetXaxis()->SetBinLabel(6, "dcaXY");
+    hFlow->GetXaxis()->SetBinLabel(7, "PV contrib cut");
+    hFlow->GetXaxis()->SetBinLabel(8, "has ITS cut");
+    hFlow->GetXaxis()->SetBinLabel(9, "N clusters ITS cut");
+    hFlow->GetXaxis()->SetBinLabel(10, "#chi^{2} N cluster ITS cut");
+    hFlow->GetXaxis()->SetBinLabel(11, "has TPC cut");
+    hFlow->GetXaxis()->SetBinLabel(12, "N clusters crossed row TPC cut");
+    hFlow->GetXaxis()->SetBinLabel(13, "(N cluster findable - N cluster minus findable) TPC cut");
+    hFlow->GetXaxis()->SetBinLabel(14, "N cluster findable TPC cut");
+    hFlow->GetXaxis()->SetBinLabel(15, "(N cluster crossed row / N cluster findable) TPC cut");
+    hFlow->GetXaxis()->SetBinLabel(16, "(N cluster findable - N cluster minus findable) / N cluster findable cut");
+    hFlow->GetXaxis()->SetBinLabel(17, "#chi^{2} N cluster TPC cut");
 
     for (const auto& track : reconstructedTracks) {
       histos.fill(HIST("Tracks/hTracksAfterCuts"), 0);
