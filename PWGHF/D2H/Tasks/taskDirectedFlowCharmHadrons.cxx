@@ -339,7 +339,7 @@ struct HfTaskDirectedFlowCharmHadrons {
           registry.fill(HIST("hpuxQxtvscentpteta"), massCand, cent, ptCand, etaCand, uxQxt, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpuyQytvscentpteta"), massCand, cent, ptCand, etaCand, uyQyt, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpQxtQxpvscentpteta"), massCand, cent, ptCand, etaCand, qxtQxp, sign, outputMl[0], outputMl[1]);
-          registry.fill(HIST("hpQytQypvsmass"), massCand, qytQyp);
+          registry.fill(HIST("hpQytQypvscentpteta"), massCand, cent, ptCand, etaCand, qytQyp, sign, outputMl[0], outputMl[1]);
 
           registry.fill(HIST("hpuxvscentpteta"), massCand, cent, ptCand, etaCand, ux, sign, outputMl[0], outputMl[1]);
           registry.fill(HIST("hpuyvscentpteta"), massCand, cent, ptCand, etaCand, uy, sign, outputMl[0], outputMl[1]);
