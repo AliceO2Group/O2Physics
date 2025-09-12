@@ -181,7 +181,7 @@ struct StudyPnch {
     }
     histos.fill(HIST("EventHist"), 6);
     if (std::abs(col.posZ()) >= vtxRange) {
-      return;
+      return false;
     }
     histos.fill(HIST("EventHist"), 7);
     histos.fill(HIST("VtxZHist"), col.posZ());
@@ -274,11 +274,11 @@ struct StudyPnch {
       return;
     }
     auto mult = countNTracks(tracks);
-    histos.fill(HIST("GlobalMult_vs_FT0A"), nchTracks, cols.multFT0A());
-    histos.fill(HIST("GlobalMult_vs_FT0C"), nchTracks, cols.multFT0C());
-    histos.fill(HIST("GlobalMult_vs_FV0A"), nchTracks, cols.multFV0A());
+    histos.fill(HIST("GlobalMult_vs_FT0A"), mult, cols.multFT0A());
+    histos.fill(HIST("GlobalMult_vs_FT0C"), mult, cols.multFT0C());
+    histos.fill(HIST("GlobalMult_vs_FV0A"), mult, cols.multFV0A());
     histos.fill(HIST("NPVtracks_vs_FT0C"), cols.multNTracksPV(), cols.multFT0C());
-    histos.fill(HIST("NPVtracks_vs_GlobalMult"), cols.multNTracksPV(), nchTracks);
+    histos.fill(HIST("NPVtracks_vs_GlobalMult"), cols.multNTracksPV(), mult);
   }
 
   void processMonteCarlo(ColMCTrueTable::iterator const&, ColMCRecTable const& RecCols, TrackMCTrueTable const& GenParticles, FilTrackMCRecTable const& RecTracks)
@@ -330,10 +330,10 @@ struct StudyPnch {
     }
   }
 
-  PROCESS_SWITCH(HeavyionMultiplicity, processData, "process data CentFT0C", false);
-  PROCESS_SWITCH(HeavyionMultiplicity, processCorrelation, "do correlation study in data", false);
-  PROCESS_SWITCH(HeavyionMultiplicity, processMonteCarlo, "process MC CentFT0C", false);
-  PROCESS_SWITCH(HeavyionMultiplicity, processEvtLossSigLossMC, "process Signal Loss, Event Loss", false);
+  PROCESS_SWITCH(StudyPnch, processData, "process data CentFT0C", false);
+  PROCESS_SWITCH(StudyPnch, processCorrelation, "do correlation study in data", false);
+  PROCESS_SWITCH(StudyPnch, processMonteCarlo, "process MC CentFT0C", false);
+  PROCESS_SWITCH(StudyPnch, processEvtLossSigLossMC, "process Signal Loss, Event Loss", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
