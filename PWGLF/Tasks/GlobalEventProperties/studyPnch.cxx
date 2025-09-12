@@ -185,6 +185,7 @@ struct StudyPnch {
     }
     histos.fill(HIST("EventHist"), 7);
     histos.fill(HIST("VtxZHist"), col.posZ());
+    return true;
   }
 
   template <typename CheckTrack>
