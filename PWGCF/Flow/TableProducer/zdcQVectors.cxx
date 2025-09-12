@@ -931,7 +931,7 @@ struct ZdcQVectors {
           cal.shiftprofileA = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
           if (!cal.shiftprofileC || !cal.shiftprofileA) {
             LOGF(error, "Shift profile not found in CCDB for runnumber: %d", runnumber);
-          } else { 
+          } else {
             LOGF(error, "Shift profile found in CCDB for runnumber: %d", runnumber);
             cal.isShiftProfileFound = true;
           }
@@ -951,13 +951,13 @@ struct ZdcQVectors {
           registry.fill(HIST("QA/ShiftZDCA"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCA));
         }
 
-        if(cal.isShiftProfileFound){
+        if (cal.isShiftProfileFound) {
           int binshiftxZDCC = cal.shiftprofileC->FindBin(centrality, 0.5, ishift - 0.5);
           int binshiftyZDCC = cal.shiftprofileC->FindBin(centrality, 1.5, ishift - 0.5);
           int binshiftxZDCA = cal.shiftprofileA->FindBin(centrality, 0.5, ishift - 0.5);
-          int binshiftyZDCA = cal.shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5); 
+          int binshiftyZDCA = cal.shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5);
 
-          if(binshiftxZDCC > 0 && binshiftyZDCC > 0 && binshiftxZDCA > 0 && binshiftyZDCA > 0){
+          if (binshiftxZDCC > 0 && binshiftyZDCC > 0 && binshiftxZDCA > 0 && binshiftyZDCA > 0) {
             coeffshiftxZDCC = cal.shiftprofileC->GetBinContent(binshiftxZDCC);
             coeffshiftyZDCC = cal.shiftprofileC->GetBinContent(binshiftyZDCC);
             coeffshiftxZDCA = cal.shiftprofileA->GetBinContent(binshiftxZDCA);
@@ -973,7 +973,7 @@ struct ZdcQVectors {
 
       // Normalize angles to [-pi, pi]
       psiZDCCshift = std::atan2(std::sin(psiZDCCshift), std::cos(psiZDCCshift));
-      psiZDCAshift = std::atan2(std::sin(psiZDCAshift), std::cos(psiZDCAshift));  
+      psiZDCAshift = std::atan2(std::sin(psiZDCAshift), std::cos(psiZDCAshift));
 
       if (cfgFillCommonRegistry) {
         registry.fill(HIST("QA/psiZDCA"), psiZDCA);
