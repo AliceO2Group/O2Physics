@@ -168,7 +168,7 @@ struct JetTaggerHFQA {
       }
     }
     if (doprocessTracksInJetsData) {
-      registry.add("h3_track_pt_impact_parameter_xy", "", {HistType::kTH3F, {{axisJetPt}, {axisTrackPt}, {axisImpactParameterXY}}});
+      registry.add("h2_track_pt_impact_parameter_xy", "", {HistType::kTH2F, {{axisTrackPt}, {axisImpactParameterXY}}});
     }
     if (doprocessSecondaryContaminationMCD) {
       registry.add("hn_jet_pt_track_pt_impact_parameter_xy_physical_primary_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisTrackPt}, {axisImpactParameterXY}, {axisJetFlavour}}});
@@ -1113,7 +1113,7 @@ struct JetTaggerHFQA {
   }
   PROCESS_SWITCH(JetTaggerHFQA, processTracksDca, "Fill inclusive tracks' imformation for data", false);
 
-  void processTracksInJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData> const& jets)
+  void processTracksInJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData> const& jets, JetTagTracksData const& /*tracks*/)
   {
     if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
       return;
@@ -1125,7 +1125,7 @@ struct JetTaggerHFQA {
       if (!isAcceptedJet<aod::JetTracks>(jet)) {
         continue;
       }
-      for (auto const& track : jet.template tracks_as<JetTagTracksMCD>()) {
+      for (auto const& track : jet.template tracks_as<JetTagTracksData>()) {
         float varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
         registry.fill(HIST("h2_track_pt_impact_parameter_xy"), track.pt(), varImpXY);
       }
