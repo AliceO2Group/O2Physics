@@ -1,10 +1,10 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
 // This software is distributed under the terms of the GNU General Public
 // License v3 (GPL Version 3), copied verbatim in the file "COPYING".
-// 
+//
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
@@ -33,6 +33,7 @@
 #include <array>
 #include <cstdint>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace o2::analysis::femtoDream // o2-linter: disable=name/namespace (Previously defined namespace)
@@ -73,8 +74,7 @@ class FemtoDreamResoSelection
   template <typename V>
   size_t numBitsUsed(V const& origvalue);
 
-  template <aod::femtodreamparticle::ParticleType part,
-            aod::femtodreamparticle::ParticleType PartDaugh>
+  template <aod::femtodreamparticle::ParticleType part, aod::femtodreamparticle::ParticleType PartDaugh>
   void init(HistogramRegistry* QAregistry, HistogramRegistry* Registry);
 
   template <aod::femtodreamparticle::ParticleType part,
@@ -174,7 +174,7 @@ class FemtoDreamResoSelection
 
   /// Helper function to obtain the type of a given selection variable for consistent naming of the configurables
   /// \param iSel Reso selection variable whose type is returned
-  static femtoDreamSelection::SelectionType  // o2-linter: disable=name/function-variable (defined with UpperCamelCase in femtoDreamSelection)
+  static femtoDreamSelection::SelectionType // o2-linter: disable=name/function-variable (defined with UpperCamelCase in femtoDreamSelection)
     getSelectionType(femto_dream_reso_selection::ResoSel iSel)
   {
     return kSelectionTypes[iSel];
@@ -276,7 +276,7 @@ void FemtoDreamResoSelection::setDaughterCuts(femto_dream_reso_selection::Daught
 {
   if (daugh == femto_dream_reso_selection::kPosdaugh) {
     posDaughTrack.setSelection(selVal, selVar, selType);
-  };
+  }
   if (daugh == femto_dream_reso_selection::kNegdaugh) {
     negDaughTrack.setSelection(selVal, selVar, selType);
   }
@@ -378,7 +378,7 @@ std::array<cutContainerType, 5> FemtoDreamResoSelection::getCutContainer(V const
   cutContainerType outputSign = 0;
   cutContainerType outputPID = 0;
   size_t counter = 0;
-  for ( auto& sel : mSelections) { // o2-linter: disable=const-ref-in-for-loop (femtoDreamObjectSelection has no const getter)
+  for (auto& sel : mSelections) { // o2-linter: disable=const-ref-in-for-loop (femtoDreamObjectSelection has no const getter)
     const auto selVariable = sel.getSelectionVariable();
     if (selVariable == femto_dream_reso_selection::kResoSign) {
       sel.checkSelectionSetBit(sign, outputSign, counter, nullptr);

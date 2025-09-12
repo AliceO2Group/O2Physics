@@ -32,12 +32,10 @@
 #include <string>
 #include <vector>
 
-
-
 namespace o2::analysis::femtoDream // o2-linter: disable=name/namespace (Previously defined namespace)
 {
 
-namespace  femto_dream_v0_selection
+namespace femto_dream_v0_selection
 {
 /// The different selections this task is capable of doing
 enum V0Sel {
@@ -68,15 +66,14 @@ enum V0ContainerPosition {
 /// \class FemtoDreamV0Selection
 /// \brief Cut class to contain and execute all cuts applied to V0s
 class FemtoDreamV0Selection
-  : public FemtoDreamObjectSelection<float,  femto_dream_v0_selection::V0Sel>
+  : public FemtoDreamObjectSelection<float, femto_dream_v0_selection::V0Sel>
 {
  public:
   FemtoDreamV0Selection()
-    : nPtV0MinSel(0), nPtV0MaxSel(0), nEtaV0MaxSel(0), nDCAV0DaughMax(0), nCPAV0Min(0), nTranRadV0Min(0), nTranRadV0Max(0), nDecVtxMax(0), pTV0Min(9999999.), pTV0Max(-9999999.), etaV0Max(-9999999.), dCAV0DaughMax(-9999999.), cPAV0Min(9999999.),tranRadV0Min(9999999.),  tranRadV0Max(-9999999.),  decVtxMax(-9999999.), fInvMassLowLimit(1.05), fInvMassUpLimit(1.3), fRejectKaon(false), fRejectLambda(false), fInvMassKaonLowLimit(0.48), fInvMassKaonUpLimit(0.515), nSigmaPIDOffsetTPC(0.), fMotherIsLambda(true) {}
+    : nPtV0MinSel(0), nPtV0MaxSel(0), nEtaV0MaxSel(0), nDCAV0DaughMax(0), nCPAV0Min(0), nTranRadV0Min(0), nTranRadV0Max(0), nDecVtxMax(0), pTV0Min(9999999.), pTV0Max(-9999999.), etaV0Max(-9999999.), dCAV0DaughMax(-9999999.), cPAV0Min(9999999.), tranRadV0Min(9999999.), tranRadV0Max(-9999999.), decVtxMax(-9999999.), fInvMassLowLimit(1.05), fInvMassUpLimit(1.3), fRejectKaon(false), fRejectLambda(false), fInvMassKaonLowLimit(0.48), fInvMassKaonUpLimit(0.515), nSigmaPIDOffsetTPC(0.), fMotherIsLambda(true) {}
+
   /// Initializes histograms for the task
-  template <o2::aod::femtodreamparticle::ParticleType part,
-            o2::aod::femtodreamparticle::ParticleType daugh,
-            typename cutContainerType>
+  template <o2::aod::femtodreamparticle::ParticleType part, o2::aod::femtodreamparticle::ParticleType daugh, typename cutContainerType>
   void init(HistogramRegistry* QAregistry, HistogramRegistry* Registry);
 
   template <typename C, typename V, typename T>
@@ -100,23 +97,22 @@ class FemtoDreamV0Selection
   void fillQA(C const& col, V const& v0, T const& posTrack, T const& negTrack);
 
   template <typename T1, typename T2>
-  void setChildCuts(  femto_dream_v0_selection::ChildTrackType child, T1 selVal,
-                    T2 selVar, femtoDreamSelection::SelectionType selType)
+  void setChildCuts(femto_dream_v0_selection::ChildTrackType child, T1 selVal, T2 selVar, femtoDreamSelection::SelectionType selType)
   {
-    if (child ==  femto_dream_v0_selection::kPosTrack) {
-       posDaughTrack.setSelection(selVal, selVar, selType);
-    } else if (child ==  femto_dream_v0_selection::kNegTrack) {
-       negDaughTrack.setSelection(selVal, selVar, selType);
+    if (child == femto_dream_v0_selection::kPosTrack) {
+      posDaughTrack.setSelection(selVal, selVar, selType);
+    } else if (child == femto_dream_v0_selection::kNegTrack) {
+      negDaughTrack.setSelection(selVal, selVar, selType);
     }
   }
+
   template <typename T>
-  void setChildPIDSpecies(  femto_dream_v0_selection::ChildTrackType child,
-                          T& pids)
+  void setChildPIDSpecies(femto_dream_v0_selection::ChildTrackType child, T& pids)
   {
-    if (child ==  femto_dream_v0_selection::kPosTrack) {
-       posDaughTrack.setPIDSpecies(pids);
-    } else if (child ==  femto_dream_v0_selection::kNegTrack) {
-       negDaughTrack.setPIDSpecies(pids);
+    if (child == femto_dream_v0_selection::kPosTrack) {
+      posDaughTrack.setPIDSpecies(pids);
+    } else if (child == femto_dream_v0_selection::kNegTrack) {
+      negDaughTrack.setPIDSpecies(pids);
     }
   }
 
@@ -124,9 +120,7 @@ class FemtoDreamV0Selection
   /// \param iSel Track selection variable to be examined
   /// \param prefix Additional prefix for the name of the configurable
   /// \param suffix Additional suffix for the name of the configurable
-  static std::string getSelectionName(  femto_dream_v0_selection::V0Sel iSel,
-                                      std::string_view prefix = "",
-                                      std::string_view suffix = "")
+  static std::string getSelectionName(femto_dream_v0_selection::V0Sel iSel, std::string_view prefix = "", std::string_view suffix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
     outString += static_cast<std::string>(kSelectionNames[iSel]);
@@ -153,9 +147,8 @@ class FemtoDreamV0Selection
 
   /// Helper function to obtain the type of a given selection variable for consistent naming of the configurables
   /// \param iSel V0 selection variable whose type is returned
-  static femtoDreamSelection::SelectionType  // o2-linter: disable=name/function-variable (defined with UpperCamelCase in femtoDreamSelection)
-    getSelectionType(  femto_dream_v0_selection::V0Sel iSel)
-  {
+  static femtoDreamSelection::SelectionType getSelectionType(femto_dream_v0_selection::V0Sel iSel)
+  { // o2-linter: disable=name/function-variable (defined with UpperCamelCase in femtoDreamSelection)
     return kSelectionTypes[iSel];
   }
 
@@ -163,7 +156,7 @@ class FemtoDreamV0Selection
   /// for consistent description of the configurables
   /// \param iSel Track selection variable to be examined
   /// \param prefix Additional prefix for the output of the configurable
-  static std::string getSelectionHelper(  femto_dream_v0_selection::V0Sel iSel,
+  static std::string getSelectionHelper(femto_dream_v0_selection::V0Sel iSel,
                                         std::string_view prefix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
@@ -195,21 +188,21 @@ class FemtoDreamV0Selection
     nSigmaPIDOffsetTPC = offsetTPC;
   }
 
-  void setChildRejectNotPropagatedTracks(  femto_dream_v0_selection::ChildTrackType child, bool reject)
+  void setChildRejectNotPropagatedTracks(femto_dream_v0_selection::ChildTrackType child, bool reject)
   {
-    if (child ==  femto_dream_v0_selection::kPosTrack) {
-       posDaughTrack.setRejectNotPropagatedTracks(reject);
-    } else if (child ==  femto_dream_v0_selection::kNegTrack) {
-       negDaughTrack.setRejectNotPropagatedTracks(reject);
+    if (child == femto_dream_v0_selection::kPosTrack) {
+      posDaughTrack.setRejectNotPropagatedTracks(reject);
+    } else if (child == femto_dream_v0_selection::kNegTrack) {
+      negDaughTrack.setRejectNotPropagatedTracks(reject);
     }
   }
 
-  void setChildnSigmaPIDOffset(  femto_dream_v0_selection::ChildTrackType child, float offsetTPC, float offsetTOF)
+  void setChildnSigmaPIDOffset(femto_dream_v0_selection::ChildTrackType child, float offsetTPC, float offsetTOF)
   {
-    if (child ==  femto_dream_v0_selection::kPosTrack) {
-       posDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
-    } else if (child ==  femto_dream_v0_selection::kNegTrack) {
-       negDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
+    if (child == femto_dream_v0_selection::kPosTrack) {
+      posDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
+    } else if (child == femto_dream_v0_selection::kNegTrack) {
+      negDaughTrack.setnSigmaPIDOffset(offsetTPC, offsetTOF);
     }
   }
 
@@ -253,12 +246,12 @@ class FemtoDreamV0Selection
 
   bool fMotherIsLambda;
 
-  FemtoDreamTrackSelection  posDaughTrack;
-  FemtoDreamTrackSelection  negDaughTrack;
+  FemtoDreamTrackSelection posDaughTrack;
+  FemtoDreamTrackSelection negDaughTrack;
 
   static constexpr int kNv0Selection = 9;
 
-  static constexpr std::string_view  kSelectionNames[kNv0Selection] = {
+  static constexpr std::string_view kSelectionNames[kNv0Selection] = {
     "Sign", "PtMin", "PtMax", "EtaMax", "DCAdaughMax", "CPAMin",
     "TranRadMin", "TranRadMax", "DecVecMax"}; ///< Name of the different
                                               ///< selections
@@ -276,7 +269,7 @@ class FemtoDreamV0Selection
       femtoDreamSelection::kUpperLimit}; ///< Map to match a variable with
                                          ///< its type
 
-  static constexpr std::string_view  kSelectionHelper[kNv0Selection] = {
+  static constexpr std::string_view kSelectionHelper[kNv0Selection] = {
     "+1 for lambda, -1 for antilambda",
     "Minimum pT (GeV/c)",
     "Maximum pT (GeV/c)",
@@ -351,11 +344,11 @@ void FemtoDreamV0Selection::init(HistogramRegistry* QAregistry, HistogramRegistr
     mQAHistogramRegistry->add((folderName + "/hInvMassLambdaAntiLambda").c_str(),
                               "", kTH2F, {massAxisLambda, massAxisAntiLambda});
 
-     posDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child,
+    posDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child,
                        aod::femtodreamparticle::TrackType::kPosChild,
                        aod::femtodreamparticle::cutContainerType>(
       mQAHistogramRegistry, mHistogramRegistry);
-     negDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child,
+    negDaughTrack.init<aod::femtodreamparticle::ParticleType::kV0Child,
                        aod::femtodreamparticle::TrackType::kNegChild,
                        aod::femtodreamparticle::cutContainerType>(
       mQAHistogramRegistry, mHistogramRegistry);
@@ -387,30 +380,30 @@ void FemtoDreamV0Selection::init(HistogramRegistry* QAregistry, HistogramRegistr
 
   /// check whether the most open cuts are fulfilled - most of this should have
   /// already be done by the filters
-  nPtV0MinSel = getNSelections(  femto_dream_v0_selection::kV0pTMin);
-  nPtV0MaxSel = getNSelections(  femto_dream_v0_selection::kV0pTMax);
-  nEtaV0MaxSel = getNSelections(  femto_dream_v0_selection::kV0etaMax);
-  nDCAV0DaughMax = getNSelections(  femto_dream_v0_selection::kV0DCADaughMax);
-  nCPAV0Min = getNSelections(  femto_dream_v0_selection::kV0CPAMin);
-  nTranRadV0Min = getNSelections(  femto_dream_v0_selection::kV0TranRadMin);
-  nTranRadV0Max = getNSelections(  femto_dream_v0_selection::kV0TranRadMax);
-  nDecVtxMax = getNSelections(  femto_dream_v0_selection::kV0DecVtxMax);
+  nPtV0MinSel = getNSelections(femto_dream_v0_selection::kV0pTMin);
+  nPtV0MaxSel = getNSelections(femto_dream_v0_selection::kV0pTMax);
+  nEtaV0MaxSel = getNSelections(femto_dream_v0_selection::kV0etaMax);
+  nDCAV0DaughMax = getNSelections(femto_dream_v0_selection::kV0DCADaughMax);
+  nCPAV0Min = getNSelections(femto_dream_v0_selection::kV0CPAMin);
+  nTranRadV0Min = getNSelections(femto_dream_v0_selection::kV0TranRadMin);
+  nTranRadV0Max = getNSelections(femto_dream_v0_selection::kV0TranRadMax);
+  nDecVtxMax = getNSelections(femto_dream_v0_selection::kV0DecVtxMax);
 
-  pTV0Min = getMinimalSelection(  femto_dream_v0_selection::kV0pTMin,
+  pTV0Min = getMinimalSelection(femto_dream_v0_selection::kV0pTMin,
                                 femtoDreamSelection::kLowerLimit);
-  pTV0Max = getMinimalSelection(  femto_dream_v0_selection::kV0pTMax,
+  pTV0Max = getMinimalSelection(femto_dream_v0_selection::kV0pTMax,
                                 femtoDreamSelection::kUpperLimit);
-  etaV0Max = getMinimalSelection(  femto_dream_v0_selection::kV0etaMax,
+  etaV0Max = getMinimalSelection(femto_dream_v0_selection::kV0etaMax,
                                  femtoDreamSelection::kAbsUpperLimit);
-  dCAV0DaughMax = getMinimalSelection(  femto_dream_v0_selection::kV0DCADaughMax,
+  dCAV0DaughMax = getMinimalSelection(femto_dream_v0_selection::kV0DCADaughMax,
                                       femtoDreamSelection::kUpperLimit);
-  cPAV0Min = getMinimalSelection(  femto_dream_v0_selection::kV0CPAMin,
+  cPAV0Min = getMinimalSelection(femto_dream_v0_selection::kV0CPAMin,
                                  femtoDreamSelection::kLowerLimit);
- tranRadV0Min = getMinimalSelection(  femto_dream_v0_selection::kV0TranRadMin,
+  tranRadV0Min = getMinimalSelection(femto_dream_v0_selection::kV0TranRadMin,
                                      femtoDreamSelection::kLowerLimit);
-   tranRadV0Max = getMinimalSelection(  femto_dream_v0_selection::kV0TranRadMax,
+  tranRadV0Max = getMinimalSelection(femto_dream_v0_selection::kV0TranRadMax,
                                      femtoDreamSelection::kUpperLimit);
-   decVtxMax = getMinimalSelection(  femto_dream_v0_selection::kV0DecVtxMax,
+  decVtxMax = getMinimalSelection(femto_dream_v0_selection::kV0DecVtxMax,
                                   femtoDreamSelection::kAbsUpperLimit);
 }
 
@@ -479,14 +472,14 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& /*col*/, V const& v0,
   if (nCPAV0Min > 0 && cpav0 < cPAV0Min) {
     return false;
   }
-  if (nTranRadV0Min > 0 && tranRad <tranRadV0Min) {
+  if (nTranRadV0Min > 0 && tranRad < tranRadV0Min) {
     return false;
   }
-  if (nTranRadV0Max > 0 && tranRad >  tranRadV0Max) {
+  if (nTranRadV0Max > 0 && tranRad > tranRadV0Max) {
     return false;
   }
   for (size_t i = 0; i < decVtx.size(); i++) {
-    if (nDecVtxMax > 0 && decVtx.at(i) >  decVtxMax) {
+    if (nDecVtxMax > 0 && decVtx.at(i) > decVtxMax) {
       return false;
     }
   }
@@ -498,7 +491,7 @@ bool FemtoDreamV0Selection::isSelectedMinimal(C const& /*col*/, V const& v0,
   }
 
   // check that track combinations for V0 or antiV0 would be fulfilling PID
-  int nSigmaPIDMax =  posDaughTrack.getSigmaPIDMax();
+  int nSigmaPIDMax = posDaughTrack.getSigmaPIDMax();
   if (fMotherIsLambda) { /// Lambda
     // antiV0
     auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
@@ -584,17 +577,17 @@ void FemtoDreamV0Selection::fillLambdaQA(C const& /*col*/, V const& v0,
   if (cpav0 > cPAV0Min) {
     mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaCPA"), fillMass);
   }
-  if (tranRad >tranRadV0Min) {
+  if (tranRad > tranRadV0Min) {
     mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaTranRadMin"),
                                fillMass);
   }
-  if (tranRad <  tranRadV0Max) {
+  if (tranRad < tranRadV0Max) {
     mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaTranRadMax"),
                                fillMass);
   }
   bool write = true;
   for (size_t i = 0; i < decVtx.size(); i++) {
-    write = write && (decVtx.at(i) <  decVtxMax);
+    write = write && (decVtx.at(i) < decVtxMax);
   }
   if (write) {
     mQAHistogramRegistry->fill(HIST("LambdaQA/hInvMassLambdaDecVtxMax"),
@@ -608,8 +601,8 @@ template <typename cutContainerType, typename C, typename V, typename T>
 std::array<cutContainerType, 5>
   FemtoDreamV0Selection::getCutContainer(C const& /*col*/, V const& v0, T const& posTrack, T const& negTrack)
 {
-  auto outputPosTrack =  posDaughTrack.getCutContainer<false, cutContainerType>(posTrack, v0.positivept(), v0.positiveeta(), v0.dcapostopv());
-  auto outputNegTrack =  negDaughTrack.getCutContainer<false, cutContainerType>(negTrack, v0.negativept(), v0.negativeeta(), v0.dcanegtopv());
+  auto outputPosTrack = posDaughTrack.getCutContainer<false, cutContainerType>(posTrack, v0.positivept(), v0.positiveeta(), v0.dcapostopv());
+  auto outputNegTrack = negDaughTrack.getCutContainer<false, cutContainerType>(negTrack, v0.negativept(), v0.negativeeta(), v0.dcanegtopv());
   cutContainerType output = 0;
   size_t counter = 0;
 
@@ -622,7 +615,7 @@ std::array<cutContainerType, 5>
     auto diffLambda = std::abs(lambdaMassNominal - lambdaMassHypothesis);
     auto diffAntiLambda = std::abs(antiLambdaMassHypothesis - lambdaMassHypothesis);
 
-    int nSigmaPIDMax =  posDaughTrack.getSigmaPIDMax();
+    int nSigmaPIDMax = posDaughTrack.getSigmaPIDMax();
     auto nSigmaPrNeg = negTrack.tpcNSigmaPr();
     auto nSigmaPiPos = posTrack.tpcNSigmaPi();
     auto nSigmaPiNeg = negTrack.tpcNSigmaPi();
@@ -652,40 +645,40 @@ std::array<cutContainerType, 5>
   const std::vector<float> decVtx = {v0.x(), v0.y(), v0.z()};
 
   float observable = 0.;
-  for ( auto& sel : mSelections) { // o2-linter: disable=const-ref-in-for-loop (femtoDreamObjectSelection has no const getter)
+  for (auto& sel : mSelections) { // o2-linter: disable=const-ref-in-for-loop (femtoDreamObjectSelection has no const getter)
     const auto selVariable = sel.getSelectionVariable();
-    if (selVariable ==  femto_dream_v0_selection::kV0DecVtxMax) {
+    if (selVariable == femto_dream_v0_selection::kV0DecVtxMax) {
       for (size_t i = 0; i < decVtx.size(); ++i) {
         auto decVtxValue = decVtx.at(i);
         sel.checkSelectionSetBit(decVtxValue, output, counter, nullptr);
       }
     } else {
       switch (selVariable) {
-        case (  femto_dream_v0_selection::kV0Sign):
+        case (femto_dream_v0_selection::kV0Sign):
           observable = sign;
           break;
-        case (  femto_dream_v0_selection::kV0pTMin):
+        case (femto_dream_v0_selection::kV0pTMin):
           observable = pT;
           break;
-        case (  femto_dream_v0_selection::kV0pTMax):
+        case (femto_dream_v0_selection::kV0pTMax):
           observable = pT;
           break;
-        case (  femto_dream_v0_selection::kV0etaMax):
+        case (femto_dream_v0_selection::kV0etaMax):
           observable = eta;
           break;
-        case (  femto_dream_v0_selection::kV0DCADaughMax):
+        case (femto_dream_v0_selection::kV0DCADaughMax):
           observable = dcaDaughv0;
           break;
-        case (  femto_dream_v0_selection::kV0CPAMin):
+        case (femto_dream_v0_selection::kV0CPAMin):
           observable = cpav0;
           break;
-        case (  femto_dream_v0_selection::kV0TranRadMin):
+        case (femto_dream_v0_selection::kV0TranRadMin):
           observable = tranRad;
           break;
-        case (  femto_dream_v0_selection::kV0TranRadMax):
+        case (femto_dream_v0_selection::kV0TranRadMax):
           observable = tranRad;
           break;
-        case (  femto_dream_v0_selection::kV0DecVtxMax):
+        case (femto_dream_v0_selection::kV0DecVtxMax):
           break;
       }
       sel.checkSelectionSetBit(observable, output, counter, nullptr);
@@ -768,9 +761,9 @@ void FemtoDreamV0Selection::fillQA(C const& /*col*/, V const& v0, T const& posTr
     }
   }
 
-   posDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child,
+  posDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child,
                        aod::femtodreamparticle::TrackType::kPosChild>(posTrack);
-   negDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child,
+  negDaughTrack.fillQA<aod::femtodreamparticle::ParticleType::kV0Child,
                        aod::femtodreamparticle::TrackType::kNegChild>(negTrack);
 }
 
