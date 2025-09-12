@@ -99,6 +99,7 @@ struct v0selector {
   Configurable<float> cutAPOmegaDown3{"cutAPOmegaDown3", 0.16, "cutAPOmegaDown3"};
   Configurable<float> cutAlphaOmegaHigh{"cutAlphaOmegaHigh", 0.358, "cutAlphaOmegaHigh"};
   Configurable<float> cutAlphaOmegaLow{"cutAlphaOmegaLow", 0., "cutAlphaOmegaLow"};
+  Configurable<float> cutQTOmegaLowOuterArc{"cutQTOmegaLowOuterArc", 0.14, "cutQTOmegaLowOuterArc"};
   Configurable<float> cutMassOmegaHigh{"cutMassOmegaHigh", 1.677, "cutMassOmegaHigh"};
   Configurable<float> cutMassOmegaLow{"cutMassOmegaLow", 1.667, "cutMassOmegaLow"};
   Configurable<float> cutMassCascV0Low{"cutMassCascV0Low", 1.110, "cutMassCascV0Low"};
@@ -186,6 +187,10 @@ struct v0selector {
     const float qDown = std::abs(alpha - cutAPOmegaDown2) > std::abs(cutAPOmegaDown3) ? 0. : cutAPOmegaDown1 * std::sqrt(1.0f - ((alpha - cutAPOmegaDown2) * (alpha - cutAPOmegaDown2)) / (cutAPOmegaDown3 * cutAPOmegaDown3));
 
     if (alpha < cutAlphaOmegaLow || alpha > cutAlphaOmegaHigh || qt < qDown || qt > qUp) {
+      return kUndef;
+    }
+
+    if (alpha > cutAPOmegaUp2 && qt < cutQTOmegaLowOuterArc) {
       return kUndef;
     }
 
