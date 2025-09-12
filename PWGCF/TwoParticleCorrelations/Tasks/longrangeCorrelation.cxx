@@ -278,14 +278,14 @@ struct LongrangeCorrelation {
   Filter fMftTrackColID = (aod::fwdtrack::bestCollisionId >= 0);
   Filter fMftTrackDca = (nabs(aod::fwdtrack::bestDCAXY) < cfigMftDcaxy);
 
-  double getPhiFT0(uint_t chno, int i)
+  double getPhiFT0(uint chno, int i)
   {
     ft0Det.calculateChannelCenter();
     auto chPos = ft0Det.getChannelCenter(chno);
     return RecoDecay::phi(chPos.X() + (*offsetFT0)[i].getX(), chPos.Y() + (*offsetFT0)[i].getY());
   }
 
-  double getPhiFV0(uint_t chno)
+  double getPhiFV0(uint chno)
   {
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
@@ -306,7 +306,7 @@ struct LongrangeCorrelation {
     return RecoDecay::phi(chPos.x + offsetX, chPos.y + offsetY);
   }
 
-  double getEtaFT0(uint_t chno, int i)
+  double getEtaFT0(uint chno, int i)
   {
     ft0Det.calculateChannelCenter();
     auto chPos = ft0Det.getChannelCenter(chno);
@@ -318,7 +318,7 @@ struct LongrangeCorrelation {
     return -std::log(std::tan(0.5 * theta));
   }
 
-  double getEtaFV0(uint_t chno)
+  double getEtaFV0(uint chno)
   {
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
@@ -381,7 +381,7 @@ struct LongrangeCorrelation {
     for (auto const& iTrk : tracks) {
       auto phi = iTrk.phi();
       if constexpr (corrType == kFV0MFT || corrType == kFT0AMFT) {
-        phi = o2::math_utils::bringTo02Pi(phi);
+        o2::math_utils::bringTo02Pi(phi);
       }
       histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_etavsphi"), phi, iTrk.eta());
       histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_eta"), iTrk.eta());
