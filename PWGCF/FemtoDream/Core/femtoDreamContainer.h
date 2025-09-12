@@ -183,15 +183,15 @@ class FemtoDreamContainer
   /// Initialize the histograms for pairs in divided qn bins
   template <typename T>
   void init_base_qn(std::string folderName, std::string femtoObs,
-                 T& femtoObsAxis, T& mTAxi4D, T& multPercentileAxis4D, T& qnAxis4D)
+                    T& femtoObsAxis, T& mTAxi4D, T& multPercentileAxis4D, T& qnAxis4D)
   {
     mHistogramRegistry->add((folderName + "/relPairkstarmTMultMultPercentileQn").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}); Centrality; qn").c_str(), kTHnSparseF, {femtoObsAxis, mTAxi4D, multPercentileAxis4D, qnAxis4D});
   }
 
   template <typename T>
   void init_qn(HistogramRegistry* registry,
-            T& kstarBins4D, T& mTBins4D, T& multPercentileBins4D,
-            bool isMC, float highkstarCut, ConfigurableAxis qnBins4D = {"qnBins4D", {10,0,10}, "qn binning"})
+               T& kstarBins4D, T& mTBins4D, T& multPercentileBins4D,
+               bool isMC, float highkstarCut, ConfigurableAxis qnBins4D = {"qnBins4D", {10, 0, 10}, "qn binning"})
   {
     mHistogramRegistry = registry;
     std::string femtoObs;
@@ -207,13 +207,13 @@ class FemtoDreamContainer
 
     std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kRecon]) + static_cast<std::string>("_qn");
 
-    init_base_qn(folderName, femtoObs, 
-                       kstarAxis4D, mTAxis4D, multPercentileAxis4D, qnAxis4D);      
+    init_base_qn(folderName, femtoObs,
+                 kstarAxis4D, mTAxis4D, multPercentileAxis4D, qnAxis4D);
 
     if (isMC) {
       folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + static_cast<std::string>("_qn");
       init_base_qn(folderName, femtoObs,
-                          kstarAxis4D, mTAxis4D, multPercentileAxis4D, qnAxis4D);
+                   kstarAxis4D, mTAxis4D, multPercentileAxis4D, qnAxis4D);
     }
   }
 
@@ -359,7 +359,7 @@ class FemtoDreamContainer
   void setPair_qn_base(const float femtoObs, const float mT, const float multPercentile, const int myQnBin, const int numQnBins = 10)
   {
     if (myQnBin >= 0 && myQnBin < numQnBins) {
-        mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("_qn") + HIST("/relPairkstarmTMultMultPercentileQn"), femtoObs, mT, multPercentile, myQnBin);
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("_qn") + HIST("/relPairkstarmTMultMultPercentileQn"), femtoObs, mT, multPercentile, myQnBin);
     } else {
       return;
     }
@@ -379,7 +379,7 @@ class FemtoDreamContainer
       }
     }
     const float mT = FemtoDreamMath::getmT(part1, mMassOne, part2, mMassTwo);
-    
+
     if (mHistogramRegistry) {
       setPair_qn_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(femtoObs, mT, multPercentile, myQnBin, numQnBins);
 
