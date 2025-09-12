@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file correlatorFlowCharmHadrons.cxx
+/// \file derivedDataCreatorCorrelationsReduced.cxx
 /// \brief CharmHadrons-Hadrons correlator tree creator for data and MC-reco analyses
 /// \author Marcello Di Costanzo <marcello.di.costanzo@cern.ch>, Politecnico and INFN Torino
 /// \author Stefano Politanò <stefano.politano@cern.ch>, CERN
@@ -60,12 +60,11 @@ enum DecayChannel {
 };
 
 /// Code to select collisions with at least one Ds meson
-struct HfCorrelatorFlowCharmHadrons {
+struct HfDerivedDataCreatorCorrelationsReduced {
   Produces<aod::HfcRedFlowColls> rowCollisions;
-  Produces<aod::HfcRedCharmHads2P> rowCharmCandidates2P;
-  Produces<aod::HfcRedCharmHads3P> rowCharmCandidates3P;
+  Produces<aod::HfcRedCharmTrigs> rowCharmCandidates;
   Produces<aod::HfcRedCharmMls> rowCharmCandidatesMl;
-  Produces<aod::HfcRedTrkAssoc> rowAssocTrackReduced;
+  Produces<aod::HfcRedTrkAssocs> rowAssocTrackReduced;
   Produces<aod::HfcRedTrkSels> rowAssocTrackSelInfo;
 
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
@@ -231,9 +230,9 @@ struct HfCorrelatorFlowCharmHadrons {
       }
       double massCand = getCandMass<channel>(candidate);
       if constexpr (channel == DecayChannel::D0ToKPi || channel == DecayChannel::D0ToPiK) {
-        rowCharmCandidates2P(indexRedColl, candidate.phi(), candidate.eta(), candidate.pt(), massCand, candidate.prong0Id(), candidate.prong1Id());
+        rowCharmCandidates(indexRedColl, candidate.phi(), candidate.eta(), candidate.pt(), massCand, candidate.prong0Id(), candidate.prong1Id(), -1);
       } else {
-        rowCharmCandidates3P(indexRedColl, candidate.phi(), candidate.eta(), candidate.pt(), massCand, candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
+        rowCharmCandidates(indexRedColl, candidate.phi(), candidate.eta(), candidate.pt(), massCand, candidate.prong0Id(), candidate.prong1Id(), candidate.prong2Id());
       }
       std::vector<float> outputMl = getCandMlScores<channel>(candidate);
       rowCharmCandidatesMl(indexRedColl, outputMl[0], outputMl[1]);
@@ -274,7 +273,7 @@ struct HfCorrelatorFlowCharmHadrons {
       fillTracksTables(trackIdsThisColl);
     }
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processDplusWithMl, "Process Dplus candidates with ML info", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDplusWithMl, "Process Dplus candidates with ML info", false);
 
   // Ds with ML selections
   void processDsWithMl(CollsWithCentMult const& colls,
@@ -297,7 +296,7 @@ struct HfCorrelatorFlowCharmHadrons {
       fillTracksTables(trackIdsThisColl);
     }
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processDsWithMl, "Process Ds candidates with ML info", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDsWithMl, "Process Ds candidates with ML info", false);
 
   // D0 with ML selections
   void processD0WithMl(CollsWithCentMult const& colls,
@@ -320,10 +319,10 @@ struct HfCorrelatorFlowCharmHadrons {
       fillTracksTables(trackIdsThisColl);
     }
   }
-  PROCESS_SWITCH(HfCorrelatorFlowCharmHadrons, processD0WithMl, "Process D0 candidates with ML info", false);
+  PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processD0WithMl, "Process D0 candidates with ML info", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<HfCorrelatorFlowCharmHadrons>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfDerivedDataCreatorCorrelationsReduced>(cfgc)};
 }
