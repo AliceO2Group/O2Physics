@@ -50,7 +50,6 @@ namespace o2::aod
 using FemtoFullCollision = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms>::iterator;
 using FemtoFullCollisionMC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::McCollisionLabels>::iterator;
 using FemtoFullCollision_noCent_MC = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::McCollisionLabels>::iterator;
-using FemtoFullCollision_CentPbPb = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFV0As, aod::QvectorFT0CVecs>::iterator;
 
 using FemtoFullTracks = soa::Join<aod::FullTracks, aod::TracksDCA,
                                   aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi, aod::pidTPCFullKa,
@@ -62,7 +61,6 @@ using FemtoFullTracks = soa::Join<aod::FullTracks, aod::TracksDCA,
 struct femtoDreamProducerReducedTask {
 
   Produces<aod::FDCollisions> outputCollision;
-  Produces<aod::FDExtQnCollisions> outputExtQnCollision;
   Produces<aod::FDParticles> outputParts;
   Produces<aod::FDMCParticles> outputPartsMC;
   Produces<aod::FDExtParticles> outputDebugParts;
@@ -101,47 +99,14 @@ struct femtoDreamProducerReducedTask {
   Configurable<std::vector<float>> ConfTrkITSnclsIbMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kITSnClsIbMin, "ConfTrk"), std::vector<float>{-1.f, 1.f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kITSnClsIbMin, "Track selection: ")};
   Configurable<std::vector<float>> ConfTrkDCAxyMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAxyMax, "ConfTrk"), std::vector<float>{0.1f, 0.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAxyMax, "Track selection: ")}; /// here we need an open cut to do the DCA fits later on!
   Configurable<std::vector<float>> ConfTrkDCAzMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kDCAzMax, "ConfTrk"), std::vector<float>{0.2f, 0.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kDCAzMax, "Track selection: ")};
-  Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kPIDnSigmaMax, "ConfTrk"), std::vector<float>{3.5f, 3.f, 2.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kPIDnSigmaMax, "Track selection: ")};
+  Configurable<std::vector<float>> ConfTrkPIDnSigmaMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kPIDnSigmaMax, "Conf"), std::vector<float>{3.5f, 3.f, 2.5f}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kPIDnSigmaMax, "Track selection: ")};
   // off set the center of the nsigma distribution to deal with bad TPC/TOF calibration
   Configurable<float> ConfTrkPIDnSigmaOffsetTPC{"ConfTrkPIDnSigmaOffsetTPC", 0., "Offset for TPC nSigma because of bad calibration"};
   Configurable<float> ConfTrkPIDnSigmaOffsetTOF{"ConfTrkPIDnSigmaOffsetTOF", 0., "Offset for TOF nSigma because of bad calibration"};
   Configurable<std::vector<int>> ConfTrkPIDspecies{"ConfTrkPIDspecies", std::vector<int>{o2::track::PID::Pion, o2::track::PID::Kaon, o2::track::PID::Proton, o2::track::PID::Deuteron}, "Trk sel: Particles species for PID"};
 
-  struct : o2::framework::ConfigurableGroup {
-    Configurable<bool> ConfgFlowCalculate{"ConfgFlowCalculate", false, "Evt sel: Cumulant of flow"}; // To do
-    Configurable<bool> ConfgQnSeparation{"ConfgQnSeparation", false, "Evt sel: Qn of event"};
-    Configurable<std::vector<float>> ConfQnBinSeparator{"ConfQnBinSeparator", std::vector<float>{-999.f, -999.f, -999.f}, "Qn bin separator"};    
-    Configurable<float> ConfCentralityMax{"ConfCentralityMax", 80.f, "Evt sel: Maximum Centrality cut"};    
-    Configurable<float> ConfCentBinWidth{"ConfCentBinWidth", 1.f, "Centrality bin length for qn separator"};
-    Configurable<int> ConfQnBinMin{"ConfQnBinMin", 0, "Minimum qn bin"};
-    Configurable<int> ConfQnBinMax{"ConfQnBinMax", 10, "Maximum qn bin"};
-  } qnCal;
-
-  struct : o2::framework::ConfigurableGroup {
-    Configurable<bool> ConfIsPbPb{"ConfIsPbPb", false, "Running on Run3 or Run2"}; // Choose if running on PbPb data
-    Configurable<bool> ConfIsUsePileUp{"ConfIsUsePileUp", false, "Required for choosing whether to run the pile-up cuts"};
-    Configurable<bool> ConfEvNoSameBunchPileup{"ConfEvNoSameBunchPileup", false, "Require kNoSameBunchPileup selection on Events."};
-    Configurable<bool> ConfEvIsGoodZvtxFT0vsPV{"ConfEvIsGoodZvtxFT0vsPV", false, "Require kIsGoodZvtxFT0vsPV selection on Events."};
-    Configurable<bool> ConfEvIsGoodITSLayersAll{"ConfEvIsGoodITSLayersAll", false, "Require kIsGoodITSLayersAll selection on Events."};
-    Configurable<bool> ConfEvNoCollInRofStandard{"ConfEvNoCollInRofStandard", false, "Require kNoCollInRofStandard selection on Events."};
-    Configurable<bool> ConfEvNoHighMultCollInPrevRof{"ConfEvNoHighMultCollInPrevRof", false, "Require kNoHighMultCollInPrevRof selection on Events."};
-    Configurable<bool> ConfEvNoCollInTimeRangeStandard{"ConfEvNoCollInTimeRangeStandard", false, "Require kNoCollInTimeRangeStandard selection on Events."};
-    Configurable<bool> ConfEvIsVertexITSTPC{"ConfEvIsVertexITSTPC", false, "Require kIsVertexITSTPC selection on Events"};
-    Configurable<int> ConfTPCOccupancyMin{"ConfTPCOccupancyMin", 0, "Minimum value for TPC Occupancy selection"};
-    Configurable<int> ConfTPCOccupancyMax{"ConfTPCOccupancyMax", 1000, "Maximum value for TPC Occupancy selection"};
-  } evtSel_PbPb;
-
-  struct : o2::framework::ConfigurableGroup {
-    Configurable<bool> ConfTrkSpecialCuts{"ConfTrkSpecialCuts", false, "Choose for special track cuts"};
-    Configurable<float> ConfTPCFracsClsMax{"ConfTPCFracsCls", 0.4, "Maximum value for fraction of shared TPC clusters"};
-    Configurable<float> ConfTPCChi2NClMax{"ConfTPCChi2NCl", 2.5, "Maximum value chi2 per cluster for TPC"};
-    Configurable<float> ConfITSChi2NClMax{"ConfITSChi2NCl", 36, "Maximum value chi2 per cluster for ITS"};
-  } specialTrkSel;
-  // Filter globalCutFilter = requireGlobalTrackInFilter();
-
   HistogramRegistry qaRegistry{"QAHistos", {}, OutputObjHandlingPolicy::AnalysisObject};
   HistogramRegistry Registry{"Tracks", {}, OutputObjHandlingPolicy::AnalysisObject};
-  HistogramRegistry FlowRegistry{"Qn", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   int mRunNumber;
   float mMagField;
@@ -174,11 +139,6 @@ struct femtoDreamProducerReducedTask {
     trackCuts.init<aod::femtodreamparticle::ParticleType::kTrack,
                    aod::femtodreamparticle::TrackType::kNoChild,
                    aod::femtodreamparticle::cutContainerType>(&qaRegistry, &Registry);
-    
-    if (qnCal.ConfgFlowCalculate){
-      colCuts.initFlow(&FlowRegistry, qnCal.ConfgQnSeparation);
-    }
-
     mRunNumber = 0;
     mMagField = 0.0;
     /// Initializing CCDB
@@ -365,174 +325,8 @@ struct femtoDreamProducerReducedTask {
     }
   }
 
-  // Centrality (Multiplicity percentile) obtained from FT0C
-  // Pile-up rejection involved
-  template <bool isMC, bool useCentrality, typename CollisionType, typename TrackType>
-  void fillCollisionsAndTracks_PbPb(CollisionType const& col, TrackType const& tracks)
-  {
-    const auto vtxZ = col.posZ();
-    const auto spher = colCuts.computeSphericity(col, tracks);
-    int mult = 0;
-    int multNtr = 0;
-    if (ConfIsRun3) {
-      if constexpr (useCentrality) {
-        mult = col.centFT0C();
-      } else {
-        mult = 0.;
-      }
-      multNtr = col.multNTracksPV();
-    } else {
-      mult = 1; // multiplicity percentile is known in Run 2
-      multNtr = col.multTracklets();
-    }
-    if (ConfEvtUseTPCmult) {
-      multNtr = col.multTPC();
-    }
-
-    /// First thing to do is to check whether the basic event selection criteria are fulfilled
-    /// That includes checking if there are any usable tracks in a collision
-    if (!colCuts.isSelectedCollision(col)) {
-      return;
-    }
-    if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
-      return;
-    }
-
-    // Pileup rejection in PbPb data
-    if (evtSel_PbPb.ConfIsPbPb && evtSel_PbPb.ConfIsUsePileUp && 
-        !colCuts.isPileUpCollisionPbPb(col, evtSel_PbPb.ConfEvNoSameBunchPileup, evtSel_PbPb.ConfEvIsGoodZvtxFT0vsPV, 
-                                            evtSel_PbPb.ConfEvIsGoodITSLayersAll, evtSel_PbPb.ConfEvNoCollInRofStandard,
-                                            evtSel_PbPb.ConfEvNoHighMultCollInPrevRof, evtSel_PbPb.ConfEvNoCollInTimeRangeStandard, 
-                                            evtSel_PbPb.ConfEvIsVertexITSTPC,
-                                            evtSel_PbPb.ConfTPCOccupancyMin, evtSel_PbPb.ConfTPCOccupancyMax)) {
-      return;
-    }
-
-    // now the table is filled
-    outputCollision(vtxZ, mult, multNtr, spher, mMagField);
-    colCuts.fillQA(col, mult);
-
-    // these IDs are necessary to keep track of the children
-    // since this producer only produces the tables for tracks, there are no children
-    std::vector<int> childIDs = {0, 0};
-    for (auto& track : tracks) {
-      /// if the most open selection criteria are not fulfilled there is no point looking further at the track
-      if (!trackCuts.isSelectedMinimal(track)) {
-        continue;
-      }
-      if (specialTrkSel.ConfTrkSpecialCuts 
-          && track.tpcFractionSharedCls()>specialTrkSel.ConfTPCFracsClsMax
-          && track.tpcChi2NCl()>specialTrkSel.ConfTPCChi2NClMax
-          && track.itsChi2NCl()>specialTrkSel.ConfITSChi2NClMax) {
-        continue;
-      }
-
-      trackCuts.fillQA<aod::femtodreamparticle::ParticleType::kTrack, aod::femtodreamparticle::TrackType::kNoChild>(track);
-      // an array of two bit-wise containers of the systematic variations is obtained
-      // one container for the track quality cuts and one for the PID cuts
-      auto cutContainer = trackCuts.getCutContainer<true, aod::femtodreamparticle::cutContainerType>(track, track.pt(), track.eta(), sqrtf(powf(track.dcaXY(), 2.f) + powf(track.dcaZ(), 2.f)));
-
-      // now the table is filled
-      outputParts(outputCollision.lastIndex(),
-                  track.pt(),
-                  track.eta(),
-                  track.phi(),
-                  aod::femtodreamparticle::ParticleType::kTrack,
-                  cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kCuts),
-                  cutContainer.at(femtoDreamTrackSelection::TrackContainerPosition::kPID),
-                  track.dcaXY(), childIDs, 0, 0);
-      if constexpr (isMC) {
-        fillMCParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
-      }
-
-      if (ConfIsDebug) {
-        outputDebugParts(track.sign(),
-                         (uint8_t)track.tpcNClsFound(),
-                         track.tpcNClsFindable(),
-                         (uint8_t)track.tpcNClsCrossedRows(),
-                         track.tpcNClsShared(),
-                         track.tpcInnerParam(),
-                         track.itsNCls(),
-                         track.itsNClsInnerBarrel(),
-                         track.dcaXY(),
-                         track.dcaZ(),
-                         track.tpcSignal(),
-                         track.tpcNSigmaEl(),
-                         track.tpcNSigmaPi(),
-                         track.tpcNSigmaKa(),
-                         track.tpcNSigmaPr(),
-                         track.tpcNSigmaDe(),
-                         track.tpcNSigmaTr(),
-                         track.tpcNSigmaHe(),
-                         track.tofNSigmaEl(),
-                         track.tofNSigmaPi(),
-                         track.tofNSigmaKa(),
-                         track.tofNSigmaPr(),
-                         track.tofNSigmaDe(),
-                         track.tofNSigmaTr(),
-                         track.tofNSigmaHe(),
-                         -1,
-                         track.itsNSigmaEl(),
-                         track.itsNSigmaPi(),
-                         track.itsNSigmaKa(),
-                         track.itsNSigmaPr(),
-                         track.itsNSigmaDe(),
-                         track.itsNSigmaTr(),
-                         track.itsNSigmaHe(),
-                         -999., -999., -999., -999., -999., -999.,
-                         -999., -999., -999., -999., -999., -999., -999.);
-      }
-    }
-  }
-
-  // Calculate and separate qn bins
-  // Do and fill cumulant in qn bins 
-  template <bool isMC, typename CollisionType, typename TrackType>
-  void fillCollisionsFlow(CollisionType const& col, TrackType const& tracks)
-  {
-    // get magnetic field for run
-
-    const auto spher = colCuts.computeSphericity(col, tracks);
-    int multNtr = 0;
-    if (ConfIsRun3) {
-      multNtr = col.multNTracksPV();
-    } else {
-      multNtr = col.multTracklets();
-    }
-    if (ConfEvtUseTPCmult) {
-      multNtr = col.multTPC();
-    }
-
-    /// First thing to do is to check whether the basic event selection criteria are fulfilled
-    /// That includes checking if there are any usable tracks in a collision
-    if (!colCuts.isSelectedCollision(col)) {
-      return;
-    }
-    if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
-      return;
-    }
-
-    // Pileup rejection in PbPb data
-    if (evtSel_PbPb.ConfIsPbPb && evtSel_PbPb.ConfIsUsePileUp && 
-        !colCuts.isPileUpCollisionPbPb(col, evtSel_PbPb.ConfEvNoSameBunchPileup, evtSel_PbPb.ConfEvIsGoodZvtxFT0vsPV, 
-                                            evtSel_PbPb.ConfEvIsGoodITSLayersAll, evtSel_PbPb.ConfEvNoCollInRofStandard,
-                                            evtSel_PbPb.ConfEvNoHighMultCollInPrevRof, evtSel_PbPb.ConfEvNoCollInTimeRangeStandard, 
-                                            evtSel_PbPb.ConfEvIsVertexITSTPC,
-                                            evtSel_PbPb.ConfTPCOccupancyMin, evtSel_PbPb.ConfTPCOccupancyMax)) {
-      return;
-    }
-
-    // Calculate and fill qnBins 
-    auto qnBin = colCuts.myqnBin(col, qnCal.ConfCentralityMax, qnCal.ConfQnBinSeparator, spher, multNtr, 1.f);
-    if (qnBin < qnCal.ConfQnBinMin || qnBin > qnCal.ConfQnBinMax){
-      qnBin = -999;
-    }
-    colCuts.fillCumulants(col, tracks);
-    colCuts.doCumulants(col, qnCal.ConfgQnSeparation, qnBin);
-    outputExtQnCollision(qnBin);      
-  }
-
-  void processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
+  void
+    processData(aod::FemtoFullCollision const& col, aod::BCsWithTimestamps const&, aod::FemtoFullTracks const& tracks)
   {
     // get magnetic field for run
     getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
@@ -571,24 +365,8 @@ struct femtoDreamProducerReducedTask {
     fillCollisionsAndTracks<true, false>(col, tracksWithItsPid);
   }
   PROCESS_SWITCH(femtoDreamProducerReducedTask, processMC_noCentrality, "Provide MC data", false);
-  
-  void processData_FlowCalc(aod::FemtoFullCollision_CentPbPb const& col,
-                            aod::BCsWithTimestamps const&,
-                            aod::FemtoFullTracks const& tracks)
-  {
-    // get magnetic field for run
-    getMagneticFieldTesla(col.bc_as<aod::BCsWithTimestamps>());
-    auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
-                                        aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
-    // fill the tables                                   
-    fillCollisionsAndTracks_PbPb<false, true>(col, tracksWithItsPid);
-    if (qnCal.ConfgQnSeparation){
-      fillCollisionsFlow<false>(col, tracksWithItsPid);
-    }
-  }
-  PROCESS_SWITCH(femtoDreamProducerReducedTask, processData_FlowCalc,
-                 "Provide experimental data with cumulant flow calculation", false);
 };
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   WorkflowSpec workflow{adaptAnalysisTask<femtoDreamProducerReducedTask>(cfgc)};
