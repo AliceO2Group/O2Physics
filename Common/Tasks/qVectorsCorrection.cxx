@@ -18,31 +18,31 @@
 ///
 
 // C++/ROOT includes.
-#include <chrono>
-#include <string>
-#include <vector>
 #include <TComplex.h>
 #include <TH1F.h>
 #include <TH2D.h>
 #include <TMath.h>
 #include <TVector2.h>
 
-// o2Physics includes.
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
+#include <chrono>
+#include <string>
+#include <vector>
 
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+// o2Physics includes.
 #include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
 
 // o2 includes.
 
@@ -741,7 +741,7 @@ struct qVectorsCorrection {
         fillHistosFlow(qVec, tracks, cfgnMods->at(i));
       }
     }
-  } 
+  }
   PROCESS_SWITCH(qVectorsCorrection, process, "default process", true);
 
   void processWithSC(MyCollisionsWithSC::iterator const& qVec, MyTracks const& tracks)
@@ -751,7 +751,7 @@ struct qVectorsCorrection {
                          !qVec.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) ||
                          !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))) {
       return;
-    } 
+    }
     if (cfgAddEvtSel && (qVec.trackOccupancyInTimeRange() > cfgMaxOccupancy || qVec.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
       return;
     }
@@ -760,7 +760,7 @@ struct qVectorsCorrection {
     }
 
     for (uint i = 0; i < cfgnMods->size(); i++) {
-      fillHistosQvecWithSC(qVec, cfgnMods->at(i)); 
+      fillHistosQvecWithSC(qVec, cfgnMods->at(i));
       if (cfgQAFlowStudy) {
         fillHistosFlowWithSC(qVec, tracks, cfgnMods->at(i));
       }
