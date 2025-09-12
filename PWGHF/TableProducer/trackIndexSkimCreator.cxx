@@ -77,8 +77,9 @@
 #include <cstdlib>
 #include <iterator> // std::distance
 #include <numeric>
-#include <string> // std::string
-#include <vector> // std::vector
+#include <string>  // std::string
+#include <utility> // std::forward
+#include <vector>  // std::vector
 
 using namespace o2;
 using namespace o2::analysis;
@@ -260,6 +261,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   Produces<aod::HfPvRefitTrack> tabPvRefitTrack;
 
   struct : ConfigurableGroup {
+    double etaMinDefault{-99999.};
     Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
     Configurable<bool> doPvRefit{"doPvRefit", false, "do PV refit excluding the considered track"};
     Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
@@ -275,29 +277,29 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
     // 2-prong cuts
     Configurable<double> ptMinTrack2Prong{"ptMinTrack2Prong", -1., "min. track pT for 2 prong candidate"};
     Configurable<LabeledArray<double>> cutsTrack2Prong{"cutsTrack2Prong", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 2-prong candidates"};
-    Configurable<double> etaMinTrack2Prong{"etaMinTrack2Prong", -99999., "min. pseudorapidity for 2 prong candidate"};
+    Configurable<double> etaMinTrack2Prong{"etaMinTrack2Prong", std::forward<double>(etaMinDefault), "min. pseudorapidity for 2 prong candidate"};
     Configurable<double> etaMaxTrack2Prong{"etaMaxTrack2Prong", 4., "max. pseudorapidity for 2 prong candidate"};
     // 3-prong cuts
     Configurable<double> ptMinTrack3Prong{"ptMinTrack3Prong", -1., "min. track pT for 3 prong candidate"};
     Configurable<LabeledArray<double>> cutsTrack3Prong{"cutsTrack3Prong", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for 3-prong candidates"};
-    Configurable<double> etaMinTrack3Prong{"etaMinTrack3Prong", -99999., "min. pseudorapidity for 3 prong candidate"};
+    Configurable<double> etaMinTrack3Prong{"etaMinTrack3Prong", std::forward<double>(etaMinDefault), "min. pseudorapidity for 3 prong candidate"};
     Configurable<double> etaMaxTrack3Prong{"etaMaxTrack3Prong", 4., "max. pseudorapidity for 3 prong candidate"};
     // bachelor cuts (V0 + bachelor decays)
     Configurable<double> ptMinTrackBach{"ptMinTrackBach", 0.3, "min. track pT for bachelor in cascade candidate"}; // 0.5 for PbPb 2015?
     Configurable<LabeledArray<double>> cutsTrackBach{"cutsTrackBach", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for the bachelor of V0-bachelor candidates"};
-    Configurable<double> etaMinTrackBach{"etaMinTrackBach", -99999., "min. pseudorapidity for bachelor in cascade candidate"};
+    Configurable<double> etaMinTrackBach{"etaMinTrackBach", std::forward<double>(etaMinDefault), "min. pseudorapidity for bachelor in cascade candidate"};
     Configurable<double> etaMaxTrackBach{"etaMaxTrackBach", 0.8, "max. pseudorapidity for bachelor in cascade candidate"};
     // bachelor cuts (cascade + bachelor decays)
     Configurable<double> ptMinTrackBachLfCasc{"ptMinTrackBachLfCasc", 0.1, "min. track pT for bachelor in cascade + bachelor decays"}; // 0.5 for PbPb 2015?
     Configurable<LabeledArray<double>> cutsTrackBachLfCasc{"cutsTrackBachLfCasc", {hf_cuts_single_track::CutsTrack[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for the bachelor in cascade + bachelor decays"};
-    Configurable<double> etaMinTrackBachLfCasc{"etaMinTrackBachLfCasc", -99999., "min. pseudorapidity for bachelor in cascade + bachelor decays"};
+    Configurable<double> etaMinTrackBachLfCasc{"etaMinTrackBachLfCasc", std::forward<double>(etaMinDefault), "min. pseudorapidity for bachelor in cascade + bachelor decays"};
     Configurable<double> etaMaxTrackBachLfCasc{"etaMaxTrackBachLfCasc", 1.1, "max. pseudorapidity for bachelor in cascade + bachelor decays"};
     Configurable<bool> useIsGlobalTrackForBachLfCasc{"useIsGlobalTrackForBachLfCasc", false, "check isGlobalTrack status for bachelor in cascade + bachelor decays"};
     Configurable<bool> useIsGlobalTrackWoDCAForBachLfCasc{"useIsGlobalTrackWoDCAForBachLfCasc", false, "check isGlobalTrackWoDCA status for bachelor in cascade + bachelor decays"};
     Configurable<bool> useIsQualityTrackITSForBachLfCasc{"useIsQualityTrackITSForBachLfCasc", true, "check isQualityTrackITS status for bachelor in cascade + bachelor decays"};
     // soft pion cuts for D*
     Configurable<double> ptMinSoftPionForDstar{"ptMinSoftPionForDstar", 0.05, "min. track pT for soft pion in D* candidate"};
-    Configurable<double> etaMinSoftPionForDstar{"etaMinSoftPionForDstar", -99999., "min. pseudorapidity for soft pion in D* candidate"};
+    Configurable<double> etaMinSoftPionForDstar{"etaMinSoftPionForDstar", std::forward<double>(etaMinDefault), "min. pseudorapidity for soft pion in D* candidate"};
     Configurable<double> etaMaxSoftPionForDstar{"etaMaxSoftPionForDstar", 0.8, "max. pseudorapidity for soft pion in D* candidate"};
     Configurable<LabeledArray<double>> cutsTrackDstar{"cutsTrackDstar", {hf_cuts_single_track::CutsTrackPrimary[0], hf_cuts_single_track::NBinsPtTrack, hf_cuts_single_track::NCutVarsTrack, hf_cuts_single_track::labelsPtTrack, hf_cuts_single_track::labelsCutVarTrack}, "Single-track selections per pT bin for the soft pion of D* candidates"};
     Configurable<bool> useIsGlobalTrackForSoftPion{"useIsGlobalTrackForSoftPion", false, "check isGlobalTrack status for soft pion tracks"};
@@ -357,19 +359,19 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
     cutsSingleTrack = {config.cutsTrack2Prong, config.cutsTrack3Prong, config.cutsTrackBach, config.cutsTrackDstar, config.cutsTrackBachLfCasc};
 
-    if (config.etaMinTrack2Prong == -99999.) {
+    if (config.etaMinTrack2Prong == config.etaMinDefault) {
       config.etaMinTrack2Prong.value = -config.etaMaxTrack2Prong;
     }
-    if (config.etaMinTrack3Prong == -99999.) {
+    if (config.etaMinTrack3Prong == config.etaMinDefault) {
       config.etaMinTrack3Prong.value = -config.etaMaxTrack3Prong;
     }
-    if (config.etaMinTrackBach == -99999.) {
+    if (config.etaMinTrackBach == config.etaMinDefault) {
       config.etaMinTrackBach.value = -config.etaMaxTrackBach;
     }
-    if (config.etaMinSoftPionForDstar == -99999.) {
+    if (config.etaMinSoftPionForDstar == config.etaMinDefault) {
       config.etaMinSoftPionForDstar.value = -config.etaMaxSoftPionForDstar;
     }
-    if (config.etaMinTrackBachLfCasc == -99999.) {
+    if (config.etaMinTrackBachLfCasc == config.etaMinDefault) {
       config.etaMinTrackBachLfCasc.value = -config.etaMaxTrackBachLfCasc;
     }
 
@@ -3049,6 +3051,7 @@ struct HfTrackIndexSkimCreatorCascades {
   Produces<aod::HfCascades> rowTrackIndexCasc;
 
   struct : ConfigurableGroup {
+    double etaMinDefault{-99999.};
     Configurable<bool> isRun2{"isRun2", false, "enable Run 2 or Run 3 GRP objects for magnetic field"};
     Configurable<bool> fillHistograms{"fillHistograms", true, "fill histograms"};
     // vertexing
@@ -3061,7 +3064,7 @@ struct HfTrackIndexSkimCreatorCascades {
     Configurable<bool> useAbsDCA{"useAbsDCA", true, "Minimise abs. distance rather than chi2"};
     Configurable<bool> useWeightedFinalPCA{"useWeightedFinalPCA", true, "Recalculate vertex position using track covariances, effective only if useAbsDCA is true"};
     // track cuts for V0 daughters
-    Configurable<double> etaMinV0Daugh{"etaMinV0Daugh", -99999., "min. pseudorapidity V0 daughters"};
+    Configurable<double> etaMinV0Daugh{"etaMinV0Daugh", std::forward<double>(etaMinDefault), "min. pseudorapidity V0 daughters"};
     Configurable<double> etaMaxV0Daugh{"etaMaxV0Daugh", 1.1, "max. pseudorapidity V0 daughters"};
     Configurable<double> ptMinV0Daugh{"ptMinV0Daugh", 0.05, "min. pT V0 daughters"};
     // v0 cuts
@@ -3107,7 +3110,7 @@ struct HfTrackIndexSkimCreatorCascades {
       return;
     }
 
-    if (config.etaMinV0Daugh == -99999.) {
+    if (config.etaMinV0Daugh == config.etaMinDefault) {
       config.etaMinV0Daugh.value = -config.etaMaxV0Daugh;
     }
 
