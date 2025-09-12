@@ -96,9 +96,6 @@ int lastRunNumber = 0;
 std::vector<double> v(3, 0); // vx, vy, vz
 bool isSelected = true;
 
-TProfile3D* shiftprofileC = nullptr;
-TProfile3D* shiftprofileA = nullptr;
-
 } // namespace o2::analysis::qvectortask
 
 using namespace o2::analysis::qvectortask;
@@ -192,6 +189,12 @@ struct ZdcQVectors {
     std::vector<bool> calibfilesLoaded = std::vector<bool>(3, false);
     int atStep = 0;
     int atIteration = 0;
+
+    TProfile3D* shiftprofileC = nullptr;
+    TProfile3D* shiftprofileA = nullptr;
+
+    bool isShiftProfileFound = false;
+
   } cal;
 
   enum FillType {
@@ -913,15 +916,6 @@ struct ZdcQVectors {
 
       int nshift = 10; // no. of iterations
 
-      if (cfgFillCommonRegistry) {
-        for (int ishift = 1; ishift <= nshift; ishift++) {
-          registry.fill(HIST("QA/ShiftZDCC"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCC));
-          registry.fill(HIST("QA/ShiftZDCC"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCC));
-          registry.fill(HIST("QA/ShiftZDCA"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCA));
-          registry.fill(HIST("QA/ShiftZDCA"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCA));
-        }
-      }
-
       double psiZDCAshift = psiZDCA;
       double psiZDCCshift = psiZDCC;
 
@@ -930,19 +924,45 @@ struct ZdcQVectors {
 
       if (cfgUseShift && !cfgCCDBdir_Shift.value.empty()) {
         if (lastRunNumber != runnumber) {
+          cal.isShiftProfileFound = false;
+          LOGF(info, "Getting shift profile from CCDB for runnumber: %d", runnumber);
           TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
-          shiftprofileC = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
-          shiftprofileA = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
+          cal.shiftprofileC = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
+          cal.shiftprofileA = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
+          if (!cal.shiftprofileC || !cal.shiftprofileA) {
+            LOGF(error, "Shift profile not found in CCDB for runnumber: %d", runnumber);
+          } else { 
+            LOGF(error, "Shift profile found in CCDB for runnumber: %d", runnumber);
+            cal.isShiftProfileFound = true;
+          }
+        }
+      }
+
+      float coeffshiftxZDCC = 0.0;
+      float coeffshiftyZDCC = 0.0;
+      float coeffshiftxZDCA = 0.0;
+      float coeffshiftyZDCA = 0.0;
+
+      for (int ishift = 1; ishift <= nshift; ishift++) {
+        if (cfgFillCommonRegistry) {
+          registry.fill(HIST("QA/ShiftZDCC"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCC));
+          registry.fill(HIST("QA/ShiftZDCC"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCC));
+          registry.fill(HIST("QA/ShiftZDCA"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCA));
+          registry.fill(HIST("QA/ShiftZDCA"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCA));
         }
 
-        auto deltaPsiZDCC = 0.0;
-        auto deltaPsiZDCA = 0.0;
+        if(cal.isShiftProfileFound){
+          int binshiftxZDCC = cal.shiftprofileC->FindBin(centrality, 0.5, ishift - 0.5);
+          int binshiftyZDCC = cal.shiftprofileC->FindBin(centrality, 1.5, ishift - 0.5);
+          int binshiftxZDCA = cal.shiftprofileA->FindBin(centrality, 0.5, ishift - 0.5);
+          int binshiftyZDCA = cal.shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5); 
 
-        for (int ishift = 1; ishift <= nshift; ishift++) {
-          auto coeffshiftxZDCC = shiftprofileC->GetBinContent(shiftprofileC->FindBin(centrality, 0.5, ishift - 0.5));
-          auto coeffshiftyZDCC = shiftprofileC->GetBinContent(shiftprofileC->FindBin(centrality, 1.5, ishift - 0.5));
-          auto coeffshiftxZDCA = shiftprofileA->GetBinContent(shiftprofileA->FindBin(centrality, 0.5, ishift - 0.5));
-          auto coeffshiftyZDCA = shiftprofileA->GetBinContent(shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5));
+          if(binshiftxZDCC > 0 && binshiftyZDCC > 0 && binshiftxZDCA > 0 && binshiftyZDCA > 0){
+            coeffshiftxZDCC = cal.shiftprofileC->GetBinContent(binshiftxZDCC);
+            coeffshiftyZDCC = cal.shiftprofileC->GetBinContent(binshiftyZDCC);
+            coeffshiftxZDCA = cal.shiftprofileA->GetBinContent(binshiftxZDCA);
+            coeffshiftyZDCA = cal.shiftprofileA->GetBinContent(binshiftyZDCA);
+          }
           deltaPsiZDCC += deltaPsiZDCC + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCC * std::cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * std::sin(ishift * 1.0 * psiZDCC)));
           deltaPsiZDCA += deltaPsiZDCA + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCA * std::cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * std::sin(ishift * 1.0 * psiZDCA)));
         }
@@ -951,9 +971,13 @@ struct ZdcQVectors {
       psiZDCCshift += deltaPsiZDCC;
       psiZDCAshift += deltaPsiZDCA;
 
+      // Normalize angles to [-pi, pi]
+      psiZDCCshift = std::atan2(std::sin(psiZDCCshift), std::cos(psiZDCCshift));
+      psiZDCAshift = std::atan2(std::sin(psiZDCAshift), std::cos(psiZDCAshift));  
+
       if (cfgFillCommonRegistry) {
-        registry.fill(HIST("QA/psiZDCA"), psiZDCAshift);
-        registry.fill(HIST("QA/psiZDCC"), psiZDCCshift);
+        registry.fill(HIST("QA/psiZDCA"), psiZDCA);
+        registry.fill(HIST("QA/psiZDCC"), psiZDCC);
         registry.fill(HIST("QA/psiZDCA_shift"), psiZDCAshift);
         registry.fill(HIST("QA/psiZDCC_shift"), psiZDCCshift);
       }
