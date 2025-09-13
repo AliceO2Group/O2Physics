@@ -182,7 +182,8 @@ struct reduced3bodyCreator {
 
     // In case override, don't proceed, please - no CCDB access required
     auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
+    ccdb->clearCache(grpmagPath);
+    o2::parameters::GRPMagField* grpmag = ccdb->getSpecific<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
     if (!grpmag) {
       LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
     }

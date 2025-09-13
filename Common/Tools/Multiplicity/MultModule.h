@@ -13,25 +13,35 @@
 /// \brief combined multiplicity + centrality module with autodetect features
 /// \author ALICE
 
-#ifndef COMMON_TOOLS_MULTMODULE_H_
-#define COMMON_TOOLS_MULTMODULE_H_
+#ifndef COMMON_TOOLS_MULTIPLICITY_MULTMODULE_H_
+#define COMMON_TOOLS_MULTIPLICITY_MULTMODULE_H_
 
-#include <vector>
-#include <memory>
-#include <cstdlib>
-#include <cmath>
-#include <array>
-#include <string>
-#include <map>
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramSpec.h"
-#include "TableHelper.h"
-#include "Common/Core/TPCVDriftManager.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/Centrality.h"
-#include "PWGMM/Mult/DataModel/bestCollisionTable.h"
-#include "TFormula.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataSpecUtils.h>
+#include <Framework/DataTypes.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
+
+#include <TFile.h>
+#include <TFormula.h>
+#include <TH1.h>
+#include <TList.h>
+#include <TProfile.h>
+#include <TString.h>
+
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <string>
+#include <vector>
 
 //__________________________________________
 // MultModule
@@ -435,7 +445,8 @@ class MultModule
     internalOpts.mEnabledTables.resize(nTablesConst, 0);
 
     LOGF(info, "Configuring tables to generate");
-    auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
+    LOGF(info, "Metadata information: isMC? %i", metadataInfo.isMC());
+    const auto& workflows = context.services().template get<o2::framework::RunningWorkflowInfo const>();
 
     TString listOfRequestors[nTablesConst];
     for (int i = 0; i < nTablesConst; i++) {
@@ -498,16 +509,6 @@ class MultModule
     if (internalOpts.embedINELgtZEROselection.value > 0 && !internalOpts.mEnabledTables[kPVMults]) {
       internalOpts.mEnabledTables[kPVMults] = 1;
       listOfRequestors[kPVMults].Append(Form("%s ", "dependency check"));
-    }
-
-    // capture the need for PYTHIA calibration in Pb-Pb runs
-    if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367) {
-      internalOpts.generatorName.value = "PYTHIA";
-    }
-
-    // capture the need for PYTHIA calibration in light ion runs automatically
-    if (metadataInfo.isMC() && mRunNumber >= 564250 && mRunNumber <= 564472) {
-      internalOpts.generatorName.value = "PYTHIA";
     }
 
     // list enabled tables
@@ -758,6 +759,12 @@ class MultModule
     }
 
     //_______________________________________________________________________
+    // fill selections (for posterior derived analysis if requested)
+    if (internalOpts.mEnabledTables[kMultSelections]) {
+      cursors.multSelections(collision.selection_raw());
+    }
+
+    //_______________________________________________________________________
     // vertex-Z equalized signals
     if (internalOpts.mEnabledTables[kFV0MultZeqs]) {
       if (std::fabs(collision.posZ()) < 15.0f && lCalibLoaded) {
@@ -862,7 +869,7 @@ class MultModule
       if (!hVtxZNGlobalTracks || std::fabs(collision.posZ()) > 15.0f) {
         mults.multGlobalTracksZeq = mults.multGlobalTracks; // if no equalization available, don't do it
       } else {
-        mults.multGlobalTracksZeq = hVtxZNGlobalTracks->Interpolate(0.0) * mults.multFT0C / hVtxZNGlobalTracks->Interpolate(collision.posZ());
+        mults.multGlobalTracksZeq = hVtxZNGlobalTracks->Interpolate(0.0) * mults.multGlobalTracks / hVtxZNGlobalTracks->Interpolate(collision.posZ());
       }
 
       // provide vertex-Z equalized Nglobals (or non-equalized if missing or beyond range)
@@ -1135,6 +1142,20 @@ class MultModule
     if (bc.runNumber() != mRunNumberCentrality) {
       mRunNumberCentrality = bc.runNumber(); // mark that this run has been attempted already regardless of outcome
       LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
+
+      // capture the need for PYTHIA calibration in Pb-Pb runs
+      if (metadataInfo.isMC() && mRunNumber >= 544013 && mRunNumber <= 545367) {
+        LOGF(info, "This is MC for Pb-Pb. Setting generatorName automatically to PYTHIA");
+        internalOpts.generatorName.value = "PYTHIA";
+      }
+
+      // capture the need for PYTHIA calibration in light ion runs automatically
+      if (metadataInfo.isMC() && mRunNumber >= 564250 && mRunNumber <= 564472) {
+        LOGF(info, "This is MC for light ion runs. Setting generatorName automatically to PYTHIA");
+        internalOpts.generatorName.value = "PYTHIA";
+      }
+
+      LOGF(info, "centrality loading procedure for timestamp=%llu, run number=%d", bc.timestamp(), bc.runNumber());
       TList* callst = nullptr;
       // Check if the ccdb path is a root file
       if (internalOpts.ccdbPathCentrality.value.find(".root") != std::string::npos) {
@@ -1246,7 +1267,11 @@ class MultModule
 
       auto populateTable = [&](auto& table, struct CalibrationInfo& estimator, float multiplicity, bool isInelGt0) {
         const bool assignOutOfRange = internalOpts.embedINELgtZEROselection && !isInelGt0;
-        auto scaleMC = [](float x, float pars[6]) {
+        auto scaleMC = [](float x, const float pars[6]) {
+          float core = ((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4];
+          if (core < 0.0f) {
+            return 0.0f; // this should be marked as low multiplicity and not mapped, core^pars[5] would be NaN
+          }
           return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
         };
 
@@ -1331,7 +1356,11 @@ class MultModule
       const auto& firstbc = bcs.begin();
       ConfigureCentralityRun2(ccdb, metadataInfo, firstbc);
 
-      auto scaleMC = [](float x, float pars[6]) {
+      auto scaleMC = [](float x, const float pars[6]) {
+        float core = ((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4];
+        if (core < 0.0f) {
+          return 0.0f; // this should be marked as low multiplicity and not mapped, core^pars[5] would be NaN
+        }
         return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
       };
 
@@ -1410,4 +1439,4 @@ class MultModule
 } // namespace common
 } // namespace o2
 
-#endif // COMMON_TOOLS_MULTMODULE_H_
+#endif // COMMON_TOOLS_MULTIPLICITY_MULTMODULE_H_

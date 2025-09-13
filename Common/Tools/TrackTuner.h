@@ -18,34 +18,31 @@
 #ifndef COMMON_TOOLS_TRACKTUNER_H_
 #define COMMON_TOOLS_TRACKTUNER_H_
 
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <DataFormatsParameters/GRPMagField.h> // FIXME: remove
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/Configurable.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Vertex.h>
+
+#include <TDirectory.h>
+#include <TFile.h>
+#include <TGraphErrors.h>
+#include <TObject.h>
+
+#include <fmt/core.h>
+#include <fmt/format.h>
+
+#include <algorithm>
+#include <cstdint>
 #include <map>
 #include <memory>
 #include <string>
 #include <utility>
 #include <vector>
-#include <algorithm>
-#include <numbers>
-#include <fmt/core.h>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/GeomConstants.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/Configurable.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
-#include <TGraphErrors.h>
 
 namespace o2::aod
 {
@@ -101,7 +98,6 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
   bool isConfigFromConfigurables = false;
   int nPhiBins = 1;
 
-  o2::ccdb::CcdbApi ccdbApi;
   std::map<std::string, std::string> metadata;
 
   std::vector<std::unique_ptr<TGraphErrors>> grDcaXYResVsPtPionMC;
@@ -246,7 +242,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
 
     LOG(info) << "[TrackTuner]";
     LOG(info) << "[TrackTuner] >>> String slices:";
-    for (std::string& s : slices)
+    for (const std::string& s : slices)
       LOG(info) << "[TrackTuner]     " << s;
 
     /// check if the number of input parameters is correct
@@ -260,7 +256,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     /// lambda expression to search for the parameter value (as string) in the configuration string
     auto getValueString = [&](uint8_t iPar) {
       /// this allows to search the parameter configuration even if they are not written in order
-      auto it = std::find_if(slices.begin(), slices.end(), [&](std::string s) { return s.find(mapParNames[iPar]) != std::string::npos; });
+      auto it = std::find_if(slices.begin(), slices.end(), [&](const std::string& s) { return s.find(mapParNames[iPar]) != std::string::npos; });
       if (it == std::end(slices)) {
         // parameter not found
         LOG(fatal) << "\"" << mapParNames[iPar] << "\" not found in the configuration string";
@@ -274,7 +270,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     };
 
     /// further lambda expression to handle bool initialization
-    auto setBoolFromString = [=](bool& b, std::string str) {
+    auto setBoolFromString = [=](bool& b, const std::string& str) {
       if (!str.compare("1") || str.find("true") != std::string::npos || str.find("True") != std::string::npos || str.find("TRUE") != std::string::npos) {
         b = true;
       } else if (!str.compare("0") || str.find("false") != std::string::npos || str.find("False") != std::string::npos || str.find("FALSE") != std::string::npos) {
@@ -446,51 +442,52 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
 
   void getDcaGraphs()
   {
-    std::string fullNameInputFile = "";
-    std::string fullNameFileQoverPt = "";
+    std::string fullNameInputFile = pathInputFile + std::string("/") + nameInputFile;
+    std::string fullNameFileQoverPt = pathFileQoverPt + std::string("/") + nameFileQoverPt;
+    TList* ccdb_object_dca = nullptr;
+    TList* ccdb_object_qoverpt = nullptr;
+
+    std::string grOneOverPtPionNameMC = "sigmaVsPtMc";
+    std::string grOneOverPtPionNameData = "sigmaVsPtData";
 
     if (isInputFileFromCCDB) {
       /// use input correction file from CCDB
 
-      // properly init the ccdb
-      std::string tmpDir = ".";
-      ccdbApi.init("http://alice-ccdb.cern.ch");
+      // get the TList from the DCA correction file present in CCDB
+      ccdb_object_dca = o2::ccdb::BasicCCDBManager::instance().get<TList>(pathInputFile);
+      LOG(info) << " [TrackTuner] ccdb_object_dca " << ccdb_object_dca;
 
-      // get the DCA correction file from CCDB
-      if (!ccdbApi.retrieveBlob(pathInputFile.data(), tmpDir, metadata, 0, false, nameInputFile.data())) {
-        LOG(fatal) << "[TrackTuner] input file for DCA corrections not found on CCDB, please check the pathInputFile and nameInputFile!";
+      // get the TList from the Q/Pt correction file from CCDB
+      if (updateCurvature || updateCurvatureIU) {
+        ccdb_object_qoverpt = o2::ccdb::BasicCCDBManager::instance().get<TList>(pathFileQoverPt);
+        LOG(info) << " [TrackTuner] ccdb_object_qoverpt " << ccdb_object_qoverpt;
       }
-
-      // get the Q/Pt correction file from CCDB
-      if (!ccdbApi.retrieveBlob(pathFileQoverPt.data(), tmpDir, metadata, 0, false, nameFileQoverPt.data())) {
-        LOG(fatal) << "[TrackTuner] input file for Q/Pt corrections not found on CCDB, please check the pathFileQoverPt and nameFileQoverPt!";
-      }
-      // point to the file in the tmp local folder
-      fullNameInputFile = tmpDir + std::string("/") + nameInputFile;
-      fullNameFileQoverPt = tmpDir + std::string("/") + nameFileQoverPt;
     } else {
       /// use input correction file from local filesystem
-      fullNameInputFile = pathInputFile + std::string("/") + nameInputFile;
-      fullNameFileQoverPt = pathFileQoverPt + std::string("/") + nameFileQoverPt;
-    }
-    /// open the input correction file
-    std::unique_ptr<TFile> inputFile(TFile::Open(fullNameInputFile.c_str(), "READ"));
-    if (!inputFile.get()) {
-      LOG(fatal) << "Something wrong with the input file" << fullNameInputFile << " for dca correction. Fix it!";
-    }
-    std::unique_ptr<TFile> inputFileQoverPt(TFile::Open(fullNameFileQoverPt.c_str(), "READ"));
-    if (!inputFileQoverPt.get() && (updateCurvature || updateCurvatureIU)) {
-      LOG(fatal) << "Something wrong with the Q/Pt input file" << fullNameFileQoverPt << " for Q/Pt correction. Fix it!";
+
+      /// open the input correction file - dca correction
+      TFile* inputFile = TFile::Open(fullNameInputFile.c_str(), "READ");
+      if (!inputFile) {
+        LOG(fatal) << "[TrackTuner] Something wrong with the local input file" << fullNameInputFile << " for dca correction. Fix it!";
+      }
+      ccdb_object_dca = dynamic_cast<TList*>(inputFile->Get("ccdb_object"));
+
+      /// open the input correction file - q/pt correction
+      TFile* inputFileQoverPt = TFile::Open(fullNameFileQoverPt.c_str(), "READ");
+      if (!inputFileQoverPt && (updateCurvature || updateCurvatureIU)) {
+        LOG(fatal) << "Something wrong with the Q/Pt input file" << fullNameFileQoverPt << " for Q/Pt correction. Fix it!";
+      }
+      ccdb_object_qoverpt = dynamic_cast<TList*>(inputFileQoverPt->Get("ccdb_object"));
     }
 
-    // choose wheter to use corrections w/ PV refit or w/o it, and retrieve the proper TDirectory
+    // choose wheter to use corrections w/ PV refit or w/o it, and retrieve the proper TList
     std::string dir = "woPvRefit";
     if (usePvRefitCorrections) {
       dir = "withPvRefit";
     }
-    TDirectory* td = dynamic_cast<TDirectory*>(inputFile->Get(dir.c_str()));
+    TList* td = dynamic_cast<TList*>(ccdb_object_dca->FindObject(dir.c_str()));
     if (!td) {
-      LOG(fatal) << "TDirectory " << td << " not found in input file" << inputFile->GetName() << ". Fix it!";
+      LOG(fatal) << "[TrackTuner] TList " << td << " not found in ccdb_object_dca. Fix it!";
     }
 
     int inputNphiBins = nPhiBins;
@@ -519,7 +516,7 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
     /// Lambda expression to get the TGraphErrors from file
     auto loadGraph = [&](int phiBin, const std::string& strBaseName) -> TGraphErrors* {
       std::string strGraphName = inputNphiBins != 0 ? fmt::format("{}_{}", strBaseName, phiBin) : strBaseName;
-      TObject* obj = td->Get(strGraphName.c_str());
+      TObject* obj = td->FindObject(strGraphName.c_str());
       if (!obj) {
         LOG(fatal) << "[TrackTuner]     TGraphErrors not found in the Input Root file: " << strGraphName;
         td->ls();
@@ -561,12 +558,9 @@ struct TrackTuner : o2::framework::ConfigurableGroup {
       }
     }
 
-    std::string grOneOverPtPionNameMC = "sigmaVsPtMc";
-    std::string grOneOverPtPionNameData = "sigmaVsPtData";
-
     if (updateCurvature || updateCurvatureIU) {
-      grOneOverPtPionMC.reset(dynamic_cast<TGraphErrors*>(inputFileQoverPt->Get(grOneOverPtPionNameMC.c_str())));
-      grOneOverPtPionData.reset(dynamic_cast<TGraphErrors*>(inputFileQoverPt->Get(grOneOverPtPionNameData.c_str())));
+      grOneOverPtPionMC.reset(dynamic_cast<TGraphErrors*>(ccdb_object_qoverpt->FindObject(grOneOverPtPionNameMC.c_str())));
+      grOneOverPtPionData.reset(dynamic_cast<TGraphErrors*>(ccdb_object_qoverpt->FindObject(grOneOverPtPionNameData.c_str())));
     }
   } // getDcaGraphs() ends here
 

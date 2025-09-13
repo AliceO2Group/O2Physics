@@ -24,6 +24,8 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
 
+#include "Common/Core/RecoDecay.h"
+
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
@@ -139,7 +141,7 @@ struct HfTaskCharmHadronsFemtoDream {
   using FilteredCharmMcCands = soa::Filtered<soa::Join<aod::FDHfCand, aod::FDHfCandMC>>;
   using FilteredCharmMcCand = FilteredCharmMcCands::iterator;
 
-  using FilteredColisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks, aod::Collisions>>;
+  using FilteredColisions = soa::Filtered<soa::Join<FDCollisions, FDColMasks>>;
   using FilteredColision = FilteredColisions::iterator;
 
   using FilteredMcColisions = soa::Filtered<soa::Join<aod::FDCollisions, FDColMasks, aod::FDMCCollLabels>>;
@@ -148,7 +150,7 @@ struct HfTaskCharmHadronsFemtoDream {
   using FilteredFDMcParts = soa::Filtered<soa::Join<aod::FDParticles, aod::FDParticlesIndex, aod::FDExtParticles, aod::FDMCLabels, aod::FDExtMCLabels>>;
   using FilteredFDMcPart = FilteredFDMcParts::iterator;
 
-  using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDParticlesIndex>>;
+  using FilteredFDParticles = soa::Filtered<soa::Join<aod::FDParticles, aod::FDExtParticles, aod::FDParticlesIndex, aod::FDTrkTimeStamp>>;
   using FilteredFDParticle = FilteredFDParticles::iterator;
 
   Filter eventMultiplicity = aod::femtodreamcollision::multNtr >= eventSel.multMin && aod::femtodreamcollision::multNtr <= eventSel.multMax;
@@ -160,7 +162,8 @@ struct HfTaskCharmHadronsFemtoDream {
   Filter trackPtFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt < ptTrack1Max, true);
   Filter trackPtFilterUp = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt > ptTrack1Min, true);
 
-  Preslice<aod::FDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
+  Preslice<FilteredFDParticles> perCol = aod::femtodreamparticle::fdCollisionId;
+  Preslice<FilteredCharmCands> perHfByCol = aod::femtodreamparticle::fdCollisionId;
 
   /// Partition for particle 1
   Partition<FilteredFDParticles> partitionTrk1 = (aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack)) && (ncheckbit(aod::femtodreamparticle::cut, cutBitTrack1)) && ifnode(aod::femtodreamparticle::pt * coshEta(aod::femtodreamparticle::eta) <= pidThresTrack1, ncheckbit(aod::femtodreamparticle::pidcut, tpcBitTrack1), ncheckbit(aod::femtodreamparticle::pidcut, tpcTofBitTrack1));
@@ -297,6 +300,49 @@ struct HfTaskCharmHadronsFemtoDream {
     return invMass;
   }
 
+  template <typename Candidate, typename Track>
+  float getCharmHadronTrackMass(const Candidate& cand,
+                                const Track& trk,
+                                double trackMassHyp = o2::constants::physics::MassProton)
+  {
+
+    auto pVecProng0 = RecoDecayPtEtaPhi::pVector(cand.prong0Pt(), cand.prong0Eta(), cand.prong0Phi());
+    auto pVecProng1 = RecoDecayPtEtaPhi::pVector(cand.prong1Pt(), cand.prong1Eta(), cand.prong1Phi());
+    auto pVecProng2 = RecoDecayPtEtaPhi::pVector(cand.prong2Pt(), cand.prong2Eta(), cand.prong2Phi());
+    auto pVecTrack = RecoDecayPtEtaPhi::pVector(trk.pt(), trk.eta(), trk.phi());
+    const auto pVecCharmTrk = std::array{pVecProng0, pVecProng1, pVecProng2, pVecTrack};
+
+    std::array<double, 4> massCharmTrk{};
+
+    if (charmHadPDGCode == o2::constants::physics::Pdg::kLambdaCPlus) {
+      // Λc⁺ → p K π
+      if (cand.candidateSelFlag() == 1) {
+        massCharmTrk = {
+          o2::constants::physics::MassProton,
+          o2::constants::physics::MassKPlus,
+          o2::constants::physics::MassPiPlus,
+          trackMassHyp};
+      } else {
+        // prong0=π, prong1=K, prong2=p
+        massCharmTrk = {
+          o2::constants::physics::MassPiPlus,
+          o2::constants::physics::MassKPlus,
+          o2::constants::physics::MassProton,
+          trackMassHyp};
+      }
+    } else if (charmHadPDGCode == o2::constants::physics::Pdg::kDPlus) {
+      // D⁺ → π K π
+      massCharmTrk = {
+        o2::constants::physics::MassPiPlus,
+        o2::constants::physics::MassKPlus,
+        o2::constants::physics::MassPiPlus,
+        trackMassHyp};
+    } else {
+      return -1.f;
+    }
+    return static_cast<float>(RecoDecay::m(pVecCharmTrk, massCharmTrk));
+  }
+
   /// This function processes the same event and takes care of all the histogramming
   template <bool isMc, typename PartitionType, typename CandType, typename TableTracks, typename Collision>
   void doSameEvent(PartitionType& sliceTrk1, CandType& sliceCharmHad, TableTracks const& parts, Collision const& col)
@@ -322,7 +368,6 @@ struct HfTaskCharmHadronsFemtoDream {
       if (kstar > highkstarCut) {
         continue;
       }
-
       float invMass = getCharmHadronMass(p2);
 
       if (invMass < charmHadMinInvMass || invMass > charmHadMaxInvMass) {
@@ -332,6 +377,8 @@ struct HfTaskCharmHadronsFemtoDream {
       if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
         continue;
       }
+
+      float deltaInvMassPair = getCharmHadronTrackMass(p2, p1, o2::constants::physics::MassProton) - invMass;
 
       // proton track charge
       float chargeTrack = 0.;
@@ -371,6 +418,7 @@ struct HfTaskCharmHadronsFemtoDream {
         col.multV0M(),
         p2.charge(),
         pairSign,
+        deltaInvMassPair,
         processType,
         charmHadMc,
         originType);
@@ -426,6 +474,9 @@ struct HfTaskCharmHadronsFemtoDream {
         if (p2.pt() < charmHadMinPt || p2.pt() > charmHadMaxPt) {
           continue;
         }
+
+        float deltaInvMassPair = getCharmHadronTrackMass(p2, p1, o2::constants::physics::MassProton) - invMass;
+
         // proton track charge
         float chargeTrack = 0.;
         if ((p1.cut() & CutBitChargePositive) == CutBitChargePositive) {
@@ -461,6 +512,7 @@ struct HfTaskCharmHadronsFemtoDream {
           collision1.multV0M(),
           p2.charge(),
           pairSign,
+          deltaInvMassPair,
           processType,
           charmHadMc,
           originType);
@@ -477,8 +529,7 @@ struct HfTaskCharmHadronsFemtoDream {
     eventHisto.fillQA(col);
     auto sliceTrk1 = partitionTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto sliceCharmHad = partitionCharmHadron->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
-    auto bc = col.template bc_as<aod::BCsWithTimestamps>();
-    int64_t timeStamp = bc.timestamp();
+    int64_t timeStamp = -999;
 
     /// Filling QA histograms of the all tracks and all charm hadrons before pairing
     for (auto const& part : sliceTrk1) {
@@ -491,7 +542,7 @@ struct HfTaskCharmHadronsFemtoDream {
       } else {
         chargeTrack = NegativeCharge;
       }
-
+      timeStamp = part.timeStamp();
       rowFemtoResultTrk(
         col.globalIndex(),
         timeStamp,
@@ -509,6 +560,8 @@ struct HfTaskCharmHadronsFemtoDream {
     for (auto const& part : sliceCharmHad) {
       float invMass = getCharmHadronMass(part);
       registryCharmHadronQa.fill(HIST("CharmHadronQA/hPtVsMass"), part.pt(), invMass);
+      timeStamp = part.timeStamp();
+
       rowFemtoResultCharm(
         col.globalIndex(),
         timeStamp,
@@ -525,15 +578,17 @@ struct HfTaskCharmHadronsFemtoDream {
         part.bdtFD());
     }
 
-    rowFemtoResultColl(
-      col.globalIndex(),
-      timeStamp,
-      col.posZ(),
-      col.multNtr());
+    if (sliceCharmHad.size() || sliceTrk1.size()) {
 
-    if ((col.bitmaskTrackOne() & bitMask) != bitMask || (col.bitmaskTrackTwo() & bitMask) != bitMask) {
+      rowFemtoResultColl(
+        col.globalIndex(),
+        timeStamp,
+        col.posZ(),
+        col.multNtr());
+    } else {
       return;
     }
+
     doSameEvent<false>(sliceTrk1, sliceCharmHad, parts, col);
   }
   PROCESS_SWITCH(HfTaskCharmHadronsFemtoDream, processSameEvent, "Enable processing same event", false);

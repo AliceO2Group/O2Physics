@@ -93,6 +93,7 @@ struct spvector {
   Configurable<float> cfgCutCentralityMax{"cfgCutCentralityMax", 80.0f, "Centrality cut Max"};
   Configurable<float> cfgCutCentralityMin{"cfgCutCentralityMin", 0.0f, "Centrality cut Min"};
   Configurable<bool> additionalEvSel{"additionalEvSel", false, "additionalEvSel"};
+  Configurable<bool> usemem{"usemem", true, "usemem"};
 
   struct : ConfigurableGroup {
     Configurable<int> QxyNbins{"QxyNbins", 100, "Number of bins in QxQy histograms"};
@@ -230,6 +231,7 @@ struct spvector {
     AxisSpec basisAxis = {2, 0, 2, "basis"};
     AxisSpec VxyAxis = {2, 0, 2, "Vxy"};
 
+    histos.add("htpcnsigmapi", "htpcnsigmapi", kTH1F, {{50, -10, 10.0}});
     histos.add("hEvtSelInfo", "hEvtSelInfo", kTH1F, {{10, 0, 10.0}});
     histos.add("hCentrality", "hCentrality", kTH1F, {{centfineAxis}});
     histos.add("Vz", "Vz", kTH1F, {vzfineAxis});
@@ -409,10 +411,17 @@ struct spvector {
   }
 
   using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::FT0sCorrected, aod::CentFT0Cs>;
+  using AllTrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa>;
   Preslice<aod::Zdcs> zdcPerCollision = aod::collision::bcId;
 
-  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, BCsRun3 const& bcs, aod::Zdcs const&)
+  void process(MyCollisions::iterator const& collision, aod::FT0s const& /*ft0s*/, aod::FV0As const& /*fv0s*/, BCsRun3 const& bcs, aod::Zdcs const&, AllTrackCandidates const& tracks)
   {
+
+    if (usemem) {
+      for (const auto& track : tracks) {
+        histos.fill(HIST("htpcnsigmapi"), track.tpcNSigmaPi());
+      }
+    }
 
     histos.fill(HIST("hEvtSelInfo"), 0.5);
     auto centrality = collision.centFT0C();

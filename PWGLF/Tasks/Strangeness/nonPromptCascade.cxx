@@ -209,6 +209,8 @@ struct NonPromptCascadeTask {
   int mRunNumber = 0;
   float mBz = 0.f;
   o2::vertexing::DCAFitterN<2> mDCAFitter;
+  std::array<int, 2> mProcessCounter = {0, 0}; // {Tracked, All}
+  std::map<uint64_t, uint32_t> mToiMap;
 
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
@@ -298,9 +300,10 @@ struct NonPromptCascadeTask {
     return true;
   }
 
-  void zorroAccounting(const auto& collisions, auto& toiMap)
+  void zorroAccounting(const auto& collisions)
   {
-    if (cfgSkimmedProcessing) {
+    if (cfgSkimmedProcessing && mProcessCounter[0] != mProcessCounter[1]) {
+      mToiMap.clear();
       int runNumber{-1};
       for (const auto& coll : collisions) {
         auto bc = coll.template bc_as<aod::BCsWithTimestamps>();
@@ -319,7 +322,7 @@ struct NonPromptCascadeTask {
           for (size_t i{0}; i < toivect.size(); i++) {
             toiMask += toivect[i] << i;
           }
-          toiMap[bc.globalBC()] = toiMask;
+          mToiMap[bc.globalBC()] = toiMask;
         }
       }
     }
@@ -337,7 +340,7 @@ struct NonPromptCascadeTask {
   };
 
   template <typename TrackType, typename CollisionType>
-  void fillCandidatesVector(CollisionType const&, TrackType const& tracks, auto const& cascades, auto& candidates, std::map<uint64_t, uint32_t> toiMap = {})
+  void fillCandidatesVector(CollisionType const&, TrackType const& tracks, auto const& cascades, auto& candidates)
   {
 
     const auto& getCascade = [](auto const& candidate) {
@@ -542,8 +545,8 @@ struct NonPromptCascadeTask {
         o2::base::Propagator::Instance()->propagateToDCA(primaryVertex, ntCascadeTrack, mBz, 2.f, matCorr, &motherDCA);
       }
       uint32_t toiMask = 0x0;
-      if (toiMap.count(bc.globalBC())) {
-        toiMask = toiMap[bc.globalBC()];
+      if (mToiMap.count(bc.globalBC())) {
+        toiMask = mToiMap[bc.globalBC()];
       }
       candidates.emplace_back(NPCascCandidate{mcParticleID, trackedCascGlobalIndex, itsTrackGlobalIndex, candidate.collisionId(), matchingChi2, deltaPtITSCascade, deltaPtCascade, cascITSclsSize, hasReassociatedClusters, hasFakeReassociation, isGoodMatch, isGoodCascade, pdgCodeMom, itsTrackPDG, fromHF[0], fromHF[1],
                                               collision.numContrib(), cascPVContribs, collision.collisionTimeRes(), primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ(),
@@ -691,10 +694,9 @@ struct NonPromptCascadeTask {
                                   aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                                   aod::BCsWithTimestamps const&)
   {
-    fillMultHistos(collisions);
-    std::map<uint64_t, uint32_t> toiMap;
-    zorroAccounting(collisions, toiMap);
-    fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates, toiMap);
+    mProcessCounter[0]++;
+    zorroAccounting(collisions);
+    fillCandidatesVector<TracksExtData>(collisions, tracks, trackedCascades, gCandidates);
     fillDataTable<aod::AssignedTrackedCascades>(gCandidates);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processTrackedCascadesData, "process cascades from strangeness tracking: Data analysis", false);
@@ -703,9 +705,10 @@ struct NonPromptCascadeTask {
                            aod::V0s const& /*v0s*/, TracksExtData const& tracks,
                            aod::BCsWithTimestamps const&)
   {
-    std::map<uint64_t, uint32_t> toiMap;
-    zorroAccounting(collisions, toiMap);
-    fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT, toiMap);
+    mProcessCounter[1]++;
+    fillMultHistos(collisions);
+    zorroAccounting(collisions);
+    fillCandidatesVector<TracksExtData>(collisions, tracks, cascades, gCandidatesNT);
     fillDataTable<aod::Cascades>(gCandidatesNT);
   }
   PROCESS_SWITCH(NonPromptCascadeTask, processCascadesData, "process cascades: Data analysis", false);

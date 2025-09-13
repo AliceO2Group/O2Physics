@@ -17,20 +17,20 @@
 ///         This provides the basic quantities computed by any response i.e. expected values, resolutions and Nsigmas
 ///
 
-#ifndef O2_ANALYSIS_PID_DETECTORRESPONSE_H_
-#define O2_ANALYSIS_PID_DETECTORRESPONSE_H_
+#ifndef COMMON_CORE_PID_DETECTORRESPONSE_H_
+#define COMMON_CORE_PID_DETECTORRESPONSE_H_
+
+#include "Common/Core/PID/ParamBase.h"
+
+#include <Framework/Logger.h>
+
+#include <TFile.h>
+
+#include <Rtypes.h>
 
 #include <array>
+#include <string>
 #include <vector>
-#include "Framework/Logger.h"
-// ROOT includes
-#include "Rtypes.h"
-#include "TMath.h"
-#include "TFile.h"
-
-// O2 includes
-#include "ReconstructionDataFormats/PID.h"
-#include "Common/Core/PID/ParamBase.h"
 
 namespace o2::pid
 {
@@ -52,7 +52,7 @@ class DetectorResponse
   /// \param fname File name used for input
   /// \param pname Name of the parametrization in the file
   /// \param ptype Type of the parametrization
-  void LoadParamFromFile(const TString fname, const TString pname, const Param_t ptype);
+  void LoadParamFromFile(const TString& fname, const TString& pname, const Param_t ptype);
 
   /// Setter for the parametrization
   /// \param ptype Type of the parametrization
@@ -65,7 +65,7 @@ class DetectorResponse
   /// Setter for the parametrizations parameters, if the parametrization is not yet initialized a new parametrization is created without any implementation and just parameters
   /// \param ptype parametrization type
   /// \param p vector with parameters
-  void SetParameters(const Param_t ptype, std::vector<pidvar_t> p);
+  void SetParameters(const Param_t ptype, const std::vector<pidvar_t>& p);
 
   /// Getter for the value of the parametrization
   /// \param ptype parametrization type
@@ -85,7 +85,7 @@ inline void DetectorResponse::LoadParam(const Param_t ptype, Parametrization* pa
   mParam[ptype] = param;
 }
 
-inline void DetectorResponse::LoadParamFromFile(const TString fname, const TString pname, const Param_t ptype)
+inline void DetectorResponse::LoadParamFromFile(const TString& fname, const TString& pname, const Param_t ptype)
 {
   TFile f(fname, "READ");
   if (!f.Get(pname)) {
@@ -97,7 +97,7 @@ inline void DetectorResponse::LoadParamFromFile(const TString fname, const TStri
   mParam[ptype]->Print();
 }
 
-inline void DetectorResponse::SetParameters(const DetectorResponse::Param_t ptype, std::vector<pidvar_t> p)
+inline void DetectorResponse::SetParameters(const DetectorResponse::Param_t ptype, const std::vector<pidvar_t>& p)
 {
   if (!mParam[ptype]) {
     const std::string pname = std::string(ParamName[ptype]) + "_default_param";
@@ -110,4 +110,4 @@ inline void DetectorResponse::SetParameters(const DetectorResponse::Param_t ptyp
 
 } // namespace o2::pid
 
-#endif // O2_ANALYSIS_PID_DETECTORRESPONSE_H_
+#endif // COMMON_CORE_PID_DETECTORRESPONSE_H_

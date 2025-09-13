@@ -13,8 +13,17 @@
 // Class for track selection
 //
 
-#include "Framework/Logger.h"
 #include "Common/Core/TrackSelection.h"
+
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <functional>
+#include <set>
+#include <string>
+#include <utility>
 
 bool TrackSelection::FulfillsITSHitRequirements(uint8_t itsClusterMap) const
 {
@@ -167,7 +176,7 @@ void TrackSelection::print() const
         LOG(info) << mCutNames[i] << " == " << mRequireITSRefit;
         break;
       case TrackCuts::kITSHits:
-        for (auto& itsRequirement : mRequiredITSHits) {
+        for (const auto& itsRequirement : mRequiredITSHits) {
           LOG(info) << mCutNames[i] << " == " << itsRequirement.first;
         }
         break;

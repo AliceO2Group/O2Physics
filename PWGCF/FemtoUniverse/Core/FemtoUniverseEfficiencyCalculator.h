@@ -16,15 +16,17 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCALCULATOR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCALCULATOR_H_
 
-#include <vector>
+#include "FemtoUniverseParticleHisto.h"
+
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/Configurable.h"
+
+#include <algorithm>
 #include <map>
 #include <string>
-#include <algorithm>
-
-#include "Framework/Configurable.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
-#include "FemtoUniverseParticleHisto.h"
+#include <vector>
 
 namespace o2::analysis::femto_universe::efficiency
 {
