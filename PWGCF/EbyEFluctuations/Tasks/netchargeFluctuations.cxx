@@ -89,7 +89,7 @@ struct NetchargeFluctuations {
   // Configurables
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> cfgUrlCCDB{"cfgUrlCCDB", "http://alice-ccdb.cern.ch", "url of ccdb"};
-  Configurable<std::string> cfgPathCCDB{"cfgPathCCDB", "Users/n/nimalik/efftest", "Path for ccdb-object"};
+  Configurable<std::string> cfgPathCCDB{"cfgPathCCDB", "Users/n/nimalik/netcharge/p/Run3/LHC24f3d", "Path for ccdb-object"};
   Configurable<bool> cfgLoadEff{"cfgLoadEff", true, "Load efficiency"};
 
   Configurable<float> vertexZcut{"vertexZcut", 10.f, "Vertex Z"};
@@ -111,43 +111,44 @@ struct NetchargeFluctuations {
   Configurable<bool> cSel8Trig{"cSel8Trig", true, "Sel8 (T0A + T0C) Selection Run3"};                    // sel8
   Configurable<bool> cInt7Trig{"cInt7Trig", true, "kINT7 MB Trigger"};                                   // kINT7
   Configurable<bool> cSel7Trig{"cSel7Trig", true, "Sel7 (V0A + V0C) Selection Run2"};                    // sel7
-  Configurable<bool> cTFBorder{"cTFBorder", false, "Timeframe Border Selection"};                        // pileup
-  Configurable<bool> cNoItsROBorder{"cNoItsROBorder", false, "No ITSRO Border Cut"};                     // pileup
-  Configurable<bool> cItsTpcVtx{"cItsTpcVtx", false, "ITS+TPC Vertex Selection"};                        // pileup
   Configurable<bool> cPileupReject{"cPileupReject", false, "Pileup rejection"};                          // pileup
-  Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "z-vtx time diff selection"};                 // pileup
   Configurable<bool> cfgUseGoodItsLayerAllCut{"cfgUseGoodItsLayerAllCut", false, "Good ITS Layers All"}; // pileup
   Configurable<bool> cDcaXy{"cDcaXy", false, "Dca XY cut"};
   Configurable<bool> cDcaZ{"cDcaZ", false, "Dca Z cut"};
   Configurable<bool> cTpcCr{"cTpcCr", false, "tpc crossrows"};
   Configurable<bool> cItsChi{"cItsChi", false, "ITS chi"};
   Configurable<bool> cTpcChi{"cTpcChi", false, "TPC chi"};
+  Configurable<bool> cFT0C{"cFT0C", true, "cent FT0C"};
+  Configurable<bool> cFT0M{"cFT0M", false, "cent FT0M"};
+  ConfigurableAxis centBining{"centBining", {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Centrality/Multiplicity percentile bining"};
+  Configurable<bool> cTFBorder{"cTFBorder", false, "Timeframe Border Selection"};        // pileup
+  Configurable<bool> cNoItsROBorder{"cNoItsROBorder", false, "No ITSRO Border Cut"};     // pileup
+  Configurable<bool> cItsTpcVtx{"cItsTpcVtx", false, "ITS+TPC Vertex Selection"};        // pileup
+  Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "z-vtx time diff selection"}; // pileup
 
   // CCDB efficiency histograms
-  TH2D* efficiency = nullptr;
+  TH1D* efficiency = nullptr;
 
   // Initialization
   void init(o2::framework::InitContext&)
   {
     const AxisSpec vtxzAxis = {800, -20, 20, "V_{Z} (cm)"};
-    const AxisSpec dcaAxis = {250, -0.5, 0.5, "DCA_{xy} (cm)"};
-    const AxisSpec dcazAxis = {250, -0.5, 0.5, "DCA_{z} (cm)"};
+    const AxisSpec dcaAxis = {1000, -0.5, 0.5, "DCA_{xy} (cm)"};
+    const AxisSpec dcazAxis = {600, -3, 3, "DCA_{z} (cm)"};
     const AxisSpec ptAxis = {70, 0.0, 7.0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec etaAxis = {20, -1., 1., "#eta"};
     const AxisSpec deltaEtaAxis = {9, 0, 1.8, "#eta"};
     const AxisSpec centAxis = {100, 0., 100., "centrality"};
-    const AxisSpec multAxis = {200, 0., 10000., "FT0M Amplitude"};
-    const AxisSpec tpcChiAxis = {1400, 0., 7., "Chi2"};
-    const AxisSpec itsChiAxis = {800, 0., 40., "Chi2"};
+    const AxisSpec multAxis = {100000, 0., 100000., "FT0M Amplitude"};
+    const AxisSpec tpcChiAxis = {700, 0., 7., "Chi2"};
+    const AxisSpec itsChiAxis = {400, 0., 40., "Chi2"};
     const AxisSpec crossedRowAxis = {1600, 0., 160., "TPC Crossed rows"};
     const AxisSpec eventsAxis = {10, 0, 10, ""};
     const AxisSpec signAxis = {20, -10, 10, ""};
     const AxisSpec nchAxis = {5000, 0, 5000, "Nch"};
     const AxisSpec nch1Axis = {1500, 0, 1500, "Nch"};
     const AxisSpec nchpAxis = {50000, 0, 50000, "Nch"};
-
-    std::vector<double> centBining = {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100};
-    AxisSpec cent1Axis = {centBining, "Multiplicity percentile from FT0M (%)"};
+    const AxisSpec cent1Axis{centBining, "Multiplicity percentile from FT0M (%)"};
 
     auto noSubsample = static_cast<int>(cfgNSubsample);
     float maxSubsample = 1.0 * noSubsample;
@@ -251,16 +252,37 @@ struct NetchargeFluctuations {
     histogramRegistry.add("subsample/neg_sq", "", kTProfile2D, {cent1Axis, subsampleAxis});
     histogramRegistry.add("subsample/posneg", "", kTProfile2D, {cent1Axis, subsampleAxis});
 
+    histogramRegistry.add("subsample/gen/pos", "", kTProfile2D, {cent1Axis, subsampleAxis});
+    histogramRegistry.add("subsample/gen/neg", "", kTProfile2D, {cent1Axis, subsampleAxis});
+    histogramRegistry.add("subsample/gen/termp", "", kTProfile2D, {cent1Axis, subsampleAxis});
+    histogramRegistry.add("subsample/gen/termn", "", kTProfile2D, {cent1Axis, subsampleAxis});
+    histogramRegistry.add("subsample/gen/pos_sq", "", kTProfile2D, {cent1Axis, subsampleAxis});
+    histogramRegistry.add("subsample/gen/neg_sq", "", kTProfile2D, {cent1Axis, subsampleAxis});
+    histogramRegistry.add("subsample/gen/posneg", "", kTProfile2D, {cent1Axis, subsampleAxis});
+
+    histogramRegistry.add("subsample/delta_eta/pos", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/neg", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/termp", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/termn", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/pos_sq", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/neg_sq", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/posneg", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+
+    histogramRegistry.add("subsample/delta_eta/gen/pos", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/gen/neg", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/gen/termp", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/gen/termn", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/gen/pos_sq", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/gen/neg_sq", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+    histogramRegistry.add("subsample/delta_eta/gen/posneg", "", kTProfile2D, {deltaEtaAxis, subsampleAxis});
+
     if (cfgLoadEff) {
       ccdb->setURL(cfgUrlCCDB.value);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
 
-      // ccdb->setCreatedNotAfter(ccdbNoLaterThan.value);
-      // LOGF(info, "Getting object %s", ccdbPath.value.data());
-
       TList* list = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, -1);
-      efficiency = reinterpret_cast<TH2D*>(list->FindObject("efficiency_Run3"));
+      efficiency = reinterpret_cast<TH1D*>(list->FindObject("efficiency_Run3"));
       if (!efficiency) {
         LOGF(info, "FATAL!! Could not find required histograms in CCDB");
       }
@@ -277,8 +299,14 @@ struct NetchargeFluctuations {
       if (cSel8Trig && !coll.sel8()) {
         return false;
       } // require min bias trigger
-      cent = coll.centFT0M(); // centrality for run3
-      mult = coll.multFT0M(); // multiplicity for run3
+      if (cFT0M) {
+        cent = coll.centFT0M(); // centrality for run3 using FT0M
+        mult = coll.multFT0M();
+      } else if (cFT0C) {
+        cent = coll.centFT0C(); // centrality for run3 using FT0C
+        mult = coll.multFT0C();
+      }
+
     } else if constexpr (run == kRun2) {
       if (cInt7Trig && !coll.alias_bit(kINT7)) {
         return false;
@@ -358,17 +386,16 @@ struct NetchargeFluctuations {
     return true;
   }
 
-  double getEfficiency(float pt, float eta, TH2D* hEff)
+  double getEfficiency(float pt, TH1D* hEff)
   {
     if (!hEff) {
       return 1e-6;
     }
-    int binX = hEff->GetXaxis()->FindBin(pt);
-    int binY = hEff->GetYaxis()->FindBin(eta);
-    if (binX < 1 || binX > hEff->GetNbinsX() || binY < 1 || binY > hEff->GetNbinsY()) {
+    int bin = hEff->GetXaxis()->FindBin(pt);
+    if (bin < 1 || bin > hEff->GetNbinsX()) {
       return 1e-6;
     }
-    double eff = hEff->GetBinContent(binX, binY);
+    double eff = hEff->GetBinContent(bin);
     return eff;
   }
 
@@ -420,7 +447,7 @@ struct NetchargeFluctuations {
     double posWeight = 0, negWeight = 0, nchCor = 0, nchTotalCor = 0;
     for (const auto& track : tracks) {
 
-      double eff = getEfficiency(track.pt(), track.eta(), efficiency);
+      double eff = getEfficiency(track.pt(), efficiency);
       if (eff < threshold)
         continue;
       double weight = 1.0 / eff;
@@ -490,7 +517,7 @@ struct NetchargeFluctuations {
       histogramRegistry.fill(HIST("QA/cent_hEta"), cent, track.eta());
       histogramRegistry.fill(HIST("QA/cent_hPt"), cent, track.pt());
 
-      double eff = getEfficiency(track.pt(), track.eta(), efficiency);
+      double eff = getEfficiency(track.pt(), efficiency);
       if (eff < threshold)
         continue;
       double weight = 1.0 / eff;
@@ -574,6 +601,17 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("gen/cent_nch"), cent, nchGen);
     histogramRegistry.fill(HIST("gen/nch"), nchGen);
 
+    float lRandom = fRndm->Rndm();
+    int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
+
+    histogramRegistry.fill(HIST("subsample/gen/pos"), cent, sampleIndex, posGen);
+    histogramRegistry.fill(HIST("subsample/gen/neg"), cent, sampleIndex, negGen);
+    histogramRegistry.fill(HIST("subsample/gen/termp"), cent, sampleIndex, termPGen);
+    histogramRegistry.fill(HIST("subsample/gen/termn"), cent, sampleIndex, termNGen);
+    histogramRegistry.fill(HIST("subsample/gen/pos_sq"), cent, sampleIndex, posGen * posGen);
+    histogramRegistry.fill(HIST("subsample/gen/neg_sq"), cent, sampleIndex, negGen * negGen);
+    histogramRegistry.fill(HIST("subsample/gen/posneg"), cent, sampleIndex, posNegGen);
+
   } // void
 
   template <RunType run, typename C, typename T>
@@ -593,7 +631,7 @@ struct NetchargeFluctuations {
       if (!selTrack(track))
         continue;
       nch += 1;
-      double eff = getEfficiency(track.pt(), track.eta(), efficiency);
+      double eff = getEfficiency(track.pt(), efficiency);
       if (eff < threshold)
         continue;
       double weight = 1.0 / eff;
@@ -630,6 +668,17 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("data/delta_eta_pos_sq"), deltaEtaWidth, fpos * fpos);
     histogramRegistry.fill(HIST("data/delta_eta_neg_sq"), deltaEtaWidth, fneg * fneg);
     histogramRegistry.fill(HIST("data/delta_eta_posneg"), deltaEtaWidth, posneg);
+
+    float lRandom = fRndm->Rndm();
+    int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
+
+    histogramRegistry.fill(HIST("subsample/delta_eta/pos"), deltaEtaWidth, sampleIndex, fpos);
+    histogramRegistry.fill(HIST("subsample/delta_eta/neg"), deltaEtaWidth, sampleIndex, fneg);
+    histogramRegistry.fill(HIST("subsample/delta_eta/termp"), deltaEtaWidth, sampleIndex, termp);
+    histogramRegistry.fill(HIST("subsample/delta_eta/termn"), deltaEtaWidth, sampleIndex, termn);
+    histogramRegistry.fill(HIST("subsample/delta_eta/pos_sq"), deltaEtaWidth, sampleIndex, fpos * fpos);
+    histogramRegistry.fill(HIST("subsample/delta_eta/neg_sq"), deltaEtaWidth, sampleIndex, fneg * fneg);
+    histogramRegistry.fill(HIST("subsample/delta_eta/posneg"), deltaEtaWidth, sampleIndex, posneg);
   }
 
   template <RunType run, typename C, typename T, typename M, typename P>
@@ -662,7 +711,7 @@ struct NetchargeFluctuations {
         continue;
 
       histogramRegistry.fill(HIST("data/delta_eta_eta"), eta);
-      double eff = getEfficiency(track.pt(), eta, efficiency);
+      double eff = getEfficiency(track.pt(), efficiency);
       if (eff < threshold)
         continue;
       double weight = 1.0 / eff;
@@ -754,6 +803,17 @@ struct NetchargeFluctuations {
     histogramRegistry.fill(HIST("gen/delta_eta_posneg"), deltaEtaWidth, posNegGen);
     histogramRegistry.fill(HIST("gen/delta_eta_nch"), deltaEtaWidth, nchGen);
 
+    float lRandom = fRndm->Rndm();
+    int sampleIndex = static_cast<int>(cfgNSubsample * lRandom);
+
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/pos"), deltaEtaWidth, sampleIndex, posGen);
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/neg"), deltaEtaWidth, sampleIndex, negGen);
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/termp"), deltaEtaWidth, sampleIndex, termPGen);
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/termn"), deltaEtaWidth, sampleIndex, termNGen);
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/pos_sq"), deltaEtaWidth, sampleIndex, posGen * posGen);
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/neg_sq"), deltaEtaWidth, sampleIndex, negGen * negGen);
+    histogramRegistry.fill(HIST("subsample/delta_eta/gen/posneg"), deltaEtaWidth, sampleIndex, posNegGen);
+
   } // void
 
   SliceCache cache;
@@ -771,7 +831,7 @@ struct NetchargeFluctuations {
     }
   }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processDataRun3, "Process for Run3 DATA", true);
+  PROCESS_SWITCH(NetchargeFluctuations, processDataRun3, "Process for Run3 DATA", false);
 
   // process function for Data Run2
   void processDataRun2(aod::MyCollisionRun2 const& coll, aod::MyTracks const& tracks)
@@ -799,7 +859,7 @@ struct NetchargeFluctuations {
       calculationMcDeltaEta<kRun3>(coll, inputTracks, mcCollisions, mcParticles, etaMin, etaMax);
     }
   }
-  PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", false);
+  PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", true);
 
   // process function for MC Run2
 
