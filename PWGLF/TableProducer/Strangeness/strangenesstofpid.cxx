@@ -1173,7 +1173,7 @@ struct strangenesstofpid {
 
     LOGF(info, "Processing derived data. Is this the new TOF info format? %i", isNewTOFFormat);
 
-    if(!isNewTOFFormat && calculationMethod.value > 0){ 
+    if (!isNewTOFFormat && calculationMethod.value > 0) {
       LOGF(fatal, "Using the old derived data format with the new calculation method is not viable due to lack of needed info! Crashing.");
     }
 
