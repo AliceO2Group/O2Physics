@@ -217,7 +217,6 @@ DECLARE_SOA_TABLE(HfCandCascFullEs, "AOD", "HFCANDCASCFULLE",
                   collision::PosZ);
 
 DECLARE_SOA_TABLE(HfCandCascFullPs, "AOD", "HFCANDCASCFULLP",
-                  collision::BCId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
@@ -463,7 +462,6 @@ struct HfTreeCreatorLcToK0sP {
     for (const auto& particle : particles) {
       if (std::abs(particle.flagMcMatchGen()) == 1) {
         rowCandidateFullParticles(
-          particle.mcCollision().bcId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
