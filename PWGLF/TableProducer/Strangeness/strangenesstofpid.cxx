@@ -1169,8 +1169,10 @@ struct strangenesstofpid {
       return;
     }
     auto firstTOFPID = dauTrackTOFPIDs.rawIteratorAt(0);
-    bool isNewTOFFOrmat = firstTOFPID.straCollisionId() < 0 ? false : true;
+    bool isNewTOFFormat = firstTOFPID.straCollisionId() < 0 ? false : true;
 
+    LOGF(info, "Processing derived data. Is this the new TOF info format? %i", isNewTOFFormat);
+    
     // Fire up CCDB with first collision in record. If no collisions, bypass
     if (useCustomRunNumber || collisions.size() < 1) {
       initCCDB(manualRunNumber);
@@ -1182,7 +1184,7 @@ struct strangenesstofpid {
     // hold indices
     std::vector<int> tofIndices(dauTrackTable.size(), -1);
 
-    if (isNewTOFFOrmat) {
+    if (isNewTOFFormat) {
       // re-index
       for (const auto& dauTrackTOFPID : dauTrackTOFPIDs) {
         tofIndices[dauTrackTOFPID.dauTrackExtraId()] = dauTrackTOFPID.globalIndex();
