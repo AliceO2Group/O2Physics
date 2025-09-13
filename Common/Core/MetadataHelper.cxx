@@ -124,3 +124,19 @@ bool MetadataHelper::isInitialized() const
   }
   return mIsInitialized;
 }
+
+std::string MetadataHelper::makeMetadataLabel() const
+{
+  if (!mIsInitialized) {
+    LOG(fatal) << "Metadata not initialized";
+  }
+  std::string label = get("DataType");
+  label += "_" + get("LPMProductionTag");
+  if (isMC()) {
+    label += "_" + get("AnchorPassName");
+    label += "_" + get("AnchorProduction");
+  } else {
+    label += "_" + get("RecoPassName");
+  }
+  return label;
+}
