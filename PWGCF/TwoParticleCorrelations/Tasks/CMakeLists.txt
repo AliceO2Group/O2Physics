@@ -72,3 +72,9 @@ o2physics_add_dpl_workflow(longrange-correlation
                            SOURCES longrangeCorrelation.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
                            COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(long-range-dihadron-cor
+                           SOURCES longRangeDihadronCor.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)
+
