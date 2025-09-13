@@ -349,7 +349,6 @@ struct NonPromptCascadeTask {
         mHistPointer4 = std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxisZoom, nTracksAxis}));
         mRuns.insert(mRunNumber);
       }
-      // std::cout << coll.selection_bit(aod::evsel::kNoSameBunchPileup) << std::endl;
       mHistPointer1->Fill(coll.centFT0M(), coll.multFT0M());
       mHistPointer2->Fill(coll.centFT0M(), coll.multFT0M());
       mHistPointer3->Fill(coll.centFT0M(), coll.multNTracksGlobal());
