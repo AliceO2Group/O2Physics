@@ -1172,7 +1172,7 @@ struct strangenesstofpid {
     bool isNewTOFFormat = firstTOFPID.straCollisionId() < 0 ? false : true;
 
     LOGF(info, "Processing derived data. Is this the new TOF info format? %i", isNewTOFFormat);
-    
+
     // Fire up CCDB with first collision in record. If no collisions, bypass
     if (useCustomRunNumber || collisions.size() < 1) {
       initCCDB(manualRunNumber);
