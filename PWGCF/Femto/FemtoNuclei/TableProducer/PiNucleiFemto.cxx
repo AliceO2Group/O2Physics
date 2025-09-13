@@ -15,7 +15,7 @@
 /// \author CMY
 /// \date 2025-04-10
 
-#include "PWGCF/Femto/DataModel/PionNucleiTables.h"
+#include "PWGCF/Femto/FemtoNuclei/DataModel/PionNucleiTables.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFHypernucleiTables.h"
 #include "PWGLF/Utils/svPoolCreator.h"
