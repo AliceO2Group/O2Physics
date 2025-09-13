@@ -18,12 +18,14 @@
 
 #include "PWGCF/DataModel/SPTableZDC.h"
 
+#include "Common/Core/EventPlaneHelper.h"
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/Qvectors.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -41,6 +43,7 @@
 #include "TPDGCode.h"
 
 #include <algorithm>
+#include <map>
 #include <numeric>
 #include <string>
 #include <unordered_map>
@@ -50,11 +53,21 @@
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+using namespace o2::aod::rctsel;
 // using namespace o2::analysis;
 
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
 struct FlowSP {
+  RCTFlagsChecker rctChecker;
+
+  struct : ConfigurableGroup {
+    O2_DEFINE_CONFIGURABLE(cfgEvtUseRCTFlagChecker, bool, false, "Evt sel: use RCT flag checker");
+    O2_DEFINE_CONFIGURABLE(cfgEvtRCTFlagCheckerLabel, std::string, "CBT_hadronPID", "Evt sel: RCT flag checker label (CBT, CBT_hadronPID)"); // all Labels can be found in Common/CCDB/RCTSelectionFlags.h
+    O2_DEFINE_CONFIGURABLE(cfgEvtRCTFlagCheckerZDCCheck, bool, false, "Evt sel: RCT flag checker ZDC check");
+    O2_DEFINE_CONFIGURABLE(cfgEvtRCTFlagCheckerLimitAcceptAsBad, bool, false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad");
+  } rctFlags;
+
   // QA Plots
   O2_DEFINE_CONFIGURABLE(cfgFillEventQA, bool, false, "Fill histograms for event QA");
   O2_DEFINE_CONFIGURABLE(cfgFillTrackQA, bool, false, "Fill histograms for track QA");
@@ -112,8 +125,7 @@ struct FlowSP {
   O2_DEFINE_CONFIGURABLE(cfgEvSelsIsGoodITSLayersAll, bool, true, "Cut time intervals with dead ITS staves");
   // harmonics for v coefficients
   O2_DEFINE_CONFIGURABLE(cfgHarm, int, 1, "Flow harmonic n for ux and uy: (Cos(n*phi), Sin(n*phi))");
-  O2_DEFINE_CONFIGURABLE(cfgHarmMixed1, int, 2, "Flow harmonic n for ux and uy in mixed harmonics (MH): (Cos(n*phi), Sin(n*phi))");
-  O2_DEFINE_CONFIGURABLE(cfgHarmMixed2, int, 3, "Flow harmonic n for ux and uy in mixed harmonics (MH): (Cos(n*phi), Sin(n*phi))");
+  O2_DEFINE_CONFIGURABLE(cfgHarmMixed, int, 2, "Flow harmonic n for ux and uy in mixed harmonics (MH): (Cos(n*phi), Sin(n*phi))");
   // settings for CCDB data
   O2_DEFINE_CONFIGURABLE(cfgCCDBdir_QQ, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/meanQQ/Default", "ccdb dir for average QQ values in 1% centrality bins");
   O2_DEFINE_CONFIGURABLE(cfgCCDBdir_SP, std::string, "", "ccdb dir for average event plane resolution in 1% centrality bins");
@@ -138,7 +150,7 @@ struct FlowSP {
   using ZDCCollisions = soa::Filtered<soa::Join<GeneralCollisions, aod::SPTableZDC>>;
 
   // For MC Reco and Gen
-  using CCs = soa::Filtered<soa::Join<GeneralCollisions, aod::McCollisionLabels>>; // without SPTableZDC
+  using CCs = soa::Filtered<soa::Join<GeneralCollisions, aod::McCollisionLabels>>;
   using CC = CCs::iterator;
   using TCs = soa::Join<UnfilteredTracks, aod::McTrackLabels>;
   using FilteredTCs = soa::Filtered<TCs>;
@@ -174,6 +186,32 @@ struct FlowSP {
 
   } cfg;
 
+  struct SPMvars {
+    std::vector<std::map<int, float>> wacc = {{{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}}; // int for part species, float for weight vector for kIncl, kPos, kNeg
+    std::vector<std::map<int, float>> weff = {{{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}, {{0, 1.0}, {1, 1.0}, {2, 1.0}, {3, 1.0}}}; // int for part species, float for weight vector for kIncl, kPos, kNeg
+    double centWeight = 1.0;
+    double ux = 0;
+    double uy = 0;
+    double uxMH = 0;
+    double uyMH = 0;
+    double qxA = 0;
+    double qyA = 0;
+    double qxC = 0;
+    double qyC = 0;
+    double corrQQx = 1;
+    double corrQQy = 1;
+    double corrQQ = 1;
+    double vnA = 0;
+    double vnC = 0;
+    double vnFull = 0;
+    float centrality = 0;
+    float vtxz = 0;
+    double vx = 0;
+    double vy = 0;
+    double vz = 0;
+    int charge = 0;
+  } spm;
+
   OutputObj<GFWWeights> fWeights{GFWWeights("weights")};
   OutputObj<GFWWeights> fWeightsPOS{GFWWeights("weights_positive")};
   OutputObj<GFWWeights> fWeightsNEG{GFWWeights("weights_negative")};
@@ -193,6 +231,7 @@ struct FlowSP {
   enum SelectionCriteria {
     evSel_FilteredEvent,
     evSel_sel8,
+    evSel_RCTFlagsZDC,
     evSel_occupancy,
     evSel_kTVXinTRD,
     evSel_kNoSameBunchPileup,
@@ -223,24 +262,28 @@ struct FlowSP {
   enum ChargeType {
     kInclusive,
     kPositive,
-    kNegative
+    kNegative,
+    nChargeTypes
   };
 
   enum FillType {
     kBefore,
-    kAfter
+    kAfter,
+    nFillTypes
   };
 
   enum ModeType {
     kGen,
-    kReco
+    kReco,
+    nModeTypes
   };
 
   enum ParticleType {
     kUnidentified,
     kPions,
     kKaons,
-    kProtons
+    kProtons,
+    nParticleTypes
   };
 
   static constexpr std::string_view Charge[] = {"incl/", "pos/", "neg/"};
@@ -282,9 +325,12 @@ struct FlowSP {
 
     int ptbins = ptbinning.size() - 1;
 
+    rctChecker.init(rctFlags.cfgEvtRCTFlagCheckerLabel, rctFlags.cfgEvtRCTFlagCheckerZDCCheck, rctFlags.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
+
     histos.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_FilteredEvent + 1, "Filtered event");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "Sel8");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_RCTFlagsZDC + 1, "RCTFlags (ZDC CBT LimAcc");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_occupancy + 1, "kOccupancy");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kTVXinTRD + 1, "kTVXinTRD");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kNoSameBunchPileup + 1, "kNoSameBunchPileup");
@@ -293,7 +339,7 @@ struct FlowSP {
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsVertexITSTPC + 1, "kIsVertexITSTPC");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_MultCuts + 1, "Multiplicity cuts");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_kIsGoodITSLayersAll + 1, "kkIsGoodITSLayersAll");
-    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected");
+    histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_isSelectedZDC + 1, "isSelected ZDC");
     histos.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_CentCuts + 1, "Cenrality range");
 
     histos.add("hTrackCount", "Number of Tracks; Cut; #Tracks Passed Cut", {HistType::kTH1D, {{nTrackSelections, 0, nTrackSelections}}});
@@ -566,7 +612,7 @@ struct FlowSP {
   }
 
   template <typename TrackObject>
-  int getTrackPID(TrackObject track)
+  ParticleType getTrackPID(TrackObject track)
   {
 
     float usedNSigmaPi = -1;
@@ -589,10 +635,10 @@ struct FlowSP {
       return kUnidentified; // No PID information available
     }
 
-    std::unordered_map<float, int> usedNSigma = {{usedNSigmaPi, kPions}, {usedNSigmaKa, kKaons}, {usedNSigmaPr, kProtons}};
+    std::unordered_map<float, ParticleType> usedNSigma = {{usedNSigmaPi, kPions}, {usedNSigmaKa, kKaons}, {usedNSigmaPr, kProtons}};
 
     int nIdentified = 0;
-    int valPID = 0;
+    ParticleType valPID = kUnidentified;
 
     for (const auto& nsigma : usedNSigma) {
       if (std::abs(nsigma.first) < cfgTrackSelsPIDNsigma) {
@@ -608,8 +654,6 @@ struct FlowSP {
     } else {
       return kUnidentified; // Multiple PID matches found
     }
-
-    return -1;
   }
 
   int getMagneticField(uint64_t timestamp)
@@ -694,7 +738,7 @@ struct FlowSP {
   }
 
   // From Generic Framework
-  bool setCurrentParticleWeights(int pID, float& weight_nue, float& weight_nua, const float& phi, const float& eta, const float& pt, const float& vtxz)
+  bool setCurrentParticleWeights(int pID, int spec, const float& phi, const float& eta, const float& pt, const float& vtxz)
   {
     float eff = 1.;
     int sizeEff = cfg.mEfficiency.size();
@@ -704,20 +748,21 @@ struct FlowSP {
       eff = 1.0;
     if (eff == 0)
       return false;
-    weight_nue = 1. / eff;
+
+    spm.weff[pID][spec] = 1. / eff;
 
     if (cfguseNUA1D) {
       int sizeAcc = cfg.mAcceptance.size();
       if (sizeAcc > pID) {
-        weight_nua = cfg.mAcceptance[pID]->getNUA(phi, eta, vtxz);
+        spm.wacc[pID][spec] = cfg.mAcceptance[pID]->getNUA(phi, eta, vtxz);
       } else {
-        weight_nua = 1;
+        spm.wacc[pID][spec] = 1;
       }
     } else if (cfguseNUA2D) {
       if (cfg.mAcceptance2D.size() > 0) {
-        weight_nua = getNUA2D(cfg.mAcceptance2D[0], eta, phi, vtxz);
+        spm.wacc[pID][spec] = getNUA2D(cfg.mAcceptance2D[0], eta, phi, vtxz);
       } else {
-        weight_nua = 1;
+        spm.wacc[pID][spec] = 1;
       }
     }
     return true;
@@ -729,6 +774,10 @@ struct FlowSP {
     if (!collision.sel8())
       return 0;
     histos.fill(HIST("hEventCount"), evSel_sel8);
+
+    if (rctFlags.cfgEvtUseRCTFlagChecker && !rctChecker(collision))
+      return 0;
+    histos.fill(HIST("hEventCount"), evSel_RCTFlagsZDC);
 
     // Occupancy
     if (cfgEvSelsDoOccupancySel) {
@@ -876,28 +925,28 @@ struct FlowSP {
   }
 
   template <FillType ft, typename CollisionObject, typename TracksObject>
-  inline void fillEventQA(CollisionObject collision, TracksObject tracks, double centWeight = 1.0)
+  inline void fillEventQA(CollisionObject collision, TracksObject tracks)
   {
     if (!cfgFillEventQA)
       return;
 
     static constexpr std::string_view Time[] = {"before", "after"};
 
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFT0C"), collision.centFT0C(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentNGlobal"), collision.centNGlobal(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFT0M"), collision.centFT0M(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFV0A"), collision.centFV0A(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_centT0C"), collision.centFT0C(), tracks.size(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_multT0A"), collision.multFT0A(), tracks.size(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_multV0A"), collision.multFV0A(), tracks.size(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/multV0A_multT0A"), collision.multFT0A(), collision.multFV0A(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/multT0C_centT0C"), collision.centFT0C(), collision.multFT0C(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0Cvariant1"), collision.centFT0C(), collision.centFT0CVariant1(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0M"), collision.centFT0C(), collision.centFT0M(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFV0A"), collision.centFT0C(), collision.centFV0A(), centWeight);
-    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal(), centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFT0C"), collision.centFT0C(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentNGlobal"), collision.centNGlobal(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFT0M"), collision.centFT0M(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/hCentFV0A"), collision.centFV0A(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_centT0C"), collision.centFT0C(), tracks.size(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PVTracks_centT0C"), collision.centFT0C(), collision.multNTracksPV(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_PVTracks"), collision.multNTracksPV(), tracks.size(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_multT0A"), collision.multFT0A(), tracks.size(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/globalTracks_multV0A"), collision.multFV0A(), tracks.size(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/multV0A_multT0A"), collision.multFT0A(), collision.multFV0A(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/multT0C_centT0C"), collision.centFT0C(), collision.multFT0C(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0Cvariant1"), collision.centFT0C(), collision.centFT0CVariant1(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFT0M"), collision.centFT0C(), collision.centFT0M(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentFV0A"), collision.centFT0C(), collision.centFV0A(), spm.centWeight);
+    histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/CentFT0C_vs_CentNGlobal"), collision.centFT0C(), collision.centNGlobal(), spm.centWeight);
 
     if (cfgFillEventPlaneQA) {
       if constexpr (o2::framework::has_type_v<aod::sptablezdc::Vx, typename CollisionObject::all_columns>) {
@@ -905,95 +954,79 @@ struct FlowSP {
         double psiC = 1.0 * std::atan2(collision.qyC(), collision.qxC());
         double psiFull = 1.0 * std::atan2(collision.qyA() + collision.qyC(), collision.qxA() + collision.qxC());
 
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Cent"), psiA, collision.centFT0C(), centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Cent"), psiC, collision.centFT0C(), centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Cent"), psiFull, collision.centFT0C(), centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vx"), psiA, collision.vx(), centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vx"), psiC, collision.vx(), centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vx"), psiFull, collision.vx(), centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vy"), psiA, collision.vy(), centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vy"), psiC, collision.vy(), centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vy"), psiFull, collision.vy(), centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vz"), psiA, collision.posZ(), centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vz"), psiC, collision.posZ(), centWeight);
-        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vz"), psiFull, collision.posZ(), centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Cent"), psiA, collision.centFT0C(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Cent"), psiC, collision.centFT0C(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Cent"), psiFull, collision.centFT0C(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vx"), psiA, collision.vx(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vx"), psiC, collision.vx(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vx"), psiFull, collision.vx(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vy"), psiA, collision.vy(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vy"), psiC, collision.vy(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vy"), psiFull, collision.vy(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiA_vs_Vz"), psiA, collision.posZ(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiC_vs_Vz"), psiC, collision.posZ(), spm.centWeight);
+        histos.fill(HIST("QA/") + HIST(Time[ft]) + HIST("/PsiFull_vs_Vz"), psiFull, collision.posZ(), spm.centWeight);
       }
     }
     return;
   }
 
   template <ChargeType ct, ParticleType pt, typename TrackObject>
-  inline void fillHistograms(TrackObject track, float wacc, float weff, double centWeight, double ux, double uy, double uxMH, double uyMH, double qxA, double qyA, double qxC, double qyC, double corrQQx, double corrQQy, double corrQQ, double vnA, double vnC, double vnFull, double centrality)
+  inline void fillHistograms(TrackObject track)
   {
-
-    double weight = wacc * weff * centWeight;
+    double weight = spm.wacc[ct][pt] * spm.weff[ct][pt] * spm.centWeight;
 
     if (cfgFillGeneralV1Histos) {
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnA"), track.pt(), track.eta(), centrality, (uy * qyA + ux * qxA) / std::sqrt(std::fabs(corrQQ)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnC"), track.pt(), track.eta(), centrality, (uy * qyC + ux * qxC) / std::sqrt(std::fabs(corrQQ)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnA"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyA + spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQ)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnC"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyC + spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQ)), weight);
     }
 
     if (cfgFillMixedHarmonics) {
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAxCxUx_MH"), track.pt(), track.eta(), centrality, (uxMH * qxA * qxC) / corrQQx, weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAxCyUx_MH"), track.pt(), track.eta(), centrality, (uxMH * qyA * qyC) / corrQQy, weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAxCyUy_MH"), track.pt(), track.eta(), centrality, (uyMH * qxA * qyC) / corrQQx, weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAyCxUy_MH"), track.pt(), track.eta(), centrality, (uyMH * qyA * qxC) / corrQQy, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAxCxUx_MH"), track.pt(), track.eta(), spm.centrality, (spm.uxMH * spm.qxA * spm.qxC) / spm.corrQQx, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAxCyUx_MH"), track.pt(), track.eta(), spm.centrality, (spm.uxMH * spm.qyA * spm.qyC) / spm.corrQQy, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAxCyUy_MH"), track.pt(), track.eta(), spm.centrality, (spm.uyMH * spm.qxA * spm.qyC) / spm.corrQQx, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAyCxUy_MH"), track.pt(), track.eta(), spm.centrality, (spm.uyMH * spm.qyA * spm.qxC) / spm.corrQQy, weight);
     }
 
     if (cfgFillXandYterms) {
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAx"), track.pt(), track.eta(), centrality, (ux * qxA) / std::sqrt(std::fabs(corrQQx)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAy"), track.pt(), track.eta(), centrality, (uy * qyA) / std::sqrt(std::fabs(corrQQy)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCx"), track.pt(), track.eta(), centrality, (ux * qxC) / std::sqrt(std::fabs(corrQQx)), weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCy"), track.pt(), track.eta(), centrality, (uy * qyC) / std::sqrt(std::fabs(corrQQy)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAx"), track.pt(), track.eta(), spm.centrality, (spm.ux * spm.qxA) / std::sqrt(std::fabs(spm.corrQQx)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnAy"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyA) / std::sqrt(std::fabs(spm.corrQQy)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCx"), track.pt(), track.eta(), spm.centrality, (spm.ux * spm.qxC) / std::sqrt(std::fabs(spm.corrQQx)), weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnCy"), track.pt(), track.eta(), spm.centrality, (spm.uy * spm.qyC) / std::sqrt(std::fabs(spm.corrQQy)), weight);
     }
 
     if (cfgFillEventPlane) { // only fill for inclusive!
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnA_EP"), track.pt(), track.eta(), centrality, vnA, weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnC_EP"), track.pt(), track.eta(), centrality, vnC, weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnFull_EP"), track.pt(), track.eta(), centrality, vnFull, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnA_EP"), track.pt(), track.eta(), spm.centrality, spm.vnA, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnC_EP"), track.pt(), track.eta(), spm.centrality, spm.vnC, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("vnFull_EP"), track.pt(), track.eta(), spm.centrality, spm.vnFull, weight);
     }
   }
 
   template <FillType ft, ChargeType ct, ParticleType pt, typename TrackObject>
-  inline void fillTrackQA(TrackObject track, double vz, float wacc = 1, float weff = 1)
+  inline void fillTrackQA(TrackObject track, bool useCentrality = false)
   {
     if (!cfgFillTrackQA)
       return;
 
     static constexpr std::string_view Time[] = {"before/", "after/"};
     // NOTE: species[kUnidentified] = "" (when no PID)
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_Pt"), track.phi(), track.eta(), track.pt());
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_Pt_corrected"), track.phi(), track.eta(), track.pt(), wacc * weff);
+    if (useCentrality) {
+      histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_Eta"), track.pt(), track.eta(), spm.centrality, spm.wacc[ct][pt] * spm.weff[ct][pt]);
+      histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_Eta_uncorrected"), track.pt(), track.eta(), spm.centrality);
+      histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta"), track.phi(), track.eta(), spm.centrality, spm.wacc[ct][pt] * spm.weff[ct][pt]);
+      histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_uncorrected"), track.phi(), track.eta(), spm.centrality);
+    } else {
+      histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_Pt"), track.phi(), track.eta(), track.pt());
+      histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_Pt_corrected"), track.phi(), track.eta(), track.pt(), spm.wacc[ct][pt] * spm.weff[ct][pt]);
+    }
 
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz"), track.phi(), track.eta(), vz);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz_corrected"), track.phi(), track.eta(), vz, wacc * weff);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAxy_pt"), track.pt(), track.dcaXY(), wacc * weff);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAz_pt"), track.pt(), track.dcaZ(), wacc * weff);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls(), wacc * weff);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_pt"), track.pt(), track.tpcNClsFound(), wacc * weff);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_vs_SharedClusters"), track.tpcNClsFound(), track.tpcFractionSharedCls(), wacc * weff);
-  }
-
-  template <FillType ft, ChargeType ct, ParticleType pt, typename TrackObject>
-  inline void fillTrackQA(TrackObject track, double vz, double centrality, float wacc = 1, float weff = 1)
-  {
-    if (!cfgFillTrackQA)
-      return;
-
-    static constexpr std::string_view Time[] = {"before/", "after/"};
-    // NOTE: species[kUnidentified] = "" (when no PID)
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_Eta"), track.pt(), track.eta(), centrality, wacc * weff);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPt_Eta_uncorrected"), track.pt(), track.eta(), centrality);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta"), track.phi(), track.eta(), centrality, wacc * weff);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_uncorrected"), track.phi(), track.eta(), centrality);
-
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz"), track.phi(), track.eta(), vz);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz_corrected"), track.phi(), track.eta(), vz, wacc);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAxy_pt"), track.pt(), track.dcaXY(), wacc * weff);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAz_pt"), track.pt(), track.dcaZ(), wacc * weff);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls(), wacc * weff);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_pt"), track.pt(), track.tpcNClsFound(), wacc * weff);
-    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_vs_SharedClusters"), track.tpcNClsFound(), track.tpcFractionSharedCls(), wacc * weff);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz"), track.phi(), track.eta(), spm.vz);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hPhi_Eta_vz_corrected"), track.phi(), track.eta(), spm.vz, spm.wacc[ct][pt]);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAxy_pt"), track.pt(), track.dcaXY(), spm.wacc[ct][pt] * spm.weff[ct][pt]);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hDCAz_pt"), track.pt(), track.dcaZ(), spm.wacc[ct][pt] * spm.weff[ct][pt]);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hSharedClusters_pt"), track.pt(), track.tpcFractionSharedCls(), spm.wacc[ct][pt] * spm.weff[ct][pt]);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_pt"), track.pt(), track.tpcNClsFound(), spm.wacc[ct][pt] * spm.weff[ct][pt]);
+    histos.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("QA/") + HIST(Time[ft]) + HIST("hCrossedRows_vs_SharedClusters"), track.tpcNClsFound(), track.tpcFractionSharedCls(), spm.wacc[ct][pt] * spm.weff[ct][pt]);
   }
 
   template <FillType ft, ChargeType ct, typename TrackObject>
@@ -1016,86 +1049,79 @@ struct FlowSP {
   }
 
   template <FillType ft, ModeType md, typename TrackObject>
-  inline void fillMCPtHistos(TrackObject track, int pdgCode, float centrality)
+  inline void fillMCPtHistos(TrackObject track, int pdgCode)
   {
     static constexpr std::string_view Time[] = {"before/", "after/"};
     static constexpr std::string_view Mode[] = {"Gen/", "Reco/"};
 
-    registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_hadron"), track.pt(), track.eta(), centrality);
+    registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_hadron"), track.pt(), track.eta(), spm.centrality);
     if (pdgCode > 0) {
-      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_hadron"), track.pt(), track.eta(), centrality);
+      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_hadron"), track.pt(), track.eta(), spm.centrality);
     } else {
-      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_hadron"), track.pt(), track.eta(), centrality);
+      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_hadron"), track.pt(), track.eta(), spm.centrality);
     }
 
     if (pdgCode == kPiPlus || pdgCode == kPiMinus) {
-      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_pion"), track.pt(), track.eta(), centrality);
+      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_pion"), track.pt(), track.eta(), spm.centrality);
       if (pdgCode == kPiPlus) {
-        registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_pion"), track.pt(), track.eta(), centrality);
+        registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_pion"), track.pt(), track.eta(), spm.centrality);
       } else {
-        registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_pion"), track.pt(), track.eta(), centrality);
+        registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_pion"), track.pt(), track.eta(), spm.centrality);
       }
     } else if (pdgCode == kKPlus || pdgCode == kKMinus) {
-      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_kaon"), track.pt(), track.eta(), centrality);
+      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_kaon"), track.pt(), track.eta(), spm.centrality);
       if (pdgCode == kKPlus) {
-        registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_kaon"), track.pt(), track.eta(), centrality);
+        registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_kaon"), track.pt(), track.eta(), spm.centrality);
       } else {
-        registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_kaon"), track.pt(), track.eta(), centrality);
+        registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_kaon"), track.pt(), track.eta(), spm.centrality);
       }
     } else if (pdgCode == kProton || pdgCode == kProtonBar) {
-      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_proton"), track.pt(), track.eta(), centrality);
+      registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("incl/hPt_proton"), track.pt(), track.eta(), spm.centrality);
       if (pdgCode == kProton) {
-        registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_proton"), track.pt(), track.eta(), centrality);
+        registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("pos/hPt_proton"), track.pt(), track.eta(), spm.centrality);
       } else {
-        registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_proton"), track.pt(), track.eta(), centrality);
+        registry.fill(HIST("trackMC") + HIST(Mode[md]) + HIST(Time[ft]) + HIST("neg/hPt_proton"), track.pt(), track.eta(), spm.centrality);
       }
     }
   }
 
   template <FillType ft, typename McParticleObject>
-  inline void fillPrimaryHistos(McParticleObject mcparticle, float centrality)
+  inline void fillPrimaryHistos(McParticleObject mcparticle)
   {
     static constexpr std::string_view Time[] = {"/before", "/after"};
 
     if (!mcparticle.isPhysicalPrimary()) {
-      registry.fill(HIST("trackMCReco") + HIST(Time[ft]) + HIST("/hIsPhysicalPrimary"), 0, centrality);
+      registry.fill(HIST("trackMCReco") + HIST(Time[ft]) + HIST("/hIsPhysicalPrimary"), 0, spm.centrality);
     } else {
-      registry.fill(HIST("trackMCReco") + HIST(Time[ft]) + HIST("/hIsPhysicalPrimary"), 1, centrality);
+      registry.fill(HIST("trackMCReco") + HIST(Time[ft]) + HIST("/hIsPhysicalPrimary"), 1, spm.centrality);
     }
   }
 
-  template <FillType ft, ParticleType ct, typename TrackObject>
-  void fillAllQA(TrackObject track, double vtxz, double centrality, bool pos, float wacc = 1, float weff = 1, float waccP = 1, float weffP = 1, float waccN = 1, float weffN = 1)
+  template <FillType ft, ParticleType pt, typename TrackObject>
+  void fillAllQA(TrackObject track)
   {
-    if (!cfgTrackSelDoTrackQAvsCent) {
-      fillTrackQA<ft, kInclusive, ct>(track, vtxz, wacc, weff);
-    } else {
-      fillTrackQA<ft, kInclusive, ct>(track, vtxz, centrality, wacc, weff);
-    }
+    fillTrackQA<ft, kInclusive, pt>(track, cfgTrackSelDoTrackQAvsCent);
     fillPIDQA<ft, kInclusive>(track);
 
-    if (!cfgFillChargeDependenceQA)
-      return;
-
-    if (pos) {
-      if (!cfgTrackSelDoTrackQAvsCent) {
-        fillTrackQA<ft, kPositive, ct>(track, vtxz, waccP, weffP);
-      } else {
-        fillTrackQA<ft, kPositive, ct>(track, vtxz, centrality, waccP, weffP);
+    if (cfgFillChargeDependenceQA) {
+      switch (spm.charge) {
+        case kPositive: {
+          fillTrackQA<ft, kPositive, pt>(track, cfgTrackSelDoTrackQAvsCent);
+          fillPIDQA<ft, kPositive>(track);
+          break;
+        }
+        case kNegative: {
+          fillTrackQA<ft, kNegative, pt>(track, cfgTrackSelDoTrackQAvsCent);
+          fillPIDQA<ft, kNegative>(track);
+          break;
+        }
       }
-      fillPIDQA<ft, kPositive>(track);
-    } else {
-      if (!cfgTrackSelDoTrackQAvsCent) {
-        fillTrackQA<ft, kNegative, ct>(track, vtxz, waccN, weffN);
-      } else {
-        fillTrackQA<ft, kNegative, ct>(track, vtxz, centrality, waccN, weffN);
-      }
-      fillPIDQA<ft, kNegative>(track);
     }
   }
 
   void processData(ZDCCollisions::iterator const& collision, aod::BCsWithTimestamps const&, UsedTracks const& tracks)
   {
+
     histos.fill(HIST("hEventCount"), evSel_FilteredEvent);
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     int standardMagField = 99999;
@@ -1114,233 +1140,263 @@ struct FlowSP {
 
     loadCorrections(bc.timestamp());
 
-    float centrality = collision.centFT0C();
+    spm.centrality = collision.centFT0C();
 
     if (cfgCentFT0Cvariant1)
-      centrality = collision.centFT0CVariant1();
+      spm.centrality = collision.centFT0CVariant1();
     if (cfgCentFT0M)
-      centrality = collision.centFT0M();
+      spm.centrality = collision.centFT0M();
     if (cfgCentFV0A)
-      centrality = collision.centFV0A();
+      spm.centrality = collision.centFV0A();
     if (cfgCentNGlobal)
-      centrality = collision.centNGlobal();
+      spm.centrality = collision.centNGlobal();
 
     if (!eventSelected(collision, tracks.size()))
       return;
 
-    if (collision.isSelected()) {
+    if (!collision.isSelected()) // selected by ZDCQVectors task (checks signal in ZDC) --> only possible in data not MC
+      return;
+    histos.fill(HIST("hEventCount"), evSel_isSelectedZDC);
 
-      histos.fill(HIST("hEventCount"), evSel_isSelectedZDC);
+    spm.qxA = collision.qxA();
+    spm.qyA = collision.qyA();
+    spm.qxC = collision.qxC();
+    spm.qyC = collision.qyC();
 
-      double qxA = collision.qxA();
-      double qyA = collision.qyA();
-      double qxC = collision.qxC();
-      double qyC = collision.qyC();
+    spm.vz = collision.posZ();
+    float vtxz = collision.posZ();
 
-      double vtxz = collision.posZ();
-      double psiA = 1.0 * std::atan2(qyA, qxA);
-      double psiC = 1.0 * std::atan2(qyC, qxC);
+    double psiA = 1.0 * std::atan2(spm.qyA, spm.qxA);
+    double psiC = 1.0 * std::atan2(spm.qyC, spm.qxC);
 
-      // https://twiki.cern.ch/twiki/pub/ALICE/DirectedFlowAnalysisNote/vn_ZDC_ALICE_INT_NOTE_version02.pdf
-      double psiFull = 1.0 * std::atan2(qyA + qyC, qxA + qxC);
+    // https://twiki.cern.ch/twiki/pub/ALICE/DirectedFlowAnalysisNote/vn_ZDC_ALICE_INT_NOTE_version02.pdf
+    double psiFull = 1.0 * std::atan2(spm.qyA + spm.qyC, spm.qxA + spm.qxC);
 
-      // always fill these histograms!
-      registry.fill(HIST("QQCorrelations/qAqCXY"), centrality, qxA * qxC + qyA * qyC);
-      registry.fill(HIST("QQCorrelations/qAXqCY"), centrality, qxA * qyC);
-      registry.fill(HIST("QQCorrelations/qAYqCX"), centrality, qyA * qxC);
-      registry.fill(HIST("QQCorrelations/qAXYqCXY"), centrality, qyA * qxC + qxA * qyC);
-      registry.fill(HIST("QQCorrelations/qAqCX"), centrality, qxA * qxC);
-      registry.fill(HIST("QQCorrelations/qAqCY"), centrality, qyA * qyC);
+    // always fill these histograms!
+    registry.fill(HIST("QQCorrelations/qAqCXY"), spm.centrality, spm.qxA * spm.qxC + spm.qyA * spm.qyC);
+    registry.fill(HIST("QQCorrelations/qAXqCY"), spm.centrality, spm.qxA * spm.qyC);
+    registry.fill(HIST("QQCorrelations/qAYqCX"), spm.centrality, spm.qyA * spm.qxC);
+    registry.fill(HIST("QQCorrelations/qAXYqCXY"), spm.centrality, spm.qyA * spm.qxC + spm.qxA * spm.qyC);
+    registry.fill(HIST("QQCorrelations/qAqCX"), spm.centrality, spm.qxA * spm.qxC);
+    registry.fill(HIST("QQCorrelations/qAqCY"), spm.centrality, spm.qyA * spm.qyC);
 
-      if (cfgFillEventQA) {
-        histos.fill(HIST("QA/hCentFull"), centrality, 1);
+    if (cfgFillEventQA) {
+      histos.fill(HIST("QA/hCentFull"), spm.centrality, 1);
+    }
+    if (cfgFillEventPlaneQA) {
+      histos.fill(HIST("QA/hSPplaneA"), psiA, 1);
+      histos.fill(HIST("QA/hSPplaneC"), psiC, 1);
+      histos.fill(HIST("QA/hSPplaneFull"), psiFull, 1);
+      histos.fill(HIST("QA/hCosPhiACosPhiC"), spm.centrality, std::cos(psiA) * std::cos(psiC));
+      histos.fill(HIST("QA/hSinPhiASinPhiC"), spm.centrality, std::sin(psiA) * std::sin(psiC));
+      histos.fill(HIST("QA/hSinPhiACosPhiC"), spm.centrality, std::sin(psiA) * std::cos(psiC));
+      histos.fill(HIST("QA/hCosPhiASinsPhiC"), spm.centrality, std::cos(psiA) * std::sin(psiC));
+      histos.fill(HIST("QA/hFullEvPlaneRes"), spm.centrality, -1 * std::cos(psiA - psiC));
+    }
+
+    if (spm.centrality > cfgCentMax || spm.centrality < cfgCentMin)
+      return;
+
+    histos.fill(HIST("hEventCount"), evSel_CentCuts);
+
+    // Load correlations and SP resolution needed for Scalar Product and event plane methods.
+    // Only load once!
+    // If not loaded set to 1
+
+    if (cfgCCDBdir_QQ.value.empty() == false) {
+      if (!cfg.clQQ) {
+        TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_QQ.value, bc.timestamp());
+        cfg.hcorrQQ = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCXY"));
+        cfg.hcorrQQx = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCX"));
+        cfg.hcorrQQy = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCY"));
+        cfg.clQQ = true;
       }
-      if (cfgFillEventPlaneQA) {
-        histos.fill(HIST("QA/hSPplaneA"), psiA, 1);
-        histos.fill(HIST("QA/hSPplaneC"), psiC, 1);
-        histos.fill(HIST("QA/hSPplaneFull"), psiFull, 1);
-        histos.fill(HIST("QA/hCosPhiACosPhiC"), centrality, std::cos(psiA) * std::cos(psiC));
-        histos.fill(HIST("QA/hSinPhiASinPhiC"), centrality, std::sin(psiA) * std::sin(psiC));
-        histos.fill(HIST("QA/hSinPhiACosPhiC"), centrality, std::sin(psiA) * std::cos(psiC));
-        histos.fill(HIST("QA/hCosPhiASinsPhiC"), centrality, std::cos(psiA) * std::sin(psiC));
-        histos.fill(HIST("QA/hFullEvPlaneRes"), centrality, -1 * std::cos(psiA - psiC));
+      spm.corrQQ = cfg.hcorrQQ->GetBinContent(cfg.hcorrQQ->FindBin(spm.centrality));
+      spm.corrQQx = cfg.hcorrQQx->GetBinContent(cfg.hcorrQQx->FindBin(spm.centrality));
+      spm.corrQQy = cfg.hcorrQQy->GetBinContent(cfg.hcorrQQy->FindBin(spm.centrality));
+    }
+
+    double evPlaneRes = 1.;
+    if (cfgCCDBdir_SP.value.empty() == false) {
+      if (!cfg.clEvPlaneRes) {
+        cfg.hEvPlaneRes = ccdb->getForTimeStamp<TProfile>(cfgCCDBdir_SP.value, bc.timestamp());
+        cfg.clEvPlaneRes = true;
       }
+      evPlaneRes = cfg.hEvPlaneRes->GetBinContent(cfg.hEvPlaneRes->FindBin(spm.centrality));
+      if (evPlaneRes < 0)
+        LOGF(fatal, "<Cos(PsiA-PsiC)> > 0 for centrality %.2f! Cannot determine resolution.. Change centrality ranges!!!", spm.centrality);
+      evPlaneRes = std::sqrt(evPlaneRes);
+    }
 
-      if (centrality > cfgCentMax || centrality < cfgCentMin)
-        return;
-
-      histos.fill(HIST("hEventCount"), evSel_CentCuts);
-
-      // Load correlations and SP resolution needed for Scalar Product and event plane methods.
-      // Only load once!
-      // If not loaded set to 1
-      double corrQQ = 1., corrQQx = 1., corrQQy = 1.;
-      if (cfgCCDBdir_QQ.value.empty() == false) {
-        if (!cfg.clQQ) {
-          TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_QQ.value, bc.timestamp());
-          cfg.hcorrQQ = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCXY"));
-          cfg.hcorrQQx = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCX"));
-          cfg.hcorrQQy = reinterpret_cast<TProfile*>(hcorrList->FindObject("qAqCY"));
-          cfg.clQQ = true;
-        }
-        corrQQ = cfg.hcorrQQ->GetBinContent(cfg.hcorrQQ->FindBin(centrality));
-        corrQQx = cfg.hcorrQQx->GetBinContent(cfg.hcorrQQx->FindBin(centrality));
-        corrQQy = cfg.hcorrQQy->GetBinContent(cfg.hcorrQQy->FindBin(centrality));
+    if (cfgCCDBdir_centrality.value.empty() == false) {
+      if (!cfg.clCentrality) {
+        cfg.hCentrality = ccdb->getForTimeStamp<TH1D>(cfgCCDBdir_centrality.value, bc.timestamp());
+        cfg.clCentrality = true;
       }
+      spm.centWeight = cfg.hCentrality->GetBinContent(cfg.hCentrality->FindBin(spm.centrality));
+      if (spm.centWeight < 0)
+        LOGF(fatal, "Centrality weight cannot be negative.. abort for (%.2f)", spm.centrality);
+    }
 
-      double evPlaneRes = 1.;
-      if (cfgCCDBdir_SP.value.empty() == false) {
-        if (!cfg.clEvPlaneRes) {
-          cfg.hEvPlaneRes = ccdb->getForTimeStamp<TProfile>(cfgCCDBdir_SP.value, bc.timestamp());
-          cfg.clEvPlaneRes = true;
-        }
-        evPlaneRes = cfg.hEvPlaneRes->GetBinContent(cfg.hEvPlaneRes->FindBin(centrality));
-        if (evPlaneRes < 0)
-          LOGF(fatal, "<Cos(PsiA-PsiC)> > 0 for centrality %.2f! Cannot determine resolution.. Change centrality ranges!!!", centrality);
-        evPlaneRes = std::sqrt(evPlaneRes);
-      }
+    fillEventQA<kAfter>(collision, tracks);
 
-      double centWeight = 1.0;
-      if (cfgCCDBdir_centrality.value.empty() == false) {
-        if (!cfg.clCentrality) {
-          cfg.hCentrality = ccdb->getForTimeStamp<TH1D>(cfgCCDBdir_centrality.value, bc.timestamp());
-          cfg.clCentrality = true;
-        }
-        centWeight = cfg.hCentrality->GetBinContent(cfg.hCentrality->FindBin(centrality));
-        if (centWeight < 0)
-          LOGF(fatal, "Centrality weight cannot be negative.. abort for (%.2f)", centrality);
-      }
+    for (const auto& track : tracks) {
 
-      fillEventQA<kAfter>(collision, tracks, centWeight);
+      ParticleType trackPID = (cfgFillPID || cfgFillPIDQA) ? getTrackPID(track) : kUnidentified;
 
-      for (const auto& track : tracks) {
+      if (cfgFillPIDQA)
+        histos.fill(HIST("hPIDcounts"), trackPID, track.pt());
 
-        int trackPID = (cfgFillPID || cfgFillPIDQA) ? getTrackPID(track) : kUnidentified;
+      if (track.sign() == 0)
+        continue;
 
-        if (cfgFillPIDQA)
-          histos.fill(HIST("hPIDcounts"), trackPID, track.pt());
+      histos.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
 
-        float weff = 1., wacc = 1.;
-        float weffP = 1., waccP = 1.;
-        float weffN = 1., waccN = 1.;
+      spm.charge = ((track.sign() > 0)) ? kPositive : kNegative;
 
-        if (track.sign() == 0.0)
-          continue;
-
-        histos.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
-        bool pos = (track.sign() > 0) ? true : false;
-
-        if (cfgFillQABefore) {
-          fillAllQA<kBefore, kUnidentified>(track, vtxz, centrality, pos);
-
-          if (cfgFillPIDQA) {
-            switch (trackPID) {
-              case kPions:
-                fillAllQA<kBefore, kPions>(track, vtxz, centrality, pos);
-                break;
-              case kKaons:
-                fillAllQA<kBefore, kKaons>(track, vtxz, centrality, pos);
-                break;
-              case kProtons:
-                fillAllQA<kBefore, kProtons>(track, vtxz, centrality, pos);
-                break;
-            }
-          }
-        }
-
-        if (!trackSelected(track, field))
-          continue;
-
-        // constrain angle to 0 -> [0,0+2pi]
-        auto phi = RecoDecay::constrainAngle(track.phi(), 0);
-
-        // Fill NUA weights (last 0 is for Data see GFWWeights class (not a weight))
-        // ToDo: Add pi, ka, proton here!
-        if (cfgFillWeights) {
-          fWeights->fill(phi, track.eta(), vtxz, track.pt(), centrality, 0);
-          registry.fill(HIST("weights2D/hPhi_Eta_vz"), phi, track.eta(), vtxz, 1);
-        }
-        if (cfgFillWeightsPOS && pos) {
-          fWeightsPOS->fill(phi, track.eta(), vtxz, track.pt(), centrality, 0);
-          registry.fill(HIST("weights2D/hPhi_Eta_vz_positive"), phi, track.eta(), vtxz, 1);
-        }
-        if (cfgFillWeightsNEG && !pos) {
-          fWeightsNEG->fill(phi, track.eta(), vtxz, track.pt(), centrality, 0);
-          registry.fill(HIST("weights2D/hPhi_Eta_vz_negative"), phi, track.eta(), vtxz, 1);
-        }
-
-        // Set weff and wacc for inclusive, negative and positive hadrons
-        if (!setCurrentParticleWeights(kInclusive, weff, wacc, phi, track.eta(), track.pt(), vtxz))
-          continue;
-        if (pos && !setCurrentParticleWeights(kPositive, weffP, waccP, phi, track.eta(), track.pt(), vtxz))
-          continue;
-        if (!pos && !setCurrentParticleWeights(kNegative, weffN, waccN, phi, track.eta(), track.pt(), vtxz))
-          continue;
-
-        histos.fill(HIST("hTrackCount"), trackSel_ParticleWeights);
-
-        fillAllQA<kAfter, kUnidentified>(track, vtxz, centrality, pos, wacc, weff, waccP, weffP, waccN, weffN);
-
+      if (cfgFillQABefore) {
+        fillAllQA<kBefore, kUnidentified>(track);
         if (cfgFillPIDQA) {
           switch (trackPID) {
             case kPions:
-              fillAllQA<kAfter, kPions>(track, vtxz, centrality, pos, wacc, weff, waccP, weffP, waccN, weffN);
+              fillAllQA<kBefore, kPions>(track);
               break;
             case kKaons:
-              fillAllQA<kAfter, kKaons>(track, vtxz, centrality, pos, wacc, weff, waccP, weffP, waccN, weffN);
+              fillAllQA<kBefore, kKaons>(track);
               break;
             case kProtons:
-              fillAllQA<kAfter, kProtons>(track, vtxz, centrality, pos, wacc, weff, waccP, weffP, waccN, weffN);
+              fillAllQA<kBefore, kProtons>(track);
+              break;
+            default: /* do nothing */
               break;
           }
         }
+      }
 
-        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        auto ux = std::cos(cfgHarm * phi);
-        auto uy = std::sin(cfgHarm * phi);
+      if (!trackSelected(track, field))
+        continue;
 
-        auto uxMH = std::cos(cfgHarmMixed1 * phi);
-        auto uyMH = std::sin(cfgHarmMixed1 * phi);
-        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      // constrain angle to 0 -> [0,0+2pi]
+      auto phi = RecoDecay::constrainAngle(track.phi(), 0);
 
-        double vnA = std::cos(cfgHarm * (phi - psiA)) / evPlaneRes;
-        double vnC = std::cos(cfgHarm * (phi - psiC)) / evPlaneRes;
-        double vnFull = std::cos(cfgHarm * (phi - psiFull)) / evPlaneRes;
+      // Fill NUA weights (last 0 is for Data see GFWWeights class (not a weight))
+      // ToDo: Add pi, ka, proton here!
+      if (cfgFillWeights) {
+        fWeights->fill(phi, track.eta(), spm.vz, track.pt(), spm.centrality, 0);
+        registry.fill(HIST("weights2D/hPhi_Eta_vz"), phi, track.eta(), spm.vz, 1);
+      }
+      if (cfgFillWeightsPOS && spm.charge == kPositive) {
+        fWeightsPOS->fill(phi, track.eta(), spm.vz, track.pt(), spm.centrality, 0);
+        registry.fill(HIST("weights2D/hPhi_Eta_vz_positive"), phi, track.eta(), spm.vz, 1);
+      }
+      if (cfgFillWeightsNEG && spm.charge == kNegative) {
+        fWeightsNEG->fill(phi, track.eta(), spm.vz, track.pt(), spm.centrality, 0);
+        registry.fill(HIST("weights2D/hPhi_Eta_vz_negative"), phi, track.eta(), spm.vz, 1);
+      }
 
-        fillHistograms<kInclusive, kUnidentified>(track, wacc, weff, centWeight, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
+      // Set weff and wacc for inclusive, negative and positive hadrons
+      if (!setCurrentParticleWeights(kInclusive, kUnidentified, phi, track.eta(), track.pt(), vtxz))
+        continue;
+      if (!setCurrentParticleWeights(spm.charge, kUnidentified, phi, track.eta(), track.pt(), vtxz))
+        continue;
 
-        // NOTE: these are not the right wacc and weff!! Need to do for each particle species! This is just to test for now.
-        if (cfgFillPID) {
-          if (trackPID == kPions) {
-            fillHistograms<kInclusive, kPions>(track, wacc, weff, centWeight, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            if (pos)
-              fillHistograms<kPositive, kPions>(track, waccP, weffP, centWeight, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            else
-              fillHistograms<kNegative, kPions>(track, waccN, weffN, centWeight, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-          } else if (trackPID == kKaons) {
-            fillHistograms<kInclusive, kKaons>(track, wacc, weff, centWeight, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            if (pos)
-              fillHistograms<kPositive, kKaons>(track, waccP, weffP, centWeight, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            else
-              fillHistograms<kNegative, kKaons>(track, waccN, weffN, centWeight, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-          } else if (trackPID == kProtons) {
-            fillHistograms<kInclusive, kProtons>(track, wacc, weff, centWeight, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            if (pos)
-              fillHistograms<kPositive, kProtons>(track, waccP, weffP, centWeight, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-            else
-              fillHistograms<kNegative, kProtons>(track, waccN, weffN, centWeight, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-          }
+      histos.fill(HIST("hTrackCount"), trackSel_ParticleWeights);
+
+      fillAllQA<kAfter, kUnidentified>(track);
+      if (cfgFillPIDQA) {
+        switch (trackPID) {
+          case kPions:
+            fillAllQA<kAfter, kPions>(track);
+            break;
+          case kKaons:
+            fillAllQA<kAfter, kKaons>(track);
+            break;
+          case kProtons:
+            fillAllQA<kAfter, kProtons>(track);
+            break;
+          default: /* do nothing */
+            break;
         }
+      }
 
+      // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+      spm.ux = std::cos(cfgHarm * phi);
+      spm.uy = std::sin(cfgHarm * phi);
+
+      spm.uxMH = std::cos(cfgHarmMixed * phi);
+      spm.uyMH = std::sin(cfgHarmMixed * phi);
+      // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+      spm.vnA = std::cos(cfgHarm * (phi - psiA)) / evPlaneRes;
+      spm.vnC = std::cos(cfgHarm * (phi - psiC)) / evPlaneRes;
+      spm.vnFull = std::cos(cfgHarm * (phi - psiFull)) / evPlaneRes;
+
+      fillHistograms<kInclusive, kUnidentified>(track);
+
+      if (cfgFillChargeDependence) {
+        switch (spm.charge) {
+          case kPositive:
+            fillHistograms<kPositive, kUnidentified>(track);
+            break;
+          case kNegative:
+            fillHistograms<kNegative, kUnidentified>(track);
+            break;
+        }
+      }
+
+      if (cfgFillPID) {
+        switch (trackPID) {
+          case kPions:
+            fillHistograms<kInclusive, kPions>(track);
+            break;
+          case kKaons:
+            fillHistograms<kInclusive, kKaons>(track);
+            break;
+          case kProtons:
+            fillHistograms<kInclusive, kProtons>(track);
+            break;
+          default: /* do nothing */
+            break;
+        }
         if (cfgFillChargeDependence) {
-          if (pos) {
-            fillHistograms<kPositive, kUnidentified>(track, waccP, weffP, centWeight, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
-          } else {
-            fillHistograms<kNegative, kUnidentified>(track, waccN, weffN, centWeight, ux, uy, uxMH, uyMH, qxA, qyA, qxC, qyC, corrQQx, corrQQy, corrQQ, vnA, vnC, vnFull, centrality);
+          switch (spm.charge) {
+            case kPositive: {
+              switch (trackPID) {
+                case kPions:
+                  fillHistograms<kPositive, kPions>(track);
+                  break;
+                case kKaons:
+                  fillHistograms<kPositive, kKaons>(track);
+                  break;
+                case kProtons:
+                  fillHistograms<kPositive, kProtons>(track);
+                  break;
+                default: /* do nothing */
+                  break;
+              }
+              break;
+            }
+            case kNegative: {
+              switch (trackPID) {
+                case kPions:
+                  fillHistograms<kNegative, kPions>(track);
+                  break;
+                case kKaons:
+                  fillHistograms<kNegative, kKaons>(track);
+                  break;
+                case kProtons:
+                  fillHistograms<kNegative, kProtons>(track);
+                  break;
+                default: /* do nothing */
+                  break;
+              }
+              break;
+            }
           }
         }
-      } // end of track loop
-    } // end of collision isSelected loop
+      } // end of fillPID
+
+    } // end of track loop
   }
 
   PROCESS_SWITCH(FlowSP, processData, "Process analysis for non-derived data", true);
@@ -1351,16 +1407,16 @@ struct FlowSP {
     int standardMagField = 99999;
     auto field = (cfgMagField == standardMagField) ? getMagneticField(bc.timestamp()) : cfgMagField;
 
-    double vtxz = collision.posZ();
-    float centrality = collision.centFT0C();
+    spm.vz = collision.posZ();
+    spm.centrality = collision.centFT0C();
     if (cfgCentFT0Cvariant1)
-      centrality = collision.centFT0CVariant1();
+      spm.centrality = collision.centFT0CVariant1();
     if (cfgCentFT0M)
-      centrality = collision.centFT0M();
+      spm.centrality = collision.centFT0M();
     if (cfgCentFV0A)
-      centrality = collision.centFV0A();
+      spm.centrality = collision.centFV0A();
     if (cfgCentNGlobal)
-      centrality = collision.centNGlobal();
+      spm.centrality = collision.centNGlobal();
 
     if (cfgFillQABefore)
       fillEventQA<kBefore>(collision, filteredTracks);
@@ -1368,7 +1424,7 @@ struct FlowSP {
     if (!eventSelected(collision, filteredTracks.size()))
       return;
 
-    if (centrality > cfgCentMax || centrality < cfgCentMin)
+    if (spm.centrality > cfgCentMax || spm.centrality < cfgCentMin)
       return;
 
     histos.fill(HIST("hEventCount"), evSel_CentCuts);
@@ -1380,8 +1436,8 @@ struct FlowSP {
 
     fillEventQA<kAfter>(collision, filteredTracks);
 
-    registry.fill(HIST("trackMCReco/hTrackSize_unFiltered"), tracks.size(), centrality);
-    registry.fill(HIST("trackMCReco/hTrackSize_Filtered"), filteredTracks.size(), centrality);
+    registry.fill(HIST("trackMCReco/hTrackSize_unFiltered"), tracks.size(), spm.centrality);
+    registry.fill(HIST("trackMCReco/hTrackSize_Filtered"), filteredTracks.size(), spm.centrality);
 
     for (const auto& track : filteredTracks) {
       auto mcParticle = track.mcParticle();
@@ -1389,28 +1445,27 @@ struct FlowSP {
         continue;
       histos.fill(HIST("hTrackCount"), trackSel_ZeroCharge);
 
-      fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode(), centrality);
-      fillPrimaryHistos<kBefore>(mcParticle, centrality);
+      fillMCPtHistos<kBefore, kReco>(track, mcParticle.pdgCode());
+      fillPrimaryHistos<kBefore>(mcParticle);
 
       if (!mcParticle.isPhysicalPrimary())
         continue;
 
-      bool pos = (track.sign() > 0) ? true : false;
+      spm.charge = (track.sign() > 0) ? kPositive : kNegative;
 
       // This neglects PID (for now) later use getPID like in data.
       if (cfgFillQABefore) {
-        fillAllQA<kBefore, kUnidentified>(track, vtxz, centrality, pos);
-
+        fillAllQA<kBefore, kUnidentified>(track);
         if (cfgFillPIDQA) {
           switch (std::abs(mcParticle.pdgCode())) {
-            case kPions:
-              fillAllQA<kBefore, kPions>(track, vtxz, centrality, pos);
+            case kPiPlus:
+              fillAllQA<kBefore, kPions>(track);
               break;
-            case kKaons:
-              fillAllQA<kBefore, kKaons>(track, vtxz, centrality, pos);
+            case kKPlus:
+              fillAllQA<kBefore, kKaons>(track);
               break;
-            case kProtons:
-              fillAllQA<kBefore, kProtons>(track, vtxz, centrality, pos);
+            case kProton:
+              fillAllQA<kBefore, kProtons>(track);
               break;
           }
         }
@@ -1419,25 +1474,25 @@ struct FlowSP {
       if (!trackSelected(track, field))
         continue;
 
-      fillMCPtHistos<kAfter, kReco>(track, mcParticle.pdgCode(), centrality);
+      fillMCPtHistos<kAfter, kReco>(track, mcParticle.pdgCode());
 
-      fillAllQA<kAfter, kUnidentified>(track, vtxz, centrality, pos);
+      fillAllQA<kAfter, kUnidentified>(track);
 
       if (cfgFillPIDQA) {
         switch (std::abs(mcParticle.pdgCode())) {
           case kPions:
-            fillAllQA<kAfter, kPions>(track, vtxz, centrality, pos);
+            fillAllQA<kAfter, kPions>(track);
             break;
           case kKaons:
-            fillAllQA<kAfter, kKaons>(track, vtxz, centrality, pos);
+            fillAllQA<kAfter, kKaons>(track);
             break;
           case kProtons:
-            fillAllQA<kAfter, kProtons>(track, vtxz, centrality, pos);
+            fillAllQA<kAfter, kProtons>(track);
             break;
         }
       }
 
-      fillPrimaryHistos<kAfter>(mcParticle, centrality);
+      fillPrimaryHistos<kAfter>(mcParticle);
 
     } // end of track loop
   }
@@ -1447,7 +1502,7 @@ struct FlowSP {
   {
 
     for (const auto& mcCollision : mcCollisions) {
-      float centrality = -1;
+      spm.centrality = -1;
       bool colSelected = true;
 
       // get McParticles which belong to mccollision
@@ -1466,15 +1521,15 @@ struct FlowSP {
 
         auto filteredTrackSlice = filteredTracks.sliceBy(trackPerCollision, col.globalIndex());
 
-        centrality = col.centFT0C();
+        spm.centrality = col.centFT0C();
         if (cfgCentFT0Cvariant1)
-          centrality = col.centFT0CVariant1();
+          spm.centrality = col.centFT0CVariant1();
         if (cfgCentFT0M)
-          centrality = col.centFT0M();
+          spm.centrality = col.centFT0M();
         if (cfgCentFV0A)
-          centrality = col.centFV0A();
+          spm.centrality = col.centFV0A();
         if (cfgCentNGlobal)
-          centrality = col.centNGlobal();
+          spm.centrality = col.centNGlobal();
 
         if (cfgFillQABefore)
           fillEventQA<kBefore>(col, filteredTrackSlice);
@@ -1488,7 +1543,7 @@ struct FlowSP {
           continue;
         }
 
-        if (centrality > cfgCentMax || centrality < cfgCentMin) {
+        if (spm.centrality > cfgCentMax || spm.centrality < cfgCentMin) {
           colSelected = false;
           continue;
         }
@@ -1507,29 +1562,24 @@ struct FlowSP {
         if (!particle.isPhysicalPrimary())
           continue;
 
-        int charge = 0;
-
         auto pdgCode = particle.pdgCode();
         auto pdgInfo = pdg->GetParticle(pdgCode);
-        if (pdgInfo != nullptr) {
-          charge = pdgInfo->Charge();
-        }
 
-        if (std::fabs(charge) < 1)
+        if (std::abs(pdgInfo->Charge()) < 1)
           continue;
+
+        spm.charge = (pdgInfo->Charge() > 0) ? kPositive : kNegative;
 
         int minVal = 100;
-        if (cfgFilterLeptons && std::fabs(pdgCode) < minVal) {
+        if (cfgFilterLeptons && std::abs(pdgCode) < minVal) {
           continue;
         }
 
-        bool pos = (charge > 0) ? true : false;
-
-        fillMCPtHistos<kBefore, kGen>(particle, pdgCode, centrality);
+        fillMCPtHistos<kBefore, kGen>(particle, pdgCode);
 
         registry.fill(HIST("trackMCGen/before/incl/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
 
-        if (pos) {
+        if (spm.charge == kPositive) {
           registry.fill(HIST("trackMCGen/before/pos/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
         } else {
           registry.fill(HIST("trackMCGen/before/neg/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
@@ -1538,11 +1588,11 @@ struct FlowSP {
         if (particle.eta() < -cfgTrackSelsEta || particle.eta() > cfgTrackSelsEta || particle.pt() < cfgTrackSelsPtmin || particle.pt() > cfgTrackSelsPtmax)
           continue;
 
-        fillMCPtHistos<kAfter, kGen>(particle, pdgCode, centrality);
+        fillMCPtHistos<kAfter, kGen>(particle, pdgCode);
 
         registry.fill(HIST("trackMCGen/after/incl/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
 
-        if (pos) {
+        if (spm.charge == kPositive) {
           registry.fill(HIST("trackMCGen/after/pos/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);
         } else {
           registry.fill(HIST("trackMCGen/after/neg/phi_eta_vtxZ_gen"), particle.phi(), particle.eta(), vtxz);

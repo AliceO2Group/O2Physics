@@ -245,9 +245,12 @@ struct qaEventTrack {
     histos.add("Events/nContrib", "", kTH1D, {axisVertexNumContrib});
     histos.add("Events/nContribVsFilteredMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribVsMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
+    histos.add("Events/nContribVsAtLeastITSMult", "", kTH2D, {axisVertexNumContrib, axisTrackMultiplicity});
     histos.add("Events/nContribWithTOFvsWithTRD", ";PV contrib. with TOF; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
     histos.add("Events/nContribAllvsWithTRD", ";PV contrib. all; PV contrib. with TRD;", kTH2D, {axisVertexNumContrib, axisVertexNumContrib});
     histos.add("Events/vertexChi2", ";#chi^{2}", kTH1D, {{100, 0, 100}});
+    histos.add("Events/vertexChi2OvernContrib", ";#chi^{2} / n contrib.", kTH1D, {{100, 0, 100}});
+    histos.add("Events/vertexChi2VsnContrib", ";#chi^{2};n contrib.", kTH2D, {{100, 0, 100}, axisVertexNumContrib});
 
     histos.add("Events/covXX", ";Cov_{xx} [cm^{2}]", kTH1D, {axisVertexCov});
     histos.add("Events/covXY", ";Cov_{xy} [cm^{2}]", kTH1D, {axisVertexCov});
@@ -1286,11 +1289,15 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
   }
 
   int nFilteredTracks = 0;
+  int atLeastITSTracks = 0;
   for (const auto& track : tracks) {
     if (checkOnlyPVContributor && !track.isPVContributor()) {
       continue;
     }
     histos.fill(HIST("Tracks/selection"), 1.f);
+    if (track.hasITS()) {
+      atLeastITSTracks++;
+    }
     if (!isSelectedTrack<IS_MC>(track)) {
       continue;
     }
@@ -1437,7 +1444,10 @@ void qaEventTrack::fillRecoHistogramsGroupedTracks(const C& collision, const T& 
   histos.fill(HIST("Events/nContrib"), collision.numContrib());
   histos.fill(HIST("Events/nContribVsFilteredMult"), collision.numContrib(), nFilteredTracks);
   histos.fill(HIST("Events/nContribVsMult"), collision.numContrib(), tracksUnfiltered.size());
+  histos.fill(HIST("Events/nContribVsAtLeastITSMult"), collision.numContrib(), atLeastITSTracks);
   histos.fill(HIST("Events/vertexChi2"), collision.chi2());
+  histos.fill(HIST("Events/vertexChi2OvernContrib"), collision.chi2() / collision.numContrib());
+  histos.fill(HIST("Events/vertexChi2VsnContrib"), collision.chi2(), collision.numContrib());
 
   histos.fill(HIST("Events/covXX"), collision.covXX());
   histos.fill(HIST("Events/covXY"), collision.covXY());
