@@ -10,7 +10,7 @@
 // or submit itself to any jurisdiction.
 //
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
-//     Lambdakzero PID
+//    Strangeness TOF PID
 //  *+-+*+-+*+-+*+-+*+-+*+-+*
 //
 /// \author Nicolò Jacazio
@@ -162,23 +162,23 @@ struct strangenesstofpid {
 
   // for n-sigma calibration
   bool nSigmaCalibLoaded;
-  TList* nSigmaCalibObjects;
-  TH1 *hMeanPosLaPi, *hSigmaPosLaPi;
-  TH1 *hMeanPosLaPr, *hSigmaPosLaPr;
-  TH1 *hMeanNegLaPi, *hSigmaNegLaPi;
-  TH1 *hMeanNegLaPr, *hSigmaNegLaPr;
-  TH1 *hMeanPosK0Pi, *hSigmaPosK0Pi;
-  TH1 *hMeanNegK0Pi, *hSigmaNegK0Pi;
-  TH1 *hMeanPosXiPi, *hSigmaPosXiPi;
-  TH1 *hMeanPosXiPr, *hSigmaPosXiPr;
-  TH1 *hMeanNegXiPi, *hSigmaNegXiPi;
-  TH1 *hMeanNegXiPr, *hSigmaNegXiPr;
-  TH1 *hMeanBachXiPi, *hSigmaBachXiPi;
-  TH1 *hMeanPosOmPi, *hSigmaPosOmPi;
-  TH1 *hMeanPosOmPr, *hSigmaPosOmPr;
-  TH1 *hMeanNegOmPi, *hSigmaNegOmPi;
-  TH1 *hMeanNegOmPr, *hSigmaNegOmPr;
-  TH1 *hMeanBachOmKa, *hSigmaBachOmKa;
+  TList* nSigmaCalibObjects = nullptr;
+  TH1 *hMeanPosLaPi = nullptr, *hSigmaPosLaPi = nullptr;
+  TH1 *hMeanPosLaPr = nullptr, *hSigmaPosLaPr = nullptr;
+  TH1 *hMeanNegLaPi = nullptr, *hSigmaNegLaPi = nullptr;
+  TH1 *hMeanNegLaPr = nullptr, *hSigmaNegLaPr = nullptr;
+  TH1 *hMeanPosK0Pi = nullptr, *hSigmaPosK0Pi = nullptr;
+  TH1 *hMeanNegK0Pi = nullptr, *hSigmaNegK0Pi = nullptr;
+  TH1 *hMeanPosXiPi = nullptr, *hSigmaPosXiPi = nullptr;
+  TH1 *hMeanPosXiPr = nullptr, *hSigmaPosXiPr = nullptr;
+  TH1 *hMeanNegXiPi = nullptr, *hSigmaNegXiPi = nullptr;
+  TH1 *hMeanNegXiPr = nullptr, *hSigmaNegXiPr = nullptr;
+  TH1 *hMeanBachXiPi = nullptr, *hSigmaBachXiPi = nullptr;
+  TH1 *hMeanPosOmPi = nullptr, *hSigmaPosOmPi = nullptr;
+  TH1 *hMeanPosOmPr = nullptr, *hSigmaPosOmPr = nullptr;
+  TH1 *hMeanNegOmPi = nullptr, *hSigmaNegOmPi = nullptr;
+  TH1 *hMeanNegOmPr = nullptr, *hSigmaNegOmPr = nullptr;
+  TH1 *hMeanBachOmKa = nullptr, *hSigmaBachOmKa = nullptr;
 
   int mRunNumber;
   float d_bz;
@@ -191,7 +191,7 @@ struct strangenesstofpid {
                  kNEnums };
 
   /// function to calculate track length of this track up to a certain segment of a detector
-  /// to be used internally in another funcrtion that calculates length until it finds the proper one
+  /// to be used internally in another function that calculates length until it finds the proper one
   /// warning: this could be optimised further for speed
   /// \param track the input track
   /// \param x1 x of the first point of the detector segment
@@ -1169,7 +1169,13 @@ struct strangenesstofpid {
       return;
     }
     auto firstTOFPID = dauTrackTOFPIDs.rawIteratorAt(0);
-    bool isNewTOFFOrmat = firstTOFPID.straCollisionId() < 0 ? false : true;
+    bool isNewTOFFormat = firstTOFPID.straCollisionId() < 0 ? false : true;
+
+    LOGF(info, "Processing derived data. Is this the new TOF info format? %i", isNewTOFFormat);
+
+    if (!isNewTOFFormat && calculationMethod.value > 0) {
+      LOGF(fatal, "Using the old derived data format with the new calculation method is not viable due to lack of needed info! Crashing.");
+    }
 
     // Fire up CCDB with first collision in record. If no collisions, bypass
     if (useCustomRunNumber || collisions.size() < 1) {
@@ -1182,7 +1188,7 @@ struct strangenesstofpid {
     // hold indices
     std::vector<int> tofIndices(dauTrackTable.size(), -1);
 
-    if (isNewTOFFOrmat) {
+    if (isNewTOFFormat) {
       // re-index
       for (const auto& dauTrackTOFPID : dauTrackTOFPIDs) {
         tofIndices[dauTrackTOFPID.dauTrackExtraId()] = dauTrackTOFPID.globalIndex();
