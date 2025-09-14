@@ -180,7 +180,7 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 
   LOGF(info, "Event selection with forced Run 2 mode engaging in unchecked mode.");
   LOGF(info, "To be improved once metadata enabling in defineDataProcessing is worked out.");
-  
+
   // force Run 2 mode
   return WorkflowSpec{adaptAnalysisTask<eventselectionRun2>(cfgc)};
 }
