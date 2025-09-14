@@ -13,26 +13,31 @@
 /// \author sourav kundu
 /// \since 02/11/2023
 
+#include "PWGLF/DataModel/ReducedDoublePhiTables.h"
+
+#include "Common/Core/trackUtilities.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
 #include <Framework/Configurable.h>
-#include <TLorentzVector.h>
+
 #include <Math/GenVector/Boost.h>
-#include <Math/Vector4D.h>
 #include <Math/Vector3D.h>
+#include <Math/Vector4D.h>
+#include <TLorentzVector.h>
 #include <TMath.h>
+#include <TVector2.h>
+
 #include <fairlogger/Logger.h>
+
 #include <iostream>
 #include <iterator>
 #include <string>
 #include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/StepTHn.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGLF/DataModel/ReducedDoublePhiTables.h"
-#include "CommonConstants/PhysicsConstants.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -630,6 +635,207 @@ struct doublephimeson {
     }
   }
   PROCESS_SWITCH(doublephimeson, processopti, "Process Optimized same event", false);
+
+  void processopti2(aod::RedPhiEvents::iterator const& collision, aod::PhiTracks const& phitracks)
+  {
+    if (additionalEvsel && (collision.numPos() < 2 || collision.numNeg() < 2)) {
+      return;
+    }
+
+    // === Helpers ===
+    // PDG phi mass (centralized constant, easy to vary for systematics)
+    constexpr double mPhiPDG = 1.019461; // GeV/c^2
+
+    // ΔR with proper Δφ wrapping (−π, π]
+    const auto deltaR = [](double phi1, double eta1, double phi2, double eta2) {
+      const double dphi = TVector2::Phi_mpi_pi(phi1 - phi2);
+      const double deta = eta1 - eta2;
+      return std::sqrt(dphi * dphi + deta * deta);
+    };
+
+    // Combined mass offset from PDG (tie-breaker metric)
+    const auto deltam = [=](double m1, double m2) {
+      return std::sqrt((m1 - mPhiPDG) * (m1 - mPhiPDG) + (m2 - mPhiPDG) * (m2 - mPhiPDG));
+    };
+
+    // Anti-merging/duplication veto:
+    // Require same-sign kaons from the two φ's to be separated in (η,φ).
+    // This protects against split/merged tracks and near-duplicate topologies.
+    const auto passDaughterDR = [&](const ROOT::Math::PtEtaPhiMVector& kplusA,
+                                    const ROOT::Math::PtEtaPhiMVector& kplusB,
+                                    const ROOT::Math::PtEtaPhiMVector& kminusA,
+                                    const ROOT::Math::PtEtaPhiMVector& kminusB) {
+      const double dRkplus = deltaR(kplusA.Phi(), kplusA.Eta(), kplusB.Phi(), kplusB.Eta());
+      const double dRkminus = deltaR(kminusA.Phi(), kminusA.Eta(), kminusB.Phi(), kminusB.Eta());
+      return (dRkplus > daughterDeltaR) && (dRkminus > daughterDeltaR);
+      // If later needed, make pT-aware:
+      // const double thr = std::max(0.01, daughterDeltaR - 0.002 * std::min(10.0, exoticPt));
+      // return (dRkplus > thr) && (dRkminus > thr);
+    };
+
+    // === Phi multiplicity (uses PID1 for d1, PID2 for d2) ===
+    int phimult = 0;
+    for (auto const& t : phitracks) {
+      if (t.phiMass() < minPhiMass1 || t.phiMass() > maxPhiMass1)
+        continue;
+      const double kpluspt = std::hypot(t.phid1Px(), t.phid1Py());
+      const double kminuspt = std::hypot(t.phid2Px(), t.phid2Py());
+      if (kpluspt > maxKaonPt)
+        continue;
+      if (kminuspt > maxKaonPt)
+        continue;
+      if (!selectionPID(t.phid1TPC(), t.phid1TOF(), t.phid1TOFHit(), strategyPID1, kpluspt))
+        continue; // d1 → PID1
+      if (!selectionPID(t.phid2TPC(), t.phid2TOF(), t.phid2TOFHit(), strategyPID2, kminuspt))
+        continue; // d2 → PID2
+      ++phimult;
+    }
+
+    // === Collect candidates first ===
+    std::vector<ROOT::Math::PtEtaPhiMVector> exoticres, phi1v, phi2v, kplus1, kplus2, kminus1, kminus2;
+    std::vector<int> d1id, d2id, d3id, d4id;
+
+    const auto n = phitracks.size();
+    exoticres.reserve(n);
+    phi1v.reserve(n);
+    phi2v.reserve(n);
+    kplus1.reserve(n);
+    kplus2.reserve(n);
+    kminus1.reserve(n);
+    kminus2.reserve(n);
+    d1id.reserve(n);
+    d2id.reserve(n);
+    d3id.reserve(n);
+    d4id.reserve(n);
+
+    for (auto const& t1 : phitracks) {
+      // Per-φ selection for the first φ
+      const double kplus1pt = std::hypot(t1.phid1Px(), t1.phid1Py());
+      const double kminus1pt = std::hypot(t1.phid2Px(), t1.phid2Py());
+      if (kplus1pt > maxKaonPt)
+        continue;
+      if (kminus1pt > maxKaonPt)
+        continue;
+      if (!selectionPID(t1.phid1TPC(), t1.phid1TOF(), t1.phid1TOFHit(), strategyPID1, kplus1pt))
+        continue;
+      if (!selectionPID(t1.phid2TPC(), t1.phid2TOF(), t1.phid2TOFHit(), strategyPID2, kminus1pt))
+        continue;
+
+      // Set vectors BEFORE QA fills
+      Phid1.SetXYZM(t1.phiPx(), t1.phiPy(), t1.phiPz(), t1.phiMass());
+      Phi1kaonplus.SetXYZM(t1.phid1Px(), t1.phid1Py(), t1.phid1Pz(), 0.493);
+      Phi1kaonminus.SetXYZM(t1.phid2Px(), t1.phid2Py(), t1.phid2Pz(), 0.493);
+
+      // PID QA
+      histos.fill(HIST("hnsigmaTPCTOFKaon"), t1.phid1TPC(), t1.phid1TOF(), kplus1pt);
+      histos.fill(HIST("hnsigmaTPCKaonPlus"), t1.phid1TPC(), kplus1pt);
+      histos.fill(HIST("hnsigmaTPCKaonMinus"), t1.phid2TPC(), kminus1pt);
+      histos.fill(HIST("hPhiMass"), Phid1.M(), Phid1.Pt());
+
+      const auto id1 = t1.index();
+
+      for (auto const& t2 : phitracks) {
+        const auto id2 = t2.index();
+        if (id2 <= id1)
+          continue; // unique unordered pairs
+
+        // Per-φ selection for the second φ
+        const double kplus2pt = std::hypot(t2.phid1Px(), t2.phid1Py());
+        const double kminus2pt = std::hypot(t2.phid2Px(), t2.phid2Py());
+        if (kplus2pt > maxKaonPt)
+          continue;
+        if (kminus2pt > maxKaonPt)
+          continue;
+        if (!selectionPID(t2.phid1TPC(), t2.phid1TOF(), t2.phid1TOFHit(), strategyPID1, kplus2pt))
+          continue;
+        if (!selectionPID(t2.phid2TPC(), t2.phid2TOF(), t2.phid2TOFHit(), strategyPID2, kminus2pt))
+          continue;
+
+        // Disallow shared same-sign daughters between the two φ's
+        if ((t1.phid1Index() == t2.phid1Index()) || (t1.phid2Index() == t2.phid2Index()))
+          continue;
+
+        Phid2.SetXYZM(t2.phiPx(), t2.phiPy(), t2.phiPz(), t2.phiMass());
+        Phi2kaonplus.SetXYZM(t2.phid1Px(), t2.phid1Py(), t2.phid1Pz(), 0.493);
+        Phi2kaonminus.SetXYZM(t2.phid2Px(), t2.phid2Py(), t2.phid2Pz(), 0.493);
+
+        // Mass windows
+        if (t1.phiMass() < minPhiMass1 || t1.phiMass() > maxPhiMass1)
+          continue;
+        if (t2.phiMass() < minPhiMass2 || t2.phiMass() > maxPhiMass2)
+          continue;
+
+        exotic = Phid1 + Phid2;
+        if (exotic.M() < minExoticMass || exotic.M() > maxExoticMass)
+          continue;
+
+        // Store candidate and bookkeeping
+        exoticres.emplace_back(exotic.Pt(), exotic.Eta(), exotic.Phi(), exotic.M());
+        phi1v.emplace_back(Phid1.Pt(), Phid1.Eta(), Phid1.Phi(), Phid1.M());
+        phi2v.emplace_back(Phid2.Pt(), Phid2.Eta(), Phid2.Phi(), Phid2.M());
+
+        kplus1.emplace_back(Phi1kaonplus.Pt(), Phi1kaonplus.Eta(), Phi1kaonplus.Phi(), 0.493);
+        kminus1.emplace_back(Phi1kaonminus.Pt(), Phi1kaonminus.Eta(), Phi1kaonminus.Phi(), 0.493);
+        kplus2.emplace_back(Phi2kaonplus.Pt(), Phi2kaonplus.Eta(), Phi2kaonplus.Phi(), 0.493);
+        kminus2.emplace_back(Phi2kaonminus.Pt(), Phi2kaonminus.Eta(), Phi2kaonminus.Phi(), 0.493);
+
+        d1id.push_back(t1.phid1Index());
+        d2id.push_back(t2.phid1Index());
+        d3id.push_back(t1.phid2Index());
+        d4id.push_back(t2.phid2Index());
+      }
+    }
+
+    if (exoticres.empty())
+      return;
+
+    // === Special handling if exactly two candidates were built ===
+    if (exoticres.size() == 2) {
+      const int i0 = 0, i1 = 1;
+
+      const bool sameFour =
+        ((d1id[i0] == d1id[i1] || d1id[i0] == d2id[i1]) &&
+         (d2id[i0] == d1id[i1] || d2id[i0] == d2id[i1]) &&
+         (d3id[i0] == d3id[i1] || d3id[i0] == d4id[i1]) &&
+         (d4id[i0] == d3id[i1] || d4id[i0] == d4id[i1]));
+
+      const double deltam0 = deltam(phi1v[i0].M(), phi2v[i0].M());
+      const double deltam1 = deltam(phi1v[i1].M(), phi2v[i1].M());
+      const bool dr0 = passDaughterDR(kplus1[i0], kplus2[i0], kminus1[i0], kminus2[i0]);
+      const bool dr1 = passDaughterDR(kplus1[i1], kplus2[i1], kminus1[i1], kminus2[i1]);
+
+      if (sameFour) {
+        // Choose the candidate closer to mφ (if it passes ΔR)
+        int keep = (deltam1 < deltam0 && dr1) ? i1 : (dr0 ? i0 : -1);
+        if (keep >= 0) {
+          const double dR = deltaR(phi1v[keep].Phi(), phi1v[keep].Eta(), phi2v[keep].Phi(), phi2v[keep].Eta());
+          const double dm = (keep == i0) ? deltam0 : deltam1;
+          histos.fill(HIST("SEMassUnlike"), exoticres[keep].M(), exoticres[keep].Pt(), dR, dm, phimult);
+        }
+      } else {
+        // Independent candidates → fill both (respect ΔR)
+        if (dr0) {
+          const double dR0 = deltaR(phi1v[i0].Phi(), phi1v[i0].Eta(), phi2v[i0].Phi(), phi2v[i0].Eta());
+          histos.fill(HIST("SEMassUnlike"), exoticres[i0].M(), exoticres[i0].Pt(), dR0, deltam0, phimult);
+        }
+        if (dr1) {
+          const double dR1 = deltaR(phi1v[i1].Phi(), phi1v[i1].Eta(), phi2v[i1].Phi(), phi2v[i1].Eta());
+          histos.fill(HIST("SEMassUnlike"), exoticres[i1].M(), exoticres[i1].Pt(), dR1, deltam1, phimult);
+        }
+      }
+      return;
+    }
+
+    // === General case: fill each candidate once (respect ΔR) ===
+    for (size_t i = 0; i < exoticres.size(); ++i) {
+      if (!passDaughterDR(kplus1[i], kplus2[i], kminus1[i], kminus2[i]))
+        continue;
+      const double dR = deltaR(phi1v[i].Phi(), phi1v[i].Eta(), phi2v[i].Phi(), phi2v[i].Eta());
+      const double dm = deltam(phi1v[i].M(), phi2v[i].M());
+      histos.fill(HIST("SEMassUnlike"), exoticres[i].M(), exoticres[i].Pt(), dR, dm, phimult);
+    }
+  }
+  PROCESS_SWITCH(doublephimeson, processopti2, "Process Optimized same event", false);
 
   SliceCache cache;
   using BinningTypeVertexContributor = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
