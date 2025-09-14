@@ -609,11 +609,11 @@ struct he3HadronFemto {
 
     he3Hadcand.signHe3 = trackHe3.sign();
     he3Hadcand.signHad = trackHad.sign();
-    if(!settingEnableDCAfitter){
-       he3Hadcand.dcaxyHe3 = trackHe3.dcaXY();
-       he3Hadcand.dcaxyHad = trackHad.dcaXY();
-       he3Hadcand.dcazHe3 = trackHe3.dcaZ();
-       he3Hadcand.dcazHad = trackHad.dcaZ();
+    if (!settingEnableDCAfitter) {
+      he3Hadcand.dcaxyHe3 = trackHe3.dcaXY();
+      he3Hadcand.dcaxyHad = trackHad.dcaXY();
+      he3Hadcand.dcazHe3 = trackHe3.dcaZ();
+      he3Hadcand.dcazHad = trackHad.dcaZ();
     } else {
       auto trackCovHe3 = getTrackParCov(trackHe3);
       auto trackCovHad = getTrackParCov(trackHad);
@@ -626,7 +626,7 @@ struct he3HadronFemto {
       he3Hadcand.dcazHad = dcaInfo[1];
       he3Hadcand.dcaPair = std::sqrt(std::abs(mFitter.getChi2AtPCACandidate()));
     }
-   
+
     he3Hadcand.tpcSignalHe3 = trackHe3.tpcSignal();
     bool heliumPID = trackHe3.pidForTracking() == o2::track::PID::Helium3 || trackHe3.pidForTracking() == o2::track::PID::Alpha;
     float correctedTPCinnerParamHe3 = (heliumPID && settingCompensatePIDinTracking) ? trackHe3.tpcInnerParam() / 2.f : trackHe3.tpcInnerParam();
