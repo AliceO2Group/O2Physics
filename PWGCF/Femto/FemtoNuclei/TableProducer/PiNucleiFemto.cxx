@@ -10,13 +10,14 @@
 // or submit itself to any jurisdiction.
 //
 
-/// \file PiDeuteronFemto.cxx
-/// \brief Analysis task for Deuteron-Pion femto analysis
+/// \file PiNucleiFemto.cxx
+/// \brief Analysis task for Nuclei-Pion femto analysis
 /// \author CMY
 /// \date 2025-04-10
 
-#include "PWGCF/Femto/DataModel/PionDeuteronTables.h"
+#include "PWGCF/Femto/FemtoNuclei/DataModel/PionNucleiTables.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/DataModel/LFHypernucleiTables.h"
 #include "PWGLF/Utils/svPoolCreator.h"
 
 #include "Common/Core/PID/PIDTOF.h"
@@ -90,61 +91,62 @@ enum Selections {
 
 } // namespace
 
-struct PiDecandidate {
+struct PiNucandidate {
 
-  float recoPtDe() const { return signDe * std::hypot(momDe[0], momDe[1]); }
-  float recoPhiDe() const { return std::atan2(momDe[1], momDe[0]); }
-  float recoEtaDe() const { return std::asinh(momDe[2] / std::abs(recoPtDe())); }
+  float recoPtNu() const { return signNu * std::hypot(momNu[0], momNu[1]); }
+  float recoPhiNu() const { return std::atan2(momNu[1], momNu[0]); }
+  float recoEtaNu() const { return std::asinh(momNu[2] / std::abs(recoPtNu())); }
   float recoPtPi() const { return signPi * std::hypot(momPi[0], momPi[1]); }
   float recoPhiPi() const { return std::atan2(momPi[1], momPi[0]); }
   float recoEtaPi() const { return std::asinh(momPi[2] / std::abs(recoPtPi())); }
 
-  std::array<float, 3> momDe = {99.f, 99.f, 99.f};
+  std::array<float, 3> momNu = {99.f, 99.f, 99.f};
   std::array<float, 3> momPi = {99.f, 99.f, 99.f};
 
-  float signDe = 1.f;
+  float signNu = 1.f;
   float signPi = 1.f;
   float invMass = -10.f;
-  float dcaxyDe = -10.f;
-  float dcazDe = -10.f;
+  float dcaxyNu = -10.f;
+  float dcazNu = -10.f;
   float dcaxyPi = -10.f;
   float dcazPi = -10.f;
 
-  uint16_t tpcSignalDe = 0u;
+  uint16_t tpcSignalNu = 0u;
   uint16_t tpcSignalPi = 0u;
-  float momDeTPC = -99.f;
+  float momNuTPC = -99.f;
   float momPiTPC = -99.f;
-  uint8_t nTPCClustersDe = 0u;
-  uint8_t sharedClustersDe = 0u;
+  uint8_t nTPCClustersNu = 0u;
+  uint8_t sharedClustersNu = 0u;
   uint8_t sharedClustersPi = 0u;
-  float chi2TPCDe = -10.f;
+  float chi2TPCNu = -10.f;
   float chi2TPCPi = -10.f;
-  float nSigmaDe = -10.f;
+  float nSigmaNu = -10.f;
   float nSigmaPi = -10.f;
-  uint32_t pidTrkDe = 0xFFFFF; // PID in tracking
+  uint32_t pidTrkNu = 0xFFFFF; // PID in tracking
   uint32_t pidTrkPi = 0xFFFFF;
-  float massTOFDe = -10;
+  float massTOFNu = -10;
   float massTOFPi = -10;
-  uint32_t itsClSizeDe = 0u;
+  uint32_t itsClSizeNu = 0u;
   uint32_t itsClSizePi = 0u;
 
-  uint8_t nClsItsDe = 0u;
+  uint8_t nClsItsNu = 0u;
   uint8_t nClsItsPi = 0u;
 
   bool isBkgUS = false; // unlike sign
   bool isBkgEM = false; // event mixing
 
-  int trackIDDe = -1;
+  int trackIDNu = -1;
   int trackIDPi = -1;
 
   // collision information
   int32_t collisionID = 0;
 };
 
-struct PiDeuteronFemto {
+struct PiNucleiFemto {
 
-  Produces<aod::PionDeuteronTable> mOutputDataTable;
-  Produces<aod::PionDeuteronMult> mOutputMultiplicityTable;
+  Produces<aod::PionNucleiTable> mOutputDataTable;
+  Produces<aod::PionHyperTable> mOutputHyperDataTable;
+  Produces<aod::PionNucleiMult> mOutputMultiplicityTable;
 
   // Selections
   Configurable<float> settingCutVertex{"settingCutVertex", 10.0f, "Accepted z-vertex range"};
@@ -199,6 +201,7 @@ struct PiDeuteronFemto {
   Configurable<int> settingMaterialCorrection{"settingMaterialCorrection", static_cast<int>(o2::base::Propagator::MatCorrType::USEMatCorrNONE), "Material correction type"};
 
   Preslice<TrackCandidates> mPerCol = aod::track::collisionId;
+  PresliceUnsorted<o2::aod::DataHypCandsWColl> hypPerCol = o2::aod::hyperrec::collisionId;
 
   // binning for EM background
   ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for multiplicity"};
@@ -213,6 +216,7 @@ struct PiDeuteronFemto {
   std::vector<int> mRecoCollisionIDs;
   std::vector<bool> mGoodCollisions;
   std::vector<SVCand> mTrackPairs;
+  std::vector<SVCand> mTrackHypPairs;
   o2::vertexing::DCAFitterN<2> mFitter;
 
   int mRunNumber;
@@ -228,31 +232,31 @@ struct PiDeuteronFemto {
      {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
      {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
      {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
-     {"hdcaxyDe", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-     {"hdcazDe", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-     {"hdcazDe_min", ";DCA_{z}-min (cm)", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
-     {"hNClsDeITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
+     {"hdcaxyNu", ";DCA_{xy} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hdcazNu", ";DCA_{z} (cm)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hdcazNu_min", ";DCA_{z}-min (cm)", {HistType::kTH1F, {{20, -1.0f, 1.0f}}}},
+     {"hNClsNuITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
      {"hNClsPiITS", ";N_{ITS} Cluster", {HistType::kTH1F, {{20, -10.0f, 10.0f}}}},
-     {"hDePitInvMass", "; M(De + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
-     {"hDePt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
+     {"hNuPitInvMass", "; M(Nu + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
+     {"hNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
      {"hPiPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
-     {"hDeEta", "eta distribution; #eta(De)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
+     {"hNuEta", "eta distribution; #eta(Nu)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hPiEta", "eta distribution; #eta(#pi)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
-     {"hDePhi", "phi distribution; phi(De)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
+     {"hNuPhi", "phi distribution; phi(Nu)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
      {"hPiPhi", "phi distribution; phi(#pi)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
-     {"h2dEdxDecandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
+     {"h2dEdxNucandidates", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
      {"h2dEdx", "dEdx distribution; #it{p} (GeV/#it{c}); dE/dx (a.u.)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {100, 0.0f, 2000.0f}}}},
-     {"h2NsigmaDeTPC", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
-     {"h2NsigmaDeComb", "NsigmaDe TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(De)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
+     {"h2NsigmaNuTPC", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaNuComb", "NsigmaNu TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(Nu)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
      {"h2NsigmaPiComb", "NsigmaPi TPCTOF comb distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{comb}(#pi)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {100, 0.0f, 5.0f}}}},
-     {"h2NsigmaDeTPC_preselection", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"h2NsigmaDeTPC_preselecComp", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-     {"h2NSigmaDeITS_preselection", "NsigmaDe ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} De", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
-     {"h2NSigmaDeITS", "NsigmaDe ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} De", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {120, -3.0f, 3.0f}}}},
+     {"h2NsigmaNuTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NsigmaNuTPC_preselecComp", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NSigmaNuITS_preselection", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}}}},
+     {"h2NSigmaNuITS", "NsigmaNu ITS distribution; signed #it{p}_{T} (GeV/#it{c}); n#sigma_{ITS} Nu", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {120, -3.0f, 3.0f}}}},
      {"h2NsigmaPiTPC", "NsigmaPi TPC distribution; #it{p}_{T}(GeV/#it{c}); n#sigma_{TPC}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-     {"h2NsigmaPiTPC_preselection", "NsigmaDe TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(De)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+     {"h2NsigmaPiTPC_preselection", "NsigmaNu TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(Nu)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
      {"h2NsigmaPiTOF", "NsigmaPi TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
-     {"h2NsigmaDeTOF", "NsigmaDe TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(De)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
+     {"h2NsigmaNuTOF", "NsigmaNu TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(Nu)", {HistType::kTH2F, {{200, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
      {"h2NsigmaPiTOF_preselection", "NsigmaPi TOF distribution; #iit{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(p)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
      {"hkStar_LS_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
@@ -450,8 +454,8 @@ struct PiDeuteronFemto {
       tpcNSigmaDe = candidate.tpcNSigmaDe();
     }
 
-    mQaRegistry.fill(HIST("h2NsigmaDeTPC_preselection"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
-    mQaRegistry.fill(HIST("h2NsigmaDeTPC_preselecComp"), candidate.sign() * candidate.pt(), candidate.tpcNSigmaDe());
+    mQaRegistry.fill(HIST("h2NsigmaNuTPC_preselection"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
+    mQaRegistry.fill(HIST("h2NsigmaNuTPC_preselecComp"), candidate.sign() * candidate.pt(), candidate.tpcNSigmaDe());
     if (std::abs(candidate.pt()) < settingCutDeptMin || std::abs(candidate.pt()) > settingCutDeptMax)
       return false;
     if (candidate.hasTOF() && candidate.tpcInnerParam() > settingCutPinMinTOFITSDe) {
@@ -460,10 +464,10 @@ struct PiDeuteronFemto {
       if (combNsigma > settingCutNsigmaTOFTPCDe) {
         return false;
       }
-      mQaRegistry.fill(HIST("h2dEdxDecandidates"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
-      mQaRegistry.fill(HIST("h2NsigmaDeComb"), candidate.sign() * candidate.pt(), combNsigma);
-      mQaRegistry.fill(HIST("h2NsigmaDeTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
-      mQaRegistry.fill(HIST("h2NsigmaDeTOF"), candidate.sign() * candidate.pt(), tofNSigmaDe);
+      mQaRegistry.fill(HIST("h2dEdxNucandidates"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
+      mQaRegistry.fill(HIST("h2NsigmaNuComb"), candidate.sign() * candidate.pt(), combNsigma);
+      mQaRegistry.fill(HIST("h2NsigmaNuTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
+      mQaRegistry.fill(HIST("h2NsigmaNuTOF"), candidate.sign() * candidate.pt(), tofNSigmaDe);
       return true;
     } else if (candidate.tpcInnerParam() <= settingCutPinMinTOFITSDe) {
       if (std::abs(tpcNSigmaDe) > settingCutNsigmaTPCDe) {
@@ -471,14 +475,14 @@ struct PiDeuteronFemto {
       }
       o2::aod::ITSResponse mResponseITS;
       auto itsnSigmaDe = mResponseITS.nSigmaITS<o2::track::PID::Deuteron>(candidate.itsClusterSizes(), candidate.p(), candidate.eta());
-      mQaRegistry.fill(HIST("h2NSigmaDeITS_preselection"), candidate.sign() * candidate.pt(), itsnSigmaDe);
+      mQaRegistry.fill(HIST("h2NSigmaNuITS_preselection"), candidate.sign() * candidate.pt(), itsnSigmaDe);
       if (std::abs(itsnSigmaDe) > settingCutNsigmaITSDe) {
         return false;
       }
-      mQaRegistry.fill(HIST("h2NsigmaDeTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
-      mQaRegistry.fill(HIST("h2NSigmaDeITS"), candidate.sign() * candidate.pt(), itsnSigmaDe);
-      // mQaRegistry.fill(HIST("h2NsigmaDeComb"), candidate.sign() * candidate.pt(), combNsigma);
-      mQaRegistry.fill(HIST("h2dEdxDecandidates"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
+      mQaRegistry.fill(HIST("h2NsigmaNuTPC"), candidate.sign() * candidate.pt(), tpcNSigmaDe);
+      mQaRegistry.fill(HIST("h2NSigmaNuITS"), candidate.sign() * candidate.pt(), itsnSigmaDe);
+      // mQaRegistry.fill(HIST("h2NsigmaNuComb"), candidate.sign() * candidate.pt(), combNsigma);
+      mQaRegistry.fill(HIST("h2dEdxNucandidates"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
       return true;
     }
     return false;
@@ -487,7 +491,7 @@ struct PiDeuteronFemto {
   // ==================================================================================================================
 
   template <typename Ttrack, typename Tcollisions, typename Ttracks>
-  bool fillCandidateInfo(const Ttrack& trackDe, const Ttrack& trackPi, const CollBracket& collBracket, const Tcollisions& collisions, PiDecandidate& piDecand, const Ttracks& /*trackTable*/, bool isMixedEvent)
+  bool fillCandidateInfo(const Ttrack& trackDe, const Ttrack& trackPi, const CollBracket& collBracket, const Tcollisions& collisions, PiNucandidate& piNucand, const Ttracks& /*trackTable*/, bool isMixedEvent)
   {
     const int numCoordinates = 3;
     if (!isMixedEvent) {
@@ -525,76 +529,144 @@ struct PiDeuteronFemto {
       if (!mGoodCollisions[collIdxMin]) {
         return false;
       }
-      piDecand.collisionID = collIdxMin;
+      piNucand.collisionID = collIdxMin;
     } else {
-      piDecand.collisionID = collBracket.getMin();
+      piNucand.collisionID = collBracket.getMin();
     }
 
-    piDecand.momDe = std::array{trackDe.px(), trackDe.py(), trackDe.pz()};
-    piDecand.momPi = std::array{trackPi.px(), trackPi.py(), trackPi.pz()};
+    piNucand.momNu = std::array{trackDe.px(), trackDe.py(), trackDe.pz()};
+    piNucand.momPi = std::array{trackPi.px(), trackPi.py(), trackPi.pz()};
     float invMass = 0;
-    invMass = RecoDecay::m(std::array{piDecand.momDe, piDecand.momPi}, std::array{o2::constants::physics::MassDeuteron, o2::constants::physics::MassPiPlus});
+    invMass = RecoDecay::m(std::array{piNucand.momNu, piNucand.momPi}, std::array{o2::constants::physics::MassDeuteron, o2::constants::physics::MassPiPlus});
     if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
       return false;
     }
-    float ptDePi = std::hypot(piDecand.momDe[0] + piDecand.momPi[0], piDecand.momDe[1] + piDecand.momPi[1]);
+    float ptDePi = std::hypot(piNucand.momNu[0] + piNucand.momPi[0], piNucand.momNu[1] + piNucand.momPi[1]);
     if (ptDePi < settingCutPtMinDePi) {
       return false;
     }
 
-    piDecand.signDe = trackDe.sign();
-    piDecand.signPi = trackPi.sign();
+    piNucand.signNu = trackDe.sign();
+    piNucand.signPi = trackPi.sign();
 
-    piDecand.dcaxyDe = trackDe.dcaXY();
-    piDecand.dcaxyPi = trackPi.dcaXY();
+    piNucand.dcaxyNu = trackDe.dcaXY();
+    piNucand.dcaxyPi = trackPi.dcaXY();
 
-    piDecand.dcazDe = trackDe.dcaZ();
-    piDecand.dcazPi = trackPi.dcaZ();
+    piNucand.dcazNu = trackDe.dcaZ();
+    piNucand.dcazPi = trackPi.dcaZ();
 
-    piDecand.tpcSignalDe = trackDe.tpcSignal();
-    piDecand.momDeTPC = trackDe.tpcInnerParam();
-    piDecand.tpcSignalPi = trackPi.tpcSignal();
-    piDecand.momPiTPC = trackPi.tpcInnerParam();
+    piNucand.tpcSignalNu = trackDe.tpcSignal();
+    piNucand.momNuTPC = trackDe.tpcInnerParam();
+    piNucand.tpcSignalPi = trackPi.tpcSignal();
+    piNucand.momPiTPC = trackPi.tpcInnerParam();
 
-    piDecand.nTPCClustersDe = trackDe.tpcNClsFound();
-    piDecand.nSigmaDe = computeNSigmaDe(trackDe);
-    piDecand.nSigmaPi = trackPi.tpcNSigmaPi();
+    piNucand.nTPCClustersNu = trackDe.tpcNClsFound();
+    piNucand.nSigmaNu = computeNSigmaDe(trackDe);
+    piNucand.nSigmaPi = trackPi.tpcNSigmaPi();
 
-    piDecand.chi2TPCDe = trackDe.tpcChi2NCl();
-    piDecand.chi2TPCPi = trackPi.tpcChi2NCl();
+    piNucand.chi2TPCNu = trackDe.tpcChi2NCl();
+    piNucand.chi2TPCPi = trackPi.tpcChi2NCl();
 
-    piDecand.pidTrkDe = trackDe.pidForTracking();
-    piDecand.pidTrkPi = trackPi.pidForTracking();
+    piNucand.pidTrkNu = trackDe.pidForTracking();
+    piNucand.pidTrkPi = trackPi.pidForTracking();
 
-    piDecand.itsClSizeDe = trackDe.itsClusterSizes();
-    piDecand.itsClSizePi = trackPi.itsClusterSizes();
+    piNucand.itsClSizeNu = trackDe.itsClusterSizes();
+    piNucand.itsClSizePi = trackPi.itsClusterSizes();
 
-    piDecand.nClsItsDe = trackDe.itsNCls();
-    piDecand.nClsItsPi = trackPi.itsNCls();
+    piNucand.nClsItsNu = trackDe.itsNCls();
+    piNucand.nClsItsPi = trackPi.itsNCls();
 
-    piDecand.sharedClustersDe = trackDe.tpcNClsShared();
-    piDecand.sharedClustersPi = trackPi.tpcNClsShared();
+    piNucand.sharedClustersNu = trackDe.tpcNClsShared();
+    piNucand.sharedClustersPi = trackPi.tpcNClsShared();
 
-    piDecand.isBkgUS = trackDe.sign() * trackPi.sign() < 0;
-    piDecand.isBkgEM = isMixedEvent;
+    piNucand.isBkgUS = trackDe.sign() * trackPi.sign() < 0;
+    piNucand.isBkgEM = isMixedEvent;
 
-    piDecand.invMass = invMass;
+    piNucand.invMass = invMass;
 
-    piDecand.trackIDDe = trackDe.globalIndex();
-    piDecand.trackIDPi = trackPi.globalIndex();
+    piNucand.trackIDNu = trackDe.globalIndex();
+    piNucand.trackIDPi = trackPi.globalIndex();
 
     if (trackDe.hasTOF()) {
       float beta = o2::pid::tof::Beta::GetBeta(trackDe);
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
       float tpcInnerParamDe = trackDe.tpcInnerParam();
-      piDecand.massTOFDe = tpcInnerParamDe * std::sqrt(1.f / (beta * beta) - 1.f);
+      piNucand.massTOFNu = tpcInnerParamDe * std::sqrt(1.f / (beta * beta) - 1.f);
     }
     if (trackPi.hasTOF()) {
       float beta = o2::pid::tof::Beta::GetBeta(trackPi);
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-      piDecand.massTOFPi = trackPi.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
+      piNucand.massTOFPi = trackPi.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
     }
 
+    return true;
+  }
+
+  template <typename Ttrack>
+  bool fillCandidateInfoHyper(const aod::DataHypCandsWColl::iterator& V0Hyper, const Ttrack& trackPi, PiNucandidate& piHypercand, bool isMixedEvent)
+  {
+    piHypercand.collisionID = V0Hyper.collisionId();
+    // get hypertriton information
+    // constexpr double mHe3 = o2::constants::physics::MassHelium3;
+    // constexpr double mPi  = o2::constants::physics::MassPiPlus;
+    //  --- He3
+    float pxHe3 = V0Hyper.ptHe3() * std::cos(V0Hyper.phiHe3());
+    float pyHe3 = V0Hyper.ptHe3() * std::sin(V0Hyper.phiHe3());
+    float pzHe3 = V0Hyper.ptHe3() * std::sinh(V0Hyper.etaHe3());
+    // float pHe3  = V0Hyper.ptHe3() * std::cosh(V0Hyper.etaHe3());
+    // float enHe3 = std::sqrt(pHe3 * pHe3 + mHe3 * mHe3);
+    //  --- pi
+    float pxPi = V0Hyper.ptPi() * std::cos(V0Hyper.phiPi());
+    float pyPi = V0Hyper.ptPi() * std::sin(V0Hyper.phiPi());
+    float pzPi = V0Hyper.ptPi() * std::sinh(V0Hyper.etaPi());
+    // float pPi  = V0Hyper.ptPi() * std::cosh(V0Hyper.etaPi());
+    // float enPi = std::sqrt(pPi * pPi + mPi * mPi);
+    //  --- hypertriton
+    float px = pxHe3 + pxPi;
+    float py = pyHe3 + pyPi;
+    float pz = pzHe3 + pzPi;
+    piHypercand.momNu = std::array{px, py, pz};
+    piHypercand.momPi = std::array{trackPi.px(), trackPi.py(), trackPi.pz()};
+
+    float invMass = 0;
+    invMass = RecoDecay::m(std::array{piHypercand.momNu, piHypercand.momPi}, std::array{o2::constants::physics::MassHelium3, o2::constants::physics::MassPiPlus});
+    if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
+      return false;
+    }
+    float ptDePi = std::hypot(piHypercand.momNu[0] + piHypercand.momPi[0], piHypercand.momNu[1] + piHypercand.momPi[1]);
+    if (ptDePi < settingCutPtMinDePi) {
+      return false;
+    }
+
+    piHypercand.signPi = trackPi.sign();
+    if (V0Hyper.isMatter()) {
+      piHypercand.signNu = 1;
+    } else {
+      piHypercand.signNu = -1;
+    }
+
+    piHypercand.dcaxyPi = trackPi.dcaXY();
+    piHypercand.dcazPi = trackPi.dcaZ();
+    piHypercand.tpcSignalPi = trackPi.tpcSignal();
+    piHypercand.momPiTPC = trackPi.tpcInnerParam();
+    piHypercand.nSigmaPi = trackPi.tpcNSigmaPi();
+    piHypercand.chi2TPCPi = trackPi.tpcChi2NCl();
+    piHypercand.pidTrkPi = trackPi.pidForTracking();
+    piHypercand.itsClSizePi = trackPi.itsClusterSizes();
+    piHypercand.nClsItsPi = trackPi.itsNCls();
+    piHypercand.sharedClustersPi = trackPi.tpcNClsShared();
+
+    piHypercand.isBkgUS = piHypercand.signNu * trackPi.sign() < 0;
+    piHypercand.isBkgEM = isMixedEvent;
+    piHypercand.invMass = invMass;
+
+    piHypercand.trackIDPi = trackPi.globalIndex();
+
+    if (trackPi.hasTOF()) {
+      float beta = o2::pid::tof::Beta::GetBeta(trackPi);
+      beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+      piHypercand.massTOFPi = trackPi.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
+    }
     return true;
   }
 
@@ -645,6 +717,36 @@ struct PiDeuteronFemto {
     }
   }
 
+  template <typename Ttrack, typename Thypers>
+  void pairTracksSameEventHyper(const Ttrack& piTracks, const Thypers& V0Hypers)
+  {
+    for (const auto& piTrack : piTracks) {
+
+      mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
+
+      if (!selectTrack(piTrack)) {
+        continue;
+      }
+      mQaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
+
+      if (!selectionPIDPion(piTrack)) {
+        continue;
+      }
+      mQaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
+
+      for (const auto& V0Hyper : V0Hypers) {
+
+        SVCand pair;
+        pair.tr0Idx = piTrack.globalIndex();
+        pair.tr1Idx = V0Hyper.globalIndex();
+        const int collIdx = V0Hyper.collisionId();
+        CollBracket collBracket{collIdx, collIdx};
+        pair.collBracket = collBracket;
+        mTrackHypPairs.push_back(pair);
+      }
+    }
+  }
+
   template <typename T>
   void pairTracksEventMixing(T& DeCands, T& pionCands)
   {
@@ -669,38 +771,38 @@ struct PiDeuteronFemto {
   }
 
   template <typename Tcoll>
-  void fillTable(const PiDecandidate& piDecand, const Tcoll& collision)
+  void fillTable(const PiNucandidate& piNucand, const Tcoll& collision)
   {
     mOutputDataTable(
-      piDecand.recoPtDe(),
-      piDecand.recoEtaDe(),
-      piDecand.recoPhiDe(),
-      piDecand.recoPtPi(),
-      piDecand.recoEtaPi(),
-      piDecand.recoPhiPi(),
-      piDecand.dcaxyDe,
-      piDecand.dcazDe,
-      piDecand.dcaxyPi,
-      piDecand.dcazPi,
-      piDecand.tpcSignalDe,
-      piDecand.momDeTPC,
-      piDecand.tpcSignalPi,
-      piDecand.momPiTPC,
-      piDecand.nTPCClustersDe,
-      piDecand.nSigmaDe,
-      piDecand.nSigmaPi,
-      piDecand.chi2TPCDe,
-      piDecand.chi2TPCPi,
-      piDecand.massTOFDe,
-      piDecand.massTOFPi,
-      piDecand.pidTrkDe,
-      piDecand.pidTrkPi,
-      piDecand.itsClSizeDe,
-      piDecand.itsClSizePi,
-      piDecand.sharedClustersDe,
-      piDecand.sharedClustersPi,
-      piDecand.isBkgUS,
-      piDecand.isBkgEM);
+      piNucand.recoPtNu(),
+      piNucand.recoEtaNu(),
+      piNucand.recoPhiNu(),
+      piNucand.recoPtPi(),
+      piNucand.recoEtaPi(),
+      piNucand.recoPhiPi(),
+      piNucand.dcaxyNu,
+      piNucand.dcazNu,
+      piNucand.dcaxyPi,
+      piNucand.dcazPi,
+      piNucand.tpcSignalNu,
+      piNucand.momNuTPC,
+      piNucand.tpcSignalPi,
+      piNucand.momPiTPC,
+      piNucand.nTPCClustersNu,
+      piNucand.nSigmaNu,
+      piNucand.nSigmaPi,
+      piNucand.chi2TPCNu,
+      piNucand.chi2TPCPi,
+      piNucand.massTOFNu,
+      piNucand.massTOFPi,
+      piNucand.pidTrkNu,
+      piNucand.pidTrkPi,
+      piNucand.itsClSizeNu,
+      piNucand.itsClSizePi,
+      piNucand.sharedClustersNu,
+      piNucand.sharedClustersPi,
+      piNucand.isBkgUS,
+      piNucand.isBkgEM);
     if (settingFillMultiplicity) {
       mOutputMultiplicityTable(
         collision.globalIndex(),
@@ -711,21 +813,53 @@ struct PiDeuteronFemto {
     }
   }
 
-  void fillHistograms(const PiDecandidate& piDecand)
+  template <typename Tcoll>
+  void fillTableHyper(const PiNucandidate& piNucand, const Tcoll& collision)
   {
-    mQaRegistry.fill(HIST("hDePt"), piDecand.recoPtDe());
-    mQaRegistry.fill(HIST("hPiPt"), piDecand.recoPtPi());
-    mQaRegistry.fill(HIST("hDeEta"), piDecand.recoEtaDe());
-    mQaRegistry.fill(HIST("hPiEta"), piDecand.recoEtaPi());
-    mQaRegistry.fill(HIST("hDePhi"), piDecand.recoPhiDe());
-    mQaRegistry.fill(HIST("hPiPhi"), piDecand.recoPhiPi());
-    mQaRegistry.fill(HIST("hDePitInvMass"), piDecand.invMass);
-    mQaRegistry.fill(HIST("hdcaxyDe"), piDecand.dcaxyDe);
-    mQaRegistry.fill(HIST("hdcazDe"), piDecand.dcazDe);
-    mQaRegistry.fill(HIST("hdcazDe_min"), (abs(piDecand.dcazDe) - settingCutDeDCAzMin));
-    mQaRegistry.fill(HIST("hNClsDeITS"), piDecand.nClsItsDe);
-    mQaRegistry.fill(HIST("hNClsPiITS"), piDecand.nClsItsPi);
-    mQaRegistry.fill(HIST("hisBkgEM"), piDecand.isBkgEM);
+    mOutputHyperDataTable(
+      piNucand.recoPtNu(),
+      piNucand.recoEtaNu(),
+      piNucand.recoPhiNu(),
+      piNucand.recoPtPi(),
+      piNucand.recoEtaPi(),
+      piNucand.recoPhiPi(),
+      piNucand.dcaxyPi,
+      piNucand.dcazPi,
+      piNucand.tpcSignalPi,
+      piNucand.momPiTPC,
+      piNucand.nSigmaPi,
+      piNucand.chi2TPCPi,
+      piNucand.massTOFPi,
+      piNucand.pidTrkPi,
+      piNucand.itsClSizePi,
+      piNucand.sharedClustersPi,
+      piNucand.isBkgUS,
+      piNucand.isBkgEM);
+    if (settingFillMultiplicity) {
+      mOutputMultiplicityTable(
+        collision.globalIndex(),
+        collision.posZ(),
+        collision.numContrib(),
+        collision.centFT0C(),
+        collision.multFT0C());
+    }
+  }
+
+  void fillHistograms(const PiNucandidate& piNucand)
+  {
+    mQaRegistry.fill(HIST("hNuPt"), piNucand.recoPtNu());
+    mQaRegistry.fill(HIST("hPiPt"), piNucand.recoPtPi());
+    mQaRegistry.fill(HIST("hNuEta"), piNucand.recoEtaNu());
+    mQaRegistry.fill(HIST("hPiEta"), piNucand.recoEtaPi());
+    mQaRegistry.fill(HIST("hNuPhi"), piNucand.recoPhiNu());
+    mQaRegistry.fill(HIST("hPiPhi"), piNucand.recoPhiPi());
+    mQaRegistry.fill(HIST("hNuPitInvMass"), piNucand.invMass);
+    mQaRegistry.fill(HIST("hdcaxyNu"), piNucand.dcaxyNu);
+    mQaRegistry.fill(HIST("hdcazNu"), piNucand.dcazNu);
+    mQaRegistry.fill(HIST("hdcazNu_min"), (abs(piNucand.dcazNu) - settingCutDeDCAzMin));
+    mQaRegistry.fill(HIST("hNClsNuITS"), piNucand.nClsItsNu);
+    mQaRegistry.fill(HIST("hNClsPiITS"), piNucand.nClsItsPi);
+    mQaRegistry.fill(HIST("hisBkgEM"), piNucand.isBkgEM);
   }
 
   double computePrTPCnsig(double InnerParamTPCHad, double SignalTPCHad)
@@ -749,13 +883,13 @@ struct PiDeuteronFemto {
     return fNSigmaTOFHad;
   }
 
-  double computeKstar(const PiDecandidate& piDecand)
+  double computeKstar(const PiNucandidate& piNucand)
   {
     constexpr double massDe = o2::constants::physics::MassDeuteron;
     constexpr double massHad = o2::constants::physics::MassPiPlus;
 
-    const ROOT::Math::PtEtaPhiMVector De(std::abs(piDecand.recoPtDe()), piDecand.recoEtaDe(), piDecand.recoPhiDe(), massDe);
-    const ROOT::Math::PtEtaPhiMVector Had(std::abs(piDecand.recoPtPi()), piDecand.recoEtaPi(), piDecand.recoPhiPi(), massHad);
+    const ROOT::Math::PtEtaPhiMVector De(std::abs(piNucand.recoPtNu()), piNucand.recoEtaNu(), piNucand.recoPhiNu(), massDe);
+    const ROOT::Math::PtEtaPhiMVector Had(std::abs(piNucand.recoPtPi()), piNucand.recoEtaPi(), piNucand.recoPhiPi(), massHad);
     const ROOT::Math::PtEtaPhiMVector trackSum = De + Had;
 
     const float beta = trackSum.Beta();
@@ -774,28 +908,28 @@ struct PiDeuteronFemto {
     return 0.5 * RelKstar.P();
   }
 
-  void fillKstar(const PiDecandidate& piDecand)
+  void fillKstar(const PiNucandidate& piNucand)
   {
-    double PrTPCnsigma = computePrTPCnsig(piDecand.momPiTPC, piDecand.tpcSignalPi);
-    double PrTOFnsigma = tofNSigmaCalculation(piDecand.massTOFPi, piDecand.recoPtPi());
+    double PrTPCnsigma = computePrTPCnsig(piNucand.momPiTPC, piNucand.tpcSignalPi);
+    double PrTOFnsigma = tofNSigmaCalculation(piNucand.massTOFPi, piNucand.recoPtPi());
     if (abs(PrTPCnsigma) < settingCutNsigTPCPrMin)
       return;
     if (abs(PrTOFnsigma) < settingCutNsigTOFPrMin)
       return;
-    float DeDCAxyMin = 0.015 + 0.0305 / TMath::Power(piDecand.recoPtDe(), 1.1);
-    if (abs(piDecand.dcaxyDe) > DeDCAxyMin || abs(piDecand.dcazDe) > settingCutDeDCAzMin || abs(piDecand.dcaxyPi) > settingCutPiDCAxyMin || abs(piDecand.dcazPi) > settingCutPiDCAzMin)
+    float DeDCAxyMin = 0.015 + 0.0305 / TMath::Power(piNucand.recoPtNu(), 1.1);
+    if (abs(piNucand.dcaxyNu) > DeDCAxyMin || abs(piNucand.dcazNu) > settingCutDeDCAzMin || abs(piNucand.dcaxyPi) > settingCutPiDCAxyMin || abs(piNucand.dcazPi) > settingCutPiDCAzMin)
       return;
-    fillHistograms(piDecand);
+    fillHistograms(piNucand);
 
-    double kstar = computeKstar(piDecand);
-    if (piDecand.isBkgUS == 0) {
-      if (piDecand.recoPtDe() > 0) {
+    double kstar = computeKstar(piNucand);
+    if (piNucand.isBkgUS == 0) {
+      if (piNucand.recoPtNu() > 0) {
         mQaRegistry.fill(HIST("hkStar_LS_M"), kstar);
       } else {
         mQaRegistry.fill(HIST("hkStar_LS_A"), kstar);
       }
     } else {
-      if (piDecand.recoPtDe() > 0) {
+      if (piNucand.recoPtNu() > 0) {
         mQaRegistry.fill(HIST("hkStar_US_M"), kstar);
       } else {
         mQaRegistry.fill(HIST("hkStar_US_A"), kstar);
@@ -815,17 +949,39 @@ struct PiDeuteronFemto {
       auto piTrack = tracks.rawIteratorAt(trackPair.tr1Idx);
       auto collBracket = trackPair.collBracket;
 
-      PiDecandidate piDecand;
-      if (!fillCandidateInfo(deTrack, piTrack, collBracket, collisions, piDecand, tracks, isMixedEvent)) {
+      PiNucandidate piNucand;
+      if (!fillCandidateInfo(deTrack, piTrack, collBracket, collisions, piNucand, tracks, isMixedEvent)) {
         continue;
       }
 
-      fillKstar(piDecand);
+      fillKstar(piNucand);
 
-      auto collision = collisions.rawIteratorAt(piDecand.collisionID);
+      auto collision = collisions.rawIteratorAt(piNucand.collisionID);
 
       if (settingFillTable) {
-        fillTable(piDecand, collision);
+        fillTable(piNucand, collision);
+      }
+    }
+  }
+
+  template <typename Tcollisions, typename Ttracks>
+  void fillPairsHyper(const Tcollisions& collisions, const Ttracks& piTracks, const o2::aod::DataHypCandsWColl& V0Hypers, const bool isMixedEvent)
+  {
+    for (const auto& trackPair : mTrackHypPairs) {
+
+      auto v0hyper = V0Hypers.rawIteratorAt(trackPair.tr1Idx);
+      auto piTrack = piTracks.rawIteratorAt(trackPair.tr0Idx);
+      // auto collBracket = trackPair.collBracket;
+
+      PiNucandidate piNucand;
+      if (!fillCandidateInfoHyper(v0hyper, piTrack, piNucand, isMixedEvent)) {
+        continue;
+      }
+
+      auto collision = collisions.rawIteratorAt(piNucand.collisionID);
+
+      if (settingFillTable) {
+        fillTableHyper(piNucand, collision);
       }
     }
   }
@@ -859,7 +1015,38 @@ struct PiDeuteronFemto {
       fillPairs(collisions, tracks, /*isMixedEvent*/ false);
     }
   }
-  PROCESS_SWITCH(PiDeuteronFemto, processSameEvent, "Process Same event", false);
+  PROCESS_SWITCH(PiNucleiFemto, processSameEvent, "Process Same event", false);
+
+  void processSameEventHyper(const CollisionsFull& collisions, const TrackCandidates& pitracks, o2::aod::DataHypCandsWColl const& V0Hypers, const aod::BCsWithTimestamps& bcs)
+  {
+    mGoodCollisions.clear();
+    mGoodCollisions.resize(collisions.size(), false);
+
+    for (const auto& collision : collisions) {
+
+      mTrackHypPairs.clear();
+
+      if (!selectCollision</*isMC*/ false>(collision, bcs)) {
+        continue;
+      }
+
+      mGoodCollisions[collision.globalIndex()] = true;
+      const uint64_t collIdx = collision.globalIndex();
+      auto trackTableThisCollision = pitracks.sliceBy(mPerCol, collIdx);
+      auto hypdTableThisCollision = V0Hypers.sliceBy(hypPerCol, collIdx);
+      trackTableThisCollision.bindExternalIndices(&pitracks);
+      hypdTableThisCollision.bindExternalIndices(&V0Hypers);
+
+      pairTracksSameEventHyper(trackTableThisCollision, hypdTableThisCollision);
+
+      if (mTrackHypPairs.size() == 0) {
+        continue;
+      }
+
+      fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ false);
+    }
+  }
+  PROCESS_SWITCH(PiNucleiFemto, processSameEventHyper, "Process Same event", false);
 
   void processMixedEvent(const CollisionsFull& collisions, const TrackCandidates& tracks)
   {
@@ -880,11 +1067,11 @@ struct PiDeuteronFemto {
 
     fillPairs(collisions, tracks, /*isMixedEvent*/ true);
   }
-  PROCESS_SWITCH(PiDeuteronFemto, processMixedEvent, "Process Mixed event", false);
+  PROCESS_SWITCH(PiNucleiFemto, processMixedEvent, "Process Mixed event", false);
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<PiDeuteronFemto>(cfgc)};
+    adaptAnalysisTask<PiNucleiFemto>(cfgc)};
 }
