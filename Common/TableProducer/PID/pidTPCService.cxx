@@ -67,20 +67,6 @@ struct pidTpcService {
     pidTPC.init(ccdb, ccdbApi, initContext, pidTPCopts, metadataInfo);
   }
 
-  void processTracks(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::Tracks, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs)
-  {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
-  }
-  void processTracksWithTracksQA(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::Tracks, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs, aod::TracksQA const& tracksQA)
-  {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, tracksQA, products);
-  }
-
-  void processTracksMC(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::Tracks, aod::TracksExtra, aod::McTrackLabels> const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const&)
-  {
-    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
-  }
-
   void processTracksIU(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::TracksIU, aod::TracksCovIU, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
@@ -91,9 +77,13 @@ struct pidTpcService {
     pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, static_cast<TObject*>(nullptr), products);
   }
 
-  PROCESS_SWITCH(pidTpcService, processTracks, "Process Tracks", false);
-  PROCESS_SWITCH(pidTpcService, processTracksMC, "Process Tracks in MC (enables tune-on-data)", false);
+  void processTracksIUWithTracksQA(soa::Join<aod::Collisions, aod::EvSels> const& collisions, soa::Join<aod::TracksIU, aod::TracksExtra> const& tracks, aod::BCsWithTimestamps const& bcs, aod::TracksQAVersion const& tracksQA)
+  {
+    pidTPC.process(ccdb, ccdbApi, bcs, collisions, tracks, tracksQA, products);
+  }
+
   PROCESS_SWITCH(pidTpcService, processTracksIU, "Process TracksIU (Run 3)", true);
+  PROCESS_SWITCH(pidTpcService, processTracksIUWithTracksQA, "Process TracksIU (Run 3)", false);
   PROCESS_SWITCH(pidTpcService, processTracksMCIU, "Process TracksIUMC (Run 3)", false);
 };
 
