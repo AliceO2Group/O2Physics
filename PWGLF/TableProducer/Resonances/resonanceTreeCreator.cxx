@@ -13,11 +13,26 @@
 /// \brief Produces a TTree with machine learning variables for resonances in the LF group
 /// \author Stefano Cannito (stefano.cannito@cern.ch)
 
-#include "Common/DataModel/EventSelection.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+#include "PWGLF/Utils/inelGt.h"
 
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CommonConstants/PhysicsConstants.h"
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
 #include <Math/Vector4D.h>
 #include <TPDGCode.h>
@@ -29,24 +44,6 @@
 #include <string>
 #include <utility>
 #include <vector>
-// #include "PWGLF/DataModel/LFResonanceMLTables.h"
-#include "PWGLF/DataModel/mcCentrality.h"
-#include "PWGLF/Utils/inelGt.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/Track.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -97,6 +94,16 @@ DECLARE_SOA_COLUMN(Sign, sign, int8_t); //! Sign of the candidate
 DECLARE_SOA_COLUMN(IsPhi, isPhi, bool); //! Flag to indicate if the candidate is a phi meson
 } // namespace resomlcandidates
 
+DECLARE_SOA_TABLE(ResoCandidates, "AOD", "RESOCANDIDATES",
+                  resomlcandidates::M,
+                  resomlcandidates::Pt,
+                  resomlcandidates::P,
+                  resomlcandidates::Phi,
+                  resomlcandidates::Eta,
+                  resomlcandidates::Y,
+                  resomlcandidates::Sign,
+                  resomlcandidates::IsPhi);
+
 DECLARE_SOA_TABLE(ResoMLCandidates, "AOD", "RESOMLCANDIDATES",
                   resomlcandidates::MultClass,
                   resomlcandidates::PtDaughter1,
@@ -145,6 +152,7 @@ DECLARE_SOA_TABLE(ResoPhiMLSelection, "AOD", "RESOPHIMLSELECTION",
 
 struct resonanceTreeCreator {
   // Production of the TTree
+  Produces<aod::ResoCandidates> resoCandidates;
   Produces<aod::ResoMLCandidates> resoMLCandidates;
 
   // Configurables for track selection
@@ -171,8 +179,8 @@ struct resonanceTreeCreator {
   Partition<FullMCTracks> posMCTracks = aod::track::signed1Pt > cfgCutCharge;
   Partition<FullMCTracks> negMCTracks = aod::track::signed1Pt < cfgCutCharge;
 
-  // Cache for the tracks
-  SliceCache cache;
+  Preslice<aod::Tracks> perColl = aod::track::collisionId;
+  Preslice<aod::McParticles> perMCColl = aod::mcparticle::mcCollisionId;
 
   // Necessary to flag INEL>0 events in GenMC
   Service<o2::framework::O2DatabasePDG> pdgDB;
@@ -277,10 +285,6 @@ struct resonanceTreeCreator {
       if (fillOnlyBackground && isPhi)
         return; // Skip filling if only background is requested and a phi candidate
     }
-
-    /*isPhi = (mcTrack1.pdgCode() == PDG_t::kKPlus && mcTrack2.pdgCode() == PDG_t::kKMinus &&
-             motherOfMcTrack1.pdgCode() == motherOfMcTrack2.pdgCode() && motherOfMcTrack1.pdgCode() == o2::constants::physics::Pdg::kPhi);
-  }*/
 
     resoMLCandidates(collision.centFT0M(),
                      track1.pt(), track1.p(), track1.phi(), track1.eta(), track1.rapidity(masstrack1), track1.dcaXY(), track1.dcaZ(),

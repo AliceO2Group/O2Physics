@@ -3409,7 +3409,9 @@ struct Phik0shortanalysis {
           continue; // condition to avoid double counting of pair
 
         ROOT::Math::PxPyPzMVector recPhi = recMother(track1, track2, massKa, massKa);
-        if (recPhi.Pt() < phiConfigs.minPhiPt || recPhi.Pt() > phiConfigs.maxPhiPt)
+        if (recPhi.Pt() < phiConfigs.minPhiPt)
+          continue;
+        if (recPhi.M() < phiConfigs.lowMPhi || recPhi.M() > phiConfigs.upMPhi)
           continue;
         if (std::abs(recPhi.Rapidity()) > deltaYConfigs.cfgYAcceptance)
           continue;
