@@ -203,19 +203,11 @@ struct DedxPidAnalysis {
 
   void init(InitContext const&)
   {
-<<<<<<< HEAD
-    if (V0SelectionMode == v0TPC) {
-      LOGF(info, "V0 seleccion using TPC only");
-    } else if (V0SelectionMode == v0TOF) {
-      LOGF(info, "V0 seleccion using TOF only");
-    } else if (V0SelectionMode == v0TPCTOF) {
-=======
     if (v0SelectionMode == v0TPC) {
       LOGF(info, "V0 seleccion using TPC only");
     } else if (v0SelectionMode == v0TOF) {
       LOGF(info, "V0 seleccion using TOF only");
     } else if (v0SelectionMode == v0TPCTOF) {
->>>>>>> 0a9044196 (The issue with the macOS-arm checks has been resolved)
       LOGF(info, "V0 seleccion using TOF + TPC");
     }
 
@@ -459,15 +451,6 @@ struct DedxPidAnalysis {
     double sigmap = 0.0;
     double sigman = 0.0;
 
-<<<<<<< HEAD
-    if (V0SelectionMode == v0TPC) {
-      sigmap = ptrack.tpcNSigmaPi();
-      sigman = ntrack.tpcNSigmaPi();
-    } else if (V0SelectionMode == v0TOF) {
-      sigmap = ptrack.tofNSigmaPi();
-      sigman = ntrack.tofNSigmaPi();
-    } else if (V0SelectionMode == v0TPCTOF) {
-=======
     if (v0SelectionMode == v0TPC) {
       sigmap = ptrack.tpcNSigmaPi();
       sigman = ntrack.tpcNSigmaPi();
@@ -475,7 +458,6 @@ struct DedxPidAnalysis {
       sigmap = ptrack.tofNSigmaPi();
       sigman = ntrack.tofNSigmaPi();
     } else if (v0SelectionMode == v0TPCTOF) {
->>>>>>> 0a9044196 (The issue with the macOS-arm checks has been resolved)
       sigmap = std::sqrt(std::pow(ptrack.tpcNSigmaPi(), 2) + std::pow(ptrack.tofNSigmaPi(), 2));
       sigman = std::sqrt(std::pow(ntrack.tpcNSigmaPi(), 2) + std::pow(ntrack.tofNSigmaPi(), 2));
     }
@@ -515,15 +497,6 @@ struct DedxPidAnalysis {
     double sigmap = 0.0;
     double sigman = 0.0;
 
-<<<<<<< HEAD
-    if (V0SelectionMode == v0TPC) {
-      sigmap = ptrack.tpcNSigmaPr();
-      sigman = ntrack.tpcNSigmaPi();
-    } else if (V0SelectionMode == v0TOF) {
-      sigmap = ptrack.tofNSigmaPr();
-      sigman = ntrack.tofNSigmaPi();
-    } else if (V0SelectionMode == v0TPCTOF) {
-=======
     if (v0SelectionMode == v0TPC) {
       sigmap = ptrack.tpcNSigmaPr();
       sigman = ntrack.tpcNSigmaPi();
@@ -531,7 +504,6 @@ struct DedxPidAnalysis {
       sigmap = ptrack.tofNSigmaPr();
       sigman = ntrack.tofNSigmaPi();
     } else if (v0SelectionMode == v0TPCTOF) {
->>>>>>> 0a9044196 (The issue with the macOS-arm checks has been resolved)
       sigmap = std::sqrt(std::pow(ptrack.tpcNSigmaPr(), 2) + std::pow(ptrack.tofNSigmaPr(), 2));
       sigman = std::sqrt(std::pow(ntrack.tpcNSigmaPi(), 2) + std::pow(ntrack.tofNSigmaPi(), 2));
     }
@@ -571,15 +543,6 @@ struct DedxPidAnalysis {
     double sigmap = 0.0;
     double sigman = 0.0;
 
-<<<<<<< HEAD
-    if (V0SelectionMode == v0TPC) {
-      sigmap = ptrack.tpcNSigmaPi();
-      sigman = ntrack.tpcNSigmaPr();
-    } else if (V0SelectionMode == v0TOF) {
-      sigmap = ptrack.tofNSigmaPi();
-      sigman = ntrack.tofNSigmaPr();
-    } else if (V0SelectionMode == v0TPCTOF) {
-=======
     if (v0SelectionMode == v0TPC) {
       sigmap = ptrack.tpcNSigmaPi();
       sigman = ntrack.tpcNSigmaPr();
@@ -587,7 +550,6 @@ struct DedxPidAnalysis {
       sigmap = ptrack.tofNSigmaPi();
       sigman = ntrack.tofNSigmaPr();
     } else if (v0SelectionMode == v0TPCTOF) {
->>>>>>> 0a9044196 (The issue with the macOS-arm checks has been resolved)
       sigmap = std::sqrt(std::pow(ptrack.tpcNSigmaPi(), 2) + std::pow(ptrack.tofNSigmaPi(), 2));
       sigman = std::sqrt(std::pow(ntrack.tpcNSigmaPr(), 2) + std::pow(ntrack.tofNSigmaPr(), 2));
     }
@@ -626,15 +588,6 @@ struct DedxPidAnalysis {
     double sigmap = 0.0;
     double sigman = 0.0;
 
-<<<<<<< HEAD
-    if (V0SelectionMode == v0TPC) {
-      sigmap = ptrack.tpcNSigmaEl();
-      sigman = ntrack.tpcNSigmaEl();
-    } else if (V0SelectionMode == v0TOF) {
-      sigmap = ptrack.tofNSigmaEl();
-      sigman = ntrack.tofNSigmaEl();
-    } else if (V0SelectionMode == v0TPCTOF) {
-=======
     if (v0SelectionMode == v0TPC) {
       sigmap = ptrack.tpcNSigmaEl();
       sigman = ntrack.tpcNSigmaEl();
@@ -642,7 +595,6 @@ struct DedxPidAnalysis {
       sigmap = ptrack.tofNSigmaEl();
       sigman = ntrack.tofNSigmaEl();
     } else if (v0SelectionMode == v0TPCTOF) {
->>>>>>> 0a9044196 (The issue with the macOS-arm checks has been resolved)
       sigmap = std::sqrt(std::pow(ptrack.tpcNSigmaEl(), 2) + std::pow(ptrack.tofNSigmaEl(), 2));
       sigman = std::sqrt(std::pow(ntrack.tpcNSigmaEl(), 2) + std::pow(ntrack.tofNSigmaEl(), 2));
     }
