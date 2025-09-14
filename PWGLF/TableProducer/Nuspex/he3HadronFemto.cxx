@@ -64,6 +64,7 @@
 #include <cstdlib>
 #include <iterator> // std::prev
 #include <string>
+#include <unordered_set>
 #include <vector>
 
 using namespace o2;
@@ -609,21 +610,23 @@ struct he3HadronFemto {
 
     he3Hadcand.signHe3 = trackHe3.sign();
     he3Hadcand.signHad = trackHad.sign();
-
-    // he3Hadcand.dcaxyHe3 = trackHe3.dcaXY();
-    // he3Hadcand.dcaxyHad = trackHad.dcaXY();
-    // he3Hadcand.dcazHe3 = trackHe3.dcaZ();
-    // he3Hadcand.dcazHad = trackHad.dcaZ();
-    auto trackCovHe3 = getTrackParCov(trackHe3);
-    auto trackCovHad = getTrackParCov(trackHad);
-    std::array<float, 2> dcaInfo;
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collisionVertex[0], collisionVertex[1], collisionVertex[2]}, trackCovHe3, 2.f, mFitter.getMatCorrType(), &dcaInfo);
-    he3Hadcand.dcaxyHe3 = dcaInfo[0];
-    he3Hadcand.dcazHe3 = dcaInfo[1];
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({collisionVertex[0], collisionVertex[1], collisionVertex[2]}, trackCovHad, 2.f, mFitter.getMatCorrType(), &dcaInfo);
-    he3Hadcand.dcaxyHad = dcaInfo[0];
-    he3Hadcand.dcazHad = dcaInfo[1];
-    he3Hadcand.dcaPair = std::sqrt(std::abs(mFitter.getChi2AtPCACandidate()));
+    if (!settingEnableDCAfitter) {
+      he3Hadcand.dcaxyHe3 = trackHe3.dcaXY();
+      he3Hadcand.dcaxyHad = trackHad.dcaXY();
+      he3Hadcand.dcazHe3 = trackHe3.dcaZ();
+      he3Hadcand.dcazHad = trackHad.dcaZ();
+    } else {
+      auto trackCovHe3 = getTrackParCov(trackHe3);
+      auto trackCovHad = getTrackParCov(trackHad);
+      std::array<float, 2> dcaInfo;
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collisionVertex[0], collisionVertex[1], collisionVertex[2]}, trackCovHe3, 2.f, mFitter.getMatCorrType(), &dcaInfo);
+      he3Hadcand.dcaxyHe3 = dcaInfo[0];
+      he3Hadcand.dcazHe3 = dcaInfo[1];
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({collisionVertex[0], collisionVertex[1], collisionVertex[2]}, trackCovHad, 2.f, mFitter.getMatCorrType(), &dcaInfo);
+      he3Hadcand.dcaxyHad = dcaInfo[0];
+      he3Hadcand.dcazHad = dcaInfo[1];
+      he3Hadcand.dcaPair = std::sqrt(std::abs(mFitter.getChi2AtPCACandidate()));
+    }
 
     he3Hadcand.tpcSignalHe3 = trackHe3.tpcSignal();
     bool heliumPID = trackHe3.pidForTracking() == o2::track::PID::Helium3 || trackHe3.pidForTracking() == o2::track::PID::Alpha;
