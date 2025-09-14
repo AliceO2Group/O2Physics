@@ -85,10 +85,11 @@ enum KindOfCorrType {
   kFT0CGLOBAL,
   kFV0GLOBAL,
   kMFTGLOBAL,
-  kFV0MFT
+  kFV0MFT,
+  kFT0AMFT
 };
 
-static constexpr std::string_view kCorrType[] = {"Ft0aGlobal/", "Ft0cGlobal/", "Fv0Global/", "MftGlobal/", "Fv0Mft/"};
+static constexpr std::string_view kCorrType[] = {"Ft0aGlobal/", "Ft0cGlobal/", "Fv0Global/", "MftGlobal/", "Fv0Mft/", "Ft0aMft/"};
 static constexpr std::string_view kEvntType[] = {"SE/", "ME/"};
 
 AxisSpec axisEvent{10, 0.5, 9.5, "#Event", "EventAxis"};
@@ -159,6 +160,8 @@ struct LongrangeCorrelation {
   OutputObj<CorrelationContainer> mixedFv0Global{Form("mixedEventFv0Global_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
   OutputObj<CorrelationContainer> sameFv0Mft{Form("sameEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
   OutputObj<CorrelationContainer> mixedFv0Mft{Form("mixedEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  OutputObj<CorrelationContainer> sameFt0aMft{Form("sameEventFt0aMft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
+  OutputObj<CorrelationContainer> mixedFt0aMft{Form("mixedEventFt0aMft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
 
   template <KindOfCorrType corrType, KindOfEvntType evntType>
   void addHistos()
@@ -253,6 +256,13 @@ struct LongrangeCorrelation {
       sameFv0Mft.setObject(new CorrelationContainer(Form("sameEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
       mixedFv0Mft.setObject(new CorrelationContainer(Form("mixedEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventFv0Mft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
     }
+
+    if (doprocessFt0aMftSE || doprocessFt0aMftME) {
+      addHistos<kFT0AMFT, kSE>();
+      addHistos<kFT0AMFT, kME>();
+      sameFt0aMft.setObject(new CorrelationContainer(Form("sameEventFt0aMft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventFt0aMft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+      mixedFt0aMft.setObject(new CorrelationContainer(Form("mixedEventFt0aMft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventFt0aMft_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
+    }
   }
 
   Filter fTrackSelectionITS = ncheckbit(aod::track::v001::detectorMap, (uint8_t)o2::aod::track::ITS) &&
@@ -268,14 +278,14 @@ struct LongrangeCorrelation {
   Filter fMftTrackColID = (aod::fwdtrack::bestCollisionId >= 0);
   Filter fMftTrackDca = (nabs(aod::fwdtrack::bestDCAXY) < cfigMftDcaxy);
 
-  double getPhiFT0(UInt_t chno, int i)
+  double getPhiFT0(uint chno, int i)
   {
     ft0Det.calculateChannelCenter();
     auto chPos = ft0Det.getChannelCenter(chno);
     return RecoDecay::phi(chPos.X() + (*offsetFT0)[i].getX(), chPos.Y() + (*offsetFT0)[i].getY());
   }
 
-  double getPhiFV0(UInt_t chno)
+  double getPhiFV0(uint chno)
   {
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
@@ -296,7 +306,7 @@ struct LongrangeCorrelation {
     return RecoDecay::phi(chPos.x + offsetX, chPos.y + offsetY);
   }
 
-  double getEtaFT0(UInt_t chno, int i)
+  double getEtaFT0(uint chno, int i)
   {
     ft0Det.calculateChannelCenter();
     auto chPos = ft0Det.getChannelCenter(chno);
@@ -308,7 +318,7 @@ struct LongrangeCorrelation {
     return -std::log(std::tan(0.5 * theta));
   }
 
-  double getEtaFV0(UInt_t chno)
+  double getEtaFV0(uint chno)
   {
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
@@ -367,22 +377,16 @@ struct LongrangeCorrelation {
   template <KindOfCorrType corrType, KindOfEvntType evntType, typename TTracks>
   void fillYield(TTracks tracks)
   {
-    if (evntType == 1) {
-      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("hMult"), tracks.size());
-      for (auto const& iTrk : tracks) {
-        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_etavsphi"), iTrk.phi(), iTrk.eta());
-        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_eta"), iTrk.eta());
-        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_phi"), iTrk.phi());
-        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_pt"), iTrk.pt());
+    histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("hMult"), tracks.size());
+    for (auto const& iTrk : tracks) {
+      auto phi = iTrk.phi();
+      if constexpr (corrType == kFV0MFT || corrType == kFT0AMFT) {
+        o2::math_utils::bringTo02Pi(phi);
       }
-    } else {
-      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("hMult"), tracks.size());
-      for (auto const& iTrk : tracks) {
-        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_etavsphi"), iTrk.phi(), iTrk.eta());
-        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_eta"), iTrk.eta());
-        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_phi"), iTrk.phi());
-        histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_pt"), iTrk.pt());
-      }
+      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_etavsphi"), phi, iTrk.eta());
+      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_eta"), iTrk.eta());
+      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_phi"), phi);
+      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_pt"), iTrk.pt());
     }
   }
 
@@ -597,6 +601,55 @@ struct LongrangeCorrelation {
     } // trigger tracks
   } // fillCorrFv0Mft
 
+  template <CorrelationContainer::CFStep step, typename TTarget, typename TTracks, typename TTriggers, typename TFT0s>
+  void fillCorrFt0aMft(TTarget target, TTracks const& tracks, TTriggers const& triggers, TFT0s const& ft0, bool mixing, float vz)
+  {
+    int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
+    if (!mixing)
+      histos.fill(HIST("Ft0aMft/SE/hMult_used"), tracks.size());
+    for (auto const& triggerTrack : triggers) {
+      if (!isMftTrackSelected(triggerTrack)) {
+        continue;
+      }
+      if (!mixing)
+        histos.fill(HIST("Ft0aMft/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
+
+      auto trigphi = triggerTrack.phi();
+      o2::math_utils::bringTo02Pi(trigphi);
+
+      for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
+        auto chanelid = ft0.channelA()[iCh];
+        float ampl = ft0.amplitudeA()[iCh];
+
+        if (mixing)
+          histos.fill(HIST("Ft0aMft/ME/Assoc_amp"), chanelid, ampl);
+        else
+          histos.fill(HIST("Ft0aMft/SE/Assoc_amp"), chanelid, ampl);
+
+        auto phi = getPhiFT0(chanelid, 0);
+        auto eta = getEtaFT0(chanelid, 0);
+
+        if (mixing) {
+          histos.fill(HIST("Ft0aMft/ME/Assoc_eta"), eta);
+          histos.fill(HIST("Ft0aMft/ME/Assoc_phi"), phi);
+          histos.fill(HIST("Ft0aMft/ME/Assoc_etavsphi"), phi, eta);
+        } else {
+          histos.fill(HIST("Ft0aMft/SE/Assoc_eta"), eta);
+          histos.fill(HIST("Ft0aMft/SE/Assoc_phi"), phi);
+          histos.fill(HIST("Ft0aMft/SE/Assoc_etavsphi"), phi, eta);
+        }
+
+        float deltaPhi = RecoDecay::constrainAngle(trigphi - phi, -PIHalf);
+        float deltaEta = triggerTrack.eta() - eta;
+        if (mixing)
+          histos.fill(HIST("Ft0aMft/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+        else
+          histos.fill(HIST("Ft0aMft/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
+        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta);
+      } // associated ft0 tracks
+    } // trigger tracks
+  } // fillCorrFt0aMft
+
   void processEventStat(CollTable::iterator const& col)
   {
     histos.fill(HIST("QA/EventHist"), 1);
@@ -688,6 +741,21 @@ struct LongrangeCorrelation {
         return;
       }
       fillCorrFv0Mft<CorrelationContainer::kCFStepReconstructed>(sameFv0Mft, tracks, mfttracks, fv0, false, col.posZ());
+    }
+  } // same event
+
+  void processFt0aMftSE(CollTable::iterator const& col, aod::FT0s const&, TrksTable const& tracks, MftTrkTable const& mfttracks)
+  {
+    if (!isEventSelected(col)) {
+      return;
+    }
+    if (col.has_foundFT0()) {
+      fillYield<kFT0AMFT, kSE>(mfttracks);
+      const auto& ft0 = col.foundFT0();
+      if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
+        return;
+      }
+      fillCorrFt0aMft<CorrelationContainer::kCFStepReconstructed>(sameFt0aMft, tracks, mfttracks, ft0, false, col.posZ());
     }
   } // same event
 
@@ -826,6 +894,35 @@ struct LongrangeCorrelation {
     }
   } // mixed event
 
+  void processFt0aMftME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks, MftTrkTable const& mfttracks)
+  {
+    auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
+      auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
+      return associatedTracks.size();
+    };
+
+    using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
+    MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}, true};
+    for (auto const& [col1, col2] : soa::selfCombinations(binningOnVtxAndMult, mixingParameter, -1, col, col)) {
+      if (!isEventSelected(col1) || !isEventSelected(col2)) {
+        continue;
+      }
+      if (col1.globalIndex() == col2.globalIndex()) {
+        continue;
+      }
+      if (col1.has_foundFT0() && col2.has_foundFT0()) {
+        auto slicedGlobalTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
+        auto slicedTriggerMftTracks = mfttracks.sliceBy(perColMft, col1.globalIndex());
+        fillYield<kFT0AMFT, kME>(slicedTriggerMftTracks);
+        const auto& ft0 = col2.foundFT0();
+        if (slicedGlobalTracks.size() < cfgMinMult || slicedGlobalTracks.size() >= cfgMaxMult) {
+          continue;
+        }
+        fillCorrFt0aMft<CorrelationContainer::kCFStepReconstructed>(mixedFt0aMft, slicedGlobalTracks, slicedTriggerMftTracks, ft0, true, col1.posZ());
+      }
+    }
+  } // mixed event
+
   PROCESS_SWITCH(LongrangeCorrelation, processEventStat, "event stat", false);
   PROCESS_SWITCH(LongrangeCorrelation, processFt0aGlobalSE, "same event FT0a vs global", false);
   PROCESS_SWITCH(LongrangeCorrelation, processFt0aGlobalME, "mixed event FT0a vs global", false);
@@ -837,6 +934,8 @@ struct LongrangeCorrelation {
   PROCESS_SWITCH(LongrangeCorrelation, processFv0GlobalME, "mixed event FV0 vs global", false);
   PROCESS_SWITCH(LongrangeCorrelation, processFv0MftSE, "same event FV0 vs MFT", false);
   PROCESS_SWITCH(LongrangeCorrelation, processFv0MftME, "mixed event FV0 vs MFT", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processFt0aMftSE, "same event FT0a vs MFT", false);
+  PROCESS_SWITCH(LongrangeCorrelation, processFt0aMftME, "mixed event FT0a vs MFT", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

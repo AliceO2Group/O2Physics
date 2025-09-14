@@ -10,33 +10,32 @@
 // or submit itself to any jurisdiction.
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
-#include <string>
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h" // for propagation to primary vertex
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/GeomConstants.h"
+#include "CommonUtils/NameConf.h"
+#include "DataFormatsCalibration/MeanVertexObject.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "DetectorsVertexing/PVertexer.h"
+#include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "Common/Core/trackUtilities.h" // for propagation to primary vertex
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CommonUtils/NameConf.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/Core/TrackSelection.h"
-#include "DetectorsVertexing/PVertexer.h"
-#include "ReconstructionDataFormats/Vertex.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
 #include "Framework/RunningWorkflowInfo.h"
-#include "CCDB/CcdbApi.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "CommonConstants/GeomConstants.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/Vertex.h"
 
 #include "iostream"
-#include "vector"
 #include "set"
+#include "vector"
+#include <string>
 
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -490,7 +489,7 @@ struct ItsImpactParStudies {
             continue;
           }
           auto particle = track.mcParticle();
-          if (keepOnlyPhysPrimary && particle.isPhysicalPrimary()) {
+          if (keepOnlyPhysPrimary && !(particle.isPhysicalPrimary())) {
             continue;
           }
           histograms.fill(HIST("MC/ptMC"), particle.pt());

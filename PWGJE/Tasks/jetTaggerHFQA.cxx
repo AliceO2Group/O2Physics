@@ -127,6 +127,8 @@ struct JetTaggerHFQA {
     // Axis
     AxisSpec axisJetFlavour = {binJetFlavour, "Jet flavour"};
     AxisSpec axisJetPt = {binJetPt, "#it{p}_{T, jet}"};
+    AxisSpec axisMCDJetPt = {binJetPt, "#it{p}_{T, jet}^{rec}"};
+    AxisSpec axisMCPJetPt = {binJetPt, "#it{p}_{T, jet}^{gen}"};
     AxisSpec axisEta = {binEta, "#eta"};
     AxisSpec axisPhi = {binPhi, "#phi"};
     AxisSpec axisNTracks = {binNtracks, "#it{N}_{tracks}"};
@@ -149,6 +151,7 @@ struct JetTaggerHFQA {
     AxisSpec axisMass = {binMass, "#it{m}_{SV}"};
     AxisSpec axisSigmaLxy = {binSigmaLxy, "#sigma_{L_{XY}} [cm]"};
     AxisSpec axisSigmaLxyz = {binSigmaLxyz, "#sigma_{L_{XYZ}} [cm]"};
+    AxisSpec axisFracSecPt = {100, 0, 1, "#frac{#Sigma#it{p}_{T}^{secondary track}}{#it{p}_{T, jet}}"};
 
     if (doprocessTracksDca) {
       if (fillIPxy) {
@@ -163,6 +166,14 @@ struct JetTaggerHFQA {
         registry.add("h_impact_parameter_xyz", "", {HistType::kTH1F, {{axisImpactParameterXYZ}}});
         registry.add("h_impact_parameter_xyz_significance", "", {HistType::kTH1F, {{axisImpactParameterXYZSignificance}}});
       }
+    }
+    if (doprocessTracksInJetsData) {
+      registry.add("h2_track_pt_impact_parameter_xy", "", {HistType::kTH2F, {{axisTrackPt}, {axisImpactParameterXY}}});
+    }
+    if (doprocessSecondaryContaminationMCD) {
+      registry.add("hn_jet_pt_track_pt_impact_parameter_xy_physical_primary_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisTrackPt}, {axisImpactParameterXY}, {axisJetFlavour}}});
+      registry.add("hn_jet_pt_track_pt_impact_parameter_xy_secondary_flavour", "", {HistType::kTHnSparseF, {{axisJetPt}, {axisTrackPt}, {axisImpactParameterXY}, {axisJetFlavour}}});
+      registry.add("h3_jet_pt_frac_secondary_pt_per_jet_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisFracSecPt}, {axisJetFlavour}}});
     }
     if (doprocessValFlavourDefMCD) {
       registry.add("h2_flavour_dist_quark_flavour_dist_hadron", "", {HistType::kTH2F, {{axisJetFlavour}, {axisJetFlavour}}});
@@ -289,7 +300,7 @@ struct JetTaggerHFQA {
       registry.add("h2_jet_phi_part_flavour", "", {HistType::kTH2F, {{axisPhi}, {axisJetFlavour}}});
     }
     if (doprocessIPsMCPMCDMatched || doprocessIPsMCPMCDMatchedWeighted) {
-      registry.add("h3_jet_pt_jet_pt_part_matchedgeo_flavour", "", {HistType::kTH3F, {{axisJetPt}, {axisJetPt}, {axisJetFlavour}}});
+      registry.add("h3_jet_pt_jet_pt_part_matchedgeo_flavour", "", {HistType::kTH3F, {{axisMCDJetPt}, {axisMCPJetPt}, {axisJetFlavour}}});
     }
     if (doprocessJPData) {
       if (!doprocessIPsData && !doprocessSV2ProngData && !doprocessSV3ProngData) {
@@ -435,14 +446,17 @@ struct JetTaggerHFQA {
   template <typename T, typename U>
   bool isAcceptedJet(U const& jet)
   {
-    if (jetAreaFractionMin > -98.0) {
+    const float noJetAreaFractionFilter = -98.0;
+    const float noConstituentPtMinFilter = -98.0;
+    const float noConstituentPtMaxFilter = 9998.0;
+    if (jetAreaFractionMin > noJetAreaFractionFilter) {
       if (jet.area() < jetAreaFractionMin * o2::constants::math::PI * (jet.r() / 100.0) * (jet.r() / 100.0)) {
         return false;
       }
     }
     bool checkConstituentPt = true;
-    bool checkConstituentMinPt = (leadingConstituentPtMin > -98.0);
-    bool checkConstituentMaxPt = (leadingConstituentPtMax < 9998.0);
+    bool checkConstituentMinPt = (leadingConstituentPtMin > noConstituentPtMinFilter);
+    bool checkConstituentMaxPt = (leadingConstituentPtMax < noConstituentPtMaxFilter);
     if (!checkConstituentMinPt && !checkConstituentMaxPt) {
       checkConstituentPt = false;
     }
@@ -520,6 +534,9 @@ struct JetTaggerHFQA {
   template <typename T, typename U>
   void fillHistogramIPsData(T const& jet, U const& /*tracks*/)
   {
+    std::size_t firstTaggerForTrackCounting = 0;
+    std::size_t secondTaggerForTrackCounting = 1;
+    std::size_t thirdTaggerForTrackCounting = 2;
     float eventWeight = 1.0;
     float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (jet.pt() > pTHatMaxMCD * pTHat) {
@@ -585,7 +602,7 @@ struct JetTaggerHFQA {
     if (fillIPxyz)
       std::sort(vecSignImpXYZSig.begin(), vecSignImpXYZSig.end(), sortImp);
 
-    if (vecSignImpXYSig.size() > 0) { // N1
+    if (vecSignImpXYSig.size() > firstTaggerForTrackCounting) { // N1
       if (fillIPxy)
         registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xy_significance_N1"), jet.pt(), vecSignImpXYSig[0][0]);
       if (fillIPz)
@@ -593,7 +610,7 @@ struct JetTaggerHFQA {
       if (fillIPxyz)
         registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xyz_significance_N1"), jet.pt(), vecSignImpXYZSig[0][0]);
     }
-    if (vecSignImpXYSig.size() > 1) { // N2
+    if (vecSignImpXYSig.size() > secondTaggerForTrackCounting) { // N2
       if (fillIPxy)
         registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xy_significance_N2"), jet.pt(), vecSignImpXYSig[1][0]);
       if (fillIPz)
@@ -601,7 +618,7 @@ struct JetTaggerHFQA {
       if (fillIPxyz)
         registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xyz_significance_N2"), jet.pt(), vecSignImpXYZSig[1][0]);
     }
-    if (vecSignImpXYSig.size() > 2) { // N3
+    if (vecSignImpXYSig.size() > thirdTaggerForTrackCounting) { // N3
       if (fillIPxy)
         registry.fill(HIST("h2_jet_pt_sign_impact_parameter_xy_significance_N3"), jet.pt(), vecSignImpXYSig[2][0]);
       if (fillIPz)
@@ -638,6 +655,9 @@ struct JetTaggerHFQA {
   template <typename T, typename U>
   void fillHistogramIPsMCD(T const& mcdjet, U const& /*tracks*/, float eventWeight = 1.0)
   {
+    std::size_t firstTaggerForTrackCounting = 0;
+    std::size_t secondTaggerForTrackCounting = 1;
+    std::size_t thirdTaggerForTrackCounting = 2;
     float pTHat = 10. / (std::pow(eventWeight, 1.0 / pTHatExponent));
     if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
       return;
@@ -739,7 +759,7 @@ struct JetTaggerHFQA {
     sort(vecSignImpZSig[jetflavour].begin(), vecSignImpZSig[jetflavour].end(), std::greater<float>());
     sort(vecSignImpXYZSig[jetflavour].begin(), vecSignImpXYZSig[jetflavour].end(), std::greater<float>());
 
-    if (vecImpXY[jetflavour].size() > 0) { // N1
+    if (vecImpXY[jetflavour].size() > firstTaggerForTrackCounting) { // N1
       if (fillIPxy)
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N1"), mcdjet.pt(), vecSignImpXYSig[jetflavour][0], jetflavour, eventWeight);
       if (fillIPz)
@@ -747,7 +767,7 @@ struct JetTaggerHFQA {
       if (fillIPxyz)
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N1"), mcdjet.pt(), vecSignImpXYZSig[jetflavour][0], jetflavour, eventWeight);
     }
-    if (vecImpXY[jetflavour].size() > 1) { // N2
+    if (vecImpXY[jetflavour].size() > secondTaggerForTrackCounting) { // N2
       if (fillIPxy)
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N2"), mcdjet.pt(), vecSignImpXYSig[jetflavour][1], jetflavour, eventWeight);
       if (fillIPz)
@@ -755,7 +775,7 @@ struct JetTaggerHFQA {
       if (fillIPxyz)
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xyz_significance_flavour_N2"), mcdjet.pt(), vecSignImpXYZSig[jetflavour][1], jetflavour, eventWeight);
     }
-    if (vecImpXY[jetflavour].size() > 2) { // N3
+    if (vecImpXY[jetflavour].size() > thirdTaggerForTrackCounting) { // N3
       if (fillIPxy)
         registry.fill(HIST("h3_jet_pt_sign_impact_parameter_xy_significance_flavour_N3"), mcdjet.pt(), vecSignImpXYSig[jetflavour][2], jetflavour, eventWeight);
       if (fillIPz)
@@ -1092,6 +1112,66 @@ struct JetTaggerHFQA {
     }
   }
   PROCESS_SWITCH(JetTaggerHFQA, processTracksDca, "Fill inclusive tracks' imformation for data", false);
+
+  void processTracksInJetsData(soa::Filtered<aod::JetCollisions>::iterator const& collision, soa::Join<JetTableData, TagTableData> const& jets, JetTagTracksData const& /*tracks*/)
+  {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    for (auto const& jet : jets) {
+      if (!jetfindingutilities::isInEtaAcceptance(jet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(jet)) {
+        continue;
+      }
+      for (auto const& track : jet.template tracks_as<JetTagTracksData>()) {
+        float varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
+        registry.fill(HIST("h2_track_pt_impact_parameter_xy"), track.pt(), varImpXY);
+      }
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processTracksInJetsData, "Fill QA comtamination of secondary-track inside jets for data jets", false);
+
+  void processSecondaryContaminationMCD(soa::Filtered<soa::Join<aod::JetCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, weightMCD> const& mcdjets, JetTagTracksMCD const& /*tracks*/, aod::JetParticles const& /*particles*/)
+  {
+    if (collision.trackOccupancyInTimeRange() < trackOccupancyInTimeRangeMin || trackOccupancyInTimeRangeMax < collision.trackOccupancyInTimeRange()) {
+      return;
+    }
+    for (auto const& mcdjet : mcdjets) {
+      if (!jetfindingutilities::isInEtaAcceptance(mcdjet, jetEtaMin, jetEtaMax, trackEtaMin, trackEtaMax)) {
+        continue;
+      }
+      if (!isAcceptedJet<aod::JetTracks>(mcdjet)) {
+        continue;
+      }
+      float pTHat = 10. / (std::pow(mcdjet.eventWeight(), 1.0 / pTHatExponent));
+      if (mcdjet.pt() > pTHatMaxMCD * pTHat) {
+        continue;
+      }
+      int jetflavour = mcdjet.origin();
+      float secondaryPt = 0;
+      float totalJetPt = 0;
+      for (auto const& track : mcdjet.template tracks_as<JetTagTracksMCD>()) {
+        float varImpXY = track.dcaXY() * jettaggingutilities::cmTomum;
+        if (!track.has_mcParticle())
+          continue;
+        auto mcParticle = track.mcParticle();
+        totalJetPt += track.pt();
+        if (mcParticle.isPhysicalPrimary()) {
+          registry.fill(HIST("hn_jet_pt_track_pt_impact_parameter_xy_physical_primary_flavour"), mcdjet.pt(), track.pt(), varImpXY, jetflavour, mcdjet.eventWeight());
+        } else {
+          registry.fill(HIST("hn_jet_pt_track_pt_impact_parameter_xy_secondary_flavour"), mcdjet.pt(), track.pt(), varImpXY, jetflavour, mcdjet.eventWeight());
+          secondaryPt += track.pt();
+        }
+      }
+      if (totalJetPt > 0) {
+        float fracSecondary = secondaryPt / totalJetPt;
+        registry.fill(HIST("h3_jet_pt_frac_secondary_pt_per_jet_flavour"), mcdjet.pt(), fracSecondary, jetflavour, mcdjet.eventWeight());
+      }
+    }
+  }
+  PROCESS_SWITCH(JetTaggerHFQA, processSecondaryContaminationMCD, "Fill QA comtamination of secondary-track inside jets for mcd jets", false);
 
   void processValFlavourDefMCD(soa::Filtered<soa::Join<aod::JCollisions, aod::JCollisionPIs, aod::JMcCollisionLbs>>::iterator const& collision, soa::Join<JetTableMCD, TagTableMCD, JetTableMCDMCP, weightMCD> const& mcdjets, soa::Join<JetTableMCP, JetTableMCPMCD> const& /*mcpjets*/, JetTagTracksMCD const& tracks, aod::JetParticles const& particles)
   {
@@ -1558,10 +1638,10 @@ using JetTaggerQAChargedDataJets = soa::Join<aod::ChargedJets, aod::ChargedJetCo
 using JetTaggerQAChargedMCDJets = soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetFlavourDef>;
 using JetTaggerQAChargedMCPJets = soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetFlavourDef>;
 
-using JetTaggerhfQACharged = JetTaggerHFQA<JetTaggerQAChargedDataJets, aod::ChargedJetTags, JetTaggerQAChargedMCDJets, aod::ChargedMCDetectorLevelJetEventWeights, aod::ChargedMCDetectorLevelJetTags, JetTaggerQAChargedMCPJets, aod::ChargedMCParticleLevelJetEventWeights, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
+using JetTaggerhfQaCharged = JetTaggerHFQA<JetTaggerQAChargedDataJets, aod::ChargedJetTags, JetTaggerQAChargedMCDJets, aod::ChargedMCDetectorLevelJetEventWeights, aod::ChargedMCDetectorLevelJetTags, JetTaggerQAChargedMCPJets, aod::ChargedMCParticleLevelJetEventWeights, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JetTaggerhfQACharged>(cfgc, TaskName{"jet-taggerhf-qa-charged"})}; // o2-linter: disable=name/o2-task
+    adaptAnalysisTask<JetTaggerhfQaCharged>(cfgc, TaskName{"jet-taggerhf-qa-charged"})}; // o2-linter: disable=name/o2-task (templated struct)
 }

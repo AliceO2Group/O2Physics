@@ -82,8 +82,9 @@ struct CreateResolutionMap {
   ConfigurableAxis ConfPhiGenBins{"ConfPhiGenBins", {72, 0, 2.f * M_PI}, "gen. eta bins at forward rapidity for output histograms"};
 
   ConfigurableAxis ConfRelDeltaPtBins{"ConfRelDeltaPtBins", {200, -1.f, +1.f}, "rel. dpt for output histograms"};
-  ConfigurableAxis ConfDeltaEtaBins{"ConfDeltaEtaBins", {200, -0.2f, +0.2f}, "deta bins for output histograms"};
-  ConfigurableAxis ConfDeltaPhiBins{"ConfDeltaPhiBins", {200, -0.2f, +0.2f}, "dphi bins for output histograms"};
+  ConfigurableAxis ConfDeltaEtaCBBins{"ConfDeltaEtaCBBins", {200, -0.5f, +0.5f}, "deta bins for output histograms"};
+  ConfigurableAxis ConfDeltaEtaFWDBins{"ConfDeltaEtaFWDBins", {200, -0.5f, +0.5f}, "deta bins for output histograms"};
+  ConfigurableAxis ConfDeltaPhiBins{"ConfDeltaPhiBins", {200, -0.5f, +0.5f}, "dphi bins for output histograms"};
 
   Configurable<bool> cfgFillTHnSparse{"cfgFillTHnSparse", true, "fill THnSparse for output"};
   Configurable<bool> cfgFillTH2{"cfgFillTH2", false, "fill TH2 for output"};
@@ -212,7 +213,8 @@ struct CreateResolutionMap {
     const AxisSpec axis_eta_fwd_gen{ConfEtaFWDGenBins, "#eta_{l}^{gen}"};
     const AxisSpec axis_phi_gen{ConfPhiGenBins, "#varphi_{l}^{gen} (rad.)"};
     const AxisSpec axis_dpt{ConfRelDeltaPtBins, "(p_{T,l}^{gen} - p_{T,l}^{rec})/p_{T,l}^{gen}"};
-    const AxisSpec axis_deta{ConfDeltaEtaBins, "#eta_{l}^{gen} - #eta_{l}^{rec}"};
+    const AxisSpec axis_deta_cb{ConfDeltaEtaCBBins, "#eta_{l}^{gen} - #eta_{l}^{rec}"};
+    const AxisSpec axis_deta_fwd{ConfDeltaEtaFWDBins, "#eta_{l}^{gen} - #eta_{l}^{rec}"};
     const AxisSpec axis_dphi{ConfDeltaPhiBins, "#varphi_{l}^{gen} - #varphi_{l}^{rec} (rad.)"};
     const AxisSpec axis_charge_gen{3, -1.5, +1.5, "true sign"};
 
@@ -222,20 +224,26 @@ struct CreateResolutionMap {
       registry.add("Event/hGenID", "generator ID;generator ID;Number of mc collisions", kTH1F, {{7, -1.5, 5.5}}, true);
     }
     if (cfgFillTH2) {
-      registry.add("Electron/hPt", "rec. p_{T,l};p_{T,l} (GeV/c)", kTH1F, {{1000, 0, 10}}, false);
-      registry.add("Electron/hEtaPhi", "rec. #eta vs. #varphi;#varphi_{l} (rad.);#eta_{l}", kTH2F, {{90, 0, 2 * M_PI}, {100, -5, +5}}, false);
+      registry.add("Electron/hPt", "rec. p_{T,e};p_{T,e} (GeV/c)", kTH1F, {{1000, 0, 10}}, false);
+      registry.add("Electron/hEtaPhi", "rec. #eta vs. #varphi;#varphi_{e} (rad.);#eta_{e}", kTH2F, {{90, 0, 2 * M_PI}, {100, -5, +5}}, false);
       registry.add("Electron/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt}}, true);
-      registry.add("Electron/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta}}, true);
+      registry.add("Electron/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta_cb}}, true);
       registry.add("Electron/Ptgen_DeltaPhi_Pos", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
       registry.add("Electron/Ptgen_DeltaPhi_Neg", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
-      registry.addClone("Electron/", "StandaloneMuon/");
-      registry.addClone("Electron/", "GlobalMuon/");
+
+      registry.add("StandaloneMuon/hPt", "rec. p_{T,#mu};p_{T,#mu} (GeV/c)", kTH1F, {{1000, 0, 10}}, false);
+      registry.add("StandaloneMuon/hEtaPhi", "rec. #eta vs. #varphi;#varphi_{#mu} (rad.);#eta_{#mu}", kTH2F, {{90, 0, 2 * M_PI}, {100, -5, +5}}, false);
+      registry.add("StandaloneMuon/Ptgen_RelDeltaPt", "resolution", kTH2F, {{axis_pt_gen}, {axis_dpt}}, true);
+      registry.add("StandaloneMuon/Ptgen_DeltaEta", "resolution", kTH2F, {{axis_pt_gen}, {axis_deta_fwd}}, true);
+      registry.add("StandaloneMuon/Ptgen_DeltaPhi_Pos", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
+      registry.add("StandaloneMuon/Ptgen_DeltaPhi_Neg", "resolution", kTH2F, {{axis_pt_gen}, {axis_dphi}}, true);
+      registry.addClone("StandaloneMuon/", "GlobalMuon/");
     }
 
     if (cfgFillTHnSparse) {
-      registry.add("Electron/hs_reso", "8D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_cb_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta, axis_dphi}, true);
-      registry.add("StandaloneMuon/hs_reso", "8D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta, axis_dphi}, true);
-      registry.add("GlobalMuon/hs_reso", "8D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta, axis_dphi}, true);
+      registry.add("Electron/hs_reso", "8D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_cb_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta_cb, axis_dphi}, true);
+      registry.add("StandaloneMuon/hs_reso", "8D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta_fwd, axis_dphi}, true);
+      registry.add("GlobalMuon/hs_reso", "8D resolution", kTHnSparseF, {axis_cent, axis_pt_gen, axis_eta_fwd_gen, axis_phi_gen, axis_charge_gen, axis_dpt, axis_deta_fwd, axis_dphi}, true);
     }
   }
 
@@ -592,7 +600,7 @@ struct CreateResolutionMap {
       return;
     }
 
-    if (!isSelectedMuon(pt, eta, rAtAbsorberEnd, pDCA, muon.chi2(), muon.trackType(), dcaXY)) {
+    if (!isSelectedMuon(pt, eta, rAtAbsorberEnd, pDCA, muon.chi2() / (2.f * (muon.nClusters() + nClustersMFT) - 5.f), muon.trackType(), dcaXY)) {
       return;
     }
 
@@ -656,7 +664,7 @@ struct CreateResolutionMap {
       if (muoncuts.cfg_max_dcaxy_gl < dcaXY) {
         return false;
       }
-      if (chi2 < 0.f || muoncuts.cfg_max_chi2_gl < chi2) {
+      if (chi2 < 0.f || muoncuts.cfg_max_chi2_gl < chi2) { // chi2/ndf
         return false;
       }
       if (rAtAbsorberEnd < muoncuts.cfg_min_rabs_gl || muoncuts.cfg_max_rabs_gl < rAtAbsorberEnd) {

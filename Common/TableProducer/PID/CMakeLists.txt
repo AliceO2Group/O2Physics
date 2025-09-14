@@ -48,6 +48,11 @@ o2physics_add_dpl_workflow(pid-tpc-service
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pid-tpc-service-run2
+                    SOURCES pidTPCServiceRun2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::MLCore O2Physics::AnalysisCCDB
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(pid-tpc-base
                     SOURCES pidTPCBase.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::AnalysisCCDB
