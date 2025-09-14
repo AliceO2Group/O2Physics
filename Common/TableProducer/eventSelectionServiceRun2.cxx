@@ -178,32 +178,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   // Parse the metadata for later too
   metadataInfo.initMetadata(cfgc);
 
-  bool isRun3 = true, hasRunInfo = false;
-  if (cfgc.options().hasOption("aod-metadata-Run") == true) {
-    hasRunInfo = true;
-    if (cfgc.options().get<std::string>("aod-metadata-Run") == "2") {
-      isRun3 = false;
-    }
-  }
+  LOGF(info, "Event selection with forced Run 2 mode engaging in unchecked mode.");
+  LOGF(info, "To be improved once metadata enabling in defineDataProcessing is worked out.");
 
-  LOGF(info, "Event selection autoconfiguring from metadata. Availability of info for Run 2/3 is %i", hasRunInfo);
-  if (!hasRunInfo) {
-    LOGF(info, "Metadata info missing or incomplete. Make sure --aod-file is provided at the end of the last workflow and that the AO2D has metadata stored.");
-    LOGF(info, "Initializing with Run 3 data as default. Please note you will not be able to change settings manually.");
-    LOGF(info, "You should instead make sure the metadata is read in correctly.");
-    return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
-  } else {
-    LOGF(info, "Metadata successfully read in. Is this Run 3? %i - will self-configure.", isRun3);
-    if (isRun3) {
-      return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
-    } else {
-      LOGF(info, "******************************************************************");
-      LOGF(info, " Event selection service self-configuring for Run 2.");
-      LOGF(info, " WARNING: THIS HAS NOT BEEN VALIDATED YET, USE WITH CAUTION");
-      LOGF(info, " If this fails, please use event-selection-service-run2 instead.");
-      LOGF(info, "******************************************************************");
-      return WorkflowSpec{adaptAnalysisTask<eventselectionRun2>(cfgc)};
-    }
-  }
-  throw std::runtime_error("Unsupported run type / problem when configuring event selection!");
+  // force Run 2 mode
+  return WorkflowSpec{adaptAnalysisTask<eventselectionRun2>(cfgc)};
 }

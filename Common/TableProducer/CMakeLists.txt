@@ -34,6 +34,12 @@ o2physics_add_dpl_workflow(event-selection-service
                                           O2::DataFormatsITSMFT
                     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(event-selection-service-run2
+                    SOURCES eventSelectionServiceRun2.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCCDB
+                                          O2::DataFormatsITSMFT
+                    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(multiplicity-table
                     SOURCES multiplicityTable.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
