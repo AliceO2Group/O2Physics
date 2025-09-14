@@ -645,7 +645,260 @@ struct ExclusiveRhoTo4Pi {
   using MCtracks = soa::Join<aod::UDTracks, aod::UDTracksPID, aod::UDTracksExtra, aod::UDTracksFlags, aod::UDTracksDCA, aod::UDMcTrackLabels>;
   using MCCollisions = soa::Join<aod::UDCollisions, aod::SGCollisions, aod::UDCollisionSelExtras, aod::UDCollisionsSels, aod::UDZdcsReduced, aod::UDMcCollsLabels>;
 
+  void processMCrec(soa::Filtered<MCCollisions>::iterator const& collision, soa::Filtered<MCtracks> const& tracks)
+  {
+
+    if (collision.has_udMcCollision()) {
+      return;
+    }
+
+    // Check if the Event is reconstructed in UPC mode and RCT flag
+    if ((collision.flags() != ifUPC) || (!sgSelector.isCBTHadronOk(collision))) {
+      return;
+    }
+
+    int runIndex = getRunNumberIndex(collision.runNumber());
+
+    histosQA.fill(HIST("Events/selected/UPCmode"), collision.flags());
+    histosQA.fill(HIST("Events/selected/GapSide"), collision.gapSide());
+    histosQA.fill(HIST("Events/selected/TrueGapSide"), sgSelector.trueGap(collision, fv0Cut, ft0aCut, ft0cCut, zdcCut));
+    histosQA.fill(HIST("Events/selected/isCBTOk"), sgSelector.isCBTOk(collision));
+    histosQA.fill(HIST("Events/selected/isCBTHadronOk"), sgSelector.isCBTHadronOk(collision));
+    histosQA.fill(HIST("Events/selected/isCBTZdcOk"), sgSelector.isCBTZdcOk(collision));
+    histosQA.fill(HIST("Events/selected/isCBTHadronZdcOk"), sgSelector.isCBTHadronZdcOk(collision));
+    histosQA.fill(HIST("Events/selected/vertexX"), collision.posX());
+    histosQA.fill(HIST("Events/selected/vertexY"), collision.posY());
+    histosQA.fill(HIST("Events/selected/vertexZ"), collision.posZ());
+    histosQA.fill(HIST("Events/selected/occupancy"), collision.occupancyInTime());
+    histosQA.fill(HIST("Events/selected/FV0A"), collision.totalFV0AmplitudeA());
+    histosQA.fill(HIST("Events/selected/FT0A"), collision.totalFT0AmplitudeA());
+    histosQA.fill(HIST("Events/selected/FT0C"), collision.totalFT0AmplitudeC());
+    histosQA.fill(HIST("Events/selected/ZDC_A"), collision.energyCommonZNA());
+    histosQA.fill(HIST("Events/selected/ZDC_C"), collision.energyCommonZNC());
+    histosQA.fill(HIST("Events/selected/FDDA"), collision.totalFDDAmplitudeA());
+    histosQA.fill(HIST("Events/selected/FDDC"), collision.totalFDDAmplitudeC());
+
+    std::vector<decltype(tracks.begin())> selectedTracks;
+    std::vector<decltype(tracks.begin())> selectedPionTracks;
+    std::vector<decltype(tracks.begin())> selectedPionPlusTracks;
+    std::vector<decltype(tracks.begin())> selectedPionMinusTracks;
+
+    for (const auto& t0 : tracks) {
+
+      PxPyPzMVector tVector(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassPionCharged);
+
+      // QA-Tracks before selection
+      histosQA.fill(HIST("Tracks/all/dcaXY"), t0.tpcChi2NCl());
+      histosQA.fill(HIST("Tracks/all/dcaZ"), t0.tpcChi2NCl());
+      histosQA.fill(HIST("Tracks/all/itsChi2NCl"), t0.itsChi2NCl());
+      histosQA.fill(HIST("Tracks/all/itsChi2"), t0.itsChi2NCl() * t0.itsNCls());
+      histosQA.fill(HIST("Tracks/all/tpcChi2NCl"), t0.tpcChi2NCl());
+      histosQA.fill(HIST("Tracks/all/tpcNClsFindable"), t0.tpcNClsFindable());
+
+      // PID before track selection
+      histosPID.fill(HIST("all/tpcSignal"), tVector.P(), t0.tpcSignal());
+      histosPID.fill(HIST("all/tpcNSigmaPi"), t0.tpcNSigmaPi(), tVector.Pt());
+      histosPID.fill(HIST("all/tpcNSigmaKa"), t0.tpcNSigmaKa(), tVector.Pt());
+      histosPID.fill(HIST("all/tpcNSigmaPr"), t0.tpcNSigmaPr(), tVector.Pt());
+      histosPID.fill(HIST("all/tpcNSigmaEl"), t0.tpcNSigmaEl(), tVector.Pt());
+      histosPID.fill(HIST("all/tpcNSigmaMu"), t0.tpcNSigmaMu(), tVector.Pt());
+      histosPID.fill(HIST("all/tofBeta"), tVector.P(), t0.beta());
+      histosPID.fill(HIST("all/tofNSigmaPi"), t0.tofNSigmaPi(), tVector.Pt());
+      histosPID.fill(HIST("all/tofNSigmaKa"), t0.tofNSigmaKa(), tVector.Pt());
+      histosPID.fill(HIST("all/tofNSigmaPr"), t0.tofNSigmaPr(), tVector.Pt());
+      histosPID.fill(HIST("all/tofNSigmaEl"), t0.tofNSigmaEl(), tVector.Pt());
+      histosPID.fill(HIST("all/tofNSigmaMu"), t0.tofNSigmaMu(), tVector.Pt());
+
+      // Kinematics for all particles before selection
+      histosKin.fill(HIST("all"), tVector.Pt(), tVector.Eta(), tVector.Phi());
+
+      // Selecting good tracks
+      if (!isSelectedTrack(t0, pTcut, etaCut, dcaXYcut, dcaZcut, useITStracksOnly, useTPCtracksOnly, itsChi2NClsCut, tpcChi2NClsCut, tpcNClsFindableCut)) {
+        continue;
+      }
+      if (!t0.has_udMcParticle()) {
+        continue;
+      }
+
+      // QA-Tracks after selection
+      histosQA.fill(HIST("Tracks/selected/dcaXY"), t0.dcaXY());
+      histosQA.fill(HIST("Tracks/selected/dcaZ"), t0.dcaZ());
+      histosQA.fill(HIST("Tracks/selected/itsChi2NCl"), t0.itsChi2NCl());
+      histosQA.fill(HIST("Tracks/selected/itsChi2"), t0.itsChi2NCl() * t0.itsNCls());
+      histosQA.fill(HIST("Tracks/selected/tpcChi2NCl"), t0.tpcChi2NCl());
+      histosQA.fill(HIST("Tracks/selected/tpcNClsFindable"), t0.tpcNClsFindable());
+
+      // PID after track selection before selecting pions
+      histosPID.fill(HIST("selected/tpcSignal"), tVector.P(), t0.tpcSignal());
+      histosPID.fill(HIST("selected/tpcNSigmaPi"), t0.tpcNSigmaPi(), tVector.Pt());
+      histosPID.fill(HIST("selected/tpcNSigmaKa"), t0.tpcNSigmaKa(), tVector.Pt());
+      histosPID.fill(HIST("selected/tpcNSigmaPr"), t0.tpcNSigmaPr(), tVector.Pt());
+      histosPID.fill(HIST("selected/tpcNSigmaEl"), t0.tpcNSigmaEl(), tVector.Pt());
+      histosPID.fill(HIST("selected/tpcNSigmaMu"), t0.tpcNSigmaMu(), tVector.Pt());
+      histosPID.fill(HIST("selected/tofBeta"), tVector.P(), t0.beta());
+      histosPID.fill(HIST("selected/tofNSigmaPi"), t0.tofNSigmaPi(), tVector.Pt());
+      histosPID.fill(HIST("selected/tofNSigmaKa"), t0.tofNSigmaKa(), tVector.Pt());
+      histosPID.fill(HIST("selected/tofNSigmaPr"), t0.tofNSigmaPr(), tVector.Pt());
+      histosPID.fill(HIST("selected/tofNSigmaEl"), t0.tofNSigmaEl(), tVector.Pt());
+      histosPID.fill(HIST("selected/tofNSigmaMu"), t0.tofNSigmaMu(), tVector.Pt());
+
+      // Kinematics for all particles after track selection before selecting pions
+      histosKin.fill(HIST("selected"), tVector.Pt(), tVector.Eta(), tVector.Phi());
+
+      selectedTracks.push_back(t0);
+      if (ifPion(t0, useTOF, nSigmaTPCcut, nSigmaTOFcut)) {
+
+        selectedPionTracks.push_back(t0);
+
+        // QA-Tracks after selecting pions
+        histosQA.fill(HIST("Tracks/pions/dcaXY"), t0.dcaXY());
+        histosQA.fill(HIST("Tracks/pions/dcaZ"), t0.dcaZ());
+        histosQA.fill(HIST("Tracks/pions/itsChi2NCl"), t0.itsChi2NCl());
+        histosQA.fill(HIST("Tracks/pions/itsChi2"), t0.itsChi2NCl() * t0.itsNCls());
+        histosQA.fill(HIST("Tracks/pions/tpcChi2NCl"), t0.tpcChi2NCl());
+        histosQA.fill(HIST("Tracks/pions/tpcNClsFindable"), t0.tpcNClsFindable());
+
+        // PID after selecting pions
+        histosPID.fill(HIST("pions/tpcSignal"), tVector.P(), t0.tpcSignal());
+        histosPID.fill(HIST("pions/tpcNSigmaPi"), t0.tpcNSigmaPi(), tVector.Pt());
+        histosPID.fill(HIST("pions/tpcNSigmaKa"), t0.tpcNSigmaKa(), tVector.Pt());
+        histosPID.fill(HIST("pions/tpcNSigmaPr"), t0.tpcNSigmaPr(), tVector.Pt());
+        histosPID.fill(HIST("pions/tpcNSigmaEl"), t0.tpcNSigmaEl(), tVector.Pt());
+        histosPID.fill(HIST("pions/tpcNSigmaMu"), t0.tpcNSigmaMu(), tVector.Pt());
+        histosPID.fill(HIST("pions/tofBeta"), tVector.P(), t0.beta());
+        histosPID.fill(HIST("pions/tofNSigmaPi"), t0.tofNSigmaPi(), tVector.Pt());
+        histosPID.fill(HIST("pions/tofNSigmaKa"), t0.tofNSigmaKa(), tVector.Pt());
+        histosPID.fill(HIST("pions/tofNSigmaPr"), t0.tofNSigmaPr(), tVector.Pt());
+        histosPID.fill(HIST("pions/tofNSigmaEl"), t0.tofNSigmaEl(), tVector.Pt());
+        histosPID.fill(HIST("pions/tofNSigmaMu"), t0.tofNSigmaMu(), tVector.Pt());
+
+        // Kinematics for pions
+        histosKin.fill(HIST("pions"), tVector.Pt(), tVector.Eta(), tVector.Phi());
+
+        if (t0.sign() == 1) {
+          selectedPionPlusTracks.push_back(t0);
+        }
+        if (t0.sign() == -1) {
+          selectedPionMinusTracks.push_back(t0);
+        }
+      } // End of Selection PID Pion
+    } // End of loop over tracks
+
+    int numSelectedPionTracks = static_cast<int>(selectedPionTracks.size());
+    int numPiPlusTracks = static_cast<int>(selectedPionPlusTracks.size());
+    int numPionMinusTracks = static_cast<int>(selectedPionMinusTracks.size());
+
+    // event should have exactly 4 pions
+    if (numSelectedPionTracks != numFourPionTracks) {
+      return;
+    }
+
+    // Selecting Events with net charge = 0
+    if (numPionMinusTracks == numPiMinus && numPiPlusTracks == numPiPlus) {
+
+      // QA-Events-4pion
+      histosQA.fill(HIST("Events/4pion/UPCmode"), collision.flags());
+      histosQA.fill(HIST("Events/4pion/GapSide"), collision.gapSide());
+      histosQA.fill(HIST("Events/4pion/TrueGapSide"), sgSelector.trueGap(collision, fv0Cut, ft0aCut, ft0cCut, zdcCut));
+      histosQA.fill(HIST("Events/4pion/isCBTOk"), sgSelector.isCBTOk(collision));
+      histosQA.fill(HIST("Events/4pion/isCBTHadronOk"), sgSelector.isCBTHadronOk(collision));
+      histosQA.fill(HIST("Events/4pion/isCBTZdcOk"), sgSelector.isCBTZdcOk(collision));
+      histosQA.fill(HIST("Events/4pion/isCBTHadronZdcOk"), sgSelector.isCBTHadronZdcOk(collision));
+      histosQA.fill(HIST("Events/4pion/vertexX"), collision.posX());
+      histosQA.fill(HIST("Events/4pion/vertexY"), collision.posY());
+      histosQA.fill(HIST("Events/4pion/vertexZ"), collision.posZ());
+      histosQA.fill(HIST("Events/4pion/occupancy"), collision.occupancyInTime());
+      histosQA.fill(HIST("Events/4pion/FV0A"), collision.totalFV0AmplitudeA());
+      histosQA.fill(HIST("Events/4pion/FT0A"), collision.totalFT0AmplitudeA());
+      histosQA.fill(HIST("Events/4pion/FT0C"), collision.totalFT0AmplitudeC());
+      histosQA.fill(HIST("Events/4pion/ZDC_A"), collision.energyCommonZNA());
+      histosQA.fill(HIST("Events/4pion/ZDC_C"), collision.energyCommonZNC());
+      histosQA.fill(HIST("Events/4pion/FDDA"), collision.totalFDDAmplitudeA());
+      histosQA.fill(HIST("Events/4pion/FDDC"), collision.totalFDDAmplitudeC());
+
+      for (int i = 0; i < numFourPionTracks; i++) {
+        PxPyPzMVector tVector(selectedPionTracks[i].px(), selectedPionTracks[i].py(), selectedPionTracks[i].pz(), o2::constants::physics::MassPionCharged);
+        // Tracks QA for all four pions
+        histosQA.fill(HIST("Tracks/pions-from-4pi/dcaXY"), selectedPionTracks[i].dcaXY());
+        histosQA.fill(HIST("Tracks/pions-from-4pi/dcaZ"), selectedPionTracks[i].dcaZ());
+        histosQA.fill(HIST("Tracks/pions-from-4pi/itsChi2NCl"), selectedPionTracks[i].itsChi2NCl());
+        histosQA.fill(HIST("Tracks/pions-from-4pi/itsChi2"), selectedPionTracks[i].itsChi2NCl() * selectedPionTracks[i].itsNCls());
+        histosQA.fill(HIST("Tracks/pions-from-4pi/tpcChi2NCl"), selectedPionTracks[i].tpcChi2NCl());
+        histosQA.fill(HIST("Tracks/pions-from-4pi/tpcNClsFindable"), selectedPionTracks[i].tpcNClsFindable());
+        // PID for all four pions
+        histosPID.fill(HIST("pions-from-4pi/tpcSignal"), tVector.P(), selectedPionTracks[i].tpcSignal());
+        histosPID.fill(HIST("pions-from-4pi/tpcNSigmaPi"), selectedPionTracks[i].tpcNSigmaPi(), tVector.Pt());
+        histosPID.fill(HIST("pions-from-4pi/tpcNSigmaKa"), selectedPionTracks[i].tpcNSigmaKa(), tVector.Pt());
+        histosPID.fill(HIST("pions-from-4pi/tpcNSigmaPr"), selectedPionTracks[i].tpcNSigmaPr(), tVector.Pt());
+        histosPID.fill(HIST("pions-from-4pi/tpcNSigmaEl"), selectedPionTracks[i].tpcNSigmaEl(), tVector.Pt());
+        histosPID.fill(HIST("pions-from-4pi/tpcNSigmaMu"), selectedPionTracks[i].tpcNSigmaMu(), tVector.Pt());
+        histosPID.fill(HIST("pions-from-4pi/tofBeta"), tVector.P(), selectedPionTracks[i].beta());
+        histosPID.fill(HIST("pions-from-4pi/tofNSigmaPi"), selectedPionTracks[i].tofNSigmaPi(), tVector.Pt());
+        histosPID.fill(HIST("pions-from-4pi/tofNSigmaKa"), selectedPionTracks[i].tofNSigmaKa(), tVector.Pt());
+        histosPID.fill(HIST("pions-from-4pi/tofNSigmaPr"), selectedPionTracks[i].tofNSigmaPr(), tVector.Pt());
+        histosPID.fill(HIST("pions-from-4pi/tofNSigmaEl"), selectedPionTracks[i].tofNSigmaEl(), tVector.Pt());
+        histosPID.fill(HIST("pions-from-4pi/tofNSigmaMu"), selectedPionTracks[i].tofNSigmaMu(), tVector.Pt());
+      }
+
+      PxPyPzMVector p1(selectedPionPlusTracks[0].px(), selectedPionPlusTracks[0].py(), selectedPionPlusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p2(selectedPionPlusTracks[1].px(), selectedPionPlusTracks[1].py(), selectedPionPlusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p3(selectedPionMinusTracks[0].px(), selectedPionMinusTracks[0].py(), selectedPionMinusTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p4(selectedPionMinusTracks[1].px(), selectedPionMinusTracks[1].py(), selectedPionMinusTracks[1].pz(), o2::constants::physics::MassPionCharged);
+
+      // Kinematics for pions from 4 pion events
+      histosKin.fill(HIST("pions-from-4pi"), p1.Pt(), p1.Eta(), p1.Phi(), p1.Rapidity());
+      histosKin.fill(HIST("pions-from-4pi"), p2.Pt(), p2.Eta(), p2.Phi(), p2.Rapidity());
+      histosKin.fill(HIST("pions-from-4pi"), p3.Pt(), p3.Eta(), p3.Phi(), p3.Rapidity());
+      histosKin.fill(HIST("pions-from-4pi"), p4.Pt(), p4.Eta(), p4.Phi(), p4.Rapidity());
+
+      PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
+      PxPyPzMVector p13 = p1 + p3;
+      PxPyPzMVector p14 = p1 + p4;
+      PxPyPzMVector p23 = p2 + p3;
+      PxPyPzMVector p24 = p2 + p4;
+
+      // Two Pion Mass combinations
+      histos4piKin.fill(HIST("two-pion-mass"), p13.M(), p14.M(), p23.M(), p24.M());
+
+      double fourPiPhiPair1 = collinSoperPhi(p13, p1234);
+      double fourPiPhiPair2 = collinSoperPhi(p14, p1234);
+      double fourPiPhiPair3 = collinSoperPhi(p23, p1234);
+      double fourPiPhiPair4 = collinSoperPhi(p24, p1234);
+
+      double fourPiCosThetaPair1 = collinSoperCosTheta(p13, p1234);
+      double fourPiCosThetaPair2 = collinSoperCosTheta(p14, p1234);
+      double fourPiCosThetaPair3 = collinSoperCosTheta(p23, p1234);
+      double fourPiCosThetaPair4 = collinSoperCosTheta(p24, p1234);
+
+      double mDiff13 = std::abs((p13.M() - mRho0));
+      double mDiff14 = std::abs((p14.M() - mRho0));
+      double mDiff23 = std::abs((p23.M() - mRho0));
+      double mDiff24 = std::abs((p24.M() - mRho0));
+      if ((mDiff13 < mDiff14) && (mDiff13 < mDiff23) && (mDiff13 < mDiff24)) {
+        histos4piKin.fill(HIST("zero-charge"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), fourPiCosThetaPair1, fourPiPhiPair1, runIndex);
+      } else if ((mDiff14 < mDiff13) && (mDiff14 < mDiff23) && (mDiff14 < mDiff24)) {
+        histos4piKin.fill(HIST("zero-charge"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), fourPiCosThetaPair2, fourPiPhiPair2, runIndex);
+      } else if ((mDiff23 < mDiff13) && (mDiff23 < mDiff14) && (mDiff23 < mDiff24)) {
+        histos4piKin.fill(HIST("zero-charge"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), fourPiCosThetaPair3, fourPiPhiPair3, runIndex);
+      } else if ((mDiff24 < mDiff13) && (mDiff24 < mDiff14) && (mDiff24 < mDiff23)) {
+        histos4piKin.fill(HIST("zero-charge"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), fourPiCosThetaPair4, fourPiPhiPair4, runIndex);
+      }
+    } // End of Analysis for 0 charge events
+
+    // Selecting Events with net charge != 0 for estimation of background
+    if (numPionMinusTracks != numPiMinus && numPiPlusTracks != numPiPlus) {
+      PxPyPzMVector p1(selectedPionTracks[0].px(), selectedPionTracks[0].py(), selectedPionTracks[0].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p2(selectedPionTracks[1].px(), selectedPionTracks[1].py(), selectedPionTracks[1].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p3(selectedPionTracks[2].px(), selectedPionTracks[2].py(), selectedPionTracks[2].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p4(selectedPionTracks[3].px(), selectedPionTracks[3].py(), selectedPionTracks[3].pz(), o2::constants::physics::MassPionCharged);
+      PxPyPzMVector p1234 = p1 + p2 + p3 + p4;
+      // Kinematics for 4 pion system from non 0 charge events
+      histos4piKin.fill(HIST("non-zero-charge"), p1234.Pt(), p1234.Eta(), p1234.Phi(), p1234.Rapidity(), p1234.M(), runIndex);
+    } // End of Analysis for non 0 charge events
+  } // End of 4 Pion Analysis Process function for Pass5 MC
+
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processData, "Data Analysis Function", true);
+  PROCESS_SWITCH(ExclusiveRhoTo4Pi, processMCrec, "MC reconstructed Analysis Function", false);
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processEventCounter, "Event Counter Function", true);
   PROCESS_SWITCH(ExclusiveRhoTo4Pi, processTrackCounter, "Track Counter Function", true);
 
