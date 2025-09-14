@@ -65,6 +65,7 @@
 #include <iterator> // std::prev
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 using namespace o2;
 using namespace o2::framework;
