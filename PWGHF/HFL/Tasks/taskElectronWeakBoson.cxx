@@ -735,8 +735,8 @@ struct HfTaskElectronWeakBoson {
             auto child2 = RecoDecayPtEtaPhi::pVector(trackPos.pt, trackPos.eta, trackPos.phi);
             double invMass = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
             if (invMass > massZMinQA) {
-              float sectorneg = 18.0 * trackEle.phi / (2.0 * o2::constants::math::PI);
-              float sectorpos = 18.0 * trackPos.phi / (2.0 * o2::constants::math::PI);
+              float sectorneg = 18.0 * trackEle.phi / (o2::constants::math::TwoPI);
+              float sectorpos = 18.0 * trackPos.phi / (o2::constants::math::TwoPI);
               // float dsectorneg = std::abs(sectorneg - TMath::Nint(sectorneg));
               // float dsectorpos = std::abs(sectorpos - TMath::Nint(sectorpos));
               // LOG(info) << "TPC sector= " << sectorneg << " ; " << sectorpos;
