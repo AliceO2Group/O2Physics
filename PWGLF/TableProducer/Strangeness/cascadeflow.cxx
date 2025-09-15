@@ -177,10 +177,9 @@ struct cascadeFlow {
   // Configurable for shift correction
   struct : ConfigurableGroup {
     Configurable<bool> cfgShiftCorr{"cfgShiftCorr", 0, ""};
-    Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
-    Configurable<std::string> cfgShiftPathFT0C{"cfgShiftPathFT0C", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
-    Configurable<std::string> cfgShiftPathTPCL{"cfgShiftPathTPCL", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
-    Configurable<std::string> cfgShiftPathTPCR{"cfgShiftPathTPCR", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
+    Configurable<std::string> cfgShiftPathFT0C{"cfgShiftPathFT0C", "Users/c/chdemart/OOpass2Shift/ShiftFT0C", "Path for Shift"};
+    Configurable<std::string> cfgShiftPathTPCL{"cfgShiftPathTPCL", "Users/c/chdemart/OOpass2Shift/ShiftTPCL", "Path for Shift"};
+    Configurable<std::string> cfgShiftPathTPCR{"cfgShiftPathTPCR", "Users/c/chdemart/OOpass2Shift/ShiftTPCR", "Path for Shift"};
   } ShiftConfigs;
   //  Configurable<float> cfgHarmonic{"cfgHarmonic", 2, "Harmonic for event plane calculation"};
 
