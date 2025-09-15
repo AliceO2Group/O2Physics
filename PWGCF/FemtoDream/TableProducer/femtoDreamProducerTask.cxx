@@ -1248,7 +1248,7 @@ struct femtoDreamProducerTask {
     if (ConfUseItsPid.value) {
       fillCollisionsAndTracksAndV0AndCascade<false, true, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
     } else {
-      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
+      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true>(col, tracks, tracks, fullV0s, fullCascades);
     }
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData_CentPbPb,
@@ -1268,7 +1268,7 @@ struct femtoDreamProducerTask {
     if (ConfUseItsPid.value) {
       fillCollisionsAndTracksAndV0AndCascade<false, true, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
     } else {
-      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
+      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true>(col, tracks, tracks, fullV0s, fullCascades);
     }
 
     if (qnCal.ConfQnSeparation) {
