@@ -69,7 +69,7 @@ using namespace o2::aod::pwgem::dilepton::utils;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 using MyCollision = MyCollisions::iterator;
 
-using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMSWTriggerInfos>;
+using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMSWTriggerBits>;
 using MyCollisionWithSWT = MyCollisionsWithSWT::iterator;
 
 using MyV0Photons = soa::Filtered<soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds, aod::V0PhotonsKFPrefilterBitDerived>>;
@@ -105,7 +105,7 @@ struct DiphotonHadronMPC {
   ConfigurableAxis ConfPtggBins{"ConfPtggBins", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.50, 1.00, 1.50, 2.00, 2.50, 3.00, 3.50, 4.00, 4.50, 5.00, 6.00, 7.00, 8.00, 9.00, 10.00}, "pTgg bins for output histograms"};
 
   ConfigurableAxis ConfPtHadronBins{"ConfPtHadronBins", {VARIABLE_WIDTH, 0.00, 0.15, 0.2, 0.3, 0.4, 0.50, 1.00, 2.00, 3.00, 4.00, 5.00}, "pT,h bins for output histograms"};
-  ConfigurableAxis ConfDEtaBins{"ConfDEtaBins", {60, -3, 3}, "deta bins for output histograms"};
+  ConfigurableAxis ConfDEtaBins{"ConfDEtaBins", {120, -6, 6}, "deta bins for output histograms"};
   Configurable<int> cfgNbinsDPhi{"cfgNbinsDPhi", 36, "nbins in dphi for output histograms"};
   // Configurable<int> cfgNbinsCosNDPhi{"cfgNbinsCosNDPhi", 100, "nbins in cos(n(dphi)) for output histograms"};
   // Configurable<int> cfgNmod{"cfgNmod", 2, "n-th harmonics"};
@@ -305,8 +305,8 @@ struct DiphotonHadronMPC {
 
     if constexpr (isTriggerAnalysis) {
       LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value);
-      LOGF(info, "total inspected TVX events = %d in run number %d", collision.nInspectedTVX(), collision.runNumber());
-      fRegistry.fill(HIST("Event/hNInspectedTVX"), collision.runNumber(), collision.nInspectedTVX());
+      // LOGF(info, "total inspected TVX events = %d in run number %d", collision.nInspectedTVX(), collision.runNumber());
+      // fRegistry.fill(HIST("Event/hNInspectedTVX"), collision.runNumber(), collision.nInspectedTVX());
     }
   }
 
@@ -325,8 +325,6 @@ struct DiphotonHadronMPC {
     used_photonIds.shrink_to_fit();
     used_dileptonIds.clear();
     used_dileptonIds.shrink_to_fit();
-    used_refTrackIds.clear();
-    used_refTrackIds.shrink_to_fit();
 
     map_mixed_eventId_to_globalBC.clear();
   }
@@ -370,7 +368,7 @@ struct DiphotonHadronMPC {
 
     // hadron-hadron
     const AxisSpec axis_deta_hh{60, -3, +3, "#Delta#eta = #eta_{h}^{ref1} - #eta_{h}^{ref2}"};
-    const AxisSpec axis_dphi_hh{cfgNbinsDPhi, -M_PI / 2, +3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
+    const AxisSpec axis_dphi_hh{90, -M_PI / 2, +3 * M_PI / 2, "#Delta#varphi = #varphi_{h}^{ref1} - #varphi_{h}^{ref2} (rad.)"};
     // const AxisSpec axis_cosndphi_hh{cfgNbinsCosNDPhi, -1, +1, std::format("cos({0:d}(#varphi_{{h}}^{{ref1}} - #varphi_{{h}}^{{ref2}}))", cfgNmod.value)};
     fRegistry.add("HadronHadron/same/hDEtaDPhi", "hadron-hadron 2PC", kTH2D, {axis_dphi_hh, axis_deta_hh}, true);
     fRegistry.addClone("HadronHadron/same/", "HadronHadron/mix/");
@@ -486,7 +484,6 @@ struct DiphotonHadronMPC {
 
   std::vector<std::pair<int, int>> used_photonIds;              // <ndf, trackId>
   std::vector<std::tuple<int, int, int, int>> used_dileptonIds; // <ndf, trackId>
-  std::vector<std::pair<int, int>> used_refTrackIds;            // <ndf, trackId>
   std::vector<std::tuple<int, int, int, int>> used_diphotonIds; // <ndf, trackId>
   std::map<std::pair<int, int>, uint64_t> map_mixed_eventId_to_globalBC;
 
@@ -556,12 +553,6 @@ struct DiphotonHadronMPC {
       // LOGF(info, "collision.globalIndex() = %d, collision.posZ() = %f, centrality = %f, ep2 = %f, collision.trackOccupancyInTimeRange() = %d, zbin = %d, centbin = %d, epbin = %d, occbin = %d", collision.globalIndex(), collision.posZ(), centrality, ep2, collision.trackOccupancyInTimeRange(), zbin, centbin, epbin, occbin);
 
       auto refTracks_per_collision = refTracks.sliceBy(perCollision_track, collision.globalIndex());
-      for (const auto& track : refTracks_per_collision) {
-        if (fEMTrackCut.IsSelected(track)) {
-          fRegistry.fill(HIST("Hadron/hs"), track.pt(), track.eta(), track.phi());
-          fRegistry.fill(HIST("Hadron/hTrackBit"), track.trackBit());
-        }
-      }
 
       std::tuple<int, int, int, int> key_bin = std::make_tuple(zbin, centbin, epbin, occbin);
       std::pair<int, int64_t> key_df_collision = std::make_pair(ndf, collision.globalIndex());
@@ -587,7 +578,7 @@ struct DiphotonHadronMPC {
           auto pos2 = g2.template posTrack_as<TSubInfos2>();
           auto ele2 = g2.template negTrack_as<TSubInfos2>();
 
-          int npair = 0;
+          int npair = 0; // the number of diphoton-h pairs
           for (const auto& track : refTracks_per_collision) {
             if (pos1.trackId() == track.trackId() || ele1.trackId() == track.trackId()) {
               continue;
@@ -604,11 +595,6 @@ struct DiphotonHadronMPC {
               dphi = RecoDecay::constrainAngle(dphi, -M_PI / 2, 1U);
               fRegistry.fill(HIST("DiphotonHadron/same/hs"), v12.M(), v12.Pt(), deta, dphi);
               npair++;
-              std::pair<int, int> pair_tmp_ref = std::make_pair(ndf, track.globalIndex());
-              if (std::find(used_refTrackIds.begin(), used_refTrackIds.end(), pair_tmp_ref) == used_refTrackIds.end()) { // add a ref track in mixing pool
-                emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(ndf, track.globalIndex(), collision.globalIndex(), track.globalIndex(), track.pt(), track.eta(), track.phi(), 0.139));
-                used_refTrackIds.emplace_back(pair_tmp_ref);
-              }
             }
           } // end of ref track loop
 
@@ -671,7 +657,7 @@ struct DiphotonHadronMPC {
             }
             fRegistry.fill(HIST("Diphoton/same/hs"), veeg.M(), veeg.Pt());
 
-            int npair = 0;
+            int npair = 0; // the number of diphoton-h pairs
             for (const auto& track : refTracks_per_collision) {
               if (pos1.trackId() == track.trackId() || ele1.trackId() == track.trackId()) {
                 continue;
@@ -688,11 +674,6 @@ struct DiphotonHadronMPC {
               fRegistry.fill(HIST("DiphotonHadron/same/hs"), veeg.M(), veeg.Pt(), deta, dphi);
               npair++;
 
-              std::pair<int, int> pair_tmp_ref = std::make_pair(ndf, track.globalIndex());
-              if (std::find(used_refTrackIds.begin(), used_refTrackIds.end(), pair_tmp_ref) == used_refTrackIds.end()) { // add a ref track in mixing pool
-                emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(ndf, track.globalIndex(), collision.globalIndex(), track.globalIndex(), track.pt(), track.eta(), track.phi(), 0.139));
-                used_refTrackIds.emplace_back(pair_tmp_ref);
-              }
             } // end of ref track loop
 
             if (npair > 0) {
@@ -719,6 +700,15 @@ struct DiphotonHadronMPC {
       } // end of pairing in same event
 
       if (ndiphoton > 0) {
+        emh_ref->ReserveNTracksPerCollision(key_df_collision, refTracks_per_collision.size());
+        for (const auto& track : refTracks_per_collision) {
+          if (fEMTrackCut.IsSelected(track)) {
+            fRegistry.fill(HIST("Hadron/hs"), track.pt(), track.eta(), track.phi());
+            fRegistry.fill(HIST("Hadron/hTrackBit"), track.trackBit());
+            emh_ref->AddTrackToEventPool(key_df_collision, EMTrack(ndf, track.globalIndex(), collision.globalIndex(), track.globalIndex(), track.pt(), track.eta(), track.phi(), 0.139));
+          }
+        }
+
         for (const auto& [ref1, ref2] : combinations(CombinationsStrictlyUpperIndexPolicy(refTracks_per_collision, refTracks_per_collision))) {
           if (fEMTrackCut.IsSelected(ref1) && fEMTrackCut.IsSelected(ref2)) {
             float deta = ref1.eta() - ref2.eta();
@@ -965,8 +955,8 @@ struct DiphotonHadronMPC {
   }
   PROCESS_SWITCH(DiphotonHadronMPC, processAnalysis, "process pair analysis", true);
 
-  using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
-  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, FilteredRefTracks const& refTracks, Types const&... args)
+  // using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
+  void processTriggerAnalysis(MyCollisionsWithSWT const& collisions, FilteredRefTracks const& refTracks, Types const&... args)
   {
     // LOGF(info, "ndf = %d", ndf);
     if constexpr (pairtype == PairType::kPCMPCM) {

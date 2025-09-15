@@ -19,7 +19,7 @@ o2physics_add_dpl_workflow(femtodream-triplet-track-track-track
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(femtodream-triplet-track-track-track-pb-pb
+o2physics_add_dpl_workflow(femto-dream-triplet-task-track-track-track-pb-pb
           SOURCES femtoDreamTripletTaskTrackTrackTrackPbPb.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
@@ -34,8 +34,18 @@ o2physics_add_dpl_workflow(femtodream-pair-track-cascade
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femtodream-pair-casdcade-cascade
+          SOURCES femtodreamPairCascadeCascade.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femtodream-triplet-track-track-v0
           SOURCES femtoDreamTripletTaskTrackTrackV0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-dream-triplet-task-track-track-v0-pb-pb
+          SOURCES femtoDreamTripletTaskTrackTrackV0PbPb.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
@@ -59,12 +69,12 @@ o2physics_add_dpl_workflow(femtodream-collision-masker
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(femtodream-pair-efficiency
-          SOURCES femtoDreamPairEfficiency.cxx
+o2physics_add_dpl_workflow(femtodream-hash
+          SOURCES femtoDreamHashTask.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(femtodream-hash
-          SOURCES femtoDreamHashTask.cxx
+o2physics_add_dpl_workflow(femtodream-pair-v0-v0
+          SOURCES femtoDreamPairTaskV0V0.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)

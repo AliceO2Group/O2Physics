@@ -19,23 +19,24 @@
 #ifndef COMMON_CORE_PID_PIDTOF_H_
 #define COMMON_CORE_PID_PIDTOF_H_
 
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsTOF/ParameterContainers.h>
+#include <Framework/DataTypes.h>
+#include <Framework/Logger.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TF2.h>
+#include <TFile.h>
+#include <TGraph.h>
+#include <TString.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
 #include <string>
 #include <unordered_map>
 #include <vector>
-
-// ROOT includes
-#include "Rtypes.h"
-#include "TMath.h"
-#include "TGraph.h"
-#include "TFile.h"
-#include "TF2.h"
-
-// O2 includes
-#include "DataFormatsTOF/ParameterContainers.h"
-#include "Framework/Logger.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "Framework/DataTypes.h"
-#include "CommonConstants/PhysicsConstants.h"
 
 namespace o2::pid::tof
 {
@@ -444,7 +445,7 @@ class ExpTimes
   static constexpr float mMassZSqared = mMassZ * mMassZ;                   /// (M/z)^2
 
   /// Computes the expected time of a track, given it TOF expected momentum
-  static float ComputeExpectedTime(const float tofExpMom, const float length) { return length * sqrt((mMassZSqared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom); }
+  static float ComputeExpectedTime(const float tofExpMom, const float length) { return length * std::sqrt((mMassZSqared) + (tofExpMom * tofExpMom)) / (o2::constants::physics::LightSpeedCm2PS * tofExpMom); }
 
   /// Gets the expected signal of the track of interest under the PID assumption
   /// \param track Track of interest
@@ -485,11 +486,11 @@ class ExpTimes
   static float GetExpectedSigma(const ParamType& parameters, const TrackType& track, const float tofSignal, const float collisionTimeRes)
   {
     const float& mom = track.p();
-    const float& eta = track.eta();
+    const float& etaTrack = track.eta();
     if (mom <= 0) {
       return -999.f;
     }
-    const float reso = parameters.template getResolution<id>(mom, eta);
+    const float reso = parameters.template getResolution<id>(mom, etaTrack);
     if (reso > 0) {
       return std::sqrt(reso * reso + parameters[4] * parameters[4] + collisionTimeRes * collisionTimeRes);
     }

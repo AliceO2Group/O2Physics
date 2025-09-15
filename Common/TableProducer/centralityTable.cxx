@@ -15,25 +15,35 @@
 /// \author ALICE
 //
 
-#include <string>
-#include <vector>
-#include <algorithm>
-#include <map>
-
-#include <CCDB/BasicCCDBManager.h>
-#include <TH1F.h>
-#include <TFormula.h>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/Core/MetadataHelper.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "MetadataHelper.h"
-#include "TableHelper.h"
-#include "TList.h"
+#include "Common/DataModel/Multiplicity.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TFile.h>
+#include <TFormula.h>
+#include <TH1.h>
+#include <TList.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <map>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -410,7 +420,7 @@ struct CentralityTable {
       }
     }
 
-    auto scaleMC = [](float x, float pars[6]) {
+    auto scaleMC = [](float x, const float pars[6]) {
       return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
     };
 
@@ -647,7 +657,7 @@ struct CentralityTable {
 
       auto populateTable = [&](auto& table, struct CalibrationInfo& estimator, float multiplicity) {
         const bool assignOutOfRange = embedINELgtZEROselection && !collision.isInelGt0();
-        auto scaleMC = [](float x, float pars[6]) {
+        auto scaleMC = [](float x, const float pars[6]) {
           return std::pow(((pars[0] + pars[1] * std::pow(x, pars[2])) - pars[3]) / pars[4], 1.0f / pars[5]);
         };
 

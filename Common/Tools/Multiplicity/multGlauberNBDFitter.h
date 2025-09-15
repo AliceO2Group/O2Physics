@@ -9,59 +9,61 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 //
-#ifndef MULTGLAUBERNBDFITTER_H
-#define MULTGLAUBERNBDFITTER_H
+#ifndef COMMON_TOOLS_MULTIPLICITY_MULTGLAUBERNBDFITTER_H_
+#define COMMON_TOOLS_MULTIPLICITY_MULTGLAUBERNBDFITTER_H_
 
-#include <iostream>
-#include "TNamed.h"
-#include "TF1.h"
-#include "TH1.h"
-#include "TH1D.h"
-#include "TH2.h"
-#include "TProfile.h"
+#include <TF1.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TNamed.h>
+#include <TProfile.h>
+#include <TString.h>
+
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 class multGlauberNBDFitter : public TNamed
 {
 
  public:
-  //basic functionality
+  // basic functionality
   multGlauberNBDFitter();
-  multGlauberNBDFitter(const char* name, const char* title = "Glauber+NBD fitter");
+  explicit multGlauberNBDFitter(const char* name, const char* title = "Glauber+NBD fitter");
   ~multGlauberNBDFitter();
 
-  //Master fitter function
+  // Master fitter function
   Double_t ProbDistrib(Double_t* x, Double_t* par);
 
   void InitAncestor();
 
-  //Do Fit: where everything happens
+  // Do Fit: where everything happens
   Bool_t DoFit();
 
-  //Set input characteristics: the 2D plot with Npart, Nanc
+  // Set input characteristics: the 2D plot with Npart, Nanc
   Bool_t SetNpartNcollCorrelation(TH2* hNpNc);
 
-  //Set main input to be fitted (the V0M distribution)
+  // Set main input to be fitted (the V0M distribution)
   Bool_t SetInputV0M(TH1* hV0M);
 
-  //Interface to get funtions if asked to
+  // Interface to get funtions if asked to
   TF1* GetNBD();
   TF1* GetGlauberNBD();
 
-  //Helper
+  // Helper
   Bool_t InitializeNpNc();
 
-  //Interface for debug
+  // Interface for debug
   void SetAncestorMode(Int_t lAncMode = 0) { fAncestorMode = lAncMode; }
   Int_t GetAncestorMode() { return fAncestorMode; }
   TH1D* GetAncestorHistogram() { return fhNanc; }
 
-  //Interface to set vals
+  // Interface to set vals
   void SetMu(Double_t lVal) { fMu = lVal; }
   void Setk(Double_t lVal) { fk = lVal; }
   void Setf(Double_t lVal) { ff = lVal; }
   void SetNorm(Double_t lVal) { fnorm = lVal; }
 
-  //Interface to get vals
+  // Interface to get vals
   Double_t GetMu() { return fMu; }
   Double_t Getk() { return fk; }
   Double_t Getf() { return ff; }
@@ -71,41 +73,41 @@ class multGlauberNBDFitter : public TNamed
   void SetFitOptions(TString lOpt);
   void SetFitNpx(Long_t lNpx);
 
-  //For ancestor mode 2
+  // For ancestor mode 2
   Double_t ContinuousNBD(Double_t n, Double_t mu, Double_t k);
 
-  //For estimating Npart, Ncoll in multiplicity bins
+  // For estimating Npart, Ncoll in multiplicity bins
   void CalculateAvNpNc(TProfile* lNPartProf, TProfile* lNCollProf, TH2F* lNPart2DPlot, TH2F* lNColl2DPlot, TH1F* hPercentileMap, Double_t lLoRange = -1, Double_t lHiRange = -1);
 
-  //void    Print(Option_t *option="") const;
+  // void    Print(Option_t *option="") const;
 
  private:
-  //This function serves as the (analytical) NBD
+  // This function serves as the (analytical) NBD
   TF1* fNBD;
 
-  //This function is the key fitting function
+  // This function is the key fitting function
   TF1* fGlauberNBD;
 
-  //Reference histo
-  TH1D* fhNanc; //basic ancestor distribution
-  TH2* fhNpNc;  //correlation between Npart and Ncoll
-  TH1* fhV0M;   //basic ancestor distribution
+  // Reference histo
+  TH1D* fhNanc; // basic ancestor distribution
+  TH2* fhNpNc;  // correlation between Npart and Ncoll
+  TH1* fhV0M;   // basic ancestor distribution
 
-  //Fitting utilities
+  // Fitting utilities
   Bool_t ffChanged;
   Double_t fCurrentf;
 
-  //0: truncation, 1: rounding, 2: analytical continuation
+  // 0: truncation, 1: rounding, 2: analytical continuation
   Int_t fAncestorMode;
 
-  //Buffer for (Npart, Ncoll) pairs in memory
+  // Buffer for (Npart, Ncoll) pairs in memory
   Double_t* fNpart;
   Double_t* fNcoll;
   Long_t* fContent;
-  Long_t fNNpNcPairs; //number of pairs to use
+  Long_t fNNpNcPairs; // number of pairs to use
   Long_t fMaxNpNcPairs;
 
-  //The actual output: mu, k, f, norm
+  // The actual output: mu, k, f, norm
   Double_t fMu;
   Double_t fdMu; // variable mu option
   Double_t fk;
@@ -117,4 +119,4 @@ class multGlauberNBDFitter : public TNamed
 
   ClassDef(multGlauberNBDFitter, 1);
 };
-#endif
+#endif // COMMON_TOOLS_MULTIPLICITY_MULTGLAUBERNBDFITTER_H_

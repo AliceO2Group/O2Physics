@@ -32,7 +32,9 @@
 
 #include <TPDGCode.h>
 
+#include <memory>
 #include <set>
+#include <string>
 #include <vector>
 
 using namespace o2;
@@ -55,8 +57,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   Configurable<float> confCascInvMassLowLimit{"confCascInvMassLowLimit", 1.315, "Lower limit of the Casc invariant mass"};
   Configurable<float> confCascInvMassUpLimit{"confCascInvMassUpLimit", 1.325, "Upper limit of the Casc invariant mass"};
 
-  Configurable<float> confNSigmaTPCPion{"confNSigmaTPCPion", 4, "NSigmaTPCPion"};
-  Configurable<float> confNSigmaTPCProton{"confNSigmaTPCProton", 4, "NSigmaTPCProton"};
+  // TODO: Add seperate selection for daughter particles
+  // Configurable<float> confNSigmaTPCPion{"confNSigmaTPCPion", 4, "NSigmaTPCPion"};
+  // Configurable<float> confNSigmaTPCProton{"confNSigmaTPCProton", 4, "NSigmaTPCProton"};
 
   /// applying narrow cut
   Configurable<float> confZVertexCut{"confZVertexCut", 10.f, "Event sel: Maximum z-Vertex (cm)"};
@@ -104,6 +107,9 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   ConfigurableAxis confTrkTempFitVarBins{"confTrkTempFitVarBins", {300, -0.15, 0.15}, "binning of the TempFitVar in the pT vs. TempFitVar plot"};
   Configurable<int> confNEventsMix{"confNEventsMix", 5, "Number of events for mixing"};
 
+  // Efficiency
+  Configurable<std::string> confLocalEfficiency{"confLocalEfficiency", "", "Local path to efficiency .root file"};
+
   Filter collisionFilter = (nabs(aod::collision::posZ) < confZVertexCut);
   using FilteredFDCollisions = soa::Filtered<o2::aod::FdCollisions>;
   using FilteredFDCollision = FilteredFDCollisions::iterator;
@@ -141,7 +147,8 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   FemtoUniverseContainer<femto_universe_container::EventType::mixed, femto_universe_container::Observable::kstar> mixedEventCont;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kCascade> pairCleaner;
   FemtoUniversePairCleaner<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kCascade> pairCleanerCasc;
-  FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kCascade> pairCloseRejection;
+  FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kTrack, aod::femtouniverseparticle::ParticleType::kCascade> pairCloseRejection;
+  FemtoUniverseDetaDphiStar<aod::femtouniverseparticle::ParticleType::kCascade, aod::femtouniverseparticle::ParticleType::kCascade> pairCloseRejectionCasc;
 
   HistogramRegistry rXiQA{"xi", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   HistogramRegistry qaRegistry{"TrackQA", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -150,6 +157,10 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   HistogramRegistry registryMCreco{"MCrecoHistos", {}, OutputObjHandlingPolicy::AnalysisObject, false, true};
 
   std::set<int> cascDuplicates;
+
+  std::unique_ptr<TFile> plocalEffFile;
+  std::unique_ptr<TH1> plocalEffp1;
+  std::unique_ptr<TH1> plocalEffp2;
 
   // Table to select cascade daughters
   // Charges: = +--, +--, +-+, +-+
@@ -308,7 +319,25 @@ struct femtoUniversePairTaskTrackCascadeExtended {
     pairCleaner.init(&qaRegistry);
     pairCleanerCasc.init(&qaRegistry);
     if (confIsCPR.value) {
-      pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value, 0, 0, confIsSameSignCPR.value);
+      if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask)
+        pairCloseRejection.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value, 0, 0, confIsSameSignCPR.value);
+      if (doprocessSameEventCasc || doprocessSameEventCascBitmask || doprocessMixedEventCasc || doprocessMixedEventCascBitmask)
+        pairCloseRejectionCasc.init(&resultRegistry, &qaRegistry, confCPRdeltaPhiCutMin.value, confCPRdeltaPhiCutMax.value, confCPRdeltaEtaCutMin.value, confCPRdeltaEtaCutMax.value, confCPRChosenRadii.value, confCPRPlotPerRadii.value, 0, 0, confIsSameSignCPR.value);
+    }
+
+    if (!confLocalEfficiency.value.empty()) {
+      plocalEffFile = std::unique_ptr<TFile>(TFile::Open(confLocalEfficiency.value.c_str(), "read"));
+      if (!plocalEffFile || plocalEffFile.get()->IsZombie())
+        LOGF(fatal, "Could not load efficiency histogram from %s", confLocalEfficiency.value.c_str());
+      if (doprocessSameEvent || doprocessSameEventBitmask || doprocessMixedEvent || doprocessMixedEventBitmask) {
+        plocalEffp1 = (confChargePart1 > 0) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrPlus")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("PrMinus")); // note: works only for protons for now
+        plocalEffp2 = (confCascType1 == 0 || confCascType1 == 1) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Cascade")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiCascade"));
+        LOGF(info, "Loaded efficiency histograms for track-Cascade.");
+      } else if (doprocessSameEventCasc || doprocessSameEventCascBitmask || doprocessMixedEventCasc || doprocessMixedEventCascBitmask) {
+        plocalEffp1 = (confCascType1 == 0 || confCascType1 == 1) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Cascade")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiCascade"));
+        plocalEffp2 = (confCascType2 == 0 || confCascType2 == 1) ? std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("Cascade")) : std::unique_ptr<TH1>(plocalEffFile.get()->Get<TH1>("AntiCascade"));
+        LOGF(info, "Loaded efficiency histograms for Cascade-Cascade.");
+      }
     }
   }
 
@@ -322,25 +351,12 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       const auto& negChild = parts.iteratorAt(part.globalIndex() - 2 - parts.begin().globalIndex());
       const auto& bachelor = parts.iteratorAt(part.globalIndex() - 1 - parts.begin().globalIndex());
 
-      //  nSigma selection for daughter and bachelor tracks
-      if (part.sign() < 0) {
-        if (std::abs(posChild.tpcNSigmaPr()) > confNSigmaTPCProton) {
-          continue;
-        }
-        if (std::abs(negChild.tpcNSigmaPi()) > confNSigmaTPCPion) {
-          continue;
-        }
-      } else {
-        if (std::abs(negChild.tpcNSigmaPr()) > confNSigmaTPCProton) {
-          continue;
-        }
-        if (std::abs(posChild.tpcNSigmaPi()) > confNSigmaTPCPion) {
-          continue;
-        }
-      }
-      if (std::abs(bachelor.tpcNSigmaPi()) > confNSigmaTPCPion) {
+      float posChildTPC, negChildTPC, bachelorTPC, posChildTOF, negChildTOF, bachelorTOF;
+      if (!isParticleTPC(posChild, CascChildTable[confCascType1][0], &posChildTPC) || !isParticleTPC(negChild, CascChildTable[confCascType1][1], &negChildTPC) || !isParticleTPC(bachelor, CascChildTable[confCascType1][2], &bachelorTPC))
         continue;
-      }
+
+      if ((!confCheckTOFBachelorOnly && (!isParticleTOF(posChild, CascChildTable[confCascType1][0], &posChildTOF) || !isParticleTOF(negChild, CascChildTable[confCascType1][1], &negChildTOF))) || !isParticleTOF(bachelor, CascChildTable[confCascType1][2], &bachelorTOF))
+        continue;
 
       rXiQA.fill(HIST("hPtXi"), part.pt());
       rXiQA.fill(HIST("hEtaXi"), part.eta());
@@ -368,6 +384,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
   template <class TableType, typename PartitionType>
   void doSameEvent(const FilteredFDCollision& col, const TableType& parts, PartitionType& partsOne, PartitionType& partsTwo)
   {
+    const auto& magFieldTesla = col.magField();
 
     auto groupPartsOne = partsOne->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsTwo = partsTwo->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
@@ -458,6 +475,11 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       if (!pairCleaner.isCleanPair(p1, p2, parts)) {
         continue;
       }
+      if (confIsCPR.value) {
+        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+          continue;
+        }
+      }
 
       const auto& posChild = parts.iteratorAt(p2.globalIndex() - 3 - parts.begin().globalIndex());
       const auto& negChild = parts.iteratorAt(p2.globalIndex() - 2 - parts.begin().globalIndex());
@@ -474,7 +496,10 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         if ((!confCheckTOFBachelorOnly && ((posChild.pidCut() & (8u << CascChildTable[confCascType1][0])) == 0 || (negChild.pidCut() & (8u << CascChildTable[confCascType1][1])) == 0)) || (bachelor.pidCut() & (8u << CascChildTable[confCascType1][2])) == 0)
           continue;
       }
-      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+      float weight = 1.0f;
+      if (plocalEffp1)
+        weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
+      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, weight);
     }
   }
 
@@ -559,7 +584,7 @@ struct femtoUniversePairTaskTrackCascadeExtended {
       if (!invMCascade(p2.mLambda(), p2.mAntiLambda(), confCascType2))
         return;
       if (confIsCPR.value) {
-        if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
+        if (pairCloseRejectionCasc.isClosePair(p1, p2, parts, magFieldTesla, femto_universe_container::EventType::same)) {
           return;
         }
       }
@@ -596,7 +621,10 @@ struct femtoUniversePairTaskTrackCascadeExtended {
           return;
       }
 
-      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+      float weight = 1.0f;
+      if (plocalEffp1)
+        weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
+      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, weight);
     };
     cascDuplicates.clear();
     if (confCascType1 == confCascType2) {
@@ -682,8 +710,16 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         if (!pairCleaner.isCleanPair(p1, p2, parts)) {
           continue;
         }
+        if (confIsCPR.value) {
+          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+            continue;
+          }
+        }
 
-        mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+        float weight = 1.0f;
+        if (plocalEffp1)
+          weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
+        mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D, weight);
       }
     };
 
@@ -744,14 +780,14 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         /// Child particles must pass this condition to be selected
         if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
           if (!isParticleTPC(posChild1, CascChildTable[confCascType1][0]) || !isParticleTPC(negChild1, CascChildTable[confCascType1][1]) || !isParticleTPC(bachelor1, CascChildTable[confCascType1][2]))
-            return;
+            continue;
           if ((!confCheckTOFBachelorOnly && (!isParticleTOF(posChild1, CascChildTable[confCascType1][0]) || !isParticleTOF(negChild1, CascChildTable[confCascType1][1]))) || !isParticleTOF(bachelor1, CascChildTable[confCascType1][2]))
-            return;
+            continue;
         } else {
           if ((posChild1.pidCut() & (1u << CascChildTable[confCascType1][0])) == 0 || (negChild1.pidCut() & (1u << CascChildTable[confCascType1][1])) == 0 || (bachelor1.pidCut() & (1u << CascChildTable[confCascType1][2])) == 0)
-            return;
+            continue;
           if ((!confCheckTOFBachelorOnly && ((posChild1.pidCut() & (8u << CascChildTable[confCascType1][0])) == 0 || (negChild1.pidCut() & (8u << CascChildTable[confCascType1][1])) == 0)) || (bachelor1.pidCut() & (8u << CascChildTable[confCascType1][2])) == 0)
-            return;
+            continue;
         }
 
         const auto& posChild2 = parts.iteratorAt(p2.globalIndex() - 3 - parts.begin().globalIndex());
@@ -760,26 +796,29 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         /// Child particles must pass this condition to be selected
         if constexpr (std::experimental::is_detected<hasSigma, typename TableType::iterator>::value) {
           if (!isParticleTPC(posChild2, CascChildTable[confCascType2][0]) || !isParticleTPC(negChild2, CascChildTable[confCascType2][1]) || !isParticleTPC(bachelor2, CascChildTable[confCascType2][2]))
-            return;
+            continue;
           if ((!confCheckTOFBachelorOnly && (!isParticleTOF(posChild2, CascChildTable[confCascType2][0]) || !isParticleTOF(negChild2, CascChildTable[confCascType2][1]))) || !isParticleTOF(bachelor2, CascChildTable[confCascType2][2]))
-            return;
+            continue;
         } else {
           if ((posChild2.pidCut() & (1u << CascChildTable[confCascType1][0])) == 0 || (negChild2.pidCut() & (1u << CascChildTable[confCascType1][1])) == 0 || (bachelor2.pidCut() & (1u << CascChildTable[confCascType1][2])) == 0)
-            return;
+            continue;
           if ((!confCheckTOFBachelorOnly && ((posChild2.pidCut() & (8u << CascChildTable[confCascType1][0])) == 0 || (negChild2.pidCut() & (8u << CascChildTable[confCascType1][1])) == 0)) || (bachelor2.pidCut() & (8u << CascChildTable[confCascType1][2])) == 0)
-            return;
+            continue;
         }
         // track cleaning
         if (!pairCleanerCasc.isCleanPair(p1, p2, parts)) {
           continue;
         }
         if (confIsCPR.value) {
-          if (pairCloseRejection.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
+          if (pairCloseRejectionCasc.isClosePair(p1, p2, parts, magFieldTesla1, femto_universe_container::EventType::mixed)) {
             continue;
           }
         }
 
-        mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+        float weight = 1.0f;
+        if (plocalEffp1)
+          weight = plocalEffp1.get()->GetBinContent(plocalEffp1->FindBin(p1.pt(), p1.eta())) * plocalEffp2.get()->GetBinContent(plocalEffp2->FindBin(p2.pt(), p2.eta()));
+        mixedEventCont.setPair<false>(p1, p2, multCol, confUse3D, weight);
       }
     }
   }
@@ -812,31 +851,30 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         continue;
 
       cascQAHistos.fillQA<false, false>(part);
-
-      for (const auto& part : groupPartsOne) {
-        int pdgCode = static_cast<int>(part.pidCut());
-        if (pdgCode != confTrkPDGCodePartOne)
-          continue;
-        const auto& pdgTrackParticle = pdgMC->GetParticle(pdgCode);
-        if (!pdgTrackParticle) {
-          continue;
-        }
-
-        if (pdgTrackParticle->Charge() > 0) {
-          trackHistoPartOnePos.fillQA<false, false>(part);
-        } else if (pdgTrackParticle->Charge() < 0) {
-          trackHistoPartOneNeg.fillQA<false, false>(part);
-        }
+    }
+    for (const auto& part : groupPartsOne) {
+      int pdgCode = static_cast<int>(part.pidCut());
+      if (pdgCode != confTrkPDGCodePartOne)
+        continue;
+      const auto& pdgTrackParticle = pdgMC->GetParticle(pdgCode);
+      if (!pdgTrackParticle) {
+        continue;
       }
 
-      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
-        if (static_cast<int>(p1.pidCut()) != confTrkPDGCodePartOne)
-          continue;
-        int pdgCodeCasc = static_cast<int>(p2.pidCut());
-        if ((confCascType1 == 0 && pdgCodeCasc != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc != kXiPlusBar))
-          continue;
-        sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+      if (pdgTrackParticle->Charge() > 0) {
+        trackHistoPartOnePos.fillQA<false, false>(part);
+      } else if (pdgTrackParticle->Charge() < 0) {
+        trackHistoPartOneNeg.fillQA<false, false>(part);
       }
+    }
+
+    for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsOne, groupPartsTwo))) {
+      if (static_cast<int>(p1.pidCut()) != confTrkPDGCodePartOne)
+        continue;
+      int pdgCodeCasc = static_cast<int>(p2.pidCut());
+      if ((confCascType1 == 0 && pdgCodeCasc != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc != kXiPlusBar))
+        continue;
+      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEventMCgen, "Enable processing same event MC truth for track - cascade", false);
@@ -856,24 +894,24 @@ struct femtoUniversePairTaskTrackCascadeExtended {
         continue;
 
       cascQAHistos.fillQA<false, false>(part);
+    }
 
-      auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
-        int pdgCodeCasc1 = static_cast<int>(p1.pidCut());
-        if ((confCascType1 == 0 && pdgCodeCasc1 != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc1 != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc1 != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc1 != kXiPlusBar))
-          return;
-        int pdgCodeCasc2 = static_cast<int>(p2.pidCut());
-        if ((confCascType2 == 0 && pdgCodeCasc2 != kOmegaMinus) || (confCascType2 == 2 && pdgCodeCasc2 != kOmegaPlusBar) || (confCascType2 == 1 && pdgCodeCasc2 != kXiMinus) || (confCascType2 == 3 && pdgCodeCasc2 != kXiPlusBar))
-          return;
-        sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
-      };
+    auto pairProcessFunc = [&](auto& p1, auto& p2) -> void {
+      int pdgCodeCasc1 = static_cast<int>(p1.pidCut());
+      if ((confCascType1 == 0 && pdgCodeCasc1 != kOmegaMinus) || (confCascType1 == 2 && pdgCodeCasc1 != kOmegaPlusBar) || (confCascType1 == 1 && pdgCodeCasc1 != kXiMinus) || (confCascType1 == 3 && pdgCodeCasc1 != kXiPlusBar))
+        return;
+      int pdgCodeCasc2 = static_cast<int>(p2.pidCut());
+      if ((confCascType2 == 0 && pdgCodeCasc2 != kOmegaMinus) || (confCascType2 == 2 && pdgCodeCasc2 != kOmegaPlusBar) || (confCascType2 == 1 && pdgCodeCasc2 != kXiMinus) || (confCascType2 == 3 && pdgCodeCasc2 != kXiPlusBar))
+        return;
+      sameEventCont.setPair<false>(p1, p2, multCol, confUse3D, 1.0f);
+    };
 
-      if (confCascType1 == confCascType2) {
-        for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo)))
-          pairProcessFunc(p1, p2);
-      } else {
-        for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo)))
-          pairProcessFunc(p1, p2);
-      }
+    if (confCascType1 == confCascType2) {
+      for (const auto& [p1, p2] : combinations(CombinationsStrictlyUpperIndexPolicy(groupPartsTwo, groupPartsTwo)))
+        pairProcessFunc(p1, p2);
+    } else {
+      for (const auto& [p1, p2] : combinations(CombinationsFullIndexPolicy(groupPartsTwo, groupPartsTwo)))
+        pairProcessFunc(p1, p2);
     }
   }
   PROCESS_SWITCH(femtoUniversePairTaskTrackCascadeExtended, processSameEventCascMCgen, "Enable processing same event MC truth for cascade - cascade", false);
