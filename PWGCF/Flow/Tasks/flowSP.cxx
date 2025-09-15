@@ -525,12 +525,12 @@ struct FlowSP {
         }
         if (cfgFillMixedHarmonics) {
           registry.add<TProfile3D>("incl/MH/vnAxCxUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-          registry.add<TProfile3D>("incl/MH/vnAxCyUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
+          registry.add<TProfile3D>("incl/MH/vnAyCyUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
           registry.add<TProfile3D>("incl/MH/vnAxCyUy_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
           registry.add<TProfile3D>("incl/MH/vnAyCxUy_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
           if (cfgFillPID) {
             registry.add<TProfile3D>("incl/pion/MH/vnAxCxUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
-            registry.add<TProfile3D>("incl/pion/MH/vnAxCyUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
+            registry.add<TProfile3D>("incl/pion/MH/vnAyCyUx_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
             registry.add<TProfile3D>("incl/pion/MH/vnAxCyUy_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
             registry.add<TProfile3D>("incl/pion/MH/vnAyCxUy_MH", "", kTProfile3D, {axisPt, axisEtaVn, axisCentrality});
           }
@@ -990,7 +990,7 @@ struct FlowSP {
 
     if (cfgFillMixedHarmonics) {
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAxCxUx_MH"), track.pt(), track.eta(), spm.centrality, (spm.uxMH * spm.qxA * spm.qxC) / spm.corrQQx, weight);
-      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAxCyUx_MH"), track.pt(), track.eta(), spm.centrality, (spm.uxMH * spm.qyA * spm.qyC) / spm.corrQQy, weight);
+      registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAyCyUx_MH"), track.pt(), track.eta(), spm.centrality, (spm.uxMH * spm.qyA * spm.qyC) / spm.corrQQy, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAxCyUy_MH"), track.pt(), track.eta(), spm.centrality, (spm.uyMH * spm.qxA * spm.qyC) / spm.corrQQx, weight);
       registry.fill(HIST(Charge[ct]) + HIST(Species[pt]) + HIST("MH/vnAyCxUy_MH"), track.pt(), track.eta(), spm.centrality, (spm.uyMH * spm.qyA * spm.qxC) / spm.corrQQy, weight);
     }
