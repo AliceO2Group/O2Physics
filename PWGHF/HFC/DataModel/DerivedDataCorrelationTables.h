@@ -88,27 +88,28 @@ DECLARE_SOA_TABLE(HfcRedCharmTrigs, "AOD", "HFCREDCHARMTRIG", //! Table with cha
                   aod::hf_candidate_reduced::EtaCand,
                   aod::hf_candidate_reduced::PtCand,
                   aod::hf_candidate_reduced::InvMassCand,
-                  aod::hf_candidate_reduced::Prong0Id,
-                  aod::hf_candidate_reduced::Prong1Id,
-                  aod::hf_candidate_reduced::Prong2Id);
-
-DECLARE_SOA_TABLE(HfcRedCharmMls, "AOD", "HFCREDCHARMML", //! Table with charm hadron candidate selection info
-                  soa::Index<>,
-                  aod::hf_candidate_reduced::HfcRedFlowCollId,
                   aod::hf_candidate_reduced::BdtScore0,
                   aod::hf_candidate_reduced::BdtScore1);
 
 namespace hf_assoc_track_reduced
 {
-DECLARE_SOA_COLUMN(OriginTrackId, originTrackId, int);     //! Original track index
-DECLARE_SOA_COLUMN(NTpcCrossedRows, nTpcCrossedRows, int); //! Number of crossed TPC Rows
-DECLARE_SOA_COLUMN(ItsClusterMap, itsClusterMap, int);     //! ITS cluster map, one bit per a layer, starting from the innermost
-DECLARE_SOA_COLUMN(ItsNCls, itsNCls, int);                 //! Number of ITS clusters
-DECLARE_SOA_COLUMN(EtaAssocTrack, etaAssocTrack, float);   //! Eta of the track
-DECLARE_SOA_COLUMN(PhiAssocTrack, phiAssocTrack, float);   //! Phi of the track
-DECLARE_SOA_COLUMN(PtAssocTrack, ptAssocTrack, float);     //! Pt of the track
-DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                   //! Impact parameter in XY of the track to the primary vertex
-DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                     //! Impact parameter in Z of the track to the primary vertex
+DECLARE_SOA_COLUMN(OriginTrackId, originTrackId, int);         //! Original track index
+DECLARE_SOA_COLUMN(NTpcCrossedRows, nTpcCrossedRows, UChar_t); //! Number of crossed TPC Rows
+DECLARE_SOA_COLUMN(ItsClusterMap, itsClusterMap, UChar_t);     //! ITS cluster map, one bit per a layer, starting from the innermost
+DECLARE_SOA_COLUMN(ItsNCls, itsNCls, UChar_t);                 //! Number of ITS clusters
+DECLARE_SOA_COLUMN(EtaAssocTrack, etaAssocTrack, float);       //! Eta of the track
+DECLARE_SOA_COLUMN(PhiAssocTrack, phiAssocTrack, float);       //! Phi of the track
+DECLARE_SOA_COLUMN(PtAssocTrack, ptAssocTrack, float);         //! Pt of the track
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                       //! Impact parameter in XY of the track to the primary vertex
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                         //! Impact parameter in Z of the track to the primary vertex
+DECLARE_SOA_COLUMN(NTpcCrossedRowsTrig, nTpcCrossedRowsTrig, UChar_t); //! Number of crossed TPC Rows
+DECLARE_SOA_COLUMN(ItsClusterMapTrig, itsClusterMapTrig, UChar_t);     //! ITS cluster map, one bit per a layer, starting from the innermost
+DECLARE_SOA_COLUMN(ItsNClsTrig, itsNClsTrig, UChar_t);                 //! Number of ITS clusters
+DECLARE_SOA_COLUMN(EtaAssocTrackTrig, etaAssocTrackTrig, float);       //! Eta of the track
+DECLARE_SOA_COLUMN(PhiAssocTrackTrig, phiAssocTrackTrig, float);       //! Phi of the track
+DECLARE_SOA_COLUMN(PtAssocTrackTrig, ptAssocTrackTrig, float);         //! Pt of the track
+DECLARE_SOA_COLUMN(DcaXYTrig, dcaXYTrig, float);                       //! Impact parameter in XY of the track to the primary vertex
+DECLARE_SOA_COLUMN(DcaZTrig, dcaZTrig, float);                         //! Impact parameter in Z of the track to the primary vertex
 } // namespace hf_assoc_track_reduced
 DECLARE_SOA_TABLE(AssocTrackReds, "AOD", "ASSOCTRACKRED", //! Table with associated track info
                   soa::Index<>,
@@ -130,14 +131,9 @@ DECLARE_SOA_TABLE(AssocTrackSels, "AOD", "ASSOCTRACKSEL", //! Table with associa
 DECLARE_SOA_TABLE(HfcRedTrkAssocs, "AOD", "HFCREDTRKASSOC", //! Table with associated track info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedFlowCollId,
-                  aod::hf_assoc_track_reduced::OriginTrackId,
                   aod::hf_assoc_track_reduced::PhiAssocTrack,
                   aod::hf_assoc_track_reduced::EtaAssocTrack,
-                  aod::hf_assoc_track_reduced::PtAssocTrack);
-
-DECLARE_SOA_TABLE(HfcRedTrkSels, "AOD", "HFCREDTRKSEL", //! Table with associated track info
-                  soa::Index<>,
-                  aod::hf_candidate_reduced::HfcRedFlowCollId,
+                  aod::hf_assoc_track_reduced::PtAssocTrack,
                   aod::hf_assoc_track_reduced::NTpcCrossedRows,
                   aod::hf_assoc_track_reduced::ItsClusterMap,
                   aod::hf_assoc_track_reduced::ItsNCls,
@@ -154,6 +150,38 @@ DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                                  
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                                    //! DeltaEta between charm hadron and Hadrons
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                        //! Pool Bin for the MixedEvent
 } // namespace hf_correlation_charm_hadron_reduced
+
+DECLARE_SOA_TABLE(HfcRedSEChHads, "AOD", "HFCREDSECHHAD", //! Table with Same Event Charm-Hadron pairs information
+                  aod::hf_correlation_charm_hadron_reduced::DeltaEta,
+                  aod::hf_correlation_charm_hadron_reduced::DeltaPhi,
+                  aod::hf_correlation_charm_hadron_reduced::PoolBin,
+                  aod::hf_candidate_reduced::PtCand,
+                  aod::hf_candidate_reduced::InvMassCand,
+                  aod::hf_candidate_reduced::BdtScore0,
+                  aod::hf_candidate_reduced::BdtScore1,
+                  aod::hf_assoc_track_reduced::PtAssocTrack,
+                  aod::hf_assoc_track_reduced::NTpcCrossedRows,
+                  aod::hf_assoc_track_reduced::ItsClusterMap,
+                  aod::hf_assoc_track_reduced::ItsNCls,
+                  aod::hf_assoc_track_reduced::DcaXY,
+                  aod::hf_assoc_track_reduced::DcaZ);
+
+DECLARE_SOA_TABLE(HfcRedSEHadHads, "AOD", "HFCREDSEHADHAD", //! Table with Same Event Hadron-Hadron pairs information
+                  aod::hf_correlation_charm_hadron_reduced::DeltaEta,
+                  aod::hf_correlation_charm_hadron_reduced::DeltaPhi,
+                  aod::hf_correlation_charm_hadron_reduced::PoolBin,
+                  aod::hf_assoc_track_reduced::PtAssocTrackTrig,
+                  aod::hf_assoc_track_reduced::NTpcCrossedRowsTrig,
+                  aod::hf_assoc_track_reduced::ItsClusterMapTrig,
+                  aod::hf_assoc_track_reduced::ItsNClsTrig,
+                  aod::hf_assoc_track_reduced::DcaXYTrig,
+                  aod::hf_assoc_track_reduced::DcaZTrig,
+                  aod::hf_assoc_track_reduced::PtAssocTrack,
+                  aod::hf_assoc_track_reduced::NTpcCrossedRows,
+                  aod::hf_assoc_track_reduced::ItsClusterMap,
+                  aod::hf_assoc_track_reduced::ItsNCls,
+                  aod::hf_assoc_track_reduced::DcaXY,
+                  aod::hf_assoc_track_reduced::DcaZ);
 
 DECLARE_SOA_TABLE(HfcRedChHads, "AOD", "HFCREDCHHAD", //! Charm-Hadron pairs information
                   aod::hf_correlation_charm_hadron_reduced::CharmTrigId,
