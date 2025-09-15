@@ -14,7 +14,6 @@
 //
 // \brief This code loops over MFT tracks and collisions and fills histograms
 //        useful to compute dNdeta
-
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
 #include "Common/DataModel/Centrality.h"
