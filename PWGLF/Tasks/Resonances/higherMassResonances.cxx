@@ -85,7 +85,7 @@ struct HigherMassResonances {
     kFV0A,
     kFV0C,
     kFV0M,
-    kNEstimators // useful if you want to iterate or size things
+    kNEstimators
   };
 
   struct : ConfigurableGroup {
