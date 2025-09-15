@@ -361,25 +361,43 @@ struct DedxPidAnalysis {
     registryDeDx.add("evsel", "events selected", HistType::kTH1F, {{5, 0.5, 5.5, ""}});
     auto hstat = registryDeDx.get<TH1>(HIST("evsel"));
     auto* x = hstat->GetXaxis();
+<<<<<<< HEAD
     x->SetBinLabel(1, "AllEv");
     x->SetBinLabel(2, "SelEigth");
     x->SetBinLabel(3, "ZVtxCut");
     x->SetBinLabel(4, "NoSameBunchPileup");
     x->SetBinLabel(5, "GoodZvtxFT0vsPV");
 
+=======
+    x->SetBinLabel(AllEv, "AllEv");
+    x->SetBinLabel(SelEigth, "SelEigth");
+    x->SetBinLabel(ZVtxCut, "ZVtxCut");
+    x->SetBinLabel(NoSameBunchPileup, "NoSameBunchPileup");
+    x->SetBinLabel(GoodZvtxFT0vsPV, "GoodZvtxFT0vsPV");
+      
+>>>>>>> 2395f3f2a (Update code following review feedback)
     // Track Counter
     registryDeDx.add("trackselAll", "track selected all particles", HistType::kTH1F, {{5, 0.5, 5.5, ""}});
     auto htrackAll = registryDeDx.get<TH1>(HIST("trackselAll"));
     auto* xAll = htrackAll->GetXaxis();
+<<<<<<< HEAD
     xAll->SetBinLabel(1, "AllPri");
     xAll->SetBinLabel(2, "SelectionPrim");
     xAll->SetBinLabel(3, "PhiVarCutPri");
     xAll->SetBinLabel(4, "NTPCClCutPri");
     xAll->SetBinLabel(5, "NITSClCutPri");
+=======
+    xAll->SetBinLabel(AllPri, "AllPri");
+    xAll->SetBinLabel(SelectionPrim, "SelectionPrim");
+    xAll->SetBinLabel(PhiVarCutPri, "PhiVarCutPri");
+    xAll->SetBinLabel(NTPCClCutPri, "NTPCClCutPri");
+    xAll->SetBinLabel(NITSClCutPri, "NITSClCutPri");
+>>>>>>> 2395f3f2a (Update code following review feedback)
 
     registryDeDx.add("trackselSec", "track selected sec particles", HistType::kTH1F, {{18, 0.5, 18.5, ""}});
     auto htrackSec = registryDeDx.get<TH1>(HIST("trackselSec"));
     auto* xSec = htrackSec->GetXaxis();
+<<<<<<< HEAD
     xSec->SetBinLabel(1, "AllSec");
     xSec->SetBinLabel(2, "V0CosPA");
     xSec->SetBinLabel(3, "V0DecayRadius");
@@ -398,6 +416,26 @@ struct DedxPidAnalysis {
     xSec->SetBinLabel(16, "V0RapidityAntiLambda");
     xSec->SetBinLabel(17, "V0ProperLifetimeAntiLambda");
     xSec->SetBinLabel(18, "AllGamma");
+=======
+    xSec->SetBinLabel(AllSec, "AllSec");
+    xSec->SetBinLabel(V0CosPA, "V0CosPA");
+    xSec->SetBinLabel(V0DecayRadius, "V0DecayRadius");
+    xSec->SetBinLabel(V0Daughters, "V0Daughters");
+    xSec->SetBinLabel(TPCRefit, "TPCRefit");
+    xSec->SetBinLabel(PhiVarCutSec, "PhiVarCutSec");
+    xSec->SetBinLabel(NTPCClCutSec, "NTPCClCutSec");
+    xSec->SetBinLabel(NITSClCutSec, "NITSClCutSec");
+    xSec->SetBinLabel(AllK0s, "AllK0s");
+    xSec->SetBinLabel(V0RapidityK0s, "V0RapidityK0s");
+    xSec->SetBinLabel(V0ProperLifetimeK0s, "V0ProperLifetimeK0s");
+    xSec->SetBinLabel(AllLambda, "AllLambda");
+    xSec->SetBinLabel(V0RapidityLambda, "V0RapidityLambda");
+    xSec->SetBinLabel(V0ProperLifetimeLambda, "V0ProperLifetimeLambda");
+    xSec->SetBinLabel(AllAntiLambda, "AllAntiLambda");
+    xSec->SetBinLabel(V0RapidityAntiLambda, "V0RapidityAntiLambda");
+    xSec->SetBinLabel(V0ProperLifetimeAntiLambda, "V0ProperLifetimeAntiLambda");
+    xSec->SetBinLabel(AllGamma, "AllGamma");
+>>>>>>> 2395f3f2a (Update code following review feedback)
 
     mySelectionPrim = myTrackSelection();
   }
@@ -458,8 +496,13 @@ struct DedxPidAnalysis {
       sigmap = ptrack.tofNSigmaPi();
       sigman = ntrack.tofNSigmaPi();
     } else if (v0SelectionMode == v0TPCTOF) {
+<<<<<<< HEAD
       sigmap = std::sqrt(std::pow(ptrack.tpcNSigmaPi(), 2) + std::pow(ptrack.tofNSigmaPi(), 2));
       sigman = std::sqrt(std::pow(ntrack.tpcNSigmaPi(), 2) + std::pow(ntrack.tofNSigmaPi(), 2));
+=======
+        sigmap = std::hypot(ptrack.tpcNSigmaPi(), ptrack.tofNSigmaPi());
+        sigman = std::hypot(ntrack.tpcNSigmaPi(), ntrack.tofNSigmaPi());
+>>>>>>> 2395f3f2a (Update code following review feedback)
     }
 
     if (ptrack.tpcInnerParam() > tpcCut) {
@@ -504,8 +547,13 @@ struct DedxPidAnalysis {
       sigmap = ptrack.tofNSigmaPr();
       sigman = ntrack.tofNSigmaPi();
     } else if (v0SelectionMode == v0TPCTOF) {
+<<<<<<< HEAD
       sigmap = std::sqrt(std::pow(ptrack.tpcNSigmaPr(), 2) + std::pow(ptrack.tofNSigmaPr(), 2));
       sigman = std::sqrt(std::pow(ntrack.tpcNSigmaPi(), 2) + std::pow(ntrack.tofNSigmaPi(), 2));
+=======
+        sigmap = std::hypot(ptrack.tpcNSigmaPr(), ptrack.tofNSigmaPr());
+        sigman = std::hypot(ntrack.tpcNSigmaPi(), ntrack.tofNSigmaPi());
+>>>>>>> 2395f3f2a (Update code following review feedback)
     }
 
     if (ptrack.tpcInnerParam() > tpcCut) {
@@ -550,8 +598,13 @@ struct DedxPidAnalysis {
       sigmap = ptrack.tofNSigmaPi();
       sigman = ntrack.tofNSigmaPr();
     } else if (v0SelectionMode == v0TPCTOF) {
+<<<<<<< HEAD
       sigmap = std::sqrt(std::pow(ptrack.tpcNSigmaPi(), 2) + std::pow(ptrack.tofNSigmaPi(), 2));
       sigman = std::sqrt(std::pow(ntrack.tpcNSigmaPr(), 2) + std::pow(ntrack.tofNSigmaPr(), 2));
+=======
+      sigmap = std::hypot(ptrack.tpcNSigmaPi(), ptrack.tofNSigmaPi());
+      sigman = std::hypot(ntrack.tpcNSigmaPr(), ntrack.tofNSigmaPr());
+>>>>>>> 2395f3f2a (Update code following review feedback)
     }
     if (ptrack.tpcInnerParam() > tpcCut) {
       if (!ptrack.hasTOF())
@@ -595,8 +648,13 @@ struct DedxPidAnalysis {
       sigmap = ptrack.tofNSigmaEl();
       sigman = ntrack.tofNSigmaEl();
     } else if (v0SelectionMode == v0TPCTOF) {
+<<<<<<< HEAD
       sigmap = std::sqrt(std::pow(ptrack.tpcNSigmaEl(), 2) + std::pow(ptrack.tofNSigmaEl(), 2));
       sigman = std::sqrt(std::pow(ntrack.tpcNSigmaEl(), 2) + std::pow(ntrack.tofNSigmaEl(), 2));
+=======
+        sigmap = std::hypot(ptrack.tpcNSigmaEl(), ptrack.tofNSigmaEl());
+        sigman = std::hypot(ntrack.tpcNSigmaEl(), ntrack.tofNSigmaEl());
+>>>>>>> 2395f3f2a (Update code following review feedback)
     }
 
     if (ptrack.tpcInnerParam() > tpcCut) {
