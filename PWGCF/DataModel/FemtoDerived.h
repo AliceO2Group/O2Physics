@@ -8,22 +8,24 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
 #ifndef PWGCF_DATAMODEL_FEMTODERIVED_H_
 #define PWGCF_DATAMODEL_FEMTODERIVED_H_
 
-#include <cmath>
-#include "Framework/ASoA.h"
-#include "MathUtils/Utils.h"
-#include "Framework/DataTypes.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
+
 #include "Common/DataModel/Multiplicity.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/Expressions.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/DataTypes.h"
+#include "Framework/Expressions.h"
+#include "MathUtils/Utils.h"
+
+#include <cmath>
 
 namespace o2::aod
 {
@@ -88,17 +90,23 @@ DECLARE_SOA_TABLE_STAGED(FDMCCollLabels, "FDMCCollLabel", mcfdcolllabel::FDMCCol
 /// FemtoDreamTrack
 namespace femtodreamparticle
 {
-/// Distinuishes the different particle types
+/// Distinguishes the different particle types
 enum ParticleType {
-  kTrack,   //! Track
-  kV0,      //! V0
-  kV0Child, //! Child track of a V0
-  kCascade, //! Cascade
+  kTrack,     //! Track
+  kV0,        //! V0
+  kReso,      //! Resonances (phi)
+  kResoChild, // Child track of a Resonance
+  kV0Child,   //! Child track of a V0
+  kCascade,   //! Cascade
   kCascadeV0,
   kCascadeV0Child,
-  kCascadeBachelor, //! Bachelor track of a cascade
-  kCharmHadron,     //! Bachelor track of a cascade
-  kNParticleTypes   //! Number of particle types
+  kCascadeBachelor,            //! Bachelor track of a cascade
+  kCharmHadron,                //! Bachelor track of a cascade
+  kPhiPosdaughTPC_NegdaughTPC, /// cases for Phi-daughters for TPC or TOF combinations
+  kPhiPosdaughTPC_NegdaughTOF,
+  kPhiPosdaughTOF_NegdaughTPC,
+  kPhiPosdaughTOF_NegdaughTOF,
+  kNParticleTypes //! Number of particle types
 };
 
 enum MomentumType {
@@ -107,8 +115,10 @@ enum MomentumType {
   kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Tracks", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron"}; //! Naming of the different particle types
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA"};
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "Reso", "ResoChild", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron", "PhiPosdaughTPC_NegdaughTPC", "PhiPosdaughTPC_NegdaughTOF", "PhiPosdaughTOF_NegdaughTPC", "PhiPosdaughTOF_NegdaughTOF"}; //! Naming of the different particle types
+// static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA"};
+
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy"}; // change later!! check for DCAXY for RESO!!
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
