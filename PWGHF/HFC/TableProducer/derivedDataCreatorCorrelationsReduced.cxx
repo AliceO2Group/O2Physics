@@ -469,207 +469,169 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   }
 
   // Dplus with ML selections
-  void processDplusSameEvent(CollsWithCentMult const& colls,
+  void processDplusSameEvent(CollsWithCentMult::iterator const& coll,
                              CandDplusData const& candsDplus,
                              TracksData const& tracks)
   {
-    for (const auto& coll : colls) {
-      auto thisCollId = coll.globalIndex();
-      auto candsCThisColl = candsDplus.sliceBy(candsDplusPerColl, thisCollId);
-      if (forceCharmInCollision && candsCThisColl.size() < 1) {
-        continue;
-      }
-      float cent{-1.}, mult{-1.};
-      if (!checkCollision(coll, cent, mult)) {
-        continue;
-      }
-      rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-      int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-      registry.fill(HIST("hCollisionPoolBin"), poolBin);
-      registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-      auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
-      fillSameEvent<CandType::DplusToPiKPi>(candsCThisColl, trackIdsThisColl, poolBin, cent);
+    if (forceCharmInCollision && candsDplus.size() < 1) {
+      return;
     }
+    float cent{-1.}, mult{-1.};
+    if (!checkCollision(coll, cent, mult)) {
+      return;
+    }
+    rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
+    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
+    registry.fill(HIST("hCollisionPoolBin"), poolBin);
+    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
+    fillSameEvent<CandType::DplusToPiKPi>(candsDplus, tracks, poolBin, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDplusSameEvent, "Process Same Event for Dplus candidates", true);
 
   // Dplus with ML selections
-  void processDplusMixedEvent(CollsWithCentMult const& colls,
+  void processDplusMixedEvent(CollsWithCentMult::iterator const& coll,
                               CandDplusData const& candsDplus,
                               TracksData const& tracks)
   {
-    for (const auto& coll : colls) {
-      auto thisCollId = coll.globalIndex();
-      auto candsCThisColl = candsDplus.sliceBy(candsDplusPerColl, thisCollId);
-      if (forceCharmInCollision && candsCThisColl.size() < 1) {
-        continue;
-      }
-      float cent{-1.}, mult{-1.};
-      if (!checkCollision(coll, cent, mult)) {
-        continue;
-      }
-      rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-      int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-      registry.fill(HIST("hCollisionPoolBin"), poolBin);
-      registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-      auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
-      fillCharmMixedEvent<CandType::DplusToPiKPi>(candsCThisColl, poolBin);
-      fillTrackMixedEvent(trackIdsThisColl, poolBin, cent);
+    if (forceCharmInCollision && candsDplus.size() < 1) {
+      return;
     }
+    float cent{-1.}, mult{-1.};
+    if (!checkCollision(coll, cent, mult)) {
+      return;
+    }
+    rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
+    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
+    registry.fill(HIST("hCollisionPoolBin"), poolBin);
+    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
+    fillCharmMixedEvent<CandType::DplusToPiKPi>(candsDplus, poolBin);
+    fillTrackMixedEvent(tracks, poolBin, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDplusMixedEvent, "Process Mixed Event for Dplus candidates", false);
 
   // Ds with ML selections
-  void processDsSameEvent(CollsWithCentMult const& colls,
-                          CandDsData const& candsDs,
-                          TracksData const& tracks)
+  void processDsSameEvent(CollsWithCentMult::iterator const& coll,
+                          TracksData const& tracks,
+                          CandDsData const&)
   {
-    for (const auto& coll : colls) {
-      auto thisCollId = coll.globalIndex();
-      auto candsCThisColl = candsDs.sliceBy(candsDsPerColl, thisCollId);
-      if (forceCharmInCollision && candsCThisColl.size() < 1) {
-        continue;
-      }
-      float cent{-1.}, mult{-1.};
-      if (!checkCollision(coll, cent, mult)) {
-        continue;
-      }
-      rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-      int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-      registry.fill(HIST("hCollisionPoolBin"), poolBin);
-      registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-      auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
-      auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
-      auto candsDsToKKPi = selectedDsToKKPi->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
-      fillSameEvent<CandType::DsToPiKK>(candsDsToPiKK, trackIdsThisColl, poolBin, cent);
-      fillSameEvent<CandType::DsToKKPi>(candsDsToKKPi, trackIdsThisColl, poolBin, cent);
+    auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
+    auto candsDsToKKPi = selectedDsToKKPi->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
+    if (forceCharmInCollision && candsDsToPiKK.size() < 1 && candsDsToKKPi.size() < 1) {
+      return;
     }
+    float cent{-1.}, mult{-1.};
+    if (!checkCollision(coll, cent, mult)) {
+      return;
+    }
+    rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
+    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
+    registry.fill(HIST("hCollisionPoolBin"), poolBin);
+    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
+    fillSameEvent<CandType::DsToPiKK>(candsDsToPiKK, tracks, poolBin, cent);
+    fillSameEvent<CandType::DsToKKPi>(candsDsToKKPi, tracks, poolBin, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDsSameEvent, "Process Same Event for Ds candidates", false);
 
   // Ds with ML selections
-  void processDsMixedEvent(CollsWithCentMult const& colls,
-                           CandDsData const& candsDs,
-                           TracksData const& tracks)
+  void processDsMixedEvent(CollsWithCentMult::iterator const& coll,
+                           TracksData const& tracks,
+                           CandDsData const&)
   {
-    for (const auto& coll : colls) {
-      auto thisCollId = coll.globalIndex();
-      auto candsCThisColl = candsDs.sliceBy(candsDsPerColl, thisCollId);
-      if (forceCharmInCollision && candsCThisColl.size() < 1) {
-        continue;
-      }
-      float cent{-1.}, mult{-1.};
-      if (!checkCollision(coll, cent, mult)) {
-        continue;
-      }
-      rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-      int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-      registry.fill(HIST("hCollisionPoolBin"), poolBin);
-      registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-      auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
-      auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
-      auto candsDsToKKPi = selectedDsToKKPi->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
-      fillCharmMixedEvent<CandType::DsToPiKK>(candsDsToPiKK, poolBin);
-      fillCharmMixedEvent<CandType::DsToKKPi>(candsDsToKKPi, poolBin);
-      fillTrackMixedEvent(trackIdsThisColl, poolBin, cent);
+    auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
+    auto candsDsToKKPi = selectedDsToKKPi->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
+    if (forceCharmInCollision && candsDsToPiKK.size() < 1 && candsDsToKKPi.size() < 1) {
+      return;
     }
+    float cent{-1.}, mult{-1.};
+    if (!checkCollision(coll, cent, mult)) {
+      return;
+    }
+    rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
+    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
+    registry.fill(HIST("hCollisionPoolBin"), poolBin);
+    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
+    fillCharmMixedEvent<CandType::DsToPiKK>(candsDsToPiKK, poolBin);
+    fillCharmMixedEvent<CandType::DsToKKPi>(candsDsToKKPi, poolBin);
+    fillTrackMixedEvent(tracks, poolBin, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDsMixedEvent, "Process Mixed Event for Ds candidates", false);
 
   // D0 with ML selections
-  void processD0SameEvent(CollsWithCentMult const& colls,
-                          CandD0Data const& candsD0,
-                          TracksData const& tracks)
+  void processD0SameEvent(CollsWithCentMult::iterator const& coll,
+                          TracksData const& tracks,
+                          CandD0Data const&)
   {
-    for (const auto& coll : colls) {
-      auto thisCollId = coll.globalIndex();
-      auto candsCThisColl = candsD0.sliceBy(candsD0PerColl, thisCollId);
-      if (forceCharmInCollision && candsCThisColl.size() < 1) {
-        continue;
-      }
-      float cent{-1.}, mult{-1.};
-      if (!checkCollision(coll, cent, mult)) {
-        continue;
-      }
-      rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-      int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-      registry.fill(HIST("hCollisionPoolBin"), poolBin);
-      registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-      auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
-      auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
-      auto candsD0ToKPi = selectedD0ToKPi->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
-      fillSameEvent<CandType::D0ToPiK>(candsD0ToPiK, trackIdsThisColl, poolBin, cent);
-      fillSameEvent<CandType::D0ToKPi>(candsD0ToKPi, trackIdsThisColl, poolBin, cent);
+    auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
+    auto candsD0ToKPi = selectedD0ToKPi->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
+    if (forceCharmInCollision && candsD0ToPiK.size() < 1 && candsD0ToKPi.size() < 1) {
+      return;
     }
+    float cent{-1.}, mult{-1.};
+    if (!checkCollision(coll, cent, mult)) {
+      return;
+    }
+    rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
+    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
+    registry.fill(HIST("hCollisionPoolBin"), poolBin);
+    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
+    fillSameEvent<CandType::D0ToPiK>(candsD0ToPiK, tracks, poolBin, cent);
+    fillSameEvent<CandType::D0ToKPi>(candsD0ToKPi, tracks, poolBin, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processD0SameEvent, "Process Same Event for D0 candidates", false);
 
   // D0 with ML selections
-  void processD0MixedEvent(CollsWithCentMult const& colls,
-                              CandD0Data const& candsD0,
-                              TracksData const& tracks)
+  void processD0MixedEvent(CollsWithCentMult::iterator const& coll,
+                           TracksData const& tracks,
+                           CandD0Data const&)
   {
-    for (const auto& coll : colls) {
-      auto thisCollId = coll.globalIndex();
-      auto candsCThisColl = candsD0.sliceBy(candsD0PerColl, thisCollId);
-      if (forceCharmInCollision && candsCThisColl.size() < 1) {
-        continue;
-      }
-      float cent{-1.}, mult{-1.};
-      if (!checkCollision(coll, cent, mult)) {
-        continue;
-      }
-      rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-      int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-      registry.fill(HIST("hCollisionPoolBin"), poolBin);
-      registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-      auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
-      auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
-      auto candsD0ToKPi = selectedD0ToKPi->sliceByCached(aod::hf_cand::collisionId, thisCollId, cache);
-      fillCharmMixedEvent<CandType::D0ToPiK>(candsD0ToPiK, poolBin);
-      fillCharmMixedEvent<CandType::D0ToKPi>(candsD0ToKPi, poolBin);
-      fillTrackMixedEvent(trackIdsThisColl, poolBin, cent);
+    auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
+    auto candsD0ToKPi = selectedD0ToKPi->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
+    if (forceCharmInCollision && candsD0ToPiK.size() < 1 && candsD0ToKPi.size() < 1) {
+      return;
     }
+    float cent{-1.}, mult{-1.};
+    if (!checkCollision(coll, cent, mult)) {
+      return;
+    }
+    rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
+    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
+    registry.fill(HIST("hCollisionPoolBin"), poolBin);
+    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
+    fillCharmMixedEvent<CandType::D0ToPiK>(candsD0ToPiK, poolBin);
+    fillCharmMixedEvent<CandType::D0ToKPi>(candsD0ToKPi, poolBin);
+    fillTrackMixedEvent(tracks, poolBin, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processD0MixedEvent, "Process Mixed Event for D0 candidates", false);
 
   // Hadron Hadron Same Event
-  void processHadronHadronSameEvent(CollsWithCentMult const& colls,
+  void processHadronHadronSameEvent(CollsWithCentMult::iterator const& coll,
                                     TracksData const& tracks)
   {
-    for (const auto& coll : colls) {
-      auto thisCollId = coll.globalIndex();
-      float cent{-1.}, mult{-1.};
-      if (!checkCollision(coll, cent, mult)) {
-        continue;
-      }
-      rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-      int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-      registry.fill(HIST("hCollisionPoolBin"), poolBin);
-      registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-      auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
-      fillSameEvent<CandType::Hadron>(trackIdsThisColl, trackIdsThisColl, poolBin, cent);
+    float cent{-1.}, mult{-1.};
+    if (!checkCollision(coll, cent, mult)) {
+      return;
     }
+    rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
+    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
+    registry.fill(HIST("hCollisionPoolBin"), poolBin);
+    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
+    fillSameEvent<CandType::Hadron>(tracks, tracks, poolBin, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processHadronHadronSameEvent, "Process Same Event for hadron candidates", true);
 
   // Hadron Hadron Mixed Event
-  void processHadronHadronMixedEvent(CollsWithCentMult const& colls,
+  void processHadronHadronMixedEvent(CollsWithCentMult::iterator const& coll,
                                      TracksData const& tracks)
   {
-    for (const auto& coll : colls) {
-      auto thisCollId = coll.globalIndex();
-      float cent{-1.}, mult{-1.};
-      if (!checkCollision(coll, cent, mult)) {
-        continue;
-      }
-      rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-      int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-      registry.fill(HIST("hCollisionPoolBin"), poolBin);
-      registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-      auto trackIdsThisColl = tracks.sliceBy(trackIndicesPerColl, thisCollId);
-      fillTrackMixedEvent(trackIdsThisColl, poolBin, cent);
+    float cent{-1.}, mult{-1.};
+    if (!checkCollision(coll, cent, mult)) {
+      return;
     }
+    rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
+    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
+    registry.fill(HIST("hCollisionPoolBin"), poolBin);
+    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
+    fillTrackMixedEvent(tracks, poolBin, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processHadronHadronMixedEvent, "Process Mixed Event for hadron candidates", false);
 };
