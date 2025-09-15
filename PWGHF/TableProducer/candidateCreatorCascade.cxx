@@ -222,12 +222,13 @@ struct HfCandidateCreatorCascade {
         dcaNegToPV = v0row.dcanegtopv();
         v0cosPA = v0row.v0cosPA();
 
+        int MomIndSize = 6;
         constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < MomIndSize; i++) {
           covV[MomInd[i]] = v0row.momentumCovMat()[i];
           covV[i] = v0row.positionCovMat()[i];
         }
-      }  else {
+      } else {
         LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
         continue; // this was inadequately linked, should not happen
       }
