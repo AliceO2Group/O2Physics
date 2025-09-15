@@ -562,74 +562,94 @@ struct HfElectronSelectionWithTpcEmcal {
         bool isEmbEta = false;
         bool isEmbPi0 = false;
 
-        if (particleMc.has_mothers()) {
-          // Check first mother
-          auto const& mother = particleMc.mothers_first_as<aod::McParticles>();
+        // Check first mother
+        auto const& mother = particleMc.mothers_first_as<aod::McParticles>();
 
-          if (std::abs(mother.pdgCode()) == kEta || std::abs(mother.pdgCode()) == kPi0 || std::abs(mother.pdgCode()) == kGamma) {
-            registry.fill(HIST("hMcgenAllNonHfeElectron"), particleMc.pt());
-            if (mother.has_mothers()) {
-              auto const& gmother = mother.mothers_first_as<aod::McParticles>();
-              if (gmother.has_mothers()) {
-                auto const& ggmother = gmother.mothers_first_as<aod::McParticles>();
+        if (std::abs(mother.pdgCode()) == kEta || std::abs(mother.pdgCode()) == kPi0 || std::abs(mother.pdgCode()) == kGamma) {
+          registry.fill(HIST("hMcgenAllNonHfeElectron"), particleMc.pt());
+          auto const& gmother = mother.mothers_first_as<aod::McParticles>();
+          auto const& ggmother = gmother.mothers_first_as<aod::McParticles>();
+          auto const& gggmother = ggmother.mothers_first_as<aod::McParticles>();
 
-                // cases to consider: eta->e, eta->pi0->e, eta->gamma->e, eta->pi0->gamma->e, pi0->e, pi0->gamma->e
+          // cases to consider: eta->e, eta->pi0->e, eta->gamma->e, eta->pi0->gamma->e, pi0->e, pi0->gamma->e
 
-                //=================  eta->e ======================================
-                if (std::abs(mother.pdgCode()) == kEta) {
-                  if (mother.isPhysicalPrimary()) {
-                    isEmbEta = true;
-                  }
+          //=================  eta->e ======================================
+          if (std::abs(mother.pdgCode()) == kEta) {
+            if (mother.isPhysicalPrimary()) {
+              if ((std::abs(gmother.pdgCode()) >= 400 && std::abs(gmother.pdgCode()) < 600) ||
+                  (std::abs(gmother.pdgCode()) >= 4000 && std::abs(gmother.pdgCode()) < 6000)) {
+                continue;
+              }
+              isEmbEta = true;
+            }
+          }
+          //=================  eta->pi0->e ======================================
+
+          if (std::abs(mother.pdgCode()) == kPi0) {
+            if (mother.isPhysicalPrimary()) {
+              if ((std::abs(gmother.pdgCode()) >= 400 && std::abs(gmother.pdgCode()) < 600) ||
+                  (std::abs(gmother.pdgCode()) >= 4000 && std::abs(gmother.pdgCode()) < 6000)) {
+                continue;
+              }
+              isEmbPi0 = true; // pi0 -> e
+            }
+
+            if (std::abs(gmother.pdgCode()) == kEta) {
+              if (gmother.isPhysicalPrimary()) {
+                if ((std::abs(ggmother.pdgCode()) >= 400 && std::abs(ggmother.pdgCode()) < 600) ||
+                    (std::abs(ggmother.pdgCode()) >= 4000 && std::abs(ggmother.pdgCode()) < 6000)) {
+                  continue;
                 }
-                //=================  eta->pi0->e ======================================
+                isEmbEta = true; // eta->pi0-> e
+              }
+            }
+          }
 
-                if (std::abs(mother.pdgCode()) == kPi0) {
-                  if (mother.isPhysicalPrimary()) {
-                    isEmbPi0 = true; // pi0 -> e
-                  }
-
-                  if (std::abs(gmother.pdgCode()) == kEta) {
-                    if (gmother.isPhysicalPrimary()) {
-                      isEmbEta = true; // eta->pi0-> e
-                    }
-                  }
+          /// ====================================  eta->gamma->e  and eta->pi0->gamma->e============
+          if (std::abs(mother.pdgCode()) == kGamma) {
+            if (std::abs(gmother.pdgCode()) == kEta) {
+              if (gmother.isPhysicalPrimary()) {
+                if ((std::abs(ggmother.pdgCode()) >= 400 && std::abs(ggmother.pdgCode()) < 600) ||
+                    (std::abs(ggmother.pdgCode()) >= 4000 && std::abs(ggmother.pdgCode()) < 6000)) {
+                  continue;
                 }
+                isEmbEta = true; // eta->gamma-> e
+              }
+            }
 
-                /// ====================================  eta->gamma->e  and eta->pi0->gamma->e============
-                if (std::abs(mother.pdgCode()) == kGamma) {
-                  if (std::abs(gmother.pdgCode()) == kEta) {
-                    if (gmother.isPhysicalPrimary()) {
-                      isEmbEta = true; // eta->gamma-> e
-                    }
+            if (std::abs(gmother.pdgCode()) == kPi0) {
+              if (gmother.isPhysicalPrimary()) {
+                if ((std::abs(ggmother.pdgCode()) >= 400 && std::abs(ggmother.pdgCode()) < 600) ||
+                    (std::abs(ggmother.pdgCode()) >= 4000 && std::abs(ggmother.pdgCode()) < 6000)) {
+                  continue;
+                }
+                isEmbPi0 = true; // pi0-> gamma-> e
+              }
+
+              if (std::abs(ggmother.pdgCode()) == kEta) {
+                if (ggmother.isPhysicalPrimary()) {
+                  if ((std::abs(gggmother.pdgCode()) >= 400 && std::abs(gggmother.pdgCode()) < 600) ||
+                      (std::abs(gggmother.pdgCode()) >= 4000 && std::abs(gggmother.pdgCode()) < 6000)) {
+                    continue;
                   }
-
-                  if (std::abs(gmother.pdgCode()) == kPi0) {
-                    if (gmother.isPhysicalPrimary()) {
-                      isEmbPi0 = true; // pi0-> gamma-> e
-                    }
-
-                    if (std::abs(ggmother.pdgCode()) == kEta) {
-                      if (ggmother.isPhysicalPrimary()) {
-                        isEmbEta = true; // eta->pi0->gamma-> e
-                      }
-                    }
-                  }
+                  isEmbEta = true; // eta->pi0->gamma-> e
                 }
               }
             }
           }
-        }
-        if (isEmbPi0 || isEmbEta) {
-          registry.fill(HIST("hMcgenNonHfeElectron"), particleMc.pt());
-          isNonHfe = true;
-          if (isEmbPi0) {
+          if (isEmbPi0 || isEmbEta) {
+            registry.fill(HIST("hMcgenNonHfeElectron"), particleMc.pt());
+            isNonHfe = true;
+            if (isEmbPi0) {
 
-            registry.fill(HIST("hPi0eEmbTrkPt"), particleMc.pt());
-          }
-          if (isEmbEta) {
-            registry.fill(HIST("hEtaeEmbTrkPt"), particleMc.pt());
+              registry.fill(HIST("hPi0eEmbTrkPt"), particleMc.pt());
+            }
+            if (isEmbEta) {
+              registry.fill(HIST("hEtaeEmbTrkPt"), particleMc.pt());
+            }
           }
         }
+
         hfGenElectronSel(mcCollision.globalIndex(), particleMc.globalIndex(), particleMc.eta(), particleMc.phi(), particleMc.pt(), isNonHfe);
       }
     }
