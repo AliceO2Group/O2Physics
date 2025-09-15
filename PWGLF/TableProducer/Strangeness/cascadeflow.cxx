@@ -490,13 +490,12 @@ struct cascadeFlow {
   std::string fullCCDBShiftCorrPathTPCL;
   std::string fullCCDBShiftCorrPathTPCR;
 
-  
   template <typename TCollision>
   double ApplyShiftCorrection(TCollision coll, double psiT0C, TProfile3D* shiftprofile)
   {
     auto deltapsiFT0C = 0.0;
     int nmode = 2;
-    
+
     for (int ishift = 1; ishift <= 10; ishift++) {
       auto coeffshiftxFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(coll.centFT0C(), 0.5, ishift - 0.5));
       auto coeffshiftyFT0C = shiftprofile->GetBinContent(shiftprofile->FindBin(coll.centFT0C(), 1.5, ishift - 0.5));
@@ -1082,7 +1081,7 @@ struct cascadeFlow {
         fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
         fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
         shiftprofileFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
-	shiftprofileTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
+        shiftprofileTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
         shiftprofileTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
         lastRunNumber = currentRunNumber;
       }
@@ -1395,7 +1394,7 @@ struct cascadeFlow {
         fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
         fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
         shiftprofileFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
-	shiftprofileTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
+        shiftprofileTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
         shiftprofileTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
         lastRunNumber = currentRunNumber;
       }
@@ -1405,7 +1404,7 @@ struct cascadeFlow {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C, shiftprofileFT0C);
       ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC, shiftprofileFT0C, shiftprofileTPCL, shiftprofileTPCR);
     }
-    
+
     histos.fill(HIST("hPsiT0C"), psiT0CCorr);
     histos.fill(HIST("hPsiT0CvsCentFT0C"), coll.centFT0C(), psiT0CCorr);
 
@@ -1696,7 +1695,7 @@ struct cascadeFlow {
         fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
         fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
         shiftprofileFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
-	shiftprofileTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
+        shiftprofileTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
         shiftprofileTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
         lastRunNumber = currentRunNumber;
       }
@@ -1706,7 +1705,7 @@ struct cascadeFlow {
       psiT0CCorr = ApplyShiftCorrection(coll, psiT0C, shiftprofileFT0C);
       ComputeEPResolutionwShifts(coll, psiT0C, psiTPCA, psiTPCC, shiftprofileFT0C, shiftprofileTPCL, shiftprofileTPCR);
     }
-    
+
     histos.fill(HIST("hPsiT0C"), psiT0CCorr);
     histos.fill(HIST("hPsiT0CvsCentFT0C"), coll.centFT0C(), psiT0CCorr);
 
@@ -1923,7 +1922,7 @@ struct cascadeFlow {
         fullCCDBShiftCorrPathTPCL = ShiftConfigs.cfgShiftPathTPCL;
         fullCCDBShiftCorrPathTPCR = ShiftConfigs.cfgShiftPathTPCR;
         shiftprofileFT0C = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathFT0C, coll.timestamp());
-	shiftprofileTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
+        shiftprofileTPCL = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCL, coll.timestamp());
         shiftprofileTPCR = ccdb->getForTimeStamp<TProfile3D>(fullCCDBShiftCorrPathTPCR, coll.timestamp());
         lastRunNumber = currentRunNumber;
       }
