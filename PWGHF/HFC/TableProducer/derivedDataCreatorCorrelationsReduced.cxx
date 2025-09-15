@@ -307,9 +307,9 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   template <typename TCand, typename TTrack>
   bool checkDaughterTrack(TTrack const& track, TCand const& cand)
   {
-    if constexpr ((requires { cand.prong2Id(); })) {  // Check 3-prong
+    if constexpr ((requires { cand.prong2Id(); })) { // Check 3-prong
       return (track.globalIndex() == cand.prong0Id() || track.globalIndex() == cand.prong1Id() || track.globalIndex() == cand.prong2Id());
-    } else {  // Check 2-prong
+    } else { // Check 2-prong
       return (track.globalIndex() == cand.prong0Id() || track.globalIndex() == cand.prong1Id());
     }
   }
@@ -441,8 +441,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       registry.fill(HIST("hPoolBinAssoc"), poolBin);
       registry.fill(HIST("hPhiVsPtAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), assTrk.pt());
       registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), assTrk.pt());
-      rowAssocTrackReduced(rowCollisions.lastIndex(), assTrk.phi(), assTrk.eta(), 
-                           assTrk.pt(), assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), 
+      rowAssocTrackReduced(rowCollisions.lastIndex(), assTrk.phi(), assTrk.eta(),
+                           assTrk.pt(), assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(),
                            assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
     }
   }

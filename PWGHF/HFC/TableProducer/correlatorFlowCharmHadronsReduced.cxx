@@ -393,7 +393,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
         }
         if (downSamplePairsME < 1.) {
           float pseudoRndm = getPt(assocTrack) * 1000. - static_cast<int64_t>(getPt(assocTrack) * 1000);
-          if (getPt(trigCand) < ptMaxForDownSampleME && trigColl.centrality() < centMaxForDownSampleME && 
+          if (getPt(trigCand) < ptMaxForDownSampleME && trigColl.centrality() < centMaxForDownSampleME &&
               assocColl.centrality() < centMaxForDownSampleME && pseudoRndm >= downSamplePairsME) {
             continue;
           }
