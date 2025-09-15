@@ -93,15 +93,15 @@ DECLARE_SOA_TABLE(HfcRedCharmTrigs, "AOD", "HFCREDCHARMTRIG", //! Table with cha
 
 namespace hf_assoc_track_reduced
 {
-DECLARE_SOA_COLUMN(OriginTrackId, originTrackId, int);         //! Original track index
-DECLARE_SOA_COLUMN(NTpcCrossedRows, nTpcCrossedRows, UChar_t); //! Number of crossed TPC Rows
-DECLARE_SOA_COLUMN(ItsClusterMap, itsClusterMap, UChar_t);     //! ITS cluster map, one bit per a layer, starting from the innermost
-DECLARE_SOA_COLUMN(ItsNCls, itsNCls, UChar_t);                 //! Number of ITS clusters
-DECLARE_SOA_COLUMN(EtaAssocTrack, etaAssocTrack, float);       //! Eta of the track
-DECLARE_SOA_COLUMN(PhiAssocTrack, phiAssocTrack, float);       //! Phi of the track
-DECLARE_SOA_COLUMN(PtAssocTrack, ptAssocTrack, float);         //! Pt of the track
-DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                       //! Impact parameter in XY of the track to the primary vertex
-DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                         //! Impact parameter in Z of the track to the primary vertex
+DECLARE_SOA_COLUMN(OriginTrackId, originTrackId, int);                 //! Original track index
+DECLARE_SOA_COLUMN(NTpcCrossedRows, nTpcCrossedRows, UChar_t);         //! Number of crossed TPC Rows
+DECLARE_SOA_COLUMN(ItsClusterMap, itsClusterMap, UChar_t);             //! ITS cluster map, one bit per a layer, starting from the innermost
+DECLARE_SOA_COLUMN(ItsNCls, itsNCls, UChar_t);                         //! Number of ITS clusters
+DECLARE_SOA_COLUMN(EtaAssocTrack, etaAssocTrack, float);               //! Eta of the track
+DECLARE_SOA_COLUMN(PhiAssocTrack, phiAssocTrack, float);               //! Phi of the track
+DECLARE_SOA_COLUMN(PtAssocTrack, ptAssocTrack, float);                 //! Pt of the track
+DECLARE_SOA_COLUMN(DcaXY, dcaXY, float);                               //! Impact parameter in XY of the track to the primary vertex
+DECLARE_SOA_COLUMN(DcaZ, dcaZ, float);                                 //! Impact parameter in Z of the track to the primary vertex
 DECLARE_SOA_COLUMN(NTpcCrossedRowsTrig, nTpcCrossedRowsTrig, UChar_t); //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(ItsClusterMapTrig, itsClusterMapTrig, UChar_t);     //! ITS cluster map, one bit per a layer, starting from the innermost
 DECLARE_SOA_COLUMN(ItsNClsTrig, itsNClsTrig, UChar_t);                 //! Number of ITS clusters
