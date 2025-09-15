@@ -183,7 +183,6 @@ struct HfCorrelatorHfeHadrons {
 
     registry.fill(HIST("hNevents"), 1);
     // Add hadron Table For Mix Event Electron Hadron correlation
-
     if (!skipEventTableFilling) {
       registry.fill(HIST("hZvertex"), collision.posZ());
       for (const auto& hTrack : tracks) {
@@ -194,14 +193,6 @@ struct HfCorrelatorHfeHadrons {
         registry.fill(HIST("hptHadron"), hTrack.pt());
         entryHadron(hTrack.phi(), hTrack.eta(), hTrack.pt(), poolBin, gCollisionId, timeStamp);
       }
-    
-    for (const auto& hTrack : tracks) {
-      if (!selAssoHadron(hTrack)) {
-        continue;
-      }
-      registry.fill(HIST("hTracksBin"), poolBin);
-      entryHadron(hTrack.phi(), hTrack.eta(), hTrack.pt(), poolBin, gCollisionId, timeStamp);
-
     }
 
     //  Construct Deta Phi between electrons and hadrons
