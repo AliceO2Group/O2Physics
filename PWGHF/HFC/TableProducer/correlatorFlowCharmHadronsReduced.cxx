@@ -89,6 +89,42 @@ double getPhi(const TTrack& track)
   }
 }
 
+/// Get charm candidate or hadron track pT
+/// \param track is the candidate
+template <typename TTrack>
+double getPt(const TTrack& track)
+{
+  if constexpr (requires { track.ptAssoc(); }) {
+    return track.ptAssoc();
+  } else {
+    return track.ptTrig();
+  }
+}
+
+/// Get charm candidate or hadron track eta
+/// \param track is the candidate
+template <typename TTrack>
+double getEta(const TTrack& track)
+{
+  if constexpr (requires { track.etaAssoc(); }) {
+    return track.etaAssoc();
+  } else {
+    return track.etaTrig();
+  }
+}
+
+/// Get charm candidate or hadron track phi
+/// \param track is the candidate
+template <typename TTrack>
+double getPhi(const TTrack& track)
+{
+  if constexpr (requires { track.phiAssoc(); }) {
+    return track.phiAssoc();
+  } else {
+    return track.phiTrig();
+  }
+}
+
 struct HfCorrelatorFlowCharmHadronsReduced {
   Produces<aod::HfcRedSEChHads> rowPairSECharmHads; //! Correlation pairs information Same Event
   Produces<aod::HfcRedMEChHads> rowPairMECharmHads; //! Correlation pairs information Mixed Event
@@ -120,6 +156,13 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   using SameEvtPairsHadHad = soa::Filtered<soa::Join<aod::HfcRedSEBases, aod::HfcRedTrigTracks, aod::HfcRedAssTracks>>;
   using AssocTracks = soa::Filtered<soa::Join<aod::HfcRedAssBases, aod::HfcRedAssTracks>>;
   using TrigCharmCands = soa::Join<aod::HfcRedTrigBases, aod::HfcRedTrigCharms>;
+
+  Filter filterAssocTracks = (nabs(aod::hf_correl_charm_had_reduced::dcaXYAssoc) < dcaXYTrackMax) && (nabs(aod::hf_correl_charm_had_reduced::dcaZAssoc) < dcaZTrackMax) && (aod::hf_correl_charm_had_reduced::nTpcCrossedRowsAssoc > tpcCrossedRowsMin) && (aod::hf_correl_charm_had_reduced::itsNClsAssoc > itsNClsMin);
+  Filter filterTrigTracks = (nabs(aod::hf_correl_charm_had_reduced::dcaXYTrig) < dcaXYTrackMax) && (nabs(aod::hf_correl_charm_had_reduced::dcaZTrig) < dcaZTrackMax) && (aod::hf_correl_charm_had_reduced::nTpcCrossedRowsTrig > tpcCrossedRowsMin) && (aod::hf_correl_charm_had_reduced::itsNClsTrig > itsNClsMin);
+  Filter filterSameEvtPairs = (nabs(aod::hf_correl_charm_had_reduced::deltaEta) > deltaEtaAbsMin) && (nabs(aod::hf_correl_charm_had_reduced::deltaEta) < deltaEtaAbsMax);
+
+  Preslice<AssocTracks> assocTracksPerCol = aod::hf_correl_charm_had_reduced::hfcRedCorrCollId;
+  Preslice<TrigCharmCands> trigCharmCandsPerCol = aod::hf_correl_charm_had_reduced::hfcRedCorrCollId;
 
   Filter filterAssocTracks = (nabs(aod::hf_correl_charm_had_reduced::dcaXYAssoc) < dcaXYTrackMax) && (nabs(aod::hf_correl_charm_had_reduced::dcaZAssoc) < dcaZTrackMax) && (aod::hf_correl_charm_had_reduced::nTpcCrossedRowsAssoc > tpcCrossedRowsMin) && (aod::hf_correl_charm_had_reduced::itsNClsAssoc > itsNClsMin);
   Filter filterTrigTracks = (nabs(aod::hf_correl_charm_had_reduced::dcaXYTrig) < dcaXYTrackMax) && (nabs(aod::hf_correl_charm_had_reduced::dcaZTrig) < dcaZTrackMax) && (aod::hf_correl_charm_had_reduced::nTpcCrossedRowsTrig > tpcCrossedRowsMin) && (aod::hf_correl_charm_had_reduced::itsNClsTrig > itsNClsMin);
@@ -160,6 +203,12 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     }
     if (binsPtTrig.value.size() != (bkgScoresPtMaxs.value.size() + 1)) {
       LOGP(fatal, "The size of binsPtTrig must be the one of bkgScorePtMaxs plus one!");
+    }
+
+    if (doprocessSameEventCharmHadWCentMix || doprocessSameEventHadHadWCentMix || doprocessMixedEventCharmHadWCentMix || doprocessMixedEventHadHadWCentMix) {
+      poolBins = (centPoolBins->size() - 1) * (zPoolBins->size() - 1);
+    } else {
+      poolBins = (multPoolBins->size() - 1) * (zPoolBins->size() - 1);
     }
 
     if (doprocessSameEventCharmHadWCentMix || doprocessSameEventHadHadWCentMix || doprocessMixedEventCharmHadWCentMix || doprocessMixedEventHadHadWCentMix) {

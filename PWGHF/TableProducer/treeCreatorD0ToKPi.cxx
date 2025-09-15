@@ -536,7 +536,10 @@ struct HfTreeCreatorD0ToKPi {
         }
       }
       if constexpr (onlySig) {
-        if ((std::abs(candidate.flagMcMatchRec()) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && (candidate.flagMcMatchRec() != 0))) {
+        if (fillCorrBkgs && candidate.flagMcMatchRec() == 0) {
+          continue;
+        }
+        if (!fillCorrBkgs && std::abs(candidate.flagMcMatchRec()) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           continue;
         }
       }
