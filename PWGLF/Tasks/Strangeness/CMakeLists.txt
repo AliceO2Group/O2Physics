@@ -54,6 +54,11 @@ o2physics_add_dpl_workflow(k0mixedevents
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(xi-lambda-corr-task
+    SOURCES xiLambdaCorr.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(vzero-cascade-absorption
     SOURCES vzero_cascade_absorption.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
