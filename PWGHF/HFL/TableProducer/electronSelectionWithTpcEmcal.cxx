@@ -118,10 +118,10 @@ struct HfElectronSelectionWithTpcEmcal {
   Configurable<float> m20EmcClusterElectronMin{"m20EmcClusterElectronMin", 0.0f, "min Electron  EMCal Cluster M20"};
   Configurable<float> tpcNsigmaElectronMin{"tpcNsigmaElectronMin", -0.5f, "min Electron TPCnsigma"};
   Configurable<float> tpcNsigmaElectronMax{"tpcNsigmaElectronMax", 3.0f, "max Electron TPCnsigma"};
-  Configurable<float> charmMinPdgCode{"charmMinPdgCode", 400.0, "Min Charm Hadron PdgCode"};
-  Configurable<float> charmMaxPdgCode{"charmMaxPdgCode", 600.0, "Max Charm Hadron PdgCode"};
-  Configurable<float> beautyMinPdgCode{"beautyMinPdgCode", 4000.0, "Min beauty Hadron PdgCode"};
-  Configurable<float> beautyMaxPdgCode{"beautyMaxPdgCode", 6000.0, "Max beauty Hadron PdgCode"};
+  Configurable<int> pdgCodeCharmMin{"pdgCodeCharmMin", 400, "Min Charm Hadron PdgCode"};
+  Configurable<int> pdgCodeCharmMax{"pdgCodeCharmMax", 600, "Max Charm Hadron PdgCode"};
+  Configurable<int> pdgCodeBeautyMin{"pdgCodeBeautyMin", 4000, "Min beauty Hadron PdgCode"};
+  Configurable<int> pdgCodeBeautyMax{"pdgCodeBeautyMax", 6000, "Max beauty Hadron PdgCode"};
 
   using TableCollisions = o2::soa::Filtered<o2::soa::Join<aod::Collisions, aod::Mults, aod::EvSels>>;
   using TableCollision = TableCollisions::iterator;
@@ -580,8 +580,8 @@ struct HfElectronSelectionWithTpcEmcal {
           //=================  eta->e ======================================
           if (std::abs(mother.pdgCode()) == kEta) {
             if (mother.isPhysicalPrimary()) {
-              if ((std::abs(gmother.pdgCode()) >= charmMinPdgCode && std::abs(gmother.pdgCode()) < charmMaxPdgCode) ||
-                  (std::abs(gmother.pdgCode()) >= beautyMinPdgCode && std::abs(gmother.pdgCode()) < beautyMaxPdgCode)) {
+              if ((std::abs(gmother.pdgCode()) >= pdgCodeCharmMin && std::abs(gmother.pdgCode()) < pdgCodeCharmMax) ||
+                  (std::abs(gmother.pdgCode()) >= pdgCodeBeautyMin && std::abs(gmother.pdgCode()) < pdgCodeBeautyMax)) {
                 continue;
               }
               isEmbEta = true;
@@ -591,8 +591,8 @@ struct HfElectronSelectionWithTpcEmcal {
 
           if (std::abs(mother.pdgCode()) == kPi0) {
             if (mother.isPhysicalPrimary()) {
-              if ((std::abs(gmother.pdgCode()) >= charmMinPdgCode && std::abs(gmother.pdgCode()) < charmMaxPdgCode) ||
-                  (std::abs(gmother.pdgCode()) >= beautyMinPdgCode && std::abs(gmother.pdgCode()) < beautyMaxPdgCode)) {
+              if ((std::abs(gmother.pdgCode()) >= pdgCodeCharmMin && std::abs(gmother.pdgCode()) < pdgCodeCharmMax) ||
+                  (std::abs(gmother.pdgCode()) >= pdgCodeBeautyMin && std::abs(gmother.pdgCode()) < pdgCodeBeautyMax)) {
                 continue;
               }
               isEmbPi0 = true; // pi0 -> e
@@ -600,8 +600,8 @@ struct HfElectronSelectionWithTpcEmcal {
 
             if (std::abs(gmother.pdgCode()) == kEta) {
               if (gmother.isPhysicalPrimary()) {
-                if ((std::abs(ggmother.pdgCode()) >= charmMinPdgCode && std::abs(ggmother.pdgCode()) < charmMaxPdgCode) ||
-                    (std::abs(ggmother.pdgCode()) >= beautyMinPdgCode && std::abs(ggmother.pdgCode()) < beautyMaxPdgCode)) {
+                if ((std::abs(ggmother.pdgCode()) >= pdgCodeCharmMin && std::abs(ggmother.pdgCode()) < pdgCodeCharmMax) ||
+                    (std::abs(ggmother.pdgCode()) >= pdgCodeBeautyMin && std::abs(ggmother.pdgCode()) < pdgCodeBeautyMax)) {
                   continue;
                 }
                 isEmbEta = true; // eta->pi0-> e
@@ -613,8 +613,8 @@ struct HfElectronSelectionWithTpcEmcal {
           if (std::abs(mother.pdgCode()) == kGamma) {
             if (std::abs(gmother.pdgCode()) == kEta) {
               if (gmother.isPhysicalPrimary()) {
-                if ((std::abs(ggmother.pdgCode()) >= charmMinPdgCode && std::abs(ggmother.pdgCode()) < charmMaxPdgCode) ||
-                    (std::abs(ggmother.pdgCode()) >= beautyMinPdgCode && std::abs(ggmother.pdgCode()) < beautyMaxPdgCode)) {
+                if ((std::abs(ggmother.pdgCode()) >= pdgCodeCharmMin && std::abs(ggmother.pdgCode()) < pdgCodeCharmMax) ||
+                    (std::abs(ggmother.pdgCode()) >= pdgCodeBeautyMin && std::abs(ggmother.pdgCode()) < pdgCodeBeautyMax)) {
                   continue;
                 }
                 isEmbEta = true; // eta->gamma-> e
@@ -623,8 +623,8 @@ struct HfElectronSelectionWithTpcEmcal {
 
             if (std::abs(gmother.pdgCode()) == kPi0) {
               if (gmother.isPhysicalPrimary()) {
-                if ((std::abs(ggmother.pdgCode()) >= charmMinPdgCode && std::abs(ggmother.pdgCode()) < charmMaxPdgCode) ||
-                    (std::abs(ggmother.pdgCode()) >= beautyMinPdgCode && std::abs(ggmother.pdgCode()) < beautyMaxPdgCode)) {
+                if ((std::abs(ggmother.pdgCode()) >= pdgCodeCharmMin && std::abs(ggmother.pdgCode()) < pdgCodeCharmMax) ||
+                    (std::abs(ggmother.pdgCode()) >= pdgCodeBeautyMin && std::abs(ggmother.pdgCode()) < pdgCodeBeautyMax)) {
                   continue;
                 }
                 isEmbPi0 = true; // pi0-> gamma-> e
@@ -632,8 +632,8 @@ struct HfElectronSelectionWithTpcEmcal {
 
               if (std::abs(ggmother.pdgCode()) == kEta) {
                 if (ggmother.isPhysicalPrimary()) {
-                  if ((std::abs(gggmother.pdgCode()) >= charmMinPdgCode && std::abs(gggmother.pdgCode()) < charmMaxPdgCode) ||
-                      (std::abs(gggmother.pdgCode()) >= beautyMinPdgCode && std::abs(gggmother.pdgCode()) < beautyMaxPdgCode)) {
+                  if ((std::abs(gggmother.pdgCode()) >= pdgCodeCharmMin && std::abs(gggmother.pdgCode()) < pdgCodeCharmMax) ||
+                      (std::abs(gggmother.pdgCode()) >= pdgCodeBeautyMin && std::abs(gggmother.pdgCode()) < pdgCodeBeautyMax)) {
                     continue;
                   }
                   isEmbEta = true; // eta->pi0->gamma-> e
