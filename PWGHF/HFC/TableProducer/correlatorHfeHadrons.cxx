@@ -48,7 +48,7 @@ using namespace o2::aod::hf_sel_electron;
 std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
 std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500.0, 5000.};
 std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MCGen multiplicity is defined by counting primaries
-using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
+using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
 BinningType corrBinning{{zBins, multBins}, true};
 using BinningTypeMcGen = ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mult::MultMCFT0A>;
 
@@ -109,6 +109,9 @@ struct HfCorrelatorHfeHadrons {
     registry.add("hMCgenNonHfEHCorrel", "Sparse for Delta phi and Delta eta  for McGen Non Hf Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMCgenInclusiveEHCorrl", "Sparse for Delta phi and Delta eta  for McGen Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hptElectron", "hptElectron", {HistType::kTH1D, {axisPt}});
+    registry.add("hptHadron", "hptHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptHadron", "hMCgenptHadron", {HistType::kTH1D, {axisPt}});
+    registry.add("hMCgenptHadronprimary", "hMCgenptHadronprimary", {HistType::kTH1D, {axisPt}});
 
     registry.add("hMixEventInclusiveEHCorrl", "Sparse for mix event Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMixEventLSEHCorrel", "Sparse for mix event Delta phi and Delta eta Like sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
@@ -147,7 +150,7 @@ struct HfCorrelatorHfeHadrons {
   {
     if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
       return;
-    int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFV0M()));
+    int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     int gCollisionId = collision.globalIndex();
     int64_t timeStamp = bc.timestamp();
@@ -158,6 +161,7 @@ struct HfCorrelatorHfeHadrons {
         continue;
       }
       registry.fill(HIST("hTracksBin"), poolBin);
+      registry.fill(HIST("hptHadron"), hTrack.pt());
       entryHadron(hTrack.phi(), hTrack.eta(), hTrack.pt(), poolBin, gCollisionId, timeStamp);
     }
 
@@ -260,7 +264,7 @@ struct HfCorrelatorHfeHadrons {
     double ptHadronMix = -999;
     double etaHadronMix = -999;
     double phiHadronMix = -999;
-    int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFV0M()));
+    int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
     for (const auto& [t1, t2] : combinations(CombinationsFullIndexPolicy(tracks1, tracks2))) {
       if (!t1.isEmcal()) {
         continue;
@@ -313,7 +317,7 @@ struct HfCorrelatorHfeHadrons {
     fillCorrelation(collision, electron, tracks, bc);
   }
 
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", true);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processData, "Process for Data", false);
 
   // =======  Process starts for McRec, Same event ============
 
@@ -332,9 +336,25 @@ struct HfCorrelatorHfeHadrons {
     BinningTypeMcGen corrBinningMcGen{{zBins, multBinsMcGen}, true};
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
 
+    for (const auto& particleMc : mcParticles) {
+      if (particleMc.eta() < etaTrackMin || particleMc.eta() > etaTrackMax) {
+        continue;
+      }
+      if (particleMc.pt() < ptTrackMin) {
+        continue;
+      }
+
+      registry.fill(HIST("hMCgenptHadron"), particleMc.pt());
+      if (particleMc.isPhysicalPrimary()) {
+
+        registry.fill(HIST("hMCgenptHadronprimary"), particleMc.pt());
+      }
+    }
+
     double ptElectron = 0;
     double phiElectron = 0;
     double etaElectron = 0;
+
     for (const auto& electronMc : electron) {
       double ptHadron = 0;
       double phiHadron = 0;
@@ -382,7 +402,7 @@ struct HfCorrelatorHfeHadrons {
       }
     }
   }
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcGen, "Process MC Gen  mode", false);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcGen, "Process MC Gen  mode", true);
   // ====================== Implement Event mixing on Data ===============================
 
   // ====================== Implement Event mixing on Data ===================================
@@ -465,7 +485,7 @@ struct HfCorrelatorHfeHadrons {
       }
     }
   }
-  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcGenMixedEvent, "Process Mixed Event MC Gen mode", false);
+  PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcGenMixedEvent, "Process Mixed Event MC Gen mode", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
