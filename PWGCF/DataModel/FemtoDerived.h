@@ -94,15 +94,15 @@ namespace femtodreamparticle
 enum ParticleType {
   kTrack,     //! Track
   kV0,        //! V0
-  kReso,      //! Resonances (phi)
-  kResoChild, // Child track of a Resonance
   kV0Child,   //! Child track of a V0
   kCascade,   //! Cascade
   kCascadeV0,
   kCascadeV0Child,
   kCascadeBachelor,            //! Bachelor track of a cascade
   kCharmHadron,                //! Bachelor track of a cascade
-  kPhiPosdaughTPC_NegdaughTPC, /// cases for Phi-daughters for TPC or TOF combinations
+  kReso,                       //! Resonances (phi)
+  kResoChild,                  // Child track of a Resonance
+  kPhiPosdaughTPC_NegdaughTPC, // cases for Phi-daughters for TPC or TOF combinations
   kPhiPosdaughTPC_NegdaughTOF,
   kPhiPosdaughTOF_NegdaughTPC,
   kPhiPosdaughTOF_NegdaughTOF,
@@ -115,10 +115,10 @@ enum MomentumType {
   kPtpc   //! momentum at the inner wall of the TPC (useful for PID plots)
 };
 
-static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "Reso", "ResoChild", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron", "PhiPosdaughTPC_NegdaughTPC", "PhiPosdaughTPC_NegdaughTOF", "PhiPosdaughTOF_NegdaughTPC", "PhiPosdaughTOF_NegdaughTOF"}; //! Naming of the different particle types
+static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron", "Reso", "ResoChild", "PhiPosdaughTPC_NegdaughTPC", "PhiPosdaughTPC_NegdaughTOF", "PhiPosdaughTOF_NegdaughTPC", "PhiPosdaughTOF_NegdaughTOF"}; //! Naming of the different particle types
 // static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA"};
 
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy"}; // change later!! check for DCAXY for RESO!!
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA",  "/hCPA", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy"}; // change later!! check for DCAXY for RESO!!
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
