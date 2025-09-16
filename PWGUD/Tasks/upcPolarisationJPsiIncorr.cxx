@@ -32,10 +32,10 @@
 #include "TMath.h"
 #include "TRandom3.h"
 
-// table for saving tree with info on data                                                                                      
+// table for saving tree with info on data
 namespace dimu
 {
-// dimuon                                                                                                                       
+// dimuon
 DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
 DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
@@ -48,11 +48,7 @@ namespace o2::aod
 DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
                   dimu::RunNumber,
                   dimu::M, dimu::Pt, dimu::Rap, dimu::Phi);
-} // namespace o2::aod                                                                                                          
-
-
-
-
+} // namespace o2::aod
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -86,7 +82,6 @@ struct upcPolarisationJPsiIncorr {
   Produces<o2::aod::DiMu> dimuSel;
   // defining histograms using histogram registry: different histos for the different process functions
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
-  
   // CONFIGURABLES
   static constexpr double Pi = o2::constants::math::PI;
   // pT of muon pairs
@@ -109,7 +104,6 @@ struct upcPolarisationJPsiIncorr {
   Configurable<int> nBinsPhi{"nBinsPhi", 600, "N bins in phi histo"};
   Configurable<float> lowPhi{"lowPhi", -Pi, "lower limit in phi histo"};
   Configurable<float> highPhi{"highPhi", Pi, "upper limit in phi histo"};
-
   // Analysis cuts                                                                                                              
   Configurable<float> maxJpsiMass{"maxJpsiMass", 3.18, "Maximum of the jpsi peak for peak cut"};
   Configurable<float> minJpsiMass{"minJpsiMass", 3.0, "Minimum of the jpsi peak for peak cut"};
@@ -127,7 +121,6 @@ struct upcPolarisationJPsiIncorr {
     const AxisSpec axisEta{nBinsEta, lowEta, highEta, "#eta"};
     const AxisSpec axisRapidity{nBinsRapidity, lowRapidity, highRapidity, "Rapidity"};
     const AxisSpec axisPhi{nBinsPhi, lowPhi, highPhi, "#varphi"};
-    
     // histos
     // data and reco MC
     registry.add("hMass", "Invariant mass of muon pairs;;#counts", kTH1D, {axisMass});
@@ -136,8 +129,6 @@ struct upcPolarisationJPsiIncorr {
     registry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
     registry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
   }
-
-  
   // retrieve particle mass (GeV/c^2) from TDatabasePDG
   float particleMass(int pid)
   {
@@ -223,7 +214,7 @@ struct upcPolarisationJPsiIncorr {
     p.SetXYZM(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu);
     float eta = p.Eta();
     float pt = p.Pt();
-    
+
     if (eta < kEtaMin || eta > kEtaMax)
       return false;
     if (pt < kPtMin)
@@ -252,7 +243,6 @@ struct upcPolarisationJPsiIncorr {
 	  return;
       }
     }
-
     // MCH-MID match selection
     int nMIDs = 0;
     if (tr1.chi2MatchMCHMID() > 0)
@@ -261,7 +251,6 @@ struct upcPolarisationJPsiIncorr {
       nMIDs++;
     if (nMIDs != kReqMatchMIDTracks)
       return;
-
     // MFT-MID match selection (if MFT is requested by the trackType)
     if (myTrackType == 0) {
       // if MFT is requested check that the tracks is inside the MFT acceptance
@@ -305,8 +294,6 @@ struct upcPolarisationJPsiIncorr {
       return;
     if (p.Rapidity() > highRapidity)
       return;
-
-
     // fill the histos without looking at neutron emission
     registry.fill(HIST("hMass"), p.M());
     registry.fill(HIST("hPt"), p.Pt());
@@ -315,11 +302,7 @@ struct upcPolarisationJPsiIncorr {
     registry.fill(HIST("hPhi"), p.Phi());
 
     dimuSel(cand.runNumber(),p.M(), p.Pt(), p.Rapidity(), p.Phi());
-
-
   }
-
-  
   // PROCESS FUNCTION
   void processData(CandidatesFwd const& eventCandidates,
                    o2::aod::UDZdcsReduced const& ZDCs,
