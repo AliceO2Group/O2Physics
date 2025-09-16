@@ -104,10 +104,9 @@ struct upcPolarisationJPsiIncorr {
   Configurable<int> nBinsPhi{"nBinsPhi", 600, "N bins in phi histo"};
   Configurable<float> lowPhi{"lowPhi", -Pi, "lower limit in phi histo"};
   Configurable<float> highPhi{"highPhi", Pi, "upper limit in phi histo"};
-  // Analysis cuts                                                                                                              
+  // Analysis cuts
   Configurable<float> maxJpsiMass{"maxJpsiMass", 3.18, "Maximum of the jpsi peak for peak cut"};
   Configurable<float> minJpsiMass{"minJpsiMass", 3.0, "Minimum of the jpsi peak for peak cut"};
-
   // my track type
   // 0 = MCH-MID-MFT
   // 1 = MCH-MID
@@ -301,7 +300,7 @@ struct upcPolarisationJPsiIncorr {
     registry.fill(HIST("hRapidity"), p.Rapidity());
     registry.fill(HIST("hPhi"), p.Phi());
 
-    dimuSel(cand.runNumber(),p.M(), p.Pt(), p.Rapidity(), p.Phi());
+    dimuSel(cand.runNumber(), p.M(), p.Pt(), p.Rapidity(), p.Phi());
   }
   // PROCESS FUNCTION
   void processData(CandidatesFwd const& eventCandidates,
