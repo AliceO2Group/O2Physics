@@ -181,8 +181,8 @@ class FemtoDreamCollisionSelection
   /// \param col Collision
   /// \return whether or not the collisions fulfills the specified selections
   template <typename C>
-  bool occupancySelection(C const& col, 
-                              int tpcOccupancyMin, int tpcOccupancyMax)
+  bool occupancySelection(C const& col,
+                          int tpcOccupancyMin, int tpcOccupancyMax)
   {
     const auto occupancy = col.trackOccupancyInTimeRange();
     if ((occupancy < tpcOccupancyMin || occupancy > tpcOccupancyMax)) {
@@ -245,7 +245,7 @@ class FemtoDreamCollisionSelection
     mHistogramQn->add<TProfile>("Event/profileC22", "; cent; c22", kTProfile, {{10, 0, 100}});
     mHistogramQn->add<TProfile>("Event/profileC24", "; cent; c24", kTProfile, {{10, 0, 100}});
 
-    if (doQnSeparation){      
+    if (doQnSeparation) {
       for (int iqn(0); iqn < mumQnBins; ++iqn) {
         profilesC22.push_back(mHistogramQn->add<TProfile>(("Qn/profileC22_" + std::to_string(iqn)).c_str(), "; cent; c22", kTProfile, {{10, 0, 100}}));
       }
@@ -400,7 +400,7 @@ class FemtoDreamCollisionSelection
       mHistogramQn->fill(HIST("Event/qnBin"), qnBin);
       if (qnBin >= 0 && qnBin < numQnBins) {
         std::get<std::shared_ptr<TH1>>(qnMults[qnBin])->Fill(mult);
-      }      
+      }
     }
 
     return qnBin;
@@ -482,8 +482,8 @@ class FemtoDreamCollisionSelection
     TComplex negEtaQStar = TComplex::Conjugate(negEtaQ);
 
     mHistogramQn->get<TProfile>(HIST("Event/profileC22"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-    if (doQnSeparation && mQnBin >= 0 && mQnBin < numQnBins){
-      std::get<std::shared_ptr<TProfile>>(profilesC22[mQnBin])->Fill(centrality, (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+    if (doQnSeparation && mQnBin >= 0 && mQnBin < numQnBins) {
+      std::get<std::shared_ptr<TProfile>>(profilesC22[mQnBin])->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
     }
     return;
   }
@@ -501,8 +501,8 @@ class FemtoDreamCollisionSelection
   float mSphericityPtmin = 0.f;
   int mQnBin = -999;
   HistogramRegistry* mHistogramQn = nullptr; ///< For flow cumulant output
-  std::vector<HistPtr> qnMults;  /// Histograms of multiplicity (TH1F) per Qn bin. Stored as HistPtr (variant of shared_ptr) from HistogramManager.
-  std::vector<HistPtr> profilesC22; /// Pofile Histograms of c22 per Qn bin
+  std::vector<HistPtr> qnMults;              /// Histograms of multiplicity (TH1F) per Qn bin. Stored as HistPtr (variant of shared_ptr) from HistogramManager.
+  std::vector<HistPtr> profilesC22;          /// Pofile Histograms of c22 per Qn bin
   TH2D* mReQthisEvt = nullptr;               ///< For flow cumulant in an event
   TH2D* mImQthisEvt = nullptr;               ///< For flow cumulant in an event
   TH2D* mReQ2thisEvt = nullptr;              ///< For flow cumulant in an event
