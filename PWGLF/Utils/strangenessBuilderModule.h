@@ -1278,7 +1278,7 @@ class BuilderModule
       sorted_cascade = sort_indices(cascadeList, (baseOpts.mc_findableMode.value > 0));
     }
 
-    LOGF(info, "AO2D input: %i V0s, %i cascades. Building list sizes: %i V0s, %i cascades", v0s.size(), cascades.size(), v0List.size(), cascadeList.size());
+    LOGF(debug, "AO2D input: %i V0s, %i cascades. Building list sizes: %i V0s, %i cascades", v0s.size(), cascades.size(), v0List.size(), cascadeList.size());
   }
 
   //__________________________________________________

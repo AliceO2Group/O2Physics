@@ -132,7 +132,7 @@ std::vector<V0group> groupDuplicates(const T& V0s)
   }
   v0tableGrouped.push_back(thisV0); // publish last
 
-  LOGF(info, "Duplicate V0s grouped. aod::V0s counted: %i, unique index pairs: %i", V0s.size(), v0tableGrouped.size());
+  LOGF(debug, "Duplicate V0s grouped. aod::V0s counted: %i, unique index pairs: %i", V0s.size(), v0tableGrouped.size());
   return v0tableGrouped;
 }
 

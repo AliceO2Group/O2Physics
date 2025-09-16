@@ -21,8 +21,6 @@
 // strangeness building in a single DPL device that is particularly
 // adequate for pipelining.
 //
-// Currently meant for testing and performance check
-//
 //===============================================================
 
 #include "PWGLF/Utils/strangenessBuilderModule.h"
@@ -67,7 +65,7 @@ using TracksWithExtra = soa::Join<aod::Tracks, aod::TracksExtra>;
 // For dE/dx association in pre-selection
 using TracksExtraWithPID = soa::Join<aod::TracksExtra, aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullPr, aod::pidTPCFullKa, aod::pidTPCFullHe>;
 
-struct propagationService {
+struct propagationServiceRun2 {
   // CCDB boilerplate declarations
   o2::framework::Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -84,14 +82,6 @@ struct propagationService {
   o2::pwglf::strangenessbuilder::preSelectOpts preSelectOpts;
   o2::pwglf::strangenessbuilder::BuilderModule strangenessBuilderModule;
 
-  // the track tuner object -> needs to be here as it inherits from ConfigurableGroup (+ has its own copy of ccdbApi)
-  TrackTuner trackTunerObj;
-
-  // track propagation
-  o2::common::TrackPropagationProducts trackPropagationProducts;
-  o2::common::TrackPropagationConfigurables trackPropagationConfigurables;
-  o2::common::TrackPropagationModule trackPropagation;
-
   // registry
   HistogramRegistry histos{"histos"};
 
@@ -103,45 +93,37 @@ struct propagationService {
     ccdb->setURL(ccdburl.value);
 
     // task-specific
-    trackPropagation.init(trackPropagationConfigurables, trackTunerObj, histos, initContext);
     strangenessBuilderModule.init(baseOpts, v0BuilderOpts, cascadeBuilderOpts, preSelectOpts, histos, initContext);
   }
 
-  void processRealData(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIU const& tracks, aod::BCsWithTimestamps const& bcs)
+  void processRealData(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExt const& tracks, aod::BCsWithTimestamps const& bcs)
   {
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
-    trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, trackTunerObj, ccdbLoader, collisions, tracks, trackPropagationProducts, histos);
-    strangenessBuilderModule.dataProcess(ccdb, histos, collisions, static_cast<TObject*>(nullptr), v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr), products);
+    strangenessBuilderModule.dataProcess(ccdb, histos, collisions, static_cast<TObject*>(nullptr), v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, static_cast<TObject*>(nullptr), products);
   }
 
-  void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIU const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
+  void processMonteCarlo(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtLabeled const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
   {
     ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
-    trackPropagation.fillTrackTables<true>(trackPropagationConfigurables, trackTunerObj, ccdbLoader, collisions, tracks, trackPropagationProducts, histos);
-    strangenessBuilderModule.dataProcess(ccdb, histos, collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles, products);
+    strangenessBuilderModule.dataProcess(ccdb, histos, collisions, mccollisions, v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, mcParticles, products);
   }
 
-  // FIXME: the part below is only viable if TPC PID
-  // switches to using TracksIU (circular dependency)
-  //
-  // void processRealDataWithPID(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtIUWithPID const& tracks, aod::BCsWithTimestamps const& bcs)
-  // {
-  //   ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
-  //   trackPropagation.fillTrackTables<false>(trackPropagationConfigurables, ccdbLoader, collisions, tracks, trackPropagationProducts, histos);
-  //   strangenessBuilderModule.dataProcess(ccdb, histos, collisions, static_cast<TObject*>(nullptr), v0s, cascades, trackedCascades, tracks, bcs, static_cast<TObject*>(nullptr), products);
-  // }
+  void processRealDataWithPID(soa::Join<aod::Collisions, aod::EvSels> const& collisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtWithPID const& tracks, aod::BCsWithTimestamps const& bcs)
+  {
+    ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
+    strangenessBuilderModule.dataProcess(ccdb, histos, collisions, static_cast<TObject*>(nullptr), v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, static_cast<TObject*>(nullptr), products);
+  }
 
-  // void processMonteCarloWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, aod::TrackedCascades const& trackedCascades, FullTracksExtLabeledIUWithPID const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
-  // {
-  //   ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
-  //   trackPropagation.fillTrackTables<true>(trackPropagationConfigurables, ccdbLoader, collisions, tracks, trackPropagationProducts, histos);
-  //   strangenessBuilderModule.dataProcess(ccdb, histos, collisions, mccollisions, v0s, cascades, trackedCascades, tracks, bcs, mcParticles, products);
-  // }
+  void processMonteCarloWithPID(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions, aod::McCollisions const& mccollisions, aod::V0s const& v0s, aod::Cascades const& cascades, FullTracksExtLabeledWithPID const& tracks, aod::BCsWithTimestamps const& bcs, aod::McParticles const& mcParticles)
+  {
+    ccdbLoader.initCCDBfromBCs(standardCCDBLoaderConfigurables, ccdb, bcs);
+    strangenessBuilderModule.dataProcess(ccdb, histos, collisions, mccollisions, v0s, cascades, static_cast<TObject*>(nullptr), tracks, bcs, mcParticles, products);
+  }
 
-  PROCESS_SWITCH(propagationService, processRealData, "process real data", true);
-  PROCESS_SWITCH(propagationService, processMonteCarlo, "process monte carlo", false);
-  // PROCESS_SWITCH(propagationService, processRealDataWithPID, "process real data", false);
-  // PROCESS_SWITCH(propagationService, processMonteCarloWithPID, "process monte carlo", false);
+  PROCESS_SWITCH(propagationServiceRun2, processRealData, "process real data", true);
+  PROCESS_SWITCH(propagationServiceRun2, processMonteCarlo, "process monte carlo", false);
+  PROCESS_SWITCH(propagationServiceRun2, processRealDataWithPID, "process real data", false);
+  PROCESS_SWITCH(propagationServiceRun2, processMonteCarloWithPID, "process monte carlo", false);
 };
 
 //****************************************************************************************
@@ -151,6 +133,6 @@ struct propagationService {
 //****************************************************************************************
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  WorkflowSpec workflow{adaptAnalysisTask<propagationService>(cfgc)};
+  WorkflowSpec workflow{adaptAnalysisTask<propagationServiceRun2>(cfgc)};
   return workflow;
 }
