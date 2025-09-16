@@ -332,7 +332,7 @@ class V0Builder
   template <typename T1, typename T2, typename T3, typename T4>
   void init(T1& config, T2& filter, T3& table, T4& initContext)
   {
-    v0Selection.configure(config, filter);
+    mV0Selection.configure(config, filter);
     if constexpr (modes::isEqual(v0Type, modes::V0::kLambda) || modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
       if constexpr (modes::isEqual(v0Type, modes::V0::kLambda)) {
         LOG(info) << "Initialize femto Lambda builder...";
@@ -340,19 +340,19 @@ class V0Builder
       if constexpr (modes::isEqual(v0Type, modes::V0::kAntiLambda)) {
         LOG(info) << "Initialize femto AntiLambda builder...";
       }
-      produceLambdas = utils::enableTable("FLambdas_001", table.produceLambdas.value, initContext);
-      produceLambdaMasks = utils::enableTable("FLambdaMasks_001", table.produceLambdaMasks.value, initContext);
-      produceLambdaExtras = utils::enableTable("FLambdaExtras_001", table.produceLambdaExtras.value, initContext);
+      mProduceLambdas = utils::enableTable("FLambdas_001", table.produceLambdas.value, initContext);
+      mProduceLambdaMasks = utils::enableTable("FLambdaMasks_001", table.produceLambdaMasks.value, initContext);
+      mProduceLambdaExtras = utils::enableTable("FLambdaExtras_001", table.produceLambdaExtras.value, initContext);
     }
     if constexpr (modes::isEqual(v0Type, modes::V0::kK0short)) {
       LOG(info) << "Initialize femto K0short builder...";
-      produceK0shorts = utils::enableTable("FK0shorts_001", table.produceK0shorts.value, initContext);
-      produceK0shortMasks = utils::enableTable("FK0shortMasks_001", table.produceK0shortMasks.value, initContext);
-      produceK0shortExtras = utils::enableTable("FK0shortExtras_001", table.produceK0shortExtras.value, initContext);
+      mProduceK0shorts = utils::enableTable("FK0shorts_001", table.produceK0shorts.value, initContext);
+      mProduceK0shortMasks = utils::enableTable("FK0shortMasks_001", table.produceK0shortMasks.value, initContext);
+      mProduceK0shortExtras = utils::enableTable("FK0shortExtras_001", table.produceK0shortExtras.value, initContext);
     }
-    if (produceLambdas || produceLambdaMasks || produceLambdaExtras || produceK0shorts || produceK0shortMasks || produceK0shortExtras) {
+    if (mProduceLambdas || mProduceLambdaMasks || mProduceLambdaExtras || mProduceK0shorts || mProduceK0shortMasks || mProduceK0shortExtras) {
       mFillAnyTable = true;
-      v0Selection.printSelections(v0SelsName, v0SelsToStrings);
+      mV0Selection.printSelections(v0SelsName, v0SelsToStrings);
     } else {
       LOG(info) << "No tables configured";
     }
@@ -368,11 +368,11 @@ class V0Builder
     int64_t posDaughterIndex = 0;
     int64_t negDaughterIndex = 0;
     for (const auto& v0 : v0s) {
-      if (!v0Selection.checkFilters(v0)) {
+      if (!mV0Selection.checkFilters(v0)) {
         continue;
       }
-      v0Selection.applySelections(v0, tracks);
-      if (v0Selection.passesAllRequiredSelections() && v0Selection.checkHypothesis(v0)) {
+      mV0Selection.applySelections(v0, tracks);
+      if (mV0Selection.passesAllRequiredSelections() && mV0Selection.checkHypothesis(v0)) {
         auto posDaughter = v0.template posTrack_as<T5>();
         auto negDaughter = v0.template negTrack_as<T5>();
         posDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kV0Daughter>(posDaughter, trackProducts, collisionProducts, indexMap);
@@ -401,7 +401,7 @@ class V0Builder
       mass = v0.mAntiLambda();
       massAnti = v0.mLambda();
     }
-    if (produceLambdas) {
+    if (mProduceLambdas) {
       v0products.producedLambdas(collisionProducts.producedCollision.lastIndex(),
                                  sign * v0.pt(),
                                  v0.eta(),
@@ -410,10 +410,10 @@ class V0Builder
                                  posDaughterIndex,
                                  negDaughterIndex);
     }
-    if (produceLambdaMasks) {
-      v0products.producedLambdaMasks(v0Selection.getBitmask());
+    if (mProduceLambdaMasks) {
+      v0products.producedLambdaMasks(mV0Selection.getBitmask());
     }
-    if (produceLambdaExtras) {
+    if (mProduceLambdaExtras) {
       v0products.producedLambdaExtras(
         massAnti,
         v0.mK0Short(),
@@ -429,7 +429,7 @@ class V0Builder
   template <typename T1, typename T2, typename T3>
   void fillK0short(T1& collisionProducts, T2& v0products, T3 const& v0, int posDaughterIndex, int negDaughterIndex)
   {
-    if (produceK0shorts) {
+    if (mProduceK0shorts) {
       v0products.producedK0shorts(collisionProducts.producedCollision.lastIndex(),
                                   v0.pt(),
                                   v0.eta(),
@@ -438,10 +438,10 @@ class V0Builder
                                   posDaughterIndex,
                                   negDaughterIndex);
     }
-    if (produceK0shortMasks) {
-      v0products.producedK0shortMasks(v0Selection.getBitmask());
+    if (mProduceK0shortMasks) {
+      v0products.producedK0shortMasks(mV0Selection.getBitmask());
     }
-    if (produceK0shortExtras) {
+    if (mProduceK0shortExtras) {
       v0products.producedK0shortExtras(
         v0.mLambda(),
         v0.mAntiLambda(),
@@ -457,14 +457,14 @@ class V0Builder
   bool fillAnyTable() { return mFillAnyTable; }
 
  private:
-  V0Selection<v0Type> v0Selection;
+  V0Selection<v0Type> mV0Selection;
   bool mFillAnyTable = false;
-  bool produceLambdas = false;
-  bool produceLambdaMasks = false;
-  bool produceLambdaExtras = false;
-  bool produceK0shorts = false;
-  bool produceK0shortMasks = false;
-  bool produceK0shortExtras = false;
+  bool mProduceLambdas = false;
+  bool mProduceLambdaMasks = false;
+  bool mProduceLambdaExtras = false;
+  bool mProduceK0shorts = false;
+  bool mProduceK0shortMasks = false;
+  bool mProduceK0shortExtras = false;
 };
 } // namespace v0builder
 } // namespace o2::analysis::femto

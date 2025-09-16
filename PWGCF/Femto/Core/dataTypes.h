@@ -24,6 +24,9 @@ namespace femtodatatypes
 {
 // Note: Length of the bitmask is the limit of how many selections can be configured
 
+// datatypes for collsions
+using CollsionsMaskType = uint64_t;
+
 // datatypes for tracks
 using TrackMaskType = uint64_t;
 using TrackType = uint16_t;

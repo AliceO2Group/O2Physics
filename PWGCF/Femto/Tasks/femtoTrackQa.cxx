@@ -54,7 +54,7 @@ struct FemtoTrackQa {
   SliceCache cache;
 
   // setup collisions
-  collisionbuilder::ConfCollisionFilter collisionSelection;
+  collisionbuilder::ConfCollisionFilters collisionSelection;
   Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
