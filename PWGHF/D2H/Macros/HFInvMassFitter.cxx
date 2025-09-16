@@ -104,6 +104,7 @@ HFInvMassFitter::HFInvMassFitter() : mHistoInvMass(nullptr),
                                      mRooMeanSgn(nullptr),
                                      mRooSigmaSgn(nullptr),
                                      mRooSecSigmaSgn(nullptr),
+                                     mRooFracDoubleGaus(nullptr),
                                      mSgnPdf(nullptr),
                                      mBkgPdf(nullptr),
                                      mReflPdf(nullptr),
@@ -176,6 +177,7 @@ HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Doubl
                                                                                                                                     mRooMeanSgn(nullptr),
                                                                                                                                     mRooSigmaSgn(nullptr),
                                                                                                                                     mRooSecSigmaSgn(nullptr),
+                                                                                                                                    mRooFracDoubleGaus(nullptr),
                                                                                                                                     mSgnPdf(nullptr),
                                                                                                                                     mBkgPdf(nullptr),
                                                                                                                                     mReflPdf(nullptr),
@@ -210,6 +212,7 @@ HFInvMassFitter::~HFInvMassFitter()
   delete mRooMeanSgn;
   delete mRooSigmaSgn;
   delete mRooSecSigmaSgn;
+  delete mRooFracDoubleGaus;
   delete mSgnPdf;
   delete mBkgPdf;
   delete mReflPdf;
@@ -810,12 +813,14 @@ RooAbsPdf* HFInvMassFitter::createSignalFitFunction(RooWorkspace* workspace)
       mRooSigmaSgn = workspace->var("sigma");
       mRooSecSigmaSgn = workspace->var("sigmaDoubleGaus");
       mRooMeanSgn = workspace->var("mean");
+      mRooFracDoubleGaus = workspace->var("fracDoubleGaus");
     } break;
     case 2: {
       sgnPdf = workspace->pdf("sgnFuncGausRatio");
       mRooSigmaSgn = workspace->var("sigma");
       mRooSecSigmaSgn = workspace->var("sigmaDoubleGausRatio");
       mRooMeanSgn = workspace->var("mean");
+      mRooFracDoubleGaus = workspace->var("fracDoubleGausRatio");
     } break;
     case 3: {
       sgnPdf = workspace->pdf("sgnFuncDoublePeak");

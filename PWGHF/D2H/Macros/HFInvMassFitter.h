@@ -214,8 +214,10 @@ class HFInvMassFitter : public TNamed
   [[nodiscard]] Double_t getSigmaUncertainty() const { return mRooSigmaSgn->getError(); }
   [[nodiscard]] Double_t getSecSigma() const { return mRooSecSigmaSgn->getVal(); }
   [[nodiscard]] Double_t getSecSigmaUncertainty() const { return mRooSecSigmaSgn->getError(); }
+  [[nodiscard]] Double_t getFracDoubleGaus() const { return mRooFracDoubleGaus->getVal(); }
+  [[nodiscard]] Double_t getFracDoubleGausUncertainty() const { return mRooFracDoubleGaus->getError(); }
   [[nodiscard]] Double_t getReflOverSig() const
-  
+
   {
     if (mReflPdf != nullptr) {
       return mReflOverSgn;
@@ -288,6 +290,7 @@ class HFInvMassFitter : public TNamed
   RooRealVar* mRooMeanSgn;           /// mean for gaussian of signal
   RooRealVar* mRooSigmaSgn;          /// sigma for gaussian of signal
   RooRealVar* mRooSecSigmaSgn;       /// second sigma for composite gaussian of signal
+  RooRealVar* mRooFracDoubleGaus;    /// fraction of second gaussian for composite gaussian of signal
   RooAbsPdf* mSgnPdf;                /// signal fit function
   RooAbsPdf* mBkgPdf;                /// background fit function
   RooAbsPdf* mReflPdf;               /// reflection fit function
