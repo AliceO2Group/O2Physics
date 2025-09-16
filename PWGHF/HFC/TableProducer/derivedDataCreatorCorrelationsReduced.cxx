@@ -51,9 +51,6 @@ using namespace o2::framework::expressions;
 using namespace o2::hf_centrality;
 using namespace o2::hf_evsel;
 
-using BinningTypeDerivedCent = ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Centrality>;
-using BinningTypeDerivedMult = ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Multiplicity>;
-
 enum CandType {
   DplusToPiKPi = 0,
   DsToKKPi,
@@ -63,47 +60,37 @@ enum CandType {
   Hadron
 };
 
-enum PoolBinningPolicy {
-  Centrality = 0,
-  Multiplicity
-};
-
 /// Code to select collisions with at least one Ds meson
 struct HfDerivedDataCreatorCorrelationsReduced {
-  Produces<aod::HfcRedFlowColls> rowCollisions;
-  Produces<aod::HfcRedCharmTrigs> rowCharmCandidates;
-  Produces<aod::HfcRedTrkAssocs> rowAssocTrackReduced;
-  Produces<aod::HfcRedSEChHads> entryCharmHadSEPair;
-  Produces<aod::HfcRedSEHadHads> entryHadHadSEPair;
+  Produces<aod::HfcRedCorrColls> rowCollisions;   // Table with reduced collision info
+  Produces<aod::HfcRedSEPairs> rowSEPairs;        // Table with same-event pairs info
+  Produces<aod::HfcRedTrkAssocs> rowAssocTrks;    // Table with associated track info
+  Produces<aod::HfcRedTrkSels> rowAssocTrkSels;   // Table with associated track selection info
+  Produces<aod::HfcRedTrigs> rowTrigs;            // Table with charm candidate info
+  Produces<aod::HfcRedTrigCharms> rowTrigCharms;  // Table with charm trigger candidate info
+  Produces<aod::HfcRedTrigHads> rowTrigHads;      // Table with hadron trigger candidate info
 
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 15, "Selection Flag for hadron (ML score tables are required to run the task)"};
   Configurable<bool> forceCharmInCollision{"forceCharmInCollision", true, "Flag to force charm in collision"};
-  Configurable<bool> useCentMixing{"useCentMixing", true, "Flag to use centrality mixing"};
-  Configurable<bool> useMultMixing{"useMultMixing", false, "Flag to use multiplicity mixing"};
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indexes of BDT scores to be stored. Two indexes max."};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
   Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
   Configurable<float> ptCandMax{"ptCandMax", 24., "max. cand. pT"};
   Configurable<int> tpcNClsCrossedRowsMin{"tpcNClsCrossedRowsMin", 70, "min. TPC crossed rows for associated tracks"};
-  Configurable<float> etaTrackMax{"etaTrackMax", 1., "max. track eta"};
-  Configurable<float> ptTrackMin{"ptTrackMin", 0.15, "min. track pT"};
-  Configurable<float> ptTrackMax{"ptTrackMax", 5., "max. track pT"};
-  Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. track DCA XY"};
-  Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. track DCA Z"};
+  Configurable<float> etaTrkMax{"etaTrkMax", 1., "max. track eta"};
+  Configurable<float> ptTrkMin{"ptTrkMin", 0.5, "min. track pT"};
+  Configurable<float> ptTrkMax{"ptTrkMax", 5., "max. track pT"};
+  Configurable<float> dcaXYTrkMax{"dcaXYTrkMax", 1., "max. track DCA XY"};
+  Configurable<float> dcaZTrkMax{"dcaZTrkMax", 1., "max. track DCA Z"};
   Configurable<float> deltaEtaAbsMin{"deltaEtaAbsMin", 0.5, "min. pair delta eta"};
   Configurable<float> deltaEtaAbsMax{"deltaEtaAbsMax", 2., "max. pair delta eta"};
-  Configurable<float> downSampleTracksFactorSE{"downSampleTracksFactorSE", 1., "Fraction of associated tracks to keep"};
-  Configurable<float> ptMaxForDownSampleSE{"ptMaxForDownSampleSE", 10., "Maximum pt for the application of the downsampling factor"};
-  Configurable<float> centMaxForDownSampleSE{"centMaxForDownSampleSE", 10., "Maximum centrality for the application of the downsampling factor"};
-  Configurable<float> downSampleTracksFactorME{"downSampleTracksFactorME", 1., "Fraction of associated tracks to keep"};
-  Configurable<float> ptMaxForDownSampleME{"ptMaxForDownSampleME", 10., "Maximum pt for the application of the downsampling factor"};
-  Configurable<float> centMaxForDownSampleME{"centMaxForDownSampleME", 10., "Maximum centrality for the application of the downsampling factor"};
+  Configurable<float> downSampleTrksFactor{"downSampleTrksFactor", 1., "Fraction of associated tracks to keep"};
+  Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
+  Configurable<float> centMaxForDownSample{"centMaxForDownSample", 101., "Maximum centrality for the application of the downsampling factor"};
   Configurable<std::vector<double>> binsPtTrig{"binsPtTrig", std::vector<double>{1., 3., 5., 8., 16., 36.}, "pT bin limits for trigger candidates"};
   Configurable<std::vector<double>> binsPtAssoc{"binsPtAssoc", std::vector<double>{0.3, 1., 2., 50.}, "pT bin limits for associated particles"};
-  Configurable<bool> fillSparses{"fillSparses", true, "Fill sparse histograms"};
-  Configurable<bool> fillTables{"fillTables", false, "Fill tables"};
 
   HfHelper hfHelper;
   HfEventSelection hfEvSel; // event selection and monitoring
@@ -116,26 +103,23 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
-  using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;
+  using TrksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;
 
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
   Filter filterSelectD0Candidates = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag || aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
-  Filter filterSelectTrackData = (nabs(aod::track::eta) < etaTrackMax) && (aod::track::pt > ptTrackMin) && (aod::track::pt < ptTrackMax) && (nabs(aod::track::dcaXY) < dcaXYTrackMax) && (nabs(aod::track::dcaZ) < dcaZTrackMax);
+  Filter filterSelectTrkData = (nabs(aod::track::eta) < etaTrkMax) && (aod::track::pt > ptTrkMin) && (aod::track::pt < ptTrkMax) && (nabs(aod::track::dcaXY) < dcaXYTrkMax) && (nabs(aod::track::dcaZ) < dcaZTrkMax);
 
   Preslice<CandDsData> candsDsPerColl = aod::hf_cand::collisionId;
   Preslice<CandDplusData> candsDplusPerColl = aod::hf_cand::collisionId;
   Preslice<CandD0Data> candsD0PerColl = aod::hf_cand::collisionId;
-  Preslice<TracksData> trackIndicesPerColl = aod::track::collisionId;
+  Preslice<TrksData> trackIndicesPerColl = aod::track::collisionId;
 
   Partition<CandDsData> selectedDsToKKPi = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag;
   Partition<CandDsData> selectedDsToPiKK = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
   Partition<CandD0Data> selectedD0ToPiK = aod::hf_sel_candidate_d0::isSelD0 >= selectionFlag;
   Partition<CandD0Data> selectedD0ToKPi = aod::hf_sel_candidate_d0::isSelD0bar >= selectionFlag;
 
-  ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0}, "Z vertex position pools"};
-  ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 900., 1800., 6000.}, "Event multiplicity pools (FT0M)"};
-  ConfigurableAxis centPoolBins{"centPoolBins", {VARIABLE_WIDTH, 0., 10., 20., 30.}, "Event centrality pools"};
   ConfigurableAxis binsInvMass{"binsInvMass", {300, 1.6, 2.2}, ""};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {100, 0., 10000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsCent{"binsCent", {100, 0., 100.}, "Centrality bins"};
@@ -144,14 +128,10 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   ConfigurableAxis binsPhi{"binsPhi", {64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, "Phi bins"};
   ConfigurableAxis binsDeltaEta{"binsDeltaEta", {100, -2., 2.}, "Delta Eta bins"};
   ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {64, -3., 3.}, "Delta Phi bins"};
-  ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsMlOne{"binsMlOne", {100, 0., 1.}, ""};
   ConfigurableAxis binsMlTwo{"binsMlTwo", {100, 0., 1.}, ""};
 
   HistogramRegistry registry{"registry", {}};
-
-  ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Centrality> corrBinningCent{{zPoolBins, centPoolBins}, true};
-  ColumnBinningPolicy<aod::hf_collisions_reduced::PosZ, aod::hf_collisions_reduced::Multiplicity> corrBinningMult{{zPoolBins, multPoolBins}, true};
 
   void init(InitContext&)
   {
@@ -161,6 +141,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       massCharm = o2::constants::physics::MassDS;
     } else if (doprocessD0SameEvent || doprocessD0MixedEvent) {
       massCharm = o2::constants::physics::MassD0;
+    } else if (doprocessHadronHadronSameEvent || doprocessHadronHadronMixedEvent) {
+      LOG(info) << "Charm mass not set, processing Hadron-Hadron case";
     } else {
       LOG(fatal) << "No decay channel selected to process";
     }
@@ -170,52 +152,21 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     ccdb->setCaching(true);
     ccdb->setLocalObjectValidityChecking();
 
-    const AxisSpec axisInvMass{binsInvMass, "Inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisCent = {binsCent, "Centrality"};
     const AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     const AxisSpec axisPosZ = {binsPosZ, "PosZ"};
-    const AxisSpec axisPoolBin = {binsPoolBin, "PoolBin"};
     const AxisSpec axisEta = {binsEta, "#it{#eta}"};
     const AxisSpec axisPhi = {binsPhi, "#it{#varphi}"};
-    const AxisSpec axisDeltaEta = {binsDeltaEta, "#Delta#it{#eta}"};
-    const AxisSpec axisDeltaPhi = {binsDeltaPhi, "#Delta#it{#varphi}"};
     const AxisSpec axisPtTrig = {(std::vector<double>)binsPtTrig, "#it{p}_{T} Trig (GeV/#it{c})"};
     const AxisSpec axisPtAssoc = {(std::vector<double>)binsPtAssoc, "#it{p}_{T} Assoc (GeV/#it{c})"};
-    const AxisSpec axisMlOne{binsMlOne, "bdtScore0"};
-    const AxisSpec axisMlTwo{binsMlTwo, "bdtScore1"};
 
     // Histograms for data analysis
-    if (useCentMixing) {
-      registry.add("hCent", "Centrality", {HistType::kTH2F, {{axisCent}, {axisPoolBin}}});
-    } else {
-      registry.add("hMultFT0M", "Multiplicity FT0M", {HistType::kTH2F, {{axisMultFT0M}, {axisPoolBin}}});
-    }
-    registry.add("hZVtx", "z vertex", {HistType::kTH2F, {{axisPosZ}, {axisPoolBin}}});
-    registry.add("hCollisionPoolBin", "Collision pool bin", {HistType::kTH1F, {axisPoolBin}});
-    registry.add("hPoolBinTrig", "Trigger candidates pool bin", {HistType::kTH1F, {axisPoolBin}});
     registry.add("hPhiVsPtTrig", "Trigger candidates phiVsPt", {HistType::kTH2F, {{axisPhi}, {axisPtTrig}}});
     registry.add("hEtaVsPtTrig", "Trigger candidates etaVsPt", {HistType::kTH2F, {{axisEta}, {axisPtTrig}}});
     registry.add("hPhiVsPtTrigAssoc", "Associated particles phiVsPt", {HistType::kTH3F, {{axisPhi}, {axisPtTrig}, {axisPtAssoc}}});
     registry.add("hEtaVsPtTrigAssoc", "Associated particles etaVsPt", {HistType::kTH3F, {{axisEta}, {axisPtTrig}, {axisPtAssoc}}});
     registry.add("hPhiVsPtAssoc", "Associated particles phiVsPt", {HistType::kTH2F, {{axisPhi}, {axisPtAssoc}}});
     registry.add("hEtaVsPtAssoc", "Associated particles etaVsPt", {HistType::kTH2F, {{axisEta}, {axisPtAssoc}}});
-    registry.add("hPoolBinAssoc", "Associated particles pool bin", {HistType::kTH1F, {axisPoolBin}});
-
-    // if (fillSparses) {
-    //   std::vector<AxisSpec> axes = {axisPtTrig, axisPtAssoc, axisDeltaEta, axisDeltaPhi, axisPoolBin};
-    //   if (doprocessSameEventDplusWCentMix) {
-    //     registry.add("hSparseCorrelationsSEHadHad", "THn for SE Had-Had correlations", HistType::kTHnSparseF, axes);
-    //   } else if (doprocessMixedEventHadHadWCentMix || doprocessMixedEventHadHadWMultMix) {
-    //     registry.add("hSparseCorrelationsMEHadHad", "THn for ME Had-Had correlations", HistType::kTHnSparseF, axes);
-    //   } else {
-    //     axes.insert(axes.end(), {axisMlOne, axisMlTwo, axisInvMass});
-    //     if (doprocessSameEventDplusCharmHadWCentMix || doprocessSameEventCharmHadWMultMix) {
-    //       registry.add("hSparseCorrelationsSECharmHad", "THn for SE Charm-Had correlations", HistType::kTHnSparseF, axes);
-    //     } else if (doprocessMixedEventCharmHadWCentMix || doprocessMixedEventCharmHadWMultMix) {
-    //       registry.add("hSparseCorrelationsMECharmHad", "THn for ME Charm-Had correlations", HistType::kTHnSparseF, axes);
-    //     }
-    //   }
-    // }
   }; // end init
 
   /// Get charm hadron candidate mass
@@ -244,9 +195,9 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   /// Get charm hadron bdt scores
   /// \param candidate is the charm hadron candidate
   template <CandType candType, typename TCand>
-  std::vector<float> getCandMlScores(const TCand& candidate)
+  std::array<float, 2> getCandMlScores(const TCand& candidate)
   {
-    std::vector<float> outputMl{-999., -999.};
+    std::array<float, 2> outputMl{-999.f, -999.f};
     if constexpr (candType == CandType::DsToKKPi) {
       for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
         outputMl[iclass] = candidate.mlProbDsToKKPi()[classMl->at(iclass)];
@@ -304,174 +255,119 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     return true;
   }
 
-  template <typename TCand, typename TTrack>
-  bool checkDaughterTrack(TTrack const& track, TCand const& cand)
+  /// Checks if the trigger cand-associated track pair can be accepted for SE correlation
+  /// \param assTrk is the associated track
+  /// \param cand is the trigger candidate
+  template <CandType candType, typename TCand, typename TAssocTrk>
+  bool acceptSameEvtPair(TAssocTrk const& assTrk, TCand const& cand)
   {
-    if constexpr ((requires { cand.prong2Id(); })) { // Check 3-prong
-      return (track.globalIndex() == cand.prong0Id() || track.globalIndex() == cand.prong1Id() || track.globalIndex() == cand.prong2Id());
-    } else { // Check 2-prong
-      return (track.globalIndex() == cand.prong0Id() || track.globalIndex() == cand.prong1Id());
+    double deltaEta = assTrk.eta() - cand.eta();
+    if (std::abs(deltaEta) <= deltaEtaAbsMin || std::abs(deltaEta) > deltaEtaAbsMax) {
+      return false;
     }
+
+    if (!assTrk.isGlobalTrackWoDCA() || assTrk.tpcNClsCrossedRows() < tpcNClsCrossedRowsMin) {
+      return false;
+    }
+
+    if constexpr (candType == CandType::Hadron) { 
+      if (!cand.isGlobalTrackWoDCA() || cand.tpcNClsCrossedRows() < tpcNClsCrossedRowsMin) {
+        return false;
+      }
+      if (assTrk.globalIndex() == cand.globalIndex()) {
+        return false; // skip self-correlation for hadron-hadron
+      }
+    } else {  // Remove Daughter-Cand pairs for charm-hadron correlations
+      if constexpr ((requires { cand.prong2Id(); })) { // Check 3-prong
+        return (assTrk.globalIndex() == cand.prong0Id() || assTrk.globalIndex() == cand.prong1Id() || assTrk.globalIndex() == cand.prong2Id());
+      } else { // Check 2-prong
+        return (assTrk.globalIndex() == cand.prong0Id() || assTrk.globalIndex() == cand.prong1Id());
+      }
+    }
+    return true;
   }
 
-  /// Fill Charm-Hadron correlation table and sparse
-  /// \param trigCand is the trigger charm hadron candidate
-  /// \param assTrk is the associated hadron track
-  /// \param poolBin is the pool bin of the collision
-  template <CandType candType, typename TTrigCand, typename TTrack>
-  void fillCharmHadSE(TTrigCand const& trigCand,
-                      TTrack const& assTrk,
-                      const int poolBin)
-  {
-    double deltaEta = assTrk.eta() - trigCand.eta();
-    double deltaPhi = RecoDecay::constrainAngle(assTrk.phi() - trigCand.phi(), -o2::constants::math::PIHalf);
-    std::vector<float> outputMl = getCandMlScores<candType>(trigCand);
-    double massCand = getCandMass<candType>(trigCand);
-    if (fillTables) {
-      entryCharmHadSEPair(deltaEta, deltaPhi, poolBin, trigCand.pt(), massCand, outputMl[0], outputMl[1],
-                          assTrk.pt(), assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
-    }
-    // if (fillSparses) {
-    //   registry.fill(HIST("hSparseCorrelationsSECharmHad"), trigCand.pt(), assTrk.pt(),
-    //                 deltaEta, deltaPhi, poolBin, trigCand.bdtScore0(),
-    //                 trigCand.bdtScore1(), trigCand.invMassCand());
-    // }
-  }
-
-  /// Fill Hadron-Hadron correlation table and sparse
-  /// \param trigTrack is the trigger hadron candidate
-  /// \param assTrk is the associated hadron track
-  /// \param poolBin is the pool bin of the collision
-  template <typename TCand>
-  void fillHadHadSE(TCand const& trigTrack,
-                    TCand const& assTrk,
-                    const int poolBin)
-  {
-    double deltaEta = assTrk.eta() - trigTrack.eta();
-    double deltaPhi = RecoDecay::constrainAngle(assTrk.phi() - trigTrack.phi(), -o2::constants::math::PIHalf);
-    if (fillTables) {
-      entryHadHadSEPair(deltaEta, deltaPhi, poolBin,
-                        trigTrack.pt(), assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ(),
-                        assTrk.pt(), assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
-    }
-    // if (fillSparses) {
-    //   registry.fill(HIST("hSparseCorrelationsSEHadHad"), trigCand.pt(), assTrk.pt(), deltaEta, deltaPhi, poolBin);
-    // }
-  }
-
-  template <CandType candType, typename TTrigCands, typename TAssocTracks>
+  /// Fill histograms and tables for same-event correlations
+  /// \param trigCands are the trigger candidates
+  /// \param assTrks are the associated tracks
+  /// \param collCentrality is the collision centrality
+  template <CandType candType, typename TTrigCands, typename TAssocTrks>
   void fillSameEvent(TTrigCands const& trigCands,
-                     TAssocTracks const& assTrks,
-                     const int poolBin,
+                     TAssocTrks const& assTrks,
                      const float collCentrality)
   {
-
     for (const auto& trigCand : trigCands) {
-      registry.fill(HIST("hPoolBinTrig"), poolBin);
       registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCand.pt());
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCand.pt());
       for (const auto& assTrk : assTrks) {
-        if (assTrk.tpcNClsCrossedRows() < tpcNClsCrossedRowsMin) {
+        if (!acceptSameEvtPair<candType>(assTrk, trigCand)) {
           continue;
         }
+        double assTrkPt = assTrk.pt();
+        if (downSampleTrksFactor < 1.) {
+          float pseudoRndm = assTrkPt * 1000. - static_cast<int64_t>(assTrkPt * 1000);
+          if (assTrkPt < ptMaxForDownSample && collCentrality < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
+            continue;
+          }
+        }
+        registry.fill(HIST("hPhiVsPtTrigAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), trigCand.pt(), assTrkPt);
+        registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), trigCand.pt(), assTrkPt);
+        
         double deltaEta = assTrk.eta() - trigCand.eta();
-        if (std::abs(deltaEta) < deltaEtaAbsMin || std::abs(deltaEta) > deltaEtaAbsMax) {
-          continue;
-        }
+        double deltaPhi = RecoDecay::constrainAngle(assTrk.phi() - trigCand.phi(), -o2::constants::math::PIHalf);
+        rowSEPairs(rowCollisions.lastIndex(), trigCand.pt(), assTrkPt, deltaEta, deltaPhi);
+        rowAssocTrkSels(rowCollisions.lastIndex(), assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
         if constexpr (candType == CandType::Hadron) {
-          if (assTrk.globalIndex() == trigCand.globalIndex()) {
-            continue; // skip self-correlation for hadron-hadron
-          }
-          if (downSampleTracksFactorSE < 1.) {
-            float pseudoRndm = assTrk.pt() * 1000. - static_cast<int64_t>(assTrk.pt() * 1000);
-            if (assTrk.pt() < ptMaxForDownSampleSE && collCentrality < centMaxForDownSampleSE && pseudoRndm >= downSampleTracksFactorSE) {
-              continue;
-            }
-          }
+          rowTrigHads(rowCollisions.lastIndex(), trigCand.tpcNClsCrossedRows(), trigCand.itsClusterMap(), trigCand.itsNCls(), trigCand.dcaXY(), trigCand.dcaZ());
         } else {
-          if (checkDaughterTrack(assTrk, trigCand)) {
-            continue; // skip daughter tracks for charm-hadron
-          }
-        }
-
-        registry.fill(HIST("hPoolBinAssoc"), poolBin);
-        registry.fill(HIST("hPhiVsPtTrigAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), trigCand.pt(), assTrk.pt());
-        registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), trigCand.pt(), assTrk.pt());
-        if constexpr (candType == CandType::Hadron) {
-          fillHadHadSE(trigCand, assTrk, poolBin);
-        } else {
-          fillCharmHadSE<candType>(trigCand, assTrk, poolBin);
+          std::array<float, 2> outputMl = getCandMlScores<candType>(trigCand);
+          rowTrigCharms(rowCollisions.lastIndex(), getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
         }
       }
     }
   }
 
   template <CandType candType, typename TTrigCands>
-  void fillCharmMixedEvent(TTrigCands const& trigCands,
-                           const int poolBin)
+  void fillCharmMixedEvent(TTrigCands const& trigCands)
   {
     for (const auto& trigCand : trigCands) {
-      registry.fill(HIST("hPoolBinTrig"), poolBin);
       registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCand.pt());
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCand.pt());
 
-      rowCharmCandidates(rowCollisions.lastIndex(), trigCand.phi(), trigCand.eta(), trigCand.pt(),
-                         getCandMass<candType>(trigCand), getCandMlScores<candType>(trigCand)[0],
-                         getCandMlScores<candType>(trigCand)[1]);
+      std::array<float, 2> outputMl = getCandMlScores<candType>(trigCand);
+      rowTrigs(rowCollisions.lastIndex(), trigCand.phi(), trigCand.eta(), trigCand.pt());
+      rowTrigCharms(rowCollisions.lastIndex(), getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
     }
   }
 
-  template <typename TAssocTracks>
-  void fillTrackMixedEvent(TAssocTracks const& assTrks,
-                           const int poolBin,
-                           const float collCentrality)
+  template <typename TAssocTrks>
+  void fillTrkMixedEvent(TAssocTrks const& assTrks,
+                         const float collCentrality)
   {
     bool first = true;
     for (const auto& assTrk : assTrks) {
-      if (assTrk.tpcNClsCrossedRows() < tpcNClsCrossedRowsMin) {
+      if (!assTrk.isGlobalTrackWoDCA() || assTrk.tpcNClsCrossedRows() < tpcNClsCrossedRowsMin) {
         continue;
       }
-      if (!first && downSampleTracksFactorME < 1.) {
-        float pseudoRndm = assTrk.pt() * 1000. - static_cast<int64_t>(assTrk.pt() * 1000);
-        if (assTrk.pt() < ptMaxForDownSampleME && collCentrality < centMaxForDownSampleME && pseudoRndm >= downSampleTracksFactorME) {
+      double assTrkPt = assTrk.pt();
+      if (!first && downSampleTrksFactor < 1.) {  // skip downsampling for the first track to avoid empty tables
+        float pseudoRndm = assTrkPt * 1000. - static_cast<int64_t>(assTrkPt * 1000);
+        if (assTrkPt < ptMaxForDownSample && collCentrality < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
           continue;
         }
       }
       first = false;
-      registry.fill(HIST("hPoolBinAssoc"), poolBin);
-      registry.fill(HIST("hPhiVsPtAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), assTrk.pt());
-      registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), assTrk.pt());
-      rowAssocTrackReduced(rowCollisions.lastIndex(), assTrk.phi(), assTrk.eta(),
-                           assTrk.pt(), assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(),
-                           assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
+      registry.fill(HIST("hPhiVsPtAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), assTrkPt);
+      registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), assTrkPt);
+      rowAssocTrks(rowCollisions.lastIndex(), assTrk.phi(), assTrk.eta(), assTrkPt);
+      rowAssocTrkSels(rowCollisions.lastIndex(), assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
     }
-  }
-
-  /// Get the binning pool associated to the collision
-  /// \param collision is the collision
-  /// \param corrBinning is the binning policy for the correlation
-  template <PoolBinningPolicy binningPolicy, bool fillHistos, typename TColl>
-  int getPoolBin(const TColl& collision, const float cent, const float mult)
-  {
-    int poolBin{0};
-    if constexpr (binningPolicy == PoolBinningPolicy::Centrality) {
-      poolBin = corrBinningCent.getBin(std::make_tuple(collision.posZ(), cent));
-      if constexpr (fillHistos) {
-        registry.fill(HIST("hCent"), cent, poolBin);
-      }
-    } else if constexpr (binningPolicy == PoolBinningPolicy::Multiplicity) {
-      poolBin = corrBinningMult.getBin(std::make_tuple(collision.posZ(), mult));
-      if constexpr (fillHistos) {
-        registry.fill(HIST("hMultFT0M"), mult, poolBin);
-      }
-    }
-    return poolBin;
   }
 
   // Dplus with ML selections
   void processDplusSameEvent(CollsWithCentMult::iterator const& coll,
                              CandDplusData const& candsDplus,
-                             TracksData const& tracks)
+                             TrksData const& tracks)
   {
     if (forceCharmInCollision && candsDplus.size() < 1) {
       return;
@@ -481,17 +377,14 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-    registry.fill(HIST("hCollisionPoolBin"), poolBin);
-    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-    fillSameEvent<CandType::DplusToPiKPi>(candsDplus, tracks, poolBin, cent);
+    fillSameEvent<CandType::DplusToPiKPi>(candsDplus, tracks, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDplusSameEvent, "Process Same Event for Dplus candidates", true);
 
   // Dplus with ML selections
   void processDplusMixedEvent(CollsWithCentMult::iterator const& coll,
                               CandDplusData const& candsDplus,
-                              TracksData const& tracks)
+                              TrksData const& tracks)
   {
     if (forceCharmInCollision && candsDplus.size() < 1) {
       return;
@@ -501,17 +394,14 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-    registry.fill(HIST("hCollisionPoolBin"), poolBin);
-    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-    fillCharmMixedEvent<CandType::DplusToPiKPi>(candsDplus, poolBin);
-    fillTrackMixedEvent(tracks, poolBin, cent);
+    fillCharmMixedEvent<CandType::DplusToPiKPi>(candsDplus);
+    fillTrkMixedEvent(tracks, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDplusMixedEvent, "Process Mixed Event for Dplus candidates", false);
 
   // Ds with ML selections
   void processDsSameEvent(CollsWithCentMult::iterator const& coll,
-                          TracksData const& tracks,
+                          TrksData const& tracks,
                           CandDsData const&)
   {
     auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
@@ -524,17 +414,14 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-    registry.fill(HIST("hCollisionPoolBin"), poolBin);
-    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-    fillSameEvent<CandType::DsToPiKK>(candsDsToPiKK, tracks, poolBin, cent);
-    fillSameEvent<CandType::DsToKKPi>(candsDsToKKPi, tracks, poolBin, cent);
+    fillSameEvent<CandType::DsToPiKK>(candsDsToPiKK, tracks, cent);
+    fillSameEvent<CandType::DsToKKPi>(candsDsToKKPi, tracks, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDsSameEvent, "Process Same Event for Ds candidates", false);
 
   // Ds with ML selections
   void processDsMixedEvent(CollsWithCentMult::iterator const& coll,
-                           TracksData const& tracks,
+                           TrksData const& tracks,
                            CandDsData const&)
   {
     auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
@@ -547,18 +434,15 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-    registry.fill(HIST("hCollisionPoolBin"), poolBin);
-    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-    fillCharmMixedEvent<CandType::DsToPiKK>(candsDsToPiKK, poolBin);
-    fillCharmMixedEvent<CandType::DsToKKPi>(candsDsToKKPi, poolBin);
-    fillTrackMixedEvent(tracks, poolBin, cent);
+    fillCharmMixedEvent<CandType::DsToPiKK>(candsDsToPiKK);
+    fillCharmMixedEvent<CandType::DsToKKPi>(candsDsToKKPi);
+    fillTrkMixedEvent(tracks, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processDsMixedEvent, "Process Mixed Event for Ds candidates", false);
 
   // D0 with ML selections
   void processD0SameEvent(CollsWithCentMult::iterator const& coll,
-                          TracksData const& tracks,
+                          TrksData const& tracks,
                           CandD0Data const&)
   {
     auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
@@ -571,17 +455,14 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-    registry.fill(HIST("hCollisionPoolBin"), poolBin);
-    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-    fillSameEvent<CandType::D0ToPiK>(candsD0ToPiK, tracks, poolBin, cent);
-    fillSameEvent<CandType::D0ToKPi>(candsD0ToKPi, tracks, poolBin, cent);
+    fillSameEvent<CandType::D0ToPiK>(candsD0ToPiK, tracks, cent);
+    fillSameEvent<CandType::D0ToKPi>(candsD0ToKPi, tracks, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processD0SameEvent, "Process Same Event for D0 candidates", false);
 
   // D0 with ML selections
   void processD0MixedEvent(CollsWithCentMult::iterator const& coll,
-                           TracksData const& tracks,
+                           TrksData const& tracks,
                            CandD0Data const&)
   {
     auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
@@ -594,44 +475,35 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-    registry.fill(HIST("hCollisionPoolBin"), poolBin);
-    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-    fillCharmMixedEvent<CandType::D0ToPiK>(candsD0ToPiK, poolBin);
-    fillCharmMixedEvent<CandType::D0ToKPi>(candsD0ToKPi, poolBin);
-    fillTrackMixedEvent(tracks, poolBin, cent);
+    fillCharmMixedEvent<CandType::D0ToPiK>(candsD0ToPiK);
+    fillCharmMixedEvent<CandType::D0ToKPi>(candsD0ToKPi);
+    fillTrkMixedEvent(tracks, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processD0MixedEvent, "Process Mixed Event for D0 candidates", false);
 
   // Hadron Hadron Same Event
   void processHadronHadronSameEvent(CollsWithCentMult::iterator const& coll,
-                                    TracksData const& tracks)
+                                    TrksData const& tracks)
   {
     float cent{-1.}, mult{-1.};
     if (!checkCollision(coll, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-    registry.fill(HIST("hCollisionPoolBin"), poolBin);
-    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-    fillSameEvent<CandType::Hadron>(tracks, tracks, poolBin, cent);
+    fillSameEvent<CandType::Hadron>(tracks, tracks, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processHadronHadronSameEvent, "Process Same Event for hadron candidates", true);
 
   // Hadron Hadron Mixed Event
   void processHadronHadronMixedEvent(CollsWithCentMult::iterator const& coll,
-                                     TracksData const& tracks)
+                                     TrksData const& tracks)
   {
     float cent{-1.}, mult{-1.};
     if (!checkCollision(coll, cent, mult)) {
       return;
     }
     rowCollisions(mult, coll.numContrib(), cent, coll.posZ());
-    int poolBin = useCentMixing ? getPoolBin<PoolBinningPolicy::Centrality, true>(coll, cent, mult) : getPoolBin<PoolBinningPolicy::Multiplicity, true>(coll, cent, mult);
-    registry.fill(HIST("hCollisionPoolBin"), poolBin);
-    registry.fill(HIST("hZVtx"), coll.posZ(), poolBin);
-    fillTrackMixedEvent(tracks, poolBin, cent);
+    fillTrkMixedEvent(tracks, cent);
   }
   PROCESS_SWITCH(HfDerivedDataCreatorCorrelationsReduced, processHadronHadronMixedEvent, "Process Mixed Event for hadron candidates", false);
 };
