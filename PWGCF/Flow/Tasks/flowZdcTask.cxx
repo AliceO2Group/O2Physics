@@ -474,7 +474,7 @@ struct FlowZdcTask {
     float sumZNC = ((zdc.energySectorZNC())[0] + (zdc.energySectorZNC())[1] + (zdc.energySectorZNC())[2] + (zdc.energySectorZNC())[3]) / cfgCollisionEnergy;
     float sumZNA = ((zdc.energySectorZNA())[0] + (zdc.energySectorZNA())[1] + (zdc.energySectorZNA())[2] + (zdc.energySectorZNA())[3]) / cfgCollisionEnergy;
     float sumZPC = ((zdc.energySectorZPC())[0] + (zdc.energySectorZPC())[1] + (zdc.energySectorZPC())[2] + (zdc.energySectorZPC())[3]) / cfgCollisionEnergy;
-    float sumZPA = ((zdc.energySectorZPA())[0] + (zdc.energySectorZPA())[1] + (zdc.energySectorZPA())[2] + (zdc.energySectorZPA())[3]) / cfgCollisionEnergy;    
+    float sumZPA = ((zdc.energySectorZPA())[0] + (zdc.energySectorZPA())[1] + (zdc.energySectorZPA())[2] + (zdc.energySectorZPA())[3]) / cfgCollisionEnergy;
 
     // TDC cut
     if (isTDCcut) {
@@ -499,7 +499,7 @@ struct FlowZdcTask {
       }
       if ((track.eta() < minEta) || (track.eta() > maxEta)) {
         continue;
-      }      
+      }
       glbTracks++;
     }
     bool skipEvent{false};
@@ -577,7 +577,7 @@ struct FlowZdcTask {
     histos.fill(HIST("ZPACommon"), commonSumZpa);
     histos.fill(HIST("ZPASector"), sumZPA);
     histos.fill(HIST("ZPAVstdc"), tZPA, zpA);
-    histos.fill(HIST("ZPAvsCent"), cent, zpA);      
+    histos.fill(HIST("ZPAvsCent"), cent, zpA);    
     histos.fill(HIST("ZPC"), zpC);
     histos.fill(HIST("ZPCCommon"), commonSumZpc);
     histos.fill(HIST("ZPCSector"), sumZPC);
@@ -661,7 +661,7 @@ struct FlowZdcTask {
     float sumZNC = ((zdcread.energySectorZNC())[0] + (zdcread.energySectorZNC())[1] + (zdcread.energySectorZNC())[2] + (zdcread.energySectorZNC())[3]) / cfgCollisionEnergy;
     float sumZNA = ((zdcread.energySectorZNA())[0] + (zdcread.energySectorZNA())[1] + (zdcread.energySectorZNA())[2] + (zdcread.energySectorZNA())[3]) / cfgCollisionEnergy;
     float sumZPC = ((zdcread.energySectorZPC())[0] + (zdcread.energySectorZPC())[1] + (zdcread.energySectorZPC())[2] + (zdcread.energySectorZPC())[3]) / cfgCollisionEnergy;
-    float sumZPA = ((zdcread.energySectorZPA())[0] + (zdcread.energySectorZPA())[1] + (zdcread.energySectorZPA())[2] + (zdcread.energySectorZPA())[3]) / cfgCollisionEnergy;
+    float sumZPA = ((zdc.energySectorZPA())[0] + (zdc.energySectorZPA())[1] + (zdc.energySectorZPA())[2] + (zdc.energySectorZPA())[3]) / cfgCollisionEnergy;
     float sumZDC = sumZPA + sumZPC + sumZNA + sumZNC;
     float sumZEM = zdcread.amplitudeZEM1() + zdcread.amplitudeZEM2();
     float sumZNs{znA + znC};
