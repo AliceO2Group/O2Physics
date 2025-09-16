@@ -42,21 +42,22 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::MultZeqs, aod::FT0Mults>::iterator;
+using Collisions = soa::Join<aod::Collisions, aod::EvSels>::iterator;
 using FullCascades = aod::CascDataExt;
 using FullV0s = aod::V0Datas;
 using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
+
 struct xiLambdaCorr {
-  ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
   // binning of (anti)lambda mass QA histograms
-  ConfigurableAxis massLambdaAxis{"massLambdaAxis", {200, o2::constants::physics::MassLambda - 0.05f, o2::constants::physics::MassLambda + 0.05f}, "binning for the lambda invariant-mass"};
-  ConfigurableAxis massXiAxis{"massXiAxis", {200, o2::constants::physics::MassXiMinus - 0.05f, o2::constants::physics::MassXiMinus + 0.05f}, "binning for the Xi invariant-mass"};
+  ConfigurableAxis massLambdaAxis{"massLambdaAxis", {100, o2::constants::physics::MassLambda - 0.05f, o2::constants::physics::MassLambda + 0.05f}, "binning for the lambda invariant-mass"};
+  ConfigurableAxis massXiAxis{"massXiAxis", {100, o2::constants::physics::MassXiMinus - 0.05f, o2::constants::physics::MassXiMinus + 0.05f}, "binning for the Xi invariant-mass"};
   ConfigurableAxis massXiLambdaAxis{"massXiLambdaAxis", {200, o2::constants::physics::MassXiMinus + o2::constants::physics::MassLambda, o2::constants::physics::MassXiMinus + o2::constants::physics::MassLambda + 0.1f}, "binning for the Xi+Lambda invariant-mass"};
+  ConfigurableAxis cosPAxis{"cosPAxis", {10, 0.99f, 1.f}, "binning for the cosine of the pointing angle"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.9f, "maximum eta"};
-  ConfigurableAxis momAxis{"momAxisFine", {5.e2, 0.f, 5.f}, "momentum axis binning"};
+  ConfigurableAxis momAxis{"momAxisFine", {50, 0.f, 10.f}, "momentum axis binning"};
   ConfigurableAxis mixTypeAxis{"mixTypeAxis", {4, -0.5f, 3.5f}, "mixing type axis"}; // xi - lambda , xi - anti-lambda, anti-xi - lambda, anti-xi - anti-lambda
 
   Configurable<float> cascPtMin{"cascPtMin", 1.f, "minimum (anti)casc pT (GeV/c)"};
@@ -98,7 +99,7 @@ struct xiLambdaCorr {
     histos.add<TH1>("QA/zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
     histos.add<TH2>("QA/massLambda", ";#it{p}_{T} (GeV/#it{c});#it{m}_{#Lambda} (GeV/#it{c}^{2})", HistType::kTH2F, {momAxis, massLambdaAxis});
     histos.add<TH2>("QA/massXi", ";#it{p}_{T} (GeV/#it{c});#it{m}_{#Xi} (GeV/#it{c}^{2})", HistType::kTH2F, {momAxis, massXiAxis});
-    histos.add("xiMinusLambda", "", {HistType::kTHnSparseF, {massXiLambdaAxis, momAxis, mixTypeAxis}});
+    histos.add("xiMinusLambda", "", {HistType::kTHnSparseF, {massXiLambdaAxis, momAxis, massXiAxis, massLambdaAxis, cosPAxis, cosPAxis, mixTypeAxis}});
   }
 
   template <class C, class T>
@@ -216,7 +217,11 @@ struct xiLambdaCorr {
         ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>> cascMom4D(casc.px(), casc.py(), casc.pz(), o2::constants::physics::MassXiMinus);
         ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>> lambdaMom4D{v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassLambda};
         auto xiLambdaMom4D = cascMom4D + lambdaMom4D;
-        histos.fill(HIST("xiMinusLambda"), xiLambdaMom4D.M(), xiLambdaMom4D.Pt(), mixType);
+        float massLambda = v0.alpha() > 0 ? v0.mLambda() : v0.mAntiLambda();
+        float massXi = casc.mXi();
+        float cosPAxi = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+        float cosPAlambda = v0.v0cosPA();
+        histos.fill(HIST("xiMinusLambda"), xiLambdaMom4D.M(), xiLambdaMom4D.Pt(), massXi, massLambda, cosPAxi, cosPAlambda, mixType);
       }
     }
   };
@@ -236,6 +241,7 @@ struct xiLambdaCorr {
     histos.fill(HIST("QA/zVtx"), collision.posZ());
     fillXiLambda(collision, tracks, v0s, cascades);
   }
+  PROCESS_SWITCH(xiLambdaCorr, processData, "Process data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
