@@ -762,7 +762,6 @@ struct CascadeAnalysisLightIonsDerivedData {
     registryData.fill(HIST("number_of_events_data"), 2);
     registryData.fill(HIST("number_of_events_data_vs_centrality"), 2, centrality);
 
-
     if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
       return;
     }
