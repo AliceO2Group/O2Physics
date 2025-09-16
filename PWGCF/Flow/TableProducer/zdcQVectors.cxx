@@ -63,6 +63,7 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::aod::track;
 using namespace o2::aod::evsel;
+using namespace o2::aod::rctsel;
 
 namespace o2::analysis::qvectortask
 {
@@ -103,6 +104,15 @@ struct ZdcQVectors {
 
   Produces<aod::SPTableZDC> spTableZDC;
 
+  struct : ConfigurableGroup {
+    Configurable<bool> cfgEvtUseRCTFlagChecker{"cfgEvtUseRCTFlagChecker", false, "Evt sel: use RCT flag checker"};
+    Configurable<std::string> cfgEvtRCTFlagCheckerLabel{"cfgEvtRCTFlagCheckerLabel", "CBT_hadronPID", "Evt sel: RCT flag checker label (CBT, CBT_hadronPID)"}; // all Labels can be found in Common/CCDB/RCTSelectionFlags.h
+    Configurable<bool> cfgEvtRCTFlagCheckerZDCCheck{"cfgEvtRCTFlagCheckerZDCCheck", false, "Evt sel: RCT flag checker ZDC check"};
+    Configurable<bool> cfgEvtRCTFlagCheckerLimitAcceptAsBad{"cfgEvtRCTFlagCheckerLimitAcceptAsBad", false, "Evt sel: RCT flag checker treat Limited Acceptance As Bad"};
+  } rctFlags;
+
+  RCTFlagsChecker rctChecker;
+
   ConfigurableAxis axisCent{"axisCent", {90, 0, 90}, "Centrality axis in 1% bins"};
   ConfigurableAxis axisCent10{"axisCent10", {9, 0, 90}, "Centrality axis in 10% bins"};
   ConfigurableAxis axisQ{"axisQ", {100, -2, 2}, "Q vector (xy) in ZDC"};
@@ -121,10 +131,10 @@ struct ZdcQVectors {
 
   O2_DEFINE_CONFIGURABLE(cfgVtxZ, float, 10.0f, "Accepted z-vertex range")
   O2_DEFINE_CONFIGURABLE(cfgMagField, float, 99999, "Configurable magnetic field; default CCDB will be queried")
-  O2_DEFINE_CONFIGURABLE(cfgEnergyCal, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4/Energy", "ccdb path for energy calibration histos")
-  O2_DEFINE_CONFIGURABLE(cfgMeanv, std::string, "Users/c/ckoster/ZDC/LHC23_zzh_pass4/vmean", "ccdb path for mean v histos")
+  O2_DEFINE_CONFIGURABLE(cfgEnergyCal, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/Energy", "ccdb path for energy calibration histos")
+  O2_DEFINE_CONFIGURABLE(cfgMeanv, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/vmean", "ccdb path for mean v histos")
   O2_DEFINE_CONFIGURABLE(cfgMinEntriesSparseBin, int, 100, "Minimal number of entries allowed in 4D recentering histogram to use for recentering.")
-  O2_DEFINE_CONFIGURABLE(cfgRec, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass4", "ccdb path for recentering histos");
+  O2_DEFINE_CONFIGURABLE(cfgRec, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5", "ccdb path for recentering histos");
   O2_DEFINE_CONFIGURABLE(cfgFillCommonRegistry, bool, true, "Fill common registry with histograms");
 
   // Additional event selections
@@ -138,6 +148,9 @@ struct ZdcQVectors {
   O2_DEFINE_CONFIGURABLE(cfgEvSelsCentMin, float, 0, "Minimum cenrality for selected events");
   O2_DEFINE_CONFIGURABLE(cfgEvSelsCentMax, float, 90, "Maximum cenrality for selected events");
 
+  O2_DEFINE_CONFIGURABLE(cfgUseShift, bool, false, "Use shift for PsiA and PsiC ZDC");
+  O2_DEFINE_CONFIGURABLE(cfgCCDBdir_Shift, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/Shift", "CCDB directory for Shift ZDC");
+
   // define my.....
   // Filter collisionFilter = nabs(aod::collision::posZ) < cfgVtxZ;
   using UsedCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNGlobals>;
@@ -145,6 +158,7 @@ struct ZdcQVectors {
 
   enum SelectionCriteria {
     evSel_FilteredEvent,
+    evSel_RCTFlagsZDC,
     evSel_Zvtx,
     evSel_sel8,
     evSel_occupancy,
@@ -175,6 +189,12 @@ struct ZdcQVectors {
     std::vector<bool> calibfilesLoaded = std::vector<bool>(3, false);
     int atStep = 0;
     int atIteration = 0;
+
+    TProfile3D* shiftprofileC = nullptr;
+    TProfile3D* shiftprofileA = nullptr;
+
+    bool isShiftProfileFound = false;
+
   } cal;
 
   enum FillType {
@@ -190,6 +210,8 @@ struct ZdcQVectors {
 
     int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
+
+    rctChecker.init(rctFlags.cfgEvtRCTFlagCheckerLabel, rctFlags.cfgEvtRCTFlagCheckerZDCCheck, rctFlags.cfgEvtRCTFlagCheckerLimitAcceptAsBad);
 
     std::vector<const char*> sides = {"A", "C"};
     std::vector<const char*> capCOORDS = {"X", "Y"};
@@ -235,6 +257,11 @@ struct ZdcQVectors {
 
       registry.add<TProfile>("QA/ZNA_Energy", "ZNA_Energy", kTProfile, {{8, 0, 8}});
       registry.add<TProfile>("QA/ZNC_Energy", "ZNC_Energy", kTProfile, {{8, 0, 8}});
+
+      registry.add<TH1>("QA/psiZDCA", "psiZDCA", kTH1D, {{100, -4, 4}});
+      registry.add<TH1>("QA/psiZDCA_shift", "psiZDCA_shift", kTH1D, {{100, -4, 4}});
+      registry.add<TH1>("QA/psiZDCC", "psiZDCC", kTH1D, {{100, -4, 4}});
+      registry.add<TH1>("QA/psiZDCC_shift", "psiZDCC_shift", kTH1D, {{100, -4, 4}});
 
       registry.add<TProfile>("QA/before/ZNA_pmC", "ZNA_pmC", kTProfile, {{1, 0, 1.}});
       registry.add<TProfile>("QA/before/ZNA_pm1", "ZNA_pm1", kTProfile, {{1, 0, 1.}});
@@ -293,8 +320,12 @@ struct ZdcQVectors {
     registry.add<TProfile>("vmean/hvertex_vy", "hvertex_vy", kTProfile, {{1, 0., 1.}});
     registry.add<TProfile>("vmean/hvertex_vz", "hvertex_vz", kTProfile, {{1, 0., 1.}});
 
+    registry.add<TProfile3D>("shift/ShiftZDCC", "ShiftZDCC", kTProfile3D, {{100, 0, 100}, {2, 0, 2}, {10, 0, 10}});
+    registry.add<TProfile3D>("shift/ShiftZDCA", "ShiftZDCA", kTProfile3D, {{100, 0, 100}, {2, 0, 2}, {10, 0, 10}});
+
     registry.add("hEventCount", "Number of Event; Cut; #Events Passed Cut", {HistType::kTH1D, {{nEventSelections, 0, nEventSelections}}});
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_FilteredEvent + 1, "Filtered events");
+    registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_RCTFlagsZDC + 1, "RCT Flags ZDC");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_Zvtx + 1, "Z vertex cut event");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_sel8 + 1, "Sel8");
     registry.get<TH1>(HIST("hEventCount"))->GetXaxis()->SetBinLabel(evSel_occupancy + 1, "kOccupancy");
@@ -560,33 +591,45 @@ struct ZdcQVectors {
     if (cfgNGlobal)
       cent = collision.centNGlobal();
 
+    v[0] = collision.posX();
+    v[1] = collision.posY();
+    v[2] = collision.posZ();
+    centrality = cent;
+
+    const auto& foundBC = collision.foundBC_as<BCsRun3>();
+    runnumber = foundBC.runNumber();
+
     if (cfgFillCommonRegistry)
       registry.fill(HIST("QA/centrality_before"), cent);
 
     registry.fill(HIST("hEventCount"), evSel_FilteredEvent);
+
+    if (rctFlags.cfgEvtUseRCTFlagChecker && !rctChecker(collision)) {
+      // event not selected
+      isSelected = false;
+      spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
+      counter++;
+      lastRunNumber = runnumber;
+      return;
+    }
+    registry.fill(HIST("hEventCount"), evSel_RCTFlagsZDC);
 
     if (!eventSelected(collision, cent)) {
       // event not selected
       isSelected = false;
       spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
       counter++;
+      lastRunNumber = runnumber;
       return;
     }
-
-    const auto& foundBC = collision.foundBC_as<BCsRun3>();
 
     if (!foundBC.has_zdc()) {
       isSelected = false;
       spTableZDC(runnumber, cent, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
       counter++;
+      lastRunNumber = runnumber;
       return;
     }
-
-    v[0] = collision.posX();
-    v[1] = collision.posY();
-    v[2] = collision.posZ();
-    centrality = cent;
-    runnumber = foundBC.runNumber();
 
     // load new calibrations for new runs only
     if (runnumber != lastRunNumber) {
@@ -598,8 +641,6 @@ struct ZdcQVectors {
 
       cal.calibfilesLoaded[2] = false;
       cal.calibList[2] = nullptr;
-
-      lastRunNumber = runnumber;
     }
 
     const auto& zdcCol = foundBC.zdc();
@@ -663,6 +704,7 @@ struct ZdcQVectors {
       counter++;
       isSelected = false;
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
+      lastRunNumber = runnumber;
       return;
     }
 
@@ -673,6 +715,7 @@ struct ZdcQVectors {
       counter++;
       isSelected = false;
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], 0, 0, 0, 0, isSelected, 0, 0);
+      lastRunNumber = runnumber;
       return;
     }
 
@@ -814,6 +857,7 @@ struct ZdcQVectors {
 
       spTableZDC(runnumber, centrality, v[0], v[1], v[2], q[0], q[1], q[2], q[3], isSelected, 0, 0);
       counter++;
+      lastRunNumber = runnumber;
       return;
     } else {
       if (cfgFillCommonRegistry)
@@ -867,14 +911,90 @@ struct ZdcQVectors {
         registry.get<TProfile>(HIST("QA/after/ZNC_Qy"))->Fill(Form("%d", runnumber), qRec[3]);
       }
 
-      spTableZDC(runnumber, centrality, v[0], v[1], v[2], qRec[0], qRec[1], qRec[2], qRec[3], isSelected, cal.atIteration, cal.atStep);
+      // do shift for psi.
+      double psiZDCA = 1.0 * std::atan2(qRec[1], qRec[0]);
+      double psiZDCC = 1.0 * std::atan2(qRec[3], qRec[2]);
 
+      int nshift = 10; // no. of iterations
+
+      double psiZDCAshift = psiZDCA;
+      double psiZDCCshift = psiZDCC;
+
+      double deltaPsiZDCA = 0;
+      double deltaPsiZDCC = 0;
+
+      if (cfgUseShift && !cfgCCDBdir_Shift.value.empty()) {
+        if (lastRunNumber != runnumber) {
+          cal.isShiftProfileFound = false;
+          LOGF(info, "Getting shift profile from CCDB for runnumber: %d", runnumber);
+          TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
+          cal.shiftprofileC = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
+          cal.shiftprofileA = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
+          if (!cal.shiftprofileC || !cal.shiftprofileA) {
+            LOGF(error, "Shift profile not found in CCDB for runnumber: %d", runnumber);
+          } else {
+            LOGF(error, "Shift profile found in CCDB for runnumber: %d", runnumber);
+            cal.isShiftProfileFound = true;
+          }
+        }
+      }
+
+      float coeffshiftxZDCC = 0.0;
+      float coeffshiftyZDCC = 0.0;
+      float coeffshiftxZDCA = 0.0;
+      float coeffshiftyZDCA = 0.0;
+
+      for (int ishift = 1; ishift <= nshift; ishift++) {
+        registry.fill(HIST("shift/ShiftZDCC"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCC));
+        registry.fill(HIST("shift/ShiftZDCC"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCC));
+        registry.fill(HIST("shift/ShiftZDCA"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCA));
+        registry.fill(HIST("shift/ShiftZDCA"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCA));
+
+        if (cal.isShiftProfileFound) {
+          int binshiftxZDCC = cal.shiftprofileC->FindBin(centrality, 0.5, ishift - 0.5);
+          int binshiftyZDCC = cal.shiftprofileC->FindBin(centrality, 1.5, ishift - 0.5);
+          int binshiftxZDCA = cal.shiftprofileA->FindBin(centrality, 0.5, ishift - 0.5);
+          int binshiftyZDCA = cal.shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5);
+
+          if (binshiftxZDCC > 0 && binshiftyZDCC > 0 && binshiftxZDCA > 0 && binshiftyZDCA > 0) {
+            coeffshiftxZDCC = cal.shiftprofileC->GetBinContent(binshiftxZDCC);
+            coeffshiftyZDCC = cal.shiftprofileC->GetBinContent(binshiftyZDCC);
+            coeffshiftxZDCA = cal.shiftprofileA->GetBinContent(binshiftxZDCA);
+            coeffshiftyZDCA = cal.shiftprofileA->GetBinContent(binshiftyZDCA);
+          }
+          deltaPsiZDCC += deltaPsiZDCC + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCC * std::cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * std::sin(ishift * 1.0 * psiZDCC)));
+          deltaPsiZDCA += deltaPsiZDCA + ((2 / (1.0 * ishift)) * (-coeffshiftxZDCA * std::cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * std::sin(ishift * 1.0 * psiZDCA)));
+        }
+      }
+
+      psiZDCCshift += deltaPsiZDCC;
+      psiZDCAshift += deltaPsiZDCA;
+
+      // Normalize angles to [-pi, pi]
+      psiZDCCshift = std::atan2(std::sin(psiZDCCshift), std::cos(psiZDCCshift));
+      psiZDCAshift = std::atan2(std::sin(psiZDCAshift), std::cos(psiZDCAshift));
+
+      if (cfgFillCommonRegistry) {
+        registry.fill(HIST("QA/psiZDCA"), psiZDCA);
+        registry.fill(HIST("QA/psiZDCC"), psiZDCC);
+        registry.fill(HIST("QA/psiZDCA_shift"), psiZDCAshift);
+        registry.fill(HIST("QA/psiZDCC_shift"), psiZDCCshift);
+      }
+
+      double qXaShift = std::hypot(qRec[1], qRec[0]) * std::cos(psiZDCAshift);
+      double qYaShift = std::hypot(qRec[1], qRec[0]) * std::sin(psiZDCAshift);
+      double qXcShift = std::hypot(qRec[2], qRec[3]) * std::cos(psiZDCCshift);
+      double qYcShift = std::hypot(qRec[2], qRec[3]) * std::sin(psiZDCCshift);
+
+      spTableZDC(runnumber, centrality, v[0], v[1], v[2], qXaShift, qYaShift, qXcShift, qYcShift, isSelected, cal.atIteration, cal.atStep);
       qRec.clear();
 
       counter++;
+      lastRunNumber = runnumber;
       return;
     }
     LOGF(warning, "We return without saving table... -> THis is a problem");
+    lastRunNumber = runnumber;
   } // end of process
 };
 
