@@ -980,7 +980,7 @@ struct NucleitpcPbPb {
       massDiff = massTOF - pdgMass;
     }
     if (species == he4) {
-      if ((massTOF * massTOF < 6.5 && massTOF * massTOF < 9.138) && cfgMasscut)
+      if (cfgMasscut && (massTOF * massTOF > 6.5 && massTOF * massTOF < 9.138))
         return;
       massDiff = massTOF - pdgMass;
     }
@@ -1008,8 +1008,19 @@ struct NucleitpcPbPb {
     float charge = (species == he3 || species == he4) ? 2.f : 1.f;
     float p = getRigidity(track);
     float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
+
     // get PDG mass
     float masssquare = massTOF * massTOF;
+
+    if (species != he4) {
+      masssquare = massTOF * massTOF;
+    }
+    if (species == he4) {
+      if (cfgMasscut && (massTOF * massTOF > 6.5 && massTOF * massTOF < 9.138))
+        return;
+      masssquare = massTOF * massTOF;
+    }
+
     if (track.sign() > 0) {
       hmassnsigma[2 * species]->Fill(sigma, masssquare);
     } else if (track.sign() < 0) {
