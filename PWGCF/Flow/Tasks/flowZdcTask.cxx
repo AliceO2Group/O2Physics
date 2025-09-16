@@ -560,7 +560,7 @@ struct FlowZdcTask {
     histos.fill(HIST("T0Ccent"), collision.centFT0C());
     histos.fill(HIST("GlbTracks"), glbTracks);
 
-    if (sumZEMs > zemCut){
+    if (sumZEMs > zemCut) {
       histos.fill(HIST("ZNA"), znA);
       histos.fill(HIST("ZNC"), znC);
       histos.fill(HIST("ZNACommon"), commonSumZna);
@@ -609,7 +609,7 @@ struct FlowZdcTask {
       histos.fill(HIST("ZPCcvsZPCsum"), sumZPC, zdc.energyCommonZPC());
       histos.fill(HIST("ZPAcvsZPAsum"), sumZPA, zdc.energyCommonZPA());
     }
-    
+
     histos.fill(HIST("ampFT0C"), aT0C / 100.);
     histos.fill(HIST("ampFT0A"), aT0A / 100.);
     histos.fill(HIST("ampFT0M"), (aT0A + aT0C) / 100.);
@@ -823,7 +823,7 @@ struct FlowZdcTask {
     float aZEM1 = zdc.amplitudeZEM1();
     float aZEM2 = zdc.amplitudeZEM2();
     float sumZEMs = aZEM1 + aZEM2;
-    if (sumZEMs > zemCut){
+    if (sumZEMs > zemCut) {
       histos.fill(HIST("ampZna"), znA);
       histos.fill(HIST("ampZnc"), znC);
       histos.fill(HIST("commonZna"), commonSumZna);
