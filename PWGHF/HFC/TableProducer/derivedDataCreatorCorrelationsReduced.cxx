@@ -62,13 +62,13 @@ enum CandType {
 
 /// Code to select collisions with at least one Ds meson
 struct HfDerivedDataCreatorCorrelationsReduced {
-  Produces<aod::HfcRedCorrColls> rowCollisions;   // Table with reduced collision info
-  Produces<aod::HfcRedSEPairs> rowSEPairs;        // Table with same-event pairs info
-  Produces<aod::HfcRedTrkAssocs> rowAssocTrks;    // Table with associated track info
-  Produces<aod::HfcRedTrkSels> rowAssocTrkSels;   // Table with associated track selection info
-  Produces<aod::HfcRedTrigs> rowTrigs;            // Table with charm candidate info
-  Produces<aod::HfcRedTrigCharms> rowTrigCharms;  // Table with charm trigger candidate info
-  Produces<aod::HfcRedTrigHads> rowTrigHads;      // Table with hadron trigger candidate info
+  Produces<aod::HfcRedCorrColls> rowCollisions;  // Table with reduced collision info
+  Produces<aod::HfcRedSEPairs> rowSEPairs;       // Table with same-event pairs info
+  Produces<aod::HfcRedTrkAssocs> rowAssocTrks;   // Table with associated track info
+  Produces<aod::HfcRedTrkSels> rowAssocTrkSels;  // Table with associated track selection info
+  Produces<aod::HfcRedTrigs> rowTrigs;           // Table with charm candidate info
+  Produces<aod::HfcRedTrigCharms> rowTrigCharms; // Table with charm trigger candidate info
+  Produces<aod::HfcRedTrigHads> rowTrigHads;     // Table with hadron trigger candidate info
 
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 15, "Selection Flag for hadron (ML score tables are required to run the task)"};
@@ -270,14 +270,14 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return false;
     }
 
-    if constexpr (candType == CandType::Hadron) { 
+    if constexpr (candType == CandType::Hadron) {
       if (!cand.isGlobalTrackWoDCA() || cand.tpcNClsCrossedRows() < tpcNClsCrossedRowsMin) {
         return false;
       }
       if (assTrk.globalIndex() == cand.globalIndex()) {
         return false; // skip self-correlation for hadron-hadron
       }
-    } else {  // Remove Daughter-Cand pairs for charm-hadron correlations
+    } else {                                           // Remove Daughter-Cand pairs for charm-hadron correlations
       if constexpr ((requires { cand.prong2Id(); })) { // Check 3-prong
         return (assTrk.globalIndex() == cand.prong0Id() || assTrk.globalIndex() == cand.prong1Id() || assTrk.globalIndex() == cand.prong2Id());
       } else { // Check 2-prong
@@ -312,7 +312,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
         }
         registry.fill(HIST("hPhiVsPtTrigAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), trigCand.pt(), assTrkPt);
         registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), trigCand.pt(), assTrkPt);
-        
+
         double deltaEta = assTrk.eta() - trigCand.eta();
         double deltaPhi = RecoDecay::constrainAngle(assTrk.phi() - trigCand.phi(), -o2::constants::math::PIHalf);
         rowSEPairs(rowCollisions.lastIndex(), trigCand.pt(), assTrkPt, deltaEta, deltaPhi);
@@ -355,7 +355,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
         continue;
       }
       double assTrkPt = assTrk.pt();
-      if (!first && downSampleTrksFactor < 1.) {  // skip downsampling for the first track to avoid empty tables
+      if (!first && downSampleTrksFactor < 1.) { // skip downsampling for the first track to avoid empty tables
         float pseudoRndm = assTrkPt * 1000. - static_cast<int64_t>(assTrkPt * 1000);
         if (assTrkPt < ptMaxForDownSample && collCentrality < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
           continue;
