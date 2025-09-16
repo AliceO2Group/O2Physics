@@ -242,7 +242,7 @@ struct upcPolarisationJPsiIncorr {
           return;
       }
     }
-    
+
     // MCH-MID match selection
     int nMIDs = 0;
     if (tr1.chi2MatchMCHMID() > 0)
