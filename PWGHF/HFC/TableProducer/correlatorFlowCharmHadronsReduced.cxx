@@ -237,7 +237,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       entryCorrPair(poolBin, pair.ptTrig(), pair.ptAssocTrack(), pair.deltaEta(), pair.deltaPhi());
     }
     if constexpr (fillSparses) {
-      if constexpr (requires{ pair.bdtScore0Trig(); }) {  // Separate Charm-Had and Had-Had cases
+      if constexpr (requires { pair.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
         registry.fill(HIST("hSparseCorrelationsSECharmHad"), poolBin, pair.ptTrig(), pair.ptAssocTrack(), pair.deltaEta(),
                       pair.deltaPhi(), pair.bdtScore0Trig(), pair.bdtScore1Trig(), pair.invMassTrig());
       } else {
@@ -282,7 +282,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
         if (downSamplePairsME < 1.) {
           float pseudoRndm = ptAssoc * 1000. - static_cast<int64_t>(ptAssoc * 1000);
           if (ptTrig < ptMaxForDownSampleME && trigColl.centrality() < centMaxForDownSampleME &&
-          assocColl.centrality() < centMaxForDownSampleME && pseudoRndm >= downSamplePairsME) {
+              assocColl.centrality() < centMaxForDownSampleME && pseudoRndm >= downSamplePairsME) {
             continue;
           }
         }
@@ -291,7 +291,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
           entryCorrPair(poolBinTrig, ptTrig, ptAssoc, deltaEta, deltaPhi);
         }
         if constexpr (fillSparses) {
-          if constexpr (requires{ trigCand.bdtScore0Trig(); }) {  // Separate Charm-Had and Had-Had cases
+          if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
             registry.fill(HIST("hSparseCorrelationsMECharmHad"), poolBinTrig, ptTrig, ptAssoc, deltaEta,
                           deltaPhi, trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig(), trigCand.invMassTrig());
           } else {
