@@ -239,9 +239,10 @@ struct upcPolarisationJPsiIncorr {
     for (unsigned int i = 0; i < ampsV0A.size(); ++i) {
       if (std::abs(ampsRelBCsV0A[i]) <= 1) {
         if (ampsV0A[i] > kMaxAmpV0A)
-	  return;
+          return;
       }
     }
+    
     // MCH-MID match selection
     int nMIDs = 0;
     if (tr1.chi2MatchMCHMID() > 0)
