@@ -49,20 +49,20 @@ using HfcRedCollision = HfcRedCollisions::iterator;
 
 namespace hf_candidate_reduced
 {
-DECLARE_SOA_INDEX_COLUMN(HfcRedCollision, hfcRedCollision);  //! ReducedCollision index
-DECLARE_SOA_INDEX_COLUMN(HfcRedFlowColl, hfcRedFlowColl);    //! ReducedCollision index
-DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                 //! Prong 0 index
-DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                 //! Prong 1 index
-DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                 //! Prong2 index
-DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                 //! Phi of the candidate
-DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                 //! Eta of the candidate
-DECLARE_SOA_COLUMN(PtCand, ptCand, float);                   //! Pt of the candidate
-DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);             //! Invariant mass of Ds candidate
-DECLARE_SOA_COLUMN(InvMassCharmHad, invMassCharmHad, float); //! Invariant mass of CharmHad candidate
-DECLARE_SOA_COLUMN(BdtScorePrompt, bdtScorePrompt, float);   //! BDT output score for prompt hypothesis
-DECLARE_SOA_COLUMN(BdtScoreBkg, bdtScoreBkg, float);         //! BDT output score for backgronud hypothesis
-DECLARE_SOA_COLUMN(BdtScore0, bdtScore0, float);             //! First BDT output score
-DECLARE_SOA_COLUMN(BdtScore1, bdtScore1, float);             //! Second BDT output score
+DECLARE_SOA_INDEX_COLUMN(HfcRedCollision, hfcRedCollision); //! ReducedCollision index
+DECLARE_SOA_INDEX_COLUMN(HfcRedFlowColl, hfcRedFlowColl);   //! ReducedCollision index
+DECLARE_SOA_COLUMN(Prong0Id, prong0Id, int);                //! Prong 0 index
+DECLARE_SOA_COLUMN(Prong1Id, prong1Id, int);                //! Prong 1 index
+DECLARE_SOA_COLUMN(Prong2Id, prong2Id, int);                //! Prong2 index
+DECLARE_SOA_COLUMN(PhiCand, phiCand, float);                //! Phi of the candidate
+DECLARE_SOA_COLUMN(EtaCand, etaCand, float);                //! Eta of the candidate
+DECLARE_SOA_COLUMN(PtCand, ptCand, float);                  //! Pt of the candidate
+DECLARE_SOA_COLUMN(InvMassDs, invMassDs, float);            //! Invariant mass of Ds candidate
+DECLARE_SOA_COLUMN(InvMassCand, invMassCand, float);        //! Invariant mass of Charm candidate
+DECLARE_SOA_COLUMN(BdtScorePrompt, bdtScorePrompt, float);  //! BDT output score for prompt hypothesis
+DECLARE_SOA_COLUMN(BdtScoreBkg, bdtScoreBkg, float);        //! BDT output score for background hypothesis
+DECLARE_SOA_COLUMN(BdtScore0, bdtScore0, float);            //! First BDT output score
+DECLARE_SOA_COLUMN(BdtScore1, bdtScore1, float);            //! Second BDT output score
 } // namespace hf_candidate_reduced
 DECLARE_SOA_TABLE(DsCandReduceds, "AOD", "DSCANDREDUCED", //! Table with Ds candidate info
                   soa::Index<>,
@@ -81,13 +81,13 @@ DECLARE_SOA_TABLE(DsCandSelInfos, "AOD", "DSCANDSELINFO", //! Table with Ds cand
                   aod::hf_candidate_reduced::BdtScorePrompt,
                   aod::hf_candidate_reduced::BdtScoreBkg);
 
-DECLARE_SOA_TABLE(HfcRedCharmHads, "AOD", "HFCREDCHARMHAD", //! Table with charm hadron candidate info
+DECLARE_SOA_TABLE(HfcRedCharmTrigs, "AOD", "HFCREDCHARMTRIG", //! Table with charm hadron candidate info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedFlowCollId,
                   aod::hf_candidate_reduced::PhiCand,
                   aod::hf_candidate_reduced::EtaCand,
                   aod::hf_candidate_reduced::PtCand,
-                  aod::hf_candidate_reduced::InvMassCharmHad,
+                  aod::hf_candidate_reduced::InvMassCand,
                   aod::hf_candidate_reduced::Prong0Id,
                   aod::hf_candidate_reduced::Prong1Id,
                   aod::hf_candidate_reduced::Prong2Id);
@@ -127,7 +127,7 @@ DECLARE_SOA_TABLE(AssocTrackSels, "AOD", "ASSOCTRACKSEL", //! Table with associa
                   aod::hf_assoc_track_reduced::DcaXY,
                   aod::hf_assoc_track_reduced::DcaZ)
 
-DECLARE_SOA_TABLE(HfcRedTrkAssoc, "AOD", "HFCREDTRKASSOC", //! Table with associated track info
+DECLARE_SOA_TABLE(HfcRedTrkAssocs, "AOD", "HFCREDTRKASSOC", //! Table with associated track info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedFlowCollId,
                   aod::hf_assoc_track_reduced::OriginTrackId,
@@ -135,7 +135,7 @@ DECLARE_SOA_TABLE(HfcRedTrkAssoc, "AOD", "HFCREDTRKASSOC", //! Table with associ
                   aod::hf_assoc_track_reduced::EtaAssocTrack,
                   aod::hf_assoc_track_reduced::PtAssocTrack);
 
-DECLARE_SOA_TABLE(HfcRedTrkSels, "AOD", "HFCREDTRKSELS", //! Table with associated track info
+DECLARE_SOA_TABLE(HfcRedTrkSels, "AOD", "HFCREDTRKSEL", //! Table with associated track info
                   soa::Index<>,
                   aod::hf_candidate_reduced::HfcRedFlowCollId,
                   aod::hf_assoc_track_reduced::NTpcCrossedRows,
@@ -143,6 +143,32 @@ DECLARE_SOA_TABLE(HfcRedTrkSels, "AOD", "HFCREDTRKSELS", //! Table with associat
                   aod::hf_assoc_track_reduced::ItsNCls,
                   aod::hf_assoc_track_reduced::DcaXY,
                   aod::hf_assoc_track_reduced::DcaZ)
+
+// definition of columns and tables for Charm-Hadron and Hadron-Hadron correlation pairs
+namespace hf_correlation_charm_hadron_reduced
+{
+DECLARE_SOA_INDEX_COLUMN_FULL(CharmTrig, charmTrig, int, HfcRedCharmTrigs, "_0"); //! Reduced charm trigger candidate index
+DECLARE_SOA_INDEX_COLUMN_FULL(HadTrig, hadTrig, int, HfcRedTrkAssocs, "_1");      //! Reduced hadron trigger candidate index
+DECLARE_SOA_INDEX_COLUMN_FULL(TrkAssoc, trkAssoc, int, HfcRedTrkAssocs, "_2");    //! Reduced associated track index
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                                    //! DeltaPhi between charm hadron and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                                    //! DeltaEta between charm hadron and Hadrons
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                        //! Pool Bin for the MixedEvent
+} // namespace hf_correlation_charm_hadron_reduced
+
+DECLARE_SOA_TABLE(HfcRedChHads, "AOD", "HFCREDCHHAD", //! Charm-Hadron pairs information
+                  aod::hf_correlation_charm_hadron_reduced::CharmTrigId,
+                  aod::hf_correlation_charm_hadron_reduced::TrkAssocId,
+                  aod::hf_correlation_charm_hadron_reduced::DeltaEta,
+                  aod::hf_correlation_charm_hadron_reduced::DeltaPhi,
+                  aod::hf_correlation_charm_hadron_reduced::PoolBin);
+
+DECLARE_SOA_TABLE(HfcRedHadHads, "AOD", "HFCREDHADHAD", //! Hadron-Hadron pairs information
+                  aod::hf_correlation_charm_hadron_reduced::HadTrigId,
+                  aod::hf_correlation_charm_hadron_reduced::TrkAssocId,
+                  aod::hf_correlation_charm_hadron_reduced::DeltaEta,
+                  aod::hf_correlation_charm_hadron_reduced::DeltaPhi,
+                  aod::hf_correlation_charm_hadron_reduced::PoolBin);
+
 } // namespace o2::aod
 
 #endif // PWGHF_HFC_DATAMODEL_DERIVEDDATACORRELATIONTABLES_H_

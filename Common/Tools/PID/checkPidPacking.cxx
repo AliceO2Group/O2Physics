@@ -16,13 +16,18 @@
 /// \since  03/05/2024
 ///
 
-#include <string>
-
 #include "Common/DataModel/PIDResponseTOF.h"
 #include "Common/DataModel/PIDResponseTPC.h"
-#include "TH1F.h"
-#include "TCanvas.h"
-#include "TRandom.h"
+
+#include <Framework/Logger.h>
+
+#include <TCanvas.h>
+#include <TH1.h>
+#include <TRandom.h>
+#include <TString.h>
+
+#include <cstdint>
+#include <string>
 
 using namespace o2;
 
