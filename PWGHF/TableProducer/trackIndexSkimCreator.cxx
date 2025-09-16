@@ -2252,7 +2252,7 @@ struct HfTrackIndexSkimCreator {
                     nCandContr--;
                     isTrackSecondContr = false;
                   }
-                  if (nCandContr == 2) {
+                  if (nCandContr == 2) { // o2-linter: disable="magic-number" (see comment below)
                     /// Both the daughter tracks were used for the original PV refit, let's refit it after excluding them
                     if (config.debugPvRefit) {
                       LOG(info) << "### [2 Prong] Calling performPvRefitCandProngs for HF 2 prong candidate";
@@ -2377,7 +2377,7 @@ struct HfTrackIndexSkimCreator {
           }
 
           // if the cut on the decay length of 3-prongs computed with the first two tracks is enabled and the vertex was not computed for the D0, we compute it now
-          if (config.do3Prong && is2ProngCandidateGoodFor3Prong && (config.minTwoTrackDecayLengthFor3Prongs > 0.f || config.maxTwoTrackChi2PcaFor3Prongs < 1.e9f) && nVtxFrom2ProngFitter == 0) {
+          if (config.do3Prong && is2ProngCandidateGoodFor3Prong && (config.minTwoTrackDecayLengthFor3Prongs > 0.f || config.maxTwoTrackChi2PcaFor3Prongs < 1.e9f) && nVtxFrom2ProngFitter == 0) { // o2-linter: disable="magic-number" (default maxTwoTrackChi2PcaFor3Prongs is 1.e10)
             try {
               nVtxFrom2ProngFitter = df2.process(trackParVarPos1, trackParVarNeg1);
             } catch (...) {
@@ -2492,7 +2492,7 @@ struct HfTrackIndexSkimCreator {
                   vecCandPvContributorGlobId.push_back(trackPos2.globalIndex());
                 }
 
-                if (nCandContr == 3 || nCandContr == 2) {
+                if (nCandContr == 3 || nCandContr == 2) { // o2-linter: disable="magic-number" (see comment below)
                   /// At least two of the daughter tracks were used for the original PV refit, let's refit it after excluding them
                   if (config.debugPvRefit) {
                     LOG(info) << "### [3 prong] Calling performPvRefitCandProngs for HF 3 prong candidate, removing " << nCandContr << " daughters";
@@ -2744,7 +2744,7 @@ struct HfTrackIndexSkimCreator {
                   vecCandPvContributorGlobId.push_back(trackNeg2.globalIndex());
                 }
 
-                if (nCandContr == 3 || nCandContr == 2) {
+                if (nCandContr == 3 || nCandContr == 2) { // o2-linter: disable="magic-number" (see comment below)
                   /// At least two of the daughter tracks were used for the original PV refit, let's refit it after excluding them
                   if (config.debugPvRefit) {
                     LOG(info) << "### [3 prong] Calling performPvRefitCandProngs for HF 3 prong candidate, removing " << nCandContr << " daughters";
@@ -2898,7 +2898,8 @@ struct HfTrackIndexSkimCreator {
             }
           }
 
-          if (config.doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (pt2Prong + config.ptTolerance) * 1.2 > config.binsPtDstarToD0Pi->at(0) && whichHypo2Prong[kN2ProngDecays] != 0) { // if D* enabled and pt of the D0 is larger than the minimum of the D* one within 20% (D* and D0 momenta are very similar, always within 20% according to PYTHIA8)
+          if (config.doDstar && TESTBIT(isSelected2ProngCand, hf_cand_2prong::DecayType::D0ToPiK) && (pt2Prong + config.ptTolerance) * 1.2 > config.binsPtDstarToD0Pi->at(0) && whichHypo2Prong[kN2ProngDecays] != 0) { // o2-linter: disable="magic-number" (see comment below)
+                                                                                                                                                                                                                        // if D* enabled and pt of the D0 is larger than the minimum of the D* one within 20% (D* and D0 momenta are very similar, always within 20% according to PYTHIA8)
             // second loop over positive tracks
             if (TESTBIT(whichHypo2Prong[kN2ProngDecays], 0) && (!config.applyKaonPidIn3Prongs || TESTBIT(trackIndexNeg1.isIdentifiedPid(), ChannelKaonPid))) { // only for D0 candidates; moreover if kaon PID enabled, apply to the negative track
               auto groupedTrackIndicesSoftPionsPos = positiveSoftPions->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -3227,8 +3228,9 @@ struct HfTrackIndexSkimCreatorCascades {
             const std::array vertexV0{v0.x(), v0.y(), v0.z()};
             // we build the neutral track to then build the cascade
             std::array<float, 21> covV{};
-            constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-            for (int i = 0; i < 6; i++) {
+            constexpr std::size_t NIndicesMom{6u};
+            constexpr std::size_t MomInd[NIndicesMom] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+            for (std::size_t i = 0; i < NIndicesMom; i++) {
               covV[MomInd[i]] = v0.momentumCovMat()[i];
               covV[i] = v0.positionCovMat()[i];
             }
@@ -3263,7 +3265,7 @@ struct HfTrackIndexSkimCreatorCascades {
           std::array posCasc{0., 0., 0.};
           if (config.useDCAFitter) {
             const auto& cascVtx = df2.getPCACandidate();
-            for (int iCoord{0}; iCoord < 3; ++iCoord) {
+            for (int iCoord{0}; iCoord < 3; ++iCoord) { // o2-linter: disable="magic-number" ({x, y, z} coordinates})
               posCasc[iCoord] = cascVtx[iCoord];
             }
           }
@@ -3623,8 +3625,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
         const std::array vertexCasc{casc.x(), casc.y(), casc.z()};
         const std::array pVecCasc{casc.px(), casc.py(), casc.pz()};
         std::array<float, 21> covCasc{};
-        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-        for (int i = 0; i < 6; i++) {
+        constexpr std::size_t NIndicesMom{6u};
+        constexpr std::size_t MomInd[NIndicesMom] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
+        for (std::size_t i = 0; i < NIndicesMom; i++) {
           covCasc[MomInd[i]] = casc.momentumCovMat()[i];
           covCasc[i] = casc.positionCovMat()[i];
         }
