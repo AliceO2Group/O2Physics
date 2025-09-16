@@ -330,7 +330,7 @@ struct FlowZdcTask {
       histos.add("ampZna", ";ZNA Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
       histos.add("ampZpa", ";ZPA Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
       histos.add("ampZnc", ";ZNC Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
-      histos.add("ampZpc", ";ZPC Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});      
+      histos.add("ampZpc", ";ZPC Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
     }
 
     ccdb->setURL("http://alice-ccdb.cern.ch");
@@ -843,7 +843,7 @@ struct FlowZdcTask {
     float commonSumZna = (zdc.energyCommonZNA());
     float commonSumZpc = (zdc.energyCommonZPC());
     float commonSumZpa = (zdc.energyCommonZPA());
-    // fill histos for neutron zdc 
+    // fill histos for neutron zdc
     histos.fill(HIST("ampZna"), znA);
     histos.fill(HIST("ampZnc"), znC);
     histos.fill(HIST("commonZna"), commonSumZna);
