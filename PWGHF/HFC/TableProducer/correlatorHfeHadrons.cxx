@@ -104,7 +104,8 @@ struct HfCorrelatorHfeHadrons {
   ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {32, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, "#it{#Delta#varphi}"};
   ConfigurableAxis binsPt{"binsPt", {50, 0.0, 50}, "#it{p_{T}}(GeV/#it{c})"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
-  ConfigurableAxis binsnSigma{"binsnSigma", {30, -15., 15.}, "#it{#sigma_{TPC}}"};
+  ConfigurableAxis binsNSigma{"binsNSigma", {30, -15., 15.}, "#it{#sigma_{TPC}}"};
+
   HistogramRegistry registry{
     "registry",
     {}};
@@ -116,15 +117,15 @@ struct HfCorrelatorHfeHadrons {
     AxisSpec axisDeltaPhi = {binsDeltaPhi, "#Delta #varphi = #varphi_{Electron}- #varphi_{Hadron}"};
     AxisSpec axisPt = {binsPt, "#it{p_{T}}(GeV/#it{c})"};
     AxisSpec axisPoolBin = {binsPoolBin, "PoolBin"};
-    AxisSpec axisnSigma = {binsnSigma, "it{#sigma_{TPC}}"};
+    AxisSpec axisNSigma = {binsNSigma, "it{#sigma_{TPC}}"};
 
     registry.add("hZvertex", "z vertex", {HistType::kTH1D, {axisPosZ}});
     registry.add("hNevents", "No of events", {HistType::kTH1D, {{3, 1, 4}}});
     registry.add("hInclusiveEHCorrel", "Sparse for Delta phi and Delta eta Inclusive Electron with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hLSEHCorrel", "Sparse for Delta phi and Delta eta Like sign Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hULSEHCorrel", "Sparse for Delta phi and Delta eta  UnLike sign Electron pair with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
-    registry.add("hTofnSigmaVsP", " Tof nSigma info vs P; n#sigma;#it{p} (GeV#it{/c});passEMcal;", {HistType::kTH2F, {{axisnSigma}, {axisPt}}});
-    registry.add("hTpcnSigmaVsP", " TPC nSigma info vs P; n#sigma;#it{p} (GeV#it{/c});passEMcal;", {HistType::kTH2F, {{axisnSigma}, {axisPt}}});
+    registry.add("hTofnSigmaVsP", " Tof nSigma info vs P; n#sigma;#it{p} (GeV#it{/c});passEMcal;", {HistType::kTH2F, {{axisNSigma}, {axisPt}}});
+    registry.add("hTpcnSigmaVsP", " TPC nSigma info vs P; n#sigma;#it{p} (GeV#it{/c});passEMcal;", {HistType::kTH2F, {{axisNSigma}, {axisPt}}});
 
     registry.add("hMCgenNonHfEHCorrel", "Sparse for Delta phi and Delta eta  for McGen Non Hf Electron  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
     registry.add("hMCgenInclusiveEHCorrl", "Sparse for Delta phi and Delta eta  for McGen Electron pair  with Hadron;p_{T}^{e} (GeV#it{/c});p_{T}^{h} (GeV#it{/c});#Delta#varphi;#Delta#eta;", {HistType::kTHnSparseF, {{axisPt}, {axisPt}, {axisDeltaPhi}, {axisDeltaEta}}});
