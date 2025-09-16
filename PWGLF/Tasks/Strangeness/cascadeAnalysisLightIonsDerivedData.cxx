@@ -131,10 +131,10 @@ struct CascadeAnalysisLightIonsDerivedData {
   Configurable<float> v0masswindow{"v0masswindow", 0.005, "v0 mass window"};
   Configurable<float> competingmassrej{"competingmassrej", 0.008, "Competing mass rejection"};
   // Axes parameters
-  ConfigurableAxis centEstimatorHistBin{"centEstimatorHistBin", {501, -0.5, 500.5}, ""};
+  ConfigurableAxis centEstimatorHistBin{"centEstimatorHistBin", {101, 0.0f, 101.0f}, ""};
   ConfigurableAxis centralityBinning{"centralityBinning", {VARIABLE_WIDTH, 0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, ""};
-  ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +1000.0f}, "Number of charged particles"};
-  ConfigurableAxis axisMult{"axisMult", {500, 0.0f, +1000.0f}, "Multiplicity"};
+  ConfigurableAxis axisNch{"axisNch", {500, 0.0f, +5000.0f}, "Number of charged particles"};
+  ConfigurableAxis axisMult{"axisMult", {500, 0.0f, +100000.0f}, "Multiplicity"};
 
   // Centrality estimator
   Configurable<int> centralityEstimator{"centralityEstimator", 0, "0 = FT0C, 1 = FTOM, 2 = FV0A, 3 = NGlobal"};
@@ -185,18 +185,31 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       registryData.get<TH1>(HIST("number_of_events_data"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
 
+      registryData.add("number_of_events_data_vs_centrality", "number of events in data vs centrality", HistType::kTH2D, {{20, -0.5f, +19.5f}, axisCentEstimator});
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(1, "All collisions");
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(3, "posZ cut");
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(6, "kIsVertexITSTPC");
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(7, "kIsGoodZvtxFT0vsPV");
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
+      registryData.get<TH2>(HIST("number_of_events_data_vs_centrality"))->GetYaxis()->SetTitle("Centrality (%)");
+
       // QC Histograms
-      registryQC.add("hVertexZdata", "hVertexZdata", HistType::kTH1F, {vertexZAxis});
-      registryQC.add("hv0cosPAdata", "hv0cosPAdata", HistType::kTH1F, {{nBins, 0.95f, 1.f}});
-      registryQC.add("hcasccosPAdata", "hcasccosPAdata", HistType::kTH1F, {{nBins, 0.95f, 1.f}});
-      registryQC.add("hv0radiusdata", "hv0radiusdata", HistType::kTH1F, {{nBins, 0.0f, 5.0f}});
-      registryQC.add("hcascradiusdata", "hcascradiusdata", HistType::kTH1F, {{nBins, 0.0f, 5.0f}});
-      registryQC.add("hdcaV0daughtersdata", "hdcaV0daughtersdata", HistType::kTH1F, {{nBins, 0.0f, 1.5f}});
-      registryQC.add("hdcacascdaughtersdata", "hdcacascdaughtersdata", HistType::kTH1F, {{nBins, 0.0f, 1.5f}});
-      registryQC.add("hdcapostopvdata", "hdcapostopvdata", HistType::kTH1F, {{nBins, 0.0f, 2.0f}});
-      registryQC.add("hdcanegtopvdata", "hdcanegtopvdata", HistType::kTH1F, {{nBins, 0.0f, 2.0f}});
-      registryQC.add("hdcabachtopvdata", "hdcabachtopvdata", HistType::kTH1F, {{nBins, 0.0f, 2.0f}});
-      registryQC.add("hdcav0topvdata", "hdcav0topvdata", HistType::kTH1F, {{nBins, 0.0f, 2.0f}});
+      registryQC.add("hVertexZdata", "hVertexZdata", HistType::kTH1D, {vertexZAxis});
+      registryQC.add("hv0cosPAdata", "hv0cosPAdata", HistType::kTH1D, {{nBins, 0.95f, 1.f}});
+      registryQC.add("hcasccosPAdata", "hcasccosPAdata", HistType::kTH1D, {{nBins, 0.95f, 1.f}});
+      registryQC.add("hv0radiusdata", "hv0radiusdata", HistType::kTH1D, {{nBins, 0.0f, 5.0f}});
+      registryQC.add("hcascradiusdata", "hcascradiusdata", HistType::kTH1D, {{nBins, 0.0f, 5.0f}});
+      registryQC.add("hdcaV0daughtersdata", "hdcaV0daughtersdata", HistType::kTH1D, {{nBins, 0.0f, 1.5f}});
+      registryQC.add("hdcacascdaughtersdata", "hdcacascdaughtersdata", HistType::kTH1D, {{nBins, 0.0f, 1.5f}});
+      registryQC.add("hdcapostopvdata", "hdcapostopvdata", HistType::kTH1D, {{nBins, 0.0f, 2.0f}});
+      registryQC.add("hdcanegtopvdata", "hdcanegtopvdata", HistType::kTH1D, {{nBins, 0.0f, 2.0f}});
+      registryQC.add("hdcabachtopvdata", "hdcabachtopvdata", HistType::kTH1D, {{nBins, 0.0f, 2.0f}});
+      registryQC.add("hdcav0topvdata", "hdcav0topvdata", HistType::kTH1D, {{nBins, 0.0f, 2.0f}});
 
       // Multiplicity Histograms
       registryData.add("hCentEstimator", "hCentEstimator", HistType::kTH1D, {axisCentEstimator});
@@ -204,16 +217,16 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryData.add("hCentralityVsMultiplicity", "hCentralityVsMultiplicity", HistType::kTH2D, {axisCentEstimator, axisMult});
 
       // Histograms for xi (data)
-      registryData.add("hMassXipos", "hMassXipos", HistType::kTH3F, {centAxis, ptAxis, invMassXiAxis});
-      registryData.add("hMassXineg", "hMassXineg", HistType::kTH3F, {centAxis, ptAxis, invMassXiAxis});
-      registryData.add("hMassXiposSelected", "hMassXiposSelected", HistType::kTH3F, {centAxis, ptAxis, invMassXiAxis});
-      registryData.add("hMassXinegSelected", "hMassXinegSelected", HistType::kTH3F, {centAxis, ptAxis, invMassXiAxis});
+      registryData.add("hMassXipos", "hMassXipos", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
+      registryData.add("hMassXineg", "hMassXineg", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
+      registryData.add("hMassXiposSelected", "hMassXiposSelected", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
+      registryData.add("hMassXinegSelected", "hMassXinegSelected", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
 
       // Histograms for omega (data)
-      registryData.add("hMassOmegapos", "hMassOmegapos", HistType::kTH3F, {centAxis, ptAxis, invMassOmegaAxis});
-      registryData.add("hMassOmeganeg", "hMassOmeganeg", HistType::kTH3F, {centAxis, ptAxis, invMassOmegaAxis});
-      registryData.add("hMassOmegaposSelected", "hMassOmegaposSelected", HistType::kTH3F, {centAxis, ptAxis, invMassOmegaAxis});
-      registryData.add("hMassOmeganegSelected", "hMassOmeganegSelected", HistType::kTH3F, {centAxis, ptAxis, invMassOmegaAxis});
+      registryData.add("hMassOmegapos", "hMassOmegapos", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
+      registryData.add("hMassOmeganeg", "hMassOmeganeg", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
+      registryData.add("hMassOmegaposSelected", "hMassOmegaposSelected", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
+      registryData.add("hMassOmeganegSelected", "hMassOmeganegSelected", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
     }
 
     if (doprocessMonteCarloRec) {
@@ -230,18 +243,31 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
       registryMC.get<TH1>(HIST("number_of_events_mc_rec"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
 
+      registryMC.add("number_of_events_mc_rec_vs_centrality", "number of events in mc_rec vs centrality", HistType::kTH2D, {{20, -0.5f, +19.5f}, axisCentEstimator});
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(1, "All collisions");
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(3, "posZ cut");
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(6, "kIsVertexITSTPC");
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(7, "kIsGoodZvtxFT0vsPV");
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(8, "kIsVertexTOFmatched");
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(9, "kIsVertexTRDmatched");
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetXaxis()->SetBinLabel(10, "kNoSameBunchPileup");
+      registryMC.get<TH2>(HIST("number_of_events_mc_rec_vs_centrality"))->GetYaxis()->SetTitle("Centrality (%)");
+
       // QC Histograms
-      registryQC.add("hVertexZRec", "hVertexZRec", HistType::kTH1F, {{vertexZAxis}});
-      registryQC.add("hv0cosPARec", "hv0cosPARec", HistType::kTH1F, {{nBins, 0.95f, 1.f}});
-      registryQC.add("hcasccosPARec", "hcasccosPARec", HistType::kTH1F, {{nBins, 0.95f, 1.f}});
-      registryQC.add("hv0radiusRec", "hv0radiusRec", HistType::kTH1F, {{nBins, 0.0f, 5.0f}});
-      registryQC.add("hcascradiusRec", "hcascradiusRec", HistType::kTH1F, {{nBins, 0.0f, 5.0f}});
-      registryQC.add("hdcaV0daughtersRec", "hdcaV0daughtersRec", HistType::kTH1F, {{nBins, 0.0f, 1.5f}});
-      registryQC.add("hdcacascdaughtersRec", "hdcacascdaughtersRec", HistType::kTH1F, {{nBins, 0.0f, 1.5f}});
-      registryQC.add("hdcapostopvRec", "hdcapostopvRec", HistType::kTH1F, {{nBins, 0.0f, 2.0f}});
-      registryQC.add("hdcanegtopvRec", "hdcanegtopvRec", HistType::kTH1F, {{nBins, 0.0f, 2.0f}});
-      registryQC.add("hdcabachtopvRec", "hdcabachtopvRec", HistType::kTH1F, {{nBins, 0.0f, 2.0f}});
-      registryQC.add("hdcav0topvRec", "hdcav0topvRec", HistType::kTH1F, {{nBins, 0.0f, 2.0f}});
+      registryQC.add("hVertexZRec", "hVertexZRec", HistType::kTH1D, {{vertexZAxis}});
+      registryQC.add("hv0cosPARec", "hv0cosPARec", HistType::kTH1D, {{nBins, 0.95f, 1.f}});
+      registryQC.add("hcasccosPARec", "hcasccosPARec", HistType::kTH1D, {{nBins, 0.95f, 1.f}});
+      registryQC.add("hv0radiusRec", "hv0radiusRec", HistType::kTH1D, {{nBins, 0.0f, 5.0f}});
+      registryQC.add("hcascradiusRec", "hcascradiusRec", HistType::kTH1D, {{nBins, 0.0f, 5.0f}});
+      registryQC.add("hdcaV0daughtersRec", "hdcaV0daughtersRec", HistType::kTH1D, {{nBins, 0.0f, 1.5f}});
+      registryQC.add("hdcacascdaughtersRec", "hdcacascdaughtersRec", HistType::kTH1D, {{nBins, 0.0f, 1.5f}});
+      registryQC.add("hdcapostopvRec", "hdcapostopvRec", HistType::kTH1D, {{nBins, 0.0f, 2.0f}});
+      registryQC.add("hdcanegtopvRec", "hdcanegtopvRec", HistType::kTH1D, {{nBins, 0.0f, 2.0f}});
+      registryQC.add("hdcabachtopvRec", "hdcabachtopvRec", HistType::kTH1D, {{nBins, 0.0f, 2.0f}});
+      registryQC.add("hdcav0topvRec", "hdcav0topvRec", HistType::kTH1D, {{nBins, 0.0f, 2.0f}});
 
       // Multiplicity Histograms
       registryMC.add("hCentEstimator_truerec", "hCentEstimator_truerec", HistType::kTH1D, {axisCentEstimator});
@@ -249,44 +275,44 @@ struct CascadeAnalysisLightIonsDerivedData {
       registryMC.add("hCentralityVsMultiplicity_truerec", "hCentralityVsMultiplicity_truerec", HistType::kTH2D, {axisCentEstimator, axisMult});
 
       // Histograms for xi (mc)
-      registryMC.add("hMassXipos_truerec", "hMassXipos_truerec", HistType::kTH3F, {centAxis, ptAxis, invMassXiAxis});
-      registryMC.add("hMassXineg_truerec", "hMassXineg_truerec", HistType::kTH3F, {centAxis, ptAxis, invMassXiAxis});
-      registryMC.add("hMassXiposSelected_truerec", "hMassXiposSelected_truerec", HistType::kTH3F, {centAxis, ptAxis, invMassXiAxis});
-      registryMC.add("hMassXinegSelected_truerec", "hMassXinegSelected_truerec", HistType::kTH3F, {centAxis, ptAxis, invMassXiAxis});
+      registryMC.add("hMassXipos_truerec", "hMassXipos_truerec", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
+      registryMC.add("hMassXineg_truerec", "hMassXineg_truerec", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
+      registryMC.add("hMassXiposSelected_truerec", "hMassXiposSelected_truerec", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
+      registryMC.add("hMassXinegSelected_truerec", "hMassXinegSelected_truerec", HistType::kTH3D, {centAxis, ptAxis, invMassXiAxis});
 
       // Histograms for omega (mc)
-      registryMC.add("hMassOmegapos_truerec", "hMassOmegapos_truerec", HistType::kTH3F, {centAxis, ptAxis, invMassOmegaAxis});
-      registryMC.add("hMassOmeganeg_truerec", "hMassOmeganeg_truerec", HistType::kTH3F, {centAxis, ptAxis, invMassOmegaAxis});
-      registryMC.add("hMassOmegaposSelected_truerec", "hMassOmegaposSelected_truerec", HistType::kTH3F, {centAxis, ptAxis, invMassOmegaAxis});
-      registryMC.add("hMassOmeganegSelected_truerec", "hMassOmeganegSelected_truerec", HistType::kTH3F, {centAxis, ptAxis, invMassOmegaAxis});
+      registryMC.add("hMassOmegapos_truerec", "hMassOmegapos_truerec", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
+      registryMC.add("hMassOmeganeg_truerec", "hMassOmeganeg_truerec", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
+      registryMC.add("hMassOmegaposSelected_truerec", "hMassOmegaposSelected_truerec", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
+      registryMC.add("hMassOmeganegSelected_truerec", "hMassOmeganegSelected_truerec", HistType::kTH3D, {centAxis, ptAxis, invMassOmegaAxis});
     }
 
     if (doprocessMonteCarloGen) {
       // Histograms for mc generated
       // QC Histograms
-      registryQC.add("hVertexZGen", "hVertexZGen", HistType::kTH1F, {{vertexZAxis}});
+      registryQC.add("hVertexZGen", "hVertexZGen", HistType::kTH1D, {{vertexZAxis}});
       // Histograms for xi (mc)
-      registryMC.add("h2dGenXiMinusVsMultMC_RecoedEvt", "h2dGenXiMinusVsMultMC_RecoedEvt", HistType::kTH2F, {axisNch, ptAxis});
-      registryMC.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", HistType::kTH2F, {axisNch, ptAxis});
-      registryMC.add("h2dGenXiMinusVsMultMC", "h2dGenXiMinusVsMultMC", HistType::kTH2F, {axisNch, ptAxis});
-      registryMC.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", HistType::kTH2F, {axisNch, ptAxis});
+      registryMC.add("h2dGenXiMinusVsMultMC_RecoedEvt", "h2dGenXiMinusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
+      registryMC.add("h2dGenXiPlusVsMultMC_RecoedEvt", "h2dGenXiPlusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
+      registryMC.add("h2dGenXiMinusVsMultMC", "h2dGenXiMinusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
+      registryMC.add("h2dGenXiPlusVsMultMC", "h2dGenXiPlusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
 
       // Histograms for omega (mc)
-      registryMC.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", HistType::kTH2F, {axisNch, ptAxis});
-      registryMC.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", HistType::kTH2F, {axisNch, ptAxis});
-      registryMC.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", HistType::kTH2F, {axisNch, ptAxis});
-      registryMC.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", HistType::kTH2F, {axisNch, ptAxis});
+      registryMC.add("h2dGenOmegaMinusVsMultMC_RecoedEvt", "h2dGenOmegaMinusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
+      registryMC.add("h2dGenOmegaPlusVsMultMC_RecoedEvt", "h2dGenOmegaPlusVsMultMC_RecoedEvt", HistType::kTH2D, {axisNch, ptAxis});
+      registryMC.add("h2dGenOmegaMinusVsMultMC", "h2dGenOmegaMinusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
+      registryMC.add("h2dGenOmegaPlusVsMultMC", "h2dGenOmegaPlusVsMultMC", HistType::kTH2D, {axisNch, ptAxis});
 
       // Histograms for event loss/splitting
-      registryMC.add("hGenEvents", "hGenEvents", HistType::kTH2F, {{axisNch}, {2, -0.5f, +1.5f}});
+      registryMC.add("hGenEvents", "hGenEvents", HistType::kTH2D, {{axisNch}, {2, -0.5f, +1.5f}});
       registryMC.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(1, "All gen. events");
       registryMC.get<TH2>(HIST("hGenEvents"))->GetYaxis()->SetBinLabel(2, "Gen. with at least 1 rec. events");
       registryMC.add("hGenEventCentrality", "hGenEventCentrality", kTH1D, {{101, 0.0f, 101.0f}});
 
-      registryMC.add("hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", HistType::kTH2F, {centAxis, {50, -0.5f, 49.5f}});
-      registryMC.add("hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", HistType::kTH2F, {centAxis, {50, -0.5f, 49.5f}});
+      registryMC.add("hCentralityVsNcoll_beforeEvSel", "hCentralityVsNcoll_beforeEvSel", HistType::kTH2D, {centAxis, {50, -0.5f, 49.5f}});
+      registryMC.add("hCentralityVsNcoll_afterEvSel", "hCentralityVsNcoll_afterEvSel", HistType::kTH2D, {centAxis, {50, -0.5f, 49.5f}});
 
-      registryMC.add("hCentralityVsMultMC", "hCentralityVsMultMC", HistType::kTH2F, {{101, 0.0f, 101.0f}, axisNch});
+      registryMC.add("hCentralityVsMultMC", "hCentralityVsMultMC", HistType::kTH2D, {{101, 0.0f, 101.0f}, axisNch});
     }
   }
 
@@ -704,53 +730,7 @@ struct CascadeAnalysisLightIonsDerivedData {
     // Initialize CCDB objects using the BC info
     initCCDB(collision);
 
-    // event selections
-    if (applySel8 && !collision.sel8())
-      return;
-    registryData.fill(HIST("number_of_events_data"), 1);
-    if (applyVtxZ && std::fabs(collision.posZ()) > zVtx)
-      return;
-    registryData.fill(HIST("number_of_events_data"), 2);
-
-    if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-      return;
-    }
-    registryData.fill(HIST("number_of_events_data"), 3 /* Not at ITS ROF border */);
-
-    if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-      return;
-    }
-    registryData.fill(HIST("number_of_events_data"), 4 /* Not at TF border */);
-
-    if (requireVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-      return;
-    }
-    registryData.fill(HIST("number_of_events_data"), 5 /* Contains at least one ITS-TPC track */);
-
-    if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-      return;
-    }
-    registryData.fill(HIST("number_of_events_data"), 6 /* PV position consistency check */);
-
-    if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
-      return;
-    }
-    registryData.fill(HIST("number_of_events_data"), 7 /* PV with at least one contributor matched with TOF */);
-
-    if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
-      return;
-    }
-    registryData.fill(HIST("number_of_events_data"), 8 /* PV with at least one contributor matched with TRD */);
-
-    if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-      return;
-    }
-    registryData.fill(HIST("number_of_events_data"), 9 /* Not at same bunch pile-up */);
-
-    // Store the Zvtx
-    registryQC.fill(HIST("hVertexZdata"), std::fabs(collision.posZ()));
-
-    // Store the event centrality using different estimators
+    // Define the event centrality using different estimators
     float centrality = -1.0f;
     float multiplicity = -1.0f;
 
@@ -771,6 +751,63 @@ struct CascadeAnalysisLightIonsDerivedData {
       multiplicity = collision.multNTracksGlobal();
     }
 
+    // event selections
+    if (applySel8 && !collision.sel8())
+      return;
+    registryData.fill(HIST("number_of_events_data"), 1);
+    registryData.fill(HIST("number_of_events_data_vs_centrality"), 1, centrality);
+
+    if (applyVtxZ && std::fabs(collision.posZ()) > zVtx)
+      return;
+    registryData.fill(HIST("number_of_events_data"), 2);
+    registryData.fill(HIST("number_of_events_data_vs_centrality"), 2, centrality);
+
+    if (rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+      return;
+    }
+    registryData.fill(HIST("number_of_events_data"), 3 /* Not at ITS ROF border */);
+    registryData.fill(HIST("number_of_events_data_vs_centrality"), 3, centrality);
+
+    if (rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return;
+    }
+    registryData.fill(HIST("number_of_events_data"), 4 /* Not at TF border */);
+    registryData.fill(HIST("number_of_events_data_vs_centrality"), 4, centrality);
+
+    if (requireVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+      return;
+    }
+    registryData.fill(HIST("number_of_events_data"), 5 /* Contains at least one ITS-TPC track */);
+    registryData.fill(HIST("number_of_events_data_vs_centrality"), 5, centrality);
+
+    if (requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+      return;
+    }
+    registryData.fill(HIST("number_of_events_data"), 6 /* PV position consistency check */);
+    registryData.fill(HIST("number_of_events_data_vs_centrality"), 6, centrality);
+
+    if (requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+      return;
+    }
+    registryData.fill(HIST("number_of_events_data"), 7 /* PV with at least one contributor matched with TOF */);
+    registryData.fill(HIST("number_of_events_data_vs_centrality"), 7, centrality);
+
+    if (requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+      return;
+    }
+    registryData.fill(HIST("number_of_events_data"), 8 /* PV with at least one contributor matched with TRD */);
+    registryData.fill(HIST("number_of_events_data_vs_centrality"), 8, centrality);
+
+    if (rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      return;
+    }
+    registryData.fill(HIST("number_of_events_data"), 9 /* Not at same bunch pile-up */);
+    registryData.fill(HIST("number_of_events_data_vs_centrality"), 9, centrality);
+
+    // Store the Zvtx
+    registryQC.fill(HIST("hVertexZdata"), collision.posZ());
+
+    // Store the event centrality
     registryData.fill(HIST("hCentEstimator"), centrality);
     registryData.fill(HIST("hCentralityVsNch"), centrality, collision.multNTracksPVeta1());
     registryData.fill(HIST("hCentralityVsMultiplicity"), centrality, multiplicity);
@@ -835,54 +872,7 @@ struct CascadeAnalysisLightIonsDerivedData {
       // Initialize CCDB objects using the BC info
       initCCDB(RecCol);
 
-      // event selections
-      if (applySel8 && !RecCol.sel8())
-        continue;
-      registryMC.fill(HIST("number_of_events_mc_rec"), 1);
-
-      if (applyVtxZ && std::fabs(RecCol.posZ()) > zVtx)
-        continue;
-      registryMC.fill(HIST("number_of_events_mc_rec"), 2);
-
-      if (rejectITSROFBorder && !RecCol.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 3 /* Not at ITS ROF border */);
-
-      if (rejectTFBorder && !RecCol.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 4 /* Not at TF border */);
-
-      if (requireVertexITSTPC && !RecCol.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 5 /* Contains at least one ITS-TPC track */);
-
-      if (requireIsGoodZvtxFT0VsPV && !RecCol.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 6 /* PV position consistency check */);
-
-      if (requireIsVertexTOFmatched && !RecCol.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 7 /* PV with at least one contributor matched with TOF */);
-
-      if (requireIsVertexTRDmatched && !RecCol.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 8 /* PV with at least one contributor matched with TRD */);
-
-      if (rejectSameBunchPileup && !RecCol.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
-        continue;
-      }
-      registryMC.fill(HIST("number_of_events_mc_rec"), 9 /* Not at same bunch pile-up */);
-
-      // Store the Zvtx
-      registryQC.fill(HIST("hVertexZRec"), RecCol.posZ());
-
-      // Store the event centrality using different estimators
+      // Define the event centrality using different estimators
       float centralityMcRec = -1.0f;
       float multiplicityMcRec = -1.0f;
 
@@ -903,6 +893,63 @@ struct CascadeAnalysisLightIonsDerivedData {
         multiplicityMcRec = RecCol.multNTracksGlobal();
       }
 
+      // event selections
+      if (applySel8 && !RecCol.sel8())
+        continue;
+      registryMC.fill(HIST("number_of_events_mc_rec"), 1);
+      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 1, centralityMcRec);
+
+      if (applyVtxZ && std::fabs(RecCol.posZ()) > zVtx)
+        continue;
+      registryMC.fill(HIST("number_of_events_mc_rec"), 2);
+      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 2, centralityMcRec);
+
+      if (rejectITSROFBorder && !RecCol.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
+        continue;
+      }
+      registryMC.fill(HIST("number_of_events_mc_rec"), 3 /* Not at ITS ROF border */);
+      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 3, centralityMcRec);
+
+      if (rejectTFBorder && !RecCol.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+        continue;
+      }
+      registryMC.fill(HIST("number_of_events_mc_rec"), 4 /* Not at TF border */);
+      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 4, centralityMcRec);
+
+      if (requireVertexITSTPC && !RecCol.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
+        continue;
+      }
+      registryMC.fill(HIST("number_of_events_mc_rec"), 5 /* Contains at least one ITS-TPC track */);
+      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 5, centralityMcRec);
+
+      if (requireIsGoodZvtxFT0VsPV && !RecCol.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
+        continue;
+      }
+      registryMC.fill(HIST("number_of_events_mc_rec"), 6 /* PV position consistency check */);
+      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 6, centralityMcRec);
+
+      if (requireIsVertexTOFmatched && !RecCol.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
+        continue;
+      }
+      registryMC.fill(HIST("number_of_events_mc_rec"), 7 /* PV with at least one contributor matched with TOF */);
+      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 7, centralityMcRec);
+
+      if (requireIsVertexTRDmatched && !RecCol.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
+        continue;
+      }
+      registryMC.fill(HIST("number_of_events_mc_rec"), 8 /* PV with at least one contributor matched with TRD */);
+      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 8, centralityMcRec);
+
+      if (rejectSameBunchPileup && !RecCol.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+        continue;
+      }
+      registryMC.fill(HIST("number_of_events_mc_rec"), 9 /* Not at same bunch pile-up */);
+      registryMC.fill(HIST("number_of_events_mc_rec_vs_centrality"), 9, centralityMcRec);
+
+      // Store the Zvtx
+      registryQC.fill(HIST("hVertexZRec"), RecCol.posZ());
+
+      // Store the event centrality
       registryMC.fill(HIST("hCentEstimator_truerec"), centralityMcRec);
       registryMC.fill(HIST("hCentralityVsNch_truerec"), centralityMcRec, RecCol.multNTracksPVeta1());
       registryMC.fill(HIST("hCentralityVsMultiplicity_truerec"), centralityMcRec, multiplicityMcRec);
