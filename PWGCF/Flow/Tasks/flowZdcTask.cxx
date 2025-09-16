@@ -77,7 +77,6 @@ struct FlowZdcTask {
   Configurable<int> nBinsZP{"nBinsZP", 160, "N bins ZP"};
   Configurable<float> minNch{"minNch", 0, "Min Nch (|eta|<0.8)"};
   Configurable<float> maxNch{"maxNch", 2500, "Max Nch (|eta|<0.8)"};
-  Configurable<float> oneNeutron{"oneNeutron", 1.0, "one neutron, energy or integer"};
   Configurable<int> nBinsTDC{"nBinsTDC", 150, "nbinsTDC"};
   Configurable<float> minTdc{"minTdc", -15.0, "minimum TDC"};
   Configurable<float> maxTdc{"maxTdc", 15.0, "maximum TDC"};
@@ -96,7 +95,6 @@ struct FlowZdcTask {
   Configurable<bool> applyEff{"applyEff", true, "Apply track-by-track efficiency correction"};
   Configurable<bool> applyFD{"applyFD", false, "Apply track-by-track feed down correction"};
   Configurable<bool> correctNch{"correctNch", true, "Correct also Nch"};
-  Configurable<bool> isOneNeutronFound{"isOneNeutronFound", false, "Require at least 1 neutron in ZNA/ZNC to fill ZPA/ZPC"};
 
   Configurable<float> nSigmaNchCut{"nSigmaNchCut", 1., "nSigma Nch selection"};
   Configurable<double> minNchSel{"minNchSel", 5., "min Nch Selection"};
