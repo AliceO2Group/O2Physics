@@ -752,8 +752,13 @@ struct femtoDreamPairTaskTrackTrack {
       case femtodreamcollision::kMultMultPercentile:
         doMixedEvent_NotMasked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMultMultPercentile);
         break;
+<<<<<<< HEAD
       case femtodreamcollision::kMultPercentileqn:
         doMixedEvent_NotMasked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMultPercentileqn);
+=======
+     case femtodreamcollision::kMultPercentileQn:
+        doMixedEvent_NotMasked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMultPercentileqn);        
+>>>>>>> 79d4db6e4 (fixed as comments)
         break;
       default:
         LOG(fatal) << "Invalid binning policiy specifed. Breaking...";

@@ -167,16 +167,38 @@ class FemtoDreamCollisionSelection
   /// \return whether or not the collisions fulfills the specified selections
   template <typename C>
   bool isPileUpCollisionPbPb(C const& col,
+<<<<<<< HEAD
                              bool noSameBunchPileup, bool isGoodITSLayersAll,
                              int tpcOccupancyMin, int tpcOccupancyMax)
+=======
+                             bool noSameBunchPileup, bool isGoodITSLayersAll)
+  {
+    if ((noSameBunchPileup && !col.selection_bit(aod::evsel::kNoSameBunchPileup)) || (isGoodITSLayersAll && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll))) {
+      return false;
+    }
+
+    return true;
+  }
+
+  /// occupancy selection
+  /// \tparam T type of the collision
+  /// \param col Collision
+  /// \return whether or not the collisions fulfills the specified selections
+  template <typename C>
+  bool occupancySelection(C const& col, 
+                              int tpcOccupancyMin, int tpcOccupancyMax)
+>>>>>>> 79d4db6e4 (fixed as comments)
   {
     const auto occupancy = col.trackOccupancyInTimeRange();
     if ((occupancy < tpcOccupancyMin || occupancy > tpcOccupancyMax)) {
       return false;
     }
+<<<<<<< HEAD
     if ((noSameBunchPileup && !col.selection_bit(aod::evsel::kNoSameBunchPileup)) || (isGoodITSLayersAll && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll))) {
       return false;
     }
+=======
+>>>>>>> 79d4db6e4 (fixed as comments)
 
     return true;
   }
@@ -212,7 +234,7 @@ class FemtoDreamCollisionSelection
     mHistogramQn->add("Event/qnBin", "; qnBin; entries", kTH1F, {{20, 0, 20}});
 
     for (int iqn(0); iqn < mumQnBins; ++iqn) {
-      mHistogramQn->add(("Qn/mult_" + std::to_string(iqn)).c_str(), "; cent; c22", kTH1F, {{100, 0, 3500}});
+      qnMults.push_back(mHistogramQn->add(("Qn/mult_" + std::to_string(iqn)).c_str(), "; cent; c22", kTH1F, {{100, 0, 3500}}));
     }
     return;
   }
@@ -234,9 +256,14 @@ class FemtoDreamCollisionSelection
     mHistogramQn = registry;
     mHistogramQn->add<TProfile>("Event/profileC22", "; cent; c22", kTProfile, {{10, 0, 100}});
     mHistogramQn->add<TProfile>("Event/profileC24", "; cent; c24", kTProfile, {{10, 0, 100}});
+<<<<<<< HEAD
     if (doQnSeparation) {
+=======
+
+    if (doQnSeparation){      
+>>>>>>> 79d4db6e4 (fixed as comments)
       for (int iqn(0); iqn < mumQnBins; ++iqn) {
-        mHistogramQn->add<TProfile>(("Qn/profileC22_" + std::to_string(iqn)).c_str(), "; cent; c22", kTProfile, {{10, 0, 100}});
+        profilesC22.push_back(mHistogramQn->add<TProfile>(("Qn/profileC22_" + std::to_string(iqn)).c_str(), "; cent; c22", kTProfile, {{10, 0, 100}}));
       }
     }
     return;
@@ -387,6 +414,7 @@ class FemtoDreamCollisionSelection
       mHistogramQn->fill(HIST("Event/centVsqn"), centrality, qn);
       mHistogramQn->fill(HIST("Event/centVsqnVsSpher"), centrality, qn, fSpher);
       mHistogramQn->fill(HIST("Event/qnBin"), qnBin);
+<<<<<<< HEAD
       if (qnBin >= 0 && qnBin < numQnBins) {
         switch (qnBin) {
           case 0:
@@ -423,6 +451,11 @@ class FemtoDreamCollisionSelection
             return qnBin; // invalid qn bin
         }
       }
+=======
+      if (qnBin >= 0 && qnBin < numQnBins){
+        std::get<std::shared_ptr<TH1>>(qnMults[qnBin])->Fill(mult);
+      }      
+>>>>>>> 79d4db6e4 (fixed as comments)
     }
 
     return qnBin;
@@ -503,6 +536,7 @@ class FemtoDreamCollisionSelection
     TComplex negEtaQ = TComplex(negEtaRe, negEtaIm);
     TComplex negEtaQStar = TComplex::Conjugate(negEtaQ);
 
+<<<<<<< HEAD
     mHistogramQn->get<TProfile>(HIST("Event/profileC22"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
     if (doQnSeparation && mQnBin >= 0 && mQnBin < numQnBins) {
       switch (mQnBin) {
@@ -539,6 +573,11 @@ class FemtoDreamCollisionSelection
         default:
           return; // invalid qn bin
       }
+=======
+    mHistogramQn->get<TProfile>(HIST("Event/profileC22"))->Fill(centrality, (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+    if (doQnSeparation && mQnBin >= 0 && mQnBin < numQnBins){
+      std::get<std::shared_ptr<TProfile>>(profilesC22[mQnBin])->Fill(centrality, (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
+>>>>>>> 79d4db6e4 (fixed as comments)
     }
     return;
   }
@@ -555,6 +594,7 @@ class FemtoDreamCollisionSelection
   float mMinSphericity = 0.f;
   float mSphericityPtmin = 0.f;
   int mQnBin = -999;
+<<<<<<< HEAD
   HistogramRegistry* mHistogramQn = nullptr; ///< For flow cumulant output
   TH2D* mReQthisEvt = nullptr;               ///< For flow cumulant in an event
   TH2D* mImQthisEvt = nullptr;               ///< For flow cumulant in an event
@@ -562,6 +602,17 @@ class FemtoDreamCollisionSelection
   TH2D* mImQ2thisEvt = nullptr;              ///< For flow cumulant in an event
   TH2D* mMQthisEvt = nullptr;                ///< For flow cumulant in an event
   TH2D* mMQWeightthisEvt = nullptr;          ///< For flow cumulant in an event
+=======
+  std::vector<HistPtr> qnMults;  /// Histograms of multiplicity (TH1F) per Qn bin. Stored as HistPtr (variant of shared_ptr) from HistogramManager.
+  std::vector<HistPtr> profilesC22; /// Pofile Histograms of c22 per Qn bin.
+  HistogramRegistry* mHistogramQn = nullptr;       ///< For flow cumulant output
+  TH2D* mReQthisEvt = nullptr; ///< For flow cumulant in an event
+  TH2D* mImQthisEvt = nullptr; ///< For flow cumulant in an event
+  TH2D* mReQ2thisEvt = nullptr; ///< For flow cumulant in an event
+  TH2D* mImQ2thisEvt = nullptr; ///< For flow cumulant in an event
+  TH2D* mMQthisEvt = nullptr;   ///< For flow cumulant in an event
+  TH2D* mMQWeightthisEvt = nullptr; ///< For flow cumulant in an event 
+>>>>>>> 79d4db6e4 (fixed as comments)
 };
 } // namespace o2::analysis::femtoDream
 
