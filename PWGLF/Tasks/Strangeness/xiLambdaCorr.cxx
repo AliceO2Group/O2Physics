@@ -9,27 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "PWGLF/DataModel/LFDoubleCascTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
 
 #include "TDatabasePDG.h"
 #include <Math/Vector4D.h>
@@ -42,10 +30,10 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using Collisions = soa::Join<aod::Collisions, aod::EvSels>::iterator;
-using FullCascades = aod::CascDataExt;
-using FullV0s = aod::V0Datas;
-using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
+using Collisions = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator;
+using FullV0s = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
+using FullCascades = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs>;
+using TracksFull = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 
 struct xiLambdaCorr {
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
@@ -84,9 +72,6 @@ struct xiLambdaCorr {
   template <class T>
   bool selectTrack(T const& track)
   {
-    if (std::abs(track.eta()) > etaMax) {
-      return false;
-    }
     if (track.tpcNClsFound() < minNTPCClus) {
       return false;
     }
@@ -106,9 +91,13 @@ struct xiLambdaCorr {
   bool isSelectedCasc(C const& collision, T const&, FullCascades::iterator const& casc)
   {
 
-    auto bachelor = casc.bachelor_as<T>();
-    auto posDau = casc.posTrack_as<T>();
-    auto negDau = casc.negTrack_as<T>();
+    if (std::abs(casc.positiveeta()) > 0.9 || std::abs(casc.negativeeta()) > 0.9 || std::abs(casc.bacheloreta()) > 0.9) {
+      return false;
+    }
+
+    auto bachelor = casc.bachTrackExtra_as<T>();
+    auto posDau = casc.posTrackExtra_as<T>();
+    auto negDau = casc.negTrackExtra_as<T>();
 
     if (!selectTrack(bachelor) || !selectTrack(posDau) || !selectTrack(negDau)) {
       return false;
@@ -139,6 +128,7 @@ struct xiLambdaCorr {
     if (casc.mXi() > o2::constants::physics::MassXiMinus - mXiWindow && casc.mXi() < o2::constants::physics::MassXiMinus + mXiWindow) {
       massInWindow = true;
     }
+
     if (!massInWindow) {
       return false;
     }
@@ -149,8 +139,12 @@ struct xiLambdaCorr {
   template <class T>
   bool isSelectedLambda(T const&, FullV0s::iterator const& v0)
   {
-    auto posDau = v0.posTrack_as<T>();
-    auto negDau = v0.negTrack_as<T>();
+    auto posDau = v0.posTrackExtra_as<T>();
+    auto negDau = v0.negTrackExtra_as<T>();
+
+    if (std::abs(v0.positiveeta()) > 0.9 || std::abs(v0.negativeeta()) > 0.9) {
+      return false;
+    }
 
     if (!selectTrack(posDau) || !selectTrack(negDau)) {
       return false;
@@ -199,7 +193,7 @@ struct xiLambdaCorr {
         if (!isSelectedLambda(tracks, v0)) {
           continue;
         }
-        if (casc.posTrackId() == v0.posTrackId() || casc.posTrackId() == v0.negTrackId()) {
+        if (casc.posTrackExtraId() == v0.posTrackExtraId() || casc.posTrackExtraId() == v0.negTrackExtraId()) {
           continue;
         }
 
