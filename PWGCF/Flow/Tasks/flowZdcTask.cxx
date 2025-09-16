@@ -455,8 +455,6 @@ struct FlowZdcTask {
       for (const auto& amplitude : foundBC.fv0a().amplitude()) {
         aV0A += amplitude;
       }
-    } else {
-      aV0A = -999.;
     }
     float tZNA{zdc.timeZNA()};
     float tZNC{zdc.timeZNC()};
