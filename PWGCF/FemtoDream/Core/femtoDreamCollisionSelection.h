@@ -167,10 +167,6 @@ class FemtoDreamCollisionSelection
   /// \return whether or not the collisions fulfills the specified selections
   template <typename C>
   bool isPileUpCollisionPbPb(C const& col,
-<<<<<<< HEAD
-                             bool noSameBunchPileup, bool isGoodITSLayersAll,
-                             int tpcOccupancyMin, int tpcOccupancyMax)
-=======
                              bool noSameBunchPileup, bool isGoodITSLayersAll)
   {
     if ((noSameBunchPileup && !col.selection_bit(aod::evsel::kNoSameBunchPileup)) || (isGoodITSLayersAll && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll))) {
@@ -185,21 +181,13 @@ class FemtoDreamCollisionSelection
   /// \param col Collision
   /// \return whether or not the collisions fulfills the specified selections
   template <typename C>
-  bool occupancySelection(C const& col,
-                          int tpcOccupancyMin, int tpcOccupancyMax)
->>>>>>> 79d4db6e4 (fixed as comments)
+  bool occupancySelection(C const& col, 
+                              int tpcOccupancyMin, int tpcOccupancyMax)
   {
     const auto occupancy = col.trackOccupancyInTimeRange();
     if ((occupancy < tpcOccupancyMin || occupancy > tpcOccupancyMax)) {
       return false;
     }
-<<<<<<< HEAD
-    if ((noSameBunchPileup && !col.selection_bit(aod::evsel::kNoSameBunchPileup)) || (isGoodITSLayersAll && !col.selection_bit(aod::evsel::kIsGoodITSLayersAll))) {
-      return false;
-    }
-=======
->>>>>>> 79d4db6e4 (fixed as comments)
-
     return true;
   }
 
@@ -256,12 +244,8 @@ class FemtoDreamCollisionSelection
     mHistogramQn = registry;
     mHistogramQn->add<TProfile>("Event/profileC22", "; cent; c22", kTProfile, {{10, 0, 100}});
     mHistogramQn->add<TProfile>("Event/profileC24", "; cent; c24", kTProfile, {{10, 0, 100}});
-<<<<<<< HEAD
-    if (doQnSeparation) {
-=======
 
-    if (doQnSeparation) {      
->>>>>>> 79d4db6e4 (fixed as comments)
+    if (doQnSeparation){      
       for (int iqn(0); iqn < mumQnBins; ++iqn) {
         profilesC22.push_back(mHistogramQn->add<TProfile>(("Qn/profileC22_" + std::to_string(iqn)).c_str(), "; cent; c22", kTProfile, {{10, 0, 100}}));
       }
@@ -414,48 +398,9 @@ class FemtoDreamCollisionSelection
       mHistogramQn->fill(HIST("Event/centVsqn"), centrality, qn);
       mHistogramQn->fill(HIST("Event/centVsqnVsSpher"), centrality, qn, fSpher);
       mHistogramQn->fill(HIST("Event/qnBin"), qnBin);
-<<<<<<< HEAD
-      if (qnBin >= 0 && qnBin < numQnBins) {
-        switch (qnBin) {
-          case 0:
-            mHistogramQn->fill(HIST("Qn/mult_") + HIST("0"), mult);
-            break;
-          case 1:
-            mHistogramQn->fill(HIST("Qn/mult_") + HIST("1"), mult);
-            break;
-          case 2:
-            mHistogramQn->fill(HIST("Qn/mult_") + HIST("2"), mult);
-            break;
-          case 3:
-            mHistogramQn->fill(HIST("Qn/mult_") + HIST("3"), mult);
-            break;
-          case 4:
-            mHistogramQn->fill(HIST("Qn/mult_") + HIST("4"), mult);
-            break;
-          case 5:
-            mHistogramQn->fill(HIST("Qn/mult_") + HIST("5"), mult);
-            break;
-          case 6:
-            mHistogramQn->fill(HIST("Qn/mult_") + HIST("6"), mult);
-            break;
-          case 7:
-            mHistogramQn->fill(HIST("Qn/mult_") + HIST("7"), mult);
-            break;
-          case 8:
-            mHistogramQn->fill(HIST("Qn/mult_") + HIST("8"), mult);
-            break;
-          case 9:
-            mHistogramQn->fill(HIST("Qn/mult_") + HIST("9"), mult);
-            break;
-          default:
-            return qnBin; // invalid qn bin
-        }
-      }
-=======
       if (qnBin >= 0 && qnBin < numQnBins) {
         std::get<std::shared_ptr<TH1>>(qnMults[qnBin])->Fill(mult);
       }      
->>>>>>> 79d4db6e4 (fixed as comments)
     }
 
     return qnBin;
@@ -536,48 +481,9 @@ class FemtoDreamCollisionSelection
     TComplex negEtaQ = TComplex(negEtaRe, negEtaIm);
     TComplex negEtaQStar = TComplex::Conjugate(negEtaQ);
 
-<<<<<<< HEAD
     mHistogramQn->get<TProfile>(HIST("Event/profileC22"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-    if (doQnSeparation && mQnBin >= 0 && mQnBin < numQnBins) {
-      switch (mQnBin) {
-        case 0:
-          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("0"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-          break;
-        case 1:
-          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("1"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-          break;
-        case 2:
-          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("2"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-          break;
-        case 3:
-          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("3"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-          break;
-        case 4:
-          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("4"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-          break;
-        case 5:
-          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("5"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-          break;
-        case 6:
-          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("6"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-          break;
-        case 7:
-          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("7"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-          break;
-        case 8:
-          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("8"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-          break;
-        case 9:
-          mHistogramQn->get<TProfile>(HIST("Qn/profileC22_") + HIST("9"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-          break;
-        default:
-          return; // invalid qn bin
-      }
-=======
-    mHistogramQn->get<TProfile>(HIST("Event/profileC22"))->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
-    if (doQnSeparation && mQnBin >= 0 && mQnBin < numQnBins) {
-      std::get<std::shared_ptr<TProfile>>(profilesC22[mQnBin])->Fill(centrality, (negEtaQ * posEtaQStar).Re() / (negEtaMQ * posEtaMQ), (negEtaMQ * posEtaMQ));
->>>>>>> 79d4db6e4 (fixed as comments)
+    if (doQnSeparation && mQnBin >= 0 && mQnBin < numQnBins){
+      std::get<std::shared_ptr<TProfile>>(profilesC22[mQnBin])->Fill(centrality, (negEtaQ*posEtaQStar).Re()/(negEtaMQ*posEtaMQ), (negEtaMQ*posEtaMQ));
     }
     return;
   }
@@ -594,25 +500,15 @@ class FemtoDreamCollisionSelection
   float mMinSphericity = 0.f;
   float mSphericityPtmin = 0.f;
   int mQnBin = -999;
-<<<<<<< HEAD
   HistogramRegistry* mHistogramQn = nullptr; ///< For flow cumulant output
+  std::vector<HistPtr> qnMults;  /// Histograms of multiplicity (TH1F) per Qn bin. Stored as HistPtr (variant of shared_ptr) from HistogramManager.
+  std::vector<HistPtr> profilesC22; /// Pofile Histograms of c22 per Qn bin
   TH2D* mReQthisEvt = nullptr;               ///< For flow cumulant in an event
   TH2D* mImQthisEvt = nullptr;               ///< For flow cumulant in an event
   TH2D* mReQ2thisEvt = nullptr;              ///< For flow cumulant in an event
   TH2D* mImQ2thisEvt = nullptr;              ///< For flow cumulant in an event
   TH2D* mMQthisEvt = nullptr;                ///< For flow cumulant in an event
   TH2D* mMQWeightthisEvt = nullptr;          ///< For flow cumulant in an event
-=======
-  std::vector<HistPtr> qnMults;              /// Histograms of multiplicity (TH1F) per Qn bin. Stored as HistPtr (variant of shared_ptr) from HistogramManager.
-  std::vector<HistPtr> profilesC22;          /// Pofile Histograms of c22 per Qn bin.
-  HistogramRegistry* mHistogramQn = nullptr; ///< For flow cumulant output
-  TH2D* mReQthisEvt = nullptr;               ///< For flow cumulant in an event
-  TH2D* mImQthisEvt = nullptr;               ///< For flow cumulant in an event
-  TH2D* mReQ2thisEvt = nullptr;              ///< For flow cumulant in an event
-  TH2D* mImQ2thisEvt = nullptr;              ///< For flow cumulant in an event
-  TH2D* mMQthisEvt = nullptr;                ///< For flow cumulant in an event
-  TH2D* mMQWeightthisEvt = nullptr;          ///< For flow cumulant in an event 
->>>>>>> 79d4db6e4 (fixed as comments)
 };
 } // namespace o2::analysis::femtoDream
 

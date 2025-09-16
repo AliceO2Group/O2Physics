@@ -767,20 +767,13 @@ struct femtoDreamProducerTask {
 
     // Pileup rejection in PbPb data
     if constexpr (analysePbPb) {
-<<<<<<< HEAD
-      if (OptionEvtSpecialSelections.ConfIsUsePileUp &&
-          !colCuts.isPileUpCollisionPbPb(col, OptionEvtSpecialSelections.ConfEvNoSameBunchPileup, OptionEvtSpecialSelections.ConfEvIsGoodITSLayersAll,
-                                         OptionEvtSpecialSelections.ConfTPCOccupancyMin, OptionEvtSpecialSelections.ConfTPCOccupancyMax)) {
-        return;
-=======
       if (OptionEvtSpecialSelections.ConfIsUsePileUpPbPb &&
           !colCuts.isPileUpCollisionPbPb(col, OptionEvtSpecialSelections.ConfEvNoSameBunchPileup, OptionEvtSpecialSelections.ConfEvIsGoodITSLayersAll)) {
         return;
       }
-      if (OptionEvtSpecialSelections.ConfIsUseOccupancy &&
-          !colCuts.occupancySelection(col, OptionEvtSpecialSelections.ConfTPCOccupancyMin, OptionEvtSpecialSelections.ConfTPCOccupancyMax)) {
+      if (OptionEvtSpecialSelections.ConfIsUseOccupancy && 
+            !colCuts.occupancySelection(col, OptionEvtSpecialSelections.ConfTPCOccupancyMin, OptionEvtSpecialSelections.ConfTPCOccupancyMax)) {
         return;
->>>>>>> 79d4db6e4 (fixed as comments)
       }
     }
 
@@ -1150,56 +1143,6 @@ struct femtoDreamProducerTask {
       myqn = colCuts.computeqnVec(col);
       outputExtQnCollision(myqn, col.trackOccupancyInTimeRange());
     }
-
-<<<<<<< HEAD
-    const auto spher = colCuts.computeSphericity(col, tracks);
-    float mult = 0;
-    int multNtr = 0;
-    if (ConfIsRun3) {
-      if constexpr (useCentrality) {
-        if constexpr (analysePbPb) {
-          mult = col.centFT0C();
-        } else {
-          mult = col.centFT0M();
-        }
-      } else {
-        mult = 0;
-      }
-      multNtr = col.multNTracksPV();
-    } else {
-      mult = 1; // multiplicity percentile is know in Run 2
-      multNtr = col.multTracklets();
-    }
-
-    // check whether the basic event selection criteria are fulfilled
-    // that included checking if there is at least on usable track or V0
-    if (!colCuts.isSelectedCollision(col)) {
-      return;
-    }
-    // bool emptyCollision = false;
-    if (colCuts.isEmptyCollision(col, tracks, trackCuts)) {
-      return;
-    }
-
-    if (rctCut.requireRCTFlagChecker && !rctChecker(col)) {
-      return;
-    }
-
-    // Pileup rejection in PbPb data
-    if constexpr (analysePbPb) {
-      if (OptionEvtSpecialSelections.ConfIsUsePileUp &&
-          !colCuts.isPileUpCollisionPbPb(col, OptionEvtSpecialSelections.ConfEvNoSameBunchPileup, OptionEvtSpecialSelections.ConfEvIsGoodITSLayersAll,
-                                         OptionEvtSpecialSelections.ConfTPCOccupancyMin, OptionEvtSpecialSelections.ConfTPCOccupancyMax)) {
-        return;
-      }
-    }
-
-    // Calculate and fill qn values
-    float myqn = colCuts.computeqnVec(col);
-    outputExtQnCollision(myqn, col.trackOccupancyInTimeRange());
-
-=======
->>>>>>> 79d4db6e4 (fixed as comments)
     // Calculate flow via cumulant
     if (qnCal.ConfFlowCalculate) {
       int qnBin = colCuts.myqnBin(mult, qnCal.ConfCentralityMax, qnCal.ConfQnBinSeparator, qnCal.ConfdoFillHisto, spher, myqn, qnCal.ConfNumQnBins, multNtr, qnCal.ConfCentBinWidth);
@@ -1264,15 +1207,9 @@ struct femtoDreamProducerTask {
     auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
                                         aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
     if (ConfUseItsPid.value) {
-<<<<<<< HEAD
-      fillCollisionsAndTracksAndV0AndCascade<false, true, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
-    } else {
-      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true>(col, tracks, tracks, fullV0s, fullCascades);
-=======
       fillCollisionsAndTracksAndV0AndCascade<false, true, true, true, false>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
     } else {
       fillCollisionsAndTracksAndV0AndCascade<false, false, true, true, false>(col, tracks, tracks, fullV0s, fullCascades);  
->>>>>>> 79d4db6e4 (fixed as comments)
     }
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData_CentPbPb,
@@ -1290,19 +1227,9 @@ struct femtoDreamProducerTask {
     auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
                                         aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
     if (ConfUseItsPid.value) {
-<<<<<<< HEAD
-      fillCollisionsAndTracksAndV0AndCascade<false, true, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
-    } else {
-      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true>(col, tracks, tracks, fullV0s, fullCascades);
-    }
-
-    if (qnCal.ConfQnSeparation) {
-      fillCollisionsFlow<false, true, true>(col, tracks);
-=======
       fillCollisionsAndTracksAndV0AndCascade<false, true, true, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
     } else {
-      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true, true>(col, tracks, tracks, fullV0s, fullCascades);  
->>>>>>> 79d4db6e4 (fixed as comments)
+      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true, true>(col, tracks, tracks, fullV0s, fullCascades);
     }
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData_CentPbPb_qvec,
@@ -1349,11 +1276,7 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-<<<<<<< HEAD
-    fillCollisionsAndTracksAndV0AndCascade<true, false, true, true>(col, tracks, tracks, fullV0s, fullCascades);
-=======
     fillCollisionsAndTracksAndV0AndCascade<true, false, true, true, false>(col, tracks, tracks, fullV0s, fullCascades);    
->>>>>>> 79d4db6e4 (fixed as comments)
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
 };
