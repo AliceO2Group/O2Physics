@@ -34,6 +34,8 @@ namespace o2::aod
 
 namespace femtocollisions
 {
+DECLARE_SOA_COLUMN(CollisionMask, collisionMask, femtodatatypes::CollsionsMaskType); //! Bitmask for collision selections
+
 DECLARE_SOA_COLUMN(PosX, posX, float);             //! x coordinate of vertex
 DECLARE_SOA_COLUMN(PosY, posY, float);             //! y coordinate of vertex
 DECLARE_SOA_COLUMN(PosZ, posZ, float);             //! z coordinate of vertex
@@ -54,6 +56,11 @@ DECLARE_SOA_TABLE_STAGED_VERSIONED(FCols_001, "FCOL", 1, //! femto collisions
                                    femtocollisions::Sphericity,
                                    femtocollisions::MagField);
 using FCols = FCols_001;
+
+// table for collisions selections
+DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMasks_001, "FCOLMASK", 1, //! track masks
+                                   femtocollisions::CollisionMask);
+using FColMasks = FColMasks_001;
 
 // table for occupancy
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FColOccs_001, "FCOLOCC", 1, //! occupancy

@@ -86,10 +86,6 @@ class SelectionContainer
     if (mSelectionValues.size() > sizeof(BitmaskType) * CHAR_BIT) {
       LOG(fatal) << "Too many selections for single a observable. Limit is " << sizeof(BitmaskType) * CHAR_BIT;
     }
-    // for kEqual we can never skip the last bit
-    if (limitType == limits::kEqual) {
-      mSkipMostPermissiveBit = false;
-    }
     // values for selection are not necessarily ordered correctly
     sortSelections();
   }
@@ -226,7 +222,7 @@ class SelectionContainer
           break;
         case (limits::kEqual):
           // special case for kEqual since here we cannot really establish an order so we need to check all cases explicitly and we cannot bail early
-          if (std::abs(value - mSelectionValues.at(i)) < constants::math::Epsilon) {
+          if (std::fabs(value - mSelectionValues.at(i)) < constants::math::Epsilon) {
             mBitmask.set(i);
           }
           break;
@@ -246,7 +242,6 @@ class SelectionContainer
   std::bitset<sizeof(BitmaskType) * CHAR_BIT> getBitmask() const
   {
     // if we do not skip the last bit, return full bitmask
-    // in the constructor we ensure that for kEqual we do not skip the most permissive bit
     if (mSkipMostPermissiveBit == false) {
       return mBitmask;
     } else {
