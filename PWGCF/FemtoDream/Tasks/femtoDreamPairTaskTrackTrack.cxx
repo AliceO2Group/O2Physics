@@ -752,7 +752,7 @@ struct femtoDreamPairTaskTrackTrack {
       case femtodreamcollision::kMultMultPercentile:
         doMixedEvent_NotMasked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMultMultPercentile);
         break;
-     case femtodreamcollision::kMultPercentileQn:
+      case femtodreamcollision::kMultPercentileQn:
         doMixedEvent_NotMasked<false>(cols, parts, PartitionTrk1, PartitionTrk2, colBinningMultPercentileqn);
         break;
       default:

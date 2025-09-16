@@ -771,8 +771,8 @@ struct femtoDreamProducerTask {
           !colCuts.isPileUpCollisionPbPb(col, OptionEvtSpecialSelections.ConfEvNoSameBunchPileup, OptionEvtSpecialSelections.ConfEvIsGoodITSLayersAll)) {
         return;
       }
-      if (OptionEvtSpecialSelections.ConfIsUseOccupancy && 
-            !colCuts.occupancySelection(col, OptionEvtSpecialSelections.ConfTPCOccupancyMin, OptionEvtSpecialSelections.ConfTPCOccupancyMax)) {
+      if (OptionEvtSpecialSelections.ConfIsUseOccupancy &&
+          !colCuts.occupancySelection(col, OptionEvtSpecialSelections.ConfTPCOccupancyMin, OptionEvtSpecialSelections.ConfTPCOccupancyMax)) {
         return;
       }
     }
@@ -1209,7 +1209,7 @@ struct femtoDreamProducerTask {
     if (ConfUseItsPid.value) {
       fillCollisionsAndTracksAndV0AndCascade<false, true, true, true, false>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
     } else {
-      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true, false>(col, tracks, tracks, fullV0s, fullCascades);  
+      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true, false>(col, tracks, tracks, fullV0s, fullCascades);
     }
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processData_CentPbPb,
@@ -1276,7 +1276,7 @@ struct femtoDreamProducerTask {
     // get magnetic field for run
     initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
-    fillCollisionsAndTracksAndV0AndCascade<true, false, true, true, false>(col, tracks, tracks, fullV0s, fullCascades);    
+    fillCollisionsAndTracksAndV0AndCascade<true, false, true, true, false>(col, tracks, tracks, fullV0s, fullCascades);
   }
   PROCESS_SWITCH(femtoDreamProducerTask, processMC_CentPbPb, "Provide MC data with centrality information for PbPb collisions", false);
 };
