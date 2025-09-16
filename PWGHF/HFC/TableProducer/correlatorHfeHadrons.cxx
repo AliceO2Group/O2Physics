@@ -47,7 +47,6 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::hf_sel_electron;
 
-TRandom3* rnd = new TRandom3(0);
 std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
 std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500.0, 5000.};
 std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MCGen multiplicity is defined by counting primaries
@@ -83,6 +82,8 @@ struct HfCorrelatorHfeHadrons {
   Configurable<bool> ptCondition{"ptCondition", true, "Electron pT should be greater than associate particle pT"};
 
   Configurable<float> eventFractionToAnalyze{"eventFractionToAnalyze", -1, "Fraction of events to analyze (use only for ME offline on very large samples)"};
+
+  TRandom3 rnd{0};
 
   SliceCache cache;
   using TableCollisions = o2::soa::Filtered<o2::soa::Join<aod::Collisions, aod::Mults, aod::EvSels>>;
@@ -176,7 +177,7 @@ struct HfCorrelatorHfeHadrons {
 
     bool skipEventTableFilling = false;
     if (eventFractionToAnalyze > 0) {
-      if (rnd->Uniform(0, 1) > eventFractionToAnalyze) {
+      if (rnd.Uniform(0, 1) > eventFractionToAnalyze) {
         skipEventTableFilling = true;
       }
     }
