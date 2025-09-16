@@ -15,22 +15,23 @@
 
 /// \author Niveditha Ram , IP2I
 
-#include <vector>
-#include <unordered_map>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPECSObject.h"
 #include "PWGUD/DataModel/UDTables.h"
 
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPECSObject.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+
 #include "TLorentzVector.h"
-#include "TSystem.h"
 #include "TMath.h"
 #include "TRandom3.h"
+#include "TSystem.h"
+
+#include <unordered_map>
+#include <vector>
 
 // table for saving tree with info on data
 namespace dimu
@@ -41,7 +42,7 @@ DECLARE_SOA_COLUMN(M, m, float);
 DECLARE_SOA_COLUMN(Pt, pt, float);
 DECLARE_SOA_COLUMN(Rap, rap, float);
 DECLARE_SOA_COLUMN(Phi, phi, float);
-}
+} // namespace dimu
 
 namespace o2::aod
 {
@@ -311,7 +312,7 @@ struct upcPolarisationJPsiIncorr {
 
     // map with the tracks
     std::unordered_map<int32_t, std::vector<int32_t>> tracksPerCand;
-    //takes a tracks table with a coloumn of collision ID and makes it into a map of collision ID to each track.
+    // takes a tracks table with a coloumn of collision ID and makes it into a map of collision ID to each track.
     collectCandIDs(tracksPerCand, fwdTracks);
 
     // map with the ZDC info
@@ -342,7 +343,6 @@ struct upcPolarisationJPsiIncorr {
   }
 
   PROCESS_SWITCH(upcPolarisationJPsiIncorr, processData, "", true);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
