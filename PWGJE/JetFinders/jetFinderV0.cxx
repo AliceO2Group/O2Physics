@@ -93,6 +93,7 @@ struct JetFinderV0Task {
   Configurable<bool> fillTHnSparse{"fillTHnSparse", true, "switch to fill the THnSparse"};
   Configurable<double> jetExtraParam{"jetExtraParam", -99.0, "sets the _extra_param in fastjet"};
   Configurable<bool> useV0SignalFlags{"useV0SignalFlags", true, "use V0 signal flags table"};
+  Configurable<bool> saveJetsWithoutCandidates{"saveJetsWithoutCandidates", false, "save all jets, even those without V0s"};
 
   Service<o2::framework::O2DatabasePDG> pdgDatabase;
   int trackSelection = -1;
@@ -171,7 +172,9 @@ struct JetFinderV0Task {
     }
     inputParticles.clear();
     if (!jetfindingutilities::analyseV0s(inputParticles, candidates, candPtMin, candPtMax, candYMin, candYMax, candIndex, useV0SignalFlags)) {
-      return;
+      if (!saveJetsWithoutCandidates) {
+        return;
+      }
     }
 
     /*
@@ -183,7 +186,7 @@ struct JetFinderV0Task {
         */
     jetfindingutilities::analyseTracksMultipleCandidates(inputParticles, tracks, trackSelection, trackingEfficiency, candidates);
 
-    jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJet")), fillTHnSparse, true);
+    jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTableInput, constituentsTableInput, registry.get<THn>(HIST("hJet")), fillTHnSparse, true, saveJetsWithoutCandidates);
   }
 
   template <typename T, typename U, typename V>
@@ -192,10 +195,12 @@ struct JetFinderV0Task {
 
     inputParticles.clear();
     if (!jetfindingutilities::analyseV0s(inputParticles, candidates, candPtMin, candPtMax, candYMin, candYMax, candIndex, useV0SignalFlags)) {
-      return;
+      if (!saveJetsWithoutCandidates) {
+        return;
+      }
     }
     jetfindingutilities::analyseParticles<true>(inputParticles, particleSelection, jetTypeParticleLevel, particles, pdgDatabase, &candidates);
-    jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, registry.get<THn>(HIST("hJetMCP")), fillTHnSparse, true);
+    jetfindingutilities::findJets(jetFinder, inputParticles, minJetPt, maxJetPt, jetRadius, jetAreaFractionMin, collision, jetsTable, constituentsTable, registry.get<THn>(HIST("hJetMCP")), fillTHnSparse, true, saveJetsWithoutCandidates);
   }
 
   void processDummy(aod::JetCollisions const&)
