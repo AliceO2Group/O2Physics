@@ -316,17 +316,19 @@ struct HfDerivedDataCreatorCorrelationsReduced {
         double deltaEta = assTrk.eta() - trigCand.eta();
         double deltaPhi = RecoDecay::constrainAngle(assTrk.phi() - trigCand.phi(), -o2::constants::math::PIHalf);
         rowSEPairs(rowCollisions.lastIndex(), trigCand.pt(), assTrkPt, deltaEta, deltaPhi);
-        rowAssocTrkSels(rowCollisions.lastIndex(), assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
+        rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
         if constexpr (candType == CandType::Hadron) {
-          rowTrigHads(rowCollisions.lastIndex(), trigCand.tpcNClsCrossedRows(), trigCand.itsClusterMap(), trigCand.itsNCls(), trigCand.dcaXY(), trigCand.dcaZ());
+          rowTrigHads(trigCand.tpcNClsCrossedRows(), trigCand.itsClusterMap(), trigCand.itsNCls(), trigCand.dcaXY(), trigCand.dcaZ());
         } else {
           std::array<float, 2> outputMl = getCandMlScores<candType>(trigCand);
-          rowTrigCharms(rowCollisions.lastIndex(), getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
+          rowTrigCharms(getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
         }
       }
     }
   }
 
+  /// Fill charm hadron tables for mixed-event
+  /// \param trigCands are the charm trigger candidates
   template <CandType candType, typename TTrigCands>
   void fillCharmMixedEvent(TTrigCands const& trigCands)
   {
@@ -336,10 +338,13 @@ struct HfDerivedDataCreatorCorrelationsReduced {
 
       std::array<float, 2> outputMl = getCandMlScores<candType>(trigCand);
       rowTrigs(rowCollisions.lastIndex(), trigCand.phi(), trigCand.eta(), trigCand.pt());
-      rowTrigCharms(rowCollisions.lastIndex(), getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
+      rowTrigCharms(getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
     }
   }
 
+  /// Fill track tables for mixed-event
+  /// \param assTrks are the associated tracks
+  /// \param collCentrality is the collision centrality
   template <typename TAssocTrks>
   void fillTrkMixedEvent(TAssocTrks const& assTrks,
                          const float collCentrality)
@@ -360,7 +365,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       registry.fill(HIST("hPhiVsPtAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), assTrkPt);
       registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), assTrkPt);
       rowAssocTrks(rowCollisions.lastIndex(), assTrk.phi(), assTrk.eta(), assTrkPt);
-      rowAssocTrkSels(rowCollisions.lastIndex(), assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
+      rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
     }
   }
 

@@ -108,14 +108,17 @@ struct HfCorrelatorFlowCharmHadronsReduced {
 
   SliceCache cache;
 
-  using AssocTracks = aod::HfcRedTrkAssocs;
-  // using AssocTracks = soa::Filtered<soa::Join<aod::HfcRedTrkAssocs, aod::HfcRedTrkSels>>;
+  using AssocTracks = soa::Filtered<soa::Join<aod::HfcRedTrkAssocs, aod::HfcRedTrkSels>>;
   using SameEvtPairsChHad = soa::Filtered<soa::Join<aod::HfcRedSEPairs, aod::HfcRedTrigCharms, aod::HfcRedTrkSels>>;
   using SameEvtPairsHadHad = soa::Filtered<soa::Join<aod::HfcRedSEPairs, aod::HfcRedTrigHads, aod::HfcRedTrkSels>>;
+  using TrigCands = soa::Join<aod::HfcRedTrigs, aod::HfcRedTrigCharms>;
 
   Filter filterTrackData = (nabs(aod::hf_assoc_track_reduced::dcaXY) < dcaXYTrackMax) && (nabs(aod::hf_assoc_track_reduced::dcaZ) < dcaZTrackMax) && (aod::hf_assoc_track_reduced::nTpcCrossedRows > tpcCrossedRowsMin) && (aod::hf_assoc_track_reduced::itsNCls > itsNClsMin);
   Filter filterSameEvtPairsChHad = (nabs(aod::hf_assoc_track_reduced::dcaXY) < dcaXYTrackMax) && (nabs(aod::hf_assoc_track_reduced::dcaZ) < dcaZTrackMax) && (aod::hf_assoc_track_reduced::nTpcCrossedRows > tpcCrossedRowsMin) && (aod::hf_assoc_track_reduced::itsNCls > itsNClsMin);
   Filter filterSameEvtPairsHadHad = (nabs(aod::hf_assoc_track_reduced::dcaXY) < dcaXYTrackMax) && (nabs(aod::hf_assoc_track_reduced::dcaZ) < dcaZTrackMax) && (aod::hf_assoc_track_reduced::nTpcCrossedRows > tpcCrossedRowsMin) && (aod::hf_assoc_track_reduced::itsNCls > itsNClsMin);
+
+  Preslice<AssocTracks> tracksPerCol = aod::hf_correlation_trigger_reduced::hfcRedCorrCollId;
+  Preslice<TrigCands> candPerCol = aod::hf_correlation_trigger_reduced::hfcRedCorrCollId;
 
   ConfigurableAxis zPoolBins{"zPoolBins", {VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0}, "Z vertex position pools"};
   ConfigurableAxis multPoolBins{"multPoolBins", {VARIABLE_WIDTH, 0., 900., 1800., 6000.}, "Event multiplicity pools (FT0M)"};
@@ -224,12 +227,10 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   void fillSameEvent(TPair const& pair,
                      TBinningType binPolicy)
   {
-    // auto collision = pair.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
-    int poolBin = -1;
-    // int poolBin = getPoolBin<true>(collision, binPolicy);
+    auto collision = pair.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
+    int poolBin = getPoolBin<true>(collision, binPolicy);
     registry.fill(HIST("hCollisionPoolBin"), poolBin);
-    registry.fill(HIST("hZVtx"), -1, poolBin);
-    // registry.fill(HIST("hZVtx"), collision.posZ(), poolBin);
+    registry.fill(HIST("hZVtx"), collision.posZ(), poolBin);
     registry.fill(HIST("hPoolBinTrig"), poolBin);
     registry.fill(HIST("hPoolBinAssoc"), poolBin);
     if constexpr (fillTables) {
@@ -290,9 +291,9 @@ struct HfCorrelatorFlowCharmHadronsReduced {
           entryCorrPair(poolBinTrig, ptTrig, ptAssoc, deltaEta, deltaPhi);
         }
         if constexpr (fillSparses) {
-          if constexpr (requires{ trigCand.bdtScore0(); }) {  // Separate Charm-Had and Had-Had cases
+          if constexpr (requires{ trigCand.bdtScore0Trig(); }) {  // Separate Charm-Had and Had-Had cases
             registry.fill(HIST("hSparseCorrelationsMECharmHad"), poolBinTrig, ptTrig, ptAssoc, deltaEta,
-                          deltaPhi, trigCand.bdtScore0(), trigCand.bdtScore1(), trigCand.invMassCand());
+                          deltaPhi, trigCand.bdtScore0Trig(), trigCand.bdtScore1Trig(), trigCand.invMassTrig());
           } else {
             registry.fill(HIST("hSparseCorrelationsMEHadHad"), poolBinTrig, ptTrig, ptAssoc, deltaEta, deltaPhi);
           }
@@ -354,7 +355,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processSameEventHadHadWCentMix, "Process Same Event for Had-Had with centrality pools", false);
 
   void processMixedEventCharmHadWCentMix(aod::HfcRedCorrColls const& collisions,
-                                         soa::Join<aod::HfcRedTrigs, aod::HfcRedTrigCharms> const& candidates,
+                                         TrigCands const& candidates,
                                          AssocTracks const& tracks)
   {
     if (fillSparses && fillTables) {
@@ -368,7 +369,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   PROCESS_SWITCH(HfCorrelatorFlowCharmHadronsReduced, processMixedEventCharmHadWCentMix, "Process Mixed Event for Charm-Had with centrality pools", false);
 
   void processMixedEventCharmHadWMultMix(aod::HfcRedCorrColls const& collisions,
-                                         soa::Join<aod::HfcRedTrigs, aod::HfcRedTrigCharms> const& candidates,
+                                         TrigCands const& candidates,
                                          AssocTracks const& tracks)
   {
     if (fillSparses && fillTables) {

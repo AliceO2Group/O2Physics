@@ -102,13 +102,11 @@ DECLARE_SOA_TABLE(HfcRedTrigs, "AOD", "HFCREDTRIG", //! Table with charm hadron 
                   aod::hf_correlation_trigger_reduced::PtTrig);
 
 DECLARE_SOA_TABLE(HfcRedTrigCharms, "AOD", "HFCREDTRIGCHARM", //! Table with Same Event Charm-Hadron pairs information
-                  aod::hf_correlation_trigger_reduced::HfcRedCorrCollId,
                   aod::hf_correlation_trigger_reduced::InvMassTrig,
                   aod::hf_correlation_trigger_reduced::BdtScore0Trig,
                   aod::hf_correlation_trigger_reduced::BdtScore1Trig);
 
 DECLARE_SOA_TABLE(HfcRedTrigHads, "AOD", "HFCREDTRIGHAD", //! Table with Same Event Charm-Hadron pairs information
-                  aod::hf_correlation_trigger_reduced::HfcRedCorrCollId,
                   aod::hf_correlation_trigger_reduced::NTpcCrossedRowsTrig,
                   aod::hf_correlation_trigger_reduced::ItsClusterMapTrig,
                   aod::hf_correlation_trigger_reduced::ItsNClsTrig,
@@ -117,7 +115,6 @@ DECLARE_SOA_TABLE(HfcRedTrigHads, "AOD", "HFCREDTRIGHAD", //! Table with Same Ev
 
 namespace hf_assoc_track_reduced
 {
-DECLARE_SOA_INDEX_COLUMN(HfcRedCorrColl, hfcRedCorrColl);   //! ReducedCollision index
 DECLARE_SOA_COLUMN(OriginTrackId, originTrackId, int);      //! Original track index
 DECLARE_SOA_COLUMN(NTpcCrossedRows, nTpcCrossedRows, int);  //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(ItsClusterMap, itsClusterMap, int);      //! ITS cluster map, one bit per a layer, starting from the innermost
@@ -143,17 +140,16 @@ DECLARE_SOA_TABLE(AssocTrackSels, "AOD", "ASSOCTRACKSEL", //! Table with associa
                   aod::hf_assoc_track_reduced::ItsClusterMap,
                   aod::hf_assoc_track_reduced::ItsNCls,
                   aod::hf_assoc_track_reduced::DcaXY,
-                  aod::hf_assoc_track_reduced::DcaZ)
+                  aod::hf_assoc_track_reduced::DcaZ);
 
 DECLARE_SOA_TABLE(HfcRedTrkAssocs, "AOD", "HFCREDTRKASSOC", //! Table with associated track info
                   soa::Index<>,
                   aod::hf_correlation_trigger_reduced::HfcRedCorrCollId,
                   aod::hf_assoc_track_reduced::PhiAssocTrack,
                   aod::hf_assoc_track_reduced::EtaAssocTrack,
-                  aod::hf_assoc_track_reduced::PtAssocTrack)
+                  aod::hf_assoc_track_reduced::PtAssocTrack);
 
 DECLARE_SOA_TABLE(HfcRedTrkSels, "AOD", "HFCREDSETRKSEL", //! Table with Same Event Track Selections information
-                  aod::hf_correlation_trigger_reduced::HfcRedCorrCollId,
                   aod::hf_assoc_track_reduced::NTpcCrossedRows,
                   aod::hf_assoc_track_reduced::ItsClusterMap,
                   aod::hf_assoc_track_reduced::ItsNCls,
@@ -163,14 +159,13 @@ DECLARE_SOA_TABLE(HfcRedTrkSels, "AOD", "HFCREDSETRKSEL", //! Table with Same Ev
 // definition of columns and tables for Charm-Hadron and Hadron-Hadron correlation pairs
 namespace hf_correlation_charm_hadron_reduced
 {
-DECLARE_SOA_INDEX_COLUMN(HfcRedCorrColl, hfcRedCorrColl);                         //! ReducedCollision index
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                                    //! DeltaPhi between charm hadron and Hadrons
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                                    //! DeltaEta between charm hadron and Hadrons
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                                        //! Pool Bin for the MixedEvent
 } // namespace hf_correlation_charm_hadron_reduced
 
 DECLARE_SOA_TABLE(HfcRedSEPairs, "AOD", "HFCREDSEPAIR", //! Table with Same Event Trig-Assoc pairs
-                  aod::hf_correlation_charm_hadron_reduced::HfcRedCorrCollId,
+                  aod::hf_correlation_trigger_reduced::HfcRedCorrCollId,
                   aod::hf_correlation_trigger_reduced::PtTrig,
                   aod::hf_assoc_track_reduced::PtAssocTrack,
                   aod::hf_correlation_charm_hadron_reduced::DeltaEta,
