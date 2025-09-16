@@ -13,8 +13,6 @@
 /// \brief Tasks that produces the track tables used for the pairing
 /// \author Laura Serksnyte, TU München, laura.serksnyte@tum.de
 
-#include "FairLogger.h" // delete after debugging
-
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamCascadeSelection.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamCollisionSelection.h"
@@ -44,7 +42,6 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 #include <CCDB/BasicCCDBManager.h>
-#include <Framework/Logger.h> // delete after debugging
 
 #include "Math/Vector4D.h"
 #include "TMath.h"
@@ -202,7 +199,6 @@ struct FemtoDreamProducerTaskReso {
   FemtoDreamResoSelection resoCuts;
   struct : ConfigurableGroup {
     std::string prefix = std::string("Resonance");
-    Configurable<bool> confThreshold{"confThreshold", true, "Enable threshold selection between TPC/TPCTOF"};
 
     Configurable<float> confResoInvMassLowLimit{"confResoInvMassLowLimit", 0.9, "Lower limit of the Reso invariant mass"}; // 1.011461
     Configurable<float> confResoInvMassUpLimit{"confResoInvMassUpLimit", 1.15, "Upper limit of the Reso invariant mass"};  // 1.027461
@@ -221,8 +217,8 @@ struct FemtoDreamProducerTaskReso {
     Configurable<std::vector<float>> confDaughterPIDnSigmaMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kPIDnSigmaMax, "confDaughter"), std::vector<float>{3.0, 2.5, 2.0}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kPIDnSigmaMax, "Reso selection: ")};
     // Configurable<float> confResoMassUp{"confResoMassUp", 0.52, "Upper limit for the mass selection of the daughters"};
     // Configurable<float> confResoMassLow{"confResoMassLow", 0.48, "Lower limit for the mass selection of the daughters"};
-    Configurable<std::vector<int>> confDaughterPIDspecies{"confDaughterPIDspecies", std::vector<int>{o2::track::PID::Kaon}, "Reso Daughter sel: Particles species for PID"};
-    Configurable<float> confDaughterPTPCThr{"confDaughterPTPCThr", 0.5, "p_T (GeV/c)Threshold for case distinction between TPC/TPCTOF"};
+    Configurable<std::vector<int>> confDaughterPIDspecies{"confDaughterPIDspecies", std::vector<int>{o2::track::PID::Kaon, o2::track::PID::Kaon}, "Reso Daughter sel: Particles species for PID"};
+    Configurable<std::vector<float>> confDaughterPTPCThr{"confDaughterPTPCThr", std::vector<float>{0.5, 0.5}, "p_T (GeV/c) & pid dependent Thresholds for case distinction between TPC/TPCTOF"};
   } Resonance;
 
   /// \todo should we add filter on min value pT/eta of V0 and daughters?
@@ -844,17 +840,21 @@ struct FemtoDreamProducerTaskReso {
     }
 
     if (confIsActivatePhi.value) {
+
       resoCuts.updateThreshold();
 
       auto slicePosdaugh = daughter1.sliceByCached(aod::track::collisionId, col.globalIndex(), cache); // o2::framework defined in AnalysisHelper.h
       auto sliceNegdaugh = daughter2.sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
 
       for (const auto& track1 : slicePosdaugh) {
-        if (!resoCuts.daughterSelectionPos(track1, Resonance.confThreshold.value))
-          continue; /// loosest cuts for track1
+        if (!resoCuts.daughterSelectionPos(track1) || !resoCuts.isSelectedMinimalPIDPos(track1, Resonance.confDaughterPIDspecies.value[0])) {
+          continue;
+        }
+
         for (const auto& track2 : sliceNegdaugh) {
-          if (!resoCuts.daughterSelectionNeg(track2, Resonance.confThreshold.value))
+          if (!resoCuts.daughterSelectionNeg(track2) || !resoCuts.isSelectedMinimalPIDNeg(track2, Resonance.confDaughterPIDspecies.value[1])) {
             continue; /// loosest cuts for track2
+          }
 
           bool resoIsNotAnti = true; /// bool for differentianting between particle/antiparticle
           float resoSign = 1.;
@@ -921,10 +921,10 @@ struct FemtoDreamProducerTaskReso {
           resoRegistry.fill(HIST("AnalysisQA/Reso/Phi_posdaughter_selected"), track1.phi());
           resoRegistry.fill(HIST("AnalysisQA/Reso/Phi_negdaughter_selected"), track2.phi());
 
-          auto type = resoCuts.getType(track1, track2); //   kPhiPosdaughTPC_NegdaughTPC
-                                                        //   kPhiPosdaughTPC_NegdaughTOF
-                                                        //   kPhiPosdaughTPC_NegdaughTPC
-                                                        //   kPhiPosdaughTOF_NegdaughTOF as possible output
+          auto type = resoCuts.getType(track1, track2); //   kResoPosdaughTPC_NegdaughTPC
+                                                        //   kResoPosdaughTPC_NegdaughTOF
+                                                        //   kResoPosdaughTPC_NegdaughTPC
+                                                        //   kResoPosdaughTOF_NegdaughTOF as possible output
 
           auto bitmask = resoCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track1, track2, resoSign);
 

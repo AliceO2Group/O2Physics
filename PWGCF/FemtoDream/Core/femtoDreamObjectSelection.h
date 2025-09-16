@@ -60,14 +60,6 @@ class FemtoDreamObjectSelection
     }
   }
 
-  /// assigns value from configurbale to protected class member
-  ///  \param selVals o2 configurable containing the values employed for the selection
-  template <typename V>
-  void assign(V& selVals)
-  {
-    assignedValue = static_cast<selValDataType>(selVals);
-  }
-
   /// Pass the Configurable of selection values in the analysis task to the selection class
   /// \tparam T Type of the configurable passed to the function
   /// \param selVals o2 configurable containing the values employed for the selection
@@ -201,7 +193,6 @@ class FemtoDreamObjectSelection
   HistogramRegistry* mHistogramRegistry;                                     ///< For Analysis QA output
   HistogramRegistry* mQAHistogramRegistry;                                   ///< For QA output
   std::vector<FemtoDreamSelection<selValDataType, selVariable>> mSelections; ///< Vector containing all selections
-  selValDataType assignedValue;
 };
 
 } // namespace femtoDream
