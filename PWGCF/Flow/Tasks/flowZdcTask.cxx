@@ -577,18 +577,16 @@ struct FlowZdcTask {
     histos.fill(HIST("ZPACommon"), commonSumZpa);
     histos.fill(HIST("ZPASector"), sumZPA);
     histos.fill(HIST("ZPAVstdc"), tZPA, zpA);
-    histos.fill(HIST("ZPAvsCent"), cent, zpA);    
+    histos.fill(HIST("ZPAvsCent"), cent, zpA);
     histos.fill(HIST("ZPC"), zpC);
     histos.fill(HIST("ZPCCommon"), commonSumZpc);
     histos.fill(HIST("ZPCSector"), sumZPC);
     histos.fill(HIST("ZPCvsCent"), cent, zpC);
-    if (std::isfinite(zpA) && !std::isnan(zpA) &&
-      cent >= minT0CcentCut && cent < maxT0CcentCut && glbTracks >= minNch && glbTracks < maxNch) {
+    if (std::isfinite(zpA) && !std::isnan(zpA) && cent >= minT0CcentCut && cent < maxT0CcentCut && glbTracks >= minNch && glbTracks < maxNch) {
       histos.fill(HIST("pZPAvsFT0Ccent"), cent, zpA);
       histos.fill(HIST("pZPAvsGlbTrack"), glbTracks, zpA);
     }
-    if (std::isfinite(zpC) && !std::isnan(zpC) &&
-      cent >= minT0CcentCut && cent < maxT0CcentCut && glbTracks >= minNch && glbTracks < maxNch) {
+    if (std::isfinite(zpC) && !std::isnan(zpC) && cent >= minT0CcentCut && cent < maxT0CcentCut && glbTracks >= minNch && glbTracks < maxNch) {
       histos.fill(HIST("pZPCvsFT0Ccent"), cent, zpC);
       histos.fill(HIST("pZPCvsGlbTrack"), glbTracks, zpC);
     }
