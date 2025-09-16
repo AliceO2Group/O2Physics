@@ -61,8 +61,7 @@ using namespace o2::framework::expressions;
 const float kRAbsMin = 17.6;
 const float kRAbsMid = 26.5;
 const float kRAbsMax = 89.5;
-const float kPDca1 = 200.;
-const float kPDca2 = 200.;
+const float kPDca = 200.;
 float kEtaMin = -4.0;
 float kEtaMax = -2.5;
 const float kPtMin = 0.;
@@ -118,7 +117,7 @@ struct upcPolarisationJPsiIncorr {
   // my track type
   // 0 = MCH-MID-MFT
   // 1 = MCH-MID
-  Configurable<int> myTrackType{"myTrackType", 3, "My track type"};
+  Configurable<int> myTrackType{"myTrackType", 1, "My track type"};
 
   void init(InitContext&)
   {
@@ -224,15 +223,14 @@ struct upcPolarisationJPsiIncorr {
     p.SetXYZM(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu);
     float eta = p.Eta();
     float pt = p.Pt();
-    float pDcaMax = rAbs < kRAbsMid ? kPDca1 : kPDca2;
-
+    
     if (eta < kEtaMin || eta > kEtaMax)
       return false;
     if (pt < kPtMin)
       return false;
     if (rAbs < kRAbsMin || rAbs > kRAbsMax)
       return false;
-    if (pDca > pDcaMax)
+    if (pDca > kPDca)
       return false;
     return true;
   }
