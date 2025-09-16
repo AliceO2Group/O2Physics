@@ -774,12 +774,12 @@ struct femtoDreamProducerTask {
         return;
 =======
       if (OptionEvtSpecialSelections.ConfIsUsePileUpPbPb &&
-            !colCuts.isPileUpCollisionPbPb(col, OptionEvtSpecialSelections.ConfEvNoSameBunchPileup, OptionEvtSpecialSelections.ConfEvIsGoodITSLayersAll)){
-          return;
+          !colCuts.isPileUpCollisionPbPb(col, OptionEvtSpecialSelections.ConfEvNoSameBunchPileup, OptionEvtSpecialSelections.ConfEvIsGoodITSLayersAll)) {
+        return;
       }
-      if (OptionEvtSpecialSelections.ConfIsUseOccupancy && 
-            !colCuts.occupancySelection(col, OptionEvtSpecialSelections.ConfTPCOccupancyMin, OptionEvtSpecialSelections.ConfTPCOccupancyMax)) {
-          return;
+      if (OptionEvtSpecialSelections.ConfIsUseOccupancy &&
+          !colCuts.occupancySelection(col, OptionEvtSpecialSelections.ConfTPCOccupancyMin, OptionEvtSpecialSelections.ConfTPCOccupancyMax)) {
+        return;
 >>>>>>> 79d4db6e4 (fixed as comments)
       }
     }
@@ -1142,7 +1142,7 @@ struct femtoDreamProducerTask {
   }
 
   template <typename CollisionType, typename TrackType>
-  void fillCollisionsFlow(CollisionType const& col, TrackType const& tracks, float mult,  float spher, float multNtr)
+  void fillCollisionsFlow(CollisionType const& col, TrackType const& tracks, float mult, float spher, float multNtr)
   {
     float myqn = -999.;
     // Calculate and fill qn values
@@ -1269,9 +1269,9 @@ struct femtoDreamProducerTask {
     } else {
       fillCollisionsAndTracksAndV0AndCascade<false, false, true, true>(col, tracks, tracks, fullV0s, fullCascades);
 =======
-        fillCollisionsAndTracksAndV0AndCascade<false, true, true, true, false>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
+      fillCollisionsAndTracksAndV0AndCascade<false, true, true, true, false>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
     } else {
-        fillCollisionsAndTracksAndV0AndCascade<false, false, true, true, false>(col, tracks, tracks, fullV0s, fullCascades);  
+      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true, false>(col, tracks, tracks, fullV0s, fullCascades);  
 >>>>>>> 79d4db6e4 (fixed as comments)
     }
   }
@@ -1299,9 +1299,9 @@ struct femtoDreamProducerTask {
     if (qnCal.ConfQnSeparation) {
       fillCollisionsFlow<false, true, true>(col, tracks);
 =======
-        fillCollisionsAndTracksAndV0AndCascade<false, true, true, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
+      fillCollisionsAndTracksAndV0AndCascade<false, true, true, true, true>(col, tracks, tracksWithItsPid, fullV0s, fullCascades);
     } else {
-        fillCollisionsAndTracksAndV0AndCascade<false, false, true, true, true>(col, tracks, tracks, fullV0s, fullCascades);  
+      fillCollisionsAndTracksAndV0AndCascade<false, false, true, true, true>(col, tracks, tracks, fullV0s, fullCascades);  
 >>>>>>> 79d4db6e4 (fixed as comments)
     }
   }

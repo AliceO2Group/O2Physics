@@ -38,7 +38,7 @@ enum CollisionBinning {
 <<<<<<< HEAD
   kMultPercentileqn,   //! Bin collision in multiplicity percentile an qn value for mixing
 =======
-  kMultPercentileQn,   //! Bin collision in multiplicity percentile an qn value for mixing  
+  kMultPercentileQn,                           //! Bin collision in multiplicity percentile an qn value for mixing  
 >>>>>>> 79d4db6e4 (fixed as comments)
   kNCollisionBinning
 };
@@ -57,10 +57,10 @@ DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit f
 DECLARE_SOA_COLUMN(Downsample, downsample, bool); //! Flag for downsampling
 
 <<<<<<< HEAD
-DECLARE_SOA_COLUMN(QnVal, qnVal, int);         //! qn bins for dividing events
-DECLARE_SOA_COLUMN(Occupancy, occupancy, int); //! TPC occupancy
+DECLARE_SOA_COLUMN(QnVal, qnVal, int);            //! qn bins for dividing events
+DECLARE_SOA_COLUMN(Occupancy, occupancy, int);    //! TPC occupancy
 =======
-DECLARE_SOA_COLUMN(QnVal, qnVal, int); //! qn values for dividing events
+DECLARE_SOA_COLUMN(QnVal, qnVal, int);         //! qn values for dividing events
 DECLARE_SOA_COLUMN(Occupancy, occupancy, int); //! Occupancy of the event
 >>>>>>> 79d4db6e4 (fixed as comments)
 } // namespace femtodreamcollision
