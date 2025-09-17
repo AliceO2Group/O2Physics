@@ -239,42 +239,32 @@ struct OnTheFlyTracker {
 
   // For TGenPhaseSpace seed
   TRandom3 rand;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   void init(o2::framework::InitContext&)
   {
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setTimestamp(-1);
+
     if (enableLUT) {
-      std::map<int, const char*> mapPdgLut;
-      const char* lutElChar = lutEl->c_str();
-      const char* lutMuChar = lutMu->c_str();
-      const char* lutPiChar = lutPi->c_str();
-      const char* lutKaChar = lutKa->c_str();
-      const char* lutPrChar = lutPr->c_str();
+      mSmearer.setCcdbManager(ccdb.operator->());
 
-      LOGF(info, "Will load electron lut file ..: %s", lutElChar);
-      LOGF(info, "Will load muon lut file ......: %s", lutMuChar);
-      LOGF(info, "Will load pion lut file ......: %s", lutPiChar);
-      LOGF(info, "Will load kaon lut file ......: %s", lutKaChar);
-      LOGF(info, "Will load proton lut file ....: %s", lutPrChar);
-
-      mapPdgLut.insert(std::make_pair(11, lutElChar));
-      mapPdgLut.insert(std::make_pair(13, lutMuChar));
-      mapPdgLut.insert(std::make_pair(211, lutPiChar));
-      mapPdgLut.insert(std::make_pair(321, lutKaChar));
-      mapPdgLut.insert(std::make_pair(2212, lutPrChar));
-
-      if (enableNucleiSmearing) {
-        const char* lutDeChar = lutDe->c_str();
-        const char* lutTrChar = lutTr->c_str();
-        const char* lutHe3Char = lutHe3->c_str();
-        mapPdgLut.insert(std::make_pair(1000010020, lutDeChar));
-        mapPdgLut.insert(std::make_pair(1000010030, lutTrChar));
-        mapPdgLut.insert(std::make_pair(1000020030, lutHe3Char));
-      }
-      for (const auto& e : mapPdgLut) {
-        if (!mSmearer.loadTable(e.first, e.second)) {
-          LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
+      auto loadLUT = [&](int pdg, const std::string& lutFile) {
+        bool success = mSmearer.loadTable(pdg, lutFile.c_str());
+        if (!success && !lutFile.empty()) {
+          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lutFile;
         }
-      }
+      };
+      loadLUT(11, lutEl.value);
+      loadLUT(13, lutMu.value);
+      loadLUT(211, lutPi.value);
+      loadLUT(321, lutKa.value);
+      loadLUT(2212, lutPr.value);
+      loadLUT(1000010020, lutDe.value);
+      loadLUT(1000010030, lutTr.value);
+      loadLUT(1000020030, lutHe3.value);
+
       // interpolate efficiencies if requested to do so
       mSmearer.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
 
