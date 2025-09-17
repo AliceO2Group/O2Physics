@@ -246,8 +246,12 @@ bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
 {
 
   auto pt = o2track.getPt();
-  if (abs(pdg) == 1000020030) {
-    pt *= 2.f;
+  static constexpr int kHelium3Pdg = 1000020030;
+  switch (pdg) {
+    case kHelium3Pdg:
+    case -kHelium3Pdg:
+      pt *= 2.f;
+      break;
   }
   auto eta = o2track.getEta();
   float interpolatedEff = 0.0f;
@@ -273,9 +277,9 @@ double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
 {
   float dummy = 0.0f;
   auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
-  auto sigmatgl = std::sqrt(lutEntry->covm[9]);                   // sigmatgl2
-  auto etaRes = std::fabs(sin(2.0 * atan(exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
-  etaRes /= lutEntry->eta;                                   // relative uncertainty
+  auto sigmatgl = std::sqrt(lutEntry->covm[9]);                             // sigmatgl2
+  auto etaRes = std::fabs(sin(2.0 * std::atan(std::exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
+  etaRes /= lutEntry->eta;                                                  // relative uncertainty
   return etaRes;
 }
 /*****************************************************************/
@@ -294,8 +298,8 @@ double TrackSmearer::getAbsEtaRes(int pdg, float nch, float eta, float pt)
 {
   float dummy = 0.0f;
   auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
-  auto sigmatgl = std::sqrt(lutEntry->covm[9]);                   // sigmatgl2
-  auto etaRes = std::fabs(sin(2.0 * atan(exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
+  auto sigmatgl = std::sqrt(lutEntry->covm[9]);                             // sigmatgl2
+  auto etaRes = std::fabs(sin(2.0 * std::atan(std::exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
   return etaRes;
 }
 /*****************************************************************/
