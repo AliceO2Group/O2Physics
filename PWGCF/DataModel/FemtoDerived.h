@@ -35,6 +35,7 @@ enum CollisionBinning {
   kMult,               //! Bin collision in number of charged tracks for mixing
   kMultPercentile,     //! Bin collision in multiplicity percentile for mixing
   kMultMultPercentile, //! Bin collision in number of charged tracks and multiplicity percentile for mixing
+  kMultPercentileQn,   //! Bin collision in multiplicity percentile an qn value for mixing
   kNCollisionBinning
 };
 
@@ -50,6 +51,9 @@ DECLARE_SOA_COLUMN(BitMaskTrackTwo, bitmaskTrackTwo, BitMaskType);     //! Bit f
 DECLARE_SOA_COLUMN(BitMaskTrackThree, bitmaskTrackThree, BitMaskType); //! Bit for track three
 
 DECLARE_SOA_COLUMN(Downsample, downsample, bool); //! Flag for downsampling
+
+DECLARE_SOA_COLUMN(QnVal, qnVal, int);         //! qn values for dividing events
+DECLARE_SOA_COLUMN(Occupancy, occupancy, int); //! Occupancy of the event
 } // namespace femtodreamcollision
 
 DECLARE_SOA_TABLE_STAGED(FDCollisions, "FDCOLLISION",
@@ -60,6 +64,10 @@ DECLARE_SOA_TABLE_STAGED(FDCollisions, "FDCOLLISION",
                          femtodreamcollision::Sphericity,
                          femtodreamcollision::MagField);
 using FDCollision = FDCollisions::iterator;
+
+DECLARE_SOA_TABLE(FDExtQnCollisions, "AOD", "FDEXTQNCOLLISION",
+                  femtodreamcollision::QnVal,
+                  femtodreamcollision::Occupancy);
 
 DECLARE_SOA_TABLE(FDColMasks, "AOD", "FDCOLMASK",
                   femtodreamcollision::BitMaskTrackOne,
