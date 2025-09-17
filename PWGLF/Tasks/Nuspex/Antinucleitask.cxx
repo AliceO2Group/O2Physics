@@ -9,11 +9,9 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file Antinucleitask.cxx
-///
-/// \author Arkaprabha Saha <arkaprabha.saha@cern.ch>
-///
-/// \brief An analysis task to select and analyze anti-nuclei events and tracks.
+/// \file Antinuclitask.cxx
+/// \brief task for analysing the anti nuclei in LF
+/// \author Arkaprabha Saha <arkaprabha.saha@crn.ch>
 
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/TrackSelection.h"
