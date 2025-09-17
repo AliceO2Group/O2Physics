@@ -116,9 +116,8 @@ enum MomentumType {
 };
 
 static constexpr std::string_view ParticleTypeName[kNParticleTypes] = {"Track", "V0", "V0Child", "Cascade", "CascadeV0", "CascadeV0Child", "CascadeBachelor", "CharmHadron", "Reso", "ResoChild", "ResoPosdaughTPC_NegdaughTPC", "ResoPosdaughTPC_NegdaughTOF", "ResoPosdaughTOF_NegdaughTPC", "ResoPosdaughTOF_NegdaughTOF"}; //! Naming of the different particle types
-// static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA"};
 
-static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hCPA", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy"}; // change later!! check for DCAXY for RESO!!
+static constexpr std::string_view TempFitVarName[kNParticleTypes] = {"/hDCAxy", "/hCPA", "/hDCAxy", "/hCPA", "/hCPA", "/hDCAxy", "/hDCAxy", "/hCPA", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy", "/hDCAxy"}; 
 
 using cutContainerType = uint32_t; //! Definition of the data type for the bit-wise container for the different selection criteria
 
