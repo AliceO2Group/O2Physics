@@ -149,7 +149,7 @@ struct LongRangeDihadronCor {
   ConfigurableAxis axisPtEfficiency{"axisPtEfficiency", {VARIABLE_WIDTH, 0.2, 0.5, 1, 1.5, 2, 3, 4, 6, 10}, "pt axis for efficiency histograms"};
   ConfigurableAxis axisAmplitudeFt0a{"axisAmplitudeFt0a", {5000, 0, 1000}, "FT0A amplitude"};
   ConfigurableAxis axisChannelFt0aAxis{"axisChannelFt0aAxis", {96, 0.0, 96.0}, "FT0A channel"};
- 
+
   Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Analysis/EventPlane/GainEq", "CCDB path for gain equalization constants"};
   Configurable<int> cfgCorrLevel{"cfgCorrLevel", 1, "calibration step: 0 = no corr, 1 = gain corr"};
   ConfigurableAxis cfgaxisFITamp{"cfgaxisFITamp", {1000, 0, 5000}, ""};
@@ -157,14 +157,14 @@ struct LongRangeDihadronCor {
   AxisSpec axisChID = {220, 0, 220};
   // make the filters and cuts.
   Filter collisionFilter = (nabs(aod::collision::posZ) < cfgCutVtxZ);
-  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t) true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
+  Filter trackFilter = (nabs(aod::track::eta) < cfgCutEta) && (aod::track::pt > cfgCutPtMin) && (aod::track::pt < cfgCutPtMax) && ((requireGlobalTrackInFilter()) || (aod::track::isGlobalTrackSDD == (uint8_t)true)) && (aod::track::tpcChi2NCl < cfgCutChi2prTPCcls) && (nabs(aod::track::dcaZ) < cfgCutDCAz);
   using FilteredCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSel, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::Mults>>;
   using FilteredTracks = soa::Filtered<soa::Join<aod::Tracks, aod::TrackSelection, aod::TracksExtra, aod::TracksDCA>>;
 
   // FT0 geometry
   o2::ft0::Geometry ft0Det;
   std::vector<o2::detectors::AlignParam>* offsetFT0;
-  std::vector<float> FT0RelGainConst{};
+  std::vector<float> cstFT0RelGain{};
 
   // Corrections
   TH3D* mEfficiency = nullptr;
@@ -278,8 +278,8 @@ struct LongRangeDihadronCor {
       registry.add("Trig_hist", "", {HistType::kTHnSparseF, {{axisSample, axisVertex, axisPtTrigger}}});
       registry.add("Assoc_amp_same", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
       registry.add("Assoc_amp_mixed", "", {HistType::kTH2D, {axisChannelFt0aAxis, axisAmplitudeFt0a}});
-      registry.add("FT0Amp","", {HistType::kTH2F, {axisChID, axisFit}});
-      registry.add("FT0AmpCorr","", {HistType::kTH2F, {axisChID, axisFit}});
+      registry.add("FT0Amp", "", {HistType::kTH2F, {axisChID, axisFit}});
+      registry.add("FT0AmpCorr", "", {HistType::kTH2F, {axisChID, axisFit}});
     }
 
     registry.add("eventcount", "bin", {HistType::kTH1F, {{4, 0, 4, "bin"}}}); // histogram to see how many events are in the same and mixed event
@@ -362,28 +362,30 @@ struct LongRangeDihadronCor {
     }
   }
 
-  void loadGain(aod::BCsWithTimestamps::iterator const& bc) {
-    FT0RelGainConst.clear();
-    FT0RelGainConst = {};
+  void loadGain(aod::BCsWithTimestamps::iterator const& bc)
+  {
+    cstFT0RelGain.clear();
+    cstFT0RelGain = {};
     std::string fullPath;
 
     auto timestamp = bc.timestamp();
-    if (cfgCorrLevel==0) {
-      for (auto i{0u}; i < 208; i++) {
-        FT0RelGainConst.push_back(1.);
+    constexpr int ChannelsFT0 = 208;
+    if (cfgCorrLevel == 0) {
+      for (auto i{0u}; i < ChannelsFT0; i++) {
+        cstFT0RelGain.push_back(1.);
       }
     } else {
       fullPath = cfgGainEqPath;
       fullPath += "/FT0";
-      const auto objft0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp); 
+      const auto objft0Gain = ccdb->getForTimeStamp<std::vector<float>>(fullPath, timestamp);
       if (!objft0Gain) {
-        for (auto i{0u}; i < 208; i++) {
-          FT0RelGainConst.push_back(1.);
+        for (auto i{0u}; i < ChannelsFT0; i++) {
+          cstFT0RelGain.push_back(1.);
         }
       } else {
-        FT0RelGainConst = *(objft0Gain);
+        cstFT0RelGain = *(objft0Gain);
       }
-    } 
+    }
   }
 
   void loadCorrection(uint64_t timestamp)
@@ -479,7 +481,7 @@ struct LongRangeDihadronCor {
       LOGF(fatal, "Cor Index %d out of range", switchCor);
     }
     registry.fill(HIST("FT0Amp"), rID, ampl);
-    ampl = ampl / FT0RelGainConst[iCh];
+    ampl = ampl / cstFT0RelGain[iCh];
     registry.fill(HIST("FT0AmpCorr"), rID, ampl);
   }
 
