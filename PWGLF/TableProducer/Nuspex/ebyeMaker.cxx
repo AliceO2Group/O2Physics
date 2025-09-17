@@ -162,7 +162,7 @@ enum TrackCharge {
   kAll = 0,
   kNegative = 1,
   kPositive = 2
-}
+};
 
 struct EbyeMaker {
   Produces<aod::CollEbyeTable> collisionEbyeTable;
