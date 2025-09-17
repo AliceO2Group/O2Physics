@@ -412,7 +412,7 @@ struct strangenesstofpid {
         histos.add("h2dDeltaTimePositiveK0ShortPi", "h2dDeltaTimePositiveK0ShortPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
         histos.add("h2dDeltaTimeNegativeK0ShortPi", "h2dDeltaTimeNegativeK0ShortPi", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
 
-        // delta time with respect to primary-like calculation 
+        // delta time with respect to primary-like calculation
         histos.add("h2dDiffFromPrimCalcPositiveLambdaPi", "h2dDiffFromPrimCalcPositiveLambdaPi", {HistType::kTH2F, {axisP, axisDeltaTimeVsPrimaryCalculation}});
         histos.add("h2dDiffFromPrimCalcNegativeLambdaPi", "h2dDiffFromPrimCalcNegativeLambdaPi", {HistType::kTH2F, {axisP, axisDeltaTimeVsPrimaryCalculation}});
         histos.add("h2dDiffFromPrimCalcPositiveLambdaPr", "h2dDiffFromPrimCalcPositiveLambdaPr", {HistType::kTH2F, {axisP, axisDeltaTimeVsPrimaryCalculation}});
@@ -442,7 +442,7 @@ struct strangenesstofpid {
         histos.add("h2dnegDeltaTimeAsOmPr", "h2dnegDeltaTimeAsOmPr", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
         histos.add("h2dbachDeltaTimeAsOmKa", "h2dbachDeltaTimeAsOmKa", {HistType::kTH3F, {axisP, axisEta, axisDeltaTime}});
 
-        // delta time with respect to primary-like calculation 
+        // delta time with respect to primary-like calculation
         histos.add("h2dposDiffFromPrimCalcAsXiPi", "h2dposDiffFromPrimCalcAsXiPi", {HistType::kTH2F, {axisP, axisDeltaTimeVsPrimaryCalculation}});
         histos.add("h2dposDiffFromPrimCalcAsXiPr", "h2dposDiffFromPrimCalcAsXiPr", {HistType::kTH2F, {axisP, axisDeltaTimeVsPrimaryCalculation}});
         histos.add("h2dnegDiffFromPrimCalcAsXiPi", "h2dnegDiffFromPrimCalcAsXiPi", {HistType::kTH2F, {axisP, axisDeltaTimeVsPrimaryCalculation}});
@@ -657,7 +657,7 @@ struct strangenesstofpid {
     float nSigmaPositiveK0ShortPi = o2::aod::v0data::kNoTOFValue;
     float nSigmaNegativeK0ShortPi = o2::aod::v0data::kNoTOFValue;
 
-    // extra auxiliary variables 
+    // extra auxiliary variables
     float deltaDecayTimeLambda = o2::aod::v0data::kNoTOFValue;
     float deltaDecayTimeAntiLambda = o2::aod::v0data::kNoTOFValue;
     float deltaDecayTimeK0Short = o2::aod::v0data::kNoTOFValue;
@@ -845,7 +845,7 @@ struct strangenesstofpid {
             v0tof.timeNegativePr = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, lengthNegative, o2::constants::physics::MassProton * o2::constants::physics::MassProton);
             v0tof.timeNegativePi = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, lengthNegative, o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged);
 
-            // as primary 
+            // as primary
             v0tof.timeAsPrimaryNegativePr = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length, o2::constants::physics::MassProton * o2::constants::physics::MassProton);
             v0tof.timeAsPrimaryNegativePi = o2::framework::pid::tof::MassToExpTime(nTof.tofExpMom, nTof.length, o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged);
           }
@@ -1280,18 +1280,18 @@ struct strangenesstofpid {
             v0tof.nSigmaNegativeLambdaPr, v0tof.nSigmaPositiveLambdaPi,
             v0tof.nSigmaPositiveK0ShortPi, v0tof.nSigmaNegativeK0ShortPi);
         }
-        if(calculateV0TOFPIDs.value){
+        if (calculateV0TOFPIDs.value) {
           v0tofpid(v0tof.deltaTimePositiveLambdaPi, v0tof.deltaTimePositiveLambdaPr,
-             v0tof.deltaTimeNegativeLambdaPi, v0tof.deltaTimeNegativeLambdaPr,
-             v0tof.deltaTimePositiveK0ShortPi, v0tof.deltaTimeNegativeK0ShortPi,
-             v0tof.deltaDecayTimeLambda, v0tof.deltaDecayTimeAntiLambda, v0tof.deltaDecayTimeK0Short);
+                   v0tof.deltaTimeNegativeLambdaPi, v0tof.deltaTimeNegativeLambdaPr,
+                   v0tof.deltaTimePositiveK0ShortPi, v0tof.deltaTimeNegativeK0ShortPi,
+                   v0tof.deltaDecayTimeLambda, v0tof.deltaDecayTimeAntiLambda, v0tof.deltaDecayTimeK0Short);
         }
-        if(calculateV0TOFBetas.value){
+        if (calculateV0TOFBetas.value) {
           v0tofbeta(v0tof.betaLambda, v0tof.betaAntiLambda, v0tof.betaK0Short);
         }
-        if(calculateV0TOFDebugs.value){
-          v0tofdebugs(v0tof.timeLambda, v0tof.timeK0Short, 
-                      v0tof.timePositivePr, v0tof.timePositivePi, 
+        if (calculateV0TOFDebugs.value) {
+          v0tofdebugs(v0tof.timeLambda, v0tof.timeK0Short,
+                      v0tof.timePositivePr, v0tof.timePositivePi,
                       v0tof.timeNegativePr, v0tof.timeNegativePi);
         }
       }
