@@ -18,6 +18,7 @@
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFhe3HadronTables.h"
 #include "PWGLF/Utils/svPoolCreator.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldMath.h"
 
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
@@ -181,6 +182,8 @@ struct He3HadCandidate {
 
   // collision information
   int32_t collisionID = 0;
+
+  float kstarfem = 1.f;
 };
 
 struct he3HadronFemto {
@@ -287,6 +290,14 @@ struct he3HadronFemto {
       {"h2NsigmaHadronTPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
       {"h2NsigmaHadronTOF", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
       {"h2NsigmaHadronTOF_preselection", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
+      {"hkStar_LS_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hkStar_US_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hkStar_US_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hkStar_LS_M_femto", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hkStar_LS_A_femto", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hkStar_US_M_femto", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hkStar_US_A_femto", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -676,6 +687,7 @@ struct he3HadronFemto {
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
       he3Hadcand.massTOFHad = trackHad.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
     }
+    he3Hadcand.kstarfem = o2::analysis::femtoWorld::FemtoWorldMath::getkstar(trackHad, o2::constants::physics::MassPiPlus, trackHe3, o2::constants::physics::MassHelium3);
 
     return true;
   }
@@ -839,6 +851,85 @@ struct he3HadronFemto {
   }
 
   // ==================================================================================================================
+  double computePrTPCnsig(double InnerParamTPCHad, double SignalTPCHad)
+  {
+    double m_BBparamsProton[6] = {-54.42066571222577, 0.2857381250239097, 1.247140602468868, 0.6297483918147729, 2.985438833884555, 0.09};
+
+    float TPCinnerParam = InnerParamTPCHad;
+    float expTPCSignal = o2::tpc::BetheBlochAleph((TPCinnerParam / 0.9382721), m_BBparamsProton[0], m_BBparamsProton[1], m_BBparamsProton[2], m_BBparamsProton[3], m_BBparamsProton[4]);
+    double resoTPC{expTPCSignal * m_BBparamsProton[5]};
+    return ((SignalTPCHad - expTPCSignal) / resoTPC);
+  }
+
+  double tofNSigmaCalculation(double MassTOFHad, double ptHad)
+  {
+    double fExpTOFMassHad = 0.9487; // Proton mass in TOF
+    const float kp0 = 1.22204e-02;
+    const float kp1 = 7.48467e-01;
+
+    double fSigmaTOFMassHad = (kp0 * TMath::Exp(kp1 * TMath::Abs(ptHad))) * fExpTOFMassHad;
+    double fNSigmaTOFHad = (MassTOFHad - fExpTOFMassHad) / fSigmaTOFMassHad;
+    return fNSigmaTOFHad;
+  }
+
+  static float computeKstar(const He3HadCandidate& he3Hadcand)
+  {
+    const float massHe = o2::constants::physics::MassHelium3;
+    const float massHad = o2::constants::physics::MassPiPlus;
+
+    const ROOT::Math::PtEtaPhiMVector He(std::abs(he3Hadcand.recoPtHe3()), he3Hadcand.recoEtaHe3(), he3Hadcand.recoPhiHe3(), massHe);
+    const ROOT::Math::PtEtaPhiMVector Had(std::abs(he3Hadcand.recoPtHad()), he3Hadcand.recoEtaHad(), he3Hadcand.recoPhiHad(), massHad);
+    const ROOT::Math::PtEtaPhiMVector trackSum = He + Had;
+
+    const float beta = trackSum.Beta();
+    const float betax = beta * std::cos(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betay = beta * std::sin(trackSum.Phi()) * std::sin(trackSum.Theta());
+    const float betaz = beta * std::cos(trackSum.Theta());
+
+    ROOT::Math::PxPyPzMVector HeCMS(He);
+    ROOT::Math::PxPyPzMVector HadCMS(Had);
+
+    const ROOT::Math::Boost boostPRF = ROOT::Math::Boost(-betax, -betay, -betaz);
+    HeCMS = boostPRF(HeCMS);
+    HadCMS = boostPRF(HadCMS);
+
+    const ROOT::Math::PxPyPzMVector RelKstar = HeCMS - HadCMS;
+    return 0.5 * RelKstar.P();
+  }
+
+  void fillKstar(const He3HadCandidate& he3Hadcand)
+  {
+    double PrTPCnsigma = computePrTPCnsig(he3Hadcand.momHadTPC, he3Hadcand.tpcSignalHad);
+    double PrTOFnsigma = tofNSigmaCalculation(he3Hadcand.massTOFHad, he3Hadcand.recoPtHad());
+    if (abs(PrTPCnsigma) < 3)
+      return;
+    if (abs(PrTOFnsigma) < 3)
+      return;
+    if (abs(he3Hadcand.dcaxyHe3) > 0.2 || abs(he3Hadcand.dcaxyHad) > 0.3 || abs(he3Hadcand.dcazHad) > 0.3)
+      return;
+    if (std::abs(he3Hadcand.recoPtHad()) < 0.14 || std::abs(he3Hadcand.recoPtHad()) > 4)
+      return;
+    fillHistograms(he3Hadcand);
+
+    float kstar = computeKstar(he3Hadcand);
+    if (he3Hadcand.isBkgUS == 0) {
+      if (he3Hadcand.recoPtHe3() > 0) {
+        mQaRegistry.fill(HIST("hkStar_LS_M"), kstar);
+        mQaRegistry.fill(HIST("hkStar_LS_M_femto"), he3Hadcand.kstarfem);
+      } else {
+        mQaRegistry.fill(HIST("hkStar_LS_A"), kstar);
+        mQaRegistry.fill(HIST("hkStar_LS_A_femto"), he3Hadcand.kstarfem);
+      }
+    } else {
+      if (he3Hadcand.recoPtHe3() > 0) {
+        mQaRegistry.fill(HIST("hkStar_US_M"), kstar);
+        mQaRegistry.fill(HIST("hkStar_US_M_femto"), he3Hadcand.kstarfem);
+      } else {
+        mQaRegistry.fill(HIST("hkStar_US_A"), kstar);
+        mQaRegistry.fill(HIST("hkStar_US_A_femto"), he3Hadcand.kstarfem);
+      }
+    }
+  }
 
   template <typename Tcollisions, typename Ttracks>
   void fillPairs(const Tcollisions& collisions, const Ttracks& tracks, const bool isMixedEvent)
@@ -853,7 +944,7 @@ struct he3HadronFemto {
       if (!fillCandidateInfo(heTrack, hadTrack, collBracket, collisions, he3Hadcand, tracks, isMixedEvent)) {
         continue;
       }
-      fillHistograms(he3Hadcand);
+      fillKstar(he3Hadcand);
       auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
       fillTable(he3Hadcand, collision, /*isMC*/ false);
     }
