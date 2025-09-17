@@ -123,7 +123,7 @@ o2physics_add_dpl_workflow(anti-nuclei-hist
     SOURCES Antinucleitask.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
-    
+
 o2physics_add_dpl_workflow(nuclei-toward-transv
     SOURCES nuclei_in_toward_transv_regions.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
