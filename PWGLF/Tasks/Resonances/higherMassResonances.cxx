@@ -1488,6 +1488,5 @@ struct HigherMassResonances {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{
-    adaptAnalysisTask<HigherMassResonances>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HigherMassResonances>(cfgc)};
 }
