@@ -277,6 +277,9 @@ struct coreConfigurables : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> useV0BufferForCascades{"useV0BufferForCascades", false, "store array of V0s for cascades or not. False (default): save RAM, use more CPU; true: save CPU, use more RAM"};
 
   o2::framework::Configurable<int> mc_findableMode{"mc_findableMode", 0, "0: disabled; 1: add findable-but-not-found to existing V0s from AO2D; 2: reset V0s and generate only findable-but-not-found"};
+
+  // test the possibility of refitting with material corrections (DCA Fitter option)
+  o2::framework::Configurable<bool> refitWithMaterialCorrection{"refitWithMaterialCorrection", false, "do refit after material corrections were applied"};
 };
 
 // strangenessBuilder: V0 building options
@@ -697,6 +700,9 @@ class BuilderModule
     straHelper.cascadeselections.dcacascdau = cascadeBuilderOpts.dcacascdau;
     straHelper.cascadeselections.lambdaMassWindow = cascadeBuilderOpts.lambdaMassWindow;
     straHelper.cascadeselections.maxDaughterEta = cascadeBuilderOpts.maxDaughterEta;
+
+    // Set option to refit with material corrections
+    straHelper.fitter.setRefitWithMatCorr(baseOpts.refitWithMaterialCorrection.value);
   }
 
   // for sorting
