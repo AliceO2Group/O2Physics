@@ -2530,9 +2530,9 @@ struct LFNucleiBATask {
 
       if constexpr (IsMC && !IsFilteredData) {
         int pdgCheck = track.mcParticle().pdgCode();
-        if (abs(pdgCheck) == PDGDeuteron)
+        if (std::abs(pdgCheck) == PDGDeuteron)
           histos.fill(HIST("hItsDeHeChecker"), 0);
-        if (abs(pdgCheck) == PDGHelium)
+        if (std::abs(pdgCheck) == PDGHelium)
           histos.fill(HIST("hItsDeHeChecker"), 1);
       }
 
@@ -2547,9 +2547,9 @@ struct LFNucleiBATask {
 
       if constexpr (IsMC && !IsFilteredData) {
         int pdgCheck = track.mcParticle().pdgCode();
-        if (abs(pdgCheck) == PDGDeuteron)
+        if (std::abs(pdgCheck) == PDGDeuteron)
           histos.fill(HIST("hItsDeHeChecker"), 2);
-        if (abs(pdgCheck) == PDGHelium)
+        if (std::abs(pdgCheck) == PDGHelium)
           histos.fill(HIST("hItsDeHeChecker"), 3);
       }
 
@@ -3280,7 +3280,7 @@ struct LFNucleiBATask {
                         if (pdgMom != -1) {
                           motherSpeciesBin = 0;
                           for (int j = 0; j < kNumMotherList; j++) {
-                            if (abs(kPdgMotherList[j]) == abs(pdgMom)) {
+                            if (std::abs(kPdgMotherList[j]) == std::abs(pdgMom)) {
                               motherSpeciesBin = j + 1;
                               break;
                             }
@@ -3377,7 +3377,7 @@ struct LFNucleiBATask {
                           if (pdgMom != -1) {
                             motherSpeciesBin = 0;
                             for (int j = 0; j < kNumMotherList; j++) {
-                              if (abs(kPdgMotherList[j]) == abs(pdgMom)) {
+                              if (std::abs(kPdgMotherList[j]) == std::abs(pdgMom)) {
                                 motherSpeciesBin = j + 1;
                                 break;
                               }
@@ -3549,7 +3549,7 @@ struct LFNucleiBATask {
                         if (pdgMom != -1) {
                           motherSpeciesBin = 0;
                           for (int j = 0; j < kNumMotherList; j++) {
-                            if (abs(kPdgMotherList[j]) == abs(pdgMom)) {
+                            if (std::abs(kPdgMotherList[j]) == std::abs(pdgMom)) {
                               motherSpeciesBin = j + 1;
                               break;
                             }
