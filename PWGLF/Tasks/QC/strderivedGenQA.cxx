@@ -143,7 +143,7 @@ struct strderivedGenQA {
     ConfigurableAxis axisAlpha{"axisAlpha", {220, -1.1f, 1.1f}, "Alpha"};
     ConfigurableAxis axisQtarm{"axisQtarm", {220, 0.0f, 0.5f}, "Qtarm"};
     ConfigurableAxis axisCosPA{"axisCosPA", {240, 0.0f, 1.2f}, "CosPA"};
-    ConfigurableAxis axisDeltaPA{"axisDeltaPA", {200, -1.0f, 1.0f}, "DeltaPA"};
+    ConfigurableAxis axisPA{"axisPA", {200, 0.0f, 0.4f}, "PA"};
     ConfigurableAxis axisDCAdau{"axisDCAdau", {50, 0.0f, 5.0f}, "DCA V0 Daughters"};
     ConfigurableAxis axisEta{"axisEta", {100, -3.0f, 3.0f}, "Eta"};
     ConfigurableAxis axisPhi{"axisPhi", {100, 0.0f, TMath::TwoPi()}, "Phi"};
@@ -226,10 +226,11 @@ struct strderivedGenQA {
       histos.add("V0/hMassLambda", "hMassLambda", kTH1F, {AxisConfig.axisMassLambda});
       histos.add("V0/hMassALambda", "hMassALambda", kTH1F, {AxisConfig.axisMassLambda});
       histos.add("V0/hMassK0Short", "hMassK0Short", kTH1F, {AxisConfig.axisMassK0Short});
-      histos.add("V0/h2dGammaMass", "h2dGammaMass", kTH2F, {AxisConfig.axisPt, AxisConfig.axisMassGamma});
-      histos.add("V0/h2dLambdaMass", "h2dLambdaMass", kTH2F, {AxisConfig.axisPt, AxisConfig.axisMassLambda});
-      histos.add("V0/h2dALambdaMass", "h2dALambdaMass", kTH2F, {AxisConfig.axisPt, AxisConfig.axisMassLambda});
-      histos.add("V0/h2dK0SMass", "h2dK0SMass", kTH2F, {AxisConfig.axisPt, AxisConfig.axisMassK0Short});
+
+      histos.add("V0/h3dPAVsPtVsGammaMass", "h3dPAVsPtVsGammaMass", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisMassGamma});
+      histos.add("V0/h3dPAVsPtVsLambdaMass", "h3dPAVsPtVsLambdaMass", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisMassLambda});
+      histos.add("V0/h3dPAVsPtVsALambdaMass", "h3dPAVsPtVsALambdaMass", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisMassLambda});
+      histos.add("V0/h3dPAVsPtVsK0SMassMass", "h3dPAVsPtVsK0SMassMass", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisMassK0Short});
 
       histos.add("V0/hV0Type", "hV0Type", kTH1F, {AxisConfig.axisV0Type});
       histos.add("V0/h2dV0Indices", "h2dV0Indices", kTH2F, {AxisConfig.axisStraCollisionId, AxisConfig.axisGlobalIndex});
@@ -304,6 +305,7 @@ struct strderivedGenQA {
       histos.add("MCV0/h2dPDGV0VsNegative", "h2dPDGV0VsNegative", kTHnSparseD, {AxisConfig.axisPDGCode, AxisConfig.axisPDGCode});
       histos.add("MCV0/h2dPDGV0VsIsPhysicalPrimary", "h2dPDGV0VsIsPhysicalPrimary", kTH2F, {AxisConfig.axisPDGCode, AxisConfig.axisBool});
       histos.add("MCV0/h2dArmenterosP", "h2dArmenterosP", kTH2F, {AxisConfig.axisAlpha, AxisConfig.axisQtarm});
+
       histos.add("MCV0/Gamma/h2dpTResolution", "h2dpTResolution", kTH2F, {AxisConfig.axisPt, AxisConfig.axisPtResolution});
       histos.add("MCV0/Gamma/h2dMass", "h2dMass", kTH2F, {AxisConfig.axisPt, AxisConfig.axisMassGamma});
       histos.add("MCV0/Gamma/h2dTPCNSigmaEl", "h2dTPCNSigmaEl", kTH2F, {AxisConfig.axisPt2, AxisConfig.axisTPCNSigma});
@@ -313,9 +315,9 @@ struct strderivedGenQA {
       histos.add("MCV0/Gamma/hdcaDau", "hdcaDau", kTH1F, {AxisConfig.axisDCAdau});
       histos.add("MCV0/Gamma/hdcaNegtopv", "hdcaNegtopv", kTH1F, {AxisConfig.axisDCAToPV});
       histos.add("MCV0/Gamma/hdcaPostopv", "hdcaPostopv", kTH1F, {AxisConfig.axisDCAToPV});
-      histos.add("MCV0/Gamma/hZ", "hZ", kTH1F, {{240, -120.0f, 120.0f}});
-      histos.add("MCV0/Gamma/h2dPAResoVsPT", "h2dPAResoVsPT", kTH2F, {AxisConfig.axisPt, AxisConfig.axisDeltaPA});
-
+      histos.add("MCV0/Gamma/hZ", "hZ", kTH1F, {{240, -120.0f, 120.0f}});    
+      histos.add("MCV0/Gamma/h3dPAVsPtVsMass", "h3dPAVsPtVsMass", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisMassGamma});
+      
       histos.add("MCV0/Lambda/h2dpTResolution", "h2dpTResolution", kTH2F, {AxisConfig.axisPt, AxisConfig.axisPtResolution});
       histos.add("MCV0/Lambda/h2dMass", "h2dMass", kTH2F, {AxisConfig.axisPt, AxisConfig.axisMassLambda});
       histos.add("MCV0/Lambda/h2dTPCNSigmaPr", "h2dTPCNSigmaPr", kTH2F, {AxisConfig.axisPt, AxisConfig.axisTPCNSigma});
@@ -325,8 +327,8 @@ struct strderivedGenQA {
       histos.add("MCV0/Lambda/hCosPA", "hCosPA", kTH1F, {AxisConfig.axisCosPA});
       histos.add("MCV0/Lambda/hdcaDau", "hdcaDau", kTH1F, {AxisConfig.axisDCAdau});
       histos.add("MCV0/Lambda/hdcaNegtopv", "hdcaNegtopv", kTH1F, {AxisConfig.axisDCAToPV});
-      histos.add("MCV0/Lambda/hdcaPostopv", "hdcaPostopv", kTH1F, {AxisConfig.axisDCAToPV});
-      histos.add("MCV0/Lambda/h2dPAResoVsPT", "h2dPAResoVsPT", kTH2F, {AxisConfig.axisPt, AxisConfig.axisDeltaPA});
+      histos.add("MCV0/Lambda/hdcaPostopv", "hdcaPostopv", kTH1F, {AxisConfig.axisDCAToPV});      
+      histos.add("MCV0/Lambda/h3dPAVsPtVsMass", "h3dPAVsPtVsMass", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisMassLambda});      
 
       histos.add("MCV0/AntiLambda/h2dpTResolution", "h2dpTResolution", kTH2F, {AxisConfig.axisPt, AxisConfig.axisPtResolution});
       histos.add("MCV0/AntiLambda/h2dMass", "h2dMass", kTH2F, {AxisConfig.axisPt, AxisConfig.axisMassLambda});
@@ -337,8 +339,8 @@ struct strderivedGenQA {
       histos.add("MCV0/AntiLambda/hCosPA", "hCosPA", kTH1F, {AxisConfig.axisCosPA});
       histos.add("MCV0/AntiLambda/hdcaDau", "hdcaDau", kTH1F, {AxisConfig.axisDCAdau});
       histos.add("MCV0/AntiLambda/hdcaNegtopv", "hdcaNegtopv", kTH1F, {AxisConfig.axisDCAToPV});
-      histos.add("MCV0/AntiLambda/hdcaPostopv", "hdcaPostopv", kTH1F, {AxisConfig.axisDCAToPV});
-      histos.add("MCV0/AntiLambda/h2dPAResoVsPT", "h2dPAResoVsPT", kTH2F, {AxisConfig.axisPt, AxisConfig.axisDeltaPA});
+      histos.add("MCV0/AntiLambda/hdcaPostopv", "hdcaPostopv", kTH1F, {AxisConfig.axisDCAToPV});      
+      histos.add("MCV0/AntiLambda/h3dPAVsPtVsMass", "h3dPAVsPtVsMass", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisMassLambda});      
 
       histos.add("MCV0/K0Short/h2dpTResolution", "h2dpTResolution", kTH2F, {AxisConfig.axisPt, AxisConfig.axisPtResolution});
       histos.add("MCV0/K0Short/h2dMass", "h2dMass", kTH2F, {AxisConfig.axisPt, AxisConfig.axisMassK0Short});
@@ -348,8 +350,8 @@ struct strderivedGenQA {
       histos.add("MCV0/K0Short/hCosPA", "hCosPA", kTH1F, {AxisConfig.axisCosPA});
       histos.add("MCV0/K0Short/hdcaDau", "hdcaDau", kTH1F, {AxisConfig.axisDCAdau});
       histos.add("MCV0/K0Short/hdcaNegtopv", "hdcaNegtopv", kTH1F, {AxisConfig.axisDCAToPV});
-      histos.add("MCV0/K0Short/hdcaPostopv", "hdcaPostopv", kTH1F, {AxisConfig.axisDCAToPV});
-      histos.add("MCV0/K0Short/h2dPAResoVsPT", "h2dPAResoVsPT", kTH2F, {AxisConfig.axisPt, AxisConfig.axisDeltaPA});
+      histos.add("MCV0/K0Short/hdcaPostopv", "hdcaPostopv", kTH1F, {AxisConfig.axisDCAToPV});    
+      histos.add("MCV0/K0Short/h3dPAVsPtVsMass", "h3dPAVsPtVsMass", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisMassK0Short});
 
     }
     if (doprocessDerivedCascades){
@@ -392,11 +394,11 @@ struct strderivedGenQA {
       histos.add("Casc/hMassXiPlus", "hMassXiPlus", kTH1F, {AxisConfig.axisXiMass});
       histos.add("Casc/hMassOmegaPlus", "hMassOmegaPlus", kTH1F, {AxisConfig.axisOmegaMass});
 
-      histos.add("Casc/h2dMassXiMinus", "h2dMassXiMinus", kTH2F, {AxisConfig.axisPt, AxisConfig.axisXiMass});
-      histos.add("Casc/h2dMassOmegaMinus", "h2dMassOmegaMinus", kTH2F, {AxisConfig.axisPt, AxisConfig.axisOmegaMass});
-      histos.add("Casc/h2dMassXiPlus", "h2dMassXiPlus", kTH2F, {AxisConfig.axisPt, AxisConfig.axisXiMass});
-      histos.add("Casc/h2dMassOmegaPlus", "h2dMassOmegaPlus", kTH2F, {AxisConfig.axisPt, AxisConfig.axisOmegaMass});
-
+      histos.add("Casc/h3dPAVsPtVsMassXiMinus", "h3dPAVsPtVsMassXiMinus", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisXiMass});
+      histos.add("Casc/h3dPAVsPtVsMassOmegaMinus", "h3dPAVsPtVsMassOmegaMinus", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisOmegaMass});
+      histos.add("Casc/h3dPAVsPtVsMassXiPlus", "h3dPAVsPtVsMassXiPlus", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisXiMass});
+      histos.add("Casc/h3dPAVsPtVsMassOmegaPlus", "h3dPAVsPtVsMassOmegaPlus", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisOmegaMass});
+      
       histos.add("Casc/Track/h2dBachITSNCls", "h2dBachITSNCls", kTH2F, {AxisConfig.axisPt2, AxisConfig.axisNCls});
       histos.add("Casc/Track/h2dBachITSChi2PerNcl", "h2dBachITSChi2PerNcl", kTH2F, {AxisConfig.axisPt2, AxisConfig.axisChi2PerNcl});
       histos.add("Casc/Track/h2dBachTPCCrossedRows", "h2dBachTPCCrossedRows", kTH2F, {AxisConfig.axisPt2, AxisConfig.axisTPCrows});
@@ -411,8 +413,8 @@ struct strderivedGenQA {
       histos.add("MCCasc/h2dPDGV0VsBach", "h2dPDGV0VsBach", kTHnSparseD, {AxisConfig.axisPDGCode, AxisConfig.axisPDGCode});
       histos.add("MCCasc/h2dPDGV0VsIsPhysicalPrimary", "h2dPDGV0VsIsPhysicalPrimary", kTH2F, {AxisConfig.axisPDGCode, AxisConfig.axisBool});
     
-      histos.add("MCCasc/XiMinus/h2dpTResolution", "h2dpTResolution", kTH2F, {AxisConfig.axisPt, AxisConfig.axisPtResolution});
-      histos.add("MCCasc/XiMinus/h2dMass", "h2dMass", kTH2F, {AxisConfig.axisPt, AxisConfig.axisXiMass});
+      histos.add("MCCasc/XiMinus/h2dpTResolution", "h2dpTResolution", kTH2F, {AxisConfig.axisPt, AxisConfig.axisPtResolution});      
+      histos.add("MCCasc/XiMinus/h3dPAVsPtVsMass", "h3dPAVsPtVsMass", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisXiMass});      
       histos.add("MCCasc/XiMinus/h2dV0TPCSignal", "h2dV0TPCSignal", kTH2F, {AxisConfig.axisPt2, AxisConfig.axisTPCSignal});
       histos.add("MCCasc/XiMinus/h2dBachTPCSignal", "h2dBachTPCSignal", kTH2F, {AxisConfig.axisPt, AxisConfig.axisTPCSignal});
       histos.add("MCCasc/XiMinus/hV0Radius", "hV0Radius", kTH1F, {AxisConfig.axisV0Radius});
@@ -427,11 +429,10 @@ struct strderivedGenQA {
       histos.add("MCCasc/XiMinus/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {AxisConfig.axisDCAV0ToPV});
       histos.add("MCCasc/XiMinus/hDCAV0Dau", "hDCAV0Dau", kTH1F, {AxisConfig.axisDCAV0Dau});
       histos.add("MCCasc/XiMinus/hDCACascDau", "hDCACascDau", kTH1F, {AxisConfig.axisDCACascDau});
-      histos.add("MCCasc/XiMinus/hLambdaMass", "hLambdaMass", kTH1F, {AxisConfig.axisMassLambda});
-      histos.add("MCCasc/XiMinus/h2dPAResoVsPT", "h2dPAResoVsPT", kTH2F, {AxisConfig.axisPt, AxisConfig.axisDeltaPA});
+      histos.add("MCCasc/XiMinus/hLambdaMass", "hLambdaMass", kTH1F, {AxisConfig.axisMassLambda});      
 
       histos.add("MCCasc/XiPlus/h2dpTResolution", "h2dpTResolution", kTH2F, {AxisConfig.axisPt, AxisConfig.axisPtResolution});
-      histos.add("MCCasc/XiPlus/h2dMass", "h2dMass", kTH2F, {AxisConfig.axisPt, AxisConfig.axisXiMass});
+      histos.add("MCCasc/XiPlus/h3dPAVsPtVsMass", "h3dPAVsPtVsMass", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisXiMass});
       histos.add("MCCasc/XiPlus/h2dV0TPCSignal", "h2dV0TPCSignal", kTH2F, {AxisConfig.axisPt2, AxisConfig.axisTPCSignal});
       histos.add("MCCasc/XiPlus/h2dBachTPCSignal", "h2dBachTPCSignal", kTH2F, {AxisConfig.axisPt, AxisConfig.axisTPCSignal});
       histos.add("MCCasc/XiPlus/hV0Radius", "hV0Radius", kTH1F, {AxisConfig.axisV0Radius});
@@ -446,11 +447,10 @@ struct strderivedGenQA {
       histos.add("MCCasc/XiPlus/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {AxisConfig.axisDCAV0ToPV});
       histos.add("MCCasc/XiPlus/hDCAV0Dau", "hDCAV0Dau", kTH1F, {AxisConfig.axisDCAV0Dau});
       histos.add("MCCasc/XiPlus/hDCACascDau", "hDCACascDau", kTH1F, {AxisConfig.axisDCACascDau});
-      histos.add("MCCasc/XiPlus/hLambdaMass", "hLambdaMass", kTH1F, {AxisConfig.axisMassLambda});
-      histos.add("MCCasc/XiPlus/h2dPAResoVsPT", "h2dPAResoVsPT", kTH2F, {AxisConfig.axisPt, AxisConfig.axisDeltaPA});
+      histos.add("MCCasc/XiPlus/hLambdaMass", "hLambdaMass", kTH1F, {AxisConfig.axisMassLambda});      
 
       histos.add("MCCasc/OmegaMinus/h2dpTResolution", "h2dpTResolution", kTH2F, {AxisConfig.axisPt, AxisConfig.axisPtResolution});
-      histos.add("MCCasc/OmegaMinus/h2dMass", "h2dMass", kTH2F, {AxisConfig.axisPt, AxisConfig.axisOmegaMass});
+      histos.add("MCCasc/OmegaMinus/h3dPAVsPtVsMass", "h3dPAVsPtVsMass", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisXiMass});
       histos.add("MCCasc/OmegaMinus/h2dV0TPCSignal", "h2dV0TPCSignal", kTH2F, {AxisConfig.axisPt2, AxisConfig.axisTPCSignal});
       histos.add("MCCasc/OmegaMinus/h2dBachTPCSignal", "h2dBachTPCSignal", kTH2F, {AxisConfig.axisPt, AxisConfig.axisTPCSignal});
       histos.add("MCCasc/OmegaMinus/hV0Radius", "hV0Radius", kTH1F, {AxisConfig.axisV0Radius});
@@ -465,11 +465,10 @@ struct strderivedGenQA {
       histos.add("MCCasc/OmegaMinus/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {AxisConfig.axisDCAV0ToPV});
       histos.add("MCCasc/OmegaMinus/hDCAV0Dau", "hDCAV0Dau", kTH1F, {AxisConfig.axisDCAV0Dau});
       histos.add("MCCasc/OmegaMinus/hDCACascDau", "hDCACascDau", kTH1F, {AxisConfig.axisDCACascDau});
-      histos.add("MCCasc/OmegaMinus/hLambdaMass", "hLambdaMass", kTH1F, {AxisConfig.axisMassLambda});
-      histos.add("MCCasc/OmegaMinus/h2dPAResoVsPT", "h2dPAResoVsPT", kTH2F, {AxisConfig.axisPt, AxisConfig.axisDeltaPA});
+      histos.add("MCCasc/OmegaMinus/hLambdaMass", "hLambdaMass", kTH1F, {AxisConfig.axisMassLambda});      
 
       histos.add("MCCasc/OmegaPlus/h2dpTResolution", "h2dpTResolution", kTH2F, {AxisConfig.axisPt, AxisConfig.axisPtResolution});
-      histos.add("MCCasc/OmegaPlus/h2dMass", "h2dMass", kTH2F, {AxisConfig.axisPt, AxisConfig.axisOmegaMass});
+      histos.add("MCCasc/OmegaPlus/h3dPAVsPtVsMass", "h3dPAVsPtVsMass", kTH3D, {AxisConfig.axisPA, AxisConfig.axisPt, AxisConfig.axisXiMass});
       histos.add("MCCasc/OmegaPlus/h2dV0TPCSignal", "h2dV0TPCSignal", kTH2F, {AxisConfig.axisPt2, AxisConfig.axisTPCSignal});
       histos.add("MCCasc/OmegaPlus/h2dBachTPCSignal", "h2dBachTPCSignal", kTH2F, {AxisConfig.axisPt, AxisConfig.axisTPCSignal});
       histos.add("MCCasc/OmegaPlus/hV0Radius", "hV0Radius", kTH1F, {AxisConfig.axisV0Radius});
@@ -484,8 +483,7 @@ struct strderivedGenQA {
       histos.add("MCCasc/OmegaPlus/hDCAV0ToPV", "hDCAV0ToPV", kTH1F, {AxisConfig.axisDCAV0ToPV});
       histos.add("MCCasc/OmegaPlus/hDCAV0Dau", "hDCAV0Dau", kTH1F, {AxisConfig.axisDCAV0Dau});
       histos.add("MCCasc/OmegaPlus/hDCACascDau", "hDCACascDau", kTH1F, {AxisConfig.axisDCACascDau});
-      histos.add("MCCasc/OmegaPlus/hLambdaMass", "hLambdaMass", kTH1F, {AxisConfig.axisMassLambda});
-      histos.add("MCCasc/OmegaPlus/h2dPAResoVsPT", "h2dPAResoVsPT", kTH2F, {AxisConfig.axisPt, AxisConfig.axisDeltaPA});
+      histos.add("MCCasc/OmegaPlus/hLambdaMass", "hLambdaMass", kTH1F, {AxisConfig.axisMassLambda});      
     }
     
     // MC Generated level
@@ -727,10 +725,12 @@ struct strderivedGenQA {
       histos.fill(HIST("V0/hMassLambda"), v0.mLambda());
       histos.fill(HIST("V0/hMassALambda"), v0.mAntiLambda());
       histos.fill(HIST("V0/hMassK0Short"), v0.mK0Short());
-      histos.fill(HIST("V0/h2dGammaMass"), pT, v0.mGamma());
-      histos.fill(HIST("V0/h2dLambdaMass"), pT, v0.mLambda());
-      histos.fill(HIST("V0/h2dALambdaMass"), pT, v0.mAntiLambda());
-      histos.fill(HIST("V0/h2dK0SMass"), pT, v0.mK0Short());
+
+
+      histos.fill(HIST("V0/h3dPAVsPtVsGammaMass"), TMath::ACos(v0.v0cosPA()), pT, v0.mGamma());
+      histos.fill(HIST("V0/h3dPAVsPtVsLambdaMass"), TMath::ACos(v0.v0cosPA()), pT, v0.mLambda());
+      histos.fill(HIST("V0/h3dPAVsPtVsALambdaMass"), TMath::ACos(v0.v0cosPA()), pT, v0.mAntiLambda());
+      histos.fill(HIST("V0/h3dPAVsPtVsK0SMassMass"), TMath::ACos(v0.v0cosPA()), pT, v0.mK0Short());
 
       histos.fill(HIST("V0/hV0Type"), v0.v0Type());
       histos.fill(HIST("V0/h2dV0Indices"), v0.straCollisionId(), coll.globalIndex()); // cross-check index correctness
@@ -792,7 +792,7 @@ struct strderivedGenQA {
     }
   }
 
-  void processMCDerivedV0s(V0DerivedMCDatas const& V0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&, soa::Join<aod::StraMCCollisions, aod::StraMCCollMults> const& mcCollisions)
+  void processMCDerivedV0s(V0DerivedMCDatas const& V0s, dauTracks const&, aod::MotherMCParts const&, soa::Join<aod::V0MCCores, aod::V0MCCollRefs> const&)
   {
     for (auto const& v0 : V0s) {
       histos.fill(HIST("MCV0/hv0MCCore"), v0.has_v0MCCore());
@@ -800,10 +800,6 @@ struct strderivedGenQA {
         continue;
 
       auto v0MC = v0.v0MCCore_as<soa::Join<aod::V0MCCores, aod::V0MCCollRefs>>();
-      if (!v0MC.has_straMCCollision())
-        continue;
-
-      auto MCCollision = mcCollisions.iteratorAt(v0MC.straMCCollisionId());
 
       // General
       histos.fill(HIST("MCV0/h2dPDGV0VsMother"), v0MC.pdgCode(), v0MC.pdgCodeMother());
@@ -815,19 +811,12 @@ struct strderivedGenQA {
       auto posTrack = v0.template posTrackExtra_as<dauTracks>();
       auto negTrack = v0.template negTrackExtra_as<dauTracks>();
 
-      // Calculate Pointing angle resolution (only if reco V0 is correctly associated)
-      float DeltaPA = -999.f;
-      if (v0MC.straMCCollisionId() == MCCollision.globalIndex()){        
-        TVector3 pMCVecPVToV0(v0MC.xMC()-MCCollision.posX(), v0MC.yMC()-MCCollision.posY(), v0MC.zMC()-MCCollision.posZ());
-        TVector3 pMCVecV0(v0MC.pxMC(), v0MC.pyMC(), v0MC.pzMC());
-        DeltaPA = TMath::ACos(v0.v0cosPA()) - pMCVecPVToV0.Angle(pMCVecV0);
-      } 
-
       // Specific analysis by species:
       if (v0MC.pdgCode() == 22) { // IsGamma
         histos.fill(HIST("MCV0/h2dArmenterosP"), v0.alpha(), v0.qtarm());
         histos.fill(HIST("MCV0/Gamma/h2dpTResolution"), v0.pt(), v0.pt() - v0MC.ptMC());
         histos.fill(HIST("MCV0/Gamma/h2dMass"), v0.pt(), v0.mGamma());
+        histos.fill(HIST("MCV0/Gamma/h3dPAVsPtVsMass"), TMath::ACos(v0.v0cosPA()), v0.pt(), v0.mGamma());
         histos.fill(HIST("MCV0/Gamma/h2dTPCNSigmaEl"), v0.positivept(), posTrack.tpcNSigmaEl());
         histos.fill(HIST("MCV0/Gamma/h2dTPCNSigmaEl"), -1 * v0.negativept(), negTrack.tpcNSigmaEl());
         histos.fill(HIST("MCV0/Gamma/h2dTPCSignal"), v0.positivept(), posTrack.tpcSignal());
@@ -838,12 +827,12 @@ struct strderivedGenQA {
         histos.fill(HIST("MCV0/Gamma/hdcaNegtopv"), v0.dcanegtopv());
         histos.fill(HIST("MCV0/Gamma/hdcaPostopv"), v0.dcapostopv());
         histos.fill(HIST("MCV0/Gamma/hZ"), v0.z());        
-        histos.fill(HIST("MCV0/Gamma/h2dPAResoVsPT"), v0MC.ptMC(), DeltaPA); 
       }
       if (v0MC.pdgCode() == 3122) { // IsLambda
         histos.fill(HIST("MCV0/h2dArmenterosP"), v0.alpha(), v0.qtarm());
         histos.fill(HIST("MCV0/Lambda/h2dpTResolution"), v0.pt(), v0.pt() - v0MC.ptMC());
         histos.fill(HIST("MCV0/Lambda/h2dMass"), v0.pt(), v0.mLambda());
+        histos.fill(HIST("MCV0/Lambda/h3dPAVsPtVsMass"), TMath::ACos(v0.v0cosPA()), v0.pt(), v0.mLambda());
         histos.fill(HIST("MCV0/Lambda/h2dTPCNSigmaPr"), v0.positivept(), posTrack.tpcNSigmaPr());
         histos.fill(HIST("MCV0/Lambda/h2dTPCNSigmaPi"), v0.negativept(), negTrack.tpcNSigmaPi());
         histos.fill(HIST("MCV0/Lambda/h2dTPCSignal"), v0.positivept(), posTrack.tpcSignal());
@@ -852,13 +841,13 @@ struct strderivedGenQA {
         histos.fill(HIST("MCV0/Lambda/hCosPA"), v0.v0cosPA());
         histos.fill(HIST("MCV0/Lambda/hdcaDau"), v0.dcaV0daughters());
         histos.fill(HIST("MCV0/Lambda/hdcaNegtopv"), v0.dcanegtopv());
-        histos.fill(HIST("MCV0/Lambda/hdcaPostopv"), v0.dcapostopv());    
-        histos.fill(HIST("MCV0/Lambda/h2dPAResoVsPT"), v0MC.ptMC(), DeltaPA); 
+        histos.fill(HIST("MCV0/Lambda/hdcaPostopv"), v0.dcapostopv());              
       }
       if (v0MC.pdgCode() == -3122) { // IsAntiLambda
         histos.fill(HIST("MCV0/h2dArmenterosP"), v0.alpha(), v0.qtarm());
         histos.fill(HIST("MCV0/AntiLambda/h2dpTResolution"), v0.pt(), v0.pt() - v0MC.ptMC());
         histos.fill(HIST("MCV0/AntiLambda/h2dMass"), v0.pt(), v0.mAntiLambda());
+        histos.fill(HIST("MCV0/AntiLambda/h3dPAVsPtVsMass"), TMath::ACos(v0.v0cosPA()), v0.pt(), v0.mAntiLambda());
         histos.fill(HIST("MCV0/AntiLambda/h2dTPCNSigmaPr"), v0.negativept(), negTrack.tpcNSigmaPr());
         histos.fill(HIST("MCV0/AntiLambda/h2dTPCNSigmaPi"), v0.positivept(), posTrack.tpcNSigmaPi());
         histos.fill(HIST("MCV0/AntiLambda/h2dTPCSignal"), v0.positivept(), posTrack.tpcSignal());
@@ -867,13 +856,13 @@ struct strderivedGenQA {
         histos.fill(HIST("MCV0/AntiLambda/hCosPA"), v0.v0cosPA());
         histos.fill(HIST("MCV0/AntiLambda/hdcaDau"), v0.dcaV0daughters());
         histos.fill(HIST("MCV0/AntiLambda/hdcaNegtopv"), v0.dcanegtopv());
-        histos.fill(HIST("MCV0/AntiLambda/hdcaPostopv"), v0.dcapostopv());        
-        histos.fill(HIST("MCV0/AntiLambda/h2dPAResoVsPT"), v0MC.ptMC(), DeltaPA); 
+        histos.fill(HIST("MCV0/AntiLambda/hdcaPostopv"), v0.dcapostopv());                
       }
       if (v0MC.pdgCode() == 310) { // IsK0Short
         histos.fill(HIST("MCV0/h2dArmenterosP"), v0.alpha(), v0.qtarm());
         histos.fill(HIST("MCV0/K0Short/h2dpTResolution"), v0.pt(), v0.pt() - v0MC.ptMC());
         histos.fill(HIST("MCV0/K0Short/h2dMass"), v0.pt(), v0.mK0Short());
+        histos.fill(HIST("MCV0/K0Short/h3dPAVsPtVsMass"), TMath::ACos(v0.v0cosPA()), v0.pt(), v0.mK0Short());
         histos.fill(HIST("MCV0/K0Short/h2dTPCNSigmaPi"), v0.positivept(), posTrack.tpcNSigmaPi());
         histos.fill(HIST("MCV0/K0Short/h2dTPCNSigmaPi"), -1 * v0.negativept(), negTrack.tpcNSigmaPi());
         histos.fill(HIST("MCV0/K0Short/h2dTPCSignal"), v0.positivept(), posTrack.tpcSignal());
@@ -882,8 +871,7 @@ struct strderivedGenQA {
         histos.fill(HIST("MCV0/K0Short/hCosPA"), v0.v0cosPA());
         histos.fill(HIST("MCV0/K0Short/hdcaDau"), v0.dcaV0daughters());
         histos.fill(HIST("MCV0/K0Short/hdcaNegtopv"), v0.dcanegtopv());
-        histos.fill(HIST("MCV0/K0Short/hdcaPostopv"), v0.dcapostopv());        
-        histos.fill(HIST("MCV0/K0Short/h2dPAResoVsPT"), v0MC.ptMC(), DeltaPA); 
+        histos.fill(HIST("MCV0/K0Short/hdcaPostopv"), v0.dcapostopv());                
       }
     }
   }
@@ -963,8 +951,8 @@ struct strderivedGenQA {
       if (casc.sign() < 0) {
         histos.fill(HIST("Casc/hMassXiMinus"), casc.mXi());
         histos.fill(HIST("Casc/hMassOmegaMinus"), casc.mOmega());
-        histos.fill(HIST("Casc/h2dMassXiMinus"), pT, casc.mXi());
-        histos.fill(HIST("Casc/h2dMassOmegaMinus"), pT, casc.mOmega());
+        histos.fill(HIST("Casc/h3dPAVsPtVsMassXiMinus"), TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())), pT, casc.mXi());
+        histos.fill(HIST("Casc/h3dPAVsPtVsMassOmegaMinus"), TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())), pT, casc.mOmega());
 
         histos.fill(HIST("Casc/Track/h2dBachITSNCls"), -1 * casc.bachelorpt(), bachTrack.itsNCls());
         histos.fill(HIST("Casc/Track/h2dBachITSChi2PerNcl"), -1 * casc.bachelorpt(), bachTrack.itsChi2PerNcl());
@@ -973,8 +961,8 @@ struct strderivedGenQA {
       } else {
         histos.fill(HIST("Casc/hMassXiPlus"), casc.mXi());
         histos.fill(HIST("Casc/hMassOmegaPlus"), casc.mOmega());
-        histos.fill(HIST("Casc/h2dMassXiPlus"), pT, casc.mXi());
-        histos.fill(HIST("Casc/h2dMassOmegaPlus"), pT, casc.mOmega());
+        histos.fill(HIST("Casc/h3dPAVsPtVsMassXiPlus"), TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())), pT, casc.mXi());
+        histos.fill(HIST("Casc/h3dPAVsPtVsMassOmegaPlus"), TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())), pT, casc.mOmega());
 
         histos.fill(HIST("Casc/Track/h2dBachITSNCls"), casc.bachelorpt(), bachTrack.itsNCls());
         histos.fill(HIST("Casc/Track/h2dBachITSChi2PerNcl"), casc.bachelorpt(), bachTrack.itsChi2PerNcl());
@@ -994,9 +982,7 @@ struct strderivedGenQA {
         continue;
 
       auto cascMC = casc.cascMCCore_as<soa::Join<aod::CascMCCores, aod::CascMCCollRefs>>();
-      if (!cascMC.has_straMCCollision())
-        continue;
-
+      
       // General
       histos.fill(HIST("MCCasc/h2dPDGV0VsMother"), cascMC.pdgCode(), cascMC.pdgCodeMother());
       histos.fill(HIST("MCCasc/h2dPDGV0VsPositive"), cascMC.pdgCode(), cascMC.pdgCodePositive());
@@ -1012,7 +998,7 @@ struct strderivedGenQA {
       // Specific analysis by species:
       if (cascMC.pdgCode() == 3312) { // XiMinus
         histos.fill(HIST("MCCasc/XiMinus/h2dpTResolution"), pT, pT - cascMC.ptMC());
-        histos.fill(HIST("MCCasc/XiMinus/h2dMass"), pT, casc.mXi());
+        histos.fill(HIST("MCCasc/XiMinus/h3dPAVsPtVsMass"), TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())), pT, casc.mXi());
         histos.fill(HIST("MCCasc/XiMinus/h2dV0TPCSignal"), casc.positivept(), posTrack.tpcSignal());
         histos.fill(HIST("MCCasc/XiMinus/h2dV0TPCSignal"), -1 * casc.negativept(), negTrack.tpcSignal());
         histos.fill(HIST("MCCasc/XiMinus/h2dBachTPCSignal"), casc.bachelorpt(), bachTrack.tpcSignal());
@@ -1032,8 +1018,8 @@ struct strderivedGenQA {
 
       }
       if (cascMC.pdgCode() == -3312) { // XiPlus
-        histos.fill(HIST("MCCasc/XiPlus/h2dpTResolution"), pT, pT - cascMC.ptMC());
-        histos.fill(HIST("MCCasc/XiPlus/h2dMass"), pT, casc.mXi());
+        histos.fill(HIST("MCCasc/XiPlus/h2dpTResolution"), pT, pT - cascMC.ptMC());        
+        histos.fill(HIST("MCCasc/XiPlus/h3dPAVsPtVsMass"), TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())), pT, casc.mXi());
         histos.fill(HIST("MCCasc/XiPlus/h2dV0TPCSignal"), casc.positivept(), posTrack.tpcSignal());
         histos.fill(HIST("MCCasc/XiPlus/h2dV0TPCSignal"), -1 * casc.negativept(), negTrack.tpcSignal());
         histos.fill(HIST("MCCasc/XiPlus/h2dBachTPCSignal"), casc.bachelorpt(), bachTrack.tpcSignal());
@@ -1052,8 +1038,8 @@ struct strderivedGenQA {
         histos.fill(HIST("MCCasc/XiPlus/hLambdaMass"), casc.mLambda());    
       }
       if (cascMC.pdgCode() == 3334) { // OmegaMinus
-        histos.fill(HIST("MCCasc/OmegaMinus/h2dpTResolution"), pT, pT - cascMC.ptMC());
-        histos.fill(HIST("MCCasc/OmegaMinus/h2dMass"), pT, casc.mOmega());
+        histos.fill(HIST("MCCasc/OmegaMinus/h2dpTResolution"), pT, pT - cascMC.ptMC());        
+        histos.fill(HIST("MCCasc/OmegaMinus/h3dPAVsPtVsMass"), TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())), pT, casc.mOmega());
         histos.fill(HIST("MCCasc/OmegaMinus/h2dV0TPCSignal"), casc.positivept(), posTrack.tpcSignal());
         histos.fill(HIST("MCCasc/OmegaMinus/h2dV0TPCSignal"), -1 * casc.negativept(), negTrack.tpcSignal());
         histos.fill(HIST("MCCasc/OmegaMinus/h2dBachTPCSignal"), casc.bachelorpt(), bachTrack.tpcSignal());
@@ -1073,7 +1059,7 @@ struct strderivedGenQA {
       }
       if (cascMC.pdgCode() == -3334) { // OmegaPlus
         histos.fill(HIST("MCCasc/OmegaPlus/h2dpTResolution"), pT, pT - cascMC.ptMC());
-        histos.fill(HIST("MCCasc/OmegaPlus/h2dMass"), pT, casc.mOmega());
+        histos.fill(HIST("MCCasc/OmegaPlus/h3dPAVsPtVsMass"), TMath::ACos(casc.v0cosPA(casc.x(), casc.y(), casc.z())), pT, casc.mOmega());
         histos.fill(HIST("MCCasc/OmegaPlus/h2dV0TPCSignal"), casc.positivept(), posTrack.tpcSignal());
         histos.fill(HIST("MCCasc/OmegaPlus/h2dV0TPCSignal"), -1 * casc.negativept(), negTrack.tpcSignal());
         histos.fill(HIST("MCCasc/OmegaPlus/h2dBachTPCSignal"), casc.bachelorpt(), bachTrack.tpcSignal());
