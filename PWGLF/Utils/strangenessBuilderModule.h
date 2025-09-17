@@ -34,12 +34,12 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
 
-#include <vector>
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <memory>
 #include <string>
+#include <vector>
 
 //__________________________________________
 // strangeness builder module

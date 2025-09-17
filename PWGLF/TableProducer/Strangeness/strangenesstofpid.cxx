@@ -52,14 +52,14 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include <string>
-#include <vector>
 #include <array>
 #include <cmath>
 #include <cstdlib>
 #include <iterator>
 #include <map>
+#include <string>
 #include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
