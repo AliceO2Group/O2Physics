@@ -63,10 +63,10 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <deque>
 #include <iterator> // std::prev
 #include <string>
 #include <vector>
-#include <deque>
 
 using namespace o2;
 using namespace o2::framework;
