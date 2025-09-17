@@ -327,7 +327,7 @@ struct SingleTrackQC {
       fRegistry.addClone("Event/before/hCollisionCounter", "Event/norm/hCollisionCounter");
     }
     if (doprocessQC_TriggeredData) {
-      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value);
+      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value.data());
       fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
       fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", kTProfile, {{80000, 520000.5, 600000.5}}, true);
       fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", kTProfile, {{80000, 520000.5, 600000.5}}, true);
@@ -346,7 +346,7 @@ struct SingleTrackQC {
     }
   }
 
-  template <bool isTriggerAnalysis, typename TCollision>
+  template <typename TCollision>
   void initCCDB(TCollision const& collision)
   {
     if (mRunNumber == collision.runNumber()) {
@@ -354,12 +354,6 @@ struct SingleTrackQC {
     }
 
     mRunNumber = collision.runNumber();
-
-    if constexpr (isTriggerAnalysis) {
-      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value);
-      // LOGF(info, "total inspected TVX events = %d in run number %d", collision.nInspectedTVX(), collision.runNumber());
-      // fRegistry.fill(HIST("Event/hNInspectedTVX"), collision.runNumber(), collision.nInspectedTVX());
-    }
   }
 
   void DefineEMEventCut()
@@ -641,7 +635,7 @@ struct SingleTrackQC {
   void runQC(TCollisions const& collisions, TTracks const& tracks, TPreslice const& perCollision, TCut const& cut)
   {
     for (const auto& collision : collisions) {
-      initCCDB<isTriggerAnalysis>(collision);
+      initCCDB(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
@@ -700,7 +694,7 @@ struct SingleTrackQC {
     std::vector<int> passed_trackIds;
     passed_trackIds.reserve(tracks.size());
     for (const auto& collision : collisions) {
-      initCCDB<isTriggerAnalysis>(collision);
+      initCCDB(collision);
       float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         continue;
