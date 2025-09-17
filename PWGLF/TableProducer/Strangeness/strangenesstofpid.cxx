@@ -1345,6 +1345,13 @@ struct strangenesstofpid {
             casctof.nSigmaXiLaPi, casctof.nSigmaXiLaPr, casctof.nSigmaXiPi,
             casctof.nSigmaOmLaPi, casctof.nSigmaOmLaPr, casctof.nSigmaOmKa);
         }
+        if(calculateCascTOFPIDs.value){
+          casctofpids(
+            casctof.posDeltaTimeAsXiPi, casctof.posDeltaTimeAsXiPr, 
+            casctof.negDeltaTimeAsXiPi, casctof.negDeltaTimeAsXiPr, casctof.bachDeltaTimeAsXiPi,
+            casctof.posDeltaTimeAsOmPi, casctof.posDeltaTimeAsOmPr, 
+            casctof.negDeltaTimeAsOmPi, casctof.negDeltaTimeAsOmPr, casctof.bachDeltaTimeAsOmKa);
+        }
       }
     }
   }
@@ -1501,6 +1508,13 @@ struct strangenesstofpid {
           casctofnsigmas(
             casctof.nSigmaXiLaPi, casctof.nSigmaXiLaPr, casctof.nSigmaXiPi,
             casctof.nSigmaOmLaPi, casctof.nSigmaOmLaPr, casctof.nSigmaOmKa);
+        }
+        if(calculateCascTOFPIDs.value){
+          casctofpids(
+            casctof.posDeltaTimeAsXiPi, casctof.posDeltaTimeAsXiPr, 
+            casctof.negDeltaTimeAsXiPi, casctof.negDeltaTimeAsXiPr, casctof.bachDeltaTimeAsXiPi,
+            casctof.posDeltaTimeAsOmPi, casctof.posDeltaTimeAsOmPr, 
+            casctof.negDeltaTimeAsOmPi, casctof.negDeltaTimeAsOmPr, casctof.bachDeltaTimeAsOmKa);
         }
       }
     }
