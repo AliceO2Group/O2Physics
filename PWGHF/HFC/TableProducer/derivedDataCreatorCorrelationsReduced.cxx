@@ -62,13 +62,13 @@ enum CandType {
 
 /// Code to select collisions with at least one Ds meson
 struct HfDerivedDataCreatorCorrelationsReduced {
-  Produces<aod::HfcRedCorrColls> rowCollisions;  // Table with reduced collision info
-  Produces<aod::HfcRedSEPairs> rowSEPairs;       // Table with same-event pairs info
-  Produces<aod::HfcRedTrkAssocs> rowAssocTrks;   // Table with associated track info
-  Produces<aod::HfcRedTrkSels> rowAssocTrkSels;  // Table with associated track selection info
-  Produces<aod::HfcRedTrigs> rowTrigs;           // Table with charm candidate info
-  Produces<aod::HfcRedTrigCharms> rowTrigCharms; // Table with charm trigger candidate info
-  Produces<aod::HfcRedTrigHads> rowTrigHads;     // Table with hadron trigger candidate info
+  Produces<aod::HfcRedCorrColls> rowCollisions;   // Table with reduced collision info
+  Produces<aod::HfcRedSEBases> rowSEPairs;        // Table with same-event pairs info
+  Produces<aod::HfcRedAssocBases> rowAssocTrks;    // Table with associated track info
+  Produces<aod::HfcRedAssocTrks> rowAssocTrkSels;   // Table with associated track selection info
+  Produces<aod::HfcRedTrigBases> rowTrigs;            // Table with charm candidate info
+  Produces<aod::HfcRedTrigCharms> rowTrigCharms;  // Table with charm trigger candidate info
+  Produces<aod::HfcRedTrigTrks> rowTrigHads;      // Table with hadron trigger candidate info
 
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 15, "Selection Flag for hadron (ML score tables are required to run the task)"};
@@ -270,21 +270,21 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return false;
     }
 
-    if constexpr (candType == CandType::Hadron) {
+    int trackGlobalIndex = assTrk.globalIndex();
+    if constexpr (candType == CandType::Hadron) { 
       if (!cand.isGlobalTrackWoDCA() || cand.tpcNClsCrossedRows() < tpcNClsCrossedRowsMin) {
         return false;
       }
-      if (assTrk.globalIndex() == cand.globalIndex()) {
+      if (trackGlobalIndex == cand.globalIndex()) {
         return false; // skip self-correlation for hadron-hadron
       }
     } else {                                           // Remove Daughter-Cand pairs for charm-hadron correlations
       if constexpr ((requires { cand.prong2Id(); })) { // Check 3-prong
-        return (assTrk.globalIndex() == cand.prong0Id() || assTrk.globalIndex() == cand.prong1Id() || assTrk.globalIndex() == cand.prong2Id());
+        return (trackGlobalIndex != cand.prong0Id() && trackGlobalIndex != cand.prong1Id() && trackGlobalIndex != cand.prong2Id());
       } else { // Check 2-prong
-        return (assTrk.globalIndex() == cand.prong0Id() || assTrk.globalIndex() == cand.prong1Id());
+        return (trackGlobalIndex != cand.prong0Id() && trackGlobalIndex != cand.prong1Id());
       }
     }
-    return true;
   }
 
   /// Fill histograms and tables for same-event correlations
