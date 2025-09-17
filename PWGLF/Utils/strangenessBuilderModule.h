@@ -13,11 +13,11 @@
 /// \brief strangeness builder module
 /// \author ALICE
 
-// simple checkers, but ensure 8 bit integers
-#define BITSET(var, nbit) ((var) |= (static_cast<uint8_t>(1) << static_cast<uint8_t>(nbit)))
-
 #ifndef PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
 #define PWGLF_UTILS_STRANGENESSBUILDERMODULE_H_
+
+// simple checkers, but ensure 8 bit integers
+#define BITSET(var, nbit) ((var) |= (static_cast<uint8_t>(1) << static_cast<uint8_t>(nbit)))
 
 #include "TableHelper.h"
 
@@ -34,6 +34,7 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
 
+#include <vector>
 #include <array>
 #include <cmath>
 #include <cstdlib>
@@ -531,7 +532,8 @@ class BuilderModule
 
     nEnabledTables = 0;
 
-    TString listOfRequestors[nTables];
+    const int nTablesConst = nTables; // silence warning
+    TString listOfRequestors[nTablesConst];
     for (int i = 0; i < nTables; i++) {
       int f = baseOpts.enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
