@@ -52,6 +52,8 @@
 #include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
 
+#include <string>
+#include <vector>
 #include <array>
 #include <cmath>
 #include <cstdlib>
