@@ -106,32 +106,32 @@ DECLARE_SOA_TABLE(AssocTrackSels, "AOD", "ASSOCTRACKSEL", //! Table with associa
 // definition of columns and tables for Charm-Hadron and Hadron-Hadron correlation pairs
 namespace hf_correl_charm_had_reduced
 {
-DECLARE_SOA_INDEX_COLUMN(HfcRedCorrColl, hfcRedCorrColl);             //! ReducedCollision index
-DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                        //! DeltaPhi between charm hadron and Hadrons
-DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                        //! DeltaEta between charm hadron and Hadrons
-DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                            //! Pool Bin for the MixedEvent
-DECLARE_SOA_COLUMN(PhiTrig, phiTrig, float);                          //! Phi of the trigger candidate
-DECLARE_SOA_COLUMN(EtaTrig, etaTrig, float);                          //! Eta of the trigger candidate
-DECLARE_SOA_COLUMN(PtTrig, ptTrig, float);                            //! Pt of the trigger candidate
-DECLARE_SOA_COLUMN(InvMassTrig, invMassTrig, float);                  //! Invariant mass of Charm trigger candidate
-DECLARE_SOA_COLUMN(BdtScore0Trig, bdtScore0Trig, float);              //! First BDT output score
-DECLARE_SOA_COLUMN(BdtScore1Trig, bdtScore1Trig, float);              //! Second BDT output score
-DECLARE_SOA_COLUMN(NTpcCrossedRowsTrig, nTpcCrossedRowsTrig, int);    //! Number of crossed TPC Rows
-DECLARE_SOA_COLUMN(ItsClsMapTrig, itsClsMapTrig, int);                //! ITS cluster map, one bit per a layer, starting from the innermost
-DECLARE_SOA_COLUMN(ItsNClsTrig, itsNClsTrig, int);                    //! Number of ITS clusters
-DECLARE_SOA_COLUMN(EtaTrigTrack, etaTrigTrack, float);                //! Eta of the track
-DECLARE_SOA_COLUMN(PhiTrigTrack, phiTrigTrack, float);                //! Phi of the track
-DECLARE_SOA_COLUMN(PtTrigTrack, ptTrigTrack, float);                  //! Pt of the track
-DECLARE_SOA_COLUMN(DcaXYTrig, dcaXYTrig, float);                      //! Impact parameter in XY of the track to the primary vertex
-DECLARE_SOA_COLUMN(DcaZTrig, dcaZTrig, float);                        //! Impact parameter in Z of the track to the primary vertex
-DECLARE_SOA_COLUMN(NTpcCrossedRowsAssoc, nTpcCrossedRowsAssoc, int);  //! Number of crossed TPC Rows
-DECLARE_SOA_COLUMN(ItsClsMapAssoc, itsClsMapAssoc, int);              //! ITS cluster map, one bit per a layer, starting from the innermost
-DECLARE_SOA_COLUMN(ItsNClsAssoc, itsNClsAssoc, int);                  //! Number of ITS clusters
-DECLARE_SOA_COLUMN(EtaAssoc, etaAssoc, float);                        //! Eta of the track
-DECLARE_SOA_COLUMN(PhiAssoc, phiAssoc, float);                        //! Phi of the track
-DECLARE_SOA_COLUMN(PtAssoc, ptAssoc, float);                          //! Pt of the track
-DECLARE_SOA_COLUMN(DcaXYAssoc, dcaXYAssoc, float);                    //! Impact parameter in XY of the track to the primary vertex
-DECLARE_SOA_COLUMN(DcaZAssoc, dcaZAssoc, float);                      //! Impact parameter in Z of the track to the primary vertex
+DECLARE_SOA_INDEX_COLUMN(HfcRedCorrColl, hfcRedCorrColl);            //! ReducedCollision index
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                       //! DeltaPhi between charm hadron and Hadrons
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                       //! DeltaEta between charm hadron and Hadrons
+DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                           //! Pool Bin for the MixedEvent
+DECLARE_SOA_COLUMN(PhiTrig, phiTrig, float);                         //! Phi of the trigger candidate
+DECLARE_SOA_COLUMN(EtaTrig, etaTrig, float);                         //! Eta of the trigger candidate
+DECLARE_SOA_COLUMN(PtTrig, ptTrig, float);                           //! Pt of the trigger candidate
+DECLARE_SOA_COLUMN(InvMassTrig, invMassTrig, float);                 //! Invariant mass of Charm trigger candidate
+DECLARE_SOA_COLUMN(BdtScore0Trig, bdtScore0Trig, float);             //! First BDT output score
+DECLARE_SOA_COLUMN(BdtScore1Trig, bdtScore1Trig, float);             //! Second BDT output score
+DECLARE_SOA_COLUMN(NTpcCrossedRowsTrig, nTpcCrossedRowsTrig, int);   //! Number of crossed TPC Rows
+DECLARE_SOA_COLUMN(ItsClsMapTrig, itsClsMapTrig, int);               //! ITS cluster map, one bit per a layer, starting from the innermost
+DECLARE_SOA_COLUMN(ItsNClsTrig, itsNClsTrig, int);                   //! Number of ITS clusters
+DECLARE_SOA_COLUMN(EtaTrigTrack, etaTrigTrack, float);               //! Eta of the track
+DECLARE_SOA_COLUMN(PhiTrigTrack, phiTrigTrack, float);               //! Phi of the track
+DECLARE_SOA_COLUMN(PtTrigTrack, ptTrigTrack, float);                 //! Pt of the track
+DECLARE_SOA_COLUMN(DcaXYTrig, dcaXYTrig, float);                     //! Impact parameter in XY of the track to the primary vertex
+DECLARE_SOA_COLUMN(DcaZTrig, dcaZTrig, float);                       //! Impact parameter in Z of the track to the primary vertex
+DECLARE_SOA_COLUMN(NTpcCrossedRowsAssoc, nTpcCrossedRowsAssoc, int); //! Number of crossed TPC Rows
+DECLARE_SOA_COLUMN(ItsClsMapAssoc, itsClsMapAssoc, int);             //! ITS cluster map, one bit per a layer, starting from the innermost
+DECLARE_SOA_COLUMN(ItsNClsAssoc, itsNClsAssoc, int);                 //! Number of ITS clusters
+DECLARE_SOA_COLUMN(EtaAssoc, etaAssoc, float);                       //! Eta of the track
+DECLARE_SOA_COLUMN(PhiAssoc, phiAssoc, float);                       //! Phi of the track
+DECLARE_SOA_COLUMN(PtAssoc, ptAssoc, float);                         //! Pt of the track
+DECLARE_SOA_COLUMN(DcaXYAssoc, dcaXYAssoc, float);                   //! Impact parameter in XY of the track to the primary vertex
+DECLARE_SOA_COLUMN(DcaZAssoc, dcaZAssoc, float);                     //! Impact parameter in Z of the track to the primary vertex
 } // namespace hf_correl_charm_had_reduced
 
 DECLARE_SOA_TABLE(HfcRedTrigBases, "AOD", "HFCREDTRIGBASE", //! Table with trigger candidate base info
