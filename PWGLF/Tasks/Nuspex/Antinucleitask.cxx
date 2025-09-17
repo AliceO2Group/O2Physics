@@ -15,31 +15,35 @@
 ///
 /// \brief An analysis task to select and analyze anti-nuclei events and tracks.
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/AnalysisDataModel.h"
-#include <TParameter.h>
-#include <cmath>
-#include "Common/DataModel/EventSelection.h"
+#include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
 #include "DataFormatsTPC/BetheBlochAleph.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
+#include <TParameter.h>
+
+#include <cmath>
 
 using namespace o2;
 using namespace o2::framework;
 using CollisionWithEvSel = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
 using TotalTracks = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::pidTOFDe>;
 
-namespace { 
-static const std::vector<std::string> particleName{"d"};  
+namespace
+{
+static const std::vector<std::string> particleName{"d"};
 static const double kBetheBlochDefault[6]{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
-}
+} // namespace
 
 struct Antinucleitask {
   // Histogram registry: for holding histograms
@@ -55,7 +59,7 @@ struct Antinucleitask {
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault, 1, 6, particleName, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
 
   void init(InitContext const&)
-  {  // Defining the Histogram Axes
+  { // Defining the Histogram Axes
     ConfigurableAxis etaAxis{"etaAxis", {16, -0.8, +0.8}, "#eta"};
     ConfigurableAxis phiAxis{"phiAxis", {70, 0.f, 7.f}, "#phi"};
     ConfigurableAxis zVtxAxis{"zVtxAxis", {100, -20.f, 20.f}, "Primary Vertex z (cm)"};
@@ -64,11 +68,10 @@ struct Antinucleitask {
     ConfigurableAxis centAxis{"centAxis", {100, 0, 100.0f}, "Centrality"};
     ConfigurableAxis momAxis{"momAxis", {5.e2, 0.f, 5.f}, "momentum axis binning"};
     ConfigurableAxis tpcAxis{"tpcAxis", {4.e2, 0.f, 4.e3f}, "tpc signal axis binning"};
-    
 
     // Creating histograms
     histos.add("RawzVtx", "RawzVtx", kTH1F, {{zVtxAxis, "Primary Vertex z (cm)"}});
-    histos.add("zVtx", "zVtx", kTH1F,{{zVtxAxis, "Primary Vertex z (cm)"}});
+    histos.add("zVtx", "zVtx", kTH1F, {{zVtxAxis, "Primary Vertex z (cm)"}});
     histos.add("RawEta", "RawEta", kTH1F, {{etaAxis, "#eta"}});
     histos.add("Eta", "Eta", kTH1F, {{etaAxis, "#eta"}});
     histos.add("RawPhi", "RawPhi", kTH1F, {{phiAxis, "#phi (rad)"}});
@@ -80,21 +83,28 @@ struct Antinucleitask {
     histos.add("tpcNSigma", "tpcNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {NSigmaAxis, "N_{#sigma}"}});
     histos.add("RawtofNSigma", "RawtofNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {NSigmaAxis, "N_{#sigma}"}});
     histos.add("tofNSigma", "tofNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {NSigmaAxis, "N_{#sigma}"}});
-    
   }
 
-  //Function to apply track cuts
+  // Function to apply track cuts
   template <typename T>
   bool isGoodTrack(const T& track)
   {
-    if (track.eta() > 0.8f) return false;  
-    if (track.tpcNClsFound() < mtrackNclusTPCcut) return false;
-    if (track.tpcNClsCrossedRows() < 70) return false;
-    if (track.itsNCls() < mtrackNclusITScut) return false;
-    if (track.tpcChi2NCl() > mChi2TPC) return false;
-    if (track.itsChi2NCl() > mChi2ITS) return false;
-    if (std::abs(track.dcaXY()) > mtrackDCAxy) return false;
-    if (std::abs(track.dcaZ()) > mtrackDCAz) return false;
+    if (track.eta() > 0.8f)
+      return false;
+    if (track.tpcNClsFound() < mtrackNclusTPCcut)
+      return false;
+    if (track.tpcNClsCrossedRows() < 70)
+      return false;
+    if (track.itsNCls() < mtrackNclusITScut)
+      return false;
+    if (track.tpcChi2NCl() > mChi2TPC)
+      return false;
+    if (track.itsChi2NCl() > mChi2ITS)
+      return false;
+    if (std::abs(track.dcaXY()) > mtrackDCAxy)
+      return false;
+    if (std::abs(track.dcaZ()) > mtrackDCAz)
+      return false;
 
     return true;
   }
@@ -132,21 +142,20 @@ struct Antinucleitask {
       histos.fill(HIST("RawPt"), pt);
       histos.fill(HIST("RawtpcNSigma"), collision.centFT0C(), pt, tpcNSigmaDeuteron);
       histos.fill(HIST("RawtofNSigma"), collision.centFT0C(), pt, track.tofNSigmaDe());
-      
+
       // If the track is good, fill the "after cuts" histograms.
       if (isGoodTrack(track)) {
         histos.fill(HIST("Eta"), track.eta());
         histos.fill(HIST("Phi"), track.phi());
         histos.fill(HIST("Pt"), pt);
-        
+
         histos.fill(HIST("tpcNSigma"), collision.centFT0C(), pt, tpcNSigmaDeuteron);
 
         histos.fill(HIST("TpcSignal"), track.tpcInnerParam(), track.tpcSignal());
 
-        if (std::abs(tpcNSigmaDeuteron)< 3.f) {
-        histos.fill(HIST("tofNSigma"), collision.centFT0C(), pt, track.tofNSigmaDe());
-       }
-
+        if (std::abs(tpcNSigmaDeuteron) < 3.f) {
+          histos.fill(HIST("tofNSigma"), collision.centFT0C(), pt, track.tofNSigmaDe());
+        }
       }
     }
   }
@@ -159,3 +168,4 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   return WorkflowSpec{
     adaptAnalysisTask<Antinucleitask>(cfgc)};
 }
+ 
