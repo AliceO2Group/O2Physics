@@ -9,27 +9,15 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include "PWGLF/DataModel/LFDoubleCascTables.h"
+#include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
-#include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
 
 #include "TDatabasePDG.h"
 #include <Math/Vector4D.h>
@@ -42,21 +30,22 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-using Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::MultZeqs, aod::FT0Mults>::iterator;
-using FullCascades = aod::CascDataExt;
-using FullV0s = aod::V0Datas;
-using TracksFull = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksCovIU, aod::pidTPCPi, aod::pidTPCPr, aod::pidTPCKa>;
+using Collisions = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraStamps>::iterator;
+using FullV0s = soa::Join<aod::V0CollRefs, aod::V0Cores, aod::V0Extras>;
+using FullCascades = soa::Join<aod::CascCollRefs, aod::CascCores, aod::CascExtras, aod::CascBBs>;
+using TracksFull = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
+
 struct xiLambdaCorr {
-  ConfigurableAxis centAxis{"centAxis", {106, 0, 106}, "binning for the centrality"};
   ConfigurableAxis zVtxAxis{"zVtxBins", {100, -20.f, 20.f}, "Binning for the vertex z in cm"};
   // binning of (anti)lambda mass QA histograms
-  ConfigurableAxis massLambdaAxis{"massLambdaAxis", {200, o2::constants::physics::MassLambda - 0.05f, o2::constants::physics::MassLambda + 0.05f}, "binning for the lambda invariant-mass"};
-  ConfigurableAxis massXiAxis{"massXiAxis", {200, o2::constants::physics::MassXiMinus - 0.05f, o2::constants::physics::MassXiMinus + 0.05f}, "binning for the Xi invariant-mass"};
+  ConfigurableAxis massLambdaAxis{"massLambdaAxis", {100, o2::constants::physics::MassLambda - 0.05f, o2::constants::physics::MassLambda + 0.05f}, "binning for the lambda invariant-mass"};
+  ConfigurableAxis massXiAxis{"massXiAxis", {100, o2::constants::physics::MassXiMinus - 0.05f, o2::constants::physics::MassXiMinus + 0.05f}, "binning for the Xi invariant-mass"};
   ConfigurableAxis massXiLambdaAxis{"massXiLambdaAxis", {200, o2::constants::physics::MassXiMinus + o2::constants::physics::MassLambda, o2::constants::physics::MassXiMinus + o2::constants::physics::MassLambda + 0.1f}, "binning for the Xi+Lambda invariant-mass"};
+  ConfigurableAxis cosPAxis{"cosPAxis", {10, 0.99f, 1.f}, "binning for the cosine of the pointing angle"};
 
   Configurable<float> zVtxMax{"zVtxMax", 10.0f, "maximum z position of the primary vertex"};
   Configurable<float> etaMax{"etaMax", 0.9f, "maximum eta"};
-  ConfigurableAxis momAxis{"momAxisFine", {5.e2, 0.f, 5.f}, "momentum axis binning"};
+  ConfigurableAxis momAxis{"momAxisFine", {50, 0.f, 10.f}, "momentum axis binning"};
   ConfigurableAxis mixTypeAxis{"mixTypeAxis", {4, -0.5f, 3.5f}, "mixing type axis"}; // xi - lambda , xi - anti-lambda, anti-xi - lambda, anti-xi - anti-lambda
 
   Configurable<float> cascPtMin{"cascPtMin", 1.f, "minimum (anti)casc pT (GeV/c)"};
@@ -83,9 +72,6 @@ struct xiLambdaCorr {
   template <class T>
   bool selectTrack(T const& track)
   {
-    if (std::abs(track.eta()) > etaMax) {
-      return false;
-    }
     if (track.tpcNClsFound() < minNTPCClus) {
       return false;
     }
@@ -98,16 +84,20 @@ struct xiLambdaCorr {
     histos.add<TH1>("QA/zVtx", ";#it{z}_{vtx} (cm);Entries", HistType::kTH1F, {zVtxAxis});
     histos.add<TH2>("QA/massLambda", ";#it{p}_{T} (GeV/#it{c});#it{m}_{#Lambda} (GeV/#it{c}^{2})", HistType::kTH2F, {momAxis, massLambdaAxis});
     histos.add<TH2>("QA/massXi", ";#it{p}_{T} (GeV/#it{c});#it{m}_{#Xi} (GeV/#it{c}^{2})", HistType::kTH2F, {momAxis, massXiAxis});
-    histos.add("xiMinusLambda", "", {HistType::kTHnSparseF, {massXiLambdaAxis, momAxis, mixTypeAxis}});
+    histos.add("xiMinusLambda", "", {HistType::kTHnSparseF, {massXiLambdaAxis, momAxis, massXiAxis, massLambdaAxis, cosPAxis, cosPAxis, mixTypeAxis}});
   }
 
   template <class C, class T>
   bool isSelectedCasc(C const& collision, T const&, FullCascades::iterator const& casc)
   {
 
-    auto bachelor = casc.bachelor_as<T>();
-    auto posDau = casc.posTrack_as<T>();
-    auto negDau = casc.negTrack_as<T>();
+    if (std::abs(casc.positiveeta()) > 0.9 || std::abs(casc.negativeeta()) > 0.9 || std::abs(casc.bacheloreta()) > 0.9) {
+      return false;
+    }
+
+    auto bachelor = casc.bachTrackExtra_as<T>();
+    auto posDau = casc.posTrackExtra_as<T>();
+    auto negDau = casc.negTrackExtra_as<T>();
 
     if (!selectTrack(bachelor) || !selectTrack(posDau) || !selectTrack(negDau)) {
       return false;
@@ -138,6 +128,7 @@ struct xiLambdaCorr {
     if (casc.mXi() > o2::constants::physics::MassXiMinus - mXiWindow && casc.mXi() < o2::constants::physics::MassXiMinus + mXiWindow) {
       massInWindow = true;
     }
+
     if (!massInWindow) {
       return false;
     }
@@ -148,8 +139,12 @@ struct xiLambdaCorr {
   template <class T>
   bool isSelectedLambda(T const&, FullV0s::iterator const& v0)
   {
-    auto posDau = v0.posTrack_as<T>();
-    auto negDau = v0.negTrack_as<T>();
+    auto posDau = v0.posTrackExtra_as<T>();
+    auto negDau = v0.negTrackExtra_as<T>();
+
+    if (std::abs(v0.positiveeta()) > 0.9 || std::abs(v0.negativeeta()) > 0.9) {
+      return false;
+    }
 
     if (!selectTrack(posDau) || !selectTrack(negDau)) {
       return false;
@@ -198,7 +193,7 @@ struct xiLambdaCorr {
         if (!isSelectedLambda(tracks, v0)) {
           continue;
         }
-        if (casc.posTrackId() == v0.posTrackId() || casc.posTrackId() == v0.negTrackId()) {
+        if (casc.posTrackExtraId() == v0.posTrackExtraId() || casc.posTrackExtraId() == v0.negTrackExtraId()) {
           continue;
         }
 
@@ -216,7 +211,11 @@ struct xiLambdaCorr {
         ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>> cascMom4D(casc.px(), casc.py(), casc.pz(), o2::constants::physics::MassXiMinus);
         ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>> lambdaMom4D{v0.px(), v0.py(), v0.pz(), o2::constants::physics::MassLambda};
         auto xiLambdaMom4D = cascMom4D + lambdaMom4D;
-        histos.fill(HIST("xiMinusLambda"), xiLambdaMom4D.M(), xiLambdaMom4D.Pt(), mixType);
+        float massLambda = v0.alpha() > 0 ? v0.mLambda() : v0.mAntiLambda();
+        float massXi = casc.mXi();
+        float cosPAxi = casc.v0cosPA(collision.posX(), collision.posY(), collision.posZ());
+        float cosPAlambda = v0.v0cosPA();
+        histos.fill(HIST("xiMinusLambda"), xiLambdaMom4D.M(), xiLambdaMom4D.Pt(), massXi, massLambda, cosPAxi, cosPAlambda, mixType);
       }
     }
   };
@@ -236,6 +235,7 @@ struct xiLambdaCorr {
     histos.fill(HIST("QA/zVtx"), collision.posZ());
     fillXiLambda(collision, tracks, v0s, cascades);
   }
+  PROCESS_SWITCH(xiLambdaCorr, processData, "Process data", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
