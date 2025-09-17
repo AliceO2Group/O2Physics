@@ -1427,6 +1427,20 @@ struct strangenesstofpid {
             v0tof.nSigmaNegativeLambdaPr, v0tof.nSigmaPositiveLambdaPi,
             v0tof.nSigmaPositiveK0ShortPi, v0tof.nSigmaNegativeK0ShortPi);
         }
+        if(calculateV0TOFPIDs.value){
+          v0tofpid(v0tof.deltaTimePositiveLambdaPi, v0tof.deltaTimePositiveLambdaPr,
+             v0tof.deltaTimeNegativeLambdaPi, v0tof.deltaTimeNegativeLambdaPr,
+             v0tof.deltaTimePositiveK0ShortPi, v0tof.deltaTimeNegativeK0ShortPi,
+             v0tof.deltaDecayTimeLambda, v0tof.deltaDecayTimeAntiLambda, v0tof.deltaDecayTimeK0Short);
+        }
+        if(calculateV0TOFBetas.value){
+          v0tofbeta(v0tof.betaLambda, v0tof.betaAntiLambda, v0tof.betaK0Short);
+        }
+        if(calculateV0TOFDebugs.value){
+          v0tofdebugs(v0tof.timeLambda, v0tof.timeK0Short, 
+                      v0tof.timePositivePr, v0tof.timePositivePi, 
+                      v0tof.timeNegativePr, v0tof.timeNegativePi);
+        }
       }
     }
 
