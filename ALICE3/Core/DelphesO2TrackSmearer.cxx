@@ -36,6 +36,7 @@
 
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 
+#include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Logger.h>
 
 namespace o2
@@ -54,7 +55,7 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
   const auto ipdg = getIndexPDG(pdg);
   LOGF(info, "Will load %s lut file ..: '%s'", getParticleName(pdg), filename);
   if (mLUTHeader[ipdg] && !forceReload) {
-    std::cout << " --- LUT table for PDG " << pdg << " has been already loaded with index " << ipdg << std::endl;
+    LOG(info) << " --- LUT table for PDG " << pdg << " has been already loaded with index " << ipdg << std::endl;
     return false;
   }
   if (strncmp(filename, "ccdb:", 5) == 0) { // Check if filename starts with "ccdb:"
@@ -83,26 +84,26 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
 
   std::ifstream lutFile(filename, std::ifstream::binary);
   if (!lutFile.is_open()) {
-    std::cout << " --- cannot open covariance matrix file for PDG " << pdg << ": " << filename << std::endl;
+    LOG(info) << " --- cannot open covariance matrix file for PDG " << pdg << ": " << filename << std::endl;
     delete mLUTHeader[ipdg];
     mLUTHeader[ipdg] = nullptr;
     return false;
   }
   lutFile.read(reinterpret_cast<char*>(mLUTHeader[ipdg]), sizeof(lutHeader_t));
   if (lutFile.gcount() != sizeof(lutHeader_t)) {
-    std::cout << " --- troubles reading covariance matrix header for PDG " << pdg << ": " << filename << std::endl;
+    LOG(info) << " --- troubles reading covariance matrix header for PDG " << pdg << ": " << filename << std::endl;
     delete mLUTHeader[ipdg];
     mLUTHeader[ipdg] = nullptr;
     return false;
   }
   if (mLUTHeader[ipdg]->version != LUTCOVM_VERSION) {
-    std::cout << " --- LUT header version mismatch: expected/detected = " << LUTCOVM_VERSION << "/" << mLUTHeader[ipdg]->version << std::endl;
+    LOG(info) << " --- LUT header version mismatch: expected/detected = " << LUTCOVM_VERSION << "/" << mLUTHeader[ipdg]->version << std::endl;
     delete mLUTHeader[ipdg];
     mLUTHeader[ipdg] = nullptr;
     return false;
   }
   if (mLUTHeader[ipdg]->pdg != pdg) {
-    std::cout << " --- LUT header PDG mismatch: expected/detected = " << pdg << "/" << mLUTHeader[ipdg]->pdg << std::endl;
+    LOG(info) << " --- LUT header PDG mismatch: expected/detected = " << pdg << "/" << mLUTHeader[ipdg]->pdg << std::endl;
     delete mLUTHeader[ipdg];
     mLUTHeader[ipdg] = nullptr;
     return false;
@@ -122,14 +123,14 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
           mLUTEntry[ipdg][inch][irad][ieta][ipt] = new lutEntry_t;
           lutFile.read(reinterpret_cast<char*>(mLUTEntry[ipdg][inch][irad][ieta][ipt]), sizeof(lutEntry_t));
           if (lutFile.gcount() != sizeof(lutEntry_t)) {
-            std::cout << " --- troubles reading covariance matrix entry for PDG " << pdg << ": " << filename << std::endl;
+            LOG(info) << " --- troubles reading covariance matrix entry for PDG " << pdg << ": " << filename << std::endl;
             return false;
           }
         }
       }
     }
   }
-  std::cout << " --- read covariance matrix table for PDG " << pdg << ": " << filename << std::endl;
+  LOG(info) << " --- read covariance matrix table for PDG " << pdg << ": " << filename << std::endl;
   mLUTHeader[ipdg]->print();
 
   lutFile.close();
@@ -152,43 +153,58 @@ lutEntry_t*
   // Interpolate if requested
   auto fraction = mLUTHeader[ipdg]->nchmap.fracPositionWithinBin(nch);
   if (mInterpolateEfficiency) {
-    if (fraction > 0.5) {
-      if (mWhatEfficiency == 1) {
-        if (inch < mLUTHeader[ipdg]->nchmap.nbins - 1) {
-          interpolatedEff = (1.5f - fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (-0.5f + fraction) * mLUTEntry[ipdg][inch + 1][irad][ieta][ipt]->eff;
-        } else {
-          interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
-        }
-      }
-      if (mWhatEfficiency == 2) {
-        if (inch < mLUTHeader[ipdg]->nchmap.nbins - 1) {
-          interpolatedEff = (1.5f - fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2 + (-0.5f + fraction) * mLUTEntry[ipdg][inch + 1][irad][ieta][ipt]->eff2;
-        } else {
-          interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
-        }
+    static constexpr float fractionThreshold = 0.5f;
+    if (fraction > fractionThreshold) {
+      switch (mWhatEfficiency) {
+        case 1:
+          if (inch < mLUTHeader[ipdg]->nchmap.nbins - 1) {
+            interpolatedEff = (1.5f - fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (-0.5f + fraction) * mLUTEntry[ipdg][inch + 1][irad][ieta][ipt]->eff;
+          } else {
+            interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
+          }
+          break;
+        case 2:
+          if (inch < mLUTHeader[ipdg]->nchmap.nbins - 1) {
+            interpolatedEff = (1.5f - fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2 + (-0.5f + fraction) * mLUTEntry[ipdg][inch + 1][irad][ieta][ipt]->eff2;
+          } else {
+            interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
+          }
+          break;
+        default:
+          LOG(fatal) << " --- getLUTEntry: unknown efficiency type " << mWhatEfficiency;
       }
     } else {
       float comparisonValue = mLUTHeader[ipdg]->nchmap.log ? std::log10(nch) : nch;
-      if (mWhatEfficiency == 1) {
-        if (inch > 0 && comparisonValue < mLUTHeader[ipdg]->nchmap.max) {
-          interpolatedEff = (0.5f + fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (0.5f - fraction) * mLUTEntry[ipdg][inch - 1][irad][ieta][ipt]->eff;
-        } else {
-          interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
-        }
-      }
-      if (mWhatEfficiency == 2) {
-        if (inch > 0 && comparisonValue < mLUTHeader[ipdg]->nchmap.max) {
-          interpolatedEff = (0.5f + fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2 + (0.5f - fraction) * mLUTEntry[ipdg][inch - 1][irad][ieta][ipt]->eff2;
-        } else {
-          interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
-        }
+      switch (mWhatEfficiency) {
+        case 1:
+          if (inch > 0 && comparisonValue < mLUTHeader[ipdg]->nchmap.max) {
+            interpolatedEff = (0.5f + fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff + (0.5f - fraction) * mLUTEntry[ipdg][inch - 1][irad][ieta][ipt]->eff;
+          } else {
+            interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
+          }
+          break;
+        case 2:
+          if (inch > 0 && comparisonValue < mLUTHeader[ipdg]->nchmap.max) {
+            interpolatedEff = (0.5f + fraction) * mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2 + (0.5f - fraction) * mLUTEntry[ipdg][inch - 1][irad][ieta][ipt]->eff2;
+          } else {
+            interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
+          }
+          break;
+        default:
+          LOG(fatal) << " --- getLUTEntry: unknown efficiency type " << mWhatEfficiency;
       }
     }
   } else {
-    if (mWhatEfficiency == 1)
-      interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
-    if (mWhatEfficiency == 2)
-      interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
+    switch (mWhatEfficiency) {
+      case 1:
+        interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff;
+        break;
+      case 2:
+        interpolatedEff = mLUTEntry[ipdg][inch][irad][ieta][ipt]->eff2;
+        break;
+      default:
+        LOG(fatal) << " --- getLUTEntry: unknown efficiency type " << mWhatEfficiency;
+    }
   }
   return mLUTEntry[ipdg][inch][irad][ieta][ipt];
 } //;
@@ -201,10 +217,14 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float inte
   // generate efficiency
   if (mUseEfficiency) {
     auto eff = 0.;
-    if (mWhatEfficiency == 1)
-      eff = lutEntry->eff;
-    if (mWhatEfficiency == 2)
-      eff = lutEntry->eff2;
+    switch (mWhatEfficiency) {
+      case 1:
+        eff = lutEntry->eff;
+        break;
+      case 2:
+        eff = lutEntry->eff2;
+        break;
+    }
     if (mInterpolateEfficiency)
       eff = interpolatedEff;
     if (gRandom->Uniform() > eff)
@@ -216,23 +236,24 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float inte
     return false;
 
   // transform params vector and smear
-  double params_[5];
-  for (int i = 0; i < 5; ++i) {
+  static constexpr int kParSize = 5;
+  double params_[kParSize];
+  for (int i = 0; i < kParSize; ++i) {
     double val = 0.;
-    for (int j = 0; j < 5; ++j)
+    for (int j = 0; j < kParSize; ++j)
       val += lutEntry->eigvec[j][i] * o2track.getParam(j);
     params_[i] = gRandom->Gaus(val, std::sqrt(lutEntry->eigval[i]));
   }
   // transform back params vector
-  for (int i = 0; i < 5; ++i) {
+  for (int i = 0; i < kParSize; ++i) {
     double val = 0.;
-    for (int j = 0; j < 5; ++j)
+    for (int j = 0; j < kParSize; ++j)
       val += lutEntry->eiginv[j][i] * params_[j];
     o2track.setParam(val, i);
   }
   // should make a sanity check that par[2] sin(phi) is in [-1, 1]
   if (std::fabs(o2track.getParam(2)) > 1.) {
-    std::cout << " --- smearTrack failed sin(phi) sanity check: " << o2track.getParam(2) << std::endl;
+    LOG(info) << " --- smearTrack failed sin(phi) sanity check: " << o2track.getParam(2) << std::endl;
   }
   // set covariance matrix
   for (int i = 0; i < 15; ++i)
@@ -246,10 +267,9 @@ bool TrackSmearer::smearTrack(O2Track& o2track, int pdg, float nch)
 {
 
   auto pt = o2track.getPt();
-  static constexpr int kHelium3Pdg = 1000020030;
   switch (pdg) {
-    case kHelium3Pdg:
-    case -kHelium3Pdg:
+    case o2::constants::physics::kHelium3:
+    case -o2::constants::physics::kHelium3:
       pt *= 2.f;
       break;
   }
@@ -277,9 +297,9 @@ double TrackSmearer::getEtaRes(int pdg, float nch, float eta, float pt)
 {
   float dummy = 0.0f;
   auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
-  auto sigmatgl = std::sqrt(lutEntry->covm[9]);                             // sigmatgl2
-  auto etaRes = std::fabs(sin(2.0 * std::atan(std::exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
-  etaRes /= lutEntry->eta;                                                  // relative uncertainty
+  auto sigmatgl = std::sqrt(lutEntry->covm[9]);                                  // sigmatgl2
+  auto etaRes = std::fabs(std::sin(2.0 * std::atan(std::exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
+  etaRes /= lutEntry->eta;                                                       // relative uncertainty
   return etaRes;
 }
 /*****************************************************************/
@@ -298,8 +318,8 @@ double TrackSmearer::getAbsEtaRes(int pdg, float nch, float eta, float pt)
 {
   float dummy = 0.0f;
   auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
-  auto sigmatgl = std::sqrt(lutEntry->covm[9]);                             // sigmatgl2
-  auto etaRes = std::fabs(sin(2.0 * std::atan(std::exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
+  auto sigmatgl = std::sqrt(lutEntry->covm[9]);                                  // sigmatgl2
+  auto etaRes = std::fabs(std::sin(2.0 * std::atan(std::exp(-eta)))) * sigmatgl; // propagate tgl to eta uncertainty
   return etaRes;
 }
 /*****************************************************************/
