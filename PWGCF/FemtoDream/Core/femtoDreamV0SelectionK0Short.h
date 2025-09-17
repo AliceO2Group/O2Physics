@@ -32,7 +32,7 @@
 #include <string>
 #include <vector>
 
-namespace o2::analysis::femtoDream // o2-linter: disable=name/namespace (Previously defined namespace)
+namespace o2::analysis::femtoDream
 {
 
 namespace femto_dream_v0_selection
@@ -123,7 +123,7 @@ class FemtoDreamV0Selection
   static std::string getSelectionName(femto_dream_v0_selection::V0Sel iSel, std::string_view prefix = "", std::string_view suffix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
-    outString += static_cast<std::string>(kSelectionNames[iSel]);
+    outString += static_cast<std::string>(mSelectionNames[iSel]);
     outString += suffix;
     return outString;
   }
@@ -136,7 +136,7 @@ class FemtoDreamV0Selection
   {
     for (int index = 0; index < kNv0Selection; index++) {
       std::string comp = static_cast<std::string>(prefix) +
-                         static_cast<std::string>(kSelectionNames[index]);
+                         static_cast<std::string>(mSelectionNames[index]);
       std::string_view cmp{comp};
       if (obs.compare(cmp) == 0)
         return index;
@@ -149,7 +149,7 @@ class FemtoDreamV0Selection
   /// \param iSel V0 selection variable whose type is returned
   static femtoDreamSelection::SelectionType getSelectionType(femto_dream_v0_selection::V0Sel iSel)
   { // o2-linter: disable=name/function-variable (defined with UpperCamelCase in femtoDreamSelection)
-    return kSelectionTypes[iSel];
+    return mSelectionTypes[iSel];
   }
 
   /// Helper function to obtain the helper string of a given selection criterion
@@ -160,7 +160,7 @@ class FemtoDreamV0Selection
                                         std::string_view prefix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
-    outString += static_cast<std::string>(kSelectionHelper[iSel]);
+    outString += static_cast<std::string>(mSelectionHelper[iSel]);
     return outString;
   }
 
@@ -251,13 +251,13 @@ class FemtoDreamV0Selection
 
   static constexpr int kNv0Selection = 9;
 
-  static constexpr std::string_view kSelectionNames[kNv0Selection] = {
+  static constexpr std::string_view mSelectionNames[kNv0Selection] = {
     "Sign", "PtMin", "PtMax", "EtaMax", "DCAdaughMax", "CPAMin",
     "TranRadMin", "TranRadMax", "DecVecMax"}; ///< Name of the different
                                               ///< selections
 
   static constexpr femtoDreamSelection::SelectionType
-    kSelectionTypes[kNv0Selection]{
+    mSelectionTypes[kNv0Selection]{
       femtoDreamSelection::kEqual,
       femtoDreamSelection::kLowerLimit,
       femtoDreamSelection::kUpperLimit,
@@ -269,7 +269,7 @@ class FemtoDreamV0Selection
       femtoDreamSelection::kUpperLimit}; ///< Map to match a variable with
                                          ///< its type
 
-  static constexpr std::string_view kSelectionHelper[kNv0Selection] = {
+  static constexpr std::string_view mSelectionHelper[kNv0Selection] = {
     "+1 for lambda, -1 for antilambda",
     "Minimum pT (GeV/c)",
     "Maximum pT (GeV/c)",
