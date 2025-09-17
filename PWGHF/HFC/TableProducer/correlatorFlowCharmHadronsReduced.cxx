@@ -139,7 +139,6 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   ConfigurableAxis binsPhi{"binsPhi", {64, -o2::constants::math::PIHalf, 3. * o2::constants::math::PIHalf}, "Phi bins"};
   ConfigurableAxis binsDeltaEta{"binsDeltaEta", {100, -2., 2.}, "Delta Eta bins"};
   ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {64, -3., 3.}, "Delta Phi bins"};
-  // ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
   ConfigurableAxis binsMlOne{"binsMlOne", {100, 0., 1.}, ""};
   ConfigurableAxis binsMlTwo{"binsMlTwo", {100, 0., 1.}, ""};
 
@@ -165,8 +164,6 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     } else {
       poolBins = (multPoolBins->size() - 1) * (zPoolBins->size() - 1);
     }
-
-    // binsPoolBin = {poolBins, 0., static_cast<float>(poolBins)};
 
     const AxisSpec axisInvMass{binsInvMass, "Inv. mass (GeV/#it{c}^{2})"};
     const AxisSpec axisCent = {binsCent, "Centrality"};
