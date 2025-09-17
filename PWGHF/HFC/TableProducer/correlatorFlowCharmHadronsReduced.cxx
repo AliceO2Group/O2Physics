@@ -115,9 +115,9 @@ struct HfCorrelatorFlowCharmHadronsReduced {
 
   int poolBins{0};
 
-  using SameEvtPairsChHad  = soa::Filtered<soa::Join<aod::HfcRedSEBases, aod::HfcRedTrigCharms, aod::HfcRedAssocTrks>>;
+  using SameEvtPairsChHad = soa::Filtered<soa::Join<aod::HfcRedSEBases, aod::HfcRedTrigCharms, aod::HfcRedAssocTrks>>;
   using SameEvtPairsHadHad = soa::Filtered<soa::Join<aod::HfcRedSEBases, aod::HfcRedTrigTrks, aod::HfcRedAssocTrks>>;
-  using AssocTracks    = soa::Filtered<soa::Join<aod::HfcRedAssocBases, aod::HfcRedAssocTrks>>;
+  using AssocTracks = soa::Filtered<soa::Join<aod::HfcRedAssocBases, aod::HfcRedAssocTrks>>;
   using TrigCharmCands = soa::Filtered<soa::Join<aod::HfcRedTrigBases, aod::HfcRedTrigCharms>>;
 
   Filter filterAssocTracks = (nabs(aod::hf_correl_charm_had_reduced::dcaXYAssoc) < dcaXYTrackMax) && (nabs(aod::hf_correl_charm_had_reduced::dcaZAssoc) < dcaZTrackMax) && (aod::hf_correl_charm_had_reduced::nTpcCrossedRowsAssoc > tpcCrossedRowsMin) && (aod::hf_correl_charm_had_reduced::itsNClsAssoc > itsNClsMin);
@@ -150,10 +150,10 @@ struct HfCorrelatorFlowCharmHadronsReduced {
 
   void init(InitContext&)
   {
-    if ( (doprocessSameEventCharmHadWCentMix && doprocessMixedEventCharmHadWMultMix) ||
-         (doprocessSameEventCharmHadWMultMix && doprocessMixedEventCharmHadWCentMix) ||
-         (doprocessSameEventHadHadWCentMix   && doprocessMixedEventHadHadWMultMix)   ||
-         (doprocessSameEventHadHadWMultMix   && doprocessMixedEventHadHadWCentMix) ) {
+    if ((doprocessSameEventCharmHadWCentMix && doprocessMixedEventCharmHadWMultMix) ||
+        (doprocessSameEventCharmHadWMultMix && doprocessMixedEventCharmHadWCentMix) ||
+        (doprocessSameEventHadHadWCentMix && doprocessMixedEventHadHadWMultMix) ||
+        (doprocessSameEventHadHadWMultMix && doprocessMixedEventHadHadWCentMix)) {
       LOGP(fatal, "You cannot mix centrality and multiplicity mixing in the same processing! Please check your configuration!");
     }
     if (!fillSparses && !fillTables) {
@@ -268,7 +268,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
       rowPairSE(poolBin, ptTrig, pair.ptAssoc(), pair.deltaEta(), pair.deltaPhi());
     }
     if constexpr (fillSparses) {
-      if constexpr (requires{ pair.bdtScore0Trig(); }) {  // Separate Charm-Had and Had-Had cases
+      if constexpr (requires { pair.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
         registry.fill(HIST("hSparseCorrelationsSECharmHad"), poolBin, ptTrig, pair.ptAssoc(), pair.deltaEta(),
                       pair.deltaPhi(), pair.bdtScore0Trig(), pair.bdtScore1Trig(), pair.invMassTrig());
       } else {

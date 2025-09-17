@@ -64,9 +64,9 @@ enum CandType {
 struct HfDerivedDataCreatorCorrelationsReduced {
   Produces<aod::HfcRedCorrColls> rowCollisions;   // Table with reduced collision info
   Produces<aod::HfcRedSEBases> rowSEPairs;        // Table with same-event pairs info
-  Produces<aod::HfcRedAssocBases> rowAssocTrks;    // Table with associated track info
-  Produces<aod::HfcRedAssocTrks> rowAssocTrkSels;   // Table with associated track selection info
-  Produces<aod::HfcRedTrigBases> rowTrigs;            // Table with charm candidate info
+  Produces<aod::HfcRedAssocBases> rowAssocTrks;   // Table with associated track info
+  Produces<aod::HfcRedAssocTrks> rowAssocTrkSels; // Table with associated track selection info
+  Produces<aod::HfcRedTrigBases> rowTrigs;        // Table with charm candidate info
   Produces<aod::HfcRedTrigCharms> rowTrigCharms;  // Table with charm trigger candidate info
   Produces<aod::HfcRedTrigTrks> rowTrigHads;      // Table with hadron trigger candidate info
 
@@ -271,7 +271,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     }
 
     int trackGlobalIndex = assTrk.globalIndex();
-    if constexpr (candType == CandType::Hadron) { 
+    if constexpr (candType == CandType::Hadron) {
       if (!cand.isGlobalTrackWoDCA() || cand.tpcNClsCrossedRows() < tpcNClsCrossedRowsMin) {
         return false;
       }
