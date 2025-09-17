@@ -180,6 +180,43 @@ class FemtoDreamContainer
     }
   }
 
+  /// Initialize the histograms for pairs in divided qn bins
+  template <typename T>
+  void init_base_qn(std::string folderName, std::string femtoObs,
+                    T& femtoObsAxis, T& mTAxi4D, T& multPercentileAxis4D, T& qnAxis4D)
+  {
+    mHistogramRegistry->add((folderName + "/relPairkstarmTMultMultPercentileQn").c_str(), ("; " + femtoObs + "; #it{m}_{T} (GeV/#it{c}); Centrality; qn").c_str(), kTHnSparseF, {femtoObsAxis, mTAxi4D, multPercentileAxis4D, qnAxis4D});
+  }
+
+  template <typename T>
+  void init_qn(HistogramRegistry* registry,
+               T& kstarBins4D, T& mTBins4D, T& multPercentileBins4D,
+               bool isMC, float highkstarCut, ConfigurableAxis qnBins4D = {"qnBins4D", {10, 0, 10}, "qn binning"})
+  {
+    mHistogramRegistry = registry;
+    std::string femtoObs;
+    if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
+      femtoObs = "#it{k*} (GeV/#it{c})";
+    }
+    mHighkstarCut = highkstarCut;
+
+    framework::AxisSpec kstarAxis4D = {kstarBins4D, femtoObs};
+    framework::AxisSpec mTAxis4D = {mTBins4D, "#it{m}_{T} (GeV/#it{c})"};
+    framework::AxisSpec multPercentileAxis4D = {multPercentileBins4D, "Centralty(%)"};
+    framework::AxisSpec qnAxis4D = {qnBins4D, "qn"};
+
+    std::string folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kRecon]) + static_cast<std::string>("_qn");
+
+    init_base_qn(folderName, femtoObs,
+                 kstarAxis4D, mTAxis4D, multPercentileAxis4D, qnAxis4D);
+
+    if (isMC) {
+      folderName = static_cast<std::string>(mFolderSuffix[mEventType]) + static_cast<std::string>(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + static_cast<std::string>("_qn");
+      init_base_qn(folderName, femtoObs,
+                   kstarAxis4D, mTAxis4D, multPercentileAxis4D, qnAxis4D);
+    }
+  }
+
   /// Set the PDG codes of the two particles involved
   /// \param pdg1 PDG code of particle one
   /// \param pdg2 PDG code of particle two
@@ -306,6 +343,56 @@ class FemtoDreamContainer
           if (abs(part1.fdMCParticle().pdgMCTruth()) == mPDGOne && abs(part2.fdMCParticle().pdgMCTruth()) == mPDGTwo) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
             setPair_base<o2::aod::femtodreamMCparticle::MCType::kTruth, isHF>(femtoObsMC, mTMC, part1.fdMCParticle(), part2.fdMCParticle(), mult, multPercentile, use4dplots, extendedplots);
             setPair_MC(femtoObsMC, femtoObs, mT, mult, part1.fdMCParticle().partOriginMCTruth(), part2.fdMCParticle().partOriginMCTruth(), smearingByOrigin);
+          } else {
+            mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
+          }
+
+        } else {
+          mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hNoMCtruthPairsCounter"), 0);
+        }
+      }
+    }
+  }
+
+  /// Pass a pair to the container and compute all the relevant observables in divided qn bins
+  template <o2::aod::femtodreamMCparticle::MCType mc>
+  void setPair_qn_base(const float femtoObs, const float mT, const float multPercentile, const int myQnBin, const int numQnBins = 10)
+  {
+    if (myQnBin >= 0 && myQnBin < numQnBins) {
+      mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[mc]) + HIST("_qn") + HIST("/relPairkstarmTMultMultPercentileQn"), femtoObs, mT, multPercentile, myQnBin);
+    } else {
+      return;
+    }
+  }
+
+  template <bool isMC, typename T1, typename T2>
+  void setPair_qn(T1 const& part1, T2 const& part2, const float multPercentile, const int myQnBin, const int numQnBins = 10)
+  {
+    float femtoObs, femtoObsMC;
+    // Calculate femto observable and the mT with reconstructed information
+    if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
+      femtoObs = FemtoDreamMath::getkstar(part1, mMassOne, part2, mMassTwo);
+    }
+    if (mHighkstarCut > 0) {
+      if (femtoObs > mHighkstarCut) {
+        return;
+      }
+    }
+    const float mT = FemtoDreamMath::getmT(part1, mMassOne, part2, mMassTwo);
+
+    if (mHistogramRegistry) {
+      setPair_qn_base<o2::aod::femtodreamMCparticle::MCType::kRecon>(femtoObs, mT, multPercentile, myQnBin, numQnBins);
+
+      if constexpr (isMC) {
+        if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {
+          // calculate the femto observable and the mT with MC truth information
+          if constexpr (mFemtoObs == femtoDreamContainer::Observable::kstar) {
+            femtoObsMC = FemtoDreamMath::getkstar(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
+          }
+          const float mTMC = FemtoDreamMath::getmT(part1.fdMCParticle(), mMassOne, part2.fdMCParticle(), mMassTwo);
+
+          if (abs(part1.fdMCParticle().pdgMCTruth()) == mPDGOne && abs(part2.fdMCParticle().pdgMCTruth()) == mPDGTwo) { // Note: all pair-histogramms are filled with MC truth information ONLY in case of non-fake candidates
+            setPair_qn_base<o2::aod::femtodreamMCparticle::MCType::kTruth>(femtoObsMC, mTMC, multPercentile, myQnBin, numQnBins);
           } else {
             mHistogramRegistry->fill(HIST(mFolderSuffix[mEventType]) + HIST(o2::aod::femtodreamMCparticle::MCTypeName[o2::aod::femtodreamMCparticle::MCType::kTruth]) + HIST("/hFakePairsCounter"), 0);
           }
