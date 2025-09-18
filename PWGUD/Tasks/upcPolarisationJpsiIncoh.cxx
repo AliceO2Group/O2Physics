@@ -9,13 +9,11 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file upcPolarisationJpsiIncorr.cxx
+/// \file upcPolarisationJpsiIncoh.cxx
 /// \brief Workflow to analyse UPC forward events and perform J/psi polarization selections
 /// \author Niveditha Ram, IP2I <niv.ram@cern.ch>
 /// \ingroup PWGUD
-/// executable name: o2-analysis-ud-upc-polarisation-jpsiincorr
-
-#include "LorentzVector.h"
+/// executable name: o2-analysis-ud-upc-polarisation-jpsiincoh
 
 #include "PWGUD/DataModel/UDTables.h"
 
@@ -74,7 +72,7 @@ const int kMaxChi2MFTMatch = 30;
 const float kMaxZDCTime = 2.;
 const float kMaxZDCTimeHisto = 10.;
 const PDG_t kMuonPDG = kMuonPlus;
-struct upcPolarisationJpsiIncorr {
+struct UpcPolarisationJpsiIncoh {
 
   // a pdg object
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -343,12 +341,12 @@ struct upcPolarisationJpsiIncorr {
     }
   }
 
-  PROCESS_SWITCH(upcPolarisationJpsiIncorr, processData, "", true);
+  PROCESS_SWITCH(UpcPolarisationJpsiIncoh, processData, "", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<upcPolarisationJpsiIncorr>(cfgc),
+    adaptAnalysisTask<UpcPolarisationJpsiIncoh>(cfgc),
   };
 }
