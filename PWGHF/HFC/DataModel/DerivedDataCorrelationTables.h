@@ -106,30 +106,33 @@ DECLARE_SOA_TABLE(AssocTrackSels, "AOD", "ASSOCTRACKSEL", //! Table with associa
 // definition of columns and tables for Charm-Hadron and Hadron-Hadron correlation pairs
 namespace hf_correl_charm_had_reduced
 {
+// Correlation columns
 DECLARE_SOA_INDEX_COLUMN(HfcRedCorrColl, hfcRedCorrColl);            //! ReducedCollision index
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                       //! DeltaPhi between charm hadron and Hadrons
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                       //! DeltaEta between charm hadron and Hadrons
 DECLARE_SOA_COLUMN(PoolBin, poolBin, int);                           //! Pool Bin for the MixedEvent
+// General trigger particle columns
 DECLARE_SOA_COLUMN(PhiTrig, phiTrig, float);                         //! Phi of the trigger candidate
 DECLARE_SOA_COLUMN(EtaTrig, etaTrig, float);                         //! Eta of the trigger candidate
 DECLARE_SOA_COLUMN(PtTrig, ptTrig, float);                           //! Pt of the trigger candidate
+// Charm trigger particle selection columns
 DECLARE_SOA_COLUMN(InvMassTrig, invMassTrig, float);                 //! Invariant mass of Charm trigger candidate
 DECLARE_SOA_COLUMN(BdtScore0Trig, bdtScore0Trig, float);             //! First BDT output score
 DECLARE_SOA_COLUMN(BdtScore1Trig, bdtScore1Trig, float);             //! Second BDT output score
+// Hadron trigger particle selection columns
 DECLARE_SOA_COLUMN(NTpcCrossedRowsTrig, nTpcCrossedRowsTrig, int);   //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(ItsClsMapTrig, itsClsMapTrig, int);               //! ITS cluster map, one bit per a layer, starting from the innermost
 DECLARE_SOA_COLUMN(ItsNClsTrig, itsNClsTrig, int);                   //! Number of ITS clusters
-DECLARE_SOA_COLUMN(EtaTrigTrack, etaTrigTrack, float);               //! Eta of the track
-DECLARE_SOA_COLUMN(PhiTrigTrack, phiTrigTrack, float);               //! Phi of the track
-DECLARE_SOA_COLUMN(PtTrigTrack, ptTrigTrack, float);                 //! Pt of the track
 DECLARE_SOA_COLUMN(DcaXYTrig, dcaXYTrig, float);                     //! Impact parameter in XY of the track to the primary vertex
 DECLARE_SOA_COLUMN(DcaZTrig, dcaZTrig, float);                       //! Impact parameter in Z of the track to the primary vertex
+// General associated particle columns
+DECLARE_SOA_COLUMN(EtaAssoc, etaAssoc, float);                       //! Eta of the associated candidate
+DECLARE_SOA_COLUMN(PhiAssoc, phiAssoc, float);                       //! Phi of the associated candidate
+DECLARE_SOA_COLUMN(PtAssoc, ptAssoc, float);                         //! Pt of the associated candidate
+// Hadron associated particle selection columns
 DECLARE_SOA_COLUMN(NTpcCrossedRowsAssoc, nTpcCrossedRowsAssoc, int); //! Number of crossed TPC Rows
 DECLARE_SOA_COLUMN(ItsClsMapAssoc, itsClsMapAssoc, int);             //! ITS cluster map, one bit per a layer, starting from the innermost
 DECLARE_SOA_COLUMN(ItsNClsAssoc, itsNClsAssoc, int);                 //! Number of ITS clusters
-DECLARE_SOA_COLUMN(EtaAssoc, etaAssoc, float);                       //! Eta of the track
-DECLARE_SOA_COLUMN(PhiAssoc, phiAssoc, float);                       //! Phi of the track
-DECLARE_SOA_COLUMN(PtAssoc, ptAssoc, float);                         //! Pt of the track
 DECLARE_SOA_COLUMN(DcaXYAssoc, dcaXYAssoc, float);                   //! Impact parameter in XY of the track to the primary vertex
 DECLARE_SOA_COLUMN(DcaZAssoc, dcaZAssoc, float);                     //! Impact parameter in Z of the track to the primary vertex
 } // namespace hf_correl_charm_had_reduced
@@ -146,21 +149,21 @@ DECLARE_SOA_TABLE(HfcRedTrigCharms, "AOD", "HFCREDTRIGCHARM", //! Table with Sam
                   aod::hf_correl_charm_had_reduced::BdtScore0Trig,
                   aod::hf_correl_charm_had_reduced::BdtScore1Trig);
 
-DECLARE_SOA_TABLE(HfcRedTrigTrks, "AOD", "HFCREDTRIGTRK", //! Table with Same Event Charm-Hadron pairs information
+DECLARE_SOA_TABLE(HfcRedTrigTracks, "AOD", "HFCREDTRIGTRACK", //! Table with Same Event Charm-Hadron pairs information
                   aod::hf_correl_charm_had_reduced::NTpcCrossedRowsTrig,
                   aod::hf_correl_charm_had_reduced::ItsClsMapTrig,
                   aod::hf_correl_charm_had_reduced::ItsNClsTrig,
                   aod::hf_correl_charm_had_reduced::DcaXYTrig,
                   aod::hf_correl_charm_had_reduced::DcaZTrig);
 
-DECLARE_SOA_TABLE(HfcRedAssocBases, "AOD", "HFCREDASSOCBASE", //! Table with associated candidate base info
+DECLARE_SOA_TABLE(HfcRedAssBases, "AOD", "HFCREDASSBASE", //! Table with associated candidate base info
                   soa::Index<>,
                   aod::hf_correl_charm_had_reduced::HfcRedCorrCollId,
                   aod::hf_correl_charm_had_reduced::PhiAssoc,
                   aod::hf_correl_charm_had_reduced::EtaAssoc,
                   aod::hf_correl_charm_had_reduced::PtAssoc);
 
-DECLARE_SOA_TABLE(HfcRedAssocTrks, "AOD", "HFCREDASSOCTRK", //! Table with Same Event Track Selections information
+DECLARE_SOA_TABLE(HfcRedAssTracks, "AOD", "HFCREDASSTRACK", //! Table with Same Event Track Selections information
                   aod::hf_correl_charm_had_reduced::NTpcCrossedRowsAssoc,
                   aod::hf_correl_charm_had_reduced::ItsClsMapAssoc,
                   aod::hf_correl_charm_had_reduced::ItsNClsAssoc,
@@ -174,20 +177,73 @@ DECLARE_SOA_TABLE(HfcRedSEBases, "AOD", "HFCREDSEBASE", //! Table with Same Even
                   aod::hf_correl_charm_had_reduced::DeltaEta,
                   aod::hf_correl_charm_had_reduced::DeltaPhi);
 
-DECLARE_SOA_TABLE(HfcRedCorrSEs, "AOD", "HFCREDCORRSE", //! Correlation pairs information Same Event
+DECLARE_SOA_TABLE(HfcRedSEChHads, "AOD", "HFCREDSECHHAD", //! Correlation pairs information Same Event
                   aod::hf_correl_charm_had_reduced::PoolBin,
                   aod::hf_correl_charm_had_reduced::PtTrig,
                   aod::hf_correl_charm_had_reduced::PtAssoc,
                   aod::hf_correl_charm_had_reduced::DeltaEta,
-                  aod::hf_correl_charm_had_reduced::DeltaPhi);
+                  aod::hf_correl_charm_had_reduced::DeltaPhi,
+                  aod::hf_correl_charm_had_reduced::InvMassTrig,
+                  aod::hf_correl_charm_had_reduced::BdtScore0Trig,
+                  aod::hf_correl_charm_had_reduced::BdtScore1Trig,
+                  aod::hf_correl_charm_had_reduced::NTpcCrossedRowsAssoc,
+                  aod::hf_correl_charm_had_reduced::ItsClsMapAssoc,
+                  aod::hf_correl_charm_had_reduced::ItsNClsAssoc,
+                  aod::hf_correl_charm_had_reduced::DcaXYAssoc,
+                  aod::hf_correl_charm_had_reduced::DcaZAssoc,
+                  soa::Marker<1>);
 
-DECLARE_SOA_TABLE(HfcRedCorrMEs, "AOD", "HFCREDCORRME", //! Correlation pairs information Mixed Event
+DECLARE_SOA_TABLE(HfcRedMEChHads, "AOD", "HFCREDMECHHAD", //! Correlation pairs information Same Event
                   aod::hf_correl_charm_had_reduced::PoolBin,
                   aod::hf_correl_charm_had_reduced::PtTrig,
                   aod::hf_correl_charm_had_reduced::PtAssoc,
                   aod::hf_correl_charm_had_reduced::DeltaEta,
-                  aod::hf_correl_charm_had_reduced::DeltaPhi);
+                  aod::hf_correl_charm_had_reduced::DeltaPhi,
+                  aod::hf_correl_charm_had_reduced::InvMassTrig,
+                  aod::hf_correl_charm_had_reduced::BdtScore0Trig,
+                  aod::hf_correl_charm_had_reduced::BdtScore1Trig,
+                  aod::hf_correl_charm_had_reduced::NTpcCrossedRowsAssoc,
+                  aod::hf_correl_charm_had_reduced::ItsClsMapAssoc,
+                  aod::hf_correl_charm_had_reduced::ItsNClsAssoc,
+                  aod::hf_correl_charm_had_reduced::DcaXYAssoc,
+                  aod::hf_correl_charm_had_reduced::DcaZAssoc,
+                  soa::Marker<2>);
 
+DECLARE_SOA_TABLE(HfcRedSEHadHads, "AOD", "HFCREDSEHADHAD", //! Correlation pairs information Same Event
+                  aod::hf_correl_charm_had_reduced::PoolBin,
+                  aod::hf_correl_charm_had_reduced::PtTrig,
+                  aod::hf_correl_charm_had_reduced::PtAssoc,
+                  aod::hf_correl_charm_had_reduced::DeltaEta,
+                  aod::hf_correl_charm_had_reduced::DeltaPhi,
+                  aod::hf_correl_charm_had_reduced::NTpcCrossedRowsTrig,
+                  aod::hf_correl_charm_had_reduced::ItsClsMapTrig,
+                  aod::hf_correl_charm_had_reduced::ItsNClsTrig,
+                  aod::hf_correl_charm_had_reduced::DcaXYTrig,
+                  aod::hf_correl_charm_had_reduced::DcaZTrig,
+                  aod::hf_correl_charm_had_reduced::NTpcCrossedRowsAssoc,
+                  aod::hf_correl_charm_had_reduced::ItsClsMapAssoc,
+                  aod::hf_correl_charm_had_reduced::ItsNClsAssoc,
+                  aod::hf_correl_charm_had_reduced::DcaXYAssoc,
+                  aod::hf_correl_charm_had_reduced::DcaZAssoc,
+                  soa::Marker<1>);
+
+DECLARE_SOA_TABLE(HfcRedMEHadHads, "AOD", "HFCREDMEHADHAD", //! Correlation pairs information Same Event
+                  aod::hf_correl_charm_had_reduced::PoolBin,
+                  aod::hf_correl_charm_had_reduced::PtTrig,
+                  aod::hf_correl_charm_had_reduced::PtAssoc,
+                  aod::hf_correl_charm_had_reduced::DeltaEta,
+                  aod::hf_correl_charm_had_reduced::DeltaPhi,
+                  aod::hf_correl_charm_had_reduced::NTpcCrossedRowsTrig,
+                  aod::hf_correl_charm_had_reduced::ItsClsMapTrig,
+                  aod::hf_correl_charm_had_reduced::ItsNClsTrig,
+                  aod::hf_correl_charm_had_reduced::DcaXYTrig,
+                  aod::hf_correl_charm_had_reduced::DcaZTrig,
+                  aod::hf_correl_charm_had_reduced::NTpcCrossedRowsAssoc,
+                  aod::hf_correl_charm_had_reduced::ItsClsMapAssoc,
+                  aod::hf_correl_charm_had_reduced::ItsNClsAssoc,
+                  aod::hf_correl_charm_had_reduced::DcaXYAssoc,
+                  aod::hf_correl_charm_had_reduced::DcaZAssoc,
+                  soa::Marker<2>);
 } // namespace o2::aod
 
 #endif // PWGHF_HFC_DATAMODEL_DERIVEDDATACORRELATIONTABLES_H_

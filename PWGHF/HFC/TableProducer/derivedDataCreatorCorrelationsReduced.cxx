@@ -62,13 +62,13 @@ enum CandType {
 
 /// Code to select collisions with at least one Ds meson
 struct HfDerivedDataCreatorCorrelationsReduced {
-  Produces<aod::HfcRedCorrColls> rowCollisions;   // Table with reduced collision info
-  Produces<aod::HfcRedSEBases> rowSEPairs;        // Table with same-event pairs info
-  Produces<aod::HfcRedAssocBases> rowAssocTrks;   // Table with associated track info
-  Produces<aod::HfcRedAssocTrks> rowAssocTrkSels; // Table with associated track selection info
-  Produces<aod::HfcRedTrigBases> rowTrigs;        // Table with charm candidate info
-  Produces<aod::HfcRedTrigCharms> rowTrigCharms;  // Table with charm trigger candidate info
-  Produces<aod::HfcRedTrigTrks> rowTrigHads;      // Table with hadron trigger candidate info
+  Produces<aod::HfcRedCorrColls> rowCollisions;     // Table with reduced collision info
+  Produces<aod::HfcRedSEBases> rowSEPairs;          // Table with same-event pairs info
+  Produces<aod::HfcRedAssBases> rowAssocBases;      // Table with associated candidate base info
+  Produces<aod::HfcRedAssTracks> rowAssocTrkSels;   // Table with associated track selection info
+  Produces<aod::HfcRedTrigBases> rowTrigBases;      // Table with base trigger candidate info
+  Produces<aod::HfcRedTrigCharms> rowTrigCharms;    // Table with charm trigger candidate selection info
+  Produces<aod::HfcRedTrigTracks> rowTrigHads;      // Table with hadron trigger candidate selection info
 
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 15, "Selection Flag for hadron (ML score tables are required to run the task)"};
@@ -76,12 +76,12 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::vector<int>> classMl{"classMl", {0, 2}, "Indexes of BDT scores to be stored. Two indexes max."};
   Configurable<float> yCandMax{"yCandMax", 0.8, "max. cand. rapidity"};
-  Configurable<float> ptCandMin{"ptCandMin", 1., "min. cand. pT"};
+  Configurable<float> ptCandMin{"ptCandMin", 0., "min. cand. pT"};
   Configurable<float> ptCandMax{"ptCandMax", 24., "max. cand. pT"};
   Configurable<int> tpcNClsCrossedRowsMin{"tpcNClsCrossedRowsMin", 70, "min. TPC crossed rows for associated tracks"};
   Configurable<float> etaTrkMax{"etaTrkMax", 1., "max. track eta"};
-  Configurable<float> ptTrkMin{"ptTrkMin", 0.5, "min. track pT"};
-  Configurable<float> ptTrkMax{"ptTrkMax", 5., "max. track pT"};
+  Configurable<float> ptTrkMin{"ptTrkMin", 0.2, "min. track pT"};
+  Configurable<float> ptTrkMax{"ptTrkMax", 3., "max. track pT"};
   Configurable<float> dcaXYTrkMax{"dcaXYTrkMax", 1., "max. track DCA XY"};
   Configurable<float> dcaZTrkMax{"dcaZTrkMax", 1., "max. track DCA Z"};
   Configurable<float> deltaEtaAbsMin{"deltaEtaAbsMin", 0.5, "min. pair delta eta"};
@@ -89,8 +89,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   Configurable<float> downSampleTrksFactor{"downSampleTrksFactor", 1., "Fraction of associated tracks to keep"};
   Configurable<float> ptMaxForDownSample{"ptMaxForDownSample", 10., "Maximum pt for the application of the downsampling factor"};
   Configurable<float> centMaxForDownSample{"centMaxForDownSample", 101., "Maximum centrality for the application of the downsampling factor"};
-  Configurable<std::vector<double>> binsPtTrig{"binsPtTrig", std::vector<double>{1., 3., 5., 8., 16., 36.}, "pT bin limits for trigger candidates"};
-  Configurable<std::vector<double>> binsPtAssoc{"binsPtAssoc", std::vector<double>{0.3, 1., 2., 50.}, "pT bin limits for associated particles"};
+  Configurable<std::vector<double>> binsPtTrig{"binsPtTrig", std::vector<double>{0., 1., 2., 3., 5., 8., 12., 24., 36.}, "pT bin limits for trigger candidates"};
+  Configurable<std::vector<double>> binsPtAssoc{"binsPtAssoc", std::vector<double>{0.2, 1., 2., 50.}, "pT bin limits for associated particles"};
 
   HfHelper hfHelper;
   HfEventSelection hfEvSel; // event selection and monitoring
@@ -103,7 +103,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
   using CandDplusData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi, aod::HfMlDplusToPiKPi>>;
   using CandD0Data = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0, aod::HfMlD0>>;
-  using TrksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;
+  using TracksData = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;
 
   Filter filterSelectDsCandidates = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag || aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
   Filter filterSelectDplusCandidates = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlag;
@@ -113,7 +113,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   Preslice<CandDsData> candsDsPerColl = aod::hf_cand::collisionId;
   Preslice<CandDplusData> candsDplusPerColl = aod::hf_cand::collisionId;
   Preslice<CandD0Data> candsD0PerColl = aod::hf_cand::collisionId;
-  Preslice<TrksData> trackIndicesPerColl = aod::track::collisionId;
+  Preslice<TracksData> trackIndicesPerColl = aod::track::collisionId;
 
   Partition<CandDsData> selectedDsToKKPi = aod::hf_sel_candidate_ds::isSelDsToKKPi >= selectionFlag;
   Partition<CandDsData> selectedDsToPiKK = aod::hf_sel_candidate_ds::isSelDsToPiKK >= selectionFlag;
@@ -275,16 +275,21 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       if (!cand.isGlobalTrackWoDCA() || cand.tpcNClsCrossedRows() < tpcNClsCrossedRowsMin) {
         return false;
       }
-      if (trackGlobalIndex == cand.globalIndex()) {
-        return false; // skip self-correlation for hadron-hadron
+      if (trackGlobalIndex <= cand.globalIndex()) {
+        return false; // skip self-correlation and avoid pair duplication for hadron-hadron
       }
     } else {                                           // Remove Daughter-Cand pairs for charm-hadron correlations
       if constexpr ((requires { cand.prong2Id(); })) { // Check 3-prong
-        return (trackGlobalIndex != cand.prong0Id() && trackGlobalIndex != cand.prong1Id() && trackGlobalIndex != cand.prong2Id());
+        if (trackGlobalIndex == cand.prong0Id() || trackGlobalIndex == cand.prong1Id() || trackGlobalIndex == cand.prong2Id()) {
+          return false;
+        }
       } else { // Check 2-prong
-        return (trackGlobalIndex != cand.prong0Id() && trackGlobalIndex != cand.prong1Id());
+        if (trackGlobalIndex == cand.prong0Id() || trackGlobalIndex == cand.prong1Id()) {
+          return false;
+        }
       }
     }
+    return true;
   }
 
   /// Fill histograms and tables for same-event correlations
@@ -297,8 +302,9 @@ struct HfDerivedDataCreatorCorrelationsReduced {
                      const float collCentrality)
   {
     for (const auto& trigCand : trigCands) {
-      registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCand.pt());
-      registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCand.pt());
+      double trigCandPt = trigCand.pt();
+      registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCandPt);
+      registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCandPt);
       for (const auto& assTrk : assTrks) {
         if (!acceptSameEvtPair<candType>(assTrk, trigCand)) {
           continue;
@@ -310,12 +316,12 @@ struct HfDerivedDataCreatorCorrelationsReduced {
             continue;
           }
         }
-        registry.fill(HIST("hPhiVsPtTrigAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), trigCand.pt(), assTrkPt);
-        registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), trigCand.pt(), assTrkPt);
+        registry.fill(HIST("hPhiVsPtTrigAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), trigCandPt, assTrkPt);
+        registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), trigCandPt, assTrkPt);
 
         double deltaEta = assTrk.eta() - trigCand.eta();
         double deltaPhi = RecoDecay::constrainAngle(assTrk.phi() - trigCand.phi(), -o2::constants::math::PIHalf);
-        rowSEPairs(rowCollisions.lastIndex(), trigCand.pt(), assTrkPt, deltaEta, deltaPhi);
+        rowSEPairs(rowCollisions.lastIndex(), trigCandPt, assTrkPt, deltaEta, deltaPhi);
         rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
         if constexpr (candType == CandType::Hadron) {
           rowTrigHads(trigCand.tpcNClsCrossedRows(), trigCand.itsClusterMap(), trigCand.itsNCls(), trigCand.dcaXY(), trigCand.dcaZ());
@@ -337,7 +343,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCand.pt());
 
       std::array<float, 2> outputMl = getCandMlScores<candType>(trigCand);
-      rowTrigs(rowCollisions.lastIndex(), trigCand.phi(), trigCand.eta(), trigCand.pt());
+      rowTrigBases(rowCollisions.lastIndex(), trigCand.phi(), trigCand.eta(), trigCand.pt());
       rowTrigCharms(getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
     }
   }
@@ -364,7 +370,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       first = false;
       registry.fill(HIST("hPhiVsPtAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), assTrkPt);
       registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), assTrkPt);
-      rowAssocTrks(rowCollisions.lastIndex(), assTrk.phi(), assTrk.eta(), assTrkPt);
+      rowAssocBases(rowCollisions.lastIndex(), assTrk.phi(), assTrk.eta(), assTrkPt);
       rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
     }
   }
@@ -372,7 +378,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   // Dplus with ML selections
   void processDplusSameEvent(CollsWithCentMult::iterator const& coll,
                              CandDplusData const& candsDplus,
-                             TrksData const& tracks)
+                             TracksData const& tracks)
   {
     if (forceCharmInCollision && candsDplus.size() < 1) {
       return;
@@ -389,7 +395,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   // Dplus with ML selections
   void processDplusMixedEvent(CollsWithCentMult::iterator const& coll,
                               CandDplusData const& candsDplus,
-                              TrksData const& tracks)
+                              TracksData const& tracks)
   {
     if (forceCharmInCollision && candsDplus.size() < 1) {
       return;
@@ -406,7 +412,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
 
   // Ds with ML selections
   void processDsSameEvent(CollsWithCentMult::iterator const& coll,
-                          TrksData const& tracks,
+                          TracksData const& tracks,
                           CandDsData const&)
   {
     auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
@@ -426,7 +432,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
 
   // Ds with ML selections
   void processDsMixedEvent(CollsWithCentMult::iterator const& coll,
-                           TrksData const& tracks,
+                           TracksData const& tracks,
                            CandDsData const&)
   {
     auto candsDsToPiKK = selectedDsToPiKK->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
@@ -447,7 +453,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
 
   // D0 with ML selections
   void processD0SameEvent(CollsWithCentMult::iterator const& coll,
-                          TrksData const& tracks,
+                          TracksData const& tracks,
                           CandD0Data const&)
   {
     auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
@@ -467,7 +473,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
 
   // D0 with ML selections
   void processD0MixedEvent(CollsWithCentMult::iterator const& coll,
-                           TrksData const& tracks,
+                           TracksData const& tracks,
                            CandD0Data const&)
   {
     auto candsD0ToPiK = selectedD0ToPiK->sliceByCached(aod::hf_cand::collisionId, coll.globalIndex(), cache);
@@ -488,7 +494,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
 
   // Hadron Hadron Same Event
   void processHadronHadronSameEvent(CollsWithCentMult::iterator const& coll,
-                                    TrksData const& tracks)
+                                    TracksData const& tracks)
   {
     float cent{-1.}, mult{-1.};
     if (!checkCollision(coll, cent, mult)) {
@@ -501,7 +507,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
 
   // Hadron Hadron Mixed Event
   void processHadronHadronMixedEvent(CollsWithCentMult::iterator const& coll,
-                                     TrksData const& tracks)
+                                     TracksData const& tracks)
   {
     float cent{-1.}, mult{-1.};
     if (!checkCollision(coll, cent, mult)) {
