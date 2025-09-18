@@ -440,7 +440,7 @@ struct he3HadronFemto {
         candidate.tpcNClsCrossedRows() < crossedRowsToFindableRatio * candidate.tpcNClsFindable() ||
         candidate.tpcChi2NCl() > maxChi2NCl ||
         candidate.tpcChi2NCl() < settingCutChi2tpcLow ||
-        candidate.itsChi2NCl() > settingCutChi2NClITS || candidate.dcaXY() > settingCutDCAxy || 
+        candidate.itsChi2NCl() > settingCutChi2NClITS || candidate.dcaXY() > settingCutDCAxy ||
         candidate.dcaZ() > settingCutDCAz) {
       return false;
     }
@@ -622,8 +622,8 @@ struct he3HadronFemto {
       return false;
     }
 
-    if(he3Hadcand.recoPtHad() < settingCutPtMinHad || he3Hadcand.recoPtHad() > settingCutPtMaxHad) return false;
-
+    if (he3Hadcand.recoPtHad() < settingCutPtMinHad || he3Hadcand.recoPtHad() > settingCutPtMaxHad)
+      return false;
 
     he3Hadcand.signHe3 = trackHe3.sign();
     he3Hadcand.signHad = trackHad.sign();
