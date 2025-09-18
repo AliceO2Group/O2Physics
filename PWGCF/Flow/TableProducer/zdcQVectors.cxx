@@ -952,7 +952,7 @@ struct ZdcQVectors {
 
       for (int ishift = 1; ishift <= nshift; ishift++) {
         if (cal.isShiftProfileFound) {
-          int binshiftxZDCC = cal.shiftprofileC->FindBin(centrality, 0.5, ishift - 0.5); // bin 0.5 
+          int binshiftxZDCC = cal.shiftprofileC->FindBin(centrality, 0.5, ishift - 0.5); // bin 0.5
           int binshiftyZDCC = cal.shiftprofileC->FindBin(centrality, 1.5, ishift - 0.5);
           int binshiftxZDCA = cal.shiftprofileA->FindBin(centrality, 0.5, ishift - 0.5);
           int binshiftyZDCA = cal.shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5);
@@ -966,8 +966,8 @@ struct ZdcQVectors {
           if (binshiftyZDCA > 0)
             coeffshiftyZDCA = cal.shiftprofileA->GetBinContent(binshiftyZDCA);
         }
-        deltaPsiZDCC += ((2 / (1.0 * ishift)) * (-1.0*coeffshiftxZDCC * std::cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * std::sin(ishift * 1.0 * psiZDCC)));
-        deltaPsiZDCA += ((2 / (1.0 * ishift)) * (-1.0*coeffshiftxZDCA * std::cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * std::sin(ishift * 1.0 * psiZDCA)));
+        deltaPsiZDCC += ((2 / (1.0 * ishift)) * (-1.0 * coeffshiftxZDCC * std::cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * std::sin(ishift * 1.0 * psiZDCC)));
+        deltaPsiZDCA += ((2 / (1.0 * ishift)) * (-1.0 * coeffshiftxZDCA * std::cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * std::sin(ishift * 1.0 * psiZDCA)));
       }
 
       psiZDCCshift += deltaPsiZDCC;
