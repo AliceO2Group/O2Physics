@@ -118,7 +118,6 @@ struct nucleiFromHypertritonMap {
               } else {
                 registryMC.fill(HIST("deutSecPtGen_from_hypertriton"), daughter.pt());
               }
-
             }
           }
         }
