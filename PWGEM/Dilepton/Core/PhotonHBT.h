@@ -212,7 +212,6 @@ struct PhotonHBT {
     Configurable<float> cfg_max_rel_diff_pin{"cfg_max_rel_diff_pin", +1e+10, "max rel. diff. between pin and ppv"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
-    Configurable<float> cfgRefR{"cfgRefR", 1.2, "reference R (in m) for extrapolation"}; // https://cds.cern.ch/record/1419204
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3, kTOFif = 4, kPIDML = 5]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -866,7 +865,7 @@ struct PhotonHBT {
               continue;
             }
           }
-          if (!cut1.IsSelectedPair(pos1, ele1, d_bz, dielectroncuts.cfgRefR)) {
+          if (!cut1.IsSelectedPair(pos1, ele1, d_bz, 0.0)) {
             continue;
           }
 
@@ -894,7 +893,7 @@ struct PhotonHBT {
                 continue;
               }
             }
-            if (!cut2.IsSelectedPair(pos2, ele2, d_bz, dielectroncuts.cfgRefR)) {
+            if (!cut2.IsSelectedPair(pos2, ele2, d_bz, 0.0)) {
               continue;
             }
 
@@ -1012,7 +1011,7 @@ struct PhotonHBT {
                 continue;
               }
             }
-            if (!cut2.IsSelectedPair(pos2, ele2, d_bz, dielectroncuts.cfgRefR)) {
+            if (!cut2.IsSelectedPair(pos2, ele2, d_bz, 0.0)) {
               continue;
             }
 
@@ -1380,7 +1379,7 @@ struct PhotonHBT {
             continue;
           }
         }
-        if (!cut.IsSelectedPair(pos, ele, d_bz, dielectroncuts.cfgRefR)) {
+        if (!cut.IsSelectedPair(pos, ele, d_bz, 0.0)) {
           continue;
         }
         passed_pairIds.emplace_back(std::make_pair(pos.globalIndex(), ele.globalIndex()));
