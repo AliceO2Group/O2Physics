@@ -303,13 +303,15 @@ struct f1protoncorrelation {
 
         if (f1track.f1SignalStat() > 0) {
           // check charge
+          float pairCharge = f1track.f1SignalStat() * protontrack.protonCharge();
           int f1Charge = f1track.f1SignalStat();
+          int pionCharge = -1;
+          int kaonCharge = 1;
           if (f1Charge == 2) {
-            f1Charge = -1;
+            pionCharge = 1;
+            kaonCharge = -1;
           }
-          int pionCharge = -1.0 * f1Charge;
-          float pairCharge = f1Charge * protontrack.protonCharge();
-          histos.fill(HIST("hPhaseSpaceProtonKaonSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, protontrack.protonCharge(), f1Charge, bz, bz));   // Phase Space Proton kaon
+          histos.fill(HIST("hPhaseSpaceProtonKaonSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, protontrack.protonCharge(), kaonCharge, bz, bz)); // Phase Space Proton kaon
           histos.fill(HIST("hPhaseSpaceProtonPionSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, protontrack.protonCharge(), pionCharge, bz, bz)); // Phase Space Proton Pion
           histos.fill(HIST("h2SameEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge);                                                       // F1 sign = 1 unlike, F1 sign = -1 like
           if (fillSparse) {
@@ -533,14 +535,16 @@ struct f1protoncorrelation {
         }
         auto relative_momentum = getkstar(F1, Proton);
         if (t1.f1SignalStat() > 0) {
+          float pairCharge = t1.f1SignalStat() * t2.protonCharge();
           int f1Charge = t1.f1SignalStat();
+          int pionCharge = -1;
+          int kaonCharge = 1;
           if (f1Charge == 2) {
-            f1Charge = -1;
+            pionCharge = 1;
+            kaonCharge = -1;
           }
-          int pionCharge = -1.0 * f1Charge;
-          float pairCharge = f1Charge * t2.protonCharge();
           histos.fill(HIST("h2MixEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge);                                               // F1 sign = 1 unlike, F1 sign = -1 like
-          histos.fill(HIST("hPhaseSpaceProtonKaonMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, t2.protonCharge(), f1Charge, bz, bz2));   // Phase Space Proton kaon
+          histos.fill(HIST("hPhaseSpaceProtonKaonMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, t2.protonCharge(), kaonCharge, bz, bz2)); // Phase Space Proton kaon
           histos.fill(HIST("hPhaseSpaceProtonPionMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, t2.protonCharge(), pionCharge, bz, bz2)); // Phase Space Proton Pion
           if (fillSparse) {
             histos.fill(HIST("MEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, pairCharge);
