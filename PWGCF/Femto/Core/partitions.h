@@ -16,13 +16,15 @@
 #ifndef PWGCF_FEMTO_CORE_PARTITIONS_H_
 #define PWGCF_FEMTO_CORE_PARTITIONS_H_
 
-// collsion filters
-#define MAKE_COLLISION_FILTER(selection)                                                                            \
-  (femtocollisions::posZ >= (selection).vtxZMin && femtocollisions::posZ <= (selection).vtxZMax) &&                 \
-    (femtocollisions::mult >= (selection).multMin && femtocollisions::mult <= (selection).multMax) &&               \
-    (femtocollisions::cent >= (selection).centMin && femtocollisions::cent <= (selection).centMax) &&               \
-    (femtocollisions::sphericity >= (selection).spherMin && femtocollisions::sphericity <= (selection).spherMax) && \
-    (femtocollisions::magField >= (selection).magFieldMin && femtocollisions::magField <= (selection).magFieldMax)
+// collsion selection
+#define MAKE_COLLISION_FILTER(selection)                                                                              \
+  (femtocollisions::posZ >= selection.vtxZMin && femtocollisions::posZ <= selection.vtxZMax) &&                       \
+    (femtocollisions::mult >= selection.multMin && femtocollisions::mult <= selection.multMax) &&                     \
+    (femtocollisions::cent >= selection.centMin && femtocollisions::cent <= selection.centMax) &&                     \
+    (femtocollisions::sphericity >= selection.spherMin && femtocollisions::sphericity <= selection.spherMax) &&       \
+    (femtocollisions::magField >= selection.magFieldMin && femtocollisions::magField <= selection.magFieldMax) &&     \
+    (femtocollisions::occupancy >= selection.occupancyMin && femtocollisions::occupancy <= selection.occupancyMax) && \
+    ncheckbit(femtocollisions::collisionMask, selection.collisionMask)
 
 // standard track partition
 #define MAKE_TRACK_PARTITION(selection)                                                                                                          \

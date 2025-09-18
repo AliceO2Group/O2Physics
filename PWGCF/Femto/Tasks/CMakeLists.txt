@@ -34,12 +34,12 @@ o2physics_add_dpl_workflow(femto-cascade-qa
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
-# o2physics_add_dpl_workflow(femtounited-pair-track-track
-# 	  SOURCES femtounitedPairTrackTrack.cxx
-#           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-#           COMPONENT_NAME Analysis)
-#
-# o2physics_add_dpl_workflow(femtounited-pair-track-v0
-# 	  SOURCES femtounitedPairTrackV0.cxx
-#           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-#           COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(femto-pair-track-track
+	  SOURCES femtoPairTrackTrack.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-pair-track-v0
+	  SOURCES femtoPairTrackV0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
