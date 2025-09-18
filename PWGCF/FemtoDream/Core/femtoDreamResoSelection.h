@@ -172,7 +172,7 @@ class FemtoDreamResoSelection
   /// Helper function to obtain the index of a given selection variable for consistent naming of the configurables
   /// \param obs Reso selection variable (together with prefix) got from file
   /// \param prefix Additional prefix for the output of the configurable
-  static int findSelectionIndex(const std::string_view& obs,
+  static int findSelectionIndex(std::string_view obs,
                                 std::string_view prefix = "")
   {
     for (int index = 0; index < kNresoSelection; index++) {

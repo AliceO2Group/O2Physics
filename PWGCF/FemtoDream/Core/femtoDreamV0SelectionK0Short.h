@@ -123,7 +123,7 @@ class FemtoDreamV0Selection
   static std::string getSelectionName(femto_dream_v0_selection::V0Sel iSel, std::string_view prefix = "", std::string_view suffix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
-    outString += static_cast<std::string>(MSelectionNames[iSel]);
+    outString += static_cast<std::string>(SelectionNames[iSel]);
     outString += suffix;
     return outString;
   }
@@ -136,7 +136,7 @@ class FemtoDreamV0Selection
   {
     for (int index = 0; index < kNv0Selection; index++) {
       std::string comp = static_cast<std::string>(prefix) +
-                         static_cast<std::string>(MSelectionNames[index]);
+                         static_cast<std::string>(SelectionNames[index]);
       std::string_view cmp{comp};
       if (obs.compare(cmp) == 0)
         return index;
@@ -160,7 +160,7 @@ class FemtoDreamV0Selection
                                         std::string_view prefix = "")
   {
     std::string outString = static_cast<std::string>(prefix);
-    outString += static_cast<std::string>(MSelectionHelper[iSel]);
+    outString += static_cast<std::string>(SelectionHelper[iSel]);
     return outString;
   }
 
@@ -251,7 +251,7 @@ class FemtoDreamV0Selection
 
   static constexpr int kNv0Selection = 9;
 
-  static constexpr std::string_view MSelectionNames[kNv0Selection] = {
+  static constexpr std::string_view SelectionNames[kNv0Selection] = {
     "Sign", "PtMin", "PtMax", "EtaMax", "DCAdaughMax", "CPAMin",
     "TranRadMin", "TranRadMax", "DecVecMax"}; ///< Name of the different
                                               ///< selections
@@ -269,7 +269,7 @@ class FemtoDreamV0Selection
       femtoDreamSelection::kUpperLimit}; ///< Map to match a variable with
                                          ///< its type
 
-  static constexpr std::string_view MSelectionHelper[kNv0Selection] = {
+  static constexpr std::string_view SelectionHelper[kNv0Selection] = {
     "+1 for lambda, -1 for antilambda",
     "Minimum pT (GeV/c)",
     "Maximum pT (GeV/c)",
