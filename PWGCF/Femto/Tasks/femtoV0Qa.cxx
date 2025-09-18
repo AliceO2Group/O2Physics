@@ -46,7 +46,7 @@ using namespace o2::analysis::femto;
 struct FemtoV0Qa {
 
   // setup for collisions
-  collisionbuilder::ConfCollisionFilter collisionSelection;
+  collisionbuilder::ConfCollisionFilters collisionSelection;
   Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
 
   colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;

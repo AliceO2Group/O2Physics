@@ -59,10 +59,8 @@ enum class System : uint32_t {
   kMC = BIT(2),
   kRun3 = BIT(3),
   kRun2 = BIT(4),
-  kNoCentCal = BIT(5),
   kPP_Run3 = kPP | kRun3,
   kPP_Run2 = kPP | kRun2,
-  kPP_NoCentCal_Run3 = kPP | kRun3 | kNoCentCal,
   kPbPb_Run3 = kPbPb | kRun3,
   kPbPb_Run2 = kPbPb | kRun2,
 };
