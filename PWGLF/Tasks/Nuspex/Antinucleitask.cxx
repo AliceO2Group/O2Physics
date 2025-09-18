@@ -8,10 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-
-/// \file Antinuclitask.cxx
-/// \brief task for analysing the anti nuclei in LF
-/// \author Arkaprabha Saha <arkaprabha.saha@cern.ch>
+///
+/// \author Arkaprabha Saha  (arkaprabha.saha@cern.ch)
+/// \since September 18, 2025
+/// \file Antinucleitask.cxx
+/// \brief  A task to analyse Anti-nuclei
 
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/TrackSelection.h"
