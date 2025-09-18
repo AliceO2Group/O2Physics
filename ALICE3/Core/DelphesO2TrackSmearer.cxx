@@ -10,14 +10,14 @@
 // or submit itself to any jurisdiction.
 
 ///
-/// @file DelphesO2TrackSmearer.cxx
-/// @brief Porting to O2Physics of DelphesO2 code.
+/// \file DelphesO2TrackSmearer.cxx
+/// \author: Roberto Preghenella
+/// \brief Porting to O2Physics of DelphesO2 code.
 ///        Minimal changes have been made to the original code for adaptation purposes, formatting and commented parts have been considered.
 ///        Relevant sources:
 ///                 DelphesO2/src/lutCovm.hh https://github.com/AliceO2Group/DelphesO2/blob/master/src/lutCovm.hh
 ///                 DelphesO2/src/TrackSmearer.cc https://github.com/AliceO2Group/DelphesO2/blob/master/src/TrackSmearer.cc
 ///                 DelphesO2/src/TrackSmearer.hh https://github.com/AliceO2Group/DelphesO2/blob/master/src/TrackSmearer.hh
-/// @author: Roberto Preghenella
 /// @email: preghenella@bo.infn.it
 ///
 
@@ -153,8 +153,8 @@ lutEntry_t*
   // Interpolate if requested
   auto fraction = mLUTHeader[ipdg]->nchmap.fracPositionWithinBin(nch);
   if (mInterpolateEfficiency) {
-    static constexpr float fractionThreshold = 0.5f;
-    if (fraction > fractionThreshold) {
+    static constexpr float kFractionThreshold = 0.5f;
+    if (fraction > kFractionThreshold) {
       switch (mWhatEfficiency) {
         case 1:
           if (inch < mLUTHeader[ipdg]->nchmap.nbins - 1) {
@@ -237,18 +237,18 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float inte
 
   // transform params vector and smear
   static constexpr int kParSize = 5;
-  double params_[kParSize];
+  double params[kParSize];
   for (int i = 0; i < kParSize; ++i) {
     double val = 0.;
     for (int j = 0; j < kParSize; ++j)
       val += lutEntry->eigvec[j][i] * o2track.getParam(j);
-    params_[i] = gRandom->Gaus(val, std::sqrt(lutEntry->eigval[i]));
+    params[i] = gRandom->Gaus(val, std::sqrt(lutEntry->eigval[i]));
   }
   // transform back params vector
   for (int i = 0; i < kParSize; ++i) {
     double val = 0.;
     for (int j = 0; j < kParSize; ++j)
-      val += lutEntry->eiginv[j][i] * params_[j];
+      val += lutEntry->eiginv[j][i] * params[j];
     o2track.setParam(val, i);
   }
   // should make a sanity check that par[2] sin(phi) is in [-1, 1]
@@ -308,7 +308,7 @@ double TrackSmearer::getAbsPtRes(int pdg, float nch, float eta, float pt)
 {
   float dummy = 0.0f;
   auto lutEntry = getLUTEntry(pdg, nch, 0., eta, pt, dummy);
-  auto val = std::sqrt(lutEntry->covm[14]) * pow(lutEntry->pt, 2);
+  auto val = std::sqrt(lutEntry->covm[14]) * lutEntry->pt * lutEntry->pt;
   return val;
 }
 
