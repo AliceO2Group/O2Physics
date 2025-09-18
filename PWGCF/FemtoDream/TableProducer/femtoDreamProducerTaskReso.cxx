@@ -125,10 +125,7 @@ struct FemtoDreamProducerTaskReso {
   FemtoDreamCollisionSelection colCuts;
   // Event cuts - Triggers
   Configurable<bool> confEnableTriggerSelection{"confEnableTriggerSelection", false, "Should the trigger selection be enabled for collisions?"};
-  Configurable<LabeledArray<float>> confTriggerSwitches{
-    "confTriggerSwitches",
-    {software_triggers::triggerSwitches[0], 1, software_triggers::nTriggers, std::vector<std::string>{"Switch"}, software_triggers::triggerNames},
-    "Turn on which trigger should be checked for recorded events to pass selection"};
+  Configurable<LabeledArray<float>> confTriggerSwitches{"confTriggerSwitches", {software_triggers::triggerSwitches[0], 1, software_triggers::nTriggers, std::vector<std::string>{"Switch"}, software_triggers::triggerNames}, "Turn on which trigger should be checked for recorded events to pass selection"};
   Configurable<std::string> confBaseCCDBPathForTriggers{"confBaseCCDBPathForTriggers", "Users/m/mpuccio/EventFiltering/OTS/Chunked/", "Provide ccdb path for trigger table; default - trigger coordination"};
 
   // Event cuts - usual selection criteria
@@ -304,7 +301,7 @@ struct FemtoDreamProducerTaskReso {
     resoRegistry.add("AnalysisQA/Reso/DCAz_negdaughter_selected", "dcaZ of all processed tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
 
     if (confEnableTriggerSelection) {
-      for (const std::string& triggerName : software_triggers::triggerNames) {
+      for (const auto& triggerName : software_triggers::triggerNames) {
         if (confTriggerSwitches->get("Switch", triggerName.c_str())) {
           zorroTriggerNames += triggerName + ",";
         }
@@ -427,7 +424,7 @@ struct FemtoDreamProducerTaskReso {
   }
 
   /// Function to retrieve the nominal magnetic field in kG (0.1T) and convert it directly to T
-  void initCCDB_Mag_Trig(aod::BCsWithTimestamps::iterator bc)
+  void initCcdbMagTrig(aod::BCsWithTimestamps::iterator bc)
   {
     // TODO done only once (and not per run). Will be replaced by CCDBConfigurable
     // get magnetic field for run
@@ -565,6 +562,11 @@ struct FemtoDreamProducerTaskReso {
   void fillMCParticle(CollisionType const& col, ParticleType const& particle, o2::aod::femtodreamparticle::ParticleType fdparttype)
   {
     if (particle.has_mcParticle()) {
+
+      constexpr int kProcessDirectMother = 4;
+      constexpr int kProcessInelasticHadronic = 23;
+      constexpr int kGenStatusTransport = -1;
+
       // get corresponding MC particle and its info
       auto particleMC = particle.mcParticle();
       auto pdgCode = particleMC.pdgCode();
@@ -589,7 +591,7 @@ struct FemtoDreamProducerTaskReso {
           // particle is from a decay -> getProcess() == 4
           // particle is generated during transport -> getGenStatusCode() == -1
           // list of mothers is not empty
-        } else if (particleMC.getProcess() == 4 && particleMC.getGenStatusCode() == -1 && !motherparticlesMC.empty()) {
+        } else if (particleMC.getProcess() == kProcessDirectMother && particleMC.getGenStatusCode() == kGenStatusTransport && !motherparticlesMC.empty()) {
           // get direct mother
           auto motherparticleMC = motherparticlesMC.front();
           pdgCodeMother = motherparticleMC.pdgCode();
@@ -598,7 +600,7 @@ struct FemtoDreamProducerTaskReso {
           // check if particle is material
           // particle is from inelastic hadronic interaction -> getProcess() == 23
           // particle is generated during transport -> getGenStatusCode() == -1
-        } else if (particleMC.getProcess() == 23 && particleMC.getGenStatusCode() == -1) {
+        } else if (particleMC.getProcess() == kProcessInelasticHadronic && particleMC.getGenStatusCode() == kGenStatusTransport) {
           particleOrigin = aod::femtodreamMCparticle::ParticleOriginMCTruth::kMaterial;
           // cross check to see if we missed a case
         } else {
@@ -1008,7 +1010,7 @@ struct FemtoDreamProducerTaskReso {
                 o2::aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
-    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
+    initCcdbMagTrig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
                                         aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
@@ -1029,7 +1031,7 @@ struct FemtoDreamProducerTaskReso {
                              o2::aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
-    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
+    initCcdbMagTrig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
                                         aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
@@ -1049,7 +1051,7 @@ struct FemtoDreamProducerTaskReso {
                             o2::aod::V0Datas const& fullV0s)
   {
     // get magnetic field for run
-    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
+    initCcdbMagTrig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     auto tracksWithItsPid = soa::Attach<aod::FemtoFullTracks, aod::pidits::ITSNSigmaEl, aod::pidits::ITSNSigmaPi, aod::pidits::ITSNSigmaKa,
                                         aod::pidits::ITSNSigmaPr, aod::pidits::ITSNSigmaDe, aod::pidits::ITSNSigmaTr, aod::pidits::ITSNSigmaHe>(tracks);
@@ -1071,7 +1073,7 @@ struct FemtoDreamProducerTaskReso {
                  soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
-    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
+    initCcdbMagTrig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracksAndV0<false, false, true, false>(col, tracks, tracks, fullV0s);
   }
@@ -1085,7 +1087,7 @@ struct FemtoDreamProducerTaskReso {
                               soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
-    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
+    initCcdbMagTrig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracksAndV0<true, false, false, false>(col, tracks, tracks, fullV0s);
   }
@@ -1099,7 +1101,7 @@ struct FemtoDreamProducerTaskReso {
                           soa::Join<o2::aod::V0Datas, aod::McV0Labels> const& fullV0s) /// \todo with FilteredFullV0s
   {
     // get magnetic field for run
-    initCCDB_Mag_Trig(col.bc_as<aod::BCsWithTimestamps>());
+    initCcdbMagTrig(col.bc_as<aod::BCsWithTimestamps>());
     // fill the tables
     fillCollisionsAndTracksAndV0<true, false, true, true>(col, tracks, tracks, fullV0s);
   }
