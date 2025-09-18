@@ -39,6 +39,9 @@
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/Logger.h>
 
+#include <map>
+#include <string>
+
 namespace o2
 {
 namespace delphes
