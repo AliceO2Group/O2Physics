@@ -61,7 +61,7 @@
         0,
         0
     ],
-    "_FixMeanManual": "fix mean mannually",
+    "_FixMeanManual": "fix mean manually",
     "FixSecondSigma": false,
     "SecondSigmaFile": "",
     "_SecondSigmaFile": "fix second sigma for double gauss from file",
@@ -73,6 +73,17 @@
         0
     ],
     "_FixSecondSigmaManual": "fix second sigma for double gauss manually",
+    "FixFracDoubleGaus": false,
+    "FracDoubleGausFile": "",
+    "_FracDoubleGausFile": "fix fraction of sigmas for double gauss from file",
+    "FixFracDoubleGausManual": [
+        0,
+        0,
+        0,
+        0,
+        0
+    ],
+    "_FixFracDoubleGausManual": "fix fraction of sigmas for double gauss manually",
     "SliceVarName": "T",
     "SliceVarUnit": "ps",
     "_SliceVarName, _SliceVarUnit": "e.g. pT, GeV/c or something else depending on user's needs",
