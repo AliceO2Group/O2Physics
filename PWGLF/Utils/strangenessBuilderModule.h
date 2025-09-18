@@ -532,8 +532,8 @@ class BuilderModule
 
     nEnabledTables = 0;
 
-    constexpr int nTablesConst = nTables; // silence warning
-    TString listOfRequestors[nTablesConst];
+    constexpr int kTablesConst = nTables; // silence warning
+    TString listOfRequestors[kTablesConst];
     for (int i = 0; i < nTables; i++) {
       int f = baseOpts.enabledTables->get(tableNames[i].c_str(), "enable");
       if (f == 1) {
