@@ -15,7 +15,6 @@
 /// \ingroup PWGUD
 /// executable name: o2-analysis-ud-upc-polarisation-jpsiincorr
 
-
 #include "LorentzVector.h"
 
 #include "PWGUD/DataModel/UDTables.h"
