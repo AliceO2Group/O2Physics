@@ -148,7 +148,6 @@ struct ZdcQVectors {
   O2_DEFINE_CONFIGURABLE(cfgEvSelsCentMin, float, 0, "Minimum cenrality for selected events");
   O2_DEFINE_CONFIGURABLE(cfgEvSelsCentMax, float, 90, "Maximum cenrality for selected events");
 
-  O2_DEFINE_CONFIGURABLE(cfgUseShift, bool, false, "Use shift for PsiA and PsiC ZDC");
   O2_DEFINE_CONFIGURABLE(cfgCCDBdir_Shift, std::string, "Users/c/ckoster/ZDC/LHC23_PbPb_pass5/Shift", "CCDB directory for Shift ZDC");
 
   // define my.....
@@ -258,10 +257,10 @@ struct ZdcQVectors {
       registry.add<TProfile>("QA/ZNA_Energy", "ZNA_Energy", kTProfile, {{8, 0, 8}});
       registry.add<TProfile>("QA/ZNC_Energy", "ZNC_Energy", kTProfile, {{8, 0, 8}});
 
-      registry.add<TH1>("QA/psiZDCA", "psiZDCA", kTH1D, {{100, -4, 4}});
-      registry.add<TH1>("QA/psiZDCA_shift", "psiZDCA_shift", kTH1D, {{100, -4, 4}});
-      registry.add<TH1>("QA/psiZDCC", "psiZDCC", kTH1D, {{100, -4, 4}});
-      registry.add<TH1>("QA/psiZDCC_shift", "psiZDCC_shift", kTH1D, {{100, -4, 4}});
+      registry.add<TH2>("QA/psiZDCA", "psiZDCA", kTH2D, {{100, -4, 4}, {100, 0, 100}});
+      registry.add<TH2>("QA/psiZDCA_shift", "psiZDCA_shift", kTH2D, {{100, -4, 4}, {100, 0, 100}});
+      registry.add<TH2>("QA/psiZDCC", "psiZDCC", kTH2D, {{100, -4, 4}, {100, 0, 100}});
+      registry.add<TH2>("QA/psiZDCC_shift", "psiZDCC_shift", kTH2D, {{100, -4, 4}, {100, 0, 100}});
 
       registry.add<TProfile>("QA/before/ZNA_pmC", "ZNA_pmC", kTProfile, {{1, 0, 1.}});
       registry.add<TProfile>("QA/before/ZNA_pm1", "ZNA_pm1", kTProfile, {{1, 0, 1.}});
@@ -923,7 +922,7 @@ struct ZdcQVectors {
       double deltaPsiZDCA = 0;
       double deltaPsiZDCC = 0;
 
-      if (cfgUseShift && !cfgCCDBdir_Shift.value.empty()) {
+      if (!cfgCCDBdir_Shift.value.empty()) {
         if (lastRunNumber != runnumber) {
           cal.isShiftProfileFound = false;
           LOGF(info, "Getting shift profile from CCDB for runnumber: %d", runnumber);
@@ -939,19 +938,21 @@ struct ZdcQVectors {
         }
       }
 
+      for (int ishift = 1; ishift <= nshift; ishift++) {
+        registry.fill(HIST("shift/ShiftZDCC"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCC));
+        registry.fill(HIST("shift/ShiftZDCC"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCC));
+        registry.fill(HIST("shift/ShiftZDCA"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCA));
+        registry.fill(HIST("shift/ShiftZDCA"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCA));
+      }
+
       float coeffshiftxZDCC = 0.0;
       float coeffshiftyZDCC = 0.0;
       float coeffshiftxZDCA = 0.0;
       float coeffshiftyZDCA = 0.0;
 
       for (int ishift = 1; ishift <= nshift; ishift++) {
-        registry.fill(HIST("shift/ShiftZDCC"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCC));
-        registry.fill(HIST("shift/ShiftZDCC"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCC));
-        registry.fill(HIST("shift/ShiftZDCA"), centrality, 0.5, ishift - 0.5, std::sin(ishift * 1.0 * psiZDCA));
-        registry.fill(HIST("shift/ShiftZDCA"), centrality, 1.5, ishift - 0.5, std::cos(ishift * 1.0 * psiZDCA));
-
         if (cal.isShiftProfileFound) {
-          int binshiftxZDCC = cal.shiftprofileC->FindBin(centrality, 0.5, ishift - 0.5);
+          int binshiftxZDCC = cal.shiftprofileC->FindBin(centrality, 0.5, ishift - 0.5); // bin 0.5
           int binshiftyZDCC = cal.shiftprofileC->FindBin(centrality, 1.5, ishift - 0.5);
           int binshiftxZDCA = cal.shiftprofileA->FindBin(centrality, 0.5, ishift - 0.5);
           int binshiftyZDCA = cal.shiftprofileA->FindBin(centrality, 1.5, ishift - 0.5);
@@ -965,8 +966,8 @@ struct ZdcQVectors {
           if (binshiftyZDCA > 0)
             coeffshiftyZDCA = cal.shiftprofileA->GetBinContent(binshiftyZDCA);
         }
-        deltaPsiZDCC += ((2 / (1.0 * ishift)) * (-coeffshiftxZDCC * std::cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * std::sin(ishift * 1.0 * psiZDCC)));
-        deltaPsiZDCA += ((2 / (1.0 * ishift)) * (-coeffshiftxZDCA * std::cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * std::sin(ishift * 1.0 * psiZDCA)));
+        deltaPsiZDCC += ((2 / (1.0 * ishift)) * (-1.0 * coeffshiftxZDCC * std::cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * std::sin(ishift * 1.0 * psiZDCC)));
+        deltaPsiZDCA += ((2 / (1.0 * ishift)) * (-1.0 * coeffshiftxZDCA * std::cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * std::sin(ishift * 1.0 * psiZDCA)));
       }
 
       psiZDCCshift += deltaPsiZDCC;
@@ -977,10 +978,10 @@ struct ZdcQVectors {
       psiZDCAshift = std::atan2(std::sin(psiZDCAshift), std::cos(psiZDCAshift));
 
       if (cfgFillCommonRegistry) {
-        registry.fill(HIST("QA/psiZDCA"), psiZDCA);
-        registry.fill(HIST("QA/psiZDCC"), psiZDCC);
-        registry.fill(HIST("QA/psiZDCA_shift"), psiZDCAshift);
-        registry.fill(HIST("QA/psiZDCC_shift"), psiZDCCshift);
+        registry.fill(HIST("QA/psiZDCA"), psiZDCA, centrality);
+        registry.fill(HIST("QA/psiZDCC"), psiZDCC, centrality);
+        registry.fill(HIST("QA/psiZDCA_shift"), psiZDCAshift, centrality);
+        registry.fill(HIST("QA/psiZDCC_shift"), psiZDCCshift, centrality);
       }
 
       double qXaShift = std::hypot(qRec[1], qRec[0]) * std::cos(psiZDCAshift);
