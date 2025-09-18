@@ -266,7 +266,10 @@ class strangenessBuilderHelper
   //_______________________________________________________________________
   // standard build V0 function. Populates ::v0 object
   // ::v0 will be initialized to defaults if build fails
-  template <bool useSelections = true, typename TTrack, typename TTrackParametrization>
+  // --- useSelections: meant to maximize recovery, but beware high cost in CPU 
+  // --- calculateProngDCAtoPV: optionally don't propagate prongs to PV, saves 
+  //     CPU, of interest when dealing with de-duplication (variable not checked)
+  template <bool useSelections = true, bool calculateProngDCAtoPV = true, typename TTrack, typename TTrackParametrization>
   bool buildV0Candidate(int collisionIndex,
                         float pvX, float pvY, float pvZ,
                         TTrack const& positiveTrack,
@@ -306,31 +309,38 @@ class strangenessBuilderHelper
       }
     }
 
-    // Calculate DCA with respect to the collision associated to the V0
-    std::array<float, 2> dcaInfo;
+    if constexpr (calculateProngDCAtoPV) {
+      // Calculate DCA with respect to the collision associated to the V0
+      std::array<float, 2> dcaInfo;
 
-    // do DCA to PV on copies instead of originals
-    auto positiveTrackParamCopy = positiveTrackParam;
-    auto negativeTrackParamCopy = negativeTrackParam;
+      // do DCA to PV on TrackPar copies and not TrackParCov
+      // TrackPar preferred: don't calculate multiple scattering / CovMat changes 
+      // Spares CPU since variables not checked 
+      o2::track::TrackPar positiveTrackParamCopy(positiveTrackParam);
+      o2::track::TrackPar negativeTrackParamCopy(negativeTrackParam);
 
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, positiveTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
-    v0.positiveDCAxy = dcaInfo[0];
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, positiveTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
+      v0.positiveDCAxy = dcaInfo[0];
 
-    if constexpr (useSelections) {
-      if (std::fabs(v0.positiveDCAxy) < v0selections.dcanegtopv) {
-        v0 = {};
-        return false;
+      if constexpr (useSelections) {
+        if (std::fabs(v0.positiveDCAxy) < v0selections.dcanegtopv) {
+          v0 = {};
+          return false;
+        }
       }
-    }
 
-    o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, negativeTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
-    v0.negativeDCAxy = dcaInfo[0];
+      o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, negativeTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
+      v0.negativeDCAxy = dcaInfo[0];
 
-    if constexpr (useSelections) {
-      if (std::fabs(v0.negativeDCAxy) < v0selections.dcanegtopv) {
-        v0 = {};
-        return false;
+      if constexpr (useSelections) {
+        if (std::fabs(v0.negativeDCAxy) < v0selections.dcanegtopv) {
+          v0 = {};
+          return false;
+        }
       }
+    }else{
+      v0.positiveDCAxy = 0.0f; // default invalid
+      v0.negativeDCAxy = 0.0f; // default invalid
     }
 
     // Perform DCA fit
@@ -499,9 +509,11 @@ class strangenessBuilderHelper
     // Calculate DCA with respect to the collision associated to the V0
     std::array<float, 2> dcaInfo;
 
-    // do DCA to PV on copies instead of originals
-    auto positiveTrackParamCopy = positiveTrackParam;
-    auto negativeTrackParamCopy = negativeTrackParam;
+    // do DCA to PV on TrackPar copies and not TrackParCov
+    // TrackPar preferred: don't calculate multiple scattering / CovMat changes 
+    // Spares CPU since variables not checked 
+    o2::track::TrackPar positiveTrackParamCopy(positiveTrackParam);
+    o2::track::TrackPar negativeTrackParamCopy(negativeTrackParam);
 
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, positiveTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.positiveDCAxy = dcaInfo[0];
