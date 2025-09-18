@@ -17,19 +17,15 @@
 #ifndef COMMON_CORE_FFITWEIGHTS_H_
 #define COMMON_CORE_FFITWEIGHTS_H_
 
+#include <TAxis.h>
 #include <TCollection.h>
-#include <TFile.h>
-#include <TH1D.h>
-#include <TH2D.h>
-#include <TH3D.h>
-#include <TMath.h>
 #include <TNamed.h>
 #include <TObjArray.h>
 #include <TString.h>
 
-#include <algorithm>
-#include <complex>
-#include <memory>
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
 #include <string>
 #include <utility>
 #include <vector>

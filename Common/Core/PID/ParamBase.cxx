@@ -21,6 +21,9 @@
 #include <PID/ParamBase.h>
 
 #include <TFile.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
 
 #include <vector>
 

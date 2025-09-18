@@ -19,24 +19,24 @@
 #ifndef COMMON_CORE_PID_PIDTOF_H_
 #define COMMON_CORE_PID_PIDTOF_H_
 
-#include <string>
-#include <unordered_map>
-#include <vector>
-
-// ROOT includes
-#include <TF2.h>
-#include <TFile.h>
-#include <TGraph.h>
-#include <TMath.h>
-
-#include <Rtypes.h>
-
-// O2 includes
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsTOF/ParameterContainers.h>
 #include <Framework/DataTypes.h>
 #include <Framework/Logger.h>
 #include <ReconstructionDataFormats/PID.h>
+
+#include <TF2.h>
+#include <TFile.h>
+#include <TGraph.h>
+#include <TString.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 namespace o2::pid::tof
 {
