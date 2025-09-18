@@ -11,7 +11,7 @@
 
 /// \file Antinuclitask.cxx
 /// \brief task for analysing the anti nuclei in LF
-/// \author Arkaprabha Saha <arkaprabha.saha@crn.ch>
+/// \author Arkaprabha Saha <arkaprabha.saha@cern.ch>
 
 #include "Common/Core/PID/TPCPIDResponse.h"
 #include "Common/Core/TrackSelection.h"
@@ -20,15 +20,12 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-
 #include <TParameter.h>
-
 #include <cmath>
 
 using namespace o2;
@@ -146,9 +143,7 @@ struct Antinucleitask {
         histos.fill(HIST("Eta"), track.eta());
         histos.fill(HIST("Phi"), track.phi());
         histos.fill(HIST("Pt"), pt);
-
         histos.fill(HIST("tpcNSigma"), collision.centFT0C(), pt, tpcNSigmaDeuteron);
-
         histos.fill(HIST("TpcSignal"), track.tpcInnerParam(), track.tpcSignal());
 
         if (std::abs(tpcNSigmaDeuteron) < 3.f) {
