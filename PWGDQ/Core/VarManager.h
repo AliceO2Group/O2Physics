@@ -28,6 +28,7 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/fwdtrackUtilities.h"
 #include "Common/Core/trackUtilities.h"
 
 #include "CommonConstants/LHCConstants.h"
@@ -134,7 +135,8 @@ class VarManager : public TObject
     ReducedTrackCollInfo = BIT(24), // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
     ReducedMuonCollInfo = BIT(25),  // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
     MuonRealign = BIT(26),
-    MuonCovRealign = BIT(27)
+    MuonCovRealign = BIT(27),
+    MFTCov = BIT(28)
   };
 
   enum PairCandidateType {
@@ -1081,6 +1083,8 @@ class VarManager : public TObject
   static void FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
   static void FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, const C& collision, float* values = nullptr);
+  template <uint32_t MuonfillMap, uint32_t MFTfillMap, typename T1, typename T2, typename C, typename C2>
+  static void FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack, const C& collision, C2 const& mftcov, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2>
@@ -1475,6 +1479,35 @@ void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, co
     values[kPz] = pz;
     values[kEta] = mfttrack.eta();
     values[kPhi] = mfttrack.phi();
+  }
+}
+
+template <uint32_t MuonfillMap, uint32_t MFTfillMap, typename T1, typename T2, typename C, typename C2>
+void VarManager::FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack, const C& collision, C2 const& mftcov, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  if constexpr ((MuonfillMap & MuonCov) > 0) {
+    if constexpr ((MFTfillMap & MFTCov) > 0) {
+      o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muontrack, collision);
+      SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
+      std::vector<double> v1{mftcov.cXX(), mftcov.cXY(), mftcov.cYY(), mftcov.cPhiX(), mftcov.cPhiY(),
+                             mftcov.cPhiPhi(), mftcov.cTglX(), mftcov.cTglY(), mftcov.cTglPhi(), mftcov.cTglTgl(),
+                             mftcov.c1PtX(), mftcov.c1PtY(), mftcov.c1PtPhi(), mftcov.c1PtTgl(), mftcov.c1Pt21Pt2()};
+      SMatrix55 tcovs(v1.begin(), v1.end());
+      o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
+
+      o2::dataformats::GlobalFwdTrack globalRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
+      values[kX] = globalRefit.getX();
+      values[kY] = globalRefit.getY();
+      values[kZ] = globalRefit.getZ();
+      values[kTgl] = globalRefit.getTgl();
+      values[kPt] = globalRefit.getPt();
+      values[kPz] = globalRefit.getPz();
+      values[kEta] = globalRefit.getEta();
+      values[kPhi] = globalRefit.getPhi();
+    }
   }
 }
 

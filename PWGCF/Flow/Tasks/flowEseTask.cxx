@@ -104,7 +104,7 @@ struct FlowEseTask {
   Configurable<float> cfgV0EtaMax{"cfgV0EtaMax", 0.5, "maximum rapidity"};
   Configurable<float> cfgV0LifeTime{"cfgV0LifeTime", 30., "maximum lambda lifetime"};
 
-  Configurable<bool> cfgQAv0{"cfgQAv0", true, "QA plot"};
+  Configurable<bool> cfgQAv0{"cfgQAv0", false, "QA plot"};
 
   Configurable<int> cfgDaughTPCnclsMin{"cfgDaughTPCnclsMin", 70, "minimum fired crossed rows"};
   Configurable<float> cfgDaughPIDCutsTPCPr{"cfgDaughPIDCutsTPCPr", 5, "proton nsigma for TPC"};
@@ -125,7 +125,7 @@ struct FlowEseTask {
   Configurable<bool> cfgUSESP{"cfgUSESP", false, "cfg for sp"};
   Configurable<float> cfgPhiDepSig{"cfgPhiDepSig", 0.2, "cfg for significance on phi dependent study"};
 
-  Configurable<bool> cfgShiftCorr{"cfgShiftCorr", true, "additional shift correction"};
+  Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "additional shift correction"};
   Configurable<bool> cfgShiftCorrDef{"cfgShiftCorrDef", false, "additional shift correction definition"};
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
 
@@ -226,6 +226,9 @@ struct FlowEseTask {
     histos.add(Form("histQvecV2"), "", {HistType::kTH3F, {qvecAxis, qvecAxis, centAxis}});
     histos.add(Form("histMult_Cent"), "", {HistType::kTH2F, {multNumAxis, centAxis}});
     histos.add(Form("histQvecCent"), "", {HistType::kTH2F, {lowerQAxis, centAxis}});
+    histos.add(Form("histPrPtCent"), "", {HistType::kTHnSparseF, {ptAxis, ptAxis, ptAxis, centAxis}});
+    histos.add(Form("histPiPtCent"), "", {HistType::kTHnSparseF, {ptAxis, ptAxis, ptAxis, centAxis}});
+    histos.add(Form("histPrBoostedPtCent"), "", {HistType::kTHnSparseF, {ptAxis, ptAxis, ptAxis, centAxis}});
 
     for (auto i = 2; i < cfgnMods + 2; i++) {
       histos.add(Form("psi%d/h_lambda_cos", i), "", {HistType::kTHnSparseF, {massAxis, ptAxis, cosAxis, centAxis, epAxis}});
@@ -511,6 +514,18 @@ struct FlowEseTask {
     return true;
   }
 
+  double safeATan2(double y, double x)
+  {
+    if (x != 0)
+      return std::atan2(y, x);
+    if (y == 0)
+      return 0;
+    if (y > 0)
+      return o2::constants::math::PIHalf;
+    else
+      return -o2::constants::math::PIHalf;
+  }
+
   template <typename TCollision>
   void fillShiftCorrection(TCollision const& collision, int nmode)
   {
@@ -717,8 +732,12 @@ struct FlowEseTask {
       protonBoostedVec = boost(protonVec);
 
       angle = protonBoostedVec.Pz() / protonBoostedVec.P();
-      psi = std::atan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode);
+      psi = safeATan2(collision.qvecIm()[qvecDetInd], collision.qvecRe()[qvecDetInd]) / static_cast<float>(nmode);
       relphi = TVector2::Phi_0_2pi(static_cast<float>(nmode) * (LambdaVec.Phi() - psi));
+
+      histos.fill(HIST("histPrPtCent"), protonVec.Px(), protonVec.Py(), protonVec.Pz(), collision.centFT0C());
+      histos.fill(HIST("histPiPtCent"), pionVec.Px(), pionVec.Py(), pionVec.Pz(), collision.centFT0C());
+      histos.fill(HIST("histPrBoostedPtCent"), protonBoostedVec.Px(), protonBoostedVec.Py(), protonBoostedVec.Pz(), collision.centFT0C());
 
       if (cfgShiftCorr) {
         auto deltapsiFT0C = 0.0;
@@ -975,8 +994,6 @@ struct FlowEseTask {
     if (!eventSelected(collision)) {
       return;
     }
-    histos.fill(HIST("QA/CentDist"), centrality, 1.0);
-    histos.fill(HIST("QA/PVzDist"), collision.posZ(), 1.0);
 
     if (cfgShiftCorr) {
       auto bc = collision.bc_as<aod::BCsWithTimestamps>();
@@ -1062,7 +1079,7 @@ struct FlowEseTask {
           continue;
         if (std::abs(mcParticle.eta()) > kEtaAcceptance) // main acceptance
           continue;
-        histos.fill(HIST("hSparseMCGenWeight"), centclass, RecoDecay::constrainAngle(deltaPhi), std::pow(std::cos(2.0 * RecoDecay::constrainAngle(deltaPhi)), 2.0), mcParticle.pt(), mcParticle.eta());
+        histos.fill(HIST("hSparseMCGenWeight"), centclass, RecoDecay::constrainAngle(deltaPhi, 0, 2), std::pow(std::cos(2.0 * RecoDecay::constrainAngle(deltaPhi, 0, 2)), 2.0), mcParticle.pt(), mcParticle.eta());
         nCh++;
         bool validGlobal = false;
         bool validAny = false;
@@ -1079,11 +1096,11 @@ struct FlowEseTask {
         }
         // if valid global, fill
         if (validGlobal) {
-          histos.fill(HIST("hSparseMCRecWeight"), centclass, RecoDecay::constrainAngle(deltaPhi), std::pow(std::cos(2.0 * RecoDecay::constrainAngle(deltaPhi)), 2.0), mcParticle.pt(), mcParticle.eta());
+          histos.fill(HIST("hSparseMCRecWeight"), centclass, RecoDecay::constrainAngle(deltaPhi, 0, 2), std::pow(std::cos(2.0 * RecoDecay::constrainAngle(deltaPhi, 0, 2)), 2.0), mcParticle.pt(), mcParticle.eta());
         }
         if (validAny) {
-          histos.fill(HIST("hSparseMCRecAllTrackWeight"), centclass, RecoDecay::constrainAngle(deltaPhi), std::pow(std::cos(2.0 * RecoDecay::constrainAngle(deltaPhi)), 2.0), mcParticle.pt(), mcParticle.eta());
-          histos.fill(HIST("hEventPlaneAngleRec"), RecoDecay::constrainAngle(deltaPhi));
+          histos.fill(HIST("hSparseMCRecAllTrackWeight"), centclass, RecoDecay::constrainAngle(deltaPhi, 0, 2), std::pow(std::cos(2.0 * RecoDecay::constrainAngle(deltaPhi, 0, 2)), 2.0), mcParticle.pt(), mcParticle.eta());
+          histos.fill(HIST("hEventPlaneAngleRec"), RecoDecay::constrainAngle(deltaPhi, 0, 2));
         }
         // if any track present, fill
       }

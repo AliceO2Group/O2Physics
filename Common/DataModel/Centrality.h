@@ -11,7 +11,7 @@
 #ifndef COMMON_DATAMODEL_CENTRALITY_H_
 #define COMMON_DATAMODEL_CENTRALITY_H_
 
-#include "Framework/AnalysisDataModel.h"
+#include <Framework/AnalysisDataModel.h>
 
 namespace o2::aod
 {

@@ -20,16 +20,15 @@
 
 #include "multCalibrator.h"
 
-#include <TArrayF.h>
-#include <TArrayL64.h>
 #include <TDirectory.h>
 #include <TF1.h>
 #include <TFile.h>
-#include <TH1D.h>
-#include <TH1F.h>
 #include <TList.h>
+#include <TNamed.h>
 #include <TProfile.h>
-#include <TStopwatch.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
 
 #include <iostream> // FIXME
 

@@ -9,30 +9,41 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <math.h>
-#include <onnxruntime_cxx_api.h>
-#include <string>
-#include <regex>
-#include <TLorentzVector.h>
 #include "Common/DataModel/MftmchMatchingML.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
-#include "Math/SMatrix.h"
-#include "DetectorsBase/Propagator.h"
-#include "MFTTracking/Tracker.h"
-#include "MCHTracking/TrackParam.h"
-#include "MCHTracking/TrackExtrap.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "CCDB/CcdbApi.h"
+
 #include "Tools/ML/model.h"
+
+#include <CCDB/CcdbApi.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
+
+#include <Math/MatrixRepresentationsStatic.h>
+#include <Math/SMatrix.h>
+
+#include <onnxruntime_c_api.h>
+#include <onnxruntime_cxx_api.h>
+
+#include <RtypesCore.h>
+
+#include <algorithm>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <memory>
+#include <regex>
+#include <string>
+#include <vector>
+
+#include <math.h> // FIXME: Replace M_PI
 
 using namespace o2;
 using namespace o2::framework;

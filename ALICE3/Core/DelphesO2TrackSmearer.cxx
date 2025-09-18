@@ -36,6 +36,8 @@
 
 #include "ALICE3/Core/DelphesO2TrackSmearer.h"
 
+#include <Framework/Logger.h>
+
 namespace o2
 {
 namespace delphes
@@ -45,11 +47,38 @@ namespace delphes
 
 bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
 {
-  auto ipdg = getIndexPDG(pdg);
+  if (!filename || filename[0] == '\0') {
+    LOG(info) << " --- No LUT file provided for PDG " << pdg << ". Skipping load.";
+    return false;
+  }
+  const auto ipdg = getIndexPDG(pdg);
+  LOGF(info, "Will load %s lut file ..: '%s'", getParticleName(pdg), filename);
   if (mLUTHeader[ipdg] && !forceReload) {
     std::cout << " --- LUT table for PDG " << pdg << " has been already loaded with index " << ipdg << std::endl;
     return false;
   }
+  if (strncmp(filename, "ccdb:", 5) == 0) { // Check if filename starts with "ccdb:"
+    LOG(info) << " --- LUT file source identified as CCDB.";
+    std::string path = std::string(filename).substr(5); // Remove "ccdb:" prefix
+    const std::string outPath = "/tmp/LUTs/";
+    filename = Form("%s/%s/snapshot.root", outPath.c_str(), path.c_str());
+    std::ifstream checkFile(filename); // Check if file already exists
+    if (!checkFile.is_open()) {        // File does not exist, retrieve from CCDB
+      LOG(info) << " --- CCDB source detected for PDG " << pdg << ": " << path;
+      if (!mCcdbManager) {
+        LOG(fatal) << " --- CCDB manager not set. Please set it before loading LUT from CCDB.";
+      }
+      std::map<std::string, std::string> metadata;
+      mCcdbManager->getCCDBAccessor().retrieveBlob(path, outPath, metadata, 1);
+      // Add CCDB handling logic here if needed
+      LOG(info) << " --- Now retrieving LUT file from CCDB to: " << filename;
+    } else { // File exists, proceed to load
+      LOG(info) << " --- LUT file already exists: " << filename << ". Skipping download.";
+      checkFile.close();
+    }
+    return loadTable(pdg, filename, forceReload);
+  }
+
   mLUTHeader[ipdg] = new lutHeader_t;
 
   std::ifstream lutFile(filename, std::ifstream::binary);

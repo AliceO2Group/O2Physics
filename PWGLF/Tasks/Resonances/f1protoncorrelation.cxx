@@ -79,6 +79,7 @@ struct f1protoncorrelation {
   Configurable<float> momentumTOFProton{"momentumTOFProton", 0.7, "Proton momentum TOF"};
   Configurable<float> momentumProtonMax{"momentumProtonMax", 3.0, "Maximum proton momentum"};
   Configurable<float> lowPtF1{"lowPtF1", 1.0, "PT cut F1"};
+  Configurable<int> nRot{"nRot", 4, "Number of rotational bkg"};
   // Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
@@ -213,7 +214,7 @@ struct f1protoncorrelation {
   }
   float combinedTPC;
   TLorentzVector F1, Proton, F1ProtonPair, Pion, Kaon, Kshort;
-  TLorentzVector F1Rot, PionRot, KaonKshortPair, KaonKshortPairRot;
+  TLorentzVector F1Rot, PionRot, KaonKshortPair;
   // Process the data in same event
 
   int currentRunNumber = -999;
@@ -299,43 +300,48 @@ struct f1protoncorrelation {
           histos.fill(HIST("hNsigmaProtonTPC"), protontrack.protonNsigmaTPC(), Proton.Pt());
         }
         histos.fill(HIST("h2SameEventPtCorrelation"), relative_momentum, F1.Pt(), Proton.Pt());
+
         if (f1track.f1SignalStat() > 0) {
+          // check charge
+          float pairCharge = f1track.f1SignalStat() * protontrack.protonCharge();
           int f1Charge = f1track.f1SignalStat();
+          int pionCharge = -1;
+          int kaonCharge = 1;
           if (f1Charge == 2) {
-            f1Charge = -1;
+            pionCharge = 1;
+            kaonCharge = -1;
           }
-          int pionCharge = -1.0 * f1Charge;
-          float pairCharge = f1Charge * protontrack.protonCharge();
-          histos.fill(HIST("hPhaseSpaceProtonKaonSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, protontrack.protonCharge(), f1Charge, bz, bz));   // Phase Space Proton kaon
+          histos.fill(HIST("hPhaseSpaceProtonKaonSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, protontrack.protonCharge(), kaonCharge, bz, bz)); // Phase Space Proton kaon
           histos.fill(HIST("hPhaseSpaceProtonPionSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, protontrack.protonCharge(), pionCharge, bz, bz)); // Phase Space Proton Pion
           histos.fill(HIST("h2SameEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge);                                                       // F1 sign = 1 unlike, F1 sign = -1 like
           if (fillSparse) {
             histos.fill(HIST("SEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, pairCharge);
+          }
+          if (fillRotation) {
+            for (int nrotbkg = 0; nrotbkg < nRot; nrotbkg++) {
+              auto anglestart = 5.0 * TMath::Pi() / 6.0;
+              auto angleend = 7.0 * TMath::Pi() / 6.0;
+              auto anglestep = (angleend - anglestart) / (1.0 * (9.0 - 1.0));
+              auto rotangle = anglestart + nrotbkg * anglestep;
+              auto rotPionPx = Pion.Px() * std::cos(rotangle) - Pion.Py() * std::sin(rotangle);
+              auto rotPionPy = Pion.Px() * std::sin(rotangle) + Pion.Py() * std::cos(rotangle);
+              PionRot.SetXYZM(rotPionPx, rotPionPy, Pion.Pz(), Pion.M());
+              F1Rot = PionRot + KaonKshortPair;
+              if (F1Rot.Pt() < 1.0) {
+                continue;
+              }
+              auto relative_momentum_rot = getkstar(F1Rot, Proton);
+              histos.fill(HIST("h2SameEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M(), pairCharge);
+              if (fillSparse) {
+                histos.fill(HIST("SEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC, pairCharge);
+              }
+            }
           }
         }
         if (f1track.f1SignalStat() == -1) {
           histos.fill(HIST("h2SameEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M(), protontrack.protonCharge());
           if (fillSparse) {
             histos.fill(HIST("SEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, protontrack.protonCharge());
-          }
-        }
-        if (fillRotation) {
-          for (int nrotbkg = 0; nrotbkg < 9; nrotbkg++) {
-            auto anglestart = 5.0 * TMath::Pi() / 6.0;
-            auto angleend = 7.0 * TMath::Pi() / 6.0;
-            auto anglestep = (angleend - anglestart) / (1.0 * (9.0 - 1.0));
-            auto rotangle = anglestart + nrotbkg * anglestep;
-            auto rotKKPx = KaonKshortPair.Px() * std::cos(rotangle) - KaonKshortPair.Py() * std::sin(rotangle);
-            auto rotKKPy = KaonKshortPair.Px() * std::sin(rotangle) + KaonKshortPair.Py() * std::cos(rotangle);
-            KaonKshortPairRot.SetXYZM(rotKKPx, rotKKPy, KaonKshortPair.Pz(), KaonKshortPair.M());
-            F1Rot = Pion + KaonKshortPairRot;
-            auto relative_momentum_rot = getkstar(F1Rot, Proton);
-            if (f1track.f1SignalStat() > 0) {
-              histos.fill(HIST("h2SameEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M(), protontrack.protonCharge());
-              if (fillSparse) {
-                histos.fill(HIST("SEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC, protontrack.protonCharge());
-              }
-            }
           }
         }
       }
@@ -430,15 +436,18 @@ struct f1protoncorrelation {
           }
         }
         if (fillRotation) {
-          for (int nrotbkg = 0; nrotbkg < 9; nrotbkg++) {
+          for (int nrotbkg = 0; nrotbkg < nRot; nrotbkg++) {
             auto anglestart = 5.0 * TMath::Pi() / 6.0;
             auto angleend = 7.0 * TMath::Pi() / 6.0;
             auto anglestep = (angleend - anglestart) / (1.0 * (9.0 - 1.0));
             auto rotangle = anglestart + nrotbkg * anglestep;
-            auto rotKKPx = KaonKshortPair.Px() * std::cos(rotangle) - KaonKshortPair.Py() * std::sin(rotangle);
-            auto rotKKPy = KaonKshortPair.Px() * std::sin(rotangle) + KaonKshortPair.Py() * std::cos(rotangle);
-            KaonKshortPairRot.SetXYZM(rotKKPx, rotKKPy, KaonKshortPair.Pz(), KaonKshortPair.M());
-            F1Rot = Pion + KaonKshortPairRot;
+            auto rotPionPx = Pion.Px() * std::cos(rotangle) - Pion.Py() * std::sin(rotangle);
+            auto rotPionPy = Pion.Px() * std::sin(rotangle) + Pion.Py() * std::cos(rotangle);
+            PionRot.SetXYZM(rotPionPx, rotPionPy, Pion.Pz(), Pion.M());
+            F1Rot = PionRot + KaonKshortPair;
+            if (F1Rot.Pt() < 1.0) {
+              continue;
+            }
             auto relative_momentum_rot = getkstar(F1Rot, Proton);
             if (t1.f1SignalStat() > 0) {
               histos.fill(HIST("h2MixEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M(), 1.0);
@@ -526,42 +535,48 @@ struct f1protoncorrelation {
         }
         auto relative_momentum = getkstar(F1, Proton);
         if (t1.f1SignalStat() > 0) {
+          float pairCharge = t1.f1SignalStat() * t2.protonCharge();
           int f1Charge = t1.f1SignalStat();
+          int pionCharge = -1;
+          int kaonCharge = 1;
           if (f1Charge == 2) {
-            f1Charge = -1;
+            pionCharge = 1;
+            kaonCharge = -1;
           }
-          int pionCharge = -1.0 * f1Charge;
-          float pairCharge = f1Charge * t2.protonCharge();
           histos.fill(HIST("h2MixEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge);                                               // F1 sign = 1 unlike, F1 sign = -1 like
-          histos.fill(HIST("hPhaseSpaceProtonKaonMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, t2.protonCharge(), f1Charge, bz, bz2));   // Phase Space Proton kaon
+          histos.fill(HIST("hPhaseSpaceProtonKaonMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, t2.protonCharge(), kaonCharge, bz, bz2)); // Phase Space Proton kaon
           histos.fill(HIST("hPhaseSpaceProtonPionMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, t2.protonCharge(), pionCharge, bz, bz2)); // Phase Space Proton Pion
           if (fillSparse) {
             histos.fill(HIST("MEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, pairCharge);
+          }
+
+          if (fillRotation) {
+            for (int nrotbkg = 0; nrotbkg < nRot; nrotbkg++) {
+              auto anglestart = 5.0 * TMath::Pi() / 6.0;
+              auto angleend = 7.0 * TMath::Pi() / 6.0;
+              auto anglestep = (angleend - anglestart) / (1.0 * (9.0 - 1.0));
+              auto rotangle = anglestart + nrotbkg * anglestep;
+              auto rotPionPx = Pion.Px() * std::cos(rotangle) - Pion.Py() * std::sin(rotangle);
+              auto rotPionPy = Pion.Px() * std::sin(rotangle) + Pion.Py() * std::cos(rotangle);
+              PionRot.SetXYZM(rotPionPx, rotPionPy, Pion.Pz(), Pion.M());
+              F1Rot = PionRot + KaonKshortPair;
+              if (F1Rot.Pt() < 1.0) {
+                continue;
+              }
+              auto relative_momentum_rot = getkstar(F1Rot, Proton);
+              if (t1.f1SignalStat() > 0) {
+                histos.fill(HIST("h2MixEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M(), pairCharge);
+                if (fillSparse) {
+                  histos.fill(HIST("MEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC, pairCharge);
+                }
+              }
+            }
           }
         }
         if (t1.f1SignalStat() == -1) {
           histos.fill(HIST("h2MixEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M(), t2.protonCharge());
           if (fillSparse) {
             histos.fill(HIST("MEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, t2.protonCharge());
-          }
-        }
-        if (fillRotation) {
-          for (int nrotbkg = 0; nrotbkg < 9; nrotbkg++) {
-            auto anglestart = 5.0 * TMath::Pi() / 6.0;
-            auto angleend = 7.0 * TMath::Pi() / 6.0;
-            auto anglestep = (angleend - anglestart) / (1.0 * (9.0 - 1.0));
-            auto rotangle = anglestart + nrotbkg * anglestep;
-            auto rotKKPx = KaonKshortPair.Px() * std::cos(rotangle) - KaonKshortPair.Py() * std::sin(rotangle);
-            auto rotKKPy = KaonKshortPair.Px() * std::sin(rotangle) + KaonKshortPair.Py() * std::cos(rotangle);
-            KaonKshortPairRot.SetXYZM(rotKKPx, rotKKPy, KaonKshortPair.Pz(), KaonKshortPair.M());
-            F1Rot = Pion + KaonKshortPairRot;
-            auto relative_momentum_rot = getkstar(F1Rot, Proton);
-            if (t1.f1SignalStat() > 0) {
-              histos.fill(HIST("h2MixEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M(), t2.protonCharge());
-              if (fillSparse) {
-                histos.fill(HIST("MEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC, t2.protonCharge());
-              }
-            }
           }
         }
       }

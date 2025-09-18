@@ -69,7 +69,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     Configurable<float> ConfNsigmaCombined{"ConfNsigmaCombined", 3.0f, "TPC and TOF Pion Sigma (combined) for momentum > ConfTOFPtMin"};
     Configurable<float> ConfNsigmaTPC{"ConfNsigmaTPC", 3.0f, "TPC Pion Sigma for momentum < ConfTOFPtMin"};
     Configurable<bool> ConfIsElReject{"ConfIsElReject", false, "Is electron rejection activated"};
-    Configurable<float> ConfNsigmaTPCElReject{"ConfNsigmaTPCElReject", 2.0f, "TPC Electron Sigma for momentum < ConfTOFPtMin"};
+    Configurable<float> ConfNsigmaTPCElRejectMin{"ConfNsigmaTPCElRejectMin", 2.0f, "TPC Electron SigmaMin for momentum < ConfTOFPtMin"};
+    Configurable<float> ConfNsigmaTPCElRejectMax{"ConfNsigmaTPCElRejectMax", 2.0f, "TPC Electron SigmaMax for momentum < ConfTOFPtMin"};
     Configurable<float> ConfTOFPtMin{"ConfTOFPtMin", 0.5f, "Min. Pt for which TOF is required for PID."};
     Configurable<float> ConfEtaMax{"ConfEtaMax", 0.8f, "Higher limit for |Eta| (the same for both particles)"};
 
@@ -111,8 +112,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   } trackonefilter;
 
   /// Partition for particle 1
-  Partition<FilteredFemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 && aod::femtouniverseparticle::pt < trackonefilter.ConfPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.ConfPtLowPart1;
-  Partition<FilteredFemtoRecoParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == trackonefilter.ConfChargePart1 && aod::femtouniverseparticle::pt < trackonefilter.ConfPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.ConfPtLowPart1;
+  Partition<FilteredFemtoFullParticles> partsOne = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.ConfChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.ConfPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.ConfPtLowPart1;
+  Partition<FilteredFemtoRecoParticles> partsOneMC = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && aod::femtouniverseparticle::sign == as<int8_t>(trackonefilter.ConfChargePart1) && aod::femtouniverseparticle::pt < trackonefilter.ConfPtHighPart1 && aod::femtouniverseparticle::pt > trackonefilter.ConfPtLowPart1;
   //
 
   /// Histogramming for particle 1
@@ -130,8 +131,8 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
   } tracktwofilter;
 
   /// Partition for particle 2
-  Partition<FilteredFemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == tracktwofilter.ConfChargePart2) && aod::femtouniverseparticle::pt < tracktwofilter.ConfPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.ConfPtLowPart2;
-  Partition<FilteredFemtoRecoParticles> partsTwoMC = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == tracktwofilter.ConfChargePart2) && aod::femtouniverseparticle::pt < tracktwofilter.ConfPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.ConfPtLowPart2;
+  Partition<FilteredFemtoFullParticles> partsTwo = (aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack)) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.ConfChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.ConfPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.ConfPtLowPart2;
+  Partition<FilteredFemtoRecoParticles> partsTwoMC = aod::femtouniverseparticle::partType == uint8_t(aod::femtouniverseparticle::ParticleType::kTrack) && (aod::femtouniverseparticle::sign == as<int8_t>(tracktwofilter.ConfChargePart2)) && aod::femtouniverseparticle::pt < tracktwofilter.ConfPtHighPart2 && aod::femtouniverseparticle::pt > tracktwofilter.ConfPtLowPart2;
 
   /// Histogramming for particle 2
   FemtoUniverseParticleHisto<aod::femtouniverseparticle::ParticleType::kTrack, 2> trackHistoPartTwo;
@@ -320,7 +321,7 @@ struct femtoUniversePairTaskTrackTrackSpherHarMultKtExtended {
     if (true) {
       if (mom < twotracksconfigs.ConfTOFPtMin) {
         if (twotracksconfigs.ConfIsElReject) {
-          if ((std::abs(nsigmaTPCPi) < twotracksconfigs.ConfNsigmaTPC) && (std::abs(nsigmaTPCElReject) > twotracksconfigs.ConfNsigmaTPCElReject)) {
+          if ((std::abs(nsigmaTPCPi) < twotracksconfigs.ConfNsigmaTPC) && (nsigmaTPCElReject < twotracksconfigs.ConfNsigmaTPCElRejectMin || nsigmaTPCElReject > twotracksconfigs.ConfNsigmaTPCElRejectMax)) {
             return true;
           } else {
             return false;

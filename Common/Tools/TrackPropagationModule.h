@@ -17,6 +17,7 @@
 #define COMMON_TOOLS_TRACKPROPAGATIONMODULE_H_
 
 #include "Common/Core/TableHelper.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Tools/TrackTuner.h"
 
@@ -113,20 +114,35 @@ class TrackPropagationModule
     fillTracksDCA = isTableRequiredInWorkflow(initContext, "TracksDCA");
     fillTracksDCACov = isTableRequiredInWorkflow(initContext, "TracksDCACov");
 
+    // enable Tracks in case Tracks have been requested
+    if (fillTracksDCA && !fillTracks) {
+      LOGF(info, "******************************************************************");
+      LOGF(info, " There is no task subscribed to Tracks, but I have detected a");
+      LOGF(info, " subscription to TracksDCA. Now enabling tracks as algorithmic");
+      LOGF(info, " dependency. Note: please be sure this is intentional! For");
+      LOGF(info, " secondary analyses, the proper DCA to test against is the DCA");
+      LOGF(info, " that the V0 or Cascade is assigned to and not necessarily the");
+      LOGF(info, " the one that the Track is assigned to (if any). ");
+      LOGF(info, "******************************************************************");
+      fillTracks = true;
+    }
+
     if (!fillTracks) {
       LOGF(info, "Track propagation to PV not required. Suppressing all further processing and logs.");
     }
 
     LOGF(info, " Track propagation table detection results:");
-    LOGF(info, " ---> Will generate Tracks table.");
+    if (fillTracks) {
+      LOGF(info, " ---> Will generate Tracks table.");
+    }
     if (fillTracksCov) {
-      LOGF(info, "---> Will generate TracksCov table.");
+      LOGF(info, " ---> Will generate TracksCov table.");
     }
     if (fillTracksDCA) {
-      LOGF(info, "---> Will generate TracksDCA table.");
+      LOGF(info, " ---> Will generate TracksDCA table.");
     }
     if (fillTracksDCACov) {
-      LOGF(info, "---> Will generate TracksDCACov table.");
+      LOGF(info, " ---> Will generate TracksDCACov table.");
     }
     if (fillTracksCov) {
       LOGF(info, "**************************************************************");
