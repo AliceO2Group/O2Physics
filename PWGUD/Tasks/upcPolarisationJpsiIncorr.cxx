@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file upcPolarisationJPsiIncorr.cxx
+/// \file upcPolarisationJpsiIncorr.cxx
 /// \brief copied from FWDMuonsUPC perform some selections on fwd events and saves the results
 /// executable name o2-analysis-ud-upc-polarisation-jpsiincorr
 
