@@ -745,10 +745,10 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/ReassignedTracksPhiEta"), phi,
                               track.eta());
                 registry.fill(HIST("Tracks/Control/ReassignedVertexCorr"),
-                              track.collision_as<CollwEv>().posZ(), z);
+                              track.template collision_as<CollwEv>().posZ(), z);
 
                 registry.fill(HIST("Tracks/Control/DeltaZ"),
-                              track.collision_as<CollwEv>().posZ() -
+                              track.template collision_as<CollwEv>().posZ() -
                                 collision.posZ());
                 registry.fill(HIST("Tracks/Control/TrackCount"), 1);
               }
@@ -758,7 +758,7 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/notReassignedTracksPhiEta"), phi,
                               track.eta());
                 registry.fill(HIST("Tracks/Control/notReassignedVertexCorr"),
-                              track.collision_as<CollwEv>().posZ(), z);
+                              track.template collision_as<CollwEv>().posZ(), z);
                 registry.fill(HIST("Tracks/Control/TrackCount"), 2);
               }
 
@@ -781,7 +781,7 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/amb/AmbTracksPhiEta"), phi,
                               track.eta());
                 registry.fill(HIST("Tracks/Control/amb/AmbVertexCorr"),
-                              track.collision_as<CollwEv>().posZ(), z);
+                              track.template collision_as<CollwEv>().posZ(), z);
                 registry.fill(HIST("Tracks/Control/amb/DCAxy_amb"), retrack.bestDCAXY());
                 if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
                   registry.fill(HIST("Tracks/Control/amb/DCAz_amb"), retrack.bestDCAZ());
@@ -805,7 +805,7 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/nonamb/nonAmbTracksPhiEta"), phi,
                               track.eta());
                 registry.fill(HIST("Tracks/Control/nonamb/nonAmbVertexCorr"),
-                              track.collision_as<CollwEv>().posZ(), z);
+                              track.template collision_as<CollwEv>().posZ(), z);
                 registry.fill(HIST("Tracks/Control/nonamb/DCAxy_nonamb"), retrack.bestDCAXY());
                 if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
                   registry.fill(HIST("Tracks/Control/nonamb/DCAz_nonamb"), retrack.bestDCAZ());
@@ -827,7 +827,7 @@ struct PseudorapidityDensityMFT {
                 registry.fill(HIST("Tracks/Control/woOrp/woOrpTracksPhiEta"), phi,
                               track.eta());
                 registry.fill(HIST("Tracks/Control/woOrp/woOrpVertexCorr"),
-                              track.collision_as<CollwEv>().posZ(), z);
+                              track.template collision_as<CollwEv>().posZ(), z);
                 registry.fill(HIST("Tracks/Control/TrackCount"), 9); // without orphan
                 registry.fill(HIST("Tracks/Control/woOrp/DCAxy_woOrp"), retrack.bestDCAXY());
                 if constexpr (std::is_same_v<RetracksT, soa::SmallGroups<aod::BestCollisionsFwd3d>>) {
