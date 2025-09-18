@@ -214,27 +214,23 @@ struct HfCorrelatorHfeHadrons {
       double ptHadron = -999;
       double etaHadron = -999;
       double phiHadron = -999;
-      if (eTrack.isEmcal()) {
-        // EMCal electron
-        if (requireEmcal) {
+      // EMCal electron
+      if (eTrack.isEmcal() && requireEmcal) {
+        acceptElectron = true;
+      } else if (!eTrack.isEmcal() && !requireEmcal) {
+
+        // Apply sigma cut
+        if (std::abs(eTrack.tofNSigmaElTrack()) < tofNSigmaEl && eTrack.tpcNSigmaElTrack() > tpcNsigmaElectronMin &&
+            eTrack.tpcNSigmaElTrack() < tpcNsigmaElectronMax) {
+          registry.fill(HIST("hTofnSigmaVsP"), eTrack.tofNSigmaElTrack(), eTrack.ptTrack());
+          registry.fill(HIST("hTpcnSigmaVsP"), eTrack.tpcNSigmaElTrack(), eTrack.ptTrack());
           acceptElectron = true;
-        }
-      } else {
-        // Non-EMCal electron
-        if (!requireEmcal) {
-          // Apply sigma cut
-          if (std::abs(eTrack.tofNSigmaElTrack()) < tofNSigmaEl) {
-            if (eTrack.tpcNSigmaElTrack() > tpcNsigmaElectronMin && eTrack.tpcNSigmaElTrack() < tpcNsigmaElectronMax) {
-              registry.fill(HIST("hTofnSigmaVsP"), eTrack.tofNSigmaElTrack(), eTrack.ptTrack());
-              registry.fill(HIST("hTpcnSigmaVsP"), eTrack.tpcNSigmaElTrack(), eTrack.ptTrack());
-              acceptElectron = true;
-            }
-          }
         }
       }
 
-      if (!acceptElectron)
+      if (!acceptElectron) {
         continue; // skip electron if not passing criteria
+      }
 
       registry.fill(HIST("hptElectron"), ptElectron);
       int nElectronLS = 0;
