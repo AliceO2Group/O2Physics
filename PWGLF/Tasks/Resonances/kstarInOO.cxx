@@ -418,7 +418,6 @@ struct kstarInOO {
         continue;
 
       auto [KstarPt_Kpi, Minv_Kpi] = minvReconstruction(trk1, trk2, QA);
-      // auto [KstarPt_piK, Minv_piK] = minvReconstruction(trk2, trk1, false);
 
       double conjugate = trk1.sign() * trk2.sign();
       if (cfgMcHistos) {
@@ -436,22 +435,7 @@ struct kstarInOO {
               histos.fill(HIST("hMC_LSS_Mix"), centrality, KstarPt_Kpi, Minv_Kpi);
             }
           }
-        } // else if (Minv_piK > 0){
-        //   if (!IsMix) {
-        //     if (conjugate < 0) {
-        //       histos.fill(HIST("hMC_USS_pion"), centrality, KstarPt_piK, Minv_piK);
-        //     } else if (conjugate > 0) {
-        //       histos.fill(HIST("hMC_LSS_pion"), centrality, KstarPt_piK, Minv_piK);
-        //     }
-        //   }
-        //   else {
-        //     if (conjugate < 0) {
-        //       histos.fill(HIST("hMC_USS_Mix_pion"), centrality, KstarPt_piK, Minv_piK);
-        //     } else if (conjugate > 0) {
-        //       histos.fill(HIST("hMC_LSS_Mix_pion"), centrality, KstarPt_piK, Minv_piK);
-        //     }
-        //   }
-        // }
+        }
       }
       //======================
       // Gen MC
@@ -491,7 +475,6 @@ struct kstarInOO {
 
       if (cfgMcHistos) {
         histos.fill(HIST("hMC_USS_True"), centrality, KstarPt_Kpi, Minv_Kpi);
-        // histos.fill(HIST("hMC_USS_pion_True"), centrality, KstarPt_piK, Minv_piK);
       }
       //======================
     } // for
