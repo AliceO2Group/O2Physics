@@ -16,7 +16,6 @@
 /// \author Niveditha Ram , IP2I
 
 #include "PWGUD/DataModel/UDTables.h"
-
 #include "TPDGCode.h" 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPECSObject.h"
@@ -67,7 +66,6 @@ const float kPDca = 200.;
 float kEtaMin = -4.0;
 float kEtaMax = -2.5;
 const float kPtMin = 0.;
-
 const float kMaxAmpV0A = 100.;
 const int kReqMatchMIDTracks = 2;
 const int kReqMatchMFTTracks = 2;
