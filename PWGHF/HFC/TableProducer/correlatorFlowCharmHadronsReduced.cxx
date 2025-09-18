@@ -90,10 +90,10 @@ double getPhi(const TTrack& track)
 }
 
 struct HfCorrelatorFlowCharmHadronsReduced {
-  Produces<aod::HfcRedSEChHads> rowPairSECharmHads;   //! Correlation pairs information Same Event
-  Produces<aod::HfcRedMEChHads> rowPairMECharmHads;   //! Correlation pairs information Mixed Event
-  Produces<aod::HfcRedSEHadHads> rowPairSEHadHads;    //! Correlation pairs information Same Event
-  Produces<aod::HfcRedMEHadHads> rowPairMEHadHads;    //! Correlation pairs information Mixed Event
+  Produces<aod::HfcRedSEChHads> rowPairSECharmHads; //! Correlation pairs information Same Event
+  Produces<aod::HfcRedMEChHads> rowPairMECharmHads; //! Correlation pairs information Mixed Event
+  Produces<aod::HfcRedSEHadHads> rowPairSEHadHads;  //! Correlation pairs information Same Event
+  Produces<aod::HfcRedMEHadHads> rowPairMEHadHads;  //! Correlation pairs information Mixed Event
 
   Configurable<bool> fillSparses{"fillSparses", true, "Fill sparse histograms"};
   Configurable<bool> fillTables{"fillTables", false, "Fill tables"};
@@ -157,7 +157,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     if (!fillSparses && !fillTables) {
       LOGP(fatal, "At least one of fillSparses or fillTables must be true!");
     }
-    if (binsPtTrig.value.size() != (bkgScoresPtMaxs.value.size() + 1) ) {
+    if (binsPtTrig.value.size() != (bkgScoresPtMaxs.value.size() + 1)) {
       LOGP(fatal, "The size of binsPtTrig must be the one of bkgScorePtMaxs plus one!");
     }
 
@@ -244,10 +244,10 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   /// Apply pT-differential ML BDT bkg score cut
   /// \param ptTrig is the pT of the charm candidate
   template <typename TCand>
-  bool applyMlBkgScoreCut(TCand const& cand, 
+  bool applyMlBkgScoreCut(TCand const& cand,
                           double ptTrig)
   {
-    for (size_t iPt = 0; iPt < binsPtTrig.value.size()-1; iPt++) {
+    for (size_t iPt = 0; iPt < binsPtTrig.value.size() - 1; iPt++) {
       if (ptTrig >= binsPtTrig.value[iPt] && ptTrig < binsPtTrig.value[iPt + 1]) {
         return cand.bdtScore0Trig() < bkgScoresPtMaxs.value[iPt];
       }
