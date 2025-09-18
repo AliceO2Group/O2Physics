@@ -1,4 +1,4 @@
-// Copyright 2019-2020 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2020 CERN and copyOAright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -17,6 +17,7 @@
 
 #include "PWGUD/DataModel/UDTables.h"
 
+#include "TPDGCode.h" 
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
@@ -25,13 +26,17 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
-#include "TLorentzVector.h"
+#include "LorentzVector.h"
 #include "TMath.h"
 #include "TRandom3.h"
 #include "TSystem.h"
 
 #include <unordered_map>
 #include <vector>
+
+#include "Math/Vector4D.h"
+
+using namespace ROOT::Math;
 
 // table for saving tree with info on data
 namespace dimu
@@ -69,8 +74,7 @@ const int kReqMatchMFTTracks = 2;
 const int kMaxChi2MFTMatch = 30;
 const float kMaxZDCTime = 2.;
 const float kMaxZDCTimeHisto = 10.;
-const int kMuonPDG = 13;
-
+const PDG_t kMuonPDG = kMuonPlus; 
 struct upcPolarisationJPsiIncorr {
 
   // a pdg object
@@ -209,9 +213,8 @@ struct upcPolarisationJPsiIncorr {
   {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
-    TLorentzVector p;
     auto mMu = particleMass(kMuonPDG);
-    p.SetXYZM(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu);
+    LorentzVector<PxPyPzM4D<float>> p(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu);
     float eta = p.Eta();
     float pt = p.Pt();
 
@@ -273,11 +276,10 @@ struct upcPolarisationJPsiIncorr {
       return;
 
     // form Lorentz vectors
-    TLorentzVector p1, p2;
     auto mMu = particleMass(kMuonPDG);
-    p1.SetXYZM(tr1.px(), tr1.py(), tr1.pz(), mMu);
-    p2.SetXYZM(tr2.px(), tr2.py(), tr2.pz(), mMu);
-    TLorentzVector p = p1 + p2;
+    LorentzVector<PxPyPzM4D<float>> p1(tr1.px(), tr1.py(), tr1.pz(), mMu);
+    LorentzVector<PxPyPzM4D<float>> p2(tr2.px(), tr2.py(), tr2.pz(), mMu);
+    LorentzVector p = p1 + p2;
 
     // cut on pair kinematics
     // select mass
