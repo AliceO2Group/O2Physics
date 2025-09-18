@@ -198,10 +198,12 @@ struct he3HadronFemto {
   Configurable<float> settingCutRigidityMinHe3{"settingCutRigidityMinHe3", 0.8f, "Minimum rigidity for He3"};
   Configurable<float> settingCutEta{"settingCutEta", 0.9f, "Eta cut on daughter track"};
   Configurable<float> settingCutDCAxy{"settingCutDCAxy", 2.0f, "DCAxy range for tracks"};
-  Configurable<float> settingCutDCAz{"settingCutDCAz", 2.0f, "DCAz range for tracks"};
+  Configurable<float> settingCutDCAz{"settingCutDCAz", 3.0f, "DCAz range for tracks"};
   Configurable<float> settingCutChi2tpcLow{"settingCutChi2tpcLow", 0.5f, "Low cut on TPC chi2"};
   Configurable<float> settingCutInvMass{"settingCutInvMass", 0.0f, "Invariant mass upper limit"};
   Configurable<float> settingCutPtMinhe3Had{"settingCutPtMinhe3Had", 0.0f, "Minimum PT cut on he3Had4"};
+  Configurable<float> settingCutPtMinHad{"settingCutPtMinHad", 0.0f, "Minimum PT cut on Hadron"};
+  Configurable<float> settingCutPtMaxHad{"settingCutPtMaxHad", 0.0f, "Maximum PT cut on Hadron"};
   Configurable<float> settingCutClSizeItsHe3{"settingCutClSizeItsHe3", 4.0f, "Minimum ITS cluster size for He3"};
   Configurable<float> settingCutNCls{"settingCutNCls", 5.0f, "Minimum ITS Ncluster for tracks"};
   Configurable<float> settingCutChi2NClITS{"settingCutChi2NClITS", 36.f, "Maximum ITS Chi2 for tracks"};
@@ -290,14 +292,14 @@ struct he3HadronFemto {
       {"h2NsigmaHadronTPC_preselection", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
       {"h2NsigmaHadronTOF", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had)", {HistType::kTH2F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}}}},
       {"h2NsigmaHadronTOF_preselection", "NsigmaHadron TOF distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TOF}(had)", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}}}},
-      {"hkStar_LS_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
-      {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
-      {"hkStar_US_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
-      {"hkStar_US_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
-      {"hkStar_LS_M_femto", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
-      {"hkStar_LS_A_femto", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
-      {"hkStar_US_M_femto", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
-      {"hkStar_US_A_femto", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hKstarLSmatter", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hKstarLSantimatter", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hKstarUSmatter", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hKstarUSantimatter", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hKstarLSmatter_femto", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hKstarLSantimatter_femto", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hKstarUSmatter_femto", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
+      {"hKstarUSantimatter_femto", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
@@ -438,7 +440,8 @@ struct he3HadronFemto {
         candidate.tpcNClsCrossedRows() < crossedRowsToFindableRatio * candidate.tpcNClsFindable() ||
         candidate.tpcChi2NCl() > maxChi2NCl ||
         candidate.tpcChi2NCl() < settingCutChi2tpcLow ||
-        candidate.itsChi2NCl() > settingCutChi2NClITS) {
+        candidate.itsChi2NCl() > settingCutChi2NClITS || candidate.dcaXY() > settingCutDCAxy || 
+        candidate.dcaZ() > settingCutDCAz) {
       return false;
     }
 
@@ -618,6 +621,9 @@ struct he3HadronFemto {
     if (pthe3Had < settingCutPtMinhe3Had) {
       return false;
     }
+
+    if(he3Hadcand.recoPtHad() < settingCutPtMinHad || he3Hadcand.recoPtHad() > settingCutPtMaxHad) return false;
+
 
     he3Hadcand.signHe3 = trackHe3.sign();
     he3Hadcand.signHad = trackHad.sign();
@@ -905,28 +911,23 @@ struct he3HadronFemto {
       return;
     if (abs(PrTOFnsigma) < 3)
       return;
-    if (abs(he3Hadcand.dcaxyHe3) > 0.2 || abs(he3Hadcand.dcaxyHad) > 0.3 || abs(he3Hadcand.dcazHad) > 0.3)
-      return;
-    if (std::abs(he3Hadcand.recoPtHad()) < 0.14 || std::abs(he3Hadcand.recoPtHad()) > 4)
-      return;
-    fillHistograms(he3Hadcand);
 
     float kstar = computeKstar(he3Hadcand);
     if (he3Hadcand.isBkgUS == 0) {
       if (he3Hadcand.recoPtHe3() > 0) {
-        mQaRegistry.fill(HIST("hkStar_LS_M"), kstar);
-        mQaRegistry.fill(HIST("hkStar_LS_M_femto"), he3Hadcand.kstarfem);
+        mQaRegistry.fill(HIST("hKstarLSmatter"), kstar);
+        mQaRegistry.fill(HIST("hKstarLSmatter_femto"), he3Hadcand.kstarfem);
       } else {
-        mQaRegistry.fill(HIST("hkStar_LS_A"), kstar);
-        mQaRegistry.fill(HIST("hkStar_LS_A_femto"), he3Hadcand.kstarfem);
+        mQaRegistry.fill(HIST("hKstarLSantimatter"), kstar);
+        mQaRegistry.fill(HIST("hKstarLSantimatter_femto"), he3Hadcand.kstarfem);
       }
     } else {
       if (he3Hadcand.recoPtHe3() > 0) {
-        mQaRegistry.fill(HIST("hkStar_US_M"), kstar);
-        mQaRegistry.fill(HIST("hkStar_US_M_femto"), he3Hadcand.kstarfem);
+        mQaRegistry.fill(HIST("hKstarUSmatter"), kstar);
+        mQaRegistry.fill(HIST("hKstarUSmatter_femto"), he3Hadcand.kstarfem);
       } else {
-        mQaRegistry.fill(HIST("hkStar_US_A"), kstar);
-        mQaRegistry.fill(HIST("hkStar_US_A_femto"), he3Hadcand.kstarfem);
+        mQaRegistry.fill(HIST("hKstarUSantimatter"), kstar);
+        mQaRegistry.fill(HIST("hKstarUSantimatter_femto"), he3Hadcand.kstarfem);
       }
     }
   }
@@ -945,6 +946,7 @@ struct he3HadronFemto {
         continue;
       }
       fillKstar(he3Hadcand);
+      fillHistograms(he3Hadcand);
       auto collision = collisions.rawIteratorAt(he3Hadcand.collisionID);
       fillTable(he3Hadcand, collision, /*isMC*/ false);
     }
