@@ -66,20 +66,6 @@ using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-enum MultOrCentEstimators {
-  MultNTracksPV = 0,
-  MultNumContrib,
-  MultFT0C,
-  MultFT0M,
-  CentFT0C,
-  CentFT0CVariant1,
-  CentFT0M,
-  CentFV0A,
-  CentNTracksPV,
-  CentNGlobal,
-  CentMFT
-};
-
 enum MftTrackSelectionStep {
   NoSelection = 0,
   Eta,
@@ -93,6 +79,13 @@ enum MftTrackAmbiguityStep {
   NumberOfAmbiguousTracks,
   NumberOfNonAmbiguousTracks,
   NMftAmbiguitySteps
+};
+
+enum MultiplicityEstimators {
+  MultNTracksPV = 0,
+  MultNumContrib,
+  MultFT0C,
+  MultFT0M
 };
 
 enum ReassociationMftTracks {
@@ -134,7 +127,7 @@ enum CorrelatedParticles {
 static constexpr std::string_view WhatDataType[] = {"Data/", "MC/"};
 static constexpr std::string_view WhatCorrelationCase[] = {"TpcTpc/", "TpcMft/", "TpcFv0a/", "MftFv0a/"};
 static constexpr std::string_view WhatParticles[] = {"ChPartChPart/", "D0ChPart/", "LcChPart/"};
-static constexpr std::string_view WhatMultOrCentEstimator[] = {"multNTracksPV/", "multNumContrib/", "multFT0C/", "multFT0M/", "centFT0C/", "centFT0CVariant1/", "centFT0M/", "centFV0A/", "centNtracksPV/", "centNGlobal/", "centMFT/"};
+static constexpr std::string_view WhatMultiplicityEstimator[] = {"multNTracksPV", "multNumContrib", "multFT0C", "multFT0M"};
 
 static constexpr TrackSelectionFlags::flagtype TrackSelectionIts =
   TrackSelectionFlags::kITSNCls | TrackSelectionFlags::kITSChi2NDF |
@@ -178,7 +171,7 @@ struct HfTaskFlow {
     std::string prefix = "ConfigCollision_group";
     Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
     Configurable<bool> isApplySameBunchPileup{"isApplySameBunchPileup", false, "Enable SameBunchPileup cut"};
-    Configurable<int> multOrCentEstimator{"multOrCentEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M, 4: centFT0C, 5: centFT0CVariants1s, 6: centFT0M, 7: centFV0A, 8: centNTracksPV, 9: centNGlobal, 10: centMFT"};
+    Configurable<int> multiplicityEstimator{"multiplicityEstimator", 0, "0: multNTracksPV, 1: numContrib, 2: multFT0C, 3: multFT0M, 4: centFT0C, 5: centFT0CVariants1s, 6: centFT0M, 7: centFV0A, 8: centNTracksPV, 9: centNGlobal, 10: centMFT"};
     Configurable<bool> isApplyNoCollInTimeRangeStrict{"isApplyNoCollInTimeRangeStrict", false, ""};
     Configurable<float> zVertexMax{"zVertexMax", 7.0f, "Accepted z-vertex range"};
   } configCollision;
@@ -225,7 +218,7 @@ struct HfTaskFlow {
   //      using declarations : DATA
   // =========================
 
-  using FilteredCollisionsWSelMult = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentFV0As, aod::CentNTPVs, aod::CentNGlobals, aod::CentMFTs>>;
+  using FilteredCollisionsWSelMult = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
   using HfCandidatesSelD0 = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using HfCandidatesSelLc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
   using FilteredTracksWDcaSel = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;
@@ -393,7 +386,7 @@ struct HfTaskFlow {
     //  =========================
 
     registry.add("Data/hVtxZ", "v_{z} (cm)", {HistType::kTH1D, {axisVertex}});
-    registry.add(Form("Data/hMultiplicity_%s", WhatMultOrCentEstimator[configCollision.multOrCentEstimator].data()), "", {HistType::kTH1D, {axisMultiplicity}});
+    registry.add(Form("Data/hMultiplicity_%s", WhatMultiplicityEstimator[configCollision.multiplicityEstimator].data()), "", {HistType::kTH1D, {axisMultiplicity}});
 
     registry.add("Data/hEventCounter", "hEventCounter", {HistType::kTH1D, {{EventSelectionStep::NEventSelectionSteps, -0.5, +EventSelectionStep::NEventSelectionSteps - 0.5}}});
     std::string labels[EventSelectionStep::NEventSelectionSteps];
@@ -794,31 +787,29 @@ struct HfTaskFlow {
   }
 
   template <typename TCollision>
-  float getMultiplicityOrCentrality(TCollision collision)
+  float getMultiplicityEstimator(TCollision collision, bool isSameEvent)
   {
-    switch (configCollision.multOrCentEstimator) {
-      case MultOrCentEstimators::MultNTracksPV:
+    switch (configCollision.multiplicityEstimator) {
+      case MultiplicityEstimators::MultNTracksPV:
+        if (isSameEvent) {
+          registry.fill(HIST("Data/hMultiplicity_multNTracksPV"), collision.multNTracksPV());
+        }
         return collision.multNTracksPV();
-      case MultOrCentEstimators::MultFT0C:
-        return collision.multFT0C();
-      case MultOrCentEstimators::MultNumContrib:
+      case MultiplicityEstimators::MultNumContrib:
+        if (isSameEvent) {
+          registry.fill(HIST("Data/hMultiplicity_multNumContrib"), collision.numContrib());
+        }
         return collision.numContrib();
-      case MultOrCentEstimators::MultFT0M:
+      case MultiplicityEstimators::MultFT0C:
+        if (isSameEvent) {
+          registry.fill(HIST("Data/hMultiplicity_multFT0C"), collision.multFT0C());
+        }
+        return collision.multFT0C();
+      case MultiplicityEstimators::MultFT0M:
+        if (isSameEvent) {
+          registry.fill(HIST("Data/hMultiplicity_multFT0M"), collision.multFT0M());
+        }
         return collision.multFT0M();
-      case MultOrCentEstimators::CentFT0C:
-        return collision.centFT0C();
-      case MultOrCentEstimators::CentFT0CVariant1:
-        return collision.centFT0CVariant1();
-      case MultOrCentEstimators::CentFT0M:
-        return collision.centFT0M();
-      case MultOrCentEstimators::CentFV0A:
-        return collision.centFV0A();
-      case MultOrCentEstimators::CentNTracksPV:
-        return collision.centNTPV();
-      case MultOrCentEstimators::CentNGlobal:
-        return collision.centNGlobal();
-      case MultOrCentEstimators::CentMFT:
-        return collision.centMFT();
       default:
         return collision.multNTracksPV();
     }
@@ -1704,7 +1695,7 @@ struct HfTaskFlow {
                      OutputObj<CorrelationContainer>& corrContainer)
   {
     auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
-      auto multiplicity = getMultiplicityOrCentrality(collision);
+      auto multiplicity = getMultiplicityEstimator(collision, false);
       return multiplicity;
     };
 
@@ -1726,7 +1717,7 @@ struct HfTaskFlow {
         }
       }
 
-      const auto multiplicity = getMultiplicityOrCentrality(collision1);
+      const auto multiplicity = getMultiplicityEstimator(collision1, false);
 
       corrContainer->fillEvent(multiplicity, step);
       fillCorrelations(corrContainer, step, tracks1, tracks2, multiplicity, collision1.posZ(), false);
@@ -1818,8 +1809,8 @@ struct HfTaskFlow {
     //  options are ran at the same time
     //  temporary solution, since other correlation options always have to be ran with h-h, too
     //  TODO: rewrite it in a more intelligent way
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
-    registry.fill(HIST("Data/hMultiplicity"), multiplicity);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
+    // registry.fill(HIST(Form("Data/hMultiplicity_%s", WhatMultiplicityEstimator[HfTaskFlow::configCollision.multiplicityEstimator].data())), multiplicity);
 
     sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, tracks, multiplicity, collision.posZ(), true);
@@ -1844,8 +1835,7 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
-    registry.fill(HIST("Data/hMultiplicity"), multiplicity);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, tracks, multiplicity, collision.posZ(), true);
@@ -1870,8 +1860,7 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
-    registry.fill(HIST("Data/hMultiplicity"), multiplicity);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, tracks, multiplicity, collision.posZ(), true);
@@ -1890,8 +1879,7 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
-    registry.fill(HIST("Data/hMultiplicity"), multiplicity);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     // I use kCFStepAll for running my code with all MFTTracks were the reassociation process was not applied
     // We don't fill "normal" QA plots with these tracks, only specific plots to compare with other type of MFTTracks
@@ -1914,8 +1902,7 @@ struct HfTaskFlow {
     registry.fill(HIST("Data/Mft/hNBestCollisionFwd"), reassociatedMftTracks.size());
 
     // const auto multiplicity = collision.multNTracksPV();
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
-    registry.fill(HIST("Data/hMultiplicity"), multiplicity);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     // I use the step kCFStepReconstructed for reassociatedMftTracks (most likely the ones we will use in the end)
     sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
@@ -1936,8 +1923,7 @@ struct HfTaskFlow {
     registry.fill(HIST("Data/Mft/hNMftTracks"), mftTracks.size());
     registry.fill(HIST("Data/Mft/hNBestCollisionFwd"), reassociatedMftTracks.size());
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
-    registry.fill(HIST("Data/hMultiplicity"), multiplicity);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     // I use kCFStepTracked for running my code with only non-ambiguous MFTTracks
     // This is the same as running with reassociatedMftTracks, but applying one more cut in the fillCorrelations function
@@ -1966,8 +1952,7 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
-    registry.fill(HIST("Data/hMultiplicity"), multiplicity);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, mftTracks, multiplicity, collision.posZ(), true);
@@ -1983,8 +1968,7 @@ struct HfTaskFlow {
       return; // when process function has iterator
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
-    registry.fill(HIST("Data/hMultiplicity"), multiplicity);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     // I use the step kCFStepReconstructed for reassociatedMftTracks (most likely the ones we will use in the end)
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
@@ -2011,8 +1995,7 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
-    registry.fill(HIST("Data/hMultiplicity"), multiplicity);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
     fillCorrelations(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, mftTracks, multiplicity, collision.posZ(), true);
@@ -2028,8 +2011,7 @@ struct HfTaskFlow {
       return; // when process function has iterator
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
-    registry.fill(HIST("Data/hMultiplicity"), multiplicity);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     // I use the step kCFStepReconstructed for reassociatedMftTracks (most likely the ones we will use in the end)
     sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
@@ -2049,11 +2031,10 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
-      registry.fill(HIST("Data/hMultiplicity"), multiplicity);
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFV0(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, tracks, fv0, multiplicity, collision.posZ(), true);
@@ -2073,11 +2054,10 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
-      registry.fill(HIST("Data/hMultiplicity"), multiplicity);
 
       sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFV0(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, fv0, multiplicity, collision.posZ(), true);
@@ -2097,11 +2077,10 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
-      registry.fill(HIST("Data/hMultiplicity"), multiplicity);
 
       sameEventHf->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFV0(sameEventHf, CorrelationContainer::CFStep::kCFStepReconstructed, candidates, fv0, multiplicity, collision.posZ(), true);
@@ -2121,11 +2100,10 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
-      registry.fill(HIST("Data/hMultiplicity"), multiplicity);
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFV0(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, mftTracks, fv0, multiplicity, collision.posZ(), true);
@@ -2142,11 +2120,10 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
-      registry.fill(HIST("Data/hMultiplicity"), multiplicity);
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFV0ReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, fv0, multiplicity, collision.posZ(), true, false);
@@ -2163,11 +2140,10 @@ struct HfTaskFlow {
       return;
     }
 
-    const auto multiplicity = getMultiplicityOrCentrality(collision);
+    const auto multiplicity = getMultiplicityEstimator(collision, true);
 
     if (collision.has_foundFV0()) {
       const auto& fv0 = collision.foundFV0();
-      registry.fill(HIST("Data/hMultiplicity"), multiplicity);
 
       sameEvent->fillEvent(multiplicity, CorrelationContainer::kCFStepReconstructed);
       fillCorrelationsFV0ReassociatedMftTracks(sameEvent, CorrelationContainer::CFStep::kCFStepReconstructed, reassociatedMftTracks, fv0, multiplicity, collision.posZ(), true, true);
@@ -2313,7 +2289,7 @@ struct HfTaskFlow {
                                aod::FV0As const&)
   {
     auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
-      auto multiplicity = getMultiplicityOrCentrality(collision);
+      auto multiplicity = getMultiplicityEstimator(collision, false);
       return multiplicity;
     };
 
@@ -2332,7 +2308,7 @@ struct HfTaskFlow {
 
       if (collision1.has_foundFV0() && collision2.has_foundFV0()) {
 
-        const auto multiplicity = getMultiplicityOrCentrality(collision1);
+        const auto multiplicity = getMultiplicityEstimator(collision1, false);
 
         auto slicedTriggerTracks = tracks.sliceBy(perColTracks, collision1.globalIndex());
         const auto& fv0 = collision2.foundFV0();
@@ -2353,7 +2329,7 @@ struct HfTaskFlow {
                                aod::FV0As const&)
   {
     auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
-      auto multiplicity = getMultiplicityOrCentrality(collision);
+      auto multiplicity = getMultiplicityEstimator(collision, false);
       return multiplicity;
     };
 
@@ -2372,7 +2348,7 @@ struct HfTaskFlow {
 
       if (collision1.has_foundFV0() && collision2.has_foundFV0()) {
 
-        const auto multiplicity = getMultiplicityOrCentrality(collision1);
+        const auto multiplicity = getMultiplicityEstimator(collision1, false);
 
         auto slicedTriggerCandidates = candidates.sliceBy(perColD0s, collision1.globalIndex());
         const auto& fv0 = collision2.foundFV0();
@@ -2393,7 +2369,7 @@ struct HfTaskFlow {
                                aod::FV0As const&)
   {
     auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
-      auto multiplicity = getMultiplicityOrCentrality(collision);
+      auto multiplicity = getMultiplicityEstimator(collision, false);
       return multiplicity;
     };
 
@@ -2412,7 +2388,7 @@ struct HfTaskFlow {
 
       if (collision1.has_foundFV0() && collision2.has_foundFV0()) {
 
-        const auto multiplicity = getMultiplicityOrCentrality(collision1);
+        const auto multiplicity = getMultiplicityEstimator(collision1, false);
 
         auto slicedTriggerCandidates = candidates.sliceBy(perColLcs, collision1.globalIndex());
         const auto& fv0 = collision2.foundFV0();
@@ -2433,7 +2409,7 @@ struct HfTaskFlow {
                                aod::FV0As const&)
   {
     auto getMultiplicity = [this](FilteredCollisionsWSelMult::iterator const& collision) {
-      auto multiplicity = getMultiplicityOrCentrality(collision);
+      auto multiplicity = getMultiplicityEstimator(collision, false);
       return multiplicity;
     };
 
@@ -2452,7 +2428,7 @@ struct HfTaskFlow {
 
       if (collision1.has_foundFV0() && collision2.has_foundFV0()) {
 
-        const auto multiplicity = getMultiplicityOrCentrality(collision1);
+        const auto multiplicity = getMultiplicityEstimator(collision1, false);
         auto slicedTriggerMftTracks = mftTracks.sliceBy(perColMftTracks, collision1.globalIndex());
         const auto& fv0 = collision2.foundFV0();
 
