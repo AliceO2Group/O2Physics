@@ -11,7 +11,7 @@
 
 ///
 /// \file DelphesO2TrackSmearer.cxx
-/// \author: Roberto Preghenella
+/// \author Roberto Preghenella
 /// \brief Porting to O2Physics of DelphesO2 code.
 ///        Minimal changes have been made to the original code for adaptation purposes, formatting and commented parts have been considered.
 ///        Relevant sources:
