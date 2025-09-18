@@ -416,7 +416,6 @@ struct kstarInOO {
         continue;
       if (std::fabs(trk1.signed1Pt()) <= 0.f || std::fabs(trk2.signed1Pt()) <= 0.f)
         continue;
-
       auto [KstarPt_Kpi, Minv_Kpi] = minvReconstruction(trk1, trk2, QA);
 
       double conjugate = trk1.sign() * trk2.sign();
@@ -439,7 +438,6 @@ struct kstarInOO {
       }
       //======================
       // Gen MC
-
       auto particle1 = trk1.mcParticle();
       auto particle2 = trk2.mcParticle();
       if (std::fabs(particle1.pdgCode()) != 321)
