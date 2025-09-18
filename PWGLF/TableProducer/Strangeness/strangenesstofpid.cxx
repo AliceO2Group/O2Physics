@@ -57,7 +57,9 @@
 #include <cstdlib>
 #include <iterator>
 #include <map>
+#include <string>
 #include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
