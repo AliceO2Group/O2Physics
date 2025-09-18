@@ -266,8 +266,8 @@ class strangenessBuilderHelper
   //_______________________________________________________________________
   // standard build V0 function. Populates ::v0 object
   // ::v0 will be initialized to defaults if build fails
-  // --- useSelections: meant to maximize recovery, but beware high cost in CPU 
-  // --- calculateProngDCAtoPV: optionally don't propagate prongs to PV, saves 
+  // --- useSelections: meant to maximize recovery, but beware high cost in CPU
+  // --- calculateProngDCAtoPV: optionally don't propagate prongs to PV, saves
   //     CPU, of interest when dealing with de-duplication (variable not checked)
   template <bool useSelections = true, bool calculateProngDCAtoPV = true, typename TTrack, typename TTrackParametrization>
   bool buildV0Candidate(int collisionIndex,
@@ -314,8 +314,8 @@ class strangenessBuilderHelper
       std::array<float, 2> dcaInfo;
 
       // do DCA to PV on TrackPar copies and not TrackParCov
-      // TrackPar preferred: don't calculate multiple scattering / CovMat changes 
-      // Spares CPU since variables not checked 
+      // TrackPar preferred: don't calculate multiple scattering / CovMat changes
+      // Spares CPU since variables not checked
       o2::track::TrackPar positiveTrackParamCopy(positiveTrackParam);
       o2::track::TrackPar negativeTrackParamCopy(negativeTrackParam);
 
@@ -338,7 +338,7 @@ class strangenessBuilderHelper
           return false;
         }
       }
-    }else{
+    } else {
       v0.positiveDCAxy = 0.0f; // default invalid
       v0.negativeDCAxy = 0.0f; // default invalid
     }
@@ -510,8 +510,8 @@ class strangenessBuilderHelper
     std::array<float, 2> dcaInfo;
 
     // do DCA to PV on TrackPar copies and not TrackParCov
-    // TrackPar preferred: don't calculate multiple scattering / CovMat changes 
-    // Spares CPU since variables not checked 
+    // TrackPar preferred: don't calculate multiple scattering / CovMat changes
+    // Spares CPU since variables not checked
     o2::track::TrackPar positiveTrackParamCopy(positiveTrackParam);
     o2::track::TrackPar negativeTrackParamCopy(negativeTrackParam);
 
