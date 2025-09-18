@@ -436,7 +436,6 @@ struct BjetTaggingGnn {
     }
   }
   PROCESS_SWITCH(BjetTaggingGnn, processMCTruthJets, "truth jet information", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
