@@ -1222,7 +1222,7 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
     for (auto const& collision : collisions) {
       int poolIndexPi = where_pool(collision.posZ(), collision.centFT0C());
       auto& pool = All_Event_pool[poolIndexPi];
-      
+
       if (poolIndexPi < 0 || static_cast<size_t>(poolIndexPi) >= All_Event_pool.size()) {
         continue;
       }
