@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file Antinucleitask.cxx
+/// \file AntinucleiTask.cxx
 /// \brief A task to analyse Anti-nuclei
 /// \author Arkaprabha Saha <arkaprabha.saha@cern.ch>
 
@@ -43,19 +43,23 @@ namespace
 static const std::vector<std::string> particleName{"d"};
 static const double kBetheBlochDefault[6]{-1.e32, -1.e32, -1.e32, -1.e32, -1.e32, -1.e32};
 static const std::vector<std::string> betheBlochParNames{"p0", "p1", "p2", "p3", "p4", "resolution"};
+static const float maxEtaCut = 0.8f;
+static const int minTpcCrossedRowsCut = 70;
+static const float maxVertexZCut = 10.f;
 } // namespace
 
-struct Antinucleitask {
+struct AntinucleiTask {
   // Histogram registry: for holding histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Configurable track cuts
-  Configurable<float> mtrackNclusTPCcut{"trackNclusTPCcut", 70.0f, "min number of TPC clusters"};
-  Configurable<float> mtrackNclusITScut{"trackNclusITScut", 4.0f, "min number of ITS clusters"};
-  Configurable<float> mChi2TPC{"Chi2TPC", 4.0f, "max chi2 per cluster TPC"};
-  Configurable<float> mChi2ITS{"Chi2ITS", 36.0f, "max chi2 per cluster ITS"};
-  Configurable<float> mtrackDCAz{"trackDCAz", 0.1f, "maxDCAz"};
-  Configurable<float> mtrackDCAxy{"trackDCAxy", 0.1f, "maxDCAxy"};
+  Configurable<float> trackNclusTPCcut{"trackNclusTPCcut", 70.0f, "min number of TPC clusters"};
+  Configurable<float> trackNclusITScut{"trackNclusITScut", 4.0f, "min number of ITS clusters"};
+  Configurable<float> chi2TPC{"chi2TPC", 4.0f, "max chi2 per cluster TPC"};
+  Configurable<float> chi2ITS{"chi2ITS", 36.0f, "max chi2 per cluster ITS"};
+  Configurable<float> trackDCAz{"trackDCAz", 0.1f, "maxDCAz"};
+  Configurable<float> trackDCAxy{"trackDCAxy", 0.1f, "maxDCAxy"};
+  Configurable<float> tpcNSigmaCut{"tpcNSigmaCut", 3.0f, "tpcNSigmaCut"};
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault, 1, 6, particleName, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for deuteron"};
 
   void init(InitContext const&)
@@ -63,7 +67,7 @@ struct Antinucleitask {
     ConfigurableAxis etaAxis{"etaAxis", {16, -0.8, +0.8}, "#eta"};
     ConfigurableAxis phiAxis{"phiAxis", {70, 0.f, 7.f}, "#phi"};
     ConfigurableAxis zVtxAxis{"zVtxAxis", {100, -20.f, 20.f}, "Primary Vertex z (cm)"};
-    ConfigurableAxis NSigmaAxis{"NSigmaAxis", {50, -5.f, 5.f}, "N_{#sigma}"};
+    ConfigurableAxis nSigmaAxis{"nSigmaAxis", {50, -5.f, 5.f}, "N_{#sigma}"};
     ConfigurableAxis ptAxis{"ptAxis", {100, -5.0f, 5.0f}, "p_{T} (GeV/c)"};
     ConfigurableAxis centAxis{"centAxis", {100, 0, 100.0f}, "Centrality"};
     ConfigurableAxis momAxis{"momAxis", {5.e2, 0.f, 5.f}, "momentum axis binning"};
@@ -79,31 +83,31 @@ struct Antinucleitask {
     histos.add("RawPt", "RawPt", kTH1F, {{ptAxis, "#it{p}_{T} (GeV/#it{c})"}});
     histos.add("Pt", "Pt", kTH1F, {{ptAxis, "#it{p}_{T} (GeV/#it{c})"}});
     histos.add("TpcSignal", "TpcSignal", kTH2F, {{momAxis, "#it{p}_{TPC} (GeV/#it{c})"}, {tpcAxis, "d#it{E}/d#it{x}_{TPC}"}});
-    histos.add("RawtpcNSigma", "RawtpcNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {NSigmaAxis, "N_{#sigma}"}});
-    histos.add("tpcNSigma", "tpcNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {NSigmaAxis, "N_{#sigma}"}});
-    histos.add("RawtofNSigma", "RawtofNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {NSigmaAxis, "N_{#sigma}"}});
-    histos.add("tofNSigma", "tofNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {NSigmaAxis, "N_{#sigma}"}});
+    histos.add("RawtpcNSigma", "RawtpcNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {nSigmaAxis, "N_{#sigma}"}});
+    histos.add("tpcNSigma", "tpcNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {nSigmaAxis, "N_{#sigma}"}});
+    histos.add("RawtofNSigma", "RawtofNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {nSigmaAxis, "N_{#sigma}"}});
+    histos.add("tofNSigma", "tofNSigma", kTH3F, {{centAxis, "Centrality"}, {ptAxis, "#it{p}_{T} (GeV/#it{c})"}, {nSigmaAxis, "N_{#sigma}"}});
   }
 
   // Function to apply track cuts
   template <typename T>
   bool isGoodTrack(const T& track)
   {
-    if (track.eta() > 0.8f)
+    if (track.eta() > maxEtaCut)
       return false;
-    if (track.tpcNClsFound() < mtrackNclusTPCcut)
+    if (track.tpcNClsFound() < trackNclusTPCcut)
       return false;
-    if (track.tpcNClsCrossedRows() < 70)
+    if (track.tpcNClsCrossedRows() < minTpcCrossedRowsCut)
       return false;
-    if (track.itsNCls() < mtrackNclusITScut)
+    if (track.itsNCls() < trackNclusITScut)
       return false;
-    if (track.tpcChi2NCl() > mChi2TPC)
+    if (track.tpcChi2NCl() > chi2TPC)
       return false;
-    if (track.itsChi2NCl() > mChi2ITS)
+    if (track.itsChi2NCl() > chi2ITS)
       return false;
-    if (std::abs(track.dcaXY()) > mtrackDCAxy)
+    if (std::abs(track.dcaXY()) > trackDCAxy)
       return false;
-    if (std::abs(track.dcaZ()) > mtrackDCAz)
+    if (std::abs(track.dcaZ()) > trackDCAz)
       return false;
 
     return true;
@@ -113,7 +117,7 @@ struct Antinucleitask {
   void process(CollisionWithEvSel::iterator const& collision, TotalTracks const& tracks)
   {
     // Event Selection
-    if (std::abs(collision.posZ()) > 10.f) {
+    if (std::abs(collision.posZ()) > maxVertexZCut) {
       return;
     }
 
@@ -129,7 +133,7 @@ struct Antinucleitask {
     histos.fill(HIST("zVtx"), collision.posZ());
 
     // Track Selection
-    for (auto& track : tracks) {
+    for (const auto& track : tracks) {
 
       double expBethe{tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() / o2::constants::physics::MassDeuteron), cfgBetheBlochParams->get("p0"), cfgBetheBlochParams->get("p1"), cfgBetheBlochParams->get("p2"), cfgBetheBlochParams->get("p3"), cfgBetheBlochParams->get("p4"))};
       double expSigma{expBethe * cfgBetheBlochParams->get("resolution")};
@@ -151,18 +155,18 @@ struct Antinucleitask {
         histos.fill(HIST("tpcNSigma"), collision.centFT0C(), pt, tpcNSigmaDeuteron);
         histos.fill(HIST("TpcSignal"), track.tpcInnerParam(), track.tpcSignal());
 
-        if (std::abs(tpcNSigmaDeuteron) < 3.f) {
+        if (std::abs(tpcNSigmaDeuteron) < tpcNSigmaCut) {
           histos.fill(HIST("tofNSigma"), collision.centFT0C(), pt, track.tofNSigmaDe());
         }
       }
     }
   }
 
-  PROCESS_SWITCH(Antinucleitask, process, "process", true);
+  PROCESS_SWITCH(AntinucleiTask, process, "process", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<Antinucleitask>(cfgc)};
+    adaptAnalysisTask<AntinucleiTask>(cfgc)};
 }
