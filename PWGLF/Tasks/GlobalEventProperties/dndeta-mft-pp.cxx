@@ -339,7 +339,7 @@ struct PseudorapidityDensityMFT {
       registry.add({"Tracks/Control/nonamb/EtaZvtxNonAmb_gt0",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
-      registry.add({"Tracks/Control/nonamb/DCAxy_nonamb", " ; DCA_{xy}(cm) non-ambiguous", {HistType::kTH1F, {{DCAxyAxis}}}}); //
+      registry.add({"Tracks/Control/nonamb/DCAxy_nonamb", " ; DCA_{xy}(cm) non-ambiguous", {HistType::kTH1F, {DCAxyAxis}}}); //
 
       registry.add({"Tracks/Control/woOrp/woOrpTracksEtaZvtx",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
@@ -347,7 +347,7 @@ struct PseudorapidityDensityMFT {
       registry.add({"Tracks/Control/woOrp/woOrpEtaZvtx_gt0",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
-      registry.add({"Tracks/Control/woOrp/DCAxy_woOrp", " ; DCA_{xy}(cm) w/o orphan", {HistType::kTH1F, {{DCAxyAxis}}}}); //
+      registry.add({"Tracks/Control/woOrp/DCAxy_woOrp", " ; DCA_{xy}(cm) w/o orphan", {HistType::kTH1F, {DCAxyAxis}}}); //
       registry.add({"Tracks/2Danalysis/EtaZvtx",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
                     {HistType::kTH2F, {EtaAxis, ZAxis}}}); //
