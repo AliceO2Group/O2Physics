@@ -2227,10 +2227,10 @@ class BuilderModule
               if (mcParticle.has_daughters()) {
                 auto const& daughters = mcParticle.template daughters_as<aod::McParticles>();
                 for (const auto& dau : daughters) {
-                  if (dau.getProcess() != 4) // check whether the daughter comes from a decay
+                  if (dau.getProcess() != TMCProcess::kPDecay) // check whether the daughter comes from a decay
                     continue;
 
-                  if (std::abs(dau.pdgCode()) == 211 || std::abs(dau.pdgCode()) == 321) {
+                  if (std::abs(dau.pdgCode()) == PDG_t::kPiPlus || std::abs(dau.pdgCode()) == PDG_t::kKPlus) {
                     thisCascInfo.pdgCodeBachelor = dau.pdgCode();
                     thisCascInfo.bachP[0] = dau.px();
                     thisCascInfo.bachP[1] = dau.py();
