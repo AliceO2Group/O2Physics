@@ -246,7 +246,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   /// \param ptTrig is the pT of the charm candidate
   template <typename TCand>
   bool isSelBdtBkgScoreCut(TCand const& cand,
-                          double ptTrig)
+                           double ptTrig)
   {
     for (size_t iPt = 0; iPt < binsPtTrig.value.size() - 1; iPt++) {
       if (ptTrig >= binsPtTrig.value[iPt] && ptTrig < binsPtTrig.value[iPt + 1]) {
