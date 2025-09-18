@@ -318,6 +318,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
         }
         registry.fill(HIST("hPhiVsPtTrigAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), trigCandPt, assTrkPt);
         registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), trigCandPt, assTrkPt);
+        registry.fill(HIST("hPhiVsPtAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), assTrkPt);
+        registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), assTrkPt);
 
         double deltaEta = assTrk.eta() - trigCand.eta();
         double deltaPhi = RecoDecay::constrainAngle(assTrk.phi() - trigCand.phi(), -o2::constants::math::PIHalf);

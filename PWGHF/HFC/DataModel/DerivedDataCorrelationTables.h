@@ -244,6 +244,11 @@ DECLARE_SOA_TABLE(HfcRedMEHadHads, "AOD", "HFCREDMEHADHAD", //! Correlation pair
                   aod::hf_correl_charm_had_reduced::DcaXYAssoc,
                   aod::hf_correl_charm_had_reduced::DcaZAssoc,
                   soa::Marker<2>);
+
+DECLARE_SOA_TABLE(HfcRedCollInfos, "AOD", "HFCREDCOLLINFO", //! Table with collision info
+                  aod::hf_collisions_reduced::Multiplicity,
+                  aod::hf_collisions_reduced::NumPvContrib,
+                  aod::hf_collisions_reduced::Centrality);
 } // namespace o2::aod
 
 #endif // PWGHF_HFC_DATAMODEL_DERIVEDDATACORRELATIONTABLES_H_

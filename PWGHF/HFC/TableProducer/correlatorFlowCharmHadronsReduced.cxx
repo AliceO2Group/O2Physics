@@ -94,6 +94,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   Produces<aod::HfcRedMEChHads> rowPairMECharmHads; //! Correlation pairs information Mixed Event
   Produces<aod::HfcRedSEHadHads> rowPairSEHadHads;  //! Correlation pairs information Same Event
   Produces<aod::HfcRedMEHadHads> rowPairMEHadHads;  //! Correlation pairs information Mixed Event
+  Produces<aod::HfcRedCollInfos> rowCollInfos;      //! Collision info
 
   Configurable<bool> fillSparses{"fillSparses", true, "Fill sparse histograms"};
   Configurable<bool> fillTables{"fillTables", false, "Fill tables"};
@@ -244,7 +245,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
   /// Apply pT-differential ML BDT bkg score cut
   /// \param ptTrig is the pT of the charm candidate
   template <typename TCand>
-  bool applyMlBkgScoreCut(TCand const& cand,
+  bool isSelBdtBkgScoreCut(TCand const& cand,
                           double ptTrig)
   {
     for (size_t iPt = 0; iPt < binsPtTrig.value.size() - 1; iPt++) {
@@ -267,7 +268,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
     auto collision = pair.template hfcRedCorrColl_as<o2::aod::HfcRedCorrColls>();
     double ptTrig = pair.ptTrig();
     if constexpr (requires { pair.bdtScore0Trig(); }) { // ML selection on bkg score for Charm-Had case
-      if (!applyMlBkgScoreCut(pair, ptTrig)) {
+      if (!isSelBdtBkgScoreCut(pair, ptTrig)) {
         return;
       }
     }
@@ -290,6 +291,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                          pair.nTpcCrossedRowsTrig(), pair.itsClsMapTrig(), pair.itsNClsTrig(), pair.dcaXYTrig(), pair.dcaZTrig(),
                          pair.nTpcCrossedRowsAssoc(), pair.itsClsMapAssoc(), pair.itsNClsAssoc(), pair.dcaXYAssoc(), pair.dcaZAssoc());
       }
+      rowCollInfos(collision.multiplicity(), collision.numPvContrib(), collision.centrality());
     }
     if constexpr (fillSparses) {
       if constexpr (requires { pair.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
@@ -330,7 +332,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
         }
         double ptTrig = getPt(trigCand);
         if constexpr (requires { trigCand.bdtScore0Trig(); }) { // ML selection on bkg score for Charm-Had case
-          if (!applyMlBkgScoreCut(trigCand, ptTrig)) {
+          if (!isSelBdtBkgScoreCut(trigCand, ptTrig)) {
             continue;
           }
         }
@@ -353,6 +355,7 @@ struct HfCorrelatorFlowCharmHadronsReduced {
                              trigCand.nTpcCrossedRowsAssoc(), trigCand.itsClsMapAssoc(), trigCand.itsNClsAssoc(), trigCand.dcaXYAssoc(), trigCand.dcaZAssoc(),
                              assocTrack.nTpcCrossedRowsAssoc(), assocTrack.itsClsMapAssoc(), assocTrack.itsNClsAssoc(), assocTrack.dcaXYAssoc(), assocTrack.dcaZAssoc());
           }
+          rowCollInfos(trigColl.multiplicity(), trigColl.numPvContrib(), trigColl.centrality());
         }
         if constexpr (fillSparses) {
           if constexpr (requires { trigCand.bdtScore0Trig(); }) { // Separate Charm-Had and Had-Had cases
