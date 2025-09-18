@@ -24,6 +24,7 @@
 #include "qaEventTrack.h"
 
 #include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
