@@ -256,7 +256,8 @@ bool TrackSmearer::smearTrack(O2Track& o2track, lutEntry_t* lutEntry, float inte
     LOG(info) << " --- smearTrack failed sin(phi) sanity check: " << o2track.getParam(2) << std::endl;
   }
   // set covariance matrix
-  for (int i = 0; i < 15; ++i)
+  static constexpr int kCovMatSize = 15;
+  for (int i = 0; i < kCovMatSize; ++i)
     o2track.setCov(lutEntry->covm[i], i);
   return isReconstructed;
 }
