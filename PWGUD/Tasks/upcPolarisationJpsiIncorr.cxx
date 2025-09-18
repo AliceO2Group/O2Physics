@@ -15,8 +15,10 @@
 
 /// \author Niveditha Ram , IP2I
 
+#include "LorentzVector.h"
+
 #include "PWGUD/DataModel/UDTables.h"
-#include "TPDGCode.h" 
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
@@ -25,15 +27,14 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
-#include "LorentzVector.h"
+#include "Math/Vector4D.h"
 #include "TMath.h"
+#include "TPDGCode.h"
 #include "TRandom3.h"
 #include "TSystem.h"
 
 #include <unordered_map>
 #include <vector>
-
-#include "Math/Vector4D.h"
 
 using namespace ROOT::Math;
 
@@ -72,7 +73,7 @@ const int kReqMatchMFTTracks = 2;
 const int kMaxChi2MFTMatch = 30;
 const float kMaxZDCTime = 2.;
 const float kMaxZDCTimeHisto = 10.;
-const PDG_t kMuonPDG = kMuonPlus; 
+const PDG_t kMuonPDG = kMuonPlus;
 struct upcPolarisationJPsiIncorr {
 
   // a pdg object
