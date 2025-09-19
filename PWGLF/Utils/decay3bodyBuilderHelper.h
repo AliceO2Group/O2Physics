@@ -60,9 +60,11 @@ struct decay3bodyCandidate {
   std::array<float, 3> posProton = {0.0f, 0.0f, 0.0f};
   std::array<float, 3> posPion = {0.0f, 0.0f, 0.0f};
   std::array<float, 3> posDeuteron = {0.0f, 0.0f, 0.0f};
-  std::array<float, 3> trackDCAxyToPV = {0.0f, 0.0f, 0.0f};  // 0 - proton, 1 - pion, 2 - deuteron
-  std::array<float, 3> trackDCAToPV = {0.0f, 0.0f, 0.0f};    // 0 - proton, 1 - pion, 2 - deuteron
-  std::array<float, 4> tpcNsigma = {0.0f, 0.0f, 0.0f, 0.0f}; // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
+  std::array<float, 3> trackDCAxyToPV = {0.0f, 0.0f, 0.0f};     // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 3> trackDCAToPV = {0.0f, 0.0f, 0.0f};       // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 3> trackDCAxyToPVprop = {0.0f, 0.0f, 0.0f}; // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 3> trackDCAToPVprop = {0.0f, 0.0f, 0.0f};   // 0 - proton, 1 - pion, 2 - deuteron
+  std::array<float, 4> tpcNsigma = {0.0f, 0.0f, 0.0f, 0.0f};    // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
   double tofNsigmaDeuteron = 0.0f;
   std::array<float, 3> averageITSClSize = {0.0f, 0.0f, 0.0f}; // 0 - proton, 1 - pion, 2 - deuteron
   std::array<float, 3> tpcNCl = {0.0f, 0.0f, 0.0f};           // 0 - proton, 1 - pion, 2 - deuteron
