@@ -907,9 +907,9 @@ struct he3HadronFemto {
   {
     double PrTPCnsigma = computePrTPCnsig(he3Hadcand.momHadTPC, he3Hadcand.tpcSignalHad);
     double PrTOFnsigma = tofNSigmaCalculation(he3Hadcand.massTOFHad, he3Hadcand.recoPtHad());
-    if (abs(PrTPCnsigma) < 3)
+    if (std::abs(PrTPCnsigma) < 3)
       return;
-    if (abs(PrTOFnsigma) < 3)
+    if (std::abs(PrTOFnsigma) < 3)
       return;
 
     float kstar = computeKstar(he3Hadcand);
