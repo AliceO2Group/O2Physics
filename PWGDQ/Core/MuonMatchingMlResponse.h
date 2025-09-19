@@ -13,8 +13,8 @@
 /// \brief Class to compute the ML response for MFT-Muon matching
 /// \author Maurice Coquet <maurice.louis.coquet@cern.ch>
 
-#ifndef PWGDQ_CORE_MLRESPONSEMFTMUONMATCHING_H_
-#define PWGDQ_CORE_MLRESPONSEMFTMUONMATCHING_H_
+#ifndef PWGDQ_CORE_MUONMATCHINGMLRESPONSE_H_
+#define PWGDQ_CORE_MUONMATCHINGMLRESPONSE_H_
 
 #include "Tools/ML/MlResponse.h"
 
@@ -374,4 +374,4 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
 #undef CHECK_AND_FILL_MFTMUON_DIFF
 #undef CHECK_AND_FILL_MFTMUON_COLLISION
 
-#endif // PWGDQ_CORE_MLRESPONSEMFTMUONMATCHING_H_
+#endif // PWGDQ_CORE_MUONMATCHINGMLRESPONSE_H_
