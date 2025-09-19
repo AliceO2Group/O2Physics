@@ -153,6 +153,7 @@ void FastTracker::AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelReso
   float x0Coldplate = 0.02f;  // (1.5 mm Al2O3 2%) 
   float x0Pipe1 = 0.0023f;    // 800 um Be
   float x0OT = 0.01;          // 1.0%
+  float x0iTOF = x0OT * 3.;
 
   float resRPhiVD = pixelResolution[0];
   float resZVD = pixelResolution[1];
@@ -166,7 +167,7 @@ void FastTracker::AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelReso
   float xrhoColdplate = 0;
   float xrhoPipe1 = 0;
   float xrhoOT = 2.3292e-01;
-
+  float xrhoiTOF = 0.03;
   float eff = 1.00;
 
   AddLayer("bpipe0", 0.48, 250, x0Pipe0, xrhoPipe0, 0.0f, 0.0f, 0.0f, 0); // 150 mum Be
@@ -178,6 +179,7 @@ void FastTracker::AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelReso
   AddLayer("B03", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B04", 9., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B05", 12., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("iTOF", 19, 250, x0iTOF, xrhoiTOF, resRPhiOT, resZOT, eff, 0);
   AddLayer("B06", 20., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B07", 30., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B08", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
