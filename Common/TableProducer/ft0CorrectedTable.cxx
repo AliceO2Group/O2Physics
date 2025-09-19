@@ -40,8 +40,6 @@ using namespace o2::aod;
 
 struct ft0CorrectedTable {
   // Configurables
-  Configurable<float> resoFT0A{"resoFT0A", 20.f, "FT0A resolution in ps for the MC override"};
-  Configurable<float> resoFT0C{"resoFT0C", 20.f, "FT0C resolution in ps for the MC override"};
   Configurable<bool> addHistograms{"addHistograms", false, "Add QA histograms"};
   Configurable<int> cfgCollisionSystem{"collisionSystem", -2, "Collision system: -2 (use cfg values), -1 (autoset), 0 (pp), 1 (PbPb), 2 (XeXe), 3 (pPb)"};
   Configurable<std::string> cfgUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
