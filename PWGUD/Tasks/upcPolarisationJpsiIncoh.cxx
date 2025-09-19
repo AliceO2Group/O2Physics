@@ -208,10 +208,8 @@ struct UpcPolarisationJpsiIncoh {
   {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
-    
     float pt  = RecoDecay::pt(fwdTrack.px(), fwdTrack.py());
     float eta = RecoDecay::eta(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz());
-    
     if (eta < kEtaMin || eta > kEtaMax)
       return false;
     if (pt < kPtMin)
