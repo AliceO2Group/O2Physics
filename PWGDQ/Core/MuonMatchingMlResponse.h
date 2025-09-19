@@ -24,69 +24,68 @@
 // Fill the map of available input features
 // the key is the feature's name (std::string)
 // the value is the corresponding value in EnumInputFeatures
-#define FILL_MAP_MFTMUON_MATCH(FEATURE)                               \
-  {                                                                             \
-    #FEATURE, static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE) \
+#define FILL_MAP_MFTMUON_MATCH(FEATURE) \
+  {                                     \
+    #FEATURE, static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE)}
+
+// Check if the index of mCachedIndices (index associated to a FEATURE)
+// matches the entry in EnumInputFeatures associated to this FEATURE
+// if so, the inputFeatures vector is filled with the FEATURE's value
+// by calling the corresponding GETTER=FEATURE from track
+#define CHECK_AND_FILL_MUON_TRACK(FEATURE, GETTER)                 \
+  case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE): { \
+    inputFeature = muon.GETTER();                                  \
+    break;                                                         \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER=FEATURE from track
-#define CHECK_AND_FILL_MUON_TRACK(FEATURE, GETTER)                     \
+#define CHECK_AND_FILL_MFT_TRACK(FEATURE, GETTER)                  \
   case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE): { \
-    inputFeature = muon.GETTER();                                         \
-    break;                                                                 \
+    inputFeature = mft.GETTER();                                   \
+    break;                                                         \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER=FEATURE from track
-#define CHECK_AND_FILL_MFT_TRACK(FEATURE, GETTER)                     \
+#define CHECK_AND_FILL_MUON_COV(FEATURE, GETTER)                   \
   case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE): { \
-    inputFeature = mft.GETTER();                                         \
-    break;                                                                 \
+    inputFeature = muoncov.GETTER();                               \
+    break;                                                         \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER=FEATURE from track
-#define CHECK_AND_FILL_MUON_COV(FEATURE, GETTER)                     \
+#define CHECK_AND_FILL_MFT_COV(FEATURE, GETTER)                    \
   case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE): { \
-    inputFeature = muoncov.GETTER();                                         \
-    break;                                                                 \
-  }
-
-// Check if the index of mCachedIndices (index associated to a FEATURE)
-// matches the entry in EnumInputFeatures associated to this FEATURE
-// if so, the inputFeatures vector is filled with the FEATURE's value
-// by calling the corresponding GETTER=FEATURE from track
-#define CHECK_AND_FILL_MFT_COV(FEATURE, GETTER)                     \
-  case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE): { \
-    inputFeature = mftcov.GETTER();                                         \
-    break;                                                                 \
+    inputFeature = mftcov.GETTER();                                \
+    break;                                                         \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER1 and GETTER2 from track.
-#define CHECK_AND_FILL_MFTMUON_DIFF(FEATURE, GETTER1, GETTER2) \
-  case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE): {       \
-    inputFeature = (mft.GETTER2() - muon.GETTER1());         \
-    break;                                                                        \
+#define CHECK_AND_FILL_MFTMUON_DIFF(FEATURE, GETTER1, GETTER2)     \
+  case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE): { \
+    inputFeature = (mft.GETTER2() - muon.GETTER1());               \
+    break;                                                         \
   }
 
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER=FEATURE from collision
-#define CHECK_AND_FILL_MFTMUON_COLLISION(GETTER)                        \
+#define CHECK_AND_FILL_MFTMUON_COLLISION(GETTER)                  \
   case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::GETTER): { \
-    inputFeature = collision.GETTER();                                     \
-    break;                                                                 \
+    inputFeature = collision.GETTER();                            \
+    break;                                                        \
   }
 
 namespace o2::analysis
@@ -180,54 +179,54 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
   {
     float inputFeature = 0.;
     switch (idx) {
-      CHECK_AND_FILL_MFT_TRACK(zMatching,z);
-      CHECK_AND_FILL_MFT_TRACK(xMFT,x);
-      CHECK_AND_FILL_MFT_TRACK(yMFT,y);
-      CHECK_AND_FILL_MFT_TRACK(qOverptMFT,signed1Pt);
-      CHECK_AND_FILL_MFT_TRACK(tglMFT,tgl);
-      CHECK_AND_FILL_MFT_TRACK(phiMFT,phi);
-      CHECK_AND_FILL_MFT_TRACK(chi2MFT,chi2);
-      CHECK_AND_FILL_MFT_TRACK(nClustersMFT,nClusters);
+      CHECK_AND_FILL_MFT_TRACK(zMatching, z);
+      CHECK_AND_FILL_MFT_TRACK(xMFT, x);
+      CHECK_AND_FILL_MFT_TRACK(yMFT, y);
+      CHECK_AND_FILL_MFT_TRACK(qOverptMFT, signed1Pt);
+      CHECK_AND_FILL_MFT_TRACK(tglMFT, tgl);
+      CHECK_AND_FILL_MFT_TRACK(phiMFT, phi);
+      CHECK_AND_FILL_MFT_TRACK(chi2MFT, chi2);
+      CHECK_AND_FILL_MFT_TRACK(nClustersMFT, nClusters);
       CHECK_AND_FILL_MUON_TRACK(dcaXY, fwddcaXY);
       CHECK_AND_FILL_MUON_TRACK(dcaZ, fwddcaz);
-      CHECK_AND_FILL_MUON_TRACK(xMCH,x);
-      CHECK_AND_FILL_MUON_TRACK(yMCH,y);
-      CHECK_AND_FILL_MUON_TRACK(qOverptMCH,signed1Pt);
-      CHECK_AND_FILL_MUON_TRACK(tglMCH,tgl);
-      CHECK_AND_FILL_MUON_TRACK(phiMCH,phi);
-      CHECK_AND_FILL_MUON_TRACK(nClustersMCH,nClusters);
-      CHECK_AND_FILL_MUON_TRACK(chi2MCH,chi2);
-      CHECK_AND_FILL_MUON_TRACK(pdca,pDca);
-      CHECK_AND_FILL_MFT_COV(cXXMFT,cXX);
-      CHECK_AND_FILL_MFT_COV(cXYMFT,cXY);
-      CHECK_AND_FILL_MFT_COV(cYYMFT,cYY);
-      CHECK_AND_FILL_MFT_COV(cPhiYMFT,cPhiY);
-      CHECK_AND_FILL_MFT_COV(cPhiXMFT,cPhiX);
-      CHECK_AND_FILL_MFT_COV(cPhiPhiMFT,cPhiPhi);
-      CHECK_AND_FILL_MFT_COV(cTglYMFT,cTglY);
-      CHECK_AND_FILL_MFT_COV(cTglXMFT,cTglX);
-      CHECK_AND_FILL_MFT_COV(cTglPhiMFT,cTglPhi);
-      CHECK_AND_FILL_MFT_COV(cTglTglMFT,cTglTgl);
-      CHECK_AND_FILL_MFT_COV(c1PtYMFT,c1PtY);
-      CHECK_AND_FILL_MFT_COV(c1PtXMFT,c1PtX);
-      CHECK_AND_FILL_MFT_COV(c1PtPhiMFT,c1PtPhi);
-      CHECK_AND_FILL_MFT_COV(c1PtTglMFT,c1PtTgl);
-      CHECK_AND_FILL_MFT_COV(c1Pt21Pt2MFT,c1Pt21Pt2);
-      CHECK_AND_FILL_MUON_COV(cXXMCH,cXX);
-      CHECK_AND_FILL_MUON_COV(cXYMCH,cXY);
-      CHECK_AND_FILL_MUON_COV(cYYMCH,cYY);
-      CHECK_AND_FILL_MUON_COV(cPhiYMCH,cPhiY);
-      CHECK_AND_FILL_MUON_COV(cPhiXMCH,cPhiX);
-      CHECK_AND_FILL_MUON_COV(cPhiPhiMCH,cPhiPhi);
-      CHECK_AND_FILL_MUON_COV(cTglYMCH,cTglY);
-      CHECK_AND_FILL_MUON_COV(cTglXMCH,cTglX);
-      CHECK_AND_FILL_MUON_COV(cTglPhiMCH,cTglPhi);
-      CHECK_AND_FILL_MUON_COV(cTglTglMCH,cTglTgl);
-      CHECK_AND_FILL_MUON_COV(c1PtYMCH,c1PtY);
-      CHECK_AND_FILL_MUON_COV(c1PtXMCH,c1PtX);
-      CHECK_AND_FILL_MUON_COV(c1PtPhiMCH,c1PtPhi);
-      CHECK_AND_FILL_MUON_COV(c1PtTglMCH,c1PtTgl);
-      CHECK_AND_FILL_MUON_COV(c1Pt21Pt2MCH,c1Pt21Pt2);
+      CHECK_AND_FILL_MUON_TRACK(xMCH, x);
+      CHECK_AND_FILL_MUON_TRACK(yMCH, y);
+      CHECK_AND_FILL_MUON_TRACK(qOverptMCH, signed1Pt);
+      CHECK_AND_FILL_MUON_TRACK(tglMCH, tgl);
+      CHECK_AND_FILL_MUON_TRACK(phiMCH, phi);
+      CHECK_AND_FILL_MUON_TRACK(nClustersMCH, nClusters);
+      CHECK_AND_FILL_MUON_TRACK(chi2MCH, chi2);
+      CHECK_AND_FILL_MUON_TRACK(pdca, pDca);
+      CHECK_AND_FILL_MFT_COV(cXXMFT, cXX);
+      CHECK_AND_FILL_MFT_COV(cXYMFT, cXY);
+      CHECK_AND_FILL_MFT_COV(cYYMFT, cYY);
+      CHECK_AND_FILL_MFT_COV(cPhiYMFT, cPhiY);
+      CHECK_AND_FILL_MFT_COV(cPhiXMFT, cPhiX);
+      CHECK_AND_FILL_MFT_COV(cPhiPhiMFT, cPhiPhi);
+      CHECK_AND_FILL_MFT_COV(cTglYMFT, cTglY);
+      CHECK_AND_FILL_MFT_COV(cTglXMFT, cTglX);
+      CHECK_AND_FILL_MFT_COV(cTglPhiMFT, cTglPhi);
+      CHECK_AND_FILL_MFT_COV(cTglTglMFT, cTglTgl);
+      CHECK_AND_FILL_MFT_COV(c1PtYMFT, c1PtY);
+      CHECK_AND_FILL_MFT_COV(c1PtXMFT, c1PtX);
+      CHECK_AND_FILL_MFT_COV(c1PtPhiMFT, c1PtPhi);
+      CHECK_AND_FILL_MFT_COV(c1PtTglMFT, c1PtTgl);
+      CHECK_AND_FILL_MFT_COV(c1Pt21Pt2MFT, c1Pt21Pt2);
+      CHECK_AND_FILL_MUON_COV(cXXMCH, cXX);
+      CHECK_AND_FILL_MUON_COV(cXYMCH, cXY);
+      CHECK_AND_FILL_MUON_COV(cYYMCH, cYY);
+      CHECK_AND_FILL_MUON_COV(cPhiYMCH, cPhiY);
+      CHECK_AND_FILL_MUON_COV(cPhiXMCH, cPhiX);
+      CHECK_AND_FILL_MUON_COV(cPhiPhiMCH, cPhiPhi);
+      CHECK_AND_FILL_MUON_COV(cTglYMCH, cTglY);
+      CHECK_AND_FILL_MUON_COV(cTglXMCH, cTglX);
+      CHECK_AND_FILL_MUON_COV(cTglPhiMCH, cTglPhi);
+      CHECK_AND_FILL_MUON_COV(cTglTglMCH, cTglTgl);
+      CHECK_AND_FILL_MUON_COV(c1PtYMCH, c1PtY);
+      CHECK_AND_FILL_MUON_COV(c1PtXMCH, c1PtX);
+      CHECK_AND_FILL_MUON_COV(c1PtPhiMCH, c1PtPhi);
+      CHECK_AND_FILL_MUON_COV(c1PtTglMCH, c1PtTgl);
+      CHECK_AND_FILL_MUON_COV(c1Pt21Pt2MCH, c1Pt21Pt2);
       CHECK_AND_FILL_MFTMUON_COLLISION(posX);
       CHECK_AND_FILL_MFTMUON_COLLISION(posY);
       CHECK_AND_FILL_MFTMUON_COLLISION(posZ);
@@ -245,7 +244,7 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_MFTMUON_COLLISION(centFT0M);
       CHECK_AND_FILL_MFTMUON_COLLISION(centFT0A);
       CHECK_AND_FILL_MFTMUON_COLLISION(centFT0C);
-      CHECK_AND_FILL_MUON_TRACK(chi2MCHMFT,chi2MatchMCHMFT);
+      CHECK_AND_FILL_MUON_TRACK(chi2MCHMFT, chi2MatchMCHMFT);
     }
     return inputFeature;
   }
@@ -255,11 +254,10 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
   {
     float inputFeature = 0.;
     switch (idx) {
-      CHECK_AND_FILL_MUON_TRACK(chi2MCHMFT,chi2MatchMCHMFT);
+      CHECK_AND_FILL_MUON_TRACK(chi2MCHMFT, chi2MatchMCHMFT);
     }
     return inputFeature;
   }
-
 
   /// Method to get the input features vector needed for ML inference
   /// \param track is the single track, \param collision is the collision
@@ -358,8 +356,7 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
       FILL_MAP_MFTMUON_MATCH(c1PtPhiMCH),
       FILL_MAP_MFTMUON_MATCH(c1PtTglMCH),
       FILL_MAP_MFTMUON_MATCH(c1Pt21Pt2MCH),
-      FILL_MAP_MFTMUON_MATCH(chi2MCHMFT)
-      };
+      FILL_MAP_MFTMUON_MATCH(chi2MCHMFT)};
   }
 
   uint8_t mCachedIndexBinning; // index correspondance between configurable and available input features

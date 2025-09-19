@@ -16,46 +16,50 @@
 //   The skimmed MC stack includes the MC truth particles corresponding to the list of user specified MC signals (see MCsignal.h)
 //    and the MC truth particles corresponding to the reconstructed tracks selected by the specified track cuts on reconstructed data.
 
-#include <cstdint>
-#include <iostream>
-#include <map>
-#include <string>
-#include <memory>
-#include <vector>
-#include <utility>
-#include <unordered_map>
-#include "TList.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/ASoA.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/CCDB/TriggerAliases.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
+#include "PWGDQ/Core/AnalysisCut.h"
 #include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
 #include "PWGDQ/Core/MuonMatchingMlResponse.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FwdTrackReAlignTables.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/FwdTrackReAlignTables.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
-#include "Field/MagneticField.h"
-#include "TGeoGlobalMagField.h"
-#include "DetectorsBase/Propagator.h"
 #include "DetectorsBase/GeometryManager.h"
-#include "CCDB/BasicCCDBManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/DataTypes.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TGeoGlobalMagField.h"
+#include "TList.h"
+
+#include <cstdint>
+#include <iostream>
+#include <map>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -248,9 +252,8 @@ struct TableMakerMC {
 
   o2::analysis::MlResponseMFTMuonMatch<float> matchingMlResponse;
   std::vector<double> binsPtMl;
-  std::array<double,1> cutValues;
+  std::array<double, 1> cutValues;
   std::vector<int> cutDirMl;
-
 
   void init(o2::framework::InitContext& context)
   {
@@ -377,18 +380,17 @@ struct TableMakerMC {
     }
     fCCDBApi.init(fConfigCCDB.fConfigCcdbUrl.value);
 
-    if (fConfigVariousOptions.fUseML.value){
-      //TODO : for now we use hard coded values since the current models use 1 pT bin
-      binsPtMl = {-1e-6,1000.0};
+    if (fConfigVariousOptions.fUseML.value) {
+      // TODO : for now we use hard coded values since the current models use 1 pT bin
+      binsPtMl = {-1e-6, 1000.0};
       cutValues = {0.0};
       cutDirMl = {cuts_ml::CutNot};
-      o2::framework::LabeledArray<double> mycutsMl(cutValues.data(),1,1,std::vector<std::string>{"pT bin 0"},std::vector<std::string>{"score"});
+      o2::framework::LabeledArray<double> mycutsMl(cutValues.data(), 1, 1, std::vector<std::string>{"pT bin 0"}, std::vector<std::string>{"score"});
       matchingMlResponse.configure(binsPtMl, mycutsMl, cutDirMl, 1);
       matchingMlResponse.setModelPathsCCDB(fConfigVariousOptions.fModelNames.value, fCCDBApi, fConfigVariousOptions.fModelPathsCCDB.value, fConfigCCDB.timestamp.value);
       matchingMlResponse.cacheInputFeaturesIndices(fConfigVariousOptions.fInputFeatures.value);
       matchingMlResponse.init();
     }
-
   }
 
   void DefineCuts()
@@ -907,12 +909,12 @@ struct TableMakerMC {
       if (static_cast<int>(muon.trackType()) < 2) {
         auto muonID = muon.matchMCHTrackId();
         auto chi2 = muon.chi2MatchMCHMFT();
-        if (fConfigVariousOptions.fUseML.value){
-	  std::vector<float> output;
-	  std::vector<float> inputML = matchingMlResponse.getInputFeaturesTest(muon);
-	  matchingMlResponse.isSelectedMl(inputML, 0, output);
-	  chi2 = output[0];
-	}
+        if (fConfigVariousOptions.fUseML.value) {
+          std::vector<float> output;
+          std::vector<float> inputML = matchingMlResponse.getInputFeaturesTest(muon);
+          matchingMlResponse.isSelectedMl(inputML, 0, output);
+          chi2 = output[0];
+        }
         if (mCandidates.find(muonID) == mCandidates.end()) {
           mCandidates[muonID] = {chi2, muon.globalIndex()};
         } else {
