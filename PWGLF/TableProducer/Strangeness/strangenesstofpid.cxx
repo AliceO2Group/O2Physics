@@ -1232,7 +1232,7 @@ struct strangenesstofpid {
     std::vector<double> collisionEventTime(collisions.size(), 0.0);
     std::vector<int> collisionNtracks(collisions.size(), 0);
     for (const auto& track : tracks) {
-      if (track.hasTOF()) {
+      if (track.hasTOF() && track.has_collision()) {
         collisionEventTime[track.collisionId()] += track.tofEvTime();
         collisionNtracks[track.collisionId()]++;
       }
