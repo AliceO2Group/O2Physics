@@ -381,7 +381,7 @@ void HFInvMassFitter::doFit()
     countSignal(mRawYieldCounted, mRawYieldCountedErr);
     calculateSignificance(mSignificance, mSignificanceErr);
     // Fit to data ratio
-    mRatioFrame = mass->frame(Title("Fit/Data Ratio"));
+    mRatioFrame = mass->frame(Title(Form("%s", mHistoInvMass->GetTitle())));
     calculateFitToDataRatio();
   }
 }
@@ -669,21 +669,9 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
 void HFInvMassFitter::drawRatio(TVirtualPad* pad)
 {
   pad->cd();
-  mRatioFrame->GetYaxis()->SetTitle("");
-  TPaveText* textInfo = new TPaveText(0.12, 0.65, 0.47, .89, "NDC");
-  textInfo->SetBorderSize(0);
-  textInfo->SetFillStyle(0);
-  textInfo->SetTextColor(kBlue);
-  textInfo->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
-  textInfo->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
-  textInfo->AddText(Form("mean = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
-  if (mTypeOfSgnPdf == DoubleGaus) {
-    textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
-    textInfo->AddText(Form("sigma 2 = %.3f #pm %.3f", mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
-  } else {
-    textInfo->AddText(Form("sigma = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
-  }
-  mRatioFrame->addObject(textInfo);
+  mRatioFrame->GetXaxis()->SetTitleOffset(1.2);
+  mRatioFrame->GetYaxis()->SetTitleOffset(1.5);
+  mRatioFrame->GetYaxis()->SetTitle("Fit / Data");
   double xMin = mRatioFrame->GetXaxis()->GetXmin();
   double xMax = mRatioFrame->GetXaxis()->GetXmax();
   TLine* line = new TLine(xMin, 1.0, xMax, 1.0);
@@ -883,7 +871,7 @@ void HFInvMassFitter::plotRefl(RooAbsPdf* pdf)
 }
 
 // Calculate fit to data ratio
-void HFInvMassFitter::calculateFitToDataRatio()
+void HFInvMassFitter::calculateFitToDataRatio() const
 {
   if (!mInvMassFrame)
     return;
@@ -911,9 +899,9 @@ void HFInvMassFitter::calculateFitToDataRatio()
     ratioHist->SetPointError(i, 0, 0, err, err);
   }
 
+  mRatioFrame->addPlotable(ratioHist, "P");
   mRatioFrame->SetMinimum(0.5);
   mRatioFrame->SetMaximum(1.5);
-  mRatioFrame->addPlotable(ratioHist, "P");
 }
 
 // Fix reflection pdf

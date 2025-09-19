@@ -651,6 +651,8 @@ int runMassFitter(const TString& configFileName)
   outputFileName.ReplaceAll(".root", ".pdf");
   TString outputFileNameResidual = outputFileName;
   outputFileNameResidual.ReplaceAll(".pdf", "_Residuals.pdf");
+  TString outputFileRatio = outputFileName;
+  outputFileRatio.ReplaceAll(".pdf", "_Ratio.pdf");
   for (int iCanvas = 0; iCanvas < nCanvases; iCanvas++) {
     if (iCanvas == 0 && nCanvases > 1) {
       canvasMass[iCanvas]->SaveAs(Form("%s[", outputFileName.Data()));
@@ -660,12 +662,21 @@ int runMassFitter(const TString& configFileName)
       canvasMass[iCanvas]->SaveAs(Form("%s]", outputFileName.Data()));
     }
     if (!isMc) {
+      // residuals
       if (iCanvas == 0 && nCanvases > 1) {
         canvasResiduals[iCanvas]->SaveAs(Form("%s[", outputFileNameResidual.Data()));
       }
       canvasResiduals[iCanvas]->SaveAs(outputFileNameResidual.Data());
       if (iCanvas == nCanvases - 1 && nCanvases > 1) {
         canvasResiduals[iCanvas]->SaveAs(Form("%s]", outputFileNameResidual.Data()));
+      }
+      // ratio
+      if (iCanvas == 0 && nCanvases > 1) {
+        canvasRatio[iCanvas]->SaveAs(Form("%s[", outputFileRatio.Data()));
+      }
+      canvasRatio[iCanvas]->SaveAs(outputFileRatio.Data());
+      if (iCanvas == nCanvases - 1 && nCanvases > 1) {
+        canvasRatio[iCanvas]->SaveAs(Form("%s]", outputFileRatio.Data()));
       }
     }
   }

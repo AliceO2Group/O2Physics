@@ -1,5 +1,7 @@
 {
     "IsMC": false,
+    "WriteSignalPar": true,
+    "_WriteSignalPar": "write signal parameter values on mass canvas",
     "InFileName": "hMasses.root",
     "_InFileName": "download example file here https://cernbox.cern.ch/s/uoWicuRAVGArDsV",
     "ReflFileName": "",
@@ -35,6 +37,8 @@
         "Dstar",
         "XicToXiPiPi"
     ],
+    "CollisionSystem": "pp #sqrt{#it{s}} = 13.6 TeV",
+    "_CollisionSystems": "Label for mass canvases",
     "EnableRefl": false,
     "FixSigma": false,
     "SigmaFile": "",
