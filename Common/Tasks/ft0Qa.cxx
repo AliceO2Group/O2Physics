@@ -84,6 +84,10 @@ struct ft0QaTask {
     histos.add("hT0AC", "T0AC;T0AC time (ns);counts", kTH1F, {axisTime});
     histos.add("hT0res", "FT0 resolution", kTH1F, {axisColTimeRes});
     histos.add("hColTime", "", kTH1F, {axisTime});
+    histos.add("hT0res_nContrib", "FT0 resolution vs. Ncontributors", kTH2F,
+               {axisColTimeRes, axisNcontrib});
+    histos.add("hT0res_MultT0AC", "FT0 resolution vs. T0AC multiplicity", kTH2F,
+               {axisColTimeRes, axisMultT0AC});
 
     // FT0 vertex
     histos.add("hT0vertex", "FT0 vertex;FT0 vertex (cm);counts", kTH1F,
@@ -109,6 +113,11 @@ struct ft0QaTask {
     histos.add("hPV_nContrib",
                "PV vs. Ncontributers;primary vertex (cm);(# contrubutors)",
                kTH2F, {axisVertex, axisNcontrib});
+    histos.add("hT0vertexDiff_vs_nContrib", "FT0V - PV vs. Ncontributors;FT0 vertex -  PV (cm);# contrubutors",
+               kTH2F, {axisVertex, axisNcontrib});
+    histos.add("hT0vertexDiff_vs_MultT0AC",
+               "FT0V - PV vs. T0AC multiplicity;FT0 vertex -  PV (cm);T0AC multiplicity (# ADC channels)",
+               kTH2F, {axisVertex, axisMultT0AC});
 
     // FT0 amplitude and multiplicity
     histos.add("hAmpT0A", "amplitude T0A;#ADC channels;counts", kTH1F,
@@ -369,7 +378,11 @@ struct ft0QaTask {
         histos.fill(HIST("hVertex_T0_PV"), ft0.posZ(), collision.posZ());
         histos.fill(HIST("hPV"), collision.posZ());
         histos.fill(HIST("hT0res"), collision.t0resolution());
+        histos.fill(HIST("hT0res_nContrib"), collision.t0resolution(), nContrib);
+        histos.fill(HIST("hT0res_MultT0AC"), collision.t0resolution(), multFT0M);
         histos.fill(HIST("hT0vertexDiff"), ft0.posZ() - collision.posZ());
+        histos.fill(HIST("hT0vertexDiff_vs_nContrib"),ft0.posZ() - collision.posZ(), nContrib);
+        histos.fill(HIST("hT0vertexDiff_vs_MultT0AC"), ft0.posZ() - collision.posZ(), multFT0M);
 
         if (nContrib > 20) {
 
