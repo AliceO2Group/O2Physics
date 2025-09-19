@@ -35,6 +35,11 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Framework/AnalysisDataModel.h"
+#include "Common/PhysicsConstants.h"
+
+#include "Common/RecoDecay.h"
+
 using namespace ROOT::Math;
 
 // table for saving tree with info on data
@@ -69,6 +74,9 @@ const float kMaxAmpV0A = 100.;
 const int kReqMatchMIDTracks = 2;
 const int kReqMatchMFTTracks = 2;
 const int kMaxChi2MFTMatch = 30;
+const float kMaxZDCTime = 2.;
+const float kMaxZDCTimeHisto = 10.;
+
 struct UpcPolarisationJpsiIncoh {
 
   using CandidatesFwd = soa::Join<o2::aod::UDCollisions, o2::aod::UDCollisionsSelsFwd>;
@@ -200,6 +208,7 @@ struct UpcPolarisationJpsiIncoh {
     float pDca = fwdTrack.pDca();
     float pt = RecoDecay::pt(fwdTrack.px(), fwdTrack.py());
     float eta = RecoDecay::eta(std::array{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz()});
+
     if (eta < kEtaMin || eta > kEtaMax)
       return false;
     if (pt < kPtMin)
