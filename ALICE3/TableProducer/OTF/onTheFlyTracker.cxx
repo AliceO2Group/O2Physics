@@ -424,7 +424,7 @@ struct OnTheFlyTracker {
         break;
 
       case 2:
-        fastTracker.AddSiliconALICE3(scaleVD, fastTrackerSettings.pixelRes);
+        fastTracker.AddSiliconALICE3(fastTrackerSettings.scaleVD, fastTrackerSettings.pixelRes);
         break;
 
       default:
