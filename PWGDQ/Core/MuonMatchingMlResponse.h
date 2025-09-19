@@ -11,9 +11,10 @@
 
 /// \file MuonMatchingMlResponse.h
 /// \brief Class to compute the ML response for MFT-Muon matching
+/// \author Maurice Coquet <maurice.louis.coquet@cern.ch>
 
-#ifndef PWGDQ_DILEPTON_UTILS_MLRESPONSEMFTMUONMATCHING_H_
-#define PWGDQ_DILEPTON_UTILS_MLRESPONSEMFTMUONMATCHING_H_
+#ifndef PWGDQ_CORE_MLRESPONSEMFTMUONMATCHING_H_
+#define PWGDQ_CORE_MLRESPONSEMFTMUONMATCHING_H_
 
 #include "Tools/ML/MlResponse.h"
 
@@ -175,7 +176,7 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
   virtual ~MlResponseMFTMuonMatch() = default;
 
   template <typename T1, typename T2, typename C1, typename C2, typename U>
-  float return_feature(uint8_t idx, T1 const& muon, T2 const& mft, C1 const& muoncov, C2 const& mftcov, U const& collision)
+  float returnFeature(uint8_t idx, T1 const& muon, T2 const& mft, C1 const& muoncov, C2 const& mftcov, U const& collision)
   {
     float inputFeature = 0.;
     switch (idx) {
@@ -250,7 +251,7 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
   }
 
   template <typename T1>
-  float return_featureTest(uint8_t idx, T1 const& muon)
+  float returnFeatureTest(uint8_t idx, T1 const& muon)
   {
     float inputFeature = 0.;
     switch (idx) {
@@ -267,7 +268,7 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
   {
     std::vector<float> inputFeatures;
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
-      float inputFeature = return_feature(idx, muon, mft, muoncov, mftcov, collision);
+      float inputFeature = returnFeature(idx, muon, mft, muoncov, mftcov, collision);
       inputFeatures.emplace_back(inputFeature);
     }
     return inputFeatures;
@@ -278,7 +279,7 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
   {
     std::vector<float> inputFeatures;
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
-      float inputFeature = return_featureTest(idx, muon);
+      float inputFeature = returnFeatureTest(idx, muon);
       inputFeatures.emplace_back(inputFeature);
     }
     return inputFeatures;
@@ -290,7 +291,7 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
   template <typename T1, typename T2, typename C1, typename C2, typename U>
   float getBinningFeature(T1 const& muon, T2 const& mft, C1 const& muoncov, C2 const& mftcov, U const& collision)
   {
-    return return_feature(mCachedIndexBinning, muon, mft, muoncov, mftcov, collision);
+    return returnFeature(mCachedIndexBinning, muon, mft, muoncov, mftcov, collision);
   }
 
   void cacheBinningIndex(std::string const& cfgBinningFeature)
@@ -372,4 +373,4 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
 #undef CHECK_AND_FILL_MFTMUON_DIFF
 #undef CHECK_AND_FILL_MFTMUON_COLLISION
 
-#endif // PWGDQ_DILEPTON_UTILS_MLRESPONSEMFTMUONMATCHING_H_
+#endif // PWGDQ_CORE_MLRESPONSEMFTMUONMATCHING_H_
