@@ -84,14 +84,14 @@ DECLARE_SOA_COLUMN(NSigTofKa2, nSigTofKa2, float);       //! TOF Nsigma separati
 DECLARE_SOA_COLUMN(NSigTpcTofPi2, nSigTpcTofPi2, float); //! TPC and TOF combined Nsigma separation for daughter2 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofKa2, nSigTpcTofKa2, float); //! TPC and TOF combined Nsigma separation for daughter2 with kaon mass hypothesis
 // Candidate
-DECLARE_SOA_COLUMN(M, m, float);        //! Invariant mass of candidate (GeV/c2)
-DECLARE_SOA_COLUMN(Pt, pt, float);      //! Transverse momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(P, p, float);        //! Momentum of candidate (GeV/c)
-DECLARE_SOA_COLUMN(Phi, phi, float);    //! Azimuth angle of candidate
-DECLARE_SOA_COLUMN(Eta, eta, float);    //! Pseudorapidity of candidate
-DECLARE_SOA_COLUMN(Y, y, float);        //! Rapidity of candidate
-DECLARE_SOA_COLUMN(Sign, sign, int8_t); //! Sign of the candidate
-DECLARE_SOA_COLUMN(IsPhi, isPhi, bool); //! Flag to indicate if the candidate is a phi meson
+DECLARE_SOA_COLUMN(M, m, float);                //! Invariant mass of candidate (GeV/c2)
+DECLARE_SOA_COLUMN(Pt, pt, float);              //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(P, p, float);                //! Momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(Phi, phi, float);            //! Azimuth angle of candidate
+DECLARE_SOA_COLUMN(Eta, eta, float);            //! Pseudorapidity of candidate
+DECLARE_SOA_COLUMN(Y, y, float);                //! Rapidity of candidate
+DECLARE_SOA_COLUMN(Sign, sign, int8_t);         //! Sign of the candidate
+DECLARE_SOA_COLUMN(IsTruePhi, isTruePhi, bool); //! Flag to indicate if the candidate is a phi meson
 } // namespace resomlcandidates
 
 DECLARE_SOA_TABLE(ResoCandidates, "AOD", "RESOCANDIDATES",
@@ -102,7 +102,7 @@ DECLARE_SOA_TABLE(ResoCandidates, "AOD", "RESOCANDIDATES",
                   resomlcandidates::Eta,
                   resomlcandidates::Y,
                   resomlcandidates::Sign,
-                  resomlcandidates::IsPhi);
+                  resomlcandidates::IsTruePhi);
 
 DECLARE_SOA_TABLE(ResoMLCandidates, "AOD", "RESOMLCANDIDATES",
                   resomlcandidates::MultClass,
@@ -247,8 +247,8 @@ struct resonanceTreeCreator {
   }
 
   template <typename T1, typename T2>
-  void fillCandidateTree(const T1& collision, const T2& track1, const T2& track2, float masstrack1, float masstrack2
-                         /*std::optional<std::reference_wrapper<const aod::McParticles>> mcParticles = std::nullopt*/)
+  void fillCandidateTree4ML(const T1& collision, const T2& track1, const T2& track2, float masstrack1, float masstrack2
+                            /*std::optional<std::reference_wrapper<const aod::McParticles>> mcParticles = std::nullopt*/)
   {
     auto tpctofPi1 = combineNSigma<Pi>(track1);
     auto tpctofKa1 = combineNSigma<Ka>(track1);
@@ -302,7 +302,7 @@ struct resonanceTreeCreator {
     return false;
   }
 
-  void processData(SelCollisions::iterator const& collision, FullTracks const&)
+  void processData4ML(SelCollisions::iterator const& collision, FullTracks const&)
   {
     auto posThisColl = posTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -310,14 +310,14 @@ struct resonanceTreeCreator {
     for (const auto& track1 : posThisColl) {
       for (const auto& track2 : negThisColl) {
         // Fill the ResoMLCandidates table with candidates in Data
-        fillCandidateTree(collision, track1, track2, massKa, massKa);
+        fillCandidateTree4ML(collision, track1, track2, massKa, massKa);
       }
     }
   }
 
-  PROCESS_SWITCH(resonanceTreeCreator, processData, "Fill ResoMLCandidates in Data", true);
+  PROCESS_SWITCH(resonanceTreeCreator, processData4ML, "Fill ResoMLCandidates in Data", true);
 
-  void processMC(SimCollisions::iterator const& collision, FullMCTracks const&, aod::McParticles const& mcParticles)
+  void processMC4ML(SimCollisions::iterator const& collision, FullMCTracks const&, aod::McParticles const& mcParticles)
   {
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
@@ -330,12 +330,12 @@ struct resonanceTreeCreator {
           return; // Skip filling if only background is requested and a phi in MC truth
 
         // Fill the ResoMLCandidates table with candidates in MC
-        fillCandidateTree(collision, track1, track2, massKa, massKa);
+        fillCandidateTree4ML(collision, track1, track2, massKa, massKa);
       }
     }
   }
 
-  PROCESS_SWITCH(resonanceTreeCreator, processMC, "Fill ResoMLCandidates in MC", false);
+  PROCESS_SWITCH(resonanceTreeCreator, processMC4ML, "Fill ResoMLCandidates in MC", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
