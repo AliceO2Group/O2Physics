@@ -47,6 +47,11 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
+// GapSide enum
+using o2::aod::sgselector::DoubleGap;
+using o2::aod::sgselector::SingleGapA;
+using o2::aod::sgselector::SingleGapC;
+
 struct SginclusivePhiKstarSD {
   SGSelector sgSelector;
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -125,12 +130,6 @@ struct SginclusivePhiKstarSD {
   //
   Configurable<bool> reconstruction{"reconstruction", true, ""};
   Configurable<int> generatedId{"generatedId", 31, ""};
-
-  enum GapSideNum {
-    SideA,    // 0
-    SideC,    // 1
-    BothSides // 2
-  };
 
   int numTwoTracks = 2;
   int numFourTracks = 4;
@@ -686,7 +685,7 @@ struct SginclusivePhiKstarSD {
     registry.fill(HIST("TrueGapSide"), truegapSide);
     gapSide = truegapSide;
 
-    if (gapSide < SideA || gapSide > BothSides)
+    if (gapSide < SingleGapA || gapSide > DoubleGap)
       return;
     registry.fill(HIST("hEventCutFlow"), 1);
 
@@ -755,13 +754,13 @@ struct SginclusivePhiKstarSD {
     registry.fill(HIST("hEventCutFlow"), 14);
 
     int mult = collision.numContrib();
-    if (gapSide == SideA) {
+    if (gapSide == SingleGapA) {
       registry.fill(HIST("gap_mult0"), mult);
     }
-    if (gapSide == SideC) {
+    if (gapSide == SingleGapC) {
       registry.fill(HIST("gap_mult1"), mult);
     }
-    if (gapSide == BothSides) {
+    if (gapSide == DoubleGap) {
       registry.fill(HIST("gap_mult2"), mult);
     }
     if (mult < mintrack || mult > maxtrack)
@@ -788,10 +787,10 @@ struct SginclusivePhiKstarSD {
 
     /*   Partition<UDtracksfull> pvContributors1 = aod::udtrack::isPVContributor == true;
    pvContributors1.bindTable(tracks);
-   if (gapSide == SideA) {
+   if (gapSide == SingleGapA) {
    registry.get<TH1>(HIST("nPVContributors_data"))->Fill(pvContributors1.size(), 1.);
    }
-   if (gapSide == SideC) {
+   if (gapSide == SingleGapC) {
    registry.get<TH1>(HIST("nPVContributors_data_1"))->Fill(pvContributors1.size(), 1.);
    }
     */
@@ -825,13 +824,13 @@ struct SginclusivePhiKstarSD {
           rawPionTracksn.push_back(track1);
         }
       }
-      if (gapSide == SideA) {
+      if (gapSide == SingleGapA) {
         mult0++;
       }
-      if (gapSide == SideC) {
+      if (gapSide == SingleGapC) {
         mult1++;
       }
-      if (gapSide == BothSides) {
+      if (gapSide == DoubleGap) {
         mult2++;
       }
       if (std::abs(v0.Eta()) < etaDG) {
@@ -883,31 +882,31 @@ struct SginclusivePhiKstarSD {
         }
       }
     }
-    if (gapSide == SideA) {
+    if (gapSide == SingleGapA) {
       registry.fill(HIST("mult_0"), mult0);
     }
-    if (gapSide == SideC) {
+    if (gapSide == SingleGapC) {
       registry.fill(HIST("mult_1"), mult1);
     }
-    if (gapSide == BothSides) {
+    if (gapSide == DoubleGap) {
       registry.fill(HIST("mult_2"), mult2);
     }
     if (qa) {
-      if (gapSide == SideA) {
+      if (gapSide == SingleGapA) {
         rQA.fill(HIST("V0A_0"), collision.totalFV0AmplitudeA());
         rQA.fill(HIST("FT0A_0"), collision.totalFT0AmplitudeA());
         rQA.fill(HIST("FT0C_0"), collision.totalFT0AmplitudeC());
         rQA.fill(HIST("ZDC_A_0"), collision.energyCommonZNA());
         rQA.fill(HIST("ZDC_C_0"), collision.energyCommonZNC());
       }
-      if (gapSide == SideC) {
+      if (gapSide == SingleGapC) {
         rQA.fill(HIST("V0A_1"), collision.totalFV0AmplitudeA());
         rQA.fill(HIST("FT0A_1"), collision.totalFT0AmplitudeA());
         rQA.fill(HIST("FT0C_1"), collision.totalFT0AmplitudeC());
         rQA.fill(HIST("ZDC_A_1"), collision.energyCommonZNA());
         rQA.fill(HIST("ZDC_C_1"), collision.energyCommonZNC());
       }
-      if (gapSide == BothSides) {
+      if (gapSide == DoubleGap) {
         rQA.fill(HIST("V0A_2"), collision.totalFV0AmplitudeA());
         rQA.fill(HIST("FT0A_2"), collision.totalFT0AmplitudeA());
         rQA.fill(HIST("FT0C_2"), collision.totalFT0AmplitudeC());
@@ -916,43 +915,43 @@ struct SginclusivePhiKstarSD {
       }
       if (rapidityGap) {
         if (trackgapC > 0 && trackgapA == 0 && trackextra == 0) {
-          if (gapSide == SideA) {
+          if (gapSide == SingleGapA) {
             registry.fill(HIST("event_rap_gap"), 1);
             registry.fill(HIST("rap_mult1"), trackgapC);
           }
-          if (gapSide == SideC) {
+          if (gapSide == SingleGapC) {
             registry.fill(HIST("event_rap_gap"), 4);
             registry.fill(HIST("rap1_mult1"), trackgapC);
           }
-          if (gapSide == BothSides) {
+          if (gapSide == DoubleGap) {
             registry.fill(HIST("event_rap_gap"), 7);
             registry.fill(HIST("rap2_mult1"), trackgapC);
           }
         }
         if (trackgapC == 0 && trackgapA > 0 && trackextra == 0) {
-          if (gapSide == SideA) {
+          if (gapSide == SingleGapA) {
             registry.fill(HIST("event_rap_gap"), 2);
             registry.fill(HIST("rap_mult2"), trackgapA);
           }
-          if (gapSide == SideC) {
+          if (gapSide == SingleGapC) {
             registry.fill(HIST("event_rap_gap"), 5);
             registry.fill(HIST("rap1_mult2"), trackgapA);
           }
-          if (gapSide == BothSides) {
+          if (gapSide == DoubleGap) {
             registry.fill(HIST("event_rap_gap"), 8);
             registry.fill(HIST("rap2_mult2"), trackgapA);
           }
         }
         if (trackDG > 0 && trackextraDG == 0) {
-          if (gapSide == SideA) {
+          if (gapSide == SingleGapA) {
             registry.fill(HIST("event_rap_gap"), 3);
             registry.fill(HIST("rap_mult3"), trackDG);
           }
-          if (gapSide == SideC) {
+          if (gapSide == SingleGapC) {
             registry.fill(HIST("event_rap_gap"), 6);
             registry.fill(HIST("rap1_mult3"), trackDG);
           }
-          if (gapSide == BothSides) {
+          if (gapSide == DoubleGap) {
             registry.fill(HIST("event_rap_gap"), 9);
             registry.fill(HIST("rap2_mult3"), trackDG);
           }
@@ -972,24 +971,24 @@ struct SginclusivePhiKstarSD {
             v01 = v0 + v1;
             // Opposite sign pairs
             if (t0.sign() != t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_kk_mass_rap"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_kk_mass1_rap"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == BothSides) {
+              if (gapSide == DoubleGap) {
                 registry.fill(HIST("os_kk_mass2_rap"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
             if (t0.sign() == t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_kk_ls_mass_rap"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_kk_ls_mass1_rap"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == BothSides) {
+              if (gapSide == DoubleGap) {
                 registry.fill(HIST("os_kk_ls_mass2_rap"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
@@ -1007,24 +1006,24 @@ struct SginclusivePhiKstarSD {
             v01 = v0 + v1;
             // Opposite sign pairs
             if (t0.sign() != t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_kp_mass_rap"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_kp_mass1_rap"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == BothSides) {
+              if (gapSide == DoubleGap) {
                 registry.fill(HIST("os_kp_mass2_rap"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
             if (t0.sign() == t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_kp_ls_mass_rap"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_kp_ls_mass1_rap"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == BothSides) {
+              if (gapSide == DoubleGap) {
                 registry.fill(HIST("os_kp_ls_mass2_rap"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
@@ -1043,24 +1042,24 @@ struct SginclusivePhiKstarSD {
             v01 = v0 + v1;
             // Opposite sign pairs
             if (t0.sign() != t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_kk_mass_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_kk_mass1_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == BothSides) {
+              if (gapSide == DoubleGap) {
                 registry.fill(HIST("os_kk_mass2_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
             if (t0.sign() == t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_kk_ls_mass_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_kk_ls_mass1_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == BothSides) {
+              if (gapSide == DoubleGap) {
                 registry.fill(HIST("os_kk_ls_mass2_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
@@ -1078,24 +1077,24 @@ struct SginclusivePhiKstarSD {
             v01 = v0 + v1;
             // Opposite sign pairs
             if (t0.sign() != t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_kp_mass_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_kp_mass1_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == BothSides) {
+              if (gapSide == DoubleGap) {
                 registry.fill(HIST("os_kp_mass2_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
             if (t0.sign() == t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_kp_ls_mass_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_kp_ls_mass1_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == BothSides) {
+              if (gapSide == DoubleGap) {
                 registry.fill(HIST("os_kp_ls_mass2_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
@@ -1113,24 +1112,24 @@ struct SginclusivePhiKstarSD {
             v01 = v0 + v1;
             // Opposite sign pairs
             if (t0.sign() != t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_kk_mass_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_kk_mass1_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == BothSides) {
+              if (gapSide == DoubleGap) {
                 registry.fill(HIST("os_kk_mass2_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
             if (t0.sign() == t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_kk_ls_mass_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_kk_ls_mass1_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == BothSides) {
+              if (gapSide == DoubleGap) {
                 registry.fill(HIST("os_kk_ls_mass2_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
@@ -1148,24 +1147,24 @@ struct SginclusivePhiKstarSD {
             v01 = v0 + v1;
             // Opposite sign pairs
             if (t0.sign() != t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_kp_mass_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_kp_mass1_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == BothSides) {
+              if (gapSide == DoubleGap) {
                 registry.fill(HIST("os_kp_mass2_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
             if (t0.sign() == t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_kp_ls_mass_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_kp_ls_mass1_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == BothSides) {
+              if (gapSide == DoubleGap) {
                 registry.fill(HIST("os_kp_ls_mass2_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
@@ -1185,25 +1184,25 @@ struct SginclusivePhiKstarSD {
         v01 = v0 + v1;
         // Opposite sign pairs
         if (t0.sign() != t1.sign()) {
-          if (gapSide == SideA) {
+          if (gapSide == SingleGapA) {
             registry.fill(HIST("os_KK_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (gapSide == SideC) {
+          if (gapSide == SingleGapC) {
             registry.fill(HIST("os_KK_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (exclusive && gapSide == BothSides && mult2 == numTwoTracks) {
+          if (exclusive && gapSide == DoubleGap && mult2 == numTwoTracks) {
             registry.fill(HIST("os_KK_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         }
         // samesignpair
         if (t0.sign() == t1.sign()) {
-          if (gapSide == SideA) {
+          if (gapSide == SingleGapA) {
             registry.fill(HIST("os_KK_ls_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (gapSide == SideC) {
+          if (gapSide == SingleGapC) {
             registry.fill(HIST("os_KK_ls_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (exclusive && gapSide == BothSides && mult2 == numTwoTracks) {
+          if (exclusive && gapSide == DoubleGap && mult2 == numTwoTracks) {
             registry.fill(HIST("os_KK_ls_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         }
@@ -1223,13 +1222,13 @@ struct SginclusivePhiKstarSD {
             v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
             v01 = v0 + v1;
             if (t0.sign() != t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_KK_rot_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_KK_rot_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (exclusive && gapSide == BothSides && mult2 == numTwoTracks) {
+              if (exclusive && gapSide == DoubleGap && mult2 == numTwoTracks) {
                 registry.fill(HIST("os_KK_rot_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
@@ -1248,24 +1247,24 @@ struct SginclusivePhiKstarSD {
         v01 = v0 + v1;
         // Opposite sign pairs
         if (t0.sign() != t1.sign()) {
-          if (gapSide == SideA) {
+          if (gapSide == SingleGapA) {
             registry.fill(HIST("os_pp_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (gapSide == SideC) {
+          if (gapSide == SingleGapC) {
             registry.fill(HIST("os_pp_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (exclusive && gapSide == BothSides && mult2 == numTwoTracks) {
+          if (exclusive && gapSide == DoubleGap && mult2 == numTwoTracks) {
             registry.fill(HIST("os_pp_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         } // same sign pair
         if (t0.sign() == t1.sign()) {
-          if (gapSide == SideA) {
+          if (gapSide == SingleGapA) {
             registry.fill(HIST("os_pp_ls_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (gapSide == SideC) {
+          if (gapSide == SingleGapC) {
             registry.fill(HIST("os_pp_ls_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (exclusive && gapSide == BothSides && mult2 == numTwoTracks) {
+          if (exclusive && gapSide == DoubleGap && mult2 == numTwoTracks) {
             registry.fill(HIST("os_pp_ls_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         }
@@ -1278,24 +1277,24 @@ struct SginclusivePhiKstarSD {
         v01 = v0 + v1;
         // Opposite sign pairs
         if (t0.sign() != t1.sign()) {
-          if (gapSide == SideA) {
+          if (gapSide == SingleGapA) {
             registry.fill(HIST("os_pk_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (gapSide == SideC) {
+          if (gapSide == SingleGapC) {
             registry.fill(HIST("os_pk_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (exclusive && gapSide == BothSides && mult2 == numTwoTracks) {
+          if (exclusive && gapSide == DoubleGap && mult2 == numTwoTracks) {
             registry.fill(HIST("os_pk_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         } // same sign pair
         if (t0.sign() == t1.sign()) {
-          if (gapSide == SideA) {
+          if (gapSide == SingleGapA) {
             registry.fill(HIST("os_pk_ls_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (gapSide == SideC) {
+          if (gapSide == SingleGapC) {
             registry.fill(HIST("os_pk_ls_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
           }
-          if (exclusive && gapSide == BothSides && mult2 == numTwoTracks) {
+          if (exclusive && gapSide == DoubleGap && mult2 == numTwoTracks) {
             registry.fill(HIST("os_pk_ls_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
           }
         }
@@ -1314,13 +1313,13 @@ struct SginclusivePhiKstarSD {
             v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
             v01 = v0 + v1;
             if (t0.sign() != t1.sign()) {
-              if (gapSide == SideA) {
+              if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_pk_rot_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (gapSide == SideC) {
+              if (gapSide == SingleGapC) {
                 registry.fill(HIST("os_pk_rot_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
               }
-              if (exclusive && gapSide == BothSides && mult2 == numTwoTracks) {
+              if (exclusive && gapSide == DoubleGap && mult2 == numTwoTracks) {
                 registry.fill(HIST("os_pk_rot_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
               }
             }
@@ -1329,7 +1328,7 @@ struct SginclusivePhiKstarSD {
       }
     }
     if (fourpion) {
-      if (gapSide == BothSides && mult2 == numFourTracks) {
+      if (gapSide == DoubleGap && mult2 == numFourTracks) {
         ROOT::Math::PxPyPzMVector pair1, pair2, pair3, pair4;
         if (static_cast<int>(onlyPionTracksp.size()) == numTwoTracks && static_cast<int>(onlyPionTracksn.size()) == numTwoTracks) {
           ROOT::Math::PxPyPzMVector k1 = onlyPionTracksp.at(0);
@@ -1411,13 +1410,13 @@ struct SginclusivePhiKstarSD {
           v01 = v0 + v1;
           // Opposite sign pairs
           if (track1.sign() != track2.sign()) {
-            if (truegapSide1 == SideA) {
+            if (truegapSide1 == SingleGapA) {
               registry.fill(HIST("os_KK_mix_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
             }
-            if (truegapSide1 == SideC) {
+            if (truegapSide1 == SingleGapC) {
               registry.fill(HIST("os_KK_mix_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
             }
-            if (truegapSide1 == BothSides) {
+            if (truegapSide1 == DoubleGap) {
               registry.fill(HIST("os_KK_mix_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
             }
           }
@@ -1434,13 +1433,13 @@ struct SginclusivePhiKstarSD {
           v01 = v0 + v1;
           // Opposite sign pairs
           if (track1.sign() != track2.sign()) {
-            if (truegapSide1 == SideA) {
+            if (truegapSide1 == SingleGapA) {
               registry.fill(HIST("os_pk_mix_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
             }
-            if (truegapSide1 == SideC) {
+            if (truegapSide1 == SingleGapC) {
               registry.fill(HIST("os_pk_mix_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
             }
-            if (truegapSide1 == BothSides) {
+            if (truegapSide1 == DoubleGap) {
               registry.fill(HIST("os_pk_mix_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
             }
           }
