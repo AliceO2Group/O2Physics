@@ -138,8 +138,7 @@ DECLARE_SOA_TABLE(ResoMLCandidates, "AOD", "RESOMLCANDIDATES",
                   resomlcandidates::Phi,
                   resomlcandidates::Eta,
                   resomlcandidates::Y,
-                  resomlcandidates::Sign,
-                  resomlcandidates::IsPhi);
+                  resomlcandidates::Sign);
 
 namespace resomlselection
 {
@@ -184,6 +183,9 @@ struct resonanceTreeCreator {
 
   // Necessary to flag INEL>0 events in GenMC
   Service<o2::framework::O2DatabasePDG> pdgDB;
+
+  // Cache for manual slicing
+  SliceCache cache;
 
   enum ParticleType {
     Pi,
@@ -244,8 +246,9 @@ struct resonanceTreeCreator {
     return mother;
   }
 
-  template <bool isMC, typename T1, typename T2>
-  void fillCandidateTree(const T1& collision, const T2& track1, const T2& track2, float masstrack1, float masstrack2)
+  template <typename T1, typename T2>
+  void fillCandidateTree(const T1& collision, const T2& track1, const T2& track2, float masstrack1, float masstrack2
+                         /*std::optional<std::reference_wrapper<const aod::McParticles>> mcParticles = std::nullopt*/)
   {
     auto tpctofPi1 = combineNSigma<Pi>(track1);
     auto tpctofKa1 = combineNSigma<Ka>(track1);
@@ -260,39 +263,43 @@ struct resonanceTreeCreator {
         return;
     }
 
-    bool isPhi = false;
-    if constexpr (isMC) {
-      if (track1.has_mcParticle() && track2.has_mcParticle()) {
-        auto mcTrack1 = track1.template mcParticle_as<aod::McParticles>();
-        auto mcTrack2 = track2.template mcParticle_as<aod::McParticles>();
-
-        auto mothersOfMcTrack1 = mcTrack1.template mothers_as<aod::McParticles>();
-        auto mothersOfMcTrack2 = mcTrack2.template mothers_as<aod::McParticles>();
-
-        for (const auto& motherOfMcTrack1 : mothersOfMcTrack1) {
-          for (const auto& motherOfMcTrack2 : mothersOfMcTrack2) {
-            if (mcTrack1.pdgCode() == PDG_t::kKPlus && mcTrack2.pdgCode() == PDG_t::kKMinus &&
-                motherOfMcTrack1.pdgCode() == motherOfMcTrack2.pdgCode() && motherOfMcTrack1.pdgCode() == o2::constants::physics::Pdg::kPhi) {
-              isPhi = true;
-              break;
-            }
-          }
-        }
-      }
-
-      if (fillOnlySignal && !isPhi)
-        return; // Skip filling if only signal is requested and not a phi candidate
-      if (fillOnlyBackground && isPhi)
-        return; // Skip filling if only background is requested and a phi candidate
-    }
-
     resoMLCandidates(collision.centFT0M(),
                      track1.pt(), track1.p(), track1.phi(), track1.eta(), track1.rapidity(masstrack1), track1.dcaXY(), track1.dcaZ(),
                      track1.tpcNSigmaPi(), track1.tpcNSigmaKa(), track1.tofNSigmaPi(), track1.tofNSigmaKa(), tpctofPi1, tpctofKa1,
                      track2.pt(), track2.p(), track2.phi(), track2.eta(), track2.rapidity(masstrack2), track2.dcaXY(), track2.dcaZ(),
                      track2.tpcNSigmaPi(), track2.tpcNSigmaKa(), track2.tofNSigmaPi(), track2.tofNSigmaKa(), tpctofPi2, tpctofKa2,
                      recCandidate.M(), recCandidate.Pt(), recCandidate.P(), recCandidate.Phi(),
-                     recCandidate.Eta(), recCandidate.Rapidity(), track1.sign() + track2.sign(), isPhi);
+                     recCandidate.Eta(), recCandidate.Rapidity(), track1.sign() + track2.sign());
+  }
+
+  template <typename T>
+  bool isMCPhi(const T& track1, const T& track2, const aod::McParticles& mcParticles)
+  {
+    if (!track1.has_mcParticle() || !track2.has_mcParticle())
+      return false; // Skip filling if no MC truth is available for both tracks
+
+    auto mcTrack1 = mcParticles.rawIteratorAt(track1.mcParticleId());
+    auto mcTrack2 = mcParticles.rawIteratorAt(track2.mcParticleId());
+
+    if (mcTrack1.pdgCode() != PDG_t::kKPlus || !mcTrack1.isPhysicalPrimary())
+      return false; // Skip filling if the first track is not a primary K+
+    if (mcTrack2.pdgCode() != PDG_t::kKMinus || !mcTrack2.isPhysicalPrimary())
+      return false; // Skip filling if the second track is not a primary K-
+
+    const auto mcTrack1MotherIndexes = mcTrack1.mothersIds();
+    const auto mcTrack2MotherIndexes = mcTrack2.mothersIds();
+
+    for (const auto& mcTrack1MotherIndex : mcTrack1MotherIndexes) {
+      for (const auto& mcTrack2MotherIndex : mcTrack2MotherIndexes) {
+        if (mcTrack1MotherIndex != mcTrack2MotherIndex)
+          continue;
+
+        const auto mother = mcParticles.rawIteratorAt(mcTrack1MotherIndex);
+        if (mother.pdgCode() == o2::constants::physics::Pdg::kPhi)
+          return true;
+      }
+    }
+    return false;
   }
 
   void processData(SelCollisions::iterator const& collision, FullTracks const&)
@@ -302,29 +309,28 @@ struct resonanceTreeCreator {
 
     for (const auto& track1 : posThisColl) {
       for (const auto& track2 : negThisColl) {
-        if (track1.globalIndex() == track2.globalIndex())
-          continue; // condition to avoid double counting of pair
-
         // Fill the ResoMLCandidates table with candidates in Data
-        fillCandidateTree<false>(collision, track1, track2, massKa, massKa);
+        fillCandidateTree(collision, track1, track2, massKa, massKa);
       }
     }
   }
 
   PROCESS_SWITCH(resonanceTreeCreator, processData, "Fill ResoMLCandidates in Data", true);
 
-  void processMC(SimCollisions::iterator const& collision, FullMCTracks const&, aod::McParticles const&)
+  void processMC(SimCollisions::iterator const& collision, FullMCTracks const&, aod::McParticles const& mcParticles)
   {
     auto posThisColl = posMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
     auto negThisColl = negMCTracks->sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
     for (const auto& track1 : posThisColl) {
       for (const auto& track2 : negThisColl) {
-        if (track1.globalIndex() == track2.globalIndex())
-          continue; // condition to avoid double counting of pair
+        if (fillOnlySignal && !isMCPhi(track1, track2, mcParticles))
+          return; // Skip filling if only signal is requested and not a phi in MC truth
+        if (fillOnlyBackground && isMCPhi(track1, track2, mcParticles))
+          return; // Skip filling if only background is requested and a phi in MC truth
 
         // Fill the ResoMLCandidates table with candidates in MC
-        fillCandidateTree<true>(collision, track1, track2, massKa, massKa);
+        fillCandidateTree(collision, track1, track2, massKa, massKa);
       }
     }
   }
