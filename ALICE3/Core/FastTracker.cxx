@@ -149,8 +149,8 @@ void FastTracker::AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelReso
   float x0Pipe0 = 0.001592;  // 200 um AlBe
   float x0VDL0 = 0.00076;    // 30 um Si + 50 um glue + carbon foam 0.03%
   float x0VDL1 = 0.00096;    // 30 um Si + 50 um glue + carbon foam 0.05%
-  float x0VDL2 = 0.00167;    // 30 um Si + 50 um glue + carbon foam 0.05% + 0.07% Be case 
-  float x0Coldplate = 0.02f; // (1.5 mm Al2O3 2%) 
+  float x0VDL2 = 0.00167;    // 30 um Si + 50 um glue + carbon foam 0.05% + 0.07% Be case
+  float x0Coldplate = 0.02f; // (1.5 mm Al2O3 2%)
   float x0Pipe1 = 0.0023f;   // 800 um Be
   float x0OT = 0.01;         // 1.0%
   float x0iTOF = x0OT * 3.;
