@@ -230,7 +230,7 @@ class HFInvMassFitter : public TNamed
   void calculateSignificance(Double_t& significance, Double_t& significanceErr) const;
   void checkForSignal(Double_t& estimatedSignal);
   void calculateFitToDataRatio();
-  void drawFit(TVirtualPad* c, Int_t writeFitInfo = 2);
+  void drawFit(TVirtualPad* c, const std::vector<std::string>& plotLabels, Bool_t writeParInfo = true);
   void drawResidual(TVirtualPad* c);
   void drawRatio(TVirtualPad* c);
   void drawReflection(TVirtualPad* c);

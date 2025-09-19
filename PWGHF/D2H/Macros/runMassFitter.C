@@ -87,11 +87,13 @@ int runMassFitter(const TString& configFileName)
   config.ParseStream(is);
   fclose(configFile);
 
-  Bool_t const isMc = config["IsMC"].GetBool();
-  TString const inputFileName = config["InFileName"].GetString();
-  TString const reflFileName = config["ReflFileName"].GetString();
+  Bool_t isMc = config["IsMC"].GetBool();
+  Bool_t writeSignalPar = config["WriteSignalPar"].GetBool();
+  TString inputFileName = config["InFileName"].GetString();
+  TString reflFileName = config["ReflFileName"].GetString();
   TString outputFileName = config["OutFileName"].GetString();
-  TString const particleName = config["Particle"].GetString();
+  TString particleName = config["Particle"].GetString();
+  TString collisionSystem = config["CollisionSystem"].GetString();
 
   std::vector<std::string> inputHistoName;
   std::vector<std::string> promptHistoName;
@@ -207,19 +209,21 @@ int runMassFitter(const TString& configFileName)
     sgnFunc[iSliceVar] = sgnFuncConfig[iSliceVar];
   }
 
-  std::map<std::string, std::pair<std::string, std::string>> particles{
-    {"Dplus", {"K#pi#pi", "D+"}},
-    {"D0", {"K#pi", "D0"}},
-    {"Ds", {"KK#pi", "D_s+"}},
-    {"LcToPKPi", {"pK#pi", "Lambda_c+"}},
-    {"LcToPK0s", {"pK^{0}_{s}", "Lambda_c+"}},
-    {"Dstar", {"D^{0}pi^{+}", "D*+"}},
-    {"XicToXiPiPi", {"#Xi#pi#pi", "Xi_c+"}}};
+  std::map<std::string, std::tuple<std::string, std::string, std::string>> particles{
+    {"Dplus", {"K#pi#pi", "D+", "D^{+} #rightarrow K^{-}#pi^{+}#pi^{+} + c.c."}},
+    {"D0", {"K#pi", "D0", "D^{0} #rightarrow K^{-}#pi^{+} + c.c."}},
+    {"Ds", {"KK#pi", "D_s+", "D_{s}^{+} #rightarrow K^{-}K^{+}#pi^{+} + c.c."}},
+    {"LcToPKPi", {"pK#pi", "Lambda_c+", "#Lambda_{c}^{+} #rightarrow pK^{-}#pi^{+} + c.c."}},
+    {"LcToPK0s", {"pK^{0}_{s}", "Lambda_c+", "#Lambda_{c}^{+} #rightarrow pK^{0}_{s} + c.c."}},
+    {"Dstar", {"D^{0}pi^{+}", "D*+", "D^{*+} #rightarrow D^{0}#pi^{+} + c.c."}},
+    {"XicToXiPiPi", {"#Xi#pi#pi", "Xi_c+", "#Xi_{c}^{+} #rightarrow #Xi^{-}#pi^{+}#pi^{+} + c.c."}}};
   if (particles.find(particleName.Data()) == particles.end()) {
     throw std::runtime_error("ERROR: only Dplus, D0, Ds, LcToPKPi, LcToPK0s, Dstar and XicToXiPiPi particles supported! Exit");
   }
-  const TString massAxisTitle = "#it{M}(" + particles[particleName.Data()].first + ") (GeV/#it{c}^{2})";
-  const double massPDG = TDatabasePDG::Instance()->GetParticle(particles[particleName.Data()].second.c_str())->Mass();
+  const auto& particleTuple = particles[particleName.Data()];
+  const TString massAxisTitle = "#it{M}(" + std::get<0>(particleTuple) + ") (GeV/#it{c}^{2})";
+  const double massPDG = TDatabasePDG::Instance()->GetParticle(std::get<1>(particleTuple).c_str())->Mass();
+  const std::vector<std::string> plotLabels = {std::get<2>(particleTuple), collisionSystem.Data()};
 
   // load inv-mass histograms
   auto* inputFile = TFile::Open(inputFileName.Data());
@@ -426,7 +430,7 @@ int runMassFitter(const TString& configFileName)
         canvasMass[iCanvas]->cd();
       }
 
-      massFitter->drawFit(gPad);
+      massFitter->drawFit(gPad, plotLabels, writeSignalPar);
 
       const Double_t rawYield = massFitter->getRawYield();
       const Double_t rawYieldErr = massFitter->getRawYieldError();
@@ -571,7 +575,7 @@ int runMassFitter(const TString& configFileName)
       } else {
         canvasMass[iCanvas]->cd();
       }
-      massFitter->drawFit(gPad);
+      massFitter->drawFit(gPad, plotLabels, writeSignalPar);
       canvasMass[iCanvas]->Modified();
       canvasMass[iCanvas]->Update();
 

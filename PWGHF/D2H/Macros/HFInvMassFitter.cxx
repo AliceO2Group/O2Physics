@@ -50,6 +50,7 @@
 #include <cstring>
 #include <stdexcept>
 #include <string>
+#include <vector>
 
 using namespace RooFit;
 
@@ -564,65 +565,80 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
 }
 
 // draw fit output
-void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
+void HFInvMassFitter::drawFit(TVirtualPad* pad, const std::vector<std::string>& plotLabels, Bool_t writeParInfo)
 {
   gStyle->SetOptStat(0);
   gStyle->SetCanvasColor(0);
   gStyle->SetFrameFillColor(0);
   pad->cd();
-  if (writeFitInfo > 0) {
-    auto* textInfoLeft = new TPaveText(0.12, 0.65, 0.47, 0.89, "NDC");
-    auto* textInfoRight = new TPaveText(0.6, 0.7, 1., .87, "NDC");
-    textInfoLeft->SetBorderSize(0);
-    textInfoLeft->SetFillStyle(0);
-    textInfoRight->SetBorderSize(0);
-    textInfoRight->SetFillStyle(0);
-    textInfoRight->SetTextColor(kBlue);
-    textInfoLeft->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
-    textInfoLeft->AddText(Form("S_{count} = %.0f #pm %.0f ", mRawYieldCounted, mRawYieldCountedErr));
-    if (mTypeOfBkgPdf != NoBkg) {
-      textInfoLeft->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
-      textInfoLeft->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
-    }
-    if (mReflPdf != nullptr) {
-      textInfoLeft->AddText(Form("Refl/Sig =  %.3f #pm %.3f ", mReflOverSgn, 0.0));
-    }
-    if (mTypeOfBkgPdf != NoBkg) {
-      textInfoLeft->AddText(Form("Signif (%d#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
-      textInfoLeft->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdfTotal));
-    }
+  // Fit metrics
+  TPaveText* textFitMetrics = new TPaveText(0.65, 0.7, 0.9, 0.88, "NDC");
+  textFitMetrics->SetBorderSize(0);
+  textFitMetrics->SetFillStyle(0);
+  textFitMetrics->SetTextSize(0.04);
+  textFitMetrics->SetTextAlign(33);
+  textFitMetrics->AddText(Form("S = %.0f #pm %.0f ", mRawYield, mRawYieldErr));
+  if (mTypeOfBkgPdf != NoBkg) {
+    textFitMetrics->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
+    textFitMetrics->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
+  }
+  if (mReflPdf) {
+    textFitMetrics->AddText(Form("Refl/Sig =  %.3f #pm %.3f ", mReflOverSgn, 0.0));
+  }
+  if (mTypeOfBkgPdf != NoBkg) {
+    textFitMetrics->AddText(Form("Significance (%d#sigma) = %.1f #pm %.1f ", mNSigmaForSidebands, mSignificance, mSignificanceErr));
+    textFitMetrics->AddText(Form("#chi^{2} / ndf  =  %.3f", mChiSquareOverNdfTotal));
+  }
+  mInvMassFrame->addObject(textFitMetrics);
+  // Analysis information
+  TPaveText* textAnalysisInfo = new TPaveText(0.18, 0.78, 0.35, 0.88, "NDC");
+  textAnalysisInfo->SetBorderSize(0);
+  textAnalysisInfo->SetFillStyle(0);
+  textAnalysisInfo->SetTextSize(0.05);
+  textAnalysisInfo->SetTextAlign(13);
+  for (const auto& label : plotLabels) {
+    textAnalysisInfo->AddText(label.c_str());
+  }
+  mInvMassFrame->addObject(textAnalysisInfo);
+  if (writeParInfo) {
+    // right text box
+    TPaveText* textSignalPar = new TPaveText(0.18, 0.65, 0.4, 0.75, "NDC");
+    textSignalPar->SetBorderSize(0);
+    textSignalPar->SetFillStyle(0);
+    textSignalPar->SetTextColor(kBlue);
+    textSignalPar->SetTextAlign(13);
     if (mFixedMean) {
-      textInfoRight->AddText(Form("mean(fixed) = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
+      textSignalPar->AddText(Form("mean(fixed) = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
     } else {
-      textInfoRight->AddText(Form("mean(free) = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
+      textSignalPar->AddText(Form("mean(free) = %.3f #pm %.3f", mRooMeanSgn->getVal(), mRooMeanSgn->getError()));
     }
     if (mTypeOfSgnPdf == DoubleGaus) {
       if (mFixedSigma) {
-        textInfoRight->AddText(Form("sigma(fixed) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+        textSignalPar->AddText(Form("sigma(fixed) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
       } else {
-        textInfoRight->AddText(Form("sigma(free) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+        textSignalPar->AddText(Form("sigma(free) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
       }
       if (mFixedSigmaDoubleGaus) {
-        textInfoRight->AddText(Form("sigma 2(fixed) = %.3f #pm %.3f", mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
+        textSignalPar->AddText(Form("sigma 2(fixed) = %.3f #pm %.3f", mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
       } else {
-        textInfoRight->AddText(Form("sigma 2(free) = %.3f #pm %.3f", mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
+        textSignalPar->AddText(Form("sigma 2(free) = %.3f #pm %.3f", mRooSecSigmaSgn->getVal(), mRooSecSigmaSgn->getError()));
       }
     } else if (mFixedSigma) {
-      textInfoRight->AddText(Form("sigma(fixed) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+      textSignalPar->AddText(Form("sigma(fixed) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
     } else {
-      textInfoRight->AddText(Form("sigma(free) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
+      textSignalPar->AddText(Form("sigma(free) = %.3f #pm %.3f", mRooSigmaSgn->getVal(), mRooSigmaSgn->getError()));
     }
-    mInvMassFrame->addObject(textInfoLeft);
-    mInvMassFrame->addObject(textInfoRight);
-    mInvMassFrame->GetYaxis()->SetTitleOffset(1.8);
-    gPad->SetLeftMargin(0.15);
-    mInvMassFrame->GetYaxis()->SetTitle(Form("%s", mHistoInvMass->GetYaxis()->GetTitle()));
-    mInvMassFrame->GetXaxis()->SetTitle(Form("%s", mHistoInvMass->GetXaxis()->GetTitle()));
-    mInvMassFrame->Draw();
-    highlightPeakRegion(mInvMassFrame);
-    if (mHistoTemplateRefl != nullptr) {
-      mReflFrame->Draw("same");
-    }
+    mInvMassFrame->addObject(textSignalPar);
+  }
+  mInvMassFrame->GetXaxis()->SetTitleOffset(1.2);
+  mInvMassFrame->GetYaxis()->SetTitleOffset(1.8);
+  gPad->SetLeftMargin(0.15);
+  mInvMassFrame->GetYaxis()->SetTitle(Form("%s", mHistoInvMass->GetYaxis()->GetTitle()));
+  mInvMassFrame->GetXaxis()->SetTitle(Form("%s", mHistoInvMass->GetXaxis()->GetTitle()));
+  mInvMassFrame->Draw();
+  highlightPeakRegion(mInvMassFrame);
+  if (mHistoTemplateRefl) {
+    mReflFrame->Draw("same");
   }
 }
 
