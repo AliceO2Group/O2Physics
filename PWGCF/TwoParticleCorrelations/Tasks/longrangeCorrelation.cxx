@@ -188,7 +188,7 @@ struct LongrangeCorrelation {
     offsetFT0 = ccdb->getForTimeStamp<std::vector<o2::detectors::AlignParam>>("FT0/Calib/Align", cfgCcdbParam.noLaterThan.value);
     LOGF(info, "Offset for FT0A: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[0].getX(), (*offsetFT0)[0].getY(), (*offsetFT0)[0].getZ());
     LOGF(info, "Offset for FT0C: x = %.3f y = %.3f z = %.3f\n", (*offsetFT0)[1].getX(), (*offsetFT0)[1].getY(), (*offsetFT0)[1].getZ());
-    
+
     std::vector<AxisSpec> corrAxis = {{axisSample, "Sample"},
                                       {axisVtxZ, "z-vtx (cm)"},
                                       {axisPtTrigger, "p_{T} (GeV/c)"},
@@ -234,7 +234,7 @@ struct LongrangeCorrelation {
       sameMftGlobal.setObject(new CorrelationContainer(Form("sameEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("sameEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
       mixedMftGlobal.setObject(new CorrelationContainer(Form("mixedEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), Form("mixedEventMftGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult)), corrAxis, effAxis, userAxis));
     }
-    
+
     if (doprocessFt0aMftSE || doprocessFt0aMftME) {
       addHistos<kFT0AMFT, kSE>();
       addHistos<kFT0AMFT, kME>();
@@ -502,11 +502,11 @@ struct LongrangeCorrelation {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
     if (!mixing)
       histos.fill(HIST("Ft0aFt0c/SE/hMult_used"), triggers.size());
-    
+
     for (std::size_t iChA = 0; iChA < ft0a.channelA().size(); iChA++) {
       if (!mixing)
         histos.fill(HIST("Ft0aFt0c/SE/Trig_hist"), fSampleIndex, vz, -1);
-      
+
       auto chanelidA = ft0a.channelA()[iChA];
       auto phiA = getPhiFT0(chanelidA, 0);
       auto etaA = getEtaFT0(chanelidA, 0);
@@ -522,12 +522,12 @@ struct LongrangeCorrelation {
       }
 
       for (std::size_t iChC = 0; iChC < ft0c.channelC().size(); iChC++) {
-        
+
         auto chanelidC = ft0c.channelC()[iChC] + 96;
         float ampl = ft0c.amplitudeC()[iChC];
         auto phiC = getPhiFT0(chanelidC, 1);
         auto etaC = getEtaFT0(chanelidC, 1);
-      
+
         if (mixing)
           histos.fill(HIST("Ft0aFt0c/ME/Assoc_amp"), chanelidC, ampl);
         else
@@ -542,7 +542,7 @@ struct LongrangeCorrelation {
           histos.fill(HIST("Ft0aFt0c/SE/Assoc_phi"), phiC);
           histos.fill(HIST("Ft0aFt0c/SE/Assoc_etavsphi"), phiC, etaC);
         }
-      
+
         float deltaPhi = RecoDecay::constrainAngle(phiA - phiC, -PIHalf);
         float deltaEta = etaA - etaC;
         if (mixing)
