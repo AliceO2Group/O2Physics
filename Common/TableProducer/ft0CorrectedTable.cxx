@@ -13,7 +13,6 @@
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/FT0Corrected.h"
 
-#include <CCDB/BasicCCDBManager.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsFT0/Digit.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
@@ -41,11 +40,6 @@ using namespace o2::aod;
 struct ft0CorrectedTable {
   // Configurables
   Configurable<bool> addHistograms{"addHistograms", false, "Add QA histograms"};
-  Configurable<int> cfgCollisionSystem{"collisionSystem", -2, "Collision system: -2 (use cfg values), -1 (autoset), 0 (pp), 1 (PbPb), 2 (XeXe), 3 (pPb)"};
-  Configurable<std::string> cfgUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> cfgPathGrpLhcIf{"ccdb-path-grplhcif", "GLO/Config/GRPLHCIF", "Path on the CCDB for the GRPLHCIF object"};
-  Configurable<int64_t> cfgTimestamp{"ccdb-timestamp", -1, "timestamp of the object"};
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // Producer
   Produces<o2::aod::FT0sCorrected> table;
@@ -56,13 +50,6 @@ struct ft0CorrectedTable {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext&)
   {
-    ccdb->setURL(cfgUrl);
-    ccdb->setTimestamp(cfgTimestamp);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    // Not later than now objects
-    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
-
     if (!addHistograms) {
       return;
     }
