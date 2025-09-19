@@ -599,7 +599,7 @@ struct LongRangeDihadronCor {
     }
   }
 
-  template <CorrelationContainer::CFStep step, typename TTracks, typename TFT0s>
+  template <CorrelationContainer::CFStep step, typename TFT0s>
   void fillCorrelationsFT0AFT0C(TFT0s const& ft0, float posZ, int system, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
