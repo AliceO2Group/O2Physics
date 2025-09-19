@@ -34,6 +34,11 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Framework/AnalysisDataModel.h"
+#include "Common/PhysicsConstants.h"
+
+#include "Common/RecoDecay.h"
+
 using namespace ROOT::Math;
 
 // table for saving tree with info on data
@@ -71,7 +76,6 @@ const int kReqMatchMFTTracks = 2;
 const int kMaxChi2MFTMatch = 30;
 const float kMaxZDCTime = 2.;
 const float kMaxZDCTimeHisto = 10.;
-const PDG_t kMuonPDG = kMuonPlus;
 struct UpcPolarisationJpsiIncoh {
 
   // a pdg object
@@ -129,12 +133,6 @@ struct UpcPolarisationJpsiIncoh {
     registry.add("hEta", "Pseudorapidty of muon pairs;;#counts", kTH1D, {axisEta});
     registry.add("hRapidity", "Rapidty of muon pairs;;#counts", kTH1D, {axisRapidity});
     registry.add("hPhi", "#varphi of muon pairs;;#counts", kTH1D, {axisPhi});
-  }
-  // retrieve particle mass (GeV/c^2) from TDatabasePDG
-  float particleMass(int pid)
-  {
-    auto mass = pdg->Mass(pid);
-    return mass;
   }
 
   // template function that fills a map with the collision id of each udcollision as key
@@ -210,11 +208,10 @@ struct UpcPolarisationJpsiIncoh {
   {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
-    auto mMu = particleMass(kMuonPDG);
-    LorentzVector<PxPyPzM4D<float>> p(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz(), mMu);
-    float eta = p.Eta();
-    float pt = p.Pt();
-
+    
+    float pt  = RecoDecay::pt(fwdTrack.px(), fwdTrack.py());
+    float eta = RecoDecay::eta(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz());
+    
     if (eta < kEtaMin || eta > kEtaMax)
       return false;
     if (pt < kPtMin)
@@ -231,8 +228,7 @@ struct UpcPolarisationJpsiIncoh {
   // it also divides the data in neutron classes
   // used for real data
   void processCand(CandidatesFwd::iterator const& cand,
-                   ForwardTracks::iterator const& tr1, ForwardTracks::iterator const& tr2,
-                   ZDCinfo const& zdc)
+                   ForwardTracks::iterator const& tr1, ForwardTracks::iterator const& tr2)
   {
     // V0 selection
     const auto& ampsV0A = cand.amplitudesV0A();
@@ -273,7 +269,7 @@ struct UpcPolarisationJpsiIncoh {
       return;
 
     // form Lorentz vectors
-    auto mMu = particleMass(kMuonPDG);
+    auto mMu = o2::constants::physics::MassMuonCharged;
     LorentzVector<PxPyPzM4D<float>> p1(tr1.px(), tr1.py(), tr1.pz(), mMu);
     LorentzVector<PxPyPzM4D<float>> p2(tr2.px(), tr2.py(), tr2.pz(), mMu);
     LorentzVector p = p1 + p2;
