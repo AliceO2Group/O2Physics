@@ -62,7 +62,7 @@ enum KinkHist {
   kKinkHistLast
 };
 
-#define KINK_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                         \
+#define KINK_DEFAULT_BINNING(defaultMassMin, defaultMassMax)                                       \
   o2::framework::ConfigurableAxis pt{"pt", {{600, 0, 6}}, "Pt"};                                   \
   o2::framework::ConfigurableAxis eta{"eta", {{300, -1.5, 1.5}}, "Eta"};                           \
   o2::framework::ConfigurableAxis phi{"phi", {{720, 0, 1.f * o2::constants::math::TwoPI}}, "Phi"}; \
@@ -96,23 +96,23 @@ using ConfSigmaQaBinning1 = ConfKinkQaBinning<PrefixSigmaQaBinning1>;
 // the enum gives the correct index in the array
 constexpr std::array<histmanager::HistInfo<KinkHist>, kKinkHistLast> HistTable = {
   {{kPt, o2::framework::kTH1F, "hPt", "Transverse Momentum; p_{T} (GeV/#it{c}); Entries"},
-  {kEta, o2::framework::kTH1F, "hEta", "Pseudorapidity; #eta; Entries"},
-  {kPhi, o2::framework::kTH1F, "hPhi", "Azimuthal angle; #varphi; Entries"},
-  {kMass, o2::framework::kTH1F, "hMass", "Invariant Mass; m_{Inv} (GeV/#it{c}^{2}); Entries"},
-  {kSign, o2::framework::kTH1F, "hSign", "Sign; sign; Entries"},
-  {kKinkAngle, o2::framework::kTH1F, "hKinkAngle", "Kink Angle; Angle (rad); Entries"},
-  {kDcaMothToPV, o2::framework::kTH1F, "hDcaMothToPV", "Mother DCA to PV; DCA (cm); Entries"},
-  {kDcaDaugToPV, o2::framework::kTH1F, "hDcaDaugToPV", "Daughter DCA to PV; DCA (cm); Entries"},
-  {kDecayVtxX, o2::framework::kTH1F, "hDecayVtxX", "Decay Vertex X; x (cm); Entries"},
-  {kDecayVtxY, o2::framework::kTH1F, "hDecayVtxY", "Decay Vertex Y; y (cm); Entries"},
-  {kDecayVtxZ, o2::framework::kTH1F, "hDecayVtxZ", "Decay Vertex Z; z (cm); Entries"},
-  {kDecayVtx, o2::framework::kTH1F, "hDecayVtx", "Decay Distance from PV; r (cm); Entries"},
-  {kTransRadius, o2::framework::kTH1F, "hTransRadius", "Transverse Decay Radius; r_{xy} (cm); Entries"},
-  {kPtVsEta, o2::framework::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}); #eta"},
-  {kPtVsPhi, o2::framework::kTH2F, "hPtVsPhi", "p_{T} vs #varphi; p_{T} (GeV/#it{c}); #varphi"},
-  {kPhiVsEta, o2::framework::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi; #eta"},
-  {kPtVsKinkAngle, o2::framework::kTH2F, "hPtVsKinkAngle", "p_{T} vs kink angle; p_{T} (GeV/#it{c}); kink angle (rad)"},
-  {kPtVsDecayRadius, o2::framework::kTH2F, "hPtVsDecayRadius", "p_{T} vs transverse decay radius; p_{T} (GeV/#it{c}); r_{xy} (cm)"}}};
+   {kEta, o2::framework::kTH1F, "hEta", "Pseudorapidity; #eta; Entries"},
+   {kPhi, o2::framework::kTH1F, "hPhi", "Azimuthal angle; #varphi; Entries"},
+   {kMass, o2::framework::kTH1F, "hMass", "Invariant Mass; m_{Inv} (GeV/#it{c}^{2}); Entries"},
+   {kSign, o2::framework::kTH1F, "hSign", "Sign; sign; Entries"},
+   {kKinkAngle, o2::framework::kTH1F, "hKinkAngle", "Kink Angle; Angle (rad); Entries"},
+   {kDcaMothToPV, o2::framework::kTH1F, "hDcaMothToPV", "Mother DCA to PV; DCA (cm); Entries"},
+   {kDcaDaugToPV, o2::framework::kTH1F, "hDcaDaugToPV", "Daughter DCA to PV; DCA (cm); Entries"},
+   {kDecayVtxX, o2::framework::kTH1F, "hDecayVtxX", "Decay Vertex X; x (cm); Entries"},
+   {kDecayVtxY, o2::framework::kTH1F, "hDecayVtxY", "Decay Vertex Y; y (cm); Entries"},
+   {kDecayVtxZ, o2::framework::kTH1F, "hDecayVtxZ", "Decay Vertex Z; z (cm); Entries"},
+   {kDecayVtx, o2::framework::kTH1F, "hDecayVtx", "Decay Distance from PV; r (cm); Entries"},
+   {kTransRadius, o2::framework::kTH1F, "hTransRadius", "Transverse Decay Radius; r_{xy} (cm); Entries"},
+   {kPtVsEta, o2::framework::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}); #eta"},
+   {kPtVsPhi, o2::framework::kTH2F, "hPtVsPhi", "p_{T} vs #varphi; p_{T} (GeV/#it{c}); #varphi"},
+   {kPhiVsEta, o2::framework::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi; #eta"},
+   {kPtVsKinkAngle, o2::framework::kTH2F, "hPtVsKinkAngle", "p_{T} vs kink angle; p_{T} (GeV/#it{c}); kink angle (rad)"},
+   {kPtVsDecayRadius, o2::framework::kTH2F, "hPtVsDecayRadius", "p_{T} vs transverse decay radius; p_{T} (GeV/#it{c}); r_{xy} (cm)"}}};
 
 template <typename T>
 auto makeKinkHistSpecMap(const T& confBinningAnalysis)
@@ -169,7 +169,7 @@ class KinkHistManager
  public:
   /// Destructor
   virtual ~KinkHistManager() = default;
-  
+
   /// Initializes histograms for the task
   /// \param registry Histogram registry to be passed
   ///
@@ -240,7 +240,7 @@ class KinkHistManager
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(GetHistName(kEta, HistTable)), kinkcandidate.eta());
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(GetHistName(kPhi, HistTable)), kinkcandidate.phi());
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(GetHistName(kMass, HistTable)), kinkcandidate.mass());
-      
+
       if constexpr (isEqual(kink, modes::Kink::kSigma)) {
         mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(GetHistName(kSign, HistTable)), kinkcandidate.sign());
       }
@@ -252,11 +252,11 @@ class KinkHistManager
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(GetHistName(kDecayVtxX, HistTable)), kinkcandidate.decayVtxX());
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(GetHistName(kDecayVtxY, HistTable)), kinkcandidate.decayVtxY());
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(GetHistName(kDecayVtxZ, HistTable)), kinkcandidate.decayVtxZ());
-      
+
       // Calculate decay distance from PV
-      float decayDistance = std::sqrt(kinkcandidate.decayVtxX() * kinkcandidate.decayVtxX() + 
-                                     kinkcandidate.decayVtxY() * kinkcandidate.decayVtxY() + 
-                                     kinkcandidate.decayVtxZ() * kinkcandidate.decayVtxZ());
+      float decayDistance = std::sqrt(kinkcandidate.decayVtxX() * kinkcandidate.decayVtxX() +
+                                      kinkcandidate.decayVtxY() * kinkcandidate.decayVtxY() +
+                                      kinkcandidate.decayVtxZ() * kinkcandidate.decayVtxZ());
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(GetHistName(kDecayVtx, HistTable)), decayDistance);
       mHistogramRegistry->fill(HIST(kinkPrefix) + HIST(QaDir) + HIST(GetHistName(kTransRadius, HistTable)), kinkcandidate.transRadius());
 
@@ -270,7 +270,7 @@ class KinkHistManager
   }
 
   /// Fill histograms for kink candidates - overload with track table argument
-  /// \param kinkcandidate Kink candidate to fill histograms for  
+  /// \param kinkcandidate Kink candidate to fill histograms for
   /// \param tracks Track table for daughter access
   template <typename T1, typename T2>
   void fill(T1 const& kinkcandidate, T2 const& /*tracks*/)

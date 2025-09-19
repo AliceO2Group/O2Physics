@@ -15,13 +15,13 @@
 
 #include "PWGCF/Femto/Core/cascadeBuilder.h"
 #include "PWGCF/Femto/Core/collisionBuilder.h"
+#include "PWGCF/Femto/Core/kinkBuilder.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/trackBuilder.h"
 #include "PWGCF/Femto/Core/twoTrackResonanceBuilder.h"
 #include "PWGCF/Femto/Core/v0Builder.h"
-#include "PWGCF/Femto/Core/kinkBuilder.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
@@ -346,11 +346,11 @@ struct FemtoProducer {
 
   // process tracks, v0s, cascades and kinks
   void processTracksV0sCascadesKinksRun3pp(consumeddata::Run3PpCollisions::iterator const& col,
-                                      BCsWithTimestamps const& bcs,
-                                      consumeddata::Run3FullPidTracks const& tracks,
-                                      consumeddata::Run3PpVzeros const& v0s,
-                                      consumeddata::Run3PpCascades const& cascades,
-                                      consumeddata::Run3PpKinks const& kinks)
+                                           BCsWithTimestamps const& bcs,
+                                           consumeddata::Run3FullPidTracks const& tracks,
+                                           consumeddata::Run3PpVzeros const& v0s,
+                                           consumeddata::Run3PpCascades const& cascades,
+                                           consumeddata::Run3PpKinks const& kinks)
   {
     // its pid information is generated dynamically, so we need to add it here
     auto tracksWithItsPid = o2::soa::Attach<consumeddata::Run3FullPidTracks, pidits::ITSNSigmaEl, pidits::ITSNSigmaPi,

@@ -16,11 +16,11 @@
 
 #include "PWGCF/Femto/Core/collisionBuilder.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
+#include "PWGCF/Femto/Core/kinkBuilder.h"
+#include "PWGCF/Femto/Core/kinkHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/partitions.h"
 #include "PWGCF/Femto/Core/trackHistManager.h"
-#include "PWGCF/Femto/Core/kinkBuilder.h"
-#include "PWGCF/Femto/Core/kinkHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 #include "PWGLF/DataModel/LFKinkDecayTables.h"
 
@@ -92,7 +92,7 @@ struct FemtoKinkQa {
   {
     auto sigmaHistSpec = kinkhistmanager::makeKinkQaHistSpecMap(confSigmaBinning, confSigmaQaBinning);
     auto chaDauHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confKinkChaDaughterBinning, confKinkChaDaughterQaBinning);
-    
+
     sigmaHistManager.init(&hRegistry, sigmaHistSpec, chaDauHistSpec);
 
     auto collisionHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);

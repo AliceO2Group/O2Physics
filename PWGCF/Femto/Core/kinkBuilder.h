@@ -25,9 +25,9 @@
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Common/Core/RecoDecay.h"
-#include "CommonConstants/PhysicsConstants.h"
 
 #include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "Framework/AnalysisHelpers.h"
 #include "Framework/Configurable.h"
 
@@ -82,16 +82,16 @@ struct ConfSigmaBits : o2::framework::ConfigurableGroup {
 #undef KINK_DEFAULT_BITS
 
 // base selection for analysis task for kinks
-#define KINK_DEFAULT_SELECTIONS(defaultMassMin, defaultMassMax, defaultPdgCode)                         \
-  o2::framework::Configurable<int> pdgCode{"pdgCode", defaultPdgCode, "Kink PDG code"};                 \
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                 \
-  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                               \
-  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                            \
-  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                             \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                              \
-  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"}; \
-  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Sigma"};      \
-  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Sigma"};      \
+#define KINK_DEFAULT_SELECTIONS(defaultMassMin, defaultMassMax, defaultPdgCode)                              \
+  o2::framework::Configurable<int> pdgCode{"pdgCode", defaultPdgCode, "Kink PDG code"};                      \
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                      \
+  o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                    \
+  o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                 \
+  o2::framework::Configurable<float> etaMax{"etaMax", 10.f, "Maximum eta"};                                  \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                   \
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};      \
+  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Sigma"}; \
+  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Sigma"}; \
   o2::framework::Configurable<o2::aod::femtodatatypes::KinkMaskType> mask{"mask", 0, "Bitmask for kink selection"};
 
 // base selection for analysis task for sigmas
@@ -139,8 +139,7 @@ const std::unordered_map<KinkSeles, std::string> kinkSelsToStrings = {
   {kAlphaAPMax, "alphaAPMax"},
   {kQtAPMin, "qtAPMin"},
   {kQtAPMax, "qtAPMax"},
-  {kCosPointingAngleMin, "cosPointingAngleMin"}
-};
+  {kCosPointingAngleMin, "cosPointingAngleMin"}};
 
 /// \class KinkCuts
 /// \brief Cut class to contain and execute all cuts applied to kinks
@@ -155,12 +154,12 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
   void configure(T1& config, T2& filter)
   {
     mPtMin = filter.ptMin.value;
-    mPtMax = filter.ptMax.value; 
+    mPtMax = filter.ptMax.value;
     mEtaMin = filter.etaMin.value;
     mEtaMax = filter.etaMax.value;
     mPhiMin = filter.phiMin.value;
     mPhiMax = filter.phiMax.value;
-    
+
     if constexpr (modes::isEqual(kinkType, modes::Kink::kSigma)) {
       mMassSigmaLowerLimit = filter.massMinSigma.value;
       mMassSigmaUpperLimit = filter.massMaxSigma.value;
@@ -206,12 +205,11 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
     std::array<float, 3> vMother = {kinkCand.xDecVtx(), kinkCand.yDecVtx(), kinkCand.zDecVtx()};
     float pMother = std::sqrt(std::inner_product(momMother.begin(), momMother.end(), momMother.begin(), 0.f));
     float vMotherNorm = std::sqrt(std::inner_product(vMother.begin(), vMother.end(), vMother.begin(), 0.f));
-    float cosPointingAngle = (vMotherNorm > 0.f && pMother > 0.f) ? 
-                             (std::inner_product(momMother.begin(), momMother.end(), vMother.begin(), 0.f)) / (pMother * vMotherNorm) : 0.f;
+    float cosPointingAngle = (vMotherNorm > 0.f && pMother > 0.f) ? (std::inner_product(momMother.begin(), momMother.end(), vMother.begin(), 0.f)) / (pMother * vMotherNorm) : 0.f;
     this->evaluateObservable(kCosPointingAngleMin, cosPointingAngle);
 
     this->evaluateObservable(kKinkTopoDcaMax, kinkCand.dcaKinkTopo());
-    
+
     // Compute transRadius
     float transRadius = std::hypot(kinkCand.xDecVtx(), kinkCand.yDecVtx());
     this->evaluateObservable(kTransRadMin, transRadius);
@@ -221,7 +219,7 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
     float px_daug = kinkCand.pxDaug();
     float py_daug = kinkCand.pyDaug();
     float pz_daug = kinkCand.pzDaug();
-    float p_daug = std::sqrt(px_daug*px_daug + py_daug*py_daug + pz_daug*pz_daug);
+    float p_daug = std::sqrt(px_daug * px_daug + py_daug * py_daug + pz_daug * pz_daug);
     float eta_daug = (p_daug > 0.f) ? 0.5f * std::log((p_daug + pz_daug) / (p_daug - pz_daug)) : 0.f;
     this->evaluateObservable(kDauAbsEtaMax, std::fabs(eta_daug));
 
@@ -242,10 +240,10 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
     float py = kink.pyMoth();
     float pz = kink.pzMoth();
     float pt = std::hypot(px, py);
-    float p = std::sqrt(px*px + py*py + pz*pz);
+    float p = std::sqrt(px * px + py * py + pz * pz);
     float eta = (p > 0.f) ? 0.5f * std::log((p + pz) / (p - pz)) : 0.f;
     float phi = std::atan2(py, px);
-    
+
     return ((pt > mPtMin && pt < mPtMax) &&
             (eta > mEtaMin && eta < mEtaMax) &&
             (phi > mPhiMin && phi < mPhiMax));
@@ -265,17 +263,16 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
       float pxneut = pxmoth - pxch;
       float pyneut = pymoth - pych;
       float pzneut = pzmoth - pzch;
-      
+
       float sigmaMass = RecoDecay::m(
-        std::array{std::array{pxch, pych, pzch}, std::array{pxneut, pyneut, pzneut}}, 
-        std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassNeutron}
-      );
-      
+        std::array{std::array{pxch, pych, pzch}, std::array{pxneut, pyneut, pzneut}},
+        std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassNeutron});
+
       return (sigmaMass > mMassSigmaLowerLimit && sigmaMass < mMassSigmaUpperLimit);
     }
     return false;
   }
-    
+
  protected:
   float mMassSigmaLowerLimit = 1.15f;
   float mMassSigmaUpperLimit = 1.25f;
@@ -361,46 +358,45 @@ class KinkBuilder
     float pxneut = pxmoth - pxch;
     float pyneut = pymoth - pych;
     float pzneut = pzmoth - pzch;
-    
+
     float mass = RecoDecay::m(
-      std::array{std::array{pxch, pych, pzch}, std::array{pxneut, pyneut, pzneut}}, 
-      std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassNeutron}
-    );
-    
+      std::array{std::array{pxch, pych, pzch}, std::array{pxneut, pyneut, pzneut}},
+      std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassNeutron});
+
     if (mProduceSigmas) {
       // Compute mother eta and phi
       float px = kink.pxMoth();
       float py = kink.pyMoth();
       float pz = kink.pzMoth();
       float pt = std::hypot(px, py);
-      float p = std::sqrt(px*px + py*py + pz*pz);
+      float p = std::sqrt(px * px + py * py + pz * pz);
       float eta = (p > 0.f) ? 0.5f * std::log((p + pz) / (p - pz)) : 0.f;
       float phi = std::atan2(py, px);
-      
+
       kinkProducts.producedSigmas(collisionProducts.producedCollision.lastIndex(),
-                                 kink.mothSign() * pt,
-                                 eta,
-                                 phi,
-                                 mass,
-                                 daughterIndex);
+                                  kink.mothSign() * pt,
+                                  eta,
+                                  phi,
+                                  mass,
+                                  daughterIndex);
     }
     if (mProduceSigmaMasks) {
       kinkProducts.producedSigmaMasks(mKinkSelection.getBitmask());
     }
     if (mProduceSigmaExtras) {
       // Compute kink angle and transRadius
-      float pMoth = std::sqrt(pxmoth*pxmoth + pymoth*pymoth + pzmoth*pzmoth);
-      float pDaug = std::sqrt(pxch*pxch + pych*pych + pzch*pzch);
+      float pMoth = std::sqrt(pxmoth * pxmoth + pymoth * pymoth + pzmoth * pzmoth);
+      float pDaug = std::sqrt(pxch * pxch + pych * pych + pzch * pzch);
       float kinkAngle = 0.f;
       if (pMoth > 0.f && pDaug > 0.f) {
-        float dotProduct = pxmoth*pxch + pymoth*pych + pzmoth*pzch;
+        float dotProduct = pxmoth * pxch + pymoth * pych + pzmoth * pzch;
         float cosAngle = dotProduct / (pMoth * pDaug);
         cosAngle = std::max(-1.0f, std::min(1.0f, cosAngle)); // Clamp
         kinkAngle = std::acos(cosAngle);
       }
-      
+
       float transRadius = std::hypot(kink.xDecVtx(), kink.yDecVtx());
-      
+
       kinkProducts.producedSigmaExtras(
         kinkAngle,
         kink.dcaDaugPv(),
