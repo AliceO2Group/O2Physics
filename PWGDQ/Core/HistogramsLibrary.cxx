@@ -1009,6 +1009,21 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         hm->AddHistogram(histClass, "Mass_VtxNcontribReal_VtxZ", "Mass vs VtxNcontribReal vs VtxZ", false, 200, 2.0, 5.0, VarManager::kMass, 150, 0, 150.0, VarManager::kVtxNcontribReal, 20, -10.0, 10.0, VarManager::kVtxZ);
         hm->AddHistogram(histClass, "VtxZ_VtxNcontribReal", "VtxZ vs VtxNcontribReal", false, 240, -12.0, 12.0, VarManager::kVtxZ, 200, 0, 200.0, VarManager::kVtxNcontribReal);
       }
+      if (subGroupStr.Contains("dielectron-polarization-he-pbpb")) {
+        int varsHEpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaHE, VarManager::kPhiHE};
+        int binspT[5] = {100, 30, 10, 10, 10};
+        double xminpT[5] = {2., 0., 0, -1., 0.0};
+        double xmaxpT[5] = {4.5, 3., 100, 1., 6.28};
+        hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_cosThetaHE", "", 5, varsHEpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+      }
+
+      if (subGroupStr.Contains("dielectron-polarization-cs-pbpb")) {
+        int varsCSpbpb[5] = {VarManager::kMass, VarManager::kPt, VarManager::kCentFT0C, VarManager::kCosThetaCS, VarManager::kPhiCS};
+        int binspT[5] = {100, 30, 10, 10, 10};
+        double xminpT[5] = {2.0, 0., 0, -1., 0.0};
+        double xmaxpT[5] = {4.5, 3., 100, 1., 6.28};
+        hm->AddHistogram(histClass, "Dielectron_Mass_Pt_Cent_cosThetaCS", "", 5, varsCSpbpb, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+      }
       if (subGroupStr.Contains("polarization")) {
         if (subGroupStr.Contains("helicity")) {
           hm->AddHistogram(histClass, "cosThetaHE", "", false, 100, -1., 1., VarManager::kCosThetaHE);
@@ -1078,8 +1093,8 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       if (subGroupStr.Contains("tauxy-midy-pol-he")) {
         int varspTHE[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaHE, VarManager::kVertexingTauxyProjectedPoleJPsiMass};
         int binspT[4] = {50, 10, 20, 1000};
-        double xminpT[4] = {2., 0., -1., -0.03};
-        double xmaxpT[4] = {4., 20., 1., 0.03};
+        double xminpT[4] = {2., 0., -1., -0.05};
+        double xmaxpT[4] = {4., 20., 1., 0.05};
         hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaHE", "", 4, varspTHE, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
 
@@ -1087,9 +1102,18 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
         int varspTRand[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaRM, VarManager::kVertexingTauxyProjectedPoleJPsiMass};
 
         int binspT[4] = {50, 10, 20, 1000};
-        double xminpT[4] = {2., 0., -1., -0.03};
-        double xmaxpT[4] = {4., 20., 1., 0.03};
+        double xminpT[4] = {2., 0., -1., -0.05};
+        double xmaxpT[4] = {4., 20., 1., 0.05};
         hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaRand", "", 4, varspTRand, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
+      }
+
+      if (subGroupStr.Contains("tauxy-midy-pol-cs")) {
+        int varspTCS[4] = {VarManager::kMass, VarManager::kPt, VarManager::kCosThetaCS, VarManager::kVertexingTauxyProjectedPoleJPsiMass};
+
+        int binspT[4] = {50, 10, 20, 1000};
+        double xminpT[4] = {2., 0., -1., -0.05};
+        double xmaxpT[4] = {4., 20., 1., 0.05};
+        hm->AddHistogram(histClass, "Tauxy_Mass_Pt_CosthetaCS", "", 4, varspTCS, binspT, xminpT, xmaxpT, 0, -1, kFALSE);
       }
 
       if (subGroupStr.Contains("kalman-filter")) {
@@ -1850,11 +1874,11 @@ void o2::aod::dqhistograms::DefineHistograms(HistogramManager* hm, const char* h
       for (int i = 0; i <= kDelEtaBins; i++)
         DelEtaBinLims[i] = -2 + i * 0.2;
 
-      const int kDelPhiBins = 52;
-      double DelPhiBinLims[] = {-1.69647, -1.57080, -1.44513, -1.31947, -1.19381, -1.06814, -0.94248, -0.81681, -0.69115, -0.56549, -0.43982, -0.31416, -0.18850, -0.06283, 0.06283, 0.18850, 0.31416, 0.43982, 0.56549, 0.69115, 0.81681, 0.94248, 1.06814, 1.19381, 1.31947, 1.44513, 1.57080, 1.69646, 1.82212, 1.94779, 2.07345, 2.19911, 2.32478, 2.45044, 2.57611, 2.70177, 2.82743, 2.95310, 3.07876, 3.20442, 3.33009, 3.45575, 3.58142, 3.70708, 3.83274, 3.95841, 4.08407, 4.20973, 4.33540, 4.46106, 4.58673, 4.71239, 4.8380600};
+      const int kDelPhiBins = 26;
+      double DelPhiBinLims[] = {-1.69647, -1.44513, -1.19381, -0.94248, -0.69115, -0.43982, -0.18850, 0.06283, 0.31416, 0.56549, 0.81681, 1.06814, 1.31947, 1.57080, 1.82212, 2.07345, 2.32478, 2.57611, 2.82743, 3.07876, 3.33009, 3.58142, 3.83274, 4.08407, 4.33540, 4.58673, 4.83806};
 
-      const int kPtBins = 45;
-      double PtBinLims[kPtBins + 1] = {0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4, 4.5, 5, 7.5, 10, 20};
+      const int kPtBins = 12;
+      double PtBinLims[kPtBins + 1] = {0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 5, 7.5, 10, 20};
 
       TArrayD nJPsiHadCorr[4];
       nJPsiHadCorr[0] = TArrayD(kInvMassBins + 1, InvMassBinLims);
