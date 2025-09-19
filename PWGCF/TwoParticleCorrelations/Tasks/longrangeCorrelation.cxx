@@ -142,11 +142,8 @@ struct LongrangeCorrelation {
   using CollTable = soa::Join<aod::Collisions, aod::EvSels>;
   using TrksTable = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
   using MftTrkTable = soa::Filtered<aod::MFTTracks>;
-  using MftTrkTable2 = soa::SmallGroups<aod::BestCollisionsFwd3d>;
-  using MftBestTrkTable = soa::Filtered<MftTrkTable2>;
   Preslice<TrksTable> perColGlobal = aod::track::collisionId;
   Preslice<MftTrkTable> perColMft = aod::fwdtrack::collisionId;
-  PresliceUnsorted<MftBestTrkTable> perColBestMft = aod::fwdtrack::bestCollisionId;
   o2::ft0::Geometry ft0Det;
 
   OutputObj<CorrelationContainer> sameFt0aGlobal{Form("sameEventFt0aGlobal_%i_%i", static_cast<int>(cfgMinMult), static_cast<int>(cfgMaxMult))};
@@ -420,28 +417,27 @@ struct LongrangeCorrelation {
         histos.fill(HIST("MftGlobal/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
 
       for (auto const& assoTrack : mft) {
-        auto bestMftTrack = assoTrack.template mfttrack_as<MftTrkTable>();
-        if (!isMftTrackSelected(bestMftTrack)) {
+        if (!isMftTrackSelected(assoTrack)) {
           continue;
         }
-        auto phi = bestMftTrack.phi();
+        auto phi = assoTrack.phi();
         o2::math_utils::bringTo02Pi(phi);
         if (mixing) {
-          histos.fill(HIST("MftGlobal/ME/Assoc_eta"), bestMftTrack.eta());
+          histos.fill(HIST("MftGlobal/ME/Assoc_eta"), assoTrack.eta());
           histos.fill(HIST("MftGlobal/ME/Assoc_phi"), phi);
-          histos.fill(HIST("MftGlobal/ME/Assoc_etavsphi"), phi, bestMftTrack.eta());
+          histos.fill(HIST("MftGlobal/ME/Assoc_etavsphi"), phi, assoTrack.eta());
         } else {
-          histos.fill(HIST("MftGlobal/SE/Assoc_eta"), bestMftTrack.eta());
+          histos.fill(HIST("MftGlobal/SE/Assoc_eta"), assoTrack.eta());
           histos.fill(HIST("MftGlobal/SE/Assoc_phi"), phi);
-          histos.fill(HIST("MftGlobal/SE/Assoc_etavsphi"), phi, bestMftTrack.eta());
+          histos.fill(HIST("MftGlobal/SE/Assoc_etavsphi"), phi, assoTrack.eta());
         }
         float deltaPhi = RecoDecay::constrainAngle(triggerTrack.phi() - phi, -PIHalf);
-        float deltaEta = triggerTrack.eta() - bestMftTrack.eta();
+        float deltaEta = triggerTrack.eta() - assoTrack.eta();
         if (mixing)
           histos.fill(HIST("MftGlobal/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
         else
           histos.fill(HIST("MftGlobal/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
-        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), bestMftTrack.pt(), deltaPhi, deltaEta);
+        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), assoTrack.pt(), deltaPhi, deltaEta);
       } // associated mft tracks
     } // trigger tracks
   } // fillCorrMftGlobal
@@ -453,14 +449,13 @@ struct LongrangeCorrelation {
     if (!mixing)
       histos.fill(HIST("Ft0aMft/SE/hMult_used"), tracks.size());
     for (auto const& triggerTrack : triggers) {
-      auto bestMftTrack = triggerTrack.template mfttrack_as<MftTrkTable>();
-      if (!isMftTrackSelected(bestMftTrack)) {
+      if (!isMftTrackSelected(triggerTrack)) {
         continue;
       }
       if (!mixing)
-        histos.fill(HIST("Ft0aMft/SE/Trig_hist"), fSampleIndex, vz, bestMftTrack.pt());
+        histos.fill(HIST("Ft0aMft/SE/Trig_hist"), fSampleIndex, vz, triggerTrack.pt());
 
-      auto trigphi = bestMftTrack.phi();
+      auto trigphi = triggerTrack.phi();
       o2::math_utils::bringTo02Pi(trigphi);
 
       for (std::size_t iCh = 0; iCh < ft0.channelA().size(); iCh++) {
@@ -486,12 +481,12 @@ struct LongrangeCorrelation {
         }
 
         float deltaPhi = RecoDecay::constrainAngle(trigphi - phi, -PIHalf);
-        float deltaEta = bestMftTrack.eta() - eta;
+        float deltaEta = triggerTrack.eta() - eta;
         if (mixing)
           histos.fill(HIST("Ft0aMft/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
         else
           histos.fill(HIST("Ft0aMft/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
-        target->getPairHist()->Fill(step, fSampleIndex, vz, bestMftTrack.pt(), bestMftTrack.pt(), deltaPhi, deltaEta);
+        target->getPairHist()->Fill(step, fSampleIndex, vz, triggerTrack.pt(), triggerTrack.pt(), deltaPhi, deltaEta);
       } // associated ft0 tracks
     } // trigger tracks
   } // fillCorrFt0aMft
@@ -606,7 +601,7 @@ struct LongrangeCorrelation {
     }
   } // same event
 
-  void processMftGlobalSE(CollTable::iterator const& col, MftBestTrkTable const& mfttracks, MftTrkTable const&, TrksTable const& tracks)
+  void processMftGlobalSE(CollTable::iterator const& col, MftTrkTable const& mfttracks, TrksTable const& tracks)
   {
     if (!isEventSelected(col)) {
       return;
@@ -618,7 +613,7 @@ struct LongrangeCorrelation {
     fillCorrMftGlobal<CorrelationContainer::kCFStepReconstructed>(sameMftGlobal, tracks, mfttracks, false, col.posZ());
   } // same event
 
-  void processFt0aMftSE(CollTable::iterator const& col, aod::FT0s const&, TrksTable const& tracks, MftBestTrkTable const& mfttracks, MftTrkTable const&)
+  void processFt0aMftSE(CollTable::iterator const& col, aod::FT0s const&, TrksTable const& tracks, MftTrkTable const& mfttracks)
   {
     if (!isEventSelected(col)) {
       return;
@@ -639,7 +634,7 @@ struct LongrangeCorrelation {
       return;
     }
     if (col.has_foundFT0()) {
-      histos.fill("Ft0aFt0c/SE/hMult", tracks.size());
+      histos.fill(HIST("Ft0aFt0c/SE/hMult"), tracks.size());
       const auto& ft0 = col.foundFT0();
       if (tracks.size() < cfgMinMult || tracks.size() >= cfgMaxMult) {
         return;
@@ -704,7 +699,7 @@ struct LongrangeCorrelation {
     }
   } // mixed event
 
-  void processMftGlobalME(CollTable const& col, MftBestTrkTable const& mfttracks, MftTrkTable const&, TrksTable const& tracks)
+  void processMftGlobalME(CollTable const& col, MftTrkTable const& mfttracks, TrksTable const& tracks)
   {
     auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
@@ -714,7 +709,7 @@ struct LongrangeCorrelation {
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getTracksSize)>, aod::collision::PosZ, decltype(getTracksSize)>;
     MixedBinning binningOnVtxAndMult{{getTracksSize}, {axisVtxZME, axisMultME}, true};
     auto tracksTuple = std::make_tuple(tracks, mfttracks);
-    Pair<CollTable, TrksTable, MftBestTrkTable, MixedBinning> pairs{binningOnVtxAndMult, mixingParameter, -1, col, tracksTuple, &cache};
+    Pair<CollTable, TrksTable, MftTrkTable, MixedBinning> pairs{binningOnVtxAndMult, mixingParameter, -1, col, tracksTuple, &cache};
     for (auto const& [col1, tracks1, col2, tracks2] : pairs) {
       if (!isEventSelected(col1) || !isEventSelected(col2)) {
         continue;
@@ -726,7 +721,7 @@ struct LongrangeCorrelation {
     }
   } // mixed event
 
-  void processFt0aMftME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks, MftBestTrkTable const& mfttracks, MftTrkTable const&)
+  void processFt0aMftME(CollTable const& col, aod::FT0s const&, TrksTable const& tracks, MftTrkTable const& mfttracks)
   {
     auto getTracksSize = [&tracks, this](CollTable::iterator const& collision) {
       auto associatedTracks = tracks.sliceByCached(o2::aod::track::collisionId, collision.globalIndex(), this->cache);
@@ -744,7 +739,7 @@ struct LongrangeCorrelation {
       }
       if (col1.has_foundFT0() && col2.has_foundFT0()) {
         auto slicedGlobalTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
-        auto slicedTriggerMftTracks = mfttracks.sliceBy(perColBestMft, col1.globalIndex());
+        auto slicedTriggerMftTracks = mfttracks.sliceBy(perColMft, col1.globalIndex());
         fillYield<kFT0AMFT, kME>(slicedTriggerMftTracks);
         const auto& ft0 = col2.foundFT0();
         if (slicedGlobalTracks.size() < cfgMinMult || slicedGlobalTracks.size() >= cfgMaxMult) {
@@ -773,7 +768,7 @@ struct LongrangeCorrelation {
       }
       if (col1.has_foundFT0() && col2.has_foundFT0()) {
         auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
-        histos.fill("Ft0aFt0c/ME/hMult", slicedTriggerTracks.size());
+        histos.fill(HIST("Ft0aFt0c/ME/hMult"), slicedTriggerTracks.size());
         const auto& ft0a = col1.foundFT0();
         const auto& ft0c = col2.foundFT0();
         if (slicedTriggerTracks.size() < cfgMinMult || slicedTriggerTracks.size() >= cfgMaxMult) {
