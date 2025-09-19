@@ -17,6 +17,9 @@
 
 #include "PWGUD/DataModel/UDTables.h"
 
+#include "Common/PhysicsConstants.h"
+#include "Common/RecoDecay.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
@@ -33,11 +36,6 @@
 
 #include <unordered_map>
 #include <vector>
-
-#include "Framework/AnalysisDataModel.h"
-#include "Common/PhysicsConstants.h"
-
-#include "Common/RecoDecay.h"
 
 using namespace ROOT::Math;
 
@@ -208,7 +206,7 @@ struct UpcPolarisationJpsiIncoh {
   {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
-    float pt  = RecoDecay::pt(fwdTrack.px(), fwdTrack.py());
+    float pt = RecoDecay::pt(fwdTrack.px(), fwdTrack.py());
     float eta = RecoDecay::eta(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz());
     if (eta < kEtaMin || eta > kEtaMax)
       return false;
