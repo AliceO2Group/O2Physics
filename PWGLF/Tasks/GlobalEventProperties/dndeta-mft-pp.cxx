@@ -266,18 +266,18 @@ struct PseudorapidityDensityMFT {
                     " ; isAmbiguous",
                     {HistType::kTH1I, {{2, -0.5, 1.5}}}});
 
-      auto htrk = registry.get<TH1>(HIST("Tracks/Control/TrackCount"));
-      auto* x = htrk->GetXaxis();
-      x->SetBinLabel(0, "All");
-      x->SetBinLabel(1, "Reass");
-      x->SetBinLabel(2, "Not Reass");
-      x->SetBinLabel(3, "Amb");
-      x->SetBinLabel(4, "Amb+Not-reass");
-      x->SetBinLabel(5, "Non-Amb");
-      x->SetBinLabel(6, "Not-Reass+Non-Amb");
-      x->SetBinLabel(7, "Amb+Non-Amb");
-      x->SetBinLabel(8, "colid<0");
-      x->SetBinLabel(9, "wo orphan");
+auto htrk = registry.get<TH1>(HIST("Tracks/Control/TrackCount"));
+auto* x = htrk->GetXaxis();
+x->SetBinLabel(1, "All");
+x->SetBinLabel(2, "Reass");
+x->SetBinLabel(3, "Not Reass");
+x->SetBinLabel(4, "Amb");
+x->SetBinLabel(5, "Amb+Not-reass");
+x->SetBinLabel(6, "Non-Amb");
+x->SetBinLabel(7, "Not-Reass+Non-Amb");
+x->SetBinLabel(8, "Amb+Non-Amb");
+x->SetBinLabel(9, "colid<0");
+x->SetBinLabel(10, "wo orphan");
 
       registry.add({"Tracks/Control/ReassignedTracksEtaZvtx",
                     "; #eta; #it{z}_{vtx} (cm); tracks",
@@ -516,7 +516,16 @@ struct PseudorapidityDensityMFT {
     (aod::fwdtrack::eta > -3.9f) && (nabs(aod::fwdtrack::bestDCAXY) <= 2.f);
 
   using CollwEv = soa::Join<aod::Collisions, aod::EvSels>;
+// Forward declarations for reassociation processes
+void processMultReassoc(CollwEv::iterator const& collision,
+                        o2::aod::MFTTracks const& mft,
+                        soa::SmallGroups<aod::BestCollisionsFwd> const& retracks,
+                        FiCentralTracks const& midtracks, aod::Tracks const& trk);
 
+void processMultReassoc3d(CollwEv::iterator const& collision,
+                          o2::aod::MFTTracks const& mft,
+                          soa::SmallGroups<aod::BestCollisionsFwd3d> const& retracks,
+                          FiCentralTracks const& midtracks, aod::Tracks const& trk);
   expressions::Filter trackSelectionCentral =
     ((aod::track::trackCutFlag & trackSelectionITS) == trackSelectionITS) &&
     ifnode((aod::track::v001::detectorMap & (uint8_t)o2::aod::track::TPC) ==
