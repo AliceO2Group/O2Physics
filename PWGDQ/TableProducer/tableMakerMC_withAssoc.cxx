@@ -44,6 +44,7 @@
 #include "PWGDQ/Core/CutsLibrary.h"
 #include "PWGDQ/Core/MCSignal.h"
 #include "PWGDQ/Core/MCSignalLibrary.h"
+#include "PWGDQ/Core/MuonMatchingMlResponse.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/FwdTrackReAlignTables.h"
@@ -199,6 +200,7 @@ struct TableMakerMC {
     Configurable<std::string> fGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> fGrpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<std::string> fGrpMagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
+    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   } fConfigCCDB;
 
   struct : ConfigurableGroup {
@@ -208,8 +210,12 @@ struct TableMakerMC {
     Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propagate muon tracks through absorber (do not use if applying pairing)"};
     Configurable<bool> fRefitGlobalMuon{"cfgRefitGlobalMuon", true, "Correct global muon parameters"};
     Configurable<bool> fKeepBestMatch{"cfgKeepBestMatch", false, "Keep only the best match global muons in the skimming"};
+    Configurable<bool> fUseML{"cfgUseML", false, "Import ONNX model from ccdb to decide which matching candidates to keep"};
     Configurable<float> fMuonMatchEtaMin{"cfgMuonMatchEtaMin", -4.0f, "Definition of the acceptance of muon tracks to be matched with MFT"};
     Configurable<float> fMuonMatchEtaMax{"cfgMuonMatchEtaMax", -2.5f, "Definition of the acceptance of muon tracks to be matched with MFT"};
+    Configurable<std::vector<std::string>> fModelPathsCCDB{"fModelPathsCCDB", std::vector<std::string>{"Users/m/mcoquet/MLTest"}, "Paths of models on CCDB"};
+    Configurable<std::vector<std::string>> fInputFeatures{"cfgInputFeatures", std::vector<std::string>{"chi2MCHMFT"}, "Names of ML model input features"};
+    Configurable<std::vector<std::string>> fModelNames{"cfgModelNames", std::vector<std::string>{"model.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   } fConfigVariousOptions;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
@@ -239,6 +245,12 @@ struct TableMakerMC {
 
   std::map<uint32_t, bool> fBestMatch;
   std::unordered_map<int64_t, int32_t> map_mfttrackcovs;
+
+  o2::analysis::MlResponseMFTMuonMatch<float> matchingMlResponse;
+  std::vector<double> binsPtMl;
+  std::array<double,1> cutValues;
+  std::vector<int> cutDirMl;
+
 
   void init(o2::framework::InitContext& context)
   {
@@ -364,6 +376,19 @@ struct TableMakerMC {
       fCCDB->get<TGeoManager>(fConfigCCDB.fGeoPath);
     }
     fCCDBApi.init(fConfigCCDB.fConfigCcdbUrl.value);
+
+    if (fConfigVariousOptions.fUseML.value){
+      //TODO : for now we use hard coded values since the current models use 1 pT bin
+      binsPtMl = {-1e-6,1000.0};
+      cutValues = {0.0};
+      cutDirMl = {cuts_ml::CutNot};
+      o2::framework::LabeledArray<double> mycutsMl(cutValues.data(),1,1,std::vector<std::string>{"pT bin 0"},std::vector<std::string>{"score"});
+      matchingMlResponse.configure(binsPtMl, mycutsMl, cutDirMl, 1);
+      matchingMlResponse.setModelPathsCCDB(fConfigVariousOptions.fModelNames.value, fCCDBApi, fConfigVariousOptions.fModelPathsCCDB.value, fConfigCCDB.timestamp.value);
+      matchingMlResponse.cacheInputFeaturesIndices(fConfigVariousOptions.fInputFeatures.value);
+      matchingMlResponse.init();
+    }
+
   }
 
   void DefineCuts()
@@ -882,6 +907,12 @@ struct TableMakerMC {
       if (static_cast<int>(muon.trackType()) < 2) {
         auto muonID = muon.matchMCHTrackId();
         auto chi2 = muon.chi2MatchMCHMFT();
+        if (fConfigVariousOptions.fUseML.value){
+	  std::vector<float> output;
+	  std::vector<float> inputML = matchingMlResponse.getInputFeaturesTest(muon);
+	  matchingMlResponse.isSelectedMl(inputML, 0, output);
+	  chi2 = output[0];
+	}
         if (mCandidates.find(muonID) == mCandidates.end()) {
           mCandidates[muonID] = {chi2, muon.globalIndex()};
         } else {
