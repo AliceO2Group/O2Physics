@@ -16,9 +16,7 @@
 /// executable name: o2-analysis-ud-upc-polarisation-jpsiincoh
 
 #include "PWGUD/DataModel/UDTables.h"
-
 #include "Common/Core/RecoDecay.h"
-
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPECSObject.h"
@@ -34,11 +32,6 @@
 
 #include <unordered_map>
 #include <vector>
-
-#include "Framework/AnalysisDataModel.h"
-#include "Common/PhysicsConstants.h"
-
-#include "Common/RecoDecay.h"
 
 using namespace ROOT::Math;
 
@@ -208,7 +201,6 @@ struct UpcPolarisationJpsiIncoh {
     float pDca = fwdTrack.pDca();
     float pt = RecoDecay::pt(fwdTrack.px(), fwdTrack.py());
     float eta = RecoDecay::eta(std::array{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz()});
-
     if (eta < kEtaMin || eta > kEtaMax)
       return false;
     if (pt < kPtMin)
