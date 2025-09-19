@@ -144,7 +144,7 @@ void FastTracker::AddSiliconALICE3v2(std::vector<float> pixelResolution)
   AddLayer("B10", 80., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
 }
 
-void FastTracker::AddSiliconALICE3(float VDX0Scale, std::vector<float> pixelResolution)
+void FastTracker::AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelResolution)
 {
   float x0Pipe0 = 0.001592;   // 200 um AlBe
   float x0VDL0 = 0.00076;     // 30 um Si + 50 um glue + carbon foam 0.03%
@@ -170,9 +170,9 @@ void FastTracker::AddSiliconALICE3(float VDX0Scale, std::vector<float> pixelReso
   float eff = 1.00;
 
   AddLayer("bpipe0", 0.48, 250, x0Pipe0, xrhoPipe0, 0.0f, 0.0f, 0.0f, 0); // 150 mum Be
-  AddLayer("B00", 0.5, 250, x0VDL0 * VDX0Scale, xrhoVDL0, resRPhiVD, resZVD, eff, 1);
-  AddLayer("B01", 1.2, 250, x0VDL1 * VDX0Scale, xrhoVDL1, resRPhiVD, resZVD, eff, 1);
-  AddLayer("B02", 2.5, 250, x0VDL2 * VDX0Scale, xrhoVDL2, resRPhiVD, resZVD, eff, 1);
+  AddLayer("B00", 0.5, 250, x0VDL0 * scaleX0VD, xrhoVDL0, resRPhiVD, resZVD, eff, 1);
+  AddLayer("B01", 1.2, 250, x0VDL1 * scaleX0VD, xrhoVDL1, resRPhiVD, resZVD, eff, 1);
+  AddLayer("B02", 2.5, 250, x0VDL2 * scaleX0VD, xrhoVDL2, resRPhiVD, resZVD, eff, 1);
   AddLayer("coldplate", 2.6, 250, x0Coldplate, xrhoColdplate, 0.0f, 0.0f, 0.0f, 0); // 500 mum Be
   AddLayer("bpipe1", 5.7, 250, x0Pipe1, xrhoPipe1, 0.0f, 0.0f, 0.0f, 0); // 500 mum Be
   AddLayer("B03", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
