@@ -59,7 +59,7 @@ class FastTracker
 
   void AddSiliconALICE3v4(std::vector<float> pixelResolution);
   void AddSiliconALICE3v2(std::vector<float> pixelResolution);
-  void AddSiliconALICE3(std::vector<float> pixelResolution);
+  void AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelResolution);
   void AddTPC(float phiResMean, float zResMean);
 
   void Print();
