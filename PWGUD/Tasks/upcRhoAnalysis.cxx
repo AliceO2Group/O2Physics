@@ -282,14 +282,21 @@ struct UpcRhoAnalysis {
     rMC.add("MC/collisions/hRunNumberVsNumOfCollisionRecos", ";number of collision reconstructions;run number;counts", kTH2D, {{6, -0.5, 5.5}, runNumberAxis});
     // tracks
     rMC.add("MC/tracks/all/hPdgCode", ";pdg code;counts", kTH1D, {{2001, -1000.5, 1000.5}});
+    rMC.add("MC/tracks/all/hMotherPdgCode", ";mother pdg code;counts", kTH1D, {{2001, -1000.5, 1000.5}});
     rMC.add("MC/tracks/all/hProducedByGenerator", ";produced by generator;counts", kTH1D, {{2, -0.5, 1.5}});
     rMC.add("MC/tracks/all/hIsPhysicalPrimary", ";is physical primary;counts", kTH1D, {{2, -0.5, 1.5}});
     rMC.add("MC/tracks/all/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
     rMC.add("MC/tracks/all/hEta", ";#it{#eta};counts", kTH1D, {etaAxis});
     rMC.add("MC/tracks/all/hPhi", ";#it{#phi};counts", kTH1D, {phiAxis});
+    rMC.addClone("MC/tracks/all/", "MC/tracks/primaries/");
+    rMC.addClone("MC/tracks/all/", "MC/tracks/prodByGen/");
     rMC.add("MC/tracks/hPt", ";#it{p}_{T leading} (GeV/#it{c});#it{p}_{T subleading} (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
     rMC.add("MC/tracks/hEta", ";#it{#eta}_{leading};#it{#eta}_{subleading};counts", kTH2D, {etaAxis, etaAxis});
     rMC.add("MC/tracks/hPhi", ";#it{#phi}_{leading};#it{#phi}_{subleading};counts", kTH2D, {phiAxis, phiAxis});
+    // resolution
+    rMC.add("MC/resolution/tracks/hPt", ";#it{p}_{T, reco} - #it{p}_{T, true} (GeV/#it{c});counts", kTH1D, {{200, -1.0, 1.0}});
+    rMC.add("MC/resolution/tracks/hEta", ";#it{#eta}_{reco} - #it{#eta}_{true};counts", kTH1D, {{200, -0.2, 0.2}});
+    rMC.add("MC/resolution/tracks/hPhi", ";#it{#phi}_{reco} - #it{#phi}_{true} (rad);counts", kTH1D, {{200, -0.2, 0.2}});
     // system
     rMC.add("MC/system/hM", ";#it{m} (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
     rMC.add("MC/system/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
@@ -817,18 +824,41 @@ struct UpcRhoAnalysis {
       rMC.fill(HIST("MC/tracks/all/hPt"), pt(mcParticle.px(), mcParticle.py()));
       rMC.fill(HIST("MC/tracks/all/hEta"), eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
       rMC.fill(HIST("MC/tracks/all/hPhi"), phi(mcParticle.px(), mcParticle.py()));
-      if (!mcParticle.isPhysicalPrimary() || std::abs(mcParticle.pdgCode()) != kPiPlus)
-        continue;
-      cutMcParticles.push_back(mcParticle);
-      ROOT::Math::PxPyPzMVector pionLV;
-      pionLV.SetPxPyPzE(mcParticle.px(), mcParticle.py(), mcParticle.pz(), mcParticle.e());
-      mcParticlesLVs.push_back(pionLV);
+      if (mcParticle.producedByGenerator()) {
+        rMC.fill(HIST("MC/tracks/prodByGen/hPdgCode"), mcParticle.pdgCode());
+        rMC.fill(HIST("MC/tracks/prodByGen/hProducedByGenerator"), mcParticle.producedByGenerator());
+        rMC.fill(HIST("MC/tracks/prodByGen/hIsPhysicalPrimary"), mcParticle.isPhysicalPrimary());
+        rMC.fill(HIST("MC/tracks/prodByGen/hPt"), pt(mcParticle.px(), mcParticle.py()));
+        rMC.fill(HIST("MC/tracks/prodByGen/hEta"), eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
+        rMC.fill(HIST("MC/tracks/prodByGen/hPhi"), phi(mcParticle.px(), mcParticle.py()));
+      }
+      if (mcParticle.isPhysicalPrimary()) {
+        rMC.fill(HIST("MC/tracks/primaries/hPdgCode"), mcParticle.pdgCode());
+        rMC.fill(HIST("MC/tracks/primaries/hProducedByGenerator"), mcParticle.producedByGenerator());
+        rMC.fill(HIST("MC/tracks/primaries/hIsPhysicalPrimary"), mcParticle.isPhysicalPrimary());
+        rMC.fill(HIST("MC/tracks/primaries/hPt"), pt(mcParticle.px(), mcParticle.py()));
+        rMC.fill(HIST("MC/tracks/primaries/hEta"), eta(mcParticle.px(), mcParticle.py(), mcParticle.pz()));
+        rMC.fill(HIST("MC/tracks/primaries/hPhi"), phi(mcParticle.px(), mcParticle.py()));
+      }
+      if (mcParticle.has_daughters()) {
+        rMC.fill(HIST("MC/tracks/all/hMotherPdgCode"), mcParticle.pdgCode());
+        if (mcParticle.pdgCode() != kRho770_0) 
+          continue; // consider only rho0s
+        for (const auto& daughter : mcParticle.template daughters_as<T>()) {
+          if (!daughter.isPhysicalPrimary() || std::abs(daughter.pdgCode()) != kPiPlus)
+            continue;
+          cutMcParticles.push_back(daughter);
+          ROOT::Math::PxPyPzMVector pionLV;
+          pionLV.SetPxPyPzE(daughter.px(), daughter.py(), daughter.pz(), daughter.e());
+          mcParticlesLVs.push_back(pionLV);
+        }
+      }
     }
     rMC.fill(HIST("MC/collisions/hNPions"), cutMcParticles.size());
 
     if (static_cast<int>(cutMcParticles.size()) != numPions)
       return;
-    if (mcParticlesLVs.size() != cutMcParticles.size())
+    if (mcParticlesLVs.size() != cutMcParticles.size()) // sanity check
       return;
     if (tracksTotalChargeMC(cutMcParticles) != 0) // shouldn't happen in theory
       return;
