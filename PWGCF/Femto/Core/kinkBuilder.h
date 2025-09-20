@@ -64,7 +64,7 @@ struct ConfKinkFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::vector<float>> kinkTopoDcaMax{"kinkTopoDcaMax", {2.0f}, "Maximum kink topological DCA"};                   \
   o2::framework::Configurable<std::vector<float>> transRadMin{"transRadMin", {0.2f}, "Minimum transverse radius (cm)"};                       \
   o2::framework::Configurable<std::vector<float>> transRadMax{"transRadMax", {100.f}, "Maximum transverse radius (cm)"};                      \
-  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"DauAbsEtaMax", {0.8f}, "Maximum absolute pseudorapidity for daughter track"}; \
+  o2::framework::Configurable<std::vector<float>> dauAbsEtaMax{"dauAbsEtaMax", {0.8f}, "Maximum absolute pseudorapidity for daughter track"}; \
   o2::framework::Configurable<std::vector<float>> dauDcaPvMin{"dauDcaPvMin", {0.0f}, "Minimum DCA of daughter from primary vertex (cm)"};     \
   o2::framework::Configurable<std::vector<float>> mothDcaPvMax{"mothDcaPvMax", {1.0f}, "Maximum DCA of mother from primary vertex (cm)"};     \
   o2::framework::Configurable<std::vector<float>> alphaAPMax{"alphaAPMax", {0.0f}, "Maximum Alpha_AP for Sigma candidates"};                  \
@@ -216,12 +216,12 @@ class KinkSelection : public BaseSelection<float, o2::aod::femtodatatypes::KinkM
     this->evaluateObservable(kTransRadMax, transRadius);
 
     // Compute daughter eta
-    float px_daug = kinkCand.pxDaug();
-    float py_daug = kinkCand.pyDaug();
-    float pz_daug = kinkCand.pzDaug();
-    float p_daug = std::sqrt(px_daug * px_daug + py_daug * py_daug + pz_daug * pz_daug);
-    float eta_daug = (p_daug > 0.f) ? 0.5f * std::log((p_daug + pz_daug) / (p_daug - pz_daug)) : 0.f;
-    this->evaluateObservable(kDauAbsEtaMax, std::fabs(eta_daug));
+    float pxDaug = kinkCand.pxDaug();
+    float pyDaug = kinkCand.pyDaug();
+    float pzDaug = kinkCand.pzDaug();
+    float pDaug = std::sqrt(pxDaug * pxDaug + pyDaug * pyDaug + pzDaug * pzDaug);
+    float etaDaug = (pDaug > 0.f) ? 0.5f * std::log((pDaug + pzDaug) / (pDaug - pzDaug)) : 0.f;
+    this->evaluateObservable(kDauAbsEtaMax, std::fabs(etaDaug));
 
     this->evaluateObservable(kDauDcaPvMin, std::abs(kinkCand.dcaDaugPv()));
     this->evaluateObservable(kMothDcaPvMax, std::abs(kinkCand.dcaMothPv()));
