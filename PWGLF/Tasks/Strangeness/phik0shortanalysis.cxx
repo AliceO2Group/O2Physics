@@ -941,20 +941,6 @@ struct Phik0shortanalysis {
     return true;
   }
 
-  template <typename T>
-  bool selectionPhi(const T& posTrack, const T& negTrack)
-  {
-    // To be possibly completed
-    return !posTrack.empty() && !negTrack.empty();
-  }
-
-  template <typename T1, typename T2>
-  bool selectionPhiWPDG(const T1& posTrack, const T1& negTrack, const T2& mcParticles)
-  {
-    // To be possibly completed
-    return !posTrack.empty() && !negTrack.empty();
-  }
-
   template <typename T1, typename T2>
   bool eventHasRecoPhi(const T1& posTracks, const T2& negTracks)
   {
