@@ -151,10 +151,10 @@ struct StrangenessInJets {
 
   // List of Particles
   enum ParticleOfInterest { kV0Particles,
-                kCascades,
-                kPions,
-                kKaons,
-                kProtons };
+                            kCascades,
+                            kPions,
+                            kKaons,
+                            kProtons };
 
   // Instantiate utility class for jet background subtraction
   JetBkgSubUtils backgroundSub;
