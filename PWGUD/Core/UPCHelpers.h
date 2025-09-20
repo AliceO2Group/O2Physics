@@ -12,16 +12,17 @@
 #ifndef PWGUD_CORE_UPCHELPERS_H_
 #define PWGUD_CORE_UPCHELPERS_H_
 
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "CommonConstants/LHCConstants.h"
-#include "TLorentzVector.h"
 #include "UPCCutparHolder.h"
+
 #include "PWGUD/DataModel/UDTables.h"
 
-using namespace o2::framework;
-using namespace o2::framework::expressions;
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include "CommonConstants/LHCConstants.h"
+#include "Framework/AnalysisDataModel.h"
+
+#include "TLorentzVector.h"
 
 using BCsWithBcSels = o2::soa::Join<o2::aod::BCs, o2::aod::BcSels>;
 

@@ -252,6 +252,7 @@ struct AntinucleiInJets {
 
       // Event counter
       registryMC.add("genEvents", "number of generated events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
+      registryMC.add("genJets", "number of generated jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
       // Generated spectra of antiprotons
       registryMC.add("antiproton_gen_jet", "antiproton_gen_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -267,6 +268,7 @@ struct AntinucleiInJets {
 
       // Event counter
       registryMC.add("recEvents", "number of reconstructed events in mc", HistType::kTH1F, {{20, 0, 20, "counter"}});
+      registryMC.add("recJets", "number of reconstructed jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
       // Reconstructed spectra of antiprotons
       registryMC.add("antiproton_rec_tpc_jet", "antiproton_rec_tpc_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -336,6 +338,13 @@ struct AntinucleiInJets {
       registryMC.add("helium3_rec_tpc_ue", "helium3_rec_tpc_ue", HistType::kTH1F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antihelium3_rec_tpc_jet", "antihelium3_rec_tpc_jet", HistType::kTH1F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antihelium3_rec_tpc_ue", "antihelium3_rec_tpc_ue", HistType::kTH1F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      // Generated spectra needed for reweighting
+      registryMC.add("protonBar", "protonBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("lambdaBar", "lambdaBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("xiBar", "xiBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("omegaBar", "omegaBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("sigmaBar", "sigmaBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
     }
 
     // Systematic uncertainties (Data)
@@ -1259,6 +1268,7 @@ struct AntinucleiInJets {
           case PDG_t::kProtonBar:
             registryMC.fill(HIST("antip_gen_jet"), particle.pt());
             registryMC.fill(HIST("antip_gen_ue"), particle.pt());
+            registryMC.fill(HIST("protonBar"), particle.pt());
             break;
           case o2::constants::physics::Pdg::kDeuteron:
             registryMC.fill(HIST("deuteron_gen_jet"), particle.pt());
@@ -1275,6 +1285,19 @@ struct AntinucleiInJets {
           case -o2::constants::physics::Pdg::kHelium3:
             registryMC.fill(HIST("antihelium3_gen_jet"), particle.pt());
             registryMC.fill(HIST("antihelium3_gen_ue"), particle.pt());
+            break;
+          // Histograms for re-weighting
+          case PDG_t::kLambda0Bar:
+            registryMC.fill(HIST("lambdaBar"), particle.pt());
+            break;
+          case PDG_t::kXiPlusBar:
+            registryMC.fill(HIST("xiBar"), particle.pt());
+            break;
+          case PDG_t::kOmegaPlusBar:
+            registryMC.fill(HIST("omegaBar"), particle.pt());
+            break;
+          case PDG_t::kSigmaBarMinus:
+            registryMC.fill(HIST("sigmaBar"), particle.pt());
             break;
         }
       }
@@ -1454,6 +1477,9 @@ struct AntinucleiInJets {
           continue;
         isAtLeastOneJetSelected = true;
 
+        // Generated jets
+        registryMC.fill(HIST("genJets"), 0.5);
+
         // Analyze jet constituents
         std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
         for (const auto& particle : jetConstituents) {
@@ -1621,6 +1647,9 @@ struct AntinucleiInJets {
         if (applyAreaCut && normalizedJetArea > maxNormalizedJetArea)
           continue;
         isAtLeastOneJetSelected = true;
+
+        // Reconstructed jets
+        registryMC.fill(HIST("recJets"), 0.5);
 
         // Set up two perpendicular cone axes for underlying event estimation
         double coneRadius = std::sqrt(jet.area() / PI);

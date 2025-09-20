@@ -1,4 +1,4 @@
-# Copyright 2019-2025 CERN and copyright holders of ALICE O2.
+# Copyright 2019-2024 CERN and copyright holders of ALICE O2.
 # See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 # All rights not expressly granted are reserved.
 #
@@ -9,6 +9,8 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-#add_subdirectory(DataModel)
+add_subdirectory(Core)
 add_subdirectory(TableProducer)
+add_subdirectory(Tasks)
 
+add_subdirectory(FemtoNuclei)

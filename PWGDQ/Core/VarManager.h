@@ -28,6 +28,7 @@
 #include "Common/CCDB/TriggerAliases.h"
 #include "Common/Core/CollisionTypeHelper.h"
 #include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/fwdtrackUtilities.h"
 #include "Common/Core/trackUtilities.h"
 
 #include "CommonConstants/LHCConstants.h"
@@ -134,7 +135,8 @@ class VarManager : public TObject
     ReducedTrackCollInfo = BIT(24), // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
     ReducedMuonCollInfo = BIT(25),  // TODO: remove it once new reduced data tables are produced for dielectron with ReducedTracksBarrelInfo
     MuonRealign = BIT(26),
-    MuonCovRealign = BIT(27)
+    MuonCovRealign = BIT(27),
+    MFTCov = BIT(28)
   };
 
   enum PairCandidateType {
@@ -1081,6 +1083,8 @@ class VarManager : public TObject
   static void FillPairPropagateMuon(T1 const& muon1, T2 const& muon2, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T1, typename T2, typename C>
   static void FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, const C& collision, float* values = nullptr);
+  template <uint32_t MuonfillMap, uint32_t MFTfillMap, typename T1, typename T2, typename C, typename C2>
+  static void FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack, const C& collision, C2 const& mftcov, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename T1, typename T2>
   static void FillPair(T1 const& t1, T2 const& t2, float* values = nullptr);
   template <int pairType, uint32_t fillMap, typename C, typename T1, typename T2>
@@ -1475,6 +1479,35 @@ void VarManager::FillGlobalMuonRefit(T1 const& muontrack, T2 const& mfttrack, co
     values[kPz] = pz;
     values[kEta] = mfttrack.eta();
     values[kPhi] = mfttrack.phi();
+  }
+}
+
+template <uint32_t MuonfillMap, uint32_t MFTfillMap, typename T1, typename T2, typename C, typename C2>
+void VarManager::FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack, const C& collision, C2 const& mftcov, float* values)
+{
+  if (!values) {
+    values = fgValues;
+  }
+  if constexpr ((MuonfillMap & MuonCov) > 0) {
+    if constexpr ((MFTfillMap & MFTCov) > 0) {
+      o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muontrack, collision);
+      SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
+      std::vector<double> v1{mftcov.cXX(), mftcov.cXY(), mftcov.cYY(), mftcov.cPhiX(), mftcov.cPhiY(),
+                             mftcov.cPhiPhi(), mftcov.cTglX(), mftcov.cTglY(), mftcov.cTglPhi(), mftcov.cTglTgl(),
+                             mftcov.c1PtX(), mftcov.c1PtY(), mftcov.c1PtPhi(), mftcov.c1PtTgl(), mftcov.c1Pt21Pt2()};
+      SMatrix55 tcovs(v1.begin(), v1.end());
+      o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
+
+      o2::dataformats::GlobalFwdTrack globalRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
+      values[kX] = globalRefit.getX();
+      values[kY] = globalRefit.getY();
+      values[kZ] = globalRefit.getZ();
+      values[kTgl] = globalRefit.getTgl();
+      values[kPt] = globalRefit.getPt();
+      values[kPz] = globalRefit.getPz();
+      values[kEta] = globalRefit.getEta();
+      values[kPhi] = globalRefit.getPhi();
+    }
   }
 }
 
@@ -3200,6 +3233,125 @@ void VarManager::FillPairME(T1 const& t1, T2 const& t2, float* values)
 
   if (fgUsedVars[kDeltaEtaPair2]) {
     values[kDeltaEtaPair2] = v1.Eta() - v2.Eta();
+  }
+
+  // polarization parameters
+  bool useHE = fgUsedVars[kCosThetaHE] || fgUsedVars[kPhiHE]; // helicity frame
+  bool useCS = fgUsedVars[kCosThetaCS] || fgUsedVars[kPhiCS]; // Collins-Soper frame
+  bool usePP = fgUsedVars[kCosThetaPP];                       // production plane frame
+  bool useRM = fgUsedVars[kCosThetaRM];                       // Random frame
+
+  if (useHE || useCS || usePP || useRM) {
+    ROOT::Math::Boost boostv12{v12.BoostToCM()};
+    ROOT::Math::XYZVectorF v1_CM{(boostv12(v1).Vect()).Unit()};
+    ROOT::Math::XYZVectorF v2_CM{(boostv12(v2).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam1_CM{(boostv12(fgBeamA).Vect()).Unit()};
+    ROOT::Math::XYZVectorF Beam2_CM{(boostv12(fgBeamC).Vect()).Unit()};
+
+    // using positive sign convention for the first track
+    ROOT::Math::XYZVectorF v_CM = (t1.sign() > 0 ? v1_CM : v2_CM);
+
+    if (useHE) {
+      ROOT::Math::XYZVectorF zaxis_HE{(v12.Vect()).Unit()};
+      ROOT::Math::XYZVectorF yaxis_HE{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+      ROOT::Math::XYZVectorF xaxis_HE{(yaxis_HE.Cross(zaxis_HE)).Unit()};
+      if (fgUsedVars[kCosThetaHE])
+        values[kCosThetaHE] = zaxis_HE.Dot(v_CM);
+      if (fgUsedVars[kPhiHE]) {
+        values[kPhiHE] = TMath::ATan2(yaxis_HE.Dot(v_CM), xaxis_HE.Dot(v_CM));
+        if (values[kPhiHE] < 0) {
+          values[kPhiHE] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+        }
+      }
+      if (fgUsedVars[kPhiTildeHE]) {
+        if (fgUsedVars[kCosThetaHE] && fgUsedVars[kPhiHE]) {
+          if (values[kCosThetaHE] > 0) {
+            values[kPhiTildeHE] = values[kPhiHE] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
+            if (values[kPhiTildeHE] < 0) {
+              values[kPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          } else {
+            values[kPhiTildeHE] = values[kPhiHE] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
+            if (values[kPhiTildeHE] < 0) {
+              values[kPhiTildeHE] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          }
+        } else {
+          values[kPhiTildeHE] = -999; // not computable
+        }
+      }
+    }
+
+    if (useCS) {
+      ROOT::Math::XYZVectorF zaxis_CS{(Beam1_CM - Beam2_CM).Unit()};
+      ROOT::Math::XYZVectorF yaxis_CS{(Beam1_CM.Cross(Beam2_CM)).Unit()};
+      ROOT::Math::XYZVectorF xaxis_CS{(yaxis_CS.Cross(zaxis_CS)).Unit()};
+      if (fgUsedVars[kCosThetaCS])
+        values[kCosThetaCS] = zaxis_CS.Dot(v_CM);
+      if (fgUsedVars[kPhiCS]) {
+        values[kPhiCS] = TMath::ATan2(yaxis_CS.Dot(v_CM), xaxis_CS.Dot(v_CM));
+        if (values[kPhiCS] < 0) {
+          values[kPhiCS] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+        }
+      }
+      if (fgUsedVars[kPhiTildeCS]) {
+        if (fgUsedVars[kCosThetaCS] && fgUsedVars[kPhiCS]) {
+          if (values[kCosThetaCS] > 0) {
+            values[kPhiTildeCS] = values[kPhiCS] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
+            if (values[kPhiTildeCS] < 0) {
+              values[kPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          } else {
+            values[kPhiTildeCS] = values[kPhiCS] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
+            if (values[kPhiTildeCS] < 0) {
+              values[kPhiTildeCS] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          }
+        } else {
+          values[kPhiTildeCS] = -999; // not computable
+        }
+      }
+    }
+
+    if (usePP) {
+      ROOT::Math::XYZVector zaxis_PP = ROOT::Math::XYZVector(v12.Py(), -v12.Px(), 0.f);
+      ROOT::Math::XYZVector yaxis_PP{(v12.Vect()).Unit()};
+      ROOT::Math::XYZVector xaxis_PP{(yaxis_PP.Cross(zaxis_PP)).Unit()};
+      if (fgUsedVars[kCosThetaPP]) {
+        values[kCosThetaPP] = zaxis_PP.Dot(v_CM) / std::sqrt(zaxis_PP.Mag2());
+      }
+      if (fgUsedVars[kPhiPP]) {
+        values[kPhiPP] = TMath::ATan2(yaxis_PP.Dot(v_CM), xaxis_PP.Dot(v_CM));
+        if (values[kPhiPP] < 0) {
+          values[kPhiPP] += 2 * TMath::Pi(); // ensure phi is in [0, 2pi]
+        }
+      }
+      if (fgUsedVars[kPhiTildePP]) {
+        if (fgUsedVars[kCosThetaPP] && fgUsedVars[kPhiPP]) {
+          if (values[kCosThetaPP] > 0) {
+            values[kPhiTildePP] = values[kPhiPP] - 0.25 * TMath::Pi(); // phi_tilde = phi - pi/4
+            if (values[kPhiTildePP] < 0) {
+              values[kPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          } else {
+            values[kPhiTildePP] = values[kPhiPP] - 0.75 * TMath::Pi(); // phi_tilde = phi - 3pi/4
+            if (values[kPhiTildePP] < 0) {
+              values[kPhiTildePP] += 2 * TMath::Pi(); // ensure phi_tilde is in [0, 2pi]
+            }
+          }
+        } else {
+          values[kPhiTildePP] = -999; // not computable
+        }
+      }
+    }
+
+    if (useRM) {
+      double randomCostheta = gRandom->Uniform(-1., 1.);
+      double randomPhi = gRandom->Uniform(0., 2. * TMath::Pi());
+      ROOT::Math::XYZVectorF zaxis_RM(randomCostheta, std::sqrt(1 - randomCostheta * randomCostheta) * std::cos(randomPhi), std::sqrt(1 - randomCostheta * randomCostheta) * std::sin(randomPhi));
+      if (fgUsedVars[kCosThetaRM])
+        values[kCosThetaRM] = zaxis_RM.Dot(v_CM);
+    }
   }
 
   if constexpr ((fillMap & ReducedEventQvector) > 0 || (fillMap & CollisionQvect) > 0) {

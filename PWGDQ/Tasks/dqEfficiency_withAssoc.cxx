@@ -77,6 +77,9 @@ DECLARE_SOA_COLUMN(MuonAmbiguityInBunch, muonAmbiguityInBunch, int8_t);         
 DECLARE_SOA_COLUMN(MuonAmbiguityOutOfBunch, muonAmbiguityOutOfBunch, int8_t);        //! Muon track out of bunch ambiguity
 DECLARE_SOA_BITMAP_COLUMN(IsBarrelSelectedPrefilter, isBarrelSelectedPrefilter, 32); //! Barrel prefilter decisions (joinable to ReducedTracksAssoc)
 // Bcandidate columns for ML analysis of B->Jpsi+K
+DECLARE_SOA_COLUMN(RunNumber, runNumber, uint64_t);
+DECLARE_SOA_COLUMN(EventIdx, eventIdx, uint64_t);
+DECLARE_SOA_COLUMN(EventTimestamp, eventTimestamp, uint64_t);
 DECLARE_SOA_COLUMN(massBcandidate, MBcandidate, float);
 DECLARE_SOA_COLUMN(MassDileptonCandidate, massDileptonCandidate, float);
 DECLARE_SOA_COLUMN(deltaMassBcandidate, deltaMBcandidate, float);
@@ -88,14 +91,23 @@ DECLARE_SOA_COLUMN(TauxyBcandidate, tauxyBcandidate, float);
 DECLARE_SOA_COLUMN(TauzBcandidate, tauzBcandidate, float);
 DECLARE_SOA_COLUMN(CosPBcandidate, cosPBcandidate, float);
 DECLARE_SOA_COLUMN(Chi2Bcandidate, chi2Bcandidate, float);
+DECLARE_SOA_COLUMN(GlobalIndexassoc, globalIndexassoc, uint64_t);
+DECLARE_SOA_COLUMN(GlobalIndexleg1, globalIndexleg1, uint64_t);
+DECLARE_SOA_COLUMN(GlobalIndexleg2, globalIndexleg2, uint64_t);
+DECLARE_SOA_COLUMN(Ptassoc, ptassoc, float);
 DECLARE_SOA_COLUMN(PINassoc, pINassoc, float);
 DECLARE_SOA_COLUMN(Etaassoc, etaassoc, float);
+DECLARE_SOA_COLUMN(Phiassoc, phiassoc, float);
 DECLARE_SOA_COLUMN(Ptpair, ptpair, float);
 DECLARE_SOA_COLUMN(Etapair, etapair, float);
+DECLARE_SOA_COLUMN(Ptleg1, ptleg1, float);
 DECLARE_SOA_COLUMN(PINleg1, pINleg1, float);
 DECLARE_SOA_COLUMN(Etaleg1, etaleg1, float);
+DECLARE_SOA_COLUMN(Phileg1, phileg1, float);
+DECLARE_SOA_COLUMN(Ptleg2, ptleg2, float);
 DECLARE_SOA_COLUMN(PINleg2, pINleg2, float);
 DECLARE_SOA_COLUMN(Etaleg2, etaleg2, float);
+DECLARE_SOA_COLUMN(Phileg2, phileg2, float);
 DECLARE_SOA_COLUMN(TPCnsigmaKaassoc, tpcnsigmaKaassoc, float);
 DECLARE_SOA_COLUMN(TPCnsigmaPiassoc, tpcnsigmaPiassoc, float);
 DECLARE_SOA_COLUMN(TPCnsigmaPrassoc, tpcnsigmaPrassoc, float);
@@ -135,6 +147,8 @@ DECLARE_SOA_COLUMN(Lzee, lzee, float);
 DECLARE_SOA_COLUMN(AmbiguousInBunchPairs, AmbiguousJpsiPairsInBunch, bool);
 DECLARE_SOA_COLUMN(AmbiguousOutOfBunchPairs, AmbiguousJpsiPairsOutOfBunch, bool);
 DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);                                                            //!  joinable to ReducedEvents
@@ -144,9 +158,11 @@ DECLARE_SOA_TABLE(MuonTrackCuts, "AOD", "DQANAMUONCUTS", dqanalysisflags::IsMuon
 DECLARE_SOA_TABLE(MuonAmbiguities, "AOD", "DQMUONAMB", dqanalysisflags::MuonAmbiguityInBunch, dqanalysisflags::MuonAmbiguityOutOfBunch);         //!  joinable to ReducedMuonTracks
 DECLARE_SOA_TABLE(Prefilter, "AOD", "DQPREFILTER", dqanalysisflags::IsBarrelSelectedPrefilter);                                                  //!  joinable to ReducedTracksAssoc
 DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
+                  dqanalysisflags::RunNumber, dqanalysisflags::EventIdx, dqanalysisflags::EventTimestamp,
                   dqanalysisflags::massBcandidate, dqanalysisflags::MassDileptonCandidate, dqanalysisflags::deltaMassBcandidate, dqanalysisflags::pTBcandidate,
                   dqanalysisflags::LxyBcandidate, dqanalysisflags::LxyzBcandidate, dqanalysisflags::LzBcandidate,
                   dqanalysisflags::TauxyBcandidate, dqanalysisflags::TauzBcandidate, dqanalysisflags::CosPBcandidate, dqanalysisflags::Chi2Bcandidate,
+                  dqanalysisflags::GlobalIndexassoc, dqanalysisflags::GlobalIndexleg1, dqanalysisflags::GlobalIndexleg2,
                   dqanalysisflags::PINassoc, dqanalysisflags::Etaassoc, dqanalysisflags::Ptpair, dqanalysisflags::Etapair,
                   dqanalysisflags::PINleg1, dqanalysisflags::Etaleg1, dqanalysisflags::PINleg2, dqanalysisflags::Etaleg2,
                   dqanalysisflags::TPCnsigmaKaassoc, dqanalysisflags::TPCnsigmaPiassoc, dqanalysisflags::TPCnsigmaPrassoc, dqanalysisflags::TOFnsigmaKaassoc,
@@ -158,6 +174,11 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
                   dqanalysisflags::TPCNclsassoc, dqanalysisflags::TPCNclsleg1, dqanalysisflags::TPCNclsleg2,
                   dqanalysisflags::TPCChi2assoc, dqanalysisflags::TPCChi2leg1, dqanalysisflags::TPCChi2leg2,
                   dqanalysisflags::IsJpsiFromBSelected, dqanalysisflags::IsBarrelSelected, dqanalysisflags::McFlag);
+DECLARE_SOA_TABLE(JPsiMuonCandidates, "AOD", "DQJPSIMUONA",
+                  dqanalysisflags::DeltaEta, dqanalysisflags::DeltaPhi,
+                  dqanalysisflags::MassDileptonCandidate, dqanalysisflags::Ptpair, dqanalysisflags::Etapair, dqanalysisflags::Ptassoc, dqanalysisflags::Etaassoc, dqanalysisflags::Phiassoc,
+                  dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::Phileg1, dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2, dqanalysisflags::Phileg2,
+                  dqanalysisflags::McFlag);
 DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER", dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Lxyee, dqanalysisflags::LxyeePoleMass, dqanalysisflags::Lzee, dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::Corrassoc);
 } // namespace o2::aod
 
@@ -424,7 +445,7 @@ struct AnalysisEventSelection {
   }
 
   PROCESS_SWITCH(AnalysisEventSelection, processSkimmed, "Run event selection on DQ skimmed events", false);
-  PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(AnalysisEventSelection, processDummy, "Dummy function", true);
 };
 
 // Produces a table with barrel track decisions (joinable to the ReducedTracksAssociations)
@@ -592,10 +613,8 @@ struct AnalysisTrackSelection {
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       // fill event information which might be needed in histograms/cuts that combine track and event properties
       VarManager::FillEvent<TEventFillMap>(event);
-      ReducedMCEvent* eventMC = nullptr;
       if (event.has_reducedMCevent()) {
-        auto eventMC = event.reducedMCevent();
-        VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(eventMC);
+        VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent());
       }
 
       auto track = assoc.template reducedtrack_as<TTracks>();
@@ -607,8 +626,8 @@ struct AnalysisTrackSelection {
       if (track.has_reducedMCTrack()) {
         auto trackMC = track.reducedMCTrack();
         auto eventMCfromTrack = trackMC.reducedMCevent();
-        if (eventMC != nullptr) {
-          isCorrectAssoc = (eventMCfromTrack.globalIndex() == eventMC->globalIndex());
+        if (event.has_reducedMCevent()) {
+          isCorrectAssoc = (eventMCfromTrack.globalIndex() == event.reducedMCevent().globalIndex());
         }
         VarManager::FillTrackMC(tracksMC, trackMC);
       }
@@ -749,7 +768,7 @@ struct AnalysisTrackSelection {
 
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmed, "Run barrel track selection on DQ skimmed track associations", false);
   PROCESS_SWITCH(AnalysisTrackSelection, processSkimmedWithCov, "Run barrel track selection on DQ skimmed tracks w/ cov matrix associations", false);
-  PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(AnalysisTrackSelection, processDummy, "Dummy function", true);
 };
 
 // Produces a table with muon decisions (joinable to the ReducedMuonsAssociations)
@@ -768,6 +787,7 @@ struct AnalysisMuonSelection {
   Configurable<std::string> fConfigCcdbUrl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<int64_t> fConfigNoLaterThan{"ccdb-no-later-than", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
+  Configurable<float> fConfigMagField{"cfgMagField", 5.0f, "Manually set magnetic field"};
   Configurable<std::string> fConfigGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
 
   Configurable<std::string> fConfigMCSignals{"cfgMuonMCSignals", "", "Comma separated list of MC signals"};
@@ -884,7 +904,9 @@ struct AnalysisMuonSelection {
         o2::base::Propagator::initFieldFromGRP(grpmag);
         VarManager::SetMagneticField(grpmag->getNominalL3Field());
       } else {
-        LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+        // LOGF(fatal, "GRP object is not available in CCDB at timestamp=%llu", events.begin().timestamp());
+        //  If the magnetic field is not found it is configured by had by the user
+        VarManager::SetMagneticField(fConfigMagField.value);
       }
       fCurrentRun = events.begin().runNumber();
     }
@@ -1050,7 +1072,7 @@ struct AnalysisMuonSelection {
 
   PROCESS_SWITCH(AnalysisMuonSelection, processSkimmed, "Run muon selection on DQ skimmed muons", false);
   PROCESS_SWITCH(AnalysisMuonSelection, processSkimmedWithCov, "Run muon selection on DQ skimmed muons, with event and track covariances", false);
-  PROCESS_SWITCH(AnalysisMuonSelection, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(AnalysisMuonSelection, processDummy, "Dummy function", true);
 };
 
 // Run the prefilter selection (e.g. electron prefiltering for photon conversions)
@@ -1237,7 +1259,7 @@ struct AnalysisPrefilterSelection {
   }
 
   PROCESS_SWITCH(AnalysisPrefilterSelection, processBarrelSkimmed, "Run Prefilter selection on reduced tracks", false);
-  PROCESS_SWITCH(AnalysisPrefilterSelection, processDummy, "Do nothing", false);
+  PROCESS_SWITCH(AnalysisPrefilterSelection, processDummy, "Do nothing", true);
 };
 
 // Run the same-event pairing
@@ -2173,9 +2195,12 @@ struct AnalysisSameEventPairing {
 
   PresliceUnsorted<ReducedMCTracks> perReducedMcGenEvent = aod::reducedtrackMC::reducedMCeventId;
 
-  void processMCGen(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedMCEvents const& /*mcEvents*/, ReducedMCTracks const& mcTracks)
+  void processMCGen(soa::Filtered<MyEventsVtxCovSelected> const& events, ReducedMCEvents const& mcEvents, ReducedMCTracks const& mcTracks)
   {
     // Fill Generated histograms taking into account all generated tracks
+    uint32_t mcDecision = 0;
+    int isig = 0;
+
     for (auto& mctrack : mcTracks) {
       VarManager::FillTrackMC(mcTracks, mctrack);
       // NOTE: Signals are checked here mostly based on the skimmed MC stack, so depending on the requested signal, the stack could be incomplete.
@@ -2209,9 +2234,15 @@ struct AnalysisSameEventPairing {
         // auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
+            mcDecision |= (static_cast<uint32_t>(1) << isig);
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
+            if (useMiniTree.fConfigMiniTree) {
+              auto mcEvent = mcEvents.rawIteratorAt(track_raw.reducedMCeventId());
+              dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), track_raw.pt(), track_raw.eta(), track_raw.phi(), -999, -999, -999);
+            }
           }
         }
+        isig++;
       }
     } // end loop over reconstructed events
     if (fHasTwoProngGenMCsignals) {
@@ -2224,14 +2255,53 @@ struct AnalysisSameEventPairing {
               continue;
             }
             if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-              // mcDecision |= (static_cast<uint32_t>(1) << isig);
+              mcDecision |= (static_cast<uint32_t>(1) << isig);
               VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
+              if (useMiniTree.fConfigMiniTree) {
+                // WARNING! To be checked
+                dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
+              }
+            }
+          }
+        }
+        isig++;
+      }
+    }
+    // Fill Generated PAIR histograms taking into account selected collisions
+    for (auto& event : events) {
+      if (!event.isEventSelected_bit(0)) {
+        continue;
+      }
+      if (!event.has_reducedMCevent()) {
+        continue;
+      }
+
+      if (fHasTwoProngGenMCsignals) {
+        for (auto& [t1, t2] : combinations(mcTracks, mcTracks)) {
+          if (t1.reducedMCeventId() != event.reducedMCeventId()) {
+            continue;
+          }
+          if (t2.reducedMCeventId() != event.reducedMCeventId()) {
+            continue;
+          }
+          auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
+          auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
+          if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
+            for (auto& sig : fGenMCSignals) {
+              if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
+                continue;
+              }
+              if (sig->CheckSignal(true, t1_raw, t2_raw)) {
+                // mcDecision |= (static_cast<uint32_t>(1) << isig);
+                VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
+                fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
+              }
             }
           }
         }
       }
-    }
+    } // end loop over reconstructed events
   }
 
   void processDummy(MyEvents&)
@@ -2244,7 +2314,7 @@ struct AnalysisSameEventPairing {
   PROCESS_SWITCH(AnalysisSameEventPairing, processBarrelOnlyWithCollSkimmed, "Run barrel only pairing, with skimmed tracks and with collision information", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMuonOnlySkimmed, "Run muon only pairing, with skimmed tracks", false);
   PROCESS_SWITCH(AnalysisSameEventPairing, processMCGen, "Loop over MC particle stack and fill generator level histograms", false);
-  PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", false);
+  PROCESS_SWITCH(AnalysisSameEventPairing, processDummy, "Dummy function, enabled only if none of the others are enabled", true);
 };
 
 // Run pairing for resonance with legs fulfilling separate cuts (asymmetric decay channel)
@@ -3257,6 +3327,7 @@ struct AnalysisAsymmetricPairing {
 //   tracks passing the fConfigTrackCut cut. The dileptons cuts from the same-event pairing task are auto-detected
 struct AnalysisDileptonTrack {
   Produces<aod::BmesonCandidates> BmesonsTable;
+  Produces<aod::JPsiMuonCandidates> DileptonTrackTable;
   OutputObj<THashList> fOutputList{"output"};
 
   Configurable<std::string> fConfigTrackCuts{"cfgTrackCuts", "kaonPID", "Comma separated list of track cuts to be correlated with the dileptons"};
@@ -3663,6 +3734,9 @@ struct AnalysisDileptonTrack {
       // get full track info of tracks based on the index
       auto lepton1 = tracks.rawIteratorAt(dilepton.index0Id());
       auto lepton2 = tracks.rawIteratorAt(dilepton.index1Id());
+      if (!lepton1.has_reducedMCTrack() || !lepton2.has_reducedMCTrack()) {
+        continue;
+      }
       auto lepton1MC = lepton1.reducedMCTrack();
       auto lepton2MC = lepton2.reducedMCTrack();
       // Check that the dilepton has zero charge
@@ -3731,10 +3805,12 @@ struct AnalysisDileptonTrack {
             }
           }
           // table to be written out for ML analysis
-          BmesonsTable(fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt],
+          BmesonsTable(event.runNumber(), event.globalIndex(), event.timestamp(),
+                       fValuesHadron[VarManager::kPairMass], dilepton.mass(), fValuesHadron[VarManager::kDeltaMass], fValuesHadron[VarManager::kPairPt],
                        fValuesHadron[VarManager::kVertexingLxy], fValuesHadron[VarManager::kVertexingLxyz], fValuesHadron[VarManager::kVertexingLz],
                        fValuesHadron[VarManager::kVertexingTauxy], fValuesHadron[VarManager::kVertexingTauz], fValuesHadron[VarManager::kCosPointingAngle],
                        fValuesHadron[VarManager::kVertexingChi2PCA],
+                       track.globalIndex(), lepton1.globalIndex(), lepton2.globalIndex(),
                        track.tpcInnerParam(), track.eta(), dilepton.pt(), dilepton.eta(), lepton1.tpcInnerParam(), lepton1.eta(), lepton2.tpcInnerParam(), lepton2.eta(),
                        track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tpcNSigmaPr(), track.tofNSigmaKa(),
                        lepton1.tpcNSigmaEl(), lepton1.tpcNSigmaPi(), lepton1.tpcNSigmaPr(),
@@ -3799,6 +3875,11 @@ struct AnalysisDileptonTrack {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
+          // Fill table for correlation analysis
+          DileptonTrackTable(fValuesHadron[VarManager::kDeltaEta], fValuesHadron[VarManager::kDeltaPhi],
+                             dilepton.mass(), dilepton.pt(), dilepton.eta(), track.pt(), track.eta(), track.phi(),
+                             lepton1.pt(), lepton1.eta(), lepton1.phi(), lepton2.pt(), lepton2.eta(), lepton2.phi(),
+                             mcDecision);
         }
 
         // Fill histograms for the triplets
@@ -4052,7 +4133,7 @@ struct AnalysisDileptonTrack {
   PROCESS_SWITCH(AnalysisDileptonTrack, processMuonSkimmed, "Run muon dilepton-track pairing, using skimmed data", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMCGen, "Loop over MC particle stack and fill generator level histograms", false);
   PROCESS_SWITCH(AnalysisDileptonTrack, processMCGenWithEventSelection, "Loop over MC particle stack and fill generator level histograms", false);
-  PROCESS_SWITCH(AnalysisDileptonTrack, processDummy, "Dummy function", false);
+  PROCESS_SWITCH(AnalysisDileptonTrack, processDummy, "Dummy function", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

@@ -74,7 +74,7 @@ using namespace o2::aod::pwgem::dilepton::core::photonhbt;
 using MyCollisions = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
 using MyCollision = MyCollisions::iterator;
 
-using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMSWTriggerInfos>;
+using MyCollisionsWithSWT = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec, aod::EMSWTriggerBits>;
 using MyCollisionWithSWT = MyCollisionsWithSWT::iterator;
 
 using MyV0Photons = soa::Join<aod::V0PhotonsKF, aod::V0KFEMEventIds>;
@@ -212,7 +212,6 @@ struct PhotonHBT {
     Configurable<float> cfg_max_rel_diff_pin{"cfg_max_rel_diff_pin", +1e+10, "max rel. diff. between pin and ppv"};
     Configurable<bool> cfg_require_itsib_any{"cfg_require_itsib_any", false, "flag to require ITS ib any hits"};
     Configurable<bool> cfg_require_itsib_1st{"cfg_require_itsib_1st", true, "flag to require ITS ib 1st hit"};
-    Configurable<float> cfgRefR{"cfgRefR", 1.2, "reference R (in m) for extrapolation"}; // https://cds.cern.ch/record/1419204
 
     Configurable<int> cfg_pid_scheme{"cfg_pid_scheme", static_cast<int>(DielectronCut::PIDSchemes::kTPChadrejORTOFreq), "pid scheme [kTOFreq : 0, kTPChadrej : 1, kTPChadrejORTOFreq : 2, kTPConly : 3, kTOFif = 4, kPIDML = 5]"};
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -390,7 +389,13 @@ struct PhotonHBT {
 
     fRegistry.add("Pair/mix/hDiffBC", "diff. global BC in mixed event;|BC_{current} - BC_{mixed}|", kTH1D, {{10001, -0.5, 10000.5}}, true);
     if (doprocessTriggerAnalysis) {
-      fRegistry.add("Event/hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value);
+      fRegistry.add("NormTrigger/hInspectedTVX", "inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      fRegistry.add("NormTrigger/hScalers", "trigger counter before DS;run number;counter", kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      fRegistry.add("NormTrigger/hSelections", "trigger counter after DS;run number;counter", kTProfile, {{80000, 520000.5, 600000.5}}, true);
+      auto hTriggerCounter = fRegistry.add<TH2>("NormTrigger/hTriggerCounter", Form("trigger counter of %s;run number;", cfg_swt_name.value.data()), kTH2D, {{80000, 520000.5, 600000.5}, {2, -0.5, 1.5}}, false);
+      hTriggerCounter->GetYaxis()->SetBinLabel(1, "Analyzed Trigger");
+      hTriggerCounter->GetYaxis()->SetBinLabel(2, "Analyzed TOI");
     }
   }
 
@@ -434,8 +439,8 @@ struct PhotonHBT {
 
     if constexpr (isTriggerAnalysis) {
       LOGF(info, "Trigger analysis is enabled. Desired trigger name = %s", cfg_swt_name.value);
-      LOGF(info, "total inspected TVX events = %d in run number %d", collision.nInspectedTVX(), collision.runNumber());
-      fRegistry.fill(HIST("Event/hNInspectedTVX"), collision.runNumber(), collision.nInspectedTVX());
+      // LOGF(info, "total inspected TVX events = %d in run number %d", collision.nInspectedTVX(), collision.runNumber());
+      // fRegistry.fill(HIST("Event/hNInspectedTVX"), collision.runNumber(), collision.nInspectedTVX());
     }
   }
 
@@ -860,7 +865,7 @@ struct PhotonHBT {
               continue;
             }
           }
-          if (!cut1.IsSelectedPair(pos1, ele1, d_bz, dielectroncuts.cfgRefR)) {
+          if (!cut1.IsSelectedPair(pos1, ele1, d_bz, 0.0)) {
             continue;
           }
 
@@ -888,7 +893,7 @@ struct PhotonHBT {
                 continue;
               }
             }
-            if (!cut2.IsSelectedPair(pos2, ele2, d_bz, dielectroncuts.cfgRefR)) {
+            if (!cut2.IsSelectedPair(pos2, ele2, d_bz, 0.0)) {
               continue;
             }
 
@@ -1006,7 +1011,7 @@ struct PhotonHBT {
                 continue;
               }
             }
-            if (!cut2.IsSelectedPair(pos2, ele2, d_bz, dielectroncuts.cfgRefR)) {
+            if (!cut2.IsSelectedPair(pos2, ele2, d_bz, 0.0)) {
               continue;
             }
 
@@ -1374,7 +1379,7 @@ struct PhotonHBT {
             continue;
           }
         }
-        if (!cut.IsSelectedPair(pos, ele, d_bz, dielectroncuts.cfgRefR)) {
+        if (!cut.IsSelectedPair(pos, ele, d_bz, 0.0)) {
           continue;
         }
         passed_pairIds.emplace_back(std::make_pair(pos.globalIndex(), ele.globalIndex()));
@@ -1454,7 +1459,7 @@ struct PhotonHBT {
   PROCESS_SWITCH(PhotonHBT, processAnalysis, "pairing for analysis", false);
 
   using FilteredMyCollisionsWithSWT = soa::Filtered<MyCollisionsWithSWT>;
-  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, Types const&... args)
+  void processTriggerAnalysis(FilteredMyCollisionsWithSWT const& collisions, aod::EMSWTriggerInfos const& cefpinfos, aod::EMSWTriggerCounters const& counters, Types const&... args)
   {
     if constexpr (pairtype == ggHBTPairType::kPCMPCM) {
       auto v0photons = std::get<0>(std::tie(args...));
@@ -1476,6 +1481,23 @@ struct PhotonHBT {
       runPairing<true>(collisions, nullptr, nullptr, emprimaryelectrons, emprimaryelectrons, perCollision_electron, perCollision_electron, fDielectronCut, fDielectronCut);
     }
     ndf++;
+
+    // for nomalization
+    int emswtId = o2::aod::pwgem::dilepton::swt::aliasLabels.at(cfg_swt_name.value);
+    for (const auto& counter : counters) {
+      if (counter.isAnalyzed_bit(emswtId)) {
+        fRegistry.fill(HIST("NormTrigger/hTriggerCounter"), mRunNumber, 0);
+      }
+      if (counter.isAnalyzedToI_bit(emswtId)) {
+        fRegistry.fill(HIST("NormTrigger/hTriggerCounter"), mRunNumber, 1);
+      }
+    }
+
+    for (const auto& info : cefpinfos) {
+      fRegistry.fill(HIST("NormTrigger/hInspectedTVX"), info.runNumber(), info.nInspectedTVX());
+      fRegistry.fill(HIST("NormTrigger/hScalers"), info.runNumber(), info.nScalers()[emswtId]);
+      fRegistry.fill(HIST("NormTrigger/hSelections"), info.runNumber(), info.nSelections()[emswtId]);
+    }
   }
   PROCESS_SWITCH(PhotonHBT, processTriggerAnalysis, "pairing analysis on trigger data", false);
 

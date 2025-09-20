@@ -18,38 +18,35 @@
 /// \author Annalena Kalteyer annalena.sophie.kalteyer@cern.ch
 /// \author Jeremy Wilkinson jeremy.wilkinson@cern.ch
 
-#ifndef COMMON_TOOLS_PIDTPCMODULE_H_
-#define COMMON_TOOLS_PIDTPCMODULE_H_
-
-#include <map>
-#include <memory>
-#include <string>
-#include <utility>
-#include <vector>
-// ROOT includes
-#include "TFile.h"
-#include "TRandom.h"
-#include "TSystem.h"
-
-// O2 includes
-#include "MetadataHelper.h"
-#include "TableHelper.h"
-#include "pidTPCBase.h"
+#ifndef COMMON_TOOLS_PID_PIDTPCMODULE_H_
+#define COMMON_TOOLS_PID_PIDTPCMODULE_H_
 
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
+#include "Common/Core/TableHelper.h"
 #include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/TableProducer/PID/pidTPCBase.h"
 #include "Tools/ML/model.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
+#include <TMatrixDfwd.h>
+#include <TRandom.h>
+
+#include <chrono>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <map>
+#include <memory>
+#include <ratio>
+#include <string>
+#include <vector>
 
 namespace o2::aod
 {
@@ -790,4 +787,4 @@ class pidTPCModule
 } // namespace pid
 } // namespace o2::aod
 
-#endif // COMMON_TOOLS_PIDTPCMODULE_H_
+#endif // COMMON_TOOLS_PID_PIDTPCMODULE_H_
