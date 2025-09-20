@@ -562,7 +562,7 @@ struct PiNucleiFemto {
   bool selectionPIDHyper(const aod::DataHypCandsWColl::iterator& V0Hyper)
   {
     mQaRegistry.fill(HIST("hHe3P_preselected"), V0Hyper.tpcMomHe());
-    float averClusSizeHe = averageClusterSizeCosl(V0Hyper.itsClusterSizesHe(), V0Hyper.etaHe3());
+    /*float averClusSizeHe = averageClusterSizeCosl(V0Hyper.itsClusterSizesHe(), V0Hyper.etaHe3());
     if (averClusSizeHe <= 4) {
       return false;
     }
@@ -570,7 +570,7 @@ struct PiNucleiFemto {
       return false;
     }
     mQaRegistry.fill(HIST("hHe3P"), V0Hyper.tpcMomHe());
-    mQaRegistry.fill(HIST("hHe3TPCnsigma"), V0Hyper.nSigmaHe());
+    mQaRegistry.fill(HIST("hHe3TPCnsigma"), V0Hyper.nSigmaHe());*/
 
     return true;
   }
@@ -735,11 +735,15 @@ struct PiNucleiFemto {
     piHypercand.dcaxyPi = trackPi.dcaXY();
     piHypercand.dcazPi = trackPi.dcaZ();
     piHypercand.tpcSignalPi = trackPi.tpcSignal();
+    piHypercand.tpcSignalNu = V0Hyper.tpcSignalHe();
     piHypercand.momPiTPC = trackPi.tpcInnerParam();
     piHypercand.nSigmaPi = trackPi.tpcNSigmaPi();
+    piHypercand.nSigmaNu = V0Hyper.nSigmaHe();
     piHypercand.chi2TPCPi = trackPi.tpcChi2NCl();
+    piHypercand.chi2TPCNu = V0Hyper.tpcChi2He();
     piHypercand.pidTrkPi = trackPi.pidForTracking();
     piHypercand.itsClSizePi = trackPi.itsClusterSizes();
+    piHypercand.itsClSizeNu = V0Hyper.itsClusterSizesHe();
     piHypercand.nClsItsPi = trackPi.itsNCls();
     piHypercand.sharedClustersPi = trackPi.tpcNClsShared();
 
@@ -938,12 +942,16 @@ struct PiNucleiFemto {
       piNucand.dcaxyPi,
       piNucand.dcazPi,
       piNucand.tpcSignalPi,
+      piNucand.tpcSignalNu,
       piNucand.momPiTPC,
       piNucand.nSigmaPi,
+      piNucand.nSigmaNu,
       piNucand.chi2TPCPi,
+      piNucand.chi2TPCNu,
       piNucand.massTOFPi,
       piNucand.pidTrkPi,
       piNucand.itsClSizePi,
+      piNucand.itsClSizeNu,
       piNucand.sharedClustersPi,
       piNucand.isBkgUS,
       piNucand.isBkgEM);
