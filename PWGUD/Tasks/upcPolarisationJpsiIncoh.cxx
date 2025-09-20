@@ -17,7 +17,6 @@
 
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
 #include "Common/RecoDecay.h"
 
 #include "CCDB/BasicCCDBManager.h"
