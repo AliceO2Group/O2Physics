@@ -17,14 +17,11 @@
 
 #include "PWGUD/DataModel/UDTables.h"
 
-<<<<<<< HEAD
-#include "Common/PhysicsConstants.h"
-=======
 #include "CommonConstants/PhysicsConstants.h"
->>>>>>> 44a10ccb9 (physics constants)
 #include "Common/RecoDecay.h"
 
 #include "CCDB/BasicCCDBManager.h"
+#include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPECSObject.h"
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "Framework/AnalysisDataModel.h"
