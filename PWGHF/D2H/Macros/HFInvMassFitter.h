@@ -211,6 +211,10 @@ class HFInvMassFitter : public TNamed
   Double_t getMeanUncertainty() const { return mRooMeanSgn->getError(); }
   Double_t getSigma() const { return mRooSigmaSgn->getVal(); }
   Double_t getSigmaUncertainty() const { return mRooSigmaSgn->getError(); }
+  Double_t getSecSigma() const { return mRooSecSigmaSgn->getVal(); }
+  Double_t getSecSigmaUncertainty() const { return mRooSecSigmaSgn->getError(); }
+  Double_t getFracDoubleGaus() const { return mRooFracDoubleGaus->getVal(); }
+  Double_t getFracDoubleGausUncertainty() const { return mRooFracDoubleGaus->getError(); }
   Double_t getReflOverSig() const
   {
     if (mReflPdf) {
@@ -224,8 +228,10 @@ class HFInvMassFitter : public TNamed
   void calculateBackground(Double_t& bkg, Double_t& bkgErr) const;
   void calculateSignificance(Double_t& significance, Double_t& significanceErr) const;
   void checkForSignal(Double_t& estimatedSignal);
-  void drawFit(TVirtualPad* c, Int_t writeFitInfo = 2);
+  void calculateFitToDataRatio() const;
+  void drawFit(TVirtualPad* c, const std::vector<std::string>& plotLabels, Bool_t writeParInfo = true);
   void drawResidual(TVirtualPad* c);
+  void drawRatio(TVirtualPad* c);
   void drawReflection(TVirtualPad* c);
 
  private:
@@ -282,6 +288,8 @@ class HFInvMassFitter : public TNamed
   Bool_t mFixReflOverSgn;            /// switch for fix refl/signal
   RooRealVar* mRooMeanSgn;           /// mean for gaussian of signal
   RooRealVar* mRooSigmaSgn;          /// sigma for gaussian of signal
+  RooRealVar* mRooSecSigmaSgn;       /// second sigma for composite gaussian of signal
+  RooRealVar* mRooFracDoubleGaus;    /// fraction of second gaussian for composite gaussian of signal
   RooAbsPdf* mSgnPdf;                /// signal fit function
   RooAbsPdf* mBkgPdf;                /// background fit function
   RooAbsPdf* mReflPdf;               /// reflection fit function
@@ -293,6 +301,7 @@ class HFInvMassFitter : public TNamed
   RooPlot* mReflFrame;               /// reflection frame
   RooPlot* mReflOnlyFrame;           /// reflection frame plot on reflection only
   RooPlot* mResidualFrame;           /// residual frame
+  RooPlot* mRatioFrame;              /// fit/data ratio frame
   RooPlot* mResidualFrameForCalculation;
   RooWorkspace* mWorkspace;    /// workspace
   Double_t mIntegralHisto;     /// integral of histogram to fit
