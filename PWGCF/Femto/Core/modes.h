@@ -69,13 +69,18 @@ enum class Track : o2::aod::femtodatatypes::TrackType {
   kPrimaryTrack,
   kV0Daughter,
   kCascadeBachelor,
-  kResonanceDaughter
+  kResonanceDaughter,
+  kKinkDaughter
 };
 
 enum class V0 : o2::aod::femtodatatypes::V0Type {
   kLambda,
   kAntiLambda,
   kK0short
+};
+
+enum class Kink : o2::aod::femtodatatypes::KinkType {
+  kSigma
 };
 
 enum class Cascade : o2::aod::femtodatatypes::CascadeType {
@@ -95,14 +100,16 @@ enum class Pairs : o2::aod::femtodatatypes::PairType {
   kTrackTrack,
   kTrackV0,
   kTrackResonance,
-  kTrackCascade
+  kTrackCascade,
+  kTrackKink
 };
 
 enum class TrackPairs : o2::aod::femtodatatypes::PairType {
   kTrackTrack,
   kTrackPosDaughter,
   kTrackNegDaughter,
-  kTrackBachelor
+  kTrackBachelor,
+  kTrackChaDaughter
 };
 
 }; // namespace modes

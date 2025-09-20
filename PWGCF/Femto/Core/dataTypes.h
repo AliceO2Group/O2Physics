@@ -35,6 +35,10 @@ using TrackType = uint16_t;
 using V0MaskType = uint16_t;
 using V0Type = uint8_t;
 
+// datatypes for kinks
+using KinkMaskType = uint32_t;
+using KinkType = uint8_t;
+
 // datatypes for two track resonances
 using TwoTrackResonanceMaskType = uint32_t;
 // two track resonance types

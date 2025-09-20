@@ -129,6 +129,7 @@ constexpr const char PrefixV0NegDauBinning[] = "V0NegDauBinning";
 constexpr const char PrefixCascadePosDauBinning[] = "CascadePosDauBinning";
 constexpr const char PrefixCascadeNegDauBinning[] = "CascadeNegDauBinning";
 constexpr const char PrefixCascadeBachelorBinning[] = "CascadeBachelorBinning";
+constexpr const char PrefixKinkChaDauBinning[] = "KinkChaDauBinning";
 
 using ConfTrackBinning1 = ConfTrackBinning<PrefixTrackBinning1>;
 using ConfTrackBinning2 = ConfTrackBinning<PrefixTrackBinning2>;
@@ -136,9 +137,11 @@ using ConfResonancePosDauBinning = ConfTrackBinning<PrefixResonancePosDauBinning
 using ConfResonanceNegDauBinning = ConfTrackBinning<PrefixResonanceNegDauBinning>;
 using ConfV0PosDauBinning = ConfTrackBinning<PrefixV0PosDauBinning>;
 using ConfV0NegDauBinning = ConfTrackBinning<PrefixV0NegDauBinning>;
+using ConfKinkChaDauBinning = ConfTrackBinning<PrefixKinkChaDauBinning>;
 using ConfCascadePosDauBinning = ConfTrackBinning<PrefixCascadePosDauBinning>;
 using ConfCascadeNegDauBinning = ConfTrackBinning<PrefixCascadeNegDauBinning>;
 using ConfCascadeBachelorBinning = ConfTrackBinning<PrefixCascadeBachelorBinning>;
+using ConfKinkChaDauBinning = ConfTrackBinning<PrefixKinkChaDauBinning>;
 
 template <const char* Prefix>
 struct ConfTrackQaBinning : o2::framework::ConfigurableGroup {
@@ -203,6 +206,7 @@ constexpr const char PrefixV0NegDauQaBinning[] = "V0NegDauQaBinning";
 constexpr const char PrefixCascadePosDauQaBinning[] = "CascadePosDauQaBinning";
 constexpr const char PrefixCascadeNegDauQaBinning[] = "CascadeNegDauQaBinning";
 constexpr const char PrefixCascadeBachelorQaBinning[] = "CascadeBachelorQaBinning";
+constexpr const char PrefixKinkChaDauQaBinning[] = "KinkChaDauQaBinning";
 
 using ConfTrackQaBinning1 = ConfTrackQaBinning<PrefixTrackQaBinning1>;
 using ConfTrackQaBinning2 = ConfTrackQaBinning<PrefixTrackQaBinning2>;
@@ -213,6 +217,7 @@ using ConfV0NegDauQaBinning = ConfTrackQaBinning<PrefixV0NegDauQaBinning>;
 using ConfCascadePosDauQaBinning = ConfTrackQaBinning<PrefixCascadePosDauQaBinning>;
 using ConfCascadeNegDauQaBinning = ConfTrackQaBinning<PrefixCascadeNegDauQaBinning>;
 using ConfCascadeBachelorQaBinning = ConfTrackQaBinning<PrefixCascadeBachelorQaBinning>;
+using ConfKinkChaDauQaBinning = ConfTrackQaBinning<PrefixKinkChaDauQaBinning>;
 
 // must be in sync with enum TrackVariables
 // the enum gives the correct index in the array
@@ -373,6 +378,9 @@ constexpr char PrefixCascadeBachelor[] = "CascadeBachelor/";
 constexpr char PrefixCascadePosDaughterQa[] = "CascadePosDauQa/";
 constexpr char PrefixCascadeNegDaughterQa[] = "CascadeNegDauQa/";
 constexpr char PrefixCascadeBachelorQa[] = "CascadeBachelorQa/";
+
+constexpr char PrefixKinkChaDaughter[] = "KinkChaDau/";
+constexpr char PrefixKinkChaDaughterQa[] = "KinkChaDauQa/";
 
 constexpr std::string_view AnalysisDir = "Kinematics/";
 constexpr std::string_view QaDir = "QA/";
