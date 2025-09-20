@@ -17,7 +17,11 @@
 
 #include "PWGUD/DataModel/UDTables.h"
 
+<<<<<<< HEAD
 #include "Common/PhysicsConstants.h"
+=======
+#include "CommonConstants/PhysicsConstants.h"
+>>>>>>> 44a10ccb9 (physics constants)
 #include "Common/RecoDecay.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -25,12 +29,10 @@
 #include "DataFormatsParameters/GRPLHCIFData.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/runDataProcessing.h"
 
 #include "Math/Vector4D.h"
 #include "TMath.h"
-#include "TPDGCode.h"
 #include "TRandom3.h"
 #include "TSystem.h"
 
@@ -265,7 +267,7 @@ struct UpcPolarisationJpsiIncoh {
       return;
 
     // form Lorentz vectors
-    auto mMu = o2::constants::physics::MassMuonCharged;
+    auto mMu = o2::constants::physics::MassMuonMinus;
     LorentzVector<PxPyPzM4D<float>> p1(tr1.px(), tr1.py(), tr1.pz(), mMu);
     LorentzVector<PxPyPzM4D<float>> p2(tr2.px(), tr2.py(), tr2.pz(), mMu);
     LorentzVector p = p1 + p2;
