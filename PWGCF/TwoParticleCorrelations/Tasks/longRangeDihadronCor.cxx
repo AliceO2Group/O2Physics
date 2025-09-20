@@ -600,7 +600,7 @@ struct LongRangeDihadronCor {
   }
 
   template <CorrelationContainer::CFStep step, typename TFT0s>
-  void fillCorrelationsFT0AFT0C(TFT0s const& ft0, float posZ, int system, float cent, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
+  void fillCorrelationsFT0AFT0C(TFT0s const& ft0, float posZ, int system, float eventWeight) // function to fill the Output functions (sparse) and the delta eta and delta phi histograms
   {
     int fSampleIndex = gRandom->Uniform(0, cfgSampleSize);
 
@@ -973,7 +973,7 @@ struct LongRangeDihadronCor {
 
     sameFt0aFt0c->fillEvent(tracks.size(), CorrelationContainer::kCFStepReconstructed);
     const auto& ft0 = collision.foundFT0();
-    fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0, collision.posZ(), SameEvent, cent, weightCent);
+    fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0, collision.posZ(), SameEvent, weightCent);
   }
   PROCESS_SWITCH(LongRangeDihadronCor, processSameFt0aFt0c, "Process same event for FT0A-FT0C correlation", false);
 
@@ -1032,7 +1032,7 @@ struct LongRangeDihadronCor {
       if (!cfgCentTableUnavailable)
         getCentralityWeight(weightCent, cent1);
       const auto& ft0 = collision2.foundFT0();
-      fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0, collision1.posZ(), MixedEvent, cent1, eventWeight * weightCent);
+      fillCorrelationsFT0AFT0C<CorrelationContainer::kCFStepReconstructed>(ft0, collision1.posZ(), MixedEvent, eventWeight * weightCent);
     }
   }
   PROCESS_SWITCH(LongRangeDihadronCor, processMixedFt0aFt0c, "Process mixed events for FT0A-FT0C correlation", false);
