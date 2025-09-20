@@ -274,7 +274,7 @@ struct LongrangeCorrelation {
     auto x = chPos.X() + (*offsetFT0)[i].getX();
     auto y = chPos.Y() + (*offsetFT0)[i].getY();
     auto z = chPos.Z() + (*offsetFT0)[i].getZ();
-    if (chno >= 96) 
+    if (chno >= 96)
       z = -z;
     auto r = std::sqrt(x * x + y * y);
     auto theta = std::atan2(r, z);
