@@ -90,7 +90,7 @@ enum KindOfCorrType {
 
 static constexpr std::string_view kCorrType[] = {"Ft0aGlobal/", "Ft0cGlobal/", "MftGlobal/", "Ft0aMft/", "Ft0aFt0c/"};
 static constexpr std::string_view kEvntType[] = {"SE/", "ME/"};
-
+auto static constexpr kMinFt0cCell = 96;
 AxisSpec axisEvent{10, 0.5, 9.5, "#Event", "EventAxis"};
 
 struct LongrangeCorrelation {
@@ -274,7 +274,7 @@ struct LongrangeCorrelation {
     auto x = chPos.X() + (*offsetFT0)[i].getX();
     auto y = chPos.Y() + (*offsetFT0)[i].getY();
     auto z = chPos.Z() + (*offsetFT0)[i].getZ();
-    if (chno >= 96)
+    if (chno >= kMinFt0cCell)
       z = -z;
     auto r = std::sqrt(x * x + y * y);
     auto theta = std::atan2(r, z);
