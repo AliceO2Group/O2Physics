@@ -294,8 +294,9 @@ struct Phik0shortanalysis {
 
   // Preslice for manual slicing
   struct : PresliceGroup {
-    Preslice<aod::Tracks> perColl = aod::track::collisionId;
-    Preslice<aod::McParticles> perMCColl = aod::mcparticle::mcCollisionId;
+    Preslice<aod::Tracks> trackPerCollision = aod::track::collisionId;
+    Preslice<aod::McParticles> mcPartPerMCCollision = aod::mcparticle::mcCollisionId;
+    Preslice<aod::V0Datas> v0PerCollision = aod::v0::collisionId;
   } preslices;
 
   // Positive and negative tracks partitions
@@ -2650,7 +2651,7 @@ struct Phik0shortanalysis {
     }
 
     for (const auto& mcCollision : mcCollisions) {
-      auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.perMCColl, mcCollision.globalIndex());
+      auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.mcPartPerMCCollision, mcCollision.globalIndex());
 
       if (!pwglf::isINELgtNmc(mcParticlesThisMcColl, 0, pdgDB))
         continue;
@@ -2676,7 +2677,7 @@ struct Phik0shortanalysis {
         auto collision = collisions.rawIteratorAt(collisionIndex);
 
         if (acceptEventQA<true>(collision, false)) {
-          auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
+          auto filteredMCTracksThisColl = filteredMCTracks.sliceBy(preslices.trackPerCollision, collision.globalIndex());
 
           posFiltMCTracks.bindTable(filteredMCTracksThisColl);
           negFiltMCTracks.bindTable(filteredMCTracksThisColl);
@@ -3145,7 +3146,7 @@ struct Phik0shortanalysis {
     }
 
     for (const auto& mcCollision : mcCollisions) {
-      auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.perMCColl, mcCollision.globalIndex());
+      auto mcParticlesThisMcColl = mcParticles.sliceBy(preslices.mcPartPerMCCollision, mcCollision.globalIndex());
 
       if (!pwglf::isINELgtNmc(mcParticlesThisMcColl, 0, pdgDB))
         continue;
@@ -3171,8 +3172,8 @@ struct Phik0shortanalysis {
         auto collision = collisions.rawIteratorAt(collisionIndex);
 
         if (acceptEventQA<true>(collision, false)) {
-          auto fullMCTracksThisColl = fullMCTracks.sliceBy(preslices.perColl, collision.globalIndex());
-          auto v0sThisColl = V0s.sliceBy(preslices.perColl, collision.globalIndex());
+          auto fullMCTracksThisColl = fullMCTracks.sliceBy(preslices.trackPerCollision, collision.globalIndex());
+          auto v0sThisColl = V0s.sliceBy(preslices.v0PerCollision, collision.globalIndex());
 
           posMCTracks.bindTable(fullMCTracksThisColl);
           negMCTracks.bindTable(fullMCTracksThisColl);
