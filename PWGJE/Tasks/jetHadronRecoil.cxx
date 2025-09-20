@@ -196,7 +196,7 @@ struct JetHadronRecoil {
       registry.add("hDeltaRpTDPhiReferencePart", "jet p_{T} vs #DeltaR vs #Delta#phi;p_{T,jet};#Delta#phi;#DeltaR", {HistType::kTH3F, {{400, 0, 400}, {100, 0, o2::constants::math::TwoPI}, dRAxis}}, doSumw);
     }
 
-    if (doprocessJetsMCPMCDMatched || doprocessJetsMCPMCDMatchedWithRhoSubtraction || doprocessJetsMCPMCDMatchedWeighted || doprocessJetsMCPMCDMatchedWeightedWithRhoSubtraction || doprocessRecoilJetsMCPMCDMatched || doprocessRecoilJetsMCPMCDMatchedWeighted) {
+    if (doprocessJetsMCPMCDMatched || doprocessJetsMCPMCDMatchedWithRhoSubtraction || doprocessJetsMCPMCDMatchedWeighted || doprocessJetsMCPMCDMatchedWeightedWithRhoSubtraction || doprocessRecoilJetsMCPMCDMatched || doprocessRecoilJetsMCPMCDMatchedWeighted || doprocessRecoilJetsMCPMCDMatchedWeightedWithRhoSubtraction) {
       registry.add("hPtMatched", "p_{T} matching;p_{T,det};p_{T,part}", {HistType::kTH2F, {{500, -100, 400}, {400, 0, 400}}}, doSumw);
       registry.add("hPhiMatched", "#phi matching;#phi_{det};#phi_{part}", {HistType::kTH2F, {{100, 0.0, o2::constants::math::TwoPI}, {100, 0.0, o2::constants::math::TwoPI}}}, doSumw);
       registry.add("hDeltaRMatched", "#DeltaR matching;#DeltaR_{det};#DeltaR_{part}", {HistType::kTH2F, {dRAxisDet, dRAxisPart}}, doSumw);
@@ -636,7 +636,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    if (collision.has_mcCollision()) {
+    if (!collision.has_mcCollision()) {
       return;
     }
     if (collision.mcCollision().ptHard() < pTHatMinEvent) {
@@ -661,7 +661,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    if (collision.has_mcCollision()) {
+    if (!collision.has_mcCollision()) {
       return;
     }
     if (collision.mcCollision().ptHard() < pTHatMinEvent) {
@@ -686,7 +686,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    if (collision.has_mcCollision()) {
+    if (!collision.has_mcCollision()) {
       return;
     }
     if (collision.mcCollision().ptHard() < pTHatMinEvent) {
@@ -711,7 +711,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    if (collision.has_mcCollision()) {
+    if (!collision.has_mcCollision()) {
       return;
     }
     if (collision.mcCollision().ptHard() < pTHatMinEvent) {
@@ -771,7 +771,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    if (collision.has_mcCollision()) {
+    if (!collision.has_mcCollision()) {
       return;
     }
     if (collision.mcCollision().ptHard() < pTHatMinEvent) {
@@ -795,7 +795,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    if (collision.has_mcCollision()) {
+    if (!collision.has_mcCollision()) {
       return;
     }
     if (collision.mcCollision().ptHard() < pTHatMinEvent) {
@@ -819,7 +819,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    if (collision.has_mcCollision()) {
+    if (!collision.has_mcCollision()) {
       return;
     }
     if (collision.mcCollision().ptHard() < pTHatMinEvent) {
@@ -843,7 +843,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    if (collision.has_mcCollision()) {
+    if (!collision.has_mcCollision()) {
       return;
     }
     if (collision.mcCollision().ptHard() < pTHatMinEvent) {
@@ -867,7 +867,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    if (collision.has_mcCollision()) {
+    if (!collision.has_mcCollision()) {
       return;
     }
     if (collision.mcCollision().ptHard() < pTHatMinEvent) {
@@ -891,7 +891,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    if (collision.has_mcCollision()) {
+    if (!collision.has_mcCollision()) {
       return;
     }
     if (collision.mcCollision().ptHard() < pTHatMinEvent) {
@@ -915,7 +915,7 @@ struct JetHadronRecoil {
     if (!jetderiveddatautilities::selectTrigger(collision, triggerMaskBits)) {
       return;
     }
-    if (collision.has_mcCollision()) {
+    if (!collision.has_mcCollision()) {
       return;
     }
     if (collision.mcCollision().ptHard() < pTHatMinEvent) {
