@@ -1247,67 +1247,67 @@ struct StrangenessInJets {
           // Select particles inside UE cones
           if (deltaRUe1 < coneRadius || deltaRUe2 < coneRadius) {
             switch (pdg[index]) {
-              case o2::constants::physics::kK0Short:
+              case kK0Short:
                 if (particleOfInterest == ParticleOfInterest::kV0Particles) {
                   registryMC.fill(HIST("K0s_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
-              case o2::constants::physics::kLambda0:
+              case kLambda0:
                 if (particleOfInterest == ParticleOfInterest::kV0Particles) {
                   registryMC.fill(HIST("Lambda_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
-              case o2::constants::physics::kLambda0Bar:
+              case kLambda0Bar:
                 if (particleOfInterest == ParticleOfInterest::kV0Particles) {
                   registryMC.fill(HIST("AntiLambda_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
-              case o2::constants::physics::kXiMinus:
+              case kXiMinus:
                 if (particleOfInterest == ParticleOfInterest::kCascades) {
                   registryMC.fill(HIST("XiNeg_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
-              case o2::constants::physics::kXiPlusBar:
+              case kXiPlusBar:
                 if (particleOfInterest == ParticleOfInterest::kCascades) {
                   registryMC.fill(HIST("XiPos_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
-              case o2::constants::physics::kOmegaMinus:
+              case kOmegaMinus:
                 if (particleOfInterest == ParticleOfInterest::kCascades) {
                   registryMC.fill(HIST("OmegaNeg_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
-              case o2::constants::physics::kOmegaPlusBar:
+              case kOmegaPlusBar:
                 if (particleOfInterest == ParticleOfInterest::kCascades) {
                   registryMC.fill(HIST("OmegaPos_generated_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
-              case o2::constants::physics::kPiPlus:
+              case kPiPlus:
                 if (particleOfInterest == ParticleOfInterest::kPions) {
                   registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
-              case o2::constants::physics::kKPlus:
+              case kKPlus:
                 if (particleOfInterest == ParticleOfInterest::kKaons) {
                   registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
-              case o2::constants::physics::kProton:
+              case kProton:
                 if (particleOfInterest == ParticleOfInterest::kProtons) {
                   registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt());
                 }
                 break;
-              case o2::constants::physics::kPiMinus:
+              case kPiMinus:
                 if (particleOfInterest == ParticleOfInterest::kPions) {
                   registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt() * -1.f);
                 }
                 break;
-              case o2::constants::physics::kKMinus:
+              case kKMinus:
                 if (particleOfInterest == ParticleOfInterest::kKaons) {
                   registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt() * -1.f);
                 }
                 break;
-              case o2::constants::physics::kProtonBar:
+              case kProtonBar:
                 if (particleOfInterest == ParticleOfInterest::kProtons) {
                   registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt() * -1.f);
                 }
