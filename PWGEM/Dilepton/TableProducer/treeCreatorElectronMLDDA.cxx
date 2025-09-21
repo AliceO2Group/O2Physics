@@ -230,7 +230,7 @@ struct TreeCreatorElectronMLDDA {
     Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
-    Configurable<float> cfg_min_chi2its{"cfg_min_chi2its", 0.0, "min chi2/NclsITS"}; // remove ITS afterburner
+    Configurable<float> cfg_min_chi2its{"cfg_min_chi2its", -1e+10, "min chi2/NclsITS"}; // remove ITS afterburner
     Configurable<float> cfg_max_chi2tof{"cfg_max_chi2tof", 1e+10, "max chi2 TOF"}; // distance in cm
 
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2, "min n sigma e in TPC for pc->ee"};
