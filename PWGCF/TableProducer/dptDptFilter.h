@@ -1163,7 +1163,7 @@ inline float extractMultiplicity(CollisionObject const& collision, CentMultEstim
       return collision.multFT0A();
       break;
     case CentMultFT0C:
-      return collision.multFT0M();
+      return collision.multFT0C();
       break;
     case CentMultNTPV:
       return collision.multNTracksPV();
