@@ -17,8 +17,7 @@
 
 #include "PWGUD/DataModel/UDTables.h"
 
-#include "Common/RecoDecay.h"
-
+#include "Common/Core/RecoDecay.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPECSObject.h"
@@ -60,7 +59,6 @@ using namespace o2::framework::expressions;
 
 // constants used in the track selection
 const float kRAbsMin = 17.6;
-const float kRAbsMid = 26.5;
 const float kRAbsMax = 89.5;
 const float kPDca = 200.;
 float kEtaMin = -4.0;
@@ -70,12 +68,7 @@ const float kMaxAmpV0A = 100.;
 const int kReqMatchMIDTracks = 2;
 const int kReqMatchMFTTracks = 2;
 const int kMaxChi2MFTMatch = 30;
-const float kMaxZDCTime = 2.;
-const float kMaxZDCTimeHisto = 10.;
 struct UpcPolarisationJpsiIncoh {
-
-  // a pdg object
-  Service<o2::framework::O2DatabasePDG> pdg;
 
   using CandidatesFwd = soa::Join<o2::aod::UDCollisions, o2::aod::UDCollisionsSelsFwd>;
   using ForwardTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTracksExtra>;
@@ -205,7 +198,7 @@ struct UpcPolarisationJpsiIncoh {
     float rAbs = fwdTrack.rAtAbsorberEnd();
     float pDca = fwdTrack.pDca();
     float pt = RecoDecay::pt(fwdTrack.px(), fwdTrack.py());
-    float eta = RecoDecay::eta(fwdTrack.px(), fwdTrack.py(), fwdTrack.pz());
+    float eta = RecoDecay::eta(std::array{fwdTrack.px(), fwdTrack.py(), fwdTrack.pz()});
     if (eta < kEtaMin || eta > kEtaMax)
       return false;
     if (pt < kPtMin)
@@ -316,18 +309,7 @@ struct UpcPolarisationJpsiIncoh {
       auto cand = eventCandidates.iteratorAt(candID);
       auto tr1 = fwdTracks.iteratorAt(trId1);
       auto tr2 = fwdTracks.iteratorAt(trId2);
-
-      ZDCinfo zdc;
-
-      if (zdcPerCand.count(candID) != 0) {
-        zdc = zdcPerCand.at(candID);
-      } else {
-        zdc.timeA = -999;
-        zdc.timeC = -999;
-        zdc.enA = -999;
-        zdc.enC = -999;
-      }
-      processCand(cand, tr1, tr2, zdc);
+      processCand(cand, tr1, tr2);
     }
   }
 
@@ -336,6 +318,7 @@ struct UpcPolarisationJpsiIncoh {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  auto ptr = std::make_shared<UpcPolarisationJpsiIncoh>();
   return WorkflowSpec{
     adaptAnalysisTask<UpcPolarisationJpsiIncoh>(cfgc),
   };
