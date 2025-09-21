@@ -586,14 +586,15 @@ struct HfTaskLc {
         double massLc(-1);
         double outputBkg(-1), outputPrompt(-1), outputFD(-1);
         const float properLifetime = hfHelper.ctLc(candidate) * CtToProperLifetimePs;
-        if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
-          massLc = hfHelper.invMassLcToPKPi(candidate);
+
+        auto fillTHnData = [&](bool isPKPi) {
+          massLc = isPKPi ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
 
           if constexpr (fillMl) {
             if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
-              outputBkg = candidate.mlProbLcToPKPi()[MlClassBackground]; /// bkg score
-              outputPrompt = candidate.mlProbLcToPKPi()[MlClassPrompt];  /// prompt score
-              outputFD = candidate.mlProbLcToPKPi()[MlClassNonPrompt];   /// non-prompt score
+              outputBkg = isPKPi ? candidate.mlProbLcToPKPi()[MlClassBackground] : candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
+              outputPrompt = isPKPi ? candidate.mlProbLcToPKPi()[MlClassPrompt] : candidate.mlProbLcToPiKP()[MlClassPrompt];      /// prompt score
+              outputFD = isPKPi ? candidate.mlProbLcToPKPi()[MlClassNonPrompt] : candidate.mlProbLcToPiKP()[MlClassNonPrompt];    /// non-prompt score
             }
             /// Fill the ML outputScores and variables of candidate
             std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)};
@@ -614,35 +615,13 @@ struct HfTaskLc {
             }
             registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
           }
+        };
+
+        if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
+          fillTHnData(true);
         }
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
-          massLc = hfHelper.invMassLcToPiKP(candidate);
-
-          if constexpr (fillMl) {
-            if (candidate.mlProbLcToPiKP().size() == NumberOfMlClasses) {
-              outputBkg = candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
-              outputPrompt = candidate.mlProbLcToPiKP()[MlClassPrompt];  /// prompt score
-              outputFD = candidate.mlProbLcToPiKP()[MlClassNonPrompt];   /// non-prompt score
-            }
-            /// Fill the ML outputScores and variables of candidate
-            std::vector<double> valuesToFill{massLc, pt, cent, outputBkg, outputPrompt, outputFD, static_cast<double>(numPvContributors)};
-            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              valuesToFill.push_back(occ);
-            }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
-            registry.get<THnSparse>(HIST("hnLcVarsWithBdt"))->Fill(valuesToFill.data());
-          } else {
-            std::vector<double> valuesToFill{massLc, pt, cent, ptProng0, ptProng1, ptProng2, chi2PCA, decayLength, cpa, static_cast<double>(numPvContributors)};
-            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              valuesToFill.push_back(occ);
-            }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
-            registry.get<THnSparse>(HIST("hnLcVars"))->Fill(valuesToFill.data());
-          }
+          fillTHnData(false);
         }
       }
     }
