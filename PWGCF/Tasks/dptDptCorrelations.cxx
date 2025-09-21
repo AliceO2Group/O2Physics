@@ -909,7 +909,7 @@ struct DptDptCorrelations {
   bool loadfromccdb = false;
   std::string cfgCCDBUrl{"http://ccdb-test.cern.ch:8080"};
   std::string cfgCCDBPathNameCorrections{""};
-  std::string cfgCCDBDate{"20220307"};
+  std::string cfgCCDBDateCorrections{"20220307"};
   std::string cfgCCDBSuffix{""};
 
   /* pair conversion suppression defaults */
@@ -973,9 +973,9 @@ struct DptDptCorrelations {
     /* self configure the CCDB access to the input file */
     getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.url", cfgCCDBUrl, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.pathNameCorrections", cfgCCDBPathNameCorrections, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.date", cfgCCDBDate, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.dateCorrections", cfgCCDBDateCorrections, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.suffix", cfgCCDBSuffix, false);
-    loadfromccdb = (cfgCCDBDate.length() > 0) && (cfgCCDBPathNameCorrections.length() > 0);
+    loadfromccdb = (cfgCCDBDateCorrections.length() > 0) && (cfgCCDBPathNameCorrections.length() > 0);
 
     /* update the potential binning change */
     etabinwidth = (etaup - etalow) / static_cast<float>(etabins);
@@ -1230,7 +1230,7 @@ struct DptDptCorrelations {
 
     if (ccdblst == nullptr) {
       if (loadfromccdb) {
-        ccdblst = getCCDBInput(ccdb, cfgCCDBPathNameCorrections.c_str(), cfgCCDBDate.c_str(), true, cfgCCDBSuffix);
+        ccdblst = getCCDBInput(ccdb, cfgCCDBPathNameCorrections.c_str(), cfgCCDBDateCorrections.c_str(), true, cfgCCDBSuffix);
       }
     }
 
@@ -1326,7 +1326,7 @@ struct DptDptCorrelations {
 
     if (ccdblst == nullptr) {
       if (loadfromccdb) {
-        ccdblst = getCCDBInput(ccdb, cfgCCDBPathNameCorrections.c_str(), cfgCCDBDate.c_str(), true, cfgCCDBSuffix);
+        ccdblst = getCCDBInput(ccdb, cfgCCDBPathNameCorrections.c_str(), cfgCCDBDateCorrections.c_str(), true, cfgCCDBSuffix);
       }
     }
 

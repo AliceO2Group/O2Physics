@@ -540,7 +540,8 @@ struct DptDptFilter {
     Configurable<std::string> url{"url", "http://ccdb-test.cern.ch:8080", "The CCDB url for the input file"};
     Configurable<std::string> pathNameCorrections{"pathNameCorrections", "", "The CCDB path for the corrections file. Default \"\", i.e. don't load from CCDB"};
     Configurable<std::string> pathNamePID{"pathNamePID", "", "The CCDB path for the PID adjusts file. Default \"\", i.e. don't load from CCDB"};
-    Configurable<std::string> date{"date", "20220307", "The CCDB date for the input file"};
+    Configurable<std::string> dateCorrections{"dateCorrections", "20220307", "The CCDB date for the corrections input file"};
+    Configurable<std::string> datePID{"datePID", "20220307", "The CCDB date for the PID adjustments input file"};
     Configurable<std::string> suffix{"suffix", "", "Dataset period suffix for metadata discrimination"};
   } cfginputfile;
   Configurable<bool> cfgFullDerivedData{"cfgFullDerivedData", false, "Produce the full derived data for external storage. Default false"};
@@ -1101,7 +1102,7 @@ struct DptDptFilterTracks {
 
   std::string cfgCCDBUrl{"http://ccdb-test.cern.ch:8080"};
   std::string cfgCCDBPathNamePID{""};
-  std::string cfgCCDBDate{"20220307"};
+  std::string cfgCCDBDatePID{"20220307"};
 
   Configurable<bool> cfgOutDebugInfo{"cfgOutDebugInfo", false, "Out detailed debug information per track into a text file. Default false"};
   Configurable<bool> cfgFullDerivedData{"cfgFullDerivedData", false, "Produce the full derived data for external storage. Default false"};
@@ -1172,7 +1173,7 @@ struct DptDptFilterTracks {
     /* self configure the CCDB access to the input file */
     getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.url", cfgCCDBUrl, false);
     getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.pathNamePID", cfgCCDBPathNamePID, false);
-    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.date", cfgCCDBDate, false);
+    getTaskOptionValue(initContext, "dpt-dpt-filter", "cfgCCDB.datePID", cfgCCDBDatePID, false);
 
     /* create the output list which will own the task histograms */
     TList* fOutputList = new TList();
@@ -1439,9 +1440,9 @@ struct DptDptFilterTracks {
     using namespace analysis::dptdptfilter;
 
     /* let's get a potential PID adjustment */
-    if ((cfgCCDBDate.length() > 0) && (cfgCCDBPathNamePID.length() > 0) && !storedccdbinfo) {
-      LOGF(info, "Getting information for PID adjustment from %s, at %s", cfgCCDBPathNamePID.c_str(), cfgCCDBDate.c_str());
-      TList* pidinfo = getCCDBInput(ccdb, cfgCCDBPathNamePID.c_str(), cfgCCDBDate.c_str());
+    if ((cfgCCDBDatePID.length() > 0) && (cfgCCDBPathNamePID.length() > 0) && !storedccdbinfo) {
+      LOGF(info, "Getting information for PID adjustment from %s, at %s", cfgCCDBPathNamePID.c_str(), cfgCCDBDatePID.c_str());
+      TList* pidinfo = getCCDBInput(ccdb, cfgCCDBPathNamePID.c_str(), cfgCCDBDatePID.c_str());
       if (pidinfo != nullptr) {
         pidselector.storePIDAdjustments(pidinfo);
       }
