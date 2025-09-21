@@ -405,7 +405,7 @@ struct v0postprocessing {
           std::abs(candidate.masslambda() - o2::constants::physics::MassLambda0) > v0rejK0s &&
           std::abs(candidate.ntpcsigmanegpi()) <= ntpcsigma &&
           std::abs(candidate.ntpcsigmapospi()) <= ntpcsigma &&
-          (doArmenterosCut && candidate.qtarm() > (paramArmenterosCut * std::abs(candidate.alpha())))) {
+          (!doArmenterosCut || candidate.qtarm() > (paramArmenterosCut * std::abs(candidate.alpha())))) {
 
         registry.fill(HIST("hMassK0Short"), candidate.massk0short());
         registry.fill(HIST("hMassVsPtK0Short"), candidate.v0pt(), candidate.massk0short());
@@ -446,7 +446,7 @@ struct v0postprocessing {
             std::abs(candidate.ntpcsigmapospr()) <= ntpcsigma &&
             candidate.ctaulambda() < ctauLambda &&
             std::abs(candidate.masslambda() - o2::constants::physics::MassLambda0) < 0.075 &&
-            (doArmenterosCutLam && candidate.qtarm() < (paramArmenterosCut * std::abs(candidate.alpha())))) {
+            (!doArmenterosCutLam || candidate.qtarm() < (paramArmenterosCut * std::abs(candidate.alpha())))) {
 
           registry.fill(HIST("hMassLambda"), candidate.masslambda());
           registry.fill(HIST("hMassVsPtLambda"), candidate.v0pt(), candidate.masslambda());
@@ -485,7 +485,7 @@ struct v0postprocessing {
             std::abs(candidate.ntpcsigmapospi()) <= ntpcsigma &&
             candidate.ctauantilambda() < ctauLambda &&
             std::abs(candidate.massantilambda() - o2::constants::physics::MassLambda0) < 0.075 &&
-            (doArmenterosCutLam && candidate.qtarm() < (paramArmenterosCut * std::abs(candidate.alpha())))) {
+            (!doArmenterosCutLam || candidate.qtarm() < (paramArmenterosCut * std::abs(candidate.alpha())))) {
 
           registry.fill(HIST("hMassAntiLambda"), candidate.massantilambda());
           registry.fill(HIST("hMassVsPtAntiLambda"), candidate.v0pt(), candidate.massantilambda());
