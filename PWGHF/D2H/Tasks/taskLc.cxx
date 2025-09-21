@@ -469,52 +469,40 @@ struct HfTaskLc {
         const float gamma = std::sqrt(1 + p2m * p2m);                       // mother's particle Lorentz factor
         const float properLifetime = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
 
-        registry.fill(HIST("MC/generated/signal/hPtGen"), ptGen);
-        registry.fill(HIST("MC/generated/signal/hEtaGen"), particle.eta());
-        registry.fill(HIST("MC/generated/signal/hYGen"), yGen);
-        registry.fill(HIST("MC/generated/signal/hPhiGen"), particle.phi());
-        registry.fill(HIST("MC/generated/signal/hEtaVsPtGen"), particle.eta(), ptGen);
-        registry.fill(HIST("MC/generated/signal/hYVsPtGen"), yGen, ptGen);
-        registry.fill(HIST("MC/generated/signal/hPhiVsPtGen"), particle.phi(), ptGen);
+        auto fillHistogramsGen = [&](const std::string& signalFolder, const std::string& signalSuffix) {
+          registry.fill(HIST(("MC/generated/" + signalFolder + "/hPtGen" + signalSuffix).c_str()), ptGen);
+          registry.fill(HIST(("MC/generated/" + signalFolder + "/hEtaGen" + signalSuffix).c_str()), particle.eta());
+          registry.fill(HIST(("MC/generated/" + signalFolder + "/hYGen" + signalSuffix).c_str()), yGen);
+          registry.fill(HIST(("MC/generated/" + signalFolder + "/hPhiGen" + signalSuffix).c_str()), particle.phi());
+          registry.fill(HIST(("MC/generated/" + signalFolder + "/hEtaVsPtGen" + signalSuffix).c_str()), particle.eta(), ptGen);
+          registry.fill(HIST(("MC/generated/" + signalFolder + "/hYVsPtGen" + signalSuffix).c_str()), yGen, ptGen);
+          registry.fill(HIST(("MC/generated/" + signalFolder + "/hPhiVsPtGen" + signalSuffix).c_str()), particle.phi(), ptGen);
+        };
+
+        fillHistogramsGen("signal", "");
+
+        auto fillHistogramsAndTHnGen = [&](bool isPrompt) {
+          ptGenB = isPrompt ? -1. : mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+          const std::string signalFolder = isPrompt ? "prompt" : "nonprompt";
+          const std::string signalSuffix = isPrompt ? "Prompt" : "NonPrompt";
+
+          if (fillTHn) {
+            std::vector<double> valuesToFill{ptGen, cent, yGen, static_cast<double>(numPvContributors), ptGenB, static_cast<double>(originType)};
+            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
+              valuesToFill.push_back(occ);
+            }
+            if (storeProperLifetime) {
+              valuesToFill.push_back(properLifetime);
+            }
+            registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(valuesToFill.data());
+          }
+          fillHistogramsGen(signalFolder, signalSuffix);
+        };
 
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
-          if (fillTHn) {
-            std::vector<double> valuesToFill{ptGen, cent, yGen, static_cast<double>(numPvContributors), ptGenB, static_cast<double>(originType)};
-            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              valuesToFill.push_back(occ);
-            }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
-            registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(valuesToFill.data());
-          }
-          registry.fill(HIST("MC/generated/prompt/hPtGenPrompt"), ptGen);
-          registry.fill(HIST("MC/generated/prompt/hEtaGenPrompt"), particle.eta());
-          registry.fill(HIST("MC/generated/prompt/hYGenPrompt"), yGen);
-          registry.fill(HIST("MC/generated/prompt/hPhiGenPrompt"), particle.phi());
-          registry.fill(HIST("MC/generated/prompt/hEtaVsPtGenPrompt"), particle.eta(), ptGen);
-          registry.fill(HIST("MC/generated/prompt/hYVsPtGenPrompt"), yGen, ptGen);
-          registry.fill(HIST("MC/generated/prompt/hPhiVsPtGenPrompt"), particle.phi(), ptGen);
-        }
-        if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-          ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
-          if (fillTHn) {
-            std::vector<double> valuesToFill{ptGen, cent, yGen, static_cast<double>(numPvContributors), ptGenB, static_cast<double>(originType)};
-            if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
-              valuesToFill.push_back(occ);
-            }
-            if (storeProperLifetime) {
-              valuesToFill.push_back(properLifetime);
-            }
-            registry.get<THnSparse>(HIST("hnLcVarsGen"))->Fill(valuesToFill.data());
-          }
-          registry.fill(HIST("MC/generated/nonprompt/hPtGenNonPrompt"), ptGen);
-          registry.fill(HIST("MC/generated/nonprompt/hEtaGenNonPrompt"), particle.eta());
-          registry.fill(HIST("MC/generated/nonprompt/hYGenNonPrompt"), yGen);
-          registry.fill(HIST("MC/generated/nonprompt/hPhiGenNonPrompt"), particle.phi());
-          registry.fill(HIST("MC/generated/nonprompt/hEtaVsPtGenNonPrompt"), particle.eta(), ptGen);
-          registry.fill(HIST("MC/generated/nonprompt/hYVsPtGenNonPrompt"), yGen, ptGen);
-          registry.fill(HIST("MC/generated/nonprompt/hPhiVsPtGenNonPrompt"), particle.phi(), ptGen);
+          fillHistogramsAndTHnGen(true);
+        } else if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
+          fillHistogramsAndTHnGen(false);
         }
       }
     }
