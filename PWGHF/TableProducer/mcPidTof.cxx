@@ -894,7 +894,7 @@ struct mcPidTof {
     std::map<std::string, std::string> metadata;
     if (metadataInfo.isFullyDefined()) {
       metadata["RecoPassName"] = metadataInfo.get("AnchorPassName");
-      if (!std::find(prodPostCalib.begin(), prodPostCalib.end(), metadataInfo.get("LPMProductionTag")) != prodPostCalib.end()) {
+      if (std::find(prodPostCalib.begin(), prodPostCalib.end(), metadataInfo.get("LPMProductionTag")) == prodPostCalib.end()) {
         enableMcRecalib = false;
         LOGP(warn, "Nsigma postcalibrations turned off for {} (new MC productions have FT0 digitisation fixed)", metadataInfo.get("LPMProductionTag"));
       }
