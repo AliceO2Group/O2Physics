@@ -901,19 +901,19 @@ struct ThreeParticleCorrelations {
 
     double ratioCorrection = 1.0;
     if (confRatioCorrectionSwitch) {
-      
+
       int index = -999;
       if (track.sign() > 0) {
-	index = 0;
+        index = 0;
       } else if (track.sign() < 0) {
-	index = 1;
-      }    
-      
+        index = 1;
+      }
+
       ratioCorrection = ratios[index]->GetBinContent(ratios[index]->FindBin(track.pt(), centrality));
     }
 
     return ratioCorrection;
-  }   
+  }
 
   template <class V0Cand>
   int v0Sign(const V0Cand& v0)
