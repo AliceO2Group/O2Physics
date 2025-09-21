@@ -18,6 +18,7 @@
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPECSObject.h"
@@ -318,7 +319,6 @@ struct UpcPolarisationJpsiIncoh {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  auto ptr = std::make_shared<UpcPolarisationJpsiIncoh>();
   return WorkflowSpec{
     adaptAnalysisTask<UpcPolarisationJpsiIncoh>(cfgc),
   };
