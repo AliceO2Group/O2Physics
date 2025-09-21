@@ -69,7 +69,6 @@ using namespace o2::soa;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::constants::physics;
 using namespace o2::constants::math;
 using std::array;
 
@@ -591,10 +590,10 @@ struct StrangenessInJets {
       // Require that V0 is compatible with Lambda
       ROOT::Math::PxPyPzMVector pProton;
       ROOT::Math::PxPyPzMVector pPion;
-      pProton.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), MassProton);
-      pPion.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), MassPionCharged);
+      pProton.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), o2::constants::physics::MassProton);
+      pPion.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), o2::constants::physics::MassPionCharged);
       double mLambda = (pProton + pPion).M();
-      if (std::fabs(mLambda - MassLambda0) > deltaMassLambda)
+      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > deltaMassLambda)
         return false;
     }
 
@@ -622,10 +621,10 @@ struct StrangenessInJets {
       // Require that V0 is compatible with Lambda
       ROOT::Math::PxPyPzMVector pProton;
       ROOT::Math::PxPyPzMVector pPion;
-      pProton.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), MassProton);
-      pPion.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), MassPionCharged);
-      double mLambda = (pProton + pPion).M();
-      if (std::fabs(mLambda - MassLambda0) > deltaMassLambda)
+      pProton.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), o2::constants::physics::MassProton);
+      pPion.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), o2::constants::physics::MassPionCharged);
+      const double mLambda = (pProton + pPion).M();
+      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > deltaMassLambda)
         return false;
     }
 
@@ -664,7 +663,7 @@ struct StrangenessInJets {
     }
 
     // Reject candidates compatible with Omega
-    if (std::fabs(casc.mOmega() - MassOmegaMinus) < deltaMassOmega)
+    if (std::fabs(casc.mOmega() - o2::constants::physics::MassOmegaMinus) < deltaMassOmega)
       return false;
     return true;
   }
@@ -705,10 +704,10 @@ struct StrangenessInJets {
       // Require that V0 is compatible with Lambda
       ROOT::Math::PxPyPzMVector pProton;
       ROOT::Math::PxPyPzMVector pPion;
-      pProton.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), MassProton);
-      pPion.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), MassPionCharged);
+      pProton.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), o2::constants::physics::MassProton);
+      pPion.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), o2::constants::physics::MassPionCharged);
       double mLambda = (pProton + pPion).M();
-      if (std::fabs(mLambda - MassLambda0) > deltaMassLambda)
+      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > deltaMassLambda)
         return false;
     }
 
@@ -736,10 +735,10 @@ struct StrangenessInJets {
       // Require that V0 is compatible with Lambda
       ROOT::Math::PxPyPzMVector pProton;
       ROOT::Math::PxPyPzMVector pPion;
-      pProton.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), MassProton);
-      pPion.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), MassPionCharged);
+      pProton.SetCoordinates(ptrack.px(), ptrack.py(), ptrack.pz(), o2::constants::physics::MassProton);
+      pPion.SetCoordinates(ntrack.px(), ntrack.py(), ntrack.pz(), o2::constants::physics::MassPionCharged);
       double mLambda = (pProton + pPion).M();
-      if (std::fabs(mLambda - MassLambda0) > deltaMassLambda)
+      if (std::fabs(mLambda - o2::constants::physics::MassLambda0) > deltaMassLambda)
         return false;
     }
 
@@ -778,7 +777,7 @@ struct StrangenessInJets {
     }
 
     // Reject candidates compatible with Xi
-    if (std::fabs(casc.mXi() - MassXiMinus) < deltaMassXi)
+    if (std::fabs(casc.mXi() - o2::constants::physics::MassXiMinus) < deltaMassXi)
       return false;
     return true;
   }
@@ -842,7 +841,7 @@ struct StrangenessInJets {
         continue;
 
       // 4-momentum representation of a particle
-      fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(MassPionCharged));
+      fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
       fjParticles.emplace_back(fourMomentum);
     }
 
@@ -1103,7 +1102,8 @@ struct StrangenessInJets {
           continue;
 
         // Build 4-momentum assuming charged pion mass
-        double energy = std::sqrt(particle.p() * particle.p() + MassPionCharged * MassPionCharged);
+        static constexpr float kMassPionChargedSquared = o2::constants::physics::MassPionCharged * o2::constants::physics::MassPionCharged;
+        const double energy = std::sqrt(particle.p() * particle.p() + kMassPionChargedSquared);
         fastjet::PseudoJet fourMomentum(particle.px(), particle.py(), particle.pz(), energy);
         fourMomentum.set_user_index(particle.pdgCode());
         fjParticles.emplace_back(fourMomentum);
@@ -1175,35 +1175,69 @@ struct StrangenessInJets {
           if (deltaRJet < coneRadius) {
             switch (pdg[index]) {
               case kK0Short:
-                registryMC.fill(HIST("K0s_generated_jet"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kV0Particles) {
+                  registryMC.fill(HIST("K0s_generated_jet"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kLambda0:
-                registryMC.fill(HIST("Lambda_generated_jet"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kV0Particles) {
+                  registryMC.fill(HIST("Lambda_generated_jet"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kLambda0Bar:
-                registryMC.fill(HIST("AntiLambda_generated_jet"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kV0Particles) {
+                  registryMC.fill(HIST("AntiLambda_generated_jet"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kXiMinus:
-                registryMC.fill(HIST("XiNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kCascades) {
+                  registryMC.fill(HIST("XiNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kXiPlusBar:
-                registryMC.fill(HIST("XiPos_generated_jet"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kCascades) {
+                  registryMC.fill(HIST("XiPos_generated_jet"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kOmegaMinus:
-                registryMC.fill(HIST("OmegaNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kCascades) {
+                  registryMC.fill(HIST("OmegaNeg_generated_jet"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kOmegaPlusBar:
-                registryMC.fill(HIST("OmegaPos_generated_jet"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kCascades) {
+                  registryMC.fill(HIST("OmegaPos_generated_jet"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kPiPlus:
+                if (particleOfInterest == ParticleOfInterest::kPions) {
+                  registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
               case kKPlus:
-              case ParticleOfInterest::kProtons:
-                registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kKaons) {
+                  registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kProton:
+                if (particleOfInterest == ParticleOfInterest::kProtons) {
+                  registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kPiMinus:
+                if (particleOfInterest == ParticleOfInterest::kPions) {
+                  registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt() * -1.f);
+                }
+                break;
               case kKMinus:
+                if (particleOfInterest == ParticleOfInterest::kKaons) {
+                  registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt() * -1.f);
+                }
+                break;
               case kProtonBar:
-                registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt() * -1.f);
+                if (particleOfInterest == ParticleOfInterest::kProtons) {
+                  registryMC.fill(HIST("ll_generated_in_jet"), genMultiplicity, hadron.Pt() * -1.f);
+                }
                 break;
               default:
                 break;
@@ -1214,35 +1248,70 @@ struct StrangenessInJets {
           if (deltaRUe1 < coneRadius || deltaRUe2 < coneRadius) {
             switch (pdg[index]) {
               case kK0Short:
-                registryMC.fill(HIST("K0s_generated_ue"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kV0Particles) {
+                  registryMC.fill(HIST("K0s_generated_ue"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kLambda0:
-                registryMC.fill(HIST("Lambda_generated_ue"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kV0Particles) {
+                  registryMC.fill(HIST("Lambda_generated_ue"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kLambda0Bar:
-                registryMC.fill(HIST("AntiLambda_generated_ue"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kV0Particles) {
+                  registryMC.fill(HIST("AntiLambda_generated_ue"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kXiMinus:
-                registryMC.fill(HIST("XiNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kCascades) {
+                  registryMC.fill(HIST("XiNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kXiPlusBar:
-                registryMC.fill(HIST("XiPos_generated_ue"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kCascades) {
+                  registryMC.fill(HIST("XiPos_generated_ue"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kOmegaMinus:
-                registryMC.fill(HIST("OmegaNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kCascades) {
+                  registryMC.fill(HIST("OmegaNeg_generated_ue"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kOmegaPlusBar:
-                registryMC.fill(HIST("OmegaPos_generated_ue"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kCascades) {
+                  registryMC.fill(HIST("OmegaPos_generated_ue"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kPiPlus:
+                if (particleOfInterest == ParticleOfInterest::kPions) {
+                  registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
               case kKPlus:
-              case ParticleOfInterest::kProtons:
-                registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt());
+                if (particleOfInterest == ParticleOfInterest::kKaons) {
+                  registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt());
+                }
+                break;
+              case kProton:
+                if (particleOfInterest == ParticleOfInterest::kProtons) {
+                  registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt());
+                }
                 break;
               case kPiMinus:
+                if (particleOfInterest == ParticleOfInterest::kPions) {
+                  registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt() * -1.f);
+                }
+                break;
               case kKMinus:
+                if (particleOfInterest == ParticleOfInterest::kKaons) {
+                  registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt() * -1.f);
+                }
+                break;
               case kProtonBar:
-                registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt() * -1.f);
+                if (particleOfInterest == ParticleOfInterest::kProtons) {
+                  registryMC.fill(HIST("ll_generated_in_ue"), genMultiplicity, hadron.Pt() * -1.f);
+                }
+                break;
               default:
                 break;
             }
@@ -1288,7 +1357,7 @@ struct StrangenessInJets {
           continue;
 
         // 4-momentum representation of a particle
-        fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(MassPionCharged));
+        fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(o2::constants::physics::MassPionCharged));
         fjParticles.emplace_back(fourMomentum);
       }
 
