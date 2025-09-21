@@ -313,7 +313,7 @@ struct BjetTaggingGnn {
   void processDataJetsSel(AnalysisCollisions::iterator const& collision, FilteredDataJets const& alljets)
   {
     registry.fill(HIST("h_event_counter"), 0.5); // Coll+TVX
-    
+
     for (const auto& analysisJet : alljets) {
 
       bool jetIncluded = false;
