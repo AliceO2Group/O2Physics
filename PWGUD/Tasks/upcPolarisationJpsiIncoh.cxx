@@ -19,6 +19,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
+
 #include "CommonConstants/PhysicsConstants.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -70,16 +71,8 @@ const float kMaxAmpV0A = 100.;
 const int kReqMatchMIDTracks = 2;
 const int kReqMatchMFTTracks = 2;
 const int kMaxChi2MFTMatch = 30;
-<<<<<<< HEAD
-const float kMaxZDCTime = 2.;
-const float kMaxZDCTimeHisto = 10.;
-
 struct UpcPolarisationJpsiIncoh {
 
-=======
-struct UpcPolarisationJpsiIncoh {
-
->>>>>>> cf8aea4a7 (clang format)
   using CandidatesFwd = soa::Join<o2::aod::UDCollisions, o2::aod::UDCollisionsSelsFwd>;
   using ForwardTracks = soa::Join<o2::aod::UDFwdTracks, o2::aod::UDFwdTracksExtra>;
   using CompleteFwdTracks = soa::Join<ForwardTracks, o2::aod::UDMcFwdTrackLabels>;
@@ -328,7 +321,6 @@ struct UpcPolarisationJpsiIncoh {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  auto ptr = std::make_shared<UpcPolarisationJpsiIncoh>();
   return WorkflowSpec{
     adaptAnalysisTask<UpcPolarisationJpsiIncoh>(cfgc),
   };
