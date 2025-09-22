@@ -346,16 +346,16 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/signal/hMassVsPtRecSig"), hfHelper.invMassLcToPiKP(candidate), pt);
         }
         registry.fill(HIST("MC/reconstructed/signal/hPtRecSig"), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hPtRecProng0Sig"), ptProng0);
-        registry.fill(HIST("MC/reconstructed/signal/hPtRecProng1Sig"), ptProng1);
-        registry.fill(HIST("MC/reconstructed/signal/hPtRecProng2Sig"), ptProng2);
+        registry.fill(HIST("MC/reconstructed/signal/hPtProng0RecSig"), ptProng0);
+        registry.fill(HIST("MC/reconstructed/signal/hPtProng1RecSig"), ptProng1);
+        registry.fill(HIST("MC/reconstructed/signal/hPtProng2RecSig"), ptProng2);
 
-        registry.fill(HIST("MC/reconstructed/signal/hd0RecProng0Sig"), candidate.impactParameter0());
-        registry.fill(HIST("MC/reconstructed/signal/hd0RecProng1Sig"), candidate.impactParameter1());
-        registry.fill(HIST("MC/reconstructed/signal/hd0RecProng2Sig"), candidate.impactParameter2());
-        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtRecProng0Sig"), candidate.impactParameter0(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtRecProng1Sig"), candidate.impactParameter1(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtRecProng2Sig"), candidate.impactParameter2(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hd0Prong0RecSig"), candidate.impactParameter0());
+        registry.fill(HIST("MC/reconstructed/signal/hd0Prong1RecSig"), candidate.impactParameter1());
+        registry.fill(HIST("MC/reconstructed/signal/hd0Prong2RecSig"), candidate.impactParameter2());
+        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtProng0RecSig"), candidate.impactParameter0(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtProng1RecSig"), candidate.impactParameter1(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hd0VsPtProng2RecSig"), candidate.impactParameter2(), pt);
         registry.fill(HIST("MC/reconstructed/signal/hDecLengthRecSig"), decayLength);
         registry.fill(HIST("MC/reconstructed/signal/hDecLengthVsPtRecSig"), decayLength, pt);
         registry.fill(HIST("MC/reconstructed/signal/hDecLengthxyRecSig"), decayLengthXY);
@@ -372,10 +372,10 @@ struct HfTaskLc {
         registry.fill(HIST("MC/reconstructed/signal/hEtaVsPtRecSig"), candidate.eta(), pt);
         registry.fill(HIST("MC/reconstructed/signal/hPhiRecSig"), candidate.phi());
         registry.fill(HIST("MC/reconstructed/signal/hPhiVsPtRecSig"), candidate.phi(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng0Sig"), candidate.errorImpactParameter0(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng1Sig"), candidate.errorImpactParameter1(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng2Sig"), candidate.errorImpactParameter2(), pt);
-        registry.fill(HIST("MC/reconstructed/signal/hDecLenErrSig"), candidate.errorDecayLength(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng0VsPtRecSig"), candidate.errorImpactParameter0(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng1VsPtRecSig"), candidate.errorImpactParameter1(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hImpParErrProng2VsPtRecSig"), candidate.errorImpactParameter2(), pt);
+        registry.fill(HIST("MC/reconstructed/signal/hDecLenErrVsPtRecSig"), candidate.errorDecayLength(), pt);
 
         /// reconstructed signal prompt
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
@@ -388,15 +388,15 @@ struct HfTaskLc {
             registry.fill(HIST("MC/reconstructed/prompt/hMassVsPtRecSigPrompt"), hfHelper.invMassLcToPiKP(candidate), pt);
           }
           registry.fill(HIST("MC/reconstructed/prompt/hPtRecSigPrompt"), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hPtRecProng0SigPrompt"), ptProng0);
-          registry.fill(HIST("MC/reconstructed/prompt/hPtRecProng1SigPrompt"), ptProng1);
-          registry.fill(HIST("MC/reconstructed/prompt/hPtRecProng2SigPrompt"), ptProng2);
-          registry.fill(HIST("MC/reconstructed/prompt/hd0RecProng0SigPrompt"), candidate.impactParameter0());
-          registry.fill(HIST("MC/reconstructed/prompt/hd0RecProng1SigPrompt"), candidate.impactParameter1());
-          registry.fill(HIST("MC/reconstructed/prompt/hd0RecProng2SigPrompt"), candidate.impactParameter2());
-          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtRecProng0SigPrompt"), candidate.impactParameter0(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtRecProng1SigPrompt"), candidate.impactParameter1(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtRecProng2SigPrompt"), candidate.impactParameter2(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hPtProng0RecSigPrompt"), ptProng0);
+          registry.fill(HIST("MC/reconstructed/prompt/hPtProng1RecSigPrompt"), ptProng1);
+          registry.fill(HIST("MC/reconstructed/prompt/hPtProng2RecSigPrompt"), ptProng2);
+          registry.fill(HIST("MC/reconstructed/prompt/hd0Prong0RecSigPrompt"), candidate.impactParameter0());
+          registry.fill(HIST("MC/reconstructed/prompt/hd0Prong1RecSigPrompt"), candidate.impactParameter1());
+          registry.fill(HIST("MC/reconstructed/prompt/hd0Prong2RecSigPrompt"), candidate.impactParameter2());
+          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtProng0RecSigPrompt"), candidate.impactParameter0(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtProng1RecSigPrompt"), candidate.impactParameter1(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hd0VsPtProng2RecSigPrompt"), candidate.impactParameter2(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hDecLengthRecSigPrompt"), decayLength);
           registry.fill(HIST("MC/reconstructed/prompt/hDecLengthVsPtRecSigPrompt"), decayLength, pt);
           registry.fill(HIST("MC/reconstructed/prompt/hDecLengthxyRecSigPrompt"), decayLengthXY);
@@ -413,10 +413,10 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/prompt/hEtaVsPtRecSigPrompt"), candidate.eta(), pt);
           registry.fill(HIST("MC/reconstructed/prompt/hPhiRecSigPrompt"), candidate.phi());
           registry.fill(HIST("MC/reconstructed/prompt/hPhiVsPtRecSigPrompt"), candidate.phi(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng0SigPrompt"), candidate.errorImpactParameter0(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng1SigPrompt"), candidate.errorImpactParameter1(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng2SigPrompt"), candidate.errorImpactParameter2(), pt);
-          registry.fill(HIST("MC/reconstructed/prompt/hDecLenErrSigPrompt"), candidate.errorDecayLength(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng0VsPtRecSigPrompt"), candidate.errorImpactParameter0(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng1VsPtRecSigPrompt"), candidate.errorImpactParameter1(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hImpParErrProng2VsPtRecSigPrompt"), candidate.errorImpactParameter2(), pt);
+          registry.fill(HIST("MC/reconstructed/prompt/hDecLenErrVsPtRecSigPrompt"), candidate.errorDecayLength(), pt);
         } else {
           if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
             registry.fill(HIST("MC/reconstructed/nonprompt/hMassRecSigNonPrompt"), hfHelper.invMassLcToPKPi(candidate));
@@ -427,15 +427,15 @@ struct HfTaskLc {
             registry.fill(HIST("MC/reconstructed/nonprompt/hMassVsPtRecSigNonPrompt"), hfHelper.invMassLcToPiKP(candidate), pt);
           }
           registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecSigNonPrompt"), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecProng0SigNonPrompt"), ptProng0);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecProng1SigNonPrompt"), ptProng1);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hPtRecProng2SigNonPrompt"), ptProng2);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0RecProng0SigNonPrompt"), candidate.impactParameter0());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0RecProng1SigNonPrompt"), candidate.impactParameter1());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0RecProng2SigNonPrompt"), candidate.impactParameter2());
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtRecProng0SigNonPrompt"), candidate.impactParameter0(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtRecProng1SigNonPrompt"), candidate.impactParameter1(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtRecProng2SigNonPrompt"), candidate.impactParameter2(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hPtProng0RecSigNonPrompt"), ptProng0);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hPtProng1RecSigNonPrompt"), ptProng1);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hPtProng2RecSigNonPrompt"), ptProng2);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hd0Prong0RecSigNonPrompt"), candidate.impactParameter0());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hd0Prong1RecSigNonPrompt"), candidate.impactParameter1());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hd0Prong2RecSigNonPrompt"), candidate.impactParameter2());
+          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtProng0RecSigNonPrompt"), candidate.impactParameter0(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtProng1RecSigNonPrompt"), candidate.impactParameter1(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hd0VsPtProng2RecSigNonPrompt"), candidate.impactParameter2(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthRecSigNonPrompt"), decayLength);
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthVsPtRecSigNonPrompt"), decayLength, pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLengthxyRecSigNonPrompt"), decayLengthXY);
@@ -452,10 +452,10 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/nonprompt/hEtaVsPtRecSigNonPrompt"), candidate.eta(), pt);
           registry.fill(HIST("MC/reconstructed/nonprompt/hPhiRecSigNonPrompt"), candidate.phi());
           registry.fill(HIST("MC/reconstructed/nonprompt/hPhiVsPtRecSigNonPrompt"), candidate.phi(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng0SigNonPrompt"), candidate.errorImpactParameter0(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng1SigNonPrompt"), candidate.errorImpactParameter1(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng2SigNonPrompt"), candidate.errorImpactParameter2(), pt);
-          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt"), candidate.errorDecayLength(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng0VsPtRecSigNonPrompt"), candidate.errorImpactParameter0(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng1VsPtRecSigNonPrompt"), candidate.errorImpactParameter1(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hImpParErrProng2VsPtRecSigNonPrompt"), candidate.errorImpactParameter2(), pt);
+          registry.fill(HIST("MC/reconstructed/nonprompt/hDecLenErrVsPtRecSigNonPrompt"), candidate.errorDecayLength(), pt);
         }
 
         if (fillTHn) {
@@ -544,9 +544,9 @@ struct HfTaskLc {
         registry.fill(HIST("MC/generated/signal/hEtaGen"), particle.eta());
         registry.fill(HIST("MC/generated/signal/hYGen"), yGen);
         registry.fill(HIST("MC/generated/signal/hPhiGen"), particle.phi());
-        registry.fill(HIST("MC/generated/signal/hEtaVsPtGenSig"), particle.eta(), ptGen);
-        registry.fill(HIST("MC/generated/signal/hYVsPtGenSig"), yGen, ptGen);
-        registry.fill(HIST("MC/generated/signal/hPhiVsPtGenSig"), particle.phi(), ptGen);
+        registry.fill(HIST("MC/generated/signal/hEtaVsPtGen"), particle.eta(), ptGen);
+        registry.fill(HIST("MC/generated/signal/hYVsPtGen"), yGen, ptGen);
+        registry.fill(HIST("MC/generated/signal/hPhiVsPtGen"), particle.phi(), ptGen);
 
         auto fillHistogramsAndTHnGen = [&](bool isPrompt) {
           ptGenB = isPrompt ? -1. : mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
@@ -569,18 +569,18 @@ struct HfTaskLc {
           registry.fill(HIST("MC/generated/prompt/hEtaGenPrompt"), particle.eta());
           registry.fill(HIST("MC/generated/prompt/hYGenPrompt"), yGen);
           registry.fill(HIST("MC/generated/prompt/hPhiGenPrompt"), particle.phi());
-          registry.fill(HIST("MC/generated/prompt/hEtaVsPtGenSigPrompt"), particle.eta(), ptGen);
-          registry.fill(HIST("MC/generated/prompt/hYVsPtGenSigPrompt"), yGen, ptGen);
-          registry.fill(HIST("MC/generated/prompt/hPhiVsPtGenSigPrompt"), particle.phi(), ptGen);
+          registry.fill(HIST("MC/generated/prompt/hEtaVsPtGenPrompt"), particle.eta(), ptGen);
+          registry.fill(HIST("MC/generated/prompt/hYVsPtGenPrompt"), yGen, ptGen);
+          registry.fill(HIST("MC/generated/prompt/hPhiVsPtGenPrompt"), particle.phi(), ptGen);
         } else if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           fillHistogramsAndTHnGen(false);
           registry.fill(HIST("MC/generated/nonprompt/hPtGenNonPrompt"), ptGen);
           registry.fill(HIST("MC/generated/nonprompt/hEtaGenNonPrompt"), particle.eta());
           registry.fill(HIST("MC/generated/nonprompt/hYGenNonPrompt"), yGen);
           registry.fill(HIST("MC/generated/nonprompt/hPhiGenNonPrompt"), particle.phi());
-          registry.fill(HIST("MC/generated/nonprompt/hEtaVsPtGenSigNonPrompt"), particle.eta(), ptGen);
-          registry.fill(HIST("MC/generated/nonprompt/hYVsPtGenSigNonPrompt"), yGen, ptGen);
-          registry.fill(HIST("MC/generated/nonprompt/hPhiVsPtGenSigNonPrompt"), particle.phi(), ptGen);
+          registry.fill(HIST("MC/generated/nonprompt/hEtaVsPtGenNonPrompt"), particle.eta(), ptGen);
+          registry.fill(HIST("MC/generated/nonprompt/hYVsPtGenNonPrompt"), yGen, ptGen);
+          registry.fill(HIST("MC/generated/nonprompt/hPhiVsPtGenNonPrompt"), particle.phi(), ptGen);
         }
       }
     }
