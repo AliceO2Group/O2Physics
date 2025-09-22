@@ -930,7 +930,7 @@ struct he3HadronFemto {
         mQaRegistry.fill(HIST("hKstarUSantimatter_femto"), he3Hadcand.kstarfem);
       }
     }
-   fillHistograms(he3Hadcand);
+    fillHistograms(he3Hadcand);
   }
 
   template <typename Tcollisions, typename Ttracks>
