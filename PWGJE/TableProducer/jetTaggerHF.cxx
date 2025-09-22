@@ -119,6 +119,7 @@ struct JetTaggerHFTask {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   // GNN configuration
+  Configurable<float> jetpTMin{"jetpTMin", 5., "minimum jet pT"};
   Configurable<float> dbMin{"dbMin", -10., "minimum GNN Db"};
   Configurable<float> dbMax{"dbMax", 20., "maximum GNN Db"};
   Configurable<double> fC{"fC", 0.018, "Parameter f_c for D_b calculation"};
@@ -276,34 +277,36 @@ struct JetTaggerHFTask {
     }
     if (doprocessAlgorithmGNN) {
       float dbRange;
-      if (scoreML[jet.globalIndex()] < dbMin) {
-        dbRange = 0.5; // underflow
-      } else if (scoreML[jet.globalIndex()] >= dbMax) {
-        dbRange = 2.5; // overflow
-      } else {
-        dbRange = 1.5; // in range
-      }
-      registry.fill(HIST("h2_count_db"), 3.5, dbRange); // incl jet
-      if constexpr (isMC) {
-        switch (origin) {
-          case 2:
-            registry.fill(HIST("h_db_b"), scoreML[jet.globalIndex()]);
-            registry.fill(HIST("h2_count_db"), 0.5, dbRange); // b-jet
-            break;
-          case 1:
-            registry.fill(HIST("h_db_c"), scoreML[jet.globalIndex()]);
-            registry.fill(HIST("h2_count_db"), 1.5, dbRange); // c-jet
-            break;
-          case 0:
-          case 3:
-            registry.fill(HIST("h_db_lf"), scoreML[jet.globalIndex()]);
-            registry.fill(HIST("h2_count_db"), 2.5, dbRange); // lf-jet
-            break;
-          default:
-            LOGF(debug, "doprocessAlgorithmGNN, Unexpected origin value: %d (%d)", origin, jet.globalIndex());
+      if (jet.pt() >= jetpTMin) {
+        if (scoreML[jet.globalIndex()] < dbMin) {
+          dbRange = 0.5; // underflow
+        } else if (scoreML[jet.globalIndex()] >= dbMax) {
+          dbRange = 2.5; // overflow
+        } else {
+          dbRange = 1.5; // in range
         }
+        registry.fill(HIST("h2_count_db"), 3.5, dbRange); // incl jet
+        if constexpr (isMC) {
+          switch (origin) {
+            case 2:
+              registry.fill(HIST("h_db_b"), scoreML[jet.globalIndex()]);
+              registry.fill(HIST("h2_count_db"), 0.5, dbRange); // b-jet
+              break;
+            case 1:
+              registry.fill(HIST("h_db_c"), scoreML[jet.globalIndex()]);
+              registry.fill(HIST("h2_count_db"), 1.5, dbRange); // c-jet
+              break;
+            case 0:
+            case 3:
+              registry.fill(HIST("h_db_lf"), scoreML[jet.globalIndex()]);
+              registry.fill(HIST("h2_count_db"), 2.5, dbRange); // lf-jet
+              break;
+            default:
+              LOGF(debug, "doprocessAlgorithmGNN, Unexpected origin value: %d (%d)", origin, jet.globalIndex());
+          }
+        }
+        registry.fill(HIST("h2_pt_db"), jet.pt(), scoreML[jet.globalIndex()]);
       }
-      registry.fill(HIST("h2_pt_db"), jet.pt(), scoreML[jet.globalIndex()]);
     }
     taggingTable(decisionNonML[jet.globalIndex()], jetProb, scoreML[jet.globalIndex()]);
   }
