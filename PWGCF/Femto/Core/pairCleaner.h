@@ -16,11 +16,6 @@
 #ifndef PWGCF_FEMTO_CORE_PAIRCLEANER_H_
 #define PWGCF_FEMTO_CORE_PAIRCLEANER_H_
 
-#include "PWGCF/Femto/Core/dataTypes.h"
-#include "PWGCF/Femto/Core/histManager.h"
-#include "PWGCF/Femto/Core/modes.h"
-#include "PWGCF/Femto/DataModel/FemtoTables.h"
-
 namespace o2::analysis::femto
 {
 namespace paircleaner
@@ -63,45 +58,7 @@ class TrackV0PairCleaner : public BasePairCleaner
     return this->isCleanTrackPair(posDaughter, track) && this->isCleanTrackPair(negDaughter, track);
   }
 };
+} // namespace paircleaner
+} // namespace o2::analysis::femto
 
-// template <femtomodes::Mode mode>
-// template <modes::Pairs pair>
-// class PairCleaner
-// {
-//  public:
-//   /// Destructor
-//   virtual ~PairCleaner() = default;
-//
-//   template <typename T1, typename T2>
-//   bool isCleanPair(const T1& particle1, const T2& particle2)
-//   {
-//     if constexpr (modes::isEqual(pair, modes::Pairs::kTrackTrack)) {
-//       return particle1.globalIndex() != particle2.globalIndex();
-//     }
-//     return true;
-//   };
-//
-//   template <typename T1, typename T2, typename T3>
-//   bool isCleanPair(const T1& particle1, const T2& particle2, const T3& /*trackTable*/)
-//   {
-//     if constexpr (modes::isEqual(pair, modes::Pairs::kTrackV0) || modes::isEqual(pair, modes::Pairs::kTrackResonance)) {
-//       auto posDaughter = particle2.template posDau_as<T3>();
-//       auto negDaughter = particle2.template negDau_as<T3>();
-//       return (particle1.globalIndex() != posDaughter.globalIndex() && particle1.globalIndex() != negDaughter.globalIndex());
-//     }
-//     if constexpr (modes::isEqual(pair, modes::Pairs::kTrackCascade)) {
-//       auto posDaughter = particle2.template posDau_as<T3>();
-//       auto negDaughter = particle2.template negDau_as<T3>();
-//       auto bachelor = particle2.template bachelor_as<T3>();
-//       return (particle1.globalIndex() != posDaughter.globalIndex() &&
-//               particle1.globalIndex() != negDaughter.globalIndex() &&
-//               particle1.globalIndex() != bachelor.globalIndex());
-//     }
-//     return true;
-//   };
-//
-//  private:
-// };
-}; // namespace paircleaner
-}; // namespace o2::analysis::femto
-#endif // PWGCF_FEMTOUNITED_CORE_PAIRCLEANER_H_
+#endif // PWGCF_FEMTO_CORE_PAIRCLEANER_H_

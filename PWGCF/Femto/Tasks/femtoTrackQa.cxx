@@ -43,7 +43,7 @@ using namespace o2::analysis::femto;
 struct FemtoTrackQa {
 
   // setup tables
-  using Collisions = o2::soa::Join<FCols, FColMasks, FColOccs, FColPos>;
+  using Collisions = o2::soa::Join<FCols, FColMasks, FColPos>;
   using Collision = Collisions::iterator;
 
   using FilteredCollisions = o2::soa::Filtered<Collisions>;
@@ -76,7 +76,7 @@ struct FemtoTrackQa {
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
     colHistManager.init(&hRegistry, colHistSpec);
     auto trackHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confTrackBinning, confTrackQaBinning);
-    trackHistManager.init(&hRegistry, trackHistSpec);
+    trackHistManager.init(&hRegistry, trackHistSpec, confTrackQaBinning.momentumType.value);
   };
 
   void process(FilteredCollision const& col, Tracks const& /*tracks*/)

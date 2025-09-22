@@ -16,9 +16,13 @@
 #ifndef PWGCF_FEMTO_CORE_PAIRHISTMANAGER_H_
 #define PWGCF_FEMTO_CORE_PAIRHISTMANAGER_H_
 
+#include "PWGCF/Femto/Core/closePairRejection.h"
+#include "PWGCF/Femto/Core/collisionHistManager.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/histManager.h"
 #include "PWGCF/Femto/Core/modes.h"
+#include "PWGCF/Femto/Core/pairCleaner.h"
+#include "PWGCF/Femto/Core/trackHistManager.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/Configurable.h"
@@ -164,19 +168,19 @@ class PairHistManager
   template <typename T1, typename T2>
   void setPair(const T1& particle1, const T2& particle2)
   {
-    mTrack1 = ROOT::Math::PtEtaPhiMVector{particle1.pt(), particle1.eta(), particle1.phi(), mMass1};
-    mTrack2 = ROOT::Math::PtEtaPhiMVector{particle2.pt(), particle2.eta(), particle2.phi(), mMass2};
-    auto partSum = mTrack1 + mTrack2;
+    mParticle1 = ROOT::Math::PtEtaPhiMVector{particle1.pt(), particle1.eta(), particle1.phi(), mMass1};
+    mParticle2 = ROOT::Math::PtEtaPhiMVector{particle2.pt(), particle2.eta(), particle2.phi(), mMass2};
+    auto partSum = mParticle1 + mParticle2;
 
     // set kT
-    mKt = partSum.Pt();
+    mKt = partSum.Pt() / 2.f;
 
     // set mT
-    float averageMass = (mMass1 + mMass2) / 2.;
+    float averageMass = (mMass1 + mMass2) / 2.f;
     mMt = std::hypot(mKt, averageMass);
 
     // Boost Track1 to the pair rest frame and calculate k*
-    auto track1 = ROOT::Math::PxPyPzEVector(mTrack1);
+    auto track1 = ROOT::Math::PxPyPzEVector(mParticle1);
     ROOT::Math::Boost boostPrf(partSum.BoostToCM());
     mKstar = boostPrf(track1).P();
   }
@@ -186,13 +190,13 @@ class PairHistManager
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kKstar, HistTable)), mKstar);
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kMt, HistTable)), mMt);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt1VsPt2, HistTable)), mTrack1.Pt(), mTrack2.Pt());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt1VsKstar, HistTable)), mTrack1.Pt(), mKstar);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt1VsMt, HistTable)), mTrack1.Pt(), mMt);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt1VsKt, HistTable)), mTrack1.Pt(), mKt);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt2VsKstar, HistTable)), mTrack2.Pt(), mKstar);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt2VsMt, HistTable)), mTrack2.Pt(), mMt);
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt2VsKt, HistTable)), mTrack2.Pt(), mKt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt1VsPt2, HistTable)), mParticle1.Pt(), mParticle2.Pt());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt1VsKstar, HistTable)), mParticle1.Pt(), mKstar);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt1VsMt, HistTable)), mParticle1.Pt(), mMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt1VsKt, HistTable)), mParticle1.Pt(), mKt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt2VsKstar, HistTable)), mParticle2.Pt(), mKstar);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt2VsMt, HistTable)), mParticle2.Pt(), mMt);
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt2VsKt, HistTable)), mParticle2.Pt(), mKt);
     }
 
     // if constexpr (isFlagSet(mode, modes::Mode::kQA)) {
@@ -204,12 +208,13 @@ class PairHistManager
   o2::framework::HistogramRegistry* mHistogramRegistry;
   float mMass1 = 0.f;
   float mMass2 = 0.f;
-  ROOT::Math::PtEtaPhiMVector mTrack1{};
-  ROOT::Math::PtEtaPhiMVector mTrack2{};
+  ROOT::Math::PtEtaPhiMVector mParticle1{};
+  ROOT::Math::PtEtaPhiMVector mParticle2{};
   float mKstar = 0.f;
   float mKt = 0.f;
   float mMt = 0.f;
 };
+
 }; // namespace pairhistmanager
 }; // namespace o2::analysis::femto
 #endif // PWGCF_FEMTO_CORE_PAIRHISTMANAGER_H_

@@ -16,21 +16,15 @@
 #ifndef PWGCF_FEMTO_CORE_CLOSEPAIRREJECTION_H_
 #define PWGCF_FEMTO_CORE_CLOSEPAIRREJECTION_H_
 
-#include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/histManager.h"
-#include "PWGCF/Femto/Core/modes.h"
-#include "PWGCF/Femto/DataModel/FemtoTables.h"
 
 #include "Framework/HistogramRegistry.h"
 
 #include <array>
 #include <map>
-#include <memory>
 #include <numeric>
 #include <string>
-#include <type_traits>
-#include <unordered_map>
 #include <vector>
 
 namespace o2::analysis::femto
@@ -58,8 +52,8 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> on{"on", true, "Turn on CPR"};
   o2::framework::Configurable<float> detaMax{"detaMax", 0.01f, "Maximium deta"};
   o2::framework::Configurable<float> dphistarMax{"dphistarMax", 0.01f, "Maximum dphistar"};
-  o2::framework::ConfigurableAxis binningDeta{"binningDeta", {{200, -0.2, 0.2}}, "deta"};
-  o2::framework::ConfigurableAxis binningDphistar{"binningDphistar", {{200, -0.2, 0.2}}, "dphi"};
+  o2::framework::ConfigurableAxis binningDeta{"binningDeta", {{500, -0.5, 0.5}}, "deta"};
+  o2::framework::ConfigurableAxis binningDphistar{"binningDphistar", {{500, -0.5, 0.5}}, "dphi"};
 };
 
 // tpc radii for computing phistar
@@ -69,10 +63,8 @@ constexpr std::array<float, kNradii> kTpcRadius = {85., 105., 125., 145., 165., 
 // directory names
 constexpr char PrefixTrackTrackSe[] = "CPR_TrackTrack/SE/";
 constexpr char PrefixTrackTrackMe[] = "CPR_TrackTrack/ME/";
-constexpr char PrefixTrackPosDauSe[] = "CPR_TrackPosDau/SE/";
-constexpr char PrefixTrackNegDauSe[] = "CPR_TrackNegDau/SE/";
-constexpr char PrefixTrackPosDauMe[] = "CPR_TrackPosDau/ME/";
-constexpr char PrefixTrackNegDauMe[] = "CPR_TrackNegDau/ME/";
+constexpr char PrefixTrackV0Se[] = "CPR_TrackV0/SE/";
+constexpr char PrefixTrackV0Me[] = "CPR_TrackV0/ME/";
 
 // must be in sync with enum TrackVariables
 // the enum gives the correct index in the array
@@ -91,58 +83,73 @@ constexpr std::array<histmanager::HistInfo<CprHist>, kCprHistogramLast> HistTabl
 template <typename T>
 auto makeCprHistSpecMap(const T& confCpr)
 {
-  std::map<CprHist, std::vector<framework::AxisSpec>> specs;
-  for (int i = 0; i < kCprHistogramLast; ++i) {
-    specs[static_cast<CprHist>(i)] = {confCpr.binningDeta, confCpr.binningDphistar};
-  }
-  return specs;
+  return std::map<CprHist, std::vector<framework::AxisSpec>>{
+    {kAverage, {confCpr.binningDeta, confCpr.binningDphistar}},
+    {kRadius0, {confCpr.binningDeta, confCpr.binningDphistar}},
+    {kRadius1, {confCpr.binningDeta, confCpr.binningDphistar}},
+    {kRadius2, {confCpr.binningDeta, confCpr.binningDphistar}},
+    {kRadius3, {confCpr.binningDeta, confCpr.binningDphistar}},
+    {kRadius4, {confCpr.binningDeta, confCpr.binningDphistar}},
+    {kRadius5, {confCpr.binningDeta, confCpr.binningDphistar}},
+    {kRadius6, {confCpr.binningDeta, confCpr.binningDphistar}},
+    {kRadius7, {confCpr.binningDeta, confCpr.binningDphistar}},
+    {kRadius8, {confCpr.binningDeta, confCpr.binningDphistar}}};
 };
 
 template <const char* prefix>
 class CloseTrackRejection
 {
  public:
-  CloseTrackRejection() {}
+  CloseTrackRejection() = default;
+  virtual ~CloseTrackRejection() = default;
 
-  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax)
+  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int chargeTrack1, int chargeTrack2)
   {
-    mHistogramRegistry = registry;
     mDetaMax = detaMax;
     mDphistarMax = dphistarMax;
 
-    for (int i = 0; i < kCprHistogramLast; ++i) {
-      auto hist = static_cast<CprHist>(i);
-      mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(hist, HistTable), GetHistDesc(hist, HistTable), GetHistType(hist, HistTable), {specs.at(hist)});
+    if (mDetaMax < o2::constants::math::Epsilon || mDphistarMax < o2::constants::math::Epsilon) {
+      LOG(fatal) << "Either DetaMax or DphistarMax are 0 or negative. Either turn off CPR or specify reasonable values. Breaking ...";
     }
+    mChargeTrack1 = chargeTrack1;
+    mChargeTrack2 = chargeTrack2;
+
+    if (utils::sign(mChargeTrack1) != utils::sign(mChargeTrack2)) {
+      LOG(warn) << "CPR is truned on for tracks with opposite charge. Is this intended?";
+    }
+
+    mHistogramRegistry = registry;
+
+    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kAverage, HistTable), GetHistDesc(kAverage, HistTable), GetHistType(kAverage, HistTable), {specs.at(kAverage)});
+    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius0, HistTable), GetHistDesc(kRadius0, HistTable), GetHistType(kRadius0, HistTable), {specs.at(kRadius0)});
+    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius1, HistTable), GetHistDesc(kRadius1, HistTable), GetHistType(kRadius1, HistTable), {specs.at(kRadius1)});
+    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius2, HistTable), GetHistDesc(kRadius2, HistTable), GetHistType(kRadius2, HistTable), {specs.at(kRadius2)});
+    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius3, HistTable), GetHistDesc(kRadius3, HistTable), GetHistType(kRadius3, HistTable), {specs.at(kRadius3)});
+    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius4, HistTable), GetHistDesc(kRadius4, HistTable), GetHistType(kRadius4, HistTable), {specs.at(kRadius4)});
+    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius5, HistTable), GetHistDesc(kRadius5, HistTable), GetHistType(kRadius5, HistTable), {specs.at(kRadius5)});
+    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius6, HistTable), GetHistDesc(kRadius6, HistTable), GetHistType(kRadius6, HistTable), {specs.at(kRadius6)});
+    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius7, HistTable), GetHistDesc(kRadius7, HistTable), GetHistType(kRadius7, HistTable), {specs.at(kRadius7)});
+    mHistogramRegistry->add(std::string(prefix) + GetHistNamev2(kRadius8, HistTable), GetHistDesc(kRadius8, HistTable), GetHistType(kRadius8, HistTable), {specs.at(kRadius8)});
   }
 
   void setMagField(float magField) { mMagField = magField; }
 
-  void reset()
-  {
-    mSameCharge = false;
-    mAverageDphistar = 0.f;
-    mDeta = 0.f;
-    mDphistar.fill(0.f);
-  }
-
   template <typename T1, typename T2>
   void compute(const T1& track1, const T2& track2)
   {
-    reset();
-    if (track1.sign() != track2.sign()) {
-      return;
-    }
-    mSameCharge = true;
-    mDeta = track1.eta() - track2.eta();
-    for (size_t i = 0; i < kTpcRadius.size(); ++i) {
-      auto phistar1 = utils::dphistar(mMagField, kTpcRadius[i], track1.sign(), track1.pt(), track1.phi());
-      auto phistar2 = utils::dphistar(mMagField, kTpcRadius[i], track2.sign(), track2.pt(), track2.phi());
+    // reset values
+    mAverageDphistar = 0.f;
+    mDeta = 0.f;
+    mDphistar.fill(0.f);
 
+    mDeta = track1.eta() - track2.eta();
+    for (size_t i = 0; i < kTpcRadius.size(); i++) {
+      auto phistar1 = utils::dphistar(mMagField, kTpcRadius[i], mChargeTrack1, track1.pt(), track1.phi());
+      auto phistar2 = utils::dphistar(mMagField, kTpcRadius[i], mChargeTrack2, track2.pt(), track2.phi());
       if (phistar1 && phistar2) {
         // if the calculation for one phistar fails, keep the default value, which is 0
         // this makes it more likelier for the pair to be rejected sind the averave will be biased towards lower values
-        mDphistar[i] = phistar1.value() - phistar2.value();
+        mDphistar.at(i) = phistar1.value() - phistar2.value();
       }
     }
     mAverageDphistar = std::accumulate(mDphistar.begin(), mDphistar.end(), 0.f) / mDphistar.size();
@@ -154,28 +161,31 @@ class CloseTrackRejection
     mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kAverage, HistTable)), mDeta, mAverageDphistar);
 
     // fill radii hists
-    for (int i = 0; i < kNradii; ++i) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(static_cast<CprHist>(kRadius0 + 1), HistTable)), mDeta, mDphistar.at(i));
-    }
+    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius0, HistTable)), mDeta, mDphistar.at(0));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius1, HistTable)), mDeta, mDphistar.at(1));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius2, HistTable)), mDeta, mDphistar.at(2));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius3, HistTable)), mDeta, mDphistar.at(3));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius4, HistTable)), mDeta, mDphistar.at(4));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius5, HistTable)), mDeta, mDphistar.at(5));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius6, HistTable)), mDeta, mDphistar.at(6));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius7, HistTable)), mDeta, mDphistar.at(7));
+    mHistogramRegistry->fill(HIST(prefix) + HIST(GetHistName(kRadius8, HistTable)), mDeta, mDphistar.at(8));
   }
 
   bool isClosePair() const
   {
-    if (!mSameCharge) {
-      return false;
-    } else {
-      return ((mAverageDphistar * mAverageDphistar) / (mDphistarMax * mDphistarMax) + (mDeta * mDeta) / (mDetaMax * mDetaMax)) < 1.f;
-    }
+    return std::hypot(mAverageDphistar / mDphistarMax, mDeta / mDetaMax) < 1.f;
   }
 
  private:
+  int mChargeTrack1 = 0;
+  int mChargeTrack2 = 0;
   float mMagField = 0.f;
   float mAverageDphistar = 0.f;
-  bool mSameCharge = false;
   float mDeta = 0.f;
   float mDetaMax = 0.f;
   float mDphistarMax = 0.f;
-  std::array<float, kNradii> mDphistar = {};
+  std::array<float, kNradii> mDphistar = {0.f};
 
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
 };
@@ -184,10 +194,10 @@ template <const char* prefix>
 class ClosePairRejectionTrackTrack
 {
  public:
-  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, bool isActivated)
+  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int signTrack1, int absChargeTrack1, int signTrack2, int AbsChargeTrack2, bool isActivated)
   {
     mIsActivated = isActivated;
-    mCtr.init(registry, specs, detaMax, dphistarMax);
+    mCtr.init(registry, specs, detaMax, dphistarMax, signTrack1 * absChargeTrack1, signTrack2 * AbsChargeTrack2);
   }
 
   void setMagField(float magField) { mCtr.setMagField(magField); }
@@ -205,41 +215,48 @@ class ClosePairRejectionTrackTrack
   bool mIsActivated = true;
 };
 
-template <const char* prefixPosDau, const char* prefixNegDau>
+template <const char* prefix>
 class ClosePairRejectionTrackV0 // can also be used for any particle type that has pos/neg daughters, like resonances
 {
  public:
-  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, bool isActivated)
+  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int signTrack, int absChargeTrack, bool isActivated)
   {
     mIsActivated = isActivated;
-    mCtrPosDau.init(registry, specs, detaMax, dphistarMax);
-    mCtrNegDau.init(registry, specs, detaMax, dphistarMax);
+    mSignTrack = signTrack;
+
+    // initialize CPR with charge of the track and the same charge for the daughter particle
+    // absolute charge of the daughter track will be 1, so we can pass the sign directly
+    mCtr.init(registry, specs, detaMax, dphistarMax, signTrack * absChargeTrack, signTrack);
   }
 
   void setMagField(float magField)
   {
-    mCtrPosDau.setMagField(magField);
-    mCtrNegDau.setMagField(magField);
+    mCtr.setMagField(magField);
   }
   template <typename T1, typename T2, typename T3>
   void setPair(const T1& track, const T2& v0, const T3 /*trackTable*/)
   {
-    auto posDaughter = v0.template posDau_as<T3>();
-    auto negDaughter = v0.template negDau_as<T3>();
-    mCtrPosDau.compute(track, posDaughter);
-    mCtrNegDau.compute(track, negDaughter);
+    if (mSignTrack == 1) {
+      auto daughter = v0.template posDau_as<T3>();
+      mCtr.compute(track, daughter);
+    } else if (mSignTrack == -1) {
+      auto daughter = v0.template negDau_as<T3>();
+      mCtr.compute(track, daughter);
+    } else {
+      LOG(fatal) << "CPR Track-V0: Wrong track sign";
+    }
   }
-  bool isClosePair() const { return mCtrPosDau.isClosePair() || mCtrNegDau.isClosePair(); }
+
+  bool isClosePair() const { return mCtr.isClosePair(); }
   void fill()
   {
-    mCtrPosDau.fill();
-    mCtrNegDau.fill();
+    mCtr.fill();
   }
   bool isActivated() const { return mIsActivated; }
 
  private:
-  CloseTrackRejection<prefixPosDau> mCtrPosDau;
-  CloseTrackRejection<prefixNegDau> mCtrNegDau;
+  CloseTrackRejection<prefix> mCtr;
+  int mSignTrack = 0;
   bool mIsActivated = true;
 };
 

@@ -43,7 +43,6 @@ DECLARE_SOA_COLUMN(Mult, mult, float);             //! Multiplicity estimator se
 DECLARE_SOA_COLUMN(Cent, cent, float);             //! Centrality (~= multiplicity percentile) estimator set by producer
 DECLARE_SOA_COLUMN(MagField, magField, float);     //! Magnetic field of the event
 DECLARE_SOA_COLUMN(Sphericity, sphericity, float); //! Sphericity of the event
-DECLARE_SOA_COLUMN(Occupancy, occupancy, float);   //! occupancy of the event
 DECLARE_SOA_COLUMN(Qn, qn, float);                 //! qn bins for dividing events
 } // namespace femtocollisions
 
@@ -61,11 +60,6 @@ using FCols = FCols_001;
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FColMasks_001, "FCOLMASK", 1, //! track masks
                                    femtocollisions::CollisionMask);
 using FColMasks = FColMasks_001;
-
-// table for occupancy
-DECLARE_SOA_TABLE_STAGED_VERSIONED(FColOccs_001, "FCOLOCC", 1, //! occupancy
-                                   femtocollisions::Occupancy);
-using FColOccs = FColOccs_001;
 
 // table for qn values
 DECLARE_SOA_TABLE_STAGED_VERSIONED(FColQns_001, "FCOLQN", 1, //! qn vector

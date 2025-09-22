@@ -182,9 +182,11 @@ std::map<V0Hist, std::vector<framework::AxisSpec>> makeV0QaHistSpecMap(T1 const&
 };
 
 constexpr char PrefixLambdaQa[] = "LambdaQA/";
-constexpr char PrefixLambda[] = "Lambda/";
+constexpr char PrefixLambda1[] = "Lambda1/";
+constexpr char PrefixLambda2[] = "Lambda2/";
 constexpr char PrefixK0shortQa[] = "K0shortQa/";
-constexpr char PrefixK0short[] = "K0short/";
+constexpr char PrefixK0short1[] = "K0short1/";
+constexpr char PrefixK0short2[] = "K0short2/";
 
 constexpr char PrefixLambdaCascade[] = "LambdaCascadeQa/";
 

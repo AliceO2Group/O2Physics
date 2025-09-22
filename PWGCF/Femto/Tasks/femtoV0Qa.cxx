@@ -53,7 +53,7 @@ struct FemtoV0Qa {
   colhistmanager::ConfCollisionBinning confCollisionBinning;
 
   // using Collisions = o2::soa::Join<FUCols, FUColPos, FUColMults, FUColCents>;
-  using Collisions = o2::soa::Join<FCols, FColMasks, FColOccs, FColPos>;
+  using Collisions = o2::soa::Join<FCols, FColMasks, FColPos>;
   using Collision = Collisions::iterator;
 
   using FilteredCollisions = o2::soa::Filtered<Collisions>;
