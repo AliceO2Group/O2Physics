@@ -502,7 +502,7 @@ struct LongrangeCorrelation {
 
     for (std::size_t iChA = 0; iChA < ft0a.channelA().size(); iChA++) {
       if (!mixing)
-        histos.fill(HIST("Ft0aFt0c/SE/Trig_hist"), fSampleIndex, vz, -1);
+        histos.fill(HIST("Ft0aFt0c/SE/Trig_hist"), fSampleIndex, vz, 1.0);
 
       auto chanelidA = ft0a.channelA()[iChA];
       auto phiA = getPhiFT0(chanelidA, 0);
@@ -546,7 +546,7 @@ struct LongrangeCorrelation {
           histos.fill(HIST("Ft0aFt0c/ME/deltaEta_deltaPhi"), deltaPhi, deltaEta);
         else
           histos.fill(HIST("Ft0aFt0c/SE/deltaEta_deltaPhi"), deltaPhi, deltaEta);
-        target->getPairHist()->Fill(step, fSampleIndex, vz, -1, -1, deltaPhi, deltaEta);
+        target->getPairHist()->Fill(step, fSampleIndex, vz, 1.0, 1.0, deltaPhi, deltaEta);
       } // associated ft0 tracks
     } // trigger tracks
   } // fillCorrFt0aFt0c
