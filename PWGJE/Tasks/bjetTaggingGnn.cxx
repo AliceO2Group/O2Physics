@@ -384,9 +384,7 @@ struct BjetTaggingGnn {
       }
 
       float weight = useEventWeight ? analysisJet.eventWeight() : 1.f;
-      if (weight != weightEvt) {
-        registry.fill(HIST("h_event_counter"), 4.5);
-      }
+
       float pTHat = 10. / (std::pow(analysisJet.eventWeight(), 1.0 / pTHatExponent));
       if (analysisJet.pt() > pTHatMaxMCD * pTHat) {
         continue;
@@ -622,7 +620,7 @@ struct BjetTaggingGnn {
         }
       }
 
-      if (jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits)) {
+      if (jetderiveddatautilities::selectCollision(collisionspermcpjet.begin(), eventSelectionBits) && std::fabs(collisionspermcpjet.begin().posZ()) < vertexZCut) {
         registry.fill(HIST("h_jetpT_particle"), mcpjet.pt(), weight);
 
         if (jetFlavor == JetTaggingSpecies::beauty) {
