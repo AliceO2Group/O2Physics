@@ -14,32 +14,30 @@
 ///
 /// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/DataModel/EventSelection.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonDataFormat/BunchFilling.h"
-#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
-#include "DataFormatsITSMFT/ROFRecord.h"
-#include "DataFormatsITSMFT/TimeDeadMap.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "ITSMFTReconstruction/ChipMappingITS.h"
-#include "ReconstructionDataFormats/Vertex.h"
-
-#include "TH1F.h"
-#include "TH2F.h"
-
 #include <map>
+#include <vector>
 #include <string>
 #include <unordered_map>
-#include <vector>
+
+#include "Framework/runDataProcessing.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/HistogramRegistry.h"
+#include "CommonDataFormat/BunchFilling.h"
+#include "DataFormatsParameters/GRPLHCIFData.h"
+#include "DataFormatsParameters/GRPECSObject.h"
+#include "DataFormatsParameters/AggregatedRunInfo.h"
+#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
+#include "DataFormatsITSMFT/TimeDeadMap.h"
+#include "DataFormatsITSMFT/ROFRecord.h"
+#include "ReconstructionDataFormats/Vertex.h"
+#include "ITSMFTBase/DPLAlpideParam.h"
+#include "ITSMFTReconstruction/ChipMappingITS.h"
+#include "TH1F.h"
+#include "TH2F.h"
 
 using namespace o2::framework;
 using namespace o2;
