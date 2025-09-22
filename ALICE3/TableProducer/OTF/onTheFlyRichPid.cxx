@@ -133,17 +133,6 @@ struct OnTheFlyRichPid {
   Configurable<float> bRICHPixelSize{"bRICHPixelSize", 0.1, "barrel RICH pixel size (cm)"};
   Configurable<float> bRichGapRefractiveIndex{"bRichGapRefractiveIndex", 1.000283, "barrel RICH gap refractive index"};
 
-  struct : ConfigurableGroup {
-    Configurable<std::string> lutEl{"lutEl", "inherit", "LUT for electrons (if inherit, inherits from otf tracker task)"};
-    Configurable<std::string> lutMu{"lutMu", "inherit", "LUT for muons (if inherit, inherits from otf tracker task)"};
-    Configurable<std::string> lutPi{"lutPi", "inherit", "LUT for pions (if inherit, inherits from otf tracker task)"};
-    Configurable<std::string> lutKa{"lutKa", "inherit", "LUT for kaons (if inherit, inherits from otf tracker task)"};
-    Configurable<std::string> lutPr{"lutPr", "inherit", "LUT for protons (if inherit, inherits from otf tracker task)"};
-    Configurable<std::string> lutDe{"lutDe", "inherit", "LUT for deuterons (if inherit, inherits from otf tracker task)"};
-    Configurable<std::string> lutTr{"lutTr", "inherit", "LUT for tritons (if inherit, inherits from otf tracker task)"};
-    Configurable<std::string> lutHe3{"lutHe3", "inherit", "LUT for helions (if inherit, inherits from otf tracker task)"};
-  } simConfig;
-
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
 
   // Track smearer (here used to get relative pt and eta uncertainties)
@@ -312,28 +301,23 @@ struct OnTheFlyRichPid {
     // Load LUT for pt and eta smearing
     if (flagIncludeTrackAngularRes && flagRICHLoadDelphesLUTs) {
       mSmearer.setCcdbManager(ccdb.operator->());
-      auto loadLUT = [&](int pdg, Configurable<std::string>& lut) {
-        if (lut.value != "inherit") {
-          return;
+      auto loadLUT = [&](int pdg, std::string cfgNameToInherit) {
+        if (!getTaskOptionValue(initContext, "on-the-fly-tracker", cfgNameToInherit, false)) {
+          LOG(fatal) << "Could not get " << cfgNameToInherit << " from on-the-fly-tracker task";
         }
-        if (!getTaskOptionValue(initContext, "on-the-fly-tracker", lut, false)) {
-          LOG(fatal) << "Could not get " << lut.name << " from on-the-fly-tracker task";
-        }
-        std::string lutFile = lut.value;
-
-        bool success = mSmearer.loadTable(pdg, lutFile.c_str());
-        if (!success && !lutFile.empty()) {
-          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lutFile;
+        bool success = mSmearer.loadTable(pdg, cfgNameToInherit.c_str());
+        if (!success && !cfgNameToInherit.empty()) {
+          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << cfgNameToInherit;
         }
       };
-      loadLUT(11, simConfig.lutEl);
-      loadLUT(13, simConfig.lutMu);
-      loadLUT(211, simConfig.lutPi);
-      loadLUT(321, simConfig.lutKa);
-      loadLUT(2212, simConfig.lutPr);
-      loadLUT(1000010020, simConfig.lutDe);
-      loadLUT(1000010030, simConfig.lutTr);
-      loadLUT(1000020030, simConfig.lutHe3);
+      loadLUT(11, "lutEl");
+      loadLUT(13, "lutMu");
+      loadLUT(211, "lutPi");
+      loadLUT(321, "lutKa");
+      loadLUT(2212, "lutPr");
+      loadLUT(1000010020, "lutDe");
+      loadLUT(1000010030, "lutTr");
+      loadLUT(1000020030, "lutHe3");
     }
 
     if (doQAplots) {
