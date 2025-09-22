@@ -242,11 +242,11 @@ struct RecoilJets {
       spectra.add("hScaledFT0M_TTSig", "Events w. TT_{Sig}: scaled FT0M", kTH1F, {scaledFT0M});
 
       // Rectricted phi range for TT selection
-      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", float(minPhiForTTSelection), float(maxPhiForTTSelection)), kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
-      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", float(minPhiForTTSelection), float(maxPhiForTTSelection)), kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
 
-      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", float(minPhiForTTSelection), float(maxPhiForTTSelection)), kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
-      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", float(minPhiForTTSelection), float(maxPhiForTTSelection)), kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
     }
 
     // List of MC particle level distributions
@@ -323,11 +323,11 @@ struct RecoilJets {
       spectra.add("hScaledFT0M_TTSig_Part", "Events w. TT_{Sig}: scaled FT0M", kTH1F, {scaledFT0M});
 
       // Rectricted phi range for TT selection
-      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", float(minPhiForTTSelection), float(maxPhiForTTSelection)), kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
-      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", float(minPhiForTTSelection), float(maxPhiForTTSelection)), kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
 
-      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", float(minPhiForTTSelection), float(maxPhiForTTSelection)), kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
-      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", float(minPhiForTTSelection), float(maxPhiForTTSelection)), kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
     }
 
     // Jet matching: part. vs. det.
