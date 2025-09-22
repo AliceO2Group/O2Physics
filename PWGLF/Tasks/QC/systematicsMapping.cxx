@@ -35,7 +35,7 @@ struct SystematicsMapping {
   // Returns a unique index for the combination of cuts
   ConfigurableAxis ptBins{"ptBins", {100, 0.f, 10.f}, "Binning for pT (GeV/c)"};
   ConfigurableAxis etaBins{"etaBins", {40, -1.0f, 1.0f}, "Binning for #eta"};
-  ConfigurableAxis phiBins{"phiBins", {36, 0.f, 2 * o2::constants::math::PI}, "Binning for #phi (rad)"};
+  ConfigurableAxis phiBins{"phiBins", {36, 0.f, 2 * o2::constants::math::TwoPI}, "Binning for #phi (rad)"};
   // Define the Signal axis
   ConfigurableAxis invariantMassBins{"invariantMassBins", {100, -0.1f, 0.1f}, "Binning for the invariant mass (GeV/c^2)"};
   ConfigurableAxis nsigmaBins{"nsigmaBins", {100, -10.f, 10.f}, "Binning for nSigma"};
