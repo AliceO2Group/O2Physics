@@ -177,8 +177,8 @@ struct EmcalClusterHadronicCorrectionTask {
 
         // Perform dEta/dPhi matching
         auto emcTrack = (emcTracks.sliceBy(perTrackMatchedTrack, matchedTrack.globalIndex())).iteratorAt(0);
-        double dEta = emcTrack.deltaEta();
-        double dPhi = emcTrack.deltaPhi();
+        double dEta = emcTrack.etaDiff();
+        double dPhi = emcTrack.phiDiff();
 
         // Apply the eta and phi matching thresholds
         // dEta and dPhi cut : ensures that the matched track is within the desired eta/phi window
