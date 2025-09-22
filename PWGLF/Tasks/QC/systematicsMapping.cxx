@@ -17,8 +17,8 @@
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 #include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
 
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -31,24 +31,26 @@
 using namespace o2;
 using namespace o2::framework;
 
-struct systematicsMapping {
+struct SystematicsMapping {
   // Returns a unique index for the combination of cuts
   ConfigurableAxis ptBins{"ptBins", {100, 0.f, 10.f}, "Binning for pT (GeV/c)"};
   ConfigurableAxis etaBins{"etaBins", {40, -1.0f, 1.0f}, "Binning for #eta"};
-  ConfigurableAxis phiBins{"phiBins", {36, 0.f, 2 * M_PI}, "Binning for #phi (rad)"};
+  ConfigurableAxis phiBins{"phiBins", {36, 0.f, 2 * o2::constants::math::PI}, "Binning for #phi (rad)"};
   // Define the Signal axis
   ConfigurableAxis invariantMassBins{"invariantMassBins", {100, -0.1f, 0.1f}, "Binning for the invariant mass (GeV/c^2)"};
   ConfigurableAxis nsigmaBins{"nsigmaBins", {100, -10.f, 10.f}, "Binning for nSigma"};
   // Selection bins
   ConfigurableAxis tpcClusterBins{"tpcClusterBins", {5, 70, 100, 120, 135, 150}, "Min TPC clusters for tracks"};
   ConfigurableAxis itsClustersBins{"itsClustersBins", {5, 0, 6}, "Min ITS clusters for tracks"};
+  // Selection configurables
+  Configurable<float> selectionPosZ{"selectionPosZ", 10.f, "Max |z| of the primary vertex"};
 
   HistogramRegistry registry{"registry"};
 
   template <typename T>
   bool isCollisionSelected(T const& collision)
   {
-    return collision.sel8() && std::abs(collision.posZ()) <= 10.f;
+    return collision.sel8() && std::abs(collision.posZ()) <= selectionPosZ;
   }
 
   void init(InitContext const&)
@@ -110,7 +112,7 @@ struct systematicsMapping {
       }
     }
   }
-  PROCESS_SWITCH(systematicsMapping, processData, "Systematics study for K0s and charged Kaons", true);
+  PROCESS_SWITCH(SystematicsMapping, processData, "Systematics study for K0s and charged Kaons", true);
 
   void processMc(soa::Join<CollisionType, aod::McCollisionLabels> const& collisions,
                  aod::McParticles const& particles,
@@ -144,7 +146,7 @@ struct systematicsMapping {
       }
     }
   }
-  PROCESS_SWITCH(systematicsMapping, processMc, "Systematics study for K0s and charged Kaons on MC", false);
+  PROCESS_SWITCH(SystematicsMapping, processMc, "Systematics study for K0s and charged Kaons on MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<systematicsMapping>(cfgc)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<SystematicsMapping>(cfgc)}; }
