@@ -30,6 +30,7 @@ namespace fastsim
 
 void FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi, float resZ, float eff, int type)
 {
+  LOG(debug) << "Adding layer " << name << " r=" << r << " z=" << z << " x0=" << x0 << " xrho=" << xrho << " resRPhi=" << resRPhi << " resZ=" << resZ << " eff=" << eff << " type=" << type;
   DetLayer newLayer(name, r, z, x0, xrho, resRPhi, resZ, eff, type);
   // Check that efficient layers are not inert layers
   if (newLayer.getEfficiency() > 0.0f && newLayer.isInert()) {
@@ -230,6 +231,56 @@ void FastTracker::AddTPC(float phiResMean, float zResMean)
 
     AddLayer(Form("tpc_%d", k), rowRadius, zLength, radLPerRow, 0, phiResMean, zResMean, 1.0f, 2);
   }
+}
+
+void FastTracker::AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBManager* ccdbManager)
+{
+  LOG(info) << " Adding generic detector from file " << filename;
+  // If the filename starts with ccdb: then take the file from the ccdb
+  if (filename.rfind("ccdb:", 0) == 0) {
+    std::string ccdbPath = filename.substr(5); // remove "ccdb:" prefix
+    if (ccdbManager == nullptr) {
+      LOG(fatal) << "CCDB manager is null, cannot retrieve file " << ccdbPath;
+      return;
+    }
+    const std::string outPath = "/tmp/DetGeo/";
+    filename = Form("%s/%s/snapshot.root", outPath.c_str(), ccdbPath.c_str());
+    std::ifstream checkFile(filename); // Check if file already exists
+    if (!checkFile.is_open()) {        // File does not exist, retrieve from CCDB
+      LOG(info) << " --- CCDB source detected for detector geometry " << filename;
+      std::map<std::string, std::string> metadata;
+      ccdbManager->getCCDBAccessor().retrieveBlob(ccdbPath, outPath, metadata, 1);
+      // Add CCDB handling logic here if needed
+      LOG(info) << " --- Now retrieving geometry configuration from CCDB to: " << filename;
+    } else { // File exists, proceed to load
+      LOG(info) << " --- Geometry configuration file already exists: " << filename << ". Skipping download.";
+      checkFile.close();
+    }
+    AddGenericDetector(filename, nullptr);
+    return;
+  }
+
+  std::ifstream infile(filename);
+  if (!infile.is_open()) {
+    LOG(fatal) << "Could not open detector configuration file: " << filename;
+    return;
+  }
+
+  std::string line;
+  while (std::getline(infile, line)) {
+    if (line.empty() || line[0] == '#')
+      continue; // skip comments and empty lines
+    std::istringstream iss(line);
+    std::string name;
+    float r, z, x0, xrho, resRPhi, resZ, eff;
+    int type;
+    if (!(iss >> name >> r >> z >> x0 >> xrho >> resRPhi >> resZ >> eff >> type)) {
+      LOG(error) << "Malformed line in detector config: " << line;
+      continue;
+    }
+    AddLayer(name.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
+  }
+  infile.close();
 }
 
 float FastTracker::Dist(float z, float r)
