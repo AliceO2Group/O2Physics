@@ -197,6 +197,11 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
     if (isRun3) {
       return WorkflowSpec{adaptAnalysisTask<eventselectionRun3>(cfgc)};
     } else {
+      LOGF(info, "******************************************************************");
+      LOGF(info, " Event selection service self-configuring for Run 2.");
+      LOGF(info, " WARNING: THIS HAS NOT BEEN VALIDATED YET, USE WITH CAUTION");
+      LOGF(info, " If this fails, please use event-selection-service-run2 instead.");
+      LOGF(info, "******************************************************************");
       return WorkflowSpec{adaptAnalysisTask<eventselectionRun2>(cfgc)};
     }
   }

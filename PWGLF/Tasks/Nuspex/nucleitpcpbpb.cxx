@@ -124,7 +124,7 @@ struct NucleitpcPbPb {
   Configurable<float> cfgCutEta{"cfgCutEta", 0.9f, "Eta range for tracks"};
   Configurable<bool> cfgetaRequire{"cfgetaRequire", true, "eta cut require"};
   Configurable<bool> cfgetaRequireMC{"cfgetaRequireMC", true, "eta cut require for generated particles"};
-  Configurable<bool> cfgrapidityRequireMC{"cfgrapidityRequireMC", true, "rapidity cut require for generated particles"};
+  Configurable<bool> cfgRapidityRequireMC{"cfgRapidityRequireMC", true, "rapidity cut require for generated particles"};
   Configurable<bool> cfgUsePVcontributors{"cfgUsePVcontributors", true, "use tracks that are PV contibutors"};
   Configurable<bool> cfgITSrequire{"cfgITSrequire", true, "Additional cut on ITS require"};
   Configurable<bool> cfgTPCrequire{"cfgTPCrequire", true, "Additional cut on TPC require"};
@@ -146,6 +146,7 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgDCAwithptRequire{"cfgDCAwithptRequire", true, "Require DCA cuts with pt dependance"};
   Configurable<bool> cfgRequirebetaplot{"cfgRequirebetaplot", true, "Require beta plot"};
   Configurable<bool> cfgIncludeMaterialInEfficiency{"cfgIncludeMaterialInEfficiency", true, "Require from material in efficiency"};
+  Configurable<bool> cfgMasscut{"cfgMasscut", true, "Require mass cut on He4 particles"};
 
   Configurable<LabeledArray<double>> cfgBetheBlochParams{"cfgBetheBlochParams", {kBetheBlochDefault[0], nParticles, nBetheParams, particleNames, betheBlochParNames}, "TPC Bethe-Bloch parameterisation for light nuclei"};
   Configurable<LabeledArray<double>> cfgTrackPIDsettings{"cfgTrackPIDsettings", {kTrackPIDSettings[0], nParticles, nTrkSettings, particleNames, trackPIDsettingsNames}, "track selection and PID criteria"};
@@ -155,7 +156,7 @@ struct NucleitpcPbPb {
   Configurable<bool> cfgFillmassnsigma{"cfgFillmassnsigma", true, "Fill mass vs nsigma histograms"};
   Configurable<float> centcut{"centcut", 80.0f, "centrality cut"};
   Configurable<float> cfgCutRapidity{"cfgCutRapidity", 0.5f, "Rapidity range"};
-  Configurable<float> cfgtpcNClsFindable{"cfgtpcNClsFindable", 0.8f, "tpcNClsFindable over crossedRows"}; /////////////
+  Configurable<float> cfgtpcNClsFindable{"cfgtpcNClsFindable", 0.8f, "tpcNClsFindable over crossedRows"};
   Configurable<float> cfgZvertex{"cfgZvertex", 10, "Min Z Vertex"};
   Configurable<bool> cfgZvertexRequire{"cfgZvertexRequire", true, "Pos Z cut require"};
   Configurable<bool> cfgZvertexRequireMC{"cfgZvertexRequireMC", true, "Pos Z cut require for generated particles"};
@@ -179,7 +180,7 @@ struct NucleitpcPbPb {
   ConfigurableAxis speciesTrackingAxis{"speciesTrackingAxis", {11, -0.5, 10.5}, "particle type 0: pion, 1: proton, 2: deuteron, 3: triton, 4:He3, 5:He4"};
   ConfigurableAxis axisDCA{"axisDCA", {400, -10., 10.}, "DCA axis"};
   ConfigurableAxis particleAntiAxis{"particleAntiAxis", {2, 0, 2}, "Particle/Anti-particle"}; // 0 = particle, 1 = anti-particle
-  ConfigurableAxis decayTypeAxis{"decayTypeAxis", {3, 0, 3}, "Decay type"};                   // 0 = primary, 1 = from decay
+  ConfigurableAxis decayTypeAxis{"decayTypeAxis", {3, -0.5, 2.5}, "Decay type"};              // 0 = primary, 1 = from decay, 2 = material
 
   // CCDB
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -281,6 +282,8 @@ struct NucleitpcPbPb {
       histomc.add("histPIDtrackanti", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10, "p_{T}(reco)"}, {9, -0.5, 8.5, "p_{T}(reco) - p_{T}(gen)"}});
       histomc.add("histPIDtrackhe4", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10, "p_{T}(reco)"}, {9, -0.5, 8.5, "p_{T}(reco) - p_{T}(gen)"}});
       histomc.add("histPIDtrackantihe4", " delta pt vs pt rec", HistType::kTH2F, {{1000, 0, 10, "p_{T}(reco)"}, {9, -0.5, 8.5, "p_{T}(reco) - p_{T}(gen)"}});
+      histomc.add("hEventLossDenom", "Event loss denominator", kTH1F, {axisCent});
+      histomc.add("hEventLossNumer", "Event loss numerator", kTH1F, {axisCent});
 
       histomc.add("histWeakDecayPtHe3", "Pt distribution of He3 from weak decays", kTH2F, {ptAxis, axisCent});
       histomc.add("histWeakDecayPtAntiHe3", "Pt distribution of Anti-He3 from weak decays", kTH2F, {ptAxis, axisCent});
@@ -296,8 +299,6 @@ struct NucleitpcPbPb {
       histomc.add("histProcess23Details", "Process 23 details", kTH2F, {{4, 0.5, 4.5, "particle type"}, {100, 0, 10, "p_{T}"}});
       histomc.add("histAllMaterialSecondariesGen", "All material secondaries (gen)", kTH3F, {{100, 0, 10, "p_{T}"}, {20, -1, 1, "y"}, {5, -0.5, 4.5, "type"}});
       histomc.add("histAllMaterialSecondariesReco", "All material secondaries (reco)", kTH3F, {{100, 0, 10, "p_{T}"}, {20, -1, 1, "y"}, {5, -0.5, 4.5, "type"}});
-
-      // Add axis labels for type: 0=unknown, 1=He3, 2=anti-He3, 3=He4, 4=anti-He4
     }
   }
   //----------------------------------------------------------------------------------------------------------------
@@ -435,20 +436,50 @@ struct NucleitpcPbPb {
 
     mcCollInfos.clear();
     mcCollInfos.resize(mcCollisions.size());
+
+    // Store centrality regardless of cuts FIRST
     for (auto const& collision : collisions) {
       int mcCollIdx = collision.mcCollisionId();
       if (mcCollIdx < 0 || mcCollIdx >= static_cast<int>(mcCollisions.size())) {
         continue;
       }
-      if (std::abs(collision.posZ()) > cfgZvertex)
+      // STORE CENTRALITY WITHOUT ANY CUTS
+      mcCollInfos[mcCollIdx].centrality = collision.centFT0C();
+    }
+
+    // FILL DENOMINATOR: ONCE per MC collision
+    for (size_t i = 0; i < mcCollInfos.size(); i++) {
+      if (mcCollInfos[i].centrality >= 0) { // Only if we found a matching collision
+        histomc.fill(HIST("hEventLossDenom"), mcCollInfos[i].centrality);
+      }
+    }
+
+    for (auto const& collision : collisions) {
+      int mcCollIdx = collision.mcCollisionId();
+      if (mcCollIdx < 0 || mcCollIdx >= static_cast<int>(mcCollisions.size())) {
         continue;
-      if (!collision.sel8())
+      }
+      if (std::abs(collision.posZ()) > cfgZvertex && cfgZvertexRequireMC)
+        continue;
+      if (!collision.sel8() && cfgsel8Require)
         continue;
       if (collision.centFT0C() > centcut)
         continue;
 
+      // Additional cuts
+      if (removeITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder))
+        continue;
+      if (removeNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup))
+        continue;
+      if (requireIsGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV))
+        continue;
+      if (requireIsVertexITSTPC && !collision.selection_bit(aod::evsel::kIsVertexITSTPC))
+        continue;
+      if (removeNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder))
+        continue;
+
       mcCollInfos[mcCollIdx].passedEvSel = true;
-      mcCollInfos[mcCollIdx].centrality = collision.centFT0C();
+      histomc.fill(HIST("hEventLossNumer"), mcCollInfos[mcCollIdx].centrality);
     }
     for (auto const& mcCollision : mcCollisions) {
       size_t idx = mcCollision.globalIndex();
@@ -464,10 +495,20 @@ struct NucleitpcPbPb {
         int pdgCode = mcParticle.pdgCode();
         bool isHe3 = (std::abs(pdgCode) == particlePdgCodes.at(4));
         bool isHe4 = (std::abs(pdgCode) == particlePdgCodes.at(5));
-
-        if (std::abs(mcParticle.eta()) > cfgCutEta)
+        if (mcParticle.isPhysicalPrimary()) {
+          if (pdgCode == particlePdgCodes.at(4)) {
+            histomc.fill(HIST("histPtgenHe3"), mcParticle.pt());
+          } else if (pdgCode == -particlePdgCodes.at(4)) {
+            histomc.fill(HIST("histPtgenAntiHe3"), mcParticle.pt());
+          } else if (pdgCode == particlePdgCodes.at(5)) {
+            histomc.fill(HIST("histPtgenHe4"), mcParticle.pt());
+          } else if (pdgCode == -particlePdgCodes.at(5)) {
+            histomc.fill(HIST("histPtgenAntiHe4"), mcParticle.pt());
+          }
+        }
+        if (std::abs(mcParticle.eta()) > cfgCutEta && cfgetaRequireMC)
           continue;
-        if (std::abs(mcParticle.y()) > cfgCutRapidity)
+        if (std::abs(mcParticle.y()) > cfgCutRapidity && cfgRapidityRequireMC)
           continue;
         bool isMaterialSecondary = false;
         if (!mcParticle.isPhysicalPrimary() && (isHe3 || isHe4)) {
@@ -543,7 +584,7 @@ struct NucleitpcPbPb {
           particleType = he4;
 
         if (particleType >= 0) {
-          float centrality = mcCollInfos[idx].passedEvSel ? mcCollInfos[idx].centrality : -1.0f;
+          float centrality = mcCollInfos[idx].centrality; // Always use actual centrality
           histomc.fill(HIST("hDenomSignalLoss"), particleType, mcParticle.pt(), mcParticle.y(), centrality, particleAnti, decayType);
 
           if (mcCollInfos[idx].passedEvSel) {
@@ -562,15 +603,6 @@ struct NucleitpcPbPb {
           } else if (pdgCode == -particlePdgCodes.at(5)) {
             histomc.fill(HIST("histWeakDecayPtAntiHe4"), mcParticle.pt(), centrality);
           }
-        }
-        if (pdgCode == particlePdgCodes.at(4)) {
-          histomc.fill(HIST("histPtgenHe3"), mcParticle.pt());
-        } else if (pdgCode == -particlePdgCodes.at(4)) {
-          histomc.fill(HIST("histPtgenAntiHe3"), mcParticle.pt());
-        } else if (pdgCode == particlePdgCodes.at(5)) {
-          histomc.fill(HIST("histPtgenHe4"), mcParticle.pt());
-        } else if (pdgCode == -particlePdgCodes.at(5)) {
-          histomc.fill(HIST("histPtgenAntiHe4"), mcParticle.pt());
         }
       }
     }
@@ -933,6 +965,7 @@ struct NucleitpcPbPb {
   {
     if (!track.hasTOF() || !cfgFillmass)
       return;
+
     float beta{o2::pid::tof::Beta::GetBeta(track)};
     const float eps = 1e-6f;
     if (beta < eps || beta > 1.0f - eps)
@@ -942,7 +975,16 @@ struct NucleitpcPbPb {
     float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
     // get PDG mass
     float pdgMass = particleMasses[species];
-    float massDiff = massTOF - pdgMass;
+    float massDiff = 0.0;
+    if (species != he4) {
+      massDiff = massTOF - pdgMass;
+    }
+    if (species == he4) {
+      if (cfgMasscut && (massTOF * massTOF > 6.5 && massTOF * massTOF < 9.138))
+        return;
+      massDiff = massTOF - pdgMass;
+    }
+
     float ptMomn;
     setTrackParCov(track, mTrackParCov);
     mTrackParCov.setPID(track.pidForTracking());
@@ -966,8 +1008,19 @@ struct NucleitpcPbPb {
     float charge = (species == he3 || species == he4) ? 2.f : 1.f;
     float p = getRigidity(track);
     float massTOF = p * charge * std::sqrt(1.f / (beta * beta) - 1.f);
+
     // get PDG mass
     float masssquare = massTOF * massTOF;
+
+    if (species != he4) {
+      masssquare = massTOF * massTOF;
+    }
+    if (species == he4) {
+      if (cfgMasscut && (massTOF * massTOF > 6.5 && massTOF * massTOF < 9.138))
+        return;
+      masssquare = massTOF * massTOF;
+    }
+
     if (track.sign() > 0) {
       hmassnsigma[2 * species]->Fill(sigma, masssquare);
     } else if (track.sign() < 0) {

@@ -18,8 +18,8 @@
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 
-#ifndef PWGCF_FEMTO_DATAMODEL_PIONNUCLEITABLES_H_
-#define PWGCF_FEMTO_DATAMODEL_PIONNUCLEITABLES_H_
+#ifndef PWGCF_FEMTO_FEMTONUCLEI_DATAMODEL_PIONNUCLEITABLES_H_
+#define PWGCF_FEMTO_FEMTONUCLEI_DATAMODEL_PIONNUCLEITABLES_H_
 
 namespace o2::aod
 {
@@ -112,12 +112,16 @@ DECLARE_SOA_TABLE(PionHyperTable, "AOD", "PIHYPERTABLE",
                   pion_nuclei_tables::DcaxyPi,
                   pion_nuclei_tables::DcazPi,
                   pion_nuclei_tables::SignalTPCPi,
+                  pion_nuclei_tables::SignalTPCNu,
                   pion_nuclei_tables::InnerParamTPCPi,
                   pion_nuclei_tables::NSigmaTPCPi,
+                  pion_nuclei_tables::NSigmaTPCNu,
                   pion_nuclei_tables::Chi2TPCPi,
+                  pion_nuclei_tables::Chi2TPCNu,
                   pion_nuclei_tables::MassTOFPi,
                   pion_nuclei_tables::PidTrkPi,
                   pion_nuclei_tables::ItsClusterSizePi,
+                  pion_nuclei_tables::ItsClusterSizeNu,
                   pion_nuclei_tables::SharedClustersPi,
                   pion_nuclei_tables::IsBkgUS,
                   pion_nuclei_tables::IsBkgEM)
@@ -130,4 +134,4 @@ DECLARE_SOA_TABLE(PionNucleiMult, "AOD", "PINUCLEIMULT",
 
 } // namespace o2::aod
 
-#endif // PWGCF_FEMTO_DATAMODEL_PIONNUCLEITABLES_H_
+#endif // PWGCF_FEMTO_FEMTONUCLEI_DATAMODEL_PIONNUCLEITABLES_H_
