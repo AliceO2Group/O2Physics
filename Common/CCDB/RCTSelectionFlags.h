@@ -210,8 +210,9 @@ class RCTFlagsChecker : public o2::utils::EnumFlags<RCTSelectionFlags>
   // The function returns true if none of the checked flags is set in the RCT column.
   bool checkTable(const HasRCTFlags auto& table)
   {
+    // throw an exception if none of the bits in the checker mask is set
     if (!any()) {
-      throw std::out_of_range("RCTFlagsCheckerAlt with empty RCTSelectionFlags bits mask");
+      throw std::out_of_range("RCTFlagsChecker has empty RCTSelectionFlags bits mask");
     }
 
     // bitmask of the current table
