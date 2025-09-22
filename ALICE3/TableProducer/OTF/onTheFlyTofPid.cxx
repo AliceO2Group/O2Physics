@@ -156,16 +156,6 @@ struct OnTheFlyTofPid {
       LOG(info) << "Bz = " << simConfig.magneticField.value << " T";
     }
 
-    // Check if inheriting the LUT configuration
-    auto configLutPath = [&](Configurable<std::string>& lut) {
-      if (lut.value != "inherit") {
-        return;
-      }
-      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", lut, false)) {
-        LOG(fatal) << "Could not get " << lut.name << " from on-the-fly-tracker task";
-      }
-    };
-
     // Load LUT for pt and eta smearing
     if (simConfig.flagIncludeTrackTimeRes && simConfig.flagTOFLoadDelphesLUTs) {
       mSmearer.setCcdbManager(ccdb.operator->());
