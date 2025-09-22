@@ -151,13 +151,14 @@ struct OnTheFlyTofPid {
     // Load LUT for pt and eta smearing
     if (simConfig.flagIncludeTrackTimeRes && simConfig.flagTOFLoadDelphesLUTs) {
       mSmearer.setCcdbManager(ccdb.operator->());
-      auto loadLUT = [&](int pdg, std::string cfgNameToInherit) {
-        if (!getTaskOptionValue(initContext, "on-the-fly-tracker", cfgNameToInherit, false)) {
+      auto loadLUT = [&](int pdg, const std::string& cfgNameToInherit) {
+        std::string lut = "none";
+        if (!getTaskOptionValue(initContext, "on-the-fly-tracker", cfgNameToInherit, lut, false)) {
           LOG(fatal) << "Could not get " << cfgNameToInherit << " from on-the-fly-tracker task";
         }
-        bool success = mSmearer.loadTable(pdg, cfgNameToInherit.c_str());
-        if (!success && !cfgNameToInherit.empty()) {
-          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << cfgNameToInherit;
+        bool success = mSmearer.loadTable(pdg, lut.c_str());
+        if (!success && !lut.empty()) {
+          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lut;
         }
       };
       loadLUT(11, "lutEl");
