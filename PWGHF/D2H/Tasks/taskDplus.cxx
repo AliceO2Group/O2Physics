@@ -565,11 +565,10 @@ struct HfTaskDplus {
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
             occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
           }
+        }
           if (storePvContributors) {
             numPvContr = collision.numContrib();
           }
-        }
-
         fillHisto(candidate);
         fillHistoMCRec<true>(candidate);
         fillSparseML<true, true>(candidate, ptBhad, flagBHad, cent, occ, numPvContr);
