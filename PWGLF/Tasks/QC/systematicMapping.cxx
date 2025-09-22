@@ -8,135 +8,143 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
+/// \file systematicsMapping.cxx
+/// \brief Task to perform a systematics study for K0s and charged Kaons
+/// \author Nicolò Jacazio, Universita del Piemonte Orientale (IT)
+/// \since September 22, 2025
+
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/PIDResponseTOF.h"
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/Track.h>
+
+#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
 
-struct systematicsStudy {
+struct systematicsMapping {
+  // Returns a unique index for the combination of cuts
   ConfigurableAxis ptBins{"ptBins", {100, 0.f, 10.f}, "Binning for pT (GeV/c)"};
-  Configurable<float> cutEta{"cutEta", 0.8f, "Max |eta| for tracks and V0s"};
-  Configurable<int> cutTPCClusters{"cutTPCClusters", 70, "Min TPC clusters for tracks"};
-  Configurable<float> cutKaonNSigma{"cutKaonNSigma", 3.f, "Max |nSigma| for kaon PID"};
-  Configurable<float> cutK0sMassWindow{"cutK0sMassWindow", 0.01f, "K0s mass window (GeV/c^2)"};
   ConfigurableAxis etaBins{"etaBins", {40, -1.0f, 1.0f}, "Binning for #eta"};
   ConfigurableAxis phiBins{"phiBins", {36, 0.f, 2 * M_PI}, "Binning for #phi (rad)"};
+  // Define the Signal axis
+  ConfigurableAxis invariantMassBins{"invariantMassBins", {100, -0.1f, 0.1f}, "Binning for the invariant mass (GeV/c^2)"};
+  ConfigurableAxis nsigmaBins{"nsigmaBins", {100, -10.f, 10.f}, "Binning for nSigma"};
+  // Selection bins
+  ConfigurableAxis tpcClusterBins{"tpcClusterBins", {5, 70, 100, 120, 135, 150}, "Min TPC clusters for tracks"};
+  ConfigurableAxis itsClustersBins{"itsClustersBins", {5, 0, 6}, "Min ITS clusters for tracks"};
+
   HistogramRegistry registry{"registry"};
+
+  template <typename T>
+  bool isCollisionSelected(T const& collision)
+  {
+    return collision.sel8() && std::abs(collision.posZ()) <= 10.f;
+  }
 
   void init(InitContext const&)
   {
     const AxisSpec ptAxis{ptBins, "#it{p}_{T} (GeV/c)"};
     const AxisSpec etaAxis{etaBins, "#eta"};
     const AxisSpec phiAxis{phiBins, "#phi (rad)"};
-    registry.add("hKaonYieldData", "", HistType::kTH1F, {ptAxis});
-    registry.add("hKaonYieldMC", "", HistType::kTH1F, {ptAxis});
-    registry.add("hK0sYieldData", "", HistType::kTH1F, {ptAxis});
-    registry.add("hK0sYieldMC", "", HistType::kTH1F, {ptAxis});
-    registry.add("hKaonYieldMapData", "", HistType::kTH3F, {ptAxis, etaAxis, phiAxis});
-    registry.add("hKaonYieldMapMC", "", HistType::kTH3F, {ptAxis, etaAxis, phiAxis});
-    registry.add("hK0sYieldMapData", "", HistType::kTH3F, {ptAxis, etaAxis, phiAxis});
-    registry.add("hK0sYieldMapMC", "", HistType::kTH3F, {ptAxis, etaAxis, phiAxis});
-  }
 
-  void processData(aod::Collisions const& collisions,
-                   aod::Tracks const& tracks,
-                   aod::V0s const& v0s)
-  {
-    for (auto& collision : collisions) {
-      if (!collision.sel8() || std::abs(collision.posZ()) > 10)
-        continue; // MB selection
-      if (collision.isMC())
-        continue;
+    if (doprocessData) {
 
-      // Kaon loop
-      for (auto& track : tracks) {
-        if (track.collisionId() != collision.globalIndex())
-          continue;
-        if (std::abs(track.eta()) > cutEta)
-          continue;
-        if (track.tpcNClsFound() < cutTPCClusters)
-          continue;
-        // PID selection for kaons
-        if (std::abs(track.tpcNSigmaKa()) < cutKaonNSigma) {
-          registry.fill(HIST("hKaonYieldData"), track.pt());
-          registry.fill(HIST("hKaonYieldMapData"), track.pt(), track.eta(), track.phi());
-        }
-      }
+      // First we define the histograms on which we are cutting (tpc clusters, its clusters, ..)
+      registry.add("K/hTPCClusters", "", HistType::kTH1F, {{100, 0, 200}});
+      registry.add("K/hITSClusters", "", HistType::kTH1F, {{10, 0, 10}});
+      registry.addClone("K/", "K0s/");
 
-      // K0s loop
-      for (auto& v0 : v0s) {
-        if (v0.collisionId() != collision.globalIndex())
-          continue;
-        // Basic selection for K0s
-        if (std::abs(v0.eta()) > cutEta)
-          continue;
-        if (std::abs(v0.mass() - constants::physics::MassK0Short) > cutK0sMassWindow)
-          continue;
-        registry.fill(HIST("hK0sYieldData"), v0.pt());
-        registry.fill(HIST("hK0sYieldMapData"), v0.pt(), v0.eta(), v0.phi());
-      }
+      // Add the signal histograms
+      registry.add("K/SignalPositive", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, nsigmaBins, tpcClusterBins, itsClustersBins});
+      registry.add("K/SignalNegative", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, nsigmaBins, tpcClusterBins, itsClustersBins});
+      registry.add("K0s/Signal", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, invariantMassBins, tpcClusterBins, itsClustersBins});
+    }
+
+    if (doprocessMc) {
+      registry.add("K/GeneratedPositive", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins});
+      registry.add("K/GeneratedNegative", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins});
+      registry.add("K0s/Generated", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins});
     }
   }
 
-  void processMC(aod::Collisions const& collisions,
-                 aod::Tracks const& tracks,
-                 aod::V0s const& v0s)
+  using TrackType = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTOFFullPi>;
+  using CollisionType = soa::Join<aod::Collisions, aod::EvSels>;
+
+  void processData(CollisionType const& collisions,
+                   TrackType const& tracks,
+                   aod::V0Datas const& v0s)
   {
-    for (auto& collision : collisions) {
-      if (!collision.sel8() || std::abs(collision.posZ()) > 10)
+    for (const auto& collision : collisions) {
+      if (isCollisionSelected(collision))
         continue; // MB selection
-      if (!collision.isMC())
-        continue;
 
       // Kaon loop
-      for (auto& track : tracks) {
+      for (const auto& track : tracks) {
         if (track.collisionId() != collision.globalIndex())
           continue;
-        if (std::abs(track.eta()) > cutEta)
-          continue;
-        if (track.tpcNClsFound() < cutTPCClusters)
-          continue;
-        // PID selection for kaons
-        if (std::abs(track.tpcNSigmaKa()) < cutKaonNSigma) {
-          registry.fill(HIST("hKaonYieldMC"), track.pt());
-          registry.fill(HIST("hKaonYieldMapMC"), track.pt(), track.eta(), track.phi());
-        }
+        registry.fill(HIST("hTPCClusters"), track.tpcNClsFound());
+        registry.fill(HIST("hITSClusters"), track.itsNCls());
+        if (track.sign() > 0)
+          registry.fill(HIST("K/SignalPositive"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcNClsFound(), track.itsNCls());
+        else
+          registry.fill(HIST("K/SignalNegative"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcNClsFound(), track.itsNCls());
       }
 
       // K0s loop
-      for (auto& v0 : v0s) {
+      for (const auto& v0 : v0s) {
         if (v0.collisionId() != collision.globalIndex())
           continue;
-        // Basic selection for K0s
-        if (std::abs(v0.eta()) > cutEta)
-          continue;
-        if (std::abs(v0.mass() - constants::physics::MassK0Short) > cutK0sMassWindow)
-          continue;
-        registry.fill(HIST("hK0sYieldMC"), v0.pt());
-        registry.fill(HIST("hK0sYieldMapMC"), v0.pt(), v0.eta(), v0.phi());
+        const auto& posTrack = v0.posTrack_as<TrackType>();
+        const auto& negTrack = v0.negTrack_as<TrackType>();
+        registry.fill(HIST("K0s/Signal"), v0.pt(), v0.eta(), v0.phi(), v0.mK0Short() - constants::physics::MassK0Short, std::min(posTrack.tpcNClsFound(), negTrack.tpcNClsFound()), std::min(posTrack.itsNCls(), negTrack.itsNCls()));
       }
     }
   }
+  PROCESS_SWITCH(systematicsMapping, processData, "Systematics study for K0s and charged Kaons", true);
 
-  void process(aod::Collisions const& collisions,
-               aod::Tracks const& tracks,
-               aod::V0s const& v0s)
+  void processMc(soa::Join<CollisionType, aod::McCollisionLabels> const& collisions,
+                 aod::McParticles const& particles,
+                 aod::McCollisions const&)
   {
-    processData(collisions, tracks, v0s);
-    processMC(collisions, tracks, v0s);
+    for (const auto& collision : collisions) {
+      if (!isCollisionSelected(collision))
+        continue; // MB selection
+      if (!collision.has_mcCollision())
+        continue;
+      const auto& mcCollision = collision.mcCollision();
+
+      for (const auto& particle : particles) {
+        if (particle.mcCollisionId() != mcCollision.globalIndex())
+          continue;
+        if (!particle.isPhysicalPrimary())
+          continue;
+        switch (particle.pdgCode()) {
+          case 321: // K+
+            registry.fill(HIST("K/GeneratedPositive"), particle.pt(), particle.eta(), particle.phi());
+            break;
+          case -321: // K-
+            registry.fill(HIST("K/GeneratedNegative"), particle.pt(), particle.eta(), particle.phi());
+            break;
+          case 310: // K0s
+            registry.fill(HIST("K0s/Generated"), particle.pt(), particle.eta(), particle.phi());
+            break;
+          default:
+            break;
+        }
+      }
+    }
   }
+  PROCESS_SWITCH(systematicsMapping, processMc, "Systematics study for K0s and charged Kaons on MC", false);
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    adaptAnalysisTask<systematicsStudy>(cfgc)};
-}
+WorkflowSpec defineDataProcessing(ConfigContext const& cfgc) { return WorkflowSpec{adaptAnalysisTask<systematicsMapping>(cfgc)}; }
