@@ -34,16 +34,16 @@ struct systematicsStudy {
   void init(InitContext const&)
   {
     const AxisSpec ptAxis{ptBins, "#it{p}_{T} (GeV/c)"};
-  const AxisSpec etaAxis{etaBins, "#eta"};
-  const AxisSpec phiAxis{phiBins, "#phi (rad)"};
-  registry.add("hKaonYieldData", "", HistType::kTH1F, {ptAxis});
-  registry.add("hKaonYieldMC", "", HistType::kTH1F, {ptAxis});
-  registry.add("hK0sYieldData", "", HistType::kTH1F, {ptAxis});
-  registry.add("hK0sYieldMC", "", HistType::kTH1F, {ptAxis});
-  registry.add("hKaonYieldMapData", "", HistType::kTH3F, {ptAxis, etaAxis, phiAxis});
-  registry.add("hKaonYieldMapMC", "", HistType::kTH3F, {ptAxis, etaAxis, phiAxis});
-  registry.add("hK0sYieldMapData", "", HistType::kTH3F, {ptAxis, etaAxis, phiAxis});
-  registry.add("hK0sYieldMapMC", "", HistType::kTH3F, {ptAxis, etaAxis, phiAxis});
+    const AxisSpec etaAxis{etaBins, "#eta"};
+    const AxisSpec phiAxis{phiBins, "#phi (rad)"};
+    registry.add("hKaonYieldData", "", HistType::kTH1F, {ptAxis});
+    registry.add("hKaonYieldMC", "", HistType::kTH1F, {ptAxis});
+    registry.add("hK0sYieldData", "", HistType::kTH1F, {ptAxis});
+    registry.add("hK0sYieldMC", "", HistType::kTH1F, {ptAxis});
+    registry.add("hKaonYieldMapData", "", HistType::kTH3F, {ptAxis, etaAxis, phiAxis});
+    registry.add("hKaonYieldMapMC", "", HistType::kTH3F, {ptAxis, etaAxis, phiAxis});
+    registry.add("hK0sYieldMapData", "", HistType::kTH3F, {ptAxis, etaAxis, phiAxis});
+    registry.add("hK0sYieldMapMC", "", HistType::kTH3F, {ptAxis, etaAxis, phiAxis});
   }
 
   void processData(aod::Collisions const& collisions,
@@ -53,7 +53,8 @@ struct systematicsStudy {
     for (auto& collision : collisions) {
       if (!collision.sel8() || std::abs(collision.posZ()) > 10)
         continue; // MB selection
-      if (collision.isMC()) continue;
+      if (collision.isMC())
+        continue;
 
       // Kaon loop
       for (auto& track : tracks) {
@@ -92,7 +93,8 @@ struct systematicsStudy {
     for (auto& collision : collisions) {
       if (!collision.sel8() || std::abs(collision.posZ()) > 10)
         continue; // MB selection
-      if (!collision.isMC()) continue;
+      if (!collision.isMC())
+        continue;
 
       // Kaon loop
       for (auto& track : tracks) {
