@@ -556,20 +556,18 @@ struct HfTaskDplus {
         }
         ptBhad = candidate.ptBhadMotherPart();
         flagBHad = getBHadMotherFlag(candidate.pdgBhadMotherPart());
-
+        auto collision = candidate.template collision_as<McRecoCollisionsCent>();
         if (storeCentrality || storeOccupancy) {
-          auto collision = candidate.template collision_as<McRecoCollisionsCent>();
           if (storeCentrality && centEstimator != CentralityEstimator::None) {
             cent = getCentralityColl(collision, centEstimator);
           }
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
             occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
           }
+        }
           if (storePvContributors) {
             numPvContr = collision.numContrib();
           }
-        }
-
         fillHisto(candidate);
         fillHistoMCRec<true>(candidate);
         fillSparseML<true, true>(candidate, ptBhad, flagBHad, cent, occ, numPvContr);
