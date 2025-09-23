@@ -89,9 +89,9 @@ struct SystematicsMapping {
       registry.addClone("K/", "K0s/");
 
       // Add the signal histograms
-      registry.add("K/SignalPositive", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis, nsigmaAxisTPC, nsigmaAxisTOF, tpcCrossedRowsBins, itsClustersBins, dcaXYAxis, dcaZAxis, chi2TPCAxis, chi2ITSAxis});
-      registry.add("K/SignalNegative", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis, nsigmaAxisTPC, nsigmaAxisTOF, tpcCrossedRowsBins, itsClustersBins, dcaXYAxis, dcaZAxis, chi2TPCAxis, chi2ITSAxis});
-      registry.add("K0s/Signal", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis, invariantMassBins, nsigmaAxisTPC, nsigmaAxisTOF, tpcCrossedRowsBins, itsClustersBins, dcaXYAxis, dcaZAxis, chi2TPCAxis, chi2ITSAxis});
+      registry.add("K/SignalPositive", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis, nsigmaAxisTPC, nsigmaAxisTOF, tpcCrossedRowsAxis, itsClustersAxis, dcaXYAxis, dcaZAxis, chi2TPCAxis, chi2ITSAxis});
+      registry.add("K/SignalNegative", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis, nsigmaAxisTPC, nsigmaAxisTOF, tpcCrossedRowsAxis, itsClustersAxis, dcaXYAxis, dcaZAxis, chi2TPCAxis, chi2ITSAxis});
+      registry.add("K0s/Signal", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis, invariantMassBins, nsigmaAxisTPC, nsigmaAxisTOF, tpcCrossedRowsAxis, itsClustersAxis, dcaXYAxis, dcaZAxis, chi2TPCAxis, chi2ITSAxis});
     }
 
     if (doprocessMc) {
