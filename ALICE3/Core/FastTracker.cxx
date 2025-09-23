@@ -290,17 +290,17 @@ void FastTracker::AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBMa
         LOG(warning) << "Key " << key << " not defined in configuration file, getting the default value";
       }
       LOG(info) << " Getting key " << key;
-      return key.c_str();
+      return key;
     };
-    const float r = env.GetValue(getKey("r"), -1.0f);
+    const float r = env.GetValue(getKey("r").c_str(), -1.0f);
     LOG(info) << " Layer " << layer << " has radius " << r;
-    const float z = env.GetValue(getKey("z"), -1.0f);
-    const float x0 = env.GetValue(getKey("x0"), 0.0f);
-    const float xrho = env.GetValue(getKey("xrho"), 0.0f);
-    const float resRPhi = env.GetValue(getKey("resRPhi"), 0.0f);
-    const float resZ = env.GetValue(getKey("resZ"), 0.0f);
-    const float eff = env.GetValue(getKey("eff"), 0.0f);
-    const int type = env.GetValue(getKey("type"), 0);
+    const float z = env.GetValue(getKey("z").c_str(), -1.0f);
+    const float x0 = env.GetValue(getKey("x0").c_str(), 0.0f);
+    const float xrho = env.GetValue(getKey("xrho").c_str(), 0.0f);
+    const float resRPhi = env.GetValue(getKey("resRPhi").c_str(), 0.0f);
+    const float resZ = env.GetValue(getKey("resZ").c_str(), 0.0f);
+    const float eff = env.GetValue(getKey("eff").c_str(), 0.0f);
+    const int type = env.GetValue(getKey("type").c_str(), 0);
 
     // void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
     AddLayer(layer.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
