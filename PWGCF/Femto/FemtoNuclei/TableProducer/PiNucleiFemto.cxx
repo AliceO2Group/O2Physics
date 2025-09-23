@@ -104,6 +104,8 @@ struct PiNucandidate {
   std::array<float, 3> momNu = {99.f, 99.f, 99.f};
   std::array<float, 3> momPi = {99.f, 99.f, 99.f};
 
+  float ptHe3 = 1.f;
+  float etaHe3 = 1.f;
   float signNu = 1.f;
   float signPi = 1.f;
   float invMass = -10.f;
@@ -732,6 +734,8 @@ struct PiNucleiFemto {
       piHypercand.signNu = -1;
     }
 
+    piHypercand.etaHe3 = V0Hyper.etaHe3();
+    piHypercand.ptHe3 = V0Hyper.ptHe3();
     piHypercand.dcaxyPi = trackPi.dcaXY();
     piHypercand.dcazPi = trackPi.dcaZ();
     piHypercand.tpcSignalPi = trackPi.tpcSignal();
@@ -935,6 +939,8 @@ struct PiNucleiFemto {
     mOutputHyperDataTable(
       piNucand.recoPtNu(),
       piNucand.recoEtaNu(),
+      piNucand.ptHe3(),
+      piNucand.etaHe3(),
       piNucand.recoPhiNu(),
       piNucand.recoPtPi(),
       piNucand.recoEtaPi(),
