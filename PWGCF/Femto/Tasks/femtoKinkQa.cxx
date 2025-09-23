@@ -48,14 +48,14 @@ using namespace o2::analysis::femto;
 struct FemtoKinkQa {
 
   // setup for collisions
-  collisionbuilder::ConfCollisionFilters collisionSelection;
+  collisionbuilder::ConfCollisionSelection collisionSelection;
   Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
 
   colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
 
   // using Collisions = o2::soa::Join<FUCols, FUColPos, FUColMults, FUColCents>;
-  using Collisions = FCols;
+  using Collisions = Join<FCols, FColMasks, FColPos>;
   using Collision = Collisions::iterator;
 
   using FilteredCollisions = o2::soa::Filtered<Collisions>;
