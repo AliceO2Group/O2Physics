@@ -397,9 +397,10 @@ class TrackHistManager
   /// Destructor
   virtual ~TrackHistManager() = default;
 
-  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> Specs, int momentumTypeForPid = 0)
+  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> Specs, float charge = 1, int momentumTypeForPid = 0)
   {
     mHistogramRegistry = registry;
+    mAbsCharge = std::fabs(charge);
 
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       std::string analysisDir = std::string(prefix) + std::string(AnalysisDir);
@@ -489,7 +490,7 @@ class TrackHistManager
   void fill(T const& track)
   {
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt, HistTable)), track.pt());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt, HistTable)), mAbsCharge * track.pt());
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kEta, HistTable)), track.eta());
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPhi, HistTable)), track.phi());
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kSign, HistTable)), track.sign());
@@ -503,23 +504,23 @@ class TrackHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcClusterShared, HistTable)), static_cast<float>(track.tpcNClsShared()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcClusterFractionShared, HistTable)), track.tpcSharedOverFound());
 
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsEta, HistTable)), track.pt(), track.eta());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsPhi, HistTable)), track.pt(), track.phi());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsEta, HistTable)), mAbsCharge * track.pt(), track.eta());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsPhi, HistTable)), mAbsCharge * track.pt(), track.phi());
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPhiVsEta, HistTable)), track.phi(), track.eta());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsItsCluster, HistTable)), track.pt(), static_cast<float>(track.itsNCls()));
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcCluster, HistTable)), track.pt(), static_cast<float>(track.tpcNClsFound()));
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcClusterShared, HistTable)), track.pt(), static_cast<float>(track.tpcNClsShared()));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsItsCluster, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.itsNCls()));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcCluster, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.tpcNClsFound()));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcClusterShared, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.tpcNClsShared()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcClusterVsTpcClusterShared, HistTable)), static_cast<float>(track.tpcNClsFound()), static_cast<float>(track.tpcNClsShared()));
 
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDcaxy, HistTable)), track.pt(), track.dcaXY());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDcaz, HistTable)), track.pt(), track.dcaZ());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDca, HistTable)), track.pt(), track.dca());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDcaxy, HistTable)), mAbsCharge * track.pt(), track.dcaXY());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDcaz, HistTable)), mAbsCharge * track.pt(), track.dcaZ());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDca, HistTable)), mAbsCharge * track.pt(), track.dca());
 
       float momentum = 0.f;
       if (mMomentumType == modes::MomentumType::kPAtPv) {
-        momentum = track.p();
+        momentum = mAbsCharge * track.p();
       } else if (mMomentumType == modes::MomentumType::kPt) {
-        momentum = track.pt();
+        momentum = mAbsCharge * track.pt();
       }
 
       mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsSignal, HistTable)), momentum, o2::analysis::femto::utils::itsSignal(track));
@@ -570,6 +571,7 @@ class TrackHistManager
 
  private:
   o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
+  float mAbsCharge = 1;
   modes::MomentumType mMomentumType = modes::MomentumType::kPAtPv;
 };
 }; // namespace trackhistmanager

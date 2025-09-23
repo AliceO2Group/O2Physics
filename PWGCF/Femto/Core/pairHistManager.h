@@ -133,9 +133,6 @@ class PairHistManager
  public:
   /// Destructor
   virtual ~PairHistManager() = default;
-  /// Initializes histograms for the task
-  /// \param registry Histogram registry to be passed
-  ///
   void init(o2::framework::HistogramRegistry* registry, std::map<PairHist, std::vector<o2::framework::AxisSpec>> Specs)
   {
     mHistogramRegistry = registry;
@@ -164,12 +161,19 @@ class PairHistManager
     mMass1 = o2::analysis::femto::utils::getMass(PdgParticle1);
     mMass2 = o2::analysis::femto::utils::getMass(PdgParticle2);
   }
+  void setCharge(int chargeParticle1, int chargeParticle2)
+  {
+    mAbsCharge1 = std::fabs(chargeParticle1);
+    mAbsCharge1 = std::fabs(chargeParticle2);
+  }
 
   template <typename T1, typename T2>
   void setPair(const T1& particle1, const T2& particle2)
   {
-    mParticle1 = ROOT::Math::PtEtaPhiMVector{particle1.pt(), particle1.eta(), particle1.phi(), mMass1};
-    mParticle2 = ROOT::Math::PtEtaPhiMVector{particle2.pt(), particle2.eta(), particle2.phi(), mMass2};
+    // pt in track stable is stored from 1/signedPt from the original track table
+    // in case of He with Z=2, we have to rescale the pt with the absolute charge
+    mParticle1 = ROOT::Math::PtEtaPhiMVector{mAbsCharge1 * particle1.pt(), particle1.eta(), particle1.phi(), mMass1};
+    mParticle2 = ROOT::Math::PtEtaPhiMVector{mAbsCharge2 * particle2.pt(), particle2.eta(), particle2.phi(), mMass2};
     auto partSum = mParticle1 + mParticle2;
 
     // set kT
@@ -208,6 +212,8 @@ class PairHistManager
   o2::framework::HistogramRegistry* mHistogramRegistry;
   float mMass1 = 0.f;
   float mMass2 = 0.f;
+  float mAbsCharge1 = 1.f;
+  float mAbsCharge2 = 1.f;
   ROOT::Math::PtEtaPhiMVector mParticle1{};
   ROOT::Math::PtEtaPhiMVector mParticle2{};
   float mKstar = 0.f;
