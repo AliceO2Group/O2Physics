@@ -35,6 +35,7 @@
 
 #include <fairlogger/Logger.h>
 
+#include <algorithm>
 #include <cmath> // for std::fabs
 #include <deque>
 #include <iostream>
@@ -96,6 +97,7 @@ struct lambdaspincorrderived {
   Configurable<float> v0eta{"v0eta", 0.8, "Eta cut on lambda"};
 
   // Event Mixing
+  Configurable<int> cosDef{"cosDef", 1, "Defination of cos"};
   Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {8, 0.0, 80}, "Mixing bins - centrality"};
@@ -271,10 +273,102 @@ struct lambdaspincorrderived {
     auto proton1LambdaRF = boostLambda1ToCM(proton1pairCM);
     auto proton2LambdaRF = boostLambda2ToCM(proton2pairCM);
 
-    auto cosThetaDiff = -999.0;
-    cosThetaDiff = proton1LambdaRF.Vect().Unit().Dot(proton2LambdaRF.Vect().Unit());
+    TVector3 zhat(lambda1CM.Px(), lambda1CM.Py(), lambda1CM.Pz());
+    if (zhat.Mag2() == 0)
+      zhat = TVector3(0, 0, 1);
+    zhat = zhat.Unit();
 
-    auto costhetaz1costhetaz2 = (proton1LambdaRF.Pz() * proton2LambdaRF.Pz()) / (proton1LambdaRF.P() * proton2LambdaRF.P());
+    // pick a reference not collinear with ẑ (beam z works)
+    TVector3 ref(0., 0., 1.);
+    if (std::abs(zhat.Dot(ref)) > 0.999)
+      ref = TVector3(1., 0., 0.);
+
+    // build transverse axes
+    TVector3 xhat = (ref - (ref.Dot(zhat)) * zhat).Unit();
+    TVector3 yhat = (zhat.Cross(xhat)).Unit();
+
+    // proton unit vectors in their Λ rest frames
+    TVector3 n1(proton1LambdaRF.Px(), proton1LambdaRF.Py(), proton1LambdaRF.Pz());
+    n1 = n1.Unit();
+    TVector3 n2(proton2LambdaRF.Px(), proton2LambdaRF.Py(), proton2LambdaRF.Pz());
+    n2 = n2.Unit();
+
+    // cosθ* (Λ2 measured along −ẑ)
+    double c1 = n1.Dot(zhat);
+    double c2 = -n2.Dot(zhat);
+
+    // sinθ*
+    double s1 = std::sqrt(std::max(0.0, 1.0 - c1 * c1));
+    double s2 = std::sqrt(std::max(0.0, 1.0 - c2 * c2));
+
+    // φ1*, φ2* in common convention (flip axes for Λ2)
+    double phi1 = std::atan2(n1.Dot(yhat), n1.Dot(xhat));
+    double phi2 = std::atan2(n2.Dot(-yhat), n2.Dot(-xhat));
+
+    // helicity spin-correlation
+    double cosDelta = c1 * c2 + s1 * s2 * std::cos(phi1 - phi2);
+    // clamp for safety
+    if (cosDelta > 1.0)
+      cosDelta = 1.0;
+    if (cosDelta < -1.0)
+      cosDelta = -1.0;
+
+    //
+    // --- (B) Beam-based correlation (common z_B = beam; axes transported into each Λ rest frame) ---
+    //
+    TVector3 zB(0., 0., 1.); // beam axis in pair–CM coordinates
+
+    // x_B: projection of Λ1 direction onto plane ⟂ z_B; y_B completes RH basis
+    TVector3 L1dir(lambda1CM.Px(), lambda1CM.Py(), lambda1CM.Pz());
+    L1dir = L1dir.Unit();
+    TVector3 xB = L1dir - (L1dir.Dot(zB)) * zB;
+    if (xB.Mag2() < 1e-12)
+      xB = TVector3(1., 0., 0.); // fallback if Λ1 ∥ beam
+    xB = xB.Unit();
+    TVector3 yB = (zB.Cross(xB)).Unit();
+
+    // helper to transport an axis into a Λ rest frame (from pair–CM)
+    auto transport = [](const TVector3& v, const ROOT::Math::Boost& B) -> TVector3 {
+      ROOT::Math::PxPyPzEVector a(v.X(), v.Y(), v.Z(), 0.0); // spacelike 4-vector (t=0)
+      ROOT::Math::PxPyPzEVector ar = B(a);                   // boost into that Λ rest frame
+      TVector3 out(ar.Px(), ar.Py(), ar.Pz());
+      if (out.Mag2() == 0)
+        return out;
+      return out.Unit();
+    };
+
+    // transport beam triad to each Λ rest frame
+    TVector3 zB1 = transport(zB, boostLambda1ToCM);
+    TVector3 xB1 = transport(xB, boostLambda1ToCM);
+    TVector3 yB1 = transport(yB, boostLambda1ToCM);
+
+    TVector3 zB2 = transport(zB, boostLambda2ToCM);
+    TVector3 xB2 = transport(xB, boostLambda2ToCM);
+    TVector3 yB2 = transport(yB, boostLambda2ToCM);
+
+    // angles w.r.t. beam triad (same z_B convention for both Λ’s; no flips)
+    double c1B = n1.Dot(zB1), c2B = n2.Dot(zB2);
+    double s1B = std::sqrt(std::max(0.0, 1.0 - c1B * c1B));
+    double s2B = std::sqrt(std::max(0.0, 1.0 - c2B * c2B));
+    double phi1B = std::atan2(n1.Dot(yB1), n1.Dot(xB1));
+    double phi2B = std::atan2(n2.Dot(yB2), n2.Dot(xB2));
+
+    // beam correlation
+    double cosDeltaBeam = c1B * c2B + s1B * s2B * std::cos(phi1B - phi2B);
+    if (cosDeltaBeam > 1.0)
+      cosDeltaBeam = 1.0;
+    if (cosDeltaBeam < -1.0)
+      cosDeltaBeam = -1.0;
+
+    auto cosThetaDiff = -999.0;
+    auto costhetaz1costhetaz2 = -999.0;
+    if (cosDef == 0) {
+      cosThetaDiff = proton1LambdaRF.Vect().Unit().Dot(proton2LambdaRF.Vect().Unit());
+      costhetaz1costhetaz2 = (proton1LambdaRF.Pz() * proton2LambdaRF.Pz()) / (proton1LambdaRF.P() * proton2LambdaRF.P());
+    } else {
+      cosThetaDiff = cosDelta;
+      costhetaz1costhetaz2 = cosDeltaBeam;
+    }
 
     double deltaPhi = std::abs(RecoDecay::constrainAngle(particle1Dummy.Phi(), 0.0F, harmonic) - RecoDecay::constrainAngle(particle2Dummy.Phi(), 0.0F, harmonic));
     double deltaEta = particle1Dummy.Eta() - particle2Dummy.Eta();
