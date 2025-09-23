@@ -43,7 +43,7 @@ struct SystematicsMapping {
   ConfigurableAxis tpcCrossedRowsBins{"tpcCrossedRowsBins", {5, 70, 100, 120, 135, 150}, "Min TPC clusters for tracks"};
   ConfigurableAxis itsClustersBins{"itsClustersBins", {5, 0, 6}, "Min ITS clusters for tracks"};
   ConfigurableAxis dcaBins{"dcaBins", {100, 0.f, 5.f}, "Binning for DCA (cm)"};
-  ConfigurableAxis chi2Bins{"chi2Bins", {100, 0.f, 10.f}, "Binning for chi2"};
+  ConfigurableAxis chi2Bins{"chi2Bins", {100, 0.f, 100.f}, "Binning for chi2"};
   // Selection configurables
   Configurable<float> selectionPosZ{"selectionPosZ", 10.f, "Max |z| of the primary vertex"};
 
@@ -68,7 +68,8 @@ struct SystematicsMapping {
       registry.add("K/hITSClusters", "", HistType::kTH1F, {{10, 0, 10}});
       registry.add("K/hDCAxy", "", HistType::kTH1F, {dcaBins});
       registry.add("K/hDCAz", "", HistType::kTH1F, {dcaBins});
-      registry.add("K/hChi2", "", HistType::kTH1F, {chi2Bins});
+      registry.add("K/hChi2OverNCLsTPC", "", HistType::kTH1F, {chi2Bins});
+      registry.add("K/hChi2OverNCLsITS", "", HistType::kTH1F, {chi2Bins});
       registry.addClone("K/", "K0s/");
 
       // Add the signal histograms
@@ -103,7 +104,8 @@ struct SystematicsMapping {
         registry.fill(HIST("K/hITSClusters"), track.itsNCls());
         registry.fill(HIST("K/hDCAxy"), track.dcaXY());
         registry.fill(HIST("K/hDCAz"), track.dcaZ());
-        registry.fill(HIST("K/hChi2"), track.tpcChi2NCl());
+        registry.fill(HIST("K/hChi2OverNCLsTPC"), track.tpcChi2NCl());
+        registry.fill(HIST("K/hChi2OverNCLsITS"), track.itsChi2NCl());
         if (track.sign() > 0)
           registry.fill(HIST("K/SignalPositive"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcNClsCrossedRows(), track.itsNCls(), track.dcaXY(), track.dcaZ(), track.tpcChi2NCl());
         else
@@ -116,6 +118,12 @@ struct SystematicsMapping {
           continue;
         const auto& posTrack = v0.posTrack_as<TrackType>();
         const auto& negTrack = v0.negTrack_as<TrackType>();
+        registry.fill(HIST("K0s/hTPCCrossedRows"), std::min(posTrack.tpcNClsCrossedRows(), negTrack.tpcNClsCrossedRows()));
+        registry.fill(HIST("K0s/hITSClusters"), std::min(posTrack.itsNCls(), negTrack.itsNCls()));
+        registry.fill(HIST("K0s/hDCAxy"), std::min(posTrack.dcaXY(), negTrack.dcaXY()));
+        registry.fill(HIST("K0s/hDCAz"), std::min(posTrack.dcaZ(), negTrack.dcaZ()));
+        registry.fill(HIST("K0s/hChi2OverNCLsTPC"), std::min(posTrack.tpcChi2NCl(), negTrack.tpcChi2NCl()));
+        registry.fill(HIST("K0s/hChi2OverNCLsITS"), std::min(posTrack.itsChi2NCl(), negTrack.itsChi2NCl()));
         registry.fill(HIST("K0s/Signal"), v0.pt(), v0.eta(), v0.phi(), v0.mK0Short() - constants::physics::MassK0Short,
                       std::min(posTrack.tpcNClsCrossedRows(), negTrack.tpcNClsCrossedRows()),
                       std::min(posTrack.itsNCls(), negTrack.itsNCls()),
