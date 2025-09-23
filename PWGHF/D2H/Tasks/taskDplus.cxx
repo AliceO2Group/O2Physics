@@ -556,9 +556,8 @@ struct HfTaskDplus {
         }
         ptBhad = candidate.ptBhadMotherPart();
         flagBHad = getBHadMotherFlag(candidate.pdgBhadMotherPart());
-
+        auto collision = candidate.template collision_as<McRecoCollisionsCent>();
         if (storeCentrality || storeOccupancy) {
-          auto collision = candidate.template collision_as<McRecoCollisionsCent>();
           if (storeCentrality && centEstimator != CentralityEstimator::None) {
             cent = getCentralityColl(collision, centEstimator);
           }
