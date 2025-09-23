@@ -40,8 +40,8 @@ struct SystematicsMapping {
   ConfigurableAxis invariantMassBins{"invariantMassBins", {100, -0.1f, 0.1f}, "Binning for the invariant mass (GeV/c^2)"};
   ConfigurableAxis nsigmaBins{"nsigmaBins", {100, -10.f, 10.f}, "Binning for nSigma"};
   // Selection bins
-  ConfigurableAxis tpcClusterBins{"tpcClusterBins", {5, 70, 100, 120, 135, 150}, "Min TPC clusters for tracks"};
-  ConfigurableAxis itsClustersBins{"itsClustersBins", {5, 0, 6}, "Min ITS clusters for tracks"};
+  ConfigurableAxis tpcCrossedRowsBins{"tpcCrossedRowsBins", {5, 70, 100, 120, 135, 150}, "TPC Crossed rows bins for tracks"};
+  ConfigurableAxis itsClustersBins{"itsClustersBins", {5, 0, 6}, "ITS Crossed rows bins for tracks"};
   // Selection configurables
   Configurable<float> selectionPosZ{"selectionPosZ", 10.f, "Max |z| of the primary vertex"};
 
@@ -61,15 +61,15 @@ struct SystematicsMapping {
 
     if (doprocessData) {
 
-      // First we define the histograms on which we are cutting (tpc clusters, its clusters, ..)
-      registry.add("K/hTPCClusters", "", HistType::kTH1F, {{100, 0, 200}});
+      // First we define the histograms on which we are cutting (tpc crossed rows, its clusters, ..)
+      registry.add("K/hTPCCrossedRows", "", HistType::kTH1F, {{100, 0, 200}});
       registry.add("K/hITSClusters", "", HistType::kTH1F, {{10, 0, 10}});
       registry.addClone("K/", "K0s/");
 
       // Add the signal histograms
-      registry.add("K/SignalPositive", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, nsigmaBins, tpcClusterBins, itsClustersBins});
-      registry.add("K/SignalNegative", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, nsigmaBins, tpcClusterBins, itsClustersBins});
-      registry.add("K0s/Signal", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, invariantMassBins, tpcClusterBins, itsClustersBins});
+      registry.add("K/SignalPositive", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, nsigmaBins, tpcCrossedRowsBins, itsClustersBins});
+      registry.add("K/SignalNegative", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, nsigmaBins, tpcCrossedRowsBins, itsClustersBins});
+      registry.add("K0s/Signal", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, invariantMassBins, tpcCrossedRowsBins, itsClustersBins});
     }
 
     if (doprocessMc) {
@@ -94,12 +94,12 @@ struct SystematicsMapping {
       for (const auto& track : tracks) {
         if (track.collisionId() != collision.globalIndex())
           continue;
-        registry.fill(HIST("hTPCClusters"), track.tpcNClsFound());
+        registry.fill(HIST("hTPCCrossedRows"), track.tpcCrossedRows());
         registry.fill(HIST("hITSClusters"), track.itsNCls());
         if (track.sign() > 0)
-          registry.fill(HIST("K/SignalPositive"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcNClsFound(), track.itsNCls());
+          registry.fill(HIST("K/SignalPositive"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcCrossedRows(), track.itsNCls());
         else
-          registry.fill(HIST("K/SignalNegative"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcNClsFound(), track.itsNCls());
+          registry.fill(HIST("K/SignalNegative"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcCrossedRows(), track.itsNCls());
       }
 
       // K0s loop
@@ -108,7 +108,7 @@ struct SystematicsMapping {
           continue;
         const auto& posTrack = v0.posTrack_as<TrackType>();
         const auto& negTrack = v0.negTrack_as<TrackType>();
-        registry.fill(HIST("K0s/Signal"), v0.pt(), v0.eta(), v0.phi(), v0.mK0Short() - constants::physics::MassK0Short, std::min(posTrack.tpcNClsFound(), negTrack.tpcNClsFound()), std::min(posTrack.itsNCls(), negTrack.itsNCls()));
+        registry.fill(HIST("K0s/Signal"), v0.pt(), v0.eta(), v0.phi(), v0.mK0Short() - constants::physics::MassK0Short, std::min(posTrack.tpcCrossedRows(), negTrack.tpcCrossedRows()), std::min(posTrack.itsNCls(), negTrack.itsNCls()));
       }
     }
   }
