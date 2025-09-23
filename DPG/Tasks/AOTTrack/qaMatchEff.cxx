@@ -95,6 +95,7 @@ struct qaMatchEff {
   Configurable<bool> isCentralityRequired{"isCentralityRequired", false, "Boolean to switch the centrality selection on/off."};
   Configurable<bool> isRejectNearByEvent{"isRejectNearByEvent", false, "Boolean to switch the rejection of near by events on/off."};
   Configurable<bool> isEnableOccupancyCut{"isEnableOccupancyCut", false, "Boolean to switch the occupancy cut on/off."};
+  Configurable<bool> disableITSROFCut{"disableITSROFCut", false, "Disable ITS ROC cut for event selection"};
   struct : ConfigurableGroup {
     Configurable<float> centralityMinCut{"centralityMinCut", 0.0f, "Minimum centrality"};
     Configurable<float> centralityMaxCut{"centralityMaxCut", 100.0f, "Maximum centrality"};
@@ -3295,10 +3296,18 @@ struct qaMatchEff {
   //////////////////////////////////////////////
   void processMC(CollisionsEvSel::iterator const& collision, soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels> const& tracks, aod::McParticles const& mcParticles)
   {
-    if (isEnableEventSelection && !collision.sel8()) {
-      if (doDebug)
-        LOGF(info, "Event selection not passed, skipping...");
-      return;
+    if (isEnableEventSelection) {
+
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
+        return;
+      }    
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
+        return;
+      }
     }
     fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
     fillGeneralHistos<true>(collision);
@@ -3315,10 +3324,18 @@ struct qaMatchEff {
         LOGF(warning, "Centrality not defined for pp collision type, return...");
       return;
     }
-    if (isEnableEventSelection && !collision.sel8()) {
-      if (doDebug)
-        LOGF(info, "Event selection not passed, skipping...");
-      return;
+    if (isEnableEventSelection) {
+
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
+        return;
+      }    
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
+        return;
+      }
     }
     float centrality = collision.centFT0C();
     if (isCentralityRequired) {
@@ -3338,10 +3355,18 @@ struct qaMatchEff {
   ////////////////////////////////////////////////////////////
   void processTrkIUMC(CollisionsMCEvSel::iterator const& collision, MCTracksIU const& tracks, aod::McParticles const& mcParticles)
   {
-    if (isEnableEventSelection && !collision.sel8()) {
-      if (doDebug)
-        LOGF(info, "Event selection not passed, skipping...");
-      return;
+    if (isEnableEventSelection) {
+
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
+        return;
+      }    
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
+        return;
+      }
     }
     fillHistograms<true>(tracks, mcParticles, mcParticles); /// 3rd argument non-sense in this case
     fillGeneralHistos<true>(collision);
@@ -3366,10 +3391,18 @@ struct qaMatchEff {
       // tracks.rawIteratorAt(0).collision().bc_as<BCsWithTimeStamp>().timestamp(); /// NB: in ms
       setUpTimeMonitoring(bcs);
     }
-    if (isEnableEventSelection && !collision.sel8()) {
-      if (doDebug)
-        LOGF(info, "Event selection not passed, skipping...");
-      return;
+    if (isEnableEventSelection) {
+
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
+        return;
+      }    
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
+        return;
+      }
     }
     fillHistograms<false>(tracks, tracks, bcs); // 2nd argument not used in this case
     fillGeneralHistos<false>(collision);
@@ -3389,10 +3422,18 @@ struct qaMatchEff {
     if (enableMonitorVsTime) {
       setUpTimeMonitoring(bcs);
     }
-    if (isEnableEventSelection && !collision.sel8()) {
-      if (doDebug)
-        LOGF(info, "Event selection not passed, skipping...");
-      return;
+    if (isEnableEventSelection) {
+
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
+        return;
+      }    
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
+        return;
+      }
     }
     const float centrality = collision.centFT0C();
     const int occupancy = collision.trackOccupancyInTimeRange();
@@ -3427,10 +3468,18 @@ struct qaMatchEff {
   /////////////////////////////////////////////////////////////
   void processTrkIUData(CollisionsEvSel::iterator const& collision, TracksIUPID const& tracks)
   {
-    if (isEnableEventSelection && !collision.sel8()) {
-      if (doDebug)
-        LOGF(info, "Event selection not passed, skipping...");
-      return;
+    if (isEnableEventSelection) {
+
+      if (!collision.selection_bit(aod::evsel::kNoITSROFrameBorder) && !disableITSROFCut) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
+        return;
+      }    
+      if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+        if (doDebug)
+          LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
+        return;
+      }
     }
     fillHistograms<false>(tracks, tracks, tracks); // 2nd and 3rd arguments not used in this case
     fillGeneralHistos<false>(collision);
