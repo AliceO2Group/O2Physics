@@ -352,7 +352,6 @@ struct HfTaskCorrelationDsHadrons {
         if (loadAccXEffFromCCDB) {
           if (useHighDimHistoForEff) {
             if (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib))) <= epsilon) {
-              LOG(info) << "Mult: " << *multPvContrib << "  PtD: " << ptD;
               LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
             }
             weight = 1. / hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib)));
@@ -465,8 +464,6 @@ struct HfTaskCorrelationDsHadrons {
       } else {
         efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
-
-      LOG(info) << "Efficiency weight = " << efficiencyWeight;
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
