@@ -903,8 +903,18 @@ struct FemtoUniversePairTaskTrackD0 {
 
     auto groupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
     auto groupPartsD0sFromSB = partsD0sFromSB->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
+    auto groupPartsD0barsFromSB = partsD0barsFromSB->sliceByCached(aod::femtouniverseparticle::fdCollisionId, col.globalIndex(), cache);
 
-    doSameEvent<false>(groupPartsTrack, groupPartsD0sFromSB, parts, col.magField(), col.multNtr());
+    switch (confChooseD0trackCorr) {
+      case 0:
+        doSameEvent<false>(groupPartsTrack, groupPartsD0sFromSB, parts, col.magField(), col.multNtr());
+        break;
+      case 1:
+        doSameEvent<false>(groupPartsTrack, groupPartsD0barsFromSB, parts, col.magField(), col.multNtr());
+        break;
+      default:
+        break;
+    }
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackD0, processSameEventSB, "Enable processing same event", false);
 
@@ -1060,6 +1070,7 @@ struct FemtoUniversePairTaskTrackD0 {
 
       auto groupPartsTrack = partsTrack->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision2.globalIndex(), cache);
       auto groupPartsD0sFromSB = partsD0sFromSB->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
+      auto groupPartsD0barsFromSB = partsD0barsFromSB->sliceByCached(aod::femtouniverseparticle::fdCollisionId, collision1.globalIndex(), cache);
 
       const auto& magFieldTesla1 = collision1.magField();
       const auto& magFieldTesla2 = collision2.magField();
@@ -1069,8 +1080,16 @@ struct FemtoUniversePairTaskTrackD0 {
       }
       /// \todo before mixing we should check whether both collisions contain a pair of particles!
       // if (partsD0.size() == 0 || kNPart2Evt1 == 0 || kNPart1Evt2 == 0 || partsTrack.size() == 0 ) continue;
-
-      doMixedEvent<false>(groupPartsTrack, groupPartsD0sFromSB, parts, magFieldTesla1, multiplicityCol);
+      switch (confChooseD0trackCorr) {
+        case 0:
+          doMixedEvent<false>(groupPartsTrack, groupPartsD0sFromSB, parts, magFieldTesla1, multiplicityCol);
+          break;
+        case 1:
+          doMixedEvent<false>(groupPartsTrack, groupPartsD0barsFromSB, parts, magFieldTesla1, multiplicityCol);
+          break;
+        default:
+          break;
+      }
     }
   }
   PROCESS_SWITCH(FemtoUniversePairTaskTrackD0, processMixedEventSB, "Enable processing mixed events", false);
