@@ -123,7 +123,7 @@ struct FemtoPairTrackV0 {
   ColumnBinningPolicy<aod::femtocollisions::PosZ, aod::femtocollisions::Mult, aod::femtocollisions::Cent> mixBinsVtxMultCent{{defaultVtxBins, defaultMultBins, defaultCentBins}, true};
   pairhistmanager::ConfMixing confMixing;
 
-  HistogramRegistry hRegistry{"FemtoTrackTrack", {}, OutputObjHandlingPolicy::AnalysisObject};
+  HistogramRegistry hRegistry{"FemtoTrackV0", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // setup cpr
   closepairrejection::ConfCpr confCpr;
