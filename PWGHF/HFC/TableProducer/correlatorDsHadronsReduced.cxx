@@ -126,7 +126,7 @@ struct HfCorrelatorDsHadronsReduced {
         registry.fill(HIST("hDsPoolBin"), poolBin);
         registry.fill(HIST("hPhiVsPtCand"), RecoDecay::constrainAngle(candidate.phiCand(), -PIHalf), candidate.ptCand());
         registry.fill(HIST("hEtaVsPtCand"), candidate.etaCand(), candidate.ptCand());
-        entryDsCandRecoInfo(candidate.invMassDs(), candidate.ptCand(), candidate.bdtScorePrompt(), candidate.bdtScoreBkg());
+        entryDsCandRecoInfo(candidate.invMassDs(), candidate.ptCand(), candidate.bdtScorePrompt(), candidate.bdtScoreBkg(), collision.numPvContrib());
         for (const auto& track : tracksThisColl) {
           // Removing Ds daughters by checking track indices
           if ((candidate.prong0Id() == track.originTrackId()) || (candidate.prong1Id() == track.originTrackId()) || (candidate.prong2Id() == track.originTrackId())) {
@@ -140,7 +140,8 @@ struct HfCorrelatorDsHadronsReduced {
                             track.etaAssocTrack() - candidate.etaCand(),
                             candidate.ptCand(),
                             track.ptAssocTrack(),
-                            poolBin);
+                            poolBin,
+                            collision.numPvContrib());
           entryDsHadronRecoInfo(candidate.invMassDs(), false, false);
           entryDsHadronMlInfo(candidate.bdtScorePrompt(), candidate.bdtScoreBkg());
           entryTrackRecoInfo(track.dcaXY(), track.dcaZ(), track.nTpcCrossedRows());
@@ -202,7 +203,8 @@ struct HfCorrelatorDsHadronsReduced {
                           pAssoc.etaAssocTrack() - cand.etaCand(),
                           cand.ptCand(),
                           pAssoc.ptAssocTrack(),
-                          poolBin);
+                          poolBin,
+                          c1.numPvContrib());
         entryDsHadronRecoInfo(cand.invMassDs(), false, false);
         // entryDsHadronGenInfo(false, false, 0);
       }
