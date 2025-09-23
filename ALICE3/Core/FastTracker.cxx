@@ -17,7 +17,11 @@
 #include "TMatrixD.h"
 #include "TMatrixDSymEigen.h"
 #include "TRandom.h"
+#include <TEnv.h>
+#include <THashList.h>
+#include <TObject.h>
 
+#include <fstream>
 #include <string>
 #include <vector>
 
@@ -260,27 +264,47 @@ void FastTracker::AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBMa
     return;
   }
 
-  std::ifstream infile(filename);
-  if (!infile.is_open()) {
-    LOG(fatal) << "Could not open detector configuration file: " << filename;
-    return;
-  }
-
-  std::string line;
-  while (std::getline(infile, line)) {
-    if (line.empty() || line[0] == '#')
-      continue; // skip comments and empty lines
-    std::istringstream iss(line);
-    std::string name;
-    float r, z, x0, xrho, resRPhi, resZ, eff;
-    int type;
-    if (!(iss >> name >> r >> z >> x0 >> xrho >> resRPhi >> resZ >> eff >> type)) {
-      LOG(error) << "Malformed line in detector config: " << line;
+  TEnv env(filename.c_str());
+  THashList* table = env.GetTable();
+  std::vector<std::string> layers;
+  for (int i = 0; i < table->GetEntries(); ++i) {
+    const std::string key = table->At(i)->GetName();
+    // key should contain exactly one dot
+    if (key.find('.') == std::string::npos || key.find('.') != key.rfind('.')) {
+      LOG(fatal) << "Key " << key << " does not contain exactly one dot";
       continue;
     }
-    AddLayer(name.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
+    const std::string firstPart = key.substr(0, key.find('.'));
+    if (std::find(layers.begin(), layers.end(), firstPart) == layers.end()) {
+      layers.push_back(firstPart);
+    }
   }
-  infile.close();
+  // env.Print();
+  // Layers
+  for (const auto& layer : layers) {
+    LOG(info) << " Reading layer " << layer;
+
+    auto getKey = [&layer, &env](const std::string& name) {
+      std::string key = layer + "." + name;
+      if (!env.Defined(key.c_str())) {
+        LOG(warning) << "Key " << key << " not defined in configuration file, getting the default value";
+      }
+      LOG(info) << " Getting key " << key;
+      return key;
+    };
+    const float r = env.GetValue(getKey("r").c_str(), -1.0f);
+    LOG(info) << " Layer " << layer << " has radius " << r;
+    const float z = env.GetValue(getKey("z").c_str(), -1.0f);
+    const float x0 = env.GetValue(getKey("x0").c_str(), 0.0f);
+    const float xrho = env.GetValue(getKey("xrho").c_str(), 0.0f);
+    const float resRPhi = env.GetValue(getKey("resRPhi").c_str(), 0.0f);
+    const float resZ = env.GetValue(getKey("resZ").c_str(), 0.0f);
+    const float eff = env.GetValue(getKey("eff").c_str(), 0.0f);
+    const int type = env.GetValue(getKey("type").c_str(), 0);
+
+    // void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
+    AddLayer(layer.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
+  }
 }
 
 float FastTracker::Dist(float z, float r)
