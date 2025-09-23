@@ -92,9 +92,9 @@ struct ft0CorrectedTableMcOverride {
   }
 
   void process(soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels> const& collisions,
-                                    soa::Join<BCsWithMatchings, aod::Timestamps> const& bcs,
-                                    aod::FT0s const&,
-                                    aod::McCollisions const&)
+               soa::Join<BCsWithMatchings, aod::Timestamps> const& bcs,
+               aod::FT0s const&,
+               aod::McCollisions const&)
   {
     if (cfgCollisionSystem.value == -1) {
       o2::parameters::GRPLHCIFData* grpo = ccdb->template getForTimeStamp<o2::parameters::GRPLHCIFData>(cfgPathGrpLhcIf,
