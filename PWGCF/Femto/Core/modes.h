@@ -65,6 +65,11 @@ enum class System : uint32_t {
   kPbPb_Run2 = kPbPb | kRun2,
 };
 
+enum class MomentumType : o2::aod::femtodatatypes::MomentumType {
+  kPAtPv, // momentum at primary vertex
+  kPt,    // transverse momentum
+};
+
 enum class Track : o2::aod::femtodatatypes::TrackType {
   kPrimaryTrack,
   kV0Daughter,
@@ -94,22 +99,6 @@ enum class TwoTrackResonance : o2::aod::femtodatatypes::TwoTrackResonanceType {
   kPhi,
   kKstar0,
   kKstar0Bar
-};
-
-enum class Pairs : o2::aod::femtodatatypes::PairType {
-  kTrackTrack,
-  kTrackV0,
-  kTrackResonance,
-  kTrackCascade,
-  kTrackKink
-};
-
-enum class TrackPairs : o2::aod::femtodatatypes::PairType {
-  kTrackTrack,
-  kTrackPosDaughter,
-  kTrackNegDaughter,
-  kTrackBachelor,
-  kTrackChaDaughter
 };
 
 }; // namespace modes

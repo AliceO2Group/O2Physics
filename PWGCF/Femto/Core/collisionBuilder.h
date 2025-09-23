@@ -17,6 +17,7 @@
 #define PWGCF_FEMTO_CORE_COLLISIONBUILDER_H_
 
 #include "PWGCF/Femto/Core/baseSelection.h"
+#include "PWGCF/Femto/Core/dataTypes.h"
 #include "PWGCF/Femto/Core/femtoUtils.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/DataModel/FemtoTables.h"
@@ -49,8 +50,6 @@ struct ConfCollisionFilters : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> centMax{"centMax", 999.f, "Maximum centrality (multiplicity percentile)"};
   o2::framework::Configurable<float> spherMin{"spherMin", 0.f, "Minimum centrality (multiplicity percentile)"};
   o2::framework::Configurable<float> spherMax{"spherMax", 2.f, "Maximum centrality (multiplicity percentile)"};
-  o2::framework::Configurable<float> occupancyMin{"occupancyMin", 0.f, "Minimum occupancy (Cut works at producer level and if occupancy is stored also at consumer level)"};
-  o2::framework::Configurable<float> occupancyMax{"occupancyMax", 1e6f, "Maximum occupancy (Cut works at producer level and if occupancy is stored also at consumer level)"};
   o2::framework::Configurable<float> magFieldMin{"magFieldMin", -1.f, "Minimum magnetic field strength (T)"};
   o2::framework::Configurable<float> magFieldMax{"magFieldMax", 1.f, "Maximum magnetic field strength (T)"};
 };
@@ -70,6 +69,8 @@ struct ConfCollisionBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<int> isGoodItsLayer3{"isGoodItsLayer3", 0, "number of inactive chips on ITS layer 3 is below maximum allowed value (-1: stored in bitmaks; 0 off; 1 on)"};
   o2::framework::Configurable<int> isGoodItsLayer0123{"isGoodItsLayer0123", 0, "numbers of inactive chips on ITS layers 0-3 are below maximum allowed values (-1: stored in bitmaks; 0 off; 1 on)"};
   o2::framework::Configurable<int> isGoodItsLayersAll{"isGoodItsLayersAll", 0, "numbers of inactive chips on all ITS layers are below maximum allowed values (-1: stored in bitmaks; 0 off; 1 on)"};
+  o2::framework::Configurable<std::vector<float>> occupancyMin{"occupancyMin", {}, "Minimum occpancy"};
+  o2::framework::Configurable<std::vector<float>> occupancyMax{"occupancyMax", {}, "Maximum occpancy"};
 };
 
 struct ConfCollisionTriggers : o2::framework::ConfigurableGroup {
@@ -77,6 +78,22 @@ struct ConfCollisionTriggers : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<bool> useTrigger{"useTrigger", false, "Set to true to only selected triggered collisions"};
   o2::framework::Configurable<std::string> ccdbPath{"ccdbPath", std::string("EventFiltering/Zorro/"), "CCDB path for trigger information"};
   o2::framework::Configurable<std::string> triggers{"triggers", std::string("fPPP,fPPL"), "Comma seperated list of all triggers to be used"};
+};
+
+// configurables for collision selection
+struct ConfCollisionSelection : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("CollisionSelection");
+  o2::framework::Configurable<float> vtxZMin{"vtxZMin", -10.f, "Minimum vertex Z position (cm)"};
+  o2::framework::Configurable<float> vtxZMax{"vtxZMax", 10.f, "Maximum vertex Z position (cm)"};
+  o2::framework::Configurable<float> multMin{"multMin", 0.f, "Minimum multiplicity"};
+  o2::framework::Configurable<float> multMax{"multMax", 999.f, "Maximum multiplicity"};
+  o2::framework::Configurable<float> centMin{"centMin", 0.f, "Minimum centrality (multiplicity percentile)"};
+  o2::framework::Configurable<float> centMax{"centMax", 999.f, "Maximum centrality (multiplicity percentile)"};
+  o2::framework::Configurable<float> spherMin{"spherMin", 0.f, "Minimum centrality (multiplicity percentile)"};
+  o2::framework::Configurable<float> spherMax{"spherMax", 2.f, "Maximum centrality (multiplicity percentile)"};
+  o2::framework::Configurable<float> magFieldMin{"magFieldMin", -1.f, "Minimum magnetic field strength (T)"};
+  o2::framework::Configurable<float> magFieldMax{"magFieldMax", 1.f, "Maximum magnetic field strength (T)"};
+  o2::framework::Configurable<aod::femtodatatypes::CollisionMaskType> collisionMask{"collisionMask", 0, "Bitmask for collision"};
 };
 
 /// enum for all collision selections
@@ -95,6 +112,8 @@ enum CollisionSels {
   kIsGoodItsLayer3,           ///< number of inactive chips on ITS layer 3 is below maximum allowed value
   kIsGoodItsLayer0123,        ///< numbers of inactive chips on ITS layers 0-3 are below maximum allowed values
   kIsGoodItsLayersAll,        ///< numbers of inactive chips on all ITS layers are below maximum allowed values
+  kOccupancyMin,              ///< Min. occupancy
+  kOccupancyMax,              ///< Max. occupancy
 
   kCollisionSelsMax
 };
@@ -113,9 +132,11 @@ const std::unordered_map<CollisionSels, std::string> colSelsToString = {
   {kNoHighMultCollInPrevRof, "No high mult collsions in previous ROF"},
   {kIsGoodItsLayer3, "Is good ITS layer 3"},
   {kIsGoodItsLayer0123, "Is good ITS layer 0-3"},
-  {kIsGoodItsLayersAll, "Is good ITS layer all"}};
+  {kIsGoodItsLayersAll, "Is good ITS layer all"},
+  {kOccupancyMin, "Minimum Occupancy"},
+  {kOccupancyMax, "Maximum Occupancy"}};
 
-class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::CollsionsMaskType, kCollisionSelsMax>
+class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::CollisionMaskType, kCollisionSelsMax>
 {
  public:
   CollisionSelection() {}
@@ -135,8 +156,6 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     mCentMax = filter.centMax.value;
     mSphericityMin = filter.spherMin.value;
     mSphericityMax = filter.spherMax.value;
-    mOccupancyMin = filter.occupancyMin.value;
-    mOccupancyMax = filter.occupancyMax.value;
 
     // flags
     this->addSelection(config.sel8.value, kSel8);
@@ -151,6 +170,8 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     this->addSelection(config.isGoodItsLayer3.value, kIsGoodItsLayer3);
     this->addSelection(config.isGoodItsLayer0123.value, kIsGoodItsLayer0123);
     this->addSelection(config.isGoodItsLayersAll.value, kIsGoodItsLayersAll);
+    this->addSelection(config.occupancyMin.value, kOccupancyMin, limits::kLowerLimit, true, true);
+    this->addSelection(config.occupancyMax.value, kOccupancyMax, limits::kUpperLimit, true, true);
   };
 
   void setMagneticField(float MagField)
@@ -214,9 +235,6 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     if (mSphericity < mSphericityMin || mSphericity > mSphericityMax) {
       return false;
     }
-    if (col.trackOccupancyInTimeRange() < mOccupancyMin || col.trackOccupancyInTimeRange() > mOccupancyMax) {
-      return false;
-    }
     return true;
   }
 
@@ -241,6 +259,9 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
     this->evaluateObservable(kIsGoodItsLayer0123, static_cast<float>(col.selection_bit(o2::aod::evsel::kIsGoodITSLayer0123)));
     this->evaluateObservable(kIsGoodItsLayersAll, static_cast<float>(col.selection_bit(o2::aod::evsel::kIsGoodITSLayersAll)));
 
+    this->evaluateObservable(kOccupancyMin, col.trackOccupancyInTimeRange());
+    this->evaluateObservable(kOccupancyMax, col.trackOccupancyInTimeRange());
+
     this->assembleBitmask();
   };
 
@@ -256,8 +277,6 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
   float mMultMax = 999.f;
   float mCentMin = 0.f;
   float mCentMax = 999.f;
-  float mOccupancyMin = 0.;
-  float mOccupancyMax = 1e6f;
 
   float mMagField = 0.f;
   float mSphericity = 0.f;
@@ -267,8 +286,7 @@ class CollisionSelection : public BaseSelection<float, o2::aod::femtodatatypes::
 
 struct CollisionBuilderProducts : o2::framework::ProducesGroup {
   o2::framework::Produces<o2::aod::FCols> producedCollision;
-  o2::framework::Produces<o2::aod::FColMasks> produceCollisionMask;
-  o2::framework::Produces<o2::aod::FColOccs> producedOccupancy;
+  o2::framework::Produces<o2::aod::FColMasks> producedCollisionMask;
   o2::framework::Produces<o2::aod::FColQns> producedQns;
   o2::framework::Produces<o2::aod::FColPos> producedPositions;
   o2::framework::Produces<o2::aod::FColMults> producedMultiplicityEstimators;
@@ -279,7 +297,6 @@ struct ConfCollisionTables : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionTables");
   o2::framework::Configurable<int> produceCollisions{"produceCollisions", -1, "Produce Collisions (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceCollisionMasks{"produceCollisionMasks", -1, "Produce Collision Masks (-1: auto; 0 off; 1 on)"};
-  o2::framework::Configurable<int> produceOccupancy{"produceOccupancy", -1, "Produce Occupancy (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceQns{"produceQns", -1, "Produce Qn (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> producePositions{"producePositions", -1, "Produce Positions (-1: auto; 0 off; 1 on)"};
   o2::framework::Configurable<int> produceMults{"produceMults", -1, "Produce Multiplicities (-1: auto; 0 off; 1 on)"};
@@ -304,7 +321,6 @@ class CollisionBuilder
     LOG(info) << "Initialize femto collision builder...";
     mProducedCollisions = utils::enableTable("FCols_001", table.produceCollisions.value, initContext);
     mProducedCollisionMasks = utils::enableTable("FColMasks_001", table.produceCollisionMasks.value, initContext);
-    mProduceOccupancy = utils::enableTable("FColOccs_001", table.produceOccupancy.value, initContext);
     mProduceQns = utils::enableTable("FColQnBins_001", table.produceQns.value, initContext);
     mProducedPositions = utils::enableTable("FColPos_001", table.producePositions.value, initContext);
     mProducedMultiplicities = utils::enableTable("FColMults_001", table.produceMults.value, initContext);
@@ -356,11 +372,9 @@ class CollisionBuilder
                                           mCollisionSelection.getSphericity(),
                                           mCollisionSelection.getMagneticField());
     }
-
-    if (mProduceOccupancy) {
-      collisionProducts.producedOccupancy(col.trackOccupancyInTimeRange());
+    if (mProducedCollisionMasks) {
+      collisionProducts.producedCollisionMask(mCollisionSelection.getBitmask());
     }
-
     if (mProducedPositions) {
       collisionProducts.producedPositions(col.posX(),
                                           col.posY());
@@ -396,7 +410,6 @@ class CollisionBuilder
   bool mFillAnyTable = false;
   bool mProducedCollisions = false;
   bool mProducedCollisionMasks = false;
-  bool mProduceOccupancy = false;
   bool mProduceQns = false;
   bool mProducedPositions = false;
   bool mProducedMultiplicities = false;
