@@ -3302,7 +3302,7 @@ struct qaMatchEff {
         if (doDebug)
           LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
         return;
-      }    
+      }
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         if (doDebug)
           LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
@@ -3330,7 +3330,7 @@ struct qaMatchEff {
         if (doDebug)
           LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
         return;
-      }    
+      }
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         if (doDebug)
           LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
@@ -3361,7 +3361,7 @@ struct qaMatchEff {
         if (doDebug)
           LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
         return;
-      }    
+      }
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         if (doDebug)
           LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
@@ -3397,7 +3397,7 @@ struct qaMatchEff {
         if (doDebug)
           LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
         return;
-      }    
+      }
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         if (doDebug)
           LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
@@ -3428,7 +3428,7 @@ struct qaMatchEff {
         if (doDebug)
           LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
         return;
-      }    
+      }
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         if (doDebug)
           LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
@@ -3474,7 +3474,7 @@ struct qaMatchEff {
         if (doDebug)
           LOGF(info, "Event selection not passed to ITSROFrame border, skipping...");
         return;
-      }    
+      }
       if (!collision.selection_bit(aod::evsel::kIsTriggerTVX) && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         if (doDebug)
           LOGF(info, "Event selection not passed to TriggerTVX and TFBorder, skipping...");
