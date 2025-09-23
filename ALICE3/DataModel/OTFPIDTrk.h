@@ -31,15 +31,15 @@ namespace upgrade::trk
 DECLARE_SOA_COLUMN(TimeOverThresholdBarrel, timeOverThresholdBarrel, float);   //! Time over threshold for the Barrel layers
 DECLARE_SOA_COLUMN(TimeOverThresholdForward, timeOverThresholdForward, float); //! Time over threshold for the Forward layers
 
-DECLARE_SOA_COLUMN(NSigmaTrkEl, nSigmaEl, float); //! NSigma electron from the tracker layers
-DECLARE_SOA_COLUMN(NSigmaTrkMu, nSigmaMu, float); //! NSigma muon from the tracker layers
-DECLARE_SOA_COLUMN(NSigmaTrkPi, nSigmaPi, float); //! NSigma pion from the tracker layers
-DECLARE_SOA_COLUMN(NSigmaTrkKa, nSigmaKa, float); //! NSigma kaon from the tracker layers
-DECLARE_SOA_COLUMN(NSigmaTrkPr, nSigmaPr, float); //! NSigma proton from the tracker layers
-DECLARE_SOA_COLUMN(NSigmaTrkDe, nSigmaDe, float); //! NSigma deuteron from the tracker layers
-DECLARE_SOA_COLUMN(NSigmaTrkTr, nSigmaTr, float); //! NSigma triton from the tracker layers
-DECLARE_SOA_COLUMN(NSigmaTrkHe, nSigmaHe, float); //! NSigma helium-3 from the tracker layers
-DECLARE_SOA_COLUMN(NSigmaTrkAl, nSigmaAl, float); //! NSigma alpha from the tracker layers
+DECLARE_SOA_COLUMN(NSigmaTrkEl, nSigmaTrkEl, float); //! NSigma electron from the tracker layers
+DECLARE_SOA_COLUMN(NSigmaTrkMu, nSigmaTrkMu, float); //! NSigma muon from the tracker layers
+DECLARE_SOA_COLUMN(NSigmaTrkPi, nSigmaTrkPi, float); //! NSigma pion from the tracker layers
+DECLARE_SOA_COLUMN(NSigmaTrkKa, nSigmaTrkKa, float); //! NSigma kaon from the tracker layers
+DECLARE_SOA_COLUMN(NSigmaTrkPr, nSigmaTrkPr, float); //! NSigma proton from the tracker layers
+DECLARE_SOA_COLUMN(NSigmaTrkDe, nSigmaTrkDe, float); //! NSigma deuteron from the tracker layers
+DECLARE_SOA_COLUMN(NSigmaTrkTr, nSigmaTrkTr, float); //! NSigma triton from the tracker layers
+DECLARE_SOA_COLUMN(NSigmaTrkHe, nSigmaTrkHe, float); //! NSigma helium-3 from the tracker layers
+DECLARE_SOA_COLUMN(NSigmaTrkAl, nSigmaTrkAl, float); //! NSigma alpha from the tracker layers
 
 DECLARE_SOA_DYNAMIC_COLUMN(NSigmaTrk, nSigmaTrk, //! General function to get the nSigma for the tracker layers
                            [](const float el,
@@ -102,8 +102,7 @@ DECLARE_SOA_TABLE(UpgradeTrkPids, "AOD", "UPGRADETRKPID",
                                           upgrade::trk::NSigmaTrkDe,
                                           upgrade::trk::NSigmaTrkTr,
                                           upgrade::trk::NSigmaTrkHe,
-                                          upgrade::trk::NSigmaTrkAl
-                                          >);
+                                          upgrade::trk::NSigmaTrkAl>);
 
 using UpgradeTrkPidSignal = UpgradeTrkPidSignals::iterator;
 using UpgradeTrkPid = UpgradeTrkPids::iterator;
