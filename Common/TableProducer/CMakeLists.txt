@@ -75,6 +75,12 @@ o2physics_add_dpl_workflow(ft0-corrected-table
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                 COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(ft0-corrected-table-mc-override
+                    SOURCES ft0CorrectedTableMcOverride.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                COMPONENT_NAME Analysis)
+
+
 o2physics_add_dpl_workflow(track-propagation
                     SOURCES trackPropagation.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
