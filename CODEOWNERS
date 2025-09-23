@@ -51,6 +51,8 @@
 /PWGLF/TableProducer/Resonances @alibuild @sustripathy @skundu692 @mpuccio @dmallick2 @smaff92
 /PWGLF/Tasks/Strangeness @alibuild @sustripathy @skundu692 @mpuccio @ercolessi @romainschotter
 /PWGLF/TableProducer/Strangeness @alibuild @sustripathy @mpuccio @skundu692 @ercolessi @romainschotter
+/PWGLF/TableProducer/QC @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
+/PWGLF/Tasks/QC @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
 /PWGLF/Utils @alibuild @sustripathy @skundu692 @mpuccio @gbencedi @abmodak @fmazzasc @maciacco @dmallick2 @smaff92 @ercolessi @romainschotter
 
 # PWG-MM (fused with LF, LF conveners included. Directories to be merged in the future)
