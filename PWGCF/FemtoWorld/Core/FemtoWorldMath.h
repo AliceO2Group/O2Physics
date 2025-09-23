@@ -14,8 +14,8 @@
 /// \author Valentina Mantovani Sarti, TU München, valentina.mantovani-sarti@tum.de, Laura Serksnyte, TU München, laura.serksnyte@cern.ch
 /// \author Zuzanna Chochulska, WUT Warsaw, zchochul@cern.ch
 
-#ifndef FEMTOWORLDMATH_H_
-#define FEMTOWORLDMATH_H_
+#ifndef PWGCF_FEMTOWORLD_CORE_FEMTOWORLDMATH_H_
+#define PWGCF_FEMTOWORLD_CORE_FEMTOWORLDMATH_H_
 
 #include "Math/Vector4D.h"
 #include "Math/Boost.h"
