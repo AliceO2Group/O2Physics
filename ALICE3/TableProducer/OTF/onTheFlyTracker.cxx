@@ -139,6 +139,7 @@ struct OnTheFlyTracker {
     Configurable<int> minSiliconHitsIfTPCUsed{"minSiliconHitsIfTPCUsed", 2, "minimum number of silicon hits to accept track in case TPC info is present"};
     Configurable<int> minTPCClusters{"minTPCClusters", 70, "minimum number of TPC hits necessary to consider minSiliconHitsIfTPCUsed"};
     Configurable<int> alice3detector{"alice3detector", 2, "0: ALICE 3 v1, 1: ALICE 3 v4, 2: ALICE 3 Sep 2025"};
+    Configurable<std::string> alice3geo{"alice3geo", "", "Path to ccdb with a3 geo. If empty, fallback to pre-defined geometry"};
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
@@ -413,22 +414,26 @@ struct OnTheFlyTracker {
     fastTracker.SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
     fastTracker.SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
 
-    switch (fastTrackerSettings.alice3detector) {
-      case 0:
-        fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
-        break;
+    if (fastTrackerSettings.alice3geo.value.empty()) {
+      switch (fastTrackerSettings.alice3detector) {
+        case 0:
+          fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
+          break;
 
-      case 1:
-        fastTracker.AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
-        fastTracker.AddTPC(0.1, 0.1);
-        break;
+        case 1:
+          fastTracker.AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
+          fastTracker.AddTPC(0.1, 0.1);
+          break;
 
-      case 2:
-        fastTracker.AddSiliconALICE3(fastTrackerSettings.scaleVD, fastTrackerSettings.pixelRes);
-        break;
+        case 2:
+          fastTracker.AddSiliconALICE3(fastTrackerSettings.scaleVD, fastTrackerSettings.pixelRes);
+          break;
 
-      default:
-        break;
+        default:
+          break;
+      }
+    } else {
+      fastTracker.AddGenericDetector(fastTrackerSettings.alice3geo, ccdb.operator->());
     }
 
     // print fastTracker settings
