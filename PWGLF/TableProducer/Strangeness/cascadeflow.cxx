@@ -728,7 +728,7 @@ struct cascadeFlow {
     const AxisSpec ptAxisCasc{static_cast<int>((CandidateConfigs.MaxPt - CandidateConfigs.MinPt) / 0.2), CandidateConfigs.MinPt, CandidateConfigs.MaxPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ptAxisLambda{static_cast<int>((V0Configs.MaxPtV0 - V0Configs.MinPtV0) / 0.2), V0Configs.MinPtV0, V0Configs.MaxPtV0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec v2Axis{200, -1., 1., "#it{v}_{2}"};
-    const AxisSpec CentAxis{18, 0., 90., "FT0C centrality percentile"};
+    const AxisSpec CentAxis{20, 0., 100., "FT0C centrality percentile"};
     TString hNEventsLabels[10] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "trackOccupancyInTimeRange", "kNoCollInTimeRange", "kNoCollInROF", "kTVXinTRD", "kIsGoodEventEP"};
     TString hNEventsLabelsMC[6] = {"All", "z vtx", ">=1RecoColl", "1Reco", "2Reco", "EvSelected"};
     TString hNCascLabelsMC[8] = {"All Xi", "all Omega", "Xi: has MC coll", "Om: has MC coll", "Xi: isPrimary", "Om: is Primary", "Xi: |eta|<0.8", "Om: |eta| < 0.8"};
@@ -748,7 +748,7 @@ struct cascadeFlow {
     histos.add("ShiftTPCL", "ShiftTPCL", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
     histos.add("ShiftTPCR", "ShiftTPCR", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
 
-    histos.add("hNEvents", "hNEvents", {HistType::kTH1F, {{10, 0.f, 10.f}}});
+    histos.add("hNEvents", "hNEvents", {HistType::kTH1D, {{10, 0.f, 10.f}}});
     for (Int_t n = 1; n <= histos.get<TH1>(HIST("hNEvents"))->GetNbinsX(); n++) {
       histos.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(n, hNEventsLabels[n - 1]);
     }

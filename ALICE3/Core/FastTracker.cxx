@@ -30,6 +30,7 @@ namespace fastsim
 
 void FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi, float resZ, float eff, int type)
 {
+  LOG(debug) << "Adding layer " << name << " r=" << r << " z=" << z << " x0=" << x0 << " xrho=" << xrho << " resRPhi=" << resRPhi << " resZ=" << resZ << " eff=" << eff << " type=" << type;
   DetLayer newLayer(name, r, z, x0, xrho, resRPhi, resZ, eff, type);
   // Check that efficient layers are not inert layers
   if (newLayer.getEfficiency() > 0.0f && newLayer.isInert()) {
@@ -144,27 +145,42 @@ void FastTracker::AddSiliconALICE3v2(std::vector<float> pixelResolution)
   AddLayer("B10", 80., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
 }
 
-void FastTracker::AddSiliconALICE3(std::vector<float> pixelResolution)
+void FastTracker::AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelResolution)
 {
-  float x0IT = 0.001;        // 0.1%
+  float x0Pipe0 = 0.001592;  // 200 um AlBe
+  float x0VDL0 = 0.00076;    // 30 um Si + 50 um glue + carbon foam 0.03%
+  float x0VDL1 = 0.00096;    // 30 um Si + 50 um glue + carbon foam 0.05%
+  float x0VDL2 = 0.00167;    // 30 um Si + 50 um glue + carbon foam 0.05% + 0.07% Be case
+  float x0Coldplate = 0.02f; // (1.5 mm Al2O3 2%)
+  float x0Pipe1 = 0.0023f;   // 800 um Be
   float x0OT = 0.01;         // 1.0%
-  float xrhoIB = 2.3292e-02; // 100 mum Si
-  float xrhoOT = 2.3292e-01; // 1000 mum Si
-  float eff = 1.00;
+  float x0iTOF = x0OT * 3.;
 
-  float resRPhiIT = pixelResolution[0];
-  float resZIT = pixelResolution[1];
+  float resRPhiVD = pixelResolution[0];
+  float resZVD = pixelResolution[1];
   float resRPhiOT = pixelResolution[2];
   float resZOT = pixelResolution[3];
 
-  AddLayer("bpipe0", 0.48, 250, 0.00042, 2.772e-02, 0.0f, 0.0f, 0.0f, 0); // 150 mum Be
-  AddLayer("B00", 0.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
-  AddLayer("B01", 1.2, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
-  AddLayer("B02", 2.5, 250, x0IT, xrhoIB, resRPhiIT, resZIT, eff, 1);
-  AddLayer("bpipe1", 3.7, 250, 0.0014, 9.24e-02, 0.0f, 0.0f, 0.0f, 0); // 500 mum Be
+  float xrhoPipe0 = 0;
+  float xrhoVDL0 = 0;
+  float xrhoVDL1 = 0;
+  float xrhoVDL2 = 0;
+  float xrhoColdplate = 0;
+  float xrhoPipe1 = 0;
+  float xrhoOT = 2.3292e-01;
+  float xrhoiTOF = 0.03;
+  float eff = 1.00;
+
+  AddLayer("bpipe0", 0.48, 250, x0Pipe0, xrhoPipe0, 0.0f, 0.0f, 0.0f, 0);
+  AddLayer("B00", 0.5, 250, x0VDL0 * scaleX0VD, xrhoVDL0, resRPhiVD, resZVD, eff, 1);
+  AddLayer("B01", 1.2, 250, x0VDL1 * scaleX0VD, xrhoVDL1, resRPhiVD, resZVD, eff, 1);
+  AddLayer("B02", 2.5, 250, x0VDL2 * scaleX0VD, xrhoVDL2, resRPhiVD, resZVD, eff, 1);
+  AddLayer("coldplate", 2.6, 250, x0Coldplate, xrhoColdplate, 0.0f, 0.0f, 0.0f, 0);
+  AddLayer("bpipe1", 5.7, 250, x0Pipe1, xrhoPipe1, 0.0f, 0.0f, 0.0f, 0);
   AddLayer("B03", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B04", 9., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B05", 12., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
+  AddLayer("iTOF", 19, 250, x0iTOF, xrhoiTOF, resRPhiOT, resZOT, eff, 0);
   AddLayer("B06", 20., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B07", 30., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B08", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
@@ -215,6 +231,56 @@ void FastTracker::AddTPC(float phiResMean, float zResMean)
 
     AddLayer(Form("tpc_%d", k), rowRadius, zLength, radLPerRow, 0, phiResMean, zResMean, 1.0f, 2);
   }
+}
+
+void FastTracker::AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBManager* ccdbManager)
+{
+  LOG(info) << " Adding generic detector from file " << filename;
+  // If the filename starts with ccdb: then take the file from the ccdb
+  if (filename.rfind("ccdb:", 0) == 0) {
+    std::string ccdbPath = filename.substr(5); // remove "ccdb:" prefix
+    if (ccdbManager == nullptr) {
+      LOG(fatal) << "CCDB manager is null, cannot retrieve file " << ccdbPath;
+      return;
+    }
+    const std::string outPath = "/tmp/DetGeo/";
+    filename = Form("%s/%s/snapshot.root", outPath.c_str(), ccdbPath.c_str());
+    std::ifstream checkFile(filename); // Check if file already exists
+    if (!checkFile.is_open()) {        // File does not exist, retrieve from CCDB
+      LOG(info) << " --- CCDB source detected for detector geometry " << filename;
+      std::map<std::string, std::string> metadata;
+      ccdbManager->getCCDBAccessor().retrieveBlob(ccdbPath, outPath, metadata, 1);
+      // Add CCDB handling logic here if needed
+      LOG(info) << " --- Now retrieving geometry configuration from CCDB to: " << filename;
+    } else { // File exists, proceed to load
+      LOG(info) << " --- Geometry configuration file already exists: " << filename << ". Skipping download.";
+      checkFile.close();
+    }
+    AddGenericDetector(filename, nullptr);
+    return;
+  }
+
+  std::ifstream infile(filename);
+  if (!infile.is_open()) {
+    LOG(fatal) << "Could not open detector configuration file: " << filename;
+    return;
+  }
+
+  std::string line;
+  while (std::getline(infile, line)) {
+    if (line.empty() || line[0] == '#')
+      continue; // skip comments and empty lines
+    std::istringstream iss(line);
+    std::string name;
+    float r, z, x0, xrho, resRPhi, resZ, eff;
+    int type;
+    if (!(iss >> name >> r >> z >> x0 >> xrho >> resRPhi >> resZ >> eff >> type)) {
+      LOG(error) << "Malformed line in detector config: " << line;
+      continue;
+    }
+    AddLayer(name.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
+  }
+  infile.close();
 }
 
 float FastTracker::Dist(float z, float r)

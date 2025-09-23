@@ -24,6 +24,11 @@ o2physics_add_dpl_workflow(femto-v0-qa
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-kink-qa
+	  SOURCES femtoKinkQa.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femto-cascade-qa
 	  SOURCES femtoCascadeQa.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
