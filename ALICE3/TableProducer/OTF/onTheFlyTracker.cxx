@@ -113,6 +113,7 @@ struct OnTheFlyTracker {
   Configurable<std::string> lutDe{"lutDe", "lutCovm.de.dat", "LUT for deuterons"};
   Configurable<std::string> lutTr{"lutTr", "lutCovm.tr.dat", "LUT for tritons"};
   Configurable<std::string> lutHe3{"lutHe3", "lutCovm.he3.dat", "LUT for Helium-3"};
+  Configurable<std::string> lutAl{"lutAl", "lutCovm.he3.dat", "LUT for Alphas"}; // To be created, for now propagating as He-3
 
   struct : ConfigurableGroup {
     ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
@@ -138,12 +139,11 @@ struct OnTheFlyTracker {
     Configurable<int> minSiliconHits{"minSiliconHits", 6, "minimum number of silicon hits to accept track"};
     Configurable<int> minSiliconHitsIfTPCUsed{"minSiliconHitsIfTPCUsed", 2, "minimum number of silicon hits to accept track in case TPC info is present"};
     Configurable<int> minTPCClusters{"minTPCClusters", 70, "minimum number of TPC hits necessary to consider minSiliconHitsIfTPCUsed"};
-    Configurable<int> alice3detector{"alice3detector", 2, "0: ALICE 3 v1, 1: ALICE 3 v4, 2: ALICE 3 Sep 2025"};
+    Configurable<int> alice3detector{"alice3detector", 0, "0: ALICE 3 v1, 1: ALICE 3 v4"};
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
     Configurable<bool> applyEffCorrection{"applyEffCorrection", true, "apply efficiency correction or not"};
-    Configurable<int> scaleVD{"scaleVD", 1, "scale x0 and xrho in VD layers"};
     Configurable<std::vector<float>> pixelRes{"pixelRes", {0.00025, 0.00025, 0.001, 0.001}, "RPhiIT, ZIT, RPhiOT, ZOT"};
   } fastTrackerSettings; // allows for gap between peak and bg in case someone wants to
 
@@ -240,32 +240,44 @@ struct OnTheFlyTracker {
 
   // For TGenPhaseSpace seed
   TRandom3 rand;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   void init(o2::framework::InitContext&)
   {
-
-    ccdb->setURL("http://alice-ccdb.cern.ch");
-    ccdb->setTimestamp(-1);
-
     if (enableLUT) {
-      mSmearer.setCcdbManager(ccdb.operator->());
+      std::map<int, const char*> mapPdgLut;
+      const char* lutElChar = lutEl->c_str();
+      const char* lutMuChar = lutMu->c_str();
+      const char* lutPiChar = lutPi->c_str();
+      const char* lutKaChar = lutKa->c_str();
+      const char* lutPrChar = lutPr->c_str();
 
-      auto loadLUT = [&](int pdg, const std::string& lutFile) {
-        bool success = mSmearer.loadTable(pdg, lutFile.c_str());
-        if (!success && !lutFile.empty()) {
-          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lutFile;
+      LOGF(info, "Will load electron lut file ..: %s", lutElChar);
+      LOGF(info, "Will load muon lut file ......: %s", lutMuChar);
+      LOGF(info, "Will load pion lut file ......: %s", lutPiChar);
+      LOGF(info, "Will load kaon lut file ......: %s", lutKaChar);
+      LOGF(info, "Will load proton lut file ....: %s", lutPrChar);
+
+      mapPdgLut.insert(std::make_pair(11, lutElChar));
+      mapPdgLut.insert(std::make_pair(13, lutMuChar));
+      mapPdgLut.insert(std::make_pair(211, lutPiChar));
+      mapPdgLut.insert(std::make_pair(321, lutKaChar));
+      mapPdgLut.insert(std::make_pair(2212, lutPrChar));
+
+      if (enableNucleiSmearing) {
+        const char* lutDeChar = lutDe->c_str();
+        const char* lutTrChar = lutTr->c_str();
+        const char* lutHe3Char = lutHe3->c_str();
+        const char* lutAlChar = lutAl->c_str();
+        mapPdgLut.insert(std::make_pair(1000010020, lutDeChar));
+        mapPdgLut.insert(std::make_pair(1000010030, lutTrChar));
+        mapPdgLut.insert(std::make_pair(1000020030, lutHe3Char));
+        mapPdgLut.insert(std::make_pair(1000020030, lutAlChar));
+      }
+      for (const auto& e : mapPdgLut) {
+        if (!mSmearer.loadTable(e.first, e.second)) {
+          LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
         }
-      };
-      loadLUT(11, lutEl.value);
-      loadLUT(13, lutMu.value);
-      loadLUT(211, lutPi.value);
-      loadLUT(321, lutKa.value);
-      loadLUT(2212, lutPr.value);
-      loadLUT(1000010020, lutDe.value);
-      loadLUT(1000010030, lutTr.value);
-      loadLUT(1000020030, lutHe3.value);
-
+      }
       // interpolate efficiencies if requested to do so
       mSmearer.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
 
@@ -413,22 +425,12 @@ struct OnTheFlyTracker {
     fastTracker.SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
     fastTracker.SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
 
-    switch (fastTrackerSettings.alice3detector) {
-      case 0:
-        fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
-        break;
-
-      case 1:
-        fastTracker.AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
-        fastTracker.AddTPC(0.1, 0.1);
-        break;
-
-      case 2:
-        fastTracker.AddSiliconALICE3(fastTrackerSettings.scaleVD, fastTrackerSettings.pixelRes);
-        break;
-
-      default:
-        break;
+    if (fastTrackerSettings.alice3detector == 0) {
+      fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
+    }
+    if (fastTrackerSettings.alice3detector == 1) {
+      fastTracker.AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
+      fastTracker.AddTPC(0.1, 0.1);
     }
 
     // print fastTracker settings
@@ -516,7 +518,8 @@ struct OnTheFlyTracker {
         continue;
       }
       const auto pdg = std::abs(mcParticle.pdgCode());
-      if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton) {
+      if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton
+          && pdg != 1000010020 && pdg != 1000010030 && pdg != 1000020030 && pdg != 1000020040) {
         if (!cascadeDecaySettings.decayXi) {
           continue;
         } else if (pdg != 3312) {
@@ -563,7 +566,8 @@ struct OnTheFlyTracker {
           continue;
         }
       }
-      if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton) {
+      if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton
+          && pdg != 1000010020 && pdg != 1000010030 && pdg != 1000020030 && pdg != 1000020040) {
         if (!cascadeDecaySettings.decayXi) {
           continue;
         } else if (pdg != 3312) {
