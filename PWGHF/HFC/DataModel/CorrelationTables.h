@@ -232,8 +232,8 @@ namespace hf_correlation_ds_hadron
 {
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);                             //! DeltaPhi between Ds and Hadrons
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);                             //! DeltaEta between Ds and Hadrons
-DECLARE_SOA_COLUMN(PtD, ptD, float);                                       //! Transverse momentum of Ds
-DECLARE_SOA_COLUMN(PtHadron, ptHadron, float);                             //! Transverse momentum of Hadron
+DECLARE_SOA_COLUMN(SignedPtD, signedPtD, float);                           //! Transverse momentum of Ds
+DECLARE_SOA_COLUMN(SignedPtHadron, signedPtHadron, float);                 //! Transverse momentum of Hadron
 DECLARE_SOA_COLUMN(MD, mD, float);                                         //! Invariant mass of Ds
 DECLARE_SOA_COLUMN(MlScoreBkg, mlScoreBkg, float);                         //! ML background score for Ds selection
 DECLARE_SOA_COLUMN(MlScorePrompt, mlScorePrompt, float);                   //! ML prompt score for Ds selection
@@ -252,8 +252,8 @@ DECLARE_SOA_COLUMN(IsPhysicalPrimary, isPhysicalPrimary, bool);            //! U
 DECLARE_SOA_TABLE(DsHadronPair, "AOD", "DSHPAIR", //! Ds-Hadrons pairs Information
                   aod::hf_correlation_ds_hadron::DeltaPhi,
                   aod::hf_correlation_ds_hadron::DeltaEta,
-                  aod::hf_correlation_ds_hadron::PtD,
-                  aod::hf_correlation_ds_hadron::PtHadron,
+                  aod::hf_correlation_ds_hadron::SignedPtD,
+                  aod::hf_correlation_ds_hadron::SignedPtHadron,
                   aod::hf_correlation_ds_hadron::PoolBin,
                   aod::hf_correlation_ds_hadron::NumPvContrib);
 
@@ -273,7 +273,7 @@ DECLARE_SOA_TABLE(DsHadronMlInfo, "AOD", "DSHMLINFO", //! Ds-Hadrons pairs Machi
 
 DECLARE_SOA_TABLE(DsCandRecoInfo, "AOD", "DSCANDRECOINFO", //! Ds candidates Reconstructed Information
                   aod::hf_correlation_ds_hadron::MD,
-                  aod::hf_correlation_ds_hadron::PtD,
+                  aod::hf_correlation_ds_hadron::SignedPtD,
                   aod::hf_correlation_ds_hadron::MlScorePrompt,
                   aod::hf_correlation_ds_hadron::MlScoreBkg,
                   aod::hf_correlation_ds_hadron::NumPvContrib);

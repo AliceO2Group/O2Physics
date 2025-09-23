@@ -351,10 +351,11 @@ struct HfTaskCorrelationDsHadrons {
       case EfficiencyMode::DsOnly:
         if (loadAccXEffFromCCDB) {
           if (useHighDimHistoForEff) {
-            if (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(multPvContrib))) <= epsilon) {
+            if (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib))) <= epsilon) {
+              LOG(info) << "Mult: " << *multPvContrib << "  PtD: " << ptD;
               LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
             }
-            weight = 1. / hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(multPvContrib)));
+            weight = 1. / hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib)));
           } else {
             if (hEfficiencyD->GetBinContent(hEfficiencyD->FindBin(ptD)) <= epsilon) {
               LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
@@ -370,18 +371,18 @@ struct HfTaskCorrelationDsHadrons {
         break;
       case EfficiencyMode::DsHadronPair:
         if (loadAccXEffFromCCDB) {
-          if (ptAssoc && hEfficiencyAssociated) {
+          if (ptAssoc && (hEfficiencyAssociated || hEfficiencyAssociatedMult || hEfficiencyAssociatedDeltaPhiCorr)) {
             if (useHighDimHistoForEff) {
               if (applyDeltaPhiCorrEff) {
-                if (hEfficiencyAssociatedDeltaPhiCorr->GetBinContent(hEfficiencyAssociatedDeltaPhiCorr->FindBin(*ptAssoc, ptD, deltaPhi)) <= epsilon) {
+                if (hEfficiencyAssociatedDeltaPhiCorr->GetBinContent(hEfficiencyAssociatedDeltaPhiCorr->FindBin(*ptAssoc, ptD, static_cast<double>(*deltaPhi))) <= epsilon) {
                   LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
                 }
-                weight = 1. / (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(multPvContrib))) * hEfficiencyAssociatedDeltaPhiCorr->GetBinContent(hEfficiencyAssociatedDeltaPhiCorr->FindBin(*ptAssoc, ptD, deltaPhi)));
+                weight = 1. / (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib))) * hEfficiencyAssociatedDeltaPhiCorr->GetBinContent(hEfficiencyAssociatedDeltaPhiCorr->FindBin(*ptAssoc, ptD, static_cast<double>(*deltaPhi))));
               } else {
-                if (hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, static_cast<double>(multPvContrib))) <= epsilon) {
+                if (hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, static_cast<double>(*multPvContrib))) <= epsilon) {
                   LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
                 }
-                weight = 1. / (hEfficiencyDMult->GetBinContent(hEfficiencyD->FindBin(ptD, static_cast<double>(multPvContrib))) * hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, static_cast<double>(multPvContrib))));
+                weight = 1. / (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib))) * hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, static_cast<double>(*multPvContrib))));
               }
             } else {
               if (hEfficiencyAssociated->GetBinContent(hEfficiencyAssociated->FindBin(*ptAssoc)) <= epsilon) {
@@ -412,7 +413,7 @@ struct HfTaskCorrelationDsHadrons {
   {
     for (const auto& candidate : candidates) {
       float massD = candidate.mD();
-      float ptD = candidate.ptD();
+      float ptD = candidate.signedPtD();
       float bdtScorePrompt = candidate.mlScorePrompt();
       float bdtScoreBkg = candidate.mlScoreBkg();
       int multPvContrib = candidate.numPvContrib();
@@ -438,8 +439,8 @@ struct HfTaskCorrelationDsHadrons {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
       float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.ptD();
-      float ptHadron = pairEntry.ptHadron();
+      float ptD = pairEntry.signedPtD();
+      float ptHadron = pairEntry.signedPtHadron();
       float massD = pairEntry.mD();
       float bdtScorePrompt = pairEntry.mlScorePrompt();
       float bdtScoreBkg = pairEntry.mlScoreBkg();
@@ -464,6 +465,8 @@ struct HfTaskCorrelationDsHadrons {
       } else {
         efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
+
+      LOG(info) << "Efficiency weight = " << efficiencyWeight;
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
@@ -523,7 +526,7 @@ struct HfTaskCorrelationDsHadrons {
   {
     for (const auto& candidate : candidates) {
       float massD = candidate.mD();
-      float ptD = candidate.ptD();
+      float ptD = candidate.signedPtD();
       float bdtScorePrompt = candidate.mlScorePrompt();
       float bdtScoreBkg = candidate.mlScoreBkg();
       int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
@@ -556,8 +559,8 @@ struct HfTaskCorrelationDsHadrons {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
       float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.ptD();
-      float ptHadron = pairEntry.ptHadron();
+      float ptD = pairEntry.signedPtD();
+      float ptHadron = pairEntry.signedPtHadron();
       float massD = pairEntry.mD();
       float bdtScorePrompt = pairEntry.mlScorePrompt();
       float bdtScoreBkg = pairEntry.mlScoreBkg();
@@ -626,8 +629,8 @@ struct HfTaskCorrelationDsHadrons {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
       float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.ptD();
-      float ptHadron = pairEntry.ptHadron();
+      float ptD = pairEntry.signedPtD();
+      float ptHadron = pairEntry.signedPtHadron();
       int poolBin = pairEntry.poolBin();
       int statusPromptHadron = pairEntry.trackOrigin();
       bool isDsPrompt = pairEntry.isPrompt();
@@ -656,8 +659,8 @@ struct HfTaskCorrelationDsHadrons {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
       float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.ptD();
-      float ptHadron = pairEntry.ptHadron();
+      float ptD = pairEntry.signedPtD();
+      float ptHadron = pairEntry.signedPtHadron();
       float massD = pairEntry.mD();
       float bdtScorePrompt = pairEntry.mlScorePrompt();
       float bdtScoreBkg = pairEntry.mlScoreBkg();
@@ -741,8 +744,8 @@ struct HfTaskCorrelationDsHadrons {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
       float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.ptD();
-      float ptHadron = pairEntry.ptHadron();
+      float ptD = pairEntry.signedPtD();
+      float ptHadron = pairEntry.signedPtHadron();
       float massD = pairEntry.mD();
       int multPvContrib = pairEntry.numPvContrib();
       int poolBin = pairEntry.poolBin();
@@ -814,8 +817,8 @@ struct HfTaskCorrelationDsHadrons {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
       float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.ptD();
-      float ptHadron = pairEntry.ptHadron();
+      float ptD = pairEntry.signedPtD();
+      float ptHadron = pairEntry.signedPtHadron();
       float massD = pairEntry.mD();
       float bdtScorePrompt = pairEntry.mlScorePrompt();
       float bdtScoreBkg = pairEntry.mlScoreBkg();
