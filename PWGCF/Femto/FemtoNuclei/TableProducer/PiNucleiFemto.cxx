@@ -939,8 +939,8 @@ struct PiNucleiFemto {
     mOutputHyperDataTable(
       piNucand.recoPtNu(),
       piNucand.recoEtaNu(),
-      piNucand.ptHe3(),
-      piNucand.etaHe3(),
+      piNucand.ptHe3,
+      piNucand.etaHe3,
       piNucand.recoPhiNu(),
       piNucand.recoPtPi(),
       piNucand.recoEtaPi(),
