@@ -21,10 +21,11 @@
 #include "PWGJE/DataModel/JetReducedData.h"
 #include "PWGJE/DataModel/JetTagging.h"
 
+#include "Common/DataModel/Multiplicity.h"
+
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Common/DataModel/Multiplicity.h"
 #include <CommonConstants/MathConstants.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
@@ -35,6 +36,7 @@
 #include <Framework/runDataProcessing.h>
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <functional>
 #include <string>
@@ -57,21 +59,12 @@ struct JetTaggerHFQA {
 
   // Cut configuration
   Configurable<float> vertexZCut{"vertexZCut", 10.0f, "Accepted z-vertex range"};
-  Configurable<std::vector<float>> trackCuts {
-    "trackCuts", {0.15, 100.0, -0.9, 0.9},
-      "Track cuts: ptMin, ptMax, etaMin, etaMax"
-  };
+  Configurable<std::vector<float>> trackCuts{"trackCuts", std::vector<float>{0.15, 100.0, -0.9, 0.9}, "Track cuts: ptMin, ptMax, etaMin, etaMax"};
   Configurable<float> trackDcaXYMax{"trackDcaXYMax", 1, "minimum DCA xy acceptance for tracks [cm]"};
   Configurable<float> trackDcaZMax{"trackDcaZMax", 2, "minimum DCA z acceptance for tracks [cm]"};
   Configurable<float> maxDeltaR{"maxDeltaR", 0.25, "maximum distance of jet axis from flavour initiating parton"};
-  Configurable<std::vector<float>> jetEtaCuts {
-    "jetEtaCuts", {-99.0, 99.0},
-      "Jet cuts: etaMin, etaMax"
-  };
-  Configurable<std::vector<float>> prongCuts {
-    "prongCuts", {1, 100, 100, 100, 0.008, 1},
-      "prong cuts: chi2PCAMin, chi2PCAMax, sigmaLxyMax, sigmaLxyzMax, IPxyMin, IPxyMax"
-  };
+  Configurable<std::vector<float>> jetEtaCuts{"jetEtaCuts", std::vector<float>{-99.0, 99.0}, "Jet cuts: etaMin, etaMax"};
+  Configurable<std::vector<float>> prongCuts{"prongCuts", std::vector<float>{1, 100, 100, 100, 0.008, 1}, "prong cuts: chi2PCAMin, chi2PCAMax, sigmaLxyMax, sigmaLxyzMax, IPxyMin, IPxyMax"};
   Configurable<float> svDispersionMax{"svDispersionMax", 0.03f, "maximum dispersion of sv"};
   Configurable<int> numFlavourSpecies{"numFlavourSpecies", 6, "number of jet flavour species"};
   Configurable<int> numOrder{"numOrder", 6, "number of ordering"};
@@ -391,8 +384,8 @@ struct JetTaggerHFQA {
         registry.add("h2_3prong_nprongs_mult", "", {HistType::kTH2F, {{axisNprongs}, {axisMult}}});
         registry.add("hn_jet_3prong_mult", "", {HistType::kTHnF, {{axisJetPt}, {axisLxy}, {axisSigmaLxy}, {axisSxy}, {axisLxyz}, {axisSigmaLxyz}, {axisSxyz}, {axisMult}}});
       }
-      registry.add("hn_jet_3prong_Sxy_N1_mult", "", {HistType::kTHnF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisMult}}});
-      registry.add("hn_jet_3prong_Sxyz_N1_mult", "", {HistType::kTHnF, {{axisJetPt}, {axisSxyz},  {axisMass}, {axisMult}}});
+      registry.add("hn_jet_pt_3prong_Sxy_N1_mult", "", {HistType::kTHnF, {{axisJetPt}, {axisSxy}, {axisMass}, {axisMult}}});
+      registry.add("hn_jet_pt_3prong_Sxyz_N1_mult", "", {HistType::kTHnF, {{axisJetPt}, {axisSxyz}, {axisMass}, {axisMult}}});
     }
     if (doprocessSV2ProngMCD || doprocessSV2ProngMCDWeighted || doprocessSV2ProngMCPMCDMatched || doprocessSV2ProngMCPMCDMatchedWeighted) {
       if (!(doprocessIPsMCD || doprocessIPsMCDWeighted || doprocessIPsMCPMCDMatched || doprocessIPsMCPMCDMatchedWeighted) && !(doprocessJPMCD || doprocessJPMCDWeighted || doprocessJPMCPMCDMatched || doprocessJPMCPMCDMatchedWeighted) && !(doprocessSV3ProngMCD || doprocessSV3ProngMCDWeighted || doprocessSV3ProngMCPMCDMatched || doprocessSV3ProngMCPMCDMatchedWeighted)) {
@@ -1021,7 +1014,7 @@ struct JetTaggerHFQA {
     if (fillGeneralSVQA) {
       registry.fill(HIST("h2_3prong_nprongs_mult"), jet.template secondaryVertices_as<V>().size(), mult);
       for (const auto& prong : jet.template secondaryVertices_as<V>()) {
-        registry.fill(HIST("hn_jet_3prong_mult"), jet.pt(), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), prong.decayLength(), prong.decayLength(), prong.decayLength() / prong.errorDecayLengthXY(), mult);
+        registry.fill(HIST("hn_jet_3prong_mult"), jet.pt(), prong.decayLengthXY(), prong.errorDecayLengthXY(), prong.decayLengthXY() / prong.errorDecayLengthXY(), prong.decayLength(), prong.errorDecayLength(), prong.decayLength() / prong.errorDecayLengthXY(), mult);
       }
     }
     bool checkSv = false;
@@ -1029,9 +1022,9 @@ struct JetTaggerHFQA {
     if (checkSv && jettaggingutilities::svAcceptance(bjetCand, svDispersionMax)) {
       auto maxSxy = bjetCand.decayLengthXY() / bjetCand.errorDecayLengthXY();
       auto massSV = bjetCand.m();
-      registry.fill(HIST("h2_jet_pt_3prong_Sxy_N1_mult"), jet.pt(), maxSxy, massSV, mult);
+      registry.fill(HIST("hn_jet_pt_3prong_Sxy_N1_mult"), jet.pt(), maxSxy, massSV, mult);
       if (jet.isTagged(BJetTaggingMethod::SV)) {
-        registry.fill(HIST("h2_taggedjet_pt_3prong_Sxy_N1_mult"), jet.pt(), maxSxy, massSV, mult);
+        registry.fill(HIST("hn_taggedjet_pt_3prong_Sxy_N1_mult"), jet.pt(), maxSxy, massSV, mult);
       }
     }
     if (fillSVxyz) {
