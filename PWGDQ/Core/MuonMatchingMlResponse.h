@@ -50,7 +50,6 @@
     break;                                                         \
   }
 
-
 // Check if the index of mCachedIndices (index associated to a FEATURE)
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
@@ -268,26 +267,24 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
   {
     float inputFeature = 0.;
     switch (idx) {
-      CHECK_AND_FILL_MFT_TRACK(xMFT,getX);
-      CHECK_AND_FILL_MFT_TRACK(yMFT,getY);
-      CHECK_AND_FILL_MFT_TRACK(qOverptMFT,getInvQPt);
-      CHECK_AND_FILL_MFT_TRACK(tglMFT,getTanl);
-      CHECK_AND_FILL_MFT_TRACK(phiMFT,getPhi);
-      CHECK_AND_FILL_MFT_TRACK(chi2MFT,getTrackChi2);
-      CHECK_AND_FILL_MUON_TRACK(xMCH,getX);
-      CHECK_AND_FILL_MUON_TRACK(yMCH,getY);
-      CHECK_AND_FILL_MUON_TRACK(qOverptMCH,getInvQPt);
-      CHECK_AND_FILL_MUON_TRACK(tglMCH,getTanl);
-      CHECK_AND_FILL_MUON_TRACK(phiMCH,getPhi);
-      CHECK_AND_FILL_MUON_TRACK(chi2MCH,getTrackChi2);
-      CHECK_AND_FILL_MUONGLOB_TRACK(chi2MCHMFT,chi2MatchMCHMFT);
-      CHECK_AND_FILL_MUONGLOB_TRACK(chi2GlobMUON,chi2);
+      CHECK_AND_FILL_MFT_TRACK(xMFT, getX);
+      CHECK_AND_FILL_MFT_TRACK(yMFT, getY);
+      CHECK_AND_FILL_MFT_TRACK(qOverptMFT, getInvQPt);
+      CHECK_AND_FILL_MFT_TRACK(tglMFT, getTanl);
+      CHECK_AND_FILL_MFT_TRACK(phiMFT, getPhi);
+      CHECK_AND_FILL_MFT_TRACK(chi2MFT, getTrackChi2);
+      CHECK_AND_FILL_MUON_TRACK(xMCH, getX);
+      CHECK_AND_FILL_MUON_TRACK(yMCH, getY);
+      CHECK_AND_FILL_MUON_TRACK(qOverptMCH, getInvQPt);
+      CHECK_AND_FILL_MUON_TRACK(tglMCH, getTanl);
+      CHECK_AND_FILL_MUON_TRACK(phiMCH, getPhi);
+      CHECK_AND_FILL_MUON_TRACK(chi2MCH, getTrackChi2);
+      CHECK_AND_FILL_MUONGLOB_TRACK(chi2MCHMFT, chi2MatchMCHMFT);
+      CHECK_AND_FILL_MUONGLOB_TRACK(chi2GlobMUON, chi2);
       CHECK_AND_FILL_MFTMUON_COLLISION(posZ);
     }
     return inputFeature;
   }
-
-
 
   template <typename T1>
   float returnFeatureTest(uint8_t idx, T1 const& muon)
@@ -334,7 +331,6 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
     }
     return inputFeatures;
   }
-
 
   /// Method to get the value of variable chosen for binning
   /// \param track is the single track, \param collision is the collision

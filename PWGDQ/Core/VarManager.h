@@ -950,7 +950,6 @@ class VarManager : public TObject
     return fgzMatching;
   }
 
- 
   // Setup the 2 prong KFParticle
   static void SetupTwoProngKFParticle(float magField)
   {
@@ -1412,7 +1411,6 @@ o2::track::TrackParCovFwd VarManager::PropagateFwd(const T& track, const C& cov,
   o2::track::TrackParCovFwd fwdtrack = FwdToTrackPar(track, cov);
   fwdtrack.propagateToZhelix(z, fgMagField);
   return fwdtrack;
-  
 }
 
 template <uint32_t fillMap, typename T, typename C>

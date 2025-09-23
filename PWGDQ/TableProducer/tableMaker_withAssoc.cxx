@@ -1423,7 +1423,7 @@ struct TableMaker {
         fGrpMag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.fConfigGrpMagPath, bcs.begin().timestamp());
         if (fGrpMag != nullptr) {
           o2::base::Propagator::initFieldFromGRP(fGrpMag);
-	  VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
+          VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
         }
         if (fConfigVariousOptions.fPropMuon) {
           VarManager::SetupMuonMagField();
@@ -1501,13 +1501,13 @@ struct TableMaker {
         if constexpr (static_cast<bool>(TMFTFillMap)) {
           auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
           if (fConfigVariousOptions.fKeepBestMatch) {
-              if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-                if (fConfigVariousOptions.fUseML.value) {
+            if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+              if (fConfigVariousOptions.fUseML.value) {
                 skimBestMuonMatchesML(muons, mftTracks, mftCovs, collision);
-                }
-              } else {
-                skimBestMuonMatches(muons);
               }
+            } else {
+              skimBestMuonMatches(muons);
+            }
           }
           if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
             skimMuons<TMuonFillMap, TMFTFillMap>(collision, bcs, muons, groupedMuonIndices, mftTracks, mftCovs);

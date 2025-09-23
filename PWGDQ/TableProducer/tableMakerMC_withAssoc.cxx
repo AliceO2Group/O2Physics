@@ -939,14 +939,14 @@ struct TableMakerMC {
       if (static_cast<int>(muon.trackType()) < 2) {
         auto muonID = muon.matchMCHTrackId();
         auto muontrack = muon.template matchMCHTrack_as<TMuons>();
-	auto muonprop = VarManager::PropagateMuon(muontrack, collision, VarManager::kToMatching);
+        auto muonprop = VarManager::PropagateMuon(muontrack, collision, VarManager::kToMatching);
         auto mfttrack = muon.template matchMFTTrack_as<TMFTTracks>();
-	auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+        auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
         o2::track::TrackParCovFwd mftprop = VarManager::PropagateFwd(mfttrack, mfttrackcov, VarManager::GetMatchingPlane());
-	std::vector<float> output;
-	std::vector<float> inputML = matchingMlResponse.getInputFeaturesGlob(muon, muonprop, mftprop, mfttrackcov, collision);
-	matchingMlResponse.isSelectedMl(inputML, 0, output);
-	float score = output[0];
+        std::vector<float> output;
+        std::vector<float> inputML = matchingMlResponse.getInputFeaturesGlob(muon, muonprop, mftprop, mfttrackcov, collision);
+        matchingMlResponse.isSelectedMl(inputML, 0, output);
+        float score = output[0];
         if (mCandidates.find(muonID) == mCandidates.end()) {
           mCandidates[muonID] = {score, muon.globalIndex()};
         } else {
@@ -1186,7 +1186,7 @@ struct TableMakerMC {
         fGrpMag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.fGrpMagPath, bcs.begin().timestamp());
         if (fGrpMag != nullptr) {
           o2::base::Propagator::initFieldFromGRP(fGrpMag);
-	  VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
+          VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
         }
         if (fConfigVariousOptions.fPropMuon) {
           VarManager::SetupMuonMagField();
@@ -1277,13 +1277,13 @@ struct TableMakerMC {
           if constexpr (static_cast<bool>(TMFTFillMap)) {
             auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
             if (fConfigVariousOptions.fKeepBestMatch) {
-	      if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
-	        if (fConfigVariousOptions.fUseML.value) {
-	        skimBestMuonMatchesML(muons, mftTracks, mftCovs, collision);
-		}
-	      } else {
-	        skimBestMuonMatches(muons);
-	      }
+              if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+                if (fConfigVariousOptions.fUseML.value) {
+                  skimBestMuonMatchesML(muons, mftTracks, mftCovs, collision);
+                }
+              } else {
+                skimBestMuonMatches(muons);
+              }
             }
             if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
               skimMuons<TMuonFillMap, TMFTFillMap>(collision, muons, groupedMuonIndices, mcParticles, mftTracks, mftCovs);
