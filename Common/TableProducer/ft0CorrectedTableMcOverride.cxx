@@ -58,12 +58,6 @@ struct ft0CorrectedTableMcOverride {
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
   void init(o2::framework::InitContext&)
   {
-    if (doprocessStandard && doprocessWithBypassFT0timeInMC) {
-      LOG(fatal) << "Both processStandard and processWithBypassFT0timeInMC are enabled. Pick one of the two";
-    }
-    if (!doprocessStandard && !doprocessWithBypassFT0timeInMC) {
-      LOG(fatal) << "No process is enabled. Pick one";
-    }
     ccdb->setURL(cfgUrl);
     ccdb->setTimestamp(cfgTimestamp);
     ccdb->setCaching(true);
@@ -71,11 +65,9 @@ struct ft0CorrectedTableMcOverride {
     // Not later than now objects
     ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
-    if (doprocessWithBypassFT0timeInMC) {
-      // From ps to ns
-      resoFT0A.value = resoFT0A.value / 1000.f;
-      resoFT0C.value = resoFT0C.value / 1000.f;
-    }
+    // From ps to ns
+    resoFT0A.value = resoFT0A.value / 1000.f;
+    resoFT0C.value = resoFT0C.value / 1000.f;
     if (!addHistograms) {
       return;
     }
