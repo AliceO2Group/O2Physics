@@ -34,7 +34,7 @@
 #include <TMath.h>
 
 #include <fairlogger/Logger.h>
-
+#include <algorithm>
 #include <cmath> // for std::fabs
 #include <deque>
 #include <iostream>
