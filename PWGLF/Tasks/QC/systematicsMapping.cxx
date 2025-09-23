@@ -46,6 +46,13 @@ struct SystematicsMapping {
   ConfigurableAxis chi2Bins{"chi2Bins", {100, 0.f, 100.f}, "Binning for chi2"};
   // Selection configurables
   Configurable<float> selectionPosZ{"selectionPosZ", 10.f, "Max |z| of the primary vertex"};
+  // V0 selection criteria
+  Configurable<double> v0cospa{"v0cospa", 0.97, "V0 CosPA"};
+  Configurable<float> dcav0dau{"dcav0dau", 10, "DCA V0 Daughters"};
+  Configurable<float> dcanegtopv{"dcanegtopv", 0.0, "DCA Neg To PV"};
+  Configurable<float> dcapostopv{"dcapostopv", 0.0, "DCA Pos To PV"};
+  Configurable<float> v0radius{"v0radius", 0.0, "Radius"};
+  Configurable<float> etadau{"etadau", 0.8, "Eta Daughters"};
 
   HistogramRegistry registry{"registry"};
 
@@ -60,6 +67,15 @@ struct SystematicsMapping {
     const AxisSpec ptAxis{ptBins, "#it{p}_{T} (GeV/c)"};
     const AxisSpec etaAxis{etaBins, "#eta"};
     const AxisSpec phiAxis{phiBins, "#phi (rad)"};
+    const AxisSpec invariantMassAxis{invariantMassBins, "Invariant Mass (GeV/c^{2})"};
+    const AxisSpec nsigmaAxisTPC{nsigmaBins, "nSigma TPC"};
+    const AxisSpec nsigmaAxisTOF{nsigmaBins, "nSigma TOF"};
+    const AxisSpec tpcCrossedRowsAxis{tpcCrossedRowsBins, "TPC crossed rows"};
+    const AxisSpec itsClustersAxis{itsClustersBins, "ITS clusters"};
+    const AxisSpec dcaXYAxis{dcaBins, "DCAxy (cm)"};
+    const AxisSpec dcaZAxis{dcaBins, "DCAz (cm)"};
+    const AxisSpec chi2TPCAxis{chi2Bins, "TPC Chi2"};
+    const AxisSpec chi2ITSAxis{chi2Bins, "ITS Chi2"};
 
     if (doprocessData) {
 
@@ -73,19 +89,19 @@ struct SystematicsMapping {
       registry.addClone("K/", "K0s/");
 
       // Add the signal histograms
-      registry.add("K/SignalPositive", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, nsigmaBins, tpcCrossedRowsBins, itsClustersBins, dcaBins, chi2Bins});
-      registry.add("K/SignalNegative", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, nsigmaBins, tpcCrossedRowsBins, itsClustersBins, dcaBins, chi2Bins});
-      registry.add("K0s/Signal", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, invariantMassBins, tpcCrossedRowsBins, itsClustersBins, dcaBins, chi2Bins});
+      registry.add("K/SignalPositive", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis, nsigmaAxisTPC, nsigmaAxisTOF, tpcCrossedRowsBins, itsClustersBins, dcaXYAxis, dcaZAxis, chi2TPCAxis, chi2ITSAxis});
+      registry.add("K/SignalNegative", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis, nsigmaAxisTPC, nsigmaAxisTOF, tpcCrossedRowsBins, itsClustersBins, dcaXYAxis, dcaZAxis, chi2TPCAxis, chi2ITSAxis});
+      registry.add("K0s/Signal", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis, invariantMassBins, nsigmaAxisTPC, nsigmaAxisTOF, tpcCrossedRowsBins, itsClustersBins, dcaXYAxis, dcaZAxis, chi2TPCAxis, chi2ITSAxis});
     }
 
     if (doprocessMc) {
-      registry.add("K/GeneratedPositive", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins});
-      registry.add("K/GeneratedNegative", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins});
-      registry.add("K0s/Generated", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins});
+      registry.add("K/GeneratedPositive", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis});
+      registry.add("K/GeneratedNegative", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis});
+      registry.add("K0s/Generated", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis});
     }
   }
 
-  using TrackType = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::TracksDCA>;
+  using TrackType = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullPi, aod::pidTOFFullPi, aod::pidTPCFullKa, aod::pidTOFFullKa, aod::TracksDCA>;
   using CollisionType = soa::Join<aod::Collisions, aod::EvSels>;
 
   void processData(CollisionType const& collisions,
@@ -107,17 +123,23 @@ struct SystematicsMapping {
         registry.fill(HIST("K/hChi2OverNCLsTPC"), track.tpcChi2NCl());
         registry.fill(HIST("K/hChi2OverNCLsITS"), track.itsChi2NCl());
         if (track.sign() > 0)
-          registry.fill(HIST("K/SignalPositive"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcNClsCrossedRows(), track.itsNCls(), track.dcaXY(), track.dcaZ(), track.tpcChi2NCl());
+          registry.fill(HIST("K/SignalPositive"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.tpcNClsCrossedRows(), track.itsNCls(), track.dcaXY(), track.dcaZ(), track.tpcChi2NCl(), track.itsChi2NCl());
         else
-          registry.fill(HIST("K/SignalNegative"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcNClsCrossedRows(), track.itsNCls(), track.dcaXY(), track.dcaZ(), track.tpcChi2NCl());
+          registry.fill(HIST("K/SignalNegative"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.tpcNClsCrossedRows(), track.itsNCls(), track.dcaXY(), track.dcaZ(), track.tpcChi2NCl(), track.itsChi2NCl());
       }
 
       // K0s loop
       for (const auto& v0 : v0s) {
         if (v0.collisionId() != collision.globalIndex())
           continue;
+
         const auto& posTrack = v0.posTrack_as<TrackType>();
         const auto& negTrack = v0.negTrack_as<TrackType>();
+        if (v0.v0radius() < v0radius ||
+            v0.v0cosPA() < v0cospa ||
+            std::abs(posTrack.eta()) > etadau ||
+            std::abs(negTrack.eta()) > etadau)
+          continue;
         registry.fill(HIST("K0s/hTPCCrossedRows"), std::min(posTrack.tpcNClsCrossedRows(), negTrack.tpcNClsCrossedRows()));
         registry.fill(HIST("K0s/hITSClusters"), std::min(posTrack.itsNCls(), negTrack.itsNCls()));
         registry.fill(HIST("K0s/hDCAxy"), std::min(posTrack.dcaXY(), negTrack.dcaXY()));
@@ -125,11 +147,14 @@ struct SystematicsMapping {
         registry.fill(HIST("K0s/hChi2OverNCLsTPC"), std::min(posTrack.tpcChi2NCl(), negTrack.tpcChi2NCl()));
         registry.fill(HIST("K0s/hChi2OverNCLsITS"), std::min(posTrack.itsChi2NCl(), negTrack.itsChi2NCl()));
         registry.fill(HIST("K0s/Signal"), v0.pt(), v0.eta(), v0.phi(), v0.mK0Short() - constants::physics::MassK0Short,
+                      std::max(posTrack.tpcNSigmaPi(), negTrack.tpcNSigmaPi()),
+                      std::max(posTrack.tofNSigmaPi(), negTrack.tofNSigmaPi()),
                       std::min(posTrack.tpcNClsCrossedRows(), negTrack.tpcNClsCrossedRows()),
                       std::min(posTrack.itsNCls(), negTrack.itsNCls()),
                       std::min(posTrack.dcaXY(), negTrack.dcaXY()),
                       std::min(posTrack.dcaZ(), negTrack.dcaZ()),
-                      std::min(posTrack.tpcChi2NCl(), negTrack.tpcChi2NCl()));
+                      std::min(posTrack.tpcChi2NCl(), negTrack.tpcChi2NCl()),
+                      std::min(posTrack.itsChi2NCl(), negTrack.itsChi2NCl()));
       }
     }
   }
