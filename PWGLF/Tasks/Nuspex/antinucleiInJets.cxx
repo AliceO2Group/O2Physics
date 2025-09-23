@@ -120,6 +120,7 @@ struct AntinucleiInJets {
   Configurable<bool> applyItsPid{"applyItsPid", true, "apply ITS PID"};
   Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
   Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 100, "minimum number of TPC crossed pad rows"};
+  Configurable<double> minChiSquareTpc{"minChiSquareTpc", 0.0, "minimum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0, "maximum ITS chi^2/Ncls"};
   Configurable<double> minPt{"minPt", 0.3, "minimum pt of the tracks"};
@@ -564,6 +565,8 @@ struct AntinucleiInJets {
     if (!track.hasTPC())
       return false;
     if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
+      return false;
+    if (track.tpcChi2NCl() < minChiSquareTpc)
       return false;
     if (track.tpcChi2NCl() > maxChiSquareTpc)
       return false;
