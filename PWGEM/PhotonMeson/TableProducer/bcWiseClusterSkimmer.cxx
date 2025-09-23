@@ -247,15 +247,15 @@ struct bcWiseClusterSkimmer {
     bool hasFoundFT0 = bc.has_foundFT0();
     int foundFT0ID = hasFoundFT0 ? bc.foundFT0().bcId() : -1;
     int FT0ID = hasFT0 ? bc.ft0().bcId() : -1;
-    mHistManager.fill(HIST("BCHasFT0FoundFT0"), static_cast<float> FT0ID, static_cast<float> foundFT0ID);
-    mHistManager.fill(HIST("BCFoundFT0Diff"), static_cast<float> foundFT0ID - static_cast<float> FT0ID);
+    mHistManager.fill(HIST("BCHasFT0FoundFT0"), static_cast<float>(FT0ID), static_cast<float>(foundFT0ID));
+    mHistManager.fill(HIST("BCFoundFT0Diff"), static_cast<float>(foundFT0ID - FT0ID));
 
     auto bcIDInOrbit = bc.globalBC() % 3564;
 
     if (hasMCCollision) {
-      mHistManager.fill(HIST("BCIDOfMCColl"), static_cast<float> bcIDInOrbit);
+      mHistManager.fill(HIST("BCIDOfMCColl"), static_cast<float>(bcIDInOrbit));
       if (!hasFoundFT0) {
-        mHistManager.fill(HIST("BCIDOfMCCollButNoFT0"), static_cast<float> bcIDInOrbit);
+        mHistManager.fill(HIST("BCIDOfMCCollButNoFT0"), static_cast<float>(bcIDInOrbit));
       }
     }
 
