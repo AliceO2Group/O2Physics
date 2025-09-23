@@ -60,7 +60,8 @@ struct JflucWeightsLoader {
   bool useEffFromCCDB = false;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   std::string ccdbURL = "http://alice-ccdb.cern.ch";
-enum { kNUA, kEFF };
+  enum { kNUA,
+         kEFF };
 
   ~JflucWeightsLoader()
   {
@@ -139,13 +140,12 @@ enum { kNUA, kEFF };
       LOGF(info, "Assuming efficiency corrections from CCDB.");
       useEffFromCCDB = true;
       // If NUA corrections are from CCDB, use the same CCDB URL for efficiency corrections
-      if (!useNUAFromCCDB) { 
+      if (!useNUAFromCCDB) {
         ccdb->setURL(ccdbURL.data()); // default CCDB URL
         ccdb->setCaching(true);
         ccdb->setLocalObjectValidityChecking();
         ccdb->setFatalWhenNull(false);
       }
-      
     }
   }
 
@@ -174,7 +174,8 @@ enum { kNUA, kEFF };
     }
     if (pfeff) {
       if (collision.runNumber() != runNumber) {
-        if (pheff) delete pheff;
+        if (pheff)
+          delete pheff;
         if (!useEffFromCCDB) {
           if (!(pheff = pfeff->Get<THnF>("ccdb_object"))) {
             LOGF(warning, "Efficiency correction histogram not found.");
