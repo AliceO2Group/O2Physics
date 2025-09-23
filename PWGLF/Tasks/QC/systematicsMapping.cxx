@@ -40,8 +40,10 @@ struct SystematicsMapping {
   ConfigurableAxis invariantMassBins{"invariantMassBins", {100, -0.1f, 0.1f}, "Binning for the invariant mass (GeV/c^2)"};
   ConfigurableAxis nsigmaBins{"nsigmaBins", {100, -10.f, 10.f}, "Binning for nSigma"};
   // Selection bins
-  ConfigurableAxis tpcCrossedRowsBins{"tpcCrossedRowsBins", {5, 70, 100, 120, 135, 150}, "TPC Crossed rows bins for tracks"};
-  ConfigurableAxis itsClustersBins{"itsClustersBins", {5, 0, 6}, "ITS Crossed rows bins for tracks"};
+  ConfigurableAxis tpcCrossedRowsBins{"tpcCrossedRowsBins", {5, 70, 100, 120, 135, 150}, "Min TPC clusters for tracks"};
+  ConfigurableAxis itsClustersBins{"itsClustersBins", {5, 0, 6}, "Min ITS clusters for tracks"};
+  ConfigurableAxis dcaBins{"dcaBins", {100, 0.f, 5.f}, "Binning for DCA (cm)"};
+  ConfigurableAxis chi2Bins{"chi2Bins", {100, 0.f, 10.f}, "Binning for chi2"};
   // Selection configurables
   Configurable<float> selectionPosZ{"selectionPosZ", 10.f, "Max |z| of the primary vertex"};
 
@@ -61,15 +63,18 @@ struct SystematicsMapping {
 
     if (doprocessData) {
 
-      // First we define the histograms on which we are cutting (tpc crossed rows, its clusters, ..)
+      // First we define the histograms on which we are cutting (tpc clusters, its clusters, ..)
       registry.add("K/hTPCCrossedRows", "", HistType::kTH1F, {{100, 0, 200}});
       registry.add("K/hITSClusters", "", HistType::kTH1F, {{10, 0, 10}});
+      registry.add("K/hDCAxy", "", HistType::kTH1F, {dcaBins});
+      registry.add("K/hDCAz", "", HistType::kTH1F, {dcaBins});
+      registry.add("K/hChi2", "", HistType::kTH1F, {chi2Bins});
       registry.addClone("K/", "K0s/");
 
       // Add the signal histograms
-      registry.add("K/SignalPositive", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, nsigmaBins, tpcCrossedRowsBins, itsClustersBins});
-      registry.add("K/SignalNegative", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, nsigmaBins, tpcCrossedRowsBins, itsClustersBins});
-      registry.add("K0s/Signal", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, invariantMassBins, tpcCrossedRowsBins, itsClustersBins});
+      registry.add("K/SignalPositive", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, nsigmaBins, tpcCrossedRowsBins, itsClustersBins, dcaBins, chi2Bins});
+      registry.add("K/SignalNegative", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, nsigmaBins, tpcCrossedRowsBins, itsClustersBins, dcaBins, chi2Bins});
+      registry.add("K0s/Signal", "", HistType::kTHnSparseF, {ptBins, etaBins, phiBins, invariantMassBins, tpcCrossedRowsBins, itsClustersBins, dcaBins, chi2Bins});
     }
 
     if (doprocessMc) {
@@ -79,7 +84,7 @@ struct SystematicsMapping {
     }
   }
 
-  using TrackType = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTOFFullPi>;
+  using TrackType = soa::Join<aod::Tracks, aod::TracksExtra, aod::pidTPCFullKa, aod::pidTOFFullPi, aod::TracksDCA>;
   using CollisionType = soa::Join<aod::Collisions, aod::EvSels>;
 
   void processData(CollisionType const& collisions,
@@ -94,12 +99,15 @@ struct SystematicsMapping {
       for (const auto& track : tracks) {
         if (track.collisionId() != collision.globalIndex())
           continue;
-        registry.fill(HIST("hTPCCrossedRows"), track.tpcCrossedRows());
-        registry.fill(HIST("hITSClusters"), track.itsNCls());
+        registry.fill(HIST("K/hTPCCrossedRows"), track.tpcNClsCrossedRows());
+        registry.fill(HIST("K/hITSClusters"), track.itsNCls());
+        registry.fill(HIST("K/hDCAxy"), track.dcaXY());
+        registry.fill(HIST("K/hDCAz"), track.dcaZ());
+        registry.fill(HIST("K/hChi2"), track.tpcChi2NCl());
         if (track.sign() > 0)
-          registry.fill(HIST("K/SignalPositive"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcCrossedRows(), track.itsNCls());
+          registry.fill(HIST("K/SignalPositive"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcNClsCrossedRows(), track.itsNCls(), track.dcaXY(), track.dcaZ(), track.tpcChi2NCl());
         else
-          registry.fill(HIST("K/SignalNegative"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcCrossedRows(), track.itsNCls());
+          registry.fill(HIST("K/SignalNegative"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tpcNClsCrossedRows(), track.itsNCls(), track.dcaXY(), track.dcaZ(), track.tpcChi2NCl());
       }
 
       // K0s loop
@@ -108,7 +116,12 @@ struct SystematicsMapping {
           continue;
         const auto& posTrack = v0.posTrack_as<TrackType>();
         const auto& negTrack = v0.negTrack_as<TrackType>();
-        registry.fill(HIST("K0s/Signal"), v0.pt(), v0.eta(), v0.phi(), v0.mK0Short() - constants::physics::MassK0Short, std::min(posTrack.tpcCrossedRows(), negTrack.tpcCrossedRows()), std::min(posTrack.itsNCls(), negTrack.itsNCls()));
+        registry.fill(HIST("K0s/Signal"), v0.pt(), v0.eta(), v0.phi(), v0.mK0Short() - constants::physics::MassK0Short,
+                      std::min(posTrack.tpcNClsCrossedRows(), negTrack.tpcNClsCrossedRows()),
+                      std::min(posTrack.itsNCls(), negTrack.itsNCls()),
+                      std::min(posTrack.dcaXY(), negTrack.dcaXY()),
+                      std::min(posTrack.dcaZ(), negTrack.dcaZ()),
+                      std::min(posTrack.tpcChi2NCl(), negTrack.tpcChi2NCl()));
       }
     }
   }
