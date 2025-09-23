@@ -26,7 +26,6 @@
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Common/DataModel/Multiplicity.h"
 #include <CommonConstants/MathConstants.h>
 #include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
