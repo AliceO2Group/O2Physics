@@ -22,7 +22,6 @@
 #include <TObject.h>
 
 #include <fstream>
-#include <map>
 #include <string>
 #include <vector>
 
@@ -53,6 +52,16 @@ void FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho,
   }
   // Add the new layer to the layers vector
   layers.push_back(newLayer);
+}
+
+void FastTracker::addDeadPhiRegionInLayer(const std::string& layerName, float phiStart, float phiEnd)
+{
+  const int layerIdx = GetLayerIndex(layerName);
+  if (layerIdx < 0) {
+    LOG(fatal) << "Cannot add dead phi region to non-existing layer " << layerName;
+    return;
+  }
+  layers[layerIdx].addDeadPhiRegion(phiStart, phiEnd);
 }
 
 DetLayer FastTracker::GetLayer(int layer, bool ignoreBarrelLayers) const
@@ -185,7 +194,7 @@ void FastTracker::AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelReso
   AddLayer("B03", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B04", 9., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B05", 12., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("iTOF", 19, 250, x0iTOF, xrhoiTOF, resRPhiOT, resZOT, 0.0f, 0);
+  AddLayer("iTOF", 19, 250, x0iTOF, xrhoiTOF, resRPhiOT, resZOT, eff, 0);
   AddLayer("B06", 20., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B07", 30., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B08", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
@@ -491,6 +500,11 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
         LOG(info) << "Skipping inert layer: " << layers[il].getName() << " at radius " << layers[il].getRadius() << " cm";
       }
       continue; // inert layer, skip
+    }
+
+    if (layers[il].isInDeadPhiRegion(inputTrack.getPhi())) {
+      LOGF(debug, "Track is in dead region of layer %d", il);
+      continue; // dead region, skip
     }
 
     // layer is reached

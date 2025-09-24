@@ -16,10 +16,14 @@
 /// \brief  Basic struct to hold information regarding a detector layer to be used in fast simulation
 ///
 
-#include <vector>
-#include <string>
-
 #include "DetLayer.h"
+
+#include <CommonConstants/MathConstants.h>
+
+#include <fairlogger/Logger.h>
+
+#include <string>
+#include <vector>
 
 namespace o2::fastsim
 {
@@ -49,6 +53,27 @@ DetLayer::DetLayer(const TString& name_,
 DetLayer::DetLayer(const DetLayer& other)
   : name(other.name), r(other.r), z(other.z), x0(other.x0), xrho(other.xrho), resRPhi(other.resRPhi), resZ(other.resZ), eff(other.eff), type(other.type)
 {
+}
+
+void DetLayer::addDeadPhiRegion(float phiStart, float phiEnd)
+{
+  static constexpr float kDefaultValue = 2.f;
+  static constexpr float kPhiTolerance = 1e-4f;
+  if (mDeadPhiRegions == nullptr) {
+    mDeadPhiRegions = new TGraph();
+    mDeadPhiRegions->SetNameTitle(Form("deadPhiRegions_%s", name.Data()), Form("Dead phi regions for layer %s", name.Data()));
+    mDeadPhiRegions->AddPoint(0, kDefaultValue);
+    mDeadPhiRegions->AddPoint(o2::constants::math::TwoPI, kDefaultValue);
+  }
+  if (phiStart < 0 || phiStart >= o2::constants::math::TwoPI || phiEnd < 0 || phiEnd >= o2::constants::math::TwoPI) {
+    LOG(fatal) << "Cannot add dead phi region with invalid range [" << phiStart << ", " << phiEnd << "] to layer " << name;
+    return;
+  }
+  mDeadPhiRegions->AddPoint(phiStart, kDefaultValue);
+  mDeadPhiRegions->AddPoint(phiEnd, kDefaultValue);
+  mDeadPhiRegions->AddPoint(phiStart + kPhiTolerance, 0.f);
+  mDeadPhiRegions->AddPoint(phiEnd - kPhiTolerance, 0.f);
+  mDeadPhiRegions->Sort();
 }
 
 std::string DetLayer::toString() const
