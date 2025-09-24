@@ -281,7 +281,9 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_MUON_TRACK(chi2MCH, getTrackChi2);
       CHECK_AND_FILL_MUONGLOB_TRACK(chi2MCHMFT, chi2MatchMCHMFT);
       CHECK_AND_FILL_MUONGLOB_TRACK(chi2GlobMUON, chi2);
+      // Below are dummy files to remove warning of unused parameters
       CHECK_AND_FILL_MFTMUON_COLLISION(posZ);
+      CHECK_AND_FILL_MFT_COV(cXXMFT, cXX);
     }
     return inputFeature;
   }
