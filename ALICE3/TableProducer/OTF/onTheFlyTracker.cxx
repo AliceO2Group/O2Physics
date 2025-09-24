@@ -266,6 +266,7 @@ struct OnTheFlyTracker {
       loadLUT(1000010020, lutDe.value);
       loadLUT(1000010030, lutTr.value);
       loadLUT(1000020030, lutHe3.value);
+      loadLUT(1000020040, lutAl.value);
 
       // interpolate efficiencies if requested to do so
       mSmearer.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
