@@ -24,12 +24,14 @@
 #ifndef ALICE3_CORE_DELPHESO2TRACKSMEARER_H_
 #define ALICE3_CORE_DELPHESO2TRACKSMEARER_H_
 
-#include <map>
-#include <iostream>
-#include <fstream>
+#include <CCDB/BasicCCDBManager.h>
+#include <ReconstructionDataFormats/Track.h>
 
-#include "TRandom.h"
-#include "ReconstructionDataFormats/Track.h"
+#include <TRandom.h>
+
+#include <fstream>
+#include <iostream>
+#include <map>
 
 ///////////////////////////////
 /// DelphesO2/src/lutCovm.hh //
@@ -85,7 +87,7 @@ struct map_t {
     if (bin > nbins - 1)
       return nbins - 1;
     return bin;
-  }                                                                                                            //;
+  } //;
   void print() { printf("nbins = %d, min = %f, max = %f, log = %s \n", nbins, min, max, log ? "on" : "off"); } //;
 };
 
@@ -214,10 +216,34 @@ class TrackSmearer
         return 7; // Helium3
       default:
         return 2; // Default: pion
-    }             //;
-  }               //;
+    }
+  }
 
-  void setdNdEta(float val) { mdNdEta = val; } //;
+  const char* getParticleName(int pdg)
+  {
+    switch (abs(pdg)) {
+      case 11:
+        return "electron";
+      case 13:
+        return "muon";
+      case 211:
+        return "pion";
+      case 321:
+        return "kaon";
+      case 2212:
+        return "proton";
+      case 1000010020:
+        return "deuteron";
+      case 1000010030:
+        return "triton";
+      case 1000020030:
+        return "helium3";
+      default:
+        return "pion"; // Default: pion
+    }
+  }
+  void setdNdEta(float val) { mdNdEta = val; }                                 //;
+  void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdbManager = mgr; } //;
 
  protected:
   static constexpr unsigned int nLUTs = 8; // Number of LUT available
@@ -228,6 +254,9 @@ class TrackSmearer
   bool mSkipUnreconstructed = true; // don't smear tracks that are not reco'ed
   int mWhatEfficiency = 1;
   float mdNdEta = 1600.;
+
+ private:
+  o2::ccdb::BasicCCDBManager* mCcdbManager = nullptr;
 };
 
 } // namespace delphes

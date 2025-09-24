@@ -63,7 +63,7 @@ class BaseSelection
     if (static_cast<size_t>(observableIndex) >= NumObservables) {
       LOG(fatal) << "Observable is not valid. Observable (index) has to be smaller than " << NumObservables;
     }
-    if (skipMostPermissiveBit) {
+    if (!selectionValues.empty() && skipMostPermissiveBit) {
       mNSelections += selectionValues.size() - 1;
     } else {
       mNSelections += selectionValues.size();
@@ -110,17 +110,45 @@ class BaseSelection
     mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(baseName, lowerLimit, upperLimit, selectionValues, limitType, skipMostPermissiveBit, isMinimalCut);
   }
 
+  /// \brief Add a boolean based selection for a specific observable.
+  /// \param mode Whether the selection is not applied, minimal or optional cut
+  /// \param observableIndex Index of the observable.
+  void addSelection(int mode, int observableIndex)
+  {
+    switch (mode) {
+      case -1: // cut is optional and we store bit for the cut
+        mNSelections += 1;
+        mHasOptionalSelection = true;
+        mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(std::vector<T>{1}, limits::LimitType::kEqual, false, false);
+        break;
+      case 0: // cut is not applied, initalize with empty vector, so we bail out later
+        mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(std::vector<T>{}, limits::LimitType::kEqual, false, false);
+        break;
+      case 1: // cut is added as mininal selection (since it is only one value, not extra bit is stored)
+        mSelectionContainers.at(observableIndex) = SelectionContainer<T, BitmaskType>(std::vector<T>{1}, limits::LimitType::kEqual, true, true);
+        break;
+      default:
+        LOG(fatal) << "Invalid switch for boolean selection";
+    }
+    if (mNSelections >= sizeof(BitmaskType) * CHAR_BIT) {
+      LOG(fatal) << "Too many selections. At most " << sizeof(BitmaskType) * CHAR_BIT << " are supported";
+    }
+  }
+
   /// \brief Update the limits of a function-based selection for a specific observable.
   /// \param observable Index of the observable.
   /// \param value Value at which to evaluate the selection functions.
-  void updateLimits(int observable, T value) { mSelectionContainers.at(observable).updateLimits(value); }
+  void updateLimits(int observable, T value)
+  {
+    mSelectionContainers.at(observable).updateLimits(value);
+  }
 
   /// \brief Reset the internal bitmask and evaluation flags before evaluating a new event.
   void reset()
   {
     mFinalBitmask.reset();
     mPassesMinimalSelections = true;
-    // will be true if no optional cut as been defined and
+    // will be true if no optional cut has been defined and
     // will be set to false if we have optional cuts (but will be set to true in the case at least one optional cut succeeds)
     mPassesOptionalSelections = !mHasOptionalSelection;
   }

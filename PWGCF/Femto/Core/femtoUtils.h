@@ -184,6 +184,12 @@ inline bool enableTable(const char* tableName, int userSetting, o2::framework::I
   return required;
 }
 
+template <typename T>
+inline int sign(T value)
+{
+  return (value > 0) - (value < 0); // Returns 1 for positive, -1 for negative, 0 for zero
+}
+
 }; // namespace utils
 }; // namespace o2::analysis::femto
 #endif // PWGCF_FEMTO_CORE_FEMTOUTILS_H_

@@ -598,7 +598,7 @@ class FemtoUniverseDetaDphiStar
           return false;
         }
       } else {
-        if (distfrac > FracMax) {
+        if (((deta > cutDeltaEtaMin) && (deta < cutDeltaEtaMax)) && (distfrac > FracMax)) {
           return true;
         } else {
           if (ChosenEventType == femto_universe_container::EventType::same) {

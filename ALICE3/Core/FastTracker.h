@@ -14,9 +14,10 @@
 
 #include "DetLayer.h"
 
-#include "ReconstructionDataFormats/Track.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <ReconstructionDataFormats/Track.h>
 
-#include <fairlogger/Logger.h> // not a system header but megalinter thinks so
+#include <fairlogger/Logger.h>
 
 #include <string>
 #include <vector>
@@ -59,8 +60,19 @@ class FastTracker
 
   void AddSiliconALICE3v4(std::vector<float> pixelResolution);
   void AddSiliconALICE3v2(std::vector<float> pixelResolution);
-  void AddSiliconALICE3(std::vector<float> pixelResolution);
+  void AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelResolution);
   void AddTPC(float phiResMean, float zResMean);
+  /**
+   * @brief Adds a generic detector configuration from the specified file.
+   *
+   * This function loads and integrates a detector configuration into the tracker
+   * using the provided filename. The file should contain the necessary parameters
+   * and settings for the detector to be added.
+   *
+   * @param filename Path to the configuration file describing the detector.
+   * @param ccdbManager Pointer to a BasicCCDBManager instance for database access (if needed).
+   */
+  void AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBManager* ccdbManager = nullptr);
 
   void Print();
 

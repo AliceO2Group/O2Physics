@@ -804,7 +804,7 @@ struct DptDptTrackSelection {
   bool requirePvContributor = false;
 };
 
-inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdate, const char* period = "")
+inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdate, bool periodInPath = false, const std::string& suffix = "")
 {
   std::tm cfgtm = {};
   std::stringstream ss(ccdbdate);
@@ -812,13 +812,27 @@ inline TList* getCCDBInput(auto& ccdb, const char* ccdbpath, const char* ccdbdat
   cfgtm.tm_hour = 12;
   int64_t timestamp = std::mktime(&cfgtm) * 1000;
 
-  TList* lst = nullptr;
-  if (std::strlen(period) != 0) {
-    std::map<std::string, std::string> metadata{{"Period", period}};
-    lst = ccdb->template getSpecific<TList>(ccdbpath, timestamp, metadata);
-  } else {
-    lst = ccdb->template getForTimeStamp<TList>(ccdbpath, timestamp);
+  auto cleanPeriod = [](const auto& str) {
+    std::string tmpStr = str;
+    size_t pos = tmpStr.find('_');
+    if (pos != std::string::npos) {
+      tmpStr.erase(pos);
+    }
+    return tmpStr;
+  };
+
+  std::string actualPeriod = cleanPeriod(metadataInfo.get("LPMProductionTag"));
+  std::string actualPath = ccdbpath;
+  if (periodInPath) {
+    actualPath = actualPath + "/" + actualPeriod;
   }
+  if (suffix.length() > 0) {
+    actualPeriod = actualPeriod + "_" + suffix;
+  }
+
+  TList* lst = nullptr;
+  std::map<std::string, std::string> metadata{{"Period", actualPeriod}};
+  lst = ccdb->template getSpecific<TList>(actualPath, timestamp, metadata);
   if (lst != nullptr) {
     LOGF(info, "Correctly loaded CCDB input object");
   } else {
@@ -1149,7 +1163,7 @@ inline float extractMultiplicity(CollisionObject const& collision, CentMultEstim
       return collision.multFT0A();
       break;
     case CentMultFT0C:
-      return collision.multFT0M();
+      return collision.multFT0C();
       break;
     case CentMultNTPV:
       return collision.multNTracksPV();

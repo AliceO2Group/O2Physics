@@ -755,8 +755,8 @@ struct mcPidTof {
     Configurable<std::string> ccdbPath{"ccdbPath", "Users/f/fgrosa/RecalibmcPidTof/", "path for MC recalibration objects in CCDB"};
   } mcRecalib;
 
-  // list of productions for which the postcalibrations must be turned off (FT0 digitisation fixed)
-  const std::vector<std::string> prodNoPostCalib = {"LHC24h1c"};
+  // list of productions for which the postcalibrations is needed (bug in FT0 digitisation)
+  const std::vector<std::string> prodPostCalib = {"LHC24d3a", "LHC24d3b", "LHC24e3", "LHC24g5", "LHC24g6", "LHC24h2", "LHC24i1", "LHC24i2", "LHC24i3", "LHC24i4", "LHC24j6", "LHC24k3", "LHC24f3c", "LHC25e2", "LHC24h1b", "LHC25e4", "LHC25f5", "LHC25e8", "LHC25e9", "LHC25e10", "LHC25e11", "LHC23k4"};
   bool enableMcRecalib{false};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -894,7 +894,7 @@ struct mcPidTof {
     std::map<std::string, std::string> metadata;
     if (metadataInfo.isFullyDefined()) {
       metadata["RecoPassName"] = metadataInfo.get("AnchorPassName");
-      if (std::find(prodNoPostCalib.begin(), prodNoPostCalib.end(), metadataInfo.get("LPMProductionTag")) != prodNoPostCalib.end()) {
+      if (std::find(prodPostCalib.begin(), prodPostCalib.end(), metadataInfo.get("LPMProductionTag")) == prodPostCalib.end()) {
         enableMcRecalib = false;
         LOGP(warn, "Nsigma postcalibrations turned off for {} (new MC productions have FT0 digitisation fixed)", metadataInfo.get("LPMProductionTag"));
       }
