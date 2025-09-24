@@ -289,7 +289,7 @@ class ClosePairRejectionTrackKink
       auto daughter = kink.template chaDau_as<T3>();
       mCtr.compute(track, daughter);
     } else {
-      LOG(fatal) << "CPR Track-Kink: Wrong track sign";
+      LOG(warn) << "CPR Track-Kink: Wrong track sign";
     }
   }
 
