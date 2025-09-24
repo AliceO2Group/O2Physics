@@ -701,7 +701,7 @@ struct PiNucleiFemto {
     // constexpr double mHe3 = o2::constants::physics::MassHelium3;
     // constexpr double mPi  = o2::constants::physics::MassPiPlus;
     //  --- He3
-   float pxHe3 = V0Hyper.ptHe3() * std::cos(V0Hyper.phiHe3());
+    float pxHe3 = V0Hyper.ptHe3() * std::cos(V0Hyper.phiHe3());
     float pyHe3 = V0Hyper.ptHe3() * std::sin(V0Hyper.phiHe3());
     float pzHe3 = V0Hyper.ptHe3() * std::sinh(V0Hyper.etaHe3());
     // float pHe3  = V0Hyper.ptHe3() * std::cosh(V0Hyper.etaHe3());
@@ -724,7 +724,7 @@ struct PiNucleiFemto {
     if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
       return false;
     }
-   
+
     piHypercand.signPi = trackPi.sign();
     if (V0Hyper.isMatter()) {
       piHypercand.signNu = 1;
@@ -753,7 +753,6 @@ struct PiNucleiFemto {
     piHypercand.invMass = invMass;
 
     piHypercand.trackIDPi = trackPi.globalIndex();
-
 
     if (trackPi.hasTOF()) {
       float beta = o2::pid::tof::Beta::GetBeta(trackPi);
@@ -1098,10 +1097,10 @@ struct PiNucleiFemto {
       // auto collBracket = trackPair.collBracket;
 
       PiNucandidate piNucand;
-     if (!fillCandidateInfoHyper(v0hyper, piTrack, piNucand, isMixedEvent)) {
+      if (!fillCandidateInfoHyper(v0hyper, piTrack, piNucand, isMixedEvent)) {
         continue;
       }
-      
+
       mQaRegistry.fill(HIST("hNuPt"), piNucand.recoPtNu());
       mQaRegistry.fill(HIST("hPiPt"), piNucand.recoPtPi());
       mQaRegistry.fill(HIST("hNuEta"), piNucand.recoEtaNu());
@@ -1231,9 +1230,9 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
       LOG(info) << "Initialized event pool with size = " << All_Event_pool.size();
     }
     for (auto const& collision : collisions) {
-       mQaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
-       mQaRegistry.fill(HIST("hCentrality"), collision.centFT0C());
-       mQaRegistry.fill(HIST("hVtxZ"), collision.posZ());
+      mQaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
+      mQaRegistry.fill(HIST("hCentrality"), collision.centFT0C());
+      mQaRegistry.fill(HIST("hVtxZ"), collision.posZ());
       int poolIndexPi = where_pool(collision.posZ(), collision.centFT0C());
       auto& pool = All_Event_pool[poolIndexPi];
 
