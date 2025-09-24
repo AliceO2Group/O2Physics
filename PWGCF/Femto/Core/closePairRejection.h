@@ -65,6 +65,8 @@ constexpr char PrefixTrackTrackSe[] = "CPR_TrackTrack/SE/";
 constexpr char PrefixTrackTrackMe[] = "CPR_TrackTrack/ME/";
 constexpr char PrefixTrackV0Se[] = "CPR_TrackV0/SE/";
 constexpr char PrefixTrackV0Me[] = "CPR_TrackV0/ME/";
+constexpr char PrefixTrackKinkSe[] = "CPR_TrackKink/SE/";
+constexpr char PrefixTrackKinkMe[] = "CPR_TrackKink/ME/";
 
 // must be in sync with enum TrackVariables
 // the enum gives the correct index in the array
@@ -244,6 +246,50 @@ class ClosePairRejectionTrackV0 // can also be used for any particle type that h
       mCtr.compute(track, daughter);
     } else {
       LOG(fatal) << "CPR Track-V0: Wrong track sign";
+    }
+  }
+
+  bool isClosePair() const { return mCtr.isClosePair(); }
+  void fill()
+  {
+    mCtr.fill();
+  }
+  bool isActivated() const { return mIsActivated; }
+
+ private:
+  CloseTrackRejection<prefix> mCtr;
+  int mSignTrack = 0;
+  bool mIsActivated = true;
+};
+
+template <const char* prefix>
+class ClosePairRejectionTrackKink
+{
+ public:
+  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int signTrack, int absChargeTrack, bool isActivated)
+  {
+    mIsActivated = isActivated;
+    mSignTrack = signTrack;
+
+    // initialize CPR with charge of the track and the charged daughter particle
+    // For kinks, we compare the primary track with the charged daughter
+    // The charged daughter has absolute charge of 1, so we can pass the sign directly
+    mCtr.init(registry, specs, detaMax, dphistarMax, signTrack * absChargeTrack, mSignTrack);
+  }
+
+  void setMagField(float magField)
+  {
+    mCtr.setMagField(magField);
+  }
+
+  template <typename T1, typename T2, typename T3>
+  void setPair(const T1& track, const T2& kink, const T3 /*trackTable*/)
+  {
+    if (mSignTrack == 1 || mSignTrack == -1) {
+      auto daughter = kink.template chaDau_as<T3>();
+      mCtr.compute(track, daughter);
+    } else {
+      LOG(warn) << "CPR Track-Kink: Wrong track sign";
     }
   }
 
