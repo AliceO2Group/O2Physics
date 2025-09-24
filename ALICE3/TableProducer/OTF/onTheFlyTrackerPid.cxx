@@ -495,11 +495,7 @@ struct OnTheFlyTrackerPid {
       mcPvVtx.setZ(mcCollisionObject.posZ());
     }
 
-    int nTracksProcessed = 0;
-    int nValidToT = 0;
-
     for (const auto& track : tracks) {
-      nTracksProcessed++;
       float truncatedMeanToT = -1.0f;
       std::array<float, kNumHypothesisParticles> nSigmaValues;
       nSigmaValues.fill(999.f);
@@ -598,7 +594,6 @@ struct OnTheFlyTrackerPid {
         nUse = kMaxValidHitsForTruncation7Plus;
 
       if (nUse > 0 && nValid >= nUse) {
-        nValidToT++;
         std::sort(validToTs.begin(), validToTs.end());
         float sum = 0.0f;
         for (size_t i = 0; i < nUse; ++i) {
