@@ -2138,9 +2138,7 @@ struct HfTaskCharmPolarisation {
           RecoDecay::getDaughters(mcParticle, &listDaughtersD0, dauPdgsD0, 1);
           for (const auto& dauIdxD0 : listDaughtersD0) {
             auto dauPartD0 = mcParticles.rawIteratorAt(dauIdxD0 - mcParticles.offset());
-            if (areDauInAcc) {
-              areDauInAcc = isDaughterInAcceptance(dauPartD0, 0.3, 0.8);
-            }
+            areDauInAcc = isDaughterInAcceptance(dauPartD0, 0.3, 0.8);
           }
         }
       } else if constexpr (channel == charm_polarisation::DecayChannel::LcToPKPi) {
