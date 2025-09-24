@@ -1042,7 +1042,7 @@ struct mcPidTof {
             nSigma = responseDe.GetSeparation(mRespParamsV3, trk);
             if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == o2::constants::physics::kDeuteron) { // we rescale only true signal
-                nSigma = applyMcRecalib(idxPr, trk.pt(), nSigma); // FIXME: currently postcalibrations for protons applied to deuterons, to be checked
+                nSigma = applyMcRecalib(idxPr, trk.pt(), nSigma);                              // FIXME: currently postcalibrations for protons applied to deuterons, to be checked
               }
             }
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nSigma, tablePIDDe);
@@ -1097,7 +1097,7 @@ struct mcPidTof {
             nSigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
             if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == o2::constants::physics::kDeuteron) { // we rescale only true signal
-                nSigma = applyMcRecalib(idxPr, trk.pt(), nSigma); // FIXME: currently postcalibrations for protons applied to deuterons, to be checked
+                nSigma = applyMcRecalib(idxPr, trk.pt(), nSigma);                              // FIXME: currently postcalibrations for protons applied to deuterons, to be checked
               }
             }
             tablePIDFullDe(resolution, nSigma);
