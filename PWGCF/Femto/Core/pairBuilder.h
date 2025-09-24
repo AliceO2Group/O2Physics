@@ -18,6 +18,7 @@
 
 #include "PWGCF/Femto/Core/closePairRejection.h"
 #include "PWGCF/Femto/Core/collisionHistManager.h"
+#include "PWGCF/Femto/Core/kinkHistManager.h"
 #include "PWGCF/Femto/Core/modes.h"
 #include "PWGCF/Femto/Core/pairCleaner.h"
 #include "PWGCF/Femto/Core/pairHistManager.h"
@@ -292,6 +293,107 @@ class PairTrackV0Builder
   closepairrejection::ClosePairRejectionTrackV0<prefixCprSe> mCprSe;
   closepairrejection::ClosePairRejectionTrackV0<prefixCprMe> mCprMe;
   paircleaner::TrackV0PairCleaner mPc;
+  pairhistmanager::MixingPoliciy mMixingPolicy = pairhistmanager::MixingPoliciy::kVtxMult;
+  int mMixingDepth = 5;
+};
+
+template <
+  const char* prefixTrack,
+  const char* prefixKink,
+  const char* prefixChaDau,
+  const char* prefixSe,
+  const char* prefixMe,
+  const char* prefixCprSe,
+  const char* prefixCprMe,
+  modes::Mode mode,
+  modes::Kink kinkType>
+class PairTrackKinkBuilder
+{
+ public:
+  PairTrackKinkBuilder() = default;
+
+  template <typename T1,
+            typename T2,
+            typename T3,
+            typename T4,
+            typename T5,
+            typename T6,
+            typename T7,
+            typename T8,
+            typename T9,
+            typename T10>
+  void init(o2::framework::HistogramRegistry* registry,
+            T1& confTrackSelection,
+            T2& confKinkSelection,
+            T3& confCpr,
+            T4& confMixing,
+            std::map<T5, std::vector<framework::AxisSpec>>& colHistSpec,
+            std::map<T6, std::vector<framework::AxisSpec>>& trackHistSpec,
+            std::map<T7, std::vector<framework::AxisSpec>>& kinkHistSpec,
+            std::map<T8, std::vector<framework::AxisSpec>>& chaDauHistSpec,
+            std::map<T9, std::vector<framework::AxisSpec>>& pairHistSpec,
+            std::map<T10, std::vector<framework::AxisSpec>>& cprHistSpec)
+  {
+    mColHistManager.init(registry, colHistSpec);
+
+    mTrackHistManager.init(registry, trackHistSpec);
+    mKinkHistManager.init(registry, kinkHistSpec, chaDauHistSpec);
+
+    mPairHistManagerSe.init(registry, pairHistSpec);
+    mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confKinkSelection.pdgCode.value);
+    mPairHistManagerSe.setCharge(confTrackSelection.absCharge.value, 1);
+    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.sign.value, confTrackSelection.absCharge.value, confCpr.on.value);
+
+    mPairHistManagerMe.init(registry, pairHistSpec);
+    mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confKinkSelection.pdgCode.value);
+    mPairHistManagerMe.setCharge(confTrackSelection.absCharge.value, 1);
+    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.sign.value, confTrackSelection.absCharge.value, confCpr.on.value);
+
+    // setup mixing
+    mMixingPolicy = static_cast<pairhistmanager::MixingPoliciy>(confMixing.policy.value);
+    mMixingDepth = confMixing.depth.value;
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void processSameEvent(T1 const& col, T2& trackTable, T3& trackPartition, T4& /*kinktable*/, T5& kinkPartition, T6& cache)
+  {
+    auto trackSlice = trackPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    auto kinkSlice = kinkPartition->sliceByCached(o2::aod::femtobase::stored::collisionId, col.globalIndex(), cache);
+    if (trackSlice.size() == 0 || kinkSlice.size() == 0) {
+      return;
+    }
+    mColHistManager.fill(col);
+    mCprSe.setMagField(col.magField());
+    pairprocesshelpers::processSameEvent(trackSlice, kinkSlice, trackTable, mTrackHistManager, mKinkHistManager, mPairHistManagerSe, mCprSe, mPc);
+  }
+
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7, typename T8>
+  void processMixedEvent(T1 const& cols, T2& trackTable, T3& trackPartition, T4& kinkPartition, T5& cache, T6& binsVtxMult, T7& binsVtxCent, T8& binsVtxMultCent)
+  {
+    switch (mMixingPolicy) {
+      case static_cast<int>(pairhistmanager::kVtxMult):
+        pairprocesshelpers::processMixedEvent(cols, trackPartition, kinkPartition, trackTable, cache, binsVtxMult, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+        break;
+      case static_cast<int>(pairhistmanager::kVtxCent):
+        pairprocesshelpers::processMixedEvent(cols, trackPartition, kinkPartition, trackTable, cache, binsVtxCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+        break;
+      case static_cast<int>(pairhistmanager::kVtxMultCent):
+        pairprocesshelpers::processMixedEvent(cols, trackPartition, kinkPartition, trackTable, cache, binsVtxMultCent, mMixingDepth, mPairHistManagerMe, mCprMe, mPc);
+        break;
+      default:
+        LOG(fatal) << "Invalid binning policiy specifed. Breaking...";
+    }
+  }
+
+ private:
+  colhistmanager::CollisionHistManager<mode> mColHistManager;
+  trackhistmanager::TrackHistManager<prefixTrack, mode> mTrackHistManager;
+  kinkhistmanager::KinkHistManager<prefixKink, prefixChaDau, mode, kinkType> mKinkHistManager;
+  pairhistmanager::PairHistManager<prefixSe, mode> mPairHistManagerSe;
+  pairhistmanager::PairHistManager<prefixMe, mode> mPairHistManagerMe;
+  closepairrejection::ClosePairRejectionTrackKink<prefixCprSe> mCprSe;
+  closepairrejection::ClosePairRejectionTrackKink<prefixCprMe> mCprMe;
+  paircleaner::TrackKinkPairCleaner mPc;
   pairhistmanager::MixingPoliciy mMixingPolicy = pairhistmanager::MixingPoliciy::kVtxMult;
   int mMixingDepth = 5;
 };
