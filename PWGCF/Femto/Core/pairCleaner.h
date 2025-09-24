@@ -58,6 +58,18 @@ class TrackV0PairCleaner : public BasePairCleaner
     return this->isCleanTrackPair(posDaughter, track) && this->isCleanTrackPair(negDaughter, track);
   }
 };
+
+class TrackKinkPairCleaner : public BasePairCleaner
+{
+ public:
+  TrackKinkPairCleaner() = default;
+  template <typename T1, typename T2, typename T3>
+  bool isCleanPair(const T1& track, const T2& kink, const T3& /*trackTable */) const
+  {
+    auto chaDaughter = kink.template chaDau_as<T3>();
+    return this->isCleanTrackPair(chaDaughter, track);
+  }
+};
 } // namespace paircleaner
 } // namespace o2::analysis::femto
 

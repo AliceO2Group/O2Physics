@@ -150,9 +150,8 @@ std::map<KinkHist, std::vector<framework::AxisSpec>> makeKinkQaHistSpecMap(T1 co
 }
 
 constexpr char PrefixSigmaQa[] = "SigmaQA/";
-constexpr char PrefixSigma[] = "Sigma/";
-constexpr char PrefixKinkChaDaughter[] = "KinkChaDau/";
-constexpr char PrefixKinkChaDaughterQa[] = "KinkChaDauQa/";
+constexpr char PrefixSigma1[] = "Sigma1/";
+constexpr char PrefixSigma2[] = "Sigma2/";
 
 constexpr std::string_view AnalysisDir = "Kinematics/";
 constexpr std::string_view QaDir = "QA/";
