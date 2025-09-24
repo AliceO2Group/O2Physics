@@ -742,6 +742,16 @@ struct NucleitpcPbPb {
                 histomc.fill(HIST("hNumerEffAcc"), i, ptReco, matchedMCParticle.y(), collision.centFT0C(), particleAnti, decayType);
               }
 
+              float ptTOF = -1.0; // Default: no TOF
+              if (track.hasTOF()) {
+                ptTOF = ptReco;
+              }
+
+              if (cfgTrackPIDsettings2->get(i, "fillsparsh") == 1) {
+                histomc.fill(HIST("hSpectramc"), i, particleAnti, collision.centFT0C(),
+                             ptReco, ptTOF);
+              }
+
               histos.fill(HIST("Tpcsignal"), getRigidity(track) * track.sign(), track.tpcSignal());
 
               // Fill the requested histograms
