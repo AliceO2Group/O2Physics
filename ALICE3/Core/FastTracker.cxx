@@ -22,6 +22,7 @@
 #include <TObject.h>
 
 #include <fstream>
+#include <map>
 #include <string>
 #include <vector>
 
@@ -184,7 +185,7 @@ void FastTracker::AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelReso
   AddLayer("B03", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B04", 9., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B05", 12., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("iTOF", 19, 250, x0iTOF, xrhoiTOF, resRPhiOT, resZOT, eff, 0);
+  AddLayer("iTOF", 19, 250, x0iTOF, xrhoiTOF, resRPhiOT, resZOT, 0.0f, 0);
   AddLayer("B06", 20., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B07", 30., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B08", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
