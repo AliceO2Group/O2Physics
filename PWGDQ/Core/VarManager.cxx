@@ -242,7 +242,7 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
       default:
         LOG(fatal) << "Invalid species for PID calibration: " << species;
         return -999.0; // Return zero if species is invalid
-    };
+    }
 
     TH3F* calibMeanHist = reinterpret_cast<TH3F*>(fgCalibs[calibMean]);
     TH3F* calibSigmaHist = reinterpret_cast<TH3F*>(fgCalibs[calibSigma]);
@@ -292,7 +292,7 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
       default:
         LOG(fatal) << "Invalid species for PID calibration: " << species;
         return -999.0; // Return zero if species is invalid
-    };
+    }
 
     THnF* calibMeanHist = reinterpret_cast<THnF*>(fgCalibs[calibMean]);
     THnF* calibSigmaHist = reinterpret_cast<THnF*>(fgCalibs[calibSigma]);
@@ -346,7 +346,7 @@ double VarManager::ComputePIDcalibration(int species, double nSigmaValue)
       default:
         return nSigmaValue; // unknown status, return the original nSigma value
         break;
-    };
+    }
   } else {
     // unknown calibration type, return the original nSigma value
     LOG(fatal) << "Unknown calibration type: " << fgCalibrationType;
