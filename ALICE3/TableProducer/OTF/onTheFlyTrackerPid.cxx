@@ -58,11 +58,11 @@
 #include <array>
 #include <cmath>
 #include <map>
+#include <memory>
 #include <string>
 #include <unordered_map>
 #include <utility>
 #include <vector>
-#include <memory>
 
 using namespace o2;
 using namespace o2::framework;
