@@ -118,6 +118,7 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   // configuration parameters
   o2::framework::Configurable<int> pdgCode{"pdgCode", 2212, "Track PDG code"};
   o2::framework::Configurable<int> sign{"sign", 1, "Sign of the track (1 for positive tracks and -1 for negative tracks)"};
+  o2::framework::Configurable<int> absCharge{"absCharge", 1, "Absolute charge of the track (keep 1 for all tracks, except for He, it should be 2)"};
   // filters for kinematics
   o2::framework::Configurable<float> ptMin{"ptMin", 0.2f, "Minimum pT (GeV/c)"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT (GeV/c)"};
@@ -443,7 +444,7 @@ struct ConfTrackTables : o2::framework::ConfigurableGroup {
 class TrackBuilder
 {
  public:
-  TrackBuilder() {}
+  TrackBuilder() = default;
   virtual ~TrackBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>

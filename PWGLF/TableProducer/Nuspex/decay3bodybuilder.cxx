@@ -907,7 +907,9 @@ struct decay3bodyBuilder {
                                    -1., -1., -1.,      // momPion
                                    -1., -1., -1.,      // momDeuteron
                                    -1., -1., -1.,      // trackDCAxyToPV: 0 - proton, 1 - pion, 2 - deuteron
-                                   -1., -1., -1.,      // trackDCAzToPV: 0 - proton, 1 - pion, 2 - deuteron
+                                   -1., -1., -1.,      // trackDCAToPV: 0 - proton, 1 - pion, 2 - deuteron
+                                   -1., -1., -1.,      // trackDCAxyToPVprop: 0 - proton, 1 - pion, 2 - deuteron
+                                   -1., -1., -1.,      // trackDCAToPVprop: 0 - proton, 1 - pion, 2 - deuteron
                                    -1., -1., -1.,      // daughterDCAtoSV: 0 - proton, 1 - pion, 2 - deuteron
                                    -1.,                // daughterDCAtoSVaverage
                                    -1., -1.,           // cosPA, ctau
@@ -1065,9 +1067,11 @@ struct decay3bodyBuilder {
                              helper.decay3body.momProton[0], helper.decay3body.momProton[1], helper.decay3body.momProton[2],
                              helper.decay3body.momPion[0], helper.decay3body.momPion[1], helper.decay3body.momPion[2],
                              helper.decay3body.momDeuteron[0], helper.decay3body.momDeuteron[1], helper.decay3body.momDeuteron[2],
-                             helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],    // 0 - proton, 1 - pion, 2 - deuteron
-                             helper.decay3body.trackDCAzToPV[0], helper.decay3body.trackDCAzToPV[1], helper.decay3body.trackDCAzToPV[2],       // 0 - proton, 1 - pion, 2 - deuteron
-                             helper.decay3body.daughterDCAtoSV[0], helper.decay3body.daughterDCAtoSV[1], helper.decay3body.daughterDCAtoSV[2], // 0 - proton, 1 - pion, 2 - deuteron
+                             helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],             // 0 - proton, 1 - pion, 2 - deuteron
+                             helper.decay3body.trackDCAToPV[0], helper.decay3body.trackDCAToPV[1], helper.decay3body.trackDCAToPV[2],                   // 0 - proton, 1 - pion, 2 - deuteron
+                             helper.decay3body.trackDCAxyToPVprop[0], helper.decay3body.trackDCAxyToPVprop[1], helper.decay3body.trackDCAxyToPVprop[2], // 0 - proton, 1 - pion, 2 - deuteron
+                             helper.decay3body.trackDCAToPVprop[0], helper.decay3body.trackDCAToPVprop[1], helper.decay3body.trackDCAToPVprop[2],       // 0 - proton, 1 - pion, 2 - deuteron
+                             helper.decay3body.daughterDCAtoSV[0], helper.decay3body.daughterDCAtoSV[1], helper.decay3body.daughterDCAtoSV[2],          // 0 - proton, 1 - pion, 2 - deuteron
                              helper.decay3body.daughterDCAtoSVaverage,
                              helper.decay3body.cosPA, helper.decay3body.ctau,
                              helper.decay3body.tpcNsigma[0], helper.decay3body.tpcNsigma[1], helper.decay3body.tpcNsigma[2], helper.decay3body.tpcNsigma[2], // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp
@@ -1094,9 +1098,11 @@ struct decay3bodyBuilder {
                                helper.decay3body.momProton[0], helper.decay3body.momProton[1], helper.decay3body.momProton[2],
                                helper.decay3body.momPion[0], helper.decay3body.momPion[1], helper.decay3body.momPion[2],
                                helper.decay3body.momDeuteron[0], helper.decay3body.momDeuteron[1], helper.decay3body.momDeuteron[2],
-                               helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],    // 0 - proton, 1 - pion, 2 - deuteron
-                               helper.decay3body.trackDCAzToPV[0], helper.decay3body.trackDCAzToPV[1], helper.decay3body.trackDCAzToPV[2],       // 0 - proton, 1 - pion, 2 - deuteron
-                               helper.decay3body.daughterDCAtoSV[0], helper.decay3body.daughterDCAtoSV[1], helper.decay3body.daughterDCAtoSV[2], // 0 - proton, 1 - pion, 2 - deuteron
+                               helper.decay3body.trackDCAxyToPV[0], helper.decay3body.trackDCAxyToPV[1], helper.decay3body.trackDCAxyToPV[2],             // 0 - proton, 1 - pion, 2 - deuteron
+                               helper.decay3body.trackDCAToPV[0], helper.decay3body.trackDCAToPV[1], helper.decay3body.trackDCAToPV[2],                   // 0 - proton, 1 - pion, 2 - deuteron
+                               helper.decay3body.trackDCAxyToPVprop[0], helper.decay3body.trackDCAxyToPVprop[1], helper.decay3body.trackDCAxyToPVprop[2], // 0 - proton, 1 - pion, 2 - deuteron
+                               helper.decay3body.trackDCAToPVprop[0], helper.decay3body.trackDCAToPVprop[1], helper.decay3body.trackDCAToPVprop[2],       // 0 - proton, 1 - pion, 2 - deuteron
+                               helper.decay3body.daughterDCAtoSV[0], helper.decay3body.daughterDCAtoSV[1], helper.decay3body.daughterDCAtoSV[2],          // 0 - proton, 1 - pion, 2 - deuteron
                                helper.decay3body.daughterDCAtoSVaverage,
                                helper.decay3body.cosPA, helper.decay3body.ctau,
                                helper.decay3body.tpcNsigma[0], helper.decay3body.tpcNsigma[1], helper.decay3body.tpcNsigma[2], helper.decay3body.tpcNsigma[2], // 0 - proton, 1 - pion, 2 - deuteron, 3 - bach with pion hyp

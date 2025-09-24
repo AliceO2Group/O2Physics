@@ -138,11 +138,12 @@ struct OnTheFlyTracker {
     Configurable<int> minSiliconHits{"minSiliconHits", 6, "minimum number of silicon hits to accept track"};
     Configurable<int> minSiliconHitsIfTPCUsed{"minSiliconHitsIfTPCUsed", 2, "minimum number of silicon hits to accept track in case TPC info is present"};
     Configurable<int> minTPCClusters{"minTPCClusters", 70, "minimum number of TPC hits necessary to consider minSiliconHitsIfTPCUsed"};
-    Configurable<int> alice3detector{"alice3detector", 0, "0: ALICE 3 v1, 1: ALICE 3 v4"};
+    Configurable<int> alice3detector{"alice3detector", 2, "0: ALICE 3 v1, 1: ALICE 3 v4, 2: ALICE 3 Sep 2025"};
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
     Configurable<bool> applyEffCorrection{"applyEffCorrection", true, "apply efficiency correction or not"};
+    Configurable<int> scaleVD{"scaleVD", 1, "scale x0 and xrho in VD layers"};
     Configurable<std::vector<float>> pixelRes{"pixelRes", {0.00025, 0.00025, 0.001, 0.001}, "RPhiIT, ZIT, RPhiOT, ZOT"};
   } fastTrackerSettings; // allows for gap between peak and bg in case someone wants to
 
@@ -412,12 +413,22 @@ struct OnTheFlyTracker {
     fastTracker.SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
     fastTracker.SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
 
-    if (fastTrackerSettings.alice3detector == 0) {
-      fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
-    }
-    if (fastTrackerSettings.alice3detector == 1) {
-      fastTracker.AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
-      fastTracker.AddTPC(0.1, 0.1);
+    switch (fastTrackerSettings.alice3detector) {
+      case 0:
+        fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
+        break;
+
+      case 1:
+        fastTracker.AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
+        fastTracker.AddTPC(0.1, 0.1);
+        break;
+
+      case 2:
+        fastTracker.AddSiliconALICE3(fastTrackerSettings.scaleVD, fastTrackerSettings.pixelRes);
+        break;
+
+      default:
+        break;
     }
 
     // print fastTracker settings
