@@ -38,6 +38,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/StaticFor.h"
 #include "Framework/runDataProcessing.h"
+#include <Framework/Configurable.h>
 
 #include <TPDGCode.h>
 
@@ -126,9 +127,13 @@ struct HStrangeCorrelation {
   } massWindowConfigurations; // allows for gap between peak and bg in case someone wants to
 
   // Implementation of on-the-spot efficiency correction
-  Configurable<bool> applyEfficiencyCorrection{"applyEfficiencyCorrection", false, "apply efficiency correction"};
-  Configurable<bool> applyEfficiencyForTrigger{"applyEfficiencyForTrigger", false, "apply efficiency correction for the trigger particle"};
-  Configurable<bool> applyEfficiencyPropagation{"applyEfficiencyPropagation", false, "propagate also the efficiency uncertainty"};
+  struct : ConfigurableGroup {
+    Configurable<bool> applyEfficiencyCorrection{"applyEfficiencyCorrection", false, "apply efficiency correction"};
+    Configurable<bool> applyEfficiencyForTrigger{"applyEfficiencyForTrigger", false, "apply efficiency correction for the trigger particle"};
+    Configurable<bool> applyEfficiencyPropagation{"applyEfficiencyPropagation", false, "propagate also the efficiency uncertainty"};
+    Configurable<bool> applyPurityHadron{"applyPurityHadron", false, "apply the purity correction for associated hadrons"};
+    Configurable<bool> applyPurityTrigger{"applyPurityTrigger", false, "apply the purity correction for trigger particle"};
+  } efficiencyFlags;
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
   Configurable<std::string> efficiencyCCDBPath{"efficiencyCCDBPath", "GLO/Config/GeometryAligned", "Path of the efficiency corrections"};
 
@@ -323,7 +328,7 @@ struct HStrangeCorrelation {
     hEfficiencyUncertaintyPion = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyPion"));
     hEfficiencyUncertaintyHadron = static_cast<TH2F*>(listEfficiencies->FindObject("hEfficiencyUncertaintyHadron"));
     hPurityUncertaintyHadron = static_cast<TH1F*>(listEfficiencies->FindObject("hPurityUncertaintyHadron"));
-    if (applyEfficiencyPropagation && !hEfficiencyUncertaintyTrigger)
+    if (efficiencyFlags.applyEfficiencyPropagation && !hEfficiencyUncertaintyTrigger)
       LOG(fatal) << "Problem getting hEfficiencyUncertaintyTrigger!";
     LOG(info) << "Efficiencies now loaded for " << mRunNumber;
   }
@@ -595,9 +600,9 @@ struct HStrangeCorrelation {
       if (!mixing) {
         float efficiency = 1.0f;
         float efficiencyError = 0.0f;
-        if (applyEfficiencyForTrigger) {
+        if (efficiencyFlags.applyEfficiencyForTrigger) {
           efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
-          if (applyEfficiencyPropagation)
+          if (efficiencyFlags.applyEfficiencyPropagation)
             efficiencyError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
           if (efficiency == 0) { // check for zero efficiency, do not apply if the case
             efficiency = 1;
@@ -694,14 +699,14 @@ struct HStrangeCorrelation {
           float totalEffUncert = 0.0;
           float efficiencyError = 0.0f;
           float triggerEfficiencyError = 0.0f;
-          if (applyEfficiencyCorrection) {
+          if (efficiencyFlags.applyEfficiencyCorrection) {
             efficiency = hEfficiencyV0[Index]->Interpolate(ptassoc, assoc.eta());
-            if (applyEfficiencyPropagation)
+            if (efficiencyFlags.applyEfficiencyPropagation)
               efficiencyError = hEfficiencyUncertaintyV0[Index]->Interpolate(ptassoc, assoc.eta());
           }
-          if (applyEfficiencyForTrigger) {
+          if (efficiencyFlags.applyEfficiencyForTrigger) {
             efficiency = efficiency * hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
-            if (applyEfficiencyPropagation)
+            if (efficiencyFlags.applyEfficiencyPropagation)
               triggerEfficiencyError = hEfficiencyUncertaintyTrigger->Interpolate(pttrigger, trigg.eta());
           }
           if (efficiency == 0) { // check for zero efficiency, do not apply if the case
@@ -712,11 +717,11 @@ struct HStrangeCorrelation {
             efficiencytrigg = 1;
             triggerEfficiencyError = 0;
           }
-          if (applyEfficiencyPropagation) {
+          if (efficiencyFlags.applyEfficiencyPropagation) {
             totalEffUncert = std::sqrt(std::pow(efficiencytrigg * efficiencyError, 2) + std::pow(triggerEfficiencyError * efficiency, 2));
           }
           double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
-          if (TESTBIT(doCorrelation, Index) && (!applyEfficiencyCorrection || efficiency != 0) && (doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
+          if (TESTBIT(doCorrelation, Index) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0) && (doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma) {
               fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/LeftBg/") + HIST(kV0names[Index])), binFillThn, etaWeight, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
               if (doDeltaPhiStarCheck) {
@@ -803,9 +808,9 @@ struct HStrangeCorrelation {
       if (!mixing) {
         float efficiency = 1.0f;
         float efficiencyError = 0.0f;
-        if (applyEfficiencyForTrigger) {
+        if (efficiencyFlags.applyEfficiencyForTrigger) {
           efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
-          if (applyEfficiencyPropagation)
+          if (efficiencyFlags.applyEfficiencyPropagation)
             efficiencyError = hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
           if (efficiency == 0) { // check for zero efficiency, do not apply if the case
             efficiency = 1;
@@ -906,25 +911,25 @@ struct HStrangeCorrelation {
           float totalEffUncert = 0.0;
           float efficiencyError = 0.0f;
           float triggerEfficiencyError = 0.0f;
-          if (applyEfficiencyCorrection) {
+          if (efficiencyFlags.applyEfficiencyCorrection) {
             efficiency = hEfficiencyCascade[Index]->Interpolate(ptassoc, assoc.eta());
-            if (applyEfficiencyPropagation)
+            if (efficiencyFlags.applyEfficiencyPropagation)
               efficiencyError = hEfficiencyUncertaintyCascade[Index]->Interpolate(ptassoc, assoc.eta());
           }
-          if (applyEfficiencyForTrigger) {
+          if (efficiencyFlags.applyEfficiencyForTrigger) {
             efficiency = efficiency * hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
-            if (applyEfficiencyPropagation)
+            if (efficiencyFlags.applyEfficiencyPropagation)
               triggerEfficiencyError = hEfficiencyUncertaintyTrigger->Interpolate(pttrigger, trigg.eta());
           }
           if (efficiency == 0) { // check for zero efficiency, do not apply if the case
             efficiency = 1;
             efficiencyError = 0;
           }
-          if (applyEfficiencyPropagation) {
+          if (efficiencyFlags.applyEfficiencyPropagation) {
             totalEffUncert = std::sqrt(std::pow(efficiencytrigg * efficiencyError, 2) + std::pow(triggerEfficiencyError * efficiency, 2));
           }
           double binFillThn[6] = {deltaphi, deltaeta, ptassoc, pttrigger, pvz, mult};
-          if (TESTBIT(doCorrelation, Index + 3) && (!applyEfficiencyCorrection || efficiency != 0) && (doPPAnalysis || (TESTBIT(CascselMap, Index) && TESTBIT(CascselMap, Index + 4) && TESTBIT(CascselMap, Index + 8) && TESTBIT(CascselMap, Index + 12)))) {
+          if (TESTBIT(doCorrelation, Index + 3) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0) && (doPPAnalysis || (TESTBIT(CascselMap, Index) && TESTBIT(CascselMap, Index + 4) && TESTBIT(CascselMap, Index + 8) && TESTBIT(CascselMap, Index + 12)))) {
             if (assocCandidate.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || assocCandidate.mcTrue(Index)) && (!doAssocPhysicalPrimary || assocCandidate.mcPhysicalPrimary()) && !mixing && -massWindowConfigurations.maxBgNSigma < assocCandidate.invMassNSigma(Index) && assocCandidate.invMassNSigma(Index) < -massWindowConfigurations.minBgNSigma) {
               fillCorrelationHistogram(histos.get<THn>(HIST("sameEvent/LeftBg/") + HIST(kCascadenames[Index])), binFillThn, etaWeight, efficiency * efficiencytrigg, totalEffUncert, 1.0f, 0.0f);
               if (doDeltaPhiStarCheck) {
@@ -980,9 +985,9 @@ struct HStrangeCorrelation {
       if (!mixing) {
         float efficiency = 1.0f;
         float efficiencyError = 0.0f;
-        if (applyEfficiencyForTrigger) {
+        if (efficiencyFlags.applyEfficiencyForTrigger) {
           efficiency = hEfficiencyTrigger->Interpolate(trigg.pt(), trigg.eta());
-          if (applyEfficiencyPropagation)
+          if (efficiencyFlags.applyEfficiencyPropagation)
             hEfficiencyUncertaintyTrigger->Interpolate(trigg.pt(), trigg.eta());
           if (efficiency == 0) { // check for zero efficiency, do not apply if the case
             efficiency = 1;
@@ -1047,26 +1052,30 @@ struct HStrangeCorrelation {
         float totalEffUncert = 0.0;
         float efficiencyUncertainty = 0.0f;
         float totalPurityUncert = 0.0;
-        if (applyEfficiencyCorrection) {
+        if (efficiencyFlags.applyEfficiencyCorrection) {
           if constexpr (requires { assocTrack.nSigmaTPCPi(); }) {
             efficiency = hEfficiencyPion->Interpolate(ptassoc, assoc.eta());
-            if (applyEfficiencyPropagation)
+            if (efficiencyFlags.applyEfficiencyPropagation)
               efficiencyUncertainty = hEfficiencyUncertaintyPion->Interpolate(ptassoc, assoc.eta());
           } else {
             efficiency = hEfficiencyHadron->Interpolate(ptassoc, assoc.eta());
-            purity = hPurityHadron->Interpolate(ptassoc);
-            if (applyEfficiencyPropagation) {
+            if (efficiencyFlags.applyPurityHadron)
+              purity = hPurityHadron->Interpolate(ptassoc);
+            if (efficiencyFlags.applyEfficiencyPropagation) {
               efficiencyUncertainty = hEfficiencyUncertaintyHadron->Interpolate(ptassoc, assoc.eta());
-              purityUncertainty = hPurityUncertaintyHadron->Interpolate(ptassoc);
+              if (efficiencyFlags.applyPurityHadron)
+                purityUncertainty = hPurityUncertaintyHadron->Interpolate(ptassoc);
             }
           }
         }
-        if (applyEfficiencyForTrigger) {
+        if (efficiencyFlags.applyEfficiencyForTrigger) {
           efficiencyTrigg = hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
-          purityTrigger = hPurityHadron->Interpolate(pttrigger);
-          if (applyEfficiencyPropagation) {
+          if (efficiencyFlags.applyPurityTrigger)
+            purityTrigger = hPurityHadron->Interpolate(pttrigger);
+          if (efficiencyFlags.applyEfficiencyPropagation) {
             triggerEfficiencyUncert = hEfficiencyUncertaintyTrigger->Interpolate(ptassoc, assoc.eta());
-            triggerPurityUncertainty = hPurityUncertaintyHadron->Interpolate(ptassoc);
+            if (efficiencyFlags.applyPurityTrigger)
+              triggerPurityUncertainty = hPurityUncertaintyHadron->Interpolate(ptassoc);
           }
         }
         if (efficiency == 0) { // check for zero efficiency, do not apply if the case
@@ -1077,7 +1086,7 @@ struct HStrangeCorrelation {
           efficiencyTrigg = 1.0;
           triggerEfficiencyUncert = 0.0;
         }
-        if (applyEfficiencyPropagation) {
+        if (efficiencyFlags.applyEfficiencyPropagation) {
           totalEffUncert = std::sqrt(std::pow(efficiencyTrigg * efficiencyUncertainty, 2) + std::pow(triggerEfficiencyUncert * efficiency, 2));
           totalPurityUncert = std::sqrt(std::pow(purityTrigger * purityUncertainty, 2) + std::pow(purity * triggerPurityUncertainty, 2));
         }
@@ -1458,7 +1467,7 @@ struct HStrangeCorrelation {
 
     // initialize CCDB *only* if efficiency correction requested
     // skip if not requested, saves a bit of time
-    if (applyEfficiencyCorrection) {
+    if (efficiencyFlags.applyEfficiencyCorrection) {
       ccdb->setURL(ccdburl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
@@ -1640,7 +1649,7 @@ struct HStrangeCorrelation {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     auto bField = getMagneticField(bc.timestamp());
 
-    if (applyEfficiencyCorrection) {
+    if (efficiencyFlags.applyEfficiencyCorrection) {
       initEfficiencyFromCCDB(bc);
     }
 
@@ -1667,13 +1676,13 @@ struct HStrangeCorrelation {
         if (!isValidTrigger(track))
           continue;
         float efficiency = 1.0f;
-        if (applyEfficiencyCorrection) {
+        if (efficiencyFlags.applyEfficiencyCorrection) {
           efficiency = hEfficiencyTrigger->Interpolate(track.pt(), track.eta());
         }
         if (efficiency == 0) { // check for zero efficiency, do not apply if the case
           efficiency = 1;
         }
-        float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
+        float weight = efficiencyFlags.applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
         histos.fill(HIST("hTriggerAllSelectedEtaVsPt"), track.pt(), track.eta(), collision.centFT0M());
         histos.fill(HIST("hTriggerPtResolution"), track.pt(), triggerTrack.mcOriginalPt());
         if (doTriggPhysicalPrimary && !triggerTrack.mcPhysicalPrimary())
@@ -1687,14 +1696,15 @@ struct HStrangeCorrelation {
           continue;
         float efficiency = 1.0f;
         float purity = 1.0f;
-        if (applyEfficiencyCorrection) {
+        if (efficiencyFlags.applyEfficiencyCorrection) {
           efficiency = hEfficiencyHadron->Interpolate(assoc.pt(), assoc.eta());
-          purity = hPurityHadron->Interpolate(assoc.pt());
+          if (efficiencyFlags.applyPurityHadron)
+            purity = hPurityHadron->Interpolate(assoc.pt());
         }
         if (efficiency == 0) { // check for zero efficiency, do not apply if the case
           efficiency = 1;
         }
-        float weight = applyEfficiencyCorrection ? purity / efficiency : 1.0f;
+        float weight = efficiencyFlags.applyEfficiencyCorrection ? purity / efficiency : 1.0f;
         histos.fill(HIST("hAssocHadronsAllSelectedEtaVsPt"), assoc.pt(), assoc.eta(), collision.centFT0M());
         histos.fill(HIST("hAssocPtResolution"), assoc.pt(), assocTrack.mcOriginalPt());
         if (doAssocPhysicalPrimary && !assocTrack.mcPhysicalPrimary())
@@ -1738,7 +1748,7 @@ struct HStrangeCorrelation {
     // Do basic QA
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     auto bField = getMagneticField(bc.timestamp());
-    if (applyEfficiencyCorrection) {
+    if (efficiencyFlags.applyEfficiencyCorrection) {
       initEfficiencyFromCCDB(bc);
     }
     TH2F* hEfficiencyV0[3];
@@ -1767,14 +1777,14 @@ struct HStrangeCorrelation {
       static_for<0, 2>([&](auto i) {
         constexpr int Index = i.value;
         float efficiency = 1.0f;
-        if (applyEfficiencyCorrection) {
+        if (efficiencyFlags.applyEfficiencyCorrection) {
           efficiency = hEfficiencyV0[Index]->Interpolate(v0Data.pt(), v0Data.eta());
         }
         if (efficiency == 0) { // check for zero efficiency, do not apply if the case
           efficiency = 1;
         }
-        float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
-        if (v0.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || v0.mcTrue(Index)) && (!doAssocPhysicalPrimary || v0.mcPhysicalPrimary()) && (!applyEfficiencyCorrection || efficiency != 0)) {
+        float weight = efficiencyFlags.applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
+        if (v0.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || v0.mcTrue(Index)) && (!doAssocPhysicalPrimary || v0.mcPhysicalPrimary()) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0)) {
           if ((TESTBIT(doCorrelation, Index)) && (doPPAnalysis || (TESTBIT(selMap, Index) && TESTBIT(selMap, Index + 3)))) {
             histos.fill(HIST("h3d") + HIST(kV0names[Index]) + HIST("Spectrum"), v0Data.pt(), cent, v0.invMassNSigma(Index), weight);
             if (std::abs(v0Data.rapidity(Index)) < ySel) {
@@ -1837,7 +1847,7 @@ struct HStrangeCorrelation {
     // Do basic QA
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     auto bField = getMagneticField(bc.timestamp());
-    if (applyEfficiencyCorrection) {
+    if (efficiencyFlags.applyEfficiencyCorrection) {
       initEfficiencyFromCCDB(bc);
     }
     TH2F* hEfficiencyCascade[4];
@@ -1874,14 +1884,14 @@ struct HStrangeCorrelation {
       static_for<0, 3>([&](auto i) {
         constexpr int Index = i.value;
         float efficiency = 1.0f;
-        if (applyEfficiencyCorrection) {
+        if (efficiencyFlags.applyEfficiencyCorrection) {
           efficiency = hEfficiencyCascade[Index]->Interpolate(cascData.pt(), cascData.eta());
         }
         if (efficiency == 0) { // check for zero efficiency, do not apply if the case
           efficiency = 1;
         }
-        float weight = applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
-        if (casc.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || casc.mcTrue(Index)) && (!doAssocPhysicalPrimary || casc.mcPhysicalPrimary()) && (!applyEfficiencyCorrection || efficiency != 0)) {
+        float weight = efficiencyFlags.applyEfficiencyCorrection ? 1. / efficiency : 1.0f;
+        if (casc.compatible(Index, systCuts.dEdxCompatibility) && (!doMCassociation || casc.mcTrue(Index)) && (!doAssocPhysicalPrimary || casc.mcPhysicalPrimary()) && (!efficiencyFlags.applyEfficiencyCorrection || efficiency != 0)) {
           if (TESTBIT(doCorrelation, Index + 3) && (doPPAnalysis || (TESTBIT(CascselMap, Index) && TESTBIT(CascselMap, Index + 4) && TESTBIT(CascselMap, Index + 8) && TESTBIT(CascselMap, Index + 12)))) {
             histos.fill(HIST("h3d") + HIST(kCascadenames[Index]) + HIST("Spectrum"), cascData.pt(), cent, casc.invMassNSigma(Index), weight);
             if (std::abs(cascData.rapidity(Index)) < ySel) {
@@ -1925,7 +1935,7 @@ struct HStrangeCorrelation {
     auto bc = collision.bc_as<aod::BCsWithTimestamps>();
     auto bField = getMagneticField(bc.timestamp());
 
-    if (applyEfficiencyCorrection) {
+    if (efficiencyFlags.applyEfficiencyCorrection) {
       initEfficiencyFromCCDB(bc);
     }
 
@@ -1972,7 +1982,7 @@ struct HStrangeCorrelation {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
       // ________________________________________________
-      if (applyEfficiencyCorrection) {
+      if (efficiencyFlags.applyEfficiencyCorrection) {
         initEfficiencyFromCCDB(bc);
       }
       // ________________________________________________
@@ -2021,7 +2031,7 @@ struct HStrangeCorrelation {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
       // ________________________________________________
-      if (applyEfficiencyCorrection) {
+      if (efficiencyFlags.applyEfficiencyCorrection) {
         initEfficiencyFromCCDB(bc);
       }
       // ________________________________________________
@@ -2069,7 +2079,7 @@ struct HStrangeCorrelation {
       // ________________________________________________
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
-      if (applyEfficiencyCorrection) {
+      if (efficiencyFlags.applyEfficiencyCorrection) {
         initEfficiencyFromCCDB(bc);
       }
       // ________________________________________________
@@ -2111,7 +2121,7 @@ struct HStrangeCorrelation {
       auto bc = collision1.bc_as<aod::BCsWithTimestamps>();
       auto bField = getMagneticField(bc.timestamp());
       // ________________________________________________
-      if (applyEfficiencyCorrection) {
+      if (efficiencyFlags.applyEfficiencyCorrection) {
         initEfficiencyFromCCDB(bc);
       }
       // ________________________________________________
