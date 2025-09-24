@@ -196,10 +196,10 @@ template <const char* prefix>
 class ClosePairRejectionTrackTrack
 {
  public:
-  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int signTrack1, int absChargeTrack1, int signTrack2, int AbsChargeTrack2, bool isActivated)
+  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int chargeTrack1, int chargeTrack2, bool isActivated)
   {
     mIsActivated = isActivated;
-    mCtr.init(registry, specs, detaMax, dphistarMax, signTrack1 * absChargeTrack1, signTrack2 * AbsChargeTrack2);
+    mCtr.init(registry, specs, detaMax, dphistarMax, chargeTrack1, chargeTrack2);
   }
 
   void setMagField(float magField) { mCtr.setMagField(magField); }
@@ -221,14 +221,14 @@ template <const char* prefix>
 class ClosePairRejectionTrackV0 // can also be used for any particle type that has pos/neg daughters, like resonances
 {
  public:
-  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int signTrack, int absChargeTrack, bool isActivated)
+  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int chargeTrack, bool isActivated)
   {
     mIsActivated = isActivated;
-    mSignTrack = signTrack;
+    mChargeTrack = chargeTrack;
 
     // initialize CPR with charge of the track and the same charge for the daughter particle
-    // absolute charge of the daughter track will be 1, so we can pass the sign directly
-    mCtr.init(registry, specs, detaMax, dphistarMax, signTrack * absChargeTrack, signTrack);
+    // absolute charge of the daughter track will be 1, so we just pass the sign
+    mCtr.init(registry, specs, detaMax, dphistarMax, mChargeTrack, utils::sign(mChargeTrack));
   }
 
   void setMagField(float magField)
@@ -238,10 +238,10 @@ class ClosePairRejectionTrackV0 // can also be used for any particle type that h
   template <typename T1, typename T2, typename T3>
   void setPair(const T1& track, const T2& v0, const T3 /*trackTable*/)
   {
-    if (mSignTrack == 1) {
+    if (mChargeTrack > 0) {
       auto daughter = v0.template posDau_as<T3>();
       mCtr.compute(track, daughter);
-    } else if (mSignTrack == -1) {
+    } else if (mChargeTrack < 0) {
       auto daughter = v0.template negDau_as<T3>();
       mCtr.compute(track, daughter);
     } else {
@@ -258,7 +258,7 @@ class ClosePairRejectionTrackV0 // can also be used for any particle type that h
 
  private:
   CloseTrackRejection<prefix> mCtr;
-  int mSignTrack = 0;
+  int mChargeTrack = 0;
   bool mIsActivated = true;
 };
 

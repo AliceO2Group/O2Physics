@@ -400,7 +400,7 @@ class TrackHistManager
   void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> Specs, float charge = 1, int momentumTypeForPid = 0)
   {
     mHistogramRegistry = registry;
-    mAbsCharge = std::fabs(charge);
+    mAbsCharge = std::fabs(charge); // stored absolute charge of the track to scale the momentum in case of Z!=1 (case only for He3)
 
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       std::string analysisDir = std::string(prefix) + std::string(AnalysisDir);

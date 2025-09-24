@@ -117,8 +117,7 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   std::string prefix = Prefix; // Unique prefix based on the template argument
   // configuration parameters
   o2::framework::Configurable<int> pdgCode{"pdgCode", 2212, "Track PDG code"};
-  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the track (1 for positive tracks and -1 for negative tracks)"};
-  o2::framework::Configurable<int> absCharge{"absCharge", 1, "Absolute charge of the track (keep 1 for all tracks, except for He, it should be 2)"};
+  o2::framework::Configurable<int> charge{"charge", 1, "Charge of the track (use +/-1 for positive/negative tracks, except He3 needs +/-2)"};
   // filters for kinematics
   o2::framework::Configurable<float> ptMin{"ptMin", 0.2f, "Minimum pT (GeV/c)"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT (GeV/c)"};
