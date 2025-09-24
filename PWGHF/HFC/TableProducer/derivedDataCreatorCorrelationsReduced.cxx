@@ -84,6 +84,9 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   Configurable<float> ptTrkMax{"ptTrkMax", 3., "max. track pT"};
   Configurable<float> dcaXYTrkMax{"dcaXYTrkMax", 1., "max. track DCA XY"};
   Configurable<float> dcaZTrkMax{"dcaZTrkMax", 1., "max. track DCA Z"};
+  Configurable<bool> usePtDiffDcaXYCut{"usePtDiffDcaXYCut", false, "Use pt-differential DCAxy cut for associated tracks"};
+  Configurable<float> dcaXYTrkNSigmaMax{"dcaXYTrkNSigmaMax", 7, "Cut on number of sigma deviations from expected DCA in the transverse direction"};
+  Configurable<std::string> dcaXYPtPrimTrkFunc{"dcaXYPtPrimTrkFunc", "(0.0026+0.005/(x^1.01))", "Functional form of pt-dependent DCAxy cut"};
   Configurable<float> deltaEtaAbsMin{"deltaEtaAbsMin", 0.5, "min. pair delta eta"};
   Configurable<float> deltaEtaAbsMax{"deltaEtaAbsMax", 2., "max. pair delta eta"};
   Configurable<float> downSampleTrksFactor{"downSampleTrksFactor", 1., "Fraction of associated tracks to keep"};
@@ -98,6 +101,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   SliceCache cache;
 
   double massCharm{0.};
+  TF1* funcDcaXYPtCutPrimTrk = nullptr;
 
   using CollsWithCentMult = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentFV0As>;
   using CandDsData = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDsToKKPi, aod::HfMlDsToKKPi>>;
@@ -130,6 +134,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   ConfigurableAxis binsDeltaPhi{"binsDeltaPhi", {64, -3., 3.}, "Delta Phi bins"};
   ConfigurableAxis binsMlOne{"binsMlOne", {100, 0., 1.}, ""};
   ConfigurableAxis binsMlTwo{"binsMlTwo", {100, 0., 1.}, ""};
+  ConfigurableAxis binsDca{"binsDca", {200, -1., 1.}, ""};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -159,6 +164,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     const AxisSpec axisPhi = {binsPhi, "#it{#varphi}"};
     const AxisSpec axisPtTrig = {(std::vector<double>)binsPtTrig, "#it{p}_{T} Trig (GeV/#it{c})"};
     const AxisSpec axisPtAssoc = {(std::vector<double>)binsPtAssoc, "#it{p}_{T} Assoc (GeV/#it{c})"};
+    const AxisSpec axisDcaXY = {binsDca, "DCA XY (cm)"};
+    const AxisSpec axisDcaZ = {binsDca, "DCA Z (cm)"};
 
     // Histograms for data analysis
     registry.add("hPhiVsPtTrig", "Trigger candidates phiVsPt", {HistType::kTH2F, {{axisPhi}, {axisPtTrig}}});
@@ -167,6 +174,15 @@ struct HfDerivedDataCreatorCorrelationsReduced {
     registry.add("hEtaVsPtTrigAssoc", "Associated particles etaVsPt", {HistType::kTH3F, {{axisEta}, {axisPtTrig}, {axisPtAssoc}}});
     registry.add("hPhiVsPtAssoc", "Associated particles phiVsPt", {HistType::kTH2F, {{axisPhi}, {axisPtAssoc}}});
     registry.add("hEtaVsPtAssoc", "Associated particles etaVsPt", {HistType::kTH2F, {{axisEta}, {axisPtAssoc}}});
+    registry.add("hDcaXYVsPtAssoc", "Associated particles DCAxyVsPt", {HistType::kTH2F, {{axisDcaXY}, {axisPtAssoc}}});
+    registry.add("hDcaZVsPtAssoc", "Associated particles DCAzVsPt", {HistType::kTH2F, {{axisDcaZ}, {axisPtAssoc}}});
+
+    // Setup pt-dependent DCAxy cut function
+    if (usePtDiffDcaXYCut) {
+      funcDcaXYPtCutPrimTrk = new TF1("funcDcaXYPtCutPrimTrk", Form("[0]*%s", dcaXYPtPrimTrkFunc.value.data()), 0.001, 100);
+      funcDcaXYPtCutPrimTrk->SetParameter(0, dcaXYTrkNSigmaMax);
+      LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", dcaXYPtPrimTrkFunc.value.data()));
+    }
   }; // end init
 
   /// Get charm hadron candidate mass
@@ -259,9 +275,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
   /// \param assTrk is the associated track
   /// \param cand is the trigger candidate
   template <CandType candType, typename TCand, typename TAssocTrk>
-  bool acceptSameEvtPair(TAssocTrk const& assTrk, TCand const& cand)
+  bool acceptSameEvtPair(TAssocTrk const& assTrk, TCand const& cand, double deltaEta)
   {
-    double deltaEta = assTrk.eta() - cand.eta();
     if (std::abs(deltaEta) <= deltaEtaAbsMin || std::abs(deltaEta) > deltaEtaAbsMax) {
       return false;
     }
@@ -306,10 +321,18 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCandPt);
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCandPt);
       for (const auto& assTrk : assTrks) {
-        if (!acceptSameEvtPair<candType>(assTrk, trigCand)) {
+        double assTrkPt = assTrk.pt();
+        if (usePtDiffDcaXYCut) {
+          float dcaXYTrkCut = funcDcaXYPtCutPrimTrk->Eval(assTrkPt);
+          if (std::fabs(assTrk.dcaXY()) > dcaXYTrkCut) {
+            continue;
+          }
+        }
+
+        double deltaEta = assTrk.eta() - trigCand.eta();
+        if (!acceptSameEvtPair<candType>(assTrk, trigCand, deltaEta)) {
           continue;
         }
-        double assTrkPt = assTrk.pt();
         if (downSampleTrksFactor < 1.) {
           float pseudoRndm = assTrkPt * 1000. - static_cast<int64_t>(assTrkPt * 1000);
           if (assTrkPt < ptMaxForDownSample && collCentrality < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
@@ -317,11 +340,12 @@ struct HfDerivedDataCreatorCorrelationsReduced {
           }
         }
         registry.fill(HIST("hPhiVsPtTrigAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), trigCandPt, assTrkPt);
-        registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), trigCandPt, assTrkPt);
+        registry.fill(HIST("hEtaVsPtTrigAssoc"), assTrk.eta(), trigCandPt, assTrkPt);
         registry.fill(HIST("hPhiVsPtAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), assTrkPt);
         registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), assTrkPt);
+        registry.fill(HIST("hDcaXYVsPtAssoc"), assTrk.dcaXY(), assTrkPt);
+        registry.fill(HIST("hDcaZVsPtAssoc"), assTrk.dcaZ(), assTrkPt);
 
-        double deltaEta = assTrk.eta() - trigCand.eta();
         double deltaPhi = RecoDecay::constrainAngle(assTrk.phi() - trigCand.phi(), -o2::constants::math::PIHalf);
         rowSEPairs(rowCollisions.lastIndex(), trigCandPt, assTrkPt, deltaEta, deltaPhi);
         rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
@@ -363,6 +387,12 @@ struct HfDerivedDataCreatorCorrelationsReduced {
         continue;
       }
       double assTrkPt = assTrk.pt();
+      if (usePtDiffDcaXYCut) {
+        float dcaXYTrkCut = funcDcaXYPtCutPrimTrk->Eval(assTrkPt);
+        if (std::fabs(assTrk.dcaXY()) > dcaXYTrkCut) {
+          continue;
+        }
+      }
       if (!first && downSampleTrksFactor < 1.) { // skip downsampling for the first track to avoid empty tables
         float pseudoRndm = assTrkPt * 1000. - static_cast<int64_t>(assTrkPt * 1000);
         if (assTrkPt < ptMaxForDownSample && collCentrality < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
@@ -372,6 +402,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       first = false;
       registry.fill(HIST("hPhiVsPtAssoc"), RecoDecay::constrainAngle(assTrk.phi(), -o2::constants::math::PIHalf), assTrkPt);
       registry.fill(HIST("hEtaVsPtAssoc"), assTrk.eta(), assTrkPt);
+      registry.fill(HIST("hDcaXYVsPtAssoc"), assTrk.dcaXY(), assTrkPt);
+      registry.fill(HIST("hDcaZVsPtAssoc"), assTrk.dcaZ(), assTrkPt);
       rowAssocBases(rowCollisions.lastIndex(), assTrk.phi(), assTrk.eta(), assTrkPt);
       rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
     }
