@@ -15,67 +15,61 @@
 ///
 /// \author Su-Jeong Ji <su-jeong.ji@cern.ch>, Bong-Hwi Lim <Bong-Hwi.Lim@cern.ch>
 
-#include <TH1F.h>
-#include <TH1D.h>
 #include <TDirectory.h>
+#include <TFile.h>
+#include <TH1D.h>
+#include <TH1F.h>
+#include <TH2F.h>
 #include <THn.h>
 #include <TMath.h>
 #include <TObjArray.h>
-#include <TFile.h>
-#include <TH2F.h>
 // #include <TDatabasePDG.h> // FIXME
-#include <TPDGCode.h>     // FIXME
-
-#include <vector>
-#include <cmath>
-#include <array>
-#include <cstdlib>
-#include <chrono>
-#include <string>
-
-#include "TRandom3.h"
-#include "TF1.h"
-#include "TVector2.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/RotationZ.h"
-#include "Math/GenVector/Boost.h"
-#include <TMath.h>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StepTHn.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/StaticFor.h"
-#include "DCAFitter/DCAFitterN.h"
-
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/RecoDecay.h"
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "CommonConstants/MathConstants.h"
-
-#include "ReconstructionDataFormats/Track.h"
-
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
-
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/collisionCuts.h"
 #include "PWGLF/Utils/inelGt.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "CommonConstants/MathConstants.h"
+#include "CommonConstants/PhysicsConstants.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/StaticFor.h"
+#include "Framework/StepTHn.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/RotationZ.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TF1.h"
+#include "TRandom3.h"
+#include "TVector2.h"
+#include <TMath.h>
+#include <TPDGCode.h> // FIXME
+
+#include <array>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -84,21 +78,21 @@ using namespace o2::soa;
 using namespace o2::constants::physics;
 using namespace o2::aod::rctsel;
 
-namespace{
-  template <typename V0T>
-  inline bool getTruthK0sAndGenKinematics(V0T const &v0, double &ptgen, double &ygen)
-  {
-    if (!v0.has_mcParticle())
-      return false;
-    auto mcPart = v0.template mcParticle_as<aod::McParticles>();
-    if (mcPart.pdgCode() != kK0Short)
-      return false;
-    ptgen = mcPart.pt();
-    ygen = mcPart.y();
-    return true;
-  }
+namespace
+{
+template <typename V0T>
+inline bool getTruthK0sAndGenKinematics(V0T const& v0, double& ptgen, double& ygen)
+{
+  if (!v0.has_mcParticle())
+    return false;
+  auto mcPart = v0.template mcParticle_as<aod::McParticles>();
+  if (mcPart.pdgCode() != kK0Short)
+    return false;
+  ptgen = mcPart.pt();
+  ygen = mcPart.y();
+  return true;
 }
-
+} // namespace
 
 struct Chk892pp {
   enum BinType : unsigned int {
@@ -120,7 +114,7 @@ struct Chk892pp {
 
   // for MC reco
   using MCEventCandidates = soa::Join<EventCandidates, aod::McCollisionLabels>;
-  using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabels>;//, aod::McParticles>;
+  using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabels>; //, aod::McParticles>;
   using MCV0Candidates = soa::Join<V0Candidates, aod::McV0Labels>;
 
   // for MC truth
@@ -179,12 +173,12 @@ struct Chk892pp {
 
   /// PID Selections, pion
   struct : ConfigurableGroup {
-    Configurable<bool> cfgTPConly{"cfgTPConly", false, "Use only TPC for PID"};                                      // bool
+    Configurable<bool> cfgTPConly{"cfgTPConly", false, "Use only TPC for PID"};                                     // bool
     Configurable<float> cfgMaxTPCnSigmaPion{"cfgMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};                 // TPC
     Configurable<float> cfgMaxTOFnSigmaPion{"cfgMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                 // TOF
     Configurable<float> cfgNsigmaCutCombinedPion{"cfgNsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
     Configurable<bool> cfgTOFVeto{"cfgTOFVeto", true, "TOF Veto, if false, TOF is nessessary for PID selection"};   // TOF Veto
-    Configurable<float> cfgTOFMinPt{"cfgTOFMinPt", 0.6, "Minimum TOF pT cut for Pion"}; // TOF pT cut
+    Configurable<float> cfgTOFMinPt{"cfgTOFMinPt", 0.6, "Minimum TOF pT cut for Pion"};                             // TOF pT cut
   } PIDCuts;
 
   // Track selections
@@ -415,16 +409,16 @@ struct Chk892pp {
     // MC
     if (doprocessMC) {
 
-			histos.add("QACent_woCut","Centrality without cut", HistType::kTH1F, {centAxis});
-      histos.add("QACent_woCentCut","Centrality without cent cut", HistType::kTH1F, {centAxis});
-      histos.add("QACent_wCentCut","Centrality with cent cut", HistType::kTH1F, {centAxis});
-      histos.add("QAvtxz_woCut","z-vertex without cut", HistType::kTH1F, {vtxzAxis});
-      histos.add("QAvtxz_wVtxzCut","z-vertex with vtxz cut", HistType::kTH1F, {vtxzAxis});
+      histos.add("QACent_woCut", "Centrality without cut", HistType::kTH1F, {centAxis});
+      histos.add("QACent_woCentCut", "Centrality without cent cut", HistType::kTH1F, {centAxis});
+      histos.add("QACent_wCentCut", "Centrality with cent cut", HistType::kTH1F, {centAxis});
+      histos.add("QAvtxz_woCut", "z-vertex without cut", HistType::kTH1F, {vtxzAxis});
+      histos.add("QAvtxz_wVtxzCut", "z-vertex with vtxz cut", HistType::kTH1F, {vtxzAxis});
 
-			histos.add("EffK0s/genK0s", "Gen K0s (|y<0.8|)", HistType::kTH2F, {ptAxisQA, centAxis});
-			histos.add("EffK0s/recoK0s", "Reco K0s (|y<0.8|)", HistType::kTH2F, {ptAxisQA, centAxis});
+      histos.add("EffK0s/genK0s", "Gen K0s (|y<0.8|)", HistType::kTH2F, {ptAxisQA, centAxis});
+      histos.add("EffK0s/recoK0s", "Reco K0s (|y<0.8|)", HistType::kTH2F, {ptAxisQA, centAxis});
 
-			histos.add("EffKstar/genKstar", "Gen Kstar (|y|<0.5)", HistType::kTH2F, {ptAxisQA, centAxis});
+      histos.add("EffKstar/genKstar", "Gen Kstar (|y|<0.5)", HistType::kTH2F, {ptAxisQA, centAxis});
       histos.add("EffKstar/genKstar_m", "Gen Kstar (|y|<0.5) invariant mass distribution", HistType::kTH1F, {invMassAxisReso});
       histos.add("EffKstar/recoKstar", "Kstar Reco matched (final all)", HistType::kTH2F, {ptAxisQA, centAxis});
       histos.add("EffKstar/recoKstar_m", "Kstar Reco (final all) invariant mass distribution", HistType::kTH2F, {ptAxisQA, invMassAxisReso});
@@ -433,20 +427,20 @@ struct Chk892pp {
       histos.add("EffKstar/recoKstar_m_matched", "Kstar Reco matched (final all) invariant mass distribution", HistType::kTH2F, {ptAxisQA, invMassAxisReso});
     }
 
-		ccdb->setURL(CCDBConfig.cfgURL);
-		ccdbApi.init("http://alice-ccdb.cern.ch");
-		ccdb->setCaching(true);
-		ccdb->setLocalObjectValidityChecking();
-		ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+    ccdb->setURL(CCDBConfig.cfgURL);
+    ccdbApi.init("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     // Print output histograms statistics
     LOG(info) << "Size of the histograms in chK(892) Analysis Task";
     histos.print();
   }
 
-	const int kCentFT0C = 1;
-	const int kCentFT0M = 2;
-	const float kInvalidCentrality = -999.f;
+  const int kCentFT0C = 1;
+  const int kCentFT0M = 2;
+  const float kInvalidCentrality = -999.f;
 
   template <typename CollisionType>
   float getCentrality(CollisionType const& collision)
@@ -535,22 +529,22 @@ struct Chk892pp {
   template <typename TrackType>
   bool selectionPIDPion(TrackType const& candidate)
   {
-		if (std::abs(candidate.tpcNSigmaPi()) >= PIDCuts.cfgMaxTPCnSigmaPion)
-			return false;
-		if (PIDCuts.cfgTPConly)
-			return true;
-		if (candidate.pt() <= PIDCuts.cfgTOFMinPt)
-			return true;
+    if (std::abs(candidate.tpcNSigmaPi()) >= PIDCuts.cfgMaxTPCnSigmaPion)
+      return false;
+    if (PIDCuts.cfgTPConly)
+      return true;
+    if (candidate.pt() <= PIDCuts.cfgTOFMinPt)
+      return true;
 
     if (candidate.hasTOF()) {
-			const bool tofPIDPassed = std::abs(candidate.tofNSigmaPi()) < PIDCuts.cfgMaxTOFnSigmaPion;
-			const bool combo = (PIDCuts.cfgNsigmaCutCombinedPion > 0) &&
-												 (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() +
-                          candidate.tofNSigmaPi() * candidate.tofNSigmaPi() <
+      const bool tofPIDPassed = std::abs(candidate.tofNSigmaPi()) < PIDCuts.cfgMaxTOFnSigmaPion;
+      const bool combo = (PIDCuts.cfgNsigmaCutCombinedPion > 0) &&
+                         (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() +
+                            candidate.tofNSigmaPi() * candidate.tofNSigmaPi() <
                           PIDCuts.cfgNsigmaCutCombinedPion * PIDCuts.cfgNsigmaCutCombinedPion);
-			return tofPIDPassed || combo;
+      return tofPIDPassed || combo;
     } else {
-			return PIDCuts.cfgTOFVeto;
+      return PIDCuts.cfgTOFVeto;
     }
   }
 
@@ -565,7 +559,7 @@ struct Chk892pp {
     auto lRadius = candidate.v0radius();
     auto lDCAtoPV = std::fabs(candidate.dcav0topv());
     auto lCPA = candidate.v0cosPA();
-		auto lPropTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
+    auto lPropTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
     auto lMk0s = candidate.mK0Short();
     auto lMLambda = candidate.mLambda();
     auto lMALambda = candidate.mAntiLambda();
@@ -695,47 +689,44 @@ struct Chk892pp {
     return true;
   }
 
-	std::unordered_set<int64_t> allowedMcIds;
-	std::unordered_map<int64_t, float> centByMcIds;
-	float RapidityMaxKstar= 0.5;
+  std::unordered_set<int64_t> allowedMcIds;
+  std::unordered_map<int64_t, float> centByMcIds;
+  float RapidityMaxKstar = 0.5;
 
-	void buildAllowedMcIds(MCEventCandidates const &events)
-	{
-		allowedMcIds.clear();
-		centByMcIds.clear();
+  void buildAllowedMcIds(MCEventCandidates const& events)
+  {
+    allowedMcIds.clear();
+    centByMcIds.clear();
 
-		for (const auto& coll : events)
-		{
-			lCentrality = getCentrality(coll);
-			histos.fill(HIST("QACent_woCut"), lCentrality);
-			histos.fill(HIST("QAvtxz_woCut"), coll.posZ());
+    for (const auto& coll : events) {
+      lCentrality = getCentrality(coll);
+      histos.fill(HIST("QACent_woCut"), lCentrality);
+      histos.fill(HIST("QAvtxz_woCut"), coll.posZ());
 
-			if (!colCuts.isSelected(coll))
-				continue;
+      if (!colCuts.isSelected(coll))
+        continue;
       if (!coll.isInelGt0())
         continue;
 
-			histos.fill(HIST("QACent_woCentCut"), lCentrality);
-			histos.fill(HIST("QAvtxz_wVtxzCut"), coll.posZ());
+      histos.fill(HIST("QACent_woCentCut"), lCentrality);
+      histos.fill(HIST("QAvtxz_wVtxzCut"), coll.posZ());
 
-			if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality  > EventCuts.cfgEventCentralityMax)
-				continue;
-			histos.fill(HIST("QACent_wCentCut"), lCentrality);
-			if (!coll.has_mcCollision())
-				continue;
-			const auto mcid = coll.mcCollisionId(); 
-			if (mcid < 0)
-				continue;
-			allowedMcIds.insert(mcid);
-			centByMcIds[mcid] = lCentrality;
-		}
-	}
+      if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
+        continue;
+      histos.fill(HIST("QACent_wCentCut"), lCentrality);
+      if (!coll.has_mcCollision())
+        continue;
+      const auto mcid = coll.mcCollisionId();
+      if (mcid < 0)
+        continue;
+      allowedMcIds.insert(mcid);
+      centByMcIds[mcid] = lCentrality;
+    }
+  }
 
-
-	void effK0sProcessGen(MCTrueTrackCandidates const &mcparts)
+  void effK0sProcessGen(MCTrueTrackCandidates const& mcparts)
   {
-    for (const auto& part : mcparts)
-    {
+    for (const auto& part : mcparts) {
       const auto mcid = part.mcCollisionId();
 
       if (!part.has_mcCollision())
@@ -760,19 +751,17 @@ struct Chk892pp {
     }
   }
 
-
-	void effK0sProcessReco(MCV0Candidates const &v0s)
+  void effK0sProcessReco(MCV0Candidates const& v0s)
   {
-    for (const auto& v0 : v0s)
-    {
+    for (const auto& v0 : v0s) {
       auto coll = v0.template collision_as<MCEventCandidates>();
 
-			if (!coll.has_mcCollision())
-				continue;
+      if (!coll.has_mcCollision())
+        continue;
 
-			const auto mcid = coll.mcCollisionId();
+      const auto mcid = coll.mcCollisionId();
 
-			if (allowedMcIds.find(mcid) == allowedMcIds.end())
+      if (allowedMcIds.find(mcid) == allowedMcIds.end())
         continue;
 
       auto iter = centByMcIds.find(mcid);
@@ -790,54 +779,53 @@ struct Chk892pp {
       if (std::abs(yreco) > SecondaryCuts.cfgSecondaryRapidityMax)
         continue;
 
-			if (!SecondaryCuts.cfgByPassDauPIDSelection){
-				auto posDauTrack = v0.template posTrack_as<MCTrackCandidates>();
-				auto negDauTrack = v0.template negTrack_as<MCTrackCandidates>();
-				if (!selectionPIDPion(posDauTrack))
-					continue;
-				if (!selectionPIDPion(negDauTrack))
-					continue;
-			}
-			if (!selectionK0s(coll, v0))
-				continue;
+      if (!SecondaryCuts.cfgByPassDauPIDSelection) {
+        auto posDauTrack = v0.template posTrack_as<MCTrackCandidates>();
+        auto negDauTrack = v0.template negTrack_as<MCTrackCandidates>();
+        if (!selectionPIDPion(posDauTrack))
+          continue;
+        if (!selectionPIDPion(negDauTrack))
+          continue;
+      }
+      if (!selectionK0s(coll, v0))
+        continue;
 
-			histos.fill(HIST("EffK0s/recoK0s"), ptreco, lCentrality);
+      histos.fill(HIST("EffK0s/recoK0s"), ptreco, lCentrality);
     }
-  }//effK0sProcessReco
+  } // effK0sProcessReco
 
-
-	template <typename V0T, typename TrkT>
-  bool matchRecoToTruthKstar(V0T const &v0, TrkT const &trk, double &ptgen, double &ygen)
+  template <typename V0T, typename TrkT>
+  bool matchRecoToTruthKstar(V0T const& v0, TrkT const& trk, double& ptgen, double& ygen)
   {
-		if (!v0.has_mcParticle() || !trk.has_mcParticle())
-			return false;
-    
+    if (!v0.has_mcParticle() || !trk.has_mcParticle())
+      return false;
+
     auto mcK0s = v0.template mcParticle_as<MCTrueTrackCandidates>();
     auto mcPi = trk.template mcParticle_as<MCTrueTrackCandidates>();
 
-		if (std::abs(mcK0s.pdgCode()) != kPDGK0s)
-			return false;
-		if (std::abs(mcPi.pdgCode()) != kPiPlus)
-			return false;
+    if (std::abs(mcK0s.pdgCode()) != kPDGK0s)
+      return false;
+    if (std::abs(mcPi.pdgCode()) != kPiPlus)
+      return false;
 
     MCTrueTrackCandidates::iterator kstarFromPi;
     bool havePiKstar = false;
-    for (const auto& m1 : mcPi.template mothers_as<MCTrueTrackCandidates>()){
-      if (std::abs(m1.pdgCode()) == kKstarPlus){
+    for (const auto& m1 : mcPi.template mothers_as<MCTrueTrackCandidates>()) {
+      if (std::abs(m1.pdgCode()) == kKstarPlus) {
         kstarFromPi = m1;
         havePiKstar = true;
         break;
       }
     }
-    if (!havePiKstar){
+    if (!havePiKstar) {
       return false;
     }
 
     bool shareSameKstar = false;
-    for (const auto& m1 : mcK0s.template mothers_as<MCTrueTrackCandidates>()){
-      if (std::abs(m1.pdgCode()) == kPDGK0){
-        for (const auto& m2 : m1.template mothers_as<MCTrueTrackCandidates>()){
-          if (m2.globalIndex() == kstarFromPi.globalIndex()){
+    for (const auto& m1 : mcK0s.template mothers_as<MCTrueTrackCandidates>()) {
+      if (std::abs(m1.pdgCode()) == kPDGK0) {
+        for (const auto& m2 : m1.template mothers_as<MCTrueTrackCandidates>()) {
+          if (m2.globalIndex() == kstarFromPi.globalIndex()) {
             shareSameKstar = true;
             break;
           }
@@ -846,7 +834,7 @@ struct Chk892pp {
           break;
       }
     }
-    if (!shareSameKstar){
+    if (!shareSameKstar) {
       return false;
     }
 
@@ -856,11 +844,9 @@ struct Chk892pp {
     return true;
   } // matchRecoToTruthKstar
 
-
-	void effKstarProcessGen(MCTrueTrackCandidates const &mcparts)
+  void effKstarProcessGen(MCTrueTrackCandidates const& mcparts)
   {
-    for (const auto& part : mcparts)
-    {
+    for (const auto& part : mcparts) {
       const auto mcid = part.mcCollisionId();
       if (!part.has_mcCollision())
         continue;
@@ -879,20 +865,18 @@ struct Chk892pp {
         continue;
 
       const double px = part.px(), py = part.py(), pz = part.pz(), e = part.e();
-      const double mgen2 = e*e - (px*px + py*py + pz*pz);
+      const double mgen2 = e * e - (px * px + py * py + pz * pz);
       const double mgen = (mgen2 > 0.0) ? std::sqrt(mgen2) : 0.0;
 
       histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
       histos.fill(HIST("EffKstar/genKstar_m"), mgen);
     }
-  }//effKstarProcessGen
-
+  } // effKstarProcessGen
 
   template <typename V0RangeT, typename TrkRangeT>
-  void effKstarProcessReco(V0RangeT const &v0s, TrkRangeT const &tracks)
+  void effKstarProcessReco(V0RangeT const& v0s, TrkRangeT const& tracks)
   {
-    for (const auto& v0 : v0s)
-    {
+    for (const auto& v0 : v0s) {
       auto coll = v0.template collision_as<MCEventCandidates>();
 
       if (!coll.has_mcCollision())
@@ -909,8 +893,7 @@ struct Chk892pp {
 
       const float lCentrality = iter->second;
 
-      if (!SecondaryCuts.cfgByPassDauPIDSelection)
-      {
+      if (!SecondaryCuts.cfgByPassDauPIDSelection) {
         auto posDauTrack = v0.template posTrack_as<MCTrackCandidates>();
         auto negDauTrack = v0.template negTrack_as<MCTrackCandidates>();
         if (!selectionPIDPion(posDauTrack))
@@ -922,8 +905,7 @@ struct Chk892pp {
         continue;
 
       auto trks = tracks.sliceBy(perCollision, v0.collisionId());
-      for (const auto& bTrack : trks)
-      {
+      for (const auto& bTrack : trks) {
         if (bTrack.collisionId() != v0.collisionId())
           continue;
 
@@ -940,10 +922,8 @@ struct Chk892pp {
 
         histos.fill(HIST("EffKstar/recoKstar_m"), lResoKstar.Pt(), lResoKstar.M());
 
-        if (BkgEstimationConfig.cfgFillRotBkg)
-        {
-          for (int i = 0; i < BkgEstimationConfig.cfgNrotBkg; i++)
-          {
+        if (BkgEstimationConfig.cfgFillRotBkg) {
+          for (int i = 0; i < BkgEstimationConfig.cfgNrotBkg; i++) {
             auto lRotAngle = BkgEstimationConfig.cfgMinRot + i * ((BkgEstimationConfig.cfgMaxRot - BkgEstimationConfig.cfgMinRot) / (BkgEstimationConfig.cfgNrotBkg - 1));
 
             lDaughterRot = lDecayDaughter_bach;
@@ -969,14 +949,14 @@ struct Chk892pp {
         histos.fill(HIST("EffKstar/recoKstar_m_matched"), ptreco, lResoKstar.M());
       }
     }
-  }//effKstarProcessReco
+  } // effKstarProcessReco
 
   int count = 0;
 
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType, typename TracksTypeK0s>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksTypeK0s& dTracks2)
   {
-		using TrackTarget = std::decay_t<TracksType>;
+    using TrackTarget = std::decay_t<TracksType>;
 
     histos.fill(HIST("QA/before/CentDist"), lCentrality);
 
@@ -1022,10 +1002,10 @@ struct Chk892pp {
     }
 
     for (const auto& k0sCand : dTracks2) {
-     // auto posDauTrack = k0sCand.template posTrack_as<TrackCandidates>();
-     // auto negDauTrack = k0sCand.template negTrack_as<TrackCandidates>();
-			auto posDauTrack = k0sCand.template posTrack_as<TrackTarget>();
-			auto negDauTrack = k0sCand.template negTrack_as<TrackTarget>();
+      // auto posDauTrack = k0sCand.template posTrack_as<TrackCandidates>();
+      // auto negDauTrack = k0sCand.template negTrack_as<TrackCandidates>();
+      auto posDauTrack = k0sCand.template posTrack_as<TrackTarget>();
+      auto negDauTrack = k0sCand.template negTrack_as<TrackTarget>();
 
       /// Daughters
       // Positve pion
@@ -1044,7 +1024,7 @@ struct Chk892pp {
       auto trkky = k0sCand.yK0Short();
       auto trkkDCAtoPV = k0sCand.dcav0topv();
       auto trkkCPA = k0sCand.v0cosPA();
-			auto trkkPropTau = k0sCand.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
+      auto trkkPropTau = k0sCand.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
       auto trkkMass = k0sCand.mK0Short();
       auto trkkDauDCAPostoPV = k0sCand.dcapostopv();
       auto trkkDauDCANegtoPV = k0sCand.dcanegtopv();
@@ -1162,17 +1142,17 @@ struct Chk892pp {
               histos.fill(HIST("QA/RotBkg/hRotBkg"), lRotAngle);
               if (BkgEstimationConfig.cfgRotPion) {
                 lDaughterRot = lDecayDaughter_bach;
-                //lDaughterRot.RotateZ(lRotAngle);
-								ROOT::Math::RotationZ rot(lRotAngle);
-								auto p3 = rot * lDaughterRot.Vect();
-								lDaughterRot = LorentzVectorSetXYZM(p3.X(),p3.Y(),p3.Z(),lDaughterRot.M());
+                // lDaughterRot.RotateZ(lRotAngle);
+                ROOT::Math::RotationZ rot(lRotAngle);
+                auto p3 = rot * lDaughterRot.Vect();
+                lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
                 lResonanceRot = lDaughterRot + lResoSecondary;
               } else {
                 lDaughterRot = lResoSecondary;
-                //lDaughterRot.RotateZ(lRotAngle);
-								ROOT::Math::RotationZ rot(lRotAngle);
-								auto p3 = rot * lDaughterRot.Vect();
-								lDaughterRot = LorentzVectorSetXYZM(p3.X(),p3.Y(),p3.Z(),lDaughterRot.M());
+                // lDaughterRot.RotateZ(lRotAngle);
+                ROOT::Math::RotationZ rot(lRotAngle);
+                auto p3 = rot * lDaughterRot.Vect();
+                lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
                 lResonanceRot = lDecayDaughter_bach + lDaughterRot;
               }
               typeKstar = bTrack.sign() > 0 ? BinType::kKstarP_Rot : BinType::kKstarN_Rot;
@@ -1201,8 +1181,8 @@ struct Chk892pp {
     lCentrality = getCentrality(collision);
     if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
       return;
-		if (!collision.isInelGt0())
-			return;
+    if (!collision.isInelGt0())
+      return;
     colCuts.fillQA(collision);
 
     fillHistograms<false, false>(collision, tracks, v0s); // second order
@@ -1213,24 +1193,26 @@ struct Chk892pp {
   void processMC(MCTrueTrackCandidates const& mcpart,
                  MCTrackCandidates const& tracks,
                  MCV0Candidates const& v0s,
-								 MCEventCandidates const& events)
+                 MCEventCandidates const& events)
   {
-		buildAllowedMcIds(events);
-		effK0sProcessGen(mcpart);
-		effK0sProcessReco(v0s);
-		effKstarProcessGen(mcpart);
-		effKstarProcessReco(v0s, tracks);
+    buildAllowedMcIds(events);
+    effK0sProcessGen(mcpart);
+    effK0sProcessReco(v0s);
+    effKstarProcessGen(mcpart);
+    effKstarProcessReco(v0s, tracks);
 
-		for (auto const& collision : events) {
-			if (!collision.has_mcCollision()) continue;
-			const auto mcid = collision.mcCollisionId();
+    for (auto const& collision : events) {
+      if (!collision.has_mcCollision())
+        continue;
+      const auto mcid = collision.mcCollisionId();
 
-			auto it = centByMcIds.find(mcid);
-			if (it == centByMcIds.end()) continue;
+      auto it = centByMcIds.find(mcid);
+      if (it == centByMcIds.end())
+        continue;
 
-			lCentrality = it->second;
-			fillHistograms<true, false>(collision, tracks, v0s);
-		}
+      lCentrality = it->second;
+      fillHistograms<true, false>(collision, tracks, v0s);
+    }
   }
   PROCESS_SWITCH(Chk892pp, processMC, "Process Event for MC", true);
 };
