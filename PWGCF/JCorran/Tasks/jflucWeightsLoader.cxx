@@ -193,7 +193,7 @@ struct JflucWeightsLoader {
         }
       }
     }
-    
+
     // Set run number after reading corrections
     runNumber = collision.runNumber();
 
