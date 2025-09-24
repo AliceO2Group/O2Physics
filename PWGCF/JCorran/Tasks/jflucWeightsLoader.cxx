@@ -175,7 +175,6 @@ struct JflucWeightsLoader {
           initCCDB(collision.runNumber(), timestamp, kNUA);
           LOGF(info, "Loaded NUA correction histogram from CCDB for run %d.", collision.runNumber());
         }
-        runNumber = collision.runNumber();
       }
     }
     if (pfeff || useEffFromCCDB) {
@@ -194,6 +193,10 @@ struct JflucWeightsLoader {
         }
       }
     }
+    
+    // Set run number after reading corrections
+    runNumber = collision.runNumber();
+
     for (const auto& track : tracks) {
       float phiWeight, effWeight;
       if (ph) {
