@@ -131,8 +131,8 @@ struct HStrangeCorrelation {
     Configurable<bool> applyEfficiencyCorrection{"applyEfficiencyCorrection", false, "apply efficiency correction"};
     Configurable<bool> applyEfficiencyForTrigger{"applyEfficiencyForTrigger", false, "apply efficiency correction for the trigger particle"};
     Configurable<bool> applyEfficiencyPropagation{"applyEfficiencyPropagation", false, "propagate also the efficiency uncertainty"};
-    Configurable<bool> applyPurityHadron{"applyPurityHadron",false,"apply the purity correction for associated hadrons"};
-    Configurable<bool> applyPurityTrigger{"applyPurityTrigger",false,"apply the purity correction for trigger particle"};
+    Configurable<bool> applyPurityHadron{"applyPurityHadron", false, "apply the purity correction for associated hadrons"};
+    Configurable<bool> applyPurityTrigger{"applyPurityTrigger", false, "apply the purity correction for trigger particle"};
   } efficiencyFlags;
   Configurable<std::string> ccdburl{"ccdburl", "http://alice-ccdb.cern.ch", "url of the ccdb repository to use"};
   Configurable<std::string> efficiencyCCDBPath{"efficiencyCCDBPath", "GLO/Config/GeometryAligned", "Path of the efficiency corrections"};
@@ -1059,19 +1059,23 @@ struct HStrangeCorrelation {
               efficiencyUncertainty = hEfficiencyUncertaintyPion->Interpolate(ptassoc, assoc.eta());
           } else {
             efficiency = hEfficiencyHadron->Interpolate(ptassoc, assoc.eta());
-            if(efficiencyFlags.applyPurityHadron) purity = hPurityHadron->Interpolate(ptassoc);
+            if (efficiencyFlags.applyPurityHadron)
+              purity = hPurityHadron->Interpolate(ptassoc);
             if (efficiencyFlags.applyEfficiencyPropagation) {
               efficiencyUncertainty = hEfficiencyUncertaintyHadron->Interpolate(ptassoc, assoc.eta());
-              if(efficiencyFlags.applyPurityHadron)purityUncertainty = hPurityUncertaintyHadron->Interpolate(ptassoc);
+              if (efficiencyFlags.applyPurityHadron)
+                purityUncertainty = hPurityUncertaintyHadron->Interpolate(ptassoc);
             }
           }
         }
         if (efficiencyFlags.applyEfficiencyForTrigger) {
           efficiencyTrigg = hEfficiencyTrigger->Interpolate(pttrigger, trigg.eta());
-          if(efficiencyFlags.applyPurityTrigger)purityTrigger = hPurityHadron->Interpolate(pttrigger);
+          if (efficiencyFlags.applyPurityTrigger)
+            purityTrigger = hPurityHadron->Interpolate(pttrigger);
           if (efficiencyFlags.applyEfficiencyPropagation) {
             triggerEfficiencyUncert = hEfficiencyUncertaintyTrigger->Interpolate(ptassoc, assoc.eta());
-            if(efficiencyFlags.applyPurityTrigger)triggerPurityUncertainty = hPurityUncertaintyHadron->Interpolate(ptassoc);
+            if (efficiencyFlags.applyPurityTrigger)
+              triggerPurityUncertainty = hPurityUncertaintyHadron->Interpolate(ptassoc);
           }
         }
         if (efficiency == 0) { // check for zero efficiency, do not apply if the case
@@ -1694,7 +1698,8 @@ struct HStrangeCorrelation {
         float purity = 1.0f;
         if (efficiencyFlags.applyEfficiencyCorrection) {
           efficiency = hEfficiencyHadron->Interpolate(assoc.pt(), assoc.eta());
-          if(efficiencyFlags.applyPurityHadron)purity = hPurityHadron->Interpolate(assoc.pt());
+          if (efficiencyFlags.applyPurityHadron)
+            purity = hPurityHadron->Interpolate(assoc.pt());
         }
         if (efficiency == 0) { // check for zero efficiency, do not apply if the case
           efficiency = 1;
