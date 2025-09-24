@@ -29,6 +29,7 @@
 
 #include <TRandom.h>
 
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <map>
