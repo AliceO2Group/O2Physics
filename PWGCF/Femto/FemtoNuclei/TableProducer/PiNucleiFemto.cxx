@@ -104,6 +104,8 @@ struct PiNucandidate {
   std::array<float, 3> momNu = {99.f, 99.f, 99.f};
   std::array<float, 3> momPi = {99.f, 99.f, 99.f};
 
+  float ptHe3 = 1.f;
+  float etaHe3 = 1.f;
   float signNu = 1.f;
   float signPi = 1.f;
   float invMass = -10.f;
@@ -159,6 +161,8 @@ struct PiNucleiFemto {
   Configurable<float> settingCutPtMinDePi{"settingCutPtMinDePi", 0.0f, "Minimum PT cut on DePi4"};
   Configurable<float> settingCutClSizeItsDe{"settingCutClSizeItsDe", 4.0f, "Minimum ITS cluster size for De"};
   Configurable<float> settingCutNCls{"settingCutNCls", 5.0f, "Minimum ITS Ncluster for tracks"};
+  Configurable<float> settingCutTPCChi2He{"settingCutTPCChi2He", 0.0f, "Minimum tpcChi2He for Hyper He3"};
+  Configurable<float> settingCutAverClsSizeHe{"settingCutAverClsSizeHe", 0.0f, "Minimum averClusSizeHe for Hyper He3"};
   Configurable<float> settingCutChi2NClITS{"settingCutChi2NClITS", 999.f, "Maximum ITS Chi2 for tracks"};
   Configurable<float> settingCutNsigmaTPCPi{"settingCutNsigmaTPCPi", 3.0f, "Value of the TPC Nsigma cut on Pi"};
   Configurable<float> settingCutNsigmaTPCDe{"settingCutNsigmaTPCDe", 2.5f, "Value of the TPC Nsigma cut on De"};
@@ -231,7 +235,7 @@ struct PiNucleiFemto {
     "QA",
     {{"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
      {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
-     {"hCentrality", "Centrality", {HistType::kTH1F, {{200, 0.0f, 100.0f}}}},
+     {"hCentrality", "Centrality", {HistType::kTH1F, {{100, 0.0f, 100.0f}}}},
      {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
      {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
      {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
@@ -562,15 +566,15 @@ struct PiNucleiFemto {
   bool selectionPIDHyper(const aod::DataHypCandsWColl::iterator& V0Hyper)
   {
     mQaRegistry.fill(HIST("hHe3P_preselected"), V0Hyper.tpcMomHe());
-    /*float averClusSizeHe = averageClusterSizeCosl(V0Hyper.itsClusterSizesHe(), V0Hyper.etaHe3());
-    if (averClusSizeHe <= 4) {
+    float averClusSizeHe = averageClusterSizeCosl(V0Hyper.itsClusterSizesHe(), V0Hyper.etaHe3());
+    if (averClusSizeHe <= settingCutAverClsSizeHe) {
       return false;
     }
-    if (V0Hyper.tpcChi2He() <= 0.5) {
+    if (V0Hyper.tpcChi2He() <= settingCutTPCChi2He) {
       return false;
     }
     mQaRegistry.fill(HIST("hHe3P"), V0Hyper.tpcMomHe());
-    mQaRegistry.fill(HIST("hHe3TPCnsigma"), V0Hyper.nSigmaHe());*/
+    mQaRegistry.fill(HIST("hHe3TPCnsigma"), V0Hyper.ptHe3(), V0Hyper.nSigmaHe());
 
     return true;
   }
@@ -720,10 +724,6 @@ struct PiNucleiFemto {
     if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
       return false;
     }
-    float ptDePi = std::hypot(piHypercand.momNu[0] + piHypercand.momPi[0], piHypercand.momNu[1] + piHypercand.momPi[1]);
-    if (ptDePi < settingCutPtMinDePi) {
-      return false;
-    }
 
     piHypercand.signPi = trackPi.sign();
     if (V0Hyper.isMatter()) {
@@ -731,7 +731,8 @@ struct PiNucleiFemto {
     } else {
       piHypercand.signNu = -1;
     }
-
+    piHypercand.etaHe3 = V0Hyper.etaHe3();
+    piHypercand.ptHe3 = V0Hyper.ptHe3();
     piHypercand.dcaxyPi = trackPi.dcaXY();
     piHypercand.dcazPi = trackPi.dcaZ();
     piHypercand.tpcSignalPi = trackPi.tpcSignal();
@@ -830,8 +831,8 @@ struct PiNucleiFemto {
         mQaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
 
         SVCand pair;
-        pair.tr0Idx = piTrack.globalIndex();
-        pair.tr1Idx = V0Hyper.globalIndex();
+        pair.tr0Idx = V0Hyper.globalIndex();
+        pair.tr1Idx = piTrack.globalIndex();
         const int collIdx = V0Hyper.collisionId();
         CollBracket collBracket{collIdx, collIdx};
         pair.collBracket = collBracket;
@@ -935,6 +936,8 @@ struct PiNucleiFemto {
     mOutputHyperDataTable(
       piNucand.recoPtNu(),
       piNucand.recoEtaNu(),
+      piNucand.ptHe3,
+      piNucand.etaHe3,
       piNucand.recoPhiNu(),
       piNucand.recoPtPi(),
       piNucand.recoEtaPi(),
@@ -1089,14 +1092,15 @@ struct PiNucleiFemto {
   {
     for (const auto& trackPair : mTrackHypPairs) {
 
-      auto v0hyper = V0Hypers.rawIteratorAt(trackPair.tr1Idx);
-      auto piTrack = piTracks.rawIteratorAt(trackPair.tr0Idx);
+      auto v0hyper = V0Hypers.rawIteratorAt(trackPair.tr0Idx);
+      auto piTrack = piTracks.rawIteratorAt(trackPair.tr1Idx);
       // auto collBracket = trackPair.collBracket;
 
       PiNucandidate piNucand;
       if (!fillCandidateInfoHyper(v0hyper, piTrack, piNucand, isMixedEvent)) {
         continue;
       }
+
       mQaRegistry.fill(HIST("hNuPt"), piNucand.recoPtNu());
       mQaRegistry.fill(HIST("hPiPt"), piNucand.recoPtPi());
       mQaRegistry.fill(HIST("hNuEta"), piNucand.recoEtaNu());
@@ -1220,14 +1224,15 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
 
   void processMixedEventHyperPool(const CollisionsFull& collisions, o2::aod::DataHypCandsWColl const& V0Hypers, const TrackCandidates& pitracks)
   {
-    LOG(info) << "Processing mixed event for hypertriton";
-
     mTrackHypPairs.clear();
     if (!isInitialized) {
       initializePools();
       LOG(info) << "Initialized event pool with size = " << All_Event_pool.size();
     }
     for (auto const& collision : collisions) {
+      mQaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
+      mQaRegistry.fill(HIST("hCentrality"), collision.centFT0C());
+      mQaRegistry.fill(HIST("hVtxZ"), collision.posZ());
       int poolIndexPi = where_pool(collision.posZ(), collision.centFT0C());
       auto& pool = All_Event_pool[poolIndexPi];
 
@@ -1247,7 +1252,6 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
             tracks1.push_back(t);
           }
         }
-
         std::vector<o2::aod::DataHypCandsWColl::iterator> hypers2;
         for (auto const& h : V0Hypers) {
           if (h.collisionId() != c2.globalIndex())

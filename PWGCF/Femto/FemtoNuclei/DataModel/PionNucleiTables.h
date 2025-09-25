@@ -30,7 +30,9 @@ DECLARE_SOA_COLUMN(PtNu, ptNu, float);
 DECLARE_SOA_COLUMN(EtaNu, etaNu, float);
 DECLARE_SOA_COLUMN(PhiNu, phiNu, float);
 DECLARE_SOA_COLUMN(PtHyp, ptHyp, float);
+DECLARE_SOA_COLUMN(PtHe3, ptHe3, float);
 DECLARE_SOA_COLUMN(EtaHyp, etaHyp, float);
+DECLARE_SOA_COLUMN(EtaHe3, etaHe3, float);
 DECLARE_SOA_COLUMN(PhiHyp, phiHyp, float);
 DECLARE_SOA_COLUMN(PtPi, ptPi, float);
 DECLARE_SOA_COLUMN(EtaPi, etaPi, float);
@@ -105,6 +107,8 @@ DECLARE_SOA_TABLE(PionNucleiTable, "AOD", "PINUCLEITABLE",
 DECLARE_SOA_TABLE(PionHyperTable, "AOD", "PIHYPERTABLE",
                   pion_nuclei_tables::PtHyp,
                   pion_nuclei_tables::EtaHyp,
+                  pion_nuclei_tables::PtHe3,
+                  pion_nuclei_tables::EtaHe3,
                   pion_nuclei_tables::PhiHyp,
                   pion_nuclei_tables::PtPi,
                   pion_nuclei_tables::EtaPi,
