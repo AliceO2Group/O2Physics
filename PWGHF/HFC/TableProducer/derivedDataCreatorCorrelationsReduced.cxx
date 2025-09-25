@@ -407,7 +407,6 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       rowAssocBases(rowCollisions.lastIndex(), assTrk.phi(), assTrk.eta(), assTrkPt);
       rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
     }
-    return poolBin;
   }
 
   // Dplus with ML selections
