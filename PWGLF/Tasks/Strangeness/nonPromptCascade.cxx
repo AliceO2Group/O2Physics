@@ -342,7 +342,7 @@ struct NonPromptCascadeTask {
       std::string histNameMvCZ = "mult/hMultVsCentZoom_run" + std::to_string(mRunNumber);
       std::string histNameTvC = "mult/hNTracksVsCent_run" + std::to_string(mRunNumber);
       std::string histNameTvCZ = "mult/hNTracksVsCentZoom_run" + std::to_string(mRunNumber);
-      if(!mHistsPerRunMultVsCent.contains(histNameMvC)) {
+      if (!mHistsPerRunMultVsCent.contains(histNameMvC)) {
         mHistsPerRunMultVsCent[histNameMvC] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameMvC.c_str(), histNameMvC.c_str(), HistType::kTH2F, {centAxis, multAxis}));
         mHistsPerRunMultVsCentZoom[histNameMvCZ] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameMvCZ.c_str(), histNameMvCZ.c_str(), HistType::kTH2F, {centAxisZoom, multAxisZoom}));
         mHistsPerRunNtracktVsCent[histNameTvC] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameTvC.c_str(), histNameTvC.c_str(), HistType::kTH2F, {centAxis, nTracksAxis}));
