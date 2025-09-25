@@ -56,6 +56,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   // track quality cuts
   o2::framework::Configurable<std::vector<float>> tpcClustersMin{"tpcClustersMin", {90.f}, "Minimum number of clusters in TPC"};
   o2::framework::Configurable<std::vector<float>> tpcCrossedRowsMin{"tpcCrossedRowsMin", {80.f}, "Minimum number of crossed rows in TPC"};
+  o2::framework::Configurable<std::vector<float>> tpcClustersOverCrossedRows{"tpcClustersOverCrossedRows", {0.83f}, "Minimum fraction of clusters over crossed rows in TPC"};
   o2::framework::Configurable<std::vector<float>> tpcSharedClustersMax{"tpcSharedClustersMax", {160.f}, "Maximum number of shared clusters in TPC"};
   o2::framework::Configurable<std::vector<float>> tpcSharedClusterFractionMax{"tpcSharedClusterFractionMax", {1.f}, "Maximum fraction of shared clusters in TPC"};
   o2::framework::Configurable<std::vector<float>> itsClustersMin{"itsClustersMin", {5.f}, "Minimum number of clusters in ITS"};
@@ -145,14 +146,15 @@ using ConfTrackSelection3 = ConfTrackSelection<PrefixTrackSelection3>;
 /// enum for all track selections
 enum TrackSels {
   // track quality cuts
-  kTPCnClsMin,     ///< Min. number of TPC clusters
-  kTPCcRowsMin,    ///< Min. number of crossed TPC rows
-  kTPCsClsMax,     ///< Max. number of shared TPC clusters
-  kTPCsClsFracMax, ///< Max. fractions of shared TPC clusters
-  kITSnClsMin,     ///< Min. number of ITS clusters
-  kITSnClsIbMin,   ///< Min. number of ITS clusters in the inner barrel
-  kDCAxyMax,       ///< Max. |DCA_xy| (cm) as a function of pT
-  kDCAzMax,        ///< Max. |DCA_z| (cm) as a function of pT
+  kTPCnClsMin,          ///< Min. number of TPC clusters
+  kTPCcRowsMin,         ///< Min. number of crossed TPC rows
+  kTPCnClsOvercRowsMin, ///< Min. fraction of TPC clusters of TPC crossed rows
+  kTPCsClsMax,          ///< Max. number of shared TPC clusters
+  kTPCsClsFracMax,      ///< Max. fractions of shared TPC clusters
+  kITSnClsMin,          ///< Min. number of ITS clusters
+  kITSnClsIbMin,        ///< Min. number of ITS clusters in the inner barrel
+  kDCAxyMax,            ///< Max. |DCA_xy| (cm) as a function of pT
+  kDCAzMax,             ///< Max. |DCA_z| (cm) as a function of pT
 
   /// track pid cuts
   kItsElectron, ///< ITS Electon PID
@@ -202,6 +204,8 @@ const char trackSelsName[] = "Track Selection Object";
 const std::unordered_map<TrackSels, std::string> trackSelsToString = {
   {kTPCnClsMin, "Min. number of TPC clusters"},
   {kTPCcRowsMin, "Min. number of crossed TPC rows"},
+  {kTPCnClsOvercRowsMin, "Min. fraction of TPC clusters over TPC crossed rows"},
+  {kTPCsClsMax, "Max. number of shared TPC clusters"},
   {kTPCsClsMax, "Max. number of shared TPC clusters"},
   {kTPCsClsFracMax, "Max. fractions of shared TPC clusters"},
   {kITSnClsMin, "Min. number of ITS clusters"},
@@ -271,6 +275,7 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     // add selections for track quality
     this->addSelection(config.tpcClustersMin.value, kTPCnClsMin, limits::kLowerLimit, true, true);
     this->addSelection(config.tpcCrossedRowsMin.value, kTPCcRowsMin, limits::kLowerLimit, true, true);
+    this->addSelection(config.tpcClustersOverCrossedRows.value, kTPCnClsOvercRowsMin, limits::kLowerLimit, true, true);
     this->addSelection(config.tpcSharedClustersMax.value, kTPCsClsMax, limits::kUpperLimit, true, true);
     this->addSelection(config.tpcSharedClusterFractionMax.value, kTPCsClsFracMax, limits::kUpperLimit, true, true);
     this->addSelection(config.itsClustersMin.value, kITSnClsMin, limits::kLowerLimit, true, true);
@@ -341,6 +346,7 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     this->reset();
     this->evaluateObservable(kTPCnClsMin, Track.tpcNClsFound());
     this->evaluateObservable(kTPCcRowsMin, Track.tpcNClsCrossedRows());
+    this->evaluateObservable(kTPCnClsOvercRowsMin, static_cast<float>(Track.tpcNClsFound()) / static_cast<float>(Track.tpcNClsCrossedRows()));
     this->evaluateObservable(kTPCsClsMax, Track.tpcNClsShared());
     this->evaluateObservable(kTPCsClsFracMax, static_cast<float>(Track.tpcNClsShared()) / static_cast<float>(Track.tpcNClsFound()));
     this->evaluateObservable(kITSnClsMin, Track.itsNCls());

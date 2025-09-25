@@ -55,7 +55,7 @@
            ncheckbit(femtotwotrackresonances::mask, selection.negDauMaskAboveThres),    \
            ncheckbit(femtotwotrackresonances::mask, selection.negDauMaskBelowThres))
 
-// partition for kstars, they have distince antiparticle
+// partition for kstars, they have distinct antiparticle
 #define MAKE_RESONANCE_1_PARTITON(selection)                                                                 \
   ifnode(selection.sign.node() > 0, femtobase::stored::signedPt > 0.f, femtobase::stored::signedPt < 0.f) && \
     (nabs(femtobase::stored::signedPt) > selection.ptMin) &&                                                 \
