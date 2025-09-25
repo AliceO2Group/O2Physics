@@ -19,7 +19,6 @@
 #include "DetLayer.h"
 
 #include <CommonConstants/MathConstants.h>
-
 #include <Framework/Logger.h>
 
 #include <string>
