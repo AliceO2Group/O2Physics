@@ -317,6 +317,10 @@ struct HfCorrelatorDsHadrons {
       registry.add("hCorrAllPrimaryKaons", "Ds-kaon correlations MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
       registry.add("hCorrAllPrimaryProtons", "Ds-proton correlations MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
       registry.add("hFakeCollision", "Fake collision counter", {HistType::kTH1F, {{1, -0.5, 0.5, "n fake coll"}}});
+      if (pidTrkApplied) {
+        registry.add("hCorrKaonsLSPairs", "Ds-kaon correlations LS MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
+        registry.add("hCorrKaonsULSPairs", "Ds-kaon correlations ULS MC Gen", {HistType::kTH3F, {{axisPhi}, {axisPtD}, {axisPtHadron}}});
+      }
     }
   }
 
