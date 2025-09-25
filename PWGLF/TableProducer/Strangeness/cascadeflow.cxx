@@ -156,7 +156,7 @@ struct cascadeFlow {
   Configurable<bool> isQVecT0C{"isQVecT0C", 1, ""};
   Configurable<bool> isQVecT0M{"isQVecT0M", 0, ""};
   Configurable<bool> isQVecV0A{"isQVecV0A", 0, ""};
-  
+
   // Output filling criteria
   struct : ConfigurableGroup {
     Configurable<bool> isFillTree{"isFillTree", 1, ""};
@@ -664,7 +664,7 @@ struct cascadeFlow {
                          chargeIndex,
                          v0.pt(),
                          v0.phi(),
-			 v0.eta(),
+                         v0.eta(),
                          invMassLambda,
                          v0.v0radius(),
                          v0.dcapostopv(),
@@ -1658,18 +1658,18 @@ struct cascadeFlow {
 
     double qvecRe = 0;
     double qvecIm = 0;
-    
+
     if (isQVecT0C) {
       qvecRe = coll.qvecFT0CRe();
       qvecIm = coll.qvecFT0CIm();
     } else if (isQVecT0M) {
       qvecRe = coll.qvecFT0MRe();
       qvecIm = coll.qvecFT0MIm();
-    } else if (isQVecV0A){
+    } else if (isQVecV0A) {
       qvecRe = coll.qvecFV0ARe();
       qvecIm = coll.qvecFV0AIm();
     }
-    
+
     // select only events used for the calibration of the event plane
     if (isGoodEventEP) {
       if (std::abs(qvecRe) > 990 || std::abs(qvecIm) > 990 || std::abs(coll.qvecBNegRe()) > 990 || std::abs(coll.qvecBNegIm()) > 990 || std::abs(coll.qvecBPosRe()) > 990 || std::abs(coll.qvecBPosIm()) > 990) {
