@@ -44,6 +44,16 @@
 // matches the entry in EnumInputFeatures associated to this FEATURE
 // if so, the inputFeatures vector is filled with the FEATURE's value
 // by calling the corresponding GETTER=FEATURE from track
+#define CHECK_AND_FILL_MUONGLOB_TRACK(FEATURE, GETTER)             \
+  case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE): { \
+    inputFeature = muonglob.GETTER();                              \
+    break;                                                         \
+  }
+
+// Check if the index of mCachedIndices (index associated to a FEATURE)
+// matches the entry in EnumInputFeatures associated to this FEATURE
+// if so, the inputFeatures vector is filled with the FEATURE's value
+// by calling the corresponding GETTER=FEATURE from track
 #define CHECK_AND_FILL_MFT_TRACK(FEATURE, GETTER)                  \
   case static_cast<uint8_t>(InputFeaturesMFTMuonMatch::FEATURE): { \
     inputFeature = mft.GETTER();                                   \
@@ -112,6 +122,7 @@ enum class InputFeaturesMFTMuonMatch : uint8_t {
   nClustersMCH,
   chi2MCH,
   pdca,
+  Rabs,
   cXXMFT,
   cXYMFT,
   cYYMFT,
@@ -164,7 +175,8 @@ enum class InputFeaturesMFTMuonMatch : uint8_t {
   centFT0M,
   centFT0A,
   centFT0C,
-  chi2MCHMFT
+  chi2MCHMFT,
+  chi2GlobMUON
 };
 
 template <typename TypeOutputScore = float>
@@ -251,6 +263,33 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
     return inputFeature;
   }
 
+  template <typename T1, typename T2, typename T3, typename C1, typename U>
+  float returnFeatureGlob(uint8_t idx, T1 const& muonglob, T2 const& muon, T3 const& mft, C1 const& mftcov, U const& collision)
+  {
+    float inputFeature = 0.;
+    switch (idx) {
+      CHECK_AND_FILL_MFT_TRACK(xMFT, getX);
+      CHECK_AND_FILL_MFT_TRACK(yMFT, getY);
+      CHECK_AND_FILL_MFT_TRACK(qOverptMFT, getInvQPt);
+      CHECK_AND_FILL_MFT_TRACK(tglMFT, getTanl);
+      CHECK_AND_FILL_MFT_TRACK(phiMFT, getPhi);
+      CHECK_AND_FILL_MFT_TRACK(chi2MFT, getTrackChi2);
+      CHECK_AND_FILL_MUON_TRACK(xMCH, getX);
+      CHECK_AND_FILL_MUON_TRACK(yMCH, getY);
+      CHECK_AND_FILL_MUON_TRACK(qOverptMCH, getInvQPt);
+      CHECK_AND_FILL_MUON_TRACK(tglMCH, getTanl);
+      CHECK_AND_FILL_MUON_TRACK(phiMCH, getPhi);
+      CHECK_AND_FILL_MUON_TRACK(chi2MCH, getTrackChi2);
+      CHECK_AND_FILL_MUONGLOB_TRACK(chi2MCHMFT, chi2MatchMCHMFT);
+      CHECK_AND_FILL_MUONGLOB_TRACK(chi2GlobMUON, chi2);
+      CHECK_AND_FILL_MUONGLOB_TRACK(Rabs, rAtAbsorberEnd);
+      // Below are dummy files to remove warning of unused parameters
+      CHECK_AND_FILL_MFTMUON_COLLISION(posZ);
+      CHECK_AND_FILL_MFT_COV(cXXMFT, cXX);
+    }
+    return inputFeature;
+  }
+
   template <typename T1>
   float returnFeatureTest(uint8_t idx, T1 const& muon)
   {
@@ -281,6 +320,17 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
     std::vector<float> inputFeatures;
     for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
       float inputFeature = returnFeatureTest(idx, muon);
+      inputFeatures.emplace_back(inputFeature);
+    }
+    return inputFeatures;
+  }
+
+  template <typename T1, typename T2, typename T3, typename C1, typename U>
+  std::vector<float> getInputFeaturesGlob(T1 const& muonglob, T2 const& muon, T3 const& mft, C1 const& mftcov, U const& collision)
+  {
+    std::vector<float> inputFeatures;
+    for (const auto& idx : MlResponse<TypeOutputScore>::mCachedIndices) {
+      float inputFeature = returnFeatureGlob(idx, muonglob, muon, mft, mftcov, collision);
       inputFeatures.emplace_back(inputFeature);
     }
     return inputFeatures;
@@ -328,6 +378,7 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
       FILL_MAP_MFTMUON_MATCH(nClustersMCH),
       FILL_MAP_MFTMUON_MATCH(chi2MCH),
       FILL_MAP_MFTMUON_MATCH(pdca),
+      FILL_MAP_MFTMUON_MATCH(Rabs),
       FILL_MAP_MFTMUON_MATCH(cXXMFT),
       FILL_MAP_MFTMUON_MATCH(cXYMFT),
       FILL_MAP_MFTMUON_MATCH(cYYMFT),
@@ -358,7 +409,8 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
       FILL_MAP_MFTMUON_MATCH(c1PtPhiMCH),
       FILL_MAP_MFTMUON_MATCH(c1PtTglMCH),
       FILL_MAP_MFTMUON_MATCH(c1Pt21Pt2MCH),
-      FILL_MAP_MFTMUON_MATCH(chi2MCHMFT)};
+      FILL_MAP_MFTMUON_MATCH(chi2MCHMFT),
+      FILL_MAP_MFTMUON_MATCH(chi2GlobMUON)};
   }
 
   uint8_t mCachedIndexBinning; // index correspondance between configurable and available input features
