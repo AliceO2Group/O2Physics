@@ -584,7 +584,7 @@ struct HStrangeCorrelation {
     previousContent = hist->GetBinContent(bin);
     previousError2 = hist->GetBinError2(bin);
     currentContent = previousContent + etaWeight * purity / (efficiency);
-    currentError2 = previousError2 + std::pow(etaWeight * totalPurityUncert / (efficiency), 2) + std::pow(totalEffUncert * purity * etaWeight, 2) / std::pow(efficiency, 4);
+    currentError2 = previousError2 + std::pow(etaWeight * purity / (efficiency), 2) + std::pow(etaWeight * totalPurityUncert / (efficiency), 2) + std::pow(totalEffUncert * purity * etaWeight, 2) / std::pow(efficiency, 4);
     hist->SetBinContent(bin, currentContent);
     hist->SetBinError2(bin, currentError2);
   }
