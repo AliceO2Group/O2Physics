@@ -57,6 +57,7 @@
 #include <algorithm>
 #include <array>
 #include <cmath>
+#include <fstream>
 #include <map>
 #include <memory>
 #include <string>
@@ -119,30 +120,39 @@ class ToTLUT
     }
   }
 
-  bool load(int pdg, const std::string& filename, o2::ccdb::BasicCCDBManager* ccdb = nullptr)
+  void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdbManager = mgr; }
+
+  bool load(int pdg, const std::string& filename)
   {
-    if (strncmp(filename, "ccdb:", 5) == 0) { // Check if filename starts with "ccdb:"
-                                              // NOTE: this eventually will directly fetch the object from CCDB instead of accessing it via the root file
-      LOG(info) << " --- ToT LUT file source identified as CCDB.";
-      std::string path = std::string(filename).substr(5); // Remove "ccdb:" prefix
+    if (!filename.empty() && strncmp(filename.c_str(), "ccdb:", 5) == 0) {
+      std::string basePath = std::string(filename).substr(5);
+      std::string path = basePath + "/PDG_" + std::to_string(pdg);
       const std::string outPath = "/tmp/ToTLUTs/";
-      filename = Form("%s/%s/snapshot.root", outPath.c_str(), path.c_str());
-      TFile checkFile(filename.c_str(), "READ");
-      if (!checkFile.IsOpen()) { // File does not exist, retrieve from CCDB
-        LOG(info) << " --- CCDB source detected for PDG " << pdg << ": " << path;
-        if (!ccdb) {
-          LOG(fatal) << " --- CCDB manager not set. Please provide it.";
+
+      std::string localFilename = Form("%s/lut_tot_%d.root", outPath.c_str(), pdg);
+      std::ifstream checkFile(localFilename);
+      if (!checkFile.is_open()) {
+        if (!mCcdbManager) {
+          LOG(fatal) << "CCDB manager not set. Please set it before loading LUT from CCDB.";
         }
         std::map<std::string, std::string> metadata;
-        ccdb->getCCDBAccessor().retrieveBlob(path, outPath, metadata, 1);
-        // Add CCDB handling logic here if needed
-        LOG(info) << " --- Now retrieving ToT LUT file from CCDB to: " << filename;
-      } else { // File exists, proceed to load
-        LOG(info) << " --- ToT LUT file already exists: " << filename << ". Skipping download.";
-        checkFile.Close();
+        mCcdbManager->getCCDBAccessor().retrieveBlob(path, outPath, metadata, 1);
+
+        std::string foundFile = Form("%s/%s/snapshot.root", outPath.c_str(), path.c_str());
+        std::ifstream testFile(foundFile);
+        if (!testFile.is_open()) {
+          LOG(error) << "Could not find downloaded CCDB file for PDG " << pdg;
+          return false;
+        }
+        testFile.close();
+
+        return load(pdg, foundFile);
+      } else {
+        checkFile.close();
+        return load(pdg, localFilename);
       }
-      return load(pdg, filename);
     }
+
     TFile* f = TFile::Open(filename.c_str());
     if (!f || f->IsZombie()) {
       LOG(error) << "Failed to open LUT file: " << filename;
@@ -253,6 +263,9 @@ class ToTLUT
 
   float mEtaBinWidth;
   float mPtBinWidth;
+
+ private:
+  o2::ccdb::BasicCCDBManager* mCcdbManager = nullptr;
 };
 
 static constexpr int kNumHypothesisParticles = 9;
@@ -352,19 +365,20 @@ struct OnTheFlyTrackerPid {
   Produces<aod::UpgradeTrkPids> tableUpgradeTrkPids;
 
   Service<o2::framework::O2DatabasePDG> pdg;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
   std::unique_ptr<ToTLUT> mToTLUT;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  Configurable<std::string> lutTotEl{"lutTotEl", "lut_tot_11.root", "ToT LUT for electrons"};
-  Configurable<std::string> lutTotMu{"lutTotMu", "lut_tot_13.root", "ToT LUT for muons"};
-  Configurable<std::string> lutTotPi{"lutTotPi", "lut_tot_211.root", "ToT LUT for pions"};
-  Configurable<std::string> lutTotKa{"lutTotKa", "lut_tot_321.root", "ToT LUT for kaons"};
-  Configurable<std::string> lutTotPr{"lutTotPr", "lut_tot_2212.root", "ToT LUT for protons"};
-  Configurable<std::string> lutTotDe{"lutTotDe", "lut_tot_1000010020.root", "ToT LUT for deuteron"};
-  Configurable<std::string> lutTotTr{"lutTotTr", "lut_tot_1000010030.root", "ToT LUT for triton"};
-  Configurable<std::string> lutTotHe{"lutTotHe", "lut_tot_1000020030.root", "ToT LUT for helium-3"};
-  Configurable<std::string> lutTotAl{"lutTotAl", "lut_tot_1000020040.root", "ToT LUT for alphas"};
+  Configurable<std::string> lutTotEl{"lutTotEl", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for electrons"};
+  Configurable<std::string> lutTotMu{"lutTotMu", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for muons"};
+  Configurable<std::string> lutTotPi{"lutTotPi", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for pions"};
+  Configurable<std::string> lutTotKa{"lutTotKa", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for kaons"};
+  Configurable<std::string> lutTotPr{"lutTotPr", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for protons"};
+  Configurable<std::string> lutTotDe{"lutTotDe", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for deuteron"};
+  Configurable<std::string> lutTotTr{"lutTotTr", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for triton"};
+  Configurable<std::string> lutTotHe{"lutTotHe", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for helium-3"};
+  Configurable<std::string> lutTotAl{"lutTotAl", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for alphas"};
 
   Configurable<float> truncationFraction{"truncationFraction", 0.80f, "Fraction of lower entries to consider for truncated standard deviation"};
   Configurable<float> dBz{"dBz", 20, "magnetic field (kilogauss) for track propagation"};
@@ -390,7 +404,6 @@ struct OnTheFlyTrackerPid {
     1000020030, // Helium-3
     1000020040  // Alpha
   };
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   void init(o2::framework::InitContext&)
   {
@@ -407,16 +420,18 @@ struct OnTheFlyTrackerPid {
                                        etaBins.value, etaMin.value, etaMax.value,
                                        ptBins.value, ptMin.value, ptMax.value);
 
+    mToTLUT->setCcdbManager(ccdb.operator->());
+
     bool loaded = true;
-    loaded &= mToTLUT->load(11, lutTotEl.value, ccdb);
-    loaded &= mToTLUT->load(13, lutTotMu.value, ccdb);
-    loaded &= mToTLUT->load(211, lutTotPi.value, ccdb);
-    loaded &= mToTLUT->load(321, lutTotKa.value, ccdb);
-    loaded &= mToTLUT->load(2212, lutTotPr.value, ccdb);
-    loaded &= mToTLUT->load(1000010020, lutTotDe.value, ccdb);
-    loaded &= mToTLUT->load(1000010030, lutTotTr.value, ccdb);
-    loaded &= mToTLUT->load(1000020030, lutTotHe.value, ccdb);
-    loaded &= mToTLUT->load(1000020040, lutTotAl.value, ccdb);
+    loaded &= mToTLUT->load(11, lutTotEl.value);
+    loaded &= mToTLUT->load(13, lutTotMu.value);
+    loaded &= mToTLUT->load(211, lutTotPi.value);
+    loaded &= mToTLUT->load(321, lutTotKa.value);
+    loaded &= mToTLUT->load(2212, lutTotPr.value);
+    loaded &= mToTLUT->load(1000010020, lutTotDe.value);
+    loaded &= mToTLUT->load(1000010030, lutTotTr.value);
+    loaded &= mToTLUT->load(1000020030, lutTotHe.value);
+    loaded &= mToTLUT->load(1000020040, lutTotAl.value);
 
     if (!loaded) {
       LOG(warning) << "Failed to load one or more ToT LUTs. PID results might be incomplete.";
