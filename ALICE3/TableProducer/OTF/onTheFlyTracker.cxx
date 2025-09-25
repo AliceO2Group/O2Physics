@@ -578,7 +578,7 @@ struct OnTheFlyTracker {
       }
       const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), pdg) != longLivedHandledPDGs.end();
       if (!longLivedToBeHandled) {
-        if (!(cascadeDecaySettings.decayXi)) {
+        if (!cascadeDecaySettings.decayXi) {
           continue;
         } else if (pdg != 3312) {
           continue;
