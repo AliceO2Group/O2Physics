@@ -201,8 +201,7 @@ DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   full::E,
                   full::FlagMc,
                   full::FlagMcDecayChanRec,
-                  full::OriginMcRec,
-                  full::CandidateId);
+                  full::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
                   collision::NumContrib,
@@ -219,8 +218,7 @@ DECLARE_SOA_TABLE(HfCandD0FullPs, "AOD", "HFCANDD0FULLP",
                   full::Y,
                   full::FlagMc,
                   full::FlagMcDecayChanGen,
-                  full::OriginMcGen,
-                  full::McParticleId);
+                  full::OriginMcGen);
 
 DECLARE_SOA_TABLE(HfCandD0Mls, "AOD", "HFCANDD0ML",
                   ml::BdtOutputBkg,
@@ -392,8 +390,7 @@ struct HfTreeCreatorD0ToKPi {
         e,
         flagMc,
         flagMcDecay,
-        origin,
-        candidate.globalIndex());
+        origin);
     }
     if constexpr (applyMl) {
       if (candFlag == 0) {
@@ -570,8 +567,7 @@ struct HfTreeCreatorD0ToKPi {
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0),
           particle.flagMcMatchGen(),
           particle.flagMcDecayChanGen(),
-          particle.originMcGen(),
-          particle.globalIndex());
+          particle.originMcGen());
       }
     }
   }
