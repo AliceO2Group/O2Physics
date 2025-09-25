@@ -729,20 +729,21 @@ struct cascadeFlow {
     const AxisSpec ptAxisLambda{static_cast<int>((V0Configs.MaxPtV0 - V0Configs.MinPtV0) / 0.2), V0Configs.MinPtV0, V0Configs.MaxPtV0, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec v2Axis{200, -1., 1., "#it{v}_{2}"};
     const AxisSpec CentAxis{20, 0., 100., "FT0C centrality percentile"};
+    const AxisSpec CentAxisPerCent{100, 0., 100., "Percent FT0C centrality percentile"};
     TString hNEventsLabels[10] = {"All", "sel8", "z vrtx", "kNoSameBunchPileup", "kIsGoodZvtxFT0vsPV", "trackOccupancyInTimeRange", "kNoCollInTimeRange", "kNoCollInROF", "kTVXinTRD", "kIsGoodEventEP"};
     TString hNEventsLabelsMC[6] = {"All", "z vtx", ">=1RecoColl", "1Reco", "2Reco", "EvSelected"};
     TString hNCascLabelsMC[8] = {"All Xi", "all Omega", "Xi: has MC coll", "Om: has MC coll", "Xi: isPrimary", "Om: is Primary", "Xi: |eta|<0.8", "Om: |eta| < 0.8"};
 
-    resolution.add("QVectorsT0CTPCA", "QVectorsT0CTPCA", HistType::kTH2F, {axisQVs, CentAxis});
-    resolution.add("QVectorsT0CTPCC", "QVectorsT0CTPCC", HistType::kTH2F, {axisQVs, CentAxis});
-    resolution.add("QVectorsTPCAC", "QVectorsTPCAC", HistType::kTH2F, {axisQVs, CentAxis});
-    resolution.add("QVectorsNormT0CTPCA", "QVectorsNormT0CTPCA", HistType::kTH2F, {axisQVsNorm, CentAxis});
-    resolution.add("QVectorsNormT0CTPCC", "QVectorsNormT0CTPCC", HistType::kTH2F, {axisQVsNorm, CentAxis});
-    resolution.add("QVectorsNormTPCAC", "QVectorsNormTPCCB", HistType::kTH2F, {axisQVsNorm, CentAxis});
-    resolution.add("QVectorsSpecPlane", "QVectorsSpecPlane", HistType::kTH2F, {axisQVsNorm, CentAxis});
-    resolution.add("QVectorsT0CTPCA_Shifted", "QVectorsT0CTPCA_Shifted", HistType::kTH2F, {axisQVs, CentAxis});
-    resolution.add("QVectorsT0CTPCC_Shifted", "QVectorsT0CTPCC_Shifted", HistType::kTH2F, {axisQVs, CentAxis});
-    resolution.add("QVectorsTPCAC_Shifted", "QVectorsTPCAC_Shifted", HistType::kTH2F, {axisQVs, CentAxis});
+    resolution.add("QVectorsT0CTPCA", "QVectorsT0CTPCA", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsT0CTPCC", "QVectorsT0CTPCC", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsTPCAC", "QVectorsTPCAC", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsNormT0CTPCA", "QVectorsNormT0CTPCA", HistType::kTH2F, {axisQVsNorm, CentAxisPerCent});
+    resolution.add("QVectorsNormT0CTPCC", "QVectorsNormT0CTPCC", HistType::kTH2F, {axisQVsNorm, CentAxisPerCent});
+    resolution.add("QVectorsNormTPCAC", "QVectorsNormTPCCB", HistType::kTH2F, {axisQVsNorm, CentAxisPerCent});
+    resolution.add("QVectorsSpecPlane", "QVectorsSpecPlane", HistType::kTH2F, {axisQVsNorm, CentAxisPerCent});
+    resolution.add("QVectorsT0CTPCA_Shifted", "QVectorsT0CTPCA_Shifted", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsT0CTPCC_Shifted", "QVectorsT0CTPCC_Shifted", HistType::kTH2F, {axisQVs, CentAxisPerCent});
+    resolution.add("QVectorsTPCAC_Shifted", "QVectorsTPCAC_Shifted", HistType::kTH2F, {axisQVs, CentAxisPerCent});
 
     histos.add("ShiftFT0C", "ShiftFT0C", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
     histos.add("ShiftTPCL", "ShiftTPCL", kTProfile3D, {CentAxis, basisAxis, shiftAxis});
