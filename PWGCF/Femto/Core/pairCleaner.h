@@ -46,7 +46,7 @@ class TrackTrackPairCleaner : public BasePairCleaner
   }
 };
 
-class TrackV0PairCleaner : public BasePairCleaner
+class TrackV0PairCleaner : public BasePairCleaner // also works for particles decaying into a positive and negative daughter, like resonances
 {
  public:
   TrackV0PairCleaner() = default;
@@ -55,7 +55,7 @@ class TrackV0PairCleaner : public BasePairCleaner
   {
     auto posDaughter = v0.template posDau_as<T3>();
     auto negDaughter = v0.template negDau_as<T3>();
-    return this->isCleanTrackPair(posDaughter, track) && this->isCleanTrackPair(negDaughter, track);
+    return (this->isCleanTrackPair(posDaughter, track) && this->isCleanTrackPair(negDaughter, track));
   }
 };
 
@@ -68,6 +68,20 @@ class TrackKinkPairCleaner : public BasePairCleaner
   {
     auto chaDaughter = kink.template chaDau_as<T3>();
     return this->isCleanTrackPair(chaDaughter, track);
+  }
+};
+
+class TrackCascadePairCleaner : public BasePairCleaner
+{
+ public:
+  TrackCascadePairCleaner() = default;
+  template <typename T1, typename T2, typename T3>
+  bool isCleanPair(const T1& track, const T2& cascade, const T3& /*trackTable */) const
+  {
+    auto bachelor = cascade.template bachelor_as<T3>();
+    auto posDaughter = cascade.template posDau_as<T3>();
+    auto negDaughter = cascade.template negDau_as<T3>();
+    return (this->isCleanTrackPair(bachelor, track) && this->isCleanTrackPair(posDaughter, track) && this->isCleanTrackPair(negDaughter, track));
   }
 };
 } // namespace paircleaner

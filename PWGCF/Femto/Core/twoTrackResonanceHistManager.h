@@ -93,7 +93,7 @@ std::map<TwoTrackResonanceHist, std::vector<framework::AxisSpec>> makeTwoTrackRe
     {kEta, {confBinningAnalysis.eta}},
     {kPhi, {confBinningAnalysis.phi}},
     {kMass, {confBinningAnalysis.mass}},
-    {kSign, {confBinningAnalysis.sing}}};
+    {kSign, {confBinningAnalysis.sign}}};
 };
 
 template <typename T>

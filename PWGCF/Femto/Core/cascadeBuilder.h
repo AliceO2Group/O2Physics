@@ -92,7 +92,7 @@ struct ConfOmegaBits : o2::framework::ConfigurableGroup {
 
 #define CASCADE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax, defaultPdgCode)                              \
   o2::framework::Configurable<int> pdgCode{"pdgCode", defaultPdgCode, "Track PDG code"};                       \
-  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the Lambda (+1 for Lambda and -1 for Antilambda"}; \
+  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the charge of the Cascade "};                      \
   o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                        \
   o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                      \
   o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                   \
@@ -105,7 +105,7 @@ struct ConfOmegaBits : o2::framework::ConfigurableGroup {
 
 struct ConfXiSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("XiSelection");
-  CASCADE_DEFAULT_SELECTION(1.22, 1.42, 3212)
+  CASCADE_DEFAULT_SELECTION(1.22, 1.42, 3312)
 };
 
 struct ConfOmegaSelection : o2::framework::ConfigurableGroup {
