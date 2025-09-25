@@ -618,7 +618,12 @@ double TListHandler::getSize(double fillFraction)
 {
   double size{};
   for (auto j = 0u; j < kMaxTListSize; ++j) {
-    std::visit([&fillFraction, &size](auto&& hist) { if (hist) { size += HistFiller::getSize(hist, fillFraction);} }, mTListValue[j]);
+    std::visit([&fillFraction, &size](auto&& hist) { 
+      if (hist) 
+      { 
+        size += HistFiller::getSize(hist, fillFraction);
+      } 
+    }, mTListValue[j]);
   }
   return size;
 }
