@@ -56,7 +56,7 @@ class TListHandler
  public:
   TList* rootList;
   bool makeNestedList;
-  TListHandler() : rootList(nullptr) {}         // Default constructor
+  TListHandler() : rootList(nullptr) {}                  // Default constructor
   explicit TListHandler(TList* list) : rootList(list) {} // Constructor accepting a TList*
 
   // operator() overload to assign a new list
