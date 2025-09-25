@@ -926,17 +926,17 @@ struct ZdcQVectors {
       double deltaPsiZDCC = 0;
 
       if (!cfgCCDBdir_Shift.value.empty() && cal.isShiftProfileFound == false) {
-          LOGF(info, "Getting shift profile from CCDB for runnumber: %d", runnumber);
-          TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
-          cal.shiftprofileC = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
-          cal.shiftprofileA = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
-          if (!cal.shiftprofileC || !cal.shiftprofileA) {
-            LOGF(error, "Shift profile not found in CCDB for runnumber: %d", runnumber);
-            cal.isShiftProfileFound = false;
-          } else {
-            LOGF(info, "Shift profile found in CCDB for runnumber: %d", runnumber);
-            cal.isShiftProfileFound = true;
-          }
+        LOGF(info, "Getting shift profile from CCDB for runnumber: %d", runnumber);
+        TList* hcorrList = ccdb->getForTimeStamp<TList>(cfgCCDBdir_Shift.value, foundBC.timestamp());
+        cal.shiftprofileC = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCC"));
+        cal.shiftprofileA = reinterpret_cast<TProfile3D*>(hcorrList->FindObject("ShiftZDCA"));
+        if (!cal.shiftprofileC || !cal.shiftprofileA) {
+          LOGF(error, "Shift profile not found in CCDB for runnumber: %d", runnumber);
+          cal.isShiftProfileFound = false;
+        } else {
+          LOGF(info, "Shift profile found in CCDB for runnumber: %d", runnumber);
+          cal.isShiftProfileFound = true;
+        }
       }
 
       for (int ishift = 1; ishift <= nshift; ishift++) {
@@ -966,7 +966,7 @@ struct ZdcQVectors {
             coeffshiftxZDCA = cal.shiftprofileA->GetBinContent(binshiftxZDCA);
           if (binshiftyZDCA > 0)
             coeffshiftyZDCA = cal.shiftprofileA->GetBinContent(binshiftyZDCA);
-      
+
           deltaPsiZDCC += ((2 / (1.0 * ishift)) * (-1.0 * coeffshiftxZDCC * std::cos(ishift * 1.0 * psiZDCC) + coeffshiftyZDCC * std::sin(ishift * 1.0 * psiZDCC)));
           deltaPsiZDCA += ((2 / (1.0 * ishift)) * (-1.0 * coeffshiftxZDCA * std::cos(ishift * 1.0 * psiZDCA) + coeffshiftyZDCA * std::sin(ishift * 1.0 * psiZDCA)));
         }
