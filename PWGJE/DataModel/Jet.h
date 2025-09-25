@@ -288,8 +288,8 @@ using McCollisionsV0 = o2::soa::Join<JV0McCollisions, JV0McCollisionIds>;
 using CandidatesV0MCP = o2::soa::Join<JV0Mcs, JV0McIds>;
 
 using CollisionsDielectron = o2::soa::Join<ReducedEvents, JDielectronCollisionIds>;
-using CandidatesDielectronData = o2::soa::Join<Dielectrons, JDielectronIds>;
-using CandidatesDielectronMCD = o2::soa::Join<Dielectrons, JDielectronIds>;
+using CandidatesDielectronData = o2::soa::Join<Dielectrons, DielectronsAll, JDielectronIds>;
+using CandidatesDielectronMCD = o2::soa::Join<Dielectrons, DielectronsAll, JDielectronIds>;
 using JetTracksSubDielectron = JTrackDielectronSubs;
 using JetParticlesSubDielectron = JMcParticleDielectronSubs;
 using McCollisionsDielectron = o2::soa::Join<JDielectronMcCollisions, JDielectronMcCollisionIds>;

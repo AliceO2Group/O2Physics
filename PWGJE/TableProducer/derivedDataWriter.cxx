@@ -239,6 +239,7 @@ struct JetDerivedDataWriter {
       Produces<aod::StoredJDielectronCollisionIds> storedDielectronCollisionIdsTable;
       Produces<aod::StoredDielectrons> storedDielectronsTable;
       Produces<aod::StoredJDielectronIds> storedDielectronIdsTable;
+      Produces<aod::StoredDielectronsAll> storedDielectronsAllTable;
       Produces<aod::StoredJDielectronMcCollisions> storedDielectronMcCollisionsTable;
       Produces<aod::StoredJDielectronMcCollisionIds> storedDielectronMcCollisionIdsTable;
       Produces<aod::StoredJDielectronMcRCollDummys> storedDielectronMcRCollDummysTable;
@@ -626,8 +627,9 @@ struct JetDerivedDataWriter {
         products.productsDielectron.storedDielectronCollisionIdsTable(collisionMapping[collision.globalIndex()]);
       }
       for (const auto& DielectronCandidate : DielectronCandidates) {
-        jetdqutilities::fillDielectronCandidateTable(DielectronCandidate, products.productsDielectron.storedDielectronCollisionsTable.lastIndex(), products.productsDielectron.storedDielectronsTable);
+        jetdqutilities::fillDielectronCandidateTable(DielectronCandidate, products.productsDielectron.storedDielectronCollisionsTable.lastIndex(), products.productsDielectron.storedDielectronsTable,products.productsDielectron.storedDielectronsAllTable);
         products.productsDielectron.storedDielectronIdsTable(collisionMapping[collision.globalIndex()], trackMapping[DielectronCandidate.prong0Id()], trackMapping[DielectronCandidate.prong1Id()]);
+        //products.productsDielectron.storedDielectronsAll    
       }
     }
   }
@@ -644,7 +646,7 @@ struct JetDerivedDataWriter {
         mcCollisionMapping[mcCollision.globalIndex()] = products.storedJMcCollisionsTable.lastIndex();
       }
     }
-  }
+  } 
   PROCESS_SWITCH(JetDerivedDataWriter, processMcCollisions, "write out mcCollision output tables", false);
 
   void processMcParticles(soa::Join<aod::JMcCollisions, aod::JMcCollisionSelections> const& mcCollisions, soa::Join<aod::JMcParticles, aod::JMcParticlePIs> const& particles)
