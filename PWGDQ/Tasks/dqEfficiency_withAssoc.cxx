@@ -2232,6 +2232,8 @@ struct AnalysisSameEventPairing {
         VarManager::FillTrackMC(mcTracks, track);
         auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
         // auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
+        mcDecision = 0;
+        isig = 0;
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
             mcDecision |= (static_cast<uint32_t>(1) << isig);
@@ -2241,8 +2243,8 @@ struct AnalysisSameEventPairing {
               dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), track_raw.pt(), track_raw.eta(), track_raw.phi(), -999, -999, -999);
             }
           }
+          isig++;
         }
-        isig++;
       }
     } // end loop over reconstructed events
     if (fHasTwoProngGenMCsignals) {
