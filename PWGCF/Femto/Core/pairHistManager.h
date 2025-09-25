@@ -121,6 +121,12 @@ constexpr char PrefixTrackTrackMe[] = "TrackTrack/ME/";
 constexpr char PrefixTrackV0Se[] = "TrackV0/SE/";
 constexpr char PrefixTrackV0Me[] = "TrackV0/ME/";
 
+constexpr char PrefixTrackResonanceSe[] = "TrackResonance/SE/";
+constexpr char PrefixTrackResonanceMe[] = "TrackResonance/ME/";
+
+constexpr char PrefixTrackCascadeSe[] = "TrackCascade/SE/";
+constexpr char PrefixTrackCascadeMe[] = "TrackCascade/ME/";
+
 constexpr char PrefixTrackKinkSe[] = "TrackKink/SE/";
 constexpr char PrefixTrackKinkMe[] = "TrackKink/ME/";
 
@@ -166,8 +172,10 @@ class PairHistManager
   }
   void setCharge(int chargeParticle1, int chargeParticle2)
   {
-    mAbsCharge1 = std::fabs(chargeParticle1);
-    mAbsCharge1 = std::fabs(chargeParticle2);
+    // the pt stored is actually pt/z, so in case of particles with z > 1, we have to rescale the pt (this is so far only for He3 the case)
+    // similarly, for neutral particles, no reason to rescale so we just set absolute charge to 1
+    mAbsCharge1 = std::abs(chargeParticle1 == 0 ? 1 : chargeParticle1);
+    mAbsCharge2 = std::abs(chargeParticle2 == 0 ? 1 : chargeParticle2);
   }
 
   template <typename T1, typename T2>

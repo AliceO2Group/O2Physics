@@ -91,6 +91,7 @@ struct FemtoProducer {
   collisionbuilder::ConfCollisionTables confCollisionTables;
   collisionbuilder::ConfCollisionFilters confCollisionFilters;
   collisionbuilder::ConfCollisionBits confCollisionBits;
+  collisionbuilder::ConfCollisionRctFlags confCollisionRctFlags;
   collisionbuilder::ConfCollisionTriggers confCollisionTriggers;
   collisionbuilder::CollisionBuilder collisionBuilder;
 
@@ -192,7 +193,7 @@ struct FemtoProducer {
     ccdb->setCreatedNotAfter(now);
 
     // collision selection
-    collisionBuilder.init(confCollisionFilters, confCollisionBits, confCollisionTables, confCollisionTriggers, context);
+    collisionBuilder.init(confCollisionFilters, confCollisionBits, confCollisionRctFlags, confCollisionTriggers, confCollisionTables, context);
 
     // configure track builder
     trackBuilder.init(confTrackBits, confTrackFilters, confTrackTables, context);

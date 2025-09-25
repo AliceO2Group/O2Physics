@@ -48,6 +48,7 @@ enum TrackHist {
   kItsClusterIb,
   kTpcCrossedRows,
   kTpcCluster,
+  kTpcClusterOverCrossedRows,
   kTpcClusterShared,
   kTpcClusterFractionShared,
   // kDcaxy,
@@ -59,7 +60,11 @@ enum TrackHist {
   kPhiVsEta,
   kPtVsItsCluster,
   kPtVsTpcCluster,
+  kPtVsTpcCrossedRows,
+  kPtVsTpcClusterOverCrossedRows,
   kPtVsTpcClusterShared,
+  kPtVsTpcClusterFractionShared,
+  kTpcClusterVsTpcCrossedRows,
   kTpcClusterVsTpcClusterShared,
   kPtVsDcaxy,
   kPtVsDcaz,
@@ -151,6 +156,7 @@ struct ConfTrackQaBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis itsClusterIb{"itsClusterIb", {{4, -0.5, 3.5}}, "ITS cluster in inner barrel"};
   o2::framework::ConfigurableAxis tpcCrossedRows{"tpcCrossedRows", {{161, -0.5, 160.5}}, "TPC cluster"};
   o2::framework::ConfigurableAxis tpcCluster{"tpcCluster", {{161, -0.5, 160.5}}, "TPC cluster"};
+  o2::framework::ConfigurableAxis tpcClusterOverCrossedRows{"tpcClusterOverCrossedRows", {{75, 0, 1.5}}, "TPC cluster over TPC crossed rows"};
   o2::framework::ConfigurableAxis tpcClusterShared{"tpcClusterShared", {{161, -0.5, 160.5}}, "TPC cluster shared"};
   o2::framework::ConfigurableAxis tpcClusterFractionShared{"tpcClusterFractionShared", {{60, 0, 1.2}}, "TPC cluster fraction shared"};
   o2::framework::ConfigurableAxis dcaXy{"dcaXy", {{300, -0.3, 0.3}}, "DCA_xy"};
@@ -231,6 +237,7 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast> HistTable
    {kItsClusterIb, o2::framework::kTH1F, "hItsClusterIb", "ITS cluster in inner barrel; ITS IB cluster; Entries"},
    {kTpcCrossedRows, o2::framework::kTH1F, "hTpcCrossedRows", "TPC crossed rows; TPC crossed rows; Entries"},
    {kTpcCluster, o2::framework::kTH1F, "hTpcCluster", "TPC cluster found; TPC cluster found; Entries"},
+   {kTpcClusterOverCrossedRows, o2::framework::kTH1F, "hTpcClusterOverCrossedRows", "TPC cluster found  over TPC crossed rows; TPC cluster found / Tpc crossed rows; Entries"},
    {kTpcClusterShared, o2::framework::kTH1F, "hTpcClusterShared", "TPC cluster shared; TPC cluster shared ; Entries"},
    {kTpcClusterFractionShared, o2::framework::kTH1F, "hTpcClusterFractionShared", "TPC cluster fraction shared; TPC cluster found / TPC cluster shared ; Entries"},
    {kPtVsEta, o2::framework::kTH2F, "hPtVsEta", "p_{T} vs #eta; p_{T} (GeV/#it{c}) ; #eta"},
@@ -238,7 +245,11 @@ constexpr std::array<histmanager::HistInfo<TrackHist>, kTrackHistLast> HistTable
    {kPhiVsEta, o2::framework::kTH2F, "hPhiVsEta", "#varphi vs #eta; #varphi ; #eta"},
    {kPtVsItsCluster, o2::framework::kTH2F, "hPtVsItsCluster", "p_{T} vs ITS cluster; p_{T} (GeV/#it{c}) ; ITS cluster"},
    {kPtVsTpcCluster, o2::framework::kTH2F, "hPtVsTpcCluster", "p_{T} vs TPC cluster found; p_{T} (GeV/#it{c}) ; TPC cluster found"},
+   {kPtVsTpcCrossedRows, o2::framework::kTH2F, "hPtVsTpcCrossedRows", "p_{T} vs TPC crossed rows; p_{T} (GeV/#it{c}) ; TPC crossed rows"},
+   {kPtVsTpcClusterOverCrossedRows, o2::framework::kTH2F, "hPtVsTpcClusterOverCrossedRows", "p_{T} vs TPC cluster found over crossed rows; p_{T} (GeV/#it{c}) ; TPC cluster found / TPC crossed rows"},
    {kPtVsTpcClusterShared, o2::framework::kTH2F, "hPtVsTpcClusterShared", "p_{T} vs TPC cluster shared; p_{T} (GeV/#it{c}) ; TPC cluster shared"},
+   {kPtVsTpcClusterFractionShared, o2::framework::kTH2F, "hPtVsTpcClusterSharedFraction", "p_{T} vs TPC cluster shared over TPC cluster found; p_{T} (GeV/#it{c}) ; TPC cluster shared / TPC cluster found"},
+   {kTpcClusterVsTpcCrossedRows, o2::framework::kTH2F, "hTpcClusterVsTpcCrossedRows", "TPC cluster found vs TPC crossed rows; TPC cluster found; TPC crossed rows"},
    {kTpcClusterVsTpcClusterShared, o2::framework::kTH2F, "hTpcClusterVsTpcClusterShared", "TPC cluster found vs TPC cluster shared; TPC cluster found; TPC cluster shared"},
    {kPtVsDcaxy, o2::framework::kTH2F, "hPtVsDcaxy", "p_{T} vs DCA_{XY}; p_{T} (GeV/#it{c}); DCA_{XY} (cm)"},
    {kPtVsDcaz, o2::framework::kTH2F, "hPtVsDcaz", "p_{T} vs DCA_{Z}; p_{T} (GeV/#it{c}); DCA_{Z} (cm)"},
@@ -308,10 +319,15 @@ auto makeTrackQaHistSpecMap(const T1& confBinningAnalysis, const T2 confiBinning
     {kPhiVsEta, {confBinningAnalysis.phi, confBinningAnalysis.eta}},
     {kPtVsItsCluster, {confBinningAnalysis.pt, confiBinningQa.itsCluster}},
     {kPtVsTpcCluster, {confBinningAnalysis.pt, confiBinningQa.tpcCluster}},
+    {kPtVsTpcCrossedRows, {confBinningAnalysis.pt, confiBinningQa.tpcCrossedRows}},
+    {kPtVsTpcClusterOverCrossedRows, {confBinningAnalysis.pt, confiBinningQa.tpcClusterOverCrossedRows}},
     {kPtVsTpcClusterShared, {confBinningAnalysis.pt, confiBinningQa.tpcClusterShared}},
+    {kPtVsTpcClusterFractionShared, {confBinningAnalysis.pt, confiBinningQa.tpcClusterFractionShared}},
+    {kTpcClusterVsTpcCrossedRows, {confiBinningQa.tpcCluster, confiBinningQa.tpcCrossedRows}},
     {kTpcClusterVsTpcClusterShared, {confiBinningQa.tpcCluster, confiBinningQa.tpcClusterShared}},
     {kTpcCrossedRows, {confiBinningQa.tpcCrossedRows}},
     {kTpcCluster, {confiBinningQa.tpcCluster}},
+    {kTpcClusterOverCrossedRows, {confiBinningQa.tpcClusterOverCrossedRows}},
     {kTpcClusterShared, {confiBinningQa.tpcClusterShared}},
     {kTpcClusterFractionShared, {confiBinningQa.tpcClusterFractionShared}},
     {kPtVsDcaxy, {confBinningAnalysis.pt, confiBinningQa.dcaXy}},
@@ -400,7 +416,7 @@ class TrackHistManager
   void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> Specs, float charge = 1, int momentumTypeForPid = 0)
   {
     mHistogramRegistry = registry;
-    mAbsCharge = std::fabs(charge);
+    mAbsCharge = std::fabs(charge); // stored absolute charge of the track to scale the momentum in case of Z!=1 (case only for He3)
 
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       std::string analysisDir = std::string(prefix) + std::string(AnalysisDir);
@@ -419,6 +435,7 @@ class TrackHistManager
       mHistogramRegistry->add(qaDir + GetHistNamev2(kItsClusterIb, HistTable), GetHistDesc(kItsClusterIb, HistTable), GetHistType(kItsClusterIb, HistTable), {Specs[kItsClusterIb]});
       mHistogramRegistry->add(qaDir + GetHistNamev2(kTpcCrossedRows, HistTable), GetHistDesc(kTpcCrossedRows, HistTable), GetHistType(kTpcCrossedRows, HistTable), {Specs[kTpcCrossedRows]});
       mHistogramRegistry->add(qaDir + GetHistNamev2(kTpcCluster, HistTable), GetHistDesc(kTpcCluster, HistTable), GetHistType(kTpcCluster, HistTable), {Specs[kTpcCluster]});
+      mHistogramRegistry->add(qaDir + GetHistNamev2(kTpcClusterOverCrossedRows, HistTable), GetHistDesc(kTpcClusterOverCrossedRows, HistTable), GetHistType(kTpcClusterOverCrossedRows, HistTable), {Specs[kTpcClusterOverCrossedRows]});
       mHistogramRegistry->add(qaDir + GetHistNamev2(kTpcClusterShared, HistTable), GetHistDesc(kTpcClusterShared, HistTable), GetHistType(kTpcClusterShared, HistTable), {Specs[kTpcClusterShared]});
       mHistogramRegistry->add(qaDir + GetHistNamev2(kTpcClusterFractionShared, HistTable), GetHistDesc(kTpcClusterFractionShared, HistTable), GetHistType(kTpcClusterFractionShared, HistTable), {Specs[kTpcClusterFractionShared]});
 
@@ -428,7 +445,11 @@ class TrackHistManager
       mHistogramRegistry->add(qaDir + GetHistNamev2(kPhiVsEta, HistTable), GetHistDesc(kPhiVsEta, HistTable), GetHistType(kPhiVsEta, HistTable), {Specs[kPhiVsEta]});
       mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsItsCluster, HistTable), GetHistDesc(kPtVsItsCluster, HistTable), GetHistType(kPtVsItsCluster, HistTable), {Specs[kPtVsItsCluster]});
       mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsTpcCluster, HistTable), GetHistDesc(kPtVsTpcCluster, HistTable), GetHistType(kPtVsTpcCluster, HistTable), {Specs[kPtVsTpcCluster]});
+      mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsTpcCrossedRows, HistTable), GetHistDesc(kPtVsTpcCrossedRows, HistTable), GetHistType(kPtVsTpcCrossedRows, HistTable), {Specs[kPtVsTpcCrossedRows]});
+      mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsTpcClusterOverCrossedRows, HistTable), GetHistDesc(kPtVsTpcClusterOverCrossedRows, HistTable), GetHistType(kPtVsTpcClusterOverCrossedRows, HistTable), {Specs[kPtVsTpcClusterOverCrossedRows]});
       mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsTpcClusterShared, HistTable), GetHistDesc(kPtVsTpcClusterShared, HistTable), GetHistType(kPtVsTpcClusterShared, HistTable), {Specs[kPtVsTpcClusterShared]});
+      mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsTpcClusterFractionShared, HistTable), GetHistDesc(kPtVsTpcClusterFractionShared, HistTable), GetHistType(kPtVsTpcClusterFractionShared, HistTable), {Specs[kPtVsTpcClusterFractionShared]});
+      mHistogramRegistry->add(qaDir + GetHistNamev2(kTpcClusterVsTpcCrossedRows, HistTable), GetHistDesc(kTpcClusterVsTpcCrossedRows, HistTable), GetHistType(kTpcClusterVsTpcCrossedRows, HistTable), {Specs[kTpcClusterVsTpcCrossedRows]});
       mHistogramRegistry->add(qaDir + GetHistNamev2(kTpcClusterVsTpcClusterShared, HistTable), GetHistDesc(kTpcClusterVsTpcClusterShared, HistTable), GetHistType(kTpcClusterVsTpcClusterShared, HistTable), {Specs[kTpcClusterVsTpcClusterShared]});
 
       // dca
@@ -501,6 +522,7 @@ class TrackHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kItsClusterIb, HistTable)), static_cast<float>(track.itsNClsInnerBarrel()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcCrossedRows, HistTable)), static_cast<float>(track.tpcNClsCrossedRows()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcCluster, HistTable)), static_cast<float>(track.tpcNClsFound()));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcClusterOverCrossedRows, HistTable)), static_cast<float>(track.tpcNClsFound()) / static_cast<float>(track.tpcNClsCrossedRows()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcClusterShared, HistTable)), static_cast<float>(track.tpcNClsShared()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcClusterFractionShared, HistTable)), track.tpcSharedOverFound());
 
@@ -509,7 +531,11 @@ class TrackHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPhiVsEta, HistTable)), track.phi(), track.eta());
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsItsCluster, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.itsNCls()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcCluster, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.tpcNClsFound()));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcCrossedRows, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.tpcNClsCrossedRows()));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcClusterOverCrossedRows, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.tpcNClsFound()) / static_cast<float>(track.tpcNClsCrossedRows()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcClusterShared, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.tpcNClsShared()));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcClusterFractionShared, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.tpcNClsShared()) / static_cast<float>(track.tpcNClsFound()));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcClusterVsTpcCrossedRows, HistTable)), static_cast<float>(track.tpcNClsFound()), static_cast<float>(track.tpcNClsCrossedRows()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcClusterVsTpcClusterShared, HistTable)), static_cast<float>(track.tpcNClsFound()), static_cast<float>(track.tpcNClsShared()));
 
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDcaxy, HistTable)), mAbsCharge * track.pt(), track.dcaXY());
