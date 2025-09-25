@@ -122,6 +122,7 @@ enum class InputFeaturesMFTMuonMatch : uint8_t {
   nClustersMCH,
   chi2MCH,
   pdca,
+  Rabs,
   cXXMFT,
   cXYMFT,
   cYYMFT,
@@ -281,6 +282,7 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
       CHECK_AND_FILL_MUON_TRACK(chi2MCH, getTrackChi2);
       CHECK_AND_FILL_MUONGLOB_TRACK(chi2MCHMFT, chi2MatchMCHMFT);
       CHECK_AND_FILL_MUONGLOB_TRACK(chi2GlobMUON, chi2);
+      CHECK_AND_FILL_MUONGLOB_TRACK(Rabs, rAtAbsorberEnd);
       // Below are dummy files to remove warning of unused parameters
       CHECK_AND_FILL_MFTMUON_COLLISION(posZ);
       CHECK_AND_FILL_MFT_COV(cXXMFT, cXX);
@@ -376,6 +378,7 @@ class MlResponseMFTMuonMatch : public MlResponse<TypeOutputScore>
       FILL_MAP_MFTMUON_MATCH(nClustersMCH),
       FILL_MAP_MFTMUON_MATCH(chi2MCH),
       FILL_MAP_MFTMUON_MATCH(pdca),
+      FILL_MAP_MFTMUON_MATCH(Rabs),
       FILL_MAP_MFTMUON_MATCH(cXXMFT),
       FILL_MAP_MFTMUON_MATCH(cXYMFT),
       FILL_MAP_MFTMUON_MATCH(cYYMFT),
