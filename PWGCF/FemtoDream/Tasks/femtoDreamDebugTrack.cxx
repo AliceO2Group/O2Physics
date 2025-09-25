@@ -115,7 +115,7 @@ struct femtoDreamDebugTrack {
   {
     eventHisto.fillQA<isMC>(col);
 
-    if (ConfdoCentCut.value && (col.multV0M() > ConfCentMax || col.multV0M() < ConfCentMin)){
+    if (ConfdoCentCut.value && (col.multV0M() > ConfCentMax || col.multV0M() < ConfCentMin)) {
       return;
     }
 
