@@ -629,7 +629,7 @@ double TListHandler::getSize(double fillFraction)
         size += HistFiller::getSize(hist, fillFraction);
       }
     },
-              mTListValue[j]);
+               mTListValue[j]);
   }
   return size;
 }
