@@ -1269,7 +1269,7 @@ struct KaonIsospinFluctuations {
     };
 
     auto addCountLabels = [](const auto& h) {
-      h->GetXaxis()->SetBinLabel(h->GetXaxis()->FindBin(int(0)), "Total Repeats / Fake Counts");
+      h->GetXaxis()->SetBinLabel(h->GetXaxis()->FindBin(static_cast<int>(0)), "Total Repeats / Fake Counts");
       static const int twenty = 20;
       for (int i = 1; i < twenty; i++) {
         h->GetXaxis()->SetBinLabel(h->GetXaxis()->FindBin(i), Form("Counted %d Times", i));
