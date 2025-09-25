@@ -437,9 +437,9 @@ struct PrimVtxParticleTable {
     } // collision loop
 
     if (cfgDebug.printDebugMessages) {
-      printTime(collLoop1Start, Form("DEBUG :: df_%ld :: collLoop1 Time :: ", dfCount));
-      printTime(start1, Form("DEBUG :: df_%ld :: DF Reading :: DF Processing Time :: ", dfCount));
-      printTime(start0, Form("DEBUG :: df_%ld :: DF Reading :: DF Elapsed Time :: ", dfCount));
+      printTime(collLoop1Start, Form("DEBUG :: df_%lld :: collLoop1 Time :: ", dfCount));
+      printTime(start1, Form("DEBUG :: df_%lld :: DF Reading :: DF Processing Time :: ", dfCount));
+      printTime(start0, Form("DEBUG :: df_%lld :: DF Reading :: DF Elapsed Time :: ", dfCount));
     }
   } // Process Function Ends
   PROCESS_SWITCH(PrimVtxParticleTable, processData, "Process for Data", true);
@@ -4159,7 +4159,7 @@ struct KaonIsospinFluctuations {
   std::array<std::array<std::vector<MyTrackData>, 2>, v0TrkEnumSize> v0CndtDauList;
   std::array<std::array<std::vector<MyTrackData>, 2>, primVtxTrkEnumSize> primVtxCndtDauList;
 
-  long int dfCount = 0;
+  int64_t dfCount = 0;
   std::chrono::high_resolution_clock::time_point start0 = std::chrono::high_resolution_clock::now();
 
   template <int analysisType, typename C, typename V, typename T, typename P>
