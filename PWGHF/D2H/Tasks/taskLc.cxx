@@ -480,6 +480,18 @@ struct HfTaskLc {
         const float gamma = std::sqrt(1 + p2m * p2m);                       // mother's particle Lorentz factor
         const float properLifetime = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
 
+        // ============================ for debug purposes only ============================
+        registry.fill(HIST("MC/generated/") + HIST(SignalFolders[Signal]) + HIST("/hPtGen") + HIST(SignalSuffixes[Signal]), ptGen);
+        registry.fill(HIST("MC/generated/") + HIST(SignalFolders[0]) + HIST("/hPtGen") + HIST(SignalSuffixes[0]), ptGen);
+        registry.fill(HIST("MC/generated/") + HIST(SignalFolders[0]) + HIST("/hPtGen"), ptGen);
+        registry.fill(HIST("MC/generated/") + HIST(SignalFolders[0]) + HIST("/hPtGen") + HIST(""), ptGen);
+        registry.fill(HIST("MC/generated/") + HIST("signal") + HIST("/hPtGen") + HIST(""), ptGen);
+        registry.fill(HIST("MC/generated/") + HIST("signal") + HIST("/hPtGen") + HIST(SignalSuffixes[0]), ptGen);
+        registry.fill(HIST("MC/generated/signal/hPtGen") + HIST(SignalSuffixes[0]), ptGen);
+        registry.fill(HIST("MC/generated/") + HIST("signal") + HIST("/hPtGen"), ptGen);
+        registry.fill(HIST("MC/generated/signal") + HIST("/hPtGen"), ptGen);
+        // =================================================================================
+
         auto fillHistogramsGen = [&]<int signalType>() {
           registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hPtGen") + HIST(SignalSuffixes[signalType]), ptGen);
           registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hEtaGen") + HIST(SignalSuffixes[signalType]), particle.eta());
