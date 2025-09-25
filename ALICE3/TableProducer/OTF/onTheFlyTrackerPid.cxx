@@ -48,11 +48,11 @@
 #include <ReconstructionDataFormats/DCA.h>
 
 #include <TF1.h>
+#include <TFile.h>
+#include <TH1F.h>
 #include <TH2F.h>
 #include <TString.h>
 #include <TVector3.h>
-#include <TFile.h>
-#include <TH1F.h>
 
 #include <algorithm>
 #include <array>
@@ -119,30 +119,30 @@ class ToTLUT
     }
   }
 
-  bool load(int pdg, const std::string& filename, o2::ccdb::BasicCCDBManager *ccdb=nullptr)
+  bool load(int pdg, const std::string& filename, o2::ccdb::BasicCCDBManager* ccdb = nullptr)
   {
-      if (strncmp(filename, "ccdb:", 5) == 0) { // Check if filename starts with "ccdb:"
-        // NOTE: this eventually will directly fetch the object from CCDB instead of accessing it via the root file
-    LOG(info) << " --- ToT LUT file source identified as CCDB.";
-    std::string path = std::string(filename).substr(5); // Remove "ccdb:" prefix
-    const std::string outPath = "/tmp/ToTLUTs/";
-    filename = Form("%s/%s/snapshot.root", outPath.c_str(), path.c_str());
-    TFile checkFile(filename.c_str(), "READ");
-    if (!checkFile.IsOpen()) {        // File does not exist, retrieve from CCDB
-      LOG(info) << " --- CCDB source detected for PDG " << pdg << ": " << path;
-      if (!ccdb) {
-        LOG(fatal) << " --- CCDB manager not set. Please provide it.";
+    if (strncmp(filename, "ccdb:", 5) == 0) { // Check if filename starts with "ccdb:"
+                                              // NOTE: this eventually will directly fetch the object from CCDB instead of accessing it via the root file
+      LOG(info) << " --- ToT LUT file source identified as CCDB.";
+      std::string path = std::string(filename).substr(5); // Remove "ccdb:" prefix
+      const std::string outPath = "/tmp/ToTLUTs/";
+      filename = Form("%s/%s/snapshot.root", outPath.c_str(), path.c_str());
+      TFile checkFile(filename.c_str(), "READ");
+      if (!checkFile.IsOpen()) { // File does not exist, retrieve from CCDB
+        LOG(info) << " --- CCDB source detected for PDG " << pdg << ": " << path;
+        if (!ccdb) {
+          LOG(fatal) << " --- CCDB manager not set. Please provide it.";
+        }
+        std::map<std::string, std::string> metadata;
+        ccdb->getCCDBAccessor().retrieveBlob(path, outPath, metadata, 1);
+        // Add CCDB handling logic here if needed
+        LOG(info) << " --- Now retrieving ToT LUT file from CCDB to: " << filename;
+      } else { // File exists, proceed to load
+        LOG(info) << " --- ToT LUT file already exists: " << filename << ". Skipping download.";
+        checkFile.Close();
       }
-      std::map<std::string, std::string> metadata;
-      ccdb->getCCDBAccessor().retrieveBlob(path, outPath, metadata, 1);
-      // Add CCDB handling logic here if needed
-      LOG(info) << " --- Now retrieving ToT LUT file from CCDB to: " << filename;
-    } else { // File exists, proceed to load
-      LOG(info) << " --- ToT LUT file already exists: " << filename << ". Skipping download.";
-      checkFile.Close();
+      return load(pdg, filename);
     }
-    return load(pdg, filename);
-  }
     TFile* f = TFile::Open(filename.c_str());
     if (!f || f->IsZombie()) {
       LOG(error) << "Failed to open LUT file: " << filename;
