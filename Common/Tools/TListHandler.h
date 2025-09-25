@@ -23,7 +23,13 @@
 
 #include <TObjString.h>
 
+#include <algorithm>
+#include <functional>
+#include <memory>
 #include <regex>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace o2::framework
 {
