@@ -246,19 +246,19 @@ struct FlowZdcTask {
       histos.add("ZNVsFT0M", ";T0A+T0C (#times 1/100);ZNA+ZNC Sector Energy;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZPVsFT0A", ";T0A (#times 1/100);ZPA+ZPC Sector Energy;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("ZPVsFT0C", ";T0C (#times 1/100);ZPA+ZPC Sector Energy;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZp}}});
-      histos.add("ZPVsFT0M", ";T0A+T0C (#times 1/100);ZPA+ZPC Sector Energy;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZp}}});      
+      histos.add("ZPVsFT0M", ";T0A+T0C (#times 1/100);ZPA+ZPC Sector Energy;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZp}}});   
       histos.add("ZNAVsFT0A", ";T0A (#times 1/100);ZNA Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNAVsFT0C", ";T0C (#times 1/100);ZNA Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNAVsFT0M", ";T0A+T0C (#times 1/100);ZNA Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNCVsFT0A", ";T0A (#times 1/100);ZNC Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
       histos.add("ZNCVsFT0C", ";T0C (#times 1/100);ZNC Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZn}}});
-      histos.add("ZNCVsFT0M", ";T0A+T0C (#times 1/100);ZNC Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZn}}});     
+      histos.add("ZNCVsFT0M", ";T0A+T0C (#times 1/100);ZNC Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZn}}});  
       histos.add("ZPAVsFT0A", ";T0A (#times 1/100);ZPA Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("ZPAVsFT0C", ";T0C (#times 1/100);ZPA Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("ZPAVsFT0M", ";T0A+T0C (#times 1/100);ZPA Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("ZPCVsFT0A", ";T0A (#times 1/100);ZPC Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZp}}});
       histos.add("ZPCVsFT0C", ";T0C (#times 1/100);ZPC Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0}, {nBinsZDC, -0.5, maxZp}}});
-      histos.add("ZPCVsFT0M", ";T0A+T0C (#times 1/100);ZPC Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZp}}});        
+      histos.add("ZPCVsFT0M", ";T0A+T0C (#times 1/100);ZPC Sector;", kTH2F, {{{nBinsAmpFT0, 0., maxAmpFT0M}, {nBinsZDC, -0.5, maxZp}}}); 
       histos.add("ZN", ";ZNA+ZNC;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
       histos.add("ZNA", ";ZNA Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZn}});
       histos.add("ZPA", ";ZPA Amplitude;Entries;", kTH1F, {{nBinsZDC, -0.5, maxZp}});
@@ -314,7 +314,7 @@ struct FlowZdcTask {
       histos.add("hZPASectorvsGlbTrack", ";Global Tracks (ITS + TPC);ZPA Sector Energy", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZp}}});
       histos.add("hZPCSectorvsGlbTrack", ";Global Tracks (ITS + TPC);ZPC Sector Energy", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZp}}});
       histos.add("hZNASectorvsGlbTrack", ";Global Tracks (ITS + TPC);ZNA Sector Energy", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZn}}});
-      histos.add("hZNCSectorvsGlbTrack", ";Global Tracks (ITS + TPC);ZNC Sector Energy", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZn}}});      
+      histos.add("hZNCSectorvsGlbTrack", ";Global Tracks (ITS + TPC);ZNC Sector Energy", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZn}}});
       histos.add("hZPSectorvsGlbTrack", ";Global Tracks (ITS + TPC);(ZPA + ZPC) Sector Energy", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZp}}});
       histos.add("hZNSectorvsGlbTrack", ";Global Tracks (ITS + TPC);(ZNA + ZNC) Sector Energy", kTH2F, {{{nBinsNch, minNch, maxNch}, {nBinsZDC, minNch, maxZn}}});
     }
@@ -578,8 +578,8 @@ struct FlowZdcTask {
       histos.fill(HIST("ZNVsFT0C"), aT0C / 100., sumSectZN);
       histos.fill(HIST("ZNVsFT0M"), (aT0A + aT0C) / 100., sumSectZN);
       histos.fill(HIST("ZPVsFT0A"), aT0A / 100., sumSectZP);
-      histos.fill(HIST("ZPVsFT0C"), aT0C / 100., sumSectZP); 
-      histos.fill(HIST("ZPVsFT0M"), (aT0A + aT0C) / 100., sumSectZP);     
+      histos.fill(HIST("ZPVsFT0C"), aT0C / 100., sumSectZP);
+      histos.fill(HIST("ZPVsFT0M"), (aT0A + aT0C) / 100., sumSectZP);   
       histos.fill(HIST("ZPAVsFT0A"), aT0A / 100., sumZPA);
       histos.fill(HIST("ZPAVsFT0C"), aT0C / 100., sumZPA);
       histos.fill(HIST("ZPAVsFT0M"), (aT0A + aT0C) / 100., sumZPA);
@@ -591,7 +591,7 @@ struct FlowZdcTask {
       histos.fill(HIST("ZNCVsFT0M"), (aT0A + aT0C) / 100., sumZNC);
       histos.fill(HIST("ZNAVsFT0A"), aT0A / 100., sumZNA);
       histos.fill(HIST("ZNAVsFT0C"), aT0C / 100., sumZNA);
-      histos.fill(HIST("ZNAVsFT0M"), (aT0A + aT0C) / 100., sumZNA);  
+      histos.fill(HIST("ZNAVsFT0M"), (aT0A + aT0C) / 100., sumZNA); 
       histos.fill(HIST("ZPA"), zpA);
       histos.fill(HIST("ZPACommon"), commonSumZpa);
       histos.fill(HIST("ZPASector"), sumZPA);
