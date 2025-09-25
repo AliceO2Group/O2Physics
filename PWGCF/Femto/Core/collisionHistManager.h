@@ -35,12 +35,17 @@ namespace colhistmanager
 {
 
 enum ColHist {
-  kPosz,
+  kPosZ,
   kMult,
   kCent,
   kMagField,
   kSphericity,
-  // 2d qa
+  // qa
+  kPosX,
+  kPosY,
+  kPos,
+  kOccupancy,
+  // 2d
   kPoszVsMult,
   kPoszVsCent,
   kCentVsMult,
@@ -54,11 +59,15 @@ constexpr std::string_view ColQaDir = "Collisions/QA/";
 
 constexpr std::array<histmanager::HistInfo<ColHist>, kColHistLast> HistTable = {
   {
-    {kPosz, o2::framework::kTH1F, "hPosz", "Vertex Z; V_{Z} (cm); Entries"},
+    {kPosZ, o2::framework::kTH1F, "hPosZ", "Vertex Z; V_{Z} (cm); Entries"},
     {kMult, o2::framework::kTH1F, "hMult", "Multiplicity; Multiplicity; Entries"},
     {kCent, o2::framework::kTH1F, "hCent", "Centrality; Centrality (%); Entries"},
     {kMagField, o2::framework::kTH1F, "hMagField", "Magnetic Field; B (T); Entries"},
     {kSphericity, o2::framework::kTH1F, "hSphericity", "Sphericity; Sphericity; Entries"},
+    {kPosX, o2::framework::kTH1F, "hPosX", "Vertex X; V_{X} (cm); Entries"},
+    {kPosY, o2::framework::kTH1F, "hPosY", "Vertex Z; V_{Y} (cm); Entries"},
+    {kPos, o2::framework::kTH1F, "hPos", "Primary vertex; V_{pos} (cm); Entries"},
+    {kOccupancy, o2::framework::kTH1F, "hOccupancy", "Occupancy; Occupancy; Entries"},
     {kPoszVsMult, o2::framework::kTH2F, "hPoszVsMult", "Vertex Z vs Multiplicity; V_{Z} (cm); Multiplicity"},
     {kPoszVsCent, o2::framework::kTH2F, "hPoszVsCent", "Vertex Z vs Centrality; V_{Z} (cm); Centrality (%)"},
     {kCentVsMult, o2::framework::kTH2F, "hCentVsMult", "Centrality vs Multiplicity; Centrality (%); Multiplicity"},
@@ -70,7 +79,7 @@ template <typename BinningStruct>
 auto makeColHistSpecMap(const BinningStruct& binning)
 {
   return std::map<ColHist, std::vector<framework::AxisSpec>>{
-    {kPosz, {binning.vtZ}},
+    {kPosZ, {binning.vtZ}},
     {kMult, {binning.mult}},
     {kCent, {binning.cent}},
     {kSphericity, {binning.spher}},
@@ -91,8 +100,6 @@ struct ConfCollisionBinning : o2::framework::ConfigurableGroup {
   o2::framework::ConfigurableAxis magField{"magField", {2, -1, 1}, "Magnetic field binning"};
 };
 
-/// \class FemtoDreamEventHisto
-/// \brief Class for histogramming event properties
 template <modes::Mode mode>
 class CollisionHistManager
 {
@@ -106,7 +113,7 @@ class CollisionHistManager
     mHistogramRegistry = registry;
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       std::string analysisDir = std::string(ColAnalysisDir);
-      mHistogramRegistry->add(analysisDir + GetHistNamev2(kPosz, HistTable), GetHistDesc(kPosz, HistTable), GetHistType(kPosz, HistTable), {Specs[kPosz]});
+      mHistogramRegistry->add(analysisDir + GetHistNamev2(kPosZ, HistTable), GetHistDesc(kPosZ, HistTable), GetHistType(kPosZ, HistTable), {Specs[kPosZ]});
       mHistogramRegistry->add(analysisDir + GetHistNamev2(kMult, HistTable), GetHistDesc(kMult, HistTable), GetHistType(kMult, HistTable), {Specs[kMult]});
       mHistogramRegistry->add(analysisDir + GetHistNamev2(kCent, HistTable), GetHistDesc(kCent, HistTable), GetHistType(kCent, HistTable), {Specs[kCent]});
       mHistogramRegistry->add(analysisDir + GetHistNamev2(kSphericity, HistTable), GetHistDesc(kSphericity, HistTable), GetHistType(kSphericity, HistTable), {Specs[kSphericity]});
@@ -128,7 +135,7 @@ class CollisionHistManager
   void fill(T const& col)
   {
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(GetHistName(kPosz, HistTable)), col.posZ());
+      mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(GetHistName(kPosZ, HistTable)), col.posZ());
       mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(GetHistName(kMult, HistTable)), col.mult());
       mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(GetHistName(kCent, HistTable)), col.cent());
       mHistogramRegistry->fill(HIST(ColAnalysisDir) + HIST(GetHistName(kSphericity, HistTable)), col.sphericity());

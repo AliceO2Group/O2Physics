@@ -45,6 +45,7 @@ struct EmcalBcWiseGammaGamma {
   Configurable<bool> cfgRequirekTVXinEMC{"cfgRequirekTVXinEMC", true, "Reconstruct mesons only in kTVXinEMC triggered BCs"};
   Configurable<bool> cfgRequireEMCCell{"cfgRequireEMCCell", true, "Reconstruct mesons only in BCs containing at least one EMCal cell (workaround for kTVXinEMC trigger)"};
   Configurable<int> cfgSelectOnlyUniqueAmbiguous{"cfgSelectOnlyUniqueAmbiguous", 0, "0: all clusters, 1: only unique clusters, 2: only ambiguous clusters"};
+  Configurable<int> cfgCentralityEstimator{"cfgCentralityEstimator", 0, "0: FT0C, 1: FT0M"};
 
   Configurable<int> cfgClusterDefinition{"cfgClusterDefinition", 13, "Clusterizer to be selected, e.g. 13 for kV3MostSplitLowSeed"};
   Configurable<int16_t> cfgMinClusterEnergy{"cfgMinClusterEnergy", 700, "Minimum energy of selected clusters (MeV)"};
@@ -125,6 +126,16 @@ struct EmcalBcWiseGammaGamma {
     }
   }
 
+  float getCentrality(const auto& bc)
+  {
+    if (cfgCentralityEstimator == 0)
+      return bc.ft0cCentrality();
+    else if (cfgCentralityEstimator == 1)
+      return bc.ft0mCentrality();
+    else
+      throw std::runtime_error("Unknown centrality estimator selected");
+  }
+
   /// \brief returns if cluster is too close to edge of EMCal
   bool isTooCloseToEdge(const int cellID, const int DistanceToBorder = 1)
   {
@@ -143,37 +154,37 @@ struct EmcalBcWiseGammaGamma {
 
   void fillEventHists(const auto& bc, const auto& collisions, const auto& clusters)
   {
-    mHistManager.fill(HIST("Event/nBCs"), 0, bc.centrality());
+    mHistManager.fill(HIST("Event/nBCs"), 0, getCentrality(bc));
     float mu = bc.mu();
     mHistManager.fill(HIST("Event/Mu"), mu);
     mHistManager.fill(HIST("Event/TimeSinceSOF"), bc.timeSinceSOF() / 60.);
     double p = mu > 0.001 ? mu / (1 - std::exp(-mu)) : 1.; // No pile-up for small mu (protection against division by zero)
-    mHistManager.fill(HIST("Event/nCollisions"), 0, bc.centrality(), p);
+    mHistManager.fill(HIST("Event/nCollisions"), 0, getCentrality(bc), p);
     if (bc.hasFT0()) {
-      mHistManager.fill(HIST("Event/nBCs"), 1, bc.centrality());
-      mHistManager.fill(HIST("Event/nCollisions"), 1, bc.centrality(), p);
+      mHistManager.fill(HIST("Event/nBCs"), 1, getCentrality(bc));
+      mHistManager.fill(HIST("Event/nCollisions"), 1, getCentrality(bc), p);
     }
     if (bc.hasTVX()) {
-      mHistManager.fill(HIST("Event/nBCs"), 2, bc.centrality());
-      mHistManager.fill(HIST("Event/nCollisions"), 2, bc.centrality(), p);
+      mHistManager.fill(HIST("Event/nBCs"), 2, getCentrality(bc));
+      mHistManager.fill(HIST("Event/nCollisions"), 2, getCentrality(bc), p);
     }
     if (bc.haskTVXinEMC()) {
-      mHistManager.fill(HIST("Event/nBCs"), 3, bc.centrality());
-      mHistManager.fill(HIST("Event/nCollisions"), 3, bc.centrality(), p);
+      mHistManager.fill(HIST("Event/nBCs"), 3, getCentrality(bc));
+      mHistManager.fill(HIST("Event/nCollisions"), 3, getCentrality(bc), p);
     }
     if (bc.hasEMCCell()) {
-      mHistManager.fill(HIST("Event/nBCs"), 4, bc.centrality());
-      mHistManager.fill(HIST("Event/nCollisions"), 4, bc.centrality(), p);
+      mHistManager.fill(HIST("Event/nBCs"), 4, getCentrality(bc));
+      mHistManager.fill(HIST("Event/nCollisions"), 4, getCentrality(bc), p);
     }
     if (clusters.size() > 0) {
-      mHistManager.fill(HIST("Event/nBCs"), 5, bc.centrality());
-      mHistManager.fill(HIST("Event/nCollisions"), 5, bc.centrality(), p);
+      mHistManager.fill(HIST("Event/nBCs"), 5, getCentrality(bc));
+      mHistManager.fill(HIST("Event/nCollisions"), 5, getCentrality(bc), p);
     }
 
-    mHistManager.fill(HIST("Event/Centrality"), bc.centrality());
-    mHistManager.fill(HIST("Event/CentralityVsAmplitude"), bc.centrality(), bc.ft0Amplitude());
+    mHistManager.fill(HIST("Event/Centrality"), getCentrality(bc));
+    mHistManager.fill(HIST("Event/CentralityVsAmplitude"), getCentrality(bc), bc.ft0Amplitude());
 
-    mHistManager.fill(HIST("Event/nCollPerBC"), collisions.size(), bc.centrality());
+    mHistManager.fill(HIST("Event/nCollPerBC"), collisions.size(), getCentrality(bc));
     if (collisions.size() == 2) {
       mHistManager.fill(HIST("Event/Z1VsZ2"), collisions.iteratorAt(0).zVtx(), collisions.iteratorAt(1).zVtx());
       mHistManager.fill(HIST("Event/dZ"), collisions.iteratorAt(0).zVtx() - collisions.iteratorAt(1).zVtx());
@@ -205,7 +216,7 @@ struct EmcalBcWiseGammaGamma {
       if (openingAngle12 < cfgMinOpenAngle)
         continue;
 
-      mHistManager.fill(HIST("GG/invMassVsPt"), v12.M(), v12.Pt(), bc.centrality());
+      mHistManager.fill(HIST("GG/invMassVsPt"), v12.M(), v12.Pt(), getCentrality(bc));
 
       if (clusters.size() < 3)
         continue;
@@ -241,7 +252,7 @@ struct EmcalBcWiseGammaGamma {
 
           ROOT::Math::PtEtaPhiMVector vBG = v3 + vi;
 
-          mHistManager.fill(HIST("GG/invMassVsPtBackground"), vBG.M(), vBG.Pt(), bc.centrality());
+          mHistManager.fill(HIST("GG/invMassVsPtBackground"), vBG.M(), vBG.Pt(), getCentrality(bc));
         }
       }
     }
@@ -265,25 +276,25 @@ struct EmcalBcWiseGammaGamma {
       if (!g1.isEta()) {
         const auto& mcPi0 = mcPi0s.iteratorAt(g1.mesonID() - mcPi0s.offset());
 
-        mHistManager.fill(HIST("True/pi0_PtRecVsPtTrue"), v12.Pt(), mcPi0.pt(), bc.centrality());
+        mHistManager.fill(HIST("True/pi0_PtRecVsPtTrue"), v12.Pt(), mcPi0.pt(), getCentrality(bc));
 
         if (mcPi0.isPrimary())
-          mHistManager.fill(HIST("True/pi0_invMassVsPt_Primary"), v12.M(), v12.Pt(), bc.centrality());
+          mHistManager.fill(HIST("True/pi0_invMassVsPt_Primary"), v12.M(), v12.Pt(), getCentrality(bc));
         else if (mcPi0.isFromWD())
-          mHistManager.fill(HIST("True/pi0_invMassVsPt_Secondary"), v12.M(), v12.Pt(), bc.centrality());
+          mHistManager.fill(HIST("True/pi0_invMassVsPt_Secondary"), v12.M(), v12.Pt(), getCentrality(bc));
         else
-          mHistManager.fill(HIST("True/pi0_invMassVsPt_HadronicShower"), v12.M(), v12.Pt(), bc.centrality());
+          mHistManager.fill(HIST("True/pi0_invMassVsPt_HadronicShower"), v12.M(), v12.Pt(), getCentrality(bc));
       } else {
         const auto& mcEta = mcEtas.iteratorAt(g1.mesonID() - mcEtas.offset());
 
-        mHistManager.fill(HIST("True/eta_PtRecVsPtTrue"), v12.Pt(), mcEta.pt(), bc.centrality());
+        mHistManager.fill(HIST("True/eta_PtRecVsPtTrue"), v12.Pt(), mcEta.pt(), getCentrality(bc));
 
         if (mcEta.isPrimary())
-          mHistManager.fill(HIST("True/eta_invMassVsPt_Primary"), v12.M(), v12.Pt(), bc.centrality());
+          mHistManager.fill(HIST("True/eta_invMassVsPt_Primary"), v12.M(), v12.Pt(), getCentrality(bc));
         else if (mcEta.isFromWD())
-          mHistManager.fill(HIST("True/eta_invMassVsPt_Secondary"), v12.M(), v12.Pt(), bc.centrality());
+          mHistManager.fill(HIST("True/eta_invMassVsPt_Secondary"), v12.M(), v12.Pt(), getCentrality(bc));
         else
-          mHistManager.fill(HIST("True/eta_invMassVsPt_HadronicShower"), v12.M(), v12.Pt(), bc.centrality());
+          mHistManager.fill(HIST("True/eta_invMassVsPt_HadronicShower"), v12.M(), v12.Pt(), getCentrality(bc));
       }
     }
   }
@@ -307,28 +318,28 @@ struct EmcalBcWiseGammaGamma {
   {
     for (const auto& mcPi0 : mcPi0s) {
       if (mcPi0.isPrimary()) {
-        mHistManager.fill(HIST("Generated/pi0_AllBCs"), mcPi0.pt(), bc.centrality());
+        mHistManager.fill(HIST("Generated/pi0_AllBCs"), mcPi0.pt(), getCentrality(bc));
         if (bc.hasFT0())
-          mHistManager.fill(HIST("Generated/pi0_FT0"), mcPi0.pt(), bc.centrality());
+          mHistManager.fill(HIST("Generated/pi0_FT0"), mcPi0.pt(), getCentrality(bc));
         if (bc.hasTVX())
-          mHistManager.fill(HIST("Generated/pi0_TVX"), mcPi0.pt(), bc.centrality());
+          mHistManager.fill(HIST("Generated/pi0_TVX"), mcPi0.pt(), getCentrality(bc));
         if (bc.haskTVXinEMC())
-          mHistManager.fill(HIST("Generated/pi0_kTVXinEMC"), mcPi0.pt(), bc.centrality());
+          mHistManager.fill(HIST("Generated/pi0_kTVXinEMC"), mcPi0.pt(), getCentrality(bc));
         if (mcPi0.isAccepted() && bc.haskTVXinEMC())
-          mHistManager.fill(HIST("Accepted/pi0_kTVXinEMC"), mcPi0.pt(), bc.centrality());
+          mHistManager.fill(HIST("Accepted/pi0_kTVXinEMC"), mcPi0.pt(), getCentrality(bc));
       }
     }
     for (const auto& mcEta : mcEtas) {
       if (mcEta.isPrimary()) {
-        mHistManager.fill(HIST("Generated/eta_AllBCs"), mcEta.pt(), bc.centrality());
+        mHistManager.fill(HIST("Generated/eta_AllBCs"), mcEta.pt(), getCentrality(bc));
         if (bc.hasFT0())
-          mHistManager.fill(HIST("Generated/eta_FT0"), mcEta.pt(), bc.centrality());
+          mHistManager.fill(HIST("Generated/eta_FT0"), mcEta.pt(), getCentrality(bc));
         if (bc.hasTVX())
-          mHistManager.fill(HIST("Generated/eta_TVX"), mcEta.pt(), bc.centrality());
+          mHistManager.fill(HIST("Generated/eta_TVX"), mcEta.pt(), getCentrality(bc));
         if (bc.haskTVXinEMC())
-          mHistManager.fill(HIST("Generated/eta_kTVXinEMC"), mcEta.pt(), bc.centrality());
+          mHistManager.fill(HIST("Generated/eta_kTVXinEMC"), mcEta.pt(), getCentrality(bc));
         if (mcEta.isAccepted() && bc.haskTVXinEMC())
-          mHistManager.fill(HIST("Accepted/eta_kTVXinEMC"), mcEta.pt(), bc.centrality());
+          mHistManager.fill(HIST("Accepted/eta_kTVXinEMC"), mcEta.pt(), getCentrality(bc));
       }
     }
   }
@@ -340,7 +351,7 @@ struct EmcalBcWiseGammaGamma {
 
     fillEventHists(bc, collisions, clusters);
 
-    fillClusterHists(clusters, bc.centrality());
+    fillClusterHists(clusters, getCentrality(bc));
 
     reconstructMesons(clusters, bc);
   }
@@ -356,7 +367,7 @@ struct EmcalBcWiseGammaGamma {
       return;
 
     for (const auto& cluster : clusters)
-      mHistManager.fill(HIST("True/clusterERecVsETrue"), cluster.e(), cluster.trueE(), bc.centrality());
+      mHistManager.fill(HIST("True/clusterERecVsETrue"), cluster.e(), cluster.trueE(), getCentrality(bc));
 
     reconstructTrueMesons(clusters, mcPi0s, mcEtas, bc);
   }

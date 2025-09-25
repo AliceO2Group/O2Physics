@@ -145,6 +145,9 @@ inline float getMass(int pdgCode)
     case o2::constants::physics::Pdg::kHelium3:
       mass = o2::constants::physics::MassHelium3;
       break;
+    case kSigmaMinus:
+      mass = o2::constants::physics::MassSigmaMinus;
+      break;
     default:
       LOG(fatal) << "PDG code is not suppored";
   }
@@ -182,6 +185,12 @@ inline bool enableTable(const char* tableName, int userSetting, o2::framework::I
     LOG(info) << "Enabled femto table (auto): " << tableName;
   }
   return required;
+}
+
+template <typename T>
+inline int sign(T value)
+{
+  return (value > 0) - (value < 0); // Returns 1 for positive, -1 for negative, 0 for zero
 }
 
 }; // namespace utils
