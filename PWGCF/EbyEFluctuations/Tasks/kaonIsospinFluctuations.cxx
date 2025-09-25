@@ -34,6 +34,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <iostream>
 #include <typeindex>
 #include <vector>
 
