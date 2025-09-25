@@ -4285,8 +4285,8 @@ struct KaonIsospinFluctuations {
       int trackIdTag = 0;
       int ptEtaBinTrk = -1;
 
-      std::array<bool, kDe + 1> trackIs;
-      std::array<int, kDe + 1> idMethodTrk;
+      std::array<bool, 6> trackIs;
+      std::array<int, 6> idMethodTrk;
 
       int decayDauTagBit = 0;
 
