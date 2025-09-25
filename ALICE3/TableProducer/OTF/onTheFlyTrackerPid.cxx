@@ -390,9 +390,13 @@ struct OnTheFlyTrackerPid {
     1000020030, // Helium-3
     1000020040  // Alpha
   };
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   void init(o2::framework::InitContext&)
   {
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setTimestamp(-1);
+
     if (static_cast<size_t>(maxBarrelLayers.value) > kTrackerRadii.size()) {
       LOG(fatal) << "Configured maxBarrelLayers (" << maxBarrelLayers.value
                  << ") exceeds the size of kTrackerRadii (" << kTrackerRadii.size()
@@ -404,15 +408,15 @@ struct OnTheFlyTrackerPid {
                                        ptBins.value, ptMin.value, ptMax.value);
 
     bool loaded = true;
-    loaded &= mToTLUT->load(11, lutTotEl.value);
-    loaded &= mToTLUT->load(13, lutTotMu.value);
-    loaded &= mToTLUT->load(211, lutTotPi.value);
-    loaded &= mToTLUT->load(321, lutTotKa.value);
-    loaded &= mToTLUT->load(2212, lutTotPr.value);
-    loaded &= mToTLUT->load(1000010020, lutTotDe.value);
-    loaded &= mToTLUT->load(1000010030, lutTotTr.value);
-    loaded &= mToTLUT->load(1000020030, lutTotHe.value);
-    loaded &= mToTLUT->load(1000020040, lutTotAl.value);
+    loaded &= mToTLUT->load(11, lutTotEl.value, ccdb);
+    loaded &= mToTLUT->load(13, lutTotMu.value, ccdb);
+    loaded &= mToTLUT->load(211, lutTotPi.value, ccdb);
+    loaded &= mToTLUT->load(321, lutTotKa.value, ccdb);
+    loaded &= mToTLUT->load(2212, lutTotPr.value, ccdb);
+    loaded &= mToTLUT->load(1000010020, lutTotDe.value, ccdb);
+    loaded &= mToTLUT->load(1000010030, lutTotTr.value, ccdb);
+    loaded &= mToTLUT->load(1000020030, lutTotHe.value, ccdb);
+    loaded &= mToTLUT->load(1000020040, lutTotAl.value, ccdb);
 
     if (!loaded) {
       LOG(warning) << "Failed to load one or more ToT LUTs. PID results might be incomplete.";
