@@ -105,16 +105,20 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
     mLUTHeader[ipdg] = nullptr;
     return false;
   }
-  if (mLUTHeader[ipdg]->pdg != pdg) {
-    // Special case: Allow Alpha particles to use He3 LUT
-    if (pdg == o2::constants::physics::kAlpha && mLUTHeader[ipdg]->pdg == o2::constants::physics::kHelium3) {
+  bool specialPdgCase = false;
+  switch(mLUTHeader[ipdg]->pdg) { // Handle special cases
+    case o2::constants::physics::kAlpha; // Special case: Allow Alpha particles to use He3 LUT
+    specialPdgCase = (mLUTHeader[ipdg]->pdg == o2::constants::physics::kHelium3);
+    if (specialPdgCase)
       LOG(info) << " --- Alpha particles (PDG " << pdg << ") will use He3 LUT data (PDG " << mLUTHeader[ipdg]->pdg << ")" << std::endl;
-    } else {
-      LOG(info) << " --- LUT header PDG mismatch: expected/detected = " << pdg << "/" << mLUTHeader[ipdg]->pdg << std::endl;
-      delete mLUTHeader[ipdg];
-      mLUTHeader[ipdg] = nullptr;
-      return false;
-    }
+    break;
+    default:
+  }
+  if (mLUTHeader[ipdg]->pdg != pdg && !specialPdgCase) {
+    LOG(info) << " --- LUT header PDG mismatch: expected/detected = " << pdg << "/" << mLUTHeader[ipdg]->pdg << std::endl;
+    delete mLUTHeader[ipdg];
+    mLUTHeader[ipdg] = nullptr;
+    return false;
   }
   const int nnch = mLUTHeader[ipdg]->nchmap.nbins;
   const int nrad = mLUTHeader[ipdg]->radmap.nbins;
