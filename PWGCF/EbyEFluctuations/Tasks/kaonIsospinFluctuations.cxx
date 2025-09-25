@@ -1685,7 +1685,7 @@ struct KaonIsospinFluctuations {
         }
 
         axisTitle = countTypeLabel + cfgAxis.axisSetting->getLabelsRows()[iPidMode] + signLabel;
-        static const int two = 2; 
+        static const int two = 2;
         if (iSparse == 0) {
           axisList0[iAxis] = AxisSpec(nBins, xLow, xUp, axisTitle);
         }
@@ -2270,7 +2270,7 @@ struct KaonIsospinFluctuations {
     static const float nSigmaTPCLowP  = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCLowP);
     static const float nSigmaTOFLowP  = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTOFLowP);
     static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCHighP);
-    static const float nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTOFHighP);    
+    static const float nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTOFHighP);
     if (vetoIdOthersTOF<kPi>(track)) {
       if (track.p() <= ThresholdP && std::abs(track.tpcNSigmaPi()) < nSigmaTPCLowP && std::abs(track.tofNSigmaPi()) < nSigmaTOFLowP) {
         return true;
@@ -2292,7 +2292,7 @@ struct KaonIsospinFluctuations {
       static const float nSigmaTOFLowP  = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTOFLowP);
       static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCHighP);
       static const float nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTOFHighP);
-        
+
     if (vetoIdOthersTOF<kKa>(track)) {
       if (track.p() <= ThresholdPLow && std::abs(track.tpcNSigmaKa()) < nSigmaTPCLowP && std::abs(track.tofNSigmaKa()) < nSigmaTOFLowP) {
         return true;
@@ -3662,7 +3662,7 @@ struct KaonIsospinFluctuations {
                                                                        requiredBit, mpBit);
     }
   }
-  
+
   void getTrackDecayInfoBit(const auto& track, auto& decayDauTagBit, const auto& v0CndtDauList, const auto& primVtxCndtDauList,
                             bool doV0K0s, bool doV0Lambda, bool doV0AntiLambda, bool doV0Gamma,
                             bool doPhi1020, bool doJPsiToEE, bool doJPsiToMuMu, bool doKStar892, bool doKStar892Bar, bool doRho770)
