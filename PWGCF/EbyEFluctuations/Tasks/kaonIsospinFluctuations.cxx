@@ -14,11 +14,6 @@
 ///
 /// \author Rahul Verma (rahul.verma@iitb.ac.in) :: Sadhana Dash (sadhana@phy.iitb.ac.in)
 
-#include <algorithm>
-#include <vector>
-#include <chrono>
-#include <typeindex>
-
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/O2DatabasePDGPlugin.h"
@@ -27,17 +22,22 @@
 
 #include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/Multiplicity.h"
 
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-
 #include "PWGLF/DataModel/mcCentrality.h"
+
 #include "CCDB/BasicCCDBManager.h"
 
 #include <Math/LorentzVector.h>
 #include <Math/PxPyPzM4D.h>
+
+#include <algorithm>
+#include <vector>
+#include <chrono>
+#include <typeindex>
 
 // --------------------------------------------------------------------------------------------------
 // --------------------------------------------------------------------------------------------------
