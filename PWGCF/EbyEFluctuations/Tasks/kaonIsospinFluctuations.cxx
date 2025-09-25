@@ -1882,10 +1882,11 @@ struct KaonIsospinFluctuations {
   // vetoRejection for particles //From Victor Luis Gonzalez Sebastian's analysis note for balance functions
   template <typename T>
   bool selTrackForId(const T& track)
-  { static const float minus3 = -3.0;
+  {
+    static const float minus3 = -3.0;
     static const float five = 5.0;
     static const float three = 3.0;
-    if ( minus3 < track.tpcNSigmaEl() && track.tpcNSigmaEl() < five &&
+    if (minus3 < track.tpcNSigmaEl() && track.tpcNSigmaEl() < five &&
         std::fabs(track.tpcNSigmaPi()) > three &&
         std::fabs(track.tpcNSigmaKa()) > three &&
         std::fabs(track.tpcNSigmaPr()) > three) {
@@ -2192,9 +2193,9 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selKaonTPCInnerParam(const T& track)
   {
-    static const float nSigmaTPCLowP  = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCLowP);
+    static const float nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCLowP);
     static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCHighP);
-    constexpr float kTPCInnerLow  = 0.05f;
+    constexpr float kTPCInnerLow = 0.05f;
     constexpr float kTPCInnerHigh = 0.70f;
     if (vetoIdOthersTPC<kKa>(track)) {
       if (kTPCInnerLow <= track.tpcInnerParam() && track.tpcInnerParam() < kTPCInnerHigh && std::abs(track.tpcNSigmaKa()) < nSigmaTPCLowP) {
@@ -2210,9 +2211,9 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selProtonTPCInnerParam(const T& track)
   {
-    static const float nSigmaTPCLowP  = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCLowP);
+    static const float nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCLowP);
     static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCHighP);
-    constexpr float kTPCInnerLow  = 0.05f;
+    constexpr float kTPCInnerLow = 0.05f;
     constexpr float kTPCInnerHigh = 1.60f;
 
     if (vetoIdOthersTPC<kPr>(track)) {
@@ -2229,10 +2230,10 @@ struct KaonIsospinFluctuations {
   template <typename T>
   bool selDeuteronTPCInnerParam(const T& track)
   {
-    constexpr float kTPCInnerLow  = 0.05f;
+    constexpr float kTPCInnerLow = 0.05f;
     constexpr float kTPCInnerHigh = 1.80f;
-    constexpr float kNSigmaLowP   = 3.0f;
-    constexpr float kNSigmaHighP  = 2.0f;
+    constexpr float kNSigmaLowP = 3.0f;
+    constexpr float kNSigmaHighP = 2.0f;
 
     if (vetoIdOthersTPC<kDe>(track)) {
       if (kTPCInnerLow <= track.tpcInnerParam() && track.tpcInnerParam() < kTPCInnerHigh && std::abs(track.tpcNSigmaDe()) < kNSigmaLowP) {
@@ -2263,8 +2264,8 @@ struct KaonIsospinFluctuations {
   {
     // Constants to avoid magic numbers and repeated getCfg calls
     static constexpr float ThresholdP = 0.75f;
-    static const float nSigmaTPCLowP  = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCLowP);
-    static const float nSigmaTOFLowP  = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTOFLowP);
+    static const float nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCLowP);
+    static const float nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTOFLowP);
     static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTPCHighP);
     static const float nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPi, kNSigmaTOFHighP);
     if (vetoIdOthersTOF<kPi>(track)) {
@@ -2284,8 +2285,8 @@ struct KaonIsospinFluctuations {
   {
       static constexpr float ThresholdPLow = 0.75f;  // π-K separation
       static constexpr float ThresholdPUp = 1.30f;  // K-p separation
-      static const float nSigmaTPCLowP  = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCLowP);
-      static const float nSigmaTOFLowP  = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTOFLowP);
+      static const float nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCLowP);
+      static const float nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTOFLowP);
       static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTPCHighP);
       static const float nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kKa, kNSigmaTOFHighP);
 
@@ -2311,10 +2312,9 @@ struct KaonIsospinFluctuations {
   {
     // Static config values (fetched once per template instantiation)
     static constexpr float ThresholdPLow = 1.30f; // Kaon-proton separation
-    static constexpr float ThresholdPUp = 3.10f; // Proton-deuteron separation
-
-    static const float nSigmaTPCLowP  = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCLowP);
-    static const float nSigmaTOFLowP  = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTOFLowP);
+    static constexpr float ThresholdPUp = 3.10f;  // Proton-deuteron separation
+    static const float nSigmaTPCLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCLowP);
+    static const float nSigmaTOFLowP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTOFLowP);
     static const float nSigmaTPCHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTPCHighP);
     static const float nSigmaTOFHighP = getCfg<float>(cfgIdCut.pidConfigSetting, kPr, kNSigmaTOFHighP);
 
