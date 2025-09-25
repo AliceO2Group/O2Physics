@@ -705,7 +705,7 @@ void TListHandler::print(bool showAxisDetails)
   std::string titleString{"======================== TListHandler ========================"};
   LOGF(info, "");
   LOGF(info, "%s", titleString);
-  LOGF(info, "%s\"%s\"", std::string((int)(0.5 * titleString.size() - (1 + 0.5 * mName.size())), ' '), mName);
+  LOGF(info, "%s\"%s\"", std::string(static_cast<int>(0.5 * titleString.size() - (1 + 0.5 * mName.size())), ' '), mName);
   for (auto& curHistName : mRegisteredNames) { // o2-linter: disable=const-ref-in-for-loop (not constant in original histogram regitry code)
     std::visit(printHistInfo, mTListValue[getHistIndex(HistName{curHistName.data()})]);
   }
