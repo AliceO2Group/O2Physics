@@ -41,6 +41,8 @@ JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec
       multAxes.emplace_back(100, 0, 1000, "Nch Global");
     registry.add("multCorrelations", "Multiplicity correlations", {HistType::kTHnSparseF, multAxes});
     phs[HIST_THN_SPARSE_MULTCORR] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/h_multcorr", folder.Data()), "multiplicity/centrality correlations", {HistType::kTHnSparseF, multAxes})).get();
+  } else {
+    phs[HIST_THN_SPARSE_MULTCORR] = 0;
   }
 
   AxisSpec chgAxis = {3, -1.5, 1.5, "charge"};
@@ -61,7 +63,8 @@ JFFlucAnalysisO2Hist::JFFlucAnalysisO2Hist(HistogramRegistry& registry, AxisSpec
   phs[HIST_THN_SPARSE_VN] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/hvna", folder.Data()), "#it{V}_#it{n}^#it{k}", {HistType::kTHnSparseF, {axisMultiplicity, massAxis, hAxis, kAxis, vnAxis}})).get();
   phs[HIST_THN_SPARSE_VN_VN] = std::get<std::shared_ptr<THnSparse>>(registry.add(Form("%s/hvn_vn", folder.Data()), "#it{V}_#it{n_1}^#it{k_1}#it{V}_#it{n_2}^#it{k_2}", {HistType::kTHnSparseF, {axisMultiplicity, massAxis, hAxis, kAxis, hAxis, kAxis, vnAxis}})).get();
   for (UInt_t i = 0; i < HIST_THN_SPARSE_COUNT; ++i)
-    phs[i]->Sumw2();
+    if (phs[i])
+      phs[i]->Sumw2();
 }
 
 JFFlucAnalysisO2Hist::~JFFlucAnalysisO2Hist()

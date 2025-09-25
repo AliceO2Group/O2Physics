@@ -35,6 +35,7 @@
 
 #include <fairlogger/Logger.h>
 
+#include <algorithm>
 #include <cmath> // for std::fabs
 #include <deque>
 #include <iostream>
@@ -96,6 +97,7 @@ struct lambdaspincorrderived {
   Configurable<float> v0eta{"v0eta", 0.8, "Eta cut on lambda"};
 
   // Event Mixing
+  Configurable<int> cosDef{"cosDef", 1, "Defination of cos"};
   Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {8, 0.0, 80}, "Mixing bins - centrality"};
@@ -138,10 +140,10 @@ struct lambdaspincorrderived {
     histos.add("hSparseAntiLambdaLambda", "hSparseAntiLambdLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
     histos.add("hSparseAntiLambdaAntiLambda", "hSparseAntiLambdaAntiLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
 
-    histos.add("hSparseLambdaLambdaMixed", "hSparseLambdaLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisRapidity, configThnAxisR}, true);
-    histos.add("hSparseLambdaAntiLambdaMixed", "hSparseLambdaAntiLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisRapidity, configThnAxisR}, true);
-    histos.add("hSparseAntiLambdaLambdaMixed", "hSparseAntiLambdaLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisRapidity, configThnAxisR}, true);
-    histos.add("hSparseAntiLambdaAntiLambdaMixed", "hSparseAntiLambdaAntiLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisRapidity, configThnAxisR}, true);
+    histos.add("hSparseLambdaLambdaMixed", "hSparseLambdaLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
+    histos.add("hSparseLambdaAntiLambdaMixed", "hSparseLambdaAntiLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
+    histos.add("hSparseAntiLambdaLambdaMixed", "hSparseAntiLambdaLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
+    histos.add("hSparseAntiLambdaAntiLambdaMixed", "hSparseAntiLambdaAntiLambdaMixed", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
 
     histos.add("hSparseRapLambdaLambda", "hSparseRapLambdaLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisRapidity}, true);
     histos.add("hSparseRapLambdaAntiLambda", "hSparseRapLambdaAntiLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisRapidity}, true);
@@ -271,10 +273,102 @@ struct lambdaspincorrderived {
     auto proton1LambdaRF = boostLambda1ToCM(proton1pairCM);
     auto proton2LambdaRF = boostLambda2ToCM(proton2pairCM);
 
-    auto cosThetaDiff = -999.0;
-    cosThetaDiff = proton1LambdaRF.Vect().Unit().Dot(proton2LambdaRF.Vect().Unit());
+    TVector3 zhat(lambda1CM.Px(), lambda1CM.Py(), lambda1CM.Pz());
+    if (zhat.Mag2() == 0)
+      zhat = TVector3(0, 0, 1);
+    zhat = zhat.Unit();
 
-    auto costhetaz1costhetaz2 = (proton1LambdaRF.Pz() * proton2LambdaRF.Pz()) / (proton1LambdaRF.P() * proton2LambdaRF.P());
+    // pick a reference not collinear with ẑ (beam z works)
+    TVector3 ref(0., 0., 1.);
+    if (std::abs(zhat.Dot(ref)) > 0.999)
+      ref = TVector3(1., 0., 0.);
+
+    // build transverse axes
+    TVector3 xhat = (ref - (ref.Dot(zhat)) * zhat).Unit();
+    TVector3 yhat = (zhat.Cross(xhat)).Unit();
+
+    // proton unit vectors in their Λ rest frames
+    TVector3 n1(proton1LambdaRF.Px(), proton1LambdaRF.Py(), proton1LambdaRF.Pz());
+    n1 = n1.Unit();
+    TVector3 n2(proton2LambdaRF.Px(), proton2LambdaRF.Py(), proton2LambdaRF.Pz());
+    n2 = n2.Unit();
+
+    // cosθ* (Λ2 measured along −ẑ)
+    double c1 = n1.Dot(zhat);
+    double c2 = -n2.Dot(zhat);
+
+    // sinθ*
+    double s1 = std::sqrt(std::max(0.0, 1.0 - c1 * c1));
+    double s2 = std::sqrt(std::max(0.0, 1.0 - c2 * c2));
+
+    // φ1*, φ2* in common convention (flip axes for Λ2)
+    double phi1 = std::atan2(n1.Dot(yhat), n1.Dot(xhat));
+    double phi2 = std::atan2(n2.Dot(-yhat), n2.Dot(-xhat));
+
+    // helicity spin-correlation
+    double cosDelta = c1 * c2 + s1 * s2 * std::cos(phi1 - phi2);
+    // clamp for safety
+    if (cosDelta > 1.0)
+      cosDelta = 1.0;
+    if (cosDelta < -1.0)
+      cosDelta = -1.0;
+
+    //
+    // --- (B) Beam-based correlation (common z_B = beam; axes transported into each Λ rest frame) ---
+    //
+    TVector3 zB(0., 0., 1.); // beam axis in pair–CM coordinates
+
+    // x_B: projection of Λ1 direction onto plane ⟂ z_B; y_B completes RH basis
+    TVector3 L1dir(lambda1CM.Px(), lambda1CM.Py(), lambda1CM.Pz());
+    L1dir = L1dir.Unit();
+    TVector3 xB = L1dir - (L1dir.Dot(zB)) * zB;
+    if (xB.Mag2() < 1e-12)
+      xB = TVector3(1., 0., 0.); // fallback if Λ1 ∥ beam
+    xB = xB.Unit();
+    TVector3 yB = (zB.Cross(xB)).Unit();
+
+    // helper to transport an axis into a Λ rest frame (from pair–CM)
+    auto transport = [](const TVector3& v, const ROOT::Math::Boost& B) -> TVector3 {
+      ROOT::Math::PxPyPzEVector a(v.X(), v.Y(), v.Z(), 0.0); // spacelike 4-vector (t=0)
+      ROOT::Math::PxPyPzEVector ar = B(a);                   // boost into that Λ rest frame
+      TVector3 out(ar.Px(), ar.Py(), ar.Pz());
+      if (out.Mag2() == 0)
+        return out;
+      return out.Unit();
+    };
+
+    // transport beam triad to each Λ rest frame
+    TVector3 zB1 = transport(zB, boostLambda1ToCM);
+    TVector3 xB1 = transport(xB, boostLambda1ToCM);
+    TVector3 yB1 = transport(yB, boostLambda1ToCM);
+
+    TVector3 zB2 = transport(zB, boostLambda2ToCM);
+    TVector3 xB2 = transport(xB, boostLambda2ToCM);
+    TVector3 yB2 = transport(yB, boostLambda2ToCM);
+
+    // angles w.r.t. beam triad (same z_B convention for both Λ’s; no flips)
+    double c1B = n1.Dot(zB1), c2B = n2.Dot(zB2);
+    double s1B = std::sqrt(std::max(0.0, 1.0 - c1B * c1B));
+    double s2B = std::sqrt(std::max(0.0, 1.0 - c2B * c2B));
+    double phi1B = std::atan2(n1.Dot(yB1), n1.Dot(xB1));
+    double phi2B = std::atan2(n2.Dot(yB2), n2.Dot(xB2));
+
+    // beam correlation
+    double cosDeltaBeam = c1B * c2B + s1B * s2B * std::cos(phi1B - phi2B);
+    if (cosDeltaBeam > 1.0)
+      cosDeltaBeam = 1.0;
+    if (cosDeltaBeam < -1.0)
+      cosDeltaBeam = -1.0;
+
+    auto cosThetaDiff = -999.0;
+    auto costhetaz1costhetaz2 = -999.0;
+    if (cosDef == 0) {
+      cosThetaDiff = proton1LambdaRF.Vect().Unit().Dot(proton2LambdaRF.Vect().Unit());
+      costhetaz1costhetaz2 = (proton1LambdaRF.Pz() * proton2LambdaRF.Pz()) / (proton1LambdaRF.P() * proton2LambdaRF.P());
+    } else {
+      cosThetaDiff = cosDelta;
+      costhetaz1costhetaz2 = cosDeltaBeam;
+    }
 
     double deltaPhi = std::abs(RecoDecay::constrainAngle(particle1Dummy.Phi(), 0.0F, harmonic) - RecoDecay::constrainAngle(particle2Dummy.Phi(), 0.0F, harmonic));
     double deltaEta = particle1Dummy.Eta() - particle2Dummy.Eta();
@@ -316,24 +410,27 @@ struct lambdaspincorrderived {
         weight3 = mixpairweight * hweight3->GetBinContent(hweight3->FindBin(particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic)));
         weight4 = mixpairweight * hweight4->GetBinContent(hweight4->FindBin(particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic)));
       }
-      histos.fill(HIST("hPtYMix"), particle1.Pt(), particle1.Rapidity());
+
       if (tag1 == 0 && tag2 == 0) {
+        histos.fill(HIST("hPtYMix"), particle1.Pt(), particle1.Rapidity(), weight1);
         histos.fill(HIST("hSparseLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight1);
         histos.fill(HIST("hSparseRapLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight1);
         histos.fill(HIST("hSparsePhiLambdaLambdaMixed"), particle1.M(), particle2.M(), costhetaz1costhetaz2, deltaPhi, weight1);
         histos.fill(HIST("hLambdaMixForLL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic), weight1);
       } else if (tag1 == 0 && tag2 == 1) {
+        histos.fill(HIST("hPtYMix"), particle1.Pt(), particle1.Rapidity(), weight2);
         histos.fill(HIST("hSparseLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight2);
         histos.fill(HIST("hSparseRapLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight2);
         histos.fill(HIST("hSparsePhiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), costhetaz1costhetaz2, deltaPhi, weight2);
         histos.fill(HIST("hLambdaMixForLAL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic), weight2);
       } else if (tag1 == 1 && tag2 == 0) {
+        histos.fill(HIST("hPtYMix"), particle1.Pt(), particle1.Rapidity(), weight3);
         histos.fill(HIST("hSparseAntiLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight3);
         histos.fill(HIST("hSparseRapAntiLambdaLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight3);
         histos.fill(HIST("hSparsePhiAntiLambdaLambdaMixed"), particle1.M(), particle2.M(), costhetaz1costhetaz2, deltaPhi, weight3);
-
         histos.fill(HIST("hLambdaMixForALL"), particle1.Pt(), particle1.Eta(), RecoDecay::constrainAngle(particle1.Phi(), 0.0F, harmonic), weight3);
       } else if (tag1 == 1 && tag2 == 1) {
+        histos.fill(HIST("hPtYMix"), particle1.Pt(), particle1.Rapidity(), weight4);
         histos.fill(HIST("hSparseAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaR, weight4);
         histos.fill(HIST("hSparseRapAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), cosThetaDiff, deltaRap, weight4);
         histos.fill(HIST("hSparsePhiAntiLambdaAntiLambdaMixed"), particle1.M(), particle2.M(), costhetaz1costhetaz2, deltaPhi, weight4);
@@ -554,6 +651,105 @@ struct lambdaspincorrderived {
     } // end primary-event loop
   }
   PROCESS_SWITCH(lambdaspincorrderived, processMEV2, "Process data ME", false);
+
+  void processMEV3(EventCandidates const& collisions, AllTrackCandidates const& V0s)
+  {
+    // one pool (deque) per mixing bin; each entry holds (collision index, slice of its V0s)
+    auto nBins = colBinning.getAllBinsCount();
+    std::vector<std::deque<std::pair<int, AllTrackCandidates>>> eventPools(nBins);
+
+    for (auto& collision1 : collisions) {
+      // select mixing bin for this event
+      const int bin = colBinning.getBin(std::make_tuple(collision1.posz(), collision1.cent()));
+
+      // all V0s from the current event
+      auto poolA = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
+
+      // loop over same-event candidate pairs (t1,t2)
+      for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(poolA, poolA))) {
+        if (!selectionV0(t1) || !selectionV0(t2))
+          continue;
+        if (t2.index() <= t1.index())
+          continue; // unique unordered pairs
+        if (t1.protonIndex() == t2.protonIndex())
+          continue; // no shared daughter
+        if (t1.pionIndex() == t2.pionIndex())
+          continue;
+
+        // --- First pass over previous events in this bin: count replacements and build a list of usable pools
+        int mixes = 0;
+        struct PoolView {
+          AllTrackCandidates* pool;
+          int nRepl;
+          int collIdx;
+        };
+        std::vector<PoolView> usable;
+        int totalRepl = 0;
+
+        for (auto it = eventPools[bin].rbegin();
+             it != eventPools[bin].rend() && mixes < nEvtMixing; ++it, ++mixes) {
+          const int collision2idx = it->first;
+          auto& poolB = it->second;
+
+          // (defensive; shouldn't happen because we push the current event after mixing)
+          if (collision2idx == collision1.index())
+            continue;
+
+          int nRepl = 0;
+          for (auto& t3 : poolB) {
+            if (selectionV0(t3) && checkKinematics(t1, t3))
+              ++nRepl;
+          }
+          if (nRepl > 0) {
+            usable.push_back(PoolView{&poolB, nRepl, collision2idx});
+            totalRepl += nRepl;
+          }
+        }
+
+        if (totalRepl == 0)
+          continue;
+        const float w = 1.0f / static_cast<float>(totalRepl); // global normalization: sum of weights over all replacements = 1
+
+        // --- Second pass: fill with normalized weight w
+        for (auto& pv : usable) {
+          auto& poolB = *pv.pool;
+          for (auto& t3 : poolB) {
+            if (!(selectionV0(t3) && checkKinematics(t1, t3)))
+              continue;
+
+            // build 4-vectors for the mixed pair (t3 from prior event replaces t1; t2 stays from current event)
+            proton = ROOT::Math::PtEtaPhiMVector(t3.protonPt(), t3.protonEta(), t3.protonPhi(), o2::constants::physics::MassProton);
+            lambda = ROOT::Math::PtEtaPhiMVector(t3.lambdaPt(), t3.lambdaEta(), t3.lambdaPhi(), t3.lambdaMass());
+            proton2 = ROOT::Math::PtEtaPhiMVector(t2.protonPt(), t2.protonEta(), t2.protonPhi(), o2::constants::physics::MassProton);
+            lambda2 = ROOT::Math::PtEtaPhiMVector(t2.lambdaPt(), t2.lambdaEta(), t2.lambdaPhi(), t2.lambdaMass());
+
+            float dPhi = std::fabs(
+              RecoDecay::constrainAngle(lambda.Phi(), 0.0F, harmonic) -
+              RecoDecay::constrainAngle(lambda2.Phi(), 0.0F, harmonic));
+            histos.fill(HIST("deltaPhiMix"), dPhi, w);
+
+            if (t3.v0Status() == 0 && t2.v0Status() == 0) {
+              fillHistograms(0, 0, lambda, lambda2, proton, proton2, 1, w);
+            } else if (t3.v0Status() == 0 && t2.v0Status() == 1) {
+              fillHistograms(0, 1, lambda, lambda2, proton, proton2, 1, w);
+            } else if (t3.v0Status() == 1 && t2.v0Status() == 0) {
+              fillHistograms(1, 0, lambda, lambda2, proton, proton2, 1, w);
+            } else if (t3.v0Status() == 1 && t2.v0Status() == 1) {
+              fillHistograms(1, 1, lambda, lambda2, proton, proton2, 1, w);
+            }
+          }
+        }
+      } // end same-event pair loop
+
+      // after mixing with prior events, push current event into the pool
+      auto sliced = V0s.sliceBy(tracksPerCollisionV0, collision1.index());
+      eventPools[bin].emplace_back(collision1.index(), std::move(sliced));
+      if (static_cast<int>(eventPools[bin].size()) > nEvtMixing) {
+        eventPools[bin].pop_front();
+      }
+    } // end primary-event loop
+  }
+  PROCESS_SWITCH(lambdaspincorrderived, processMEV3, "Process data ME", false);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {

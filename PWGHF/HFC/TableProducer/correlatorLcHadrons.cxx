@@ -440,7 +440,9 @@ struct HfCorrelatorLcHadrons {
           outputMl[iclass] = candidate.mlProbLcToPKPi()[classMl->at(iclass)];
         }
         entryLcCandRecoInfo(hfHelper.invMassLcToPKPi(candidate), candidate.pt() * chargeLc, outputMl[0], outputMl[1]); // 0: BkgBDTScore, 1:PromptBDTScore
-        entryLc(candidate.phi(), candidate.eta(), candidate.pt() * chargeLc, hfHelper.invMassLcToPKPi(candidate), poolBin, gCollisionId, timeStamp);
+        if (!skipMixedEventTableFilling) {
+          entryLc(candidate.phi(), candidate.eta(), candidate.pt() * chargeLc, hfHelper.invMassLcToPKPi(candidate), poolBin, gCollisionId, timeStamp);
+        }
       }
       if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
         registry.fill(HIST("hMassLcVsPtVsCent"), hfHelper.invMassLcToPiKP(candidate), candidate.pt(), cent, efficiencyWeightLc);
@@ -458,6 +460,7 @@ struct HfCorrelatorLcHadrons {
       // Lc-Hadron correlation dedicated section
       // if the candidate is a Lc, search for Hadrons and evaluate correlations
       for (const auto& track : tracks) {
+        correlationStatus = false;
         // Remove Lc daughters by checking track indices
         if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
           if (!storeAutoCorrelationFlag) {
@@ -695,6 +698,7 @@ struct HfCorrelatorLcHadrons {
       // Lc-Hadron correlation dedicated section
       // if the candidate is selected as Lc, search for Hadron ad evaluate correlations
       for (const auto& track : tracks) {
+        correlationStatus = false;
         bool isPhysicalPrimary = false;
         int trackOrigin = -1;
         // apply track selection
@@ -868,6 +872,7 @@ struct HfCorrelatorLcHadrons {
       // if it's a Lc particle, search for Hadron and evalutate correlations
       registry.fill(HIST("hcountLctriggersMcGen"), 0, particle.pt()); // to count trigger Lc for normalisation
       for (const auto& particleAssoc : mcParticles) {
+        correlationStatus = false;
         if (std::abs(particleAssoc.eta()) > etaTrackMax || particleAssoc.pt() < ptTrackMin || particleAssoc.pt() > ptTrackMax) {
           continue;
         }
