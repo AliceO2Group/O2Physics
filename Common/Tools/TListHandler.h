@@ -18,9 +18,11 @@
 #ifndef FRAMEWORK_TLISTHANDLER_H_
 #define FRAMEWORK_TLISTHANDLER_H_
 
-#include "Framework/HistogramSpec.h"
 #include "Framework/AnalysisTask.h"
+#include "Framework/HistogramSpec.h"
+
 #include <TObjString.h>
+
 #include <regex>
 
 namespace o2::framework
@@ -168,7 +170,7 @@ class TListHandler
 
   // To Do - make templated class with bitmask --> static constexpr uint32_t kTListBitmask = BitMask;.
   // {0x1FF = 511}; {0x3FF = 1023}; {0x7FF = 2047}; {0xFFF = 4095}
-  static constexpr uint32_t kTListBitmask{0x7FF};              // o2-linter: disable=name/constexpr-constant,name/function-variable
+  static constexpr uint32_t kTListBitmask{0x7FF};             // o2-linter: disable=name/constexpr-constant,name/function-variable
   static constexpr uint32_t kMaxTListSize{kTListBitmask + 1}; // o2-linter: disable=name/constexpr-constant,name/function-variable
   static_assert((kMaxTListSize & (kMaxTListSize - 1)) == 0, "BitMask must be a power of 2^(n)-1");
   std::array<uint32_t, kMaxTListSize> mTListKey{};
