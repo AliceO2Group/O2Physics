@@ -123,7 +123,7 @@ struct HfCandidateSelectorLc {
 
   HistogramRegistry registry{"registry"};
 
-  double massK0Star892;
+  double massK0Star892{};
 
   void init(InitContext const&)
   {

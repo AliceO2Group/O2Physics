@@ -194,7 +194,7 @@ struct HfCandidateCreatorLb {
           continue;
         }
         hPtPion->Fill(trackPion.pt());
-        std::array<float, 3> pvecPion;
+        std::array<float, 3> pvecPion{};
         auto trackParVarPi = getTrackParCov(trackPion);
 
         // reconstruct the 3-prong Lc vertex

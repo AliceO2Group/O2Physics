@@ -203,7 +203,7 @@ struct HfDataCreatorCharmResoReduced {
   int runNumber{0}; // needed to detect if the run changed and trigger update of calibrations etc.
 
   // material correction for track propagation
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   // O2DatabasePDG service
@@ -228,7 +228,7 @@ struct HfDataCreatorCharmResoReduced {
     float mK0Short;
     float mLambda;
     uint8_t v0Type;
-  } candidateV0;
+  } candidateV0{};
 
   struct {
     float invMassD;
@@ -241,7 +241,7 @@ struct HfDataCreatorCharmResoReduced {
     std::array<float, 3> pVectorProng0;
     std::array<float, 3> pVectorProng1;
     std::array<float, 3> pVectorProng2;
-  } varUtils;
+  } varUtils{};
 
   // Dplus
   using CandsDplusFiltered = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelDplusToPiKPi>>;
@@ -449,7 +449,7 @@ struct HfDataCreatorCharmResoReduced {
     if (!selectV0Daughter(trackPos, dDaughtersIds) || !selectV0Daughter(trackNeg, dDaughtersIds))
       return false;
     // daughters DCA to V0's collision primary vertex
-    std::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo{};
     auto trackPosPar = getTrackPar(trackPos);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackPosPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     auto trackPosDcaXY = dcaInfo[0];
@@ -1027,8 +1027,8 @@ struct HfDataCreatorCharmResoReduced {
     for (const auto& candD : candsD) {
       // initialize variables depending on D meson type
       bool fillHfCandD = false;
-      std::array<float, 3> secondaryVertexD;
-      std::array<int, 3> prongIdsD;
+      std::array<float, 3> secondaryVertexD{};
+      std::array<int, 3> prongIdsD{};
       std::array<float, 6> bdtScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
       std::vector<std::decay_t<typename TrIU::iterator>> charmHadDauTracks{};
       varUtils.ptD = candD.pt();
@@ -1152,7 +1152,7 @@ struct HfDataCreatorCharmResoReduced {
           // propagate V0 to primary vertex (if enabled)
           if (propagateV0toPV) {
             std::array<float, 3> pVecV0Orig = {candidateV0.mom[0], candidateV0.mom[1], candidateV0.mom[2]};
-            std::array<float, 2> dcaInfo;
+            std::array<float, 2> dcaInfo{};
             auto trackParK0 = o2::track::TrackPar(candidateV0.pos, pVecV0Orig, 0, true);
             trackParK0.setPID(o2::track::PID::K0);
             trackParK0.setAbsCharge(0);
@@ -1694,9 +1694,9 @@ struct HfDataCreatorCharmResoReduced {
           auto yParticle = RecoDecay::y(particle.pVector(), invMassGen);
           auto etaParticle = particle.eta();
 
-          std::array<float, 2> ptProngs;
-          std::array<float, 2> yProngs;
-          std::array<float, 2> etaProngs;
+          std::array<float, 2> ptProngs{};
+          std::array<float, 2> yProngs{};
+          std::array<float, 2> etaProngs{};
           int counter = 0;
           for (const auto& daught : particle.template daughters_as<McParticles>()) {
             ptProngs[counter] = daught.pt();

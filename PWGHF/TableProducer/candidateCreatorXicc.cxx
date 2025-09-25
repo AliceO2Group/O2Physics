@@ -167,7 +167,7 @@ struct HfCandidateCreatorXicc {
         if (trackpion.globalIndex() == index0Xic || trackpion.globalIndex() == index1Xic || trackpion.globalIndex() == index2Xic) {
           continue;
         }
-        std::array<float, 3> pvecpion;
+        std::array<float, 3> pvecpion{};
         auto trackParVarPi = getTrackParCov(trackpion);
 
         // reconstruct the 3-prong X vertex

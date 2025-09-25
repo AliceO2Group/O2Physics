@@ -140,7 +140,7 @@ struct HfCandidateCreatorXic0Omegac0 {
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter to build the omegac/xic vertex
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber{-1};
   double magneticField{0.};
@@ -207,7 +207,7 @@ struct HfCandidateCreatorXic0Omegac0 {
     float chi2MassCasc;
     float etaOmegac;
     float cascRejectInvmass; // rej
-  } kfOmegac0Candidate;
+  } kfOmegac0Candidate{};
 
   struct {
     float chi2GeoV0;
@@ -251,7 +251,7 @@ struct HfCandidateCreatorXic0Omegac0 {
     float chi2MassV0;
     float chi2MassCasc;
     float etaXic;
-  } kfXic0Candidate;
+  } kfXic0Candidate{};
 
   void init(InitContext const&)
   {
@@ -537,8 +537,8 @@ struct HfCandidateCreatorXic0Omegac0 {
       hFitterStatus->Fill(0);
       hCandidateCounter->Fill(2);
       auto vertexCharmBaryonFromFitter = df.getPCACandidate();
-      std::array<float, 3> pVecCascAsD;
-      std::array<float, 3> pVecCharmBachelorAsD;
+      std::array<float, 3> pVecCascAsD{};
+      std::array<float, 3> pVecCharmBachelorAsD{};
       df.propagateTracksToVertex();
       if (!df.isPropagateTracksToVertexDone()) {
         continue;
@@ -982,7 +982,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       auto primaryVertex = getPrimaryVertex(collision);
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
       std::array<float, 3> vertexCharmBaryonFromFitter = {0.0, 0.0, 0.0}; // This variable get from DCAfitter in default process, in KF process it is set as 0.
-      std::array<float, 3> pVecCharmBachelorAsD;
+      std::array<float, 3> pVecCharmBachelorAsD{};
       pVecCharmBachelorAsD[0] = kfBachPionToOmegaC.GetPx();
       pVecCharmBachelorAsD[1] = kfBachPionToOmegaC.GetPy();
       pVecCharmBachelorAsD[2] = kfBachPionToOmegaC.GetPz();
@@ -994,9 +994,9 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfVertex.GetCovarianceMatrix(covMatrixPV);
 
       // impact parameters
-      std::array<float, 2> impactParameterV0Dau0;
-      std::array<float, 2> impactParameterV0Dau1;
-      std::array<float, 2> impactParameterKaFromCasc;
+      std::array<float, 2> impactParameterV0Dau0{};
+      std::array<float, 2> impactParameterV0Dau1{};
+      std::array<float, 2> impactParameterKaFromCasc{};
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0Dau0, 2.f, matCorr, &impactParameterV0Dau0);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0Dau1, 2.f, matCorr, &impactParameterV0Dau1);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, omegaDauChargedTrackParCov, 2.f, matCorr, &impactParameterKaFromCasc);
@@ -1465,7 +1465,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       std::array<float, 3> pVecCascBachelor = {kfBachPionToXi.GetPx(), kfBachPionToXi.GetPy(), kfBachPionToXi.GetPz()};
 
       std::array<float, 3> pvCoord = {collision.posX(), collision.posY(), collision.posZ()};
-      std::array<float, 3> pVecCharmBachelorAsD;
+      std::array<float, 3> pVecCharmBachelorAsD{};
       pVecCharmBachelorAsD[0] = kfCharmBachPionToXiC.GetPx();
       pVecCharmBachelorAsD[1] = kfCharmBachPionToXiC.GetPy();
       pVecCharmBachelorAsD[2] = kfCharmBachPionToXiC.GetPz();
@@ -1476,9 +1476,9 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfVertex.GetCovarianceMatrix(covMatrixPV);
 
       // impact parameters
-      std::array<float, 2> impactParameterV0Dau0;
-      std::array<float, 2> impactParameterV0Dau1;
-      std::array<float, 2> impactParameterPiFromCasc;
+      std::array<float, 2> impactParameterV0Dau0{};
+      std::array<float, 2> impactParameterV0Dau1{};
+      std::array<float, 2> impactParameterPiFromCasc{};
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0Dau0, 2.f, matCorr, &impactParameterV0Dau0);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, trackParCovV0Dau1, 2.f, matCorr, &impactParameterV0Dau1);
       o2::base::Propagator::Instance()->propagateToDCABxByBz({collision.posX(), collision.posY(), collision.posZ()}, xiDauChargedTrackParCov, 2.f, matCorr, &impactParameterPiFromCasc);

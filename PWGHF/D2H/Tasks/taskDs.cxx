@@ -166,11 +166,11 @@ struct HfTaskDs {
   ConfigurableAxis axisOccupancy{"axisOccupancy", {14, 0., 14000.}, "axis for occupancy"};
 
   int mRunNumber{0};
-  bool lCalibLoaded;
-  TList* lCalibObjects;
-  TProfile* hVtxZFT0A;
-  TProfile* hVtxZFT0C;
-  TProfile* hVtxZNTracks;
+  bool lCalibLoaded{};
+  TList* lCalibObjects{};
+  TProfile* hVtxZFT0A{};
+  TProfile* hVtxZFT0C{};
+  TProfile* hVtxZNTracks{};
 
   HistogramRegistry registry{"registry", {}};
 
@@ -844,9 +844,9 @@ struct HfTaskDs {
 
         if (lCalibObjects) {
           LOG(info) << "CCDB objects loaded successfully";
-          hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
-          hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
-          hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
+          hVtxZFT0A = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
+          hVtxZFT0C = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
+          hVtxZNTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
           lCalibLoaded = true;
           // Capture error
           if (!hVtxZFT0A || !hVtxZFT0C || !hVtxZNTracks) {
@@ -909,9 +909,9 @@ struct HfTaskDs {
 
         if (lCalibObjects) {
           LOG(info) << "CCDB objects loaded successfully";
-          hVtxZFT0A = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
-          hVtxZFT0C = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
-          hVtxZNTracks = static_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
+          hVtxZFT0A = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0A"));
+          hVtxZFT0C = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZFT0C"));
+          hVtxZNTracks = dynamic_cast<TProfile*>(lCalibObjects->FindObject("hVtxZNTracksPV"));
           lCalibLoaded = true;
           // Capture error
           if (!hVtxZFT0A || !hVtxZFT0C || !hVtxZNTracks) {

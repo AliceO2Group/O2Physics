@@ -288,8 +288,8 @@ struct HfCandidateCreator2Prong {
       auto trackParVar1 = df.getTrack(1);
 
       // get track momenta
-      std::array<float, 3> pvec0;
-      std::array<float, 3> pvec1;
+      std::array<float, 3> pvec0{};
+      std::array<float, 3> pvec1{};
       trackParVar0.getPxPyPzGlo(pvec0);
       trackParVar1.getPxPyPzGlo(pvec1);
 

@@ -99,7 +99,7 @@ struct HfCandidateCreatorBs {
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
   HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   int runNumber{0};
@@ -393,8 +393,8 @@ struct HfCandidateCreatorBsExpressions {
     int8_t sign = 0;
     int8_t flagChannelMain = 0;
     int8_t flagChannelReso = 0;
-    std::vector<int> arrDaughDsIndex;
-    std::array<int, 2> arrPDGDaughDs;
+    std::vector<int> arrDaughDsIndex{};
+    std::array<int, 2> arrPDGDaughDs{};
     std::array<int, 2> arrPDGResonantDsPhiPi = {Pdg::kPhi, kPiPlus}; // Ds± → Phi π±
 
     // Match reconstructed candidates.

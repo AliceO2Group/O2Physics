@@ -144,9 +144,9 @@ struct HfCorrelatorDstarHadrons {
   Configurable<std::vector<double>> rightSidebandInnerBoundary{"rightSidebandInnerBoundary", std::vector<double>{vecSidebandRightInnerDefault}, "right sideband inner boundary"};
 
   // Inv Mass of Dstar and D0 Candidate
-  float invMassDstarParticle;
-  float invMassD0Particle;
-  int binNumber;
+  float invMassDstarParticle{};
+  float invMassD0Particle{};
+  int binNumber{};
   SliceCache cache;
 
   // using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;

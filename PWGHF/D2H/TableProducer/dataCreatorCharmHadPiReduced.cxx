@@ -210,7 +210,7 @@ struct HfDataCreatorCharmHadPiReduced {
   // CCDB service
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-  int runNumber;
+  int runNumber{};
 
   // O2DatabasePDG service
   Service<o2::framework::O2DatabasePDG> pdg;
@@ -626,7 +626,7 @@ struct HfDataCreatorCharmHadPiReduced {
         indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
         if (indexRec > -1) {
           std::vector<int> arrDaughDsIndex;
-          std::array<int, 2> arrPDGDaughDs;
+          std::array<int, 2> arrPDGDaughDs{};
           RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
           if (arrDaughDsIndex.size() == NDaughtersDs) {
             for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
@@ -663,7 +663,7 @@ struct HfDataCreatorCharmHadPiReduced {
             indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
             if (indexRec > -1) {
               std::vector<int> arrDaughDsIndex;
-              std::array<int, 2> arrPDGDaughDs;
+              std::array<int, 2> arrPDGDaughDs{};
               RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
               if (arrDaughDsIndex.size() == NDaughtersDs) {
                 for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
@@ -688,7 +688,7 @@ struct HfDataCreatorCharmHadPiReduced {
             indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, -Pdg::kDS, std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
             if (indexRec > -1) {
               std::vector<int> arrDaughDsIndex;
-              std::array<int, 2> arrPDGDaughDs;
+              std::array<int, 2> arrPDGDaughDs{};
               RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDsIndex, std::array{0}, 1);
               if (arrDaughDsIndex.size() == NDaughtersDs) {
                 for (auto iProng = 0u; iProng < arrDaughDsIndex.size(); ++iProng) {
@@ -1545,9 +1545,9 @@ struct HfDataCreatorCharmHadPiReduced {
         auto yParticle = RecoDecay::y(particle.pVector(), massB);
         auto etaParticle = particle.eta();
 
-        std::array<float, 2> ptProngs;
-        std::array<float, 2> yProngs;
-        std::array<float, 2> etaProngs;
+        std::array<float, 2> ptProngs{};
+        std::array<float, 2> yProngs{};
+        std::array<float, 2> etaProngs{};
         int counter = 0;
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
@@ -1565,7 +1565,7 @@ struct HfDataCreatorCharmHadPiReduced {
           auto candCMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
           if (RecoDecay::isMatchedMCGen(particlesMc, candCMC, -static_cast<int>(Pdg::kDS), std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
             std::vector<int> arrDaughDsIndex;
-            std::array<int, 2> arrPDGDaughDs;
+            std::array<int, 2> arrPDGDaughDs{};
             RecoDecay::getDaughters(candCMC, &arrDaughDsIndex, std::array{0}, 1);
             if (arrDaughDsIndex.size() == NDaughtersDs) {
               for (auto jProng = 0u; jProng < arrDaughDsIndex.size(); ++jProng) {
@@ -1591,7 +1591,7 @@ struct HfDataCreatorCharmHadPiReduced {
               auto candCMC = particlesMc.rawIteratorAt(particle.daughtersIds().front());
               if (RecoDecay::isMatchedMCGen(particlesMc, candCMC, -static_cast<int>(Pdg::kDS), std::array{-kKPlus, +kKPlus, -kPiPlus}, true, &sign, 2)) {
                 std::vector<int> arrDaughDsIndex;
-                std::array<int, 2> arrPDGDaughDs;
+                std::array<int, 2> arrPDGDaughDs{};
                 RecoDecay::getDaughters(candCMC, &arrDaughDsIndex, std::array{0}, 1);
                 if (arrDaughDsIndex.size() == NDaughtersDs) {
                   for (auto jProng = 0u; jProng < arrDaughDsIndex.size(); ++jProng) {
@@ -1620,9 +1620,9 @@ struct HfDataCreatorCharmHadPiReduced {
         auto yParticle = RecoDecay::y(particle.pVector(), massB);
         auto etaParticle = particle.eta();
 
-        std::array<float, 2> ptProngs;
-        std::array<float, 2> yProngs;
-        std::array<float, 2> etaProngs;
+        std::array<float, 2> ptProngs{};
+        std::array<float, 2> yProngs{};
+        std::array<float, 2> etaProngs{};
         int counter = 0;
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
@@ -1653,9 +1653,9 @@ struct HfDataCreatorCharmHadPiReduced {
         auto yParticle = RecoDecay::y(particle.pVector(), massB);
         auto etaParticle = particle.eta();
 
-        std::array<float, 2> ptProngs;
-        std::array<float, 2> yProngs;
-        std::array<float, 2> etaProngs;
+        std::array<float, 2> ptProngs{};
+        std::array<float, 2> yProngs{};
+        std::array<float, 2> etaProngs{};
         int counter = 0;
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
@@ -1686,9 +1686,9 @@ struct HfDataCreatorCharmHadPiReduced {
         auto yParticle = RecoDecay::y(particle.pVector(), massB);
         auto etaParticle = particle.eta();
 
-        std::array<float, 2> ptProngs;
-        std::array<float, 2> yProngs;
-        std::array<float, 2> etaProngs;
+        std::array<float, 2> ptProngs{};
+        std::array<float, 2> yProngs{};
+        std::array<float, 2> etaProngs{};
         int counter = 0;
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
@@ -1719,9 +1719,9 @@ struct HfDataCreatorCharmHadPiReduced {
         auto yParticle = RecoDecay::y(particle.pVector(), massB);
         auto etaParticle = particle.eta();
 
-        std::array<float, 2> ptProngs;
-        std::array<float, 2> yProngs;
-        std::array<float, 2> etaProngs;
+        std::array<float, 2> ptProngs{};
+        std::array<float, 2> yProngs{};
+        std::array<float, 2> etaProngs{};
         int counter = 0;
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();

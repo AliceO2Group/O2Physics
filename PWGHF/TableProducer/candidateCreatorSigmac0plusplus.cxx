@@ -101,9 +101,9 @@ struct HfCandidateCreatorSigmac0plusplus {
 
   // Needed for dcaXY, dcaZ recalculation of soft pions reassigned to a new collision
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-  int runNumber;
+  int runNumber{};
 
   using CandidatesLc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
 

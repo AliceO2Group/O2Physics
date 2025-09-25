@@ -136,7 +136,7 @@ struct HfTaskMcEfficiency {
 
       for (const auto pdgCode : pdgCodes) { /// loop on pdg codes
         auto decayType = -1;
-        std::array<int, 3> pdgDaughters;
+        std::array<int, 3> pdgDaughters{};
 
         if (pdgCode == Pdg::kDPlus) {
           decayType = 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi;
@@ -334,7 +334,7 @@ struct HfTaskMcEfficiency {
 
     for (const auto pdgCode : pdgCodes) {
       auto decayType = -1;
-      std::array<int, 2> pdgDaughters;
+      std::array<int, 2> pdgDaughters{};
 
       if (pdgCode == Pdg::kD0) {
         decayType = 1 << aod::hf_cand_2prong::DecayType::D0ToPiK;
@@ -577,7 +577,7 @@ struct HfTaskMcEfficiency {
           continue;
         }
 
-        std::array<int, 3> pdgDaughters;
+        std::array<int, 3> pdgDaughters{};
         if (pdgCode == Pdg::kDPlus) {
           pdgDaughters[0] = +kPiPlus;
           pdgDaughters[1] = -kKPlus;

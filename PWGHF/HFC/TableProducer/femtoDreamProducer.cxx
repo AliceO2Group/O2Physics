@@ -167,11 +167,11 @@ struct HfFemtoDreamProducer {
   o2::ccdb::CcdbApi ccdbApi;
   o2::hf_evsel::HfEventSelection hfEvSel;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   // if (doPvRefit){ lut = o2::base::MatLayerCylSet::rectifyPtrFromFile(ccdb->get<o2::base::MatLayerCylSet>(ccdbPathLut));} //! may be it useful, will check later
 
-  float magField;
-  int runNumber;
+  float magField{};
+  int runNumber{};
   using CandidateDplus = soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi>;
   using CandidateDplusMc = soa::Join<aod::HfCand3ProngWPidPiKa, aod::HfSelDplusToPiKPi, aod::HfCand3ProngMcRec>;
   using CandidateLc = soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc>;

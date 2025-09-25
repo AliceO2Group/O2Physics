@@ -518,12 +518,12 @@ struct HfTaskXicToXiPiPi {
         }
 
         // get kinematic variables of Ξ π π
-        std::array<float, 3> ptProngs;
-        std::array<float, 3> yProngs;
-        std::array<float, 3> etaProngs;
-        std::array<float, 3> prodVtxXProngs;
-        std::array<float, 3> prodVtxYProngs;
-        std::array<float, 3> prodVtxZProngs;
+        std::array<float, 3> ptProngs{};
+        std::array<float, 3> yProngs{};
+        std::array<float, 3> etaProngs{};
+        std::array<float, 3> prodVtxXProngs{};
+        std::array<float, 3> prodVtxYProngs{};
+        std::array<float, 3> prodVtxZProngs{};
         int counter = 0;
         RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
         for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {

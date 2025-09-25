@@ -73,7 +73,7 @@ class HFInvMassFitter : public TNamed
     if (mHistoInvMass) {
       delete mHistoInvMass;
     }
-    mHistoInvMass = static_cast<TH1*>(histoToFit->Clone("mHistoInvMass"));
+    mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone("mHistoInvMass"));
     mHistoInvMass->SetDirectory(0);
   }
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
@@ -193,7 +193,7 @@ class HFInvMassFitter : public TNamed
     if (!histoRefl) {
       mEnableReflections = kFALSE;
     }
-    mHistoTemplateRefl = static_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
+    mHistoTemplateRefl = dynamic_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
   }
   void setDrawBgPrefit(Bool_t value = true) { mDrawBgPrefit = value; }
   void setHighlightPeakRegion(Bool_t value = true) { mHighlightPeakRegion = value; }

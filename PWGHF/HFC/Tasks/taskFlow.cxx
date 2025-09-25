@@ -214,11 +214,11 @@ struct HfTaskFlow {
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  std::vector<o2::detectors::AlignParam>* offsetFT0;
-  std::vector<o2::detectors::AlignParam>* offsetFV0;
+  std::vector<o2::detectors::AlignParam>* offsetFT0{};
+  std::vector<o2::detectors::AlignParam>* offsetFV0{};
   o2::ccdb::CcdbApi ccdbApi;
   o2::ft0::Geometry ft0Det;
-  o2::fv0::Geometry* fv0Det;
+  o2::fv0::Geometry* fv0Det{};
   std::vector<int> hfIndexCache;
 
   // =========================
@@ -708,7 +708,7 @@ struct HfTaskFlow {
       offsetY = (*offsetFV0)[1].getY();
     }
 
-    o2::fv0::Point3Dsimple chPos;
+    o2::fv0::Point3Dsimple chPos{};
     chPos = fv0Det->getReadoutCenter(chno);
 
     // if (configTask.isReadoutCenter)
@@ -746,7 +746,7 @@ struct HfTaskFlow {
       offsetZ = (*offsetFV0)[1].getZ();
     }
 
-    o2::fv0::Point3Dsimple chPos;
+    o2::fv0::Point3Dsimple chPos{};
     chPos = fv0Det->getReadoutCenter(chno);
     // if (configTask.isReadoutCenter)
     //   chPos = fv0Det->getReadoutCenter(chno);

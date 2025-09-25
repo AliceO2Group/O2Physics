@@ -260,7 +260,7 @@ struct HfTreeCreatorTccToD0D0Pi {
 
   HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   double bz{0.};
   int runNumber{0};

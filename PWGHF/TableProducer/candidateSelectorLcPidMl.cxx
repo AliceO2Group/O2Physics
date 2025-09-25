@@ -93,7 +93,7 @@ struct HfCandidateSelectorLcPidMl {
 
   Configurable<bool> activateQA{"activateQA", false, "flag to enable QA histos"};
 
-  int dataTypeML;
+  int dataTypeML{};
   o2::ccdb::CcdbApi ccdbApi;
   OnnxModel model;
   TrackSelectorPi selectorPion;

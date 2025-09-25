@@ -333,9 +333,9 @@ struct HfCandidateCreator3Prong {
       trackParVar2 = df.getTrack(2);
 
       // get track momenta
-      std::array<float, 3> pvec0;
-      std::array<float, 3> pvec1;
-      std::array<float, 3> pvec2;
+      std::array<float, 3> pvec0{};
+      std::array<float, 3> pvec1{};
+      std::array<float, 3> pvec2{};
       trackParVar0.getPxPyPzGlo(pvec0);
       trackParVar1.getPxPyPzGlo(pvec1);
       trackParVar2.getPxPyPzGlo(pvec2);
@@ -1030,8 +1030,8 @@ struct HfCandidateCreator3ProngExpressions {
     int8_t swapping = 0;
     int8_t nKinkedTracks = 0;
     int8_t nInteractionsWithMaterial = 0;
-    std::vector<int> arrDaughIndex;
-    std::array<int, NDaughtersResonant> arrPdgDaugResonant;
+    std::vector<int> arrDaughIndex{};
+    std::array<int, NDaughtersResonant> arrPdgDaugResonant{};
     const std::array<int, NDaughtersResonant> arrPdgDaugResonantLcToPKstar0{daughtersLcResonant.at(DecayChannelResonant::LcToPKstar0)};               // Λc± → p± K*
     const std::array<int, NDaughtersResonant> arrPdgDaugResonantLcToDeltaplusplusK{daughtersLcResonant.at(DecayChannelResonant::LcToDeltaplusplusK)}; // Λc± → Δ(1232)±± K∓
     const std::array<int, NDaughtersResonant> arrPdgDaugResonantLcToL1520Pi{daughtersLcResonant.at(DecayChannelResonant::LcToL1520Pi)};               // Λc± → Λ(1520) π±

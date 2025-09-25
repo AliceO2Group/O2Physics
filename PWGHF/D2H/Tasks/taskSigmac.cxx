@@ -65,7 +65,7 @@ struct HfTaskSigmac {
   Configurable<bool> addSoftPiDcaToSigmacSparse{"addSoftPiDcaToSigmacSparse", false, "enable the filling of sof-pion dcaXY, dcaZ in the Σc0,++ THnSparse"};
 
   HfHelper hfHelper;
-  bool isMc;
+  bool isMc{};
   static constexpr std::size_t NDaughters{2u};
 
   using RecoLc = soa::Join<aod::HfCand3Prong, aod::HfSelLc>;

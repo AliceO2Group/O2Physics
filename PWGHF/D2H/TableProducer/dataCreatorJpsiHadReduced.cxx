@@ -207,9 +207,9 @@ struct HfDataCreatorJpsiHadReduced {
   PresliceUnsorted<CollisionsWCMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-  int runNumber;
+  int runNumber{};
   double bz{0.};
-  double invMass2JpsiHadMin, invMass2JpsiHadMax;
+  double invMass2JpsiHadMin{}, invMass2JpsiHadMax{};
   bool isHfCandBhadConfigFilled = false;
 
   o2::hf_evsel::HfEventSelection hfEvSel;
@@ -658,9 +658,9 @@ struct HfDataCreatorJpsiHadReduced {
         auto yParticle = RecoDecay::y(particle.pVector(), MassBPlus);
         auto etaParticle = particle.eta();
 
-        std::array<float, 2> ptProngs;
-        std::array<float, 2> yProngs;
-        std::array<float, 2> etaProngs;
+        std::array<float, 2> ptProngs{};
+        std::array<float, 2> yProngs{};
+        std::array<float, 2> etaProngs{};
         int counter = 0;
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();
@@ -698,9 +698,9 @@ struct HfDataCreatorJpsiHadReduced {
         auto yParticle = RecoDecay::y(particle.pVector(), MassBPlus);
         auto etaParticle = particle.eta();
 
-        std::array<float, 2> ptProngs;
-        std::array<float, 2> yProngs;
-        std::array<float, 2> etaProngs;
+        std::array<float, 2> ptProngs{};
+        std::array<float, 2> yProngs{};
+        std::array<float, 2> etaProngs{};
         int counter = 0;
         for (const auto& daught : particle.daughters_as<aod::McParticles>()) {
           ptProngs[counter] = daught.pt();

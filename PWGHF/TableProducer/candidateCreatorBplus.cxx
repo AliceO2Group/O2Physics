@@ -106,9 +106,9 @@ struct HfCandidateCreatorBplus {
 
   HfHelper hfHelper;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
+  int runNumber{};
 
   double invMass2D0PiMin{0.};
   double invMass2D0PiMax{0.};

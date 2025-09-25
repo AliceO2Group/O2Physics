@@ -290,9 +290,9 @@ class HfHelper
   auto cosPiKPhiRestFrame(const T& candidate, int option)
   {
     // Ported from AliAODRecoDecayHF3Prong::CosPiKPhiRFrame
-    std::array<float, 3> momPi;
-    std::array<float, 3> momK1;
-    std::array<float, 3> momK2;
+    std::array<float, 3> momPi{};
+    std::array<float, 3> momK1{};
+    std::array<float, 3> momK2{};
 
     if (option == 0) { // KKPi
       momPi = candidate.pVectorProng2();

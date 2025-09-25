@@ -318,9 +318,9 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
 
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-  int runNumber;
+  int runNumber{};
 
   using TracksWithSelAndDca = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection>;
   using TracksWithSelAndDcaAndPidTpc = soa::Join<aod::TracksWCovDcaExtra, aod::TrackSelection, aod::pidTPCFullPr, aod::pidTPCFullKa>;
@@ -1263,9 +1263,9 @@ struct HfTrackIndexSkimCreator {
   o2::vertexing::DCAFitterN<3> df3; // 3-prong vertex fitter
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
-  int runNumber;
+  int runNumber{};
 
   // int nColls{0}; //can be added to run over limited collisions per file - for tesing purposes
 
@@ -3088,7 +3088,7 @@ struct HfTrackIndexSkimCreatorCascades {
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   // Needed for PV refitting
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
   int runNumber{0};
@@ -3351,9 +3351,9 @@ struct HfTrackIndexSkimCreatorLfCascades {
 
   o2::vertexing::DCAFitterN<2> df2; // 2-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
-  int runNumber;
+  int runNumber{};
 
   // array of PDG masses of possible charm baryon daughters
   static constexpr int kN2ProngDecays = hf_cand_casc_lf::DecayType2Prong::N2ProngDecays; // number of 2-prong hadron types

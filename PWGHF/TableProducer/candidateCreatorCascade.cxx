@@ -90,7 +90,7 @@ struct HfCandidateCreatorCascade {
   HfEventSelection hfEvSel;        // event selection and monitoring
   o2::vertexing::DCAFitterN<2> df; // 2-prong vertex fitter
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   int runNumber{0};
@@ -276,8 +276,8 @@ struct HfCandidateCreatorCascade {
       auto trackParVarBach = df.getTrack(1);
 
       // get track momenta
-      std::array<float, 3> pVecV0;
-      std::array<float, 3> pVecBach;
+      std::array<float, 3> pVecV0{};
+      std::array<float, 3> pVecBach{};
       trackParVarV0.getPxPyPzGlo(pVecV0);
       trackParVarBach.getPxPyPzGlo(pVecBach);
 

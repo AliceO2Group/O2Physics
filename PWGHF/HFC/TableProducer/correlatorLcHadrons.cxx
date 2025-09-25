@@ -856,7 +856,7 @@ struct HfCorrelatorLcHadrons {
       // prompt and non-prompt division
       std::vector<int> listDaughters{};
       std::array<int, NDaughters> arrDaughLcPDG = {kProton, -kKPlus, kPiPlus};
-      std::array<int, NDaughters> prongsId;
+      std::array<int, NDaughters> prongsId{};
       listDaughters.clear();
       RecoDecay::getDaughters(particle, &listDaughters, arrDaughLcPDG, 2);
       int counterDaughters = 0;

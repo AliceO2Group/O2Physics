@@ -707,7 +707,7 @@ struct HfCorrelatorDsHadrons {
             isDecayChan = particle.flagMcDecayChanGen() == channelsResonant[decayChannel];
             std::vector<int> listDaughters{};
             std::array<int, 3> arrDaughDsPDG = {+kKPlus, -kKPlus, kPiPlus};
-            std::array<int, 3> prongsId;
+            std::array<int, 3> prongsId{};
             listDaughters.clear();
             RecoDecay::getDaughters(particle, &listDaughters, arrDaughDsPDG, 2);
             int counterDaughters = 0;

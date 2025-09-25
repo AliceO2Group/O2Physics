@@ -147,7 +147,7 @@ void fillMcMatchGen3Prong(TMcParticles const& mcParticles,
     int8_t sign = 0;
     std::vector<int> arrDaughIndex;
     std::vector<int> idxBhadMothers{};
-    std::array<int, NDaughtersResonant> arrPdgDaugResonant;
+    std::array<int, NDaughtersResonant> arrPdgDaugResonant{};
     const std::array<int, NDaughtersResonant> arrPdgDaugResonantLcToPKstar0{daughtersLcResonant.at(DecayChannelResonant::LcToPKstar0)};               // Λc± → p± K*
     const std::array<int, NDaughtersResonant> arrPdgDaugResonantLcToDeltaplusplusK{daughtersLcResonant.at(DecayChannelResonant::LcToDeltaplusplusK)}; // Λc± → Δ(1232)±± K∓
     const std::array<int, NDaughtersResonant> arrPdgDaugResonantLcToL1520Pi{daughtersLcResonant.at(DecayChannelResonant::LcToL1520Pi)};               // Λc± → Λ(1520) π±

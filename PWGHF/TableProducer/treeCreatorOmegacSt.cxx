@@ -532,7 +532,7 @@ struct HfTreeCreatorOmegacSt {
         hCandidatesPrPi->Fill(SVFitting::FitOk);
 
         std::array<double, NDaughters> massesV0Daughters{o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus};
-        std::array<std::array<float, 3>, NDaughters> momentaV0Daughters;
+        std::array<std::array<float, 3>, NDaughters> momentaV0Daughters{};
         o2::track::TrackPar trackParV0Pr = df2.getTrackParamAtPCA(0);
         trackParV0Pr.getPxPyPzGlo(momentaV0Daughters[0]);
         o2::track::TrackPar trackParV0Pi = df2.getTrackParamAtPCA(1);
@@ -557,11 +557,11 @@ struct HfTreeCreatorOmegacSt {
         const auto decayLengthCascXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
         o2::track::TrackPar trackParV0 = df2.getTrackParamAtPCA(0);
         o2::track::TrackPar trackParBachelor = df2.getTrackParamAtPCA(1);
-        std::array<std::array<float, 3>, NDaughters> momentaCascDaughters;
+        std::array<std::array<float, 3>, NDaughters> momentaCascDaughters{};
         trackParV0.getPxPyPzGlo(momentaCascDaughters[0]);
         trackParBachelor.getPxPyPzGlo(momentaCascDaughters[1]);
         o2::track::TrackParCov trackParCovCascUntracked = df2.createParentTrackParCov(0);
-        std::array<float, 3> pCasc;
+        std::array<float, 3> pCasc{};
         trackParCovCascUntracked.getPxPyPzGlo(pCasc);
         const auto cpaCasc = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pCasc);
         const auto cpaXYCasc = RecoDecay::cpaXY(primaryVertexPos, df2.getPCACandidate(), pCasc);
@@ -589,7 +589,7 @@ struct HfTreeCreatorOmegacSt {
             std::array<double, NDaughters> massesOmegacToOmegaPi{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
             std::array<double, NDaughters> massesOmegacToOmegaK{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus};
             std::array<double, NDaughters> massesXicDaughters{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
-            std::array<std::array<float, 3>, NDaughters> momenta;
+            std::array<std::array<float, 3>, NDaughters> momenta{};
 
             auto trackParCovPr = getTrackParCov(v0TrackPr);
             auto trackParCovKa = getTrackParCov(v0TrackPi);
@@ -653,7 +653,7 @@ struct HfTreeCreatorOmegacSt {
                     const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
                     const auto decayLengthXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
                     const auto chi2TopCharmedBaryon = df2.getChi2AtPCACandidate();
-                    std::array<float, 3> pCharmedBaryon;
+                    std::array<float, 3> pCharmedBaryon{};
                     df2.createParentTrackParCov().getPxPyPzGlo(pCharmedBaryon);
                     const auto cpaCharmedBaryon = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pCharmedBaryon);
                     const auto cpaXYCharmedBaryon = RecoDecay::cpaXY(primaryVertexPos, df2.getPCACandidate(), pCharmedBaryon);
@@ -890,7 +890,7 @@ struct HfTreeCreatorOmegacSt {
           if (std::abs(pdgCode) == kOmegaMinus) {
             LOG(debug) << "found Omega, looking for pions";
             std::array<double, NDaughters> masses{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
-            std::array<std::array<float, 3>, NDaughters> momenta;
+            std::array<std::array<float, 3>, NDaughters> momenta{};
             std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
             const auto& mcColl = mother.mcCollision();
             std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};

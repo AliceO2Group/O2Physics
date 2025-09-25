@@ -107,10 +107,10 @@ struct HfCandidateCreatorDstar {
   o2::base::Propagator::MatCorrType noMatCorr = o2::base::Propagator::MatCorrType::USEMatCorrNONE;
   // D0-prong vertex fitter
   o2::vertexing::DCAFitterN<2> df;
-  int runNumber;
-  double bz;
+  int runNumber{};
+  double bz{};
   static constexpr float CmToMicrometers = 10000.; // from cm to µm
-  double massPi, massK, massD0;
+  double massPi{}, massK{}, massD0{};
 
   using TracksWCovExtraPidPiKa = soa::Join<aod::TracksWCovExtra, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
@@ -287,8 +287,8 @@ struct HfCandidateCreatorDstar {
       auto trackD0ProngParVar0 = df.getTrack(0);
       auto trackD0ProngParVar1 = df.getTrack(1);
 
-      std::array<float, 3> pVecD0Prong0;
-      std::array<float, 3> pVecD0Prong1;
+      std::array<float, 3> pVecD0Prong0{};
+      std::array<float, 3> pVecD0Prong1{};
       trackD0ProngParVar0.getPxPyPzGlo(pVecD0Prong0);
       trackD0ProngParVar1.getPxPyPzGlo(pVecD0Prong1);
 
@@ -346,7 +346,7 @@ struct HfCandidateCreatorDstar {
       auto ptD0 = RecoDecay::pt(pVecD0);
 
       // Soft pi momentum vector and sign
-      std::array<float, 3> pVecSoftPi;
+      std::array<float, 3> pVecSoftPi{};
       trackPiParVar.getPxPyPzGlo(pVecSoftPi);
       int8_t signSoftPi = static_cast<int8_t>(trackPi.sign());
 

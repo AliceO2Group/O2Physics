@@ -110,7 +110,7 @@ struct HfCandidateCreatorXicToXiPiPi {
   Configurable<bool> rejDiffCollTrack{"rejDiffCollTrack", true, "Reject tracks coming from different collisions (effective only for KFParticle w/o derived data)"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  o2::base::MatLayerCylSet* lut;
+  o2::base::MatLayerCylSet* lut{};
   o2::base::Propagator::MatCorrType matCorr = o2::base::Propagator::MatCorrType::USEMatCorrLUT;
 
   o2::vertexing::DCAFitterN<3> df;
@@ -302,9 +302,9 @@ struct HfCandidateCreatorXicToXiPiPi {
       trackCasc = df.getTrack(0);
       trackParCovCharmBachelor0 = df.getTrack(1);
       trackParCovCharmBachelor1 = df.getTrack(2);
-      std::array<float, 3> pVecXi;
-      std::array<float, 3> pVecPi0;
-      std::array<float, 3> pVecPi1;
+      std::array<float, 3> pVecXi{};
+      std::array<float, 3> pVecPi0{};
+      std::array<float, 3> pVecPi1{};
       trackCasc.getPxPyPzGlo(pVecXi);
       trackParCovCharmBachelor0.getPxPyPzGlo(pVecPi0);
       trackParCovCharmBachelor1.getPxPyPzGlo(pVecPi1);
@@ -918,7 +918,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
     // for resonance matching
     std::vector<int> arrDaughIndex;
     constexpr std::size_t NDaughtersResonant{2u};
-    std::array<int, NDaughtersResonant> arrPDGDaugh;
+    std::array<int, NDaughtersResonant> arrPDGDaugh{};
     std::array<int, NDaughtersResonant> arrXiResonance = {3324, kPiPlus}; // 3324: Ξ(1530)
     // for non-prompt
     std::vector<int> idxBhadMothers;
