@@ -28,29 +28,29 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/GeomConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsVertexing/HelixHelper.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/GeomConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <CommonUtils/NameConf.h>
+#include <DataFormatsCalibration/MeanVertexObject.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <DetectorsVertexing/HelixHelper.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
 
-#include "TF1.h"
-#include "TH2F.h"
-#include "TString.h"
-#include "TVector3.h"
+#include <TF1.h>
+#include <TH2F.h>
+#include <TString.h>
+#include <TVector3.h>
 #include <TFile.h>
 #include <TH1F.h>
 
@@ -119,8 +119,30 @@ class ToTLUT
     }
   }
 
-  bool load(int pdg, const std::string& filename)
+  bool load(int pdg, const std::string& filename, o2::ccdb::BasicCCDBManager *ccdb=nullptr)
   {
+      if (strncmp(filename, "ccdb:", 5) == 0) { // Check if filename starts with "ccdb:"
+        // NOTE: this eventually will directly fetch the object from CCDB instead of accessing it via the root file
+    LOG(info) << " --- ToT LUT file source identified as CCDB.";
+    std::string path = std::string(filename).substr(5); // Remove "ccdb:" prefix
+    const std::string outPath = "/tmp/ToTLUTs/";
+    filename = Form("%s/%s/snapshot.root", outPath.c_str(), path.c_str());
+    TFile checkFile(filename.c_str(), "READ");
+    if (!checkFile.IsOpen()) {        // File does not exist, retrieve from CCDB
+      LOG(info) << " --- CCDB source detected for PDG " << pdg << ": " << path;
+      if (!ccdb) {
+        LOG(fatal) << " --- CCDB manager not set. Please provide it.";
+      }
+      std::map<std::string, std::string> metadata;
+      ccdb->getCCDBAccessor().retrieveBlob(path, outPath, metadata, 1);
+      // Add CCDB handling logic here if needed
+      LOG(info) << " --- Now retrieving ToT LUT file from CCDB to: " << filename;
+    } else { // File exists, proceed to load
+      LOG(info) << " --- ToT LUT file already exists: " << filename << ". Skipping download.";
+      checkFile.Close();
+    }
+    return load(pdg, filename);
+  }
     TFile* f = TFile::Open(filename.c_str());
     if (!f || f->IsZombie()) {
       LOG(error) << "Failed to open LUT file: " << filename;
