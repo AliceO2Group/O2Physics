@@ -47,7 +47,17 @@ struct DetLayer {
   void setResolutionZ(float resZ_) { resZ = resZ_; }
   void setEfficiency(float eff_) { eff = eff_; }
   void setType(int type_) { type = type_; }
+
+  // Dead areas
+
+  /// @brief Add a dead region in phi for this layer
+  /// @param phiStart starting angle in radians of the dead region
+  /// @param phiEnd ending angle in radians of the dead region
   void addDeadPhiRegion(float phiStart, float phiEnd);
+
+  /// @brief Set the dead regions in phi for this layer with a TGraph containing all regions. The graph should have y=2 for dead regions and y=0 for alive regions.
+  /// @param graph graph of the dead regions. Can be nullptr to clear the dead regions.
+  void setDeadPhiRegions(TGraph* graph);
 
   // Getters
   float getRadius() const { return r; }

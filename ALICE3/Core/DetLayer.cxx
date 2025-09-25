@@ -76,6 +76,41 @@ void DetLayer::addDeadPhiRegion(float phiStart, float phiEnd)
   mDeadPhiRegions->Sort();
 }
 
+void DetLayer::setDeadPhiRegions(TGraph* graph)
+{
+  LOG(debug) << "Setting dead phi regions for layer " << name << " with graph " << (graph ? graph->GetName() : "nullptr");
+  if (mDeadPhiRegions != nullptr) {
+    LOG(warning) << "Overriding existing dead phi regions for layer " << name;
+    delete mDeadPhiRegions;
+  }
+  mDeadPhiRegions = graph;
+  if (mDeadPhiRegions->GetN() == 0) {
+    LOG(warning) << "Dead phi regions graph for layer " << name << " is empty, clearing dead regions";
+    mDeadPhiRegions = nullptr;
+    return; // cleared the dead regions
+  }
+  // Check sanity of the graph
+  if (mDeadPhiRegions != nullptr) {
+    for (int i = 0; i < mDeadPhiRegions->GetN(); i++) {
+      const float x = mDeadPhiRegions->GetX()[i];
+      const float y = mDeadPhiRegions->GetY()[i];
+      // First point has to be at 0, last point has to be at 2PI
+      if ((i == 0 && x != 0.f) || (i == mDeadPhiRegions->GetN() - 1 && x != o2::constants::math::TwoPI)) {
+        LOG(fatal) << "Dead phi regions graph for layer " << name << " has invalid x value " << x << " at point " << i << ", first point should be 0 and last point should be 2PI";
+      }
+      LOG(debug) << "Point " << i << ": (" << x << ", " << y << ")";
+      if (x < 0 || x > o2::constants::math::TwoPI) {
+        LOG(fatal) << "Dead phi regions graph for layer " << name << " has invalid x value " << x << " at point " << i;
+      }
+      if (y != 0.f && y != 2.f) {
+        LOG(fatal) << "Dead phi regions graph for layer " << name << " has invalid y value " << y << " at point " << i << ", should be 0 or 2";
+      }
+    }
+  } else {
+    LOG(info) << "Cleared dead phi regions for layer " << name;
+  }
+}
+
 std::string DetLayer::toString() const
 {
   std::string out = "";
