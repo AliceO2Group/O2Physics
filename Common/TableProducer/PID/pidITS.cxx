@@ -19,28 +19,30 @@
 ///         Only the tables for the mass hypotheses requested are filled, the others are sent empty.
 ///
 
-#include <utility>
-#include <vector>
-#include <string>
-
-// O2 includes
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "TOFBase/EventTimeMaker.h"
-
-// O2Physics includes
+#include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/PIDResponseITS.h"
-#include "MetadataHelper.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <chrono>
+#include <cstdint>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::track;
 
-MetadataHelper metadataInfo;
+o2::common::core::MetadataHelper metadataInfo;
 
 static constexpr int nCases = 2;
 static constexpr int nParameters = 12;
@@ -51,12 +53,12 @@ static const std::vector<std::string> parameterNames{"RespITSPar1", "RespITSPar2
                                                      "ResolutionPar1_Z2", "ResolutionPar2_Z2", "ResolutionPar3_Z2"};
 
 static constexpr float defaultParameters[nCases][nParameters] = {
-  {1.18941, 1.53792, 1.69961, 2.35117, 1.80347, 5.14355, 1.94669e-01, -2.08616e-01, 1.30753, 8.74371e-02, -1.82804, 5.06449e-01},
-  {1.18941, 1.53792, 1.69961, 2.35117, 1.80347, 5.14355, 1.94669e-01, -2.08616e-01, 1.30753, 8.74371e-02, -1.82804, 5.06449e-01}};
+  {1.18941, 1.53792, 1.69961, 2.35117, 1.80347, 5.14355, 1.94669e-01, -2.08616e-01, 1.30753, 0.09, -999., -999.},
+  {1.63806, 1.58847, 2.52275, 2.66505, 1.48405, 6.90453, 1.40487e-01, -4.31078e-01, 1.50052, 0.09, -999., -999.}};
 
 /// Task to produce the ITS PID information for each particle species
 /// The parametrization is: [p0/(bg)**p1 + p2] being bg = p/m. Different parametrizations are used for He3 and Alpha particles.
-/// The resolution depends on the bg and is modelled with an erf function: p0*TMath::Erf((bg-p1)/p2)
+/// The resolution depends on the bg and is modelled with an erf function: p0*TMath::Erf((bg-p1)/p2). If p1/p2 is -999, the resolution is set to p0.
 struct itsPid {
 
   Configurable<LabeledArray<float>> itsParams{"itsParams",

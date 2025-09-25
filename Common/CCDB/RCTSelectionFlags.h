@@ -18,13 +18,13 @@
 #define COMMON_CCDB_RCTSELECTIONFLAGS_H_
 
 #include <CommonUtils/EnumFlags.h>
-#include <Rtypes.h>
-#include <TMath.h>
 
-#include <stdexcept>
 #include <algorithm>
+#include <concepts>
+#include <cstdint>
+#include <initializer_list>
+#include <stdexcept>
 #include <string>
-#include <vector>
 
 namespace o2::aod::rctsel
 {
@@ -98,7 +98,7 @@ class RCTFlagsChecker : public o2::utils::EnumFlags<RCTSelectionFlags>
   // - "CBT"
   // - "CBT_hadronPID"
   // - "CBT_electronPID"
-  // - "CCBT_calo"
+  // - "CBT_calo"
   // - "CBT_muon"
   // - "CBT_muon_glo"
   // The checkZDC boolean flag controls whether to iclude the ZDC quality in all the pre-defined selections (for Pb-Pb data)
@@ -121,7 +121,7 @@ class RCTFlagsChecker : public o2::utils::EnumFlags<RCTSelectionFlags>
   // - "CBT"
   // - "CBT_hadronPID"
   // - "CBT_electronPID"
-  // - "CCBT_calo"
+  // - "CBT_calo"
   // - "CBT_muon"
   // - "CBT_muon_glo"
   // The checkZDC boolean flag controls whether to iclude the ZDC quality in all the pre-defined selections (for Pb-Pb data)

@@ -119,9 +119,12 @@ enum SelectionsCombined : int { selV0CosPA = 0,
 
 static constexpr int kSelNum = static_cast<int>(SelectionsCombined::selCount);
 
-// constants
-const float ctauxiPDG = 4.91;     // from PDG
-const float ctauomegaPDG = 2.461; // from PDG
+// constants in cm
+const float ctauxiPDG = 4.91;
+const float ctauomegaPDG = 2.46;
+
+const float ctauk0shortPDG = 2.68;
+const float ctaulambdaPDG = 7.85;
 
 // bit masks
 std::bitset<kSelNum> maskTopologicalV0;

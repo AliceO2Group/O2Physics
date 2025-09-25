@@ -14,26 +14,60 @@
 /// \author Grazia Luparello <grazia.luparello@cern.ch>
 /// \author Samuele Cattaruzzi <samuele.cattaruzzi@cern.ch>
 
-#include <memory>
-#include <string>
-#include <vector>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsAnalysis.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
+#include "PWGHF/Utils/utilsAnalysis.h"
+
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <THnSparse.h>
+#include <TPDGCode.h>
+
+#include <chrono>
+#include <cstdint>
+#include <cstdlib>
+#include <memory>
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <vector>
 
 using namespace o2;
 using namespace o2::constants::physics;
 using namespace o2::constants::math;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
+
+enum ResonantChannel : int8_t {
+  PhiPi = 1,
+  Kstar0K = 2
+};
+
+static std::unordered_map<int8_t, int8_t> channelsResonant = {{{ResonantChannel::PhiPi, hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi}, {ResonantChannel::Kstar0K, hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K}}};
 
 /// Ds-Hadron correlation pair filling task, from pair tables - for real data and data-like analysis (i.e. reco-level w/o matching request via MC truth)
 struct HfTaskCorrelationDsHadrons {
@@ -47,11 +81,15 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<bool> removeCollWSplitVtx{"removeCollWSplitVtx", false, "Flag for rejecting the splitted collisions"};
   Configurable<bool> loadAccXEffFromCCDB{"loadAccXEffFromCCDB", false, "Flag for loading efficiency distributions from CCDB"};
   Configurable<bool> separateTrackOrigins{"separateTrackOrigins", false, "Flag to enable separation of track origins (from c or b)"};
+  Configurable<bool> useHighDimHistoForEff{"useHighDimHistoForEff", false, "Flag to create/use higher dimension histograms in the efficiency processes/correction"};
+  Configurable<bool> applyDeltaPhiCorrEff{"applyDeltaPhiCorrEff", false, "Flag to use higher dimension histograms with delta phi correction in the efficiency correction"};
+  Configurable<bool> doLSpair{"doLSpair", false, "Flag to evaluate correlations for like-sign pairs"};
+  Configurable<bool> doULSpair{"doULSpair", false, "Flag to evaluate correlations for unlike-sign pairs"};
   // Configurable<bool> doMcCollisionCheck{"doMcCollisionCheck", false, "Flag for applying the collision check and selection based on MC collision info"};
   Configurable<int> selectionFlagDs{"selectionFlagDs", 7, "Selection Flag for Ds (avoid the case of flag = 0, no outputMlScore)"};
   Configurable<int> nTpcCrossedRaws{"nTpcCrossedRaws", 70, "Number of crossed TPC Rows"};
   // Configurable<int> eventGeneratorType{"eventGeneratorType", -1, "If positive, enable event selection using subGeneratorId information. The value indicates which events to keep (0 = MB, 4 = charm triggered, 5 = beauty triggered)"};
-  Configurable<int> decayChannel{"decayChannel", 1, "Decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
+  Configurable<int> decayChannel{"decayChannel", 1, "Resonant decay channels: 1 for Ds->PhiPi->KKpi, 2 for Ds->K0*K->KKPi"};
   Configurable<float> cutCollPosZMc{"cutCollPosZMc", 10., "max z-vertex position for collision acceptance"};
   Configurable<float> dcaXYTrackMax{"dcaXYTrackMax", 1., "max. DCA_xy of tracks"};
   Configurable<float> dcaZTrackMax{"dcaZTrackMax", 1., "max. DCA_z of tracks"};
@@ -66,7 +104,8 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<std::vector<double>> binsPtD{"binsPtD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
   Configurable<std::vector<double>> binsPtHadron{"binsPtHadron", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for assoc particle efficiency"};
-  Configurable<std::vector<double>> mlOutputPrompt{"mlOutputPrompt", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
+  Configurable<std::vector<double>> mlOutputPromptMin{"mlOutputPromptMin", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for prompt"};
+  Configurable<std::vector<double>> mlOutputPromptMax{"mlOutputPromptMax", {1.0, 1.0, 1.0, 1.0}, "Machine learning scores for prompt"};
   Configurable<std::vector<double>> mlOutputBkg{"mlOutputBkg", {0.5, 0.5, 0.5, 0.5}, "Machine learning scores for bkg"};
   Configurable<std::vector<double>> binsPtEfficiencyD{"binsPtEfficiencyD", std::vector<double>{o2::analysis::hf_cuts_ds_to_k_k_pi::vecBinsPt}, "pT bin limits for D-meson efficiency"};
   Configurable<std::vector<double>> binsPtEfficiencyHad{"binsPtEfficiencyHad", std::vector<double>{0.3, 2., 4., 8., 12., 50.}, "pT bin limits for associated particle efficiency"};
@@ -85,25 +124,13 @@ struct HfTaskCorrelationDsHadrons {
   Configurable<std::string> fdEffCcdbPath{"fdEffCcdbPath", "", "CCDB path for trigger efficiency"};
   Configurable<int64_t> timestampCcdb{"timestampCcdb", -1, "timestamp of the efficiency files used to query in CCDB"};
 
-  std::shared_ptr<TH1> mEfficiencyD = nullptr;
-  std::shared_ptr<TH1> mEfficiencyAssociated = nullptr;
+  std::shared_ptr<TH1> hEfficiencyD = nullptr;
+  std::shared_ptr<TH1> hEfficiencyAssociated = nullptr;
+  std::shared_ptr<TH2> hEfficiencyDMult = nullptr;
+  std::shared_ptr<TH2> hEfficiencyAssociatedMult = nullptr;
+  std::shared_ptr<TH3> hEfficiencyAssociatedDeltaPhiCorr = nullptr;
 
-  enum CandidateStep {
-    kCandidateStepMcGenDsToKKPi = 0,
-    kCandidateStepMcCandInAcceptance,
-    kCandidateStepMcDaughtersInAcceptance,
-    kCandidateStepMcReco,
-    kCandidateStepMcRecoInAcceptance,
-    kCandidateNSteps
-  };
-
-  enum AssocTrackStep { kAssocTrackStepMcGen = 0,
-                        kAssocTrackStepMcGenInAcceptance,
-                        kAssocTrackStepRecoAll,
-                        kAssocTrackStepRecoMcMatch,
-                        kAssocTrackStepRecoPrimaries,
-                        kAssocTrackStepRecoSpecies,
-                        kAssocTrackNSteps };
+  const float epsilon = 1.e-8;
 
   HfHelper hfHelper;
   SliceCache cache;
@@ -133,6 +160,7 @@ struct HfTaskCorrelationDsHadrons {
   ConfigurableAxis binsPhi{"binsPhi", {64, -PIHalf, 3. * PIHalf}, "#it{#varphi}"};
   ConfigurableAxis binsMultFT0M{"binsMultFT0M", {600, 0., 8000.}, "Multiplicity as FT0M signal amplitude"};
   ConfigurableAxis binsPosZ{"binsPosZ", {100, -10., 10.}, "primary vertex z coordinate"};
+  ConfigurableAxis binsNumPvContr{"binsNumPvContr", {100, 0., 1000.}, "number PV contributors"};
   ConfigurableAxis binsPoolBin{"binsPoolBin", {9, 0., 9.}, "PoolBin"};
 
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -149,6 +177,7 @@ struct HfTaskCorrelationDsHadrons {
     AxisSpec axisBdtScore = {binsBdtScore, "Bdt score"};
     AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     AxisSpec axisPosZ = {binsPosZ, "PosZ"};
+    AxisSpec axisNumPvContr = {binsNumPvContr, "Num PV contributors"};
     AxisSpec axisDsPrompt = {2, -0.5, 1.5, "Prompt Ds"};
 
     // Histograms for data analysis
@@ -208,41 +237,52 @@ struct HfTaskCorrelationDsHadrons {
     }
     // Histograms for efficiencies
     if (fillHistoMcEff) {
-      registry.add("hPtCandMcRecPrompt", "Ds prompt candidates pt", {HistType::kTH1F, {axisPtD}});
-      registry.add("hPtCandMcRecNonPrompt", "Ds non prompt candidates pt", {HistType::kTH1F, {axisPtD}});
-      registry.add("hPtCandMcGenPrompt", "Ds,Hadron particles prompt - MC Gen", {HistType::kTH1F, {axisPtD}});
-      registry.add("hPtCandMcGenNonPrompt", "Ds,Hadron particles non prompt - MC Gen", {HistType::kTH1F, {axisPtD}});
-      registry.add("hPtCandMcGenDaughterInAcc", "Ds,Hadron particles non prompt - MC Gen", {HistType::kTH1F, {axisPtD}});
-      registry.add("hPtParticleAssocMcRec", "Associated Particle - MC Rec", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtParticleAssocSpecieMcRec", "Associated Particle - MC Rec", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtMcParticleAssocSpecieMcRec", "Associated Particle - MC Rec", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmPionMcRec", "Primary pions - MC Rec", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmKaonMcRec", "Primary kaons - MC Rec", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmProtonMcRec", "Primary protons - MC Rec", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmElectronMcRec", "Primary electrons - MC Rec", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmMuonMcRec", "Primary muons - MC Rec", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmPromptPartMcRec", "Primary prompt particles - MC Rec", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmNonPromptPartMcRec", "Primary non-prompt particles - MC Rec", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtParticleAssocMcGen", "Associated Particle - MC Gen", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmPionMcGen", "Primary pions - MC Gen", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmKaonMcGen", "Primary kaons - MC Gen", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmProtonMcGen", "Primary protons - MC Gen", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmElectronMcGen", "Primary electrons - MC Gen", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmMuonMcGen", "Primary muons - MC Gen", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmPromptPartMcGen", "Primary prompt particles - MC Rec", {HistType::kTH1F, {axisPtHadron}});
-      registry.add("hPtPrmNonPromptPartMcGen", "Primary non-prompt particles - MC Rec", {HistType::kTH1F, {axisPtHadron}});
       registry.add("hFakeCollision", "Fake collision counter", {HistType::kTH1F, {{1, -0.5, 0.5, "n fake coll"}}});
       registry.add("hFakeTracks", "Fake tracks counter", {HistType::kTH1F, {{1, -0.5, 0.5, "n fake tracks"}}});
+      registry.add("hNumPvContrib", "Num PV contributors", {HistType::kTH1F, {axisNumPvContr}});
+      registry.add("hPtPrmPromptPartMcGen", "Primary prompt particles - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+      registry.add("hPtPrmNonPromptPartMcGen", "Primary non-prompt particles - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+      registry.add("hPtPrmPromptPartMcRec", "Primary prompt particles - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+      registry.add("hPtPrmNonPromptPartMcRec", "Primary non-prompt particles - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+      registry.add("hPtMcParticleAssocSpecieMcRec", "Associated Particle - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+      registry.add("hPtParticleAssocMcRec", "Associated Particle - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+      registry.add("hPtCandMcGenDaughterInAcc", "Ds,Hadron particles non prompt - MC Gen", {HistType::kTH1F, {axisPtD}});
 
-      auto hCandidates = registry.add<StepTHn>("hCandidates", "Candidate count at different steps", {HistType::kStepTHnF, {axisPtD, axisMultFT0M, {RecoDecay::OriginType::NonPrompt + 1, +RecoDecay::OriginType::None - 0.5, +RecoDecay::OriginType::NonPrompt + 0.5}}, kCandidateNSteps});
-      hCandidates->GetAxis(0)->SetTitle("#it{p}_{T} (GeV/#it{c})");
-      hCandidates->GetAxis(1)->SetTitle("multiplicity");
-      hCandidates->GetAxis(2)->SetTitle("Charm hadron origin");
-      auto hAssocTracks = registry.add<StepTHn>("hAssocTracks", "Associated tracks at different steps", {HistType::kStepTHnF, {axisEta, axisPtHadron, axisMultFT0M, axisPosZ}, kAssocTrackNSteps});
-      hAssocTracks->GetAxis(0)->SetTitle("#eta");
-      hAssocTracks->GetAxis(1)->SetTitle("#it{p}_{T} (GeV/#it{c})");
-      hAssocTracks->GetAxis(2)->SetTitle("multiplicity");
-      hAssocTracks->GetAxis(3)->SetTitle("pos z");
+      if (useHighDimHistoForEff) {
+        registry.add("hPtCandMcRecPrompt", "Ds prompt candidates", {HistType::kTH2F, {{axisPtD}, {axisNumPvContr}}});
+        registry.add("hPtCandMcRecNonPrompt", "Ds non prompt candidates pt", {HistType::kTH2F, {{axisPtD}, {axisNumPvContr}}});
+        registry.add("hPtCandMcGenPrompt", "Ds,Hadron particles prompt - MC Gen", {HistType::kTH2F, {{axisPtD}, {axisNumPvContr}}});
+        registry.add("hPtCandMcGenNonPrompt", "Ds,Hadron particles non prompt - MC Gen", {HistType::kTH2F, {{axisPtD}, {axisNumPvContr}}});
+        registry.add("hPtParticleAssocSpecieMcRec", "Associated Particle - MC Rec", {HistType::kTHnSparseF, {axisPtHadron}});
+        registry.add("hPtPrmPionMcRec", "Primary pions - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
+        registry.add("hPtPrmKaonMcRec", "Primary kaons - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
+        registry.add("hPtPrmProtonMcRec", "Primary protons - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
+        registry.add("hPtPrmElectronMcRec", "Primary electrons - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
+        registry.add("hPtPrmMuonMcRec", "Primary muons - MC Rec", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
+        registry.add("hPtParticleAssocMcGen", "Associated Particle - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
+        registry.add("hPtPrmPionMcGen", "Primary pions - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
+        registry.add("hPtPrmKaonMcGen", "Primary kaons - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
+        registry.add("hPtPrmProtonMcGen", "Primary protons - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
+        registry.add("hPtPrmElectronMcGen", "Primary electrons - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
+        registry.add("hPtPrmMuonMcGen", "Primary muons - MC Gen", {HistType::kTHnSparseF, {{axisPtHadron}, {axisEta}, {axisPosZ}, {axisNumPvContr}}});
+      } else {
+        registry.add("hPtCandMcRecPrompt", "Ds prompt candidates pt", {HistType::kTH1F, {axisPtD}});
+        registry.add("hPtCandMcRecNonPrompt", "Ds non prompt candidates pt", {HistType::kTH1F, {axisPtD}});
+        registry.add("hPtCandMcGenPrompt", "Ds,Hadron particles prompt - MC Gen", {HistType::kTH1F, {axisPtD}});
+        registry.add("hPtCandMcGenNonPrompt", "Ds,Hadron particles non prompt - MC Gen", {HistType::kTH1F, {axisPtD}});
+        registry.add("hPtParticleAssocSpecieMcRec", "Associated Particle - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+        registry.add("hPtPrmPionMcRec", "Primary pions - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+        registry.add("hPtPrmKaonMcRec", "Primary kaons - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+        registry.add("hPtPrmProtonMcRec", "Primary protons - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+        registry.add("hPtPrmElectronMcRec", "Primary electrons - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+        registry.add("hPtPrmMuonMcRec", "Primary muons - MC Rec", {HistType::kTH1F, {axisPtHadron}});
+        registry.add("hPtParticleAssocMcGen", "Associated Particle - MC Gen", {HistType::kTH1F, {axisPtHadron}});
+        registry.add("hPtPrmPionMcGen", "Primary pions - MC Gen", {HistType::kTH1F, {axisPtHadron}});
+        registry.add("hPtPrmKaonMcGen", "Primary kaons - MC Gen", {HistType::kTH1F, {axisPtHadron}});
+        registry.add("hPtPrmProtonMcGen", "Primary protons - MC Gen", {HistType::kTH1F, {axisPtHadron}});
+        registry.add("hPtPrmElectronMcGen", "Primary electrons - MC Gen", {HistType::kTH1F, {axisPtHadron}});
+        registry.add("hPtPrmMuonMcGen", "Primary muons - MC Gen", {HistType::kTH1F, {axisPtHadron}});
+      }
     }
 
     // Loading efficiency histograms from CCDB
@@ -252,18 +292,119 @@ struct HfTaskCorrelationDsHadrons {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
-      mEfficiencyD = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(promptEffCcdbPath, timestampCcdb));
-      if (mEfficiencyD == nullptr) {
-        LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", promptEffCcdbPath.value.c_str());
-      }
-      LOGF(info, "Loaded trigger efficiency (prompt D) histogram from %s", promptEffCcdbPath.value.c_str());
+      if (useHighDimHistoForEff) {
+        hEfficiencyDMult = std::shared_ptr<TH2>(ccdb->getForTimeStamp<TH2F>(promptEffCcdbPath, timestampCcdb));
+        if (hEfficiencyDMult == nullptr) {
+          LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", promptEffCcdbPath.value.c_str());
+        }
+        LOGF(info, "Loaded trigger efficiency (prompt D) histogram from %s", promptEffCcdbPath.value.c_str());
 
-      mEfficiencyAssociated = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(associatedEffCcdbPath, timestampCcdb));
-      if (mEfficiencyAssociated == nullptr) {
-        LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", associatedEffCcdbPath.value.c_str());
+        if (applyDeltaPhiCorrEff) {
+          hEfficiencyAssociatedDeltaPhiCorr = std::shared_ptr<TH3>(ccdb->getForTimeStamp<TH3F>(associatedEffCcdbPath, timestampCcdb));
+          if (hEfficiencyAssociatedDeltaPhiCorr == nullptr) {
+            LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", associatedEffCcdbPath.value.c_str());
+          }
+          LOGF(info, "Loaded associated efficiency histogram from %s", associatedEffCcdbPath.value.c_str());
+        } else {
+          hEfficiencyAssociatedMult = std::shared_ptr<TH2>(ccdb->getForTimeStamp<TH2F>(associatedEffCcdbPath, timestampCcdb));
+          if (hEfficiencyAssociatedMult == nullptr) {
+            LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", associatedEffCcdbPath.value.c_str());
+          }
+          LOGF(info, "Loaded associated efficiency histogram from %s", associatedEffCcdbPath.value.c_str());
+        }
+      } else {
+        hEfficiencyD = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(promptEffCcdbPath, timestampCcdb));
+        if (hEfficiencyD == nullptr) {
+          LOGF(fatal, "Could not load efficiency histogram for trigger particles from %s", promptEffCcdbPath.value.c_str());
+        }
+        LOGF(info, "Loaded trigger efficiency (prompt D) histogram from %s", promptEffCcdbPath.value.c_str());
+
+        hEfficiencyAssociated = std::shared_ptr<TH1>(ccdb->getForTimeStamp<TH1F>(associatedEffCcdbPath, timestampCcdb));
+        if (hEfficiencyAssociated == nullptr) {
+          LOGF(fatal, "Could not load efficiency histogram for associated particles from %s", associatedEffCcdbPath.value.c_str());
+        }
+        LOGF(info, "Loaded associated efficiency histogram from %s", associatedEffCcdbPath.value.c_str());
       }
-      LOGF(info, "Loaded associated efficiency histogram from %s", associatedEffCcdbPath.value.c_str());
     }
+  }
+
+  enum class EfficiencyMode {
+    DsOnly = 1,
+    DsHadronPair = 2
+  };
+
+  bool isSelectedCandidate(const int ptBinD, const float bdtScorePrompt, const float bdtScoreBkg)
+  {
+
+    return (ptBinD != -1 && bdtScorePrompt >= mlOutputPromptMin->at(ptBinD) && bdtScorePrompt <= mlOutputPromptMax->at(ptBinD) && bdtScoreBkg <= mlOutputBkg->at(ptBinD));
+  }
+
+  double getEfficiencyWeight(float ptD, std::optional<int> multPvContrib = std::nullopt, std::optional<float> ptAssoc = std::nullopt, std::optional<float> deltaPhi = std::nullopt, EfficiencyMode mode = EfficiencyMode::DsOnly)
+  {
+    if (!applyEfficiency) {
+      return 1.;
+    }
+
+    double weight = 1.;
+
+    switch (mode) {
+      case EfficiencyMode::DsOnly:
+        if (loadAccXEffFromCCDB) {
+          if (useHighDimHistoForEff) {
+            if (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib))) <= epsilon) {
+              LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
+            }
+            weight = 1. / hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib)));
+          } else {
+            if (hEfficiencyD->GetBinContent(hEfficiencyD->FindBin(ptD)) <= epsilon) {
+              LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
+            }
+            weight = 1. / hEfficiencyD->GetBinContent(hEfficiencyD->FindBin(ptD));
+          }
+        } else {
+          if (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) <= epsilon) {
+            LOG(fatal) << "A bin content in Ds-meson efficiency vector is zero!";
+          }
+          weight = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
+        }
+        break;
+      case EfficiencyMode::DsHadronPair:
+        if (loadAccXEffFromCCDB) {
+          if (ptAssoc && (hEfficiencyAssociated || hEfficiencyAssociatedMult || hEfficiencyAssociatedDeltaPhiCorr)) {
+            if (useHighDimHistoForEff) {
+              if (applyDeltaPhiCorrEff) {
+                if (hEfficiencyAssociatedDeltaPhiCorr->GetBinContent(hEfficiencyAssociatedDeltaPhiCorr->FindBin(*ptAssoc, ptD, static_cast<double>(*deltaPhi))) <= epsilon) {
+                  LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
+                }
+                weight = 1. / (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib))) * hEfficiencyAssociatedDeltaPhiCorr->GetBinContent(hEfficiencyAssociatedDeltaPhiCorr->FindBin(*ptAssoc, ptD, static_cast<double>(*deltaPhi))));
+              } else {
+                if (hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, static_cast<double>(*multPvContrib))) <= epsilon) {
+                  LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
+                }
+                weight = 1. / (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib))) * hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, static_cast<double>(*multPvContrib))));
+              }
+            } else {
+              if (hEfficiencyAssociated->GetBinContent(hEfficiencyAssociated->FindBin(*ptAssoc)) <= epsilon) {
+                LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
+              }
+              weight = 1. / (hEfficiencyD->GetBinContent(hEfficiencyD->FindBin(ptD)) * hEfficiencyAssociated->GetBinContent(hEfficiencyAssociated->FindBin(*ptAssoc)));
+            }
+          }
+        } else {
+          if (ptAssoc) {
+            if (efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, *ptAssoc)) <= epsilon) {
+              LOG(fatal) << "A bin content in associated particle efficiency vector is zero!";
+            }
+            weight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, *ptAssoc)));
+          }
+        }
+        break;
+      default:
+        LOG(fatal) << "Unknown efficiency mode!";
+        break;
+    }
+
+    return weight;
   }
 
   void processData(DsHadronPairWithMl const& pairEntries,
@@ -271,22 +412,24 @@ struct HfTaskCorrelationDsHadrons {
   {
     for (const auto& candidate : candidates) {
       float massD = candidate.mD();
-      float ptD = candidate.ptD();
+      float ptD = candidate.signedPtD();
       float bdtScorePrompt = candidate.mlScorePrompt();
       float bdtScoreBkg = candidate.mlScoreBkg();
-      int ptBinD = o2::analysis::findBin(binsPtD, ptD);
+      int multPvContrib = candidate.numPvContrib();
+      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
 
-      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
       }
+
       double efficiencyWeightD = 1.;
-      if (applyEfficiency) {
-        efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeightD = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
-        }
+      if (useHighDimHistoForEff) {
+        efficiencyWeightD = getEfficiencyWeight(std::abs(ptD), multPvContrib);
+      } else {
+        efficiencyWeightD = getEfficiencyWeight(std::abs(ptD));
       }
-      registry.fill(HIST("hMassDsVsPt"), massD, ptD, efficiencyWeightD);
+
+      registry.fill(HIST("hMassDsVsPt"), massD, std::abs(ptD), efficiencyWeightD);
       registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
       registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
     }
@@ -295,48 +438,80 @@ struct HfTaskCorrelationDsHadrons {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
       float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.ptD();
-      float ptHadron = pairEntry.ptHadron();
+      float ptD = pairEntry.signedPtD();
+      float ptHadron = pairEntry.signedPtHadron();
       float massD = pairEntry.mD();
       float bdtScorePrompt = pairEntry.mlScorePrompt();
       float bdtScoreBkg = pairEntry.mlScoreBkg();
       float trackDcaXY = pairEntry.trackDcaXY();
       float trackDcaZ = pairEntry.trackDcaZ();
+      int multPvContrib = pairEntry.numPvContrib();
       int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
       int poolBin = pairEntry.poolBin();
-      int ptBinD = o2::analysis::findBin(binsPtD, ptD);
+      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
 
-      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
       }
+
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
+
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
-        }
+      if (useHighDimHistoForEff) {
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), multPvContrib, std::abs(ptHadron), deltaPhi, EfficiencyMode::DsHadronPair);
+      } else {
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-        registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
-        registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+        if (doLSpair && ((ptD > 0. && ptHadron > 0.) || (ptD < 0. && ptHadron < 0.))) { // like-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+        } else if (doULSpair && ((ptD > 0. && ptHadron < 0.) || (ptD < 0. && ptHadron > 0.))) { // unlike-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+        } else { // default case
+          registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+        }
       }
       // in sideband left region
       if (massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-        registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
-        registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+        if (doLSpair && ((ptD > 0. && ptHadron > 0.) || (ptD < 0. && ptHadron < 0.))) { // like-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+        } else if (doULSpair && ((ptD > 0. && ptHadron < 0.) || (ptD < 0. && ptHadron > 0.))) { // unlike-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+        } else { // default case
+          registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+        }
       }
       // in sideband right region
       if (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-        registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
-        registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+        if (doLSpair && ((ptD > 0. && ptHadron > 0.) || (ptD < 0. && ptHadron < 0.))) { // like-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+        } else if (doULSpair && ((ptD > 0. && ptHadron < 0.) || (ptD < 0. && ptHadron > 0.))) { // unlike-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+        } else { // default case
+          registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+        }
       }
     }
   }
@@ -348,28 +523,30 @@ struct HfTaskCorrelationDsHadrons {
   {
     for (const auto& candidate : candidates) {
       float massD = candidate.mD();
-      float ptD = candidate.ptD();
+      float ptD = candidate.signedPtD();
       float bdtScorePrompt = candidate.mlScorePrompt();
       float bdtScoreBkg = candidate.mlScoreBkg();
-      int ptBinD = o2::analysis::findBin(binsPtD, ptD);
+      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
+      int multPvContrib = candidate.numPvContrib();
       bool isDsPrompt = candidate.isPrompt();
 
-      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
       }
+
       double efficiencyWeightD = 1.;
-      if (applyEfficiency) {
-        efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeightD = 1. / mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD));
-        }
+      if (useHighDimHistoForEff) {
+        efficiencyWeightD = getEfficiencyWeight(std::abs(ptD), multPvContrib);
+      } else {
+        efficiencyWeightD = getEfficiencyWeight(std::abs(ptD));
       }
+
       if (isDsPrompt) {
-        registry.fill(HIST("hMassPromptDsVsPt"), massD, ptD, efficiencyWeightD);
+        registry.fill(HIST("hMassPromptDsVsPt"), massD, std::abs(ptD), efficiencyWeightD);
         registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
         registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
       } else {
-        registry.fill(HIST("hMassNonPromptDsVsPt"), massD, ptD, efficiencyWeightD);
+        registry.fill(HIST("hMassNonPromptDsVsPt"), massD, std::abs(ptD), efficiencyWeightD);
         registry.fill(HIST("hBdtScorePrompt"), bdtScorePrompt);
         registry.fill(HIST("hBdtScoreBkg"), bdtScoreBkg);
       }
@@ -379,59 +556,62 @@ struct HfTaskCorrelationDsHadrons {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
       float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.ptD();
-      float ptHadron = pairEntry.ptHadron();
+      float ptD = pairEntry.signedPtD();
+      float ptHadron = pairEntry.signedPtHadron();
       float massD = pairEntry.mD();
       float bdtScorePrompt = pairEntry.mlScorePrompt();
       float bdtScoreBkg = pairEntry.mlScoreBkg();
       float trackDcaXY = pairEntry.trackDcaXY();
       float trackDcaZ = pairEntry.trackDcaZ();
+      int multPvContrib = pairEntry.numPvContrib();
       int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
       int poolBin = pairEntry.poolBin();
       int statusDsPrompt = static_cast<int>(pairEntry.isPrompt());
       int statusPromptHadron = pairEntry.trackOrigin();
-      int ptBinD = o2::analysis::findBin(binsPtD, ptD);
+      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
       bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
 
-      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
       }
+
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
+
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
-        }
+      if (useHighDimHistoForEff) {
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), multPvContrib, std::abs(ptHadron), deltaPhi, EfficiencyMode::DsHadronPair);
+      } else {
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
+
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
         // prompt and non-prompt division
         if (pairEntry.isSignal() && pairEntry.isDecayChan()) {
           registry.fill(HIST("hDeltaEtaPtIntSignalRegionMcRec"), deltaEta, efficiencyWeight);
           registry.fill(HIST("hDeltaPhiPtIntSignalRegionMcRec"), deltaPhi, efficiencyWeight);
-          registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
+          registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), statusDsPrompt, poolBin, efficiencyWeight);
           if (isPhysicalPrimary) {
-            registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
-            if (statusDsPrompt == 1 && statusPromptHadron == 1) {
-              registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-            } else if (statusDsPrompt == 0 && statusPromptHadron == 2) {
-              registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+            registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), statusDsPrompt, poolBin, efficiencyWeight);
+            if (statusDsPrompt == 1 && statusPromptHadron == RecoDecay::OriginType::Prompt) {
+              registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+            } else if (statusDsPrompt == 0 && statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
+              registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
             }
           }
         }
       }
       // in sideband left region
       if (massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSidebandLeftMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSidebandLeftMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandLeftMcRec"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandLeftMcRec"), deltaPhi, efficiencyWeight);
       }
       // in sideband right region
       if (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSidebandRightMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSidebandRightMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandRightMcRec"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandRightMcRec"), deltaPhi, efficiencyWeight);
       }
@@ -446,24 +626,24 @@ struct HfTaskCorrelationDsHadrons {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
       float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.ptD();
-      float ptHadron = pairEntry.ptHadron();
+      float ptD = pairEntry.signedPtD();
+      float ptHadron = pairEntry.signedPtHadron();
       int poolBin = pairEntry.poolBin();
       int statusPromptHadron = pairEntry.trackOrigin();
       bool isDsPrompt = pairEntry.isPrompt();
 
-      registry.fill(HIST("hCorrel2DVsPtMcGen"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
+      registry.fill(HIST("hCorrel2DVsPtMcGen"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
       registry.fill(HIST("hDeltaEtaPtIntMcGen"), deltaEta);
       registry.fill(HIST("hDeltaPhiPtIntMcGen"), deltaPhi);
       if (isDsPrompt) {
-        registry.fill(HIST("hCorrel2DVsPtMcGenPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        if (statusPromptHadron == 1) {
-          registry.fill(HIST("hCorrel2DVsPtMcGenPromptDsPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
+        registry.fill(HIST("hCorrel2DVsPtMcGenPrompt"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
+        if (statusPromptHadron == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("hCorrel2DVsPtMcGenPromptDsPromptHadron"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
         }
       } else {
-        registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
-        if (statusPromptHadron == 2) {
-          registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptDsNonPromptHadron"), deltaPhi, deltaEta, ptD, ptHadron, poolBin);
+        registry.fill(HIST("hCorrel2DVsPtMcGenNonPrompt"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
+        if (statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
+          registry.fill(HIST("hCorrel2DVsPtMcGenNonPromptDsNonPromptHadron"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
         }
       }
     }
@@ -476,48 +656,80 @@ struct HfTaskCorrelationDsHadrons {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
       float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.ptD();
-      float ptHadron = pairEntry.ptHadron();
+      float ptD = pairEntry.signedPtD();
+      float ptHadron = pairEntry.signedPtHadron();
       float massD = pairEntry.mD();
       float bdtScorePrompt = pairEntry.mlScorePrompt();
       float bdtScoreBkg = pairEntry.mlScoreBkg();
       float trackDcaXY = pairEntry.trackDcaXY();
       float trackDcaZ = pairEntry.trackDcaZ();
+      int multPvContrib = pairEntry.numPvContrib();
       int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
       int poolBin = pairEntry.poolBin();
-      int ptBinD = o2::analysis::findBin(binsPtD, ptD);
+      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
 
-      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
       }
+
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
+
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
-        }
+      if (useHighDimHistoForEff) {
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), multPvContrib, std::abs(ptHadron), deltaPhi, EfficiencyMode::DsHadronPair);
+      } else {
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-        registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
-        registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+        if (doLSpair && ((ptD > 0. && ptHadron > 0.) || (ptD < 0. && ptHadron < 0.))) { // like-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+        } else if (doULSpair && ((ptD > 0. && ptHadron < 0.) || (ptD < 0. && ptHadron > 0.))) { // unlike-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+        } else { // default case
+          registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+        }
       }
       // in sideband left region
       if (massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-        registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
-        registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+        if (doLSpair && ((ptD > 0. && ptHadron > 0.) || (ptD < 0. && ptHadron < 0.))) { // like-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+        } else if (doULSpair && ((ptD > 0. && ptHadron < 0.) || (ptD < 0. && ptHadron > 0.))) { // unlike-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+        } else { // default case
+          registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+        }
       }
       // in sideband right region
       if (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-        registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
-        registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+        if (doLSpair && ((ptD > 0. && ptHadron > 0.) || (ptD < 0. && ptHadron < 0.))) { // like-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+        } else if (doULSpair && ((ptD > 0. && ptHadron < 0.) || (ptD < 0. && ptHadron > 0.))) { // unlike-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+        } else { // default case
+          registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+        }
       }
     }
   }
@@ -529,37 +741,67 @@ struct HfTaskCorrelationDsHadrons {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
       float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.ptD();
-      float ptHadron = pairEntry.ptHadron();
+      float ptD = pairEntry.signedPtD();
+      float ptHadron = pairEntry.signedPtHadron();
       float massD = pairEntry.mD();
+      int multPvContrib = pairEntry.numPvContrib();
       int poolBin = pairEntry.poolBin();
-      int ptBinD = o2::analysis::findBin(binsPtD, ptD);
+      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
-        }
+      if (useHighDimHistoForEff) {
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), multPvContrib, std::abs(ptHadron), deltaPhi, EfficiencyMode::DsHadronPair);
+      } else {
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
 
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-        registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
-        registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+        if (doLSpair && ((ptD > 0. && ptHadron > 0.) || (ptD < 0. && ptHadron < 0.))) { // like-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+        } else if (doULSpair && ((ptD > 0. && ptHadron < 0.) || (ptD < 0. && ptHadron > 0.))) { // unlike-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+        } else { // default case
+          registry.fill(HIST("hCorrel2DVsPtSignalRegion"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSignalRegion"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSignalRegion"), deltaPhi, efficiencyWeight);
+        }
       }
       // in sideband left region
       if (massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-        registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
-        registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+        if (doLSpair && ((ptD > 0. && ptHadron > 0.) || (ptD < 0. && ptHadron < 0.))) { // like-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+        } else if (doULSpair && ((ptD > 0. && ptHadron < 0.) || (ptD < 0. && ptHadron > 0.))) { // unlike-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+        } else { // default case
+          registry.fill(HIST("hCorrel2DVsPtSidebandLeft"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandLeft"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandLeft"), deltaPhi, efficiencyWeight);
+        }
       }
       // in sideband right region
       if (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-        registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
-        registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+        if (doLSpair && ((ptD > 0. && ptHadron > 0.) || (ptD < 0. && ptHadron < 0.))) { // like-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+        } else if (doULSpair && ((ptD > 0. && ptHadron < 0.) || (ptD < 0. && ptHadron > 0.))) { // unlike-sign pairs
+          registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+        } else { // default case
+          registry.fill(HIST("hCorrel2DVsPtSidebandRight"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+          registry.fill(HIST("hDeltaEtaPtIntSidebandRight"), deltaEta, efficiencyWeight);
+          registry.fill(HIST("hDeltaPhiPtIntSidebandRight"), deltaPhi, efficiencyWeight);
+        }
       }
     }
   }
@@ -572,59 +814,62 @@ struct HfTaskCorrelationDsHadrons {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
       float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.ptD();
-      float ptHadron = pairEntry.ptHadron();
+      float ptD = pairEntry.signedPtD();
+      float ptHadron = pairEntry.signedPtHadron();
       float massD = pairEntry.mD();
       float bdtScorePrompt = pairEntry.mlScorePrompt();
       float bdtScoreBkg = pairEntry.mlScoreBkg();
       float trackDcaXY = pairEntry.trackDcaXY();
       float trackDcaZ = pairEntry.trackDcaZ();
+      int multPvContrib = pairEntry.numPvContrib();
       int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
       int poolBin = pairEntry.poolBin();
       int statusDsPrompt = static_cast<int>(pairEntry.isPrompt());
       int statusPromptHadron = pairEntry.trackOrigin();
-      int ptBinD = o2::analysis::findBin(binsPtD, ptD);
+      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
       bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
 
-      if (bdtScorePrompt < mlOutputPrompt->at(ptBinD) || bdtScoreBkg > mlOutputBkg->at(ptBinD)) {
+      if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
       }
+
       if (trackDcaXY > dcaXYTrackMax || trackDcaZ > dcaZTrackMax || trackTpcCrossedRows < nTpcCrossedRaws) {
         continue;
       }
+
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
-        efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
-        if (loadAccXEffFromCCDB) {
-          efficiencyWeight = 1. / (mEfficiencyD->GetBinContent(mEfficiencyD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
-        }
+      if (useHighDimHistoForEff) {
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), multPvContrib, std::abs(ptHadron), deltaPhi, EfficiencyMode::DsHadronPair);
+      } else {
+        efficiencyWeight = getEfficiencyWeight(std::abs(ptD), std::nullopt, std::abs(ptHadron), std::nullopt, EfficiencyMode::DsHadronPair);
       }
+
       // in signal region
       if (massD > signalRegionInner->at(ptBinD) && massD < signalRegionOuter->at(ptBinD)) {
         // prompt and non-prompt division
         if (pairEntry.isSignal() && pairEntry.isDecayChan()) {
           registry.fill(HIST("hDeltaEtaPtIntSignalRegionMcRec"), deltaEta, efficiencyWeight);
           registry.fill(HIST("hDeltaPhiPtIntSignalRegionMcRec"), deltaPhi, efficiencyWeight);
-          registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
+          registry.fill(HIST("hCorrel2DVsPtSignalRegionMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), statusDsPrompt, poolBin, efficiencyWeight);
           if (isPhysicalPrimary) {
-            registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, ptD, ptHadron, statusDsPrompt, poolBin, efficiencyWeight);
-            if (statusDsPrompt == 1 && statusPromptHadron == 1) {
-              registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
-            } else if (statusDsPrompt == 0 && statusPromptHadron == 2) {
-              registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+            registry.fill(HIST("hCorrel2DVsPtPhysicalPrimaryMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), statusDsPrompt, poolBin, efficiencyWeight);
+            if (statusDsPrompt == 1 && statusPromptHadron == RecoDecay::OriginType::Prompt) {
+              registry.fill(HIST("hCorrel2DVsPtSignalRegionPromptDsPromptHadronMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
+            } else if (statusDsPrompt == 0 && statusPromptHadron == RecoDecay::OriginType::NonPrompt) {
+              registry.fill(HIST("hCorrel2DVsPtSignalRegionNonPromptDsNonPromptHadronMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
             }
           }
         }
       }
       // in sideband left region
       if (massD > sidebandLeftOuter->at(ptBinD) && massD < sidebandLeftInner->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSidebandLeftMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSidebandLeftMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandLeftMcRec"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandLeftMcRec"), deltaPhi, efficiencyWeight);
       }
       // in sideband right region
       if (massD > sidebandRightInner->at(ptBinD) && massD < sidebandRightOuter->at(ptBinD)) {
-        registry.fill(HIST("hCorrel2DVsPtSidebandRightMcRec"), deltaPhi, deltaEta, ptD, ptHadron, poolBin, efficiencyWeight);
+        registry.fill(HIST("hCorrel2DVsPtSidebandRightMcRec"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin, efficiencyWeight);
         registry.fill(HIST("hDeltaEtaPtIntSidebandRightMcRec"), deltaEta, efficiencyWeight);
         registry.fill(HIST("hDeltaPhiPtIntSidebandRightMcRec"), deltaPhi, efficiencyWeight);
       }
@@ -639,8 +884,6 @@ struct HfTaskCorrelationDsHadrons {
                                CandDsMcReco const& candidates,
                                aod::TracksWMc const&)
   {
-    auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
-
     /// loop over generated collisions
     for (const auto& mcCollision : mcCollisions) {
 
@@ -672,38 +915,43 @@ struct HfTaskCorrelationDsHadrons {
           continue;
         }
 
-        float multiplicityReco = collision.multFT0M();
-        float multiplicityGen = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
+        registry.fill(HIST("hNumPvContrib"), collision.numContrib());
 
         const auto groupedCandidates = candidates.sliceBy(perCollisionCand, collision.globalIndex());
 
         // generated candidate loop
         for (const auto& mcParticle : groupedMcParticles) {
-          if ((std::abs(mcParticle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
-            hCandidates->Fill(kCandidateStepMcGenDsToKKPi, mcParticle.pt(), multiplicityGen, mcParticle.originMcGen());
+          if ((std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (mcParticle.flagMcDecayChanGen() == channelsResonant[decayChannel])) {
             auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
             if (std::abs(yDs) <= yCandGenMax) {
-              hCandidates->Fill(kCandidateStepMcCandInAcceptance, mcParticle.pt(), multiplicityGen, mcParticle.originMcGen());
               if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
-                registry.fill(HIST("hPtCandMcGenPrompt"), mcParticle.pt());
+                if (useHighDimHistoForEff) {
+                  registry.fill(HIST("hPtCandMcGenPrompt"), mcParticle.pt(), collision.numContrib());
+                } else {
+                  registry.fill(HIST("hPtCandMcGenPrompt"), mcParticle.pt());
+                }
               }
               if (mcParticle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
-                registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt());
+                if (useHighDimHistoForEff) {
+                  registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt(), collision.numContrib());
+                } else {
+                  registry.fill(HIST("hPtCandMcGenNonPrompt"), mcParticle.pt());
+                }
               }
-            }
-            bool isDaughterInAcceptance = true;
-            auto daughters = mcParticle.template daughters_as<CandDsMcGen>();
-            for (const auto& daughter : daughters) {
-              if (daughter.pt() < ptDaughterMin || std::abs(daughter.eta()) > etaTrackMax) {
-                isDaughterInAcceptance = false;
+
+              bool isDaughterInAcceptance = true;
+              auto daughters = mcParticle.template daughters_as<CandDsMcGen>();
+              for (const auto& daughter : daughters) {
+                if (daughter.pt() < ptDaughterMin || std::abs(daughter.eta()) > etaTrackMax) {
+                  isDaughterInAcceptance = false;
+                }
               }
-            }
-            if (isDaughterInAcceptance) {
-              hCandidates->Fill(kCandidateStepMcDaughtersInAcceptance, mcParticle.pt(), multiplicityGen, mcParticle.originMcGen());
-              registry.fill(HIST("hPtCandMcGenDaughterInAcc"), mcParticle.pt());
+              if (isDaughterInAcceptance) {
+                registry.fill(HIST("hPtCandMcGenDaughterInAcc"), mcParticle.pt());
+              }
             }
           }
-        }
+        } // end loop candidate gen
 
         // reconstructed candidate loop
         for (const auto& candidate : groupedCandidates) {
@@ -720,28 +968,33 @@ struct HfTaskCorrelationDsHadrons {
               outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
             }
           }
-          if (outputMl[0] < mlOutputPrompt->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
+          if (outputMl[0] < mlOutputPromptMin->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[0] > mlOutputPromptMax->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
             continue;
           }
 
-          if ((std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (candidate.flagMcDecayChanRec() == decayChannel)) {
+          if ((std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (candidate.flagMcDecayChanRec() == channelsResonant[decayChannel])) {
             auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
             // DsToKKPi and DsToPiKK division
             if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
-              hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicityReco, candidate.originMcRec());
               if (std::abs(hfHelper.yDs(candidate)) <= yCandMax) {
-                hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicityReco, candidate.originMcRec());
                 if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-                  registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt());
+                  if (useHighDimHistoForEff) {
+                    registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt(), collision.numContrib());
+                  } else {
+                    registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt());
+                  }
                 }
                 if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-                  registry.fill(HIST("hPtCandMcRecNonPrompt"), candidate.pt());
+                  if (useHighDimHistoForEff) {
+                    registry.fill(HIST("hPtCandMcRecNonPrompt"), candidate.pt(), collision.numContrib());
+                  } else {
+                    registry.fill(HIST("hPtCandMcRecNonPrompt"), candidate.pt());
+                  }
                 }
               }
             }
           }
-        }
-
+        } // end loop candidate reco
       } // end loop reconstructed collision
     } // end loop generated collisions
   }
@@ -753,19 +1006,12 @@ struct HfTaskCorrelationDsHadrons {
                                      CandDsMcReco const& candidates,
                                      aod::TracksWMc const&)
   {
-    auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
-
     /// Gen loop
-    float multiplicity = -1.;
     for (const auto& mcParticle : mcParticles) {
       // generated candidates
-      if ((std::abs(mcParticle.flagMcMatchGen()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (mcParticle.flagMcDecayChanGen() == decayChannel)) {
-        auto mcCollision = mcParticle.template mcCollision_as<soa::Join<aod::McCollisions, aod::MultsExtraMC>>();
-        multiplicity = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
-        hCandidates->Fill(kCandidateStepMcGenDsToKKPi, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
+      if ((std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (mcParticle.flagMcDecayChanGen() == channelsResonant[decayChannel])) {
         auto yDs = RecoDecay::y(mcParticle.pVector(), o2::constants::physics::MassDS);
         if (std::abs(yDs) <= yCandGenMax) {
-          hCandidates->Fill(kCandidateStepMcCandInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
           if (mcParticle.originMcGen() == RecoDecay::OriginType::Prompt) {
             registry.fill(HIST("hPtCandMcGenPrompt"), mcParticle.pt());
           }
@@ -781,7 +1027,6 @@ struct HfTaskCorrelationDsHadrons {
           }
         }
         if (isDaughterInAcceptance) {
-          hCandidates->Fill(kCandidateStepMcDaughtersInAcceptance, mcParticle.pt(), multiplicity, mcParticle.originMcGen());
           registry.fill(HIST("hPtCandMcGenDaughterInAcc"), mcParticle.pt());
         }
       }
@@ -802,21 +1047,18 @@ struct HfTaskCorrelationDsHadrons {
           outputMl[iclass] = candidate.mlProbDsToPiKK()[classMl->at(iclass)];
         }
       }
-      if (outputMl[0] < mlOutputPrompt->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
+      if (outputMl[0] < mlOutputPromptMin->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[0] > mlOutputPromptMax->at(o2::analysis::findBin(binsPtD, candidate.pt())) || outputMl[2] > mlOutputBkg->at(o2::analysis::findBin(binsPtD, candidate.pt()))) {
         continue;
       }
       auto collision = candidate.template collision_as<soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels>>();
       if (selNoSameBunchPileUpColl && !(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup))) {
         continue;
       }
-      multiplicity = collision.multFT0M();
-      if ((std::abs(candidate.flagMcMatchRec()) == 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) && (candidate.flagMcDecayChanRec() == decayChannel)) {
+      if ((std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (candidate.flagMcDecayChanRec() == channelsResonant[decayChannel])) {
         auto prong0McPart = candidate.template prong0_as<aod::TracksWMc>().template mcParticle_as<CandDsMcGen>();
         // DsToKKPi and DsToPiKK division
         if (((std::abs(prong0McPart.pdgCode()) == kKPlus) && (candidate.isSelDsToKKPi() >= selectionFlagDs)) || ((std::abs(prong0McPart.pdgCode()) == kPiPlus) && (candidate.isSelDsToPiKK() >= selectionFlagDs))) {
-          hCandidates->Fill(kCandidateStepMcReco, candidate.pt(), multiplicity, candidate.originMcRec());
           if (std::abs(hfHelper.yDs(candidate)) <= yCandMax) {
-            hCandidates->Fill(kCandidateStepMcRecoInAcceptance, candidate.pt(), multiplicity, candidate.originMcRec());
             if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
               registry.fill(HIST("hPtCandMcRecPrompt"), candidate.pt());
             }
@@ -836,7 +1078,6 @@ struct HfTaskCorrelationDsHadrons {
                                 aod::McParticles const& mcParticles,
                                 TracksWithMc const& tracksData)
   {
-    auto hAssocTracks = registry.get<StepTHn>(HIST("hAssocTracks"));
 
     /// loop over generated collisions
     for (const auto& mcCollision : mcCollisions) {
@@ -869,37 +1110,45 @@ struct HfTaskCorrelationDsHadrons {
           continue;
         }
 
-        float multiplicityReco = collision.multFT0M();
-        float posZReco = collision.posZ();
-        float multiplicityGen = mcCollision.multMCFT0A() + mcCollision.multMCFT0C(); // multFT0M = multFt0A + multFT0C
-        float posZGen = mcCollision.posZ();
-
         const auto groupedTracks = tracksData.sliceBy(perCollision, collision.globalIndex());
 
         // generated track loop
         for (const auto& mcParticle : groupedMcParticles) {
           if (mcParticle.isPhysicalPrimary() && ((std::abs(mcParticle.pdgCode()) == kElectron) || (std::abs(mcParticle.pdgCode()) == kMuonMinus) || (std::abs(mcParticle.pdgCode()) == kPiPlus) || (std::abs(mcParticle.pdgCode()) == kKPlus) || (std::abs(mcParticle.pdgCode()) == kProton))) {
             if (mcParticle.pt() > ptTrackMin && mcParticle.pt() < ptTrackMax) {
-              hAssocTracks->Fill(kAssocTrackStepMcGen, mcParticle.eta(), mcParticle.pt(), multiplicityGen, posZGen);
               if (std::abs(mcParticle.eta()) < etaTrackMax) {
-                hAssocTracks->Fill(kAssocTrackStepMcGenInAcceptance, mcParticle.eta(), mcParticle.pt(), multiplicityGen, posZGen);
-                registry.fill(HIST("hPtParticleAssocMcGen"), mcParticle.pt());
-                if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
-                  registry.fill(HIST("hPtPrmPionMcGen"), mcParticle.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
-                  registry.fill(HIST("hPtPrmKaonMcGen"), mcParticle.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kProton) {
-                  registry.fill(HIST("hPtPrmProtonMcGen"), mcParticle.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
-                  registry.fill(HIST("hPtPrmElectronMcGen"), mcParticle.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
-                  registry.fill(HIST("hPtPrmMuonMcGen"), mcParticle.pt());
+                if (useHighDimHistoForEff) {
+                  registry.fill(HIST("hPtParticleAssocMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+                    registry.fill(HIST("hPtPrmPionMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+                    registry.fill(HIST("hPtPrmKaonMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kProton) {
+                    registry.fill(HIST("hPtPrmProtonMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
+                    registry.fill(HIST("hPtPrmElectronMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
+                    registry.fill(HIST("hPtPrmMuonMcGen"), mcParticle.pt(), mcParticle.eta(), collision.posZ(), collision.numContrib());
+                  }
+                } else {
+                  registry.fill(HIST("hPtParticleAssocMcGen"), mcParticle.pt());
+                  if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+                    registry.fill(HIST("hPtPrmPionMcGen"), mcParticle.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+                    registry.fill(HIST("hPtPrmKaonMcGen"), mcParticle.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kProton) {
+                    registry.fill(HIST("hPtPrmProtonMcGen"), mcParticle.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
+                    registry.fill(HIST("hPtPrmElectronMcGen"), mcParticle.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
+                    registry.fill(HIST("hPtPrmMuonMcGen"), mcParticle.pt());
+                  }
                 }
                 if (separateTrackOrigins) {
                   int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
-                  if (trackOrigin == 1) { // charm orgin
+                  if (trackOrigin == RecoDecay::OriginType::Prompt) { // charm orgin
                     registry.fill(HIST("hPtPrmPromptPartMcGen"), mcParticle.pt());
-                  } else if (trackOrigin == 2) { // beauty origin
+                  } else if (trackOrigin == RecoDecay::OriginType::NonPrompt) { // beauty origin
                     registry.fill(HIST("hPtPrmNonPromptPartMcGen"), mcParticle.pt());
                   }
                 }
@@ -914,33 +1163,45 @@ struct HfTaskCorrelationDsHadrons {
             continue;
           }
           if (track.has_mcParticle()) {
-            hAssocTracks->Fill(kAssocTrackStepRecoMcMatch, track.eta(), track.pt(), multiplicityReco, posZReco);
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
             if (mcParticle.isPhysicalPrimary()) {
-              hAssocTracks->Fill(kAssocTrackStepRecoPrimaries, track.eta(), track.pt(), multiplicityReco, posZReco);
               registry.fill(HIST("hPtParticleAssocMcRec"), track.pt());
               if ((std::abs(mcParticle.pdgCode()) == kElectron) || (std::abs(mcParticle.pdgCode()) == kMuonMinus) || (std::abs(mcParticle.pdgCode()) == kPiPlus) || (std::abs(mcParticle.pdgCode()) == kKPlus) || (std::abs(mcParticle.pdgCode()) == kProton)) {
-                hAssocTracks->Fill(kAssocTrackStepRecoSpecies, track.eta(), track.pt(), multiplicityReco, posZReco);
-                registry.fill(HIST("hPtParticleAssocSpecieMcRec"), track.pt());
                 // check the pt spectra of mcParticle
                 registry.fill(HIST("hPtMcParticleAssocSpecieMcRec"), mcParticle.pt());
-                if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
-                  registry.fill(HIST("hPtPrmPionMcRec"), track.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
-                  registry.fill(HIST("hPtPrmKaonMcRec"), track.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kProton) {
-                  registry.fill(HIST("hPtPrmProtonMcRec"), track.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
-                  registry.fill(HIST("hPtPrmElectronMcRec"), track.pt());
-                } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
-                  registry.fill(HIST("hPtPrmMuonMcRec"), track.pt());
+                if (useHighDimHistoForEff) {
+                  registry.fill(HIST("hPtParticleAssocSpecieMcRec"), track.pt());
+                  if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+                    registry.fill(HIST("hPtPrmPionMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+                    registry.fill(HIST("hPtPrmKaonMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kProton) {
+                    registry.fill(HIST("hPtPrmProtonMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
+                    registry.fill(HIST("hPtPrmElectronMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                  } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
+                    registry.fill(HIST("hPtPrmMuonMcRec"), track.pt(), track.eta(), collision.posZ(), collision.numContrib());
+                  }
+                } else {
+                  registry.fill(HIST("hPtParticleAssocSpecieMcRec"), track.pt());
+                  if (std::abs(mcParticle.pdgCode()) == kPiPlus) {
+                    registry.fill(HIST("hPtPrmPionMcRec"), track.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kKPlus) {
+                    registry.fill(HIST("hPtPrmKaonMcRec"), track.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kProton) {
+                    registry.fill(HIST("hPtPrmProtonMcRec"), track.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kElectron) {
+                    registry.fill(HIST("hPtPrmElectronMcRec"), track.pt());
+                  } else if (std::abs(mcParticle.pdgCode()) == kMuonMinus) {
+                    registry.fill(HIST("hPtPrmMuonMcRec"), track.pt());
+                  }
                 }
                 // check track origin
                 if (separateTrackOrigins) {
                   int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
-                  if (trackOrigin == 1) { // charm orgin
+                  if (trackOrigin == RecoDecay::OriginType::Prompt) { // charm orgin
                     registry.fill(HIST("hPtPrmPromptPartMcRec"), track.pt());
-                  } else if (trackOrigin == 2) { // beauty origin
+                  } else if (trackOrigin == RecoDecay::OriginType::NonPrompt) { // beauty origin
                     registry.fill(HIST("hPtPrmNonPromptPartMcRec"), track.pt());
                   }
                 }

@@ -12,227 +12,397 @@
 /// \file taskOmegac0ToOmegapi.cxx
 /// \brief OmegaC0 analysis task
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
-
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
+/// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
 
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <THnSparse.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <numeric>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-/// Omegac0 analysis task
+namespace o2::aod
+{
+namespace ml
+{
+DECLARE_SOA_COLUMN(InvMassCharmBaryon, invMassCharmBaryon, float);
+DECLARE_SOA_COLUMN(KfptOmegac, kfptOmegac, float);
+DECLARE_SOA_COLUMN(KfptPiFromOmegac, kfptPiFromOmegac, float);
+DECLARE_SOA_COLUMN(MlProbOmegac, mlProbOmegac, float);
+DECLARE_SOA_COLUMN(Cent, cent, float);
+} // namespace ml
+DECLARE_SOA_TABLE(HfKfOmegacML, "AOD", "HFKFOMEGACML",
+                  ml::InvMassCharmBaryon, ml::KfptOmegac, ml::KfptPiFromOmegac, ml::MlProbOmegac, ml::Cent);
+} // namespace o2::aod
 
+/// Omegac0 analysis task
 struct HfTaskOmegac0ToOmegapi {
-  // ML inference
-  Configurable<bool> applyMl{"applyMl", false, "Flag to apply ML selections"};
-  Configurable<bool> selectionFlagOmegac0{"selectionFlagOmegac0", false, "Selection Flag for Omegac0 candidates"};
-  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "max. gen particle rapidity"};
-  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "max. cand. rapidity"};
+  Produces<o2::aod::HfKfOmegacML> kfCandMl;
+
+  Configurable<bool> selectionFlagOmegac0{"selectionFlagOmegac0", true, "Select Omegac0 candidates"};
+  Configurable<double> yCandGenMax{"yCandGenMax", 0.5, "Max. gen particle rapidity"};
+  Configurable<double> yCandRecoMax{"yCandRecoMax", 0.8, "Max. cand. rapidity"};
+  Configurable<bool> fillTree{"fillTree", false, "Fill tree for local analysis (enabled only with ML)"};
 
   HfHelper hfHelper;
   SliceCache cache;
-  using MyTracksWMc = soa::Join<aod::Tracks, aod::TracksIU, aod::McTrackLabels>;
 
-  using Omegac0Candidates = soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi>;
-  using Omegac0CandidatesKF = soa::Join<Omegac0Candidates, aod::HfOmegacKf>;
-  using OmegaC0CandidatesMcKF = soa::Join<Omegac0CandidatesKF, aod::HfToOmegaPiMCRec>;
+  using Omegac0Cands = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi>>;
+  using Omegac0CandsKF = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfOmegacKf>>;
+  using OmegaC0CandsMcKF = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfOmegacKf, aod::HfToOmegaPiMCRec>>;
+  using Omegac0CandsMl = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfMlSelOmegacToOmegaPi>>;
+  using Omegac0CandsMlKF = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfMlSelOmegacToOmegaPi, aod::HfOmegacKf>>;
+  using Omegac0CandsMlMcKF = soa::Filtered<soa::Join<aod::HfCandToOmegaPi, aod::HfSelToOmegaPi, aod::HfMlSelOmegacToOmegaPi, aod::HfOmegacKf, aod::HfToOmegaPiMCRec>>;
 
-  using Omegac0CandidatesMl = soa::Join<Omegac0Candidates, aod::HfMlSelOmegacToOmegaPi>;
-  using Omegac0CandidatesMlKF = soa::Join<Omegac0CandidatesMl, aod::HfOmegacKf>;
-  using Omegac0CandidatesMlMcKF = soa::Join<Omegac0CandidatesMlKF, aod::HfToOmegaPiMCRec>;
+  using Omegac0Gen = soa::Filtered<soa::Join<aod::McParticles, aod::HfToOmegaPiMCGen>>;
 
   using Collisions = soa::Join<aod::Collisions, aod::EvSels>;
+  using CollisionsWithFT0C = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Cs>;
+  using CollisionsWithFT0M = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
   using CollisionsWithMcLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::EvSels>;
+
+  using McCollisionsWithFT0M = soa::Join<aod::McCollisions, aod::McCentFT0Ms>;
+
+  Filter filterOmegaCToOmegaPiFlag = (aod::hf_track_index::hfflag & static_cast<uint8_t>(BIT(aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi))) != static_cast<uint8_t>(0);
+  Filter filterOmegaCMatchedRec = nabs(aod::hf_cand_xic0_omegac0::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi));
+  Filter filterOmegaCMatchedGen = nabs(aod::hf_cand_xic0_omegac0::flagMcMatchGen) == static_cast<int8_t>(BIT(aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi));
+
+  Preslice<Omegac0CandsKF> candOmegacKFPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
+  Preslice<Omegac0CandsMlKF> candOmegacKFMlPerCollision = aod::hf_cand_xic0_omegac0::collisionId;
   PresliceUnsorted<CollisionsWithMcLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
-  Partition<Omegac0CandidatesKF> selectedOmegac0CandidatesKF = aod::hf_sel_toomegapi::resultSelections && !selectionFlagOmegac0;
-  Partition<Omegac0CandidatesMlKF> selectedOmegac0CandidatesMlKF = aod::hf_sel_toomegapi::resultSelections && !selectionFlagOmegac0;
-
-  // ThnSparse for ML outputScores and Vars
-  ConfigurableAxis thnConfigAxisPromptScore{"thnConfigAxisPromptScore", {50, 0, 1}, "Prompt score bins"};
-  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {120, 2.4, 3.1}, "Cand. inv-mass bins"};
-  ConfigurableAxis thnConfigAxisPtB{"thnConfigAxisPtB", {1000, 0, 100}, "Cand. beauty mother pTB bins"};
-  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {100, 0, 20}, "Cand. pT bins"};
-  ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity bins"};
-  ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin type"};
-  ConfigurableAxis thnConfigAxisGenPtD{"thnConfigAxisGenPtD", {500, 0, 50}, "Gen Pt D"};
-  ConfigurableAxis thnConfigAxisGenPtB{"thnConfigAxisGenPtB", {1000, 0, 100}, "Gen Pt B"};
-  ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Number of PV contributors"};
-  HistogramRegistry registry{
-    "registry",
-    {}};
+  ConfigurableAxis thnConfigAxisMass{"thnConfigAxisMass", {700, 2.4, 3.1}, "Cand. inv. mass"};
+  ConfigurableAxis thnConfigAxisPt{"thnConfigAxisPt", {500, 0, 50}, "Cand. pT"};
+  ConfigurableAxis thnConfigAxisPtB{"thnConfigAxisPtB", {500, 0, 50}, "Cand. beauty mother pT"};
+  ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {20, -1, 1}, "Cand. rapidity"};
+  ConfigurableAxis thnConfigAxisOrigin{"thnConfigAxisOrigin", {3, -0.5, 2.5}, "Cand. origin"};
+  ConfigurableAxis thnConfigAxisMatchFlag{"thnConfigAxisMatchFlag", {15, -7.5, 7.5}, "Cand. MC match flag"};
+  ConfigurableAxis thnConfigAxisNumPvContr{"thnConfigAxisNumPvContr", {200, -0.5, 199.5}, "Coll. num. PV contributors"};
+  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {100, 0, 100}, "Coll. centrality precentile"};
+  ConfigurableAxis thnConfigAxisPromptScore{"thnConfigAxisPromptScore", {100, 0, 1}, "Prompt score"};
+  HistogramRegistry registry{"registry", {}};
 
   void init(InitContext&)
   {
-    std::array<bool, 12> doprocess{doprocessDataWithKFParticle, doprocessMcWithKFParticle, doprocessDataWithKFParticleMl, doprocessMcWithKFParticleMl};
+    std::array<bool, 10> doprocess{doprocessDataKFParticle, doprocessDataKFParticleMl, doprocessDataKFParticleFT0C, doprocessDataKFParticleMlFT0C,
+                                   doprocessDataKFParticleFT0M, doprocessDataKFParticleMlFT0M, doprocessMcKFParticle, doprocessMcKFParticleMl,
+                                   doprocessMcKFParticleFT0M, doprocessMcKFParticleMlFT0M};
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "One and only one process function should be enabled at a time.");
     }
 
-    const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#Omega #pi) (GeV/#it{c}^{2})"};
+    const AxisSpec thnAxisMass{thnConfigAxisMass, "Inv. mass (#Omega#pi) (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisPtB{thnConfigAxisPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
     const AxisSpec thnAxisY{thnConfigAxisY, "y"};
     const AxisSpec thnAxisOrigin{thnConfigAxisOrigin, "Origin"};
-    const AxisSpec thnAxisGenPtD{thnConfigAxisGenPtD, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec thnAxisGenPtB{thnConfigAxisGenPtB, "#it{p}_{T}^{B} (GeV/#it{c})"};
-    const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "Number of PV contributors"};
+    const AxisSpec thnAxisMatchFlag{thnConfigAxisMatchFlag, "MC match flag"};
+    const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "Number of primary vtx. contributors"};
+    const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality percentile"};
+    const AxisSpec thnAxisCentMc{thnConfigAxisCent, "Centrality percentile (from gen. MC info)"};
+    const AxisSpec thnAxisPromptScore{thnConfigAxisPromptScore, "BDT score prompt"};
 
-    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl) {
-      std::vector<AxisSpec> axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
-      registry.add("hSparseAcc", "Thn for generated Omega0 from charm and beauty", HistType::kTHnSparseD, axesAcc);
-      registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
+    std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt, thnAxisY};
+    std::vector<AxisSpec> axesMcGen = {thnAxisPt, thnAxisPtB, thnAxisY, thnAxisOrigin};
+
+    if (doprocessDataKFParticleFT0C || doprocessDataKFParticleMlFT0C || doprocessDataKFParticleFT0M || doprocessDataKFParticleMlFT0M) {
+      axes.push_back(thnAxisCent);
+      axes.push_back(thnConfigAxisNumPvContr);
     }
 
-    std::vector<AxisSpec> axes = {
-      thnAxisMass,
-      thnAxisPt,
-      thnAxisY,
-    };
-    if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl) {
+    if (doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
+      axes.push_back(thnAxisCentMc);
+      axes.push_back(thnConfigAxisNumPvContr);
+      axesMcGen.push_back(thnAxisCentMc);
+      axesMcGen.push_back(thnConfigAxisNumPvContr);
+    }
+
+    if (doprocessMcKFParticle || doprocessMcKFParticleMl || doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
+      registry.add("hMcGen", "Gen. #Omega_{c}^{0} from charm and beauty", HistType::kTHnSparseD, axesMcGen);
+      registry.get<THnSparse>(HIST("hMcGen"))->Sumw2();
+
+      if (doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
+        registry.add("hMcGenWithRecoColl", "Gen. #Omega_{c}^{0} from charm and beauty (associated to a reco collision)", HistType::kTHnSparseD, axesMcGen);
+        registry.add("hNumRecoCollPerMcColl", "Number of reco collisions associated to a mc collision;Num. reco. coll. per Mc coll.;", {HistType::kTH1D, {{10, -0.5, 9.5}}});
+        registry.get<THnSparse>(HIST("hMcGenWithRecoColl"))->Sumw2();
+      }
+
       axes.push_back(thnAxisPtB);
       axes.push_back(thnAxisOrigin);
-      axes.push_back(thnAxisNumPvContr);
+      axes.push_back(thnAxisMatchFlag);
     }
-    if (applyMl) {
-      const AxisSpec thnAxisPromptScore{thnConfigAxisPromptScore, "BDT score prompt."};
 
-      axes.insert(axes.begin(), thnAxisPromptScore);
-
-      registry.add("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type", "Thn for Omegac0 candidates", HistType::kTHnSparseD, axes);
-      registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"))->Sumw2();
-    } else {
-      registry.add("hMassVsPtVsPtBVsYVsOriginVsOmegac0Type", "Thn for Omegac0 candidates", HistType::kTHnSparseF, axes);
-      registry.get<THnSparse>(HIST("hMassVsPtVsPtBVsYVsOriginVsOmegac0Type"))->Sumw2();
+    if (doprocessDataKFParticleMl || doprocessDataKFParticleMlFT0C || doprocessDataKFParticleMlFT0M || doprocessMcKFParticleMl || doprocessMcKFParticleMlFT0M) {
+      axes.push_back(thnAxisPromptScore);
     }
+
+    registry.add("hReco", "Reco. #Omega_{c}^{0} candidates", HistType::kTHnSparseD, axes);
+    registry.get<THnSparse>(HIST("hReco"))->Sumw2();
   }
 
-  template <bool applyMl, typename CandType, typename CollType>
-  void processData(const CandType& candidates, CollType const&)
+  /// Evaluate centrality/multiplicity percentile (centrality estimator is automatically selected based on the used table)
+  /// \param candidate is candidate
+  /// \return centrality/multiplicity percentile of the collision
+  template <typename Coll>
+  float evaluateCentralityColl(const Coll& collision)
+  {
+    return o2::hf_centrality::getCentralityColl<Coll>(collision);
+  }
+
+  template <bool applyMl, typename CandType>
+  void processData(const CandType& candidates)
   {
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi)) {
+      if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagOmegac0))) {
         continue;
       }
+
       if (yCandRecoMax >= 0. && std::abs(candidate.kfRapOmegac()) > yCandRecoMax) {
         continue;
       }
-      float massOmegac0;
-      massOmegac0 = candidate.invMassCharmBaryon();
-      auto rapidityCandidate = candidate.kfRapOmegac();
-      auto ptCandidate = candidate.ptCharmBaryon();
+
       if constexpr (applyMl) {
-        registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], massOmegac0, ptCandidate, rapidityCandidate);
+        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.mlProbOmegac()[0]);
       } else {
-        registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), massOmegac0, ptCandidate, rapidityCandidate);
+        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac());
       }
     }
   }
 
-  void processDataWithKFParticle(Omegac0CandidatesKF const&, Collisions const& collisions)
-  {
-    processData<false>(selectedOmegac0CandidatesKF, collisions);
-  }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticle, "process HfTaskOmegac0ToOmegapi with KFParticle", false);
-  // TODO: add processKFParticle
-
-  void processDataWithKFParticleMl(Omegac0CandidatesMlKF const&, Collisions const& collisions)
-  {
-    processData<true>(selectedOmegac0CandidatesMlKF, collisions);
-  }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataWithKFParticleMl, "process HfTaskOmegac0ToOmegapi with KFParticle and ML selections", false);
-  // TODO: add processKFParticleMl
-
   template <bool applyMl, typename CandType, typename CollType>
-  void processMc(const CandType& candidates,
-                 soa::Join<aod::McParticles, aod::HfToOmegaPiMCGen> const& mcParticles,
-                 MyTracksWMc const&,
-                 CollType const& collisions,
-                 aod::McCollisions const&)
+  void processDataCent(const CandType& candidates, CollType const& collisions)
+  {
+    for (const auto& collision : collisions) {
+      auto thisCollId = collision.globalIndex();
+      auto groupedOmegacCandidates = applyMl ? candidates.sliceBy(candOmegacKFMlPerCollision, thisCollId) : candidates.sliceBy(candOmegacKFPerCollision, thisCollId);
+      auto numPvContributors = collision.numContrib();
+
+      for (const auto& candidate : groupedOmegacCandidates) {
+        if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagOmegac0))) {
+          continue;
+        }
+
+        if (yCandRecoMax >= 0. && std::abs(candidate.kfRapOmegac()) > yCandRecoMax) {
+          continue;
+        }
+
+        float cent = evaluateCentralityColl(collision);
+
+        if constexpr (applyMl) {
+          registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(),
+                        cent, numPvContributors, candidate.mlProbOmegac()[0]);
+          if (fillTree) {
+            kfCandMl(candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfptPiFromOmegac(), candidate.mlProbOmegac()[0], cent);
+          }
+        } else {
+          registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(),
+                        cent, numPvContributors);
+        }
+      }
+    }
+  }
+
+  template <bool applyMl, typename CandType>
+  void processMc(const CandType& candidates, Omegac0Gen const& mcParticles)
   {
     // MC rec.
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi)) {
+      if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagOmegac0))) {
         continue;
       }
       if (yCandRecoMax >= 0. && std::abs(candidate.kfRapOmegac()) > yCandRecoMax) {
         continue;
       }
-      auto collision = candidate.template collision_as<CollType>();
-      auto numPvContributors = collision.numContrib();
-      float massOmegac0;
-      massOmegac0 = candidate.invMassCharmBaryon();
-      auto ptCandidate = candidate.ptCharmBaryon();
-      auto rapidityCandidate = candidate.kfRapOmegac();
-      if (candidate.resultSelections() && !selectionFlagOmegac0)
-        if (candidate.flagMcMatchRec() == (1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi)) {
-          if constexpr (applyMl) {
-            registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), candidate.mlProbOmegac()[0], massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), numPvContributors);
 
-          } else {
-            registry.fill(HIST("hMassVsPtVsPtBVsYVsOriginVsOmegac0Type"), massOmegac0, ptCandidate, rapidityCandidate, candidate.ptBhadMotherPart(), candidate.originRec(), numPvContributors);
-          }
-        }
+      if constexpr (applyMl) {
+        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegac()[0]);
+
+      } else {
+        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec());
+      }
     }
+
     // MC gen.
     for (const auto& particle : mcParticles) {
-      if (std::abs(particle.flagMcMatchGen()) == 1 << aod::hf_cand_xic0_omegac0::DecayType::OmegaczeroToOmegaPi) {
-        if (yCandGenMax >= 0. && std::abs(particle.rapidityCharmBaryonGen()) > yCandGenMax) {
-          continue;
-        }
-        float ptGenB = -1;
-        auto ptGen = particle.pt();
-        auto yGen = particle.rapidityCharmBaryonGen();
+      if (yCandGenMax >= 0. && std::abs(particle.rapidityCharmBaryonGen()) > yCandGenMax) {
+        continue;
+      }
 
-        unsigned maxNumContrib = 0;
-        const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, particle.mcCollision().globalIndex());
-        for (const auto& recCol : recoCollsPerMcColl) {
-          maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
-        }
+      auto ptGen = particle.pt();
+      auto yGen = particle.rapidityCharmBaryonGen();
 
-        if (particle.originGen() == RecoDecay::OriginType::Prompt) {
-          registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 1, maxNumContrib);
+      if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
+        registry.fill(HIST("hMcGen"), ptGen, -1., yGen, RecoDecay::OriginType::Prompt);
+      } else {
+        float ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+        registry.fill(HIST("hMcGen"), ptGen, ptGenB, yGen, RecoDecay::OriginType::NonPrompt);
+      }
+    }
+  }
 
+  template <bool applyMl, typename CandType, typename McCollisionWithCents>
+  void processMcCent(const CandType& candidates, Omegac0Gen const& mcParticles,
+                     CollisionsWithMcLabels const& collisions, McCollisionWithCents const&)
+  {
+    // MC rec.
+    for (const auto& candidate : candidates) {
+      if (!(candidate.resultSelections() == true || (candidate.resultSelections() == false && !selectionFlagOmegac0))) {
+        continue;
+      }
+      if (yCandRecoMax >= 0. && std::abs(candidate.kfRapOmegac()) > yCandRecoMax) {
+        continue;
+      }
+
+      auto collision = candidate.template collision_as<CollisionsWithMcLabels>();
+      uint16_t numPvContributors = collision.numContrib();
+      float mcCent = evaluateCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
+
+      if constexpr (applyMl) {
+        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegac()[0]);
+
+      } else {
+        registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec());
+      }
+    }
+
+    // MC gen.
+    for (const auto& particle : mcParticles) {
+      if (yCandGenMax >= 0. && std::abs(particle.rapidityCharmBaryonGen()) > yCandGenMax) {
+        continue;
+      }
+
+      auto ptGen = particle.pt();
+      auto yGen = particle.rapidityCharmBaryonGen();
+      auto mcCollision = particle.template mcCollision_as<McCollisionWithCents>();
+
+      int maxNumContrib = 0;
+      const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcCollision.globalIndex());
+      for (const auto& recCol : recoCollsPerMcColl) {
+        maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
+      }
+
+      float mcCent = evaluateCentralityColl(mcCollision);
+
+      if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
+        registry.fill(HIST("hMcGen"), ptGen, -1., yGen, RecoDecay::OriginType::Prompt, mcCent, maxNumContrib);
+      } else {
+        float ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+        registry.fill(HIST("hMcGen"), ptGen, ptGenB, yGen, RecoDecay::OriginType::NonPrompt, mcCent, maxNumContrib);
+      }
+
+      registry.fill(HIST("hNumRecoCollPerMcColl"), recoCollsPerMcColl.size());
+
+      // fill sparse only for gen particles associated to a reconstructed collision
+      if (recoCollsPerMcColl.size() >= 1) {
+        if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
+          registry.fill(HIST("hMcGenWithRecoColl"), ptGen, -1., yGen, RecoDecay::OriginType::Prompt, mcCent, maxNumContrib);
         } else {
-          ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
-          registry.fill(HIST("hSparseAcc"), ptGen, ptGenB, yGen, 2, maxNumContrib);
+          float ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+          registry.fill(HIST("hMcGenWithRecoColl"), ptGen, ptGenB, yGen, RecoDecay::OriginType::NonPrompt, mcCent, maxNumContrib);
         }
       }
     }
   }
 
-  void processMcWithKFParticle(OmegaC0CandidatesMcKF const& omegaC0CandidatesMcKF,
-                               soa::Join<aod::McParticles, aod::HfToOmegaPiMCGen> const& mcParticles,
-                               MyTracksWMc const& tracks,
-                               CollisionsWithMcLabels const& collisions,
-                               aod::McCollisions const& mcCollisions)
+  void processDataKFParticle(Omegac0CandsKF const& candidates)
   {
-    processMc<false>(omegaC0CandidatesMcKF, mcParticles, tracks, collisions, mcCollisions);
+    processData<false>(candidates);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcWithKFParticle, "Process MC with KFParticle", false);
-  // TODO: add the processMcWithKFParticle
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticle, "process data with KFParticle", false);
 
-  void processMcWithKFParticleMl(Omegac0CandidatesMlMcKF const& omegac0CandidatesMlMcKF,
-                                 soa::Join<aod::McParticles, aod::HfToOmegaPiMCGen> const& mcParticles,
-                                 MyTracksWMc const& tracks,
-                                 CollisionsWithMcLabels const& collisions,
-                                 aod::McCollisions const& mcCollisions)
+  void processDataKFParticleMl(Omegac0CandsMlKF const& candidates)
   {
-    processMc<true>(omegac0CandidatesMlMcKF, mcParticles, tracks, collisions, mcCollisions);
+    processData<true>(candidates);
   }
-  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
-  // TODO: add the processMcWithKFParticleMl
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleMl, "process data with KFParticle, ML selections", false);
+
+  void processDataKFParticleFT0C(Omegac0CandsKF const& candidates,
+                                 CollisionsWithFT0C const& collisions)
+  {
+    processDataCent<false>(candidates, collisions);
+  }
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleFT0C, "process data with KFParticle, FT0C centrality", false);
+
+  void processDataKFParticleMlFT0C(Omegac0CandsMlKF const& candidates,
+                                   CollisionsWithFT0C const& collisions)
+  {
+    processDataCent<true>(candidates, collisions);
+  }
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleMlFT0C, "process data with KFParticle, ML selections, FT0C centrality", false);
+
+  void processDataKFParticleFT0M(Omegac0CandsKF const& candidates,
+                                 CollisionsWithFT0M const& collisions)
+  {
+    processDataCent<false>(candidates, collisions);
+  }
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleFT0M, "process data with KFParticle, FT0M centrality", false);
+
+  void processDataKFParticleMlFT0M(Omegac0CandsMlKF const& candidates,
+                                   CollisionsWithFT0M const& collisions)
+  {
+    processDataCent<true>(candidates, collisions);
+  }
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processDataKFParticleMlFT0M, "process data with KFParticle, ML selections, FT0M centrality", false);
+
+  void processMcKFParticle(OmegaC0CandsMcKF const& omegaC0CandidatesMcKF,
+                           Omegac0Gen const& mcParticles)
+  {
+    processMc<false>(omegaC0CandidatesMcKF, mcParticles);
+  }
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcKFParticle, "Process MC with KFParticle", false);
+
+  void processMcKFParticleMl(Omegac0CandsMlMcKF const& omegac0CandidatesMlMcKF,
+                             Omegac0Gen const& mcParticles)
+  {
+    processMc<true>(omegac0CandidatesMlMcKF, mcParticles);
+  }
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcKFParticleMl, "Process MC with KFParticle, ML selections", false);
+
+  void processMcKFParticleFT0M(OmegaC0CandsMcKF const& omegaC0CandidatesMcKF,
+                               Omegac0Gen const& mcParticles,
+                               CollisionsWithMcLabels const& collisions,
+                               McCollisionsWithFT0M const& mcCollisions)
+  {
+    processMcCent<false>(omegaC0CandidatesMcKF, mcParticles, collisions, mcCollisions);
+  }
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcKFParticleFT0M, "Process MC with KFParticle, FT0M centrality (from MC)", false);
+
+  void processMcKFParticleMlFT0M(Omegac0CandsMlMcKF const& omegac0CandidatesMlMcKF,
+                                 Omegac0Gen const& mcParticles,
+                                 CollisionsWithMcLabels const& collisions,
+                                 McCollisionsWithFT0M const& mcCollisions)
+  {
+    processMcCent<true>(omegac0CandidatesMlMcKF, mcParticles, collisions, mcCollisions);
+  }
+  PROCESS_SWITCH(HfTaskOmegac0ToOmegapi, processMcKFParticleMlFT0M, "Process MC with KFParticle, ML selections, FT0M centrality (from MC)", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

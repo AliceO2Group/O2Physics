@@ -17,19 +17,39 @@
 /// \author Vít Kučera <vit.kucera@cern.ch>, CERN
 /// \author Luca Aglietta <luca.aglietta@cern.ch>, University and INFN Torino
 
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
 #include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Rtypes.h>
+
+#include <algorithm>
+#include <array>
+#include <cstdint>
+#include <cstdlib>
+#include <numeric>
+#include <vector>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -50,6 +70,7 @@ struct HfTaskDplus {
   Configurable<std::vector<int>> classMl{"classMl", {0, 1, 2}, "Indexes of ML scores to be stored. Three indexes max."};
   Configurable<bool> storeCentrality{"storeCentrality", false, "Flag to store centrality information"};
   Configurable<bool> storeOccupancy{"storeOccupancy", false, "Flag to store occupancy information"};
+  Configurable<bool> storePvContributors{"storePvContributors", false, "Flag to store number of PV contributors information"};
   Configurable<bool> fillMcBkgHistos{"fillMcBkgHistos", false, "Flag to fill and store histograms for MC background"};
 
   HfHelper hfHelper;
@@ -73,16 +94,17 @@ struct HfTaskDplus {
   Partition<CandDplusDataWithMl> selectedDPlusCandidatesWithMl = aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   // Matched MC
-  Partition<CandDplusMcReco> recoDPlusCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Partition<CandDplusMcRecoWithMl> recoDPlusCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<CandDplusMcReco> recoDPlusCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<CandDplusMcRecoWithMl> recoDPlusCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) == static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   // MC Bkg
-  Partition<CandDplusMcReco> recoBkgCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
-  Partition<CandDplusMcRecoWithMl> recoBkgCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(BIT(aod::hf_cand_3prong::DecayType::DplusToPiKPi)) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<CandDplusMcReco> recoBkgCandidates = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
+  Partition<CandDplusMcRecoWithMl> recoBkgCandidatesWithMl = nabs(aod::hf_cand_3prong::flagMcMatchRec) != static_cast<int8_t>(hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) && aod::hf_sel_candidate_dplus::isSelDplusToPiKPi >= selectionFlagDplus;
 
   ConfigurableAxis thnConfigAxisY{"thnConfigAxisY", {40, -1, 1}, "Cand. rapidity bins"};
-  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {110, 0., 110.}, ""};
-  ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for centrality"};
+  ConfigurableAxis thnConfigAxisCent{"thnConfigAxisCent", {110, 0., 110.}, "axis for centrality"};
+  ConfigurableAxis thnConfigAxisOccupancy{"thnConfigAxisOccupancy", {14, 0, 14000}, "axis for occupancy"};
+  ConfigurableAxis thnConfigAxisPvContributors{"thnConfigAxisPvContributors", {100, 0., 100.}, "axis for PV contributors"};
   ConfigurableAxis thnConfigAxisPtBHad{"thnConfigAxisPtBHad", {25, 0., 50}, "axis for pt of B hadron decayed into D candidate"};
   ConfigurableAxis thnConfigAxisFlagBHad{"thnConfigAxisFlagBHad", {5, 0., 5}, "axis for PDG of B hadron"};
   ConfigurableAxis thnConfigAxisMlScore0{"thnConfigAxisMlScore0", {100, 0., 1.}, "axis for ML output score 0"};
@@ -118,6 +140,7 @@ struct HfTaskDplus {
     AxisSpec thnAxisFlagBHad{thnConfigAxisFlagBHad, "B Hadron flag"};
     AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality"};
     AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
+    AxisSpec thnAxisPvContributors{thnConfigAxisPvContributors, "PV contributors"};
 
     registry.add("hMass", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{350, 1.7, 2.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEta", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -161,13 +184,15 @@ struct HfTaskDplus {
       std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt};
 
       if (doprocessDataWithMl) {
-        axes.insert(axes.end(), {thnAxisMlScore0, thnAxisMlScore1, thnAxisMlScore2});
+        axes.push_back(thnAxisMlScore0);
+        axes.push_back(thnAxisMlScore1);
+        axes.push_back(thnAxisMlScore2);
       }
       if (storeCentrality) {
-        axes.insert(axes.end(), {thnAxisCent});
+        axes.push_back(thnAxisCent);
       }
       if (storeOccupancy) {
-        axes.insert(axes.end(), {thnAxisOccupancy});
+        axes.push_back(thnAxisOccupancy);
       }
 
       registry.add("hSparseMass", "THn for Dplus", HistType::kTHnSparseF, axes);
@@ -183,22 +208,28 @@ struct HfTaskDplus {
         axesFD.insert(axesFD.end(), {thnAxisMlScore0, thnAxisMlScore1, thnAxisMlScore2});
       }
       if (storeCentrality) {
-        axes.insert(axes.end(), {thnAxisCent});
-        axesFD.insert(axesFD.end(), {thnAxisCent});
-        axesGenPrompt.insert(axesGenPrompt.end(), {thnAxisCent});
-        axesGenFD.insert(axesGenFD.end(), {thnAxisCent});
+        axes.push_back(thnAxisCent);
+        axesFD.push_back(thnAxisCent);
+        axesGenPrompt.push_back(thnAxisCent);
+        axesGenFD.push_back(thnAxisCent);
       }
       if (storeOccupancy) {
-        axes.insert(axes.end(), {thnAxisOccupancy});
-        axesFD.insert(axesFD.end(), {thnAxisOccupancy});
-        axesGenPrompt.insert(axesGenPrompt.end(), {thnAxisOccupancy});
-        axesGenFD.insert(axesGenFD.end(), {thnAxisOccupancy});
+        axes.push_back(thnAxisOccupancy);
+        axesFD.push_back(thnAxisOccupancy);
+        axesGenPrompt.push_back(thnAxisOccupancy);
+        axesGenFD.push_back(thnAxisOccupancy);
+      }
+      if (storePvContributors) {
+        axes.push_back(thnAxisPvContributors);
+        axesFD.push_back(thnAxisPvContributors);
+        axesGenPrompt.push_back(thnAxisPvContributors);
+        axesGenFD.push_back(thnAxisPvContributors);
       }
 
-      axesFD.insert(axesFD.end(), {thnAxisPtBHad});
-      axesFD.insert(axesFD.end(), {thnAxisFlagBHad});
-      axesGenFD.insert(axesGenFD.end(), {thnAxisPtBHad});
-      axesGenFD.insert(axesGenFD.end(), {thnAxisFlagBHad});
+      axesFD.push_back(thnAxisPtBHad);
+      axesFD.push_back(thnAxisFlagBHad);
+      axesGenFD.push_back(thnAxisPtBHad);
+      axesGenFD.push_back(thnAxisFlagBHad);
 
       registry.add("hSparseMassPrompt", "THn for Dplus Prompt", HistType::kTHnSparseF, axes);
       registry.add("hSparseMassFD", "THn for Dplus FD", HistType::kTHnSparseF, axesFD);
@@ -248,12 +279,14 @@ struct HfTaskDplus {
   /// \param flagBHad transverse momentum of beauty mother for nonprompt candidates
   /// \param centrality collision centrality
   /// \param occupancy collision occupancy
+  /// \param numPvContributors contributors to the PV
   template <bool isMc, bool isMatched, typename T1>
   void fillSparseML(const T1& candidate,
                     float ptbhad,
                     int flagBHad,
                     float centrality,
-                    float occupancy)
+                    float occupancy,
+                    float numPvContributors)
   {
     std::vector<float> outputMl = {-999., -999., -999.};
     for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -269,6 +302,8 @@ struct HfTaskDplus {
             registry.fill(HIST("hSparseMassPrompt"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
           } else if (!storeCentrality && storeOccupancy) {
             registry.fill(HIST("hSparseMassPrompt"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
+          } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
+            registry.fill(HIST("hSparseMassPrompt"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
           } else {
             registry.fill(HIST("hSparseMassPrompt"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
           }
@@ -281,6 +316,8 @@ struct HfTaskDplus {
             registry.fill(HIST("hSparseMassFD"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality, ptbhad, flagBHad);
           } else if (!storeCentrality && storeOccupancy) {
             registry.fill(HIST("hSparseMassFD"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy, ptbhad, flagBHad);
+          } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
+            registry.fill(HIST("hSparseMassFD"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors, ptbhad, flagBHad);
           } else {
             registry.fill(HIST("hSparseMassFD"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], ptbhad, flagBHad);
           }
@@ -293,6 +330,8 @@ struct HfTaskDplus {
               registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
             } else if (!storeCentrality && storeOccupancy) {
               registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
+            } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
+              registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
             } else {
               registry.fill(HIST("hSparseMassBkg"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
             }
@@ -305,6 +344,8 @@ struct HfTaskDplus {
           registry.fill(HIST("hSparseMassNotMatched"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
         } else if (!storeCentrality && storeOccupancy) {
           registry.fill(HIST("hSparseMassNotMatched"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
+        } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
+          registry.fill(HIST("hSparseMassNotMatched"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
         } else {
           registry.fill(HIST("hSparseMassNotMatched"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
         }
@@ -316,6 +357,8 @@ struct HfTaskDplus {
         registry.fill(HIST("hSparseMass"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], centrality);
       } else if (!storeCentrality && storeOccupancy) {
         registry.fill(HIST("hSparseMass"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], occupancy);
+      } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
+        registry.fill(HIST("hSparseMass"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2], numPvContributors);
       } else {
         registry.fill(HIST("hSparseMass"), hfHelper.invMassDplusToPiKPi(candidate), candidate.pt(), outputMl[0], outputMl[1], outputMl[2]);
       }
@@ -397,12 +440,14 @@ struct HfTaskDplus {
   /// \param flagGenB transverse momentum of beauty mother for nonprompt candidates
   /// \param centrality collision centrality
   /// \param occupancy collision occupancy
+  /// \param numPvContributors contributors to the PV
   template <typename T1>
   void fillSparseMcGen(const T1& particle,
                        float ptGenB,
                        int flagGenB,
                        float centrality,
-                       float occupancy)
+                       float occupancy,
+                       float numPvContributors)
   {
     auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
     if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
@@ -412,6 +457,8 @@ struct HfTaskDplus {
         registry.fill(HIST("hSparseMassGenPrompt"), particle.pt(), yGen, centrality);
       } else if (!storeCentrality && storeOccupancy) {
         registry.fill(HIST("hSparseMassGenPrompt"), particle.pt(), yGen, occupancy);
+      } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
+        registry.fill(HIST("hSparseMassGenPrompt"), particle.pt(), yGen, numPvContributors);
       } else {
         registry.fill(HIST("hSparseMassGenPrompt"), particle.pt(), yGen);
       }
@@ -422,6 +469,8 @@ struct HfTaskDplus {
         registry.fill(HIST("hSparseMassGenFD"), particle.pt(), yGen, centrality, ptGenB, flagGenB);
       } else if (!storeCentrality && storeOccupancy) {
         registry.fill(HIST("hSparseMassGenFD"), particle.pt(), yGen, occupancy, ptGenB, flagGenB);
+      } else if (!storeCentrality && !storeOccupancy && storePvContributors) {
+        registry.fill(HIST("hSparseMassGenFD"), particle.pt(), yGen, numPvContributors, ptGenB, flagGenB);
       } else {
         registry.fill(HIST("hSparseMassGenFD"), particle.pt(), yGen, ptGenB, flagGenB);
       }
@@ -435,6 +484,7 @@ struct HfTaskDplus {
   {
     float cent{-1.f};
     float occ{-1.f};
+    float numPvContr{-1.f};
     float ptBhad{-1.f};
     int flagBHad{-1};
     if constexpr (!fillMl) {
@@ -456,12 +506,15 @@ struct HfTaskDplus {
             cent = getCentralityColl(collision, centEstimator);
           }
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = getOccupancyColl(collision, occEstimator);
+            occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
+          }
+          if (storePvContributors) {
+            numPvContr = collision.numContrib();
           }
         }
 
         fillHisto(candidate);
-        fillSparseML<false, false>(candidate, ptBhad, flagBHad, cent, occ);
+        fillSparseML<false, false>(candidate, ptBhad, flagBHad, cent, occ, numPvContr);
       }
     }
   }
@@ -474,6 +527,7 @@ struct HfTaskDplus {
   {
     float cent{-1};
     float occ{-1};
+    float numPvContr{-1};
     float ptBhad{-1};
     int flagBHad{-1};
 
@@ -502,20 +556,21 @@ struct HfTaskDplus {
         }
         ptBhad = candidate.ptBhadMotherPart();
         flagBHad = getBHadMotherFlag(candidate.pdgBhadMotherPart());
-
+        auto collision = candidate.template collision_as<McRecoCollisionsCent>();
         if (storeCentrality || storeOccupancy) {
-          auto collision = candidate.template collision_as<McRecoCollisionsCent>();
           if (storeCentrality && centEstimator != CentralityEstimator::None) {
             cent = getCentralityColl(collision, centEstimator);
           }
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = getOccupancyColl(collision, occEstimator);
+            occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
           }
         }
-
+          if (storePvContributors) {
+            numPvContr = collision.numContrib();
+          }
         fillHisto(candidate);
         fillHistoMCRec<true>(candidate);
-        fillSparseML<true, true>(candidate, ptBhad, flagBHad, cent, occ);
+        fillSparseML<true, true>(candidate, ptBhad, flagBHad, cent, occ, numPvContr);
       }
       // Bkg
       ptBhad = -1;
@@ -530,10 +585,13 @@ struct HfTaskDplus {
             cent = getCentralityColl(collision, centEstimator);
           }
           if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-            occ = getOccupancyColl(collision, occEstimator);
+            occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
+          }
+          if (storePvContributors) {
+            numPvContr = collision.numContrib();
           }
           fillHistoMCRec<false>(candidate);
-          fillSparseML<true, false>(candidate, ptBhad, flagBHad, cent, occ);
+          fillSparseML<true, false>(candidate, ptBhad, flagBHad, cent, occ, numPvContr);
         }
       }
     }
@@ -551,6 +609,7 @@ struct HfTaskDplus {
     // MC gen.
     float cent{-1.};
     float occ{-1.};
+    float numPvContr{-1.};
     float ptGenB{-1.};
     int flagGenB{-1};
 
@@ -561,14 +620,15 @@ struct HfTaskDplus {
         cent = getCentralityGenColl(recoCollsPerGenMcColl, centEstimator);
       }
       if (storeOccupancy && occEstimator != OccupancyEstimator::None) {
-        occ = getOccupancyGenColl(recoCollsPerGenMcColl, occEstimator);
+        occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerGenMcColl, occEstimator);
       }
 
       for (const auto& particle : mcParticlesPerGenMcColl) {
         ptGenB = -1;
         flagGenB = -1;
+        numPvContr = -1;
         auto yGen = RecoDecay::y(particle.pVector(), o2::constants::physics::MassDPlus);
-        if ((yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) || (std::abs(particle.flagMcMatchGen()) != 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
+        if ((yCandGenMax >= 0. && std::abs(yGen) > yCandGenMax) || (std::abs(particle.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi)) {
           continue;
         }
         if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
@@ -576,9 +636,12 @@ struct HfTaskDplus {
           flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
           ptGenB = bHadMother.pt();
         }
+        for (const auto& recCol : mcRecoCollisions) {
+          numPvContr = std::max<float>(numPvContr, recCol.numContrib());
+        }
         fillHistoMCGen(particle);
         if constexpr (fillMl) {
-          fillSparseMcGen(particle, ptGenB, flagGenB, cent, occ);
+          fillSparseMcGen(particle, ptGenB, flagGenB, cent, occ, numPvContr);
         }
       }
     }

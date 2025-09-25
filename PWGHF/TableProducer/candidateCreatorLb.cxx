@@ -15,22 +15,39 @@
 ///
 /// \author Panos Christakoglou <panos.christakoglou@cern.ch>, Nikhef
 
-#include <memory>
-#include <utility>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
-
-#include "Common/Core/trackUtilities.h"
-
+#include "PWGHF/Core/DecayChannels.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+#include <ReconstructionDataFormats/V0.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <memory>
+#include <stdexcept>
+#include <utility>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -39,11 +56,12 @@ using namespace o2::constants::physics;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::hf_trkcandsel;
+using namespace o2::hf_decay::hf_cand_beauty;
 
 /// Reconstruction of Λb candidates
 struct HfCandidateCreatorLb {
   Produces<aod::HfCandLbBase> rowCandidateBase;
-
+  Produces<aod::HfCandLbProngs> rowCandidateProngs;
   // vertexing
   Configurable<float> bz{"bz", 20., "magnetic field"};
   Configurable<bool> propagateToPCA{"propagateToPCA", true, "create tracks version propagated to PCA"};
@@ -217,8 +235,6 @@ struct HfCandidateCreatorLb {
         auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixPCA, phi, theta));
         auto errorDecayLengthXY = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, 0.) + getRotatedCovMatrixXX(covMatrixPCA, phi, 0.));
 
-        int hfFlag = 1 << hf_cand_lb::DecayType::LbToLcPi;
-
         // fill the candidate table for the Lb here:
         rowCandidateBase(collision.globalIndex(),
                          collision.posX(), collision.posY(), collision.posZ(),
@@ -228,10 +244,8 @@ struct HfCandidateCreatorLb {
                          pvecLc[0], pvecLc[1], pvecLc[2],
                          pvecPion[0], pvecPion[1], pvecPion[2],
                          impactParameter0.getY(), impactParameter1.getY(),
-                         std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()),
-                         lcCand.globalIndex(), trackPion.globalIndex(),
-                         hfFlag);
-
+                         std::sqrt(impactParameter0.getSigmaY2()), std::sqrt(impactParameter1.getSigmaY2()));
+        rowCandidateProngs(lcCand.globalIndex(), trackPion.globalIndex());
         // calculate invariant mass
         auto arrayMomenta = std::array{pvecLc, pvecPion};
         massLcPi = RecoDecay::m(std::move(arrayMomenta), std::array{massLc, massPi});
@@ -257,22 +271,22 @@ struct HfCandidateCreatorLbExpressions {
   /// @brief dummy process function, to be run on data
   void process(aod::Tracks const&) {}
 
-  void processMc(aod::HfCand3Prong const& lcCandidates,
-                 aod::TracksWMc const& tracks,
-                 aod::McParticles const& mcParticles)
+  void processMc(aod::HfCand3Prong const&,
+                 aod::TracksWMc const&,
+                 aod::McParticles const& mcParticles,
+                 aod::HfCandLbProngs const& candsLb)
   {
     int indexRec = -1;
     int8_t sign = 0;
-    int8_t flag = 0;
+    int8_t flagChannelMain = 0;
+    int8_t flagChannelReso = 0;
     int8_t origin = 0;
     int8_t debug = 0;
 
-    rowCandidateLb->bindExternalIndices(&tracks);
-    rowCandidateLb->bindExternalIndices(&lcCandidates);
-
     // Match reconstructed candidates.
-    for (const auto& candidate : *rowCandidateLb) {
-      flag = 0;
+    for (const auto& candidate : candsLb) {
+      flagChannelMain = 0;
+      flagChannelReso = 0;
       origin = 0;
       debug = 0;
       auto lcCand = candidate.prong0();
@@ -289,28 +303,29 @@ struct HfCandidateCreatorLbExpressions {
         // Λb → Λc+ π-
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersLc, Pdg::kLambdaCPlus, std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign, 1);
         if (indexRec > -1) {
-          flag = 1 << hf_cand_lb::DecayType::LbToLcPi;
+          flagChannelMain = sign * DecayChannelMain::LbToLcPi;
         } else {
           debug = 1;
           LOGF(info, "WARNING: Λb in decays in the expected final state but the condition on the intermediate state is not fulfilled");
         }
       }
-      rowMcMatchRec(flag, origin, debug);
+      rowMcMatchRec(flagChannelMain, flagChannelReso, origin, debug);
     }
 
     // Match generated particles.
     for (const auto& particle : mcParticles) {
-      flag = 0;
+      flagChannelMain = 0;
+      flagChannelReso = 0;
       origin = 0;
       // Λb → Λc+ π-
       if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kLambdaB0, std::array{static_cast<int>(Pdg::kLambdaCPlus), -kPiPlus}, true)) {
         // Λc+ → p K- π+
         auto candLcMc = mcParticles.rawIteratorAt(particle.daughtersIds().front());
         if (RecoDecay::isMatchedMCGen(mcParticles, candLcMc, static_cast<int>(Pdg::kLambdaCPlus), std::array{+kProton, -kKPlus, +kPiPlus}, true, &sign)) {
-          flag = sign * (1 << hf_cand_lb::DecayType::LbToLcPi);
+          flagChannelMain = sign * DecayChannelMain::LbToLcPi;
         }
       }
-      rowMcMatchGen(flag, origin);
+      rowMcMatchGen(flagChannelMain, flagChannelReso, origin);
     }
   }
   PROCESS_SWITCH(HfCandidateCreatorLbExpressions, processMc, "Process MC", false);

@@ -17,9 +17,10 @@
 #ifndef PWGHF_HFC_DATAMODEL_DMESONPAIRSTABLES_H_
 #define PWGHF_HFC_DATAMODEL_DMESONPAIRSTABLES_H_
 
-#include <vector>
+#include <Framework/ASoA.h>
 
-#include "Framework/AnalysisDataModel.h"
+#include <cstdint>
+#include <vector>
 
 namespace o2::aod
 {

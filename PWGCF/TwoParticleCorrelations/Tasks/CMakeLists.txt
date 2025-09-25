@@ -9,7 +9,7 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
-o2physics_add_dpl_workflow(twopartcorr
+o2physics_add_dpl_workflow(two-particle-correlations
                            SOURCES twoParticleCorrelations.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::TwoPartCorrCore
                            COMPONENT_NAME Analysis)
@@ -23,16 +23,6 @@ o2physics_add_dpl_workflow(lambdacorr
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(identifiedbf
-                           SOURCES identifiedbf.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                           COMPONENT_NAME Analysis)
-
-o2physics_add_dpl_workflow(identifiedbf-filter-qa
-                           SOURCES identifiedbfqa.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
-                           COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(dpt-dpt-efficiency-and-qc
                            SOURCES dptDptEfficiencyAndQc.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
@@ -40,7 +30,7 @@ o2physics_add_dpl_workflow(dpt-dpt-efficiency-and-qc
 
 o2physics_add_dpl_workflow(dpt-dpt-per-run-qc
                            SOURCES dptDptPerRunQc.cxx
-                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2::DataFormatsITSMFT
                            COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(dpt-dpt-per-run-extra-qc
@@ -58,6 +48,23 @@ o2physics_add_dpl_workflow(neutron-proton-corr-zdc
                            PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                            COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(di-hadron-cor
+                           SOURCES diHadronCor.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(pid-di-hadron
+                           SOURCES pidDiHadron.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(longrange-correlation
+                           SOURCES longrangeCorrelation.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore
+                           COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(long-range-dihadron-cor
+                           SOURCES longRangeDihadronCor.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::PWGCFCore O2Physics::AnalysisCCDB O2Physics::GFWCore
+                           COMPONENT_NAME Analysis)
 

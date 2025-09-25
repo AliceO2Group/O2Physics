@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -16,15 +16,17 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCALCULATOR_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEFFICIENCYCALCULATOR_H_
 
-#include <vector>
+#include "FemtoUniverseParticleHisto.h"
+
+#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "Framework/Configurable.h"
+
+#include <algorithm>
 #include <map>
 #include <string>
-#include <algorithm>
-
-#include "Framework/Configurable.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
-#include "FemtoUniverseParticleHisto.h"
+#include <vector>
 
 namespace o2::analysis::femto_universe::efficiency
 {

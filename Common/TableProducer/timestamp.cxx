@@ -16,31 +16,42 @@
 /// \brief  A task to fill the timestamp table from run number.
 ///         Uses headers from CCDB
 ///
-#include <vector>
+#include "Common/Core/MetadataHelper.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/LHCConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+
+#include <RtypesCore.h>
+
+#include <cstdint>
 #include <map>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonDataFormat/InteractionRecord.h"
-#include "DetectorsRaw/HBFUtils.h"
-#include "MetadataHelper.h"
+#include <string>
+#include <utility>
+#include <vector>
 
 using namespace o2::framework;
 using namespace o2::header;
 using namespace o2;
 
-MetadataHelper metadataInfo; // Metadata helper
+o2::common::core::MetadataHelper metadataInfo; // Metadata helper
 
 struct TimestampTask {
-  Produces<aod::Timestamps> timestampTable;  /// Table with SOR timestamps produced by the task
-  Service<o2::ccdb::BasicCCDBManager> ccdb;  /// CCDB manager to access orbit-reset timestamp
-  o2::ccdb::CcdbApi ccdb_api;                /// API to access CCDB headers
+  Produces<aod::Timestamps> timestampTable; /// Table with SOR timestamps produced by the task
+  Service<o2::ccdb::BasicCCDBManager> ccdb; /// CCDB manager to access orbit-reset timestamp
+  o2::ccdb::CcdbApi ccdb_api;               /// API to access CCDB headers
   Configurable<bool> fatalOnInvalidTimestamp{"fatalOnInvalidTimestamp", false, "Generate fatal error for invalid timestamps"};
-  std::map<int, int64_t> mapRunToOrbitReset; /// Cache of orbit reset timestamps
+  std::map<int, int64_t> mapRunToOrbitReset;                      /// Cache of orbit reset timestamps
   std::map<int, std::pair<int64_t, int64_t>> mapRunToRunDuration; /// Cache of run duration timestamps
-  int lastRunNumber = 0;                     /// Last run number processed
-  int64_t orbitResetTimestamp = 0;           /// Orbit-reset timestamp in us
-  std::pair<int64_t, int64_t> runDuration;   /// Pair of SOR and EOR timestamps
+  int lastRunNumber = 0;                                          /// Last run number processed
+  int64_t orbitResetTimestamp = 0;                                /// Orbit-reset timestamp in us
+  std::pair<int64_t, int64_t> runDuration;                        /// Pair of SOR and EOR timestamps
 
   // Configurables
   Configurable<bool> verbose{"verbose", false, "verbose mode"};

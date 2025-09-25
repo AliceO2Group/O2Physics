@@ -18,9 +18,12 @@
 #ifndef COMMON_CORE_COLLISIONTYPEHELPER_H_
 #define COMMON_CORE_COLLISIONTYPEHELPER_H_
 
-#include <string>
-#include "DataFormatsParameters/GRPLHCIFData.h"
+#include <DataFormatsParameters/GRPLHCIFData.h>
 
+#include <string>
+
+namespace o2::common::core
+{
 // Container for the collision system type
 struct CollisionSystemType {
   // Enum type for the collision system
@@ -31,11 +34,18 @@ struct CollisionSystemType {
   static constexpr collType kCollSysPbPb = 1;   // PbPb
   static constexpr collType kCollSysXeXe = 2;   // XeXe
   static constexpr collType kCollSyspPb = 3;    // pPb
-  static constexpr collType kNCollSys = 4;      // Number of collision systems
+  static constexpr collType kCollSysOO = 4;     // OO (Oxygen-Oxygen)
+  static constexpr collType kCollSyspO = 5;     // pO (proton-Oxygen)
+  static constexpr collType kCollSysNeNe = 6;   // NeNe (Neon-Neon)
+  static constexpr collType kNCollSys = 7;      // Number of collision systems
 
   static std::string getCollisionSystemName(collType collSys);
 
   static int getCollisionTypeFromGrp(o2::parameters::GRPLHCIFData* grplhcif);
 };
+
+} // namespace o2::common::core
+
+using CollisionSystemType = o2::common::core::CollisionSystemType;
 
 #endif // COMMON_CORE_COLLISIONTYPEHELPER_H_

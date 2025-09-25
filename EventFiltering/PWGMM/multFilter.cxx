@@ -8,24 +8,23 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-#include <cmath>
-#include <string>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 #include "EventFiltering/filterTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
 #include "DataFormatsFT0/Digit.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/StaticFor.h"
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
+
+#include <cmath>
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -58,6 +57,9 @@ struct multFilter {
   Configurable<bool> sel8{"sel8", 1, "apply sel8 event selection"};
   Configurable<bool> selt0time{"selt0time", 0, "apply 1ns cut T0A and T0C"};
   Configurable<bool> selt0vtx{"selt0vtx", 0, "apply T0 vertext trigger"};
+  Configurable<bool> isTimeFrameBorderCut{"isTimeFrameBorderCut", 1, "apply timeframe border cut"};
+  Configurable<bool> isSameBunchPileup{"isSameBunchPileup", 1, "apply same bunch pileup cut"};
+  Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 1, "apply good vtx FT0vsPV cut"};
 
   Configurable<float> avPyT0A{"avPyT0A", 8.16, "nch from pythia T0A"};
   Configurable<float> avPyT0C{"avPyT0C", 8.83, "nch from pythia T0C"};
@@ -354,6 +356,19 @@ struct multFilter {
       return;
     }
     if (sel8 && !collision.sel8()) {
+      tags(false, false, false, false, false, false, false);
+      return;
+    }
+
+    if (isTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      tags(false, false, false, false, false, false, false);
+      return;
+    }
+    if (isSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
+      tags(false, false, false, false, false, false, false);
+      return;
+    }
+    if (isGoodZvtxFT0vsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
       tags(false, false, false, false, false, false, false);
       return;
     }

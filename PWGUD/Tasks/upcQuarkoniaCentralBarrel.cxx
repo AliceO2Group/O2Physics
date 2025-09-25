@@ -414,9 +414,9 @@ struct upcQuarkoniaCentralBarrel {
     // __________________________________________
     // main analysis
     if (doMCAssociation) {
-      if constexpr (requires { proton.template udMcParticle(); }) { // check if MC information is available
-        auto protonMC = fullTrackMCs.iteratorAt(proton.template udMcParticle().globalIndex());
-        auto antiProtonMC = fullTrackMCs.iteratorAt(antiProton.template udMcParticle().globalIndex());
+      if constexpr (requires { proton.udMcParticle(); }) { // check if MC information is available
+        auto protonMC = fullTrackMCs.iteratorAt(proton.udMcParticle().globalIndex());
+        auto antiProtonMC = fullTrackMCs.iteratorAt(antiProton.udMcParticle().globalIndex());
 
         if (!protonMC.has_mothers())
           return;

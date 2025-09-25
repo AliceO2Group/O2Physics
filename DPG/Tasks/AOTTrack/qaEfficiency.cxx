@@ -16,28 +16,41 @@
 ///         In MC the efficiency for particles is computed according to the PDG code (sign included and not charge).
 ///
 
-// O2 includes
-#include <memory>
-#include <vector>
+#include "PWGLF/DataModel/LFParticleIdentification.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/StaticFor.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/Track.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/Centrality.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGLF/DataModel/LFParticleIdentification.h"
-#include "Common/Core/RecoDecay.h"
 
-// ROOT includes
-#include "TPDGCode.h"
-#include "TEfficiency.h"
-#include "THashList.h"
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TAxis.h>
+#include <TEfficiency.h>
+#include <THashList.h>
+#include <TMathBase.h>
+#include <TString.h>
+
+#include <array>
+#include <cmath>
+#include <memory>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -231,6 +244,7 @@ struct QaEfficiency {
   Configurable<bool> doPtEta{"doPtEta", false, "Flag to produce the efficiency vs pT and Eta"};
   Configurable<bool> doPtRadius{"doPtRadius", false, "Flag to produce the efficiency vs pT and Radius"};
   Configurable<int> applyEvSel{"applyEvSel", 0, "Flag to apply event selection: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
+  Configurable<bool> applyTimeFrameBorderCut{"applyTimeFrameBorderCut", false, "Flag to apply the TF border cut"};
   // Custom track cuts for debug purposes
   TrackSelection customTrackCuts;
   struct : ConfigurableGroup {
@@ -264,6 +278,7 @@ struct QaEfficiency {
   using CollisionCandidatesMC = o2::soa::Join<CollisionCandidates, o2::aod::McCollisionLabels>;
   using TrackCandidates = o2::soa::Join<o2::aod::Tracks, o2::aod::TracksExtra, o2::aod::TrackSelection, o2::aod::TrackSelectionExtension, o2::aod::TracksDCA>;
   using TrackCandidatesMC = o2::soa::Join<TrackCandidates, o2::aod::McTrackLabels>;
+  using BCsInfo = soa::Join<aod::BCs, aod::Timestamps, aod::BcSels>;
 
   // Histograms
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -972,6 +987,7 @@ struct QaEfficiency {
 
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(3, "Passed Contrib.");
     histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(4, "Passed Position");
+    histos.get<TH1>(HIST("eventSelection"))->GetXaxis()->SetBinLabel(5, "Passed Time Frame border cut");
 
     if (doprocessMC) {
       histos.add("MC/generatedCollisions", "Generated Collisions", kTH1D, {{10, 0.5, 10.5, "Generated collisions"}});
@@ -1265,7 +1281,7 @@ struct QaEfficiency {
           for (const auto& mother : mothers) {
             for (const auto& pdgToCheck : mothersPDGs.value) {
               if (mother.pdgCode() == pdgToCheck) {
-                motherIsAccepted = true; // Mother matches the list of specified PDGs
+                motherIsAccepted = true;                               // Mother matches the list of specified PDGs
                 hPtmotherGenerated[histogramIndex]->Fill(mother.pt()); // Fill generated pT for mother
                 break;
               }
@@ -1453,6 +1469,12 @@ struct QaEfficiency {
     }
     if constexpr (doFillHistograms) {
       histos.fill(HIST("eventSelection"), 4);
+    }
+    if (applyTimeFrameBorderCut && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+      return false;
+    }
+    if constexpr (doFillHistograms) {
+      histos.fill(HIST("eventSelection"), 5);
     }
     return true;
   }
@@ -1743,7 +1765,8 @@ struct QaEfficiency {
                  // o2::soa::SmallGroups<CollisionCandidatesMC> const& collisions,
                  CollisionCandidatesMC const& collisions,
                  TrackCandidatesMC const& tracks,
-                 o2::aod::McParticles const& mcParticles)
+                 o2::aod::McParticles const& mcParticles,
+                 BCsInfo const&)
   {
 
     /// loop over generated collisions
@@ -1874,6 +1897,13 @@ struct QaEfficiency {
               continue;
             }
           }
+          // apply time-frame border cut also to the generated collision
+          if (applyTimeFrameBorderCut) {
+            auto bc = mcCollision.bc_as<BCsInfo>();
+            if (!bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
+              continue;
+            }
+          }
         }
 
         /// only to fill denominator of ITS-TPC matched primary tracks only in MC events with at least 1 reco. vtx
@@ -1919,6 +1949,13 @@ struct QaEfficiency {
       if (applyPvZCutGenColl) {
         const float genPvZ = mcCollision.posZ();
         if (genPvZ < vertexZMin || genPvZ > vertexZMax) {
+          continue;
+        }
+      }
+      // apply time-frame border cut also to the generated collision
+      if (applyTimeFrameBorderCut) {
+        auto bc = mcCollision.bc_as<BCsInfo>();
+        if (!bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
           continue;
         }
       }
@@ -1976,7 +2013,8 @@ struct QaEfficiency {
   void processMCWithoutCollisions(TrackCandidatesMC const& tracks,
                                   o2::aod::Collisions const&,
                                   o2::aod::McParticles const& mcParticles,
-                                  o2::aod::McCollisions const&)
+                                  o2::aod::McCollisions const&,
+                                  BCsInfo const&)
   {
     // Track loop
     for (const auto& track : tracks) {
@@ -2025,6 +2063,14 @@ struct QaEfficiency {
         const auto mcCollision = mcParticle.mcCollision();
         const float posZ = mcCollision.posZ();
         if (posZ < vertexZMin || posZ > vertexZMax) {
+          continue;
+        }
+      }
+      // apply time-frame border cut also to the generated collision
+      if (applyTimeFrameBorderCut) {
+        const auto mcCollision = mcParticle.mcCollision();
+        auto bc = mcCollision.bc_as<BCsInfo>();
+        if (!bc.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
           continue;
         }
       }

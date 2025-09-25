@@ -14,23 +14,22 @@
 ///
 /// \author Daiki Sekihata, daiki.sekihata@cern.ch
 
-#include <string>
+#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "PWGJE/DataModel/Jet.h"
 
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
 #include "Common/CCDB/TriggerAliases.h"
 
-#include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
-#include "PWGJE/DataModel/Jet.h"
+#include <string>
 
 using namespace o2;
 using namespace o2::framework;
@@ -40,26 +39,33 @@ using namespace o2::soa;
 using MyBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
 using MyQvectors = soa::Join<aod::QvectorFT0CVecs, aod::QvectorFT0AVecs, aod::QvectorFT0MVecs, aod::QvectorBPosVecs, aod::QvectorBNegVecs, aod::QvectorBTotVecs>;
 
-using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::Mults>;
+using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod::EMEoIs, aod::Mults>;
 using MyCollisionsCent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsCentQvec = soa::Join<MyCollisionsCent, MyQvectors>;
+
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
+using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
+using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT_Cent, MyQvectors>;
 
 using MyCollisionsMC = soa::Join<MyCollisions, aod::McCollisionLabels>;
 using MyCollisionsMCCent = soa::Join<MyCollisionsMC, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsMCCentQvec = soa::Join<MyCollisionsMCCent, MyQvectors>;
 
 struct CreateEMEventPhoton {
+  Produces<o2::aod::EMBCs> embc;
   Produces<o2::aod::EMEvents> event;
   // Produces<o2::aod::EMEventsCov> eventCov;
   Produces<o2::aod::EMEventsMult> eventMult;
   Produces<o2::aod::EMEventsCent> eventCent;
   Produces<o2::aod::EMEventsQvec> eventQvec;
+  Produces<o2::aod::EMSWTriggerBits> emswtbit;
+  Produces<o2::aod::EMEventNormInfos> event_norm_info;
   Produces<o2::aod::EMEventsWeight> eventWeights;
 
   enum class EMEventType : int {
     kEvent = 0,
-    kEventCent = 1,
-    kEventCent_Qvec = 2,
+    kEvent_Cent = 1,
+    kEvent_Cent_Qvec = 2,
     kEvent_JJ = 3,
   };
 
@@ -129,9 +135,15 @@ struct CreateEMEventPhoton {
     mRunNumber = bc.runNumber();
   }
 
-  template <bool isMC, EMEventType eventype, typename TCollisions, typename TBCs>
-  void skimEvent(TCollisions const& collisions, TBCs const&)
+  template <bool isMC, bool isTriggerAnalysis, EMEventType eventtype, typename TCollisions, typename TBCs>
+  void skimEvent(TCollisions const& collisions, TBCs const& bcs)
   {
+    for (const auto& bc : bcs) {
+      if (bc.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        embc(bc.alias_raw(), bc.selection_raw(), bc.rct_raw()); // TVX is fired.
+      }
+    } // end of bc loop
+
     for (const auto& collision : collisions) {
       if constexpr (isMC) {
         if (!collision.has_mcCollision()) {
@@ -142,14 +154,37 @@ struct CreateEMEventPhoton {
       auto bc = collision.template foundBC_as<TBCs>();
       initCCDB(bc);
 
-      if (!collision.isSelected()) {
-        continue;
-      }
       if (needEMCTrigger && !collision.alias_bit(kTVXinEMC)) {
         continue;
       }
       if (needPHSTrigger && !collision.alias_bit(kTVXinPHOS)) {
         continue;
+      }
+
+      if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
+        if constexpr (eventtype == EMEventType::kEvent) {
+          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+        } else if constexpr (eventtype == EMEventType::kEvent_Cent || eventtype == EMEventType::kEvent_Cent_Qvec) {
+          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), collision.centFT0C());
+        } else {
+          event_norm_info(collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), static_cast<int16_t>(10.f * collision.posZ()), 105.f);
+        }
+      }
+
+      if (!collision.isSelected()) {
+        continue;
+      }
+
+      if (!collision.isEoI()) { // events with at least 1 photon for data reduction.
+        continue;
+      }
+
+      if constexpr (isTriggerAnalysis) {
+        if (collision.swtaliastmp_raw() == 0) {
+          continue;
+        } else {
+          emswtbit(collision.swtaliastmp_raw());
+        }
       }
 
       const float qDefault = 999.f; // default value for q vectors if not obtained
@@ -160,27 +195,27 @@ struct CreateEMEventPhoton {
         registry.fill(HIST("hEventCounter"), 2);
       }
 
-      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), bc.timestamp(),
-            collision.posX(), collision.posY(), collision.posZ(),
+      event(collision.globalIndex(), bc.runNumber(), bc.globalBC(), collision.alias_raw(), collision.selection_raw(), collision.rct_raw(), bc.timestamp(),
+            collision.posZ(),
             collision.numContrib(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
 
       // eventCov(collision.covXX(), collision.covXY(), collision.covXZ(), collision.covYY(), collision.covYZ(), collision.covZZ(), collision.chi2());
 
       eventMult(collision.multFT0A(), collision.multFT0C(), collision.multNTracksPV(), collision.multNTracksPVeta1(), collision.multNTracksPVetaHalf());
 
-      if constexpr (eventype != EMEventType::kEvent_JJ) {
+      if constexpr (eventtype != EMEventType::kEvent_JJ) {
         eventWeights(1.f);
       }
 
-      if constexpr (eventype == EMEventType::kEvent) {
+      if constexpr (eventtype == EMEventType::kEvent) {
         eventCent(105.f, 105.f, 105.f);
         eventQvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
                   qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
-      } else if constexpr (eventype == EMEventType::kEventCent) {
+      } else if constexpr (eventtype == EMEventType::kEvent_Cent) {
         eventCent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
         eventQvec(qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault,
                   qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault, qDefault);
-      } else if constexpr (eventype == EMEventType::kEventCent_Qvec) {
+      } else if constexpr (eventtype == EMEventType::kEvent_Cent_Qvec) {
         eventCent(collision.centFT0M(), collision.centFT0A(), collision.centFT0C());
         const size_t qvecSize = collision.qvecFT0CReVec().size();
         if (qvecSize >= 2) { // harmonics 2,3
@@ -232,46 +267,66 @@ struct CreateEMEventPhoton {
     }
   }
 
+  // for data
   void processEvent(MyCollisions const& collisions, MyBCs const& bcs)
   {
-    skimEvent<false, EMEventType::kEvent>(collisions, bcs);
+    skimEvent<false, false, EMEventType::kEvent>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEventPhoton, processEvent, "process event info", false);
 
-  void processEventMC(MyCollisionsMC const& collisions, MyBCs const& bcs)
-  {
-    skimEvent<true, EMEventType::kEvent>(collisions, bcs);
-  }
-  PROCESS_SWITCH(CreateEMEventPhoton, processEventMC, "process event info", false);
-
-  void processEventJJMC(MyCollisionsMC const& collisions, MyJJCollisions const& mcCollisions, MyBCs const& bcs, aod::FullMCParticleLevelJets const& jets)
-  {
-    skimEvent<true, EMEventType::kEvent_JJ>(collisions, bcs);
-    fillEventWeights(collisions, mcCollisions, bcs, jets);
-  }
-  PROCESS_SWITCH(CreateEMEventPhoton, processEventJJMC, "process event info", false);
-
   void processEvent_Cent(MyCollisionsCent const& collisions, MyBCs const& bcs)
   {
-    skimEvent<false, EMEventType::kEventCent>(collisions, bcs);
+    skimEvent<false, false, EMEventType::kEvent_Cent>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEventPhoton, processEvent_Cent, "process event info", false);
 
   void processEvent_Cent_Qvec(MyCollisionsCentQvec const& collisions, MyBCs const& bcs)
   {
-    skimEvent<false, EMEventType::kEventCent_Qvec>(collisions, bcs);
+    skimEvent<false, false, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEventPhoton, processEvent_Cent_Qvec, "process event info", false);
 
+  void processEvent_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs)
+  {
+    skimEvent<false, true, EMEventType::kEvent>(collisions, bcs);
+  }
+  PROCESS_SWITCH(CreateEMEventPhoton, processEvent_SWT, "process event info", false);
+
+  void processEvent_SWT_Cent(MyCollisionsWithSWT_Cent const& collisions, MyBCs const& bcs)
+  {
+    skimEvent<false, true, EMEventType::kEvent_Cent>(collisions, bcs);
+  }
+  PROCESS_SWITCH(CreateEMEventPhoton, processEvent_SWT_Cent, "process event info", false);
+
+  void processEvent_SWT_Cent_Qvec(MyCollisionsWithSWT_Cent_Qvec const& collisions, MyBCs const& bcs)
+  {
+    skimEvent<false, true, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
+  }
+  PROCESS_SWITCH(CreateEMEventPhoton, processEvent_SWT_Cent_Qvec, "process event info", false);
+
+  // for MC
+  void processEventMC(MyCollisionsMC const& collisions, MyBCs const& bcs)
+  {
+    skimEvent<true, false, EMEventType::kEvent>(collisions, bcs);
+  }
+  PROCESS_SWITCH(CreateEMEventPhoton, processEventMC, "process event info", false);
+
+  void processEventJJMC(MyCollisionsMC const& collisions, MyJJCollisions const& mcCollisions, MyBCs const& bcs, aod::FullMCParticleLevelJets const& jets)
+  {
+    skimEvent<true, false, EMEventType::kEvent_JJ>(collisions, bcs);
+    fillEventWeights(collisions, mcCollisions, bcs, jets);
+  }
+  PROCESS_SWITCH(CreateEMEventPhoton, processEventJJMC, "process event info", false);
+
   void processEventMC_Cent(MyCollisionsMCCent const& collisions, MyBCs const& bcs)
   {
-    skimEvent<true, EMEventType::kEventCent>(collisions, bcs);
+    skimEvent<true, false, EMEventType::kEvent_Cent>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEventPhoton, processEventMC_Cent, "process event info", false);
 
   void processEventMC_Cent_Qvec(MyCollisionsMCCentQvec const& collisions, MyBCs const& bcs)
   {
-    skimEvent<true, EMEventType::kEventCent_Qvec>(collisions, bcs);
+    skimEvent<true, false, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
   }
   PROCESS_SWITCH(CreateEMEventPhoton, processEventMC_Cent_Qvec, "process event info", false);
 
@@ -281,14 +336,15 @@ struct CreateEMEventPhoton {
 struct AssociatePhotonToEMEvent {
   Produces<o2::aod::V0KFEMEventIds> v0kfeventid;
   Produces<o2::aod::EMPrimaryElectronEMEventIds> prmeleventid;
-  Produces<o2::aod::EMPrimaryMuonEMEventIds> prmmueventid;
   Produces<o2::aod::PHOSEMEventIds> phoseventid;
   Produces<o2::aod::EMCEMEventIds> emceventid;
+  Produces<o2::aod::EMPrimaryTrackEMEventIds> prmtrackeventid;
 
   Preslice<aod::V0PhotonsKF> perCollisionPCM = aod::v0photonkf::collisionId;
   PresliceUnsorted<aod::EMPrimaryElectronsFromDalitz> perCollisionEl = aod::emprimaryelectron::collisionId;
   Preslice<aod::PHOSClusters> perCollisionPHOS = aod::skimmedcluster::collisionId;
   Preslice<aod::SkimEMCClusters> perCollisionEMC = aod::skimmedcluster::collisionId;
+  Preslice<aod::EMPrimaryTracks> perCollision_track = aod::emprimarytrack::collisionId;
 
   void init(o2::framework::InitContext&) {}
 
@@ -327,12 +383,18 @@ struct AssociatePhotonToEMEvent {
     fillEventId(collisions, photons, emceventid, perCollisionEMC);
   }
 
+  void processChargedTrack(aod::EMEvents const& collisions, aod::EMPrimaryTracks const& tracks)
+  {
+    fillEventId(collisions, tracks, prmtrackeventid, perCollision_track);
+  }
+
   void processDummy(aod::EMEvents const&) {}
 
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPCM, "process pcm-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processElectronFromDalitz, "process dalitzee-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processPHOS, "process phos-event indexing", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processEMC, "process emc-event indexing", false);
+  PROCESS_SWITCH(AssociatePhotonToEMEvent, processChargedTrack, "process indexing for charged tracks", false);
   PROCESS_SWITCH(AssociatePhotonToEMEvent, processDummy, "process dummy", true);
 };
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

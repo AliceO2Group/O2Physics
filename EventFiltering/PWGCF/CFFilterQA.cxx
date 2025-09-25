@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -1033,7 +1033,7 @@ struct CFFilterQA {
 
   std::vector<double> setValuesBB(aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string ccdbPath)
   {
-    map<string, string> metadata;
+    std::map<std::string, std::string> metadata;
     auto h = ccdbApi.retrieveFromTFileAny<TH1F>(ccdbPath, metadata, bunchCrossing.timestamp());
     // auto h = ccdb->getForTimeStamp<TH1F>(ccdbPath, bunchCrossing.timestamp()); //check if possible to use this without getting fatal
     if (!h) {
@@ -1055,7 +1055,7 @@ struct CFFilterQA {
 
   std::vector<double> setValuesAvg(aod::BCsWithTimestamps::iterator const& bunchCrossing, const std::string ccdbPath)
   {
-    map<string, string> metadata;
+    std::map<std::string, std::string> metadata;
     auto h = ccdbApi.retrieveFromTFileAny<TH1F>(ccdbPath, metadata, bunchCrossing.timestamp());
     // auto h = ccdb->getForTimeStamp<TH1F>(ccdbPath, bunchCrossing.timestamp()); //check if possible to use this without getting fatal
     if (!h) {

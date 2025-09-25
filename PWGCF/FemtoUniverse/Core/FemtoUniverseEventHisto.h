@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -18,6 +18,7 @@
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEEVENTHISTO_H_
 
 #include "PWGCF/FemtoUniverse/DataModel/FemtoDerived.h"
+
 #include "Framework/HistogramRegistry.h"
 
 using namespace o2::framework;

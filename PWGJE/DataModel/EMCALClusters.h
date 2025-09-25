@@ -16,10 +16,14 @@
 #ifndef PWGJE_DATAMODEL_EMCALCLUSTERS_H_
 #define PWGJE_DATAMODEL_EMCALCLUSTERS_H_
 
+#include "EMCALClusterDefinition.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
+
+#include <stdexcept>
 #include <string>
 #include <vector>
-#include "Framework/AnalysisDataModel.h"
-#include "EMCALClusterDefinition.h"
 
 namespace o2::aod
 {
@@ -135,6 +139,12 @@ DECLARE_SOA_TABLE(EMCALMCClusters, "AOD", "EMCALMCCLUSTERS", //!
 
 using EMCALMCCluster = EMCALMCClusters::iterator;
 
+// table of cluster MC info that could not be matched to a collision
+DECLARE_SOA_TABLE(EMCALAmbiguousMCClusters, "AOD", "EMCALAMBMCCLS", //!
+                  emcalclustermc::McParticleIds, emcalclustermc::AmplitudeA);
+
+using EMCALAmbiguousMCCluster = EMCALAmbiguousMCClusters::iterator;
+
 namespace emcalclustercell
 {
 // declare index column pointing to cluster table
@@ -152,10 +162,13 @@ using EMCALClusterCell = EMCALClusterCells::iterator;
 using EMCALAmbiguousClusterCell = EMCALAmbiguousClusterCells::iterator;
 namespace emcalmatchedtrack
 {
-DECLARE_SOA_INDEX_COLUMN(Track, track); //! linked to Track table only for tracks that were matched
+DECLARE_SOA_INDEX_COLUMN(Track, track);        //! linked to Track table only for tracks that were matched
+DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float); //! difference between matched track and cluster azimuthal angle
+DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float); //! difference between matched track and cluster pseudorapidity
 } // namespace emcalmatchedtrack
-DECLARE_SOA_TABLE(EMCALMatchedTracks, "AOD", "EMCMATCHTRACKS",                                     //!
-                  o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalmatchedtrack::TrackId); //!
+DECLARE_SOA_TABLE(EMCALMatchedTracks, "AOD", "EMCMATCHTRACKS", //!
+                  o2::soa::Index<>, emcalclustercell::EMCALClusterId, emcalmatchedtrack::TrackId,
+                  emcalmatchedtrack::DeltaPhi, emcalmatchedtrack::DeltaEta); //!
 using EMCALMatchedTrack = EMCALMatchedTracks::iterator;
 } // namespace o2::aod
 #endif // PWGJE_DATAMODEL_EMCALCLUSTERS_H_

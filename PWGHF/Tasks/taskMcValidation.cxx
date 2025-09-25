@@ -18,27 +18,56 @@
 /// \author Fabrizio Grosa <fabrizio.grosa@cern.ch>, CERN
 /// \author Fabio Catalano <fabio.catalano@cern.ch>, CERN
 
-#include <memory>
+#include "PWGHF/Core/CentralityEstimation.h"
+#include "PWGHF/Core/DecayChannels.h"
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+#include "PWGHF/Utils/utilsEvSelHf.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/StaticFor.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <THnSparse.h>
+#include <TPDGCode.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <Rtypes.h>
+
 #include <algorithm>
+#include <array>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
+#include <memory>
+#include <numeric>
+#include <string_view>
 #include <vector>
 
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-
-#include "PWGHF/Core/CentralityEstimation.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/Utils/utilsEvSelHf.h"
-
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -60,6 +89,7 @@ enum DecayChannels { DzeroToKPi = 0,
                      D2Star0ToDPlusPi,
                      B0ToDminusPi,
                      BplusToD0Pi,
+                     BsToDsPi,
                      LcToPKPi,
                      LcToPiK0s,
                      XiCplusToPKPi,
@@ -71,31 +101,33 @@ enum DecayChannels { DzeroToKPi = 0,
 }; // always keep nChannels at the end
 
 static constexpr int nCharmMesonChannels = 10;                                                 // number of charm meson channels
-static constexpr int nBeautyChannels = 2;                                                      // number of beauty hadron channels
+static constexpr int nBeautyChannels = 3;                                                      // number of beauty hadron channels
 static constexpr int nCharmBaryonChannels = nChannels - nCharmMesonChannels - nBeautyChannels; // number of charm baryon channels
 static constexpr int nOriginTypes = 2;                                                         // number of origin types (prompt, non-prompt; only for charm hadrons)
 static constexpr std::array<int, nChannels> PDGArrayParticle = {o2::constants::physics::Pdg::kD0, o2::constants::physics::Pdg::kDStar,
                                                                 o2::constants::physics::Pdg::kDPlus, o2::constants::physics::Pdg::kDPlus,
                                                                 o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS, o2::constants::physics::Pdg::kDS1, o2::constants::physics::Pdg::kDS2Star,
-                                                                o2::constants::physics::Pdg::kD10, o2::constants::physics::Pdg::kD2Star0, o2::constants::physics::Pdg::kB0, o2::constants::physics::Pdg::kBPlus, o2::constants::physics::Pdg::kLambdaCPlus,
-                                                                o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kXiC0,
+                                                                o2::constants::physics::Pdg::kD10, o2::constants::physics::Pdg::kD2Star0,
+                                                                o2::constants::physics::Pdg::kB0, o2::constants::physics::Pdg::kBPlus, o2::constants::physics::Pdg::kBS,
+                                                                o2::constants::physics::Pdg::kLambdaCPlus, o2::constants::physics::Pdg::kLambdaCPlus,
+                                                                o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kXiCPlus, o2::constants::physics::Pdg::kXiC0,
                                                                 o2::constants::physics::Pdg::kOmegaC0, o2::constants::physics::Pdg::kOmegaC0};
-static constexpr std::array<unsigned int, nChannels> nDaughters = {2, 3, 3, 3, 3, 3, 5, 5, 4, 4, 4, 3, 3, 3, 3, 5, 4, 4, 4};
-static constexpr std::array<int, nChannels> maxDepthForSearch = {1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 2, 2, 3, 2, 4, 3, 3, 3};
+static constexpr std::array<unsigned int, nChannels> nDaughters = {2, 3, 3, 3, 3, 3, 5, 5, 4, 4, 4, 3, 4, 3, 3, 3, 5, 4, 4, 4};
+static constexpr std::array<int, nChannels> maxDepthForSearch = {1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 2, 3, 2, 3, 2, 4, 3, 3, 3};
 // keep coherent indexing with PDGArrayParticle
 // FIXME: look for a better solution
-static constexpr std::array<std::array<int, 2>, nChannels> arrPDGFinal2Prong = {{{+kPiPlus, -kKPlus}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}};
-static constexpr std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {}, {}, {}, {}, {}, {-kPiPlus, +kKPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kPiPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {}, {}, {}, {}}};
-static constexpr std::array<std::array<int, 4>, nChannels> arrPDGFinal4Prong = {{{}, {}, {}, {}, {}, {}, {}, {}, {+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus}, {-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, {}, {}, {}, {}, {}, {+kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {+kPiPlus, -kKPlus, -kPiPlus, +kProton}, {+kPiPlus, -kPiPlus, -kPiPlus, +kProton}}};
-static constexpr std::array<std::array<int, 5>, nChannels> arrPDGFinal5Prong = {{{}, {}, {}, {}, {}, {}, {+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, {}, {}, {}, {}, {}, {}, {}, {+kPiPlus, +kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {}, {}, {}}};
+static constexpr std::array<std::array<int, 2>, nChannels> arrPDGFinal2Prong = {{{+kPiPlus, -kKPlus}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}, {}}};
+static constexpr std::array<std::array<int, 3>, nChannels> arrPDGFinal3Prong = {{{}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {+kKPlus, -kKPlus, +kPiPlus}, {}, {}, {}, {}, {}, {-kPiPlus, +kKPlus, +kPiPlus}, {}, {+kProton, -kKPlus, +kPiPlus}, {+kProton, -kPiPlus, +kPiPlus}, {+kProton, -kKPlus, +kPiPlus}, {}, {}, {}, {}}};
+static constexpr std::array<std::array<int, 4>, nChannels> arrPDGFinal4Prong = {{{}, {}, {}, {}, {}, {}, {}, {}, {+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus}, {-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, {}, {-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, {}, {}, {}, {}, {+kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {+kPiPlus, -kKPlus, -kPiPlus, +kProton}, {+kPiPlus, -kPiPlus, -kPiPlus, +kProton}}};
+static constexpr std::array<std::array<int, 5>, nChannels> arrPDGFinal5Prong = {{{}, {}, {}, {}, {}, {}, {+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, {+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus}, {}, {}, {}, {}, {}, {}, {}, {}, {+kPiPlus, +kPiPlus, -kPiPlus, -kPiPlus, +kProton}, {}, {}, {}}};
 static constexpr std::string_view labels[nChannels] = {"D^{0} #rightarrow K#pi", "D*^{+} #rightarrow D^{0}#pi", "D^{+} #rightarrow K#pi#pi", "D^{+} #rightarrow KK#pi", "D_{s}^{+} #rightarrow #Phi#pi #rightarrow KK#pi",
                                                        "D_{s}^{+} #rightarrow #bar{K}^{*0}K #rightarrow KK#pi", "D_{s}1 #rightarrow D*^{+}K^{0}_{s}", "D_{s}2* #rightarrow D^{+}K^{0}_{s}", "D1^{0} #rightarrow D*^{+}#pi",
                                                        "D2^{*} #rightarrow D^{+}#pi",
-                                                       "B^{0} #rightarrow D^{-}#pi", "B^{+} #rightarrow D^{0}#pi",
+                                                       "B^{0} #rightarrow D^{-}#pi", "B^{+} #rightarrow D^{0}#pi", "B_{s}^{+} #rightarrow D_{s}^{-}#pi",
                                                        "#Lambda_{c}^{+} #rightarrow pK#pi",
                                                        "#Lambda_{c}^{+} #rightarrow pK^{0}_{s}", "#Xi_{c}^{+} #rightarrow pK#pi",
                                                        "#Xi_{c}^{+} #rightarrow #Xi#pi#pi", "#Xi_{c}^{0} #rightarrow #Xi#pi", "#Omega_{c}^{0} #rightarrow #Omega#pi", "#Omega_{c}^{0} #rightarrow #Xi#pi"};
-static constexpr std::string_view particleNames[nChannels] = {"DzeroToKPi", "DstarToDzeroPi", "DplusToPiKPi", "DplusToPhiPiToKKPi", "DsToPhiPiToKKPi", "DsToK0starKToKKPi", "Ds1ToDStarK0s", "Ds2StarToDPlusK0s", "D10ToDStarPi", "D2Star0ToDPlusPi", "B0ToDminusPi", "BplusToD0Pi",
+static constexpr std::string_view particleNames[nChannels] = {"DzeroToKPi", "DstarToDzeroPi", "DplusToPiKPi", "DplusToPhiPiToKKPi", "DsToPhiPiToKKPi", "DsToK0starKToKKPi", "Ds1ToDStarK0s", "Ds2StarToDPlusK0s", "D10ToDStarPi", "D2Star0ToDPlusPi", "B0ToDminusPi", "BplusToD0Pi", "BsToDsPi",
                                                               "LcToPKPi", "LcToPiK0s", "XiCplusToPKPi", "XiCplusToXiPiPi", "XiCzeroToXiPi", "OmegaCToOmegaPi", "OmegaCToXiPi"};
 static constexpr std::string_view originNames[nOriginTypes] = {"Prompt", "NonPrompt"};
 } // namespace
@@ -254,11 +286,11 @@ struct HfTaskMcValidationGen {
 
     // Slice the collisions table to get the collision info for the current MC collision
     float centrality{105.f};
-    int occupancy = 0;
+    float occupancy{0.f};
     if (storeOccupancy) {
-      occupancy = getOccupancyGenColl(recoCollisions, OccupancyEstimator::Its);
+      occupancy = o2::hf_occupancy::getOccupancyGenColl(recoCollisions, OccupancyEstimator::Its);
     }
-    uint16_t rejectionMask{0};
+    o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
     if constexpr (centEstimator == CentralityEstimator::FT0C) {
       rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, recoCollisions, centrality);
     } else if constexpr (centEstimator == CentralityEstimator::FT0M) {
@@ -386,6 +418,10 @@ struct HfTaskMcValidationGen {
           }
           if (iD == B0ToDminusPi &&
               !RecoDecay::isMatchedMCGen<true, false>(mcParticles, particle, PDGArrayParticle[iD], std::array{-o2::constants::physics::Pdg::kDPlus, +kPiPlus}, true)) {
+            continue;
+          }
+          if (iD == BsToDsPi &&
+              !RecoDecay::isMatchedMCGen<true, false>(mcParticles, particle, PDGArrayParticle[iD], std::array{-o2::constants::physics::Pdg::kDS, +kPiPlus}, true)) {
             continue;
           }
         }
@@ -1069,7 +1105,7 @@ struct HfTaskMcValidationRec {
           continue;
         }
         int whichHad = -1;
-        if (isD0Sel && TESTBIT(std::abs(cand2Prong.flagMcMatchRec()), hf_cand_2prong::DecayType::D0ToPiK)) {
+        if (isD0Sel && std::abs(cand2Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           whichHad = DzeroToKPi;
         }
         int whichOrigin;
@@ -1103,21 +1139,21 @@ struct HfTaskMcValidationRec {
           continue;
         }
         int whichHad = -1;
-        if (isDPlusSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DplusToPiKPi)) {
+        if (isDPlusSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
           whichHad = DplusToPiKPi;
-        } else if (isDsSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::DsToKKPi)) {
-          if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToPhiPi) {
+        } else if (isDsSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) {
+          if (cand3Prong.flagMcDecayChanRec() == o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToPhiPi) {
             whichHad = DsToPhiPiToKKPi;
           }
-          if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DsToK0starK) {
+          if (cand3Prong.flagMcDecayChanRec() == o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DsToKstar0K) {
             whichHad = DsToK0starKToKKPi;
           }
-          if (cand3Prong.flagMcDecayChanRec() == hf_cand_3prong::DecayChannelDToKKPi::DplusToPhiPi) {
+          if (cand3Prong.flagMcDecayChanRec() == o2::hf_decay::hf_cand_3prong::DecayChannelResonant::DplusToPhiPi) {
             whichHad = DplusToPhiPiToKKPi;
           }
-        } else if (isLcSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::LcToPKPi)) {
+        } else if (isLcSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
           whichHad = LcToPKPi;
-        } else if (isXicSel && TESTBIT(std::abs(cand3Prong.flagMcMatchRec()), hf_cand_3prong::DecayType::XicToPKPi)) {
+        } else if (isXicSel && std::abs(cand3Prong.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::XicToPKPi) {
           whichHad = XiCplusToPKPi;
         }
         int whichOrigin;

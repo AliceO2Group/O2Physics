@@ -14,44 +14,44 @@
 //
 // Author: Giorgio Alberto Lucia
 
-#include <vector>
-#include <utility>
-#include <random>
-#include <cstdint>
-#include <cstring>
-#include <unordered_map>
-#include <numeric>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/EventSelection.h"
+#include "PWGLF/DataModel/LFClusterStudiesTable.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "CCDB/BasicCCDBManager.h"
 
 #include "Common/Core/PID/PIDTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
-#include "DCAFitter/DCAFitterN.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 
-#include "PWGLF/DataModel/LFClusterStudiesTable.h"
+#include "CCDB/BasicCCDBManager.h"
+#include "DCAFitter/DCAFitterN.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/Track.h"
 
 #include "TDatabasePDG.h"
 #include "TPDGCode.h"
+
+#include <cstdint>
+#include <cstring>
+#include <numeric>
+#include <random>
+#include <unordered_map>
+#include <utility>
+#include <vector>
 
 using namespace ::o2;
 using namespace o2::framework;
@@ -138,6 +138,22 @@ enum PartID {
   he
 };
 
+struct Candidate {
+  float p = -999.f; // momentum * charge
+  float eta = -999.f;
+  float phi = -999.f;
+  uint32_t itsClusterSize = 0;
+  uint8_t partID = PartID::none;
+  float pTPC = -999.f;
+  uint32_t pidInTrk = 0; // PID in tracking
+  float nsigmaTPC = -999.f;
+  float nsigmaTOF = -999.f;
+  float tofMass = -999.f;
+  float cosPAMother = -999.f; // Cosine of the pointing angle of the mother
+  float massMother = -999.f;  // Invariant mass of the mother
+  int pdgCode = 0;
+};
+
 struct LfTreeCreatorClusterStudies {
 
   Service<o2::ccdb::BasicCCDBManager> m_ccdb;
@@ -163,9 +179,10 @@ struct LfTreeCreatorClusterStudies {
   Configurable<float> track_nClsItsMin{"track_NclsItsMin", 0.f, "Minimum number of ITS clusters for the V0 daughters"};
   Configurable<float> track_nClsTpcMin{"track_NclsTpcMin", 100.f, "Minimum number of TPC clusters for the V0 daughters"};
   Configurable<float> track_nClsTpcMaxShared{"track_NclsTpcMaxShared", 5.f, "Maximum number of shared TPC clusters for the V0 daughters"};
+  Configurable<float> track_etaMax{"etaMax", 0.8f, "Maximum eta"};
+  Configurable<float> track_tpcChi2Min{"track_tpcChi2Min", 0.5f, "Minimum TPC chi2 per cluster"};
 
   // Configurable<float> v0setting_etaMaxV0{"etaMaxV0", 0.8f, "Maximum eta for the V0 daughters"};
-  Configurable<float> v0setting_etaMaxV0dau{"etaMaxV0dau", 0.8f, "Maximum eta for the V0 daughters"};
   Configurable<float> v0setting_dcaV0daughters{"v0setting_dcaV0daughters", 0.5f, "DCA between the V0 daughters"};
   Configurable<float> v0setting_dcaV0toPV{"v0setting_dcaV0fromPV", 1.f, "DCA of the V0 to the primary vertex"};
   Configurable<float> v0setting_dcaDaughtersToPV{"v0setting_dcaDaughtersToPV", 1.f, "DCA of the daughters to the primary vertex"};
@@ -180,6 +197,8 @@ struct LfTreeCreatorClusterStudies {
   Configurable<float> v0setting_nsigmatpcPr{"v0setting_nsigmaTPCPr", 2.f, "Number of sigmas for the TPC PID for protons"};
   Configurable<float> lambdasetting_qtAPcut{"lambdasetting_qtAPcut", 0.02f, "Cut on the qt for the Armenteros-Podolanski plot for photon rejection"};
   Configurable<float> lambdasetting_pmin{"lambdasetting_pmin", 0.0f, "Minimum momentum for the V0 daughters"};
+  Configurable<float> electronsetting_conversion_rmin{"electron_conversion_rmin", 1.76f, "Minimum radius for the photon conversion (cm)"};
+  Configurable<float> electronsetting_conversion_rmax{"electron_conversion_rmax", 19.77f, "Maximum radius for the photon conversion (cm)"};
 
   Configurable<float> cascsetting_dcaCascDaughters{"casc_setting_dcaV0daughters", 0.1f, "DCA between the V0 daughters"};
   Configurable<float> cascsetting_cosPA{"casc_setting_cosPA", 0.99f, "Cosine of the pointing angle of the V0"};
@@ -214,7 +233,8 @@ struct LfTreeCreatorClusterStudies {
      {"he3_selections", "He3 track selection; selection; counts", {HistType::kTH1F, {{He3Selections::kHe3All, -0.5, static_cast<double>(He3Selections::kHe3All) - 0.5}}}},
      {"v0_type", "Selected V0; particle; counts", {HistType::kTH1F, {{V0Type::V0TypeAll, -0.5, static_cast<double>(V0Type::V0TypeAll) - 0.5}}}},
      {"radiusV0", "Decay radius (xy) V0; radius (cm); counts", {HistType::kTH1F, {{100, 0., 100.}}}},
-     {"massLambda", "#Lambda invariant mass; signed #it{p} (GeV/#it{c}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {50, 1.08f, 1.18f}}}},
+     {"massLambda", "#Lambda invariant mass; signed #it{p} (GeV/#it{c}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {200, 1.08f, 1.18f}}}},
+     {"massLambdaMc", "#Lambda invariant mass (MC); signed #it{p} (GeV/#it{c}); m (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {200, 1.08f, 1.18f}}}},
      {"Lambda_vs_K0s", "Mass #Lambda vs K^{0}_s; m_{K^{0}_{s}} (GeV/#it{c}^{2}); m_{#Lambda} (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 0.f, 1.f}, {70, 0.6f, 2.f}}}},
      {"armenteros_plot_before_selections", "Armenteros-Podolanski plot; #alpha; q_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
      {"armenteros_plot", "Armenteros-Podolanski plot; #alpha; q_{T} (GeV/#it{c})", {HistType::kTH2F, {{100, -1.f, 1.f}, {100, 0.f, 0.3f}}}},
@@ -223,8 +243,10 @@ struct LfTreeCreatorClusterStudies {
      {"photon_radiusV0", "Photon conversion radius (xy) V0; radius (cm); counts", {HistType::kTH1F, {{100, 0., 100.}}}},
      {"photon_conversion_position", "Photon conversion position; x (cm); y (cm)", {HistType::kTH2F, {{250, -5.f, 5.f}, {250, -5.f, 5.f}}}},
      {"photon_conversion_position_layer", "Photon conversion position (ITS layers); x (cm); y (cm)", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, -5.f, 5.f}}}},
+     {"casc_dca_daughter_pairs", "DCA (xy) for cascade daughter pairs; DCAxy (cm); counts", {HistType::kTH1F, {{100, -0.1, 0.1}}}},
      {"Xi_vs_Omega", "Mass Xi vs Omega; mass Omega (GeV/#it{c}^{2}); mass Xi (GeV/#it{c}^{2})", {HistType::kTH2F, {{50, 1.f, 2.f}, {50, 1.f, 2.f}}}},
-     {"massOmega", "Mass #Omega; signed #it{p}_{T} (GeV/#it{c}); mass (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {100, 1.62f, 1.72f}}}},
+     {"massOmega", "Mass #Omega; signed #it{p}_{T} (GeV/#it{c}); mass (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
+     {"massOmegaMc", "Mass #Omega (MC); signed #it{p}_{T} (GeV/#it{c}); mass (GeV/#it{c}^{2})", {HistType::kTH2F, {{100, -5.f, 5.f}, {400, 1.62f, 1.72f}}}},
      {"massOmegaWithBkg", "Mass Omega with Background; mass Omega (GeV/#it{c}^{2}); counts", {HistType::kTH1F, {{100, 1.62f, 1.72f}}}},
      {"nSigmaTPCEl", "nSigma TPC Electron; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} e", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -2.0f, 2.0f}}}},
      {"nSigmaTPCPi", "nSigma TPC Pion; signed #it{p} (GeV/#it{c}); n#sigma_{TPC} #pi", {HistType::kTH2F, {{100, -5.0f, 5.0f}, {60, -3.0f, 3.0f}}}},
@@ -256,7 +278,6 @@ struct LfTreeCreatorClusterStudies {
   Produces<o2::aod::ClStTable> m_ClusterStudiesTable;
   Produces<o2::aod::ClStTableExtra> m_ClusterStudiesTableExtra;
   Produces<o2::aod::ClStTableMc> m_ClusterStudiesTableMc;
-  Produces<o2::aod::ClStTableMcExt> m_ClusterStudiesTableMcExtra;
 
   struct V0TrackParCov {
     int64_t globalIndex;
@@ -331,7 +352,7 @@ struct LfTreeCreatorClusterStudies {
   }
 
   template <typename T>
-  float dcaToPV(const std::array<float, 3>& PV, T& trackParCov, gpu::gpustd::array<float, 2>& dcaInfo)
+  float dcaToPV(const std::array<float, 3>& PV, T& trackParCov, std::array<float, 2>& dcaInfo)
   {
     o2::base::Propagator::Instance()->propagateToDCABxByBz({PV[0], PV[1], PV[2]}, trackParCov, 2.f, m_fitter.getMatCorrType(), &dcaInfo);
     return std::hypot(dcaInfo[0], dcaInfo[1]);
@@ -371,14 +392,16 @@ struct LfTreeCreatorClusterStudies {
   template <typename T>
   bool qualityTrackSelection(const T& track)
   {
-    if (std::abs(track.eta()) > v0setting_etaMaxV0dau) {
+    if (std::abs(track.eta()) > track_etaMax) {
       return false;
     }
     if (track.itsNCls() < track_nClsItsMin ||
         track.tpcNClsFound() < track_nClsTpcMin ||
         track.tpcNClsCrossedRows() < track_nClsTpcMin ||
         track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
-        track.tpcNClsShared() > track_nClsTpcMaxShared) {
+        track.tpcNClsShared() > track_nClsTpcMaxShared ||
+        track.tpcChi2NCl() < track_tpcChi2Min ||
+        track.tpcChi2NCl() > 4.0f) {
       return false;
     }
     return true;
@@ -403,6 +426,7 @@ struct LfTreeCreatorClusterStudies {
 
   bool qualitySelectionCascade(const double dcaCascDaughters, const double cosPA)
   {
+    m_hAnalysis.fill(HIST("casc_dca_daughter_pairs"), dcaCascDaughters);
     if (std::abs(dcaCascDaughters) > cascsetting_dcaCascDaughters) {
       return false;
     }
@@ -414,12 +438,226 @@ struct LfTreeCreatorClusterStudies {
     return true;
   }
 
+  uint8_t selectV0MotherHypothesis(float massK0sV0, float massLambdaV0, float massAntiLambdaV0, float alphaAP, const o2::aod::V0& v0)
+  {
+    uint8_t v0Bitmask(0);
+    if (v0.isPhotonV0()) {
+      SETBIT(v0Bitmask, Photon);
+    }
+    if (std::abs(massK0sV0 - o2::constants::physics::MassK0Short) < v0setting_massWindowK0s) {
+      SETBIT(v0Bitmask, K0s);
+    }
+    if ((std::abs(massLambdaV0 - o2::constants::physics::MassLambda0) < v0setting_massWindowLambda) && (alphaAP > 0)) {
+      SETBIT(v0Bitmask, Lambda);
+    }
+    if ((std::abs(massAntiLambdaV0 - o2::constants::physics::MassLambda0) < v0setting_massWindowLambda) && (alphaAP < 0)) {
+      SETBIT(v0Bitmask, AntiLambda);
+    }
+    return v0Bitmask;
+  }
+
+  template <typename T>
+  bool selectPidV0Daughters(Candidate& candidatePos, Candidate& candidateNeg, const T& posTrack,
+                            const T& negTrack, const std::array<float, 3>& momMother, const std::array<float, 3>& decayVtx,
+                            float qtAP, float radiusV0, uint8_t v0Bitmask)
+  {
+    if (TESTBIT(v0Bitmask, Lambda)) {
+      if (qtAP < lambdasetting_qtAPcut)
+        return false;
+      if (std::abs(posTrack.tpcNSigmaPr()) > v0setting_nsigmatpcPr || std::abs(negTrack.tpcNSigmaPi()) > v0setting_nsigmatpcPi)
+        return false;
+      if (std::hypot(momMother[0], momMother[1], momMother[2]) < lambdasetting_pmin)
+        return false;
+      candidatePos.partID = PartID::pr;
+      candidateNeg.partID = PartID::pi;
+      candidatePos.nsigmaTPC = posTrack.tpcNSigmaPr();
+      candidateNeg.nsigmaTPC = negTrack.tpcNSigmaPi();
+      m_hAnalysis.fill(HIST("v0_type"), V0Type::Lambda);
+
+    } else if (TESTBIT(v0Bitmask, AntiLambda)) {
+      if (qtAP < lambdasetting_qtAPcut)
+        return false;
+      if (std::abs(posTrack.tpcNSigmaPi()) > v0setting_nsigmatpcPi || std::abs(negTrack.tpcNSigmaPr()) > v0setting_nsigmatpcPr)
+        return false;
+      if (std::hypot(momMother[0], momMother[1], momMother[2]) < lambdasetting_pmin)
+        return false;
+      candidatePos.partID = PartID::pi;
+      candidateNeg.partID = PartID::pr;
+      candidatePos.nsigmaTPC = posTrack.tpcNSigmaPi();
+      candidateNeg.nsigmaTPC = negTrack.tpcNSigmaPr();
+      m_hAnalysis.fill(HIST("v0_type"), V0Type::AntiLambda);
+
+    } else if (TESTBIT(v0Bitmask, K0s)) {
+      m_hAnalysis.fill(HIST("v0_type"), V0Type::K0s);
+      return false; // K0s not implemented
+
+    } else if (TESTBIT(v0Bitmask, Photon)) {
+      // require photon conversion to happen in one of the Inner Tracker layers (± 0.5 cm resolution)
+      m_hAnalysis.fill(HIST("photon_conversion_position"), decayVtx[0], decayVtx[1]);
+      m_hAnalysis.fill(HIST("photon_radiusV0"), radiusV0);
+      if (!(radiusV0 > electronsetting_conversion_rmin && radiusV0 < electronsetting_conversion_rmax))
+        return false;
+      if (std::abs(posTrack.tpcNSigmaEl()) > v0setting_nsigmatpcEl || std::abs(negTrack.tpcNSigmaEl()) > v0setting_nsigmatpcEl)
+        return false;
+      m_hAnalysis.fill(HIST("photon_conversion_position_layer"), decayVtx[0], decayVtx[1]);
+      candidatePos.partID = PartID::el;
+      candidateNeg.partID = PartID::el;
+      candidatePos.nsigmaTPC = posTrack.tpcNSigmaEl();
+      candidateNeg.nsigmaTPC = negTrack.tpcNSigmaEl();
+      m_hAnalysis.fill(HIST("v0_type"), V0Type::Photon);
+
+    } else {
+      return false;
+    }
+
+    return true;
+  }
+
+  /**
+   * Fill the histograms for the V0 candidate and return the mass of the V0
+   */
+  float fillHistogramsV0(float massLambdaV0, float massAntiLambdaV0,
+                         const std::array<float, 3>& momMother,
+                         const Candidate& candidatePos, const Candidate& candidateNeg, float alphaAP, float qtAP, float radiusV0, uint8_t v0Bitmask)
+  {
+    float massV0{0.f};
+    m_hAnalysis.fill(HIST("v0_selections"), V0Selections::kV0DaughterDCAtoPV);
+    if (TESTBIT(v0Bitmask, Lambda)) {
+      massV0 = massLambdaV0;
+      m_hAnalysis.fill(HIST("massLambda"), std::hypot(momMother[0], momMother[1], momMother[2]), massLambdaV0);
+      m_hAnalysis.fill(HIST("armenteros_plot_lambda"), alphaAP, qtAP);
+      m_hAnalysis.fill(HIST("nSigmaTPCPr"), candidatePos.p, candidatePos.nsigmaTPC);
+      m_hAnalysis.fill(HIST("nSigmaITSPr"), candidatePos.p, m_responseITS.nSigmaITS<o2::track::PID::Proton>(candidatePos.itsClusterSize, candidatePos.p, candidatePos.eta));
+      m_hAnalysis.fill(HIST("nSigmaTPCPi"), candidateNeg.p, candidateNeg.nsigmaTPC);
+      m_hAnalysis.fill(HIST("nSigmaITSPi"), candidateNeg.p, m_responseITS.nSigmaITS<o2::track::PID::Pion>(candidateNeg.itsClusterSize, candidateNeg.p, candidateNeg.eta));
+      m_hAnalysis.fill(HIST("pmatchingPr"), candidatePos.pTPC, (candidatePos.pTPC - candidatePos.p) / candidatePos.pTPC);
+      m_hAnalysis.fill(HIST("pmatchingPi"), -candidateNeg.pTPC, (candidateNeg.pTPC - candidateNeg.p) / candidateNeg.pTPC);
+
+    } else if (TESTBIT(v0Bitmask, AntiLambda)) {
+      massV0 = massAntiLambdaV0;
+      m_hAnalysis.fill(HIST("massLambda"), std::hypot(momMother[0], momMother[1], momMother[2]) * -1.f, massAntiLambdaV0);
+      // "signed" pt for antimatter
+      m_hAnalysis.fill(HIST("armenteros_plot_lambda"), alphaAP, qtAP);
+      m_hAnalysis.fill(HIST("nSigmaTPCPi"), candidatePos.p, candidatePos.nsigmaTPC);
+      m_hAnalysis.fill(HIST("nSigmaITSPi"), candidatePos.p, m_responseITS.nSigmaITS<o2::track::PID::Pion>(candidatePos.itsClusterSize, candidatePos.p, candidatePos.eta));
+      m_hAnalysis.fill(HIST("nSigmaTPCPr"), candidateNeg.p, candidateNeg.nsigmaTPC);
+      m_hAnalysis.fill(HIST("nSigmaITSPr"), candidateNeg.p, m_responseITS.nSigmaITS<o2::track::PID::Proton>(candidateNeg.itsClusterSize, candidateNeg.p, candidateNeg.eta));
+      m_hAnalysis.fill(HIST("pmatchingPi"), candidatePos.pTPC, (candidatePos.pTPC - candidatePos.p) / candidatePos.pTPC);
+      m_hAnalysis.fill(HIST("pmatchingPr"), -candidateNeg.pTPC, (candidateNeg.pTPC - candidateNeg.p) / candidateNeg.pTPC);
+
+    } else if (TESTBIT(v0Bitmask, Photon)) {
+      massV0 = 0.f;
+      m_hAnalysis.fill(HIST("nSigmaTPCEl"), candidatePos.p, candidatePos.nsigmaTPC);
+      m_hAnalysis.fill(HIST("nSigmaTPCEl"), candidateNeg.p, candidateNeg.nsigmaTPC);
+      m_hAnalysis.fill(HIST("nSigmaITSEl"), candidatePos.p, m_responseITS.nSigmaITS<o2::track::PID::Electron>(candidatePos.itsClusterSize, candidatePos.p, candidatePos.eta));
+      m_hAnalysis.fill(HIST("nSigmaITSEl"), candidateNeg.p, m_responseITS.nSigmaITS<o2::track::PID::Electron>(candidateNeg.itsClusterSize, candidateNeg.p, candidateNeg.eta));
+      m_hAnalysis.fill(HIST("armenteros_plot_gamma"), alphaAP, qtAP);
+      m_hAnalysis.fill(HIST("pmatchingEl"), candidatePos.pTPC, (candidatePos.pTPC - candidatePos.p) / candidatePos.pTPC);
+      m_hAnalysis.fill(HIST("pmatchingEl"), -candidateNeg.pTPC, (candidateNeg.pTPC - candidateNeg.p) / candidateNeg.pTPC);
+    }
+    m_hAnalysis.fill(HIST("radiusV0"), radiusV0);
+    m_hAnalysis.fill(HIST("armenteros_plot"), alphaAP, qtAP);
+
+    return massV0;
+  }
+
+  template <typename McPart>
+  void fillMcHistogramsV0(const float massLambda, const float massAntiLambda,
+                          const std::array<float, 3>& momMother,
+                          const McPart& posDaughter, const McPart& negDaughter)
+  {
+    if ((std::abs(posDaughter.pdgCode()) != 2212 && std::abs(posDaughter.pdgCode()) != 211) ||
+        (std::abs(negDaughter.pdgCode()) != 2212 && std::abs(negDaughter.pdgCode()) != 211)) {
+      return;
+    }
+
+    int motherPdgCode = 0;
+    for (const auto& posMother : posDaughter.template mothers_as<aod::McParticles>()) {
+      for (const auto& negMother : negDaughter.template mothers_as<aod::McParticles>()) {
+        if (negMother.globalIndex() == posMother.globalIndex()) {
+          motherPdgCode = posMother.pdgCode();
+        }
+      }
+    }
+
+    if (motherPdgCode == 3122) {
+      m_hAnalysis.fill(HIST("massLambdaMc"), std::hypot(momMother[0], momMother[1], momMother[2]), massLambda);
+    } else if (motherPdgCode == -3122) {
+      m_hAnalysis.fill(HIST("massLambdaMc"), std::hypot(momMother[0], momMother[1], momMother[2]) * -1.f, massAntiLambda);
+    }
+  }
+
+  template <typename McPart>
+  void fillMcHistogramsCascade(const float massOmega,
+                               const std::array<float, 3>& momMother,
+                               const McPart& bachelorDaughter, const McPart& posV0Daughter)
+  {
+    McPart v0Daughter;
+    for (const auto& iterV0Daughter : posV0Daughter.template mothers_as<aod::McParticles>()) {
+      if (std::abs(iterV0Daughter.pdgCode()) != 3122) {
+        continue;
+      }
+      v0Daughter = iterV0Daughter;
+    }
+    if (std::abs(bachelorDaughter.pdgCode()) != 321) {
+      return;
+    }
+
+    int motherPdgCode = 0;
+    for (const auto& bachelorMother : bachelorDaughter.template mothers_as<aod::McParticles>()) {
+      for (const auto& v0Mother : v0Daughter.template mothers_as<aod::McParticles>()) {
+        if (v0Mother.globalIndex() == bachelorMother.globalIndex()) {
+          motherPdgCode = bachelorMother.pdgCode();
+        }
+      }
+    }
+
+    if (motherPdgCode == 3334) {
+      m_hAnalysis.fill(HIST("massOmegaMc"), std::hypot(momMother[0], momMother[1], momMother[2]), massOmega);
+    } else if (motherPdgCode == -3334) {
+      m_hAnalysis.fill(HIST("massOmegaMc"), std::hypot(momMother[0], momMother[1], momMother[2]) * -1.f, massOmega);
+    }
+  }
+
+  template <bool isMC = false>
+  void fillTable(const Candidate& candidate)
+  {
+    m_ClusterStudiesTable(
+      candidate.p,                             // p
+      candidate.eta,                           // eta
+      candidate.phi,                           // phi
+      candidate.itsClusterSize,                // itsClsize
+      static_cast<uint8_t>(candidate.partID)); // partID
+    if (!setting_smallTable) {
+      m_ClusterStudiesTableExtra(
+        candidate.pTPC,        // pTPC
+        candidate.pidInTrk,    // pidInTrk
+        candidate.nsigmaTPC,   // TpcNSigma
+        candidate.nsigmaTOF,   // TofNSigma
+        candidate.tofMass,     // TofMass
+        candidate.cosPAMother, // cosPA
+        candidate.massMother); // massMother
+    }
+
+    if constexpr (isMC) {
+      m_ClusterStudiesTableMc(
+        candidate.pdgCode); // pdgCod
+    }
+  }
+
   // =========================================================================================================
 
   template <typename T>
   bool nucleiTrackSelection(const T& track)
   {
+    if (std::abs(track.eta()) > track_etaMax) {
+      return false;
+    }
     if (track.tpcNClsFound() < 90) {
+      return false;
+    }
+    if ((track.tpcChi2NCl() > 4.0f) ||
+        (track.tpcChi2NCl() < track_tpcChi2Min)) {
       return false;
     }
     return true;
@@ -450,7 +688,7 @@ struct LfTreeCreatorClusterStudies {
   {
     float beta = o2::pid::tof::Beta::GetBeta(candidate);
     beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
-    return candidate.tpcInnerParam() * 2.f * std::sqrt(1.f / (beta * beta) - 1.f);
+    return candidate.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
   }
 
   // =========================================================================================================
@@ -605,7 +843,7 @@ struct LfTreeCreatorClusterStudies {
     float qtAP = computeQtAP(momMother, momPos);
     m_hAnalysis.fill(HIST("armenteros_plot_before_selections"), alphaAP, qtAP);
 
-    gpu::gpustd::array<float, 2> dcaInfo;
+    std::array<float, 2> dcaInfo;
     V0TrackParCov v0TrackParCov{v0.globalIndex(), m_fitter.createParentTrackParCov()};
     float dcaV0daughters = std::sqrt(std::abs(m_fitter.getChi2AtPCACandidate()));
     float radiusV0 = std::hypot(decayVtx[0], decayVtx[1]);
@@ -622,61 +860,22 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("Lambda_vs_K0s"), massK0sV0, massLambdaV0);
     // float massPhotonV0 = computeMassMother(o2::constants::physics::MassElectron, o2::constants::physics::MassElectron, momPos, momNeg, momMother);
 
-    uint8_t v0Bitmask(0);
-    if (v0.isPhotonV0()) {
-      SETBIT(v0Bitmask, Photon);
-    }
-    if (std::abs(massK0sV0 - o2::constants::physics::MassK0Short) < v0setting_massWindowK0s) {
-      SETBIT(v0Bitmask, K0s);
-    }
-    if ((std::abs(massLambdaV0 - o2::constants::physics::MassLambda0) < v0setting_massWindowLambda) && (alphaAP > 0)) {
-      SETBIT(v0Bitmask, Lambda);
-    }
-    if ((std::abs(massAntiLambdaV0 - o2::constants::physics::MassLambda0) < v0setting_massWindowLambda) && (alphaAP < 0)) {
-      SETBIT(v0Bitmask, AntiLambda);
-    }
+    uint8_t v0Bitmask = selectV0MotherHypothesis(massK0sV0, massLambdaV0, massAntiLambdaV0, alphaAP, v0);
     if (v0Bitmask == 0 || (v0Bitmask & (v0Bitmask - 1)) != 0) {
       return;
     }
     m_hAnalysis.fill(HIST("v0_selections"), V0Selections::kV0PID);
 
-    uint8_t partID_pos{0}, partID_neg{0};
-    if (TESTBIT(v0Bitmask, Lambda)) {
-      if (qtAP < lambdasetting_qtAPcut)
-        return;
-      if (std::abs(posTrack.tpcNSigmaPr()) > v0setting_nsigmatpcPr || std::abs(negTrack.tpcNSigmaPi()) > v0setting_nsigmatpcPi)
-        return;
-      if (std::hypot(momMother[0], momMother[1], momMother[2]) < lambdasetting_pmin)
-        return;
-      partID_pos = PartID::pr;
-      partID_neg = PartID::pi;
-      m_hAnalysis.fill(HIST("v0_type"), V0Type::Lambda);
-    } else if (TESTBIT(v0Bitmask, AntiLambda)) {
-      if (qtAP < lambdasetting_qtAPcut)
-        return;
-      if (std::abs(posTrack.tpcNSigmaPi()) > v0setting_nsigmatpcPr || std::abs(negTrack.tpcNSigmaPr()) > v0setting_nsigmatpcPi)
-        return;
-      if (std::hypot(momMother[0], momMother[1], momMother[2]) < lambdasetting_pmin)
-        return;
-      partID_pos = PartID::pi;
-      partID_neg = PartID::pr;
-      m_hAnalysis.fill(HIST("v0_type"), V0Type::AntiLambda);
-    } else if (TESTBIT(v0Bitmask, K0s)) {
-      m_hAnalysis.fill(HIST("v0_type"), V0Type::K0s);
-      return; // K0s not implemented
-    } else if (TESTBIT(v0Bitmask, Photon)) {
-      // require photon conversion to happen in one of the Inner Tracker layers (± 0.5 cm resolution)
-      m_hAnalysis.fill(HIST("photon_conversion_position"), decayVtx[0], decayVtx[1]);
-      m_hAnalysis.fill(HIST("photon_radiusV0"), radiusV0);
-      if (!(radiusV0 > 1.76 && radiusV0 < 4.71))
-        return;
-      if (std::abs(posTrack.tpcNSigmaEl()) > v0setting_nsigmatpcEl || std::abs(negTrack.tpcNSigmaEl()) > v0setting_nsigmatpcEl)
-        return;
-      m_hAnalysis.fill(HIST("photon_conversion_position_layer"), decayVtx[0], decayVtx[1]);
-      partID_pos = PartID::el;
-      partID_neg = PartID::el;
-      m_hAnalysis.fill(HIST("v0_type"), V0Type::Photon);
-    } else {
+    Candidate candidatePos(std::hypot(momPos[0], momPos[1], momPos[2]) * posTrack.sign(),
+                           RecoDecay::eta(momPos), RecoDecay::phi(momPos), posTrack.itsClusterSizes(),
+                           0, posTrack.tpcInnerParam() * posTrack.sign(), posTrack.pidForTracking(),
+                           -999.f, -999.f, -999.f, cosPA, -999.f, 0);
+    Candidate candidateNeg(std::hypot(momNeg[0], momNeg[1], momNeg[2]) * negTrack.sign(),
+                           RecoDecay::eta(momNeg), RecoDecay::phi(momNeg), negTrack.itsClusterSizes(),
+                           0, negTrack.tpcInnerParam() * negTrack.sign(), negTrack.pidForTracking(),
+                           -999.f, -999.f, -999.f, cosPA, -999.f, 0);
+
+    if (!selectPidV0Daughters(candidatePos, candidateNeg, posTrack, negTrack, momMother, decayVtx, qtAP, radiusV0, v0Bitmask)) {
       return;
     }
 
@@ -689,44 +888,10 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
 
-    float massV0{0.f};
-    m_hAnalysis.fill(HIST("v0_selections"), V0Selections::kV0DaughterDCAtoPV);
-    if (TESTBIT(v0Bitmask, Lambda)) {
-      massV0 = massLambdaV0;
-      m_hAnalysis.fill(HIST("massLambda"), std::hypot(momMother[0], momMother[1], momMother[2]), massLambdaV0);
-      m_hAnalysis.fill(HIST("armenteros_plot_lambda"), alphaAP, qtAP);
-      m_hAnalysis.fill(HIST("nSigmaTPCPr"), std::hypot(momPos[0], momPos[1], momPos[2]), posTrack.tpcNSigmaPr());
-      m_hAnalysis.fill(HIST("nSigmaITSPr"), std::hypot(momPos[0], momPos[1], momPos[2]), m_responseITS.nSigmaITS<o2::track::PID::Proton>(posTrack.itsClusterSizes(), posTrack.p(), posTrack.eta()));
-      m_hAnalysis.fill(HIST("nSigmaTPCPi"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, negTrack.tpcNSigmaPi());
-      m_hAnalysis.fill(HIST("nSigmaITSPi"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, m_responseITS.nSigmaITS<o2::track::PID::Pion>(negTrack.itsClusterSizes(), negTrack.p(), negTrack.eta()));
-      m_hAnalysis.fill(HIST("pmatchingPr"), posTrack.tpcInnerParam(), (posTrack.tpcInnerParam() - posTrack.p()) / posTrack.tpcInnerParam());
-      m_hAnalysis.fill(HIST("pmatchingPi"), -negTrack.tpcInnerParam(), (negTrack.tpcInnerParam() - negTrack.p()) / negTrack.tpcInnerParam());
-
-    } else if (TESTBIT(v0Bitmask, AntiLambda)) {
-      massV0 = massAntiLambdaV0;
-      m_hAnalysis.fill(HIST("massLambda"), std::hypot(momMother[0], momMother[1], momMother[2]) * -1.f, massAntiLambdaV0);
-      // "signed" pt for antimatter
-      m_hAnalysis.fill(HIST("armenteros_plot_lambda"), alphaAP, qtAP);
-      m_hAnalysis.fill(HIST("nSigmaTPCPi"), std::hypot(momPos[0], momPos[1], momPos[2]), posTrack.tpcNSigmaPi());
-      m_hAnalysis.fill(HIST("nSigmaITSPi"), std::hypot(momPos[0], momPos[1], momPos[2]), m_responseITS.nSigmaITS<o2::track::PID::Pion>(posTrack.itsClusterSizes(), posTrack.p(), posTrack.eta()));
-      m_hAnalysis.fill(HIST("nSigmaTPCPr"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, negTrack.tpcNSigmaPr());
-      m_hAnalysis.fill(HIST("nSigmaITSPr"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, m_responseITS.nSigmaITS<o2::track::PID::Proton>(negTrack.itsClusterSizes(), negTrack.p(), negTrack.eta()));
-      m_hAnalysis.fill(HIST("pmatchingPi"), posTrack.tpcInnerParam(), (posTrack.tpcInnerParam() - posTrack.p()) / posTrack.tpcInnerParam());
-      m_hAnalysis.fill(HIST("pmatchingPr"), -negTrack.tpcInnerParam(), (negTrack.tpcInnerParam() - negTrack.p()) / negTrack.tpcInnerParam());
-
-    } else if (TESTBIT(v0Bitmask, Photon)) {
-      massV0 = 0.f;
-      m_hAnalysis.fill(HIST("nSigmaTPCEl"), std::hypot(momPos[0], momPos[1], momPos[2]), posTrack.tpcNSigmaEl());
-      m_hAnalysis.fill(HIST("nSigmaTPCEl"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, negTrack.tpcNSigmaEl());
-      m_hAnalysis.fill(HIST("nSigmaITSEl"), std::hypot(momPos[0], momPos[1], momPos[2]), m_responseITS.nSigmaITS<o2::track::PID::Electron>(posTrack.itsClusterSizes(), posTrack.p(), posTrack.eta()));
-      m_hAnalysis.fill(HIST("nSigmaITSEl"), std::hypot(momNeg[0], momNeg[1], momNeg[2]) * -1.f, m_responseITS.nSigmaITS<o2::track::PID::Electron>(negTrack.itsClusterSizes(), negTrack.p(), negTrack.eta()));
-      m_hAnalysis.fill(HIST("armenteros_plot_gamma"), alphaAP, qtAP);
-      m_hAnalysis.fill(HIST("pmatchingEl"), posTrack.tpcInnerParam(), (posTrack.tpcInnerParam() - posTrack.p()) / posTrack.tpcInnerParam());
-      m_hAnalysis.fill(HIST("pmatchingEl"), -negTrack.tpcInnerParam(), (negTrack.tpcInnerParam() - negTrack.p()) / negTrack.tpcInnerParam());
-    }
-    m_hAnalysis.fill(HIST("radiusV0"), radiusV0);
-    m_hAnalysis.fill(HIST("armenteros_plot"), alphaAP, qtAP);
-    m_v0TrackParCovs.push_back(v0TrackParCov);
+    m_v0TrackParCovs.emplace_back(v0TrackParCov);
+    float massV0 = fillHistogramsV0(massLambdaV0, massAntiLambdaV0, momMother, candidatePos, candidateNeg, alphaAP, qtAP, radiusV0, v0Bitmask);
+    candidatePos.massMother = massV0;
+    candidateNeg.massMother = massV0;
 
     if (!setting_fillV0) {
       return;
@@ -740,94 +905,14 @@ struct LfTreeCreatorClusterStudies {
       auto posMcParticle = posTrack.mcParticle();
       auto negMcParticle = negTrack.mcParticle();
 
-      if (setting_smallTable) {
-        m_ClusterStudiesTableMc(
-          std::hypot(momPos[0], momPos[1], momPos[2]) * posTrack.sign(), // p_pos
-          RecoDecay::eta(momPos),                                        // eta_pos
-          RecoDecay::phi(momPos),                                        // phi_pos
-          posTrack.itsClusterSizes(),                                    // itsClsize_pos
-          partID_pos,                                                    // partID_pos
-          posMcParticle.pdgCode());                                      // pdgCode_pos
-        m_ClusterStudiesTableMc(
-          std::hypot(momNeg[0], momNeg[1], momNeg[2]) * negTrack.sign(), // p_neg
-          RecoDecay::eta(momNeg),                                        // eta_neg
-          RecoDecay::phi(momNeg),                                        // phi_neg
-          negTrack.itsClusterSizes(),                                    // itsClsize_neg
-          partID_neg,                                                    // partID_neg
-          negMcParticle.pdgCode());                                      // pdgCode_neg
-      } else {
-        m_ClusterStudiesTableMcExtra(
-          std::hypot(momPos[0], momPos[1], momPos[2]) * posTrack.sign(), // p_pos
-          RecoDecay::eta(momPos),                                        // eta_pos
-          RecoDecay::phi(momPos),                                        // phi_pos
-          posTrack.itsClusterSizes(),                                    // itsClsize_pos
-          partID_pos,                                                    // partID_pos
-          posMcParticle.pdgCode(),                                       // pdgCode_pos
-          posTrack.tpcInnerParam() * posTrack.sign(),                    // pTPC_pos
-          posTrack.pidForTracking(),                                     // pidInTrk_pos
-          -999.f,                                                        // TpcNSigma_pos
-          -999.f,                                                        // TofNSigma_pos
-          -999.f,                                                        // TofMass_pos
-          cosPA,                                                         // cosPA
-          massV0);                                                       // massV0
-        m_ClusterStudiesTableMcExtra(
-          std::hypot(momNeg[0], momNeg[1], momNeg[2]) * negTrack.sign(), // p_neg
-          RecoDecay::eta(momNeg),                                        // eta_neg
-          RecoDecay::phi(momNeg),                                        // phi_neg
-          negTrack.itsClusterSizes(),                                    // itsClsize_neg
-          partID_neg,                                                    // partID_neg
-          negMcParticle.pdgCode(),                                       // pdgCode_pos
-          negTrack.tpcInnerParam() * negTrack.sign(),                    // pTPC_neg
-          negTrack.pidForTracking(),                                     // pidInTrk_neg
-          -999.f,                                                        // TpcNSigma_neg
-          -999.f,                                                        // TofNSigma_neg
-          -999.f,                                                        // TofMass_neg
-          cosPA,                                                         // cosPA
-          massV0);                                                       // massV0
-      }
-    } else { // data
-      if (setting_smallTable) {
-        m_ClusterStudiesTable(
-          std::hypot(momPos[0], momPos[1], momPos[2]) * posTrack.sign(), // p_pos
-          RecoDecay::eta(momPos),                                        // eta_pos
-          RecoDecay::phi(momPos),                                        // phi_pos
-          posTrack.itsClusterSizes(),                                    // itsClsize_pos
-          partID_pos);                                                   // partID_pos
-        m_ClusterStudiesTable(
-          std::hypot(momNeg[0], momNeg[1], momNeg[2]) * negTrack.sign(), // p_neg
-          RecoDecay::eta(momNeg),                                        // eta_neg
-          RecoDecay::phi(momNeg),                                        // phi_neg
-          negTrack.itsClusterSizes(),                                    // itsClsize_neg
-          partID_neg);                                                   // partID_neg
-      } else {
-        m_ClusterStudiesTableExtra(
-          std::hypot(momPos[0], momPos[1], momPos[2]) * posTrack.sign(), // p_pos
-          RecoDecay::eta(momPos),                                        // eta_pos
-          RecoDecay::phi(momPos),                                        // phi_pos
-          posTrack.itsClusterSizes(),                                    // itsClsize_pos
-          partID_pos,                                                    // partID_pos
-          posTrack.tpcInnerParam() * posTrack.sign(),                    // pTPC_pos
-          posTrack.pidForTracking(),                                     // pidInTrk_pos
-          -999.f,                                                        // TpcNSigma_pos
-          -999.f,                                                        // TofNSigma_pos
-          -999.f,                                                        // TofMass_pos
-          cosPA,                                                         // cosPA
-          massV0);                                                       // massV0
-        m_ClusterStudiesTableExtra(
-          std::hypot(momNeg[0], momNeg[1], momNeg[2]) * negTrack.sign(), // p_neg
-          RecoDecay::eta(momNeg),                                        // eta_neg
-          RecoDecay::phi(momNeg),                                        // phi_neg
-          negTrack.itsClusterSizes(),                                    // itsClsize_neg
-          partID_neg,                                                    // partID_neg
-          negTrack.tpcInnerParam() * negTrack.sign(),                    // pTPC_neg
-          negTrack.pidForTracking(),                                     // pidInTrk_neg
-          -999.f,                                                        // TpcNSigma_neg
-          -999.f,                                                        // TofNSigma_neg
-          -999.f,                                                        // TofMass_neg
-          cosPA,                                                         // cosPA
-          massV0);                                                       // massV0
-      }
+      candidatePos.pdgCode = posMcParticle.pdgCode();
+      candidateNeg.pdgCode = negMcParticle.pdgCode();
+
+      fillMcHistogramsV0(massLambdaV0, massAntiLambdaV0, momMother, posMcParticle, negMcParticle);
     }
+
+    fillTable<isMC>(candidatePos);
+    fillTable<isMC>(candidateNeg);
 
     m_hAnalysis.fill(HIST("isPositive"), true);
     m_hAnalysis.fill(HIST("isPositive"), false);
@@ -866,7 +951,7 @@ struct LfTreeCreatorClusterStudies {
     if (!qualitySelectionCascade(dcaV0daughters, cosPA)) {
       return;
     }
-    // gpu::gpustd::array<float, 2> dcaInfo;
+    // std::array<float, 2> dcaInfo;
     // float dcaToPVbachelor = dcaToPV(PV, bachelorTrackCovariance, dcaInfo);
 
     float massXi = computeMassMother(o2::constants::physics::MassLambda0, o2::constants::physics::MassPionCharged, momV0, momBachelor, momMother);
@@ -891,59 +976,38 @@ struct LfTreeCreatorClusterStudies {
 
     uint8_t partID_bachelor = PartID::ka;
 
+    m_ClusterStudiesTable(
+      std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]) * bachelorTrack.sign(), // p_K
+      RecoDecay::eta(momBachelor),                                                       // eta_K
+      RecoDecay::phi(momBachelor),                                                       // phi_K
+      bachelorTrack.itsClusterSizes(),                                                   // itsClSize_K
+      partID_bachelor);                                                                  // partID_K
+    if (!setting_smallTable) {
+      m_ClusterStudiesTableExtra(
+        bachelorTrack.tpcInnerParam() * bachelorTrack.sign(), // pTPC_K
+        bachelorTrack.pidForTracking(),                       // PIDinTrk_K
+        -999.f,                                               // TpcNSigma_K
+        -999.f,                                               // TofNSigma_K
+        -999.f,                                               // TofMass_K
+        cosPA,                                                // cosPA
+        massOmega);
+    }
+
     if constexpr (isMC) {
       if (!bachelorTrack.has_mcParticle()) {
         return;
       }
       auto mcParticle = bachelorTrack.mcParticle();
 
-      if (setting_smallTable) {
-        m_ClusterStudiesTableMc(
-          std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]) * bachelorTrack.sign(), // p_K
-          RecoDecay::eta(momBachelor),                                                       // eta_K
-          RecoDecay::phi(momBachelor),                                                       // phi_K
-          bachelorTrack.itsClusterSizes(),                                                   // itsClSize_K
-          partID_bachelor,                                                                   // partID_K
-          mcParticle.pdgCode());                                                             // pdgCode_K
-      } else {
-        m_ClusterStudiesTableMcExtra(
-          std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]) * bachelorTrack.sign(), // p_K
-          RecoDecay::eta(momBachelor),                                                       // eta_K
-          RecoDecay::phi(momBachelor),                                                       // phi_K
-          bachelorTrack.itsClusterSizes(),                                                   // itsClSize_K
-          partID_bachelor,                                                                   // partID_K
-          mcParticle.pdgCode(),                                                              // pdgCode_K
-          bachelorTrack.tpcInnerParam() * bachelorTrack.sign(),                              // pTPC_K
-          bachelorTrack.pidForTracking(),                                                    // PIDinTrk_K
-          -999.f,                                                                            // TpcNSigma_K
-          -999.f,                                                                            // TofNSigma_K
-          -999.f,                                                                            // TofMass_K
-          cosPA,                                                                             // cosPA
-          massOmega);                                                                        // massMother
+      m_ClusterStudiesTableMc(
+        mcParticle.pdgCode()); // pdgCode_K
+
+      auto posV0Daughter = v0Track.posTrack_as<Track>();
+      if (!posV0Daughter.has_mcParticle()) {
+        return;
       }
-    } else {
-      if (setting_smallTable) {
-        m_ClusterStudiesTable(
-          std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]) * bachelorTrack.sign(), // p_K
-          RecoDecay::eta(momBachelor),                                                       // eta_K
-          RecoDecay::phi(momBachelor),                                                       // phi_K
-          bachelorTrack.itsClusterSizes(),                                                   // itsClSize_K
-          partID_bachelor);                                                                  // partID_K
-      } else {
-        m_ClusterStudiesTableExtra(
-          std::hypot(momBachelor[0], momBachelor[1], momBachelor[2]) * bachelorTrack.sign(), // p_K
-          RecoDecay::eta(momBachelor),                                                       // eta_K
-          RecoDecay::phi(momBachelor),                                                       // phi_K
-          bachelorTrack.itsClusterSizes(),                                                   // itsClSize_K
-          partID_bachelor,                                                                   // partID_K
-          bachelorTrack.tpcInnerParam() * bachelorTrack.sign(),                              // pTPC_K
-          bachelorTrack.pidForTracking(),                                                    // PIDinTrk_K
-          -999.f,                                                                            // TpcNSigma_K
-          -999.f,                                                                            // TofNSigma_K
-          -999.f,                                                                            // TofMass_K
-          cosPA,                                                                             // cosPA
-          massOmega);
-      }
+      auto mcPosParticleV0 = posV0Daughter.mcParticle();
+      fillMcHistogramsCascade(massOmega, momMother, mcParticle, mcPosParticleV0);
     }
 
     m_hAnalysis.fill(HIST("isPositive"), bachelorTrack.p() > 0);
@@ -960,7 +1024,7 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDeNClsIts);
-    if (!selectionPIDtpcDe(track)) {
+    if (std::abs(track.tpcNSigmaDe()) > desetting_nsigmatpc) {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtpc);
@@ -968,13 +1032,30 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
     m_hAnalysis.fill(HIST("de_selections"), DeSelections::kDePIDtof);
-    m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), computeNSigmaDe(track));
+    m_hAnalysis.fill(HIST("nSigmaTPCDe"), track.p() * track.sign(), track.tpcNSigmaDe());
     m_hAnalysis.fill(HIST("nSigmaITSDe"), track.p() * track.sign(), m_responseITS.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta()));
     m_hAnalysis.fill(HIST("nSigmaTOFDe"), track.p() * track.sign(), track.tofNSigmaDe());
     m_hAnalysis.fill(HIST("TOFmassDe"), track.p() * track.sign(), computeTOFmassDe<isMC>(track));
     m_hAnalysis.fill(HIST("pmatchingDe"), track.sign() * track.tpcInnerParam(), (track.tpcInnerParam() - track.p()) / track.tpcInnerParam());
 
     uint8_t partID = PartID::de;
+
+    m_ClusterStudiesTable(
+      track.p() * track.sign(), // p_De,
+      track.eta(),              // eta_De,
+      track.phi(),              // phi_De,
+      track.itsClusterSizes(),  // itsClSize_De,
+      partID);                  // partID_De
+    if (!setting_smallTable) {
+      m_ClusterStudiesTableExtra(
+        track.tpcInnerParam() * track.sign(), // pTPC_De,
+        track.pidForTracking(),               // PIDinTrk_De,
+        track.tpcNSigmaDe(),                  // TpcNSigma_De,
+        track.tofNSigmaDe(),                  // TofNSigma_De,
+        computeTOFmassDe<isMC>(track),        // TofMass_De,
+        -999.f,                               // cosPA,
+        -999.f);                              // massMother
+    }
 
     if constexpr (isMC) {
       if (!track.has_mcParticle() || track.sign() > 0) {
@@ -983,53 +1064,8 @@ struct LfTreeCreatorClusterStudies {
 
       auto mcParticle = track.mcParticle();
 
-      if (setting_smallTable) {
-        m_ClusterStudiesTableMc(
-          track.p() * track.sign(), // p_De,
-          track.eta(),              // eta_De,
-          track.phi(),              // phi_De,
-          track.itsClusterSizes(),  // itsClSize_De,
-          partID,                   // pdgCode_De,
-          mcParticle.pdgCode());    // pdgCodeMc_De
-      } else {
-        m_ClusterStudiesTableMcExtra(
-          track.p() * track.sign(),             // p_De,
-          track.eta(),                          // eta_De,
-          track.phi(),                          // phi_De,
-          track.itsClusterSizes(),              // itsClSize_De,
-          partID,                               // pdgCode_De,
-          mcParticle.pdgCode(),                 // pdgCodeMc_De
-          track.tpcInnerParam() * track.sign(), // pTPC_De,
-          track.pidForTracking(),               // PIDinTrk_De,
-          computeNSigmaDe(track),               // TpcNSigma_De,
-          track.tofNSigmaDe(),                  // TofNSigma_De,
-          computeTOFmassDe<isMC>(track),        // TofMass_De,
-          -999.f,                               // cosPA,
-          -999.f);                              // massMother
-      }
-    } else {
-      if (setting_smallTable) {
-        m_ClusterStudiesTable(
-          track.p() * track.sign(), // p_De,
-          track.eta(),              // eta_De,
-          track.phi(),              // phi_De,
-          track.itsClusterSizes(),  // itsClSize_De,
-          partID);                  // pdgCode_De
-      } else {
-        m_ClusterStudiesTableExtra(
-          track.p() * track.sign(),             // p_De,
-          track.eta(),                          // eta_De,
-          track.phi(),                          // phi_De,
-          track.itsClusterSizes(),              // itsClSize_De,
-          partID,                               // pdgCode_De,
-          track.tpcInnerParam() * track.sign(), // pTPC_De,
-          track.pidForTracking(),               // PIDinTrk_De,
-          computeNSigmaDe(track),               // TpcNSigma_De,
-          track.tofNSigmaDe(),                  // TofNSigma_De,
-          computeTOFmassDe<isMC>(track),        // TofMass_De,
-          -999.f,                               // cosPA,
-          -999.f);                              // massMother
-      }
+      m_ClusterStudiesTableMc(
+        mcParticle.pdgCode()); // pdgCode_De
     }
 
     m_hAnalysis.fill(HIST("isPositive"), track.sign() > 0);
@@ -1062,60 +1098,31 @@ struct LfTreeCreatorClusterStudies {
     m_hAnalysis.fill(HIST("TOFmassHe"), track.p() * track.sign(), tofMass);
     m_hAnalysis.fill(HIST("pmatchingHe"), track.sign() * correctedTPCinnerParam, (correctedTPCinnerParam - track.p()) / correctedTPCinnerParam);
 
+    m_ClusterStudiesTable(
+      track.p() * track.sign(), // p_He3,
+      track.eta(),              // eta_He3,
+      track.phi(),              // phi_He3,
+      track.itsClusterSizes(),  // itsClSize_He3,
+      partID);                  // partID_He3
+    if (!setting_smallTable) {
+      m_ClusterStudiesTableExtra(
+        correctedTPCinnerParam * track.sign(), // pTPC_He3,
+        track.pidForTracking(),                // PIDinTrk_He3,
+        computeNSigmaHe3(track),               // TpcNSigma_He3,
+        -999.f,                                // TofNSigma_He3,
+        tofMass,                               // TofMass_He3,
+        -999.f,                                // cosPA,
+        -999.f);                               // massMother
+    }
+
     if constexpr (isMC) {
       if (!track.has_mcParticle()) {
         return;
       }
       auto mcParticle = track.mcParticle();
 
-      if (setting_smallTable) {
-        m_ClusterStudiesTableMc(
-          track.p() * track.sign(), // p_He3,
-          track.eta(),              // eta_He3,
-          track.phi(),              // phi_He3,
-          track.itsClusterSizes(),  // itsClSize_He3,
-          partID,                   // pdgCode_He3,
-          mcParticle.pdgCode());    // pdgCodeMc_He3
-      } else {
-        m_ClusterStudiesTableMcExtra(
-          track.p() * track.sign(),              // p_He3
-          track.eta(),                           // eta_He3
-          track.phi(),                           // phi_He3
-          track.itsClusterSizes(),               // itsClSize_He3
-          partID,                                // pdgCode_He3
-          mcParticle.pdgCode(),                  // pdgCodeMc_He3
-          correctedTPCinnerParam * track.sign(), // pTPC_He3
-          track.pidForTracking(),                // PIDinTrk_He3
-          computeNSigmaHe3(track),               // TpcNSigma_He3
-          -999.f,                                // TofNSigma_He3
-          tofMass,                               // TofMass_He3
-          -999.f,                                // cosPA_He3
-          -999.f);                               // massMother_He3
-      }
-
-    } else {
-      if (setting_smallTable) {
-        m_ClusterStudiesTable(
-          track.p() * track.sign(), // p_He3,
-          track.eta(),              // eta_He3,
-          track.phi(),              // phi_He3,
-          track.itsClusterSizes(),  // itsClSize_He3,
-          partID);                  // pdgCode_He3
-      } else {
-        m_ClusterStudiesTableExtra(
-          track.p() * track.sign(),              // p_He3,
-          track.eta(),                           // eta_He3,
-          track.phi(),                           // phi_He3,
-          track.itsClusterSizes(),               // itsClSize_He3,
-          partID,                                // pdgCode_He3,
-          correctedTPCinnerParam * track.sign(), // pTPC_He3,
-          track.pidForTracking(),                // PIDinTrk_He3,
-          computeNSigmaHe3(track),               // TpcNSigma_He3,
-          -999.f,                                // TofNSigma_He3,
-          tofMass,                               // TofMass_He3,
-          -999.f,                                // cosPA,
-          -999.f);                               // massMother
-      }
+      m_ClusterStudiesTableMc(
+        mcParticle.pdgCode()); // pdgCodeMc_He3
     }
 
     m_hAnalysis.fill(HIST("isPositive"), track.sign() > 0);
@@ -1141,20 +1148,14 @@ struct LfTreeCreatorClusterStudies {
       return;
     }
 
-    if (setting_smallTable) {
-      m_ClusterStudiesTable(
-        track.p() * track.sign(),
-        track.eta(),
-        track.phi(),
-        track.itsClusterSizes(),
-        partID);
-    } else {
+    m_ClusterStudiesTable(
+      track.p() * track.sign(),
+      track.eta(),
+      track.phi(),
+      track.itsClusterSizes(),
+      partID);
+    if (!setting_smallTable) {
       m_ClusterStudiesTableExtra(
-        track.p() * track.sign(),             // p,
-        track.eta(),                          // eta,
-        track.phi(),                          // phi,
-        track.itsClusterSizes(),              // itsClSize,
-        partID,                               // pdgCode,
         track.tpcInnerParam() * track.sign(), // pTPC,
         track.pidForTracking(),               // PIDinTrk,
         tpcNSigma,                            // TpcNSigma,

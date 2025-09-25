@@ -15,32 +15,50 @@
 /// \author Chiara Zampolli, <Chiara.Zampolli@cern.ch>, CERN
 ///         Paul Buehler, <paul.buehler@oeaw.ac.at>, Vienna
 
-#include <string>
-#include <memory>
-#include <vector>
-
-#include <TPDGCode.h>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "DCAFitter/DCAFitterN.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "ReconstructionDataFormats/V0.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-
-#include "Common/Core/trackUtilities.h"
-
 #include "PWGHF/Core/CentralityEstimation.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/Utils/utilsBfieldCCDB.h"
 #include "PWGHF/Utils/utilsEvSelHf.h"
 #include "PWGHF/Utils/utilsTrkCandHf.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGLF/DataModel/mcCentrality.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DCAFitter/DCAFitterN.h>
+#include <DetectorsBase/MatLayerCylSet.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DeviceSpec.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
+
+#include <TH1.h>
+#include <TPDGCode.h>
+
+#include <array>
+#include <cstdint>
+#include <memory>
+#include <numeric>
+#include <stdexcept>
+#include <string>
+#include <vector>
 
 using namespace o2;
-using namespace o2::analysis;
 using namespace o2::hf_evsel;
 using namespace o2::hf_trkcandsel;
 using namespace o2::hf_centrality;
@@ -84,7 +102,6 @@ struct HfCandidateCreatorCascade {
   double bz = 0.;
 
   using V0full = soa::Join<aod::V0Datas, aod::V0Covs>;
-  using V0fCfull = soa::Join<aod::V0fCDatas, aod::V0fCCovs>;
 
   std::shared_ptr<TH1> hCandidates;
   HistogramRegistry registry{"registry"};
@@ -118,7 +135,9 @@ struct HfCandidateCreatorCascade {
     registry.add("hCovPVXX", "2-prong candidates;XX element of cov. matrix of prim. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 1.e-4}}});
     registry.add("hCovSVXX", "2-prong candidates;XX element of cov. matrix of sec. vtx. position (cm^{2});entries", {HistType::kTH1F, {{100, 0., 0.2}}});
     hCandidates = registry.add<TH1>("hCandidates", "candidates counter", {HistType::kTH1D, {axisCands}});
-    hfEvSel.addHistograms(registry); // collision monitoring
+
+    // init HF event selection helper
+    hfEvSel.init(registry);
 
     massP = MassProton;
     massK0s = MassK0Short;
@@ -149,7 +168,6 @@ struct HfCandidateCreatorCascade {
                          aod::HfCascades const& rowsTrackIndexCasc,
                          aod::V0sLinked const&,
                          V0full const&,
-                         V0fCfull const&,
                          aod::TracksWCov const&,
                          aod::BCsWithTimestamps const& /*bcWithTimeStamps*/)
   {
@@ -204,42 +222,14 @@ struct HfCandidateCreatorCascade {
         dcaNegToPV = v0row.dcanegtopv();
         v0cosPA = v0row.v0cosPA();
 
+        int momIndSize = 6;
         constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-        for (int i = 0; i < 6; i++) {
-          covV[MomInd[i]] = v0row.momentumCovMat()[i];
-          covV[i] = v0row.positionCovMat()[i];
-        }
-      } else if (v0index.has_v0fCData()) {
-        // this V0 passes only V0-for-cascade selections, use that instead
-        auto v0row = v0index.template v0fCData_as<V0fCfull>();
-        const auto& trackV0DaughPos = v0row.posTrack_as<aod::TracksWCov>();
-        const auto& trackV0DaughNeg = v0row.negTrack_as<aod::TracksWCov>();
-        posGlobalIndex = trackV0DaughPos.globalIndex();
-        negGlobalIndex = trackV0DaughNeg.globalIndex();
-        v0X = v0row.x();
-        v0Y = v0row.y();
-        v0Z = v0row.z();
-        v0px = v0row.px();
-        v0py = v0row.py();
-        v0pz = v0row.pz();
-        v0PosPx = v0row.pxpos();
-        v0PosPy = v0row.pypos();
-        v0PosPz = v0row.pzpos();
-        v0NegPx = v0row.pxneg();
-        v0NegPy = v0row.pyneg();
-        v0NegPz = v0row.pzneg();
-        dcaV0dau = v0row.dcaV0daughters();
-        dcaPosToPV = v0row.dcapostopv();
-        dcaNegToPV = v0row.dcanegtopv();
-        v0cosPA = v0row.v0cosPA();
-
-        constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
-        for (int i = 0; i < 6; i++) {
+        for (int i = 0; i < momIndSize; i++) {
           covV[MomInd[i]] = v0row.momentumCovMat()[i];
           covV[i] = v0row.positionCovMat()[i];
         }
       } else {
-        LOGF(warning, "V0Data/V0fCData not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
+        LOGF(warning, "V0Data not there for V0 %d in HF cascade %d. Skipping candidate.", casc.v0Id(), casc.globalIndex());
         continue; // this was inadequately linked, should not happen
       }
 
@@ -343,11 +333,10 @@ struct HfCandidateCreatorCascade {
                      aod::HfCascades const& rowsTrackIndexCasc,
                      aod::V0sLinked const& v0sLinked,
                      V0full const& v0Full,
-                     V0fCfull const& v0fcFull,
                      aod::TracksWCov const& tracks,
                      aod::BCsWithTimestamps const& bcs)
   {
-    runCreatorCascade<CentralityEstimator::None>(collisions, rowsTrackIndexCasc, v0sLinked, v0Full, v0fcFull, tracks, bcs);
+    runCreatorCascade<CentralityEstimator::None>(collisions, rowsTrackIndexCasc, v0sLinked, v0Full, tracks, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorCascade, processNoCent, " Run candidate creator w/o centrality selections", true);
 
@@ -356,11 +345,10 @@ struct HfCandidateCreatorCascade {
                        aod::HfCascades const& rowsTrackIndexCasc,
                        aod::V0sLinked const& v0sLinked,
                        V0full const& v0Full,
-                       V0fCfull const& v0fcFull,
                        aod::TracksWCov const& tracks,
                        aod::BCsWithTimestamps const& bcs)
   {
-    runCreatorCascade<CentralityEstimator::FT0C>(collisions, rowsTrackIndexCasc, v0sLinked, v0Full, v0fcFull, tracks, bcs);
+    runCreatorCascade<CentralityEstimator::FT0C>(collisions, rowsTrackIndexCasc, v0sLinked, v0Full, tracks, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorCascade, processCentFT0C, " Run candidate creator w/ centrality selection on FT0C", false);
 
@@ -369,11 +357,10 @@ struct HfCandidateCreatorCascade {
                        aod::HfCascades const& rowsTrackIndexCasc,
                        aod::V0sLinked const& v0sLinked,
                        V0full const& v0Full,
-                       V0fCfull const& v0fcFull,
                        aod::TracksWCov const& tracks,
                        aod::BCsWithTimestamps const& bcs)
   {
-    runCreatorCascade<CentralityEstimator::FT0M>(collisions, rowsTrackIndexCasc, v0sLinked, v0Full, v0fcFull, tracks, bcs);
+    runCreatorCascade<CentralityEstimator::FT0M>(collisions, rowsTrackIndexCasc, v0sLinked, v0Full, tracks, bcs);
   }
   PROCESS_SWITCH(HfCandidateCreatorCascade, processCentFT0M, " Run candidate creator w/ centrality selection on FT0M", false);
 
@@ -471,11 +458,11 @@ struct HfCandidateCreatorCascadeMc {
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
       if (device.name.compare("hf-candidate-creator-cascade") == 0) {
-        hfEvSelMc.configureFromDevice(device);
+        // init HF event selection helper
+        hfEvSelMc.init(device, registry);
         break;
       }
     }
-    hfEvSelMc.addHistograms(registry); // particles monitoring
   }
 
   template <o2::hf_centrality::CentralityEstimator centEstimator, typename CCs, typename McCollisions>
@@ -544,7 +531,7 @@ struct HfCandidateCreatorCascadeMc {
       const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
       float centrality{-1.f};
-      uint16_t rejectionMask{0};
+      o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       int nSplitColl = 0;
       if constexpr (centEstimator == CentralityEstimator::FT0C) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());

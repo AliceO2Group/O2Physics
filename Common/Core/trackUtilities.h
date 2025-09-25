@@ -17,11 +17,17 @@
 #ifndef COMMON_CORE_TRACKUTILITIES_H_
 #define COMMON_CORE_TRACKUTILITIES_H_
 
-#include <utility> // std::move
-#include "CommonConstants/MathConstants.h"
-#include "ReconstructionDataFormats/Track.h"
-#include "ReconstructionDataFormats/Vertex.h"
 #include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <ReconstructionDataFormats/TrackParametrization.h>
+#include <ReconstructionDataFormats/TrackParametrizationWithError.h>
+#include <ReconstructionDataFormats/Vertex.h>
+
+#include <GPUROOTCartesianFwd.h>
+
+#include <array>
+#include <utility> // std::move
 
 /// Extracts track parameters from a track.
 template <typename TrackPrecision = float, typename T>
@@ -122,12 +128,12 @@ auto getRotatedCovMatrixXX(const T& matrix, U phi, V theta)
 template <typename T, typename U>
 void getPxPyPz(T const& trackPars, U& pVec)
 {
-  auto pt = 1.f / std::abs(trackPars.getQ2Pt());
+  auto ptTrack = 1.f / std::abs(trackPars.getQ2Pt());
   float cs = cosf(trackPars.getAlpha()), sn = sinf(trackPars.getAlpha());
   auto r = std::sqrt((1.f - trackPars.getSnp()) * (1.f + trackPars.getSnp()));
-  pVec[0] = pt * (r * cs - trackPars.getSnp() * sn);
-  pVec[1] = pt * (trackPars.getSnp() * cs + r * sn);
-  pVec[2] = pt * trackPars.getTgl();
+  pVec[0] = ptTrack * (r * cs - trackPars.getSnp() * sn);
+  pVec[1] = ptTrack * (trackPars.getSnp() * cs + r * sn);
+  pVec[2] = ptTrack * trackPars.getTgl();
 }
 
 /// Calculates DCA XYZ of a track w.r.t. the primary vertex and its uncertainty if required.

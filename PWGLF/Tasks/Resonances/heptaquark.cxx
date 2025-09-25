@@ -80,8 +80,8 @@ struct heptaquark {
     histos.add("h_InvMass_rotLambda", "h_InvMass_rotLambda", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
     histos.add("h_InvMass_rotPhiLambda", "h_InvMass_rotPhiLambda", {HistType::kTH3F, {massAxis, ptAxis, centAxis}});
 
-    histos.add("hDalitz", "hDalitz", {HistType::kTHnSparseF, {massPPAxis, massPLAxis, massAxis, ptAxis, centAxis}});
-    histos.add("hDalitzRot", "hDalitzRot", {HistType::kTHnSparseF, {massPPAxis, massPLAxis, massAxis, ptAxis, centAxis}});
+    histos.add("hDalitz", "hDalitz", {HistType::kTHnSparseF, {massPPAxis, massPLAxis, massAxis, ptAxis, {2, -0.5f, 1.5f}, centAxis}});
+    histos.add("hDalitzRot", "hDalitzRot", {HistType::kTHnSparseF, {massPPAxis, massPLAxis, massAxis, ptAxis, {2, -0.5f, 1.5f}, centAxis}});
   }
 
   double massLambda = o2::constants::physics::MassLambda;
@@ -172,6 +172,30 @@ struct heptaquark {
     return false;
   }
 
+  template <typename V01, typename V02>
+  ROOT::Math::XYZVector getDCAofV0V0(V01 const& v01, V02 const& v02)
+  {
+    ROOT::Math::XYZVector v01pos, v02pos, v01mom, v02mom;
+    v01pos.SetXYZ(v01.x(), v01.y(), v01.z());
+    v02pos.SetXYZ(v02.x(), v02.y(), v02.z());
+    v01mom.SetXYZ(v01.px(), v01.py(), v01.pz());
+    v02mom.SetXYZ(v02.px(), v02.py(), v02.pz());
+
+    ROOT::Math::XYZVector posdiff = v02pos - v01pos;
+    ROOT::Math::XYZVector cross = v01mom.Cross(v02mom);
+    ROOT::Math::XYZVector dcaVec = (posdiff.Dot(cross) / cross.Mag2()) * cross;
+    return dcaVec;
+  }
+
+  template <typename V01, typename V02>
+  float getCPA(V01 const& v01, V02 const& v02)
+  {
+    ROOT::Math::XYZVector v01mom, v02mom;
+    v01mom.SetXYZ(v01.px() / v01.p(), v01.py() / v01.p(), v01.pz() / v01.p());
+    v02mom.SetXYZ(v02.px() / v02.p(), v02.py() / v02.p(), v02.pz() / v02.p());
+    return v01mom.Dot(v02mom);
+  }
+
   ROOT::Math::PxPyPzMVector DauVec1, DauVec2;
 
   TLorentzVector exotic, HQ1, HQ2, HQ3;
@@ -257,6 +281,8 @@ struct heptaquark {
           if (hqtrackd3.hqMass() < minLambdaMass || hqtrackd3.hqMass() > maxLambdaMass)
             continue;
 
+          int isLambda = static_cast<int>(hqtrackd3.hqId() < 0);
+
           if (hqtrackd3.hqId() > 0) {
             DauVec1 = ROOT::Math::PxPyPzMVector(hqtrackd3.hqd1Px(), hqtrackd3.hqd1Py(), hqtrackd3.hqd1Pz(), massPr);
             DauVec2 = ROOT::Math::PxPyPzMVector(hqtrackd3.hqd2Px(), hqtrackd3.hqd2Py(), hqtrackd3.hqd2Pz(), massPi);
@@ -296,7 +322,7 @@ struct heptaquark {
           HQ13 = HQ1 + HQ3;
 
           histos.fill(HIST("h_InvMass_same"), exotic.M(), exotic.Pt(), collision.centrality());
-          histos.fill(HIST("hDalitz"), HQ12.M2(), HQ13.M2(), exotic.M(), exotic.Pt(), collision.centrality());
+          histos.fill(HIST("hDalitz"), HQ12.M2(), HQ13.M2(), exotic.M(), exotic.Pt(), isLambda, collision.centrality());
 
           if (cfgRotBkg) {
             for (int nr = 0; nr < cfgNRotBkg; nr++) {
@@ -319,7 +345,7 @@ struct heptaquark {
               histos.fill(HIST("h_InvMass_rotPhi"), exoticRot2.M(), exoticRot2.Pt(), collision.centrality());
               histos.fill(HIST("h_InvMass_rotLambda"), exoticRot3.M(), exoticRot3.Pt(), collision.centrality());
               histos.fill(HIST("h_InvMass_rotPhiLambda"), exoticRot23.M(), exoticRot23.Pt(), collision.centrality());
-              histos.fill(HIST("hDalitzRot"), HQ12Rot.M2(), HQ13Rot.M2(), exoticRot23.M(), exoticRot23.Pt(), collision.centrality());
+              histos.fill(HIST("hDalitzRot"), HQ12Rot.M2(), HQ13Rot.M2(), exoticRot23.M(), exoticRot23.Pt(), isLambda, collision.centrality());
             }
           }
         }

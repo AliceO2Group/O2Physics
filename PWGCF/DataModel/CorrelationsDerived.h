@@ -11,11 +11,12 @@
 #ifndef PWGCF_DATAMODEL_CORRELATIONSDERIVED_H_
 #define PWGCF_DATAMODEL_CORRELATIONSDERIVED_H_
 
-#include <vector>
+#include "Common/DataModel/Centrality.h"
 
 #include "Framework/ASoA.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/Centrality.h"
+
+#include <vector>
 
 namespace o2::aod
 {
@@ -85,6 +86,22 @@ using CFTrackWithLabel = CFTracksWithLabel::iterator;
 //------transient CF-filter to CF-2prong-filter
 DECLARE_SOA_TABLE(CFCollRefs, "AOD", "CFCOLLREF", o2::soa::Index<>, track::CollisionId); //! Transient cf collision index table
 
+//------multiplicity set
+namespace cfmultset
+{
+DECLARE_SOA_COLUMN(Multiplicities, multiplicities, std::vector<float>); //! List of auxiliary multiplicities
+enum MultiplicityEstimators : uint8_t {
+  CentFT0C = 0x1,
+  MultFV0A = 0x2,
+  MultNTracksPV = 0x4,
+  MultNTracksGlobal = 0x8
+};
+
+} // namespace cfmultset
+DECLARE_SOA_TABLE(CFMultSets, "AOD", "CFMULTSET", cfmultset::Multiplicities); //! Auxilary multiplicity set table
+
+using CFMultSet = CFMultSets::iterator;
+
 // Reco
 
 using CFCollRef = CFCollRefs::iterator;
@@ -121,7 +138,14 @@ enum ParticleDecay {
   D0ToPiK,
   D0barToKPi,
   JPsiToEE,
-  JPsiToMuMu
+  JPsiToMuMu,
+  Generic2Prong,
+  PhiToKKPID1,
+  PhiToKKPID2,
+  PhiToKKPID3,
+  K0stoPiPi,
+  LambdatoPPi,
+  AntiLambdatoPiP
 };
 } // namespace cf2prongtrack
 DECLARE_SOA_TABLE(CF2ProngTracks, "AOD", "CF2PRONGTRACK", //! Reduced track table
@@ -147,13 +171,20 @@ using CF2ProngTrackml = CF2ProngTrackmls::iterator;
 
 namespace cf2prongmcpart
 {
-DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh0, cfParticleDaugh0, int, CFMcParticles, "_0"); //! Index to prong 1 CFMcParticle
-DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh1, cfParticleDaugh1, int, CFMcParticles, "_1"); //! Index to prong 2 CFMcParticle
+DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh0, cfParticleDaugh0, int, CFMcParticles, "_0");         //! Index to prong 1 CFMcParticle
+DECLARE_SOA_INDEX_COLUMN_FULL(CFParticleDaugh1, cfParticleDaugh1, int, CFMcParticles, "_1");         //! Index to prong 2 CFMcParticle
+DECLARE_SOA_COLUMN(Decay, decay, uint8_t);                                                           //! Particle decay and flags
+DECLARE_SOA_DYNAMIC_COLUMN(McDecay, mcDecay, [](uint8_t decay) -> uint8_t { return decay & 0x7f; }); //! MC particle decay
+enum ParticleDecayFlags {
+  Prompt = 0x80
+};
 } // namespace cf2prongmcpart
 DECLARE_SOA_TABLE(CF2ProngMcParts, "AOD", "CF2PRONGMCPART", //! Table for the daughter particles of a 2-prong particle, to be joined with CFMcParticles
                   o2::soa::Index<>,
                   cf2prongmcpart::CFParticleDaugh0Id,
-                  cf2prongmcpart::CFParticleDaugh1Id)
+                  cf2prongmcpart::CFParticleDaugh1Id,
+                  cf2prongmcpart::Decay,
+                  cf2prongmcpart::McDecay<cf2prongmcpart::Decay>)
 using CF2ProngMcPart = CF2ProngMcParts::iterator;
 
 } // namespace o2::aod

@@ -13,8 +13,19 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include <vector>
 #include "PWGJE/Tasks/jetSubstructureHF.cxx"
+
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetSubstructure.h"
+#include "PWGJE/DataModel/JetSubtraction.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
 
 using JetSubstructureDielectron = JetSubstructureHFTask<soa::Join<aod::DielectronChargedJets, aod::DielectronChargedJetConstituents>, soa::Join<aod::DielectronChargedMCDetectorLevelJets, aod::DielectronChargedMCDetectorLevelJetConstituents>, soa::Join<aod::DielectronChargedMCParticleLevelJets, aod::DielectronChargedMCParticleLevelJetConstituents>, soa::Join<aod::DielectronChargedEventWiseSubtractedJets, aod::DielectronChargedEventWiseSubtractedJetConstituents>, aod::CandidatesDielectronData, aod::CandidatesDielectronMCP, aod::DielectronCJetSSs, aod::DielectronChargedSPs, aod::DielectronChargedPRs, aod::DielectronCMCDJetSSs, aod::DielectronChargedMCDetectorLevelSPs, aod::DielectronChargedMCDetectorLevelPRs, aod::DielectronCMCPJetSSs, aod::DielectronChargedMCParticleLevelSPs, aod::DielectronChargedMCParticleLevelPRs, aod::DielectronCEWSJetSSs, aod::DielectronChargedEventWiseSubtractedSPs, aod::DielectronChargedEventWiseSubtractedPRs, aod::JTrackDielectronSubs>;
 

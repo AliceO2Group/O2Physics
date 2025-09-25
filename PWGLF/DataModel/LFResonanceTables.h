@@ -332,7 +332,7 @@ DECLARE_SOA_DYNAMIC_COLUMN(Sign, sign,
 
 } // namespace resodaughter
 
-namespace resodmciroaughter
+namespace resomicrodaughter
 {
 // micro track for primary pion
 
@@ -471,7 +471,7 @@ struct ResoMicroTrackSelFlag {
 };
 
 DECLARE_SOA_DYNAMIC_COLUMN(Pt, pt, [](float px, float py) -> float { return RecoDecay::sqrtSumOfSquares(px, py); });
-} // namespace resodmciroaughter
+} // namespace resomicrodaughter
 
 DECLARE_SOA_TABLE(ResoTracks, "AOD", "RESOTRACK",
                   o2::soa::Index<>,
@@ -525,13 +525,13 @@ DECLARE_SOA_TABLE(ResoMicroTracks, "AOD", "RESOMICROTRACK",
                   resodaughter::Px,
                   resodaughter::Py,
                   resodaughter::Pz,
-                  resodmciroaughter::PidNSigmaPiFlag,
-                  resodmciroaughter::PidNSigmaKaFlag,
-                  resodmciroaughter::PidNSigmaPrFlag,
-                  resodmciroaughter::TrackSelectionFlags,
+                  resomicrodaughter::PidNSigmaPiFlag,
+                  resomicrodaughter::PidNSigmaKaFlag,
+                  resomicrodaughter::PidNSigmaPrFlag,
+                  resomicrodaughter::TrackSelectionFlags,
                   resodaughter::TrackFlags,
                   // Dynamic columns
-                  resodmciroaughter::Pt<resodaughter::Px, resodaughter::Py>,
+                  resomicrodaughter::Pt<resodaughter::Px, resodaughter::Py>,
                   resodaughter::Eta<resodaughter::Px, resodaughter::Py, resodaughter::Pz>,
                   resodaughter::Phi<resodaughter::Px, resodaughter::Py>,
                   resodaughter::PassedITSRefit<resodaughter::TrackFlags>,
@@ -540,7 +540,7 @@ DECLARE_SOA_TABLE(ResoMicroTracks, "AOD", "RESOMICROTRACK",
                   resodaughter::IsGlobalTrack<resodaughter::TrackFlags>,
                   resodaughter::IsPrimaryTrack<resodaughter::TrackFlags>,
                   resodaughter::IsPVContributor<resodaughter::TrackFlags>,
-                  resodmciroaughter::HasTOF<resodmciroaughter::PidNSigmaPiFlag>,
+                  resomicrodaughter::HasTOF<resomicrodaughter::PidNSigmaPiFlag>,
                   resodaughter::Sign<resodaughter::TrackFlags>);
 using ResoMicroTrack = ResoMicroTracks::iterator;
 

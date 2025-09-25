@@ -17,35 +17,12 @@
 #ifndef PWGJE_CORE_JETCANDIDATEUTILITIES_H_
 #define PWGJE_CORE_JETCANDIDATEUTILITIES_H_
 
-#include <array>
-#include <vector>
-#include <string>
-#include <optional>
-#include <algorithm>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
-#include "Framework/Logger.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
-
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-#include "PWGHF/DataModel/DerivedTables.h"
-
-#include "PWGJE/Core/FastJetUtilities.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetDQUtilities.h"
+#include "PWGJE/Core/JetHFUtilities.h"
 #include "PWGJE/Core/JetV0Utilities.h"
-#include "PWGJE/Core/JetFinder.h"
-#include "PWGJE/DataModel/Jet.h"
+
+#include <cstdint>
+#include <type_traits>
 
 namespace jetcandidateutilities
 {
@@ -228,11 +205,11 @@ auto matchedParticle(const T& candidate, const U& tracks, const V& particles)
  * @param candidate candidate that is being checked
  * @param table the table to be sliced
  */
-template <typename T, typename U, typename V, typename M, typename N, typename O, typename P>
-auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candidate, M const& perDplusCandidate, N const& perLcCandidate, O const& perBplusCandidate, P const& perDielectronCandidate)
+template <typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q, typename R, typename S, typename A>
+auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candidate, M const& perDplusCandidate, N const& perDsCandidate, O const& perDstarCandidate, P const& perLcCandidate, Q const& perB0Candidate, R const& perBplusCandidate, S const& perXicToXiPiPiCandidate, A const& perDielectronCandidate)
 {
   if constexpr (jethfutilities::isHFCandidate<U>()) {
-    return jethfutilities::slicedPerHFCandidate(table, candidate, perD0Candidate, perDplusCandidate, perLcCandidate, perBplusCandidate);
+    return jethfutilities::slicedPerHFCandidate(table, candidate, perD0Candidate, perDplusCandidate, perDsCandidate, perDstarCandidate, perLcCandidate, perB0Candidate, perBplusCandidate, perXicToXiPiPiCandidate);
   } else if constexpr (jetdqutilities::isDielectronCandidate<U>()) {
     return jetdqutilities::slicedPerDielectronCandidate(table, candidate, perDielectronCandidate);
   } else {
@@ -246,11 +223,11 @@ auto slicedPerCandidate(T const& table, U const& candidate, V const& perD0Candid
  * @param jet jet that the slice is based on
  * @param table the table to be sliced
  */
-template <typename CandidateTable, typename T, typename U, typename V, typename M, typename N, typename O, typename P>
-auto slicedPerJet(T const& table, U const& jet, V const& perD0Jet, M const& perDplusJet, N const& perLcJet, O const& perBplusJet, P const& perDielectronJet)
+template <typename CandidateTable, typename T, typename U, typename V, typename M, typename N, typename O, typename P, typename Q, typename R, typename S, typename A>
+auto slicedPerJet(T const& table, U const& jet, V const& perD0Jet, M const& perDplusJet, N const& perDsJet, O const& perDstarJet, P const& perLcJet, Q const& perB0Jet, R const& perBplusJet, S const& perXicToXiPiPiJet, A const& perDielectronJet)
 {
   if constexpr (jethfutilities::isHFTable<CandidateTable>() || jethfutilities::isHFMcTable<CandidateTable>()) {
-    return jethfutilities::slicedPerHFJet<CandidateTable>(table, jet, perD0Jet, perDplusJet, perLcJet, perBplusJet);
+    return jethfutilities::slicedPerHFJet<CandidateTable>(table, jet, perD0Jet, perDplusJet, perDsJet, perDstarJet, perLcJet, perB0Jet, perBplusJet, perXicToXiPiPiJet);
   } else if constexpr (jetdqutilities::isDielectronTable<CandidateTable>() || jetdqutilities::isDielectronMcTable<CandidateTable>()) {
     return jetdqutilities::slicedPerDielectronJet<CandidateTable>(table, jet, perDielectronJet);
   } else {

@@ -9,18 +9,20 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-///
-/// \file   TableHelper.h
+/// \file MetadataHelper.h
+/// \brief Utility to handle the metadata from the AOD
 /// \author Nicolò Jacazio nicolo.jacazio@cern.ch
-/// \brief  Utility to handle the metadata from the AOD
-///
 
 #ifndef COMMON_CORE_METADATAHELPER_H_
 #define COMMON_CORE_METADATAHELPER_H_
 
-#include <string>
+#include <Framework/ConfigContext.h>
+
 #include <map>
-#include "Framework/ConfigContext.h"
+#include <string>
+
+namespace o2::common::core
+{
 
 struct MetadataHelper {
   /// @brief Constructor for the MetadataHelper. Defines the all the metadata keys that will be looked for and accessible
@@ -59,9 +61,14 @@ struct MetadataHelper {
   /// @return true if the key is defined, false otherwise. Throws an exception if the key is not found
   bool isKeyDefined(const std::string& key) const;
 
+  /// @brief Function to create a label with the metadata information, useful e.g. for histogram naming
+  std::string makeMetadataLabel() const;
+
  private:
   std::map<std::string, std::string> mMetadata; /// < The metadata map
   bool mIsInitialized = false;                  /// < Flag to check if the metadata has been initialized
 };
+
+} // namespace o2::common::core
 
 #endif // COMMON_CORE_METADATAHELPER_H_

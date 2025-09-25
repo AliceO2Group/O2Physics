@@ -12,16 +12,19 @@
 // \brief software trigger for EM photon
 // \author daiki.sekihata@cern.ch
 
-#include "Math/Vector4D.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Common/DataModel/CaloClusters.h"
-#include "DataFormatsPHOS/TriggerRecord.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
+
+#include "Common/DataModel/CaloClusters.h"
 #include "EventFiltering/filterTables.h"
+
+#include "DataFormatsPHOS/TriggerRecord.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
 #include "Framework/HistogramRegistry.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/Vector4D.h"
 
 using namespace o2;
 using namespace o2::soa;
@@ -128,7 +131,7 @@ struct EMPhotonFilter {
       return false;
     }
 
-    if (track.pt() < minpt || abs(track.eta()) > maxeta) {
+    if (track.pt() < minpt || std::fabs(track.eta()) > maxeta) {
       return false;
     }
 
@@ -158,7 +161,7 @@ struct EMPhotonFilter {
       dca_3d = 999.f;
     } else {
       float chi2 = (track.dcaXY() * track.dcaXY() * track.cZZ() + track.dcaZ() * track.dcaZ() * track.cYY() - 2. * track.dcaXY() * track.dcaZ() * track.cZY()) / det;
-      dca_3d = std::sqrt(std::abs(chi2) / 2.);
+      dca_3d = std::sqrt(std::fabs(chi2) / 2.);
     }
     if (dca_3d > dca_3d_sigma_max) {
       return false;
@@ -174,23 +177,23 @@ struct EMPhotonFilter {
   template <uint8_t system, typename TCollisions, typename TPhotons1, typename TPhotons2, typename TPhotons3, typename TV0Legs, typename TDielectrons, typename TEMPrimaryElectrons>
   void runFilter(TCollisions const& collisions, TPhotons1 const& photons1, TPhotons2 const& photons2, TPhotons3 const& /*photons3*/, TV0Legs const&, TDielectrons const& dielectrons, TEMPrimaryElectrons const& /*emprimaryelectrons*/)
   {
-    for (auto& collision : collisions) {
+    for (const auto& collision : collisions) {
       mHistManager.fill(HIST("hEventCounter"), 1.);
       bool keepEvent[kNtrg]{false};
 
       if (collision.sel8()) {
         mHistManager.fill(HIST("hEventCounter"), 2.);
       }
-      if (abs(collision.posZ()) < 10.f) {
+      if (std::fabs(collision.posZ()) < 10.f) {
         mHistManager.fill(HIST("hEventCounter"), 3.);
       }
       if (collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         mHistManager.fill(HIST("hEventCounter"), 4.);
       }
-      if (collision.sel8() && abs(collision.posZ()) < 10.f) {
+      if (collision.sel8() && std::fabs(collision.posZ()) < 10.f) {
         mHistManager.fill(HIST("hEventCounter"), 5.);
       }
-      if (collision.sel8() && abs(collision.posZ()) < 10.f && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
+      if (collision.sel8() && std::fabs(collision.posZ()) < 10.f && collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
         mHistManager.fill(HIST("hEventCounter"), 6.);
       }
 
@@ -203,7 +206,7 @@ struct EMPhotonFilter {
         auto photons1_per_coll = photons1.sliceBy(perCollision_pcm, collision.globalIndex());
         auto dielectrons_per_coll = dielectrons.sliceBy(perCollision_ee, collision.globalIndex());
 
-        for (auto& v0photon : photons1_per_coll) {
+        for (const auto& v0photon : photons1_per_coll) {
           auto pos_sv = v0photon.template posTrack_as<TV0Legs>();
           auto ele_sv = v0photon.template negTrack_as<TV0Legs>();
           if (!isSelectedSecondary(pos_sv) || !isSelectedSecondary(ele_sv)) {
@@ -215,7 +218,7 @@ struct EMPhotonFilter {
           }
         } // end of single v0 photon loop
 
-        for (auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_per_coll, dielectrons_per_coll))) {
+        for (const auto& [g1, g2] : combinations(CombinationsFullIndexPolicy(photons1_per_coll, dielectrons_per_coll))) {
           auto pos_sv = g1.template posTrack_as<TV0Legs>();
           auto ele_sv = g1.template negTrack_as<TV0Legs>();
           if (!isSelectedSecondary(pos_sv) || !isSelectedSecondary(ele_sv)) {
@@ -279,8 +282,8 @@ struct EMPhotonFilter {
               if (clu2.trackdist() < 1.) { // select neutral clusters. Disp, Ncell cuts?
                 continue;
               }
-              double m = pow(clu.e() + clu2.e(), 2) - pow(clu.px() + clu2.px(), 2) -
-                         pow(clu.py() + clu2.py(), 2) - pow(clu.pz() + clu2.pz(), 2);
+              double m = std::pow(clu.e() + clu2.e(), 2) - std::pow(clu.px() + clu2.px(), 2) -
+                         std::pow(clu.py() + clu2.py(), 2) - std::pow(clu.pz() + clu2.pz(), 2);
               if (m > ePair * ePair) {
                 keepEvent[kPHOS_Pair] |= true;
                 break;
@@ -325,13 +328,10 @@ struct EMPhotonFilter {
     } // end of collision loop
   }
 
-  Filter PCMFilter = o2::aod::v0photonkf::dcaXYtopv < max_dcatopv_xy_v0 && o2::aod::v0photonkf::dcaZtopv < max_dcatopv_z_v0;
-  using filteredV0PhotonsKF = Filtered<aod::V0PhotonsKF>;
-
   Filter DalitzEEFilter = o2::aod::dalitzee::sign == 0; // analyze only uls
   using filteredDalitzEEs = Filtered<aod::DalitzEEs>;
 
-  void process_PCM(MyCollisions const& collisions, filteredV0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons)
+  void process_PCM(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons)
   {
     const uint8_t system = EM_Filter_PhotonType::kPCM;
     runFilter<system>(collisions, v0photons, nullptr, nullptr, v0legs, dielectrons, emprimaryelectrons);
@@ -351,7 +351,7 @@ struct EMPhotonFilter {
     runFilter<system>(collisions, nullptr, nullptr, clusters, nullptr, nullptr, nullptr);
   }
 
-  void process_PCM_PHOS(MyCollisions const& collisions, filteredV0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons, CluCandidates const& clusters)
+  void process_PCM_PHOS(MyCollisions const& collisions, aod::V0PhotonsKF const& v0photons, aod::V0Legs const& v0legs, filteredDalitzEEs const& dielectrons, MyPrimaryElectrons const& emprimaryelectrons, CluCandidates const& clusters)
   {
     const uint8_t system = EM_Filter_PhotonType::kPCM | EM_Filter_PhotonType::kPHOS;
     runFilter<system>(collisions, v0photons, clusters, nullptr, v0legs, dielectrons, emprimaryelectrons);

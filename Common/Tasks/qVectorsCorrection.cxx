@@ -18,31 +18,30 @@
 ///
 
 // C++/ROOT includes.
-#include <chrono>
-#include <string>
-#include <vector>
-#include <TComplex.h>
-#include <TH1F.h>
-#include <TH2D.h>
-#include <TMath.h>
+#include <TString.h>
 #include <TVector2.h>
 
+#include <sys/types.h>
+
+#include <string>
+#include <vector>
+
 // o2Physics includes.
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StaticFor.h"
-
-#include "Common/DataModel/Qvectors.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CommonConstants/PhysicsConstants.h"
+#include <CommonConstants/MathConstants.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
 
 // o2 includes.
 
@@ -68,6 +67,8 @@ struct qVectorsCorrection {
   Configurable<std::string> cfgRefBName{"cfgRefBName", "TPCneg", "The name of detector for reference B"};
   Configurable<bool> cfgAddEvtSel{"cfgAddEvtSel", true, "event selection"};
 
+  Configurable<int> cfgEvtSel{"cfgEvtSel", 0, "Event selection flags\n0: Sel8\n1: Sel8+kIsGoodZvtxFT0vsPV+kNoSameBunchPileup\n2: Sel8+kIsGoodZvtxFT0vsPV+kNoSameBunchPileup+kNoCollInTimeRangeStandard\n3: Sel8+kNoSameBunchPileup"};
+
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "total qvector number"};
   Configurable<int> cfgNbinsEP{"cfgNbinsEP", 360, "nbins for EP histograms"};
 
@@ -75,7 +76,6 @@ struct qVectorsCorrection {
   Configurable<bool> cfgQAFinal{"cfgQAFinal", false, "draw final q-vector steps"};
   Configurable<bool> cfgQAFlowStudy{"cfgQAFlowStudy", false, "configurable for flow study"};
   Configurable<bool> cfgQAOccupancyStudy{"cfgQAOccupancyStudy", false, "configurable for occupancy study"};
-  Configurable<bool> cfgAddEvtSelPileup{"cfgAddEvtSelPileup", false, "configurable for pileup selection"};
 
   Configurable<float> cfgMinPt{"cfgMinPt", 0.15, "Minimum transverse momentum for charged track"};
   Configurable<float> cfgMaxEta{"cfgMaxEta", 0.8, "Maximum pseudorapidiy for charged track"};
@@ -541,16 +541,31 @@ struct qVectorsCorrection {
   void process(MyCollisions::iterator const& qVec, MyTracks const& tracks)
   {
     histosQA.fill(HIST("histCentFull"), qVec.cent());
-    if (cfgAddEvtSel && (!qVec.sel8() ||
-                         !qVec.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) ||
-                         !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))) {
-      return;
-    }
-    if (cfgAddEvtSel && (qVec.trackOccupancyInTimeRange() > cfgMaxOccupancy || qVec.trackOccupancyInTimeRange() < cfgMinOccupancy)) {
-      return;
-    }
-    if (cfgAddEvtSelPileup && !qVec.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
-      return;
+    if (cfgAddEvtSel) {
+      switch (cfgEvtSel) {
+        case 0: // Sel8
+          if (!qVec.sel8())
+            return;
+          break;
+        case 1: // PbPb standard
+          if (!qVec.sel8() || !qVec.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))
+            return;
+          break;
+        case 2: // PbPb with pileup
+          if (!qVec.sel8() || !qVec.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard) ||
+              !qVec.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))
+            return;
+          break;
+        case 3: // Small systems (OO, NeNe, pp)
+          if (!qVec.sel8() || !qVec.selection_bit(aod::evsel::kNoSameBunchPileup))
+            return;
+          break;
+        default:
+          LOGF(warning, "Event selection flag was not found, continuing without basic event selections!\n");
+      }
+      // Check occupancy
+      if (qVec.trackOccupancyInTimeRange() > cfgMaxOccupancy || qVec.trackOccupancyInTimeRange() < cfgMinOccupancy)
+        return;
     }
 
     for (uint i = 0; i < cfgnMods->size(); i++) {

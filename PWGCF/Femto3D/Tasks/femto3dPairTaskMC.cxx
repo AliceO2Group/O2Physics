@@ -51,6 +51,7 @@ struct FemtoCorrelationsMC {
   Configurable<bool> _requestVertexITSTPC{"requestVertexITSTPC", false, ""};
   Configurable<int> _requestVertexTOForTRDmatched{"requestVertexTOFmatched", 0, "0 -> no selectio; 1 -> vertex is matched to TOF or TRD; 2 -> matched to both;"};
   Configurable<bool> _requestNoCollInTimeRangeStandard{"requestNoCollInTimeRangeStandard", false, ""};
+  Configurable<bool> _requestIsGoodITSLayersAll{"requestIsGoodITSLayersAll", false, "cut time intervals with dead ITS staves"};
   Configurable<std::pair<float, float>> _IRcut{"IRcut", std::pair<float, float>{0.f, 100.f}, "[min., max.] IR range to keep events within"};
   Configurable<std::pair<int, int>> _OccupancyCut{"OccupancyCut", std::pair<int, int>{0, 10000}, "[min., max.] occupancy range to keep events within"};
 
@@ -86,7 +87,8 @@ struct FemtoCorrelationsMC {
   Configurable<int> _particlePDGtoReject{"particlePDGtoRejectFromSecond", 0, "applied only if the particles are non-identical and only to the second particle in the pair!!!"};
   Configurable<std::vector<float>> _rejectWithinNsigmaTOF{"rejectWithinNsigmaTOF", std::vector<float>{-0.0f, 0.0f}, "TOF rejection Nsigma range for the particle specified with PDG to be rejected"};
 
-  // Configurable<float> _radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
+  Configurable<int> _dPhiMode{"dPhiMode", 0, "Flag to choose how to calc. dphi*: 0 - at a fixed TPC radius; 1 - average over different TPC radii;"};
+  Configurable<float> _radiusTPC{"radiusTPC", 1.2, "TPC radius to calculate phi_star for"};
 
   Configurable<int> _vertexNbinsToMix{"vertexNbinsToMix", 10, "Number of vertexZ bins for the mixing"};
   Configurable<std::vector<float>> _centBins{"multBins", std::vector<float>{0.0f, 100.0f}, "multiplicity percentile/centrality binning (min:0, max:100)"};
@@ -105,7 +107,8 @@ struct FemtoCorrelationsMC {
   std::pair<int, std::vector<float>> TOFcuts_2;
 
   using FilteredCollisions = soa::Join<aod::SingleCollSels, aod::SingleCollExtras>;
-  using FilteredTracks = soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>;
+  using FilteredTracks = soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs, aod::SinglePIDPrs, aod::SinglePIDDes>;
+  // using FilteredTracks = soa::Join<aod::SingleTrackSels, aod::SingleTrkMCs, aod::SinglePIDPis, aod::SinglePIDKas, aod::SinglePIDPrs, aod::SinglePIDDes, aod::SinglePIDTrs, aod::SinglePIDHes>;
 
   typedef std::shared_ptr<soa::Filtered<FilteredTracks>::iterator> trkType;
   typedef std::shared_ptr<soa::Filtered<FilteredCollisions>::iterator> colType;
@@ -142,6 +145,8 @@ struct FemtoCorrelationsMC {
 
   void init(o2::framework::InitContext&)
   {
+
+    o2::aod::ITSResponse::setMCDefaultParameters(); // set MC parametrisation for the ITS PID
 
     IsIdentical = (_sign_1 * _particlePDG_1 == _sign_2 * _particlePDG_2);
 
@@ -254,7 +259,7 @@ struct FemtoCorrelationsMC {
           LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins");
 
         kThistos[centBin][kTbin]->Fill(pair_kT);
-        DoubleTrack_SE_histos[centBin][kTbin]->Fill(Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
+        DoubleTrack_SE_histos[centBin][kTbin]->Fill(_dPhiMode.value == 0 ? Pair->GetPhiStarDiff(_radiusTPC) : Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
         AvgSep_SE_histos[centBin][kTbin]->Fill(Pair->GetAvgSep());
         Pair->ResetPair();
       }
@@ -278,7 +283,7 @@ struct FemtoCorrelationsMC {
           LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins");
 
         kThistos[centBin][kTbin]->Fill(pair_kT);
-        DoubleTrack_SE_histos[centBin][kTbin]->Fill(Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
+        DoubleTrack_SE_histos[centBin][kTbin]->Fill(_dPhiMode.value == 0 ? Pair->GetPhiStarDiff(_radiusTPC) : Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
         AvgSep_SE_histos[centBin][kTbin]->Fill(Pair->GetAvgSep());
         Pair->ResetPair();
       }
@@ -301,7 +306,7 @@ struct FemtoCorrelationsMC {
         if (kTbin > Resolution_histos[centBin].size() || kTbin > DoubleTrack_ME_histos[centBin].size())
           LOGF(fatal, "kTbin value obtained for a pair exceeds the configured number of kT bins");
 
-        DoubleTrack_ME_histos[centBin][kTbin]->Fill(Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
+        DoubleTrack_ME_histos[centBin][kTbin]->Fill(_dPhiMode.value == 0 ? Pair->GetPhiStarDiff(_radiusTPC) : Pair->GetAvgPhiStarDiff(), Pair->GetEtaDiff());
         AvgSep_ME_histos[centBin][kTbin]->Fill(Pair->GetAvgSep());
 
         if (abs(ii->pdgCode()) != _particlePDG_1.value || abs(iii->pdgCode()) != _particlePDG_2.value)
@@ -346,7 +351,8 @@ struct FemtoCorrelationsMC {
         continue;
       if (_requestNoCollInTimeRangeStandard && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().noCollInTimeRangeStandard())
         continue;
-
+      if (_requestIsGoodITSLayersAll && !track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().isGoodITSLayersAll())
+        continue;
       unsigned int centBin = o2::aod::singletrackselector::getBinIndex<unsigned int>(track.template singleCollSel_as<soa::Filtered<FilteredCollisions>>().multPerc(), _centBins);
 
       if (track.sign() == _sign_1 && (track.p() < _PIDtrshld_1 ? o2::aod::singletrackselector::TPCselection<true>(track, TPCcuts_1, _itsNSigma_1.value) : o2::aod::singletrackselector::TOFselection(track, TOFcuts_1, _tpcNSigmaResidual_1.value))) {
@@ -408,7 +414,8 @@ struct FemtoCorrelationsMC {
         continue;
       if (_requestNoCollInTimeRangeStandard && !collision.noCollInTimeRangeStandard())
         continue;
-
+      if (_requestIsGoodITSLayersAll && !collision.isGoodITSLayersAll())
+        continue;
       if (selectedtracks_1.find(collision.globalIndex()) == selectedtracks_1.end()) {
         if (IsIdentical)
           continue;

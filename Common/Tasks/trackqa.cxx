@@ -13,12 +13,25 @@
 // Task producing basic tracking qa histograms
 //
 
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Common/DataModel/TrackSelectionTables.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/Variant.h>
+
+#include <TH1.h>
+
+#include <utility> // std::swap
+#include <vector>
+
+#include <math.h> // FIXME: Replace M_PI
 
 using namespace o2;
 using namespace o2::framework;
@@ -31,7 +44,7 @@ void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
     {"add-cut-qa", VariantType::Int, 0, {"Add track cut QA histograms."}}};
   std::swap(workflowOptions, options);
 }
-#include "Framework/runDataProcessing.h"
+#include <Framework/runDataProcessing.h>
 
 //****************************************************************************************
 /**
@@ -101,8 +114,8 @@ struct TrackQa {
     histos.fill(HIST("TrackPar/signed1Pt"), track.signed1Pt());
     histos.fill(HIST("TrackPar/snp"), track.snp());
     histos.fill(HIST("TrackPar/tgl"), track.tgl());
-    for (unsigned int i = 0; i < 64; i++) {
-      if (track.flags() & (1 << i)) {
+    for (unsigned int i = 0; i < 32; i++) {
+      if (track.flags() & (1u << i)) {
         histos.fill(HIST("TrackPar/flags"), i);
       }
     }
@@ -161,13 +174,13 @@ struct TrackQaMc {
 
   HistogramRegistry resolution{"Resolution", {}, OutputObjHandlingPolicy::QAObject};
 
-  void init(o2::framework::InitContext&){
+  void init(o2::framework::InitContext&)
+  {
+  }
 
-  };
-
-  void process(soa::Join<aod::FullTracks, aod::McTrackLabels>::iterator const&){
-
-  };
+  void process(soa::Join<aod::FullTracks, aod::McTrackLabels>::iterator const&)
+  {
+  }
 };
 
 //****************************************************************************************

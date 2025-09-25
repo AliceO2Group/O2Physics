@@ -17,11 +17,15 @@
 #ifndef PWGJE_DATAMODEL_JETREDUCEDDATA_H_
 #define PWGJE_DATAMODEL_JETREDUCEDDATA_H_
 
-#include <cmath>
-#include <vector>
-#include "Framework/AnalysisDataModel.h"
-#include "PWGJE/DataModel/EMCALClusters.h"
 #include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/EMCALClusters.h" // IWYU pragma: keep
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h> // IWYU pragma: keep
+
+#include <cmath>
+#include <cstdint>
+#include <vector>
 
 namespace o2::aod
 {
@@ -67,8 +71,20 @@ DECLARE_SOA_INDEX_COLUMN(JBC, bc);
 DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
-DECLARE_SOA_COLUMN(Multiplicity, multiplicity, float);
-DECLARE_SOA_COLUMN(Centrality, centrality, float);
+DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);
+DECLARE_SOA_COLUMN(MultFV0C, multFV0C, float);
+DECLARE_SOA_DYNAMIC_COLUMN(MultFV0M, multFV0M,
+                           [](float multFV0A, float multFV0C) -> float { return multFV0A + multFV0C; });
+DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);
+DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);
+DECLARE_SOA_DYNAMIC_COLUMN(MultFT0M, multFT0M,
+                           [](float multFT0A, float multFT0C) -> float { return multFT0A + multFT0C; });
+DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);
+DECLARE_SOA_COLUMN(CentFV0M, centFV0M, float); // only Run 2
+DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
+DECLARE_SOA_COLUMN(CentFT0CVariant1, centFT0CVariant1, float);
 DECLARE_SOA_COLUMN(CentralityVariant1, centralityVariant1, float);
 DECLARE_SOA_COLUMN(HadronicRate, hadronicRate, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
@@ -95,6 +111,7 @@ DECLARE_SOA_COLUMN(ReadCountsWithTVXAndZVertexAndSel7KINT7, readCountsWithTVXAnd
 DECLARE_SOA_COLUMN(ReadCountsWithCustom, readCountsWithCustom, std::vector<int>);
 DECLARE_SOA_COLUMN(IsAmbiguous, isAmbiguous, bool);
 DECLARE_SOA_COLUMN(IsEMCALReadout, isEmcalReadout, bool);
+DECLARE_SOA_COLUMN(IsOutlier, isOutlier, bool);
 } // namespace jcollision
 
 DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
@@ -102,9 +119,18 @@ DECLARE_SOA_TABLE_STAGED(JCollisions, "JCOLLISION",
                          jcollision::PosX,
                          jcollision::PosY,
                          jcollision::PosZ,
-                         jcollision::Multiplicity,
-                         jcollision::Centrality,
-                         jcollision::CentralityVariant1,
+                         jcollision::MultFV0A,
+                         jcollision::MultFV0C,
+                         jcollision::MultFV0M<jcollision::MultFV0A, jcollision::MultFV0C>,
+                         jcollision::MultFT0A,
+                         jcollision::MultFT0C,
+                         jcollision::MultFT0M<jcollision::MultFT0A, jcollision::MultFT0C>,
+                         jcollision::CentFV0A,
+                         jcollision::CentFV0M,
+                         jcollision::CentFT0A,
+                         jcollision::CentFT0C,
+                         jcollision::CentFT0M,
+                         jcollision::CentFT0CVariant1,
                          jcollision::HadronicRate,
                          jcollision::TrackOccupancyInTimeRange,
                          jcollision::EventSel,
@@ -117,6 +143,9 @@ using StoredJCollision = StoredJCollisions::iterator;
 DECLARE_SOA_TABLE_STAGED(JCollisionMcInfos, "JCOLLISIONMCINFO",
                          jcollision::Weight,
                          jcollision::SubGeneratorId);
+
+DECLARE_SOA_TABLE_STAGED(JCollisionOutliers, "JCOLLISIONOUTLR",
+                         jcollision::IsOutlier);
 
 DECLARE_SOA_TABLE_STAGED(JEMCCollisionLbs, "JEMCCOLLISIONLB",
                          jcollision::IsAmbiguous,
@@ -160,24 +189,41 @@ DECLARE_SOA_INDEX_COLUMN(McCollision, mcCollision);
 DECLARE_SOA_COLUMN(PosX, posX, float);
 DECLARE_SOA_COLUMN(PosY, posY, float);
 DECLARE_SOA_COLUMN(PosZ, posZ, float);
+DECLARE_SOA_COLUMN(MultFV0A, multFV0A, float);
+DECLARE_SOA_COLUMN(MultFT0A, multFT0A, float);
+DECLARE_SOA_COLUMN(MultFT0C, multFT0C, float);
+DECLARE_SOA_COLUMN(CentFV0A, centFV0A, float);
+DECLARE_SOA_COLUMN(CentFT0A, centFT0A, float);
+DECLARE_SOA_COLUMN(CentFT0C, centFT0C, float);
+DECLARE_SOA_COLUMN(CentFT0M, centFT0M, float);
 DECLARE_SOA_COLUMN(Weight, weight, float);
 DECLARE_SOA_COLUMN(SubGeneratorId, subGeneratorId, int);
 DECLARE_SOA_COLUMN(Accepted, accepted, uint64_t);
 DECLARE_SOA_COLUMN(Attempted, attempted, uint64_t);
 DECLARE_SOA_COLUMN(XsectGen, xsectGen, float);
 DECLARE_SOA_COLUMN(XsectErr, xsectErr, float);
+DECLARE_SOA_COLUMN(PtHard, ptHard, float);
+DECLARE_SOA_COLUMN(IsOutlier, isOutlier, bool);
 } // namespace jmccollision
 DECLARE_SOA_TABLE_STAGED(JMcCollisions, "JMCCOLLISION",
                          o2::soa::Index<>,
                          jmccollision::PosX,
                          jmccollision::PosY,
                          jmccollision::PosZ,
+                         jmccollision::MultFV0A,
+                         jmccollision::MultFT0A,
+                         jmccollision::MultFT0C,
+                         jmccollision::CentFV0A,
+                         jmccollision::CentFT0A,
+                         jmccollision::CentFT0C,
+                         jmccollision::CentFT0M,
                          jmccollision::Weight,
                          jmccollision::SubGeneratorId,
                          jmccollision::Accepted,
                          jmccollision::Attempted,
                          jmccollision::XsectGen,
-                         jmccollision::XsectErr);
+                         jmccollision::XsectErr,
+                         jmccollision::PtHard);
 
 using JMcCollision = JMcCollisions::iterator;
 using StoredJMcCollision = StoredJMcCollisions::iterator;
@@ -192,6 +238,9 @@ DECLARE_SOA_INDEX_COLUMN(JMcCollision, mcCollision);
 
 DECLARE_SOA_TABLE_STAGED(JMcCollisionLbs, "JMCCOLLISIONLB",
                          jmccollisionlb::JMcCollisionId);
+
+DECLARE_SOA_TABLE_STAGED(JMcCollisionOutliers, "JMCCOLLISIONOUTLR",
+                         jmccollision::IsOutlier);
 
 namespace jtrack
 {

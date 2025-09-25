@@ -13,18 +13,19 @@
 //
 /// \author Nima Zardoshti <nima.zardoshti@cern.ch>
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-
 #include "PWGJE/DataModel/Jet.h"
+
+#include "Framework/AnalysisTask.h"
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-
-#include "Framework/runDataProcessing.h"
 
 template <typename MCParticleLevelJetTable, typename MCParticleLevelWeightsTable>
 
@@ -48,8 +49,12 @@ using NeutralMCJetsEventWeight = JetEventWeightMCPTask<aod::NeutralMCParticleLev
 using FullMCJetsEventWeight = JetEventWeightMCPTask<aod::FullMCParticleLevelJet, aod::FullMCParticleLevelJetEventWeights>;
 using D0ChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::D0ChargedMCParticleLevelJet, aod::D0ChargedMCParticleLevelJetEventWeights>;
 using DplusChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::DplusChargedMCParticleLevelJet, aod::DplusChargedMCParticleLevelJetEventWeights>;
+using DsChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::DsChargedMCParticleLevelJet, aod::DsChargedMCParticleLevelJetEventWeights>;
+using DstarChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::DstarChargedMCParticleLevelJet, aod::DstarChargedMCParticleLevelJetEventWeights>;
 using LcChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::LcChargedMCParticleLevelJet, aod::LcChargedMCParticleLevelJetEventWeights>;
+using B0ChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::B0ChargedMCParticleLevelJet, aod::B0ChargedMCParticleLevelJetEventWeights>;
 using BplusChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::BplusChargedMCParticleLevelJet, aod::BplusChargedMCParticleLevelJetEventWeights>;
+using XicToXiPiPiChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::XicToXiPiPiChargedMCParticleLevelJet, aod::XicToXiPiPiChargedMCParticleLevelJetEventWeights>;
 using V0ChargedMCJetsEventWeight = JetEventWeightMCPTask<aod::V0ChargedMCParticleLevelJet, aod::V0ChargedMCParticleLevelJetEventWeights>;
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
@@ -78,12 +83,28 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
                                                      SetDefaultProcesses{}, TaskName{"jet-dplus-eventweight-mcp-charged"}));
 
   tasks.emplace_back(
+    adaptAnalysisTask<DsChargedMCJetsEventWeight>(cfgc,
+                                                  SetDefaultProcesses{}, TaskName{"jet-ds-eventweight-mcp-charged"}));
+
+  tasks.emplace_back(
+    adaptAnalysisTask<DstarChargedMCJetsEventWeight>(cfgc,
+                                                     SetDefaultProcesses{}, TaskName{"jet-dstar-eventweight-mcp-charged"}));
+
+  tasks.emplace_back(
     adaptAnalysisTask<LcChargedMCJetsEventWeight>(cfgc,
                                                   SetDefaultProcesses{}, TaskName{"jet-lc-eventweight-mcp-charged"}));
 
   tasks.emplace_back(
+    adaptAnalysisTask<B0ChargedMCJetsEventWeight>(cfgc,
+                                                  SetDefaultProcesses{}, TaskName{"jet-b0-eventweight-mcp-charged"}));
+
+  tasks.emplace_back(
     adaptAnalysisTask<BplusChargedMCJetsEventWeight>(cfgc,
                                                      SetDefaultProcesses{}, TaskName{"jet-bplus-eventweight-mcp-charged"}));
+
+  tasks.emplace_back(
+    adaptAnalysisTask<XicToXiPiPiChargedMCJetsEventWeight>(cfgc,
+                                                           SetDefaultProcesses{}, TaskName{"jet-xictoxipipi-eventweight-mcp-charged"}));
 
   tasks.emplace_back(
     adaptAnalysisTask<V0ChargedMCJetsEventWeight>(cfgc,

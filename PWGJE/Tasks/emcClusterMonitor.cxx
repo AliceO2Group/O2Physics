@@ -9,33 +9,39 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-#include <climits>
-#include <cstdlib>
-#include <map>
-#include <memory>
-#include <sstream>
-#include <string>
-#include <vector>
-#include <numeric>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoA.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
-
-#include "EMCALBase/Geometry.h"
-#include "EMCALCalib/BadChannelMap.h"
 #include "PWGJE/DataModel/EMCALClusters.h"
-#include "DataFormatsEMCAL/Cell.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "DataFormatsEMCAL/AnalysisCluster.h"
+
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/EventSelection.h"
 
 #include "CommonDataFormat/InteractionRecord.h"
+#include "EMCALBase/Geometry.h"
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include <EMCALBase/GeometryBase.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TMath.h>
+#include <TMathBase.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
+#include <algorithm>
+#include <array>
+#include <climits>
+#include <cstdlib>
+#include <numeric>
+#include <sstream>
+#include <string>
+#include <string_view>
+#include <vector>
 
 // \struct ClusterMonitor
 /// \brief Simple monitoring task for EMCal clusters
@@ -100,31 +106,31 @@ struct ClusterMonitor {
     const AxisSpec thAxisCellTimeMean{1500, -600, 900, "#LT#it{t}_{cell}#GT (ns)"};
 
     // event properties
-    mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
-    mHistManager.add("eventsSelected", "Number of events", o2HistType::kTH1F, {{1, 0.5, 1.5}});
-    mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", o2HistType::kTH1F, {bcAxis});
-    mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", o2HistType::kTH1F, {{200, -20, 20}});
-    mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", o2HistType::kTH1F, {{200, -20, 20}});
-    mHistManager.add("numberOfClustersEvents", "number of clusters per event (selected events)", o2HistType::kTH1F, {numberClustersAxis});
-    mHistManager.add("numberOfClustersBC", "number of clusters per bunch crossing (ambiguous BCs)", o2HistType::kTH1F, {numberClustersAxis});
-    mHistManager.add("numberOfClustersEventsRejected", "number of clusters per event (rejected events)", o2HistType::kTH1F, {numberClustersAxis});
+    mHistManager.add("eventsAll", "Number of events", o2HistType::kTH1D, {{1, 0.5, 1.5}});
+    mHistManager.add("eventsSelected", "Number of events", o2HistType::kTH1D, {{1, 0.5, 1.5}});
+    mHistManager.add("eventBCAll", "Bunch crossing ID of event (all events)", o2HistType::kTH1D, {bcAxis});
+    mHistManager.add("eventBCSelected", "Bunch crossing ID of event (selected events)", o2HistType::kTH1D, {bcAxis});
+    mHistManager.add("eventVertexZAll", "z-vertex of event (all events)", o2HistType::kTH1D, {{200, -20, 20}});
+    mHistManager.add("eventVertexZSelected", "z-vertex of event (selected events)", o2HistType::kTH1D, {{200, -20, 20}});
+    mHistManager.add("numberOfClustersEvents", "number of clusters per event (selected events)", o2HistType::kTH1D, {numberClustersAxis});
+    mHistManager.add("numberOfClustersBC", "number of clusters per bunch crossing (ambiguous BCs)", o2HistType::kTH1D, {numberClustersAxis});
+    mHistManager.add("numberOfClustersEventsRejected", "number of clusters per event (rejected events)", o2HistType::kTH1D, {numberClustersAxis});
     mHistManager.add("numberOfClustersSMEvents", "number of clusters per supermodule per event (selected events)", o2HistType::kTH2F, {numberClustersAxis, {20, -0.5, 19.5, "SupermoduleID"}});
     mHistManager.add("numberOfClustersSMBC", "number of clusters per supermodule per bunch crossing (ambiguous BCs)", o2HistType::kTH2F, {numberClustersAxis, {20, -0.5, 19.5, "SupermoduleID"}});
 
     // cluster properties (matched clusters)
-    mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1F, {energyAxis});
-    mHistManager.add("clusterEMatched", "Energy of cluster (with match)", o2HistType::kTH1F, {energyAxis});
+    mHistManager.add("clusterE", "Energy of cluster", o2HistType::kTH1D, {energyAxis});
+    mHistManager.add("clusterEMatched", "Energy of cluster (with match)", o2HistType::kTH1D, {energyAxis});
     mHistManager.add("clusterESupermodule", "Energy of the cluster vs. supermoduleID", o2HistType::kTH2F, {energyAxis, supermoduleAxis});
-    mHistManager.add("clusterE_SimpleBinning", "Energy of cluster", o2HistType::kTH1F, {{2000, 0, 200}});
+    mHistManager.add("clusterE_SimpleBinning", "Energy of cluster", o2HistType::kTH1D, {{2000, 0, 200}});
     mHistManager.add("clusterEtaPhi", "Eta and phi of cluster", o2HistType::kTH2F, {{100, -1, 1}, {100, 0, 2 * TMath::Pi()}});
-    mHistManager.add("clusterM02", "M02 of cluster", o2HistType::kTH1F, {{400, 0, 5}});
-    mHistManager.add("clusterM20", "M20 of cluster", o2HistType::kTH1F, {{400, 0, 2.5}});
-    mHistManager.add("clusterNLM", "Number of local maxima of cluster", o2HistType::kTH1I, {{10, 0, 10}});
-    mHistManager.add("clusterNCells", "Number of cells in cluster", o2HistType::kTH1I, {{50, 0, 50}});
-    mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1F, {{100, 0, 100}});
+    mHistManager.add("clusterM02", "M02 of cluster", o2HistType::kTH1D, {{400, 0, 5}});
+    mHistManager.add("clusterM20", "M20 of cluster", o2HistType::kTH1D, {{400, 0, 2.5}});
+    mHistManager.add("clusterNLM", "Number of local maxima of cluster", o2HistType::kTH1D, {{10, 0, 10}});
+    mHistManager.add("clusterNCells", "Number of cells in cluster", o2HistType::kTH1D, {{50, 0, 50}});
+    mHistManager.add("clusterDistanceToBadChannel", "Distance to bad channel", o2HistType::kTH1D, {{100, 0, 100}});
     mHistManager.add("clusterTimeVsE", "Cluster time vs energy", o2HistType::kTH2F, {timeAxis, energyAxis});
-    mHistManager.add("clusterAmpFractionLeadingCell", "Fraction of energy in leading cell", o2HistType::kTH1F, {{100, 0, 1}});
+    mHistManager.add("clusterAmpFractionLeadingCell", "Fraction of energy in leading cell", o2HistType::kTH1D, {{100, 0, 1}});
     mHistManager.add("clusterCellTimeDiff", "Cell time difference in clusters", o2HistType::kTH1D, {thAxisCellTimeDiff});
     mHistManager.add("clusterCellTimeMean", "Mean cell time per cluster", o2HistType::kTH1D, {thAxisCellTimeMean});
 

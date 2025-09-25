@@ -15,23 +15,35 @@
 
 /// \brief Correlator for D* and hadrons. This task is used to produce table for D* and hadron pairs.
 
-// c++
-#include <vector>
-
-// O2
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-// O2Physics
-#include "Common/DataModel/Multiplicity.h"
-
-// PWGHF
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/HFC/DataModel/CorrelationTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
+
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <array>
+#include <cstdlib>
+#include <numeric>
+#include <tuple>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -184,12 +196,15 @@ struct HfCorrelatorDstarHadrons {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
 
+    AxisSpec axisSpecMultFT0M{binsMultiplicity, "Multiplicity in FT0M", "multFT0M"};
+
     invMassDstarParticle = -999.0;
     invMassD0Particle = -999.0;
     binNumber = -2;
 
     binningScheme = {{binsZVtx, binsMultiplicity}, true};
 
+    registry.add("QA/hMultFT0M", "Multiplicity distribution in FT0M", {HistType::kTH1D, {axisSpecMultFT0M}});
     registry.add("QA/hCandsPerCol", "Candidates per Collision", {HistType::kTH1D, {{100, 0.0, 100.0}}});
     registry.add("QA/hAssoTracksPerCol", "Tracks per Collision", {HistType::kTH1D, {{1000, 0.0, 1000.0}}});
     registry.add("QA/hCandsVsTracksPerCol", "Candidates vs Tracks per Collision", {HistType::kTHnSparseF, {{100, 0.0, 100.0}, {1000, 0.0, 1000.0}}});
@@ -227,6 +242,7 @@ struct HfCorrelatorDstarHadrons {
       } // endif
 
       registry.fill(HIST("hTriggerColCandPairCounts"), 1); // counting number of trigger particle
+      registry.fill(HIST("QA/hMultFT0M"), collision.multFT0M());
       registry.fill(HIST("QA/hCandsPerCol"), candidatesPerCol.size());
       registry.fill(HIST("QA/hAssoTracksPerCol"), tracksPerCol.size());
       registry.fill(HIST("QA/hCandsVsTracksPerCol"), candidatesPerCol.size(), tracksPerCol.size());

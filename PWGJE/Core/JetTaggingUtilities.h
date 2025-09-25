@@ -18,25 +18,31 @@
 #ifndef PWGJE_CORE_JETTAGGINGUTILITIES_H_
 #define PWGJE_CORE_JETTAGGINGUTILITIES_H_
 
-#include <cmath>
-#include <limits>
-#include <numeric>
-#include <tuple>
-#include <vector>
+#include "PWGJE/Core/JetUtilities.h"
+
+#include "Common/Core/RecoDecay.h"
+
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/Logger.h>
+
+#include <TF1.h>
+#include <TMath.h>
+
+#include <Rtypes.h>
+
 #include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
 #include <functional>
+#include <limits>
 #include <memory>
 #include <string>
+#include <tuple>
 #include <unordered_map>
-
-#include <TPDGCode.h>
-#include "CommonConstants/PhysicsConstants.h"
-
-#include "TF1.h"
-#include "Framework/Logger.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
-#include "PWGJE/Core/JetUtilities.h"
+#include <utility>
+#include <vector>
 
 enum JetTaggingSpecies {
   none = 0,
@@ -44,7 +50,9 @@ enum JetTaggingSpecies {
   beauty = 2,
   lightflavour = 3,
   lightquark = 4,
-  gluon = 5
+  gluon = 5,
+  udg = 6,
+  strange = 7,
 };
 
 enum BJetTaggingMethod {
@@ -79,6 +87,8 @@ struct BJetTrackParams {
   double deltaRJetTrack = 0.0;
   double signedIP2D = 0.0;
   double signedIP2DSign = 0.0;
+  double signedIPz = 0.0;
+  double signedIPzSign = 0.0;
   double signedIP3D = 0.0;
   double signedIP3DSign = 0.0;
   double momFraction = 0.0;
@@ -209,12 +219,12 @@ int jetTrackFromHFShower(T const& jet, U const& /*tracks*/, V const& particles, 
     hasMcParticle = true;
     auto const& particle = track.template mcParticle_as<V>();
     origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
-    if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
+    if (origin == RecoDecay::OriginType::Prompt || origin == RecoDecay::OriginType::NonPrompt) { // 1=charm , 2=beauty
       hftrack = track;
-      if (origin == 1) {
+      if (origin == RecoDecay::OriginType::Prompt) {
         return JetTaggingSpecies::charm;
       }
-      if (origin == 2) {
+      if (origin == RecoDecay::OriginType::NonPrompt) {
         return JetTaggingSpecies::beauty;
       }
     }
@@ -242,12 +252,12 @@ int jetParticleFromHFShower(T const& jet, U const& particles, typename U::iterat
   for (const auto& particle : jet.template tracks_as<U>()) {
     hfparticle = particle; // for init if origin is 1 or 2, the particle is not hfparticle
     origin = RecoDecay::getParticleOrigin(particles, particle, searchUpToQuark);
-    if (origin == 1 || origin == 2) { // 1=charm , 2=beauty
+    if (origin == RecoDecay::OriginType::Prompt || origin == RecoDecay::OriginType::NonPrompt) { // 1=charm , 2=beauty
       hfparticle = particle;
-      if (origin == 1) {
+      if (origin == RecoDecay::OriginType::Prompt) {
         return JetTaggingSpecies::charm;
       }
-      if (origin == 2) {
+      if (origin == RecoDecay::OriginType::NonPrompt) {
         return JetTaggingSpecies::beauty;
       }
     }
@@ -348,7 +358,7 @@ int jetOrigin(T const& jet, U const& particles, float dRMax = 0.25)
   typename U::iterator parton1;
   typename U::iterator parton2;
   for (auto const& particle : particles) {
-    if (std::abs(particle.getGenStatusCode() == 23)) {
+    if (std::abs(particle.getGenStatusCode()) == 23) {
       if (!firstPartonFound) {
         parton1 = particle;
         firstPartonFound = true;
@@ -403,6 +413,45 @@ int16_t getJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
   }
 
   return JetTaggingSpecies::lightflavour; // Light flavor jet
+}
+
+/**
+ * return also the s-jet flavor: 1 for c-jet, 2 for b-jet, 7 for s-jet
+ *                               6 for u,d or g jets.
+ *
+ * @param AnyJet the jet that we need to study its flavor
+ * @param AllMCParticles a vector of all the mc particles stack
+ */
+template <typename AnyJet, typename AllMCParticles>
+int16_t getSJetFlavor(AnyJet const& jet, AllMCParticles const& mcparticles)
+{
+  bool charmQuark = false;
+  bool strangeQuark = false;
+
+  for (auto const& mcpart : mcparticles) {
+    int pdgcode = mcpart.pdgCode();
+    if (std::abs(pdgcode) == 21 || (std::abs(pdgcode) >= 1 && std::abs(pdgcode) <= 5)) {
+      double dR = jetutilities::deltaR(jet, mcpart);
+
+      if (dR < jet.r() / 100.f) {
+        if (std::abs(pdgcode) == 5) {
+          return JetTaggingSpecies::beauty; // Beauty jet
+        } else if (std::abs(pdgcode) == 4) {
+          charmQuark = true;
+        } else if (std::abs(pdgcode) == 3) {
+          strangeQuark = true;
+        }
+      }
+    }
+  }
+
+  if (charmQuark) {
+    return JetTaggingSpecies::charm; // Charm jet
+  } else if (strangeQuark) {
+    return JetTaggingSpecies::strange; // Strange jet
+  }
+
+  return JetTaggingSpecies::udg; // Up, Down or Gluon jet
 }
 
 /**
@@ -991,11 +1040,11 @@ void analyzeJetSVInfo4ML(AnalysisJet const& myJet, AnyTracks const& /*allTracks*
 
 // Looping over the track info and putting them in the input vector
 template <typename AnalysisJet, typename AnyTracks, typename SecondaryVertices>
-void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<BJetTrackParams>& tracksParams, float trackPtMin = 0.5)
+void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, SecondaryVertices const& /*allSVs*/, std::vector<BJetTrackParams>& tracksParams, float trackPtMin = 0.5, float trackDcaXYMax = 10.0, float trackDcaZMax = 10.0)
 {
   for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
 
-    if (constituent.pt() < trackPtMin) {
+    if (constituent.pt() < trackPtMin || !trackAcceptanceWithDca(constituent, trackDcaXYMax, trackDcaZMax)) {
       continue;
     }
 
@@ -1011,7 +1060,7 @@ void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*a
       }
     }
 
-    tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), rClosestSV});
+    tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), rClosestSV});
   }
 
   auto compare = [](BJetTrackParams& tr1, BJetTrackParams& tr2) {
@@ -1024,11 +1073,11 @@ void analyzeJetTrackInfo4ML(AnalysisJet const& analysisJet, AnyTracks const& /*a
 
 // Looping over the track info and putting them in the input vector without using any SV info
 template <typename AnalysisJet, typename AnyTracks>
-void analyzeJetTrackInfo4MLnoSV(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, std::vector<BJetTrackParams>& tracksParams, float trackPtMin = 0.5)
+void analyzeJetTrackInfo4MLnoSV(AnalysisJet const& analysisJet, AnyTracks const& /*allTracks*/, std::vector<BJetTrackParams>& tracksParams, float trackPtMin = 0.5, float trackDcaXYMax = 10.0, float trackDcaZMax = 10.0)
 {
   for (const auto& constituent : analysisJet.template tracks_as<AnyTracks>()) {
 
-    if (constituent.pt() < trackPtMin) {
+    if (constituent.pt() < trackPtMin || !trackAcceptanceWithDca(constituent, trackDcaXYMax, trackDcaZMax)) {
       continue;
     }
 
@@ -1036,7 +1085,7 @@ void analyzeJetTrackInfo4MLnoSV(AnalysisJet const& analysisJet, AnyTracks const&
     double dotProduct = RecoDecay::dotProd(std::array<float, 3>{analysisJet.px(), analysisJet.py(), analysisJet.pz()}, std::array<float, 3>{constituent.px(), constituent.py(), constituent.pz()});
     int sign = getGeoSign(analysisJet, constituent);
 
-    tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), 0.0});
+    tracksParams.emplace_back(BJetTrackParams{constituent.pt(), constituent.eta(), dotProduct, dotProduct / analysisJet.p(), deltaRJetTrack, std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), constituent.p() / analysisJet.p(), 0.0});
   }
 
   auto compare = [](BJetTrackParams& tr1, BJetTrackParams& tr2) {
@@ -1062,7 +1111,7 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
     auto origConstit = constituent.template track_as<AnyOriginalTracks>();
 
     if (static_cast<int64_t>(tracksParams.size()) < nMaxConstit) {
-      tracksParams.emplace_back(std::vector<float>{constituent.pt(), origConstit.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), static_cast<float>(origConstit.itsNCls()), static_cast<float>(origConstit.tpcNClsFound()), static_cast<float>(origConstit.tpcNClsCrossedRows()), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl()});
+      tracksParams.emplace_back(std::vector<float>{constituent.pt(), origConstit.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), static_cast<float>(origConstit.itsNCls()), static_cast<float>(origConstit.tpcNClsFound()), static_cast<float>(origConstit.tpcNClsCrossedRows()), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl()});
     } else {
       // If there are more than nMaxConstit constituents in the jet, select only nMaxConstit constituents with the highest DCA_XY significance.
       size_t minIdx = 0;
@@ -1071,7 +1120,7 @@ void analyzeJetTrackInfo4GNN(AnalysisJet const& analysisJet, AnyTracks const& /*
           minIdx = i;
       }
       if (std::abs(constituent.dcaXY()) * sign / constituent.sigmadcaXY() > tracksParams[minIdx][4] / tracksParams[minIdx][5])
-        tracksParams[minIdx] = std::vector<float>{constituent.pt(), origConstit.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaXYZ()) * sign, constituent.sigmadcaXYZ(), static_cast<float>(origConstit.itsNCls()), static_cast<float>(origConstit.tpcNClsFound()), static_cast<float>(origConstit.tpcNClsCrossedRows()), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl()};
+        tracksParams[minIdx] = std::vector<float>{constituent.pt(), origConstit.phi(), constituent.eta(), static_cast<float>(constituent.sign()), std::abs(constituent.dcaXY()) * sign, constituent.sigmadcaXY(), std::abs(constituent.dcaZ()) * sign, constituent.sigmadcaZ(), static_cast<float>(origConstit.itsNCls()), static_cast<float>(origConstit.tpcNClsFound()), static_cast<float>(origConstit.tpcNClsCrossedRows()), origConstit.itsChi2NCl(), origConstit.tpcChi2NCl()};
     }
   }
 }

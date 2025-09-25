@@ -17,16 +17,17 @@
 
 #include "Common/Core/TableHelper.h"
 
-#include <string>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/RunningWorkflowInfo.h>
 
-#include "Framework/InitContext.h"
-#include "Framework/RunningWorkflowInfo.h"
+#include <string>
 
 /// Function to print the table required in the full workflow
 /// @param initContext initContext of the init function
-void printTablesInWorkflow(o2::framework::InitContext& initContext)
+void o2::common::core::printTablesInWorkflow(o2::framework::InitContext& initContext)
 {
-  auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
+  const auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
   for (auto const& device : workflows.devices) {
     for (auto const& input : device.inputs) {
       LOG(info) << "Table: " << input.matcher.binding << " in device: " << device.name;
@@ -37,11 +38,11 @@ void printTablesInWorkflow(o2::framework::InitContext& initContext)
 /// Function to check if a table is required in a workflow
 /// @param initContext initContext of the init function
 /// @param table name of the table to check for
-bool isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const std::string& table)
+bool o2::common::core::isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const std::string& table)
 {
   LOG(debug) << "Checking if table " << table << " is needed";
   bool tableNeeded = false;
-  auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
+  const auto& workflows = initContext.services().get<o2::framework::RunningWorkflowInfo const>();
   for (auto const& device : workflows.devices) {
     for (auto const& input : device.inputs) {
       if (input.matcher.binding == table) {
@@ -57,7 +58,7 @@ bool isTableRequiredInWorkflow(o2::framework::InitContext& initContext, const st
 /// @param initContext initContext of the init function
 /// @param table name of the table to check for
 /// @param flag bool value of flag to set, if the given value is true it will be kept, disregarding the table usage in the workflow.
-void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const std::string& table, bool& flag)
+void o2::common::core::enableFlagIfTableRequired(o2::framework::InitContext& initContext, const std::string& table, bool& flag)
 {
   if (flag) {
     LOG(info) << "Table enabled: " + table;
@@ -75,7 +76,7 @@ void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const st
 /// @param initContext initContext of the init function
 /// @param table name of the table to check for
 /// @param flag int value of flag to set, only if initially set to -1. Initial values of 0 or 1 will be kept disregarding the table usage in the workflow.
-void enableFlagIfTableRequired(o2::framework::InitContext& initContext, const std::string& table, int& flag)
+void o2::common::core::enableFlagIfTableRequired(o2::framework::InitContext& initContext, const std::string& table, int& flag)
 {
   if (flag > 0) {
     flag = 1;

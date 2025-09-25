@@ -8,7 +8,6 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-// O2 includes
 
 /// \file HFFilterPrepareMLSamples.cxx
 /// \brief task for trainings of ML models to be used in the HFFilter.cxx task
@@ -19,29 +18,41 @@
 /// \author Biao Zhang <biao.zhang@cern.ch>, CCNU
 /// \author Antonio Palasciano <antonio.palasciano@cern.ch>, INFN Bari
 
-#include <string>
-#if __has_include(<onnxruntime/core/session/onnxruntime_cxx_api.h>)
-#include <onnxruntime/core/session/experimental_onnxruntime_cxx_api.h> // needed for HFFilterHelpers, to be fixed
-#else
-#include <onnxruntime_cxx_api.h>
-#endif
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/Propagator.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/trackUtilities.h"
-#include "PWGHF/DataModel/CandidateReconstructionTables.h"
-#include "PWGHF/DataModel/CandidateSelectionTables.h"
-
 #include "EventFiltering/PWGHF/HFFilterHelpers.h"
+//
+#include "PWGHF/DataModel/CandidateReconstructionTables.h"
+//
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/PIDResponseTOF.h"
+#include "Common/DataModel/PIDResponseTPC.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include <onnxruntime_cxx_api.h>
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TPDGCode.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <cstdlib>
+#include <string>
 
 using namespace o2;
 using namespace o2::analysis;
@@ -114,8 +125,8 @@ struct HfFilterPrepareMlSamples { // Main struct
 
       auto trackParPos = getTrackPar(trackPos);
       auto trackParNeg = getTrackPar(trackNeg);
-      o2::gpu::gpustd::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
-      o2::gpu::gpustd::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
+      std::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
+      std::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
       std::array<float, 3> pVecPos{trackPos.pVector()};
       std::array<float, 3> pVecNeg{trackNeg.pVector()};
       if (trackPos.collisionId() != thisCollId) {
@@ -171,9 +182,9 @@ struct HfFilterPrepareMlSamples { // Main struct
       auto trackParFirst = getTrackPar(trackFirst);
       auto trackParSecond = getTrackPar(trackSecond);
       auto trackParThird = getTrackPar(trackThird);
-      o2::gpu::gpustd::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
-      o2::gpu::gpustd::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
-      o2::gpu::gpustd::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
+      std::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
+      std::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
+      std::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
       std::array<float, 3> pVecFirst{trackFirst.pVector()};
       std::array<float, 3> pVecSecond{trackSecond.pVector()};
       std::array<float, 3> pVecThird{trackThird.pVector()};
@@ -248,8 +259,8 @@ struct HfFilterPrepareMlSamples { // Main struct
 
       auto trackParPos = getTrackPar(trackPos);
       auto trackParNeg = getTrackPar(trackNeg);
-      o2::gpu::gpustd::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
-      o2::gpu::gpustd::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
+      std::array<float, 2> dcaPos{trackPos.dcaXY(), trackPos.dcaZ()};
+      std::array<float, 2> dcaNeg{trackNeg.dcaXY(), trackNeg.dcaZ()};
       std::array<float, 3> pVecPos{trackPos.pVector()};
       std::array<float, 3> pVecNeg{trackNeg.pVector()};
       if (trackPos.collisionId() != thisCollId) {
@@ -323,9 +334,9 @@ struct HfFilterPrepareMlSamples { // Main struct
       auto trackParFirst = getTrackPar(trackFirst);
       auto trackParSecond = getTrackPar(trackSecond);
       auto trackParThird = getTrackPar(trackThird);
-      o2::gpu::gpustd::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
-      o2::gpu::gpustd::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
-      o2::gpu::gpustd::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
+      std::array<float, 2> dcaFirst{trackFirst.dcaXY(), trackFirst.dcaZ()};
+      std::array<float, 2> dcaSecond{trackSecond.dcaXY(), trackSecond.dcaZ()};
+      std::array<float, 2> dcaThird{trackThird.dcaXY(), trackThird.dcaZ()};
       std::array<float, 3> pVecFirst{trackFirst.pVector()};
       std::array<float, 3> pVecSecond{trackSecond.pVector()};
       std::array<float, 3> pVecThird{trackThird.pVector()};

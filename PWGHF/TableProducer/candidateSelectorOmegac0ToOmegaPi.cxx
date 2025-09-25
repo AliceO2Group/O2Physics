@@ -14,23 +14,41 @@
 /// \author Federica Zanone <federica.zanone@cern.ch>, Heidelberg University
 /// \author Ruiqi Yin <ruiqi.yin@cern.ch>, Fudan University
 /// \author Yunfan Liu <yunfan.liu@cern.ch>, China University of Geosciences
+/// \author Fabio Catalano <fabio.catalano@cern.ch>, University of Houston
 
-#include <string>
-#include <vector>
-
-#include "CommonConstants/PhysicsConstants.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectorPID.h"
-
-#include "PWGHF/Core/HfMlResponse.h"
 #include "PWGHF/Core/HfMlResponseOmegacToOmegaPi.h"
-
+#include "PWGHF/Core/SelectorCuts.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsAnalysis.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelectorPID.h"
+
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Array2D.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+
+#include <Rtypes.h>
+
+#include <array>
+#include <cstdint>
+#include <cstdlib>
+#include <numeric>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -223,7 +241,6 @@ struct HfCandidateSelectorToOmegaPi {
     registry.add("hStatusCheck", "Check consecutive selections status;status;entries", {HistType::kTH1D, {{12, 0., 12.}}});
 
     // for QA of the selections (bin 0 -> candidates that did not pass the selection, bin 1 -> candidates that passed the selection)
-    registry.add("hSelPtOmegac", "hSelPtOmegac;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelSignDec", "hSelSignDec;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelEtaPosV0Dau", "hSelEtaPosV0Dau;status;entries", {HistType::kTH1D, {axisSel}});
     registry.add("hSelEtaNegV0Dau", "hSelEtaNegV0Dau;status;entries", {HistType::kTH1D, {axisSel}});
@@ -254,6 +271,7 @@ struct HfCandidateSelectorToOmegaPi {
     registry.add("hSelDcaXYToPvKaFromCasc", "hSelDcaXYToPvKaFromCasc;status;entries", {HistType::kTH1D, {axisSel}});
 
     if (KfconfigurableGroup.applyKFpreselections) {
+      registry.add("hSelPtOmegac", "hSelPtOmegac;status;entries", {HistType::kTH1D, {axisSel}});
       registry.add("hSelCompetingCasc", "hSelCompetingCasc;status;entries", {HistType::kTH1D, {axisSel}});
       registry.add("hSelKFstatus", "hSelKFstatus;status;entries", {HistType::kTH1D, {axisSel}});
       registry.add("hSelV0_Casc_Omegacldl", "hSelV0_Casc_Omegacldl;status;entries", {HistType::kTH1D, {axisSel}});
@@ -340,7 +358,6 @@ struct HfCandidateSelectorToOmegaPi {
       auto trackPrFromLam = trackV0PosDau;
 
       auto ptCand = candidate.ptCharmBaryon();
-
       int8_t signDecay = candidate.signDecay(); // sign of pi <- cascade
 
       if (signDecay > 0) {
@@ -507,7 +524,6 @@ struct HfCandidateSelectorToOmegaPi {
       }
 
       if constexpr (ConstructMethod == hf_cand_casc_lf::ConstructMethod::KfParticle) {
-        ;
         // KFParticle Preselections(kfsel)
         if (KfconfigurableGroup.applyKFpreselections) {
 
@@ -529,7 +545,6 @@ struct HfCandidateSelectorToOmegaPi {
           }
 
           // Omegac Pt selection
-          hPtCharmBaryon->Fill(std::abs(candidate.kfptOmegac()));
           if (std::abs(candidate.kfptOmegac()) < ptCandMin || std::abs(candidate.kfptOmegac()) > ptCandMax) {
             resultSelections = false;
             registry.fill(HIST("hSelPtOmegac"), 0);
@@ -554,7 +569,7 @@ struct HfCandidateSelectorToOmegaPi {
           }
 
           // Chi2Geo/NDF V0&Casc&Omegac selection
-          if ((candidate.v0Chi2OverNdf() > KfconfigurableGroup.v0Chi2OverNdfMax) || (candidate.cascChi2OverNdf() > KfconfigurableGroup.cascChi2OverNdfMax) || (candidate.omegacChi2OverNdf() > KfconfigurableGroup.omegacChi2OverNdfMax)) {
+          if ((candidate.v0Chi2OverNdf() > KfconfigurableGroup.v0Chi2OverNdfMax) || (candidate.v0Chi2OverNdf() < 0) || (candidate.cascChi2OverNdf() > KfconfigurableGroup.cascChi2OverNdfMax) || (candidate.cascChi2OverNdf() < 0) || (candidate.omegacChi2OverNdf() > KfconfigurableGroup.omegacChi2OverNdfMax) || (candidate.omegacChi2OverNdf() < 0)) {
             resultSelections = false;
             registry.fill(HIST("hSelChi2GeooverNDFV0_Casc_Omegac"), 0);
           } else {
@@ -562,7 +577,7 @@ struct HfCandidateSelectorToOmegaPi {
           }
 
           // Chi2Topo/NDF (chi2TopoV0ToCasc chi2TopoOmegacToPv chi2TopoCascToOmegac chi2TopoCascToPv) selection  (???????????/NDF of which particle????????)
-          if ((candidate.chi2TopoV0ToCasc() > KfconfigurableGroup.chi2TopoV0ToCascMax) || (candidate.chi2TopoOmegacToPv() > KfconfigurableGroup.chi2TopoOmegacToPvMax) || (candidate.chi2TopoCascToOmegac() > KfconfigurableGroup.chi2TopoCascToOmegacMax) || (candidate.chi2TopoCascToPv() > KfconfigurableGroup.chi2TopoCascToPvMax)) {
+          if ((candidate.chi2TopoV0ToCasc() > KfconfigurableGroup.chi2TopoV0ToCascMax) || (candidate.chi2TopoV0ToCasc() < 0) || (candidate.chi2TopoOmegacToPv() > KfconfigurableGroup.chi2TopoOmegacToPvMax) || (candidate.chi2TopoOmegacToPv() < 0) || (candidate.chi2TopoCascToOmegac() > KfconfigurableGroup.chi2TopoCascToOmegacMax) || (candidate.chi2TopoCascToOmegac() < 0) || (candidate.chi2TopoCascToPv() > KfconfigurableGroup.chi2TopoCascToPvMax) || (candidate.chi2TopoCascToPv() < 0)) {
             resultSelections = false;
             registry.fill(HIST("hSelChi2TopooverNDFV0_Casc_Omegac"), 0);
           } else {
@@ -798,6 +813,11 @@ struct HfCandidateSelectorToOmegaPi {
 
       if (statusPidLambda && statusPidCascade && statusPidCharmBaryon && statusInvMassLambda && statusInvMassCascade && statusInvMassCharmBaryon && resultSelections) {
         hInvMassCharmBaryon->Fill(invMassCharmBaryon);
+        if constexpr (ConstructMethod == hf_cand_casc_lf::ConstructMethod::KfParticle) {
+          hPtCharmBaryon->Fill(candidate.kfptOmegac());
+        } else {
+          hPtCharmBaryon->Fill(ptCand);
+        }
       }
     }
   } // end process

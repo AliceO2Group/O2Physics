@@ -12,13 +12,31 @@
 
 #include "Zorro.h"
 
+#include "EventFiltering/ZorroHelper.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <CommonDataFormat/IRFrame.h>
+#include <CommonDataFormat/InteractionRecord.h>
+#include <CommonUtils/StringUtils.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/Logger.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
+
+#include <RtypesCore.h>
+
 #include <algorithm>
+#include <bitset>
+#include <cstddef>
+#include <cstdint>
 #include <map>
-
-#include <TList.h>
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CommonDataFormat/InteractionRecord.h"
+#include <memory>
+#include <string>
+#include <vector>
 
 using o2::InteractionRecord;
 
@@ -113,7 +131,7 @@ void Zorro::populateExternalHists(int runNumber, TH2* ZorroHisto, TH2* ToiHisto)
   }
   if (!ToiHisto) {
     LOGF(info, "TOI histogram not set, creating a new one");
-    ToiHisto = new TH2D("TOI", "TOI", 1, -0.5, 0.5, mTOIs.size(), -0.5, mTOIs.size() - 0.5);
+    ToiHisto = new TH2D("TOI", "TOI", 1, -0.5, 0.5, mTOIs.size() * 2, -0.5, mTOIs.size() * 2 - 0.5);
   }
   // if it is the first run, initialize the histogram
   if (mRunNumberHistos.size() == 0) {
@@ -126,10 +144,11 @@ void Zorro::populateExternalHists(int runNumber, TH2* ZorroHisto, TH2* ToiHisto)
       ZorroHisto->GetYaxis()->SetBinLabel(i + 2 + mTOIs.size(), Form("%s scalers", mTOIs[i].data()));
     }
     // TOI histogram
-    ToiHisto->SetBins(1, -0.5, 0.5, mTOIs.size(), -0.5, mTOIs.size() - 0.5);
+    ToiHisto->SetBins(1, -0.5, 0.5, mTOIs.size() * 2, -0.5, mTOIs.size() * 2 - 0.5);
     ToiHisto->GetXaxis()->SetBinLabel(1, Form("%d", runNumber));
     for (size_t i{0}; i < mTOIs.size(); ++i) {
-      ToiHisto->GetYaxis()->SetBinLabel(i + 1, mTOIs[i].data());
+      ToiHisto->GetYaxis()->SetBinLabel(i * 2 + 1, mTOIs[i].data());
+      ToiHisto->GetYaxis()->SetBinLabel(i * 2 + 2, Form("%s AnalysedTriggers", mTOIs[i].data()));
     }
   }
   if (mInspectedTVX) {
@@ -137,6 +156,10 @@ void Zorro::populateExternalHists(int runNumber, TH2* ZorroHisto, TH2* ToiHisto)
     ZorroHisto->SetBinError(mRunNumberHistos.size() + 1, 1, mInspectedTVX->GetBinError(1));
   }
   if (mSelections) {
+    mAnalysedTriggers = new TH1D("AnalysedTriggers", "", mSelections->GetNbinsX() - 2, -0.5, mSelections->GetNbinsX() - 2.5);
+    for (int iBin{2}; iBin < mSelections->GetNbinsX(); ++iBin) { // Exclude first and last bins as they are total number of analysed and selected events, respectively
+      mAnalysedTriggers->GetXaxis()->SetBinLabel(iBin - 1, mSelections->GetXaxis()->GetBinLabel(iBin));
+    }
     for (size_t i{0}; i < mTOIs.size(); ++i) {
       int bin = findBin(mSelections, mTOIs[i]);
       ZorroHisto->Fill(Form("%d", runNumber), Form("%s selections", mTOIs[i].data()), mSelections->GetBinContent(bin));
@@ -162,38 +185,29 @@ std::vector<int> Zorro::initCCDB(o2::ccdb::BasicCCDBManager* ccdb, int runNumber
   mCCDB = ccdb;
   mRunNumber = runNumber;
   mBCtolerance = bcRange;
-  std::map<std::string, std::string> metadata;
-  metadata["runNumber"] = std::to_string(runNumber);
-  mRunDuration = mCCDB->getRunDuration(runNumber, true);
-  int64_t runTs = (mRunDuration.first / 2 + mRunDuration.second / 2);
-  auto ctp = ccdb->getForTimeStamp<std::vector<Long64_t>>("CTP/Calib/OrbitReset", runTs);
+  auto ctp = ccdb->getForRun<std::vector<Long64_t>>("CTP/Calib/OrbitReset", runNumber, false);
   mOrbitResetTimestamp = (*ctp)[0];
-  mScalers = mCCDB->getSpecific<TH1D>(mBaseCCDBPath + "FilterCounters", runTs, metadata);
-  mSelections = mCCDB->getSpecific<TH1D>(mBaseCCDBPath + "SelectionCounters", runTs, metadata);
-  mInspectedTVX = mCCDB->getSpecific<TH1D>(mBaseCCDBPath + "InspectedTVX", runTs, metadata);
+  mScalers = mCCDB->getForRun<TH1D>(mBaseCCDBPath + "FilterCounters", runNumber, true);
+  mSelections = mCCDB->getForRun<TH1D>(mBaseCCDBPath + "SelectionCounters", runNumber, true);
+  mInspectedTVX = mCCDB->getForRun<TH1D>(mBaseCCDBPath + "InspectedTVX", runNumber, true);
   setupHelpers(timestamp);
   mLastBCglobalId = 0;
   mLastSelectedIdx = 0;
   mTOIs.clear();
   mTOIidx.clear();
-  while (!tois.empty()) {
-    size_t pos = tois.find(",");
-    pos = (pos == std::string::npos) ? tois.size() : pos;
-    std::string token = tois.substr(0, pos);
-    // Trim leading and trailing whitespaces from the token
-    token.erase(0, token.find_first_not_of(" "));
-    token.erase(token.find_last_not_of(" ") + 1);
+  std::vector<std::string> tokens = o2::utils::Str::tokenize(tois, ','); // tokens are trimmed
+  for (auto const& token : tokens) {
     int bin = findBin(mSelections, token) - 2;
     mTOIs.push_back(token);
     mTOIidx.push_back(bin);
-    tois = tois.erase(0, pos + 1);
   }
   mTOIcounts.resize(mTOIs.size(), 0);
+  mATcounts.resize(mSelections->GetNbinsX() - 2, 0);
   LOGF(info, "Zorro initialized for run %d, triggers of interest:", runNumber);
   for (size_t i{0}; i < mTOIs.size(); ++i) {
     LOGF(info, ">>> %s : %i", mTOIs[i].data(), mTOIidx[i]);
   }
-  mZorroSummary.setupTOIs(mTOIs.size(), tois);
+  mZorroSummary.setupTOIs(mTOIs.size(), mTOIs);
   std::vector<double> toiCounters(mTOIs.size(), 0.);
   for (size_t i{0}; i < mTOIs.size(); ++i) {
     toiCounters[i] = mSelections->GetBinContent(mTOIidx[i] + 2);
@@ -207,7 +221,7 @@ std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
 {
   mLastResult.reset();
   if (bcGlobalId < mBCranges.front().getMin().toLong() - tolerance || bcGlobalId > mBCranges.back().getMax().toLong() + tolerance) {
-    setupHelpers((mOrbitResetTimestamp + int64_t(bcGlobalId * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000);
+    setupHelpers((mOrbitResetTimestamp + static_cast<int64_t>(bcGlobalId * o2::constants::lhc::LHCBunchSpacingNS * 1e-3)) / 1000);
   }
 
   o2::dataformats::IRFrame bcFrame{InteractionRecord::long2IR(bcGlobalId) - tolerance, InteractionRecord::long2IR(bcGlobalId) + tolerance};
@@ -222,8 +236,11 @@ std::bitset<128> Zorro::fetch(uint64_t bcGlobalId, uint64_t tolerance)
         for (int iTOI{0}; iTOI < 64; ++iTOI) {
           if (mZorroHelpers->at(i).selMask[iMask] & (1ull << iTOI)) {
             mLastResult.set(iMask * 64 + iTOI, 1);
-            if (mAnalysedTriggers && !mAccountedBCranges[i]) {
-              mAnalysedTriggers->Fill(iMask * 64 + iTOI);
+            if (!mAccountedBCranges[i]) {
+              mATcounts[iMask * 64 + iTOI]++;
+              if (mAnalysedTriggers) {
+                mAnalysedTriggers->Fill(iMask * 64 + iTOI);
+              }
             }
           }
         }
@@ -248,6 +265,11 @@ bool Zorro::isSelected(uint64_t bcGlobalId, uint64_t tolerance, TH2* ToiHisto)
     if (mTOIidx[i] < 0) {
       continue;
     } else if (mLastResult.test(mTOIidx[i])) {
+      if (ToiHisto && mAnalysedTriggers) {
+        int binX = ToiHisto->GetXaxis()->FindBin(Form("%d", mRunNumber));
+        int binY = ToiHisto->GetYaxis()->FindBin(Form("%s AnalysedTriggers", mTOIs[i].data()));
+        ToiHisto->SetBinContent(binX, binY, mAnalysedTriggers->GetBinContent(mAnalysedTriggers->GetXaxis()->FindBin(mTOIs[i].data())));
+      }
       mTOIcounts[i] += (lastSelectedIdx != mLastSelectedIdx); /// Avoid double counting
       if (mAnalysedTriggersOfInterest && lastSelectedIdx != mLastSelectedIdx) {
         mAnalysedTriggersOfInterest->Fill(i);
@@ -296,7 +318,7 @@ void Zorro::setupHelpers(int64_t timestamp)
   std::sort(mZorroHelpers->begin(), mZorroHelpers->end(), [](const auto& a, const auto& b) { return std::min(a.bcAOD, a.bcEvSel) < std::min(b.bcAOD, b.bcEvSel); });
   mBCranges.clear();
   mAccountedBCranges.clear();
-  for (auto helper : *mZorroHelpers) {
+  for (const auto& helper : *mZorroHelpers) {
     mBCranges.emplace_back(InteractionRecord::long2IR(std::min(helper.bcAOD, helper.bcEvSel)), InteractionRecord::long2IR(std::max(helper.bcAOD, helper.bcEvSel)));
   }
   mAccountedBCranges.resize(mBCranges.size(), false);

@@ -14,29 +14,32 @@
 /// \since  Jun/08/2023
 /// \brief  a task to calculate the pt efficiency
 
-#include <CCDB/BasicCCDBManager.h>
-#include <vector>
-#include <string>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "GFWPowerArray.h"
+#include "FlowContainer.h"
 #include "GFW.h"
 #include "GFWCumulant.h"
+#include "GFWPowerArray.h"
 #include "GFWWeights.h"
-#include "FlowContainer.h"
+
+#include "Common/Core/RecoDecay.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/Core/TrackSelectionDefaults.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include <CCDB/BasicCCDBManager.h>
+
+#include <TF1.h>
+#include <TPDGCode.h>
 #include <TProfile.h>
 #include <TRandom3.h>
-#include <TPDGCode.h>
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -57,9 +60,12 @@ struct FlowPtEfficiency {
   O2_DEFINE_CONFIGURABLE(cfgCutITSclu, float, 5.0f, "minimum ITS clusters")
   O2_DEFINE_CONFIGURABLE(cfgCutTPCcrossedrows, float, 70.0f, "minimum TPC crossed rows")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxy, float, 0.2f, "DCAxy cut for tracks")
+  O2_DEFINE_CONFIGURABLE(cfgDCAxyNSigma, float, 7, "Cut on number of sigma deviations from expected DCA in the transverse direction");
+  O2_DEFINE_CONFIGURABLE(cfgDCAxyFunction, std::string, "(0.0015+0.005/(x^1.1))", "Functional form of pt-dependent DCAxy cut");
   O2_DEFINE_CONFIGURABLE(cfgCutDCAz, float, 2.0f, "DCAz cut for tracks")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAxyppPass3Enabled, bool, false, "switch of ppPass3 DCAxy pt dependent cut")
   O2_DEFINE_CONFIGURABLE(cfgCutDCAzPtDepEnabled, bool, false, "switch of DCAz pt dependent cut")
+  O2_DEFINE_CONFIGURABLE(cfgEnableITSCuts, bool, true, "switch of enabling ITS based track selection cuts")
   O2_DEFINE_CONFIGURABLE(cfgSelRunNumberEnabled, bool, false, "switch of run number selection")
   O2_DEFINE_CONFIGURABLE(cfgFlowEnabled, bool, false, "switch of calculating flow")
   O2_DEFINE_CONFIGURABLE(cfgFlowNbootstrap, int, 30, "Number of subsamples")
@@ -127,6 +133,7 @@ struct FlowPtEfficiency {
   std::vector<GFW::CorrConfig> corrconfigsTruth;
   std::vector<GFW::CorrConfig> corrconfigsReco;
   TRandom3* fRndm = new TRandom3(0);
+  TF1* fPtDepDCAxy = nullptr;
 
   bool isStable(int pdg)
   {
@@ -145,18 +152,22 @@ struct FlowPtEfficiency {
 
   void init(InitContext const&)
   {
+    const AxisSpec axisVertex{20, -10, 10, "Vtxz (cm)"};
+    const AxisSpec axisEta{20, -1., 1., "#eta"};
     const AxisSpec axisCounter{1, 0, +1, ""};
     // create histograms
     registry.add("eventCounter", "eventCounter", kTH1F, {axisCounter});
     registry.add("hPtMCRec", "Monte Carlo Reco", {HistType::kTH1D, {axisPt}});
     registry.add("hPtNchMCRec", "Reco production; pT (GeV/c); multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
     registry.add("hBVsPtVsPhiRec", "hBVsPtVsPhiRec", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    registry.add("hEtaPtVzRec", "hEtaPtVz Reconstructed", HistType::kTH3D, {axisEta, axisPt, axisVertex});
 
     registry.add("mcEventCounter", "Monte Carlo Truth EventCounter", kTH1F, {axisCounter});
     registry.add("hPtMCGen", "Monte Carlo Truth", {HistType::kTH1D, {axisPt}});
     registry.add("hPtNchMCGen", "Truth production; pT (GeV/c); multiplicity", {HistType::kTH2D, {axisPt, axisNch}});
     registry.add("numberOfRecoCollisions", "numberOfRecoCollisions", kTH1F, {{10, -0.5f, 9.5f}});
     registry.add("hBVsPtVsPhiTrue", "hBVsPtVsPhiTrue", HistType::kTH3D, {axisB, axisPhi, axisPt});
+    registry.add("hEtaPtVzTrue", "hEtaPtVz True", HistType::kTH3D, {axisEta, axisPt, axisVertex});
 
     if (cfgFlowEnabled) {
       registry.add("hImpactParameterReco", "hImpactParameterReco", {HistType::kTH1D, {axisB}});
@@ -215,19 +226,29 @@ struct FlowPtEfficiency {
       fGFWReco->CreateRegions();
     }
 
-    if (cfgTrkSelRun3ITSMatch) {
-      myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
-    } else {
-      myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+    if (cfgEnableITSCuts) {
+      if (cfgTrkSelRun3ITSMatch) {
+        myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSall7Layers, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+      } else {
+        myTrackSel = getGlobalTrackSelectionRun3ITSMatch(TrackSelection::GlobalTrackRun3ITSMatching::Run3ITSibAny, TrackSelection::GlobalTrackRun3DCAxyCut::Default);
+      }
     }
     if (cfgCutDCAxyppPass3Enabled) {
       myTrackSel.SetMaxDcaXYPtDep([](float pt) { return 0.004f + 0.013f / pt; });
     } else {
-      myTrackSel.SetMaxDcaXY(cfgCutDCAxy);
+      if (cfgCutDCAxy != 0.0) {
+        myTrackSel.SetMaxDcaXY(cfgCutDCAxy);
+      } else {
+        fPtDepDCAxy = new TF1("ptDepDCAxy", Form("[0]*%s", cfgDCAxyFunction->c_str()), 0.001, 100);
+        fPtDepDCAxy->SetParameter(0, cfgDCAxyNSigma);
+        LOGF(info, "DCAxy pt-dependence function: %s", Form("[0]*%s", cfgDCAxyFunction->c_str()));
+        myTrackSel.SetMaxDcaXYPtDep([fPtDepDCAxy = this->fPtDepDCAxy](float pt) { return fPtDepDCAxy->Eval(pt); });
+      }
     }
     myTrackSel.SetMinNClustersTPC(cfgCutTPCclu);
-    myTrackSel.SetMinNClustersITS(cfgCutITSclu);
     myTrackSel.SetMinNCrossedRowsTPC(cfgCutTPCcrossedrows);
+    if (cfgEnableITSCuts)
+      myTrackSel.SetMinNClustersITS(cfgCutITSclu);
     if (!cfgCutDCAzPtDepEnabled)
       myTrackSel.SetMaxDcaZ(cfgCutDCAz);
   }
@@ -354,10 +375,12 @@ struct FlowPtEfficiency {
   template <typename TTrack>
   bool trackSelected(TTrack track)
   {
-    if (cfgkIsTrackGlobal && !track.isGlobalTrack())
+    if (cfgkIsTrackGlobal && !track.isGlobalTrack()) {
       return false;
-    if (cfgCutDCAzPtDepEnabled && (track.dcaZ() > (0.004f + 0.013f / track.pt())))
+    }
+    if (cfgCutDCAzPtDepEnabled && (track.dcaZ() > (0.004f + 0.013f / track.pt()))) {
       return false;
+    }
     return myTrackSel.IsSelected(track);
   }
 
@@ -374,7 +397,6 @@ struct FlowPtEfficiency {
       if (!std::count(cfgRunNumberList.value.begin(), cfgRunNumberList.value.end(), runNumber))
         return;
     }
-
     float imp = 0;
     bool impFetched = false;
     float evPhi = 0;
@@ -389,7 +411,6 @@ struct FlowPtEfficiency {
 
       fGFWReco->Clear();
     }
-
     for (const auto& track : tracks) {
       if (!trackSelected(track))
         continue;
@@ -406,6 +427,7 @@ struct FlowPtEfficiency {
         if (isStable(mcParticle.pdgCode())) {
           registry.fill(HIST("hPtMCRec"), track.pt());
           registry.fill(HIST("hPtNchMCRec"), track.pt(), tracks.size());
+          registry.fill(HIST("hEtaPtVzRec"), track.eta(), track.pt(), vtxz);
 
           if (cfgFlowEnabled) {
             float deltaPhi = RecoDecay::constrainAngle(track.phi() - evPhi);
@@ -462,6 +484,7 @@ struct FlowPtEfficiency {
     float lRandom = fRndm->Rndm();
     float wacc = 1.0f;
     float weff = 1.0f;
+    float vtxz = mcCollision.posZ();
 
     if (collisions.size() > -1) {
       registry.fill(HIST("mcEventCounter"), 0.5);
@@ -477,8 +500,10 @@ struct FlowPtEfficiency {
       for (const auto& mcParticle : mcParticles) {
         if (mcParticle.isPhysicalPrimary() && isStable(mcParticle.pdgCode())) {
           registry.fill(HIST("hPtMCGen"), mcParticle.pt());
-          if (collisions.size() > 0)
+          if (collisions.size() > 0) {
             registry.fill(HIST("hPtNchMCGen"), mcParticle.pt(), numberOfTracks[0]);
+          }
+          registry.fill(HIST("hEtaPtVzTrue"), mcParticle.eta(), mcParticle.pt(), vtxz);
 
           if (cfgFlowEnabled) {
             float deltaPhi = RecoDecay::constrainAngle(mcParticle.phi() - evPhi);

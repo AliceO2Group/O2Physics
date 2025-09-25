@@ -58,6 +58,7 @@ struct singleTrackSelector {
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
   Configurable<bool> applySkimming{"applySkimming", false, "Skimmed dataset processing"};
   Configurable<std::string> cfgSkimming{"cfgSkimming", "fPD", "Configurable for skimming"};
+  Configurable<bool> CBThadronPID{"CBThadronPID", false, "Apply ev. sel. based on RCT flag `hadronPID`"}; // more in Common/CCDB/RCTSelectionFlags.h
 
   Configurable<int> applyEvSel{"applyEvSel", 2, "Flag to apply rapidity cut: 0 -> no event selection, 1 -> Run 2 event selection, 2 -> Run 3 event selection"};
   // Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -134,6 +135,8 @@ struct singleTrackSelector {
   HistogramRegistry registry{"registry", {}, OutputObjHandlingPolicy::AnalysisObject};
   SliceCache cache;
 
+  rctsel::RCTFlagsChecker myChecker{"CBT_hadronPID"};
+
   void init(InitContext&)
   {
 
@@ -148,6 +151,8 @@ struct singleTrackSelector {
     ccdb->setLocalObjectValidityChecking();
     ccdb->setFatalWhenNull(false);
 
+    myChecker.init("CBT_hadronPID", true);
+
     registry.add("hNEvents", "hNEvents", {HistType::kTH1D, {{2, 0.f, 2.f}}});
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "All");
     registry.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "Skimmed");
@@ -158,12 +163,12 @@ struct singleTrackSelector {
 
     if (enable_gen_info) {
       registry.add("hNEvents_MCGen", "hNEvents_MCGen", {HistType::kTH1F, {{1, 0.f, 1.f}}});
-      registry.add("hGen_EtaPhiPt_Proton", "Gen (anti)protons in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
-      registry.add("hGen_EtaPhiPt_Deuteron", "Gen (anti)deuteron in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
-      registry.add("hGen_EtaPhiPt_Helium3", "Gen (anti)Helium3 in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
-      registry.add("hReco_EtaPhiPt_Proton", "Gen (anti)protons in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
-      registry.add("hReco_EtaPhiPt_Deuteron", "Gen (anti)deuteron in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
-      registry.add("hReco_EtaPhiPt_Helium3", "Gen (anti)Helium3 in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., 2 * TMath::Pi(), "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hGen_EtaPhiPt_Proton", "Gen (anti)protons in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hGen_EtaPhiPt_Deuteron", "Gen (anti)deuteron in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hGen_EtaPhiPt_Helium3", "Gen (anti)Helium3 in true collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPt_Proton", "Gen (anti)protons in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPt_Deuteron", "Gen (anti)deuteron in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
+      registry.add("hReco_EtaPhiPt_Helium3", "Gen (anti)Helium3 in reco collisions", {HistType::kTH3F, {{100, -1., 1., "#eta"}, {157, 0., o2::constants::math::TwoPI, "#phi"}, {100, -5.f, 5.f, "p_{T} GeV/c"}}});
     }
   }
 
@@ -348,6 +353,9 @@ struct singleTrackSelector {
 
     const auto& bc = collision.bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
+
+    if (!myChecker(*collision) && CBThadronPID)
+      return;
 
     registry.fill(HIST("hNEvents"), 0.5);
     if (applySkimming) {

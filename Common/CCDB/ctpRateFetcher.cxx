@@ -11,18 +11,24 @@
 
 #include "ctpRateFetcher.h"
 
-#include <map>
-#include <vector>
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <DataFormatsCTP/Configuration.h>
+#include <DataFormatsCTP/Scalers.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/Logger.h>
 
-#include "CommonConstants/LHCConstants.h"
-#include "DataFormatsCTP/Configuration.h"
-#include "DataFormatsCTP/Scalers.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "CCDB/BasicCCDBManager.h"
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <map>
+#include <ostream>
+#include <string>
+#include <vector>
 
 namespace o2
 {
-double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, std::string sourceName, bool fCrashOnNull)
+double ctpRateFetcher::fetch(o2::ccdb::BasicCCDBManager* ccdb, uint64_t timeStamp, int runNumber, const std::string& sourceName, bool fCrashOnNull)
 {
   setupRun(runNumber, ccdb, timeStamp);
   if (sourceName.find("ZNC") != std::string::npos) {
@@ -69,7 +75,7 @@ double ctpRateFetcher::fetchCTPratesClasses(o2::ccdb::BasicCCDBManager* /*ccdb*/
     LOG(warn) << "Trigger class " << className << " not found in CTPConfiguration";
     return -1.;
   }
-  auto rate{mScalers->getRateGivenT(timeStamp * 1.e-3, classIndex, inputType)};
+  auto rate{mScalers->getRateGivenT(timeStamp * 1.e-3, classIndex, inputType, 1)};
   return pileUpCorrection(rate.second);
 }
 
@@ -77,7 +83,7 @@ double ctpRateFetcher::fetchCTPratesInputs(o2::ccdb::BasicCCDBManager* /*ccdb*/,
 {
   std::vector<ctp::CTPScalerRecordO2> recs = mScalers->getScalerRecordO2();
   if (recs[0].scalersInps.size() == 48) {
-    return pileUpCorrection(mScalers->getRateGivenT(timeStamp * 1.e-3, input, 7).second);
+    return pileUpCorrection(mScalers->getRateGivenT(timeStamp * 1.e-3, input, 7, 1).second);
   } else {
     LOG(error) << "Inputs not available";
     return -1.;
@@ -109,7 +115,7 @@ void ctpRateFetcher::setupRun(int runNumber, o2::ccdb::BasicCCDBManager* ccdb, u
     delete mScalers;
     delete mLHCIFdata;
   }
-  std::map<string, string> metadata;
+  std::map<std::string, std::string> metadata;
   mLHCIFdata = ccdb->getSpecific<parameters::GRPLHCIFData>("GLO/Config/GRPLHCIF", timeStamp, metadata);
   if (mLHCIFdata == nullptr) {
     LOG(fatal) << "GRPLHCIFData not in database, timestamp:" << timeStamp;

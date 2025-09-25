@@ -15,6 +15,17 @@
 
 #include "PWGJE/TableProducer/Matching/Duplicates/jetMatchingDuplicates.cxx"
 
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+
+#include <Framework/ASoA.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/ConfigContext.h>
+#include <Framework/DataProcessorSpec.h>
+#include <Framework/runDataProcessing.h>
+
+#include <vector>
+
 using Charged1JetDataMatchingDupliacates = JetMatchingDuplicates<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>,
                                                                  soa::Join<aod::Charged1Jets, aod::Charged1JetConstituents>,
                                                                  aod::ChargedJetsMatchedToCharged1Jets,

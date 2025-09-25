@@ -14,72 +14,96 @@
 ///
 /// \author M. Hemmer, marvin.hemmer@cern.ch
 
-#include <numbers>
-#include <iterator>
-#include <array>
-#include <string>
-#include <map>
-#include <algorithm>
-#include <vector>
-#include <tuple>
-#include <utility>
-#include <cmath>
-
-#include "Math/Vector4D.h"
-#include "Math/Vector3D.h"
-#include "Math/LorentzRotation.h"
-#include "Math/Rotation3D.h"
-#include "Math/AxisAngle.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-
-#include "Common/Core/EventPlaneHelper.h"
-#include "Common/Core/RecoDecay.h"
-#include "Common/DataModel/Qvectors.h"
-#include "CommonConstants/MathConstants.h"
-
-#include "DetectorsBase/GeometryManager.h"
-#include "DataFormatsEMCAL/Constants.h"
-#include "EMCALBase/Geometry.h"
-#include "EMCALCalib/BadChannelMap.h"
-
-#include "PWGEM/Dilepton/Utils/EMTrackUtilities.h"
 #include "PWGEM/PhotonMeson/Core/EMCPhotonCut.h"
 #include "PWGEM/PhotonMeson/Core/EMPhotonEventCut.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
-#include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
-#include "PWGEM/PhotonMeson/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/EventHistograms.h"
-#include "PWGEM/PhotonMeson/Utils/NMHistograms.h"
+#include "PWGEM/PhotonMeson/Utils/emcalHistoDefinitions.h"
+
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/RecoDecay.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/MathConstants.h>
+#include <EMCALBase/Geometry.h>
+#include <EMCALBase/GeometryBase.h>
+#include <EMCALCalib/BadChannelMap.h>
+#include <Framework/ASoA.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/Expressions.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/SliceCache.h>
+#include <Framework/runDataProcessing.h>
+
+#include <Math/GenVector/AxisAngle.h>
+#include <Math/GenVector/Rotation3D.h>
+#include <Math/Vector4D.h> // IWYU pragma: keep
+#include <TF1.h>
+#include <TH1.h>
+#include <TString.h>
+
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <memory>
+#include <numbers>
+#include <string>
+#include <string_view>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::soa;
-using namespace o2::aod::pwgem::photonmeson::photonpair;
 using namespace o2::aod::pwgem::photon;
-using namespace o2::aod::pwgem::dilepton::utils;
 
-enum QvecEstimator { FT0M = 0,
-                     FT0A = 1,
-                     FT0C,
-                     TPCPos,
-                     TPCNeg,
-                     TPCTot };
+enum QvecEstimator {
+  FT0M = 0,
+  FT0A = 1,
+  FT0C,
+  TPCPos,
+  TPCNeg,
+  TPCTot
+};
 
-enum CentralityEstimator { None = 0,
-                           CFT0A = 1,
-                           CFT0C,
-                           CFT0M,
-                           NCentralityEstimators
+enum CentralityEstimator {
+  None = 0,
+  CFT0A = 1,
+  CFT0C,
+  CFT0M,
+  NCentralityEstimators
+};
+
+enum Harmonics {
+  kNone = 0,
+  kDirect = 1,
+  kElliptic = 2,
+  kTriangluar = 3,
+  kQuadrangular = 4,
+  kPentagonal = 5,
+  kHexagonal = 6,
+  kHeptagonal = 7,
+  kOctagonal = 8
 };
 
 struct TaskPi0FlowEMC {
+  static constexpr float MinEnergy = 0.7f;
+
   // configurable for flow
   Configurable<int> harmonic{"harmonic", 2, "harmonic number"};
   Configurable<int> qvecDetector{"qvecDetector", 0, "Detector for Q vector estimation (FT0M: 0, FT0A: 1, FT0C: 2, TPC Pos: 3, TPC Neg: 4, TPC Tot: 5)"};
@@ -98,6 +122,8 @@ struct TaskPi0FlowEMC {
   Configurable<bool> cfgDoM02{"cfgDoM02", false, "Flag to enable flow vs M02 for single photons"};
   Configurable<bool> cfgDoReverseScaling{"cfgDoReverseScaling", false, "Flag to reverse the scaling that is possibly applied during NonLin"};
   Configurable<bool> cfgDoPlaneQA{"cfgDoPlaneQA", false, "Flag to enable QA plots comparing in and out of plane"};
+  Configurable<float> cfgMaxQVector{"cfgMaxQVector", 20.f, "Maximum allowed absolute QVector value."};
+  Configurable<float> cfgMaxAsymmetry{"cfgMaxAsymmetry", 0.1f, "Maximum allowed asymmetry for photon pairs used in calibration."};
 
   // configurable axis
   ConfigurableAxis thnConfigAxisInvMass{"thnConfigAxisInvMass", {400, 0.0, 0.8}, ""};
@@ -107,6 +133,7 @@ struct TaskPi0FlowEMC {
   ConfigurableAxis thnConfigAxisCosDeltaPhi{"thnConfigAxisCosDeltaPhi", {8, -1., 1.}, ""};
   ConfigurableAxis thnConfigAxisScalarProd{"thnConfigAxisScalarProd", {100, -5., 5.}, ""};
   ConfigurableAxis thnConfigAxisM02{"thnConfigAxisM02", {200, 0., 5.}, ""};
+  ConfigurableAxis thnConfigAxisEnergyCalib{"thnConfigAxisEnergyCalib", {200, 0., 20.}, ""};
 
   EMPhotonEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -173,6 +200,7 @@ struct TaskPi0FlowEMC {
     Configurable<std::string> cfgSpresoPath{"cfgSpresoPath", "Users/m/mhemmer/EM/Flow/Resolution", "Path to SP resolution file"};
     Configurable<int> cfgApplySPresolution{"cfgApplySPresolution", 0, "Apply resolution correction"};
     Configurable<bool> doEMCalCalib{"doEMCalCalib", 0, "Produce output for EMCal calibration"};
+    Configurable<bool> cfgEnableNonLin{"cfgEnableNonLin", false, "flag to turn extra non linear energy calibration on/off"};
   } correctionConfig;
 
   SliceCache cache;
@@ -187,6 +215,7 @@ struct TaskPi0FlowEMC {
   using EMCalPhotons = soa::Join<aod::EMCEMEventIds, aod::SkimEMCClusters>;
   using FilteredCollsWithQvecs = soa::Filtered<soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>>;
   using CollsWithQvecs = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent, aod::EMEventsQvec>;
+  using Colls = soa::Join<aod::EMEvents, aod::EMEventsMult, aod::EMEventsCent>;
 
   Preslice<EMCalPhotons> perCollisionEMC = aod::emccluster::emeventId;
 
@@ -204,6 +233,12 @@ struct TaskPi0FlowEMC {
 
   std::vector<int8_t> lookupTable1D;
   float epsilon = 1.e-8;
+
+  // static constexpr
+  static constexpr int64_t NMinPhotonRotBkg = 3;
+
+  // Usage when cfgEnableNonLin is enabled
+  std::unique_ptr<TF1> fEMCalCorrectionFactor; // ("fEMCalCorrectionFactor","(1 + [0]/x + [1]/x^2) / (1 + [2]/x)", 0.3, 100.);
 
   // To access the 1D array
   inline int getIndex(int iEta, int iPhi)
@@ -265,7 +300,7 @@ struct TaskPi0FlowEMC {
 
   void init(InitContext&)
   {
-    if (harmonic != 2 && harmonic != 3) {
+    if (harmonic != kElliptic && harmonic != kTriangluar) {
       LOG(info) << "Harmonic was set to " << harmonic << " but can only be 2 or 3!";
     }
 
@@ -283,10 +318,10 @@ struct TaskPi0FlowEMC {
     const AxisSpec thnAxisM02{thnConfigAxisM02, "M_{02}"};
     const AxisSpec thAxisTanThetaPhi{mesonConfig.thConfigAxisTanThetaPhi, "atan(#Delta#theta/#Delta#varphi)"};
     const AxisSpec thAxisClusterEnergy{thnConfigAxisPt, "#it{E} (GeV)"};
+    const AxisSpec thAxisEnergyCalib{thnConfigAxisEnergyCalib, "#it{E}_{clus} (GeV)"};
     const AxisSpec thAxisAlpha{100, -1., +1, "#alpha"};
     const AxisSpec thAxisMult{1000, 0., +1000, "#it{N}_{ch}"};
     const AxisSpec thAxisEnergy{1000, 0., 100., "#it{E}_{clus} (GeV)"};
-    const AxisSpec thAxisEnergyCalib{100, 0., 20., "#it{E}_{clus} (GeV)"};
     const AxisSpec thAxisTime{1500, -600, 900, "#it{t}_{cl} (ns)"};
     const AxisSpec thAxisEta{320, -0.8, 0.8, "#eta"};
     const AxisSpec thAxisPhi{500, 0, 2 * 3.14159, "phi"};
@@ -414,6 +449,9 @@ struct TaskPi0FlowEMC {
 
     LOG(info) << "thnConfigAxisInvMass.value[1] = " << thnConfigAxisInvMass.value[1] << " thnConfigAxisInvMass.value.back() = " << thnConfigAxisInvMass.value.back();
     LOG(info) << "thnConfigAxisPt.value[1] = " << thnConfigAxisPt.value[1] << " thnConfigAxisPt.value.back() = " << thnConfigAxisPt.value.back();
+
+    fEMCalCorrectionFactor = std::make_unique<TF1>("fEMCalCorrectionFactor", "(1 + [0]/x + [1]/x^2) / (1 + [2]/x)", 0.3, 100.);
+    fEMCalCorrectionFactor->SetParameters(-5.33426e-01, 1.40144e-02, -5.24434e-01);
   }; // end init
 
   /// Change radians to degree
@@ -450,7 +488,8 @@ struct TaskPi0FlowEMC {
 
   /// Get the centrality
   /// \param collision is the collision with the centrality information
-  float getCentrality(CollsWithQvecs::iterator const& collision)
+  template <typename TCollision>
+  float getCentrality(TCollision const& collision)
   {
     float cent = -999.;
     switch (centEstimator) {
@@ -492,65 +531,65 @@ struct TaskPi0FlowEMC {
 
     switch (detector) {
       case QvecEstimator::FT0M:
-        if (harmonic == 2) {
+        if (harmonic == kElliptic) {
           xQVec = collision.q2xft0m();
           yQVec = collision.q2yft0m();
-        } else if (harmonic == 3) {
+        } else if (harmonic == kTriangluar) {
           xQVec = collision.q3xft0m();
           yQVec = collision.q3yft0m();
         }
         break;
       case QvecEstimator::FT0A:
-        if (harmonic == 2) {
+        if (harmonic == kElliptic) {
           xQVec = collision.q2xft0a();
           yQVec = collision.q2yft0a();
-        } else if (harmonic == 3) {
+        } else if (harmonic == kTriangluar) {
           xQVec = collision.q3xft0a();
           yQVec = collision.q3yft0a();
         }
         break;
       case QvecEstimator::FT0C:
-        if (harmonic == 2) {
+        if (harmonic == kElliptic) {
           xQVec = collision.q2xft0c();
           yQVec = collision.q2yft0c();
-        } else if (harmonic == 3) {
+        } else if (harmonic == kTriangluar) {
           xQVec = collision.q3xft0c();
           yQVec = collision.q3yft0c();
         }
         break;
       case QvecEstimator::TPCPos:
-        if (harmonic == 2) {
+        if (harmonic == kElliptic) {
           xQVec = collision.q2xbpos();
           yQVec = collision.q2ybpos();
-        } else if (harmonic == 3) {
+        } else if (harmonic == kTriangluar) {
           xQVec = collision.q3xbpos();
           yQVec = collision.q3ybpos();
         }
         break;
       case QvecEstimator::TPCNeg:
-        if (harmonic == 2) {
+        if (harmonic == kElliptic) {
           xQVec = collision.q2xbneg();
           yQVec = collision.q2ybneg();
-        } else if (harmonic == 3) {
+        } else if (harmonic == kTriangluar) {
           xQVec = collision.q3xbneg();
           yQVec = collision.q3ybneg();
         }
         break;
       case QvecEstimator::TPCTot:
-        if (harmonic == 2) {
+        if (harmonic == kElliptic) {
           xQVec = collision.q2xbtot();
           yQVec = collision.q2ybtot();
-        } else if (harmonic == 3) {
+        } else if (harmonic == kTriangluar) {
           xQVec = collision.q3xbtot();
           yQVec = collision.q3ybtot();
         }
         break;
       default:
         LOG(warning) << "Q vector estimator not valid. Falling back to FT0M";
-        if (harmonic == 2) {
+        if (harmonic == kElliptic) {
           xQVec = collision.q2xft0m();
           yQVec = collision.q2yft0m();
-        } else if (harmonic == 3) {
+        } else if (harmonic == kTriangluar) {
           xQVec = collision.q3xft0m();
           yQVec = collision.q3yft0m();
         }
@@ -565,7 +604,7 @@ struct TaskPi0FlowEMC {
   {
     bool isgood = true;
     for (const auto& QVec : QVecs) {
-      if (std::fabs(QVec) > 20.f) {
+      if (std::fabs(QVec) > cfgMaxQVector) {
         isgood = false;
         break;
       }
@@ -660,7 +699,7 @@ struct TaskPi0FlowEMC {
   void rotationBackground(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, CollsWithQvecs::iterator const& collision)
   {
     // if less than 3 clusters are present skip event since we need at least 3 clusters
-    if (photons_coll.size() < 3) {
+    if (photons_coll.size() < NMinPhotonRotBkg) {
       return;
     }
 
@@ -703,7 +742,11 @@ struct TaskPi0FlowEMC {
       if (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelBackground.value) {
         continue;
       }
-      ROOT::Math::PtEtaPhiMVector photon3(photon.pt(), photon.eta(), photon.phi(), 0.);
+      float energyCorrectionFactor = 1.f;
+      if (correctionConfig.cfgEnableNonLin.value) {
+        energyCorrectionFactor = fEMCalCorrectionFactor->Eval(photon.e() > MinEnergy ? photon.e() : MinEnergy);
+      }
+      ROOT::Math::PtEtaPhiMVector photon3(energyCorrectionFactor * photon.pt(), photon.eta(), photon.phi(), 0.);
       if (iCellIDPhoton1 >= 0) {
         ROOT::Math::PtEtaPhiMVector mother1 = photon1 + photon3;
         float openingAngle1 = std::acos(photon1.Vect().Dot(photon3.Vect()) / (photon1.P() * photon3.P()));
@@ -755,11 +798,11 @@ struct TaskPi0FlowEMC {
   }
 
   /// \brief Calculate background using rotation background method for calib
-  template <typename TPhotons>
-  void rotationBackgroundCalib(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, CollsWithQvecs::iterator const& collision)
+  template <typename TPhotons, typename TCollision>
+  void rotationBackgroundCalib(const ROOT::Math::PtEtaPhiMVector& meson, ROOT::Math::PtEtaPhiMVector photon1, ROOT::Math::PtEtaPhiMVector photon2, TPhotons const& photons_coll, unsigned int ig1, unsigned int ig2, TCollision const& collision)
   {
     // if less than 3 clusters are present skip event since we need at least 3 clusters
-    if (photons_coll.size() < 3) {
+    if (photons_coll.size() < NMinPhotonRotBkg) {
       return;
     }
     float cent = getCentrality(collision);
@@ -792,9 +835,13 @@ struct TaskPi0FlowEMC {
       if (checkEtaPhi1D(photon.eta(), RecoDecay::constrainAngle(photon.phi())) >= cfgEMCalMapLevelBackground.value) {
         continue;
       }
-      ROOT::Math::PtEtaPhiMVector photon3(photon.pt(), photon.eta(), photon.phi(), 0.);
+      float energyCorrectionFactor = 1.f;
+      if (correctionConfig.cfgEnableNonLin.value) {
+        energyCorrectionFactor = fEMCalCorrectionFactor->Eval(photon.e() > MinEnergy ? photon.e() : MinEnergy);
+      }
+      ROOT::Math::PtEtaPhiMVector photon3(energyCorrectionFactor * photon.pt(), photon.eta(), photon.phi(), 0.);
       if (iCellIDPhoton1 >= 0) {
-        if (std::fabs((photon1.E() - photon3.E()) / (photon1.E() + photon3.E()) < 0.1)) { // only use symmetric decays
+        if (std::fabs((photon1.E() - photon3.E()) / (photon1.E() + photon3.E()) < cfgMaxAsymmetry)) { // only use symmetric decays
           ROOT::Math::PtEtaPhiMVector mother1 = photon1 + photon3;
           float openingAngle1 = std::acos(photon1.Vect().Dot(photon3.Vect()) / (photon1.P() * photon3.P()));
 
@@ -812,7 +859,7 @@ struct TaskPi0FlowEMC {
         }
       }
       if (iCellIDPhoton2 >= 0) {
-        if (std::fabs((photon2.E() - photon3.E()) / (photon2.E() + photon3.E()) < 0.1)) { // only use symmetric decays
+        if (std::fabs((photon2.E() - photon3.E()) / (photon2.E() + photon3.E()) < cfgMaxAsymmetry)) { // only use symmetric decays
           ROOT::Math::PtEtaPhiMVector mother2 = photon2 + photon3;
           float openingAngle2 = std::acos(photon2.Vect().Dot(photon3.Vect()) / (photon2.P() * photon3.P()));
 
@@ -868,6 +915,10 @@ struct TaskPi0FlowEMC {
   void processEMCal(CollsWithQvecs const& collisions, EMCalPhotons const& clusters)
   {
     int nColl = 1;
+    float energyCorrectionFactor = 1.f;
+    if (cfgDoReverseScaling.value) {
+      energyCorrectionFactor = 1.0505f;
+    }
     for (const auto& collision : collisions) {
       auto photonsPerCollision = clusters.sliceBy(perCollisionEMC, collision.globalIndex());
 
@@ -946,18 +997,14 @@ struct TaskPi0FlowEMC {
             continue;
           }
         }
-
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-        if (cfgDoReverseScaling.value) {
-          // Convert to PxPyPzEVector to modify energy
-          ROOT::Math::PxPyPzEVector v1Mod(v1);
-          v1Mod.SetE(v1Mod.E() * 1.0505);
-          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod.Pt(), v1Mod.Eta(), v1Mod.Phi(), 0.);
-          ROOT::Math::PxPyPzEVector v2Mod(v2);
-          v2Mod.SetE(v2Mod.E() * 1.0505);
-          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod.Pt(), v2Mod.Eta(), v2Mod.Phi(), 0.);
+        if (correctionConfig.cfgEnableNonLin.value) {
+          energyCorrectionFactor = fEMCalCorrectionFactor->Eval(g1.e() > MinEnergy ? g1.e() : MinEnergy);
         }
+        ROOT::Math::PtEtaPhiMVector v1(energyCorrectionFactor * g1.pt(), g1.eta(), g1.phi(), 0.);
+        if (correctionConfig.cfgEnableNonLin.value) {
+          energyCorrectionFactor = fEMCalCorrectionFactor->Eval(g2.e() > MinEnergy ? g2.e() : MinEnergy);
+        }
+        ROOT::Math::PtEtaPhiMVector v2(energyCorrectionFactor * g2.pt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
         float dTheta = v1.Theta() - v2.Theta();
         float dPhi = v1.Phi() - v2.Phi();
@@ -1006,6 +1053,10 @@ struct TaskPi0FlowEMC {
   // Pi0 from EMCal
   void processEMCalMixed(FilteredCollsWithQvecs const& collisions, FilteredEMCalPhotons const& clusters)
   {
+    float energyCorrectionFactor = 1.f;
+    if (cfgDoReverseScaling.value) {
+      energyCorrectionFactor = 1.0505f;
+    }
     auto getClustersSize =
       [&clusters, this](FilteredCollsWithQvecs::iterator const& col) {
         auto associatedClusters = clusters.sliceByCached(emccluster::emeventId, col.globalIndex(), this->cache); // it's cached, so slicing/grouping happens only once
@@ -1054,18 +1105,14 @@ struct TaskPi0FlowEMC {
             continue;
           }
         }
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-
-        if (cfgDoReverseScaling.value) {
-          // Convert to PxPyPzEVector to modify energy
-          ROOT::Math::PxPyPzEVector v1Mod(v1);
-          v1Mod.SetE(v1Mod.E() * 1.0505);
-          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod.Pt(), v1Mod.Eta(), v1Mod.Phi(), 0.);
-          ROOT::Math::PxPyPzEVector v2Mod(v2);
-          v2Mod.SetE(v2Mod.E() * 1.0505);
-          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod.Pt(), v2Mod.Eta(), v2Mod.Phi(), 0.);
+        if (correctionConfig.cfgEnableNonLin.value) {
+          energyCorrectionFactor = fEMCalCorrectionFactor->Eval(g1.e() > MinEnergy ? g1.e() : MinEnergy);
         }
+        ROOT::Math::PtEtaPhiMVector v1(energyCorrectionFactor * g1.pt(), g1.eta(), g1.phi(), 0.);
+        if (correctionConfig.cfgEnableNonLin.value) {
+          energyCorrectionFactor = fEMCalCorrectionFactor->Eval(g2.e() > MinEnergy ? g2.e() : MinEnergy);
+        }
+        ROOT::Math::PtEtaPhiMVector v2(energyCorrectionFactor * g2.pt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
 
         float dTheta = v1.Theta() - v2.Theta();
@@ -1138,7 +1185,7 @@ struct TaskPi0FlowEMC {
     float yQVecBNeg = -999.f;
     float xQVecBTot = -999.f;
     float yQVecBTot = -999.f;
-    if (harmonic == 2) {
+    if (harmonic == kElliptic) {
       xQVecFT0a = collision.q2xft0a();
       yQVecFT0a = collision.q2yft0a();
       xQVecFT0c = collision.q2xft0c();
@@ -1151,7 +1198,7 @@ struct TaskPi0FlowEMC {
       yQVecBNeg = collision.q2ybneg();
       xQVecBTot = collision.q2xbtot();
       yQVecBTot = collision.q2ybtot();
-    } else if (harmonic == 3) {
+    } else if (harmonic == kTriangluar) {
       xQVecFT0a = collision.q3xft0a();
       yQVecFT0a = collision.q3yft0a();
       xQVecFT0c = collision.q3xft0c();
@@ -1203,7 +1250,7 @@ struct TaskPi0FlowEMC {
       registry.fill(HIST("epReso/hEpResoFT0mTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epBNegs)));
       registry.fill(HIST("epReso/hEpResoFT0mTPCtot"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0m, epBTots)));
       registry.fill(HIST("epReso/hEpResoTPCposTPCneg"), centrality, std::cos(harmonic * getDeltaPsiInRange(epBPoss, epBNegs)));
-      for (int n = 1; n <= 8; n++) {
+      for (int n = 1; n <= kOctagonal; n++) {
         registry.fill(HIST("epReso/hEpCosCoefficientsFT0c"), centrality, n, std::cos(n * epFT0c));
         registry.fill(HIST("epReso/hEpSinCoefficientsFT0c"), centrality, n, std::sin(n * epFT0c));
         registry.fill(HIST("epReso/hEpCosCoefficientsFT0a"), centrality, n, std::cos(n * epFT0a));
@@ -1222,8 +1269,9 @@ struct TaskPi0FlowEMC {
   PROCESS_SWITCH(TaskPi0FlowEMC, processResolution, "Process resolution", false);
 
   // EMCal calibration
-  void processEMCalCalib(CollsWithQvecs const& collisions, EMCalPhotons const& clusters)
+  void processEMCalCalib(Colls const& collisions, EMCalPhotons const& clusters)
   {
+    float energyCorrectionFactor = 1.f;
     if (!correctionConfig.doEMCalCalib) {
       return;
     }
@@ -1242,10 +1290,6 @@ struct TaskPi0FlowEMC {
       float cent = getCentrality(collision);
       if (cent < eventcuts.cfgMinCent || cent > eventcuts.cfgMaxCent) {
         // event selection
-        continue;
-      }
-      if (!isQvecGood(getAllQvec(collision))) {
-        // selection based on QVector
         continue;
       }
       runNow = collision.runNumber();
@@ -1281,18 +1325,16 @@ struct TaskPi0FlowEMC {
           }
         }
 
-        ROOT::Math::PtEtaPhiMVector v1(g1.pt(), g1.eta(), g1.phi(), 0.);
-        ROOT::Math::PtEtaPhiMVector v2(g2.pt(), g2.eta(), g2.phi(), 0.);
-        if (cfgDoReverseScaling.value) {
-          // Convert to PxPyPzEVector to modify energy
-          ROOT::Math::PxPyPzEVector v1Mod(v1);
-          v1Mod.SetE(v1Mod.E() * 1.0505);
-          v1 = ROOT::Math::PtEtaPhiMVector(v1Mod.Pt(), v1Mod.Eta(), v1Mod.Phi(), 0.);
-          ROOT::Math::PxPyPzEVector v2Mod(v2);
-          v2Mod.SetE(v2Mod.E() * 1.0505);
-          v2 = ROOT::Math::PtEtaPhiMVector(v2Mod.Pt(), v2Mod.Eta(), v2Mod.Phi(), 0.);
+        if (correctionConfig.cfgEnableNonLin.value) {
+          energyCorrectionFactor = fEMCalCorrectionFactor->Eval(g1.e() > MinEnergy ? g1.e() : MinEnergy);
         }
+        ROOT::Math::PtEtaPhiMVector v1(energyCorrectionFactor * g1.pt(), g1.eta(), g1.phi(), 0.);
+        if (correctionConfig.cfgEnableNonLin.value) {
+          energyCorrectionFactor = fEMCalCorrectionFactor->Eval(g2.e() > MinEnergy ? g2.e() : MinEnergy);
+        }
+        ROOT::Math::PtEtaPhiMVector v2(energyCorrectionFactor * g2.pt(), g2.eta(), g2.phi(), 0.);
         ROOT::Math::PtEtaPhiMVector vMeson = v1 + v2;
+
         float dTheta = v1.Theta() - v2.Theta();
         float dPhi = v1.Phi() - v2.Phi();
         float openingAngle = std::acos(v1.Vect().Dot(v2.Vect()) / (v1.P() * v2.P()));
@@ -1323,7 +1365,7 @@ struct TaskPi0FlowEMC {
           registry.fill(HIST("hClusterCuts"), 5);
           continue;
         }
-        if (std::fabs((v1.E() - v2.E()) / (v1.E() + v2.E()) < 0.1)) { // only use symmetric decays
+        if (std::fabs((v1.E() - v2.E()) / (v1.E() + v2.E()) < cfgMaxAsymmetry)) { // only use symmetric decays
           registry.fill(HIST("hClusterCuts"), 6);
           registry.fill(HIST("hSparseCalibSE"), vMeson.M(), vMeson.E() / 2., getCentrality(collision));
         }

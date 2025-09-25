@@ -107,9 +107,9 @@ struct ResonancesMicrotrack {
     } else {
       if (std::abs(track.pt()) < cMinPtcut)
         return false;
-      if (o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAxy(track.trackSelectionFlags()) > cMaxDCArToPVcut - Epsilon)
+      if (o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAxy(track.trackSelectionFlags()) > cMaxDCArToPVcut - Epsilon)
         return false;
-      if (o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags()) > cMaxDCAzToPVcut - Epsilon)
+      if (o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags()) > cMaxDCAzToPVcut - Epsilon)
         return false;
       if (cfgPrimaryTrack && !track.isPrimaryTrack())
         return false;
@@ -132,8 +132,8 @@ struct ResonancesMicrotrack {
       }
       // return true;
     } else {
-      bool tpcPass = std::abs(o2::aod::resodmciroaughter::PidNSigma::getTPCnSigma(candidate.pidNSigmaPrFlag())) < nSigmaCutTPC + Epsilon;
-      bool tofPass = candidate.hasTOF() ? std::abs(o2::aod::resodmciroaughter::PidNSigma::getTOFnSigma(candidate.pidNSigmaPrFlag())) < nSigmaCutTOF + Epsilon : true;
+      bool tpcPass = std::abs(o2::aod::resomicrodaughter::PidNSigma::getTPCnSigma(candidate.pidNSigmaPrFlag())) < nSigmaCutTPC + Epsilon;
+      bool tofPass = candidate.hasTOF() ? std::abs(o2::aod::resomicrodaughter::PidNSigma::getTOFnSigma(candidate.pidNSigmaPrFlag())) < nSigmaCutTOF + Epsilon : true;
       if (tpcPass && tofPass) {
         return true;
       }
@@ -173,11 +173,11 @@ struct ResonancesMicrotrack {
         histos.fill(HIST("hPx_ResoMicroTracks"), track.px());
         histos.fill(HIST("hPy_ResoMicroTracks"), track.py());
         histos.fill(HIST("hPz_ResoMicroTracks"), track.pz());
-        histos.fill(HIST("hDcaxy_ResoMicroTracks"), o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAxy(track.trackSelectionFlags()));
-        histos.fill(HIST("hDcaz_ResoMicroTracks"), o2::aod::resodmciroaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags()));
-        histos.fill(HIST("hNsigmaKaonTPC_ResoMicroTracks"), o2::aod::resodmciroaughter::PidNSigma::getTPCnSigma(track.pidNSigmaPrFlag()));
+        histos.fill(HIST("hDcaxy_ResoMicroTracks"), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAxy(track.trackSelectionFlags()));
+        histos.fill(HIST("hDcaz_ResoMicroTracks"), o2::aod::resomicrodaughter::ResoMicroTrackSelFlag::decodeDCAz(track.trackSelectionFlags()));
+        histos.fill(HIST("hNsigmaKaonTPC_ResoMicroTracks"), o2::aod::resomicrodaughter::PidNSigma::getTPCnSigma(track.pidNSigmaPrFlag()));
         if (track.hasTOF()) {
-          histos.fill(HIST("hNsigmaKaonTOF_ResoMicroTracks"), o2::aod::resodmciroaughter::PidNSigma::getTOFnSigma(track.pidNSigmaPrFlag()));
+          histos.fill(HIST("hNsigmaKaonTOF_ResoMicroTracks"), o2::aod::resomicrodaughter::PidNSigma::getTOFnSigma(track.pidNSigmaPrFlag()));
         }
       }
     }

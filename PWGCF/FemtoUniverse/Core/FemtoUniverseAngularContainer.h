@@ -1,4 +1,4 @@
-// Copyright 2019-2022 CERN and copyright holders of ALICE O2.
+// Copyright 2019-2025 CERN and copyright holders of ALICE O2.
 // See https://alice-o2.web.cern.ch/copyright for details of the copyright holders.
 // All rights not expressly granted are reserved.
 //
@@ -20,17 +20,20 @@
 #ifndef PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEANGULARCONTAINER_H_
 #define PWGCF_FEMTOUNIVERSE_CORE_FEMTOUNIVERSEANGULARCONTAINER_H_
 
-#include <fairlogger/Logger.h>
-#include <vector>
-#include <string>
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
+#include "PWGCF/FemtoUniverse/Core/FemtoUniverseParticleHisto.h"
+
+#include "Common/Core/RecoDecay.h"
 
 #include "Framework/HistogramRegistry.h"
-#include "Common/Core/RecoDecay.h"
-#include "PWGCF/FemtoUniverse/Core/FemtoUniverseMath.h"
+#include <Framework/Logger.h>
 
 #include "Math/Vector4D.h"
-#include "TMath.h"
 #include "TDatabasePDG.h"
+#include "TMath.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2::framework;
 
@@ -206,7 +209,7 @@ class FemtoUniverseAngularContainer
     const float mT = FemtoUniverseMath::getmT(part1, mMassOne, part2, mMassTwo);
 
     if (mHistogramRegistry) {
-      setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(femtoObs, mT, part1, part2, mult, use3dplots);
+      setPairBase<o2::aod::femtouniverse_mc_particle::MCType::kRecon>(femtoObs, mT, part1, part2, mult, use3dplots, weight);
 
       if constexpr (isMC) {
         if (part1.has_fdMCParticle() && part2.has_fdMCParticle()) {

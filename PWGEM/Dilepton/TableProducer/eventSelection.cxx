@@ -14,10 +14,12 @@
 // This code produces event selection table for PWG-EM.
 //    Please write to: daiki.sekihata@cern.ch
 
+#include <string>
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/ASoAHelpers.h"
+#include "Common/CCDB/RCTSelectionFlags.h"
 #include "PWGEM/Dilepton/DataModel/dileptonTables.h"
 
 using namespace o2;
@@ -39,6 +41,13 @@ struct EMEventSelection {
   Configurable<float> cfgCentMin{"cfgCentMin", -1.f, "min. centrality"};
   Configurable<float> cfgCentMax{"cfgCentMax", 999.f, "max. centrality"};
 
+  // for RCT
+  Configurable<bool> cfgRequireGoodRCT{"cfgRequireGoodRCT", false, "require good detector flag in run condtion table"};
+  Configurable<std::string> cfgRCTLabel{"cfgRCTLabel", "CBT_hadronPID", "select 1 [CBT, CBT_hadronPID, CBT_muon_glo] see O2Physics/Common/CCDB/RCTSelectionFlags.h"};
+  Configurable<bool> cfgCheckZDC{"cfgCheckZDC", false, "set ZDC flag for PbPb"};
+  Configurable<bool> cfgTreatLimitedAcceptanceAsBad{"cfgTreatLimitedAcceptanceAsBad", false, "reject all events where the detectors relevant for the specified Runlist are flagged as LimitedAcceptance"};
+
+  Configurable<float> cfgZvtxMin{"cfgZvtxMin", -1e+10, "min. Zvtx"};
   Configurable<float> cfgZvtxMax{"cfgZvtxMax", 1e+10, "max. Zvtx"};
   Configurable<bool> cfgRequireSel8{"cfgRequireSel8", false, "require sel8 in event cut"};
   Configurable<bool> cfgRequireFT0AND{"cfgRequireFT0AND", false, "require FT0AND in event cut"};
@@ -52,7 +61,14 @@ struct EMEventSelection {
   Configurable<float> cfgFT0COccupancyMax{"cfgFT0COccupancyMax", 1000000000, "max. occupancy"};
   Configurable<bool> cfgRequireNoCollInTimeRangeStandard{"cfgRequireNoCollInTimeRangeStandard", false, "require no collision in time range standard"};
 
-  void init(InitContext&) {}
+  Configurable<bool> cfgRequireTVXinEMC{"cfgRequireTVXinEMC", false, "require kTVXinEMC (only for EMC analyses)"};
+
+  o2::aod::rctsel::RCTFlagsChecker rctChecker;
+
+  void init(InitContext&)
+  {
+    rctChecker.init(cfgRCTLabel.value, cfgCheckZDC.value, cfgTreatLimitedAcceptanceAsBad.value);
+  }
 
   template <typename TCollision>
   bool isSelectedEvent(TCollision const& collision)
@@ -63,7 +79,7 @@ struct EMEventSelection {
       }
     }
 
-    if (std::fabs(collision.posZ()) > cfgZvtxMax) {
+    if (collision.posZ() < cfgZvtxMin || cfgZvtxMax < collision.posZ()) {
       return false;
     }
 
@@ -99,11 +115,20 @@ struct EMEventSelection {
       return false;
     }
 
+    if (cfgRequireTVXinEMC && !collision.alias_bit(triggerAliases::kTVXinEMC)) {
+      return false;
+    }
+
     if constexpr (std::is_same_v<std::decay_t<TCollision>, MyCollisions_Cent::iterator>) {
       const float centralities[3] = {collision.centFT0M(), collision.centFT0A(), collision.centFT0C()};
       if (centralities[cfgCentEstimator] < cfgCentMin || cfgCentMax < centralities[cfgCentEstimator]) {
         return false;
       }
+    }
+
+    if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
+      // LOGF(info, "rejected by RCT flag");
+      return false;
     }
 
     return true;
