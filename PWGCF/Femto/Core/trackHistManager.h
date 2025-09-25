@@ -146,6 +146,7 @@ using ConfKinkChaDauBinning = ConfTrackBinning<PrefixKinkChaDauBinning>;
 template <const char* Prefix>
 struct ConfTrackQaBinning : o2::framework::ConfigurableGroup {
   std::string prefix = Prefix;
+  o2::framework::Configurable<int> momentumType{"momentumType", 0, "Momentum on x-axis (0->Pt, 1->P at PV"};
   o2::framework::ConfigurableAxis itsCluster{"itsCluster", {{8, -0.5, 7.5}}, "ITS cluster"};
   o2::framework::ConfigurableAxis itsClusterIb{"itsClusterIb", {{4, -0.5, 3.5}}, "ITS cluster in inner barrel"};
   o2::framework::ConfigurableAxis tpcCrossedRows{"tpcCrossedRows", {{161, -0.5, 160.5}}, "TPC cluster"};
@@ -396,9 +397,10 @@ class TrackHistManager
   /// Destructor
   virtual ~TrackHistManager() = default;
 
-  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> Specs)
+  void init(o2::framework::HistogramRegistry* registry, std::map<TrackHist, std::vector<o2::framework::AxisSpec>> Specs, float charge = 1, int momentumTypeForPid = 0)
   {
     mHistogramRegistry = registry;
+    mAbsCharge = std::fabs(charge);
 
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
       std::string analysisDir = std::string(prefix) + std::string(AnalysisDir);
@@ -410,6 +412,7 @@ class TrackHistManager
     }
 
     if constexpr (isFlagSet(mode, modes::Mode::kQa)) {
+
       std::string qaDir = std::string(prefix) + std::string(QaDir);
 
       mHistogramRegistry->add(qaDir + GetHistNamev2(kItsCluster, HistTable), GetHistDesc(kItsCluster, HistTable), GetHistType(kItsCluster, HistTable), {Specs[kItsCluster]});
@@ -434,6 +437,8 @@ class TrackHistManager
       mHistogramRegistry->add(qaDir + GetHistNamev2(kPtVsDca, HistTable), GetHistDesc(kPtVsDca, HistTable), GetHistType(kPtVsDca, HistTable), {Specs[kPtVsDca]});
 
       std::string pidDir = std::string(prefix) + std::string(PidDir);
+
+      mMomentumType = static_cast<modes::MomentumType>(momentumTypeForPid);
 
       mHistogramRegistry->add(pidDir + GetHistNamev2(kItsSignal, HistTable), GetHistDesc(kItsSignal, HistTable), GetHistType(kItsSignal, HistTable), {Specs[kItsSignal]});
       mHistogramRegistry->add(pidDir + GetHistNamev2(kItsElectron, HistTable), GetHistDesc(kItsElectron, HistTable), GetHistType(kItsElectron, HistTable), {Specs[kItsElectron]});
@@ -485,7 +490,7 @@ class TrackHistManager
   void fill(T const& track)
   {
     if constexpr (isFlagSet(mode, modes::Mode::kAnalysis)) {
-      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt, HistTable)), track.pt());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPt, HistTable)), mAbsCharge * track.pt());
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kEta, HistTable)), track.eta());
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kPhi, HistTable)), track.phi());
       mHistogramRegistry->fill(HIST(prefix) + HIST(AnalysisDir) + HIST(GetHistName(kSign, HistTable)), track.sign());
@@ -499,67 +504,77 @@ class TrackHistManager
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcClusterShared, HistTable)), static_cast<float>(track.tpcNClsShared()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcClusterFractionShared, HistTable)), track.tpcSharedOverFound());
 
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsEta, HistTable)), track.pt(), track.eta());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsPhi, HistTable)), track.pt(), track.phi());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsEta, HistTable)), mAbsCharge * track.pt(), track.eta());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsPhi, HistTable)), mAbsCharge * track.pt(), track.phi());
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPhiVsEta, HistTable)), track.phi(), track.eta());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsItsCluster, HistTable)), track.pt(), static_cast<float>(track.itsNCls()));
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcCluster, HistTable)), track.pt(), static_cast<float>(track.tpcNClsFound()));
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcClusterShared, HistTable)), track.pt(), static_cast<float>(track.tpcNClsShared()));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsItsCluster, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.itsNCls()));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcCluster, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.tpcNClsFound()));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsTpcClusterShared, HistTable)), mAbsCharge * track.pt(), static_cast<float>(track.tpcNClsShared()));
       mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kTpcClusterVsTpcClusterShared, HistTable)), static_cast<float>(track.tpcNClsFound()), static_cast<float>(track.tpcNClsShared()));
 
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDcaxy, HistTable)), track.pt(), track.dcaXY());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDcaz, HistTable)), track.pt(), track.dcaZ());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDca, HistTable)), track.pt(), track.dca());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDcaxy, HistTable)), mAbsCharge * track.pt(), track.dcaXY());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDcaz, HistTable)), mAbsCharge * track.pt(), track.dcaZ());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(QaDir) + HIST(GetHistName(kPtVsDca, HistTable)), mAbsCharge * track.pt(), track.dca());
 
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsSignal, HistTable)), track.p(), o2::analysis::femto::utils::itsSignal(track));
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsElectron, HistTable)), track.p(), track.itsNSigmaEl());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsPion, HistTable)), track.p(), track.itsNSigmaPi());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsKaon, HistTable)), track.p(), track.itsNSigmaKa());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsProton, HistTable)), track.p(), track.itsNSigmaPr());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsDeuteron, HistTable)), track.p(), track.itsNSigmaDe());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsTriton, HistTable)), track.p(), track.itsNSigmaTr());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsHelium, HistTable)), track.p(), track.itsNSigmaHe());
+      float momentum = 0.f;
+      if (mMomentumType == modes::MomentumType::kPAtPv) {
+        momentum = mAbsCharge * track.p();
+      } else if (mMomentumType == modes::MomentumType::kPt) {
+        momentum = mAbsCharge * track.pt();
+      }
 
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcSignal, HistTable)), track.p(), track.tpcSignal());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcElectron, HistTable)), track.p(), track.tpcNSigmaEl());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcPion, HistTable)), track.p(), track.tpcNSigmaPi());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcKaon, HistTable)), track.p(), track.tpcNSigmaKa());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcProton, HistTable)), track.p(), track.tpcNSigmaPr());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcDeuteron, HistTable)), track.p(), track.tpcNSigmaDe());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcTriton, HistTable)), track.p(), track.tpcNSigmaTr());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcHelium, HistTable)), track.p(), track.tpcNSigmaHe());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsSignal, HistTable)), momentum, o2::analysis::femto::utils::itsSignal(track));
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsElectron, HistTable)), momentum, track.itsNSigmaEl());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsPion, HistTable)), momentum, track.itsNSigmaPi());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsKaon, HistTable)), momentum, track.itsNSigmaKa());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsProton, HistTable)), momentum, track.itsNSigmaPr());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsDeuteron, HistTable)), momentum, track.itsNSigmaDe());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsTriton, HistTable)), momentum, track.itsNSigmaTr());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kItsHelium, HistTable)), momentum, track.itsNSigmaHe());
 
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofBeta, HistTable)), track.p(), track.tofBeta());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofMass, HistTable)), track.p(), track.tofMass());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofElectron, HistTable)), track.p(), track.tofNSigmaEl());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofPion, HistTable)), track.p(), track.tofNSigmaPi());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofKaon, HistTable)), track.p(), track.tofNSigmaKa());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofProton, HistTable)), track.p(), track.tofNSigmaPr());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofDeuteron, HistTable)), track.p(), track.tofNSigmaDe());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofTriton, HistTable)), track.p(), track.tofNSigmaTr());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofHelium, HistTable)), track.p(), track.tofNSigmaHe());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcSignal, HistTable)), momentum, track.tpcSignal());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcElectron, HistTable)), momentum, track.tpcNSigmaEl());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcPion, HistTable)), momentum, track.tpcNSigmaPi());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcKaon, HistTable)), momentum, track.tpcNSigmaKa());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcProton, HistTable)), momentum, track.tpcNSigmaPr());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcDeuteron, HistTable)), momentum, track.tpcNSigmaDe());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcTriton, HistTable)), momentum, track.tpcNSigmaTr());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcHelium, HistTable)), momentum, track.tpcNSigmaHe());
 
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsElectron, HistTable)), track.p(), track.tpcitsNSigmaEl());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsPion, HistTable)), track.p(), track.tpcitsNSigmaPi());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsKaon, HistTable)), track.p(), track.tpcitsNSigmaKa());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsProton, HistTable)), track.p(), track.tpcitsNSigmaPr());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsDeuteron, HistTable)), track.p(), track.tpcitsNSigmaDe());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsTriton, HistTable)), track.p(), track.tpcitsNSigmaTr());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsHelium, HistTable)), track.p(), track.tpcitsNSigmaHe());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofBeta, HistTable)), momentum, track.tofBeta());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofMass, HistTable)), momentum, track.tofMass());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofElectron, HistTable)), momentum, track.tofNSigmaEl());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofPion, HistTable)), momentum, track.tofNSigmaPi());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofKaon, HistTable)), momentum, track.tofNSigmaKa());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofProton, HistTable)), momentum, track.tofNSigmaPr());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofDeuteron, HistTable)), momentum, track.tofNSigmaDe());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofTriton, HistTable)), momentum, track.tofNSigmaTr());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTofHelium, HistTable)), momentum, track.tofNSigmaHe());
 
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofElectron, HistTable)), track.p(), track.tpctofNSigmaEl());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofPion, HistTable)), track.p(), track.tpctofNSigmaPi());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofKaon, HistTable)), track.p(), track.tpctofNSigmaKa());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofProton, HistTable)), track.p(), track.tpctofNSigmaPr());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofDeuteron, HistTable)), track.p(), track.tpctofNSigmaDe());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofTriton, HistTable)), track.p(), track.tpctofNSigmaTr());
-      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofHelium, HistTable)), track.p(), track.tpctofNSigmaHe());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsElectron, HistTable)), momentum, track.tpcitsNSigmaEl());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsPion, HistTable)), momentum, track.tpcitsNSigmaPi());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsKaon, HistTable)), momentum, track.tpcitsNSigmaKa());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsProton, HistTable)), momentum, track.tpcitsNSigmaPr());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsDeuteron, HistTable)), momentum, track.tpcitsNSigmaDe());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsTriton, HistTable)), momentum, track.tpcitsNSigmaTr());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpcitsHelium, HistTable)), momentum, track.tpcitsNSigmaHe());
+
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofElectron, HistTable)), momentum, track.tpctofNSigmaEl());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofPion, HistTable)), momentum, track.tpctofNSigmaPi());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofKaon, HistTable)), momentum, track.tpctofNSigmaKa());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofProton, HistTable)), momentum, track.tpctofNSigmaPr());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofDeuteron, HistTable)), momentum, track.tpctofNSigmaDe());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofTriton, HistTable)), momentum, track.tpctofNSigmaTr());
+      mHistogramRegistry->fill(HIST(prefix) + HIST(PidDir) + HIST(GetHistName(kTpctofHelium, HistTable)), momentum, track.tpctofNSigmaHe());
     }
   }
 
  private:
-  o2::framework::HistogramRegistry* mHistogramRegistry;
+  o2::framework::HistogramRegistry* mHistogramRegistry = nullptr;
+  float mAbsCharge = 1;
+  modes::MomentumType mMomentumType = modes::MomentumType::kPAtPv;
 };
 }; // namespace trackhistmanager
+// aespace trackhistmanager
 }; // namespace o2::analysis::femto
 #endif // PWGCF_FEMTO_CORE_TRACKHISTMANAGER_H_
