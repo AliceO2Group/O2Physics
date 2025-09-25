@@ -58,13 +58,17 @@ struct ConfCpr : o2::framework::ConfigurableGroup {
 
 // tpc radii for computing phistar
 constexpr int kNradii = 9;
-constexpr std::array<float, kNradii> kTpcRadius = {85., 105., 125., 145., 165., 185., 205., 225., 245.};
+constexpr std::array<float, kNradii> kTpcRadius = {85., 105., 125., 145., 165., 185., 205., 225., 245.}; // in cm
 
 // directory names
 constexpr char PrefixTrackTrackSe[] = "CPR_TrackTrack/SE/";
 constexpr char PrefixTrackTrackMe[] = "CPR_TrackTrack/ME/";
-constexpr char PrefixTrackV0Se[] = "CPR_TrackV0/SE/";
-constexpr char PrefixTrackV0Me[] = "CPR_TrackV0/ME/";
+constexpr char PrefixTrackV0Se[] = "CPR_TrackV0Daughter/SE/";
+constexpr char PrefixTrackV0Me[] = "CPR_TrackV0Daughter/ME/";
+constexpr char PrefixTrackTwoTrackResonanceSe[] = "CPR_TrackResonanceDaughter/SE/";
+constexpr char PrefixTrackTwoTrackResonnaceMe[] = "CPR_TrackResonanceDaughter/ME/";
+constexpr char PrefixTrackCascadeSe[] = "CPR_TrackCascadeBachelor/SE/";
+constexpr char PrefixTrackCascadeMe[] = "CPR_TrackCascadeBachelor/ME/";
 constexpr char PrefixTrackKinkSe[] = "CPR_TrackKink/SE/";
 constexpr char PrefixTrackKinkMe[] = "CPR_TrackKink/ME/";
 
@@ -117,7 +121,7 @@ class CloseTrackRejection
     mChargeTrack2 = chargeTrack2;
 
     if (utils::sign(mChargeTrack1) != utils::sign(mChargeTrack2)) {
-      LOG(warn) << "CPR is truned on for tracks with opposite charge. Is this intended?";
+      LOG(warn) << "CPR is turned on for tracks with opposite charge. Is this intended?";
     }
 
     mHistogramRegistry = registry;
@@ -196,10 +200,12 @@ template <const char* prefix>
 class ClosePairRejectionTrackTrack
 {
  public:
-  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int signTrack1, int absChargeTrack1, int signTrack2, int AbsChargeTrack2, bool isActivated)
+  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int chargeTrack1, int chargeTrack2, bool isActivated)
   {
     mIsActivated = isActivated;
-    mCtr.init(registry, specs, detaMax, dphistarMax, signTrack1 * absChargeTrack1, signTrack2 * AbsChargeTrack2);
+    if (mIsActivated) {
+      mCtr.init(registry, specs, detaMax, dphistarMax, chargeTrack1, chargeTrack2);
+    }
   }
 
   void setMagField(float magField) { mCtr.setMagField(magField); }
@@ -221,14 +227,16 @@ template <const char* prefix>
 class ClosePairRejectionTrackV0 // can also be used for any particle type that has pos/neg daughters, like resonances
 {
  public:
-  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int signTrack, int absChargeTrack, bool isActivated)
+  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int chargeTrack, bool isActivated)
   {
     mIsActivated = isActivated;
-    mSignTrack = signTrack;
+    mChargeTrack = chargeTrack;
 
     // initialize CPR with charge of the track and the same charge for the daughter particle
-    // absolute charge of the daughter track will be 1, so we can pass the sign directly
-    mCtr.init(registry, specs, detaMax, dphistarMax, signTrack * absChargeTrack, signTrack);
+    // absolute charge of the daughter track will be 1, so we just pass the sign
+    if (mIsActivated) {
+      mCtr.init(registry, specs, detaMax, dphistarMax, mChargeTrack, utils::sign(mChargeTrack));
+    }
   }
 
   void setMagField(float magField)
@@ -238,14 +246,14 @@ class ClosePairRejectionTrackV0 // can also be used for any particle type that h
   template <typename T1, typename T2, typename T3>
   void setPair(const T1& track, const T2& v0, const T3 /*trackTable*/)
   {
-    if (mSignTrack == 1) {
+    if (mChargeTrack > 0) {
       auto daughter = v0.template posDau_as<T3>();
       mCtr.compute(track, daughter);
-    } else if (mSignTrack == -1) {
+    } else if (mChargeTrack < 0) {
       auto daughter = v0.template negDau_as<T3>();
       mCtr.compute(track, daughter);
     } else {
-      LOG(fatal) << "CPR Track-V0: Wrong track sign";
+      LOG(fatal) << "CPR Track-V0: Sign of the track is 0!";
     }
   }
 
@@ -258,7 +266,42 @@ class ClosePairRejectionTrackV0 // can also be used for any particle type that h
 
  private:
   CloseTrackRejection<prefix> mCtr;
-  int mSignTrack = 0;
+  int mChargeTrack = 0;
+  bool mIsActivated = true;
+};
+
+template <const char* prefix>
+class ClosePairRejectionTrackCascade // can also be used for any particle type that has pos/neg daughters, like resonances
+{
+ public:
+  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int chargeTrack, int chargeCascade, bool isActivated)
+  {
+    mIsActivated = isActivated;
+    if (mIsActivated) {
+      mCtr.init(registry, specs, detaMax, dphistarMax, chargeTrack, chargeCascade);
+    }
+  }
+
+  void setMagField(float magField)
+  {
+    mCtr.setMagField(magField);
+  }
+  template <typename T1, typename T2, typename T3>
+  void setPair(const T1& track, const T2& cascade, const T3 /*trackTable*/)
+  {
+    auto bachelor = cascade.template posDau_as<T3>();
+    mCtr.compute(track, bachelor);
+  }
+
+  bool isClosePair() const { return mCtr.isClosePair(); }
+  void fill()
+  {
+    mCtr.fill();
+  }
+  bool isActivated() const { return mIsActivated; }
+
+ private:
+  CloseTrackRejection<prefix> mCtr;
   bool mIsActivated = true;
 };
 
@@ -266,15 +309,15 @@ template <const char* prefix>
 class ClosePairRejectionTrackKink
 {
  public:
-  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int signTrack, int absChargeTrack, bool isActivated)
+  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int chargeTrack, int signKinkCandidate, bool isActivated)
   {
     mIsActivated = isActivated;
-    mSignTrack = signTrack;
-
     // initialize CPR with charge of the track and the charged daughter particle
     // For kinks, we compare the primary track with the charged daughter
     // The charged daughter has absolute charge of 1, so we can pass the sign directly
-    mCtr.init(registry, specs, detaMax, dphistarMax, signTrack * absChargeTrack, mSignTrack);
+    if (mIsActivated) {
+      mCtr.init(registry, specs, detaMax, dphistarMax, chargeTrack, signKinkCandidate);
+    }
   }
 
   void setMagField(float magField)
@@ -285,12 +328,8 @@ class ClosePairRejectionTrackKink
   template <typename T1, typename T2, typename T3>
   void setPair(const T1& track, const T2& kink, const T3 /*trackTable*/)
   {
-    if (mSignTrack == 1 || mSignTrack == -1) {
-      auto daughter = kink.template chaDau_as<T3>();
-      mCtr.compute(track, daughter);
-    } else {
-      LOG(warn) << "CPR Track-Kink: Wrong track sign";
-    }
+    auto daughter = kink.template chaDau_as<T3>();
+    mCtr.compute(track, daughter);
   }
 
   bool isClosePair() const { return mCtr.isClosePair(); }
@@ -302,7 +341,6 @@ class ClosePairRejectionTrackKink
 
  private:
   CloseTrackRejection<prefix> mCtr;
-  int mSignTrack = 0;
   bool mIsActivated = true;
 };
 
