@@ -138,11 +138,12 @@ struct OnTheFlyTracker {
     Configurable<int> minSiliconHits{"minSiliconHits", 6, "minimum number of silicon hits to accept track"};
     Configurable<int> minSiliconHitsIfTPCUsed{"minSiliconHitsIfTPCUsed", 2, "minimum number of silicon hits to accept track in case TPC info is present"};
     Configurable<int> minTPCClusters{"minTPCClusters", 70, "minimum number of TPC hits necessary to consider minSiliconHitsIfTPCUsed"};
-    Configurable<int> alice3detector{"alice3detector", 0, "0: ALICE 3 v1, 1: ALICE 3 v4"};
+    Configurable<std::string> alice3geo{"alice3geo", "2", "0: ALICE 3 v1, 1: ALICE 3 v4, 2: ALICE 3 Sep 2025, or path to ccdb with a3 geo"};
     Configurable<bool> applyZacceptance{"applyZacceptance", false, "apply z limits to detector layers or not"};
     Configurable<bool> applyMSCorrection{"applyMSCorrection", true, "apply ms corrections for secondaries or not"};
     Configurable<bool> applyElossCorrection{"applyElossCorrection", true, "apply eloss corrections for secondaries or not"};
     Configurable<bool> applyEffCorrection{"applyEffCorrection", true, "apply efficiency correction or not"};
+    Configurable<int> scaleVD{"scaleVD", 1, "scale x0 and xrho in VD layers"};
     Configurable<std::vector<float>> pixelRes{"pixelRes", {0.00025, 0.00025, 0.001, 0.001}, "RPhiIT, ZIT, RPhiOT, ZOT"};
   } fastTrackerSettings; // allows for gap between peak and bg in case someone wants to
 
@@ -239,42 +240,32 @@ struct OnTheFlyTracker {
 
   // For TGenPhaseSpace seed
   TRandom3 rand;
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   void init(o2::framework::InitContext&)
   {
+
+    ccdb->setURL("http://alice-ccdb.cern.ch");
+    ccdb->setTimestamp(-1);
+
     if (enableLUT) {
-      std::map<int, const char*> mapPdgLut;
-      const char* lutElChar = lutEl->c_str();
-      const char* lutMuChar = lutMu->c_str();
-      const char* lutPiChar = lutPi->c_str();
-      const char* lutKaChar = lutKa->c_str();
-      const char* lutPrChar = lutPr->c_str();
+      mSmearer.setCcdbManager(ccdb.operator->());
 
-      LOGF(info, "Will load electron lut file ..: %s", lutElChar);
-      LOGF(info, "Will load muon lut file ......: %s", lutMuChar);
-      LOGF(info, "Will load pion lut file ......: %s", lutPiChar);
-      LOGF(info, "Will load kaon lut file ......: %s", lutKaChar);
-      LOGF(info, "Will load proton lut file ....: %s", lutPrChar);
-
-      mapPdgLut.insert(std::make_pair(11, lutElChar));
-      mapPdgLut.insert(std::make_pair(13, lutMuChar));
-      mapPdgLut.insert(std::make_pair(211, lutPiChar));
-      mapPdgLut.insert(std::make_pair(321, lutKaChar));
-      mapPdgLut.insert(std::make_pair(2212, lutPrChar));
-
-      if (enableNucleiSmearing) {
-        const char* lutDeChar = lutDe->c_str();
-        const char* lutTrChar = lutTr->c_str();
-        const char* lutHe3Char = lutHe3->c_str();
-        mapPdgLut.insert(std::make_pair(1000010020, lutDeChar));
-        mapPdgLut.insert(std::make_pair(1000010030, lutTrChar));
-        mapPdgLut.insert(std::make_pair(1000020030, lutHe3Char));
-      }
-      for (const auto& e : mapPdgLut) {
-        if (!mSmearer.loadTable(e.first, e.second)) {
-          LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
+      auto loadLUT = [&](int pdg, const std::string& lutFile) {
+        bool success = mSmearer.loadTable(pdg, lutFile.c_str());
+        if (!success && !lutFile.empty()) {
+          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lutFile;
         }
-      }
+      };
+      loadLUT(11, lutEl.value);
+      loadLUT(13, lutMu.value);
+      loadLUT(211, lutPi.value);
+      loadLUT(321, lutKa.value);
+      loadLUT(2212, lutPr.value);
+      loadLUT(1000010020, lutDe.value);
+      loadLUT(1000010030, lutTr.value);
+      loadLUT(1000020030, lutHe3.value);
+
       // interpolate efficiencies if requested to do so
       mSmearer.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
 
@@ -417,21 +408,26 @@ struct OnTheFlyTracker {
     rand.SetSeed(seed);
 
     // configure FastTracker
-    fastTracker.SetMagneticField(magneticField);
-    fastTracker.SetApplyZacceptance(fastTrackerSettings.applyZacceptance);
-    fastTracker.SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
-    fastTracker.SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
+    if (enableSecondarySmearing) {
+      fastTracker.SetMagneticField(magneticField);
+      fastTracker.SetApplyZacceptance(fastTrackerSettings.applyZacceptance);
+      fastTracker.SetApplyMSCorrection(fastTrackerSettings.applyMSCorrection);
+      fastTracker.SetApplyElossCorrection(fastTrackerSettings.applyElossCorrection);
 
-    if (fastTrackerSettings.alice3detector == 0) {
-      fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
-    }
-    if (fastTrackerSettings.alice3detector == 1) {
-      fastTracker.AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
-      fastTracker.AddTPC(0.1, 0.1);
-    }
+      if (fastTrackerSettings.alice3geo.value == "0") {
+        fastTracker.AddSiliconALICE3v2(fastTrackerSettings.pixelRes);
+      } else if (fastTrackerSettings.alice3geo.value == "1") {
+        fastTracker.AddSiliconALICE3v4(fastTrackerSettings.pixelRes);
+        fastTracker.AddTPC(0.1, 0.1);
+      } else if (fastTrackerSettings.alice3geo.value == "2") {
+        fastTracker.AddSiliconALICE3(fastTrackerSettings.scaleVD, fastTrackerSettings.pixelRes);
+      } else {
+        fastTracker.AddGenericDetector(fastTrackerSettings.alice3geo, ccdb.operator->());
+      }
 
-    // print fastTracker settings
-    fastTracker.Print();
+      // print fastTracker settings
+      fastTracker.Print();
+    }
   }
 
   /// Function to decay the xi

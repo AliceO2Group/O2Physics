@@ -119,6 +119,9 @@ struct JetTaggerHFTask {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   // GNN configuration
+  Configurable<float> jetpTMin{"jetpTMin", 5., "minimum jet pT"};
+  Configurable<float> dbMin{"dbMin", -10., "minimum GNN Db"};
+  Configurable<float> dbMax{"dbMax", 20., "maximum GNN Db"};
   Configurable<double> fC{"fC", 0.018, "Parameter f_c for D_b calculation"};
   Configurable<int64_t> nJetFeat{"nJetFeat", 4, "Number of jet GNN input features"};
   Configurable<int64_t> nTrkFeat{"nTrkFeat", 13, "Number of track GNN input features"};
@@ -273,23 +276,37 @@ struct JetTaggerHFTask {
       }
     }
     if (doprocessAlgorithmGNN) {
-      if constexpr (isMC) {
-        switch (origin) {
-          case 2:
-            registry.fill(HIST("h_db_b"), scoreML[jet.globalIndex()]);
-            break;
-          case 1:
-            registry.fill(HIST("h_db_c"), scoreML[jet.globalIndex()]);
-            break;
-          case 0:
-          case 3:
-            registry.fill(HIST("h_db_lf"), scoreML[jet.globalIndex()]);
-            break;
-          default:
-            LOGF(debug, "doprocessAlgorithmGNN, Unexpected origin value: %d (%d)", origin, jet.globalIndex());
+      float dbRange;
+      if (jet.pt() >= jetpTMin) {
+        if (scoreML[jet.globalIndex()] < dbMin) {
+          dbRange = 0.5; // underflow
+        } else if (scoreML[jet.globalIndex()] >= dbMax) {
+          dbRange = 2.5; // overflow
+        } else {
+          dbRange = 1.5; // in range
         }
+        registry.fill(HIST("h2_count_db"), 3.5, dbRange); // incl jet
+        if constexpr (isMC) {
+          switch (origin) {
+            case 2:
+              registry.fill(HIST("h_db_b"), scoreML[jet.globalIndex()]);
+              registry.fill(HIST("h2_count_db"), 0.5, dbRange); // b-jet
+              break;
+            case 1:
+              registry.fill(HIST("h_db_c"), scoreML[jet.globalIndex()]);
+              registry.fill(HIST("h2_count_db"), 1.5, dbRange); // c-jet
+              break;
+            case 0:
+            case 3:
+              registry.fill(HIST("h_db_lf"), scoreML[jet.globalIndex()]);
+              registry.fill(HIST("h2_count_db"), 2.5, dbRange); // lf-jet
+              break;
+            default:
+              LOGF(debug, "doprocessAlgorithmGNN, Unexpected origin value: %d (%d)", origin, jet.globalIndex());
+          }
+        }
+        registry.fill(HIST("h2_pt_db"), jet.pt(), scoreML[jet.globalIndex()]);
       }
-      registry.fill(HIST("h2_pt_db"), jet.pt(), scoreML[jet.globalIndex()]);
     }
     taggingTable(decisionNonML[jet.globalIndex()], jetProb, scoreML[jet.globalIndex()]);
   }
@@ -508,6 +525,17 @@ struct JetTaggerHFTask {
 
     if (doprocessAlgorithmGNN) {
       tensorAlloc = o2::analysis::GNNBjetAllocator(nJetFeat.value, nTrkFeat.value, nClassesMl.value, nTrkOrigin.value, transformFeatureJetMean.value, transformFeatureJetStdev.value, transformFeatureTrkMean.value, transformFeatureTrkStdev.value, nJetConst);
+
+      registry.add("h2_count_db", "#it{D}_{b} underflow/overflow;Jet flavour;#it{D}_{b} range", {HistType::kTH2F, {{4, 0., 4.}, {3, 0., 3.}}});
+      auto h2CountDb = registry.get<TH2>(HIST("h2_count_db"));
+      h2CountDb->GetXaxis()->SetBinLabel(1, "b-jet");
+      h2CountDb->GetXaxis()->SetBinLabel(2, "c-jet");
+      h2CountDb->GetXaxis()->SetBinLabel(3, "lf-jet");
+      h2CountDb->GetXaxis()->SetBinLabel(4, "incl jet");
+      h2CountDb->GetYaxis()->SetBinLabel(1, "underflow");
+      h2CountDb->GetYaxis()->SetBinLabel(2, "in range");
+      h2CountDb->GetYaxis()->SetBinLabel(3, "overflow");
+
       registry.add("h_db_b", "#it{D}_{b} b-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
       registry.add("h_db_c", "#it{D}_{b} c-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});
       registry.add("h_db_lf", "#it{D}_{b} lf-jet;#it{D}_{b}", {HistType::kTH1F, {{50, -10., 35.}}});

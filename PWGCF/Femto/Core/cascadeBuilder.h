@@ -92,7 +92,7 @@ struct ConfOmegaBits : o2::framework::ConfigurableGroup {
 
 #define CASCADE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax, defaultPdgCode)                              \
   o2::framework::Configurable<int> pdgCode{"pdgCode", defaultPdgCode, "Track PDG code"};                       \
-  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the Lambda (+1 for Lambda and -1 for Antilambda"}; \
+  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the charge of the Cascade "};                      \
   o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                        \
   o2::framework::Configurable<float> ptMax{"ptMax", 999.f, "Maximum pT"};                                      \
   o2::framework::Configurable<float> etaMin{"etaMin", -10.f, "Minimum eta"};                                   \
@@ -105,7 +105,7 @@ struct ConfOmegaBits : o2::framework::ConfigurableGroup {
 
 struct ConfXiSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("XiSelection");
-  CASCADE_DEFAULT_SELECTION(1.22, 1.42, 3212)
+  CASCADE_DEFAULT_SELECTION(1.22, 1.42, 3312)
 };
 
 struct ConfOmegaSelection : o2::framework::ConfigurableGroup {
@@ -337,23 +337,23 @@ class CascadeBuilder
   template <typename T1, typename T2, typename T3, typename T4>
   void init(T1& config, T2& filter, T3& table, T4& initContext)
   {
-    cascadeSelection.configure(config, filter);
+    mCascadeSelection.configure(config, filter);
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
       LOG(info) << "Initialize femto Xi builder...";
-      produceXis = utils::enableTable("FXis_001", table.produceXis.value, initContext);
-      produceXiMasks = utils::enableTable("FXiMasks_001", table.produceXiMasks.value, initContext);
-      produceXiExtras = utils::enableTable("FXiExtras_001", table.produceXiExtras.value, initContext);
+      mProduceXis = utils::enableTable("FXis_001", table.produceXis.value, initContext);
+      mProduceXiMasks = utils::enableTable("FXiMasks_001", table.produceXiMasks.value, initContext);
+      mProduceXiExtras = utils::enableTable("FXiExtras_001", table.produceXiExtras.value, initContext);
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
       LOG(info) << "Initialize femto Omega builder...";
-      produceOmegas = utils::enableTable("FOmegas_001", table.produceOmegas.value, initContext);
-      produceOmegaMasks = utils::enableTable("FOmegaMasks_001", table.produceOmegaMasks.value, initContext);
-      produceOmegaExtras = utils::enableTable("FOmegaExtras_001", table.produceOmegaExtras.value, initContext);
+      mProduceOmegas = utils::enableTable("FOmegas_001", table.produceOmegas.value, initContext);
+      mProduceOmegaMasks = utils::enableTable("FOmegaMasks_001", table.produceOmegaMasks.value, initContext);
+      mProduceOmegaExtras = utils::enableTable("FOmegaExtras_001", table.produceOmegaExtras.value, initContext);
     }
 
-    if (produceXis || produceXiExtras || produceXiMasks || produceOmegas || produceOmegaMasks || produceOmegaExtras) {
+    if (mProduceXis || mProduceXiExtras || mProduceXiMasks || mProduceOmegas || mProduceOmegaMasks || mProduceOmegaExtras) {
       mFillAnyTable = true;
-      cascadeSelection.printSelections(cascadeSelsName, cascadeSelsToString);
+      mCascadeSelection.printSelections(cascadeSelsName, cascadeSelsToString);
     } else {
       LOG(info) << "No tables configured";
     }
@@ -371,11 +371,11 @@ class CascadeBuilder
     int64_t posDaughterIndex = 0;
     int64_t negDaughterIndex = 0;
     for (const auto& cascade : fullCascades) {
-      if (!cascadeSelection.checkFilters(cascade)) {
+      if (!mCascadeSelection.checkFilters(cascade)) {
         continue;
       }
-      cascadeSelection.applySelections(cascade, fullTracks, col);
-      if (cascadeSelection.passesAllRequiredSelections() && cascadeSelection.checkHypothesis(cascade)) {
+      mCascadeSelection.applySelections(cascade, fullTracks, col);
+      if (mCascadeSelection.passesAllRequiredSelections() && mCascadeSelection.checkHypothesis(cascade)) {
 
         auto bachelor = cascade.template bachelor_as<T5>();
         auto posDaughter = cascade.template posTrack_as<T5>();
@@ -394,7 +394,7 @@ class CascadeBuilder
   void fillCascade(T1& collisionProducts, T2& cascadeProducts, T3 const& cascade, T4 const& col, int bachelorIndex, int posDaughterIndex, int negDaughterIndex)
   {
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kXi)) {
-      if (produceXis) {
+      if (mProduceXis) {
         cascadeProducts.producedXis(collisionProducts.producedCollision.lastIndex(),
                                     cascade.sign() * cascade.pt(),
                                     cascade.eta(),
@@ -404,10 +404,10 @@ class CascadeBuilder
                                     posDaughterIndex,
                                     negDaughterIndex);
       }
-      if (produceXiMasks) {
-        cascadeProducts.producedXiMasks(cascadeSelection.getBitmask());
+      if (mProduceXiMasks) {
+        cascadeProducts.producedXiMasks(mCascadeSelection.getBitmask());
       }
-      if (produceXiExtras) {
+      if (mProduceXiExtras) {
         cascadeProducts.producedXiExtras(
           cascade.mOmega(),
           cascade.casccosPA(col.posX(), col.posY(), col.posZ()),
@@ -420,7 +420,7 @@ class CascadeBuilder
       }
     }
     if constexpr (modes::isEqual(cascadeType, modes::Cascade::kOmega)) {
-      if (produceOmegas) {
+      if (mProduceOmegas) {
         cascadeProducts.producedOmegas(collisionProducts.producedCollision.lastIndex(),
                                        cascade.sign() * cascade.pt(),
                                        cascade.eta(),
@@ -430,10 +430,10 @@ class CascadeBuilder
                                        posDaughterIndex,
                                        negDaughterIndex);
       }
-      if (produceOmegaMasks) {
-        cascadeProducts.producedOmegaMasks(cascadeSelection.getBitmask());
+      if (mProduceOmegaMasks) {
+        cascadeProducts.producedOmegaMasks(mCascadeSelection.getBitmask());
       }
-      if (produceOmegaExtras) {
+      if (mProduceOmegaExtras) {
         cascadeProducts.producedOmegaExtras(
           cascade.mXi(),
           cascade.casccosPA(col.posX(), col.posY(), col.posZ()),
@@ -450,14 +450,14 @@ class CascadeBuilder
   bool fillAnyTable() { return mFillAnyTable; }
 
  private:
-  CascadeSelection<cascadeType> cascadeSelection;
+  CascadeSelection<cascadeType> mCascadeSelection;
   bool mFillAnyTable = false;
-  bool produceXis = false;
-  bool produceXiMasks = false;
-  bool produceXiExtras = false;
-  bool produceOmegas = false;
-  bool produceOmegaMasks = false;
-  bool produceOmegaExtras = false;
+  bool mProduceXis = false;
+  bool mProduceXiMasks = false;
+  bool mProduceXiExtras = false;
+  bool mProduceOmegas = false;
+  bool mProduceOmegaMasks = false;
+  bool mProduceOmegaExtras = false;
 };
 
 } // namespace cascadebuilder

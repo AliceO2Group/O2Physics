@@ -49,28 +49,19 @@ using namespace o2::framework;
 using namespace o2::framework::expressions;
 
 // Shorthand notations
-using FilteredColl =
-  soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator;
-using FilteredCollPartLevel =
-  soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos, aod::JMcCollisionOutliers>>::iterator;
-using FilteredCollDetLevelGetWeight =
-  soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos, aod::JCollisionOutliers>>::iterator;
-using FilteredEventMultiplicity =
-  soa::Filtered<soa::Join<aod::JetCollisions, aod::ZDCMults>>::iterator;
+using FilteredColl = soa::Filtered<soa::Join<aod::JetCollisions, aod::BkgChargedRhos>>::iterator;
+using FilteredCollPartLevel = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::BkgChargedMcRhos, aod::JMcCollisionOutliers>>::iterator;
+using FilteredCollDetLevelGetWeight = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::BkgChargedRhos, aod::JCollisionOutliers>>::iterator;
+using FilteredEventMultiplicity = soa::Filtered<soa::Join<aod::JetCollisions, aod::ZDCMults>>::iterator;
+using FilteredEventMultiplicityDetLevelGetWeight = soa::Filtered<soa::Join<aod::JetCollisionsMCD, aod::JCollisionOutliers, aod::ZDCMults>>::iterator;
+using FilteredEventMultiplicityPartLevel = soa::Filtered<soa::Join<aod::JetMcCollisions, aod::JMcCollisionOutliers>>::iterator;
 
-using FilteredJets =
-  soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
-using FilteredJetsDetLevel =
-  soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>>;
-using FilteredJetsPartLevel =
-  soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>>;
+using FilteredJets = soa::Filtered<soa::Join<aod::ChargedJets, aod::ChargedJetConstituents>>;
+using FilteredJetsDetLevel = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents>>;
+using FilteredJetsPartLevel = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>>;
 
-using FilteredMatchedJetsDetLevel = soa::Filtered<soa::Join<
-  aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents,
-  aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
-using FilteredMatchedJetsPartLevel = soa::Filtered<soa::Join<
-  aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents,
-  aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
+using FilteredMatchedJetsDetLevel = soa::Filtered<soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetsMatchedToChargedMCParticleLevelJets>>;
+using FilteredMatchedJetsPartLevel = soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents, aod::ChargedMCParticleLevelJetsMatchedToChargedMCDetectorLevelJets>>;
 
 using FilteredTracks = soa::Filtered<aod::JetTracks>;
 using FilteredParticles = soa::Filtered<aod::JetParticles>;
@@ -88,6 +79,7 @@ struct RecoilJets {
 
   Configurable<float> trkEtaCut{"trkEtaCut", 0.9, "Eta acceptance of TPC"};
   Configurable<float> jetR{"jetR", 0.4, "Jet cone radius"};
+  Configurable<float> maxJetConstituentPt{"maxJetConstituentPt", 100., "Remove jets with constituent above this pT cut"};
 
   Configurable<std::string> triggerMasks{"triggerMasks", "", "Relevant trigger masks: fTrackLowPt,fTrackHighPt"};
   Configurable<bool> skipMBGapEvents{"skipMBGapEvents", false,
@@ -98,9 +90,8 @@ struct RecoilJets {
   Configurable<float> meanFT0A{"meanFT0A", -1., "Mean value of FT0A signal"};
   Configurable<float> meanFT0C{"meanFT0C", -1., "Mean value of FT0C signal"};
 
-  // List of configurable parameters for MC
-  Configurable<float> pTHatExponent{"pTHatExponent", 4.0, "Exponent of the event weight for the calculation of pTHat"};
-  Configurable<float> pTHatMax{"pTHatMax", 999.0, "Maximum fraction of hard scattering for jet acceptance in MC"};
+  Configurable<float> meanFT0APartLevel{"meanFT0APartLevel", -1., "Mean number of charged part. within FT0A acceptance"};
+  Configurable<float> meanFT0CPartLevel{"meanFT0CPartLevel", -1., "Mean number of charged part. within FT0C acceptance"};
 
   // Parameters for recoil jet selection
   Configurable<float> ptTTrefMin{"ptTTrefMin", 5., "Minimum pT of reference TT"};
@@ -108,8 +99,8 @@ struct RecoilJets {
   Configurable<float> ptTTsigMin{"ptTTsigMin", 20., "Minimum pT of signal TT"};
   Configurable<float> ptTTsigMax{"ptTTsigMax", 50., "Maximum pT of signal TT"};
   Configurable<float> recoilRegion{"recoilRegion", 0.6, "Width of recoil acceptance"};
-
-  Configurable<float> maxJetConstituentPt{"maxJetConstituentPt", 100., "Remove jets with constituent above this pT cut"};
+  Configurable<float> minPhiForTTSelection{"minPhiForTTSelection", 0.0, "Min rectriction of phi angle for TT if phi is non-uniform"};
+  Configurable<float> maxPhiForTTSelection{"maxPhiForTTSelection", 6.3, "Max rectriction of phi angle for TT if phi is non-uniform"};
 
   // List of configurable parameters for histograms
   Configurable<uint16_t> histJetPt{"histJetPt", 100, "Maximum value of jet pT shown in histograms"};
@@ -123,8 +114,11 @@ struct RecoilJets {
   AxisSpec jetArea{50, 0.0, 5., "Area_{jet}"};
   AxisSpec rhoArea{60, 0.0, 60., "#it{#rho} #times Area_{jet}"};
   AxisSpec rho{50, 0.0, 50., "#it{#rho}"};
-  ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0, 0.2, 0.3, 0.4, 0.6, 0.8, 1., 1.4, 1.8, 2.4, 3.6, 5., 20.}, "Percentiles of scaled FT0C: 100-90%, 90-80%, 80-70%, 70-60%, 60-50%, 50-40%, 40-30%, 30-20%, 20-10%, 10-1%, 1-0.1%"}; // to adjust the boarders
-  ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0, 0.2, 0.3, 0.4, 0.6, 0.8, 1., 1.4, 1.8, 2.4, 3.6, 5., 20.}, "Percentiles of scaled FT0M: 100-90%, 90-80%, 80-70%, 70-60%, 60-50%, 50-40%, 40-30%, 30-20%, 20-10%, 10-1%, 1-0.1%"};
+  ConfigurableAxis multFT0CThresh{"multFT0CThresh", {VARIABLE_WIDTH, 0.0, 0.133, 0.233, 0.367, 0.567, 0.767, 1.067, 1.4, 1.867, 2.5, 3.9, 5.4, 6.9, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0.1%, 0.01%"};   // default values for raw data
+  ConfigurableAxis multFT0MThresh{"multFT0MThresh", {VARIABLE_WIDTH, 0.0, 0.167, 0.267, 0.4, 0.567, 0.8, 1.067, 1.4, 1.833, 2.433, 3.667, 5.1, 6.433, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0.1%, 0.01%"}; // default values for raw data
+
+  ConfigurableAxis multFT0CThreshPartLevel{"multFT0CThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.133, 0.233, 0.367, 0.567, 0.767, 1.067, 1.4, 1.867, 2.5, 3.9, 5.4, 6.9, 20.}, "Percentiles of scaled FT0C: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0.1%, 0.01%"};
+  ConfigurableAxis multFT0MThreshPartLevel{"multFT0MThreshPartLevel", {VARIABLE_WIDTH, 0.0, 0.167, 0.267, 0.4, 0.567, 0.8, 1.067, 1.4, 1.833, 2.433, 3.667, 5.1, 6.433, 20.}, "Percentiles of scaled FT0M: 100%, 90%, 80%, 70%, 60%, 50%, 40%, 30%, 20%, 10%, 1%, 0.1%, 0.01%"};
 
   // Auxiliary variables
   TRandom3* rand = new TRandom3(0);
@@ -157,6 +151,8 @@ struct RecoilJets {
     AxisSpec scaledFT0A{histMultBins, 0.0, 20., "FT0A / #LT FT0A #GT"};
     AxisSpec scaledFT0C{histMultBins, 0.0, 20., "FT0C / #LT FT0C #GT"};
     AxisSpec scaledFT0M{histMultBins, 0.0, 20., "FT0M^{*}"};
+    std::string nameFT0Caxis = "FT0C / #LT FT0C #GT";
+    std::string nameFT0Maxis = "FT0M^{*}";
 
     // Convert configurable strings to std::string
     std::string evSelToString = static_cast<std::string>(evSel);
@@ -168,115 +164,170 @@ struct RecoilJets {
 
     // List of raw and MC det. distributions
     if (doprocessData || doprocessMCDetLevel || doprocessMCDetLevelWeighted) {
-      spectra.add("hEventSelectionCount", "Count # of events in the analysis", kTH1F, {{3, 0.0, 3.}});
+      spectra.add("hEventSelectionCount", "Count # of events in the analysis", kTH1F, {{6, 0.0, 6.}});
       spectra.get<TH1>(HIST("hEventSelectionCount"))->GetXaxis()->SetBinLabel(1, "Total # of events");
       spectra.get<TH1>(HIST("hEventSelectionCount"))->GetXaxis()->SetBinLabel(2, Form("# of events after sel. %s", evSelToString.data()));
-      spectra.get<TH1>(HIST("hEventSelectionCount"))->GetXaxis()->SetBinLabel(3, "# of events w. outlier");
+      spectra.get<TH1>(HIST("hEventSelectionCount"))->GetXaxis()->SetBinLabel(3, "# of events skipMBGap");
+      spectra.get<TH1>(HIST("hEventSelectionCount"))->GetXaxis()->SetBinLabel(4, "# of events w. outlier");
+      spectra.get<TH1>(HIST("hEventSelectionCount"))->GetXaxis()->SetBinLabel(5, "# of events w/o assoc MC.");
+      spectra.get<TH1>(HIST("hEventSelectionCount"))->GetXaxis()->SetBinLabel(6, "# of selected events");
 
-      spectra.add("vertexZ", "Z vertex of collisions", kTH1F, {{60, -12., 12.}});
-      spectra.add("hHasAssocMcCollision", "Has det. level coll. associat. MC coll.", kTH1F, {{2, 0.0, 2.}});
-      spectra.get<TH1>(HIST("hHasAssocMcCollision"))->GetXaxis()->SetBinLabel(1, "Yes");
-      spectra.get<TH1>(HIST("hHasAssocMcCollision"))->GetXaxis()->SetBinLabel(2, "No");
+      spectra.add("hScaledFT0C_vertexZ", "Z vertex of collisions", kTH2F, {{multFT0CThresh, nameFT0Caxis}, {60, -12., 12., "#it{z}_{vertex}"}});
+      spectra.add("hScaledFT0M_vertexZ", "Z vertex of collisions", kTH2F, {{multFT0MThresh, nameFT0Maxis}, {60, -12., 12., "#it{z}_{vertex}"}});
 
       spectra.add("hTrackSelectionCount", "Count # of tracks in the analysis", kTH1F, {{2, 0.0, 2.}});
       spectra.get<TH1>(HIST("hTrackSelectionCount"))->GetXaxis()->SetBinLabel(1, "Total # of tracks");
       spectra.get<TH1>(HIST("hTrackSelectionCount"))->GetXaxis()->SetBinLabel(2, Form("# of tracks after sel. %s", trkSelToString.data()));
 
-      spectra.add("hTrackPtEtaPhi", "Charact. of tracks", kTH3F, {pT, pseudorap, phiAngle});
+      spectra.add("hScaledFT0CTrackPtEtaPhi", "Charact. of tracks", kTHnSparseF, {{multFT0CThresh, nameFT0Caxis}, pT, pseudorap, phiAngle});
+      spectra.add("hScaledFT0MTrackPtEtaPhi", "Charact. of tracks", kTHnSparseF, {{multFT0MThresh, nameFT0Maxis}, pT, pseudorap, phiAngle});
       spectra.add("hTTSig_pT", "pT spectrum of all found TT_{Sig} cand.", kTH1F, {{40, 10., 50.}}); // needed to distinguish merged data from diff. wagons
 
-      spectra.add("hScaledFT0C_vs_Ntrig", "Total number of selected triggers per class vs scaled FT0C", kTH2F, {{multFT0CThresh}, {2, 0.0, 2.}});
-      spectra.get<TH2>(HIST("hScaledFT0C_vs_Ntrig"))->GetYaxis()->SetBinLabel(1, "TT_{ref}");
-      spectra.get<TH2>(HIST("hScaledFT0C_vs_Ntrig"))->GetYaxis()->SetBinLabel(2, "TT_{sig}");
+      spectra.add("hScaledFT0C_Ntrig", "Total number of selected triggers per class vs scaled FT0C", kTH2F, {{multFT0CThresh, nameFT0Caxis}, {2, 0.0, 2.}});
+      spectra.get<TH2>(HIST("hScaledFT0C_Ntrig"))->GetYaxis()->SetBinLabel(1, "TT_{ref}");
+      spectra.get<TH2>(HIST("hScaledFT0C_Ntrig"))->GetYaxis()->SetBinLabel(2, "TT_{sig}");
 
-      spectra.add("hScaledFT0M_vs_Ntrig", "Total number of selected triggers per class vs scaled FT0M", kTH2F, {{multFT0MThresh}, {2, 0.0, 2.}});
-      spectra.get<TH2>(HIST("hScaledFT0M_vs_Ntrig"))->GetYaxis()->SetBinLabel(1, "TT_{ref}");
-      spectra.get<TH2>(HIST("hScaledFT0M_vs_Ntrig"))->GetYaxis()->SetBinLabel(2, "TT_{sig}");
+      spectra.add("hScaledFT0M_Ntrig", "Total number of selected triggers per class vs scaled FT0M", kTH2F, {{multFT0MThresh, nameFT0Maxis}, {2, 0.0, 2.}});
+      spectra.get<TH2>(HIST("hScaledFT0M_Ntrig"))->GetYaxis()->SetBinLabel(1, "TT_{ref}");
+      spectra.get<TH2>(HIST("hScaledFT0M_Ntrig"))->GetYaxis()->SetBinLabel(2, "TT_{sig}");
 
-      spectra.add("hScaledFT0C_vs_TTRef_per_event", "Number of TT_{Ref} per event vs scaled FT0C", kTH2F, {{multFT0CThresh}, {15, 0.5, 15.5}});
-      spectra.add("hScaledFT0M_vs_TTRef_per_event", "Number of TT_{Ref} per event vs scaled FT0M", kTH2F, {{multFT0MThresh}, {15, 0.5, 15.5}});
+      spectra.add("hScaledFT0C_TTRef_per_event", "Number of TT_{Ref} per event vs scaled FT0C", kTH2F, {{multFT0CThresh, nameFT0Caxis}, {15, 0.5, 15.5, "# of TT_{Ref}"}});
+      spectra.add("hScaledFT0M_TTRef_per_event", "Number of TT_{Ref} per event vs scaled FT0M", kTH2F, {{multFT0MThresh, nameFT0Maxis}, {15, 0.5, 15.5, "# of TT_{Ref}"}});
 
-      spectra.add("hScaledFT0C_vs_TTSig_per_event", "Number of TT_{Sig} per event vs scaled FT0C", kTH2F, {{multFT0CThresh}, {10, 0.5, 10.5}});
-      spectra.add("hScaledFT0M_vs_TTSig_per_event", "Number of TT_{Sig} per event vs scaled FT0M", kTH2F, {{multFT0MThresh}, {10, 0.5, 10.5}});
+      spectra.add("hScaledFT0C_TTSig_per_event", "Number of TT_{Sig} per event vs scaled FT0C", kTH2F, {{multFT0CThresh, nameFT0Caxis}, {10, 0.5, 10.5, "# of TT_{Sig}"}});
+      spectra.add("hScaledFT0M_TTSig_per_event", "Number of TT_{Sig} per event vs scaled FT0M", kTH2F, {{multFT0MThresh, nameFT0Maxis}, {10, 0.5, 10.5, "# of TT_{Sig}"}});
 
       spectra.add("hJetPtEtaPhiRhoArea", "Charact. of inclusive jets", kTHnSparseF, {pT, pseudorapJets, phiAngle, rho, jetArea});
 
-      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef", "Events w. TT_{Ref}: scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {multFT0CThresh, deltaPhiAngle, jetPTcorr});
-      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef", "Events w. TT_{Ref}: scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {multFT0MThresh, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef", "Events w. TT_{Ref}: scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef", "Events w. TT_{Ref}: scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
 
-      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig", "Events w. TT_{Sig}: scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {multFT0CThresh, deltaPhiAngle, jetPTcorr});
-      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig", "Events w. TT_{Sig}: scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {multFT0MThresh, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig", "Events w. TT_{Sig}: scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig", "Events w. TT_{Sig}: scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
 
-      spectra.add("hScaledFT0C_DPhi_JetPt_TTRef", "Events w. TT_{Ref}: scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {multFT0CThresh, deltaPhiAngle, pT});
-      spectra.add("hScaledFT0M_DPhi_JetPt_TTRef", "Events w. TT_{Ref}: scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {multFT0MThresh, deltaPhiAngle, pT});
+      spectra.add("hScaledFT0C_DPhi_JetPt_TTRef", "Events w. TT_{Ref}: scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, pT});
+      spectra.add("hScaledFT0M_DPhi_JetPt_TTRef", "Events w. TT_{Ref}: scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, pT});
 
-      spectra.add("hScaledFT0C_DPhi_JetPt_TTSig", "Events w. TT_{Sig}: scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {multFT0CThresh, deltaPhiAngle, pT});
-      spectra.add("hScaledFT0M_DPhi_JetPt_TTSig", "Events w. TT_{Sig}: scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {multFT0MThresh, deltaPhiAngle, pT});
+      spectra.add("hScaledFT0C_DPhi_JetPt_TTSig", "Events w. TT_{Sig}: scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, pT});
+      spectra.add("hScaledFT0M_DPhi_JetPt_TTSig", "Events w. TT_{Sig}: scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, pT});
 
-      spectra.add("hScaledFT0C_Recoil_JetPt_Corr_TTRef", "Events w. TT_{Ref}: scaled FT0C & #it{p}_{T} of recoil jets", kTH2F, {multFT0CThresh, jetPTcorr});
-      spectra.add("hScaledFT0M_Recoil_JetPt_Corr_TTRef", "Events w. TT_{Ref}: scaled FT0M & #it{p}_{T} of recoil jets", kTH2F, {multFT0MThresh, jetPTcorr});
+      spectra.add("hScaledFT0C_Recoil_JetPt_Corr_TTRef", "Events w. TT_{Ref}: scaled FT0C & #it{p}_{T} of recoil jets", kTH2F, {{multFT0CThresh, nameFT0Caxis}, jetPTcorr});
+      spectra.add("hScaledFT0M_Recoil_JetPt_Corr_TTRef", "Events w. TT_{Ref}: scaled FT0M & #it{p}_{T} of recoil jets", kTH2F, {{multFT0MThresh, nameFT0Maxis}, jetPTcorr});
 
-      spectra.add("hScaledFT0C_Recoil_JetPt_Corr_TTSig", "Events w. TT_{Sig}: scaled FT0C & #it{p}_{T} of recoil jets", kTH2F, {multFT0CThresh, jetPTcorr});
-      spectra.add("hScaledFT0M_Recoil_JetPt_Corr_TTSig", "Events w. TT_{Sig}: scaled FT0M & #it{p}_{T} of recoil jets", kTH2F, {multFT0MThresh, jetPTcorr});
+      spectra.add("hScaledFT0C_Recoil_JetPt_Corr_TTSig", "Events w. TT_{Sig}: scaled FT0C & #it{p}_{T} of recoil jets", kTH2F, {{multFT0CThresh, nameFT0Caxis}, jetPTcorr});
+      spectra.add("hScaledFT0M_Recoil_JetPt_Corr_TTSig", "Events w. TT_{Sig}: scaled FT0M & #it{p}_{T} of recoil jets", kTH2F, {{multFT0MThresh, nameFT0Maxis}, jetPTcorr});
 
-      spectra.add("hScaledFT0C_Recoil_JetPt_TTRef", "Events w. TT_{Ref}: scaled FT0C & #it{p}_{T} of recoil jets", kTH2F, {multFT0CThresh, pT});
-      spectra.add("hScaledFT0M_Recoil_JetPt_TTRef", "Events w. TT_{Ref}: scaled FT0M & #it{p}_{T} of recoil jets", kTH2F, {multFT0MThresh, pT});
+      spectra.add("hScaledFT0C_Recoil_JetPt_TTRef", "Events w. TT_{Ref}: scaled FT0C & #it{p}_{T} of recoil jets", kTH2F, {{multFT0CThresh, nameFT0Caxis}, pT});
+      spectra.add("hScaledFT0M_Recoil_JetPt_TTRef", "Events w. TT_{Ref}: scaled FT0M & #it{p}_{T} of recoil jets", kTH2F, {{multFT0MThresh, nameFT0Maxis}, pT});
 
-      spectra.add("hScaledFT0C_Recoil_JetPt_TTSig", "Events w. TT_{Sig}: scaled FT0C & #it{p}_{T} of recoil jets", kTH2F, {multFT0CThresh, pT});
-      spectra.add("hScaledFT0M_Recoil_JetPt_TTSig", "Events w. TT_{Sig}: scaled FT0M & #it{p}_{T} of recoil jets", kTH2F, {multFT0MThresh, pT});
+      spectra.add("hScaledFT0C_Recoil_JetPt_TTSig", "Events w. TT_{Sig}: scaled FT0C & #it{p}_{T} of recoil jets", kTH2F, {{multFT0CThresh, nameFT0Caxis}, pT});
+      spectra.add("hScaledFT0M_Recoil_JetPt_TTSig", "Events w. TT_{Sig}: scaled FT0M & #it{p}_{T} of recoil jets", kTH2F, {{multFT0MThresh, nameFT0Maxis}, pT});
 
       spectra.add("hJetArea_JetPt_Rho_TTRef", "Events w. TT_{Ref}: A_{jet} & jet pT & #rho", kTH3F, {jetArea, pT, rho});
       spectra.add("hJetArea_JetPt_Rho_TTSig", "Events w. TT_{Sig}: A_{jet} & jet pT & #rho", kTH3F, {jetArea, pT, rho});
 
-      spectra.add("hScaledFT0C_Rho_TTRef", "Events w. TT_{Ref}: scaled FT0C & #rho", kTH2F, {multFT0CThresh, rho});
-      spectra.add("hScaledFT0M_Rho_TTRef", "Events w. TT_{Ref}: scaled FT0M & #rho", kTH2F, {multFT0MThresh, rho});
+      spectra.add("hScaledFT0C_Rho", "Scaled FT0C & #rho", kTH2F, {{multFT0CThresh, nameFT0Caxis}, rho});
+      spectra.add("hScaledFT0M_Rho", "Scaled FT0M & #rho", kTH2F, {{multFT0MThresh, nameFT0Maxis}, rho});
 
-      spectra.add("hScaledFT0C_Rho_TTSig", "Events w. TT_{Sig}: scaled FT0C & #rho", kTH2F, {multFT0CThresh, rho});
-      spectra.add("hScaledFT0M_Rho_TTSig", "Events w. TT_{Sig}: scaled FT0M & #rho", kTH2F, {multFT0MThresh, rho});
+      spectra.add("hScaledFT0C_Rho_TTRef", "Events w. TT_{Ref}: scaled FT0C & #rho", kTH2F, {{multFT0CThresh, nameFT0Caxis}, rho});
+      spectra.add("hScaledFT0M_Rho_TTRef", "Events w. TT_{Ref}: scaled FT0M & #rho", kTH2F, {{multFT0MThresh, nameFT0Maxis}, rho});
+
+      spectra.add("hScaledFT0C_Rho_TTSig", "Events w. TT_{Sig}: scaled FT0C & #rho", kTH2F, {{multFT0CThresh, nameFT0Caxis}, rho});
+      spectra.add("hScaledFT0M_Rho_TTSig", "Events w. TT_{Sig}: scaled FT0M & #rho", kTH2F, {{multFT0MThresh, nameFT0Maxis}, rho});
 
       spectra.add("hScaledFT0C_TTRef", "Events w. TT_{Ref}: scaled FT0C", kTH1F, {scaledFT0C});
       spectra.add("hScaledFT0M_TTRef", "Events w. TT_{Ref}: scaled FT0M", kTH1F, {scaledFT0M});
 
       spectra.add("hScaledFT0C_TTSig", "Events w. TT_{Sig}: scaled FT0C", kTH1F, {scaledFT0C});
       spectra.add("hScaledFT0M_TTSig", "Events w. TT_{Sig}: scaled FT0M", kTH1F, {scaledFT0M});
+
+      // Rectricted phi range for TT selection
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
+
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0CThresh, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0MThresh, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
     }
 
     // List of MC particle level distributions
     if (doprocessMCPartLevel || doprocessMCPartLevelWeighted) {
-      spectra.add("vertexZMC", "Z vertex of jmccollision", kTH1F, {{60, -12., 12.}});
-      spectra.add("ptHat", "Distribution of pT hat", kTH1F, {{500, 0.0, 100.}});
+      spectra.add("hScaledFT0C_vertexZMC", "Z vertex of MCcollision", kTH2F, {{multFT0CThreshPartLevel, nameFT0Caxis}, {60, -12., 12., "#it{z}_{vertex}"}});
+      spectra.add("hScaledFT0M_vertexZMC", "Z vertex of MCcollision", kTH2F, {{multFT0MThreshPartLevel, nameFT0Maxis}, {60, -12., 12., "#it{z}_{vertex}"}});
+      spectra.add("ptHat", "Distribution of pT hat", kTH1F, {{5000, 0.0, 1000.}});
 
-      spectra.add("hEventSelectionCountPartLevel", "Count # of events in the part. level analysis", kTH1F, {{2, 0.0, 2.}});
+      spectra.add("hEventSelectionCountPartLevel", "Count # of events in the part. level analysis", kTH1F, {{4, 0.0, 4.}});
       spectra.get<TH1>(HIST("hEventSelectionCountPartLevel"))->GetXaxis()->SetBinLabel(1, "Total # of events");
-      spectra.get<TH1>(HIST("hEventSelectionCountPartLevel"))->GetXaxis()->SetBinLabel(2, "# of events w. outlier");
+      spectra.get<TH1>(HIST("hEventSelectionCountPartLevel"))->GetXaxis()->SetBinLabel(2, "# of events skipMB gap");
+      spectra.get<TH1>(HIST("hEventSelectionCountPartLevel"))->GetXaxis()->SetBinLabel(3, "# of events w. outlier");
+      spectra.get<TH1>(HIST("hEventSelectionCountPartLevel"))->GetXaxis()->SetBinLabel(4, "# of selected events");
 
-      spectra.add("hCountNumberOutliersFrameWork", "Count # of outlier events based on flag from JE fw", kTH1F, {{1, 0.0, 1.}});
-      spectra.get<TH1>(HIST("hCountNumberOutliersFrameWork"))->GetXaxis()->SetBinLabel(1, "Outlier flag true");
+      spectra.add("hScaledFT0CPartPtEtaPhi", "Charact. of particles", kTHnSparseF, {{multFT0CThreshPartLevel, nameFT0Caxis}, pT, pseudorap, phiAngle});
+      spectra.add("hScaledFT0MPartPtEtaPhi", "Charact. of particles", kTHnSparseF, {{multFT0MThreshPartLevel, nameFT0Maxis}, pT, pseudorap, phiAngle});
 
-      spectra.add("hPartPtEtaPhi", "Charact. of particles", kTH3F, {pT, pseudorap, phiAngle});
-      spectra.add("hNtrig_Part", "Total number of selected triggers per class", kTH1F, {{2, 0.0, 2.}});
-      spectra.get<TH1>(HIST("hNtrig_Part"))->GetXaxis()->SetBinLabel(1, "TT_{ref}");
-      spectra.get<TH1>(HIST("hNtrig_Part"))->GetXaxis()->SetBinLabel(2, "TT_{sig}");
+      spectra.add("hScaledFT0C_Ntrig_Part", "Total number of selected triggers per class vs scaled FT0C", kTH2F, {{multFT0CThreshPartLevel, nameFT0Caxis}, {2, 0.0, 2.}});
+      spectra.get<TH2>(HIST("hScaledFT0C_Ntrig_Part"))->GetXaxis()->SetBinLabel(1, "TT_{ref}");
+      spectra.get<TH2>(HIST("hScaledFT0C_Ntrig_Part"))->GetXaxis()->SetBinLabel(2, "TT_{sig}");
 
-      spectra.add("hTTRef_per_event_Part", "Number of TT_{Ref} per event", kTH1F, {{15, 0.5, 15.5}});
-      spectra.add("hTTSig_per_event_Part", "Number of TT_{Sig} per event", kTH1F, {{10, 0.5, 10.5}});
+      spectra.add("hScaledFT0M_Ntrig_Part", "Total number of selected triggers per class vs scaled FT0M", kTH2F, {{multFT0MThreshPartLevel, nameFT0Maxis}, {2, 0.0, 2.}});
+      spectra.get<TH2>(HIST("hScaledFT0M_Ntrig_Part"))->GetXaxis()->SetBinLabel(1, "TT_{ref}");
+      spectra.get<TH2>(HIST("hScaledFT0M_Ntrig_Part"))->GetXaxis()->SetBinLabel(2, "TT_{sig}");
+
+      spectra.add("hScaledFT0C_TTRef_per_event_Part", "Number of TT_{Ref} per event vs scaled FT0C", kTH2F, {{multFT0CThreshPartLevel, nameFT0Caxis}, {15, 0.5, 15.5, "# of TT_{Ref}"}});
+      spectra.add("hScaledFT0M_TTRef_per_event_Part", "Number of TT_{Ref} per event vs scaled FT0M", kTH2F, {{multFT0MThreshPartLevel, nameFT0Maxis}, {15, 0.5, 15.5, "# of TT_{Ref}"}});
+
+      spectra.add("hScaledFT0C_TTSig_per_event_Part", "Number of TT_{Sig} per event vs scaled FT0C", kTH2F, {{multFT0CThreshPartLevel, nameFT0Caxis}, {10, 0.5, 10.5, "# of TT_{Sig}"}});
+      spectra.add("hScaledFT0M_TTSig_per_event_Part", "Number of TT_{Sig} per event vs scaled FT0M", kTH2F, {{multFT0MThreshPartLevel, nameFT0Maxis}, {10, 0.5, 10.5, "# of TT_{Sig}"}});
 
       spectra.add("hJetPtEtaPhiRhoArea_Part", "Charact. of inclusive part. level jets", kTHnSparseF, {pT, pseudorapJets, phiAngle, rho, jetArea});
 
-      spectra.add("hDPhi_JetPt_Corr_TTRef_Part", "Events w. TT_{Ref}: #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH2F, {deltaPhiAngle, jetPTcorr});
-      spectra.add("hDPhi_JetPt_Corr_TTSig_Part", "Events w. TT_{Sig}: #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH2F, {deltaPhiAngle, jetPTcorr});
-      spectra.add("hDPhi_JetPt_TTRef_Part", "Events w. TT_{Ref}: #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH2F, {deltaPhiAngle, pT});
-      spectra.add("hDPhi_JetPt_TTSig_Part", "Events w. TT_{Sig}: #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH2F, {deltaPhiAngle, pT});
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef_Part", "Events w. TT_{Ref}: scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef_Part", "Events w. TT_{Ref}: scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
 
-      spectra.add("hRecoil_JetPt_Corr_TTRef_Part", "Events w. TT_{Ref}: #it{p}_{T} of recoil jets", kTH1F, {jetPTcorr});
-      spectra.add("hRecoil_JetPt_Corr_TTSig_Part", "Events w. TT_{Sig}: #it{p}_{T} of recoil jets", kTH1F, {jetPTcorr});
-      spectra.add("hRecoil_JetPt_TTRef_Part", "Events w. TT_{Ref}: #it{p}_{T} of recoil jets", kTH1F, {pT});
-      spectra.add("hRecoil_JetPt_TTSig_Part", "Events w. TT_{Sig}: #it{p}_{T} of recoil jets", kTH1F, {pT});
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig_Part", "Events w. TT_{Sig}: scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig_Part", "Events w. TT_{Sig}: scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
+
+      spectra.add("hScaledFT0C_DPhi_JetPt_TTRef_Part", "Events w. TT_{Ref}: scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, pT});
+      spectra.add("hScaledFT0M_DPhi_JetPt_TTRef_Part", "Events w. TT_{Ref}: scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, pT});
+
+      spectra.add("hScaledFT0C_DPhi_JetPt_TTSig_Part", "Events w. TT_{Sig}: scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, pT});
+      spectra.add("hScaledFT0M_DPhi_JetPt_TTSig_Part", "Events w. TT_{Sig}: scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, pT});
+
+      spectra.add("hScaledFT0C_Recoil_JetPt_Corr_TTRef_Part", "Events w. TT_{Ref}: scaled FT0C & #it{p}_{T} of recoil jets", kTH2F, {{multFT0CThreshPartLevel, nameFT0Caxis}, jetPTcorr});
+      spectra.add("hScaledFT0M_Recoil_JetPt_Corr_TTRef_Part", "Events w. TT_{Ref}: scaled FT0M & #it{p}_{T} of recoil jets", kTH2F, {{multFT0MThreshPartLevel, nameFT0Maxis}, jetPTcorr});
+
+      spectra.add("hScaledFT0C_Recoil_JetPt_Corr_TTSig_Part", "Events w. TT_{Sig}: scaled FT0C & #it{p}_{T} of recoil jets", kTH2F, {{multFT0CThreshPartLevel, nameFT0Caxis}, jetPTcorr});
+      spectra.add("hScaledFT0M_Recoil_JetPt_Corr_TTSig_Part", "Events w. TT_{Sig}: scaled FT0M & #it{p}_{T} of recoil jets", kTH2F, {{multFT0MThreshPartLevel, nameFT0Maxis}, jetPTcorr});
+
+      spectra.add("hScaledFT0C_Recoil_JetPt_TTRef_Part", "Events w. TT_{Ref}: scaled FT0C & #it{p}_{T} of recoil jets", kTH2F, {{multFT0CThreshPartLevel, nameFT0Caxis}, pT});
+      spectra.add("hScaledFT0M_Recoil_JetPt_TTRef_Part", "Events w. TT_{Ref}: scaled FT0M & #it{p}_{T} of recoil jets", kTH2F, {{multFT0MThreshPartLevel, nameFT0Maxis}, pT});
+
+      spectra.add("hScaledFT0C_Recoil_JetPt_TTSig_Part", "Events w. TT_{Sig}: scaled FT0C & #it{p}_{T} of recoil jets", kTH2F, {{multFT0CThreshPartLevel, nameFT0Caxis}, pT});
+      spectra.add("hScaledFT0M_Recoil_JetPt_TTSig_Part", "Events w. TT_{Sig}: scaled FT0M & #it{p}_{T} of recoil jets", kTH2F, {{multFT0MThreshPartLevel, nameFT0Maxis}, pT});
 
       spectra.add("hJetArea_JetPt_Rho_TTRef_Part", "Events w. TT_{Ref}: A_{jet} & jet pT & #rho", kTH3F, {jetArea, pT, rho});
       spectra.add("hJetArea_JetPt_Rho_TTSig_Part", "Events w. TT_{Sig}: A_{jet} & jet pT & #rho", kTH3F, {jetArea, pT, rho});
 
-      spectra.add("hDiffInOutlierRemove", "Difference between pT hat from code and fw", kTH1F, {{502, -0.2, 50.}});
+      spectra.add("hScaledFT0C_Rho_Part", "Scaled FT0C & #rho", kTH2F, {{multFT0CThreshPartLevel, nameFT0Caxis}, rho});
+      spectra.add("hScaledFT0M_Rho_Part", "Scaled FT0M & #rho", kTH2F, {{multFT0MThreshPartLevel, nameFT0Maxis}, rho});
+
+      spectra.add("hScaledFT0C_Rho_TTRef_Part", "Events w. TT_{Ref}: scaled FT0C & #rho", kTH2F, {{multFT0CThreshPartLevel, nameFT0Caxis}, rho});
+      spectra.add("hScaledFT0M_Rho_TTRef_Part", "Events w. TT_{Ref}: scaled FT0M & #rho", kTH2F, {{multFT0MThreshPartLevel, nameFT0Maxis}, rho});
+
+      spectra.add("hScaledFT0C_Rho_TTSig_Part", "Events w. TT_{Sig}: scaled FT0C & #rho", kTH2F, {{multFT0CThreshPartLevel, nameFT0Caxis}, rho});
+      spectra.add("hScaledFT0M_Rho_TTSig_Part", "Events w. TT_{Sig}: scaled FT0M & #rho", kTH2F, {{multFT0MThreshPartLevel, nameFT0Maxis}, rho});
+
+      spectra.add("hScaledFT0C_TTRef_Part", "Events w. TT_{Ref}: scaled FT0C", kTH1F, {scaledFT0C});
+      spectra.add("hScaledFT0M_TTRef_Part", "Events w. TT_{Ref}: scaled FT0M", kTH1F, {scaledFT0M});
+
+      spectra.add("hScaledFT0C_TTSig_Part", "Events w. TT_{Sig}: scaled FT0C", kTH1F, {scaledFT0C});
+      spectra.add("hScaledFT0M_TTSig_Part", "Events w. TT_{Sig}: scaled FT0M", kTH1F, {scaledFT0M});
+
+      // Rectricted phi range for TT selection
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part", Form("Events w. TT_{Ref} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
+
+      spectra.add("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0C & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0CThreshPartLevel, nameFT0Caxis}, deltaPhiAngle, jetPTcorr});
+      spectra.add("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part", Form("Events w. TT_{Sig} #in #varphi (%.2f, %.2f): scaled FT0M & #Delta#varphi & #it{p}_{T, jet}^{ch}", static_cast<float>(minPhiForTTSelection), static_cast<float>(maxPhiForTTSelection)), kTH3F, {{multFT0MThreshPartLevel, nameFT0Maxis}, deltaPhiAngle, jetPTcorr});
     }
 
     // Jet matching: part. vs. det.
@@ -306,7 +357,8 @@ struct RecoilJets {
       spectra.add("hNumberMatchedJetsPerOneBaseJet", "# of tagged jets per 1 base jet vs. jet pT", kTH2F, {{10, 0.5, 10.5}, {100, 0.0, 100.}});
     }
 
-    if (doprocessMultiplicity) {
+    // Multiplicity for raw data and detector level MC
+    if (doprocessMultiplicityOO || doprocessMultiplicityMCDetLevelWeightedOO) {
       spectra.add("hMultFT0A", "Mult. signal from FTOA", kTH1F, {{2000, 0.0, 40000., "FT0A"}});
       spectra.add("hMultFT0C", "Mult. signal from FTOC", kTH1F, {{2000, 0.0, 40000., "FT0C"}});
       spectra.add("hMultFT0M", "Total mult. signal from FT0A & FTOC", kTH1F, {{3000, 0.0, 60000., "FT0M"}});
@@ -317,9 +369,16 @@ struct RecoilJets {
 
       spectra.add("hMultZNA", "Mult. signal from ZDC A-side", kTH1F, {{1000, 0.0, 5000., "ZNA"}});
       spectra.add("hMultZNC", "Mult. signal from ZDC C-side", kTH1F, {{1000, 0.0, 5000., "ZNC"}});
-      spectra.add("hMultZNM", "Total mult. signal from ZDCs", kTH1F, {{4000, 0.0, 8000., "ZNM"}});
+      spectra.add("hMultZNM", "Total mult. signal from ZDCs for neutrons", kTH1F, {{4000, 0.0, 8000., "ZNM"}});
+
+      spectra.add("hMultZPA", "Mult. signal from ZDC A-side", kTH1F, {{1000, 0.0, 5000., "ZPA"}});
+      spectra.add("hMultZPC", "Mult. signal from ZDC C-side", kTH1F, {{1000, 0.0, 5000., "ZPC"}});
+      spectra.add("hMultZPM", "Total mult. signal from ZDCs for protons", kTH1F, {{4000, 0.0, 8000., "ZPM"}});
 
       // Correlations
+      spectra.add("hZPA_vs_ZNA", "Correlation of signals ZPA vs ZNA", kTH2F, {{1000, 0.0, 5000., "ZPA"}, {1000, 0.0, 5000., "ZNA"}});
+      spectra.add("hZPC_vs_ZNC", "Correlation of signals ZPC vs ZNC", kTH2F, {{1000, 0.0, 5000., "ZPC"}, {1000, 0.0, 5000., "ZNC"}});
+
       spectra.add("hMultFT0A_vs_ZNA", "Correlation of signals FTOA vs ZNA", kTH2F, {{2000, 0.0, 40000., "FT0A"}, {1000, 0.0, 5000., "ZNA"}});
       spectra.add("hMultFT0C_vs_ZNC", "Correlation of signals FTOC vs ZNC", kTH2F, {{2000, 0.0, 40000., "FT0C"}, {1000, 0.0, 5000., "ZNC"}});
       spectra.add("hMultFT0M_vs_ZNM", "Correlation of signals FTOM vs ZNM", kTH2F, {{3000, 0.0, 60000., "FT0M"}, {4000, 0.0, 8000., "ZNM"}});
@@ -327,7 +386,24 @@ struct RecoilJets {
       spectra.add("hScaleMultFT0A_vs_ZNA", "Correlation of signals FT0A/meanFT0A vs ZNA", kTH2F, {{scaledFT0A}, {1000, 0.0, 5000., "ZNA"}});
       spectra.add("hScaleMultFT0C_vs_ZNC", "Correlation of signals FT0C/meanFT0C vs ZNC", kTH2F, {{scaledFT0C}, {1000, 0.0, 5000., "ZNC"}});
       spectra.add("hScaleMultFT0M_vs_ZNM", "Correlation of signals FT0M^{*} vs ZNM", kTH2F, {{scaledFT0M}, {4000, 0.0, 8000., "ZNM"}});
+
+      spectra.add("hScaleMultFT0A_vs_ZPA", "Correlation of signals FT0A/meanFT0A vs ZPA", kTH2F, {{scaledFT0A}, {1000, 0.0, 5000., "ZPA"}});
+      spectra.add("hScaleMultFT0C_vs_ZPC", "Correlation of signals FT0C/meanFT0C vs ZPC", kTH2F, {{scaledFT0C}, {1000, 0.0, 5000., "ZPC"}});
+      spectra.add("hScaleMultFT0M_vs_ZPM", "Correlation of signals FT0M^{*} vs ZPM", kTH2F, {{scaledFT0M}, {4000, 0.0, 8000., "ZPM"}});
+
       spectra.add("hScaleMultFT0M_vs_ZNA_vs_ZNC", "Correlation of signals FT0M^{*} vs ZNA vs ZNC", kTH3F, {{scaledFT0M}, {600, 0.0, 3000., "ZNA"}, {600, 0.0, 3000., "ZNC"}});
+      spectra.add("hScaleMultFT0M_vs_ZPA_vs_ZPC", "Correlation of signals FT0M^{*} vs ZPA vs ZPC", kTH3F, {{scaledFT0M}, {600, 0.0, 3000., "ZPA"}, {600, 0.0, 3000., "ZPC"}});
+    }
+
+    // Multiplicity for particle level MC
+    if (doprocessMultiplicityPartLevelMC || doprocessMultiplicityPartLevelMCWeighted) {
+      spectra.add("hMultFT0APartLevel", "# of primary particles within FTOA acceptance", kTH1F, {{2000, 0.0, 500., "FT0A"}});
+      spectra.add("hMultFT0CPartLevel", "# of primary particles within FTOC acceptance", kTH1F, {{2000, 0.0, 500., "FT0C"}});
+      spectra.add("hMultFT0MPartLevel", "Total # of primary particles from FT0A & FTOC", kTH1F, {{4000, 0.0, 1000., "FT0M"}});
+
+      spectra.add("hScaleMultFT0APartLevel", "Scaled # of primary particles within FTOA acceptance", kTH1F, {scaledFT0A});
+      spectra.add("hScaleMultFT0CPartLevel", "Scaled # of primary particles within FTOC acceptance", kTH1F, {scaledFT0C});
+      spectra.add("hScaleMultFT0MPartLevel", "Scaled total # of primary particles from FT0A & FTOC", kTH1F, {scaledFT0M});
     }
   }
 
@@ -340,7 +416,6 @@ struct RecoilJets {
     std::vector<double> vPhiOfTT;
     double phiTT = 0.;
     int nTT = 0;
-    float pTHat = getPtHat(weight);
     float rho = collision.rho();
     float multFT0A = collision.multFT0A();
     float multFT0C = collision.multFT0C();
@@ -351,13 +426,11 @@ struct RecoilJets {
     if (dice < fracSig)
       bSigEv = true;
 
-    // Remove whole event if jet passes the outlier removal condition
-    for (const auto& jet : jets) {
-      if (jet.pt() > pTHatMax * pTHat) {
-        spectra.fill(HIST("hEventSelectionCount"), 2.5);
-        return;
-      }
-    }
+    spectra.fill(HIST("hScaledFT0C_vertexZ"), scaledFT0C, collision.posZ(), weight);
+    spectra.fill(HIST("hScaledFT0M_vertexZ"), scaledFT0M, collision.posZ(), weight);
+
+    spectra.fill(HIST("hScaledFT0C_Rho"), scaledFT0C, rho, weight);
+    spectra.fill(HIST("hScaledFT0M_Rho"), scaledFT0M, rho, weight);
 
     for (const auto& track : tracks) {
       spectra.fill(HIST("hTrackSelectionCount"), 0.5);
@@ -366,19 +439,21 @@ struct RecoilJets {
         continue;
 
       float trackPt = track.pt();
+      float trackPhi = track.phi();
 
       spectra.fill(HIST("hTrackSelectionCount"), 1.5);
-      spectra.fill(HIST("hTrackPtEtaPhi"), trackPt, track.eta(), track.phi(), weight);
+      spectra.fill(HIST("hScaledFT0CTrackPtEtaPhi"), scaledFT0C, trackPt, track.eta(), trackPhi, weight);
+      spectra.fill(HIST("hScaledFT0MTrackPtEtaPhi"), scaledFT0M, trackPt, track.eta(), trackPhi, weight);
 
       // Search for TT candidate
       if (bSigEv && (trackPt > ptTTsigMin && trackPt < ptTTsigMax)) {
-        vPhiOfTT.push_back(track.phi());
+        vPhiOfTT.push_back(trackPhi);
         spectra.fill(HIST("hTTSig_pT"), trackPt, weight);
         ++nTT;
       }
 
       if (!bSigEv && (trackPt > ptTTrefMin && trackPt < ptTTrefMax)) {
-        vPhiOfTT.push_back(track.phi());
+        vPhiOfTT.push_back(trackPhi);
         ++nTT;
       }
     }
@@ -388,21 +463,27 @@ struct RecoilJets {
       phiTT = getPhiTT(vPhiOfTT);
 
       if (bSigEv) {
-        spectra.fill(HIST("hScaledFT0C_vs_Ntrig"), scaledFT0C, 1.5, weight);
-        spectra.fill(HIST("hScaledFT0M_vs_Ntrig"), scaledFT0M, 1.5, weight);
-        spectra.fill(HIST("hScaledFT0C_vs_TTSig_per_event"), scaledFT0C, nTT, weight);
-        spectra.fill(HIST("hScaledFT0M_vs_TTSig_per_event"), scaledFT0M, nTT, weight);
+        spectra.fill(HIST("hScaledFT0C_Ntrig"), scaledFT0C, 1.5, weight);
+        spectra.fill(HIST("hScaledFT0M_Ntrig"), scaledFT0M, 1.5, weight);
+        spectra.fill(HIST("hScaledFT0C_TTSig_per_event"), scaledFT0C, nTT, weight);
+        spectra.fill(HIST("hScaledFT0M_TTSig_per_event"), scaledFT0M, nTT, weight);
 
         spectra.fill(HIST("hScaledFT0C_TTSig"), scaledFT0C, weight);
         spectra.fill(HIST("hScaledFT0M_TTSig"), scaledFT0M, weight);
+
+        spectra.fill(HIST("hScaledFT0C_Rho_TTSig"), scaledFT0C, rho, weight);
+        spectra.fill(HIST("hScaledFT0M_Rho_TTSig"), scaledFT0M, rho, weight);
       } else {
-        spectra.fill(HIST("hScaledFT0C_vs_Ntrig"), scaledFT0C, 0.5, weight);
-        spectra.fill(HIST("hScaledFT0M_vs_Ntrig"), scaledFT0M, 0.5, weight);
-        spectra.fill(HIST("hScaledFT0C_vs_TTRef_per_event"), scaledFT0C, nTT, weight);
-        spectra.fill(HIST("hScaledFT0M_vs_TTRef_per_event"), scaledFT0M, nTT, weight);
+        spectra.fill(HIST("hScaledFT0C_Ntrig"), scaledFT0C, 0.5, weight);
+        spectra.fill(HIST("hScaledFT0M_Ntrig"), scaledFT0M, 0.5, weight);
+        spectra.fill(HIST("hScaledFT0C_TTRef_per_event"), scaledFT0C, nTT, weight);
+        spectra.fill(HIST("hScaledFT0M_TTRef_per_event"), scaledFT0M, nTT, weight);
 
         spectra.fill(HIST("hScaledFT0C_TTRef"), scaledFT0C, weight);
         spectra.fill(HIST("hScaledFT0M_TTRef"), scaledFT0M, weight);
+
+        spectra.fill(HIST("hScaledFT0C_Rho_TTRef"), scaledFT0C, rho, weight);
+        spectra.fill(HIST("hScaledFT0M_Rho_TTRef"), scaledFT0M, rho, weight);
       }
     }
 
@@ -421,15 +502,17 @@ struct RecoilJets {
         auto [dphi, bRecoilJet] = isRecoilJet(jet, phiTT);
 
         if (bSigEv) {
-          spectra.fill(HIST("hScaledFT0C_Rho_TTSig"), scaledFT0C, rho, weight);
-          spectra.fill(HIST("hScaledFT0M_Rho_TTSig"), scaledFT0M, rho, weight);
-
           spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTSig"), scaledFT0C, dphi, jetPtCorr, weight);
           spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTSig"), scaledFT0M, dphi, jetPtCorr, weight);
 
           spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_TTSig"), scaledFT0C, dphi, jetPt, weight);
           spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_TTSig"), scaledFT0M, dphi, jetPt, weight);
           spectra.fill(HIST("hJetArea_JetPt_Rho_TTSig"), jetArea, jetPt, rho, weight);
+
+          if (phiTT > minPhiForTTSelection && phiTT < maxPhiForTTSelection) {
+            spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi"), scaledFT0C, dphi, jetPtCorr, weight);
+            spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi"), scaledFT0M, dphi, jetPtCorr, weight);
+          }
 
           if (bRecoilJet) {
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_Corr_TTSig"), scaledFT0C, jetPtCorr, weight);
@@ -438,17 +521,18 @@ struct RecoilJets {
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_TTSig"), scaledFT0C, jetPt, weight);
             spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_TTSig"), scaledFT0M, jetPt, weight);
           }
-
         } else {
-          spectra.fill(HIST("hScaledFT0C_Rho_TTRef"), scaledFT0C, rho, weight);
-          spectra.fill(HIST("hScaledFT0M_Rho_TTRef"), scaledFT0M, rho, weight);
-
           spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTRef"), scaledFT0C, dphi, jetPtCorr, weight);
           spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTRef"), scaledFT0M, dphi, jetPtCorr, weight);
 
           spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_TTRef"), scaledFT0C, dphi, jetPt, weight);
           spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_TTRef"), scaledFT0M, dphi, jetPt, weight);
           spectra.fill(HIST("hJetArea_JetPt_Rho_TTRef"), jetArea, jetPt, rho, weight);
+
+          if (phiTT > minPhiForTTSelection && phiTT < maxPhiForTTSelection) {
+            spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi"), scaledFT0C, dphi, jetPtCorr, weight);
+            spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi"), scaledFT0M, dphi, jetPtCorr, weight);
+          }
 
           if (bRecoilJet) {
             spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_Corr_TTRef"), scaledFT0C, jetPtCorr, weight);
@@ -470,21 +554,21 @@ struct RecoilJets {
     std::vector<double> vPhiOfTT;
     double phiTT = 0.;
     int nTT = 0;
-    float pTHat = getPtHat(weight);
     float rho = collision.rho();
 
-    spectra.fill(HIST("ptHat"), pTHat, weight);
+    float scaledFT0A = collision.multFT0A() / meanFT0APartLevel;
+    float scaledFT0C = collision.multFT0C() / meanFT0CPartLevel;
+    float scaledFT0M = 0.5 * (scaledFT0A + scaledFT0C);
 
     auto dice = rand->Rndm();
     if (dice < fracSig)
       bSigEv = true;
 
-    for (const auto& jet : jets) {
-      if (jet.pt() > pTHatMax * pTHat) {
-        spectra.fill(HIST("hEventSelectionCountPartLevel"), 1.5);
-        return;
-      }
-    }
+    spectra.fill(HIST("hScaledFT0C_vertexZMC"), scaledFT0C, collision.posZ(), weight);
+    spectra.fill(HIST("hScaledFT0M_vertexZMC"), scaledFT0M, collision.posZ(), weight);
+
+    spectra.fill(HIST("hScaledFT0C_Rho_Part"), scaledFT0C, rho, weight);
+    spectra.fill(HIST("hScaledFT0M_Rho_Part"), scaledFT0M, rho, weight);
 
     for (const auto& particle : particles) {
       auto pdgParticle = pdg->GetParticle(particle.pdgCode());
@@ -492,23 +576,23 @@ struct RecoilJets {
         continue;
 
       float particlePt = particle.pt();
+      float particlePhi = particle.phi();
 
       // Need charge and physical primary particles
       bool bParticleNeutral = (static_cast<int8_t>(pdgParticle->Charge()) == 0);
       if (bParticleNeutral || !particle.isPhysicalPrimary())
         continue;
 
-      spectra.fill(HIST("hPartPtEtaPhi"), particlePt, particle.eta(), particle.phi(), weight);
+      spectra.fill(HIST("hScaledFT0CPartPtEtaPhi"), scaledFT0C, particlePt, particle.eta(), particlePhi, weight);
+      spectra.fill(HIST("hScaledFT0MPartPtEtaPhi"), scaledFT0M, particlePt, particle.eta(), particlePhi, weight);
 
-      if (bSigEv &&
-          (particlePt > ptTTsigMin && particlePt < ptTTsigMax)) {
-        vPhiOfTT.push_back(particle.phi());
+      if (bSigEv && (particlePt > ptTTsigMin && particlePt < ptTTsigMax)) {
+        vPhiOfTT.push_back(particlePhi);
         ++nTT;
       }
 
-      if (!bSigEv &&
-          (particlePt > ptTTrefMin && particlePt < ptTTrefMax)) {
-        vPhiOfTT.push_back(particle.phi());
+      if (!bSigEv && (particlePt > ptTTrefMin && particlePt < ptTTrefMax)) {
+        vPhiOfTT.push_back(particlePhi);
         ++nTT;
       }
     }
@@ -518,11 +602,27 @@ struct RecoilJets {
       phiTT = getPhiTT(vPhiOfTT);
 
       if (bSigEv) {
-        spectra.fill(HIST("hNtrig_Part"), 1.5, weight);
-        spectra.fill(HIST("hTTSig_per_event_Part"), nTT, weight);
+        spectra.fill(HIST("hScaledFT0C_Ntrig_Part"), scaledFT0C, 1.5, weight);
+        spectra.fill(HIST("hScaledFT0M_Ntrig_Part"), scaledFT0M, 1.5, weight);
+        spectra.fill(HIST("hScaledFT0C_TTSig_per_event_Part"), scaledFT0C, nTT, weight);
+        spectra.fill(HIST("hScaledFT0M_TTSig_per_event_Part"), scaledFT0M, nTT, weight);
+
+        spectra.fill(HIST("hScaledFT0C_TTSig_Part"), scaledFT0C, weight);
+        spectra.fill(HIST("hScaledFT0M_TTSig_Part"), scaledFT0M, weight);
+
+        spectra.fill(HIST("hScaledFT0C_Rho_TTSig_Part"), scaledFT0C, rho, weight);
+        spectra.fill(HIST("hScaledFT0M_Rho_TTSig_Part"), scaledFT0M, rho, weight);
       } else {
-        spectra.fill(HIST("hNtrig_Part"), 0.5, weight);
-        spectra.fill(HIST("hTTRef_per_event_Part"), nTT, weight);
+        spectra.fill(HIST("hScaledFT0C_Ntrig_Part"), scaledFT0C, 0.5, weight);
+        spectra.fill(HIST("hScaledFT0M_Ntrig_Part"), scaledFT0M, 0.5, weight);
+        spectra.fill(HIST("hScaledFT0C_TTRef_per_event_Part"), scaledFT0C, nTT, weight);
+        spectra.fill(HIST("hScaledFT0M_TTRef_per_event_Part"), scaledFT0M, nTT, weight);
+
+        spectra.fill(HIST("hScaledFT0C_TTRef_Part"), scaledFT0C, weight);
+        spectra.fill(HIST("hScaledFT0M_TTRef_Part"), scaledFT0M, weight);
+
+        spectra.fill(HIST("hScaledFT0C_Rho_TTRef_Part"), scaledFT0C, rho, weight);
+        spectra.fill(HIST("hScaledFT0M_Rho_TTRef_Part"), scaledFT0M, rho, weight);
       }
     }
 
@@ -538,25 +638,48 @@ struct RecoilJets {
         auto [dphi, bRecoilJet] = isRecoilJet(jet, phiTT);
 
         if (bSigEv) {
+          spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTSig_Part"), scaledFT0C, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTSig_Part"), scaledFT0M, dphi, jetPtCorr, weight);
 
-          spectra.fill(HIST("hDPhi_JetPt_Corr_TTSig_Part"), dphi, jetPtCorr, weight);
-          spectra.fill(HIST("hDPhi_JetPt_TTSig_Part"), dphi, jetPt, weight);
+          spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_TTSig_Part"), scaledFT0C, dphi, jetPt, weight);
+          spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_TTSig_Part"), scaledFT0M, dphi, jetPt, weight);
+
           spectra.fill(HIST("hJetArea_JetPt_Rho_TTSig_Part"), jetArea, jetPt, rho, weight);
 
+          if (phiTT > minPhiForTTSelection && phiTT < maxPhiForTTSelection) {
+            spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part"), scaledFT0C, dphi, jetPtCorr, weight);
+            spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTSig_RectrictedPhi_Part"), scaledFT0M, dphi, jetPtCorr, weight);
+          }
+
           if (bRecoilJet) {
-            spectra.fill(HIST("hRecoil_JetPt_Corr_TTSig_Part"), jetPtCorr, weight);
-            spectra.fill(HIST("hRecoil_JetPt_TTSig_Part"), jetPt, weight);
+            spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_Corr_TTSig_Part"), scaledFT0C, jetPtCorr, weight);
+            spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_Corr_TTSig_Part"), scaledFT0M, jetPtCorr, weight);
+
+            spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_TTSig_Part"), scaledFT0C, jetPt, weight);
+            spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_TTSig_Part"), scaledFT0M, jetPt, weight);
           }
 
         } else {
 
-          spectra.fill(HIST("hDPhi_JetPt_Corr_TTRef_Part"), dphi, jetPtCorr, weight);
-          spectra.fill(HIST("hDPhi_JetPt_TTRef_Part"), dphi, jetPt, weight);
+          spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTRef_Part"), scaledFT0C, dphi, jetPtCorr, weight);
+          spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTRef_Part"), scaledFT0M, dphi, jetPtCorr, weight);
+
+          spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_TTRef_Part"), scaledFT0C, dphi, jetPt, weight);
+          spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_TTRef_Part"), scaledFT0M, dphi, jetPt, weight);
+
           spectra.fill(HIST("hJetArea_JetPt_Rho_TTRef_Part"), jetArea, jetPt, rho, weight);
 
+          if (phiTT > minPhiForTTSelection && phiTT < maxPhiForTTSelection) {
+            spectra.fill(HIST("hScaledFT0C_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part"), scaledFT0C, dphi, jetPtCorr, weight);
+            spectra.fill(HIST("hScaledFT0M_DPhi_JetPt_Corr_TTRef_RectrictedPhi_Part"), scaledFT0M, dphi, jetPtCorr, weight);
+          }
+
           if (bRecoilJet) {
-            spectra.fill(HIST("hRecoil_JetPt_Corr_TTRef_Part"), jetPtCorr, weight);
-            spectra.fill(HIST("hRecoil_JetPt_TTRef_Part"), jetPt, weight);
+            spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_Corr_TTRef_Part"), scaledFT0C, jetPtCorr, weight);
+            spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_Corr_TTRef_Part"), scaledFT0M, jetPtCorr, weight);
+
+            spectra.fill(HIST("hScaledFT0C_Recoil_JetPt_TTRef_Part"), scaledFT0C, jetPt, weight);
+            spectra.fill(HIST("hScaledFT0M_Recoil_JetPt_TTRef_Part"), scaledFT0M, jetPt, weight);
           }
         }
       }
@@ -570,12 +693,6 @@ struct RecoilJets {
   {
     std::vector<double> vPhiOfTT;
     double phiTTSig = 0.;
-    float pTHat = getPtHat(weight);
-
-    for (const auto& jetBase : jetsBase) {
-      if (jetBase.pt() > pTHatMax * pTHat)
-        return;
-    }
 
     for (const auto& track : tracks) {
       if (skipTrack(track))
@@ -599,8 +716,8 @@ struct RecoilJets {
   }
 
   template <typename Collision>
-  void fillMultiplicityHistograms(Collision const& collision,
-                                  float weight = 1.)
+  void fillMultiplicityHistogramsOO(Collision const& collision,
+                                    float weight = 1.)
   {
     float multFT0A = collision.multFT0A();
     float multFT0C = collision.multFT0C();
@@ -612,6 +729,10 @@ struct RecoilJets {
     float multZNA = collision.multZNA();
     float multZNC = collision.multZNC();
     float multZNM = collision.multZNA() + collision.multZNC();
+
+    float multZPA = collision.multZPA();
+    float multZPC = collision.multZPC();
+    float multZPM = collision.multZPA() + collision.multZPC();
 
     // Individual distributions
     spectra.fill(HIST("hMultFT0A"), multFT0A, weight);
@@ -626,7 +747,14 @@ struct RecoilJets {
     spectra.fill(HIST("hMultZNC"), multZNC, weight);
     spectra.fill(HIST("hMultZNM"), multZNM, weight);
 
+    spectra.fill(HIST("hMultZPA"), multZPA, weight);
+    spectra.fill(HIST("hMultZPC"), multZPC, weight);
+    spectra.fill(HIST("hMultZPM"), multZPM, weight);
+
     // Correlations
+    spectra.fill(HIST("hZPA_vs_ZNA"), multZPA, multZNA, weight);
+    spectra.fill(HIST("hZPC_vs_ZNC"), multZPC, multZNC, weight);
+
     spectra.fill(HIST("hMultFT0A_vs_ZNA"), multFT0A, multZNA, weight);
     spectra.fill(HIST("hMultFT0C_vs_ZNC"), multFT0C, multZNC, weight);
     spectra.fill(HIST("hMultFT0M_vs_ZNM"), multFT0M, multZNM, weight);
@@ -634,7 +762,26 @@ struct RecoilJets {
     spectra.fill(HIST("hScaleMultFT0A_vs_ZNA"), scaledFT0A, multZNA, weight);
     spectra.fill(HIST("hScaleMultFT0C_vs_ZNC"), scaledFT0C, multZNC, weight);
     spectra.fill(HIST("hScaleMultFT0M_vs_ZNM"), scaledFT0M, multZNM, weight);
+
+    spectra.fill(HIST("hScaleMultFT0A_vs_ZPA"), scaledFT0A, multZPA, weight);
+    spectra.fill(HIST("hScaleMultFT0C_vs_ZPC"), scaledFT0C, multZPC, weight);
+    spectra.fill(HIST("hScaleMultFT0M_vs_ZPM"), scaledFT0M, multZPM, weight);
+
     spectra.fill(HIST("hScaleMultFT0M_vs_ZNA_vs_ZNC"), scaledFT0M, multZNA, multZNC, weight);
+    spectra.fill(HIST("hScaleMultFT0M_vs_ZPA_vs_ZPC"), scaledFT0M, multZPA, multZPC, weight);
+  }
+
+  template <typename CollisionMC>
+  void fillMultiplicityHistogramsPartLevelMC(CollisionMC const& collision,
+                                             float weight = 1.)
+  {
+    spectra.fill(HIST("hMultFT0APartLevel"), collision.multFT0A(), weight);
+    spectra.fill(HIST("hMultFT0CPartLevel"), collision.multFT0C(), weight);
+    spectra.fill(HIST("hMultFT0MPartLevel"), collision.multFT0A() + collision.multFT0C(), weight);
+
+    spectra.fill(HIST("hScaleMultFT0APartLevel"), collision.multFT0A() / meanFT0APartLevel, weight);
+    spectra.fill(HIST("hScaleMultFT0CPartLevel"), collision.multFT0C() / meanFT0CPartLevel, weight);
+    spectra.fill(HIST("hScaleMultFT0MPartLevel"), 0.5 * ((collision.multFT0A() / meanFT0APartLevel) + (collision.multFT0C() / meanFT0CPartLevel)), weight);
   }
 
   //------------------------------------------------------------------------------
@@ -647,28 +794,32 @@ struct RecoilJets {
     if (skipEvent(collision))
       return;
 
-    spectra.fill(HIST("hEventSelectionCount"), 1.5);
+    spectra.fill(HIST("hEventSelectionCount"), 1.5); // number of events selected for analysis
 
-    spectra.fill(HIST("vertexZ"), collision.posZ());
+    // spectra.fill(HIST("vertexZ"), collision.posZ());
     fillHistograms(collision, jets, tracks);
   }
-  PROCESS_SWITCH(RecoilJets, processData, "process data", true);
+  PROCESS_SWITCH(RecoilJets, processData, "process raw data", true);
 
   void processMCDetLevel(FilteredColl const& collision,
                          FilteredTracks const& tracks,
                          FilteredJetsDetLevel const& jets)
   {
     spectra.fill(HIST("hEventSelectionCount"), 0.5);
-    if (skipEvent(collision) || skipMBGapEvent(collision))
+    if (skipEvent(collision))
       return;
 
     spectra.fill(HIST("hEventSelectionCount"), 1.5);
 
-    spectra.fill(HIST("vertexZ"), collision.posZ());
+    if (skipMBGapEvent(collision)) {
+      spectra.fill(HIST("hEventSelectionCount"), 2.5);
+      return;
+    }
+
+    spectra.fill(HIST("hEventSelectionCount"), 5.5); // number of events selected for analysis
     fillHistograms(collision, jets, tracks);
   }
-  PROCESS_SWITCH(RecoilJets, processMCDetLevel, "process MC detector level",
-                 false);
+  PROCESS_SWITCH(RecoilJets, processMCDetLevel, "process MC detector level data (no weight)", false);
 
   void processMCDetLevelWeighted(FilteredCollDetLevelGetWeight const& collision,
                                  aod::JetMcCollisions const&,
@@ -676,37 +827,47 @@ struct RecoilJets {
                                  FilteredJetsDetLevel const& jets)
   {
     spectra.fill(HIST("hEventSelectionCount"), 0.5);
-    if (skipEvent(collision) || skipMBGapEvent(collision))
+    if (skipEvent(collision))
       return;
 
     spectra.fill(HIST("hEventSelectionCount"), 1.5);
 
-    auto weight = collision.mcCollision().weight();
-    spectra.fill(HIST("vertexZ"), collision.posZ(), weight);
-
-    if (collision.has_mcCollision()) {
-      spectra.fill(HIST("hHasAssocMcCollision"), 0.5, weight);
-    } else {
-      spectra.fill(HIST("hHasAssocMcCollision"), 1.5, weight);
+    if (skipMBGapEvent(collision)) {
+      spectra.fill(HIST("hEventSelectionCount"), 2.5);
+      return;
     }
 
+    if (collision.isOutlier()) {
+      spectra.fill(HIST("hEventSelectionCount"), 3.5);
+      return;
+    }
+
+    if (!collision.has_mcCollision()) {
+      spectra.fill(HIST("hEventSelectionCount"), 4.5);
+      return;
+    }
+
+    spectra.fill(HIST("hEventSelectionCount"), 5.5); // number of events selected for analysis
+    auto weight = collision.mcCollision().weight();
     fillHistograms(collision, jets, tracks, weight);
   }
-  PROCESS_SWITCH(RecoilJets, processMCDetLevelWeighted,
-                 "process MC detector level with event weight", false);
+  PROCESS_SWITCH(RecoilJets, processMCDetLevelWeighted, "process MC detector level data (weighted)", false);
 
   void processMCPartLevel(FilteredCollPartLevel const& collision,
                           FilteredParticles const& particles,
                           FilteredJetsPartLevel const& jets)
   {
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 0.5);
-    if (skipMBGapEvent(collision))
-      return;
 
-    spectra.fill(HIST("vertexZMC"), collision.posZ());
+    if (skipMBGapEvent(collision)) {
+      spectra.fill(HIST("hEventSelectionCountPartLevel"), 1.5);
+      return;
+    }
+
+    spectra.fill(HIST("hEventSelectionCountPartLevel"), 3.5); // number of events selected for analysis
     fillMCPHistograms(collision, jets, particles);
   }
-  PROCESS_SWITCH(RecoilJets, processMCPartLevel, "process MC particle level",
+  PROCESS_SWITCH(RecoilJets, processMCPartLevel, "process MC particle level data (no weight)",
                  false);
 
   void processMCPartLevelWeighted(FilteredCollPartLevel const& collision,
@@ -714,24 +875,24 @@ struct RecoilJets {
                                   FilteredJetsPartLevel const& jets)
   {
     spectra.fill(HIST("hEventSelectionCountPartLevel"), 0.5);
-    if (skipMBGapEvent(collision))
+
+    if (skipMBGapEvent(collision)) {
+      spectra.fill(HIST("hEventSelectionCountPartLevel"), 1.5);
       return;
+    }
+
+    if (collision.isOutlier()) {
+      spectra.fill(HIST("hEventSelectionCountPartLevel"), 2.5);
+      return;
+    }
+
+    spectra.fill(HIST("hEventSelectionCountPartLevel"), 3.5); // number of events selected for analysis
 
     auto weight = collision.weight();
-
-    auto calcPtHat = getPtHat(weight);
-    auto pThatFromFW = collision.ptHard();
-    spectra.fill(HIST("hDiffInOutlierRemove"), calcPtHat - pThatFromFW);
-    if (collision.isOutlier())
-      spectra.fill(HIST("hCountNumberOutliersFrameWork"), 0.5);
-
-    // LOG(debug) << "Difference between pT hat: " << calcPtHat - pThatFromFW;
-
-    spectra.fill(HIST("vertexZMC"), collision.posZ(), weight);
+    spectra.fill(HIST("ptHat"), collision.ptHard(), weight);
     fillMCPHistograms(collision, jets, particles, weight);
   }
-  PROCESS_SWITCH(RecoilJets, processMCPartLevelWeighted,
-                 "process MC particle level with event weight", false);
+  PROCESS_SWITCH(RecoilJets, processMCPartLevelWeighted, "process MC particle level data (weighted)", false);
 
   void processJetsMatched(FilteredCollDetLevelGetWeight const& collision,
                           aod::JetMcCollisions const&,
@@ -739,16 +900,14 @@ struct RecoilJets {
                           FilteredMatchedJetsDetLevel const& mcdjets,
                           FilteredMatchedJetsPartLevel const& mcpjets)
   {
-    if (skipEvent(collision) || skipMBGapEvent(collision))
+    if (skipEvent(collision) || skipMBGapEvent(collision) || collision.isOutlier())
       return;
 
-    auto mcpjetsPerMCCollision =
-      mcpjets.sliceBy(partJetsPerCollision, collision.mcCollisionId());
+    auto mcpjetsPerMCCollision = mcpjets.sliceBy(partJetsPerCollision, collision.mcCollisionId());
 
     fillMatchedHistograms(tracks, mcpjetsPerMCCollision, mcdjets);
   }
-  PROCESS_SWITCH(RecoilJets, processJetsMatched,
-                 "process matching of MC jets (no weight)", false);
+  PROCESS_SWITCH(RecoilJets, processJetsMatched, "process matching of MC jets (no weight)", false);
 
   void processJetsMatchedWeighted(FilteredCollDetLevelGetWeight const& collision,
                                   aod::JetMcCollisions const&,
@@ -756,26 +915,54 @@ struct RecoilJets {
                                   FilteredMatchedJetsDetLevel const& mcdjets,
                                   FilteredMatchedJetsPartLevel const& mcpjets)
   {
-    if (skipEvent(collision) || skipMBGapEvent(collision))
+    if (skipEvent(collision) || skipMBGapEvent(collision) || collision.isOutlier())
       return;
 
-    auto mcpjetsPerMCCollision =
-      mcpjets.sliceBy(partJetsPerCollision, collision.mcCollisionId());
+    auto mcpjetsPerMCCollision = mcpjets.sliceBy(partJetsPerCollision, collision.mcCollisionId());
     auto weight = collision.mcCollision().weight();
 
     fillMatchedHistograms(tracks, mcpjetsPerMCCollision, mcdjets, weight);
   }
-  PROCESS_SWITCH(RecoilJets, processJetsMatchedWeighted,
-                 "process matching of MC jets (weighted)", false);
+  PROCESS_SWITCH(RecoilJets, processJetsMatchedWeighted, "process matching of MC jets (weighted)", false);
 
-  void processMultiplicity(FilteredEventMultiplicity const& collision)
+  //------------------------------------------------------------------------------
+  void processMultiplicityOO(FilteredEventMultiplicity const& collision)
   {
     if (skipEvent(collision))
       return;
 
-    fillMultiplicityHistograms(collision);
+    fillMultiplicityHistogramsOO(collision);
   }
-  PROCESS_SWITCH(RecoilJets, processMultiplicity, "process multiplicity", false);
+  PROCESS_SWITCH(RecoilJets, processMultiplicityOO, "process multiplicity for OO collisions and MC detector level (no weight)", false);
+
+  void processMultiplicityMCDetLevelWeightedOO(FilteredEventMultiplicityDetLevelGetWeight const& collision)
+  {
+    if (skipEvent(collision) || collision.isOutlier() || !collision.has_mcCollision())
+      return;
+
+    auto weight = collision.mcCollision().weight();
+    fillMultiplicityHistogramsOO(collision, weight);
+  }
+  PROCESS_SWITCH(RecoilJets, processMultiplicityMCDetLevelWeightedOO, "process multiplicity for MC detector level OO collisions (weighted)", false);
+
+  void processMultiplicityPartLevelMC(FilteredEventMultiplicityPartLevel const& collision)
+  {
+    if (skipMBGapEvent(collision))
+      return;
+
+    fillMultiplicityHistogramsPartLevelMC(collision);
+  }
+  PROCESS_SWITCH(RecoilJets, processMultiplicityPartLevelMC, "process multiplicity for MC particle level events (no weight)", false);
+
+  void processMultiplicityPartLevelMCWeighted(FilteredEventMultiplicityPartLevel const& collision)
+  {
+    if (skipMBGapEvent(collision) || collision.isOutlier())
+      return;
+
+    auto weight = collision.weight();
+    fillMultiplicityHistogramsPartLevelMC(collision, weight);
+  }
+  PROCESS_SWITCH(RecoilJets, processMultiplicityPartLevelMCWeighted, "process multiplicity for MC particle level events (weighted)", false);
 
   //------------------------------------------------------------------------------
   // Auxiliary functions
@@ -809,11 +996,6 @@ struct RecoilJets {
   {
     auto iTrig = rand->Integer(vPhiOfTT.size());
     return vPhiOfTT[iTrig];
-  }
-
-  float getPtHat(float weight)
-  {
-    return 10. / (std::pow(weight, 1.0 / pTHatExponent));
   }
 
   float getScaledFT0A(const float multFT0A)

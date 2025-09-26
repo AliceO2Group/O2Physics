@@ -43,7 +43,7 @@ using namespace o2::analysis::femto;
 struct FemtoTrackQa {
 
   // setup tables
-  using Collisions = FCols;
+  using Collisions = o2::soa::Join<FCols, FColMasks, FColPos>;
   using Collision = Collisions::iterator;
 
   using FilteredCollisions = o2::soa::Filtered<Collisions>;
@@ -54,7 +54,7 @@ struct FemtoTrackQa {
   SliceCache cache;
 
   // setup collisions
-  collisionbuilder::ConfCollisionFilter collisionSelection;
+  collisionbuilder::ConfCollisionSelection collisionSelection;
   Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::ConfCollisionBinning confCollisionBinning;
   colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
@@ -76,7 +76,7 @@ struct FemtoTrackQa {
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
     colHistManager.init(&hRegistry, colHistSpec);
     auto trackHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confTrackBinning, confTrackQaBinning);
-    trackHistManager.init(&hRegistry, trackHistSpec);
+    trackHistManager.init(&hRegistry, trackHistSpec, trackSelections.charge.value, confTrackQaBinning.momentumType.value);
   };
 
   void process(FilteredCollision const& col, Tracks const& /*tracks*/)
@@ -85,7 +85,6 @@ struct FemtoTrackQa {
     auto trackSlice = trackPartition->sliceByCached(femtobase::stored::collisionId, col.globalIndex(), cache);
     for (auto const& track : trackSlice) {
       trackHistManager.fill(track);
-      // asdf
     }
   }
 };

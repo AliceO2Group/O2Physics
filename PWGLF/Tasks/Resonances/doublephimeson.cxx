@@ -82,6 +82,9 @@ struct doublephimeson {
   void init(o2::framework::InitContext&)
   {
     // register histograms
+    histos.add("hnsigmaTPCKaonPlusBefore", "hnsigmaTPCKaonPlusBefore", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
+    histos.add("hnsigmaTPCKaonMinusBefore", "hnsigmaTPCKaonMinusBefore", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
+    histos.add("hnsigmaTPCTOFKaonBefore", "hnsigmaTPCTOFKaonBefore", kTH3F, {{500, -3.0, 3.0f}, {500, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
     histos.add("hnsigmaTPCKaonPlus", "hnsigmaTPCKaonPlus", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
     histos.add("hnsigmaTPCKaonMinus", "hnsigmaTPCKaonMinus", kTH2F, {{1000, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
     histos.add("hnsigmaTPCTOFKaon", "hnsigmaTPCTOFKaon", kTH3F, {{500, -3.0, 3.0f}, {500, -3.0, 3.0f}, {100, 0.0f, 10.0f}});
@@ -89,6 +92,8 @@ struct doublephimeson {
     histos.add("hPhiMass2", "hPhiMass2", kTH2F, {{40, 1.0, 1.04f}, {40, 1.0f, 1.04f}});
     histos.add("hkPlusDeltaetaDeltaPhi", "hkPlusDeltaetaDeltaPhi", kTH2F, {{400, -2.0, 2.0}, {640, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}});
     histos.add("hkMinusDeltaetaDeltaPhi", "hkMinusDeltaetaDeltaPhi", kTH2F, {{400, -2.0, 2.0}, {640, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}});
+    histos.add("hDeltaRkaonplus", "hDeltaRkaonplus", kTH1F, {{800, 0.0, 8.0}});
+    histos.add("hDeltaRkaonminus", "hDeltaRkaonminus", kTH1F, {{800, 0.0, 8.0}});
 
     const AxisSpec thnAxisInvMass{configThnAxisInvMass, "#it{M} (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisInvMassPhi{configThnAxisInvMassPhi, "#it{M} (GeV/#it{c}^{2})"};
@@ -467,6 +472,11 @@ struct doublephimeson {
     for (auto phitrackd1 : phitracks) {
       auto kaonplusd1pt = TMath::Sqrt(phitrackd1.phid1Px() * phitrackd1.phid1Px() + phitrackd1.phid1Py() * phitrackd1.phid1Py());
       auto kaonminusd1pt = TMath::Sqrt(phitrackd1.phid2Px() * phitrackd1.phid2Px() + phitrackd1.phid2Py() * phitrackd1.phid2Py());
+
+      histos.fill(HIST("hnsigmaTPCTOFKaonBefore"), phitrackd1.phid1TPC(), phitrackd1.phid1TOF(), kaonplusd1pt);
+      histos.fill(HIST("hnsigmaTPCKaonPlusBefore"), phitrackd1.phid1TPC(), kaonplusd1pt);
+      histos.fill(HIST("hnsigmaTPCKaonMinusBefore"), phitrackd1.phid2TPC(), kaonminusd1pt);
+
       if (kaonplusd1pt > maxKaonPt) {
         continue;
       }
@@ -564,6 +574,8 @@ struct doublephimeson {
         auto exotic1kaonminus2 = kaonminus2.at(i5);
         auto deltaRkaonplus1 = TMath::Sqrt(TMath::Power(exotic1kaonplus1.Phi() - exotic1kaonplus2.Phi(), 2.0) + TMath::Power(exotic1kaonplus1.Eta() - exotic1kaonplus2.Eta(), 2.0));
         auto deltaRkaonminus1 = TMath::Sqrt(TMath::Power(exotic1kaonminus1.Phi() - exotic1kaonminus2.Phi(), 2.0) + TMath::Power(exotic1kaonminus1.Eta() - exotic1kaonminus2.Eta(), 2.0));
+        histos.fill(HIST("hDeltaRkaonplus"), deltaRkaonplus1);
+        histos.fill(HIST("hDeltaRkaonminus"), deltaRkaonminus1);
 
         auto deltam1 = TMath::Sqrt(TMath::Power(exotic1phi1.M() - 1.0192, 2.0) + TMath::Power(exotic1phi2.M() - 1.0192, 2.0));
         auto deltaR1 = TMath::Sqrt(TMath::Power(exotic1phi1.Phi() - exotic1phi2.Phi(), 2.0) + TMath::Power(exotic1phi1.Eta() - exotic1phi2.Eta(), 2.0));
@@ -623,6 +635,9 @@ struct doublephimeson {
         auto deltam1 = TMath::Sqrt(TMath::Power(exotic1phi1.M() - 1.0192, 2.0) + TMath::Power(exotic1phi2.M() - 1.0192, 2.0));
         auto deltaR1 = TMath::Sqrt(TMath::Power(exotic1phi1.Phi() - exotic1phi2.Phi(), 2.0) + TMath::Power(exotic1phi1.Eta() - exotic1phi2.Eta(), 2.0));
 
+        histos.fill(HIST("hDeltaRkaonplus"), deltaRkaonplus1);
+        histos.fill(HIST("hDeltaRkaonminus"), deltaRkaonminus1);
+
         if (deltaRkaonplus1 < daughterDeltaR) {
           continue;
         }
@@ -667,6 +682,8 @@ struct doublephimeson {
                                     const ROOT::Math::PtEtaPhiMVector& kminusB) {
       const double dRkplus = deltaR(kplusA.Phi(), kplusA.Eta(), kplusB.Phi(), kplusB.Eta());
       const double dRkminus = deltaR(kminusA.Phi(), kminusA.Eta(), kminusB.Phi(), kminusB.Eta());
+      histos.fill(HIST("hDeltaRkaonplus"), dRkplus);
+      histos.fill(HIST("hDeltaRkaonminus"), dRkminus);
       return (dRkplus > daughterDeltaR) && (dRkminus > daughterDeltaR);
       // If later needed, make pT-aware:
       // const double thr = std::max(0.01, daughterDeltaR - 0.002 * std::min(10.0, exoticPt));
@@ -712,6 +729,11 @@ struct doublephimeson {
       // Per-φ selection for the first φ
       const double kplus1pt = std::hypot(t1.phid1Px(), t1.phid1Py());
       const double kminus1pt = std::hypot(t1.phid2Px(), t1.phid2Py());
+
+      histos.fill(HIST("hnsigmaTPCTOFKaonBefore"), t1.phid1TPC(), t1.phid1TOF(), kplus1pt);
+      histos.fill(HIST("hnsigmaTPCKaonPlusBefore"), t1.phid1TPC(), kplus1pt);
+      histos.fill(HIST("hnsigmaTPCKaonMinusBefore"), t1.phid2TPC(), kminus1pt);
+
       if (kplus1pt > maxKaonPt)
         continue;
       if (kminus1pt > maxKaonPt)
