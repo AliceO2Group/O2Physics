@@ -173,8 +173,8 @@ struct HfCandidateCreatorSigmac0plusplus {
     LOG(info) << "### ITS hitmap for soft pion";
     LOG(info) << "    >>> setSoftPiItsHitMap.size(): " << setSoftPiItsHitMap.size();
     LOG(info) << "    >>> Custom ITS hitmap dfchecked: ";
-    for (std::set<uint8_t>::iterator it = setSoftPiItsHitMap.begin(); it != setSoftPiItsHitMap.end(); it++) {
-      LOG(info) << "        Layer " << static_cast<int>(*it) << " ";
+    for (const auto it : setSoftPiItsHitMap) {
+      LOG(info) << "        Layer " << static_cast<int>(it) << " ";
     }
     LOG(info) << "############";
     softPiCuts.SetRequireITSRefit();

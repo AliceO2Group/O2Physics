@@ -138,7 +138,7 @@ struct HfCandidateSelectorLcPidMl {
       if (loadModelsFromCCDB && timestampCCDB > 0) {
         retrieveSuccess = ccdbApi.retrieveBlob(mlModelPathCCDB.value, ".", metadata, timestampCCDB.value, false, onnxFileLcToPiKPConf.value);
         headers = ccdbApi.retrieveHeaders(mlModelPathCCDB.value, metadata, timestampCCDB.value);
-        model.initModel(onnxFileLcToPiKPConf.value, false, 1, strtoul(headers["Valid-From"].c_str(), NULL, 0), strtoul(headers["Valid-Until"].c_str(), NULL, 0));
+        model.initModel(onnxFileLcToPiKPConf.value, false, 1, strtoul(headers["Valid-From"].c_str(), nullptr, 0), strtoul(headers["Valid-Until"].c_str(), nullptr, 0));
       } else if (!loadModelsFromCCDB) {
         model.initModel(onnxFileLcToPiKPConf.value, false, 1);
       } else {

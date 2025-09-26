@@ -563,8 +563,8 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
   gStyle->SetFrameFillColor(0);
   pad->cd();
   if (writeFitInfo > 0) {
-    TPaveText* textInfoLeft = new TPaveText(0.12, 0.65, 0.47, 0.89, "NDC");
-    TPaveText* textInfoRight = new TPaveText(0.6, 0.7, 1., .87, "NDC");
+    auto* textInfoLeft = new TPaveText(0.12, 0.65, 0.47, 0.89, "NDC");
+    auto* textInfoRight = new TPaveText(0.6, 0.7, 1., .87, "NDC");
     textInfoLeft->SetBorderSize(0);
     textInfoLeft->SetFillStyle(0);
     textInfoRight->SetBorderSize(0);
@@ -621,7 +621,7 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
 {
   pad->cd();
   mResidualFrame->GetYaxis()->SetTitle("");
-  TPaveText* textInfo = new TPaveText(0.12, 0.65, 0.47, .89, "NDC");
+  auto* textInfo = new TPaveText(0.12, 0.65, 0.47, .89, "NDC");
   textInfo->SetBorderSize(0);
   textInfo->SetFillStyle(0);
   textInfo->SetTextColor(kBlue);
@@ -651,8 +651,8 @@ void HFInvMassFitter::highlightPeakRegion(const RooPlot* plot, Color_t color, Wi
   const Double_t sigma = mRooSigmaSgn->getVal();
   const Double_t minForSgn = mean - mNSigmaForSidebands * sigma;
   const Double_t maxForSgn = mean + mNSigmaForSidebands * sigma;
-  TLine* leftLine = new TLine(minForSgn, yMin, minForSgn, yMax);
-  TLine* rightLine = new TLine(maxForSgn, yMin, maxForSgn, yMax);
+  auto* leftLine = new TLine(minForSgn, yMin, minForSgn, yMax);
+  auto* rightLine = new TLine(maxForSgn, yMin, maxForSgn, yMax);
   for (const auto& line : std::array<TLine*, 2>{leftLine, rightLine}) {
     line->SetLineColor(color);
     line->SetLineWidth(width);

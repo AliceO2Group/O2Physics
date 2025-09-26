@@ -26,6 +26,7 @@
 
 #include "Common/Core/RecoDecay.h"
 
+#include <CommonConstants/MathConstants.h>
 #include <CommonConstants/PhysicsConstants.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
@@ -191,7 +192,7 @@ struct HfTaskCharmHadronsFemtoDream {
   ConfigurableAxis binMulPercentile{"binMulPercentile", {10, 0.0f, 100.0f}, "multiplicity percentile Binning"};
   ConfigurableAxis binpTTrack{"binpTTrack", {50, 0.5, 10.05}, "pT binning of the pT vs. TempFitVar plot (Track)"};
   ConfigurableAxis binEta{"binEta", {{200, -1.5, 1.5}}, "eta binning"};
-  ConfigurableAxis binPhi{"binPhi", {{200, 0, 2.f * 3.14159274101257324e+00f}}, "phi binning"};
+  ConfigurableAxis binPhi{"binPhi", {{200, 0, o2::constants::math::TwoPI}}, "phi binning"};
   ConfigurableAxis binkT{"binkT", {150, 0., 9.}, "binning kT"};
   ConfigurableAxis binkstar{"binkstar", {1500, 0., 6.}, "binning kstar"};
   ConfigurableAxis binNSigmaTPC{"binNSigmaTPC", {1600, -8, 8}, "Binning of Nsigma TPC plot"};

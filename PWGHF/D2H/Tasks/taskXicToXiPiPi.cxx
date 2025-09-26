@@ -526,8 +526,8 @@ struct HfTaskXicToXiPiPi {
         std::array<float, 3> prodVtxZProngs{};
         int counter = 0;
         RecoDecay::getDaughters(particle, &arrDaughIndex, std::array{+kXiMinus, +kPiPlus, +kPiPlus}, 2);
-        for (auto iProng = 0u; iProng < arrDaughIndex.size(); ++iProng) {
-          auto daughI = mcParticles.rawIteratorAt(arrDaughIndex[iProng]);
+        for (const int iProng : arrDaughIndex) {
+          auto daughI = mcParticles.rawIteratorAt(iProng);
           ptProngs[counter] = daughI.pt();
           etaProngs[counter] = daughI.eta();
           yProngs[counter] = RecoDecay::y(daughI.pVector(), pdg->Mass(daughI.pdgCode()));

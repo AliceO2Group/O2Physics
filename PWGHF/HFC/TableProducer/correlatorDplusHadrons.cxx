@@ -133,7 +133,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
         if (std::abs(hfHelper.yDplus(candidate)) >= yCandMax || candidate.pt() <= ptCandMin) {
           continue;
         }
-        isDplusFound = 1;
+        isDplusFound = true;
         break;
       }
     }
@@ -152,7 +152,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
   void processDplusSelectionMcGen(aod::McCollision const&,
                                   CandDplusMcGen const& mcParticles)
   {
-    bool isDplusFound = 0;
+    bool isDplusFound = false;
     for (const auto& particle1 : mcParticles) {
       if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
         continue;
@@ -161,7 +161,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
       if (std::abs(yD) >= yCandMax || particle1.pt() <= ptCandMin) {
         continue;
       }
-      isDplusFound = 1;
+      isDplusFound = true;
       break;
     }
     dplusSel(isDplusFound);

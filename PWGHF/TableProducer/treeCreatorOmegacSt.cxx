@@ -455,10 +455,10 @@ struct HfTreeCreatorOmegacSt {
         runNumber = bc.runNumber();
         auto timestamp = bc.timestamp();
 
-        if (o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
+        if (auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
           o2::base::Propagator::initFieldFromGRP(grpo);
           bz = grpo->getNominalL3Field();
-        } else if (o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpMagPath, timestamp)) {
+        } else if (auto* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpMagPath, timestamp)) {
           o2::base::Propagator::initFieldFromGRP(grpmag);
           bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
         } else {
@@ -841,9 +841,9 @@ struct HfTreeCreatorOmegacSt {
       runNumber = bc.runNumber();
       auto timestamp = bc.timestamp();
 
-      if (o2::parameters::GRPObject* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
+      if (auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, timestamp)) {
         o2::base::Propagator::initFieldFromGRP(grpo);
-      } else if (o2::parameters::GRPMagField* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpMagPath, timestamp)) {
+      } else if (auto* grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpMagPath, timestamp)) {
         o2::base::Propagator::initFieldFromGRP(grpmag);
       } else {
         LOG(fatal) << "Got nullptr from CCDB for path " << grpMagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << timestamp;

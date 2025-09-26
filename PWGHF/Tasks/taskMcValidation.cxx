@@ -217,14 +217,14 @@ struct HfTaskMcValidationGen {
     }
 
     // add per species histograms
-    for (size_t iOrigin = 0; iOrigin < nOriginTypes; iOrigin++) {
+    for (auto originName : originNames) {
       for (int iChannel = 0; iChannel < nCharmMesonChannels; iChannel++) { // Charm mesons
-        registry.add(Form("%sCharmMesons/hCount%s%s", originNames[iOrigin].data(), originNames[iOrigin].data(), particleNames[iChannel].data()),
-                     Form("Event counter - %s %s; Events Per Collision; entries", originNames[iOrigin].data(), labels[iChannel].data()), {HistType::kTH1F, {axisNhadrons}});
+        registry.add(Form("%sCharmMesons/hCount%s%s", originName.data(), originName.data(), particleNames[iChannel].data()),
+                     Form("Event counter - %s %s; Events Per Collision; entries", originName.data(), labels[iChannel].data()), {HistType::kTH1F, {axisNhadrons}});
       }
       for (int iChannel = nCharmMesonChannels + nBeautyChannels; iChannel < nChannels; iChannel++) { // Charm baryons
-        registry.add(Form("%sCharmBaryons/hCount%s%s", originNames[iOrigin].data(), originNames[iOrigin].data(), particleNames[iChannel].data()),
-                     Form("Event counter - %s %s; Events Per Collision; entries", originNames[iOrigin].data(), labels[iChannel].data()), {HistType::kTH1F, {axisNhadrons}});
+        registry.add(Form("%sCharmBaryons/hCount%s%s", originName.data(), originName.data(), particleNames[iChannel].data()),
+                     Form("Event counter - %s %s; Events Per Collision; entries", originName.data(), labels[iChannel].data()), {HistType::kTH1F, {axisNhadrons}});
       }
     }
     for (int iChannel = nCharmMesonChannels; iChannel < nCharmMesonChannels + nBeautyChannels; iChannel++) { // Beauty mesons
@@ -451,8 +451,8 @@ struct HfTaskMcValidationGen {
         double sumPyDau = 0.;
         double sumPzDau = 0.;
         bool momentumCheck = true;
-        for (std::size_t iDau = 0; iDau < listDaughters.size(); ++iDau) {
-          auto daughter = mcParticles.rawIteratorAt(listDaughters.at(iDau) - mcParticles.offset());
+        for (const int listDaughter : listDaughters) {
+          auto daughter = mcParticles.rawIteratorAt(listDaughter - mcParticles.offset());
           sumPxDau += daughter.px();
           sumPyDau += daughter.py();
           sumPzDau += daughter.pz();

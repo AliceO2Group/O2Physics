@@ -1108,7 +1108,7 @@ struct HfCandidateCreator3ProngExpressions {
                   }
                 }
               }
-            } else if (finalState.size() == 3) { // o2-linter: disable=magic-number(fully reconstructed 3-prong decays)
+            } else if (finalState.size() == 3) { // o2-linter: disable=magic-number (fully reconstructed 3-prong decays)
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(mcParticles, arrayDaughters, pdgMother, arrPdgDaughtersMain3Prongs, true, &sign, depthMainMax, &nKinkedTracks, &nInteractionsWithMaterial);
               } else if (matchKinkedDecayTopology && !matchInteractionsWithMaterial) {
@@ -1137,8 +1137,8 @@ struct HfCandidateCreator3ProngExpressions {
               if (pdgMother == Pdg::kDStar) {
                 std::vector<int> arrResoDaughIndexDstar = {};
                 RecoDecay::getDaughters(mcParticles.rawIteratorAt(indexRec), &arrResoDaughIndexDstar, std::array{0}, DepthResoMax);
-                for (size_t iDaug = 0; iDaug < arrResoDaughIndexDstar.size(); iDaug++) {
-                  auto daughDstar = mcParticles.rawIteratorAt(arrResoDaughIndexDstar[iDaug]);
+                for (const int iDaug : arrResoDaughIndexDstar) { // o2-linter: disable=const-ref-in-for-loop (int elements)
+                  auto daughDstar = mcParticles.rawIteratorAt(iDaug);
                   if (std::abs(daughDstar.pdgCode()) == Pdg::kD0 || std::abs(daughDstar.pdgCode()) == Pdg::kDPlus) {
                     RecoDecay::getDaughters(daughDstar, &arrResoDaughIndex, std::array{0}, DepthResoMax);
                     break;

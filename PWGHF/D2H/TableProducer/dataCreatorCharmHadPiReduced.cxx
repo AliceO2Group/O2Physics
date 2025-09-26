@@ -984,9 +984,9 @@ struct HfDataCreatorCharmHadPiReduced {
           std::vector<int> arrDaughDstarIndex;
           RecoDecay::getDaughters(particlesMc.rawIteratorAt(indexRec), &arrDaughDstarIndex, std::array{0}, 1);
           if (arrDaughDstarIndex.size() == NDaughtersDstar) {
-            bool matchD0{0};
-            for (auto iProng = 0u; iProng < arrDaughDstarIndex.size(); ++iProng) {
-              auto daughI = particlesMc.rawIteratorAt(arrDaughDstarIndex[iProng]);
+            bool matchD0{false};
+            for (const int iProng : arrDaughDstarIndex) {
+              auto daughI = particlesMc.rawIteratorAt(iProng);
               if (std::abs(daughI.pdgCode()) == Pdg::kD0) {
                 matchD0 = RecoDecay::isMatchedMCGen(particlesMc, daughI, +Pdg::kD0, std::array{+kPiPlus, -kKPlus}, true, &signD, 2);
               }
@@ -1045,7 +1045,7 @@ struct HfDataCreatorCharmHadPiReduced {
     auto bc = collision.template bc_as<BBCs>();
     if (runNumber != bc.runNumber()) {
       LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(configs.ccdbPathGrpMag, bc.timestamp());
+      auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(configs.ccdbPathGrpMag, bc.timestamp());
       if (grpo == nullptr) {
         LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
       }

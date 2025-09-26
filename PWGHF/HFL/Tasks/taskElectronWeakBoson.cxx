@@ -463,7 +463,7 @@ struct HfTaskElectronWeakBoson {
       lastRunNumber = runNumber;
 
       // initialize magnetic field
-      o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, currentTimestamp);
+      auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, currentTimestamp);
       o2::base::Propagator::initFieldFromGRP(grpo);
       double magneticField = o2::base::Propagator::Instance()->getNominalBz();
       LOG(info) << "magneticField = " << magneticField;

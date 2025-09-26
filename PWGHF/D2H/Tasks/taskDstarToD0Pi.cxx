@@ -284,7 +284,7 @@ struct HfTaskDstarToD0Pi {
               LOGF(fatal, "Histogram %s not found in weight file!", histName.c_str());
               return;
             }
-            hWeights[ithWeight]->SetDirectory(0);
+            hWeights[ithWeight]->SetDirectory(nullptr);
             hWeights[ithWeight]->SetName(("hWeight" + std::to_string(ithWeight + 1)).c_str());
           }
           weightFile->Close();
@@ -587,7 +587,7 @@ struct HfTaskDstarToD0Pi {
         if (recCollisions.size()) {
           std::vector<std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>> tempRecCols;
           for (const auto& recCol : recCollisions) {
-            tempRecCols.push_back(std::make_pair(recCol, recCol.numContrib()));
+            tempRecCols.emplace_back(recCol, recCol.numContrib());
           }
           std::sort(tempRecCols.begin(), tempRecCols.end(), compare);
           centFT0MGen = tempRecCols.at(0).first.centFT0M();

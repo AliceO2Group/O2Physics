@@ -249,7 +249,7 @@ struct HfCandidateCreatorDstar {
       auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
       if (runNumber != bc.runNumber()) {
         // LOG(info) << ">>>>>>>>>>>> Current run number: " << runNumber;
-        o2::parameters::GRPMagField* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
+        auto* grpo = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(ccdbPathGrpMag, bc.timestamp());
         if (grpo == nullptr) {
           LOGF(fatal, "Run 3 GRP object (type o2::parameters::GRPMagField) is not available in CCDB for run=%d at timestamp=%llu", bc.runNumber(), bc.timestamp());
         }
@@ -348,7 +348,7 @@ struct HfCandidateCreatorDstar {
       // Soft pi momentum vector and sign
       std::array<float, 3> pVecSoftPi{};
       trackPiParVar.getPxPyPzGlo(pVecSoftPi);
-      int8_t signSoftPi = static_cast<int8_t>(trackPi.sign());
+      auto signSoftPi = static_cast<int8_t>(trackPi.sign());
 
       // D* pt magnitude
       auto ptDstar = RecoDecay::pt(pVecD0, pVecSoftPi);

@@ -67,14 +67,14 @@ class HFInvMassFitter : public TNamed
   std::vector<std::string> namesOfReflPdf{"reflFuncGaus", "reflFuncDoubleGaus", "reflFuncPoly3", "reflFuncPoly6"};
   HFInvMassFitter();
   HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg = Expo, Int_t fitTypeSgn = SingleGaus);
-  ~HFInvMassFitter();
+  ~HFInvMassFitter() override;
   void setHistogramForFit(const TH1* histoToFit)
   {
     if (mHistoInvMass) {
       delete mHistoInvMass;
     }
     mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone("mHistoInvMass"));
-    mHistoInvMass->SetDirectory(0);
+    mHistoInvMass->SetDirectory(nullptr);
   }
   void setUseLikelihoodFit() { mFitOption = "L,E"; }
   void setUseChi2Fit() { mFitOption = "Chi2"; }
@@ -197,21 +197,21 @@ class HFInvMassFitter : public TNamed
   }
   void setDrawBgPrefit(Bool_t value = true) { mDrawBgPrefit = value; }
   void setHighlightPeakRegion(Bool_t value = true) { mHighlightPeakRegion = value; }
-  Double_t getChiSquareOverNDFTotal() const { return mChiSquareOverNdfTotal; }
-  Double_t getChiSquareOverNDFBkg() const { return mChiSquareOverNdfBkg; }
-  Double_t getRawYield() const { return mRawYield; }
-  Double_t getRawYieldError() const { return mRawYieldErr; }
-  Double_t getRawYieldCounted() const { return mRawYieldCounted; }
-  Double_t getRawYieldCountedError() const { return mRawYieldCountedErr; }
-  Double_t getBkgYield() const { return mBkgYield; }
-  Double_t getBkgYieldError() const { return mBkgYieldErr; }
-  Double_t getSignificance() const { return mSignificance; }
-  Double_t getSignificanceError() const { return mSignificanceErr; }
-  Double_t getMean() const { return mRooMeanSgn->getVal(); }
-  Double_t getMeanUncertainty() const { return mRooMeanSgn->getError(); }
-  Double_t getSigma() const { return mRooSigmaSgn->getVal(); }
-  Double_t getSigmaUncertainty() const { return mRooSigmaSgn->getError(); }
-  Double_t getReflOverSig() const
+  [[nodiscard]] Double_t getChiSquareOverNDFTotal() const { return mChiSquareOverNdfTotal; }
+  [[nodiscard]] Double_t getChiSquareOverNDFBkg() const { return mChiSquareOverNdfBkg; }
+  [[nodiscard]] Double_t getRawYield() const { return mRawYield; }
+  [[nodiscard]] Double_t getRawYieldError() const { return mRawYieldErr; }
+  [[nodiscard]] Double_t getRawYieldCounted() const { return mRawYieldCounted; }
+  [[nodiscard]] Double_t getRawYieldCountedError() const { return mRawYieldCountedErr; }
+  [[nodiscard]] Double_t getBkgYield() const { return mBkgYield; }
+  [[nodiscard]] Double_t getBkgYieldError() const { return mBkgYieldErr; }
+  [[nodiscard]] Double_t getSignificance() const { return mSignificance; }
+  [[nodiscard]] Double_t getSignificanceError() const { return mSignificanceErr; }
+  [[nodiscard]] Double_t getMean() const { return mRooMeanSgn->getVal(); }
+  [[nodiscard]] Double_t getMeanUncertainty() const { return mRooMeanSgn->getError(); }
+  [[nodiscard]] Double_t getSigma() const { return mRooSigmaSgn->getVal(); }
+  [[nodiscard]] Double_t getSigmaUncertainty() const { return mRooSigmaSgn->getError(); }
+  [[nodiscard]] Double_t getReflOverSig() const
   {
     if (mReflPdf) {
       return mReflOverSgn;

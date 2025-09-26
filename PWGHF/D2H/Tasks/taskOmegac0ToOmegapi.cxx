@@ -135,14 +135,14 @@ struct HfTaskOmegac0ToOmegapi {
 
     if (doprocessDataKFParticleFT0C || doprocessDataKFParticleMlFT0C || doprocessDataKFParticleFT0M || doprocessDataKFParticleMlFT0M) {
       axes.push_back(thnAxisCent);
-      axes.push_back(thnConfigAxisNumPvContr);
+      axes.emplace_back(thnConfigAxisNumPvContr);
     }
 
     if (doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {
       axes.push_back(thnAxisCentMc);
-      axes.push_back(thnConfigAxisNumPvContr);
+      axes.emplace_back(thnConfigAxisNumPvContr);
       axesMcGen.push_back(thnAxisCentMc);
-      axesMcGen.push_back(thnConfigAxisNumPvContr);
+      axesMcGen.emplace_back(thnConfigAxisNumPvContr);
     }
 
     if (doprocessMcKFParticle || doprocessMcKFParticleMl || doprocessMcKFParticleFT0M || doprocessMcKFParticleMlFT0M) {

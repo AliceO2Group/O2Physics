@@ -202,8 +202,8 @@ void fillMcMatchGen3Prong(TMcParticles const& mcParticles,
             if (std::abs(pdgMother) == Pdg::kDStar) {
               std::vector<int> arrResoDaughIndexDStar = {};
               RecoDecay::getDaughters(particle, &arrResoDaughIndexDStar, std::array{0}, DepthResoMax);
-              for (std::size_t iDaug = 0; iDaug < arrResoDaughIndexDStar.size(); iDaug++) {
-                auto daughDstar = mcParticles.rawIteratorAt(arrResoDaughIndexDStar[iDaug]);
+              for (const int iDaug : arrResoDaughIndexDStar) {
+                auto daughDstar = mcParticles.rawIteratorAt(iDaug);
                 if (std::abs(daughDstar.pdgCode()) == Pdg::kD0 || std::abs(daughDstar.pdgCode()) == Pdg::kDPlus) {
                   RecoDecay::getDaughters(daughDstar, &arrResoDaughIndex, std::array{0}, DepthResoMax);
                   break;
