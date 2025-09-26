@@ -123,13 +123,13 @@ std::tuple<std::vector<int>, std::vector<int>> MatchJetsGeometricallyImpl(
   const std::vector<T>& jetsBaseEta,
   std::vector<T> jetsBasePhiForMatching,
   std::vector<T> jetsBaseEtaForMatching,
-  const std::vector<std::size_t> jetMapBaseToJetIndex,
+  const std::vector<std::size_t>& jetMapBaseToJetIndex,
   const std::vector<T>& jetsTagPhi,
   const std::vector<T>& jetsTagEta,
   std::vector<T> jetsTagPhiForMatching,
   std::vector<T> jetsTagEtaForMatching,
-  const std::vector<std::size_t> jetMapTagToJetIndex,
-  double maxMatchingDistance)
+  const std::vector<std::size_t>& jetMapTagToJetIndex,
+  const double maxMatchingDistance)
 {
   // Validation
   // If no jets in either collection, then return immediately.
