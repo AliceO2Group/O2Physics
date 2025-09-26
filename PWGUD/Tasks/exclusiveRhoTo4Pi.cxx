@@ -909,7 +909,7 @@ struct ExclusiveRhoTo4Pi {
     } // End of Analysis for non 0 charge events
   } // End of 4 Pion Analysis Process function for Pass5 MC
 
-  void processMCgen(aod::UDMcCollisions::iterator const& mccollision, aod::UDMcParticles const& mcParticles, aod::BCs const& bcs)
+  void processMCgen(aod::UDMcCollisions::iterator const&, aod::UDMcParticles const& mcParticles, aod::BCs const& bcs)
   {
 
     if (bcs.size() == 0) {
