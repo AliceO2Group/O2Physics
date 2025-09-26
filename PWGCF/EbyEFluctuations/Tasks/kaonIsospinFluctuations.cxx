@@ -649,7 +649,7 @@ struct KaonIsospinFluctuations {
     {250000, -1.5, 249998.5 /*(nKaPlus*nKaMinus)*/},
     {1020, -1.0, 101.0 /*centrality*/},
     {2000, -1.5, 1998.5 /*nTrack*/}};
-  
+
   std::string defaultSparseAxis[10][3] = {
     {"centrality", "centrality", "centrality"},
     {"nK0s/kPos/iNTrk", "nK0s/kPos/iNTrk", "nKa/kPos/iNTrk"},
