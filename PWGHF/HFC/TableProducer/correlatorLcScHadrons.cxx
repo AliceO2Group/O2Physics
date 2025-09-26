@@ -300,9 +300,9 @@ struct HfCorrelatorLcScHadrons {
   bool isPrompt = false;
   bool isNonPrompt = false;
   bool isSignal = false;
-  const int8_t chargeScPlusPlus = 2;
-  const int8_t chargeZero = 0;
-  const int8_t assignedChargeSc0 = 1; // to distingush sc0 from anti-sc0, charge set to +1 and -1
+  static constexpr int8_t ChargeScPlusPlus{2};
+  static constexpr int8_t ChargeZero{0};
+  static constexpr int8_t AssignedChargeSc0{1}; // to distinguish sc0 from anti-sc0, charge set to +1 and -1
 
   TRandom3* rnd = new TRandom3(0);
   // std::vector<float> outputMl = {-1., -1., -1.};
@@ -458,7 +458,7 @@ struct HfCorrelatorLcScHadrons {
     if constexpr (isCandSc) {
       int8_t chargeCand = candidate.charge();
 
-      if (chargeCand == chargeZero) {
+      if (chargeCand == ChargeZero) {
         y = hfHelper.ySc0(candidate);
       } else {
         y = hfHelper.yScPlusPlus(candidate);
@@ -805,8 +805,8 @@ struct HfCorrelatorLcScHadrons {
           //   (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == 0) ||
           //   (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == 2);
           isSignal =
-            (std::abs(candidate.flagMcMatchRec()) == (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == chargeZero) ||
-            (std::abs(candidate.flagMcMatchRec()) == (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == chargeScPlusPlus);
+            (std::abs(candidate.flagMcMatchRec()) == (1 << aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == ChargeZero) ||
+            (std::abs(candidate.flagMcMatchRec()) == (1 << aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == ChargeScPlusPlus);
 
           auto trackPos1 = candidateLc.template prong0_as<aod::TracksWMc>();
           auto trackPos2 = candidateLc.template prong2_as<aod::TracksWMc>();
@@ -821,8 +821,8 @@ struct HfCorrelatorLcScHadrons {
         }
         registry.fill(HIST("hPtProng0"), ptCandLc);
 
-        if (chargeCand == chargeZero) {
-          chargeCand = (signSoftPion < chargeZero) ? assignedChargeSc0 : -assignedChargeSc0; // to distingush sc0 from anti-sc0, charge set to +1 and -1
+        if (chargeCand == ChargeZero) {
+          chargeCand = (signSoftPion < ChargeZero) ? AssignedChargeSc0 : -AssignedChargeSc0; // to distingush sc0 from anti-sc0, charge set to +1 and -1
         }
 
       } else {
@@ -1029,14 +1029,14 @@ struct HfCorrelatorLcScHadrons {
           }
           if constexpr (isMcRec) {
             isSignal =
-              (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == chargeZero) ||
-              (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == chargeScPlusPlus);
+              (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == ChargeZero) ||
+              (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == ChargeScPlusPlus);
             signSoftPion = candidate.template prong1_as<aod::TracksWMc>().sign();
           } else {
             signSoftPion = candidate.template prong1_as<aod::Tracks>().sign();
           }
-          if (chargeCand == chargeZero) {
-            chargeCand = (signSoftPion < chargeZero) ? assignedChargeSc0 : -assignedChargeSc0; // to distingush sc0 from anti-sc0, charge set to +1 and -1
+          if (chargeCand == ChargeZero) {
+            chargeCand = (signSoftPion < ChargeZero) ? AssignedChargeSc0 : -AssignedChargeSc0; // to distingush sc0 from anti-sc0, charge set to +1 and -1
           }
         } else {
           selLcPKPi = candidate.isSelLcToPKPi() >= selectionFlagLc;
@@ -1132,8 +1132,8 @@ struct HfCorrelatorLcScHadrons {
       registry.fill(HIST("hYMcGen"), yCand);
 
       int8_t chargeCand = pdg->GetParticle(particle.pdgCode())->Charge() / PDGChargeScale; // Retrieve charge
-      if (chargeCand == chargeZero) {
-        chargeCand = (particle.pdgCode() > chargeZero) ? assignedChargeSc0 : -assignedChargeSc0; // to distingush sc0 from anti-sc0, charge set to +1 and -1
+      if (chargeCand == ChargeZero) {
+        chargeCand = (particle.pdgCode() > ChargeZero) ? AssignedChargeSc0 : -AssignedChargeSc0; // to distingush sc0 from anti-sc0, charge set to +1 and -1
       }
 
       isPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;

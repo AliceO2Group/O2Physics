@@ -47,11 +47,12 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::hf_sel_electron;
 
-std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
-std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500.0, 5000.};
-std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MCGen multiplicity is defined by counting primaries
+const std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
+const std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500.0, 5000.};
+const std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MCGen multiplicity is defined by counting primaries
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
-BinningType corrBinning{{zBins, multBins}, true};
+const BinningType corrBinning{{zBins, multBins}, true};
+
 using BinningTypeMcGen = ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mult::MultMCFT0A>;
 
 struct HfCorrelatorHfeHadrons {

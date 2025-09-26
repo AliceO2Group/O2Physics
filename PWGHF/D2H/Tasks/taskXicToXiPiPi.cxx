@@ -67,7 +67,7 @@ struct HfTaskXicToXiPiPi {
   // THnSparese for ML selection check
   Configurable<bool> enableTHn{"enableTHn", false, "Fill THnSparse for Xic"};
 
-  const int nVarsMultiClass = 3;
+  static constexpr int NVarsMultiClass{3};
 
   Service<o2::framework::O2DatabasePDG> pdg;
 
@@ -302,7 +302,7 @@ struct HfTaskXicToXiPiPi {
       if (scoreSize > 0) {
         outputBkg = candidate.mlProbXicToXiPiPi()[0];
         outputPrompt = candidate.mlProbXicToXiPiPi()[1];
-        if (scoreSize == nVarsMultiClass) {
+        if (scoreSize == NVarsMultiClass) {
           outputFD = candidate.mlProbXicToXiPiPi()[2];
         }
       }

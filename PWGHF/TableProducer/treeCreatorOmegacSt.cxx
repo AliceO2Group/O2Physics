@@ -260,16 +260,16 @@ struct HfTreeCreatorOmegacSt {
   Configurable<bool> bzOnly{"bzOnly", true, "Use B_z instead of full field map"};
   Configurable<std::string> cfgTriggersOfInterest{"cfgTriggersOfInterest", "fTrackedOmega,fHfCharmBarToXiBach", "Triggers of interest, comma separated for Zorro"};
 
-  const int itsNClsMin = 4;
-  const float tpcNclsFindableFraction = 0.8;
-  const float tpcChi2NclMax = 4.;
-  const float itsChi2NclMax = 36.;
-
   SliceCache cache;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::vertexing::DCAFitterN<2> df2;
 
-  float bz = 0.;
+  static constexpr int ItsNClsMin{4};
+  static constexpr float TpcNclsFindableFraction{0.8f};
+  static constexpr float TpcChi2NclMax{4.f};
+  static constexpr float ItsChi2NclMax{36.f};
+
+  float bz{0.f};
   int runNumber{0};
   std::map<int, int> mapMcPartToGenTable;
 
@@ -614,12 +614,12 @@ struct HfTreeCreatorOmegacSt {
                   track.globalIndex() == bachelor.globalIndex()) {
                 continue;
               }
-              if ((track.itsNCls() >= itsNClsMin) &&
+              if ((track.itsNCls() >= ItsNClsMin) &&
                   (track.tpcNClsFound() >= minNoClsTrackedPionOrKaon) &&
                   (track.tpcNClsCrossedRows() >= minNoClsTrackedPionOrKaon) &&
-                  (track.tpcNClsCrossedRows() >= tpcNclsFindableFraction * track.tpcNClsFindable()) &&
-                  (track.tpcChi2NCl() <= tpcChi2NclMax) &&
-                  (track.itsChi2NCl() <= itsChi2NclMax) &&
+                  (track.tpcNClsCrossedRows() >= TpcNclsFindableFraction * track.tpcNClsFindable()) &&
+                  (track.tpcChi2NCl() <= TpcChi2NclMax) &&
+                  (track.itsChi2NCl() <= ItsChi2NclMax) &&
                   (std::abs(track.tpcNSigmaPi()) < maxNSigmaPion || std::abs(track.tpcNSigmaKa()) < maxNSigmaKaon)) {
                 LOGF(debug, "  .. combining with pion/kaon candidate %d", track.globalIndex());
                 int trackMotherId = -1;

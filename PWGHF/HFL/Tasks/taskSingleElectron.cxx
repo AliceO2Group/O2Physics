@@ -108,21 +108,21 @@ struct HfTaskSingleElectron {
   // ConfigurableAxis
   ConfigurableAxis axisPtEl{"axisPtEl", {VARIABLE_WIDTH, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.75f, 2.0f, 2.25f, 2.5f, 2.75f, 3.f, 3.5f, 4.0f, 5.0f, 6.0f, 8.0f, 10.0f}, "electron pt bins"};
 
-  // AxisSpec
-  const AxisSpec axisEvt{4, 0., 4., "nEvents"};
-  const AxisSpec axisNCont{100, 0., 100., "nCont"};
-  const AxisSpec axisPosZ{600, -30., 30., "Z_{pos}"};
-  const AxisSpec axisEta{30, -1.5, +1.5, "#eta"};
-  const AxisSpec axisP{nBinsP, 0., 15., "p_{T}"};
-  const AxisSpec axisPt{nBinsPt, 0., 15., "p_{T}"};
-  const AxisSpec axisNsig{800, -20., 20.};
-  const AxisSpec axisTrackIp{4000, -0.2, 0.2, "dca"};
-
   // Histogram registry
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   void init(InitContext const&)
   {
+    // AxisSpec
+    const AxisSpec axisEvt{4, 0., 4., "nEvents"};
+    const AxisSpec axisNCont{100, 0., 100., "nCont"};
+    const AxisSpec axisPosZ{600, -30., 30., "Z_{pos}"};
+    const AxisSpec axisEta{30, -1.5, +1.5, "#eta"};
+    const AxisSpec axisP{nBinsP, 0., 15., "p_{T}"};
+    const AxisSpec axisPt{nBinsPt, 0., 15., "p_{T}"};
+    const AxisSpec axisNsig{800, -20., 20.};
+    const AxisSpec axisTrackIp{4000, -0.2, 0.2, "dca"};
+
     // create histograms
     histos.add("nEvents", "Number of events", kTH1D, {{1, 0., 1.}});
     histos.add("VtxZ", "VtxZ; cm; entries", kTH1D, {axisPosZ});

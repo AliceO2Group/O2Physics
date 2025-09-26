@@ -130,7 +130,7 @@ struct HfTaskCorrelationDsHadrons {
   std::shared_ptr<TH2> hEfficiencyAssociatedMult = nullptr;
   std::shared_ptr<TH3> hEfficiencyAssociatedDeltaPhiCorr = nullptr;
 
-  const float epsilon = 1.e-8;
+  static constexpr float Epsilon{1.e-8};
 
   HfHelper hfHelper;
   SliceCache cache;
@@ -351,18 +351,18 @@ struct HfTaskCorrelationDsHadrons {
       case EfficiencyMode::DsOnly:
         if (loadAccXEffFromCCDB) {
           if (useHighDimHistoForEff) {
-            if (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib))) <= epsilon) {
+            if (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib))) <= Epsilon) {
               LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
             }
             weight = 1. / hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib)));
           } else {
-            if (hEfficiencyD->GetBinContent(hEfficiencyD->FindBin(ptD)) <= epsilon) {
+            if (hEfficiencyD->GetBinContent(hEfficiencyD->FindBin(ptD)) <= Epsilon) {
               LOG(fatal) << "A bin content in Ds-meson efficiency histogram is zero!";
             }
             weight = 1. / hEfficiencyD->GetBinContent(hEfficiencyD->FindBin(ptD));
           }
         } else {
-          if (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) <= epsilon) {
+          if (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) <= Epsilon) {
             LOG(fatal) << "A bin content in Ds-meson efficiency vector is zero!";
           }
           weight = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
@@ -373,18 +373,18 @@ struct HfTaskCorrelationDsHadrons {
           if (ptAssoc && (hEfficiencyAssociated || hEfficiencyAssociatedMult || hEfficiencyAssociatedDeltaPhiCorr)) {
             if (useHighDimHistoForEff) {
               if (applyDeltaPhiCorrEff) {
-                if (hEfficiencyAssociatedDeltaPhiCorr->GetBinContent(hEfficiencyAssociatedDeltaPhiCorr->FindBin(*ptAssoc, ptD, static_cast<double>(*deltaPhi))) <= epsilon) {
+                if (hEfficiencyAssociatedDeltaPhiCorr->GetBinContent(hEfficiencyAssociatedDeltaPhiCorr->FindBin(*ptAssoc, ptD, static_cast<double>(*deltaPhi))) <= Epsilon) {
                   LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
                 }
                 weight = 1. / (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib))) * hEfficiencyAssociatedDeltaPhiCorr->GetBinContent(hEfficiencyAssociatedDeltaPhiCorr->FindBin(*ptAssoc, ptD, static_cast<double>(*deltaPhi))));
               } else {
-                if (hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, static_cast<double>(*multPvContrib))) <= epsilon) {
+                if (hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, static_cast<double>(*multPvContrib))) <= Epsilon) {
                   LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
                 }
                 weight = 1. / (hEfficiencyDMult->GetBinContent(hEfficiencyDMult->FindBin(ptD, static_cast<double>(*multPvContrib))) * hEfficiencyAssociatedMult->GetBinContent(hEfficiencyAssociatedMult->FindBin(*ptAssoc, static_cast<double>(*multPvContrib))));
               }
             } else {
-              if (hEfficiencyAssociated->GetBinContent(hEfficiencyAssociated->FindBin(*ptAssoc)) <= epsilon) {
+              if (hEfficiencyAssociated->GetBinContent(hEfficiencyAssociated->FindBin(*ptAssoc)) <= Epsilon) {
                 LOG(fatal) << "A bin content in associated particle efficiency histogram is zero!";
               }
               weight = 1. / (hEfficiencyD->GetBinContent(hEfficiencyD->FindBin(ptD)) * hEfficiencyAssociated->GetBinContent(hEfficiencyAssociated->FindBin(*ptAssoc)));
@@ -392,7 +392,7 @@ struct HfTaskCorrelationDsHadrons {
           }
         } else {
           if (ptAssoc) {
-            if (efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, *ptAssoc)) <= epsilon) {
+            if (efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, *ptAssoc)) <= Epsilon) {
               LOG(fatal) << "A bin content in associated particle efficiency vector is zero!";
             }
             weight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, *ptAssoc)));

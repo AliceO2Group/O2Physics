@@ -65,7 +65,7 @@ double getDeltaPhi(double phiD, double phiHadron)
 
 /// definition of variables for Dplus hadron pairs (in data-like, MC-reco and MC-kine tasks)
 const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_dplus_to_pi_k_pi::NBinsPt;
-std::vector<double> efficiencyDmeson(npTBinsMassAndEfficiency + 1);
+const std::vector<double> efficiencyDmeson(npTBinsMassAndEfficiency + 1);
 
 // definition of ME variables
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
