@@ -32,6 +32,7 @@
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -138,6 +139,8 @@ struct AntinucleiInJets {
   Configurable<double> nSigmaItsMin{"nSigmaItsMin", -3.0, "nSigmaITS min"};
   Configurable<double> nSigmaItsMax{"nSigmaItsMax", +3.0, "nSigmaITS max"};
   Configurable<bool> setMCDefaultItsParams{"setMCDefaultItsParams", false, "set MC default parameters"};
+  Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
+  Configurable<std::array<double, 5>> cfgBetheBlochParams{"cfgBetheBlochParams", {0.6539, 1.591, 0.8225, 2.363, 0.09}, "TPC Bethe-Bloch parameterisation for He3"};
 
   // CCDB manager service for accessing condition data
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -246,6 +249,11 @@ struct AntinucleiInJets {
 
       // nsigmaITS for antiproton candidates
       registryData.add("antiproton_nsigma_its_data", "antiproton_nsigma_its_data", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{ITS}"}});
+
+      // custom nsigma for He3 - needed for 24 pp data
+      registryData.add("tpcsignal_data", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
+      registryData.add("antihelium3_jet_tpc_custom", "antihelium3_jet_tpc_custom", HistType::kTH2F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC} custom"}});
+      registryData.add("antihelium3_ue_tpc_custom", "antihelium3_ue_tpc_custom", HistType::kTH2F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC} custom"}});
     }
 
     // Generated antiproton spectra in jets and UE from MC truth
@@ -783,6 +791,11 @@ struct AntinucleiInJets {
       fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(MassPionCharged));
       fourMomentum.set_user_index(id);
       fjParticles.emplace_back(fourMomentum);
+
+      // Fill TPC signal vs p*sign for PID calibration
+      bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3;
+      float correctedTpcInnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
+      registryData.fill(HIST("tpcsignal_data"), correctedTpcInnerParam * track.sign(), track.tpcSignal());
     }
 
     // Reject empty events
@@ -893,6 +906,12 @@ struct AntinucleiInJets {
           }
           if (passedItsPidHel) {
             registryData.fill(HIST("antihelium3_jet_tpc"), 2.0 * pt, nsigmaTPCHe);
+            // custom nsigma He3 based on bethe bloch fit of TPC signal
+            double tpcSignal = track.tpcSignal();
+            double expectedSignalHe3 = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
+            double sigmaHe3 = expectedSignalHe3 * cfgBetheBlochParams.value[4];
+            double nSigmaTPCHe3Custom = (tpcSignal - expectedSignalHe3) / sigmaHe3;
+            registryData.fill(HIST("antihelium3_jet_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
         }
 
@@ -983,6 +1002,12 @@ struct AntinucleiInJets {
           }
           if (passedItsPidHel) {
             registryData.fill(HIST("antihelium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe);
+            // custom nsigma He3 based on bethe bloch fit of TPC signal
+            double tpcSignal = track.tpcSignal();
+            double expectedSignalHe3 = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
+            double sigmaHe3 = expectedSignalHe3 * cfgBetheBlochParams.value[4];
+            double nSigmaTPCHe3Custom = (tpcSignal - expectedSignalHe3) / sigmaHe3;
+            registryData.fill(HIST("antihelium3_ue_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
         }
 
