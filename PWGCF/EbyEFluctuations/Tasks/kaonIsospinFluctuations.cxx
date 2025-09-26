@@ -452,7 +452,7 @@ constexpr std::array<float, 4> MV0DecayCndt = {MassK0Short, MassLambda0, MassLam
 constexpr std::array<float, 6> WPrimVtxCndt = {0.004249f, 0.0000929f, 0.0000929f, 0.0473f, 0.0473f, 0.1491f}; // from acutal pdg widths
 constexpr std::array<float, 4> WV0DecayCndt = {0.01f, 0.01f, 0.01f, 0.01f};                                   // actual pdg widths are very small, using 0.01 for now
 
-static const std::string defaultSparseAxis[10][3] = {
+std::string defaultSparseAxis[10][3] = {
   {"centrality", "centrality", "centrality"},
   {"nK0s/kPos/iNTrk", "nK0s/kPos/iNTrk", "nKa/kPos/iNTrk"},
   {"nKa/kPos/iNTrk", "nKaon/kPos/iNTrk", "nKa/kNeg/iNTrk"},
