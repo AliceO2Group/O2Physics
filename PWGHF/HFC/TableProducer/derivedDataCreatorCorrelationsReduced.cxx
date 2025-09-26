@@ -321,7 +321,13 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       double trigCandPt = trigCand.pt();
       registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCandPt);
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCandPt);
-      bool isFirstAssoc{true};
+      if constexpr (candType == CandType::Hadron) {
+        rowTrigHads(trigCandPt, trigCand.tpcNClsCrossedRows(), trigCand.itsClusterMap(), trigCand.itsNCls(), trigCand.dcaXY(), trigCand.dcaZ());
+      } else {
+        std::array<float, 2> outputMl = getCandMlScores<candType>(trigCand);
+        rowTrigCharms(trigCandPt, getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
+      }
+
       for (const auto& assTrk : assTrks) {
         double assTrkPt = assTrk.pt();
         if (usePtDiffDcaXYCut) {
@@ -351,17 +357,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
         double deltaPhi = RecoDecay::constrainAngle(assTrk.phi() - trigCand.phi(), -o2::constants::math::PIHalf);
         rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
         if constexpr (candType == CandType::Hadron) {
-          if (isFirstAssoc) {
-            rowTrigHads(trigCandPt, trigCand.tpcNClsCrossedRows(), trigCand.itsClusterMap(), trigCand.itsNCls(), trigCand.dcaXY(), trigCand.dcaZ());
-            isFirstAssoc = false;
-          }
           rowSEHadHadPairs(rowCollisions.lastIndex(), rowTrigHads.lastIndex(), assTrkPt, deltaEta, deltaPhi);
         } else {
-          if (isFirstAssoc) {
-            std::array<float, 2> outputMl = getCandMlScores<candType>(trigCand);
-            rowTrigCharms(trigCandPt, getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
-            isFirstAssoc = false;
-          }
           rowSECharmHadPairs(rowCollisions.lastIndex(), rowTrigCharms.lastIndex(), assTrkPt, deltaEta, deltaPhi);
         }
       }
