@@ -693,6 +693,8 @@ class strangenessBuilderHelper
                              bool useCascadeMomentumAtPV = false,
                              bool processCovariances = false)
   {
+    cascade = {}; // initialize / empty (extra safety)
+
     // verify track quality
     if (positiveTrack.tpcNClsCrossedRows() < cascadeselections.minCrossedRows) {
       cascade = {};
@@ -924,6 +926,8 @@ class strangenessBuilderHelper
                                    bool kfDoDCAFitterPreMinimV0 = false,
                                    bool kfDoDCAFitterPreMinimCasc = false)
   {
+    cascade = {}; // initialize / empty (extra safety)
+
     //*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*>~<*
     // KF particle based rebuilding
     // dispenses prior V0 generation, uses constrained (re-)fit based on bachelor charge
