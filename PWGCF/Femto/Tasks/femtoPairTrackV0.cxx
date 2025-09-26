@@ -142,25 +142,24 @@ struct FemtoPairTrackV0 {
     auto trackHistSpec = trackhistmanager::makeTrackHistSpecMap(confTrackBinning);
     auto posDauSpec = trackhistmanager::makeTrackHistSpecMap(confPosDauBinning);
     auto negDauSpec = trackhistmanager::makeTrackHistSpecMap(confNegDauBinning);
-    auto pairHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confLambdaBinning);
     auto cprHistSpec = closepairrejection::makeCprHistSpecMap(confCpr);
 
     // setup for lambda
-    // if (doprocessLambdaSameEvent || doprocessLambdaMixedEvent) {
-    if (doprocessLambdaSameEvent) {
+    if (doprocessLambdaSameEvent || doprocessLambdaMixedEvent) {
       auto lambdaHistSpec = v0histmanager::makeV0HistSpecMap(confLambdaBinning);
-      pairTrackLambdaBuilder.init(&hRegistry, trackSelection, lambdaSelection, confCpr, confMixing, colHistSpec, trackHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairHistSpec, cprHistSpec);
+      auto pairTrackLambdaHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confLambdaBinning);
+      pairTrackLambdaBuilder.init(&hRegistry, trackSelection, lambdaSelection, confCpr, confMixing, colHistSpec, trackHistSpec, lambdaHistSpec, posDauSpec, negDauSpec, pairTrackLambdaHistSpec, cprHistSpec);
     }
 
-    // if (((doprocessLambdaSameEvent || doprocessLambdaMixedEvent) + (doprocessK0shortSameEvent || doprocessK0shortMixedEvent)) > 1) {
-    //   LOG(fatal) << "Can only process lambda-tracks Or k0short-tracks";
-    // }
-
     // setup for k0short
-    // if (doprocessK0shortSameEvent || doprocessK0shortMixedEvent) {
-    if (doprocessK0shortSameEvent) {
+    if (doprocessK0shortSameEvent || doprocessK0shortMixedEvent) {
       auto k0shortHistSpec = v0histmanager::makeV0HistSpecMap(confK0shortBinning);
-      pairTrackK0shortBuilder.init(&hRegistry, trackSelection, lambdaSelection, confCpr, confMixing, colHistSpec, trackHistSpec, k0shortHistSpec, posDauSpec, negDauSpec, pairHistSpec, cprHistSpec);
+      auto pairTrackK0shortHistSpec = pairhistmanager::makePairHistSpecMap(confPairBinning, confTrackBinning, confLambdaBinning);
+      pairTrackK0shortBuilder.init(&hRegistry, trackSelection, lambdaSelection, confCpr, confMixing, colHistSpec, trackHistSpec, k0shortHistSpec, posDauSpec, negDauSpec, pairTrackK0shortHistSpec, cprHistSpec);
+    }
+
+    if (((doprocessLambdaSameEvent || doprocessLambdaMixedEvent) + (doprocessK0shortSameEvent || doprocessK0shortMixedEvent)) > 1) {
+      LOG(fatal) << "Can only process lambda-tracks Or k0short-tracks";
     }
   };
 

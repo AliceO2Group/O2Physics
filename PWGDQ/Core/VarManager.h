@@ -891,7 +891,8 @@ class VarManager : public TObject
     // Index used to set different options for Muon propagation
     kToVertex = 0, // propagtion to vertex by default
     kToDCA,
-    kToRabs
+    kToRabs,
+    kToMatching
   };
 
   static TString fgVariableNames[kNVars];      // variable names
@@ -936,6 +937,17 @@ class VarManager : public TObject
   static void SetMagneticField(float magField)
   {
     fgMagField = magField;
+  }
+
+  // Setup plane position for MFT-MCH matching
+  static void SetMatchingPlane(float z)
+  {
+    fgzMatching = z;
+  }
+
+  static float GetMatchingPlane()
+  {
+    return fgzMatching;
   }
 
   // Setup the 2 prong KFParticle
@@ -1048,7 +1060,11 @@ class VarManager : public TObject
   }
 
   template <typename T, typename C>
+  static o2::track::TrackParCovFwd FwdToTrackPar(const T& track, const C& cov);
+  template <typename T, typename C>
   static o2::dataformats::GlobalFwdTrack PropagateMuon(const T& muon, const C& collision, int endPoint = kToVertex);
+  template <typename T, typename C>
+  static o2::track::TrackParCovFwd PropagateFwd(const T& track, const C& cov, float z);
   template <uint32_t fillMap, typename T, typename C>
   static void FillMuonPDca(const T& muon, const C& collision, float* values = nullptr);
   template <uint32_t fillMap, typename T, typename C>
@@ -1208,6 +1224,7 @@ class VarManager : public TObject
   static void SetVariableDependencies(); // toggle those variables on which other used variables might depend
 
   static float fgMagField;
+  static float fgzMatching;
   static float fgCenterOfMassEnergy;      // collision energy
   static float fgMassofCollidingParticle; // mass of the colliding particle
   static float fgTPCInterSectorBoundary;  // TPC inter-sector border size at the TPC outer radius, in cm
@@ -1251,6 +1268,19 @@ class VarManager : public TObject
 
   ClassDef(VarManager, 4);
 };
+
+template <typename T, typename C>
+o2::track::TrackParCovFwd VarManager::FwdToTrackPar(const T& track, const C& cov)
+{
+  double chi2 = track.chi2();
+  SMatrix5 tpars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
+  std::vector<double> v1{cov.cXX(), cov.cXY(), cov.cYY(), cov.cPhiX(), cov.cPhiY(),
+                         cov.cPhiPhi(), cov.cTglX(), cov.cTglY(), cov.cTglPhi(), cov.cTglTgl(),
+                         cov.c1PtX(), cov.c1PtY(), cov.c1PtPhi(), cov.c1PtTgl(), cov.c1Pt21Pt2()};
+  SMatrix55 tcovs(v1.begin(), v1.end());
+  o2::track::TrackParCovFwd trackparCov{track.z(), tpars, tcovs, chi2};
+  return trackparCov;
+}
 
 template <typename T, typename U, typename V>
 auto VarManager::getRotatedCovMatrixXX(const T& matrix, U phi, V theta)
@@ -1300,13 +1330,7 @@ KFPTrack VarManager::createKFPTrackFromTrack(const T& track)
 template <typename T>
 KFPTrack VarManager::createKFPFwdTrackFromFwdTrack(const T& muon)
 {
-  double chi2 = muon.chi2();
-  SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
-  std::vector<double> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
-                         muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
-                         muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
-  SMatrix55 tcovs(v1.begin(), v1.end());
-  o2::track::TrackParCovFwd trackparCov{muon.z(), tpars, tcovs, chi2};
+  o2::track::TrackParCovFwd trackparCov = FwdToTrackPar(muon, muon);
 
   std::array<float, 21> trk_cov;
   trackparCov.getCovXYZPxPyPzGlo(trk_cov);
@@ -1321,7 +1345,7 @@ KFPTrack VarManager::createKFPFwdTrackFromFwdTrack(const T& muon)
   kfpTrack.SetCovarianceMatrix(trkcov_KF);
   kfpTrack.SetCharge(muon.sign());
   kfpTrack.SetNDF(muon.nClusters() - 5);
-  kfpTrack.SetChi2(chi2);
+  kfpTrack.SetChi2(muon.chi2());
   return kfpTrack;
 }
 
@@ -1340,19 +1364,13 @@ KFPVertex VarManager::createKFPVertexFromCollision(const T& collision)
 template <typename T, typename C>
 o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C& collision, const int endPoint)
 {
-  double chi2 = muon.chi2();
-  SMatrix5 tpars(muon.x(), muon.y(), muon.phi(), muon.tgl(), muon.signed1Pt());
-  std::vector<double> v1{muon.cXX(), muon.cXY(), muon.cYY(), muon.cPhiX(), muon.cPhiY(),
-                         muon.cPhiPhi(), muon.cTglX(), muon.cTglY(), muon.cTglPhi(), muon.cTglTgl(),
-                         muon.c1PtX(), muon.c1PtY(), muon.c1PtPhi(), muon.c1PtTgl(), muon.c1Pt21Pt2()};
-  SMatrix55 tcovs(v1.begin(), v1.end());
-  o2::track::TrackParCovFwd fwdtrack{muon.z(), tpars, tcovs, chi2};
+  o2::track::TrackParCovFwd fwdtrack = FwdToTrackPar(muon, muon);
   o2::dataformats::GlobalFwdTrack propmuon;
   if (static_cast<int>(muon.trackType()) > 2) {
     o2::dataformats::GlobalFwdTrack track;
-    track.setParameters(tpars);
+    track.setParameters(fwdtrack.getParameters());
     track.setZ(fwdtrack.getZ());
-    track.setCovariances(tcovs);
+    track.setCovariances(fwdtrack.getCovariances());
     auto mchTrack = mMatching.FwdtoMCH(track);
 
     if (endPoint == kToVertex) {
@@ -1363,6 +1381,9 @@ o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C
     }
     if (endPoint == kToRabs) {
       o2::mch::TrackExtrap::extrapToZ(mchTrack, -505.);
+    }
+    if (endPoint == kToMatching) {
+      o2::mch::TrackExtrap::extrapToVertexWithoutBranson(mchTrack, fgzMatching);
     }
 
     auto proptrack = mMatching.MCHtoFwd(mchTrack);
@@ -1382,6 +1403,14 @@ o2::dataformats::GlobalFwdTrack VarManager::PropagateMuon(const T& muon, const C
     propmuon.setCovariances(fwdtrack.getCovariances());
   }
   return propmuon;
+}
+
+template <typename T, typename C>
+o2::track::TrackParCovFwd VarManager::PropagateFwd(const T& track, const C& cov, float z)
+{
+  o2::track::TrackParCovFwd fwdtrack = FwdToTrackPar(track, cov);
+  fwdtrack.propagateToZhelix(z, fgMagField);
+  return fwdtrack;
 }
 
 template <uint32_t fillMap, typename T, typename C>
@@ -1491,12 +1520,7 @@ void VarManager::FillGlobalMuonRefitCov(T1 const& muontrack, T2 const& mfttrack,
   if constexpr ((MuonfillMap & MuonCov) > 0) {
     if constexpr ((MFTfillMap & MFTCov) > 0) {
       o2::dataformats::GlobalFwdTrack propmuon = PropagateMuon(muontrack, collision);
-      SMatrix5 tpars(mfttrack.x(), mfttrack.y(), mfttrack.phi(), mfttrack.tgl(), mfttrack.signed1Pt());
-      std::vector<double> v1{mftcov.cXX(), mftcov.cXY(), mftcov.cYY(), mftcov.cPhiX(), mftcov.cPhiY(),
-                             mftcov.cPhiPhi(), mftcov.cTglX(), mftcov.cTglY(), mftcov.cTglPhi(), mftcov.cTglTgl(),
-                             mftcov.c1PtX(), mftcov.c1PtY(), mftcov.c1PtPhi(), mftcov.c1PtTgl(), mftcov.c1Pt21Pt2()};
-      SMatrix55 tcovs(v1.begin(), v1.end());
-      o2::track::TrackParCovFwd mft{mfttrack.z(), tpars, tcovs, mfttrack.chi2()};
+      o2::track::TrackParCovFwd mft = FwdToTrackPar(mfttrack, mftcov);
 
       o2::dataformats::GlobalFwdTrack globalRefit = o2::aod::fwdtrackutils::refitGlobalMuonCov(propmuon, mft);
       values[kX] = globalRefit.getX();
@@ -3685,20 +3709,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       procCode = fgFitterTwoProngBarrel.process(pars1, pars2);
     } else if constexpr ((pairType == kDecayToMuMu) && muonHasCov) {
       // Initialize track parameters for forward
-      double chi21 = t1.chi2();
-      double chi22 = t2.chi2();
-      SMatrix5 t1pars(t1.x(), t1.y(), t1.phi(), t1.tgl(), t1.signed1Pt());
-      std::vector<double> v1{t1.cXX(), t1.cXY(), t1.cYY(), t1.cPhiX(), t1.cPhiY(),
-                             t1.cPhiPhi(), t1.cTglX(), t1.cTglY(), t1.cTglPhi(), t1.cTglTgl(),
-                             t1.c1PtX(), t1.c1PtY(), t1.c1PtPhi(), t1.c1PtTgl(), t1.c1Pt21Pt2()};
-      SMatrix55 t1covs(v1.begin(), v1.end());
-      o2::track::TrackParCovFwd pars1{t1.z(), t1pars, t1covs, chi21};
-      SMatrix5 t2pars(t2.x(), t2.y(), t2.phi(), t2.tgl(), t2.signed1Pt());
-      std::vector<double> v2{t2.cXX(), t2.cXY(), t2.cYY(), t2.cPhiX(), t2.cPhiY(),
-                             t2.cPhiPhi(), t2.cTglX(), t2.cTglY(), t2.cTglPhi(), t2.cTglTgl(),
-                             t2.c1PtX(), t2.c1PtY(), t2.c1PtPhi(), t2.c1PtTgl(), t2.c1Pt21Pt2()};
-      SMatrix55 t2covs(v2.begin(), v2.end());
-      o2::track::TrackParCovFwd pars2{t2.z(), t2pars, t2covs, chi22};
+      o2::track::TrackParCovFwd pars1 = FwdToTrackPar(t1, t1);
+      o2::track::TrackParCovFwd pars2 = FwdToTrackPar(t2, t2);
       procCode = fgFitterTwoProngFwd.process(pars1, pars2);
     } else {
       return;
@@ -3960,20 +3972,8 @@ void VarManager::FillPairVertexing(C const& collision, T const& t1, T const& t2,
       }
       if (propToSV) {
         if constexpr ((pairType == kDecayToMuMu) && muonHasCov) {
-          double chi21 = t1.chi2();
-          double chi22 = t2.chi2();
-          SMatrix5 t1pars(t1.x(), t1.y(), t1.phi(), t1.tgl(), t1.signed1Pt());
-          std::vector<double> c1{t1.cXX(), t1.cXY(), t1.cYY(), t1.cPhiX(), t1.cPhiY(),
-                                 t1.cPhiPhi(), t1.cTglX(), t1.cTglY(), t1.cTglPhi(), t1.cTglTgl(),
-                                 t1.c1PtX(), t1.c1PtY(), t1.c1PtPhi(), t1.c1PtTgl(), t1.c1Pt21Pt2()};
-          SMatrix55 t1covs(c1.begin(), c1.end());
-          o2::track::TrackParCovFwd pars1{t1.z(), t1pars, t1covs, chi21};
-          SMatrix5 t2pars(t2.x(), t2.y(), t2.phi(), t2.tgl(), t2.signed1Pt());
-          std::vector<double> c2{t2.cXX(), t2.cXY(), t2.cYY(), t2.cPhiX(), t2.cPhiY(),
-                                 t2.cPhiPhi(), t2.cTglX(), t2.cTglY(), t2.cTglPhi(), t2.cTglTgl(),
-                                 t2.c1PtX(), t2.c1PtY(), t2.c1PtPhi(), t2.c1PtTgl(), t2.c1Pt21Pt2()};
-          SMatrix55 t2covs(c2.begin(), c2.end());
-          o2::track::TrackParCovFwd pars2{t2.z(), t2pars, t2covs, chi22};
+          o2::track::TrackParCovFwd pars1 = FwdToTrackPar(t1, t1);
+          o2::track::TrackParCovFwd pars2 = FwdToTrackPar(t2, t2);
 
           auto geoMan1 = o2::base::GeometryManager::meanMaterialBudget(t1.x(), t1.y(), t1.z(), KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY(), KFGeoTwoProng.GetZ());
           auto geoMan2 = o2::base::GeometryManager::meanMaterialBudget(t2.x(), t2.y(), t2.z(), KFGeoTwoProng.GetX(), KFGeoTwoProng.GetY(), KFGeoTwoProng.GetZ());
@@ -4282,29 +4282,10 @@ void VarManager::FillDileptonTrackVertexing(C const& collision, T1 const& lepton
       mlepton2 = o2::constants::physics::MassMuon;
       mtrack = o2::constants::physics::MassMuon;
 
-      double chi21 = lepton1.chi2();
-      double chi22 = lepton2.chi2();
-      double chi23 = track.chi2();
-      SMatrix5 t1pars(lepton1.x(), lepton1.y(), lepton1.phi(), lepton1.tgl(), lepton1.signed1Pt());
-      std::vector<double> v1{lepton1.cXX(), lepton1.cXY(), lepton1.cYY(), lepton1.cPhiX(), lepton1.cPhiY(),
-                             lepton1.cPhiPhi(), lepton1.cTglX(), lepton1.cTglY(), lepton1.cTglPhi(), lepton1.cTglTgl(),
-                             lepton1.c1PtX(), lepton1.c1PtY(), lepton1.c1PtPhi(), lepton1.c1PtTgl(), lepton1.c1Pt21Pt2()};
-      SMatrix55 t1covs(v1.begin(), v1.end());
-      o2::track::TrackParCovFwd pars1{lepton1.z(), t1pars, t1covs, chi21};
+      o2::track::TrackParCovFwd pars1 = FwdToTrackPar(lepton1, lepton1);
+      o2::track::TrackParCovFwd pars2 = FwdToTrackPar(lepton2, lepton2);
+      o2::track::TrackParCovFwd pars3 = FwdToTrackPar(track, track);
 
-      SMatrix5 t2pars(lepton2.x(), lepton2.y(), lepton2.phi(), lepton2.tgl(), lepton2.signed1Pt());
-      std::vector<double> v2{lepton2.cXX(), lepton2.cXY(), lepton2.cYY(), lepton2.cPhiX(), lepton2.cPhiY(),
-                             lepton2.cPhiPhi(), lepton2.cTglX(), lepton2.cTglY(), lepton2.cTglPhi(), lepton2.cTglTgl(),
-                             lepton2.c1PtX(), lepton2.c1PtY(), lepton2.c1PtPhi(), lepton2.c1PtTgl(), lepton2.c1Pt21Pt2()};
-      SMatrix55 t2covs(v2.begin(), v2.end());
-      o2::track::TrackParCovFwd pars2{lepton2.z(), t2pars, t2covs, chi22};
-
-      SMatrix5 t3pars(track.x(), track.y(), track.phi(), track.tgl(), track.signed1Pt());
-      std::vector<double> v3{track.cXX(), track.cXY(), track.cYY(), track.cPhiX(), track.cPhiY(),
-                             track.cPhiPhi(), track.cTglX(), track.cTglY(), track.cTglPhi(), track.cTglTgl(),
-                             track.c1PtX(), track.c1PtY(), track.c1PtPhi(), track.c1PtTgl(), track.c1Pt21Pt2()};
-      SMatrix55 t3covs(v3.begin(), v3.end());
-      o2::track::TrackParCovFwd pars3{track.z(), t3pars, t3covs, chi23};
       procCode = VarManager::fgFitterThreeProngFwd.process(pars1, pars2, pars3);
       procCodeJpsi = VarManager::fgFitterTwoProngFwd.process(pars1, pars2);
     } else if constexpr ((candidateType == kBtoJpsiEEK || candidateType == kDstarToD0KPiPi) && trackHasCov) {

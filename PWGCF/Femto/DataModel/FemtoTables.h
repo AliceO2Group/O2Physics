@@ -35,6 +35,7 @@ namespace o2::aod
 namespace femtocollisions
 {
 DECLARE_SOA_COLUMN(CollisionMask, collisionMask, femtodatatypes::CollisionMaskType); //! Bitmask for collision selections
+DECLARE_SOA_COLUMN(CollisionTag, collisionTag, femtodatatypes::CollisionTagType);    //! Bitmask for collision selections
 
 DECLARE_SOA_COLUMN(PosX, posX, float);             //! x coordinate of vertex
 DECLARE_SOA_COLUMN(PosY, posY, float);             //! y coordinate of vertex

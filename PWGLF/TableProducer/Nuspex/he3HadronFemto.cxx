@@ -693,7 +693,7 @@ struct he3HadronFemto {
       beta = std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
       he3Hadcand.massTOFHad = trackHad.tpcInnerParam() * std::sqrt(1.f / (beta * beta) - 1.f);
     }
-    he3Hadcand.kstarfem = o2::analysis::femtoWorld::FemtoWorldMath::getkstar(trackHad, o2::constants::physics::MassPiPlus, trackHe3, o2::constants::physics::MassHelium3);
+    he3Hadcand.kstarfem = o2::analysis::femtoWorld::FemtoWorldMath::getkstar(trackHad, o2::constants::physics::MassPiPlus, trackHe3, o2::constants::physics::MassHelium3, 1, 2);
 
     return true;
   }

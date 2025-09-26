@@ -76,7 +76,7 @@ struct FemtoTrackQa {
     auto colHistSpec = colhistmanager::makeColHistSpecMap(confCollisionBinning);
     colHistManager.init(&hRegistry, colHistSpec);
     auto trackHistSpec = trackhistmanager::makeTrackQaHistSpecMap(confTrackBinning, confTrackQaBinning);
-    trackHistManager.init(&hRegistry, trackHistSpec, trackSelections.absCharge.value, confTrackQaBinning.momentumType.value);
+    trackHistManager.init(&hRegistry, trackHistSpec, trackSelections.charge.value, confTrackQaBinning.momentumType.value);
   };
 
   void process(FilteredCollision const& col, Tracks const& /*tracks*/)

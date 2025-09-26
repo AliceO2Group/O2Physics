@@ -80,6 +80,14 @@ struct ConfCollisionTriggers : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<std::string> triggers{"triggers", std::string("fPPP,fPPL"), "Comma seperated list of all triggers to be used"};
 };
 
+struct ConfCollisionRctFlags : o2::framework::ConfigurableGroup {
+  std::string prefix = std::string("CollisionRctFlags");
+  o2::framework::Configurable<bool> useRctFlags{"useRctFlags", true, "Set to true to use RCT flags"};
+  o2::framework::Configurable<std::string> label{"label", std::string("CBT_hadronPID"), "Which RCT flag to check"};
+  o2::framework::Configurable<bool> useZdc{"useZdc", false, "Whether to use ZDC (only use for PbPb)"};
+  o2::framework::Configurable<bool> treatLimitedAcceptanceAsBad{"treatLimitedAcceptanceAsBad", false, "Whether to treat limited acceptance as bad or not"};
+};
+
 // configurables for collision selection
 struct ConfCollisionSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("CollisionSelection");
@@ -309,22 +317,27 @@ class CollisionBuilder
   CollisionBuilder() {}
   virtual ~CollisionBuilder() = default;
 
-  template <typename T1, typename T2, typename T3, typename T4, typename T5>
-  void init(T1& filter, T2& config, T3& table, T4& trigger, T5& initContext)
+  template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6>
+  void init(T1& confFilter, T2& confBits, T3& confRct, T4& confTrigger, T5& confTable, T6& initContext)
   {
-    mCollisionSelection.configure(filter, config);
-    if (trigger.useTrigger.value) {
+    mCollisionSelection.configure(confFilter, confBits);
+    if (confTrigger.useTrigger.value) {
       mUseTrigger = true;
-      mTriggerNames = trigger.triggers.value;
-      mZorro.setBaseCCDBPath(trigger.ccdbPath.value);
+      mTriggerNames = confTrigger.triggers.value;
+      mZorro.setBaseCCDBPath(confTrigger.ccdbPath.value);
     }
+    if (confRct.useRctFlags.value) {
+      mUseRctFlags = true;
+      mRctFlagsChecker.init(confRct.label.value, confRct.useZdc.value, confRct.treatLimitedAcceptanceAsBad.value);
+    }
+
     LOG(info) << "Initialize femto collision builder...";
-    mProducedCollisions = utils::enableTable("FCols_001", table.produceCollisions.value, initContext);
-    mProducedCollisionMasks = utils::enableTable("FColMasks_001", table.produceCollisionMasks.value, initContext);
-    mProduceQns = utils::enableTable("FColQnBins_001", table.produceQns.value, initContext);
-    mProducedPositions = utils::enableTable("FColPos_001", table.producePositions.value, initContext);
-    mProducedMultiplicities = utils::enableTable("FColMults_001", table.produceMults.value, initContext);
-    mProducedCentralities = utils::enableTable("FColCents_001", table.produceCents.value, initContext);
+    mProducedCollisions = utils::enableTable("FCols_001", confTable.produceCollisions.value, initContext);
+    mProducedCollisionMasks = utils::enableTable("FColMasks_001", confTable.produceCollisionMasks.value, initContext);
+    mProduceQns = utils::enableTable("FColQnBins_001", confTable.produceQns.value, initContext);
+    mProducedPositions = utils::enableTable("FColPos_001", confTable.producePositions.value, initContext);
+    mProducedMultiplicities = utils::enableTable("FColMults_001", confTable.produceMults.value, initContext);
+    mProducedCentralities = utils::enableTable("FColCents_001", confTable.produceCents.value, initContext);
     if (mProducedCollisions || mProducedCollisionMasks || mProducedPositions || mProducedMultiplicities || mProducedCentralities) {
       mFillAnyTable = true;
       mCollisionSelection.printSelections(colSelsName, colSelsToString);
@@ -351,12 +364,17 @@ class CollisionBuilder
   template <typename T1, typename T2>
   bool checkCollision(T1 const& bc, T2 const& col)
   {
-    if (mUseTrigger) {
-      return mZorro.isSelected(bc.globalBC()) && mCollisionSelection.checkFilters(col) && mCollisionSelection.passesAllRequiredSelections();
-    } else {
-
-      return mCollisionSelection.checkFilters(col) && mCollisionSelection.passesAllRequiredSelections();
+    // First: if triggers are enabled, the object must be selected
+    if (mUseTrigger && !mZorro.isSelected(bc.globalBC())) {
+      return false;
     }
+    // Then: if RCT flags are enabled, check them
+    if (mUseRctFlags && !mRctFlagsChecker(col)) {
+      return false;
+    }
+    // Finally: do the expensive checks
+    return mCollisionSelection.checkFilters(col) &&
+           mCollisionSelection.passesAllRequiredSelections();
   }
 
   template <modes::System system, typename T1, typename T2>
@@ -406,6 +424,8 @@ class CollisionBuilder
   CollisionSelection mCollisionSelection;
   Zorro mZorro;
   bool mUseTrigger = false;
+  aod::rctsel::RCTFlagsChecker mRctFlagsChecker;
+  bool mUseRctFlags = false;
   std::string mTriggerNames = std::string("");
   bool mFillAnyTable = false;
   bool mProducedCollisions = false;
