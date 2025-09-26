@@ -124,7 +124,7 @@ DECLARE_SOA_TABLE(Qvectors, "AOD", "QVECTORDEVS", //! Table with all Qvectors.
 using Qvector = Qvectors::iterator;
 DECLARE_SOA_TABLE(QvectorsShifteds, "AOD", "QVECTORSCDEVS", //! Table with all shifted Qvectors.
                   qvec::Cent, qvec::IsCalibrated, qvec::QvecShiftedRe, qvec::QvecShiftedIm, qvec::QvecAmp);
-using QvectorShifted = QvectorsShifteds::iterator; 
+using QvectorShifted = QvectorsShifteds::iterator;
 
 DECLARE_SOA_TABLE(QvectorFT0Cs, "AOD", "QVECTORSFT0C", qvec::IsCalibrated, qvec::QvecFT0CRe, qvec::QvecFT0CIm, qvec::SumAmplFT0C);
 DECLARE_SOA_TABLE(QvectorFT0As, "AOD", "QVECTORSFT0A", qvec::IsCalibrated, qvec::QvecFT0ARe, qvec::QvecFT0AIm, qvec::SumAmplFT0A);

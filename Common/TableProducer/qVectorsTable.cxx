@@ -97,6 +97,7 @@ struct qVectorsTable {
   Configurable<bool> useCorrectionForRun{"useCorrectionForRun", true, "Get Qvector corrections based on run number instead of timestamp"};
   Configurable<std::string> cfgGainEqPath{"cfgGainEqPath", "Users/j/junlee/Qvector/GainEq", "CCDB path for gain equalization constants"};
   Configurable<std::string> cfgQvecCalibPath{"cfgQvecCalibPath", "Analysis/EventPlane/QVecCorrections", "CCDB pasth for Q-vecteor calibration constants"};
+
   Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "configurable flag for shift correction"};
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "", "CCDB path for shift correction"};
 
@@ -188,7 +189,7 @@ struct qVectorsTable {
   void init(InitContext& initContext)
   {
     // Check the sub-detector used
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (DeviceSpec const& device : workflows.devices) {
       for (auto const& input : device.inputs) {
         if (input.matcher.binding == "Qvectors") {
@@ -280,7 +281,7 @@ struct qVectorsTable {
 
     if (cfgShiftCorr) {
       shiftprofile.clear();
-      for (std::size_t i = 0; i < cfgnMods->size(); i++) {
+      for (std::size_t i = 0; i < cfgnMods->size(); i++) { 
         int ind = cfgnMods->at(i);
         fullPath = cfgShiftPath;
         fullPath += "/v";
@@ -288,11 +289,11 @@ struct qVectorsTable {
         auto objshift = getForTsOrRun<TProfile3D>(fullPath, timestamp, runnumber);
         shiftprofile.push_back(objshift);
       }
-    }
+    }       
 
     fullPath = cfgGainEqPath;
     fullPath += "/FT0";
-    auto objft0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
+    const auto objft0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
     if (!objft0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 208; i++) {
         FT0RelGainConst.push_back(1.);
@@ -303,7 +304,7 @@ struct qVectorsTable {
 
     fullPath = cfgGainEqPath;
     fullPath += "/FV0";
-    auto objfv0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
+    const auto objfv0Gain = getForTsOrRun<std::vector<float>>(fullPath, timestamp, runnumber);
     if (!objfv0Gain || cfgCorrLevel == 0) {
       for (auto i{0u}; i < 48; i++) {
         FV0RelGainConst.push_back(1.);
