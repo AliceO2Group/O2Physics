@@ -512,7 +512,7 @@ struct JetDerivedDataWriter {
           clusterStoredJTrackIDs.push_back(trackMapping[clusterTrack.globalIndex()]);
           auto emcTracksPerTrack = emcTracks.sliceBy(preslices.EMCTrackPerTrack, clusterTrack.globalIndex());
           auto emcTrackPerTrack = emcTracksPerTrack.iteratorAt(0);
-          products.storedJTracksEMCalTable(trackMapping[clusterTrack.globalIndex()], emcTrackPerTrack.etaEmcal(), emcTrackPerTrack.phiEmcal());
+          products.storedJTracksEMCalTable(trackMapping[clusterTrack.globalIndex()], emcTrackPerTrack.etaEmcal(), emcTrackPerTrack.phiEmcal(), emcTrackPerTrack.etaDiff(), emcTrackPerTrack.phiDiff());
         }
         products.storedJClustersMatchedTracksTable(clusterStoredJTrackIDs);
       }
