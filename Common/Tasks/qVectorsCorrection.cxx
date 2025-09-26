@@ -254,7 +254,6 @@ struct qVectorsCorrection {
     }
   } // End void init(InitContext const&)
 
-
   template <typename CollType, typename TrackType>
   void fillHistosFlowWithSC(const CollType& coll, const TrackType& track, int nmode)
   {
