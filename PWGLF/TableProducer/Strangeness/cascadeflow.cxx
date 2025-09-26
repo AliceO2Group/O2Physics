@@ -47,7 +47,7 @@ using std::array;
 
 using DauTracks = soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs>;
 using CollEventPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraFT0CQVsEv, aod::StraTPCQVs, aod::StraStamps>::iterator;
-using CollEventPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraTPCQVs, aod::StraStamps>::iterator;
+using CollEventPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraFT0MQVs, aod::StraFV0AQVs, aod::StraTPCQVs, aod::StraStamps>::iterator;
 using CollEventAndSpecPlane = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraFT0CQVsEv, aod::StraTPCQVs, aod::StraZDCSP, aod::StraStamps>::iterator;
 using CollEventAndSpecPlaneCentralFW = soa::Join<aod::StraCollisions, aod::StraCents, aod::StraEvSels, aod::StraFT0CQVs, aod::StraTPCQVs, aod::StraZDCSP, aod::StraStamps>::iterator;
 using MCCollisionsStra = soa::Join<aod::StraMCCollisions, aod::StraMCCollMults>;
@@ -152,6 +152,10 @@ static const std::vector<std::string> labelsCutScore = {"Background score", "Sig
 } // namespace cascade_flow_cuts_ml
 
 struct cascadeFlow {
+
+  Configurable<bool> isQVecT0C{"isQVecT0C", 1, ""};
+  Configurable<bool> isQVecT0M{"isQVecT0M", 0, ""};
+  Configurable<bool> isQVecV0A{"isQVecV0A", 0, ""};
 
   // Output filling criteria
   struct : ConfigurableGroup {
@@ -660,6 +664,7 @@ struct cascadeFlow {
                          chargeIndex,
                          v0.pt(),
                          v0.phi(),
+                         v0.eta(),
                          invMassLambda,
                          v0.v0radius(),
                          v0.dcapostopv(),
@@ -1652,9 +1657,23 @@ struct cascadeFlow {
       return;
     }
 
+    double qvecRe = 0;
+    double qvecIm = 0;
+
+    if (isQVecT0C) {
+      qvecRe = coll.qvecFT0CRe();
+      qvecIm = coll.qvecFT0CIm();
+    } else if (isQVecT0M) {
+      qvecRe = coll.qvecFT0MRe();
+      qvecIm = coll.qvecFT0MIm();
+    } else if (isQVecV0A) {
+      qvecRe = coll.qvecFV0ARe();
+      qvecIm = coll.qvecFV0AIm();
+    }
+
     // select only events used for the calibration of the event plane
     if (isGoodEventEP) {
-      if (std::abs(coll.qvecFT0CRe()) > 990 || std::abs(coll.qvecFT0CIm()) > 990 || std::abs(coll.qvecBNegRe()) > 990 || std::abs(coll.qvecBNegIm()) > 990 || std::abs(coll.qvecBPosRe()) > 990 || std::abs(coll.qvecBPosIm()) > 990) {
+      if (std::abs(qvecRe) > 990 || std::abs(qvecIm) > 990 || std::abs(coll.qvecBNegRe()) > 990 || std::abs(coll.qvecBNegIm()) > 990 || std::abs(coll.qvecBPosRe()) > 990 || std::abs(coll.qvecBPosIm()) > 990) {
         return;
       }
     }
@@ -1670,11 +1689,11 @@ struct cascadeFlow {
     histos.fill(HIST("hEventCentrality"), coll.centFT0C());
     histos.fill(HIST("hEventVertexZ"), coll.posZ());
 
-    ROOT::Math::XYZVector eventplaneVecT0C{coll.qvecFT0CRe(), coll.qvecFT0CIm(), 0};
+    ROOT::Math::XYZVector eventplaneVecT0C{qvecRe, qvecIm, 0};
     ROOT::Math::XYZVector eventplaneVecTPCA{coll.qvecBPosRe(), coll.qvecBPosIm(), 0};
     ROOT::Math::XYZVector eventplaneVecTPCC{coll.qvecBNegRe(), coll.qvecBNegIm(), 0};
 
-    const float psiT0C = std::atan2(coll.qvecFT0CIm(), coll.qvecFT0CRe()) * 0.5f;
+    const float psiT0C = std::atan2(qvecIm, qvecRe) * 0.5f;
     const float psiTPCA = std::atan2(coll.qvecBPosIm(), coll.qvecBPosRe()) * 0.5f;
     const float psiTPCC = std::atan2(coll.qvecBNegIm(), coll.qvecBNegRe()) * 0.5f;
     float psiT0CCorr = psiT0C;
