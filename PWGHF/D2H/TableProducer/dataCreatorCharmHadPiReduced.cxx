@@ -1330,6 +1330,7 @@ struct HfDataCreatorCharmHadPiReduced {
 
         if constexpr (doMc) {
           std::vector<typename TTracks::iterator> beautyHadDauTracks{};
+          beautyHadDauTracks.reserve(charmHadDauTracks.size());
           for (const auto& track : charmHadDauTracks) {
             beautyHadDauTracks.push_back(track);
           }

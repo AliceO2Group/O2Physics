@@ -913,6 +913,7 @@ struct HfDataCreatorJpsiHadReduced {
 
           if constexpr (doMc) {
             std::vector<typename TTracks::iterator> beautyHadDauTracks{};
+            beautyHadDauTracks.reserve(jPsiDauTracks.size());
             for (const auto& track : jPsiDauTracks) {
               beautyHadDauTracks.push_back(track);
             }
@@ -1034,6 +1035,7 @@ struct HfDataCreatorJpsiHadReduced {
 
             if constexpr (doMc) {
               std::vector<typename TTracks::iterator> beautyHadDauTracks{};
+              beautyHadDauTracks.reserve(jPsiDauTracks.size());
               for (const auto& track : jPsiDauTracks) {
                 beautyHadDauTracks.push_back(track);
               }

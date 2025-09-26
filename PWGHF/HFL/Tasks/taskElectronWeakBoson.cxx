@@ -366,7 +366,7 @@ struct HfTaskElectronWeakBoson {
     return std::make_pair(trackCount - 1, isoMomentum);
   }
 
-  void recoMassZee(KFParticle kfpIsoEle,
+  void recoMassZee(KFParticle const& kfpIsoEle,
                    int charge,
                    float centrality,
                    TrackEle const& tracks)

@@ -443,8 +443,8 @@ struct HfDataCreatorCharmResoReduced {
   template <typename Coll, typename Tr>
   bool buildAndSelectV0(const Coll& collision, const std::array<int, 3>& dDaughtersIds, const std::array<Tr, 2>& dauTracks)
   {
-    auto trackPos = dauTracks[0];
-    auto trackNeg = dauTracks[1];
+    const auto& trackPos = dauTracks[0];
+    const auto& trackNeg = dauTracks[1];
     // single-tracks selection
     if (!selectV0Daughter(trackPos, dDaughtersIds) || !selectV0Daughter(trackNeg, dDaughtersIds))
       return false;

@@ -1933,7 +1933,7 @@ struct HfTrackIndexSkimCreator {
                                 aod::BCsWithTimestamps const&,
                                 std::vector<int64_t> const& vecPvContributorGlobId,
                                 std::vector<o2::track::TrackParCov> const& vecPvContributorTrackParCov,
-                                std::vector<int64_t> vecCandPvContributorGlobId,
+                                std::vector<int64_t> const& vecCandPvContributorGlobId,
                                 std::array<float, 3>& pvCoord,
                                 std::array<float, 6>& pvCovMatrix)
   {

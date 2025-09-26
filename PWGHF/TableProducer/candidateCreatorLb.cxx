@@ -248,7 +248,7 @@ struct HfCandidateCreatorLb {
         rowCandidateProngs(lcCand.globalIndex(), trackPion.globalIndex());
         // calculate invariant mass
         auto arrayMomenta = std::array{pvecLc, pvecPion};
-        massLcPi = RecoDecay::m(std::move(arrayMomenta), std::array{massLc, massPi});
+        massLcPi = RecoDecay::m(arrayMomenta, std::array{massLc, massPi});
         if (lcCand.isSelLcToPKPi() > 0) {
           hMassLbToLcPi->Fill(massLcPi);
         }

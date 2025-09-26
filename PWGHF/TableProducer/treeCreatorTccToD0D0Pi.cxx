@@ -646,7 +646,7 @@ struct HfTreeCreatorTccToD0D0Pi {
             auto massKpipi1 = RecoDecay::m(std::array{pVecD1Prong0, pVecD1Prong1, pVecSoftPi}, std::array{massD1Daus[0], massD1Daus[1], MassPiPlus});
             auto massKpipi2 = RecoDecay::m(std::array{pVecD2Prong0, pVecD2Prong1, pVecSoftPi}, std::array{massD2Daus[0], massD2Daus[1], MassPiPlus});
             auto arrayMomentaDDpi = std::array{pVecD1, pVecD2, pVecSoftPi};
-            const auto massD0D0Pi = RecoDecay::m(std::move(arrayMomentaDDpi), std::array{MassD0, MassD0, MassPiPlus});
+            const auto massD0D0Pi = RecoDecay::m(arrayMomentaDDpi, std::array{MassD0, MassD0, MassPiPlus});
             const auto deltaMassD0D0Pi = massD0D0Pi - (massD01 + massD02);
 
             deltaMassD01 = massKpipi1 - massD01;

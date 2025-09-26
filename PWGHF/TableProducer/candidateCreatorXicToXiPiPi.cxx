@@ -311,7 +311,7 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       // get invariant mass of Xic candidate
       auto arrayMomenta = std::array{pVecXi, pVecPi0, pVecPi1};
-      massXiPiPi = RecoDecay::m(std::move(arrayMomenta), std::array{MassXiMinus, MassPiPlus, MassPiPlus});
+      massXiPiPi = RecoDecay::m(arrayMomenta, std::array{MassXiMinus, MassPiPlus, MassPiPlus});
 
       // get track impact parameters
       // This modifies track momenta!
@@ -336,9 +336,9 @@ struct HfCandidateCreatorXicToXiPiPi {
 
       // get invariant mass of Xi-pi pairs
       auto arrayMomentaXiPi0 = std::array{pVecXi, pVecPi0};
-      massXiPi0 = RecoDecay::m(std::move(arrayMomentaXiPi0), std::array{MassXiMinus, MassPiPlus});
+      massXiPi0 = RecoDecay::m(arrayMomentaXiPi0, std::array{MassXiMinus, MassPiPlus});
       auto arrayMomentaXiPi1 = std::array{pVecXi, pVecPi1};
-      massXiPi1 = RecoDecay::m(std::move(arrayMomentaXiPi1), std::array{MassXiMinus, MassPiPlus});
+      massXiPi1 = RecoDecay::m(arrayMomentaXiPi1, std::array{MassXiMinus, MassPiPlus});
 
       // get uncertainty of the decay length
       float phi, theta;
