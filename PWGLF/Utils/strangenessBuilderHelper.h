@@ -280,6 +280,8 @@ class strangenessBuilderHelper
                         bool calculateCovariance = false,
                         bool acceptTPCOnly = false)
   {
+    v0 = {}; // safe initialization: start new
+
     if constexpr (useSelections) {
       // verify track quality
       if (positiveTrack.tpcNClsCrossedRows() < v0selections.minCrossedRows) {
@@ -312,6 +314,7 @@ class strangenessBuilderHelper
     if constexpr (calculateProngDCAtoPV) {
       // Calculate DCA with respect to the collision associated to the V0
       std::array<float, 2> dcaInfo;
+      dcaInfo[0] = dcaInfo[1] = 0.0f; // invalid
 
       // do DCA to PV on TrackPar copies and not TrackParCov
       // TrackPar preferred: don't calculate multiple scattering / CovMat changes
@@ -350,10 +353,12 @@ class strangenessBuilderHelper
       nCand = fitter.process(positiveTrackParam, negativeTrackParam);
     } catch (...) {
       v0 = {};
+      fitter.setCollinear(false); // even if returned, reset
       return false;
     }
     if (nCand == 0) {
       v0 = {};
+      fitter.setCollinear(false); // even if returned, reset
       return false;
     }
     fitter.setCollinear(false); // proper cleaning: when exiting this loop, always reset to not collinear
@@ -508,6 +513,7 @@ class strangenessBuilderHelper
 
     // Calculate DCA with respect to the collision associated to the V0
     std::array<float, 2> dcaInfo;
+    dcaInfo[0] = dcaInfo[1] = 0.0f; // invalid
 
     // do DCA to PV on TrackPar copies and not TrackParCov
     // TrackPar preferred: don't calculate multiple scattering / CovMat changes
@@ -738,6 +744,7 @@ class strangenessBuilderHelper
     // bachelor DCA track to PV
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
     std::array<float, 2> dcaInfo;
+    dcaInfo[0] = dcaInfo[1] = 0.0f; // invalid
 
     auto bachTrackPar = getTrackPar(bachelorTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
