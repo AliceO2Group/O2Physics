@@ -147,6 +147,7 @@ struct JetDerivedDataProducerTask {
   Configurable<std::string> ccdbURL{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> includeTriggers{"includeTriggers", false, "fill the collision information with software trigger decisions"};
   Configurable<bool> includeHadronicRate{"includeHadronicRate", true, "fill the collision information with the hadronic rate"};
+  Configurable<bool> v0ChargedDecaysOnly{"v0ChargedDecaysOnly", true, "store V0s (at particle-level) only if they decay to charged particles"};
 
   Preslice<aod::EMCALClusterCells> perClusterCells = aod::emcalclustercell::emcalclusterId;
   Preslice<aod::EMCALMatchedTracks> perClusterTracks = aod::emcalclustercell::emcalclusterId;
@@ -763,9 +764,8 @@ struct JetDerivedDataProducerTask {
   void processV0MC(aod::McCollision const& mcCollision, aod::McParticles const& particles)
   { // can loop over McV0Labels tables if we want to only store matched V0Particles
     bool filledV0McCollisionTable = false;
-    bool onlyChargedDecays = false;
     for (auto const& particle : particles) {
-      if (jetv0utilities::isV0Particle(particles, particle, onlyChargedDecays)) {
+      if (jetv0utilities::isV0Particle(particles, particle, v0ChargedDecaysOnly)) {
         if (!filledV0McCollisionTable) {
           products.jV0McCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
           products.jV0McCollisionIdsTable(mcCollision.globalIndex());
@@ -796,43 +796,6 @@ struct JetDerivedDataProducerTask {
     }
   }
   PROCESS_SWITCH(JetDerivedDataProducerTask, processV0MC, "produces V0 particles", false);
-
-  void processV0MCChargedDecays(aod::McCollision const& mcCollision, aod::McParticles const& particles)
-  { // can loop over McV0Labels tables if we want to only store matched V0Particles
-    bool filledV0McCollisionTable = false;
-    bool onlyChargedDecays = true;
-    for (auto const& particle : particles) {
-      if (jetv0utilities::isV0Particle(particles, particle, onlyChargedDecays)) {
-        if (!filledV0McCollisionTable) {
-          products.jV0McCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
-          products.jV0McCollisionIdsTable(mcCollision.globalIndex());
-          filledV0McCollisionTable = true;
-        }
-        std::vector<int32_t> mothersId;
-        if (particle.has_mothers()) {
-          auto mothersIdTemps = particle.mothersIds();
-          for (auto mothersIdTemp : mothersIdTemps) {
-            mothersId.push_back(mothersIdTemp);
-          }
-        }
-        int daughtersId[2] = {-1, -1};
-        auto i = 0;
-        if (particle.has_daughters()) {
-          for (auto daughterId : particle.daughtersIds()) {
-            if (i > 1) {
-              break;
-            }
-            daughtersId[i] = daughterId;
-            i++;
-          }
-        }
-        auto pdgParticle = pdgDatabase->GetParticle(particle.pdgCode());
-        products.jV0McsTable(products.jV0McCollisionsTable.lastIndex(), particle.pt(), particle.eta(), particle.phi(), particle.y(), particle.e(), pdgParticle->Mass(), particle.pdgCode(), particle.getGenStatusCode(), particle.getHepMCStatusCode(), particle.isPhysicalPrimary(), jetv0utilities::setV0ParticleDecayBit(particles, particle));
-        products.jV0McIdsTable(mcCollision.globalIndex(), particle.globalIndex(), mothersId, daughtersId);
-      }
-    }
-  }
-  PROCESS_SWITCH(JetDerivedDataProducerTask, processV0MCChargedDecays, "produces V0 particles that decay to charged particles", false);
 
   void processDielectronCollisions(aod::ReducedEventsInfo::iterator const& DielectronCollision)
   {

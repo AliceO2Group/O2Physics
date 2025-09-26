@@ -271,7 +271,7 @@ bool analyseV0s(std::vector<fastjet::PseudoJet>& inputParticles, T const& v0s, f
  * @param doHFJetFinding set whether only jets containing a HF candidate are saved
  */
 template <typename T, typename U, typename V>
-void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, float jetPtMin, float jetPtMax, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, std::shared_ptr<THn> thnSparseJet, bool fillThnSparse, bool doCandidateJetFinding = false, bool saveJetsWithoutCandidates = false)
+void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputParticles, float jetPtMin, float jetPtMax, std::vector<double> jetRadius, float jetAreaFractionMin, T const& collision, U& jetsTable, V& constituentsTable, std::shared_ptr<THn> thnSparseJet, bool fillThnSparse, bool doCandidateJetFinding = false)
 {
   auto jetRValues = static_cast<std::vector<double>>(jetRadius);
   jetFinder.jetPtMin = jetPtMin;
@@ -296,7 +296,7 @@ void findJets(JetFinder& jetFinder, std::vector<fastjet::PseudoJet>& inputPartic
             break;
           }
         }
-        if (!isCandidateJet && !saveJetsWithoutCandidates) {
+        if (!isCandidateJet) {
           continue;
         }
       }
