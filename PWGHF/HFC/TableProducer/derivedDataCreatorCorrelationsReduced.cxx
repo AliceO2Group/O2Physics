@@ -62,14 +62,14 @@ enum CandType {
 
 /// Code to select collisions with at least one Ds meson
 struct HfDerivedDataCreatorCorrelationsReduced {
-  Produces<aod::HfcRedCorrColls> rowCollisions;       // Table with reduced collision info
-  Produces<aod::HfcRedSEChBases> rowSECharmHadPairs;  // Table with same-event pairs info
-  Produces<aod::HfcRedSEHadBases> rowSEHadHadPairs;   // Table with same-event pairs info
-  Produces<aod::HfcRedAssBases> rowAssocBases;        // Table with associated candidate base info
-  Produces<aod::HfcRedAssTracks> rowAssocTrkSels;     // Table with associated track selection info
-  Produces<aod::HfcRedTrigBases> rowTrigBases;        // Table with base trigger candidate info
-  Produces<aod::HfcRedTrigCharms> rowTrigCharms;      // Table with charm trigger candidate selection info
-  Produces<aod::HfcRedTrigTracks> rowTrigHads;        // Table with hadron trigger candidate selection info
+  Produces<aod::HfcRedCorrColls> rowCollisions;      // Table with reduced collision info
+  Produces<aod::HfcRedSEChBases> rowSECharmHadPairs; // Table with same-event pairs info
+  Produces<aod::HfcRedSEHadBases> rowSEHadHadPairs;  // Table with same-event pairs info
+  Produces<aod::HfcRedAssBases> rowAssocBases;       // Table with associated candidate base info
+  Produces<aod::HfcRedAssTracks> rowAssocTrkSels;    // Table with associated track selection info
+  Produces<aod::HfcRedTrigBases> rowTrigBases;       // Table with base trigger candidate info
+  Produces<aod::HfcRedTrigCharms> rowTrigCharms;     // Table with charm trigger candidate selection info
+  Produces<aod::HfcRedTrigTracks> rowTrigHads;       // Table with hadron trigger candidate selection info
 
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 15, "Selection Flag for hadron (ML score tables are required to run the task)"};

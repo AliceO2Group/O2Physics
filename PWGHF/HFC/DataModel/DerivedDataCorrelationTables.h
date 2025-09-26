@@ -169,7 +169,7 @@ DECLARE_SOA_TABLE(HfcRedSEChBases, "AOD", "HFCREDSECHBASE", //! Table with Same 
                   aod::hf_correl_charm_had_reduced::PtAssoc,
                   aod::hf_correl_charm_had_reduced::DeltaEta,
                   aod::hf_correl_charm_had_reduced::DeltaPhi);
-                  
+
 DECLARE_SOA_TABLE(HfcRedSEHadBases, "AOD", "HFCREDSEHADBASE", //! Table with Same Event Trig-Assoc pairs
                   aod::hf_correl_charm_had_reduced::HfcRedCorrCollId,
                   aod::hf_correl_charm_had_reduced::HfcRedTrigTrackId,
