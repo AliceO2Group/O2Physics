@@ -666,8 +666,6 @@ struct KaonIsospinFluctuations {
   struct : ConfigurableGroup {
     Configurable<LabeledArray<int>> sparseSetting{"sparseSetting", {&DefaultSparseHistValues[0][0], 3, 2, {"hSparse0", "hSparse1", "hSparse2"}, {"nAxis", "sparseType"}}, "configuration of sparse histogram"};
     Configurable<LabeledArray<std::string>> sparseAxisStr{"sparseAxisStr", {&defaultSparseAxis[0][0], 10, 3, {"Axis0", "Axis1", "Axis2", "Axis3", "Axis4", "Axis5", "Axis6", "Axis7", "Axis8", "Axis9"}, {"sparse1", "sparse2", "sparse3"}}, "configuration of sparse histogramee"};
-    // Configurable<std::vector<std::string>> cfgSparse1qqAxis{"cfgSparse1qqAxis", {"axis1", "col1", "axis2", "col2"}, "cfgSparse1qqAxis"};
-
     Configurable<LabeledArray<double>> axisSetting{"axisSetting", {&DefaultAxisValues[0][0], 31, 3, {"nPi", "nKa", "nPr", "nEl", "nMu", "nDe", "nK0s", "nLambda", "nAntiLambda", "nGamma", "nPhi1020", "nJPsiToEE", "nJPsiToMuMu", "nKStar892", "nKStar892Bar", "nRho770", "nRejectedPi", "nRejectedKa", "nRejectedPr", "nRejectedEl", "nRejectedMu", "nRejectedDe", "nKaon", "(nK0s)^{2}", "(nKaon)^{2}", "(nK0s*nKaon)", "(nKaPlus)^{2}", "(nKaMinus)^{2}", "(nKaPlus*nKaMinus)", "centrality", "nTrack"}, {"nBins", "xLow", "xUp"}}, "particle count axis bin configuration"};
   } cfgAxis;
 
