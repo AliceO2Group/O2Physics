@@ -281,7 +281,7 @@ struct qVectorsTable {
 
     if (cfgShiftCorr) {
       shiftprofile.clear();
-      for (std::size_t i = 0; i < cfgnMods->size(); i++) { 
+      for (std::size_t i = 0; i < cfgnMods->size(); i++) {
         int ind = cfgnMods->at(i);
         fullPath = cfgShiftPath;
         fullPath += "/v";
@@ -289,7 +289,7 @@ struct qVectorsTable {
         auto objshift = getForTsOrRun<TProfile3D>(fullPath, timestamp, runnumber);
         shiftprofile.push_back(objshift);
       }
-    }       
+    }
 
     fullPath = cfgGainEqPath;
     fullPath += "/FT0";
