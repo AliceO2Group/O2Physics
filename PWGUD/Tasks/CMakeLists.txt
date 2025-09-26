@@ -9,6 +9,11 @@
 # granted to it by virtue of its status as an Intergovernmental Organization
 # or submit itself to any jurisdiction.
 
+o2physics_add_dpl_workflow(upc-polarisation-jpsi-incoh
+                           SOURCES upcPolarisationJpsiIncoh.cxx
+                           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase
+                           COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(upc
                            SOURCES upcAnalysis.cxx
                            PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::DetectorsBase

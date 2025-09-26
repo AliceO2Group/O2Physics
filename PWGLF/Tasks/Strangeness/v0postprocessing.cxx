@@ -54,7 +54,8 @@ struct v0postprocessing {
   Configurable<bool> hasTOF2Leg{"hasTOF2Leg", 0, "hasTOF2Leg"};
   Configurable<bool> hasTOF1Leg{"hasTOF1Leg", 0, "hasTOF1Leg"};
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
-  Configurable<bool> doArmenterosCut{"doArmenterosCut", 1, "do Armenteros Cut"};
+  Configurable<bool> doArmenterosCut{"doArmenterosCut", 1, "do Armenteros Cut for K0s"};
+  Configurable<bool> doArmenterosCutLam{"doArmenterosCutLam", 1, "do Armenteros Cut for Lam"};
   Configurable<bool> doQA{"doQA", 1, "fill QA histograms"};
 
   HistogramRegistry registry{"registry"};
@@ -404,7 +405,7 @@ struct v0postprocessing {
           std::abs(candidate.masslambda() - o2::constants::physics::MassLambda0) > v0rejK0s &&
           std::abs(candidate.ntpcsigmanegpi()) <= ntpcsigma &&
           std::abs(candidate.ntpcsigmapospi()) <= ntpcsigma &&
-          (doArmenterosCut && candidate.qtarm() > (paramArmenterosCut * std::abs(candidate.alpha())))) {
+          (!doArmenterosCut || candidate.qtarm() > (paramArmenterosCut * std::abs(candidate.alpha())))) {
 
         registry.fill(HIST("hMassK0Short"), candidate.massk0short());
         registry.fill(HIST("hMassVsPtK0Short"), candidate.v0pt(), candidate.massk0short());
@@ -444,7 +445,8 @@ struct v0postprocessing {
         if (std::abs(candidate.ntpcsigmanegpi()) <= ntpcsigma &&
             std::abs(candidate.ntpcsigmapospr()) <= ntpcsigma &&
             candidate.ctaulambda() < ctauLambda &&
-            std::abs(candidate.masslambda() - o2::constants::physics::MassLambda0) < 0.075) {
+            std::abs(candidate.masslambda() - o2::constants::physics::MassLambda0) < 0.075 &&
+            (!doArmenterosCutLam || candidate.qtarm() < (paramArmenterosCut * std::abs(candidate.alpha())))) {
 
           registry.fill(HIST("hMassLambda"), candidate.masslambda());
           registry.fill(HIST("hMassVsPtLambda"), candidate.v0pt(), candidate.masslambda());
@@ -482,7 +484,8 @@ struct v0postprocessing {
         if (std::abs(candidate.ntpcsigmanegpr()) <= ntpcsigma &&
             std::abs(candidate.ntpcsigmapospi()) <= ntpcsigma &&
             candidate.ctauantilambda() < ctauLambda &&
-            std::abs(candidate.massantilambda() - o2::constants::physics::MassLambda0) < 0.075) {
+            std::abs(candidate.massantilambda() - o2::constants::physics::MassLambda0) < 0.075 &&
+            (!doArmenterosCutLam || candidate.qtarm() < (paramArmenterosCut * std::abs(candidate.alpha())))) {
 
           registry.fill(HIST("hMassAntiLambda"), candidate.massantilambda());
           registry.fill(HIST("hMassVsPtAntiLambda"), candidate.v0pt(), candidate.massantilambda());

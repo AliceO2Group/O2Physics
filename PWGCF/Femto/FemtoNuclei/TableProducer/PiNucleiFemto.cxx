@@ -63,6 +63,7 @@
 #include <array>
 #include <cmath>
 #include <cstdlib>
+#include <deque>
 #include <iterator> // std::prev
 #include <string>
 #include <vector>
@@ -103,6 +104,8 @@ struct PiNucandidate {
   std::array<float, 3> momNu = {99.f, 99.f, 99.f};
   std::array<float, 3> momPi = {99.f, 99.f, 99.f};
 
+  float ptHe3 = 1.f;
+  float etaHe3 = 1.f;
   float signNu = 1.f;
   float signPi = 1.f;
   float invMass = -10.f;
@@ -158,6 +161,8 @@ struct PiNucleiFemto {
   Configurable<float> settingCutPtMinDePi{"settingCutPtMinDePi", 0.0f, "Minimum PT cut on DePi4"};
   Configurable<float> settingCutClSizeItsDe{"settingCutClSizeItsDe", 4.0f, "Minimum ITS cluster size for De"};
   Configurable<float> settingCutNCls{"settingCutNCls", 5.0f, "Minimum ITS Ncluster for tracks"};
+  Configurable<float> settingCutTPCChi2He{"settingCutTPCChi2He", 0.0f, "Minimum tpcChi2He for Hyper He3"};
+  Configurable<float> settingCutAverClsSizeHe{"settingCutAverClsSizeHe", 0.0f, "Minimum averClusSizeHe for Hyper He3"};
   Configurable<float> settingCutChi2NClITS{"settingCutChi2NClITS", 999.f, "Maximum ITS Chi2 for tracks"};
   Configurable<float> settingCutNsigmaTPCPi{"settingCutNsigmaTPCPi", 3.0f, "Value of the TPC Nsigma cut on Pi"};
   Configurable<float> settingCutNsigmaTPCDe{"settingCutNsigmaTPCDe", 2.5f, "Value of the TPC Nsigma cut on De"};
@@ -204,12 +209,13 @@ struct PiNucleiFemto {
   PresliceUnsorted<o2::aod::DataHypCandsWColl> hypPerCol = o2::aod::hyperrec::collisionId;
 
   // binning for EM background
-  ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for multiplicity"};
+  ConfigurableAxis axisVertex{"axisVertex", {30, -10, 10}, "Binning for vtxz"};
   ConfigurableAxis axisCentrality{"axisCentrality", {40, 0, 100}, "Binning for centrality"};
   using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
   BinningType binningPolicy{{axisVertex, axisCentrality}, true};
   SliceCache cache;
   SameKindPair<CollisionsFull, TrackCandidates, BinningType> mPair{binningPolicy, settingNoMixedEvents, -1, &cache};
+  // Pair<CollisionsFull, TrackCandidates, o2::aod::DataHypCandsWColl, BinningType> hyperPair{binningPolicy, settingNoMixedEvents, -1, &cache};
 
   std::array<float, 6> mBBparamsDe;
 
@@ -229,6 +235,7 @@ struct PiNucleiFemto {
     "QA",
     {{"hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}}},
      {"hNcontributor", "Number of primary vertex contributor", {HistType::kTH1F, {{2000, 0.0f, 2000.0f}}}},
+     {"hCentrality", "Centrality", {HistType::kTH1F, {{100, 0.0f, 100.0f}}}},
      {"hTrackSel", "Accepted tracks", {HistType::kTH1F, {{Selections::kAll, -0.5, static_cast<double>(Selections::kAll) - 0.5}}}},
      {"hEvents", "; Events;", {HistType::kTH1F, {{3, -0.5, 2.5}}}},
      {"hEmptyPool", "svPoolCreator did not find track pairs false/true", {HistType::kTH1F, {{2, -0.5, 1.5}}}},
@@ -240,6 +247,9 @@ struct PiNucleiFemto {
      {"hNuPitInvMass", "; M(Nu + p) (GeV/#it{c}^{2})", {HistType::kTH1F, {{300, 3.74f, 4.34f}}}},
      {"hNuPt", "#it{p}_{T} distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
      {"hPiPt", "Pt distribution; #it{p}_{T} (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
+     {"hHe3TPCnsigma", "NsigmaHe3 TPC distribution; #it{p}_{T} (GeV/#it{c}); n#sigma_{TPC}(He3)", {HistType::kTH2F, {{100, -2.0f, 2.0f}, {200, -5.0f, 5.0f}}}},
+     {"hHe3P", "Pin distribution; p (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
+     {"hHe3P_preselected", "Pin distribution_preselected; p (GeV/#it{c})", {HistType::kTH1F, {{120, -3.0f, 3.0f}}}},
      {"hNuEta", "eta distribution; #eta(Nu)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hPiEta", "eta distribution; #eta(#pi)", {HistType::kTH1F, {{200, -1.0f, 1.0f}}}},
      {"hNuPhi", "phi distribution; phi(Nu)", {HistType::kTH1F, {{600, -4.0f, 4.0f}}}},
@@ -267,6 +277,52 @@ struct PiNucleiFemto {
     OutputObjHandlingPolicy::AnalysisObject,
     false,
     true};
+
+  int numOfCentBins = 40;
+  int numOfVertexZBins = 30;
+  float Vz_low = -10.0f;
+  float Vz_high = 10.0f;
+  float Vz_step = (Vz_high - Vz_low) / numOfVertexZBins;
+
+  struct EventRef {
+    int64_t collisionId;
+  };
+
+  struct PoolBin {
+    std::deque<EventRef> events;
+  };
+
+  std::vector<PoolBin> All_Event_pool;
+  bool isInitialized = false;
+
+  int nPoolBins() const { return numOfVertexZBins * numOfCentBins; }
+
+  void initializePools()
+  {
+    All_Event_pool.clear();
+    All_Event_pool.resize(nPoolBins());
+    isInitialized = true;
+  }
+
+  int where_pool(float vz, float v0Centr) const
+  {
+    float CentBinWidth = 100.0 / numOfCentBins; // = 2.5
+
+    int iy = static_cast<int>(std::floor(v0Centr / CentBinWidth));
+    if (iy < 0)
+      iy = 0;
+    if (iy >= numOfCentBins)
+      iy = numOfCentBins - 1;
+
+    int ix = static_cast<int>(std::floor((vz - Vz_low) / Vz_step));
+    if (ix < 0)
+      ix = 0;
+    if (ix >= numOfVertexZBins)
+      ix = numOfVertexZBins - 1;
+
+    int bin = ix + numOfVertexZBins * iy;
+    return bin;
+  }
 
   void init(o2::framework::InitContext&)
   {
@@ -488,6 +544,41 @@ struct PiNucleiFemto {
     return false;
   }
 
+  float averageClusterSizeCosl(uint32_t itsClusterSizes, float eta)
+  {
+    float average = 0;
+    int nclusters = 0;
+    const float cosl = 1. / std::cosh(eta);
+    const int nlayerITS = 7;
+
+    for (int layer = 0; layer < nlayerITS; layer++) {
+      if ((itsClusterSizes >> (layer * 4)) & 0xf) {
+        nclusters++;
+        average += (itsClusterSizes >> (layer * 4)) & 0xf;
+      }
+    }
+    if (nclusters == 0) {
+      return 0;
+    }
+    return average * cosl / nclusters;
+  };
+
+  bool selectionPIDHyper(const aod::DataHypCandsWColl::iterator& V0Hyper)
+  {
+    mQaRegistry.fill(HIST("hHe3P_preselected"), V0Hyper.tpcMomHe());
+    float averClusSizeHe = averageClusterSizeCosl(V0Hyper.itsClusterSizesHe(), V0Hyper.etaHe3());
+    if (averClusSizeHe <= settingCutAverClsSizeHe) {
+      return false;
+    }
+    if (V0Hyper.tpcChi2He() <= settingCutTPCChi2He) {
+      return false;
+    }
+    mQaRegistry.fill(HIST("hHe3P"), V0Hyper.tpcMomHe());
+    mQaRegistry.fill(HIST("hHe3TPCnsigma"), V0Hyper.ptHe3(), V0Hyper.nSigmaHe());
+
+    return true;
+  }
+
   // ==================================================================================================================
 
   template <typename Ttrack, typename Tcollisions, typename Ttracks>
@@ -633,10 +724,6 @@ struct PiNucleiFemto {
     if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
       return false;
     }
-    float ptDePi = std::hypot(piHypercand.momNu[0] + piHypercand.momPi[0], piHypercand.momNu[1] + piHypercand.momPi[1]);
-    if (ptDePi < settingCutPtMinDePi) {
-      return false;
-    }
 
     piHypercand.signPi = trackPi.sign();
     if (V0Hyper.isMatter()) {
@@ -644,15 +731,20 @@ struct PiNucleiFemto {
     } else {
       piHypercand.signNu = -1;
     }
-
+    piHypercand.etaHe3 = V0Hyper.etaHe3();
+    piHypercand.ptHe3 = V0Hyper.ptHe3();
     piHypercand.dcaxyPi = trackPi.dcaXY();
     piHypercand.dcazPi = trackPi.dcaZ();
     piHypercand.tpcSignalPi = trackPi.tpcSignal();
+    piHypercand.tpcSignalNu = V0Hyper.tpcSignalHe();
     piHypercand.momPiTPC = trackPi.tpcInnerParam();
     piHypercand.nSigmaPi = trackPi.tpcNSigmaPi();
+    piHypercand.nSigmaNu = V0Hyper.nSigmaHe();
     piHypercand.chi2TPCPi = trackPi.tpcChi2NCl();
+    piHypercand.chi2TPCNu = V0Hyper.tpcChi2He();
     piHypercand.pidTrkPi = trackPi.pidForTracking();
     piHypercand.itsClSizePi = trackPi.itsClusterSizes();
+    piHypercand.itsClSizeNu = V0Hyper.itsClusterSizesHe();
     piHypercand.nClsItsPi = trackPi.itsNCls();
     piHypercand.sharedClustersPi = trackPi.tpcNClsShared();
 
@@ -720,25 +812,27 @@ struct PiNucleiFemto {
   template <typename Ttrack, typename Thypers>
   void pairTracksSameEventHyper(const Ttrack& piTracks, const Thypers& V0Hypers)
   {
-    for (const auto& piTrack : piTracks) {
-
-      mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
-
-      if (!selectTrack(piTrack)) {
+    for (const auto& V0Hyper : V0Hypers) {
+      if (!selectionPIDHyper(V0Hyper)) {
         continue;
       }
-      mQaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
+      for (const auto& piTrack : piTracks) {
 
-      if (!selectionPIDPion(piTrack)) {
-        continue;
-      }
-      mQaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
+        mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
 
-      for (const auto& V0Hyper : V0Hypers) {
+        if (!selectTrack(piTrack)) {
+          continue;
+        }
+        mQaRegistry.fill(HIST("hTrackSel"), Selections::kTrackCuts);
+
+        if (!selectionPIDPion(piTrack)) {
+          continue;
+        }
+        mQaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
 
         SVCand pair;
-        pair.tr0Idx = piTrack.globalIndex();
-        pair.tr1Idx = V0Hyper.globalIndex();
+        pair.tr0Idx = V0Hyper.globalIndex();
+        pair.tr1Idx = piTrack.globalIndex();
         const int collIdx = V0Hyper.collisionId();
         CollBracket collBracket{collIdx, collIdx};
         pair.collBracket = collBracket;
@@ -766,6 +860,29 @@ struct PiNucleiFemto {
         CollBracket collBracket{collIdx, collIdx};
         trackPair.collBracket = collBracket;
         mTrackPairs.push_back(trackPair);
+      }
+    }
+  }
+
+  template <typename T1, typename T2>
+  void pairHyperEventMixing(T1& pionCands, T2& hypCands)
+  {
+    for (const auto& hypCand : hypCands) {
+      if (!selectionPIDHyper(hypCand)) {
+        continue;
+      }
+      for (const auto& pionCand : pionCands) {
+        if (!selectTrack(pionCand) || !selectionPIDPion(pionCand)) {
+          continue;
+        }
+
+        SVCand pair;
+        pair.tr0Idx = hypCand.globalIndex();
+        pair.tr1Idx = pionCand.globalIndex();
+        const int collIdx = hypCand.collisionId();
+        CollBracket collBracket{collIdx, collIdx};
+        pair.collBracket = collBracket;
+        mTrackHypPairs.push_back(pair);
       }
     }
   }
@@ -819,6 +936,8 @@ struct PiNucleiFemto {
     mOutputHyperDataTable(
       piNucand.recoPtNu(),
       piNucand.recoEtaNu(),
+      piNucand.ptHe3,
+      piNucand.etaHe3,
       piNucand.recoPhiNu(),
       piNucand.recoPtPi(),
       piNucand.recoEtaPi(),
@@ -826,12 +945,16 @@ struct PiNucleiFemto {
       piNucand.dcaxyPi,
       piNucand.dcazPi,
       piNucand.tpcSignalPi,
+      piNucand.tpcSignalNu,
       piNucand.momPiTPC,
       piNucand.nSigmaPi,
+      piNucand.nSigmaNu,
       piNucand.chi2TPCPi,
+      piNucand.chi2TPCNu,
       piNucand.massTOFPi,
       piNucand.pidTrkPi,
       piNucand.itsClSizePi,
+      piNucand.itsClSizeNu,
       piNucand.sharedClustersPi,
       piNucand.isBkgUS,
       piNucand.isBkgEM);
@@ -969,14 +1092,24 @@ struct PiNucleiFemto {
   {
     for (const auto& trackPair : mTrackHypPairs) {
 
-      auto v0hyper = V0Hypers.rawIteratorAt(trackPair.tr1Idx);
-      auto piTrack = piTracks.rawIteratorAt(trackPair.tr0Idx);
+      auto v0hyper = V0Hypers.rawIteratorAt(trackPair.tr0Idx);
+      auto piTrack = piTracks.rawIteratorAt(trackPair.tr1Idx);
       // auto collBracket = trackPair.collBracket;
 
       PiNucandidate piNucand;
       if (!fillCandidateInfoHyper(v0hyper, piTrack, piNucand, isMixedEvent)) {
         continue;
       }
+
+      mQaRegistry.fill(HIST("hNuPt"), piNucand.recoPtNu());
+      mQaRegistry.fill(HIST("hPiPt"), piNucand.recoPtPi());
+      mQaRegistry.fill(HIST("hNuEta"), piNucand.recoEtaNu());
+      mQaRegistry.fill(HIST("hPiEta"), piNucand.recoEtaPi());
+      mQaRegistry.fill(HIST("hNuPhi"), piNucand.recoPhiNu());
+      mQaRegistry.fill(HIST("hPiPhi"), piNucand.recoPhiPi());
+      mQaRegistry.fill(HIST("hNuPitInvMass"), piNucand.invMass);
+      mQaRegistry.fill(HIST("hNClsPiITS"), piNucand.nClsItsPi);
+      mQaRegistry.fill(HIST("hisBkgEM"), piNucand.isBkgEM);
 
       auto collision = collisions.rawIteratorAt(piNucand.collisionID);
 
@@ -1021,6 +1154,7 @@ struct PiNucleiFemto {
   {
     mGoodCollisions.clear();
     mGoodCollisions.resize(collisions.size(), false);
+    // LOG(info) << "Number of hyperCandidates read = " << V0Hypers.size();
 
     for (const auto& collision : collisions) {
 
@@ -1068,6 +1202,76 @@ struct PiNucleiFemto {
     fillPairs(collisions, tracks, /*isMixedEvent*/ true);
   }
   PROCESS_SWITCH(PiNucleiFemto, processMixedEvent, "Process Mixed event", false);
+
+  /*void processMixedEventHyper(const CollisionsFull& collisions, o2::aod::DataHypCandsWColl const& V0Hypers, const TrackCandidates& pitracks)
+  {
+    LOG(debug) << "Processing mixed event for hypertriton";
+    mTrackHypPairs.clear();
+
+    for (const auto& [c1, tracks1, c2, V0Hypers2] : hyperPair) {
+      if (!c1.sel8() || !c2.sel8()) {
+        continue;
+      }
+
+      mQaRegistry.fill(HIST("hNcontributor"), c2.numContrib());
+      //mQaRegistry.fill(HIST("hCentrality"), c2.centFT0C());
+      mQaRegistry.fill(HIST("hVtxZ"), c2.posZ());
+
+      pairHyperEventMixing(tracks1, V0Hypers2);
+    }
+}
+PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", false);*/
+
+  void processMixedEventHyperPool(const CollisionsFull& collisions, o2::aod::DataHypCandsWColl const& V0Hypers, const TrackCandidates& pitracks)
+  {
+    mTrackHypPairs.clear();
+    if (!isInitialized) {
+      initializePools();
+      LOG(info) << "Initialized event pool with size = " << All_Event_pool.size();
+    }
+    for (auto const& collision : collisions) {
+      mQaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
+      mQaRegistry.fill(HIST("hCentrality"), collision.centFT0C());
+      mQaRegistry.fill(HIST("hVtxZ"), collision.posZ());
+      int poolIndexPi = where_pool(collision.posZ(), collision.centFT0C());
+      auto& pool = All_Event_pool[poolIndexPi];
+
+      if (poolIndexPi < 0 || static_cast<size_t>(poolIndexPi) >= All_Event_pool.size()) {
+        continue;
+      }
+
+      for (auto const& storedEvent : pool.events) {
+        auto c1 = collisions.iteratorAt(storedEvent.collisionId);
+        const auto& c2 = collision;
+        if (!c1.sel8() || !c2.sel8())
+          continue;
+
+        std::vector<TrackCandidates::iterator> tracks1;
+        for (auto const& t : pitracks) {
+          if (t.collisionId() == c1.globalIndex()) {
+            tracks1.push_back(t);
+          }
+        }
+        std::vector<o2::aod::DataHypCandsWColl::iterator> hypers2;
+        for (auto const& h : V0Hypers) {
+          if (h.collisionId() != c2.globalIndex())
+            continue;
+          int poolIndexHyp = where_pool(h.zPrimVtx(), h.centralityFT0C());
+          if (poolIndexHyp != poolIndexPi)
+            continue;
+          hypers2.push_back(h);
+        }
+        pairHyperEventMixing(tracks1, hypers2);
+      }
+      fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ true);
+
+      if (static_cast<int>(pool.events.size()) >= settingNoMixedEvents) {
+        pool.events.pop_front();
+      }
+      pool.events.push_back({collision.globalIndex()});
+    }
+  }
+  PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyperPool, "Process Mixed event", false);
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)

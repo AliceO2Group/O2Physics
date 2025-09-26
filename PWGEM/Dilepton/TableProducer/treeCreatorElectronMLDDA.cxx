@@ -195,6 +195,7 @@ struct TreeCreatorElectronMLDDA {
     Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 5.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 36.0, "max chi2/NclsITS"};
+    Configurable<float> cfg_min_chi2its{"cfg_min_chi2its", 0.0, "min chi2/NclsITS"}; // remove ITS afterburner
     Configurable<float> cfg_min_dcaxy_v0leg{"cfg_min_dcaxy_v0leg", 0.1, "min dca XY to PV for v0 legs in cm"};
     Configurable<bool> cfg_includeITSsa{"cfg_includeITSsa", false, "Flag to include ITSsa tracks"};
     Configurable<float> cfg_max_pt_itssa{"cfg_max_pt_itssa", 0.15, "mix pt for ITSsa track"};
@@ -229,6 +230,7 @@ struct TreeCreatorElectronMLDDA {
     Configurable<int> cfg_min_ncluster_itsib{"cfg_min_ncluster_itsib", 0, "min ncluster itsib"};
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
+    Configurable<float> cfg_min_chi2its{"cfg_min_chi2its", -1e+10, "min chi2/NclsITS"}; // remove ITS afterburner
     Configurable<float> cfg_max_chi2tof{"cfg_max_chi2tof", 1e+10, "max chi2 TOF"}; // distance in cm
 
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2, "min n sigma e in TPC for pc->ee"};
@@ -399,7 +401,7 @@ struct TreeCreatorElectronMLDDA {
     if (track.itsNClsInnerBarrel() < v0cuts.cfg_min_ncluster_itsib) {
       return false;
     }
-    if (track.itsChi2NCl() > v0cuts.cfg_max_chi2its) {
+    if (track.itsChi2NCl() < v0cuts.cfg_min_chi2its || v0cuts.cfg_max_chi2its < track.itsChi2NCl()) {
       return false;
     }
 
@@ -465,7 +467,7 @@ struct TreeCreatorElectronMLDDA {
     if (track.itsNClsInnerBarrel() < tightv0cuts.cfg_min_ncluster_itsib) {
       return false;
     }
-    if (tightv0cuts.cfg_max_chi2its < track.itsChi2NCl()) {
+    if (track.itsChi2NCl() < tightv0cuts.cfg_min_chi2its || tightv0cuts.cfg_max_chi2its < track.itsChi2NCl()) {
       return false;
     }
 

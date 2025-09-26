@@ -97,12 +97,17 @@ DECLARE_SOA_COLUMN(GlobalIndexleg2, globalIndexleg2, uint64_t);
 DECLARE_SOA_COLUMN(Ptassoc, ptassoc, float);
 DECLARE_SOA_COLUMN(PINassoc, pINassoc, float);
 DECLARE_SOA_COLUMN(Etaassoc, etaassoc, float);
+DECLARE_SOA_COLUMN(Phiassoc, phiassoc, float);
 DECLARE_SOA_COLUMN(Ptpair, ptpair, float);
 DECLARE_SOA_COLUMN(Etapair, etapair, float);
+DECLARE_SOA_COLUMN(Ptleg1, ptleg1, float);
 DECLARE_SOA_COLUMN(PINleg1, pINleg1, float);
 DECLARE_SOA_COLUMN(Etaleg1, etaleg1, float);
+DECLARE_SOA_COLUMN(Phileg1, phileg1, float);
+DECLARE_SOA_COLUMN(Ptleg2, ptleg2, float);
 DECLARE_SOA_COLUMN(PINleg2, pINleg2, float);
 DECLARE_SOA_COLUMN(Etaleg2, etaleg2, float);
+DECLARE_SOA_COLUMN(Phileg2, phileg2, float);
 DECLARE_SOA_COLUMN(TPCnsigmaKaassoc, tpcnsigmaKaassoc, float);
 DECLARE_SOA_COLUMN(TPCnsigmaPiassoc, tpcnsigmaPiassoc, float);
 DECLARE_SOA_COLUMN(TPCnsigmaPrassoc, tpcnsigmaPrassoc, float);
@@ -171,7 +176,8 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
                   dqanalysisflags::IsJpsiFromBSelected, dqanalysisflags::IsBarrelSelected, dqanalysisflags::McFlag);
 DECLARE_SOA_TABLE(JPsiMuonCandidates, "AOD", "DQJPSIMUONA",
                   dqanalysisflags::DeltaEta, dqanalysisflags::DeltaPhi,
-                  dqanalysisflags::MassDileptonCandidate, dqanalysisflags::Ptpair, dqanalysisflags::Etapair, dqanalysisflags::Ptassoc, dqanalysisflags::Etaassoc,
+                  dqanalysisflags::MassDileptonCandidate, dqanalysisflags::Ptpair, dqanalysisflags::Etapair, dqanalysisflags::Ptassoc, dqanalysisflags::Etaassoc, dqanalysisflags::Phiassoc,
+                  dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::Phileg1, dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2, dqanalysisflags::Phileg2,
                   dqanalysisflags::McFlag);
 DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER", dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Lxyee, dqanalysisflags::LxyeePoleMass, dqanalysisflags::Lzee, dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::Corrassoc);
 } // namespace o2::aod
@@ -364,7 +370,7 @@ struct AnalysisEventSelection {
     // loop over the BC map, get the collision vectors and make in-bunch and out of bunch 2-event correlations
     for (auto bc1It = fBCCollMap.begin(); bc1It != fBCCollMap.end(); ++bc1It) {
       uint64_t bc1 = bc1It->first;
-      auto bc1Events = bc1It->second;
+      auto const& bc1Events = bc1It->second;
 
       // same bunch event correlations, if more than 1 collisions in this bunch
       if (bc1Events.size() > 1) {
@@ -387,9 +393,9 @@ struct AnalysisEventSelection {
       for (auto bc2It = std::next(bc1It); bc2It != fBCCollMap.end(); ++bc2It) {
         uint64_t bc2 = bc2It->first;
         if ((bc2 > bc1 ? bc2 - bc1 : bc1 - bc2) > fConfigSplitCollisionsDeltaBC) {
-          continue;
+          break;
         }
-        auto bc2Events = bc2It->second;
+        auto const& bc2Events = bc2It->second;
 
         // loop over events in the first BC
         for (auto ev1It : bc1Events) {
@@ -607,10 +613,8 @@ struct AnalysisTrackSelection {
       VarManager::ResetValues(0, VarManager::kNBarrelTrackVariables);
       // fill event information which might be needed in histograms/cuts that combine track and event properties
       VarManager::FillEvent<TEventFillMap>(event);
-      ReducedMCEvent* eventMC = nullptr;
       if (event.has_reducedMCevent()) {
-        auto eventMC = event.reducedMCevent();
-        VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(eventMC);
+        VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent());
       }
 
       auto track = assoc.template reducedtrack_as<TTracks>();
@@ -622,8 +626,8 @@ struct AnalysisTrackSelection {
       if (track.has_reducedMCTrack()) {
         auto trackMC = track.reducedMCTrack();
         auto eventMCfromTrack = trackMC.reducedMCevent();
-        if (eventMC != nullptr) {
-          isCorrectAssoc = (eventMCfromTrack.globalIndex() == eventMC->globalIndex());
+        if (event.has_reducedMCevent()) {
+          isCorrectAssoc = (eventMCfromTrack.globalIndex() == event.reducedMCevent().globalIndex());
         }
         VarManager::FillTrackMC(tracksMC, trackMC);
       }
@@ -2228,6 +2232,8 @@ struct AnalysisSameEventPairing {
         VarManager::FillTrackMC(mcTracks, track);
         auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
         // auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
+        mcDecision = 0;
+        isig = 0;
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
             mcDecision |= (static_cast<uint32_t>(1) << isig);
@@ -2237,8 +2243,8 @@ struct AnalysisSameEventPairing {
               dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), track_raw.pt(), track_raw.eta(), track_raw.phi(), -999, -999, -999);
             }
           }
+          isig++;
         }
-        isig++;
       }
     } // end loop over reconstructed events
     if (fHasTwoProngGenMCsignals) {
@@ -3730,6 +3736,9 @@ struct AnalysisDileptonTrack {
       // get full track info of tracks based on the index
       auto lepton1 = tracks.rawIteratorAt(dilepton.index0Id());
       auto lepton2 = tracks.rawIteratorAt(dilepton.index1Id());
+      if (!lepton1.has_reducedMCTrack() || !lepton2.has_reducedMCTrack()) {
+        continue;
+      }
       auto lepton1MC = lepton1.reducedMCTrack();
       auto lepton2MC = lepton2.reducedMCTrack();
       // Check that the dilepton has zero charge
@@ -3841,8 +3850,6 @@ struct AnalysisDileptonTrack {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
-          // Fill table for correlation analysis
-          DileptonTrackTable(fValuesHadron[VarManager::kDeltaEta], fValuesHadron[VarManager::kDeltaPhi], dilepton.mass(), dilepton.pt(), dilepton.eta(), track.pt(), track.eta(), mcDecision);
         }
 
         if constexpr (TCandidateType == VarManager::kBcToThreeMuons) {
@@ -3870,6 +3877,11 @@ struct AnalysisDileptonTrack {
               mcDecision |= (static_cast<uint32_t>(1) << isig);
             }
           }
+          // Fill table for correlation analysis
+          DileptonTrackTable(fValuesHadron[VarManager::kDeltaEta], fValuesHadron[VarManager::kDeltaPhi],
+                             dilepton.mass(), dilepton.pt(), dilepton.eta(), track.pt(), track.eta(), track.phi(),
+                             lepton1.pt(), lepton1.eta(), lepton1.phi(), lepton2.pt(), lepton2.eta(), lepton2.phi(),
+                             mcDecision);
         }
 
         // Fill histograms for the triplets
