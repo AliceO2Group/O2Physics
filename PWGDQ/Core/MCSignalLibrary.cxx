@@ -87,6 +87,16 @@ MCSignal* o2::aod::dqmcsignals::GetMCSignal(const char* name)
     signal = new MCSignal(name, "Primary Kaons", {prong}, {-1}); // define the signal using the full constructor
     return signal;
   }
+  if (!nameStr.compare("Lambda0Baryon")) {
+    MCProng prong(1, {3122}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "Lambda0 Baryon", {prong}, {-1});
+    return signal;
+  }
+  if (!nameStr.compare("SigmaPlusBaryon")) {
+    MCProng prong(1, {3222}, {true}, {false}, {0}, {0}, {false});
+    signal = new MCSignal(name, "SigmaPlus Baryon", {prong}, {-1});
+    return signal;
+  }
   if (!nameStr.compare("proton")) {
     MCProng prong(1, {2212}, {true}, {false}, {0}, {0}, {false});
     signal = new MCSignal(name, "proton", {prong}, {-1});
