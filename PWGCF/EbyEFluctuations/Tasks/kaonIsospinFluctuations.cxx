@@ -2527,7 +2527,7 @@ struct KaonIsospinFluctuations {
         casters.emplace_back([](void* ptr) { return static_cast<ReturnType>(*static_cast<double*>(ptr)); });
       } else {
         casters.emplace_back([](void*) {
-          LOG(fatal)<<"Unsupported type in Generic Caster";
+          LOG(fatal) <<"Unsupported type in Generic Caster";
           return ReturnType{};
         });
       }
