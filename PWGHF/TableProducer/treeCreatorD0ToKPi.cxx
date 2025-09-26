@@ -142,7 +142,6 @@ DECLARE_SOA_TABLE(HfCandD0Lites, "AOD", "HFCANDD0LITE",
                   full::OriginMcRec)
 
 DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
-                  full::CollisionId,
                   collision::PosX,
                   collision::PosY,
                   collision::PosZ,
@@ -202,11 +201,9 @@ DECLARE_SOA_TABLE(HfCandD0Fulls, "AOD", "HFCANDD0FULL",
                   full::E,
                   full::FlagMc,
                   full::FlagMcDecayChanRec,
-                  full::OriginMcRec,
-                  full::CandidateId);
+                  full::OriginMcRec);
 
 DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
-                  full::CollisionId,
                   collision::NumContrib,
                   collision::PosX,
                   collision::PosY,
@@ -215,15 +212,13 @@ DECLARE_SOA_TABLE(HfCandD0FullEvs, "AOD", "HFCANDD0FULLEV",
                   full::RunNumber);
 
 DECLARE_SOA_TABLE(HfCandD0FullPs, "AOD", "HFCANDD0FULLP",
-                  full::McCollisionId,
                   full::Pt,
                   full::Eta,
                   full::Phi,
                   full::Y,
                   full::FlagMc,
                   full::FlagMcDecayChanGen,
-                  full::OriginMcGen,
-                  full::McParticleId);
+                  full::OriginMcGen);
 
 DECLARE_SOA_TABLE(HfCandD0Mls, "AOD", "HFCANDD0ML",
                   ml::BdtOutputBkg,
@@ -283,7 +278,6 @@ struct HfTreeCreatorD0ToKPi {
   void fillEvent(const T& collision, int isEventReject, int runNumber)
   {
     rowCandidateFullEvents(
-      collision.globalIndex(),
       collision.numContrib(),
       collision.posX(),
       collision.posY(),
@@ -337,7 +331,6 @@ struct HfTreeCreatorD0ToKPi {
     } else {
       double cosThetaStar = candFlag == 0 ? hfHelper.cosThetaStarD0(candidate) : hfHelper.cosThetaStarD0bar(candidate);
       rowCandidateFull(
-        candidate.collisionId(),
         candidate.posX(),
         candidate.posY(),
         candidate.posZ(),
@@ -397,8 +390,7 @@ struct HfTreeCreatorD0ToKPi {
         e,
         flagMc,
         flagMcDecay,
-        origin,
-        candidate.globalIndex());
+        origin);
     }
     if constexpr (applyMl) {
       if (candFlag == 0) {
@@ -536,7 +528,10 @@ struct HfTreeCreatorD0ToKPi {
         }
       }
       if constexpr (onlySig) {
-        if ((std::abs(candidate.flagMcMatchRec()) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && (candidate.flagMcMatchRec() != 0))) {
+        if (fillCorrBkgs && candidate.flagMcMatchRec() == 0) {
+          continue;
+        }
+        if (!fillCorrBkgs && std::abs(candidate.flagMcMatchRec()) != o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           continue;
         }
       }
@@ -566,15 +561,13 @@ struct HfTreeCreatorD0ToKPi {
     for (const auto& particle : mcParticles) {
       if ((std::abs(particle.flagMcMatchGen()) == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) || (fillCorrBkgs && particle.flagMcMatchGen() != 0)) {
         rowCandidateFullParticles(
-          particle.mcCollisionId(),
           particle.pt(),
           particle.eta(),
           particle.phi(),
           RecoDecay::y(particle.pVector(), o2::constants::physics::MassD0),
           particle.flagMcMatchGen(),
           particle.flagMcDecayChanGen(),
-          particle.originMcGen(),
-          particle.globalIndex());
+          particle.originMcGen());
       }
     }
   }
