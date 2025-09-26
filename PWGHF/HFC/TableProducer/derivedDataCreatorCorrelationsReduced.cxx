@@ -62,13 +62,14 @@ enum CandType {
 
 /// Code to select collisions with at least one Ds meson
 struct HfDerivedDataCreatorCorrelationsReduced {
-  Produces<aod::HfcRedCorrColls> rowCollisions;   // Table with reduced collision info
-  Produces<aod::HfcRedSEBases> rowSEPairs;        // Table with same-event pairs info
-  Produces<aod::HfcRedAssBases> rowAssocBases;    // Table with associated candidate base info
-  Produces<aod::HfcRedAssTracks> rowAssocTrkSels; // Table with associated track selection info
-  Produces<aod::HfcRedTrigBases> rowTrigBases;    // Table with base trigger candidate info
-  Produces<aod::HfcRedTrigCharms> rowTrigCharms;  // Table with charm trigger candidate selection info
-  Produces<aod::HfcRedTrigTracks> rowTrigHads;    // Table with hadron trigger candidate selection info
+  Produces<aod::HfcRedCorrColls> rowCollisions;      // Table with reduced collision info
+  Produces<aod::HfcRedSEChBases> rowSECharmHadPairs; // Table with same-event pairs info
+  Produces<aod::HfcRedSEHadBases> rowSEHadHadPairs;  // Table with same-event pairs info
+  Produces<aod::HfcRedAssBases> rowAssocBases;       // Table with associated candidate base info
+  Produces<aod::HfcRedAssTracks> rowAssocTrkSels;    // Table with associated track selection info
+  Produces<aod::HfcRedTrigBases> rowTrigBases;       // Table with base trigger candidate info
+  Produces<aod::HfcRedTrigCharms> rowTrigCharms;     // Table with charm trigger candidate selection info
+  Produces<aod::HfcRedTrigTracks> rowTrigHads;       // Table with hadron trigger candidate selection info
 
   Configurable<int> centEstimator{"centEstimator", 2, "Centrality estimation (FT0A: 1, FT0C: 2, FT0M: 3, FV0A: 4)"};
   Configurable<int> selectionFlag{"selectionFlag", 15, "Selection Flag for hadron (ML score tables are required to run the task)"};
@@ -320,6 +321,13 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       double trigCandPt = trigCand.pt();
       registry.fill(HIST("hPhiVsPtTrig"), RecoDecay::constrainAngle(trigCand.phi(), -o2::constants::math::PIHalf), trigCandPt);
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCandPt);
+      if constexpr (candType == CandType::Hadron) {
+        rowTrigHads(trigCandPt, trigCand.tpcNClsCrossedRows(), trigCand.itsClusterMap(), trigCand.itsNCls(), trigCand.dcaXY(), trigCand.dcaZ());
+      } else {
+        std::array<float, 2> outputMl = getCandMlScores<candType>(trigCand);
+        rowTrigCharms(trigCandPt, getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
+      }
+
       for (const auto& assTrk : assTrks) {
         double assTrkPt = assTrk.pt();
         if (usePtDiffDcaXYCut) {
@@ -347,13 +355,11 @@ struct HfDerivedDataCreatorCorrelationsReduced {
         registry.fill(HIST("hDcaZVsPtAssoc"), assTrk.dcaZ(), assTrkPt);
 
         double deltaPhi = RecoDecay::constrainAngle(assTrk.phi() - trigCand.phi(), -o2::constants::math::PIHalf);
-        rowSEPairs(rowCollisions.lastIndex(), trigCandPt, assTrkPt, deltaEta, deltaPhi);
         rowAssocTrkSels(assTrk.tpcNClsCrossedRows(), assTrk.itsClusterMap(), assTrk.itsNCls(), assTrk.dcaXY(), assTrk.dcaZ());
         if constexpr (candType == CandType::Hadron) {
-          rowTrigHads(trigCand.tpcNClsCrossedRows(), trigCand.itsClusterMap(), trigCand.itsNCls(), trigCand.dcaXY(), trigCand.dcaZ());
+          rowSEHadHadPairs(rowCollisions.lastIndex(), rowTrigHads.lastIndex(), assTrkPt, deltaEta, deltaPhi);
         } else {
-          std::array<float, 2> outputMl = getCandMlScores<candType>(trigCand);
-          rowTrigCharms(getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
+          rowSECharmHadPairs(rowCollisions.lastIndex(), rowTrigCharms.lastIndex(), assTrkPt, deltaEta, deltaPhi);
         }
       }
     }
@@ -369,8 +375,8 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       registry.fill(HIST("hEtaVsPtTrig"), trigCand.eta(), trigCand.pt());
 
       std::array<float, 2> outputMl = getCandMlScores<candType>(trigCand);
-      rowTrigBases(rowCollisions.lastIndex(), trigCand.phi(), trigCand.eta(), trigCand.pt());
-      rowTrigCharms(getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
+      rowTrigBases(rowCollisions.lastIndex(), trigCand.phi(), trigCand.eta());
+      rowTrigCharms(trigCand.pt(), getCandMass<candType>(trigCand), outputMl[0], outputMl[1]);
     }
   }
 

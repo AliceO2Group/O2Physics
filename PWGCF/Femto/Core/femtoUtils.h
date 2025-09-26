@@ -148,6 +148,12 @@ inline float getMass(int pdgCode)
     case kSigmaMinus:
       mass = o2::constants::physics::MassSigmaMinus;
       break;
+    case kXiMinus:
+      mass = o2::constants::physics::MassXiMinus;
+      break;
+    case kOmegaMinus:
+      mass = o2::constants::physics::MassOmegaMinus;
+      break;
     default:
       LOG(fatal) << "PDG code is not suppored";
   }

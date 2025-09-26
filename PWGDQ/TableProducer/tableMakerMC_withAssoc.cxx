@@ -217,6 +217,7 @@ struct TableMakerMC {
     Configurable<bool> fUseML{"cfgUseML", false, "Import ONNX model from ccdb to decide which matching candidates to keep"};
     Configurable<float> fMuonMatchEtaMin{"cfgMuonMatchEtaMin", -4.0f, "Definition of the acceptance of muon tracks to be matched with MFT"};
     Configurable<float> fMuonMatchEtaMax{"cfgMuonMatchEtaMax", -2.5f, "Definition of the acceptance of muon tracks to be matched with MFT"};
+    Configurable<float> fzMatching{"cfgzMatching", -77.5f, "Plane for MFT-MCH matching"};
     Configurable<std::vector<std::string>> fModelPathsCCDB{"fModelPathsCCDB", std::vector<std::string>{"Users/m/mcoquet/MLTest"}, "Paths of models on CCDB"};
     Configurable<std::vector<std::string>> fInputFeatures{"cfgInputFeatures", std::vector<std::string>{"chi2MCHMFT"}, "Names of ML model input features"};
     Configurable<std::vector<std::string>> fModelNames{"cfgModelNames", std::vector<std::string>{"model.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
@@ -379,6 +380,7 @@ struct TableMakerMC {
       fCCDB->get<TGeoManager>(fConfigCCDB.fGeoPath);
     }
     fCCDBApi.init(fConfigCCDB.fConfigCcdbUrl.value);
+    VarManager::SetMatchingPlane(fConfigVariousOptions.fzMatching.value);
 
     if (fConfigVariousOptions.fUseML.value) {
       // TODO : for now we use hard coded values since the current models use 1 pT bin
@@ -929,6 +931,36 @@ struct TableMakerMC {
     }
   }
 
+  template <typename TMuons, typename TMFTTracks, typename TMFTCovs, typename TEvent>
+  void skimBestMuonMatchesML(TMuons const& muons, TMFTTracks const& /*mfttracks*/, TMFTCovs const& mfCovs, TEvent const& collision)
+  {
+    std::unordered_map<int, std::pair<float, int>> mCandidates;
+    for (const auto& muon : muons) {
+      if (static_cast<int>(muon.trackType()) < 2) {
+        auto muonID = muon.matchMCHTrackId();
+        auto muontrack = muon.template matchMCHTrack_as<TMuons>();
+        auto muonprop = VarManager::PropagateMuon(muontrack, collision, VarManager::kToMatching);
+        auto mfttrack = muon.template matchMFTTrack_as<TMFTTracks>();
+        auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+        o2::track::TrackParCovFwd mftprop = VarManager::PropagateFwd(mfttrack, mfttrackcov, VarManager::GetMatchingPlane());
+        std::vector<float> output;
+        std::vector<float> inputML = matchingMlResponse.getInputFeaturesGlob(muon, muonprop, mftprop, mfttrackcov, collision);
+        matchingMlResponse.isSelectedMl(inputML, 0, output);
+        float score = output[0];
+        if (mCandidates.find(muonID) == mCandidates.end()) {
+          mCandidates[muonID] = {score, muon.globalIndex()};
+        } else {
+          if (score < mCandidates[muonID].first) {
+            mCandidates[muonID] = {score, muon.globalIndex()};
+          }
+        }
+      }
+    }
+    for (auto& pairCand : mCandidates) {
+      fBestMatch[pairCand.second.second] = true;
+    }
+  }
+
   template <uint32_t TMuonFillMap, uint32_t TMFTFillMap, typename TEvent, typename TMuons, typename TMFTTracks, typename TMFTCovs>
   void skimMuons(TEvent const& collision, TMuons const& muons, FwdTrackAssoc const& muonAssocs, aod::McParticles const& mcTracks, TMFTTracks const& /*mftTracks*/, TMFTCovs const& mfCovs)
   {
@@ -1154,6 +1186,7 @@ struct TableMakerMC {
         fGrpMag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.fGrpMagPath, bcs.begin().timestamp());
         if (fGrpMag != nullptr) {
           o2::base::Propagator::initFieldFromGRP(fGrpMag);
+          VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
         }
         if (fConfigVariousOptions.fPropMuon) {
           VarManager::SetupMuonMagField();
@@ -1244,7 +1277,13 @@ struct TableMakerMC {
           if constexpr (static_cast<bool>(TMFTFillMap)) {
             auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
             if (fConfigVariousOptions.fKeepBestMatch) {
-              skimBestMuonMatches(muons);
+              if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+                if (fConfigVariousOptions.fUseML.value) {
+                  skimBestMuonMatchesML(muons, mftTracks, mftCovs, collision);
+                }
+              } else {
+                skimBestMuonMatches(muons);
+              }
             }
             if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
               skimMuons<TMuonFillMap, TMFTFillMap>(collision, muons, groupedMuonIndices, mcParticles, mftTracks, mftCovs);
