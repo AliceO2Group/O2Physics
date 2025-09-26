@@ -121,7 +121,7 @@ struct HfCandidateCreatorXicc {
                aod::TracksWCov const& tracks)
   {
     for (const auto& xicCand : xicCands) {
-      if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::XicToPKPi)) {
+      if ((xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::XicToPKPi) == 0) {
         continue;
       }
       if (xicCand.isSelXicToPKPi() >= selectionFlagXic) {

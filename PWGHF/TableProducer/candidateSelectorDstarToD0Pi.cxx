@@ -108,7 +108,7 @@ struct HfCandidateSelectorDstarToD0Pi {
 
   HfHelper hfHelper;
   o2::analysis::HfMlResponseDstarToD0Pi<float> hfMlResponse;
-  std::vector<float> outputMlDstarToD0Pi = {};
+  std::vector<float> outputMlDstarToD0Pi;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;

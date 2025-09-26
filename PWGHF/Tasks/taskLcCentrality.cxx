@@ -95,7 +95,7 @@ struct HfTaskLcCentrality {
     registry.fill(HIST("hCentrality"), centrality);
 
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      if ((candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) == 0) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandMax) {
@@ -166,7 +166,7 @@ struct HfTaskLcCentralityMc {
   {
     // MC rec.
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      if ((candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) == 0) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yLc(candidate)) > yCandMax) {

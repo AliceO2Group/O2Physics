@@ -112,7 +112,7 @@ class DhCorrelationExtraction : public TObject
     fRebinSecPart = rebinSecPart;
   }
   void GetSignalAndBackgroundForNorm(Double_t PtCandMin, Double_t PtCandMax);
-  void NormalizeMEplot(TH2D*& histoME, TH2D*& histoMEsoftPi);
+  void NormalizeMEplot(TH2D*& histoME, TH2D*& histoMEsoftPi) const;
   void SetDebugLevel(Int_t debug) { fDebug = debug; }
   void SetDividedSidebands(Bool_t dividedSideb, Bool_t useSidebLeft, Bool_t useSidebRight)
   {

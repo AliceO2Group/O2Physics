@@ -70,10 +70,7 @@ struct HfCandidateSelectorLbToLcPi {
   bool passesImpactParameterResolution(float pT, float d0Resolution)
   {
     float expectedResolution(0.001 + 0.0052 * std::exp(-0.655 * pT));
-    if (d0Resolution > expectedResolution * 1.5)
-      return false;
-    else
-      return true;
+    return d0Resolution <= expectedResolution * 1.5;
   } // Compares to pT dependent cut on impact parameter resolution
 
   // Apply topological cuts as defined in SelectorCuts.h; return true if candidate passes all cuts
@@ -109,17 +106,22 @@ struct HfCandidateSelectorLbToLcPi {
     }
 
     float lcMass = 0.;
-    if (hfCandLc.isSelLcToPKPi())
+    if (hfCandLc.isSelLcToPKPi()) {
       lcMass = hfHelper.invMassLcToPKPi(hfCandLc);
-    if (hfCandLc.isSelLcToPiKP())
+    }
+    if (hfCandLc.isSelLcToPiKP()) {
       lcMass = hfHelper.invMassLcToPiKP(hfCandLc);
-    if (std::abs(lcMass - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "DeltaMLc"))
+    }
+    if (std::abs(lcMass - o2::constants::physics::MassLambdaCPlus) > cuts->get(pTBin, "DeltaMLc")) {
       return false;
+    }
 
-    if (hfCandLb.errorDecayLengthXY() > maxDecayLengthXYError)
+    if (hfCandLb.errorDecayLengthXY() > maxDecayLengthXYError) {
       return false;
-    if (hfCandLb.errorDecayLength() > maxDecayLengthError)
+    }
+    if (hfCandLb.errorDecayLength() > maxDecayLengthError) {
       return false;
+    }
 
     // Lb Decay length
     if (hfCandLb.decayLength() < cuts->get(pTBin, "Lb decLen")) {
@@ -157,11 +159,7 @@ struct HfCandidateSelectorLbToLcPi {
     float diffYVert = hfCandLb.ySecondaryVertex() - hfCandLc.ySecondaryVertex();
     float diffZVert = hfCandLb.zSecondaryVertex() - hfCandLc.zSecondaryVertex();
     float vertexDistance = std::sqrt(diffXVert * diffXVert + diffYVert * diffYVert + diffZVert * diffZVert);
-    if (vertexDistance > maxVertexDistanceLbLc) {
-      return false;
-    }
-
-    return true;
+    return vertexDistance <= maxVertexDistanceLbLc;
   }
 
   void process(aod::HfCandLb const& hfCandLbs,

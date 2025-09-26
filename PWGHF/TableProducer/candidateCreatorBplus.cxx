@@ -288,7 +288,7 @@ struct HfCandidateCreatorBplus {
           }
 
           // Select D0pi- and D0(bar)pi+ pairs only
-          if (!((candD0.isSelD0() >= selectionFlagD0 && trackPion.sign() < 0) || (candD0.isSelD0bar() >= selectionFlagD0bar && trackPion.sign() > 0))) {
+          if ((candD0.isSelD0() < selectionFlagD0 || trackPion.sign() >= 0) && (candD0.isSelD0bar() < selectionFlagD0bar || trackPion.sign() <= 0)) {
             // LOGF(debug, "D0: %d, D0bar%d, sign: %d", candD0.isSelD0(), candD0.isSelD0bar(), track.sign());
             continue;
           }

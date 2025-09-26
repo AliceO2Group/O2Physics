@@ -170,8 +170,9 @@ struct HfCorrelatorHfeHadrons {
   template <typename TracksType, typename ElectronType, typename CollisionType, typename BcType>
   void fillCorrelation(CollisionType const& collision, ElectronType const& electron, TracksType const& tracks, BcType const&)
   {
-    if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
+    if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) {
       return;
+    }
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     int gCollisionId = collision.globalIndex();
@@ -304,8 +305,9 @@ struct HfCorrelatorHfeHadrons {
   template <typename TracksType, typename ElectronType, typename CollisionType1, typename CollisionType2>
   void fillMixCorrelation(CollisionType1 const&, CollisionType2 const& c2, ElectronType const& tracks1, TracksType const& tracks2)
   {
-    if (!(isRun3 ? c2.sel8() : (c2.sel7() && c2.alias_bit(kINT7))))
+    if (!(isRun3 ? c2.sel8() : (c2.sel7() && c2.alias_bit(kINT7)))) {
       return;
+    }
     double ptElectronMix = -999;
     double phiElectronMix = -999;
     double etaElectronMix = -999;

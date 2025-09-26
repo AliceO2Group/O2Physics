@@ -266,10 +266,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       std::abort();
     }
     hfEvSel.fillHistograms(collision, collRejMask, cent);
-    if (collRejMask != 0) {
-      return false;
-    }
-    return true;
+    return collRejMask == 0;
   }
 
   /// Checks if the trigger cand-associated track pair can be accepted for SE correlation

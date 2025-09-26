@@ -114,7 +114,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
       isSel8 = collision.sel8();
     }
     if (selNoSameBunchPileUpColl) {
-      isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
+      isNosameBunchPileUp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     }
     isSelColl = isDplusFound && isSel8 && isNosameBunchPileUp;
     dplusSel(isSelColl);
@@ -141,7 +141,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
       isSel8 = collision.sel8();
     }
     if (selNoSameBunchPileUpColl) {
-      isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
+      isNosameBunchPileUp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     }
     isSelColl = isDplusFound && isSel8 && isNosameBunchPileUp;
     dplusSel(isSelColl);

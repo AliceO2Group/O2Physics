@@ -270,14 +270,17 @@ struct HfTaskCharmResoToDV0Reduced {
         if (channel == DecayChannel::DstarK0s &&
             !hf_decay::hf_cand_reso::particlesToDstarK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
           return;
-        } else if (channel == DecayChannel::DplusK0s &&
-                   !hf_decay::hf_cand_reso::particlesToDplusK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
+        }
+        if (channel == DecayChannel::DplusK0s &&
+            !hf_decay::hf_cand_reso::particlesToDplusK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
           return;
-        } else if (channel == DecayChannel::DplusLambda &&
-                   !hf_decay::hf_cand_reso::particlesToDplusLambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
+        }
+        if (channel == DecayChannel::DplusLambda &&
+            !hf_decay::hf_cand_reso::particlesToDplusLambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
           return;
-        } else if (channel == DecayChannel::D0Lambda &&
-                   !hf_decay::hf_cand_reso::particlesToD0Lambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
+        }
+        if (channel == DecayChannel::D0Lambda &&
+            !hf_decay::hf_cand_reso::particlesToD0Lambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
           return;
         }
       }
@@ -390,7 +393,8 @@ struct HfTaskCharmResoToDV0Reduced {
       }
       if (doWrongSign && cand.isWrongSign() == 0) {
         continue;
-      } else if (!doWrongSign && cand.isWrongSign() != 0) {
+      }
+      if (!doWrongSign && cand.isWrongSign() != 0) {
         continue;
       }
 
@@ -450,14 +454,17 @@ struct HfTaskCharmResoToDV0Reduced {
       if (channel == DecayChannel::DstarK0s &&
           !hf_decay::hf_cand_reso::particlesToDstarK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
         continue;
-      } else if (channel == DecayChannel::DplusK0s &&
-                 !hf_decay::hf_cand_reso::particlesToDplusK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
+      }
+      if (channel == DecayChannel::DplusK0s &&
+          !hf_decay::hf_cand_reso::particlesToDplusK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
         continue;
-      } else if (channel == DecayChannel::DplusLambda &&
-                 !hf_decay::hf_cand_reso::particlesToDplusLambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
+      }
+      if (channel == DecayChannel::DplusLambda &&
+          !hf_decay::hf_cand_reso::particlesToDplusLambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
         continue;
-      } else if (channel == DecayChannel::D0Lambda &&
-                 !hf_decay::hf_cand_reso::particlesToD0Lambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
+      }
+      if (channel == DecayChannel::D0Lambda &&
+          !hf_decay::hf_cand_reso::particlesToD0Lambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
         continue;
       }
       registry.fill(HIST("hYGenAll"), ptParticle, yParticle);

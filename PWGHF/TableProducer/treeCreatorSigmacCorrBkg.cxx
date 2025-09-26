@@ -104,7 +104,7 @@ struct HfTreeCreatorSigmacCorrBkg {
     }
 
     /// BDT scores
-    if (candLcDauSc.mlProbLcToPiKP().size() > 0) {
+    if (!candLcDauSc.mlProbLcToPiKP().empty()) {
       outputMl.at(0) = candLcDauSc.mlProbLcToPiKP()[0]; /// bkg score
       outputMl.at(1) = candLcDauSc.mlProbLcToPiKP()[2]; /// non-prompt score
     }
@@ -152,21 +152,24 @@ struct HfTreeCreatorSigmacCorrBkg {
         /// the candidate that we reconstructed is a real Sigmac(2455, 2520), but later we look for correlated background sources
         /// let's continue
         continue;
-      } else if (isTrueSigmacPlusPlus) {
+      }
+      if (isTrueSigmacPlusPlus) {
         /// fill the output for the signal
         fillTable(candidateSc, candLcDauSc, o2::constants::physics::Pdg::kSigmaCPlusPlus);
 
         /// the candidate that we reconstructed is a real Sigmac(2455, 2520), but later we look for correlated background sources
         /// let's continue
         continue;
-      } else if (isTrueSigmacStar0) {
+      }
+      if (isTrueSigmacStar0) {
         /// fill the output for the signal
         fillTable(candidateSc, candLcDauSc, o2::constants::physics::Pdg::kSigmaCStar0);
 
         /// the candidate that we reconstructed is a real Sigmac(2455, 2520), but later we look for correlated background sources
         /// let's continue
         continue;
-      } else if (isTrueSigmacStarPlusPlus) {
+      }
+      if (isTrueSigmacStarPlusPlus) {
         /// fill the output for the signal
         fillTable(candidateSc, candLcDauSc, o2::constants::physics::Pdg::kSigmaCStarPlusPlus);
 

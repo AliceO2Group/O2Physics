@@ -274,13 +274,13 @@ struct HfTaskDstarToD0Pi {
       if (isCentStudy) {
         // Open the ROOT file
         TFile* weightFile = TFile::Open(weightFileName.value.c_str(), "READ");
-        if (weightFile && !weightFile->IsZombie()) {
+        if ((weightFile != nullptr) && !weightFile->IsZombie()) {
           // Ensure hWeights is properly sized
           hWeights.resize(nWeights);
           for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
             std::string histName = "hMult" + std::to_string(ithWeight + 1) + "_Weight";
             hWeights[ithWeight] = reinterpret_cast<TH2F*>(weightFile->Get(histName.c_str()));
-            if (!hWeights[ithWeight]) {
+            if (hWeights[ithWeight] == nullptr) {
               LOGF(fatal, "Histogram %s not found in weight file!", histName.c_str());
               return;
             }
@@ -458,10 +458,11 @@ struct HfTaskDstarToD0Pi {
 
         if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
           float weightValue = 1.0;
-          if (useWeight && (hWeights.size() < 1 || hWeights[0] == nullptr)) {
+          if (useWeight && (hWeights.empty() || hWeights[0] == nullptr)) {
             LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
             return;
-          } else if (useWeight && isCentStudy) {
+          }
+          if (useWeight && isCentStudy) {
             for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
               if (centrality > centRangesForWeights.value[ithWeight] && centrality <= centRangesForWeights.value[ithWeight + 1]) {
                 weightValue = hWeights[ithWeight]->GetBinContent(hWeights[ithWeight]->FindBin(nPVContributors));
@@ -584,7 +585,7 @@ struct HfTaskDstarToD0Pi {
         float centFT0MGen;
         float pvContributors;
         // assigning centrality to MC Collision using max FT0M amplitute from Reconstructed collisions
-        if (recCollisions.size()) {
+        if (recCollisions.size() != 0) {
           std::vector<std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>> tempRecCols;
           for (const auto& recCol : recCollisions) {
             tempRecCols.emplace_back(recCol, recCol.numContrib());
@@ -598,10 +599,11 @@ struct HfTaskDstarToD0Pi {
         }
 
         float weightValue = 1.0;
-        if (useWeight && (hWeights.size() < 1 || hWeights[0] == nullptr)) {
+        if (useWeight && (hWeights.empty() || hWeights[0] == nullptr)) {
           LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
           return;
-        } else if (useWeight && isCentStudy) {
+        }
+        if (useWeight && isCentStudy) {
           for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
             if (centFT0MGen > centRangesForWeights.value[ithWeight] && centFT0MGen <= centRangesForWeights.value[ithWeight + 1]) {
               weightValue = hWeights[ithWeight]->GetBinContent(hWeights[ithWeight]->FindBin(centFT0MGen, pvContributors));

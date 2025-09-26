@@ -135,7 +135,7 @@ struct HfCandidateCreatorLb {
   {
     // loop over Lc candidates
     for (const auto& lcCand : lcCands) {
-      if (!(lcCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      if ((lcCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::LcToPKPi) == 0) {
         continue;
       }
       if (lcCand.isSelLcToPKPi() >= selectionFlagLc) {

@@ -100,8 +100,8 @@ struct HfCandidateSelectorD0 {
   Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
 
   o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponse;
-  std::vector<float> outputMlD0 = {};
-  std::vector<float> outputMlD0bar = {};
+  std::vector<float> outputMlD0;
+  std::vector<float> outputMlD0bar;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;

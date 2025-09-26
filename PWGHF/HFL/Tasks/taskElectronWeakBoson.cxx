@@ -467,8 +467,9 @@ struct HfTaskElectronWeakBoson {
       o2::base::Propagator::initFieldFromGRP(grpo);
       double magneticField = o2::base::Propagator::Instance()->getNominalBz();
       LOG(info) << "magneticField = " << magneticField;
-      if (magneticField)
+      if (magneticField != 0.0) {
         KFParticle::SetField(magneticField);
+      }
     }
 
     // Check if this is a triggered event using Zorro
@@ -583,11 +584,12 @@ struct HfTaskElectronWeakBoson {
       bool isIsolated = false;
       bool isIsolatedTr = false;
 
-      if (tracksofcluster.size() && isEMCacceptance) {
+      if ((tracksofcluster.size() != 0) && isEMCacceptance) {
         int nMatch = 0;
         for (const auto& match : tracksofcluster) {
-          if (match.emcalcluster_as<SelectedClusters>().time() < timeEmcMin || match.emcalcluster_as<SelectedClusters>().time() > timeEmcMax)
+          if (match.emcalcluster_as<SelectedClusters>().time() < timeEmcMin || match.emcalcluster_as<SelectedClusters>().time() > timeEmcMax) {
             continue;
+          }
 
           float m02Emc = match.emcalcluster_as<SelectedClusters>().m02();
           float energyEmc = match.emcalcluster_as<SelectedClusters>().energy();
@@ -617,8 +619,9 @@ struct HfTaskElectronWeakBoson {
             registry.fill(HIST("hEMCtime"), timeEmc);
             registry.fill(HIST("hEnergy"), energyEmc);
 
-            if (std::abs(dPhi) > rMatchMax || std::abs(dEta) > rMatchMax)
+            if (std::abs(dPhi) > rMatchMax || std::abs(dEta) > rMatchMax) {
               continue;
+            }
 
             registry.fill(HIST("hTrMatchR"), match.track_as<TrackEle>().pt(), r);
             registry.fill(HIST("hEnergyNcell"), energyEmc, match.emcalcluster_as<SelectedClusters>().nCells());
@@ -641,10 +644,12 @@ struct HfTaskElectronWeakBoson {
 
             if (match.track_as<TrackEle>().tpcNSigmaEl() > nsigTpcMin && match.track_as<TrackEle>().tpcNSigmaEl() < nsigTpcMax) {
               registry.fill(HIST("hEop"), match.track_as<TrackEle>().pt(), eop);
-              if (eop > eopMin && eop < eopMax && isoEnergy < energyIsolationMax)
+              if (eop > eopMin && eop < eopMax && isoEnergy < energyIsolationMax) {
                 isIsolated = true;
-              if (eop > eopMin && eop < eopMax && trackCount < trackIsolationMax)
+              }
+              if (eop > eopMin && eop < eopMax && trackCount < trackIsolationMax) {
                 isIsolatedTr = true;
+              }
 
               if (isIsolated && isIsolatedTr) {
                 registry.fill(HIST("hEopIsolation"), match.track_as<TrackEle>().pt(), eop);
@@ -705,7 +710,7 @@ struct HfTaskElectronWeakBoson {
 
     } // end of track loop
     // Z-hadron
-    if (reconstructedZ.size() > 0) {
+    if (!reconstructedZ.empty()) {
       for (const auto& zBoson : reconstructedZ) {
         // Z boson selection
         if (zBoson.mass < massZMin || zBoson.mass > massZMax) {
@@ -728,7 +733,7 @@ struct HfTaskElectronWeakBoson {
     } // end of Z-hadron correlation
     // Z->ee QA
     if (enableZeeRecoQA) {
-      if (selectedElectronsIso.size() > 0 && selectedPositronsIso.size() > 0) {
+      if (!selectedElectronsIso.empty() && !selectedPositronsIso.empty()) {
         for (const auto& trackEle : selectedElectronsIso) {
           for (const auto& trackPos : selectedPositronsIso) {
             auto child1 = RecoDecayPtEtaPhi::pVector(trackEle.pt, trackEle.eta, trackEle.phi);

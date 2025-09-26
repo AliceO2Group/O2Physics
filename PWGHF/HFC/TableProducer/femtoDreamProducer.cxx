@@ -161,9 +161,9 @@ struct HfFemtoDreamProducer {
   HfHelper hfHelper;
   o2::analysis::HfMlResponseLcToPKPi<float> hfMlResponse;
   o2::analysis::HfMlResponseDplusToPiKPi<float> hfMlResponseDplus;
-  std::vector<float> outputMlDplus = {};
-  std::vector<float> outputMlPKPi = {};
-  std::vector<float> outputMlPiKP = {};
+  std::vector<float> outputMlDplus;
+  std::vector<float> outputMlPKPi;
+  std::vector<float> outputMlPiKP;
   o2::ccdb::CcdbApi ccdbApi;
   o2::hf_evsel::HfEventSelection hfEvSel;
   Service<o2::ccdb::BasicCCDBManager> ccdb; /// Accessing the CCDB
@@ -529,8 +529,9 @@ struct HfFemtoDreamProducer {
               std::vector<float> inputFeaturesDplusToPiKPi = hfMlResponseDplus.getInputFeatures(candidate);
               isSelectedMlDplusToPiKPi = hfMlResponseDplus.isSelectedMl(inputFeaturesDplusToPiKPi, candidate.pt(), outputMlDplus);
             }
-            if (!isSelectedMlDplusToPiKPi)
+            if (!isSelectedMlDplusToPiKPi) {
               continue;
+            }
           } else {
             LOGF(fatal, "Please check your Ml configuration!!");
           }
@@ -563,8 +564,9 @@ struct HfFemtoDreamProducer {
               std::vector<float> inputFeaturesLcToPiKP = hfMlResponse.getInputFeatures(candidate, false);
               isSelectedMlLcToPiKP = hfMlResponse.isSelectedMl(inputFeaturesLcToPiKP, candidate.pt(), outputMlPKPi);
             }
-            if (!isSelectedMlLcToPKPi && !isSelectedMlLcToPiKP)
+            if (!isSelectedMlLcToPKPi && !isSelectedMlLcToPiKP) {
               continue;
+            }
           } else {
             LOGF(fatal, "Please check your Ml configuration!!");
           }
@@ -591,11 +593,12 @@ struct HfFemtoDreamProducer {
       qaRegistry.fill(HIST("hEventQA"), 1 + Event::CharmSelected);
     }
 
-    if (isTrackFilled && (sizeCand > 0))
+    if (isTrackFilled && (sizeCand > 0)) {
       qaRegistry.fill(HIST("hEventQA"), 1 + Event::PairSelected);
+    }
 
-    rowMasks(static_cast<aod::femtodreamcollision::BitMaskType>(bitTrack),
-             static_cast<aod::femtodreamcollision::BitMaskType>(bitCand),
+    rowMasks(bitTrack,
+             bitCand,
              0);
   }
 

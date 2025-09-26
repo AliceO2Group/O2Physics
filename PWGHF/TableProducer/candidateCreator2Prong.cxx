@@ -478,7 +478,7 @@ struct HfCandidateCreator2Prong {
       registry.fill(HIST("hCovSVXZ"), kfCandD0.Covariance(2, 0));
       registry.fill(HIST("hCovSVZZ"), kfCandD0.Covariance(2, 2));
 
-      auto covMatrixSV = kfCandD0.CovarianceMatrix();
+      auto* covMatrixSV = kfCandD0.CovarianceMatrix();
 
       double phi, theta;
       getPointDirection(std::array{kfpV.GetX(), kfpV.GetY(), kfpV.GetZ()}, std::array{kfCandD0.GetX(), kfCandD0.GetY(), kfCandD0.GetZ()}, phi, theta);
@@ -857,7 +857,7 @@ struct HfCandidateCreator2ProngExpressions {
 
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-2prong") == 0) {
+      if (device.name == "hf-candidate-creator-2prong") {
         // init HF event selection helper
         hfEvSelMc.init(device, registry);
         break;

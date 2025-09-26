@@ -182,12 +182,12 @@ struct HfCorrelatorD0D0bar {
         continue;
       }
       // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+      if ((candidate1.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) == 0) {
         continue;
       }
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
@@ -214,7 +214,7 @@ struct HfCorrelatorD0D0bar {
         continue;
       }
       for (const auto& candidate2 : selectedD0CandidatesGrouped) {
-        if (!(candidate2.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) { // check decay channel flag for candidate2
+        if ((candidate2.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) == 0) { // check decay channel flag for candidate2
           continue;
         }
         if (candidate2.isSelD0bar() < selectionFlagD0bar) { // keep only D0bar candidates passing the selection
@@ -292,7 +292,7 @@ struct HfCorrelatorD0D0bar {
     bool flagD0barReflection = false;
     for (const auto& candidate1 : selectedD0CandidatesGroupedMC) {
       // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) {
+      if ((candidate1.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) == 0) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yD0(candidate1)) > yCandMax) {
@@ -303,7 +303,7 @@ struct HfCorrelatorD0D0bar {
       }
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
@@ -345,7 +345,7 @@ struct HfCorrelatorD0D0bar {
       flagD0Signal = candidate1.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;      // flagD0Signal 'true' if candidate1 matched to D0 (particle)
       flagD0Reflection = candidate1.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK; // flagD0Reflection 'true' if candidate1, selected as D0 (particle), is matched to D0bar (antiparticle)
       for (const auto& candidate2 : selectedD0CandidatesGroupedMC) {
-        if (!(candidate2.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK)) { // check decay channel flag for candidate2
+        if ((candidate2.hfflag() & 1 << aod::hf_cand_2prong::DecayType::D0ToPiK) == 0) { // check decay channel flag for candidate2
           continue;
         }
         if (candidate2.isSelD0bar() < selectionFlagD0bar) { // discard candidates not selected as D0bar in inner loop

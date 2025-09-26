@@ -85,7 +85,7 @@ class DhCorrelationFitter
   Double_t GetNSYield() { return fFit->GetParameter("NS Y"); }
   Double_t GetASYield() { return fFit->GetParameter("AS Y"); }
   Double_t GetBeta() { return fFit->GetParameter(7); }
-  Double_t GetPedestal() { return fBaseline; }
+  Double_t GetPedestal() const { return fBaseline; }
   Double_t Getv2hadron() { return fFit->GetParameter("v_{2} hadron"); }
   Double_t Getv2Dmeson() { return fFit->GetParameter("v_{2} D meson"); }
   Double_t GetNSSigmaError() { return fFit->GetParError(fFit->GetParNumber("NS #sigma")); } // TODO: case kConstThreeGausPeriodicity
@@ -93,16 +93,16 @@ class DhCorrelationFitter
   Double_t GetNSYieldError() { return fFit->GetParError(fFit->GetParNumber("NS Y")); }
   Double_t GetASYieldError() { return fFit->GetParError(fFit->GetParNumber("AS Y")); }
   Double_t GetBetaError() { return fFit->GetParError(7); }
-  Double_t GetPedestalError() { return fErrBaseline; }
+  Double_t GetPedestalError() const { return fErrBaseline; }
   Double_t Getv2hadronError() { return fFit->GetParError(fFit->GetParNumber("v_{2} hadron")); }
   Double_t Getv2DmesonError() { return fFit->GetParError(fFit->GetParNumber("v_{2} D meson")); }
-  Double_t GetBinCountingNSYield() { return fNSyieldBinCount; }
-  Double_t GetBinCountingASYield() { return fASyieldBinCount; }
-  Double_t GetBinCountingNSYieldErr() { return fErrNSyieldBinCount; }
-  Double_t GetBinCountingASYieldErr() { return fErrASyieldBinCount; }
+  Double_t GetBinCountingNSYield() const { return fNSyieldBinCount; }
+  Double_t GetBinCountingASYield() const { return fASyieldBinCount; }
+  Double_t GetBinCountingNSYieldErr() const { return fErrNSyieldBinCount; }
+  Double_t GetBinCountingASYieldErr() const { return fErrASyieldBinCount; }
   TF1* GetFitFunction()
   {
-    if (!fFit) {
+    if (fFit == nullptr) {
       printf("[ERROR] DhCorrelationFitter::GetFitFunction, No fit function");
       return NULL;
     }

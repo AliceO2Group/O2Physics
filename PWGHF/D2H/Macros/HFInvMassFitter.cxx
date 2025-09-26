@@ -56,8 +56,7 @@ using namespace RooFit;
 
 ClassImp(HFInvMassFitter);
 
-HFInvMassFitter::HFInvMassFitter() : TNamed(),
-                                     mHistoInvMass(nullptr),
+HFInvMassFitter::HFInvMassFitter() : mHistoInvMass(nullptr),
                                      mFitOption("L,E"),
                                      mMinMass(0),
                                      mMaxMass(5),
@@ -128,8 +127,7 @@ HFInvMassFitter::HFInvMassFitter() : TNamed(),
   // default constructor
 }
 
-HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg, Int_t fitTypeSgn) : TNamed(),
-                                                                                                                                    mHistoInvMass(nullptr),
+HFInvMassFitter::HFInvMassFitter(const TH1* histoToFit, Double_t minValue, Double_t maxValue, Int_t fitTypeBkg, Int_t fitTypeSgn) : mHistoInvMass(nullptr),
                                                                                                                                     mFitOption("L,E"),
                                                                                                                                     mMinMass(minValue),
                                                                                                                                     mMaxMass(maxValue),
@@ -260,7 +258,7 @@ void HFInvMassFitter::doFit()
   if (mTypeOfBkgPdf == NoBkg) {                                                                                // MC
     mRooNSgn = new RooRealVar("mRooNSig", "number of signal", 0.3 * mIntegralHisto, 0., 1.2 * mIntegralHisto); // signal yield
     mTotalPdf = new RooAddPdf("mMCFunc", "MC fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));       // create total pdf
-    if (!strcmp(mFitOption.Data(), "Chi2")) {
+    if (strcmp(mFitOption.Data(), "Chi2") == 0) {
       mTotalPdf->chi2FitTo(dataHistogram, Range("signal"));
     } else {
       mTotalPdf->fitTo(dataHistogram, Range("signal"));
@@ -272,13 +270,13 @@ void HFInvMassFitter::doFit()
   } else {                                           // data
     mBkgPdf = new RooAddPdf("mBkgPdf", "background fit function", RooArgList(*bkgPdf), RooArgList(*mRooNBkg));
     if (mTypeOfSgnPdf == GausSec) { // two peak fit
-      if (!strcmp(mFitOption.Data(), "Chi2")) {
+      if (strcmp(mFitOption.Data(), "Chi2") == 0) {
         mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
       } else {
         mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR,SEC"), Save());
       }
     } else { // single peak fit
-      if (!strcmp(mFitOption.Data(), "Chi2")) {
+      if (strcmp(mFitOption.Data(), "Chi2") == 0) {
         mBkgPdf->chi2FitTo(dataHistogram, Range("SBL,SBR"), Save());
       } else {
         mBkgPdf->fitTo(dataHistogram, Range("SBL,SBR"), Save());
@@ -287,7 +285,7 @@ void HFInvMassFitter::doFit()
     // define the frame to evaluate background sidebands chi2 (bg pdf needs to be plotted within sideband ranges)
     RooPlot* frameTemporary = mass->frame(Title(Form("%s_temp", mHistoInvMass->GetTitle())));
     dataHistogram.plotOn(frameTemporary, Name("data_for_bkgchi2"));
-    mBkgPdf->plotOn(frameTemporary, Range("SBL", "SBR"), Name("Bkg_sidebands"));
+    mBkgPdf->plotOn(frameTemporary, Range("SBL", true), Name("Bkg_sidebands"));
     mChiSquareOverNdfBkg = frameTemporary->chiSquare("Bkg_sidebands", "data_for_bkgchi2"); // calculate reduced chi2 / NDF of background sidebands (pre-fit)
     delete frameTemporary;
     RooAbsPdf* mBkgPdfPrefit{nullptr};
@@ -311,7 +309,7 @@ void HFInvMassFitter::doFit()
     }
     mSgnPdf = new RooAddPdf("mSgnPdf", "signal fit function", RooArgList(*sgnPdf), RooArgList(*mRooNSgn));
     // create reflection template and fit to reflection
-    if (mHistoTemplateRefl) {
+    if (mHistoTemplateRefl != nullptr) {
       RooAbsPdf* reflPdf = createReflectionFitFunction(mWorkspace); // create reflection pdf
       RooDataHist reflHistogram("reflHistogram", "refl for fit", *mass, Import(*mHistoTemplateRefl));
       mReflFrame = mass->frame();
@@ -319,7 +317,7 @@ void HFInvMassFitter::doFit()
       reflHistogram.plotOn(mReflOnlyFrame);
       mRooNRefl = new RooRealVar("mNRefl", "number of reflection", 0.5 * mHistoTemplateRefl->Integral(), 0, mHistoTemplateRefl->Integral());
       RooAddPdf reflFuncTemp("reflFuncTemp", "template reflection fit function", RooArgList(*reflPdf), RooArgList(*mRooNRefl));
-      if (!strcmp(mFitOption.Data(), "Chi2")) {
+      if (strcmp(mFitOption.Data(), "Chi2") == 0) {
         reflFuncTemp.chi2FitTo(reflHistogram);
       } else {
         reflFuncTemp.fitTo(reflHistogram);
@@ -330,7 +328,7 @@ void HFInvMassFitter::doFit()
       mRooNRefl->setConstant(kTRUE);
       setReflFuncFixed(); // fix reflection pdf parameter
       mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal + reflection fit function", RooArgList(*bkgPdf, *sgnPdf, *reflPdf), RooArgList(*mRooNBkg, *mRooNSgn, *mRooNRefl));
-      if (!strcmp(mFitOption.Data(), "Chi2")) {
+      if (strcmp(mFitOption.Data(), "Chi2") == 0) {
         mTotalPdf->chi2FitTo(dataHistogram);
       } else {
         mTotalPdf->fitTo(dataHistogram);
@@ -350,7 +348,7 @@ void HFInvMassFitter::doFit()
       mSgnPdf->plotOn(mResidualFrame, Normalization(1.0, RooAbsReal::RelativeExpected), LineColor(kBlue));
     } else {
       mTotalPdf = new RooAddPdf("mTotalPdf", "background + signal pdf", RooArgList(*bkgPdf, *sgnPdf), RooArgList(*mRooNBkg, *mRooNSgn));
-      if (!strcmp(mFitOption.Data(), "Chi2")) {
+      if (strcmp(mFitOption.Data(), "Chi2") == 0) {
         mTotalPdf->chi2FitTo(dataHistogram);
       } else {
         mTotalPdf->fitTo(dataHistogram);
@@ -576,7 +574,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
       textInfoLeft->AddText(Form("B (%d#sigma) = %.0f #pm %.0f", mNSigmaForSidebands, mBkgYield, mBkgYieldErr));
       textInfoLeft->AddText(Form("S/B (%d#sigma) = %.4g ", mNSigmaForSidebands, mRawYield / mBkgYield));
     }
-    if (mReflPdf) {
+    if (mReflPdf != nullptr) {
       textInfoLeft->AddText(Form("Refl/Sig =  %.3f #pm %.3f ", mReflOverSgn, 0.0));
     }
     if (mTypeOfBkgPdf != NoBkg) {
@@ -610,7 +608,7 @@ void HFInvMassFitter::drawFit(TVirtualPad* pad, Int_t writeFitInfo)
     mInvMassFrame->GetXaxis()->SetTitle(Form("%s", mHistoInvMass->GetXaxis()->GetTitle()));
     mInvMassFrame->Draw();
     highlightPeakRegion(mInvMassFrame);
-    if (mHistoTemplateRefl) {
+    if (mHistoTemplateRefl != nullptr) {
       mReflFrame->Draw("same");
     }
   }
@@ -643,8 +641,9 @@ void HFInvMassFitter::drawResidual(TVirtualPad* pad)
 // draw peak region with vertical lines
 void HFInvMassFitter::highlightPeakRegion(const RooPlot* plot, Color_t color, Width_t width, Style_t style) const
 {
-  if (!mHighlightPeakRegion)
+  if (!mHighlightPeakRegion) {
     return;
+  }
   double yMin = plot->GetMinimum();
   double yMax = plot->GetMaximum();
   const Double_t mean = mRooMeanSgn->getVal();

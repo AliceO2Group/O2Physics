@@ -93,7 +93,7 @@ struct HfCandidateSelectorBsToDsPiReduced {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponseBsToDsPi<float> hfMlResponse;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;

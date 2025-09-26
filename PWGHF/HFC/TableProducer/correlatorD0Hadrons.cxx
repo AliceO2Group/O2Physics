@@ -135,7 +135,7 @@ struct HfCorrelatorD0HadronsSelection {
     }
     if (selNoSameBunchPileUpColl) {
       isNosameBunchPileUp = false;
-      isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
+      isNosameBunchPileUp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     }
     isSelColl = isD0Found && isSel8 && isNosameBunchPileUp;
     collisionsWithSelD0(isSelColl);
@@ -169,7 +169,7 @@ struct HfCorrelatorD0HadronsSelection {
       isSel8 = collision.sel8();
     }
     if (selNoSameBunchPileUpColl) {
-      isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
+      isNosameBunchPileUp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     }
     isSelColl = isD0Found && isSel8 && isNosameBunchPileUp;
     collisionsWithSelD0(isSelColl);
@@ -398,7 +398,7 @@ struct HfCorrelatorD0Hadrons {
 
       // ========================== trigger efficiency ================================
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt()));
       }
       // ========================== Fill mass histo  ================================
@@ -409,7 +409,7 @@ struct HfCorrelatorD0Hadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMlD0[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
         }
-        registry.fill(HIST("hMLScoresVsMassVsPtVsOrigin"), outputMlD0[0], outputMlD0[2], hfHelper.invMassD0ToPiK(candidate), candidate.pt(), candidate.isSelD0bar() ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0Only);
+        registry.fill(HIST("hMLScoresVsMassVsPtVsOrigin"), outputMlD0[0], outputMlD0[2], hfHelper.invMassD0ToPiK(candidate), candidate.pt(), (candidate.isSelD0bar() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0Only);
       }
       if (candidate.isSelD0bar() >= selectionFlagD0bar) {
         registry.fill(HIST("hMass"), hfHelper.invMassD0barToKPi(candidate), candidate.pt(), efficiencyWeight);
@@ -418,7 +418,7 @@ struct HfCorrelatorD0Hadrons {
         for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
           outputMlD0bar[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
         }
-        registry.fill(HIST("hMLScoresVsMassVsPtVsOrigin"), outputMlD0bar[0], outputMlD0bar[2], hfHelper.invMassD0barToKPi(candidate), candidate.pt(), candidate.isSelD0() ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0barOnly);
+        registry.fill(HIST("hMLScoresVsMassVsPtVsOrigin"), outputMlD0bar[0], outputMlD0bar[2], hfHelper.invMassD0barToKPi(candidate), candidate.pt(), (candidate.isSelD0() != 0) ? o2::aod::hf_correlation_d0_hadron::D0D0barBoth : o2::aod::hf_correlation_d0_hadron::D0barOnly);
       }
       entryD0CandRecoInfo(hfHelper.invMassD0ToPiK(candidate), hfHelper.invMassD0barToKPi(candidate), candidate.pt(), outputMlD0[0], outputMlD0[2], outputMlD0bar[0], outputMlD0bar[2]);
 
@@ -557,7 +557,7 @@ struct HfCorrelatorD0Hadrons {
       registry.fill(HIST("hD0PoolBin"), poolBin);
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / efficiencyDmeson->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt()));
       }
 

@@ -114,11 +114,11 @@ struct HfCorrelatorDMesonPairs {
   o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponse;
   o2::ccdb::CcdbApi ccdbApi;
 
-  std::vector<float> outputMlD0Cand1 = {};
-  std::vector<float> outputMlD0barCand1 = {};
+  std::vector<float> outputMlD0Cand1;
+  std::vector<float> outputMlD0barCand1;
 
-  std::vector<float> outputMlD0Cand2 = {};
-  std::vector<float> outputMlD0barCand2 = {};
+  std::vector<float> outputMlD0Cand2;
+  std::vector<float> outputMlD0barCand2;
 
   // using TracksWPid = soa::Join<aod::Tracks, aod::TracksPidPi, aod::PidTpcTofFullPi, aod::TracksPidKa, aod::PidTpcTofFullKa>;
 
@@ -550,23 +550,23 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hMatchingMcRec"), 8);
     }
     // Fill True info
-    if (isTrueDCand1) {
+    if (isTrueDCand1 != 0) {
       registry.fill(HIST("hSelectionStatus"), 6);
-    } else if (isTrueDbarCand1) {
+    } else if (isTrueDbarCand1 != 0) {
       registry.fill(HIST("hSelectionStatus"), 7);
     }
-    if (isTrueDCand2) {
+    if (isTrueDCand2 != 0) {
       registry.fill(HIST("hSelectionStatus"), 12);
-    } else if (isTrueDbarCand2) {
+    } else if (isTrueDbarCand2 != 0) {
       registry.fill(HIST("hSelectionStatus"), 13);
     }
-    if (isTrueDCand1 && isTrueDCand2) {
+    if ((isTrueDCand1 != 0) && (isTrueDCand2 != 0)) {
       registry.fill(HIST("hSelectionStatus"), 22);
-    } else if (isTrueDbarCand1 && isTrueDbarCand2) {
+    } else if ((isTrueDbarCand1 != 0) && (isTrueDbarCand2 != 0)) {
       registry.fill(HIST("hSelectionStatus"), 23);
-    } else if (isTrueDCand1 && isTrueDbarCand2) {
+    } else if ((isTrueDCand1 != 0) && (isTrueDbarCand2 != 0)) {
       registry.fill(HIST("hSelectionStatus"), 24);
-    } else if (isTrueDbarCand1 && isTrueDCand2) {
+    } else if ((isTrueDbarCand1 != 0) && (isTrueDCand2 != 0)) {
       registry.fill(HIST("hSelectionStatus"), 25);
     }
   }
@@ -759,7 +759,7 @@ struct HfCorrelatorDMesonPairs {
       if (selectSignalRegionOnly && !(isSignalD0Cand1 || isSignalD0barCand1)) {
         continue;
       }
-      if (!(candidate1.isSelD0() >= selectionFlagD0 || candidate1.isSelD0bar() >= selectionFlagD0bar)) {
+      if (candidate1.isSelD0() < selectionFlagD0 && candidate1.isSelD0bar() < selectionFlagD0bar) {
         continue;
       }
 
@@ -874,7 +874,7 @@ struct HfCorrelatorDMesonPairs {
         if (selectSignalRegionOnly && !(isSignalD0Cand2 || isSignalD0barCand2)) {
           continue;
         }
-        if (!(candidate2.isSelD0() >= selectionFlagD0 || candidate2.isSelD0bar() >= selectionFlagD0bar)) {
+        if (candidate2.isSelD0() < selectionFlagD0 && candidate2.isSelD0bar() < selectionFlagD0bar) {
           continue;
         }
         if (daughterTracksCutFlag && ((prong0Cand1 == prong0Cand2) || (prong1Cand1 == prong1Cand2) || (prong0Cand1 == prong1Cand2) || (prong1Cand1 == prong0Cand2))) {
@@ -916,7 +916,7 @@ struct HfCorrelatorDMesonPairs {
           // Fill tables
           fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2, phiCandidate1, phiCandidate2,
                     ptCandidate1, ptCandidate2, massD0Cand1, massD0barCand1, massD0Cand2, massD0barCand2);
-          fillMcHistos(matchedRec1, matchedRec2, isTrueDCand1, isTrueDbarCand1, isTrueDCand2, isTrueDbarCand2);
+          fillMcHistos(matchedRec1, matchedRec2, static_cast<int8_t>(isTrueDCand1), static_cast<int8_t>(isTrueDbarCand1), static_cast<int8_t>(isTrueDCand2), static_cast<int8_t>(isTrueDbarCand2));
           entryD0PairMcInfo(originRec1, originRec2, matchedRec1, matchedRec2);
           entryD0PairMl(outputMlD0Cand1, outputMlD0barCand1, outputMlD0Cand2, outputMlD0barCand2);
 
@@ -924,7 +924,7 @@ struct HfCorrelatorDMesonPairs {
           // Fill tables
           fillEntry(isDCand1, isDbarCand1, isDCand2, isDbarCand2, candidateType1, candidateType2, yCandidate1, yCandidate2, phiCandidate1, phiCandidate2,
                     ptCandidate1, ptCandidate2, massD0Cand1, massD0barCand1, massD0Cand2, massD0barCand2);
-          fillMcHistos(matchedRec1, matchedRec2, isTrueDCand1, isTrueDbarCand1, isTrueDCand2, isTrueDbarCand2);
+          fillMcHistos(matchedRec1, matchedRec2, static_cast<int8_t>(isTrueDCand1), static_cast<int8_t>(isTrueDbarCand1), static_cast<int8_t>(isTrueDCand2), static_cast<int8_t>(isTrueDbarCand2));
           entryD0PairMcInfo(originRec1, originRec2, matchedRec1, matchedRec2);
         }
       } // end inner loop (Cand2)

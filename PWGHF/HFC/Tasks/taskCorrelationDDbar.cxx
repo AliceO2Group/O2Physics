@@ -257,7 +257,7 @@ struct HfTaskCorrelationDDbar {
       int pTBinDbar = o2::analysis::findBin(binsPtCorrelations, ptDbar);
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiency, ptD)) * efficiencyD->at(o2::analysis::findBin(binsPtEfficiency, ptDbar)));
       }
 
@@ -314,7 +314,7 @@ struct HfTaskCorrelationDDbar {
       int pTBinDbar = o2::analysis::findBin(binsPtCorrelations, ptDbar);
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / (efficiencyD->at(o2::analysis::findBin(binsPtEfficiency, ptD)) * efficiencyD->at(o2::analysis::findBin(binsPtEfficiency, ptDbar)));
       }
 

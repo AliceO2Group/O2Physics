@@ -430,7 +430,7 @@ struct HfCandidateCreatorBsExpressions {
         }
       }
 
-      if (!flagChannelMain) {
+      if (flagChannelMain == 0) {
         // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
         indexRec = RecoDecay::getMatchedMCRec(mcParticles, arrayDaughtersBs, Pdg::kB0, std::array{-kKPlus, +kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
         if (indexRec > -1) {
@@ -453,7 +453,7 @@ struct HfCandidateCreatorBsExpressions {
 
       // Partly reconstructed decays, i.e. the 4 prongs have a common b-hadron ancestor
       // convention: final state particles are prong0,1,2,3
-      if (!flagChannelMain) {
+      if (flagChannelMain == 0) {
         auto particleProng0 = arrayDaughtersBs[0].mcParticle();
         auto particleProng1 = arrayDaughtersBs[1].mcParticle();
         auto particleProng2 = arrayDaughtersBs[2].mcParticle();
@@ -502,7 +502,7 @@ struct HfCandidateCreatorBsExpressions {
         }
       }
 
-      if (!flagChannelMain) {
+      if (flagChannelMain == 0) {
         // Checking B0(bar) → Ds± π∓ → (K- K+ π±) π∓
         if (RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kB0, std::array{+Pdg::kDS, -kPiPlus}, true)) {
           // Checking Ds± → K- K+ π±

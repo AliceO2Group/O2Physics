@@ -96,7 +96,7 @@ struct HfCandidateSelectorLcToK0sP {
   TrackSelectorPr selectorProtonHighP;
 
   o2::analysis::HfMlResponseLcToK0sP<float> hfMlResponse;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
 
   o2::ccdb::CcdbApi ccdbApi;
 
@@ -221,9 +221,8 @@ struct HfCandidateSelectorLcToK0sP {
   {
     if (track.p() < pPidThreshold) {
       return selectorProtonLowP.statusTpcAndTof(track) == TrackSelectorPID::Accepted;
-    } else {
-      return selectorProtonHighP.statusTpcAndTof(track) == TrackSelectorPID::Accepted;
     }
+    return selectorProtonHighP.statusTpcAndTof(track) == TrackSelectorPID::Accepted;
   }
 
   template <typename T>
@@ -235,9 +234,8 @@ struct HfCandidateSelectorLcToK0sP {
 
     if (track.p() < pPidThreshold) {
       return selectorProtonLowP.statusBayesProb(track) == TrackSelectorPID::Accepted;
-    } else {
-      return selectorProtonHighP.statusBayesProb(track) == TrackSelectorPID::Accepted;
     }
+    return selectorProtonHighP.statusBayesProb(track) == TrackSelectorPID::Accepted;
   }
 
   template <typename T, typename U>

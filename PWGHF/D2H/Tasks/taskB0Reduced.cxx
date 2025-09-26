@@ -236,7 +236,7 @@ struct HfTaskB0Reduced {
                                               doprocessMcDplusPiWithDmesMlAndDecayTypeCheck, doprocessMcDplusPiWithB0Ml,
                                               doprocessMcDplusPiWithB0MlAndDecayTypeCheck};
     const AxisSpec axisMass = ((std::accumulate(processFuncDplusPi.begin(), processFuncDplusPi.end(), 0)) > 0) ? axisMassDminus : axisMassDeltaMassDStar;
-    std::string dMesSpecie{""};
+    std::string dMesSpecie;
     if ((std::accumulate(processFuncDplusPi.begin(), processFuncDplusPi.end(), 0)) > 0) {
       dMesSpecie += "D^{#minus}";
     } else {

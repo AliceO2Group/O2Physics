@@ -96,8 +96,8 @@ struct HfCandidateSelectorDsToKKPi {
 
   HfHelper hfHelper;
   o2::analysis::HfMlResponseDsToKKPi<float> hfMlResponse;
-  std::vector<float> outputMlDsToKKPi = {};
-  std::vector<float> outputMlDsToPiKK = {};
+  std::vector<float> outputMlDsToKKPi;
+  std::vector<float> outputMlDsToPiKK;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
@@ -151,12 +151,9 @@ struct HfCandidateSelectorDsToKKPi {
   template <typename T1>
   bool isSelectedCandidateProngDca(const T1& candidate)
   {
-    if (isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0(), candidate.impactParameterZ0()) &&
-        isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1(), candidate.impactParameterZ1()) &&
-        isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng2(), candidate.impactParameter2(), candidate.impactParameterZ2())) {
-      return true;
-    }
-    return false;
+    return static_cast<bool>(isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng0(), candidate.impactParameter0(), candidate.impactParameterZ0()) &&
+                             isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng1(), candidate.impactParameter1(), candidate.impactParameterZ1()) &&
+                             isSelectedTrackDca(binsPtTrack, cutsSingleTrack, candidate.ptProng2(), candidate.impactParameter2(), candidate.impactParameterZ2()));
   }
 
   /// Candidate selections independent from the daugther-mass hypothesis
@@ -278,7 +275,7 @@ struct HfCandidateSelectorDsToKKPi {
       outputMlDsToKKPi.clear();
       outputMlDsToPiKK.clear();
 
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) {
+      if ((candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) == 0) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         if (applyMl) {
           hfMlDsToKKPiCandidate(outputMlDsToKKPi, outputMlDsToPiKK);
@@ -347,13 +344,13 @@ struct HfCandidateSelectorDsToKKPi {
         pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
       }
 
-      bool pidDsToKKPi = !(pidTrackPos1Kaon == TrackSelectorPID::Rejected ||
-                           pidTrackNegKaon == TrackSelectorPID::Rejected ||
-                           pidTrackPos2Pion == TrackSelectorPID::Rejected);
+      bool pidDsToKKPi = pidTrackPos1Kaon != TrackSelectorPID::Rejected &&
+                         pidTrackNegKaon != TrackSelectorPID::Rejected &&
+                         pidTrackPos2Pion != TrackSelectorPID::Rejected;
 
-      bool pidDsToPiKK = !(pidTrackPos1Pion == TrackSelectorPID::Rejected ||
-                           pidTrackNegKaon == TrackSelectorPID::Rejected ||
-                           pidTrackPos2Kaon == TrackSelectorPID::Rejected);
+      bool pidDsToPiKK = pidTrackPos1Pion != TrackSelectorPID::Rejected &&
+                         pidTrackNegKaon != TrackSelectorPID::Rejected &&
+                         pidTrackPos2Kaon != TrackSelectorPID::Rejected;
 
       if (!pidDsToKKPi && !pidDsToPiKK) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);

@@ -257,9 +257,9 @@ struct HfCandidateCreatorCascade {
       try {
         if (df.process(trackV0, trackBach) == 0) {
           continue;
-        } else {
-          LOG(debug) << "Vertexing succeeded for Lc candidate";
         }
+        LOG(debug) << "Vertexing succeeded for Lc candidate";
+
       } catch (const std::runtime_error& error) {
         LOG(debug) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
         hCandidates->Fill(SVFitting::Fail);
@@ -324,8 +324,6 @@ struct HfCandidateCreatorCascade {
         registry.fill(HIST("hMass2"), mass2K0sP);
       }
     }
-
-    return;
   }
 
   /// @brief process function w/o centrality selections
@@ -457,7 +455,7 @@ struct HfCandidateCreatorCascadeMc {
 
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-cascade") == 0) {
+      if (device.name == "hf-candidate-creator-cascade") {
         // init HF event selection helper
         hfEvSelMc.init(device, registry);
         break;

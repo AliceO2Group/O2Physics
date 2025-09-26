@@ -118,7 +118,7 @@ struct HfTaskMcEfficiency {
   }
 
   template <typename T>
-  inline bool checkTrack(T track)
+  bool checkTrack(T track)
   {
     // TODO configurable?
     return track.isGlobalTrackWoDCA();

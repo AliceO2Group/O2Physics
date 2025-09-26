@@ -160,7 +160,7 @@ void fillMcMatchGen3Prong(TMcParticles const& mcParticles,
       continue;
     }
 
-    if (pdgMothersCorrelBkg.size() > 0) {
+    if (!pdgMothersCorrelBkg.empty()) {
       for (const auto& pdgMother : pdgMothersCorrelBkg) {
         if (std::abs(particle.pdgCode()) != pdgMother) {
           continue; // Skip if the particle PDG code does not match the mother PDG code

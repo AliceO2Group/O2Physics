@@ -140,7 +140,7 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
     }
 
     // set numerical value of the Run 2 trigger class
-    const auto triggerAlias = std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data());
+    auto* const triggerAlias = std::find(aliasLabels, aliasLabels + kNaliases, triggerClassName.value.data());
     if (triggerAlias != aliasLabels + kNaliases) {
       hfEvSel.triggerClass.value = std::distance(aliasLabels, triggerAlias);
     }
@@ -1466,7 +1466,7 @@ struct HfTrackIndexSkimCreator {
 
       // initialise 3-prong ML responses
       for (int iDecay3P{0}; iDecay3P < kN3ProngDecays; ++iDecay3P) {
-        if (onnxFileNames3Prongs[iDecay3P][0] == "") { // 3-prong species to be skipped
+        if (onnxFileNames3Prongs[iDecay3P][0].empty()) { // 3-prong species to be skipped
           continue;
         }
         hasMlModel3Prong[iDecay3P] = true;
@@ -1749,11 +1749,7 @@ struct HfTrackIndexSkimCreator {
       return false;
     }
     const auto decLen = RecoDecay::distance(primVtx, secVtx);
-    if (decLen < config.minTwoTrackDecayLengthFor3Prongs) {
-      return false;
-    }
-
-    return true;
+    return static_cast<bool>(decLen >= config.minTwoTrackDecayLengthFor3Prongs);
   }
 
   /// Method to perform selections for 3-prong candidates after vertex reconstruction
@@ -2054,7 +2050,6 @@ struct HfTrackIndexSkimCreator {
 
     } /// end 'if (doprocess2And3ProngsWithPvRefit && pvRefitDoable)'
 
-    return;
   } /// end of performPvRefitCandProngs function
 
   template <bool doPvRefit, bool usePidForHfFiltersBdt, typename TTracks>
@@ -2091,14 +2086,13 @@ struct HfTrackIndexSkimCreator {
             /// the track did not contribute to fit the primary vertex
             nNonContrib++;
             continue;
-          } else {
-            vecPvContributorGlobId.push_back(trackUnfiltered.globalIndex());
-            vecPvContributorTrackParCov.push_back(getTrackParCov(trackUnfiltered));
-            nContrib++;
-            if (config.debugPvRefit) {
-              LOG(info) << "---> a contributor! stuff saved";
-              LOG(info) << "vec_contrib size: " << vecPvContributorTrackParCov.size() << ", nContrib: " << nContrib;
-            }
+          }
+          vecPvContributorGlobId.push_back(trackUnfiltered.globalIndex());
+          vecPvContributorTrackParCov.push_back(getTrackParCov(trackUnfiltered));
+          nContrib++;
+          if (config.debugPvRefit) {
+            LOG(info) << "---> a contributor! stuff saved";
+            LOG(info) << "vec_contrib size: " << vecPvContributorTrackParCov.size() << ", nContrib: " << nContrib;
           }
         }
         if (config.debugPvRefit) {
@@ -2399,17 +2393,15 @@ struct HfTrackIndexSkimCreator {
               if (!TESTBIT(trackIndexPos2.isSelProng(), CandidateType::Cand3Prong)) { // continue immediately
                 if (!config.debug) {
                   continue;
-                } else {
-                  isSelected3ProngCand = 0;
                 }
+                isSelected3ProngCand = 0;
               }
 
               if (config.applyKaonPidIn3Prongs && !TESTBIT(trackIndexNeg1.isIdentifiedPid(), ChannelKaonPid)) { // continue immediately if kaon PID enabled and opposite-sign track not a kaon
                 if (!config.debug) {
                   continue;
-                } else {
-                  isSelected3ProngCand = 0;
                 }
+                isSelected3ProngCand = 0;
               }
 
               const auto trackPos2 = trackIndexPos2.template track_as<TTracks>();
@@ -2651,17 +2643,15 @@ struct HfTrackIndexSkimCreator {
               if (!TESTBIT(trackIndexNeg2.isSelProng(), CandidateType::Cand3Prong)) { // continue immediately
                 if (!config.debug) {
                   continue;
-                } else {
-                  isSelected3ProngCand = 0;
                 }
+                isSelected3ProngCand = 0;
               }
 
               if (config.applyKaonPidIn3Prongs && !TESTBIT(trackIndexPos1.isIdentifiedPid(), ChannelKaonPid)) { // continue immediately if kaon PID enabled and opposite-sign track not a kaon
                 if (!config.debug) {
                   continue;
-                } else {
-                  isSelected3ProngCand = 0;
                 }
+                isSelected3ProngCand = 0;
               }
 
               auto trackNeg2 = trackIndexNeg2.template track_as<TTracks>();
@@ -3097,7 +3087,7 @@ struct HfTrackIndexSkimCreatorCascades {
   using FilteredTrackAssocSel = soa::Filtered<soa::Join<aod::TrackAssoc, aod::HfSelTrack>>;
 
   Filter filterSelectCollisions = (aod::hf_sel_collision::whyRejectColl == static_cast<o2::hf_evsel::HfCollisionRejectionMask>(0));
-  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u && (config.applyProtonPid == false || (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsProtonPid::LcToPK0S))) != 0u);
+  Filter filterSelectTrackIds = (aod::hf_sel_track::isSelProng & static_cast<uint32_t>(BIT(CandidateType::CandV0bachelor))) != 0u && (!config.applyProtonPid || (aod::hf_sel_track::isIdentifiedPid & static_cast<uint32_t>(BIT(ChannelsProtonPid::LcToPK0S))) != 0u);
 
   Preslice<FilteredTrackAssocSel> trackIndicesPerCollision = aod::track_association::collisionId;
   Preslice<aod::V0Datas> v0sPerCollision = aod::v0data::collisionId;

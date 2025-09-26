@@ -183,12 +183,12 @@ struct HfCorrelatorDplusDminus {
         continue;
       }
       // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) { // probably dummy since already selected? not sure...
+      if ((candidate1.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) == 0) { // probably dummy since already selected? not sure...
         continue;
       }
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
@@ -222,7 +222,7 @@ struct HfCorrelatorDplusDminus {
       }
       for (const auto& candidate2 : selectedDPlusCandidatesGrouped) {
         // check decay channel flag for candidate2
-        if (!(candidate2.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) { // probably dummy since already selected? not sure...
+        if ((candidate2.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) == 0) { // probably dummy since already selected? not sure...
           continue;
         }
         auto innerSecondTrack = candidate2.prong1_as<aod::TracksWDca>();
@@ -289,7 +289,7 @@ struct HfCorrelatorDplusDminus {
     bool flagDminusSignal = false;
     for (const auto& candidate1 : selectedDPlusCandidatesGroupedMC) {
       // check decay channel flag for candidate1
-      if (!(candidate1.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) {
+      if ((candidate1.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) == 0) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yDplus(candidate1)) > yCandMax) {
@@ -300,7 +300,7 @@ struct HfCorrelatorDplusDminus {
       }
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / efficiencyD->at(o2::analysis::findBin(binsPt, candidate1.pt()));
       }
 
@@ -339,7 +339,7 @@ struct HfCorrelatorDplusDminus {
       }
       flagDplusSignal = std::abs(candidate1.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi; // flagDplusSignal 'true' if candidate1 matched to Dplus
       for (const auto& candidate2 : selectedDPlusCandidatesGroupedMC) {
-        if (!(candidate2.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi)) { // check decay channel flag for candidate2
+        if ((candidate2.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DplusToPiKPi) == 0) { // check decay channel flag for candidate2
           continue;
         }
         auto innerSecondTrack = candidate2.prong1_as<aod::TracksWDca>();

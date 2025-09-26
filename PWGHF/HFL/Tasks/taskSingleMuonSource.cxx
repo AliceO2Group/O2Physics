@@ -146,8 +146,9 @@ struct HfTaskSingleMuonSource {
       mcPart = *(mcPart.mothers_first_as<aod::McParticles>());
 
       const auto pdgAbs(std::abs(mcPart.pdgCode()));
-      if (pdgAbs < 10)
+      if (pdgAbs < 10) {
         break; // Quark
+      }
 
       if (!mcPart.producedByGenerator()) { // Produced in transport code
         SETBIT(mask, IsSecondary);
@@ -181,8 +182,8 @@ struct HfTaskSingleMuonSource {
         continue;
       }
 
-      auto pdgData(TDatabasePDG::Instance()->GetParticle(mcPart.pdgCode()));
-      if (pdgData && !pdgData->AntiParticle()) {
+      auto* pdgData(TDatabasePDG::Instance()->GetParticle(mcPart.pdgCode()));
+      if ((pdgData != nullptr) && (pdgData->AntiParticle() == nullptr)) {
         SETBIT(mask, HasQuarkoniumParent);
       } else if (flv == 4) {
         SETBIT(mask, HasCharmParent);

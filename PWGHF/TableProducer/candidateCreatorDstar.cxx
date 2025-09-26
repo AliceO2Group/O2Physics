@@ -575,7 +575,7 @@ struct HfCandidateCreatorDstarExpressions {
 
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-dstar") == 0) {
+      if (device.name == "hf-candidate-creator-dstar") {
         // init HF event selection helper
         hfEvSelMc.init(device, registry);
         break;

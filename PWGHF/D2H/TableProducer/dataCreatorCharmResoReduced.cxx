@@ -385,7 +385,7 @@ struct HfDataCreatorCharmResoReduced {
 
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-data-creator-charm-reso-reduced") == 0) {
+      if (device.name == "hf-data-creator-charm-reso-reduced") {
         // init HF event selection helper
         hfEvSelMc.init(device, registry);
         break;
@@ -446,8 +446,9 @@ struct HfDataCreatorCharmResoReduced {
     const auto& trackPos = dauTracks[0];
     const auto& trackNeg = dauTracks[1];
     // single-tracks selection
-    if (!selectV0Daughter(trackPos, dDaughtersIds) || !selectV0Daughter(trackNeg, dDaughtersIds))
+    if (!selectV0Daughter(trackPos, dDaughtersIds) || !selectV0Daughter(trackNeg, dDaughtersIds)) {
       return false;
+    }
     // daughters DCA to V0's collision primary vertex
     std::array<float, 2> dcaInfo{};
     auto trackPosPar = getTrackPar(trackPos);
@@ -536,20 +537,23 @@ struct HfDataCreatorCharmResoReduced {
     // PID
     if (TESTBIT(candidateV0.v0Type, BachelorType::K0s)) {
       if ((trackPos.hasTPC() && std::fabs(trackPos.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc) ||
-          (trackNeg.hasTPC() && std::fabs(trackNeg.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc))
+          (trackNeg.hasTPC() && std::fabs(trackNeg.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc)) {
         CLRBIT(candidateV0.v0Type, BachelorType::K0s);
+      }
     }
     if (TESTBIT(candidateV0.v0Type, BachelorType::Lambda)) {
       if ((trackPos.hasTPC() && std::fabs(trackPos.tpcNSigmaPr()) > cfgV0Cuts.nSigmaTpc) ||
           (trackPos.hasTOF() && std::fabs(trackPos.tofNSigmaPr()) > cfgV0Cuts.nSigmaTofPr) ||
-          (trackNeg.hasTPC() && std::fabs(trackNeg.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc))
+          (trackNeg.hasTPC() && std::fabs(trackNeg.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc)) {
         CLRBIT(candidateV0.v0Type, BachelorType::Lambda);
+      }
     }
     if (TESTBIT(candidateV0.v0Type, BachelorType::AntiLambda)) {
       if ((trackPos.hasTPC() && std::fabs(trackPos.tpcNSigmaPi()) > cfgV0Cuts.nSigmaTpc) ||
           (trackNeg.hasTPC() && std::fabs(trackNeg.tpcNSigmaPr()) > cfgV0Cuts.nSigmaTpc) ||
-          (trackNeg.hasTOF() && std::fabs(trackNeg.tofNSigmaPr()) > cfgV0Cuts.nSigmaTofPr))
+          (trackNeg.hasTOF() && std::fabs(trackNeg.tofNSigmaPr()) > cfgV0Cuts.nSigmaTofPr)) {
         CLRBIT(candidateV0.v0Type, BachelorType::AntiLambda);
+      }
     }
     if (candidateV0.v0Type == 0) {
       return false;
@@ -821,9 +825,11 @@ struct HfDataCreatorCharmResoReduced {
     auto pdgCode = std::abs(particle.pdgCode());
     if (pdgCode == kPiPlus) {
       return hf_decay::hf_cand_reso::PartialMatchMc::PionMatched;
-    } else if (pdgCode == kKPlus) {
+    }
+    if (pdgCode == kKPlus) {
       return hf_decay::hf_cand_reso::PartialMatchMc::KaonMatched;
-    } else if (pdgCode == kProton) {
+    }
+    if (pdgCode == kProton) {
       return hf_decay::hf_cand_reso::PartialMatchMc::ProtonMatched;
     }
     return 0;
@@ -1265,12 +1271,13 @@ struct HfDataCreatorCharmResoReduced {
           // Optional filling of MC Rec table, for now only implemented for Ds1->D*K0s and Ds2*->D+K0s
           if constexpr (doMc) {
             int indexHfCandCharm{-1};
-            if constexpr (dType == DType::Dstar)
+            if constexpr (dType == DType::Dstar) {
               indexHfCandCharm = hfCandDstar.lastIndex() + 1;
-            else if constexpr (dType == DType::Dplus)
+            } else if constexpr (dType == DType::Dplus) {
               indexHfCandCharm = hfCandD3Pr.lastIndex() + 1;
-            else if constexpr (dType == DType::D0)
+            } else if constexpr (dType == DType::D0) {
               indexHfCandCharm = hfCandD2Pr.lastIndex() + 1;
+            }
             fillMcRecoInfoDV0<dType>(particlesMc, candD, v0, tracksIU, indexHfCandCharm, selectedV0s[v0.globalIndex()]);
           }
         } // end of loop on V0 candidates
@@ -1464,12 +1471,13 @@ struct HfDataCreatorCharmResoReduced {
           fillHfCandD = true;
           if constexpr (doMc) {
             int indexHfCandCharm{-1};
-            if constexpr (dType == DType::Dstar)
+            if constexpr (dType == DType::Dstar) {
               indexHfCandCharm = hfCandDstar.lastIndex() + 1;
-            else if constexpr (dType == DType::Dplus)
+            } else if constexpr (dType == DType::Dplus) {
               indexHfCandCharm = hfCandD3Pr.lastIndex() + 1;
-            else if constexpr (dType == DType::D0)
+            } else if constexpr (dType == DType::D0) {
               indexHfCandCharm = hfCandD2Pr.lastIndex() + 1;
+            }
             fillMcRecoInfoDTrack<dType>(particlesMc, candD, track, tracks, indexHfCandCharm, selectedTracks[track.globalIndex()]);
           }
         } // end of loop on bachelor tracks

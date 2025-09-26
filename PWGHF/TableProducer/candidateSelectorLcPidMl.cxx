@@ -132,7 +132,7 @@ struct HfCandidateSelectorLcPidMl {
     std::map<std::string, std::string> headers;
     bool retrieveSuccess = true;
     if (applyML) {
-      if (onnxFileLcToPiKPConf.value == "") {
+      if (onnxFileLcToPiKPConf.value.empty()) {
         LOG(error) << "Apply ML specified, but no name given to the local model file";
       }
       if (loadModelsFromCCDB && timestampCCDB > 0) {
@@ -174,7 +174,7 @@ struct HfCandidateSelectorLcPidMl {
       auto statusLcToPKPi = 0;
       auto statusLcToPiKP = 0;
 
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) {
+      if ((candidate.hfflag() & 1 << aod::hf_cand_3prong::DecayType::LcToPKPi) == 0) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         continue;
       }
@@ -305,12 +305,12 @@ struct HfCandidateSelectorLcPidMl {
         std::vector<double> inputFeaturesD{trackParPos1.getPt(), trackPos1.dcaXY(), trackPos1.dcaZ(), trackParNeg.getPt(), trackNeg.dcaXY(), trackNeg.dcaZ(), trackParPos2.getPt(), trackPos2.dcaXY(), trackPos2.dcaZ()};
         float scores[3] = {-1.f, -1.f, -1.f};
         if (dataTypeML == 1) {
-          auto scoresRaw = model.evalModel(inputFeaturesF);
+          auto* scoresRaw = model.evalModel(inputFeaturesF);
           for (int iScore = 0; iScore < 3; ++iScore) {
             scores[iScore] = scoresRaw[iScore];
           }
         } else if (dataTypeML == 11) {
-          auto scoresRaw = model.evalModel(inputFeaturesD);
+          auto* scoresRaw = model.evalModel(inputFeaturesD);
           for (int iScore = 0; iScore < 3; ++iScore) {
             scores[iScore] = scoresRaw[iScore];
           }

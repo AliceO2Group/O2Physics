@@ -123,7 +123,7 @@ struct HfCorrelatorDsHadronsSelCollision {
     }
     if (selNoSameBunchPileUpColl) {
       isNosameBunchPileUp = false;
-      isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
+      isNosameBunchPileUp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     }
     isSelColl = isDsFound && isSel8 && isNosameBunchPileUp;
     collisionsWithSelDs(isSelColl);
@@ -152,7 +152,7 @@ struct HfCorrelatorDsHadronsSelCollision {
       isSel8 = collision.sel8();
     }
     if (selNoSameBunchPileUpColl) {
-      isNosameBunchPileUp = static_cast<bool>(collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup));
+      isNosameBunchPileUp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     }
     isSelColl = isDsFound && isSel8 && isNosameBunchPileUp;
     collisionsWithSelDs(isSelColl);
@@ -821,8 +821,9 @@ struct HfCorrelatorDsHadrons {
           continue;
         }
         if (pidTrkApplied) {
-          if (!passPIDSelection(track, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF))
+          if (!passPIDSelection(track, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)) {
             continue;
+          }
         }
         assocTrackReduced(indexHfcReducedCollision, track.globalIndex(), track.phi(), track.eta(), track.pt() * track.sign());
         assocTrackSelInfo(indexHfcReducedCollision, track.tpcNClsCrossedRows(), track.itsClusterMap(), track.itsNCls(), track.dcaXY(), track.dcaZ());
@@ -858,7 +859,7 @@ struct HfCorrelatorDsHadrons {
       registry.fill(HIST("hTracksPoolBin"), poolBin); // note that the selections here are not yet applied
       registry.fill(HIST("hDsPoolBin"), poolBinDs);   // note that the selections here are not yet applied
       for (const auto& [cand, pAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
-        if (!(cand.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DsToKKPi)) {
+        if ((cand.hfflag() & 1 << aod::hf_cand_3prong::DecayType::DsToKKPi) == 0) {
           continue;
         }
         if (std::abs(hfHelper.yDs(cand)) > yCandMax || cand.pt() < ptCandMin || cand.pt() > ptCandMax) {

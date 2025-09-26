@@ -100,7 +100,7 @@ struct HfCandidateSelectorBplusToD0Pi {
 
   o2::analysis::HfMlResponseBplusToD0Pi<float> hfMlResponse;
   float outputMlNotPreselected = -1.;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
   HfHelper hfHelper;

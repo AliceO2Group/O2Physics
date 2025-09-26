@@ -94,14 +94,15 @@ struct HfTaskCorrelationDMesonPairs {
   {
     if ((TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueD)) || (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueDbar))) {
       return Signal;
-    } else if ((TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueDbar)) || (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueD))) {
-      return Reflected;
-    } else if ((TESTBIT(candidateType, SelectedD) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) ||
-               (TESTBIT(candidateType, SelectedDbar) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar)))) {
-      return Bkg;
-    } else {
-      return Default;
     }
+    if ((TESTBIT(candidateType, SelectedD) && TESTBIT(candidateType, TrueDbar)) || (TESTBIT(candidateType, SelectedDbar) && TESTBIT(candidateType, TrueD))) {
+      return Reflected;
+    }
+    if ((TESTBIT(candidateType, SelectedD) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar))) ||
+        (TESTBIT(candidateType, SelectedDbar) && !(TESTBIT(candidateType, TrueD) && TESTBIT(candidateType, TrueDbar)))) {
+      return Bkg;
+    }
+    return Default;
   }
 
   void processData(aod::D0Pair const& pairEntries)

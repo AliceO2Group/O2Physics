@@ -242,7 +242,7 @@ struct HfTaskBplusToJpsiKReduced {
   o2::ccdb::CcdbApi ccdbApi;
 
   using TracksKaon = soa::Join<HfRedTracks, HfRedTracksPid>;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
 
   // Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBplusToJpsiPi >= selectionFlagBplus);
 
@@ -324,7 +324,7 @@ struct HfTaskBplusToJpsiKReduced {
   /// Calculate pseudorapidity from track tan(lambda)
   /// \param tgl is the track tangent of the dip angle
   /// \return pseudorapidity
-  inline float absEta(float tgl)
+  float absEta(float tgl)
   {
     return std::abs(std::log(std::tan(o2::constants::math::PIQuarter - 0.5f * std::atan(tgl))));
   }

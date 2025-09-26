@@ -70,9 +70,9 @@ class HFInvMassFitter : public TNamed
   ~HFInvMassFitter() override;
   void setHistogramForFit(const TH1* histoToFit)
   {
-    if (mHistoInvMass) {
-      delete mHistoInvMass;
-    }
+
+    delete mHistoInvMass;
+
     mHistoInvMass = dynamic_cast<TH1*>(histoToFit->Clone("mHistoInvMass"));
     mHistoInvMass->SetDirectory(nullptr);
   }
@@ -99,7 +99,7 @@ class HFInvMassFitter : public TNamed
     mParamSgn = sigmaLimit;
   }
   void setParticlePdgMass(Double_t mass) { mMassParticle = mass; }
-  Double_t getParticlePdgMass() { return mMassParticle; }
+  Double_t getParticlePdgMass() const { return mMassParticle; }
   void setInitialGaussianMean(Double_t mean)
   {
     mMass = mean;
@@ -190,7 +190,7 @@ class HFInvMassFitter : public TNamed
   }
   void setTemplateReflections(const TH1* histoRefl, Int_t fitTypeRefl = DoubleGaus)
   {
-    if (!histoRefl) {
+    if (histoRefl == nullptr) {
       mEnableReflections = kFALSE;
     }
     mHistoTemplateRefl = dynamic_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
@@ -213,11 +213,10 @@ class HFInvMassFitter : public TNamed
   [[nodiscard]] Double_t getSigmaUncertainty() const { return mRooSigmaSgn->getError(); }
   [[nodiscard]] Double_t getReflOverSig() const
   {
-    if (mReflPdf) {
+    if (mReflPdf != nullptr) {
       return mReflOverSgn;
-    } else {
-      return 0;
     }
+    return 0;
   }
   void calculateSignal(Double_t& signal, Double_t& signalErr) const;
   void countSignal(Double_t& signal, Double_t& signalErr) const;

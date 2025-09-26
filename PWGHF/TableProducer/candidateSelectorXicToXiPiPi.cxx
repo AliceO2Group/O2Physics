@@ -92,7 +92,7 @@ struct HfCandidateSelectorXicToXiPiPi {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponseXicToXiPiPi<float> hfMlResponse;
-  std::vector<float> outputMlXicToXiPiPi = {};
+  std::vector<float> outputMlXicToXiPiPi;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorPr selectorProton;
@@ -276,10 +276,7 @@ struct HfCandidateSelectorXicToXiPiPi {
                      bool const useTpcPidOnly)
   {
     if (useTpcPidOnly) {
-      if ((statusPidPi0 != TrackSelectorPID::Accepted && statusPidPi0 != TrackSelectorPID::NotApplicable) || (statusPidPi1 != TrackSelectorPID::Accepted && statusPidPi1 != TrackSelectorPID::NotApplicable) || (statusPidPiXi != TrackSelectorPID::Accepted && statusPidPiXi != TrackSelectorPID::NotApplicable) || (statusPidPrLam != TrackSelectorPID::Accepted && statusPidPrLam != TrackSelectorPID::NotApplicable) || (statusPidPiLam != TrackSelectorPID::Accepted && statusPidPiLam != TrackSelectorPID::NotApplicable)) {
-        return false;
-      }
-      return true;
+      return (statusPidPi0 == TrackSelectorPID::Accepted || statusPidPi0 == TrackSelectorPID::NotApplicable) && (statusPidPi1 == TrackSelectorPID::Accepted || statusPidPi1 == TrackSelectorPID::NotApplicable) && (statusPidPiXi == TrackSelectorPID::Accepted || statusPidPiXi == TrackSelectorPID::NotApplicable) && (statusPidPrLam == TrackSelectorPID::Accepted || statusPidPrLam == TrackSelectorPID::NotApplicable) && (statusPidPiLam == TrackSelectorPID::Accepted || statusPidPiLam == TrackSelectorPID::NotApplicable);
     }
     if (statusPidPi0 == TrackSelectorPID::Rejected || statusPidPi1 == TrackSelectorPID::Rejected || statusPidPiXi == TrackSelectorPID::Rejected || statusPidPrLam == TrackSelectorPID::Rejected || statusPidPiLam == TrackSelectorPID::Rejected) {
       return false;

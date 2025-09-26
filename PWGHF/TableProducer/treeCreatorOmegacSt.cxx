@@ -354,7 +354,7 @@ struct HfTreeCreatorOmegacSt {
   int8_t origin = 0; // to be used for prompt/non prompt
   int8_t nPiToMuV0{0}, nPiToMuCasc{0}, nPiToMuOmegac0{0};
   int8_t nKaToPiCasc{0}, nKaToPiOmegac0{0};
-  std::vector<int> idxBhadMothers{};
+  std::vector<int> idxBhadMothers;
   int decayChannel = -1; // flag for different decay channels
   bool isMatched = false;
   static constexpr std::size_t NDaughters{2u};
@@ -746,11 +746,11 @@ struct HfTreeCreatorOmegacSt {
                                   momenta[0][0], // cascade momentum
                                   momenta[0][1],
                                   momenta[0][2],
-                                  trackCasc.sign() > 0 ? true : false,
+                                  static_cast<bool>(trackCasc.sign() > 0),
                                   momenta[1][0], // pion/kaon momentum
                                   momenta[1][1],
                                   momenta[1][2],
-                                  track.sign() > 0 ? true : false,
+                                  static_cast<bool>(track.sign() > 0),
                                   track.itsClusterMap(),
                                   cpaCharmedBaryon,
                                   cpaXYCharmedBaryon,
@@ -917,7 +917,7 @@ struct HfTreeCreatorOmegacSt {
 
                 hCandidatesCascPiOrK->Fill(SVFitting::BeforeFit);
                 try {
-                  if (df2.process(trackParCovCasc, trackParCovPion)) {
+                  if (df2.process(trackParCovCasc, trackParCovPion) != 0) {
                     const auto& secondaryVertex = df2.getPCACandidate();
                     const auto decayLength = RecoDecay::distance(secondaryVertex, primaryVertexPos);
                     if (mother.has_mothers()) {

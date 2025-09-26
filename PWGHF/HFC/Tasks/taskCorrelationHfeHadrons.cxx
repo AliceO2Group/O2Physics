@@ -103,7 +103,7 @@ struct HfTaskCorrelationHfeHadrons {
       ptHadron = pairEntry.ptHadron();
 
       registry.fill(HIST("hMcGenInclusiveEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
-      if (pairEntry.isNonHfEHCorr()) {
+      if (pairEntry.isNonHfEHCorr() != 0) {
 
         registry.fill(HIST("hMcGenNonHfEHCorrel"), ptElectron, ptHadron, deltaPhi, deltaEta);
       }

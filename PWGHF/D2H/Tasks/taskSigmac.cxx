@@ -152,11 +152,7 @@ struct HfTaskSigmac {
     }
 
     /// establish if the analysis is done on Data or MC
-    if (doprocessMcWoMl || doprocessMcWithMl) {
-      isMc = true;
-    } else {
-      isMc = false;
-    }
+    isMc = doprocessMcWoMl || doprocessMcWithMl;
 
     const AxisSpec thnAxisMassLambdaC{configAxisMassLambdaC, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPtLambdaC{thnConfigAxisPt, "#it{p}_{T}(#Lambda_{c}^{+}) (GeV/#it{c})"};
@@ -610,8 +606,9 @@ struct HfTaskSigmac {
       bool isScStar0Gen = (std::abs(particle.flagMcMatchGen()) == BIT(aod::hf_cand_sigmac::DecayType::ScStar0ToPKPiPi));
       bool isScPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi));
       bool isScStarPlusPlusGen = (std::abs(particle.flagMcMatchGen()) == BIT(aod::hf_cand_sigmac::DecayType::ScStarPlusPlusToPKPiPi));
-      if (!isSc0Gen && !isScPlusPlusGen && !isScStar0Gen && !isScStarPlusPlusGen)
+      if (!isSc0Gen && !isScPlusPlusGen && !isScStar0Gen && !isScStarPlusPlusGen) {
         continue;
+      }
 
       /// look for generated particles in acceptance
       /*

@@ -842,11 +842,13 @@ struct HfCandidateCreatorXic0Omegac0 {
       // mass window cut on lambda before mass constraint
       float massLam, sigLam;
       kfV0.GetMass(massLam, sigLam);
-      if (std::abs(massLam - MassLambda0) > lambdaMassWindow)
+      if (std::abs(massLam - MassLambda0) > lambdaMassWindow) {
         continue;
+      }
       // err_mass>0 of Lambda
-      if (sigLam <= 0)
+      if (sigLam <= 0) {
         continue;
+      }
       kfOmegac0Candidate.chi2GeoV0 = kfV0.GetChi2();
       KFParticle kfV0MassConstrained = kfV0;
       kfV0MassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassLambda); // set mass constrain to Lambda
@@ -876,10 +878,12 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfOmega.GetMass(massCasc, sigCasc);
       kfOmegarej.GetMass(massCascrej, sigCascrej); // rej
       // err_massOmega > 0
-      if (sigCasc <= 0)
+      if (sigCasc <= 0) {
         continue;
-      if (std::abs(massCasc - MassOmegaMinus) > massToleranceCascade)
+      }
+      if (std::abs(massCasc - MassOmegaMinus) > massToleranceCascade) {
         continue;
+      }
 
       kfOmegac0Candidate.chi2GeoCasc = kfOmega.GetChi2();
       kfOmegac0Candidate.cascRejectInvmass = massCascrej;
@@ -912,8 +916,9 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       float massOmegaC0, sigOmegaC0;
       kfOmegaC0.GetMass(massOmegaC0, sigOmegaC0);
-      if (sigOmegaC0 <= 0)
+      if (sigOmegaC0 <= 0) {
         continue;
+      }
 
       hFitterStatus->Fill(0);
       hCandidateCounter->Fill(2);
@@ -989,7 +994,7 @@ struct HfCandidateCreatorXic0Omegac0 {
 
       std::array<float, 3> pVecCharmBaryon = {kfOmegaC0.GetPx(), kfOmegaC0.GetPy(), kfOmegaC0.GetPz()};
       std::array<float, 3> coordVtxCharmBaryon = {kfOmegaC0.GetX(), kfOmegaC0.GetY(), kfOmegaC0.GetZ()};
-      auto covVtxCharmBaryon = kfOmegaC0.CovarianceMatrix();
+      auto* covVtxCharmBaryon = kfOmegaC0.CovarianceMatrix();
       float covMatrixPV[6];
       kfVertex.GetCovarianceMatrix(covMatrixPV);
 
@@ -1322,15 +1327,18 @@ struct HfCandidateCreatorXic0Omegac0 {
       // mass window cut on lambda before mass constraint
       float massLam, sigLam;
       kfV0.GetMass(massLam, sigLam);
-      if (std::abs(massLam - MassLambda0) > lambdaMassWindow)
+      if (std::abs(massLam - MassLambda0) > lambdaMassWindow) {
         continue;
+      }
 
       // err_mass>0 of Lambda
-      if (sigLam <= 0)
+      if (sigLam <= 0) {
         continue;
+      }
       // chi2>0 && NDF>0 for selecting Lambda
-      if ((kfV0.GetNDF() <= 0 || kfV0.GetChi2() <= 0))
+      if ((kfV0.GetNDF() <= 0 || kfV0.GetChi2() <= 0)) {
         continue;
+      }
 
       kfXic0Candidate.chi2GeoV0 = kfV0.GetChi2();
       KFParticle kfV0MassConstrained = kfV0;
@@ -1356,14 +1364,17 @@ struct HfCandidateCreatorXic0Omegac0 {
       float massCasc, sigCasc;
       kfXi.GetMass(massCasc, sigCasc);
       // err_massXi > 0
-      if (sigCasc <= 0)
+      if (sigCasc <= 0) {
         continue;
+      }
 
-      if (std::abs(massCasc - MassXiMinus) > massToleranceCascade)
+      if (std::abs(massCasc - MassXiMinus) > massToleranceCascade) {
         continue;
+      }
       // chi2>0 && NDF>0
-      if (kfXi.GetNDF() <= 0 || kfXi.GetChi2() <= 0)
+      if (kfXi.GetNDF() <= 0 || kfXi.GetChi2() <= 0) {
         continue;
+      }
       kfXic0Candidate.chi2GeoCasc = kfXi.GetChi2();
       KFParticle kfXiMassConstrained = kfXi;
       kfXiMassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassXiMinus); // set mass constrain to XiMinus
@@ -1392,11 +1403,13 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       float massXiC0, sigXiC0;
       kfXiC0.GetMass(massXiC0, sigXiC0);
-      if (sigXiC0 <= 0)
+      if (sigXiC0 <= 0) {
         continue;
+      }
       // chi2>0 && NDF>0
-      if (kfXiC0.GetNDF() <= 0 || kfXiC0.GetChi2() <= 0)
+      if (kfXiC0.GetNDF() <= 0 || kfXiC0.GetChi2() <= 0) {
         continue;
+      }
 
       hFitterStatus->Fill(0);
       hCandidateCounter->Fill(2);
@@ -1471,7 +1484,7 @@ struct HfCandidateCreatorXic0Omegac0 {
       pVecCharmBachelorAsD[2] = kfCharmBachPionToXiC.GetPz();
 
       std::array<float, 3> pVecCharmBaryon = {kfXiC0.GetPx(), kfXiC0.GetPy(), kfXiC0.GetPz()};
-      auto covVtxCharmBaryon = kfXiC0.CovarianceMatrix();
+      auto* covVtxCharmBaryon = kfXiC0.CovarianceMatrix();
       float covMatrixPV[6];
       kfVertex.GetCovarianceMatrix(covMatrixPV);
 
@@ -1746,14 +1759,17 @@ struct HfCandidateCreatorXic0Omegac0 {
       // mass window cut on lambda before mass constraint
       float massLam, sigLam;
       kfV0.GetMass(massLam, sigLam);
-      if (std::abs(massLam - MassLambda0) > lambdaMassWindow)
+      if (std::abs(massLam - MassLambda0) > lambdaMassWindow) {
         continue;
+      }
       // err_mass>0 of Lambda
-      if (sigLam <= 0)
+      if (sigLam <= 0) {
         continue;
+      }
       // chi2>0 && NDF>0 for selecting Lambda
-      if ((kfV0.GetNDF() <= 0 || kfV0.GetChi2() <= 0))
+      if ((kfV0.GetNDF() <= 0 || kfV0.GetChi2() <= 0)) {
         continue;
+      }
       KFParticle kfV0MassConstrained = kfV0;
       kfV0MassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassLambda); // set mass constrain to Lambda
       if (kfUseV0MassConstraint) {
@@ -1781,13 +1797,16 @@ struct HfCandidateCreatorXic0Omegac0 {
       kfOmega.GetMass(massCasc, sigCasc);
       kfOmegarej.GetMass(massCascrej, sigCascrej); // rej
       // err_massOmega and err_massXiRej > 0
-      if (sigCasc <= 0 || sigCascrej <= 0)
+      if (sigCasc <= 0 || sigCascrej <= 0) {
         continue;
+      }
       // chi2>0 && NDF>0
-      if (kfOmega.GetNDF() <= 0 || kfOmega.GetChi2() <= 0)
+      if (kfOmega.GetNDF() <= 0 || kfOmega.GetChi2() <= 0) {
         continue;
-      if ((std::abs(massCasc - MassOmegaMinus) > massToleranceCascade) || (std::abs(massCascrej - MassXiMinus) < massToleranceCascadeRej))
+      }
+      if ((std::abs(massCasc - MassOmegaMinus) > massToleranceCascade) || (std::abs(massCascrej - MassXiMinus) < massToleranceCascadeRej)) {
         continue;
+      }
       registry.fill(HIST("hInvMassXiMinus_rej"), massCascrej); // rej: Add competing rejection to minimize misidentified Xi impact. Reject if kfBachPionRej is Pion and the constructed cascade has Xi's invariant mass.
       KFParticle kfOmegaMassConstrained = kfOmega;
       kfOmegaMassConstrained.SetNonlinearMassConstraint(o2::constants::physics::MassOmegaMinus); // set mass constrain to XiMinus
@@ -1813,10 +1832,12 @@ struct HfCandidateCreatorXic0Omegac0 {
       }
       float massOmegaKa, sigOmegaKa;
       kfOmegaKa.GetMass(massOmegaKa, sigOmegaKa);
-      if (sigOmegaKa <= 0)
+      if (sigOmegaKa <= 0) {
         continue;
-      if (kfOmegaKa.GetNDF() <= 0 || kfOmegaKa.GetChi2() <= 0)
+      }
+      if (kfOmegaKa.GetNDF() <= 0 || kfOmegaKa.GetChi2() <= 0) {
         continue;
+      }
       kfOmegaKa.TransportToDecayVertex();
       hFitterStatus->Fill(0);
       hCandidateCounter->Fill(2);
@@ -2309,7 +2330,7 @@ struct HfCandidateCreatorXic0Omegac0Mc {
 
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-xic0-omegac0") == 0) {
+      if (device.name == "hf-candidate-creator-xic0-omegac0") {
         // init HF event selection helper
         hfEvSelMc.init(device, registry);
         break;

@@ -335,10 +335,7 @@ struct TOFCalibConfig {
 /// Selection criteria for tracks used for TOF event time
 bool isTrackGoodMatchForTOFPID(const Trks::iterator& tr)
 {
-  if (!tr.hasTOF()) {
-    return false;
-  }
-  return true;
+  return tr.hasTOF();
 }
 
 /// Task to produce the TOF signal from the trackTime information
@@ -517,7 +514,7 @@ struct tofEventTime {
     trackSampleMaxMomentum = maxMomentum;
     LOG(info) << "Configuring track sample for TOF ev. time: " << trackSampleMinMomentum << " < p < " << trackSampleMaxMomentum;
 
-    if (sel8TOFEvTime.value == true) {
+    if (sel8TOFEvTime.value) {
       LOG(info) << "TOF event time will be computed for collisions that pass the event selection only!";
     }
     mTOFCalibConfig.initSetup(mRespParamsV3, ccdb); // Getting the parametrization parameters
@@ -569,9 +566,9 @@ struct tofEventTime {
     LOG(debug) << "Running on " << CollisionSystemType::getCollisionSystemName(mTOFCalibConfig.collisionSystem()) << " mComputeEvTimeWithTOF " << mComputeEvTimeWithTOF.value << " mComputeEvTimeWithFT0 " << mComputeEvTimeWithFT0.value;
 
     if (mComputeEvTimeWithTOF == 1 && mComputeEvTimeWithFT0 == 1) {
-      int lastCollisionId = -1;                                                                                       // Last collision ID analysed
-      for (auto const& t : tracks) {                                                                                  // Loop on collisions
-        if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
+      int lastCollisionId = -1;                                                                               // Last collision ID analysed
+      for (auto const& t : tracks) {                                                                          // Loop on collisions
+        if (!t.has_collision() || ((sel8TOFEvTime.value) && !t.collision_as<EvTimeCollisionsFT0>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
           tableFlags(0);
           tableEvTime(0.f, 999.f);
           if (enableTableEvTimeTOFOnly) {
@@ -646,9 +643,9 @@ struct tofEventTime {
         }
       }
     } else if (mComputeEvTimeWithTOF == 1 && mComputeEvTimeWithFT0 == 0) {
-      int lastCollisionId = -1;                                                                                    // Last collision ID analysed
-      for (auto const& t : tracks) {                                                                               // Loop on collisions
-        if (!t.has_collision() || ((sel8TOFEvTime.value == true) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
+      int lastCollisionId = -1;                                                                            // Last collision ID analysed
+      for (auto const& t : tracks) {                                                                       // Loop on collisions
+        if (!t.has_collision() || ((sel8TOFEvTime.value) && !t.collision_as<EvTimeCollisions>().sel8())) { // Track was not assigned, cannot compute event time or event did not pass the event selection
           tableFlags(0);
           tableEvTime(0.f, 999.f);
           if (enableTableEvTimeTOFOnly) {
@@ -749,8 +746,8 @@ struct mcPidTof {
   std::array<std::shared_ptr<TH2>, nSpecies> hnSigmaFull;
 
   // postcalibrations to overcome MC FT0 timing issue
-  std::map<int, TGraph*> gMcPostCalibMean{};
-  std::map<int, TGraph*> gMcPostCalibSigma{};
+  std::map<int, TGraph*> gMcPostCalibMean;
+  std::map<int, TGraph*> gMcPostCalibSigma;
   int currentRun{0};
   struct : ConfigurableGroup {
     std::string prefix = "mcRecalib";
@@ -787,7 +784,7 @@ struct mcPidTof {
         mEnabledParticlesFull.push_back(supportedSpecies[iSpecie]);
       }
     }
-    if (mEnabledParticlesFull.size() == 0 && mEnabledParticles.size() == 0) {
+    if (mEnabledParticlesFull.empty() && mEnabledParticles.empty()) {
       LOG(info) << "No PID tables are required, disabling process function";
       doprocessFillTables.value = false;
       doprocessDummy.value = true;
@@ -913,7 +910,7 @@ struct mcPidTof {
       LOGP(error, "Impossible to read metadata! Using default calibrations (2022 apass7)");
       metadata["RecoPassName"] = "";
     }
-    auto calibList = ccdb->getSpecific<TList>(mcRecalib.ccdbPath, timestamp, metadata);
+    auto* calibList = ccdb->getSpecific<TList>(mcRecalib.ccdbPath, timestamp, metadata);
     std::vector<int> updatedSpecies{};
     for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses (tiny)
       gMcPostCalibMean[pidId] = reinterpret_cast<TGraph*>(calibList->FindObject(Form("Mean%s", particleNames[pidId].data())));

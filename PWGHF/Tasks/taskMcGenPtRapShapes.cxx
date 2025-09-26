@@ -44,10 +44,10 @@ using namespace o2::constants::physics;
 namespace
 {
 const int nCharmHadrons = 10;
-static constexpr std::array<int, nCharmHadrons> pdgCodesCharm = {Pdg::kD0, Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kSigmaC0, Pdg::kSigmaCPlusPlus, Pdg::kXiC0, Pdg::kXiCPlus, Pdg::kOmegaC0};
+constexpr std::array<int, nCharmHadrons> pdgCodesCharm = {Pdg::kD0, Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus, Pdg::kSigmaC0, Pdg::kSigmaCPlusPlus, Pdg::kXiC0, Pdg::kXiCPlus, Pdg::kOmegaC0};
 
 const int nBeautyHadrons = 4;
-static constexpr std::array<int, nBeautyHadrons> pdgCodesBeauty = {Pdg::kB0, Pdg::kBPlus, Pdg::kBS, Pdg::kLambdaB0};
+constexpr std::array<int, nBeautyHadrons> pdgCodesBeauty = {Pdg::kB0, Pdg::kBPlus, Pdg::kBS, Pdg::kLambdaB0};
 } // namespace
 
 struct HfTaskMcGenPtRapShapes {
@@ -62,7 +62,7 @@ struct HfTaskMcGenPtRapShapes {
   std::array<std::shared_ptr<TH2>, nCharmHadrons> histPtCharmVsPtBeautyNonPrompt{};
   std::array<std::shared_ptr<TH2>, nBeautyHadrons> histRapVsPtBeauty{};
 
-  HistogramRegistry registry{};
+  HistogramRegistry registry;
 
   void init(InitContext&)
   {
@@ -84,8 +84,8 @@ struct HfTaskMcGenPtRapShapes {
       int absPdgCode = std::abs(mcParticle.pdgCode());
       float pt = mcParticle.pt();
       float rap = mcParticle.y();
-      auto itCharm = std::find(pdgCodesCharm.begin(), pdgCodesCharm.end(), absPdgCode);
-      auto itBeauty = std::find(pdgCodesBeauty.begin(), pdgCodesBeauty.end(), absPdgCode);
+      const auto* itCharm = std::find(pdgCodesCharm.begin(), pdgCodesCharm.end(), absPdgCode);
+      const auto* itBeauty = std::find(pdgCodesBeauty.begin(), pdgCodesBeauty.end(), absPdgCode);
       if (itCharm != pdgCodesCharm.end()) {
         auto idxCharm = std::distance(pdgCodesCharm.begin(), itCharm);
         std::vector<int> idxBhadMothers{};

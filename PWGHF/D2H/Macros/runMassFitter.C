@@ -47,7 +47,7 @@ int runMassFitter(const TString& configFileName = "config_massfitter.json");
 template <typename ValueType>
 void readArray(const Value& jsonArray, std::vector<ValueType>& output)
 {
-  for (auto it = jsonArray.Begin(); it != jsonArray.End(); it++) {
+  for (const auto* it = jsonArray.Begin(); it != jsonArray.End(); it++) {
     auto value = it->template Get<ValueType>();
     output.emplace_back(value);
   }
@@ -70,7 +70,7 @@ int runMassFitter(const TString& configFileName)
 {
   // load config
   FILE* configFile = fopen(configFileName.Data(), "r");
-  if (!configFile) {
+  if (configFile == nullptr) {
     throw std::runtime_error("ERROR: Missing configuration json file: " + configFileName);
   }
 
@@ -208,15 +208,15 @@ int runMassFitter(const TString& configFileName)
   const double massPDG = TDatabasePDG::Instance()->GetParticle(particles[particleName.Data()].second.c_str())->Mass();
 
   // load inv-mass histograms
-  auto inputFile = TFile::Open(inputFileName.Data());
-  if (!inputFile || !inputFile->IsOpen()) {
+  auto* inputFile = TFile::Open(inputFileName.Data());
+  if ((inputFile == nullptr) || !inputFile->IsOpen()) {
     return -1;
   }
 
   TFile* inputFileRefl = nullptr;
   if (enableRefl) {
     inputFileRefl = TFile::Open(reflFileName.Data());
-    if (!inputFileRefl || !inputFileRefl->IsOpen()) {
+    if ((inputFileRefl == nullptr) || !inputFileRefl->IsOpen()) {
       return -1;
     }
   }
@@ -232,10 +232,10 @@ int runMassFitter(const TString& configFileName)
         hMassRefl[iSliceVar] = inputFileRefl->Get<TH1>(reflHistoName[iSliceVar].data());
         hMassSgn[iSliceVar] = inputFileRefl->Get<TH1>(fdHistoName[iSliceVar].data());
         hMassSgn[iSliceVar]->Add(inputFileRefl->Get<TH1>(promptHistoName[iSliceVar].data()));
-        if (!hMassRefl[iSliceVar]) {
+        if (hMassRefl[iSliceVar] == nullptr) {
           throw std::runtime_error("ERROR: MC reflection histogram not found! Exit!");
         }
-        if (!hMassSgn[iSliceVar]) {
+        if (hMassSgn[iSliceVar] == nullptr) {
           throw std::runtime_error("ERROR: MC prompt or FD histogram not found! Exit!");
         }
       }
@@ -247,7 +247,7 @@ int runMassFitter(const TString& configFileName)
         hMass[iSliceVar]->Add(inputFile->Get<TH1>(fdSecPeakHistoName[iSliceVar].data()));
       }
     }
-    if (!hMass[iSliceVar]) {
+    if (hMass[iSliceVar] == nullptr) {
       throw std::runtime_error("ERROR: input histogram for fit not found! Exit!");
     }
     hMass[iSliceVar]->SetDirectory(nullptr);
@@ -255,39 +255,39 @@ int runMassFitter(const TString& configFileName)
   inputFile->Close();
 
   // define output histos
-  auto hRawYieldsSignal = new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
-                                   nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSignalCounted = new TH1D("hRawYieldsSignalCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
-                                          nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSigma = new TH1D(
+  auto* hRawYieldsSignal = new TH1D("hRawYieldsSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield",
+                                    nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsSignalCounted = new TH1D("hRawYieldsSignalCounted", ";" + sliceVarName + "(" + sliceVarUnit + ");raw yield via bin count",
+                                           nSliceVarBins, sliceVarLimits.data());
+  auto* hRawYieldsSigma = new TH1D(
     "hRawYieldsSigma", ";" + sliceVarName + "(" + sliceVarUnit + ");width (GeV/#it{c}^{2})",
     nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsMean = new TH1D(
+  auto* hRawYieldsMean = new TH1D(
     "hRawYieldsMean", ";" + sliceVarName + "(" + sliceVarUnit + ");mean (GeV/#it{c}^{2})",
     nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSignificance = new TH1D(
+  auto* hRawYieldsSignificance = new TH1D(
     "hRawYieldsSignificance",
     ";" + sliceVarName + "(" + sliceVarUnit + ");significance (3#sigma)", nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsSgnOverBkg =
+  auto* hRawYieldsSgnOverBkg =
     new TH1D("hRawYieldsSgnOverBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");S/B (3#sigma)",
              nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsBkg =
+  auto* hRawYieldsBkg =
     new TH1D("hRawYieldsBkg", ";" + sliceVarName + "(" + sliceVarUnit + ");Background (3#sigma)",
              nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsChiSquareBkg =
+  auto* hRawYieldsChiSquareBkg =
     new TH1D("hRawYieldsChiSquareBkg",
              ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
-  auto hRawYieldsChiSquareTotal =
+  auto* hRawYieldsChiSquareTotal =
     new TH1D("hRawYieldsChiSquareTotal",
              ";" + sliceVarName + "(" + sliceVarUnit + ");#chi^{2}/#it{ndf}", nSliceVarBins, sliceVarLimits.data());
-  auto hReflectionOverSignal =
+  auto* hReflectionOverSignal =
     new TH1D("hReflectionOverSignal", ";" + sliceVarName + "(" + sliceVarUnit + ");Refl/Signal",
              nSliceVarBins, sliceVarLimits.data());
 
   const Int_t nConfigsToSave = 6;
-  auto hFitConfig = new TH2F("hfitConfig", "Fit Configurations", nConfigsToSave, 0, 6, nSliceVarBins, sliceVarLimits.data());
+  auto* hFitConfig = new TH2F("hfitConfig", "Fit Configurations", nConfigsToSave, 0, 6, nSliceVarBins, sliceVarLimits.data());
   const char* hFitConfigXLabel[nConfigsToSave] = {"mass min", "mass max", "rebin num", "fix sigma", "bkg func", "sgn func"};
-  hFitConfig->SetStats(0);
+  hFitConfig->SetStats(false);
   hFitConfig->LabelsDeflate("X");
   hFitConfig->LabelsDeflate("Y");
   hFitConfig->LabelsOption("v");
@@ -310,8 +310,8 @@ int runMassFitter(const TString& configFileName)
     TH1* histToFix = nullptr;
     if (isFix) {
       if (fixManual.empty()) {
-        auto fixInputFile = TFile::Open(fixFileName.data());
-        if (!fixInputFile) {
+        auto* fixInputFile = TFile::Open(fixFileName.data());
+        if (fixInputFile == nullptr) {
           throw std::runtime_error("Cannot open file for fixed " + var);
         }
         const std::string histName = "hRawYields" + var;
@@ -364,7 +364,7 @@ int runMassFitter(const TString& configFileName)
   for (unsigned int iSliceVar = 0; iSliceVar < nSliceVarBins; iSliceVar++) {
     const Int_t iCanvas = std::floor(static_cast<float>(iSliceVar) / nCanvasesMax);
 
-    hMassForFit[iSliceVar] = static_cast<TH1*>(hMass[iSliceVar]->Rebin(nRebin[iSliceVar]));
+    hMassForFit[iSliceVar] = hMass[iSliceVar]->Rebin(nRebin[iSliceVar]);
     TString ptTitle =
       Form("%0.2f < " + sliceVarName + " < %0.2f " + sliceVarUnit, sliceVarMin[iSliceVar], sliceVarMax[iSliceVar]);
     hMassForFit[iSliceVar]->SetTitle(Form("%s;%s;Counts per %0.1f MeV/#it{c}^{2}",
@@ -373,8 +373,8 @@ int runMassFitter(const TString& configFileName)
     hMassForFit[iSliceVar]->SetName(Form("MassForFit%d", iSliceVar));
 
     if (enableRefl) {
-      hMassForRefl[iSliceVar] = static_cast<TH1*>(hMassRefl[iSliceVar]->Rebin(nRebin[iSliceVar]));
-      hMassForSgn[iSliceVar] = static_cast<TH1*>(hMassSgn[iSliceVar]->Rebin(nRebin[iSliceVar]));
+      hMassForRefl[iSliceVar] = hMassRefl[iSliceVar]->Rebin(nRebin[iSliceVar]);
+      hMassForSgn[iSliceVar] = hMassSgn[iSliceVar]->Rebin(nRebin[iSliceVar]);
     }
 
     Double_t reflOverSgn = 0;

@@ -237,7 +237,7 @@ struct HfCorrelatorDstarHadrons {
       auto candidatesPerCol = candidates.sliceByCached(aod::hf_cand::collisionId, collision.globalIndex(), cache);
       auto tracksPerCol = tracks.sliceByCached(aod::track::collisionId, collision.globalIndex(), cache);
 
-      if (candidatesPerCol.size() && tracksPerCol.size() == 0) {
+      if ((candidatesPerCol.size() != 0) && tracksPerCol.size() == 0) {
         continue;
       } // endif
 

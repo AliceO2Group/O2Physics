@@ -1976,23 +1976,23 @@ struct HfTaskCharmPolarisation {
           int pdgMotherProng0 = -1;
           int pdgMotherProng1 = -1;
           int pdgMotherProng2 = -1;
-          bool atLeast2ProngsFromSameMother = (idMothersProng0.size() > 0 && idMothersProng1.size() > 0 && idMothersProng0.at(0) == idMothersProng1.at(0)) ||
-                                              (idMothersProng1.size() > 0 && idMothersProng2.size() > 0 && idMothersProng1.at(0) == idMothersProng2.at(0)) ||
-                                              (idMothersProng0.size() > 0 && idMothersProng2.size() > 0 && idMothersProng0.at(0) == idMothersProng2.at(0));
+          bool atLeast2ProngsFromSameMother = (!idMothersProng0.empty() && !idMothersProng1.empty() && idMothersProng0.at(0) == idMothersProng1.at(0)) ||
+                                              (!idMothersProng1.empty() && !idMothersProng2.empty() && idMothersProng1.at(0) == idMothersProng2.at(0)) ||
+                                              (!idMothersProng0.empty() && !idMothersProng2.empty() && idMothersProng0.at(0) == idMothersProng2.at(0));
           if (atLeast2ProngsFromSameMother) {
-            if (idMothersProng0.size() > 0) {
+            if (!idMothersProng0.empty()) {
               /// BEWARE: in case of mcCollision grouping, the idMother can anyway point to a particle in another collision (*)
               /// therefore the rawIteratorAt call might crash the code because one goes above the (grouped) particles table size
               auto mother = particles.rawIteratorAt(idMothersProng0.at(0) - particles.offset());
               pdgMotherProng0 = std::abs(mother.pdgCode()); // PDG code of the mother
             }
-            if (idMothersProng1.size() > 0) {
+            if (!idMothersProng1.empty()) {
               /// BEWARE: in case of mcCollision grouping, the idMother can anyway point to a particle in another collision (*)
               /// therefore the rawIteratorAt call might crash the code because one goes above the (grouped) particles table size
               auto mother = particles.rawIteratorAt(idMothersProng1.at(0) - particles.offset());
               pdgMotherProng1 = std::abs(mother.pdgCode()); // PDG code of the mother
             }
-            if (idMothersProng2.size() > 0) {
+            if (!idMothersProng2.empty()) {
               /// BEWARE: in case of mcCollision grouping, the idMother can anyway point to a particle in another collision (*)
               /// therefore the rawIteratorAt call might crash the code because one goes above the (grouped) particles table size
               auto mother = particles.rawIteratorAt(idMothersProng2.at(0) - particles.offset());

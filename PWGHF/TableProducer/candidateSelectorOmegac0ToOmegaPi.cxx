@@ -191,7 +191,7 @@ struct HfCandidateSelectorToOmegaPi {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponseOmegacToOmegaPi<float> hfMlResponse;
-  std::vector<float> outputMlOmegac = {};
+  std::vector<float> outputMlOmegac;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
@@ -317,9 +317,8 @@ struct HfCandidateSelectorToOmegaPi {
     if (pionPtFromOmegac < cuts->get(pTBin, "pT pi from Omegac")) {
       registry.fill(HIST("hSelPtPiFromCharm"), 0);
       return false;
-    } else {
-      registry.fill(HIST("hSelPtPiFromCharm"), 1);
     }
+    registry.fill(HIST("hSelPtPiFromCharm"), 1);
 
     return true;
   } // end template

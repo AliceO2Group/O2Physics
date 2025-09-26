@@ -237,14 +237,13 @@ struct HfTaskSingleElectron {
 
           if (grmothersIdsVec.empty()) {
             return DirectCharm;
-          } else {
-            grmotherPt = mctrack.front().pt();
-            grmotherPdg = std::abs(mctrack.front().pdgCode());
-            if ((static_cast<int>(grmotherPdg / 100.) % 10) == kBottom || (static_cast<int>(grmotherPdg / 1000.) % 10) == kBottom) {
-              mpt = grmotherPt;
-              mpdg = grmotherPdg;
-              return BeautyCharm;
-            }
+          }
+          grmotherPt = mctrack.front().pt();
+          grmotherPdg = std::abs(mctrack.front().pdgCode());
+          if ((static_cast<int>(grmotherPdg / 100.) % 10) == kBottom || (static_cast<int>(grmotherPdg / 1000.) % 10) == kBottom) {
+            mpt = grmotherPt;
+            mpdg = grmotherPdg;
+            return BeautyCharm;
           }
         }
         partMother = mctrack;
@@ -257,77 +256,86 @@ struct HfTaskSingleElectron {
         auto const& grmothersIdsVec = mctrack.front().mothersIds();
         if (grmothersIdsVec.empty()) {
           return DirectGamma;
-        } else {
-          grmotherPdg = std::abs(mctrack.front().pdgCode());
-          mpdg = grmotherPdg;
-          mpt = mctrack.front().pt();
+        }
+        grmotherPdg = std::abs(mctrack.front().pdgCode());
+        mpdg = grmotherPdg;
+        mpt = mctrack.front().pt();
 
-          partMother = mctrack;
-          mctrack = partMother.front().template mothers_as<aod::McParticles>();
-          if (mctrack.size()) {
-            auto const& ggrmothersIdsVec = mctrack.front().mothersIds();
-            if (ggrmothersIdsVec.empty()) {
-              if (grmotherPdg == kPi0) {
-                return GammaPi0;
-              } else if (grmotherPdg == kEta) {
-                return GammaEta;
-              } else if (grmotherPdg == kOmega) {
-                return GammaOmega;
-              } else if (grmotherPdg == kPhi) {
-                return GammaPhi;
-              } else if (grmotherPdg == kEtaPrime) {
-                return GammaEtaPrime;
-              } else if (grmotherPdg == kRho770_0) {
-                return GammaRho0;
-              } else {
-                return Else;
-              }
-            } else {
-              ggrmotherPdg = mctrack.front().pdgCode();
-              ggrmotherPt = mctrack.front().pt();
-              mpdg = ggrmotherPdg;
-              mpt = ggrmotherPt;
-              if (grmotherPdg == kPi0) {
-                if (ggrmotherPdg == kK0Short) {
-                  return GammaK0s;
-                } else if (ggrmotherPdg == kK0Long) {
-                  return GammaK0l;
-                } else if (ggrmotherPdg == kKPlus) {
-                  return GammaKe3;
-                } else if (ggrmotherPdg == kLambda0) {
-                  return GammaLambda0;
-                } else if (ggrmotherPdg == kSigmaPlus) {
-                  return GammaSigma;
-                } else {
-                  mpdg = grmotherPdg;
-                  mpt = grmotherPt;
-                  return GammaPi0;
-                }
-              } else if (grmotherPdg == kEta) {
-                mpdg = grmotherPdg;
-                mpt = grmotherPt;
-                return GammaEta;
-              } else if (grmotherPdg == kOmega) {
-                mpdg = grmotherPdg;
-                mpt = grmotherPt;
-                return GammaOmega;
-              } else if (grmotherPdg == kPhi) {
-                mpdg = grmotherPdg;
-                mpt = grmotherPt;
-                return GammaPhi;
-              } else if (grmotherPdg == kEtaPrime) {
-                mpdg = grmotherPdg;
-                mpt = grmotherPt;
-                return GammaEtaPrime;
-              } else if (grmotherPdg == kRho770_0) {
-                mpdg = grmotherPdg;
-                mpt = grmotherPt;
-                return GammaRho0;
-              } else {
-                return Else;
-              }
+        partMother = mctrack;
+        mctrack = partMother.front().template mothers_as<aod::McParticles>();
+        if (mctrack.size()) {
+          auto const& ggrmothersIdsVec = mctrack.front().mothersIds();
+          if (ggrmothersIdsVec.empty()) {
+            if (grmotherPdg == kPi0) {
+              return GammaPi0;
             }
+            if (grmotherPdg == kEta) {
+              return GammaEta;
+            }
+            if (grmotherPdg == kOmega) {
+              return GammaOmega;
+            }
+            if (grmotherPdg == kPhi) {
+              return GammaPhi;
+            }
+            if (grmotherPdg == kEtaPrime) {
+              return GammaEtaPrime;
+            }
+            if (grmotherPdg == kRho770_0) {
+              return GammaRho0;
+            }
+            return Else;
           }
+          ggrmotherPdg = mctrack.front().pdgCode();
+          ggrmotherPt = mctrack.front().pt();
+          mpdg = ggrmotherPdg;
+          mpt = ggrmotherPt;
+          if (grmotherPdg == kPi0) {
+            if (ggrmotherPdg == kK0Short) {
+              return GammaK0s;
+            }
+            if (ggrmotherPdg == kK0Long) {
+              return GammaK0l;
+            }
+            if (ggrmotherPdg == kKPlus) {
+              return GammaKe3;
+            }
+            if (ggrmotherPdg == kLambda0) {
+              return GammaLambda0;
+            }
+            if (ggrmotherPdg == kSigmaPlus) {
+              return GammaSigma;
+            }
+            mpdg = grmotherPdg;
+            mpt = grmotherPt;
+            return GammaPi0;
+          }
+          if (grmotherPdg == kEta) {
+            mpdg = grmotherPdg;
+            mpt = grmotherPt;
+            return GammaEta;
+          }
+          if (grmotherPdg == kOmega) {
+            mpdg = grmotherPdg;
+            mpt = grmotherPt;
+            return GammaOmega;
+          }
+          if (grmotherPdg == kPhi) {
+            mpdg = grmotherPdg;
+            mpt = grmotherPt;
+            return GammaPhi;
+          }
+          if (grmotherPdg == kEtaPrime) {
+            mpdg = grmotherPdg;
+            mpt = grmotherPt;
+            return GammaEtaPrime;
+          }
+          if (grmotherPdg == kRho770_0) {
+            mpdg = grmotherPdg;
+            mpt = grmotherPt;
+            return GammaRho0;
+          }
+          return Else;
         }
       }
     } else { // check if electron from Dalitz decays
@@ -350,46 +358,53 @@ struct HfTaskSingleElectron {
             return it->second;
           }
           return Else;
-
-        } else {
-          if (motherPdg == kPi0) {
-            grmotherPt = mctrack.front().pt();
-            grmotherPdg = mctrack.front().pdgCode();
-            mpt = grmotherPt;
-            mpdg = grmotherPdg;
-            if (grmotherPdg == kK0Short) {
-              return K0s;
-            } else if (grmotherPdg == kK0Long) {
-              return K0l;
-            } else if (grmotherPdg == kKPlus) {
-              return Ke3;
-            } else if (grmotherPdg == kLambda0) {
-              return Lambda0;
-            } else if (grmotherPdg == kSigmaPlus) {
-              return Sigma;
-            } else {
-              mpt = motherPt;
-              mpdg = motherPdg;
-              return Pi0;
-            }
-          } else if (motherPdg == kEta) {
-            return Eta;
-          } else if (motherPdg == kOmega) {
-            return Omega;
-          } else if (motherPdg == kPhi) {
-            return Phi;
-          } else if (motherPdg == kEtaPrime) {
-            return EtaPrime;
-          } else if (motherPdg == kRho770_0) {
-            return Rho0;
-          } else if (motherPdg == kKPlus) {
-            return Ke3;
-          } else if (motherPdg == kK0Long) {
-            return K0l;
-          } else {
-            return Else;
-          }
         }
+        if (motherPdg == kPi0) {
+          grmotherPt = mctrack.front().pt();
+          grmotherPdg = mctrack.front().pdgCode();
+          mpt = grmotherPt;
+          mpdg = grmotherPdg;
+          if (grmotherPdg == kK0Short) {
+            return K0s;
+          }
+          if (grmotherPdg == kK0Long) {
+            return K0l;
+          }
+          if (grmotherPdg == kKPlus) {
+            return Ke3;
+          }
+          if (grmotherPdg == kLambda0) {
+            return Lambda0;
+          }
+          if (grmotherPdg == kSigmaPlus) {
+            return Sigma;
+          }
+          mpt = motherPt;
+          mpdg = motherPdg;
+          return Pi0;
+        }
+        if (motherPdg == kEta) {
+          return Eta;
+        }
+        if (motherPdg == kOmega) {
+          return Omega;
+        }
+        if (motherPdg == kPhi) {
+          return Phi;
+        }
+        if (motherPdg == kEtaPrime) {
+          return EtaPrime;
+        }
+        if (motherPdg == kRho770_0) {
+          return Rho0;
+        }
+        if (motherPdg == kKPlus) {
+          return Ke3;
+        }
+        if (motherPdg == kK0Long) {
+          return K0l;
+        }
+        return Else;
       }
     }
 

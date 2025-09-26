@@ -368,7 +368,7 @@ struct HfTaskCorrelationLcHadrons {
     hCandidates->GetAxis(2)->SetTitle("Charm hadron origin");
 
     // Loading efficiency histograms from CCDB
-    if (applyEfficiency && loadAccXEffFromCCDB) {
+    if ((applyEfficiency != 0) && loadAccXEffFromCCDB) {
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
@@ -430,7 +430,7 @@ struct HfTaskCorrelationLcHadrons {
         continue;
       }
       double efficiencyWeightLc = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeightLc = 1. / efficiencyLc->at(o2::analysis::findBin(binsPtEfficiencyLc, ptLc));
         if (loadAccXEffFromCCDB) {
           efficiencyWeightLc = 1. / mEfficiencyPrompt->GetBinContent(mEfficiencyPrompt->FindBin(ptLc));
@@ -476,7 +476,7 @@ struct HfTaskCorrelationLcHadrons {
       }
 
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / (efficiencyLc->at(effBinLc) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
         if (loadAccXEffFromCCDB) {
           efficiencyWeight = 1. / (mEfficiencyPrompt->GetBinContent(mEfficiencyPrompt->FindBin(ptLc)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
@@ -567,14 +567,15 @@ struct HfTaskCorrelationLcHadrons {
       bool isLcPrompt = candidate.isPrompt();
 
       // reject entries outside pT ranges of interest
-      if (ptLc < binsPtEfficiencyLc->front() || ptLc > binsPtEfficiencyLc->back())
+      if (ptLc < binsPtEfficiencyLc->front() || ptLc > binsPtEfficiencyLc->back()) {
         continue;
+      }
 
       if (bdtScorePrompt < mlOutputPrompt->at(effBinLc) || bdtScoreBkg > mlOutputBkg->at(effBinLc)) {
         continue;
       }
       double efficiencyWeightLc = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         if (isLcPrompt) {
           efficiencyWeightLc = 1. / efficiencyLc->at(effBinLc);
           if (loadAccXEffFromCCDB) {
@@ -621,8 +622,9 @@ struct HfTaskCorrelationLcHadrons {
       int signPair = 0;
 
       // reject entries outside pT ranges of interest
-      if (ptLc < binsPtEfficiencyLc->front() || ptLc > binsPtEfficiencyLc->back())
+      if (ptLc < binsPtEfficiencyLc->front() || ptLc > binsPtEfficiencyLc->back()) {
         continue;
+      }
 
       if (bdtScorePrompt < mlOutputPrompt->at(effBinLc) || bdtScoreBkg > mlOutputBkg->at(effBinLc)) {
         continue;
@@ -632,8 +634,8 @@ struct HfTaskCorrelationLcHadrons {
       }
       double efficiencyWeight = 1.;
 
-      if (applyEfficiency) {
-        if (statusLcPrompt) {
+      if (applyEfficiency != 0) {
+        if (statusLcPrompt != 0) {
           efficiencyWeight = 1. / (efficiencyLc->at(effBinLc) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
           if (loadAccXEffFromCCDB) {
             efficiencyWeight = 1. / (mEfficiencyPrompt->GetBinContent(mEfficiencyPrompt->FindBin(ptLc)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
@@ -675,7 +677,7 @@ struct HfTaskCorrelationLcHadrons {
       }
 
       // fill correlation plots for signal/bagkground correlations
-      if (pairEntry.signalStatus()) {
+      if (pairEntry.signalStatus() != 0) {
         if (fillSign) {
           registry.fill(HIST("hCorrel2DVsPtSignSignalMcRec"), deltaPhi, deltaEta, ptLc, ptHadron, signPair, poolBin, efficiencyWeight);
         } else {

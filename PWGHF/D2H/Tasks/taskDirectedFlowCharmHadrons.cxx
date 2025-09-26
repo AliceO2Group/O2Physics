@@ -258,8 +258,9 @@ struct HfTaskDirectedFlowCharmHadrons {
         auto trackprong0 = candidate.template prong0_as<Trk>();
         sign = trackprong0.sign();
         if constexpr (std::is_same_v<T1, CandDplusDataWMl>) {
-          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
+          }
         }
       } else if constexpr (std::is_same_v<T1, CandD0Data> || std::is_same_v<T1, CandD0DataWMl>) {
         switch (channel) {
@@ -268,8 +269,9 @@ struct HfTaskDirectedFlowCharmHadrons {
             rapCand = hfHelper.yD0(candidate);
             sign = candidate.isSelD0bar() ? 3 : 1; // 3: reflected D0bar, 1: pure D0 excluding reflected D0bar
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbD0()[classMl->at(iclass)];
+              }
             }
             break;
           case DecayChannel::D0ToKPi:
@@ -277,8 +279,9 @@ struct HfTaskDirectedFlowCharmHadrons {
             rapCand = hfHelper.yD0(candidate);
             sign = candidate.isSelD0() ? 3 : 2; // 3: reflected D0, 2: pure D0bar excluding reflected D0
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
-              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+              for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
                 outputMl[iclass] = candidate.mlProbD0bar()[classMl->at(iclass)];
+              }
             }
             break;
           default:
@@ -294,8 +297,9 @@ struct HfTaskDirectedFlowCharmHadrons {
           rapCand = candidate.y(candidate.invMassAntiDstar());
         }
         if constexpr (std::is_same_v<T1, CandDstarDataWMl>) {
-          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++)
+          for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
             outputMl[iclass] = candidate.mlProbDstarToD0Pi()[classMl->at(iclass)];
+          }
         }
       }
 
@@ -305,11 +309,13 @@ struct HfTaskDirectedFlowCharmHadrons {
       double cosNPhi = std::cos(phiCand);
       double sinNPhi = std::sin(phiCand);
 
-      if (userap)
+      if (userap) {
         etaCand = rapCand;
+      }
 
-      if (selectionFlagDstar)
+      if (selectionFlagDstar) {
         sign = signDstarCand;
+      }
 
       auto ux = cosNPhi; // real part of candidate q vector
       auto uy = sinNPhi; // imaginary part of candidate q vector

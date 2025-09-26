@@ -281,7 +281,7 @@ struct HfTaskCorrelationDplusHadrons {
     hCandidates->GetAxis(2)->SetTitle("Charm hadron origin");
 
     // Loading efficiency histograms from CCDB
-    if (applyEfficiency && loadAccXEffFromCCDB) {
+    if ((applyEfficiency != 0) && loadAccXEffFromCCDB) {
       ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
@@ -347,7 +347,7 @@ struct HfTaskCorrelationDplusHadrons {
         continue;
       }
       double efficiencyWeightD = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, ptD));
         if (loadAccXEffFromCCDB) {
           efficiencyWeightD = 1. / effD->GetBinContent(effD->FindBin(ptD));
@@ -389,7 +389,7 @@ struct HfTaskCorrelationDplusHadrons {
         continue;
       }
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / (efficiencyD->at(effBinD) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
         if (loadAccXEffFromCCDB) {
           efficiencyWeight = 1. / (effD->GetBinContent(effD->FindBin(ptD)) * mEfficiencyAssociated->GetBinContent(mEfficiencyAssociated->FindBin(ptHadron)));
@@ -442,14 +442,15 @@ struct HfTaskCorrelationDplusHadrons {
       float bdtScorePromptOrNonPrompt = isPromptAnalysis ? bdtScorePrompt : bdtScoreNonPrompt;
 
       // reject entries outside pT ranges of interest
-      if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back())
+      if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back()) {
         continue;
+      }
 
       if (bdtScorePromptOrNonPrompt < mlScorePromptOrNonPromptMin->at(effBinD) || bdtScorePromptOrNonPrompt > mlScorePromptOrNonPromptMax->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
         continue;
       }
       double efficiencyWeightD = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         if (isDplusPrompt) {
           efficiencyWeightD = 1. / efficiencyD->at(effBinD);
           if (loadAccXEffFromCCDB) {
@@ -496,8 +497,9 @@ struct HfTaskCorrelationDplusHadrons {
       float bdtScorePromptOrNonPrompt = isPromptAnalysis ? bdtScorePrompt : bdtScoreNonPrompt;
 
       // reject entries outside pT ranges of interest
-      if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back())
+      if (ptD < binsPtEfficiencyD->front() || ptD > binsPtEfficiencyD->back()) {
         continue;
+      }
 
       if (bdtScorePromptOrNonPrompt < mlScorePromptOrNonPromptMin->at(effBinD) || bdtScorePromptOrNonPrompt > mlScorePromptOrNonPromptMax->at(effBinD) || bdtScoreBkg > mlScoreBkg->at(effBinD)) {
         continue;
@@ -507,7 +509,7 @@ struct HfTaskCorrelationDplusHadrons {
       }
       double efficiencyWeight = 1.;
 
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         if (isDplusPrompt) {
           efficiencyWeight = 1. / (efficiencyD->at(effBinD) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
           if (loadAccXEffFromCCDB) {

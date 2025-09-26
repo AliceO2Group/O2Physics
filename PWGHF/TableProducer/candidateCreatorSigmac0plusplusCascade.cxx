@@ -179,24 +179,33 @@ struct HfCandidateCreatorSigmac0plusplusCascade {
   template <typename TrackType>
   bool isTrackSelected(const TrackType& track)
   {
-    if (track.pt() < trkMinPt)
+    if (track.pt() < trkMinPt) {
       return false;
-    if (std::abs(track.eta()) > trkMaxEta)
+    }
+    if (std::abs(track.eta()) > trkMaxEta) {
       return false;
-    if (std::abs(track.dcaXY()) > maxDCAxyToPVcut)
+    }
+    if (std::abs(track.dcaXY()) > maxDCAxyToPVcut) {
       return false;
-    if (std::abs(track.dcaZ()) > maxDCAzToPVcut)
+    }
+    if (std::abs(track.dcaZ()) > maxDCAzToPVcut) {
       return false;
-    if (track.tpcNClsFound() < nTpcNClsFound)
+    }
+    if (track.tpcNClsFound() < nTpcNClsFound) {
       return false;
-    if (track.tpcNClsCrossedRows() < nTPCCrossedRows)
+    }
+    if (track.tpcNClsCrossedRows() < nTPCCrossedRows) {
       return false;
-    if (track.tpcChi2NCl() > nTPCChi2)
+    }
+    if (track.tpcChi2NCl() > nTPCChi2) {
       return false;
-    if (track.itsChi2NCl() > nITSChi2)
+    }
+    if (track.itsChi2NCl() > nITSChi2) {
       return false;
-    if (track.tpcNSigmaPi() > tpcnSigmaPi)
+    }
+    if (track.tpcNSigmaPi() > tpcnSigmaPi) {
       return false;
+    }
 
     return true;
   }

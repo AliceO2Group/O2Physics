@@ -695,7 +695,7 @@ struct HfTaskFlow {
     return RecoDecay::phi(chPos.X() + (*offsetFT0)[i].getX(), chPos.Y() + (*offsetFT0)[i].getY());
   }
 
-  double getPhiFV0(unsigned int chno)
+  double getPhiFV0(unsigned int chno) const
   {
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
@@ -731,7 +731,7 @@ struct HfTaskFlow {
     return -std::log(std::tan(0.5 * theta));
   }
 
-  double getEtaFV0(unsigned int chno)
+  double getEtaFV0(unsigned int chno) const
   {
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
     bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
@@ -773,7 +773,7 @@ struct HfTaskFlow {
       registry.fill(HIST("Data/hEventCounter"), EventSelectionStep::AllEvents);
     }
 
-    if (configTask.processMc == false) {
+    if (!configTask.processMc) {
       if (!collision.sel8()) {
         return false;
       }
@@ -1018,7 +1018,7 @@ struct HfTaskFlow {
 
       // FILL QA PLOTS for trigger particle
       if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
-        if (configTask.processMc == false) {                                // If DATA
+        if (!configTask.processMc) {                                        // If DATA
           if constexpr (!std::is_same_v<FilteredMftTracks, TTracksAssoc>) { // IF TPC-TPC case
             if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-TPC D0-h
               fillTriggerQa<Data, TpcTpc, D0ChPart>(multiplicity, eta1, phi1, pt1);
@@ -1185,7 +1185,7 @@ struct HfTaskFlow {
       }
 
       // FILL QA PLOTS for trigger particle
-      if (sameEvent && (cutAmbiguousTracks == false)) {
+      if (sameEvent && (!cutAmbiguousTracks)) {
         if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) {
           fillTriggerQa<Data, TpcMft, D0ChPart>(multiplicity, eta1, phi1, pt1);
         } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) {
@@ -1265,7 +1265,7 @@ struct HfTaskFlow {
         }
 
         // FILL QA PLOTS for associated particle
-        if (sameEvent && (loopCounter == 1) && (cutAmbiguousTracks == false)) {
+        if (sameEvent && (loopCounter == 1) && (!cutAmbiguousTracks)) {
           if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) {
             fillAssociatedQa<Data, TpcMft, D0ChPart>(multiplicity, eta2, phi2);
           } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) {
@@ -1332,7 +1332,7 @@ struct HfTaskFlow {
 
       // FILL QA PLOTS for trigger particle
       if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
-        if (configTask.processMc == false) {                                // If DATA
+        if (!configTask.processMc) {                                        // If DATA
           if constexpr (!std::is_same_v<FilteredMftTracks, TTracksTrig>) {  // If not FilteredMftTracks as trigger -> TPC-FV0a correlations
             if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-FV0a D0-h
               if constexpr (std::is_same_v<aod::FV0As, TFits>) {            // IF NEITHER D0 NOR LC ->
@@ -1744,8 +1744,9 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (configTask.doReferenceFlow)
+    if (configTask.doReferenceFlow) {
       fillEventSelectionPlots = false;
+    }
 
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
       return;
@@ -1769,8 +1770,9 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (configTask.doReferenceFlow)
+    if (configTask.doReferenceFlow) {
       fillEventSelectionPlots = false;
+    }
 
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
       return;
@@ -1885,8 +1887,9 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (configTask.doReferenceFlow)
+    if (configTask.doReferenceFlow) {
       fillEventSelectionPlots = false;
+    }
 
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
       return;
@@ -1928,8 +1931,9 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (configTask.doReferenceFlow)
+    if (configTask.doReferenceFlow) {
       fillEventSelectionPlots = false;
+    }
 
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
       return;

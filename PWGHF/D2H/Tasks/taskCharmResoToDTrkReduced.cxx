@@ -347,7 +347,8 @@ struct HfTaskCharmResoToDTrkReduced {
       }
       if (doWrongSign && cand.isWrongSign() == 0) {
         continue;
-      } else if (!doWrongSign && cand.isWrongSign() != 0) {
+      }
+      if (!doWrongSign && cand.isWrongSign() != 0) {
         continue;
       }
 

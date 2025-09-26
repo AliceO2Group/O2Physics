@@ -161,7 +161,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
       // final selection flag: 0 - rejected, 1 - accepted
       auto statusXiccToPKPiPi = 0;
 
-      if (!(hfCandXicc.hfflag() & 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi)) {
+      if ((hfCandXicc.hfflag() & 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi) == 0) {
         hfSelXiccToPKPiPiCandidate(statusXiccToPKPiPi);
         continue;
       }

@@ -644,16 +644,18 @@ struct HfCorrelatorLcScHadrons {
         continue;
       }
 
-      if (pidTrkApplied && (std::abs(track.pdgCode()) != kProton))
+      if (pidTrkApplied && (std::abs(track.pdgCode()) != kProton)) {
         continue; // proton PID
+      }
 
       if (!track.isPhysicalPrimary()) {
         continue;
       }
 
       auto motherTrkGen = mcParticles.iteratorAt(track.mothersIds()[0]);
-      if (std::abs(motherTrkGen.pdgCode()) == kLambdaCPlus)
+      if (std::abs(motherTrkGen.pdgCode()) == kLambdaCPlus) {
         continue;
+      }
 
       auto chargeTrack = pdg->GetParticle(track.pdgCode())->Charge(); // Retrieve charge
       registry.fill(HIST("hPtTracksVsSignGen"), track.pt(), chargeTrack / (std::abs(chargeTrack)));
@@ -924,8 +926,9 @@ struct HfCorrelatorLcScHadrons {
           continue;
         }
         if (pidTrkApplied) {
-          if (!passPIDSelection(track, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF))
+          if (!passPIDSelection(track, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)) {
             continue;
+          }
         }
         if (correlateLcWithLeadingParticle) {
           if (track.globalIndex() != leadingIndex) {
@@ -935,16 +938,19 @@ struct HfCorrelatorLcScHadrons {
         if constexpr (isMcRec) {
           if (calTrkEff && countCand == 1 && (isSignal || !calEffEventWithCand) && track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
-            if (!mcParticle.isPhysicalPrimary() && isRecTrkPhyPrimary)
+            if (!mcParticle.isPhysicalPrimary() && isRecTrkPhyPrimary) {
               continue;
+            }
 
             auto motherTrk = mcParticles->iteratorAt(mcParticle.mothersIds()[0]);
-            if (std::abs(motherTrk.pdgCode()) == kLambdaCPlus)
+            if (std::abs(motherTrk.pdgCode()) == kLambdaCPlus) {
               continue;
+            }
 
             registry.fill(HIST("hPtTracksVsSignRec"), track.pt(), track.sign());
-            if (std::abs(mcParticle.pdgCode()) == kProton)
+            if (std::abs(mcParticle.pdgCode()) == kProton) {
               registry.fill(HIST("hPtTracksVsSignRecTrue"), track.pt(), track.sign());
+            }
           }
         }
 
@@ -1063,8 +1069,9 @@ struct HfCorrelatorLcScHadrons {
         }
 
         if (pidTrkApplied) {
-          if (!passPIDSelection(assocParticle, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF))
+          if (!passPIDSelection(assocParticle, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)) {
             continue;
+          }
         }
 
         if (selLcPKPi) {
@@ -1195,8 +1202,9 @@ struct HfCorrelatorLcScHadrons {
           continue;
         }
 
-        if (pidTrkApplied && (std::abs(particleAssoc.pdgCode()) != kProton))
+        if (pidTrkApplied && (std::abs(particleAssoc.pdgCode()) != kProton)) {
           continue; // proton PID
+        }
 
         if (!particleAssoc.isPhysicalPrimary()) {
           continue;

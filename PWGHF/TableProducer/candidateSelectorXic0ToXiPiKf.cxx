@@ -137,7 +137,7 @@ struct HfCandidateSelectorXic0ToXiPiKf {
   Configurable<bool> loadModelsFromCCDB{"loadModelsFromCCDB", false, "Flag to enable or disable the loading of models from CCDB"};
 
   o2::analysis::HfMlResponseXic0ToXiPiKf<float> hfMlResponse;
-  std::vector<float> outputMlXic0ToXiPiKf = {};
+  std::vector<float> outputMlXic0ToXiPiKf;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPr selectorProton;

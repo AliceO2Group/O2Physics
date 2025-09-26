@@ -94,8 +94,8 @@ struct HfCandidateSelectorDplusToPiKPi {
   Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
 
   HfMlResponseDplusToPiKPi<float> hfMlResponse;
-  std::vector<float> outputMlNotPreselected = {};
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMlNotPreselected;
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;

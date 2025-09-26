@@ -618,7 +618,7 @@ struct HfCandidateCreator3Prong {
       registry.fill(HIST("hCovSVXZ"), kfCandPKPi.Covariance(2, 0));
       registry.fill(HIST("hCovSVZZ"), kfCandPKPi.Covariance(2, 2));
 
-      auto covMatrixSV = kfCandPKPi.CovarianceMatrix();
+      auto* covMatrixSV = kfCandPKPi.CovarianceMatrix();
       double phi, theta;
       getPointDirection(std::array{kfpV.GetX(), kfpV.GetY(), kfpV.GetZ()}, std::array{kfCandPKPi.GetX(), kfCandPKPi.GetY(), kfCandPKPi.GetZ()}, phi, theta);
       auto errorDecayLength = std::sqrt(getRotatedCovMatrixXX(covMatrixPV, phi, theta) + getRotatedCovMatrixXX(covMatrixSV, phi, theta));
@@ -1004,7 +1004,7 @@ struct HfCandidateCreator3ProngExpressions {
     // inspect for which particle species the candidates were created and which zPvPosMax cut was set for reconstructed
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-3prong") == 0) {
+      if (device.name == "hf-candidate-creator-3prong") {
         // init HF event selection helper
         hfEvSelMc.init(device, registry);
         break;

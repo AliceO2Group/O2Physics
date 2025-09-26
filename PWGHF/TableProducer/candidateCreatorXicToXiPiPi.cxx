@@ -660,7 +660,7 @@ struct HfCandidateCreatorXicToXiPiPi {
         registry.fill(HIST("hCovPVXZ"), covMatrixPV[3]);
         registry.fill(HIST("hCovPVZZ"), covMatrixPV[5]);
         // covariance matrix elements of SV
-        auto covMatrixXicPlus = kfXicPlus.CovarianceMatrix();
+        auto* covMatrixXicPlus = kfXicPlus.CovarianceMatrix();
         registry.fill(HIST("hCovSVXX"), covMatrixXicPlus[0]);
         registry.fill(HIST("hCovSVYY"), covMatrixXicPlus[2]);
         registry.fill(HIST("hCovSVXZ"), covMatrixXicPlus[3]);
@@ -891,7 +891,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
     // initialize HF event selection helper
     const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-xic-to-xi-pi-pi") == 0) {
+      if (device.name == "hf-candidate-creator-xic-to-xi-pi-pi") {
         hfEvSelMc.init(device, registry);
         break;
       }

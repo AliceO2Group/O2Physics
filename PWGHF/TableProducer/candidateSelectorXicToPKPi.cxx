@@ -90,8 +90,8 @@ struct HfCandidateSelectorXicToPKPi {
   Configurable<bool> activateQA{"activateQA", true, "Flag to enable QA histogram"};
 
   o2::analysis::HfMlResponseXicToPKPi<float> hfMlResponse;
-  std::vector<float> outputMlXicToPKPi = {};
-  std::vector<float> outputMlXicToPiKP = {};
+  std::vector<float> outputMlXicToPKPi;
+  std::vector<float> outputMlXicToPiKP;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
@@ -376,11 +376,11 @@ struct HfCandidateSelectorXicToPKPi {
         bool isSelectedMlXicToPKPi = false;
         bool isSelectedMlXicToPiKP = false;
 
-        if (topolXicToPKPi && pidXicToPKPi) {
+        if (topolXicToPKPi && (pidXicToPKPi != 0)) {
           std::vector<float> inputFeaturesXicToPKPi = hfMlResponse.getInputFeatures(candidate, true);
           isSelectedMlXicToPKPi = hfMlResponse.isSelectedMl(inputFeaturesXicToPKPi, ptCand, outputMlXicToPKPi);
         }
-        if (topolXicToPiKP && pidXicToPiKP) {
+        if (topolXicToPiKP && (pidXicToPiKP != 0)) {
           std::vector<float> inputFeaturesXicToPiKP = hfMlResponse.getInputFeatures(candidate, false);
           isSelectedMlXicToPiKP = hfMlResponse.isSelectedMl(inputFeaturesXicToPiKP, ptCand, outputMlXicToPiKP);
         }

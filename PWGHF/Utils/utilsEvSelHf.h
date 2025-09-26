@@ -248,7 +248,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     }
 
     // we initialise the summary object
-    if (softwareTrigger.value != "") {
+    if (!softwareTrigger.value.empty()) {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
 
@@ -344,7 +344,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       SETBIT(rejectionMask, EventRejection::PositionZ);
     }
 
-    if (softwareTrigger.value != "") {
+    if (!softwareTrigger.value.empty()) {
       // we might have to update it from CCDB
       const auto bc = collision.template bc_as<TBcs>();
       const auto runNumber = bc.runNumber();
@@ -435,7 +435,7 @@ struct HfEventSelectionMc {
   float centralityMin{-10.f};                 // Minimum centrality
   float centralityMax{100.f};                 // Maximum centrality
   bool requireGoodRct{false};                 // Apply RCT selection
-  std::string rctLabel{""};                   // RCT selection flag
+  std::string rctLabel;                       // RCT selection flag
   bool rctCheckZDC{false};                    // require ZDC from RCT
   bool rctTreatLimitedAcceptanceAsBad{false}; // RCT flag to reject events with limited acceptance for selected detectors
 
@@ -471,29 +471,29 @@ struct HfEventSelectionMc {
   void configureFromDevice(o2::framework::DeviceSpec const& device)
   {
     for (const auto& option : device.options) {
-      if (option.name.compare("hfEvSel.useSel8Trigger") == 0) {
+      if (option.name == "hfEvSel.useSel8Trigger") {
         useSel8Trigger = option.defaultValue.get<bool>();
-      } else if (option.name.compare("hfEvSel.useTvxTrigger") == 0) {
+      } else if (option.name == "hfEvSel.useTvxTrigger") {
         useTvxTrigger = option.defaultValue.get<bool>();
-      } else if (option.name.compare("hfEvSel.useTimeFrameBorderCut") == 0) {
+      } else if (option.name == "hfEvSel.useTimeFrameBorderCut") {
         useTimeFrameBorderCut = option.defaultValue.get<bool>();
-      } else if (option.name.compare("hfEvSel.useItsRofBorderCut") == 0) {
+      } else if (option.name == "hfEvSel.useItsRofBorderCut") {
         useItsRofBorderCut = option.defaultValue.get<bool>();
-      } else if (option.name.compare("hfEvSel.zPvPosMin") == 0) {
+      } else if (option.name == "hfEvSel.zPvPosMin") {
         zPvPosMin = option.defaultValue.get<float>();
-      } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
+      } else if (option.name == "hfEvSel.zPvPosMax") {
         zPvPosMax = option.defaultValue.get<float>();
-      } else if (option.name.compare("hfEvSel.centralityMin") == 0) {
+      } else if (option.name == "hfEvSel.centralityMin") {
         centralityMin = option.defaultValue.get<float>();
-      } else if (option.name.compare("hfEvSel.centralityMax") == 0) {
+      } else if (option.name == "hfEvSel.centralityMax") {
         centralityMax = option.defaultValue.get<float>();
-      } else if (option.name.compare("hfEvSel.requireGoodRct") == 0) {
+      } else if (option.name == "hfEvSel.requireGoodRct") {
         requireGoodRct = option.defaultValue.get<bool>();
-      } else if (option.name.compare("hfEvSel.rctLabel") == 0) {
+      } else if (option.name == "hfEvSel.rctLabel") {
         rctLabel = option.defaultValue.get<std::string>();
-      } else if (option.name.compare("hfEvSel.rctCheckZDC") == 0) {
+      } else if (option.name == "hfEvSel.rctCheckZDC") {
         rctCheckZDC = option.defaultValue.get<bool>();
-      } else if (option.name.compare("hfEvSel.rctTreatLimitedAcceptanceAsBad") == 0) {
+      } else if (option.name == "hfEvSel.rctTreatLimitedAcceptanceAsBad") {
         rctTreatLimitedAcceptanceAsBad = option.defaultValue.get<bool>();
       }
     }

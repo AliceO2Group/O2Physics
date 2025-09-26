@@ -109,8 +109,8 @@ struct HfCandidateCreatorLbReduced {
   }
 
   template <typename Config>
-  inline std::pair<float, float> computeInvMass2LcPiWindow(Config const& configs,
-                                                           float invMassWindowLcPiTolerance)
+  std::pair<float, float> computeInvMass2LcPiWindow(Config const& configs,
+                                                    float invMassWindowLcPiTolerance)
   {
 
     myInvMassWindowLcPi = 0.0f;

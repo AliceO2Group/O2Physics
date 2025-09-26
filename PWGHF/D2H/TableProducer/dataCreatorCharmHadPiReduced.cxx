@@ -349,8 +349,8 @@ struct HfDataCreatorCharmHadPiReduced {
       registry.get<TH1>(HIST("hEvents"))->GetXaxis()->SetBinLabel(iBin + 1, labels[iBin].data());
     }
 
-    std::string charmHadTitle = "";
-    std::string histMassTitle = "";
+    std::string charmHadTitle;
+    std::string histMassTitle;
     if (doprocessDplusPiData || doprocessDplusPiDataWithMl || doprocessDplusPiDataWithQvec || doprocessDplusPiDataWithMlAndQvec || doprocessDplusPiMc || doprocessDplusPiMcWithMl) {
       charmHadTitle = "D^{#plus}";
       histMassTitle = "Dplus";
@@ -402,7 +402,7 @@ struct HfDataCreatorCharmHadPiReduced {
         doprocessDstarPiMc || doprocessDstarPiMcWithMl) {
       const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
       for (const DeviceSpec& device : workflows.devices) {
-        if (device.name.compare("hf-data-creator-charm-had-pi-reduced") == 0) {
+        if (device.name == "hf-data-creator-charm-had-pi-reduced") {
           // init HF event selection helper
           hfEvSelMc.init(device, registry);
           break;

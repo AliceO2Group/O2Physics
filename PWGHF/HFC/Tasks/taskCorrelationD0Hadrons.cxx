@@ -356,7 +356,7 @@ struct HfTaskCorrelationD0Hadrons {
         continue;
       }
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / (efficiencyDmeson->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
       }
       // reject entries outside pT ranges of interest
@@ -514,7 +514,7 @@ struct HfTaskCorrelationD0Hadrons {
         continue;
       }
       double efficiencyWeight = 1.;
-      if (applyEfficiency) {
+      if (applyEfficiency != 0) {
         efficiencyWeight = 1. / (efficiencyDmeson->at(o2::analysis::findBin(binsPtEfficiencyD, ptD)) * efficiencyHad->at(o2::analysis::findBin(binsPtEfficiencyHad, ptHadron)));
       }
       if (isTowardTransverseAway) {
@@ -538,7 +538,7 @@ struct HfTaskCorrelationD0Hadrons {
         }
       }
       // fill correlation plots for signal/bagkground correlations
-      if (pairEntry.signalStatus()) {
+      if (pairEntry.signalStatus() != 0) {
         registry.fill(HIST("hCorrel2DVsPtRecSig"), deltaPhi, deltaEta, ptD, ptHadron, efficiencyWeight);
 
       } else {

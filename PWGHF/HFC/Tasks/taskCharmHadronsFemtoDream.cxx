@@ -287,10 +287,9 @@ struct HfTaskCharmHadronsFemtoDream {
       if (cand.candidateSelFlag() == 1) {
         invMass = cand.m(std::array{o2::constants::physics::MassProton, o2::constants::physics::MassKPlus, o2::constants::physics::MassPiPlus});
         return invMass;
-      } else {
-        invMass = cand.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
-        return invMass;
       }
+      invMass = cand.m(std::array{o2::constants::physics::MassPiPlus, o2::constants::physics::MassKPlus, o2::constants::physics::MassProton});
+      return invMass;
     }
     // D+ → π K π (PDG: 411)
     if (charmHadPDGCode == o2::constants::physics::Pdg::kDPlus) {
@@ -352,8 +351,9 @@ struct HfTaskCharmHadronsFemtoDream {
     processType = 1; // for same event
     for (auto const& [p1, p2] : combinations(CombinationsFullIndexPolicy(sliceTrk1, sliceCharmHad))) {
 
-      if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id())
+      if (p1.trackId() == p2.prong0Id() || p1.trackId() == p2.prong1Id() || p1.trackId() == p2.prong2Id()) {
         continue;
+      }
 
       if (useCPR.value) {
         if (pairCloseRejectionSE.isClosePair(p1, p2, parts, col.magField())) {
@@ -579,7 +579,7 @@ struct HfTaskCharmHadronsFemtoDream {
         part.bdtFD());
     }
 
-    if (sliceCharmHad.size() || sliceTrk1.size()) {
+    if ((sliceCharmHad.size() != 0) || (sliceTrk1.size() != 0)) {
 
       rowFemtoResultColl(
         col.globalIndex(),

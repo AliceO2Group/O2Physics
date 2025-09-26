@@ -97,7 +97,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
 
   o2::analysis::HfMlResponseB0ToDPi<float, true> hfMlResponse;
   float outputMlNotPreselected = -1.;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;

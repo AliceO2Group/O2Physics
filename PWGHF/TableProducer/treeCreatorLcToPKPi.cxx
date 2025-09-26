@@ -440,19 +440,21 @@ struct HfTreeCreatorLcToPKPi {
     if (std::abs(flag) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
       if (swapped == 0) {
         if (candFlag == 0) {
-          if (origin == RecoDecay::OriginType::Prompt)
+          if (origin == RecoDecay::OriginType::Prompt) {
             status = Prompt;
-          else if (origin == RecoDecay::OriginType::NonPrompt)
+          } else if (origin == RecoDecay::OriginType::NonPrompt) {
             status = NonPrompt;
+          }
         } else {
           status = WrongOrder;
         }
       } else {
         if (candFlag == 1) {
-          if (origin == RecoDecay::OriginType::Prompt)
+          if (origin == RecoDecay::OriginType::Prompt) {
             status = Prompt;
-          else if (origin == RecoDecay::OriginType::NonPrompt)
+          } else if (origin == RecoDecay::OriginType::NonPrompt) {
             status = NonPrompt;
+          }
         } else {
           status = WrongOrder;
         }
@@ -471,7 +473,7 @@ struct HfTreeCreatorLcToPKPi {
     if (std::accumulate(processes.begin(), processes.end(), 0) != 1) {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
-    if (std::accumulate(processes.begin(), processes.begin() + 4, 0) && fillCandidateMcTable) {
+    if ((std::accumulate(processes.begin(), processes.begin() + 4, 0) != 0) && fillCandidateMcTable) {
       LOGP(fatal, "fillCandidateMcTable can be activated only in case of MC processing.");
     }
   }
@@ -592,7 +594,7 @@ struct HfTreeCreatorLcToPKPi {
     constexpr int IndexFirstClass{0};
     constexpr int IndexSecondClass{1};
     constexpr int IndexThirdClass{2};
-    if (mlScores.size() == 0) {
+    if (mlScores.empty()) {
       return; // when candidateSelectorLc rejects a candidate by "usual", non-ML cut, the ml score vector remains empty
     }
     mlScoreFirstClass = mlScores.at(IndexFirstClass);

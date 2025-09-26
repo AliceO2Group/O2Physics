@@ -266,7 +266,7 @@ struct HfTreeCreatorLcToK0sP {
     constexpr int IndexFirstClass{0};
     constexpr int IndexSecondClass{1};
     constexpr int IndexThirdClass{2};
-    if (mlScores.size() == 0) {
+    if (mlScores.empty()) {
       return; // when candidateSelectorLcK0sP rejects a candidate by "usual", non-ML cut, the ml score vector remains empty
     }
     mlScoreFirstClass = mlScores.at(IndexFirstClass);

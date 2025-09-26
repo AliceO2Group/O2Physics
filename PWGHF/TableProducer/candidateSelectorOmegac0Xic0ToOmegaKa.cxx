@@ -275,17 +275,15 @@ struct HfCandidateSelectorToOmegaKa {
     if (candpT <= ptCandMin || candpT >= ptCandMax) {
       registry.fill(HIST("hSelPtOmegaKa"), 0);
       return false;
-    } else {
-      registry.fill(HIST("hSelPtOmegaKa"), 1);
     }
+    registry.fill(HIST("hSelPtOmegaKa"), 1);
 
     // check that the candidate pT is within the analysis range
     if (KaPtFromOmegaKa < cuts->get(pTBin, "pT ka from OmegaKa")) {
       registry.fill(HIST("hSelPtKaFromCharm"), 0);
       return false;
-    } else {
-      registry.fill(HIST("hSelPtKaFromCharm"), 1);
     }
+    registry.fill(HIST("hSelPtKaFromCharm"), 1);
 
     return true;
   } // end template

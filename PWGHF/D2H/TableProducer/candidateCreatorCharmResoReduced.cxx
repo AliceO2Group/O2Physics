@@ -184,11 +184,10 @@ struct HfCandidateCreatorCharmResoReduced {
   {
     if (!cfgDmesCuts.keepSideBands) {
       return (invMass >= cfgDmesCuts.cutsD->get(ptBin, "invMassSignalLow") && invMass <= cfgDmesCuts.cutsD->get(ptBin, "invMassSignalHigh"));
-    } else {
-      return ((invMass >= cfgDmesCuts.cutsD->get(ptBin, "invMassLeftSBLow") && invMass <= cfgDmesCuts.cutsD->get(ptBin, "invMassLeftSBHigh")) ||
-              (invMass >= cfgDmesCuts.cutsD->get(ptBin, "invMassRightSBLow") && invMass <= cfgDmesCuts.cutsD->get(ptBin, "invMassRightSBHigh")) ||
-              (invMass >= cfgDmesCuts.cutsD->get(ptBin, "invMassSignalLow") && invMass <= cfgDmesCuts.cutsD->get(ptBin, "invMassSignalHigh")));
     }
+    return ((invMass >= cfgDmesCuts.cutsD->get(ptBin, "invMassLeftSBLow") && invMass <= cfgDmesCuts.cutsD->get(ptBin, "invMassLeftSBHigh")) ||
+            (invMass >= cfgDmesCuts.cutsD->get(ptBin, "invMassRightSBLow") && invMass <= cfgDmesCuts.cutsD->get(ptBin, "invMassRightSBHigh")) ||
+            (invMass >= cfgDmesCuts.cutsD->get(ptBin, "invMassSignalLow") && invMass <= cfgDmesCuts.cutsD->get(ptBin, "invMassSignalHigh")));
   }
 
   /// Basic selection of D candidates

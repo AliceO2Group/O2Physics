@@ -86,8 +86,9 @@ struct HfTaskMuonCharmBeautySeparation {
       }
     }
     registry.fill(HIST("hForwardMultiplicity"), nFwdTracks);
-    if (nFwdTracks > 0)
+    if (nFwdTracks > 0) {
       registry.fill(HIST("hZvtx_WithMuons"), zvtx);
+    }
   }
 };
 

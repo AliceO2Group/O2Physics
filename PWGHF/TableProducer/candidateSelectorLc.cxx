@@ -110,8 +110,8 @@ struct HfCandidateSelectorLc {
   HfHelper hfHelper;
   o2::analysis::HfMlResponseLcToPKPi<float, aod::hf_cand::VertexerType::DCAFitter> hfMlResponseDCA;
   o2::analysis::HfMlResponseLcToPKPi<float, aod::hf_cand::VertexerType::KfParticle> hfMlResponseKF;
-  std::vector<float> outputMlLcToPKPi = {};
-  std::vector<float> outputMlLcToPiKP = {};
+  std::vector<float> outputMlLcToPKPi;
+  std::vector<float> outputMlLcToPiKP;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
@@ -429,12 +429,9 @@ struct HfCandidateSelectorLc {
   /// \return true if prongs pass all selections
   bool isSelectedPID(const TrackSelectorPID::Status pidTrackProton, const TrackSelectorPID::Status pidTrackKaon, const TrackSelectorPID::Status pidTrackPion)
   {
-    if (pidTrackProton == TrackSelectorPID::Rejected ||
-        pidTrackKaon == TrackSelectorPID::Rejected ||
-        pidTrackPion == TrackSelectorPID::Rejected) {
-      return false;
-    }
-    return true;
+    return pidTrackProton != TrackSelectorPID::Rejected &&
+           pidTrackKaon != TrackSelectorPID::Rejected &&
+           pidTrackPion != TrackSelectorPID::Rejected;
   }
 
   /// \brief function to apply Lc selections

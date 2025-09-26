@@ -90,7 +90,7 @@ struct HfCandidateSelectorBsToDsPi {
   bool selectionFlagDsAndUsePidInSync = true;
 
   o2::analysis::HfMlResponse<float> hfMlResponse;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
 
   o2::ccdb::CcdbApi ccdbApi;
 
@@ -138,11 +138,11 @@ struct HfCandidateSelectorBsToDsPi {
     }
 
     int selectionFlagDs = -1;
-    auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
+    const auto& workflows = initContext.services().get<RunningWorkflowInfo const>();
     for (const DeviceSpec& device : workflows.devices) {
-      if (device.name.compare("hf-candidate-creator-bs") == 0) {
+      if (device.name == "hf-candidate-creator-bs") {
         for (const auto& option : device.options) {
-          if (option.name.compare("selectionFlagDs") == 0) {
+          if (option.name == "selectionFlagDs") {
             selectionFlagDs = option.defaultValue.get<int>();
             LOGF(info, "selectionFlagDs = %d", selectionFlagDs);
           }

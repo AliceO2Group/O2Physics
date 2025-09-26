@@ -392,8 +392,9 @@ struct HfTreeCreatorTccToD0D0Pi {
       o2::dataformats::V0 trackD2;
       auto thisCollId = collision.globalIndex();
       auto candwD0ThisColl = candidates.sliceBy(candsD0PerCollisionWithMl, thisCollId);
-      if (candwD0ThisColl.size() <= 1)
+      if (candwD0ThisColl.size() <= 1) {
         continue; // only loop the collision that include at least 2 D candidates
+      }
       auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
       for (const auto& candidateD1 : candwD0ThisColl) {

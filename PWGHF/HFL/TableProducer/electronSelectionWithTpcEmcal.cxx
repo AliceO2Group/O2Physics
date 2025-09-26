@@ -376,8 +376,9 @@ struct HfElectronSelectionWithTpcEmcal {
   template <bool isMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
   void fillElectronTrack(CollisionType const& collision, TracksType const& tracks, EmcClusterType const& emcClusters, MatchType const& matchedTracks, ParticleType const& /*particlemc*/)
   {
-    if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
+    if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) {
       return;
+    }
 
     registry.fill(HIST("hNevents"), 1);
 
@@ -421,10 +422,12 @@ struct HfElectronSelectionWithTpcEmcal {
       if (!selTracks(track)) {
         continue;
       }
-      if ((phiTrack > phiTrackEMCalMin && phiTrack < phiTrackEMCalMax) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax))
+      if ((phiTrack > phiTrackEMCalMin && phiTrack < phiTrackEMCalMax) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax)) {
         passEMCal = EMCalAcceptance; // EMcal acceptance passed
-      if ((phiTrack > phiTrackDCalMin && phiTrack < phiTrackDCalMax) && ((etaTrack > etaTrackDCalPositiveMin && etaTrack < etaTrackDCalPositiveMax) || (etaTrack > etaTrackDCalNegativeMin && etaTrack < etaTrackDCalNegativeMax)))
+      }
+      if ((phiTrack > phiTrackDCalMin && phiTrack < phiTrackDCalMax) && ((etaTrack > etaTrackDCalPositiveMin && etaTrack < etaTrackDCalPositiveMax) || (etaTrack > etaTrackDCalNegativeMin && etaTrack < etaTrackDCalNegativeMax))) {
         passEMCal = DCalAcceptance; // Dcal acceptance passed
+      }
 
       if (fillTrackInfo) {
         registry.fill(HIST("hTrackEtaPhi"), etaTrack, phiTrack, passEMCal);                 // track etaphi infor after filter bit
