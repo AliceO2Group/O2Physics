@@ -273,101 +273,123 @@ struct lambdaspincorrderived {
     auto proton1LambdaRF = boostLambda1ToCM(proton1pairCM);
     auto proton2LambdaRF = boostLambda2ToCM(proton2pairCM);
 
-    TVector3 zhat(lambda1CM.Px(), lambda1CM.Py(), lambda1CM.Pz());
-    if (zhat.Mag2() == 0)
-      zhat = TVector3(0, 0, 1);
-    zhat = zhat.Unit();
+    // =================== Opening-angle correlator: cos(Δθ) for helicity-z and beam-z ===================
 
-    // pick a reference not collinear with ẑ (beam z works)
-    TVector3 ref(0., 0., 1.);
-    if (std::abs(zhat.Dot(ref)) > 0.999)
-      ref = TVector3(1., 0., 0.);
+    // Proton unit directions in Λ rest frames
+    TVector3 k1(proton1LambdaRF.Px(), proton1LambdaRF.Py(), proton1LambdaRF.Pz());
+    k1 = k1.Unit();
+    TVector3 k2(proton2LambdaRF.Px(), proton2LambdaRF.Py(), proton2LambdaRF.Pz());
+    k2 = k2.Unit();
 
-    // build transverse axes
-    TVector3 xhat = (ref - (ref.Dot(zhat)) * zhat).Unit();
-    TVector3 yhat = (zhat.Cross(xhat)).Unit();
+    // Helper: boost a spacelike axis (t=0) from PRF into a Λ rest frame
+    auto transport = [](const TVector3& v, const ROOT::Math::Boost& B) -> TVector3 {
+      ROOT::Math::PxPyPzEVector a(v.X(), v.Y(), v.Z(), 0.0);
+      auto ar = B(a);
+      TVector3 out(ar.Px(), ar.Py(), ar.Pz());
+      return (out.Mag2() > 0) ? out.Unit() : out;
+    };
 
-    // proton unit vectors in their Λ rest frames
-    TVector3 n1(proton1LambdaRF.Px(), proton1LambdaRF.Py(), proton1LambdaRF.Pz());
-    n1 = n1.Unit();
-    TVector3 n2(proton2LambdaRF.Px(), proton2LambdaRF.Py(), proton2LambdaRF.Pz());
-    n2 = n2.Unit();
+    // ----------------------------- (1) Helicity-z construction -----------------------------
+    // z along Λ1 in PRF
+    TVector3 zPRF(lambda1CM.Px(), lambda1CM.Py(), lambda1CM.Pz());
+    if (zPRF.Mag2() == 0)
+      zPRF = TVector3(0, 0, 1);
+    zPRF = zPRF.Unit();
 
-    // cosθ* (Λ2 measured along −ẑ)
-    double c1 = n1.Dot(zhat);
-    double c2 = -n2.Dot(zhat);
+    // transverse axes in PRF
+    TVector3 ref(0, 0, 1);
+    if (std::abs(zPRF.Dot(ref)) > 0.999)
+      ref = TVector3(1, 0, 0);
+    TVector3 xPRF = (ref - (ref.Dot(zPRF)) * zPRF).Unit();
+    TVector3 yPRF = (zPRF.Cross(xPRF)).Unit();
 
-    // sinθ*
-    double s1 = std::sqrt(std::max(0.0, 1.0 - c1 * c1));
-    double s2 = std::sqrt(std::max(0.0, 1.0 - c2 * c2));
+    // carry PRF triad to Λ rest frames (flip triad for Λ2 to keep same PRF-handedness)
+    TVector3 z1_h = transport(zPRF, boostLambda1ToCM);
+    TVector3 x1_h = transport(xPRF, boostLambda1ToCM);
+    TVector3 y1_h = transport(yPRF, boostLambda1ToCM);
 
-    // φ1*, φ2* in common convention (flip axes for Λ2)
-    double phi1 = std::atan2(n1.Dot(yhat), n1.Dot(xhat));
-    double phi2 = std::atan2(n2.Dot(-yhat), n2.Dot(-xhat));
+    TVector3 z2_h = transport(-zPRF, boostLambda2ToCM);
+    TVector3 x2_h = transport(-xPRF, boostLambda2ToCM);
+    TVector3 y2_h = transport(-yPRF, boostLambda2ToCM);
 
-    // helicity spin-correlation
-    double cosDelta = c1 * c2 + s1 * s2 * std::cos(phi1 - phi2);
-    // clamp for safety
-    if (cosDelta > 1.0)
-      cosDelta = 1.0;
-    if (cosDelta < -1.0)
-      cosDelta = -1.0;
+    // angles and cosΔθ (helicity)
+    double c1_h = k1.Dot(z1_h);
+    double s1_h = std::sqrt(std::max(0.0, 1.0 - c1_h * c1_h));
+    double phi1_h = std::atan2(k1.Dot(y1_h), k1.Dot(x1_h));
 
-    //
-    // --- (B) Beam-based correlation (common z_B = beam; axes transported into each Λ rest frame) ---
-    //
-    TVector3 zB(0., 0., 1.); // beam axis in pair–CM coordinates
+    double c2_h = k2.Dot(z2_h);
+    double s2_h = std::sqrt(std::max(0.0, 1.0 - c2_h * c2_h));
+    double phi2_h = std::atan2(k2.Dot(y2_h), k2.Dot(x2_h));
 
-    // x_B: projection of Λ1 direction onto plane ⟂ z_B; y_B completes RH basis
+    double cosDeltaTheta_hel = c1_h * c2_h + s1_h * s2_h * std::cos(phi1_h - phi2_h);
+    if (cosDeltaTheta_hel > 1.0)
+      cosDeltaTheta_hel = 1.0;
+    if (cosDeltaTheta_hel < -1.0)
+      cosDeltaTheta_hel = -1.0;
+
+    // ------------------------------- (2) Beam-z construction -------------------------------
+    // z along beam in PRF; choose x by projecting Λ1 onto the ⟂ plane to fix azimuth zero
+    TVector3 zB(0, 0, 1);
     TVector3 L1dir(lambda1CM.Px(), lambda1CM.Py(), lambda1CM.Pz());
     L1dir = L1dir.Unit();
     TVector3 xB = L1dir - (L1dir.Dot(zB)) * zB;
     if (xB.Mag2() < 1e-12)
-      xB = TVector3(1., 0., 0.); // fallback if Λ1 ∥ beam
+      xB = TVector3(1, 0, 0);
     xB = xB.Unit();
     TVector3 yB = (zB.Cross(xB)).Unit();
 
-    // helper to transport an axis into a Λ rest frame (from pair–CM)
-    auto transport = [](const TVector3& v, const ROOT::Math::Boost& B) -> TVector3 {
-      ROOT::Math::PxPyPzEVector a(v.X(), v.Y(), v.Z(), 0.0); // spacelike 4-vector (t=0)
-      ROOT::Math::PxPyPzEVector ar = B(a);                   // boost into that Λ rest frame
-      TVector3 out(ar.Px(), ar.Py(), ar.Pz());
-      if (out.Mag2() == 0)
-        return out;
-      return out.Unit();
-    };
+    // carry beam triad to Λ rest frames (no flip for a common external axis)
+    TVector3 z1_b = transport(zB, boostLambda1ToCM);
+    TVector3 x1_b = transport(xB, boostLambda1ToCM);
+    TVector3 y1_b = transport(yB, boostLambda1ToCM);
 
-    // transport beam triad to each Λ rest frame
-    TVector3 zB1 = transport(zB, boostLambda1ToCM);
-    TVector3 xB1 = transport(xB, boostLambda1ToCM);
-    TVector3 yB1 = transport(yB, boostLambda1ToCM);
+    TVector3 z2_b = transport(zB, boostLambda2ToCM);
+    TVector3 x2_b = transport(xB, boostLambda2ToCM);
+    TVector3 y2_b = transport(yB, boostLambda2ToCM);
 
-    TVector3 zB2 = transport(zB, boostLambda2ToCM);
-    TVector3 xB2 = transport(xB, boostLambda2ToCM);
-    TVector3 yB2 = transport(yB, boostLambda2ToCM);
+    // angles and cosΔθ (beam)
+    double c1_b = k1.Dot(z1_b);
+    double s1_b = std::sqrt(std::max(0.0, 1.0 - c1_b * c1_b));
+    double phi1_b = std::atan2(k1.Dot(y1_b), k1.Dot(x1_b));
 
-    // angles w.r.t. beam triad (same z_B convention for both Λ’s; no flips)
-    double c1B = n1.Dot(zB1), c2B = n2.Dot(zB2);
-    double s1B = std::sqrt(std::max(0.0, 1.0 - c1B * c1B));
-    double s2B = std::sqrt(std::max(0.0, 1.0 - c2B * c2B));
-    double phi1B = std::atan2(n1.Dot(yB1), n1.Dot(xB1));
-    double phi2B = std::atan2(n2.Dot(yB2), n2.Dot(xB2));
+    double c2_b = k2.Dot(z2_b);
+    double s2_b = std::sqrt(std::max(0.0, 1.0 - c2_b * c2_b));
+    double phi2_b = std::atan2(k2.Dot(y2_b), k2.Dot(x2_b));
 
-    // beam correlation
-    double cosDeltaBeam = c1B * c2B + s1B * s2B * std::cos(phi1B - phi2B);
-    if (cosDeltaBeam > 1.0)
-      cosDeltaBeam = 1.0;
-    if (cosDeltaBeam < -1.0)
-      cosDeltaBeam = -1.0;
+    double cosDeltaTheta_beam = c1_b * c2_b + s1_b * s2_b * std::cos(phi1_b - phi2_b);
+    if (cosDeltaTheta_beam > 1.0)
+      cosDeltaTheta_beam = 1.0;
+    if (cosDeltaTheta_beam < -1.0)
+      cosDeltaTheta_beam = -1.0;
+
+    // --- STAR-style Δθ (as written: dot product of proton directions in their own Λ RFs) ---
+
+    // Boost each proton into its parent's rest frame
+    ROOT::Math::Boost boostL1_LabToRF{particle1Dummy.BoostToCM()}; // Λ1 velocity in lab
+    ROOT::Math::Boost boostL2_LabToRF{particle2Dummy.BoostToCM()}; // Λ2 velocity in lab
+
+    auto p1_LRF = boostL1_LabToRF(daughpart1);
+    auto p2_LRF = boostL2_LabToRF(daughpart2);
+
+    // Unit 3-vectors (in different rest frames!)
+    TVector3 u1 = TVector3(p1_LRF.Px(), p1_LRF.Py(), p1_LRF.Pz()).Unit();
+    TVector3 u2 = TVector3(p2_LRF.Px(), p2_LRF.Py(), p2_LRF.Pz()).Unit();
+
+    // STAR-style cosΔθ definition
+    double cosDeltaTheta_STAR_naive = u1.Dot(u2);
+    if (cosDeltaTheta_STAR_naive > 1.0)
+      cosDeltaTheta_STAR_naive = 1.0;
+    if (cosDeltaTheta_STAR_naive < -1.0)
+      cosDeltaTheta_STAR_naive = -1.0;
 
     auto cosThetaDiff = -999.0;
     auto costhetaz1costhetaz2 = -999.0;
     if (cosDef == 0) {
-      cosThetaDiff = proton1LambdaRF.Vect().Unit().Dot(proton2LambdaRF.Vect().Unit());
+      cosThetaDiff = cosDeltaTheta_STAR_naive;
       costhetaz1costhetaz2 = (proton1LambdaRF.Pz() * proton2LambdaRF.Pz()) / (proton1LambdaRF.P() * proton2LambdaRF.P());
     } else {
-      cosThetaDiff = cosDelta;
-      costhetaz1costhetaz2 = cosDeltaBeam;
+      cosThetaDiff = cosDeltaTheta_hel;
+      costhetaz1costhetaz2 = cosDeltaTheta_beam;
     }
 
     double deltaPhi = std::abs(RecoDecay::constrainAngle(particle1Dummy.Phi(), 0.0F, harmonic) - RecoDecay::constrainAngle(particle2Dummy.Phi(), 0.0F, harmonic));
