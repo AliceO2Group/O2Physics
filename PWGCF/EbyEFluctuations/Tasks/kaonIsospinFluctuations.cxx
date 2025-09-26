@@ -650,7 +650,7 @@ struct KaonIsospinFluctuations {
     {1020, -1.0, 101.0 /*centrality*/},
     {2000, -1.5, 1998.5 /*nTrack*/}};
 
-  std::string defaultSparseAxis[10][3] = {
+  inline static const std::array<std::array<std::string, 3>, 10> defaultSparseAxis = {{
     {"centrality", "centrality", "centrality"},
     {"nK0s/kPos/iNTrk", "nK0s/kPos/iNTrk", "nKa/kPos/iNTrk"},
     {"nKa/kPos/iNTrk", "nKaon/kPos/iNTrk", "nKa/kNeg/iNTrk"},
@@ -661,7 +661,7 @@ struct KaonIsospinFluctuations {
     {"", "(nKaPlus)^{2}/kPos/iNTrk", "nKaon/kPos/iNTrk"},
     {"", "(nKaMinus)^{2}/kPos/iNTrk", "(nK0s)^{2}/kPos/iNTrk"},
     {"", "(nKaPlus*nKaMinus)/kPos/iNTrk", "(nK0s*nKaon)/kPos/iNTrk"},
-  };
+  }};
 
   struct : ConfigurableGroup {
     Configurable<LabeledArray<int>> sparseSetting{"sparseSetting", {&DefaultSparseHistValues[0][0], 3, 2, {"hSparse0", "hSparse1", "hSparse2"}, {"nAxis", "sparseType"}}, "configuration of sparse histogram"};
