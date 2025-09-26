@@ -314,7 +314,6 @@ class strangenessBuilderHelper
     if constexpr (calculateProngDCAtoPV) {
       // Calculate DCA with respect to the collision associated to the V0
       std::array<float, 2> dcaInfo;
-      dcaInfo[0] = dcaInfo[1] = 0.0f; // invalid
 
       // do DCA to PV on TrackPar copies and not TrackParCov
       // TrackPar preferred: don't calculate multiple scattering / CovMat changes
@@ -322,16 +321,18 @@ class strangenessBuilderHelper
       o2::track::TrackPar positiveTrackParamCopy(positiveTrackParam);
       o2::track::TrackPar negativeTrackParamCopy(negativeTrackParam);
 
+      dcaInfo[0] = dcaInfo[1] = 999.0f; // by default, take large value to make sure candidate accepted
       o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, positiveTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
       v0.positiveDCAxy = dcaInfo[0];
 
       if constexpr (useSelections) {
-        if (std::fabs(v0.positiveDCAxy) < v0selections.dcanegtopv) {
+        if (std::fabs(v0.positiveDCAxy) < v0selections.dcapostopv) {
           v0 = {};
           return false;
         }
       }
 
+      dcaInfo[0] = dcaInfo[1] = 999.0f; // by default, take large value to make sure candidate accepted
       o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, negativeTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
       v0.negativeDCAxy = dcaInfo[0];
 
@@ -369,6 +370,7 @@ class strangenessBuilderHelper
     std::array<float, 2> dcaV0Info;
 
     // propagate to collision vertex
+    dcaV0Info[0] = dcaV0Info[1] = 999.0f; // default DCA: large, use with care if propagation fails
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, V0Temp, 2.f, fitter.getMatCorrType(), &dcaV0Info);
     v0.v0DCAToPVxy = dcaV0Info[0];
     v0.v0DCAToPVz = dcaV0Info[1];
@@ -513,7 +515,6 @@ class strangenessBuilderHelper
 
     // Calculate DCA with respect to the collision associated to the V0
     std::array<float, 2> dcaInfo;
-    dcaInfo[0] = dcaInfo[1] = 0.0f; // invalid
 
     // do DCA to PV on TrackPar copies and not TrackParCov
     // TrackPar preferred: don't calculate multiple scattering / CovMat changes
@@ -521,6 +522,7 @@ class strangenessBuilderHelper
     o2::track::TrackPar positiveTrackParamCopy(positiveTrackParam);
     o2::track::TrackPar negativeTrackParamCopy(negativeTrackParam);
 
+    dcaInfo[0] = dcaInfo[1] = 999.0f; // by default, take large value to make sure candidate accepted
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, positiveTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.positiveDCAxy = dcaInfo[0];
 
@@ -529,6 +531,7 @@ class strangenessBuilderHelper
       return false;
     }
 
+    dcaInfo[0] = dcaInfo[1] = 999.0f; // reset to default value
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, negativeTrackParamCopy, 2.f, fitter.getMatCorrType(), &dcaInfo);
     v0.negativeDCAxy = dcaInfo[0];
 
@@ -744,7 +747,7 @@ class strangenessBuilderHelper
     // bachelor DCA track to PV
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
     std::array<float, 2> dcaInfo;
-    dcaInfo[0] = dcaInfo[1] = 0.0f; // invalid
+    dcaInfo[0] = dcaInfo[1] = 999.0f; // by default, take large value to make sure candidate accepted
 
     auto bachTrackPar = getTrackPar(bachelorTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
@@ -969,13 +972,18 @@ class strangenessBuilderHelper
     // bachelor DCA track to PV
     // Calculate DCA with respect to the collision associated to the V0, not individual tracks
     std::array<float, 2> dcaInfo;
+    dcaInfo[0] = dcaInfo[1] = 999.0f; // by default, take large value to make sure candidate accepted
 
     auto bachTrackPar = getTrackPar(bachelorTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, bachTrackPar, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascade.bachelorDCAxy = dcaInfo[0];
+
+    dcaInfo[0] = dcaInfo[1] = 999.0f; // by default, take large value to make sure candidate accepted
     o2::track::TrackParCov posTrackParCovForDCA = getTrackParCov(positiveTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, posTrackParCovForDCA, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascade.positiveDCAxy = dcaInfo[0];
+
+    dcaInfo[0] = dcaInfo[1] = 999.0f; // by default, take large value to make sure candidate accepted
     o2::track::TrackParCov negTrackParCovForDCA = getTrackParCov(negativeTrack);
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, negTrackParCovForDCA, 2.f, fitter.getMatCorrType(), &dcaInfo);
     cascade.negativeDCAxy = dcaInfo[0];
@@ -1291,8 +1299,7 @@ class strangenessBuilderHelper
     o2::track::TrackPar wrongV0 = fitter.createParentTrackPar();
     wrongV0.setAbsCharge(0); // charge zero
     std::array<float, 2> dcaInfo;
-    dcaInfo[0] = 999;
-    dcaInfo[1] = 999;
+    dcaInfo[0] = dcaInfo[1] = 999.0f; // by default, take large value
 
     // bachelor-baryon DCAxy to PV
     o2::base::Propagator::Instance()->propagateToDCABxByBz({pvX, pvY, pvZ}, wrongV0, 2.f, fitter.getMatCorrType(), &dcaInfo);
