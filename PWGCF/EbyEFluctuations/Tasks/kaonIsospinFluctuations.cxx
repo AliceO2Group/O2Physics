@@ -452,19 +452,6 @@ constexpr std::array<float, 4> MV0DecayCndt = {MassK0Short, MassLambda0, MassLam
 constexpr std::array<float, 6> WPrimVtxCndt = {0.004249f, 0.0000929f, 0.0000929f, 0.0473f, 0.0473f, 0.1491f}; // from acutal pdg widths
 constexpr std::array<float, 4> WV0DecayCndt = {0.01f, 0.01f, 0.01f, 0.01f};                                   // actual pdg widths are very small, using 0.01 for now
 
-std::string defaultSparseAxis[10][3] = {
-  {"centrality", "centrality", "centrality"},
-  {"nK0s/kPos/iNTrk", "nK0s/kPos/iNTrk", "nKa/kPos/iNTrk"},
-  {"nKa/kPos/iNTrk", "nKaon/kPos/iNTrk", "nKa/kNeg/iNTrk"},
-  {"nKa/kNeg/iNTrk", "(nK0s)^{2}/kPos/iNTrk", "(nKaPlus)^{2}/kPos/iNTrk"},
-  {"nK0s/kPos/effSum", "(nKaon)^{2}/kPos/iNTrk", "(nKaMinus)^{2}/kPos/iNTrk"},
-  {"nKa/kPos/effSum", "(nK0s*nKaon)/kPos/iNTrk", "(nKaPlus*nKaMinus)/kPos/iNTrk"},
-  {"nKa/kNeg/effSum", "nTrack/kPos/iNTrk", "nTrack/kPos/iNTrk"},
-  {"", "(nKaPlus)^{2}/kPos/iNTrk", "nKaon/kPos/iNTrk"},
-  {"", "(nKaMinus)^{2}/kPos/iNTrk", "(nK0s)^{2}/kPos/iNTrk"},
-  {"", "(nKaPlus*nKaMinus)/kPos/iNTrk", "(nK0s*nKaon)/kPos/iNTrk"},
-};
-
 struct KaonIsospinFluctuations {
   // Hisogram registry:
   HistogramRegistry anlysisTimingInfo{"anlysisTimingInfo", {}, OutputObjHandlingPolicy::AnalysisObject, true};
@@ -662,6 +649,19 @@ struct KaonIsospinFluctuations {
     {250000, -1.5, 249998.5 /*(nKaPlus*nKaMinus)*/},
     {1020, -1.0, 101.0 /*centrality*/},
     {2000, -1.5, 1998.5 /*nTrack*/}};
+  
+  std::string defaultSparseAxis[10][3] = {
+    {"centrality", "centrality", "centrality"},
+    {"nK0s/kPos/iNTrk", "nK0s/kPos/iNTrk", "nKa/kPos/iNTrk"},
+    {"nKa/kPos/iNTrk", "nKaon/kPos/iNTrk", "nKa/kNeg/iNTrk"},
+    {"nKa/kNeg/iNTrk", "(nK0s)^{2}/kPos/iNTrk", "(nKaPlus)^{2}/kPos/iNTrk"},
+    {"nK0s/kPos/effSum", "(nKaon)^{2}/kPos/iNTrk", "(nKaMinus)^{2}/kPos/iNTrk"},
+    {"nKa/kPos/effSum", "(nK0s*nKaon)/kPos/iNTrk", "(nKaPlus*nKaMinus)/kPos/iNTrk"},
+    {"nKa/kNeg/effSum", "nTrack/kPos/iNTrk", "nTrack/kPos/iNTrk"},
+    {"", "(nKaPlus)^{2}/kPos/iNTrk", "nKaon/kPos/iNTrk"},
+    {"", "(nKaMinus)^{2}/kPos/iNTrk", "(nK0s)^{2}/kPos/iNTrk"},
+    {"", "(nKaPlus*nKaMinus)/kPos/iNTrk", "(nK0s*nKaon)/kPos/iNTrk"},
+  };
 
   struct : ConfigurableGroup {
     Configurable<LabeledArray<int>> sparseSetting{"sparseSetting", {&DefaultSparseHistValues[0][0], 3, 2, {"hSparse0", "hSparse1", "hSparse2"}, {"nAxis", "sparseType"}}, "configuration of sparse histogram"};
