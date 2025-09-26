@@ -141,20 +141,41 @@ DECLARE_SOA_TABLE(HfcRedTrigBases, "AOD", "HFCREDTRIGBASE", //! Table with trigg
                   soa::Index<>,
                   aod::hf_correl_charm_had_reduced::HfcRedCorrCollId,
                   aod::hf_correl_charm_had_reduced::PhiTrig,
-                  aod::hf_correl_charm_had_reduced::EtaTrig,
-                  aod::hf_correl_charm_had_reduced::PtTrig);
+                  aod::hf_correl_charm_had_reduced::EtaTrig);
 
 DECLARE_SOA_TABLE(HfcRedTrigCharms, "AOD", "HFCREDTRIGCHARM", //! Table with Same Event Charm-Hadron pairs information
+                  aod::hf_correl_charm_had_reduced::PtTrig,
                   aod::hf_correl_charm_had_reduced::InvMassTrig,
                   aod::hf_correl_charm_had_reduced::BdtScore0Trig,
                   aod::hf_correl_charm_had_reduced::BdtScore1Trig);
 
 DECLARE_SOA_TABLE(HfcRedTrigTracks, "AOD", "HFCREDTRIGTRACK", //! Table with Same Event Charm-Hadron pairs information
+                  aod::hf_correl_charm_had_reduced::PtTrig,
                   aod::hf_correl_charm_had_reduced::NTpcCrossedRowsTrig,
                   aod::hf_correl_charm_had_reduced::ItsClsMapTrig,
                   aod::hf_correl_charm_had_reduced::ItsNClsTrig,
                   aod::hf_correl_charm_had_reduced::DcaXYTrig,
                   aod::hf_correl_charm_had_reduced::DcaZTrig);
+
+namespace hf_correl_charm_had_reduced
+{
+DECLARE_SOA_INDEX_COLUMN(HfcRedTrigCharm, hfcRedTrigCharm); //! Same Event pair index
+DECLARE_SOA_INDEX_COLUMN(HfcRedTrigTrack, hfcRedTrigTrack); //! Same Event pair index
+} // namespace hf_correl_charm_had_reduced
+
+DECLARE_SOA_TABLE(HfcRedSEChBases, "AOD", "HFCREDSECHBASE", //! Table with Same Event Trig-Assoc pairs
+                  aod::hf_correl_charm_had_reduced::HfcRedCorrCollId,
+                  aod::hf_correl_charm_had_reduced::HfcRedTrigCharmId,
+                  aod::hf_correl_charm_had_reduced::PtAssoc,
+                  aod::hf_correl_charm_had_reduced::DeltaEta,
+                  aod::hf_correl_charm_had_reduced::DeltaPhi);
+
+DECLARE_SOA_TABLE(HfcRedSEHadBases, "AOD", "HFCREDSEHADBASE", //! Table with Same Event Trig-Assoc pairs
+                  aod::hf_correl_charm_had_reduced::HfcRedCorrCollId,
+                  aod::hf_correl_charm_had_reduced::HfcRedTrigTrackId,
+                  aod::hf_correl_charm_had_reduced::PtAssoc,
+                  aod::hf_correl_charm_had_reduced::DeltaEta,
+                  aod::hf_correl_charm_had_reduced::DeltaPhi);
 
 DECLARE_SOA_TABLE(HfcRedAssBases, "AOD", "HFCREDASSBASE", //! Table with associated candidate base info
                   soa::Index<>,
@@ -169,13 +190,6 @@ DECLARE_SOA_TABLE(HfcRedAssTracks, "AOD", "HFCREDASSTRACK", //! Table with Same 
                   aod::hf_correl_charm_had_reduced::ItsNClsAssoc,
                   aod::hf_correl_charm_had_reduced::DcaXYAssoc,
                   aod::hf_correl_charm_had_reduced::DcaZAssoc);
-
-DECLARE_SOA_TABLE(HfcRedSEBases, "AOD", "HFCREDSEBASE", //! Table with Same Event Trig-Assoc pairs
-                  aod::hf_correl_charm_had_reduced::HfcRedCorrCollId,
-                  aod::hf_correl_charm_had_reduced::PtTrig,
-                  aod::hf_correl_charm_had_reduced::PtAssoc,
-                  aod::hf_correl_charm_had_reduced::DeltaEta,
-                  aod::hf_correl_charm_had_reduced::DeltaPhi);
 
 DECLARE_SOA_TABLE(HfcRedSEChHads, "AOD", "HFCREDSECHHAD", //! Correlation pairs information Same Event
                   aod::hf_correl_charm_had_reduced::PoolBin,
