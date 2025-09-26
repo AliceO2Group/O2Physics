@@ -15,10 +15,10 @@
 //
 // \author Daiki Sekihata <daiki.sekihata@cern.ch>, Tokyo
 
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
-#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TPCVDriftManager.h"
