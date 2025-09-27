@@ -31,8 +31,6 @@
 #include "Math/Vector3D.h"
 #include "Math/Vector4D.h"
 #include "TPDGCode.h"
-#include <TCanvas.h>
-#include <TH1F.h>
 #include <TMath.h>
 #include <TString.h>
 
