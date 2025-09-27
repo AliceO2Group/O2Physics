@@ -164,7 +164,7 @@ struct strangepidqa {
 
   void processReal(soa::Join<aod::StraCollisions, aod::StraCents>::iterator const& coll, soa::Join<aod::V0Cores, aod::V0CollRefs, aod::V0Extras, aod::V0TOFPIDs, aod::V0TOFBetas, aod::V0TOFDebugs, aod::V0TOFNSigmas> const& v0s, soa::Join<aod::DauTrackExtras, aod::DauTrackTPCPIDs> const&)
   {
-    for (auto& lambda : v0s) { // selecting photons from Sigma0
+    for (auto& lambda : v0s) {
 
       if (TMath::Abs(lambda.eta()) > 0.5)
         continue;
