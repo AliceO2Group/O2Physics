@@ -301,11 +301,11 @@ class strangenessBuilderHelper
         v0 = {};
         return false;
       }
-      if (!acceptTPCOnly && !positiveTrack.hasITS()) {
+      if (!acceptTPCOnly && !positiveTrack.hasITS() && !negativeTrack.hasTRD() && !negativeTrack.hasTOF()) {
         v0 = {};
         return false;
       }
-      if (!acceptTPCOnly && !negativeTrack.hasITS()) {
+      if (!acceptTPCOnly && !negativeTrack.hasITS() && !negativeTrack.hasTRD() && !negativeTrack.hasTOF()) {
         v0 = {};
         return false;
       }
