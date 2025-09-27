@@ -2257,17 +2257,11 @@ struct AnalysisSameEventPairing {
               continue;
             }
             if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-              mcDecision |= (static_cast<uint32_t>(1) << isig);
               VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
-              if (useMiniTree.fConfigMiniTree) {
-                // WARNING! To be checked
-                dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
-              }
             }
           }
         }
-        isig++;
       }
     }
     // Fill Generated PAIR histograms taking into account selected collisions
@@ -2290,15 +2284,22 @@ struct AnalysisSameEventPairing {
           auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
           auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
           if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
+            mcDecision = 0;
+            isig = 0;
             for (auto& sig : fGenMCSignals) {
               if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
                 continue;
               }
               if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-                // mcDecision |= (static_cast<uint32_t>(1) << isig);
+                mcDecision |= (static_cast<uint32_t>(1) << isig);
                 VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
                 fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
+                if (useMiniTree.fConfigMiniTree) {
+                  // WARNING! To be checked
+                  dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
+                }
               }
+              isig++;
             }
           }
         }
