@@ -44,7 +44,7 @@ using namespace o2::analysis::femto;
 struct FemtoTwotrackresonanceQa {
 
   // setup tables
-  using Collisions = FCols;
+  using Collisions = Join<FCols, FColMasks, FColPos>;
   using Collision = Collisions::iterator;
 
   using FilteredCollisions = o2::soa::Filtered<Collisions>;
@@ -58,10 +58,10 @@ struct FemtoTwotrackresonanceQa {
   SliceCache cache;
 
   // setup for collisions
+  collisionbuilder::ConfCollisionSelection collisionSelection;
+  Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
   colhistmanager::CollisionHistManager<modes::Mode::kAnalysis_Qa> colHistManager;
   colhistmanager::ConfCollisionBinning confCollisionBinning;
-  collisionbuilder::ConfCollisionFilter collisionSelection;
-  Filter collisionFilter = MAKE_COLLISION_FILTER(collisionSelection);
 
   // setup for phis
   twotrackresonancebuilder::ConfPhiSelection confPhiSelection;

@@ -56,6 +56,7 @@ struct ConfTrackBits : o2::framework::ConfigurableGroup {
   // track quality cuts
   o2::framework::Configurable<std::vector<float>> tpcClustersMin{"tpcClustersMin", {90.f}, "Minimum number of clusters in TPC"};
   o2::framework::Configurable<std::vector<float>> tpcCrossedRowsMin{"tpcCrossedRowsMin", {80.f}, "Minimum number of crossed rows in TPC"};
+  o2::framework::Configurable<std::vector<float>> tpcClustersOverCrossedRows{"tpcClustersOverCrossedRows", {0.83f}, "Minimum fraction of clusters over crossed rows in TPC"};
   o2::framework::Configurable<std::vector<float>> tpcSharedClustersMax{"tpcSharedClustersMax", {160.f}, "Maximum number of shared clusters in TPC"};
   o2::framework::Configurable<std::vector<float>> tpcSharedClusterFractionMax{"tpcSharedClusterFractionMax", {1.f}, "Maximum fraction of shared clusters in TPC"};
   o2::framework::Configurable<std::vector<float>> itsClustersMin{"itsClustersMin", {5.f}, "Minimum number of clusters in ITS"};
@@ -117,7 +118,7 @@ struct ConfTrackSelection : public o2::framework::ConfigurableGroup {
   std::string prefix = Prefix; // Unique prefix based on the template argument
   // configuration parameters
   o2::framework::Configurable<int> pdgCode{"pdgCode", 2212, "Track PDG code"};
-  o2::framework::Configurable<int> sign{"sign", 1, "Sign of the track (1 for positive tracks and -1 for negative tracks)"};
+  o2::framework::Configurable<int> charge{"charge", 1, "Charge of the track (use +/-1 for positive/negative tracks, except He3 needs +/-2)"};
   // filters for kinematics
   o2::framework::Configurable<float> ptMin{"ptMin", 0.2f, "Minimum pT (GeV/c)"};
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT (GeV/c)"};
@@ -145,14 +146,15 @@ using ConfTrackSelection3 = ConfTrackSelection<PrefixTrackSelection3>;
 /// enum for all track selections
 enum TrackSels {
   // track quality cuts
-  kTPCnClsMin,     ///< Min. number of TPC clusters
-  kTPCcRowsMin,    ///< Min. number of crossed TPC rows
-  kTPCsClsMax,     ///< Max. number of shared TPC clusters
-  kTPCsClsFracMax, ///< Max. fractions of shared TPC clusters
-  kITSnClsMin,     ///< Min. number of ITS clusters
-  kITSnClsIbMin,   ///< Min. number of ITS clusters in the inner barrel
-  kDCAxyMax,       ///< Max. |DCA_xy| (cm) as a function of pT
-  kDCAzMax,        ///< Max. |DCA_z| (cm) as a function of pT
+  kTPCnClsMin,          ///< Min. number of TPC clusters
+  kTPCcRowsMin,         ///< Min. number of crossed TPC rows
+  kTPCnClsOvercRowsMin, ///< Min. fraction of TPC clusters of TPC crossed rows
+  kTPCsClsMax,          ///< Max. number of shared TPC clusters
+  kTPCsClsFracMax,      ///< Max. fractions of shared TPC clusters
+  kITSnClsMin,          ///< Min. number of ITS clusters
+  kITSnClsIbMin,        ///< Min. number of ITS clusters in the inner barrel
+  kDCAxyMax,            ///< Max. |DCA_xy| (cm) as a function of pT
+  kDCAzMax,             ///< Max. |DCA_z| (cm) as a function of pT
 
   /// track pid cuts
   kItsElectron, ///< ITS Electon PID
@@ -202,6 +204,8 @@ const char trackSelsName[] = "Track Selection Object";
 const std::unordered_map<TrackSels, std::string> trackSelsToString = {
   {kTPCnClsMin, "Min. number of TPC clusters"},
   {kTPCcRowsMin, "Min. number of crossed TPC rows"},
+  {kTPCnClsOvercRowsMin, "Min. fraction of TPC clusters over TPC crossed rows"},
+  {kTPCsClsMax, "Max. number of shared TPC clusters"},
   {kTPCsClsMax, "Max. number of shared TPC clusters"},
   {kTPCsClsFracMax, "Max. fractions of shared TPC clusters"},
   {kITSnClsMin, "Min. number of ITS clusters"},
@@ -271,6 +275,7 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     // add selections for track quality
     this->addSelection(config.tpcClustersMin.value, kTPCnClsMin, limits::kLowerLimit, true, true);
     this->addSelection(config.tpcCrossedRowsMin.value, kTPCcRowsMin, limits::kLowerLimit, true, true);
+    this->addSelection(config.tpcClustersOverCrossedRows.value, kTPCnClsOvercRowsMin, limits::kLowerLimit, true, true);
     this->addSelection(config.tpcSharedClustersMax.value, kTPCsClsMax, limits::kUpperLimit, true, true);
     this->addSelection(config.tpcSharedClusterFractionMax.value, kTPCsClsFracMax, limits::kUpperLimit, true, true);
     this->addSelection(config.itsClustersMin.value, kITSnClsMin, limits::kLowerLimit, true, true);
@@ -341,6 +346,7 @@ class TrackSelection : public BaseSelection<float, o2::aod::femtodatatypes::Trac
     this->reset();
     this->evaluateObservable(kTPCnClsMin, Track.tpcNClsFound());
     this->evaluateObservable(kTPCcRowsMin, Track.tpcNClsCrossedRows());
+    this->evaluateObservable(kTPCnClsOvercRowsMin, static_cast<float>(Track.tpcNClsFound()) / static_cast<float>(Track.tpcNClsCrossedRows()));
     this->evaluateObservable(kTPCsClsMax, Track.tpcNClsShared());
     this->evaluateObservable(kTPCsClsFracMax, static_cast<float>(Track.tpcNClsShared()) / static_cast<float>(Track.tpcNClsFound()));
     this->evaluateObservable(kITSnClsMin, Track.itsNCls());
@@ -443,30 +449,30 @@ struct ConfTrackTables : o2::framework::ConfigurableGroup {
 class TrackBuilder
 {
  public:
-  TrackBuilder() {}
+  TrackBuilder() = default;
   virtual ~TrackBuilder() = default;
 
   template <typename T1, typename T2, typename T3, typename T4>
   void init(T1& config, T2& filter, T3& table, T4& initContext)
   {
-    trackSelection.configure(config, filter);
+    mTrackSelection.configure(config, filter);
     LOG(info) << "Initialize femto track builder...";
 
-    produceTracks = utils::enableTable("FTracks_001", table.produceTracks.value, initContext);
-    produceTrackMasks = utils::enableTable("FTrackMasks_001", table.produceTrackMasks.value, initContext);
-    produceTrackDcas = utils::enableTable("FTrackDcas_001", table.produceTrackDcas.value, initContext);
-    produceTrackExtras = utils::enableTable("FTrackExtras_001", table.produceTrackExtras.value, initContext);
-    produceElectronPids = utils::enableTable("FElectronPids_001", table.produceElectronPids.value, initContext);
-    producePionPids = utils::enableTable("FPionPids_001", table.producePionPids.value, initContext);
-    produceKaonPids = utils::enableTable("FKaonPids_001", table.produceKaonPids.value, initContext);
-    produceProtonPids = utils::enableTable("FProtonPids_001", table.produceProtonPids.value, initContext);
-    produceDeuteronPids = utils::enableTable("FDeuteronPids_001", table.produceDeuteronPids.value, initContext);
-    produceTritonPids = utils::enableTable("FTritonPids_001", table.produceTritonPids.value, initContext);
-    produceHeliumPids = utils::enableTable("FHeliumPids_001", table.produceHeliumPids.value, initContext);
+    mProduceTracks = utils::enableTable("FTracks_001", table.produceTracks.value, initContext);
+    mProduceTrackMasks = utils::enableTable("FTrackMasks_001", table.produceTrackMasks.value, initContext);
+    mProduceTrackDcas = utils::enableTable("FTrackDcas_001", table.produceTrackDcas.value, initContext);
+    mProduceTrackExtras = utils::enableTable("FTrackExtras_001", table.produceTrackExtras.value, initContext);
+    mProduceElectronPids = utils::enableTable("FElectronPids_001", table.produceElectronPids.value, initContext);
+    mProducePionPids = utils::enableTable("FPionPids_001", table.producePionPids.value, initContext);
+    mProduceKaonPids = utils::enableTable("FKaonPids_001", table.produceKaonPids.value, initContext);
+    mProduceProtonPids = utils::enableTable("FProtonPids_001", table.produceProtonPids.value, initContext);
+    mProduceDeuteronPids = utils::enableTable("FDeuteronPids_001", table.produceDeuteronPids.value, initContext);
+    mProduceTritonPids = utils::enableTable("FTritonPids_001", table.produceTritonPids.value, initContext);
+    mProduceHeliumPids = utils::enableTable("FHeliumPids_001", table.produceHeliumPids.value, initContext);
 
-    if (produceTracks || produceTrackMasks || produceTrackDcas || produceTrackExtras || produceElectronPids || producePionPids || produceKaonPids || produceProtonPids || produceDeuteronPids || produceTritonPids || produceHeliumPids) {
-      fillAnyTable = true;
-      trackSelection.printSelections(trackSelsName, trackSelsToString);
+    if (mProduceTracks || mProduceTrackMasks || mProduceTrackDcas || mProduceTrackExtras || mProduceElectronPids || mProducePionPids || mProduceKaonPids || mProduceProtonPids || mProduceDeuteronPids || mProduceTritonPids || mProduceHeliumPids) {
+      mFillAnyTable = true;
+      mTrackSelection.printSelections(trackSelsName, trackSelsToString);
     } else {
       LOG(info) << "No tables configured";
     }
@@ -476,15 +482,15 @@ class TrackBuilder
   template <typename T1, typename T2, typename T3, typename T4>
   void fillTracks(T1 const& tracks, T2& trackProducts, T3& collisionProducts, T4& indexMap)
   {
-    if (!fillAnyTable) {
+    if (!mFillAnyTable) {
       return;
     }
     for (const auto& track : tracks) {
-      if (!trackSelection.checkFilters(track) || !trackSelection.hasTofAboveThreshold(track)) {
+      if (!mTrackSelection.checkFilters(track) || !mTrackSelection.hasTofAboveThreshold(track)) {
         continue;
       }
-      trackSelection.applySelections(track);
-      if (!trackSelection.passesAllRequiredSelections()) {
+      mTrackSelection.applySelections(track);
+      if (!mTrackSelection.passesAllRequiredSelections()) {
         continue;
       }
       this->fillTrack<modes::Track::kPrimaryTrack>(track, trackProducts, collisionProducts, indexMap);
@@ -494,25 +500,25 @@ class TrackBuilder
   template <modes::Track type, typename T1, typename T2, typename T3, typename T4>
   void fillTrack(T1 const& track, T2& trackProducts, T3& collisionProducts, T4& indexMap)
   {
-    if (produceTracks) {
+    if (mProduceTracks) {
       trackProducts.producedTracks(collisionProducts.producedCollision.lastIndex(),
                                    track.pt() * track.sign(),
                                    track.eta(),
                                    track.phi());
     }
 
-    if (produceTrackMasks) {
+    if (mProduceTrackMasks) {
       if constexpr (type == modes::Track::kPrimaryTrack) {
-        trackProducts.producedTrackMasks(trackSelection.getBitmask());
+        trackProducts.producedTrackMasks(mTrackSelection.getBitmask());
       } else {
         trackProducts.producedTrackMasks(static_cast<o2::aod::femtodatatypes::TrackMaskType>(0u));
       }
     }
 
-    if (produceTrackDcas) {
+    if (mProduceTrackDcas) {
       trackProducts.producedTrackDcas(track.dcaXY(), track.dcaZ());
     }
-    if (produceTrackExtras) {
+    if (mProduceTrackExtras) {
       trackProducts.producedTrackExtras(track.isPVContributor(),
                                         track.itsNCls(),
                                         track.itsNClsInnerBarrel(),
@@ -527,49 +533,49 @@ class TrackBuilder
                                         track.mass());
     }
 
-    if (produceElectronPids) {
+    if (mProduceElectronPids) {
       if constexpr (type == modes::Track::kPrimaryTrack) {
         trackProducts.producedElectronPids(track.itsNSigmaEl(), track.tpcNSigmaEl(), track.tofNSigmaEl());
       } else {
         trackProducts.producedElectronPids(0, track.tpcNSigmaEl(), track.tofNSigmaEl());
       }
     }
-    if (producePionPids) {
+    if (mProducePionPids) {
       if constexpr (type == modes::Track::kPrimaryTrack) {
         trackProducts.producedPionPids(track.itsNSigmaPi(), track.tpcNSigmaPi(), track.tofNSigmaPi());
       } else {
         trackProducts.producedPionPids(0, track.tpcNSigmaPi(), track.tofNSigmaPi());
       }
     }
-    if (produceKaonPids) {
+    if (mProduceKaonPids) {
       if constexpr (type == modes::Track::kPrimaryTrack) {
         trackProducts.producedKaonPids(track.itsNSigmaKa(), track.tpcNSigmaKa(), track.tofNSigmaKa());
       } else {
         trackProducts.producedKaonPids(0, track.tpcNSigmaKa(), track.tofNSigmaKa());
       }
     }
-    if (produceProtonPids) {
+    if (mProduceProtonPids) {
       if constexpr (type == modes::Track::kPrimaryTrack) {
         trackProducts.producedProtonPids(track.itsNSigmaPr(), track.tpcNSigmaPr(), track.tofNSigmaPr());
       } else {
         trackProducts.producedProtonPids(0, track.tpcNSigmaPr(), track.tofNSigmaPr());
       }
     }
-    if (produceDeuteronPids) {
+    if (mProduceDeuteronPids) {
       if constexpr (type == modes::Track::kPrimaryTrack) {
         trackProducts.producedDeuteronPids(track.itsNSigmaDe(), track.tpcNSigmaDe(), track.tofNSigmaDe());
       } else {
         trackProducts.producedDeuteronPids(0, track.tpcNSigmaDe(), track.tofNSigmaDe());
       }
     }
-    if (produceTritonPids) {
+    if (mProduceTritonPids) {
       if constexpr (type == modes::Track::kPrimaryTrack) {
         trackProducts.producedTritonPids(track.itsNSigmaTr(), track.tpcNSigmaTr(), track.tofNSigmaTr());
       } else {
         trackProducts.producedTritonPids(0, track.tpcNSigmaTr(), track.tofNSigmaTr());
       }
     }
-    if (produceHeliumPids) {
+    if (mProduceHeliumPids) {
       if constexpr (type == modes::Track::kPrimaryTrack) {
         trackProducts.producedHeliumPids(track.itsNSigmaHe(), track.tpcNSigmaHe(), track.tofNSigmaHe());
       } else {
@@ -594,19 +600,19 @@ class TrackBuilder
   }
 
  private:
-  TrackSelection trackSelection;
-  bool fillAnyTable = false;
-  bool produceTracks = false;
-  bool produceTrackMasks = false;
-  bool produceTrackDcas = false;
-  bool produceTrackExtras = false;
-  bool produceElectronPids = false;
-  bool producePionPids = false;
-  bool produceKaonPids = false;
-  bool produceProtonPids = false;
-  bool produceDeuteronPids = false;
-  bool produceTritonPids = false;
-  bool produceHeliumPids = false;
+  TrackSelection mTrackSelection;
+  bool mFillAnyTable = false;
+  bool mProduceTracks = false;
+  bool mProduceTrackMasks = false;
+  bool mProduceTrackDcas = false;
+  bool mProduceTrackExtras = false;
+  bool mProduceElectronPids = false;
+  bool mProducePionPids = false;
+  bool mProduceKaonPids = false;
+  bool mProduceProtonPids = false;
+  bool mProduceDeuteronPids = false;
+  bool mProduceTritonPids = false;
+  bool mProduceHeliumPids = false;
 };
 
 } // namespace trackbuilder

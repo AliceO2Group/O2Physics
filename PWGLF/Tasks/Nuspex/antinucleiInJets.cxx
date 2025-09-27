@@ -32,6 +32,7 @@
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -120,6 +121,7 @@ struct AntinucleiInJets {
   Configurable<bool> applyItsPid{"applyItsPid", true, "apply ITS PID"};
   Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
   Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 100, "minimum number of TPC crossed pad rows"};
+  Configurable<double> minChiSquareTpc{"minChiSquareTpc", 0.0, "minimum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0, "maximum ITS chi^2/Ncls"};
   Configurable<double> minPt{"minPt", 0.3, "minimum pt of the tracks"};
@@ -137,6 +139,8 @@ struct AntinucleiInJets {
   Configurable<double> nSigmaItsMin{"nSigmaItsMin", -3.0, "nSigmaITS min"};
   Configurable<double> nSigmaItsMax{"nSigmaItsMax", +3.0, "nSigmaITS max"};
   Configurable<bool> setMCDefaultItsParams{"setMCDefaultItsParams", false, "set MC default parameters"};
+  Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
+  Configurable<std::array<double, 5>> cfgBetheBlochParams{"cfgBetheBlochParams", {0.6539, 1.591, 0.8225, 2.363, 0.09}, "TPC Bethe-Bloch parameterisation for He3"};
 
   // CCDB manager service for accessing condition data
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -245,6 +249,11 @@ struct AntinucleiInJets {
 
       // nsigmaITS for antiproton candidates
       registryData.add("antiproton_nsigma_its_data", "antiproton_nsigma_its_data", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{ITS}"}});
+
+      // custom nsigma for He3 - needed for 24 pp data
+      registryData.add("tpcsignal_data", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
+      registryData.add("antihelium3_jet_tpc_custom", "antihelium3_jet_tpc_custom", HistType::kTH2F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC} custom"}});
+      registryData.add("antihelium3_ue_tpc_custom", "antihelium3_ue_tpc_custom", HistType::kTH2F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC} custom"}});
     }
 
     // Generated antiproton spectra in jets and UE from MC truth
@@ -338,6 +347,13 @@ struct AntinucleiInJets {
       registryMC.add("helium3_rec_tpc_ue", "helium3_rec_tpc_ue", HistType::kTH1F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antihelium3_rec_tpc_jet", "antihelium3_rec_tpc_jet", HistType::kTH1F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antihelium3_rec_tpc_ue", "antihelium3_rec_tpc_ue", HistType::kTH1F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      // Generated spectra needed for reweighting
+      registryMC.add("protonBar", "protonBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("lambdaBar", "lambdaBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("xiBar", "xiBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("omegaBar", "omegaBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("sigmaBar", "sigmaBar", HistType::kTH1F, {{5000, 0, 5, "#it{p}_{T} (GeV/#it{c})"}});
     }
 
     // Systematic uncertainties (Data)
@@ -558,6 +574,8 @@ struct AntinucleiInJets {
       return false;
     if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
       return false;
+    if (track.tpcChi2NCl() < minChiSquareTpc)
+      return false;
     if (track.tpcChi2NCl() > maxChiSquareTpc)
       return false;
     if (track.itsChi2NCl() > maxChiSquareIts)
@@ -773,6 +791,11 @@ struct AntinucleiInJets {
       fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(MassPionCharged));
       fourMomentum.set_user_index(id);
       fjParticles.emplace_back(fourMomentum);
+
+      // Fill TPC signal vs p*sign for PID calibration
+      bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3;
+      float correctedTpcInnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
+      registryData.fill(HIST("tpcsignal_data"), correctedTpcInnerParam * track.sign(), track.tpcSignal());
     }
 
     // Reject empty events
@@ -883,6 +906,12 @@ struct AntinucleiInJets {
           }
           if (passedItsPidHel) {
             registryData.fill(HIST("antihelium3_jet_tpc"), 2.0 * pt, nsigmaTPCHe);
+            // custom nsigma He3 based on bethe bloch fit of TPC signal
+            double tpcSignal = track.tpcSignal();
+            double expectedSignalHe3 = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
+            double sigmaHe3 = expectedSignalHe3 * cfgBetheBlochParams.value[4];
+            double nSigmaTPCHe3Custom = (tpcSignal - expectedSignalHe3) / sigmaHe3;
+            registryData.fill(HIST("antihelium3_jet_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
         }
 
@@ -973,6 +1002,12 @@ struct AntinucleiInJets {
           }
           if (passedItsPidHel) {
             registryData.fill(HIST("antihelium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe);
+            // custom nsigma He3 based on bethe bloch fit of TPC signal
+            double tpcSignal = track.tpcSignal();
+            double expectedSignalHe3 = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
+            double sigmaHe3 = expectedSignalHe3 * cfgBetheBlochParams.value[4];
+            double nSigmaTPCHe3Custom = (tpcSignal - expectedSignalHe3) / sigmaHe3;
+            registryData.fill(HIST("antihelium3_ue_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
         }
 
@@ -1261,6 +1296,7 @@ struct AntinucleiInJets {
           case PDG_t::kProtonBar:
             registryMC.fill(HIST("antip_gen_jet"), particle.pt());
             registryMC.fill(HIST("antip_gen_ue"), particle.pt());
+            registryMC.fill(HIST("protonBar"), particle.pt());
             break;
           case o2::constants::physics::Pdg::kDeuteron:
             registryMC.fill(HIST("deuteron_gen_jet"), particle.pt());
@@ -1277,6 +1313,19 @@ struct AntinucleiInJets {
           case -o2::constants::physics::Pdg::kHelium3:
             registryMC.fill(HIST("antihelium3_gen_jet"), particle.pt());
             registryMC.fill(HIST("antihelium3_gen_ue"), particle.pt());
+            break;
+          // Histograms for re-weighting
+          case PDG_t::kLambda0Bar:
+            registryMC.fill(HIST("lambdaBar"), particle.pt());
+            break;
+          case PDG_t::kXiPlusBar:
+            registryMC.fill(HIST("xiBar"), particle.pt());
+            break;
+          case PDG_t::kOmegaPlusBar:
+            registryMC.fill(HIST("omegaBar"), particle.pt());
+            break;
+          case PDG_t::kSigmaBarMinus:
+            registryMC.fill(HIST("sigmaBar"), particle.pt());
             break;
         }
       }

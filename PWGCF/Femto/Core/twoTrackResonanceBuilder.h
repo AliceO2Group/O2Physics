@@ -127,7 +127,8 @@ struct ConfKstar0Bits : o2::framework::ConfigurableGroup {
 #undef TWOTRACKRESONANCE_KAONPID_BITS
 #undef TWOTRACKRESONANCE_PIONPID_BITS
 
-#define TWOTRACKRESONANCE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax)                                                                                                            \
+#define TWOTRACKRESONANCE_DEFAULT_SELECTION(defaultPdgCode, defaultMassMin, defaultMassMax)                                                                                            \
+  o2::framework::Configurable<int> pdgCode{"pdgCode", defaultPdgCode, "Resonance PDG code"};                                                                                           \
   o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                                                                                \
   o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};                                                                                                                \
   o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};                                                                                                           \
@@ -145,18 +146,18 @@ struct ConfKstar0Bits : o2::framework::ConfigurableGroup {
 
 struct ConfPhiSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("PhiSelection");
-  TWOTRACKRESONANCE_DEFAULT_SELECTION(0.95f, 1.05f)
+  TWOTRACKRESONANCE_DEFAULT_SELECTION(333, 0.95f, 1.05f)
 };
 
 struct ConfRho0Selection : o2::framework::ConfigurableGroup {
-  std::string prefix = std::string("RhoSelection");
-  TWOTRACKRESONANCE_DEFAULT_SELECTION(0.7f, 0.84f)
+  std::string prefix = std::string("Rho0Selection");
+  TWOTRACKRESONANCE_DEFAULT_SELECTION(113, 0.7f, 0.84f)
 };
 
 struct ConfKstar0Selection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("Kstar0Selection");
   o2::framework::Configurable<int> sign{"sign", 1, "Sign (+1 for Kstar0 and -1 for Kstar0Bar) "};
-  TWOTRACKRESONANCE_DEFAULT_SELECTION(0.8f, 1.0f)
+  TWOTRACKRESONANCE_DEFAULT_SELECTION(313, 0.8f, 1.0f)
 };
 
 #undef TWOTRACKRESONANCE_DEFAULT_SELECTION
@@ -469,11 +470,11 @@ class TwoTrackResonanceBuilder
   template <typename T1, typename T2, typename T3, typename T4, typename T5>
   void init(T1& config, T2& filter, T3& daughterFilter, T4& table, T5 initContext)
   {
-    twoTrackResonanceSelection.configure(config, filter, daughterFilter);
+    mTwoTrackResonanceSelection.configure(config, filter, daughterFilter);
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kPhi)) {
       LOG(info) << "Initialize femto Phi builder...";
-      producePhis = utils::enableTable("FPhis_001", table.producePhis.value, initContext);
-      producePhiMasks = utils::enableTable("FPhiMasks_001", table.producePhiMasks.value, initContext);
+      mProducePhis = utils::enableTable("FPhis_001", table.producePhis.value, initContext);
+      mProducePhiMasks = utils::enableTable("FPhiMasks_001", table.producePhiMasks.value, initContext);
     }
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kKstar0) || modes::isEqual(resoType, modes::TwoTrackResonance::kKstar0Bar)) {
       if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kKstar0)) {
@@ -482,18 +483,18 @@ class TwoTrackResonanceBuilder
       if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kKstar0Bar)) {
         LOG(info) << "Initialize femto Kstar0Bar builder...";
       }
-      produceKstar0s = utils::enableTable("FKstar0s_001", table.produceKstar0s.value, initContext);
-      produceKstar0Masks = utils::enableTable("FKstar0Masks_001", table.produceKstar0Masks.value, initContext);
+      mProduceKstar0s = utils::enableTable("FKstar0s_001", table.produceKstar0s.value, initContext);
+      mProduceKstar0Masks = utils::enableTable("FKstar0Masks_001", table.produceKstar0Masks.value, initContext);
     }
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kRho0)) {
       LOG(info) << "Initialize femto Rho0 builder...";
-      produceRho0s = utils::enableTable("FRho0s_001", table.produceRho0s.value, initContext);
-      produceRho0Masks = utils::enableTable("FRho0Masks_001", table.produceRho0Masks.value, initContext);
+      mProduceRho0s = utils::enableTable("FRho0s_001", table.produceRho0s.value, initContext);
+      mProduceRho0Masks = utils::enableTable("FRho0Masks_001", table.produceRho0Masks.value, initContext);
     }
 
-    if (producePhis || producePhiMasks || produceKstar0s || produceKstar0Masks || produceRho0s || produceRho0Masks) {
-      fillAnyTable = true;
-      twoTrackResonanceSelection.printSelections(twoTrackResonanceSelsName, twoTrackResonanceSelsToString);
+    if (mProducePhis || mProducePhiMasks || mProduceKstar0s || mProduceKstar0Masks || mProduceRho0s || mProduceRho0Masks) {
+      mFillAnyTable = true;
+      mTwoTrackResonanceSelection.printSelections(twoTrackResonanceSelsName, twoTrackResonanceSelsToString);
     } else {
       LOG(info) << "No tables configured";
     }
@@ -503,7 +504,7 @@ class TwoTrackResonanceBuilder
   template <typename T1, typename T2, typename T3, typename T4, typename T5, typename T6, typename T7>
   void fillResonances(T1& collisionProducts, T2& trackProducts, T3& resonanceProducts, T4& groupPositiveTracks, T5& groupNegativeTracks, T6& trackBuilder, T7& indexMap)
   {
-    if (!fillAnyTable) {
+    if (!mFillAnyTable) {
       return;
     }
     for (auto const& positiveTrack : groupPositiveTracks) {
@@ -517,12 +518,12 @@ class TwoTrackResonanceBuilder
   void fillResonance(T1& collisionProducts, T2& trackProducts, T3& resonanceProducts, T4 const& posDaughter, T4 const& negDaughter, T5& trackBuilder, T6& indexMap)
   {
 
-    twoTrackResonanceSelection.applySelections(posDaughter, negDaughter); // for resonances selection are only applied to daughter tracks
-    if (!twoTrackResonanceSelection.hasTofAboveThreshold(posDaughter, negDaughter) || !twoTrackResonanceSelection.passesAllRequiredSelections()) {
+    mTwoTrackResonanceSelection.applySelections(posDaughter, negDaughter); // for resonances selection are only applied to daughter tracks
+    if (!mTwoTrackResonanceSelection.hasTofAboveThreshold(posDaughter, negDaughter) || !mTwoTrackResonanceSelection.passesAllRequiredSelections()) {
       return;
     }
-    twoTrackResonanceSelection.reconstructResonance(posDaughter, negDaughter);
-    if (!twoTrackResonanceSelection.checkFilters() || !twoTrackResonanceSelection.checkHypothesis()) {
+    mTwoTrackResonanceSelection.reconstructResonance(posDaughter, negDaughter);
+    if (!mTwoTrackResonanceSelection.checkFilters() || !mTwoTrackResonanceSelection.checkHypothesis()) {
       return;
     }
     int64_t posDaughterIndex = 0;
@@ -531,76 +532,76 @@ class TwoTrackResonanceBuilder
     negDaughterIndex = trackBuilder.template getDaughterIndex<modes::Track::kResonanceDaughter>(negDaughter, trackProducts, collisionProducts, indexMap);
 
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kRho0)) {
-      if (produceRho0s) {
+      if (mProduceRho0s) {
         resonanceProducts.producedRhos(
           collisionProducts.producedCollision.lastIndex(),
-          twoTrackResonanceSelection.getPt(),
-          twoTrackResonanceSelection.getEta(),
-          twoTrackResonanceSelection.getPhi(),
-          twoTrackResonanceSelection.getMass(),
+          mTwoTrackResonanceSelection.getPt(),
+          mTwoTrackResonanceSelection.getEta(),
+          mTwoTrackResonanceSelection.getPhi(),
+          mTwoTrackResonanceSelection.getMass(),
           posDaughterIndex,
           negDaughterIndex);
       }
-      if (produceRho0Masks) {
-        resonanceProducts.producedRhoMasks(twoTrackResonanceSelection.getBitmask());
+      if (mProduceRho0Masks) {
+        resonanceProducts.producedRhoMasks(mTwoTrackResonanceSelection.getBitmask());
       }
     }
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kPhi)) {
-      if (producePhis) {
+      if (mProducePhis) {
         resonanceProducts.producedPhis(
           collisionProducts.producedCollision.lastIndex(),
-          twoTrackResonanceSelection.getPt(),
-          twoTrackResonanceSelection.getEta(),
-          twoTrackResonanceSelection.getPhi(),
-          twoTrackResonanceSelection.getMass(),
+          mTwoTrackResonanceSelection.getPt(),
+          mTwoTrackResonanceSelection.getEta(),
+          mTwoTrackResonanceSelection.getPhi(),
+          mTwoTrackResonanceSelection.getMass(),
           posDaughterIndex,
           negDaughterIndex);
       }
-      if (producePhiMasks) {
-        resonanceProducts.producedPhiMasks(twoTrackResonanceSelection.getBitmask());
+      if (mProducePhiMasks) {
+        resonanceProducts.producedPhiMasks(mTwoTrackResonanceSelection.getBitmask());
       }
     }
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kKstar0)) {
-      if (produceKstar0s) {
+      if (mProduceKstar0s) {
         resonanceProducts.producedKstars(
           collisionProducts.producedCollision.lastIndex(),
-          twoTrackResonanceSelection.getPt(),
-          twoTrackResonanceSelection.getEta(),
-          twoTrackResonanceSelection.getPhi(),
-          twoTrackResonanceSelection.getMass(),
+          mTwoTrackResonanceSelection.getPt(),
+          mTwoTrackResonanceSelection.getEta(),
+          mTwoTrackResonanceSelection.getPhi(),
+          mTwoTrackResonanceSelection.getMass(),
           posDaughterIndex,
           negDaughterIndex);
       }
-      if (produceKstar0Masks) {
-        resonanceProducts.producedKstarMasks(twoTrackResonanceSelection.getBitmask());
+      if (mProduceKstar0Masks) {
+        resonanceProducts.producedKstarMasks(mTwoTrackResonanceSelection.getBitmask());
       }
     }
     if constexpr (modes::isEqual(resoType, modes::TwoTrackResonance::kKstar0Bar)) {
-      if (produceKstar0s) {
+      if (mProduceKstar0s) {
         resonanceProducts.producedKstars(
           collisionProducts.producedCollision.lastIndex(),
-          -1.f * twoTrackResonanceSelection.getPt(),
-          twoTrackResonanceSelection.getEta(),
-          twoTrackResonanceSelection.getPhi(),
-          twoTrackResonanceSelection.getMass(),
+          -1.f * mTwoTrackResonanceSelection.getPt(),
+          mTwoTrackResonanceSelection.getEta(),
+          mTwoTrackResonanceSelection.getPhi(),
+          mTwoTrackResonanceSelection.getMass(),
           posDaughterIndex,
           negDaughterIndex);
       }
-      if (produceKstar0Masks) {
-        resonanceProducts.producedKstarMasks(twoTrackResonanceSelection.getBitmask());
+      if (mProduceKstar0Masks) {
+        resonanceProducts.producedKstarMasks(mTwoTrackResonanceSelection.getBitmask());
       }
     }
   }
 
  private:
-  TwoTrackResonanceSelection<resoType> twoTrackResonanceSelection;
-  bool fillAnyTable = false;
-  bool producePhis = false;
-  bool producePhiMasks = false;
-  bool produceKstar0s = false;
-  bool produceKstar0Masks = false;
-  bool produceRho0s = false;
-  bool produceRho0Masks = false;
+  TwoTrackResonanceSelection<resoType> mTwoTrackResonanceSelection;
+  bool mFillAnyTable = false;
+  bool mProducePhis = false;
+  bool mProducePhiMasks = false;
+  bool mProduceKstar0s = false;
+  bool mProduceKstar0Masks = false;
+  bool mProduceRho0s = false;
+  bool mProduceRho0Masks = false;
 }; // namespace twotrackresonancebuilder
 
 } // namespace twotrackresonancebuilder

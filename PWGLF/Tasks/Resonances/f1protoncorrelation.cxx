@@ -82,6 +82,7 @@ struct f1protoncorrelation {
   Configurable<int> nRot{"nRot", 4, "Number of rotational bkg"};
   // Event Mixing
   Configurable<int> nEvtMixing{"nEvtMixing", 10, "Number of events to mix"};
+  Configurable<int> nEvtMixingBkg{"nEvtMixingBkg", 5, "Number of events to mix for background reconstruction"};
   ConfigurableAxis CfgVtxBins{"CfgVtxBins", {10, -10, 10}, "Mixing bins - z-vertex"};
   ConfigurableAxis CfgMultBins{"CfgMultBins", {VARIABLE_WIDTH, 0.0, 40.0, 80.0, 500.0}, "Mixing bins - number of contributor"};
 
@@ -108,10 +109,11 @@ struct f1protoncorrelation {
     const AxisSpec thnAxisCharge{configThnAxisCharge, "Charge"};
 
     // register histograms
-    histos.add("hPhaseSpaceProtonKaonSame", "hPhaseSpaceProtonKaonSame", kTH2F, {{200, -2.0f, 2.0f}, {360, -4.0 * TMath::Pi(), 4.0 * TMath::Pi()}});
-    histos.add("hPhaseSpaceProtonPionSame", "hPhaseSpaceProtonPionSame", kTH2F, {{200, -2.0f, 2.0f}, {360, -4.0 * TMath::Pi(), 4.0 * TMath::Pi()}});
-    histos.add("hPhaseSpaceProtonKaonMix", "hPhaseSpaceProtonKaonMix", kTH2F, {{200, -2.0f, 2.0f}, {360, -4.0 * TMath::Pi(), 4.0 * TMath::Pi()}});
-    histos.add("hPhaseSpaceProtonPionMix", "hPhaseSpaceProtonPionMix", kTH2F, {{200, -2.0f, 2.0f}, {360, -4.0 * TMath::Pi(), 4.0 * TMath::Pi()}});
+    histos.add("hPhaseSpaceProtonKaonSame", "hPhaseSpaceProtonKaonSame", kTH3F, {{40, -2.0f, 2.0f}, {180, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}, {100, 0.0, 1.0}});
+    histos.add("hPhaseSpaceProtonPionSame", "hPhaseSpaceProtonPionSame", kTH3F, {{40, -2.0f, 2.0f}, {180, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}, {100, 0.0, 1.0}});
+    histos.add("hPhaseSpaceProtonKaonMix", "hPhaseSpaceProtonKaonMix", kTH3F, {{40, -2.0f, 2.0f}, {180, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}, {100, 0.0, 1.0}});
+    histos.add("hPhaseSpaceProtonPionMix", "hPhaseSpaceProtonPionMix", kTH3F, {{40, -2.0f, 2.0f}, {180, -2.0 * TMath::Pi(), 2.0 * TMath::Pi()}, {100, 0.0, 1.0}});
+
     histos.add("hNsigmaProtonTPC", "Nsigma Proton TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 10.0f}});
     histos.add("hNsigmaKaonTPC", "Nsigma Kaon TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 10.0f}});
     histos.add("hNsigmaPionTPC", "Nsigma Pion TPC distribution", kTH2F, {{100, -5.0f, 5.0f}, {100, 0.0f, 10.0f}});
@@ -125,6 +127,9 @@ struct f1protoncorrelation {
     histos.add("h2MixEventInvariantMassUnlike_mass", "Unlike Sign Invariant mass of f1 mix event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
     histos.add("h2MixEventInvariantMassLike_mass", "Like Sign Invariant mass of f1 mix event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
     histos.add("h2MixEventInvariantMassRot_mass", "Rotational Sign Invariant mass of f1 mix event", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
+
+    histos.add("h2MixEventInvariantMassUnlike_mass_SEFP", "Unlike-sign invariant mass of f1 mix event (SE-F1P: π mixed, p same event)", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
+    histos.add("h2MixEventInvariantMassUnlike_mass_DEFP", "Unlike-sign invariant mass of f1 mix event (DE-F1P: π + p mixed)", kTHnSparseF, {thnAxisKstar, thnAxisPt, thnAxisInvMass, thnAxisCharge});
 
     if (fillSparse) {
       histos.add("SEMassUnlike", "SEMassUnlike", HistType::kTHnSparseF, {thnAxisInvMass, thnAxisPt, thnAxisPtProton, thnAxisKstar, thnAxisNsigma, thnAxisCharge});
@@ -311,8 +316,8 @@ struct f1protoncorrelation {
             pionCharge = 1;
             kaonCharge = -1;
           }
-          histos.fill(HIST("hPhaseSpaceProtonKaonSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, protontrack.protonCharge(), kaonCharge, bz, bz)); // Phase Space Proton kaon
-          histos.fill(HIST("hPhaseSpaceProtonPionSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, protontrack.protonCharge(), pionCharge, bz, bz)); // Phase Space Proton Pion
+          histos.fill(HIST("hPhaseSpaceProtonKaonSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, protontrack.protonCharge(), kaonCharge, bz, bz), relative_momentum); // Phase Space Proton kaon
+          histos.fill(HIST("hPhaseSpaceProtonPionSame"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, protontrack.protonCharge(), pionCharge, bz, bz), relative_momentum); // Phase Space Proton Pion
           histos.fill(HIST("h2SameEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge);                                                       // F1 sign = 1 unlike, F1 sign = -1 like
           if (fillSparse) {
             histos.fill(HIST("SEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, pairCharge);
@@ -354,113 +359,163 @@ struct f1protoncorrelation {
   BinningType colBinning{{CfgVtxBins, CfgMultBins}, true};
   Preslice<aod::F1Tracks> tracksPerCollisionPresliceF1 = aod::f1protondaughter::redF1PEventId;
   Preslice<aod::ProtonTracks> tracksPerCollisionPresliceP = aod::f1protondaughter::redF1PEventId;
-  void processME(aod::RedF1PEvents& collisions, aod::F1Tracks& f1tracks, aod::ProtonTracks& protontracks)
+  void processME(aod::RedF1PEvents& collisions,
+                 aod::F1Tracks& f1tracks,
+                 aod::ProtonTracks& protontracks)
   {
-    for (auto& [collision1, collision2] : selfCombinations(colBinning, nEvtMixing, -1, collisions, collisions)) {
-      // LOGF(info, "Mixed event collisions: (%d, %d)", collision1.index(), collision2.index());
-      if (collision1.index() == collision2.index()) {
+    for (auto const& [collision1, collision2] :
+         selfCombinations(colBinning, nEvtMixingBkg, -1, collisions, collisions)) {
+      if (collision1.index() == collision2.index())
         continue;
-      }
-      if (f1tracks.size() == 0 || protontracks.size() == 0) {
-        continue;
-      }
-      auto groupF1 = f1tracks.sliceBy(tracksPerCollisionPresliceF1, collision1.globalIndex());
-      auto groupProton = protontracks.sliceBy(tracksPerCollisionPresliceP, collision2.globalIndex());
-      // auto groupF1 = f1tracks.sliceByCached(aod::f1protondaughter::redF1PEventId, collision1.globalIndex(), cache);
-      // auto groupProton = protontracks.sliceByCached(aod::f1protondaughter::redF1PEventId, collision2.globalIndex(), cache);
-      for (auto& [t1, t2] : soa::combinations(o2::soa::CombinationsFullIndexPolicy(groupF1, groupProton))) {
-        if (t1.f1MassKaonKshort() > maxKKS0Mass) {
+
+      // Preslices
+      auto f1_c1 = f1tracks.sliceBy(tracksPerCollisionPresliceF1, collision1.globalIndex());
+      auto f1_c2 = f1tracks.sliceBy(tracksPerCollisionPresliceF1, collision2.globalIndex());
+      auto p_c1 = protontracks.sliceBy(tracksPerCollisionPresliceP, collision1.globalIndex());
+      auto p_c2 = protontracks.sliceBy(tracksPerCollisionPresliceP, collision2.globalIndex());
+
+      // -------------------------------
+      // CASE 1: SE-F1P  (π mixed from c2, K+K0s from c1, proton from c1)
+      // -------------------------------
+      for (auto const& t1 : f1_c1) {
+        if (t1.f1MassKaonKshort() > maxKKS0Mass)
           continue;
-        }
-        F1.SetXYZM(t1.f1Px(), t1.f1Py(), t1.f1Pz(), t1.f1Mass());
-        Pion.SetXYZM(t1.f1d1Px(), t1.f1d1Py(), t1.f1d1Pz(), 0.139);
+
         Kaon.SetXYZM(t1.f1d2Px(), t1.f1d2Py(), t1.f1d2Pz(), 0.493);
         Kshort.SetXYZM(t1.f1d3Px(), t1.f1d3Py(), t1.f1d3Pz(), 0.497);
         KaonKshortPair = Kaon + Kshort;
-        if (Pion.Pt() > maxMomentumPion || Kaon.Pt() > maxMomentumKaon) {
+
+        if (Kaon.Pt() > maxMomentumKaon)
           continue;
-        }
         if (pdepPID) {
-          if (Kaon.Pt() <= 0.5 && (t1.f1d2TPC() < -2.5 || t1.f1d2TPC() > 2.5)) {
+          if (Kaon.Pt() <= 0.5 && (t1.f1d2TPC() < -2.5 || t1.f1d2TPC() > 2.5))
             continue;
-          }
-          if (Kaon.Pt() > 0.5 && Kaon.Pt() <= 0.7 && (t1.f1d2TPC() < -1.5 || t1.f1d2TPC() > 2.5)) {
+          if (Kaon.Pt() > 0.5 && Kaon.Pt() <= 0.7 && (t1.f1d2TPC() < -1.5 || t1.f1d2TPC() > 2.5))
             continue;
-          }
-          if (Kaon.Pt() > 0.7 && Kaon.Pt() <= 1.0 && (t1.f1d2TPC() < -1.0 || t1.f1d2TPC() > 2.5)) {
+          if (Kaon.Pt() > 0.7 && Kaon.Pt() <= 1.0 && (t1.f1d2TPC() < -1.0 || t1.f1d2TPC() > 2.5))
             continue;
-          }
-          if (Kaon.Pt() > 1.0 && (t1.f1d2TPC() < -2.5 || t1.f1d2TPC() > 2.5)) {
+          if (Kaon.Pt() > 1.0 && (t1.f1d2TPC() < -2.5 || t1.f1d2TPC() > 2.5))
             continue;
-          }
-          if (Pion.Pt() < 2.0 && (t1.f1d1TPC() < -2.5 || t1.f1d1TPC() > 2.5)) {
-            continue;
-          }
-          if (Pion.Pt() > 2.0 && (t1.f1d1TPC() < -2.5 || t1.f1d1TPC() > 2.5)) {
-            continue;
-          }
         }
-        if (strategyPIDPion == 1 && Pion.Pt() > momentumTOFPionMin && Pion.Pt() <= momentumTOFPionMax && t1.f1d1TOFHit() != 1) {
+        if (strategyPIDKaon == 1 &&
+            Kaon.Pt() > momentumTOFKaonMin && Kaon.Pt() <= momentumTOFKaonMax &&
+            t1.f1d2TOFHit() != 1)
           continue;
-        }
-        if (strategyPIDKaon == 1 && Kaon.Pt() > momentumTOFKaonMin && Kaon.Pt() <= momentumTOFKaonMax && t1.f1d2TOFHit() != 1) {
-          continue;
-        }
-        if (typeofCombined == 0) {
-          combinedTPC = TMath::Sqrt(t1.f1d1TPC() * t1.f1d1TPC() + t1.f1d2TPC() * t1.f1d2TPC());
-        }
-        if (typeofCombined == 1) {
-          combinedTPC = (t1.f1d1TPC() - t1.f1d2TPC()) / (t1.f1d1TPC() + t1.f1d2TPC());
-        }
-        Proton.SetXYZM(t2.protonPx(), t2.protonPy(), t2.protonPz(), 0.938);
-        if (Proton.Pt() > momentumProtonMax) {
-          continue;
-        }
-        if (Proton.P() < momentumTOFProton && TMath::Abs(t2.protonNsigmaTPC()) > 2.5) {
-          continue;
-        }
-        if (Proton.P() >= momentumTOFProton && (t2.protonTOFHit() != 1 || TMath::Abs(t2.protonNsigmaTOF()) > 2.5)) {
-          continue;
-        }
-        auto relative_momentum = getkstar(F1, Proton);
-        if (t1.f1SignalStat() > 0) {
-          histos.fill(HIST("h2MixEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), 1.0); // F1 sign = 1 unlike, F1 sign = -1 like
-          if (fillSparse) {
-            histos.fill(HIST("MEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, 1.0);
-          }
-        }
-        if (t1.f1SignalStat() == -1) {
-          histos.fill(HIST("h2MixEventInvariantMassLike_mass"), relative_momentum, F1.Pt(), F1.M(), 1.0);
-          if (fillSparse) {
-            histos.fill(HIST("MEMassLike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, 1.0);
-          }
-        }
-        if (fillRotation) {
-          for (int nrotbkg = 0; nrotbkg < nRot; nrotbkg++) {
-            auto anglestart = 5.0 * TMath::Pi() / 6.0;
-            auto angleend = 7.0 * TMath::Pi() / 6.0;
-            auto anglestep = (angleend - anglestart) / (1.0 * (9.0 - 1.0));
-            auto rotangle = anglestart + nrotbkg * anglestep;
-            auto rotPionPx = Pion.Px() * std::cos(rotangle) - Pion.Py() * std::sin(rotangle);
-            auto rotPionPy = Pion.Px() * std::sin(rotangle) + Pion.Py() * std::cos(rotangle);
-            PionRot.SetXYZM(rotPionPx, rotPionPy, Pion.Pz(), Pion.M());
-            F1Rot = PionRot + KaonKshortPair;
-            if (F1Rot.Pt() < 1.0) {
+
+        for (auto const& t2 : p_c1) { // proton from c1
+          Proton.SetXYZM(t2.protonPx(), t2.protonPy(), t2.protonPz(), 0.938);
+          if (Proton.Pt() > momentumProtonMax)
+            continue;
+          if (Proton.P() < momentumTOFProton && TMath::Abs(t2.protonNsigmaTPC()) > 2.5)
+            continue;
+          if (Proton.P() >= momentumTOFProton && (t2.protonTOFHit() != 1 || TMath::Abs(t2.protonNsigmaTOF()) > 2.5))
+            continue;
+
+          for (auto const& t3 : f1_c2) { // pion source from c2
+            Pion.SetXYZM(t3.f1d1Px(), t3.f1d1Py(), t3.f1d1Pz(), 0.139);
+            if (Pion.Pt() > maxMomentumPion)
               continue;
+            if (pdepPID) {
+              if (Pion.Pt() < 2.0 && (t3.f1d1TPC() < -2.5 || t3.f1d1TPC() > 2.5))
+                continue;
+              if (Pion.Pt() >= 2.0 && (t3.f1d1TPC() < -2.5 || t3.f1d1TPC() > 2.5))
+                continue;
             }
-            auto relative_momentum_rot = getkstar(F1Rot, Proton);
-            if (t1.f1SignalStat() > 0) {
-              histos.fill(HIST("h2MixEventInvariantMassRot_mass"), relative_momentum_rot, F1Rot.Pt(), F1Rot.M(), 1.0);
-              if (fillSparse) {
-                histos.fill(HIST("MEMassRot"), F1Rot.M(), F1Rot.Pt(), Proton.Pt(), relative_momentum_rot, combinedTPC, 1.0);
-              }
+            if (strategyPIDPion == 1 &&
+                Pion.Pt() > momentumTOFPionMin && Pion.Pt() <= momentumTOFPionMax &&
+                t3.f1d1TOFHit() != 1)
+              continue;
+
+            // Fake f1: π(mixed) + (K+K0s from c1)
+            F1 = Pion + KaonKshortPair;
+
+            // keep only unlike-sign branch
+            if (t1.f1SignalStat() <= 0)
+              continue;
+
+            int f1Charge = t1.f1SignalStat();
+            float pairQ = f1Charge * t2.protonCharge();
+
+            auto kstar = getkstar(F1, Proton);
+
+            histos.fill(HIST("h2MixEventInvariantMassUnlike_mass_SEFP"),
+                        kstar, F1.Pt(), F1.M(), pairQ);
+          }
+        }
+      }
+
+      // -------------------------------
+      // CASE 2: DE-F1P  (π mixed from c2, K+K0s from c1, proton from c2)
+      // -------------------------------
+      for (auto const& t1 : f1_c1) {
+        if (t1.f1MassKaonKshort() > maxKKS0Mass)
+          continue;
+
+        Kaon.SetXYZM(t1.f1d2Px(), t1.f1d2Py(), t1.f1d2Pz(), 0.493);
+        Kshort.SetXYZM(t1.f1d3Px(), t1.f1d3Py(), t1.f1d3Pz(), 0.497);
+        KaonKshortPair = Kaon + Kshort;
+
+        if (Kaon.Pt() > maxMomentumKaon)
+          continue;
+        if (pdepPID) {
+          if (Kaon.Pt() <= 0.5 && (t1.f1d2TPC() < -2.5 || t1.f1d2TPC() > 2.5))
+            continue;
+          if (Kaon.Pt() > 0.5 && Kaon.Pt() <= 0.7 && (t1.f1d2TPC() < -1.5 || t1.f1d2TPC() > 2.5))
+            continue;
+          if (Kaon.Pt() > 0.7 && Kaon.Pt() <= 1.0 && (t1.f1d2TPC() < -1.0 || t1.f1d2TPC() > 2.5))
+            continue;
+          if (Kaon.Pt() > 1.0 && (t1.f1d2TPC() < -2.5 || t1.f1d2TPC() > 2.5))
+            continue;
+        }
+        if (strategyPIDKaon == 1 &&
+            Kaon.Pt() > momentumTOFKaonMin && Kaon.Pt() <= momentumTOFKaonMax &&
+            t1.f1d2TOFHit() != 1)
+          continue;
+
+        for (auto const& t2 : p_c2) { // proton from c2
+          Proton.SetXYZM(t2.protonPx(), t2.protonPy(), t2.protonPz(), 0.938);
+          if (Proton.Pt() > momentumProtonMax)
+            continue;
+          if (Proton.P() < momentumTOFProton && TMath::Abs(t2.protonNsigmaTPC()) > 2.5)
+            continue;
+          if (Proton.P() >= momentumTOFProton && (t2.protonTOFHit() != 1 || TMath::Abs(t2.protonNsigmaTOF()) > 2.5))
+            continue;
+
+          for (auto const& t3 : f1_c2) { // pion from c2
+            Pion.SetXYZM(t3.f1d1Px(), t3.f1d1Py(), t3.f1d1Pz(), 0.139);
+            if (Pion.Pt() > maxMomentumPion)
+              continue;
+            if (pdepPID) {
+              if (Pion.Pt() < 2.0 && (t3.f1d1TPC() < -2.5 || t3.f1d1TPC() > 2.5))
+                continue;
+              if (Pion.Pt() >= 2.0 && (t3.f1d1TPC() < -2.5 || t3.f1d1TPC() > 2.5))
+                continue;
             }
+            if (strategyPIDPion == 1 &&
+                Pion.Pt() > momentumTOFPionMin && Pion.Pt() <= momentumTOFPionMax &&
+                t3.f1d1TOFHit() != 1)
+              continue;
+
+            F1 = Pion + KaonKshortPair;
+
+            if (t1.f1SignalStat() <= 0)
+              continue;
+
+            int f1Charge = t1.f1SignalStat();
+            float pairQ = f1Charge * t2.protonCharge();
+
+            auto kstar = getkstar(F1, Proton);
+
+            histos.fill(HIST("h2MixEventInvariantMassUnlike_mass_DEFP"),
+                        kstar, F1.Pt(), F1.M(), pairQ);
           }
         }
       }
     }
   }
-  PROCESS_SWITCH(f1protoncorrelation, processME, "Process EventMixing for combinatorial background", false);
+
+  PROCESS_SWITCH(f1protoncorrelation, processME, "Process EventMixing for combinatorial background (SE-F1P & DE-F1P, minimal)", false);
+
   void processMEOpti(aod::RedF1PEvents& collisions, aod::F1Tracks& f1tracks, aod::ProtonTracks& protontracks)
   {
     // for (auto const& [collision1, collision2] : combinations(soa::CombinationsBlockFullIndexPolicy(colBinningFemto, nEvtMixing, -1, collisions, collisions))){
@@ -544,8 +599,8 @@ struct f1protoncorrelation {
             kaonCharge = -1;
           }
           histos.fill(HIST("h2MixEventInvariantMassUnlike_mass"), relative_momentum, F1.Pt(), F1.M(), pairCharge);                                               // F1 sign = 1 unlike, F1 sign = -1 like
-          histos.fill(HIST("hPhaseSpaceProtonKaonMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, t2.protonCharge(), kaonCharge, bz, bz2)); // Phase Space Proton kaon
-          histos.fill(HIST("hPhaseSpaceProtonPionMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, t2.protonCharge(), pionCharge, bz, bz2)); // Phase Space Proton Pion
+          histos.fill(HIST("hPhaseSpaceProtonKaonMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Kaon, t2.protonCharge(), kaonCharge, bz, bz2), relative_momentum); // Phase Space Proton kaon
+          histos.fill(HIST("hPhaseSpaceProtonPionMix"), Proton.Eta() - Kaon.Eta(), PhiAtSpecificRadiiTPC(Proton, Pion, t2.protonCharge(), pionCharge, bz, bz2), relative_momentum); // Phase Space Proton Pion
           if (fillSparse) {
             histos.fill(HIST("MEMassUnlike"), F1.M(), F1.Pt(), Proton.Pt(), relative_momentum, combinedTPC, pairCharge);
           }

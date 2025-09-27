@@ -165,6 +165,7 @@ struct PiKpRAA {
     // Phi cut
     Configurable<bool> applyPhiCut{"applyPhiCut", false, "Apply geometrical cut?"};
     Configurable<bool> applyEtaCal{"applyEtaCal", false, "Apply eta calibration?"};
+    Configurable<bool> applyPlateauSel{"applyPlateauSel", false, "Apply eta calibration?"};
     Configurable<bool> usePinPhiSelection{"usePinPhiSelection", true, "Uses Phi selection as a function of P or Pt?"};
     Configurable<bool> applyNclSel{"applyNclSel", false, "Apply Min. found Ncl in TPC?"};
   } v0Selections;
@@ -262,7 +263,8 @@ struct PiKpRAA {
   struct ConfigEtaCalib {
     TProfile* pEtaCal = nullptr;
     TProfile* pEtaCalPlateau = nullptr;
-    bool isCalLoaded = false;
+    bool isMIPCalLoaded = false;
+    bool isCalPlateauLoaded = false;
   } etaCal;
 
   TrackSelection trkSelDaugthers;
@@ -387,6 +389,8 @@ struct PiKpRAA {
       registry.add("dEdxVsEtaElMIPV0", "e^{+} + e^{-} (0.4 < #it{p} < 0.6 GeV/#it{c});#eta; dE/dx", kTH2F, {{{axisEta}, {100, 0, 100}}});
       registry.add("dEdxVsEtaElMIPV0p", "e^{+} + e^{-} (0.4 < #it{p} < 0.6 GeV/#it{c});#eta; #LTdE/dx#GT", kTProfile, {axisEta});
 
+      registry.add("pTVsCent", "", kTH2F, {axisPt, axisCent});
+
       for (int i = 0; i < kNEtaHists; ++i) {
         dEdx[i] = registry.add<TH3>(Form("dEdx_%s", endingEta[i]), Form("%s;Momentum (GeV/#it{c});dE/dx;", latexEta[i]), kTH3F, {axisPt, axisdEdx, axisCent});
         pTVsP[i] = registry.add<TH2>(Form("pTVsP_%s", endingEta[i]), Form("%s;Momentum (GeV/#it{c});#it{p}_{T} (GeV/#it{c});", latexEta[i]), kTH2F, {axisPt, axisPt});
@@ -450,8 +454,13 @@ struct PiKpRAA {
     if (v0Selections.applyEtaCal) {
       LOG(info) << "\tLoading Eta Cal!";
       LOG(info) << "\tpathEtaCal=" << pathEtaCal.value;
-      LOG(info) << "\tpathEtaCalPlateau=" << pathEtaCalPlateau.value;
       loadEtaCalibration();
+    }
+
+    if (v0Selections.applyPlateauSel) {
+      LOG(info) << "\tLoading Eta Plateau Cal!";
+      LOG(info) << "\tpathEtaCalPlateau=" << pathEtaCalPlateau.value;
+      loadEtaPlateauCalibration();
     }
 
     if (v0Selections.applyNclSel)
@@ -573,7 +582,7 @@ struct PiKpRAA {
           continue;
       }
 
-      if (v0Selections.applyEtaCal) {
+      if (v0Selections.applyEtaCal && etaCal.isMIPCalLoaded) {
         const double dedxCal{etaCal.pEtaCal->GetBinContent(etaCal.pEtaCal->FindBin(eta))};
         if (dedxCal > kMindEdxMIP && dedxCal < kMaxdEdxMIP)
           dedx *= (50.0 / dedxCal);
@@ -618,6 +627,7 @@ struct PiKpRAA {
       pTVsP[indexEta]->Fill(momentum, pt);
       nClVsP[indexEta]->Fill(pOrPt, ncl);
       nClVsPp[indexEta]->Fill(pOrPt, ncl);
+      registry.fill(HIST("pTVsCent"), pt, centrality);
       registry.fill(HIST("dcaVsPt"), pt, track.dcaXY());
       registry.fill(HIST("EtaVsPhi"), eta, track.phi());
       registry.fill(HIST("NclVsEta"), eta, nclFound);
@@ -697,7 +707,7 @@ struct PiKpRAA {
       if (v0Selections.applyNclSel && !(posNcl >= v0Selections.minNcl && negNcl >= v0Selections.minNcl))
         continue;
 
-      if (v0Selections.applyEtaCal) {
+      if (v0Selections.applyEtaCal && etaCal.isMIPCalLoaded) {
         const double dedxCal{etaCal.pEtaCal->GetBinContent(etaCal.pEtaCal->FindBin(posTrkEta))};
         if (dedxCal > kMindEdxMIP && dedxCal < kMaxdEdxMIP)
           posTrkdEdx *= (50.0 / dedxCal);
@@ -705,7 +715,7 @@ struct PiKpRAA {
           continue;
       }
 
-      if (v0Selections.applyEtaCal) {
+      if (v0Selections.applyEtaCal && etaCal.isMIPCalLoaded) {
         const double dedxCal{etaCal.pEtaCal->GetBinContent(etaCal.pEtaCal->FindBin(negTrkEta))};
         if (dedxCal > kMindEdxMIP && dedxCal < kMaxdEdxMIP)
           negTrkdEdx *= (50.0 / dedxCal);
@@ -849,37 +859,41 @@ struct PiKpRAA {
       if (v0Selections.applyInvMassSel && dMassK0s > v0Selections.dMassSel && dMassL > v0Selections.dMassSel && dMassAL > v0Selections.dMassSel && dMassG < v0Selections.dMassSel) {
         if (passesGammaSelection(collision, v0)) {
           if (std::abs(alpha) < v0Selections.armAlphaSel && qT < v0Selections.qTSel) {
-            const double posDedxCal{etaCal.pEtaCalPlateau->GetBinContent(etaCal.pEtaCalPlateau->FindBin(posTrkEta))};
-            const double negDedxCal{etaCal.pEtaCalPlateau->GetBinContent(etaCal.pEtaCalPlateau->FindBin(negTrkEta))};
-            if (std::abs(posTrkdEdx - posDedxCal) < v0Selections.dEdxPlateauSel && std::abs(negTrkdEdx - negDedxCal) < v0Selections.dEdxPlateauSel) {
-              registry.fill(HIST("V0sCounter"), V0sCounter::Gamma);
-              registry.fill(HIST("ArmG"), alpha, qT);
-              registry.fill(HIST("MassGVsPt"), v0.pt(), v0.mGamma());
-              registry.fill(HIST("nSigElFromG"), negTrkPt, negTrack.tpcNSigmaEl());
-              registry.fill(HIST("nSigElFromG"), posTrkPt, posTrack.tpcNSigmaEl());
-              registry.fill(HIST("NclVsEtaElV0"), posTrkEta, posNcl);
-              registry.fill(HIST("NclVsEtaElV0p"), posTrkEta, posNcl);
-              registry.fill(HIST("NclVsEtaElV0"), negTrkEta, negNcl);
-              registry.fill(HIST("NclVsEtaElV0p"), negTrkEta, negNcl);
-              nClVsPElV0[negIndexEta]->Fill(negPorPt, negNcl);
-              nClVsPpElV0[negIndexEta]->Fill(negPorPt, negNcl);
-              nClVsPElV0[posIndexEta]->Fill(posPorPt, posNcl);
-              nClVsPpElV0[posIndexEta]->Fill(posPorPt, posNcl);
-              nClVsdEdxElV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
-              nClVsdEdxpElV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
-              nClVsdEdxElV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
-              nClVsdEdxpElV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
-              if (posTrkP > kMinPMIP && posTrkP < kMaxPMIP) {
-                registry.fill(HIST("dEdxVsEtaElMIPV0"), posTrkEta, posTrkdEdx);
-                registry.fill(HIST("dEdxVsEtaElMIPV0p"), posTrkEta, posTrkdEdx);
-              }
-              if (negTrkP > kMinPMIP && negTrkP < kMaxPMIP) {
-                registry.fill(HIST("dEdxVsEtaElMIPV0"), negTrkEta, negTrkdEdx);
-                registry.fill(HIST("dEdxVsEtaElMIPV0p"), negTrkEta, negTrkdEdx);
-              }
-              dEdxElV0[posIndexEta]->Fill(posTrkP, posTrkdEdx, centrality);
-              dEdxElV0[negIndexEta]->Fill(negTrkP, negTrkdEdx, centrality);
+
+            if (v0Selections.applyPlateauSel && etaCal.isCalPlateauLoaded) {
+              const double posDedxCal{etaCal.pEtaCalPlateau->GetBinContent(etaCal.pEtaCalPlateau->FindBin(posTrkEta))};
+              const double negDedxCal{etaCal.pEtaCalPlateau->GetBinContent(etaCal.pEtaCalPlateau->FindBin(negTrkEta))};
+              if (!(std::abs(posTrkdEdx - posDedxCal) < v0Selections.dEdxPlateauSel && std::abs(negTrkdEdx - negDedxCal) < v0Selections.dEdxPlateauSel))
+                continue;
             }
+
+            registry.fill(HIST("V0sCounter"), V0sCounter::Gamma);
+            registry.fill(HIST("ArmG"), alpha, qT);
+            registry.fill(HIST("MassGVsPt"), v0.pt(), v0.mGamma());
+            registry.fill(HIST("nSigElFromG"), negTrkPt, negTrack.tpcNSigmaEl());
+            registry.fill(HIST("nSigElFromG"), posTrkPt, posTrack.tpcNSigmaEl());
+            registry.fill(HIST("NclVsEtaElV0"), posTrkEta, posNcl);
+            registry.fill(HIST("NclVsEtaElV0p"), posTrkEta, posNcl);
+            registry.fill(HIST("NclVsEtaElV0"), negTrkEta, negNcl);
+            registry.fill(HIST("NclVsEtaElV0p"), negTrkEta, negNcl);
+            nClVsPElV0[negIndexEta]->Fill(negPorPt, negNcl);
+            nClVsPpElV0[negIndexEta]->Fill(negPorPt, negNcl);
+            nClVsPElV0[posIndexEta]->Fill(posPorPt, posNcl);
+            nClVsPpElV0[posIndexEta]->Fill(posPorPt, posNcl);
+            nClVsdEdxElV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
+            nClVsdEdxpElV0[negIndexEta]->Fill(negNcl, negTrkdEdx);
+            nClVsdEdxElV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
+            nClVsdEdxpElV0[posIndexEta]->Fill(posNcl, posTrkdEdx);
+            if (posTrkP > kMinPMIP && posTrkP < kMaxPMIP) {
+              registry.fill(HIST("dEdxVsEtaElMIPV0"), posTrkEta, posTrkdEdx);
+              registry.fill(HIST("dEdxVsEtaElMIPV0p"), posTrkEta, posTrkdEdx);
+            }
+            if (negTrkP > kMinPMIP && negTrkP < kMaxPMIP) {
+              registry.fill(HIST("dEdxVsEtaElMIPV0"), negTrkEta, negTrkdEdx);
+              registry.fill(HIST("dEdxVsEtaElMIPV0p"), negTrkEta, negTrkdEdx);
+            }
+            dEdxElV0[posIndexEta]->Fill(posTrkP, posTrkdEdx, centrality);
+            dEdxElV0[negIndexEta]->Fill(negTrkP, negTrkdEdx, centrality);
           }
         }
       }
@@ -1100,14 +1114,14 @@ struct PiKpRAA {
   bool passesPhiSelection(const float& pt, const float& phi)
   {
 
-    bool isSelected{false};
+    bool isSelected{true};
     if (phiCut.isPhiCutLoaded) {
       const int binLow{phiCut.hPhiCutLow->FindBin(pt)};
       const int binHigh{phiCut.hPhiCutHigh->FindBin(pt)};
       const double phiCutLow{phiCut.hPhiCutLow->GetBinContent(binLow)};
       const double phiCutHigh{phiCut.hPhiCutHigh->GetBinContent(binHigh)};
-      if (phi < phiCutLow || phi > phiCutHigh)
-        isSelected = true;
+      if (phi >= phiCutLow && phi <= phiCutHigh)
+        isSelected = false;
     }
     return isSelected;
   }
@@ -1263,16 +1277,25 @@ struct PiKpRAA {
   {
     if (pathEtaCal.value.empty() == false) {
       etaCal.pEtaCal = ccdb->getForTimeStamp<TProfile>(pathEtaCal, ccdbNoLaterThan.value);
-      etaCal.pEtaCalPlateau = ccdb->getForTimeStamp<TProfile>(pathEtaCalPlateau, ccdbNoLaterThan.value);
       if (etaCal.pEtaCal == nullptr)
         LOGF(fatal, "Could not load pEtaCal from %s", pathEtaCal.value.c_str());
+    }
+
+    if (etaCal.pEtaCal)
+      etaCal.isMIPCalLoaded = true;
+  }
+
+  void loadEtaPlateauCalibration()
+  {
+    if (pathEtaCalPlateau.value.empty() == false) {
+      etaCal.pEtaCalPlateau = ccdb->getForTimeStamp<TProfile>(pathEtaCalPlateau, ccdbNoLaterThan.value);
 
       if (etaCal.pEtaCalPlateau == nullptr)
         LOGF(fatal, "Could not load pEtaCalPlateau from %s", pathEtaCalPlateau.value.c_str());
     }
 
-    if (etaCal.pEtaCal && etaCal.pEtaCalPlateau)
-      etaCal.isCalLoaded = true;
+    if (etaCal.pEtaCalPlateau)
+      etaCal.isCalPlateauLoaded = true;
   }
 };
 

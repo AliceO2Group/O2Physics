@@ -21,11 +21,6 @@ o2physics_add_dpl_workflow(alice3-trackextension
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2::ReconstructionDataFormats
                     COMPONENT_NAME Analysis)
 
-o2physics_add_dpl_workflow(alice3-pid-tof
-                    SOURCES alice3-pidTOF.cxx
-                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore O2Physics::ALICE3Core
-                    COMPONENT_NAME Analysis)
-
 o2physics_add_dpl_workflow(alice3-centrality
                     SOURCES alice3-centrality.cxx
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
