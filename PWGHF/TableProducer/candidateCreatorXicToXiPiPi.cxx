@@ -194,7 +194,7 @@ struct HfCandidateCreatorXicToXiPiPi {
     df.setWeightedFinalPCA(useWeightedFinalPCA);
   }
 
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Collision>
+  template <o2::hf_centrality::CentralityEstimator CentEstimator, typename Collision>
   void runXicplusCreatorWithDcaFitter(Collision const&,
                                       aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                       CascadesLinked const&,
@@ -209,7 +209,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       // check if the event is selected
       auto collision = rowTrackIndexXicPlus.collision_as<Collision>();
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -427,7 +427,7 @@ struct HfCandidateCreatorXicToXiPiPi {
     } // loop over track triplets
   }
 
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename Collision>
+  template <o2::hf_centrality::CentralityEstimator CentEstimator, typename Collision>
   void runXicplusCreatorWithKFParticle(Collision const&,
                                        aod::HfCascLf3Prongs const& rowsTrackIndexXicPlus,
                                        KFCascadesLinked const&,
@@ -442,7 +442,7 @@ struct HfCandidateCreatorXicToXiPiPi {
       // check if the event is selected
       auto collision = rowTrackIndexXicPlus.collision_as<Collision>();
       float centrality{-1.f};
-      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+      const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
       if (rejectionMask != 0) {
         /// at least one event selection not satisfied --> reject the candidate
         continue;
@@ -898,7 +898,7 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
     }
   }
 
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename McCollisions, typename CollInfos>
+  template <o2::hf_centrality::CentralityEstimator CentEstimator, typename McCollisions, typename CollInfos>
   void runMcMatching(aod::TracksWMc const& tracks,
                      aod::McParticles const& mcParticles,
                      McCollisions const& mcCollisions,
@@ -1074,18 +1074,18 @@ struct HfCandidateCreatorXicToXiPiPiExpressions {
       float centrality{-1.f};
       o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
       int nSplitColl = 0;
-      if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
+      if constexpr (CentEstimator == o2::hf_centrality::CentralityEstimator::FT0C) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0C, mcCollision.globalIndex());
-        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-      } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, CentEstimator>(mcCollision, collSlice, centrality);
+      } else if constexpr (CentEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollisionFT0M, mcCollision.globalIndex());
         nSplitColl = collSlice.size();
-        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
-      } else if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::None) {
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, CentEstimator>(mcCollision, collSlice, centrality);
+      } else if constexpr (CentEstimator == o2::hf_centrality::CentralityEstimator::None) {
         const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
-        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, centEstimator>(mcCollision, collSlice, centrality);
+        rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, CentEstimator>(mcCollision, collSlice, centrality);
       }
-      hfEvSelMc.fillHistograms<centEstimator>(mcCollision, rejectionMask, nSplitColl);
+      hfEvSelMc.fillHistograms<CentEstimator>(mcCollision, rejectionMask, nSplitColl);
       if (rejectionMask != 0) {
         // at least one event selection not satisfied --> reject all particles from this collision
         for (unsigned int i = 0; i < mcParticlesPerMcColl.size(); ++i) {

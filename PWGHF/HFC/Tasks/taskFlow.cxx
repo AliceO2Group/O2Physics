@@ -354,17 +354,17 @@ struct HfTaskFlow {
   OutputObj<CorrelationContainer> sameEventHfMc{"sameEventHfMc"};
   OutputObj<CorrelationContainer> mixedEventHfMc{"mixedEventHfMc"};
 
-  template <DataType dataType, CorrelationCase correlationCase, CorrelatedParticles correlatedParticles>
+  template <DataType DataType, CorrelationCase CorrelationCase, CorrelatedParticles CorrelatedParticles>
   void addHistograms()
   {
-    registry.add(Form("%s%s%shEtaTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisEtaTrigger}});
-    registry.add(Form("%s%s%shPhiTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisPhi}});
-    registry.add(Form("%s%s%shPtTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisPt}});
-    registry.add(Form("%s%s%shYieldsTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaTrigger}});
-    registry.add(Form("%s%s%shEtaPhiTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisEtaTrigger, axisPhi}});
-    registry.add(Form("%s%s%shEtaAssociated", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisEtaAssociated}});
-    registry.add(Form("%s%s%shPhiAssociated", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisPhi}});
-    registry.add(Form("%s%s%shEtaPhiAssociated", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisEtaAssociated, axisPhi}});
+    registry.add(Form("%s%s%shEtaTrigger", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH1D, {axisEtaTrigger}});
+    registry.add(Form("%s%s%shPhiTrigger", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH1D, {axisPhi}});
+    registry.add(Form("%s%s%shPtTrigger", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH1D, {axisPt}});
+    registry.add(Form("%s%s%shYieldsTrigger", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaTrigger}});
+    registry.add(Form("%s%s%shEtaPhiTrigger", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisEtaTrigger, axisPhi}});
+    registry.add(Form("%s%s%shEtaAssociated", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH1D, {axisEtaAssociated}});
+    registry.add(Form("%s%s%shPhiAssociated", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH1D, {axisPhi}});
+    registry.add(Form("%s%s%shEtaPhiAssociated", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisEtaAssociated, axisPhi}});
   }
 
   //  =========================
@@ -623,22 +623,22 @@ struct HfTaskFlow {
   //      Quality assessment functions
   // =========================
 
-  template <DataType dataType, CorrelationCase correlationCase, CorrelatedParticles correlatedParticles>
+  template <DataType DataType, CorrelationCase CorrelationCase, CorrelatedParticles CorrelatedParticles>
   void fillTriggerQa(float multiplicity, float const& eta, float const& phi, float const& pt)
   {
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hPtTrigger"), pt);
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hEtaTrigger"), eta);
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hPhiTrigger"), phi);
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hYieldsTrigger"), multiplicity, pt, eta);
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hEtaPhiTrigger"), multiplicity, eta, phi);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hPtTrigger"), pt);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaTrigger"), eta);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hPhiTrigger"), phi);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hYieldsTrigger"), multiplicity, pt, eta);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaPhiTrigger"), multiplicity, eta, phi);
   }
 
-  template <DataType dataType, CorrelationCase correlationCase, CorrelatedParticles correlatedParticles>
+  template <DataType DataType, CorrelationCase CorrelationCase, CorrelatedParticles CorrelatedParticles>
   void fillAssociatedQa(float multiplicity, float const& eta, float const& phi)
   {
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hEtaAssociated"), eta);
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hPhiAssociated"), phi);
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hEtaPhiAssociated"), multiplicity, eta, phi);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaAssociated"), eta);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hPhiAssociated"), phi);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaPhiAssociated"), multiplicity, eta, phi);
   }
 
   // =========================

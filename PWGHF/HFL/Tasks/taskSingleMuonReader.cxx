@@ -119,10 +119,10 @@ struct HfTaskSingleMuonReader {
       // histograms after acceptance cuts
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<TMuons>();
-        auto Dpt = muonType3.pt() - pt;
+        auto dpt = muonType3.pt() - pt;
 
-        singleMuon(pt, dcaXY, Dpt, chi2);
-        registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, rAbs, charge, chi2, Dpt);
+        singleMuon(pt, dcaXY, dpt, chi2);
+        registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, rAbs, charge, chi2, dpt);
       }
     }
   }
@@ -156,15 +156,15 @@ struct HfTaskSingleMuonReader {
       // histograms after acceptance cuts
       if (muon.has_matchMCHTrack()) {
         auto muonType3 = muon.template matchMCHTrack_as<TMuons>();
-        auto Dpt = muonType3.pt() - pt;
+        auto dpt = muonType3.pt() - pt;
 
-        singleMuon(pt, dcaXY, Dpt, chi2);
-        registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, rAbs, charge, chi2, Dpt);
+        singleMuon(pt, dcaXY, dpt, chi2);
+        registry.fill(HIST("hMuAfterCuts"), pt, eta, dcaXY, rAbs, charge, chi2, dpt);
         if (muon.mcMask() == 0) {
-          registry.fill(HIST("hMuAfterCutsTrue"), pt, eta, dcaXY, rAbs, charge, chi2, Dpt);
+          registry.fill(HIST("hMuAfterCutsTrue"), pt, eta, dcaXY, rAbs, charge, chi2, dpt);
         }
         if (muon.mcMask() == 128) {
-          registry.fill(HIST("hMuAfterCutsFake"), pt, eta, dcaXY, rAbs, charge, chi2, Dpt);
+          registry.fill(HIST("hMuAfterCutsFake"), pt, eta, dcaXY, rAbs, charge, chi2, dpt);
         }
       }
     }

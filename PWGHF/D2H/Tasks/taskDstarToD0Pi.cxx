@@ -310,7 +310,7 @@ struct HfTaskDstarToD0Pi {
   /// @param cols reconstructed collision with centrality
   /// @param selectedCands selected candidates with selection flag
   /// @param preslice preslice to slice
-  template <bool applyMl, typename T1, typename T2>
+  template <bool ApplyMl, typename T1, typename T2>
   void runTaskDstar(CollisionsWCent const& cols, T1 selectedCands, T2 preslice)
   {
     for (const auto& col : cols) {
@@ -370,7 +370,7 @@ struct HfTaskDstarToD0Pi {
             nCandsSignalRegion++;
           }
 
-          if constexpr (applyMl) {
+          if constexpr (ApplyMl) {
             auto mlBdtScore = candDstar.mlProbDstarToD0Pi();
             registry.fill(HIST("Yield/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMDstar, candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2]);
           }
@@ -393,7 +393,7 @@ struct HfTaskDstarToD0Pi {
             nCandsSignalRegion++;
           }
 
-          if constexpr (applyMl) {
+          if constexpr (ApplyMl) {
             auto mlBdtScore = candDstar.mlProbDstarToD0Pi();
             registry.fill(HIST("Yield/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMAntiDstar, candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2]);
           }
@@ -425,7 +425,7 @@ struct HfTaskDstarToD0Pi {
   /// @tparam applyMl a boolean to apply ML or not
   /// @param candsMcRecSel reconstructed candidates with selection flag
   /// @param rowsMcPartilces generated particles  table
-  template <bool applyMl, typename T1>
+  template <bool ApplyMl, typename T1>
   void runMcRecTaskDstar(T1 const& candsMcRecSel, CandDstarMcGen const& rowsMcPartilces)
   {
     int8_t signDstar = 0;
@@ -474,7 +474,7 @@ struct HfTaskDstarToD0Pi {
             registry.fill(HIST("QA/hPtFullRecoDstarRecSig"), ptDstarRecSig);
           }
 
-          if constexpr (applyMl) { // All efficiency histograms at reconstruction level w/ ml
+          if constexpr (ApplyMl) { // All efficiency histograms at reconstruction level w/ ml
             if (isCentStudy) {
               auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
               registry.fill(HIST("Efficiency/hPtVsCentVsBDTScoreVsPvContribRecSig"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], nPVContributors, weightValue);

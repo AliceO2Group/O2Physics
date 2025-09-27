@@ -160,7 +160,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
   /// \param hfCandsBp B+ candidates
   /// \param pionTracks pion tracks
   /// \param configs config inherited from the D0pi data creator
-  template <bool withDmesMl, typename Cands>
+  template <bool WithDmesMl, typename Cands>
   void runSelection(Cands const& hfCandsBp,
                     TracksPion const& /*pionTracks*/,
                     HfCandBpConfigs const& configs)
@@ -190,7 +190,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
         continue;
       }
 
-      if constexpr (withDmesMl) { // we include it in the topological selections
+      if constexpr (WithDmesMl) { // we include it in the topological selections
         if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandBp, cutsDmesMl, binsPtDmesMl)) {
           hfSelBplusToD0PiCandidate(statusBplus);
           if (applyBplusMl) {
@@ -230,7 +230,7 @@ struct HfCandidateSelectorBplusToD0PiReduced {
       }
       if (applyBplusMl) {
         // B+ ML selections
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withDmesMl>(hfCandBp, trackPi);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<WithDmesMl>(hfCandBp, trackPi);
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBplus, outputMl);
         hfMlBplusToD0PiCandidate(outputMl[1]); // storing ML score for signal class
 

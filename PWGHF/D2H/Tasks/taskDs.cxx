@@ -366,7 +366,7 @@ struct HfTaskDs {
   /// Evaluate centrality/multiplicity percentile using FT0M estimator
   /// \param candidate is candidate
   /// \return centrality/multiplicity percentile of the collision
-  template <o2::hf_centrality::hasFT0MCent Coll>
+  template <o2::hf_centrality::HasFT0MCent Coll>
   float getZEqMultColl(const Coll& collision, uint8_t nProngsContributorsPV)
   {
     auto multFT0A = collision.multFT0A() - nProngsContributorsPV;
@@ -379,7 +379,7 @@ struct HfTaskDs {
   /// Evaluate centrality/multiplicity percentile using NTracksPV estimator
   /// \param candidate is candidate
   /// \return centrality/multiplicity percentile of the collision
-  template <o2::hf_centrality::hasNTracksPVCent Coll>
+  template <o2::hf_centrality::HasNTracksPvCent Coll>
   float getZEqMultColl(const Coll& collision, uint8_t nProngsContributorsPV)
   {
     auto multNTracksPV = collision.multNTracksPV() - nProngsContributorsPV;
@@ -464,7 +464,7 @@ struct HfTaskDs {
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
   /// \param finalState is either KKPi or PiKK, as defined in FinalState enum
-  template <bool isMc, typename Coll, HasDsMlInfo Cand>
+  template <bool IsMc, typename Coll, HasDsMlInfo Cand>
   void fillSparse(const Cand& candidate, DataType dataType, FinalState finalState)
   {
     auto mass = finalState == FinalState::KKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
@@ -487,7 +487,7 @@ struct HfTaskDs {
       std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2]);
       return;
     }
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (dataType == DataType::McDsNonPrompt || dataType == DataType::McDplusNonPrompt) {
         if (storeOccupancy) {
           std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), outputMl[0], outputMl[1], outputMl[2], candidate.template collision_as<Coll>().numContrib(), candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()), o2::hf_occupancy::getOccupancyColl(candidate.template collision_as<Coll>(), occEstimator));
@@ -509,7 +509,7 @@ struct HfTaskDs {
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
   /// \param finalState is either KKPi or PiKK, as defined in FinalState enum
-  template <bool isMc, typename Coll, typename Cand>
+  template <bool IsMc, typename Coll, typename Cand>
   void fillSparse(const Cand& candidate, DataType dataType, FinalState finalState)
   {
     auto mass = finalState == FinalState::KKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
@@ -523,7 +523,7 @@ struct HfTaskDs {
       std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate));
       return;
     }
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       if (dataType == DataType::McDsNonPrompt || dataType == DataType::McDplusNonPrompt) {
         if (storeOccupancy) {
           std::get<THnSparsePtr>(histosPtr[dataType]["hSparseMass"])->Fill(mass, pt, evaluateCentralityCand<Coll>(candidate), candidate.template collision_as<Coll>().numContrib(), candidate.ptBhadMotherPart(), getBHadMotherFlag(candidate.pdgBhadMotherPart()), o2::hf_occupancy::getOccupancyColl(candidate.template collision_as<Coll>(), occEstimator));
@@ -544,11 +544,11 @@ struct HfTaskDs {
   /// Fill histograms of quantities for the KKPi daugther-mass hypothesis
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
-  template <bool isMc, typename Coll, typename T1>
+  template <bool IsMc, typename Coll, typename T1>
   void fillHistoKKPi(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
-    fillSparse<isMc, Coll>(candidate, dataType, FinalState::KKPi);
+    fillSparse<IsMc, Coll>(candidate, dataType, FinalState::KKPi);
 
     std::get<TH2Ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToKKPi(candidate), pt);
     std::get<TH2Ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToKKPi(candidate), pt);
@@ -559,11 +559,11 @@ struct HfTaskDs {
   /// Fill histograms of quantities for the PiKK daugther-mass hypothesis
   /// \param candidate is candidate
   /// \param dataType is data class, as defined in DataType enum
-  template <bool isMc, typename Coll, typename T1>
+  template <bool IsMc, typename Coll, typename T1>
   void fillHistoPiKK(const T1& candidate, DataType dataType)
   {
     auto pt = candidate.pt();
-    fillSparse<isMc, Coll>(candidate, dataType, FinalState::PiKK);
+    fillSparse<IsMc, Coll>(candidate, dataType, FinalState::PiKK);
 
     std::get<TH2Ptr>(histosPtr[dataType]["hCos3PiK"])->Fill(hfHelper.cos3PiKDsToPiKK(candidate), pt);
     std::get<TH2Ptr>(histosPtr[dataType]["hAbsCos3PiK"])->Fill(hfHelper.absCos3PiKDsToPiKK(candidate), pt);

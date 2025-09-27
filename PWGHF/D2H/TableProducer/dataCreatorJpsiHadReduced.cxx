@@ -510,7 +510,7 @@ struct HfDataCreatorJpsiHadReduced {
   /// \param vecDaughtersB is the vector with all daughter tracks (Jpsi daughters in first position)
   /// \param indexHfCandJpsi is the index of the Jpsi candidate
   /// \param selectedTracksBach is the map with the indices of selected bachelor pion tracks
-  template <uint8_t decChannel, typename CColl, typename PParticles, typename TTrack>
+  template <uint8_t DecChannel, typename CColl, typename PParticles, typename TTrack>
   void fillMcRecoInfo(CColl const& collision,
                       PParticles const& particlesMc,
                       std::vector<TTrack> const& vecDaughtersB,
@@ -525,7 +525,7 @@ struct HfDataCreatorJpsiHadReduced {
     int8_t debug{0};
     float motherPt{-1.f};
 
-    if constexpr (decChannel == DecayChannel::BplusToJpsiK) {
+    if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
       // B+ → J/Psi K+ → (µ+µ-) K+
       int indexRec = -1;
       if (!runJpsiToee) {
@@ -555,7 +555,7 @@ struct HfDataCreatorJpsiHadReduced {
         }
       }
       rowHfJpsiKMcRecReduced(indexHfCandJpsi, selectedTracksBach[0][vecDaughtersB.back().globalIndex()], flag, channel, flagWrongCollision, debug, motherPt);
-    } else if constexpr (decChannel == DecayChannel::BsToJpsiPhi) {
+    } else if constexpr (DecChannel == DecayChannel::BsToJpsiPhi) {
       // Bs → J/Psi phi → (µ+µ-) (K+K-)
       int indexRec = -1;
       if (!runJpsiToee) {
@@ -612,7 +612,7 @@ struct HfDataCreatorJpsiHadReduced {
     return indexCollisionMaxNumContrib;
   }
 
-  template <uint8_t decChannel>
+  template <uint8_t DecChannel>
   void runMcGen(aod::McCollision const& mcCollision,
                 aod::McParticles const& particlesMc,
                 CollisionsWCMcLabels const& collisions,
@@ -631,7 +631,7 @@ struct HfDataCreatorJpsiHadReduced {
     // Match generated particles.
     for (const auto& particle : mcParticlesPerMcColl) {
       int8_t sign{0}, flag{0}, channel{0};
-      if constexpr (decChannel == DecayChannel::BplusToJpsiK) {
+      if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
         // B+ → J/Psi K+ → (µ+µ-) K+
         if (RecoDecay::isMatchedMCGen<false>(particlesMc, particle, Pdg::kBPlus, std::array{static_cast<int>(Pdg::kJPsi), +kKPlus}, true, &sign)) {
           // Match J/Psi -> µ+µ-
@@ -671,7 +671,7 @@ struct HfDataCreatorJpsiHadReduced {
         rowHfBpMcGenReduced(flag, channel, ptParticle, yParticle, etaParticle,
                             ptProngs[0], yProngs[0], etaProngs[0],
                             ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
-      } else if constexpr (decChannel == DecayChannel::BsToJpsiPhi) {
+      } else if constexpr (DecChannel == DecayChannel::BsToJpsiPhi) {
         // Bs → J/Psi phi → (µ+µ-) (K+K-)
         if (RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kBS, std::array{static_cast<int>(Pdg::kJPsi), +kKPlus, -kKPlus}, true, &sign, 2)) {
           // Match J/Psi -> µ+µ- and phi -> K+K-
@@ -716,7 +716,7 @@ struct HfDataCreatorJpsiHadReduced {
   }
 
   // Jpsi candidate selection
-  template <bool doMc, uint8_t decChannel, typename Coll, typename JpsiCands, typename TTracks, typename PParticles, typename BBCs>
+  template <bool DoMc, uint8_t DecChannel, typename Coll, typename JpsiCands, typename TTracks, typename PParticles, typename BBCs>
   void runDataCreation(Coll const& collision,
                        JpsiCands const& candsJpsi,
                        aod::TrackAssoc const& trackIndices,
@@ -850,7 +850,7 @@ struct HfDataCreatorJpsiHadReduced {
           continue;
         }
 
-        if constexpr (decChannel == DecayChannel::BplusToJpsiK) {
+        if constexpr (DecChannel == DecayChannel::BplusToJpsiK) {
           registry.fill(HIST("hPtKaon"), trackParCovBach.getPt());
           // compute invariant mass square and apply selection
           invMass2JpsiHad = RecoDecay::m2(std::array{pVecJpsi, pVecBach}, std::array{MassJPsi, MassKPlus});
@@ -911,7 +911,7 @@ struct HfDataCreatorJpsiHadReduced {
             selectedTracksBach[trackBach.globalIndex()] = hfTrackLfDau0.lastIndex();
           }
 
-          if constexpr (doMc) {
+          if constexpr (DoMc) {
             std::vector<typename TTracks::iterator> beautyHadDauTracks{};
             beautyHadDauTracks.reserve(jPsiDauTracks.size());
             for (const auto& track : jPsiDauTracks) {
@@ -921,7 +921,7 @@ struct HfDataCreatorJpsiHadReduced {
             fillMcRecoInfo<DecayChannel::BplusToJpsiK>(collision, particlesMc, beautyHadDauTracks, indexHfCandJpsi, std::array<std::map<int64_t, int64_t>, 2>{selectedTracksBach}, indexCollisionMaxNumContrib);
           }
           fillHfCandJpsi = true;
-        } else if constexpr (decChannel == DecayChannel::BsToJpsiPhi) {
+        } else if constexpr (DecChannel == DecayChannel::BsToJpsiPhi) {
           for (auto trackBachId2 = trackId + 1; trackBachId2 != trackIndices.end(); ++trackBachId2) {
             auto trackBach2 = trackBachId2.template track_as<TTracks>();
             auto trackBach2ParCov = getTrackParCov(trackBach2);
@@ -1033,7 +1033,7 @@ struct HfDataCreatorJpsiHadReduced {
               selectedTracksBach2[trackBach2.globalIndex()] = hfTrackLfDau1.lastIndex();
             }
 
-            if constexpr (doMc) {
+            if constexpr (DoMc) {
               std::vector<typename TTracks::iterator> beautyHadDauTracks{};
               beautyHadDauTracks.reserve(jPsiDauTracks.size());
               for (const auto& track : jPsiDauTracks) {

@@ -339,7 +339,7 @@ bool isTrackGoodMatchForTOFPID(const Trks::iterator& tr)
 }
 
 /// Task to produce the TOF signal from the trackTime information
-struct tofSignal {
+struct TofSignal {
   // Tables to produce
   o2::framework::Produces<o2::aod::TOFSignal> table;
   o2::framework::Produces<o2::aod::pidTOFFlags> tableFlags;
@@ -431,8 +431,8 @@ struct tofSignal {
 /// Selection criteria for tracks used for TOF event time
 float trackSampleMinMomentum = 0.5f;
 float trackSampleMaxMomentum = 2.f;
-template <typename trackType>
-bool filterForTOFEventTime(const trackType& tr)
+template <typename TrackType>
+bool filterForTOFEventTime(const TrackType& tr)
 {
   return (tr.hasTOF() &&
           tr.p() > trackSampleMinMomentum && tr.p() < trackSampleMaxMomentum &&
@@ -442,30 +442,30 @@ bool filterForTOFEventTime(const trackType& tr)
 } // accept all
 
 /// Specialization of TOF event time maker
-template <typename trackType,
-          bool (*trackFilter)(const trackType&),
-          template <typename T, o2::track::PID::ID> typename response,
-          typename trackTypeContainer,
-          typename responseParametersType>
-o2::tof::eventTimeContainer evTimeMakerForTracks(const trackTypeContainer& tracks,
-                                                 const responseParametersType& responseParameters,
+template <typename TrackType,
+          bool (*TrackFilter)(const TrackType&),
+          template <typename T, o2::track::PID::ID> typename Response,
+          typename TrackTypeContainer,
+          typename ResponseParametersType>
+o2::tof::eventTimeContainer evTimeMakerForTracks(const TrackTypeContainer& tracks,
+                                                 const ResponseParametersType& responseParameters,
                                                  const float& diamond = 6.0)
 {
-  return o2::tof::evTimeMakerFromParam<trackTypeContainer, trackType, trackFilter, response, responseParametersType>(tracks, responseParameters, diamond);
+  return o2::tof::evTimeMakerFromParam<TrackTypeContainer, TrackType, TrackFilter, Response, ResponseParametersType>(tracks, responseParameters, diamond);
 }
 
 // Part 2 event time definition
 
 /// Task to produce the TOF event time table
-struct tofEventTime {
+struct TofEventTime {
   // Tables to produce
   Produces<o2::aod::TOFEvTime> tableEvTime;
   Produces<o2::aod::EvTimeTOFOnly> tableEvTimeTOFOnly;
   Produces<o2::aod::pidEvTimeFlags> tableFlags;
-  static constexpr bool removeTOFEvTimeBias = true; // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
-  static constexpr float diamond = 6.0;             // Collision diamond used in the estimation of the TOF event time
-  static constexpr float errDiamond = diamond * 33.356409f;
-  static constexpr float weightDiamond = 1.f / (errDiamond * errDiamond);
+  static constexpr bool RemoveTofEvTimeBias = true; // Flag to subtract the Ev. Time bias for low multiplicity events with TOF
+  static constexpr float Diamond = 6.0;             // Collision diamond used in the estimation of the TOF event time
+  static constexpr float ErrDiamond = Diamond * 33.356409f;
+  static constexpr float WeightDiamond = 1.f / (ErrDiamond * ErrDiamond);
 
   bool enableTableTOFEvTime = false;
   bool enableTableEvTimeTOFOnly = false;
@@ -527,8 +527,8 @@ struct tofEventTime {
   /// Process function to prepare the event for each track on Run 3 data without the FT0
   // Define slice per collision
   Preslice<TrksWtof> perCollision = aod::track::collisionId;
-  template <o2::track::PID::ID pid>
-  using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksWtof::iterator, pid>;
+  template <o2::track::PID::ID Pid>
+  using ResponseImplementationEvTime = o2::pid::tof::ExpTimes<TrksWtof::iterator, Pid>;
   void process(TrksWtof const& tracks,
                aod::FT0s const&,
                EvTimeCollisionsFT0 const&,
@@ -586,7 +586,7 @@ struct tofEventTime {
         const auto& collision = t.collision_as<EvTimeCollisionsFT0>();
 
         // Compute the TOF event time
-        const auto evTimeMakerTOF = evTimeMakerForTracks<TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
+        const auto evTimeMakerTOF = evTimeMakerForTracks<TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, Diamond);
 
         float t0AC[2] = {.0f, 999.f};                                                                                             // Value and error of T0A or T0C or T0AC
         float t0TOF[2] = {static_cast<float_t>(evTimeMakerTOF.mEventTime), static_cast<float_t>(evTimeMakerTOF.mEventTimeError)}; // Value and error of TOF
@@ -605,10 +605,10 @@ struct tofEventTime {
           sumOfWeights = 0.f;
           weight = 0.f;
           // Remove the bias on TOF ev. time
-          if constexpr (removeTOFEvTimeBias) {
+          if constexpr (RemoveTofEvTimeBias) {
             evTimeMakerTOF.removeBias<TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, t0TOF[0], t0TOF[1], 2);
           }
-          if (t0TOF[1] < errDiamond && (maxEvTimeTOF <= 0 || std::abs(t0TOF[0]) < maxEvTimeTOF)) {
+          if (t0TOF[1] < ErrDiamond && (maxEvTimeTOF <= 0 || std::abs(t0TOF[0]) < maxEvTimeTOF)) {
             flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
 
             weight = 1.f / (t0TOF[1] * t0TOF[1]);
@@ -629,9 +629,9 @@ struct tofEventTime {
             sumOfWeights += weight;
           }
 
-          if (sumOfWeights < weightDiamond) { // avoiding sumOfWeights = 0 or worse that diamond
+          if (sumOfWeights < WeightDiamond) { // avoiding sumOfWeights = 0 or worse that diamond
             eventTime = 0;
-            sumOfWeights = weightDiamond;
+            sumOfWeights = WeightDiamond;
             tableFlags(0);
           } else {
             tableFlags(flags);
@@ -662,21 +662,21 @@ struct tofEventTime {
         const auto& tracksInCollision = tracks.sliceBy(perCollision, lastCollisionId);
 
         // First make table for event time
-        const auto evTimeMakerTOF = evTimeMakerForTracks<TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, diamond);
+        const auto evTimeMakerTOF = evTimeMakerForTracks<TrksWtof::iterator, filterForTOFEventTime, o2::pid::tof::ExpTimes>(tracksInCollision, mRespParamsV3, Diamond);
         int nGoodTracksForTOF = 0;
         float et = evTimeMakerTOF.mEventTime;
         float erret = evTimeMakerTOF.mEventTimeError;
 
         for (auto const& trk : tracksInCollision) { // Loop on Tracks
-          if constexpr (removeTOFEvTimeBias) {
+          if constexpr (RemoveTofEvTimeBias) {
             evTimeMakerTOF.removeBias<TrksWtof::iterator, filterForTOFEventTime>(trk, nGoodTracksForTOF, et, erret, 2);
           }
           uint8_t flags = 0;
-          if (erret < errDiamond && (maxEvTimeTOF <= 0.f || std::abs(et) < maxEvTimeTOF)) {
+          if (erret < ErrDiamond && (maxEvTimeTOF <= 0.f || std::abs(et) < maxEvTimeTOF)) {
             flags |= o2::aod::pidflags::enums::PIDFlags::EvTimeTOF;
           } else {
             et = 0.f;
-            erret = errDiamond;
+            erret = ErrDiamond;
           }
           tableFlags(flags);
           tableEvTime(et, erret);
@@ -716,13 +716,13 @@ struct tofEventTime {
 
 // Part 3 Nsigma computation
 
-static constexpr int idxPi = 2;
-static constexpr int idxKa = 3;
-static constexpr int idxPr = 4;
-static constexpr int idxDe = 5;
+static constexpr int IdxPi = 2;
+static constexpr int IdxKa = 3;
+static constexpr int IdxPr = 4;
+static constexpr int IdxDe = 5;
 
 /// Task to produce the response table
-struct mcPidTof {
+struct McPidTof {
   // Tables to produce
   Produces<o2::aod::pidTOFPi> tablePIDPi;
   Produces<o2::aod::pidTOFKa> tablePIDKa;
@@ -768,7 +768,7 @@ struct mcPidTof {
   {
     mTOFCalibConfig.inheritFromBaseTask(initContext);
     // Checking the tables are requested in the workflow and enabling them (only pi, K, p)
-    std::array<int, 4> supportedSpecies = {idxPi, idxKa, idxPr, idxDe};
+    std::array<int, 4> supportedSpecies = {IdxPi, IdxKa, IdxPr, IdxDe};
     for (auto iSpecie{0u}; iSpecie < supportedSpecies.size(); ++iSpecie) {
       // First checking tiny
       int flag = -1;
@@ -823,7 +823,7 @@ struct mcPidTof {
   void reserveTable(const int id, const int64_t& size, const bool fullTable = false)
   {
     switch (id) {
-      case idxPi: {
+      case IdxPi: {
         if (fullTable) {
           tablePIDFullPi.reserve(size);
         } else {
@@ -831,7 +831,7 @@ struct mcPidTof {
         }
         break;
       }
-      case idxKa: {
+      case IdxKa: {
         if (fullTable) {
           tablePIDFullKa.reserve(size);
         } else {
@@ -839,7 +839,7 @@ struct mcPidTof {
         }
         break;
       }
-      case idxPr: {
+      case IdxPr: {
         if (fullTable) {
           tablePIDFullPr.reserve(size);
         } else {
@@ -857,7 +857,7 @@ struct mcPidTof {
   void makeTableEmpty(const int id, bool fullTable = false)
   {
     switch (id) {
-      case idxPi:
+      case IdxPi:
         if (fullTable) {
           tablePIDFullPi(-999.f, -999.f);
         } else {
@@ -865,7 +865,7 @@ struct mcPidTof {
                                                                 tablePIDPi);
         }
         break;
-      case idxKa:
+      case IdxKa:
         if (fullTable) {
           tablePIDFullKa(-999.f, -999.f);
         } else {
@@ -873,7 +873,7 @@ struct mcPidTof {
                                                                 tablePIDKa);
         }
         break;
-      case idxPr:
+      case IdxPr:
         if (fullTable) {
           tablePIDFullPr(-999.f, -999.f);
         } else {
@@ -881,7 +881,7 @@ struct mcPidTof {
                                                                 tablePIDPr);
         }
         break;
-      case idxDe:
+      case IdxDe:
         if (fullTable) {
           tablePIDFullDe(-999.f, -999.f);
         } else {
@@ -956,19 +956,19 @@ struct mcPidTof {
   }
 
   void processDummy(Trks const&) {}
-  PROCESS_SWITCH(mcPidTof, processDummy, "Dummy process function", false);
+  PROCESS_SWITCH(McPidTof, processDummy, "Dummy process function", false);
 
-  template <o2::track::PID::ID pid>
-  using ResponseImplementation = o2::pid::tof::ExpTimes<TrksWtofWevTime::iterator, pid>;
+  template <o2::track::PID::ID Pid>
+  using ResponseImplementation = o2::pid::tof::ExpTimes<TrksWtofWevTime::iterator, Pid>;
   void processFillTables(TrksWtofWevTime const& tracks,
                          Cols const&,
                          aod::BCsWithTimestamps const& bcs,
                          aod::McParticles const&)
   {
-    constexpr auto responsePi = ResponseImplementation<PID::Pion>();
-    constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
-    constexpr auto responsePr = ResponseImplementation<PID::Proton>();
-    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
+    constexpr auto ResponsePi = ResponseImplementation<PID::Pion>();
+    constexpr auto ResponseKa = ResponseImplementation<PID::Kaon>();
+    constexpr auto ResponsePr = ResponseImplementation<PID::Proton>();
+    constexpr auto ResponseDe = ResponseImplementation<PID::Deuteron>();
 
     mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
@@ -1005,8 +1005,8 @@ struct mcPidTof {
 
       for (auto const& pidId : mEnabledParticles) { // Loop on enabled particle hypotheses
         switch (pidId) {
-          case idxPi: {
-            nSigma = responsePi.GetSeparation(mRespParamsV3, trk);
+          case IdxPi: {
+            nSigma = ResponsePi.GetSeparation(mRespParamsV3, trk);
             if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == kPiPlus) { // we rescale only true signal
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
@@ -1015,8 +1015,8 @@ struct mcPidTof {
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nSigma, tablePIDPi);
             break;
           }
-          case idxKa: {
-            nSigma = responseKa.GetSeparation(mRespParamsV3, trk);
+          case IdxKa: {
+            nSigma = ResponseKa.GetSeparation(mRespParamsV3, trk);
             if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == kKPlus) { // we rescale only true signal
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
@@ -1025,8 +1025,8 @@ struct mcPidTof {
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nSigma, tablePIDKa);
             break;
           }
-          case idxPr: {
-            nSigma = responsePr.GetSeparation(mRespParamsV3, trk);
+          case IdxPr: {
+            nSigma = ResponsePr.GetSeparation(mRespParamsV3, trk);
             if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == kProton) { // we rescale only true signal
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
@@ -1035,11 +1035,11 @@ struct mcPidTof {
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nSigma, tablePIDPr);
             break;
           }
-          case idxDe: {
-            nSigma = responseDe.GetSeparation(mRespParamsV3, trk);
+          case IdxDe: {
+            nSigma = ResponseDe.GetSeparation(mRespParamsV3, trk);
             if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == o2::constants::physics::kDeuteron) { // we rescale only true signal
-                nSigma = applyMcRecalib(idxPr, trk.pt(), nSigma);                              // FIXME: currently postcalibrations for protons applied to deuterons, to be checked
+                nSigma = applyMcRecalib(IdxPr, trk.pt(), nSigma);                              // FIXME: currently postcalibrations for protons applied to deuterons, to be checked
               }
             }
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nSigma, tablePIDDe);
@@ -1056,9 +1056,9 @@ struct mcPidTof {
 
       for (auto const& pidId : mEnabledParticlesFull) { // Loop on enabled particle hypotheses with full tables
         switch (pidId) {
-          case idxPi: {
-            resolution = responsePi.GetExpectedSigma(mRespParamsV3, trk);
-            nSigma = responsePi.GetSeparation(mRespParamsV3, trk);
+          case IdxPi: {
+            resolution = ResponsePi.GetExpectedSigma(mRespParamsV3, trk);
+            nSigma = ResponsePi.GetSeparation(mRespParamsV3, trk);
             if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == kPiPlus) { // we rescale only true signal
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
@@ -1067,9 +1067,9 @@ struct mcPidTof {
             tablePIDFullPi(resolution, nSigma);
             break;
           }
-          case idxKa: {
-            resolution = responseKa.GetExpectedSigma(mRespParamsV3, trk);
-            nSigma = responseKa.GetSeparation(mRespParamsV3, trk, resolution);
+          case IdxKa: {
+            resolution = ResponseKa.GetExpectedSigma(mRespParamsV3, trk);
+            nSigma = ResponseKa.GetSeparation(mRespParamsV3, trk, resolution);
             if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == kKPlus) { // we rescale only true signal
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
@@ -1078,9 +1078,9 @@ struct mcPidTof {
             tablePIDFullKa(resolution, nSigma);
             break;
           }
-          case idxPr: {
-            resolution = responsePr.GetExpectedSigma(mRespParamsV3, trk);
-            nSigma = responsePr.GetSeparation(mRespParamsV3, trk, resolution);
+          case IdxPr: {
+            resolution = ResponsePr.GetExpectedSigma(mRespParamsV3, trk);
+            nSigma = ResponsePr.GetSeparation(mRespParamsV3, trk, resolution);
             if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == kProton) { // we rescale only true signal
                 nSigma = applyMcRecalib(pidId, trk.pt(), nSigma);
@@ -1089,12 +1089,12 @@ struct mcPidTof {
             tablePIDFullPr(resolution, nSigma);
             break;
           }
-          case idxDe: {
-            resolution = responseDe.GetExpectedSigma(mRespParamsV3, trk);
-            nSigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
+          case IdxDe: {
+            resolution = ResponseDe.GetExpectedSigma(mRespParamsV3, trk);
+            nSigma = ResponseDe.GetSeparation(mRespParamsV3, trk, resolution);
             if (enableMcRecalib && trk.has_mcParticle()) {
               if (std::abs(trk.mcParticle().pdgCode()) == o2::constants::physics::kDeuteron) { // we rescale only true signal
-                nSigma = applyMcRecalib(idxPr, trk.pt(), nSigma);                              // FIXME: currently postcalibrations for protons applied to deuterons, to be checked
+                nSigma = applyMcRecalib(IdxPr, trk.pt(), nSigma);                              // FIXME: currently postcalibrations for protons applied to deuterons, to be checked
               }
             }
             tablePIDFullDe(resolution, nSigma);
@@ -1110,15 +1110,15 @@ struct mcPidTof {
       }
     }
   }
-  PROCESS_SWITCH(mcPidTof, processFillTables, "Process with table filling", true);
+  PROCESS_SWITCH(McPidTof, processFillTables, "Process with table filling", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   // Parse the metadata
   metadataInfo.initMetadata(cfgc);
-  auto workflow = WorkflowSpec{adaptAnalysisTask<tofSignal>(cfgc)};
-  workflow.push_back(adaptAnalysisTask<tofEventTime>(cfgc));
-  workflow.push_back(adaptAnalysisTask<mcPidTof>(cfgc));
+  auto workflow = WorkflowSpec{adaptAnalysisTask<TofSignal>(cfgc)};
+  workflow.push_back(adaptAnalysisTask<TofEventTime>(cfgc));
+  workflow.push_back(adaptAnalysisTask<McPidTof>(cfgc));
   return workflow;
 }

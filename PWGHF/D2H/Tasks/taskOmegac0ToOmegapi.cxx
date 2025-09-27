@@ -177,7 +177,7 @@ struct HfTaskOmegac0ToOmegapi {
     return o2::hf_centrality::getCentralityColl<Coll>(collision);
   }
 
-  template <bool applyMl, typename CandType>
+  template <bool ApplyMl, typename CandType>
   void processData(const CandType& candidates)
   {
     for (const auto& candidate : candidates) {
@@ -189,7 +189,7 @@ struct HfTaskOmegac0ToOmegapi {
         continue;
       }
 
-      if constexpr (applyMl) {
+      if constexpr (ApplyMl) {
         registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.mlProbOmegac()[0]);
       } else {
         registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac());
@@ -197,12 +197,12 @@ struct HfTaskOmegac0ToOmegapi {
     }
   }
 
-  template <bool applyMl, typename CandType, typename CollType>
+  template <bool ApplyMl, typename CandType, typename CollType>
   void processDataCent(const CandType& candidates, CollType const& collisions)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      auto groupedOmegacCandidates = applyMl ? candidates.sliceBy(candOmegacKFMlPerCollision, thisCollId) : candidates.sliceBy(candOmegacKFPerCollision, thisCollId);
+      auto groupedOmegacCandidates = ApplyMl ? candidates.sliceBy(candOmegacKFMlPerCollision, thisCollId) : candidates.sliceBy(candOmegacKFPerCollision, thisCollId);
       auto numPvContributors = collision.numContrib();
 
       for (const auto& candidate : groupedOmegacCandidates) {
@@ -216,7 +216,7 @@ struct HfTaskOmegac0ToOmegapi {
 
         float cent = evaluateCentralityColl(collision);
 
-        if constexpr (applyMl) {
+        if constexpr (ApplyMl) {
           registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(),
                         cent, numPvContributors, candidate.mlProbOmegac()[0]);
           if (fillTree) {
@@ -230,7 +230,7 @@ struct HfTaskOmegac0ToOmegapi {
     }
   }
 
-  template <bool applyMl, typename CandType>
+  template <bool ApplyMl, typename CandType>
   void processMc(const CandType& candidates, Omegac0Gen const& mcParticles)
   {
     // MC rec.
@@ -242,7 +242,7 @@ struct HfTaskOmegac0ToOmegapi {
         continue;
       }
 
-      if constexpr (applyMl) {
+      if constexpr (ApplyMl) {
         registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegac()[0]);
 
       } else {
@@ -268,7 +268,7 @@ struct HfTaskOmegac0ToOmegapi {
     }
   }
 
-  template <bool applyMl, typename CandType, typename McCollisionWithCents>
+  template <bool ApplyMl, typename CandType, typename McCollisionWithCents>
   void processMcCent(const CandType& candidates, Omegac0Gen const& mcParticles,
                      CollisionsWithMcLabels const& collisions, McCollisionWithCents const&)
   {
@@ -285,7 +285,7 @@ struct HfTaskOmegac0ToOmegapi {
       uint16_t numPvContributors = collision.numContrib();
       float mcCent = evaluateCentralityColl(collision.template mcCollision_as<McCollisionWithCents>());
 
-      if constexpr (applyMl) {
+      if constexpr (ApplyMl) {
         registry.fill(HIST("hReco"), candidate.invMassCharmBaryon(), candidate.ptCharmBaryon(), candidate.kfRapOmegac(), mcCent, numPvContributors, candidate.ptBhadMotherPart(), candidate.originMcRec(), candidate.flagMcMatchRec(), candidate.mlProbOmegac()[0]);
 
       } else {

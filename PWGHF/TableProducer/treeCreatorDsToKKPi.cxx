@@ -325,17 +325,17 @@ struct HfTreeCreatorDsToKKPi {
   /// \param doMc true to fill MC information
   /// \param massHypo mass hypothesis considered: 0 = KKPi, 1 = PiKK
   /// \param candidate is candidate
-  template <bool doMc = false, int massHypo = 0, typename Coll, typename T>
+  template <bool DoMc = false, int MassHypo = 0, typename Coll, typename T>
   void fillCandidateTable(const T& candidate)
   {
     float invMassDs = 0;
     float deltaMassPhiKK = 0;
     float absCos3PiKDs = 0;
-    if constexpr (massHypo == 0) {
+    if constexpr (MassHypo == 0) {
       invMassDs = hfHelper.invMassDsToKKPi(candidate);
       deltaMassPhiKK = hfHelper.deltaMassPhiDsToKKPi(candidate);
       absCos3PiKDs = hfHelper.absCos3PiKDsToKKPi(candidate);
-    } else if constexpr (massHypo == 1) {
+    } else if constexpr (MassHypo == 1) {
       invMassDs = hfHelper.invMassDsToPiKK(candidate);
       deltaMassPhiKK = hfHelper.deltaMassPhiDsToPiKK(candidate);
       absCos3PiKDs = hfHelper.absCos3PiKDsToPiKK(candidate);
@@ -344,11 +344,11 @@ struct HfTreeCreatorDsToKKPi {
     int8_t flagMc{0};
     int8_t originMc{0};
     int8_t channelMc{0};
-    int8_t isSwapped{massHypo}; // 0 if KKPi, 1 if PiKK
+    int8_t isSwapped{MassHypo}; // 0 if KKPi, 1 if PiKK
     float eCand{0.f};
     float ctCand{0.f};
     float yCand = candidate.y(invMassDs);
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       channelMc = candidate.flagMcDecayChanRec();
@@ -395,8 +395,8 @@ struct HfTreeCreatorDsToKKPi {
         candidate.nSigTofKa2(),
         candidate.tpcTofNSigmaPi2(),
         candidate.tpcTofNSigmaKa2(),
-        massHypo == 0 ? candidate.isSelDsToKKPi() : -1,
-        massHypo == 1 ? candidate.isSelDsToPiKK() : -1,
+        MassHypo == 0 ? candidate.isSelDsToKKPi() : -1,
+        MassHypo == 1 ? candidate.isSelDsToPiKK() : -1,
         invMassDs,
         candidate.pt(),
         candidate.eta(),
@@ -463,8 +463,8 @@ struct HfTreeCreatorDsToKKPi {
         candidate.nSigTofKa2(),
         candidate.tpcTofNSigmaPi2(),
         candidate.tpcTofNSigmaKa2(),
-        massHypo == 0 ? candidate.isSelDsToKKPi() : -1,
-        massHypo == 1 ? candidate.isSelDsToPiKK() : -1,
+        MassHypo == 0 ? candidate.isSelDsToKKPi() : -1,
+        MassHypo == 1 ? candidate.isSelDsToPiKK() : -1,
         candidate.xSecondaryVertex(),
         candidate.ySecondaryVertex(),
         candidate.zSecondaryVertex(),

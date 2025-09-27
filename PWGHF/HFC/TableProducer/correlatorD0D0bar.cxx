@@ -64,7 +64,7 @@ const double epsilon = 1E-5;
 
 const int npTBinsMassAndEfficiency = o2::analysis::hf_cuts_d0_to_pi_k::NBinsPt;
 const double efficiencyDmesonDefault[npTBinsMassAndEfficiency] = {};
-const auto efficiencyDmeson_v = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
+const auto efficiencyDmesonV = std::vector<double>{efficiencyDmesonDefault, efficiencyDmesonDefault + npTBinsMassAndEfficiency};
 
 // histogram binning definition
 const int massAxisBins = 120;
@@ -96,7 +96,7 @@ struct HfCorrelatorD0D0bar {
   Configurable<double> multMin{"multMin", 0., "minimum multiplicity accepted"};
   Configurable<double> multMax{"multMax", 10000., "maximum multiplicity accepted"};
   Configurable<std::vector<double>> binsPt{"binsPt", std::vector<double>{o2::analysis::hf_cuts_d0_to_pi_k::vecBinsPt}, "pT bin limits for candidate mass plots and efficiency"};
-  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmeson_v}, "Efficiency values for D0 meson"};
+  Configurable<std::vector<double>> efficiencyD{"efficiencyD", std::vector<double>{efficiencyDmesonV}, "Efficiency values for D0 meson"};
 
   HfHelper hfHelper;
 

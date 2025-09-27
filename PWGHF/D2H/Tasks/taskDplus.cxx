@@ -280,7 +280,7 @@ struct HfTaskDplus {
   /// \param centrality collision centrality
   /// \param occupancy collision occupancy
   /// \param numPvContributors contributors to the PV
-  template <bool isMc, bool isMatched, typename T1>
+  template <bool IsMc, bool IsMatched, typename T1>
   void fillSparseML(const T1& candidate,
                     float ptbhad,
                     int flagBHad,
@@ -292,8 +292,8 @@ struct HfTaskDplus {
     for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
       outputMl[iclass] = candidate.mlProbDplusToPiKPi()[classMl->at(iclass)];
     }
-    if constexpr (isMc) {                                               // MC
-      if constexpr (isMatched) {                                        // Matched
+    if constexpr (IsMc) {                                               // MC
+      if constexpr (IsMatched) {                                        // Matched
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) { // Prompt
 
           if (storeCentrality && storeOccupancy) {
@@ -367,10 +367,10 @@ struct HfTaskDplus {
 
   // Fill histograms of quantities for the reconstructed Dplus candidates with MC matching
   /// \param candidate is candidate
-  template <bool isMatched, typename T1>
+  template <bool IsMatched, typename T1>
   void fillHistoMCRec(const T1& candidate)
   {
-    if constexpr (isMatched) {
+    if constexpr (IsMatched) {
       auto ptRec = candidate.pt();
       auto yRec = hfHelper.yDplus(candidate);
       registry.fill(HIST("hPtVsYRecSig_RecoSkim"), ptRec, yRec);
@@ -479,7 +479,7 @@ struct HfTaskDplus {
 
   // Run analysis for the reconstructed Dplus candidates from data
   /// \param candidates are reconstructed candidates
-  template <bool fillMl, typename T1>
+  template <bool FillMl, typename T1>
   void runDataAnalysis(const T1& /*candidates*/, CollisionsCent const& /*colls*/)
   {
     float cent{-1.f};
@@ -487,7 +487,7 @@ struct HfTaskDplus {
     float numPvContr{-1.f};
     float ptBhad{-1.f};
     int flagBHad{-1};
-    if constexpr (!fillMl) {
+    if constexpr (!FillMl) {
       for (const auto& candidate : selectedDPlusCandidates) {
         if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
           continue;
@@ -522,7 +522,7 @@ struct HfTaskDplus {
   // Run analysis for the reconstructed Dplus candidates with MC matching
   /// \param recoCandidates are reconstructed candidates
   /// \param recoColls are reconstructed collisions
-  template <bool fillMl>
+  template <bool FillMl>
   void runAnalysisMcRec(McRecoCollisionsCent const& /*recoColls*/)
   {
     float cent{-1};
@@ -532,7 +532,7 @@ struct HfTaskDplus {
     int flagBHad{-1};
 
     // MC rec. w/o Ml
-    if constexpr (!fillMl) {
+    if constexpr (!FillMl) {
       for (const auto& candidate : recoDPlusCandidates) {
         if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {
           continue;
@@ -565,9 +565,9 @@ struct HfTaskDplus {
             occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
           }
         }
-          if (storePvContributors) {
-            numPvContr = collision.numContrib();
-          }
+        if (storePvContributors) {
+          numPvContr = collision.numContrib();
+        }
         fillHisto(candidate);
         fillHistoMCRec<true>(candidate);
         fillSparseML<true, true>(candidate, ptBhad, flagBHad, cent, occ, numPvContr);
@@ -601,7 +601,7 @@ struct HfTaskDplus {
   /// \param mcGenCollisions are the generated MC collisions
   /// \param mcRecoCollisions are the reconstructed MC collisions
   /// \param mcGenParticles are the generated MC particle candidates
-  template <bool fillMl, typename Cand>
+  template <bool FillMl, typename Cand>
   void runAnalysisMcGen(aod::McCollisions const& mcGenCollisions,
                         McRecoCollisionsCent const& mcRecoCollisions,
                         Cand const& mcGenParticles)
@@ -640,7 +640,7 @@ struct HfTaskDplus {
           numPvContr = std::max<float>(numPvContr, recCol.numContrib());
         }
         fillHistoMCGen(particle);
-        if constexpr (fillMl) {
+        if constexpr (FillMl) {
           fillSparseMcGen(particle, ptGenB, flagGenB, cent, occ, numPvContr);
         }
       }

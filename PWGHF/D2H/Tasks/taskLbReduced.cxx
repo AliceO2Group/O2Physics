@@ -388,7 +388,7 @@ struct HfTaskLbReduced {
   /// \param withLbMl is the flag to enable the filling with ML scores for the Lb candidate
   /// \param candidate is the Lb candidate
   /// \param candidatesLc is the table with Lc candidates
-  template <bool doMc, bool withDecayTypeCheck, bool withLcMl, bool withLbMl, typename Cand, typename CandsLc>
+  template <bool DoMc, bool WithDecayTypeCheck, bool WithLcMl, bool WithLbMl, typename Cand, typename CandsLc>
   void fillCand(Cand const& candidate,
                 CandsLc const&)
   {
@@ -409,14 +409,14 @@ struct HfTaskLbReduced {
     int8_t flagMcMatchRec = 0;
     int8_t flagWrongCollision = 0;
     bool isSignal = false;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagWrongCollision = candidate.flagWrongCollision();
       isSignal = TESTBIT(std::abs(flagMcMatchRec), hf_cand_lb::DecayTypeMc::LbToLcPiToPKPiPi);
     }
 
     if (fillHistograms) {
-      if constexpr (doMc) {
+      if constexpr (DoMc) {
         if (isSignal) {
           registry.fill(HIST("hMassRecSig"), ptCandLb, hfHelper.invMassLbToLcPi(candidate));
           registry.fill(HIST("hPtProng0RecSig"), ptCandLb, candidate.ptProng0());
@@ -436,15 +436,15 @@ struct HfTaskLbReduced {
           registry.fill(HIST("hDecLengthXyLcRecSig"), ptLc, decLenXyLc);
           registry.fill(HIST("hCospLcRecSig"), ptLc, cospLc);
           registry.fill(HIST("hCospXyLcRecSig"), ptLc, cospXyLc);
-          if constexpr (withDecayTypeCheck) {
+          if constexpr (WithDecayTypeCheck) {
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_lb::DecayTypeMc::LbToLcPiToPKPiPi, invMassLb, ptCandLb);
           }
-          if constexpr (withLcMl) {
+          if constexpr (WithLcMl) {
             registry.fill(HIST("hMlScoreBkgLcRecSig"), ptLc, candidate.prong0MlScoreBkg());
             registry.fill(HIST("hMlScorePromptLcRecSig"), ptLc, candidate.prong0MlScorePrompt());
             registry.fill(HIST("hMlScoreNonPromptLcRecSig"), ptLc, candidate.prong0MlScoreNonprompt());
           }
-          if constexpr (withLbMl) {
+          if constexpr (WithLbMl) {
             registry.fill(HIST("hMlScoreSigLbRecSig"), ptCandLb, candidate.mlProbLbToLcPi());
           }
         } else if (fillBackground) {
@@ -466,15 +466,15 @@ struct HfTaskLbReduced {
           registry.fill(HIST("hDecLengthXyLcRecBg"), ptLc, decLenXyLc);
           registry.fill(HIST("hCospLcRecBg"), ptLc, cospLc);
           registry.fill(HIST("hCospXyLcRecBg"), ptLc, cospXyLc);
-          if constexpr (withLcMl) {
+          if constexpr (WithLcMl) {
             registry.fill(HIST("hMlScoreBkgLcRecBg"), ptLc, candidate.prong0MlScoreBkg());
             registry.fill(HIST("hMlScorePromptLcRecBg"), ptLc, candidate.prong0MlScorePrompt());
             registry.fill(HIST("hMlScoreNonPromptLcRecBg"), ptLc, candidate.prong0MlScoreNonprompt());
           }
-          if constexpr (withLbMl) {
+          if constexpr (WithLbMl) {
             registry.fill(HIST("hMlScoreSigLbRecBg"), ptCandLb, candidate.mlProbLbToLcPi());
           }
-        } else if constexpr (withDecayTypeCheck) {
+        } else if constexpr (WithDecayTypeCheck) {
           if (TESTBIT(flagMcMatchRec, hf_cand_lb::DecayTypeMc::LbToLcKToPKPiK)) { // Lb → Lc+ K- → (pK-π+) K-
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_lb::DecayTypeMc::LbToLcKToPKPiK, invMassLb, ptCandLb);
           } else if (TESTBIT(flagMcMatchRec, hf_cand_lb::DecayTypeMc::B0ToDplusPiToPiKPiPi)) { // // B0 → D- π+ → (π- K+ π-) π+
@@ -505,33 +505,33 @@ struct HfTaskLbReduced {
         registry.fill(HIST("hCospLc"), ptLc, cospLc);
         registry.fill(HIST("hCospXyLc"), ptLc, cospXyLc);
 
-        if constexpr (withLcMl) {
+        if constexpr (WithLcMl) {
           registry.fill(HIST("hMlScoreBkgLc"), ptLc, candidate.prong0MlScoreBkg());
           registry.fill(HIST("hMlScorePromptLc"), ptLc, candidate.prong0MlScorePrompt());
           registry.fill(HIST("hMlScoreNonPromptLc"), ptLc, candidate.prong0MlScoreNonprompt());
         }
-        if constexpr (withLbMl) {
+        if constexpr (WithLbMl) {
           registry.fill(HIST("hMlScoreSigLb"), ptCandLb, candidate.mlProbLbToLcPi());
         }
       }
     }
     if (fillSparses) {
-      if constexpr (withLcMl) {
+      if constexpr (WithLcMl) {
         if (isSignal) {
-          if constexpr (withLcMl) {
+          if constexpr (WithLcMl) {
             registry.fill(HIST("hMassPtCutVarsRecSig"), invMassLb, ptCandLb, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassLc, ptLc, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
           } else {
             registry.fill(HIST("hMassPtCutVarsRecSig"), invMassLb, ptCandLb, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassLc, ptLc, decLenLc, cospLc);
           }
         } else if (fillBackground) {
-          if constexpr (withLcMl) {
+          if constexpr (WithLcMl) {
             registry.fill(HIST("hMassPtCutVarsRecBg"), invMassLb, ptCandLb, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassLc, ptLc, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
           } else {
             registry.fill(HIST("hMassPtCutVarsRecBg"), invMassLb, ptCandLb, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassLc, ptLc, decLenLc, cospLc);
           }
         }
       } else {
-        if constexpr (withLcMl) {
+        if constexpr (WithLcMl) {
           registry.fill(HIST("hMassPtCutVars"), invMassLb, ptCandLb, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassLc, ptLc, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
         } else {
           registry.fill(HIST("hMassPtCutVars"), invMassLb, ptCandLb, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassLc, ptLc, decLenLc, cospLc);
@@ -540,23 +540,23 @@ struct HfTaskLbReduced {
     }
     if (fillTree) {
       float pseudoRndm = ptLc * 1000. - static_cast<int64_t>(ptLc * 1000);
-      if (flagMcMatchRec != 0 || (((doMc && fillBackground) || !doMc) && (ptCandLb >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
+      if (flagMcMatchRec != 0 || (((DoMc && fillBackground) || !DoMc) && (ptCandLb >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
         float prong0MlScoreBkg = -1.;
         float prong0MlScorePrompt = -1.;
         float prong0MlScoreNonprompt = -1.;
         float candidateMlScoreSig = -1;
-        if constexpr (withLcMl) {
+        if constexpr (WithLcMl) {
           prong0MlScoreBkg = candidate.prong0MlScoreBkg();
           prong0MlScorePrompt = candidate.prong0MlScorePrompt();
           prong0MlScoreNonprompt = candidate.prong0MlScoreNonprompt();
         }
-        if constexpr (withLbMl) {
+        if constexpr (WithLbMl) {
           candidateMlScoreSig = candidate.mlProbLbToLcPi();
         }
         auto prong1 = candidate.template prong1_as<TracksPion>();
 
         float ptMother = -1.;
-        if constexpr (doMc) {
+        if constexpr (DoMc) {
           ptMother = candidate.ptMother();
         }
 
@@ -617,7 +617,7 @@ struct HfTaskLbReduced {
           flagWrongCollision,
           ptMother);
 
-        if constexpr (withDecayTypeCheck) {
+        if constexpr (WithDecayTypeCheck) {
           hfRedLbMcCheck(
             flagMcMatchRec,
             flagWrongCollision,

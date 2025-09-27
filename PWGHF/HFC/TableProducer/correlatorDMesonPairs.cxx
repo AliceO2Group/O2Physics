@@ -316,7 +316,7 @@ struct HfCorrelatorDMesonPairs {
   /// SelectedD and SelectedDbar bits look at whether the candidate passed the selection flags.
   /// \param candidate is candidate
   /// \return bitmap with type of candidate
-  template <bool isMcRec, typename T>
+  template <bool IsMcRec, typename T>
   uint8_t assignCandidateTypeD0(const T& candidate)
   {
     uint8_t candidateType(0);
@@ -326,7 +326,7 @@ struct HfCorrelatorDMesonPairs {
     if (candidate.isSelD0bar() >= selectionFlagD0bar) {
       SETBIT(candidateType, SelectedDbar);
     }
-    if constexpr (isMcRec) {
+    if constexpr (IsMcRec) {
       if (candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) { // matched as D0
         SETBIT(candidateType, TrueD);
       }

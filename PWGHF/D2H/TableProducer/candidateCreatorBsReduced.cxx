@@ -116,7 +116,7 @@ struct HfCandidateCreatorBsReduced {
   /// \param tracksPionThisCollision pion tracks in this collision
   /// \param invMass2DPiMin minimum Bs invariant-mass
   /// \param invMass2DPiMax maximum Bs invariant-mass
-  template <bool withDmesMl, typename Cands, typename Pions, typename Coll>
+  template <bool WithDmesMl, typename Cands, typename Pions, typename Coll>
   void runCandidateCreation(Coll const& collision,
                             Cands const& candsDThisColl,
                             Pions const& tracksPionThisCollision,
@@ -203,7 +203,7 @@ struct HfCandidateCreatorBsReduced {
 
         rowCandidateProngs(candD.globalIndex(), trackPion.globalIndex());
 
-        if constexpr (withDmesMl) {
+        if constexpr (WithDmesMl) {
           if (candD.invMassHypo0() > 0) {
             rowCandidateDmesMlScores(candD.mlScoreBkgMassHypo0(), candD.mlScorePromptMassHypo0(), candD.mlScoreNonpromptMassHypo0());
           } else {
@@ -295,7 +295,7 @@ struct HfCandidateCreatorBsReducedExpressions {
   /// \param checkDecayTypeMc
   /// \param rowsDPiMcRec MC reco information on DsPi pairs
   /// \param candsB prong global indices of Bs candidates
-  template <bool checkDecayTypeMc, typename McRec>
+  template <bool CheckDecayTypeMc, typename McRec>
   void fillBsMcRec(McRec const& rowsDPiMcRec, HfRedBsProngs const& candsB)
   {
     for (const auto& candB : candsB) {
@@ -306,7 +306,7 @@ struct HfCandidateCreatorBsReducedExpressions {
         }
         rowBsMcRec(rowDPiMcRec.flagMcMatchRec(), -1 /*channel*/, rowDPiMcRec.flagWrongCollision(), rowDPiMcRec.debugMcRec(), rowDPiMcRec.ptMother());
         filledMcInfo = true;
-        if constexpr (checkDecayTypeMc) {
+        if constexpr (CheckDecayTypeMc) {
           rowBsMcCheck(rowDPiMcRec.pdgCodeBeautyMother(),
                        rowDPiMcRec.pdgCodeCharmMother(),
                        rowDPiMcRec.pdgCodeProng0(),
@@ -318,7 +318,7 @@ struct HfCandidateCreatorBsReducedExpressions {
       }
       if (!filledMcInfo) { // protection to get same size tables in case something went wrong: we created a candidate that was not preselected in the DsPi creator
         rowBsMcRec(0, -1, -1, -1, -1.f);
-        if constexpr (checkDecayTypeMc) {
+        if constexpr (CheckDecayTypeMc) {
           rowBsMcCheck(-1, -1, -1, -1, -1, -1);
         }
       }

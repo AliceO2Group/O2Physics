@@ -340,7 +340,7 @@ struct HfTaskSigmac {
   /// @brief function to fill the histograms needed in analysis (data)
   /// @param candidatesSc are the reconstructed candidate Σc0,++
   /// @param
-  template <bool useMl, typename CandsLc>
+  template <bool UseMl, typename CandsLc>
   void fillHistosData(aod::HfCandSc const& candidatesSc,
                       CandsLc const& candidatesLc,
                       aod::Tracks const&)
@@ -429,7 +429,7 @@ struct HfTaskSigmac {
             /// fill it only if no MC operations are enabled, otherwise fill it in the processMC with the right origin and channel!
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
-            if constexpr (useMl) {
+            if constexpr (UseMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
               std::array<float, 2> outputMl{-1., -1.};
@@ -512,7 +512,7 @@ struct HfTaskSigmac {
             /// fill it only if no MC operations are enabled, otherwise fill it in the processMC with the right origin and channel!
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
-            if constexpr (useMl) {
+            if constexpr (UseMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
               std::array<float, 2> outputMl{-1., -1.};
@@ -550,7 +550,7 @@ struct HfTaskSigmac {
           double cpaLc(candidateLc.cpa()), cpaXYLc(candidateLc.cpaXY());
           if (candidateLc.isSelLcToPKPi() >= 1) {
             massLc = hfHelper.invMassLcToPKPi(candidateLc);
-            if constexpr (useMl) {
+            if constexpr (UseMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
               std::array<float, 2> outputMl{-1., -1.};
@@ -566,7 +566,7 @@ struct HfTaskSigmac {
           }
           if (candidateLc.isSelLcToPiKP() >= 1) {
             massLc = hfHelper.invMassLcToPiKP(candidateLc);
-            if constexpr (useMl) {
+            if constexpr (UseMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
               std::array<float, 2> outputMl{-1., -1.};
@@ -589,7 +589,7 @@ struct HfTaskSigmac {
   /// @param candidatesSc are the reconstructed candidate Σc0,++ with MC info
   /// @param mcParticles are the generated particles with flags wheter they are Σc0,++ or not
   /// @param
-  template <bool useMl, typename CandsLc>
+  template <bool UseMl, typename CandsLc>
   void fillHistosMc(soa::Join<aod::HfCandSc, aod::HfCandScMcRec> const& candidatesSc,
                     soa::Join<aod::McParticles, aod::HfCandScMcGen> const& mcParticlesSc,
                     soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticlesLc,
@@ -899,7 +899,7 @@ struct HfTaskSigmac {
             int8_t particleAntiparticle = candSc.particleAntiparticle();
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
-            if constexpr (useMl) {
+            if constexpr (UseMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
               std::array<float, 2> outputMl{-1., -1.};
@@ -984,7 +984,7 @@ struct HfTaskSigmac {
             int8_t particleAntiparticle = candSc.particleAntiparticle();
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
-            if constexpr (useMl) {
+            if constexpr (UseMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
               std::array<float, 2> outputMl{-1., -1.};
@@ -1105,7 +1105,7 @@ struct HfTaskSigmac {
             int8_t particleAntiparticle = candSc.particleAntiparticle();
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
-            if constexpr (useMl) {
+            if constexpr (UseMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
               std::array<float, 2> outputMl{-1., -1.};
@@ -1188,7 +1188,7 @@ struct HfTaskSigmac {
             int8_t particleAntiparticle = candSc.particleAntiparticle();
             const float softPiAbsDcaXY = std::abs(candSc.softPiDcaXY());
             const float softPiAbsDcaZ = std::abs(candSc.softPiDcaZ());
-            if constexpr (useMl) {
+            if constexpr (UseMl) {
               /// fill with ML information
               /// BDT index 0: bkg score; BDT index 2: non-prompt score
               std::array<float, 2> outputMl{-1., -1.};
@@ -1235,7 +1235,7 @@ struct HfTaskSigmac {
         }
         if (candidateLc.isSelLcToPKPi() >= 1 && pdgAbs == kProton) {
           massLc = hfHelper.invMassLcToPKPi(candidateLc);
-          if constexpr (useMl) {
+          if constexpr (UseMl) {
             /// fill with ML information
             /// BDT index 0: bkg score; BDT index 2: non-prompt score
             std::array<float, 2> outputMl{-1., -1.};
@@ -1251,7 +1251,7 @@ struct HfTaskSigmac {
         }
         if (candidateLc.isSelLcToPiKP() >= 1 && pdgAbs == kPiPlus) {
           massLc = hfHelper.invMassLcToPiKP(candidateLc);
-          if constexpr (useMl) {
+          if constexpr (UseMl) {
             /// fill with ML information
             /// BDT index 0: bkg score; BDT index 2: non-prompt score
             std::array<float, 2> outputMl{-1., -1.};

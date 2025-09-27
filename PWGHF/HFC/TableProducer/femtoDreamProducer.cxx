@@ -374,7 +374,7 @@ struct HfFemtoDreamProducer {
     }
   }
 
-  template <bool isMc = false, typename TrackType, typename CollisionType>
+  template <bool IsMc = false, typename TrackType, typename CollisionType>
   bool fillTracksForCharmHadron(CollisionType const& col, TrackType const& tracks)
   {
 
@@ -413,14 +413,14 @@ struct HfFemtoDreamProducer {
         fillDebugParticle(track);
       }
 
-      if constexpr (isMc) {
+      if constexpr (IsMc) {
         fillMcParticle(col, track, o2::aod::femtodreamparticle::ParticleType::kTrack);
       }
     }
     return fIsTrackFilled;
   }
 
-  template <DecayChannel channel, bool isMc, bool useCharmMl, typename TrackType, typename CollisionType, typename CandType>
+  template <DecayChannel Channel, bool IsMc, bool UseCharmMl, typename TrackType, typename CollisionType, typename CandType>
   void fillCharmHadronTable(CollisionType const& col, TrackType const& tracks, CandType const& candidates)
   {
     const auto vtxZ = col.posZ();
@@ -458,7 +458,7 @@ struct HfFemtoDreamProducer {
     }
 
     outputCollision(vtxZ, mult, multNtr, spher, magField);
-    if constexpr (isMc) {
+    if constexpr (IsMc) {
       fillMcCollision(col);
     }
 
@@ -478,12 +478,12 @@ struct HfFemtoDreamProducer {
 
       auto bc = col.template bc_as<aod::BCsWithTimestamps>();
       int64_t timeStamp = bc.timestamp();
-      auto fillTable = [&](int CandFlag,
-                           int FunctionSelection,
-                           float BDTScoreBkg,
-                           float BDTScorePrompt,
-                           float BDTScoreFD) {
-        if (FunctionSelection >= 1){
+      auto fillTable = [&](int candFlag,
+                           int functionSelection,
+                           float bdtScoreBkg,
+                           float bdtScorePrompt,
+                           float bdtScoreFd) {
+        if (functionSelection >= 1){
           rowCandCharmHad(
             outputCollision.lastIndex(),
             timeStamp,
@@ -500,21 +500,21 @@ struct HfFemtoDreamProducer {
             trackPos1.phi(),
             trackNeg.phi(),
             trackPos2.phi(),
-            1 << CandFlag,
-            BDTScoreBkg,
-            BDTScorePrompt,
-            BDTScoreFD);
+            1 << candFlag,
+            bdtScoreBkg,
+            bdtScorePrompt,
+            bdtScoreFd);
 
           // Row for MC candidate charm hadron (if constexpr isMc)
-          if constexpr (isMc) {
+          if constexpr (IsMc) {
             rowCandMcCharmHad(
               candidate.flagMcMatchRec(),
               candidate.originMcRec());
           }
       } };
 
-      if constexpr (channel == DecayChannel::DplusToPiKPi) {
-        if constexpr (useCharmMl) {
+      if constexpr (Channel == DecayChannel::DplusToPiKPi) {
+        if constexpr (UseCharmMl) {
           /// fill with ML information
           /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
           if (applyMlMode == FillMlFromSelector) {
@@ -538,8 +538,8 @@ struct HfFemtoDreamProducer {
         }
         fillTable(2, candidate.isSelDplusToPiKPi(), outputMlDplus.at(0), outputMlDplus.at(1), outputMlDplus.at(2));
 
-      } else if constexpr (channel == DecayChannel::LcToPKPi) {
-        if constexpr (useCharmMl) {
+      } else if constexpr (Channel == DecayChannel::LcToPKPi) {
+        if constexpr (UseCharmMl) {
           /// fill with ML information
           /// BDT index 0: bkg score; BDT index 1: prompt score; BDT index 2: non-prompt score
           if (applyMlMode == FillMlFromSelector) {
@@ -577,7 +577,7 @@ struct HfFemtoDreamProducer {
     }
 
     if (!isTrackFilled) {
-      isTrackFilled = fillTracksForCharmHadron<isMc>(col, tracks);
+      isTrackFilled = fillTracksForCharmHadron<IsMc>(col, tracks);
       // If track filling was successful, fill the collision table
     }
 
@@ -618,12 +618,12 @@ struct HfFemtoDreamProducer {
     return true;
   }
 
-  template <DecayChannel channel, typename ParticleType>
+  template <DecayChannel Channel, typename ParticleType>
   void fillCharmHadMcGen(ParticleType particles)
   {
     // Filling particle properties
     rowCandCharmHadGen.reserve(particles.size());
-    if constexpr (channel == DecayChannel::DplusToPiKPi) {
+    if constexpr (Channel == DecayChannel::DplusToPiKPi) {
       for (const auto& particle : particles) {
         if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
           rowCandCharmHadGen(
@@ -632,7 +632,7 @@ struct HfFemtoDreamProducer {
             particle.originMcGen());
         }
       }
-    } else if constexpr (channel == DecayChannel::LcToPKPi) {
+    } else if constexpr (Channel == DecayChannel::LcToPKPi) {
       for (const auto& particle : particles) {
         if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
           rowCandCharmHadGen(

@@ -344,7 +344,7 @@ struct HfTaskCharmHadronsFemtoDream {
   }
 
   /// This function processes the same event and takes care of all the histogramming
-  template <bool isMc, typename PartitionType, typename CandType, typename TableTracks, typename Collision>
+  template <bool IsMc, typename PartitionType, typename CandType, typename TableTracks, typename Collision>
   void doSameEvent(PartitionType& sliceTrk1, CandType& sliceCharmHad, TableTracks const& parts, Collision const& col)
   {
     fillCollision(col);
@@ -396,11 +396,11 @@ struct HfTaskCharmHadronsFemtoDream {
       }
 
       /// Filling QA histograms of the selected tracks
-      selectedTrackHisto.fillQA<isMc, true>(p1, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
+      selectedTrackHisto.fillQA<IsMc, true>(p1, static_cast<aod::femtodreamparticle::MomentumType>(confTempFitVarMomentum.value), col.multNtr(), col.multV0M());
 
       int charmHadMc = 0;
       int originType = 0;
-      if constexpr (isMc) {
+      if constexpr (IsMc) {
         charmHadMc = p2.flagMc();
         originType = p2.originMcRec();
       }
@@ -424,11 +424,11 @@ struct HfTaskCharmHadronsFemtoDream {
         charmHadMc,
         originType);
 
-      sameEventCont.setPair<isMc, true>(p1, p2, col.multNtr(), col.multV0M(), use4D, extendedPlots, smearingByOrigin);
+      sameEventCont.setPair<IsMc, true>(p1, p2, col.multNtr(), col.multV0M(), use4D, extendedPlots, smearingByOrigin);
     }
   }
 
-  template <bool isMc, typename CollisionType, typename PartType, typename PartitionType1, typename PartitionType2, typename BinningType>
+  template <bool IsMc, typename CollisionType, typename PartType, typename PartitionType1, typename PartitionType2, typename BinningType>
   void doMixedEvent(CollisionType const& cols, PartType const& parts, PartitionType1& part1, PartitionType2& part2, BinningType policy)
   {
     processType = 2; // for mixed event
@@ -494,7 +494,7 @@ struct HfTaskCharmHadronsFemtoDream {
 
         int charmHadMc = 0;
         int originType = 0;
-        if constexpr (isMc) {
+        if constexpr (IsMc) {
           charmHadMc = p2.flagMc();
           originType = p2.originMcRec();
         }
@@ -518,7 +518,7 @@ struct HfTaskCharmHadronsFemtoDream {
           charmHadMc,
           originType);
 
-        mixedEventCont.setPair<isMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
+        mixedEventCont.setPair<IsMc, true>(p1, p2, collision1.multNtr(), collision1.multV0M(), use4D, extendedPlots, smearingByOrigin);
       }
     }
   }

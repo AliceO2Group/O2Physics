@@ -481,7 +481,7 @@ struct HfDataCreatorCharmHadPiReduced {
   /// \param vecDaughtersB is the vector with all daughter tracks (bachelor pion in last position)
   /// \param indexHfCandCharm is the index of the charm-hadron candidate
   /// \param selectedTracksPion is the map with the indices of selected bachelor pion tracks
-  template <uint8_t decChannel, typename CColl, typename PParticles, typename TTrack>
+  template <uint8_t DecChannel, typename CColl, typename PParticles, typename TTrack>
   void fillMcRecoInfo(const CColl& collision,
                       const PParticles& particlesMc,
                       const std::vector<TTrack>& vecDaughtersB,
@@ -504,7 +504,7 @@ struct HfDataCreatorCharmHadPiReduced {
     int pdgCodeProng3{0};
     float motherPt{-1.f};
 
-    if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
+    if constexpr (DecChannel == DecayChannel::B0ToDminusPi) {
       // B0 → D- π+ → (π- K+ π-) π+
       auto indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{-kPiPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
@@ -618,7 +618,7 @@ struct HfDataCreatorCharmHadPiReduced {
         tables.rowHfDPiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2, pdgCodeProng3);
       }
       tables.rowHfDPiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
-    } else if constexpr (decChannel == DecayChannel::BsToDsminusPi) {
+    } else if constexpr (DecChannel == DecayChannel::BsToDsminusPi) {
       // Bs → Ds- π+ → (K- K+ π-) π+
       auto indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kBS, std::array{-kKPlus, +kKPlus, -kPiPlus, +kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
@@ -773,7 +773,7 @@ struct HfDataCreatorCharmHadPiReduced {
         tables.rowHfDsPiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2, pdgCodeProng3);
       }
       tables.rowHfDsPiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
-    } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) {
+    } else if constexpr (DecChannel == DecayChannel::BplusToD0barPi) {
       // B+ → D0(bar) π+ → (K+ π-) π+
       auto indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2]}, Pdg::kBPlus, std::array{+kPiPlus, +kKPlus, -kPiPlus}, true, &sign, 2);
       if (indexRec > -1) {
@@ -870,7 +870,7 @@ struct HfDataCreatorCharmHadPiReduced {
         tables.rowHfD0PiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2);
       }
       tables.rowHfD0PiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
-    } else if constexpr (decChannel == DecayChannel::LbToLcplusPi) {
+    } else if constexpr (DecChannel == DecayChannel::LbToLcplusPi) {
       // Lb → Lc+ π- → (p K- π+) π-
       auto indexRec = RecoDecay::getMatchedMCRec<false, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kLambdaB0, std::array{+kProton, -kKPlus, +kPiPlus, -kPiPlus}, true, &sign, 3);
       if (indexRec > -1) {
@@ -974,7 +974,7 @@ struct HfDataCreatorCharmHadPiReduced {
         tables.rowHfLcPiMcCheckReduced(pdgCodeBeautyMother, pdgCodeCharmMother, pdgCodeProng0, pdgCodeProng1, pdgCodeProng2, pdgCodeProng3);
       }
       tables.rowHfLcPiMcRecReduced(indexHfCandCharm, selectedTracksPion[vecDaughtersB.back().globalIndex()], flag, flagWrongCollision, debug, motherPt);
-    } else if constexpr (decChannel == DecayChannel::B0ToDstarPi) {
+    } else if constexpr (DecChannel == DecayChannel::B0ToDstarPi) {
       // B0 → D*+ π- → (D0 π+) π- → (K- π+ π+) π-
       auto indexRec = RecoDecay::getMatchedMCRec<true, false, false, true, true>(particlesMc, std::array{vecDaughtersB[0], vecDaughtersB[1], vecDaughtersB[2], vecDaughtersB[3]}, Pdg::kB0, std::array{+kKPlus, -kPiPlus, -kPiPlus, +kPiPlus}, true, &sign, 4);
       if (indexRec > -1) {
@@ -1014,7 +1014,7 @@ struct HfDataCreatorCharmHadPiReduced {
     }
   }
 
-  template <bool doMc, bool withMl, uint8_t decChannel, bool withQvec, typename PParticles, typename TTracks, typename CCharmCands, typename Coll, typename BBCs>
+  template <bool DoMc, bool WithMl, uint8_t DecChannel, bool WithQvec, typename PParticles, typename TTracks, typename CCharmCands, typename Coll, typename BBCs>
   void runDataCreation(Coll const& collision,
                        CCharmCands const& candsC,
                        aod::TrackAssoc const& trackIndices,
@@ -1061,13 +1061,13 @@ struct HfDataCreatorCharmHadPiReduced {
     for (const auto& candC : candsC) {
       int indexHfCandCharm{-1};
       float invMassC0{-1.f}, invMassC1{-1.f};
-      if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
+      if constexpr (DecChannel == DecayChannel::B0ToDminusPi) {
         indexHfCandCharm = tables.hfCand3Prong.lastIndex() + 1;
         invMassC0 = hfHelper.invMassDplusToPiKPi(candC);
         registry.fill(HIST("hMassDplus"), invMassC0);
         registry.fill(HIST("hPtDplus"), candC.pt());
         registry.fill(HIST("hCpaDplus"), candC.cpa());
-      } else if constexpr (decChannel == DecayChannel::BsToDsminusPi) {
+      } else if constexpr (DecChannel == DecayChannel::BsToDsminusPi) {
         indexHfCandCharm = tables.hfCand3Prong.lastIndex() + 1;
         if (candC.isSelDsToKKPi() >= hfflagConfigurations.selectionFlagDs) {
           invMassC0 = hfHelper.invMassDsToKKPi(candC);
@@ -1079,7 +1079,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         registry.fill(HIST("hPtDs"), candC.pt());
         registry.fill(HIST("hCpaDs"), candC.cpa());
-      } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) {
+      } else if constexpr (DecChannel == DecayChannel::BplusToD0barPi) {
         indexHfCandCharm = tables.hfCand2Prong.lastIndex() + 1;
         if (candC.isSelD0() >= hfflagConfigurations.selectionFlagD0) {
           invMassC0 = hfHelper.invMassD0ToPiK(candC);
@@ -1091,7 +1091,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         registry.fill(HIST("hPtD0"), candC.pt());
         registry.fill(HIST("hCpaD0"), candC.cpa());
-      } else if constexpr (decChannel == DecayChannel::LbToLcplusPi) {
+      } else if constexpr (DecChannel == DecayChannel::LbToLcplusPi) {
         indexHfCandCharm = tables.hfCand3Prong.lastIndex() + 1;
         if (candC.isSelLcToPKPi() >= hfflagConfigurations.selectionFlagLc) {
           invMassC0 = hfHelper.invMassLcToPKPi(candC);
@@ -1103,7 +1103,7 @@ struct HfDataCreatorCharmHadPiReduced {
         }
         registry.fill(HIST("hPtLc"), candC.pt());
         registry.fill(HIST("hCpaLc"), candC.cpa());
-      } else if constexpr (decChannel == DecayChannel::B0ToDstarPi) {
+      } else if constexpr (DecChannel == DecayChannel::B0ToDstarPi) {
         indexHfCandCharm = tables.hfCand2Prong.lastIndex() + 1;
         if (candC.signSoftPi() > 0) {
           invMassC0 = candC.invMassDstar() - candC.invMassD0();
@@ -1138,8 +1138,8 @@ struct HfDataCreatorCharmHadPiReduced {
       }
 
       // third track, if it's a 3-prong
-      if constexpr (decChannel == DecayChannel::B0ToDminusPi || decChannel == DecayChannel::BsToDsminusPi || decChannel == DecayChannel::LbToLcplusPi || decChannel == DecayChannel::B0ToDstarPi) {
-        if constexpr (decChannel == DecayChannel::B0ToDstarPi) {
+      if constexpr (DecChannel == DecayChannel::B0ToDminusPi || DecChannel == DecayChannel::BsToDsminusPi || DecChannel == DecayChannel::LbToLcplusPi || DecChannel == DecayChannel::B0ToDstarPi) {
+        if constexpr (DecChannel == DecayChannel::B0ToDstarPi) {
           charmHadDauTracks.push_back(candC.template prongPi_as<TTracks>()); // Soft pion from D* decay
         } else {
           charmHadDauTracks.push_back(candC.template prong2_as<TTracks>());
@@ -1157,13 +1157,13 @@ struct HfDataCreatorCharmHadPiReduced {
       // reconstruct charm candidate secondary vertex
       o2::track::TrackParCov trackParCovCharmHad{};
       std::array<float, 3> pVecCharm{};
-      if constexpr (decChannel == DecayChannel::B0ToDminusPi || decChannel == DecayChannel::BsToDsminusPi || decChannel == DecayChannel::LbToLcplusPi) { // D∓ → π∓ K± π∓ and Ds∓ → K∓ K± π∓ and Lc∓ → p∓ K± π∓
+      if constexpr (DecChannel == DecayChannel::B0ToDminusPi || DecChannel == DecayChannel::BsToDsminusPi || DecChannel == DecayChannel::LbToLcplusPi) { // D∓ → π∓ K± π∓ and Ds∓ → K∓ K± π∓ and Lc∓ → p∓ K± π∓
 
-        if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
+        if constexpr (DecChannel == DecayChannel::B0ToDminusPi) {
           hCandidatesDPlus->Fill(SVFitting::BeforeFit);
-        } else if constexpr (decChannel == DecayChannel::BsToDsminusPi) {
+        } else if constexpr (DecChannel == DecayChannel::BsToDsminusPi) {
           hCandidatesDs->Fill(SVFitting::BeforeFit);
-        } else if constexpr (decChannel == DecayChannel::LbToLcplusPi) {
+        } else if constexpr (DecChannel == DecayChannel::LbToLcplusPi) {
           hCandidatesLc->Fill(SVFitting::BeforeFit);
         }
 
@@ -1173,20 +1173,20 @@ struct HfDataCreatorCharmHadPiReduced {
           }
         } catch (const std::runtime_error& error) {
           LOG(info) << "Run time error found: " << error.what() << ". DCAFitterN cannot work, skipping the candidate.";
-          if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
+          if constexpr (DecChannel == DecayChannel::B0ToDminusPi) {
             hCandidatesDPlus->Fill(SVFitting::Fail);
-          } else if constexpr (decChannel == DecayChannel::BsToDsminusPi) {
+          } else if constexpr (DecChannel == DecayChannel::BsToDsminusPi) {
             hCandidatesDs->Fill(SVFitting::Fail);
-          } else if constexpr (decChannel == DecayChannel::LbToLcplusPi) {
+          } else if constexpr (DecChannel == DecayChannel::LbToLcplusPi) {
             hCandidatesLc->Fill(SVFitting::Fail);
           }
           continue;
         }
-        if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
+        if constexpr (DecChannel == DecayChannel::B0ToDminusPi) {
           hCandidatesDPlus->Fill(SVFitting::FitOk);
-        } else if constexpr (decChannel == DecayChannel::BsToDsminusPi) {
+        } else if constexpr (DecChannel == DecayChannel::BsToDsminusPi) {
           hCandidatesDs->Fill(SVFitting::FitOk);
-        } else if constexpr (decChannel == DecayChannel::LbToLcplusPi) {
+        } else if constexpr (DecChannel == DecayChannel::LbToLcplusPi) {
           hCandidatesLc->Fill(SVFitting::FitOk);
         }
 
@@ -1200,7 +1200,7 @@ struct HfDataCreatorCharmHadPiReduced {
         pVecCharm = RecoDecay::pVec(pVec0, pVec1, pVec2);
         trackParCovCharmHad = df3.createParentTrackParCov();
         trackParCovCharmHad.setAbsCharge(charmHadDauTracks[1].sign());   // to be sure
-      } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
+      } else if constexpr (DecChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
 
         hCandidatesD0->Fill(SVFitting::BeforeFit);
         try {
@@ -1222,7 +1222,7 @@ struct HfDataCreatorCharmHadPiReduced {
         pVecCharm = RecoDecay::pVec(pVec0, pVec1);
         trackParCovCharmHad = df2.createParentTrackParCov();
         trackParCovCharmHad.setAbsCharge(0); // to be sure
-      } else if constexpr (decChannel == DecayChannel::B0ToDstarPi) {
+      } else if constexpr (DecChannel == DecayChannel::B0ToDstarPi) {
 
         hCandidatesD0FromDstar->Fill(SVFitting::BeforeFit);
         try {
@@ -1279,15 +1279,15 @@ struct HfDataCreatorCharmHadPiReduced {
         }
 
         // reject pi D with same sign as D
-        if constexpr (decChannel == DecayChannel::B0ToDminusPi || decChannel == DecayChannel::BsToDsminusPi || decChannel == DecayChannel::LbToLcplusPi) { // D∓ → π∓ K± π∓ and Ds∓ → K∓ K± π∓ and Lc∓ → p∓ K± π∓
+        if constexpr (DecChannel == DecayChannel::B0ToDminusPi || DecChannel == DecayChannel::BsToDsminusPi || DecChannel == DecayChannel::LbToLcplusPi) { // D∓ → π∓ K± π∓ and Ds∓ → K∓ K± π∓ and Lc∓ → p∓ K± π∓
           if (trackPion.sign() * charmHadDauTracks[0].sign() > 0) {
             continue;
           }
-        } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
+        } else if constexpr (DecChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
           if (!((candC.isSelD0() >= hfflagConfigurations.selectionFlagD0 && trackPion.sign() < 0) || (candC.isSelD0bar() >= hfflagConfigurations.selectionFlagD0bar && trackPion.sign() > 0))) {
             continue;
           }
-        } else if constexpr (decChannel == DecayChannel::B0ToDstarPi) { // D*+ → D0 π+
+        } else if constexpr (DecChannel == DecayChannel::B0ToDstarPi) { // D*+ → D0 π+
           if (trackPion.sign() * charmHadDauTracks.back().sign() > 0) {
             continue;
           }
@@ -1328,20 +1328,20 @@ struct HfDataCreatorCharmHadPiReduced {
           selectedTracksPion[trackPion.globalIndex()] = tables.hfTrackPion.lastIndex();
         }
 
-        if constexpr (doMc) {
+        if constexpr (DoMc) {
           std::vector<typename TTracks::iterator> beautyHadDauTracks{};
           beautyHadDauTracks.reserve(charmHadDauTracks.size());
           for (const auto& track : charmHadDauTracks) {
             beautyHadDauTracks.push_back(track);
           }
           beautyHadDauTracks.push_back(trackPion);
-          fillMcRecoInfo<decChannel>(collision, particlesMc, beautyHadDauTracks, indexHfCandCharm, selectedTracksPion, indexCollisionMaxNumContrib);
+          fillMcRecoInfo<DecChannel>(collision, particlesMc, beautyHadDauTracks, indexHfCandCharm, selectedTracksPion, indexCollisionMaxNumContrib);
         }
         fillHfCandCharm = true;
       } // pion loop
       if (fillHfCandCharm) { // fill candCplus table only once per D candidate
         constexpr std::size_t NSizeMLScore{3u};
-        if constexpr (decChannel == DecayChannel::B0ToDminusPi || decChannel == DecayChannel::BsToDsminusPi || decChannel == DecayChannel::LbToLcplusPi) { // D∓ → π∓ K± π∓ and Ds∓ → K∓ K± π∓ and Lc∓ → p∓ K± π∓
+        if constexpr (DecChannel == DecayChannel::B0ToDminusPi || DecChannel == DecayChannel::BsToDsminusPi || DecChannel == DecayChannel::LbToLcplusPi) { // D∓ → π∓ K± π∓ and Ds∓ → K∓ K± π∓ and Lc∓ → p∓ K± π∓
           tables.hfCand3Prong(charmHadDauTracks[0].globalIndex(), charmHadDauTracks[1].globalIndex(), charmHadDauTracks[2].globalIndex(),
                               indexHfReducedCollision,
                               trackParCovCharmHad.getX(), trackParCovCharmHad.getAlpha(),
@@ -1357,7 +1357,7 @@ struct HfDataCreatorCharmHadPiReduced {
                                  trackParCovCharmHad.getSigma1PtTgl(), trackParCovCharmHad.getSigma1Pt2());
           float nSigmaTpcPr0{-999.f}, nSigmaTpcPr1{-999.f}, nSigmaTpcPr2{-999.f};
           float nSigmaTofPr0{-999.f}, nSigmaTofPr1{-999.f}, nSigmaTofPr2{-999.f};
-          if constexpr (decChannel == DecayChannel::LbToLcplusPi) {
+          if constexpr (DecChannel == DecayChannel::LbToLcplusPi) {
             /// assign non-dummy values only for Lb->LcPi analysis
             nSigmaTpcPr0 = candC.nSigTpcPr0();
             nSigmaTpcPr1 = candC.nSigTpcPr1();
@@ -1369,11 +1369,11 @@ struct HfDataCreatorCharmHadPiReduced {
           tables.hfCandPidProng0(candC.nSigTpcPi0(), candC.nSigTofPi0(), candC.nSigTpcKa0(), candC.nSigTofKa0(), nSigmaTpcPr0, nSigmaTofPr0, charmHadDauTracks[0].hasTOF(), charmHadDauTracks[0].hasTPC());
           tables.hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1(), nSigmaTpcPr1, nSigmaTofPr1, charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
           tables.hfCandPidProng2(candC.nSigTpcPi2(), candC.nSigTofPi2(), candC.nSigTpcKa2(), candC.nSigTofKa2(), nSigmaTpcPr2, nSigmaTofPr2, charmHadDauTracks[2].hasTOF(), charmHadDauTracks[2].hasTPC());
-          if constexpr (withMl) {
+          if constexpr (WithMl) {
             std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
-            if constexpr (decChannel == DecayChannel::B0ToDminusPi) {
+            if constexpr (DecChannel == DecayChannel::B0ToDminusPi) {
               tables.hfCand3ProngMl(candC.mlProbDplusToPiKPi()[0], candC.mlProbDplusToPiKPi()[1], candC.mlProbDplusToPiKPi()[2], -1., -1., -1.);
-            } else if constexpr (decChannel == DecayChannel::BsToDsminusPi) {
+            } else if constexpr (DecChannel == DecayChannel::BsToDsminusPi) {
               if (candC.mlProbDsToKKPi().size() == NSizeMLScore) {
                 std::copy(candC.mlProbDsToKKPi().begin(), candC.mlProbDsToKKPi().end(), mlScores.begin());
               }
@@ -1381,7 +1381,7 @@ struct HfDataCreatorCharmHadPiReduced {
                 std::copy(candC.mlProbDsToPiKK().begin(), candC.mlProbDsToPiKK().end(), mlScores.begin() + 3);
               }
               tables.hfCand3ProngMl(mlScores[0], mlScores[1], mlScores[2], mlScores[3], mlScores[4], mlScores[5]);
-            } else if constexpr (decChannel == DecayChannel::LbToLcplusPi) {
+            } else if constexpr (DecChannel == DecayChannel::LbToLcplusPi) {
               if (candC.mlProbLcToPKPi().size() == NSizeMLScore) {
                 std::copy(candC.mlProbLcToPKPi().begin(), candC.mlProbLcToPKPi().end(), mlScores.begin());
               }
@@ -1391,7 +1391,7 @@ struct HfDataCreatorCharmHadPiReduced {
               tables.hfCand3ProngMl(mlScores[0], mlScores[1], mlScores[2], mlScores[3], mlScores[4], mlScores[5]);
             }
           }
-        } else if constexpr (decChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
+        } else if constexpr (DecChannel == DecayChannel::BplusToD0barPi) { // D0(bar) → K± π∓
           tables.hfCand2Prong(charmHadDauTracks[0].globalIndex(), charmHadDauTracks[1].globalIndex(),
                               indexHfReducedCollision,
                               trackParCovCharmHad.getX(), trackParCovCharmHad.getAlpha(),
@@ -1407,7 +1407,7 @@ struct HfDataCreatorCharmHadPiReduced {
                                  trackParCovCharmHad.getSigma1PtTgl(), trackParCovCharmHad.getSigma1Pt2());
           tables.hfCandPidProng0(candC.nSigTpcPi0(), candC.nSigTofPi0(), candC.nSigTpcKa0(), candC.nSigTofKa0(), 0., 0., charmHadDauTracks[0].hasTOF(), charmHadDauTracks[0].hasTPC());
           tables.hfCandPidProng1(candC.nSigTpcPi1(), candC.nSigTofPi1(), candC.nSigTpcKa1(), candC.nSigTofKa1(), 0., 0., charmHadDauTracks[1].hasTOF(), charmHadDauTracks[1].hasTPC());
-          if constexpr (withMl) {
+          if constexpr (WithMl) {
             std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
             if (candC.mlProbD0().size() == NSizeMLScore) {
               std::copy(candC.mlProbD0().begin(), candC.mlProbD0().end(), mlScores.begin());
@@ -1417,7 +1417,7 @@ struct HfDataCreatorCharmHadPiReduced {
             }
             tables.hfCand2ProngMl(mlScores[0], mlScores[1], mlScores[2], mlScores[3], mlScores[4], mlScores[5]);
           }
-        } else if constexpr (decChannel == DecayChannel::B0ToDstarPi) {
+        } else if constexpr (DecChannel == DecayChannel::B0ToDstarPi) {
           tables.hfCand2Prong(charmHadDauTracks[0].globalIndex(), charmHadDauTracks[1].globalIndex(),
                               indexHfReducedCollision,
                               trackParCovCharmHad.getX(), trackParCovCharmHad.getAlpha(),
@@ -1457,7 +1457,7 @@ struct HfDataCreatorCharmHadPiReduced {
                                     trackParCovSoftPion.getSigma1PtY(), trackParCovSoftPion.getSigma1PtZ(), trackParCovSoftPion.getSigma1PtSnp(),
                                     trackParCovSoftPion.getSigma1PtTgl(), trackParCovSoftPion.getSigma1Pt2());
           tables.hfTrackPidSoftPion(candC.nSigTpcPi2(), candC.nSigTofPi2(), charmHadDauTracks[2].hasTOF(), charmHadDauTracks[2].hasTPC());
-          if constexpr (withMl) {
+          if constexpr (WithMl) {
             std::array<float, 6> mlScores = {-1.f, -1.f, -1.f, -1.f, -1.f, -1.f};
             if (candC.mlProbDstarToD0Pi().size() == NSizeMLScore) {
               std::copy(candC.mlProbDstarToD0Pi().begin(), candC.mlProbDstarToD0Pi().end(), mlScores.begin());
@@ -1484,7 +1484,7 @@ struct HfDataCreatorCharmHadPiReduced {
     tables.hfReducedCollExtra(collision.covXX(), collision.covXY(), collision.covYY(),
                               collision.covXZ(), collision.covYZ(), collision.covZZ());
     tables.hfReducedCollCentrality(collision.centFT0C(), collision.centFT0M(), collision.trackOccupancyInTimeRange(), collision.ft0cOccupancyInTimeRange());
-    if constexpr (withQvec) {
+    if constexpr (WithQvec) {
       tables.hfReducedQvector(collision.qvecFT0CRe(), collision.qvecFT0CIm(), collision.sumAmplFT0C(),
                               collision.qvecFT0ARe(), collision.qvecFT0AIm(), collision.sumAmplFT0A(),
                               collision.qvecFT0MRe(), collision.qvecFT0MIm(), collision.sumAmplFT0M(),
@@ -1494,7 +1494,7 @@ struct HfDataCreatorCharmHadPiReduced {
     }
   }
 
-  template <uint8_t decayChannel>
+  template <uint8_t DecayChannel>
   void runMcGen(aod::McCollision const& mcCollision,
                 aod::McParticles const& particlesMc,
                 CollisionsWCentAndMcLabels const& collisions,
@@ -1526,7 +1526,7 @@ struct HfDataCreatorCharmHadPiReduced {
     for (const auto& particle : mcParticlesPerMcColl) {
       int8_t sign{0};
       int8_t flag{0};
-      if constexpr (decayChannel == DecayChannel::B0ToDminusPi) {
+      if constexpr (DecayChannel == DecayChannel::B0ToDminusPi) {
         // B0 → D- π+
         if (RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kB0, std::array{-static_cast<int>(Pdg::kDPlus), +kPiPlus}, true)) {
           // Match D- -> π- K+ π-
@@ -1559,7 +1559,7 @@ struct HfDataCreatorCharmHadPiReduced {
         tables.rowHfB0McGenReduced(flag, -1 /*channel*/, ptParticle, yParticle, etaParticle,
                                    ptProngs[0], yProngs[0], etaProngs[0],
                                    ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
-      } else if constexpr (decayChannel == DecayChannel::BsToDsminusPi) {
+      } else if constexpr (DecayChannel == DecayChannel::BsToDsminusPi) {
         // Bs → Ds- π+
         if (RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kBS, std::array{-static_cast<int>(Pdg::kDS), +kPiPlus}, true)) {
           // Match Ds- -> π- K+ π-
@@ -1634,7 +1634,7 @@ struct HfDataCreatorCharmHadPiReduced {
         tables.rowHfBsMcGenReduced(flag, -1 /*channel*/, ptParticle, yParticle, etaParticle,
                                    ptProngs[0], yProngs[0], etaProngs[0],
                                    ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
-      } else if constexpr (decayChannel == DecayChannel::BplusToD0barPi) {
+      } else if constexpr (DecayChannel == DecayChannel::BplusToD0barPi) {
         // B+ → D0bar π+
         if (RecoDecay::isMatchedMCGen(particlesMc, particle, Pdg::kBPlus, std::array{-static_cast<int>(Pdg::kD0), +kPiPlus}, true)) {
           // Match D0bar -> π- K+
@@ -1667,7 +1667,7 @@ struct HfDataCreatorCharmHadPiReduced {
         tables.rowHfBpMcGenReduced(flag, -1 /*channel*/, ptParticle, yParticle, etaParticle,
                                    ptProngs[0], yProngs[0], etaProngs[0],
                                    ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
-      } else if constexpr (decayChannel == DecayChannel::LbToLcplusPi) {
+      } else if constexpr (DecayChannel == DecayChannel::LbToLcplusPi) {
         // Lb → Lc+ π-
         if (RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kLambdaB0, std::array{static_cast<int>(Pdg::kLambdaCPlus), -kPiPlus}, true)) {
           // Match Lc+ → p K- π+
@@ -1700,7 +1700,7 @@ struct HfDataCreatorCharmHadPiReduced {
         tables.rowHfLbMcGenReduced(flag, ptParticle, yParticle, etaParticle,
                                    ptProngs[0], yProngs[0], etaProngs[0],
                                    ptProngs[1], yProngs[1], etaProngs[1], hfRejMap, centFT0C, centFT0M);
-      } else if constexpr (decayChannel == DecayChannel::B0ToDstarPi) {
+      } else if constexpr (DecayChannel == DecayChannel::B0ToDstarPi) {
         // B0 → D* π+
         if (RecoDecay::isMatchedMCGen<true>(particlesMc, particle, Pdg::kB0, std::array{-static_cast<int>(Pdg::kDStar), +kPiPlus}, true)) {
           // Match D- -> π- K+ π-

@@ -156,7 +156,7 @@ struct HfCandidateSelectorBsToDsPiReduced {
   /// \param hfCandsBs Bs candidates
   /// \param pionTracks pion tracks
   /// \param configs config inherited from the charm-hadron data creator
-  template <bool withDmesMl, typename Cands>
+  template <bool WithDmesMl, typename Cands>
   void runSelection(Cands const& hfCandsBs,
                     TracksPion const&,
                     HfCandBsConfigs const&)
@@ -180,7 +180,7 @@ struct HfCandidateSelectorBsToDsPiReduced {
         continue;
       }
 
-      if constexpr (withDmesMl) { // we include it in the topological selections
+      if constexpr (WithDmesMl) { // we include it in the topological selections
         if (!hfHelper.selectionDmesMlScoresForBReduced(hfCandBs, cutsDmesMl, binsPtDmesMl)) {
           hfSelBsToDsPiCandidate(statusBsToDsPi);
           if (applyBsMl) {
@@ -219,7 +219,7 @@ struct HfCandidateSelectorBsToDsPiReduced {
 
       if (applyBsMl) {
         // Bs ML selections
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withDmesMl>(hfCandBs, trackPi);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<WithDmesMl>(hfCandBs, trackPi);
         bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBs, outputMl);
         hfMlBsToDsPiCandidate(outputMl);
 

@@ -266,7 +266,7 @@ struct HfTaskXic {
   {
     return std::abs(etaProng) <= etaMaxAcceptance && ptProng >= ptMinAcceptance;
   }
-  template <bool useMl, typename Cands>
+  template <bool UseMl, typename Cands>
   void analysisData(aod::Collision const& collision,
                     Cands const& candidates,
                     aod::TracksWDca const& tracks)
@@ -370,7 +370,7 @@ struct HfTaskXic {
         const int ternaryCl = 3;
         if (candidate.isSelXicToPKPi() >= selectionFlagXic) {
           massXic = hfHelper.invMassXicToPKPi(candidate);
-          if constexpr (useMl) {
+          if constexpr (UseMl) {
             if (candidate.mlProbXicToPKPi().size() == ternaryCl) {
               outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
               outputPrompt = candidate.mlProbXicToPKPi()[1]; /// prompt score
@@ -384,7 +384,7 @@ struct HfTaskXic {
         }
         if (candidate.isSelXicToPiKP() >= selectionFlagXic) {
           massXic = hfHelper.invMassXicToPiKP(candidate);
-          if constexpr (useMl) {
+          if constexpr (UseMl) {
             if (candidate.mlProbXicToPiKP().size() == ternaryCl) {
               outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
               outputPrompt = candidate.mlProbXicToPiKP()[1]; /// prompt score
@@ -416,7 +416,7 @@ struct HfTaskXic {
   PROCESS_SWITCH(HfTaskXic, processDataWithMl, "Process Data with the ML method", false);
 
   // Fill MC histograms
-  template <bool useMl, typename Cands>
+  template <bool UseMl, typename Cands>
   void analysisMc(Cands const& candidates,
                   soa::Join<aod::McParticles, aod::HfCand3ProngMcGen> const& mcParticles,
                   aod::TracksWMc const&)
@@ -506,7 +506,7 @@ struct HfTaskXic {
           double outputBkg(-1), outputPrompt(-1), outputFD(-1);
           const int ternaryCl = 3;
           if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
-            if constexpr (useMl) {
+            if constexpr (UseMl) {
               if (candidate.mlProbXicToPKPi().size() == ternaryCl) {
                 outputBkg = candidate.mlProbXicToPKPi()[0];    /// bkg score
                 outputPrompt = candidate.mlProbXicToPKPi()[1]; /// prompt score
@@ -519,7 +519,7 @@ struct HfTaskXic {
             }
           }
           if ((candidate.isSelXicToPiKP() >= selectionFlagXic) && pdgCodeProng0 == kPiPlus) {
-            if constexpr (useMl) {
+            if constexpr (UseMl) {
               if (candidate.mlProbXicToPiKP().size() == ternaryCl) {
                 outputBkg = candidate.mlProbXicToPiKP()[0];    /// bkg score
                 outputPrompt = candidate.mlProbXicToPiKP()[1]; /// prompt score

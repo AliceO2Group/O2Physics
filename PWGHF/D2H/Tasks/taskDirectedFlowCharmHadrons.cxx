@@ -201,7 +201,7 @@ struct HfTaskDirectedFlowCharmHadrons {
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param candidates are the selected candidates
-  template <DecayChannel channel, typename T1, typename Trk>
+  template <DecayChannel Channel, typename T1, typename Trk>
   void runFlowAnalysis(CollsWithQvecs::iterator const& collision,
                        T1 const& candidates,
                        Trk const& /*tracks*/)
@@ -263,7 +263,7 @@ struct HfTaskDirectedFlowCharmHadrons {
           }
         }
       } else if constexpr (std::is_same_v<T1, CandD0Data> || std::is_same_v<T1, CandD0DataWMl>) {
-        switch (channel) {
+        switch (Channel) {
           case DecayChannel::D0ToPiK:
             massCand = hfHelper.invMassD0ToPiK(candidate);
             rapCand = hfHelper.yD0(candidate);

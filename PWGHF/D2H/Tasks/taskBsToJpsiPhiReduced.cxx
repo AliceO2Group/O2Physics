@@ -365,7 +365,7 @@ struct HfTaskBsToJpsiPhiReduced {
   /// \param withBsMl is the flag to enable the filling with ML scores for the Bs candidate
   /// \param candidate is the Bs candidate
   /// \param candidatesJpsi is the table with Jpsi candidates
-  template <bool doMc, bool withBsMl, typename Cand>
+  template <bool DoMc, bool WithBsMl, typename Cand>
   void fillCand(Cand const& candidate,
                 aod::HfRedJpsis const& /*candidatesJpsi*/,
                 aod::HfRedBach0Tracks const&,
@@ -385,7 +385,7 @@ struct HfTaskBsToJpsiPhiReduced {
 
     int8_t flagMcMatchRec{0}, flagMcDecayChanRec{0}, flagWrongCollision{0};
     bool isSignal = false;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagMcDecayChanRec = candidate.flagMcDecayChanRec();
       flagWrongCollision = candidate.flagWrongCollision();
@@ -421,7 +421,7 @@ struct HfTaskBsToJpsiPhiReduced {
     }
 
     float candidateMlScoreSig = -1;
-    if constexpr (withBsMl) {
+    if constexpr (WithBsMl) {
       // Bs ML selections
       std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate, candKa0, candKa1);
       if (hfMlResponse.isSelectedMl(inputFeatures, ptCandBs, outputMl)) {
@@ -436,7 +436,7 @@ struct HfTaskBsToJpsiPhiReduced {
     registry.fill(HIST("hMassJpsi"), invMassJpsi, candidate.ptProng0());
     registry.fill(HIST("hMassPhi"), invMassPhi, candidate.ptProng0());
     registry.fill(HIST("hd0K"), candidate.impactParameter1(), candidate.ptProng1());
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       if (isSignal) {
         registry.fill(HIST("hMassRecSig"), invMassBs, ptCandBs);
         registry.fill(HIST("hMassJpsiRecSig"), invMassJpsi, candidate.ptProng0());
@@ -451,7 +451,7 @@ struct HfTaskBsToJpsiPhiReduced {
     float pseudoRndm = ptJpsi * 1000. - static_cast<int64_t>(ptJpsi * 1000);
     if (ptCandBs >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor) {
       float ptMother = -1.;
-      if constexpr (doMc) {
+      if constexpr (DoMc) {
         ptMother = candidate.ptMother();
       }
 

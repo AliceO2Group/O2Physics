@@ -394,7 +394,7 @@ struct HfTaskLc {
 
   /// Fill MC histograms at reconstruction level
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
+  template <bool FillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
   void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
   {
 
@@ -565,7 +565,7 @@ struct HfTaskLc {
           if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
             massLc = hfHelper.invMassLcToPKPi(candidate);
 
-            if constexpr (fillMl) {
+            if constexpr (FillMl) {
               if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
                 outputBkg = candidate.mlProbLcToPKPi()[MlClassBackground]; /// bkg score
                 outputPrompt = candidate.mlProbLcToPKPi()[MlClassPrompt];  /// prompt score
@@ -594,7 +594,7 @@ struct HfTaskLc {
           if ((candidate.isSelLcToPiKP() >= selectionFlagLc) && pdgCodeProng0 == kPiPlus) {
             massLc = hfHelper.invMassLcToPiKP(candidate);
 
-            if constexpr (fillMl) {
+            if constexpr (FillMl) {
               if (candidate.mlProbLcToPiKP().size() == NumberOfMlClasses) {
                 outputBkg = candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
                 outputPrompt = candidate.mlProbLcToPiKP()[MlClassPrompt];  /// prompt score
@@ -709,7 +709,7 @@ struct HfTaskLc {
 
   /// Fill histograms for real data
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandType>
+  template <bool FillMl, typename CollType, typename CandType>
   void fillHistosData(CollType const& collision, CandType const& candidates)
   {
     auto thisCollId = collision.globalIndex();
@@ -788,7 +788,7 @@ struct HfTaskLc {
         if (candidate.isSelLcToPKPi() >= selectionFlagLc) {
           massLc = hfHelper.invMassLcToPKPi(candidate);
 
-          if constexpr (fillMl) {
+          if constexpr (FillMl) {
             if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
               outputBkg = candidate.mlProbLcToPKPi()[MlClassBackground]; /// bkg score
               outputPrompt = candidate.mlProbLcToPKPi()[MlClassPrompt];  /// prompt score
@@ -817,7 +817,7 @@ struct HfTaskLc {
         if (candidate.isSelLcToPiKP() >= selectionFlagLc) {
           massLc = hfHelper.invMassLcToPiKP(candidate);
 
-          if constexpr (fillMl) {
+          if constexpr (FillMl) {
             if (candidate.mlProbLcToPiKP().size() == NumberOfMlClasses) {
               outputBkg = candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
               outputPrompt = candidate.mlProbLcToPiKP()[MlClassPrompt];  /// prompt score
@@ -848,26 +848,26 @@ struct HfTaskLc {
   }
   /// Run the analysis on real data
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandType>
+  template <bool FillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionData(CollType const& collisions,
                                    CandType const& candidates)
   {
 
     for (const auto& collision : collisions) {
-      fillHistosData<fillMl>(collision, candidates);
+      fillHistosData<FillMl>(collision, candidates);
     }
   }
 
   /// Run the analysis on MC data
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandType, typename CandLcMcGen>
+  template <bool FillMl, typename CollType, typename CandType, typename CandLcMcGen>
   void runAnalysisPerCollisionMc(CollType const& collisions,
                                  CandType const& candidates,
                                  CandLcMcGen const& mcParticles)
   {
     for (const auto& collision : collisions) {
       // MC Rec.
-      fillHistosMcRec<fillMl>(collision, candidates, mcParticles);
+      fillHistosMcRec<FillMl>(collision, candidates, mcParticles);
     }
     // MC gen.
     fillHistosMcGen(mcParticles, collisions);

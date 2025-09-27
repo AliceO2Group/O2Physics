@@ -204,12 +204,12 @@ struct HfTreeCreatorXiccToPKPiPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      auto fillTable = [&](int CandFlag,
-                           int FunctionSelection,
-                           float FunctionInvMass,
-                           float FunctionCt,
-                           float FunctionY) {
-        if (FunctionSelection >= 1) {
+      auto fillTable = [&](int candFlag,
+                           int functionSelection,
+                           float functionInvMass,
+                           float functionCt,
+                           float functionY) {
+        if (functionSelection >= 1) {
           auto xicCand = candidate.prong0();
 
           rowCandidateFull(
@@ -253,16 +253,16 @@ struct HfTreeCreatorXiccToPKPiPi {
             xicCand.prong1_as<TracksWPid>().tofNSigmaKa(),
             xicCand.prong2_as<TracksWPid>().tofNSigmaPr(),
             xicCand.prong2_as<TracksWPid>().tofNSigmaPi(),
-            1 << CandFlag,
-            FunctionInvMass,
+            1 << candFlag,
+            functionInvMass,
             candidate.pt(),
             candidate.p(),
             candidate.cpa(),
             candidate.cpaXY(),
-            FunctionCt,
+            functionCt,
             candidate.eta(),
             candidate.phi(),
-            FunctionY,
+            functionY,
             candidate.flagMcMatchRec(),
             candidate.originMcRec());
         }

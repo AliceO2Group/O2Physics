@@ -286,14 +286,14 @@ struct HfTaskXicToXiPiPi {
 
   /// Fill THnSpare depending on whether ML selection is used
   // \param candidate is candidate
-  template <bool useMl, typename T1>
+  template <bool UseMl, typename T1>
   void fillTHnSparse(const T1& candidate)
   {
     if (!enableTHn) {
       return;
     }
 
-    if constexpr (useMl) {
+    if constexpr (UseMl) {
       // with ML information
       double outputBkg = -99.;    // bkg score
       double outputPrompt = -99.; // prompt score
@@ -324,7 +324,7 @@ struct HfTaskXicToXiPiPi {
   }
 
   /// Function to fill histograms
-  template <bool useKfParticle, bool useMl, typename TCanTable>
+  template <bool UseKfParticle, bool UseMl, typename TCanTable>
   void fillHistograms(TCanTable const& candidates)
   {
     for (const auto& candidate : candidates) {
@@ -369,7 +369,7 @@ struct HfTaskXicToXiPiPi {
       registry.fill(HIST("hMassXiPi2"), candidate.invMassXiPi1(), ptCandXic);
 
       // fill KFParticle specific histograms
-      if constexpr (useKfParticle) {
+      if constexpr (UseKfParticle) {
         registry.fill(HIST("hChi2GeoXi"), candidate.kfCascadeChi2(), ptCandXic);
         registry.fill(HIST("hChi2GeoLam"), candidate.kfV0Chi2(), ptCandXic);
         registry.fill(HIST("hChi2TopoXicPlusToPV"), candidate.chi2TopoXicPlusToPV(), ptCandXic);
@@ -377,7 +377,7 @@ struct HfTaskXicToXiPiPi {
 
       // fill THnSparse
       if (enableTHn) {
-        if constexpr (useMl) {
+        if constexpr (UseMl) {
           fillTHnSparse<true>(candidate);
         } else {
           fillTHnSparse<false>(candidate);
@@ -387,7 +387,7 @@ struct HfTaskXicToXiPiPi {
   }
 
   /// Function for MC analysis and histogram filling
-  template <bool useKfParticle, bool useMl, typename TCandTable>
+  template <bool UseKfParticle, bool UseMl, typename TCandTable>
   void fillHistogramsMc(TCandTable const& candidates,
                         soa::Join<aod::McParticles, aod::HfCandXicMcGen> const& mcParticles,
                         aod::TracksWMc const&)
@@ -441,7 +441,7 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hCPAxyLambdaRecSig"), candidate.cpaLambda(), ptCandXic);
 
         // fill KFParticle specific histograms
-        if constexpr (useKfParticle) {
+        if constexpr (UseKfParticle) {
           registry.fill(HIST("hChi2geoXiRecSig"), candidate.kfCascadeChi2(), ptCandXic);
           registry.fill(HIST("hChi2geoLamRecSig"), candidate.kfV0Chi2(), ptCandXic);
           registry.fill(HIST("hChi2TopoXicPlusToPVRecSig"), candidate.chi2TopoXicPlusToPV(), ptCandXic);
@@ -479,7 +479,7 @@ struct HfTaskXicToXiPiPi {
         registry.fill(HIST("hCPAxyLambdaRecBg"), candidate.cpaLambda(), ptCandXic);
 
         // fill KFParticle specific histograms
-        if constexpr (useKfParticle) {
+        if constexpr (UseKfParticle) {
           registry.fill(HIST("hChi2geoXiRecBg"), candidate.kfCascadeChi2(), ptCandXic);
           registry.fill(HIST("hChi2geoLamRecBg"), candidate.kfV0Chi2(), ptCandXic);
           registry.fill(HIST("hChi2TopoXicPlusToPVRecBg"), candidate.chi2TopoXicPlusToPV(), ptCandXic);
@@ -497,7 +497,7 @@ struct HfTaskXicToXiPiPi {
       }
       // fill THnSparse
       if (enableTHn) {
-        if constexpr (useMl) {
+        if constexpr (UseMl) {
           fillTHnSparse<true>(candidate);
         } else {
           fillTHnSparse<false>(candidate);

@@ -207,7 +207,7 @@ struct HfCandidateSelectorLc {
   /// Conjugate-independent topological cuts
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
-  template <aod::hf_cand::VertexerType reconstructionType, typename T>
+  template <aod::hf_cand::VertexerType ReconstructionType, typename T>
   bool selectionTopol(const T& candidate)
   {
     auto candpT = candidate.pt();
@@ -222,7 +222,7 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
-    if (reconstructionType == aod::hf_cand::VertexerType::DCAFitter || (reconstructionType == aod::hf_cand::VertexerType::KfParticle && applyNonKfCuts)) {
+    if (ReconstructionType == aod::hf_cand::VertexerType::DCAFitter || (ReconstructionType == aod::hf_cand::VertexerType::KfParticle && applyNonKfCuts)) {
       // cosine of pointing angle
       if (candidate.cpa() <= cuts->get(pTBin, "cos pointing angle")) {
         return false;
@@ -253,7 +253,7 @@ struct HfCandidateSelectorLc {
       }
     }
 
-    if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+    if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
       if (applyKfCuts) {
         // candidate chi2geo of the triplet of prongs
         if (candidate.kfChi2Geo() > kfCuts->get(pTBin, "kfChi2Geo")) {
@@ -285,7 +285,7 @@ struct HfCandidateSelectorLc {
   /// \param trackPion is the track with the pion hypothesis
   /// \param trackKaon is the track with the kaon hypothesis
   /// \return true if candidate passes all cuts for the given Conjugate
-  template <aod::hf_cand::VertexerType reconstructionType, typename T1, typename T2>
+  template <aod::hf_cand::VertexerType ReconstructionType, typename T1, typename T2>
   bool selectionTopolConjugate(const T1& candidate, const T2& trackProton, const T2& trackKaon, const T2& trackPion)
   {
 
@@ -295,7 +295,7 @@ struct HfCandidateSelectorLc {
       return false;
     }
 
-    if (reconstructionType == aod::hf_cand::VertexerType::DCAFitter || (reconstructionType == aod::hf_cand::VertexerType::KfParticle && applyNonKfCuts)) {
+    if (ReconstructionType == aod::hf_cand::VertexerType::DCAFitter || (ReconstructionType == aod::hf_cand::VertexerType::KfParticle && applyNonKfCuts)) {
 
       // cut on daughter pT
       if (trackProton.pt() < cuts->get(pTBin, "pT p") || trackKaon.pt() < cuts->get(pTBin, "pT K") || trackPion.pt() < cuts->get(pTBin, "pT Pi")) {
@@ -303,7 +303,7 @@ struct HfCandidateSelectorLc {
       }
 
       float massLc{0.f}, massKPi{0.f};
-      if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
+      if constexpr (ReconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
         if (trackProton.globalIndex() == candidate.prong0Id()) {
           massLc = hfHelper.invMassLcToPKPi(candidate);
           massKPi = hfHelper.invMassKPiPairLcToPKPi(candidate);
@@ -311,7 +311,7 @@ struct HfCandidateSelectorLc {
           massLc = hfHelper.invMassLcToPiKP(candidate);
           massKPi = hfHelper.invMassKPiPairLcToPiKP(candidate);
         }
-      } else if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      } else if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         if (trackProton.globalIndex() == candidate.prong0Id()) {
           massLc = candidate.kfMassPKPi();
           massKPi = candidate.kfMassKPi();
@@ -333,7 +333,7 @@ struct HfCandidateSelectorLc {
       }
     }
 
-    if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+    if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
       if (applyKfCuts) {
         const float chi2PrimProng0 = candidate.kfChi2PrimProng0();
         const float chi2PrimProng1 = candidate.kfChi2PrimProng1();
@@ -438,7 +438,7 @@ struct HfCandidateSelectorLc {
   /// \param reconstructionType is the reconstruction type (DCAFitterN or KFParticle)
   /// \param candidates Lc candidate table
   /// \param tracks track table
-  template <bool useBayesPid = false, aod::hf_cand::VertexerType reconstructionType, typename CandType, typename TTracks>
+  template <bool UseBayesPid = false, aod::hf_cand::VertexerType ReconstructionType, typename CandType, typename TTracks>
   void runSelectLc(CandType const& candidates, TTracks const&)
   {
     // looping over 3-prong candidates
@@ -485,7 +485,7 @@ struct HfCandidateSelectorLc {
       }
 
       // conjugate-independent topological selection
-      if (!selectionTopol<reconstructionType>(candidate)) {
+      if (!selectionTopol<ReconstructionType>(candidate)) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         if (applyMl) {
           hfMlLcToPKPiCandidate(outputMlLcToPKPi, outputMlLcToPiKP);
@@ -494,8 +494,8 @@ struct HfCandidateSelectorLc {
       }
 
       // conjugate-dependent topological selection for Lc
-      bool topolLcToPKPi = selectionTopolConjugate<reconstructionType>(candidate, trackPos1, trackNeg, trackPos2);
-      bool topolLcToPiKP = selectionTopolConjugate<reconstructionType>(candidate, trackPos2, trackNeg, trackPos1);
+      bool topolLcToPKPi = selectionTopolConjugate<ReconstructionType>(candidate, trackPos1, trackNeg, trackPos2);
+      bool topolLcToPiKP = selectionTopolConjugate<ReconstructionType>(candidate, trackPos2, trackNeg, trackPos1);
 
       if (!topolLcToPKPi && !topolLcToPiKP) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
@@ -544,7 +544,7 @@ struct HfCandidateSelectorLc {
         }
       }
 
-      if constexpr (useBayesPid) {
+      if constexpr (UseBayesPid) {
         TrackSelectorPID::Status pidBayesTrackPos1Proton = selectorProton.statusBayes(trackPos1);
         TrackSelectorPID::Status pidBayesTrackPos2Proton = selectorProton.statusBayes(trackPos2);
         TrackSelectorPID::Status pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos1);
@@ -579,7 +579,7 @@ struct HfCandidateSelectorLc {
         isSelectedMlLcToPKPi = false;
         isSelectedMlLcToPiKP = false;
 
-        if constexpr (reconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
+        if constexpr (ReconstructionType == aod::hf_cand::VertexerType::DCAFitter) {
           if (pidLcToPKPi == 1 && pidBayesLcToPKPi == 1 && topolLcToPKPi) {
             std::vector<float> inputFeaturesLcToPKPi = hfMlResponseDCA.getInputFeatures(candidate, true);
             isSelectedMlLcToPKPi = hfMlResponseDCA.isSelectedMl(inputFeaturesLcToPKPi, candidate.pt(), outputMlLcToPKPi);

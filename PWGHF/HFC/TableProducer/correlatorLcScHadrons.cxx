@@ -104,7 +104,7 @@ struct HfCorrelatorLcScHadronsSelection {
   // filter on selection of Lc and decay channel Lc->PKPi
   Filter lcFilter = ((o2::aod::hf_track_index::hfflag & static_cast<uint8_t>(1 << aod::hf_cand_3prong::DecayType::LcToPKPi)) != static_cast<uint8_t>(0)) && (aod::hf_sel_candidate_lc::isSelLcToPKPi >= selectionFlagLc || aod::hf_sel_candidate_lc::isSelLcToPiKP >= selectionFlagLc);
 
-  template <bool isCandSc, typename CollType, typename CandType>
+  template <bool IsCandSc, typename CollType, typename CandType>
   void selectionCollision(CollType const& collision, CandType const& candidates)
   {
     bool isSelColl = true;
@@ -116,7 +116,7 @@ struct HfCorrelatorLcScHadronsSelection {
     if (doSelLcCollision) {
       for (const auto& candidate : candidates) {
 
-        if constexpr (isCandSc) {
+        if constexpr (IsCandSc) {
           int8_t chargeCand = candidate.charge();
 
           if (chargeCand == chargeZero) {
@@ -147,14 +147,14 @@ struct HfCorrelatorLcScHadronsSelection {
     candSel(isSelColl);
   }
 
-  template <bool isCandSc, typename CandType>
+  template <bool IsCandSc, typename CandType>
   void selectionCollisionMcGen(CandType const& mcParticles)
   {
     bool isCandFound = false;
     double massCand = -999.0;
     for (const auto& particle : mcParticles) {
 
-      isCandFound = matchCandAndMass<isCandSc>(particle, massCand);
+      isCandFound = matchCandAndMass<IsCandSc>(particle, massCand);
       if (!isCandFound) {
         continue;
       }
@@ -451,11 +451,11 @@ struct HfCorrelatorLcScHadrons {
     }
   };
 
-  template <bool isCandSc, typename CandType>
+  template <bool IsCandSc, typename CandType>
   double estimateY(CandType const& candidate)
   {
     double y = -999.;
-    if constexpr (isCandSc) {
+    if constexpr (IsCandSc) {
       int8_t chargeCand = candidate.charge();
 
       if (chargeCand == ChargeZero) {
@@ -661,7 +661,7 @@ struct HfCorrelatorLcScHadrons {
       registry.fill(HIST("hPtTracksVsSignGen"), track.pt(), chargeTrack / (std::abs(chargeTrack)));
     }
   }
-  template <bool isMcRec, typename TrackType, typename CandType, typename McPart>
+  template <bool IsMcRec, typename TrackType, typename CandType, typename McPart>
   void fillCorrelationTable(bool trkPidFill, TrackType const& track, CandType const& candidate,
                             const std::vector<float>& outMl, int binPool, int8_t correlStatus,
                             double yCand, int signCand, McPart const& mcParticles)
@@ -684,7 +684,7 @@ struct HfCorrelatorLcScHadrons {
     if (trkPidFill) {
       entryCandHadronPairTrkPID(track.tpcNSigmaPr(), track.tpcNSigmaKa(), track.tpcNSigmaPi(), track.tofNSigmaPr(), track.tofNSigmaKa(), track.tofNSigmaPi());
     }
-    if constexpr (isMcRec) {
+    if constexpr (IsMcRec) {
       if (track.has_mcParticle()) {
         auto mcParticle = track.template mcParticle_as<aod::McParticles>();
         isPhysicalPrimary = mcParticle.isPhysicalPrimary();
@@ -701,7 +701,7 @@ struct HfCorrelatorLcScHadrons {
     }
   }
 
-  template <bool isMcRec, bool isCandSc, typename CollisionType, typename CandType, typename TrackType>
+  template <bool IsMcRec, bool IsCandSc, typename CollisionType, typename CandType, typename TrackType>
   void doSameEvent(CollisionType const& collision,
                    TrackType const& tracks,
                    CandType const& candidates,
@@ -723,7 +723,7 @@ struct HfCorrelatorLcScHadrons {
       }
     }
 
-    if constexpr (!isMcRec) {
+    if constexpr (!IsMcRec) {
       timeStamp = collision.template bc_as<aod::BCsWithTimestamps>().timestamp();
     }
 
@@ -762,7 +762,7 @@ struct HfCorrelatorLcScHadrons {
       bool selLcPKPi = false;
       bool selLcPiKP = false;
 
-      yCand = estimateY<isCandSc>(candidate);
+      yCand = estimateY<IsCandSc>(candidate);
       etaCand = candidate.eta();
       ptCand = candidate.pt();
       phiCand = RecoDecay::constrainAngle(candidate.phi(), -PIHalf);
@@ -781,12 +781,12 @@ struct HfCorrelatorLcScHadrons {
         efficiencyWeightCand = 1. / efficiencyLc->at(o2::analysis::findBin(binsPtEfficiencyLc, ptCand));
       }
 
-      if constexpr (isMcRec) {
+      if constexpr (IsMcRec) {
         isPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
         isNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
       }
 
-      if constexpr (isCandSc) {
+      if constexpr (IsCandSc) {
         chargeCand = candidate.charge();
         const auto& candidateLc = candidate.template prongLc_as<CandsLcData>();
         ptCandLc = candidateLc.pt();
@@ -802,7 +802,7 @@ struct HfCorrelatorLcScHadrons {
           fillMlOutput(probs, outputMlPiKP);
           massCandPiKP = std::abs(hfHelper.invMassScRecoLcToPiKP(candidate, candidateLc) - hfHelper.invMassLcToPiKP(candidateLc));
         }
-        if constexpr (isMcRec) {
+        if constexpr (IsMcRec) {
           // isSignal =
           //   (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == 0) ||
           //   (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == 2);
@@ -843,7 +843,7 @@ struct HfCorrelatorLcScHadrons {
         auto trackPos1 = candidate.template prong0_as<TrackType>();
         auto trackPos2 = candidate.template prong2_as<TrackType>();
         chargeCand = trackPos1.sign();
-        if constexpr (isMcRec) {
+        if constexpr (IsMcRec) {
           isSignal = std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
           if (calTrkEff && countCand == 1 && (isSignal || !calEffEventWithCand)) {
             calculateTrkEff(trackPos1, trackPos2, *mcParticles);
@@ -906,7 +906,7 @@ struct HfCorrelatorLcScHadrons {
       // Correlation with hadrons
       for (const auto& track : tracks) {
         // Remove Lc daughters by checking track indices
-        if constexpr (!isCandSc) {
+        if constexpr (!IsCandSc) {
           if ((candidate.prong0Id() == track.globalIndex()) || (candidate.prong1Id() == track.globalIndex()) || (candidate.prong2Id() == track.globalIndex())) {
             if (!storeAutoCorrelationFlag) {
               continue;
@@ -935,7 +935,7 @@ struct HfCorrelatorLcScHadrons {
             continue;
           }
         }
-        if constexpr (isMcRec) {
+        if constexpr (IsMcRec) {
           if (calTrkEff && countCand == 1 && (isSignal || !calEffEventWithCand) && track.has_mcParticle()) {
             auto mcParticle = track.template mcParticle_as<aod::McParticles>();
             if (!mcParticle.isPhysicalPrimary() && isRecTrkPhyPrimary) {
@@ -955,11 +955,11 @@ struct HfCorrelatorLcScHadrons {
         }
 
         if (selLcPKPi) {
-          fillCorrelationTable<isMcRec>(fillTrkPID, track, candidate, outputMlPKPi, poolBin, correlationStatus, yCand, chargeCand, *mcParticles);
+          fillCorrelationTable<IsMcRec>(fillTrkPID, track, candidate, outputMlPKPi, poolBin, correlationStatus, yCand, chargeCand, *mcParticles);
           entryCandHadronRecoInfo(massCandPKPi, false);
         }
         if (selLcPiKP) {
-          fillCorrelationTable<isMcRec>(fillTrkPID, track, candidate, outputMlPiKP, poolBin, correlationStatus, yCand, chargeCand, *mcParticles);
+          fillCorrelationTable<IsMcRec>(fillTrkPID, track, candidate, outputMlPiKP, poolBin, correlationStatus, yCand, chargeCand, *mcParticles);
           entryCandHadronRecoInfo(massCandPiKP, false);
         }
 
@@ -979,7 +979,7 @@ struct HfCorrelatorLcScHadrons {
     registry.fill(HIST("hMultFT0M"), multiplicityFT0M);
   }
 
-  template <bool isMcRec, bool isCandSc, typename CollisionType, typename CandType, typename TrackType>
+  template <bool IsMcRec, bool IsCandSc, typename CollisionType, typename CandType, typename TrackType>
   void doMixEvent(CollisionType const& collisions,
                   TrackType const& tracks,
                   CandType const& candidates,
@@ -1010,14 +1010,14 @@ struct HfCorrelatorLcScHadrons {
       registry.fill(HIST("hLcPoolBin"), poolBinLc);
       for (const auto& [candidate, assocParticle] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
 
-        yCand = estimateY<isCandSc>(candidate);
+        yCand = estimateY<IsCandSc>(candidate);
         ptCand = candidate.pt();
-        if constexpr (isMcRec) {
+        if constexpr (IsMcRec) {
           isPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
           isNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
         }
 
-        if constexpr (isCandSc) {
+        if constexpr (IsCandSc) {
           const auto& candidateLc = candidate.template prongLc_as<CandsLcData>();
           chargeCand = candidate.charge();
 
@@ -1033,7 +1033,7 @@ struct HfCorrelatorLcScHadrons {
             fillMlOutput(probs, outputMlPiKP);
             massCandPiKP = std::abs(hfHelper.invMassScRecoLcToPiKP(candidate, candidateLc) - hfHelper.invMassLcToPiKP(candidateLc));
           }
-          if constexpr (isMcRec) {
+          if constexpr (IsMcRec) {
             isSignal =
               (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::Sc0ToPKPiPi) && chargeCand == ChargeZero) ||
               (TESTBIT(std::abs(candidate.flagMcMatchRec()), aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi) && std::abs(chargeCand) == ChargeScPlusPlus);
@@ -1059,7 +1059,7 @@ struct HfCorrelatorLcScHadrons {
           }
           auto trackPos1 = candidate.template prong0_as<TrackType>();
           chargeCand = trackPos1.sign();
-          if constexpr (isMcRec) {
+          if constexpr (IsMcRec) {
             isSignal = std::abs(candidate.flagMcMatchRec()) == o2::hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi;
           }
         }
@@ -1075,7 +1075,7 @@ struct HfCorrelatorLcScHadrons {
         }
 
         if (selLcPKPi) {
-          fillCorrelationTable<isMcRec>(fillTrkPID, assocParticle, candidate, outputMlPKPi, poolBin, correlationStatus, yCand, chargeCand, *mcParticles);
+          fillCorrelationTable<IsMcRec>(fillTrkPID, assocParticle, candidate, outputMlPKPi, poolBin, correlationStatus, yCand, chargeCand, *mcParticles);
           entryCandHadronRecoInfo(massCandPKPi, false);
 
           if (isPrompt) {
@@ -1088,7 +1088,7 @@ struct HfCorrelatorLcScHadrons {
         }
 
         if (selLcPiKP) {
-          fillCorrelationTable<isMcRec>(fillTrkPID, assocParticle, candidate, outputMlPiKP, poolBin, correlationStatus, yCand, chargeCand, *mcParticles);
+          fillCorrelationTable<IsMcRec>(fillTrkPID, assocParticle, candidate, outputMlPiKP, poolBin, correlationStatus, yCand, chargeCand, *mcParticles);
           entryCandHadronRecoInfo(massCandPiKP, false);
 
           if (isPrompt) {
@@ -1103,7 +1103,7 @@ struct HfCorrelatorLcScHadrons {
     }
   }
 
-  template <bool isCandSc, typename CollisionType, typename PartType>
+  template <bool IsCandSc, typename CollisionType, typename PartType>
   void doSameEventMcGen(CollisionType const& mcCollision, PartType const& mcParticles)
   {
 
@@ -1123,7 +1123,7 @@ struct HfCorrelatorLcScHadrons {
     for (const auto& particle : mcParticles) {
 
       double massCand = -999.0;
-      bool isCandFound = isCandSc ? matchCandAndMass<true>(particle, massCand) : matchCandAndMass<false>(particle, massCand);
+      bool isCandFound = IsCandSc ? matchCandAndMass<true>(particle, massCand) : matchCandAndMass<false>(particle, massCand);
       if (!isCandFound) {
         continue;
       }
@@ -1157,9 +1157,9 @@ struct HfCorrelatorLcScHadrons {
       static constexpr std::size_t NDaughtersLc{3u};
       std::vector<int> listDaughters{};
       listDaughters.clear();
-      const std::size_t nDaughtersExpected = isCandSc ? NDaughtersSc : NDaughtersLc;
+      const std::size_t nDaughtersExpected = IsCandSc ? NDaughtersSc : NDaughtersLc;
 
-      if (isCandSc) {
+      if (IsCandSc) {
         if (massCand == o2::constants::physics::MassSigmaC0 || massCand == o2::constants::physics::MassSigmaCStar0) {
           std::array<int, NDaughtersSc> arrDaughSc0PDG = {kProton, -kKPlus, kPiPlus, kPiMinus};
           RecoDecay::getDaughters(particle, &listDaughters, arrDaughSc0PDG, 2);

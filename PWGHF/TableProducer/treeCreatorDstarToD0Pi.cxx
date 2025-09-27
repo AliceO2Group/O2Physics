@@ -293,12 +293,12 @@ struct HfTreeCreatorDstarToD0Pi {
       runNumber);
   }
 
-  template <bool doMc = false, typename T>
+  template <bool DoMc = false, typename T>
   void fillCandidateTable(const T& candidate, float ptBhadMotherPart = -1)
   {
     int8_t flagMc{0};
     int8_t originMc{0};
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
     }

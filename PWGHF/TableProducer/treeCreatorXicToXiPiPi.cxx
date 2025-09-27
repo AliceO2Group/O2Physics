@@ -373,16 +373,16 @@ struct HfTreeCreatorXicToXiPiPi {
   {
   }
 
-  template <bool doMc, bool doKf, typename T>
+  template <bool DoMc, bool DoKf, typename T>
   void fillCandidateTable(const T& candidate)
   {
     int8_t particleFlag = candidate.sign();
     int8_t originMc = 0;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       particleFlag = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
     }
-    if constexpr (!doKf) {
+    if constexpr (!DoKf) {
       if (fillCandidateLiteTable) {
         rowCandidateLite(
           particleFlag,

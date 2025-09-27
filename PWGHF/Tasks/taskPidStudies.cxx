@@ -238,7 +238,7 @@ struct HfTaskPidStudies {
     hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::ItsChi2NCls + 1, "ITS #chi^{2}/NCls");
   }
 
-  template <bool isV0, typename Coll, typename Cand>
+  template <bool IsV0, typename Coll, typename Cand>
   void fillTree(Cand const& candidate, const int flag)
   {
     float pseudoRndm = candidate.pt() * 1000. - static_cast<int64_t>(candidate.pt() * 1000);
@@ -247,7 +247,7 @@ struct HfTaskPidStudies {
     }
 
     const auto& coll = candidate.template collision_as<Coll>();
-    if constexpr (isV0) {
+    if constexpr (IsV0) {
       const auto& posTrack = candidate.template posTrack_as<PidTracks>();
       const auto& negTrack = candidate.template negTrack_as<PidTracks>();
       pidV0(
@@ -361,13 +361,13 @@ struct HfTaskPidStudies {
     return rejectionMask == 0;
   }
 
-  template <bool isV0, typename T1>
+  template <bool IsV0, typename T1>
   bool isTrackSelected(const T1& candidate)
   {
     const auto& posTrack = candidate.template posTrack_as<PidTracks>();
     const auto& negTrack = candidate.template negTrack_as<PidTracks>();
     registry.fill(HIST("hTrackSel"), TrackCuts::All);
-    if constexpr (isV0) {
+    if constexpr (IsV0) {
       if (!posTrack.hasITS() || !negTrack.hasITS()) {
         return false;
       }
@@ -508,13 +508,13 @@ struct HfTaskPidStudies {
   }
 
   void processV0Mc(CollisionsMc const& /*mcCollisions*/,
-                   V0sMcRec const& V0s,
+                   V0sMcRec const& v0s,
                    aod::V0MCCores const&,
                    aod::McParticles const& /*particlesMc*/,
                    PidTracks const& /*tracks*/,
                    aod::BCsWithTimestamps const&)
   {
-    for (const auto& v0 : V0s) {
+    for (const auto& v0 : v0s) {
       if (applyEvSels && !isCollSelected(v0.collision_as<CollisionsMc>())) {
         continue;
       }
@@ -531,12 +531,12 @@ struct HfTaskPidStudies {
   }
   PROCESS_SWITCH(HfTaskPidStudies, processV0Mc, "Process MC", true);
 
-  void processV0Data(aod::V0Datas const& V0s,
+  void processV0Data(aod::V0Datas const& v0s,
                      PidTracks const&,
                      aod::BCsWithTimestamps const&,
                      CollSels const&)
   {
-    for (const auto& v0 : V0s) {
+    for (const auto& v0 : v0s) {
       if (applyEvSels && !isCollSelected(v0.collision_as<CollSels>())) {
         continue;
       }

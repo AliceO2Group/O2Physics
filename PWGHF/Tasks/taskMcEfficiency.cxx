@@ -124,7 +124,7 @@ struct HfTaskMcEfficiency {
     return track.isGlobalTrackWoDCA();
   }
 
-  template <bool mc, bool hasDplus, bool hasDs, bool hasLc, bool hasXicPlus, typename T1, typename T2, typename T3>
+  template <bool Mc, bool HasDplus, bool HasDs, bool HasLc, bool HasXicPlus, typename T1, typename T2, typename T3>
   void candidate3ProngLoop(T1& candidates, T2& tracks, T3& mcParticles, std::vector<int> pdgCodes)
   {
     using TracksType = std::decay_t<decltype(tracks)>;
@@ -175,24 +175,24 @@ struct HfTaskMcEfficiency {
         bool isHypoMass1SelStep = false;
         bool isHypoMass2SelStep = false;
         /// selections from candidate selectors
-        if constexpr (hasDplus) {
+        if constexpr (HasDplus) {
           if (pdgCode == Pdg::kDPlus) {
             isHypoMass1SelStep = candidate.isSelDplusToPiKPi(); // only one mass hypo for D+
           }
         }
-        if constexpr (hasDs) {
+        if constexpr (HasDs) {
           if (pdgCode == Pdg::kDS) {
             isHypoMass1SelStep = candidate.isSelDsToKKPi();
             isHypoMass2SelStep = candidate.isSelDsToPiKK();
           }
         }
-        if constexpr (hasLc) {
+        if constexpr (HasLc) {
           if (pdgCode == Pdg::kLambdaCPlus) {
             isHypoMass1SelStep = candidate.isSelLcToPKPi();
             isHypoMass2SelStep = candidate.isSelLcToPiKP();
           }
         }
-        if constexpr (hasXicPlus) {
+        if constexpr (HasXicPlus) {
           if (pdgCode == Pdg::kXiCPlus) {
             isHypoMass1SelStep = candidate.isSelXicToPKPi();
             isHypoMass2SelStep = candidate.isSelXicToPiKP();
@@ -201,7 +201,7 @@ struct HfTaskMcEfficiency {
 
         bool collisionMatched = false;
         int origin = RecoDecay::OriginType::None;
-        if constexpr (mc) { /// info MC used
+        if constexpr (Mc) { /// info MC used
           int8_t sign = 0;
           int indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg, trackThird}, pdgCode, pdgDaughters, true, &sign, 2);
 
@@ -324,7 +324,7 @@ struct HfTaskMcEfficiency {
     }
   }
 
-  template <bool mc, typename T1, typename T2, typename T3>
+  template <bool Mc, typename T1, typename T2, typename T3>
   void candidate2ProngLoop(T1 const& candidates, T2 const& tracks, T3 const& mcParticles, std::vector<int> pdgCodes)
   {
     using TracksType = std::decay_t<decltype(tracks)>;
@@ -360,7 +360,7 @@ struct HfTaskMcEfficiency {
 
         bool collisionMatched = false;
         int origin = RecoDecay::OriginType::None;
-        if constexpr (mc) {
+        if constexpr (Mc) {
           auto indexRec = RecoDecay::getMatchedMCRec(mcParticles, std::array{trackPos, trackNeg}, pdgCode, pdgDaughters, false);
           if (indexRec < 0) {
             continue;
@@ -536,10 +536,10 @@ struct HfTaskMcEfficiency {
 
   /// 3-prong analyses
 
-  template <bool hasDplus, bool hasDs, bool hasLc, bool hasXicPlus, typename C>
+  template <bool HasDplus, bool HasDs, bool HasLc, bool HasXicPlus, typename C>
   void candidate3ProngMcLoop(C const& candidates, TracksWithSelectionMC const& tracks, aod::McParticles const& mcParticles, aod::McCollisionLabels const&, std::vector<int> pdgCodes)
   {
-    candidate3ProngLoop<true, hasDplus, hasDs, hasLc, hasXicPlus>(candidates, tracks, mcParticles, pdgCodes);
+    candidate3ProngLoop<true, HasDplus, HasDs, HasLc, HasXicPlus>(candidates, tracks, mcParticles, pdgCodes);
 
     auto hCandidates = registry.get<StepTHn>(HIST("hCandidates"));
     auto hTrackablePtEta = registry.get<StepTHn>(HIST("hTrackablePtEta"));

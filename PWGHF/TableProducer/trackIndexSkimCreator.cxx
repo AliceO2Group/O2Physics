@@ -158,25 +158,25 @@ struct HfTrackIndexSkimCreatorTagSelCollisions {
 
   /// Collision selection
   /// \param collision  collision table with
-  template <bool applyTrigSel, bool applyUpcSel, o2::hf_centrality::CentralityEstimator centEstimator, typename Col, typename BCsType>
+  template <bool ApplyTrigSel, bool ApplyUpcSel, o2::hf_centrality::CentralityEstimator CentEstimator, typename Col, typename BCsType>
   void selectCollision(const Col& collision,
                        const BCsType& bcs)
   {
     float centrality{-1.f};
     o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
 
-    if constexpr (applyUpcSel) {
-      rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<applyTrigSel, centEstimator>(
+    if constexpr (ApplyUpcSel) {
+      rejectionMask = hfEvSel.getHfCollisionRejectionMaskWithUpc<ApplyTrigSel, CentEstimator>(
         collision, centrality, ccdb, registry, bcs);
     } else {
-      rejectionMask = hfEvSel.getHfCollisionRejectionMask<applyTrigSel, centEstimator, BCsType>(
+      rejectionMask = hfEvSel.getHfCollisionRejectionMask<ApplyTrigSel, CentEstimator, BCsType>(
         collision, centrality, ccdb, registry);
     }
 
     if (fillHistograms) {
       hfEvSel.fillHistograms(collision, rejectionMask, centrality);
       // additional centrality histos
-      if constexpr (centEstimator != o2::hf_centrality::None) {
+      if constexpr (CentEstimator != o2::hf_centrality::None) {
         if (rejectionMask == 0) {
           registry.fill(HIST("hCentralitySelected"), centrality);
         } else if (rejectionMask == BIT(EventRejection::Centrality)) { // rejected by centrality only
@@ -464,11 +464,11 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// PID track cuts (for proton only)
   /// \param hfTrack is a track
   /// \return true if the track is compatible with a proton hypothesis
-  template <int pidStrategy, typename T>
+  template <int PidStrategy, typename T>
   uint8_t isSelectedPid(const T& hfTrack)
   {
     std::array statusPid{TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted, TrackSelectorPID::Accepted};
-    if constexpr (pidStrategy == ProtonPidStrategy::PidTofOnly) {
+    if constexpr (PidStrategy == ProtonPidStrategy::PidTofOnly) {
       if (hfTrack.hasTOF()) {
         for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
           statusPid[iChannel] = selectorProton[iChannel].statusTof(hfTrack);
@@ -476,7 +476,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         statusPid[ChannelKaonPid] = selectorKaon.statusTof(hfTrack);
       }
     }
-    if constexpr (pidStrategy == ProtonPidStrategy::PidTpcOnly) {
+    if constexpr (PidStrategy == ProtonPidStrategy::PidTpcOnly) {
       if (hfTrack.hasTPC()) {
         for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
           statusPid[iChannel] = selectorProton[iChannel].statusTpc(hfTrack);
@@ -484,13 +484,13 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
         statusPid[ChannelKaonPid] = selectorKaon.statusTpc(hfTrack);
       }
     }
-    if constexpr (pidStrategy == ProtonPidStrategy::PidTpcOrTof) {
+    if constexpr (PidStrategy == ProtonPidStrategy::PidTpcOrTof) {
       for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
         statusPid[iChannel] = selectorProton[iChannel].statusTpcOrTof(hfTrack);
       }
       statusPid[ChannelKaonPid] = selectorKaon.statusTpcOrTof(hfTrack);
     }
-    if constexpr (pidStrategy == ProtonPidStrategy::PidTpcAndTof) {
+    if constexpr (PidStrategy == ProtonPidStrategy::PidTpcAndTof) {
       for (auto iChannel{0u}; iChannel < ChannelsProtonPid::NChannelsProtonPid; ++iChannel) {
         statusPid[iChannel] = selectorProton[iChannel].statusTpcAndTof(hfTrack);
       }
@@ -921,7 +921,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
   /// \param pvRefitDcaPerTrack is a vector to be filled with track dcas after PV refit
   /// \param pvRefitPvCoordPerTrack is a vector to be filled with PV coordinates after PV refit
   /// \param pvRefitPvCovMatrixPerTrack is a vector to be filled with PV coordinate covariances after PV refit
-  template <int pidStrategy, typename TTracks, typename GroupedTrackIndices, typename GroupedPvContributors>
+  template <int PidStrategy, typename TTracks, typename GroupedTrackIndices, typename GroupedPvContributors>
   void runTagSelTracks(aod::Collision const& collision,
                        TTracks const&,
                        GroupedTrackIndices const& trackIndicesCollision,
@@ -991,7 +991,7 @@ struct HfTrackIndexSkimCreatorTagSelTracks {
       // }
 
       isSelectedTrack(track, trackPt, trackEta, pvRefitDcaXYDcaZ, statusProng);
-      const int8_t isIdentifiedPid = isSelectedPid<pidStrategy>(track);
+      const int8_t isIdentifiedPid = isSelectedPid<PidStrategy>(track);
       const bool isPositive = track.sign() > 0;
       rowSelectedTrack(statusProng, isIdentifiedPid, isPositive);
     }
@@ -1807,7 +1807,7 @@ struct HfTrackIndexSkimCreator {
   /// \param featuresCandPid is the vector with the candidate PID features
   /// \param outputScores is the array of vectors with the output scores to be filled
   /// \param isSelected ia s bitmap with selection outcome
-  template <bool usePidForHfFiltersBdt>
+  template <bool UsePidForHfFiltersBdt>
   void applyMlSelectionForHfFilters3Prong(std::vector<float> featuresCand, std::vector<float> featuresCandPid, std::array<std::vector<float>, kN3ProngDecays>& outputScores, auto& isSelected)
   {
     if (isSelected == 0) {
@@ -1818,7 +1818,7 @@ struct HfTrackIndexSkimCreator {
     for (int iDecay3P{0}; iDecay3P < kN3ProngDecays; ++iDecay3P) {
       if (TESTBIT(isSelected, iDecay3P) && hasMlModel3Prong[iDecay3P]) {
         bool isMlSel = false;
-        if constexpr (usePidForHfFiltersBdt) {
+        if constexpr (UsePidForHfFiltersBdt) {
           if (iDecay3P != hf_cand_3prong::DecayType::LcToPKPi && iDecay3P != hf_cand_3prong::DecayType::XicToPKPi) {
             isMlSel = hfMlResponse3Prongs[iDecay3P].isSelectedMl(featuresCand, ptDummy, outputScores[iDecay3P]);
           } else {
@@ -2052,7 +2052,7 @@ struct HfTrackIndexSkimCreator {
 
   } /// end of performPvRefitCandProngs function
 
-  template <bool doPvRefit, bool usePidForHfFiltersBdt, typename TTracks>
+  template <bool DoPvRefit, bool UsePidForHfFiltersBdt, typename TTracks>
   void run2And3Prongs(SelectedCollisions const& collisions,
                       aod::BCsWithTimestamps const& bcWithTimeStamps,
                       FilteredTrackAssocSel const&,
@@ -2076,7 +2076,7 @@ struct HfTrackIndexSkimCreator {
       std::vector<int64_t> vecPvContributorGlobId{};
       std::vector<o2::track::TrackParCov> vecPvContributorTrackParCov{};
       std::vector<bool> vecPvRefitContributorUsed{};
-      if constexpr (doPvRefit) {
+      if constexpr (DoPvRefit) {
         auto groupedTracksUnfiltered = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
         const int nTrk = groupedTracksUnfiltered.size();
         int nContrib = 0;
@@ -2221,7 +2221,7 @@ struct HfTrackIndexSkimCreator {
                 df2.getTrack(1).getPxPyPzGlo(pvec1);
 
                 /// PV refit excluding the candidate daughters, if contributors
-                if constexpr (doPvRefit) {
+                if constexpr (DoPvRefit) {
                   if (config.fillHistograms) {
                     registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
                   }
@@ -2283,7 +2283,7 @@ struct HfTrackIndexSkimCreator {
                 const auto pVecCandProng2 = RecoDecay::pVec(pvec0, pvec1);
                 // 2-prong selections after secondary vertex
                 std::array pvCoord2Prong = {collision.posX(), collision.posY(), collision.posZ()};
-                if constexpr (doPvRefit) {
+                if constexpr (DoPvRefit) {
                   pvCoord2Prong[0] = pvRefitCoord2Prong[0];
                   pvCoord2Prong[1] = pvRefitCoord2Prong[1];
                   pvCoord2Prong[2] = pvRefitCoord2Prong[2];
@@ -2311,7 +2311,7 @@ struct HfTrackIndexSkimCreator {
                     lastFilledD0 = rowTrackIndexProng2.lastIndex();
                   }
 
-                  if constexpr (doPvRefit) {
+                  if constexpr (DoPvRefit) {
                     // fill table row with coordinates of PV refit
                     rowProng2PVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
                                      pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);
@@ -2436,7 +2436,7 @@ struct HfTrackIndexSkimCreator {
               /// PV refit excluding the candidate daughters, if contributors
               std::array pvRefitCoord3Prong2Pos1Neg{collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
               std::array pvRefitCovMatrix3Prong2Pos1Neg{getPrimaryVertex(collision).getCov()};             /// initialize to the original PV
-              if constexpr (doPvRefit) {
+              if constexpr (DoPvRefit) {
                 if (config.fillHistograms) {
                   registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
                 }
@@ -2554,14 +2554,14 @@ struct HfTrackIndexSkimCreator {
               if (config.applyMlForHfFilters) {
                 const std::vector<float> inputFeatures{trackParVarPcaPos1.getPt(), dcaInfoPos1[0], dcaInfoPos1[1], trackParVarPcaNeg1.getPt(), dcaInfoNeg1[0], dcaInfoNeg1[1], trackParVarPcaPos2.getPt(), dcaInfoPos2[0], dcaInfoPos2[1]};
                 std::vector<float> inputFeaturesLcPid{};
-                if constexpr (usePidForHfFiltersBdt) {
+                if constexpr (UsePidForHfFiltersBdt) {
                   inputFeaturesLcPid.push_back(trackPos1.tpcNSigmaPr());
                   inputFeaturesLcPid.push_back(trackPos2.tpcNSigmaPr());
                   inputFeaturesLcPid.push_back(trackPos1.tpcNSigmaPi());
                   inputFeaturesLcPid.push_back(trackPos2.tpcNSigmaPi());
                   inputFeaturesLcPid.push_back(trackNeg1.tpcNSigmaKa());
                 }
-                applyMlSelectionForHfFilters3Prong<usePidForHfFiltersBdt>(inputFeatures, inputFeaturesLcPid, mlScores3Prongs, isSelected3ProngCand);
+                applyMlSelectionForHfFilters3Prong<UsePidForHfFiltersBdt>(inputFeatures, inputFeaturesLcPid, mlScores3Prongs, isSelected3ProngCand);
               }
 
               if (!config.debug && isSelected3ProngCand == 0) {
@@ -2573,7 +2573,7 @@ struct HfTrackIndexSkimCreator {
               if (config.applyMlForHfFilters) {
                 rowTrackIndexMlScoreProng3(mlScores3Prongs[0], mlScores3Prongs[1], mlScores3Prongs[2], mlScores3Prongs[3]);
               }
-              if constexpr (doPvRefit) {
+              if constexpr (DoPvRefit) {
                 // fill table row of coordinates of PV refit
                 rowProng3PVrefit(pvRefitCoord3Prong2Pos1Neg[0], pvRefitCoord3Prong2Pos1Neg[1], pvRefitCoord3Prong2Pos1Neg[2],
                                  pvRefitCovMatrix3Prong2Pos1Neg[0], pvRefitCovMatrix3Prong2Pos1Neg[1], pvRefitCovMatrix3Prong2Pos1Neg[2], pvRefitCovMatrix3Prong2Pos1Neg[3], pvRefitCovMatrix3Prong2Pos1Neg[4], pvRefitCovMatrix3Prong2Pos1Neg[5]);
@@ -2686,7 +2686,7 @@ struct HfTrackIndexSkimCreator {
               /// PV refit excluding the candidate daughters, if contributors
               std::array pvRefitCoord3Prong1Pos2Neg{collision.posX(), collision.posY(), collision.posZ()}; /// initialize to the original PV
               std::array pvRefitCovMatrix3Prong1Pos2Neg{getPrimaryVertex(collision).getCov()};             /// initialize to the original PV
-              if constexpr (doPvRefit) {
+              if constexpr (DoPvRefit) {
                 if (config.fillHistograms) {
                   registry.fill(HIST("PvRefit/verticesPerCandidate"), 1);
                 }
@@ -2805,14 +2805,14 @@ struct HfTrackIndexSkimCreator {
               if (config.applyMlForHfFilters) {
                 const std::vector<float> inputFeatures{trackParVarPcaNeg1.getPt(), dcaInfoNeg1[0], dcaInfoNeg1[1], trackParVarPcaPos1.getPt(), dcaInfoPos1[0], dcaInfoPos1[1], trackParVarPcaNeg2.getPt(), dcaInfoNeg2[0], dcaInfoNeg2[1]};
                 std::vector<float> inputFeaturesLcPid{};
-                if constexpr (usePidForHfFiltersBdt) {
+                if constexpr (UsePidForHfFiltersBdt) {
                   inputFeaturesLcPid.push_back(trackNeg1.tpcNSigmaPr());
                   inputFeaturesLcPid.push_back(trackNeg2.tpcNSigmaPr());
                   inputFeaturesLcPid.push_back(trackNeg1.tpcNSigmaPi());
                   inputFeaturesLcPid.push_back(trackNeg2.tpcNSigmaPi());
                   inputFeaturesLcPid.push_back(trackPos1.tpcNSigmaKa());
                 }
-                applyMlSelectionForHfFilters3Prong<usePidForHfFiltersBdt>(inputFeatures, inputFeaturesLcPid, mlScores3Prongs, isSelected3ProngCand);
+                applyMlSelectionForHfFilters3Prong<UsePidForHfFiltersBdt>(inputFeatures, inputFeaturesLcPid, mlScores3Prongs, isSelected3ProngCand);
               }
 
               if (!config.debug && isSelected3ProngCand == 0) {
@@ -2824,7 +2824,7 @@ struct HfTrackIndexSkimCreator {
               if (config.applyMlForHfFilters) {
                 rowTrackIndexMlScoreProng3(mlScores3Prongs[0], mlScores3Prongs[1], mlScores3Prongs[2], mlScores3Prongs[3]);
               }
-              if constexpr (doPvRefit) {
+              if constexpr (DoPvRefit) {
                 // fill table row of coordinates of PV refit
                 rowProng3PVrefit(pvRefitCoord3Prong1Pos2Neg[0], pvRefitCoord3Prong1Pos2Neg[1], pvRefitCoord3Prong1Pos2Neg[2],
                                  pvRefitCovMatrix3Prong1Pos2Neg[0], pvRefitCovMatrix3Prong1Pos2Neg[1], pvRefitCovMatrix3Prong1Pos2Neg[2], pvRefitCovMatrix3Prong1Pos2Neg[3], pvRefitCovMatrix3Prong1Pos2Neg[4], pvRefitCovMatrix3Prong1Pos2Neg[5]);
@@ -2915,7 +2915,7 @@ struct HfTrackIndexSkimCreator {
                   if (config.fillHistograms) {
                     registry.fill(HIST("hMassDstarToD0Pi"), deltaMass);
                   }
-                  if constexpr (doPvRefit) {
+                  if constexpr (DoPvRefit) {
                     // fill table row with coordinates of PV refit (same as 2-prong because we do not remove the soft pion)
                     rowDstarPVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
                                     pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);
@@ -2952,7 +2952,7 @@ struct HfTrackIndexSkimCreator {
                   if (config.fillHistograms) {
                     registry.fill(HIST("hMassDstarToD0Pi"), deltaMass);
                   }
-                  if constexpr (doPvRefit) {
+                  if constexpr (DoPvRefit) {
                     // fill table row with coordinates of PV refit (same as 2-prong because we do not remove the soft pion)
                     rowDstarPVrefit(pvRefitCoord2Prong[0], pvRefitCoord2Prong[1], pvRefitCoord2Prong[2],
                                     pvRefitCovMatrix2Prong[0], pvRefitCovMatrix2Prong[1], pvRefitCovMatrix2Prong[2], pvRefitCovMatrix2Prong[3], pvRefitCovMatrix2Prong[4], pvRefitCovMatrix2Prong[5]);

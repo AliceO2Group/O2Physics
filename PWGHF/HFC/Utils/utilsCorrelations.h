@@ -140,14 +140,14 @@ bool passPIDSelection(Atrack const& track, SpeciesContainer const mPIDspecies,
 /// @param[out] massCand Mass of the matched candidate is set here, if a valid match is found
 ///
 /// @return `true` if candidate matches expected PDG and decay flag, and mass is set; `false` otherwise
-template <bool isScCandidate, typename McParticleType>
+template <bool IsScCandidate, typename McParticleType>
 bool matchCandAndMass(McParticleType const& particle, double& massCand)
 {
   const auto pdgCand = std::abs(particle.pdgCode());
   const auto matchGenFlag = std::abs(particle.flagMcMatchGen());
 
   // Validate PDG code based on candidate type
-  if (isScCandidate) {
+  if (IsScCandidate) {
     if (!(pdgCand == o2::constants::physics::Pdg::kSigmaC0 ||
           pdgCand == o2::constants::physics::Pdg::kSigmaCPlusPlus ||
           pdgCand == o2::constants::physics::Pdg::kSigmaCStar0 ||

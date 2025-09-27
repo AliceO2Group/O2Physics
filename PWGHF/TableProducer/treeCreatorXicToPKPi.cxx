@@ -269,22 +269,22 @@ struct HfTreeCreatorXicToPKPi {
   /// \param doMc true to fill MC information
   /// \param massHypo mass hypothesis considered: 0 = PKPi, 1 = PiKP
   /// \param candidate is candidate
-  template <bool doMc = false, int massHypo = 0, typename T>
+  template <bool DoMc = false, int MassHypo = 0, typename T>
   void fillCandidateTable(const T& candidate)
   {
     int8_t flagMc = 0;
     int8_t originMc = 0;
     int candSwapped = 0;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMc = candidate.flagMcMatchRec();
       originMc = candidate.originMcRec();
       candSwapped = candidate.isCandidateSwapped();
     }
 
     float invMassXic = 0;
-    if constexpr (massHypo == 0) {
+    if constexpr (MassHypo == 0) {
       invMassXic = hfHelper.invMassXicToPKPi(candidate);
-    } else if constexpr (massHypo == 1) {
+    } else if constexpr (MassHypo == 1) {
       invMassXic = hfHelper.invMassXicToPiKP(candidate);
     }
 

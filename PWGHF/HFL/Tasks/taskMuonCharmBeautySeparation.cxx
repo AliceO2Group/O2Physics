@@ -47,8 +47,8 @@ struct HfTaskMuonCharmBeautySeparation {
     AxisSpec chi2MCHMFTAxis = {170, -1.5, 150.5, "#chi^{2} MCH-MFT"};
     AxisSpec chi2MCHMIDAxis = {170, -1.5, 150.5, "#chi^{2} MCH-MID"};
 
-    HistogramConfigSpec HistVariable({HistType::kTHnSparseF, {ptRecoAxis, dcaxAxis, dcaxAxis, dcaAxis, zvtxAxis}});
-    registry.add("hBasicDist", "", HistVariable);
+    HistogramConfigSpec histVariable({HistType::kTHnSparseF, {ptRecoAxis, dcaxAxis, dcaxAxis, dcaAxis, zvtxAxis}});
+    registry.add("hBasicDist", "", histVariable);
     registry.add("hTrackType", "hTrackType", {HistType::kTH1F, {trackTypeAxis}});
     registry.add("hZvtx", "Zvtx in cm", {HistType::kTH1F, {zvtxAxis}});
     registry.add("hZvtx_WithMuons", "Zvtx with muons", {HistType::kTH1F, {zvtxAxis}});

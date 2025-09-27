@@ -316,7 +316,7 @@ struct HfTaskFlowCharmHadrons {
   /// \param tracksQx is the X component of the Q vector for the tracks
   /// \param tracksQy is the Y component of the Q vector for the tracks
   /// \param channel is the decay channel
-  template <DecayChannel channel, typename T1>
+  template <DecayChannel Channel, typename T1>
   void getQvecDtracks(T1 const& cand,
                       std::vector<float>& tracksQx,
                       std::vector<float>& tracksQy,
@@ -337,7 +337,7 @@ struct HfTaskFlowCharmHadrons {
     tracksQx.push_back(std::cos(harmonic * phiTrack1) * pTTrack1 / ampl);
     tracksQy.push_back(std::sin(harmonic * phiTrack1) * pTTrack1 / ampl);
 
-    if constexpr (channel != DecayChannel::D0ToPiK && channel != DecayChannel::D0ToKPi) {
+    if constexpr (Channel != DecayChannel::D0ToPiK && Channel != DecayChannel::D0ToKPi) {
       float pXTrack2 = cand.pxProng2();
       float pYTrack2 = cand.pyProng2();
       float pTTrack2 = cand.ptProng2();
@@ -471,14 +471,14 @@ struct HfTaskFlowCharmHadrons {
   /// \param bc is the bunch crossing with timestamp information
   /// \param centrality is the collision centrality
   /// \return true if the collision is selected, false otherwise
-  template <o2::hf_centrality::CentralityEstimator centEstimator>
+  template <o2::hf_centrality::CentralityEstimator CentEstimator>
   bool isCollSelected(CollsWithQvecs::iterator const& collision,
                       aod::BCsWithTimestamps const&,
                       float& centrality)
   {
     const auto occupancy = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
-    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, centEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
-    centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+    const auto rejectionMask = hfEvSel.getHfCollisionRejectionMask<true, CentEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry);
+    centrality = o2::hf_centrality::getCentralityColl(collision, CentEstimator);
 
     /// monitor the satisfied event selections
     hfEvSel.fillHistograms(collision, rejectionMask, centrality, occupancy);
@@ -537,7 +537,7 @@ struct HfTaskFlowCharmHadrons {
   /// Compute the scalar product
   /// \param collision is the collision with the Q vector information and event plane
   /// \param candidates are the selected candidates
-  template <DecayChannel channel, typename T1>
+  template <DecayChannel Channel, typename T1>
   void runFlowAnalysis(CollsWithQvecs::iterator const& collision,
                        T1 const& candidates)
   {
@@ -565,7 +565,7 @@ struct HfTaskFlowCharmHadrons {
       std::vector<float> outputMl = {-999., -999.};
 
       if constexpr (std::is_same_v<T1, CandDsData> || std::is_same_v<T1, CandDsDataWMl>) {
-        switch (channel) {
+        switch (Channel) {
           case DecayChannel::DsToKKPi:
             massCand = hfHelper.invMassDsToKKPi(candidate);
             if constexpr (std::is_same_v<T1, CandDsDataWMl>) {
@@ -594,7 +594,7 @@ struct HfTaskFlowCharmHadrons {
         }
       } else if constexpr (std::is_same_v<T1, CandD0Data> || std::is_same_v<T1, CandD0DataWMl>) {
         nProngs = 2;
-        switch (channel) {
+        switch (Channel) {
           case DecayChannel::D0ToPiK:
             massCand = hfHelper.invMassD0ToPiK(candidate);
             if constexpr (std::is_same_v<T1, CandD0DataWMl>) {
@@ -615,7 +615,7 @@ struct HfTaskFlowCharmHadrons {
             break;
         }
       } else if constexpr (std::is_same_v<T1, CandLcData> || std::is_same_v<T1, CandLcDataWMl>) {
-        switch (channel) {
+        switch (Channel) {
           case DecayChannel::LcToPKPi:
             massCand = hfHelper.invMassLcToPKPi(candidate);
             if constexpr (std::is_same_v<T1, CandLcDataWMl>) {
@@ -636,7 +636,7 @@ struct HfTaskFlowCharmHadrons {
             break;
         }
       } else if constexpr (std::is_same_v<T1, CandXicData> || std::is_same_v<T1, CandXicDataWMl>) {
-        switch (channel) {
+        switch (Channel) {
           case DecayChannel::XicToPKPi:
             massCand = hfHelper.invMassXicToPKPi(candidate);
             if constexpr (std::is_same_v<T1, CandXicDataWMl>) {
@@ -685,7 +685,7 @@ struct HfTaskFlowCharmHadrons {
           // std::cout<<candidate.pxProng0()<<std::endl;
           getQvecXic0Tracks(candidate, tracksQx, tracksQy, ampl);
         } else {
-          getQvecDtracks<channel>(candidate, tracksQx, tracksQy, ampl);
+          getQvecDtracks<Channel>(candidate, tracksQx, tracksQy, ampl);
         }
         for (auto iTrack{0u}; iTrack < tracksQx.size(); ++iTrack) {
           xQVec -= tracksQx[iTrack];
