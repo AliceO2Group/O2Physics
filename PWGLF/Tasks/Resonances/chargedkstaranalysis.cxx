@@ -75,8 +75,6 @@ using namespace o2::soa;
 using namespace o2::constants::physics;
 
 struct chargedkstaranalysis {
-  SliceCache cache;
-  Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
   using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
   //  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::Mults>;
@@ -899,12 +897,15 @@ struct chargedkstaranalysis {
   }
   PROCESS_SWITCH(chargedkstaranalysis, processDataSE, "Process Event for data without Partitioning", true);
 
+  SliceCache cache;
   using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
 
   //  using BinningTypeVtxZT0M = ColumnBinningPolicy<aod::collision::PosZ,  aod::mult::MultFV0M<aod::mult::MultFV0A, aod::mult::MultFV0C>>;
   BinningTypeVtxZT0M colBinning{{cfgvtxbins, cfgmultbins}, true};
   void processDataME(EventCandidates const& collisions, TrackCandidates const& tracks, V0Candidates const& v0s)
   {
+    Preslice<aod::Tracks> perCollision = aod::track::collisionId;
+    Preslice<aod::V0s> perCollisionV0 = aod::v0::collisionId;
     auto tracksV0sTuple = std::make_tuple(tracks, v0s);
 
     Pair<EventCandidates, TrackCandidates, V0Candidates, BinningTypeVtxZT0M> pair{colBinning, nEvtMixing, -1, collisions, tracksV0sTuple, &cache};
