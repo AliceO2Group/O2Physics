@@ -539,7 +539,7 @@ struct HfElectronSelectionWithTpcEmcal {
   {
     fillElectronTrack<false>(collision, tracks, emcClusters, matchedTracks, 0);
   }
-  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processData, "process Data info only", false);
+  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processData, "process Data info only", true);
   ///  Electron selection - for MC reco-level analysis
   void processMcRec(McTableCollision const& mcCollision,
                     McTableTracks const& mcTracks,
@@ -624,7 +624,6 @@ struct HfElectronSelectionWithTpcEmcal {
                   isEmbEta = true; // eta->gamma-> e
                 }
               }
-
               if (std::abs(gmother.pdgCode()) == kPi0) {
                 if (gmother.isPhysicalPrimary() || gmother.has_mothers()) {
                   auto const& ggmother = gmother.mothers_first_as<aod::McParticles>();
@@ -649,7 +648,6 @@ struct HfElectronSelectionWithTpcEmcal {
                 }
               }
             }
-
             if (isEmbPi0 || isEmbEta) {
               registry.fill(HIST("hMcgenNonHfeElectron"), particleMc.pt());
               isNonHfe = true;
@@ -663,13 +661,11 @@ struct HfElectronSelectionWithTpcEmcal {
             }
           }
         }
-
         hfGenElectronSel(mcCollision.globalIndex(), particleMc.globalIndex(), particleMc.eta(), particleMc.phi(), particleMc.pt(), isNonHfe);
       }
     }
   }
-
-  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcGen, "Process MC Gen mode", true);
+  PROCESS_SWITCH(HfElectronSelectionWithTpcEmcal, processMcGen, "Process MC Gen mode", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
