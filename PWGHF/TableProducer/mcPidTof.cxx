@@ -12,7 +12,7 @@
 ///
 /// \file   mcPidTof.cxx
 /// \author Fabrizio Grosa fabrizio.grosa@cern.ch
-/// \brief  Task to produce PID tables for TOF split for pi, K, p, copied from https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/PID/pidTofMerge.cxx
+/// \brief  Task to produce PID tables for TOF split for pi, K, p, de, copied from https://github.com/AliceO2Group/O2Physics/blob/master/Common/TableProducer/PID/pidTofMerge.cxx
 ///         It works only for MC and adds the possibility to apply postcalibrations for MC.
 ///
 
@@ -722,6 +722,7 @@ struct tofEventTime {
 static constexpr int idxPi = 2;
 static constexpr int idxKa = 3;
 static constexpr int idxPr = 4;
+static constexpr int idxDe = 5;
 
 /// Task to produce the response table
 struct mcPidTof {
@@ -729,11 +730,13 @@ struct mcPidTof {
   Produces<o2::aod::pidTOFPi> tablePIDPi;
   Produces<o2::aod::pidTOFKa> tablePIDKa;
   Produces<o2::aod::pidTOFPr> tablePIDPr;
+  Produces<o2::aod::pidTOFDe> tablePIDDe;
 
   // Tables to produce (full)
   Produces<o2::aod::pidTOFFullPi> tablePIDFullPi;
   Produces<o2::aod::pidTOFFullKa> tablePIDFullKa;
   Produces<o2::aod::pidTOFFullPr> tablePIDFullPr;
+  Produces<o2::aod::pidTOFFullDe> tablePIDFullDe;
 
   // Detector response parameters
   o2::pid::tof::TOFResoParamsV3 mRespParamsV3;
@@ -755,8 +758,8 @@ struct mcPidTof {
     Configurable<std::string> ccdbPath{"ccdbPath", "Users/f/fgrosa/RecalibmcPidTof/", "path for MC recalibration objects in CCDB"};
   } mcRecalib;
 
-  // list of productions for which the postcalibrations must be turned off (FT0 digitisation fixed)
-  const std::vector<std::string> prodNoPostCalib = {"LHC24h1c"};
+  // list of productions for which the postcalibrations is needed (bug in FT0 digitisation)
+  const std::vector<std::string> prodPostCalib = {"LHC24d3a", "LHC24d3b", "LHC24e3", "LHC24g5", "LHC24g6", "LHC24h2", "LHC24i1", "LHC24i2", "LHC24i3", "LHC24i4", "LHC24j6", "LHC24k3", "LHC24f3c", "LHC25e2", "LHC24h1b", "LHC25e4", "LHC25f5", "LHC25e8", "LHC25e9", "LHC25e10", "LHC25e11", "LHC23k4"};
   bool enableMcRecalib{false};
 
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -768,7 +771,7 @@ struct mcPidTof {
   {
     mTOFCalibConfig.inheritFromBaseTask(initContext);
     // Checking the tables are requested in the workflow and enabling them (only pi, K, p)
-    std::array<int, 3> supportedSpecies = {idxPi, idxKa, idxPr};
+    std::array<int, 4> supportedSpecies = {idxPi, idxKa, idxPr, idxDe};
     for (auto iSpecie{0u}; iSpecie < supportedSpecies.size(); ++iSpecie) {
       // First checking tiny
       int flag = -1;
@@ -881,6 +884,14 @@ struct mcPidTof {
                                                                 tablePIDPr);
         }
         break;
+      case idxDe:
+        if (fullTable) {
+          tablePIDFullDe(-999.f, -999.f);
+        } else {
+          aod::pidutils::packInTable<aod::pidtof_tiny::binning>(-999.f,
+                                                                tablePIDDe);
+        }
+        break;
       default:
         LOG(fatal) << "Wrong particle ID in makeTableEmpty() for " << (fullTable ? "full" : "tiny") << " tables";
         break;
@@ -894,7 +905,7 @@ struct mcPidTof {
     std::map<std::string, std::string> metadata;
     if (metadataInfo.isFullyDefined()) {
       metadata["RecoPassName"] = metadataInfo.get("AnchorPassName");
-      if (std::find(prodNoPostCalib.begin(), prodNoPostCalib.end(), metadataInfo.get("LPMProductionTag")) != prodNoPostCalib.end()) {
+      if (std::find(prodPostCalib.begin(), prodPostCalib.end(), metadataInfo.get("LPMProductionTag")) == prodPostCalib.end()) {
         enableMcRecalib = false;
         LOGP(warn, "Nsigma postcalibrations turned off for {} (new MC productions have FT0 digitisation fixed)", metadataInfo.get("LPMProductionTag"));
       }
@@ -960,6 +971,7 @@ struct mcPidTof {
     constexpr auto responsePi = ResponseImplementation<PID::Pion>();
     constexpr auto responseKa = ResponseImplementation<PID::Kaon>();
     constexpr auto responsePr = ResponseImplementation<PID::Proton>();
+    constexpr auto responseDe = ResponseImplementation<PID::Deuteron>();
 
     mTOFCalibConfig.processSetup(mRespParamsV3, ccdb, bcs.iteratorAt(0)); // Update the calibration parameters
 
@@ -1026,6 +1038,16 @@ struct mcPidTof {
             aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nSigma, tablePIDPr);
             break;
           }
+          case idxDe: {
+            nSigma = responseDe.GetSeparation(mRespParamsV3, trk);
+            if (enableMcRecalib && trk.has_mcParticle()) {
+              if (std::abs(trk.mcParticle().pdgCode()) == o2::constants::physics::kDeuteron) { // we rescale only true signal
+                nSigma = applyMcRecalib(idxPr, trk.pt(), nSigma);                              // FIXME: currently postcalibrations for protons applied to deuterons, to be checked
+              }
+            }
+            aod::pidutils::packInTable<aod::pidtof_tiny::binning>(nSigma, tablePIDDe);
+            break;
+          }
           default:
             LOG(fatal) << "Wrong particle ID for standard tables";
             break;
@@ -1068,6 +1090,17 @@ struct mcPidTof {
               }
             }
             tablePIDFullPr(resolution, nSigma);
+            break;
+          }
+          case idxDe: {
+            resolution = responseDe.GetExpectedSigma(mRespParamsV3, trk);
+            nSigma = responseDe.GetSeparation(mRespParamsV3, trk, resolution);
+            if (enableMcRecalib && trk.has_mcParticle()) {
+              if (std::abs(trk.mcParticle().pdgCode()) == o2::constants::physics::kDeuteron) { // we rescale only true signal
+                nSigma = applyMcRecalib(idxPr, trk.pt(), nSigma);                              // FIXME: currently postcalibrations for protons applied to deuterons, to be checked
+              }
+            }
+            tablePIDFullDe(resolution, nSigma);
             break;
           }
           default:

@@ -16,12 +16,12 @@
 #ifndef PWGLF_UTILS_RSNOUTPUT_H_
 #define PWGLF_UTILS_RSNOUTPUT_H_
 
-#include <utility>
-#include <string>
-#include <vector>
-
 #include "Framework/HistogramRegistry.h"
 #include "Framework/Logger.h"
+
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace o2::analysis
 {
@@ -48,9 +48,8 @@ enum class PairType {
   unlikegen,
   unlikegenold,
   mixingpm,
-  mixingpp,
-  mixingmm,
   mixingmp,
+  rotationpm,
   all
 };
 
@@ -105,7 +104,7 @@ class Output
  public:
   virtual ~Output() = default;
 
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool /*produceTrue*/ = false, MixingType /*eventMixing*/ = MixingType::none, bool /*produceLikesign*/ = false, o2::framework::HistogramRegistry* registry = nullptr)
+  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool /*produceTrue*/ = false, MixingType /*eventMixing*/ = MixingType::none, bool /*produceLikesign*/ = false, bool /*produceRotational*/ = false, o2::framework::HistogramRegistry* registry = nullptr)
   {
     mHistogramRegistry = registry;
     if (mHistogramRegistry == nullptr)
@@ -209,9 +208,8 @@ class Output
   virtual void fillUnlikegen(double* point) = 0;
   virtual void fillUnlikegenOld(double* point) = 0;
   virtual void fillMixingpm(double* point) = 0;
-  virtual void fillMixingpp(double* point) = 0;
-  virtual void fillMixingmm(double* point) = 0;
   virtual void fillMixingmp(double* point) = 0;
+  virtual void fillRotationpm(double* point) = 0;
   virtual void fillSystematics(double* point) = 0;
 
   PairAxisType type(std::string name)
@@ -265,12 +263,11 @@ class Output
 class OutputSparse : public Output
 {
  public:
-  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool produceTrue = false, MixingType eventMixing = MixingType::none, bool produceLikesign = false, o2::framework::HistogramRegistry* registry = nullptr)
+  virtual void init(std::vector<std::string> const& sparseAxes, std::vector<o2::framework::AxisSpec> const& allAxes, std::vector<std::string> const& sysAxes, std::vector<o2::framework::AxisSpec> const& allAxes_sys, bool produceTrue = false, MixingType eventMixing = MixingType::none, bool produceLikesign = false, bool produceRotational = false, o2::framework::HistogramRegistry* registry = nullptr)
   {
-    Output::init(sparseAxes, allAxes, sysAxes, allAxes_sys, produceTrue, eventMixing, produceLikesign, registry);
+    Output::init(sparseAxes, allAxes, sysAxes, allAxes_sys, produceTrue, eventMixing, produceLikesign, produceRotational, registry);
 
     mHistogramRegistry->add("unlikepm", "Unlike pm", *mPairHisto);
-    // mHistogramRegistry->add("unlikemp", "Unlike mp", *mPairHisto);
     if (produceLikesign) {
       mHistogramRegistry->add("likepp", "Like PP", *mPairHisto);
       mHistogramRegistry->add("likemm", "Like MM", *mPairHisto);
@@ -282,13 +279,11 @@ class OutputSparse : public Output
     }
     if (eventMixing != MixingType::none) {
       mHistogramRegistry->add("mixingpm", "Event Mixing pm", *mPairHisto);
-      if (produceLikesign) {
-        mHistogramRegistry->add("mixingpp", "Event Mixing pp", *mPairHisto);
-        mHistogramRegistry->add("mixingmm", "Event Mixing mm", *mPairHisto);
-      }
       mHistogramRegistry->add("mixingmp", "Event Mixing mp", *mPairHisto);
     }
-
+    if (produceRotational) {
+      mHistogramRegistry->add("rotationpm", "Rotational pm", *mPairHisto);
+    }
     mHistogramRegistry->add("Mapping/systematics", "Systematics mapping", *mPairHistoSys);
   }
 
@@ -331,14 +326,11 @@ class OutputSparse : public Output
       case PairType::mixingpm:
         fillMixingpm(point);
         break;
-      case PairType::mixingpp:
-        fillMixingpp(point);
-        break;
-      case PairType::mixingmm:
-        fillMixingmm(point);
-        break;
       case PairType::mixingmp:
         fillMixingmp(point);
+        break;
+      case PairType::rotationpm:
+        fillRotationpm(point);
         break;
       default:
         break;
@@ -357,17 +349,14 @@ class OutputSparse : public Output
   {
     fillSparse(HIST("likepp"), point);
   }
-
   virtual void fillLikemm(double* point)
   {
     fillSparse(HIST("likemm"), point);
   }
-
   virtual void fillUnliketrue(double* point)
   {
     fillSparse(HIST("unliketrue"), point);
   }
-
   virtual void fillUnlikegen(double* point)
   {
     fillSparse(HIST("unlikegen"), point);
@@ -380,17 +369,13 @@ class OutputSparse : public Output
   {
     fillSparse(HIST("mixingpm"), point);
   }
-  virtual void fillMixingpp(double* point)
-  {
-    fillSparse(HIST("mixingpp"), point);
-  }
-  virtual void fillMixingmm(double* point)
-  {
-    fillSparse(HIST("mixingmm"), point);
-  }
   virtual void fillMixingmp(double* point)
   {
     fillSparse(HIST("mixingmp"), point);
+  }
+  virtual void fillRotationpm(double* point)
+  {
+    fillSparse(HIST("rotationpm"), point);
   }
   virtual void fillSystematics(double* point)
   {

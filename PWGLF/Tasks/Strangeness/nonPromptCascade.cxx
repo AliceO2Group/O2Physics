@@ -213,11 +213,11 @@ struct NonPromptCascadeTask {
   o2::vertexing::DCAFitterN<2> mDCAFitter;
   std::array<int, 2> mProcessCounter = {0, 0}; // {Tracked, All}
   std::map<uint64_t, uint32_t> mToiMap;
-  std::unordered_set<int> mRuns;
-  std::shared_ptr<TH2> mHistPointer1;
-  std::shared_ptr<TH2> mHistPointer2;
-  std::shared_ptr<TH2> mHistPointer3;
-  std::shared_ptr<TH2> mHistPointer4;
+  std::unordered_map<std::string, std::shared_ptr<TH2>> mHistsPerRunMultVsCent;
+  std::unordered_map<std::string, std::shared_ptr<TH2>> mHistsPerRunMultVsCentZoom;
+  std::unordered_map<std::string, std::shared_ptr<TH2>> mHistsPerRunNtracktVsCent;
+  std::unordered_map<std::string, std::shared_ptr<TH2>> mHistsPerRunNtracktVsCentZoom;
+
   AxisSpec multAxis = {10000, 0, 10000, "Multiplicity FT0M"};
   AxisSpec centAxis = {2021, -0.025, 101.025, "Centrality"};
   AxisSpec centAxisZoom = {2000, -0.0025, 10.0025, "Centrality"};
@@ -338,22 +338,21 @@ struct NonPromptCascadeTask {
   {
     // std::cout << "Filling mult histos" << std::endl;
     for (const auto& coll : collisions) {
-      if (!mRuns.count(mRunNumber)) {
-        std::string histName = "mult/hMultVsCent_run" + std::to_string(mRunNumber);
-        mHistPointer1 = std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxis, multAxis}));
-        histName = "mult/hMultVsCentZoom_run" + std::to_string(mRunNumber);
-        mHistPointer2 = std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxisZoom, multAxisZoom}));
-        histName = "mult/hNTracksVsCent_run" + std::to_string(mRunNumber);
-        mHistPointer3 = std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxis, nTracksAxis}));
-        histName = "mult/hNTracksVsCentZoom_run" + std::to_string(mRunNumber);
-        mHistPointer4 = std::get<std::shared_ptr<TH2>>(mRegistry.add(histName.c_str(), histName.c_str(), HistType::kTH2F, {centAxisZoom, nTracksAxis}));
-        mRuns.insert(mRunNumber);
+      std::string histNameMvC = "mult/hMultVsCent_run" + std::to_string(mRunNumber);
+      std::string histNameMvCZ = "mult/hMultVsCentZoom_run" + std::to_string(mRunNumber);
+      std::string histNameTvC = "mult/hNTracksVsCent_run" + std::to_string(mRunNumber);
+      std::string histNameTvCZ = "mult/hNTracksVsCentZoom_run" + std::to_string(mRunNumber);
+      if (!mHistsPerRunMultVsCent.contains(histNameMvC)) {
+        mHistsPerRunMultVsCent[histNameMvC] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameMvC.c_str(), histNameMvC.c_str(), HistType::kTH2F, {centAxis, multAxis}));
+        mHistsPerRunMultVsCentZoom[histNameMvCZ] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameMvCZ.c_str(), histNameMvCZ.c_str(), HistType::kTH2F, {centAxisZoom, multAxisZoom}));
+        mHistsPerRunNtracktVsCent[histNameTvC] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameTvC.c_str(), histNameTvC.c_str(), HistType::kTH2F, {centAxis, nTracksAxis}));
+        mHistsPerRunNtracktVsCentZoom[histNameTvCZ] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameTvCZ.c_str(), histNameTvCZ.c_str(), HistType::kTH2F, {centAxisZoom, nTracksAxis}));
       }
-      mHistPointer1->Fill(coll.centFT0M(), coll.multFT0M());
-      mHistPointer2->Fill(coll.centFT0M(), coll.multFT0M());
-      mHistPointer3->Fill(coll.centFT0M(), coll.multNTracksGlobal());
-      mHistPointer4->Fill(coll.centFT0M(), coll.multNTracksGlobal());
-
+      mHistsPerRunMultVsCent[histNameMvC]->Fill(coll.centFT0M(), coll.multFT0M());
+      mHistsPerRunMultVsCentZoom[histNameMvCZ]->Fill(coll.centFT0M(), coll.multFT0M());
+      mHistsPerRunNtracktVsCent[histNameTvC]->Fill(coll.centFT0M(), coll.multNTracksGlobal());
+      mHistsPerRunNtracktVsCentZoom[histNameTvCZ]->Fill(coll.centFT0M(), coll.multNTracksGlobal());
+      // run integrated histos
       mRegistry.fill(HIST("hMultVsCent"), coll.centFT0M(), coll.multFT0M());
       mRegistry.fill(HIST("hMultVsCentZoom"), coll.centFT0M(), coll.multFT0M());
       mRegistry.fill(HIST("hNTracksVsCent"), coll.centFT0M(), (float)coll.multNTracksGlobal());

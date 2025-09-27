@@ -14,30 +14,46 @@
 ///
 /// \author Evgeny Kryshen <evgeny.kryshen@cern.ch> and Igor Altsybeev <Igor.Altsybeev@cern.ch>
 
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/EventSelection.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/LHCConstants.h>
+#include <CommonDataFormat/BunchFilling.h>
+#include <CommonDataFormat/TimeStamp.h>
+#include <DataFormatsITSMFT/TimeDeadMap.h>
+#include <DataFormatsParameters/AggregatedRunInfo.h>
+#include <DataFormatsParameters/GRPLHCIFData.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/OutputObjHeader.h>
+#include <Framework/runDataProcessing.h>
+#include <ITSMFTBase/DPLAlpideParam.h>
+#include <ITSMFTReconstruction/ChipMappingITS.h>
+#include <ReconstructionDataFormats/Vertex.h>
+
+#include <TH1.h>
+#include <TMath.h>
+#include <TString.h>
+
+#include <sys/types.h>
+
+#include <bitset>
+#include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <map>
-#include <vector>
 #include <string>
 #include <unordered_map>
-
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Framework/HistogramRegistry.h"
-#include "CommonDataFormat/BunchFilling.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
-#include "DataFormatsITSMFT/NoiseMap.h" // missing include in TimeDeadMap.h
-#include "DataFormatsITSMFT/TimeDeadMap.h"
-#include "DataFormatsITSMFT/ROFRecord.h"
-#include "ReconstructionDataFormats/Vertex.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "ITSMFTReconstruction/ChipMappingITS.h"
-#include "TH1F.h"
-#include "TH2F.h"
+#include <vector>
 
 using namespace o2::framework;
 using namespace o2;
@@ -53,6 +69,7 @@ struct EventSelectionQaTask {
   Configurable<bool> isMC{"isMC", 0, "0 - data, 1 - MC"};
   Configurable<int32_t> nGlobalBCs{"nGlobalBCs", 100000, "number of global bcs for detailed monitoring"};
   Configurable<bool> isLowFlux{"isLowFlux", 1, "1 - low flux (pp, pPb), 0 - high flux (PbPb)"};
+  Configurable<bool> fillITSdeadStaveHists{"fillITSdeadStaveHists", 0, "0 - no, 1 - yes"};
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   HistogramRegistry histos{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -639,78 +656,80 @@ struct EventSelectionQaTask {
         }
 
         // fill ITS dead maps
-        o2::itsmft::TimeDeadMap* itsDeadMap = ccdb->getForTimeStamp<o2::itsmft::TimeDeadMap>("ITS/Calib/TimeDeadMap", (tsSOR + tsEOR) / 2);
-        auto itsDeadMapOrbits = itsDeadMap->getEvolvingMapKeys(); // roughly every second, ~350 TFs = 350x32 orbits
-        if (itsDeadMapOrbits.size() > 0) {
-          std::vector<double> itsDeadMapOrbitsDouble(itsDeadMapOrbits.begin(), itsDeadMapOrbits.end());
-          const AxisSpec axisItsDeadMapOrbits{itsDeadMapOrbitsDouble};
+        if (fillITSdeadStaveHists) {
+          o2::itsmft::TimeDeadMap* itsDeadMap = ccdb->getForTimeStamp<o2::itsmft::TimeDeadMap>("ITS/Calib/TimeDeadMap", (tsSOR + tsEOR) / 2);
+          auto itsDeadMapOrbits = itsDeadMap->getEvolvingMapKeys(); // roughly every second, ~350 TFs = 350x32 orbits
+          if (itsDeadMapOrbits.size() > 0) {
+            std::vector<double> itsDeadMapOrbitsDouble(itsDeadMapOrbits.begin(), itsDeadMapOrbits.end());
+            const AxisSpec axisItsDeadMapOrbits{itsDeadMapOrbitsDouble};
 
-          for (int l = 0; l < o2::itsmft::ChipMappingITS::NLayers; l++) {
-            int nChips = o2::itsmft::ChipMappingITS::getNChipsOnLayer(l);
-            double idFirstChip = o2::itsmft::ChipMappingITS::getFirstChipsOnLayer(l);
-            // int nStaves = o2::itsmft::ChipMappingITS::getNStavesOnLr(l);
-            // double idFirstStave = o2::itsmft::ChipMappingITS::getFirstStavesOnLr(l);
-            histos.add(Form("hDeadChipsVsOrbitL%d", l), Form(";orbit; chip; Layer %d", l), kTH2C, {axisItsDeadMapOrbits, {nChips, idFirstChip, idFirstChip + nChips}});
-            histos.add(Form("hNumberOfInactiveChipsVsOrbitL%d", l), Form(";orbit; Layer %d", l), kTH1I, {axisItsDeadMapOrbits});
-          }
-
-          std::vector<uint16_t> vClosest;
-          std::bitset<o2::itsmft::ChipMappingITS::getNChips()> alwaysDeadChips;
-          std::bitset<o2::itsmft::ChipMappingITS::getNChips()> deadChips;
-          alwaysDeadChips.set();
-          for (const auto& orbit : itsDeadMapOrbits) {
-            itsDeadMap->getMapAtOrbit(orbit, vClosest);
-            deadChips.reset();
-            for (size_t iel = 0; iel < vClosest.size(); iel++) {
-              uint16_t w1 = vClosest[iel];
-              bool isLastInSequence = (w1 & 0x8000) == 0;
-              uint16_t w2 = isLastInSequence ? w1 + 1 : vClosest[iel + 1];
-              uint16_t chipId1 = w1 & 0x7FFF;
-              uint16_t chipId2 = w2 & 0x7FFF;
-              // dead chips are stored as ranges
-              // vClosest contains first and last chip ids in the range
-              // last chip id in the range is marked with 0x8000 bit set to 1
-              for (int chipId = chipId1; chipId < chipId2; chipId++) {
-                histos.fill(HIST("hDeadChipsVsOrbitL0"), orbit, chipId, 1);
-                histos.fill(HIST("hDeadChipsVsOrbitL1"), orbit, chipId, 1);
-                histos.fill(HIST("hDeadChipsVsOrbitL2"), orbit, chipId, 1);
-                histos.fill(HIST("hDeadChipsVsOrbitL3"), orbit, chipId, 1);
-                histos.fill(HIST("hDeadChipsVsOrbitL4"), orbit, chipId, 1);
-                histos.fill(HIST("hDeadChipsVsOrbitL5"), orbit, chipId, 1);
-                histos.fill(HIST("hDeadChipsVsOrbitL6"), orbit, chipId, 1);
-                deadChips.set(chipId);
-              }
+            for (int l = 0; l < o2::itsmft::ChipMappingITS::NLayers; l++) {
+              int nChips = o2::itsmft::ChipMappingITS::getNChipsOnLayer(l);
+              double idFirstChip = o2::itsmft::ChipMappingITS::getFirstChipsOnLayer(l);
+              // int nStaves = o2::itsmft::ChipMappingITS::getNStavesOnLr(l);
+              // double idFirstStave = o2::itsmft::ChipMappingITS::getFirstStavesOnLr(l);
+              histos.add(Form("hDeadChipsVsOrbitL%d", l), Form(";orbit; chip; Layer %d", l), kTH2C, {axisItsDeadMapOrbits, {nChips, idFirstChip, idFirstChip + nChips}});
+              histos.add(Form("hNumberOfInactiveChipsVsOrbitL%d", l), Form(";orbit; Layer %d", l), kTH1I, {axisItsDeadMapOrbits});
             }
-            alwaysDeadChips &= deadChips; // chips active in the current orbit are set to 0
-          }
-          // std::cout << alwaysDeadChips << std::endl;
 
-          // filling histograms with number of inactive chips per layer vs orbit (ignoring always inactive)
-          for (const auto& orbit : itsDeadMapOrbits) {
-            itsDeadMap->getMapAtOrbit(orbit, vClosest);
-            std::vector<int16_t> nInactiveChips(o2::itsmft::ChipMappingITS::NLayers, 0);
-            for (size_t iel = 0; iel < vClosest.size(); iel++) {
-              uint16_t w1 = vClosest[iel];
-              bool isLastInSequence = (w1 & 0x8000) == 0;
-              uint16_t w2 = isLastInSequence ? w1 + 1 : vClosest[iel + 1];
-              uint16_t chipId1 = w1 & 0x7FFF;
-              uint16_t chipId2 = w2 & 0x7FFF;
-              for (int chipId = chipId1; chipId < chipId2; chipId++) {
-                if (alwaysDeadChips[chipId]) // skip always inactive chips
-                  continue;
-                int32_t layer = o2::itsmft::ChipMappingITS::getLayer(chipId);
-                nInactiveChips[layer]++;
+            std::vector<uint16_t> vClosest;
+            std::bitset<o2::itsmft::ChipMappingITS::getNChips()> alwaysDeadChips;
+            std::bitset<o2::itsmft::ChipMappingITS::getNChips()> deadChips;
+            alwaysDeadChips.set();
+            for (const auto& orbit : itsDeadMapOrbits) {
+              itsDeadMap->getMapAtOrbit(orbit, vClosest);
+              deadChips.reset();
+              for (size_t iel = 0; iel < vClosest.size(); iel++) {
+                uint16_t w1 = vClosest[iel];
+                bool isLastInSequence = (w1 & 0x8000) == 0;
+                uint16_t w2 = isLastInSequence ? w1 + 1 : vClosest[iel + 1];
+                uint16_t chipId1 = w1 & 0x7FFF;
+                uint16_t chipId2 = w2 & 0x7FFF;
+                // dead chips are stored as ranges
+                // vClosest contains first and last chip ids in the range
+                // last chip id in the range is marked with 0x8000 bit set to 1
+                for (int chipId = chipId1; chipId < chipId2; chipId++) {
+                  histos.fill(HIST("hDeadChipsVsOrbitL0"), orbit, chipId, 1);
+                  histos.fill(HIST("hDeadChipsVsOrbitL1"), orbit, chipId, 1);
+                  histos.fill(HIST("hDeadChipsVsOrbitL2"), orbit, chipId, 1);
+                  histos.fill(HIST("hDeadChipsVsOrbitL3"), orbit, chipId, 1);
+                  histos.fill(HIST("hDeadChipsVsOrbitL4"), orbit, chipId, 1);
+                  histos.fill(HIST("hDeadChipsVsOrbitL5"), orbit, chipId, 1);
+                  histos.fill(HIST("hDeadChipsVsOrbitL6"), orbit, chipId, 1);
+                  deadChips.set(chipId);
+                }
               }
+              alwaysDeadChips &= deadChips; // chips active in the current orbit are set to 0
             }
-            histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL0"), orbit, nInactiveChips[0]);
-            histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL1"), orbit, nInactiveChips[1]);
-            histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL2"), orbit, nInactiveChips[2]);
-            histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL3"), orbit, nInactiveChips[3]);
-            histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL4"), orbit, nInactiveChips[4]);
-            histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL5"), orbit, nInactiveChips[5]);
-            histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL6"), orbit, nInactiveChips[6]);
+            // std::cout << alwaysDeadChips << std::endl;
+
+            // filling histograms with number of inactive chips per layer vs orbit (ignoring always inactive)
+            for (const auto& orbit : itsDeadMapOrbits) {
+              itsDeadMap->getMapAtOrbit(orbit, vClosest);
+              std::vector<int16_t> nInactiveChips(o2::itsmft::ChipMappingITS::NLayers, 0);
+              for (size_t iel = 0; iel < vClosest.size(); iel++) {
+                uint16_t w1 = vClosest[iel];
+                bool isLastInSequence = (w1 & 0x8000) == 0;
+                uint16_t w2 = isLastInSequence ? w1 + 1 : vClosest[iel + 1];
+                uint16_t chipId1 = w1 & 0x7FFF;
+                uint16_t chipId2 = w2 & 0x7FFF;
+                for (int chipId = chipId1; chipId < chipId2; chipId++) {
+                  if (alwaysDeadChips[chipId]) // skip always inactive chips
+                    continue;
+                  int32_t layer = o2::itsmft::ChipMappingITS::getLayer(chipId);
+                  nInactiveChips[layer]++;
+                }
+              }
+              histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL0"), orbit, nInactiveChips[0]);
+              histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL1"), orbit, nInactiveChips[1]);
+              histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL2"), orbit, nInactiveChips[2]);
+              histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL3"), orbit, nInactiveChips[3]);
+              histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL4"), orbit, nInactiveChips[4]);
+              histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL5"), orbit, nInactiveChips[5]);
+              histos.fill(HIST("hNumberOfInactiveChipsVsOrbitL6"), orbit, nInactiveChips[6]);
+            }
           }
-        }
+        } // end of fill ITS dead maps
       } // run >= 500000
 
       // create orbit-axis histograms on the fly with binning based on info from GRP if GRP is available
@@ -736,7 +755,7 @@ struct EventSelectionQaTask {
 
       double minSec = floor(tsSOR / 1000.);
       double maxSec = ceil(tsEOR / 1000.);
-      const AxisSpec axisSeconds{maxSec - minSec < 5000 ? static_cast<int>(maxSec - minSec) : 5000, minSec, maxSec, "seconds"};
+      const AxisSpec axisSeconds{maxSec - minSec < 1000 ? static_cast<int>(maxSec - minSec) : 1000, minSec, maxSec, "seconds"};
       const AxisSpec axisBcDif{600, -300., 300., "bc difference"};
       histos.add("hSecondsTVXvsBcDif", "", kTH2F, {axisSeconds, axisBcDif});
       histos.add("hSecondsTVXvsBcDifAll", "", kTH2F, {axisSeconds, axisBcDif});
@@ -981,17 +1000,19 @@ struct EventSelectionQaTask {
       auto mapAmbTrIdsIt = mapAmbTrIds.find(track.globalIndex());
       int ambTrId = mapAmbTrIdsIt == mapAmbTrIds.end() ? -1 : mapAmbTrIdsIt->second;
       int indexBc = ambTrId < 0 ? track.collision_as<ColEvSels>().bc_as<BCsRun3>().globalIndex() : ambTracks.iteratorAt(ambTrId).bc_as<BCsRun3>().begin().globalIndex();
-      auto bc = bcs.iteratorAt(indexBc);
-      int64_t globalBC = bc.globalBC() + floor(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
+      if (ambTrId < 0) { // temprorary limitation, to avoid crashes, in particular, on MC Pb-Pb datasets
+        auto bc = bcs.iteratorAt(indexBc);
+        int64_t globalBC = bc.globalBC() + floor(track.trackTime() / o2::constants::lhc::LHCBunchSpacingNS);
 
-      int32_t indexClosestTVX = findClosest(globalBC, mapGlobalBcWithTVX);
-      int bcDiff = static_cast<int>(globalBC - vGlobalBCs[indexClosestTVX]);
-      if (track.hasTOF() || track.hasTRD() || !track.hasITS() || !track.hasTPC() || track.pt() < 1)
-        continue;
-      histos.fill(HIST("hTrackBcDiffVsEtaAll"), track.eta(), bcDiff);
-      if (track.eta() < -0.2 || track.eta() > 0.2)
-        continue;
-      histos.fill(HIST("hSecondsTVXvsBcDifAll"), bc.timestamp() / 1000., bcDiff);
+        int32_t indexClosestTVX = findClosest(globalBC, mapGlobalBcWithTVX);
+        int bcDiff = static_cast<int>(globalBC - vGlobalBCs[indexClosestTVX]);
+        if (track.hasTOF() || track.hasTRD() || !track.hasITS() || !track.hasTPC() || track.pt() < 1)
+          continue;
+        histos.fill(HIST("hTrackBcDiffVsEtaAll"), track.eta(), bcDiff);
+        if (track.eta() < -0.2 || track.eta() > 0.2)
+          continue;
+        histos.fill(HIST("hSecondsTVXvsBcDifAll"), bc.timestamp() / 1000., bcDiff);
+      }
     }
 
     // collision-based event selection qa

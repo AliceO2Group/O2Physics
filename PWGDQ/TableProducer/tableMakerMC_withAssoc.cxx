@@ -16,45 +16,50 @@
 //   The skimmed MC stack includes the MC truth particles corresponding to the list of user specified MC signals (see MCsignal.h)
 //    and the MC truth particles corresponding to the reconstructed tracks selected by the specified track cuts on reconstructed data.
 
+#include "PWGDQ/Core/AnalysisCompositeCut.h"
+#include "PWGDQ/Core/AnalysisCut.h"
+#include "PWGDQ/Core/CutsLibrary.h"
+#include "PWGDQ/Core/HistogramManager.h"
+#include "PWGDQ/Core/HistogramsLibrary.h"
+#include "PWGDQ/Core/MCSignal.h"
+#include "PWGDQ/Core/MCSignalLibrary.h"
+#include "PWGDQ/Core/MuonMatchingMlResponse.h"
+#include "PWGDQ/Core/VarManager.h"
+#include "PWGDQ/DataModel/ReducedInfoTables.h"
+
+#include "Common/CCDB/TriggerAliases.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/FwdTrackReAlignTables.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "DataFormatsParameters/GRPMagField.h"
+#include "DataFormatsParameters/GRPObject.h"
+#include "DetectorsBase/GeometryManager.h"
+#include "DetectorsBase/Propagator.h"
+#include "Field/MagneticField.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/DataTypes.h"
+#include "Framework/runDataProcessing.h"
+
+#include "TGeoGlobalMagField.h"
+#include "TList.h"
+
 #include <cstdint>
 #include <iostream>
 #include <map>
-#include <string>
 #include <memory>
-#include <vector>
-#include <utility>
+#include <string>
 #include <unordered_map>
-#include "TList.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/ASoA.h"
-#include "Framework/DataTypes.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/CCDB/TriggerAliases.h"
-#include "PWGDQ/DataModel/ReducedInfoTables.h"
-#include "PWGDQ/Core/VarManager.h"
-#include "PWGDQ/Core/HistogramManager.h"
-#include "PWGDQ/Core/AnalysisCut.h"
-#include "PWGDQ/Core/AnalysisCompositeCut.h"
-#include "PWGDQ/Core/HistogramsLibrary.h"
-#include "PWGDQ/Core/CutsLibrary.h"
-#include "PWGDQ/Core/MCSignal.h"
-#include "PWGDQ/Core/MCSignalLibrary.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/FwdTrackReAlignTables.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "Field/MagneticField.h"
-#include "TGeoGlobalMagField.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "CCDB/BasicCCDBManager.h"
+#include <utility>
+#include <vector>
 
 using std::cout;
 using std::endl;
@@ -199,6 +204,7 @@ struct TableMakerMC {
     Configurable<std::string> fGeoPath{"geoPath", "GLO/Config/GeometryAligned", "Path of the geometry file"};
     Configurable<std::string> fGrpMagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
     Configurable<std::string> fGrpMagPathRun2{"grpmagPathRun2", "GLO/GRP/GRP", "CCDB path of the GRPObject (Usage for Run 2)"};
+    Configurable<int64_t> timestampCCDB{"timestampCCDB", -1, "timestamp of the ONNX file for ML model used to query in CCDB"};
   } fConfigCCDB;
 
   struct : ConfigurableGroup {
@@ -208,8 +214,13 @@ struct TableMakerMC {
     Configurable<bool> fPropMuon{"cfgPropMuon", true, "Propagate muon tracks through absorber (do not use if applying pairing)"};
     Configurable<bool> fRefitGlobalMuon{"cfgRefitGlobalMuon", true, "Correct global muon parameters"};
     Configurable<bool> fKeepBestMatch{"cfgKeepBestMatch", false, "Keep only the best match global muons in the skimming"};
+    Configurable<bool> fUseML{"cfgUseML", false, "Import ONNX model from ccdb to decide which matching candidates to keep"};
     Configurable<float> fMuonMatchEtaMin{"cfgMuonMatchEtaMin", -4.0f, "Definition of the acceptance of muon tracks to be matched with MFT"};
     Configurable<float> fMuonMatchEtaMax{"cfgMuonMatchEtaMax", -2.5f, "Definition of the acceptance of muon tracks to be matched with MFT"};
+    Configurable<float> fzMatching{"cfgzMatching", -77.5f, "Plane for MFT-MCH matching"};
+    Configurable<std::vector<std::string>> fModelPathsCCDB{"fModelPathsCCDB", std::vector<std::string>{"Users/m/mcoquet/MLTest"}, "Paths of models on CCDB"};
+    Configurable<std::vector<std::string>> fInputFeatures{"cfgInputFeatures", std::vector<std::string>{"chi2MCHMFT"}, "Names of ML model input features"};
+    Configurable<std::vector<std::string>> fModelNames{"cfgModelNames", std::vector<std::string>{"model.onnx"}, "ONNX file names for each pT bin (if not from CCDB full path)"};
   } fConfigVariousOptions;
 
   Service<o2::ccdb::BasicCCDBManager> fCCDB;
@@ -239,6 +250,11 @@ struct TableMakerMC {
 
   std::map<uint32_t, bool> fBestMatch;
   std::unordered_map<int64_t, int32_t> map_mfttrackcovs;
+
+  o2::analysis::MlResponseMFTMuonMatch<float> matchingMlResponse;
+  std::vector<double> binsPtMl;
+  std::array<double, 1> cutValues;
+  std::vector<int> cutDirMl;
 
   void init(o2::framework::InitContext& context)
   {
@@ -364,6 +380,19 @@ struct TableMakerMC {
       fCCDB->get<TGeoManager>(fConfigCCDB.fGeoPath);
     }
     fCCDBApi.init(fConfigCCDB.fConfigCcdbUrl.value);
+    VarManager::SetMatchingPlane(fConfigVariousOptions.fzMatching.value);
+
+    if (fConfigVariousOptions.fUseML.value) {
+      // TODO : for now we use hard coded values since the current models use 1 pT bin
+      binsPtMl = {-1e-6, 1000.0};
+      cutValues = {0.0};
+      cutDirMl = {cuts_ml::CutNot};
+      o2::framework::LabeledArray<double> mycutsMl(cutValues.data(), 1, 1, std::vector<std::string>{"pT bin 0"}, std::vector<std::string>{"score"});
+      matchingMlResponse.configure(binsPtMl, mycutsMl, cutDirMl, 1);
+      matchingMlResponse.setModelPathsCCDB(fConfigVariousOptions.fModelNames.value, fCCDBApi, fConfigVariousOptions.fModelPathsCCDB.value, fConfigCCDB.timestampCCDB.value);
+      matchingMlResponse.cacheInputFeaturesIndices(fConfigVariousOptions.fInputFeatures.value);
+      matchingMlResponse.init();
+    }
   }
 
   void DefineCuts()
@@ -882,11 +911,47 @@ struct TableMakerMC {
       if (static_cast<int>(muon.trackType()) < 2) {
         auto muonID = muon.matchMCHTrackId();
         auto chi2 = muon.chi2MatchMCHMFT();
+        if (fConfigVariousOptions.fUseML.value) {
+          std::vector<float> output;
+          std::vector<float> inputML = matchingMlResponse.getInputFeaturesTest(muon);
+          matchingMlResponse.isSelectedMl(inputML, 0, output);
+          chi2 = output[0];
+        }
         if (mCandidates.find(muonID) == mCandidates.end()) {
           mCandidates[muonID] = {chi2, muon.globalIndex()};
         } else {
           if (chi2 < mCandidates[muonID].first) {
             mCandidates[muonID] = {chi2, muon.globalIndex()};
+          }
+        }
+      }
+    }
+    for (auto& pairCand : mCandidates) {
+      fBestMatch[pairCand.second.second] = true;
+    }
+  }
+
+  template <typename TMuons, typename TMFTTracks, typename TMFTCovs, typename TEvent>
+  void skimBestMuonMatchesML(TMuons const& muons, TMFTTracks const& /*mfttracks*/, TMFTCovs const& mfCovs, TEvent const& collision)
+  {
+    std::unordered_map<int, std::pair<float, int>> mCandidates;
+    for (const auto& muon : muons) {
+      if (static_cast<int>(muon.trackType()) < 2) {
+        auto muonID = muon.matchMCHTrackId();
+        auto muontrack = muon.template matchMCHTrack_as<TMuons>();
+        auto muonprop = VarManager::PropagateMuon(muontrack, collision, VarManager::kToMatching);
+        auto mfttrack = muon.template matchMFTTrack_as<TMFTTracks>();
+        auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
+        o2::track::TrackParCovFwd mftprop = VarManager::PropagateFwd(mfttrack, mfttrackcov, VarManager::GetMatchingPlane());
+        std::vector<float> output;
+        std::vector<float> inputML = matchingMlResponse.getInputFeaturesGlob(muon, muonprop, mftprop, mfttrackcov, collision);
+        matchingMlResponse.isSelectedMl(inputML, 0, output);
+        float score = output[0];
+        if (mCandidates.find(muonID) == mCandidates.end()) {
+          mCandidates[muonID] = {score, muon.globalIndex()};
+        } else {
+          if (score < mCandidates[muonID].first) {
+            mCandidates[muonID] = {score, muon.globalIndex()};
           }
         }
       }
@@ -1121,6 +1186,7 @@ struct TableMakerMC {
         fGrpMag = fCCDB->getForTimeStamp<o2::parameters::GRPMagField>(fConfigCCDB.fGrpMagPath, bcs.begin().timestamp());
         if (fGrpMag != nullptr) {
           o2::base::Propagator::initFieldFromGRP(fGrpMag);
+          VarManager::SetMagneticField(fGrpMag->getNominalL3Field());
         }
         if (fConfigVariousOptions.fPropMuon) {
           VarManager::SetupMuonMagField();
@@ -1211,7 +1277,13 @@ struct TableMakerMC {
           if constexpr (static_cast<bool>(TMFTFillMap)) {
             auto groupedMuonIndices = fwdTrackAssocs.sliceBy(fwdtrackIndicesPerCollision, origIdx);
             if (fConfigVariousOptions.fKeepBestMatch) {
-              skimBestMuonMatches(muons);
+              if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
+                if (fConfigVariousOptions.fUseML.value) {
+                  skimBestMuonMatchesML(muons, mftTracks, mftCovs, collision);
+                }
+              } else {
+                skimBestMuonMatches(muons);
+              }
             }
             if constexpr (static_cast<bool>(TMFTFillMap & VarManager::ObjTypes::MFTCov)) {
               skimMuons<TMuonFillMap, TMFTFillMap>(collision, muons, groupedMuonIndices, mcParticles, mftTracks, mftCovs);

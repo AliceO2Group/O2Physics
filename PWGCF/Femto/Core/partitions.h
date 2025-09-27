@@ -16,25 +16,26 @@
 #ifndef PWGCF_FEMTO_CORE_PARTITIONS_H_
 #define PWGCF_FEMTO_CORE_PARTITIONS_H_
 
-// collsion filters
-#define MAKE_COLLISION_FILTER(selection)                                                                            \
-  (femtocollisions::posZ >= (selection).vtxZMin && femtocollisions::posZ <= (selection).vtxZMax) &&                 \
-    (femtocollisions::mult >= (selection).multMin && femtocollisions::mult <= (selection).multMax) &&               \
-    (femtocollisions::cent >= (selection).centMin && femtocollisions::cent <= (selection).centMax) &&               \
-    (femtocollisions::sphericity >= (selection).spherMin && femtocollisions::sphericity <= (selection).spherMax) && \
-    (femtocollisions::magField >= (selection).magFieldMin && femtocollisions::magField <= (selection).magFieldMax)
+// collsion selection
+#define MAKE_COLLISION_FILTER(selection)                                                                          \
+  (femtocollisions::posZ >= selection.vtxZMin && femtocollisions::posZ <= selection.vtxZMax) &&                   \
+    (femtocollisions::mult >= selection.multMin && femtocollisions::mult <= selection.multMax) &&                 \
+    (femtocollisions::cent >= selection.centMin && femtocollisions::cent <= selection.centMax) &&                 \
+    (femtocollisions::sphericity >= selection.spherMin && femtocollisions::sphericity <= selection.spherMax) &&   \
+    (femtocollisions::magField >= selection.magFieldMin && femtocollisions::magField <= selection.magFieldMax) && \
+    ncheckbit(femtocollisions::collisionMask, selection.collisionMask)
 
 // standard track partition
-#define MAKE_TRACK_PARTITION(selection)                                                                                                          \
-  ifnode(selection.sign.node() > 0, femtobase::stored::signedPt > 0.f, femtobase::stored::signedPt < 0.f) &&                                     \
-    (nabs(femtobase::stored::signedPt) > selection.ptMin) &&                                                                                     \
-    (nabs(femtobase::stored::signedPt) < selection.ptMax) &&                                                                                     \
-    (femtobase::stored::eta > selection.etaMin) &&                                                                                               \
-    (femtobase::stored::eta < selection.etaMax) &&                                                                                               \
-    (femtobase::stored::phi > selection.phiMin) &&                                                                                               \
-    (femtobase::stored::phi < selection.phiMax) &&                                                                                               \
-    ifnode(nabs(femtobase::stored::signedPt) * (nexp(femtobase::stored::eta) + nexp(-1.f * femtobase::stored::eta)) / 2.f <= selection.pidThres, \
-           ncheckbit(femtotracks::trackMask, selection.maskLowMomentum),                                                                         \
+#define MAKE_TRACK_PARTITION(selection)                                                                                                                                      \
+  ifnode(selection.charge.node() > 0, femtobase::stored::signedPt > 0.f, femtobase::stored::signedPt < 0.f) &&                                                               \
+    (nabs(selection.charge.node() * femtobase::stored::signedPt) > selection.ptMin) &&                                                                                       \
+    (nabs(selection.charge.node() * femtobase::stored::signedPt) < selection.ptMax) &&                                                                                       \
+    (femtobase::stored::eta > selection.etaMin) &&                                                                                                                           \
+    (femtobase::stored::eta < selection.etaMax) &&                                                                                                                           \
+    (femtobase::stored::phi > selection.phiMin) &&                                                                                                                           \
+    (femtobase::stored::phi < selection.phiMax) &&                                                                                                                           \
+    ifnode(nabs(selection.charge.node() * femtobase::stored::signedPt) * (nexp(femtobase::stored::eta) + nexp(-1.f * femtobase::stored::eta)) / (2.f) <= selection.pidThres, \
+           ncheckbit(femtotracks::trackMask, selection.maskLowMomentum),                                                                                                     \
            ncheckbit(femtotracks::trackMask, selection.maskHighMomentum))
 
 // partition for phis and rhos, i.e. resonance that are their own antiparticle
@@ -54,7 +55,7 @@
            ncheckbit(femtotwotrackresonances::mask, selection.negDauMaskAboveThres),    \
            ncheckbit(femtotwotrackresonances::mask, selection.negDauMaskBelowThres))
 
-// partition for kstars, they have distince antiparticle
+// partition for kstars, they have distinct antiparticle
 #define MAKE_RESONANCE_1_PARTITON(selection)                                                                 \
   ifnode(selection.sign.node() > 0, femtobase::stored::signedPt > 0.f, femtobase::stored::signedPt < 0.f) && \
     (nabs(femtobase::stored::signedPt) > selection.ptMin) &&                                                 \
@@ -109,5 +110,17 @@
     (femtobase::stored::mass > selection.massMin) &&                                                         \
     (femtobase::stored::mass < selection.massMax) &&                                                         \
     ncheckbit(femtocascades::mask, selection.mask)
+
+#define MAKE_SIGMA_PARTITION(selection)                                                                      \
+  ifnode(selection.sign.node() > 0, femtobase::stored::signedPt > 0.f, femtobase::stored::signedPt < 0.f) && \
+    (nabs(femtobase::stored::signedPt) > selection.ptMin) &&                                                 \
+    (nabs(femtobase::stored::signedPt) < selection.ptMax) &&                                                 \
+    (femtobase::stored::eta > selection.etaMin) &&                                                           \
+    (femtobase::stored::eta < selection.etaMax) &&                                                           \
+    (femtobase::stored::phi > selection.phiMin) &&                                                           \
+    (femtobase::stored::phi < selection.phiMax) &&                                                           \
+    (femtobase::stored::mass > selection.massMin) &&                                                         \
+    (femtobase::stored::mass < selection.massMax) &&                                                         \
+    ncheckbit(femtokinks::mask, selection.mask)
 
 #endif // PWGCF_FEMTO_CORE_PARTITIONS_H_

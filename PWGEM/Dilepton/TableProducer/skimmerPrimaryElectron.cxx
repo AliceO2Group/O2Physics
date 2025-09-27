@@ -142,7 +142,7 @@ struct skimmerPrimaryElectron {
 
     if (fillQAHistogram) {
       fRegistry.add("Track/hPt", "pT;p_{T} (GeV/c)", kTH1F, {{1000, 0.0f, 10}}, false);
-      fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{400, -20, 20}}, false);
+      fRegistry.add("Track/hQoverPt", "q/pT;q/p_{T} (GeV/c)^{-1}", kTH1F, {{4000, -20, 20}}, false);
       fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{180, 0, 2 * M_PI}, {20, -1.0f, 1.0f}}, false);
       fRegistry.add("Track/hDCAxyz", "DCA xy vs. z;DCA_{xy} (cm);DCA_{z} (cm)", kTH2F, {{200, -1.0f, 1.0f}, {200, -1.0f, 1.0f}}, false);
       fRegistry.add("Track/hDCAxyzSigma", "DCA xy vs. z;DCA_{xy} (#sigma);DCA_{z} (#sigma)", kTH2F, {{200, -10.0f, 10.0f}, {200, -10.0f, 10.0f}}, false);
@@ -353,19 +353,17 @@ struct skimmerPrimaryElectron {
       return false;
     }
 
-    if (track.hasITS() && !track.hasTPC() && !track.hasTRD() && !track.hasTOF()) {
-      int total_cluster_size = 0, nl = 0;
-      for (unsigned int layer = 0; layer < 7; layer++) {
-        int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
-        if (cluster_size_per_layer > 0) {
-          nl++;
-        }
-        total_cluster_size += cluster_size_per_layer;
+    int total_cluster_size = 0, nl = 0;
+    for (unsigned int layer = 0; layer < 7; layer++) {
+      int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
+      if (cluster_size_per_layer > 0) {
+        nl++;
       }
+      total_cluster_size += cluster_size_per_layer;
+    }
 
-      if (maxMeanITSClusterSize < static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(trackParCov.getTgl()))) {
-        return false;
-      }
+    if (maxMeanITSClusterSize < static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(trackParCov.getTgl()))) {
+      return false;
     }
 
     return true;
@@ -823,8 +821,8 @@ struct prefilterPrimaryElectron {
   Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
 
   Configurable<bool> fillQAHistogram{"fillQAHistogram", false, "flag to fill QA histograms"};
-  Configurable<float> max_dcaxy{"max_dcaxy", 0.3, "DCAxy To PV for loose track sample"};
-  Configurable<float> max_dcaz{"max_dcaz", 0.3, "DCAz To PV for loose track sample"};
+  Configurable<float> max_dcaxy{"max_dcaxy", 1.0, "DCAxy To PV for loose track sample"};
+  Configurable<float> max_dcaz{"max_dcaz", 1.0, "DCAz To PV for loose track sample"};
   Configurable<float> minpt{"minpt", 0.1, "min pt for ITS-TPC track"};
   Configurable<float> maxeta{"maxeta", 1.2, "eta acceptance for loose track sample"};
   Configurable<int> min_ncluster_tpc{"min_ncluster_tpc", 0, "min ncluster tpc"};
@@ -832,7 +830,7 @@ struct prefilterPrimaryElectron {
   Configurable<float> max_frac_shared_clusters_tpc{"max_frac_shared_clusters_tpc", 999.f, "max fraction of shared clusters in TPC"};
   Configurable<float> min_tpc_cr_findable_ratio{"min_tpc_cr_findable_ratio", 0.8, "min. TPC Ncr/Nf ratio"};
   Configurable<float> maxchi2tpc{"maxchi2tpc", 5.0, "max chi2/NclsTPC"};
-  Configurable<float> maxchi2its{"maxchi2its", 6.0, "max chi2/NclsITS"};
+  Configurable<float> maxchi2its{"maxchi2its", 36.0, "max chi2/NclsITS"};
   Configurable<int> min_ncluster_its{"min_ncluster_its", 4, "min ncluster its"};
   Configurable<int> min_ncluster_itsib{"min_ncluster_itsib", 1, "min ncluster itsib"};
   Configurable<float> minTPCNsigmaEl{"minTPCNsigmaEl", -2.0, "min. TPC n sigma for electron inclusion"};
@@ -876,7 +874,7 @@ struct prefilterPrimaryElectron {
     fRegistry.add("Track/hEtaPhi", "#eta vs. #varphi;#varphi (rad.);#eta", kTH2F, {{90, 0, 2 * M_PI}, {80, -2.0f, 2.0f}}, false);
     fRegistry.add("Track/hTPCNsigmaEl", "loose track TPC PID", kTH2F, {{1000, 0.f, 10}, {100, -5, +5}});
     fRegistry.add("Pair/before/uls/hMvsPt", "mass vs. pT;m_{ee} (GeV/c^{2});p_{T,ee} (GeV/c)", kTH2F, {{500, 0, 0.5}, {100, 0, 1}});
-    fRegistry.add("Pair/before/uls/hMvsPhiV", "mass vs. phiv;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0.f, M_PI}, {100, 0, 0.1}});
+    fRegistry.add("Pair/before/uls/hMvsPhiV", "mass vs. phiv;#varphi_{V} (rad.);m_{ee} (GeV/c^{2})", kTH2F, {{90, 0.f, M_PI}, {100, 0, 1.0}});
     fRegistry.addClone("Pair/before/uls/", "Pair/before/lspp/");
     fRegistry.addClone("Pair/before/uls/", "Pair/before/lsmm/");
     fRegistry.addClone("Pair/before/", "Pair/after/");
@@ -998,19 +996,17 @@ struct prefilterPrimaryElectron {
       return false;
     }
 
-    if (track.hasITS() && !track.hasTPC() && !track.hasTOF() && !track.hasTRD()) {
-      int total_cluster_size = 0, nl = 0;
-      for (unsigned int layer = 0; layer < 7; layer++) {
-        int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
-        if (cluster_size_per_layer > 0) {
-          nl++;
-        }
-        total_cluster_size += cluster_size_per_layer;
+    int total_cluster_size = 0, nl = 0;
+    for (unsigned int layer = 0; layer < 7; layer++) {
+      int cluster_size_per_layer = track.itsClsSizeInLayer(layer);
+      if (cluster_size_per_layer > 0) {
+        nl++;
       }
+      total_cluster_size += cluster_size_per_layer;
+    }
 
-      if (maxMeanITSClusterSize < static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(trackParCov.getTgl()))) {
-        return false;
-      }
+    if (maxMeanITSClusterSize < static_cast<float>(total_cluster_size) / static_cast<float>(nl) * std::cos(std::atan(trackParCov.getTgl()))) {
+      return false;
     }
 
     return true;

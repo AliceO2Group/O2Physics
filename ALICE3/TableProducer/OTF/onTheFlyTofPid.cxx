@@ -32,30 +32,30 @@
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/GeomConstants.h"
-#include "CommonConstants/MathConstants.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "CommonUtils/NameConf.h"
-#include "DataFormatsCalibration/MeanVertexObject.h"
-#include "DataFormatsParameters/GRPMagField.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
-#include "DetectorsVertexing/HelixHelper.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/DCA.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/GeomConstants.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <CommonUtils/NameConf.h>
+#include <DataFormatsCalibration/MeanVertexObject.h>
+#include <DataFormatsParameters/GRPMagField.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <DetectorsVertexing/HelixHelper.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/runDataProcessing.h>
+#include <ReconstructionDataFormats/DCA.h>
 
-#include "TEfficiency.h"
-#include "THashList.h"
-#include "TRandom3.h"
+#include <TEfficiency.h>
+#include <THashList.h>
 #include <TPDGCode.h>
+#include <TRandom3.h>
 
 #include <map>
 #include <string>
@@ -81,6 +81,8 @@ struct OnTheFlyTofPid {
 
   // necessary for particle charges
   Service<o2::framework::O2DatabasePDG> pdg;
+  // Necessary for LUTs
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   // these are the settings governing the TOF layers to be used
   // note that there are two layers foreseen for now: inner and outer TOF
@@ -97,11 +99,6 @@ struct OnTheFlyTofPid {
     Configurable<float> multiplicityEtaRange{"multiplicityEtaRange", 0.800000012, "eta range to compute the multiplicity"};
     Configurable<bool> flagIncludeTrackTimeRes{"flagIncludeTrackTimeRes", true, "flag to include or exclude track time resolution"};
     Configurable<bool> flagTOFLoadDelphesLUTs{"flagTOFLoadDelphesLUTs", false, "flag to load Delphes LUTs for tracking correction (use recoTrack parameters if false)"};
-    Configurable<std::string> lutEl{"lutEl", "inherit", "LUT for electrons (if inherit, inherits from otf tracker task)"};
-    Configurable<std::string> lutMu{"lutMu", "inherit", "LUT for muons (if inherit, inherits from otf tracker task)"};
-    Configurable<std::string> lutPi{"lutPi", "inherit", "LUT for pions (if inherit, inherits from otf tracker task)"};
-    Configurable<std::string> lutKa{"lutKa", "inherit", "LUT for kaons (if inherit, inherits from otf tracker task)"};
-    Configurable<std::string> lutPr{"lutPr", "inherit", "LUT for protons (if inherit, inherits from otf tracker task)"};
   } simConfig;
 
   struct : ConfigurableGroup {
@@ -151,47 +148,27 @@ struct OnTheFlyTofPid {
       LOG(info) << "Bz = " << simConfig.magneticField.value << " T";
     }
 
-    // Check if inheriting the LUT configuration
-    auto configLutPath = [&](Configurable<std::string>& lut) {
-      if (lut.value != "inherit") {
-        return;
-      }
-      if (!getTaskOptionValue(initContext, "on-the-fly-tracker", lut, false)) {
-        LOG(fatal) << "Could not get " << lut.name << " from on-the-fly-tracker task";
-      }
-    };
-    configLutPath(simConfig.lutEl);
-    configLutPath(simConfig.lutMu);
-    configLutPath(simConfig.lutPi);
-    configLutPath(simConfig.lutKa);
-    configLutPath(simConfig.lutPr);
-
     // Load LUT for pt and eta smearing
     if (simConfig.flagIncludeTrackTimeRes && simConfig.flagTOFLoadDelphesLUTs) {
-      std::map<int, const char*> mapPdgLut;
-      const char* lutElChar = simConfig.lutEl->c_str();
-      const char* lutMuChar = simConfig.lutMu->c_str();
-      const char* lutPiChar = simConfig.lutPi->c_str();
-      const char* lutKaChar = simConfig.lutKa->c_str();
-      const char* lutPrChar = simConfig.lutPr->c_str();
-
-      LOGF(info, "Will load electron lut file ..: %s for TOF PID", lutElChar);
-      LOGF(info, "Will load muon lut file ......: %s for TOF PID", lutMuChar);
-      LOGF(info, "Will load pion lut file ......: %s for TOF PID", lutPiChar);
-      LOGF(info, "Will load kaon lut file ......: %s for TOF PID", lutKaChar);
-      LOGF(info, "Will load proton lut file ....: %s for TOF PID", lutPrChar);
-
-      mapPdgLut.insert(std::make_pair(11, lutElChar));
-      mapPdgLut.insert(std::make_pair(13, lutMuChar));
-      mapPdgLut.insert(std::make_pair(211, lutPiChar));
-      mapPdgLut.insert(std::make_pair(321, lutKaChar));
-      mapPdgLut.insert(std::make_pair(2212, lutPrChar));
-
-      for (const auto& e : mapPdgLut) {
-        if (!mSmearer.loadTable(e.first, e.second)) {
-          LOG(fatal) << "Having issue with loading the LUT " << e.first << " " << e.second;
+      mSmearer.setCcdbManager(ccdb.operator->());
+      auto loadLUT = [&](int pdg, const std::string& cfgNameToInherit) {
+        std::string lut = "none";
+        if (!getTaskOptionValue(initContext, "on-the-fly-tracker", cfgNameToInherit, lut, false)) {
+          LOG(fatal) << "Could not get " << cfgNameToInherit << " from on-the-fly-tracker task";
         }
-      }
+        bool success = mSmearer.loadTable(pdg, lut.c_str());
+        if (!success && !lut.empty()) {
+          LOG(fatal) << "Having issue with loading the LUT " << pdg << " " << lut;
+        }
+      };
+      loadLUT(11, "lutEl");
+      loadLUT(13, "lutMu");
+      loadLUT(211, "lutPi");
+      loadLUT(321, "lutKa");
+      loadLUT(2212, "lutPr");
+      loadLUT(1000010020, "lutDe");
+      loadLUT(1000010030, "lutTr");
+      loadLUT(1000020030, "lutHe3");
     }
 
     if (plotsConfig.doQAplots) {
