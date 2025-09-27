@@ -18,7 +18,6 @@
 /// \author Nida Malik <nida.malik@cern.ch>
 #include "PWGCF/Core/CorrelationContainer.h"
 #include "PWGCF/Core/PairCuts.h"
-#include <vector> // Include for std::vector
 
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
@@ -29,25 +28,7 @@
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/trackUtilities.h"
-#include "Common/CCDB/EventSelectionParams.h"
-#include "Common/Core/TrackSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/Centrality.h"
-#include "CommonConstants/MathConstants.h"
-#include "Common/DataModel/FT0Corrected.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
-#include "Common/CCDB/TriggerAliases.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "CommonConstants/PhysicsConstants.h"
-#include "TProfile.h"
-#include "TProfile2D.h"
-#include "TRandom3.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/MathConstants.h"
@@ -927,50 +908,50 @@ struct NetchargeFluctuations {
       calculationDeltaEta<kRun2>(coll, tracks, etaMin, etaMax);
     }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processDataRun2, "Process for Run2 DATA", false);
+    PROCESS_SWITCH(NetchargeFluctuations, processDataRun2, "Process for Run2 DATA", false);
 
-  // process function for MC Run3
+    // process function for MC Run3
 
-  void processMcRun3(aod::MyMCCollisionRun3 const& coll, aod::MyMCTracks const& inputTracks,
-                     aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
-  {
-    calculationMc<kRun3>(coll, inputTracks, mcCollisions, mcParticles);
-    for (int ii = 0; ii < deltaEta; ii++) {
-      float etaMin = -0.1f * (ii + 1);
-      float etaMax = 0.1f * (ii + 1);
-      calculationMcDeltaEta<kRun3>(coll, inputTracks, mcCollisions, mcParticles, etaMin, etaMax);
+    void processMcRun3(aod::MyMCCollisionRun3 const& coll, aod::MyMCTracks const& inputTracks,
+                       aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+    {
+      calculationMc<kRun3>(coll, inputTracks, mcCollisions, mcParticles);
+      for (int ii = 0; ii < deltaEta; ii++) {
+        float etaMin = -0.1f * (ii + 1);
+        float etaMax = 0.1f * (ii + 1);
+        calculationMcDeltaEta<kRun3>(coll, inputTracks, mcCollisions, mcParticles, etaMin, etaMax);
+      }
     }
-  }
-  PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", true);
+    PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", true);
 
-  // process function for MC Run2
-  void processMcRun3(aod::MyMCCollisionRun3 const& coll, aod::MyMCTracks const& inputTracks,
-                     aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
-  {
-    histosMcRecoGen<kRun3>(coll, inputTracks, mcCollisions, mcParticles);
-  }
-
-  PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", true);
-
-  void processMcRun2(aod::MyMCCollisionRun2 const& coll, aod::MyMCTracks const& inputTracks,
-                     aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
-  {
-    calculationMc<kRun2>(coll, inputTracks, mcCollisions, mcParticles);
-    for (int ii = 0; ii < deltaEta; ii++) {
-      float etaMin = -0.1f * (ii + 1);
-      float etaMax = 0.1f * (ii + 1);
-      calculationMcDeltaEta<kRun2>(coll, inputTracks, mcCollisions, mcParticles, etaMin, etaMax);
+    // process function for MC Run2
+    void processMcRun3(aod::MyMCCollisionRun3 const& coll, aod::MyMCTracks const& inputTracks,
+                       aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+    {
+      histosMcRecoGen<kRun3>(coll, inputTracks, mcCollisions, mcParticles);
     }
-  }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processMcRun2, "Process reconstructed", false);
-};
+    PROCESS_SWITCH(NetchargeFluctuations, processMcRun3, "Process reconstructed", true);
 
-// struct
-WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
-{
-  return WorkflowSpec{
-    {adaptAnalysisTask<NetchargeFluctuations>(cfgc)}};
+    void processMcRun2(aod::MyMCCollisionRun2 const& coll, aod::MyMCTracks const& inputTracks,
+                       aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+    {
+      calculationMc<kRun2>(coll, inputTracks, mcCollisions, mcParticles);
+      for (int ii = 0; ii < deltaEta; ii++) {
+        float etaMin = -0.1f * (ii + 1);
+        float etaMax = 0.1f * (ii + 1);
+        calculationMcDeltaEta<kRun2>(coll, inputTracks, mcCollisions, mcParticles, etaMin, etaMax);
+      }
+    }
+
+    PROCESS_SWITCH(NetchargeFluctuations, processMcRun2, "Process reconstructed", false);
+  };
+
+  // struct
+  WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
+  {
+    return WorkflowSpec{
+      {adaptAnalysisTask<NetchargeFluctuations>(cfgc)}};
     histosMcRecoGen<kRun2>(coll, inputTracks, mcCollisions, mcParticles);
   }
 
