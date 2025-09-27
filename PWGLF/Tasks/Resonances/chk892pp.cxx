@@ -693,7 +693,6 @@ struct Chk892pp {
 
   std::unordered_set<int64_t> allowedMcIds;
   std::unordered_map<int64_t, float> centByMcIds;
-  float RapidityMaxKstar = 0.5;
 
   void buildAllowedMcIds(MCEventCandidates const& events)
   {
