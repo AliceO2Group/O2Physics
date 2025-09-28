@@ -48,7 +48,7 @@ class TListHandler
   struct HistName {
     // ctor for histogram names that are already hashed at compile time via HIST("myHistName")
     template <char... chars>
-    constexpr HistName(const ConstStr<chars...>& hashedHistName);
+    constexpr HistName(const ConstStr<chars...>& hashedHistName); // NOLINT(runtime/explicit)
     char const* const str{};
     const uint32_t hash{};
     const uint32_t idx{};
@@ -56,7 +56,7 @@ class TListHandler
    protected:
     friend class TListHandler;
     // ctor that does the hashing at runtime (for internal use only)
-    constexpr HistName(char const* const name);
+    constexpr HistName(char const* const name); // NOLINT(runtime/explicit)
   };
 
  public:
