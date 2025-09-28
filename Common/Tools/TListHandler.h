@@ -41,7 +41,7 @@ namespace o2::framework
 // Many methods/definitions/parts of code are taken from HistogramRegisty.h and HistogramRegistry.cxx
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
-//ToDo :: create templated class to keep the BitMask modifiable and declrable at compile time. // template <uint32_t BitMask>
+// ToDo :: create templated class to keep the BitMask modifiable and declrable at compile time. // template <uint32_t BitMask>
 class TListHandler
 {
 
