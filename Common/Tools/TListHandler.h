@@ -399,7 +399,7 @@ void TListHandler::insertInNestedTList(const std::string& name, const HistPtr hi
     }
 
     TNamed* rawPtrToObj = nullptr;
-    std::visit([&](const auto& sharedPtr) { rawPtrToObj = static_cast<TNamed*>(sharedPtr.get()); }, tObj);
+    std::visit([&](const auto& sharedPtr) { rawPtrToObj = (TNamed*)sharedPtr.get(); }, tObj);
     rawPtrToObj->SetName(histName.c_str());
   }
 
@@ -426,7 +426,7 @@ uint32_t TListHandler::performRobinhoodSwapAndGetIndex(const uint32_t histSpecHa
 {
   const uint32_t idx = imask(histSpecHash);
   uint32_t swappedHash = 0;
-  HistPtr swappedPtr; // is place of std::remove_reference_t<decltype(mTListValue[0])> swappedPtr = nullptr;
+  HistPtr swappedPtr; // in place of std::remove_reference_t<decltype(mTListValue[0])> swappedPtr = nullptr;
   uint32_t pos = 0;
   uint32_t returnPos = kMaxTListSize;
   for (auto i = 0u; i < kMaxTListSize; ++i) {
