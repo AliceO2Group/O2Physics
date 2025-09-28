@@ -138,7 +138,8 @@ enum TrkSel {
   trkSelPt,
   trkSelDCA,
   trkNRowsTPC,
-  trkSelNCls,
+  trkSelNClsFound,
+  trkSelNClsPID,
   trkSelTPCBndr,
   nTrkSel
 };
@@ -148,6 +149,7 @@ enum V0Sel {
   v0SelEta,
   v0SelDaughters,
   v0SelTPCnClsFound,
+  v0SelTPCnClsPID,
   v0SelRejectV0sAtTPCSector,
   v0SelRejectSameSign,
   v0SelDCAv0daughter,
@@ -277,7 +279,9 @@ struct FlattenictyPikp {
     Configurable<float> cfgTrkEtaMax{"cfgTrkEtaMax", 0.8f, "Eta range for tracks"};
     Configurable<float> cfgRapMax{"cfgRapMax", 0.5f, "Maximum range of rapidity for tracks"};
     Configurable<float> cfgTrkPtMin{"cfgTrkPtMin", 0.15f, "Minimum pT of tracks"};
-    Configurable<float> cfgNclTPCMin{"cfgNclTPCMin", 100.0f, "Minimum of number of TPC clusters"};
+    Configurable<float> cfgNclTPCMin{"cfgNclTPCMin", 80.0f, "Minimum of number of TPC found clusters"};
+    Configurable<bool> cfgApplyNclPID{"cfgApplyNclPID", true, "Apply cut on TPC PID clusters"};
+    Configurable<float> cfgNclPidTPCMin{"cfgNclPidTPCMin", 130.0f, "Minimum of number of TPC PID clusters"};
     Configurable<float> cfgPhiCutPtMin{"cfgPhiCutPtMin", 2.0f, "Minimum pT for phi cut"};
     Configurable<float> cfgTOFBetaPion{"cfgTOFBetaPion", 1.0f, "Minimum beta for TOF pions"};
     Configurable<float> cfgTofBetaPiMax{"cfgTofBetaPiMax", 5E-5, "Maximum beta for TOF pion selection"};
@@ -309,7 +313,9 @@ struct FlattenictyPikp {
     ConfigurableAxis axisArmPodqT{"axisArmPodqT", {600, 0.0f, 0.3f}, "Armenteros-Podolanski qT"};
     // standad parameters for V0 selection
     Configurable<float> cfgV0etamax{"cfgV0etamax", 0.8f, "max eta of V0s"};
-    Configurable<float> cfgTPCnClsmin{"cfgTPCnClsmin", 70.0f, "cfgTPCnClsmin"};
+    Configurable<float> cfgTPCnClsmin{"cfgTPCnClsmin", 80.0f, "Minimum of number of TPC found clusters"};
+    Configurable<bool> cfgApplyV0sNclPID{"cfgApplyV0sNclPID", true, "Apply cut on TPC PID clusters"};
+    Configurable<float> cfgTPCnClsPidmin{"cfgTPCnClsPidmin", 130.0f, "Minimum of number of TPC PID clusters"};
     Configurable<float> cfgDCAv0daughter{"cfgDCAv0daughter", 1.0, "max DCA of V0 daughter tracks (cm)"};
     Configurable<float> cfgv0cospa{"cfgv0cospa", 0.995, "min V0 CosPA"};
     Configurable<float> cfgDCAposToPV{"cfgDCAposToPV", 0.05f, "min DCA Pos To PV (cm)"};
@@ -509,7 +515,8 @@ struct FlattenictyPikp {
     flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelPt + 1, "Pt");
     flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelDCA + 1, "DCA");
     flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkNRowsTPC + 1, "trkNRowsTPC");
-    flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNCls + 1, "NClsTPC");
+    flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNClsFound + 1, "NClsTPCFound");
+    flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelNClsPID + 1, "NClsTPCPid");
     flatchrg.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelTPCBndr + 1, "TPC Boundary");
     // V0 counter
     flatchrg.add("Tracks/V0qa/hV0Sel", "Number of V0s; Cut; #Tracks Passed Cut", {kTH1F, {{nV0Sel + 1, 0, nV0Sel + 1}}});
@@ -517,6 +524,7 @@ struct FlattenictyPikp {
     flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelEta + 1, "Eta");
     flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelDaughters + 1, "V0 daughters' sel.");
     flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelTPCnClsFound + 1, "TPC nCls found");
+    flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelTPCnClsPID + 1, "TPC nCls PID");
     flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelRejectV0sAtTPCSector + 1, "Reject V0s at TPC sector");
     flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelRejectSameSign + 1, "Reject same sign");
     flatchrg.get<TH1>(HIST("Tracks/V0qa/hV0Sel"))->GetXaxis()->SetBinLabel(v0SelDCAv0daughter + 1, "DCA v0 daughter");
@@ -544,18 +552,24 @@ struct FlattenictyPikp {
           flatchrg.add("Tracks/postSel/hDCAZvsPt", "", kTH2F, {ptAxis, dcaZAxis});
           // tpc
           if (cfgStoreThnSparse) {
-            flatchrg.add("Tracks/postSel/hPtPhiTPCCluster", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9); N_{cluster}", {kTHnSparseF, {ptAxis, phiAxisMod, clTpcAxis}});
+            flatchrg.add("Tracks/postSel/hPtPhiNclTPC", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9); N_{cluster}", {kTHnSparseF, {ptAxis, phiAxisMod, clTpcAxis}});
+            flatchrg.add("Tracks/postSel/hPtPhiNclPIDTPC", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9); N_{PID cluster}", {kTHnSparseF, {ptAxis, phiAxisMod, clTpcAxis}});
           } else {
-            flatchrg.add("Tracks/postSel/hPtPhiTPCCluster", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9); N_{cluster}", {kTH2F, {ptAxis, phiAxisMod}});
+            flatchrg.add("Tracks/postSel/hPtPhiNclTPC", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9); N_{cluster}", {kTH3F, {ptAxis, phiAxisMod, clTpcAxis}});
+            flatchrg.add("Tracks/postSel/hPtPhiNclPIDTPC", "; #it{p}_{T} (GeV/#it{c}); fmod(#varphi,#pi/9); N_{PID cluster}", {kTH3F, {ptAxis, phiAxisMod, clTpcAxis}});
           }
+          flatchrg.add("Tracks/postSel/hPtNclTPC", "; #it{p}_{T} (GeV/#it{c}); N_{cluster}", {kTH2F, {ptAxis, clTpcAxis}});
+          flatchrg.add("Tracks/postSel/pPtNclTPC", "; #it{p}_{T} (GeV/#it{c}); N_{cluster}", {kTProfile, {ptAxis}});
+          flatchrg.add("Tracks/postSel/hPtNclPIDTPC", "; #it{p}_{T} (GeV/#it{c}); N_{PID cluster}", {kTH2F, {ptAxis, clTpcAxis}});
+          flatchrg.add("Tracks/postSel/pPtNclPIDTPC", "; #it{p}_{T} (GeV/#it{c}); N_{PID cluster}", {kTProfile, {ptAxis}});
           flatchrg.add("Tracks/postSel/hShTpcClvsPt", "", {kTH2F, {ptAxis, shCluserAxis}});
-          flatchrg.add("Tracks/postSel/hCrossTPCvsPt", "", {kTH2F, {ptAxis, clTpcAxis}});
+          flatchrg.add("Tracks/postSel/hNclTPCFoundvsPt", "", {kTH2F, {ptAxis, clTpcAxis}});
           flatchrg.add("Tracks/postSel/hTPCCluster", "N_{cluster}", kTH1F, {clTpcAxis});
-          flatchrg.add("Tracks/postSel/tpcNClsShared", " ; # shared TPC clusters TPC", kTH1F, {{165, -0.5, 164.5}});
-          flatchrg.add("Tracks/postSel/tpcCrossedRows", " ; # crossed TPC rows", kTH1F, {{165, -0.5, 164.5}});
-          flatchrg.add("Tracks/postSel/tpcCrossedRowsOverFindableCls", " ; crossed rows / findable TPC clusters", kTH1F, {{60, 0.7, 1.3}});
+          flatchrg.add("Tracks/postSel/hTPCnClsShared", " ; # shared TPC clusters TPC", kTH1F, {{165, -0.5, 164.5}});
+          flatchrg.add("Tracks/postSel/hTPCcrossedRows", " ; # crossed TPC rows", kTH1F, {{165, -0.5, 164.5}});
+          flatchrg.add("Tracks/postSel/hTPCcrossedRowsOverFindableCls", " ; crossed rows / findable TPC clusters", kTH1F, {{60, 0.7, 1.3}});
           // its
-          flatchrg.add("Tracks/postSel/itsNCls", " ; # ITS clusters", kTH1F, {{8, -0.5, 7.5}});
+          flatchrg.add("Tracks/postSel/hITSnCls", " ; # ITS clusters", kTH1F, {{8, -0.5, 7.5}});
           flatchrg.add("Tracks/postSel/hChi2ITSTrkSegment", "chi2ITS", kTH1F, {{100, -0.5, 99.5}});
           // tof
           flatchrg.add("Tracks/postSel/hTOFPvsBeta", "Beta from TOF; #it{p} (GeV/#it{c}); #beta", {kTH2F, {pAxis, {120, 0.0, 1.2}}});
@@ -640,13 +654,13 @@ struct FlattenictyPikp {
           flatchrg.add({"Tracks/CleanV0/pos/hPiV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
           flatchrg.add({"Tracks/CleanV0/pos/hPV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTHnSparseF, {etaAxis, multAxis, flatAxis, pAxis, dEdxAxis}}});
         } else {
-          flatchrg.add("Tracks/CleanTof/all/hBetaVsP", ";Momentum (GeV/#it{c}); #beta", kTH2F, {{{ptAxisV0s}, {120, 0., 1.2}}});
-          flatchrg.add("Tracks/CleanTof/all/hTofExpPi", ";Momentum (GeV/#it{c});#it{t}^{#pi}_{Exp}/#it{t}_{TOF}", kTH2F, {{{ptAxisV0s}, {100, 0.2, 1.2}}});
           flatchrg.add({"Tracks/CleanTof/all/hPiTof", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTH3F, {etaAxis, pAxis, dEdxAxis}}});
           flatchrg.add({"Tracks/CleanV0/pos/hEV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTH3F, {etaAxis, pAxis, dEdxAxis}}});
           flatchrg.add({"Tracks/CleanV0/pos/hPiV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTH3F, {etaAxis, pAxis, dEdxAxis}}});
           flatchrg.add({"Tracks/CleanV0/pos/hPV0", "; #eta; mult; flat; #it{p} (GeV/#it{c}); dEdx", {kTH3F, {etaAxis, pAxis, dEdxAxis}}});
         }
+        flatchrg.add("Tracks/CleanTof/all/hBetaVsP", ";Momentum (GeV/#it{c}); #beta", kTH2F, {{{ptAxisV0s}, {120, 0., 1.2}}});
+        flatchrg.add("Tracks/CleanTof/all/hTofExpPi", ";Momentum (GeV/#it{c});#it{t}^{#pi}_{Exp}/#it{t}_{TOF}", kTH2F, {{{ptAxisV0s}, {100, 0.2, 1.2}}});
         flatchrg.addClone("Tracks/CleanV0/pos/", "Tracks/CleanV0/neg/");
         if (cfgFillChrgType) {
           flatchrg.addClone("Tracks/CleanTof/all/", "Tracks/CleanTof/pos/");
@@ -879,9 +893,9 @@ struct FlattenictyPikp {
       const float trkLength = track.length();
       const float tExpPiTOF = track.tofExpSignalPi(tTOF);
       if (track.p() >= trkSelOpt.cfgMomSelPiTOF && trkLength > kNull && tTOF > kNull) {
-        flatchrg.fill(HIST(kPrefixCleanTof) + HIST(kCharge[kAll]) + HIST("hTofExpPi"), track.p(), tExpPiTOF / tTOF);
+        flatchrg.fill(HIST(kPrefixCleanTof) + HIST(kCharge[chrg]) + HIST("hTofExpPi"), track.p(), tExpPiTOF / tTOF);
         if (std::abs((tExpPiTOF / tTOF) - kOne) < trkSelOpt.cfgTofBetaPiMax) {
-          flatchrg.fill(HIST(kPrefixCleanTof) + HIST(kCharge[kAll]) + HIST("hBetaVsP"), track.p(), track.beta());
+          flatchrg.fill(HIST(kPrefixCleanTof) + HIST(kCharge[chrg]) + HIST("hBetaVsP"), track.p(), track.beta());
           // if (std::abs(track.tpcNSigmaPi()) < v0SelOpt.cfgNsigmaPiTPC && std::abs(track.tofNSigmaPi()) < v0SelOpt.cfgNsigmaPiTOF) {
           return true;
           // }
@@ -1138,9 +1152,15 @@ struct FlattenictyPikp {
       flatchrg.fill(HIST("Tracks/preSel/hPtPhi"), track.pt(), phimodn);
       if (track.hasTPC() && track.hasITS()) {
         if (cfgStoreThnSparse) {
-          flatchrg.fill(HIST("Tracks/preSel/hPtPhiTPCCluster"), track.pt(), phimodn, track.tpcNClsFindable() - track.tpcNClsFindableMinusFound());
+          flatchrg.fill(HIST("Tracks/preSel/hPtPhiNclTPC"), track.pt(), phimodn, track.tpcNClsFound());
+          flatchrg.fill(HIST("Tracks/preSel/hPtPhiNclPIDTPC"), track.pt(), phimodn, track.tpcNClsPID());
         } else {
-          flatchrg.fill(HIST("Tracks/preSel/hPtPhiTPCCluster"), track.pt(), phimodn);
+          flatchrg.fill(HIST("Tracks/preSel/hPtPhiNclTPC"), track.pt(), phimodn, track.tpcNClsFound());
+          flatchrg.fill(HIST("Tracks/preSel/hPtNclTPC"), track.pt(), track.tpcNClsFound());
+          flatchrg.fill(HIST("Tracks/preSel/pPtNclTPC"), track.pt(), track.tpcNClsFound());
+          flatchrg.fill(HIST("Tracks/preSel/hPtPhiNclPIDTPC"), track.pt(), phimodn, track.tpcNClsPID());
+          flatchrg.fill(HIST("Tracks/preSel/hPtNclPIDTPC"), track.pt(), track.tpcNClsPID());
+          flatchrg.fill(HIST("Tracks/preSel/pPtNclPIDTPC"), track.pt(), track.tpcNClsPID());
         }
       }
     }
@@ -1151,9 +1171,15 @@ struct FlattenictyPikp {
       flatchrg.fill(HIST("Tracks/postSel/hPtPhi"), track.pt(), phimodn);
       if (track.hasTPC() && track.hasITS()) {
         if (cfgStoreThnSparse) {
-          flatchrg.fill(HIST("Tracks/postSel/hPtPhiTPCCluster"), track.pt(), phimodn, track.tpcNClsFindable() - track.tpcNClsFindableMinusFound());
+          flatchrg.fill(HIST("Tracks/postSel/hPtPhiNclTPC"), track.pt(), phimodn, track.tpcNClsFound());
+          flatchrg.fill(HIST("Tracks/postSel/hPtPhiNclPIDTPC"), track.pt(), phimodn, track.tpcNClsPID());
         } else {
-          flatchrg.fill(HIST("Tracks/postSel/hPtPhiTPCCluster"), track.pt(), phimodn);
+          flatchrg.fill(HIST("Tracks/postSel/hPtPhiNclTPC"), track.pt(), phimodn, track.tpcNClsFound());
+          flatchrg.fill(HIST("Tracks/postSel/hPtNclTPC"), track.pt(), track.tpcNClsFound());
+          flatchrg.fill(HIST("Tracks/postSel/pPtNclTPC"), track.pt(), track.tpcNClsFound());
+          flatchrg.fill(HIST("Tracks/postSel/hPtPhiNclPIDTPC"), track.pt(), phimodn, track.tpcNClsPID());
+          flatchrg.fill(HIST("Tracks/postSel/hPtNclPIDTPC"), track.pt(), track.tpcNClsPID());
+          flatchrg.fill(HIST("Tracks/postSel/pPtNclPIDTPC"), track.pt(), track.tpcNClsPID());
         }
       }
     }
@@ -1180,11 +1206,15 @@ struct FlattenictyPikp {
       return false;
     }
     flatchrg.fill(HIST("Tracks/hTrkSel"), trkNRowsTPC);
-    auto nClusterTPC = track.tpcNClsFindable() - track.tpcNClsFindableMinusFound();
-    if (nClusterTPC < trkSelOpt.cfgNclTPCMin) {
+    if (track.tpcNClsFound() < trkSelOpt.cfgNclTPCMin) {
       return false;
     }
-    flatchrg.fill(HIST("Tracks/hTrkSel"), trkSelNCls);
+    flatchrg.fill(HIST("Tracks/hTrkSel"), trkSelNClsFound);
+
+    if (trkSelOpt.cfgApplyNclPID && track.tpcNClsPID() < trkSelOpt.cfgNclPidTPCMin) {
+      return false;
+    }
+    flatchrg.fill(HIST("Tracks/hTrkSel"), trkSelNClsPID);
     if (trkSelOpt.cfgRejectTrkAtTPCSector && !phiCut(track, magfield, fPhiCutLow, fPhiCutHigh)) {
       return false;
     }
@@ -1306,6 +1336,13 @@ struct FlattenictyPikp {
       return false;
     }
     flatchrg.fill(HIST("Tracks/V0qa/hV0Sel"), v0SelTPCnClsFound);
+
+    if (v0SelOpt.cfgApplyV0sNclPID) {
+      if (posTrack.tpcNClsPID() < v0SelOpt.cfgTPCnClsPidmin || negTrack.tpcNClsPID() < v0SelOpt.cfgTPCnClsPidmin) {
+        return false;
+      }
+    }
+    flatchrg.fill(HIST("Tracks/V0qa/hV0Sel"), v0SelTPCnClsPID);
     if (v0SelOpt.cfgRejectV0sAtTPCSector) {
       if (!(phiCut(posTrack, magfield, fPhiCutLow, fPhiCutHigh) && phiCut(negTrack, magfield, fPhiCutLow, fPhiCutHigh))) {
         return false;
@@ -1409,17 +1446,15 @@ struct FlattenictyPikp {
       flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hDCAZvsPt"), track.pt(), track.dcaZ());
 
       if (track.hasTPC() && track.hasITS()) {
-        int nFindable = track.tpcNClsFindable();
-        int nMinusFound = track.tpcNClsFindableMinusFound();
-        int nCluster = nFindable - nMinusFound;
-        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hTPCCluster"), nCluster);
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hTPCCluster"), track.tpcNClsFindable() - track.tpcNClsFindableMinusFound());
         flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hShTpcClvsPt"), track.pt(), track.tpcFractionSharedCls());
-        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hCrossTPCvsPt"), track.pt(), track.tpcNClsFound());
-        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("tpcNClsShared"), track.tpcNClsShared());
-        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("tpcCrossedRows"), track.tpcNClsCrossedRows());
-        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("tpcCrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hNclTPCFoundvsPt"), track.pt(), track.tpcNClsFound());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hNClTPCPidvsPt"), track.pt(), track.tpcNClsPID());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hTPCnClsShared"), track.tpcNClsShared());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hTPCcrossedRows"), track.tpcNClsCrossedRows());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hTPCcrossedRowsOverFindableCls"), track.tpcCrossedRowsOverFindableCls());
         flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hChi2ITSTrkSegment"), track.itsChi2NCl());
-        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("itsNCls"), track.itsNCls());
+        flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hITSnCls"), track.itsNCls());
       }
 
       flatchrg.fill(HIST(kPrefix) + HIST(kStatus[ft]) + HIST("hTOFPvsBeta"), track.tpcInnerParam(), track.beta());
@@ -1441,7 +1476,6 @@ struct FlattenictyPikp {
   {
     const float mult = getMult(collision);
     const float flat = fillFlat<false>(collision);
-    // float dEdx = track.tpcSignal();
     if constexpr (fillHist) {
       if (track.tpcInnerParam() >= trkSelOpt.cfgMomMIPMin && track.tpcInnerParam() <= trkSelOpt.cfgMomMIPMax) {
         if (dEdx > trkSelOpt.cfgDeDxMIPMin && dEdx < trkSelOpt.cfgDeDxMIPMax) { // MIP pions
