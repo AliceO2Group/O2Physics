@@ -131,8 +131,9 @@ struct Dilepton {
   // ConfigurableAxis ConfMmumuBins{"ConfMmumuBins", {VARIABLE_WIDTH, 0.20, 0.21, 0.22, 0.23, 0.24, 0.25, 0.26, 0.27, 0.28, 0.29, 0.30, 0.31, 0.32, 0.33, 0.34, 0.35, 0.36, 0.37, 0.38, 0.39, 0.40, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.50, 0.51, 0.52, 0.53, 0.54, 0.55, 0.56, 0.57, 0.58, 0.59, 0.60, 0.61, 0.62, 0.63, 0.64, 0.65, 0.66, 0.67, 0.68, 0.69, 0.70, 0.71, 0.72, 0.73, 0.74, 0.75, 0.76, 0.77, 0.78, 0.79, 0.80, 0.81, 0.82, 0.83, 0.84, 0.85, 0.86, 0.87, 0.88, 0.89, 0.90, 0.91, 0.92, 0.93, 0.94, 0.95, 0.96, 0.97, 0.98, 0.99, 1.00, 1.01, 1.02, 1.03, 1.04, 1.05, 1.06, 1.07, 1.08, 1.09, 1.10, 1.11,1.12,1.13,1.14,1.15,1.16,1.17,1.18,1.19, 1.20, 1.30, 1.40, 1.50, 1.60, 1.70, 1.80, 1.90, 2.00, 2.10, 2.20, 2.30, 2.40, 2.50, 2.60, 2.70, 2.75, 2.80, 2.85, 2.90, 2.95, 3.00, 3.05, 3.10, 3.15, 3.20, 3.25, 3.30, 3.35, 3.40, 3.45, 3.50, 3.55, 3.60, 3.65, 3.70, 3.75, 3.80, 3.85, 3.90, 3.95, 4.00, 4.10, 4.20, 4.30, 4.40, 4.50, 4.60, 4.70, 4.80, 4.90, 5.00, 5.10, 5.20, 5.30, 5.40, 5.50, 5.60, 5.70, 5.80, 5.90, 6.00, 6.10, 6.20, 6.30, 6.40, 6.50, 6.60, 6.70, 6.80, 6.90, 7.00, 7.10, 7.20, 7.30, 7.40, 7.50, 7.60, 7.70, 7.80, 7.90, 8.00, 8.10, 8.20, 8.30, 8.40, 8.50, 8.60, 8.70, 8.80, 8.90, 9.00, 9.10, 9.20, 9.30, 9.40, 9.50, 9.60, 9.70, 9.80, 9.90, 10.00, 10.10, 10.20, 10.30, 10.40, 10.50, 10.60, 10.70, 10.80, 10.90, 11.00, 11.50, 12.00}, "mmumu bins for output histograms"}; // for dimuon. one can copy bins here to hyperloop page.
 
   ConfigurableAxis ConfSPBins{"ConfSPBins", {200, -5, 5}, "SP bins for flow analysis"};
-  ConfigurableAxis ConfPolarizationPhiBins{"ConfPolarizationPhiBins", {6, 0.f, M_PI}, "phi bins for polarization analysis"};
-  ConfigurableAxis ConfPolarizationCosThetaBins{"ConfPolarizationCosThetaBins", {5, 0.f, 1.f}, "phi bins for polarization analysis"};
+  ConfigurableAxis ConfPolarizationPhiBins{"ConfPolarizationPhiBins", {1, 0.f, 2 * M_PI}, "phi bins for polarization analysis"};
+  ConfigurableAxis ConfPolarizationCosThetaBins{"ConfPolarizationCosThetaBins", {20, -1.f, 1.f}, "cos(theta) bins for polarization analysis"};
+  ConfigurableAxis ConfPolarizationQuadMomBins{"ConfPolarizationQuadMomBins", {15, -0.5, 1}, "quadrupole moment bins for polarization analysis"}; // quardrupole moment <(3 x cos^2(theta) -1)/2>
 
   EMEventCut fEMEventCut;
   struct : ConfigurableGroup {
@@ -612,7 +613,8 @@ struct Dilepton {
 
       const AxisSpec axis_cos_theta{ConfPolarizationCosThetaBins, Form("|cos(#theta^{%s})|", frameName.data())};
       const AxisSpec axis_phi{ConfPolarizationPhiBins, Form("|#varphi^{%s}| (rad.)", frameName.data())};
-      fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_cos_theta, axis_phi}, true);
+      const AxisSpec axis_quadmom{ConfPolarizationQuadMomBins, Form("#frac{3 cos^{2}(#theta^{%s}) -1}{2}", frameName.data())};
+      fRegistry.add("Pair/same/uls/hs", "dilepton", kTHnSparseD, {axis_mass, axis_pt, axis_dca, axis_y, axis_cos_theta, axis_phi, axis_quadmom}, true);
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lspp/");
       fRegistry.addClone("Pair/same/uls/", "Pair/same/lsmm/");
       fRegistry.addClone("Pair/same/", "Pair/mix/");
@@ -979,14 +981,14 @@ struct Dilepton {
       } else if (cfgPolarizationFrame == 1) {
         o2::aod::pwgem::dilepton::utils::pairutil::getAngleHX(std::array<float, 4>{t1.px(), t1.py(), t1.pz(), leptonM1}, std::array<float, 4>{t2.px(), t2.py(), t2.pz(), leptonM2}, beamE1, beamE2, beamP1, beamP2, t1.sign(), cos_thetaPol, phiPol);
       }
-      o2::math_utils::bringToPMPi(phiPol);
+      o2::math_utils::bringTo02Pi(phiPol);
 
       if (t1.sign() * t2.sign() < 0) { // ULS
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), aco, asym, std::fabs(dphi_e_ee), std::fabs(cos_thetaPol), weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), aco, asym, std::fabs(dphi_e_ee), cos_thetaPol, weight);
       } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), aco, asym, std::fabs(dphi_e_ee), std::fabs(cos_thetaPol), weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), aco, asym, std::fabs(dphi_e_ee), cos_thetaPol, weight);
       } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), aco, asym, std::fabs(dphi_e_ee), std::fabs(cos_thetaPol), weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), aco, asym, std::fabs(dphi_e_ee), cos_thetaPol, weight);
       }
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV2) || cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kFlowV3)) {
       std::array<float, 2> q2ft0m = {collision.q2xft0m(), collision.q2yft0m()};
@@ -1036,14 +1038,15 @@ struct Dilepton {
       } else if (cfgPolarizationFrame == 1) {
         o2::aod::pwgem::dilepton::utils::pairutil::getAngleHX(std::array<float, 4>{t1.px(), t1.py(), t1.pz(), leptonM1}, std::array<float, 4>{t2.px(), t2.py(), t2.pz(), leptonM2}, beamE1, beamE2, beamP1, beamP2, t1.sign(), cos_thetaPol, phiPol);
       }
-      o2::math_utils::bringToPMPi(phiPol);
+      o2::math_utils::bringTo02Pi(phiPol);
+      float quadmom = (3.f * std::pow(cos_thetaPol, 2) - 1.f) / 2.f;
 
       if (t1.sign() * t2.sign() < 0) { // ULS
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), std::fabs(cos_thetaPol), std::fabs(phiPol), weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("uls/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), cos_thetaPol, phiPol, quadmom, weight);
       } else if (t1.sign() > 0 && t2.sign() > 0) { // LS++
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), std::fabs(cos_thetaPol), std::fabs(phiPol), weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lspp/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), cos_thetaPol, phiPol, quadmom, weight);
       } else if (t1.sign() < 0 && t2.sign() < 0) { // LS--
-        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), std::fabs(cos_thetaPol), std::fabs(phiPol), weight);
+        fRegistry.fill(HIST("Pair/") + HIST(event_pair_types[ev_id]) + HIST("lsmm/hs"), v12.M(), v12.Pt(), pair_dca, v12.Rapidity(), cos_thetaPol, phiPol, quadmom, weight);
       }
     } else if (cfgAnalysisType == static_cast<int>(o2::aod::pwgem::dilepton::utils::pairutil::DileptonAnalysisType::kHFll)) {
       float dphi = v1.Phi() - v2.Phi();
