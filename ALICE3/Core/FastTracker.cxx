@@ -22,7 +22,6 @@
 #include <TObject.h>
 
 #include <fstream>
-#include <map>
 #include <string>
 #include <vector>
 
@@ -33,7 +32,7 @@ namespace fastsim
 
 // +-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+-~-<*>-~-+
 
-void FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi, float resZ, float eff, int type)
+DetLayer* FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi, float resZ, float eff, int type)
 {
   LOG(debug) << "Adding layer " << name << " r=" << r << " z=" << z << " x0=" << x0 << " xrho=" << xrho << " resRPhi=" << resRPhi << " resZ=" << resZ << " eff=" << eff << " type=" << type;
   DetLayer newLayer(name, r, z, x0, xrho, resRPhi, resZ, eff, type);
@@ -53,6 +52,18 @@ void FastTracker::AddLayer(TString name, float r, float z, float x0, float xrho,
   }
   // Add the new layer to the layers vector
   layers.push_back(newLayer);
+  // Return the last added layer
+  return &layers.back();
+}
+
+void FastTracker::addDeadPhiRegionInLayer(const std::string& layerName, float phiStart, float phiEnd)
+{
+  const int layerIdx = GetLayerIndex(layerName);
+  if (layerIdx < 0) {
+    LOG(fatal) << "Cannot add dead phi region to non-existing layer " << layerName;
+    return;
+  }
+  layers[layerIdx].addDeadPhiRegion(phiStart, phiEnd);
 }
 
 DetLayer FastTracker::GetLayer(int layer, bool ignoreBarrelLayers) const
@@ -185,7 +196,7 @@ void FastTracker::AddSiliconALICE3(float scaleX0VD, std::vector<float> pixelReso
   AddLayer("B03", 7., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B04", 9., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B05", 12., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
-  AddLayer("iTOF", 19, 250, x0iTOF, xrhoiTOF, resRPhiOT, resZOT, 0.0f, 0);
+  AddLayer("iTOF", 19, 250, x0iTOF, xrhoiTOF, resRPhiOT, resZOT, eff, 0);
   AddLayer("B06", 20., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B07", 30., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
   AddLayer("B08", 45., 250, x0OT, xrhoOT, resRPhiOT, resZOT, eff, 1);
@@ -285,12 +296,15 @@ void FastTracker::AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBMa
   for (const auto& layer : layers) {
     LOG(info) << " Reading layer " << layer;
 
-    auto getKey = [&layer, &env](const std::string& name) {
+    auto getKey = [&layer, &env](const std::string& name, const bool required = true) {
       std::string key = layer + "." + name;
       if (!env.Defined(key.c_str())) {
-        LOG(warning) << "Key " << key << " not defined in configuration file, getting the default value";
+        if (required) {
+          LOG(fatal) << "Key " << key << " not defined in configuration file";
+        }
+        LOG(debug) << "Key " << key << " not defined in configuration file, getting the default value";
       }
-      LOG(info) << " Getting key " << key;
+      LOG(debug) << " Getting key " << key << " from configuration file";
       return key;
     };
     const float r = env.GetValue(getKey("r").c_str(), -1.0f);
@@ -302,9 +316,36 @@ void FastTracker::AddGenericDetector(std::string filename, o2::ccdb::BasicCCDBMa
     const float resZ = env.GetValue(getKey("resZ").c_str(), 0.0f);
     const float eff = env.GetValue(getKey("eff").c_str(), 0.0f);
     const int type = env.GetValue(getKey("type").c_str(), 0);
+    const char* deadPhiRegions = env.GetValue(getKey("deadPhiRegions", false).c_str(), "");
 
     // void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
-    AddLayer(layer.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
+    LOG(info) << " Adding layer " << layer << " r=" << r << " z=" << z << " x0=" << x0 << " xrho=" << xrho << " resRPhi=" << resRPhi << " resZ=" << resZ << " eff=" << eff << " type=" << type << " deadPhiRegions=" << deadPhiRegions;
+
+    DetLayer* addedLayer = AddLayer(layer.c_str(), r, z, x0, xrho, resRPhi, resZ, eff, type);
+    if (strlen(deadPhiRegions) > 0) { // Taking it as ccdb path or local file
+                                      // Check if it begins with ccdb:
+      if (std::string(deadPhiRegions).rfind("ccdb:", 0) == 0) {
+        std::string ccdbPath = std::string(deadPhiRegions).substr(5); // remove "ccdb:" prefix
+        if (ccdbManager == nullptr) {
+          LOG(fatal) << "CCDB manager is null, cannot retrieve file " << ccdbPath;
+          return;
+        }
+        TGraph* g = ccdbManager->getForTimeStamp<TGraph>(ccdbPath, -1);
+        addedLayer->setDeadPhiRegions(g);
+      } else {
+        // Taking it as local file
+        TFile infile(deadPhiRegions, "READ");
+        if (!infile.IsOpen()) {
+          LOG(fatal) << "Cannot open dead phi regions file " << deadPhiRegions;
+          return;
+        }
+        TGraph* g = (TGraph*)infile.Get(infile.GetListOfKeys()->At(0)->GetName());
+        infile.Close();
+        addedLayer->setDeadPhiRegions(g);
+      }
+    } else {
+      LOG(debug) << " No dead phi regions for layer " << layer;
+    }
   }
 }
 
@@ -491,6 +532,11 @@ int FastTracker::FastTrack(o2::track::TrackParCov inputTrack, o2::track::TrackPa
         LOG(info) << "Skipping inert layer: " << layers[il].getName() << " at radius " << layers[il].getRadius() << " cm";
       }
       continue; // inert layer, skip
+    }
+
+    if (layers[il].isInDeadPhiRegion(inputTrack.getPhi())) {
+      LOGF(debug, "Track is in dead region of layer %d", il);
+      continue; // dead region, skip
     }
 
     // layer is reached

@@ -916,9 +916,10 @@ class BuilderModule
             } // end TPC drift treatment
 
             // process candidate with helper, generate properties for consulting
-            // <false>: do not apply selections: do as much as possible to preserve
+            // first 'false' : do not apply selections: do as much as possible to preserve
+            // second 'false': do not calculate prong DCA to PV, unnecessary, costly if XIU = 83.1f
             // candidate at this level and do not select with topo selections
-            if (straHelper.buildV0Candidate<false>(v0tableGrouped[iV0].collisionIds[ic], collision.posX(), collision.posY(), collision.posZ(), pTrack, nTrack, posTrackPar, negTrackPar, true, false, true)) {
+            if (straHelper.buildV0Candidate<false, false>(v0tableGrouped[iV0].collisionIds[ic], collision.posX(), collision.posY(), collision.posZ(), pTrack, nTrack, posTrackPar, negTrackPar, true, false, true)) {
               // candidate built, check pointing angle
               if (straHelper.v0.pointingAngle < bestPointingAngle) {
                 bestPointingAngle = straHelper.v0.pointingAngle;
