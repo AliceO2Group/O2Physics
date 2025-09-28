@@ -41,14 +41,14 @@ namespace o2::framework
 // Many methods/definitions/parts of code are taken from HistogramRegisty.h and HistogramRegistry.cxx
 //--------------------------------------------------------------------------------------------------
 //--------------------------------------------------------------------------------------------------
-// template <uint32_t BitMask>
+//ToDo :: create templated class to keep the BitMask modifiable and declrable at compile time. // template <uint32_t BitMask>
 class TListHandler
 {
 
   struct HistName {
     // ctor for histogram names that are already hashed at compile time via HIST("myHistName")
     template <char... chars>
-    explicit constexpr HistName(const ConstStr<chars...>& hashedHistName);
+    constexpr HistName(const ConstStr<chars...>& hashedHistName);
     char const* const str{};
     const uint32_t hash{};
     const uint32_t idx{};
@@ -56,7 +56,7 @@ class TListHandler
    protected:
     friend class TListHandler;
     // ctor that does the hashing at runtime (for internal use only)
-    explicit constexpr HistName(char const* const name);
+    constexpr HistName(char const* const name);
   };
 
  public:
@@ -384,10 +384,10 @@ void TListHandler::insertInNestedTList(const std::string& name, const HistPtr hi
       TString dirPathT(dirPath.c_str());
       TObjArray* folders = dirPathT.Tokenize('/');
       for (int i = 0; i < folders->GetEntries(); ++i) {
-        TString subdir = reinterpret_cast<TObjString*>(folders->At(i))->GetString();
+        TString subdir = (static_cast<TObjString*>(folders->At(i)))->GetString();
         TObject* existingObj = parentList->FindObject(subdir);
         if (existingObj && existingObj->InheritsFrom(TList::Class())) {
-          subList = reinterpret_cast<TList*>(existingObj);
+          subList = static_cast<TList*>(existingObj);
         } else {
           subList = new TList();
           subList->SetName(subdir);
@@ -399,7 +399,7 @@ void TListHandler::insertInNestedTList(const std::string& name, const HistPtr hi
     }
 
     TNamed* rawPtrToObj = nullptr;
-    std::visit([&](const auto& sharedPtr) { rawPtrToObj = reinterpret_cast<TNamed*>(sharedPtr.get()); }, tObj);
+    std::visit([&](const auto& sharedPtr) { rawPtrToObj = (TNamed*)sharedPtr.get(); }, tObj);
     rawPtrToObj->SetName(histName.c_str());
   }
 
@@ -526,7 +526,7 @@ const TList* getRootSubList(TList* rootList, std::string dirPath)
     TString dirPathT(dirPath.c_str());
     TObjArray* folders = dirPathT.Tokenize('/');
     for (int i = 0; i < folders->GetEntries(); ++i) {
-      TString subdir = reinterpret_cast<TObjString*>(folders->At(i))->GetString();
+      TString subdir = (static_cast<TObjString*>(folders->At(i)))->GetString();
       TObject* existingObj = parentList->FindObject(subdir);
       if (existingObj && existingObj->InheritsFrom(TList::Class())) {
         parentList = static_cast<const TList*>(existingObj);
@@ -585,7 +585,7 @@ void TListHandler::addClone(const std::string& source, const std::string& target
       if (!sharedPtr.get()) {
         return;
       }
-      std::string sourceName{reinterpret_cast<TNamed*>(sharedPtr.get())->GetName()};
+      std::string sourceName{(static_cast<TNamed*>(sharedPtr.get()))->GetName()};
       // search for histograms starting with source_ substring
       if (sourceName.rfind(source, 0) == 0) {
         // when cloning groups of histograms source_ and target_ must end with "/"
@@ -628,7 +628,7 @@ double TListHandler::getSize(double fillFraction)
       if (hist) {
         size += HistFiller::getSize(hist, fillFraction);
       }
-    },
+     },
                mTListValue[j]);
   }
   return size;
