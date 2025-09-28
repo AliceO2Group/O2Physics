@@ -399,7 +399,7 @@ void TListHandler::insertInNestedTList(const std::string& name, const HistPtr hi
     }
 
     TNamed* rawPtrToObj = nullptr;
-    std::visit([&](const auto& sharedPtr) { rawPtrToObj = (TNamed*)sharedPtr.get(); }, tObj);
+    std::visit([&](const auto& sharedPtr) { rawPtrToObj = static_cast<TNamed*>(sharedPtr.get()); }, tObj);
     rawPtrToObj->SetName(histName.c_str());
   }
 
