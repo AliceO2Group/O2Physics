@@ -628,7 +628,7 @@ double TListHandler::getSize(double fillFraction)
       if (hist) {
         size += HistFiller::getSize(hist, fillFraction);
       }
-     },
+    },
                mTListValue[j]);
   }
   return size;
