@@ -992,10 +992,11 @@ struct TreeWriterTPCTOF {
   Produces<o2::aod::SkimmedTPCTOFTreeWithdEdxTrkQA> rowTPCTOFTreeWithdEdxTrkQA;
   Produces<o2::aod::SkimmedTPCTOFTreeWithTrkQA> rowTPCTOFTreeWithTrkQA;
 
-  constexpr static double MassElectorn{o2::track::pid_constants::sMasses[o2::track::PID::Electron]};
   constexpr static double MassPion{o2::track::pid_constants::sMasses[o2::track::PID::Pion]};
   constexpr static double MassKaon{o2::track::pid_constants::sMasses[o2::track::PID::Kaon]};
   constexpr static double MassProton{o2::track::pid_constants::sMasses[o2::track::PID::Proton]};
+  constexpr static double MassDeuteron{o2::track::pid_constants::sMasses[o2::track::PID::Deuteron]};
+  constexpr static double MassTriton{o2::track::pid_constants::sMasses[o2::track::PID::Triton]};
 
   /// Configurables
   Configurable<float> nClNorm{"nClNorm", 152., "Number of cluster normalization. Run 2: 159, Run 3 152"};
@@ -1266,15 +1267,15 @@ struct TreeWriterTPCTOF {
     rowTPCTOFTree.reserve(tracks.size());
     for (auto const& trk : tracks) {
       /// Fill tree for tritons
-      if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+      if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassTriton)) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
-      } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+      } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassTriton)) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
       }
       /// Fill tree for deuterons
-      if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+      if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassDeuteron)) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate);
-      } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+      } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassDeuteron)) {
         fillSkimmedTPCTOFTable(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate);
       }
       /// Fill tree for protons
@@ -1312,15 +1313,15 @@ struct TreeWriterTPCTOF {
     rowTPCTOFTree.reserve(tracks.size());
     for (auto const& trk : tracks) {
       /// Fill tree for tritons/*  */
-      if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+      if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassTriton)) {
         fillSkimmedTPCTOFTable<true>(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignalCorrected()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
-      } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+      } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassTriton)) {
         fillSkimmedTPCTOFTable<true>(trk, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignalCorrected()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
       }
       /// Fill tree for deuterons
-      if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+      if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassDeuteron)) {
         fillSkimmedTPCTOFTable<true>(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignalCorrected()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate);
-      } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+      } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassDeuteron)) {
         fillSkimmedTPCTOFTable<true>(trk, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignalCorrected()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate);
       }
       /// Fill tree for protons
@@ -1390,15 +1391,15 @@ struct TreeWriterTPCTOF {
           existTrkQA = false;
         }
         /// Fill tree for tritons
-        if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+        if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassTriton)) {
           fillSkimmedTPCTOFTableWithdEdxTrkQA(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.itsNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
-        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassTriton)) {
           fillSkimmedTPCTOFTableWithdEdxTrkQA(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.itsNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
         }
         /// Fill tree for deuterons
-        if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+        if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassDeuteron)) {
           fillSkimmedTPCTOFTableWithdEdxTrkQA(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.itsNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate);
-        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassDeuteron)) {
           fillSkimmedTPCTOFTableWithdEdxTrkQA(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.itsNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate);
         }
         /// Fill tree for protons
@@ -1469,15 +1470,15 @@ struct TreeWriterTPCTOF {
           existTrkQA = false;
         }
         /// Fill tree for tritons
-        if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+        if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassTriton)) {
           fillSkimmedTPCTOFTableWithdEdxTrkQA<true>(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.itsNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignalCorrected()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
-        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassTriton)) {
           fillSkimmedTPCTOFTableWithdEdxTrkQA<true>(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.itsNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignalCorrected()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate);
         }
         /// Fill tree for deuterons
-        if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+        if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassDeuteron)) {
           fillSkimmedTPCTOFTableWithdEdxTrkQA<true>(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.itsNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignalCorrected()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate);
-        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassDeuteron)) {
           fillSkimmedTPCTOFTableWithdEdxTrkQA<true>(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.itsNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignalCorrected()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate);
         }
         /// Fill tree for protons
@@ -1550,15 +1551,15 @@ struct TreeWriterTPCTOF {
           existTrkQA = false;
         }
         /// Fill tree for tritons
-        if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+        if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassTriton)) {
           fillSkimmedTPCTOFTableWithTrkQA(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.itsNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassTriton)) {
           fillSkimmedTPCTOFTableWithTrkQA(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.itsNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignal()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
         }
         /// Fill tree for deuterons
-        if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+        if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassDeuteron)) {
           fillSkimmedTPCTOFTableWithTrkQA(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.itsNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassDeuteron)) {
           fillSkimmedTPCTOFTableWithTrkQA(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.itsNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignal()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
         }
         /// Fill tree for protons
@@ -1631,15 +1632,15 @@ struct TreeWriterTPCTOF {
           existTrkQA = false;
         }
         /// Fill tree for tritons
-        if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+        if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() <= maxMomTPCOnlyTr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPCOnlyTr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassTriton)) {
           fillSkimmedTPCTOFTableWithTrkQA<true>(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.itsNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignalCorrected()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Triton])) {
+        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyTr && trk.tpcInnerParam() > maxMomTPCOnlyTr && std::abs(trk.tofNSigmaTr()) < nSigmaTOF_TPCTOF_Tr && std::abs(trk.tpcNSigmaTr()) < nSigmaTPC_TPCTOF_Tr && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassTriton)) {
           fillSkimmedTPCTOFTableWithTrkQA<true>(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaTr(), trk.tofNSigmaTr(), trk.itsNSigmaTr(), trk.tpcExpSignalTr(trk.tpcSignalCorrected()), o2::track::PID::Triton, runnumber, dwnSmplFactor_Tr, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
         }
         /// Fill tree for deuterons
-        if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+        if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() <= maxMomTPCOnlyDe && std::abs(trk.tpcNSigmaDe()) < nSigmaTPCOnlyDe && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassDeuteron)) {
           fillSkimmedTPCTOFTableWithTrkQA<true>(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.itsNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignalCorrected()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, o2::track::pid_constants::sMasses[o2::track::PID::Deuteron])) {
+        } else if (trk.tpcInnerParam() < maxMomHardCutOnlyDe && trk.tpcInnerParam() > maxMomTPCOnlyDe && std::abs(trk.tofNSigmaDe()) < nSigmaTOF_TPCTOF_De && std::abs(trk.tpcNSigmaDe()) < nSigmaTPC_TPCTOF_De && downsampleTsalisCharged(trk.pt(), downsamplingTsalisProtons, MassDeuteron)) {
           fillSkimmedTPCTOFTableWithTrkQA<true>(trk, trackQA, existTrkQA, collision, trk.tpcNSigmaDe(), trk.tofNSigmaDe(), trk.itsNSigmaDe(), trk.tpcExpSignalDe(trk.tpcSignalCorrected()), o2::track::PID::Deuteron, runnumber, dwnSmplFactor_De, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
         }
         /// Fill tree for protons
