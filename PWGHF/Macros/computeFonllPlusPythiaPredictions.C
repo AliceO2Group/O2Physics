@@ -180,7 +180,7 @@ void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFile
 
   // get histograms from FONLL
   auto hFonllBhad = readFonll(inFileFonllBhad);
-  if (!hFonllBhad[0]) {
+  if (hFonllBhad[0] == nullptr) {
     return;
   }
 
@@ -331,11 +331,11 @@ void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFile
   for (auto iFonll{0}; iFonll < 3; ++iFonll) {
     hFonllBhad[iFonll]->Write();
   }
-  auto dirNonPrompt = new TDirectoryFile("NonPrompt", "NonPrompt");
+  auto* dirNonPrompt = new TDirectoryFile("NonPrompt", "NonPrompt");
   dirNonPrompt->Write();
   for (auto iChad{0}; iChad < NCharmHadrons; ++iChad) {
     dirNonPrompt->cd();
-    auto dirCharmHad = new TDirectoryFile(charmHadNames[iChad].data(), charmHadNames[iChad].data());
+    auto* dirCharmHad = new TDirectoryFile(charmHadNames[iChad].data(), charmHadNames[iChad].data());
     dirCharmHad->Write();
     dirCharmHad->cd();
     for (auto iBHad{0}; iBHad < NBeautyHadrons + 1; ++iBHad) {
@@ -346,15 +346,15 @@ void computeFonllPlusPythiaPredictions(int nDecays, int seed, std::string inFile
   }
   if (addPromptCharmHadrons) {
     outFile.cd();
-    auto dirPrompt = new TDirectoryFile("Prompt", "Prompt");
+    auto* dirPrompt = new TDirectoryFile("Prompt", "Prompt");
     dirPrompt->Write();
     for (auto iChad{0}; iChad < NCharmHadrons; ++iChad) {
       dirPrompt->cd();
-      auto dirCharmHad = new TDirectoryFile(charmHadNames[iChad].data(), charmHadNames[iChad].data());
+      auto* dirCharmHad = new TDirectoryFile(charmHadNames[iChad].data(), charmHadNames[iChad].data());
       dirCharmHad->Write();
       dirCharmHad->cd();
       for (auto iFonll{0}; iFonll < 3; ++iFonll) {
-        if (hFonllPromptChad[charmHadPdgs[iChad]][iFonll]) {
+        if (hFonllPromptChad[charmHadPdgs[iChad]][iFonll] != nullptr) {
           hFonllPromptChad[charmHadPdgs[iChad]][iFonll]->Write();
         }
       }

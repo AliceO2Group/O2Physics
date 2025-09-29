@@ -44,7 +44,7 @@ bool removeNSPeakLowPt = false;
 template <typename ValueType>
 void readArray(const Value& jsonArray, vector<ValueType>& output)
 {
-  for (auto it = jsonArray.Begin(); it != jsonArray.End(); it++) {
+  for (const auto* it = jsonArray.Begin(); it != jsonArray.End(); it++) {
     auto value = it->template Get<ValueType>();
     output.emplace_back(value);
   }
@@ -234,7 +234,7 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
       canvasCorrPhi[iBinPtHad]->cd(iBinPtCand + 1);
       canvasCorrPhi[iBinPtHad]->SetTickx();
       canvasCorrPhi[iBinPtHad]->SetTicky();
-      hCorrPhi[iBinPtCand][iBinPtHad]->SetStats(0);
+      hCorrPhi[iBinPtCand][iBinPtHad]->SetStats(false);
       hCorrPhi[iBinPtCand][iBinPtHad]->SetMinimum(0);
       // hCorrPhi[iBinPtCand][iBinPtHad] -> Draw();
 
@@ -336,14 +336,17 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
       tScaleUnc->SetTextColor(kBlack);
       tScaleUnc->AddText(0., 0., "corr. unc.");
 
-      if (drawSystematicErrors)
+      if (drawSystematicErrors) {
         hSystematicErrorsPlot[iBinPtCand][iBinPtHad]->Draw("E2same");
+      }
       hCorrPhi[iBinPtCand][iBinPtHad]->Draw("same");
       pttext->Draw("same");
-      if (drawSystematicErrors)
+      if (drawSystematicErrors) {
         tCorrUncDs->Draw("same");
-      if (drawSystematicErrors)
+      }
+      if (drawSystematicErrors) {
         tScaleUnc->Draw("same");
+      }
     }
     canvasCorrPhi[iBinPtHad]->SaveAs(Form("Output_CorrelationFitting_%s_png/CorrPhiDs_PtBinAssoc%d.png", codeNameAnalysis.data(), iBinPtHad + 1));
     canvasCorrPhi[iBinPtHad]->SaveAs(Form("Output_CorrelationFitting_%s_Root/CorrPhiDs_PtBinAssoc%d.root", codeNameAnalysis.data(), iBinPtHad + 1));
@@ -456,8 +459,6 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
     c4->SaveAs(Form("Output_CorrelationFitting_%s_Root/AwaySideSigma_PtBinAssoc%d.root", codeNameAnalysis.data(), iBinPtHad + 1));
     c5->SaveAs(Form("Output_CorrelationFitting_%s_Root/Baseline_PtBinAssoc%d.root", codeNameAnalysis.data(), iBinPtHad + 1));
   }
-
-  return;
 }
 
 void setTH1HistoStyle(TH1D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle,
@@ -483,8 +484,6 @@ void setTH1HistoStyle(TH1D*& histo, TString hTitle, TString hXaxisTitle, TString
   histo->GetYaxis()->SetLabelSize(hLabelYaxisSize);
   histo->GetXaxis()->CenterTitle(centerXaxisTitle);
   histo->GetYaxis()->CenterTitle(centerYaxisTitle);
-
-  return;
 }
 
 void setTH1HistoStyle(TH1F*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle,
@@ -510,6 +509,4 @@ void setTH1HistoStyle(TH1F*& histo, TString hTitle, TString hXaxisTitle, TString
   histo->GetYaxis()->SetLabelSize(hLabelYaxisSize);
   histo->GetXaxis()->CenterTitle(centerXaxisTitle);
   histo->GetYaxis()->CenterTitle(centerYaxisTitle);
-
-  return;
 }

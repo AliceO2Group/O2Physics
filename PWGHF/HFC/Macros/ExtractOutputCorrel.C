@@ -37,7 +37,7 @@ using namespace rapidjson;
 template <typename ValueType>
 void readArray(const Value& jsonArray, std::vector<ValueType>& output)
 {
-  for (auto it = jsonArray.Begin(); it != jsonArray.End(); it++) {
+  for (const auto* it = jsonArray.Begin(); it != jsonArray.End(); it++) {
     auto value = it->template Get<ValueType>();
     output.emplace_back(value);
   }
@@ -180,33 +180,41 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
   plotter->setCorrBiasBtoD(applyBiasBtoDCorr);
   plotter->setDebugLevel(1);
 
-  if (!flagSpecie)
+  if (!flagSpecie) {
     std::cout << "[ERROR] Wrong D meson flag" << std::endl;
+  }
 
   // Set the input file config
   setInputCorrelNames(plotter, pathFileSE, pathFileME, dirSE, dirME, histoNameCorrSignal, histoNameCorrSideba, histoNameCorrSidebaLeft, histoNameCorrSidebaRight);
   setInputHistoInvMassNames(plotter, pathFileMass, inputHistoMassName);
-  if (applyFDCorr)
+  if (applyFDCorr) {
     setInputHistoFdSubtraction(plotter, pathFileFDTemplate, pathFileFDPromptFrac, histoNameFDTemplatePrompt, histoNameFDTemplateNonPrompt, histoNameRawFracPrompt);
-  if (applySecPartCorr)
+  }
+  if (applySecPartCorr) {
     setInputHistoSecPart(plotter, pathFileSecPart, dirSecPart, histoNamePrimaryPart, histoNameAllPart);
-  if (applyBiasBtoDCorr)
+  }
+  if (applyBiasBtoDCorr) {
     setInputHistoBiasBtoD(plotter, pathfFilePromptMcRec, pathfFileNonPromptMcRec);
+  }
   Bool_t readSEandME = plotter->readInputSeAndMe();
-  if (readSEandME)
+  if (readSEandME) {
     std::cout << "Files SE and ME read correctly" << std::endl;
+  }
   Bool_t readInvMass = plotter->readInputInvMass();
-  if (readInvMass)
+  if (readInvMass) {
     std::cout << "Files inv. mass read correctly" << std::endl;
+  }
   if (applyFDCorr) {
     Bool_t readFDSubtr = plotter->readInputFdSubtr();
-    if (readFDSubtr)
+    if (readFDSubtr) {
       std::cout << "Files for FD subtr. read correctly" << std::endl;
+    }
   }
   if (applySecPartCorr) {
     Bool_t readSecPart = plotter->readInputSecondaryPartContamination();
-    if (readSecPart)
+    if (readSecPart) {
       std::cout << "Files for secondary part. contamination read correctly" << std::endl;
+    }
   }
 
   // Loop over candidate pt and assoc. particle pt
@@ -216,10 +224,10 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
     for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
       plotter->setBinCandAndHad(iBinPtCand + 1, iBinPtHad + 1);
       plotter->extractCorrelations(binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1], binsPtHadIntervals[iBinPtHad], binsPtHadIntervals[iBinPtHad + 1], codeNameAnalysis);
-      hCorrectedCorrel[iBinPtCand][iBinPtHad] = (TH1D*)plotter->getCorrectedCorrHisto();
-      hCorrectedCorrelBaselineSubtr[iBinPtCand][iBinPtHad] = (TH1D*)plotter->getCorrectedCorrHistoBaselineSubtr();
-      hCorrectedCorrelReflected[iBinPtCand][iBinPtHad] = (TH1D*)plotter->getCorrectedCorrHistoReflected();
-      hCorrectedCorrelReflectedBaselineSubtr[iBinPtCand][iBinPtHad] = (TH1D*)plotter->getCorrectedCorrHistoReflectedBaselineSubtr();
+      hCorrectedCorrel[iBinPtCand][iBinPtHad] = plotter->getCorrectedCorrHisto();
+      hCorrectedCorrelBaselineSubtr[iBinPtCand][iBinPtHad] = plotter->getCorrectedCorrHistoBaselineSubtr();
+      hCorrectedCorrelReflected[iBinPtCand][iBinPtHad] = plotter->getCorrectedCorrHistoReflected();
+      hCorrectedCorrelReflectedBaselineSubtr[iBinPtCand][iBinPtHad] = plotter->getCorrectedCorrHistoReflectedBaselineSubtr();
     }
   }
 
@@ -262,8 +270,6 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
     }
   }
   outFileReflectedBaselineSubtr->Close();
-
-  return;
 }
 
 void setInputCorrelNames(DhCorrelationExtraction* plotter, TString pathFileSE, TString pathFileME, TString dirSE, TString dirME, TString histoNameCorrSignal, TString histoNameCorrSideba, TString histoNameCorrSidebaLeft, TString histoNameCorrSidebaRight)
@@ -282,8 +288,6 @@ void setInputCorrelNames(DhCorrelationExtraction* plotter, TString pathFileSE, T
   plotter->setMeCorrelHistoSidebandLeftName(histoNameCorrSidebaLeft.Data());
   plotter->setSeCorrelHistoSidebandRightName(histoNameCorrSidebaRight.Data());
   plotter->setMeCorrelHistoSidebandRightName(histoNameCorrSidebaRight.Data());
-
-  return;
 }
 
 void setInputHistoInvMassNames(DhCorrelationExtraction* plotter, TString pathFileMass, std::vector<std::string> inputMassNames)
@@ -293,8 +297,6 @@ void setInputHistoInvMassNames(DhCorrelationExtraction* plotter, TString pathFil
   plotter->setMassHistoNameSgn(inputMassNames[0].data());
   plotter->setMassHistoNameBkg(inputMassNames[1].data());
   plotter->setMassHistoNameSBs(inputMassNames[2].data());
-
-  return;
 }
 
 void setInputHistoFdSubtraction(DhCorrelationExtraction* plotter, TString pathFileFDTemplate, TString pathFileFDPromptFrac, TString histoNameFDTemplatePrompt, TString histoNameFDTemplateNonPrompt, TString histoNameRawFracPrompt)
@@ -305,8 +307,6 @@ void setInputHistoFdSubtraction(DhCorrelationExtraction* plotter, TString pathFi
   plotter->setInputHistoNameFdTemplatePrompt(histoNameFDTemplatePrompt.Data());
   plotter->setInputHistoNameFdTemplateNonPrompt(histoNameFDTemplateNonPrompt.Data());
   plotter->setInputHistoNameFdPromptFrac(histoNameRawFracPrompt.Data());
-
-  return;
 }
 
 void setInputHistoSecPart(DhCorrelationExtraction* plotter, TString pathFileSecPart, TString dirSecPartName, TString histoNamePrimaryPart, TString histoNameAllPart)
@@ -315,14 +315,10 @@ void setInputHistoSecPart(DhCorrelationExtraction* plotter, TString pathFileSecP
   plotter->setInputFilenameSecPart(pathFileSecPart.Data());
   plotter->setDirNameSecPart(dirSecPartName.Data());
   plotter->setHistoSecPartName(histoNamePrimaryPart.Data(), histoNameAllPart.Data());
-
-  return;
 }
 
 void setInputHistoBiasBtoD(DhCorrelationExtraction* plotter, TString pathfFilePromptMcRec, TString pathfFileNonPromptMcRec)
 {
 
   plotter->setInputFilenameBiasBtoD(pathfFilePromptMcRec.Data(), pathfFileNonPromptMcRec.Data());
-
-  return;
 }

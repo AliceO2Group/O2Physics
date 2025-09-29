@@ -158,20 +158,20 @@ DhCorrelationFitter::~DhCorrelationFitter()
 {
   Info("DhCorrelationFitter.cxx", "Destructor is calling");
 
-  if (fHist) {
+  if (fHist != nullptr) {
     delete fHist;
     fHist = 0;
   }
-  if (fFit) {
+  if (fFit != nullptr) {
     delete fFit;
     fFit = 0;
   }
-  if (fGausNS) {
+  if (fGausNS != nullptr) {
     delete fGausNS;
     fGausNS = 0;
   }
   // if (fGausNS2) {delete fGausNS2; fGausNS2 = 0;}
-  if (fPed) {
+  if (fPed != nullptr) {
     delete fPed;
     fPed = 0;
   }
@@ -180,8 +180,9 @@ DhCorrelationFitter::~DhCorrelationFitter()
 DhCorrelationFitter& DhCorrelationFitter::operator=(const DhCorrelationFitter& cfit)
 // assignment operator
 {
-  if (&cfit == this)
+  if (&cfit == this) {
     return *this;
+  }
 
   fIsReflected = cfit.fIsReflected;
   fTypeOfFitFunc = cfit.fTypeOfFitFunc;
@@ -215,7 +216,7 @@ DhCorrelationFitter& DhCorrelationFitter::operator=(const DhCorrelationFitter& c
   return *this;
 }
 
-void DhCorrelationFitter::setExternalValsAndBounds(Int_t nPars, Double_t* vals, Double_t* lowBounds, Double_t* uppBounds)
+void DhCorrelationFitter::setExternalValsAndBounds(Int_t nPars, const Double_t* vals, const Double_t* lowBounds, const Double_t* uppBounds)
 {
 
   fNpars = nPars;
@@ -229,8 +230,6 @@ void DhCorrelationFitter::setExternalValsAndBounds(Int_t nPars, Double_t* vals, 
     fExtParsLowBounds[i] = lowBounds[i];
     fExtParsUppBounds[i] = uppBounds[i];
   }
-
-  return;
 }
 
 void DhCorrelationFitter::fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
@@ -247,8 +246,9 @@ void DhCorrelationFitter::fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
   //             = 2 : AS mean fixed to pi, NS mean free
   //             = 3 : NS mean fixed to 0, AS mean to pi
 
-  if (useExternalPars)
+  if (useExternalPars) {
     fUseExternalPars = kTRUE;
+  }
 
   if (fFixBase != 0 && fFixBase != 6) {
     Printf("[INFO] DhCorrelationFitter::Fitting, Finding baseline");
@@ -272,10 +272,12 @@ void DhCorrelationFitter::fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
     fFit->FixParameter(2, 0.);
   }
   if (fFixMean == 2 || fFixMean == 3) {
-    if (fTypeOfFitFunc != 0 && fTypeOfFitFunc != 3)
+    if (fTypeOfFitFunc != 0 && fTypeOfFitFunc != 3) {
       fFit->FixParameter(5, TMath::Pi());
-    if (fTypeOfFitFunc == 3 || fTypeOfFitFunc == 6)
+    }
+    if (fTypeOfFitFunc == 3 || fTypeOfFitFunc == 6) {
       fFit->FixParameter(2, TMath::Pi());
+    }
   }
 
   Printf("[INFO] DhCorrelationFitter::Fitting, Fitting");
@@ -331,7 +333,7 @@ void DhCorrelationFitter::setFitFunction()
   //            = 6: const + VonMises AS
   //            = 7: baseline w v2 modulation + G NS + G AS  (w/ periodicity)
 
-  if (fFit) {
+  if (fFit != nullptr) {
     delete fFit;
     delete fGausNS;
     // delete fGausNS2;
@@ -596,7 +598,7 @@ void DhCorrelationFitter::setFitFunction()
   }
 }
 
-void DhCorrelationFitter::setPointsForBaseline(Int_t nBaselinePoints, Int_t* binsBaseline)
+void DhCorrelationFitter::setPointsForBaseline(Int_t nBaselinePoints, const Int_t* binsBaseline)
 {
 
   fNbasleinePoints = nBaselinePoints;
@@ -606,8 +608,6 @@ void DhCorrelationFitter::setPointsForBaseline(Int_t nBaselinePoints, Int_t* bin
   for (int i = 0; i < fNbasleinePoints; i++) {
     fBinsBaseline[i] = binsBaseline[i];
   }
-
-  return;
 }
 
 Double_t DhCorrelationFitter::findBaseline()
@@ -694,8 +694,9 @@ Double_t DhCorrelationFitter::findBaseline()
     errAv += 1. / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
     if (!fIsReflected) {
       binPhi = fHist->FindBin(-TMath::Pi() / 2.);
-      if (binPhi < 1)
+      if (binPhi < 1) {
         binPhi = 1;
+      }
       av += fHist->GetBinContent(binPhi) / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
       errAv += 1. / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
     } else {
@@ -774,7 +775,7 @@ Double_t DhCorrelationFitter::findBaseline()
 void DhCorrelationFitter::fitBaselineWv2()
 {
 
-  fBaseTransvReg = new TF1("fBaseTransvReg", [](double* x, double* p) {
+  fBaseTransvReg = new TF1("fBaseTransvReg", [](const double* x, const double* p) {
     double xx = x[0]; // x value
     if ((xx >= -TMath::Pi()/2 && xx <= -3*TMath::Pi()/8) || (xx >= 3*TMath::Pi()/8 && xx <= 5*TMath::Pi()/8) || (xx >= 11*TMath::Pi()/8 && xx <= 3*TMath::Pi()/2)) {
         // Gaussian example: p[0] = amplitude, p[1] = mean, p[2] = sigma
@@ -787,8 +788,6 @@ void DhCorrelationFitter::fitBaselineWv2()
 
   TFitResultPtr rFit = fHist->Fit(fBaseTransvReg, "RIMES", "", fMinCorr, fMaxCorr);
   fBaseline = fBaseTransvReg->GetParameter(0);
-
-  return;
 }
 
 void DhCorrelationFitter::calculateYieldsAboveBaseline()
@@ -800,13 +799,15 @@ void DhCorrelationFitter::calculateYieldsAboveBaseline()
   fErrASyieldBinCount = 0;
   std::cout << "[RESULT] Baseline: " << fBaseline << " +- " << fErrBaseline << std::endl;
   Int_t binMinNS = fHist->FindBin(-1.5); // slightly more than -pi/2
-  if (binMinNS < 1)
-    binMinNS = 1;      // with this, it is ok even in the case of a reflected fHist (range 0 - pi)
+  if (binMinNS < 1) {
+    binMinNS = 1; // with this, it is ok even in the case of a reflected fHist (range 0 - pi)
+  }
   Int_t binMaxNS = 6;  // fHist -> FindBin(1.5); // slightly less than +pi/2
   Int_t binMinAS = 11; // fHist -> FindBin(1.6); // slightly more than +pi/2
   Int_t binMaxAS = 16; // fHist -> FindBin(3.14+1.5); // slightly less than +3pi/2
-  if (binMaxAS > fHist->GetNbinsX())
+  if (binMaxAS > fHist->GetNbinsX()) {
     binMaxAS = fHist->GetNbinsX(); // with this, it is ok even in the case of a reflected fHist (range 0 - pi)
+  }
   std::cout << "N bins : " << fHist->GetNbinsX() << std::endl;
   std::cout << "binMinNS : " << binMinNS << std::endl;
   std::cout << "binMaxNS : " << binMaxNS << std::endl;
@@ -827,8 +828,6 @@ void DhCorrelationFitter::calculateYieldsAboveBaseline()
   fErrASyieldBinCount = TMath::Sqrt(fErrASyieldBinCount);
 
   printf("[RESULT] Bin counting results: NS Yield = %.3f +- %.3f \n[RESULT] Bin counting results: AS Yield: %.3f +- %.3f \n", fNSyieldBinCount, fErrNSyieldBinCount, fASyieldBinCount, fErrASyieldBinCount);
-
-  return;
 }
 
 Double_t DhCorrelationFitter::calculateBaseline(TH1F*& histo, Bool_t totalRange)

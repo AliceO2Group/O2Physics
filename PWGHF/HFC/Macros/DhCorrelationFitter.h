@@ -55,8 +55,8 @@ class DhCorrelationFitter
     fMinAssoPt = ptAssocMin;
     fMaxAssoPt = ptAssocMax;
   }
-  void setExternalValsAndBounds(Int_t nPars, Double_t* vals, Double_t* lowBounds, Double_t* uppBounds);
-  void setPointsForBaseline(Int_t nBaselinePoints, Int_t* binsBaseline);
+  void setExternalValsAndBounds(Int_t nPars, const Double_t* vals, const Double_t* lowBounds, const Double_t* uppBounds);
+  void setPointsForBaseline(Int_t nBaselinePoints, const Int_t* binsBaseline);
   void setReflectedCorrHisto(Bool_t isReflected) { fIsTotal = !isReflected; }
   void setBaselineUpOrDown(Bool_t baseUp, Bool_t baseDown)
   {
