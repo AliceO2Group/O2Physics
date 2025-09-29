@@ -51,6 +51,8 @@ DECLARE_SOA_COLUMN(MassTOFHe3, massTOFHe3, float);
 DECLARE_SOA_COLUMN(MassTOFHad, massTOFHad, float);
 DECLARE_SOA_COLUMN(PIDtrkHe3, pidTrkHe3, uint32_t);
 DECLARE_SOA_COLUMN(PIDtrkHad, pidTrkHad, uint32_t);
+DECLARE_SOA_COLUMN(TrackIDHe3, trackIDHe3, int);
+DECLARE_SOA_COLUMN(TrackIDHad, trackIDHad, int);
 
 DECLARE_SOA_COLUMN(ItsClusterSizeHe3, itsClusterSizeHe3, uint32_t);
 DECLARE_SOA_COLUMN(ItsClusterSizeHad, itsClusterSizeHad, uint32_t);
@@ -115,7 +117,9 @@ DECLARE_SOA_TABLE(he3HadronTable, "AOD", "HE3HADTABLE",
                   he3HadronTablesNS::SharedClustersHe3,
                   he3HadronTablesNS::SharedClustersHad,
                   he3HadronTablesNS::IsBkgUS,
-                  he3HadronTablesNS::IsBkgEM)
+                  he3HadronTablesNS::IsBkgEM,
+                  he3HadronTablesNS::TrackIDHe3,
+                  he3HadronTablesNS::TrackIDHad)
 DECLARE_SOA_TABLE(he3HadronTableMC, "AOD", "HE3HADTABLEMC",
                   he3HadronTablesNS::PtMCHe3,
                   he3HadronTablesNS::EtaMCHe3,
