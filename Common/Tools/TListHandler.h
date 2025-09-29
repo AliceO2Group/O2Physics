@@ -48,7 +48,7 @@ class TListHandler
   struct HistName {
     // ctor for histogram names that are already hashed at compile time via HIST("myHistName")
     template <char... chars>
-    constexpr HistName(const ConstStr<chars...>& hashedHistName); // NO LINT(runtime / explicit)
+    constexpr HistName(const ConstStr<chars...>& hashedHistName); // NOLINT(runtime/explicit)
     char const* const str{};
     const uint32_t hash{};
     const uint32_t idx{};
@@ -56,7 +56,7 @@ class TListHandler
    protected:
     friend class TListHandler;
     // ctor that does the hashing at runtime (for internal use only)
-    constexpr HistName(char const* const name); // NO LINT(runtime / explicit)
+    constexpr HistName(char const* const name); // NOLINT(runtime/explicit)
   };
 
  public:
@@ -399,7 +399,7 @@ void TListHandler::insertInNestedTList(const std::string& name, const HistPtr hi
     }
 
     TNamed* rawPtrToObj = nullptr;
-    std::visit([&](const auto& sharedPtr) { rawPtrToObj = (TNamed*)sharedPtr.get(); }, tObj);
+    std::visit([&](const auto& sharedPtr) { rawPtrToObj = (TNamed*)sharedPtr.get(); }, tObj); // NOLINT(readability/casting)
     rawPtrToObj->SetName(histName.c_str());
   }
 
