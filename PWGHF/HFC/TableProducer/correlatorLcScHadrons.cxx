@@ -472,7 +472,7 @@ struct HfCorrelatorLcScHadrons {
   }
 
   template <typename TCollision, typename V0>
-  bool SelectionV0(TCollision const& collision, V0 const& candidate)
+  bool selectionV0(TCollision const& collision, V0 const& candidate)
   {
     if (candidate.v0radius() < cfgV0.cfgV0radiusMin){
       return false;
@@ -534,65 +534,65 @@ struct HfCorrelatorLcScHadrons {
   }
 
   template <bool isMcRec = false, typename CollType, typename V0, typename TrackType>
-  void FillV0Histograms(CollType const& collV0, V0 const& v0s, TrackType const&)
+  void fillV0Histograms(CollType const& collV0, V0 const& v0s, TrackType const&)
   {
-    for (auto& v0 : v0s) {
+    for (const auto& v0 : v0s) {
 
-      if (!SelectionV0(collV0, v0)){
+      if (!selectionV0(collV0, v0)){
         continue;
       }
 
-      auto posTrack_V0 = v0.template posTrack_as<TrackType>();
-      auto negTrack_V0 = v0.template negTrack_as<TrackType>();
+      auto posTrackV0 = v0.template posTrack_as<TrackType>();
+      auto negTrackV0 = v0.template negTrack_as<TrackType>();
 
-      if (isSelectedV0Daughter(posTrack_V0, kProton) && isSelectedV0Daughter(negTrack_V0, kPiPlus)) {
+      if (isSelectedV0Daughter(posTrackV0, kProton) && isSelectedV0Daughter(negTrackV0, kPiPlus)) {
         if (std::abs(massLambda - v0.mLambda()) < cfgV0.cfgHypMassWindow){
-          registry.fill(HIST("hV0Lambda"), v0.mLambda(), v0.pt(), posTrack_V0.pt());
-          registry.fill(HIST("hV0LambdaRefl"), v0.mAntiLambda(), v0.pt(), negTrack_V0.pt());
+          registry.fill(HIST("hV0Lambda"), v0.mLambda(), v0.pt(), posTrackV0.pt());
+          registry.fill(HIST("hV0LambdaRefl"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
 
-          if(passPIDSelection(posTrack_V0, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)){
-            registry.fill(HIST("hV0LambdaPiKRej"), v0.mLambda(), v0.pt(), posTrack_V0.pt());
-            registry.fill(HIST("hV0LambdaReflPiKRej"), v0.mAntiLambda(), v0.pt(), negTrack_V0.pt());
+          if(passPIDSelection(posTrackV0, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)){
+            registry.fill(HIST("hV0LambdaPiKRej"), v0.mLambda(), v0.pt(), posTrackV0.pt());
+            registry.fill(HIST("hV0LambdaReflPiKRej"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
           }
         }
           
       }
-      if (isSelectedV0Daughter(negTrack_V0, kProton) && isSelectedV0Daughter(posTrack_V0, kPiPlus)) {
+      if (isSelectedV0Daughter(negTrackV0, kProton) && isSelectedV0Daughter(posTrackV0, kPiPlus)) {
         if (std::abs(massLambda - v0.mAntiLambda()) > cfgV0.cfgHypMassWindow){
-          registry.fill(HIST("hV0Lambda"), v0.mAntiLambda(), v0.pt(), negTrack_V0.pt());
-          registry.fill(HIST("hV0LambdaRefl"), v0.mLambda(), v0.pt(), posTrack_V0.pt());
+          registry.fill(HIST("hV0Lambda"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
+          registry.fill(HIST("hV0LambdaRefl"), v0.mLambda(), v0.pt(), posTrackV0.pt());
 
-          if(passPIDSelection(negTrack_V0, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)){
-            registry.fill(HIST("hV0LambdaPiKRej"), v0.mAntiLambda(), v0.pt(), negTrack_V0.pt());
-            registry.fill(HIST("hV0LambdaReflPiKRej"), v0.mLambda(), v0.pt(), posTrack_V0.pt());
+          if(passPIDSelection(negTrackV0, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)){
+            registry.fill(HIST("hV0LambdaPiKRej"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
+            registry.fill(HIST("hV0LambdaReflPiKRej"), v0.mLambda(), v0.pt(), posTrackV0.pt());
           }
         }
       }
       if constexpr (isMcRec){
-        if (!v0.has_mcParticle() || !posTrack_V0.has_mcParticle() || !negTrack_V0.has_mcParticle()){
+        if (!v0.has_mcParticle() || !posTrackV0.has_mcParticle() || !negTrackV0.has_mcParticle()){
         continue;
         }
         auto v0Mc = v0.mcParticle();
-        auto posTrack = posTrack_V0.mcParticle();
-        auto negTrack = negTrack_V0.mcParticle();
+        auto posTrack = posTrackV0.mcParticle();
+        auto negTrack = negTrackV0.mcParticle();
 
         if(std::abs(v0Mc.pdgCode()) == kLambda0) {
           if (std::abs(posTrack.pdgCode()) == kProton){
-          registry.fill(HIST("hV0LambdaMcRec"), v0.mLambda(), v0.pt(), posTrack_V0.pt());
-          registry.fill(HIST("hV0LambdaReflMcRec"), v0.mAntiLambda(), v0.pt(), negTrack_V0.pt());
+          registry.fill(HIST("hV0LambdaMcRec"), v0.mLambda(), v0.pt(), posTrackV0.pt());
+          registry.fill(HIST("hV0LambdaReflMcRec"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
 
-          if(passPIDSelection(posTrack_V0, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)){
-            registry.fill(HIST("hV0LambdaPiKRejMcRec"), v0.mLambda(), v0.pt(), posTrack_V0.pt());
-            registry.fill(HIST("hV0LambdaReflPiKRejMcRec"), v0.mAntiLambda(), v0.pt(), negTrack_V0.pt());
+          if(passPIDSelection(posTrackV0, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)){
+            registry.fill(HIST("hV0LambdaPiKRejMcRec"), v0.mLambda(), v0.pt(), posTrackV0.pt());
+            registry.fill(HIST("hV0LambdaReflPiKRejMcRec"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
           }
           }
           if (std::abs(negTrack.pdgCode()) == kProton){
-            registry.fill(HIST("hV0LambdaMcRec"), v0.mAntiLambda(), v0.pt(), negTrack_V0.pt());
-            registry.fill(HIST("hV0LambdaReflMcRec"), v0.mLambda(), v0.pt(), posTrack_V0.pt());
-            
-          if(passPIDSelection(negTrack_V0, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)){
-            registry.fill(HIST("hV0LambdaPiKRejMcRec"), v0.mAntiLambda(), v0.pt(), negTrack_V0.pt());
-            registry.fill(HIST("hV0LambdaReflPiKRejMcRec"), v0.mLambda(), v0.pt(), posTrack_V0.pt());
+            registry.fill(HIST("hV0LambdaMcRec"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
+            registry.fill(HIST("hV0LambdaReflMcRec"), v0.mLambda(), v0.pt(), posTrackV0.pt());
+
+          if(passPIDSelection(negTrackV0, trkPIDspecies, pidTPCMax, pidTOFMax, tofPIDThreshold, forceTOF)){
+            registry.fill(HIST("hV0LambdaPiKRejMcRec"), v0.mAntiLambda(), v0.pt(), negTrackV0.pt());
+            registry.fill(HIST("hV0LambdaReflPiKRejMcRec"), v0.mLambda(), v0.pt(), posTrackV0.pt());
           }
           }
         }
@@ -1394,7 +1394,7 @@ struct HfCorrelatorLcScHadrons {
     }
     registry.fill(HIST("hEventLambdaV0"), 1.5);
 
-    FillV0Histograms<false>(collision, V0s, tracks);
+    fillV0Histograms<false>(collision, V0s, tracks);
   }
   PROCESS_SWITCH(HfCorrelatorLcScHadrons, processDataLambdaV0, "Data process for v0 lambda", false);
 
@@ -1407,7 +1407,7 @@ struct HfCorrelatorLcScHadrons {
     }
     registry.fill(HIST("hEventLambdaV0"), 1.5);
 
-    FillV0Histograms<true>(collision, V0s, tracks);
+    fillV0Histograms<true>(collision, V0s, tracks);
   }
   PROCESS_SWITCH(HfCorrelatorLcScHadrons, processMcLambdaV0, "Mc process for v0 lambda", false);
 
