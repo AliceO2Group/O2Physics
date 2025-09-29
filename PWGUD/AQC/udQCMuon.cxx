@@ -8,11 +8,13 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
-///
+//
+/// \file udQcMuon.cxx
 /// \brief A task for Asynchronus Quality Control for Ultra-perimpheral and Diffraction (AQC-UD)
 /// \author Anisa Khatun, anisa.khatun@cern.ch
 /// \author Paul Buehler, paul.buehler@oeaw.ac.at
-/// \since  04.05.2023
+/// \author Sara Haidlova, sara.haidlova@cern.ch
+/// \since  28.09.2025
 
 #include "PWGUD/Core/UDHelpers.h"
 
@@ -32,25 +34,25 @@ using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 
-struct UDQC {
+struct UdQcMuon {
 
   SliceCache cache;
   Preslice<aod::Zdcs> perBCzdc = aod::zdc::bcId;
   Preslice<aod::Calos> perBCcalo = aod::calo::bcId;
 
-  static constexpr std::string_view hcFIT1s[5] = {"CleanFIT1/FV0A", "CleanFIT1/FT0A", "CleanFIT1/FT0C", "CleanFIT1/FDDA", "CleanFIT1/FDDC"};
-  static constexpr std::string_view hcFIT2s[5] = {"CleanFIT2/FV0A", "CleanFIT2/FT0A", "CleanFIT2/FT0C", "CleanFIT2/FDDA", "CleanFIT2/FDDC"};
-  static constexpr std::string_view hcRelBCs[5] = {"CleanFIT2/BCFV0A", "CleanFIT2/BCFT0A", "CleanFIT2/BCFT0C", "CleanFIT2/BCFDDA", "CleanFIT2/BCFDDC"};
+  static constexpr std::string_view KhcFIT1s[5] = {"CleanFIT1/FV0A", "CleanFIT1/FT0A", "CleanFIT1/FT0C", "CleanFIT1/FDDA", "CleanFIT1/FDDC"};
+  static constexpr std::string_view KhcFIT2s[5] = {"CleanFIT2/FV0A", "CleanFIT2/FT0A", "CleanFIT2/FT0C", "CleanFIT2/FDDA", "CleanFIT2/FDDC"};
+  static constexpr std::string_view KhcRelBCs[5] = {"CleanFIT2/BCFV0A", "CleanFIT2/BCFT0A", "CleanFIT2/BCFT0C", "CleanFIT2/BCFDDA", "CleanFIT2/BCFDDC"};
 
   // get a DGCutparHolder
   DGCutparHolder diffCuts = DGCutparHolder();
-  Configurable<DGCutparHolder> DGCuts{"DGCuts", {}, "DG event cuts"};
-  Configurable<bool> withAmbTrackAnalysis{"ambiguousTracks", false, "with ambiguous tracks analysis"};
-  Configurable<bool> withAmbFwdTrackAnalysis{"ambiguousFwdTracks", false, "with ambiguous forward tracks analysis"};
+  Configurable<DGCutparHolder> dgCuts{"dgCuts", {}, "DG event cuts"};
+  Configurable<bool> withAmbTrackAnalysis{"withAmbTrackAnalysis", false, "with ambiguous tracks analysis"};
+  Configurable<bool> withAmbFwdTrackAnalysis{"withAmbFwdTrackAnalysis", false, "with ambiguous forward tracks analysis"};
   Configurable<bool> doCleanFITBC{"doCleanFITBC", false, "Require cleanFIT in compatible BCs"};
   Configurable<float> rapCut{"rapCut", 0.9f, "choose event in midrapidity"};
   Configurable<int> itsNClsCut{"itsNClsCut", 4, "minimal number of ITS clusters"};
-  Configurable<int> itsChi2NCls{"itsChi2NClsCut", 36, "minimal Chi2/cluster for the ITS track"};
+  Configurable<int> itsChi2NCls{"itsChi2NCls", 36, "minimal Chi2/cluster for the ITS track"};
   Configurable<int> tpcNClsCrossedRowsCut{"tpcNClsCrossedRowsCut", 70, "minimal number of crossed TPC rows"};
   Configurable<int> tpcChi2NCls{"tpcChi2NCls", 4, "minimal Chi2/cluster for the TPC track"};
   Configurable<float> tpcMinNCls{"tpcMinNCls", 3, "minimum number of TPC clusters"};
@@ -77,10 +79,7 @@ struct UDQC {
 
   void init(InitContext& context)
   {
-    // initialize global variables - smazat
-    // maxdEdxTPC = 0.;
-    // maxdEdxTOF = 0.;
-    diffCuts = (DGCutparHolder)DGCuts;
+    diffCuts = (DGCutparHolder)dgCuts;
 
     // add histograms for the different process functions
     if (context.mOptions.get<bool>("processMain")) {
@@ -150,8 +149,10 @@ struct UDQC {
       registry.add("CleanFIT1/cF1FDDAamp", "#cF1FDDAamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
       registry.add("CleanFIT1/cF1FDDCamp", "#cF1FDDCamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
 
-      for (auto n{0}; n < 5; n++) {
-        registry.add(hcFIT1s[n].data(), hcFIT1s[n].data(), {HistType::kTH2F, {{20, -0.5, 19.5}, {2, -0.5, 1.5}}});
+      constexpr int N = static_cast<int>(std::size(KhcFIT1s));
+
+      for (auto n{0}; n < N; n++) {
+        registry.add(KhcFIT1s[n].data(), KhcFIT1s[n].data(), {HistType::kTH2F, {{20, -0.5, 19.5}, {2, -0.5, 1.5}}});
       }
     }
     if (context.mOptions.get<bool>("processCleanFIT2")) {
@@ -162,9 +163,10 @@ struct UDQC {
       registry.add("CleanFIT2/cF2FDDAamp", "#cF2FDDAamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
       registry.add("CleanFIT2/cF2FDDCamp", "#cF2FDDCamp", {HistType::kTH2F, {{20, -0.5, 19.5}, {1000, -0.5, 999.5}}});
 
-      for (auto n{0}; n < 5; n++) {
-        registry.add(hcFIT2s[n].data(), hcFIT2s[n].data(), {HistType::kTH2F, {{20, -0.5, 19.5}, {2, -0.5, 1.5}}});
-        registry.add(hcRelBCs[n].data(), hcRelBCs[n].data(), {HistType::kTH1F, {{3564, -0.5, 3563.5}}});
+      constexpr int N_t = static_cast<int>(std::size(KhcFIT2s));
+      for (auto n{0}; n < N_t; n++) {
+        registry.add(KhcFIT2s[n].data(), KhcFIT2s[n].data(), {HistType::kTH2F, {{20, -0.5, 19.5}, {2, -0.5, 1.5}}});
+        registry.add(KhcRelBCs[n].data(), KhcRelBCs[n].data(), {HistType::kTH1F, {{3564, -0.5, 3563.5}}});
       }
     }
     if (context.mOptions.get<bool>("processFV0")) {
@@ -258,18 +260,9 @@ struct UDQC {
         // update dEdx histograms
         registry.get<TH2>(HIST("tracks/dEdxTPC"))->Fill(track.tpcInnerParam() / track.sign(), track.tpcSignal());
 
-        /*if (track.tpcSignal() > maxdEdxTPC) {
-          maxdEdxTPC = track.tpcSignal();
-          // LOGF(debug, "<UDQC> New maxdEdx TPC %f", maxdEdxTPC);
-        }smazat*/
-
         // TOF hit?
         if (track.hasTOF()) {
           registry.get<TH2>(HIST("tracks/dEdxTOF"))->Fill(track.p() / track.sign(), track.beta());
-          /* if (track.tofSignal() > maxdEdxTOF) {
-             maxdEdxTOF = track.tofSignal();
-             // LOGF(debug, "<UDQC> New maxdEdx TOF %f", maxdEdxTOF);
-           }smazat*/
 
           // No vertex track with TOF hit?
           if (!track.isPVContributor()) {
@@ -460,7 +453,8 @@ struct UDQC {
 
     float massMu = o2::constants::physics::MassMuonMinus;
     // DGcandidates with 2 good tracks -> to be optimised for different number of candidates
-    if (isDGcandidate && countGT == 2) {
+    int tG = 2;
+    if (isDGcandidate && countGT == tG) {
 
       auto trkDaughter1 = tracks.iteratorAt(trkIdx[0]);
       auto trkDaughter2 = tracks.iteratorAt(trkIdx[1]);
@@ -545,7 +539,7 @@ struct UDQC {
       }
     }
   }
-  PROCESS_SWITCH(UDQC, processMain, "Process Main", true);
+  PROCESS_SWITCH(UdQcMuon, processMain, "Process Main", true);
 
   // ...............................................................................................................
   // Distribution of number of PV contributors for all collisions and those with empty FT0
@@ -566,7 +560,7 @@ struct UDQC {
       registry.get<TH1>(HIST("fpPVC"))->Fill(collision.numContrib(), 1.);
     }
   }
-  PROCESS_SWITCH(UDQC, processFewProng, "Process FewProng", true);
+  PROCESS_SWITCH(UdQcMuon, processFewProng, "Process FewProng", true);
 
   // .............................................................................................................................................
   void processCleanFIT1(CC const& collision, BCs const& bct0s,
@@ -576,9 +570,10 @@ struct UDQC {
 
     // test influence of BCrange width using a series of NDtcoll
     float ampFV0A, ampFT0A, ampFT0C, ampFDDA, ampFDDC;
-    auto FITlims = std::vector<float>(5, 1000000.);
+    auto fitLims = std::vector<float>(5, 1000000.);
     bool isDGcandidate = true;
-    for (int NDtcoll = 0; NDtcoll < 20; NDtcoll++) {
+    int maxNDtcoll = 20;
+    for (int NDtcoll = 0; NDtcoll < maxNDtcoll; NDtcoll++) {
       auto bcSlice = udhelpers::compatibleBCs(collision, NDtcoll, bct0s, 0);
 
       // do for diffCuts.FITAmpLimits
@@ -610,19 +605,19 @@ struct UDQC {
 
       // loop over single detectors
       static_for<0, 4>([&](auto n) {
-        FITlims[n] = 0.;
+        fitLims[n] = 0.;
         isDGcandidate = true;
         for (auto const& bc : bcSlice) {
-          isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), FITlims);
+          isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), fitLims);
         }
-        constexpr int index = n.value;
-        registry.fill(HIST(hcFIT1s[index]), NDtcoll, isDGcandidate * 1.);
-        FITlims[n] = 1000000.;
+        constexpr int Index = n.value;
+        registry.fill(HIST(KhcFIT1s[Index]), NDtcoll, isDGcandidate * 1.);
+        fitLims[n] = 1000000.;
       });
     }
   }
 
-  PROCESS_SWITCH(UDQC, processCleanFIT1, "Process CleanFitTest1", true);
+  PROCESS_SWITCH(UdQcMuon, processCleanFIT1, "Process CleanFitTest1", true);
   // .............................................................................................................................................
 
   void processCleanFIT2(CC const& collision, BCs const& bct0s,
@@ -636,9 +631,10 @@ struct UDQC {
     }
     // test influence of BCrange width using a series of nMinBC
     float ampFV0A, ampFT0A, ampFT0C, ampFDDA, ampFDDC;
-    auto FITlims = std::vector<float>(5, 1000000.);
+    auto fitLims = std::vector<float>(5, 1000000.);
     bool isDGcandidate = true;
-    for (int nMinBC = 0; nMinBC < 20; nMinBC++) {
+    int nMaxBC = 20;
+    for (int nMinBC = 0; nMinBC < nMaxBC; nMinBC++) {
       auto bcSlice = udhelpers::compatibleBCs(collision, 0, bct0s, nMinBC);
       ampFV0A = ampFT0A = ampFT0C = ampFDDA = ampFDDC = 0.;
       isDGcandidate = true;
@@ -669,20 +665,20 @@ struct UDQC {
 
       // loop over single detectors
       static_for<0, 4>([&](auto n) {
-        FITlims[n] = 0.;
+        fitLims[n] = 0.;
         isDGcandidate = true;
         for (auto const& bc : bcSlice) {
-          isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), FITlims); // DG
+          isDGcandidate &= udhelpers::cleanFIT(bc, diffCuts.maxFITtime(), fitLims); // DG
         }
-        constexpr int index = n.value;
-        registry.fill(HIST(hcFIT2s[index]), nMinBC, isDGcandidate * 1.);
-        registry.fill(HIST(hcRelBCs[index]), static_cast<float>(bcnum), isDGcandidate * 1.);
-        FITlims[n] = 1000000.;
+        constexpr int Index = n.value;
+        registry.fill(HIST(KhcFIT2s[Index]), nMinBC, isDGcandidate * 1.);
+        registry.fill(HIST(KhcRelBCs[Index]), static_cast<float>(bcnum), isDGcandidate * 1.);
+        fitLims[n] = 1000000.;
       });
     }
   }
 
-  PROCESS_SWITCH(UDQC, processCleanFIT2, "Process CleanFitTest2", true);
+  PROCESS_SWITCH(UdQcMuon, processCleanFIT2, "Process CleanFitTest2", true);
 
   // ...............................................................................................................
   void processFV0(aod::FV0As const& fv0s, BCs const&)
@@ -692,7 +688,7 @@ struct UDQC {
       return;
     }
 
-    for (auto fv0 : fv0s) {
+    for (auto const& fv0 : fv0s) {
       registry.get<TH1>(HIST("FV0/hV0A"))->Fill(fv0.time());
       // side A
       for (size_t ind = 0; ind < fv0.channel().size(); ind++) {
@@ -700,7 +696,7 @@ struct UDQC {
       }
     }
   };
-  PROCESS_SWITCH(UDQC, processFV0, "Process FV0", true);
+  PROCESS_SWITCH(UdQcMuon, processFV0, "Process FV0", true);
 
   // ...............................................................................................................
   void processFT0(aod::FT0s const& ft0s, aod::FT0sCorrected const& ft0scorr, BCs const&)
@@ -719,7 +715,7 @@ struct UDQC {
         registry.get<TH1>(HIST("FT0/hT0AC"))->Fill(collision.t0AC());
       }
     }
-    for (auto ft0 : ft0s) {
+    for (auto const& ft0 : ft0s) {
       registry.get<TH1>(HIST("FT0/hT0A"))->Fill(ft0.timeA());
       registry.get<TH1>(HIST("FT0/hT0C"))->Fill(ft0.timeC());
 
@@ -734,29 +730,30 @@ struct UDQC {
       }
     }
   };
-  PROCESS_SWITCH(UDQC, processFT0, "Process FT0", true);
+  PROCESS_SWITCH(UdQcMuon, processFT0, "Process FT0", true);
 
   // ...............................................................................................................
   void processFDD(aod::FDDs const& fdds, BCs const&)
   {
     // LOGF(debug, "<FDDSignals> %d", fdds.size());
 
-    for (auto fdd : fdds) {
+    for (auto const& fdd : fdds) {
 
       registry.get<TH1>(HIST("FDD/hFDDA"))->Fill(fdd.timeA());
       registry.get<TH1>(HIST("FDD/hFDDC"))->Fill(fdd.timeC());
       // side A
-      for (auto ind = 0; ind < 8; ind++) {
+      int maxInd = 8;
+      for (auto ind = 0; ind < maxInd; ind++) {
         registry.get<TH2>(HIST("FDD/FDDA"))->Fill(ind, (fdd.chargeA())[ind]);
       }
 
       // side C
-      for (auto ind = 0; ind < 8; ind++) {
+      for (auto ind = 0; ind < maxInd; ind++) {
         registry.get<TH2>(HIST("FDD/FDDC"))->Fill(ind, (fdd.chargeC())[ind]);
       }
     }
   };
-  PROCESS_SWITCH(UDQC, processFDD, "Process FDD", true);
+  PROCESS_SWITCH(UdQcMuon, processFDD, "Process FDD", true);
 
   // ...............................................................................................................
   void processZDC(aod::Zdc const& zdc)
@@ -787,12 +784,12 @@ struct UDQC {
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(20., (zdc.energySectorZPC())[2]);
     registry.get<TH2>(HIST("ZdcEnergies"))->Fill(21., (zdc.energySectorZPC())[3]);
   };
-  PROCESS_SWITCH(UDQC, processZDC, "Process ZDC", true);
+  PROCESS_SWITCH(UdQcMuon, processZDC, "Process ZDC", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<UDQC>(cfgc, TaskName{"udQCMuon"}),
+    adaptAnalysisTask<UdQcMuon>(cfgc),
   };
 }
