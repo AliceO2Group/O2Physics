@@ -114,7 +114,7 @@ struct TreeWriterTpcV0 {
 
   /// Funktion to fill skimmed tables
   template <bool doUseCorrecteddEdx = false, typename T, typename C, typename V0Casc>
-  void fillSkimmedV0Table(V0Casc const& v0casc, T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate)
+  void fillSkimmedV0Table(V0Casc const& v0casc, T const& track, C const& collision, float nSigmaTPC, float nSigmaTOF, float dEdxExp, o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -171,7 +171,7 @@ struct TreeWriterTpcV0 {
   };
 
   template <bool doUseCorrecteddEdx = false, typename T, typename TQA, typename C, typename V0Casc>
-  void fillSkimmedV0TableWithdEdxTrQA(V0Casc const& v0casc, T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate)
+  void fillSkimmedV0TableWithdEdxTrQA(V0Casc const& v0casc, T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, float nSigmaTPC, float nSigmaTOF, float dEdxExp, o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -230,7 +230,7 @@ struct TreeWriterTpcV0 {
 
   /// Function to fill skimmed tables
   template <bool doUseCorrecteddEdx = false, typename T, typename TQA, typename C, typename V0Casc>
-  void fillSkimmedV0TableWithTrQA(V0Casc const& v0casc, T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate, int bcGlobalIndex, int bcTimeFrameId, int bcBcInTimeFrame)
+  void fillSkimmedV0TableWithTrQA(V0Casc const& v0casc, T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, float nSigmaTPC, float nSigmaTOF, float dEdxExp, o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate, int bcGlobalIndex, int bcTimeFrameId, int bcBcInTimeFrame)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -1139,7 +1139,7 @@ struct TreeWriterTPCTOF {
 
   /// Function to fill trees
   template <bool doCorrectdEdx = false, typename T, typename C>
-  void fillSkimmedTPCTOFTable(T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, double hadronicRate)
+  void fillSkimmedTPCTOFTable(T const& track, C const& collision, float nSigmaTPC, float nSigmaTOF, float dEdxExp, o2::track::PID::ID id, int runnumber, double dwnSmplFactor, double hadronicRate)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -1182,7 +1182,7 @@ struct TreeWriterTPCTOF {
     }
   };
   template <bool doCorrectdEdx = false, typename T, typename TQA, typename C>
-  void fillSkimmedTPCTOFTableWithdEdxTrkQA(T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float nSigmaITS, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, double hadronicRate)
+  void fillSkimmedTPCTOFTableWithdEdxTrkQA(T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, float nSigmaTPC, float nSigmaTOF, float nSigmaITS, float dEdxExp, o2::track::PID::ID id, int runnumber, double dwnSmplFactor, double hadronicRate)
   {
 
     const double ncl = track.tpcNClsFound();
@@ -1228,7 +1228,7 @@ struct TreeWriterTPCTOF {
   };
   /// Function to fill trees
   template <bool doCorrectdEdx = false, typename T, typename TQA, typename C>
-  void fillSkimmedTPCTOFTableWithTrkQA(T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float nSigmaITS, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, double hadronicRate, int bcGlobalIndex, int bcTimeFrameId, int bcBcInTimeFrame)
+  void fillSkimmedTPCTOFTableWithTrkQA(T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, float nSigmaTPC, float nSigmaTOF, float nSigmaITS, float dEdxExp, o2::track::PID::ID id, int runnumber, double dwnSmplFactor, double hadronicRate, int bcGlobalIndex, int bcTimeFrameId, int bcBcInTimeFrame)
   {
 
     const double ncl = track.tpcNClsFound();
