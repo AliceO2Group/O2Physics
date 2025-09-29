@@ -45,9 +45,9 @@ DhCorrelationExtraction::DhCorrelationExtraction() : // default constructor
                                                      fDirME(0x0),
                                                      fDirSecPart(0x0),
                                                      fCorrectedCorrHisto(0x0),
-                                                     fCorrectedCorrHisto_BaselineSubtr(0x0),
-                                                     fCorrectedCorrHisto_Reflected(0x0),
-                                                     fCorrectedCorrHisto_Reflected_BaselineSubtr(0x0),
+                                                     fCorrectedCorrHistoBaselineSubtr(0x0),
+                                                     fCorrectedCorrHistoReflected(0x0),
+                                                     fCorrectedCorrHistoReflectedBaselineSubtr(0x0),
                                                      fDmesonSpecies(kDsToKKPi),
                                                      fDmesonLabel("Ds"),
                                                      fFileNameSE(""),
@@ -113,9 +113,9 @@ DhCorrelationExtraction::DhCorrelationExtraction(const DhCorrelationExtraction& 
                                                                                           fDirMass(source.fDirMass),
                                                                                           fDirSecPart(source.fDirSecPart),
                                                                                           fCorrectedCorrHisto(source.fCorrectedCorrHisto),
-                                                                                          fCorrectedCorrHisto_BaselineSubtr(source.fCorrectedCorrHisto_BaselineSubtr),
-                                                                                          fCorrectedCorrHisto_Reflected(source.fCorrectedCorrHisto_Reflected),
-                                                                                          fCorrectedCorrHisto_Reflected_BaselineSubtr(source.fCorrectedCorrHisto_Reflected_BaselineSubtr),
+                                                                                          fCorrectedCorrHistoBaselineSubtr(source.fCorrectedCorrHistoBaselineSubtr),
+                                                                                          fCorrectedCorrHistoReflected(source.fCorrectedCorrHistoReflected),
+                                                                                          fCorrectedCorrHistoReflectedBaselineSubtr(source.fCorrectedCorrHistoReflectedBaselineSubtr),
                                                                                           fDmesonSpecies(source.fDmesonSpecies),
                                                                                           fDmesonLabel(source.fDmesonLabel),
                                                                                           fFileNameSE(source.fFileNameSE),
@@ -174,7 +174,7 @@ DhCorrelationExtraction::~DhCorrelationExtraction()
 {
 }
 
-Bool_t DhCorrelationExtraction::SetDmesonSpecie(DmesonSpecie k)
+Bool_t DhCorrelationExtraction::setDmesonSpecie(DmesonSpecie k)
 {
 
   if (k < 0 || k > 3) {
@@ -194,7 +194,7 @@ Bool_t DhCorrelationExtraction::SetDmesonSpecie(DmesonSpecie k)
   return kTRUE;
 }
 
-Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax, TString codeName)
+Bool_t DhCorrelationExtraction::extractCorrelations(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax, TString codeName)
 {
 
   if (fSubtractSoftPiME) {
@@ -249,13 +249,13 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
 
   for (int iPool = 0; iPool < fNpools; iPool++) {
     // Retrieve 2D plots for SE and ME, signal and bkg regions, for each pTbin and pool
-    hSeSign[iPool] = GetCorrelHisto(kSE, kSign, iPool, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
+    hSeSign[iPool] = getCorrelHisto(kSE, kSign, iPool, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
     std::cout << "Got SE histogram signal region" << std::endl;
-    hMeSign[iPool] = GetCorrelHisto(kME, kSign, iPool, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
+    hMeSign[iPool] = getCorrelHisto(kME, kSign, iPool, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
     std::cout << "Got ME histogram signal region" << std::endl;
-    hSeSideb[iPool] = GetCorrelHisto(kSE, kSideb, iPool, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
+    hSeSideb[iPool] = getCorrelHisto(kSE, kSideb, iPool, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
     std::cout << "Got SE histogram sdeband region" << std::endl;
-    hMeSideb[iPool] = GetCorrelHisto(kME, kSideb, iPool, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
+    hMeSideb[iPool] = getCorrelHisto(kME, kSideb, iPool, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
     std::cout << "Got ME histogram sdeband region" << std::endl;
 
     hSeSign[iPool]->Sumw2();
@@ -314,8 +314,8 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
     }
 
     // Normalize ME plots for the entries in (deltaEta, deltaPhi) = (0, 0)
-    NormalizeMEplot(hMeSign[iPool], hMeSignSoftPi[iPool]);
-    NormalizeMEplot(hMeSideb[iPool], hMeSidebSoftPi[iPool]);
+    normalizeMePlot(hMeSign[iPool], hMeSignSoftPi[iPool]);
+    normalizeMePlot(hMeSideb[iPool], hMeSidebSoftPi[iPool]);
 
     // Apply Event Mixing Correction
     hCorrSign[iPool] = reinterpret_cast<TH2D*>(hSeSign[iPool]->Clone(Form("hCorr_Sign_Pool%d", iPool)));
@@ -379,8 +379,8 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
 
   // Draw 2D plots (Signal region and Sidebands)
   TCanvas* c2D = new TCanvas(Form("c2D_IntPools_PtHad%.0fto%.0f", ptHadMin, ptHadMax), Form("c2D_%s_IntPools_PtAssoc%.0fto%.0f", fDmesonLabel.Data(), ptHadMin, ptHadMax), 100, 100, 1500, 800);
-  SetTH2HistoStyle(h2DSign, Form("Signal region, %.0f < p^{%s}_{T} < %.0f GeV/c, %.0f < p^{assoc}_{T} < %.0f GeV/c", ptCandMin, fDmesonLabel.Data(), ptCandMax, ptHadMin, ptHadMax), "#Delta#eta", "#Delta#phi [rad]", "entries", 1.6, 1.6, 1.6, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04);
-  SetTH2HistoStyle(h2DSideb, Form("Sideband region, %.0f < p^{%s}_{T} < %.0f GeV/c, %.0f < p^{assoc}_{T} < %.0f GeV/c", ptCandMin, fDmesonLabel.Data(), ptCandMax, ptHadMin, ptHadMax), "#Delta#eta", "#Delta#phi [rad]", "#frac{Y_{Bkg}}{Y_{SB}} entries", 1.6, 1.6, 1.6, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04);
+  setTH2HistoStyle(h2DSign, Form("Signal region, %.0f < p^{%s}_{T} < %.0f GeV/c, %.0f < p^{assoc}_{T} < %.0f GeV/c", ptCandMin, fDmesonLabel.Data(), ptCandMax, ptHadMin, ptHadMax), "#Delta#eta", "#Delta#phi [rad]", "entries", 1.6, 1.6, 1.6, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04);
+  setTH2HistoStyle(h2DSideb, Form("Sideband region, %.0f < p^{%s}_{T} < %.0f GeV/c, %.0f < p^{assoc}_{T} < %.0f GeV/c", ptCandMin, fDmesonLabel.Data(), ptCandMax, ptHadMin, ptHadMax), "#Delta#eta", "#Delta#phi [rad]", "#frac{Y_{Bkg}}{Y_{SB}} entries", 1.6, 1.6, 1.6, 0.04, 0.04, 0.04, 0.04, 0.04, 0.04);
   c2D->Divide(2, 1);
   c2D->cd(1);
   h2DSign->SetMinimum(0);
@@ -393,10 +393,10 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
 
   // Get FD correlations for FD subtraction
   if (fFDsubtraction) {
-    h2DFdTemplatePrompt = GetFDTemplateHisto(kPrompt, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
-    h2DFdTemplateNonPrompt = GetFDTemplateHisto(kFD, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
+    h2DFdTemplatePrompt = getFdTemplateHisto(kPrompt, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
+    h2DFdTemplateNonPrompt = getFdTemplateHisto(kFD, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
     // h1D_BaselineSubtr
-    fdPromptFrac = GetFDPromptFrac(ptCandMin, ptCandMax, ptHadMin, ptHadMax);
+    fdPromptFrac = getFdPromptFrac(ptCandMin, ptCandMax, ptHadMin, ptHadMax);
 
     if (fRebinFDCorr) {
       h2DFdTemplatePrompt->Rebin2D(fRebinAxisDeltaEta, fRebinAxisDeltaPhi);
@@ -488,7 +488,7 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
 
   // Correction for bias B to D topologies
   if (fCorrBiasBtoD) {
-    hModul = EvaluateMCClosModulations(ptCandMin, ptCandMax, ptHadMin, ptHadMax);
+    hModul = evaluateMcClosModulations(ptCandMin, ptCandMax, ptHadMin, ptHadMax);
     TCanvas* c1DCorrBbias = new TCanvas(Form("c1D_corrBbias_IntPools_PtCand%.0fto%.0f_PtHad%.0fto%.0f", ptCandMin, ptCandMax, ptHadMin, ptHadMax), Form("c1D_corrBbias_%s_IntPools_PtAssoc%.0fto%.0f", fDmesonLabel.Data(), ptHadMin, ptHadMax), 100, 100, 1600, 500);
     c1DCorrBbias->cd();
     hBeforeModulCorr = reinterpret_cast<TH1D*>(h1DSubtrNorm->Clone("hBeforeModulCorr"));
@@ -502,8 +502,8 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
 
     TFile* file = new TFile(Form("Output_CorrelationExtraction_%s_Root/SystematicCorrBiasBtoD_%s_PtCand%.0fto%.0f_PoolInt_PtAssoc%.0fto%.0f.root", codeName.Data(), fDmesonLabel.Data(), ptCandMin, ptCandMax, ptHadMin, ptHadMax), "RECREATE"); // Open file in write mode
     TH1D* h1DSubtrNormClone = reinterpret_cast<TH1D*>(h1DSubtrNorm->Clone("h1D_SubtrNorm_Clone"));
-    h1DSubtrNormClone = ReflectCorrHistogram(h1DSubtrNormClone);
-    hBeforeModulCorr = ReflectCorrHistogram(hBeforeModulCorr);
+    h1DSubtrNormClone = reflectCorrHistogram(h1DSubtrNormClone);
+    hBeforeModulCorr = reflectCorrHistogram(hBeforeModulCorr);
     TH1D* hSystematicCorrBiasBtoD = reinterpret_cast<TH1D*>(h1DSubtrNormClone->Clone("hSystematicCorrBiasBtoD"));
     hSystematicCorrBiasBtoD->Add(h1DSubtrNormClone, hBeforeModulCorr, 1, -1);
     // Set bin contents to absolute values
@@ -517,8 +517,8 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
 
   // Secondary particle contamination
   if (fSecPartContamination) {
-    h1DPrimaryPartCorr = GetCorrelHistoSecondaryPart(kPrimaryPart, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
-    h1DAllPartCorr = GetCorrelHistoSecondaryPart(kAllPart, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
+    h1DPrimaryPartCorr = getCorrelHistoSecondaryPart(kPrimaryPart, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
+    h1DAllPartCorr = getCorrelHistoSecondaryPart(kAllPart, ptCandMin, ptCandMax, ptHadMin, ptHadMax);
     h1DPrimaryPartCorr->Sumw2();
     h1DAllPartCorr->Sumw2();
     if (fRebinSecPart) {
@@ -532,7 +532,7 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
 
     TCanvas* c1D = new TCanvas(Form("c1D_CorrPrimaryPart_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", ptCandMin, ptCandMax, ptHadMin, ptHadMax), Form("c1D_%s_CorrPrimaryPart_PtAssoc%.0fto%.0f", fDmesonLabel.Data(), ptHadMin, ptHadMax));
     c1D->cd();
-    SetTH1HistoStyle(h1DSecPartFrac, Form("%.0f < p_{T} < %.0f GeV/c", ptCandMin, ptCandMax), "#Delta#phi [rad]", "#frac{primary part.}{part. selected}");
+    setTH1HistoStyle(h1DSecPartFrac, Form("%.0f < p_{T} < %.0f GeV/c", ptCandMin, ptCandMax), "#Delta#phi [rad]", "#frac{primary part.}{part. selected}");
     h1DSecPartFrac->Draw();
     c1D->SaveAs(Form("Output_CorrelationExtraction_%s_png/CorrPrimaryPartRatio_%s_Canvas_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f.png", codeName.Data(), fDmesonLabel.Data(), ptCandMin, ptCandMax, ptHadMin, ptHadMax));
     c1D->SaveAs(Form("Output_CorrelationExtraction_%s_Root/CorrPrimaryPartRatio_%s_Canvas_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f.root", codeName.Data(), fDmesonLabel.Data(), ptCandMin, ptCandMax, ptHadMin, ptHadMax));
@@ -589,12 +589,12 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
       c->SaveAs(Form("Output_CorrelationExtraction_%s_Root/CorrFDTemplate_1D_%s_Canvas_PtCand%.0fto%.0f_PoolInt_PtAssoc%.0fto%.0f.root", codeName.Data(), fDmesonLabel.Data(), ptCandMin, ptCandMax, ptHadMin, ptHadMax));
     }
 
-    Double_t baselineFd = CalculateBaseline(h1DTemplateTotal, kTRUE);
+    Double_t baselineFd = calculateBaseline(h1DTemplateTotal, kTRUE);
     Double_t baselineData;
     if (fSecPartContamination) {
-      baselineData = CalculateBaseline(h1DSubtrNormSecPart, kTRUE);
+      baselineData = calculateBaseline(h1DSubtrNormSecPart, kTRUE);
     } else {
-      baselineData = CalculateBaseline(h1DSubtrNorm, kTRUE);
+      baselineData = calculateBaseline(h1DSubtrNorm, kTRUE);
     }
 
     std::cout << "===================== " << std::endl;
@@ -711,8 +711,8 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
   TH1D* hBaseline = reinterpret_cast<TH1D*>(h1DSubtrNorm->Clone("hBaseline"));
   hBaseline->Sumw2();
   if (fFDsubtraction) {
-    baselineData = CalculateBaseline(h1DSubtrFdNorm, kTRUE, kFALSE); // introduced kFALSE
-    baselineDataErr = CalculateBaselineError(h1DSubtrFdNorm, kTRUE, kFALSE);
+    baselineData = calculateBaseline(h1DSubtrFdNorm, kTRUE, kFALSE); // introduced kFALSE
+    baselineDataErr = calculateBaselineError(h1DSubtrFdNorm, kTRUE, kFALSE);
     for (int iBin = 0; iBin < hBaseline->GetNbinsX(); iBin++) {
       hBaseline->SetBinContent(iBin + 1, baselineData);
       hBaseline->SetBinError(iBin + 1, baselineDataErr);
@@ -720,8 +720,8 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
     h1DBaselineSubtr = reinterpret_cast<TH1D*>(h1DSubtrFdNorm->Clone("h1D_BaselineSubtr"));
     h1DBaselineSubtr->Add(hBaseline, -1.);
   } else if (fSecPartContamination) {
-    baselineData = CalculateBaseline(h1DSubtrNormSecPart, kTRUE, kFALSE);
-    baselineDataErr = CalculateBaselineError(h1DSubtrNormSecPart, kTRUE, kFALSE);
+    baselineData = calculateBaseline(h1DSubtrNormSecPart, kTRUE, kFALSE);
+    baselineDataErr = calculateBaselineError(h1DSubtrNormSecPart, kTRUE, kFALSE);
     for (int iBin = 0; iBin < hBaseline->GetNbinsX(); iBin++) {
       hBaseline->SetBinContent(iBin + 1, baselineData);
       hBaseline->SetBinError(iBin + 1, baselineDataErr);
@@ -729,8 +729,8 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
     h1DBaselineSubtr = reinterpret_cast<TH1D*>(h1DSubtrNormSecPart->Clone("h1D_BaselineSubtr"));
     h1DBaselineSubtr->Add(hBaseline, -1.);
   } else {
-    baselineData = CalculateBaseline(h1DSubtrNorm, kTRUE, kFALSE);
-    baselineDataErr = CalculateBaselineError(h1DSubtrNorm, kTRUE, kFALSE);
+    baselineData = calculateBaseline(h1DSubtrNorm, kTRUE, kFALSE);
+    baselineDataErr = calculateBaselineError(h1DSubtrNorm, kTRUE, kFALSE);
     for (int iBin = 0; iBin < hBaseline->GetNbinsX(); iBin++) {
       hBaseline->SetBinContent(iBin + 1, baselineData);
       hBaseline->SetBinError(iBin + 1, baselineDataErr);
@@ -739,7 +739,7 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
     h1DBaselineSubtr->Add(hBaseline, -1.);
   }
 
-  fCorrectedCorrHisto_BaselineSubtr = reinterpret_cast<TH1D*>(h1DBaselineSubtr->Clone(Form("hCorrectedCorrBaselineSubtr_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", ptCandMin, ptCandMax, ptHadMin, ptHadMax)));
+  fCorrectedCorrHistoBaselineSubtr = reinterpret_cast<TH1D*>(h1DBaselineSubtr->Clone(Form("hCorrectedCorrBaselineSubtr_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", ptCandMin, ptCandMax, ptHadMin, ptHadMax)));
 
   TCanvas* cFinalBaselineSubtr = new TCanvas(Form("cFinal_BaselineSubtr_%.0fto%.0f", ptHadMin, ptHadMax), Form("cFinal_BaselineSubtr_%s_IntPools_PtAssoc%.0fto%.0f", fDmesonLabel.Data(), ptHadMin, ptHadMax), 100, 100, 1200, 700);
   h1DBaselineSubtr->SetMarkerColor(kOrange + 8);
@@ -763,11 +763,11 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
 
   // Reflected histograms
   if (fFDsubtraction) {
-    h1DReflCorr = ReflectCorrHistogram(h1DSubtrFdNorm);
+    h1DReflCorr = reflectCorrHistogram(h1DSubtrFdNorm);
   } else if (fSecPartContamination) {
-    h1DReflCorr = ReflectCorrHistogram(h1DSubtrNormSecPart);
+    h1DReflCorr = reflectCorrHistogram(h1DSubtrNormSecPart);
   } else {
-    h1DReflCorr = ReflectCorrHistogram(h1DSubtrNorm);
+    h1DReflCorr = reflectCorrHistogram(h1DSubtrNorm);
   }
 
   /* used as control using Run2 reflection function
@@ -781,7 +781,7 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
 
   TCanvas* cFinalReflected = new TCanvas(Form("cFinal_Reflected_%.0fto%.0f", ptHadMin, ptHadMax), Form("cFinal_Reflected_%s_IntPools_PtAssoc%.0fto%.0f", fDmesonLabel.Data(), ptHadMin, ptHadMax), 100, 100, 1200, 700);
   cFinalReflected->cd();
-  SetTH1HistoStyle(h1DReflCorr, Form("%.0f < p_{T} < %.0f GeV/c", ptCandMin, ptCandMax), "#Delta#phi [rad]", "#frac{1}{N_{D}}#frac{dN^{assoc}}{d#Delta#phi} [rad^{-1}]", kFullCircle, kOrange + 8, 1.6, kOrange + 8, 3);
+  setTH1HistoStyle(h1DReflCorr, Form("%.0f < p_{T} < %.0f GeV/c", ptCandMin, ptCandMax), "#Delta#phi [rad]", "#frac{1}{N_{D}}#frac{dN^{assoc}}{d#Delta#phi} [rad^{-1}]", kFullCircle, kOrange + 8, 1.6, kOrange + 8, 3);
   h1DReflCorr->SetMinimum(0);
   h1DReflCorr->Draw();
   cFinalReflected->SaveAs(Form("Output_CorrelationExtraction_%s_png/AzimCorrDistr_Reflected_%s_Canvas_PtCand%.0fto%.0f_PoolInt_PtAssoc%.0fto%.0f.png", codeName.Data(), fDmesonLabel.Data(), ptCandMin, ptCandMax, ptHadMin, ptHadMax));
@@ -790,8 +790,8 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
   // Reflected histograms baseline subtracted
   TH1D* hBaselineRefl = reinterpret_cast<TH1D*>(h1DReflCorr->Clone("hBaseline_Refl"));
   hBaselineRefl->Sumw2();
-  baselineData = CalculateBaseline(h1DReflCorr, kFALSE, kTRUE);
-  baselineDataErr = CalculateBaselineError(h1DReflCorr, kFALSE, kTRUE);
+  baselineData = calculateBaseline(h1DReflCorr, kFALSE, kTRUE);
+  baselineDataErr = calculateBaselineError(h1DReflCorr, kFALSE, kTRUE);
 
   for (int iBin = 0; iBin < hBaselineRefl->GetNbinsX(); iBin++) {
     hBaselineRefl->SetBinContent(iBin + 1, baselineData);
@@ -809,7 +809,7 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
   fConstZero->SetTitle("");
 
   TCanvas* cFinalReflectedBaselineSubtr = new TCanvas(Form("cFinal_Reflected_BaselineSubtr_%.0fto%.0f", ptHadMin, ptHadMax), Form("cFinal_Reflected_BaselineSubtr_%s_IntPools_PtAssoc%.0fto%.0f", fDmesonLabel.Data(), ptHadMin, ptHadMax), 100, 100, 1200, 700);
-  SetTH1HistoStyle(h1DReflCorrBaselineSubtr, Form("%.0f < p_{T} < %.0f GeV/c", ptCandMin, ptCandMax), "#Delta#phi [rad]", "#frac{1}{N_{D}}#frac{dN^{assoc}}{d#Delta#phi} [rad^{-1}]", kFullCircle, kRed + 1, 1.6, kRed + 1, 3);
+  setTH1HistoStyle(h1DReflCorrBaselineSubtr, Form("%.0f < p_{T} < %.0f GeV/c", ptCandMin, ptCandMax), "#Delta#phi [rad]", "#frac{1}{N_{D}}#frac{dN^{assoc}}{d#Delta#phi} [rad^{-1}]", kFullCircle, kRed + 1, 1.6, kRed + 1, 3);
   hBaselineRefl->SetMarkerColor(kOrange);
   hBaselineRefl->SetMarkerStyle(kFullSquare);
   hBaselineRefl->SetLineColor(kOrange);
@@ -825,13 +825,13 @@ Bool_t DhCorrelationExtraction::ExtractCorrelations(Double_t ptCandMin, Double_t
   cFinalReflectedBaselineSubtr->SaveAs(Form("Output_CorrelationExtraction_%s_png/AzimCorrDistr_Reflected_BaselineSubtr_%s_Canvas_PtCand%.0fto%.0f_PoolInt_PtAssoc%.0fto%.0f.png", codeName.Data(), fDmesonLabel.Data(), ptCandMin, ptCandMax, ptHadMin, ptHadMax));
   cFinalReflectedBaselineSubtr->SaveAs(Form("Output_CorrelationExtraction_%s_Root/AzimCorrDistr_Reflected_BaselineSubtr_%s_Canvas_PtCand%.0fto%.0f_PoolInt_PtAssoc%.0fto%.0f.root", codeName.Data(), fDmesonLabel.Data(), ptCandMin, ptCandMax, ptHadMin, ptHadMax));
 
-  fCorrectedCorrHisto_Reflected = reinterpret_cast<TH1D*>(h1DReflCorr->Clone(Form("hCorrectedCorrReflected_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", ptCandMin, ptCandMax, ptHadMin, ptHadMax)));
-  fCorrectedCorrHisto_Reflected_BaselineSubtr = reinterpret_cast<TH1D*>(h1DReflCorrBaselineSubtr->Clone(Form("hCorrectedCorrReflected_BaselineSubtr_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", ptCandMin, ptCandMax, ptHadMin, ptHadMax)));
+  fCorrectedCorrHistoReflected = reinterpret_cast<TH1D*>(h1DReflCorr->Clone(Form("hCorrectedCorrReflected_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", ptCandMin, ptCandMax, ptHadMin, ptHadMax)));
+  fCorrectedCorrHistoReflectedBaselineSubtr = reinterpret_cast<TH1D*>(h1DReflCorrBaselineSubtr->Clone(Form("hCorrectedCorrReflected_BaselineSubtr_PtCand%.0fto%.0f_PtAssoc%.0fto%.0f", ptCandMin, ptCandMax, ptHadMin, ptHadMax)));
 
   return kTRUE;
 }
 
-Bool_t DhCorrelationExtraction::ReadInputSEandME()
+Bool_t DhCorrelationExtraction::readInputSeAndMe()
 {
 
   fFileSE = TFile::Open(fFileNameSE.Data());
@@ -861,7 +861,7 @@ Bool_t DhCorrelationExtraction::ReadInputSEandME()
   return kTRUE;
 }
 
-Bool_t DhCorrelationExtraction::ReadInputInvMass()
+Bool_t DhCorrelationExtraction::readInputInvMass()
 {
 
   fFileMass = TFile::Open(fFileNameMass.Data());
@@ -882,7 +882,7 @@ Bool_t DhCorrelationExtraction::ReadInputInvMass()
   return kTRUE;
 }
 
-Bool_t DhCorrelationExtraction::ReadInputFDSubtr()
+Bool_t DhCorrelationExtraction::readInputFdSubtr()
 {
 
   fFileFDTemplate = TFile::Open(fFileFDTemplateName.Data());
@@ -909,7 +909,7 @@ Bool_t DhCorrelationExtraction::ReadInputFDSubtr()
   return kTRUE;
 }
 
-Bool_t DhCorrelationExtraction::ReadInputSecondaryPartContamination()
+Bool_t DhCorrelationExtraction::readInputSecondaryPartContamination()
 {
 
   fFileSecPart = TFile::Open(fFileSecPartName.Data());
@@ -935,7 +935,7 @@ Bool_t DhCorrelationExtraction::ReadInputSecondaryPartContamination()
   return kTRUE;
 }
 
-TH1D* DhCorrelationExtraction::EvaluateMCClosModulations(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
+TH1D* DhCorrelationExtraction::evaluateMcClosModulations(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
 
   TH1D* hModul = new TH1D();
@@ -958,10 +958,10 @@ TH1D* DhCorrelationExtraction::EvaluateMCClosModulations(Double_t ptCandMin, Dou
 
   printf("[INFO] Bin cand %d - Bin had %d \n", fBinPtCand, fBinPtHad);
 
-  // hRecPrompt = ReflectCorrHistogram(hRecPrompt);
-  // hRecNonPrompt = ReflectCorrHistogram(hRecNonPrompt);
-  // hGenPrompt = ReflectCorrHistogram(hGenPrompt);
-  // hGenNonPrompt = ReflectCorrHistogram(hGenNonPrompt);
+  // hRecPrompt = reflectCorrHistogram(hRecPrompt);
+  // hRecNonPrompt = reflectCorrHistogram(hRecNonPrompt);
+  // hGenPrompt = reflectCorrHistogram(hGenPrompt);
+  // hGenNonPrompt = reflectCorrHistogram(hGenNonPrompt);
 
   hRecNonPrompt->Sumw2();
   hRecNonPrompt->Sumw2();
@@ -982,7 +982,7 @@ TH1D* DhCorrelationExtraction::EvaluateMCClosModulations(Double_t ptCandMin, Dou
   hRatioNonPrompt->GetYaxis()->SetRangeUser(0.2, 1.8);
   hRatioNonPrompt->Draw();
 
-  Double_t fPrompt = GetFDPromptFrac(ptCandMin, ptCandMax, ptHadMin, ptHadMax);
+  Double_t fPrompt = getFdPromptFrac(ptCandMin, ptCandMax, ptHadMin, ptHadMax);
   Double_t relAmplC[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   Double_t relAmplB[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   Double_t recoKineVal[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -1012,7 +1012,7 @@ TH1D* DhCorrelationExtraction::EvaluateMCClosModulations(Double_t ptCandMin, Dou
   return hModul;
 }
 
-TH2D* DhCorrelationExtraction::GetCorrelHisto(Int_t sEorMe, Int_t sorSb, Int_t pool, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
+TH2D* DhCorrelationExtraction::getCorrelHisto(Int_t sEorMe, Int_t sorSb, Int_t pool, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
   // TODO: Subtraction of softpion
   TH2D* h2D = new TH2D(); // pointer to be returned
@@ -1130,7 +1130,7 @@ TH2D* DhCorrelationExtraction::GetCorrelHisto(Int_t sEorMe, Int_t sorSb, Int_t p
   return h2D;
 }
 
-void DhCorrelationExtraction::GetSignalAndBackgroundForNorm(Double_t ptCandMin, Double_t ptCandMax)
+void DhCorrelationExtraction::getSignalAndBackgroundForNorm(Double_t ptCandMin, Double_t ptCandMax)
 {
 
   // using results obtained from HFInvariantMassFitter.cxx class
@@ -1162,21 +1162,21 @@ void DhCorrelationExtraction::GetSignalAndBackgroundForNorm(Double_t ptCandMin, 
   std::cout << "================================= " << std::endl;
   std::cout << " " << std::endl;
 
-  SetSignalYieldforNorm(sgnYield);
-  SetBkgYield(bkgYield);
+  setSignalYieldforNorm(sgnYield);
+  setBkgYield(bkgYield);
   if (fUseSidebLeft && fUseSidebRight) {
-    SetBkgScaleFactor(bkgYield / sBsYield);
-    SetSBYield(sBsYield);
+    setBkgScaleFactor(bkgYield / sBsYield);
+    setSbYield(sBsYield);
   } else if (fUseSidebLeft && !fUseSidebRight) {
-    SetBkgScaleFactor(bkgYield / sblYield);
-    SetSBYield(sblYield);
+    setBkgScaleFactor(bkgYield / sblYield);
+    setSbYield(sblYield);
   } else if (!fUseSidebLeft && fUseSidebRight) {
-    SetBkgScaleFactor(bkgYield / sbrYield);
-    SetSBYield(sbrYield);
+    setBkgScaleFactor(bkgYield / sbrYield);
+    setSbYield(sbrYield);
   }
 }
 
-TH2D* DhCorrelationExtraction::GetFDTemplateHisto(Int_t promptOrFd, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
+TH2D* DhCorrelationExtraction::getFdTemplateHisto(Int_t promptOrFd, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
 
   TH2D* h2D = new TH2D(); // pointer to be returned
@@ -1208,7 +1208,7 @@ TH2D* DhCorrelationExtraction::GetFDTemplateHisto(Int_t promptOrFd, Double_t ptC
   return h2D;
 }
 
-TH1D* DhCorrelationExtraction::GetCorrelHistoSecondaryPart(Int_t partType, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
+TH1D* DhCorrelationExtraction::getCorrelHistoSecondaryPart(Int_t partType, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
 
   TH1D* h1D = new TH1D(); // pointer to be returned
@@ -1257,7 +1257,7 @@ TH1D* DhCorrelationExtraction::GetCorrelHistoSecondaryPart(Int_t partType, Doubl
   return h1D;
 }
 
-TH1D* DhCorrelationExtraction::ReflectCorrHistogram(TH1D*& histo)
+TH1D* DhCorrelationExtraction::reflectCorrHistogram(TH1D*& histo)
 {
 
   // nBinsPhi must be a multple of 4 in order to reflect correcty the histogram
@@ -1293,7 +1293,7 @@ TH1D* DhCorrelationExtraction::ReflectCorrHistogram(TH1D*& histo)
   return h1D;
 }
 
-TH1D* DhCorrelationExtraction::ReflectHistoRun2(TH1D* h, Double_t scale)
+TH1D* DhCorrelationExtraction::reflectHistoRun2(TH1D* h, Double_t scale)
 {
 
   TH1D* h2 = new TH1D(Form("%sReflected", h->GetName()), Form("%sReflected", h->GetName()), h->GetNbinsX() / 2., 0., TMath::Pi());
@@ -1322,7 +1322,7 @@ TH1D* DhCorrelationExtraction::ReflectHistoRun2(TH1D* h, Double_t scale)
   return h2;
 }
 
-Double_t DhCorrelationExtraction::GetFDPromptFrac(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
+Double_t DhCorrelationExtraction::getFdPromptFrac(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
 
   TH1D* h1D = new TH1D();
@@ -1341,7 +1341,7 @@ Double_t DhCorrelationExtraction::GetFDPromptFrac(Double_t ptCandMin, Double_t p
   return promptFraction;
 }
 
-void DhCorrelationExtraction::NormalizeMEplot(TH2D*& histoME, TH2D*& histoMEsoftPi) const
+void DhCorrelationExtraction::normalizeMePlot(TH2D*& histoME, TH2D*& histoMEsoftPi) const
 {
 
   Int_t bin0phi = histoME->GetYaxis()->FindBin(0.);
@@ -1370,7 +1370,7 @@ void DhCorrelationExtraction::NormalizeMEplot(TH2D*& histoME, TH2D*& histoMEsoft
   histoME->Scale(1. / factorNorm);
 }
 
-Double_t DhCorrelationExtraction::CalculateBaseline(TH1D*& histo, Bool_t totalRange, Bool_t reflected)
+Double_t DhCorrelationExtraction::calculateBaseline(TH1D*& histo, Bool_t totalRange, Bool_t reflected)
 {
 
   // total range = 2*Pi
@@ -1450,7 +1450,7 @@ Double_t DhCorrelationExtraction::CalculateBaseline(TH1D*& histo, Bool_t totalRa
   return baseline;
 }
 
-Double_t DhCorrelationExtraction::CalculateBaselineError(TH1D*& histo, Bool_t totalRange, Bool_t reflected)
+Double_t DhCorrelationExtraction::calculateBaselineError(TH1D*& histo, Bool_t totalRange, Bool_t reflected)
 {
 
   // total range = 2*Pi
@@ -1508,7 +1508,7 @@ Double_t DhCorrelationExtraction::CalculateBaselineError(TH1D*& histo, Bool_t to
   return errBaseline;
 }
 
-void DhCorrelationExtraction::SetTH1HistoStyle(TH1D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle,
+void DhCorrelationExtraction::setTH1HistoStyle(TH1D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle,
                                                Style_t markerStyle, Color_t markerColor, Double_t markerSize,
                                                Color_t lineColor, Int_t lineWidth, Float_t hTitleXaxisOffset, Float_t hTitleYaxisOffset,
                                                Float_t hTitleXaxisSize, Float_t hTitleYaxisSize, Float_t hLabelXaxisSize, Float_t hLabelYaxisSize,
@@ -1533,7 +1533,7 @@ void DhCorrelationExtraction::SetTH1HistoStyle(TH1D*& histo, TString hTitle, TSt
   histo->GetYaxis()->CenterTitle(centerYaxisTitle);
 }
 
-void DhCorrelationExtraction::SetTH2HistoStyle(TH2D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle, TString hZaxisTitle,
+void DhCorrelationExtraction::setTH2HistoStyle(TH2D*& histo, TString hTitle, TString hXaxisTitle, TString hYaxisTitle, TString hZaxisTitle,
                                                Float_t hTitleXaxisOffset, Float_t hTitleYaxisOffset, Float_t hTitleZaxisOffset,
                                                Float_t hTitleXaxisSize, Float_t hTitleYaxisSize, Float_t hTitleZaxisSize,
                                                Float_t hLabelXaxisSize, Float_t hLabelYaxisSize, Float_t hLabelZaxisSize,

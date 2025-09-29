@@ -215,7 +215,7 @@ DhCorrelationFitter& DhCorrelationFitter::operator=(const DhCorrelationFitter& c
   return *this;
 }
 
-void DhCorrelationFitter::SetExternalValsAndBounds(Int_t nPars, Double_t* vals, Double_t* lowBounds, Double_t* uppBounds)
+void DhCorrelationFitter::setExternalValsAndBounds(Int_t nPars, Double_t* vals, Double_t* lowBounds, Double_t* uppBounds)
 {
 
   fNpars = nPars;
@@ -233,7 +233,7 @@ void DhCorrelationFitter::SetExternalValsAndBounds(Int_t nPars, Double_t* vals, 
   return;
 }
 
-void DhCorrelationFitter::Fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
+void DhCorrelationFitter::fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
 {
   // -> fFixBase = 0 : baseline free
   //             = 1 : fix the baseline to the minimum of the histogram
@@ -252,18 +252,18 @@ void DhCorrelationFitter::Fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
 
   if (fFixBase != 0 && fFixBase != 6) {
     Printf("[INFO] DhCorrelationFitter::Fitting, Finding baseline");
-    FindBaseline();
+    findBaseline();
   }
   if (fFixBase == 0) {
     // set initial value of the fBaseline
-    fBaseline = CalculateBaseline(fHist, fIsTotal);
+    fBaseline = calculateBaseline(fHist, fIsTotal);
   }
   Printf("[INFO] DhCorrelationFitter::Fitting, Setting Function");
   if (fTypeOfFitFunc == 7) { // case for v2 modulation
-    FitBaselineWv2();        // to contrain the B parameter in the fit function for the pedestal
+    fitBaselineWv2();        // to contrain the B parameter in the fit function for the pedestal
     Printf("[INFO] B parameter for v2 fit: %.3f", fBaseline);
   }
-  SetFitFunction();
+  setFitFunction();
 
   if (fFixBase != 0) {
     fFit->FixParameter(0, fBaseline);
@@ -293,10 +293,10 @@ void DhCorrelationFitter::Fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
     fErrBaseline = fFit->GetParError(0);
   }
   Printf("[INFO] DhCorrelationFitter::Fitting, Calculating yields with BC");
-  CalculateYieldsAboveBaseline();
+  calculateYieldsAboveBaseline();
   fHist->SetTitle(";#Delta#varphi (rad); #frac{1}{N_{D}}#frac{dN^{assoc}}{d#Delta#varphi} (rad^{-1})");
   Printf("[INFO] DhCorrelationFitter::Fitting, Now drawing, if requested");
-  SetSingleTermsForDrawing(drawSplitTerm);
+  setSingleTermsForDrawing(drawSplitTerm);
 
   // NS yield from bin counting
   double fNSyield = 0.;
@@ -321,7 +321,7 @@ void DhCorrelationFitter::Fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
   printf("[RESULT MINE] Bin counting results: NS Yield = %.3f +- %.3f \n[RESULT MINE] Bin counting results: AS Yield: %.3f +- %.3f \n[RESULT MINE] baseline = %.3f \n", fNSyield, fNSyieldErr, fASyield, fASyieldErr, baselinBinCount);
 }
 
-void DhCorrelationFitter::SetFitFunction()
+void DhCorrelationFitter::setFitFunction()
 {
   // -> fitFunc = 1: const + G NS + G AS (w/o periodicity)
   //            = 2: const + G NS + G AS  (w/ periodicity)
@@ -596,7 +596,7 @@ void DhCorrelationFitter::SetFitFunction()
   }
 }
 
-void DhCorrelationFitter::SetPointsForBaseline(Int_t nBaselinePoints, Int_t* binsBaseline)
+void DhCorrelationFitter::setPointsForBaseline(Int_t nBaselinePoints, Int_t* binsBaseline)
 {
 
   fNbasleinePoints = nBaselinePoints;
@@ -610,13 +610,13 @@ void DhCorrelationFitter::SetPointsForBaseline(Int_t nBaselinePoints, Int_t* bin
   return;
 }
 
-Double_t DhCorrelationFitter::FindBaseline()
+Double_t DhCorrelationFitter::findBaseline()
 {
 
   // baseline free
   if (fFixBase == 0) {
     Printf("[INFO] DhCorrelationFitter::FindBasline(). The baseline option is set to free baseline: now the full fit will be done. Beware!");
-    Fitting(); // TODO: not sure
+    fitting(); // TODO: not sure
     return fBaseline;
   }
 
@@ -654,7 +654,7 @@ Double_t DhCorrelationFitter::FindBaseline()
     for (Int_t k = 1; k <= fHist->GetNbinsX(); k++) {
       hval[k - 1] = fHist->GetBinContent(k);
     }
-    Double_t errAv = 0., Av = 0.;
+    Double_t errAv = 0., av = 0.;
     TMath::Sort(fHist->GetNbinsX(), hval, ind, kFALSE); //  KFALSE -> increasing order
     // Average of abs(fFixBase) lower points
     for (Int_t k = 0; k < npointsAv; k++) {
@@ -664,13 +664,13 @@ Double_t DhCorrelationFitter::FindBaseline()
         npointsAv++;
         continue;
       }
-      Av += fHist->GetBinContent(ind[k] + 1) / (fHist->GetBinError(ind[k] + 1) * fHist->GetBinError(ind[k] + 1));
+      av += fHist->GetBinContent(ind[k] + 1) / (fHist->GetBinError(ind[k] + 1) * fHist->GetBinError(ind[k] + 1));
       errAv += 1. / (fHist->GetBinError(ind[k] + 1) * fHist->GetBinError(ind[k] + 1));
     }
-    Av /= errAv;
+    av /= errAv;
     errAv = TMath::Sqrt(1. / errAv);
-    printf("[RESULT] Average fBaseline: %.3f +- %.3f", Av, errAv);
-    fBaseline = Av;
+    printf("[RESULT] Average fBaseline: %.3f +- %.3f", av, errAv);
+    fBaseline = av;
     fErrBaseline = errAv;
 
     if (fShiftBaselineUp) {
@@ -688,23 +688,23 @@ Double_t DhCorrelationFitter::FindBaseline()
 
   // zyam at pi/2. Fix the baseline averaging the 2 points around +-pi/2 value
   if (fFixBase == 2) {
-    Double_t errAv = 0., Av = 0.;
+    Double_t errAv = 0., av = 0.;
     Int_t binPhi = fHist->FindBin(TMath::Pi() / 2.);
-    Av += fHist->GetBinContent(binPhi) / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
+    av += fHist->GetBinContent(binPhi) / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
     errAv += 1. / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
     if (!fIsReflected) {
       binPhi = fHist->FindBin(-TMath::Pi() / 2.);
       if (binPhi < 1)
         binPhi = 1;
-      Av += fHist->GetBinContent(binPhi) / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
+      av += fHist->GetBinContent(binPhi) / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
       errAv += 1. / (fHist->GetBinError(binPhi) * fHist->GetBinError(binPhi));
     } else {
       printf("[INFO] Reflected histo: only the point at +pi/2 used to evaluate baseline");
     }
-    Av /= errAv;
+    av /= errAv;
     errAv = TMath::Sqrt(1. / errAv);
-    printf("[RESULT] Average fBaseline: %.3f +- %.3f \n", Av, errAv);
-    fBaseline = Av;
+    printf("[RESULT] Average fBaseline: %.3f +- %.3f \n", av, errAv);
+    fBaseline = av;
     fErrBaseline = errAv;
 
     if (fShiftBaselineUp) {
@@ -726,15 +726,15 @@ Double_t DhCorrelationFitter::FindBaseline()
       printf("[ERROR] No baseline points set for the baseline evaluation, SetPointsForBaseline(Int_t nBaselinePoints, Double_t* valsBaseline). Returning -1");
       return -1;
     }
-    Double_t errAv = 0., Av = 0.;
+    Double_t errAv = 0., av = 0.;
     for (int i = 0; i < fNbasleinePoints; i++) {
-      Av += fHist->GetBinContent(fBinsBaseline[i]) / (fHist->GetBinError(fBinsBaseline[i]) * fHist->GetBinError(fBinsBaseline[i]));
+      av += fHist->GetBinContent(fBinsBaseline[i]) / (fHist->GetBinError(fBinsBaseline[i]) * fHist->GetBinError(fBinsBaseline[i]));
       errAv += 1. / (fHist->GetBinError(fBinsBaseline[i]) * fHist->GetBinError(fBinsBaseline[i]));
     }
-    Av /= errAv;
+    av /= errAv;
     errAv = TMath::Sqrt(1. / errAv);
-    printf("[RESULT] Average fBaseline: %.3f +- %.3f \n", Av, errAv);
-    fBaseline = Av;
+    printf("[RESULT] Average fBaseline: %.3f +- %.3f \n", av, errAv);
+    fBaseline = av;
     fErrBaseline = errAv;
 
     if (fShiftBaselineUp) {
@@ -751,8 +751,8 @@ Double_t DhCorrelationFitter::FindBaseline()
   }
 
   if (fFixBase == 4) {
-    fBaseline = CalculateBaseline(fHist, fIsTotal); // TODO: add the option for total range/ reflected range to pass in input
-    fErrBaseline = CalculateBaselineError(fHist, fIsTotal);
+    fBaseline = calculateBaseline(fHist, fIsTotal); // TODO: add the option for total range/ reflected range to pass in input
+    fErrBaseline = calculateBaselineError(fHist, fIsTotal);
 
     if (fShiftBaselineUp) {
       fBaseline += fErrBaseline;
@@ -771,7 +771,7 @@ Double_t DhCorrelationFitter::FindBaseline()
   return -1.;
 }
 
-void DhCorrelationFitter::FitBaselineWv2()
+void DhCorrelationFitter::fitBaselineWv2()
 {
 
   fBaseTransvReg = new TF1("fBaseTransvReg", [](double* x, double* p) {
@@ -791,14 +791,14 @@ void DhCorrelationFitter::FitBaselineWv2()
   return;
 }
 
-void DhCorrelationFitter::CalculateYieldsAboveBaseline()
+void DhCorrelationFitter::calculateYieldsAboveBaseline()
 {
 
   fNSyieldBinCount = 0;
   fErrNSyieldBinCount = 0;
   fASyieldBinCount = 0;
   fErrASyieldBinCount = 0;
-  cout << "[RESULT] Baseline: " << fBaseline << " +- " << fErrBaseline << endl;
+  std::cout << "[RESULT] Baseline: " << fBaseline << " +- " << fErrBaseline << std::endl;
   Int_t binMinNS = fHist->FindBin(-1.5); // slightly more than -pi/2
   if (binMinNS < 1)
     binMinNS = 1;      // with this, it is ok even in the case of a reflected fHist (range 0 - pi)
@@ -807,11 +807,11 @@ void DhCorrelationFitter::CalculateYieldsAboveBaseline()
   Int_t binMaxAS = 16; // fHist -> FindBin(3.14+1.5); // slightly less than +3pi/2
   if (binMaxAS > fHist->GetNbinsX())
     binMaxAS = fHist->GetNbinsX(); // with this, it is ok even in the case of a reflected fHist (range 0 - pi)
-  cout << "N bins : " << fHist->GetNbinsX() << endl;
-  cout << "binMinNS : " << binMinNS << endl;
-  cout << "binMaxNS : " << binMaxNS << endl;
-  cout << "binMinAS : " << binMinAS << endl;
-  cout << "binMaxAS : " << binMaxAS << endl;
+  std::cout << "N bins : " << fHist->GetNbinsX() << std::endl;
+  std::cout << "binMinNS : " << binMinNS << std::endl;
+  std::cout << "binMaxNS : " << binMaxNS << std::endl;
+  std::cout << "binMinAS : " << binMinAS << std::endl;
+  std::cout << "binMaxAS : " << binMaxAS << std::endl;
   // Near Side Yield from bin counting
   for (Int_t bmNS = binMinNS; bmNS <= binMaxNS; bmNS++) {
     fNSyieldBinCount += 2 * (fHist->GetBinContent(bmNS) - fBaseline) * fHist->GetBinWidth(bmNS);
@@ -831,7 +831,7 @@ void DhCorrelationFitter::CalculateYieldsAboveBaseline()
   return;
 }
 
-Double_t DhCorrelationFitter::CalculateBaseline(TH1F*& histo, Bool_t totalRange)
+Double_t DhCorrelationFitter::calculateBaseline(TH1F*& histo, Bool_t totalRange)
 {
 
   // total range = 2*Pi
@@ -904,7 +904,7 @@ Double_t DhCorrelationFitter::CalculateBaseline(TH1F*& histo, Bool_t totalRange)
   return baseline;
 }
 
-Double_t DhCorrelationFitter::CalculateBaselineError(TH1F*& histo, Bool_t totalRange)
+Double_t DhCorrelationFitter::calculateBaselineError(TH1F*& histo, Bool_t totalRange)
 {
 
   // total range = 2*Pi
@@ -954,7 +954,7 @@ Double_t DhCorrelationFitter::CalculateBaselineError(TH1F*& histo, Bool_t totalR
   return errBaseline;
 }
 
-void DhCorrelationFitter::SetSingleTermsForDrawing(Bool_t draw)
+void DhCorrelationFitter::setSingleTermsForDrawing(Bool_t draw)
 {
   Double_t* par = 0;
   if (fTypeOfFitFunc == 1 || fTypeOfFitFunc == 2 || fTypeOfFitFunc == 5) {

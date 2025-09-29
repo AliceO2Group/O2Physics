@@ -112,7 +112,7 @@ class DhCorrelationExtraction : public TObject
     fRebinSecPart = rebinSecPart;
   }
   void getSignalAndBackgroundForNorm(Double_t ptCandMin, Double_t ptCandMax);
-  void normalizeMEplot(TH2D*& histoME, TH2D*& histoMEsoftPi) const;
+  void normalizeMePlot(TH2D*& histoME, TH2D*& histoMEsoftPi) const;
   void setDebugLevel(Int_t debug) { fDebug = debug; }
   void setDividedSidebands(Bool_t dividedSideb, Bool_t useSidebLeft, Bool_t useSidebRight)
   {
@@ -139,7 +139,7 @@ class DhCorrelationExtraction : public TObject
   Double_t getFdPromptFrac(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax);
   Double_t calculateBaseline(TH1D*& histo, Bool_t totalRange = kTRUE, Bool_t reflected = kFALSE);
   Double_t calculateBaselineError(TH1D*& histo, Bool_t totalRange = kTRUE, Bool_t reflected = kFALSE);
-  Bool_t readInputSEandMe();
+  Bool_t readInputSeAndMe();
   Bool_t readInputInvMass();
   Bool_t readInputFdSubtr();
   Bool_t readInputSecondaryPartContamination();
@@ -168,9 +168,9 @@ class DhCorrelationExtraction : public TObject
   TDirectoryFile* fDirME;      // TDirectory for ME info
   TDirectoryFile* fDirSecPart; // TDirectory for seondary particle correction
 
-  TH1D* fCorrectedCorrHisto;                         // Corrected correlation histogram
-  TH1D* fCorrectedCorrHistoBaselineSubtr;           // Corrected correlation histogram with baseline subtracion
-  TH1D* fCorrectedCorrHistoReflected;               // Corrected correlation histogram relected in azimuth
+  TH1D* fCorrectedCorrHisto;                       // Corrected correlation histogram
+  TH1D* fCorrectedCorrHistoBaselineSubtr;          // Corrected correlation histogram with baseline subtracion
+  TH1D* fCorrectedCorrHistoReflected;              // Corrected correlation histogram relected in azimuth
   TH1D* fCorrectedCorrHistoReflectedBaselineSubtr; // Corrected correlation histogram reflected in azimuth with baseline subtraction
 
   DmesonSpecie fDmesonSpecies;           // D meson specie
