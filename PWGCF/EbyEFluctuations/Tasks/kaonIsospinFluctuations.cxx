@@ -267,7 +267,7 @@ struct PrimVtxParticleTable {
   Partition<MyTracks> negTracks = aod::track::signed1Pt < 0.0f;
 
   std::chrono::high_resolution_clock::time_point start0 = std::chrono::high_resolution_clock::now();
-  int64_t dfCount = 0;
+  int dfCount = 0;
 
   /// Reconstruction of particles from primary vertex
   /// to get contamination sources from primary vertex
@@ -436,9 +436,9 @@ struct PrimVtxParticleTable {
     } // collision loop
 
     if (cfgDebug.printDebugMessages) {
-      printTime(collLoop1Start, Form("DEBUG :: df_%lld :: collLoop1 Time :: ", dfCount));
-      printTime(start1, Form("DEBUG :: df_%lld :: DF Reading :: DF Processing Time :: ", dfCount));
-      printTime(start0, Form("DEBUG :: df_%lld :: DF Reading :: DF Elapsed Time :: ", dfCount));
+      printTime(collLoop1Start, Form("DEBUG :: df_%d :: collLoop1 Time :: ", dfCount));
+      printTime(start1, Form("DEBUG :: df_%d :: DF Reading :: DF Processing Time :: ", dfCount));
+      printTime(start0, Form("DEBUG :: df_%d :: DF Reading :: DF Elapsed Time :: ", dfCount));
     }
   } // Process Function Ends
   PROCESS_SWITCH(PrimVtxParticleTable, processData, "Process for Data", true);
@@ -4156,7 +4156,7 @@ struct KaonIsospinFluctuations {
   std::array<std::array<std::vector<MyTrackData>, 2>, v0TrkEnumSize> v0CndtDauList;
   std::array<std::array<std::vector<MyTrackData>, 2>, primVtxTrkEnumSize> primVtxCndtDauList;
 
-  int64_t dfCount = 0;
+  int dfCount = 0;
   std::chrono::high_resolution_clock::time_point start0 = std::chrono::high_resolution_clock::now();
 
   template <int analysisType, typename C, typename V, typename T, typename P>
@@ -4948,18 +4948,18 @@ struct KaonIsospinFluctuations {
 
     // Debug messages for checking time consuming parts
     if (cfgDebug.printDebugMessages) {
-      printHistInfo(Form("DEBUG :: df_%lld :: time00_dfProcessingTime  = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time00_dfProcessingTime")));
-      printHistInfo(Form("DEBUG :: df_%lld :: time01_executeV0loop     = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time01_executeV0loop")));
-      printHistInfo(Form("DEBUG :: df_%lld :: time02_v0SortTime        = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time02_v0SortTime")));
-      printHistInfo(Form("DEBUG :: df_%lld :: time03_collisionLoopTime = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time03_collisionLoopTime")));
-      printHistInfo(Form("DEBUG :: df_%lld :: time04_manualGrouping    = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time04_manualGrouping")));
-      printHistInfo(Form("DEBUG :: df_%lld :: time05_primVtxLoop1Time  = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time05_primVtxLoop1Time")));
-      printHistInfo(Form("DEBUG :: df_%lld :: time06_primVtxSortTime   = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time06_primVtxSortTime")));
-      printHistInfo(Form("DEBUG :: df_%lld :: time07_primVtxLoop2Time  = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time07_primVtxLoop2Time")));
-      printHistInfo(Form("DEBUG :: df_%lld :: time08_seconV0LoopTime   = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time08_seconV0LoopTime")));
-      printHistInfo(Form("DEBUG :: df_%lld :: time09_trackLoopTime     = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time09_trackLoopTime")));
-      printHistInfo(Form("DEBUG :: df_%lld :: time10_hSparseFillTime   = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time10_hSparseFillTime")));
-      printHistInfo(Form("DEBUG :: df_%lld :: time11_EventInfoFillTime = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time11_EventInfoFillTime")));
+      printHistInfo(Form("DEBUG :: df_%d :: time00_dfProcessingTime  = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time00_dfProcessingTime")));
+      printHistInfo(Form("DEBUG :: df_%d :: time01_executeV0loop     = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time01_executeV0loop")));
+      printHistInfo(Form("DEBUG :: df_%d :: time02_v0SortTime        = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time02_v0SortTime")));
+      printHistInfo(Form("DEBUG :: df_%d :: time03_collisionLoopTime = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time03_collisionLoopTime")));
+      printHistInfo(Form("DEBUG :: df_%d :: time04_manualGrouping    = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time04_manualGrouping")));
+      printHistInfo(Form("DEBUG :: df_%d :: time05_primVtxLoop1Time  = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time05_primVtxLoop1Time")));
+      printHistInfo(Form("DEBUG :: df_%d :: time06_primVtxSortTime   = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time06_primVtxSortTime")));
+      printHistInfo(Form("DEBUG :: df_%d :: time07_primVtxLoop2Time  = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time07_primVtxLoop2Time")));
+      printHistInfo(Form("DEBUG :: df_%d :: time08_seconV0LoopTime   = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time08_seconV0LoopTime")));
+      printHistInfo(Form("DEBUG :: df_%d :: time09_trackLoopTime     = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time09_trackLoopTime")));
+      printHistInfo(Form("DEBUG :: df_%d :: time10_hSparseFillTime   = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time10_hSparseFillTime")));
+      printHistInfo(Form("DEBUG :: df_%d :: time11_EventInfoFillTime = ", dfCount), anlysisTimingInfo.get<TH1>(HIST("time11_EventInfoFillTime")));
       LOG(info) << "DEBUG ::";
     }
     if (cfgDebug.resetHistograms) {
@@ -4987,33 +4987,33 @@ struct KaonIsospinFluctuations {
   }
   PROCESS_SWITCH(KaonIsospinFluctuations, processData, "Process for Data", true);
 
-  void processReco(aod::BCsWithTimestamps const&, MyCollisionsWithMcLabels const& collisions, MyV0sWithMcLabels const& V0s, MyTracksWithMcLabels const& tracks, MyPrimVtxCndts const& primVtxCndts, aod::McParticles const&)
-  {
-    recoEvent.fill(HIST("recoEvent/ProcessType"), doRecoProcessing);
-    executeAnalysis<doRecoProcessing>(collisions, V0s, tracks, primVtxCndts);
-  }
-  PROCESS_SWITCH(KaonIsospinFluctuations, processReco, "Process for Reco", false);
+//   void processReco(aod::BCsWithTimestamps const&, MyCollisionsWithMcLabels const& collisions, MyV0sWithMcLabels const& V0s, MyTracksWithMcLabels const& tracks, MyPrimVtxCndts const& primVtxCndts, aod::McParticles const&)
+//   {
+//     recoEvent.fill(HIST("recoEvent/ProcessType"), doRecoProcessing);
+//     executeAnalysis<doRecoProcessing>(collisions, V0s, tracks, primVtxCndts);
+//   }
+//   PROCESS_SWITCH(KaonIsospinFluctuations, processReco, "Process for Reco", false);
 
-  void processPurity(aod::BCsWithTimestamps const&, MyCollisionsWithMcLabels const& collisions, MyV0sWithMcLabels const& V0s, MyTracksWithMcLabels const& tracks, MyPrimVtxCndts const& primVtxCndts, aod::McParticles const&)
-  {
-    recoEvent.fill(HIST("recoEvent/ProcessType"), doPurityProcessing);
-    executeAnalysis<doPurityProcessing>(collisions, V0s, tracks, primVtxCndts);
-  }
-  PROCESS_SWITCH(KaonIsospinFluctuations, processPurity, "Process for Purity", false);
+//   void processPurity(aod::BCsWithTimestamps const&, MyCollisionsWithMcLabels const& collisions, MyV0sWithMcLabels const& V0s, MyTracksWithMcLabels const& tracks, MyPrimVtxCndts const& primVtxCndts, aod::McParticles const&)
+//   {
+//     recoEvent.fill(HIST("recoEvent/ProcessType"), doPurityProcessing);
+//     executeAnalysis<doPurityProcessing>(collisions, V0s, tracks, primVtxCndts);
+//   }
+//   PROCESS_SWITCH(KaonIsospinFluctuations, processPurity, "Process for Purity", false);
 
-  void processGen(MyMcCollisions const&, MyCollisionsWithMcLabels const& collisions, aod::McParticles const& mcParticles)
-  {
-    recoEvent.fill(HIST("recoEvent/ProcessType"), doGenProcessing);
-    executeAnalysis<doGenProcessing>(collisions, nullptr, mcParticles, nullptr);
-  }
-  PROCESS_SWITCH(KaonIsospinFluctuations, processGen, "Process for Gen", false);
+//   void processGen(MyMcCollisions const&, MyCollisionsWithMcLabels const& collisions, aod::McParticles const& mcParticles)
+//   {
+//     recoEvent.fill(HIST("recoEvent/ProcessType"), doGenProcessing);
+//     executeAnalysis<doGenProcessing>(collisions, nullptr, mcParticles, nullptr);
+//   }
+//   PROCESS_SWITCH(KaonIsospinFluctuations, processGen, "Process for Gen", false);
 
-  void processSim(MyMcCollisions const& mcCollisions, aod::McParticles const& mcParticles)
-  {
-    recoEvent.fill(HIST("recoEvent/ProcessType"), doSimProcessing);
-    executeAnalysis<doSimProcessing>(mcCollisions, nullptr, mcParticles, nullptr);
-  }
-  PROCESS_SWITCH(KaonIsospinFluctuations, processSim, "Process for Sim", false);
+//   void processSim(MyMcCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+//   {
+//     recoEvent.fill(HIST("recoEvent/ProcessType"), doSimProcessing);
+//     executeAnalysis<doSimProcessing>(mcCollisions, nullptr, mcParticles, nullptr);
+//   }
+//   PROCESS_SWITCH(KaonIsospinFluctuations, processSim, "Process for Sim", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
