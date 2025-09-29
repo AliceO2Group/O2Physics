@@ -4987,33 +4987,33 @@ struct KaonIsospinFluctuations {
   }
   PROCESS_SWITCH(KaonIsospinFluctuations, processData, "Process for Data", true);
 
-//   void processReco(aod::BCsWithTimestamps const&, MyCollisionsWithMcLabels const& collisions, MyV0sWithMcLabels const& V0s, MyTracksWithMcLabels const& tracks, MyPrimVtxCndts const& primVtxCndts, aod::McParticles const&)
-//   {
-//     recoEvent.fill(HIST("recoEvent/ProcessType"), doRecoProcessing);
-//     executeAnalysis<doRecoProcessing>(collisions, V0s, tracks, primVtxCndts);
-//   }
-//   PROCESS_SWITCH(KaonIsospinFluctuations, processReco, "Process for Reco", false);
+  void processReco(aod::BCsWithTimestamps const&, MyCollisionsWithMcLabels const& collisions, MyV0sWithMcLabels const& V0s, MyTracksWithMcLabels const& tracks, MyPrimVtxCndts const& primVtxCndts, aod::McParticles const&)
+  {
+    recoEvent.fill(HIST("recoEvent/ProcessType"), doRecoProcessing);
+    executeAnalysis<doRecoProcessing>(collisions, V0s, tracks, primVtxCndts);
+  }
+  PROCESS_SWITCH(KaonIsospinFluctuations, processReco, "Process for Reco", false);
 
-//   void processPurity(aod::BCsWithTimestamps const&, MyCollisionsWithMcLabels const& collisions, MyV0sWithMcLabels const& V0s, MyTracksWithMcLabels const& tracks, MyPrimVtxCndts const& primVtxCndts, aod::McParticles const&)
-//   {
-//     recoEvent.fill(HIST("recoEvent/ProcessType"), doPurityProcessing);
-//     executeAnalysis<doPurityProcessing>(collisions, V0s, tracks, primVtxCndts);
-//   }
-//   PROCESS_SWITCH(KaonIsospinFluctuations, processPurity, "Process for Purity", false);
+  void processPurity(aod::BCsWithTimestamps const&, MyCollisionsWithMcLabels const& collisions, MyV0sWithMcLabels const& V0s, MyTracksWithMcLabels const& tracks, MyPrimVtxCndts const& primVtxCndts, aod::McParticles const&)
+  {
+    recoEvent.fill(HIST("recoEvent/ProcessType"), doPurityProcessing);
+    executeAnalysis<doPurityProcessing>(collisions, V0s, tracks, primVtxCndts);
+  }
+  PROCESS_SWITCH(KaonIsospinFluctuations, processPurity, "Process for Purity", false);
 
-//   void processGen(MyMcCollisions const&, MyCollisionsWithMcLabels const& collisions, aod::McParticles const& mcParticles)
-//   {
-//     recoEvent.fill(HIST("recoEvent/ProcessType"), doGenProcessing);
-//     executeAnalysis<doGenProcessing>(collisions, nullptr, mcParticles, nullptr);
-//   }
-//   PROCESS_SWITCH(KaonIsospinFluctuations, processGen, "Process for Gen", false);
+  void processGen(MyMcCollisions const&, MyCollisionsWithMcLabels const& collisions, aod::McParticles const& mcParticles)
+  {
+    recoEvent.fill(HIST("recoEvent/ProcessType"), doGenProcessing);
+    executeAnalysis<doGenProcessing>(collisions, nullptr, mcParticles, nullptr);
+  }
+  PROCESS_SWITCH(KaonIsospinFluctuations, processGen, "Process for Gen", false);
 
-//   void processSim(MyMcCollisions const& mcCollisions, aod::McParticles const& mcParticles)
-//   {
-//     recoEvent.fill(HIST("recoEvent/ProcessType"), doSimProcessing);
-//     executeAnalysis<doSimProcessing>(mcCollisions, nullptr, mcParticles, nullptr);
-//   }
-//   PROCESS_SWITCH(KaonIsospinFluctuations, processSim, "Process for Sim", false);
+  void processSim(MyMcCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    recoEvent.fill(HIST("recoEvent/ProcessType"), doSimProcessing);
+    executeAnalysis<doSimProcessing>(mcCollisions, nullptr, mcParticles, nullptr);
+  }
+  PROCESS_SWITCH(KaonIsospinFluctuations, processSim, "Process for Sim", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
