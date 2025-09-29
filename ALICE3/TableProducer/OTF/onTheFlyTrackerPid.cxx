@@ -37,7 +37,7 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <DetectorsVertexing/HelixHelper.h>
+#include <ReconstructionDataFormats/HelixHelper.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
