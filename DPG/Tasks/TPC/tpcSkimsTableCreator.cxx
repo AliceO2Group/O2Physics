@@ -108,7 +108,7 @@ struct TreeWriterTpcV0 {
   ctpRateFetcher mRateFetcher;
 
   /// Funktion to fill skimmed tables
-  template <bool doUseCorreceddEdx = false, typename T, typename C, typename V0Casc>
+  template <bool doUseCorrecteddEdx = false, typename T, typename C, typename V0Casc>
   void fillSkimmedV0Table(V0Casc const& v0casc, T const& track, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate)
   {
 
@@ -131,7 +131,7 @@ struct TreeWriterTpcV0 {
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       float usedDedx;
-      if constexpr (doUseCorreceddEdx) {
+      if constexpr (doUseCorrecteddEdx) {
         usedDedx = track.tpcSignalCorrected();
       } else {
         usedDedx = track.tpcSignal();
@@ -165,7 +165,7 @@ struct TreeWriterTpcV0 {
     }
   };
 
-  template <bool doUseCorreceddEdx = false, typename T, typename TQA, typename C, typename V0Casc>
+  template <bool doUseCorrecteddEdx = false, typename T, typename TQA, typename C, typename V0Casc>
   void fillSkimmedV0TableWithdEdxTrQA(V0Casc const& v0casc, T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate)
   {
 
@@ -188,7 +188,7 @@ struct TreeWriterTpcV0 {
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       float usedDedx;
-      if constexpr (doUseCorreceddEdx) {
+      if constexpr (doUseCorrecteddEdx) {
         usedDedx = track.tpcSignalCorrected();
       } else {
         usedDedx = track.tpcSignal();
@@ -224,7 +224,7 @@ struct TreeWriterTpcV0 {
   };
 
   /// Function to fill skimmed tables
-  template <bool doUseCorreceddEdx = false, typename T, typename TQA, typename C, typename V0Casc>
+  template <bool doUseCorrecteddEdx = false, typename T, typename TQA, typename C, typename V0Casc>
   void fillSkimmedV0TableWithTrQA(V0Casc const& v0casc, T const& track, TQA const& trackQA, bool existTrkQA, C const& collision, const float nSigmaTPC, const float nSigmaTOF, const float dEdxExp, const o2::track::PID::ID id, int runnumber, double dwnSmplFactor, float hadronicRate, int bcGlobalIndex, int bcTimeFrameId, int bcBcInTimeFrame)
   {
 
@@ -247,7 +247,7 @@ struct TreeWriterTpcV0 {
     const double pseudoRndm = track.pt() * 1000. - static_cast<int64_t>(track.pt() * 1000);
     if (pseudoRndm < dwnSmplFactor) {
       float usedDedx;
-      if constexpr (doUseCorreceddEdx) {
+      if constexpr (doUseCorrecteddEdx) {
         usedDedx = track.tpcSignalCorrected();
       } else {
         usedDedx = track.tpcSignal();
