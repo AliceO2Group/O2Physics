@@ -202,17 +202,17 @@ struct HfTaskDs {
       LOGP(fatal, "Invalid value of decayChannel");
     }
 
-    AxisSpec ptbins{axisPt, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec ptBHad{axisPtBHad, "#it{p}_{T}(B) (GeV/#it{c})"};
-    AxisSpec flagBHad{axisFlagBHad, "B Hadron flag"};
+    AxisSpec const ptbins{axisPt, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const ptBHad{axisPtBHad, "#it{p}_{T}(B) (GeV/#it{c})"};
+    AxisSpec const flagBHad{axisFlagBHad, "B Hadron flag"};
     AxisSpec ybins = {100, -5., 5, "#it{y}"};
-    AxisSpec massbins = {600, 1.67, 2.27, "inv. mass (KK#pi) (GeV/#it{c}^{2})"};
-    AxisSpec centralitybins = {axisCentrality, "Centrality"};
-    AxisSpec npvcontributorsbins = {axisNPvContributors, "NPvContributors"};
-    AxisSpec mlscore0bins = {axisMlScore0, "Score 0"};
-    AxisSpec mlscore1bins = {axisMlScore1, "Score 1"};
-    AxisSpec mlscore2bins = {axisMlScore2, "Score 2"};
-    AxisSpec occupancybins = {axisOccupancy, "Occupancy"};
+    AxisSpec const massbins = {600, 1.67, 2.27, "inv. mass (KK#pi) (GeV/#it{c}^{2})"};
+    AxisSpec const centralitybins = {axisCentrality, "Centrality"};
+    AxisSpec const npvcontributorsbins = {axisNPvContributors, "NPvContributors"};
+    AxisSpec const mlscore0bins = {axisMlScore0, "Score 0"};
+    AxisSpec const mlscore1bins = {axisMlScore1, "Score 1"};
+    AxisSpec const mlscore2bins = {axisMlScore2, "Score 2"};
+    AxisSpec const occupancybins = {axisOccupancy, "Occupancy"};
 
     histosPtr[DataType::Data]["hNPvContribAll"] = registry.add<TH2>((folders[DataType::Data] + "hNPvContribAll").c_str(), "3-prong candidates;NPvContributors;Centrality;Entries", HistType::kTH2F, {axisNPvContributors, {100, 0., 100}});
 
@@ -352,8 +352,8 @@ struct HfTaskDs {
   template <typename CandDs>
   bool isCandInSignalRegion(const CandDs& candidate, bool isDs)
   {
-    bool isKKPi = candidate.isSelDsToKKPi() >= selectionFlagDs;
-    float invMass = isKKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
+    bool const isKKPi = candidate.isSelDsToKKPi() >= selectionFlagDs;
+    float const invMass = isKKPi ? hfHelper.invMassDsToKKPi(candidate) : hfHelper.invMassDsToPiKK(candidate);
     if (isDs && (invMass < massDsSignalMin || invMass > massDsSignalMax)) {
       return false;
     }
@@ -371,8 +371,8 @@ struct HfTaskDs {
   {
     auto multFT0A = collision.multFT0A() - nProngsContributorsPV;
     auto multFT0C = collision.multFT0C() - nProngsContributorsPV;
-    float multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
-    float multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
+    float const multZeqFT0A = hVtxZFT0A->Interpolate(0.0) * multFT0A / hVtxZFT0A->Interpolate(collision.posZ());
+    float const multZeqFT0C = hVtxZFT0C->Interpolate(0.0) * multFT0C / hVtxZFT0C->Interpolate(collision.posZ());
     return multZeqFT0A + multZeqFT0C;
   }
 
@@ -383,7 +383,7 @@ struct HfTaskDs {
   float getZEqMultColl(const Coll& collision, uint8_t nProngsContributorsPV)
   {
     auto multNTracksPV = collision.multNTracksPV() - nProngsContributorsPV;
-    float multZeqNTracksPV = hVtxZNTracks->Interpolate(0.0) * multNTracksPV / hVtxZNTracks->Interpolate(collision.posZ());
+    float const multZeqNTracksPV = hVtxZNTracks->Interpolate(0.0) * multNTracksPV / hVtxZNTracks->Interpolate(collision.posZ());
     return multZeqNTracksPV;
   }
 
@@ -713,7 +713,7 @@ struct HfTaskDs {
           for (const auto& recCol : recoCollsPerMcColl) {
             maxNumContrib = recCol.numContrib() > maxNumContrib ? recCol.numContrib() : maxNumContrib;
           }
-          float cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl);
+          float const cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl);
           float occ{-1.};
           if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
             occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
@@ -738,8 +738,8 @@ struct HfTaskDs {
               std::get<TH1Ptr>(histosPtr[DataType::McDsNonPrompt]["hPtGen"])->Fill(pt); // gen. level pT
               std::get<TH1Ptr>(histosPtr[DataType::McDsNonPrompt]["hEtaGen"])->Fill(particle.eta());
               auto bHadMother = mcParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcParticles.offset());
-              int flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
-              float ptGenB = bHadMother.pt();
+              int const flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
+              float const ptGenB = bHadMother.pt();
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
                 std::get<THnSparsePtr>(histosPtr[DataType::McDsNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ, ptGenB, flagGenB);
               } else {
@@ -764,8 +764,8 @@ struct HfTaskDs {
               std::get<TH1Ptr>(histosPtr[DataType::McDplusNonPrompt]["hPtGen"])->Fill(pt); // gen. level pT
               std::get<TH1Ptr>(histosPtr[DataType::McDplusNonPrompt]["hEtaGen"])->Fill(particle.eta());
               auto bHadMother = mcParticles.rawIteratorAt(particle.idxBhadMotherPart() - mcParticles.offset());
-              int flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
-              float ptGenB = bHadMother.pt();
+              int const flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
+              float const ptGenB = bHadMother.pt();
               if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
                 std::get<THnSparsePtr>(histosPtr[DataType::McDplusNonPrompt]["hSparseGen"])->Fill(pt, y, maxNumContrib, cent, occ, ptGenB, flagGenB);
               } else {
@@ -784,8 +784,8 @@ struct HfTaskDs {
                            std::array<int, DataType::kDataTypes>& nCandsInSignalRegionDsPerType,
                            std::array<int, DataType::kDataTypes>& nCandsInSignalRegionDplusPerType)
   {
-    int numPvContributors = collision.numContrib();
-    float centrality = evaluateCentralityColl(collision);
+    int const numPvContributors = collision.numContrib();
+    float const centrality = evaluateCentralityColl(collision);
     std::get<TH2Ptr>(histosPtr[DataType::Data]["hNPvContribAll"])->Fill(numPvContributors, centrality);
     for (int i = 0; i < DataType::kDataTypes; i++) {
       if (i == DataType::McBkg && !fillMcBkgHistos) {

@@ -81,9 +81,9 @@ struct HfTaskMcGenPtRapShapes {
   void process(aod::McParticles const& mcParticles)
   {
     for (auto const& mcParticle : mcParticles) {
-      int absPdgCode = std::abs(mcParticle.pdgCode());
-      float pt = mcParticle.pt();
-      float rap = mcParticle.y();
+      int const absPdgCode = std::abs(mcParticle.pdgCode());
+      float const pt = mcParticle.pt();
+      float const rap = mcParticle.y();
       const auto* itCharm = std::find(PdgCodesCharm.begin(), PdgCodesCharm.end(), absPdgCode);
       const auto* itBeauty = std::find(PdgCodesBeauty.begin(), PdgCodesBeauty.end(), absPdgCode);
       if (itCharm != PdgCodesCharm.end()) {

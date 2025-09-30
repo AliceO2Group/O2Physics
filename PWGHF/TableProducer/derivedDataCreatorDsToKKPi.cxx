@@ -276,7 +276,7 @@ struct HfDerivedDataCreatorDsToKKPi {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
-              float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+              float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
               if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
                 continue;
               }
@@ -288,9 +288,9 @@ struct HfDerivedDataCreatorDsToKKPi {
             }
           }
         }
-        double ct = hfHelper.ctDs(candidate);
-        double y = hfHelper.yDs(candidate);
-        float massDsToKKPi = hfHelper.invMassDsToKKPi(candidate);
+        double const ct = hfHelper.ctDs(candidate);
+        double const y = hfHelper.yDs(candidate);
+        float const massDsToKKPi = hfHelper.invMassDsToKKPi(candidate);
         std::vector<float> mlScoresDsToKKPi;
         if constexpr (IsMl) {
           std::copy(candidate.mlProbDsToKKPi().begin(), candidate.mlProbDsToKKPi().end(), std::back_inserter(mlScoresDsToKKPi));

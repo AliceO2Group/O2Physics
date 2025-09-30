@@ -415,7 +415,7 @@ struct HfCorrelatorD0D0bar {
       if (std::abs(particle1.pdgCode()) != Pdg::kD0) {
         continue;
       }
-      double yD = RecoDecay::y(particle1.pVector(), MassD0);
+      double const yD = RecoDecay::y(particle1.pVector(), MassD0);
       if (yCandMax >= 0. && std::abs(yD) > yCandMax) {
         continue;
       }
@@ -507,13 +507,13 @@ struct HfCorrelatorD0D0bar {
       if (std::abs(particle1.pdgCode()) != PDG_t::kCharm) { // search c or cbar particles
         continue;
       }
-      int partMothPDG = particle1.mothers_as<MCParticlesPlus>().front().pdgCode();
+      int const partMothPDG = particle1.mothers_as<MCParticlesPlus>().front().pdgCode();
       // check whether mothers of quark c/cbar are still '4'/'-4' particles - in that case the c/cbar quark comes from its own fragmentation, skip it
       if (partMothPDG == particle1.pdgCode()) {
         continue;
       }
       counterCCbarBeforeEtasel++; // count c or cbar (before kinematic selection)
-      double yC = RecoDecay::y(particle1.pVector(), MassCharm);
+      double const yC = RecoDecay::y(particle1.pVector(), MassCharm);
       if (yCandMax >= 0. && std::abs(yC) > yCandMax) {
         continue;
       }

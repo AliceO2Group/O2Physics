@@ -267,7 +267,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
-              float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+              float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
               if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
                 continue;
               }
@@ -282,7 +282,7 @@ struct HfDerivedDataCreatorDstarToD0Pi {
         auto prong0 = candidate.template prong0_as<TracksWPid>();
         auto prong1 = candidate.template prong1_as<TracksWPid>();
         auto prongSoftPi = candidate.template prongPi_as<TracksWPid>();
-        double y = candidate.y(o2::constants::physics::MassDStar);
+        double const y = candidate.y(o2::constants::physics::MassDStar);
         int flagSign = -1;
         double massDstar = 0, invMassD0 = 0;
         std::vector<float> mlScoresDstarToD0Pi;

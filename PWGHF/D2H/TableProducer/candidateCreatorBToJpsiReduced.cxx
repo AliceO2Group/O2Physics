@@ -369,8 +369,8 @@ struct HfCandidateCreatorBToJpsiReduced {
     }
     // invMassWindowJpsiHadTolerance is used to apply a slightly tighter cut than in JpsiK pair preselection
     // to avoid accepting JpsiK pairs that were not formed in JpsiK pair creator
-    double invMass2JpsiKMin = (massBplus - myInvMassWindowJpsiK + invMassWindowJpsiHadTolerance) * (massBplus - myInvMassWindowJpsiK + invMassWindowJpsiHadTolerance);
-    double invMass2JpsiKMax = (massBplus + myInvMassWindowJpsiK - invMassWindowJpsiHadTolerance) * (massBplus + myInvMassWindowJpsiK - invMassWindowJpsiHadTolerance);
+    double const invMass2JpsiKMin = (massBplus - myInvMassWindowJpsiK + invMassWindowJpsiHadTolerance) * (massBplus - myInvMassWindowJpsiK + invMassWindowJpsiHadTolerance);
+    double const invMass2JpsiKMax = (massBplus + myInvMassWindowJpsiK - invMassWindowJpsiHadTolerance) * (massBplus + myInvMassWindowJpsiK - invMassWindowJpsiHadTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -398,8 +398,8 @@ struct HfCandidateCreatorBToJpsiReduced {
     }
     // invMassWindowJpsiHadTolerance is used to apply a slightly tighter cut than in JpsiK pair preselection
     // to avoid accepting JpsiK pairs that were not formed in JpsiK pair creator
-    double invMass2JpsiKMin = (massBs - myInvMassWindowJpsiPhi + invMassWindowJpsiHadTolerance) * (massBs - myInvMassWindowJpsiPhi + invMassWindowJpsiHadTolerance);
-    double invMass2JpsiKMax = (massBs + myInvMassWindowJpsiPhi - invMassWindowJpsiHadTolerance) * (massBs + myInvMassWindowJpsiPhi - invMassWindowJpsiHadTolerance);
+    double const invMass2JpsiKMin = (massBs - myInvMassWindowJpsiPhi + invMassWindowJpsiHadTolerance) * (massBs - myInvMassWindowJpsiPhi + invMassWindowJpsiHadTolerance);
+    double const invMass2JpsiKMax = (massBs + myInvMassWindowJpsiPhi - invMassWindowJpsiHadTolerance) * (massBs + myInvMassWindowJpsiPhi - invMassWindowJpsiHadTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());

@@ -197,7 +197,7 @@ struct HfCandidateSelectorBsToDsPi {
       // track-level PID selection
       if (usePid) {
         auto trackPi = hfCandBs.prong1_as<TracksPidWithSel>();
-        int pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
+        int const pidTrackPi = selectorPion.statusTpcAndTof(trackPi);
         if (!hfHelper.selectionBsToDsPiPid(pidTrackPi, acceptPIDNotApplicable.value)) {
           hfSelBsToDsPiCandidate(statusBsToDsPi);
           if (applyMl) {
@@ -223,7 +223,7 @@ struct HfCandidateSelectorBsToDsPi {
                                          hfCandBs.maxNormalisedDeltaIP(),
                                          hfCandBs.impactParameterProduct()};
 
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBs, outputMl);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBs, outputMl);
         hfMlBsToDsPiCandidate(outputMl);
 
         if (!isSelectedMl) {

@@ -220,7 +220,7 @@ struct HfCandidateSelectorBsToDsPiReduced {
       if (applyBsMl) {
         // Bs ML selections
         std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<WithDmesMl>(hfCandBs, trackPi);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBs, outputMl);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBs, outputMl);
         hfMlBsToDsPiCandidate(outputMl);
 
         if (!isSelectedMl) {

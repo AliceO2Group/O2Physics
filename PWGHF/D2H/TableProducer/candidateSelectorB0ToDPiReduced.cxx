@@ -279,7 +279,7 @@ struct HfCandidateSelectorB0ToDPiReduced {
       if (applyB0Ml) {
         // B0 ML selections
         std::vector<float> inputFeatures = getMlInputFeatures<WithDmesMl>(hfCandB0, trackBachPi);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandB0, outputMl);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandB0, outputMl);
         hfMlB0ToDPiCandidate(outputMl[1]); // storing ML score for signal class
 
         if (!isSelectedMl) {

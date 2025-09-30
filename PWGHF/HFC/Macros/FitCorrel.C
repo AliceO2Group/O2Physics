@@ -91,11 +91,11 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
   string inputFileNameFit = config["InputFileNameFitCorr"].GetString();
   const TString inFileName = Form("Output_CorrelationExtraction_%s_Root/%s", codeNameAnalysis.data(), inputFileNameFit.data());
 
-  bool isReflected = config["IsRiflected"].GetBool();
-  bool drawSystematicErrors = config["DrawSystematics"].GetBool();
-  bool sameSystematics = config["SameSystematics"].GetBool();
-  bool shiftBaseUp = config["ShiftBaseUp"].GetBool();
-  bool shiftBaseDown = config["ShiftBaseDown"].GetBool();
+  bool const isReflected = config["IsRiflected"].GetBool();
+  bool const drawSystematicErrors = config["DrawSystematics"].GetBool();
+  bool const sameSystematics = config["SameSystematics"].GetBool();
+  bool const shiftBaseUp = config["ShiftBaseUp"].GetBool();
+  bool const shiftBaseDown = config["ShiftBaseDown"].GetBool();
 
   std::vector<double> binsPtCandIntervalsVec;
   std::vector<double> binsPtHadIntervals;
@@ -118,10 +118,10 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
   const Value& fitFuncValue = config["FitFunction"];
   readArray(fitFuncValue, fitFunc);
 
-  int fixBase = config["FixBaseline"].GetInt();
-  int fixMean = config["FixMean"].GetInt();
+  int const fixBase = config["FixBaseline"].GetInt();
+  int const fixMean = config["FixMean"].GetInt();
 
-  int nBaselinePoints = config["nBaselinePoints"].GetInt();
+  int const nBaselinePoints = config["nBaselinePoints"].GetInt();
   vector<int> pointsForBaselineVec;
   const Value& pointsForBaselineValue = config["binsForBaseline"];
   readArray(pointsForBaselineValue, pointsForBaselineVec);
@@ -145,7 +145,7 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
   std::cout << " " << std::endl;
 
   // TODO: reflections
-  bool refl = false;
+  bool const refl = false;
 
   // Input file
   auto* inFile = new TFile(inFileName.Data());
@@ -165,7 +165,7 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
     std::cout << "[ERROR]: nBinsPtD != nBinsPtCand" << std::endl;
     return;
   }
-  double systUncCorrelatedDs[nBinsPtD] = {20, 20, 20, 10}; // % (just the MC Closure uncertainty to put in the plot)
+  double const systUncCorrelatedDs[nBinsPtD] = {20, 20, 20, 10}; // % (just the MC Closure uncertainty to put in the plot)
 
   // DhCorrelationFitter
   const double fMin{-0.5 * TMath::Pi()}, fMax{1.5 * TMath::Pi()}; // limits for the fitting function
@@ -177,8 +177,8 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
   Double_t lowBounds[npars] = {0., 0., -1., 0., 0., 2., 0., 0.5, 0., 0.};
   Double_t uppBounds[npars] = {9999., 999., 1., 3.14 / 3., 999., 4., 3.14 / 2., 3.5, 0.5, 0.5};
 
-  Double_t v2AssocPart[nBinsPtD] = {0.15, 0.15, 0.15, 0.15};
-  Double_t v2Dmeson[nBinsPtD] = {0.175, 0.09, 0.04, 0.04};
+  Double_t const v2AssocPart[nBinsPtD] = {0.15, 0.15, 0.15, 0.15};
+  Double_t const v2Dmeson[nBinsPtD] = {0.175, 0.09, 0.04, 0.04};
 
   // Output histograms
   TH1D* hBaselin[nBinsPtHad];
@@ -243,7 +243,7 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
       // hCorrPhi[iBinPtCand][iBinPtHad] -> Draw();
 
       // draw systematic errors
-      int nBinsPhi = hCorrPhi[iBinPtCand][iBinPtHad]->GetNbinsX();
+      int const nBinsPhi = hCorrPhi[iBinPtCand][iBinPtHad]->GetNbinsX();
       if (drawSystematicErrors) {
         hSystematicErrors[iBinPtCand][iBinPtHad] = reinterpret_cast<TH1F*>(inFileSystematicErrors->Get(Form("hSystematicErrorsMerged_PtBin%d_PtBinAssoc%d", iBinPtCand + 1, iBinPtHad + 1)));
         hSystematicErrorsPlot[iBinPtCand][iBinPtHad] = reinterpret_cast<TH1D*>(hCorrPhi[iBinPtCand][iBinPtHad]->Clone(Form("hSystematicErrorsPlot_PtBin%d_PtBinAssoc%d", iBinPtCand + 1, iBinPtHad + 1)));
@@ -296,7 +296,7 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
           hNSSigma[iBinPtHad]->SetBinError(iBinPtCand + 1, corrFitter[iBinPtHad][iBinPtCand]->getNsSigmaError());
         } else {
           hNSSigma[iBinPtHad]->SetBinContent(iBinPtCand + 1, TMath::Sqrt(1. / corrFitter[iBinPtHad][iBinPtCand]->getNsSigma()));
-          Double_t errrel = corrFitter[iBinPtHad][iBinPtCand]->getNsSigmaError() / corrFitter[iBinPtHad][iBinPtCand]->getNsSigma() / 2.;
+          Double_t const errrel = corrFitter[iBinPtHad][iBinPtCand]->getNsSigmaError() / corrFitter[iBinPtHad][iBinPtCand]->getNsSigma() / 2.;
           hNSSigma[iBinPtHad]->SetBinError(iBinPtCand + 1, errrel * TMath::Sqrt(1. / corrFitter[iBinPtHad][iBinPtCand]->getNsSigma()));
         }
       }
@@ -313,7 +313,7 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
         hASSigma[iBinPtHad]->SetBinError(iBinPtCand + 1, corrFitter[iBinPtHad][iBinPtCand]->getAsSigmaError());
       } else {
         hASSigma[iBinPtHad]->SetBinContent(iBinPtCand + 1, TMath::Sqrt(1. / corrFitter[iBinPtHad][iBinPtCand]->getAsSigma()));
-        Double_t errrel = corrFitter[iBinPtHad][iBinPtCand]->getAsSigmaError() / corrFitter[iBinPtHad][iBinPtCand]->getAsSigma() / 2.;
+        Double_t const errrel = corrFitter[iBinPtHad][iBinPtCand]->getAsSigmaError() / corrFitter[iBinPtHad][iBinPtCand]->getAsSigma() / 2.;
         hASSigma[iBinPtHad]->SetBinError(iBinPtCand + 1, errrel * TMath::Sqrt(1. / corrFitter[iBinPtHad][iBinPtCand]->getAsSigma()));
       }
       if (fitFunc[iBinPtCand] == 4) { // param beta for gen. gauss

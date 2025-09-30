@@ -119,10 +119,10 @@ struct HfTaskXic {
       LOGP(fatal, "no or more than one process function enabled! Please check your configuration!");
     }
 
-    AxisSpec axisPPid = {100, 0.f, 10.0f, "#it{p} (GeV/#it{c})"};
-    AxisSpec axisNSigmaPr = {100, -6.f, 6.f, "n#it{#sigma}_{p}"};
-    AxisSpec axisNSigmaPi = {100, -6.f, 6.f, "n#it{#sigma}_{#pi}"};
-    AxisSpec axisNSigmaKa = {100, -6.f, 6.f, "n#it{#sigma}_{K}"};
+    AxisSpec const axisPPid = {100, 0.f, 10.0f, "#it{p} (GeV/#it{c})"};
+    AxisSpec const axisNSigmaPr = {100, -6.f, 6.f, "n#it{#sigma}_{p}"};
+    AxisSpec const axisNSigmaPi = {100, -6.f, 6.f, "n#it{#sigma}_{#pi}"};
+    AxisSpec const axisNSigmaKa = {100, -6.f, 6.f, "n#it{#sigma}_{K}"};
 
     auto vbins = (std::vector<double>)binsPt; // histo in pt bins
     registry.add("Data/hMassVsPt", "3-prong candidates;inv. mass (p K #pi) (GeV/#it{c}^{2});;entries", {HistType::kTH2F, {{500, 2., 3.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -477,7 +477,7 @@ struct HfTaskXic {
         registry.fill(HIST("MC/reconstructed/signal/hEtaVsPtRecSig"), candidate.eta(), ptCandidate);
 
         /// reconstructed signal prompt
-        int origin = candidate.originMcRec();
+        int const origin = candidate.originMcRec();
         if (origin == RecoDecay::OriginType::Prompt) {
           if ((candidate.isSelXicToPKPi() >= selectionFlagXic) && pdgCodeProng0 == kProton) {
             registry.fill(HIST("MC/reconstructed/prompt/hMassRecSigPrompt"), massXicToPKPi);

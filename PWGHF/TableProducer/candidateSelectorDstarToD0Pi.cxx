@@ -393,7 +393,7 @@ struct HfCandidateSelectorDstarToD0Pi {
       // need to add special cuts (additional cuts on decay length and d0 norm)
 
       // conjugate-dependent topological selection for Dstar
-      bool topoDstar = selectionTopolConjugate(candDstar);
+      bool const topoDstar = selectionTopolConjugate(candDstar);
       if (!topoDstar) {
         hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
         if (applyMl) {

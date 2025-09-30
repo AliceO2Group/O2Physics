@@ -227,8 +227,8 @@ struct HfCandidateCreatorBsReduced {
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DsPi pair preselection
     // to avoid accepting DsPi pairs that were not formed in DsPi pair creator
-    float invMass2DPiMin = (massB - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    float invMass2DPiMax = (massB + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    float const invMass2DPiMin = (massB - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    float const invMass2DPiMax = (massB + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -261,8 +261,8 @@ struct HfCandidateCreatorBsReduced {
     }
     // invMassWindowDPiTolerance is used to apply a slightly tighter cut than in DsPi pair preselection
     // to avoid accepting DPi pairs that were not formed in DsPi pair creator
-    float invMass2DPiMin = (massB - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB - myInvMassWindowDPi + invMassWindowDPiTolerance);
-    float invMass2DPiMax = (massB + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB + myInvMassWindowDPi - invMassWindowDPiTolerance);
+    float const invMass2DPiMin = (massB - myInvMassWindowDPi + invMassWindowDPiTolerance) * (massB - myInvMassWindowDPi + invMassWindowDPiTolerance);
+    float const invMass2DPiMax = (massB + myInvMassWindowDPi - invMassWindowDPiTolerance) * (massB + myInvMassWindowDPi - invMassWindowDPiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());

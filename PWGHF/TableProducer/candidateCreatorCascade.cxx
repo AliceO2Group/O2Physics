@@ -222,7 +222,7 @@ struct HfCandidateCreatorCascade {
         dcaNegToPV = v0row.dcanegtopv();
         v0cosPA = v0row.v0cosPA();
 
-        int momIndSize = 6;
+        int const momIndSize = 6;
         constexpr int MomInd[6] = {9, 13, 14, 18, 19, 20}; // cov matrix elements for momentum component
         for (int i = 0; i < momIndSize; i++) {
           covV[MomInd[i]] = v0row.momentumCovMat()[i];
@@ -504,7 +504,7 @@ struct HfCandidateCreatorCascadeMc {
         }
       }
 
-      int indexK0SRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
+      int const indexK0SRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersV0, kK0Short, std::array{+kPiPlus, -kPiPlus}, false, &sign, 1);
       if (indexK0SRec >= 0) { // we have already positively checked the K0s
         // then we check the Lc
         indexRec = RecoDecay::getMatchedMCRec<false, true>(mcParticles, arrayDaughtersLc, Pdg::kLambdaCPlus, std::array{+kProton, +kPiPlus, -kPiPlus}, true, &sign, 3); // 3-levels Lc --> p + K0 --> p + K0s --> p + pi+ pi-

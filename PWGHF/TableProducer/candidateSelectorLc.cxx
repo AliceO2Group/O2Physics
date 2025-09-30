@@ -212,7 +212,7 @@ struct HfCandidateSelectorLc {
   {
     auto candpT = candidate.pt();
 
-    int pTBin = findBin(binsPt, candpT);
+    int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
@@ -290,7 +290,7 @@ struct HfCandidateSelectorLc {
   {
 
     auto candpT = candidate.pt();
-    int pTBin = findBin(binsPt, candpT);
+    int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
@@ -475,7 +475,7 @@ struct HfCandidateSelectorLc {
       // implement filter bit 4 cut - should be done before this task at the track selection level
 
       // track quality selection
-      bool trackQualitySel = isSelectedCandidateProngQuality(trackPos1, trackNeg, trackPos2);
+      bool const trackQualitySel = isSelectedCandidateProngQuality(trackPos1, trackNeg, trackPos2);
       if (!trackQualitySel) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
         if (applyMl) {
@@ -494,8 +494,8 @@ struct HfCandidateSelectorLc {
       }
 
       // conjugate-dependent topological selection for Lc
-      bool topolLcToPKPi = selectionTopolConjugate<ReconstructionType>(candidate, trackPos1, trackNeg, trackPos2);
-      bool topolLcToPiKP = selectionTopolConjugate<ReconstructionType>(candidate, trackPos2, trackNeg, trackPos1);
+      bool const topolLcToPKPi = selectionTopolConjugate<ReconstructionType>(candidate, trackPos1, trackNeg, trackPos2);
+      bool const topolLcToPiKP = selectionTopolConjugate<ReconstructionType>(candidate, trackPos2, trackNeg, trackPos1);
 
       if (!topolLcToPKPi && !topolLcToPiKP) {
         hfSelLcCandidate(statusLcToPKPi, statusLcToPiKP);
@@ -545,11 +545,11 @@ struct HfCandidateSelectorLc {
       }
 
       if constexpr (UseBayesPid) {
-        TrackSelectorPID::Status pidBayesTrackPos1Proton = selectorProton.statusBayes(trackPos1);
-        TrackSelectorPID::Status pidBayesTrackPos2Proton = selectorProton.statusBayes(trackPos2);
-        TrackSelectorPID::Status pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos1);
-        TrackSelectorPID::Status pidBayesTrackPos2Pion = selectorPion.statusBayes(trackPos2);
-        TrackSelectorPID::Status pidBayesTrackNegKaon = selectorKaon.statusBayes(trackNeg);
+        TrackSelectorPID::Status const pidBayesTrackPos1Proton = selectorProton.statusBayes(trackPos1);
+        TrackSelectorPID::Status const pidBayesTrackPos2Proton = selectorProton.statusBayes(trackPos2);
+        TrackSelectorPID::Status const pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos1);
+        TrackSelectorPID::Status const pidBayesTrackPos2Pion = selectorPion.statusBayes(trackPos2);
+        TrackSelectorPID::Status const pidBayesTrackNegKaon = selectorKaon.statusBayes(trackNeg);
 
         if (!isSelectedPID(pidBayesTrackPos1Proton, pidBayesTrackNegKaon, pidBayesTrackPos2Pion)) {
           pidBayesLcToPKPi = 0; // reject LcToPKPi

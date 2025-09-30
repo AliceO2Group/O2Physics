@@ -797,8 +797,8 @@ struct HfDataCreatorJpsiHadReduced {
 
       // ---------------------------------
       // reconstruct J/Psi candidate secondary vertex
-      o2::track::TrackParCov trackParCovJpsi{}; // FIXME: unused
-      std::array<float, 3> pVecJpsi{};          // FIXME: unused
+      o2::track::TrackParCov const trackParCovJpsi{}; // FIXME: unused
+      std::array<float, 3> const pVecJpsi{};          // FIXME: unused
       registry.fill(HIST("hFitCandidatesJpsi"), SVFitting::BeforeFit);
       try {
         if (df2.process(trackPosParCov, trackNegParCov) == 0) {

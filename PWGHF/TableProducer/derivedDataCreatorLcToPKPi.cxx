@@ -269,7 +269,7 @@ struct HfDerivedDataCreatorLcToPKPi {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
-              float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+              float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
               if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
                 continue;
               }
@@ -282,16 +282,16 @@ struct HfDerivedDataCreatorLcToPKPi {
           }
         } else {
           if (downSampleBkgFactor < 1.) {
-            float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+            float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
             if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
               continue;
             }
           }
         }
-        double ct = hfHelper.ctLc(candidate);
-        double y = hfHelper.yLc(candidate);
-        float massLcToPKPi = hfHelper.invMassLcToPKPi(candidate);
-        float massLcToPiKP = hfHelper.invMassLcToPiKP(candidate);
+        double const ct = hfHelper.ctLc(candidate);
+        double const y = hfHelper.yLc(candidate);
+        float const massLcToPKPi = hfHelper.invMassLcToPKPi(candidate);
+        float const massLcToPiKP = hfHelper.invMassLcToPiKP(candidate);
         std::vector<float> mlScoresLcToPKPi, mlScoresLcToPiKP;
         if constexpr (IsMl) {
           std::copy(candidate.mlProbLcToPKPi().begin(), candidate.mlProbLcToPKPi().end(), std::back_inserter(mlScoresLcToPKPi));

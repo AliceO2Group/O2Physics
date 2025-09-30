@@ -225,7 +225,7 @@ struct HfTaskPidStudies {
     ccdb->setLocalObjectValidityChecking();
     hfEvSel.addHistograms(registry);
 
-    std::shared_ptr<TH1> hTrackSel = registry.add<TH1>("hTrackSel", "Track selection;;Counts", {HistType::kTH1F, {{TrackCuts::NCuts, 0, TrackCuts::NCuts}}});
+    std::shared_ptr<TH1> const hTrackSel = registry.add<TH1>("hTrackSel", "Track selection;;Counts", {HistType::kTH1F, {{TrackCuts::NCuts, 0, TrackCuts::NCuts}}});
 
     // Set Labels for hTrackSel
     hTrackSel->GetXaxis()->SetBinLabel(TrackCuts::All + 1, "All");
@@ -241,7 +241,7 @@ struct HfTaskPidStudies {
   template <bool IsV0, typename Coll, typename Cand>
   void fillTree(Cand const& candidate, const int flag)
   {
-    float pseudoRndm = candidate.pt() * 1000. - static_cast<int64_t>(candidate.pt() * 1000);
+    float const pseudoRndm = candidate.pt() * 1000. - static_cast<int64_t>(candidate.pt() * 1000);
     if (candidate.pt() < ptMaxForDownSample && pseudoRndm > downSampleBkgFactor) {
       return;
     }
@@ -522,7 +522,7 @@ struct HfTaskPidStudies {
         continue;
       }
       if (isSelectedV0AsK0s(v0) || isSelectedV0AsLambda(v0)) {
-        int matched = isMatched(v0);
+        int const matched = isMatched(v0);
         if (matched != Particle::NotMatched) {
           fillTree<true, CollisionsMc>(v0, matched);
         }
@@ -565,7 +565,7 @@ struct HfTaskPidStudies {
         continue;
       }
       if (isSelectedCascAsOmega<CollisionsMc>(casc)) {
-        int matched = isMatched(casc);
+        int const matched = isMatched(casc);
         if (matched != Particle::NotMatched) {
           fillTree<false, CollisionsMc>(casc, matched);
         }

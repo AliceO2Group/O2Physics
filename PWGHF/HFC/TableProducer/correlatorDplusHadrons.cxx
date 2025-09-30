@@ -157,7 +157,7 @@ struct HfCorrelatorDplusHadronsDplusSelection {
       if (std::abs(particle1.pdgCode()) != Pdg::kDPlus) {
         continue;
       }
-      double yD = RecoDecay::y(particle1.pVector(), MassDPlus);
+      double const yD = RecoDecay::y(particle1.pVector(), MassDPlus);
       if (std::abs(yD) >= yCandMax || particle1.pt() <= ptCandMin) {
         continue;
       }
@@ -240,17 +240,17 @@ struct HfCorrelatorDplusHadrons {
   void init(InitContext&)
   {
     AxisSpec axisMassD = {binsMassD, "inv. mass (pi^{+}K^{-}#pi^{+}) (GeV/#it{c}^{2})"};
-    AxisSpec axisEta = {binsEta, "#it{#eta}"};
-    AxisSpec axisPhi = {binsPhi, "#it{#varphi}"};
+    AxisSpec const axisEta = {binsEta, "#it{#eta}"};
+    AxisSpec const axisPhi = {binsPhi, "#it{#varphi}"};
     AxisSpec axisPtD = {(std::vector<double>)binsPtD, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T} Hadron (GeV/#it{c})"};
-    AxisSpec axisMultiplicity = {binsMultiplicity, "Multiplicity"};
+    AxisSpec const axisMultiplicity = {binsMultiplicity, "Multiplicity"};
     AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
-    AxisSpec axisPosZ = {binsZVtx, "PosZ"};
-    AxisSpec axisBdtScore = {binsBdtScore, "Bdt score"};
-    AxisSpec axisPoolBin = {binsPoolBin, "PoolBin"};
-    AxisSpec axisStatus = {15, 0.5, 15.5, "Selection status"};
-    AxisSpec axisRapidity = {100, -2, 2, "Rapidity"};
+    AxisSpec const axisPosZ = {binsZVtx, "PosZ"};
+    AxisSpec const axisBdtScore = {binsBdtScore, "Bdt score"};
+    AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
+    AxisSpec const axisStatus = {15, 0.5, 15.5, "Selection status"};
+    AxisSpec const axisRapidity = {100, -2, 2, "Rapidity"};
 
     registry.add("hPtCand", "Dplus,Hadron candidates;candidate #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}});
     registry.add("hPtProng0", "Dplus,Hadron candidates;prong 0 #it{p}_{T} (GeV/#it{c});entries", {HistType::kTH1F, {axisPtD}});
@@ -341,7 +341,7 @@ struct HfCorrelatorDplusHadrons {
         if (std::abs(hfHelper.yDplus(candidate)) >= yCandMax || candidate.pt() <= ptCandMin || candidate.pt() >= ptCandMax) {
           continue;
         }
-        int effBinD = o2::analysis::findBin(binsPtEfficiencyD, candidate.pt());
+        int const effBinD = o2::analysis::findBin(binsPtEfficiencyD, candidate.pt());
         double efficiencyWeightD = 1.;
         if (applyEfficiency) {
           efficiencyWeightD = 1. / efficiencyD->at(effBinD);
@@ -421,7 +421,7 @@ struct HfCorrelatorDplusHadrons {
       }
       registry.fill(HIST("hMultiplicity"), nTracks);
 
-      float multiplicityFT0M = collision.multFT0M();
+      float const multiplicityFT0M = collision.multFT0M();
 
       // MC reco level
       bool isDplusPrompt = false;
@@ -433,7 +433,7 @@ struct HfCorrelatorDplusHadrons {
           continue;
         }
         // efficiency weight determination
-        int effBinD = o2::analysis::findBin(binsPtEfficiencyD, candidate.pt());
+        int const effBinD = o2::analysis::findBin(binsPtEfficiencyD, candidate.pt());
         double efficiencyWeightD = 1.;
         if (applyEfficiency) {
           efficiencyWeightD = 1. / efficiencyD->at(effBinD);
@@ -536,7 +536,7 @@ struct HfCorrelatorDplusHadrons {
     int counterDplusHadron = 0;
     registry.fill(HIST("hMCEvtCount"), 0);
 
-    BinningTypeMcGen corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
+    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
     registry.fill(HIST("hMultFT0AMcGen"), mcCollision.multMCFT0A());
 
@@ -551,7 +551,7 @@ struct HfCorrelatorDplusHadrons {
       if (std::abs(particle1.flagMcMatchGen()) != hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi) {
         continue;
       }
-      double yD = RecoDecay::y(particle1.pVector(), MassDPlus);
+      double const yD = RecoDecay::y(particle1.pVector(), MassDPlus);
       if (std::abs(yD) >= yCandMax || particle1.pt() <= ptCandMin) {
         continue;
       }
@@ -572,7 +572,7 @@ struct HfCorrelatorDplusHadrons {
 
       // prompt and non-prompt division
       std::vector<int> listDaughters{};
-      std::array<int, NDaughters> arrDaughDplusPDG = {+kPiPlus, -kKPlus, kPiPlus};
+      std::array<int, NDaughters> const arrDaughDplusPDG = {+kPiPlus, -kKPlus, kPiPlus};
       std::array<int, NDaughters> prongsId{};
       listDaughters.clear();
       RecoDecay::getDaughters(particle1, &listDaughters, arrDaughDplusPDG, 2);
@@ -626,7 +626,7 @@ struct HfCorrelatorDplusHadrons {
                              TracksData const& tracks)
   {
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelCollisionsWithDplus, CandidatesDplusData, TracksData, BinningType> pairData{corrBinning, 5, -1, collisions, tracksTuple, &cache};
+    Pair<SelCollisionsWithDplus, CandidatesDplusData, TracksData, BinningType> const pairData{corrBinning, 5, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairData) {
       // LOGF(info, "Mixed event collisions: Index = (%d, %d), tracks Size: (%d, %d), Z Vertex: (%f, %f), Pool Bin: (%d, %d)", c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size(), c1.posZ(), c2.posZ(), corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M())),corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()))); // For debug
@@ -648,16 +648,16 @@ struct HfCorrelatorDplusHadrons {
                               TracksWithMc const& tracks,
                               aod::McParticles const& mcParticles)
   {
-    BinningType corrBinning{{binsZVtx, binsMultiplicityMc}, true};
+    BinningType const corrBinning{{binsZVtx, binsMultiplicityMc}, true};
     for (const auto& candidate : candidates) {
       if (std::abs(hfHelper.yDplus(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
         continue;
       }
       // Dplus flag
-      bool isDplusSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
+      bool const isDplusSignal = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DplusToPiKPi;
       // prompt and non-prompt division
-      bool isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
-      bool isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
+      bool const isDplusPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
+      bool const isDplusNonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
       if (isDplusSignal) {
         if (isDplusPrompt) {
           registry.fill(HIST("hPtCandMcRecSigPrompt"), candidate.pt());
@@ -673,11 +673,11 @@ struct HfCorrelatorDplusHadrons {
       }
     }
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelCollisionsWithDplus, CandidatesDplusMcRec, TracksWithMc, BinningType> pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
+    Pair<SelCollisionsWithDplus, CandidatesDplusMcRec, TracksWithMc, BinningType> const pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
-      int poolBinDplus = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
+      int const poolBinDplus = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
       registry.fill(HIST("hMultFT0M"), c1.multFT0M());
       registry.fill(HIST("hZVtx"), c1.posZ());
       registry.fill(HIST("hTracksPoolBin"), poolBin);     // note that the selections here are not yet applied
@@ -722,16 +722,16 @@ struct HfCorrelatorDplusHadrons {
   void processMcGenMixedEvent(SelCollisionsWithDplusMc const& collisions,
                               CandDplusMcGen const& mcParticles)
   {
-    BinningTypeMcGen corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
+    BinningTypeMcGen const corrBinningMcGen{{binsZVtx, binsMultiplicityMc}, true};
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
-    Pair<SelCollisionsWithDplusMc, CandDplusMcGen, CandDplusMcGen, BinningTypeMcGen> pairMcGen{corrBinningMcGen, numberEventsMixed, -1, collisions, tracksTuple, &cache};
+    Pair<SelCollisionsWithDplusMc, CandDplusMcGen, CandDplusMcGen, BinningTypeMcGen> const pairMcGen{corrBinningMcGen, numberEventsMixed, -1, collisions, tracksTuple, &cache};
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
       int poolBin = corrBinningMcGen.getBin(std::make_tuple(c1.posZ(), c1.multMCFT0A()));
       for (const auto& [candidate, particleAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if (std::abs(candidate.pdgCode()) != Pdg::kDPlus) {
           continue;
         }
-        double yD = RecoDecay::y(candidate.pVector(), MassDPlus);
+        double const yD = RecoDecay::y(candidate.pVector(), MassDPlus);
         if (std::abs(yD) > yCandGenMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
           continue;
         }

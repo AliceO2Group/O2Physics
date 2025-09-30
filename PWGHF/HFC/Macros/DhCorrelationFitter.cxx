@@ -248,9 +248,9 @@ void DhCorrelationFitter::fitting(Bool_t drawSplitTerm, Bool_t useExternalPars)
 
   Printf("[INFO] DhCorrelationFitter::Fitting, Fitting");
   TVirtualFitter::SetMaxIterations(20000);
-  TFitResultPtr fitptr = fHist->Fit(fFit, "RIMES", "", fMinCorr, fMaxCorr);
-  TMatrixD cor = fitptr->GetCorrelationMatrix();
-  TMatrixD cov = fitptr->GetCovarianceMatrix();
+  TFitResultPtr const fitptr = fHist->Fit(fFit, "RIMES", "", fMinCorr, fMaxCorr);
+  TMatrixD const cor = fitptr->GetCorrelationMatrix();
+  TMatrixD const cov = fitptr->GetCovarianceMatrix();
   printf("[INFO] Correlation Matrix - The final one! \n");
   cor.Print();
   gMinuit->mnmatu(1);
@@ -742,7 +742,7 @@ void DhCorrelationFitter::fitBaselineWv2()
 {
 
   fBaseTransvReg = new TF1("fBaseTransvReg", [](const double* x, const double* p) {
-    double xx = x[0]; // x value
+    double const xx = x[0]; // x value
     if ((xx >= -TMath::Pi()/2 && xx <= -3*TMath::Pi()/8) || (xx >= 3*TMath::Pi()/8 && xx <= 5*TMath::Pi()/8) || (xx >= 11*TMath::Pi()/8 && xx <= 3*TMath::Pi()/2)) {
         // Gaussian example: p[0] = amplitude, p[1] = mean, p[2] = sigma
         return p[0]*(1+2*p[1]*p[2]*TMath::Cos(2*xx));
@@ -752,7 +752,7 @@ void DhCorrelationFitter::fitBaselineWv2()
   fBaseTransvReg->FixParameter(1, fv2AssocPart);
   fBaseTransvReg->FixParameter(2, fv2Dmeson);
 
-  TFitResultPtr rFit = fHist->Fit(fBaseTransvReg, "RIMES", "", fMinCorr, fMaxCorr);
+  TFitResultPtr const rFit = fHist->Fit(fBaseTransvReg, "RIMES", "", fMinCorr, fMaxCorr);
   fBaseline = fBaseTransvReg->GetParameter(0);
 }
 
@@ -768,9 +768,9 @@ void DhCorrelationFitter::calculateYieldsAboveBaseline()
   if (binMinNS < 1) {
     binMinNS = 1; // with this, it is ok even in the case of a reflected fHist (range 0 - pi)
   }
-  Int_t binMaxNS = 6;  // fHist -> FindBin(1.5); // slightly less than +pi/2
-  Int_t binMinAS = 11; // fHist -> FindBin(1.6); // slightly more than +pi/2
-  Int_t binMaxAS = 16; // fHist -> FindBin(3.14+1.5); // slightly less than +3pi/2
+  Int_t const binMaxNS = 6;  // fHist -> FindBin(1.5); // slightly less than +pi/2
+  Int_t const binMinAS = 11; // fHist -> FindBin(1.6); // slightly more than +pi/2
+  Int_t binMaxAS = 16;       // fHist -> FindBin(3.14+1.5); // slightly less than +3pi/2
   if (binMaxAS > fHist->GetNbinsX()) {
     binMaxAS = fHist->GetNbinsX(); // with this, it is ok even in the case of a reflected fHist (range 0 - pi)
   }
@@ -803,11 +803,11 @@ Double_t DhCorrelationFitter::calculateBaseline(TH1F*& histo, Bool_t totalRange)
   // half range = Pi , for histogram reflected under symmetric assumption
 
   Double_t baseline, errBaseline;
-  Int_t nBinsPhi = histo->GetNbinsX();
-  Int_t binPhiHalf = nBinsPhi / 2;
-  Int_t binPhiHalfMinus1 = nBinsPhi / 2 - 1;
-  Int_t binPhiHalfPlus1 = nBinsPhi / 2 + 1;
-  Int_t binPhiHalfPlus2 = nBinsPhi / 2 + 1;
+  Int_t const nBinsPhi = histo->GetNbinsX();
+  Int_t const binPhiHalf = nBinsPhi / 2;
+  Int_t const binPhiHalfMinus1 = nBinsPhi / 2 - 1;
+  Int_t const binPhiHalfPlus1 = nBinsPhi / 2 + 1;
+  Int_t const binPhiHalfPlus2 = nBinsPhi / 2 + 1;
 
   if (totalRange) {
     printf("[INFO] Using total deltaPhi range \n");
@@ -876,11 +876,11 @@ Double_t DhCorrelationFitter::calculateBaselineError(TH1F*& histo, Bool_t totalR
   // half range = Pi , for histogram reflected under symmetric assumption
 
   Double_t errBaseline;
-  Int_t nBinsPhi = histo->GetNbinsX();
-  Int_t binPhiHalf = nBinsPhi / 2;
-  Int_t binPhiHalfMinus1 = nBinsPhi / 2 - 1;
-  Int_t binPhiHalfPlus1 = nBinsPhi / 2 + 1;
-  Int_t binPhiHalfPlus2 = nBinsPhi / 2 + 1;
+  Int_t const nBinsPhi = histo->GetNbinsX();
+  Int_t const binPhiHalf = nBinsPhi / 2;
+  Int_t const binPhiHalfMinus1 = nBinsPhi / 2 - 1;
+  Int_t const binPhiHalfPlus1 = nBinsPhi / 2 + 1;
+  Int_t const binPhiHalfPlus2 = nBinsPhi / 2 + 1;
 
   if (totalRange) {
     // baseline evaluated considering: the two first points, the last two points and four points in the middle (corresponding to the outer points)

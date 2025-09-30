@@ -459,9 +459,9 @@ struct HfTaskB0Reduced {
     auto ptD = candidate.ptProng0();
     auto invMassD = candD.invMassHypo0();
     auto softPi = softPions.rawIteratorAt(candD.globalIndex());
-    std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
-    std::array<float, 3> posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
-    std::array<float, 3> momD{candD.pVector()};
+    std::array<float, 3> const posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
+    std::array<float, 3> const posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
+    std::array<float, 3> const momD{candD.pVector()};
     auto cospD = RecoDecay::cpa(posPv, posSvD, momD);
     auto cospXyD = RecoDecay::cpaXY(posPv, posSvD, momD);
     auto decLenD = RecoDecay::distance(posPv, posSvD);
@@ -584,12 +584,12 @@ struct HfTaskB0Reduced {
       }
     }
     if (fillTree) {
-      float pseudoRndm = ptD * 1000. - static_cast<int64_t>(ptD * 1000);
+      float const pseudoRndm = ptD * 1000. - static_cast<int64_t>(ptD * 1000);
       if (flagMcMatchRec != 0 || (((DoMc && fillBackground) || !DoMc) && (ptCandB0 >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
         float prong0MlScoreBkg = -1.;
         float prong0MlScorePrompt = -1.;
         float prong0MlScoreNonprompt = -1.;
-        float candidateMlScoreSig = -1;
+        float const candidateMlScoreSig = -1;
         if constexpr (WithDmesMl) {
           prong0MlScoreBkg = candidate.prong0MlScoreBkg();
           prong0MlScorePrompt = candidate.prong0MlScorePrompt();
@@ -695,9 +695,9 @@ struct HfTaskB0Reduced {
     auto candD = candidate.template prong0_as<CandsDmes>();
     auto ptD = candidate.ptProng0();
     auto invMassD = candD.invMassHypo0();
-    std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
-    std::array<float, 3> posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
-    std::array<float, 3> momD{candD.pVector()};
+    std::array<float, 3> const posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
+    std::array<float, 3> const posSvD{candD.xSecondaryVertex(), candD.ySecondaryVertex(), candD.zSecondaryVertex()};
+    std::array<float, 3> const momD{candD.pVector()};
     auto cospD = RecoDecay::cpa(posPv, posSvD, momD);
     auto cospXyD = RecoDecay::cpaXY(posPv, posSvD, momD);
     auto decLenD = RecoDecay::distance(posPv, posSvD);
@@ -838,7 +838,7 @@ struct HfTaskB0Reduced {
       }
     }
     if (fillTree) {
-      float pseudoRndm = ptD * 1000. - static_cast<int64_t>(ptD * 1000);
+      float const pseudoRndm = ptD * 1000. - static_cast<int64_t>(ptD * 1000);
       if (flagMcMatchRec != 0 || (((DoMc && fillBackground) || !DoMc) && (ptCandB0 >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
         float prong0MlScoreBkg = -1.;
         float prong0MlScorePrompt = -1.;
@@ -948,7 +948,7 @@ struct HfTaskB0Reduced {
     std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
     std::array<float, 2> yProngs = {particle.yProng0(), particle.yProng1()};
     std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
-    bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
+    bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
 
     if (fillHistograms) {
       registry.fill(HIST("hPtProng0Gen"), ptParticle, ptProngs[0]);

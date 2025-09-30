@@ -430,8 +430,8 @@ struct HfTaskCharmPolarisation {
         }
       }
       if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) {
-        std::vector<AxisSpec> hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
-        std::vector<AxisSpec> hgenNonPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisPtB, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
+        std::vector<AxisSpec> const hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
+        std::vector<AxisSpec> const hgenNonPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarHelicity, thnAxisPtB, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
         registry.add("hGenPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores for generated prompt D*+ candidates", HistType::kTHnSparseF, hgenPromptAxes);
         registry.add("hGenNonPromptHelicity", "THn for polarisation studies with cosThStar w.r.t. helicity axis and BDT scores for generated non-prompt D*+ candidates", HistType::kTHnSparseF, hgenNonPromptAxes);
         if (activatePartRecoDstar) {
@@ -504,8 +504,8 @@ struct HfTaskCharmPolarisation {
         }
       }
       if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) {
-        std::vector<AxisSpec> hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarProduction, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
-        std::vector<AxisSpec> hgenNonPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarProduction, thnAxisPtB, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
+        std::vector<AxisSpec> const hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarProduction, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
+        std::vector<AxisSpec> const hgenNonPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarProduction, thnAxisPtB, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
         registry.add("hGenPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores for generated prompt D*+ candidates", HistType::kTHnSparseF, hgenPromptAxes);
         registry.add("hGenNonPromptProduction", "THn for polarisation studies with cosThStar w.r.t. production axis and BDT scores for generated non-prompt D*+ candidates", HistType::kTHnSparseF, hgenNonPromptAxes);
         if (activatePartRecoDstar) {
@@ -577,8 +577,8 @@ struct HfTaskCharmPolarisation {
         }
       }
       if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) {
-        std::vector<AxisSpec> hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarBeam, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
-        std::vector<AxisSpec> hgenNonPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarBeam, thnAxisPtB, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
+        std::vector<AxisSpec> const hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarBeam, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
+        std::vector<AxisSpec> const hgenNonPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarBeam, thnAxisPtB, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
         registry.add("hGenPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis and BDT scores for generated prompt D*+ candidates", HistType::kTHnSparseF, hgenPromptAxes);
         registry.add("hGenNonPromptBeam", "THn for polarisation studies with cosThStar w.r.t. beam axis and BDT scores for generated non-prompt D*+ candidates", HistType::kTHnSparseF, hgenNonPromptAxes);
         if (activatePartRecoDstar) {
@@ -635,8 +635,8 @@ struct HfTaskCharmPolarisation {
         registry.add("hRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores", HistType::kTHnSparseF, hRandomaxes);
       }
       if (doprocessDstarMc || doprocessDstarMcWithMl || doprocessDstarMcInPbPb || doprocessDstarMcWithMlInPbPb || doprocessLcToPKPiMc || doprocessLcToPKPiMcWithMl || doprocessLcToPKPiBackgroundMcWithMl) {
-        std::vector<AxisSpec> hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarRandom, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
-        std::vector<AxisSpec> hgenNonPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarRandom, thnAxisPtB, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
+        std::vector<AxisSpec> const hgenPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarRandom, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
+        std::vector<AxisSpec> const hgenNonPromptAxes = {thnAxisPt, thnAxisNumPvContributors, thnAxisY, thnAxisCosThetaStarRandom, thnAxisPtB, thnAxisDausAcc, thnAxisResoChannelLc, thnAxisCharge};
         registry.add("hGenPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores for generated prompt D*+ candidates", HistType::kTHnSparseF, hgenPromptAxes);
         registry.add("hGenNonPromptRandom", "THn for polarisation studies with cosThStar w.r.t. random axis and BDT scores for generated non-prompt D*+ candidates", HistType::kTHnSparseF, hgenNonPromptAxes);
         if (activatePartRecoDstar) {
@@ -1482,7 +1482,7 @@ struct HfTaskCharmPolarisation {
   {
     float xQVec = -999.;
     float yQVec = -999.;
-    float amplQVec = -999.;
+    float const amplQVec = -999.;
     switch (qVecDetector) {
       case charm_polarisation::QvecEstimator::FV0A:
         xQVec = collision.qvecFV0ARe();
@@ -1530,13 +1530,13 @@ struct HfTaskCharmPolarisation {
     if constexpr (DoMc) {
       if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
         partRecoDstar = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0 && std::abs(candidate.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0;
-        bool signalDstar = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi && std::abs(candidate.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
+        bool const signalDstar = std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi && std::abs(candidate.flagMcMatchRecD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK;
         if (!signalDstar && (!partRecoDstar || !activatePartRecoDstar)) { // this candidate is not signal and not partially reconstructed signal, skip
           return isCandidateInSignalRegion;
         }
         origin = candidate.originMcRec();
         ptBhadMother = candidate.ptBhadMotherPart();
-        int pdgBhadMother = candidate.pdgBhadMotherPart();
+        int const pdgBhadMother = candidate.pdgBhadMotherPart();
         // For unknown reasons there are charm hadrons coming directly from beauty diquarks without an intermediate B-hadron which have an unreasonable correlation between the pT of the charm hadron and the beauty mother. We also remove charm hadrons from quarkonia.
         if (origin == RecoDecay::OriginType::NonPrompt && (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 557)) { // o2-linter: disable=pdg/explicit-code, magic-number (constants not in the PDG header)
           return isCandidateInSignalRegion;
@@ -1557,7 +1557,7 @@ struct HfTaskCharmPolarisation {
 
         /// Lc electric charge from MC truth
         /// This is checked when the reconstructed 3-prong candidate is matched to MC with RecoDecay::getMatchedMCRec
-        int8_t flagMc = candidate.flagMcMatchRec();
+        int8_t const flagMc = candidate.flagMcMatchRec();
         charge = std::abs(flagMc) > 0 ? flagMc / std::abs(flagMc) : 0; /// 0 should never happen, debug protection
       }
     } else {
@@ -1755,9 +1755,9 @@ struct HfTaskCharmPolarisation {
         }
 
         /// control plots on pair masses
-        double invMass2KPiLc = invMassKPiLc * invMassKPiLc;
-        double invMass2PKLc = invMassPKLc * invMassPKLc;
-        double invMass2PPiLc = invMassPPiLc * invMassPPiLc;
+        double const invMass2KPiLc = invMassKPiLc * invMassKPiLc;
+        double const invMass2PKLc = invMassPKLc * invMassPKLc;
+        double const invMass2PPiLc = invMassPPiLc * invMassPPiLc;
         if (lcPKPiChannels.activateTHnLcChannelMonitor && bkgRotationId == 0) {
           /// fill Dalitz plot only for genuine candidates (i.e. non-rotated)
           registry.fill(HIST("hMass2PairsLcPKPi"), invMass2KPiLc, invMass2PKLc, invMass2PPiLc, candidate.pt());
@@ -1780,15 +1780,15 @@ struct HfTaskCharmPolarisation {
         continue;
       }
 
-      float phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-      float thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
-      ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(pxDau, pyDau, pzDau, massDau);
-      ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(pxCharmHad, pyCharmHad, pzCharmHad, invMassCharmHad);
-      ROOT::Math::Boost boost{fourVecMother.BoostToCM()};
-      ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);
-      ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();
+      float const phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+      float const thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
+      ROOT::Math::PxPyPzMVector const fourVecDau = ROOT::Math::PxPyPzMVector(pxDau, pyDau, pzDau, massDau);
+      ROOT::Math::PxPyPzMVector const fourVecMother = ROOT::Math::PxPyPzMVector(pxCharmHad, pyCharmHad, pzCharmHad, invMassCharmHad);
+      ROOT::Math::Boost const boost{fourVecMother.BoostToCM()};
+      ROOT::Math::PxPyPzMVector const fourVecDauCM = boost(fourVecDau);
+      ROOT::Math::XYZVector const threeVecDauCM = fourVecDauCM.Vect();
 
-      float ptCharmHad = std::sqrt(pxCharmHad * pxCharmHad + pyCharmHad * pyCharmHad); // this definition is valid for both rotated and original candidates
+      float const ptCharmHad = std::sqrt(pxCharmHad * pxCharmHad + pyCharmHad * pyCharmHad); // this definition is valid for both rotated and original candidates
 
       if (!isCandidateInSignalRegion) { // it could be that only one mass hypothesis is in signal region
         isCandidateInSignalRegion = isInSignalRegion<Channel>(invMassCharmHadForSparse);
@@ -1810,15 +1810,15 @@ struct HfTaskCharmPolarisation {
       }
 
       // helicity
-      ROOT::Math::XYZVector helicityVec = fourVecMother.Vect();
+      ROOT::Math::XYZVector const helicityVec = fourVecMother.Vect();
       float cosThetaStarHelicity = -10.f;
       float phiHelicity = -10.f;
       // production
-      ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.f);
+      ROOT::Math::XYZVector const normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.f);
       float cosThetaStarProduction = -10.f;
       float phiProduction = -10.f;
       // beam
-      ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
+      ROOT::Math::XYZVector const beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
       float cosThetaStarBeam = -10.f;
       float phiBeam = -10.f;
       // random
@@ -1831,11 +1831,11 @@ struct HfTaskCharmPolarisation {
 
       if constexpr (WithEp && !DoMc) {
         /// EP analysis
-        float xQvec = (*qVecs).at(0);
-        float yQvec = (*qVecs).at(1);
-        ROOT::Math::XYZVector qVecNorm = ROOT::Math::XYZVector(yQvec, -xQvec, 0.f);
+        float const xQvec = (*qVecs).at(0);
+        float const yQvec = (*qVecs).at(1);
+        ROOT::Math::XYZVector const qVecNorm = ROOT::Math::XYZVector(yQvec, -xQvec, 0.f);
         float cosThetaStarEP = -10.f;
-        float phiEP = -99.f;
+        float const phiEP = -99.f;
 
         if (activateTHnSparseCosThStarEP) {
           // EP
@@ -1864,7 +1864,7 @@ struct HfTaskCharmPolarisation {
       }
       if (activateTHnSparseCosThStarRandom) {
         // random
-        ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
+        ROOT::Math::XYZVector const randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
         cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
         fillRecoHistos<Channel, WithMl, DoMc, charm_polarisation::CosThetaStarType::Random>(invMassCharmHadForSparse, ptCharmHad, numPvContributors, rapidity, invMassD0, invMassKPiLc, cosThetaStarRandom, -99.f, outputMl, isRotatedCandidate, origin, ptBhadMother, resoChannelLc, absEtaTrackMin, numItsClsMin, numTpcClsMin, charge, nMuons, partRecoDstar);
       }
@@ -1949,9 +1949,9 @@ struct HfTaskCharmPolarisation {
             originTriplet = RecoDecay::OriginType::Prompt;
           } else if (originProng0 == RecoDecay::OriginType::NonPrompt && originProng1 == RecoDecay::OriginType::NonPrompt && originProng2 == RecoDecay::OriginType::NonPrompt) {
             /// check if the three particles share the same B-hadron id. If yes: claim the triplet as "non-prompt"
-            int idBMotherProng0 = idxBhadMothersProng0.at(0);
-            int idBMotherProng1 = idxBhadMothersProng1.at(0);
-            int idBMotherProng2 = idxBhadMothersProng2.at(0);
+            int const idBMotherProng0 = idxBhadMothersProng0.at(0);
+            int const idBMotherProng1 = idxBhadMothersProng1.at(0);
+            int const idBMotherProng2 = idxBhadMothersProng2.at(0);
             if (idBMotherProng0 == idBMotherProng1 && idBMotherProng1 == idBMotherProng2) {
               originTriplet = RecoDecay::OriginType::NonPrompt;
             }
@@ -1976,9 +1976,9 @@ struct HfTaskCharmPolarisation {
           int pdgMotherProng0 = -1;
           int pdgMotherProng1 = -1;
           int pdgMotherProng2 = -1;
-          bool atLeast2ProngsFromSameMother = (!idMothersProng0.empty() && !idMothersProng1.empty() && idMothersProng0.at(0) == idMothersProng1.at(0)) ||
-                                              (!idMothersProng1.empty() && !idMothersProng2.empty() && idMothersProng1.at(0) == idMothersProng2.at(0)) ||
-                                              (!idMothersProng0.empty() && !idMothersProng2.empty() && idMothersProng0.at(0) == idMothersProng2.at(0));
+          bool const atLeast2ProngsFromSameMother = (!idMothersProng0.empty() && !idMothersProng1.empty() && idMothersProng0.at(0) == idMothersProng1.at(0)) ||
+                                                    (!idMothersProng1.empty() && !idMothersProng2.empty() && idMothersProng1.at(0) == idMothersProng2.at(0)) ||
+                                                    (!idMothersProng0.empty() && !idMothersProng2.empty() && idMothersProng0.at(0) == idMothersProng2.at(0));
           if (atLeast2ProngsFromSameMother) {
             if (!idMothersProng0.empty()) {
               /// BEWARE: in case of mcCollision grouping, the idMother can anyway point to a particle in another collision (*)
@@ -2002,7 +2002,7 @@ struct HfTaskCharmPolarisation {
 
           /// calculate inv. masses for pairs, depending on mass hypothesis
           std::array<float, 3> pVecPion = {};
-          std::array<float, 3> pVecKaon = candidate.pVectorProng1();
+          std::array<float, 3> const pVecKaon = candidate.pVectorProng1();
           std::array<float, 3> pVecProton = {};
           if (iMass == charm_polarisation::MassHyposLcToPKPi::PKPi && candidate.isSelLcToPKPi() >= selectionFlagLcToPKPi) {
             pVecProton = candidate.pVectorProng0();
@@ -2075,7 +2075,7 @@ struct HfTaskCharmPolarisation {
     bool partRecoDstar{false};
     if constexpr (Channel == charm_polarisation::DecayChannel::DstarToDzeroPi) {
       partRecoDstar = (std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPiPi0) && (std::abs(mcParticle.flagMcMatchGenD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiKPi0);
-      bool signalDstar = (std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) && (std::abs(mcParticle.flagMcMatchGenD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
+      bool const signalDstar = (std::abs(mcParticle.flagMcMatchGen()) == hf_decay::hf_cand_dstar::DecayChannelMain::DstarToPiKPi) && (std::abs(mcParticle.flagMcMatchGenD0()) == hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK);
 
       if (!signalDstar && (!activatePartRecoDstar || !partRecoDstar)) { // this particle is not signal and not partially reconstructed signal, skip
         return;
@@ -2083,7 +2083,7 @@ struct HfTaskCharmPolarisation {
       origin = mcParticle.originMcGen();
       if (origin == RecoDecay::OriginType::NonPrompt) {
         auto bHadMother = mcParticles.rawIteratorAt(mcParticle.idxBhadMotherPart() - mcParticles.offset());
-        int pdgBhadMother = std::abs(bHadMother.pdgCode());
+        int const pdgBhadMother = std::abs(bHadMother.pdgCode());
         // For unknown reasons there are charm hadrons coming directly from beauty diquarks without an intermediate B-hadron which have an unreasonable correlation between the pT of the charm hadron and the beauty mother. We also remove charm hadrons from quarkonia.
         if (pdgBhadMother == 5101 || pdgBhadMother == 5103 || pdgBhadMother == 5201 || pdgBhadMother == 5203 || pdgBhadMother == 5301 || pdgBhadMother == 5303 || pdgBhadMother == 5401 || pdgBhadMother == 5403 || pdgBhadMother == 5503 || pdgBhadMother == 553 || pdgBhadMother == 555 || pdgBhadMother == 557) { // o2-linter: disable=pdg/explicit-code, magic-number (constants not in the PDG header)
           return;
@@ -2091,7 +2091,7 @@ struct HfTaskCharmPolarisation {
         ptBhadMother = bHadMother.pt();
       }
 
-      std::array<int, 2> dauPdgs = {kPiPlus, o2::constants::physics::Pdg::kD0};
+      std::array<int, 2> const dauPdgs = {kPiPlus, o2::constants::physics::Pdg::kD0};
       RecoDecay::getDaughters(mcParticle, &listDaughters, dauPdgs, 1);
       massDau = massPi;
       massCharmHad = massDstar;
@@ -2101,25 +2101,25 @@ struct HfTaskCharmPolarisation {
       }
       origin = mcParticle.originMcGen();
       resoChannelLc = mcParticle.flagMcDecayChanGen();
-      std::array<int, 3> dauPdgs = {kProton, -kKPlus, kPiPlus};
+      std::array<int, 3> const dauPdgs = {kProton, -kKPlus, kPiPlus};
       RecoDecay::getDaughters(mcParticle, &listDaughters, dauPdgs, 2);
       massDau = massProton;
       massCharmHad = massLc;
 
       /// electric charge from PDG code
-      int pdgCode = mcParticle.pdgCode();
+      int const pdgCode = mcParticle.pdgCode();
       charge = static_cast<int8_t>(pdgCode / std::abs(pdgCode));
     }
 
-    float rapidity = mcParticle.y();
+    float const rapidity = mcParticle.y();
     if (std::abs(rapidity) > 1.f) { // we do not keep particles with |y| > 1
       return;
     }
 
-    float pxCharmHad = mcParticle.px();
-    float pyCharmHad = mcParticle.py();
-    float pzCharmHad = mcParticle.pz();
-    float ptCharmHad = mcParticle.pt();
+    float const pxCharmHad = mcParticle.px();
+    float const pyCharmHad = mcParticle.py();
+    float const pzCharmHad = mcParticle.pz();
+    float const ptCharmHad = mcParticle.pt();
 
     float pxDau{-1000.f}, pyDau{-1000.f}, pzDau{-1000.f};
     for (const auto& dauIdx : listDaughters) {
@@ -2134,7 +2134,7 @@ struct HfTaskCharmPolarisation {
           }
         } else if (areDauInAcc) { // check also D0 daughters
           std::vector<int> listDaughtersD0{};
-          std::array<int, 2> dauPdgsD0 = {kPiPlus, -kKPlus};
+          std::array<int, 2> const dauPdgsD0 = {kPiPlus, -kKPlus};
           RecoDecay::getDaughters(mcParticle, &listDaughtersD0, dauPdgsD0, 1);
           for (const auto& dauIdxD0 : listDaughtersD0) {
             auto dauPartD0 = mcParticles.rawIteratorAt(dauIdxD0 - mcParticles.offset());
@@ -2153,32 +2153,32 @@ struct HfTaskCharmPolarisation {
       }
     }
 
-    float phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
-    float thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
-    ROOT::Math::PxPyPzMVector fourVecDau = ROOT::Math::PxPyPzMVector(pxDau, pyDau, pzDau, massDau);
-    ROOT::Math::PxPyPzMVector fourVecMother = ROOT::Math::PxPyPzMVector(pxCharmHad, pyCharmHad, pzCharmHad, massCharmHad);
-    ROOT::Math::Boost boost{fourVecMother.BoostToCM()};
-    ROOT::Math::PxPyPzMVector fourVecDauCM = boost(fourVecDau);
-    ROOT::Math::XYZVector threeVecDauCM = fourVecDauCM.Vect();
+    float const phiRandom = gRandom->Uniform(0.f, constants::math::TwoPI);
+    float const thetaRandom = gRandom->Uniform(0.f, constants::math::PI);
+    ROOT::Math::PxPyPzMVector const fourVecDau = ROOT::Math::PxPyPzMVector(pxDau, pyDau, pzDau, massDau);
+    ROOT::Math::PxPyPzMVector const fourVecMother = ROOT::Math::PxPyPzMVector(pxCharmHad, pyCharmHad, pzCharmHad, massCharmHad);
+    ROOT::Math::Boost const boost{fourVecMother.BoostToCM()};
+    ROOT::Math::PxPyPzMVector const fourVecDauCM = boost(fourVecDau);
+    ROOT::Math::XYZVector const threeVecDauCM = fourVecDauCM.Vect();
 
     if (activateTHnSparseCosThStarHelicity) {
-      ROOT::Math::XYZVector helicityVec = fourVecMother.Vect();
-      float cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
+      ROOT::Math::XYZVector const helicityVec = fourVecMother.Vect();
+      float const cosThetaStarHelicity = helicityVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(helicityVec.Mag2());
       fillGenHistos<charm_polarisation::CosThetaStarType::Helicity>(ptCharmHad, numPvContributors, rapidity, cosThetaStarHelicity, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
     }
     if (activateTHnSparseCosThStarProduction) {
-      ROOT::Math::XYZVector normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.f);
-      float cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
+      ROOT::Math::XYZVector const normalVec = ROOT::Math::XYZVector(pyCharmHad, -pxCharmHad, 0.f);
+      float const cosThetaStarProduction = normalVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2()) / std::sqrt(normalVec.Mag2());
       fillGenHistos<charm_polarisation::CosThetaStarType::Production>(ptCharmHad, numPvContributors, rapidity, cosThetaStarProduction, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
     }
     if (activateTHnSparseCosThStarBeam) {
-      ROOT::Math::XYZVector beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
-      float cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+      ROOT::Math::XYZVector const beamVec = ROOT::Math::XYZVector(0.f, 0.f, 1.f);
+      float const cosThetaStarBeam = beamVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
       fillGenHistos<charm_polarisation::CosThetaStarType::Beam>(ptCharmHad, numPvContributors, rapidity, cosThetaStarBeam, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
     }
     if (activateTHnSparseCosThStarRandom) {
-      ROOT::Math::XYZVector randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
-      float cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
+      ROOT::Math::XYZVector const randomVec = ROOT::Math::XYZVector(std::sin(thetaRandom) * std::cos(phiRandom), std::sin(thetaRandom) * std::sin(phiRandom), std::cos(thetaRandom));
+      float const cosThetaStarRandom = randomVec.Dot(threeVecDauCM) / std::sqrt(threeVecDauCM.Mag2());
       fillGenHistos<charm_polarisation::CosThetaStarType::Random>(ptCharmHad, numPvContributors, rapidity, cosThetaStarRandom, origin, ptBhadMother, areDauInAcc, resoChannelLc, charge, partRecoDstar);
     }
   }
@@ -2194,7 +2194,7 @@ struct HfTaskCharmPolarisation {
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2220,7 +2220,7 @@ struct HfTaskCharmPolarisation {
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2249,7 +2249,7 @@ struct HfTaskCharmPolarisation {
     int numPvContributorsGen{0};
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
       auto thisCollId = collision.globalIndex();
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMcPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2282,7 +2282,7 @@ struct HfTaskCharmPolarisation {
     int numPvContributorsGen{0};
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
       auto thisCollId = collision.globalIndex();
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMcAndMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2318,11 +2318,11 @@ struct HfTaskCharmPolarisation {
       registry.fill(HIST("hCentrality"), centrality);
 
       auto thisCollId = collision.globalIndex();
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
-      std::vector<float> qVecs = getQVec(collision);
+      std::vector<float> const qVecs = getQVec(collision);
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
@@ -2348,11 +2348,11 @@ struct HfTaskCharmPolarisation {
       registry.fill(HIST("hCentrality"), centrality);
 
       auto thisCollId = collision.globalIndex();
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
-      std::vector<float> qVecs = getQVec(collision);
+      std::vector<float> const qVecs = getQVec(collision);
 
       for (const auto& dstarCandidate : groupedDstarCandidates) {
         nCands++;
@@ -2382,7 +2382,7 @@ struct HfTaskCharmPolarisation {
       registry.fill(HIST("hCentrality"), centrality);
 
       auto thisCollId = collision.globalIndex();
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMcPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2400,7 +2400,7 @@ struct HfTaskCharmPolarisation {
     }
     for (const auto& mcParticle : mcParticles) {
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcParticle.mcCollision().globalIndex());
-      float cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl, centEstimator);
+      float const cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl, centEstimator);
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true>(mcParticle, mcParticles, numPvContributorsGen, &cent);
     }
   }
@@ -2423,7 +2423,7 @@ struct HfTaskCharmPolarisation {
       registry.fill(HIST("hCentrality"), centrality);
 
       auto thisCollId = collision.globalIndex();
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
       auto groupedDstarCandidates = dstarCandidates.sliceBy(dstarWithMcAndMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2441,7 +2441,7 @@ struct HfTaskCharmPolarisation {
     }
     for (const auto& mcParticle : mcParticles) {
       const auto& recoCollsPerMcColl = collisions.sliceBy(colPerMcCollision, mcParticle.mcCollision().globalIndex());
-      float cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl, centEstimator);
+      float const cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl, centEstimator);
       runMcGenPolarisationAnalysis<charm_polarisation::DecayChannel::DstarToDzeroPi, true>(mcParticle, mcParticles, numPvContributorsGen, &cent);
     }
   }
@@ -2458,7 +2458,7 @@ struct HfTaskCharmPolarisation {
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
       auto groupedLcCandidates = lcCandidates.sliceBy(lcToPKPiPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2485,7 +2485,7 @@ struct HfTaskCharmPolarisation {
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
       auto groupedLcCandidates = lcCandidates.sliceBy(lcToPKPiWithMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2515,7 +2515,7 @@ struct HfTaskCharmPolarisation {
     int numPvContributorsGen{0};
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
       auto thisCollId = collision.globalIndex();
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
       auto groupedLcCandidates = lcCandidates.sliceBy(lcToPKPiWithMcAndMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 
@@ -2548,7 +2548,7 @@ struct HfTaskCharmPolarisation {
     int numPvContributorsGen{0};
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
       auto thisCollId = collision.globalIndex();
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
       auto groupedLcCandidates = lcCandidates.sliceBy(lcToPKPiWithMcAndMlPerCollision, thisCollId);
       int nCands{0}, nCandsInSignalRegion{0};
 

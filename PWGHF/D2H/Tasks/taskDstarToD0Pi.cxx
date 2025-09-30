@@ -121,16 +121,16 @@ struct HfTaskDstarToD0Pi {
     }
     auto vecPtBins = (std::vector<double>)ptBins;
 
-    AxisSpec axisImpactParam = {binningImpactParam, "impact parameter (cm)"};
-    AxisSpec axisDecayLength = {binningDecayLength, " decay length (cm)"};
-    AxisSpec axisNormDecayLength = {binningNormDecayLength, "normalised decay length (cm)"};
+    AxisSpec const axisImpactParam = {binningImpactParam, "impact parameter (cm)"};
+    AxisSpec const axisDecayLength = {binningDecayLength, " decay length (cm)"};
+    AxisSpec const axisNormDecayLength = {binningNormDecayLength, "normalised decay length (cm)"};
     AxisSpec axisCentrality = {binningCentrality, "centrality (%)"};
     AxisSpec axisDeltaInvMass = {binningDeltaInvMass, "#Delta #it{M}_{inv} D*"};
     AxisSpec axisBDTScorePrompt = {binningSigBDTScore, "BDT Score for Prompt Cand"};
     AxisSpec axisBDTScoreNonPrompt = {binningSigBDTScore, "BDT Score for Non-Prompt Cand"};
     AxisSpec axisBDTScoreBackground = {binningBkgBDTScore, "BDT Score for Background Cand"};
     AxisSpec axisPvContrib = {binningPvContrib, "PV Contribution"};
-    AxisSpec axisPt = {vecPtBins, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const axisPt = {vecPtBins, "#it{p}_{T} (GeV/#it{c})"};
 
     axesPtVsCentVsBDTVsPvContrib = {axisPt, axisCentrality, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt, axisPvContrib};
     axesPtVsCentVsPvContrib = {axisPt, axisCentrality, axisPvContrib};
@@ -265,9 +265,9 @@ struct HfTaskDstarToD0Pi {
     // if weights to be applied
     if (useWeight) {
       ccdbApi.init(ccdbUrl);
-      std::map<std::string, std::string> metadata;
+      std::map<std::string, std::string> const metadata;
       // Retrieve the file from CCDB
-      bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForWeight, ".", metadata, timestampCCDB, false, weightFileName);
+      bool const isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForWeight, ".", metadata, timestampCCDB, false, weightFileName);
       if (!isFileAvailable) {
         LOGF(fatal, "Failed to retrieve weight file from CCDB: %s", ccdbPathForWeight.value.c_str());
         return;
@@ -280,7 +280,7 @@ struct HfTaskDstarToD0Pi {
           // Ensure hWeights is properly sized
           hWeights.resize(nWeights);
           for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
-            std::string histName = "hMult" + std::to_string(ithWeight + 1) + "_Weight";
+            std::string const histName = "hMult" + std::to_string(ithWeight + 1) + "_Weight";
             hWeights[ithWeight] = reinterpret_cast<TH2F*>(weightFile->Get(histName.c_str()));
             if (hWeights[ithWeight] == nullptr) {
               LOGF(fatal, "Histogram %s not found in weight file!", histName.c_str());

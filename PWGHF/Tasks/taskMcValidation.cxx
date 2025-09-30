@@ -314,7 +314,7 @@ struct HfTaskMcValidationGen {
         continue;
       }
 
-      int particlePdgCode = particle.pdgCode();
+      int const particlePdgCode = particle.pdgCode();
       bool isDiffFromMothers = true;
       for (const auto& mother : particle.template mothers_as<Particles>()) {
         if (particlePdgCode == mother.pdgCode()) {
@@ -459,8 +459,8 @@ struct HfTaskMcValidationGen {
         if (std::abs(pxDiff) > 0.001 || std::abs(pyDiff) > 0.001 || std::abs(pzDiff) > 0.001) {
           momentumCheck = false;
         }
-        double pDiff = RecoDecay::p(pxDiff, pyDiff, pzDiff);
-        double ptDiff = RecoDecay::pt(pxDiff, pyDiff);
+        double const pDiff = RecoDecay::p(pxDiff, pyDiff, pzDiff);
+        double const ptDiff = RecoDecay::pt(pxDiff, pyDiff);
         registry.fill(HIST("hMomentumCheck"), static_cast<float>(momentumCheck));
         registry.fill(HIST("hPxDiffMotherDaughterGen"), pxDiff);
         registry.fill(HIST("hPyDiffMotherDaughterGen"), pyDiff);
@@ -479,8 +479,8 @@ struct HfTaskMcValidationGen {
         }
 
         auto daughter0 = particle.template daughters_as<Particles>().begin();
-        double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-        double vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
+        double const vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+        double const vertexPrimary[3] = {mcCollision.posX(), mcCollision.posY(), mcCollision.posZ()};
         auto decayLength = RecoDecay::distance(vertexPrimary, vertexDau);
         if (iD < NCharmMesonChannels) {
           if (origin == RecoDecay::OriginType::Prompt) { // Prompt charm mesons
@@ -725,20 +725,20 @@ struct HfTaskMcValidationRec {
     histDeltaPz[whichHad]->Fill(candidate.pz() - mother.pz());
     // Compare Secondary vertex and decay length with MC
     auto daughter0 = mother.template daughters_as<aod::McParticles>().begin();
-    double vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
-    double vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
+    double const vertexDau[3] = {daughter0.vx(), daughter0.vy(), daughter0.vz()};
+    double const vertexMoth[3] = {mother.vx(), mother.vy(), mother.vz()};
     auto decayLength = RecoDecay::distance(vertexMoth, vertexDau);
 
     histDeltaSecondaryVertexX[whichHad]->Fill(candidate.xSecondaryVertex() - vertexDau[0]);
     histDeltaSecondaryVertexY[whichHad]->Fill(candidate.ySecondaryVertex() - vertexDau[1]);
     histDeltaSecondaryVertexZ[whichHad]->Fill(candidate.zSecondaryVertex() - vertexDau[2]);
     histDeltaDecayLength[whichHad]->Fill(candidate.decayLength() - decayLength);
-    std::array<double, 3> momDau0 = {candidate.pxProng0(),
-                                     candidate.pyProng0(),
-                                     candidate.pzProng0()};
-    std::array<double, 3> momDau1 = {candidate.pxProng1(),
-                                     candidate.pyProng1(),
-                                     candidate.pzProng1()};
+    std::array<double, 3> const momDau0 = {candidate.pxProng0(),
+                                           candidate.pyProng0(),
+                                           candidate.pzProng0()};
+    std::array<double, 3> const momDau1 = {candidate.pxProng1(),
+                                           candidate.pyProng1(),
+                                           candidate.pzProng1()};
     histPtCentReco[whichHad][whichOrigin]->Fill(candidate.pt(), centrality);
     if (storeOccupancy) {
       histPtOccReco[whichHad][whichOrigin]->Fill(candidate.pt(), occupancy);
@@ -907,14 +907,14 @@ struct HfTaskMcValidationRec {
           nGoodContributors++;
         }
       }
-      float frac = (nContributors > 0) ? static_cast<float>(nGoodContributors) / nContributors : 1.;
+      float const frac = (nContributors > 0) ? static_cast<float>(nGoodContributors) / nContributors : 1.;
       registry.fill(HIST("TrackToCollChecks/histFracGoodContributors"), frac);
-      uint64_t mostProbableBC = collision.bc().globalBC();
+      uint64_t const mostProbableBC = collision.bc().globalBC();
       for (auto collision2 = collision + 1; collision2 != collisions.end(); ++collision2) {
-        uint64_t mostProbableBC2 = collision2.bc().globalBC();
+        uint64_t const mostProbableBC2 = collision2.bc().globalBC();
         if (mostProbableBC2 == mostProbableBC) {
-          float radColl1 = std::sqrt(collision.posX() * collision.posX() + collision.posY() * collision.posY());
-          float radColl2 = std::sqrt(collision2.posX() * collision2.posX() + collision2.posY() * collision2.posY());
+          float const radColl1 = std::sqrt(collision.posX() * collision.posX() + collision.posY() * collision.posY());
+          float const radColl2 = std::sqrt(collision2.posX() * collision2.posX() + collision2.posY() * collision2.posY());
           int nFromBeautyColl1 = 0, nFromBeautyColl2 = 0;
           for (const auto& trackColl1 : tracksColl1) {
             if (trackColl1.has_mcParticle() && trackColl1.isPVContributor()) {
@@ -945,13 +945,13 @@ struct HfTaskMcValidationRec {
     for (const auto& track : tracksFilteredGlobalTrackWoDCA) {
       // check number of ITS hits
       int nITSlayers = 0;
-      uint8_t itsHitMap = track.itsClusterMap();
+      uint8_t const itsHitMap = track.itsClusterMap();
       for (int iLayer = 0; iLayer < 7; ++iLayer) {
         if (TESTBIT(itsHitMap, iLayer)) {
           nITSlayers++;
         }
       }
-      uint index = uint(track.collisionId() >= 0);
+      uint const index = uint(track.collisionId() >= 0);
       if (track.has_mcParticle()) {
         auto particle = track.mcParticle(); // get corresponding MC particle to check origin
         auto mcCollision = particle.mcCollision_as<aod::McCollisions>();
@@ -960,7 +960,7 @@ struct HfTaskMcValidationRec {
         }
         auto origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, true);
         histTracks->Fill(origin, track.pt());
-        bool isAmbiguous = (track.compatibleCollIds().size() != 1);
+        bool const isAmbiguous = (track.compatibleCollIds().size() != 1);
         if (isAmbiguous) {
           registry.fill(HIST("TrackToCollChecks/histAmbiguousTrackNumCollisions"), track.compatibleCollIds().size());
           histAmbiguousTracks->Fill(origin, track.pt());
@@ -1077,7 +1077,7 @@ struct HfTaskMcValidationRec {
     for (const auto& collision : collisions) {
       // apply event selection
       float centrality{105.f};
-      int occupancy = collision.trackOccupancyInTimeRange();
+      int const occupancy = collision.trackOccupancyInTimeRange();
       hfEvSel.getHfCollisionRejectionMask<true, CentEstimator, aod::BCsWithTimestamps>(collision, centrality, ccdb, registry); // only needed to update centrality, no bitmask selection applied
       if (!collision.has_mcCollision()) {
         return;
@@ -1096,7 +1096,7 @@ struct HfTaskMcValidationRec {
       for (const auto& cand2Prong : grouped2ProngCandidates) {
 
         // determine which kind of candidate it is
-        bool isD0Sel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK);
+        bool const isD0Sel = TESTBIT(cand2Prong.hfflag(), o2::aod::hf_cand_2prong::DecayType::D0ToPiK);
         if (!isD0Sel) {
           continue;
         }
@@ -1127,10 +1127,10 @@ struct HfTaskMcValidationRec {
 
         // determine which kind of candidate it is
         // FIXME: add D* and decays with cascades
-        bool isDPlusSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::DplusToPiKPi);
-        bool isDsSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::DsToKKPi);
-        bool isLcSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::LcToPKPi);
-        bool isXicSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::XicToPKPi);
+        bool const isDPlusSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::DplusToPiKPi);
+        bool const isDsSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::DsToKKPi);
+        bool const isLcSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::LcToPKPi);
+        bool const isXicSel = TESTBIT(cand3Prong.hfflag(), hf_cand_3prong::DecayType::XicToPKPi);
         if (!isDPlusSel && !isDsSel && !isLcSel && !isXicSel) {
           continue;
         }
@@ -1169,9 +1169,9 @@ struct HfTaskMcValidationRec {
           }
           auto mother = mcParticles.rawIteratorAt(indexParticle);
           fillHisto(cand3Prong, mother, whichHad, whichOrigin, centrality, occupancy);
-          std::array<double, 3> momDau2 = {cand3Prong.pxProng2(),
-                                           cand3Prong.pyProng2(),
-                                           cand3Prong.pzProng2()};
+          std::array<double, 3> const momDau2 = {cand3Prong.pxProng2(),
+                                                 cand3Prong.pyProng2(),
+                                                 cand3Prong.pzProng2()};
           histPtDau[whichHad][whichOrigin][2]->Fill(RecoDecay::pt(momDau2));
           histEtaDau[whichHad][whichOrigin][2]->Fill(RecoDecay::eta(momDau2));
           histImpactParameterDau[whichHad][whichOrigin][2]->Fill(cand3Prong.impactParameter2());

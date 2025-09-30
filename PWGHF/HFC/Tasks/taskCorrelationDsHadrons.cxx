@@ -179,8 +179,8 @@ struct HfTaskCorrelationDsHadrons {
     AxisSpec axisPtD = {(std::vector<double>)binsPtD, "#it{p}_{T}^{D} (GeV/#it{c})"};
     AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
     AxisSpec axisPoolBin = {binsPoolBin, "poolBin"};
-    AxisSpec axisBdtScore = {binsBdtScore, "Bdt score"};
-    AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
+    AxisSpec const axisBdtScore = {binsBdtScore, "Bdt score"};
+    AxisSpec const axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     AxisSpec axisPosZ = {binsPosZ, "PosZ"};
     AxisSpec axisNumPvContr = {binsNumPvContr, "Num PV contributors"};
     AxisSpec axisDsPrompt = {2, -0.5, 1.5, "Prompt Ds"};
@@ -416,12 +416,12 @@ struct HfTaskCorrelationDsHadrons {
                    aod::DsCandRecoInfo const& candidates)
   {
     for (const auto& candidate : candidates) {
-      float massD = candidate.mD();
-      float ptD = candidate.signedPtD();
-      float bdtScorePrompt = candidate.mlScorePrompt();
-      float bdtScoreBkg = candidate.mlScoreBkg();
+      float const massD = candidate.mD();
+      float const ptD = candidate.signedPtD();
+      float const bdtScorePrompt = candidate.mlScorePrompt();
+      float const bdtScoreBkg = candidate.mlScoreBkg();
       int multPvContrib = candidate.numPvContrib();
-      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
+      int const ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
 
       if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
@@ -442,18 +442,18 @@ struct HfTaskCorrelationDsHadrons {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
-      float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.signedPtD();
-      float ptHadron = pairEntry.signedPtHadron();
-      float massD = pairEntry.mD();
-      float bdtScorePrompt = pairEntry.mlScorePrompt();
-      float bdtScoreBkg = pairEntry.mlScoreBkg();
-      float trackDcaXY = pairEntry.trackDcaXY();
-      float trackDcaZ = pairEntry.trackDcaZ();
+      float const deltaEta = pairEntry.deltaEta();
+      float const ptD = pairEntry.signedPtD();
+      float const ptHadron = pairEntry.signedPtHadron();
+      float const massD = pairEntry.mD();
+      float const bdtScorePrompt = pairEntry.mlScorePrompt();
+      float const bdtScoreBkg = pairEntry.mlScoreBkg();
+      float const trackDcaXY = pairEntry.trackDcaXY();
+      float const trackDcaZ = pairEntry.trackDcaZ();
       int multPvContrib = pairEntry.numPvContrib();
-      int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
-      int poolBin = pairEntry.poolBin();
-      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
+      int const trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
+      int const poolBin = pairEntry.poolBin();
+      int const ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
 
       if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
@@ -527,13 +527,13 @@ struct HfTaskCorrelationDsHadrons {
                     soa::Join<aod::DsCandRecoInfo, aod::DsCandGenInfo> const& candidates)
   {
     for (const auto& candidate : candidates) {
-      float massD = candidate.mD();
-      float ptD = candidate.signedPtD();
-      float bdtScorePrompt = candidate.mlScorePrompt();
-      float bdtScoreBkg = candidate.mlScoreBkg();
-      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
+      float const massD = candidate.mD();
+      float const ptD = candidate.signedPtD();
+      float const bdtScorePrompt = candidate.mlScorePrompt();
+      float const bdtScoreBkg = candidate.mlScoreBkg();
+      int const ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
       int multPvContrib = candidate.numPvContrib();
-      bool isDsPrompt = candidate.isPrompt();
+      bool const isDsPrompt = candidate.isPrompt();
 
       if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
@@ -560,21 +560,21 @@ struct HfTaskCorrelationDsHadrons {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
-      float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.signedPtD();
-      float ptHadron = pairEntry.signedPtHadron();
-      float massD = pairEntry.mD();
-      float bdtScorePrompt = pairEntry.mlScorePrompt();
-      float bdtScoreBkg = pairEntry.mlScoreBkg();
-      float trackDcaXY = pairEntry.trackDcaXY();
-      float trackDcaZ = pairEntry.trackDcaZ();
+      float const deltaEta = pairEntry.deltaEta();
+      float const ptD = pairEntry.signedPtD();
+      float const ptHadron = pairEntry.signedPtHadron();
+      float const massD = pairEntry.mD();
+      float const bdtScorePrompt = pairEntry.mlScorePrompt();
+      float const bdtScoreBkg = pairEntry.mlScoreBkg();
+      float const trackDcaXY = pairEntry.trackDcaXY();
+      float const trackDcaZ = pairEntry.trackDcaZ();
       int multPvContrib = pairEntry.numPvContrib();
-      int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
-      int poolBin = pairEntry.poolBin();
-      int statusDsPrompt = static_cast<int>(pairEntry.isPrompt());
-      int statusPromptHadron = pairEntry.trackOrigin();
-      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
-      bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
+      int const trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
+      int const poolBin = pairEntry.poolBin();
+      int const statusDsPrompt = static_cast<int>(pairEntry.isPrompt());
+      int const statusPromptHadron = pairEntry.trackOrigin();
+      int const ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
+      bool const isPhysicalPrimary = pairEntry.isPhysicalPrimary();
 
       if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
@@ -629,13 +629,13 @@ struct HfTaskCorrelationDsHadrons {
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
-      float deltaPhi = pairEntry.deltaPhi();
-      float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.signedPtD();
-      float ptHadron = pairEntry.signedPtHadron();
-      int poolBin = pairEntry.poolBin();
-      int statusPromptHadron = pairEntry.trackOrigin();
-      bool isDsPrompt = pairEntry.isPrompt();
+      float const deltaPhi = pairEntry.deltaPhi();
+      float const deltaEta = pairEntry.deltaEta();
+      float const ptD = pairEntry.signedPtD();
+      float const ptHadron = pairEntry.signedPtHadron();
+      int const poolBin = pairEntry.poolBin();
+      int const statusPromptHadron = pairEntry.trackOrigin();
+      bool const isDsPrompt = pairEntry.isPrompt();
 
       registry.fill(HIST("hCorrel2DVsPtMcGen"), deltaPhi, deltaEta, std::abs(ptD), std::abs(ptHadron), poolBin);
       registry.fill(HIST("hDeltaEtaPtIntMcGen"), deltaEta);
@@ -660,18 +660,18 @@ struct HfTaskCorrelationDsHadrons {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
-      float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.signedPtD();
-      float ptHadron = pairEntry.signedPtHadron();
-      float massD = pairEntry.mD();
-      float bdtScorePrompt = pairEntry.mlScorePrompt();
-      float bdtScoreBkg = pairEntry.mlScoreBkg();
-      float trackDcaXY = pairEntry.trackDcaXY();
-      float trackDcaZ = pairEntry.trackDcaZ();
+      float const deltaEta = pairEntry.deltaEta();
+      float const ptD = pairEntry.signedPtD();
+      float const ptHadron = pairEntry.signedPtHadron();
+      float const massD = pairEntry.mD();
+      float const bdtScorePrompt = pairEntry.mlScorePrompt();
+      float const bdtScoreBkg = pairEntry.mlScoreBkg();
+      float const trackDcaXY = pairEntry.trackDcaXY();
+      float const trackDcaZ = pairEntry.trackDcaZ();
       int multPvContrib = pairEntry.numPvContrib();
-      int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
-      int poolBin = pairEntry.poolBin();
-      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
+      int const trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
+      int const poolBin = pairEntry.poolBin();
+      int const ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
 
       if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
@@ -745,13 +745,13 @@ struct HfTaskCorrelationDsHadrons {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
-      float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.signedPtD();
-      float ptHadron = pairEntry.signedPtHadron();
-      float massD = pairEntry.mD();
+      float const deltaEta = pairEntry.deltaEta();
+      float const ptD = pairEntry.signedPtD();
+      float const ptHadron = pairEntry.signedPtHadron();
+      float const massD = pairEntry.mD();
       int multPvContrib = pairEntry.numPvContrib();
-      int poolBin = pairEntry.poolBin();
-      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
+      int const poolBin = pairEntry.poolBin();
+      int const ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
 
       double efficiencyWeight = 1.;
       if (useHighDimHistoForEff) {
@@ -818,21 +818,21 @@ struct HfTaskCorrelationDsHadrons {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
       float deltaPhi = pairEntry.deltaPhi();
-      float deltaEta = pairEntry.deltaEta();
-      float ptD = pairEntry.signedPtD();
-      float ptHadron = pairEntry.signedPtHadron();
-      float massD = pairEntry.mD();
-      float bdtScorePrompt = pairEntry.mlScorePrompt();
-      float bdtScoreBkg = pairEntry.mlScoreBkg();
-      float trackDcaXY = pairEntry.trackDcaXY();
-      float trackDcaZ = pairEntry.trackDcaZ();
+      float const deltaEta = pairEntry.deltaEta();
+      float const ptD = pairEntry.signedPtD();
+      float const ptHadron = pairEntry.signedPtHadron();
+      float const massD = pairEntry.mD();
+      float const bdtScorePrompt = pairEntry.mlScorePrompt();
+      float const bdtScoreBkg = pairEntry.mlScoreBkg();
+      float const trackDcaXY = pairEntry.trackDcaXY();
+      float const trackDcaZ = pairEntry.trackDcaZ();
       int multPvContrib = pairEntry.numPvContrib();
-      int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
-      int poolBin = pairEntry.poolBin();
-      int statusDsPrompt = static_cast<int>(pairEntry.isPrompt());
-      int statusPromptHadron = pairEntry.trackOrigin();
-      int ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
-      bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
+      int const trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
+      int const poolBin = pairEntry.poolBin();
+      int const statusDsPrompt = static_cast<int>(pairEntry.isPrompt());
+      int const statusPromptHadron = pairEntry.trackOrigin();
+      int const ptBinD = o2::analysis::findBin(binsPtD, std::abs(ptD));
+      bool const isPhysicalPrimary = pairEntry.isPhysicalPrimary();
 
       if (!isSelectedCandidate(ptBinD, bdtScorePrompt, bdtScoreBkg)) {
         continue;
@@ -1150,7 +1150,7 @@ struct HfTaskCorrelationDsHadrons {
                   }
                 }
                 if (separateTrackOrigins) {
-                  int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
+                  int const trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
                   if (trackOrigin == RecoDecay::OriginType::Prompt) { // charm orgin
                     registry.fill(HIST("hPtPrmPromptPartMcGen"), mcParticle.pt());
                   } else if (trackOrigin == RecoDecay::OriginType::NonPrompt) { // beauty origin
@@ -1203,7 +1203,7 @@ struct HfTaskCorrelationDsHadrons {
                 }
                 // check track origin
                 if (separateTrackOrigins) {
-                  int trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
+                  int const trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
                   if (trackOrigin == RecoDecay::OriginType::Prompt) { // charm orgin
                     registry.fill(HIST("hPtPrmPromptPartMcRec"), track.pt());
                   } else if (trackOrigin == RecoDecay::OriginType::NonPrompt) { // beauty origin

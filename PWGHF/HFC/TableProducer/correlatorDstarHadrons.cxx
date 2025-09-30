@@ -196,7 +196,7 @@ struct HfCorrelatorDstarHadrons {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
 
-    AxisSpec axisSpecMultFT0M{binsMultiplicity, "Multiplicity in FT0M", "multFT0M"};
+    AxisSpec const axisSpecMultFT0M{binsMultiplicity, "Multiplicity in FT0M", "multFT0M"};
 
     invMassDstarParticle = -999.0;
     invMassD0Particle = -999.0;
@@ -260,7 +260,7 @@ struct HfCorrelatorDstarHadrons {
           invMassD0Particle = cand.invMassD0Bar();
         }
         auto ptDstar = cand.pt();
-        int corrBinPtDstar = o2::analysis::findBin(binsPtCorrelations, ptDstar);
+        int const corrBinPtDstar = o2::analysis::findBin(binsPtCorrelations, ptDstar);
         auto deltaM = cand.invMassDstar() - cand.invMassD0();
         if (deltaM > signalRegionLefBound->at(corrBinPtDstar) && deltaM < signalRegionRightBound->at(corrBinPtDstar)) {
           // Signal Region
@@ -361,7 +361,7 @@ struct HfCorrelatorDstarHadrons {
   {
 
     auto dstarHadronTuple = std::make_tuple(candidates, tracks);
-    Pair<FilteredCollisions, FilteredCandidates, FilteredTracks, BinningType> pairData{binningScheme, 5, -1, collisions, dstarHadronTuple, &cache};
+    Pair<FilteredCollisions, FilteredCandidates, FilteredTracks, BinningType> const pairData{binningScheme, 5, -1, collisions, dstarHadronTuple, &cache};
 
     for (const auto& [c1, candidatesPerCol, c2, tracksPerCol] : pairData) {
       auto bc = c2.bc_as<aod::BCsWithTimestamps>();

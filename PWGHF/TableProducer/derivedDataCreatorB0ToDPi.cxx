@@ -296,7 +296,7 @@ struct HfDerivedDataCreatorB0ToDPi {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
-              float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+              float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
               if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
                 continue;
               }
@@ -310,9 +310,9 @@ struct HfDerivedDataCreatorB0ToDPi {
         }
         auto prongCharm = candidate.template prong0_as<CandCharmType>();
         auto prongBachelor = candidate.template prong1_as<TracksWPid>();
-        double ct = hfHelper.ctB0(candidate);
-        double y = hfHelper.yB0(candidate);
-        float massB0ToDPi = hfHelper.invMassB0ToDPi(candidate);
+        double const ct = hfHelper.ctB0(candidate);
+        double const y = hfHelper.yB0(candidate);
+        float const massB0ToDPi = hfHelper.invMassB0ToDPi(candidate);
         float mlScoreB0ToDPi{-1.f};
         std::vector<float> mlScoresDplus;
         std::copy(prongCharm.mlProbDplusToPiKPi().begin(), prongCharm.mlProbDplusToPiKPi().end(), std::back_inserter(mlScoresDplus));

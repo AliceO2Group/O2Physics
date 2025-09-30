@@ -163,7 +163,7 @@ struct HfCandidateSelectorDsToKKPi {
   bool selection(const T1& candidate)
   {
     auto candpT = candidate.pt();
-    int pTBin = findBin(binsPt, candpT);
+    int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
@@ -207,7 +207,7 @@ struct HfCandidateSelectorDsToKKPi {
   template <typename T1, typename T2>
   bool selectionKKPi(const T1& candidate, const T2& trackKaon1, const T2& trackKaon2, const T2& trackPion)
   {
-    int pTBin = findBin(binsPt, candidate.pt());
+    int const pTBin = findBin(binsPt, candidate.pt());
     if (pTBin == -1) {
       return false;
     }
@@ -239,7 +239,7 @@ struct HfCandidateSelectorDsToKKPi {
   template <typename T1, typename T2>
   bool selectionPiKK(const T1& candidate, const T2& trackPion, const T2& trackKaon1, const T2& trackKaon2)
   {
-    int pTBin = findBin(binsPt, candidate.pt());
+    int const pTBin = findBin(binsPt, candidate.pt());
     if (pTBin == -1) {
       return false;
     }
@@ -304,8 +304,8 @@ struct HfCandidateSelectorDsToKKPi {
         continue;
       }
 
-      bool topolDsToKKPi = selectionKKPi(candidate, trackPos1, trackNeg, trackPos2);
-      bool topolDsToPiKK = selectionPiKK(candidate, trackPos1, trackNeg, trackPos2);
+      bool const topolDsToKKPi = selectionKKPi(candidate, trackPos1, trackNeg, trackPos2);
+      bool const topolDsToPiKK = selectionPiKK(candidate, trackPos1, trackNeg, trackPos2);
       if (!topolDsToKKPi && !topolDsToPiKK) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);
         if (applyMl) {
@@ -344,13 +344,13 @@ struct HfCandidateSelectorDsToKKPi {
         pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
       }
 
-      bool pidDsToKKPi = pidTrackPos1Kaon != TrackSelectorPID::Rejected &&
-                         pidTrackNegKaon != TrackSelectorPID::Rejected &&
-                         pidTrackPos2Pion != TrackSelectorPID::Rejected;
+      bool const pidDsToKKPi = pidTrackPos1Kaon != TrackSelectorPID::Rejected &&
+                               pidTrackNegKaon != TrackSelectorPID::Rejected &&
+                               pidTrackPos2Pion != TrackSelectorPID::Rejected;
 
-      bool pidDsToPiKK = pidTrackPos1Pion != TrackSelectorPID::Rejected &&
-                         pidTrackNegKaon != TrackSelectorPID::Rejected &&
-                         pidTrackPos2Kaon != TrackSelectorPID::Rejected;
+      bool const pidDsToPiKK = pidTrackPos1Pion != TrackSelectorPID::Rejected &&
+                               pidTrackNegKaon != TrackSelectorPID::Rejected &&
+                               pidTrackPos2Kaon != TrackSelectorPID::Rejected;
 
       if (!pidDsToKKPi && !pidDsToPiKK) {
         hfSelDsToKKPiCandidate(statusDsToKKPi, statusDsToPiKK);

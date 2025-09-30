@@ -933,7 +933,7 @@ struct HfTreeCreatorLcToPKPi {
       float ptProng0 = candidate.ptProng0();
       auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int candFlag) {
-        double pseudoRndm = ptProng0 * 1000. - static_cast<int64_t>(ptProng0 * 1000);
+        double const pseudoRndm = ptProng0 * 1000. - static_cast<int64_t>(ptProng0 * 1000);
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         const int sigbgstatus = determineSignalBgStatus(candidate, candFlag);
         const bool isMcCandidateSignal = (sigbgstatus == Prompt) || (sigbgstatus == NonPrompt);
@@ -1122,7 +1122,7 @@ struct HfTreeCreatorLcToPKPi {
       float ptProng0 = candidate.ptProng0();
       auto collision = candidate.template collision_as<Colls>();
       auto fillTable = [&](int candFlag) {
-        double pseudoRndm = ptProng0 * 1000. - static_cast<int64_t>(ptProng0 * 1000);
+        double const pseudoRndm = ptProng0 * 1000. - static_cast<int64_t>(ptProng0 * 1000);
         const int functionSelection = candFlag == 0 ? candidate.isSelLcToPKPi() : candidate.isSelLcToPiKP();
         if (functionSelection >= selectionFlagLc && (candidate.pt() > downSampleBkgPtMax || (pseudoRndm < downSampleBkgFactor && candidate.pt() < downSampleBkgPtMax))) {
           if (fillCandidateLiteTable) {

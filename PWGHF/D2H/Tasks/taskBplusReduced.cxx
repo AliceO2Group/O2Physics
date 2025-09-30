@@ -413,9 +413,9 @@ struct HfTaskBplusReduced {
     auto candPi = candidate.template prong1_as<TracksPion>();
     auto ptD0 = candidate.ptProng0();
     auto invMassD0 = (candPi.signed1Pt() < 0) ? candD0.invMassHypo0() : candD0.invMassHypo1();
-    std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
-    std::array<float, 3> posSvD{candD0.xSecondaryVertex(), candD0.ySecondaryVertex(), candD0.zSecondaryVertex()};
-    std::array<float, 3> momD{candD0.pVector()};
+    std::array<float, 3> const posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
+    std::array<float, 3> const posSvD{candD0.xSecondaryVertex(), candD0.ySecondaryVertex(), candD0.zSecondaryVertex()};
+    std::array<float, 3> const momD{candD0.pVector()};
     auto cpaD0 = RecoDecay::cpa(posPv, posSvD, momD);
     auto cpaXyD0 = RecoDecay::cpaXY(posPv, posSvD, momD);
     auto decLenD0 = RecoDecay::distance(posPv, posSvD);
@@ -556,7 +556,7 @@ struct HfTaskBplusReduced {
       }
     }
     if (fillTree) {
-      float pseudoRndm = ptD0 * 1000. - static_cast<int64_t>(ptD0 * 1000);
+      float const pseudoRndm = ptD0 * 1000. - static_cast<int64_t>(ptD0 * 1000);
       if (ptCandBplus >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor) {
         float prong0MlScoreBkg = -1.;
         float prong0MlScorePrompt = -1.;
@@ -680,7 +680,7 @@ struct HfTaskBplusReduced {
     std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
     std::array<float, 2> yProngs = {particle.yProng0(), particle.yProng1()};
     std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
-    bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
+    bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
 
     if (fillHistograms) {
       registry.fill(HIST("hPtProng0Gen"), ptParticle, ptProngs[0]);

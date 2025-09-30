@@ -148,7 +148,7 @@ struct HfCandidateSelectorXicToPKPi {
   bool selectionTopol(const T& candidate)
   {
     auto candpT = candidate.pt();
-    int pTBin = findBin(binsPt, candpT);
+    int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
@@ -212,7 +212,7 @@ struct HfCandidateSelectorXicToPKPi {
   {
 
     auto candpT = candidate.pt();
-    int pTBin = findBin(binsPt, candpT);
+    int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
@@ -283,8 +283,8 @@ struct HfCandidateSelectorXicToPKPi {
 
       // conjugate-dependent topplogical selection for Xic
 
-      bool topolXicToPKPi = selectionTopolConjugate(candidate, trackPos1, trackNeg, trackPos2);
-      bool topolXicToPiKP = selectionTopolConjugate(candidate, trackPos2, trackNeg, trackPos1);
+      bool const topolXicToPKPi = selectionTopolConjugate(candidate, trackPos1, trackNeg, trackPos2);
+      bool const topolXicToPiKP = selectionTopolConjugate(candidate, trackPos2, trackNeg, trackPos1);
 
       if (!topolXicToPKPi && !topolXicToPiKP) {
         hfSelXicToPKPiCandidate(statusXicToPKPi, statusXicToPiKP);

@@ -154,7 +154,7 @@ struct HfCandidateSelectorDplusToPiKPi {
   bool selection(const T1& candidate, const T2& trackPion1, const T2& trackKaon, const T2& trackPion2)
   {
     auto ptCand = candidate.pt();
-    int pTBin = findBin(binsPt, ptCand);
+    int const pTBin = findBin(binsPt, ptCand);
     if (pTBin == -1) {
       return false;
     }
@@ -302,7 +302,7 @@ struct HfCandidateSelectorDplusToPiKPi {
       if (applyMl) {
         // ML selections
         std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
         hfMlDplusToPiKPiCandidate(outputMl);
 
         if (!isSelectedMl) {

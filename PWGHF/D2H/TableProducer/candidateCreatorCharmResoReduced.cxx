@@ -199,8 +199,8 @@ struct HfCandidateCreatorCharmResoReduced {
   {
     uint8_t selection = {BIT(D0Sel::SelectedD0) | BIT(D0Sel::SelectedD0Bar)};
     float invMassD{0.};
-    float ptD = candD.pt();
-    int ptBin = findBin(cfgDmesCuts.binsPtD, ptD);
+    float const ptD = candD.pt();
+    int const ptBin = findBin(cfgDmesCuts.binsPtD, ptD);
     if (ptBin == -1) {
       return 0;
     }
@@ -245,7 +245,7 @@ struct HfCandidateCreatorCharmResoReduced {
   template <typename V0RedTable>
   bool isV0Selected(V0RedTable const& candV0)
   {
-    int ptBin = findBin(cfgV0Cuts.binsPtV0, candV0.pt());
+    int const ptBin = findBin(cfgV0Cuts.binsPtV0, candV0.pt());
     const float invMassLow = cfgV0Cuts.cutsV0->get(ptBin, "invMassLow");
     const float invMassHigh = cfgV0Cuts.cutsV0->get(ptBin, "invMassHigh");
     if (ptBin == -1) {
@@ -359,19 +359,19 @@ struct HfCandidateCreatorCharmResoReduced {
     std::vector<std::array<float, 3>> pVectorCharmProngs = {candD.pVectorProng0(), candD.pVectorProng1()};
     std::array<float, 3> pVecD = candD.pVector();
 
-    int numFills = (cfgTrackRotation.enable) ? cfgTrackRotation.numRotations : 1; // number of times we fil the tables: default 1, but more in case of track rotation
+    int const numFills = (cfgTrackRotation.enable) ? cfgTrackRotation.numRotations : 1; // number of times we fil the tables: default 1, but more in case of track rotation
 
     for (int iFill{0}; iFill < numFills; ++iFill) {
 
       std::array<float, 3> pVecV0Tr = candV0Tr.pVector();
       if (cfgTrackRotation.enable) { // let's rotate
-        float bkgRotAngle = cfgTrackRotation.minRotAngleMultByPi * constants::math::PI + bkgRotationAngleStep * iFill;
+        float const bkgRotAngle = cfgTrackRotation.minRotAngleMultByPi * constants::math::PI + bkgRotationAngleStep * iFill;
         pVecV0Tr = std::array<float, 3>{candV0Tr.px() * std::cos(bkgRotAngle) - candV0Tr.py() * std::sin(bkgRotAngle), candV0Tr.px() * std::sin(bkgRotAngle) + candV0Tr.py() * std::cos(bkgRotAngle), candV0Tr.pz()};
       }
 
       float invMassReso{-1}, invMassV0Tr{-1}, invMassD{-1};
       int8_t signReso{0}, isWrongSign{0};
-      double ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0Tr, pVecD));
+      double const ptReso = RecoDecay::pt(RecoDecay::sumOfVec(pVecV0Tr, pVecD));
 
       if constexpr (DType == DMesonType::Dplus) {
         invMassD = candD.invMassDplus();
@@ -712,7 +712,7 @@ struct HfCandidateCreatorCharmResoReduced {
     for (const auto& candD : candsD) {
       // selection of D candidates
       registry.fill(HIST("hSelections"), 1);
-      uint8_t selFlagD = selctionFlagBachD<DType>(candD);
+      uint8_t const selFlagD = selctionFlagBachD<DType>(candD);
       if (selFlagD == 0) {
         continue;
       }
@@ -765,15 +765,15 @@ struct HfCandidateCreatorCharmResoReduced {
                                       V0TrRedTable const& candsV0Tr)
   {
     using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::collision::NumContrib>;
-    BinningType corrBinning{{cfgMixedEvent.zPoolBins, cfgMixedEvent.multPoolBins}, true};
+    BinningType const corrBinning{{cfgMixedEvent.zPoolBins, cfgMixedEvent.multPoolBins}, true};
     auto bachTuple = std::make_tuple(candsD, candsV0Tr);
-    Pair<Coll, DRedTable, V0TrRedTable, BinningType> pairs{corrBinning, cfgMixedEvent.numberEventsMixed, cfgMixedEvent.numberEventsToSkip, collisions, bachTuple, &cache};
+    Pair<Coll, DRedTable, V0TrRedTable, BinningType> const pairs{corrBinning, cfgMixedEvent.numberEventsMixed, cfgMixedEvent.numberEventsToSkip, collisions, bachTuple, &cache};
     for (const auto& [collision1, bachDs, collision2, bachV0Trs] : pairs) {
       registry.fill(HIST("hNPvContCorr"), collision1.numContrib(), collision2.numContrib());
       registry.fill(HIST("hZvertCorr"), collision1.posZ(), collision2.posZ());
       for (const auto& [bachD, bachV0Tr] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(bachDs, bachV0Trs))) {
         // Apply analysis selections on D and V0 bachelors
-        uint8_t selFlagD = selctionFlagBachD<DType>(bachD);
+        uint8_t const selFlagD = selctionFlagBachD<DType>(bachD);
         if (selFlagD == 0) {
           continue;
         }

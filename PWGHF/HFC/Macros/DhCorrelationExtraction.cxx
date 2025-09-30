@@ -543,7 +543,7 @@ Bool_t DhCorrelationExtraction::extractCorrelations(Double_t ptCandMin, Double_t
 
     h1DSubtrNormSecPart = reinterpret_cast<TH1D*>(h1DSubtrNorm->Clone("h1D_SubtrNorm_SecPart"));
     h1DSubtrNormSecPart->Sumw2();
-    Int_t nBinsPhi = h1DSubtrNormSecPart->GetNbinsX();
+    Int_t const nBinsPhi = h1DSubtrNormSecPart->GetNbinsX();
     if (nBinsPhi != h1DSecPartFrac->GetNbinsX()) {
       std::cout << "[ERROR]: nBinsPhi different between h1D_SubtrNorm and h1D_SecPartFrac" << std::endl;
       return kFALSE;
@@ -593,7 +593,7 @@ Bool_t DhCorrelationExtraction::extractCorrelations(Double_t ptCandMin, Double_t
       c->SaveAs(Form("Output_CorrelationExtraction_%s_Root/CorrFDTemplate_1D_%s_Canvas_PtCand%.0fto%.0f_PoolInt_PtAssoc%.0fto%.0f.root", codeName.Data(), fDmesonLabel.Data(), ptCandMin, ptCandMax, ptHadMin, ptHadMax));
     }
 
-    Double_t baselineFd = calculateBaseline(h1DTemplateTotal, kTRUE);
+    Double_t const baselineFd = calculateBaseline(h1DTemplateTotal, kTRUE);
     Double_t baselineData;
     if (fSecPartContamination) {
       baselineData = calculateBaseline(h1DSubtrNormSecPart, kTRUE);
@@ -607,7 +607,7 @@ Bool_t DhCorrelationExtraction::extractCorrelations(Double_t ptCandMin, Double_t
     std::cout << "===================== " << std::endl;
     std::cout << " " << std::endl;
 
-    Double_t baselinediff = baselineData - baselineFd;
+    Double_t const baselinediff = baselineData - baselineFd;
     TH1D* hBaselineDiff = reinterpret_cast<TH1D*>(h1DFdTemplateNonPrompt->Clone("hBaselineDiff"));
     for (int iBin = 0; iBin < hBaselineDiff->GetNbinsX(); iBin++) {
       hBaselineDiff->SetBinContent(iBin + 1, baselinediff);
@@ -979,14 +979,14 @@ TH1D* DhCorrelationExtraction::evaluateMcClosModulations(Double_t ptCandMin, Dou
 
   TF1* funFit = new TF1("funFit", "[0]", TMath::Pi() * 3. / 8., TMath::Pi() * 3 / 2);
   hRatioNonPrompt->Fit(funFit, "R");
-  Double_t fitVal = funFit->GetParameter(0);
+  Double_t const fitVal = funFit->GetParameter(0);
 
   auto* cRatioMcClosure = new TCanvas(Form("cRatio_MCClosure_PtCand%.0fto%.0f_Pthad%.0fto%.0f", ptCandMin, ptCandMax, ptHadMin, ptHadMax), Form("cRatio_MCClosure_PtCand%.0fto%.0f_Pthad%.0fto%.0f", ptCandMin, ptCandMax, ptHadMin, ptHadMax), 100, 100, 1200, 700);
   cRatioMcClosure->cd();
   hRatioNonPrompt->GetYaxis()->SetRangeUser(0.2, 1.8);
   hRatioNonPrompt->Draw();
 
-  Double_t fPrompt = getFdPromptFrac(ptCandMin, ptCandMax, ptHadMin, ptHadMax);
+  Double_t const fPrompt = getFdPromptFrac(ptCandMin, ptCandMax, ptHadMin, ptHadMax);
   Double_t relAmplC[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   Double_t relAmplB[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
   Double_t recoKineVal[12] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -1074,10 +1074,10 @@ TH2D* DhCorrelationExtraction::getCorrelHisto(Int_t sEorMe, Int_t sorSb, Int_t p
     }
   }*/
 
-  Int_t binExtPtCandMin = hSparse->GetAxis(2)->FindBin(ptCandMin + 0.01); // axis2: ptCand, the 0.01 to avoid bin edges!
-  Int_t binExtPtCandMax = hSparse->GetAxis(2)->FindBin(ptCandMax - 0.01);
-  Int_t binExtPtHadMin = hSparse->GetAxis(3)->FindBin(ptHadMin + 0.01); // axis3: ptHad
-  Int_t binExtPtHadMax = hSparse->GetAxis(3)->FindBin(ptHadMax - 0.01);
+  Int_t const binExtPtCandMin = hSparse->GetAxis(2)->FindBin(ptCandMin + 0.01); // axis2: ptCand, the 0.01 to avoid bin edges!
+  Int_t const binExtPtCandMax = hSparse->GetAxis(2)->FindBin(ptCandMax - 0.01);
+  Int_t const binExtPtHadMin = hSparse->GetAxis(3)->FindBin(ptHadMin + 0.01); // axis3: ptHad
+  Int_t const binExtPtHadMax = hSparse->GetAxis(3)->FindBin(ptHadMax - 0.01);
   Int_t binExtPoolMin;
   Int_t binExtPoolMax;
   if (fCorrectPoolsSeparately) {
@@ -1144,16 +1144,16 @@ void DhCorrelationExtraction::getSignalAndBackgroundForNorm(Double_t ptCandMin, 
   TH1F* hMassFitSBLYield = reinterpret_cast<TH1F*>(fFileMass->Get("hBackgroundSidebandLeft"));
   TH1F* hMassFitSBRYield = reinterpret_cast<TH1F*>(fFileMass->Get("hBackgroundSidebandRight"));
 
-  Int_t ptCandBin = hMassFitSgnYield->FindBin(ptCandMin + 0.01);
+  Int_t const ptCandBin = hMassFitSgnYield->FindBin(ptCandMin + 0.01);
   if (ptCandBin != hMassFitSgnYield->FindBin(ptCandMax - 0.01)) {
     std::cout << "[ERROR] Pt bin in invariant mass histogram not univocally defined " << std::endl;
   }
 
-  Float_t sgnYield = hMassFitSgnYield->GetBinContent(ptCandBin);
-  Float_t bkgYield = hMassFitBkgYield->GetBinContent(ptCandBin);
-  Float_t sBsYield = hMassFitSBsYield->GetBinContent(ptCandBin);
-  Float_t sblYield = hMassFitSBLYield->GetBinContent(ptCandBin);
-  Float_t sbrYield = hMassFitSBRYield->GetBinContent(ptCandBin);
+  Float_t const sgnYield = hMassFitSgnYield->GetBinContent(ptCandBin);
+  Float_t const bkgYield = hMassFitBkgYield->GetBinContent(ptCandBin);
+  Float_t const sBsYield = hMassFitSBsYield->GetBinContent(ptCandBin);
+  Float_t const sblYield = hMassFitSBLYield->GetBinContent(ptCandBin);
+  Float_t const sbrYield = hMassFitSBRYield->GetBinContent(ptCandBin);
 
   std::cout << "================================= " << std::endl;
   std::cout << "Getting invariant mass parameters " << std::endl;
@@ -1224,10 +1224,10 @@ TH1D* DhCorrelationExtraction::getCorrelHistoSecondaryPart(Int_t partType, Doubl
   } else { // all selected particles
     hSparse = reinterpret_cast<THnSparseD*>(fDirSecPart->Get(fHistoAllPartName.Data()));
   }
-  Int_t binExtPtCandMin = hSparse->GetAxis(2)->FindBin(ptCandMin + 0.01); // axis2: ptCand, the 0.01 to avoid bin edges!
-  Int_t binExtPtCandMax = hSparse->GetAxis(2)->FindBin(ptCandMax - 0.01);
-  Int_t binExtPtHadMin = hSparse->GetAxis(3)->FindBin(ptHadMin + 0.01); // axis3: ptHad
-  Int_t binExtPtHadMax = hSparse->GetAxis(3)->FindBin(ptHadMax - 0.01);
+  Int_t const binExtPtCandMin = hSparse->GetAxis(2)->FindBin(ptCandMin + 0.01); // axis2: ptCand, the 0.01 to avoid bin edges!
+  Int_t const binExtPtCandMax = hSparse->GetAxis(2)->FindBin(ptCandMax - 0.01);
+  Int_t const binExtPtHadMin = hSparse->GetAxis(3)->FindBin(ptHadMin + 0.01); // axis3: ptHad
+  Int_t const binExtPtHadMax = hSparse->GetAxis(3)->FindBin(ptHadMax - 0.01);
   Int_t binExtPoolMin;
   Int_t binExtPoolMax;
   if (partType == kAllPart) {
@@ -1265,10 +1265,10 @@ TH1D* DhCorrelationExtraction::reflectCorrHistogram(TH1D*& histo)
 {
 
   // nBinsPhi must be a multple of 4 in order to reflect correcty the histogram
-  Int_t nBinsPhi = histo->GetNbinsX();
-  Int_t nBinsPhiRefl = nBinsPhi / 2;
-  Int_t bin0Phi = nBinsPhi / 4 + 1;
-  Int_t binPiPhi = 3 * nBinsPhi / 4;
+  Int_t const nBinsPhi = histo->GetNbinsX();
+  Int_t const nBinsPhiRefl = nBinsPhi / 2;
+  Int_t const bin0Phi = nBinsPhi / 4 + 1;
+  Int_t const binPiPhi = 3 * nBinsPhi / 4;
 
   TH1D* h1D = new TH1D("h1D_Reflected", "", nBinsPhiRefl, 0., TMath::Pi()); // pointer to be returned
   h1D->Sumw2();
@@ -1302,9 +1302,9 @@ TH1D* DhCorrelationExtraction::reflectHistoRun2(TH1D* h, Double_t scale)
 
   TH1D* h2 = new TH1D(Form("%sReflected", h->GetName()), Form("%sReflected", h->GetName()), h->GetNbinsX() / 2., 0., TMath::Pi());
   for (Int_t j = 1; j <= h->GetNbinsX(); j++) {
-    Double_t x = h->GetBinCenter(j);
-    Double_t y0 = h->GetBinContent(j);
-    Double_t ey0 = h->GetBinError(j);
+    Double_t const x = h->GetBinCenter(j);
+    Double_t const y0 = h->GetBinContent(j);
+    Double_t const ey0 = h->GetBinError(j);
     Int_t j2;
     if (x > 0 && x < TMath::Pi()) {
       j2 = h2->FindBin(x);
@@ -1316,8 +1316,8 @@ TH1D* DhCorrelationExtraction::reflectHistoRun2(TH1D* h, Double_t scale)
       printf("Point %d excluded \n", j);
       continue;
     }
-    Double_t y = h2->GetBinContent(j2);
-    Double_t ey = h2->GetBinError(j2);
+    Double_t const y = h2->GetBinContent(j2);
+    Double_t const ey = h2->GetBinError(j2);
     h2->SetBinContent(j2, (y + y0));
     h2->SetBinError(j2, TMath::Sqrt(ey0 * ey0 + ey * ey));
   }
@@ -1332,8 +1332,8 @@ Double_t DhCorrelationExtraction::getFdPromptFrac(Double_t ptCandMin, Double_t p
   TH1D* h1D = new TH1D();
   h1D = reinterpret_cast<TH1D*>(fFileFDPromptFrac->Get(fHistoFDPromptFracName.Data()));
 
-  Int_t binPtCandMin = h1D->GetXaxis()->FindBin(ptCandMin + 0.01);
-  Int_t binPtCandMax = h1D->GetXaxis()->FindBin(ptCandMax - 0.01);
+  Int_t const binPtCandMin = h1D->GetXaxis()->FindBin(ptCandMin + 0.01);
+  Int_t const binPtCandMax = h1D->GetXaxis()->FindBin(ptCandMax - 0.01);
   Double_t promptFraction;
   if (binPtCandMin == binPtCandMax) {
     promptFraction = h1D->GetBinContent(binPtCandMin);
@@ -1348,8 +1348,8 @@ Double_t DhCorrelationExtraction::getFdPromptFrac(Double_t ptCandMin, Double_t p
 void DhCorrelationExtraction::normalizeMePlot(TH2D*& histoME, TH2D*& histoMEsoftPi) const
 {
 
-  Int_t bin0phi = histoME->GetYaxis()->FindBin(0.);
-  Int_t bin0eta = histoME->GetXaxis()->FindBin(0.);
+  Int_t const bin0phi = histoME->GetYaxis()->FindBin(0.);
+  Int_t const bin0eta = histoME->GetXaxis()->FindBin(0.);
 
   // evaluate the normalization (from ALL tracks, including possible fake softpions) -> **histoME indeed includes bin1+bin2 of THnSparse, i.e. all the tracks**
   Double_t factorNorm = 0;
@@ -1381,11 +1381,11 @@ Double_t DhCorrelationExtraction::calculateBaseline(TH1D*& histo, Bool_t totalRa
   // half range = Pi , for histogram reflected under symmetric assumption
 
   Double_t baseline, errBaseline;
-  Int_t nBinsPhi = histo->GetNbinsX();
-  Int_t binPhiHalf = nBinsPhi / 2;
-  Int_t binPhiHalfMinus1 = nBinsPhi / 2 - 1;
-  Int_t binPhiHalfPlus1 = nBinsPhi / 2 + 1;
-  Int_t binPhiHalfPlus2 = nBinsPhi / 2 + 1;
+  Int_t const nBinsPhi = histo->GetNbinsX();
+  Int_t const binPhiHalf = nBinsPhi / 2;
+  Int_t const binPhiHalfMinus1 = nBinsPhi / 2 - 1;
+  Int_t const binPhiHalfPlus1 = nBinsPhi / 2 + 1;
+  Int_t const binPhiHalfPlus2 = nBinsPhi / 2 + 1;
 
   if (totalRange) {
     // baseline evaluated considering: the two first points, the last two points and four points in the middle (corresponding to the outer points)
@@ -1461,11 +1461,11 @@ Double_t DhCorrelationExtraction::calculateBaselineError(TH1D*& histo, Bool_t to
   // half range = Pi , for histogram reflected under symmetric assumption
 
   Double_t errBaseline;
-  Int_t nBinsPhi = histo->GetNbinsX();
-  Int_t binPhiHalf = nBinsPhi / 2;
-  Int_t binPhiHalfMinus1 = nBinsPhi / 2 - 1;
-  Int_t binPhiHalfPlus1 = nBinsPhi / 2 + 1;
-  Int_t binPhiHalfPlus2 = nBinsPhi / 2 + 1;
+  Int_t const nBinsPhi = histo->GetNbinsX();
+  Int_t const binPhiHalf = nBinsPhi / 2;
+  Int_t const binPhiHalfMinus1 = nBinsPhi / 2 - 1;
+  Int_t const binPhiHalfPlus1 = nBinsPhi / 2 + 1;
+  Int_t const binPhiHalfPlus2 = nBinsPhi / 2 + 1;
 
   if (totalRange) {
     // baseline evaluated considering: the two first points, the last two points and four points in the middle (corresponding to the outer points)

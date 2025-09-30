@@ -298,7 +298,7 @@ struct HfTaskXicToXiPiPi {
       double outputBkg = -99.;    // bkg score
       double outputPrompt = -99.; // prompt score
       double outputFD = -99.;     // non-prompt score
-      int scoreSize = candidate.mlProbXicToXiPiPi().size();
+      int const scoreSize = candidate.mlProbXicToXiPiPi().size();
       if (scoreSize > 0) {
         outputBkg = candidate.mlProbXicToXiPiPi()[0];
         outputPrompt = candidate.mlProbXicToXiPiPi()[1];

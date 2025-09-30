@@ -270,7 +270,7 @@ struct HfDerivedDataCreatorDplusToPiKPi {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
-              float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+              float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
               if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
                 continue;
               }
@@ -282,9 +282,9 @@ struct HfDerivedDataCreatorDplusToPiKPi {
             }
           }
         }
-        double ct = hfHelper.ctDplus(candidate);
-        double y = hfHelper.yDplus(candidate);
-        float massDplusToPiKPi = hfHelper.invMassDplusToPiKPi(candidate);
+        double const ct = hfHelper.ctDplus(candidate);
+        double const y = hfHelper.yDplus(candidate);
+        float const massDplusToPiKPi = hfHelper.invMassDplusToPiKPi(candidate);
         std::vector<float> mlScoresDplusToPiKPi;
         if constexpr (IsMl) {
           std::copy(candidate.mlProbDplusToPiKPi().begin(), candidate.mlProbDplusToPiKPi().end(), std::back_inserter(mlScoresDplusToPiKPi));

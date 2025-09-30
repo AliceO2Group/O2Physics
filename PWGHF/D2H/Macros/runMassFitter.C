@@ -62,7 +62,7 @@ void readArray(const Value& jsonArray, std::vector<ValueType>& output)
 
 void parseStringArray(const Value& jsonArray, std::vector<std::string>& output)
 {
-  size_t arrayLength = jsonArray.Size();
+  size_t const arrayLength = jsonArray.Size();
   for (size_t i = 0; i < arrayLength; i++) {
     if (jsonArray[i].IsString()) {
       output.emplace_back(jsonArray[i].GetString());
@@ -87,11 +87,11 @@ int runMassFitter(const TString& configFileName)
   config.ParseStream(is);
   fclose(configFile);
 
-  Bool_t isMc = config["IsMC"].GetBool();
-  TString inputFileName = config["InFileName"].GetString();
-  TString reflFileName = config["ReflFileName"].GetString();
+  Bool_t const isMc = config["IsMC"].GetBool();
+  TString const inputFileName = config["InFileName"].GetString();
+  TString const reflFileName = config["ReflFileName"].GetString();
   TString outputFileName = config["OutFileName"].GetString();
-  TString particleName = config["Particle"].GetString();
+  TString const particleName = config["Particle"].GetString();
 
   std::vector<std::string> inputHistoName;
   std::vector<std::string> promptHistoName;
@@ -166,8 +166,8 @@ int runMassFitter(const TString& configFileName)
   const Value& rebinValue = config["Rebin"];
   readArray(rebinValue, nRebin);
 
-  bool includeSecPeak = config["InclSecPeak"].GetBool();
-  bool useLikelihood = config["UseLikelihood"].GetBool();
+  bool const includeSecPeak = config["InclSecPeak"].GetBool();
+  bool const useLikelihood = config["UseLikelihood"].GetBool();
 
   const Value& bkgFuncValue = config["BkgFunc"];
   readArray(bkgFuncValue, bkgFuncConfig);
@@ -349,7 +349,7 @@ int runMassFitter(const TString& configFileName)
     canvasSize[1] = 500;
   }
 
-  Int_t nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
+  Int_t const nCanvasesMax = 20; // do not put more than 20 bins per canvas to make them visible
   const Int_t nCanvases = std::ceil(static_cast<float>(nSliceVarBins) / nCanvasesMax);
   std::vector<TCanvas*> canvasMass(nCanvases);
   std::vector<TCanvas*> canvasResiduals(nCanvases);
@@ -372,7 +372,7 @@ int runMassFitter(const TString& configFileName)
     const Int_t iCanvas = std::floor(static_cast<float>(iSliceVar) / nCanvasesMax);
 
     hMassForFit[iSliceVar] = hMass[iSliceVar]->Rebin(nRebin[iSliceVar]);
-    TString ptTitle =
+    TString const ptTitle =
       Form("%0.2f < " + sliceVarName + " < %0.2f " + sliceVarUnit, sliceVarMin[iSliceVar], sliceVarMax[iSliceVar]);
     hMassForFit[iSliceVar]->SetTitle(Form("%s;%s;Counts per %0.1f MeV/#it{c}^{2}",
                                           ptTitle.Data(), massAxisTitle.Data(),

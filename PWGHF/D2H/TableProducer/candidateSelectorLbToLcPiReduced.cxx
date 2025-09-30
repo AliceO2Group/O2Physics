@@ -221,7 +221,7 @@ struct HfCandidateSelectorLbToLcPiReduced {
       if (applyLbMl) {
         // Lb ML selections
         std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<WithLcMl>(hfCandLb, trackPi);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandLb, outputMl);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandLb, outputMl);
         hfMlLbToLcPiCandidate(outputMl[1]);
 
         if (!isSelectedMl) {

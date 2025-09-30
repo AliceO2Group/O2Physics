@@ -226,8 +226,8 @@ struct HfCandidateCreatorBplusReduced {
     }
     // invMassWindowD0PiTolerance is used to apply a slightly tighter cut than in D0Pi pair preselection
     // to avoid accepting D0Pi pairs that were not formed in D0Pi pair creator
-    double invMass2D0PiMin = (massBplus - myInvMassWindowD0Pi + invMassWindowD0PiTolerance) * (massBplus - myInvMassWindowD0Pi + invMassWindowD0PiTolerance);
-    double invMass2D0PiMax = (massBplus + myInvMassWindowD0Pi - invMassWindowD0PiTolerance) * (massBplus + myInvMassWindowD0Pi - invMassWindowD0PiTolerance);
+    double const invMass2D0PiMin = (massBplus - myInvMassWindowD0Pi + invMassWindowD0PiTolerance) * (massBplus - myInvMassWindowD0Pi + invMassWindowD0PiTolerance);
+    double const invMass2D0PiMax = (massBplus + myInvMassWindowD0Pi - invMassWindowD0PiTolerance) * (massBplus + myInvMassWindowD0Pi - invMassWindowD0PiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());
@@ -261,8 +261,8 @@ struct HfCandidateCreatorBplusReduced {
     }
     // invMassWindowD0PiTolerance is used to apply a slightly tighter cut than in D0Pi pair preselection
     // to avoid accepting D0Pi pairs that were not formed in D0Pi pair creator
-    float invMass2D0PiMin = (massBplus - myInvMassWindowD0Pi + invMassWindowD0PiTolerance) * (massBplus - myInvMassWindowD0Pi + invMassWindowD0PiTolerance);
-    float invMass2D0PiMax = (massBplus + myInvMassWindowD0Pi - invMassWindowD0PiTolerance) * (massBplus + myInvMassWindowD0Pi - invMassWindowD0PiTolerance);
+    float const invMass2D0PiMin = (massBplus - myInvMassWindowD0Pi + invMassWindowD0PiTolerance) * (massBplus - myInvMassWindowD0Pi + invMassWindowD0PiTolerance);
+    float const invMass2D0PiMax = (massBplus + myInvMassWindowD0Pi - invMassWindowD0PiTolerance) * (massBplus + myInvMassWindowD0Pi - invMassWindowD0PiTolerance);
 
     for (const auto& collisionCounter : collisionsCounter) {
       registry.fill(HIST("hEvents"), 1, collisionCounter.originalCollisionCount());

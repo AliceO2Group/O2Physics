@@ -2676,8 +2676,8 @@ struct HfTrackIndexSkimCreator {
                 }
 
                 // 3-prong preselections
-                int8_t isIdentifiedPidTrackNeg1 = trackIndexNeg1.isIdentifiedPid();
-                int8_t isIdentifiedPidTrackNeg2 = trackIndexNeg2.isIdentifiedPid();
+                int8_t const isIdentifiedPidTrackNeg1 = trackIndexNeg1.isIdentifiedPid();
+                int8_t const isIdentifiedPidTrackNeg2 = trackIndexNeg2.isIdentifiedPid();
                 applyPreselection3Prong(pVecTrackNeg1, pVecTrackPos1, pVecTrackNeg2, isIdentifiedPidTrackNeg1, isIdentifiedPidTrackNeg2, cutStatus3Prong, whichHypo3Prong, isSelected3ProngCand);
                 if (!config.debug && isSelected3ProngCand == 0) {
                   continue;

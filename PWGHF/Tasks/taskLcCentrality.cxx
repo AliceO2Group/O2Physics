@@ -45,7 +45,7 @@ using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Fill MC histograms."}};
+  ConfigParamSpec const optionDoMC{"doMC", VariantType::Bool, true, {"Fill MC histograms."}};
   workflowOptions.push_back(optionDoMC);
 }
 
@@ -91,7 +91,7 @@ struct HfTaskLcCentrality {
   void process(soa::Join<aod::Collisions, aod::CentRun2V0Ms>::iterator const& collision,
                soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>> const& candidates)
   {
-    float centrality = collision.centRun2V0M();
+    float const centrality = collision.centRun2V0M();
     registry.fill(HIST("hCentrality"), centrality);
 
     for (const auto& candidate : candidates) {

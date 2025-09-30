@@ -452,7 +452,7 @@ struct HfTaskCharmResoToDV0Reduced {
       auto flag = particle.flagMcMatchGen();
       std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
       std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
-      bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
+      bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
       if (Channel == DecayChannel::DstarK0s &&
           !hf_decay::hf_cand_reso::particlesToDstarK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
         continue;

@@ -938,9 +938,9 @@ struct McPidTof {
     }
 
     float shift{0.f}, scaleWidth{0.f};
-    int nPoints = gMcPostCalibMean[pidId]->GetN();
-    double ptMin = gMcPostCalibMean[pidId]->GetX()[0];
-    double ptMax = gMcPostCalibMean[pidId]->GetX()[nPoints - 1];
+    int const nPoints = gMcPostCalibMean[pidId]->GetN();
+    double const ptMin = gMcPostCalibMean[pidId]->GetX()[0];
+    double const ptMax = gMcPostCalibMean[pidId]->GetX()[nPoints - 1];
     if (trackPt < ptMin) {
       shift = gMcPostCalibMean[pidId]->Eval(ptMin);
       scaleWidth = gMcPostCalibSigma[pidId]->Eval(ptMin);

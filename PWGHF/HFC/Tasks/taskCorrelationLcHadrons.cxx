@@ -197,13 +197,13 @@ struct HfTaskCorrelationLcHadrons {
     AxisSpec axisMassLc = {binsMassLc, "inv. mass (p K #pi) (GeV/#it{c}^{2})"};
     AxisSpec axisPtCorr = {(std::vector<double>)binsPtCorrelations, "#it{p}_{T}^{#Lambda_c} (GeV/#it{c})"};
     AxisSpec axisPtLc = {(std::vector<double>)binsPtEfficiencyLc, "#it{p}_{T}^{#Lambda_c} (GeV/#it{c})"};
-    AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
+    AxisSpec const axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
     AxisSpec axisDeltaEta = {binsEta, "#it{#eta}^{Hadron}-#it{#eta}^{#Lambda_c}"};
     AxisSpec axisDeltaPhi = {binsPhi, "#it{#varphi}^{Hadron}-#it{#varphi}^{#Lambda_c} (rad)"};
     AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T}^{Hadron} (GeV/#it{c})"};
     AxisSpec axisPoolBin = {binsPoolBin, "poolBin"};
     AxisSpec axisLcPrompt = {2, -0.5, 1.5, "Prompt #Lambda_c"};
-    AxisSpec axisBdtScore = {binsBdtScore, "Bdt score"};
+    AxisSpec const axisBdtScore = {binsBdtScore, "Bdt score"};
     AxisSpec axisCorrelationState = {2, 0., 2., ""};
     AxisSpec axisSignPair = {4, 1., 5.};
     AxisSpec axisCentFT0M = {binsCentFt0m, "Centrality percentile (FT0M)"};
@@ -415,11 +415,11 @@ struct HfTaskCorrelationLcHadrons {
   void processData(LcHadronPairFullWithMl const& pairEntries, aod::LcRecoInfo const& candidates)
   {
     for (const auto& candidate : candidates) {
-      float massLc = candidate.mLc();
-      float ptLc = std::abs(candidate.ptLc());
-      float bdtScorePrompt = candidate.mlScorePrompt();
-      float bdtScoreBkg = candidate.mlScoreBkg();
-      int effBinLc = o2::analysis::findBin(binsPtEfficiencyLc, ptLc);
+      float const massLc = candidate.mLc();
+      float const ptLc = std::abs(candidate.ptLc());
+      float const bdtScorePrompt = candidate.mlScorePrompt();
+      float const bdtScoreBkg = candidate.mlScoreBkg();
+      int const effBinLc = o2::analysis::findBin(binsPtEfficiencyLc, ptLc);
 
       // reject entries outside Pt ranges of interest
       if (ptLc < binsPtEfficiencyLc->front() || ptLc > binsPtEfficiencyLc->back()) {
@@ -444,24 +444,24 @@ struct HfTaskCorrelationLcHadrons {
 
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
-      float deltaPhi = pairEntry.deltaPhi();
+      float const deltaPhi = pairEntry.deltaPhi();
       float cent = 0.;
       if (useCentrality) {
         cent = pairEntry.cent();
       }
-      float deltaEta = pairEntry.deltaEta();
-      double ptLc = std::abs(pairEntry.ptLc());
-      double ptHadron = std::abs(pairEntry.ptHadron());
-      float bdtScorePrompt = pairEntry.mlScorePrompt();
-      float bdtScoreBkg = pairEntry.mlScoreBkg();
-      float trackDcaXY = pairEntry.trackDcaXY();
-      float trackDcaZ = pairEntry.trackDcaZ();
-      int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
-      int poolBin = pairEntry.poolBin();
-      double massLc = pairEntry.mLc();
-      int effBinLc = o2::analysis::findBin(binsPtEfficiencyLc, ptLc);
-      int ptBinLc = o2::analysis::findBin(binsPtCorrelations, ptLc);
-      bool isAutoCorrelated = pairEntry.isAutoCorrelated();
+      float const deltaEta = pairEntry.deltaEta();
+      double const ptLc = std::abs(pairEntry.ptLc());
+      double const ptHadron = std::abs(pairEntry.ptHadron());
+      float const bdtScorePrompt = pairEntry.mlScorePrompt();
+      float const bdtScoreBkg = pairEntry.mlScoreBkg();
+      float const trackDcaXY = pairEntry.trackDcaXY();
+      float const trackDcaZ = pairEntry.trackDcaZ();
+      int const trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
+      int const poolBin = pairEntry.poolBin();
+      double const massLc = pairEntry.mLc();
+      int const effBinLc = o2::analysis::findBin(binsPtEfficiencyLc, ptLc);
+      int const ptBinLc = o2::analysis::findBin(binsPtCorrelations, ptLc);
+      bool const isAutoCorrelated = pairEntry.isAutoCorrelated();
       int signPair = 0;
       // reject entries outside Pt ranges of interest
       if (ptBinLc < 0 || effBinLc < 0) {
@@ -488,7 +488,7 @@ struct HfTaskCorrelationLcHadrons {
         if (ptHadron < leadingParticlePtMin) {
           continue;
         }
-        Region region = getRegion(deltaPhi);
+        Region const region = getRegion(deltaPhi);
         switch (region) {
           case Toward:
             registry.fill(HIST("hToward"), massLc, ptLc, isAutoCorrelated, efficiencyWeight);
@@ -559,12 +559,12 @@ struct HfTaskCorrelationLcHadrons {
                     soa::Join<aod::LcRecoInfo, aod::LcGenInfo> const& candidates)
   {
     for (const auto& candidate : candidates) {
-      float massLc = candidate.mLc();
-      float ptLc = std::abs(candidate.ptLc());
-      float bdtScorePrompt = candidate.mlScorePrompt();
-      float bdtScoreBkg = candidate.mlScoreBkg();
-      int effBinLc = o2::analysis::findBin(binsPtEfficiencyLc, ptLc);
-      bool isLcPrompt = candidate.isPrompt();
+      float const massLc = candidate.mLc();
+      float const ptLc = std::abs(candidate.ptLc());
+      float const bdtScorePrompt = candidate.mlScorePrompt();
+      float const bdtScoreBkg = candidate.mlScoreBkg();
+      int const effBinLc = o2::analysis::findBin(binsPtEfficiencyLc, ptLc);
+      bool const isLcPrompt = candidate.isPrompt();
 
       // reject entries outside pT ranges of interest
       if (ptLc < binsPtEfficiencyLc->front() || ptLc > binsPtEfficiencyLc->back()) {
@@ -602,23 +602,23 @@ struct HfTaskCorrelationLcHadrons {
 
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
-      float deltaPhi = pairEntry.deltaPhi();
-      float deltaEta = pairEntry.deltaEta();
-      float ptLc = std::abs(pairEntry.ptLc());
-      float ptHadron = std::abs(pairEntry.ptHadron());
-      float massLc = pairEntry.mLc();
-      float bdtScorePrompt = pairEntry.mlScorePrompt();
-      float bdtScoreBkg = pairEntry.mlScoreBkg();
-      bool isPhysicalPrimary = pairEntry.isPhysicalPrimary();
-      float trackDcaXY = pairEntry.trackDcaXY();
-      float trackDcaZ = pairEntry.trackDcaZ();
-      int trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
-      int statusLcPrompt = static_cast<int>(pairEntry.isPrompt());
-      int statusPromptHadron = pairEntry.trackOrigin();
-      int poolBin = pairEntry.poolBin();
-      int effBinLc = o2::analysis::findBin(binsPtEfficiencyLc, ptLc);
-      int ptBinLc = o2::analysis::findBin(binsPtCorrelations, ptLc);
-      bool isAutoCorrelated = pairEntry.isAutoCorrelated();
+      float const deltaPhi = pairEntry.deltaPhi();
+      float const deltaEta = pairEntry.deltaEta();
+      float const ptLc = std::abs(pairEntry.ptLc());
+      float const ptHadron = std::abs(pairEntry.ptHadron());
+      float const massLc = pairEntry.mLc();
+      float const bdtScorePrompt = pairEntry.mlScorePrompt();
+      float const bdtScoreBkg = pairEntry.mlScoreBkg();
+      bool const isPhysicalPrimary = pairEntry.isPhysicalPrimary();
+      float const trackDcaXY = pairEntry.trackDcaXY();
+      float const trackDcaZ = pairEntry.trackDcaZ();
+      int const trackTpcCrossedRows = pairEntry.trackTPCNClsCrossedRows();
+      int const statusLcPrompt = static_cast<int>(pairEntry.isPrompt());
+      int const statusPromptHadron = pairEntry.trackOrigin();
+      int const poolBin = pairEntry.poolBin();
+      int const effBinLc = o2::analysis::findBin(binsPtEfficiencyLc, ptLc);
+      int const ptBinLc = o2::analysis::findBin(binsPtCorrelations, ptLc);
+      bool const isAutoCorrelated = pairEntry.isAutoCorrelated();
       int signPair = 0;
 
       // reject entries outside pT ranges of interest
@@ -653,7 +653,7 @@ struct HfTaskCorrelationLcHadrons {
         if (ptHadron < leadingParticlePtMin) {
           continue;
         }
-        Region region = getRegion(deltaPhi);
+        Region const region = getRegion(deltaPhi);
         switch (region) {
           case Toward:
             registry.fill(HIST("hTowardRec"), massLc, ptLc, isAutoCorrelated, efficiencyWeight);
@@ -757,14 +757,14 @@ struct HfTaskCorrelationLcHadrons {
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
-      float deltaPhi = pairEntry.deltaPhi();
-      float deltaEta = pairEntry.deltaEta();
-      float ptLc = std::abs(pairEntry.ptLc());
-      float ptHadron = std::abs(pairEntry.ptHadron());
-      int poolBin = pairEntry.poolBin();
-      int statusPromptHadron = pairEntry.trackOrigin();
-      bool isLcPrompt = pairEntry.isPrompt();
-      bool isAutoCorrelated = pairEntry.isAutoCorrelated();
+      float const deltaPhi = pairEntry.deltaPhi();
+      float const deltaEta = pairEntry.deltaEta();
+      float const ptLc = std::abs(pairEntry.ptLc());
+      float const ptHadron = std::abs(pairEntry.ptHadron());
+      int const poolBin = pairEntry.poolBin();
+      int const statusPromptHadron = pairEntry.trackOrigin();
+      bool const isLcPrompt = pairEntry.isPrompt();
+      bool const isAutoCorrelated = pairEntry.isAutoCorrelated();
       int signPair = 0;
 
       if (isTowardTransverseAway) {
@@ -772,7 +772,7 @@ struct HfTaskCorrelationLcHadrons {
         if (ptHadron < leadingParticlePtMin) {
           continue;
         }
-        Region region = getRegion(deltaPhi);
+        Region const region = getRegion(deltaPhi);
         switch (region) {
           case Toward:
             registry.fill(HIST("hTowardRec"), o2::constants::physics::MassLambdaCPlus, ptLc, isAutoCorrelated);

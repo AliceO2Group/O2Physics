@@ -768,7 +768,7 @@ struct HfCandidateCreatorDstarExpressions {
 
         // D*± → D0(bar) π±
         std::vector<int> listIndexDaughters{};
-        bool isDstarToDzeroPi = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+Pdg::kD0, +kPiPlus}, true, &signDstar, 1, &listIndexDaughters);
+        bool const isDstarToDzeroPi = RecoDecay::isMatchedMCGen(mcParticles, particle, Pdg::kDStar, std::array{+Pdg::kD0, +kPiPlus}, true, &signDstar, 1, &listIndexDaughters);
 
         // D0(bar) → π± K∓
         if (isDstarToDzeroPi) {

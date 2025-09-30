@@ -431,19 +431,19 @@ struct HfCandidateCreator2Prong {
         kfpVertex.SetCovarianceMatrix(rowTrackIndexProng2.pvRefitSigmaX2(), rowTrackIndexProng2.pvRefitSigmaXY(), rowTrackIndexProng2.pvRefitSigmaY2(), rowTrackIndexProng2.pvRefitSigmaXZ(), rowTrackIndexProng2.pvRefitSigmaYZ(), rowTrackIndexProng2.pvRefitSigmaZ2());
       }
       kfpVertex.GetCovarianceMatrix(covMatrixPV);
-      KFParticle kfpV(kfpVertex);
+      KFParticle const kfpV(kfpVertex);
       registry.fill(HIST("hCovPVXX"), covMatrixPV[0]);
       registry.fill(HIST("hCovPVYY"), covMatrixPV[2]);
       registry.fill(HIST("hCovPVXZ"), covMatrixPV[3]);
       registry.fill(HIST("hCovPVZZ"), covMatrixPV[5]);
 
-      KFPTrack kfpTrack0 = createKFPTrackFromTrack(track0);
-      KFPTrack kfpTrack1 = createKFPTrackFromTrack(track1);
+      KFPTrack const kfpTrack0 = createKFPTrackFromTrack(track0);
+      KFPTrack const kfpTrack1 = createKFPTrackFromTrack(track1);
 
-      KFParticle kfPosPion(kfpTrack0, kPiPlus);
-      KFParticle kfNegPion(kfpTrack1, kPiPlus);
-      KFParticle kfPosKaon(kfpTrack0, kKPlus);
-      KFParticle kfNegKaon(kfpTrack1, kKPlus);
+      KFParticle const kfPosPion(kfpTrack0, kPiPlus);
+      KFParticle const kfNegPion(kfpTrack1, kPiPlus);
+      KFParticle const kfPosKaon(kfpTrack0, kKPlus);
+      KFParticle const kfNegKaon(kfpTrack1, kKPlus);
 
       float impactParameter0XY = 0., errImpactParameter0XY = 0., impactParameter1XY = 0., errImpactParameter1XY = 0.;
       if (!kfPosPion.GetDistanceFromVertexXY(kfpV, impactParameter0XY, errImpactParameter0XY)) {
@@ -918,7 +918,7 @@ struct HfCandidateCreator2ProngExpressions {
 
         // D0(bar) → π+ K−, π+ K− π0, π+ π−, π+ π− π0, K+ K−
         for (const auto& [channelMain, finalState] : daughtersD0Main) {
-          std::array<int, 2> arrPdgDaughtersMain2Prongs = std::array{finalState[0], finalState[1]};
+          std::array<int, 2> const arrPdgDaughtersMain2Prongs = std::array{finalState[0], finalState[1]};
           if (finalState.size() == 3) { // o2-linter: disable=magic-number (partially reconstructed 3-prong decays)
             if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
               indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughters, Pdg::kD0, arrPdgDaughtersMain2Prongs, true, &sign, FinalStateDepth, &nKinkedTracks, &nInteractionsWithMaterial);

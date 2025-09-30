@@ -499,7 +499,7 @@ struct HfTreeCreatorLcToK0sP {
       auto candidateMlScore = candidateMlScores.rawIteratorAt(iCand);
       ++iCand;
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
-      double pseudoRndm = bach.pt() * 1000. - static_cast<int16_t>(bach.pt() * 1000);
+      double const pseudoRndm = bach.pt() * 1000. - static_cast<int16_t>(bach.pt() * 1000);
       if (candidate.isSelLcToK0sP() >= 1 && pseudoRndm < downSampleBkgFactor) {
         fillCandidate(candidate, bach, 0, 0, candidateMlScore);
       }

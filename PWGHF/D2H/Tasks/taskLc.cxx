@@ -332,10 +332,10 @@ struct HfTaskLc {
       const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
       const AxisSpec thnAxisProperLifetime{thnConfigAxisProperLifetime, "T_{proper} (ps)"};
 
-      bool isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
-      bool isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
-      bool isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M;
-      bool isMcStd = doprocessMcStd || doprocessMcStdWithFT0C || doprocessMcStdWithFT0M;
+      bool const isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
+      bool const isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
+      bool const isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M;
+      bool const isMcStd = doprocessMcStd || doprocessMcStdWithFT0C || doprocessMcStdWithFT0M;
 
       std::vector<AxisSpec> axesStd, axesWithBdt, axesGen;
 
@@ -555,7 +555,7 @@ struct HfTaskLc {
           registry.fill(HIST("MC/reconstructed/nonprompt/hDecLenErrSigNonPrompt"), candidate.errorDecayLength(), pt);
         }
         if (fillTHn) {
-          float cent = evaluateCentralityColl(collision);
+          float const cent = evaluateCentralityColl(collision);
           float occ{-1.};
           if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
             occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
@@ -646,7 +646,7 @@ struct HfTaskLc {
         for (const auto& recCol : recoCollsPerMcColl) {
           numPvContributors = recCol.numContrib() > numPvContributors ? recCol.numContrib() : numPvContributors;
         }
-        float cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl);
+        float const cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl);
         float occ{-1.};
         if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
           occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
@@ -778,7 +778,7 @@ struct HfTaskLc {
       registry.fill(HIST("Data/hDecLenErr"), candidate.errorDecayLength(), pt);
 
       if (fillTHn) {
-        float cent = evaluateCentralityColl(collision);
+        float const cent = evaluateCentralityColl(collision);
         float occ{-1.};
         if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
           occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);

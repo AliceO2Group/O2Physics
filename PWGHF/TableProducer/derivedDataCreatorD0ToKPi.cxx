@@ -289,7 +289,7 @@ struct HfDerivedDataCreatorD0ToKPi {
               continue;
             }
             if (downSampleBkgFactor < 1.) {
-              float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+              float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
               if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
                 continue;
               }
@@ -302,15 +302,15 @@ struct HfDerivedDataCreatorD0ToKPi {
           }
         } else {
           if (downSampleBkgFactor < 1.) {
-            float pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
+            float const pseudoRndm = candidate.ptProng0() * 1000. - static_cast<int64_t>(candidate.ptProng0() * 1000);
             if (candidate.pt() < ptMaxForDownSample && pseudoRndm >= downSampleBkgFactor) {
               continue;
             }
           }
         }
 
-        double ct = hfHelper.ctD0(candidate);
-        double y = hfHelper.yD0(candidate);
+        double const ct = hfHelper.ctD0(candidate);
+        double const y = hfHelper.yD0(candidate);
         float massD0, massD0bar;
         float topolChi2PerNdf = -999.;
         if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {

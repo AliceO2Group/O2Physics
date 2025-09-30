@@ -567,15 +567,15 @@ struct HfDataCreatorCharmHadPiReduced {
           auto particleProng2 = vecDaughtersB[2].mcParticle();
           auto particleProng3 = vecDaughtersB[3].mcParticle();
           // b-hadron hypothesis
-          std::array<int, 3> bHadronMotherHypos = {Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
+          std::array<int, 3> const bHadronMotherHypos = {Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
           // c-hadron hypothesis
-          std::array<int, 4> cHadronMotherHypos = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus};
+          std::array<int, 4> const cHadronMotherHypos = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus};
 
           for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
-            int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
-            int index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
-            int index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
-            int index3Mother = RecoDecay::getMother(particlesMc, particleProng3, bHadronMotherHypo, true);
+            int const index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
+            int const index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
+            int const index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
+            int const index3Mother = RecoDecay::getMother(particlesMc, particleProng3, bHadronMotherHypo, true);
 
             // look for common b-hadron ancestor
             if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
@@ -593,9 +593,9 @@ struct HfDataCreatorCharmHadPiReduced {
                   if (cHadronMotherHypo == Pdg::kDStar) { // to include D* -> D π0/γ and D* -> D0 π
                     depthMax += 1;
                   }
-                  int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
-                  int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
-                  int index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, depthMax);
+                  int const index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
+                  int const index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
+                  int const index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, depthMax);
                   if (index0CharmMother > -1 && index1CharmMother > -1 && index2CharmMother > -1) {
                     if (index0CharmMother == index1CharmMother && index1CharmMother == index2CharmMother) {
                       // pdgCodeCharmMother =
@@ -721,15 +721,15 @@ struct HfDataCreatorCharmHadPiReduced {
           auto particleProng2 = vecDaughtersB[2].mcParticle();
           auto particleProng3 = vecDaughtersB[3].mcParticle();
           // b-hadron hypothesis
-          std::array<int, 3> bHadronMotherHypos = {Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
+          std::array<int, 3> const bHadronMotherHypos = {Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
           // c-hadron hypothesis
-          std::array<int, 5> cHadronMotherHypos = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kDSStar, Pdg::kLambdaCPlus};
+          std::array<int, 5> const cHadronMotherHypos = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kDSStar, Pdg::kLambdaCPlus};
 
           for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
-            int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
-            int index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
-            int index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
-            int index3Mother = RecoDecay::getMother(particlesMc, particleProng3, bHadronMotherHypo, true);
+            int const index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
+            int const index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
+            int const index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
+            int const index3Mother = RecoDecay::getMother(particlesMc, particleProng3, bHadronMotherHypo, true);
 
             // look for common b-hadron ancestor
             if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
@@ -747,9 +747,9 @@ struct HfDataCreatorCharmHadPiReduced {
                   if (cHadronMotherHypo == Pdg::kDStar || cHadronMotherHypo == Pdg::kDSStar) { // to include D* -> D π0/γ, D* -> D0 π, and Ds* -> Ds π0/γ
                     depthMax += 1;
                   }
-                  int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
-                  int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
-                  int index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, depthMax);
+                  int const index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
+                  int const index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
+                  int const index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, depthMax);
                   if (index0CharmMother > -1 && index1CharmMother > -1 && index2CharmMother > -1) {
                     if (index0CharmMother == index1CharmMother && index1CharmMother == index2CharmMother) {
                       // pdgCodeCharmMother =
@@ -821,14 +821,14 @@ struct HfDataCreatorCharmHadPiReduced {
           auto particleProng1 = vecDaughtersB[1].mcParticle();
           auto particleProng2 = vecDaughtersB[2].mcParticle();
           // b-hadron hypothesis
-          std::array<int, 4> bHadronMotherHypos = {Pdg::kBPlus, Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
+          std::array<int, 4> const bHadronMotherHypos = {Pdg::kBPlus, Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
           // c-hadron hypothesis
-          std::array<int, 7> cHadronMotherHypos = {Pdg::kD0, Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, 423, Pdg::kDSStar, Pdg::kLambdaCPlus};
+          std::array<int, 7> const cHadronMotherHypos = {Pdg::kD0, Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, 423, Pdg::kDSStar, Pdg::kLambdaCPlus};
 
           for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
-            int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
-            int index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
-            int index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
+            int const index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
+            int const index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
+            int const index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
 
             // look for common b-hadron ancestor
             if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1) {
@@ -845,8 +845,8 @@ struct HfDataCreatorCharmHadPiReduced {
                   if (cHadronMotherHypo == Pdg::kDStar || cHadronMotherHypo == Pdg::kDStar0 || cHadronMotherHypo == Pdg::kDSStar) { // to include D* -> D π0/γ, D* -> D0 π, and Ds* -> Ds π0/γ
                     depthMax += 1;
                   }
-                  int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
-                  int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
+                  int const index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
+                  int const index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
                   if (index0CharmMother > -1 && index1CharmMother > -1) {
                     if (index0CharmMother == index1CharmMother) {
                       // pdgCodeCharmMother =
@@ -923,15 +923,15 @@ struct HfDataCreatorCharmHadPiReduced {
           auto particleProng2 = vecDaughtersB[2].mcParticle();
           auto particleProng3 = vecDaughtersB[3].mcParticle();
           // b-hadron hypothesis
-          std::array<int, 3> bHadronMotherHypos = {Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
+          std::array<int, 3> const bHadronMotherHypos = {Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
           // c-hadron hypothesis
-          std::array<int, 4> cHadronMotherHypos = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus};
+          std::array<int, 4> const cHadronMotherHypos = {Pdg::kDPlus, Pdg::kDS, Pdg::kDStar, Pdg::kLambdaCPlus};
 
           for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
-            int index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
-            int index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
-            int index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
-            int index3Mother = RecoDecay::getMother(particlesMc, particleProng3, bHadronMotherHypo, true);
+            int const index0Mother = RecoDecay::getMother(particlesMc, particleProng0, bHadronMotherHypo, true);
+            int const index1Mother = RecoDecay::getMother(particlesMc, particleProng1, bHadronMotherHypo, true);
+            int const index2Mother = RecoDecay::getMother(particlesMc, particleProng2, bHadronMotherHypo, true);
+            int const index3Mother = RecoDecay::getMother(particlesMc, particleProng3, bHadronMotherHypo, true);
 
             // look for common b-hadron ancestor
             if (index0Mother > -1 && index1Mother > -1 && index2Mother > -1 && index3Mother > -1) {
@@ -949,9 +949,9 @@ struct HfDataCreatorCharmHadPiReduced {
                   if (cHadronMotherHypo == Pdg::kDStar) { // to include D* -> D π0/γ and D* -> D0 π
                     depthMax += 1;
                   }
-                  int index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
-                  int index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
-                  int index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, depthMax);
+                  int const index0CharmMother = RecoDecay::getMother(particlesMc, particleProng0, cHadronMotherHypo, true, &sign, depthMax);
+                  int const index1CharmMother = RecoDecay::getMother(particlesMc, particleProng1, cHadronMotherHypo, true, &sign, depthMax);
+                  int const index2CharmMother = RecoDecay::getMother(particlesMc, particleProng2, cHadronMotherHypo, true, &sign, depthMax);
                   if (index0CharmMother > -1 && index1CharmMother > -1 && index2CharmMother > -1) {
                     if (index0CharmMother == index1CharmMother && index1CharmMother == index2CharmMother) {
                       // pdgCodeCharmMother =
@@ -1029,7 +1029,7 @@ struct HfDataCreatorCharmHadPiReduced {
     }
 
     // helpers for ReducedTables filling
-    int indexHfReducedCollision = tables.hfReducedCollision.lastIndex() + 1;
+    int const indexHfReducedCollision = tables.hfReducedCollision.lastIndex() + 1;
     // std::map where the key is the track.globalIndex() and
     // the value is the track index in the table of the selected pions
     std::map<int64_t, int64_t> selectedTracksPion;
@@ -2311,7 +2311,7 @@ struct HfDataCreatorCharmHadPiReduced {
       auto candsCThisColl = candsC.sliceBy(preslices.candsDplusPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
-      int64_t indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
+      int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
       runDataCreation<true, false, DecayChannel::B0ToDminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
     }
     // handle normalization by the right number of collisions
@@ -2348,7 +2348,7 @@ struct HfDataCreatorCharmHadPiReduced {
       auto candsCThisColl = candsC.sliceBy(preslices.candsDplusPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
-      int64_t indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
+      int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
       runDataCreation<true, true, DecayChannel::B0ToDminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
     }
     // handle normalization by the right number of collisions
@@ -2386,7 +2386,7 @@ struct HfDataCreatorCharmHadPiReduced {
       auto candsCThisColl = candsC.sliceBy(preslices.candsDstarPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
-      int64_t indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
+      int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
       runDataCreation<true, false, DecayChannel::B0ToDstarPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
     }
     // handle normalization by the right number of collisions
@@ -2424,7 +2424,7 @@ struct HfDataCreatorCharmHadPiReduced {
       auto candsCThisColl = candsC.sliceBy(preslices.candsDstarPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
-      int64_t indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
+      int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
       runDataCreation<true, true, DecayChannel::B0ToDstarPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
     }
     // handle normalization by the right number of collisions
@@ -2461,7 +2461,7 @@ struct HfDataCreatorCharmHadPiReduced {
       auto candsCThisColl = candsC.sliceBy(preslices.candsDsPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
-      int64_t indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
+      int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
       runDataCreation<true, false, DecayChannel::BsToDsminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
     }
     // handle normalization by the right number of collisions
@@ -2498,7 +2498,7 @@ struct HfDataCreatorCharmHadPiReduced {
       auto candsCThisColl = candsC.sliceBy(preslices.candsDsPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
-      int64_t indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
+      int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
       runDataCreation<true, true, DecayChannel::BsToDsminusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
     }
     // handle normalization by the right number of collisions
@@ -2535,7 +2535,7 @@ struct HfDataCreatorCharmHadPiReduced {
       auto candsCThisColl = candsC.sliceBy(preslices.candsD0PerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
-      int64_t indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
+      int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
       runDataCreation<true, false, DecayChannel::BplusToD0barPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
     }
     // handle normalization by the right number of collisions
@@ -2572,7 +2572,7 @@ struct HfDataCreatorCharmHadPiReduced {
       auto candsCThisColl = candsC.sliceBy(preslices.candsD0PerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
-      int64_t indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
+      int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
       runDataCreation<true, true, DecayChannel::BplusToD0barPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
     }
     // handle normalization by the right number of collisions
@@ -2609,7 +2609,7 @@ struct HfDataCreatorCharmHadPiReduced {
       auto candsCThisColl = candsC.sliceBy(preslices.candsLcPerCollision, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
-      int64_t indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
+      int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
       runDataCreation<true, false, DecayChannel::LbToLcplusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
     }
     // handle normalization by the right number of collisions
@@ -2646,7 +2646,7 @@ struct HfDataCreatorCharmHadPiReduced {
       auto candsCThisColl = candsC.sliceBy(preslices.candsLcPerCollisionWithMl, thisCollId);
       auto trackIdsThisCollision = trackIndices.sliceBy(preslices.trackIndicesPerCollision, thisCollId);
       auto collsSameMcCollision = collisions.sliceBy(preslices.colPerMcCollision, collision.mcCollisionId());
-      int64_t indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
+      int64_t const indexCollisionMaxNumContrib = getIndexCollisionMaxNumContrib(collsSameMcCollision);
       runDataCreation<true, true, DecayChannel::LbToLcplusPi, false>(collision, candsCThisColl, trackIdsThisCollision, tracks, particlesMc, indexCollisionMaxNumContrib, bcs);
     }
     // handle normalization by the right number of collisions

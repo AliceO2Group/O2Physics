@@ -47,7 +47,7 @@ void readArray(const Value& jsonArray, std::vector<ValueType>& output)
 
 void parseStringArray(const Value& jsonArray, std::vector<std::string>& output)
 {
-  size_t arrayLength = jsonArray.Size();
+  size_t const arrayLength = jsonArray.Size();
   for (size_t i = 0; i < arrayLength; i++) {
     if (jsonArray[i].IsString()) {
       output.emplace_back(jsonArray[i].GetString());
@@ -83,27 +83,27 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
   gSystem->Exec(Form("rm -rf Output_CorrelationExtraction_%s_Root/ Output_CorrelationExtraction_%s_png/", codeNameAnalysis.data(), codeNameAnalysis.data()));
   gSystem->Exec(Form("mkdir Output_CorrelationExtraction_%s_Root/ Output_CorrelationExtraction_%s_png/", codeNameAnalysis.data(), codeNameAnalysis.data()));
 
-  std::string pathFileSE = config["pathFileSE"].GetString();
-  std::string pathFileME = config["pathFileME"].GetString();
-  std::string pathFileMass = config["pathFileMass"].GetString();
-  std::string pathFileFDTemplate = config["pathFileFDTemplate"].GetString();
-  std::string pathFileFDPromptFrac = config["pathFileFDPromptFrac"].GetString();
-  std::string pathFileSecPart = config["pathFileSecPart"].GetString();
-  std::string pathfFilePromptMcRec = config["pathfFilePromptMcRec"].GetString();
-  std::string pathfFileNonPromptMcRec = config["pathfFileNonPromptMcRec"].GetString();
+  std::string const pathFileSE = config["pathFileSE"].GetString();
+  std::string const pathFileME = config["pathFileME"].GetString();
+  std::string const pathFileMass = config["pathFileMass"].GetString();
+  std::string const pathFileFDTemplate = config["pathFileFDTemplate"].GetString();
+  std::string const pathFileFDPromptFrac = config["pathFileFDPromptFrac"].GetString();
+  std::string const pathFileSecPart = config["pathFileSecPart"].GetString();
+  std::string const pathfFilePromptMcRec = config["pathfFilePromptMcRec"].GetString();
+  std::string const pathfFileNonPromptMcRec = config["pathfFileNonPromptMcRec"].GetString();
 
-  std::string dirSE = config["InputDirSE"].GetString();
-  std::string dirME = config["InputDirME"].GetString();
-  std::string dirSecPart = config["InputDirSecPart"].GetString();
-  std::string histoNameCorrSignal = config["InputHistoCorrSignalName"].GetString();
-  std::string histoNameCorrSideba = config["InputHistoCorrSidebaName"].GetString();
-  std::string histoNameCorrSidebaLeft = config["InputHistoCorrSidebaLeftName"].GetString();
-  std::string histoNameCorrSidebaRight = config["InputHistoCorrSidebaRightName"].GetString();
-  std::string histoNameFDTemplatePrompt = config["InputHistoFDTemplatePrompt"].GetString();
-  std::string histoNameFDTemplateNonPrompt = config["InputHistoFDTemplateNonPrompt"].GetString();
-  std::string histoNameRawFracPrompt = config["InputHistoFDPromptFrac"].GetString();
-  std::string histoNamePrimaryPart = config["InputHistoPrimaryPart"].GetString();
-  std::string histoNameAllPart = config["InputHistoAllPart"].GetString();
+  std::string const dirSE = config["InputDirSE"].GetString();
+  std::string const dirME = config["InputDirME"].GetString();
+  std::string const dirSecPart = config["InputDirSecPart"].GetString();
+  std::string const histoNameCorrSignal = config["InputHistoCorrSignalName"].GetString();
+  std::string const histoNameCorrSideba = config["InputHistoCorrSidebaName"].GetString();
+  std::string const histoNameCorrSidebaLeft = config["InputHistoCorrSidebaLeftName"].GetString();
+  std::string const histoNameCorrSidebaRight = config["InputHistoCorrSidebaRightName"].GetString();
+  std::string const histoNameFDTemplatePrompt = config["InputHistoFDTemplatePrompt"].GetString();
+  std::string const histoNameFDTemplateNonPrompt = config["InputHistoFDTemplateNonPrompt"].GetString();
+  std::string const histoNameRawFracPrompt = config["InputHistoFDPromptFrac"].GetString();
+  std::string const histoNamePrimaryPart = config["InputHistoPrimaryPart"].GetString();
+  std::string const histoNameAllPart = config["InputHistoAllPart"].GetString();
 
   std::vector<std::string> inputHistoMassName;
 
@@ -126,24 +126,24 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
 
   const Value& deltaEtaValue = config["deltaEtaInterval"];
   readArray(deltaEtaValue, deltaEtaInterval);
-  double deltaEtaMin = deltaEtaInterval[0];
-  double deltaEtaMax = deltaEtaInterval[1];
+  double const deltaEtaMin = deltaEtaInterval[0];
+  double const deltaEtaMax = deltaEtaInterval[1];
 
-  int specie = config["DmesonSpecie"].GetInt();
-  bool rebinAngCorr = config["RebinAngCorr"].GetBool();
-  bool rebinFDCorr = config["RebinFDCorr"].GetBool();
-  bool rebinSecPart = config["RebinSecPart"].GetBool();
-  int rebinDeltaPhi = config["nRebinDeltaPhi"].GetInt();
-  int rebinDeltaEta = config["nRebinDeltaEta"].GetInt();
+  int const specie = config["DmesonSpecie"].GetInt();
+  bool const rebinAngCorr = config["RebinAngCorr"].GetBool();
+  bool const rebinFDCorr = config["RebinFDCorr"].GetBool();
+  bool const rebinSecPart = config["RebinSecPart"].GetBool();
+  int const rebinDeltaPhi = config["nRebinDeltaPhi"].GetInt();
+  int const rebinDeltaEta = config["nRebinDeltaEta"].GetInt();
 
-  int npools = config["NumberOfPools"].GetInt();
-  bool poolByPool = config["CorrectPoolsSeparately"].GetBool();
-  bool applySecPartCorr = config["ApplySecPartCorr"].GetBool();
-  bool applyBiasBtoDCorr = config["ApplyBiasBtoDCorr"].GetBool();
-  bool applyFDCorr = config["ApplyFDCorr"].GetBool();
-  bool isDividedSideb = config["IsDividedSideb"].GetBool();
-  bool useSidebLeft = config["UseSidebLeft"].GetBool();
-  bool useSidebRight = config["UseSidebRight"].GetBool();
+  int const npools = config["NumberOfPools"].GetInt();
+  bool const poolByPool = config["CorrectPoolsSeparately"].GetBool();
+  bool const applySecPartCorr = config["ApplySecPartCorr"].GetBool();
+  bool const applyBiasBtoDCorr = config["ApplyBiasBtoDCorr"].GetBool();
+  bool const applyFDCorr = config["ApplyFDCorr"].GetBool();
+  bool const isDividedSideb = config["IsDividedSideb"].GetBool();
+  bool const useSidebLeft = config["UseSidebLeft"].GetBool();
+  bool const useSidebRight = config["UseSidebRight"].GetBool();
 
   if (useSidebLeft && useSidebRight) {
     std::cout << "Using left and right" << std::endl;
@@ -170,7 +170,7 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
   // Create and set the correlation plotter class
   auto* plotter = new DhCorrelationExtraction();
 
-  Bool_t flagSpecie = plotter->setDmesonSpecie(static_cast<DhCorrelationExtraction::DmesonSpecie>(specie));
+  Bool_t const flagSpecie = plotter->setDmesonSpecie(static_cast<DhCorrelationExtraction::DmesonSpecie>(specie));
   plotter->setNpools(npools);
   plotter->setCorrectPoolsSeparately(poolByPool); // kTRUE = pool.by-pool extraction and correction; kFALSE = merged ME pools
   plotter->setFdSubtraction(applyFDCorr);
@@ -198,22 +198,22 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
   if (applyBiasBtoDCorr) {
     setInputHistoBiasBtoD(plotter, pathfFilePromptMcRec, pathfFileNonPromptMcRec);
   }
-  Bool_t readSEandME = plotter->readInputSeAndMe();
+  Bool_t const readSEandME = plotter->readInputSeAndMe();
   if (readSEandME) {
     std::cout << "Files SE and ME read correctly" << std::endl;
   }
-  Bool_t readInvMass = plotter->readInputInvMass();
+  Bool_t const readInvMass = plotter->readInputInvMass();
   if (readInvMass) {
     std::cout << "Files inv. mass read correctly" << std::endl;
   }
   if (applyFDCorr) {
-    Bool_t readFDSubtr = plotter->readInputFdSubtr();
+    Bool_t const readFDSubtr = plotter->readInputFdSubtr();
     if (readFDSubtr) {
       std::cout << "Files for FD subtr. read correctly" << std::endl;
     }
   }
   if (applySecPartCorr) {
-    Bool_t readSecPart = plotter->readInputSecondaryPartContamination();
+    Bool_t const readSecPart = plotter->readInputSecondaryPartContamination();
     if (readSecPart) {
       std::cout << "Files for secondary part. contamination read correctly" << std::endl;
     }

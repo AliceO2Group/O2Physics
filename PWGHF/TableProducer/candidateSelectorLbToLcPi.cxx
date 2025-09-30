@@ -69,7 +69,7 @@ struct HfCandidateSelectorLbToLcPi {
 
   bool passesImpactParameterResolution(float pT, float d0Resolution)
   {
-    float expectedResolution(0.001 + 0.0052 * std::exp(-0.655 * pT));
+    float const expectedResolution(0.001 + 0.0052 * std::exp(-0.655 * pT));
     return d0Resolution <= expectedResolution * 1.5;
   } // Compares to pT dependent cut on impact parameter resolution
 
@@ -78,7 +78,7 @@ struct HfCandidateSelectorLbToLcPi {
   bool selectionTopol(const T1& hfCandLb, const T2& hfCandLc, const T3& trackPi)
   {
     auto candpT = hfCandLb.pt();
-    int pTBin = findBin(binsPt, candpT);
+    int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       // LOGF(debug, "Lb topol selection failed at getpTBin");
       return false;
@@ -155,10 +155,10 @@ struct HfCandidateSelectorLbToLcPi {
     }
 
     // distance between Lb and Lc decay
-    float diffXVert = hfCandLb.xSecondaryVertex() - hfCandLc.xSecondaryVertex();
-    float diffYVert = hfCandLb.ySecondaryVertex() - hfCandLc.ySecondaryVertex();
-    float diffZVert = hfCandLb.zSecondaryVertex() - hfCandLc.zSecondaryVertex();
-    float vertexDistance = std::sqrt(diffXVert * diffXVert + diffYVert * diffYVert + diffZVert * diffZVert);
+    float const diffXVert = hfCandLb.xSecondaryVertex() - hfCandLc.xSecondaryVertex();
+    float const diffYVert = hfCandLb.ySecondaryVertex() - hfCandLc.ySecondaryVertex();
+    float const diffZVert = hfCandLb.zSecondaryVertex() - hfCandLc.zSecondaryVertex();
+    float const vertexDistance = std::sqrt(diffXVert * diffXVert + diffYVert * diffYVert + diffZVert * diffZVert);
     return vertexDistance <= maxVertexDistanceLbLc;
   }
 
@@ -178,9 +178,9 @@ struct HfCandidateSelectorLbToLcPi {
       auto track0 = candLc.prong0_as<TracksWExt>();
       auto track1 = candLc.prong1_as<TracksWExt>();
       auto track2 = candLc.prong2_as<TracksWExt>();
-      float reso0 = candLc.errorImpactParameter0();
-      float reso1 = candLc.errorImpactParameter1();
-      float reso2 = candLc.errorImpactParameter2();
+      float const reso0 = candLc.errorImpactParameter0();
+      float const reso1 = candLc.errorImpactParameter1();
+      float const reso2 = candLc.errorImpactParameter2();
       if (!passesImpactParameterResolution(track0.pt(), reso0) || !passesImpactParameterResolution(track1.pt(), reso1) || !passesImpactParameterResolution(track2.pt(), reso2) || !passesImpactParameterResolution(trackPi.pt(), hfCandLb.errorImpactParameter1())) {
         hfSelLbToLcPiCandidate(statusLb);
         continue;

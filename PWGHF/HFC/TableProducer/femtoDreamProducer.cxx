@@ -202,7 +202,7 @@ struct HfFemtoDreamProducer {
       LOGP(fatal, "One and only one process function must be enabled at a time.");
     }
 
-    int cutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
+    int const cutBits = 8 * sizeof(o2::aod::femtodreamparticle::cutContainerType);
     trackRegistry.add("AnalysisQA/CutCounter", "; Bit; Counter", kTH1F, {{cutBits + 1, -0.5, cutBits + 0.5}});
 
     // event QA histograms
@@ -247,7 +247,7 @@ struct HfFemtoDreamProducer {
 
     hfEvSel.addHistograms(qaRegistry); // collision monitoring
 
-    int64_t now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+    int64_t const now = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
     ccdb->setCreatedNotAfter(now);
 
     if (applyMlMode == FillMlFromNewBDT) {
@@ -378,7 +378,7 @@ struct HfFemtoDreamProducer {
   bool fillTracksForCharmHadron(CollisionType const& col, TrackType const& tracks)
   {
 
-    std::vector<int> childIDs = {0, 0}; // these IDs are necessary to keep track of the children
+    std::vector<int> const childIDs = {0, 0}; // these IDs are necessary to keep track of the children
     // std::vector<int> tmpIDtrack;        // this vector keeps track of the matching of the primary track table row <-> aod::track table global index
     bool fIsTrackFilled = false;
 

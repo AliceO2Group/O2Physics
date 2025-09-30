@@ -392,19 +392,19 @@ struct HfTreeCreatorOmegacSt {
             decayChannel = -1; // LOG(warning) << "Decay channel not recognized!";
           }
           if (decayChannel != -1) {
-            int idxDaughter = (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) ? idxPionDaughter : idxKaonDaughter;
+            int const idxDaughter = (decayChannel == o2::aod::hf_cand_casc_lf::DecayType2Prong::OmegaczeroToOmegaPi) ? idxPionDaughter : idxKaonDaughter;
             auto particle = mcParticles.rawIteratorAt(idxDaughter);
             origin = RecoDecay::getCharmHadronOrigin(mcParticles, particle, false, &idxBhadMothers);
 
             const auto& cascDaughter = mcParticles.iteratorAt(idxCascDaughter);
             const auto& mcColl = mcParticle.mcCollision();
-            std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
-            std::array<double, 3> secondaryVertexGen = {cascDaughter.vx(), cascDaughter.vy(), cascDaughter.vz()};
+            std::array<double, 3> const primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
+            std::array<double, 3> const secondaryVertexGen = {cascDaughter.vx(), cascDaughter.vy(), cascDaughter.vz()};
             float decayLengthCascGen = -1.;
             float decayLengthXYCascGen = -1.;
             if (cascDaughter.has_daughters()) {
               const auto& cascDecayDaughter = cascDaughter.daughters_as<aod::McParticles>().iteratorAt(0);
-              std::array<double, 3> tertiaryVertexGen = {cascDecayDaughter.vx(), cascDecayDaughter.vy(), cascDecayDaughter.vz()};
+              std::array<double, 3> const tertiaryVertexGen = {cascDecayDaughter.vx(), cascDecayDaughter.vy(), cascDecayDaughter.vz()};
               decayLengthCascGen = RecoDecay::distance(tertiaryVertexGen, primaryVertexPosGen);
               decayLengthXYCascGen = RecoDecay::distanceXY(tertiaryVertexGen, primaryVertexPosGen);
             }
@@ -468,7 +468,7 @@ struct HfTreeCreatorOmegacSt {
       }
       uint32_t toiMask = 0;
       if (skimmedProcessing) {
-        bool sel = zorro.isSelected(bc.globalBC());
+        bool const sel = zorro.isSelected(bc.globalBC());
         if (sel) {
           std::vector<bool> toivect = zorro.getTriggerOfInterestResults();
           for (size_t i{0}; i < toivect.size(); i++) {
@@ -531,15 +531,15 @@ struct HfTreeCreatorOmegacSt {
         }
         hCandidatesPrPi->Fill(SVFitting::FitOk);
 
-        std::array<double, NDaughters> massesV0Daughters{o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus};
+        std::array<double, NDaughters> const massesV0Daughters{o2::constants::physics::MassProton, o2::constants::physics::MassPiMinus};
         std::array<std::array<float, 3>, NDaughters> momentaV0Daughters{};
-        o2::track::TrackPar trackParV0Pr = df2.getTrackParamAtPCA(0);
+        o2::track::TrackPar const trackParV0Pr = df2.getTrackParamAtPCA(0);
         trackParV0Pr.getPxPyPzGlo(momentaV0Daughters[0]);
-        o2::track::TrackPar trackParV0Pi = df2.getTrackParamAtPCA(1);
+        o2::track::TrackPar const trackParV0Pi = df2.getTrackParamAtPCA(1);
         trackParV0Pi.getPxPyPzGlo(momentaV0Daughters[1]);
         const auto massV0 = RecoDecay::m(momentaV0Daughters, massesV0Daughters);
 
-        o2::track::TrackParCov trackParCovV0 = df2.createParentTrackParCov(0);
+        o2::track::TrackParCov const trackParCovV0 = df2.createParentTrackParCov(0);
         hCandidatesV0Pi->Fill(SVFitting::BeforeFit);
         try {
           if (!df2.process(trackParCovV0, getTrackParCov(bachelor))) {
@@ -555,20 +555,20 @@ struct HfTreeCreatorOmegacSt {
         const auto& secondaryVertex = df2.getPCACandidate();
         const auto decayLengthCasc = RecoDecay::distance(secondaryVertex, primaryVertexPos);
         const auto decayLengthCascXY = RecoDecay::distanceXY(secondaryVertex, primaryVertexPos);
-        o2::track::TrackPar trackParV0 = df2.getTrackParamAtPCA(0);
-        o2::track::TrackPar trackParBachelor = df2.getTrackParamAtPCA(1);
+        o2::track::TrackPar const trackParV0 = df2.getTrackParamAtPCA(0);
+        o2::track::TrackPar const trackParBachelor = df2.getTrackParamAtPCA(1);
         std::array<std::array<float, 3>, NDaughters> momentaCascDaughters{};
         trackParV0.getPxPyPzGlo(momentaCascDaughters[0]);
         trackParBachelor.getPxPyPzGlo(momentaCascDaughters[1]);
-        o2::track::TrackParCov trackParCovCascUntracked = df2.createParentTrackParCov(0);
+        o2::track::TrackParCov const trackParCovCascUntracked = df2.createParentTrackParCov(0);
         std::array<float, 3> pCasc{};
         trackParCovCascUntracked.getPxPyPzGlo(pCasc);
         const auto cpaCasc = RecoDecay::cpa(primaryVertexPos, df2.getPCACandidate(), pCasc);
         const auto cpaXYCasc = RecoDecay::cpaXY(primaryVertexPos, df2.getPCACandidate(), pCasc);
 
-        std::array<double, NDaughters> massesXiDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassPiPlus};
+        std::array<double, NDaughters> const massesXiDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassPiPlus};
         const auto massXi = RecoDecay::m(momentaCascDaughters, massesXiDaughters);
-        std::array<double, NDaughters> massesOmegaDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
+        std::array<double, NDaughters> const massesOmegaDaughters = {o2::constants::physics::MassLambda0, o2::constants::physics::MassKPlus};
         const auto massOmega = RecoDecay::m(momentaCascDaughters, massesOmegaDaughters);
 
         registry.fill(HIST("hDca"), std::sqrt(impactParameterCasc.getR2()));
@@ -586,9 +586,9 @@ struct HfTreeCreatorOmegacSt {
               (std::abs(v0TrackPr.tpcNSigmaPr()) < maxNSigmaV0Pr) &&
               (std::abs(v0TrackPi.tpcNSigmaPi()) < maxNSigmaV0Pi)) {
 
-            std::array<double, NDaughters> massesOmegacToOmegaPi{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
-            std::array<double, NDaughters> massesOmegacToOmegaK{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus};
-            std::array<double, NDaughters> massesXicDaughters{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
+            std::array<double, NDaughters> const massesOmegacToOmegaPi{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
+            std::array<double, NDaughters> const massesOmegacToOmegaK{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassKPlus};
+            std::array<double, NDaughters> const massesXicDaughters{o2::constants::physics::MassXiMinus, o2::constants::physics::MassPiPlus};
             std::array<std::array<float, 3>, NDaughters> momenta{};
 
             auto trackParCovPr = getTrackParCov(v0TrackPr);
@@ -889,11 +889,11 @@ struct HfTreeCreatorOmegacSt {
           LOG(debug) << "cascade with PDG code: " << pdgCode;
           if (std::abs(pdgCode) == kOmegaMinus) {
             LOG(debug) << "found Omega, looking for pions";
-            std::array<double, NDaughters> masses{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
+            std::array<double, NDaughters> const masses{o2::constants::physics::MassOmegaMinus, o2::constants::physics::MassPiPlus};
             std::array<std::array<float, 3>, NDaughters> momenta{};
-            std::array<double, 3> primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
+            std::array<double, 3> const primaryVertexPos = {primaryVertex.getX(), primaryVertex.getY(), primaryVertex.getZ()};
             const auto& mcColl = mother.mcCollision();
-            std::array<double, 3> primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
+            std::array<double, 3> const primaryVertexPosGen = {mcColl.posX(), mcColl.posY(), mcColl.posZ()};
 
             for (const auto& track : tracks) {
               if (!track.has_mcParticle()) {
@@ -927,7 +927,7 @@ struct HfTreeCreatorOmegacSt {
                           registry.fill(HIST("hDecayLengthId"), decayLength * 1e4);
                           registry.fill(HIST("hDecayLengthScaledId"), decayLength * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);
 
-                          std::array<double, 3> secondaryVertexGen = {mother.vx(), mother.vy(), mother.vz()};
+                          std::array<double, 3> const secondaryVertexGen = {mother.vx(), mother.vy(), mother.vz()};
                           const auto decayLengthGen = RecoDecay::distance(secondaryVertexGen, primaryVertexPosGen);
                           registry.fill(HIST("hDecayLengthGen"), decayLengthGen * 1e4);
                           registry.fill(HIST("hDecayLengthScaledGen"), decayLengthGen * o2::constants::physics::MassOmegaC0 / RecoDecay::p(momenta[0], momenta[1]) * 1e4);

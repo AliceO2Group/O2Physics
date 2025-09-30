@@ -400,8 +400,8 @@ struct HfTreeCreatorTccToD0D0Pi {
 
         auto trackD1Prong0 = tracks.rawIteratorAt(candidateD1.prong0Id()); // positive daughter for D1
         auto trackD1Prong1 = tracks.rawIteratorAt(candidateD1.prong1Id()); // negative daughter for D1
-        std::array<float, 3> pVecD1Prong0{trackD1Prong0.pVector()};
-        std::array<float, 3> pVecD1Prong1{trackD1Prong1.pVector()};
+        std::array<float, 3> const pVecD1Prong0{trackD1Prong0.pVector()};
+        std::array<float, 3> const pVecD1Prong1{trackD1Prong1.pVector()};
         std::array<float, 3> pVecD1 = RecoDecay::pVec(pVecD1Prong0, pVecD1Prong1);
 
         for (auto candidateD2 = candidateD1 + 1; candidateD2 != candwD0ThisColl.end(); ++candidateD2) {
@@ -416,8 +416,8 @@ struct HfTreeCreatorTccToD0D0Pi {
 
           auto trackD2Prong0 = tracks.rawIteratorAt(candidateD2.prong0Id()); // positive daughter for D2
           auto trackD2Prong1 = tracks.rawIteratorAt(candidateD2.prong1Id()); // negative daughter for D2
-          std::array<float, 3> pVecD2Prong0{trackD2Prong0.pVector()};
-          std::array<float, 3> pVecD2Prong1{trackD2Prong1.pVector()};
+          std::array<float, 3> const pVecD2Prong0{trackD2Prong0.pVector()};
+          std::array<float, 3> const pVecD2Prong1{trackD2Prong1.pVector()};
           std::array<float, 3> pVecD2 = RecoDecay::pVec(pVecD2Prong0, pVecD2Prong1);
 
           if (buildVertex) {

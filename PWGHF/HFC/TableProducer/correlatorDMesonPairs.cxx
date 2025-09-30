@@ -223,7 +223,7 @@ struct HfCorrelatorDMesonPairs {
     labels[23] = "# of True D+Dbar Pairs";
     labels[24] = "# of True Dbar+D Pairs";
 
-    AxisSpec axisSelStatus = {kNBinsSelStatus, 0.5, kNBinsSelStatus + 0.5, ""};
+    AxisSpec const axisSelStatus = {kNBinsSelStatus, 0.5, kNBinsSelStatus + 0.5, ""};
     registry.add("hSelectionStatus", "D Meson candidates;selection status;entries", HistType::kTH1F, {axisSelStatus});
     registry.add("hSelectionStatusMcGen", "D Meson candidates MC Gen;selection status;entries", HistType::kTH1F, {axisSelStatus});
 
@@ -245,7 +245,7 @@ struct HfCorrelatorDMesonPairs {
     labelsMatching[6] = "# of matched Dbar Cand 2";
     labelsMatching[7] = "# of unmatched Cand 2";
 
-    AxisSpec axisMatching = {kNBinsMatching, 0.5, kNBinsMatching + 0.5, ""};
+    AxisSpec const axisMatching = {kNBinsMatching, 0.5, kNBinsMatching + 0.5, ""};
     registry.add("hMatchingMcRec", "D Meson candidates; MC matching status;entries", HistType::kTH1F, {axisMatching});
     registry.add("hMatchingMcGen", "D Meson candidates; MC matching status;entries", HistType::kTH1F, {axisMatching});
 
@@ -264,7 +264,7 @@ struct HfCorrelatorDMesonPairs {
     labelsSinglePart[4] = "# of true D";
     labelsSinglePart[5] = "# of true Dbar";
 
-    AxisSpec axisSinglePart = {kNBinsSinglePart, 0.5, kNBinsSinglePart + 0.5, ""};
+    AxisSpec const axisSinglePart = {kNBinsSinglePart, 0.5, kNBinsSinglePart + 0.5, ""};
     registry.add("hStatusSinglePart", "D Meson candidates; MC matching status;entries", HistType::kTH1F, {axisSinglePart});
     registry.add("hStatusSinglePartMcGen", "D Meson candidates; MC matching status;entries", HistType::kTH1F, {axisSinglePart});
 
@@ -273,7 +273,7 @@ struct HfCorrelatorDMesonPairs {
       registry.get<TH1>(HIST("hStatusSinglePartMcGen"))->GetXaxis()->SetBinLabel(iBin + 1, labelsSinglePart[iBin].data());
     }
 
-    AxisSpec axisInputD0 = {200, -0.5, 199.5};
+    AxisSpec const axisInputD0 = {200, -0.5, 199.5};
     registry.add("hInputCheckD0", "Check on input D0 meson candidates/event", {HistType::kTH1F, {axisInputD0}});
     registry.add("hInputCheckD0bar", "Check on input D0bar meson candidates/event", {HistType::kTH1F, {axisInputD0}});
     registry.add("hInputCheckD0AndD0bar", "Check on input D0 & D0bar meson candidates/event", {HistType::kTH1F, {axisInputD0}});
@@ -416,8 +416,8 @@ struct HfCorrelatorDMesonPairs {
     int nDevent = 0, nDbarevent = 0, nDDbarevent = 0, nDorDbarevent = 0;
     for (const auto& candidate : selectedD0Candidates) {
       // Get counters per event
-      bool isSignalD0 = std::abs(hfHelper.invMassD0ToPiK(candidate) - MassD0) < massCut;
-      bool isSignalD0bar = std::abs(hfHelper.invMassD0barToKPi(candidate) - MassD0Bar) < massCut;
+      bool const isSignalD0 = std::abs(hfHelper.invMassD0ToPiK(candidate) - MassD0) < massCut;
+      bool const isSignalD0bar = std::abs(hfHelper.invMassD0barToKPi(candidate) - MassD0Bar) < massCut;
       if (selectSignalRegionOnly && !(isSignalD0 || isSignalD0bar)) {
         continue;
       }
@@ -430,8 +430,8 @@ struct HfCorrelatorDMesonPairs {
         continue;
       }
 
-      bool isDCand1 = isD(candidateType1);
-      bool isDbarCand1 = isDbar(candidateType1);
+      bool const isDCand1 = isD(candidateType1);
+      bool const isDbarCand1 = isDbar(candidateType1);
       if (isDCand1) {
         nDevent++;
       }
@@ -598,15 +598,15 @@ struct HfCorrelatorDMesonPairs {
       auto prong0Cand1 = candidate1.template prong0_as<aod::Tracks>();
       auto prong1Cand1 = candidate1.template prong1_as<aod::Tracks>();
 
-      bool isSignalD0Cand1 = std::abs(hfHelper.invMassD0ToPiK(candidate1) - MassD0) < massCut;
-      bool isSignalD0barCand1 = std::abs(hfHelper.invMassD0barToKPi(candidate1) - MassD0Bar) < massCut;
+      bool const isSignalD0Cand1 = std::abs(hfHelper.invMassD0ToPiK(candidate1) - MassD0) < massCut;
+      bool const isSignalD0barCand1 = std::abs(hfHelper.invMassD0barToKPi(candidate1) - MassD0Bar) < massCut;
       if (selectSignalRegionOnly && !(isSignalD0Cand1 || isSignalD0barCand1)) {
         continue;
       }
 
       auto candidateType1 = assignCandidateTypeD0<false>(candidate1); // Candidate type attribution
-      bool isDCand1 = isD(candidateType1);
-      bool isDbarCand1 = isDbar(candidateType1);
+      bool const isDCand1 = isD(candidateType1);
+      bool const isDbarCand1 = isDbar(candidateType1);
 
       bool isSelectedMlD0Cand1 = false;
       bool isSelectedMlD0barCand1 = false;
@@ -674,15 +674,15 @@ struct HfCorrelatorDMesonPairs {
           continue;
         }
 
-        bool isSignalD0Cand2 = std::abs(hfHelper.invMassD0ToPiK(candidate2) - MassD0) < massCut;
-        bool isSignalD0barCand2 = std::abs(hfHelper.invMassD0barToKPi(candidate2) - MassD0Bar) < massCut;
+        bool const isSignalD0Cand2 = std::abs(hfHelper.invMassD0ToPiK(candidate2) - MassD0) < massCut;
+        bool const isSignalD0barCand2 = std::abs(hfHelper.invMassD0barToKPi(candidate2) - MassD0Bar) < massCut;
         if (selectSignalRegionOnly && !(isSignalD0Cand2 || isSignalD0barCand2)) {
           continue;
         }
         auto candidateType2 = assignCandidateTypeD0<false>(candidate2); // Candidate type attribution
 
-        bool isDCand2 = isD(candidateType2);
-        bool isDbarCand2 = isDbar(candidateType2);
+        bool const isDCand2 = isD(candidateType2);
+        bool const isDbarCand2 = isDbar(candidateType2);
 
         bool isSelectedMlD0Cand2 = false;
         bool isSelectedMlD0barCand2 = false;
@@ -743,8 +743,8 @@ struct HfCorrelatorDMesonPairs {
       auto ptCandidate1 = candidate1.pt();
       auto yCandidate1 = hfHelper.yD0(candidate1);
       auto phiCandidate1 = candidate1.phi();
-      float massD0Cand1 = hfHelper.invMassD0ToPiK(candidate1);
-      float massD0barCand1 = hfHelper.invMassD0barToKPi(candidate1);
+      float const massD0Cand1 = hfHelper.invMassD0ToPiK(candidate1);
+      float const massD0barCand1 = hfHelper.invMassD0barToKPi(candidate1);
       auto prong0Cand1 = candidate1.template prong0_as<aod::Tracks>();
       auto prong1Cand1 = candidate1.template prong1_as<aod::Tracks>();
 
@@ -754,8 +754,8 @@ struct HfCorrelatorDMesonPairs {
       if (ptCandMin >= 0. && candidate1.pt() < ptCandMin) {
         continue;
       }
-      bool isSignalD0Cand1 = std::abs(massD0Cand1 - MassD0) < massCut;
-      bool isSignalD0barCand1 = std::abs(massD0barCand1 - MassD0Bar) < massCut;
+      bool const isSignalD0Cand1 = std::abs(massD0Cand1 - MassD0) < massCut;
+      bool const isSignalD0barCand1 = std::abs(massD0barCand1 - MassD0Bar) < massCut;
       if (selectSignalRegionOnly && !(isSignalD0Cand1 || isSignalD0barCand1)) {
         continue;
       }
@@ -765,10 +765,10 @@ struct HfCorrelatorDMesonPairs {
 
       auto candidateType1 = assignCandidateTypeD0<true>(candidate1); // Candidate type attribution
 
-      bool isDCand1 = isD(candidateType1);
-      bool isDbarCand1 = isDbar(candidateType1);
-      bool isTrueDCand1 = isTrueD(candidateType1);
-      bool isTrueDbarCand1 = isTrueDbar(candidateType1);
+      bool const isDCand1 = isD(candidateType1);
+      bool const isDbarCand1 = isDbar(candidateType1);
+      bool const isTrueDCand1 = isTrueD(candidateType1);
+      bool const isTrueDbarCand1 = isTrueDbar(candidateType1);
 
       int8_t matchedRec1 = candidate1.flagMcMatchRec();
       int8_t originRec1 = candidate1.originMcRec();
@@ -858,8 +858,8 @@ struct HfCorrelatorDMesonPairs {
         auto ptCandidate2 = candidate2.pt();
         auto yCandidate2 = hfHelper.yD0(candidate2);
         auto phiCandidate2 = candidate2.phi();
-        float massD0Cand2 = hfHelper.invMassD0ToPiK(candidate2);
-        float massD0barCand2 = hfHelper.invMassD0barToKPi(candidate2);
+        float const massD0Cand2 = hfHelper.invMassD0ToPiK(candidate2);
+        float const massD0barCand2 = hfHelper.invMassD0barToKPi(candidate2);
         auto prong0Cand2 = candidate2.template prong0_as<aod::Tracks>();
         auto prong1Cand2 = candidate2.template prong1_as<aod::Tracks>();
 
@@ -869,8 +869,8 @@ struct HfCorrelatorDMesonPairs {
         if (ptCandMin >= 0. && candidate2.pt() < ptCandMin) {
           continue;
         }
-        bool isSignalD0Cand2 = std::abs(massD0Cand2 - MassD0) < massCut;
-        bool isSignalD0barCand2 = std::abs(massD0barCand2 - MassD0Bar) < massCut;
+        bool const isSignalD0Cand2 = std::abs(massD0Cand2 - MassD0) < massCut;
+        bool const isSignalD0barCand2 = std::abs(massD0barCand2 - MassD0Bar) < massCut;
         if (selectSignalRegionOnly && !(isSignalD0Cand2 || isSignalD0barCand2)) {
           continue;
         }
@@ -882,10 +882,10 @@ struct HfCorrelatorDMesonPairs {
         }
         auto candidateType2 = assignCandidateTypeD0<true>(candidate2); // Candidate type attribution
 
-        bool isDCand2 = isD(candidateType2);
-        bool isDbarCand2 = isDbar(candidateType2);
-        bool isTrueDCand2 = isTrueD(candidateType2);
-        bool isTrueDbarCand2 = isTrueDbar(candidateType2);
+        bool const isDCand2 = isD(candidateType2);
+        bool const isDbarCand2 = isDbar(candidateType2);
+        bool const isTrueDCand2 = isTrueD(candidateType2);
+        bool const isTrueDbarCand2 = isTrueDbar(candidateType2);
 
         int8_t matchedRec2 = candidate2.flagMcMatchRec();
         int8_t originRec2 = candidate2.originMcRec();
@@ -937,7 +937,7 @@ struct HfCorrelatorDMesonPairs {
   {
     int numPvContributorsGen{0};
     for (const auto& collision : collisions) { // loop over reco collisions associated to this gen collision
-      int numPvContributors = collision.numContrib();
+      int const numPvContributors = collision.numContrib();
 
       if (numPvContributors > numPvContributorsGen) { // we take the associated reconstructed collision with higher number of PV contributors
         numPvContributorsGen = numPvContributors;
@@ -957,8 +957,8 @@ struct HfCorrelatorDMesonPairs {
         continue;
       }
       auto particleType = assignParticleTypeD0Gen(particle); // Candidate type attribution
-      bool isDParticle = isTrueD(particleType);
-      bool isDbarParticle = isTrueDbar(particleType);
+      bool const isDParticle = isTrueD(particleType);
+      bool const isDbarParticle = isTrueDbar(particleType);
       if (isDParticle) {
         nDevent++;
       }
@@ -1006,8 +1006,8 @@ struct HfCorrelatorDMesonPairs {
       registry.fill(HIST("hPtCandAfterCutMcGen"), particle1.pt());
 
       auto particleType1 = assignParticleTypeD0Gen(particle1); // Candidate sign attribution
-      bool isDParticle1 = isTrueD(particleType1);
-      bool isDbarParticle1 = isTrueDbar(particleType1);
+      bool const isDParticle1 = isTrueD(particleType1);
+      bool const isDbarParticle1 = isTrueDbar(particleType1);
 
       // check if it's MC matched
       int8_t matchedGen1 = particle1.flagMcMatchGen();
@@ -1048,8 +1048,8 @@ struct HfCorrelatorDMesonPairs {
         }
         // Candidate sign attribution.
         auto particleType2 = assignParticleTypeD0Gen(particle2);
-        bool isDParticle2 = isTrueD(particleType2);
-        bool isDbarParticle2 = isTrueDbar(particleType2);
+        bool const isDParticle2 = isTrueD(particleType2);
+        bool const isDbarParticle2 = isTrueDbar(particleType2);
 
         // check if it's MC matched
         int8_t matchedGen2 = particle2.flagMcMatchGen();

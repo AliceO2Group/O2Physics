@@ -141,8 +141,8 @@ struct HfCandidateSelectorLcToK0sP {
       hfMlResponse.init();
 
       // load histograms for ML score
-      AxisSpec axisScore = {100, 0, 1, "score"};
-      AxisSpec axisBinsPt = {binsPtMl, "#it{p}_{T} (GeV/#it{c})"};
+      AxisSpec const axisScore = {100, 0, 1, "score"};
+      AxisSpec const axisBinsPt = {binsPtMl, "#it{p}_{T} (GeV/#it{c})"};
       for (int classMl = 0; classMl < nClassesMl; classMl++) {
         hModelScore.push_back(registry.add<TH1>(Form("hMlScoreClass%d", classMl), "Model score distribution for Lc;Model score;counts", HistType::kTH1F, {axisScore}));
         hModelScoreVsPtCand.push_back(registry.add<TH2>(Form("hMlScoreClass%dVsPtCand", classMl), "Model score distribution for Lc;Model score;counts", HistType::kTH2F, {axisScore, axisBinsPt}));
@@ -157,7 +157,7 @@ struct HfCandidateSelectorLcToK0sP {
   bool selectionTopol(const T& hfCandCascade)
   {
     auto candPt = hfCandCascade.pt();
-    int ptBin = findBin(binsPt, candPt);
+    int const ptBin = findBin(binsPt, candPt);
     if (ptBin == -1) {
       return false;
     }
@@ -245,7 +245,7 @@ struct HfCandidateSelectorLcToK0sP {
     auto ptCand = hfCandCascade.pt();
     std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(hfCandCascade, bach);
 
-    bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
+    bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCand, outputMl);
 
     for (int classMl = 0; classMl < nClassesMl; classMl++) {
       hModelScore[classMl]->Fill(outputMl[classMl]);
@@ -285,7 +285,7 @@ struct HfCandidateSelectorLcToK0sP {
       }
 
       if (applyMl) {
-        bool isSelectedMlLcToK0sP = selectionMl(candidate, bach, outputMl);
+        bool const isSelectedMlLcToK0sP = selectionMl(candidate, bach, outputMl);
         hfMlLcToK0sPCandidate(outputMl);
 
         if (!isSelectedMlLcToK0sP) {
@@ -328,7 +328,7 @@ struct HfCandidateSelectorLcToK0sP {
       }
 
       if (applyMl) {
-        bool isSelectedMlLcToK0sP = selectionMl(candidate, bach, outputMl);
+        bool const isSelectedMlLcToK0sP = selectionMl(candidate, bach, outputMl);
         hfMlLcToK0sPCandidate(outputMl);
 
         if (!isSelectedMlLcToK0sP) {

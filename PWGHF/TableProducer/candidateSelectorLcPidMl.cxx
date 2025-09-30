@@ -118,7 +118,7 @@ struct HfCandidateSelectorLcPidMl {
     selectorKaon = selectorPion;
     selectorProton = selectorPion;
 
-    AxisSpec bdtAxis{100, 0.f, 1.f};
+    AxisSpec const bdtAxis{100, 0.f, 1.f};
     if (applyML && activateQA) {
       registry.add<TH1>("hLcBDTScoreBkg", "BDT background score distribution for Lc;BDT background score;counts", HistType::kTH1F, {bdtAxis});
       registry.add<TH1>("hLcBDTScorePrompt", "BDT prompt score distribution for Lc;BDT prompt score;counts", HistType::kTH1F, {bdtAxis});
@@ -128,7 +128,7 @@ struct HfCandidateSelectorLcPidMl {
     ccdbApi.init(url);
 
     // init ONNX runtime session
-    std::map<std::string, std::string> metadata;
+    std::map<std::string, std::string> const metadata;
     std::map<std::string, std::string> headers;
     bool retrieveSuccess = true;
     if (applyML) {
@@ -147,7 +147,7 @@ struct HfCandidateSelectorLcPidMl {
       if (retrieveSuccess) {
         auto session = model.getSession();
         std::vector<std::vector<int64_t>> inputShapes;
-        Ort::AllocatorWithDefaultOptions tmpAllocator;
+        Ort::AllocatorWithDefaultOptions const tmpAllocator;
         for (size_t i = 0; i < session->GetInputCount(); ++i) {
           inputShapes.emplace_back(session->GetInputTypeInfo(i).GetTensorTypeAndShapeInfo().GetShape());
         }
@@ -196,11 +196,11 @@ struct HfCandidateSelectorLcPidMl {
         pidLcToPiKP = 1;
       } else {
         // track-level PID selection
-        TrackSelectorPID::Status pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
-        TrackSelectorPID::Status pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2, candidate.nSigTpcPr2(), candidate.nSigTofPr2());
-        TrackSelectorPID::Status pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
-        TrackSelectorPID::Status pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
-        TrackSelectorPID::Status pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
+        TrackSelectorPID::Status const pidTrackPos1Proton = selectorProton.statusTpcOrTof(trackPos1, candidate.nSigTpcPr0(), candidate.nSigTofPr0());
+        TrackSelectorPID::Status const pidTrackPos2Proton = selectorProton.statusTpcOrTof(trackPos2, candidate.nSigTpcPr2(), candidate.nSigTofPr2());
+        TrackSelectorPID::Status const pidTrackPos1Pion = selectorPion.statusTpcOrTof(trackPos1, candidate.nSigTpcPi0(), candidate.nSigTofPi0());
+        TrackSelectorPID::Status const pidTrackPos2Pion = selectorPion.statusTpcOrTof(trackPos2, candidate.nSigTpcPi2(), candidate.nSigTofPi2());
+        TrackSelectorPID::Status const pidTrackNegKaon = selectorKaon.statusTpcOrTof(trackNeg, candidate.nSigTpcKa1(), candidate.nSigTofKa1());
 
         if (pidTrackPos1Proton == TrackSelectorPID::Accepted &&
             pidTrackNegKaon == TrackSelectorPID::Accepted &&
@@ -227,11 +227,11 @@ struct HfCandidateSelectorLcPidMl {
         pidBayesLcToPKPi = 1;
         pidBayesLcToPiKP = 1;
       } else {
-        int pidBayesTrackPos1Proton = selectorProton.statusBayes(trackPos1);
-        int pidBayesTrackPos2Proton = selectorProton.statusBayes(trackPos2);
-        int pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos1);
-        int pidBayesTrackPos2Pion = selectorPion.statusBayes(trackPos2);
-        int pidBayesTrackNegKaon = selectorKaon.statusBayes(trackNeg);
+        int const pidBayesTrackPos1Proton = selectorProton.statusBayes(trackPos1);
+        int const pidBayesTrackPos2Proton = selectorProton.statusBayes(trackPos2);
+        int const pidBayesTrackPos1Pion = selectorPion.statusBayes(trackPos1);
+        int const pidBayesTrackPos2Pion = selectorPion.statusBayes(trackPos2);
+        int const pidBayesTrackNegKaon = selectorKaon.statusBayes(trackNeg);
 
         if (pidBayesTrackPos1Proton == TrackSelectorPID::Accepted &&
             pidBayesTrackNegKaon == TrackSelectorPID::Accepted &&
@@ -277,9 +277,9 @@ struct HfCandidateSelectorLcPidMl {
         continue;
       }
 
-      std::array<float, 3> pVecPos1 = trackPos1.pVector();
-      std::array<float, 3> pVecNeg = trackNeg.pVector();
-      std::array<float, 3> pVecPos2 = trackPos2.pVector();
+      std::array<float, 3> const pVecPos1 = trackPos1.pVector();
+      std::array<float, 3> const pVecNeg = trackNeg.pVector();
+      std::array<float, 3> const pVecPos2 = trackPos2.pVector();
       const float massPi = o2::constants::physics::MassPiPlus;
       const float massK = o2::constants::physics::MassKPlus;
       const float massProton = o2::constants::physics::MassProton;

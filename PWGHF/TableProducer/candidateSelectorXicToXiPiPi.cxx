@@ -386,7 +386,7 @@ struct HfCandidateSelectorXicToXiPiPi {
 
     // check whether candidate is in analyzed pT range
     auto ptCandXic = hfCandXic.pt();
-    int pTBin = findBin(binsPt, ptCandXic);
+    int const pTBin = findBin(binsPt, ptCandXic);
     if (pTBin == -1) {
       return false;
     }
@@ -671,7 +671,7 @@ struct HfCandidateSelectorXicToXiPiPi {
                      bool const isMatchedSignal = false)
   {
     bool isSelectedMlXicToXiPiPi = false;
-    float ptCandXic = hfCandXic.pt();
+    float const ptCandXic = hfCandXic.pt();
 
     std::vector<float> inputFeaturesXicToXiPiPi = hfMlResponse.getInputFeatures(hfCandXic);
     isSelectedMlXicToXiPiPi = hfMlResponse.isSelectedMl(inputFeaturesXicToXiPiPi, ptCandXic, outputMlXicToXiPiPi);

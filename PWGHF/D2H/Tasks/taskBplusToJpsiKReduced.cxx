@@ -406,7 +406,7 @@ struct HfTaskBplusToJpsiKReduced {
       }
     }
 
-    float pseudoRndm = ptJpsi * 1000. - static_cast<int64_t>(ptJpsi * 1000);
+    float const pseudoRndm = ptJpsi * 1000. - static_cast<int64_t>(ptJpsi * 1000);
     if (ptCandBplus >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor) {
       float ptMother = -1.;
       if constexpr (DoMc) {
@@ -477,7 +477,7 @@ struct HfTaskBplusToJpsiKReduced {
     }
     std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
     std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
-    bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
+    bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
 
     registry.fill(HIST("hPtJpsiGen"), ptProngs[0], ptParticle);
     registry.fill(HIST("hPtKGen"), ptProngs[1], ptParticle);

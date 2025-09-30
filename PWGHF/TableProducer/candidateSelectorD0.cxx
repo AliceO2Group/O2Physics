@@ -357,9 +357,9 @@ struct HfCandidateSelectorD0 {
       // need to add special cuts (additional cuts on decay length and d0 norm)
 
       // conjugate-dependent topological selection for D0
-      bool topolD0 = selectionTopolConjugate<ReconstructionType>(candidate, trackPos, trackNeg);
+      bool const topolD0 = selectionTopolConjugate<ReconstructionType>(candidate, trackPos, trackNeg);
       // conjugate-dependent topological selection for D0bar
-      bool topolD0bar = selectionTopolConjugate<ReconstructionType>(candidate, trackNeg, trackPos);
+      bool const topolD0bar = selectionTopolConjugate<ReconstructionType>(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);

@@ -494,17 +494,17 @@ struct HfCandidateCreator3Prong {
       registry.fill(HIST("hCovPVXZ"), covMatrixPV[3]);
       registry.fill(HIST("hCovPVZZ"), covMatrixPV[5]);
 
-      KFPTrack kfpTrack0 = createKFPTrackFromTrack(track0);
-      KFPTrack kfpTrack1 = createKFPTrackFromTrack(track1);
-      KFPTrack kfpTrack2 = createKFPTrackFromTrack(track2);
+      KFPTrack const kfpTrack0 = createKFPTrackFromTrack(track0);
+      KFPTrack const kfpTrack1 = createKFPTrackFromTrack(track1);
+      KFPTrack const kfpTrack2 = createKFPTrackFromTrack(track2);
 
-      KFParticle kfFirstProton(kfpTrack0, kProton);
-      KFParticle kfFirstPion(kfpTrack0, kPiPlus);
-      KFParticle kfFirstKaon(kfpTrack0, kKPlus);
-      KFParticle kfSecondKaon(kfpTrack1, kKPlus);
-      KFParticle kfThirdProton(kfpTrack2, kProton);
-      KFParticle kfThirdPion(kfpTrack2, kPiPlus);
-      KFParticle kfThirdKaon(kfpTrack2, kKPlus);
+      KFParticle const kfFirstProton(kfpTrack0, kProton);
+      KFParticle const kfFirstPion(kfpTrack0, kPiPlus);
+      KFParticle const kfFirstKaon(kfpTrack0, kKPlus);
+      KFParticle const kfSecondKaon(kfpTrack1, kKPlus);
+      KFParticle const kfThirdProton(kfpTrack2, kProton);
+      KFParticle const kfThirdPion(kfpTrack2, kPiPlus);
+      KFParticle const kfThirdKaon(kfpTrack2, kKPlus);
 
       float impactParameter0XY = 0., errImpactParameter0XY = 0., impactParameter1XY = 0., errImpactParameter1XY = 0., impactParameter2XY = 0., errImpactParameter2XY = 0.;
       if (!kfFirstProton.GetDistanceFromVertexXY(kfpV, impactParameter0XY, errImpactParameter0XY)) {
@@ -1080,7 +1080,7 @@ struct HfCandidateCreator3ProngExpressions {
           }
           auto finalStates = getDecayChannelsMain(pdgMother);
           for (const auto& [channelMain, finalState] : finalStates) {
-            std::array<int, 3> arrPdgDaughtersMain3Prongs = std::array{finalState[0], finalState[1], finalState[2]};
+            std::array<int, 3> const arrPdgDaughtersMain3Prongs = std::array{finalState[0], finalState[1], finalState[2]};
             if (finalState.size() > 3) { // o2-linter: disable=magic-number (partially reconstructed decays with 4 or 5 final state particles)
               if (matchKinkedDecayTopology && matchInteractionsWithMaterial) {
                 indexRec = RecoDecay::getMatchedMCRec<false, false, true, true, true>(mcParticles, arrayDaughters, pdgMother, arrPdgDaughtersMain3Prongs, true, &sign, depthMainMax, &nKinkedTracks, &nInteractionsWithMaterial);

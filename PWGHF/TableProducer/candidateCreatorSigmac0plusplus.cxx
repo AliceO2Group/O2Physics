@@ -217,7 +217,7 @@ struct HfCandidateCreatorSigmac0plusplus {
       // define mass window for Lc
       float mPKPiCandLcMax = -1;
       float mPiKPCandLcMax = -1;
-      int const pTBin = findBin(binsPt, candLc.pt());
+      int pTBin = findBin(binsPt, candLc.pt());
       if (pTBin != -1) {
         mPKPiCandLcMax = cutsMassLcMax->get(pTBin, "max pKpi mass Lc");
         mPiKPCandLcMax = cutsMassLcMax->get(pTBin, "max piKp mass Lc");
@@ -244,19 +244,19 @@ struct HfCandidateCreatorSigmac0plusplus {
       //////////////////////////////////////////////////////////////////////////////////////
 
       /// Exclude the current candidate soft pion if it corresponds already to a candidate Lc prong
-      int const indexProng0 = candLc.template prong0_as<aod::TracksWDcaExtra>().globalIndex();
-      int const indexProng1 = candLc.template prong1_as<aod::TracksWDcaExtra>().globalIndex();
-      int const indexProng2 = candLc.template prong2_as<aod::TracksWDcaExtra>().globalIndex();
-      int const indexSoftPi = trackSoftPi.globalIndex();
+      int indexProng0 = candLc.template prong0_as<aod::TracksWDcaExtra>().globalIndex();
+      int indexProng1 = candLc.template prong1_as<aod::TracksWDcaExtra>().globalIndex();
+      int indexProng2 = candLc.template prong2_as<aod::TracksWDcaExtra>().globalIndex();
+      int indexSoftPi = trackSoftPi.globalIndex();
       if (indexSoftPi == indexProng0 || indexSoftPi == indexProng1 || indexSoftPi == indexProng2) {
         continue;
       }
       histos.fill(HIST("hCounter"), 6);
 
       /// determine the Σc candidate charge
-      int const chargeLc = candLc.template prong0_as<aod::TracksWDcaExtra>().sign() + candLc.template prong1_as<aod::TracksWDcaExtra>().sign() + candLc.template prong2_as<aod::TracksWDcaExtra>().sign();
-      int const chargeSoftPi = trackSoftPi.sign();
-      int8_t const chargeSigmac = chargeLc + chargeSoftPi;
+      int chargeLc = candLc.template prong0_as<aod::TracksWDcaExtra>().sign() + candLc.template prong1_as<aod::TracksWDcaExtra>().sign() + candLc.template prong2_as<aod::TracksWDcaExtra>().sign();
+      int chargeSoftPi = trackSoftPi.sign();
+      int8_t chargeSigmac = chargeLc + chargeSoftPi;
       if (std::abs(chargeSigmac) != o2::aod::hf_cand_sigmac::ChargeNull && std::abs(chargeSigmac) != o2::aod::hf_cand_sigmac::ChargePlusPlus) {
         /// this shall never happen
         LOG(fatal) << ">>> Sc candidate with charge +1 built, not possible! Charge Lc: " << chargeLc << ", charge soft pion: " << chargeSoftPi;
@@ -446,7 +446,7 @@ struct HfCandidateSigmac0plusplusMc {
   int8_t isParticleAntiparticle(PART const& particle, int pdgSigmac)
   {
 
-    int const pdgCode = particle.pdgCode();
+    int pdgCode = particle.pdgCode();
     if (pdgCode == pdgSigmac) {
       // particle
       return aod::hf_cand_sigmac::Particle;

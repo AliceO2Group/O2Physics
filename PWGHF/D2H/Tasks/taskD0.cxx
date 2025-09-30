@@ -397,8 +397,8 @@ struct HfTaskD0 {
 
       auto trackPos = candidate.template prong0_as<o2::aod::TracksWExtra>(); // positive daughter
       auto trackNeg = candidate.template prong1_as<o2::aod::TracksWExtra>(); // negative daughter
-      int minItsClustersOfProngs = std::min(trackPos.itsNCls(), trackNeg.itsNCls());
-      int minTpcCrossedRowsOfProngs = std::min(trackPos.tpcNClsCrossedRows(), trackNeg.tpcNClsCrossedRows());
+      int const minItsClustersOfProngs = std::min(trackPos.itsNCls(), trackNeg.itsNCls());
+      int const minTpcCrossedRowsOfProngs = std::min(trackPos.tpcNClsCrossedRows(), trackNeg.tpcNClsCrossedRows());
       if constexpr (ApplyMl) {
         if (storeCentrality && storeOccupancy) {
           if (candidate.isSelD0() >= selectionFlagD0) {
@@ -660,8 +660,8 @@ struct HfTaskD0 {
       auto ctCandidate = hfHelper.ctD0(candidate);
       auto cpaCandidate = candidate.cpa();
       auto cpaxyCandidate = candidate.cpaXY();
-      int minItsClustersOfProngs = std::min(trackPos.itsNCls(), trackNeg.itsNCls());
-      int minTpcCrossedRowsOfProngs = std::min(trackPos.tpcNClsCrossedRows(), trackNeg.tpcNClsCrossedRows());
+      int const minItsClustersOfProngs = std::min(trackPos.itsNCls(), trackNeg.itsNCls());
+      int const minTpcCrossedRowsOfProngs = std::min(trackPos.tpcNClsCrossedRows(), trackNeg.tpcNClsCrossedRows());
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {

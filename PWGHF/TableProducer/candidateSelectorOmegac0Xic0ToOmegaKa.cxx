@@ -191,7 +191,7 @@ struct HfCandidateSelectorToOmegaKa {
     const AxisSpec thnAxisMass{thnConfigAxisMass, "inv. mass (#Omega#Ka) (GeV/#it{c}^{2})"};
     const AxisSpec thnAxisPt{thnConfigAxisPt, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec thnAxisPtKaon{thnConfigAxisPtKaon, "Pt of Kaon from Omegac0."};
-    std::vector<AxisSpec> axes = {thnAxisMass, thnAxisPt, thnAxisPtKaon};
+    std::vector<AxisSpec> const axes = {thnAxisMass, thnAxisPt, thnAxisPtKaon};
     registry.add("hMassVsPtVsPtKaon", "Thn for Omegac0 or Xic candidates with InvmassOmegaKa&pT&pTKa", HistType::kTHnSparseF, axes);
     registry.get<THnSparse>(HIST("hMassVsPtVsPtKaon"))->Sumw2();
 
@@ -266,7 +266,7 @@ struct HfCandidateSelectorToOmegaKa {
   {
     auto candpT = hfCandOmegaKa.kfPtOmegaKa();
     auto kaPtFromOmegaKa = hfCandOmegaKa.kfPtKaFromOmegaKa();
-    int pTBin = findBin(binsPt, candpT);
+    int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
@@ -320,7 +320,7 @@ struct HfCandidateSelectorToOmegaKa {
       auto trackPiFromLam = trackV0NegDau;
       auto trackPrFromLam = trackV0PosDau;
 
-      int8_t signDecay = candidate.signDecay(); // sign of pi <- cascade
+      int8_t const signDecay = candidate.signDecay(); // sign of pi <- cascade
 
       if (signDecay > 0) {
         trackPiFromLam = trackV0PosDau;
@@ -336,10 +336,10 @@ struct HfCandidateSelectorToOmegaKa {
       }
 
       // eta selection
-      double etaV0DauPr = candidate.etaV0DauPr();
-      double etaV0DauPi = candidate.etaV0DauPi();
-      double etaKaFromCasc = candidate.etaBachFromCasc();
-      double etaKaFromCharmBaryon = candidate.etaBachFromCharmBaryon();
+      double const etaV0DauPr = candidate.etaV0DauPr();
+      double const etaV0DauPi = candidate.etaV0DauPi();
+      double const etaKaFromCasc = candidate.etaBachFromCasc();
+      double const etaKaFromCharmBaryon = candidate.etaBachFromCharmBaryon();
       if (std::abs(etaV0DauPr) > etaTrackLFDauMax) {
         resultSelections = false;
         registry.fill(HIST("hSelEtaPosV0Dau"), 0);
@@ -618,9 +618,9 @@ struct HfCandidateSelectorToOmegaKa {
       }
 
       // invariant mass cuts
-      double invMassLambda = candidate.invMassLambda();
-      double invMassCascade = candidate.invMassCascade();
-      double invMassCharmBaryon = candidate.invMassCharmBaryon();
+      double const invMassLambda = candidate.invMassLambda();
+      double const invMassCascade = candidate.invMassCascade();
+      double const invMassCharmBaryon = candidate.invMassCharmBaryon();
 
       if (std::abs(invMassLambda - o2::constants::physics::MassLambda0) < v0MassWindow) {
         statusInvMassLambda = true;

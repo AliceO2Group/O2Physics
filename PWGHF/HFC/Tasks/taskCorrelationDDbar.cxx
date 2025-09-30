@@ -171,7 +171,7 @@ struct HfTaskCorrelationDDbar {
   void init(InitContext&)
   {
     // redefinition of pT axes for THnSparse holding correlation entries
-    int nBinspTaxis = binsPtCorrelations->size() - 1;
+    int const nBinspTaxis = binsPtCorrelations->size() - 1;
     const double* valuespTaxis = binsPtCorrelations->data();
 
     for (int i = 2; i <= 3; i++) {
@@ -246,15 +246,15 @@ struct HfTaskCorrelationDDbar {
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
-      double deltaPhi = pairEntry.deltaPhi();
-      double deltaEta = pairEntry.deltaEta();
-      double ptD = pairEntry.ptD();
-      double ptDbar = pairEntry.ptDbar();
-      double massD = pairEntry.mD();
-      double massDbar = pairEntry.mDbar();
+      double const deltaPhi = pairEntry.deltaPhi();
+      double const deltaEta = pairEntry.deltaEta();
+      double const ptD = pairEntry.ptD();
+      double const ptDbar = pairEntry.ptDbar();
+      double const massD = pairEntry.mD();
+      double const massDbar = pairEntry.mDbar();
 
-      int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
-      int pTBinDbar = o2::analysis::findBin(binsPtCorrelations, ptDbar);
+      int const pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
+      int const pTBinDbar = o2::analysis::findBin(binsPtCorrelations, ptDbar);
 
       double efficiencyWeight = 1.;
       if (applyEfficiency != 0) {
@@ -303,15 +303,15 @@ struct HfTaskCorrelationDDbar {
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
-      double deltaPhi = pairEntry.deltaPhi();
-      double deltaEta = pairEntry.deltaEta();
-      double ptD = pairEntry.ptD();
-      double ptDbar = pairEntry.ptDbar();
-      double massD = pairEntry.mD();
-      double massDbar = pairEntry.mDbar();
+      double const deltaPhi = pairEntry.deltaPhi();
+      double const deltaEta = pairEntry.deltaEta();
+      double const ptD = pairEntry.ptD();
+      double const ptDbar = pairEntry.ptDbar();
+      double const massD = pairEntry.mD();
+      double const massDbar = pairEntry.mDbar();
 
-      int pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
-      int pTBinDbar = o2::analysis::findBin(binsPtCorrelations, ptDbar);
+      int const pTBinD = o2::analysis::findBin(binsPtCorrelations, ptD);
+      int const pTBinDbar = o2::analysis::findBin(binsPtCorrelations, ptDbar);
 
       double efficiencyWeight = 1.;
       if (applyEfficiency != 0) {
@@ -450,10 +450,10 @@ struct HfTaskCorrelationDDbar {
   {
     for (const auto& pairEntry : pairEntries) {
       // define variables for widely used quantities
-      double deltaPhi = pairEntry.deltaPhi();
-      double deltaEta = pairEntry.deltaEta();
-      double ptD = pairEntry.ptD();
-      double ptDbar = pairEntry.ptDbar();
+      double const deltaPhi = pairEntry.deltaPhi();
+      double const deltaEta = pairEntry.deltaEta();
+      double const ptD = pairEntry.ptD();
+      double const ptDbar = pairEntry.ptDbar();
 
       // reject entries outside pT ranges of interest
       if (o2::analysis::findBin(binsPtCorrelations, ptD) == -1 || o2::analysis::findBin(binsPtCorrelations, ptDbar) == -1) {

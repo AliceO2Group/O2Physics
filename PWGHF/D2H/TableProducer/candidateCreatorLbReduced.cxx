@@ -118,11 +118,11 @@ struct HfCandidateCreatorLbReduced {
       myInvMassWindowLcPi = config.myInvMassWindowLcPi();
     }
 
-    float deltaMin = MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance;
-    float deltaMax = MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance;
+    float const deltaMin = MassLambdaB0 - myInvMassWindowLcPi + invMassWindowLcPiTolerance;
+    float const deltaMax = MassLambdaB0 + myInvMassWindowLcPi - invMassWindowLcPiTolerance;
 
-    float invMass2LcPiMin = deltaMin * deltaMin;
-    float invMass2LcPiMax = deltaMax * deltaMax;
+    float const invMass2LcPiMin = deltaMin * deltaMin;
+    float const invMass2LcPiMax = deltaMax * deltaMax;
 
     return {invMass2LcPiMin, invMass2LcPiMax};
   }

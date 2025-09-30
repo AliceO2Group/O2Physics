@@ -453,16 +453,16 @@ struct HfTaskFlow {
     //      Declaration of correlation containers and their respective axis
     //  =========================
 
-    std::vector<AxisSpec> corrAxis = {{axisDeltaEta, "#Delta#eta"},
-                                      {axisPtAssoc, "p_{T} (GeV/c)"},
-                                      {axisPtTrigger, "p_{T} (GeV/c)"},
-                                      {axisMultiplicity, "multiplicity"},
-                                      {axisDeltaPhi, "#Delta#varphi (rad)"},
-                                      {axisVertex, "z-vtx (cm)"}};
-    std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
-                                     {axisPtEfficiency, "p_{T} (GeV/c)"},
-                                     {axisVertexEfficiency, "z-vtx (cm)"}};
-    std::vector<AxisSpec> userAxis = {{axisMass, "m_{inv} (GeV/c^{2})"}};
+    std::vector<AxisSpec> const corrAxis = {{axisDeltaEta, "#Delta#eta"},
+                                            {axisPtAssoc, "p_{T} (GeV/c)"},
+                                            {axisPtTrigger, "p_{T} (GeV/c)"},
+                                            {axisMultiplicity, "multiplicity"},
+                                            {axisDeltaPhi, "#Delta#varphi (rad)"},
+                                            {axisVertex, "z-vtx (cm)"}};
+    std::vector<AxisSpec> const effAxis = {{axisEtaEfficiency, "#eta"},
+                                           {axisPtEfficiency, "p_{T} (GeV/c)"},
+                                           {axisVertexEfficiency, "z-vtx (cm)"}};
+    std::vector<AxisSpec> const userAxis = {{axisMass, "m_{inv} (GeV/c^{2})"}};
 
     fv0Det = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
 
@@ -708,7 +708,7 @@ struct HfTaskFlow {
   double getPhiFV0(unsigned int chno) const
   {
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
-    bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
+    bool const isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
     float offsetX, offsetY;
     if (isChnoInLeft) {
       offsetX = (*offsetFV0)[0].getX();
@@ -744,7 +744,7 @@ struct HfTaskFlow {
   double getEtaFV0(unsigned int chno) const
   {
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
-    bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
+    bool const isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
     float offsetX, offsetY, offsetZ;
     if (isChnoInLeft) {
       offsetX = (*offsetFV0)[0].getX();
@@ -983,9 +983,9 @@ struct HfTaskFlow {
 
       loopCounter++;
 
-      float eta1 = track1.eta();
-      float pt1 = track1.pt();
-      float phi1 = track1.phi();
+      float const eta1 = track1.eta();
+      float const pt1 = track1.pt();
+      float const phi1 = track1.phi();
 
       //  TODO: add getter for NUE trigger efficiency here
 
@@ -1100,8 +1100,8 @@ struct HfTaskFlow {
           }
         }
 
-        float eta2 = track2.eta();
-        float pt2 = track2.pt();
+        float const eta2 = track2.eta();
+        float const pt2 = track2.pt();
         float phi2 = track2.phi();
         o2::math_utils::bringTo02Pi(phi2);
 
@@ -1169,9 +1169,9 @@ struct HfTaskFlow {
 
       loopCounter++;
 
-      float eta1 = track1.eta();
-      float pt1 = track1.pt();
-      float phi1 = track1.phi();
+      float const eta1 = track1.eta();
+      float const pt1 = track1.pt();
+      float const phi1 = track1.phi();
 
       bool fillingHFcontainer = false;
       double invmass = 0;
@@ -1253,8 +1253,8 @@ struct HfTaskFlow {
           }
         }
 
-        float eta2 = reassociatedMftTrack.eta();
-        float pt2 = reassociatedMftTrack.pt();
+        float const eta2 = reassociatedMftTrack.eta();
+        float const pt2 = reassociatedMftTrack.pt();
         float phi2 = reassociatedMftTrack.phi();
         o2::math_utils::bringTo02Pi(phi2);
 
@@ -1312,8 +1312,8 @@ struct HfTaskFlow {
 
       loopCounter++;
 
-      float eta1 = track1.eta();
-      float pt1 = track1.pt();
+      float const eta1 = track1.eta();
+      float const pt1 = track1.pt();
       float phi1 = track1.phi();
       if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
         o2::math_utils::bringTo02Pi(phi1);
@@ -1488,8 +1488,8 @@ struct HfTaskFlow {
         }
       }
 
-      float eta1 = reassociatedMftTrack.eta();
-      float pt1 = reassociatedMftTrack.pt();
+      float const eta1 = reassociatedMftTrack.eta();
+      float const pt1 = reassociatedMftTrack.pt();
       float phi1 = reassociatedMftTrack.phi();
       o2::math_utils::bringTo02Pi(phi1);
 
@@ -1577,9 +1577,9 @@ struct HfTaskFlow {
     // The first one that I call "Data" should work for data and mc rec
     using BinningTypeData = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
 
-    BinningTypeData binningWithTracksSize{{getMultiplicity}, {binsMixingVertex, binsMixingMultiplicity}, true};
+    BinningTypeData const binningWithTracksSize{{getMultiplicity}, {binsMixingVertex, binsMixingMultiplicity}, true};
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<TCollisions, TTracksTrig, TTracksAssoc, BinningTypeData> pair{binningWithTracksSize, configTask.nMixedEvents, -1, collisions, tracksTuple, &cache};
+    Pair<TCollisions, TTracksTrig, TTracksAssoc, BinningTypeData> const pair{binningWithTracksSize, configTask.nMixedEvents, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -1610,7 +1610,7 @@ struct HfTaskFlow {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {binsMixingVertex, binsMixingMultiplicity}, true};
+    MixedBinning const binningOnVtxAndMult{{getMultiplicity}, {binsMixingVertex, binsMixingMultiplicity}, true};
 
     for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, configTask.nMixedEvents, -1, collisions, collisions)) {
 
@@ -1696,9 +1696,9 @@ struct HfTaskFlow {
   {
     using BinningTypeMcTruth = FlexibleBinningPolicy<std::tuple<decltype(getPartsSize)>, aod::mccollision::PosZ, decltype(getPartsSize)>;
 
-    BinningTypeMcTruth binningWithTracksSize{{getPartsSize}, {binsMixingVertex, binsMixingMultiplicity}, true};
+    BinningTypeMcTruth const binningWithTracksSize{{getPartsSize}, {binsMixingVertex, binsMixingMultiplicity}, true};
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<TMcCollisions, TTracksTrig, TTracksAssoc, BinningTypeMcTruth> pair{binningWithTracksSize, configTask.nMixedEvents, -1, mcCollisions, tracksTuple, &cache};
+    Pair<TMcCollisions, TTracksTrig, TTracksAssoc, BinningTypeMcTruth> const pair{binningWithTracksSize, configTask.nMixedEvents, -1, mcCollisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -2273,7 +2273,7 @@ struct HfTaskFlow {
   {
     const auto multiplicity = mcCollision.multMCPVz();
 
-    BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
+    BinningPolicyBase<2> const baseBinning{{axisVertex, axisMultiplicity}, true};
 
     sameEventHfMc->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
     fillCorrelations(sameEventHfMc, CorrelationContainer::CFStep::kCFStepAll, mcParticles2Prong, mcParticles, multiplicity, mcCollision.posZ(), true);
@@ -2290,7 +2290,7 @@ struct HfTaskFlow {
   {
     const auto multiplicity = mcCollision.multMCPVz();
 
-    BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
+    BinningPolicyBase<2> const baseBinning{{axisVertex, axisMultiplicity}, true};
 
     sameEventHfMc->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
     fillCorrelations(sameEventHfMc, CorrelationContainer::CFStep::kCFStepAll, mcParticles3Prong, mcParticles, multiplicity, mcCollision.posZ(), true);

@@ -376,8 +376,8 @@ struct HfTaskBsToJpsiPhiReduced {
     auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
     auto candKa0 = candidate.template prong0Phi_as<aod::HfRedBach0Tracks>();
     auto candKa1 = candidate.template prong1Phi_as<aod::HfRedBach1Tracks>();
-    std::array<float, 3> pVecKa0 = {candKa0.px(), candKa0.py(), candKa0.pz()};
-    std::array<float, 3> pVecKa1 = {candKa1.px(), candKa1.py(), candKa1.pz()};
+    std::array<float, 3> const pVecKa0 = {candKa0.px(), candKa0.py(), candKa0.pz()};
+    std::array<float, 3> const pVecKa1 = {candKa1.px(), candKa1.py(), candKa1.pz()};
     auto ptJpsi = candidate.ptProng0();
     auto invMassJpsi = candJpsi.m();
     auto invMassPhi = RecoDecay::m(std::array{pVecKa0, pVecKa1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
@@ -448,7 +448,7 @@ struct HfTaskBsToJpsiPhiReduced {
       }
     }
 
-    float pseudoRndm = ptJpsi * 1000. - static_cast<int64_t>(ptJpsi * 1000);
+    float const pseudoRndm = ptJpsi * 1000. - static_cast<int64_t>(ptJpsi * 1000);
     if (ptCandBs >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor) {
       float ptMother = -1.;
       if constexpr (DoMc) {
@@ -532,7 +532,7 @@ struct HfTaskBsToJpsiPhiReduced {
     }
     std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
     std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
-    bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
+    bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
 
     registry.fill(HIST("hPtJpsiGen"), ptProngs[0], ptParticle);
     registry.fill(HIST("hPtKGen"), ptProngs[1], ptParticle);

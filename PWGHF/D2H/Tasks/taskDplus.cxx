@@ -130,17 +130,17 @@ struct HfTaskDplus {
       LOGP(fatal, "Only one process function should be enabled! Please check your configuration!");
     }
     auto vbins = static_cast<std::vector<double>>(binsPt);
-    AxisSpec thnAxisPt = {vbins, "#it{p}_{T} (GeV/#it{c})"};
-    AxisSpec thnAxisMass = {600, 1.67, 2.27, "inv. mass (K#pi#pi) (GeV/#it{c}^{2})"};
-    AxisSpec thnAxisY = {thnConfigAxisY, "y"};
-    AxisSpec thnAxisMlScore0 = {thnConfigAxisMlScore0, "Score 0"};
-    AxisSpec thnAxisMlScore1 = {thnConfigAxisMlScore1, "Score 1"};
-    AxisSpec thnAxisMlScore2 = {thnConfigAxisMlScore2, "Score 2"};
-    AxisSpec thnAxisPtBHad{thnConfigAxisPtBHad, "#it{p}_{T,B} (GeV/#it{c})"};
-    AxisSpec thnAxisFlagBHad{thnConfigAxisFlagBHad, "B Hadron flag"};
-    AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality"};
-    AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
-    AxisSpec thnAxisPvContributors{thnConfigAxisPvContributors, "PV contributors"};
+    AxisSpec const thnAxisPt = {vbins, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const thnAxisMass = {600, 1.67, 2.27, "inv. mass (K#pi#pi) (GeV/#it{c}^{2})"};
+    AxisSpec const thnAxisY = {thnConfigAxisY, "y"};
+    AxisSpec const thnAxisMlScore0 = {thnConfigAxisMlScore0, "Score 0"};
+    AxisSpec const thnAxisMlScore1 = {thnConfigAxisMlScore1, "Score 1"};
+    AxisSpec const thnAxisMlScore2 = {thnConfigAxisMlScore2, "Score 2"};
+    AxisSpec const thnAxisPtBHad{thnConfigAxisPtBHad, "#it{p}_{T,B} (GeV/#it{c})"};
+    AxisSpec const thnAxisFlagBHad{thnConfigAxisFlagBHad, "B Hadron flag"};
+    AxisSpec const thnAxisCent{thnConfigAxisCent, "Centrality"};
+    AxisSpec const thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
+    AxisSpec const thnAxisPvContributors{thnConfigAxisPvContributors, "PV contributors"};
 
     registry.add("hMass", "3-prong candidates;inv. mass (#pi K #pi) (GeV/#it{c}^{2});entries", {HistType::kTH2F, {{350, 1.7, 2.05}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
     registry.add("hEta", "3-prong candidates;candidate #it{#eta};entries", {HistType::kTH2F, {{100, -2., 2.}, {vbins, "#it{p}_{T} (GeV/#it{c})"}}});
@@ -247,7 +247,7 @@ struct HfTaskDplus {
   template <typename T1>
   void fillHisto(const T1& candidate)
   {
-    float pt = candidate.pt();
+    float const pt = candidate.pt();
     registry.fill(HIST("hMass"), hfHelper.invMassDplusToPiKPi(candidate), pt);
     registry.fill(HIST("hPt"), pt);
     registry.fill(HIST("hEta"), candidate.eta(), pt);
@@ -486,7 +486,7 @@ struct HfTaskDplus {
     float occ{-1.f};
     float numPvContr{-1.f};
     float ptBhad{-1.f};
-    int flagBHad{-1};
+    int const flagBHad{-1};
     if constexpr (!FillMl) {
       for (const auto& candidate : selectedDPlusCandidates) {
         if ((yCandRecoMax >= 0. && std::abs(hfHelper.yDplus(candidate)) > yCandRecoMax)) {

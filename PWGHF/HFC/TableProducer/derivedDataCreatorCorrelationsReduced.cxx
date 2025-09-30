@@ -288,7 +288,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       return false;
     }
 
-    int trackGlobalIndex = assTrk.globalIndex();
+    int const trackGlobalIndex = assTrk.globalIndex();
     if constexpr (CandType == CandidateType::Hadron) {
       if (!cand.isGlobalTrackWoDCA() || cand.tpcNClsCrossedRows() < tpcNClsCrossedRowsMin) {
         return false;
@@ -333,7 +333,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       for (const auto& assTrk : assTrks) {
         double assTrkPt = assTrk.pt();
         if (usePtDiffDcaXYCut) {
-          float dcaXYTrkCut = funcDcaXYPtCutPrimTrk->Eval(assTrkPt);
+          float const dcaXYTrkCut = funcDcaXYPtCutPrimTrk->Eval(assTrkPt);
           if (std::fabs(assTrk.dcaXY()) > dcaXYTrkCut) {
             continue;
           }
@@ -344,7 +344,7 @@ struct HfDerivedDataCreatorCorrelationsReduced {
           continue;
         }
         if (downSampleTrksFactor < 1.) {
-          float pseudoRndm = assTrkPt * 1000. - static_cast<int64_t>(assTrkPt * 1000);
+          float const pseudoRndm = assTrkPt * 1000. - static_cast<int64_t>(assTrkPt * 1000);
           if (assTrkPt < ptMaxForDownSample && collCentrality < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
             continue;
           }
@@ -396,13 +396,13 @@ struct HfDerivedDataCreatorCorrelationsReduced {
       }
       double assTrkPt = assTrk.pt();
       if (usePtDiffDcaXYCut) {
-        float dcaXYTrkCut = funcDcaXYPtCutPrimTrk->Eval(assTrkPt);
+        float const dcaXYTrkCut = funcDcaXYPtCutPrimTrk->Eval(assTrkPt);
         if (std::fabs(assTrk.dcaXY()) > dcaXYTrkCut) {
           continue;
         }
       }
       if (!first && downSampleTrksFactor < 1.) { // skip downsampling for the first track to avoid empty tables
-        float pseudoRndm = assTrkPt * 1000. - static_cast<int64_t>(assTrkPt * 1000);
+        float const pseudoRndm = assTrkPt * 1000. - static_cast<int64_t>(assTrkPt * 1000);
         if (assTrkPt < ptMaxForDownSample && collCentrality < centMaxForDownSample && pseudoRndm >= downSampleTrksFactor) {
           continue;
         }

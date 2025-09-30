@@ -398,9 +398,9 @@ struct HfTaskLbReduced {
     auto ptLc = candidate.ptProng0();
     auto invMassLc = candLc.invMassHypo0() > 0 ? candLc.invMassHypo0() : candLc.invMassHypo1();
     // TODO: here we are assuming that only one of the two hypotheses is filled, to be checked
-    std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
-    std::array<float, 3> posSvLc{candLc.xSecondaryVertex(), candLc.ySecondaryVertex(), candLc.zSecondaryVertex()};
-    std::array<float, 3> momLc{candLc.pVector()};
+    std::array<float, 3> const posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
+    std::array<float, 3> const posSvLc{candLc.xSecondaryVertex(), candLc.ySecondaryVertex(), candLc.zSecondaryVertex()};
+    std::array<float, 3> const momLc{candLc.pVector()};
     auto cospLc = RecoDecay::cpa(posPv, posSvLc, momLc);
     auto cospXyLc = RecoDecay::cpaXY(posPv, posSvLc, momLc);
     auto decLenLc = RecoDecay::distance(posPv, posSvLc);
@@ -539,7 +539,7 @@ struct HfTaskLbReduced {
       }
     }
     if (fillTree) {
-      float pseudoRndm = ptLc * 1000. - static_cast<int64_t>(ptLc * 1000);
+      float const pseudoRndm = ptLc * 1000. - static_cast<int64_t>(ptLc * 1000);
       if (flagMcMatchRec != 0 || (((DoMc && fillBackground) || !DoMc) && (ptCandLb >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
         float prong0MlScoreBkg = -1.;
         float prong0MlScorePrompt = -1.;
@@ -649,7 +649,7 @@ struct HfTaskLbReduced {
     std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
     std::array<float, 2> yProngs = {particle.yProng0(), particle.yProng1()};
     std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
-    bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
+    bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
 
     if (fillHistograms) {
       registry.fill(HIST("hPtProng0Gen"), ptParticle, ptProngs[0]);

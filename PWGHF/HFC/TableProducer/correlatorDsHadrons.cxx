@@ -254,11 +254,11 @@ struct HfCorrelatorDsHadrons {
     AxisSpec axisPhi = {binsPhi, "#it{#varphi}"};
     AxisSpec axisPtD = {(std::vector<double>)binsPtD, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec axisPtHadron = {(std::vector<double>)binsPtHadron, "#it{p}_{T} Hadron (GeV/#it{c})"};
-    AxisSpec axisMultiplicity = {binsMultiplicity, "Multiplicity"};
+    AxisSpec const axisMultiplicity = {binsMultiplicity, "Multiplicity"};
     AxisSpec axisMultFT0M = {binsMultFT0M, "MultiplicityFT0M"};
-    AxisSpec axisPosZ = {binsPosZ, "PosZ"};
-    AxisSpec axisPoolBin = {binsPoolBin, "PoolBin"};
-    AxisSpec axisStatus = {15, 0.5, 15.5, "Selection status"};
+    AxisSpec const axisPosZ = {binsPosZ, "PosZ"};
+    AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
+    AxisSpec const axisStatus = {15, 0.5, 15.5, "Selection status"};
 
     // Histograms for data analysis
     registry.add("hCollisionPoolBin", "Ds candidates collision pool bin", {HistType::kTH1F, {axisPoolBin}});
@@ -413,12 +413,12 @@ struct HfCorrelatorDsHadrons {
                    CandDsData const& candidates,
                    MyTracksData const& tracks)
   {
-    BinningType corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
     registry.fill(HIST("hZVtx"), collision.posZ());
     registry.fill(HIST("hMultFT0M"), collision.multFT0M());
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     registry.fill(HIST("hCollisionPoolBin"), poolBin);
-    int nTracks = tracks.size();
+    int const nTracks = tracks.size();
     registry.fill(HIST("hMultiplicity"), nTracks);
 
     // Ds fill histograms and Ds-Hadron correlation for DsToKKPi
@@ -431,7 +431,7 @@ struct HfCorrelatorDsHadrons {
         efficiencyWeightD = 1. / efficiencyD->at(o2::analysis::findBin(binsPtEfficiencyD, candidate.pt()));
       }
       auto prong0 = candidate.template prong0_as<MyTracksData>();
-      int chargeDs = prong0.sign();
+      int const chargeDs = prong0.sign();
       std::vector<float> outputMl = {-1., -1., -1.};
       fillHisto(candidate);
       if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
@@ -497,7 +497,7 @@ struct HfCorrelatorDsHadrons {
                     TracksWithMc const& tracks,
                     aod::McParticles const& mcParticles)
   {
-    BinningType corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
     registry.fill(HIST("hZVtx"), collision.posZ());
     registry.fill(HIST("hMultFT0M"), collision.multFT0M());
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
@@ -509,7 +509,7 @@ struct HfCorrelatorDsHadrons {
     bool isCorrectInvMassHypo = false;
     bool isDecayChan = false;
     bool isAlreadyFilledEvent = false;
-    float multiplicityFT0M = collision.multFT0M();
+    float const multiplicityFT0M = collision.multFT0M();
     for (const auto& candidate : candidates) {
       // prompt and non-prompt division
       isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
@@ -531,7 +531,7 @@ struct HfCorrelatorDsHadrons {
 
       std::vector<float> outputMl = {-1., -1., -1.};
       auto prong0 = candidate.template prong0_as<MyTracksData>();
-      int chargeDs = prong0.sign();
+      int const chargeDs = prong0.sign();
 
       if (isDsSignal && isDecayChan && isCorrectInvMassHypo) {
         fillHistoMcRecSig(candidate, multiplicityFT0M);
@@ -654,7 +654,7 @@ struct HfCorrelatorDsHadrons {
                     soa::Join<aod::Collisions, aod::FT0Mults, aod::EvSels, aod::McCollisionLabels> const& collisions,
                     CandDsMcGen const& mcParticles)
   {
-    BinningTypeMcGen corrBinningMcGen{{zPoolBins, multPoolBins}, true};
+    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBins}, true};
 
     for (const auto& mcCollision : mcCollisions) {
 
@@ -700,7 +700,7 @@ struct HfCorrelatorDsHadrons {
         for (const auto& particle : groupedMcParticles) {
           // check if the particle is Ds
           if ((std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (particle.flagMcDecayChanGen() == channelsResonant[decayChannel])) {
-            double yD = RecoDecay::y(particle.pVector(), MassDS);
+            double const yD = RecoDecay::y(particle.pVector(), MassDS);
             if (std::abs(yD) > yCandGenMax || particle.pt() < ptCandMin || particle.pt() > ptCandMax) {
               continue;
             }
@@ -709,7 +709,7 @@ struct HfCorrelatorDsHadrons {
             isDsPrompt = particle.originMcGen() == RecoDecay::OriginType::Prompt;
             isDecayChan = particle.flagMcDecayChanGen() == channelsResonant[decayChannel];
             std::vector<int> listDaughters{};
-            std::array<int, 3> arrDaughDsPDG = {+kKPlus, -kKPlus, kPiPlus};
+            std::array<int, 3> const arrDaughDsPDG = {+kKPlus, -kKPlus, kPiPlus};
             std::array<int, 3> prongsId{};
             listDaughters.clear();
             RecoDecay::getDaughters(particle, &listDaughters, arrDaughDsPDG, 2);
@@ -801,7 +801,7 @@ struct HfCorrelatorDsHadrons {
       for (const auto& candidate : candsDsThisColl) {
         std::vector<float> outputMl = {-1., -1., -1.};
         auto prong0 = candidate.template prong0_as<MyTracksData>();
-        int chargeDs = prong0.sign();
+        int const chargeDs = prong0.sign();
         // candidate selected
         if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
           for (unsigned int iclass = 0; iclass < classMl->size(); iclass++) {
@@ -842,14 +842,14 @@ struct HfCorrelatorDsHadrons {
                      CandDsData const& candidates,
                      MyTracksData const& tracks)
   {
-    BinningType corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
     for (const auto& collision : collisions) {
       registry.fill(HIST("hMultFT0M"), collision.multFT0M());
       registry.fill(HIST("hZVtx"), collision.posZ());
     }
 
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelCollisionsWithDs, CandDsData, MyTracksData, BinningType> pairData{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
+    Pair<SelCollisionsWithDs, CandDsData, MyTracksData, BinningType> const pairData{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [c1, tracks1, c2, tracks2] : pairData) {
       if (tracks1.size() == 0) {
@@ -858,7 +858,7 @@ struct HfCorrelatorDsHadrons {
 
       // LOGF(info, "Mixed event collisions: Index = (%d, %d), tracks Size: (%d, %d), Z Vertex: (%f, %f), Pool Bin: (%d, %d)", c1.globalIndex(), c2.globalIndex(), tracks1.size(), tracks2.size(), c1.posZ(), c2.posZ(), corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M())), corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M())));
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
-      int poolBinDs = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
+      int const poolBinDs = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
       registry.fill(HIST("hTracksPoolBin"), poolBin); // note that the selections here are not yet applied
       registry.fill(HIST("hDsPoolBin"), poolBinDs);   // note that the selections here are not yet applied
       for (const auto& [cand, pAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
@@ -872,7 +872,7 @@ struct HfCorrelatorDsHadrons {
           continue;
         }
         auto prong0 = cand.template prong0_as<MyTracksData>();
-        int chargeDs = prong0.sign();
+        int const chargeDs = prong0.sign();
         std::vector<float> outputMl = {-1., -1., -1.};
         // DsToKKPi and DsToPiKK division
         if (cand.isSelDsToKKPi() >= selectionFlagDs) {
@@ -916,7 +916,7 @@ struct HfCorrelatorDsHadrons {
                       TracksWithMc const& tracks,
                       aod::McParticles const& mcParticles)
   {
-    BinningType corrBinning{{zPoolBins, multPoolBins}, true};
+    BinningType const corrBinning{{zPoolBins, multPoolBins}, true};
     for (const auto& candidate : candidates) {
       if (std::abs(hfHelper.yDs(candidate)) > yCandMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
         continue;
@@ -931,7 +931,7 @@ struct HfCorrelatorDsHadrons {
       }
     }
     auto tracksTuple = std::make_tuple(candidates, tracks);
-    Pair<SelCollisionsWithDs, CandDsMcReco, TracksWithMc, BinningType> pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
+    Pair<SelCollisionsWithDs, CandDsMcReco, TracksWithMc, BinningType> const pairMcRec{corrBinning, numberEventsMixed, -1, collisions, tracksTuple, &cache};
 
     bool isDsPrompt = false;
     bool isDsSignal = false;
@@ -940,7 +940,7 @@ struct HfCorrelatorDsHadrons {
     int trackOrigin = 0;
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
       int poolBin = corrBinning.getBin(std::make_tuple(c2.posZ(), c2.multFT0M()));
-      int poolBinDs = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
+      int const poolBinDs = corrBinning.getBin(std::make_tuple(c1.posZ(), c1.multFT0M()));
       registry.fill(HIST("hMultFT0M"), c1.multFT0M());
       registry.fill(HIST("hZVtx"), c1.posZ());
       registry.fill(HIST("hTracksPoolBin"), poolBin); // note that the selections here are not yet applied
@@ -953,7 +953,7 @@ struct HfCorrelatorDsHadrons {
           continue;
         }
         auto prong0 = candidate.template prong0_as<MyTracksData>();
-        int chargeDs = prong0.sign();
+        int const chargeDs = prong0.sign();
         std::vector<float> outputMl = {-1., -1., -1.};
         // prompt and non-prompt division
         isDsPrompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
@@ -1005,14 +1005,14 @@ struct HfCorrelatorDsHadrons {
   void processMcGenME(SelCollisionsMc const& collisions,
                       CandDsMcGen const& mcParticles)
   {
-    BinningTypeMcGen corrBinningMcGen{{zPoolBins, multPoolBins}, true};
+    BinningTypeMcGen const corrBinningMcGen{{zPoolBins, multPoolBins}, true};
     auto tracksTuple = std::make_tuple(mcParticles, mcParticles);
-    Pair<SelCollisionsMc, CandDsMcGen, CandDsMcGen, BinningTypeMcGen> pairMcGen{corrBinningMcGen, numberEventsMixed, -1, collisions, tracksTuple, &cache};
+    Pair<SelCollisionsMc, CandDsMcGen, CandDsMcGen, BinningTypeMcGen> const pairMcGen{corrBinningMcGen, numberEventsMixed, -1, collisions, tracksTuple, &cache};
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcGen) {
       int poolBin = corrBinningMcGen.getBin(std::make_tuple(c1.posZ(), c1.multMCFT0A()));
       for (const auto& [candidate, particleAssoc] : o2::soa::combinations(o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         if ((std::abs(candidate.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) && (candidate.flagMcDecayChanGen() == decayChannel)) {
-          double yD = RecoDecay::y(candidate.pVector(), MassDS);
+          double const yD = RecoDecay::y(candidate.pVector(), MassDS);
           if (std::abs(yD) > yCandGenMax || candidate.pt() < ptCandMin || candidate.pt() > ptCandMax) {
             continue;
           }

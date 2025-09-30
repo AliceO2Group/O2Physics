@@ -351,7 +351,7 @@ struct HfDataCreatorCharmResoReduced {
         doprocessDstarV0MC || doprocessDstarTrackMC || doprocessDstarV0AndTrackMC || doprocessDstarV0MCWithMl || doprocessDstarTrackMCWithMl || doprocessDstarV0AndTrackMCWithMl ||
         doprocessDplusV0MC || doprocessDplusTrackMC || doprocessDplusV0AndTrackMC || doprocessDplusV0MCWithMl || doprocessDplusTrackMCWithMl || doprocessDplusV0AndTrackMCWithMl) {
       // MC Rec
-      int nChannels = hf_decay::hf_cand_reso::DecayChannelMain::NChannelsMain;
+      int const nChannels = hf_decay::hf_cand_reso::DecayChannelMain::NChannelsMain;
       registry.add("hMCRecCounter", "Number of Reconstructed MC Matched candidates per channel", {HistType::kTH1D, {{2 * nChannels + 1, -(nChannels + 0.5), nChannels + 0.5}}});
       registry.add("hMCRecDebug", "Debug of MC Reco", {HistType::kTH1D, {{551, -0.5, 550.5}}});
       registry.add("hMCRecOrigin", "Origin of Matched particles", {HistType::kTH1D, {{3, -0.5, 2.5}}});
@@ -426,9 +426,9 @@ struct HfDataCreatorCharmResoReduced {
   // Utility to find which v0 daughter carries the largest fraction of the mother longitudinal momentum
   float alphaAP(std::array<float, 3> const& momA, std::array<float, 3> const& momB, std::array<float, 3> const& momC)
   {
-    float momTot = std::sqrt(std::pow(momA[0], 2.) + std::pow(momA[1], 2.) + std::pow(momA[2], 2.));
-    float lQlPos = (momB[0] * momA[0] + momB[1] * momA[1] + momB[2] * momA[2]) / momTot;
-    float lQlNeg = (momC[0] * momA[0] + momC[1] * momA[1] + momC[2] * momA[2]) / momTot;
+    float const momTot = std::sqrt(std::pow(momA[0], 2.) + std::pow(momA[1], 2.) + std::pow(momA[2], 2.));
+    float const lQlPos = (momB[0] * momA[0] + momB[1] * momA[1] + momB[2] * momA[2]) / momTot;
+    float const lQlNeg = (momC[0] * momA[0] + momC[1] * momA[1] + momC[2] * momA[2]) / momTot;
     return (lQlPos - lQlNeg) / (lQlPos + lQlNeg);
   }
   // Utility to find DCA of V0 to Primary vertex
@@ -512,7 +512,7 @@ struct HfDataCreatorCharmResoReduced {
       return false;
     }
     // v0 cosine of pointing angle
-    std::array<float, 3> primVtx = {collision.posX(), collision.posY(), collision.posZ()};
+    std::array<float, 3> const primVtx = {collision.posX(), collision.posY(), collision.posZ()};
     candidateV0.cosPA = RecoDecay::cpa(primVtx, vtx, candidateV0.mom);
     if (candidateV0.cosPA < cfgV0Cuts.cosPa) {
       return false;
@@ -521,7 +521,7 @@ struct HfDataCreatorCharmResoReduced {
     candidateV0.v0Type = {BIT(BachelorType::K0s) | BIT(BachelorType::Lambda) | BIT(BachelorType::AntiLambda)};
     // for lambda hypotesys define if its lambda or anti-lambda
     candidateV0.alpha = alphaAP(candidateV0.mom, candidateV0.momPos, candidateV0.momNeg);
-    bool matter = candidateV0.alpha > 0;
+    bool const matter = candidateV0.alpha > 0;
     CLRBIT(candidateV0.v0Type, matter ? BachelorType::AntiLambda : BachelorType::Lambda);
     auto massPos = matter ? o2::constants::physics::MassProton : o2::constants::physics::MassPionCharged;
     auto massNeg = matter ? o2::constants::physics::MassPionCharged : o2::constants::physics::MassProton;
@@ -598,9 +598,9 @@ struct HfDataCreatorCharmResoReduced {
     if (!track.hasTPC()) {
       return false;
     }
-    bool isPion = std::abs(track.tpcNSigmaPi()) < cfgSingleTrackCuts.maxNsigmaTpcPi;
-    bool isKaon = std::abs(track.tpcNSigmaKa()) < cfgSingleTrackCuts.maxNsigmaTpcKa;
-    bool isProton = std::abs(track.tpcNSigmaPr()) < cfgSingleTrackCuts.maxNsigmaTpcPr;
+    bool const isPion = std::abs(track.tpcNSigmaPi()) < cfgSingleTrackCuts.maxNsigmaTpcPi;
+    bool const isKaon = std::abs(track.tpcNSigmaKa()) < cfgSingleTrackCuts.maxNsigmaTpcKa;
+    bool const isProton = std::abs(track.tpcNSigmaPr()) < cfgSingleTrackCuts.maxNsigmaTpcPr;
     return (isPion || isKaon || isProton); // we keep the track if is it compatible with at least one of the PID hypotheses selected
   }
 
@@ -677,7 +677,7 @@ struct HfDataCreatorCharmResoReduced {
       }
       // If both D* and K0s are matched, try to match resonance
       if (flagCharmBach != 0 && flagV0 == hf_decay::hf_cand_reso::PartialMatchMc::K0Matched) {
-        std::array<int, 5> pdgCodesDaughters = {+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus};
+        std::array<int, 5> const pdgCodesDaughters = {+kPiPlus, -kKPlus, +kPiPlus, +kPiPlus, -kPiPlus};
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[2], vecDaughtersReso[3], vecDaughtersReso[4]};
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarK0s) {
           indexRec = RecoDecay::getMatchedMCRec<false, true, true, true, true>(particlesMc, arrDaughtersReso, pdgCodeReso, pdgCodesDaughters, true, &sign, 3, &nKinkedTracks);
@@ -687,7 +687,7 @@ struct HfDataCreatorCharmResoReduced {
           }
         }
       } else if (flagCharmBachInterm != 0 && flagV0 == hf_decay::hf_cand_reso::PartialMatchMc::K0Matched) {
-        std::array<int, 4> pdgCodesDaughters = {+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus};
+        std::array<int, 4> const pdgCodesDaughters = {+kPiPlus, -kKPlus, +kPiPlus, -kPiPlus};
         auto arrDaughtersReso = std::array{vecDaughtersReso[0], vecDaughtersReso[1], vecDaughtersReso[3], vecDaughtersReso[4]};
         // Peaking background of D0K0s <- Ds* with spurious soft pion
         for (const auto& [decayChannelFlag, pdgCodeReso] : hf_decay::hf_cand_reso::particlesToDstarK0s) {
@@ -1011,7 +1011,7 @@ struct HfDataCreatorCharmResoReduced {
     if (rejectCollisionsWithBadEvSel && hfRejMap != 0) {
       return;
     }
-    int indexHfReducedCollision = hfReducedCollision.lastIndex() + 1;
+    int const indexHfReducedCollision = hfReducedCollision.lastIndex() + 1;
     // std::map where the key is the V0.globalIndex() and
     // the value is the V0 index in the table of the selected v0s
     std::map<int64_t, int64_t> selectedV0s;
@@ -1155,7 +1155,7 @@ struct HfDataCreatorCharmResoReduced {
           }
           // propagate V0 to primary vertex (if enabled)
           if (propagateV0toPV) {
-            std::array<float, 3> pVecV0Orig = {candidateV0.mom[0], candidateV0.mom[1], candidateV0.mom[2]};
+            std::array<float, 3> const pVecV0Orig = {candidateV0.mom[0], candidateV0.mom[1], candidateV0.mom[2]};
             std::array<float, 2> dcaInfo{};
             auto trackParK0 = o2::track::TrackPar(candidateV0.pos, pVecV0Orig, 0, true);
             trackParK0.setPID(o2::track::PID::K0);
@@ -1197,8 +1197,8 @@ struct HfDataCreatorCharmResoReduced {
                 break; // no other D meson types expected
             } // end of dType switch
           } // matched with K0s
-          bool isLambda = TESTBIT(candidateV0.v0Type, BachelorType::Lambda);
-          bool isAntiLambda = TESTBIT(candidateV0.v0Type, BachelorType::AntiLambda);
+          bool const isLambda = TESTBIT(candidateV0.v0Type, BachelorType::Lambda);
+          bool const isAntiLambda = TESTBIT(candidateV0.v0Type, BachelorType::AntiLambda);
           if (isLambda || isAntiLambda) {
             registry.fill(HIST("hMassVsPtLambda"), candidateV0.pT, candidateV0.mLambda);
             switch (DType) {
@@ -1556,15 +1556,15 @@ struct HfDataCreatorCharmResoReduced {
                 McCollisions const& mcCollisions,
                 BCsInfo const&)
   {
-    bool doV0s = (PairingType == PairingType::V0Only || PairingType == PairingType::V0AndTrack);
-    bool doTracks = (PairingType == PairingType::TrackOnly || PairingType == PairingType::V0AndTrack);
+    bool const doV0s = (PairingType == PairingType::V0Only || PairingType == PairingType::V0AndTrack);
+    bool const doTracks = (PairingType == PairingType::TrackOnly || PairingType == PairingType::V0AndTrack);
     for (const auto& mcCollision : mcCollisions) {
       // Slice the particles table to get the particles for the current MC collision
       const auto mcParticlesPerMcColl = mcParticles.sliceBy(mcParticlesPerMcCollision, mcCollision.globalIndex());
       // Slice the collisions table to get the collision info for the current MC collision
       float centrality{-1.f};
       o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
-      int nSplitColl = 0;
+      int const nSplitColl = 0;
       const auto collSlice = collInfos.sliceBy(colPerMcCollision, mcCollision.globalIndex());
       rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, o2::hf_centrality::CentralityEstimator::None>(mcCollision, collSlice, centrality);
       hfEvSelMc.fillHistograms<o2::hf_centrality::CentralityEstimator::None>(mcCollision, rejectionMask, nSplitColl);

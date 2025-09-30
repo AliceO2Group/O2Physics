@@ -323,14 +323,14 @@ struct HfTaskFlowCharmHadrons {
                       const float ampl)
   {
     // TODO: add possibility to consider different weights for the tracks, at the moment only pT is considered;
-    float pXTrack0 = cand.pxProng0();
-    float pYTrack0 = cand.pyProng0();
-    float pTTrack0 = cand.ptProng0();
-    float phiTrack0 = std::atan2(pYTrack0, pXTrack0);
-    float pXTrack1 = cand.pxProng1();
-    float pYTrack1 = cand.pyProng1();
-    float pTTrack1 = cand.ptProng1();
-    float phiTrack1 = std::atan2(pYTrack1, pXTrack1);
+    float const pXTrack0 = cand.pxProng0();
+    float const pYTrack0 = cand.pyProng0();
+    float const pTTrack0 = cand.ptProng0();
+    float const phiTrack0 = std::atan2(pYTrack0, pXTrack0);
+    float const pXTrack1 = cand.pxProng1();
+    float const pYTrack1 = cand.pyProng1();
+    float const pTTrack1 = cand.ptProng1();
+    float const phiTrack1 = std::atan2(pYTrack1, pXTrack1);
 
     tracksQx.push_back(std::cos(harmonic * phiTrack0) * pTTrack0 / ampl);
     tracksQy.push_back(std::sin(harmonic * phiTrack0) * pTTrack0 / ampl);
@@ -338,10 +338,10 @@ struct HfTaskFlowCharmHadrons {
     tracksQy.push_back(std::sin(harmonic * phiTrack1) * pTTrack1 / ampl);
 
     if constexpr (Channel != DecayChannel::D0ToPiK && Channel != DecayChannel::D0ToKPi) {
-      float pXTrack2 = cand.pxProng2();
-      float pYTrack2 = cand.pyProng2();
-      float pTTrack2 = cand.ptProng2();
-      float phiTrack2 = std::atan2(pYTrack2, pXTrack2);
+      float const pXTrack2 = cand.pxProng2();
+      float const pYTrack2 = cand.pyProng2();
+      float const pTTrack2 = cand.ptProng2();
+      float const phiTrack2 = std::atan2(pYTrack2, pXTrack2);
       tracksQx.push_back(std::cos(harmonic * phiTrack2) * pTTrack2 / ampl);
       tracksQy.push_back(std::sin(harmonic * phiTrack2) * pTTrack2 / ampl);
     }
@@ -359,22 +359,22 @@ struct HfTaskFlowCharmHadrons {
                          float ampl)
   {
     // add possibility to consider different weights for the tracks, at the moment only pT is considered;
-    float pXTrack0 = cand.pxPosV0Dau();
-    float pYTrack0 = cand.pyPosV0Dau();
-    float pTTrack0 = std::hypot(pXTrack0, pYTrack0);
-    float phiTrack0 = std::atan2(pXTrack0, pYTrack0);
-    float pXTrack1 = cand.pxNegV0Dau();
-    float pYTrack1 = cand.pyNegV0Dau();
-    float pTTrack1 = std::hypot(pXTrack1, pYTrack1);
-    float phiTrack1 = std::atan2(pXTrack1, pYTrack1);
-    float pYTrack2 = cand.pxBachFromCasc();
-    float pXTrack2 = cand.pyBachFromCasc();
-    float pTTrack2 = std::hypot(pXTrack2, pYTrack2);
-    float phiTrack2 = std::atan2(pXTrack2, pYTrack2);
-    float pXTrack3 = cand.pxBachFromCharmBaryon();
-    float pYTrack3 = cand.pyBachFromCharmBaryon();
-    float pTTrack3 = std::hypot(pXTrack3, pYTrack3);
-    float phiTrack3 = std::atan2(pXTrack3, pYTrack3);
+    float const pXTrack0 = cand.pxPosV0Dau();
+    float const pYTrack0 = cand.pyPosV0Dau();
+    float const pTTrack0 = std::hypot(pXTrack0, pYTrack0);
+    float const phiTrack0 = std::atan2(pXTrack0, pYTrack0);
+    float const pXTrack1 = cand.pxNegV0Dau();
+    float const pYTrack1 = cand.pyNegV0Dau();
+    float const pTTrack1 = std::hypot(pXTrack1, pYTrack1);
+    float const phiTrack1 = std::atan2(pXTrack1, pYTrack1);
+    float const pYTrack2 = cand.pxBachFromCasc();
+    float const pXTrack2 = cand.pyBachFromCasc();
+    float const pTTrack2 = std::hypot(pXTrack2, pYTrack2);
+    float const phiTrack2 = std::atan2(pXTrack2, pYTrack2);
+    float const pXTrack3 = cand.pxBachFromCharmBaryon();
+    float const pYTrack3 = cand.pyBachFromCharmBaryon();
+    float const pTTrack3 = std::hypot(pXTrack3, pYTrack3);
+    float const phiTrack3 = std::atan2(pXTrack3, pYTrack3);
 
     tracksQx.push_back(std::cos(harmonic * phiTrack0) * pTTrack0 / ampl);
     tracksQy.push_back(std::sin(harmonic * phiTrack0) * pTTrack0 / ampl);
@@ -556,8 +556,8 @@ struct HfTaskFlowCharmHadrons {
     std::vector<float> qVecs = getQvec(collision);
     float xQVec = qVecs[0];
     float yQVec = qVecs[1];
-    float amplQVec = qVecs[2];
-    float evtPl = epHelper.GetEventPlane(xQVec, yQVec, harmonic);
+    float const amplQVec = qVecs[2];
+    float const evtPl = epHelper.GetEventPlane(xQVec, yQVec, harmonic);
     int nProngs = 3;
 
     for (const auto& candidate : candidates) {
@@ -693,14 +693,14 @@ struct HfTaskFlowCharmHadrons {
         }
       }
 
-      float cosNPhi = std::cos(harmonic * phiCand);
-      float sinNPhi = std::sin(harmonic * phiCand);
-      float scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
-      float cosDeltaPhi = std::cos(harmonic * (phiCand - evtPl));
+      float const cosNPhi = std::cos(harmonic * phiCand);
+      float const sinNPhi = std::sin(harmonic * phiCand);
+      float const scalprodCand = cosNPhi * xQVec + sinNPhi * yQVec;
+      float const cosDeltaPhi = std::cos(harmonic * (phiCand - evtPl));
 
       if (fillMassPtMlTree && storeMl) {
         if (downSampleFactor < 1.) {
-          float pseudoRndm = ptCand * 1000. - static_cast<int64_t>(ptCand * 1000);
+          float const pseudoRndm = ptCand * 1000. - static_cast<int64_t>(ptCand * 1000);
           if (ptCand < ptDownSampleMax && pseudoRndm >= downSampleFactor) {
             continue;
           }
@@ -839,20 +839,20 @@ struct HfTaskFlowCharmHadrons {
                          aod::BCsWithTimestamps const& bcs)
   {
     float centrality{-1.f};
-    float xQVecFT0a = collision.qvecFT0ARe();
-    float yQVecFT0a = collision.qvecFT0AIm();
-    float xQVecFT0c = collision.qvecFT0CRe();
-    float yQVecFT0c = collision.qvecFT0CIm();
-    float xQVecFT0m = collision.qvecFT0MRe();
-    float yQVecFT0m = collision.qvecFT0MIm();
-    float xQVecFV0a = collision.qvecFV0ARe();
-    float yQVecFV0a = collision.qvecFV0AIm();
-    float xQVecBPos = collision.qvecBPosRe();
-    float yQVecBPos = collision.qvecBPosIm();
-    float xQVecBNeg = collision.qvecBNegRe();
-    float yQVecBNeg = collision.qvecBNegIm();
-    float xQVecBTot = collision.qvecBTotRe();
-    float yQVecBTot = collision.qvecBTotIm();
+    float const xQVecFT0a = collision.qvecFT0ARe();
+    float const yQVecFT0a = collision.qvecFT0AIm();
+    float const xQVecFT0c = collision.qvecFT0CRe();
+    float const yQVecFT0c = collision.qvecFT0CIm();
+    float const xQVecFT0m = collision.qvecFT0MRe();
+    float const yQVecFT0m = collision.qvecFT0MIm();
+    float const xQVecFV0a = collision.qvecFV0ARe();
+    float const yQVecFV0a = collision.qvecFV0AIm();
+    float const xQVecBPos = collision.qvecBPosRe();
+    float const yQVecBPos = collision.qvecBPosIm();
+    float const xQVecBNeg = collision.qvecBNegRe();
+    float const yQVecBNeg = collision.qvecBNegIm();
+    float const xQVecBTot = collision.qvecBTotRe();
+    float const yQVecBTot = collision.qvecBTotIm();
 
     centrality = o2::hf_centrality::getCentralityColl(collision, o2::hf_centrality::CentralityEstimator::FT0C);
     if (storeResoOccu) {
@@ -890,13 +890,13 @@ struct HfTaskFlowCharmHadrons {
     registry.fill(HIST("spReso/hSpResoTPCposTPCneg"), centrality, xQVecBPos * xQVecBNeg + yQVecBPos * yQVecBNeg);
 
     if (saveEpResoHisto) {
-      float epFT0a = epHelper.GetEventPlane(xQVecFT0a, yQVecFT0a, harmonic);
-      float epFT0c = epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, harmonic);
-      float epFT0m = epHelper.GetEventPlane(xQVecFT0m, yQVecFT0m, harmonic);
-      float epFV0a = epHelper.GetEventPlane(xQVecFV0a, yQVecFV0a, harmonic);
-      float epBPoss = epHelper.GetEventPlane(xQVecBPos, yQVecBPos, harmonic);
-      float epBNegs = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, harmonic);
-      float epBTots = epHelper.GetEventPlane(xQVecBTot, yQVecBTot, harmonic);
+      float const epFT0a = epHelper.GetEventPlane(xQVecFT0a, yQVecFT0a, harmonic);
+      float const epFT0c = epHelper.GetEventPlane(xQVecFT0c, yQVecFT0c, harmonic);
+      float const epFT0m = epHelper.GetEventPlane(xQVecFT0m, yQVecFT0m, harmonic);
+      float const epFV0a = epHelper.GetEventPlane(xQVecFV0a, yQVecFV0a, harmonic);
+      float const epBPoss = epHelper.GetEventPlane(xQVecBPos, yQVecBPos, harmonic);
+      float const epBNegs = epHelper.GetEventPlane(xQVecBNeg, yQVecBNeg, harmonic);
+      float const epBTots = epHelper.GetEventPlane(xQVecBTot, yQVecBTot, harmonic);
 
       registry.fill(HIST("epReso/hEpResoFT0cFT0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFT0a)));
       registry.fill(HIST("epReso/hEpResoFT0cFV0a"), centrality, std::cos(harmonic * getDeltaPsiInRange(epFT0c, epFV0a)));

@@ -63,7 +63,7 @@ namespace o2::pid_tpc_tof_utils
 template <typename T1>
 float getTpcTofNSigmaPi1(const T1& prong1)
 {
-  float defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+  float const defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
 
   bool hasTpc = prong1.hasTPC();
   bool hasTof = prong1.hasTOF();
@@ -87,7 +87,7 @@ float getTpcTofNSigmaPi1(const T1& prong1)
 template <typename T1>
 float getTpcTofNSigmaSoftPi(const T1& prongSoftPi)
 {
-  float defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+  float const defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
 
   bool hasTpc = prongSoftPi.hasTPC();
   bool hasTof = prongSoftPi.hasTOF();
@@ -112,7 +112,7 @@ float getTpcTofNSigmaSoftPi(const T1& prongSoftPi)
 template <typename T1>
 float getTpcTofNSigmaKa1(const T1& prong1)
 {
-  float defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
+  float const defaultNSigma = -999.f; // -999.f is the default value set in TPCPIDResponse.h and PIDTOF.h
 
   bool hasTpc = prong1.hasTPC();
   bool hasTof = prong1.hasTOF();

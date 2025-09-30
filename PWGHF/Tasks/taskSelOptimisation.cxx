@@ -282,7 +282,7 @@ struct HfSelOptimisation {
 
       auto trackPos = cand2Prong.prong0_as<aod::TracksWDca>(); // positive daughter
       auto trackNeg = cand2Prong.prong1_as<aod::TracksWDca>(); // negative daughter
-      std::array tracks = {trackPos, trackNeg};
+      std::array const tracks = {trackPos, trackNeg};
 
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
       for (int iDecay{0}; iDecay < n2Prong; ++iDecay) {
@@ -338,7 +338,7 @@ struct HfSelOptimisation {
       auto trackFirst = cand3Prong.prong0_as<aod::TracksWDca>();  // first daughter
       auto trackSecond = cand3Prong.prong1_as<aod::TracksWDca>(); // second daughter
       auto trackThird = cand3Prong.prong2_as<aod::TracksWDca>();  // third daughter
-      std::array tracks = {trackFirst, trackSecond, trackThird};
+      std::array const tracks = {trackFirst, trackSecond, trackThird};
 
       bool isPrompt = false, isNonPrompt = false, isBkg = false;
       for (int iDecay{0}; iDecay < n3Prong; ++iDecay) {

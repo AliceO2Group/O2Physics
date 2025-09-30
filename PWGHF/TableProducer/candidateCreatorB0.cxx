@@ -288,14 +288,14 @@ struct HfCandidateCreatorB0 {
         df3.getTrack(2).getPxPyPzGlo(pVec2);
 
         // D∓ → π∓ K± π∓
-        std::array<float, 3> pVecPiK = RecoDecay::pVec(pVec0, pVec1);
+        std::array<float, 3> const pVecPiK = RecoDecay::pVec(pVec0, pVec1);
         std::array<float, 3> pVecD = RecoDecay::pVec(pVec0, pVec1, pVec2);
         auto trackParCovPiK = o2::dataformats::V0(df3.getPCACandidatePos(), pVecPiK, df3.calcPCACovMatrixFlat(), trackParCov0, trackParCov1);
         auto trackParCovD = o2::dataformats::V0(df3.getPCACandidatePos(), pVecD, df3.calcPCACovMatrixFlat(), trackParCovPiK, trackParCov2);
 
-        int indexTrack0 = track0.globalIndex();
-        int indexTrack1 = track1.globalIndex();
-        int indexTrack2 = track2.globalIndex();
+        int const indexTrack0 = track0.globalIndex();
+        int const indexTrack1 = track1.globalIndex();
+        int const indexTrack2 = track2.globalIndex();
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 
@@ -457,13 +457,13 @@ struct HfCandidateCreatorB0Expressions {
         auto particleProng2 = arrayDaughtersB0[2].mcParticle();
         auto particleProng3 = arrayDaughtersB0[3].mcParticle();
         // b-hadron hypothesis
-        std::array<int, 3> bHadronMotherHypos = {Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
+        std::array<int, 3> const bHadronMotherHypos = {Pdg::kB0, Pdg::kBS, Pdg::kLambdaB0};
 
         for (const auto& bHadronMotherHypo : bHadronMotherHypos) {
-          int index0Mother = RecoDecay::getMother(mcParticles, particleProng0, bHadronMotherHypo, true);
-          int index1Mother = RecoDecay::getMother(mcParticles, particleProng1, bHadronMotherHypo, true);
-          int index2Mother = RecoDecay::getMother(mcParticles, particleProng2, bHadronMotherHypo, true);
-          int index3Mother = RecoDecay::getMother(mcParticles, particleProng3, bHadronMotherHypo, true);
+          int const index0Mother = RecoDecay::getMother(mcParticles, particleProng0, bHadronMotherHypo, true);
+          int const index1Mother = RecoDecay::getMother(mcParticles, particleProng1, bHadronMotherHypo, true);
+          int const index2Mother = RecoDecay::getMother(mcParticles, particleProng2, bHadronMotherHypo, true);
+          int const index3Mother = RecoDecay::getMother(mcParticles, particleProng3, bHadronMotherHypo, true);
 
           // look for common b-hadron ancestor
           if (index0Mother > -1 && index0Mother == index1Mother && index1Mother == index2Mother && index2Mother == index3Mother) {

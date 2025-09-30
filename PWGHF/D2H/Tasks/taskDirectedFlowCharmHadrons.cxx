@@ -206,7 +206,7 @@ struct HfTaskDirectedFlowCharmHadrons {
                        T1 const& candidates,
                        Trk const& /*tracks*/)
   {
-    double cent = getCentrality(collision);
+    double const cent = getCentrality(collision);
     if (cent < centralityMin || cent > centralityMax) {
       return;
     }
@@ -303,11 +303,11 @@ struct HfTaskDirectedFlowCharmHadrons {
         }
       }
 
-      double ptCand = candidate.pt();
+      double const ptCand = candidate.pt();
       double etaCand = candidate.eta();
-      double phiCand = candidate.phi();
-      double cosNPhi = std::cos(phiCand);
-      double sinNPhi = std::sin(phiCand);
+      double const phiCand = candidate.phi();
+      double const cosNPhi = std::cos(phiCand);
+      double const sinNPhi = std::sin(phiCand);
 
       if (userap) {
         etaCand = rapCand;

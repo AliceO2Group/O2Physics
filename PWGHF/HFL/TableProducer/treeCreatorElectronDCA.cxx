@@ -117,7 +117,7 @@ struct HfTreeCreatorElectronDCA {
         auto motherTracks = mcTrack.mothers_as<aod::McParticles>();
         int numberOfMothers = motherTracks.size();
         // Categorise the electron sources
-        int firstMotherPDG = motherTracks[0].pdgCode();
+        int const firstMotherPDG = motherTracks[0].pdgCode();
         if (firstMotherPDG == kGamma) {
           isConversion = true;
         }

@@ -268,13 +268,13 @@ struct HfCandidateCreatorBplus {
         df.getTrack(0).getPxPyPzGlo(pVec0);
         df.getTrack(1).getPxPyPzGlo(pVec1);
         // Get D0 momentum
-        std::array<float, 3> pVecD = RecoDecay::pVec(pVec0, pVec1);
+        std::array<float, 3> const pVecD = RecoDecay::pVec(pVec0, pVec1);
 
         // build a D0 neutral track
         auto trackD0 = o2::dataformats::V0(vertexD0, pVecD, df.calcPCACovMatrixFlat(), trackParCovProng0, trackParCovProng1);
 
-        int indexTrack0 = prong0.globalIndex();
-        int indexTrack1 = prong1.globalIndex();
+        int const indexTrack0 = prong0.globalIndex();
+        int const indexTrack1 = prong1.globalIndex();
 
         auto trackIdsThisCollision = trackIndices.sliceBy(trackIndicesPerCollision, thisCollId);
 

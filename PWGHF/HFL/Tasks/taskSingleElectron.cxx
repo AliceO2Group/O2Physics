@@ -424,7 +424,7 @@ struct HfTaskSingleElectron {
   void processData(soa::Filtered<MyCollisions>::iterator const& collision,
                    TracksEl const& tracks)
   {
-    float flagAnalysedEvt = 0.5;
+    float const flagAnalysedEvt = 0.5;
 
     if (!collision.sel8()) {
       return;
@@ -483,7 +483,7 @@ struct HfTaskSingleElectron {
                  McTracksEl const& tracks,
                  aod::McParticles const&)
   {
-    float flagAnalysedEvt = 0.5;
+    float const flagAnalysedEvt = 0.5;
 
     if (!collision.sel8()) {
       return;
@@ -517,7 +517,7 @@ struct HfTaskSingleElectron {
 
       int mpdg;   // electron source pdg code
       double mpt; // electron source pt
-      int source = getElecSource(track, mpt, mpdg);
+      int const source = getElecSource(track, mpt, mpdg);
 
       if (source == DirectBeauty || source == BeautyCharm) {
         histos.fill(HIST("hPdgB"), mpdg);

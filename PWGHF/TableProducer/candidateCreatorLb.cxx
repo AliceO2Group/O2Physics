@@ -172,14 +172,14 @@ struct HfCandidateCreatorLb {
       trackParVar1.propagateTo(secondaryVertex[0], bz);
       trackParVar2.propagateTo(secondaryVertex[0], bz);
 
-      std::array<float, 3> pvecpK = RecoDecay::pVec(track0.pVector(), track1.pVector());
+      std::array<float, 3> const pvecpK = RecoDecay::pVec(track0.pVector(), track1.pVector());
       std::array<float, 3> pvecLc = RecoDecay::pVec(pvecpK, track2.pVector());
       auto trackpK = o2::dataformats::V0(df3.getPCACandidatePos(), pvecpK, df3.calcPCACovMatrixFlat(), trackParVar0, trackParVar1);
       auto trackLc = o2::dataformats::V0(df3.getPCACandidatePos(), pvecLc, df3.calcPCACovMatrixFlat(), trackpK, trackParVar2);
 
-      int index0Lc = track0.globalIndex();
-      int index1Lc = track1.globalIndex();
-      int index2Lc = track2.globalIndex();
+      int const index0Lc = track0.globalIndex();
+      int const index1Lc = track1.globalIndex();
+      int const index2Lc = track2.globalIndex();
       // int charge = track0.sign() + track1.sign() + track2.sign();
 
       for (const auto& trackPion : tracks) {
