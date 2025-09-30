@@ -351,21 +351,26 @@ struct PidNSigma {
   /// @brief Encode 0.2 sigma interval to 0~10 range
   static uint8_t encodeNSigma(float nSigma)
   {
-		const float x = std::abs(nSigma);
-		if (x <= 1.5) return 0; // Return 0 when absolute nSigma is smaller than 1.5
-		float t = (x - 1.5) / 0.2;
-		int encoded = static_cast<int>(std::ceil(t)); // (1.5,1.7]->1, ..., (3.3,3.5]->10
-		if (encoded < 1) encoded = 1;
-		if (encoded > 10) encoded = 10;
-		return static_cast<uint8_t>(encoded);
+    const float x = std::abs(nSigma);
+    if (x <= 1.5)
+      return 0; // Return 0 when absolute nSigma is smaller than 1.5
+    float t = (x - 1.5) / 0.2;
+    int encoded = static_cast<int>(std::ceil(t)); // (1.5,1.7]->1, ..., (3.3,3.5]->10
+    if (encoded < 1)
+      encoded = 1;
+    if (encoded > 10)
+      encoded = 10;
+    return static_cast<uint8_t>(encoded);
   }
 
   /// @brief Decode 0~10 value to original 1.5~3.5 sigma range
   static float decodeNSigma(uint8_t encoded)
   {
-		if (encoded == 0) return 1.5;
-		if (encoded > 10) encoded = 10;
-		return 1.5 + static_cast<float>(encoded) * 0.2;
+    if (encoded == 0)
+      return 1.5;
+    if (encoded > 10)
+      encoded = 10;
+    return 1.5 + static_cast<float>(encoded) * 0.2;
   }
 
   /// @brief Check if TOF info is available
@@ -424,12 +429,15 @@ struct ResoMicroTrackSelFlag {
   /// @brief Convert DCA to 1~15 steps (|DCA|<0.1 is saved in 0)
   static uint8_t encodeDCA(float DCA)
   {
-		float x = std::fabs(DCA);
-		if (x < 0.1) return 0;
-		int encoded = static_cast<int>(std::ceil((x - 0.1) / 0.1)); // (0.1, 0.2] -> 1, ..., (1.4, 1.5] -> 14
-		if (encoded < 1) encoded = 1;
-		if (encoded > 14) encoded = 15;
-		return static_cast<uint8_t>(encoded);
+    float x = std::fabs(DCA);
+    if (x < 0.1)
+      return 0;
+    int encoded = static_cast<int>(std::ceil((x - 0.1) / 0.1)); // (0.1, 0.2] -> 1, ..., (1.4, 1.5] -> 14
+    if (encoded < 1)
+      encoded = 1;
+    if (encoded > 14)
+      encoded = 15;
+    return static_cast<uint8_t>(encoded);
   }
 
   /// @brief Operator to convert to `uint8_t` (for SOA storage)
