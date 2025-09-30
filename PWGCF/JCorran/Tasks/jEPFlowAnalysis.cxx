@@ -11,9 +11,6 @@
 /// \author Maxim Virta (maxim.virta@cern.ch)
 /// \since Jul 2024
 
-#include <string>
-#include <vector>
-
 #include "Framework/AnalysisTask.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/HistogramRegistry.h"
@@ -26,11 +23,11 @@
 #include "Common/DataModel/Qvectors.h"
 #include "Common/Core/EventPlaneHelper.h"
 
-#include "FlowJHistManager.h"
-#include "JEPFlowAnalysis.h"
-
 #include "CCDB/CcdbApi.h"
 #include "CCDB/BasicCCDBManager.h"
+
+#include "FlowJHistManager.h"
+#include "JEPFlowAnalysis.h"
 
 using namespace o2;
 using namespace o2::framework;
@@ -47,10 +44,8 @@ struct jEPFlowAnalysis {
   EventPlaneHelper helperEP;
   FlowJHistManager histManager;
   Bool_t debug = kFALSE;
-
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
-
 
   // Set Configurables here
   struct : ConfigurableGroup {
@@ -125,7 +120,7 @@ struct jEPFlowAnalysis {
     Float_t EPs[3] = {0.};
 
     if (cfgShiftCorr) {
-      auto bc = collision.bc_as<aod::BCsWithTimestamps>();
+      auto bc = coll.bc_as<aod::BCsWithTimestamps>();
       currentRunNumber = bc.runNumber();
       if (currentRunNumber != lastRunNumber) {
         shiftprofile.clear();
@@ -154,12 +149,12 @@ struct jEPFlowAnalysis {
 
       if (cfgShiftCorr) {
         for (int ishift = 1; ishift <= 10; ishift++) {
-          auto coeffshiftxDet = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(centrality, 0.5, ishift - 0.5));
-          auto coeffshiftyDet = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(centrality, 1.5, ishift - 0.5));
-          auto coeffshiftxRefA = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(centrality, 2.5, ishift - 0.5));
-          auto coeffshiftyRefA = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(centrality, 3.5, ishift - 0.5));
-          auto coeffshiftxRefB = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(centrality, 4.5, ishift - 0.5));
-          auto coeffshiftyRefB = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(centrality, 5.5, ishift - 0.5)); //currently only FT0C/TPCpos/TPCneg
+          auto coeffshiftxDet = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 0.5, ishift - 0.5));
+          auto coeffshiftyDet = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 1.5, ishift - 0.5));
+          auto coeffshiftxRefA = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 2.5, ishift - 0.5));
+          auto coeffshiftyRefA = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 3.5, ishift - 0.5));
+          auto coeffshiftxRefB = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 4.5, ishift - 0.5));
+          auto coeffshiftyRefB = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 5.5, ishift - 0.5)); //currently only FT0C/TPCpos/TPCneg
 
           deltapsiDet += ((1 / (1.0 * ishift)) * (-coeffshiftxDet * TMath::Cos(ishift * static_cast<float>(i) * EPs[0]) + coeffshiftyDet * TMath::Sin(ishift * static_cast<float>(i) * EPs[0])));
           deltapsiRefA += ((1 / (1.0 * ishift)) * (-coeffshiftxRefA * TMath::Cos(ishift * static_cast<float>(i) * EPs[1]) + coeffshiftyRefA * TMath::Sin(ishift * static_cast<float>(i) * EPs[1])));
