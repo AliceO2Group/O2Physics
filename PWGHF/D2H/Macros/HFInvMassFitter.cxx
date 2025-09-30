@@ -408,7 +408,7 @@ void HFInvMassFitter::fillWorkspace(RooWorkspace& workspace) const
   workspace.import(*bkgFuncPow);
   delete bkgFuncPow;
   // pow * exp
-  RooRealVar powExpoParam1("powExpoParam1", "Parameter of PowExpo function", 1 / 2);
+  RooRealVar powExpoParam1("powExpoParam1", "Parameter of PowExpo function", 1. / 2.);
   RooRealVar powExpoParam2("powExpoParam2", "Parameter of PowExpo function", 1, -10, 10);
   RooRealVar massPi("massPi", "mass of pion", TDatabasePDG::Instance()->GetParticle("pi+")->Mass());
   RooFormulaVar powExpoParam3("powExpoParam3", "powExpoParam1 + 1", RooArgList(powExpoParam1));
