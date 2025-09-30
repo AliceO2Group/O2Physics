@@ -29,6 +29,9 @@
 #include "FlowJHistManager.h"
 #include "JEPFlowAnalysis.h"
 
+#include "CCDB/CcdbApi.h"
+#include "CCDB/BasicCCDBManager.h"
+
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
@@ -44,6 +47,10 @@ struct jEPFlowAnalysis {
   EventPlaneHelper helperEP;
   FlowJHistManager histManager;
   Bool_t debug = kFALSE;
+
+  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  o2::ccdb::CcdbApi ccdbApi;
+
 
   // Set Configurables here
   struct : ConfigurableGroup {
