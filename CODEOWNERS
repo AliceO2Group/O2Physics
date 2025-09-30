@@ -61,7 +61,7 @@
 /PWGMM/Lumi @alibuild @sustripathy @skundu692 @aalkin @jgcn @gbencedi @abmodak
 /PWGMM/UE   @alibuild @sustripathy @skundu692 @aalkin @aortizve @jgcn
 
-/PWGUD @alibuild @pbuehler @nystrand @rolavick
+/PWGUD @alibuild @amatyja @rolavick
 /PWGJE @alibuild @lhavener @maoyx @nzardosh @fjonasALICE @mfasDa @mhemmer-cern
 /Tools/PIDML @alibuild @saganatt
 /Tools/ML @alibuild @fcatalan92 @fmazzasc
@@ -72,4 +72,4 @@
 /Tutorials/PWGJE @alibuild @lhavener @maoyx @nzardosh @mfasDa @fjonasALICE
 /Tutorials/PWGLF @alibuild @alcaliva @lbariogl @chiarapinto @BongHwi @lbarnby @ercolessi @iravasen @njacazio @romainschotter @skundu692
 /Tutorials/PWGMM @alibuild @aalkin @ddobrigk
-/Tutorials/PWGUD @alibuild @pbuehler
+/Tutorials/PWGUD @alibuild @pbuehler @amatyja
