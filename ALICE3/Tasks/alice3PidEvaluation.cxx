@@ -40,6 +40,8 @@
 #include "TVector3.h"
 
 #include <array>
+#include <memory>
+#include <string>
 #include <vector>
 
 using namespace o2;
