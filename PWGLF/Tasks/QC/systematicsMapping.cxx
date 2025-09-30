@@ -192,9 +192,6 @@ struct SystematicsMapping {
           case -321: // K-
             registry.fill(HIST("K/ReconstructedNegative"), track.pt(), track.eta(), track.phi());
             break;
-          case 310: // K0s
-            registry.fill(HIST("K0s/Reconstructed"), track.pt(), track.eta(), track.phi());
-            break;
           default:
             break;
         }
