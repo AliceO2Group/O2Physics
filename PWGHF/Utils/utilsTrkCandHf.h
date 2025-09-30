@@ -50,7 +50,7 @@ void setLabelHistoCands(THisto& hCandidates)
 
 /// \brief Function to evaluate number of ones in a binary representation of the argument
 /// \param num is the input argument
-int countOnesInBinary(const uint8_t num)
+inline int countOnesInBinary(const uint8_t num)
 {
   int count{0};
   constexpr std::size_t NBits{8u};

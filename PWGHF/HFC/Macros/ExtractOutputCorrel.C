@@ -143,7 +143,7 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
   bool useSidebLeft = config["UseSidebLeft"].GetBool();
   bool useSidebRight = config["UseSidebRight"].GetBool();
 
-  if (useSidebLeft && useSidebLeft) {
+  if (useSidebLeft && useSidebRight) {
     std::cout << "Using left and right" << std::endl;
   }
 

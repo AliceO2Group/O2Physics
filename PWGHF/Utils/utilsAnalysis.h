@@ -37,7 +37,7 @@ enum BHadMothers { NotMatched = 0,
 /// Convert the B hadron mother PDG for non prompt candidates to a flag
 /// \param flagBHad pdg of the b hadron mother
 /// \return integer map to specific mothers' PDG codes
-BHadMothers getBHadMotherFlag(const int flagBHad)
+inline BHadMothers getBHadMotherFlag(const int flagBHad)
 {
   if (std::abs(flagBHad) == o2::constants::physics::kBPlus) {
     return BHadMothers::BPlus;

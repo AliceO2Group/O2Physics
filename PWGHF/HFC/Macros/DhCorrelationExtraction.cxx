@@ -1321,7 +1321,7 @@ TH1D* DhCorrelationExtraction::reflectHistoRun2(TH1D* h, Double_t scale)
   return h2;
 }
 
-Double_t DhCorrelationExtraction::getFdPromptFrac(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
+Double_t DhCorrelationExtraction::getFdPromptFrac(Double_t ptCandMin, Double_t ptCandMax, Double_t /*ptHadMin*/, Double_t /*ptHadMax*/)
 {
 
   TH1D* h1D = new TH1D();
