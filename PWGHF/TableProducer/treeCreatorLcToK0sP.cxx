@@ -36,6 +36,7 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstdlib>
+#include <iterator>
 #include <vector>
 
 using namespace o2;

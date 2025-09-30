@@ -26,6 +26,7 @@
 #include "Common/TableProducer/PID/pidTOFBase.h"
 
 #include <CCDB/BasicCCDBManager.h>
+#include <CommonConstants/PhysicsConstants.h>
 #include <DataFormatsParameters/GRPLHCIFData.h>
 #include <DataFormatsTOF/ParameterContainers.h>
 #include <Framework/ASoA.h>

@@ -37,7 +37,6 @@
 #include <TColor.h>
 #include <TDatabasePDG.h>
 #include <TLine.h>
-#include <TNamed.h>
 #include <TPaveText.h>
 #include <TString.h>
 #include <TStyle.h>

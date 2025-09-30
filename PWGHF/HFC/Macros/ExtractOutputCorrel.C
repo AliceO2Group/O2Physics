@@ -18,14 +18,16 @@
 
 #include "DhCorrelationExtraction.h"
 
+#include <TH1.h>
 #include <TROOT.h>
+#include <TString.h>
 #include <TStyle.h>
 #include <TSystem.h>
 
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 
-#include <Riostream.h>
+#include <RtypesCore.h>
 
 #include <cstdio>
 #include <iostream>

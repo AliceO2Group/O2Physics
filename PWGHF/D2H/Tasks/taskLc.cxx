@@ -45,6 +45,7 @@
 #include <TPDGCode.h>
 
 #include <array>
+#include <cmath>
 #include <numeric>
 #include <vector> // std::vector
 

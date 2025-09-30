@@ -42,8 +42,6 @@
 #include <Framework/OutputObjHeader.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TMath.h>
-
 #include <array>
 #include <cstdint>
 #include <string>

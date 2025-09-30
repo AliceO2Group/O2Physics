@@ -18,6 +18,8 @@
 
 #include <Framework/Logger.h>
 
+#include <cstdint>
+
 namespace o2::hf_centrality
 {
 // centrality selection estimators

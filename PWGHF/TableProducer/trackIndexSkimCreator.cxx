@@ -67,8 +67,9 @@
 #include <TH1.h>
 #include <TString.h>
 
+#include <sys/types.h>
+
 #include <Rtypes.h>
-#include <RtypesCore.h>
 
 #include <algorithm> // std::find
 #include <array>

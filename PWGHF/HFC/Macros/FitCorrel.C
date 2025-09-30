@@ -16,20 +16,24 @@
 
 #include "DhCorrelationFitter.h"
 
+#include <TAttMarker.h>
 #include <TCanvas.h>
 #include <TF1.h>
 #include <TFile.h>
-#include <TH1D.h>
+#include <TH1.h>
 #include <TMath.h>
 #include <TPaveText.h>
 #include <TROOT.h>
+#include <TString.h>
 #include <TStyle.h>
 #include <TSystem.h>
+#include <TText.h>
 
 #include <rapidjson/document.h>
 #include <rapidjson/filereadstream.h>
 
-#include <Riostream.h>
+#include <Rtypes.h>
+#include <RtypesCore.h>
 
 #include <cstdio>
 #include <iostream>

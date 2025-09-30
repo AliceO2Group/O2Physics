@@ -22,16 +22,23 @@
 
 #include "HFInvMassFitter.h"
 
-// if .h file not found, please include your local rapidjson/document.h and rapidjson/filereadstream.h here
 #include <TCanvas.h>
 #include <TDatabasePDG.h>
 #include <TFile.h>
-#include <TH2F.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TString.h>
+#include <TVirtualPad.h>
 
-#include <rapidjson/document.h>
+#include <rapidjson/document.h> // if .h file not found, please include your local rapidjson/document.h and rapidjson/filereadstream.h here
 #include <rapidjson/filereadstream.h>
 
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <cmath>
 #include <cstdio> // for fclose
+#include <functional>
 #include <map>
 #include <stdexcept>
 #include <string> // std::string

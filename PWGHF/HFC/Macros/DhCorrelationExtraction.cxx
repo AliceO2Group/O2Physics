@@ -16,6 +16,7 @@
 
 #include "DhCorrelationExtraction.h"
 
+#include <TAttMarker.h>
 #include <TCanvas.h>
 #include <TDirectoryFile.h>
 #include <TF1.h>
@@ -24,11 +25,15 @@
 #include <TH2.h>
 #include <TH3.h>
 #include <THnSparse.h>
+#include <TLegend.h>
+#include <TMath.h>
 #include <TString.h>
 
+#include <Rtypes.h>
 #include <RtypesCore.h>
 
 #include <cstdio>
+#include <cstdlib>
 #include <iostream>
 
 DhCorrelationExtraction::DhCorrelationExtraction() : // default constructor
