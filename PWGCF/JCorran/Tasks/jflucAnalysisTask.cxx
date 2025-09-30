@@ -28,6 +28,7 @@
 #include <array>
 #include <deque>
 #include <memory>
+#include <string>
 
 // #include "CCDB/BasicCCDBManager.h"
 
