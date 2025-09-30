@@ -448,11 +448,7 @@ struct HfTreeCreatorLcToK0sP {
       auto bach = candidate.prong0_as<TracksWPid>(); // bachelor
       const int flag = candidate.flagMcMatchRec();
 
-      if (fillOnlySignal && flag != 0) {
-        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
-      } else if (fillOnlyBackground && flag == 0) {
-        fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
-      } else {
+      if ((fillOnlySignal && flag != 0) || (fillOnlyBackground && flag == 0) || (!fillOnlySignal && !fillOnlyBackground)) {
         fillCandidate(candidate, bach, candidate.flagMcMatchRec(), candidate.originMcRec(), candidateMlScore);
       }
     }
