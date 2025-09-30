@@ -253,6 +253,7 @@ struct UpcRhoAnalysis {
 
     // SYSTEM
     rSystem.add("system/all/unlike-sign/hM", ";#it{m} (GeV/#it{c}^{2});counts", kTH1D, {mAxis});
+    rSystem.add("system/all/unlike-sign/hRecoSettingVsM", ";#it{m} (GeV/#it{c}^{2});reco setting;counts", kTH2D, {mAxis, {2, -0.5, 1.5}});
     rSystem.add("system/all/unlike-sign/hPt", ";#it{p}_{T} (GeV/#it{c});counts", kTH1D, {ptAxis});
     rSystem.add("system/all/unlike-sign/hPt2", ";#it{p}_{T}^{2} (GeV^{2}/#it{c}^{2});counts", kTH1D, {pt2Axis});
     rSystem.add("system/all/unlike-sign/hPtVsM", ";#it{m} (GeV/#it{c}^{2});#it{p}_{T} (GeV/#it{c});counts", kTH2D, {mAxis, ptAxis});
@@ -739,6 +740,7 @@ struct UpcRhoAnalysis {
       case 0:
         fillTrack2dHistos<1, 0>(leadingPt, subleadingPt, leadingEta, subleadingEta, leadingPhi, subleadingPhi);
         fillSystemHistos<0, 0, 0>(mass, pT, rapidity, systemPhi, phiRandom, phiCharge);
+        rSystem.fill(HIST("system/all/unlike-sign/hRecoSettingVsM"), mass, collision.flags());
         break;
 
       case 2:
