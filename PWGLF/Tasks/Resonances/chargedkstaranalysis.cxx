@@ -912,8 +912,6 @@ struct chargedkstaranalysis {
         continue;
       }
 
-      float multiplicity = 0.0f;
-      multiplicity = c1.centFT0M();
       for (auto& [t1, t2] : o2::soa::combinations(
              o2::soa::CombinationsFullIndexPolicy(tracks1, tracks2))) {
         // Here t1 corressponds to bachelor track and t2 corressponds to v0s.
