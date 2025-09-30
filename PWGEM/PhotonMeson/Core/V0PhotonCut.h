@@ -359,8 +359,8 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kTPCNsigmaEl:
         return track.tpcNSigmaEl() > mMinTPCNsigmaEl && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
 
-      // case V0PhotonCuts::kTPCNsigmaPi:
-      //   return track.tpcNSigmaPi() > mMinTPCNsigmaPi && track.tpcNSigmaPi() < mMaxTPCNsigmaPi;
+        // case V0PhotonCuts::kTPCNsigmaPi:
+        //   return track.tpcNSigmaPi() > mMinTPCNsigmaPi && track.tpcNSigmaPi() < mMaxTPCNsigmaPi;
 
       case V0PhotonCuts::kDCAxy:
         return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
