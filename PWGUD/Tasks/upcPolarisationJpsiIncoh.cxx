@@ -53,7 +53,7 @@ namespace dimu
   DECLARE_SOA_COLUMN(Rap, rap, float);
   DECLARE_SOA_COLUMN(Phi, phi, float);
 
-  //tracks positive (p) and negative (n)
+  //tracks positive (p) and negative (n) stored
   DECLARE_SOA_COLUMN(EnergyP, energyP, float);
   DECLARE_SOA_COLUMN(Pxp, pxp, float);
   DECLARE_SOA_COLUMN(Pyp, pyp, float);
