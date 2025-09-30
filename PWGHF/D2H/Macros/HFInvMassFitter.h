@@ -188,10 +188,11 @@ class HFInvMassFitter : public TNamed
     setInitialReflOverSgn(reflOverSgn);
     mFixReflOverSgn = kTRUE;
   }
-  void setTemplateReflections(const TH1* histoRefl, Int_t fitTypeRefl = DoubleGaus)
+  void setTemplateReflections(const TH1* histoRefl)
   {
     if (histoRefl == nullptr) {
       mEnableReflections = kFALSE;
+      return;
     }
     mHistoTemplateRefl = dynamic_cast<TH1*>(histoRefl->Clone("mHistoTemplateRefl"));
   }

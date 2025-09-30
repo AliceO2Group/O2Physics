@@ -378,11 +378,6 @@ int runMassFitter(const TString& configFileName)
     }
 
     Double_t reflOverSgn = 0;
-    double markerSize = 1.;
-    constexpr int NSliceVarBinsLarge = 15;
-    if (nSliceVarBins > NSliceVarBinsLarge) {
-      markerSize = 0.5;
-    }
 
     if (isMc) {
       HFInvMassFitter* massFitter;
@@ -439,7 +434,7 @@ int runMassFitter(const TString& configFileName)
         massFitter->setUseLikelihoodFit();
       }
 
-      auto setFixedValue = [&massFitter, &iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(Double_t)> setFunc, std::string const& var) -> void {
+      auto setFixedValue = [&iSliceVar](bool const& isFix, std::vector<double> const& fixManual, const TH1* histToFix, std::function<void(Double_t)> setFunc, std::string const& var) -> void {
         if (isFix) {
           if (fixManual.empty()) {
             setFunc(histToFix->GetBinContent(iSliceVar + 1));
@@ -463,7 +458,7 @@ int runMassFitter(const TString& configFileName)
         reflOverSgn = hMassForSgn[iSliceVar]->Integral(hMassForSgn[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForSgn[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999));
         reflOverSgn = hMassForRefl[iSliceVar]->Integral(hMassForRefl[iSliceVar]->FindBin(massMin[iSliceVar] * 1.0001), hMassForRefl[iSliceVar]->FindBin(massMax[iSliceVar] * 0.999)) / reflOverSgn;
         massFitter->setFixReflOverSgn(reflOverSgn);
-        massFitter->setTemplateReflections(hMassRefl[iSliceVar], HFInvMassFitter::DoubleGaus);
+        massFitter->setTemplateReflections(hMassRefl[iSliceVar]);
       }
 
       massFitter->doFit();
