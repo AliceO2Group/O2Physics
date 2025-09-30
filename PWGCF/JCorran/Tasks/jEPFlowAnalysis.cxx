@@ -11,6 +11,9 @@
 /// \author Maxim Virta (maxim.virta@cern.ch)
 /// \since Jul 2024
 
+#include <string>
+#include <vector>
+
 #include "Framework/AnalysisTask.h"
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/HistogramRegistry.h"
