@@ -100,6 +100,16 @@ void DielectronCut::SetTrackPhiRange(float minPhi, float maxPhi, bool mirror, bo
   mRejectTrackPhi = reject;
   LOG(info) << "Dielectron Cut, set track phi range (rad.): " << mMinTrackPhi << " - " << mMaxTrackPhi << " with mirror: " << mMirrorTrackPhi << " and rejection: " << mRejectTrackPhi;
 }
+void DielectronCut::SetTrackPhiPositionRange(float minPhi, float maxPhi, float refR, float bz, bool mirror)
+{
+  mMinTrackPhiPosition = minPhi;
+  mMaxTrackPhiPosition = maxPhi;
+  mRefR = refR;
+  mBz = bz;
+  mMirrorTrackPhi = mirror;
+  LOG(info) << "Dielectron Cut, set track phi position range (rad.): " << mMinTrackPhiPosition << " - " << mMaxTrackPhiPosition << " at Rxy = " << mRefR << " with mirror: " << mMirrorTrackPhi;
+  LOG(info) << "Dielectron Cut, set Bz in kG: " << mBz;
+}
 void DielectronCut::SetMinNClustersTPC(int minNClustersTPC)
 {
   mMinNClustersTPC = minNClustersTPC;

@@ -147,6 +147,7 @@ struct JetDerivedDataProducerTask {
   Configurable<std::string> ccdbURL{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<bool> includeTriggers{"includeTriggers", false, "fill the collision information with software trigger decisions"};
   Configurable<bool> includeHadronicRate{"includeHadronicRate", true, "fill the collision information with the hadronic rate"};
+  Configurable<bool> v0ChargedDecaysOnly{"v0ChargedDecaysOnly", true, "store V0s (at particle-level) only if they decay to charged particles"};
 
   Preslice<aod::EMCALClusterCells> perClusterCells = aod::emcalclustercell::emcalclusterId;
   Preslice<aod::EMCALMatchedTracks> perClusterTracks = aod::emcalclustercell::emcalclusterId;
@@ -764,7 +765,7 @@ struct JetDerivedDataProducerTask {
   { // can loop over McV0Labels tables if we want to only store matched V0Particles
     bool filledV0McCollisionTable = false;
     for (auto const& particle : particles) {
-      if (jetv0utilities::isV0Particle(particles, particle)) {
+      if (jetv0utilities::isV0Particle(particles, particle, v0ChargedDecaysOnly)) {
         if (!filledV0McCollisionTable) {
           products.jV0McCollisionsTable(mcCollision.posX(), mcCollision.posY(), mcCollision.posZ());
           products.jV0McCollisionIdsTable(mcCollision.globalIndex());

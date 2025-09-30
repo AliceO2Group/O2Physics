@@ -13,7 +13,7 @@
 /// \brief Reconstruction of track-track decay resonance candidates
 ///
 ///
-/// \author Su-Jeong Ji <su-jeong.ji@cern.ch>
+/// \author Su-Jeong Ji <su-jeong.ji@cern.ch>, Bong-Hwi Lim <Bong-Hwi.Lim@cern.ch>
 
 #include <TDirectory.h>
 #include <TFile.h>
@@ -26,6 +26,7 @@
 // #include <TDatabasePDG.h> // FIXME
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/Utils/collisionCuts.h"
+#include "PWGLF/Utils/inelGt.h"
 
 #include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
@@ -68,6 +69,8 @@
 #include <cmath>
 #include <cstdlib>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 using namespace o2;
@@ -76,6 +79,22 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::constants::physics;
 using namespace o2::aod::rctsel;
+
+namespace
+{
+template <typename V0T>
+inline bool getTruthK0sAndGenKinematics(V0T const& v0, double& ptgen, double& ygen)
+{
+  if (!v0.has_mcParticle())
+    return false;
+  auto mcPart = v0.template mcParticle_as<aod::McParticles>();
+  if (mcPart.pdgCode() != kK0Short)
+    return false;
+  ptgen = mcPart.pt();
+  ygen = mcPart.y();
+  return true;
+}
+} // namespace
 
 struct Chk892pp {
   enum BinType : unsigned int {
@@ -91,14 +110,19 @@ struct Chk892pp {
   SliceCache cache;
   Preslice<aod::Tracks> perCollision = aod::track::collisionId;
 
-  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults>;
-  //  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::Mults>;
+  using EventCandidates = soa::Join<aod::Collisions, aod::EvSels, aod::FT0Mults, aod::FV0Mults, aod::TPCMults, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0Cs, aod::CentFT0As, aod::Mults, aod::PVMults>;
   using TrackCandidates = soa::Join<aod::FullTracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::TrackSelectionExtension, aod::pidTPCFullPi, aod::pidTOFFullPi>;
   using V0Candidates = aod::V0Datas;
 
+  // for MC reco
   using MCEventCandidates = soa::Join<EventCandidates, aod::McCollisionLabels>;
-  using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabels>;
+  using MCTrackCandidates = soa::Join<TrackCandidates, aod::McTrackLabels>; //, aod::McParticles>;
   using MCV0Candidates = soa::Join<V0Candidates, aod::McV0Labels>;
+
+  // for MC truth
+  using MCTrueEventCandidates = aod::McCollisions;
+  using MCTrueTrackCandidates = aod::McParticles;
+
   using LorentzVectorSetXYZM = ROOT::Math::LorentzVector<ROOT::Math::PxPyPzM4D<float>>;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
@@ -115,7 +139,7 @@ struct Chk892pp {
   // Configurables
   struct : ConfigurableGroup {
     ConfigurableAxis cfgBinsPt{"cfgBinsPt", {VARIABLE_WIDTH, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0, 4.1, 4.2, 4.3, 4.4, 4.5, 4.6, 4.7, 4.8, 4.9, 5.0, 5.1, 5.2, 5.3, 5.4, 5.5, 5.6, 5.7, 5.8, 5.9, 6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, 7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, 8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, 9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9, 10.0, 10.1, 10.2, 10.3, 10.4, 10.5, 10.6, 10.7, 10.8, 10.9, 11.0, 11.1, 11.2, 11.3, 11.4, 11.5, 11.6, 11.7, 11.8, 11.9, 12.0, 12.1, 12.2, 12.3, 12.4, 12.5, 12.6, 12.7, 12.8, 12.9, 13.0, 13.1, 13.2, 13.3, 13.4, 13.5, 13.6, 13.7, 13.8, 13.9, 14.0, 14.1, 14.2, 14.3, 14.4, 14.5, 14.6, 14.7, 14.8, 14.9, 15.0}, "Binning of the pT axis"};
-    ConfigurableAxis cfgBinsPtQA{"cfgBinsPtQA", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0, 8.2, 8.4, 8.6, 8.8, 9.0, 9.2, 9.4, 9.6, 9.8, 10.0}, "Binning of the pT axis"};
+    ConfigurableAxis cfgBinsPtQA{"cfgBinsPtQA", {VARIABLE_WIDTH, 0.0, 0.8, 1.3, 1.8, 2.3, 2.8, 3.4, 4.0, 5.0, 6.0, 7.0, 8.0}, "Binning of the pT axis"};
     ConfigurableAxis cfgBinsCent{"cfgBinsCent", {VARIABLE_WIDTH, 0.0, 1.0, 5.0, 10.0, 20.0, 30.0, 40.0, 50.0, 60.0, 70.0, 80.0, 90.0, 100.0, 110.0}, "Binning of the centrality axis"};
     ConfigurableAxis cfgBinsVtxZ{"cfgBinsVtxZ", {VARIABLE_WIDTH, -10.0, -9.0, -8.0, -7.0, -6.0, -5.0, -4.0, -3.0, -2.0, -1.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0}, "Binning of the z-vertex axis"};
     Configurable<int> cNbinsDiv{"cNbinsDiv", 1, "Integer to divide the number of bins"};
@@ -130,14 +154,14 @@ struct Chk892pp {
     Configurable<int> cfgEvtOccupancyInTimeRangeMin{"cfgEvtOccupancyInTimeRangeMin", -1, "Evt sel: minimum track occupancy"};
     Configurable<bool> cfgEvtTriggerCheck{"cfgEvtTriggerCheck", false, "Evt sel: check for trigger"};
     Configurable<bool> cfgEvtOfflineCheck{"cfgEvtOfflineCheck", true, "Evt sel: check for offline selection"};
-    Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", false, "Evt sel: triggerTVX selection (MB)"};
-    Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", false, "Evt sel: apply TF border cut"};
+    Configurable<bool> cfgEvtTriggerTVXSel{"cfgEvtTriggerTVXSel", true, "Evt sel: triggerTVX selection (MB)"};
+    Configurable<bool> cfgEvtTFBorderCut{"cfgEvtTFBorderCut", true, "Evt sel: apply TF border cut"};
     Configurable<bool> cfgEvtUseITSTPCvertex{"cfgEvtUseITSTPCvertex", false, "Evt sel: use at lease on ITS-TPC track for vertexing"};
-    Configurable<bool> cfgEvtZvertexTimedifference{"cfgEvtZvertexTimedifference", true, "Evt sel: apply Z-vertex time difference"};
-    Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", true, "Evt sel: apply pileup rejection"};
-    Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", false, "Evt sel: apply NoITSRO border cut"};
+    Configurable<bool> cfgEvtZvertexTimedifference{"cfgEvtZvertexTimedifference", false, "Evt sel: apply Z-vertex time difference"};
+    Configurable<bool> cfgEvtPileupRejection{"cfgEvtPileupRejection", false, "Evt sel: apply pileup rejection"};
+    Configurable<bool> cfgEvtNoITSROBorderCut{"cfgEvtNoITSROBorderCut", true, "Evt sel: apply NoITSRO border cut"};
     Configurable<bool> cfgincludeCentralityMC{"cfgincludeCentralityMC", false, "Include centrality in MC"};
-    Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", true, "Evt sel: apply NoCollInTimeRangeStandard"};
+    Configurable<bool> cfgEvtCollInTimeRangeStandard{"cfgEvtCollInTimeRangeStandard", false, "Evt sel: apply NoCollInTimeRangeStandard"};
     Configurable<float> cfgEventCentralityMin{"cfgEventCentralityMin", 0.0f, "Event sel: minimum centrality"};
     Configurable<float> cfgEventCentralityMax{"cfgEventCentralityMax", 80.0f, "Event sel: maximum centrality"};
     Configurable<bool> cfgEvtUseRCTFlagChecker{"cfgEvtUseRCTFlagChecker", false, "Evt sel: use RCT flag checker"};
@@ -147,22 +171,16 @@ struct Chk892pp {
   } EventCuts;
   RCTFlagsChecker rctChecker;
 
-  /*
-  // Cuts from polarization analysis
-  Configurable<bool> cfgOccupancySel{"cfgOccupancySel", false, "Occupancy selection"};
-  Configurable<int> cfgMaxOccupancy{"cfgMaxOccupancy", 999999, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
-  Configurable<int> cfgMinOccupancy{"cfgMinOccupancy", -100, "maximum occupancy of tracks in neighbouring collisions in a given time range"};
-  Configurable<bool> cfgNCollinTR{"cfgNCollinTR", false, "Additional selection for the number of coll in time range"};
-*/
   Configurable<int> cfgCentEst{"cfgCentEst", 2, "Centrality estimator, 1: FT0C, 2: FT0M"};
 
   /// PID Selections, pion
   struct : ConfigurableGroup {
-    Configurable<bool> cfgTPConly{"cfgTPConly", true, "Use only TPC for PID"};                                      // bool
+    Configurable<bool> cfgTPConly{"cfgTPConly", false, "Use only TPC for PID"};                                     // bool
     Configurable<float> cfgMaxTPCnSigmaPion{"cfgMaxTPCnSigmaPion", 3.0, "TPC nSigma cut for Pion"};                 // TPC
     Configurable<float> cfgMaxTOFnSigmaPion{"cfgMaxTOFnSigmaPion", 3.0, "TOF nSigma cut for Pion"};                 // TOF
     Configurable<float> cfgNsigmaCutCombinedPion{"cfgNsigmaCutCombinedPion", -999, "Combined nSigma cut for Pion"}; // Combined
     Configurable<bool> cfgTOFVeto{"cfgTOFVeto", true, "TOF Veto, if false, TOF is nessessary for PID selection"};   // TOF Veto
+    Configurable<float> cfgTOFMinPt{"cfgTOFMinPt", 0.6, "Minimum TOF pT cut for Pion"};                             // TOF pT cut
   } PIDCuts;
 
   // Track selections
@@ -174,7 +192,7 @@ struct Chk892pp {
     Configurable<bool> cfgGlobalTrack{"cfgGlobalTrack", false, "Global track selection"};                      // kGoldenChi2 | kDCAxy | kDCAz
     Configurable<bool> cfgPVContributor{"cfgPVContributor", false, "PV contributor track selection"};          // PV Contriuibutor
 
-    Configurable<bool> cfgpTdepDCAxyCut{"cfgpTdepDCAxyCut", false, "pT-dependent DCAxy cut"};
+    Configurable<bool> cfgpTdepDCAxyCut{"cfgpTdepDCAxyCut", true, "pT-dependent DCAxy cut"};
     Configurable<int> cfgITScluster{"cfgITScluster", 0, "Number of ITS cluster"};
     Configurable<int> cfgTPCcluster{"cfgTPCcluster", 0, "Number of TPC cluster"};
     Configurable<float> cfgRatioTPCRowsOverFindableCls{"cfgRatioTPCRowsOverFindableCls", 0.0f, "TPC Crossed Rows to Findable Clusters"};
@@ -193,22 +211,22 @@ struct Chk892pp {
 
   // Secondary Selection
   struct : ConfigurableGroup {
-    Configurable<bool> cfgReturnFlag{"cfgReturnFlag", false, "Return Flag for debugging"};
+    Configurable<bool> cfgReturnFlag{"cfgReturnFlag", true, "Return Flag for debugging"};
     Configurable<bool> cfgSecondaryRequire{"cfgSecondaryRequire", true, "Secondary cuts on/off"};
     Configurable<bool> cfgSecondaryArmenterosCut{"cfgSecondaryArmenterosCut", true, "cut on Armenteros-Podolanski graph"};
     Configurable<bool> cfgSecondaryCrossMassHypothesisCut{"cfgSecondaryCrossMassHypothesisCut", false, "Apply cut based on the lambda mass hypothesis"};
 
     Configurable<bool> cfgByPassDauPIDSelection{"cfgByPassDauPIDSelection", true, "Bypass Daughters PID selection"};
     Configurable<float> cfgSecondaryDauDCAMax{"cfgSecondaryDauDCAMax", 1., "Maximum DCA Secondary daughters to PV"};
-    Configurable<float> cfgSecondaryDauPosDCAtoPVMin{"cfgSecondaryDauPosDCAtoPVMin", 0.0, "Minimum DCA Secondary positive daughters to PV"};
-    Configurable<float> cfgSecondaryDauNegDCAtoPVMin{"cfgSecondaryDauNegDCAtoPVMin", 0.0, "Minimum DCA Secondary negative daughters to PV"};
+    Configurable<float> cfgSecondaryDauPosDCAtoPVMin{"cfgSecondaryDauPosDCAtoPVMin", 0.1, "Minimum DCA Secondary positive daughters to PV"};
+    Configurable<float> cfgSecondaryDauNegDCAtoPVMin{"cfgSecondaryDauNegDCAtoPVMin", 0.1, "Minimum DCA Secondary negative daughters to PV"};
 
     Configurable<float> cfgSecondaryPtMin{"cfgSecondaryPtMin", 0.f, "Minimum transverse momentum of Secondary"};
     Configurable<float> cfgSecondaryRapidityMax{"cfgSecondaryRapidityMax", 0.8, "Maximum rapidity of Secondary"};
-    Configurable<float> cfgSecondaryRadiusMin{"cfgSecondaryRadiusMin", 1.2, "Minimum transverse radius of Secondary"};
+    Configurable<float> cfgSecondaryRadiusMin{"cfgSecondaryRadiusMin", 0, "Minimum transverse radius of Secondary"};
     Configurable<float> cfgSecondaryRadiusMax{"cfgSecondaryRadiusMax", 999.9, "Maximum transverse radius of Secondary"};
     Configurable<float> cfgSecondaryCosPAMin{"cfgSecondaryCosPAMin", 0.995, "Mininum cosine pointing angle of Secondary"};
-    Configurable<float> cfgSecondaryDCAtoPVMax{"cfgSecondaryDCAtoPVMax", 0.3, "Maximum DCA Secondary to PV"};
+    Configurable<float> cfgSecondaryDCAtoPVMax{"cfgSecondaryDCAtoPVMax", 0.4, "Maximum DCA Secondary to PV"};
     Configurable<float> cfgSecondaryProperLifetimeMax{"cfgSecondaryProperLifetimeMax", 20, "Maximum Secondary Lifetime"};
     Configurable<float> cfgSecondaryparamArmenterosCut{"cfgSecondaryparamArmenterosCut", 0.2, "parameter for Armenteros Cut"};
     Configurable<float> cfgSecondaryMassWindow{"cfgSecondaryMassWindow", 0.03, "Secondary inv mass selciton window"};
@@ -273,12 +291,29 @@ struct Chk892pp {
     AxisSpec pidQAAxis = {130 / AxisConfig.cNbinsDivQA, -6.5, 6.5};
     AxisSpec dataTypeAxis = {9, 0, 9, "Histogram types"};
     AxisSpec mcTypeAxis = {4, 0, 4, "Histogram types"};
+    AxisSpec cutAxis{14, 0.5, 14.5, "Check"}; // 1..14
 
     // THnSparse
     AxisSpec axisType = {BinType::kTYEnd, 0, BinType::kTYEnd, "Type of bin with charge and mix"};
     AxisSpec mcLabelAxis = {5, -0.5, 4.5, "MC Label"};
 
-    histos.add("QA/K0sCutCheck", "Check K0s cut", HistType::kTH1D, {AxisSpec{12, -0.5, 11.5, "Check"}});
+    histos.add("QA/K0sCutCheck", "Check K0s cut", HistType::kTH1D, {AxisSpec{13, -0.5, 12.5, "Check"}});
+    histos.add("QA/K0sCutFlow", "Check K0s cut (first-fail or pass)", HistType::kTH1F, {cutAxis});
+    auto hcut = histos.get<TH1>(HIST("QA/K0sCutFlow"));
+    hcut->GetXaxis()->SetBinLabel(1, "TOTAL"); // 총 후보 수
+    hcut->GetXaxis()->SetBinLabel(2, "PASS");  // 최종 통과
+    hcut->GetXaxis()->SetBinLabel(3, "DauDCA>max");
+    hcut->GetXaxis()->SetBinLabel(4, "PosDCAtoPV<min");
+    hcut->GetXaxis()->SetBinLabel(5, "NegDCAtoPV<min");
+    hcut->GetXaxis()->SetBinLabel(6, "pT<min");
+    hcut->GetXaxis()->SetBinLabel(7, "|y|>max");
+    hcut->GetXaxis()->SetBinLabel(8, "R<min or R>max");
+    hcut->GetXaxis()->SetBinLabel(9, "DCAtoPV>max");
+    hcut->GetXaxis()->SetBinLabel(10, "cosPA<min");
+    hcut->GetXaxis()->SetBinLabel(11, "ctau>max");
+    hcut->GetXaxis()->SetBinLabel(12, "qtarm<a|alpha|");
+    hcut->GetXaxis()->SetBinLabel(13, "|M(K0s)-m0|>win");
+    hcut->GetXaxis()->SetBinLabel(14, "cross-mass veto");
 
     histos.add("QA/before/CentDist", "Centrality distribution", {HistType::kTH1D, {centAxis}});
     histos.add("QA/before/VtxZ", "Centrality distribution", {HistType::kTH1D, {vtxzAxis}});
@@ -376,61 +411,29 @@ struct Chk892pp {
     // MC
     if (doprocessMC) {
 
-      histos.add("QAMC/hEvent", "Number of Events", HistType::kTH1F, {{1, 0.5, 1.5}});
-      // Bachelor pion
-      histos.add("QAMC/trkbpionDCAxy", "DCAxy distribution of bachelor pion candidates", HistType::kTH1D, {dcaxyAxis});
-      histos.add("QAMC/trkbpionDCAz", "DCAz distribution of bachelor pion candidates", HistType::kTH1D, {dcazAxis});
-      histos.add("QAMC/trkbpionpT", "pT distribution of bachelor pion candidates", HistType::kTH1D, {ptAxis});
-      histos.add("QAMC/trkbpionTPCPID", "TPC PID of bachelor pion candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
-      histos.add("QAMC/trkbpionTOFPID", "TOF PID of bachelor pion candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
-      histos.add("QAMC/trkbpionTPCTOFPID", "TPC-TOF PID map of bachelor pion candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
+      histos.add("QACent_woCut", "Centrality without cut", HistType::kTH1F, {centAxis});
+      histos.add("QACent_woCentCut", "Centrality without cent cut", HistType::kTH1F, {centAxis});
+      histos.add("QACent_wCentCut", "Centrality with cent cut", HistType::kTH1F, {centAxis});
+      histos.add("QAvtxz_woCut", "z-vertex without cut", HistType::kTH1F, {vtxzAxis});
+      histos.add("QAvtxz_wVtxzCut", "z-vertex with vtxz cut", HistType::kTH1F, {vtxzAxis});
 
-      // Secondary pion 1
-      histos.add("QAMC/trkppionDCAxy", "DCAxy distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcaxyAxis});
-      histos.add("QAMC/trkppionDCAz", "DCAz distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {dcazAxis});
-      histos.add("QAMC/trkppionpT", "pT distribution of secondary pion 1 (positive) candidates", HistType::kTH1D, {ptAxis});
-      histos.add("QAMC/trkppionTPCPID", "TPC PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
-      histos.add("QAMC/trkppionTOFPID", "TOF PID of secondary pion 1 (positive) candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
-      histos.add("QAMC/trkppionTPCTOFPID", "TPC-TOF PID map of secondary pion 1 (positive) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
+      histos.add("EffK0s/genK0s", "Gen K0s (|y<0.8|)", HistType::kTH2F, {ptAxisQA, centAxis});
+      histos.add("EffK0s/recoK0s", "Reco K0s (|y<0.8|)", HistType::kTH2F, {ptAxisQA, centAxis});
 
-      // Secondary pion 2
-      histos.add("QAMC/trknpionTPCPID", "TPC PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
-      histos.add("QAMC/trknpionTOFPID", "TOF PID of secondary pion 2 (negative) candidates", HistType::kTH2D, {ptAxis, pidQAAxis});
-      histos.add("QAMC/trknpionTPCTOFPID", "TPC-TOF PID map of secondary pion 2 (negative) candidates", HistType::kTH2D, {pidQAAxis, pidQAAxis});
-      histos.add("QAMC/trknpionpT", "pT distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {ptAxis});
-      histos.add("QAMC/trknpionDCAxy", "DCAxy distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcaxyAxis});
-      histos.add("QAMC/trknpionDCAz", "DCAz distribution of secondary pion 2 (negative) candidates", HistType::kTH1D, {dcazAxis});
+      histos.add("EffKstar/genKstar", "Gen Kstar (|y|<0.5)", HistType::kTH2F, {ptAxisQA, centAxis});
+      histos.add("EffKstar/genKstar_m", "Gen Kstar (|y|<0.5) invariant mass distribution", HistType::kTH1F, {invMassAxisReso});
+      histos.add("EffKstar/recoKstar", "Kstar Reco matched (final all)", HistType::kTH2F, {ptAxisQA, centAxis});
+      histos.add("EffKstar/recoKstar_m", "Kstar Reco (final all) invariant mass distribution", HistType::kTH2F, {ptAxisQA, invMassAxisReso});
+      histos.add("EffKstar/recoKstar_m_rot", "Kstar Reco (final all) invariant mass distribution of Rot", HistType::kTH2F, {ptAxisQA, invMassAxisReso});
 
-      // Secondary Resonance (K0s cand)
-      histos.add("QAMC/hDauDCASecondary", "DCA of daughters of secondary resonance", HistType::kTH1D, {dcaAxis});
-      histos.add("QAMC/hDauPosDCAtoPVSecondary", "Pos DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
-      histos.add("QAMC/hDauNegDCAtoPVSecondary", "Neg DCA to PV of daughters secondary resonance", HistType::kTH1D, {dcaAxis});
-
-      histos.add("QAMC/hpT_Secondary", "pT distribution of secondary resonance", HistType::kTH1D, {ptAxis});
-      histos.add("QAMC/hy_Secondary", "Rapidity distribution of secondary resonance", HistType::kTH1D, {yAxis});
-      histos.add("QAMC/hRadiusSecondary", "Radius distribution of secondary resonance", HistType::kTH1D, {radiusAxis});
-      histos.add("QAMC/hCPASecondary", "Cosine pointing angle distribution of secondary resonance", HistType::kTH1D, {cpaAxis});
-      histos.add("QAMC/hDCAtoPVSecondary", "DCA to PV distribution of secondary resonance", HistType::kTH1D, {dcaAxis});
-      histos.add("QAMC/hPropTauSecondary", "Proper Lifetime distribution of secondary resonance", HistType::kTH1D, {tauAxis});
-      histos.add("QAMC/hPtAsymSecondary", "pT asymmetry distribution of secondary resonance", HistType::kTH1D, {AxisSpec{100, -1, 1, "Pair asymmetry"}});
-      histos.add("QAMC/hInvmassSecondary", "Invariant mass of unlike-sign secondary resonance", HistType::kTH1D, {invMassAxisK0s});
-
-      // K892
-      histos.add("QAMC/KstarOA", "Opening angle of chK(892)", HistType::kTH1D, {AxisSpec{100, 0, 3.14, "Opening angle"}});
-      histos.add("QAMC/KstarPairAsym", "Pair asymmetry of chK(892)", HistType::kTH1D, {AxisSpec{100, -1, 1, "Pair asymmetry"}});
-      histos.add("QAMC/KstarRapidity", "Rapidity distribution of chK(892)", HistType::kTH1D, {yAxis});
-
-      histos.add("QAMC/kstarinvmass", "Invariant mass of unlike-sign chK(892)", HistType::kTH1D, {invMassAxisReso});
-      histos.add("QAMC/kstarinvmass_noKstar", "Invariant mass of unlike-sign no chK(892)", HistType::kTH1D, {invMassAxisReso});
-
-      histos.add("hInvmass_Kstar_MC", "Invariant mass of unlike chK(892)", HistType::kTHnSparseD, {axisType, centAxis, ptAxis, invMassAxisReso});
-
-      ccdb->setURL(CCDBConfig.cfgURL);
-      ccdbApi.init("http://alice-ccdb.cern.ch");
-      ccdb->setCaching(true);
-      ccdb->setLocalObjectValidityChecking();
-      ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
+      histos.add("EffKstar/recoKstar_m_matched", "Kstar Reco matched (final all) invariant mass distribution", HistType::kTH2F, {ptAxisQA, invMassAxisReso});
     }
+
+    ccdb->setURL(CCDBConfig.cfgURL);
+    ccdbApi.init("http://alice-ccdb.cern.ch");
+    ccdb->setCaching(true);
+    ccdb->setLocalObjectValidityChecking();
+    ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
 
     // Print output histograms statistics
     LOG(info) << "Size of the histograms in chK(892) Analysis Task";
@@ -528,36 +531,35 @@ struct Chk892pp {
   template <typename TrackType>
   bool selectionPIDPion(TrackType const& candidate)
   {
-    bool tpcPIDPassed = std::abs(candidate.tpcNSigmaPi()) < PIDCuts.cfgMaxTPCnSigmaPion;
-    bool tofPIDPassed = false;
-
-    if (PIDCuts.cfgTPConly) {
-      return tpcPIDPassed;
-    }
+    if (std::abs(candidate.tpcNSigmaPi()) >= PIDCuts.cfgMaxTPCnSigmaPion)
+      return false;
+    if (PIDCuts.cfgTPConly)
+      return true;
+    if (candidate.pt() <= PIDCuts.cfgTOFMinPt)
+      return true;
 
     if (candidate.hasTOF()) {
-      tofPIDPassed = std::abs(candidate.tofNSigmaPi()) < PIDCuts.cfgMaxTOFnSigmaPion ||
-                     (PIDCuts.cfgNsigmaCutCombinedPion > 0 &&
-                      candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() +
-                          candidate.tofNSigmaPi() * candidate.tofNSigmaPi() <
-                        PIDCuts.cfgNsigmaCutCombinedPion * PIDCuts.cfgNsigmaCutCombinedPion);
+      const bool tofPIDPassed = std::abs(candidate.tofNSigmaPi()) < PIDCuts.cfgMaxTOFnSigmaPion;
+      const bool combo = (PIDCuts.cfgNsigmaCutCombinedPion > 0) &&
+                         (candidate.tpcNSigmaPi() * candidate.tpcNSigmaPi() +
+                            candidate.tofNSigmaPi() * candidate.tofNSigmaPi() <
+                          PIDCuts.cfgNsigmaCutCombinedPion * PIDCuts.cfgNsigmaCutCombinedPion);
+      return tofPIDPassed || combo;
     } else {
-      tofPIDPassed = PIDCuts.cfgTOFVeto;
+      return PIDCuts.cfgTOFVeto;
     }
-
-    return tpcPIDPassed && tofPIDPassed;
   }
 
   template <typename CollisionType, typename K0sType>
   bool selectionK0s(CollisionType const& collision, K0sType const& candidate)
   {
-    auto lDauDCA = candidate.dcaV0daughters();
-    auto lDauPosDCAtoPV = candidate.dcapostopv();
-    auto lDauNegDCAtoPV = candidate.dcanegtopv();
+    auto lDauDCA = std::fabs(candidate.dcaV0daughters());
+    auto lDauPosDCAtoPV = std::fabs(candidate.dcapostopv());
+    auto lDauNegDCAtoPV = std::fabs(candidate.dcanegtopv());
     auto lPt = candidate.pt();
     auto lRapidity = candidate.yK0Short();
     auto lRadius = candidate.v0radius();
-    auto lDCAtoPV = candidate.dcav0topv();
+    auto lDCAtoPV = std::fabs(candidate.dcav0topv());
     auto lCPA = candidate.v0cosPA();
     auto lPropTauK0s = candidate.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * MassK0Short;
     auto lMk0s = candidate.mK0Short();
@@ -565,11 +567,11 @@ struct Chk892pp {
     auto lMALambda = candidate.mAntiLambda();
 
     auto checkCommonCuts = [&]() {
-      if (lDauDCA > SecondaryCuts.cfgSecondaryDauDCAMax)
+      if (std::fabs(lDauDCA) > SecondaryCuts.cfgSecondaryDauDCAMax)
         return false;
-      if (lDauPosDCAtoPV < SecondaryCuts.cfgSecondaryDauPosDCAtoPVMin)
+      if (std::fabs(lDauPosDCAtoPV) < SecondaryCuts.cfgSecondaryDauPosDCAtoPVMin)
         return false;
-      if (lDauNegDCAtoPV < SecondaryCuts.cfgSecondaryDauNegDCAtoPVMin)
+      if (std::fabs(lDauNegDCAtoPV) < SecondaryCuts.cfgSecondaryDauNegDCAtoPVMin)
         return false;
       if (lPt < SecondaryCuts.cfgSecondaryPtMin)
         return false;
@@ -577,13 +579,13 @@ struct Chk892pp {
         return false;
       if (lRadius < SecondaryCuts.cfgSecondaryRadiusMin || lRadius > SecondaryCuts.cfgSecondaryRadiusMax)
         return false;
-      if (lDCAtoPV > SecondaryCuts.cfgSecondaryDCAtoPVMax)
+      if (std::fabs(lDCAtoPV) > SecondaryCuts.cfgSecondaryDCAtoPVMax)
         return false;
       if (lCPA < SecondaryCuts.cfgSecondaryCosPAMin)
         return false;
       if (lPropTauK0s > SecondaryCuts.cfgSecondaryProperLifetimeMax)
         return false;
-      if (candidate.qtarm() < SecondaryCuts.cfgSecondaryparamArmenterosCut * std::abs(candidate.alpha()))
+      if (candidate.qtarm() < SecondaryCuts.cfgSecondaryparamArmenterosCut * std::fabs(candidate.alpha()))
         return false;
       if (std::fabs(lMk0s - MassK0Short) > SecondaryCuts.cfgSecondaryMassWindow)
         return false;
@@ -632,7 +634,7 @@ struct Chk892pp {
         histos.fill(HIST("QA/K0sCutCheck"), 9);
         returnFlag = false;
       }
-      if (candidate.qtarm() < SecondaryCuts.cfgSecondaryparamArmenterosCut * std::abs(candidate.alpha())) {
+      if (candidate.qtarm() < SecondaryCuts.cfgSecondaryparamArmenterosCut * std::fabs(candidate.alpha())) {
         histos.fill(HIST("QA/K0sCutCheck"), 10);
         returnFlag = false;
       }
@@ -689,11 +691,274 @@ struct Chk892pp {
     return true;
   }
 
+  std::unordered_set<int64_t> allowedMcIds;
+  std::unordered_map<int64_t, float> centByMcIds;
+
+  void buildAllowedMcIds(MCEventCandidates const& events)
+  {
+    allowedMcIds.clear();
+    centByMcIds.clear();
+
+    for (const auto& coll : events) {
+      lCentrality = getCentrality(coll);
+      histos.fill(HIST("QACent_woCut"), lCentrality);
+      histos.fill(HIST("QAvtxz_woCut"), coll.posZ());
+
+      if (!colCuts.isSelected(coll))
+        continue;
+      if (!coll.isInelGt0())
+        continue;
+
+      histos.fill(HIST("QACent_woCentCut"), lCentrality);
+      histos.fill(HIST("QAvtxz_wVtxzCut"), coll.posZ());
+
+      if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
+        continue;
+      histos.fill(HIST("QACent_wCentCut"), lCentrality);
+      if (!coll.has_mcCollision())
+        continue;
+      const auto mcid = coll.mcCollisionId();
+      if (mcid < 0)
+        continue;
+      allowedMcIds.insert(mcid);
+      centByMcIds[mcid] = lCentrality;
+    }
+  }
+
+  void effK0sProcessGen(MCTrueTrackCandidates const& mcparts)
+  {
+    for (const auto& part : mcparts) {
+      const auto mcid = part.mcCollisionId();
+
+      if (!part.has_mcCollision())
+        continue;
+      if (part.pdgCode() != kPDGK0s)
+        continue;
+      if (!part.isPhysicalPrimary())
+        continue;
+      if (allowedMcIds.find(mcid) == allowedMcIds.end())
+        continue;
+
+      auto iter = centByMcIds.find(mcid);
+      if (iter == centByMcIds.end())
+        continue;
+
+      const float lCentrality = iter->second;
+
+      if (std::abs(part.y()) > SecondaryCuts.cfgSecondaryRapidityMax)
+        continue;
+
+      histos.fill(HIST("EffK0s/genK0s"), part.pt(), lCentrality);
+    }
+  }
+
+  void effK0sProcessReco(MCV0Candidates const& v0s)
+  {
+    for (const auto& v0 : v0s) {
+      auto coll = v0.template collision_as<MCEventCandidates>();
+
+      if (!coll.has_mcCollision())
+        continue;
+
+      const auto mcid = coll.mcCollisionId();
+
+      if (allowedMcIds.find(mcid) == allowedMcIds.end())
+        continue;
+
+      auto iter = centByMcIds.find(mcid);
+      if (iter == centByMcIds.end())
+        continue;
+
+      const float lCentrality = iter->second;
+
+      const double ptreco = v0.pt();
+      const double yreco = v0.yK0Short();
+
+      double ptgen = -1, ygen = 0;
+      if (!getTruthK0sAndGenKinematics(v0, ptgen, ygen))
+        continue;
+      if (std::abs(yreco) > SecondaryCuts.cfgSecondaryRapidityMax)
+        continue;
+
+      if (!SecondaryCuts.cfgByPassDauPIDSelection) {
+        auto posDauTrack = v0.template posTrack_as<MCTrackCandidates>();
+        auto negDauTrack = v0.template negTrack_as<MCTrackCandidates>();
+        if (!selectionPIDPion(posDauTrack))
+          continue;
+        if (!selectionPIDPion(negDauTrack))
+          continue;
+      }
+      if (!selectionK0s(coll, v0))
+        continue;
+
+      histos.fill(HIST("EffK0s/recoK0s"), ptreco, lCentrality);
+    }
+  } // effK0sProcessReco
+
+  template <typename V0T, typename TrkT>
+  bool matchRecoToTruthKstar(V0T const& v0, TrkT const& trk, double& ptgen, double& ygen)
+  {
+    if (!v0.has_mcParticle() || !trk.has_mcParticle())
+      return false;
+
+    auto mcK0s = v0.template mcParticle_as<MCTrueTrackCandidates>();
+    auto mcPi = trk.template mcParticle_as<MCTrueTrackCandidates>();
+
+    if (std::abs(mcK0s.pdgCode()) != kPDGK0s)
+      return false;
+    if (std::abs(mcPi.pdgCode()) != kPiPlus)
+      return false;
+
+    MCTrueTrackCandidates::iterator kstarFromPi;
+    bool havePiKstar = false;
+    for (const auto& m1 : mcPi.template mothers_as<MCTrueTrackCandidates>()) {
+      if (std::abs(m1.pdgCode()) == kKstarPlus) {
+        kstarFromPi = m1;
+        havePiKstar = true;
+        break;
+      }
+    }
+    if (!havePiKstar) {
+      return false;
+    }
+
+    bool shareSameKstar = false;
+    for (const auto& m1 : mcK0s.template mothers_as<MCTrueTrackCandidates>()) {
+      if (std::abs(m1.pdgCode()) == kPDGK0) {
+        for (const auto& m2 : m1.template mothers_as<MCTrueTrackCandidates>()) {
+          if (m2.globalIndex() == kstarFromPi.globalIndex()) {
+            shareSameKstar = true;
+            break;
+          }
+        }
+        if (shareSameKstar)
+          break;
+      }
+    }
+    if (!shareSameKstar) {
+      return false;
+    }
+
+    ptgen = kstarFromPi.pt();
+    ygen = kstarFromPi.y();
+
+    return true;
+  } // matchRecoToTruthKstar
+
+  void effKstarProcessGen(MCTrueTrackCandidates const& mcparts)
+  {
+    for (const auto& part : mcparts) {
+      const auto mcid = part.mcCollisionId();
+      if (!part.has_mcCollision())
+        continue;
+      if (std::abs(part.pdgCode()) != kKstarPlus)
+        continue;
+      if (allowedMcIds.find(mcid) == allowedMcIds.end())
+        continue;
+
+      auto iter = centByMcIds.find(mcid);
+      if (iter == centByMcIds.end())
+        continue;
+
+      const float lCentrality = iter->second;
+
+      if (std::abs(part.y()) > KstarCuts.cfgKstarMaxRap)
+        continue;
+
+      const double px = part.px(), py = part.py(), pz = part.pz(), e = part.e();
+      const double mgen2 = e * e - (px * px + py * py + pz * pz);
+      const double mgen = (mgen2 > 0.0) ? std::sqrt(mgen2) : 0.0;
+
+      histos.fill(HIST("EffKstar/genKstar"), part.pt(), lCentrality);
+      histos.fill(HIST("EffKstar/genKstar_m"), mgen);
+    }
+  } // effKstarProcessGen
+
+  template <typename V0RangeT, typename TrkRangeT>
+  void effKstarProcessReco(V0RangeT const& v0s, TrkRangeT const& tracks)
+  {
+    for (const auto& v0 : v0s) {
+      auto coll = v0.template collision_as<MCEventCandidates>();
+
+      if (!coll.has_mcCollision())
+        continue;
+
+      const auto mcid = coll.mcCollisionId();
+
+      if (allowedMcIds.find(mcid) == allowedMcIds.end())
+        continue;
+
+      auto iter = centByMcIds.find(mcid);
+      if (iter == centByMcIds.end())
+        continue;
+
+      const float lCentrality = iter->second;
+
+      if (!SecondaryCuts.cfgByPassDauPIDSelection) {
+        auto posDauTrack = v0.template posTrack_as<MCTrackCandidates>();
+        auto negDauTrack = v0.template negTrack_as<MCTrackCandidates>();
+        if (!selectionPIDPion(posDauTrack))
+          continue;
+        if (!selectionPIDPion(negDauTrack))
+          continue;
+      }
+      if (!selectionK0s(coll, v0))
+        continue;
+
+      auto trks = tracks.sliceBy(perCollision, v0.collisionId());
+      for (const auto& bTrack : trks) {
+        if (bTrack.collisionId() != v0.collisionId())
+          continue;
+
+        if (!trackCut(bTrack))
+          continue;
+        if (!selectionPIDPion(bTrack))
+          continue;
+
+        LorentzVectorSetXYZM lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot, lResonanceRot;
+
+        lResoSecondary = LorentzVectorSetXYZM(v0.px(), v0.py(), v0.pz(), v0.mK0Short());
+        lDecayDaughter_bach = LorentzVectorSetXYZM(bTrack.px(), bTrack.py(), bTrack.pz(), MassPionCharged);
+        lResoKstar = lResoSecondary + lDecayDaughter_bach;
+
+        histos.fill(HIST("EffKstar/recoKstar_m"), lResoKstar.Pt(), lResoKstar.M());
+
+        if (BkgEstimationConfig.cfgFillRotBkg) {
+          for (int i = 0; i < BkgEstimationConfig.cfgNrotBkg; i++) {
+            auto lRotAngle = BkgEstimationConfig.cfgMinRot + i * ((BkgEstimationConfig.cfgMaxRot - BkgEstimationConfig.cfgMinRot) / (BkgEstimationConfig.cfgNrotBkg - 1));
+
+            lDaughterRot = lDecayDaughter_bach;
+            ROOT::Math::RotationZ rot(lRotAngle);
+            auto p3 = rot * lDaughterRot.Vect();
+            lDaughterRot = LorentzVectorSetXYZM(p3.X(), p3.Y(), p3.Z(), lDaughterRot.M());
+            lResonanceRot = lDaughterRot + lResoSecondary;
+
+            histos.fill(HIST("EffKstar/recoKstar_m_rot"), lResonanceRot.Pt(), lResonanceRot.M());
+          }
+        }
+
+        double ptgen = 0, ygen = 0;
+        if (!matchRecoToTruthKstar(v0, bTrack, ptgen, ygen))
+          continue;
+
+        const double ptreco = lResoKstar.Pt();
+        const double yreco = lResoKstar.Rapidity();
+
+        if (std::abs(yreco) > KstarCuts.cfgKstarMaxRap)
+          continue;
+        histos.fill(HIST("EffKstar/recoKstar"), ptreco, lCentrality);
+        histos.fill(HIST("EffKstar/recoKstar_m_matched"), ptreco, lResoKstar.M());
+      }
+    }
+  } // effKstarProcessReco
+
   int count = 0;
 
   template <bool IsMC, bool IsMix, typename CollisionType, typename TracksType, typename TracksTypeK0s>
   void fillHistograms(const CollisionType& collision, const TracksType& dTracks1, const TracksTypeK0s& dTracks2)
   {
+    using TrackTarget = std::decay_t<TracksType>;
+
     histos.fill(HIST("QA/before/CentDist"), lCentrality);
 
     LorentzVectorSetXYZM lDecayDaughter1, lDecayDaughter2, lResoSecondary, lDecayDaughter_bach, lResoKstar, lDaughterRot, lResonanceRot;
@@ -738,8 +1003,10 @@ struct Chk892pp {
     }
 
     for (const auto& k0sCand : dTracks2) {
-      auto posDauTrack = k0sCand.template posTrack_as<TrackCandidates>();
-      auto negDauTrack = k0sCand.template negTrack_as<TrackCandidates>();
+      // auto posDauTrack = k0sCand.template posTrack_as<TrackCandidates>();
+      // auto negDauTrack = k0sCand.template negTrack_as<TrackCandidates>();
+      auto posDauTrack = k0sCand.template posTrack_as<TrackTarget>();
+      auto negDauTrack = k0sCand.template negTrack_as<TrackTarget>();
 
       /// Daughters
       // Positve pion
@@ -764,6 +1031,8 @@ struct Chk892pp {
       auto trkkDauDCANegtoPV = k0sCand.dcanegtopv();
       auto trkkpt = k0sCand.pt();
       auto trkkRadius = k0sCand.v0radius();
+
+      lResoSecondary = LorentzVectorSetXYZM(k0sCand.px(), k0sCand.py(), k0sCand.pz(), trkkMass);
 
       if constexpr (!IsMix) {
         // Seconddary QA plots
@@ -913,24 +1182,42 @@ struct Chk892pp {
     lCentrality = getCentrality(collision);
     if (lCentrality < EventCuts.cfgEventCentralityMin || lCentrality > EventCuts.cfgEventCentralityMax)
       return;
+    if (!collision.isInelGt0())
+      return;
     colCuts.fillQA(collision);
 
     fillHistograms<false, false>(collision, tracks, v0s); // second order
   }
-  PROCESS_SWITCH(Chk892pp, processData, "Process Event for data without Partitioning", true);
+  PROCESS_SWITCH(Chk892pp, processData, "Process Event for data without Partitioning", false);
 
   // process MC reconstructed level
-  void processMC(EventCandidates::iterator const& collision,
+  void processMC(MCTrueTrackCandidates const& mcpart,
                  MCTrackCandidates const& tracks,
-                 MCV0Candidates const& v0s)
+                 MCV0Candidates const& v0s,
+                 MCEventCandidates const& events)
   {
+    buildAllowedMcIds(events);
+    effK0sProcessGen(mcpart);
+    effK0sProcessReco(v0s);
+    effKstarProcessGen(mcpart);
+    effKstarProcessReco(v0s, tracks);
 
-    histos.fill(HIST("QAMC/hEvent"), 1.0);
+    for (auto const& collision : events) {
+      if (!collision.has_mcCollision())
+        continue;
+      const auto mcid = collision.mcCollisionId();
 
-    fillHistograms<true, false>(collision, tracks, v0s);
+      auto it = centByMcIds.find(mcid);
+      if (it == centByMcIds.end())
+        continue;
+
+      lCentrality = it->second;
+      fillHistograms<true, false>(collision, tracks, v0s);
+    }
   }
-  PROCESS_SWITCH(Chk892pp, processMC, "Process Event for MC", false);
+  PROCESS_SWITCH(Chk892pp, processMC, "Process Event for MC", true);
 };
+
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{adaptAnalysisTask<Chk892pp>(cfgc)};

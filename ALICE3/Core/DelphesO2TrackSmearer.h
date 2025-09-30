@@ -29,6 +29,7 @@
 
 #include <TRandom.h>
 
+#include <cstdio>
 #include <fstream>
 #include <iostream>
 #include <map>
@@ -214,6 +215,8 @@ class TrackSmearer
         return 6; // Triton
       case 1000020030:
         return 7; // Helium3
+      case 1000020040:
+        return 8; // Alphas
       default:
         return 2; // Default: pion
     }
@@ -238,6 +241,8 @@ class TrackSmearer
         return "triton";
       case 1000020030:
         return "helium3";
+      case 1000020040:
+        return "alpha";
       default:
         return "pion"; // Default: pion
     }
@@ -246,7 +251,7 @@ class TrackSmearer
   void setCcdbManager(o2::ccdb::BasicCCDBManager* mgr) { mCcdbManager = mgr; } //;
 
  protected:
-  static constexpr unsigned int nLUTs = 8; // Number of LUT available
+  static constexpr unsigned int nLUTs = 9; // Number of LUT available
   lutHeader_t* mLUTHeader[nLUTs] = {nullptr};
   lutEntry_t***** mLUTEntry[nLUTs] = {nullptr};
   bool mUseEfficiency = true;
