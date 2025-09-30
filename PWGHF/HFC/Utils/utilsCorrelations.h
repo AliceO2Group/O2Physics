@@ -173,7 +173,7 @@ bool matchCandAndMass(McParticleType const& particle, double& massCand)
     }
 
     case BIT(aod::hf_cand_sigmac::DecayType::ScplusplusToPKPiPi): {
-      massCand = o2::constants::physics::MassSigmaCStarPlusPlus;
+      massCand = o2::constants::physics::MassSigmaCPlusPlus;
       return true;
     }
 
