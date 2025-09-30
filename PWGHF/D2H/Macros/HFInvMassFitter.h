@@ -99,7 +99,7 @@ class HFInvMassFitter : public TNamed
     mParamSgn = sigmaLimit;
   }
   void setParticlePdgMass(Double_t mass) { mMassParticle = mass; }
-  Double_t getParticlePdgMass() const { return mMassParticle; }
+  [[nodiscard]] Double_t getParticlePdgMass() const { return mMassParticle; }
   void setInitialGaussianMean(Double_t mean)
   {
     mMass = mean;

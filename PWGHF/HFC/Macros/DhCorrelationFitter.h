@@ -85,7 +85,7 @@ class DhCorrelationFitter
   Double_t getNsYield() { return fFit->GetParameter("NS Y"); }
   Double_t getAsYield() { return fFit->GetParameter("AS Y"); }
   Double_t getBeta() { return fFit->GetParameter(7); }
-  Double_t getPedestal() const { return fBaseline; }
+  [[nodiscard]] Double_t getPedestal() const { return fBaseline; }
   Double_t getv2hadron() { return fFit->GetParameter("v_{2} hadron"); }
   Double_t getv2Dmeson() { return fFit->GetParameter("v_{2} D meson"); }
   Double_t getNsSigmaError() { return fFit->GetParError(fFit->GetParNumber("NS #sigma")); } // TODO: case kConstThreeGausPeriodicity
@@ -93,18 +93,18 @@ class DhCorrelationFitter
   Double_t getNsYieldError() { return fFit->GetParError(fFit->GetParNumber("NS Y")); }
   Double_t getAsYieldError() { return fFit->GetParError(fFit->GetParNumber("AS Y")); }
   Double_t getBetaError() { return fFit->GetParError(7); }
-  Double_t getPedestalError() const { return fErrBaseline; }
+  [[nodiscard]] Double_t getPedestalError() const { return fErrBaseline; }
   Double_t getv2hadronError() { return fFit->GetParError(fFit->GetParNumber("v_{2} hadron")); }
   Double_t getv2DmesonError() { return fFit->GetParError(fFit->GetParNumber("v_{2} D meson")); }
-  Double_t getBinCountingNsYield() const { return fNSyieldBinCount; }
-  Double_t getBinCountingAsYield() const { return fASyieldBinCount; }
-  Double_t getBinCountingNsYieldErr() const { return fErrNSyieldBinCount; }
-  Double_t getBinCountingAsYieldErr() const { return fErrASyieldBinCount; }
+  [[nodiscard]] Double_t getBinCountingNsYield() const { return fNSyieldBinCount; }
+  [[nodiscard]] Double_t getBinCountingAsYield() const { return fASyieldBinCount; }
+  [[nodiscard]] Double_t getBinCountingNsYieldErr() const { return fErrNSyieldBinCount; }
+  [[nodiscard]] Double_t getBinCountingAsYieldErr() const { return fErrASyieldBinCount; }
   TF1* getFitFunction()
   {
     if (fFit == nullptr) {
       printf("[ERROR] DhCorrelationFitter::GetFitFunction, No fit function");
-      return NULL;
+      return nullptr;
     }
     return fFit;
   }

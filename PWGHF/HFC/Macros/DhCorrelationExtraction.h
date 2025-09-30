@@ -48,7 +48,7 @@ class DhCorrelationExtraction : public TObject
 
   DhCorrelationExtraction(); // default constructor
   DhCorrelationExtraction(const DhCorrelationExtraction& source);
-  virtual ~DhCorrelationExtraction();
+  ~DhCorrelationExtraction() override;
 
   /// Methods to set the input configuration
   // Input files, directories and histograms

@@ -166,7 +166,7 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
   TH1D* hCorrectedCorrelReflectedBaselineSubtr[nBinsPtCand][nBinsPtHad];
 
   // Create and set the correlation plotter class
-  DhCorrelationExtraction* plotter = new DhCorrelationExtraction();
+  auto* plotter = new DhCorrelationExtraction();
 
   Bool_t flagSpecie = plotter->setDmesonSpecie(static_cast<DhCorrelationExtraction::DmesonSpecie>(specie));
   plotter->setNpools(npools);
@@ -232,7 +232,7 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
   }
 
   // output file
-  TFile* outFile = new TFile(Form("Output_CorrelationExtraction_%s_Root/ExtractCorrelationsResults.root", codeNameAnalysis.data()), "RECREATE");
+  auto* outFile = new TFile(Form("Output_CorrelationExtraction_%s_Root/ExtractCorrelationsResults.root", codeNameAnalysis.data()), "RECREATE");
   outFile->cd();
   for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
     for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
@@ -242,7 +242,7 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
   outFile->Close();
 
   // output file baseline subtr.
-  TFile* outFileBaselineSubtr = new TFile(Form("Output_CorrelationExtraction_%s_Root/ExtractCorrelationsResults_BaselineSubtr.root", codeNameAnalysis.data()), "RECREATE");
+  auto* outFileBaselineSubtr = new TFile(Form("Output_CorrelationExtraction_%s_Root/ExtractCorrelationsResults_BaselineSubtr.root", codeNameAnalysis.data()), "RECREATE");
   outFileBaselineSubtr->cd();
   for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
     for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
@@ -252,7 +252,7 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
   outFileBaselineSubtr->Close();
 
   // output file reflected
-  TFile* outFileReflected = new TFile(Form("Output_CorrelationExtraction_%s_Root/ExtractCorrelationsResults_Reflected.root", codeNameAnalysis.data()), "RECREATE");
+  auto* outFileReflected = new TFile(Form("Output_CorrelationExtraction_%s_Root/ExtractCorrelationsResults_Reflected.root", codeNameAnalysis.data()), "RECREATE");
   outFileReflected->cd();
   for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
     for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
@@ -262,7 +262,7 @@ void extractOutputCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json
   outFileReflected->Close();
 
   // output file reflected baseline subtr.
-  TFile* outFileReflectedBaselineSubtr = new TFile(Form("Output_CorrelationExtraction_%s_Root/ExtractCorrelationsResults_Reflected_BaselineSubtr.root", codeNameAnalysis.data()), "RECREATE");
+  auto* outFileReflectedBaselineSubtr = new TFile(Form("Output_CorrelationExtraction_%s_Root/ExtractCorrelationsResults_Reflected_BaselineSubtr.root", codeNameAnalysis.data()), "RECREATE");
   outFileReflectedBaselineSubtr->cd();
   for (int iBinPtCand = 0; iBinPtCand < nBinsPtCand; iBinPtCand++) {
     for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {

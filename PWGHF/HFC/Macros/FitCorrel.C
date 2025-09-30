@@ -144,9 +144,9 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
   bool refl = false;
 
   // Input file
-  TFile* inFile = new TFile(inFileName.Data());
-  TFile* inFileSystematicErrors = new TFile("OutputSystematicUncertainties/SystematicUncertaintesAngCorrMerged.root");
-  TFile* inFileFitSystematicErrors = new TFile("OutputSystematicUncertainties/SystematicUncertaintesFitPhysObsMerged.root");
+  auto* inFile = new TFile(inFileName.Data());
+  auto* inFileSystematicErrors = new TFile("OutputSystematicUncertainties/SystematicUncertaintesAngCorrMerged.root");
+  auto* inFileFitSystematicErrors = new TFile("OutputSystematicUncertainties/SystematicUncertaintesFitPhysObsMerged.root");
 
   // Canvas
   TCanvas* canvasCorrPhi[nBinsPtHad];
@@ -265,7 +265,7 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
       TF1* fFit = corrFitter[iBinPtHad][iBinPtCand]->getFitFunction();
 
       // Title of the histogram
-      TPaveText* pttext = new TPaveText(0.15, 0.9, 0.85, 0.95, "NDC");
+      auto* pttext = new TPaveText(0.15, 0.9, 0.85, 0.95, "NDC");
       pttext->SetFillStyle(0);
       pttext->SetBorderSize(0);
       TText* tpT = pttext->AddText(0., 0.8, Form("%.0f < p_{T}^{D_{s}} < %.0f GeV/c, p_{T}^{assoc} > %.1f GeV/c", binsPtCandIntervals[iBinPtCand], binsPtCandIntervals[iBinPtCand + 1], binsPtHadIntervals[iBinPtHad]));
@@ -318,7 +318,7 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
       }
 
       // Draw
-      TPaveText* tCorrUncDs = new TPaveText(0.413, 0.311, 0.877, 0.392, "NDC");
+      auto* tCorrUncDs = new TPaveText(0.413, 0.311, 0.877, 0.392, "NDC");
       tCorrUncDs->SetFillStyle(0);
       tCorrUncDs->SetBorderSize(0);
       tCorrUncDs->SetTextSize(0.05);
@@ -327,7 +327,7 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
       tCorrUncDs->SetTextColor(kRed + 1);
       tCorrUncDs->AddText(0., 0., Form("#splitline{+%.0f%%}{#minus%.0f%%}", systUncCorrelatedDs[iBinPtCand], systUncCorrelatedDs[iBinPtCand]));
 
-      TPaveText* tScaleUnc = new TPaveText(0.501, 0.292, 0.968, 0.372, "NDC");
+      auto* tScaleUnc = new TPaveText(0.501, 0.292, 0.968, 0.372, "NDC");
       tScaleUnc->SetFillStyle(0);
       tScaleUnc->SetBorderSize(0);
       tScaleUnc->SetTextSize(0.05);
@@ -353,7 +353,7 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
   }
 
   // histogram with fit parameter and errors
-  TFile* outFile = new TFile(Form("Output_CorrelationFitting_%s_Root/CorrPhiDs_FinalPlots.root", codeNameAnalysis.data()), "RECREATE");
+  auto* outFile = new TFile(Form("Output_CorrelationFitting_%s_Root/CorrPhiDs_FinalPlots.root", codeNameAnalysis.data()), "RECREATE");
   outFile->cd();
   for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
     hBaselin[iBinPtHad]->Write();
@@ -369,11 +369,11 @@ void fitCorrelDs(const TString cfgFileName = "config_CorrAnalysis.json")
 
   // Draw plots
   for (int iBinPtHad = 0; iBinPtHad < nBinsPtHad; iBinPtHad++) {
-    TCanvas* c1 = new TCanvas(Form("NS_yield_PtAssoc%d", iBinPtHad + 1), Form("NS_yield_PtAssoc%d", iBinPtHad + 1));
-    TCanvas* c2 = new TCanvas(Form("AS_yield_PtAssoc%d", iBinPtHad + 1), Form("AS_yield_PtAssoc%d", iBinPtHad + 1));
-    TCanvas* c3 = new TCanvas(Form("NS_sigma_PtAssoc%d", iBinPtHad + 1), Form("AS_sigma_PtAssoc%d", iBinPtHad + 1));
-    TCanvas* c4 = new TCanvas(Form("AS_sigma_PtAssoc%d", iBinPtHad + 1), Form("AS_sigma_PtAssoc%d", iBinPtHad + 1));
-    TCanvas* c5 = new TCanvas(Form("Baseline_PtAssoc%d", iBinPtHad + 1), Form("Baseline_PtAssoc%d", iBinPtHad + 1));
+    auto* c1 = new TCanvas(Form("NS_yield_PtAssoc%d", iBinPtHad + 1), Form("NS_yield_PtAssoc%d", iBinPtHad + 1));
+    auto* c2 = new TCanvas(Form("AS_yield_PtAssoc%d", iBinPtHad + 1), Form("AS_yield_PtAssoc%d", iBinPtHad + 1));
+    auto* c3 = new TCanvas(Form("NS_sigma_PtAssoc%d", iBinPtHad + 1), Form("AS_sigma_PtAssoc%d", iBinPtHad + 1));
+    auto* c4 = new TCanvas(Form("AS_sigma_PtAssoc%d", iBinPtHad + 1), Form("AS_sigma_PtAssoc%d", iBinPtHad + 1));
+    auto* c5 = new TCanvas(Form("Baseline_PtAssoc%d", iBinPtHad + 1), Form("Baseline_PtAssoc%d", iBinPtHad + 1));
     setTH1HistoStyle(hBaselin[iBinPtHad], Form("p_{T}^{assoc} > %.1f GeV/c", binsPtHadIntervals[iBinPtHad]), "p_{T} (GeV/c)", "Baseline", kFullSquare, kBlue, 1.8, kBlue, 2);
     setTH1HistoStyle(hNSYield[iBinPtHad], Form("p_{T}^{assoc} > %.1f GeV/c", binsPtHadIntervals[iBinPtHad]), "p_{T} (GeV/c)", "Y^{NS}", kFullSquare, kRed, 1.8, kRed, 2);
     setTH1HistoStyle(hASYield[iBinPtHad], Form("p_{T}^{assoc} > %.1f GeV/c", binsPtHadIntervals[iBinPtHad]), "p_{T} (GeV/c)", "Y^{AS}", kFullSquare, kMagenta, 1.8, kMagenta, 2);
