@@ -920,9 +920,7 @@ struct HfCorrelatorDsHadrons {
       }
       if (std::abs(candidate.flagMcMatchRec()) == hf_decay::hf_cand_3prong::DecayChannelMain::DsToPiKK) {
         // DsToKKPi and DsToPiKK division
-        if (candidate.isSelDsToKKPi() >= selectionFlagDs) {
-          fillHistoMcRecSig(candidate, 0.);
-        } else if (candidate.isSelDsToPiKK() >= selectionFlagDs) {
+        if (candidate.isSelDsToKKPi() >= selectionFlagDs || candidate.isSelDsToPiKK() >= selectionFlagDs) {
           fillHistoMcRecSig(candidate, 0.);
         }
       } else {
