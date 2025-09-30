@@ -291,11 +291,7 @@ struct HfTaskMcValidationGen {
       occupancy = o2::hf_occupancy::getOccupancyGenColl(recoCollisions, OccupancyEstimator::Its);
     }
     o2::hf_evsel::HfCollisionRejectionMask rejectionMask{};
-    if constexpr (CentEstimator == CentralityEstimator::FT0C) {
-      rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, CentEstimator>(mcCollision, recoCollisions, centrality);
-    } else if constexpr (CentEstimator == CentralityEstimator::FT0M) {
-      rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, CentEstimator>(mcCollision, recoCollisions, centrality);
-    } else if constexpr (CentEstimator == CentralityEstimator::None) {
+    if constexpr (CentEstimator == CentralityEstimator::FT0C || CentEstimator == CentralityEstimator::FT0M || CentEstimator == CentralityEstimator::None) {
       rejectionMask = hfEvSelMc.getHfMcCollisionRejectionMask<BCsInfo, CentEstimator>(mcCollision, recoCollisions, centrality);
     }
     hfEvSelMc.fillHistograms<CentEstimator>(mcCollision, rejectionMask);
