@@ -60,7 +60,7 @@ class V0PhotonCut : public TNamed
     kTPCFracSharedClusters,
     kTPCChi2NDF,
     kTPCNsigmaEl,
-    kTPCNsigmaPi,
+    // kTPCNsigmaPi,
     kDCAxy,
     kDCAz,
     kITSNCls,
@@ -235,9 +235,9 @@ class V0PhotonCut : public TNamed
     if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaEl)) {
       return false;
     }
-    if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaPi)) {
-      return false;
-    }
+    // if (!IsSelectedTrack(track, V0PhotonCuts::kTPCNsigmaPi)) {
+    //   return false;
+    // }
     return true;
   }
 
@@ -359,8 +359,8 @@ class V0PhotonCut : public TNamed
       case V0PhotonCuts::kTPCNsigmaEl:
         return track.tpcNSigmaEl() > mMinTPCNsigmaEl && track.tpcNSigmaEl() < mMaxTPCNsigmaEl;
 
-      case V0PhotonCuts::kTPCNsigmaPi:
-        return track.tpcNSigmaPi() > mMinTPCNsigmaPi && track.tpcNSigmaPi() < mMaxTPCNsigmaPi;
+      // case V0PhotonCuts::kTPCNsigmaPi:
+      //   return track.tpcNSigmaPi() > mMinTPCNsigmaPi && track.tpcNSigmaPi() < mMaxTPCNsigmaPi;
 
       case V0PhotonCuts::kDCAxy:
         return std::fabs(track.dcaXY()) < ((mMaxDcaXYPtDep) ? mMaxDcaXYPtDep(track.pt()) : mMaxDcaXY);
@@ -430,7 +430,7 @@ class V0PhotonCut : public TNamed
   void SetMeanClusterSizeITSob(float min, float max);
 
   void SetTPCNsigmaElRange(float min = -3, float max = +3);
-  void SetTPCNsigmaPiRange(float min = -1e+10, float max = 1e+10);
+  // void SetTPCNsigmaPiRange(float min = -1e+10, float max = 1e+10);
 
   void SetMaxDcaXY(float maxDcaXY);
   void SetMaxDcaZ(float maxDcaZ);
@@ -467,7 +467,7 @@ class V0PhotonCut : public TNamed
 
   // pid cuts
   float mMinTPCNsigmaEl{-5}, mMaxTPCNsigmaEl{+5};
-  float mMinTPCNsigmaPi{-1e+10}, mMaxTPCNsigmaPi{+1e+10};
+  // float mMinTPCNsigmaPi{-1e+10}, mMaxTPCNsigmaPi{+1e+10};
 
   // kinematic cuts
   float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};      // range in pT

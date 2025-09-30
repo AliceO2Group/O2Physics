@@ -74,7 +74,7 @@ struct pcmConverter1 {
         v0leg.tpcInnerParam(),
         v0leg.tpcSignal(),
         v0leg.tpcNSigmaEl(),
-        v0leg.tpcNSigmaPi(),
+        // v0leg.tpcNSigmaPi(),
         v0leg.itsClusterSizes(),
         v0leg.itsChi2NCl(),
         v0leg.detectorMap());

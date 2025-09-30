@@ -723,7 +723,7 @@ struct GammaConversions {
     fillTH1(theContainer, "hTPCFoundOverFindableCls", theTrack.tpcFoundOverFindableCls());
     fillTH1(theContainer, "hTPCCrossedRowsOverFindableCls", theTrack.tpcCrossedRowsOverFindableCls());
     fillTH2(theContainer, "hTPCdEdxSigEl", theTrack.p(), theTrack.tpcNSigmaEl());
-    fillTH2(theContainer, "hTPCdEdxSigPi", theTrack.p(), theTrack.tpcNSigmaPi());
+    // fillTH2(theContainer, "hTPCdEdxSigPi", theTrack.p(), theTrack.tpcNSigmaPi());
     fillTH2(theContainer, "hTPCdEdx", theTrack.p(), theTrack.tpcSignal());
   }
 
@@ -895,13 +895,13 @@ struct GammaConversions {
     if (theTrack.p() > fPIDPionRejectionPMin) {
       // low pt Pion rej
       if (theTrack.p() < fPIDPionRejectionPBoarder) {
-        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineLowPMin) {
+        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax /*&& theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineLowPMin*/) {
           fillV0SelectionHisto(ePhotonCuts::kPionRejLowMom);
           return kFALSE;
         }
         // High Pt Pion rej
       } else {
-        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax && theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin) {
+        if (theTrack.tpcNSigmaEl() > fPIDnSigmaElectronMin && theTrack.tpcNSigmaEl() < fPIDnSigmaElectronMax /*&& theTrack.tpcNSigmaPi() < fPIDnSigmaAbovePionLineHighPMin*/) {
           fillV0SelectionHisto(ePhotonCuts::kPionRejHighMom);
           return kFALSE;
         }

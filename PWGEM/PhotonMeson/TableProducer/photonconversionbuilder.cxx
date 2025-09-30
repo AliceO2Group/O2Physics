@@ -373,7 +373,7 @@ struct PhotonConversionBuilder {
            kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), dcaXY, dcaZ,
            track.tpcNClsFindable(), track.tpcNClsFindableMinusFound(), track.tpcNClsFindableMinusCrossedRows(), track.tpcNClsShared(),
            track.tpcChi2NCl(), track.tpcInnerParam(), track.tpcSignal(),
-           track.tpcNSigmaEl(), track.tpcNSigmaPi(),
+           track.tpcNSigmaEl(), /*track.tpcNSigmaPi(),*/
            track.itsClusterSizes(), track.itsChi2NCl(), track.detectorMap());
 
     v0legsXYZ(shiftedtrack.getX(), shiftedtrack.getY(), shiftedtrack.getZ());
