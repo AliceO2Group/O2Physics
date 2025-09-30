@@ -600,10 +600,7 @@ struct HfDataCreatorCharmResoReduced {
     bool isPion = std::abs(track.tpcNSigmaPi()) < cfgSingleTrackCuts.maxNsigmaTpcPi;
     bool isKaon = std::abs(track.tpcNSigmaKa()) < cfgSingleTrackCuts.maxNsigmaTpcKa;
     bool isProton = std::abs(track.tpcNSigmaPr()) < cfgSingleTrackCuts.maxNsigmaTpcPr;
-    if (!isPion && !isKaon && !isProton) { // we keep the track if is it compatible with at least one of the PID hypotheses selected
-      return false;
-    }
-    return true;
+    return (isPion || isKaon || isProton); // we keep the track if is it compatible with at least one of the PID hypotheses selected
   }
 
   template <typename PParticles, typename TrIU>
