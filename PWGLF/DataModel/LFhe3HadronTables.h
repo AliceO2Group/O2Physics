@@ -44,7 +44,12 @@ DECLARE_SOA_COLUMN(SignalTPCHad, signalTPCHad, float);
 DECLARE_SOA_COLUMN(InnerParamTPCHad, innerParamTPCHad, float);
 DECLARE_SOA_COLUMN(NClsTPCHe3, nClsTPCHe3, uint8_t);
 DECLARE_SOA_COLUMN(NSigmaTPCHe3, nSigmaTPCHe3, float);
-DECLARE_SOA_COLUMN(NSigmaTPCHad, nSigmaTOFHad, float);
+DECLARE_SOA_COLUMN(NSigmaTPCHadPi, nSigmaTPCHadPi, float);
+DECLARE_SOA_COLUMN(NSigmaTPCHadKa, nSigmaTPCHadKa, float);
+DECLARE_SOA_COLUMN(NSigmaTPCHadPr, nSigmaTPCHadPr, float);
+DECLARE_SOA_COLUMN(NSigmaTOFHadPi, nSigmaTOFHadPi, float);
+DECLARE_SOA_COLUMN(NSigmaTOFHadKa, nSigmaTOFHadKa, float);
+DECLARE_SOA_COLUMN(NSigmaTOFHadPr, nSigmaTOFHadPr, float);
 DECLARE_SOA_COLUMN(Chi2TPCHe3, chi2TPCHe3, float);
 DECLARE_SOA_COLUMN(Chi2TPCHad, chi2TPCHad, float);
 DECLARE_SOA_COLUMN(MassTOFHe3, massTOFHe3, float);
@@ -105,7 +110,12 @@ DECLARE_SOA_TABLE(he3HadronTable, "AOD", "HE3HADTABLE",
                   he3HadronTablesNS::InnerParamTPCHad,
                   he3HadronTablesNS::NClsTPCHe3,
                   he3HadronTablesNS::NSigmaTPCHe3,
-                  he3HadronTablesNS::NSigmaTPCHad,
+                  he3HadronTablesNS::NSigmaTPCHadPi,
+                  he3HadronTablesNS::NSigmaTPCHadKa,
+                  he3HadronTablesNS::NSigmaTPCHadPr,
+                  he3HadronTablesNS::NSigmaTOFHadPi,
+                  he3HadronTablesNS::NSigmaTOFHadKa,
+                  he3HadronTablesNS::NSigmaTOFHadPr,
                   he3HadronTablesNS::Chi2TPCHe3,
                   he3HadronTablesNS::Chi2TPCHad,
                   he3HadronTablesNS::MassTOFHe3,
