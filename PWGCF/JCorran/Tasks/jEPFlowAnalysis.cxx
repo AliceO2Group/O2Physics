@@ -42,9 +42,9 @@ using namespace std;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
 using MyTracks = aod::Tracks;
 
-struct jEPFlowAnalysis {
+struct JEPFlowAnalysis {
 
-  HistogramRegistry EPFlowHistograms{"EPFlow", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
+  HistogramRegistry epFlowHistograms{"EPFlow", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   JEPFlowAnalysis epAnalysis;
   EventPlaneHelper helperEP;
   FlowJHistManager histManager;
@@ -74,22 +74,25 @@ struct jEPFlowAnalysis {
 
   Filter trackFilter = (aod::track::pt > cfgTrackCuts.cfgPtMin) && (aod::track::pt < cfgTrackCuts.cfgPtMax) && (nabs(aod::track::eta) < cfgTrackCuts.cfgEtaMax);
 
-  int DetId;
-  int RefAId;
-  int RefBId;
+  int detId;
+  int refAId;
+  int refBId;
   int harmInd;
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
 
+  int initflow = 2;
   int nshift = 10;
   int nsystem = 3;
+  int nqvec = 4;
+  int nstep = 3;
 
   std::vector<TProfile3D*> shiftprofile{};
   std::string fullCCDBShiftCorrPath;
 
   template <typename T>
-  int GetDetId(const T& name)
+  int getDetId(const T& name)
   {
     if (name.value == "FT0C") {
       return 0;
@@ -112,11 +115,11 @@ struct jEPFlowAnalysis {
 
   void init(InitContext const&)
   {
-    DetId = GetDetId(cfgDetName);
-    RefAId = GetDetId(cfgRefAName);
-    RefBId = GetDetId(cfgRefBName);
+    detId = getDetId(cfgDetName);
+    refAId = getDetId(cfgRefAName);
+    refBId = getDetId(cfgRefBName);
 
-    epAnalysis.SetHistRegistry(&EPFlowHistograms);
+    epAnalysis.SetHistRegistry(&epFlowHistograms);
     epAnalysis.CreateHistograms();
   }
 
@@ -126,15 +129,15 @@ struct jEPFlowAnalysis {
       return;
 
     float cent = coll.cent();
-    EPFlowHistograms.fill(HIST("FullCentrality"), cent);
-    float EPs[3] = {0.};
+    epFlowHistograms.fill(HIST("FullCentrality"), cent);
+    float eps[3] = {0.};
 
     if (cfgShiftCorr) {
       auto bc = coll.bc_as<aod::BCsWithTimestamps>();
       currentRunNumber = bc.runNumber();
       if (currentRunNumber != lastRunNumber) {
         shiftprofile.clear();
-        for (int i = 2; i < 2 + cfgNmode; i++) {
+        for (int i = initflow; i < initflow + cfgNmode; i++) {
           fullCCDBShiftCorrPath = cfgShiftPath;
           fullCCDBShiftCorrPath += "/v";
           fullCCDBShiftCorrPath += std::to_string(i);
@@ -145,11 +148,11 @@ struct jEPFlowAnalysis {
       }
     }
 
-    for (int i = 2; i < 2 + cfgNmode; i++) {                  // loop over different harmonic orders
-      harmInd = cfgnTotalSystem * 4 * (i - 2) + 3; // harmonic index to access corresponding Q-vector as all Q-vectors are in same vector
-      EPs[0] = helperEP.GetEventPlane(coll.qvecRe()[DetId + harmInd], coll.qvecIm()[DetId + harmInd], i);
-      EPs[1] = helperEP.GetEventPlane(coll.qvecRe()[RefAId + harmInd], coll.qvecIm()[RefAId + harmInd], i);
-      EPs[2] = helperEP.GetEventPlane(coll.qvecRe()[RefBId + harmInd], coll.qvecIm()[RefBId + harmInd], i);
+    for (int i = initflow; i < initflow + cfgNmode; i++) {                  // loop over different harmonic orders
+      harmInd = cfgnTotalSystem * nqvec * (i - initflow) + nstep; // harmonic index to access corresponding Q-vector as all Q-vectors are in same vector
+      eps[0] = helperEP.GetEventPlane(coll.qvecRe()[detId + harmInd], coll.qvecIm()[detId + harmInd], i);
+      eps[1] = helperEP.GetEventPlane(coll.qvecRe()[refAId + harmInd], coll.qvecIm()[refAId + harmInd], i);
+      eps[2] = helperEP.GetEventPlane(coll.qvecRe()[refBId + harmInd], coll.qvecIm()[refBId + harmInd], i);
 
       auto deltapsiDet = 0.0;
       auto deltapsiRefA = 0.0;
@@ -166,27 +169,28 @@ struct jEPFlowAnalysis {
           auto coeffshiftxRefB = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 4.5, ishift - 0.5));
           auto coeffshiftyRefB = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 5.5, ishift - 0.5)); // currently only FT0C/TPCpos/TPCneg
 
-          deltapsiDet += ((1 / (1.0 * ishift)) * (-coeffshiftxDet * std::cos(ishift * static_cast<float>(i) * EPs[0]) + coeffshiftyDet * std::sin(ishift * static_cast<float>(i) * EPs[0])));
-          deltapsiRefA += ((1 / (1.0 * ishift)) * (-coeffshiftxRefA * std::cos(ishift * static_cast<float>(i) * EPs[1]) + coeffshiftyRefA * std::sin(ishift * static_cast<float>(i) * EPs[1])));
-          deltapsiRefB += ((1 / (1.0 * ishift)) * (-coeffshiftxRefB * std::cos(ishift * static_cast<float>(i) * EPs[2]) + coeffshiftyRefB * std::sin(ishift * static_cast<float>(i) * EPs[2])));
+          deltapsiDet += ((1 / (1.0 * ishift)) * (-coeffshiftxDet * std::cos(ishift * static_cast<float>(i) * eps[0]) + coeffshiftyDet * std::sin(ishift * static_cast<float>(i) * eps[0])));
+          deltapsiRefA += ((1 / (1.0 * ishift)) * (-coeffshiftxRefA * std::cos(ishift * static_cast<float>(i) * eps[1]) + coeffshiftyRefA * std::sin(ishift * static_cast<float>(i) * eps[1])));
+          deltapsiRefB += ((1 / (1.0 * ishift)) * (-coeffshiftxRefB * std::cos(ishift * static_cast<float>(i) * eps[2]) + coeffshiftyRefB * std::sin(ishift * static_cast<float>(i) * eps[2])));
         }
 
-        EPs[0] += deltapsiDet;
-        EPs[1] += deltapsiRefA;
-        EPs[2] += deltapsiRefB;
+        eps[0] += deltapsiDet;
+        eps[1] += deltapsiRefA;
+        eps[2] += deltapsiRefB;
       }
 
       if (cfgSPmethod)
-        weight *= std::sqrt(std::pow(coll.qvecRe()[DetId + harmInd], 2) + std::pow(coll.qvecIm()[DetId + harmInd], 2));
+        weight *= std::sqrt(std::pow(coll.qvecRe()[detId + harmInd], 2) + std::pow(coll.qvecIm()[detId + harmInd], 2));
 
-      float resNumA = helperEP.GetResolution(EPs[0], EPs[1], i);
-      float resNumB = helperEP.GetResolution(EPs[0], EPs[2], i);
-      float resDenom = helperEP.GetResolution(EPs[1], EPs[2], i);
+      float resNumA = helperEP.GetResolution(eps[0], eps[1], i);
+      float resNumB = helperEP.GetResolution(eps[0], eps[2], i);
+      float resDenom = helperEP.GetResolution(eps[1], eps[2], i);
       epAnalysis.FillResolutionHistograms(cent, static_cast<float>(i), resNumA, resNumB, resDenom);
+
       for (uint j = 0; j < nsystem; j++) { // loop over detectors used
         for (const auto& track : tracks) {
-          float vn = std::cos((i) * (track.phi() - EPs[j]));
-          float vn_sin = std::sin((i) * (track.phi() - EPs[j]));
+          float vn = std::cos((i) * (track.phi() - eps[j]));
+          float vn_sin = std::sin((i) * (track.phi() - eps[j]));
           epAnalysis.FillVnHistograms(i, cent, static_cast<float>(j + 1), track.pt(), vn * weight, vn_sin * weight);
         }
       }
@@ -197,5 +201,5 @@ struct jEPFlowAnalysis {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<jEPFlowAnalysis>(cfgc)};
+    adaptAnalysisTask<JEPFlowAnalysis>(cfgc)};
 }
