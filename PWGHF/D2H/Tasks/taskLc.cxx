@@ -84,9 +84,6 @@ struct HfTaskLc {
     NonPrompt
   };
 
-  constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
-  constexpr static std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
-
   HfHelper hfHelper;
   SliceCache cache;
 
@@ -310,6 +307,8 @@ struct HfTaskLc {
   template <bool fillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
   void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
   {
+    static constexpr std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
+    static constexpr std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
 
     auto thisCollId = collision.globalIndex();
     auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
@@ -454,6 +453,8 @@ struct HfTaskLc {
   template <typename CandLcMcGen, typename Coll>
   void fillHistosMcGen(CandLcMcGen const& mcParticles, Coll const& recoCollisions)
   {
+    static constexpr std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
+    static constexpr std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
