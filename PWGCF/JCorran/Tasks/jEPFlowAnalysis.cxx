@@ -8,8 +8,11 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+
 /// \author Maxim Virta (maxim.virta@cern.ch)
 /// \since Jul 2024
+/// \brief task for flow measurement
+/// \file jEPFlowAnalysis.cxx
 
 #include "JEPFlowAnalysis.h"
 
@@ -45,7 +48,7 @@ struct jEPFlowAnalysis {
   JEPFlowAnalysis epAnalysis;
   EventPlaneHelper helperEP;
   FlowJHistManager histManager;
-  Bool_t debug = kFALSE;
+  bool debug = kFALSE;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   o2::ccdb::CcdbApi ccdbApi;
 
@@ -58,6 +61,8 @@ struct jEPFlowAnalysis {
 
   Configurable<bool> cfgAddEvtSel{"cfgAddEvtSel", true, "Use event selection"};
   Configurable<int> cfgnTotalSystem{"cfgnTotalSystem", 7, "Total number of detectors in qVectorsTable"};
+
+  Configurable<int> cfgNmode{"cfgNmode", 1, "the number of modulations to be calculated"};
 
   Configurable<bool> cfgShiftCorr{"cfgShiftCorr", false, "additional shift correction"};
   Configurable<std::string> cfgShiftPath{"cfgShiftPath", "Users/j/junlee/Qvector/QvecCalib/Shift", "Path for Shift"};
@@ -76,6 +81,9 @@ struct jEPFlowAnalysis {
 
   int currentRunNumber = -999;
   int lastRunNumber = -999;
+
+  int nshift = 10;
+  int nsystem = 3;
 
   std::vector<TProfile3D*> shiftprofile{};
   std::string fullCCDBShiftCorrPath;
@@ -126,7 +134,7 @@ struct jEPFlowAnalysis {
       currentRunNumber = bc.runNumber();
       if (currentRunNumber != lastRunNumber) {
         shiftprofile.clear();
-        for (int i = 2; i < 5; i++) {
+        for (int i = 2; i < 2 + cfgNmode; i++) {
           fullCCDBShiftCorrPath = cfgShiftPath;
           fullCCDBShiftCorrPath += "/v";
           fullCCDBShiftCorrPath += std::to_string(i);
@@ -137,7 +145,7 @@ struct jEPFlowAnalysis {
       }
     }
 
-    for (int i = 2; i < 5; i++) {                  // loop over different harmonic orders
+    for (int i = 2; i < 2 + cfgNmode; i++) {                  // loop over different harmonic orders
       harmInd = cfgnTotalSystem * 4 * (i - 2) + 3; // harmonic index to access corresponding Q-vector as all Q-vectors are in same vector
       EPs[0] = helperEP.GetEventPlane(coll.qvecRe()[DetId + harmInd], coll.qvecIm()[DetId + harmInd], i);
       EPs[1] = helperEP.GetEventPlane(coll.qvecRe()[RefAId + harmInd], coll.qvecIm()[RefAId + harmInd], i);
@@ -150,7 +158,7 @@ struct jEPFlowAnalysis {
       float weight = 1.0;
 
       if (cfgShiftCorr) {
-        for (int ishift = 1; ishift <= 10; ishift++) {
+        for (int ishift = 1; ishift <= nshift; ishift++) {
           auto coeffshiftxDet = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 0.5, ishift - 0.5));
           auto coeffshiftyDet = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 1.5, ishift - 0.5));
           auto coeffshiftxRefA = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 2.5, ishift - 0.5));
@@ -169,14 +177,14 @@ struct jEPFlowAnalysis {
       }
 
       if (cfgSPmethod)
-        weight *= sqrt(pow(coll.qvecRe()[DetId + harmInd], 2) + pow(coll.qvecIm()[DetId + harmInd], 2));
+        weight *= std::sqrt(std::pow(coll.qvecRe()[DetId + harmInd], 2) + std::pow(coll.qvecIm()[DetId + harmInd], 2));
 
       float resNumA = helperEP.GetResolution(EPs[0], EPs[1], i);
       float resNumB = helperEP.GetResolution(EPs[0], EPs[2], i);
       float resDenom = helperEP.GetResolution(EPs[1], EPs[2], i);
       epAnalysis.FillResolutionHistograms(cent, static_cast<float>(i), resNumA, resNumB, resDenom);
-      for (uint j = 0; j < 3; j++) { // loop over detectors used
-        for (auto& track : tracks) {
+      for (uint j = 0; j < nsystem; j++) { // loop over detectors used
+        for (const auto& track : tracks) {
           float vn = std::cos((i) * (track.phi() - EPs[j]));
           float vn_sin = std::sin((i) * (track.phi() - EPs[j]));
           epAnalysis.FillVnHistograms(i, cent, static_cast<float>(j + 1), track.pt(), vn * weight, vn_sin * weight);
