@@ -15,20 +15,20 @@
 /// \author Abhi Modak (abhi.modak@cern.ch)
 /// \since October 01, 2025
 
-#include <cmath>
-#include <cstdlib>
-#include <TPDGCode.h>
-#include <vector>
-
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+#include "PWGMM/Mult/DataModel/Index.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
-#include "CCDB/BasicCCDBManager.h"
-#include "Common/Core/trackUtilities.h"
+
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/Core/TrackSelection.h"
+#include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/MathConstants.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -38,9 +38,12 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/GlobalTrackID.h"
 #include "ReconstructionDataFormats/Track.h"
-#include "PWGMM/Mult/DataModel/Index.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include <TPDGCode.h>
+
+#include <cmath>
+#include <cstdlib>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -277,7 +280,6 @@ struct ChargedparticleRaa {
                                      ncheckbit(aod::track::trackCutFlag, TrackSelectionDca));
   Filter fTracksPt = aod::track::pt > cfgPtCutMin;
 
-
   void processDataPbPb(ColDataTablePbPb::iterator const& cols, FilTrackDataTable const& tracks)
   {
     if (!isEventSelected(cols)) {
@@ -306,7 +308,7 @@ struct ChargedparticleRaa {
       return;
     }
     histos.fill(HIST("VtxZHist"), cols.posZ());
-        
+
     for (const auto& track : tracks) {
       if (!isTrackSelected(track)) {
         continue;
@@ -341,7 +343,7 @@ struct ChargedparticleRaa {
           histos.fill(HIST("hmcrechistPbPb"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), kGlobalonly);
         } else {
           histos.fill(HIST("hmcrechistPbPb"), RecCol.posZ(), RecCol.centFT0C(), Rectrack.pt(), kITSonly);
-        }        
+        }
       } // track (mcrec) loop
 
       for (const auto& particle : GenParticles) {
@@ -361,7 +363,7 @@ struct ChargedparticleRaa {
         continue;
       }
       histos.fill(HIST("VtxZHist"), RecCol.posZ());
-      
+
       auto recTracksPart = RecTracks.sliceBy(perCollision, RecCol.globalIndex());
       for (const auto& Rectrack : recTracksPart) {
         if (!isTrackSelected(Rectrack)) {
@@ -372,7 +374,7 @@ struct ChargedparticleRaa {
           histos.fill(HIST("hmcrechistpp"), RecCol.posZ(), Rectrack.pt(), kGlobalonly);
         } else {
           histos.fill(HIST("hmcrechistpp"), RecCol.posZ(), Rectrack.pt(), kITSonly);
-        }        
+        }
       } // track (mcrec) loop
 
       for (const auto& particle : GenParticles) {
@@ -394,7 +396,7 @@ struct ChargedparticleRaa {
     }
     // All generated events
     histos.fill(HIST("MCEventHist"), 1);
-    
+
     bool atLeastOne = false;
     auto numcontributors = -999;
     for (const auto& RecCol : RecCols) {
@@ -435,7 +437,7 @@ struct ChargedparticleRaa {
     // All generated events
     histos.fill(HIST("MCEventHist"), 1);
     histos.fill(HIST("hImpactParameterGen"), mcCollision.impactParameter());
-    
+
     bool atLeastOne = false;
     auto centrality = -999.;
     auto numcontributors = -999;
@@ -467,8 +469,8 @@ struct ChargedparticleRaa {
         histos.fill(HIST("hgenptAfterEvtSelPbPb"), particle.pt(), mcCollision.impactParameter());
       }
     }
-  }  
-  
+  }
+
   PROCESS_SWITCH(ChargedparticleRaa, processDataPbPb, "process data heavy-ion", false);
   PROCESS_SWITCH(ChargedparticleRaa, processDatapp, "process data pp", false);
   PROCESS_SWITCH(ChargedparticleRaa, processMCPbPb, "process MC heavy-ion", false);
