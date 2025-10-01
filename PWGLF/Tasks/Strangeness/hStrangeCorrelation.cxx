@@ -2470,7 +2470,7 @@ struct HStrangeCorrelation {
           histos.fill(HIST("ClosureTest/hTrigger"), gpt, geta, bestCollisionFT0Mpercentile);
           if (doCorrelationHadron) {
             assocHadronIndices.emplace_back(iteratorNum);
-            histos.fill(HIST("ClosureTest/hHadron"), gpt, geta, bestCollisionFT0Mpercentile);
+            histos.fill(HIST("ClosureTest/hHadron"), gpt, geta, gphi);
           }
         }
       }
