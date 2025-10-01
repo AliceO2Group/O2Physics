@@ -123,6 +123,9 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
       workflow.push_back(adaptAnalysisTask<TracksExtraV002Converter>(cfgc));
       workflow.push_back(adaptAnalysisTask<TracksExtraSpawner>(cfgc));
     }
+  } else {
+    workflow.push_back(adaptAnalysisTask<TracksExtraV002Converter>(cfgc));
+    workflow.push_back(adaptAnalysisTask<TracksExtraSpawner>(cfgc));
   }
   return workflow;
 }
