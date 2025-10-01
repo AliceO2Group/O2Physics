@@ -11,26 +11,25 @@
 /// \author Maxim Virta (maxim.virta@cern.ch)
 /// \since Jul 2024
 
-#include <string>
-#include <vector>
-
-#include "Framework/AnalysisTask.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/HistogramRegistry.h"
-
-#include "Common/DataModel/EventSelection.h"
-#include "Common/Core/TrackSelection.h"
-#include "Framework/runDataProcessing.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Common/DataModel/Qvectors.h"
-#include "Common/Core/EventPlaneHelper.h"
-
-#include "CCDB/CcdbApi.h"
-#include "CCDB/BasicCCDBManager.h"
+#include "JEPFlowAnalysis.h"
 
 #include "FlowJHistManager.h"
-#include "JEPFlowAnalysis.h"
+
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/TrackSelection.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+
+#include "CCDB/BasicCCDBManager.h"
+#include "CCDB/CcdbApi.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -118,9 +117,9 @@ struct jEPFlowAnalysis {
     if (cfgAddEvtSel && (!coll.sel8() || !coll.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV) || !coll.selection_bit(aod::evsel::kNoSameBunchPileup)))
       return;
 
-    Float_t cent = coll.cent();
+    float cent = coll.cent();
     EPFlowHistograms.fill(HIST("FullCentrality"), cent);
-    Float_t EPs[3] = {0.};
+    float EPs[3] = {0.};
 
     if (cfgShiftCorr) {
       auto bc = coll.bc_as<aod::BCsWithTimestamps>();
@@ -157,11 +156,11 @@ struct jEPFlowAnalysis {
           auto coeffshiftxRefA = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 2.5, ishift - 0.5));
           auto coeffshiftyRefA = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 3.5, ishift - 0.5));
           auto coeffshiftxRefB = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 4.5, ishift - 0.5));
-          auto coeffshiftyRefB = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 5.5, ishift - 0.5)); //currently only FT0C/TPCpos/TPCneg
+          auto coeffshiftyRefB = shiftprofile.at(i - 2)->GetBinContent(shiftprofile.at(i - 2)->FindBin(cent, 5.5, ishift - 0.5)); // currently only FT0C/TPCpos/TPCneg
 
-          deltapsiDet += ((1 / (1.0 * ishift)) * (-coeffshiftxDet * TMath::Cos(ishift * static_cast<float>(i) * EPs[0]) + coeffshiftyDet * TMath::Sin(ishift * static_cast<float>(i) * EPs[0])));
-          deltapsiRefA += ((1 / (1.0 * ishift)) * (-coeffshiftxRefA * TMath::Cos(ishift * static_cast<float>(i) * EPs[1]) + coeffshiftyRefA * TMath::Sin(ishift * static_cast<float>(i) * EPs[1])));
-          deltapsiRefB += ((1 / (1.0 * ishift)) * (-coeffshiftxRefB * TMath::Cos(ishift * static_cast<float>(i) * EPs[2]) + coeffshiftyRefB * TMath::Sin(ishift * static_cast<float>(i) * EPs[2])));
+          deltapsiDet += ((1 / (1.0 * ishift)) * (-coeffshiftxDet * std::cos(ishift * static_cast<float>(i) * EPs[0]) + coeffshiftyDet * std::sin(ishift * static_cast<float>(i) * EPs[0])));
+          deltapsiRefA += ((1 / (1.0 * ishift)) * (-coeffshiftxRefA * std::cos(ishift * static_cast<float>(i) * EPs[1]) + coeffshiftyRefA * std::sin(ishift * static_cast<float>(i) * EPs[1])));
+          deltapsiRefB += ((1 / (1.0 * ishift)) * (-coeffshiftxRefB * std::cos(ishift * static_cast<float>(i) * EPs[2]) + coeffshiftyRefB * std::sin(ishift * static_cast<float>(i) * EPs[2])));
         }
 
         EPs[0] += deltapsiDet;
@@ -169,16 +168,17 @@ struct jEPFlowAnalysis {
         EPs[2] += deltapsiRefB;
       }
 
-      if (cfgSPmethod) weight *= sqrt(pow(coll.qvecRe()[DetId + harmInd], 2) + pow(coll.qvecIm()[DetId + harmInd], 2));
+      if (cfgSPmethod)
+        weight *= sqrt(pow(coll.qvecRe()[DetId + harmInd], 2) + pow(coll.qvecIm()[DetId + harmInd], 2));
 
-      Float_t resNumA = helperEP.GetResolution(EPs[0], EPs[1], i);
-      Float_t resNumB = helperEP.GetResolution(EPs[0], EPs[2], i);
-      Float_t resDenom = helperEP.GetResolution(EPs[1], EPs[2], i);
+      float resNumA = helperEP.GetResolution(EPs[0], EPs[1], i);
+      float resNumB = helperEP.GetResolution(EPs[0], EPs[2], i);
+      float resDenom = helperEP.GetResolution(EPs[1], EPs[2], i);
       epAnalysis.FillResolutionHistograms(cent, static_cast<float>(i), resNumA, resNumB, resDenom);
       for (uint j = 0; j < 3; j++) { // loop over detectors used
         for (auto& track : tracks) {
-          Float_t vn = TMath::Cos((i) * (track.phi() - EPs[j]));
-          Float_t vn_sin = TMath::Sin((i) * (track.phi() - EPs[j]));
+          float vn = std::cos((i) * (track.phi() - EPs[j]));
+          float vn_sin = std::sin((i) * (track.phi() - EPs[j]));
           epAnalysis.FillVnHistograms(i, cent, static_cast<float>(j + 1), track.pt(), vn * weight, vn_sin * weight);
         }
       }
