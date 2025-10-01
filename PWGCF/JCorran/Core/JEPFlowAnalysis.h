@@ -27,14 +27,14 @@ class JEPFlowAnalysis
 {
  public:
   JEPFlowAnalysis() = default;
-  void SetHistRegistry(HistogramRegistry* histReg) { mHistRegistry = histReg; }
+  void setHistRegistry(HistogramRegistry* histReg) { mHistRegistry = histReg; }
 
-  void FillHistograms(const Int_t fCentBin, Float_t det, Float_t v2, Float_t v3, Float_t v4);
-  void FillVnHistograms(const Int_t harmN, Float_t fCent, Float_t det, Float_t pT, Float_t vn, Float_t vn_sin);
-  void FillResolutionHistograms(Float_t fCent, Float_t harmN, Float_t ResNumA, Float_t ResNumB, Float_t ResDenom);
+  void fillHistograms(const Int_t fCentBin, Float_t det, Float_t v2, Float_t v3, Float_t v4);
+  void fillVnHistograms(const Int_t harmN, Float_t fCent, Float_t det, Float_t pT, Float_t vn, Float_t vn_sin);
+  void fillResolutionHistograms(Float_t fCent, Float_t harmN, Float_t ResNumA, Float_t ResNumB, Float_t ResDenom);
   TComplex Q(const Int_t harmN, const Int_t p);
 
-  void CreateHistograms()
+  void createHistograms()
   {
     if (!mHistRegistry) {
       LOGF(error, "Histogram registry missing. Quitting...");
