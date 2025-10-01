@@ -72,26 +72,6 @@ struct HfTaskElectronWeakBoson {
   Configurable<int> nBinsE{"nBinsE", 100, "N bins in E registry"};
   Configurable<float> binEmax{"binEmax", 100.0, "maximum E registry"};
 
-  ConfigurableAxis confaxisPt{"confaxisPt", {100, 0, 100}, "p_{T}"};
-  ConfigurableAxis confaxisPtZee{"confaxisPtZee", {60, 20, 80}, "p_{T}"};
-  ConfigurableAxis confaxisPtZneg{"confaxisPtZneg", {60, 20, 80}, "p_{T,neg} (GeV/c)"};
-  ConfigurableAxis confaxisPtZpos{"confaxisPtZpos", {60, 20, 80}, "p_{T,pos} (GeV/c)"};
-  ConfigurableAxis confaxisEop{"confaxisEop", {300, -0.01, 1.49}, "E/p"};
-  ConfigurableAxis confaxisEopZneg{"confaxisEopZneg", {300, -0.01, 1.49}, "E/p_{neg}"};
-  ConfigurableAxis confaxisEopZpos{"confaxisEopZpos", {300, -0.01, 1.49}, "E/p_{pos}"};
-  ConfigurableAxis confaxisIsoEnergy{"confaxisIsoEnergy", {255, 0, 2.0}, "E_{iso}"};
-  ConfigurableAxis confaxisIsoEnergyZneg{"confaxisIsoEnergyZneg", {255, 0, 2.0}, "E_{iso,neg}"};
-  ConfigurableAxis confaxisIsoEnergyZpos{"confaxisIsoEnergyZpos", {255, 0, 2.0}, "E_{iso,pos}"};
-  ConfigurableAxis confaxisIsoMomentum{"confaxisIsoMomentum", {255, 0, 2.0}, "E_{iso}"};
-  ConfigurableAxis confaxisIsoMomentumZneg{"confaxisIsoMomentumZneg", {255, 0, 1.5}, "E_{iso,neg}"};
-  ConfigurableAxis confaxisIsoMomentumZpos{"confaxisIsoMomentumZpos", {255, 0, 1.5}, "E_{iso,pos}"};
-  ConfigurableAxis confaxisIsoTrack{"confaxisIsoTrack", {25, -0.5, 24.5}, "Isolation Track"};
-  ConfigurableAxis confaxisIsoTrackZneg{"confaxisIsoTrackZneg", {25, -0.5, 24.5}, "N_{isotrk,neg}"};
-  ConfigurableAxis confaxisIsoTrackZpos{"confaxisIsoTrackZpos", {25, -0.5, 24.5}, "N_{isotrk,pos}"};
-  ConfigurableAxis confaxisInvMassZgamma{"confaxisInvMassZgamma", {150, 0, 150}, "M_{ee} (GeV/c^{2})"};
-  ConfigurableAxis confaxisInvMassZ{"confaxisInvMassZ", {130, 20, 150}, "M_{ee} (GeV/c^{2})"};
-  ConfigurableAxis confaxisZfrag{"confaxisZfrag", {200, 0, 2.0}, "p_{T,h}/p_{T,Z}"};
-
   Configurable<float> vtxZ{"vtxZ", 10.f, ""};
 
   Configurable<float> etaTrMin{"etaTrMin", -1.0f, "minimun track eta"};
@@ -200,6 +180,27 @@ struct HfTaskElectronWeakBoson {
   Preslice<o2::aod::EMCALClusterCells> perCluster = o2::aod::emcalclustercell::emcalclusterId;
   Preslice<o2::aod::EMCALAmbiguousClusterCells> perClusterAmb = o2::aod::emcalclustercell::emcalambiguousclusterId;
   PresliceUnsorted<o2::aod::EMCALMatchedTracks> perClusterMatchedTracks = o2::aod::emcalmatchedtrack::trackId;
+
+  // config axis
+  ConfigurableAxis confaxisPt{"confaxisPt", {100, 0, 100}, "p_{T}"};
+  ConfigurableAxis confaxisPtZee{"confaxisPtZee", {60, 20, 80}, "p_{T}"};
+  ConfigurableAxis confaxisPtZneg{"confaxisPtZneg", {60, 20, 80}, "p_{T,neg} (GeV/c)"};
+  ConfigurableAxis confaxisPtZpos{"confaxisPtZpos", {60, 20, 80}, "p_{T,pos} (GeV/c)"};
+  ConfigurableAxis confaxisEop{"confaxisEop", {300, -0.01, 1.49}, "E/p"};
+  ConfigurableAxis confaxisEopZneg{"confaxisEopZneg", {300, -0.01, 1.49}, "E/p_{neg}"};
+  ConfigurableAxis confaxisEopZpos{"confaxisEopZpos", {300, -0.01, 1.49}, "E/p_{pos}"};
+  ConfigurableAxis confaxisIsoEnergy{"confaxisIsoEnergy", {255, 0, 2.0}, "E_{iso}"};
+  ConfigurableAxis confaxisIsoEnergyZneg{"confaxisIsoEnergyZneg", {255, 0, 2.0}, "E_{iso,neg}"};
+  ConfigurableAxis confaxisIsoEnergyZpos{"confaxisIsoEnergyZpos", {255, 0, 2.0}, "E_{iso,pos}"};
+  ConfigurableAxis confaxisIsoMomentum{"confaxisIsoMomentum", {255, 0, 2.0}, "E_{iso}"};
+  ConfigurableAxis confaxisIsoMomentumZneg{"confaxisIsoMomentumZneg", {255, 0, 1.5}, "E_{iso,neg}"};
+  ConfigurableAxis confaxisIsoMomentumZpos{"confaxisIsoMomentumZpos", {255, 0, 1.5}, "E_{iso,pos}"};
+  ConfigurableAxis confaxisIsoTrack{"confaxisIsoTrack", {25, -0.5, 24.5}, "Isolation Track"};
+  ConfigurableAxis confaxisIsoTrackZneg{"confaxisIsoTrackZneg", {25, -0.5, 24.5}, "N_{isotrk,neg}"};
+  ConfigurableAxis confaxisIsoTrackZpos{"confaxisIsoTrackZpos", {25, -0.5, 24.5}, "N_{isotrk,pos}"};
+  ConfigurableAxis confaxisInvMassZgamma{"confaxisInvMassZgamma", {150, 0, 150}, "M_{ee} (GeV/c^{2})"};
+  ConfigurableAxis confaxisInvMassZ{"confaxisInvMassZ", {130, 20, 150}, "M_{ee} (GeV/c^{2})"};
+  ConfigurableAxis confaxisZfrag{"confaxisZfrag", {200, 0, 2.0}, "p_{T,h}/p_{T,Z}"};
 
   // Histogram registry: an object to hold your registrygrams
   HistogramRegistry registry{"registry"};
