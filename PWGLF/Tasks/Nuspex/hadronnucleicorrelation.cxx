@@ -1288,18 +1288,16 @@ struct hadronnucleicorrelation {
       bool isDe = (IsDeuteron(track, +1) && track.pdgCode() == pdgDeuteron);
       bool isAntiDe = (IsDeuteron(track, -1) && track.pdgCode() == -pdgDeuteron);
 
-      if (track.origin() == 1 || track.origin() == 0) { // primaries and secondaries
-        if (isPr) {
-          registry.fill(HIST("hPrimSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * +1);
-          if (track.origin() == 1) { // secondaries
-            registry.fill(HIST("hSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * +1);
-          }
+      if (isPr) {
+        registry.fill(HIST("hPrimSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * +1);
+        if (track.origin() == 1 || track.origin() == 2) { // secondaries
+          registry.fill(HIST("hSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * +1);
         }
-        if (isAntiPr) {
-          registry.fill(HIST("hPrimSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * -1);
-          if (track.origin() == 1) {
-            registry.fill(HIST("hSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * -1);
-          }
+      }
+      if (isAntiPr) {
+        registry.fill(HIST("hPrimSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * -1);
+        if (track.origin() == 1 || track.origin() == 2) {
+          registry.fill(HIST("hSec_EtaPhiPt_Proton"), track.eta(), track.phi(), track.pt() * -1);
         }
       }
 
