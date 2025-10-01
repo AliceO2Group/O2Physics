@@ -84,6 +84,9 @@ struct HfTaskLc {
     NonPrompt
   };
 
+  constexpr static std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
+  constexpr static std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
+
   HfHelper hfHelper;
   SliceCache cache;
 
@@ -307,8 +310,6 @@ struct HfTaskLc {
   template <bool fillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
   void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
   {
-    static constexpr std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
-    static constexpr std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
 
     auto thisCollId = collision.globalIndex();
     auto groupedLcCandidates = candidates.sliceBy(candLcPerCollision, thisCollId);
@@ -344,7 +345,7 @@ struct HfTaskLc {
         auto numPvContributors = collision.numContrib();
         auto ptRecB = candidate.ptBhadMotherPart();
 
-        auto fillHistogramsRec = [&, SignalFolders, SignalSuffixes]<int signalType>() {
+        auto fillHistogramsRec = [&]<int signalType>() {
           if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
             registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[signalType]), hfHelper.invMassLcToPKPi(candidate));
             registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[signalType]), hfHelper.invMassLcToPKPi(candidate), pt);
@@ -453,8 +454,6 @@ struct HfTaskLc {
   template <typename CandLcMcGen, typename Coll>
   void fillHistosMcGen(CandLcMcGen const& mcParticles, Coll const& recoCollisions)
   {
-    static constexpr std::string_view SignalFolders[] = {"signal", "prompt", "nonprompt"};
-    static constexpr std::string_view SignalSuffixes[] = {"", "Prompt", "NonPrompt"};
     // MC gen.
     for (const auto& particle : mcParticles) {
       if (std::abs(particle.flagMcMatchGen()) == hf_decay::hf_cand_3prong::DecayChannelMain::LcToPKPi) {
@@ -481,20 +480,7 @@ struct HfTaskLc {
         const float gamma = std::sqrt(1 + p2m * p2m);                       // mother's particle Lorentz factor
         const float properLifetime = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
 
-        // ============================ for debug purposes only ============================
-        registry.fill(HIST("MC/generated/") + HIST(SignalFolders[Signal]) + HIST("/hPtGen") + HIST(SignalSuffixes[Signal]), ptGen);
-        registry.fill(HIST("MC/generated/") + HIST(SignalFolders[0]) + HIST("/hPtGen") + HIST(SignalSuffixes[0]), ptGen);
-        registry.fill(HIST("MC/generated/") + HIST(SignalFolders[0]) + HIST("/hPtGen"), ptGen);
-        registry.fill(HIST("MC/generated/") + HIST(SignalFolders[0]) + HIST("/hPtGen") + HIST(""), ptGen);
-        registry.fill(HIST("MC/generated/") + HIST("signal") + HIST("/hPtGen") + HIST(""), ptGen);
-        registry.fill(HIST("MC/generated/") + HIST("signal") + HIST("/hPtGen") + HIST(SignalSuffixes[0]), ptGen);
-        registry.fill(HIST("MC/generated/signal/hPtGen") + HIST(SignalSuffixes[0]), ptGen);
-        registry.fill(HIST("MC/generated/") + HIST("signal") + HIST("/hPtGen"), ptGen);
-        registry.fill(HIST("MC/generated/signal") + HIST("/hPtGen"), ptGen);
-        registry.fill(HIST("MC/generated/signal/hPtGen"), ptGen);
-        // =================================================================================
-
-        auto fillHistogramsGen = [&, SignalFolders, SignalSuffixes]<int signalType>() {
+        auto fillHistogramsGen = [&]<int signalType>() {
           registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hPtGen") + HIST(SignalSuffixes[signalType]), ptGen);
           registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hEtaGen") + HIST(SignalSuffixes[signalType]), particle.eta());
           registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hYGen") + HIST(SignalSuffixes[signalType]), yGen);
