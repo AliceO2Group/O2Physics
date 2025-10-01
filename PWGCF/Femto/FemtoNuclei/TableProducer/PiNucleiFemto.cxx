@@ -16,10 +16,10 @@
 /// \date 2025-04-10
 
 #include "PWGCF/Femto/FemtoNuclei/DataModel/PionNucleiTables.h"
+#include "PWGCF/FemtoWorld/Core/FemtoWorldMath.h"
 #include "PWGLF/DataModel/EPCalibrationTables.h"
 #include "PWGLF/DataModel/LFHypernucleiTables.h"
 #include "PWGLF/Utils/svPoolCreator.h"
-#include "PWGCF/FemtoWorld/Core/FemtoWorldMath.h"
 
 #include "Common/Core/PID/PIDTOF.h"
 #include "Common/Core/PID/TPCPIDResponse.h"
@@ -149,7 +149,7 @@ struct PiNucandidate {
 
   // collision information
   int32_t collisionID = 0;
-  float cent =1.f;
+  float cent = 1.f;
 };
 
 struct PiNucleiFemto {
@@ -283,7 +283,7 @@ struct PiNucleiFemto {
      {"hkStaVsmTVsCent_US_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {100, 0.2f, 3.2f}, {100, 0.0f, 100.0f}}}},
      {"hkStaVsmTVsCent_US_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {100, 0.2f, 3.2f}, {100, 0.0f, 100.0f}}}},
      {"hCollIDVsCentEachPion", ";CollisionID;Centrality", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {100, 0.0f, 100.0f}}}},
-     {"hNHypsPerPrevColl", "Number of V0Hypers in previous collision used for mixing;N_{V0Hypers};Entries",{HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {50, -0.5, 49.5}}}}, 
+     {"hNHypsPerPrevColl", "Number of V0Hypers in previous collision used for mixing;N_{V0Hypers};Entries", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {50, -0.5, 49.5}}}},
      {"hkStar_LS_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_US_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
@@ -295,7 +295,6 @@ struct PiNucleiFemto {
     false,
     true};
 
- 
   int numOfCentBins = 40;
   int numOfVertexZBins = 30;
   float Vz_low = -10.0f;
@@ -485,14 +484,14 @@ struct PiNucleiFemto {
     mQaRegistry.fill(HIST("h2NsigmaPiTPC_preselection"), candidate.tpcInnerParam(), tpcNSigmaPi);
     if (std::abs(candidate.pt()) < settingCutPiptMin || std::abs(candidate.pt()) > settingCutPiptMax)
       return false;
-      //reject protons
+    // reject protons
     if (std::abs(candidate.tpcNSigmaPr()) < settingCutNsigTPCPrMin)
       return false;
     mQaRegistry.fill(HIST("h2NsigmaPiPrTPC"), candidate.tpcNSigmaPr());
     if (candidate.hasTOF() && std::abs(candidate.tofNSigmaPr()) < settingCutNsigTOFPrMin)
       return false;
     mQaRegistry.fill(HIST("h2NsigmaPiPrTOF"), candidate.tofNSigmaPr());
-      
+
     if (candidate.hasTOF() && candidate.tpcInnerParam() >= settingCutPinMinTOFPi) {
       auto tofNSigmaPi = candidate.tofNSigmaPi();
       auto combNsigma = std::sqrt(tofNSigmaPi * tofNSigmaPi + tpcNSigmaPi * tpcNSigmaPi);
@@ -528,7 +527,7 @@ struct PiNucleiFemto {
   {
     float tpcInnerParam = candidate.tpcInnerParam();
     mQaRegistry.fill(HIST("h2dEdx"), candidate.sign() * tpcInnerParam, candidate.tpcSignal());
-    
+
     float DeDCAxyMin = 0.015 + 0.0305 / TMath::Power(candidate.pt(), 1.1);
     if (abs(candidate.dcaXY()) > DeDCAxyMin || abs(candidate.dcaXY()) > settingCutDeDCAzMin)
       return false;
@@ -804,7 +803,7 @@ struct PiNucleiFemto {
     bool filledAllOnce = false;
     // LOG(info) << "Number of tracks: " << tracks.size();
     for (const auto& track0 : tracks) {
-    
+
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kNoCuts);
 
       if (!selectTrack(track0)) {
@@ -835,7 +834,7 @@ struct PiNucleiFemto {
         if (!selectTrack(track1) || !selectionPIDPion(track1)) {
           continue;
         }
-   
+
         if (!filledAllOnce) {
           mQaRegistry.fill(HIST("hCollIDVsCentEachPion"), track1.collisionId(), cent);
           mQaRegistry.fill(HIST("hSinglePiPt"), track1.pt() * track1.sign());
@@ -849,7 +848,7 @@ struct PiNucleiFemto {
         trackPair.collBracket = collBracket;
         mTrackPairs.push_back(trackPair);
       }
-      filledAllOnce = true; 
+      filledAllOnce = true;
     }
   }
 
@@ -1237,23 +1236,23 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
           mQaRegistry.fill(HIST("hSkipReasons"), 0);
           continue;
         }
-        
+
         auto hypdTablepreviousCollision = V0Hypers.sliceBy(hypPerCol, c2.globalIndex());
         hypdTablepreviousCollision.bindExternalIndices(&V0Hypers);
-        
+
         if (hypdTablepreviousCollision.size() == 0) {
           mQaRegistry.fill(HIST("hSkipReasons"), 1);
           continue;
         }
-        
+
         auto firstHyp = hypdTablepreviousCollision.iteratorAt(0);
         int poolIndexHyp = where_pool(firstHyp.zPrimVtx(), firstHyp.centralityFT0C());
-        
+
         if (poolIndexHyp != poolIndexPi) {
-         mQaRegistry.fill(HIST("hSkipReasons"), 2);
-         continue;
+          mQaRegistry.fill(HIST("hSkipReasons"), 2);
+          continue;
         }
-        
+
         auto trackTableThisCollision = pitracks.sliceBy(mPerCol, collision.globalIndex());
         trackTableThisCollision.bindExternalIndices(&pitracks);
 
@@ -1265,7 +1264,7 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
         pool.events.pop_front();
       }
       pool.events.push_back({collision.globalIndex()});
-      }
+    }
     fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ true);
   }
   PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyperPool, "Process Mixed event", false);
