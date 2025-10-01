@@ -131,22 +131,22 @@ struct ChargedparticleRaa {
     histos.add("PhiVsEtaHistNoCut", "PhiVsEtaHistNoCut", kTH2D, {axisPhi, axisEta}, false);
     histos.add("PhiVsEtaHistWithCut", "PhiVsEtaHistWithCut", kTH2D, {axisPhi, axisEta}, false);
 
-    if (processDataPbPb) {
+    if (doprocessDataPbPb) {
       histos.add("hdatazvtxcent", "hdatazvtxcent", kTH2D, {axisVtxZ, centAxis}, false);
       histos.add("hdatahistPbPb", "hdatahistPbPb", kTHnSparseD, {axisVtxZ, centAxis, axisPt, axisTrackType}, false);
     }
 
-    if (processDatapp) {
+    if (doprocessDatapp) {
       histos.add("hdatahistpp", "hdatahistpp", kTHnSparseD, {axisVtxZ, axisPt, axisTrackType}, false);
     }
 
-    if (processMCPbPb) {
+    if (doprocessMCPbPb) {
       histos.add("hmczvtxcent", "hmczvtxcent", kTH2D, {axisVtxZ, centAxis}, false);
       histos.add("hmcrechistPbPb", "hmcrechistPbPb", kTHnSparseD, {axisVtxZ, centAxis, axisPt, axisTrackType}, false);
       histos.add("hmcgenhistPbPb", "hmcgenhistPbPb", kTHnSparseD, {axisVtxZ, centAxis, axisPt}, false);
     }
 
-    if (processMCpp) {
+    if (doprocessMCpp) {
       histos.add("hmcrechistpp", "hmcrechistpp", kTHnSparseD, {axisVtxZ, axisPt, axisTrackType}, false);
       histos.add("hmcgenhistpp", "hmcgenhistpp", kTHnSparseD, {axisVtxZ, axisPt}, false);
     }
