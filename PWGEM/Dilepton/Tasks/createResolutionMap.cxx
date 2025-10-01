@@ -78,7 +78,7 @@ struct CreateResolutionMap {
 
   ConfigurableAxis ConfEtaCBGenBins{"ConfEtaCBGenBins", {30, -1.5, +1.5}, "gen. eta bins at midrapidity for output histograms"};
   ConfigurableAxis ConfEtaFWDGenBins{"ConfEtaFWDGenBins", {40, -5.5, -1.5}, "gen. eta bins at forward rapidity for output histograms"};
-  ConfigurableAxis ConfPhiGenBins{"ConfPhiGenBins", {72, 0, 2.f * M_PI}, "gen. phi bins at forward rapidity for output histograms"};
+  ConfigurableAxis ConfPhiGenBins{"ConfPhiGenBins", {36, 0, 2.f * M_PI}, "gen. phi bins at forward rapidity for output histograms"};
   ConfigurableAxis ConfPhiPositionCBGenBins{"ConfPhiPositionCBGenBins", {VARIABLE_WIDTH, 2.3 - M_PI, 0.85, 2.3, 0.85 + M_PI, 2.3 + M_PI}, "gen. phi psotion bins at forward rapidity for output histograms"}; // default is adjusted at R = 0.50 m
   ConfigurableAxis ConfPhiPositionFWDGenBins{"ConfPhiPositionFWDGenBins", {1, 0, 2 * M_PI}, "gen. phi psotion bins at forward rapidity for output histograms"};
   Configurable<float> cfgRefR{"cfgRefR", 0.50, "ref. radius (m) for calculating phi position"}; // 0.50 +/- 0.06 can be syst. unc.
