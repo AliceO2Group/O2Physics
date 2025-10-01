@@ -113,18 +113,18 @@ struct NetchargeFluctuations {
 
     O2_DEFINE_CONFIGURABLE(cfgMultPVT0CCutEnabled, bool, true, "Enable PV multiplicity vs T0C centrality cut")
     O2_DEFINE_CONFIGURABLE(cfgMultGlobalFT0CCutEnabled, bool, true, "Enable globalTracks vs FT0C multiplicity cut")
-    O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCutEnabled, bool, false, "Enable globalTracks vs PV multiplicity cut")
+    O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCutEnabled, bool, true, "Enable globalTracks vs PV multiplicity cut")
 
     Configurable<std::vector<double>> cfgMultPVT0CCutPars{"cfgMultPVT0CCutPars",
-                                                          std::vector<double>{187.621, -5.14575, 0.0716601, -0.000586642, 2.02818e-06, 51.2929, -1.66644, 0.0354762, -0.000389809, 1.55365e-06},
+                                                          std::vector<double>{30.434, -0.917137, 0.0185032, -0.000198425, 7.94381e-07, 13.7406, -0.282656, 0.00556147, -6.32766e-05, 2.51648e-07},
                                                           "PV multiplicity vs T0C centrality cut parameter values"};
 
     Configurable<std::vector<double>> cfgMultGlobalFT0CCutPars{"cfgMultGlobalFT0CCutPars",
-                                                               std::vector<double>{135.561, -3.7818, 0.0536562, -0.000445155, 1.55429e-06, 38.2336, -1.2568, 0.0270932, -0.000301034, 1.21234e-06},
+                                                               std::vector<double>{18.9628, -0.576466, 0.0117324, -0.000126086, 5.05365e-07, 8.99921, -0.188022, 0.0037089, -4.20275e-05, 1.68234e-07},
                                                                "globalTracks vs FT0C cut parameter values"};
 
     Configurable<std::vector<double>> cfgMultGlobalPVCutPars{"cfgMultGlobalPVCutPars",
-                                                             std::vector<double>{100., -2., 0.05, -0.0003, 1e-06, 30., -1.0, 0.02, -0.0002, 8e-07},
+                                                             std::vector<double>{0.148031, 0.616699, 0.603083, 0.112751, -0.0013846, 8.38211e-06},
                                                              "globalTracks vs PV cut parameter values"};
 
     std::vector<double> multPVT0CCutPars;
@@ -354,13 +354,13 @@ struct NetchargeFluctuations {
 
     cfgFunCoeff.fMultGlobalPVCutLow =
       new TF1("fMultGlobalPVCutLow",
-              "[0] + [1]*x - 5.*([2] + [3]*x)",
+              "[0]+[1]*x - 3.5*([2]+[3]*x+[4]*x*x+[5]*x*x*x)",
               0, 100);
     cfgFunCoeff.fMultGlobalPVCutLow->SetParameters(&(cfgFunCoeff.multGlobalPVCutPars[0]));
 
     cfgFunCoeff.fMultGlobalPVCutHigh =
       new TF1("fMultGlobalPVCutHigh",
-              "[0] + [1]*x + 5.*([2] + [3]*x)",
+              "[0]+[1]*x + 3.5*([2]+[3]*x+[4]*x*x+[5]*x*x*x)",
               0, 100);
     cfgFunCoeff.fMultGlobalPVCutHigh->SetParameters(&(cfgFunCoeff.multGlobalPVCutPars[0]));
 
