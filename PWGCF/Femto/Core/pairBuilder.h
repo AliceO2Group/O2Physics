@@ -448,12 +448,12 @@ class PairTrackKinkBuilder
     mPairHistManagerSe.init(registry, pairHistSpec);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confKinkSelection.pdgCode.value);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, confKinkSelection.sign.value);
-    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confKinkSelection.sign.value, confCpr.on.value);
+    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     mPairHistManagerMe.init(registry, pairHistSpec);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confKinkSelection.pdgCode.value);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, confKinkSelection.sign.value);
-    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confKinkSelection.sign.value, confCpr.on.value);
+    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     // setup mixing
     mMixingPolicy = static_cast<pairhistmanager::MixingPoliciy>(confMixing.policy.value);
@@ -555,12 +555,12 @@ class PairTrackCascadeBuilder
     mPairHistManagerSe.init(registry, pairHistSpec);
     mPairHistManagerSe.setMass(confTrackSelection.pdgCode.value, confCascadeSelection.pdgCode.value);
     mPairHistManagerSe.setCharge(confTrackSelection.chargeAbs.value, confCascadeSelection.sign.value);
-    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCascadeSelection.sign.value, confCpr.on.value);
+    mCprSe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     mPairHistManagerMe.init(registry, pairHistSpec);
     mPairHistManagerMe.setMass(confTrackSelection.pdgCode.value, confCascadeSelection.pdgCode.value);
     mPairHistManagerMe.setCharge(confTrackSelection.chargeAbs.value, confCascadeSelection.sign.value);
-    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCascadeSelection.sign.value, confCpr.on.value);
+    mCprMe.init(registry, cprHistSpec, confCpr.detaMax.value, confCpr.dphistarMax.value, confTrackSelection.chargeAbs.value, confCpr.on.value);
 
     // setup mixing
     mMixingPolicy = static_cast<pairhistmanager::MixingPoliciy>(confMixing.policy.value);
