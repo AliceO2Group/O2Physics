@@ -758,43 +758,43 @@ struct HfTaskElectronWeakBoson {
       if (selectedElectronsIso.size() > 0 && selectedPositronsIso.size() > 0) {
         // signal
         for (const auto& trackEle : selectedElectronsIso) {
+          auto child1 = RecoDecayPtEtaPhi::pVector(trackEle.pt, trackEle.eta, trackEle.phi);
+          float sectorneg = trackEle.phi / o2::constants::math::SectorSpanRad;
           for (const auto& trackPos : selectedPositronsIso) {
-            auto child1 = RecoDecayPtEtaPhi::pVector(trackEle.pt, trackEle.eta, trackEle.phi);
             auto child2 = RecoDecayPtEtaPhi::pVector(trackPos.pt, trackPos.eta, trackPos.phi);
             double invMass = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
+            float sectorpos = trackPos.phi / o2::constants::math::SectorSpanRad;
             if (invMass > massZMinQA) {
-              float sectorneg = trackEle.phi / o2::constants::math::SectorSpanRad;
-              float sectorpos = trackPos.phi / o2::constants::math::SectorSpanRad;
               registry.fill(HIST("hInvMassZeeQA"), invMass, trackEle.pt, trackPos.pt, trackEle.dcaxyTrk, trackPos.dcaxyTrk, trackPos.dcazTrk, trackEle.nclusterTPC, trackPos.nclusterTPC, trackEle.nclusterITS, trackPos.nclusterITS, sectorneg, sectorpos, trackEle.eop, trackPos.eop, trackEle.energyIso, trackPos.energyIso, trackEle.momIso, trackPos.momIso, trackEle.ntrackIso, trackPos.ntrackIso);
             }
           }
         }
         // bg e-e-
         for (size_t i = 0; i < selectedElectronsIso.size(); ++i) {
+          const auto& trackEle = selectedElectronsIso[i];
+          auto child1 = RecoDecayPtEtaPhi::pVector(trackEle.pt, trackEle.eta, trackEle.phi);
+          float sectorneg = trackEle.phi / o2::constants::math::SectorSpanRad;
           for (size_t j = i + 1; j < selectedElectronsIso.size(); ++j) {
-            const auto& trackEle = selectedElectronsIso[i];
             const auto& trackEle2 = selectedElectronsIso[j];
-            auto child1 = RecoDecayPtEtaPhi::pVector(trackEle.pt, trackEle.eta, trackEle.phi);
             auto child2 = RecoDecayPtEtaPhi::pVector(trackEle2.pt, trackEle2.eta, trackEle2.phi);
+            float sectorpos = trackEle2.phi / o2::constants::math::SectorSpanRad;
             double invMass = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
             if (invMass > massZMinQA) {
-              float sectorneg = trackEle.phi / o2::constants::math::SectorSpanRad;
-              float sectorpos = trackEle2.phi / o2::constants::math::SectorSpanRad;
               registry.fill(HIST("hInvMassZeeQAbg"), invMass, trackEle.pt, trackEle2.pt, trackEle.dcaxyTrk, trackEle2.dcaxyTrk, trackEle2.dcazTrk, trackEle.nclusterTPC, trackEle2.nclusterTPC, trackEle.nclusterITS, trackEle2.nclusterITS, sectorneg, sectorpos, trackEle.eop, trackEle2.eop, trackEle.energyIso, trackEle2.energyIso, trackEle.momIso, trackEle2.momIso, trackEle.ntrackIso, trackEle2.ntrackIso);
             }
           }
         }
         // bg e+e+
         for (size_t i = 0; i < selectedPositronsIso.size(); ++i) {
+          const auto& trackPos = selectedPositronsIso[i];
+          auto child1 = RecoDecayPtEtaPhi::pVector(trackPos.pt, trackPos.eta, trackPos.phi);
+          float sectorneg = trackPos.phi / o2::constants::math::SectorSpanRad;
           for (size_t j = i + 1; j < selectedPositronsIso.size(); ++j) {
-            const auto& trackPos = selectedPositronsIso[i];
             const auto& trackPos2 = selectedPositronsIso[j];
-            auto child1 = RecoDecayPtEtaPhi::pVector(trackPos.pt, trackPos.eta, trackPos.phi);
             auto child2 = RecoDecayPtEtaPhi::pVector(trackPos2.pt, trackPos2.eta, trackPos2.phi);
+            float sectorpos = trackPos2.phi / o2::constants::math::SectorSpanRad;
             double invMass = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
             if (invMass > massZMinQA) {
-              float sectorneg = trackPos.phi / o2::constants::math::SectorSpanRad;
-              float sectorpos = trackPos2.phi / o2::constants::math::SectorSpanRad;
               registry.fill(HIST("hInvMassZeeQAbg"), invMass, trackPos.pt, trackPos2.pt, trackPos.dcaxyTrk, trackPos2.dcaxyTrk, trackPos2.dcazTrk, trackPos.nclusterTPC, trackPos2.nclusterTPC, trackPos.nclusterITS, trackPos2.nclusterITS, sectorneg, sectorpos, trackPos.eop, trackPos2.eop, trackPos.energyIso, trackPos2.energyIso, trackPos.momIso, trackPos2.momIso, trackPos.ntrackIso, trackPos2.ntrackIso);
             }
           }
