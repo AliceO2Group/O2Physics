@@ -149,8 +149,6 @@ struct Alice3PidEvaluation {
   void process(soa::Join<aod::Tracks, aod::TracksCov, aod::McTrackLabels, aod::UpgradeTrkPids, aod::UpgradeTrkPidSignals, aod::UpgradeTofs, aod::UpgradeRichs> const& tracks,
                aod::McParticles const& /*mcParticles*/)
   {
-    int totalTracks = 0;
-    int analyzedTracks = 0;
 
     auto isValidNSigma = [](float nSigma) -> bool {
       return (nSigma < kInvalidNSigmaValue && nSigma > -kInvalidNSigmaValue);
@@ -258,8 +256,6 @@ struct Alice3PidEvaluation {
     };
 
     for (const auto& track : tracks) {
-      totalTracks++;
-
       if (!track.has_mcParticle()) {
         continue;
       }
@@ -289,8 +285,6 @@ struct Alice3PidEvaluation {
       trackerNSigma[kTriton] = track.nSigmaTrkTr();
       trackerNSigma[kHelium3] = track.nSigmaTrkHe();
       trackerNSigma[kAlpha] = track.nSigmaTrkAl();
-
-      analyzedTracks++;
 
       analyzeDetector(trackerHists, trackerNSigma, trueParticleIndex, p);
 
