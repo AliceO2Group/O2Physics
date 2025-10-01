@@ -30,7 +30,7 @@ o2physics_add_dpl_workflow(flow-nuacreation
                     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(epflow-analysis
-                    SOURCES jEPFlowAnalysis.cxx
+                    SOURCES JepFlowAnalysis.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore O2Physics::JCorran
                     COMPONENT_NAME Analysis)
 

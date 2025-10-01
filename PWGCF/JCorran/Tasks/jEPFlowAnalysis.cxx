@@ -119,8 +119,8 @@ struct JepFlowAnalysis {
     refAId = getDetId(cfgRefAName);
     refBId = getDetId(cfgRefBName);
 
-    epAnalysis.SetHistRegistry(&epFlowHistograms);
-    epAnalysis.CreateHistograms();
+    epAnalysis.setHistRegistry(&epFlowHistograms);
+    epAnalysis.createHistograms();
   }
 
   void process(MyCollisions::iterator const& coll, soa::Filtered<MyTracks> const& tracks, aod::BCsWithTimestamps const&)
@@ -185,13 +185,13 @@ struct JepFlowAnalysis {
       float resNumA = helperEP.GetResolution(eps[0], eps[1], i);
       float resNumB = helperEP.GetResolution(eps[0], eps[2], i);
       float resDenom = helperEP.GetResolution(eps[1], eps[2], i);
-      epAnalysis.FillResolutionHistograms(cent, static_cast<float>(i), resNumA, resNumB, resDenom);
+      epAnalysis.fillResolutionHistograms(cent, static_cast<float>(i), resNumA, resNumB, resDenom);
 
       for (uint j = 0; j < nsystem; j++) { // loop over detectors used
         for (const auto& track : tracks) {
           float vn = std::cos((i) * (track.phi() - eps[j]));
           float vn_sin = std::sin((i) * (track.phi() - eps[j]));
-          epAnalysis.FillVnHistograms(i, cent, static_cast<float>(j + 1), track.pt(), vn * weight, vn_sin * weight);
+          epAnalysis.fillVnHistograms(i, cent, static_cast<float>(j + 1), track.pt(), vn * weight, vn_sin * weight);
         }
       }
     }
