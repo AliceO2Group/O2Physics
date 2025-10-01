@@ -621,14 +621,14 @@ struct HfDataCreatorCharmResoReduced {
   }
 
   template <typename PParticles>
-  double computeInvMassGen(PParticles const& particlesMc, int indexRec)
+  float computeInvMassGen(PParticles const& particlesMc, int indexRec)
   {
     auto particleReso = particlesMc.iteratorAt(indexRec);
     auto dau1 = particlesMc.iteratorAt(particleReso.daughtersIds().front());
     auto dau2 = particlesMc.iteratorAt(particleReso.daughtersIds().back());
     std::array<std::array<float, 3>, 2> pArr = {{{dau1.px(), dau1.py(), dau1.pz()}, {dau2.px(), dau2.py(), dau2.pz()}}};
     std::array<float, 2> mArr = {static_cast<float>(pdg->Mass(dau1.pdgCode())), static_cast<float>(pdg->Mass(dau2.pdgCode()))};
-    return RecoDecay::m(pArr, mArr);
+    return static_cast<float>(RecoDecay::m(pArr, mArr));
   }
 
   /// Function for filling MC reco information of DV0 candidates in the tables
