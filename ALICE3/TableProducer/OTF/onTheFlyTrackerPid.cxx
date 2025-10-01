@@ -103,7 +103,7 @@ static constexpr float kLUTPtMax = 10.0f;
 class ToTLUT
 {
  public:
-  ToTLUT(int maxLayers, float analysisEtaMinVal = 0.0f, float analysisEtaMaxVal = 1.0f, float analysisPtMinVal = 0.0f, float analysisPtMaxVal = 10.0f)
+  explicit ToTLUT(int maxLayers, float analysisEtaMinVal = 0.0f, float analysisEtaMaxVal = 1.0f, float analysisPtMinVal = 0.0f, float analysisPtMaxVal = 10.0f)
     : mMaxLayers(maxLayers),
       mAnalysisEtaMin(analysisEtaMinVal),
       mAnalysisEtaMax(analysisEtaMaxVal),
