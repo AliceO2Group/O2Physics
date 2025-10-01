@@ -119,8 +119,7 @@ struct electronConverter5 {
   }
   PROCESS_SWITCH(electronConverter5, process003to005, "convert from 003 into 005", false);
 
-  using MyElectrons004 = soa::Join<aod::EMPrimaryElectrons_004, aod::EMPrimaryElectronsCov_000>;
-  void process004to005(MyElectrons004 const& tracks)
+  void process004to005(aod::EMPrimaryElectrons_004 const& tracks)
   {
     for (const auto& track : tracks) {
       track_005(track.collisionId(),
