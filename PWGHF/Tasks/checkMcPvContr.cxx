@@ -50,24 +50,36 @@ namespace check_mc_pv_contr
 // V0s
 DECLARE_SOA_COLUMN(IdCollGen, idCollGen, int);             //! Generated collision index
 DECLARE_SOA_COLUMN(ImpParGen, impParGen, float);           //! Generated impact parameter
+DECLARE_SOA_COLUMN(XCollGen, xCollGen, float);             //! Generated x coordinate of the collision
+DECLARE_SOA_COLUMN(YCollGen, yCollGen, float);             //! Generated y coordinate of the collision
+DECLARE_SOA_COLUMN(ZCollGen, zCollGen, float);             //! Generated z coordinate of the collision
 DECLARE_SOA_COLUMN(TimeGen, timeGen, float);               //! Generated collision time
 DECLARE_SOA_COLUMN(TimeRec, timeRec, float);               //! Reconstructed collision time
 DECLARE_SOA_COLUMN(NCharm, nCharm, int);                   //! Number of charm quarks in the collision
 DECLARE_SOA_COLUMN(NCharmFromInj, nCharmFromInj, int);     //! Number of charm quarks from injected events
 DECLARE_SOA_COLUMN(NPVContributors, nPVContributors, int); //! Number of contributors to the PV
 DECLARE_SOA_COLUMN(Centrality, centrality, int);           //! Centrality FT0C
+DECLARE_SOA_COLUMN(XCollRec, xCollRec, float);             //! Reconstructed x coordinate of the collision
+DECLARE_SOA_COLUMN(YCollRec, yCollRec, float);             //! Reconstructed y coordinate of the collision
+DECLARE_SOA_COLUMN(ZCollRec, zCollRec, float);             //! Reconstructed z coordinate of the collision
 DECLARE_SOA_COLUMN(BC, Bc, int);                           //! Bunch crossing
 } // namespace check_mc_pv_contr
 
 DECLARE_SOA_TABLE(CheckInj, "AOD", "CHECKINJ", //! Table with PID information
                   check_mc_pv_contr::IdCollGen,
                   check_mc_pv_contr::ImpParGen,
+                  check_mc_pv_contr::XCollGen,
+                  check_mc_pv_contr::YCollGen,
+                  check_mc_pv_contr::ZCollGen,
                   check_mc_pv_contr::TimeGen,
                   check_mc_pv_contr::TimeRec,
                   check_mc_pv_contr::NCharm,
                   check_mc_pv_contr::NCharmFromInj,
                   check_mc_pv_contr::NPVContributors,
                   check_mc_pv_contr::Centrality,
+                  check_mc_pv_contr::XCollRec,
+                  check_mc_pv_contr::YCollRec,
+                  check_mc_pv_contr::ZCollRec,
                   check_mc_pv_contr::BC);
 } // namespace o2::aod
 
@@ -84,14 +96,32 @@ struct checkMcPvContr {
   HistogramRegistry registry{"registry", {}};
   std::shared_ptr<TH1> hCharmPerCollImpPar;
 
+  bool isCharm(int pdg)
+  {
+    if (std::abs(pdg) / 1000 == 4)
+      return true;
+    if (std::abs(pdg) / 100 == 4)
+      return true;
+    return false;
+  }
+
+  bool isBeauty(int pdg)
+  {
+    if (std::abs(pdg) / 1000 == 5)
+      return true;
+    if (std::abs(pdg) / 100 == 5)
+      return true;
+    return false;
+  }
+
   void init(InitContext&)
   {
     registry.add("hCharmImpPar", ";Impact parameter (fm);Charm counts", {HistType::kTH1F, {{200, 0, 20}}});
     registry.add("hCollImpPar", ";Impact parameter (fm);Counts", {HistType::kTH1F, {{200, 0, 20}}});
     hCharmPerCollImpPar = registry.add<TH1>("hCharmPerCollImpPar", ";Impact parameter (fm);Charm counts per collision", {HistType::kTH1F, {{200, 0, 20}}});
 
-    registry.add("hDeltaX", ";#DeltaX (cm);Counts", {HistType::kTH1F, {{200, 0.01, 0.01}}});
-    registry.add("hDeltaY", ";#DeltaY (cm);Counts", {HistType::kTH1F, {{200, 0.01, 0.01}}});
+    registry.add("hDeltaX", ";#DeltaX (cm);Counts", {HistType::kTH1F, {{200, -0.01, 0.01}}});
+    registry.add("hDeltaY", ";#DeltaY (cm);Counts", {HistType::kTH1F, {{200, -0.01, 0.01}}});
     registry.add("hDeltaZ", ";#DeltaZ (cm);Counts", {HistType::kTH1F, {{200, -0.01, 0.01}}});
   }
 
@@ -100,6 +130,7 @@ struct checkMcPvContr {
                aod::McParticles const& mcParticles,
                aod::McCollisions const& mcCollisions)
   {
+    assert(isCharm(413));
     int splitColls{0};
     for (const auto& mcColl : mcCollisions) {
       const auto collSlice = collisions.sliceBy(colPerMcCollision, mcColl.globalIndex());
@@ -124,7 +155,7 @@ struct checkMcPvContr {
           if (track.has_mcParticle()) {
             auto mcPart = track.mcParticle_as<aod::McParticles>();
             for (const auto& mother : mcPart.mothers_as<aod::McParticles>()) {
-              if (std::abs(mother.pdgCode()) == 4) { // (anti)charm quark
+              if (isCharm(mother.pdgCode())) { // charm hadron
                 registry.fill(HIST("hDeltaX"), collision.posX() - collisions.rawIteratorAt(idxCollMostPVContrib).posX());
                 registry.fill(HIST("hDeltaY"), collision.posY() - collisions.rawIteratorAt(idxCollMostPVContrib).posY());
                 registry.fill(HIST("hDeltaZ"), collision.posZ() - collisions.rawIteratorAt(idxCollMostPVContrib).posZ());
@@ -137,7 +168,10 @@ struct checkMcPvContr {
             }
           }
         }
-        checkInj(mcColl.globalIndex(), mcColl.impactParameter(), mcColl.t(), collision.collisionTime(), charmIds.size(), fromSignalEv, collision.numContrib(), collision.centFT0C(), collision.bcId());
+        checkInj(
+          mcColl.globalIndex(), mcColl.impactParameter(), mcColl.posX(), mcColl.posY(), mcColl.posZ(), mcColl.t(), collision.collisionTime(),
+          charmIds.size(), fromSignalEv, collision.numContrib(), collision.centFT0C(), collision.posX(), collision.posY(), collision.posZ(),
+          collision.bcId());
       }
     }
     for (const auto& mcColl : mcCollisions) {
@@ -145,7 +179,7 @@ struct checkMcPvContr {
     }
     int count_bkg{0}, count_sgn{0};
     for (const auto& mcPart : mcParticles) {
-      if (std::abs(mcPart.pdgCode()) == 4) { // (anti)charm quark
+      if (isCharm(mcPart.pdgCode())) { // charm hadron
         if (!mcPart.fromBackgroundEvent()) {
           auto mcCollision = mcPart.mcCollision_as<aod::McCollisions>();
           registry.fill(HIST("hCharmImpPar"), mcCollision.impactParameter());
