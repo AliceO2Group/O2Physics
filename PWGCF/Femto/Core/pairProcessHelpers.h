@@ -181,8 +181,8 @@ void processMixedEvent(T1& Collisions,
       continue;
     }
     CprManager.setMagField(collision1.magField());
-    auto sliceParticle1 = Partition->sliceByCached(o2::aod::femtobase::stored::collisionId, collision1.globalIndex(), cache);
-    auto sliceParticle2 = Partition->sliceByCached(o2::aod::femtobase::stored::collisionId, collision2.globalIndex(), cache);
+    auto sliceParticle1 = Partition->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
+    auto sliceParticle2 = Partition->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
     if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
       continue;
     }
@@ -230,8 +230,8 @@ void processMixedEvent(T1& Collisions,
       continue;
     }
     CprManager.setMagField(collision1.magField());
-    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, collision1.globalIndex(), cache);
-    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::collisionId, collision2.globalIndex(), cache);
+    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
+    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
     if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
       continue;
     }
@@ -281,8 +281,8 @@ void processMixedEvent(T1& Collisions,
       continue;
     }
     CprManager.setMagField(collision1.magField());
-    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::collisionId, collision1.globalIndex(), cache);
-    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::collisionId, collision2.globalIndex(), cache);
+    auto sliceParticle1 = Partition1->sliceByCached(o2::aod::femtobase::stored::fColId, collision1.globalIndex(), cache);
+    auto sliceParticle2 = Partition2->sliceByCached(o2::aod::femtobase::stored::fColId, collision2.globalIndex(), cache);
     if (sliceParticle1.size() == 0 || sliceParticle2.size() == 0) {
       continue;
     }
