@@ -42,7 +42,7 @@ using namespace std;
 using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::Qvectors>;
 using MyTracks = aod::Tracks;
 
-struct JEPFlowAnalysis {
+struct JepFlowAnalysis {
 
   HistogramRegistry epFlowHistograms{"EPFlow", {}, OutputObjHandlingPolicy::AnalysisObject, true, true};
   JEPFlowAnalysis epAnalysis;
@@ -201,5 +201,5 @@ struct JEPFlowAnalysis {
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<JEPFlowAnalysis>(cfgc)};
+    adaptAnalysisTask<JepFlowAnalysis>(cfgc)};
 }
