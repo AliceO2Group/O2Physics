@@ -109,20 +109,13 @@ class CloseTrackRejection
   CloseTrackRejection() = default;
   virtual ~CloseTrackRejection() = default;
 
-  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int chargeTrack1, int chargeTrack2)
+  void init(o2::framework::HistogramRegistry* registry, std::map<CprHist, std::vector<o2::framework::AxisSpec>>& specs, float detaMax, float dphistarMax, int chargeAbsTrack1, int chargeAbsTrack2)
   {
     mDetaMax = detaMax;
     mDphistarMax = dphistarMax;
 
-    if (mDetaMax < o2::constants::math::Epsilon || mDphistarMax < o2::constants::math::Epsilon) {
-      LOG(fatal) << "Either DetaMax or DphistarMax are 0 or negative. Either turn off CPR or specify reasonable values. Breaking ...";
-    }
-    mChargeTrack1 = chargeTrack1;
-    mChargeTrack2 = chargeTrack2;
-
-    if (utils::sign(mChargeTrack1) != utils::sign(mChargeTrack2)) {
-      LOG(warn) << "CPR is turned on for tracks with opposite charge. Is this intended?";
-    }
+    mChargeAbsTrack1 = chargeAbsTrack1;
+    mChargeAbsTrack2 = chargeAbsTrack2;
 
     mHistogramRegistry = registry;
 
@@ -150,8 +143,8 @@ class CloseTrackRejection
 
     mDeta = track1.eta() - track2.eta();
     for (size_t i = 0; i < kTpcRadius.size(); i++) {
-      auto phistar1 = utils::dphistar(mMagField, kTpcRadius[i], mChargeTrack1, track1.pt(), track1.phi());
-      auto phistar2 = utils::dphistar(mMagField, kTpcRadius[i], mChargeTrack2, track2.pt(), track2.phi());
+      auto phistar1 = utils::dphistar(mMagField, kTpcRadius[i], mChargeAbsTrack1 * track1.signedPt(), track1.phi());
+      auto phistar2 = utils::dphistar(mMagField, kTpcRadius[i], mChargeAbsTrack2 * track2.signedPt(), track2.phi());
       if (phistar1 && phistar2) {
         // if the calculation for one phistar fails, keep the default value, which is 0
         // this makes it more likelier for the pair to be rejected sind the averave will be biased towards lower values
@@ -184,8 +177,8 @@ class CloseTrackRejection
   }
 
  private:
-  int mChargeTrack1 = 0;
-  int mChargeTrack2 = 0;
+  int mChargeAbsTrack1 = 0;
+  int mChargeAbsTrack2 = 0;
   float mMagField = 0.f;
   float mAverageDphistar = 0.f;
   float mDeta = 0.f;

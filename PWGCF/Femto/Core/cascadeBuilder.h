@@ -101,7 +101,7 @@ struct ConfOmegaBits : o2::framework::ConfigurableGroup {
   o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};        \
   o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Cascade"}; \
   o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Cascade"}; \
-  o2::framework::Configurable<o2::aod::femtodatatypes::CascadeMaskType> mask{"mask", 0, "Bitmask for cascade selection"};
+  o2::framework::Configurable<o2::aod::femtodatatypes::CascadeMaskType> mask{"mask", 0x0, "Bitmask for cascade selection"};
 
 struct ConfXiSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("XiSelection");
