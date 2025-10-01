@@ -69,29 +69,28 @@ struct HfTaskElectronWeakBoson {
   // configurable parameters
   Configurable<int> nBinsPt{"nBinsPt", 100, "N bins in pt registry"};
   Configurable<float> binPtmax{"binPtmax", 100.0, "maximum pt registry"};
-  Configurable<int> nBinsPtZee{"nBinsPtZee", 60, "N bins in pt Zee registry"};
-  Configurable<float> binPtZeemin{"binPtZeemin", 20.0, "minimum pt Zee registry"};
-  Configurable<float> binPtZeemax{"binPtZeemax", 80.0, "maximum pt Zee registry"};
   Configurable<int> nBinsE{"nBinsE", 100, "N bins in E registry"};
   Configurable<float> binEmax{"binEmax", 100.0, "maximum E registry"};
-  Configurable<int> nBinsEop{"nBinsEop", 300, "N bins in E/p registry"};
-  Configurable<float> binEopmin{"binEopmin", -0.01, "minimum E/p registry"};
-  Configurable<float> binEopmax{"binEopmax", 1.49, "maximum E/p registry"};
-  Configurable<int> nBinsEiso{"nBinsEiso", 255, "N bins in Eiso registry"};
-  Configurable<float> binEisomin{"binEisomin", 0, "minimum Eiso registry"};
-  Configurable<float> binEisomax{"binEisomax", 2.0, "maximum Eiso registry"};
-  Configurable<int> nBinsPiso{"nBinsPiso", 255, "N bins in mom. isolation registry"};
-  Configurable<float> binPisomin{"binPisomin", 0, "minimum mom. isolation registry"};
-  Configurable<float> binPisomax{"binPisomax", 1.5, "maximum mom. isolation registry"};
-  Configurable<int> nBinsTriso{"nBinsTriso", 25, "N bins in Track isolation registry"};
-  Configurable<float> binTrisomin{"binTrisomin", -0.5, "minimum Track isolation registry"};
-  Configurable<float> binTrisomax{"binTrisomax", 24.5, "maximum Track isolation registry"};
-  Configurable<int> nBinsMassZg{"nBinsMassZg", 150, "N bins in Mass Zgamma registry"};
-  Configurable<float> binMassZgmax{"binMassZgmax", 150, "maximum Mass Zgamma registry"};
-  Configurable<int> nBinsMassZ{"nBinsMassZ", 130, "N bins in Mass Z registry"};
-  Configurable<float> binMassZmin{"binMassZmin", 20, "minimum Mass Z registry"};
-  Configurable<int> nBinsZfrag{"nBinsZfrag", 200, "N bins in Z frag registry"};
-  Configurable<float> binZfragmin{"binZfragmin", 2, "maximum Z frag registry"};
+
+  ConfigurableAxis confaxisPt{"confaxisPt", {100, 0, 100}, "p_{T}"};
+  ConfigurableAxis confaxisPtZee{"confaxisPtZee", {60, 20, 80}, "p_{T}"};
+  ConfigurableAxis confaxisPtZneg{"confaxisPtZneg", {60, 20, 80}, "p_{T,neg} (GeV/c)"};
+  ConfigurableAxis confaxisPtZpos{"confaxisPtZpos", {60, 20, 80}, "p_{T,pos} (GeV/c)"};
+  ConfigurableAxis confaxisEop{"confaxisEop", {300, -0.01, 1.49}, "E/p"};
+  ConfigurableAxis confaxisEopZneg{"confaxisEopZneg", {300, -0.01, 1.49}, "E/p_{neg}"};
+  ConfigurableAxis confaxisEopZpos{"confaxisEopZpos", {300, -0.01, 1.49}, "E/p_{pos}"};
+  ConfigurableAxis confaxisIsoEnergy{"confaxisIsoEnergy", {255, 0, 2.0}, "E_{iso}"};
+  ConfigurableAxis confaxisIsoEnergyZneg{"confaxisIsoEnergyZneg", {255, 0, 2.0}, "E_{iso,neg}"};
+  ConfigurableAxis confaxisIsoEnergyZpos{"confaxisIsoEnergyZpos", {255, 0, 2.0}, "E_{iso,pos}"};
+  ConfigurableAxis confaxisIsoMomentum{"confaxisIsoMomentum", {255, 0, 2.0}, "E_{iso}"};
+  ConfigurableAxis confaxisIsoMomentumZneg{"confaxisIsoMomentumZneg", {255, 0, 1.5}, "E_{iso,neg}"};
+  ConfigurableAxis confaxisIsoMomentumZpos{"confaxisIsoMomentumZpos", {255, 0, 1.5}, "E_{iso,pos}"};
+  ConfigurableAxis confaxisIsoTrack{"confaxisIsoTrack", {25, -0.5, 24.5}, "Isolation Track"};
+  ConfigurableAxis confaxisIsoTrackZneg{"confaxisIsoTrackZneg", {25, -0.5, 24.5}, "N_{isotrk,neg}"};
+  ConfigurableAxis confaxisIsoTrackZpos{"confaxisIsoTrackZpos", {25, -0.5, 24.5}, "N_{isotrk,pos}"};
+  ConfigurableAxis confaxisInvMassZgamma{"confaxisInvMassZgamma", {150, 0, 150}, "M_{ee} (GeV/c^{2})"};
+  ConfigurableAxis confaxisInvMassZ{"confaxisInvMassZ", {130, 20, 150}, "M_{ee} (GeV/c^{2})"};
+  ConfigurableAxis confaxisZfrag{"confaxisZfrag", {200, 0, 2.0}, "p_{T,h}/p_{T,Z}"};
 
   Configurable<float> vtxZ{"vtxZ", 10.f, ""};
 
@@ -234,10 +233,6 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisZvtx{40, -20, 20, "Zvtx"};
     const AxisSpec axisCounter{1, 0, 1, "events"};
     const AxisSpec axisEta{20, -1.0, 1.0, "#eta"};
-    const AxisSpec axisPt{nBinsPt, 0, binPtmax, "p_{T}"};
-    const AxisSpec axisPtZee{nBinsPtZee, binPtZeemin, binPtZeemax, "p_{T}"};
-    const AxisSpec axisPtZneg{nBinsPtZee, binPtZeemin, binPtZeemax, "p_{T,neg} (GeV/c)"};
-    const AxisSpec axisPtZpos{nBinsPtZee, binPtZeemin, binPtZeemax, "p_{T,pos} (GeV/c)"};
     const AxisSpec axisDCAxyneg{150, 0, 0.3, "DCAxy_{neg}"};
     const AxisSpec axisDCAxypos{150, 0, 0.3, "DCAxy_{pos}"};
     const AxisSpec axisDCAzneg{150, 0, 0.3, "DCAz_{neg}"};
@@ -257,31 +252,35 @@ struct HfTaskElectronWeakBoson {
     const AxisSpec axisdR{20, 0.0, 0.2, "dR"};
     const AxisSpec axisNcell{50, 0.0, 50.0, "Ncell"};
     const AxisSpec axisPhi{350, 0, 7, "Phi"};
-    const AxisSpec axisEop{nBinsEop, binEopmin, binEopmax, "E/p"};
-    const AxisSpec axisEopZneg{nBinsEop, binEopmin, binEopmax, "E/p"};
-    const AxisSpec axisEopZpos{nBinsEop, binEopmin, binEopmax, "E/p"};
     const AxisSpec axisChi2{250, 0.0, 25.0, "#chi^{2}"};
     const AxisSpec axisCluster{100, 0.0, 200.0, "counts"};
     const AxisSpec axisITSNCls{10, 0.0, 10, "counts"};
     const AxisSpec axisEMCtime{100, -50.0, 50, "EMC time"};
-    const AxisSpec axisIsoEnergy{nBinsEiso, binEisomin, binEisomax, "E_{iso}"};
-    const AxisSpec axisIsoEnergyZneg{nBinsEiso, binEisomin, binEisomax, "E_{iso}"};
-    const AxisSpec axisIsoEnergyZpos{nBinsEiso, binEisomin, binEisomax, "E_{iso}"};
-    const AxisSpec axisIsoMomentum{nBinsPiso, binPisomin, binPisomax, "Isolation momentum(GeV/C)"};
-    const AxisSpec axisIsoMomentumZneg{nBinsPiso, binPisomin, binPisomax, "Isolation momentum(GeV/C)"};
-    const AxisSpec axisIsoMomentumZpos{nBinsPiso, binPisomin, binPisomax, "Isolation momentum(GeV/C)"};
-    const AxisSpec axisIsoTrack{nBinsTriso, binTrisomin, binTrisomax, "Isolation Track"};
-    const AxisSpec axisIsoTrackZneg{nBinsTriso, binTrisomin, binTrisomax, "N_{isotrk,neg}"};
-    const AxisSpec axisIsoTrackZpos{nBinsTriso, binTrisomin, binTrisomax, "N_{isotrk,pos}"};
-    const AxisSpec axisInvMassZgamma{nBinsMassZg, 0, binMassZgmax, "M_{ee} (GeV/c^{2})"};
-    const AxisSpec axisInvMassZ{nBinsMassZ, binMassZmin, binMassZgmax, "M_{ee} (GeV/c^{2})"};
     const AxisSpec axisTrigger{3, -0.5, 2.5, "Trigger status of zorro"};
     const AxisSpec axisDPhiZh{64, -o2::constants::math::PIHalf, 3 * o2::constants::math::PIHalf, "#Delta#phi(Z-h)"};
     const AxisSpec axisPtHadron{nBinsPt, 0, binPtmax, "p_{T,hadron} (GeV/c)"};
     const AxisSpec axisPtZ{nBinsPt, 0, binPtmax, "p_{T,Z} (GeV/c)"};
     const AxisSpec axisSign{2, -2, 2, "charge sign"};
-    const AxisSpec axisCentrality{centralityBins};
-    const AxisSpec axisZfrag{nBinsZfrag, 0, binZfragmin, "p_{T,h}/p_{T,Z}"};
+    const AxisSpec axisCentrality{centralityBins, "centrality"};
+    const AxisSpec axisEop{confaxisEop, "E/p"};
+    const AxisSpec axisEopZneg{confaxisEopZneg, "E/p_{neg}"};
+    const AxisSpec axisEopZpos{confaxisEopZpos, "E/p_{[pos}"};
+    const AxisSpec axisPt{confaxisPt, "p_{T}"};
+    const AxisSpec axisPtZee{confaxisPtZee, "p_{T}"};
+    const AxisSpec axisPtZneg{confaxisPtZneg, "p_{T,neg} (GeV/c)"};
+    const AxisSpec axisPtZpos{confaxisPtZpos, "p_{T,pos} (GeV/c)"};
+    const AxisSpec axisIsoEnergy{confaxisIsoEnergy, "E_{iso}"};
+    const AxisSpec axisIsoEnergyZneg{confaxisIsoEnergyZneg, "E_{iso}"};
+    const AxisSpec axisIsoEnergyZpos{confaxisIsoEnergyZpos, "E_{iso}"};
+    const AxisSpec axisIsoMomentum{confaxisIsoMomentum, "Isolation momentum(GeV/C)"};
+    const AxisSpec axisIsoMomentumZneg{confaxisIsoMomentumZneg, "Isolation momentum(GeV/C)"};
+    const AxisSpec axisIsoMomentumZpos{confaxisIsoMomentumZpos, "Isolation momentum(GeV/C)"};
+    const AxisSpec axisIsoTrack{confaxisIsoTrack, "Isolation Track"};
+    const AxisSpec axisIsoTrackZneg{confaxisIsoTrackZneg, "N_{isotrk,neg}"};
+    const AxisSpec axisIsoTrackZpos{confaxisIsoTrackZpos, "N_{isotrk,pos}"};
+    const AxisSpec axisInvMassZgamma{confaxisInvMassZgamma, "M_{ee} (GeV/c^{2})"};
+    const AxisSpec axisInvMassZ{confaxisInvMassZ, "M_{ee} (GeV/c^{2})"};
+    const AxisSpec axisZfrag{confaxisZfrag, "p_{T,h}/p_{T,Z}"};
 
     // create registrygrams
     registry.add("hZvtx", "Z vertex", kTH1D, {axisZvtx});
@@ -770,11 +769,10 @@ struct HfTaskElectronWeakBoson {
           }
         }
         // bg e-e-
-        for (const auto& trackEle : selectedElectronsIso) {
-          for (const auto& trackEle2 : selectedElectronsIso) {
-            if (&trackEle.pt == &trackEle2.pt) {
-              continue;
-            }
+        for (size_t i = 0; i < selectedElectronsIso.size(); ++i) {
+          for (size_t j = i + 1; j < selectedElectronsIso.size(); ++j) {
+            const auto& trackEle = selectedElectronsIso[i];
+            const auto& trackEle2 = selectedElectronsIso[j];
             auto child1 = RecoDecayPtEtaPhi::pVector(trackEle.pt, trackEle.eta, trackEle.phi);
             auto child2 = RecoDecayPtEtaPhi::pVector(trackEle2.pt, trackEle2.eta, trackEle2.phi);
             double invMass = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
@@ -786,11 +784,10 @@ struct HfTaskElectronWeakBoson {
           }
         }
         // bg e+e+
-        for (const auto& trackPos : selectedPositronsIso) {
-          for (const auto& trackPos2 : selectedPositronsIso) {
-            if (&trackPos.pt == &trackPos2.pt) {
-              continue;
-            }
+        for (size_t i = 0; i < selectedPositronsIso.size(); ++i) {
+          for (size_t j = i + 1; j < selectedPositronsIso.size(); ++j) {
+            const auto& trackPos = selectedPositronsIso[i];
+            const auto& trackPos2 = selectedPositronsIso[j];
             auto child1 = RecoDecayPtEtaPhi::pVector(trackPos.pt, trackPos.eta, trackPos.phi);
             auto child2 = RecoDecayPtEtaPhi::pVector(trackPos2.pt, trackPos2.eta, trackPos2.phi);
             double invMass = RecoDecay::m(std::array{child1, child2}, std::array{o2::constants::physics::MassElectron, o2::constants::physics::MassElectron});
