@@ -491,6 +491,7 @@ struct HfTaskLc {
         registry.fill(HIST("MC/generated/signal/hPtGen") + HIST(SignalSuffixes[0]), ptGen);
         registry.fill(HIST("MC/generated/") + HIST("signal") + HIST("/hPtGen"), ptGen);
         registry.fill(HIST("MC/generated/signal") + HIST("/hPtGen"), ptGen);
+        registry.fill(HIST("MC/generated/signal/hPtGen"), ptGen);
         // =================================================================================
 
         auto fillHistogramsGen = [&]<int signalType>() {
