@@ -345,7 +345,7 @@ struct HfTaskLc {
         auto numPvContributors = collision.numContrib();
         auto ptRecB = candidate.ptBhadMotherPart();
 
-        auto fillHistogramsRec = [&]<int signalType>() {
+        auto fillHistogramsRec = [&candidate, pdgCodeProng0, pt, ptProng0, ptProng1, ptProng2, decayLength, decayLengthXY, chi2PCA, cpa, cpaXY]<int signalType>(HistogramRegistry& registry, HfHelper& hfHelper, int selectionFlagLc) {
           if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
             registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[signalType]), hfHelper.invMassLcToPKPi(candidate));
             registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[signalType]), hfHelper.invMassLcToPKPi(candidate), pt);
@@ -388,14 +388,14 @@ struct HfTaskLc {
         };
 
         /// MC reconstructed signal
-        fillHistogramsRec.template operator()<Signal>();
+        fillHistogramsRec.template operator()<Signal>(registry, hfHelper, selectionFlagLc);
 
         /// reconstructed signal prompt
         if (candidate.originMcRec() == RecoDecay::OriginType::Prompt) {
-          fillHistogramsRec.template operator()<Prompt>();
+          fillHistogramsRec.template operator()<Prompt>(registry, hfHelper, selectionFlagLc);
           /// reconstructed signal nonprompt
         } else if (candidate.originMcRec() == RecoDecay::OriginType::NonPrompt) {
-          fillHistogramsRec.template operator()<NonPrompt>();
+          fillHistogramsRec.template operator()<NonPrompt>(registry, hfHelper, selectionFlagLc);
         }
 
         if (fillTHn) {
@@ -480,7 +480,7 @@ struct HfTaskLc {
         const float gamma = std::sqrt(1 + p2m * p2m);                       // mother's particle Lorentz factor
         const float properLifetime = mcDaughter0.vt() * NanoToPico / gamma; // from ns to ps * from lab time to proper time
 
-        auto fillHistogramsGen = [&]<int signalType>() {
+        auto fillHistogramsGen = [&particle, ptGen, yGen]<int signalType>(HistogramRegistry& registry) {
           registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hPtGen") + HIST(SignalSuffixes[signalType]), ptGen);
           registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hEtaGen") + HIST(SignalSuffixes[signalType]), particle.eta());
           registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hYGen") + HIST(SignalSuffixes[signalType]), yGen);
@@ -490,7 +490,7 @@ struct HfTaskLc {
           registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hPhiVsPtGen") + HIST(SignalSuffixes[signalType]), particle.phi(), ptGen);
         };
 
-        fillHistogramsGen.template operator()<Signal>();
+        fillHistogramsGen.template operator()<Signal>(registry);
 
         auto fillTHnGen = [&](bool isPrompt) {
           ptGenB = isPrompt ? -1. : mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
@@ -509,10 +509,10 @@ struct HfTaskLc {
 
         if (particle.originMcGen() == RecoDecay::OriginType::Prompt) {
           fillTHnGen(true);
-          fillHistogramsGen.template operator()<Prompt>();
+          fillHistogramsGen.template operator()<Prompt>(registry);
         } else if (particle.originMcGen() == RecoDecay::OriginType::NonPrompt) {
           fillTHnGen(false);
-          fillHistogramsGen.template operator()<NonPrompt>();
+          fillHistogramsGen.template operator()<NonPrompt>(registry);
         }
       }
     }
