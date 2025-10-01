@@ -344,7 +344,7 @@ struct HfTaskLc {
         auto numPvContributors = collision.numContrib();
         auto ptRecB = candidate.ptBhadMotherPart();
 
-        auto fillHistogramsRec = [&]<int signalType>() {
+        auto fillHistogramsRec = [&, SignalFolders, SignalSuffixes]<int signalType>() {
           if ((candidate.isSelLcToPKPi() >= selectionFlagLc) && pdgCodeProng0 == kProton) {
             registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hMassRecSig") + HIST(SignalSuffixes[signalType]), hfHelper.invMassLcToPKPi(candidate));
             registry.fill(HIST("MC/reconstructed/") + HIST(SignalFolders[signalType]) + HIST("/hMassVsPtRecSig") + HIST(SignalSuffixes[signalType]), hfHelper.invMassLcToPKPi(candidate), pt);
@@ -494,7 +494,7 @@ struct HfTaskLc {
         registry.fill(HIST("MC/generated/signal/hPtGen"), ptGen);
         // =================================================================================
 
-        auto fillHistogramsGen = [&]<int signalType>() {
+        auto fillHistogramsGen = [&, SignalFolders, SignalSuffixes]<int signalType>() {
           registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hPtGen") + HIST(SignalSuffixes[signalType]), ptGen);
           registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hEtaGen") + HIST(SignalSuffixes[signalType]), particle.eta());
           registry.fill(HIST("MC/generated/") + HIST(SignalFolders[signalType]) + HIST("/hYGen") + HIST(SignalSuffixes[signalType]), yGen);
