@@ -166,7 +166,7 @@ o2physics_add_dpl_workflow(pikp-raa-analysis
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(chargedparticle-raa
-    SOURCES ChargedparticleRaa.cxx
+    SOURCES chargedparticleRaa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
