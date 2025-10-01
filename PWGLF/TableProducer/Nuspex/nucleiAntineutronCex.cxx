@@ -25,6 +25,7 @@
 
 #include "TMCProcess.h"
 
+#include <algorithm>
 #include <optional>
 // ROOT
 #include "CommonConstants/MathConstants.h"
@@ -61,7 +62,7 @@ struct NucleiAntineutronCex {
   static constexpr double kVtxTol = 1e-4;
 
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
-  Produces<aod::antinCexPairs> outPairs;
+  Produces<aod::AntinCexPairs> outPairs;
 
   void init(InitContext const&)
   {
@@ -619,7 +620,7 @@ struct NucleiAntineutronCex {
             auto trAP = makeTPCovFromAOD(*apRow);
             int nCand = fitter.process(trP, trAP);
             auto status = fitter.getFitStatus();
-            histos.fill(HIST("vtxfitStatus"), (int)status);
+            histos.fill(HIST("vtxfitStatus"), static_cast<int>(status));
             if (nCand > 0 && (status == DCAFitter2::FitStatus::Converged || status == DCAFitter2::FitStatus::MaxIter)) {
               // Secondary vertex (commom PCA) [x,y,z] cm
               auto vtx = fitter.getPCACandidatePos();
@@ -641,10 +642,6 @@ struct NucleiAntineutronCex {
               if (motherPdg != -kNeutron)
                 histos.fill(HIST("cexbg_pairtrkVtxfitDcaPair"), dcaPair);
 
-              // Cuts
-              // if (dcaPair > 10.0) continue;
-              // if (trkangleDeg > 60) continue;
-              // if (std::abs(dplane) > 2) continue;
               if (!(antipLayers && pLayers))
                 continue;
               double cexPairTrkP = total_trk_pVec.Mag();
@@ -681,12 +678,12 @@ struct NucleiAntineutronCex {
               // closest ITS layer: Radius need to be checked
               static const std::array<double, 7> Rlayers = {2.2, 2.8, 3.6, 19.6, 24.0, 29.0, 35.0};
               int16_t svNearestLayerId = -1;
-              float svDeltaRtoLayer = 1e9f;
-              for (int i = 0; i < (int)Rlayers.size(); ++i) {
-                const float dR = std::abs((float)radius - (float)Rlayers[i]);
-                if (dR < svDeltaRtoLayer) {
-                  svDeltaRtoLayer = dR;
-                  svNearestLayerId = i;
+              float SVDeltaRToLayer = 1e9f;
+              for (int i = 0; i < static_cast<int>(Rlayers.size()); ++i) {
+                const float dR = static_cast<float>(std::abs(radius - Rlayers[i]));
+                if (dR < SVDeltaRToLayer) {
+                  SVDeltaRToLayer = dR;
+                  svNearestLayerId = static_cast<int16_t>(i);
                 }
               }
 
@@ -792,12 +789,12 @@ struct NucleiAntineutronCex {
                 dOpenAngle,
 
                 svNearestLayerId,
-                svDeltaRtoLayer,
+                SVDeltaRToLayer,
 
                 pItsMap,
                 apItsMap,
-                (int8_t)(pLayers ? 1 : 0),
-                (int8_t)(antipLayers ? 1 : 0),
+                static_cast<int8_t>(pLayers ? 1 : 0),
+                static_cast<int8_t>(antipLayers ? 1 : 0),
 
                 pvtxZ);
             }

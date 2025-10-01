@@ -23,7 +23,7 @@
 
 namespace o2::aod
 {
-namespace antinCexNS
+namespace antin_cex
 {
 // Metadata
 DECLARE_SOA_COLUMN(IsCex, isCex, bool);            // 1=CEX (from antin), 0=BG
@@ -95,35 +95,35 @@ DECLARE_SOA_COLUMN(DPairPz, dPairPz, float);
 DECLARE_SOA_COLUMN(DOpenAngle, dOpenAngle, float);
 
 DECLARE_SOA_COLUMN(SVNearestLayerId, svNearestLayerId, int16_t);
-DECLARE_SOA_COLUMN(SVDeltaRtoLayer, svDeltaRtoLayer, float);
+DECLARE_SOA_COLUMN(SVDeltaRToLayer, svDeltaRToLayer, float);
 
 DECLARE_SOA_COLUMN(PTrkItsHitMap, pTrkItsHitMap, uint16_t);
 DECLARE_SOA_COLUMN(APTrkItsHitMap, apTrkItsHitMap, uint16_t);
-DECLARE_SOA_COLUMN(PLayersOK, pLayersOK, int8_t);
-DECLARE_SOA_COLUMN(APLayersOK, apLayersOK, int8_t);
+DECLARE_SOA_COLUMN(PLayersOk, pLayersOk, int8_t);
+DECLARE_SOA_COLUMN(APLayersOk, apLayersOk, int8_t);
 
-DECLARE_SOA_COLUMN(PvtxZ, pvtxZ, float);
-} // namespace antinCexNS
+DECLARE_SOA_COLUMN(PVtxZ, pVtxZ, float);
+} // namespace antin_cex
 
 // Table
-DECLARE_SOA_TABLE(antinCexPairs, "AOD", "ANTINCEX",
-                  antinCexNS::IsCex,
-                  antinCexNS::MotherPdg, antinCexNS::ColId, antinCexNS::PId, antinCexNS::AntipId,
-                  antinCexNS::McPairP, antinCexNS::McPairPt, antinCexNS::McPairPz,
-                  antinCexNS::McDplane, antinCexNS::McAngleDeg, antinCexNS::McVtxX, antinCexNS::McVtxY, antinCexNS::McVtxZ,
-                  antinCexNS::TrkPairP, antinCexNS::TrkPairPt, antinCexNS::TrkPairPz, antinCexNS::TrkAngleDeg,
-                  antinCexNS::TrkVtxfitDcaPair, antinCexNS::TrkVtxfitR, antinCexNS::TrkVtxfitDistToPv,
-                  antinCexNS::TrkVtxfitSecVtxX, antinCexNS::TrkVtxfitSecVtxY, antinCexNS::TrkVtxfitSecVtxZ,
-                  antinCexNS::VtxfitChi2, antinCexNS::VtxfitStatus, antinCexNS::NCand,
-                  antinCexNS::VtxfitDX, antinCexNS::VtxfitDY, antinCexNS::VtxfitDZ, antinCexNS::VtxfitD3D,
-                  antinCexNS::PTrkP, antinCexNS::PTrkPx, antinCexNS::PTrkPy, antinCexNS::PTrkPz, antinCexNS::PTrkEta, antinCexNS::PTrkTpcSignal, antinCexNS::PTrkNClsIts,
-                  antinCexNS::AntipTrkP, antinCexNS::AntipTrkPx, antinCexNS::AntipTrkPy, antinCexNS::AntipTrkPz, antinCexNS::AntipTrkEta, antinCexNS::AntipTrkTpcSignal, antinCexNS::AntipTrkNClsIts,
-                  antinCexNS::SelMask,
-                  antinCexNS::PairPointingAngleDeg, antinCexNS::PairPBalance, antinCexNS::PairPtBalance, antinCexNS::PairQ,
-                  antinCexNS::DPairP, antinCexNS::DPairPt, antinCexNS::DPairPz, antinCexNS::DOpenAngle,
-                  antinCexNS::SVNearestLayerId, antinCexNS::SVDeltaRtoLayer,
-                  antinCexNS::PTrkItsHitMap, antinCexNS::APTrkItsHitMap, antinCexNS::PLayersOK, antinCexNS::APLayersOK,
-                  antinCexNS::PvtxZ);
+DECLARE_SOA_TABLE(AntinCexPairs, "AOD", "ANTINCEX",
+                  antin_cex::IsCex,
+                  antin_cex::MotherPdg, antin_cex::ColId, antin_cex::PId, antin_cex::AntipId,
+                  antin_cex::McPairP, antin_cex::McPairPt, antin_cex::McPairPz,
+                  antin_cex::McDplane, antin_cex::McAngleDeg, antin_cex::McVtxX, antin_cex::McVtxY, antin_cex::McVtxZ,
+                  antin_cex::TrkPairP, antin_cex::TrkPairPt, antin_cex::TrkPairPz, antin_cex::TrkAngleDeg,
+                  antin_cex::TrkVtxfitDcaPair, antin_cex::TrkVtxfitR, antin_cex::TrkVtxfitDistToPv,
+                  antin_cex::TrkVtxfitSecVtxX, antin_cex::TrkVtxfitSecVtxY, antin_cex::TrkVtxfitSecVtxZ,
+                  antin_cex::VtxfitChi2, antin_cex::VtxfitStatus, antin_cex::NCand,
+                  antin_cex::VtxfitDX, antin_cex::VtxfitDY, antin_cex::VtxfitDZ, antin_cex::VtxfitD3D,
+                  antin_cex::PTrkP, antin_cex::PTrkPx, antin_cex::PTrkPy, antin_cex::PTrkPz, antin_cex::PTrkEta, antin_cex::PTrkTpcSignal, antin_cex::PTrkNClsIts,
+                  antin_cex::AntipTrkP, antin_cex::AntipTrkPx, antin_cex::AntipTrkPy, antin_cex::AntipTrkPz, antin_cex::AntipTrkEta, antin_cex::AntipTrkTpcSignal, antin_cex::AntipTrkNClsIts,
+                  antin_cex::SelMask,
+                  antin_cex::PairPointingAngleDeg, antin_cex::PairPBalance, antin_cex::PairPtBalance, antin_cex::PairQ,
+                  antin_cex::DPairP, antin_cex::DPairPt, antin_cex::DPairPz, antin_cex::DOpenAngle,
+                  antin_cex::SVNearestLayerId, antin_cex::SVDeltaRToLayer,
+                  antin_cex::PTrkItsHitMap, antin_cex::APTrkItsHitMap, antin_cex::PLayersOk, antin_cex::APLayersOk,
+                  antin_cex::PVtxZ);
 
 } // namespace o2::aod
 
