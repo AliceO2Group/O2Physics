@@ -18,33 +18,19 @@
 #include "Framework/runDataProcessing.h"
 #include "Framework/AnalysisTask.h"
 #include "Framework/AnalysisDataModel.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/Track.h"
 #include "Common/Core/RecoDecay.h"
-#include "Common/Core/trackUtilities.h"
 #include "Common/CCDB/ctpRateFetcher.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/PIDResponse.h"
 #include "Framework/StaticFor.h"
 
-#include "Framework/ConfigParamSpec.h"
 #include "Common/CCDB/EventSelectionParams.h"
 #include "Common/CCDB/TriggerAliases.h"
 #include "CCDB/BasicCCDBManager.h"
-#include "CommonConstants/LHCConstants.h"
 #include "Framework/HistogramRegistry.h"
-#include "DataFormatsFT0/Digit.h"
-#include "DataFormatsParameters/GRPLHCIFData.h"
-#include "DataFormatsParameters/GRPECSObject.h"
-#include "ITSMFTBase/DPLAlpideParam.h"
-#include "MetadataHelper.h"
-#include "DataFormatsParameters/AggregatedRunInfo.h"
+#include <Framework/Configurable.h>
+#include <Framework/HistogramSpec.h>
 
 #include <TFile.h>
 #include <TH2F.h>
@@ -99,6 +85,7 @@ struct Derivedcascadeanalysis {
     Configurable<bool> doOccupancyCheck{"doOccupancyCheck", true, ""};
     Configurable<bool> doIRCheck{"doIRCheck", true, ""};
     Configurable<bool> doITSTPCmatchingCheck{"doITSTPCmatchingCheck", true, "fill histogram for ITS-TPC matching check"};
+    Configurable<bool> doITSclusterCheck{"doITSclusterCheck", false, "fill histograms with number of ITS clusters, enable only is ITS only tracks used"};
   } qaFlags;
 
   struct : ConfigurableGroup {
@@ -191,6 +178,8 @@ struct Derivedcascadeanalysis {
     Configurable<bool> doAtLeastOneTrackAB{"doAtLeastOneTrackAB", false, "require that at least one of the daughter tracks is from Afterburner"};
     Configurable<bool> doBachelorITSTracking{"doBachelorITSTracking", false, "require that the bachelor track is from the ITS tracking"};
     Configurable<bool> doAllTracksMinITSClusters{"doAllTracksMinITSClusters", false, "require that all daughter tracks have minimal ITS hits"};
+    Configurable<bool> useBachelorITSStandAlone{"useBachelorITSStandAlone",false, "if enabled, the bachelor track is required to be ITS only track"};
+    Configurable<bool> useMesonDaughterITSStandAlone{"useMesonDaughterITSStandAlone",false, "if enabled, the meson daughter track is required to be ITS only track"};
   } candidateSelectionFlags;
 
   struct : ConfigurableGroup {
@@ -236,6 +225,7 @@ struct Derivedcascadeanalysis {
     Configurable<float> maxRapCut{"maxRapCut", 0.155, "maximal rapidity acceptance in case of p--o"};
     Configurable<float> etaDauCut{"etaDauCut", 0.8, "Pseudorapidity acceptance of the cascade daughters"};
     Configurable<int> minITSclusters{"minITSclusters", 3, "minimal number of ITS hits for the daughter tracks"};
+    Configurable<int> maxTPCCrossedRows{"maxTPCCrossedRows",1,"maximal number of TPC crossed rows is ITS only tracks are requierd"};
   } candidateSelectionValues;
 
   o2::ccdb::CcdbApi ccdbApi;
@@ -330,9 +320,13 @@ struct Derivedcascadeanalysis {
       histos.add("hEventGlobalTracksVsCentralityBefCuts", "hEventGlobalTracksVsCentralityBefCuts", kTH2F, {{100, 0, 100}, {2500, 0, 2500}});
     }
 
-    histos.add("hCandidate", "hCandidate", HistType::kTH1D, {{22, -0.5, 21.5}});
-    histos.add("hCutValue", "hCutValue", HistType::kTH2D, {{22, -0.5, 21.5}, {300, 0, 3.1}});
+    histos.add("hCandidate", "hCandidate", HistType::kTH1D, {{24, -0.5, 23.5}});
+    histos.add("hCutValue", "hCutValue", HistType::kTH2D, {{24, -0.5, 23.5}, {300, 0, 3.1}});
 
+    if(qaFlags.doITSclusterCheck){
+      histos.add("hBachelorITSclusters","hBachelorITSclusters", HistType::kTH1F, {{7,-0.5,6.6}});
+      histos.add("hMesonDaughterITSclusters","hMesonDaughterITSclusters", HistType::kTH1F, {{7,-0.5,6.6}});
+    }
     if (qaFlags.doFillNsigmaTPCHistProton) {
       histos.add("hNsigmaProton", "hNsigmaProton", HistType::kTH3D, {{280, -7, 7}, {nPtBinsForNsigmaTPC, 0, 6}, {100, 0, 100}});
       histos.add("hNsigmaProtonNeg", "hNsigmaProtonNeg", HistType::kTH3D, {{280, -7, 7}, {nPtBinsForNsigmaTPC, 0, 6}, {100, 0, 100}});
@@ -359,7 +353,7 @@ struct Derivedcascadeanalysis {
         histos.add("hNsigmaTOFBachelorKaon", "", HistType::kTH3D, {{70, -7, 7}, {100, 0, 10}, {100, 0, 100}});
     }
 
-    TString cutLabel[22] = {"All", "MassWin", "y", "DCACascDau", "DCAV0Dau", "rCasc", "rCascMax", "rV0", "rV0Max", "LambdaMass", "Bach-baryon", "V0CosPA", "CompDecayMass", "DCADauToPV", "EtaDau", "CascCosPA", "DCAV0ToPV", "nSigmaTPCV0Dau", "NTPCrows", "OOBRej", "nSigmaTPCbachelor", "ctau"};
+    TString cutLabel[24] = {"All", "MassWin", "y", "DCACascDau", "DCAV0Dau", "rCasc", "rCascMax", "rV0", "rV0Max", "LambdaMass", "Bach-baryon", "V0CosPA", "CompDecayMass", "DCADauToPV", "EtaDau", "CascCosPA", "DCAV0ToPV", "nSigmaTPCV0Dau", "NTPCrows", "OOBRej", "nSigmaTPCbachelor", "ctau", "bachelor ITS only","meson ITS only"};
     for (int i = 1; i <= histos.get<TH1>(HIST("hCandidate"))->GetNbinsX(); i++) {
       histos.get<TH1>(HIST("hCandidate"))->GetXaxis()->SetBinLabel(i, cutLabel[i - 1]);
       histos.get<TH2>(HIST("hCutValue"))->GetXaxis()->SetBinLabel(i, cutLabel[i - 1]);
@@ -1235,7 +1229,9 @@ struct Derivedcascadeanalysis {
 
       if (isNegative) {
         if (candidateSelectionFlags.doNTPCSigmaCut) {
-          if (std::abs(posExtra.tpcNSigmaPr()) > candidateSelectionValues.nsigmatpcPr || std::abs(negExtra.tpcNSigmaPi()) > candidateSelectionValues.nsigmatpcPi)
+          if(!candidateSelectionFlags.useMesonDaughterITSStandAlone && std::abs(negExtra.tpcNSigmaPi()) > candidateSelectionValues.nsigmatpcPi)
+            continue;
+          if (std::abs(posExtra.tpcNSigmaPr()) > candidateSelectionValues.nsigmatpcPr) //proton should be always identified
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
         } else {
@@ -1243,7 +1239,9 @@ struct Derivedcascadeanalysis {
         }
       } else {
         if (candidateSelectionFlags.doNTPCSigmaCut) {
-          if (std::abs(posExtra.tpcNSigmaPi()) > candidateSelectionValues.nsigmatpcPi || std::abs(negExtra.tpcNSigmaPr()) > candidateSelectionValues.nsigmatpcPr)
+          if(!candidateSelectionFlags.useMesonDaughterITSStandAlone && std::abs(posExtra.tpcNSigmaPi()) > candidateSelectionValues.nsigmatpcPi)
+            continue;
+          if (std::abs(negExtra.tpcNSigmaPr()) > candidateSelectionValues.nsigmatpcPr) //proton should be always identified
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
         } else {
@@ -1285,8 +1283,15 @@ struct Derivedcascadeanalysis {
             histos.fill(HIST("histITSTPCmatchBachTrack"), ptBachelor, centrality, 2.5);
         }
       }
-
-      if (std::abs(posExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows || std::abs(negExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows || std::abs(bachExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows)
+      if(!candidateSelectionFlags.useBachelorITSStandAlone && std::abs(bachExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows)
+        continue;
+      if(!candidateSelectionFlags.useMesonDaughterITSStandAlone && isPositive && std::abs(posExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows) 
+        continue;
+      if(!candidateSelectionFlags.useMesonDaughterITSStandAlone && isNegative && std::abs(negExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows)
+        continue;  
+      if (isNegative && std::abs(posExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows) // proton is always required to be TPC track
+        continue;
+      if(isPositive && std::abs(negExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows) // proton is always required to be TPC track
         continue;
       histos.fill(HIST("hCandidate"), ++counter);
 
@@ -1354,7 +1359,7 @@ struct Derivedcascadeanalysis {
 
       if (isXi) {
 
-        if (candidateSelectionFlags.doNTPCSigmaCut) {
+        if (candidateSelectionFlags.doNTPCSigmaCut && !candidateSelectionFlags.useBachelorITSStandAlone) {
           if (std::abs(bachExtra.tpcNSigmaPi()) > candidateSelectionValues.nsigmatpcPi)
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
@@ -1362,7 +1367,7 @@ struct Derivedcascadeanalysis {
           ++counter;
         }
 
-        if (bachExtra.hasTOF() && candidateSelectionFlags.doNTOFSigmaBachelorCut) {
+        if (bachExtra.hasTOF() && candidateSelectionFlags.doNTOFSigmaBachelorCut && !candidateSelectionFlags.useBachelorITSStandAlone) {
           histos.fill(HIST("hNsigmaTOFBachelorPion"), casc.tofNSigmaXiPi(), fullmomentumBachelor, centrality);
           if (std::abs(casc.tofNSigmaXiPi()) > candidateSelectionValues.nsigmatofBachPion)
             continue;
@@ -1379,7 +1384,7 @@ struct Derivedcascadeanalysis {
           ++counter;
         }
       } else {
-        if (candidateSelectionFlags.doNTPCSigmaCut) {
+        if (candidateSelectionFlags.doNTPCSigmaCut && !candidateSelectionFlags.useBachelorITSStandAlone) {
           if (std::abs(bachExtra.tpcNSigmaKa()) > candidateSelectionValues.nsigmatpcKa)
             continue;
           histos.fill(HIST("hCandidate"), ++counter);
@@ -1387,7 +1392,7 @@ struct Derivedcascadeanalysis {
           ++counter;
         }
 
-        if (bachExtra.hasTOF() && candidateSelectionFlags.doNTOFSigmaBachelorCut) {
+        if (bachExtra.hasTOF() && candidateSelectionFlags.doNTOFSigmaBachelorCut && !candidateSelectionFlags.useBachelorITSStandAlone) {
           histos.fill(HIST("hNsigmaTOFBachelorKaon"), casc.tofNSigmaOmKa(), std::sqrt(std::pow(casc.pxbach(), 2) + std::pow(casc.pybach(), 2) + std::pow(casc.pzbach(), 2)), centrality);
           if (std::abs(casc.tofNSigmaOmKa()) > candidateSelectionValues.nsigmatofBachKaon)
             continue;
@@ -1404,6 +1409,27 @@ struct Derivedcascadeanalysis {
           ++counter;
         }
       }
+      if(candidateSelectionFlags.useBachelorITSStandAlone && std::abs(bachExtra.tpcCrossedRows()) < candidateSelectionValues.mintpccrrows && std::abs(bachExtra.tpcCrossedRows()) > candidateSelectionValues.maxTPCCrossedRows)
+        continue;
+      histos.fill(HIST("hCandidate"), ++counter);
+
+      if(candidateSelectionFlags.useMesonDaughterITSStandAlone && isPositive && posExtra.tpcCrossedRows() > candidateSelectionValues.maxTPCCrossedRows)
+        continue;
+      if(candidateSelectionFlags.useMesonDaughterITSStandAlone && isNegative && negExtra.tpcCrossedRows() > candidateSelectionValues.maxTPCCrossedRows)
+        continue;
+      histos.fill(HIST("hCandidate"), ++counter);
+
+      if(qaFlags.doITSclusterCheck){
+        if(candidateSelectionFlags.useBachelorITSStandAlone) 
+          histos.fill(HIST("hBachelorITSclusters"),bachExtra.itsNCls());
+        if(candidateSelectionFlags.useMesonDaughterITSStandAlone && isPositive)
+          histos.fill(HIST("hMesonDaughterITSclusters"),posExtra.itsNCls());
+        if(candidateSelectionFlags.useMesonDaughterITSStandAlone && isNegative)
+          histos.fill(HIST("hMesonDaughterITSclusters"),negExtra.itsNCls());
+      }
+      histos.fill(HIST("hPseudorapPosDaughter"), poseta);
+      histos.fill(HIST("hPseudorapNegDaughter"), negeta);
+      histos.fill(HIST("hPseudorapBachelor"), bacheta);
 
       if (qaFlags.doOccupancyCheck) {
         fillHistOccupancyCheck(recoPt, invmass, occupancy, centrality, isPositive);
