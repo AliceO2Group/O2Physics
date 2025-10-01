@@ -98,9 +98,9 @@ struct SystematicsMapping {
       registry.add("K/GeneratedPositive", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis});
       registry.add("K/GeneratedNegative", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis});
       registry.add("K0s/Generated", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis});
-      registry.add("K/ReconstructedPositive", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis});
-      registry.add("K/ReconstructedNegative", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis});
-      registry.add("K0s/Reconstructed", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis});
+      registry.add("K/ReconstructedPositive", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis, nsigmaAxisTPC, nsigmaAxisTOF, tpcCrossedRowsAxis, itsClustersAxis, dcaXYAxis, dcaZAxis, chi2TPCAxis, chi2ITSAxis});
+      registry.add("K/ReconstructedNegative", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis, nsigmaAxisTPC, nsigmaAxisTOF, tpcCrossedRowsAxis, itsClustersAxis, dcaXYAxis, dcaZAxis, chi2TPCAxis, chi2ITSAxis});
+      registry.add("K0s/Reconstructed", "", HistType::kTHnSparseF, {ptAxis, etaAxis, phiAxis, invariantMassBins, nsigmaAxisTPC, nsigmaAxisTOF, tpcCrossedRowsAxis, itsClustersAxis, dcaXYAxis, dcaZAxis, chi2TPCAxis, chi2ITSAxis});
     }
   }
 
@@ -165,6 +165,7 @@ struct SystematicsMapping {
 
   void processMc(soa::Join<CollisionType, aod::McCollisionLabels> const& collisions,
                  soa::Join<TrackType, aod::McTrackLabels> const& tracks,
+                 soa::Join<aod::V0Datas, aod::McV0Labels> const& v0s,
                  aod::McParticles const& particles,
                  aod::McCollisions const&)
   {
@@ -187,14 +188,45 @@ struct SystematicsMapping {
           continue;
         switch (mcParticle.pdgCode()) {
           case 321: // K+
-            registry.fill(HIST("K/ReconstructedPositive"), track.pt(), track.eta(), track.phi());
+            registry.fill(HIST("K/ReconstructedPositive"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.tpcNClsCrossedRows(), track.itsNCls(), track.dcaXY(), track.dcaZ(), track.tpcChi2NCl(), track.itsChi2NCl());
             break;
           case -321: // K-
-            registry.fill(HIST("K/ReconstructedNegative"), track.pt(), track.eta(), track.phi());
+            registry.fill(HIST("K/ReconstructedNegative"), track.pt(), track.eta(), track.phi(), track.tpcNSigmaKa(), track.tofNSigmaKa(), track.tpcNClsCrossedRows(), track.itsNCls(), track.dcaXY(), track.dcaZ(), track.tpcChi2NCl(), track.itsChi2NCl());
             break;
           default:
             break;
         }
+      }
+
+      for (const auto& v0 : v0s) {
+        if (v0.collisionId() != collision.globalIndex())
+          continue;
+        if (!v0.has_mcParticle())
+          continue;
+        const auto& mcParticle = v0.mcParticle();
+        if (mcParticle.mcCollisionId() != mcCollision.globalIndex())
+          continue;
+        if (!mcParticle.isPhysicalPrimary())
+          continue;
+        if (std::abs(mcParticle.pdgCode()) != 310)
+          continue;
+        const auto& posTrack = v0.posTrack_as<TrackType>();
+        const auto& negTrack = v0.negTrack_as<TrackType>();
+        if (v0.v0radius() < v0radius ||
+            v0.v0cosPA() < v0cospa ||
+            std::abs(posTrack.eta()) > etadau ||
+            std::abs(negTrack.eta()) > etadau)
+          continue;
+
+        registry.fill(HIST("K0s/Reconstructed"), v0.pt(), v0.eta(), v0.phi(), v0.mK0Short() - constants::physics::MassK0Short,
+                      std::max(posTrack.tpcNSigmaPi(), negTrack.tpcNSigmaPi()),
+                      std::max(posTrack.tofNSigmaPi(), negTrack.tofNSigmaPi()),
+                      std::min(posTrack.tpcNClsCrossedRows(), negTrack.tpcNClsCrossedRows()),
+                      std::min(posTrack.itsNCls(), negTrack.itsNCls()),
+                      std::min(posTrack.dcaXY(), negTrack.dcaXY()),
+                      std::min(posTrack.dcaZ(), negTrack.dcaZ()),
+                      std::min(posTrack.tpcChi2NCl(), negTrack.tpcChi2NCl()),
+                      std::min(posTrack.itsChi2NCl(), negTrack.itsChi2NCl()));
       }
 
       for (const auto& particle : particles) {
