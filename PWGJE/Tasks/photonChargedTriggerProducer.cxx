@@ -265,7 +265,7 @@ struct PhotonChargedTriggerProducer {
   }
   PROCESS_SWITCH(PhotonChargedTriggerProducer, processRecoPipmTPC, "process pipm (TPC) table (reconstructed)", false);
 
-  void processRecoPhotonPCM(soa::Join<aod::JetCollisions, aod::JCollisionPIs>::iterator const& collision, aod::Collisions const&,
+  void processRecoPhotonPCM(soa::Join<aod::JetCollisions, aod::JCollisionPIs>::iterator const& collision,
                             aod::V0PhotonsKF const& v0Photons, aod::V0Legs const&)
   {
     // event selection
