@@ -6086,9 +6086,9 @@ struct LFNucleiBATask {
         return;
     }
 
-    spectraGen.fill(HIST("histGenVetxZ"), mcCollision.posZ());
     if (mcCollision.centFT0M() < cfgMultCutLow || mcCollision.centFT0M() > cfgMultCutHigh)
       return;
+    spectraGen.fill(HIST("histGenVetxZ"), mcCollision.posZ());
 
     for (auto const& mcParticleGen : mcParticles) {
       if (mcParticleGen.y() > kinemOptions.cfgRapidityCutHigh || mcParticleGen.y() < kinemOptions.cfgRapidityCutLow)
