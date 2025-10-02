@@ -167,9 +167,9 @@ float qn(T const& col)
   return qn;
 }
 
-inline std::optional<float> dphistar(float magfield, float radius, float sign, float pt, float phi)
+inline std::optional<float> dphistar(float magfield, float radius, float signedPt, float phi)
 {
-  float arg = 0.3f * sign * magfield * radius * 0.01f / (2.f * pt);
+  float arg = 0.3f * (0.1f * magfield) * (0.01 * radius) / (2.f * signedPt);
   if (std::fabs(arg) < 1.f) {
     return phi - std::asin(arg);
   }

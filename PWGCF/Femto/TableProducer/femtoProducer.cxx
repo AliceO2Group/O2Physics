@@ -164,7 +164,7 @@ struct FemtoProducer {
 
   // data members
   int runNumber = -1;
-  float magField = 0.f;
+  int magField = 0.f;
   Service<o2::ccdb::BasicCCDBManager> ccdb;            /// Accessing the CCDB
   std::unordered_map<int64_t, int64_t> indexMapTracks; // for mapping tracks to lambdas, cascades and resonances
 
@@ -179,7 +179,7 @@ struct FemtoProducer {
       LOGF(fatal, "GRP object not found for timestamp %llu", timestamp);
       return;
     }
-    magField = 0.1 * grpo->getNominalL3Field(); // get magnetic field in tesla
+    magField = static_cast<int>(grpo->getNominalL3Field()); // get magnetic field in kG
     runNumber = bc.runNumber();
   };
 
