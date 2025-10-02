@@ -532,7 +532,7 @@ struct HfCorrelatorLcScHadrons {
     return true;
   }
 
-  template <bool isMcRec = false, typename CollType, typename V0, typename TrackType>
+  template <bool IsMcRec = false, typename CollType, typename V0, typename TrackType>
   void fillV0Histograms(CollType const& collV0, V0 const& v0s, TrackType const&)
   {
     for (const auto& v0 : v0s) {
@@ -566,7 +566,7 @@ struct HfCorrelatorLcScHadrons {
           }
         }
       }
-      if constexpr (isMcRec) {
+      if constexpr (IsMcRec) {
         if (!v0.has_mcParticle() || !posTrackV0.has_mcParticle() || !negTrackV0.has_mcParticle()) {
           continue;
         }
@@ -1390,7 +1390,7 @@ struct HfCorrelatorLcScHadrons {
   PROCESS_SWITCH(HfCorrelatorLcScHadrons, processMcGenMixedEvent, "Process Mixed Event McGen", false);
 
   void processDataLambdaV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                           TracksData const& tracks, aod::V0Datas const& V0s)
+                           TracksData const& tracks, aod::V0Datas const& v0s)
   {
     registry.fill(HIST("hEventLambdaV0"), 0.5);
     if (!eventSelV0(collision)) {
@@ -1398,12 +1398,12 @@ struct HfCorrelatorLcScHadrons {
     }
     registry.fill(HIST("hEventLambdaV0"), 1.5);
 
-    fillV0Histograms<false>(collision, V0s, tracks);
+    fillV0Histograms<false>(collision, v0s, tracks);
   }
   PROCESS_SWITCH(HfCorrelatorLcScHadrons, processDataLambdaV0, "Data process for v0 lambda", false);
 
   void processMcLambdaV0(soa::Join<aod::Collisions, aod::EvSels>::iterator const& collision,
-                         TracksWithMc const& tracks, soa::Join<aod::V0Datas, aod::McV0Labels> const& V0s, aod::McParticles const&)
+                         TracksWithMc const& tracks, soa::Join<aod::V0Datas, aod::McV0Labels> const& v0s, aod::McParticles const&)
   {
     registry.fill(HIST("hEventLambdaV0"), 0.5);
     if (!eventSelV0(collision)) {
@@ -1411,7 +1411,7 @@ struct HfCorrelatorLcScHadrons {
     }
     registry.fill(HIST("hEventLambdaV0"), 1.5);
 
-    fillV0Histograms<true>(collision, V0s, tracks);
+    fillV0Histograms<true>(collision, v0s, tracks);
   }
   PROCESS_SWITCH(HfCorrelatorLcScHadrons, processMcLambdaV0, "Mc process for v0 lambda", false);
 };
