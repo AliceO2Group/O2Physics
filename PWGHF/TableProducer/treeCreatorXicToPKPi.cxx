@@ -282,12 +282,16 @@ struct HfTreeCreatorXicToPKPi {
     }
 
     float invMassXic = 0;
-    if constexpr (massHypo == 0) {
+    int selStatusPKPi = candidate.isSelXicToPKPi();
+    int selStatusPiKP = candidate.isSelXicToPiKP();
+
+    if constexpr (massHypo == 0) { // Xic->PKPi
+      selStatusPiKP *= -1;
       invMassXic = hfHelper.invMassXicToPKPi(candidate);
-    } else if constexpr (massHypo == 1) {
+    } else if constexpr (massHypo == 1) { // Xic->PiKP
+      selStatusPKPi *= -1;
       invMassXic = hfHelper.invMassXicToPiKP(candidate);
     }
-
     if (fillCandidateLiteTable) {
       rowCandidateLite(
         candidate.chi2PCA(),
@@ -316,8 +320,8 @@ struct HfTreeCreatorXicToPKPi {
         candidate.tpcTofNSigmaKa1(),
         candidate.tpcTofNSigmaPi2(),
         candidate.tpcTofNSigmaPr2(),
-        candidate.isSelXicToPKPi(),
-        candidate.isSelXicToPiKP(),
+        selStatusPKPi,
+        selStatusPiKP,
         invMassXic,
         candidate.pt(),
         candidate.cpa(),
@@ -383,8 +387,8 @@ struct HfTreeCreatorXicToPKPi {
         candidate.tpcTofNSigmaKa1(),
         candidate.tpcTofNSigmaPi2(),
         candidate.tpcTofNSigmaPr2(),
-        candidate.isSelXicToPKPi(),
-        candidate.isSelXicToPiKP(),
+        selStatusPKPi,
+        selStatusPiKP,
         invMassXic,
         candidate.pt(),
         candidate.p(),
