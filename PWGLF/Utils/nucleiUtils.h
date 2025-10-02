@@ -12,11 +12,11 @@
 #ifndef PWGLF_UTILS_NUCLEIUTILS_H_
 #define PWGLF_UTILS_NUCLEIUTILS_H_
 
-#include <string>
-#include <vector>
-
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
+
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -119,18 +119,26 @@ enum Flags {
   kIsSecondaryFromWeakDecay = BIT(11) /// the last 4 bits are reserved for the PID in tracking
 };
 
-constexpr int getSpeciesFromPdg(int pdg) {
+constexpr int getSpeciesFromPdg(int pdg)
+{
   switch (std::abs(pdg)) {
-  case PDG_t::kProton:                          return Species::kPr;
-  case o2::constants::physics::Pdg::kDeuteron:  return Species::kDe;
-  case o2::constants::physics::Pdg::kTriton:    return Species::kTr;
-  case o2::constants::physics::Pdg::kHelium3:   return Species::kHe;
-  case o2::constants::physics::Pdg::kAlpha:     return Species::kAl;
-  default:  return -1;
+    case PDG_t::kProton:
+      return Species::kPr;
+    case o2::constants::physics::Pdg::kDeuteron:
+      return Species::kDe;
+    case o2::constants::physics::Pdg::kTriton:
+      return Species::kTr;
+    case o2::constants::physics::Pdg::kHelium3:
+      return Species::kHe;
+    case o2::constants::physics::Pdg::kAlpha:
+      return Species::kAl;
+    default:
+      return -1;
   }
 }
 
-bool checkSpeciesValidity(const int species) {
+bool checkSpeciesValidity(const int species)
+{
   if (species < 0 || species > Species::kNspecies) {
     return false;
   }
@@ -356,8 +364,9 @@ enum trackSelection {
 };
 static const std::array<std::string, static_cast<int>(trackSelection::kNtrackSelections)> trackSelectionLabels{"All", "Track cuts", "PID cuts"};
 
-template<int iSpecies>
-void createHistogramRegistryNucleus(HistogramRegistry& registry) {
+template <int iSpecies>
+void createHistogramRegistryNucleus(HistogramRegistry& registry)
+{
 
   constexpr int index = iSpecies;
   if (!checkSpeciesValidity(index)) {
@@ -369,7 +378,7 @@ void createHistogramRegistryNucleus(HistogramRegistry& registry) {
   registry.add(fmt::format("{}/h3PtVsEtaVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); #eta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, -1.0f, 1.f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3PhiVsEtaVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#phi (radians); #eta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, 0.0f, o2::constants::math::TwoPI}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3DCAxyVsPtVsCentrality", cNames[index]).c_str(), (fmt::format(";", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{xy} (cm); CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
-  registry.add(fmt::format("{}/h3DCAzVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{z} (cm); CentralityFT0C (%)")).c_str() , HistType::kTH3F, {{240, -6.0f, 6.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3DCAzVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{z} (cm); CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaTPC_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TPC distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TPC}}({}); CentralityFT0C (%)", cNames[index])).c_str(), HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaTPCVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TPC distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TPC}}({}); Centrality FT0C (%)", cNames[index])).c_str(), HistType::kTH3F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaITS_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} ITS distribution;", cNames[index]) + std::string("signed #it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{ITS}}({}); Centrality FT0C (%)", cNames[index])).c_str(), HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {20, 0.0f, 100.0f}});
@@ -390,141 +399,159 @@ void createHistogramRegistryNucleus(HistogramRegistry& registry) {
 
 // PID manager class
 
-class PidManager {
-  
-  public:
-    PidManager(const int species, const float* tpcBetheBlochParams = nullptr) 
+class PidManager
+{
+
+ public:
+  PidManager(const int species, const float* tpcBetheBlochParams = nullptr)
     : mSpecies(species)
-    {
-      if (!checkSpeciesValidity(species)) {
-        std::runtime_error("species contains invalid nucleus index");
-      }
-
-      if (!tpcBetheBlochParams) {
-        mUseTpcCentralCalibration = true;
-        return;
-      }
-
-      for (int i = 0; i < 6; i++) {
-        mTpcBetheBlochParams[i] = tpcBetheBlochParams[i];
-      }
+  {
+    if (!checkSpeciesValidity(species)) {
+      std::runtime_error("species contains invalid nucleus index");
     }
-    PidManager() = default;
-    ~PidManager() = default;
 
+    if (!tpcBetheBlochParams) {
+      mUseTpcCentralCalibration = true;
+      return;
+    }
 
-    // TOF
-    template <typename Ttrack>
-    float getBetaTOF(const Ttrack& track)
-    {
-      if (!track.hasTOF()) {
+    for (int i = 0; i < 6; i++) {
+      mTpcBetheBlochParams[i] = tpcBetheBlochParams[i];
+    }
+  }
+  PidManager() = default;
+  ~PidManager() = default;
+
+  // TOF
+  template <typename Ttrack>
+  float getBetaTOF(const Ttrack& track)
+  {
+    if (!track.hasTOF()) {
+      return -999.f;
+    }
+    float beta = o2::pid::tof::Beta::GetBeta(track);
+    return std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
+  }
+
+  template <typename Ttrack>
+  float getMassTOF(const Ttrack& track)
+  {
+    if (!track.hasTOF()) {
+      return -999.f;
+    }
+    const float charge{1.f + static_cast<float>(mSpecies == Species::kHe || mSpecies == Species::kAl)};
+    const float beta = getBetaTOF(track);
+    return track.tpcInnerParam() * charge * std::sqrt(1.f / (beta * beta) - 1.f);
+  }
+
+  template <typename Ttrack>
+  float getNSigmaTOF(const Ttrack& track)
+  {
+    if (!track.hasTOF()) {
+      return -999.f;
+    }
+
+    switch (mSpecies) {
+      case Species::kPr:
+        return track.tofNSigmaPr();
+      case Species::kDe:
+        return track.tofNSigmaDe();
+      case Species::kTr:
+        return track.tofNSigmaTr();
+      case Species::kHe:
+        return track.tofNSigmaHe();
+      case Species::kAl:
+        return track.tofNSigmaAl();
+      default:
         return -999.f;
-      }
-      float beta = o2::pid::tof::Beta::GetBeta(track);
-      return std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
     }
+  }
 
-    template <typename Ttrack>
-    float getMassTOF(const Ttrack& track)
-    {
-      if (!track.hasTOF()) {
+  template <typename Ttrack>
+  float getClusterSizeCosLambdaITS(const Ttrack& track)
+  {
+    return mResponseITS.averageClusterSize(track.itsClusterSizes()) / std::cosh(track.eta());
+  }
+
+  float getClusterSizeCosLambdaITS(const u_int32_t clusterSizesITS, const float eta)
+  {
+    return mResponseITS.averageClusterSize(clusterSizesITS) / std::cosh(eta);
+  }
+
+  template <typename Ttrack>
+  float getNSigmaITS(const Ttrack& track)
+  {
+    switch (mSpecies) {
+      case Species::kPr:
+        return mResponseITS.nSigmaITS<o2::track::PID::Proton>(track.itsClusterSizes(), track.p(), track.eta());
+      case Species::kDe:
+        return mResponseITS.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta());
+      case Species::kTr:
+        return mResponseITS.nSigmaITS<o2::track::PID::Triton>(track.itsClusterSizes(), track.p(), track.eta());
+      case Species::kHe:
+        return mResponseITS.nSigmaITS<o2::track::PID::Helium3>(track.itsClusterSizes(), 2. * track.p(), track.eta());
+      case Species::kAl:
+        return mResponseITS.nSigmaITS<o2::track::PID::Alpha>(track.itsClusterSizes(), 2. * track.p(), track.eta());
+      default:
         return -999.f;
-      }
-      const float charge{1.f + static_cast<float>(mSpecies == Species::kHe || mSpecies == Species::kAl)};
-      const float beta = getBetaTOF(track);
-      return track.tpcInnerParam() * charge * std::sqrt(1.f / (beta * beta) - 1.f);
     }
+  }
 
-    template <typename Ttrack>
-    float getNSigmaTOF(const Ttrack& track)
-    {
-      if (!track.hasTOF()) {
+  // TPC
+  float getExpectedTPCsignal(const float p)
+  {
+    if (!mUseTpcCentralCalibration) {
+      return -999.f;
+    }
+    float pScaled = p * mMomScaling[0] + mMomScaling[1];
+    float betaGamma = pScaled / masses[mSpecies];
+    return tpc::BetheBlochAleph(betaGamma,
+                                mTpcBetheBlochParams[0],
+                                mTpcBetheBlochParams[1],
+                                mTpcBetheBlochParams[2],
+                                mTpcBetheBlochParams[3],
+                                mTpcBetheBlochParams[4]);
+  }
+
+  template <typename Ttrack>
+  float getNSigmaTPC(const Ttrack& track)
+  {
+    if (!mUseTpcCentralCalibration) {
+      return getNSigmaTPCcentral(track);
+    }
+    float expectedSignal = getExpectedTPCsignal(track.tpcInnerParam());
+    float resolution = mTpcBetheBlochParams[5];
+    return (track.tpcSignal() - expectedSignal) / (expectedSignal * resolution);
+  }
+
+ protected:
+  // TPC
+  template <typename Ttrack>
+  float getNSigmaTPCcentral(const Ttrack& track)
+  {
+    switch (mSpecies) {
+      case Species::kPr:
+        return track.tpcNSigmaPr();
+      case Species::kDe:
+        return track.tpcNSigmaDe();
+      case Species::kTr:
+        return track.tpcNSigmaTr();
+      case Species::kHe:
+        return track.tpcNSigmaHe();
+      case Species::kAl:
+        return track.tpcNSigmaAl();
+      default:
         return -999.f;
-      }
-
-      switch (mSpecies) {
-        case Species::kPr:  return track.tofNSigmaPr();
-        case Species::kDe:  return track.tofNSigmaDe();
-        case Species::kTr:  return track.tofNSigmaTr();
-        case Species::kHe:  return track.tofNSigmaHe();
-        case Species::kAl:  return track.tofNSigmaAl();
-        default:            return -999.f;
-      }
     }
+  }
 
-    template <typename Ttrack>
-    float getClusterSizeCosLambdaITS(const Ttrack& track)
-    {
-      return mResponseITS.averageClusterSize(track.itsClusterSizes())  / std::cosh(track.eta());
-    }
-
-    float getClusterSizeCosLambdaITS(const u_int32_t clusterSizesITS, const float eta)
-    {
-      return mResponseITS.averageClusterSize(clusterSizesITS)  / std::cosh(eta);
-    }
-
-    template <typename Ttrack>
-    float getNSigmaITS(const Ttrack& track)
-    {
-      switch (mSpecies) {
-        case Species::kPr:  return mResponseITS.nSigmaITS<o2::track::PID::Proton>(track.itsClusterSizes(), track.p(), track.eta());
-        case Species::kDe:  return mResponseITS.nSigmaITS<o2::track::PID::Deuteron>(track.itsClusterSizes(), track.p(), track.eta());
-        case Species::kTr:  return mResponseITS.nSigmaITS<o2::track::PID::Triton>(track.itsClusterSizes(), track.p(), track.eta());
-        case Species::kHe:  return mResponseITS.nSigmaITS<o2::track::PID::Helium3>(track.itsClusterSizes(), 2. * track.p(), track.eta());
-        case Species::kAl:  return mResponseITS.nSigmaITS<o2::track::PID::Alpha>(track.itsClusterSizes(), 2. * track.p(), track.eta());
-        default:            return -999.f;
-      }
-    }
-
-    // TPC
-    float getExpectedTPCsignal(const float p)
-    {
-      if (!mUseTpcCentralCalibration) {
-        return -999.f;
-      }
-      float pScaled = p * mMomScaling[0] + mMomScaling[1];
-      float betaGamma = pScaled / masses[mSpecies];
-      return tpc::BetheBlochAleph(betaGamma,
-                                  mTpcBetheBlochParams[0],
-                                  mTpcBetheBlochParams[1],
-                                  mTpcBetheBlochParams[2],
-                                  mTpcBetheBlochParams[3],
-                                  mTpcBetheBlochParams[4]);
-    }
-    
-    template <typename Ttrack>
-    float getNSigmaTPC(const Ttrack& track)
-    {
-      if (!mUseTpcCentralCalibration) {
-        return getNSigmaTPCcentral(track);
-      }
-      float expectedSignal = getExpectedTPCsignal(track.tpcInnerParam());
-      float resolution = mTpcBetheBlochParams[5];
-      return (track.tpcSignal() - expectedSignal) / (expectedSignal * resolution);
-    }
-
-  protected:
-    // TPC 
-    template <typename Ttrack>
-    float getNSigmaTPCcentral(const Ttrack& track) {
-      switch (mSpecies) {  
-        case Species::kPr:  return track.tpcNSigmaPr();
-        case Species::kDe:  return track.tpcNSigmaDe();
-        case Species::kTr:  return track.tpcNSigmaTr();
-        case Species::kHe:  return track.tpcNSigmaHe();
-        case Species::kAl:  return track.tpcNSigmaAl();
-        default:            return -999.f;
-      }
-    }
-
-  private:
-    float mTpcBetheBlochParams[6];
-    bool mUseTpcCentralCalibration = true; // this just becomes a check for the null pointer in the parameters
-    o2::aod::ITSResponse mResponseITS;
-    float mMomScaling[2]{1., 0.};
-    int mSpecies;
+ private:
+  float mTpcBetheBlochParams[6];
+  bool mUseTpcCentralCalibration = true; // this just becomes a check for the null pointer in the parameters
+  o2::aod::ITSResponse mResponseITS;
+  float mMomScaling[2]{1., 0.};
+  int mSpecies;
 };
-
 
 } // namespace nuclei
 
