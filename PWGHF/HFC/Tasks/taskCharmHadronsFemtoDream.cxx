@@ -23,7 +23,7 @@
 #include "PWGCF/FemtoDream/Core/femtoDreamPairCleaner.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamParticleHisto.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamUtils.h"
-#include "PWGHF/Utils/utilsMcMatching.h"
+#include "PWGHF/Core/DecayChannels.h"
 
 #include "Common/Core/RecoDecay.h"
 
