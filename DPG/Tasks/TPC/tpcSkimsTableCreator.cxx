@@ -617,7 +617,8 @@ struct TreeWriterTpcV0 {
   } /// process with dEdx from TrackQA
   PROCESS_SWITCH(TreeWriterTpcV0, processWithdEdxTrQAWithCorrecteddEdx, "Standard V0 Samples with dEdx from Track QA for PID with corrected dEdx", false);
 
-  void processWithTrQA(Colls const& collisions, Trks const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, MyBCTable const&, aod::TracksQAVersion const& tracksQA)
+  template<bool IsCorrecteddEdx, typename TrksType>
+  void runWithTrQA(Colls const& collisions, TrksType const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, aod::TracksQAVersion const& tracksQA, Preslice<TrksType> const& perCollisionTracksType)
   {
     std::vector<int64_t> labelTrack2TrackQA;
     labelTrack2TrackQA.clear();
@@ -628,7 +629,7 @@ struct TreeWriterTpcV0 {
       labelTrack2TrackQA[trackId] = trackQAIndex;
     }
     for (const auto& collision : collisions) {
-      auto tracks = myTracks.sliceBy(perCollisionTracks, collision.globalIndex());
+      auto tracks = myTracks.sliceBy(perCollisionTracksType, collision.globalIndex());
       auto v0s = myV0s.sliceBy(perCollisionV0s, collision.globalIndex());
       auto cascs = myCascs.sliceBy(perCollisionCascs, collision.globalIndex());
       /// Check event slection
@@ -644,8 +645,8 @@ struct TreeWriterTpcV0 {
       rowTPCTreeWithTrkQA.reserve(tracks.size());
       /// Loop over v0 candidates
       for (const auto& v0 : v0s) {
-        auto posTrack = v0.posTrack_as<Trks>();
-        auto negTrack = v0.negTrack_as<Trks>();
+        auto posTrack = v0.posTrack_as<TrksType>();
+        auto negTrack = v0.negTrack_as<TrksType>();
         if (v0.v0addid() == -1) {
           continue;
         }
@@ -671,40 +672,40 @@ struct TreeWriterTpcV0 {
         // gamma
         if (static_cast<bool>(posTrack.pidbit() & (1 << 0)) && static_cast<bool>(negTrack.pidbit() & (1 << 0))) {
           if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisElectrons, MassElectorn, maxPt4dwnsmplTsalisElectrons)) {
-            fillSkimmedV0TableWithTrQA(v0, posTrack, posTrackQA, existPosTrkQA, collision, posTrack.tpcNSigmaEl(), posTrack.tofNSigmaEl(), posTrack.tpcExpSignalEl(posTrack.tpcSignal()), o2::track::PID::Electron, runnumber, dwnSmplFactor_El, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
+            fillSkimmedV0TableWithTrQA<IsCorrecteddEdx>(v0, posTrack, posTrackQA, existPosTrkQA, collision, posTrack.tpcNSigmaEl(), posTrack.tofNSigmaEl(), posTrack.tpcExpSignalEl(tpcSignalGeneric<IsCorrecteddEdx>(posTrack)), o2::track::PID::Electron, runnumber, dwnSmplFactor_El, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
           }
           if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisElectrons, MassElectorn, maxPt4dwnsmplTsalisElectrons)) {
-            fillSkimmedV0TableWithTrQA(v0, negTrack, negTrackQA, existNegTrkQA, collision, negTrack.tpcNSigmaEl(), negTrack.tofNSigmaEl(), negTrack.tpcExpSignalEl(negTrack.tpcSignal()), o2::track::PID::Electron, runnumber, dwnSmplFactor_El, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
+            fillSkimmedV0TableWithTrQA<IsCorrecteddEdx>(v0, negTrack, negTrackQA, existNegTrkQA, collision, negTrack.tpcNSigmaEl(), negTrack.tofNSigmaEl(), negTrack.tpcExpSignalEl(tpcSignalGeneric<IsCorrecteddEdx>(negTrack)), o2::track::PID::Electron, runnumber, dwnSmplFactor_El, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
           }
         }
         // Ks0
         if (static_cast<bool>(posTrack.pidbit() & (1 << 1)) && static_cast<bool>(negTrack.pidbit() & (1 << 1))) {
           if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisPions, MassPion, maxPt4dwnsmplTsalisPions)) {
-            fillSkimmedV0TableWithTrQA(v0, posTrack, posTrackQA, existPosTrkQA, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
+            fillSkimmedV0TableWithTrQA<IsCorrecteddEdx>(v0, posTrack, posTrackQA, existPosTrkQA, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(tpcSignalGeneric<IsCorrecteddEdx>(posTrack)), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
           }
           if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisPions, MassPion, maxPt4dwnsmplTsalisPions)) {
-            fillSkimmedV0TableWithTrQA(v0, negTrack, negTrackQA, existNegTrkQA, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(negTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
+            fillSkimmedV0TableWithTrQA<IsCorrecteddEdx>(v0, negTrack, negTrackQA, existNegTrkQA, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(tpcSignalGeneric<IsCorrecteddEdx>(negTrack)), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
           }
         }
         // Lambda
         if (static_cast<bool>(posTrack.pidbit() & (1 << 2)) && static_cast<bool>(negTrack.pidbit() & (1 << 2))) {
           if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisProtons, MassProton, maxPt4dwnsmplTsalisProtons)) {
             if (std::abs(posTrack.tofNSigmaPr()) <= nSigmaTOFdautrack) {
-              fillSkimmedV0TableWithTrQA(v0, posTrack, posTrackQA, existPosTrkQA, collision, posTrack.tpcNSigmaPr(), posTrack.tofNSigmaPr(), posTrack.tpcExpSignalPr(posTrack.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
+              fillSkimmedV0TableWithTrQA<IsCorrecteddEdx>(v0, posTrack, posTrackQA, existPosTrkQA, collision, posTrack.tpcNSigmaPr(), posTrack.tofNSigmaPr(), posTrack.tpcExpSignalPr(tpcSignalGeneric<IsCorrecteddEdx>(posTrack)), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
             }
           }
           if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisPions, MassPion, maxPt4dwnsmplTsalisPions)) {
-            fillSkimmedV0TableWithTrQA(v0, negTrack, negTrackQA, existNegTrkQA, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(negTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
+            fillSkimmedV0TableWithTrQA<IsCorrecteddEdx>(v0, negTrack, negTrackQA, existNegTrkQA, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(tpcSignalGeneric<IsCorrecteddEdx>(negTrack)), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
           }
         }
         // Antilambda
         if (static_cast<bool>(posTrack.pidbit() & (1 << 3)) && static_cast<bool>(negTrack.pidbit() & (1 << 3))) {
           if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisPions, MassPion, maxPt4dwnsmplTsalisPions)) {
-            fillSkimmedV0TableWithTrQA(v0, posTrack, posTrackQA, existPosTrkQA, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignal()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
+            fillSkimmedV0TableWithTrQA<IsCorrecteddEdx>(v0, posTrack, posTrackQA, existPosTrkQA, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(tpcSignalGeneric<IsCorrecteddEdx>(posTrack)), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
           }
           if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisProtons, MassProton, maxPt4dwnsmplTsalisProtons)) {
             if (std::abs(negTrack.tofNSigmaPr()) <= nSigmaTOFdautrack) {
-              fillSkimmedV0TableWithTrQA(v0, negTrack, negTrackQA, existNegTrkQA, collision, negTrack.tpcNSigmaPr(), negTrack.tofNSigmaPr(), negTrack.tpcExpSignalPr(negTrack.tpcSignal()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
+              fillSkimmedV0TableWithTrQA<IsCorrecteddEdx>(v0, negTrack, negTrackQA, existNegTrkQA, collision, negTrack.tpcNSigmaPr(), negTrack.tofNSigmaPr(), negTrack.tpcExpSignalPr(tpcSignalGeneric<IsCorrecteddEdx>(negTrack)), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
             }
           }
         }
@@ -712,7 +713,7 @@ struct TreeWriterTpcV0 {
 
       /// Loop over cascade candidates
       for (const auto& casc : cascs) {
-        auto bachTrack = casc.bachelor_as<Trks>();
+        auto bachTrack = casc.bachelor_as<TrksType>();
         if (casc.cascaddid() == kUndef) {
           continue;
         }
@@ -730,132 +731,22 @@ struct TreeWriterTpcV0 {
         // Omega and antiomega
         if (static_cast<bool>(bachTrack.pidbit() & (1 << kOmega)) || static_cast<bool>(bachTrack.pidbit() & (1 << kAntiOmega))) {
           if (downsampleTsalisCharged(bachTrack.pt(), downsamplingTsalisKaons, MassKaon, maxPt4dwnsmplTsalisKaons)) {
-            fillSkimmedV0TableWithTrQA(casc, bachTrack, bachTrackQA, existBachTrkQA, collision, bachTrack.tpcNSigmaKa(), bachTrack.tofNSigmaKa(), bachTrack.tpcExpSignalKa(bachTrack.tpcSignal()), o2::track::PID::Kaon, runnumber, dwnSmplFactor_Ka, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
+            fillSkimmedV0TableWithTrQA<IsCorrecteddEdx>(casc, bachTrack, bachTrackQA, existBachTrkQA, collision, bachTrack.tpcNSigmaKa(), bachTrack.tofNSigmaKa(), bachTrack.tpcExpSignalKa(tpcSignalGeneric<IsCorrecteddEdx>(bachTrack)), o2::track::PID::Kaon, runnumber, dwnSmplFactor_Ka, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
           }
         }
       }
     }
+  }
+
+  void processWithTrQA(Colls const& collisions, Trks const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, MyBCTable const&, aod::TracksQAVersion const& tracksQA)
+  {
+    runWithTrQA<false>(collisions, myTracks, myV0s, myCascs, tracksQA, perCollisionTracks);
   } /// process with TrackQA
   PROCESS_SWITCH(TreeWriterTpcV0, processWithTrQA, "Standard V0 Samples with Track QA for PID", false);
 
   void processWithTrQAWithCorrecteddEdx(Colls const& collisions, TrksWithDEdxCorrection const& myTracks, V0sWithID const& myV0s, CascsWithID const& myCascs, MyBCTable const&, aod::TracksQAVersion const& tracksQA)
   {
-    std::vector<int64_t> labelTrack2TrackQA;
-    labelTrack2TrackQA.clear();
-    labelTrack2TrackQA.resize(myTracks.size(), -1);
-    for (const auto& trackQA : tracksQA) {
-      int64_t trackId = trackQA.trackId();
-      int64_t trackQAIndex = trackQA.globalIndex();
-      labelTrack2TrackQA[trackId] = trackQAIndex;
-    }
-    for (const auto& collision : collisions) {
-      auto tracks = myTracks.sliceBy(perCollisionTracksWithNewDEdx, collision.globalIndex());
-      auto v0s = myV0s.sliceBy(perCollisionV0s, collision.globalIndex());
-      auto cascs = myCascs.sliceBy(perCollisionCascs, collision.globalIndex());
-      /// Check event slection
-      if (!isEventSelected(collision, tracks)) {
-        continue;
-      }
-      auto bc = collision.bc_as<MyBCTable>();
-      const int runnumber = bc.runNumber();
-      float hadronicRate = mRateFetcher.fetch(ccdb.service, bc.timestamp(), runnumber, irSource) * 1.e-3;
-      const int bcGlobalIndex = bc.globalIndex();
-      const int bcTimeFrameId = bc.tfId();
-      const int bcBcInTimeFrame = bc.bcInTF();
-      rowTPCTreeWithTrkQA.reserve(tracks.size());
-      /// Loop over v0 candidates
-      for (const auto& v0 : v0s) {
-        auto posTrack = v0.posTrack_as<TrksWithDEdxCorrection>();
-        auto negTrack = v0.negTrack_as<TrksWithDEdxCorrection>();
-        if (v0.v0addid() == -1) {
-          continue;
-        }
-        aod::TracksQA posTrackQA;
-        aod::TracksQA negTrackQA;
-        bool existPosTrkQA;
-        bool existNegTrkQA;
-        if (labelTrack2TrackQA[posTrack.globalIndex()] != -1) {
-          posTrackQA = tracksQA.iteratorAt(labelTrack2TrackQA[posTrack.globalIndex()]);
-          existPosTrkQA = true;
-        } else {
-          posTrackQA = tracksQA.iteratorAt(0);
-          existPosTrkQA = false;
-        }
-        if (labelTrack2TrackQA[negTrack.globalIndex()] != -1) {
-          negTrackQA = tracksQA.iteratorAt(labelTrack2TrackQA[negTrack.globalIndex()]);
-          existNegTrkQA = true;
-        } else {
-          negTrackQA = tracksQA.iteratorAt(0);
-          existNegTrkQA = false;
-        }
-
-        // gamma
-        if (static_cast<bool>(posTrack.pidbit() & (1 << 0)) && static_cast<bool>(negTrack.pidbit() & (1 << 0))) {
-          if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisElectrons, MassElectorn, maxPt4dwnsmplTsalisElectrons)) {
-            fillSkimmedV0TableWithTrQA<true>(v0, posTrack, posTrackQA, existPosTrkQA, collision, posTrack.tpcNSigmaEl(), posTrack.tofNSigmaEl(), posTrack.tpcExpSignalEl(posTrack.tpcSignalCorrected()), o2::track::PID::Electron, runnumber, dwnSmplFactor_El, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-          }
-          if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisElectrons, MassElectorn, maxPt4dwnsmplTsalisElectrons)) {
-            fillSkimmedV0TableWithTrQA<true>(v0, negTrack, negTrackQA, existNegTrkQA, collision, negTrack.tpcNSigmaEl(), negTrack.tofNSigmaEl(), negTrack.tpcExpSignalEl(negTrack.tpcSignalCorrected()), o2::track::PID::Electron, runnumber, dwnSmplFactor_El, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-          }
-        }
-        // Ks0
-        if (static_cast<bool>(posTrack.pidbit() & (1 << 1)) && static_cast<bool>(negTrack.pidbit() & (1 << 1))) {
-          if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisPions, MassPion, maxPt4dwnsmplTsalisPions)) {
-            fillSkimmedV0TableWithTrQA<true>(v0, posTrack, posTrackQA, existPosTrkQA, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignalCorrected()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-          }
-          if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisPions, MassPion, maxPt4dwnsmplTsalisPions)) {
-            fillSkimmedV0TableWithTrQA<true>(v0, negTrack, negTrackQA, existNegTrkQA, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(negTrack.tpcSignalCorrected()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-          }
-        }
-        // Lambda
-        if (static_cast<bool>(posTrack.pidbit() & (1 << 2)) && static_cast<bool>(negTrack.pidbit() & (1 << 2))) {
-          if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisProtons, MassProton, maxPt4dwnsmplTsalisProtons)) {
-            if (std::abs(posTrack.tofNSigmaPr()) <= nSigmaTOFdautrack) {
-              fillSkimmedV0TableWithTrQA<true>(v0, posTrack, posTrackQA, existPosTrkQA, collision, posTrack.tpcNSigmaPr(), posTrack.tofNSigmaPr(), posTrack.tpcExpSignalPr(posTrack.tpcSignalCorrected()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-            }
-          }
-          if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisPions, MassPion, maxPt4dwnsmplTsalisPions)) {
-            fillSkimmedV0TableWithTrQA<true>(v0, negTrack, negTrackQA, existNegTrkQA, collision, negTrack.tpcNSigmaPi(), negTrack.tofNSigmaPi(), negTrack.tpcExpSignalPi(negTrack.tpcSignalCorrected()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-          }
-        }
-        // Antilambda
-        if (static_cast<bool>(posTrack.pidbit() & (1 << 3)) && static_cast<bool>(negTrack.pidbit() & (1 << 3))) {
-          if (downsampleTsalisCharged(posTrack.pt(), downsamplingTsalisPions, MassPion, maxPt4dwnsmplTsalisPions)) {
-            fillSkimmedV0TableWithTrQA<true>(v0, posTrack, posTrackQA, existPosTrkQA, collision, posTrack.tpcNSigmaPi(), posTrack.tofNSigmaPi(), posTrack.tpcExpSignalPi(posTrack.tpcSignalCorrected()), o2::track::PID::Pion, runnumber, dwnSmplFactor_Pi, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-          }
-          if (downsampleTsalisCharged(negTrack.pt(), downsamplingTsalisProtons, MassProton, maxPt4dwnsmplTsalisProtons)) {
-            if (std::abs(negTrack.tofNSigmaPr()) <= nSigmaTOFdautrack) {
-              fillSkimmedV0TableWithTrQA<true>(v0, negTrack, negTrackQA, existNegTrkQA, collision, negTrack.tpcNSigmaPr(), negTrack.tofNSigmaPr(), negTrack.tpcExpSignalPr(negTrack.tpcSignalCorrected()), o2::track::PID::Proton, runnumber, dwnSmplFactor_Pr, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-            }
-          }
-        }
-      }
-
-      /// Loop over cascade candidates
-      for (const auto& casc : cascs) {
-        auto bachTrack = casc.bachelor_as<TrksWithDEdxCorrection>();
-        if (casc.cascaddid() == kUndef) {
-          continue;
-        }
-
-        aod::TracksQA bachTrackQA;
-        bool existBachTrkQA;
-        if (labelTrack2TrackQA[bachTrack.globalIndex()] != -1) {
-          bachTrackQA = tracksQA.iteratorAt(labelTrack2TrackQA[bachTrack.globalIndex()]);
-          existBachTrkQA = true;
-        } else {
-          bachTrackQA = tracksQA.iteratorAt(0);
-          existBachTrkQA = false;
-        }
-
-        // Omega and antiomega
-        if (static_cast<bool>(bachTrack.pidbit() & (1 << kOmega)) || static_cast<bool>(bachTrack.pidbit() & (1 << kAntiOmega))) {
-          if (downsampleTsalisCharged(bachTrack.pt(), downsamplingTsalisKaons, MassKaon, maxPt4dwnsmplTsalisKaons)) {
-            fillSkimmedV0TableWithTrQA<true>(casc, bachTrack, bachTrackQA, existBachTrkQA, collision, bachTrack.tpcNSigmaKa(), bachTrack.tofNSigmaKa(), bachTrack.tpcExpSignalKa(bachTrack.tpcSignal()), o2::track::PID::Kaon, runnumber, dwnSmplFactor_Ka, hadronicRate, bcGlobalIndex, bcTimeFrameId, bcBcInTimeFrame);
-          }
-        }
-      }
-    }
+    runWithTrQA<true>(collisions, myTracks, myV0s, myCascs, tracksQA, perCollisionTracksWithNewDEdx);
   } /// process with TrackQA
   PROCESS_SWITCH(TreeWriterTpcV0, processWithTrQAWithCorrecteddEdx, "Standard V0 Samples with Track QA for PID with corrected dEdx", false);
 
