@@ -457,7 +457,7 @@ class pidTPCModule
           track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
           if (trk.has_collision()) {
             auto trk_bc = (collisions.iteratorAt(trk.collisionId())).template bc_as<B>();
-            if (trk_bc.timestamp() != timeStamp_bcOld){ 
+            if (trk_bc.timestamp() != timeStamp_bcOld) { 
               hadronicRate = mRateFetcher.fetch(ccdb.service, trk_bc.timestamp(), trk_bc.runNumber(), pidTPCopts.irSource.value) * 1.e-3;
             }
             timeStamp_bcOld=trk_bc.timestamp();
@@ -468,7 +468,7 @@ class pidTPCModule
         }
         counter_track_props += input_dimensions;
       }
-      
+
       auto start_network_eval = std::chrono::high_resolution_clock::now();
       float* output_network = network.evalModel(track_properties);
       auto stop_network_eval = std::chrono::high_resolution_clock::now();
