@@ -15,6 +15,8 @@
 /// \author Biao Zhang, Heidelberg University, biao.zhang@cern.ch
 /// \author Yunfan Liu, Central China Normal University, yunfan.l@cern.ch
 
+#include "PWGHF/Utils/utilsMcMatching.h"
+
 #include "PWGCF/DataModel/FemtoDerived.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamContainer.h"
 #include "PWGCF/FemtoDream/Core/femtoDreamDetaDphiStar.h"
@@ -54,6 +56,8 @@ using namespace o2::soa;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::analysis::femtoDream;
+using namespace o2::hf_decay;
+using namespace o2::hf_decay::hf_cand_3prong;
 
 inline o2::framework::expressions::Node coshEta(o2::framework::expressions::Node&& eta)
 {
@@ -87,7 +91,7 @@ struct HfTaskCharmHadronsFemtoDream {
   /// Particle 2 (Charm Hadrons)
   Configurable<float> charmHadBkgBDTmax{"charmHadBkgBDTmax", 1., "Maximum background bdt score for Charm Hadron (particle 2)"};
   Configurable<int> charmHadCandSel{"charmHadCandSel", 1, "candidate selection for charm hadron"};
-  Configurable<int> charmHadMcSel{"charmHadMcSel", 2, "charm hadron selection for mc, partDplusToPiKPi (1), partLcToPKPi (2), partDsToKKPi (4), partXicToPKPi (8)"};
+  Configurable<int> charmHadMcSel{"charmHadMcSel", DecayChannelMain::LcToPKPi, "charm hadron selection for mc, DplusToPiKPi = 1, LcToPKPi = 17"};
   Configurable<float> charmHadFdBDTmin{"charmHadFdBDTmin", 0., "Minimum feed-down bdt score Charm Hadron (particle 2)"};
   Configurable<float> charmHadFdBDTmax{"charmHadFdBDTmax", 1., "Maximum feed-down bdt score Charm Hadron (particle 2)"};
   Configurable<float> charmHadMaxInvMass{"charmHadMaxInvMass", 2.45, "Maximum invariant mass of Charm Hadron (particle 2)"};
