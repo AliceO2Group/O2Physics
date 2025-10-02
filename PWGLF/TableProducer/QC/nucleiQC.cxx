@@ -156,7 +156,7 @@ struct nucleiQC {
 
       nuclei::createHistogramRegistryNucleus<iSpeciesCt>(mHistograms);
 
-      if (cfgUseCentralTpcCalibration->get(uint32_t(iSpeciesRt), uint32_t(0)) == 0) {
+      if (cfgUseCentralTpcCalibration->get(static_cast<uint32_t>(iSpeciesRt), static_cast<uint32_t>(0)) == 0) {
         mPidManagers[iSpeciesRt] = nuclei::PidManager(iSpeciesRt, tpcBetheBlochParams);
       } else {
         mPidManagers[iSpeciesRt] = nuclei::PidManager(iSpeciesRt);
