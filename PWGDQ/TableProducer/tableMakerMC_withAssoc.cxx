@@ -943,7 +943,7 @@ struct TableMakerMC {
         auto const& mfttrackcov = mfCovs.rawIteratorAt(map_mfttrackcovs[mfttrack.globalIndex()]);
         o2::track::TrackParCovFwd mftprop = VarManager::FwdToTrackPar(mfttrack, mfttrackcov);
         o2::dataformats::GlobalFwdTrack muonprop = VarManager::FwdToTrackPar(muontrack, muontrack);
-        if (fConfigVariousOptions.fzMatching.value < 0.){
+        if (fConfigVariousOptions.fzMatching.value < 0.) {
           mftprop = VarManager::PropagateFwd(mfttrack, mfttrackcov, fConfigVariousOptions.fzMatching.value);
           muonprop = VarManager::PropagateMuon(muontrack, collision, VarManager::kToMatching);
         }
