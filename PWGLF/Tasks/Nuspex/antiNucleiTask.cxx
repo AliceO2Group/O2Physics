@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file AntinucleiTask.cxx
+/// \file antiNucleiTask.cxx
 /// \brief A task to analyse Anti-nuclei
 /// \author Arkaprabha Saha <arkaprabha.saha@cern.ch>
 
@@ -48,7 +48,7 @@ static const int minTpcCrossedRowsCut = 70;
 static const float maxVertexZCut = 10.f;
 } // namespace
 
-struct AntinucleiTask {
+struct antiNucleiTask {
   // Histogram registry: for holding histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
@@ -165,11 +165,11 @@ struct AntinucleiTask {
     }
   }
 
-  PROCESS_SWITCH(AntinucleiTask, process, "process", true);
+  PROCESS_SWITCH(antiNucleiTask, process, "process", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<AntinucleiTask>(cfgc)};
+    adaptAnalysisTask<antiNucleiTask>(cfgc)};
 }
