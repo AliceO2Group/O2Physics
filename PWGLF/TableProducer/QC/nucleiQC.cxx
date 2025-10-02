@@ -19,60 +19,53 @@
 // o2-analysis-pid-tof-base, o2-analysis-multiplicity-table, o2-analysis-event-selection
 // (to add flow: o2-analysis-qvector-table, o2-analysis-centrality-table)
 
-#include <algorithm>
-#include <cmath>
-#include <memory>
-#include <string>
-#include <vector>
-#include <array>
+#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/DataModel/LFSlimNucleiTables.h"
+#include "PWGLF/Utils/nucleiUtils.h"
 
-#include "Math/Vector4D.h"
-
-#include "CCDB/BasicCCDBManager.h"
-
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
-#include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Tools/TrackTuner.h"
-#include "Common/Core/RecoDecay.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 
+#include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
-
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
-
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
 #include "Framework/StaticFor.h"
-
+#include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "PWGLF/DataModel/LFSlimNucleiTables.h"
-
+#include "Math/Vector4D.h"
 #include "TRandom3.h"
 
-#include "PWGLF/Utils/nucleiUtils.h"
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
-
 
 struct nucleiQC {
 
@@ -109,7 +102,7 @@ struct nucleiQC {
   int mRunNumber = 0;
   float mBz = 0.f;
 
-  HistogramRegistry mHistograms {
+  HistogramRegistry mHistograms{
     "histos",
     {
       {"hEventSelections", "Event selections; Selection step; Counts", {HistType::kTH1D, {{nuclei::evSel::kNevSels + 1, -0.5f, static_cast<float>(nuclei::evSel::kNevSels) + 0.5f}}}},
@@ -118,19 +111,19 @@ struct nucleiQC {
     },
     OutputObjHandlingPolicy::AnalysisObject,
     false,
-    true
-  };
+    true};
   std::vector<int> mSpeciesToProcess;
   Produces<aod::NucleiTableRed> mNucleiTableRed;
-  
+
   std::vector<nuclei::SlimCandidate> mNucleiCandidates;
   std::vector<int> mFilledMcParticleIds;
-  
+
   o2::dataformats::DCA mDcaInfoCov;
   o2::track::TrackParametrizationWithError<float> mTrackParCov;
   std::array<nuclei::PidManager, static_cast<int>(nuclei::Species::kNspecies)> mPidManagers;
 
-  void init(o2::framework::InitContext&) {
+  void init(o2::framework::InitContext&)
+  {
 
     mCcdb->setURL(cfgCCDBurl);
     mCcdb->setCaching(true);
@@ -148,8 +141,7 @@ struct nucleiQC {
       }
     }
 
-    static_for<0, nuclei::kNspecies-1> ([&] (auto iSpecies) {
-      
+    static_for<0, nuclei::kNspecies - 1>([&](auto iSpecies) {
       constexpr int iSpeciesCt = decltype(iSpecies)::value;
       const int iSpeciesRt = iSpeciesCt;
 
@@ -163,7 +155,7 @@ struct nucleiQC {
       }
 
       nuclei::createHistogramRegistryNucleus<iSpeciesCt>(mHistograms);
-      
+
       if (cfgUseCentralTpcCalibration->get(uint32_t(iSpeciesRt), uint32_t(0)) == 0) {
         mPidManagers[iSpeciesRt] = nuclei::PidManager(iSpeciesRt, tpcBetheBlochParams);
       } else {
@@ -188,8 +180,9 @@ struct nucleiQC {
   }
 
   template <typename Ttrack>
-  bool trackSelection(const Ttrack& track) {
-     if (std::abs(track.eta()) > cfgCutEta ||
+  bool trackSelection(const Ttrack& track)
+  {
+    if (std::abs(track.eta()) > cfgCutEta ||
         track.tpcInnerParam() < cfgCutTpcMom ||
         track.itsNCls() < cfgCutNclusITS ||
         track.tpcNClsFound() < cfgCutNclusTPC ||
@@ -201,10 +194,10 @@ struct nucleiQC {
     }
     return true;
   }
-  
+
   template <int iSpecies, typename Ttrack, typename Tcollision>
-  bool pidSelection(const Ttrack& track, const Tcollision& collision) 
-  { 
+  bool pidSelection(const Ttrack& track, const Tcollision& collision)
+  {
     constexpr int index = iSpecies;
     if (!nuclei::checkSpeciesValidity(index)) {
       std::runtime_error("species contains invalid nucleus index");
@@ -213,7 +206,8 @@ struct nucleiQC {
     const float centrality = nuclei::getCentrality(collision, cfgCentralityEstimator);
     const float nsigmaTPC = mPidManagers[index].getNSigmaTPC(track);
     mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3NsigmaTPC_preselectionVsCentrality"), track.pt(), nsigmaTPC, centrality);
-    if (std::abs(nsigmaTPC) > cfgNsigmaTPC->get(index, 1)) return false;
+    if (std::abs(nsigmaTPC) > cfgNsigmaTPC->get(index, 1))
+      return false;
     mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3NsigmaTPCVsCentrality"), track.pt(), nsigmaTPC, centrality);
 
     const float nsigmaITS = mPidManagers[index].getNSigmaITS(track);
@@ -223,54 +217,55 @@ struct nucleiQC {
 
     const float nsigmaTOF = mPidManagers[index].getNSigmaTOF(track);
     mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3NsigmaTOF_preselectionVsCentrality"), track.pt(), nsigmaTOF, centrality);
-    if (std::abs(nsigmaTOF) > cfgNsigmaTOF->get(index, 1)) return false;
+    if (std::abs(nsigmaTOF) > cfgNsigmaTOF->get(index, 1))
+      return false;
     mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3NsigmaTOFVsCentrality"), track.pt(), nsigmaTOF, centrality);
 
     return true;
   }
 
   template <typename Tparticle>
-  void fillNucleusFlagsPdgsMc(const Tparticle& particle, nuclei::SlimCandidate& candidate) 
+  void fillNucleusFlagsPdgsMc(const Tparticle& particle, nuclei::SlimCandidate& candidate)
   {
     candidate.pdgCode = particle.pdgCode();
 
     if (particle.isPhysicalPrimary()) {
-        candidate.flags |= nuclei::Flags::kIsPhysicalPrimary;
-        
-        // heavy flavour mother 
-        //if (particle.has_mothers()) {
-        //  for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
-        //    if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
-        //      flags |= kIsSecondaryFromWeakDecay;
-        //      motherPdgCode = motherparticle.pdgCode();
-        //      break;
-        //    }
-        //  }
-        //}
+      candidate.flags |= nuclei::Flags::kIsPhysicalPrimary;
 
-      } else if (particle.has_mothers()) {
-        candidate.flags |= nuclei::Flags::kIsSecondaryFromWeakDecay;
-        for (auto& motherparticle : particle.template mothers_as<aod::McParticles>()) {
-          candidate.motherPdgCode = motherparticle.pdgCode();
-        }
-      
-      } else {
-        candidate.flags |= nuclei::Flags::kIsSecondaryFromMaterial;
+      // heavy flavour mother
+      // if (particle.has_mothers()) {
+      //  for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+      //    if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
+      //      flags |= kIsSecondaryFromWeakDecay;
+      //      motherPdgCode = motherparticle.pdgCode();
+      //      break;
+      //    }
+      //  }
+      //}
+
+    } else if (particle.has_mothers()) {
+      candidate.flags |= nuclei::Flags::kIsSecondaryFromWeakDecay;
+      for (auto& motherparticle : particle.template mothers_as<aod::McParticles>()) {
+        candidate.motherPdgCode = motherparticle.pdgCode();
       }
 
-      mFilledMcParticleIds.emplace_back(particle.globalIndex());
+    } else {
+      candidate.flags |= nuclei::Flags::kIsSecondaryFromMaterial;
+    }
+
+    mFilledMcParticleIds.emplace_back(particle.globalIndex());
   }
 
   template <typename Tcollision, typename Ttrack>
-  void fillNucleusFlagsPdgs(const int iSpecies, const Tcollision& collision, const Ttrack& track, nuclei::SlimCandidate& candidate) 
+  void fillNucleusFlagsPdgs(const int iSpecies, const Tcollision& collision, const Ttrack& track, nuclei::SlimCandidate& candidate)
   {
     candidate.flags = static_cast<uint16_t>((track.pidForTracking() & 0xF) << 12);
-    candidate.flags |= iSpecies == nuclei::Species::kPr ? nuclei::Flags::kProton :
-                       iSpecies == nuclei::Species::kDe ? nuclei::Flags::kDeuteron :
-                       iSpecies == nuclei::Species::kTr ? nuclei::Flags::kTriton :
-                       iSpecies == nuclei::Species::kHe ? nuclei::Flags::kHe3 :
-                       iSpecies == nuclei::Species::kAl ? nuclei::Flags::kHe4 : 0;
-    
+    candidate.flags |= iSpecies == nuclei::Species::kPr ? nuclei::Flags::kProton : iSpecies == nuclei::Species::kDe ? nuclei::Flags::kDeuteron
+                                                                                 : iSpecies == nuclei::Species::kTr ? nuclei::Flags::kTriton
+                                                                                 : iSpecies == nuclei::Species::kHe ? nuclei::Flags::kHe3
+                                                                                 : iSpecies == nuclei::Species::kAl ? nuclei::Flags::kHe4
+                                                                                                                    : 0;
+
     if (track.hasTOF()) {
       candidate.flags |= nuclei::Flags::kHasTOF;
     }
@@ -291,7 +286,8 @@ struct nucleiQC {
   }
 
   template <typename Tcollision, typename Ttrack>
-  void fillDcaInformation(const Tcollision& collision, const Ttrack& track, nuclei::SlimCandidate& candidate) {
+  void fillDcaInformation(const Tcollision& collision, const Ttrack& track, nuclei::SlimCandidate& candidate)
+  {
 
     const o2::math_utils::Point3D<float> collisionVertex{collision.posX(), collision.posY(), collision.posZ()};
 
@@ -303,7 +299,6 @@ struct nucleiQC {
 
     candidate.DCAxy = dcaInfo[0];
     candidate.DCAz = dcaInfo[1];
-
   }
 
   template <const bool isMc, typename Tcollision, typename Ttrack>
@@ -327,35 +322,40 @@ struct nucleiQC {
                                        .ptGenerated = 0.f, // to be filled for mc
                                        .etaGenerated = 0.f,
                                        .phiGenerated = 0.f,
-                                       .centrality = nuclei::getCentrality(collision, cfgCentralityEstimator)
-                                       };
-    
+                                       .centrality = nuclei::getCentrality(collision, cfgCentralityEstimator)};
+
     fillDcaInformation(collision, track, candidate);
     fillNucleusFlagsPdgs(iSpecies, collision, track, candidate);
-  
+
     if constexpr (isMc) {
       if (track.has_mcParticle()) {
-      
+
         const auto& particle = track.mcParticle();
         fillNucleusFlagsPdgsMc(particle, candidate);
         fillNucleusGeneratedVariables(particle, candidate);
       }
     }
-    
+
     mNucleiCandidates.emplace_back(candidate);
     return candidate;
-    
   }
 
-  template<bool isGenerated>
-  void dispatchFillHistograms(const int iSpecies, const nuclei::SlimCandidate& candidate) {
+  template <bool isGenerated>
+  void dispatchFillHistograms(const int iSpecies, const nuclei::SlimCandidate& candidate)
+  {
     switch (iSpecies) {
-      case nuclei::Species::kPr: return fillHistograms<nuclei::Species::kPr, isGenerated>(candidate);
-      case nuclei::Species::kDe: return fillHistograms<nuclei::Species::kDe, isGenerated>(candidate);
-      case nuclei::Species::kTr: return fillHistograms<nuclei::Species::kTr, isGenerated>(candidate);
-      case nuclei::Species::kHe: return fillHistograms<nuclei::Species::kHe, isGenerated>(candidate);
-      case nuclei::Species::kAl: return fillHistograms<nuclei::Species::kAl, isGenerated>(candidate);
-      default: return;
+      case nuclei::Species::kPr:
+        return fillHistograms<nuclei::Species::kPr, isGenerated>(candidate);
+      case nuclei::Species::kDe:
+        return fillHistograms<nuclei::Species::kDe, isGenerated>(candidate);
+      case nuclei::Species::kTr:
+        return fillHistograms<nuclei::Species::kTr, isGenerated>(candidate);
+      case nuclei::Species::kHe:
+        return fillHistograms<nuclei::Species::kHe, isGenerated>(candidate);
+      case nuclei::Species::kAl:
+        return fillHistograms<nuclei::Species::kAl, isGenerated>(candidate);
+      default:
+        return;
     }
   }
 
@@ -366,7 +366,7 @@ struct nucleiQC {
     if (!nuclei::checkSpeciesValidity(index)) {
       std::runtime_error("species contains invalid nucleus index");
     }
- 
+
     if (isGenerated) {
       const float ptGenerated = (index == nuclei::Species::kPr || index == nuclei::Species::kDe || index == nuclei::Species::kTr) ? candidate.ptGenerated : candidate.ptGenerated / 2.f;
       mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/hPtGenerated"), ptGenerated);
@@ -388,7 +388,7 @@ struct nucleiQC {
   {
     mNucleiCandidates.clear();
     mFilledMcParticleIds.clear();
-    
+
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     initCCDB(bc);
 
@@ -396,11 +396,9 @@ struct nucleiQC {
       return;
     }
 
-    for (const auto& track: tracks)
-    {
-      
-      static_for<0, nuclei::kNspecies-1> ([&] (auto iSpecies) {
+    for (const auto& track : tracks) {
 
+      static_for<0, nuclei::kNspecies - 1>([&](auto iSpecies) {
         constexpr int iSpeciesCt = decltype(iSpecies)::value;
         const int iSpeciesRt = iSpeciesCt;
 
@@ -411,37 +409,39 @@ struct nucleiQC {
         if (track.has_mcParticle()) {
           const auto& particle = track.mcParticle();
           if (cfgDoCheckPdgCode) {
-            if (particle.pdgCode() != nuclei::pdgCodes[iSpeciesRt]) return;
+            if (particle.pdgCode() != nuclei::pdgCodes[iSpeciesRt])
+              return;
           }
           if (particle.y() - cfgRapidityCenterMass < cfgRapidityMin || particle.y() - cfgRapidityCenterMass > cfgRapidityMax) {
             return;
           }
-        }  
+        }
 
         mHistograms.fill(HIST(nuclei::cNames[iSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kNoCuts);
-        if (!trackSelection(track)) return;
+        if (!trackSelection(track))
+          return;
         mHistograms.fill(HIST(nuclei::cNames[iSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kTrackCuts);
 
-        if (!pidSelection<iSpeciesRt>(track, collision)) return;
+        if (!pidSelection<iSpeciesRt>(track, collision))
+          return;
         mHistograms.fill(HIST(nuclei::cNames[iSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kPidCuts);
 
         nuclei::SlimCandidate candidate;
         if (track.has_mcParticle()) {
-          candidate = fillCandidate</*isMc*/true>(iSpeciesCt, collision, track);
-          dispatchFillHistograms</*isGenerated*/true>(iSpeciesRt, candidate);
+          candidate = fillCandidate</*isMc*/ true>(iSpeciesCt, collision, track);
+          dispatchFillHistograms</*isGenerated*/ true>(iSpeciesRt, candidate);
         } else {
-          candidate = fillCandidate</*isMc*/true>(iSpeciesCt, collision, track);
+          candidate = fillCandidate</*isMc*/ true>(iSpeciesCt, collision, track);
         }
 
-        dispatchFillHistograms</*isGenerated*/false>(iSpeciesRt, candidate);
+        dispatchFillHistograms</*isGenerated*/ false>(iSpeciesRt, candidate);
       });
     }
-    
+
     const int mcCollisionId = collision.mcCollisionId();
     auto mcParticlesThisCollision = mcParticles.sliceBy(mMcParticlesPerCollision, mcCollisionId);
     mcParticlesThisCollision.bindExternalIndices(&mcParticles);
-    for (const auto& particle: mcParticlesThisCollision)
-    {
+    for (const auto& particle : mcParticlesThisCollision) {
       if (std::find(mFilledMcParticleIds.begin(), mFilledMcParticleIds.end(), particle.globalIndex()) != mFilledMcParticleIds.end()) {
         continue;
       }
@@ -455,13 +455,13 @@ struct nucleiQC {
       fillNucleusGeneratedVariables(particle, candidate);
       mNucleiCandidates.emplace_back(candidate);
 
-      dispatchFillHistograms</*isGenerated*/true>(iSpecies, candidate);
+      dispatchFillHistograms</*isGenerated*/ true>(iSpecies, candidate);
     }
 
-    if (!cfgFillTable) return;
+    if (!cfgFillTable)
+      return;
 
-    for (const auto& candidate: mNucleiCandidates)
-    {
+    for (const auto& candidate : mNucleiCandidates) {
       mNucleiTableRed(
         candidate.pt,
         candidate.eta,
@@ -474,8 +474,7 @@ struct nucleiQC {
         candidate.DCAz,
         candidate.flags,
         candidate.pdgCode,
-        candidate.motherPdgCode
-      );
+        candidate.motherPdgCode);
     }
   }
   PROCESS_SWITCH(nucleiQC, processMc, "Mc analysis", false);
