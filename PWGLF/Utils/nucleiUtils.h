@@ -119,20 +119,14 @@ enum Flags {
   kIsSecondaryFromWeakDecay = BIT(11) /// the last 4 bits are reserved for the PID in tracking
 };
 
-int getSpeciesFromPdg(int pdg) {
+constexpr int getSpeciesFromPdg(int pdg) {
   switch (std::abs(pdg)) {
-  case PDG_t::kProton:
-    return Species::kPr;
-  case o2::constants::physics::Pdg::kDeuteron:
-    return Species::kDe;
-  case o2::constants::physics::Pdg::kTriton:
-    return Species::kTr;
-  case o2::constants::physics::Pdg::kHelium3:
-    return Species::kHe;
-  case o2::constants::physics::Pdg::kAlpha:
-    return Species::kAl;
-  default:
-    return -1;
+  case PDG_t::kProton:                          return Species::kPr;
+  case o2::constants::physics::Pdg::kDeuteron:  return Species::kDe;
+  case o2::constants::physics::Pdg::kTriton:    return Species::kTr;
+  case o2::constants::physics::Pdg::kHelium3:   return Species::kHe;
+  case o2::constants::physics::Pdg::kAlpha:     return Species::kAl;
+  default:  return -1;
   }
 }
 
@@ -212,9 +206,11 @@ constexpr double DownscalingDefault[Species::kNspecies][1]{
 // constexpr bool storeTreesDefault[Species::kNspecies]{false, false, false, false, false};
 constexpr float charges[Species::kNspecies]{1.f, 1.f, 1.f, 2.f, 2.f};
 constexpr float masses[Species::kNspecies]{MassProton, MassDeuteron, MassTriton, MassHelium3, MassAlpha};
+constexpr int pdgCodes[Species::kNspecies]{PDG_t::kProton, o2::constants::physics::Pdg::kDeuteron, o2::constants::physics::Pdg::kTriton, o2::constants::physics::Pdg::kHelium3, o2::constants::physics::Pdg::kAlpha};
+static constexpr std::string_view cNames[] = {"proton", "deuteron", "triton", "He3", "alpha"};
+static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"};
 static const std::vector<std::string> matter{"M", "A"};
 static const std::vector<std::string> pidName{"TPC", "TOF"};
-static const std::vector<std::string> names{"proton", "deuteron", "triton", "He3", "alpha"};
 static const std::vector<std::string> treeConfigNames{"Filter trees", "Use TOF selection"};
 static const std::vector<std::string> flowConfigNames{"Save flow hists"};
 static const std::vector<std::string> DCAConfigNames{"Save DCA hist", "Matter/Antimatter"};
@@ -270,10 +266,17 @@ constexpr int EvSelDefault[8][1]{
 template <typename Tcollision> // move to nucleiUtils
 bool eventSelection(const Tcollision& collision, HistogramRegistry& registry, LabeledArray<int> eventSelections, const float cutVertex)
 {
+  if (!registry.contains(HIST("hVtxZBefore"))) {
+    registry.add("hVtxZBefore", "Vertex distribution in Z before selections;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}});
+  }
+  if (!registry.contains(HIST("hVtxZ"))) {
+    registry.add("hVtxZ", "Vertex distribution in Z;Z (cm)", {HistType::kTH1F, {{400, -20.0, 20.0}}});
+  }
   if (!registry.contains(HIST("hEventSelections"))) {
     registry.add("hEventSelections", "hEventSelections", {HistType::kTH1D, {{evSel::kNevSels + 1, -0.5f, static_cast<float>(evSel::kNevSels) + 0.5f}}});
   }
   registry.fill(HIST("hEventSelections"), 0);
+  registry.fill(HIST("hVtxZBefore"), collision.posZ());
 
   if (eventSelections.get(evSel::kTVX) && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
     return false;
@@ -319,6 +322,7 @@ bool eventSelection(const Tcollision& collision, HistogramRegistry& registry, La
     }
     registry.fill(HIST("hEventSelections"), evSel::kIsEPtriggered + 1);
   }
+  registry.fill(HIST("hVtxZ"), collision.posZ());
 
   return true;
 }
@@ -352,43 +356,36 @@ enum trackSelection {
 };
 static const std::array<std::string, static_cast<int>(trackSelection::kNtrackSelections)> trackSelectionLabels{"All", "Track cuts", "PID cuts"};
 
-HistogramRegistry createHistogramRegistryNucleus(const int iSpecies) {
+template<int iSpecies>
+void createHistogramRegistryNucleus(HistogramRegistry& registry) {
 
-  if (!checkSpeciesValidity(iSpecies)) {
+  constexpr int index = iSpecies;
+  if (!checkSpeciesValidity(index)) {
     std::runtime_error("species contains invalid nucleus index");
   }
 
-  HistogramRegistry registry{
-    names[iSpecies].c_str(),
-    {
-      {"hTrackSelections", *Form("%s", names[iSpecies].c_str()) + " track selections; Selection step; Counts", {HistType::kTH1D, {{trackSelection::kNtrackSelections, -0.5f, static_cast<float>(trackSelection::kNtrackSelections) - 0.5f}}}},
-      {"hPtReconstructed", *Form("%s", names[iSpecies].c_str()) + " - reconstructed variables; #it{p}_{T} / |#it{Z}| (GeV/#it{c}); Counts", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"h3PtVsEtaVsCentralityReconstructed", *Form("%s", names[iSpecies].c_str()) + " - reconstructed variables; #it{p}_{T} / |#it{Z}| (GeV/#it{c}); #eta; CentralityFT0C (%)", {HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, -1.0f, 1.f}, {20, 0.0f, 100.0f}}}},
-      {"h3PhiVsEtaVsCentralityReconstructed", *Form("%s", names[iSpecies].c_str()) + " - reconstructed variables; #phi (radians); #eta; CentralityFT0C (%)", {HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, 0.0f, o2::constants::math::TwoPI}, {20, 0.0f, 100.0f}}}},
-      {"h3DCAxyVsPtVsCentrality", *Form("%s", names[iSpecies].c_str()) + "; #it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{xy} (cm); CentralityFT0C (%)", {HistType::kTH3F, {{240, -6.0f, 6.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}}}},
-      {"h3DCAzVsPtVsCentrality", *Form("%s", names[iSpecies].c_str()) + "; #it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{z} (cm); CentralityFT0C (%)", {HistType::kTH3F, {{240, -6.0f, 6.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}}}},
-      {"h3NsigmaTPC_preselectionVsCentrality", *Form("Nsigma%s TPC distribution; #it{p}_{T} / |#it{Z}| (GeV/#it{c}); n#sigma_{TPC}(%s);", names[iSpecies].c_str(), names[iSpecies].c_str()) + "CentralityFT0C (%)", {HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {20, 0.0f, 100.0f}}}},
-      {"h3NsigmaTPCVsCentrality", *Form("Nsigma%s TPC distribution; #it{p}_{T} / |#it{Z}| (GeV/#it{c}); n#sigma_{TPC}(%s);", names[iSpecies].c_str(), names[iSpecies].c_str()) + "CentralityFT0C (%)", {HistType::kTH3F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}}}},
-      {"h3NSigmaITS_preselectionVsCentrality", *Form("Nsigma%s ITS distribution; signed #it{p}_{T} / |#it{Z}| (GeV/#it{c}); n#sigma_{ITS}(%s);", names[iSpecies].c_str(), names[iSpecies].c_str()) + "CentralityFT0C (%)", {HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {20, 0.0f, 100.0f}}}},
-      {"h3NSigmaITSVsCentrality", *Form("Nsigma%s ITS distribution; signed #it{p}_{T} / |#it{Z}| (GeV/#it{c}); n#sigma_{ITS}(%s);", names[iSpecies].c_str(), names[iSpecies].c_str()) + "CentralityFT0C (%)", {HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {20, 0.0f, 100.0f}}}},
-      {"h3NSigmaTOF_preselectionVsCentrality", *Form("Nsigma%s TOF distribution; #it{p}_{T} / |#it{Z}| (GeV/#it{c}); n#sigma_{TOF}(%s);", names[iSpecies].c_str(), names[iSpecies].c_str()) + "CentralityFT0C (%)", {HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {20, 0.0f, 100.0f}}}},
-      {"h3NSigmaTOFVsCentrality", *Form("Nsigma%s TOF distribution; #it{p}_{T} / |#it{Z}| (GeV/#it{c}); n#sigma_{TOF}(%s);", names[iSpecies].c_str(), names[iSpecies].c_str()) + "CentralityFT0C (%)", {HistType::kTH3F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}}}},
-      {"h3BetaVsPtVsCentrality", *Form("%s", names[iSpecies].c_str()) + "; #it{p}_{T} / |#it{Z}| (GeV/#it{c}); #beta; CentralityFT0C (%)", {HistType::kTH3F, {{240, -6.0f, 6.0f}, {100, 0.0f, 1.0f}, {20, 0.0f, 100.0f}}}},
-      {"h3dEdxVsPVsCentrality", *Form("dEdx distribution for %s; #it{p} (GeV/#it{c}); d#it{E}/d#it{x} (a.u.);", names[iSpecies].c_str()) + "CentralityFT0C (%)", {HistType::kTH3F, {{200, -6.0f, 6.0f}, {100, 0.0f, 2000.0f}, {20, 0.0f, 100.0f}}}},
-      {"h3ClusterSizeVsPtVsCentrality", *Form("%s", names[iSpecies].c_str()) + "; #it{p}_{T} / |#it{Z}| (GeV/#it{c}); Cluster size ITS; CentralityFT0C (%)", {HistType::kTH3F, {{240, -6.0f, 6.0f}, {90, 0.f, 15.f}, {20, 0.0f, 100.0f}}}},
-      {"hPtGenerated", *Form("%s", names[iSpecies].c_str()) + " - generated variables; #it{p}_{T} / |#it{Z}| (GeV/#it{c}); Counts", {HistType::kTH1F, {{240, -6.0f, 6.0f}}}},
-      {"h3PtVsEtaVsCentralityGenerated", *Form("%s", names[iSpecies].c_str()) + " - generated variables; #it{p}_{T} / |#it{Z}| (GeV/#it{c}); #eta; CentralityFT0C (%)", {HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, -1.0f, 1.f}, {20, 0.0f, 100.0f}}}},
-      {"h3PhiVsEtaVsCentralityGenerated", *Form("%s", names[iSpecies].c_str()) + " - generated variables; #phi (radians); #eta; CentralityFT0C (%)", {HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, 0.0f, o2::constants::math::TwoPI}, {20, 0.0f, 100.0f}}}},
-    },
-    OutputObjHandlingPolicy::AnalysisObject,
-    false,
-    true};
+  registry.add(fmt::format("{}/hTrackSelections", cNames[index]).c_str(), (fmt::format("{} track selections;", cNames[index]) + std::string("Selection step; Counts")).c_str(), HistType::kTH1D, {{trackSelection::kNtrackSelections, -0.5f, static_cast<float>(trackSelection::kNtrackSelections) - 0.5f}});
+  registry.add(fmt::format("{}/hPtReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); Counts")).c_str(), HistType::kTH1F, {{240, -6.0f, 6.0f}});
+  registry.add(fmt::format("{}/h3PtVsEtaVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); #eta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, -1.0f, 1.f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3PhiVsEtaVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#phi (radians); #eta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, 0.0f, o2::constants::math::TwoPI}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3DCAxyVsPtVsCentrality", cNames[index]).c_str(), (fmt::format(";", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{xy} (cm); CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3DCAzVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{z} (cm); CentralityFT0C (%)")).c_str() , HistType::kTH3F, {{240, -6.0f, 6.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3NsigmaTPC_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TPC distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TPC}}({}); CentralityFT0C (%)", cNames[index])).c_str(), HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3NsigmaTPCVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TPC distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TPC}}({}); Centrality FT0C (%)", cNames[index])).c_str(), HistType::kTH3F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3NsigmaITS_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} ITS distribution;", cNames[index]) + std::string("signed #it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{ITS}}({}); Centrality FT0C (%)", cNames[index])).c_str(), HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3NsigmaITSVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} ITS distribution;", cNames[index]) + std::string("signed #it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{ITS}}({}); Centrality FT0C (%)", cNames[index])).c_str(), HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3NsigmaTOF_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TOF distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TOF}}({}); Centrality FT0C (%)", cNames[index])).c_str(), HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3NsigmaTOFVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TOF distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TOF}}({}); Centrality FT0C (%)", cNames[index], cNames[index])).c_str(), HistType::kTH3F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3BetaVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); #beta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {100, 0.0f, 1.0f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3dEdxVsPVsCentrality", cNames[index]).c_str(), (fmt::format("dEdx distribution for {};", cNames[index]) + std::string("#it{p} (GeV/#it{c}); d#it{E}/d#it{x} (a.u.); Centrality FT0C (%)")).c_str(), HistType::kTH3F, {{200, -6.0f, 6.0f}, {100, 0.0f, 2000.0f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3ClusterSizeVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); Cluster size ITS; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {90, 0.f, 15.f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/hPtGenerated", cNames[index]).c_str(), (fmt::format("{} - generated variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); Counts")).c_str(), HistType::kTH1F, {{240, -6.0f, 6.0f}});
+  registry.add(fmt::format("{}/h3PtVsEtaVsCentralityGenerated", cNames[index]).c_str(), (fmt::format("{} - generated variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); #eta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, -1.0f, 1.f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3PhiVsEtaVsCentralityGenerated", cNames[index]).c_str(), (fmt::format("{} - generated variables;", cNames[index]) + std::string("#phi (radians); #eta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, 0.0f, o2::constants::math::TwoPI}, {20, 0.0f, 100.0f}});
 
   for (size_t iSel = 0; iSel < trackSelection::kNtrackSelections; iSel++) {
-    registry.get<TH1>(HIST("hTrackSelections"))->GetXaxis()->SetBinLabel(iSel + 1, trackSelectionLabels[iSel].c_str());
+    registry.get<TH1>(HIST(cNames[index]) + HIST("/hTrackSelections"))->GetXaxis()->SetBinLabel(iSel + 1, trackSelectionLabels[iSel].c_str());
   }
-
-  return registry;
 };
 
 // PID manager class
@@ -453,11 +450,6 @@ class PidManager {
         case Species::kAl:  return track.tofNSigmaAl();
         default:            return -999.f;
       }
-    }
-
-    // ITS
-    void initMcResponseITS() {
-      mResponseITS.setMCDefaultParameters();
     }
 
     template <typename Ttrack>
