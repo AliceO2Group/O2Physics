@@ -56,6 +56,7 @@ DECLARE_SOA_COLUMN(MassTOFNu, massTOFNu, float);
 DECLARE_SOA_COLUMN(MassTOFPi, massTOFPi, float);
 DECLARE_SOA_COLUMN(PidTrkNu, pidTrkNu, uint32_t);
 DECLARE_SOA_COLUMN(PidTrkPi, pidTrkPi, uint32_t);
+DECLARE_SOA_COLUMN(TrackIDPi, trackIDPi, int);
 
 DECLARE_SOA_COLUMN(ItsClusterSizeNu, itsClusterSizeNu, uint32_t);
 DECLARE_SOA_COLUMN(ItsClusterSizePi, itsClusterSizePi, uint32_t);
@@ -127,6 +128,7 @@ DECLARE_SOA_TABLE(PionHyperTable, "AOD", "PIHYPERTABLE",
                   pion_nuclei_tables::ItsClusterSizePi,
                   pion_nuclei_tables::ItsClusterSizeNu,
                   pion_nuclei_tables::SharedClustersPi,
+                  pion_nuclei_tables::TrackIDPi,
                   pion_nuclei_tables::IsBkgUS,
                   pion_nuclei_tables::IsBkgEM)
 DECLARE_SOA_TABLE(PionNucleiMult, "AOD", "PINUCLEIMULT",
