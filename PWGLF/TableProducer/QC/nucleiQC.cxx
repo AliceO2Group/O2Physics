@@ -154,7 +154,7 @@ struct nucleiQC {
         tpcBetheBlochParams[iParam] = cfgBetheBlochParams->get(kSpeciesRt, iParam);
       }
 
-      nuclei::createHistogramRegistryNucleus<iSpeciesCt>(mHistograms);
+      nuclei::createHistogramRegistryNucleus<kSpeciesCt>(mHistograms);
 
       if (cfgUseCentralTpcCalibration->get(static_cast<uint32_t>(kSpeciesRt), static_cast<uint32_t>(0)) == 0) {
         mPidManagers[kSpeciesRt] = nuclei::PidManager(kSpeciesRt, tpcBetheBlochParams);
@@ -399,17 +399,17 @@ struct nucleiQC {
     for (const auto& track : tracks) {
 
       static_for<0, nuclei::kNspecies - 1>([&](auto iSpecies) {
-        constexpr int iSpeciesCt = decltype(iSpecies)::value;
-        const int iSpeciesRt = iSpeciesCt;
+        constexpr int kSpeciesCt = decltype(iSpecies)::value;
+        const int kSpeciesRt = kSpeciesCt;
 
-        if (std::find(mSpeciesToProcess.begin(), mSpeciesToProcess.end(), iSpeciesRt) == mSpeciesToProcess.end()) {
+        if (std::find(mSpeciesToProcess.begin(), mSpeciesToProcess.end(), kSpeciesRt) == mSpeciesToProcess.end()) {
           return;
         }
 
         if (track.has_mcParticle()) {
           const auto& particle = track.mcParticle();
           if (cfgDoCheckPdgCode) {
-            if (particle.pdgCode() != nuclei::pdgCodes[iSpeciesRt])
+            if (particle.pdgCode() != nuclei::pdgCodes[kSpeciesRt])
               return;
           }
           if (particle.y() - cfgRapidityCenterMass < cfgRapidityMin || particle.y() - cfgRapidityCenterMass > cfgRapidityMax) {
@@ -417,24 +417,24 @@ struct nucleiQC {
           }
         }
 
-        mHistograms.fill(HIST(nuclei::cNames[iSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kNoCuts);
+        mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kNoCuts);
         if (!trackSelection(track))
           return;
-        mHistograms.fill(HIST(nuclei::cNames[iSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kTrackCuts);
+        mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kTrackCuts);
 
-        if (!pidSelection<iSpeciesRt>(track, collision))
+        if (!pidSelection<kSpeciesRt>(track, collision))
           return;
-        mHistograms.fill(HIST(nuclei::cNames[iSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kPidCuts);
+        mHistograms.fill(HIST(nuclei::cNames[kSpeciesCt]) + HIST("/hTrackSelections"), nuclei::trackSelection::kPidCuts);
 
         nuclei::SlimCandidate candidate;
         if (track.has_mcParticle()) {
-          candidate = fillCandidate</*isMc*/ true>(iSpeciesCt, collision, track);
-          dispatchFillHistograms</*isGenerated*/ true>(iSpeciesRt, candidate);
+          candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
+          dispatchFillHistograms</*isGenerated*/ true>(kSpeciesRt, candidate);
         } else {
-          candidate = fillCandidate</*isMc*/ true>(iSpeciesCt, collision, track);
+          candidate = fillCandidate</*isMc*/ true>(kSpeciesCt, collision, track);
         }
 
-        dispatchFillHistograms</*isGenerated*/ false>(iSpeciesRt, candidate);
+        dispatchFillHistograms</*isGenerated*/ false>(kSpeciesRt, candidate);
       });
     }
 
