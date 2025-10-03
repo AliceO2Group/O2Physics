@@ -958,11 +958,11 @@ struct TreeWriterTPCTOF {
   } /// process
   PROCESS_SWITCH(TreeWriterTPCTOF, processStandard, "Standard Samples for PID", true);
 
-  void processStandard2(Colls::iterator const& collision, soa::Filtered<TrksWithDEdxCorrection> const& tracks, aod::BCsWithTimestamps const&)
+  void processStandardWithCorrecteddEdx(Colls::iterator const& collision, soa::Filtered<TrksWithDEdxCorrection> const& tracks, aod::BCsWithTimestamps const&)
   {
     runStandard<true, TrksWithDEdxCorrection>(collision, tracks);
   } /// process
-  PROCESS_SWITCH(TreeWriterTPCTOF, processStandard2, "Standard Samples for PID with corrected dEdx", false);
+  PROCESS_SWITCH(TreeWriterTPCTOF, processStandardWithCorrecteddEdx, "Standard Samples for PID with corrected dEdx", false);
 
   Preslice<Trks> perCollisionTracks = aod::track::collisionId;
   Preslice<TrksWithDEdxCorrection> perCollisionTracksWithCorrecteddEdx = aod::track::collisionId;
