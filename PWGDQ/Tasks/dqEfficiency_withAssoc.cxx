@@ -1295,7 +1295,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DileptonsMiniTreeRec> dileptonMiniTreeRec;
   Produces<aod::DileptonsInfo> dileptonInfoList;
   Produces<aod::JPsieeCandidates> PromptNonPromptSepTable;
-  Produces<aod::OniaMCTruth> MCTruthTableEffi;
+  Produces<aod::OniaMCTruth> ;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
@@ -2237,7 +2237,8 @@ struct AnalysisSameEventPairing {
       if (!event.has_reducedMCevent()) {
         continue;
       }
-
+      VarManager::FillEvent<gkEventFillMap>(event, VarManager::fgValues);
+      VarManager::FillEvent<VarManager::ObjTypes::ReducedEventMC>(event.reducedMCevent(), VarManager::fgValues);
       // auto groupedMCTracks = mcTracks.sliceBy(perReducedMcGenEvent, event.reducedMCeventId());
       // groupedMCTracks.bindInternalIndicesTo(&mcTracks);
       // for (auto& track : groupedMCTracks) {
