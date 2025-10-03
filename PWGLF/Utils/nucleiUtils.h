@@ -24,9 +24,9 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
 
-#include <algorithm>
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
@@ -460,18 +460,12 @@ class PidManager
       return -999.f;
 
     switch (mSpecies) {
-      case Species::kPr:
-        return track.tofNSigmaPr();
-      case Species::kDe:
-        return track.tofNSigmaDe();
-      case Species::kTr:
-        return track.tofNSigmaTr();
-      case Species::kHe:
-        return track.tofNSigmaHe();
-      case Species::kAl:
-        return track.tofNSigmaAl();
-      default:
-        return -999.f;
+      case Species::kPr:  return track.tofNSigmaPr();
+      case Species::kDe:  return track.tofNSigmaDe();
+      case Species::kTr:  return track.tofNSigmaTr();
+      case Species::kHe:  return track.tofNSigmaHe();
+      case Species::kAl:  return track.tofNSigmaAl();
+      default:  return -999.f;
     }
   }
 
@@ -539,18 +533,12 @@ class PidManager
   float getNSigmaTPCcentral(const Ttrack& track)
   {
     switch (mSpecies) {
-      case Species::kPr:
-        return track.tpcNSigmaPr();
-      case Species::kDe:
-        return track.tpcNSigmaDe();
-      case Species::kTr:
-        return track.tpcNSigmaTr();
-      case Species::kHe:
-        return track.tpcNSigmaHe();
-      case Species::kAl:
-        return track.tpcNSigmaAl();
-      default:
-        return -999.f;
+      case Species::kPr:  return track.tpcNSigmaPr();
+      case Species::kDe:  return track.tpcNSigmaDe();
+      case Species::kTr:  return track.tpcNSigmaTr();
+      case Species::kHe:  return track.tpcNSigmaHe();
+      case Species::kAl:  return track.tpcNSigmaAl();
+      default:  return -999.f;
     }
   }
 
