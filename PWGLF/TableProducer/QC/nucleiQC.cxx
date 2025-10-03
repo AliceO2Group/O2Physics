@@ -142,24 +142,24 @@ struct nucleiQC {
     }
 
     static_for<0, nuclei::kNspecies - 1>([&](auto iSpecies) {
-      constexpr int iSpeciesCt = decltype(iSpecies)::value;
-      const int iSpeciesRt = iSpeciesCt;
+      constexpr int kSpeciesCt = decltype(iSpecies)::value;
+      const int kSpeciesRt = kSpeciesCt;
 
-      if (std::find(mSpeciesToProcess.begin(), mSpeciesToProcess.end(), iSpeciesCt) == mSpeciesToProcess.end()) {
+      if (std::find(mSpeciesToProcess.begin(), mSpeciesToProcess.end(), kSpeciesCt) == mSpeciesToProcess.end()) {
         return;
       }
 
       float tpcBetheBlochParams[6];
       for (int iParam = 0; iParam < 6; iParam++) {
-        tpcBetheBlochParams[iParam] = cfgBetheBlochParams->get(iSpeciesRt, iParam);
+        tpcBetheBlochParams[iParam] = cfgBetheBlochParams->get(kSpeciesRt, iParam);
       }
 
       nuclei::createHistogramRegistryNucleus<iSpeciesCt>(mHistograms);
 
-      if (cfgUseCentralTpcCalibration->get(static_cast<uint32_t>(iSpeciesRt), static_cast<uint32_t>(0)) == 0) {
-        mPidManagers[iSpeciesRt] = nuclei::PidManager(iSpeciesRt, tpcBetheBlochParams);
+      if (cfgUseCentralTpcCalibration->get(static_cast<uint32_t>(kSpeciesRt), static_cast<uint32_t>(0)) == 0) {
+        mPidManagers[kSpeciesRt] = nuclei::PidManager(kSpeciesRt, tpcBetheBlochParams);
       } else {
-        mPidManagers[iSpeciesRt] = nuclei::PidManager(iSpeciesRt);
+        mPidManagers[kSpeciesRt] = nuclei::PidManager(kSpeciesRt);
       }
     });
   }
@@ -198,28 +198,28 @@ struct nucleiQC {
   template <int iSpecies, typename Ttrack, typename Tcollision>
   bool pidSelection(const Ttrack& track, const Tcollision& collision)
   {
-    constexpr int index = iSpecies;
-    if (!nuclei::checkSpeciesValidity(index)) {
-      std::runtime_error("species contains invalid nucleus index");
+    constexpr int kIndex = iSpecies;
+    if (!nuclei::checkSpeciesValidity(kIndex)) {
+      std::runtime_error("species contains invalid nucleus kIndex");
     }
 
-    const float centrality = nuclei::getCentrality(collision, cfgCentralityEstimator);
-    const float nsigmaTPC = mPidManagers[index].getNSigmaTPC(track);
-    mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3NsigmaTPC_preselectionVsCentrality"), track.pt(), nsigmaTPC, centrality);
-    if (std::abs(nsigmaTPC) > cfgNsigmaTPC->get(index, 1))
+    float centrality = nuclei::getCentrality(collision, cfgCentralityEstimator);
+    float nsigmaTPC = mPidManagers[kIndex].getNSigmaTPC(track);
+    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTPC_preselectionVsCentrality"), track.pt(), nsigmaTPC, centrality);
+    if (std::abs(nsigmaTPC) > cfgNsigmaTPC->get(kIndex, 1))
       return false;
-    mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3NsigmaTPCVsCentrality"), track.pt(), nsigmaTPC, centrality);
+    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTPCVsCentrality"), track.pt(), nsigmaTPC, centrality);
 
-    const float nsigmaITS = mPidManagers[index].getNSigmaITS(track);
-    mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3NsigmaITS_preselectionVsCentrality"), track.sign() * track.pt(), nsigmaITS, centrality);
+    float nsigmaITS = mPidManagers[kIndex].getNSigmaITS(track);
+    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaITS_preselectionVsCentrality"), track.sign() * track.pt(), nsigmaITS, centrality);
     // add nsigmaITS cut ?
-    mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3NsigmaITSVsCentrality"), track.sign() * track.pt(), nsigmaITS, centrality);
+    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaITSVsCentrality"), track.sign() * track.pt(), nsigmaITS, centrality);
 
-    const float nsigmaTOF = mPidManagers[index].getNSigmaTOF(track);
-    mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3NsigmaTOF_preselectionVsCentrality"), track.pt(), nsigmaTOF, centrality);
-    if (std::abs(nsigmaTOF) > cfgNsigmaTOF->get(index, 1))
+    float nsigmaTOF = mPidManagers[kIndex].getNSigmaTOF(track);
+    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTOF_preselectionVsCentrality"), track.pt(), nsigmaTOF, centrality);
+    if (std::abs(nsigmaTOF) > cfgNsigmaTOF->get(kIndex, 1))
       return false;
-    mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3NsigmaTOFVsCentrality"), track.pt(), nsigmaTOF, centrality);
+    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTOFVsCentrality"), track.pt(), nsigmaTOF, centrality);
 
     return true;
   }
@@ -234,7 +234,7 @@ struct nucleiQC {
 
       // heavy flavour mother
       // if (particle.has_mothers()) {
-      //  for (auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
+      //  for (const auto& motherparticle : particle.mothers_as<aod::McParticles>()) {
       //    if (std::find(nuclei::hfMothCodes.begin(), nuclei::hfMothCodes.end(), std::abs(motherparticle.pdgCode())) != nuclei::hfMothCodes.end()) {
       //      flags |= kIsSecondaryFromWeakDecay;
       //      motherPdgCode = motherparticle.pdgCode();
@@ -245,7 +245,7 @@ struct nucleiQC {
 
     } else if (particle.has_mothers()) {
       candidate.flags |= nuclei::Flags::kIsSecondaryFromWeakDecay;
-      for (auto& motherparticle : particle.template mothers_as<aod::McParticles>()) {
+      for (const auto& motherparticle : particle.template mothers_as<aod::McParticles>()) {
         candidate.motherPdgCode = motherparticle.pdgCode();
       }
 
@@ -362,25 +362,25 @@ struct nucleiQC {
   template <int iSpecies, const bool isGenerated>
   void fillHistograms(const nuclei::SlimCandidate& candidate)
   {
-    constexpr int index = iSpecies;
-    if (!nuclei::checkSpeciesValidity(index)) {
-      std::runtime_error("species contains invalid nucleus index");
+    constexpr int kIndex = iSpecies;
+    if (!nuclei::checkSpeciesValidity(kIndex)) {
+      std::runtime_error("species contains invalid nucleus kIndex");
     }
 
     if (isGenerated) {
-      const float ptGenerated = (index == nuclei::Species::kPr || index == nuclei::Species::kDe || index == nuclei::Species::kTr) ? candidate.ptGenerated : candidate.ptGenerated / 2.f;
-      mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/hPtGenerated"), ptGenerated);
-      mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3PtVsEtaVsCentralityGenerated"), ptGenerated, candidate.etaGenerated, candidate.centrality);
-      mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3PhiVsEtaVsCentralityGenerated"), candidate.phiGenerated, candidate.etaGenerated, candidate.centrality);
+      const float ptGenerated = (kIndex == nuclei::Species::kPr || kIndex == nuclei::Species::kDe || kIndex == nuclei::Species::kTr) ? candidate.ptGenerated : candidate.ptGenerated / 2.f;
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/hPtGenerated"), ptGenerated);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3PtVsEtaVsCentralityGenerated"), ptGenerated, candidate.etaGenerated, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3PhiVsEtaVsCentralityGenerated"), candidate.phiGenerated, candidate.etaGenerated, candidate.centrality);
     } else {
-      mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/hPtReconstructed"), candidate.pt);
-      mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3PtVsEtaVsCentralityReconstructed"), candidate.pt, candidate.eta, candidate.centrality);
-      mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3PhiVsEtaVsCentralityReconstructed"), candidate.phi, candidate.eta, candidate.centrality);
-      mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3DCAxyVsPtVsCentrality"), candidate.DCAxy, candidate.pt, candidate.centrality);
-      mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3DCAzVsPtVsCentrality"), candidate.DCAz, candidate.pt, candidate.centrality);
-      mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3BetaVsPtVsCentrality"), candidate.beta, candidate.pt, candidate.centrality);
-      mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3dEdxVsPVsCentrality"), candidate.TPCsignal, candidate.pt, candidate.centrality);
-      mHistograms.fill(HIST(nuclei::cNames[index]) + HIST("/h3ClusterSizeVsPtVsCentrality"), mPidManagers[index].getClusterSizeCosLambdaITS(candidate.clusterSizesITS, candidate.eta), candidate.pt, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/hPtReconstructed"), candidate.pt);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3PtVsEtaVsCentralityReconstructed"), candidate.pt, candidate.eta, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3PhiVsEtaVsCentralityReconstructed"), candidate.phi, candidate.eta, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3DCAxyVsPtVsCentrality"), candidate.DCAxy, candidate.pt, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3DCAzVsPtVsCentrality"), candidate.DCAz, candidate.pt, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3BetaVsPtVsCentrality"), candidate.beta, candidate.pt, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3dEdxVsPVsCentrality"), candidate.TPCsignal, candidate.pt, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3ClusterSizeVsPtVsCentrality"), mPidManagers[kIndex].getClusterSizeCosLambdaITS(candidate.clusterSizesITS, candidate.eta), candidate.pt, candidate.centrality);
     }
   }
 

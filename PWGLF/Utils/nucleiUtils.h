@@ -15,8 +15,17 @@
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
 
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
+
+#include "DataFormatsTPC/BetheBlochAleph.h"
+
 #include <string>
 #include <vector>
+#include <algorithm>
 
 using namespace o2;
 using namespace o2::framework;
@@ -403,7 +412,7 @@ class PidManager
 {
 
  public:
-  PidManager(const int species, const float* tpcBetheBlochParams = nullptr)
+  explicit PidManager(const int species, const float* tpcBetheBlochParams = nullptr)
     : mSpecies(species)
   {
     if (!checkSpeciesValidity(species)) {
@@ -426,9 +435,7 @@ class PidManager
   template <typename Ttrack>
   float getBetaTOF(const Ttrack& track)
   {
-    if (!track.hasTOF()) {
-      return -999.f;
-    }
+    if (!track.hasTOF()) return -999.f;
     float beta = o2::pid::tof::Beta::GetBeta(track);
     return std::min(1.f - 1.e-6f, std::max(1.e-4f, beta)); /// sometimes beta > 1 or < 0, to be checked
   }
@@ -436,9 +443,7 @@ class PidManager
   template <typename Ttrack>
   float getMassTOF(const Ttrack& track)
   {
-    if (!track.hasTOF()) {
-      return -999.f;
-    }
+    if (!track.hasTOF()) return -999.f;
     const float charge{1.f + static_cast<float>(mSpecies == Species::kHe || mSpecies == Species::kAl)};
     const float beta = getBetaTOF(track);
     return track.tpcInnerParam() * charge * std::sqrt(1.f / (beta * beta) - 1.f);
@@ -447,23 +452,15 @@ class PidManager
   template <typename Ttrack>
   float getNSigmaTOF(const Ttrack& track)
   {
-    if (!track.hasTOF()) {
-      return -999.f;
-    }
+    if (!track.hasTOF()) return -999.f;
 
     switch (mSpecies) {
-      case Species::kPr:
-        return track.tofNSigmaPr();
-      case Species::kDe:
-        return track.tofNSigmaDe();
-      case Species::kTr:
-        return track.tofNSigmaTr();
-      case Species::kHe:
-        return track.tofNSigmaHe();
-      case Species::kAl:
-        return track.tofNSigmaAl();
-      default:
-        return -999.f;
+      case Species::kPr:  return track.tofNSigmaPr();
+      case Species::kDe:  return track.tofNSigmaDe();
+      case Species::kTr:  return track.tofNSigmaTr();
+      case Species::kHe:  return track.tofNSigmaHe();
+      case Species::kAl:  return track.tofNSigmaAl();
+      default:  return -999.f;
     }
   }
 
@@ -500,9 +497,8 @@ class PidManager
   // TPC
   float getExpectedTPCsignal(const float p)
   {
-    if (!mUseTpcCentralCalibration) {
-      return -999.f;
-    }
+    if (!mUseTpcCentralCalibration) return -999.f;
+
     float pScaled = p * mMomScaling[0] + mMomScaling[1];
     float betaGamma = pScaled / masses[mSpecies];
     return tpc::BetheBlochAleph(betaGamma,
@@ -530,18 +526,12 @@ class PidManager
   float getNSigmaTPCcentral(const Ttrack& track)
   {
     switch (mSpecies) {
-      case Species::kPr:
-        return track.tpcNSigmaPr();
-      case Species::kDe:
-        return track.tpcNSigmaDe();
-      case Species::kTr:
-        return track.tpcNSigmaTr();
-      case Species::kHe:
-        return track.tpcNSigmaHe();
-      case Species::kAl:
-        return track.tpcNSigmaAl();
-      default:
-        return -999.f;
+      case Species::kPr:  return track.tpcNSigmaPr();
+      case Species::kDe:  return track.tpcNSigmaDe();
+      case Species::kTr:  return track.tpcNSigmaTr();
+      case Species::kHe:  return track.tpcNSigmaHe();
+      case Species::kAl:  return track.tpcNSigmaAl();
+      default:  return -999.f;
     }
   }
 
