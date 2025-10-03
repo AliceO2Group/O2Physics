@@ -187,7 +187,7 @@ struct skimmerGammaConversion {
            kfp.GetPx(), kfp.GetPy(), kfp.GetPz(), theTrack.dcaXY(), theTrack.dcaZ(),
            theTrack.tpcNClsFindable(), theTrack.tpcNClsFindableMinusFound(), theTrack.tpcNClsFindableMinusCrossedRows(), theTrack.tpcNClsShared(),
            theTrack.tpcChi2NCl(), theTrack.tpcInnerParam(), theTrack.tpcSignal(),
-           theTrack.tpcNSigmaEl(), theTrack.tpcNSigmaPi(),
+           theTrack.tpcNSigmaEl(), /*theTrack.tpcNSigmaPi(),*/
            theTrack.itsClusterSizes(), theTrack.itsChi2NCl(), theTrack.detectorMap());
   }
 

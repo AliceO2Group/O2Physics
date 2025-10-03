@@ -207,7 +207,7 @@ DECLARE_SOA_TABLE_VERSIONED(V0Legs_001, "AOD", "V0LEG", 1, //!
                             track::DcaXY, track::DcaZ,
                             track::TPCNClsFindable, track::TPCNClsFindableMinusFound, track::TPCNClsFindableMinusCrossedRows, track::TPCNClsShared,
                             track::TPCChi2NCl, track::TPCInnerParam,
-                            track::TPCSignal, pidtpc::TPCNSigmaEl, pidtpc::TPCNSigmaPi,
+                            track::TPCSignal, pidtpc::TPCNSigmaEl, /*pidtpc::TPCNSigmaPi,*/
                             track::ITSClusterSizes, track::ITSChi2NCl, track::DetectorMap,
 
                             // dynamic column

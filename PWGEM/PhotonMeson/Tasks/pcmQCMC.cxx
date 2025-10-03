@@ -225,7 +225,7 @@ struct PCMQCMC {
     fRegistry.add("V0Leg/primary/hChi2TPC", "chi2/number of TPC clusters", kTH1F, {{100, 0, 10}}, false);
     fRegistry.add("V0Leg/primary/hTPCdEdx", "TPC dE/dx;p_{in} (GeV/c);TPC dE/dx (a.u.)", kTH2F, {{1000, 0, 10}, {200, 0, 200}}, false);
     fRegistry.add("V0Leg/primary/hTPCNsigmaEl", "TPC n sigma el;p_{in} (GeV/c);n #sigma_{e}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
-    fRegistry.add("V0Leg/primary/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
+    // fRegistry.add("V0Leg/primary/hTPCNsigmaPi", "TPC n sigma pi;p_{in} (GeV/c);n #sigma_{#pi}^{TPC}", kTH2F, {{1000, 0, 10}, {100, -5, +5}}, false);
     fRegistry.add("V0Leg/primary/hTPCNcr2Nf", "TPC Ncr/Nfindable", kTH1F, {{200, 0, 2}}, false);
     fRegistry.add("V0Leg/primary/hTPCNcls2Nf", "TPC Ncls/Nfindable", kTH1F, {{200, 0, 2}}, false);
     fRegistry.add("V0Leg/primary/hTPCNclsShared", "TPC Ncls shared/Ncls;p_{T} (GeV/c);N_{cls}^{shared}/N_{cls} in TPC", kTH2F, {{1000, 0, 10}, {100, 0, 1}}, false);
@@ -403,7 +403,7 @@ struct PCMQCMC {
     }
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hTPCdEdx"), leg.tpcInnerParam(), leg.tpcSignal());
     fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hTPCNsigmaEl"), leg.tpcInnerParam(), leg.tpcNSigmaEl());
-    fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hTPCNsigmaPi"), leg.tpcInnerParam(), leg.tpcNSigmaPi());
+    // fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hTPCNsigmaPi"), leg.tpcInnerParam(), leg.tpcNSigmaPi());
     // fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hXY"), leg.x(), leg.y());
     // fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hZX"), leg.z(), leg.x());
     // fRegistry.fill(HIST("V0Leg/") + HIST(mcphoton_types[mctype]) + HIST("hZY"), leg.z(), leg.y());
