@@ -662,7 +662,7 @@ struct K892analysispbpb {
 
         // MC
         if constexpr (IsMC && !IsRot) {
-	  
+
           if (!trk1.has_mcParticle() || !trk2.has_mcParticle())
             continue;
 
@@ -1110,7 +1110,7 @@ struct K892analysispbpb {
     }
     for (const auto& RecCollision : recCollisions) {
       histos.fill(HIST("QAevent/hMCrecCollSels"), 3);
-   
+
       if (!myEventSelections(RecCollision))
         continue;
 
@@ -1120,7 +1120,6 @@ struct K892analysispbpb {
 
       auto tracks = RecTracks.sliceBy(trackPerCollision, RecCollision.globalIndex());
 
- 
       //            <IsMC, IsMix, IsRot, IsRun2>
       fillHistograms<true, false, false, false>(RecCollision, tracks, tracks);
 
