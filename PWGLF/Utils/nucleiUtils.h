@@ -23,8 +23,6 @@
 #include "DetectorsBase/Propagator.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/HistogramSpec.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/Propagator.h"
 
 #include <algorithm>
 #include <string>
