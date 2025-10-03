@@ -31,9 +31,9 @@ DECLARE_SOA_COLUMN(Photons_charge, photons_charge, float[10]);
 
 DECLARE_SOA_COLUMN(EtaTrack, etatrack, float);
 DECLARE_SOA_COLUMN(PhiTrack, phitrack, float);
-DECLARE_SOA_COLUMN(Px,px,float);
-DECLARE_SOA_COLUMN(Py,py,float);
-DECLARE_SOA_COLUMN(Pz,pz,float);
+DECLARE_SOA_COLUMN(Px, px, float);
+DECLARE_SOA_COLUMN(Py, py, float);
+DECLARE_SOA_COLUMN(Pz, pz, float);
 
 DECLARE_SOA_COLUMN(ITSNcluster, itsNcluster, float);
 DECLARE_SOA_COLUMN(TPCNcluster, tpcNcluster, float);
@@ -59,13 +59,12 @@ DECLARE_SOA_TABLE(HMPID_analysis, "AOD", "HMPIDANALYSIS",
                   variables_table::ChAngle, variables_table::Phi, variables_table::Eta, variables_table::MomentumHMPID,
                   variables_table::MomentumTrack, variables_table::Xtrack, variables_table::Ytrack, variables_table::Xmip,
                   variables_table::Ymip, variables_table::Nphotons, variables_table::ChargeMIP, variables_table::ClusterSize,
-                  variables_table::Chamber, variables_table::Photons_charge, variables_table::EtaTrack, variables_table::PhiTrack, 
+                  variables_table::Chamber, variables_table::Photons_charge, variables_table::EtaTrack, variables_table::PhiTrack,
                   variables_table::Px, variables_table::Py, variables_table::Pz,
                   variables_table::ITSNcluster, variables_table::TPCNcluster, variables_table::TPCNClsCrossedRows,
                   variables_table::TPCchi2, variables_table::ITSchi2, variables_table::DCAxy, variables_table::DCAz,
                   variables_table::TPCNSigmaPi, variables_table::TOFNSigmaPi, variables_table::TPCNSigmaKa, variables_table::TOFNSigmaKa,
                   variables_table::TPCNSigmaPr, variables_table::TOFNSigmaPr, variables_table::TPCNSigmaDe, variables_table::TOFNSigmaDe);
 } // namespace o2::aod
-
 
 #endif // O2_ANALYSIS_HMPIDTABLE_H

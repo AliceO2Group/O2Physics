@@ -10,35 +10,34 @@
 // or submit itself to any jurisdiction.
 
 // O2 includes
-#include "ReconstructionDataFormats/Track.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "ReconstructionDataFormats/TrackParametrization.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
-#include "ReconstructionDataFormats/PID.h"
-#include "Common/Core/trackUtilities.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/ASoA.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-
-#include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/Centrality.h"
-
 #include "tableHMPIDPb.h"
+
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/Centrality.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
+#include "Framework/ASoA.h"
+#include "Framework/ASoAHelpers.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/HistogramRegistry.h"
+#include "Framework/RunningWorkflowInfo.h"
+#include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/DCA.h"
+#include "ReconstructionDataFormats/PID.h"
+#include "ReconstructionDataFormats/Track.h"
+#include "ReconstructionDataFormats/TrackParametrization.h"
 
 #include <TTree.h>
 
-
-//CREATE AND FILL TABLE FOR PBPB COLLISIONS
+// CREATE AND FILL TABLE FOR PBPB COLLISIONS
 
 using namespace o2;
 using namespace o2::framework;
@@ -50,14 +49,11 @@ struct pidHmpidAnalysisPb {
 
   const AxisSpec axisEvtCounter{1, 0, +1, ""};
 
-
   // CCDB configurable
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   struct : ConfigurableGroup {
     Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   } ccdbConfig;
-
-
 
   Produces<aod::HMPID_analysisPb> HMPID_analysisPb;
 
@@ -69,8 +65,7 @@ struct pidHmpidAnalysisPb {
                                     aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
                                     aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
 
-  //using CentralityClass = o2::soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>;
-
+  // using CentralityClass = o2::soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>;
 
   void init(o2::framework::InitContext&)
   {
@@ -82,7 +77,7 @@ struct pidHmpidAnalysisPb {
     histos.add("eventCounter", "eventCounter", kTH1F, {axisEvtCounter});
   }
 
-  //function to manage ccdb
+  // function to manage ccdb
   int mCCDBRunNumber = 0;
   void initCCDB(aod::BCsWithTimestamps::iterator const& bc)
   {
@@ -92,25 +87,23 @@ struct pidHmpidAnalysisPb {
     mCCDBRunNumber = bc.runNumber();
   }
 
-
-
-  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>::iterator const& col, 
-                const aod::HMPIDs& hmpids, 
-                TrackCandidates const&,
-                aod::BCsWithTimestamps const&)
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>::iterator const& col,
+               const aod::HMPIDs& hmpids,
+               TrackCandidates const&,
+               aod::BCsWithTimestamps const&)
   {
-    histos.fill(HIST("eventCounter"), 0.5); 
+    histos.fill(HIST("eventCounter"), 0.5);
 
     initCCDB(col.bc_as<aod::BCsWithTimestamps>());
 
-
     for (const auto& t : hmpids) {
 
-      //global tracks associated to hmpid tracks
+      // global tracks associated to hmpid tracks
       const auto& global_track = t.track_as<TrackCandidates>();
-      if (!global_track.isGlobalTrack()) continue;
-      if (!global_track.hasITS() || !global_track.hasTPC() || !global_track.hasTOF()) continue;
-
+      if (!global_track.isGlobalTrack())
+        continue;
+      if (!global_track.hasITS() || !global_track.hasTPC() || !global_track.hasTOF())
+        continue;
 
       // Verifica se la collisione è accessibile
       if (!global_track.has_collision()) {
@@ -122,17 +115,17 @@ struct pidHmpidAnalysisPb {
       for (int i = 0; i < 10; i++) {
         hmpidPhotsCharge2[i] = t.hmpidPhotsCharge()[i];
       }
-      
+
       float centrality = col.centFV0A();
 
       /////FILL TABLE
       HMPID_analysisPb(t.hmpidSignal(), global_track.phi(), global_track.eta(), t.hmpidMom(),
-                     global_track.p(), t.hmpidXTrack(), t.hmpidYTrack(), t.hmpidXMip(),
-                     t.hmpidYMip(), t.hmpidNPhotons(), t.hmpidQMip(), (t.hmpidClusSize() % 1000000) / 1000, t.hmpidClusSize() / 1000000,
-                     hmpidPhotsCharge2, global_track.eta(), global_track.phi(), global_track.px(), global_track.py(), global_track.pz(),
-                     global_track.itsNCls(), global_track.tpcNClsFound(), global_track.tpcNClsCrossedRows(),global_track.tpcChi2NCl(), global_track.itsChi2NCl(), 
-                     global_track.dcaXY(), global_track.dcaZ(), global_track.tpcNSigmaPi(), global_track.tofNSigmaPi(), global_track.tpcNSigmaKa(), global_track.tofNSigmaKa(),
-                     global_track.tpcNSigmaPr(), global_track.tofNSigmaPr(), global_track.tpcNSigmaDe(), global_track.tofNSigmaDe(),centrality);
+                       global_track.p(), t.hmpidXTrack(), t.hmpidYTrack(), t.hmpidXMip(),
+                       t.hmpidYMip(), t.hmpidNPhotons(), t.hmpidQMip(), (t.hmpidClusSize() % 1000000) / 1000, t.hmpidClusSize() / 1000000,
+                       hmpidPhotsCharge2, global_track.eta(), global_track.phi(), global_track.px(), global_track.py(), global_track.pz(),
+                       global_track.itsNCls(), global_track.tpcNClsFound(), global_track.tpcNClsCrossedRows(), global_track.tpcChi2NCl(), global_track.itsChi2NCl(),
+                       global_track.dcaXY(), global_track.dcaZ(), global_track.tpcNSigmaPi(), global_track.tofNSigmaPi(), global_track.tpcNSigmaKa(), global_track.tofNSigmaKa(),
+                       global_track.tpcNSigmaPr(), global_track.tofNSigmaPr(), global_track.tpcNSigmaDe(), global_track.tofNSigmaDe(), centrality);
     }
   }
 };
