@@ -180,6 +180,7 @@ struct PiNucleiFemto {
   Configurable<float> settingCutNsigmaTOFTPCPi{"settingCutNsigmaTOFTPCPi", 3.0f, "Value of the Pion TOF TPC Nsigma cut"};
   Configurable<int> settingNoMixedEvents{"settingNoMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> settingEnableBkgUS{"settingEnableBkgUS", false, "Enable US background"};
+  Configurable<bool> settingSaferME{"settingSaferME", false, "For Safer ME"};
 
   Configurable<bool> settingFillTable{"settingFillTable", false, "Enable table filling"};
   Configurable<float> settingCutPiptMin{"settingCutPiptMin", 0.14f, "Minimum PT cut on Pi"};
@@ -1220,51 +1221,58 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
       LOG(info) << "Initialized event pool with size = " << All_Event_pool.size();
     }
     for (auto const& collision : collisions) {
+      if (!collision.sel8()) {
+        mQaRegistry.fill(HIST("hSkipReasons"), 0);
+        continue;
+      }
       mQaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
       mQaRegistry.fill(HIST("hCentrality"), collision.centFT0C());
       mQaRegistry.fill(HIST("hVtxZ"), collision.posZ());
-      int poolIndexPi = where_pool(collision.posZ(), collision.centFT0C());
 
+      int poolIndexPi = where_pool(collision.posZ(), collision.centFT0C());
       if (poolIndexPi < 0 || static_cast<size_t>(poolIndexPi) >= All_Event_pool.size()) {
         continue;
       }
       auto& pool = All_Event_pool[poolIndexPi];
 
+      const uint64_t collIdxPi = collision.globalIndex();
+      auto trackTableThisCollision = pitracks.sliceBy(mPerCol, collIdxPi);
+      trackTableThisCollision.bindExternalIndices(&pitracks);
+
       for (auto const& storedEvent : pool.events) {
-        const auto& c2 = collisions.iteratorAt(storedEvent.collisionId);
-        if (!collision.sel8() || !c2.sel8()) {
-          mQaRegistry.fill(HIST("hSkipReasons"), 0);
-          continue;
+        const uint64_t collIdxHyp = storedEvent.collisionId;
+        if (settingSaferME) {
+          if (collIdxHyp > collisions.size()) { 
+            mQaRegistry.fill(HIST("hSkipReasons"), 4);
+            continue;
+          }
         }
 
-        auto hypdTablepreviousCollision = V0Hypers.sliceBy(hypPerCol, c2.globalIndex());
+        auto hypdTablepreviousCollision = V0Hypers.sliceBy(hypPerCol, collIdxHyp);
         hypdTablepreviousCollision.bindExternalIndices(&V0Hypers);
-
         if (hypdTablepreviousCollision.size() == 0) {
           mQaRegistry.fill(HIST("hSkipReasons"), 1);
           continue;
         }
-
+        
         auto firstHyp = hypdTablepreviousCollision.iteratorAt(0);
         int poolIndexHyp = where_pool(firstHyp.zPrimVtx(), firstHyp.centralityFT0C());
-
         if (poolIndexHyp != poolIndexPi) {
-          mQaRegistry.fill(HIST("hSkipReasons"), 2);
-          continue;
+         mQaRegistry.fill(HIST("hSkipReasons"), 2);
+         continue;
         }
+        mQaRegistry.fill(HIST("hNHypsPerPrevColl"), collIdxHyp, hypdTablepreviousCollision.size());
 
-        auto trackTableThisCollision = pitracks.sliceBy(mPerCol, collision.globalIndex());
-        trackTableThisCollision.bindExternalIndices(&pitracks);
-
-        mQaRegistry.fill(HIST("hNHypsPerPrevColl"), c2.globalIndex(), hypdTablepreviousCollision.size());
         pairHyperEventMixing(trackTableThisCollision, hypdTablepreviousCollision);
       }
 
       if (static_cast<int>(pool.events.size()) >= settingNoMixedEvents) {
         pool.events.pop_front();
       }
-      pool.events.push_back({collision.globalIndex()});
-    }
+      pool.events.push_back({collIdxPi});
+      }
+    fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ true);
+  }
     fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ true);
   }
   PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyperPool, "Process Mixed event", false);
