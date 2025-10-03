@@ -79,6 +79,7 @@ struct LfMyV0s {
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
   Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
   Configurable<bool> requireITS{"requireITS", false, "require ITS hit"};
+  Configurable<bool> require_max_tpcSharedCls{"require_max_tpcSharedCls", false, "require ITS hit"};
   Configurable<float> max_tpcSharedCls{"max_tpcSharedCls", 100, "max_tpcSharedCls"};
   Configurable<float> max_chi2_TPC{"max_chi2_TPC", 4, "max_chi2_TPC"};
   Configurable<float> max_chi2_ITS{"max_chi2_ITS", 36, "max_chi2_ITS"};
@@ -151,7 +152,10 @@ struct LfMyV0s {
     const AxisSpec axisPz{100, -10, 10, "#pz (GeV/c)"};
     const AxisSpec axisPT{200, 0, 50, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec axisPhi{100, -3.14, 3.14, "#Phi"};
-    const AxisSpec axisMass{100, 0, 2, "Mass(GeV/c^{2})"};
+    const AxisSpec axisTheta{100, 0, 3.14, "#Theta"};
+    const AxisSpec axisMass{100, 0.9, 1.0, "Mass(GeV/c^{2})"};
+    const AxisSpec axisCostheta{100, -1, 1, "Cos(#theta^{*}_{p})"};
+    const AxisSpec axisSinPhi{100, -1, 1, "Sin(#phi^{*}_{p})"};
 
     const AxisSpec JetaxisEta{30, -1.5, +1.5, "#eta"};
     const AxisSpec JetaxisPhi{200, -1, +7, "#phi"};
@@ -216,7 +220,6 @@ struct LfMyV0s {
     registry.add("V0LambdaprotonPhi", "V0LambdaprotonPhi", {HistType::kTH1F, {{200, -TMath::Pi() / 2, TMath::Pi() / 2}}});
     registry.add("V0AntiLambdaprotonPhi", "V0AntiLambdaprotonPhi", {HistType::kTH1F, {{200, -TMath::Pi() / 2, TMath::Pi() / 2}}});
 
-    registryData.add("number_of_events_data", "number of events in data", HistType::kTH1D, {{20, 0, 20, "Event Cuts"}});
     registryData.add("number_of_events_vsmultiplicity", "number of events in data vs multiplicity", HistType::kTH1D, {{101, 0, 101, "Multiplicity percentile"}});
     registryData.add("h_track_pt", "track pT;#it{p}_{T,track} (GeV/#it{c});entries", kTH1F, {{200, 0., 200.}});
     registryData.add("h_track_eta", "track #eta;#eta_{track};entries", kTH1F, {{100, -1.f, 1.f}});
@@ -254,24 +257,57 @@ struct LfMyV0s {
     registryData.add("V0pyInRest_frame", "V0pyInRest_frame", kTH1F, {axisPy});
     registryData.add("V0pzInRest_frame", "V0pzInRest_frame", kTH1F, {axisPz});
 
-    registryData.add("V0protonpxInLab", "V0protonpxInLab", kTH1F, {axisPx});
-    registryData.add("V0protonpyInLab", "V0protonpyInLab", kTH1F, {axisPy});
-    registryData.add("V0protonpzInLab", "V0protonpzInLab", kTH1F, {axisPz});
-    registryData.add("V0protonphiInLab", "V0protonphiInLab", kTH1F, {axisPhi});
+    registryData.add("protonQA/V0protonpxInLab", "V0protonpxInLab", kTH1F, {axisPx});
+    registryData.add("protonQA/V0protonpyInLab", "V0protonpyInLab", kTH1F, {axisPy});
+    registryData.add("protonQA/V0protonpzInLab", "V0protonpzInLab", kTH1F, {axisPz});
+    registryData.add("protonQA/V0protonMassInLab", "V0protonMassInLab", kTH1F, {axisMass});
+    registryData.add("protonQA/V0protonphiInLab", "V0protonphiInLab", kTH1F, {axisPhi});
+    registryData.add("protonQA/V0protonthetaInLab", "V0protonthetaInLab", kTH1F, {axisTheta});
+    registryData.add("protonQA/V0protoncosthetaInLab", "V0protoncosthetaInLab", kTH1F, {axisCostheta});
+    registryData.add("protonQA/profileprotonsinthetaInLab", "Invariant Mass vs sin(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("protonQA/profileprotonsinphiInLab", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("protonQA/profileprotoncosSquarethetaInLab", "Invariant Mass vs cos^2(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
 
-    registryData.add("V0protonpxInRest_frame", "V0protonpxInRest_frame", kTH1F, {axisPx});
-    registryData.add("V0protonpyInRest_frame", "V0protonpyInRest_frame", kTH1F, {axisPy});
-    registryData.add("V0protonpzInRest_frame", "V0protonpzInRest_frame", kTH1F, {axisPz});
-    registryData.add("V0protonMassInRest_frame", "V0protonMassInRest_frame", kTH1F, {axisMass});
-    registryData.add("V0protonphiInRest_frame", "V0protonphiInRest_frame", kTH1F, {axisPhi});
+    registryData.add("protonQA/V0protonpxInRest_frame", "V0protonpxInRest_frame", kTH1F, {axisPx});
+    registryData.add("protonQA/V0protonpyInRest_frame", "V0protonpyInRest_frame", kTH1F, {axisPy});
+    registryData.add("protonQA/V0protonpzInRest_frame", "V0protonpzInRest_frame", kTH1F, {axisPz});
+    registryData.add("protonQA/V0protonMassInRest_frame", "V0protonMassInRest_frame", kTH1F, {axisMass});
+    registryData.add("protonQA/V0protonphiInRest_frame", "V0protonphiInRest_frame", kTH1F, {axisPhi});
+    registryData.add("protonQA/V0protonthetaInRest_frame", "V0protonthetaInRest_frame", kTH1F, {axisTheta});
+    registryData.add("protonQA/V0protoncosthetaInV0frame", "V0protoncosthetaInV0frame", kTH1F, {axisCostheta});
+    registryData.add("protonQA/profileprotonsinthetaInV0frame", "Invariant Mass vs sin(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("protonQA/profileprotonsinphiInV0frame", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("protonQA/profileprotoncosSquarethetaInV0frame", "Invariant Mass vs cos^2(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
 
-    registryData.add("V0protonpxInJetV0frame", "V0protonpxInJetV0frame", kTH1F, {axisPx});
-    registryData.add("V0protonpyInJetV0frame", "V0protonpyInJetV0frame", kTH1F, {axisPy});
-    registryData.add("V0protonpzInJetV0frame", "V0protonpzInJetV0frame", kTH1F, {axisPz});
+    registryData.add("protonQA/V0protonpxInJetframe", "V0protonpxInJetframe", kTH1F, {axisPx});
+    registryData.add("protonQA/V0protonpyInJetframe", "V0protonpyInJetframe", kTH1F, {axisPy});
+    registryData.add("protonQA/V0protonpzInJetframe", "V0protonpzInJetframe", kTH1F, {axisPz});
+    registryData.add("protonQA/V0protonphiInJetframe", "V0protonphiInJetframe", kTH1F, {axisPhi});
+    registryData.add("protonQA/V0protonthetaInJetframe", "V0protonthetaInJetframe", kTH1F, {axisTheta});
+    registryData.add("protonQA/V0protoncosthetaInJetframe", "V0protoncosthetaInJetframe", kTH1F, {axisCostheta});
+    registryData.add("protonQA/profileprotonsinthetaInJetframe", "Invariant Mass vs sin(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("protonQA/profileprotonsinphiInJetframe", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("protonQA/profileprotoncosSquarethetaInJetframe", "Invariant Mass vs cos^2(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("protonQA/V0protonMassInJetframe", "V0protonMassInJetframe", kTH1F, {axisMass});
+
+    registryData.add("protonQA/V0protonpxInJetV0frame", "V0protonpxInJetV0frame", kTH1F, {axisPx});
+    registryData.add("protonQA/V0protonpyInJetV0frame", "V0protonpyInJetV0frame", kTH1F, {axisPy});
+    registryData.add("protonQA/V0protonpzInJetV0frame", "V0protonpzInJetV0frame", kTH1F, {axisPz});
+    registryData.add("protonQA/V0protonphiInJetV0frame", "V0protonphiInJetV0frame", kTH1F, {axisPhi});
+    registryData.add("protonQA/V0protonthetaInJetV0frame", "V0protonthetaInJetV0frame", kTH1F, {axisTheta});
+    registryData.add("protonQA/V0protoncosthetaInJetV0", "V0protoncosthetaInJetV0", kTH1F, {axisCostheta});
+    registryData.add("protonQA/V0protonMassInJetV0frame", "V0protonMassInJetV0frame", kTH1F, {axisMass});
+    registryData.add("protonQA/profileprotonsinthetaInJetV0frame", "Invariant Mass vs sin(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("protonQA/profileprotonsinphiInJetV0frame", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryData.add("protonQA/profileprotoncosSquarethetaInJetV0frame", "Invariant Mass vs cos^2(theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
 
     registryData.add("V0LambdapxInJetV0frame", "V0LambdapxInJetV0frame", kTH1F, {axisPx});
     registryData.add("V0LambdapyInJetV0frame", "V0LambdapyInJetV0frame", kTH1F, {axisPy});
     registryData.add("V0LambdapzInJetV0frame", "V0LambdapzInJetV0frame", kTH1F, {axisPz});
+
+    registryData.add("hprotonPhi", "hprotonPhi", kTH1F, {axisPhi});
+    registryData.add("hantiprotonPhi", "hantiprotonPhi", kTH1F, {axisPhi});
+
     registryData.add("hLambdamassandSinPhi", "hLambdamassandSinPhi", kTH2F, {{200, 0.9, 1.2}, {200, -1, 1}});
     registryData.add("profileLambda", "Invariant Mass vs sin(phi)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryData.add("hLambdaPhiandSinPhi", "hLambdaPhiandSinPhi", kTH2F, {{200, -TMath::Pi() / 2, TMath::Pi() / 2}, {200, -1, 1}});
@@ -287,6 +323,11 @@ struct LfMyV0s {
 
     registryData.add("TProfile2DLambdaPtMassCosSquareTheta", "", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
     registryData.add("TProfile2DAntiLambdaPtMassCosSquareTheta", "", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
+    registryData.add("TProfile2DLambdaMassDeltaPhi", "", kTProfile2D, {{200, -TMath::Pi(), TMath::Pi(), "#Delta#varphi"}, TProfile2DaxisMass});
+    registryData.add("TProfile2DAntiLambdaMassDeltaPhi", "", kTProfile2D, {{200, -TMath::Pi(), TMath::Pi(), "#Delta#varphi"}, TProfile2DaxisMass});
+    registryData.add("hprotonThetaInLab", "hprotonThetaInLab", kTH1F, {axisTheta});
+    registryData.add("hprotonThetaInV0", "hprotonThetaInV0", kTH1F, {axisTheta});
+    registryData.add("hprotonThetaInJetV0", "hprotonThetaInJetV0", kTH1F, {axisTheta});
 
     registryData.add("hNEvents", "hNEvents", {HistType::kTH1I, {{10, 0.f, 10.f}}});
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
@@ -298,6 +339,30 @@ struct LfMyV0s {
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "isTOFVertexMatched");
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(8, "isGoodZvtxFT0vsPV");
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(9, "Applied selected");
+
+    if (doQA) {
+      registryData.add("QA/hv0sSelection", ";Sel", {HistType::kTH1D, {{22, 0., 22.}}});
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(1, "all");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(2, "Event selection");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(3, "Radius");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(4, "Eta Daughters");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(5, "Dau DCA to PV");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(6, "DCA Daughters");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(7, "min ITS hits");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(8, "has TOF 1 Leg");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(9, "has TOF 2 Legs");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(10, "TPC NCl");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(11, "TPC Cls Shared");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(12, "ITS Chi2");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(13, "TPC Chi2");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(14, "cosPA");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(15, "rapidity");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(16, "ctau");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(17, "v0 rej");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(18, "TPC nsigma Neg Dau");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(19, "TPC nsigma Pos Dau");
+      registryData.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(20, "Armenteros-Podolansky");
+    }
 
     registryV0Data.add("hLambdaPt", "hLambdaPt", {HistType::kTH1F, {ptAxis}});
     registryV0Data.add("hAntiLambdaPt", "hAntiLambdaPt", {HistType::kTH1F, {ptAxis}});
@@ -372,6 +437,15 @@ struct LfMyV0s {
     registryLongitudinalPolarization.add("hLambdamassandCosthetaInV0", "hLambdamassandCosthetaInV0", kTH2F, {{200, 0.9, 1.2}, {200, -1, 1}});
     registryLongitudinalPolarization.add("TProfile2DLambdaPtMassCostheta", "", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
     registryLongitudinalPolarization.add("TProfile2DLambdaPtMassCosSquareTheta", "", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
+    registryLongitudinalPolarization.add("TH2FLambdaPtCostheta", "", kTH2F, {axisCostheta, TProfile2DaxisPt});
+
+    registryLongitudinalPolarization.add("hprotonThetaInLab", "hprotonThetaInLab", kTH1F, {axisTheta});
+    registryLongitudinalPolarization.add("hprotonPhiInLab", "hprotonPhiInLab", kTH1F, {axisPhi});
+    registryLongitudinalPolarization.add("hprotonPhiInV0", "hprotonPhiInV0", kTH1F, {axisPhi});
+    registryLongitudinalPolarization.add("hAntiprotonThetaInLab", "hAntiprotonThetaInLab", kTH1F, {axisTheta});
+
+    registryLongitudinalPolarization.add("hprotonTheta", "hprotonTheta", kTH1F, {axisTheta});
+    registryLongitudinalPolarization.add("hAntiprotonTheta", "hAntiprotonTheta", kTH1F, {axisTheta});
 
     registryLongitudinalPolarization.add("hantiprotoncosthetainV0", "hantiprotoncosthetainV0", kTH1F, {{200, -1.f, 1.f}});
     registryLongitudinalPolarization.add("hantiprotoncosSquarethetainV0", "hantiprotoncosSquarethetainV0", kTH1F, {{200, -1.f, 1.f}});
@@ -380,6 +454,7 @@ struct LfMyV0s {
     registryLongitudinalPolarization.add("TProfile2DAntiLambdaPtMassCosSquareTheta", "TProfile2DAntiLambdaPtMassCosSquareTheta", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
     registryLongitudinalPolarization.add("TProfile1DLambdaPtMassCostheta", "Invariant Mass vs cos(#theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryLongitudinalPolarization.add("TProfile1DAntiLambdaPtMassCostheta", "Invariant Mass vs cos(#theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+    registryLongitudinalPolarization.add("TH2FAntiLambdaPtCostheta", "", kTH2F, {axisCostheta, TProfile2DaxisPt});
 
     if (doQA) {
       registryLongitudinalPolarization.add("QA/hv0sSelection", ";Sel", {HistType::kTH1D, {{22, 0., 22.}}});
@@ -912,6 +987,205 @@ struct LfMyV0s {
     return true;
   }
 
+  template <typename Lambda, typename TrackPos, typename TrackNeg, typename TCollision>
+  bool registryDataAcceptV0Lambda(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack, const TCollision& collision)
+  {
+
+    int evFlag = 0;
+    if (collision.isInelGt0()) {
+      evFlag = 1;
+    }
+
+    registryData.fill(HIST("QA/hv0sSelection"), 0.5);
+
+    if (evSel && evFlag < 1)
+      return false;
+
+    registryData.fill(HIST("QA/hv0sSelection"), 1.5);
+
+    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+      return false;
+
+    registryData.fill(HIST("QA/hv0sSelection"), 2.5);
+
+    if (TMath::Abs(ptrack.eta()) > V0tracketaMax || TMath::Abs(ntrack.eta()) > V0tracketaMax) {
+      return false;
+    }
+    registryData.fill(HIST("QA/hv0sSelection"), 3.5);
+
+    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
+      return false;
+    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 4.5);
+
+    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 5.5);
+
+    if (requireITS && ptrack.itsNCls() < minITSnCls)
+      return false;
+    if (requireITS && ntrack.itsNCls() < minITSnCls)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 6.5);
+
+    if (hasTOF1Leg && !ptrack.hasTOF() && !ntrack.hasTOF())
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 7.5);
+
+    if (hasTOF2Leg && (!ptrack.hasTOF() || !ntrack.hasTOF()))
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 8.5);
+
+    if (ptrack.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    if (ntrack.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 9.5);
+
+    if (require_max_tpcSharedCls && ptrack.tpcNClsShared() > max_tpcSharedCls)
+      return false;
+    if (require_max_tpcSharedCls && ntrack.tpcNClsShared() > max_tpcSharedCls)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 10.5);
+
+    if (ptrack.itsChi2NCl() > max_chi2_ITS)
+      return false;
+    if (ntrack.itsChi2NCl() > max_chi2_ITS)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 11.5);
+
+    if (ptrack.tpcChi2NCl() > max_chi2_TPC)
+      return false;
+    if (ntrack.tpcChi2NCl() > max_chi2_TPC)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 12.5);
+
+    if (v0.v0cosPA() < v0cospaMin)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 13.5);
+
+    if (v0.yLambda() < yMin || v0.yLambda() > yMax) {
+      return false;
+    }
+    registryData.fill(HIST("QA/hv0sSelection"), 14.5);
+
+    float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+    if (ctauLambda >= CtauLambda)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 15.5);
+
+    if (TMath::Abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0rejLambda) {
+      return false;
+    }
+    if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) > v0accLambda) {
+      return false;
+    }
+
+    registryData.fill(HIST("QA/hv0sSelection"), 16.5);
+
+    if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 17.5);
+
+    if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 18.5);
+
+    if (doArmenterosCut && v0.qtarm() > (paramArmenterosCut * std::abs(v0.alpha())))
+      return false;
+    registryData.fill(HIST("QA/hv0sSelection"), 19.5);
+
+    return true;
+  }
+
+  template <typename Lambda, typename TrackPos, typename TrackNeg, typename TCollision>
+  bool registryDataAcceptV0AntiLambda(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack, const TCollision& collision)
+  {
+
+    int evFlag = 0;
+    if (collision.isInelGt0()) {
+      evFlag = 1;
+    }
+
+    if (evSel && evFlag < 1)
+      return false;
+
+    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+      return false;
+
+    if (TMath::Abs(ptrack.eta()) > V0tracketaMax || TMath::Abs(ntrack.eta()) > V0tracketaMax) {
+      return false;
+    }
+
+    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
+      return false;
+    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
+      return false;
+
+    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+      return false;
+
+    if (requireITS && ptrack.itsNCls() < minITSnCls)
+      return false;
+    if (requireITS && ntrack.itsNCls() < minITSnCls)
+      return false;
+
+    if (hasTOF1Leg && !ptrack.hasTOF() && !ntrack.hasTOF())
+      return false;
+
+    if (hasTOF2Leg && (!ptrack.hasTOF() || !ntrack.hasTOF()))
+      return false;
+
+    if (ptrack.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    if (ntrack.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+
+    if (ptrack.tpcNClsShared() > max_tpcSharedCls)
+      return false;
+    if (ntrack.tpcNClsShared() > max_tpcSharedCls)
+      return false;
+
+    if (ptrack.itsChi2NCl() > max_chi2_ITS)
+      return false;
+    if (ntrack.itsChi2NCl() > max_chi2_ITS)
+      return false;
+
+    if (ptrack.tpcChi2NCl() > max_chi2_TPC)
+      return false;
+    if (ntrack.tpcChi2NCl() > max_chi2_TPC)
+      return false;
+
+    if (v0.v0cosPA() < v0cospaMin)
+      return false;
+
+    if (v0.yLambda() < yMin || v0.yLambda() > yMax) {
+      return false;
+    }
+
+    float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
+    if (ctauAntiLambda >= CtauLambda)
+      return false;
+
+    if (TMath::Abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0rejLambda) {
+      return false;
+    }
+    if (std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) > v0accLambda) {
+      return false;
+    }
+    if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax)
+      return false;
+
+    if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+      return false;
+
+    if (doArmenterosCut && v0.qtarm() > (paramArmenterosCut * std::abs(v0.alpha())))
+      return false;
+
+    return true;
+  }
+
   // Lambda Selections
   template <typename Lambda, typename TrackPos, typename TrackNeg>
   bool passedLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
@@ -1196,16 +1470,14 @@ struct LfMyV0s {
   }
 
   using SelCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::CentFT0Ms>;
+  using SelV0Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentNGlobals>;
   using StrHadronDaughterTracks = soa::Join<aod::Tracks, aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TracksDCA, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>;
-  void processData(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, StrHadronDaughterTracks const& tracks)
+  void processData(SelV0Collisions::iterator const& collision, aod::V0Datas const& fullV0s, StrHadronDaughterTracks const& tracks)
   {
-    registryData.fill(HIST("number_of_events_data"), 0.5);
-    // event selection
-    if (!collision.sel8() || std::fabs(collision.posZ()) > zVtx) {
+    if (!AcceptEvent(collision)) {
       return;
     }
-    // event counter: after event selection
-    registryData.fill(HIST("number_of_events_data"), 1.5);
+    // event selection
     // loop over reconstructed tracks
     std::vector<fastjet::PseudoJet> fjParticles;
     for (auto const& track : tracks) {
@@ -1226,8 +1498,6 @@ struct LfMyV0s {
     // reject empty events
     if (fjParticles.size() < 1)
       return;
-    registryData.fill(HIST("number_of_events_data"), 2.5);
-
     // cluster particles using the anti-kt algorithm
     fastjet::RecombinationScheme recombScheme = fastjet::E_scheme;
     fastjet::JetDefinition jetDef(fastjet::antikt_algorithm, rJet, recombScheme);
@@ -1287,7 +1557,7 @@ struct LfMyV0s {
     if (!isAtLeastOneJetSelected) {
       return;
     }
-    registryData.fill(HIST("number_of_events_data"), 3.5);
+
     // Event multiplicity
     const float multiplicity = collision.centFT0M();
     registryData.fill(HIST("number_of_events_vsmultiplicity"), multiplicity);
@@ -1298,11 +1568,11 @@ struct LfMyV0s {
       const auto& pos = v0.posTrack_as<StrHadronDaughterTracks>();
       const auto& neg = v0.negTrack_as<StrHadronDaughterTracks>();
       TVector3 v0dir(v0.px(), v0.py(), v0.pz());
-      if (passedLambdaSelection(v0, pos, neg)) {
+      if (registryDataAcceptV0Lambda(v0, pos, neg, collision)) {
         V0Numbers = V0Numbers + 1;
         registryData.fill(HIST("LambdaPtMass"), v0.pt(), v0.mLambda());
       }
-      if (passedAntiLambdaSelection(v0, pos, neg)) {
+      if (registryDataAcceptV0AntiLambda(v0, pos, neg, collision)) {
         AntiV0Numbers = AntiV0Numbers + 1;
         registryData.fill(HIST("AntiLambdaPtMass"), v0.pt(), v0.mAntiLambda());
       }
@@ -1311,7 +1581,7 @@ struct LfMyV0s {
 
     // calculate lambda polarization induced by jet
 
-    if (V0Numbers == 0) {
+    if (V0Numbers == 0 && AntiV0Numbers == 0) {
       return;
     }
     if (maxJetpx == 0) {
@@ -1325,15 +1595,15 @@ struct LfMyV0s {
       const auto& neg = candidate.negTrack_as<StrHadronDaughterTracks>();
       TVector3 v0dir(candidate.px(), candidate.py(), candidate.pz());
 
-      if (passedLambdaSelection(candidate, pos, neg)) {
+      if (registryDataAcceptV0Lambda(candidate, pos, neg, collision)) {
         registryData.fill(HIST("hMassLambda"), candidate.mLambda());
         registryData.fill(HIST("V0pTInLab"), candidate.pt());
         registryData.fill(HIST("V0pxInLab"), candidate.px());
         registryData.fill(HIST("V0pyInLab"), candidate.py());
         registryData.fill(HIST("V0pzInLab"), candidate.pz());
-        registryData.fill(HIST("V0protonpxInLab"), pos.px());
-        registryData.fill(HIST("V0protonpyInLab"), pos.py());
-        registryData.fill(HIST("V0protonpzInLab"), pos.pz());
+        registryData.fill(HIST("protonQA/V0protonpxInLab"), pos.px());
+        registryData.fill(HIST("protonQA/V0protonpyInLab"), pos.py());
+        registryData.fill(HIST("protonQA/V0protonpzInLab"), pos.pz());
 
         double PLambda = sqrt(candidate.px() * candidate.px() + candidate.py() * candidate.py() + candidate.pz() * candidate.pz());
         double ELambda = sqrt(candidate.mLambda() * candidate.mLambda() + PLambda * PLambda);
@@ -1351,9 +1621,6 @@ struct LfMyV0s {
         registryData.fill(HIST("V0pyInRest_frame"), V0InV0(2, 0));
         registryData.fill(HIST("V0pzInRest_frame"), V0InV0(3, 0));
 
-        double protonsinPhiInLab = candidate.py() / sqrt(candidate.px() * candidate.px() + candidate.py() * candidate.py());
-        registryData.fill(HIST("V0protonphiInLab"), protonsinPhiInLab);
-
         TMatrixD lambdaInJet(4, 1);
         lambdaInJet = MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabV0;
 
@@ -1368,28 +1635,82 @@ struct LfMyV0s {
         pLabproton(1, 0) = pos.px();
         pLabproton(2, 0) = pos.py();
         pLabproton(3, 0) = pos.pz();
+        double protonsinPhiInLab = pLabproton(2, 0) / sqrt(pLabproton(1, 0) * pLabproton(1, 0) + pLabproton(2, 0) * pLabproton(2, 0));
+        double protoncosthetaInLab = pLabproton(3, 0) / sqrt(pLabproton(1, 0) * pLabproton(1, 0) + pLabproton(2, 0) * pLabproton(2, 0) + pLabproton(3, 0) * pLabproton(3, 0));
+        double protonPtInLab = sqrt(pLabproton(1, 0) * pLabproton(1, 0) + pLabproton(2, 0) * pLabproton(2, 0));
+        double protonPInLab = sqrt(pLabproton(1, 0) * pLabproton(1, 0) + pLabproton(2, 0) * pLabproton(2, 0) + pLabproton(3, 0) * pLabproton(3, 0));
+        double protonsinThetaInLab = protonPtInLab / protonPInLab;
+        double protonMassInLab = sqrt(pLabproton(0, 0) * pLabproton(0, 0) - pLabproton(1, 0) * pLabproton(1, 0) - pLabproton(2, 0) * pLabproton(2, 0) - pLabproton(3, 0) * pLabproton(3, 0));
+
+        registryData.fill(HIST("protonQA/V0protonphiInLab"), TMath::ASin(protonsinPhiInLab));
+        registryData.fill(HIST("protonQA/V0protonThetaInLab"), TMath::ASin(protonsinThetaInLab));
+        registryData.fill(HIST("protonQA/V0protoncosthetaInLab"), protoncosthetaInLab);
+        registryData.fill(HIST("protonQA/profileprotonsinthetaInLab"), candidate.mLambda(), protonsinThetaInLab);
+        registryData.fill(HIST("protonQA/profileprotonsinphiInLab"), candidate.mLambda(), protonsinPhiInLab);
+        registryData.fill(HIST("protonQA/profileprotoncosSquarethetaInLab"), candidate.mLambda(), protoncosthetaInLab * protoncosthetaInLab);
+        registryData.fill(HIST("protonQA/V0protonMassInLab"), protonMassInLab);
 
         TMatrixD protonInV0(4, 1);
         protonInV0 = LorentzTransInV0frame(ELambda, candidate.px(), candidate.py(), candidate.pz()) * pLabproton;
         double protonMassInV0 = sqrt(protonInV0(0, 0) * protonInV0(0, 0) - protonInV0(1, 0) * protonInV0(1, 0) - protonInV0(2, 0) * protonInV0(2, 0) - protonInV0(3, 0) * protonInV0(3, 0));
-        registryData.fill(HIST("V0protonMassInRest_frame"), protonMassInV0);
-        registryData.fill(HIST("V0protonpxInRest_frame"), protonInV0(1, 0));
-        registryData.fill(HIST("V0protonpyInRest_frame"), protonInV0(2, 0));
-        registryData.fill(HIST("V0protonpzInRest_frame"), protonInV0(3, 0));
+        double protonPInV0 = sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0) + protonInV0(3, 0) * protonInV0(3, 0));
+        double protonPtInV0 = sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0));
+        double protonsinThetaInV0 = protonPtInV0 / protonPInV0;
+
+        registryData.fill(HIST("protonQA/V0protonMassInRest_frame"), protonMassInV0);
+        registryData.fill(HIST("protonQA/V0protonpxInRest_frame"), protonInV0(1, 0));
+        registryData.fill(HIST("protonQA/V0protonpyInRest_frame"), protonInV0(2, 0));
+        registryData.fill(HIST("protonQA/V0protonpzInRest_frame"), protonInV0(3, 0));
         double protonsinPhiInV0frame = protonInV0(2, 0) / sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0));
-        registryData.fill(HIST("V0protonphiInRest_frame"), protonsinPhiInV0frame);
+        double protoncosthetaInV0frame = protonInV0(3, 0) / sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0) + protonInV0(3, 0) * protonInV0(3, 0));
+        registryData.fill(HIST("protonQA/V0protonphiInRest_frame"), TMath::ASin(protonsinPhiInV0frame));
+        registryData.fill(HIST("protonQA/V0protonThetaInRest_frame"), TMath::ASin(protonsinThetaInV0));
+        registryData.fill(HIST("protonQA/V0protoncosthetaInV0frame"), protoncosthetaInV0frame);
+        registryData.fill(HIST("protonQA/profileprotonsinthetaInV0frame"), candidate.mLambda(), protonsinThetaInV0);
+        registryData.fill(HIST("protonQA/profileprotonsinphiInV0frame"), candidate.mLambda(), protonsinPhiInV0frame);
+        registryData.fill(HIST("protonQA/profileprotoncosSquarethetaInV0frame"), candidate.mLambda(), protoncosthetaInV0frame * protoncosthetaInV0frame);
+
+        TMatrixD protonInJet(4, 1);
+        protonInJet = MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabproton;
+        double protoncosthetaInJet = protonInJet(3, 0) / sqrt(protonInJet(1, 0) * protonInJet(1, 0) + protonInJet(2, 0) * protonInJet(2, 0) + protonInJet(3, 0) * protonInJet(3, 0));
+        double protonsinPhiInJet = protonInJet(2, 0) / sqrt(protonInJet(1, 0) * protonInJet(1, 0) + protonInJet(2, 0) * protonInJet(2, 0));
+        double protonPtinJet = sqrt(protonInJet(1, 0) * protonInJet(1, 0) + protonInJet(2, 0) * protonInJet(2, 0));
+        double protonPinJet = sqrt(protonInJet(1, 0) * protonInJet(1, 0) + protonInJet(2, 0) * protonInJet(2, 0) + protonInJet(3, 0) * protonInJet(3, 0));
+        double protonSinThetainJet = protonPtinJet / protonPinJet;
+        double protonMassInJetframe = sqrt(protonInJet(0, 0) * protonInJet(0, 0) - protonInJet(1, 0) * protonInJet(1, 0) - protonInJet(2, 0) * protonInJet(2, 0) - protonInJet(3, 0) * protonInJet(3, 0));
+
+        registryData.fill(HIST("protonQA/V0protonpxInJetframe"), protonInJet(1, 0));
+        registryData.fill(HIST("protonQA/V0protonpyInJetframe"), protonInJet(2, 0));
+        registryData.fill(HIST("protonQA/V0protonpzInJetframe"), protonInJet(3, 0));
+        registryData.fill(HIST("protonQA/V0protonphiInJetframe"), TMath::ASin(protonsinPhiInJet));
+        registryData.fill(HIST("protonQA/V0protonThetaInJetframe"), TMath::ASin(protonSinThetainJet));
+        registryData.fill(HIST("protonQA/V0protoncosthetaInJetframe"), protoncosthetaInJet);
+        registryData.fill(HIST("protonQA/profileprotonsinthetaInJetframe"), candidate.mLambda(), protonSinThetainJet);
+        registryData.fill(HIST("protonQA/profileprotonsinphiInJetframe"), candidate.mLambda(), protonsinPhiInJet);
+        registryData.fill(HIST("protonQA/profileprotoncosSquarethetaInJetframe"), candidate.mLambda(), protoncosthetaInJet * protoncosthetaInJet);
+        registryData.fill(HIST("protonQA/V0protonMassInJetframe"), protonMassInJetframe);
 
         TMatrixD protonInJetV0(4, 1);
         protonInJetV0 = LorentzTransInV0frame(ELambda, lambdaInJet(1, 0), lambdaInJet(2, 0), lambdaInJet(3, 0)) * MyTMatrixTranslationToJet(maxJetpx, maxJetpy, maxJetpz, candidate.px(), candidate.py(), candidate.pz()) * pLabproton;
-        registryData.fill(HIST("V0protonpxInJetV0frame"), protonInJetV0(1, 0));
-        registryData.fill(HIST("V0protonpyInJetV0frame"), protonInJetV0(2, 0));
-        registryData.fill(HIST("V0protonpzInJetV0frame"), protonInJetV0(3, 0));
-
-        double protonPinJetV0 = sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0) + protonInJetV0(3, 0) * protonInJetV0(3, 0));
+        double protoncosthetaInJetV0 = protonInJetV0(3, 0) / sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0) + protonInJetV0(3, 0) * protonInJetV0(3, 0));
+        double protonsinphiInJetV0 = protonInJetV0(2, 0) / sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0));
         double protonPtinJetV0 = sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0));
+        double protonPinJetV0 = sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0) + protonInJetV0(3, 0) * protonInJetV0(3, 0));
+        double protonSinThetainJetV0 = protonPtinJetV0 / protonPinJetV0;
+        double protonMassInJetV0frame = sqrt(protonInJetV0(0, 0) * protonInJetV0(0, 0) - protonInJetV0(1, 0) * protonInJetV0(1, 0) - protonInJetV0(2, 0) * protonInJetV0(2, 0) - protonInJetV0(3, 0) * protonInJetV0(3, 0));
+
+        registryData.fill(HIST("protonQA/V0protonpxInJetV0frame"), protonInJetV0(1, 0));
+        registryData.fill(HIST("protonQA/V0protonpyInJetV0frame"), protonInJetV0(2, 0));
+        registryData.fill(HIST("protonQA/V0protonpzInJetV0frame"), protonInJetV0(3, 0));
+        registryData.fill(HIST("protonQA/V0protonphiInJetV0frame"), TMath::ASin(protonsinphiInJetV0));
+        registryData.fill(HIST("protonQA/V0protonThetaInJetV0frame"), TMath::ASin(protonSinThetainJetV0));
+        registryData.fill(HIST("protonQA/V0protoncosthetaInJetV0"), protoncosthetaInJetV0);
+        registryData.fill(HIST("protonQA/V0protonMassInJetV0frame"), protonMassInJetV0frame);
+        registryData.fill(HIST("protonQA/profileprotonsinthetaInJetV0frame"), candidate.mLambda(), protonSinThetainJetV0);
+        registryData.fill(HIST("protonQA/profileprotonsinphiInJetV0frame"), candidate.mLambda(), protonsinphiInJetV0);
+        registryData.fill(HIST("protonQA/profileprotoncosSquarethetaInJetV0frame"), candidate.mLambda(), protoncosthetaInJetV0 * protoncosthetaInJetV0);
 
         double protonCosThetainJetV0 = protonInJetV0(3, 0) / protonPinJetV0;
-        double protonSinThetainJetV0 = protonPtinJetV0 / protonPinJetV0;
         double protonthetainJetV0 = TMath::ASin(protonSinThetainJetV0);
         registryV0Data.fill(HIST("hprotoncosthetainJetV0"), protonCosThetainJetV0);
         registryV0Data.fill(HIST("hprotonsinthetainJetV0"), protonSinThetainJetV0);
@@ -1407,8 +1728,17 @@ struct LfMyV0s {
         registryData.fill(HIST("TProfile2DLambdaPtMassSinPhi"), candidate.mLambda(), candidate.pt(), protonInJetV0(2, 0) / sqrt(protonInJetV0(1, 0) * protonInJetV0(1, 0) + protonInJetV0(2, 0) * protonInJetV0(2, 0)));
         registryData.fill(HIST("TProfile2DLambdaPtMassSintheta"), candidate.mLambda(), candidate.pt(), (4.0 / TMath::Pi()) * protonSinThetainJetV0);
         registryData.fill(HIST("TProfile2DLambdaPtMassCosSquareTheta"), candidate.mLambda(), candidate.pt(), 3.0 * protonCosThetainJetV0 * protonCosThetainJetV0);
+        registryData.fill(HIST("TProfile2DLambdaMassDeltaPhi"), TMath::ASin(protonsinPhiInJetV0frame), candidate.mLambda(), protonsinPhiInJetV0frame);
+        registryData.fill(HIST("hprotonPhi"), TMath::ASin(protonsinPhiInJetV0frame));
+
+        double protonCosThetaInLab = pLabproton(3, 0) / sqrt(pLabproton(1, 0) * pLabproton(1, 0) + pLabproton(2, 0) * pLabproton(2, 0) + pLabproton(3, 0) * pLabproton(3, 0));     // cos(theta) of lambda in lab frame
+        double protonCosThetaInV0frame = protonInV0(3, 0) / sqrt(protonInV0(1, 0) * protonInV0(1, 0) + protonInV0(2, 0) * protonInV0(2, 0) + protonInV0(3, 0) * protonInV0(3, 0)); // cos(theta) of lambda in V0 frame
+        double protonCosThetaInJetV0frame = protonCosThetainJetV0;                                                                                                                 // cos(theta) of lambda in jet V0 frame
+        registryData.fill(HIST("hprotonThetaInLab"), TMath::ACos(protonCosThetaInLab));
+        registryData.fill(HIST("hprotonThetaInV0"), TMath::ACos(protonCosThetaInV0frame));
+        registryData.fill(HIST("hprotonThetaInJetV0"), TMath::ACos(protonCosThetaInJetV0frame));
       }
-      if (passedAntiLambdaSelection(candidate, pos, neg)) {
+      if (registryDataAcceptV0AntiLambda(candidate, pos, neg, collision)) {
         registryData.fill(HIST("hMassAntiLambda"), candidate.mAntiLambda());
         double PAntiLambda = sqrt(candidate.px() * candidate.px() + candidate.py() * candidate.py() + candidate.pz() * candidate.pz());
         double EAntiLambda = sqrt(candidate.mAntiLambda() * candidate.mAntiLambda() + PAntiLambda * PAntiLambda);
@@ -1439,6 +1769,8 @@ struct LfMyV0s {
         registryData.fill(HIST("TProfile2DAntiLambdaPtMassSinPhi"), candidate.mAntiLambda(), candidate.pt(), AntiprotonInJetV0(2, 0) / sqrt(AntiprotonInJetV0(1, 0) * AntiprotonInJetV0(1, 0) + AntiprotonInJetV0(2, 0) * AntiprotonInJetV0(2, 0)));
         registryData.fill(HIST("TProfile2DAntiLambdaPtMassSintheta"), candidate.mAntiLambda(), candidate.pt(), (4.0 / TMath::Pi()) * AntiprotonSinThetainJetV0);
         registryData.fill(HIST("TProfile2DAntiLambdaPtMassCosSquareTheta"), candidate.mAntiLambda(), candidate.pt(), 3.0 * AntiprotonCosThetainJetV0 * AntiprotonCosThetainJetV0);
+        registryData.fill(HIST("TProfile2DAntiLambdaMassDeltaPhi"), TMath::ASin(AntiprotonsinPhiInJetV0frame), candidate.mAntiLambda(), AntiprotonsinPhiInJetV0frame);
+        registryData.fill(HIST("hantiprotonPhi"), TMath::ASin(AntiprotonsinPhiInJetV0frame));
       }
     }
 
@@ -1583,6 +1915,9 @@ struct LfMyV0s {
         registryLongitudinalPolarization.fill(HIST("V0pzInRest_frame"), LambdaBoostedVec.Pz());
 
         double protonCosThetainV0 = ProtonBoostedVec.Pz() / ProtonBoostedVec.P();
+        double protonCosThetainLab = ProtonVec.Pz() / ProtonVec.P();
+        double protonSinPhiInLab = ProtonVec.Py() / sqrt(ProtonVec.Px() * ProtonVec.Px() + ProtonVec.Py() * ProtonVec.Py());
+        double protonSinPhiInV0 = ProtonBoostedVec.Py() / sqrt(ProtonBoostedVec.Px() * ProtonBoostedVec.Px() + ProtonBoostedVec.Py() * ProtonBoostedVec.Py());
 
         registryLongitudinalPolarization.fill(HIST("hprotoncosthetainV0"), protonCosThetainV0);
         registryLongitudinalPolarization.fill(HIST("hprotoncosSquarethetainV0"), protonCosThetainV0 * protonCosThetainV0);
@@ -1592,6 +1927,13 @@ struct LfMyV0s {
         registryLongitudinalPolarization.fill(HIST("TProfile2DLambdaPtMassCosSquareTheta"), v0.mLambda(), v0.pt(), protonCosThetainV0 * protonCosThetainV0);
 
         registryLongitudinalPolarization.fill(HIST("TProfile1DLambdaPtMassCostheta"), v0.mLambda(), protonCosThetainV0);
+
+        registryLongitudinalPolarization.fill(HIST("TH2FLambdaPtCostheta"), protonCosThetainV0, v0.pt());
+        registryLongitudinalPolarization.fill(HIST("hprotonThetaInLab"), TMath::ACos(protonCosThetainLab));
+        registryLongitudinalPolarization.fill(HIST("hprotonPhiInLab"), TMath::ASin(protonSinPhiInLab));
+        registryLongitudinalPolarization.fill(HIST("hprotonPhiInV0"), TMath::ASin(protonSinPhiInV0));
+
+        registryLongitudinalPolarization.fill(HIST("hprotonTheta"), TMath::ACos(protonCosThetainV0));
       }
       if (AcceptV0AntiLambda(v0, pos, neg, collision) && ifpasslambda) {
         registryLongitudinalPolarization.fill(HIST("hMassAntiLambdasel"), v0.mAntiLambda());
@@ -1606,6 +1948,7 @@ struct LfMyV0s {
         LambdaBoostedVec = boost(LambdaVec);
 
         double protonCosThetainV0 = ProtonBoostedVec.Pz() / ProtonBoostedVec.P();
+        double protonCosThetainLab = ProtonVec.Pz() / ProtonVec.P();
 
         registryLongitudinalPolarization.fill(HIST("hantiprotoncosthetainV0"), protonCosThetainV0);
         registryLongitudinalPolarization.fill(HIST("hantiprotoncosSquarethetainV0"), protonCosThetainV0 * protonCosThetainV0);
@@ -1614,6 +1957,9 @@ struct LfMyV0s {
         registryLongitudinalPolarization.fill(HIST("TProfile2DAntiLambdaPtMassCostheta"), v0.mAntiLambda(), v0.pt(), protonCosThetainV0);
         registryLongitudinalPolarization.fill(HIST("TProfile2DAntiLambdaPtMassCosSquareTheta"), v0.mAntiLambda(), v0.pt(), protonCosThetainV0 * protonCosThetainV0);
         registryLongitudinalPolarization.fill(HIST("TProfile1DAntiLambdaPtMassCostheta"), v0.mAntiLambda(), protonCosThetainV0);
+        registryLongitudinalPolarization.fill(HIST("TH2FAntiLambdaPtCostheta"), protonCosThetainV0, v0.pt());
+        registryLongitudinalPolarization.fill(HIST("hAntiprotonThetaInLab"), TMath::ACos(protonCosThetainLab));
+        registryLongitudinalPolarization.fill(HIST("hAntiprotonTheta"), TMath::ACos(protonCosThetainV0));
       }
     }
     registryLongitudinalPolarization.fill(HIST("nV0sPerEvent"), V0NumbersPerEvent);
