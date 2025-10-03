@@ -1242,7 +1242,7 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
       for (auto const& storedEvent : pool.events) {
         const uint64_t collIdxHyp = storedEvent.collisionId;
         if (settingSaferME) {
-          if (collIdxHyp > collisions.size()) { 
+          if (collIdxHyp > collisions.size()) {
             mQaRegistry.fill(HIST("hSkipReasons"), 4);
             continue;
           }
@@ -1254,12 +1254,12 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
           mQaRegistry.fill(HIST("hSkipReasons"), 1);
           continue;
         }
-        
+
         auto firstHyp = hypdTablepreviousCollision.iteratorAt(0);
         int poolIndexHyp = where_pool(firstHyp.zPrimVtx(), firstHyp.centralityFT0C());
         if (poolIndexHyp != poolIndexPi) {
-         mQaRegistry.fill(HIST("hSkipReasons"), 2);
-         continue;
+          mQaRegistry.fill(HIST("hSkipReasons"), 2);
+          continue;
         }
         mQaRegistry.fill(HIST("hNHypsPerPrevColl"), collIdxHyp, hypdTablepreviousCollision.size());
 
@@ -1270,7 +1270,7 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
         pool.events.pop_front();
       }
       pool.events.push_back({collIdxPi});
-      }
+    }
     fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ true);
   }
     fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ true);
