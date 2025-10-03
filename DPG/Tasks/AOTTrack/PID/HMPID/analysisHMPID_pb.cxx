@@ -27,23 +27,25 @@
 #include "Framework/ASoA.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-//#include "ReconstructionDataFormats/MatchInfoHMP.h"
 
-#include "tableHMPID.h"
+#include "Common/DataModel/Multiplicity.h"
+#include "Common/DataModel/Centrality.h"
 
+#include "tableHMPIDPb.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
 
 #include <TTree.h>
+
+
+//CREATE AND FILL TABLE FOR PBPB COLLISIONS
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
 using namespace o2::constants::physics;
 
-
-struct pidHmpidAnalysis {
-
+struct pidHmpidAnalysisPb {
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   const AxisSpec axisEvtCounter{1, 0, +1, ""};
@@ -56,7 +58,8 @@ struct pidHmpidAnalysis {
   } ccdbConfig;
 
 
-  Produces<aod::HMPID_analysis> HMPID_analysis;
+
+  Produces<aod::HMPID_analysisPb> HMPID_analysisPb;
 
   // using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>;
 
@@ -65,6 +68,8 @@ struct pidHmpidAnalysis {
   using TrackCandidates = soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection,
                                     aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
                                     aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe>;
+
+  //using CentralityClass = o2::soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>;
 
 
   void init(o2::framework::InitContext&)
@@ -87,40 +92,49 @@ struct pidHmpidAnalysis {
     mCCDBRunNumber = bc.runNumber();
   }
 
-  void process(aod::Collision const& event,
-               const aod::HMPIDs& hmpids,
-               TrackCandidates const&,
-               aod::BCsWithTimestamps const&)
-  {
-    //counter for all events processed (move into tracks loop if good event counter is needed)
-    histos.fill(HIST("eventCounter"), 0.5);
 
-    initCCDB(event.bc_as<aod::BCsWithTimestamps>());
-    
-    //loop sulle tracce hmpid
-    for (const auto& t : hmpids) 
-    {
+
+  void process(soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFV0As>::iterator const& col, 
+                const aod::HMPIDs& hmpids, 
+                TrackCandidates const&,
+                aod::BCsWithTimestamps const&)
+  {
+    histos.fill(HIST("eventCounter"), 0.5); 
+
+    initCCDB(col.bc_as<aod::BCsWithTimestamps>());
+
+
+    for (const auto& t : hmpids) {
+
       //global tracks associated to hmpid tracks
       const auto& global_track = t.track_as<TrackCandidates>();
       if (!global_track.isGlobalTrack()) continue;
       if (!global_track.hasITS() || !global_track.hasTPC() || !global_track.hasTOF()) continue;
+
+
+      // Verifica se la collisione è accessibile
+      if (!global_track.has_collision()) {
+        continue;
+      }
 
       float hmpidPhotsCharge2[10];
 
       for (int i = 0; i < 10; i++) {
         hmpidPhotsCharge2[i] = t.hmpidPhotsCharge()[i];
       }
+      
+      float centrality = col.centFV0A();
 
       /////FILL TABLE
-      HMPID_analysis(t.hmpidSignal(), global_track.phi(), global_track.eta(), t.hmpidMom(),
+      HMPID_analysisPb(t.hmpidSignal(), global_track.phi(), global_track.eta(), t.hmpidMom(),
                      global_track.p(), t.hmpidXTrack(), t.hmpidYTrack(), t.hmpidXMip(),
                      t.hmpidYMip(), t.hmpidNPhotons(), t.hmpidQMip(), (t.hmpidClusSize() % 1000000) / 1000, t.hmpidClusSize() / 1000000,
                      hmpidPhotsCharge2, global_track.eta(), global_track.phi(), global_track.px(), global_track.py(), global_track.pz(),
                      global_track.itsNCls(), global_track.tpcNClsFound(), global_track.tpcNClsCrossedRows(),global_track.tpcChi2NCl(), global_track.itsChi2NCl(), 
                      global_track.dcaXY(), global_track.dcaZ(), global_track.tpcNSigmaPi(), global_track.tofNSigmaPi(), global_track.tpcNSigmaKa(), global_track.tofNSigmaKa(),
-                     global_track.tpcNSigmaPr(), global_track.tofNSigmaPr(), global_track.tpcNSigmaDe(), global_track.tofNSigmaDe());
-     } //end hmpid tracks loop
+                     global_track.tpcNSigmaPr(), global_track.tofNSigmaPr(), global_track.tpcNSigmaDe(), global_track.tofNSigmaDe(),centrality);
+    }
   }
 };
 
-WorkflowSpec defineDataProcessing(ConfigContext const& cfg) { return WorkflowSpec{adaptAnalysisTask<pidHmpidAnalysis>(cfg)}; }
+WorkflowSpec defineDataProcessing(ConfigContext const& cfg) { return WorkflowSpec{adaptAnalysisTask<pidHmpidAnalysisPb>(cfg)}; }
