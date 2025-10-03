@@ -15,6 +15,8 @@
 /// \since November 2021
 /// \last update: October 2025
 
+#include "PWGLF/Utils/inelGt.h"
+
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/TrackSelectionDefaults.h"
 #include "Common/DataModel/EventSelection.h"
@@ -30,7 +32,6 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
-#include "PWGLF/Utils/inelGt.h"
 #include "TDatabasePDG.h"
 #include <TF1.h>
 #include <TH1F.h>
