@@ -1295,7 +1295,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DileptonsMiniTreeRec> dileptonMiniTreeRec;
   Produces<aod::DileptonsInfo> dileptonInfoList;
   Produces<aod::JPsieeCandidates> PromptNonPromptSepTable;
-  Produces<aod::OniaMCTruth> ;
+  Produces<aod::OniaMCTruth>;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
