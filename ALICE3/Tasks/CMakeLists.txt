@@ -74,4 +74,7 @@ o2physics_add_dpl_workflow(alice3-tracking-performance
                     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
-
+o2physics_add_dpl_workflow(alice3-pid-evaluation
+                    SOURCES alice3PidEvaluation.cxx
+                    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+                    COMPONENT_NAME Analysis)
