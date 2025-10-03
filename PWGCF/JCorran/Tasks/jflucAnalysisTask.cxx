@@ -70,6 +70,11 @@ struct jflucAnalysisTask {
   ConfigurableAxis ptAxis{"axisPt", {60, 0.0, 300.0}, "pt axis for histograms"};
   ConfigurableAxis massAxis{"axisMass", {1, 0.0, 10.0}, "mass axis for histograms"};
 
+  ConfigurableAxis vnCorrAxis{"vnCorrAxis", {2048, -0.1, 0.1}, "vn correlation axis"};
+  ConfigurableAxis fourCorrSCAxis{"4pCorrAxisSC", {2048, -0.001, 0.001}, "4-particle correlation axis for SC"};
+  ConfigurableAxis twoCorrSCAxis{"2pCorrAxisSC", {2048, -0.1, 0.1}, "2-particle correlation axis for SC"};
+  ConfigurableAxis mixedCorrAxis{"mixedCorrAxis", {2048, -3.0, 3.0}, "N-particle correlation axis"};
+
   Filter jtrackFilter = (aod::jtrack::pt > ptmin) && (aod::jtrack::pt < ptmax);                                                     // eta cuts done by jfluc
   Filter cftrackFilter = (aod::cftrack::pt > ptmin) && (aod::cftrack::pt < ptmax);                                                  // eta cuts done by jfluc
   Filter cfmcparticleFilter = (aod::cfmcparticle::pt > ptmin) && (aod::cfmcparticle::pt < ptmax) && (aod::cfmcparticle::sign != 0); // eta cuts done by jfluc
@@ -88,15 +93,19 @@ struct jflucAnalysisTask {
     auto axisSpecZvt = AxisSpec(zvtAxis);
     auto axisSpecPt = AxisSpec(ptAxis);
     auto axisSpecMass = AxisSpec(massAxis);
+    auto axisSpecVn = AxisSpec(vnCorrAxis);
+    auto axisSpec4pSC = AxisSpec(fourCorrSCAxis);
+    auto axisSpec2pSC = AxisSpec(twoCorrSCAxis);
+    auto axisSpecMixed = AxisSpec(mixedCorrAxis);
     if (doprocessJDerived || doprocessJDerivedCorrected || doprocessCFDerived || doprocessCFDerivedCorrected || doprocessCFDerivedMultSet || doprocessCFDerivedMultSetCorrected || doprocessMCCFDerived) {
-      pcf = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, cfgMultCorrelationsMask, "jfluc");
+      pcf = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, axisSpecVn, axisSpec4pSC, axisSpec2pSC, axisSpecMixed, cfgMultCorrelationsMask, "jfluc");
       pcf->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
       pcf->UserCreateOutputObjects();
     } else {
       pcf = 0;
     }
     if (doprocessCF2ProngDerived || doprocessCF2ProngDerivedCorrected) {
-      pcf2Prong = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, cfgMultCorrelationsMask, "jfluc2prong");
+      pcf2Prong = new JFFlucAnalysisO2Hist(registry, axisSpecMult, axisSpecPhi, axisSpecEta, axisSpecZvt, axisSpecPt, axisSpecMass, axisSpecVn, axisSpec4pSC, axisSpec2pSC, axisSpecMixed, cfgMultCorrelationsMask, "jfluc2prong");
       pcf2Prong->AddFlags(JFFlucAnalysis::kFlucEbEWeighting);
       pcf2Prong->UserCreateOutputObjects();
 
