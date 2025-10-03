@@ -1274,8 +1274,7 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
     fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ true);
   }
   fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ true);
-  }
-  PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyperPool, "Process Mixed event", false);
+} PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyperPool, "Process Mixed event", false);
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)
