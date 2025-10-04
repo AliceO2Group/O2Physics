@@ -1213,7 +1213,7 @@ struct PiNucleiFemto {
 }
 PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", false);*/
 
-  void processMixedEventHyperPool(const CollisionsFull& collisions, o2::aod::DataHypCandsWColl const& V0Hypers, const TrackCandidates& pitracks)
+   void processMixedEventHyperPool(const CollisionsFull& collisions, o2::aod::DataHypCandsWColl const& V0Hypers, const TrackCandidates& pitracks)
   {
     mTrackHypPairs.clear();
     if (!isInitialized) {
@@ -1273,8 +1273,7 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
     }
     fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ true);
   }
-  fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ true);
-} PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyperPool, "Process Mixed event", false);
+ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyperPool, "Process Mixed event", false);
 };
 
 WorkflowSpec defineDataProcessing(const ConfigContext& cfgc)
