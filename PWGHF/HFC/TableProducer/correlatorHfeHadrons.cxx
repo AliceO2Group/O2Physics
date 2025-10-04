@@ -47,11 +47,12 @@ using namespace o2::framework::expressions;
 using namespace o2::soa;
 using namespace o2::aod::hf_sel_electron;
 
-std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
-std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500.0, 5000.};
-std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MCGen multiplicity is defined by counting primaries
+const std::vector<double> zBins{VARIABLE_WIDTH, -10.0, -2.5, 2.5, 10.0};
+const std::vector<double> multBins{VARIABLE_WIDTH, 0., 200., 500.0, 5000.};
+const std::vector<double> multBinsMcGen{VARIABLE_WIDTH, 0., 20., 50.0, 500.}; // In MCGen multiplicity is defined by counting primaries
 using BinningType = ColumnBinningPolicy<aod::collision::PosZ, aod::mult::MultFT0M<aod::mult::MultFT0A, aod::mult::MultFT0C>>;
-BinningType corrBinning{{zBins, multBins}, true};
+const BinningType corrBinning{{zBins, multBins}, true};
+
 using BinningTypeMcGen = ColumnBinningPolicy<aod::mccollision::PosZ, o2::aod::mult::MultMCFT0A>;
 
 struct HfCorrelatorHfeHadrons {
@@ -112,11 +113,11 @@ struct HfCorrelatorHfeHadrons {
 
   void init(InitContext&)
   {
-    AxisSpec axisPosZ = {binsPosZ, "Pos Z"};
+    AxisSpec const axisPosZ = {binsPosZ, "Pos Z"};
     AxisSpec axisDeltaEta = {binsDeltaEta, "#Delta #eta = #eta_{Electron}- #eta_{Hadron}"};
     AxisSpec axisDeltaPhi = {binsDeltaPhi, "#Delta #varphi = #varphi_{Electron}- #varphi_{Hadron}"};
     AxisSpec axisPt = {binsPt, "#it{p_{T}}(GeV/#it{c})"};
-    AxisSpec axisPoolBin = {binsPoolBin, "PoolBin"};
+    AxisSpec const axisPoolBin = {binsPoolBin, "PoolBin"};
     AxisSpec axisNSigma = {binsNSigma, "it{#sigma_{TPC}}"};
 
     registry.add("hZvertex", "z vertex", {HistType::kTH1D, {axisPosZ}});
@@ -169,8 +170,9 @@ struct HfCorrelatorHfeHadrons {
   template <typename TracksType, typename ElectronType, typename CollisionType, typename BcType>
   void fillCorrelation(CollisionType const& collision, ElectronType const& electron, TracksType const& tracks, BcType const&)
   {
-    if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
+    if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) {
       return;
+    }
     int poolBin = corrBinning.getBin(std::make_tuple(collision.posZ(), collision.multFT0M()));
     auto bc = collision.template bc_as<aod::BCsWithTimestamps>();
     int gCollisionId = collision.globalIndex();
@@ -303,8 +305,9 @@ struct HfCorrelatorHfeHadrons {
   template <typename TracksType, typename ElectronType, typename CollisionType1, typename CollisionType2>
   void fillMixCorrelation(CollisionType1 const&, CollisionType2 const& c2, ElectronType const& tracks1, TracksType const& tracks2)
   {
-    if (!(isRun3 ? c2.sel8() : (c2.sel7() && c2.alias_bit(kINT7))))
+    if (!(isRun3 ? c2.sel8() : (c2.sel7() && c2.alias_bit(kINT7)))) {
       return;
+    }
     double ptElectronMix = -999;
     double phiElectronMix = -999;
     double etaElectronMix = -999;
@@ -382,7 +385,7 @@ struct HfCorrelatorHfeHadrons {
   void processMcGen(McGenTableCollision const& mcCollision, aod::McParticles const& mcParticles, aod::HfMcGenSelEl const& electron)
   {
 
-    BinningTypeMcGen corrBinningMcGen{{zBins, multBinsMcGen}, true};
+    BinningTypeMcGen const corrBinningMcGen{{zBins, multBinsMcGen}, true};
     int poolBin = corrBinningMcGen.getBin(std::make_tuple(mcCollision.posZ(), mcCollision.multMCFT0A()));
 
     for (const auto& particleMc : mcParticles) {
@@ -459,7 +462,7 @@ struct HfCorrelatorHfeHadrons {
   void processDataMixedEvent(TableCollisions const& collision, aod::HfCorrSelEl const& electron, TableTracks const& tracks)
   {
     auto tracksTuple = std::make_tuple(electron, tracks);
-    Pair<TableCollisions, aod::HfCorrSelEl, TableTracks, BinningType> pair{corrBinning, numberEventsMixed, -1, collision, tracksTuple, &cache};
+    Pair<TableCollisions, aod::HfCorrSelEl, TableTracks, BinningType> const pair{corrBinning, numberEventsMixed, -1, collision, tracksTuple, &cache};
 
     // loop over the rows of the new table
     for (const auto& [c1, tracks1, c2, tracks2] : pair) {
@@ -474,7 +477,7 @@ struct HfCorrelatorHfeHadrons {
   void processMcRecMixedEvent(McTableCollisions const& mccollision, aod::HfCorrSelEl const& electron, McTableTracks const& mcTracks)
   {
     auto tracksTuple = std::make_tuple(electron, mcTracks);
-    Pair<McTableCollisions, aod::HfCorrSelEl, McTableTracks, BinningType> pairMcRec{corrBinning, numberEventsMixed, -1, mccollision, tracksTuple, &cache};
+    Pair<McTableCollisions, aod::HfCorrSelEl, McTableTracks, BinningType> const pairMcRec{corrBinning, numberEventsMixed, -1, mccollision, tracksTuple, &cache};
 
     // loop over the rows of the new table
     for (const auto& [c1, tracks1, c2, tracks2] : pairMcRec) {
@@ -486,10 +489,10 @@ struct HfCorrelatorHfeHadrons {
   void processMcGenMixedEvent(McGenTableCollisions const& mcCollision, aod::HfMcGenSelEl const& electrons, aod::McParticles const& mcParticles)
   {
 
-    BinningTypeMcGen corrBinningMcGen{{zBins, multBinsMcGen}, true};
+    BinningTypeMcGen const corrBinningMcGen{{zBins, multBinsMcGen}, true};
 
     auto tracksTuple = std::make_tuple(electrons, mcParticles);
-    Pair<McGenTableCollisions, aod::HfMcGenSelEl, aod::McParticles, BinningTypeMcGen> pairMcGen{corrBinningMcGen, 5, -1, mcCollision, tracksTuple, &cache};
+    Pair<McGenTableCollisions, aod::HfMcGenSelEl, aod::McParticles, BinningTypeMcGen> const pairMcGen{corrBinningMcGen, 5, -1, mcCollision, tracksTuple, &cache};
 
     // loop over the rows of the new table
     double ptElectronMix = -999;

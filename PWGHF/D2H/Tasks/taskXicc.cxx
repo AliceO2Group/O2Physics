@@ -43,7 +43,7 @@ using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Fill MC histograms."}};
+  ConfigParamSpec const optionDoMC{"doMC", VariantType::Bool, true, {"Fill MC histograms."}};
   workflowOptions.push_back(optionDoMC);
 }
 
@@ -87,7 +87,7 @@ struct HfTaskXicc {
   void process(soa::Filtered<soa::Join<aod::HfCandXicc, aod::HfSelXiccToPKPiPi>> const& candidates)
   {
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi)) {
+      if ((candidate.hfflag() & 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi) == 0) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yXicc(candidate)) > yCandMax) {
@@ -195,7 +195,7 @@ struct HfTaskXiccMc {
   {
     // MC rec.
     for (const auto& candidate : candidates) {
-      if (!(candidate.hfflag() & 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi)) {
+      if ((candidate.hfflag() & 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi) == 0) {
         continue;
       }
       if (yCandMax >= 0. && std::abs(hfHelper.yXicc(candidate)) > yCandMax) {

@@ -30,6 +30,8 @@
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
+#include <Rtypes.h>
+
 #include <array>
 #include <cstdint>
 #include <cstdlib>
@@ -221,7 +223,7 @@ struct HfTaskCharmResoToDV0Reduced {
   /// \param coll is a reduced collision
   /// \param bach0 is a bachelor of the candidate
   /// \param bach1 is a bachelor of the candidate
-  template <bool doMc, bool withMl, DecayChannel channel, typename Cand, typename Coll, typename CharmBach, typename V0Bach>
+  template <bool DoMc, bool WithMl, DecayChannel Channel, typename Cand, typename Coll, typename CharmBach, typename V0Bach>
   void fillCand(const Cand& candidate, const Coll& collision, const CharmBach& bach0, const V0Bach& bach1)
   {
     // Base
@@ -229,22 +231,22 @@ struct HfTaskCharmResoToDV0Reduced {
     int8_t sign{0};
     int itsNClsSoftPi{0}, tpcNClsCrossedRowsSoftPi{0};
     float tpcChi2NClSoftPi{0.};
-    if constexpr (channel == DecayChannel::DstarK0s) {
+    if constexpr (Channel == DecayChannel::DstarK0s) {
       sign = bach0.sign();
       massReso = useDeltaMass ? candidate.invMass() + MassDStar : candidate.invMass();
       cosThetaStar = RecoDecay::cosThetaStar(std::array{bach0.pVector(), bach1.pVector()}, std::array{MassDStar, MassK0}, massReso, 0);
       itsNClsSoftPi = bach0.itsNClsSoftPi();
       tpcNClsCrossedRowsSoftPi = bach0.tpcNClsCrossedRowsSoftPi();
       tpcChi2NClSoftPi = bach0.tpcChi2NClSoftPi();
-    } else if constexpr (channel == DecayChannel::DplusK0s) {
+    } else if constexpr (Channel == DecayChannel::DplusK0s) {
       sign = bach0.sign();
       massReso = useDeltaMass ? candidate.invMass() + MassDPlus : candidate.invMass();
       cosThetaStar = RecoDecay::cosThetaStar(std::array{bach0.pVector(), bach1.pVector()}, std::array{MassDPlus, MassK0}, massReso, 0);
-    } else if constexpr (channel == DecayChannel::DplusLambda) {
+    } else if constexpr (Channel == DecayChannel::DplusLambda) {
       sign = bach0.sign();
       massReso = useDeltaMass ? candidate.invMass() + MassDPlus : candidate.invMass();
       cosThetaStar = RecoDecay::cosThetaStar(std::array{bach0.pVector(), bach1.pVector()}, std::array{MassDPlus, MassLambda0}, massReso, 0);
-    } else if constexpr (channel == DecayChannel::D0Lambda) {
+    } else if constexpr (Channel == DecayChannel::D0Lambda) {
       massReso = useDeltaMass ? candidate.invMass() + MassD0 : candidate.invMass();
       cosThetaStar = RecoDecay::cosThetaStar(std::array{bach0.pVector(), bach1.pVector()}, std::array{MassD0, MassLambda0}, massReso, 0);
     }
@@ -258,7 +260,7 @@ struct HfTaskCharmResoToDV0Reduced {
     float ptGen{-1.}, invMassGen{-1};
     int8_t origin{0}, flagMcMatchRec{0}, flagCharmBach{0}, flagCharmBachInterm{0};
     int debugMcRec{-1};
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       ptGen = candidate.ptGen();
       origin = candidate.origin();
       flagMcMatchRec = candidate.flagMcMatchRec();
@@ -267,17 +269,20 @@ struct HfTaskCharmResoToDV0Reduced {
       flagCharmBach = candidate.flagMcMatchRecD();
       flagCharmBachInterm = candidate.flagMcMatchChanD();
       if (fillOnlySignal) {
-        if (channel == DecayChannel::DstarK0s &&
+        if (Channel == DecayChannel::DstarK0s &&
             !hf_decay::hf_cand_reso::particlesToDstarK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
           return;
-        } else if (channel == DecayChannel::DplusK0s &&
-                   !hf_decay::hf_cand_reso::particlesToDplusK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
+        }
+        if (Channel == DecayChannel::DplusK0s &&
+            !hf_decay::hf_cand_reso::particlesToDplusK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
           return;
-        } else if (channel == DecayChannel::DplusLambda &&
-                   !hf_decay::hf_cand_reso::particlesToDplusLambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
+        }
+        if (Channel == DecayChannel::DplusLambda &&
+            !hf_decay::hf_cand_reso::particlesToDplusLambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
           return;
-        } else if (channel == DecayChannel::D0Lambda &&
-                   !hf_decay::hf_cand_reso::particlesToD0Lambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
+        }
+        if (Channel == DecayChannel::D0Lambda &&
+            !hf_decay::hf_cand_reso::particlesToD0Lambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flagMcMatchRec)))) {
           return;
         }
       }
@@ -290,8 +295,8 @@ struct HfTaskCharmResoToDV0Reduced {
 
     // Ml
     float mlScoreBkg{-1.}, mlScorePrompt{-1.}, mlScoreNonPrompt{-1.};
-    if constexpr (withMl) {
-      if constexpr (channel == DecayChannel::D0Lambda) {
+    if constexpr (WithMl) {
+      if constexpr (Channel == DecayChannel::D0Lambda) {
         if (TESTBIT(bach1.v0Type(), BachelorType::Lambda) && !doWrongSign) {
           mlScoreBkg = bach0.mlScoreBkgMassHypo0();
           mlScorePrompt = bach0.mlScorePromptMassHypo0();
@@ -377,7 +382,7 @@ struct HfTaskCharmResoToDV0Reduced {
   /// \param CharmBach is the reduced 3 prong table
   /// \param V0Bach is the reduced v0 table
   /// \param Cand is the candidates table
-  template <bool doMc, bool withMl, DecayChannel channel, typename Coll, typename Candidates, typename CharmBach>
+  template <bool DoMc, bool WithMl, DecayChannel Channel, typename Coll, typename Candidates, typename CharmBach>
   void processData(Coll const&, Candidates const& candidates, CharmBach const&, aod::HfRedVzeros const&)
   {
     for (const auto& cand : candidates) {
@@ -390,13 +395,14 @@ struct HfTaskCharmResoToDV0Reduced {
       }
       if (doWrongSign && cand.isWrongSign() == 0) {
         continue;
-      } else if (!doWrongSign && cand.isWrongSign() != 0) {
+      }
+      if (!doWrongSign && cand.isWrongSign() != 0) {
         continue;
       }
 
       float massReso{0};
       if (useDeltaMass) {
-        switch (channel) {
+        switch (Channel) {
           case DecayChannel::DstarK0s:
             massReso = cand.invMass() + MassDStar;
             break;
@@ -421,7 +427,7 @@ struct HfTaskCharmResoToDV0Reduced {
       auto coll = cand.template hfRedCollision_as<Coll>();
       auto bach0 = cand.template prong0_as<CharmBach>();
       auto bach1 = cand.template prong1_as<aod::HfRedVzeros>();
-      fillCand<doMc, withMl, channel>(cand, coll, bach0, bach1);
+      fillCand<DoMc, WithMl, Channel>(cand, coll, bach0, bach1);
     }
   }
 
@@ -436,7 +442,7 @@ struct HfTaskCharmResoToDV0Reduced {
   }
 
   /// Fill particle histograms (gen MC truth)
-  template <DecayChannel channel>
+  template <DecayChannel Channel>
   void fillCandMcGen(aod::HfMcGenRedResos const& mcParticles)
   {
     for (const auto& particle : mcParticles) {
@@ -446,18 +452,21 @@ struct HfTaskCharmResoToDV0Reduced {
       auto flag = particle.flagMcMatchGen();
       std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
       std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
-      bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
-      if (channel == DecayChannel::DstarK0s &&
+      bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
+      if (Channel == DecayChannel::DstarK0s &&
           !hf_decay::hf_cand_reso::particlesToDstarK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
         continue;
-      } else if (channel == DecayChannel::DplusK0s &&
-                 !hf_decay::hf_cand_reso::particlesToDplusK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
+      }
+      if (Channel == DecayChannel::DplusK0s &&
+          !hf_decay::hf_cand_reso::particlesToDplusK0s.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
         continue;
-      } else if (channel == DecayChannel::DplusLambda &&
-                 !hf_decay::hf_cand_reso::particlesToDplusLambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
+      }
+      if (Channel == DecayChannel::DplusLambda &&
+          !hf_decay::hf_cand_reso::particlesToDplusLambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
         continue;
-      } else if (channel == DecayChannel::D0Lambda &&
-                 !hf_decay::hf_cand_reso::particlesToD0Lambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
+      }
+      if (Channel == DecayChannel::D0Lambda &&
+          !hf_decay::hf_cand_reso::particlesToD0Lambda.contains(static_cast<hf_decay::hf_cand_reso::DecayChannelMain>(std::abs(flag)))) {
         continue;
       }
       registry.fill(HIST("hYGenAll"), ptParticle, yParticle);

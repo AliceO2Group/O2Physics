@@ -290,9 +290,9 @@ class HfHelper
   auto cosPiKPhiRestFrame(const T& candidate, int option)
   {
     // Ported from AliAODRecoDecayHF3Prong::CosPiKPhiRFrame
-    std::array<float, 3> momPi;
-    std::array<float, 3> momK1;
-    std::array<float, 3> momK2;
+    std::array<float, 3> momPi{};
+    std::array<float, 3> momK1{};
+    std::array<float, 3> momK2{};
 
     if (option == 0) { // KKPi
       momPi = candidate.pVectorProng2();
@@ -304,12 +304,12 @@ class HfHelper
       momK2 = candidate.pVectorProng2();
     }
 
-    ROOT::Math::PxPyPzMVector vecPi(momPi[0], momPi[1], momPi[2], o2::constants::physics::MassPiPlus);
-    ROOT::Math::PxPyPzMVector vecK1(momK1[0], momK1[1], momK1[2], o2::constants::physics::MassKPlus);
-    ROOT::Math::PxPyPzMVector vecK2(momK2[0], momK2[1], momK2[2], o2::constants::physics::MassKPlus);
-    ROOT::Math::PxPyPzMVector vecPhi = vecK1 + vecK2;
+    ROOT::Math::PxPyPzMVector const vecPi(momPi[0], momPi[1], momPi[2], o2::constants::physics::MassPiPlus);
+    ROOT::Math::PxPyPzMVector const vecK1(momK1[0], momK1[1], momK1[2], o2::constants::physics::MassKPlus);
+    ROOT::Math::PxPyPzMVector const vecK2(momK2[0], momK2[1], momK2[2], o2::constants::physics::MassKPlus);
+    ROOT::Math::PxPyPzMVector const vecPhi = vecK1 + vecK2;
 
-    ROOT::Math::Boost boostToPhiRestFrame(vecPhi.BoostToCM());
+    ROOT::Math::Boost const boostToPhiRestFrame(vecPhi.BoostToCM());
     auto momPiPhiRestFrame = boostToPhiRestFrame(vecPi).Vect();
     auto momK1PhiRestFrame = boostToPhiRestFrame(vecK1).Vect();
 
@@ -522,8 +522,8 @@ class HfHelper
       phiPi = RecoDecay::phi(candidate.pxProng2(), candidate.pyProng2());
     }
 
-    double deltaEta = etaJpsi - etaPi;
-    double deltaPhi = RecoDecay::constrainAngle(phiJpsi - phiPi, -o2::constants::math::PI);
+    double const deltaEta = etaJpsi - etaPi;
+    double const deltaPhi = RecoDecay::constrainAngle(phiJpsi - phiPi, -o2::constants::math::PI);
 
     return RecoDecay::sqrtSumOfSquares(deltaEta, deltaPhi);
   }

@@ -207,10 +207,10 @@ struct HfTreeCreatorLbToLcPi {
     // Filling candidate properties
     rowCandidateFull.reserve(candidates.size());
     for (const auto& candidate : candidates) {
-      auto fillTable = [&](int FunctionSelection,
-                           float FunctionInvMass,
-                           float FunctionCt,
-                           float FunctionY) {
+      auto fillTable = [&](int functionSelection,
+                           float functionInvMass,
+                           float functionCt,
+                           float functionY) {
         auto candLc = candidate.prong0_as<soa::Join<aod::HfCand3ProngWPidPiKaPr, aod::HfSelLc>>();
         auto track0 = candidate.prong1_as<TracksWPid>(); // daughter pion track
         auto track1 = candLc.prong0_as<TracksWPid>();    // granddaughter tracks (lc decay particles)
@@ -290,16 +290,16 @@ struct HfTreeCreatorLbToLcPi {
           track2.px(), track2.py(), track2.pz(),
           track3.px(), track3.py(), track3.pz(),
           track1.sign(), track2.sign(), track3.sign(),
-          FunctionSelection,
-          FunctionInvMass,
+          functionSelection,
+          functionInvMass,
           candidate.pt(),
           candidate.p(),
           candidate.cpa(),
           candidate.cpaXY(),
-          FunctionCt,
+          functionCt,
           candidate.eta(),
           candidate.phi(),
-          FunctionY,
+          functionY,
           tempConst,
           tempConst);
       };

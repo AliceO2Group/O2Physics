@@ -16,48 +16,58 @@
 /// \author Maja Kabus <maja.kabus@cern.ch>, CERN
 
 #include "PWGCF/Core/CorrelationContainer.h"
-#include "PWGCF/Core/PairCuts.h"
 #include "PWGHF/Core/HfHelper.h"
 #include "PWGHF/DataModel/CandidateReconstructionTables.h"
 #include "PWGHF/DataModel/CandidateSelectionTables.h"
 #include "PWGHF/Utils/utilsPid.h"
-#include "PWGMM/Mult/DataModel/Index.h"
 #include "PWGMM/Mult/DataModel/bestCollisionTable.h"
 
-#include "Common/Core/trackUtilities.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/FT0Corrected.h"
+#include "Common/DataModel/McCollisionExtra.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CcdbApi.h"
-#include "CommonConstants/MathConstants.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsCommonDataFormats/AlignParam.h"
-#include "FT0Base/Geometry.h"
-#include "FV0Base/Geometry.h"
-#include "Framework/ASoAHelpers.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/Logger.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "Framework/RunningWorkflowInfo.h"
-#include "Framework/StepTHn.h"
-#include "Framework/runDataProcessing.h"
-#include "ReconstructionDataFormats/GlobalTrackID.h"
+#include <CCDB/BasicCCDBManager.h>
+#include <CCDB/CcdbApi.h>
+#include <CommonConstants/MathConstants.h>
+#include <CommonConstants/PhysicsConstants.h>
+#include <DetectorsCommonDataFormats/AlignParam.h>
+#include <FT0Base/Geometry.h>
+#include <FV0Base/Geometry.h>
+#include <Framework/ASoAHelpers.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/BinningPolicy.h>
+#include <Framework/Configurable.h>
+#include <Framework/DataTypes.h>
+#include <Framework/GroupedCombinations.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/Logger.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/StepTHn.h>
+#include <Framework/runDataProcessing.h>
+#include <MathUtils/Utils.h>
 
-#include <TComplex.h>
-#include <TDirectory.h>
-#include <TH1F.h>
 #include <THn.h>
-#include <TMath.h>
+#include <TPDGCode.h>
+#include <TParticlePDG.h>
+#include <TString.h>
 
+#include <sys/types.h>
+
+#include <algorithm>
 #include <chrono>
+#include <cmath>
+#include <cstdint>
 #include <cstdio>
+#include <cstdlib>
 #include <string>
+#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -214,11 +224,11 @@ struct HfTaskFlow {
   SliceCache cache;
   Service<o2::framework::O2DatabasePDG> pdg;
   Service<o2::ccdb::BasicCCDBManager> ccdb;
-  std::vector<o2::detectors::AlignParam>* offsetFT0;
-  std::vector<o2::detectors::AlignParam>* offsetFV0;
+  std::vector<o2::detectors::AlignParam>* offsetFT0{};
+  std::vector<o2::detectors::AlignParam>* offsetFV0{};
   o2::ccdb::CcdbApi ccdbApi;
   o2::ft0::Geometry ft0Det;
-  o2::fv0::Geometry* fv0Det;
+  o2::fv0::Geometry* fv0Det{};
   std::vector<int> hfIndexCache;
 
   // =========================
@@ -354,17 +364,17 @@ struct HfTaskFlow {
   OutputObj<CorrelationContainer> sameEventHfMc{"sameEventHfMc"};
   OutputObj<CorrelationContainer> mixedEventHfMc{"mixedEventHfMc"};
 
-  template <DataType dataType, CorrelationCase correlationCase, CorrelatedParticles correlatedParticles>
+  template <DataType DataType, CorrelationCase CorrelationCase, CorrelatedParticles CorrelatedParticles>
   void addHistograms()
   {
-    registry.add(Form("%s%s%shEtaTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisEtaTrigger}});
-    registry.add(Form("%s%s%shPhiTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisPhi}});
-    registry.add(Form("%s%s%shPtTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisPt}});
-    registry.add(Form("%s%s%shYieldsTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaTrigger}});
-    registry.add(Form("%s%s%shEtaPhiTrigger", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisEtaTrigger, axisPhi}});
-    registry.add(Form("%s%s%shEtaAssociated", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisEtaAssociated}});
-    registry.add(Form("%s%s%shPhiAssociated", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH1D, {axisPhi}});
-    registry.add(Form("%s%s%shEtaPhiAssociated", WhatDataType[dataType].data(), WhatCorrelationCase[correlationCase].data(), WhatParticles[correlatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisEtaAssociated, axisPhi}});
+    registry.add(Form("%s%s%shEtaTrigger", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH1D, {axisEtaTrigger}});
+    registry.add(Form("%s%s%shPhiTrigger", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH1D, {axisPhi}});
+    registry.add(Form("%s%s%shPtTrigger", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH1D, {axisPt}});
+    registry.add(Form("%s%s%shYieldsTrigger", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisPt, axisEtaTrigger}});
+    registry.add(Form("%s%s%shEtaPhiTrigger", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisEtaTrigger, axisPhi}});
+    registry.add(Form("%s%s%shEtaAssociated", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH1D, {axisEtaAssociated}});
+    registry.add(Form("%s%s%shPhiAssociated", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH1D, {axisPhi}});
+    registry.add(Form("%s%s%shEtaPhiAssociated", WhatDataType[DataType].data(), WhatCorrelationCase[CorrelationCase].data(), WhatParticles[CorrelatedParticles].data()), "", {HistType::kTH3F, {axisMultiplicity, axisEtaAssociated, axisPhi}});
   }
 
   //  =========================
@@ -443,16 +453,16 @@ struct HfTaskFlow {
     //      Declaration of correlation containers and their respective axis
     //  =========================
 
-    std::vector<AxisSpec> corrAxis = {{axisDeltaEta, "#Delta#eta"},
-                                      {axisPtAssoc, "p_{T} (GeV/c)"},
-                                      {axisPtTrigger, "p_{T} (GeV/c)"},
-                                      {axisMultiplicity, "multiplicity"},
-                                      {axisDeltaPhi, "#Delta#varphi (rad)"},
-                                      {axisVertex, "z-vtx (cm)"}};
-    std::vector<AxisSpec> effAxis = {{axisEtaEfficiency, "#eta"},
-                                     {axisPtEfficiency, "p_{T} (GeV/c)"},
-                                     {axisVertexEfficiency, "z-vtx (cm)"}};
-    std::vector<AxisSpec> userAxis = {{axisMass, "m_{inv} (GeV/c^{2})"}};
+    std::vector<AxisSpec> const corrAxis = {{axisDeltaEta, "#Delta#eta"},
+                                            {axisPtAssoc, "p_{T} (GeV/c)"},
+                                            {axisPtTrigger, "p_{T} (GeV/c)"},
+                                            {axisMultiplicity, "multiplicity"},
+                                            {axisDeltaPhi, "#Delta#varphi (rad)"},
+                                            {axisVertex, "z-vtx (cm)"}};
+    std::vector<AxisSpec> const effAxis = {{axisEtaEfficiency, "#eta"},
+                                           {axisPtEfficiency, "p_{T} (GeV/c)"},
+                                           {axisVertexEfficiency, "z-vtx (cm)"}};
+    std::vector<AxisSpec> const userAxis = {{axisMass, "m_{inv} (GeV/c^{2})"}};
 
     fv0Det = o2::fv0::Geometry::instance(o2::fv0::Geometry::eUninitialized);
 
@@ -623,22 +633,22 @@ struct HfTaskFlow {
   //      Quality assessment functions
   // =========================
 
-  template <DataType dataType, CorrelationCase correlationCase, CorrelatedParticles correlatedParticles>
+  template <DataType DataType, CorrelationCase CorrelationCase, CorrelatedParticles CorrelatedParticles>
   void fillTriggerQa(float multiplicity, float const& eta, float const& phi, float const& pt)
   {
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hPtTrigger"), pt);
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hEtaTrigger"), eta);
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hPhiTrigger"), phi);
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hYieldsTrigger"), multiplicity, pt, eta);
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hEtaPhiTrigger"), multiplicity, eta, phi);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hPtTrigger"), pt);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaTrigger"), eta);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hPhiTrigger"), phi);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hYieldsTrigger"), multiplicity, pt, eta);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaPhiTrigger"), multiplicity, eta, phi);
   }
 
-  template <DataType dataType, CorrelationCase correlationCase, CorrelatedParticles correlatedParticles>
+  template <DataType DataType, CorrelationCase CorrelationCase, CorrelatedParticles CorrelatedParticles>
   void fillAssociatedQa(float multiplicity, float const& eta, float const& phi)
   {
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hEtaAssociated"), eta);
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hPhiAssociated"), phi);
-    registry.fill(HIST(WhatDataType[dataType]) + HIST(WhatCorrelationCase[correlationCase]) + HIST(WhatParticles[correlatedParticles]) + HIST("hEtaPhiAssociated"), multiplicity, eta, phi);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaAssociated"), eta);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hPhiAssociated"), phi);
+    registry.fill(HIST(WhatDataType[DataType]) + HIST(WhatCorrelationCase[CorrelationCase]) + HIST(WhatParticles[CorrelatedParticles]) + HIST("hEtaPhiAssociated"), multiplicity, eta, phi);
   }
 
   // =========================
@@ -695,10 +705,10 @@ struct HfTaskFlow {
     return RecoDecay::phi(chPos.X() + (*offsetFT0)[i].getX(), chPos.Y() + (*offsetFT0)[i].getY());
   }
 
-  double getPhiFV0(unsigned int chno)
+  double getPhiFV0(unsigned int chno) const
   {
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
-    bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
+    bool const isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
     float offsetX, offsetY;
     if (isChnoInLeft) {
       offsetX = (*offsetFV0)[0].getX();
@@ -708,7 +718,7 @@ struct HfTaskFlow {
       offsetY = (*offsetFV0)[1].getY();
     }
 
-    o2::fv0::Point3Dsimple chPos;
+    o2::fv0::Point3Dsimple chPos{};
     chPos = fv0Det->getReadoutCenter(chno);
 
     // if (configTask.isReadoutCenter)
@@ -731,10 +741,10 @@ struct HfTaskFlow {
     return -std::log(std::tan(0.5 * theta));
   }
 
-  double getEtaFV0(unsigned int chno)
+  double getEtaFV0(unsigned int chno) const
   {
     int cellsInLeft[] = {0, 1, 2, 3, 8, 9, 10, 11, 16, 17, 18, 19, 24, 25, 26, 27, 32, 40, 33, 41, 34, 42, 35, 43};
-    bool isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
+    bool const isChnoInLeft = std::find(std::begin(cellsInLeft), std::end(cellsInLeft), chno) != std::end(cellsInLeft);
     float offsetX, offsetY, offsetZ;
     if (isChnoInLeft) {
       offsetX = (*offsetFV0)[0].getX();
@@ -746,7 +756,7 @@ struct HfTaskFlow {
       offsetZ = (*offsetFV0)[1].getZ();
     }
 
-    o2::fv0::Point3Dsimple chPos;
+    o2::fv0::Point3Dsimple chPos{};
     chPos = fv0Det->getReadoutCenter(chno);
     // if (configTask.isReadoutCenter)
     //   chPos = fv0Det->getReadoutCenter(chno);
@@ -773,7 +783,7 @@ struct HfTaskFlow {
       registry.fill(HIST("Data/hEventCounter"), EventSelectionStep::AllEvents);
     }
 
-    if (configTask.processMc == false) {
+    if (!configTask.processMc) {
       if (!collision.sel8()) {
         return false;
       }
@@ -973,9 +983,9 @@ struct HfTaskFlow {
 
       loopCounter++;
 
-      float eta1 = track1.eta();
-      float pt1 = track1.pt();
-      float phi1 = track1.phi();
+      float const eta1 = track1.eta();
+      float const pt1 = track1.pt();
+      float const phi1 = track1.phi();
 
       //  TODO: add getter for NUE trigger efficiency here
 
@@ -1018,7 +1028,7 @@ struct HfTaskFlow {
 
       // FILL QA PLOTS for trigger particle
       if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
-        if (configTask.processMc == false) {                                // If DATA
+        if (!configTask.processMc) {                                        // If DATA
           if constexpr (!std::is_same_v<FilteredMftTracks, TTracksAssoc>) { // IF TPC-TPC case
             if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-TPC D0-h
               fillTriggerQa<Data, TpcTpc, D0ChPart>(multiplicity, eta1, phi1, pt1);
@@ -1090,8 +1100,8 @@ struct HfTaskFlow {
           }
         }
 
-        float eta2 = track2.eta();
-        float pt2 = track2.pt();
+        float const eta2 = track2.eta();
+        float const pt2 = track2.pt();
         float phi2 = track2.phi();
         o2::math_utils::bringTo02Pi(phi2);
 
@@ -1159,9 +1169,9 @@ struct HfTaskFlow {
 
       loopCounter++;
 
-      float eta1 = track1.eta();
-      float pt1 = track1.pt();
-      float phi1 = track1.phi();
+      float const eta1 = track1.eta();
+      float const pt1 = track1.pt();
+      float const phi1 = track1.phi();
 
       bool fillingHFcontainer = false;
       double invmass = 0;
@@ -1185,7 +1195,7 @@ struct HfTaskFlow {
       }
 
       // FILL QA PLOTS for trigger particle
-      if (sameEvent && (cutAmbiguousTracks == false)) {
+      if (sameEvent && (!cutAmbiguousTracks)) {
         if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) {
           fillTriggerQa<Data, TpcMft, D0ChPart>(multiplicity, eta1, phi1, pt1);
         } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) {
@@ -1243,8 +1253,8 @@ struct HfTaskFlow {
           }
         }
 
-        float eta2 = reassociatedMftTrack.eta();
-        float pt2 = reassociatedMftTrack.pt();
+        float const eta2 = reassociatedMftTrack.eta();
+        float const pt2 = reassociatedMftTrack.pt();
         float phi2 = reassociatedMftTrack.phi();
         o2::math_utils::bringTo02Pi(phi2);
 
@@ -1265,7 +1275,7 @@ struct HfTaskFlow {
         }
 
         // FILL QA PLOTS for associated particle
-        if (sameEvent && (loopCounter == 1) && (cutAmbiguousTracks == false)) {
+        if (sameEvent && (loopCounter == 1) && (!cutAmbiguousTracks)) {
           if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) {
             fillAssociatedQa<Data, TpcMft, D0ChPart>(multiplicity, eta2, phi2);
           } else if constexpr (std::is_same_v<HfCandidatesSelLc, TTracksTrig>) {
@@ -1302,8 +1312,8 @@ struct HfTaskFlow {
 
       loopCounter++;
 
-      float eta1 = track1.eta();
-      float pt1 = track1.pt();
+      float const eta1 = track1.eta();
+      float const pt1 = track1.pt();
       float phi1 = track1.phi();
       if constexpr (std::is_same_v<FilteredMftTracks, TTracksTrig>) {
         o2::math_utils::bringTo02Pi(phi1);
@@ -1332,7 +1342,7 @@ struct HfTaskFlow {
 
       // FILL QA PLOTS for trigger particle
       if (sameEvent && (step == CorrelationContainer::kCFStepReconstructed)) {
-        if (configTask.processMc == false) {                                // If DATA
+        if (!configTask.processMc) {                                        // If DATA
           if constexpr (!std::is_same_v<FilteredMftTracks, TTracksTrig>) {  // If not FilteredMftTracks as trigger -> TPC-FV0a correlations
             if constexpr (std::is_same_v<HfCandidatesSelD0, TTracksTrig>) { // IF D0 CASE -> TPC-FV0a D0-h
               if constexpr (std::is_same_v<aod::FV0As, TFits>) {            // IF NEITHER D0 NOR LC ->
@@ -1478,8 +1488,8 @@ struct HfTaskFlow {
         }
       }
 
-      float eta1 = reassociatedMftTrack.eta();
-      float pt1 = reassociatedMftTrack.pt();
+      float const eta1 = reassociatedMftTrack.eta();
+      float const pt1 = reassociatedMftTrack.pt();
       float phi1 = reassociatedMftTrack.phi();
       o2::math_utils::bringTo02Pi(phi1);
 
@@ -1567,9 +1577,9 @@ struct HfTaskFlow {
     // The first one that I call "Data" should work for data and mc rec
     using BinningTypeData = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
 
-    BinningTypeData binningWithTracksSize{{getMultiplicity}, {binsMixingVertex, binsMixingMultiplicity}, true};
+    BinningTypeData const binningWithTracksSize{{getMultiplicity}, {binsMixingVertex, binsMixingMultiplicity}, true};
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<TCollisions, TTracksTrig, TTracksAssoc, BinningTypeData> pair{binningWithTracksSize, configTask.nMixedEvents, -1, collisions, tracksTuple, &cache};
+    Pair<TCollisions, TTracksTrig, TTracksAssoc, BinningTypeData> const pair{binningWithTracksSize, configTask.nMixedEvents, -1, collisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -1600,7 +1610,7 @@ struct HfTaskFlow {
     };
 
     using MixedBinning = FlexibleBinningPolicy<std::tuple<decltype(getMultiplicity)>, aod::collision::PosZ, decltype(getMultiplicity)>;
-    MixedBinning binningOnVtxAndMult{{getMultiplicity}, {binsMixingVertex, binsMixingMultiplicity}, true};
+    MixedBinning const binningOnVtxAndMult{{getMultiplicity}, {binsMixingVertex, binsMixingMultiplicity}, true};
 
     for (auto const& [collision1, collision2] : soa::selfCombinations(binningOnVtxAndMult, configTask.nMixedEvents, -1, collisions, collisions)) {
 
@@ -1686,9 +1696,9 @@ struct HfTaskFlow {
   {
     using BinningTypeMcTruth = FlexibleBinningPolicy<std::tuple<decltype(getPartsSize)>, aod::mccollision::PosZ, decltype(getPartsSize)>;
 
-    BinningTypeMcTruth binningWithTracksSize{{getPartsSize}, {binsMixingVertex, binsMixingMultiplicity}, true};
+    BinningTypeMcTruth const binningWithTracksSize{{getPartsSize}, {binsMixingVertex, binsMixingMultiplicity}, true};
     auto tracksTuple = std::make_tuple(tracks1, tracks2);
-    Pair<TMcCollisions, TTracksTrig, TTracksAssoc, BinningTypeMcTruth> pair{binningWithTracksSize, configTask.nMixedEvents, -1, mcCollisions, tracksTuple, &cache};
+    Pair<TMcCollisions, TTracksTrig, TTracksAssoc, BinningTypeMcTruth> const pair{binningWithTracksSize, configTask.nMixedEvents, -1, mcCollisions, tracksTuple, &cache};
 
     for (const auto& [collision1, tracks1, collision2, tracks2] : pair) {
 
@@ -1744,8 +1754,9 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (configTask.doReferenceFlow)
+    if (configTask.doReferenceFlow) {
       fillEventSelectionPlots = false;
+    }
 
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
       return;
@@ -1769,8 +1780,9 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (configTask.doReferenceFlow)
+    if (configTask.doReferenceFlow) {
       fillEventSelectionPlots = false;
+    }
 
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
       return;
@@ -1885,8 +1897,9 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (configTask.doReferenceFlow)
+    if (configTask.doReferenceFlow) {
       fillEventSelectionPlots = false;
+    }
 
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
       return;
@@ -1928,8 +1941,9 @@ struct HfTaskFlow {
     auto fillEventSelectionPlots = true;
 
     // When doing reference flow, two cases are used (HF-h, h-h) and thus eventSelectionPlots was filled twice
-    if (configTask.doReferenceFlow)
+    if (configTask.doReferenceFlow) {
       fillEventSelectionPlots = false;
+    }
 
     if (!(isAcceptedCollision(collision, fillEventSelectionPlots))) {
       return;
@@ -2259,7 +2273,7 @@ struct HfTaskFlow {
   {
     const auto multiplicity = mcCollision.multMCPVz();
 
-    BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
+    BinningPolicyBase<2> const baseBinning{{axisVertex, axisMultiplicity}, true};
 
     sameEventHfMc->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
     fillCorrelations(sameEventHfMc, CorrelationContainer::CFStep::kCFStepAll, mcParticles2Prong, mcParticles, multiplicity, mcCollision.posZ(), true);
@@ -2276,7 +2290,7 @@ struct HfTaskFlow {
   {
     const auto multiplicity = mcCollision.multMCPVz();
 
-    BinningPolicyBase<2> baseBinning{{axisVertex, axisMultiplicity}, true};
+    BinningPolicyBase<2> const baseBinning{{axisVertex, axisMultiplicity}, true};
 
     sameEventHfMc->fillEvent(multiplicity, CorrelationContainer::kCFStepAll);
     fillCorrelations(sameEventHfMc, CorrelationContainer::CFStep::kCFStepAll, mcParticles3Prong, mcParticles, multiplicity, mcCollision.posZ(), true);
