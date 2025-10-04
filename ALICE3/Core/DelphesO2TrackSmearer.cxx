@@ -105,7 +105,18 @@ bool TrackSmearer::loadTable(int pdg, const char* filename, bool forceReload)
     mLUTHeader[ipdg] = nullptr;
     return false;
   }
-  if (mLUTHeader[ipdg]->pdg != pdg) {
+  bool specialPdgCase = false;
+  switch (pdg) {                         // Handle special cases
+    case o2::constants::physics::kAlpha: // Special case: Allow Alpha particles to use He3 LUT
+      specialPdgCase = (mLUTHeader[ipdg]->pdg == o2::constants::physics::kHelium3);
+      if (specialPdgCase)
+        LOG(info)
+          << " --- Alpha particles (PDG " << pdg << ") will use He3 LUT data (PDG " << mLUTHeader[ipdg]->pdg << ")" << std::endl;
+      break;
+    default:
+      break;
+  }
+  if (mLUTHeader[ipdg]->pdg != pdg && !specialPdgCase) {
     LOG(info) << " --- LUT header PDG mismatch: expected/detected = " << pdg << "/" << mLUTHeader[ipdg]->pdg << std::endl;
     delete mLUTHeader[ipdg];
     mLUTHeader[ipdg] = nullptr;

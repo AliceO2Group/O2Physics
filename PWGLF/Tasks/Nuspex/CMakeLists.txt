@@ -120,7 +120,7 @@ o2physics_add_dpl_workflow(nuclei-ebye
     COMPONENT_NAME Analysis)
 
 o2physics_add_dpl_workflow(anti-nuclei-hist
-    SOURCES antinucleiTask.cxx
+    SOURCES antiNucleiTask.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
@@ -162,6 +162,11 @@ o2physics_add_dpl_workflow(dedx-pid-analysis
 
 o2physics_add_dpl_workflow(pikp-raa-analysis
     SOURCES piKpRAA.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(chargedparticle-raa
+    SOURCES chargedparticleRaa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 

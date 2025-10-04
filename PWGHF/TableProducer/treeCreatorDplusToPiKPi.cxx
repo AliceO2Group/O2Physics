@@ -371,8 +371,8 @@ struct HfTreeCreatorDplusToPiKPi {
         candidate.eta(),
         candidate.phi(),
         hfHelper.yDplus(candidate),
-        coll.numContrib(),
         cent,
+        coll.numContrib(),
         flagMc,
         originMc,
         channelMc);

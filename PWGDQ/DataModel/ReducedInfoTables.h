@@ -1124,6 +1124,14 @@ DECLARE_SOA_COLUMN(V0AddID, v0addid, int8_t); //!
 DECLARE_SOA_TABLE(V0MapID, "AOD", "V0MAPID", //!
                   v0mapID::V0AddID);
 
+namespace cascmapID
+{
+DECLARE_SOA_COLUMN(CascAddID, cascaddid, int8_t); //!
+} // namespace cascmapID
+
+DECLARE_SOA_TABLE(CascMapID, "AOD", "CASCMAPID", //!
+                  cascmapID::CascAddID);
+
 namespace DalBits
 {
 DECLARE_SOA_COLUMN(DALITZBits, dalitzBits, uint8_t); //!

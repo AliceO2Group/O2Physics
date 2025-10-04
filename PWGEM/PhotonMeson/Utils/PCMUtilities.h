@@ -16,7 +16,7 @@
 #define PWGEM_PHOTONMESON_UTILS_PCMUTILITIES_H_
 
 #include <TVector2.h>
-#include "DCAFitter/HelixHelper.h"
+#include "ReconstructionDataFormats/HelixHelper.h"
 #include "DetectorsBase/Propagator.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/Core/RecoDecay.h"

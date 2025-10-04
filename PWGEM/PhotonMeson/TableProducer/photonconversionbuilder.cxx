@@ -15,6 +15,7 @@
 //
 // \author Daiki Sekihata <daiki.sekihata@cern.ch>, Tokyo
 
+#include "PWGEM/Dilepton/Utils/PairUtilities.h"
 #include "PWGEM/PhotonMeson/DataModel/gammaTables.h"
 #include "PWGEM/PhotonMeson/Utils/PCMUtilities.h"
 #include "PWGEM/PhotonMeson/Utils/TrackSelection.h"
@@ -73,6 +74,7 @@ struct PhotonConversionBuilder {
   Produces<aod::V0Legs> v0legs;
   Produces<aod::V0LegsXYZ> v0legsXYZ;
   Produces<aod::V0LegsDeDxMC> v0legsDeDxMC;
+  Produces<aod::V0PhotonsPhiV> v0photonsphiv;
   // Produces<aod::V0PhotonsKFCov> v0photonskfcov;
   // Produces<aod::EMEventsNgPCM> events_ngpcm;
 
@@ -166,6 +168,7 @@ struct PhotonConversionBuilder {
       {"V0/hRxy_minX_ITSTPC_TPC", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
       {"V0/hRxy_minX_TPC_TPC", "min trackiu X vs. R_{xy};trackiu X (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{100, 0.0f, 100.f}, {100, -50.0, 50.0f}}}},
       {"V0/hPCA_diffX", "PCA vs. trackiu X - R_{xy};distance btween 2 legs (cm);min trackiu X - R_{xy} (cm)", {HistType::kTH2F, {{500, 0.0f, 5.f}, {100, -50.0, 50.0f}}}},
+      {"V0/hPhiV", "#phi_{V}; #phi_{V} (rad.)", {HistType::kTH1F, {{500, 0.0f, 2 * M_PI}}}},
       {"V0Leg/hPt", "pT of leg at SV;p_{T,e} (GeV/c)", {HistType::kTH1F, {{1000, 0.0f, 10.0f}}}},
       {"V0Leg/hEtaPhi", "#eta vs. #varphi of leg at SV;#varphi (rad.);#eta", {HistType::kTH2F, {{72, 0.0f, 2 * M_PI}, {200, -1, +1}}}},
       {"V0Leg/hRelDeltaPt", "pT resolution;p_{T} (GeV/c);#Deltap_{T}/p_{T}", {HistType::kTH2F, {{1000, 0.f, 10.f}, {100, 0, 1}}}},
@@ -631,6 +634,8 @@ struct PhotonConversionBuilder {
     pca_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = pca_kf;
     cospa_map[std::make_tuple(v0.globalIndex(), collision.globalIndex(), pos.globalIndex(), ele.globalIndex())] = cospa_kf;
 
+    float phiv = o2::aod::pwgem::dilepton::utils::pairutil::getPhivPair(pos.px(), pos.py(), pos.pz(), ele.px(), ele.py(), ele.pz(), pos.sign(), ele.sign(), d_bz);
+
     if (filltable) {
       registry.fill(HIST("V0/hAP"), alpha, qt);
       registry.fill(HIST("V0/hConversionPointXY"), gammaKF_DecayVtx.GetX(), gammaKF_DecayVtx.GetY());
@@ -644,6 +649,7 @@ struct PhotonConversionBuilder {
       registry.fill(HIST("V0/hPCA_Rxy"), rxy, pca_kf);
       registry.fill(HIST("V0/hDCAxyz"), dca_xy_v0_to_pv, dca_z_v0_to_pv);
       registry.fill(HIST("V0/hPCA_diffX"), pca_kf, std::min(pTrack.getX(), nTrack.getX()) - rxy); // trackiu.x() - rxy should be positive
+      registry.fill(HIST("V0/hPhiV"), phiv);
 
       float cospaXY_kf = cospaXY_KF(gammaKF_DecayVtx, KFPV);
       float cospaRZ_kf = cospaRZ_KF(gammaKF_DecayVtx, KFPV);
@@ -680,6 +686,7 @@ struct PhotonConversionBuilder {
                   v0_sv.M(), dca_xy_v0_to_pv, dca_z_v0_to_pv,
                   cospa_kf, cospaXY_kf, cospaRZ_kf,
                   pca_kf, alpha, qt, chi2kf);
+      v0photonsphiv(phiv);
 
       // v0photonskfcov(gammaKF_PV.GetCovariance(9), gammaKF_PV.GetCovariance(14), gammaKF_PV.GetCovariance(20), gammaKF_PV.GetCovariance(13), gammaKF_PV.GetCovariance(19), gammaKF_PV.GetCovariance(18));
 

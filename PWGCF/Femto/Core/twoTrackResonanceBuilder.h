@@ -127,36 +127,37 @@ struct ConfKstar0Bits : o2::framework::ConfigurableGroup {
 #undef TWOTRACKRESONANCE_KAONPID_BITS
 #undef TWOTRACKRESONANCE_PIONPID_BITS
 
-#define TWOTRACKRESONANCE_DEFAULT_SELECTION(defaultMassMin, defaultMassMax)                                                                                                            \
-  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                                                                                \
-  o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};                                                                                                                \
-  o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};                                                                                                           \
-  o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};                                                                                                            \
-  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                                                                             \
-  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                                                                                \
-  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Resonance"};                                                                       \
-  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Resonance"};                                                                       \
-  o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> posDauBitForThres{"posDauBitForThres", 32u, "Bit marking momentum threshold for positive daughter"}; \
-  o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> posDauMaskBelowThres{"posDauMaskBelowThres", 16u, "Bitmask for resonance selection"};                \
-  o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> posDauMaskAboveThres{"posDauMaskAboveThres", 8u, "Bitmask for resonance selection"};                 \
-  o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> negDauBitForThres{"negDauBitForThres", 4u, "Bit marking resonance selection for negative daughter"}; \
-  o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> negDauMaskBelowThres{"negDauMaskBelowThres", 2u, "Bitmask for resonance selection"};                 \
-  o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> negDauMaskAboveThres{"negDauMaskAboveThres", 1u, "Bitmask for resonance selection"};
+#define TWOTRACKRESONANCE_DEFAULT_SELECTION(defaultPdgCode, defaultMassMin, defaultMassMax)                                                                                              \
+  o2::framework::Configurable<int> pdgCode{"pdgCode", defaultPdgCode, "Resonance PDG code"};                                                                                             \
+  o2::framework::Configurable<float> ptMin{"ptMin", 0.f, "Minimum pT"};                                                                                                                  \
+  o2::framework::Configurable<float> ptMax{"ptMax", 6.f, "Maximum pT"};                                                                                                                  \
+  o2::framework::Configurable<float> etaMin{"etaMin", -0.9f, "Minimum eta"};                                                                                                             \
+  o2::framework::Configurable<float> etaMax{"etaMax", 0.9f, "Maximum eta"};                                                                                                              \
+  o2::framework::Configurable<float> phiMin{"phiMin", 0.f, "Minimum phi"};                                                                                                               \
+  o2::framework::Configurable<float> phiMax{"phiMax", 1.f * o2::constants::math::TwoPI, "Maximum phi"};                                                                                  \
+  o2::framework::Configurable<float> massMin{"massMin", defaultMassMin, "Minimum invariant mass for Resonance"};                                                                         \
+  o2::framework::Configurable<float> massMax{"massMax", defaultMassMax, "Maximum invariant mass for Resonance"};                                                                         \
+  o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> posDauBitForThres{"posDauBitForThres", 0x20u, "Bit marking momentum threshold for positive daughter"}; \
+  o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> posDauMaskBelowThres{"posDauMaskBelowThres", 0x10u, "Bitmask for positive daughter below threshold"};  \
+  o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> posDauMaskAboveThres{"posDauMaskAboveThres", 0x8u, "Bitmask for positive daughter above threshold"};   \
+  o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> negDauBitForThres{"negDauBitForThres", 0x4u, "Bit marking momentum threshold for negative daughter"};  \
+  o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> negDauMaskBelowThres{"negDauMaskBelowThres", 0x2u, "Bitmask for negative daughter below threshold"};   \
+  o2::framework::Configurable<o2::aod::femtodatatypes::TwoTrackResonanceMaskType> negDauMaskAboveThres{"negDauMaskAboveThres", 0x1u, "Bitmask for negative daughter above threshold"};
 
 struct ConfPhiSelection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("PhiSelection");
-  TWOTRACKRESONANCE_DEFAULT_SELECTION(0.95f, 1.05f)
+  TWOTRACKRESONANCE_DEFAULT_SELECTION(333, 0.95f, 1.05f)
 };
 
 struct ConfRho0Selection : o2::framework::ConfigurableGroup {
-  std::string prefix = std::string("RhoSelection");
-  TWOTRACKRESONANCE_DEFAULT_SELECTION(0.7f, 0.84f)
+  std::string prefix = std::string("Rho0Selection");
+  TWOTRACKRESONANCE_DEFAULT_SELECTION(113, 0.7f, 0.84f)
 };
 
 struct ConfKstar0Selection : o2::framework::ConfigurableGroup {
   std::string prefix = std::string("Kstar0Selection");
   o2::framework::Configurable<int> sign{"sign", 1, "Sign (+1 for Kstar0 and -1 for Kstar0Bar) "};
-  TWOTRACKRESONANCE_DEFAULT_SELECTION(0.8f, 1.0f)
+  TWOTRACKRESONANCE_DEFAULT_SELECTION(313, 0.8f, 1.0f)
 };
 
 #undef TWOTRACKRESONANCE_DEFAULT_SELECTION
@@ -506,6 +507,7 @@ class TwoTrackResonanceBuilder
     if (!mFillAnyTable) {
       return;
     }
+    // combinations object ?
     for (auto const& positiveTrack : groupPositiveTracks) {
       for (auto const& negativeTrack : groupNegativeTracks) {
         this->fillResonance(collisionProducts, trackProducts, resonanceProducts, positiveTrack, negativeTrack, trackBuilder, indexMap);

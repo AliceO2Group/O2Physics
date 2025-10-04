@@ -279,12 +279,12 @@ class BaseSelection
           line << std::setw(bitWidth) << "-> loosest minimal selection, no bit saved";
         } else {
           const uint64_t bitmask = uint64_t{1} << globalBitIndex++;
-          line << std::setw(bitWidth) << ("-> bitmask: " + std::to_string(bitmask));
+          std::stringstream hexStream;
+          hexStream << "-> bitmask: 0x" << std::uppercase << std::hex << bitmask;
+          line << std::setw(bitWidth) << hexStream.str();
         }
-
         LOG(info) << line.str();
       }
-
       LOG(info) << ""; // blank line between observables
     }
     LOG(info) << "Printing done";

@@ -92,9 +92,8 @@ struct SginclusivePhiKstarSD {
   Configurable<float> pt2{"pt2", 0.4, "pid selection pt2"};
   Configurable<float> pt3{"pt3", 0.5, "pid selection pt3"};
 
-  Configurable<float> etaGapMin{"etaGapMin", 0.0, "Track eta min"};
-  Configurable<float> etaGapMax{"etaGapMax", 0.9, "Track eta max"};
-  Configurable<float> etaDG{"etaDG", 0.5, "Track eta DG"};
+  Configurable<bool> rapiditycut{"rapiditycut", 1, "Rapidity Cut"};
+  Configurable<bool> rapiditycutvalue{"rapiditycutvalue", 1, "Rapidity Cut value"};
 
   Configurable<float> nsigmaTpcCut1{"nsigmaTpcCut1", 3.0, "nsigma tpc cut1"};
   Configurable<float> nsigmaTpcCut2{"nsigmaTpcCut2", 3.0, "nsigma tpc cut2"};
@@ -105,14 +104,13 @@ struct SginclusivePhiKstarSD {
   Configurable<float> pionNsigmaCut{"pionNsigmaCut", 3.0, "nsigma tpc cut for kaon"};
 
   Configurable<int> mintrack{"mintrack", 1, "min track"};
-  Configurable<int> maxtrack{"maxtrack", 50, "max track"};
+  Configurable<int> maxtrack{"maxtrack", 150, "max track"};
   Configurable<bool> useTof{"useTof", true, "TOF PID"};
   Configurable<bool> ccut{"ccut", true, "TPC + TOF PID"};
-  Configurable<bool> kaoncut{"kaoncut", true, " kaon slection cut for kstar "};
+  Configurable<bool> kaoncut{"kaoncut", false, " kaon slection cut for kstar "};
 
-  Configurable<bool> qa{"qa", true, "QA plots for Data (turn qaMC to 0)"};
+  Configurable<bool> qa{"qa", false, "QA plots for Data (turn qaMC to 0)"};
   Configurable<bool> qaMC{"qaMC", false, "QA plots for MC (turn qa for data to 0)"};
-  Configurable<bool> rapidityGap{"rapidityGap", true, ""};
   Configurable<bool> exclusive{"exclusive", false, "for double gap side "};
 
   Configurable<bool> phi{"phi", true, ""};
@@ -130,6 +128,12 @@ struct SginclusivePhiKstarSD {
   //
   Configurable<bool> reconstruction{"reconstruction", true, ""};
   Configurable<int> generatedId{"generatedId", 31, ""};
+
+  ConfigurableAxis axisphimass{"axisphimass", {220, 0.98, 1.2}, ""};
+  ConfigurableAxis axiskstarmass{"axiskstarmass", {400, 0.0, 2.0}, ""};
+  ConfigurableAxis axisrhomass{"axisrhomass", {200, 1.0, 2.0}, ""};
+  ConfigurableAxis axispt{"axispt", {200, 0.0, 20.0}, ""};
+  ConfigurableAxis axisrapdity{"axisrapdity", {40, -2.0, 2.0}, ""};
 
   int numTwoTracks = 2;
   int numFourTracks = 4;
@@ -161,45 +165,45 @@ struct SginclusivePhiKstarSD {
     registry.add("nPVContributors_data_1", "Multiplicity_dist_before track cut gap C", kTH1F, {{110, 0, 110}});
 
     if (phi) {
-      registry.add("os_KK_pT_0", "pt kaon pair", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_pT_1", "pt kaon pair", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_pT_2", "pt kaon pair", kTH3F, {{305, 0.98, 2.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_ls_pT_0", "kaon pair like sign", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_ls_pT_1", "kaon pair like sign", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_ls_pT_2", "kaon pair like sign", kTH3F, {{305, 0.98, 2.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_pT_0", "pt kaon pair", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_pT_1", "pt kaon pair", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_pT_2", "pt kaon pair", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_ls_pT_0", "kaon pair like sign", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_ls_pT_1", "kaon pair like sign", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_ls_pT_2", "kaon pair like sign", kTH3F, {axisphimass, axisrapdity, axispt});
 
-      registry.add("os_KK_mix_pT_0", "kaon pair mix event", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_mix_pT_1", "kaon pair mix event", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_mix_pT_2", "kaon pair mix event", kTH3F, {{305, 0.98, 2.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_mix_pT_0", "kaon pair mix event", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_mix_pT_1", "kaon pair mix event", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_mix_pT_2", "kaon pair mix event", kTH3F, {axisphimass, axisrapdity, axispt});
 
-      registry.add("os_KK_rot_pT_0", "kaon pair mix event", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_rot_pT_1", "kaon pair mix event", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_KK_rot_pT_2", "kaon pair mix event", kTH3F, {{305, 0.98, 2.2}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_KK_rot_pT_0", "kaon pair mix event", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_rot_pT_1", "kaon pair mix event", kTH3F, {axisphimass, axisrapdity, axispt});
+      registry.add("os_KK_rot_pT_2", "kaon pair mix event", kTH3F, {axisphimass, axisrapdity, axispt});
     }
     if (rho) {
-      registry.add("os_pp_pT_0", "pt pion pair", kTH3F, {{200, 1.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pp_pT_1", "pt pion pair", kTH3F, {{200, 1.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pp_pT_2", "pt pion pair", kTH3F, {{200, 1.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pp_ls_pT_0", "pion pair like sign", kTH3F, {{200, 1.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pp_ls_pT_1", "pion pair like sign", kTH3F, {{200, 1.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pp_ls_pT_2", "pion pair like sign", kTH3F, {{200, 1.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
+      registry.add("os_pp_pT_0", "pt pion pair", kTH3F, {axisrhomass, axisrapdity, axispt});
+      registry.add("os_pp_pT_1", "pt pion pair", kTH3F, {axisrhomass, axisrapdity, axispt});
+      registry.add("os_pp_pT_2", "pt pion pair", kTH3F, {axisrhomass, axisrapdity, axispt});
+      registry.add("os_pp_ls_pT_0", "pion pair like sign", kTH3F, {axisrhomass, axisrapdity, axispt});
+      registry.add("os_pp_ls_pT_1", "pion pair like sign", kTH3F, {axisrhomass, axisrapdity, axispt});
+      registry.add("os_pp_ls_pT_2", "pion pair like sign", kTH3F, {axisrhomass, axisrapdity, axispt});
     }
     if (kstar) {
-      registry.add("os_pk_pT_0", "pion-kaon pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pk_pT_1", "pion-kaon pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pk_pT_2", "pion-kaon pair", kTH3F, {{600, 0.0, 3.0}, {80, -2.0, 2.0}, {1000, 0, 10}});
+      registry.add("os_pk_pT_0", "pion-kaon pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_pT_1", "pion-kaon pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_pT_2", "pion-kaon pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
 
-      registry.add("os_pk_mix_pT_0", "pion-kaon mix pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pk_mix_pT_1", "pion-kaon mix pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pk_mix_pT_2", "pion-kaon mix pair", kTH3F, {{600, 0.0, 3.0}, {80, -2.0, 2.0}, {1000, 0, 10}});
+      registry.add("os_pk_mix_pT_0", "pion-kaon mix pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_mix_pT_1", "pion-kaon mix pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_mix_pT_2", "pion-kaon mix pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
 
-      registry.add("os_pk_rot_pT_0", "pion-kaon rotional pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pk_rot_pT_1", "pion-kaon rotional pair", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pk_rot_pT_2", "pion-kaon rotional pair", kTH3F, {{600, 0.0, 3.0}, {80, -2.0, 2.0}, {1000, 0, 10}});
+      registry.add("os_pk_rot_pT_0", "pion-kaon rotional pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_rot_pT_1", "pion-kaon rotional pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_rot_pT_2", "pion-kaon rotional pair", kTH3F, {axiskstarmass, axisrapdity, axispt});
 
-      registry.add("os_pk_ls_pT_0", "pion-kaon pair like sign", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pk_ls_pT_1", "pion-kaon like sign", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_pk_ls_pT_2", "pion-kaon like sign", kTH3F, {{600, 0.0, 3.0}, {80, -2.0, 2.0}, {1000, 0, 10}});
+      registry.add("os_pk_ls_pT_0", "pion-kaon pair like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_ls_pT_1", "pion-kaon like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
+      registry.add("os_pk_ls_pT_2", "pion-kaon like sign", kTH3F, {axiskstarmass, axisrapdity, axispt});
 
       registry.add("hRotation", "hRotation", kTH1F, {{360, 0.0, o2::constants::math::TwoPI}});
     }
@@ -273,19 +277,6 @@ struct SginclusivePhiKstarSD {
       rQA.add("V0A_2", "V0A amplitude", kTH1F, {{1000, 0.0, 1000.0}});
       rQA.add("V0A_0", "V0A amplitude", kTH1F, {{1000, 0.0, 1000.0}});
       rQA.add("V0A_1", "V0A amplitude", kTH1F, {{1000, 0.0, 1000.0}});
-
-      if (rapidityGap) {
-        registry.add("event_rap_gap", "rap_gap", kTH1F, {{15, 0, 15.0}});
-        registry.add("rap_mult1", "rap_mult1", kTH1F, {{150, 0, 150}});
-        registry.add("rap_mult2", "rap_mult2", kTH1F, {{150, 0, 150}});
-        registry.add("rap_mult3", "rap_mult3", kTH1F, {{150, 0, 150}});
-        registry.add("rap1_mult1", "rap1_mult1", kTH1F, {{150, 0, 150}});
-        registry.add("rap1_mult2", "rap1_mult2", kTH1F, {{150, 0, 150}});
-        registry.add("rap1_mult3", "rap1_mult3", kTH1F, {{150, 0, 150}});
-        registry.add("rap2_mult1", "rap2_mult1", kTH1F, {{150, 0, 150}});
-        registry.add("rap2_mult2", "rap2_mult2", kTH1F, {{150, 0, 150}});
-        registry.add("rap2_mult3", "rap2_mult3", kTH1F, {{150, 0, 150}});
-      }
     }
     registry.add("gap_mult0", "Mult 0", kTH1F, {{100, 0.0, 100.0}});
     registry.add("gap_mult1", "Mult 1", kTH1F, {{100, 0.0, 100.0}});
@@ -295,53 +286,6 @@ struct SginclusivePhiKstarSD {
     registry.add("mult_1", "mult1", kTH1F, {{150, 0, 150}});
     registry.add("mult_2", "mult2", kTH1F, {{150, 0, 150}});
 
-    // Multiplicity plot
-    if (rapidityGap && phi) {
-      registry.add("os_kk_mass_rap", "phi mass1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass_rap1", "phi mass2", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass_rap2", "phi mass3", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass1_rap", "phi mass1 gap1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass1_rap1", "phi mass2 gap1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass1_rap2", "phi mass3 gap1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass2_rap", "phi mass1 DG", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass2_rap1", "phi mass2 DG", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_mass2_rap2", "phi mass3 DG", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-
-      // like sign bkg
-      registry.add("os_kk_ls_mass_rap", "phi ls mass1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass_rap1", "phi ls mass2", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass_rap2", "phi ls mass3", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass1_rap", "phi ls mass1 gap1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass1_rap1", "phi ls mass2 gap1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass1_rap2", "phi ls mass3 gap1", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass2_rap", "phi ls mass1 DG", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass2_rap1", "phi ls mass2 DG", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kk_ls_mass2_rap2", "phi ls mass3 DG", kTH3F, {{220, 0.98, 1.2}, {80, -2.0, 2.0}, {100, 0, 10}});
-    }
-
-    if (rapidityGap && kstar) {
-      registry.add("os_kp_mass_rap", "kstar mass1", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_mass_rap1", "kstar mass2", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_mass_rap2", "kstar mass3", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_mass1_rap", "kstar mass1 gap1", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_mass1_rap1", "kstar mass2 gap1", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_mass1_rap2", "kstar mass3 gap1", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_mass2_rap", "kstar mass1 DG", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_mass2_rap1", "kstar mass2 DG", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_mass2_rap2", "kstar mass3 DG", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-
-      // like sign bkg
-
-      registry.add("os_kp_ls_mass_rap", "kstar ls mass1", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_ls_mass_rap1", "kstar ls mass2", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_ls_mass_rap2", "kstar ls mass3", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_ls_mass1_rap", "kstar ls mass1 gap1", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_ls_mass1_rap1", "kstar ls mass2 gap1", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_ls_mass1_rap2", "kstar ls mass3 gap1", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_ls_mass2_rap", "kstar ls mass1 DG", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_ls_mass2_rap1", "kstar ls mass2 DG", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-      registry.add("os_kp_ls_mass2_rap2", "kstar ls mass3 DG", kTH3F, {{400, 0.0, 2.0}, {80, -2.0, 2.0}, {100, 0, 10}});
-    }
     if (fourpion) {
       registry.add("os_pppp_pT_2", "4 pion pair", kTH3F, {{800, 0.5, 4.5}, {250, 0.0, 5.0}, {30, -1.5, 1.5}});
       registry.add("os_pppp_pT_2_ls", "4 pion pair", kTH3F, {{800, 0.5, 4.5}, {250, 0.0, 5.0}, {30, -1.5, 1.5}});
@@ -773,29 +717,13 @@ struct SginclusivePhiKstarSD {
     int mult0 = 0;
     int mult1 = 0;
     int mult2 = 0;
-    int trackgapA = 0;
-    int trackgapC = 0;
-    int trackDG = 0;
-    int trackextra = 0;
-    int trackextraDG = 0;
-
     if (qa) {
       rQA.fill(HIST("hVertexX"), collision.posX());
       rQA.fill(HIST("hVertexY"), collision.posY());
       rQA.fill(HIST("hVertexZ"), collision.posZ());
     }
 
-    /*   Partition<UDtracksfull> pvContributors1 = aod::udtrack::isPVContributor == true;
-   pvContributors1.bindTable(tracks);
-   if (gapSide == SingleGapA) {
-   registry.get<TH1>(HIST("nPVContributors_data"))->Fill(pvContributors1.size(), 1.);
-   }
-   if (gapSide == SingleGapC) {
-   registry.get<TH1>(HIST("nPVContributors_data_1"))->Fill(pvContributors1.size(), 1.);
-   }
-    */
     for (const auto& track1 : tracks) {
-
       if (qa) {
         rQA.fill(HIST("hDcaxy_all_before"), track1.dcaXY());
         rQA.fill(HIST("hDcaz_all_before"), track1.dcaZ());
@@ -832,21 +760,6 @@ struct SginclusivePhiKstarSD {
       }
       if (gapSide == DoubleGap) {
         mult2++;
-      }
-      if (std::abs(v0.Eta()) < etaDG) {
-        trackDG++;
-      }
-      if (v0.Eta() > etaGapMin && v0.Eta() < etaGapMax) {
-        trackgapA++;
-      }
-      if (v0.Eta() < etaGapMin && v0.Eta() > -etaGapMax) {
-        trackgapC++;
-      }
-      if (std::abs(v0.Eta()) > etaGapMax || std::abs(v0.Eta()) < etaGapMin) {
-        trackextra++;
-      }
-      if (std::abs(v0.Eta()) > etaDG) {
-        trackextraDG++;
       }
 
       if (qa) {
@@ -888,9 +801,6 @@ struct SginclusivePhiKstarSD {
     if (gapSide == SingleGapC) {
       registry.fill(HIST("mult_1"), mult1);
     }
-    if (gapSide == DoubleGap) {
-      registry.fill(HIST("mult_2"), mult2);
-    }
     if (qa) {
       if (gapSide == SingleGapA) {
         rQA.fill(HIST("V0A_0"), collision.totalFV0AmplitudeA());
@@ -906,273 +816,7 @@ struct SginclusivePhiKstarSD {
         rQA.fill(HIST("ZDC_A_1"), collision.energyCommonZNA());
         rQA.fill(HIST("ZDC_C_1"), collision.energyCommonZNC());
       }
-      if (gapSide == DoubleGap) {
-        rQA.fill(HIST("V0A_2"), collision.totalFV0AmplitudeA());
-        rQA.fill(HIST("FT0A_2"), collision.totalFT0AmplitudeA());
-        rQA.fill(HIST("FT0C_2"), collision.totalFT0AmplitudeC());
-        rQA.fill(HIST("ZDC_A_2"), collision.energyCommonZNA());
-        rQA.fill(HIST("ZDC_C_2"), collision.energyCommonZNC());
-      }
-      if (rapidityGap) {
-        if (trackgapC > 0 && trackgapA == 0 && trackextra == 0) {
-          if (gapSide == SingleGapA) {
-            registry.fill(HIST("event_rap_gap"), 1);
-            registry.fill(HIST("rap_mult1"), trackgapC);
-          }
-          if (gapSide == SingleGapC) {
-            registry.fill(HIST("event_rap_gap"), 4);
-            registry.fill(HIST("rap1_mult1"), trackgapC);
-          }
-          if (gapSide == DoubleGap) {
-            registry.fill(HIST("event_rap_gap"), 7);
-            registry.fill(HIST("rap2_mult1"), trackgapC);
-          }
-        }
-        if (trackgapC == 0 && trackgapA > 0 && trackextra == 0) {
-          if (gapSide == SingleGapA) {
-            registry.fill(HIST("event_rap_gap"), 2);
-            registry.fill(HIST("rap_mult2"), trackgapA);
-          }
-          if (gapSide == SingleGapC) {
-            registry.fill(HIST("event_rap_gap"), 5);
-            registry.fill(HIST("rap1_mult2"), trackgapA);
-          }
-          if (gapSide == DoubleGap) {
-            registry.fill(HIST("event_rap_gap"), 8);
-            registry.fill(HIST("rap2_mult2"), trackgapA);
-          }
-        }
-        if (trackDG > 0 && trackextraDG == 0) {
-          if (gapSide == SingleGapA) {
-            registry.fill(HIST("event_rap_gap"), 3);
-            registry.fill(HIST("rap_mult3"), trackDG);
-          }
-          if (gapSide == SingleGapC) {
-            registry.fill(HIST("event_rap_gap"), 6);
-            registry.fill(HIST("rap1_mult3"), trackDG);
-          }
-          if (gapSide == DoubleGap) {
-            registry.fill(HIST("event_rap_gap"), 9);
-            registry.fill(HIST("rap2_mult3"), trackDG);
-          }
-        }
-      }
     }
-
-    if (rapidityGap) {
-      if (trackgapC > 0 && trackgapA == 0 && trackextra == 0) {
-        for (const auto& [t0, t1] : combinations(tracks, tracks)) {
-          if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
-            continue;
-          if (phi && selectionPIDKaon1(t0) && selectionPIDKaon1(t1)) {
-            // Apply kaon hypothesis and create pairs
-            v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
-            v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
-            v01 = v0 + v1;
-            // Opposite sign pairs
-            if (t0.sign() != t1.sign()) {
-              if (gapSide == SingleGapA) {
-                registry.fill(HIST("os_kk_mass_rap"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == SingleGapC) {
-                registry.fill(HIST("os_kk_mass1_rap"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == DoubleGap) {
-                registry.fill(HIST("os_kk_mass2_rap"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-            }
-            if (t0.sign() == t1.sign()) {
-              if (gapSide == SingleGapA) {
-                registry.fill(HIST("os_kk_ls_mass_rap"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == SingleGapC) {
-                registry.fill(HIST("os_kk_ls_mass1_rap"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == DoubleGap) {
-                registry.fill(HIST("os_kk_ls_mass2_rap"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-            }
-          }
-        }
-        for (const auto& [t0, t1] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))) {
-          if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
-            continue;
-          if (t0.globalIndex() == t1.globalIndex())
-            continue;
-          if (kstar && selectionPIDKaon1(t0) && selectionPIDPion1(t1)) {
-            // Apply kaon hypothesis and create pairs
-            v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
-            v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
-            v01 = v0 + v1;
-            // Opposite sign pairs
-            if (t0.sign() != t1.sign()) {
-              if (gapSide == SingleGapA) {
-                registry.fill(HIST("os_kp_mass_rap"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == SingleGapC) {
-                registry.fill(HIST("os_kp_mass1_rap"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == DoubleGap) {
-                registry.fill(HIST("os_kp_mass2_rap"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-            }
-            if (t0.sign() == t1.sign()) {
-              if (gapSide == SingleGapA) {
-                registry.fill(HIST("os_kp_ls_mass_rap"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == SingleGapC) {
-                registry.fill(HIST("os_kp_ls_mass1_rap"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == DoubleGap) {
-                registry.fill(HIST("os_kp_ls_mass2_rap"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-            }
-          }
-        }
-      }
-
-      if (trackgapC == 0 && trackgapA > 0 && trackextra == 0) {
-        for (const auto& [t0, t1] : combinations(tracks, tracks)) {
-          if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
-            continue;
-          if (phi && selectionPIDKaon1(t0) && selectionPIDKaon1(t1)) {
-            // Apply kaon hypothesis and create pairs
-            v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
-            v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
-            v01 = v0 + v1;
-            // Opposite sign pairs
-            if (t0.sign() != t1.sign()) {
-              if (gapSide == SingleGapA) {
-                registry.fill(HIST("os_kk_mass_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == SingleGapC) {
-                registry.fill(HIST("os_kk_mass1_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == DoubleGap) {
-                registry.fill(HIST("os_kk_mass2_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-            }
-            if (t0.sign() == t1.sign()) {
-              if (gapSide == SingleGapA) {
-                registry.fill(HIST("os_kk_ls_mass_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == SingleGapC) {
-                registry.fill(HIST("os_kk_ls_mass1_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == DoubleGap) {
-                registry.fill(HIST("os_kk_ls_mass2_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-            }
-          }
-        }
-        for (const auto& [t0, t1] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))) {
-          if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
-            continue;
-          if (t0.globalIndex() == t1.globalIndex())
-            continue;
-          if (kstar && selectionPIDKaon1(t0) && selectionPIDPion1(t1)) {
-            // Apply kaon hypothesis and create pairs
-            v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
-            v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
-            v01 = v0 + v1;
-            // Opposite sign pairs
-            if (t0.sign() != t1.sign()) {
-              if (gapSide == SingleGapA) {
-                registry.fill(HIST("os_kp_mass_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == SingleGapC) {
-                registry.fill(HIST("os_kp_mass1_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == DoubleGap) {
-                registry.fill(HIST("os_kp_mass2_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-            }
-            if (t0.sign() == t1.sign()) {
-              if (gapSide == SingleGapA) {
-                registry.fill(HIST("os_kp_ls_mass_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == SingleGapC) {
-                registry.fill(HIST("os_kp_ls_mass1_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == DoubleGap) {
-                registry.fill(HIST("os_kp_ls_mass2_rap1"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-            }
-          }
-        }
-      }
-      if (trackDG > 0 && trackextraDG == 0) {
-        for (const auto& [t0, t1] : combinations(tracks, tracks)) {
-          if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
-            continue;
-          if (phi && selectionPIDKaon1(t0) && selectionPIDKaon1(t1)) {
-            // Apply kaon hypothesis and create pairs
-            v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
-            v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
-            v01 = v0 + v1;
-            // Opposite sign pairs
-            if (t0.sign() != t1.sign()) {
-              if (gapSide == SingleGapA) {
-                registry.fill(HIST("os_kk_mass_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == SingleGapC) {
-                registry.fill(HIST("os_kk_mass1_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == DoubleGap) {
-                registry.fill(HIST("os_kk_mass2_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-            }
-            if (t0.sign() == t1.sign()) {
-              if (gapSide == SingleGapA) {
-                registry.fill(HIST("os_kk_ls_mass_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == SingleGapC) {
-                registry.fill(HIST("os_kk_ls_mass1_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == DoubleGap) {
-                registry.fill(HIST("os_kk_ls_mass2_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-            }
-          }
-        }
-        for (const auto& [t0, t1] : combinations(o2::soa::CombinationsFullIndexPolicy(tracks, tracks))) {
-          if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
-            continue;
-          if (t0.globalIndex() == t1.globalIndex())
-            continue;
-          if (kstar && selectionPIDKaon1(t0) && selectionPIDPion1(t1)) {
-            // Apply kaon hypothesis and create pairs
-            v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
-            v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
-            v01 = v0 + v1;
-            // Opposite sign pairs
-            if (t0.sign() != t1.sign()) {
-              if (gapSide == SingleGapA) {
-                registry.fill(HIST("os_kp_mass_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == SingleGapC) {
-                registry.fill(HIST("os_kp_mass1_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == DoubleGap) {
-                registry.fill(HIST("os_kp_mass2_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-            }
-            if (t0.sign() == t1.sign()) {
-              if (gapSide == SingleGapA) {
-                registry.fill(HIST("os_kp_ls_mass_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == SingleGapC) {
-                registry.fill(HIST("os_kp_ls_mass1_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-              if (gapSide == DoubleGap) {
-                registry.fill(HIST("os_kp_ls_mass2_rap2"), v01.M(), v01.Rapidity(), v01.Pt());
-              }
-            }
-          }
-        }
-      }
-    }
-
     for (const auto& [t0, t1] : combinations(tracks, tracks)) {
       if (!trackselector(t0, parameters) || !trackselector(t1, parameters))
         continue;
@@ -1182,6 +826,9 @@ struct SginclusivePhiKstarSD {
         v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
         v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
         v01 = v0 + v1;
+        if (rapiditycut && std::abs(v01.Rapidity()) > rapiditycutvalue)
+          continue;
+
         // Opposite sign pairs
         if (t0.sign() != t1.sign()) {
           if (gapSide == SingleGapA) {
@@ -1221,6 +868,9 @@ struct SginclusivePhiKstarSD {
             v0.SetCoordinates(rotkaonPx, rotkaonPy, t0.pz(), o2::constants::physics::MassKaonCharged);
             v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
             v01 = v0 + v1;
+            if (rapiditycut && std::abs(v01.Rapidity()) > rapiditycutvalue)
+              continue;
+
             if (t0.sign() != t1.sign()) {
               if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_KK_rot_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
@@ -1245,6 +895,9 @@ struct SginclusivePhiKstarSD {
         v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassProton);
         v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassKaonCharged);
         v01 = v0 + v1;
+        if (rapiditycut && std::abs(v01.Rapidity()) > rapiditycutvalue)
+          continue;
+
         // Opposite sign pairs
         if (t0.sign() != t1.sign()) {
           if (gapSide == SingleGapA) {
@@ -1275,6 +928,9 @@ struct SginclusivePhiKstarSD {
         v0.SetCoordinates(t0.px(), t0.py(), t0.pz(), o2::constants::physics::MassKaonCharged);
         v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
         v01 = v0 + v1;
+        if (rapiditycut && std::abs(v01.Rapidity()) > rapiditycutvalue)
+          continue;
+
         // Opposite sign pairs
         if (t0.sign() != t1.sign()) {
           if (gapSide == SingleGapA) {
@@ -1312,6 +968,9 @@ struct SginclusivePhiKstarSD {
             v0.SetCoordinates(rotkaonPx, rotkaonPy, t0.pz(), o2::constants::physics::MassKaonCharged);
             v1.SetCoordinates(t1.px(), t1.py(), t1.pz(), o2::constants::physics::MassPionCharged);
             v01 = v0 + v1;
+            if (rapiditycut && std::abs(v01.Rapidity()) > rapiditycutvalue)
+              continue;
+
             if (t0.sign() != t1.sign()) {
               if (gapSide == SingleGapA) {
                 registry.fill(HIST("os_pk_rot_pT_0"), v01.M(), v01.Rapidity(), v01.Pt());
@@ -1408,6 +1067,8 @@ struct SginclusivePhiKstarSD {
           v0.SetCoordinates(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetCoordinates(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassKaonCharged);
           v01 = v0 + v1;
+          if (rapiditycut && std::abs(v01.Rapidity()) > rapiditycutvalue)
+            continue;
           // Opposite sign pairs
           if (track1.sign() != track2.sign()) {
             if (truegapSide1 == SingleGapA) {
@@ -1415,9 +1076,6 @@ struct SginclusivePhiKstarSD {
             }
             if (truegapSide1 == SingleGapC) {
               registry.fill(HIST("os_KK_mix_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
-            }
-            if (truegapSide1 == DoubleGap) {
-              registry.fill(HIST("os_KK_mix_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
             }
           }
         }
@@ -1431,6 +1089,8 @@ struct SginclusivePhiKstarSD {
           v0.SetCoordinates(track1.px(), track1.py(), track1.pz(), o2::constants::physics::MassKaonCharged);
           v1.SetCoordinates(track2.px(), track2.py(), track2.pz(), o2::constants::physics::MassPionCharged);
           v01 = v0 + v1;
+          if (rapiditycut && std::abs(v01.Rapidity()) > rapiditycutvalue)
+            continue;
           // Opposite sign pairs
           if (track1.sign() != track2.sign()) {
             if (truegapSide1 == SingleGapA) {
@@ -1438,9 +1098,6 @@ struct SginclusivePhiKstarSD {
             }
             if (truegapSide1 == SingleGapC) {
               registry.fill(HIST("os_pk_mix_pT_1"), v01.M(), v01.Rapidity(), v01.Pt());
-            }
-            if (truegapSide1 == DoubleGap) {
-              registry.fill(HIST("os_pk_mix_pT_2"), v01.M(), v01.Rapidity(), v01.Pt());
             }
           }
         }

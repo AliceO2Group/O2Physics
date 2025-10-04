@@ -636,7 +636,7 @@ struct HfTaskDplus {
           flagGenB = getBHadMotherFlag(bHadMother.pdgCode());
           ptGenB = bHadMother.pt();
         }
-        for (const auto& recCol : mcRecoCollisions) {
+        for (const auto& recCol : recoCollsPerGenMcColl) {
           numPvContr = std::max<float>(numPvContr, recCol.numContrib());
         }
         fillHistoMCGen(particle);

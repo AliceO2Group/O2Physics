@@ -59,13 +59,17 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels>;
 using MyCollision = MyCollisions::iterator;
 
 using MyTracks = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU,
-                           aod::pidTPCFullEl, /*aod::pidTPCFullMu,*/ aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
-                           aod::pidTOFFullEl, /*aod::pidTOFFullMu,*/ aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
+                           aod::pidTPCFullEl, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr,
+                           aod::pidTOFFullEl, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFbeta>;
 using MyTrack = MyTracks::iterator;
 
 struct TreeCreatorElectronMLDDA {
   SliceCache cache;
   Produces<o2::aod::EMTracksForMLPID> emprimarytracks; // flat table containing collision + track information
+  Produces<o2::aod::EMPIDsEl> empidel;
+  Produces<o2::aod::EMPIDsPi> empidpi;
+  Produces<o2::aod::EMPIDsKa> empidka;
+  Produces<o2::aod::EMPIDsPr> empidpr;
 
   // Basic checks
   HistogramRegistry registry{
@@ -231,7 +235,7 @@ struct TreeCreatorElectronMLDDA {
     Configurable<float> cfg_max_chi2tpc{"cfg_max_chi2tpc", 4.0, "max chi2/NclsTPC"};
     Configurable<float> cfg_max_chi2its{"cfg_max_chi2its", 5.0, "max chi2/NclsITS"};
     Configurable<float> cfg_min_chi2its{"cfg_min_chi2its", -1e+10, "min chi2/NclsITS"}; // remove ITS afterburner
-    Configurable<float> cfg_max_chi2tof{"cfg_max_chi2tof", 1e+10, "max chi2 TOF"}; // distance in cm
+    Configurable<float> cfg_max_chi2tof{"cfg_max_chi2tof", 1e+10, "max chi2 TOF"};      // distance in cm
 
     Configurable<float> cfg_min_TPCNsigmaEl{"cfg_min_TPCNsigmaEl", -2, "min n sigma e in TPC for pc->ee"};
     Configurable<float> cfg_max_TPCNsigmaEl{"cfg_max_TPCNsigmaEl", +2, "max n sigma e in TPC for pc->ee"};
@@ -654,9 +658,15 @@ struct TreeCreatorElectronMLDDA {
                       trackParCov.getP(), trackParCov.getTgl(), track.sign(),
                       track.tpcNClsFindable(), track.tpcNClsFound(), track.tpcNClsCrossedRows(), track.tpcNClsPID(),
                       track.tpcChi2NCl(), track.tpcInnerParam(),
-                      track.tpcSignal(), track.tpcNSigmaEl(), /*track.tpcNSigmaMu(),*/ track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr(),
-                      track.beta(), track.tofNSigmaEl(), /*track.tofNSigmaMu(),*/ track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr(),
+                      track.tpcSignal(),
+                      track.beta(),
                       track.itsClusterSizes(), track.itsChi2NCl(), track.tofChi2(), track.detectorMap(), pidlabel);
+
+      empidel(track.tpcNSigmaEl(), track.tofNSigmaEl());
+      empidpi(track.tpcNSigmaPi(), track.tofNSigmaPi());
+      empidka(track.tpcNSigmaKa(), track.tofNSigmaKa());
+      empidpr(track.tpcNSigmaPr(), track.tofNSigmaPr());
+
       stored_trackIds.emplace_back(track.globalIndex());
     }
   }
@@ -1004,7 +1014,9 @@ struct MLTrackQC {
     },
   };
 
-  void processQC(aod::EMTracksForMLPID const& tracks)
+  using MyPIDTracks = soa::Join<aod::EMTracksForMLPID, aod::EMPIDsEl, aod::EMPIDsPi, aod::EMPIDsKa, aod::EMPIDsPr>;
+
+  void processQC(MyPIDTracks const& tracks)
   {
     for (const auto& track : tracks) {
       registry.fill(HIST("hTPCdEdx_P_All"), track.tpcInnerParam(), track.tpcSignal());

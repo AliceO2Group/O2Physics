@@ -9,7 +9,7 @@
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
 
-/// \file antinucleiTask.cxx
+/// \file antiNucleiTask.cxx
 /// \brief A task to analyse Anti-nuclei
 /// \author Arkaprabha Saha <arkaprabha.saha@cern.ch>
 
@@ -48,14 +48,15 @@ static const int minTpcCrossedRowsCut = 70;
 static const float maxVertexZCut = 10.f;
 } // namespace
 
-struct antinucleiTask {
+struct antiNucleiTask {
   // Histogram registry: for holding histograms
   HistogramRegistry histos{"histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
   // Configurable track cuts
   Configurable<float> trackNclusTPCcut{"trackNclusTPCcut", 70.0f, "min number of TPC clusters"};
   Configurable<float> trackNclusITScut{"trackNclusITScut", 4.0f, "min number of ITS clusters"};
-  Configurable<float> chi2TPC{"chi2TPC", 4.0f, "max chi2 per cluster TPC"};
+  Configurable<float> maxChi2TPC{"maxChi2TPC", 4.0f, "max chi2 per cluster TPC"};
+  Configurable<float> minChi2TPC{"minChi2TPC", 0.0f, "min chi2 per cluster TPC"};
   Configurable<float> chi2ITS{"chi2ITS", 36.0f, "max chi2 per cluster ITS"};
   Configurable<float> trackDCAz{"trackDCAz", 0.1f, "maxDCAz"};
   Configurable<float> trackDCAxy{"trackDCAxy", 0.1f, "maxDCAxy"};
@@ -101,7 +102,9 @@ struct antinucleiTask {
       return false;
     if (track.itsNCls() < trackNclusITScut)
       return false;
-    if (track.tpcChi2NCl() > chi2TPC)
+    if (track.tpcChi2NCl() > maxChi2TPC)
+      return false;
+    if (track.tpcChi2NCl() < minChi2TPC)
       return false;
     if (track.itsChi2NCl() > chi2ITS)
       return false;
@@ -162,11 +165,11 @@ struct antinucleiTask {
     }
   }
 
-  PROCESS_SWITCH(antinucleiTask, process, "process", true);
+  PROCESS_SWITCH(antiNucleiTask, process, "process", true);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
   return WorkflowSpec{
-    adaptAnalysisTask<antinucleiTask>(cfgc)};
+    adaptAnalysisTask<antiNucleiTask>(cfgc)};
 }

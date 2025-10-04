@@ -49,7 +49,7 @@ enum PairHist {
   kKstar,
   kKt,
   kMt,
-  // 2d qa
+  // 2d
   kPt1VsPt2,
   kPt1VsKstar,
   kPt2VsKstar,
@@ -58,6 +58,7 @@ enum PairHist {
   kPt1VsMt,
   kPt2VsMt,
   kPairHistogramLast
+  //  more dimensions
 };
 
 enum MixingPoliciy {
@@ -121,6 +122,12 @@ constexpr char PrefixTrackTrackMe[] = "TrackTrack/ME/";
 constexpr char PrefixTrackV0Se[] = "TrackV0/SE/";
 constexpr char PrefixTrackV0Me[] = "TrackV0/ME/";
 
+constexpr char PrefixTrackResonanceSe[] = "TrackResonance/SE/";
+constexpr char PrefixTrackResonanceMe[] = "TrackResonance/ME/";
+
+constexpr char PrefixTrackCascadeSe[] = "TrackCascade/SE/";
+constexpr char PrefixTrackCascadeMe[] = "TrackCascade/ME/";
+
 constexpr char PrefixTrackKinkSe[] = "TrackKink/SE/";
 constexpr char PrefixTrackKinkMe[] = "TrackKink/ME/";
 
@@ -164,10 +171,12 @@ class PairHistManager
     mMass1 = o2::analysis::femto::utils::getMass(PdgParticle1);
     mMass2 = o2::analysis::femto::utils::getMass(PdgParticle2);
   }
-  void setCharge(int chargeParticle1, int chargeParticle2)
+  void setCharge(int chargeAbsParticle1, int chargeAbsParticle2)
   {
-    mAbsCharge1 = std::fabs(chargeParticle1);
-    mAbsCharge1 = std::fabs(chargeParticle2);
+    // the pt stored is actually pt/z, so in case of particles with z > 1, we have to rescale the pt (this is so far only for He3 the case)
+    // similarly, for neutral particles, no reason to rescale so we just set absolute charge to 1
+    mAbsCharge1 = chargeAbsParticle1;
+    mAbsCharge2 = chargeAbsParticle2;
   }
 
   template <typename T1, typename T2>

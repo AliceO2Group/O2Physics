@@ -113,7 +113,7 @@ constexpr std::array<histmanager::HistInfo<CascadeHist>, kCascadeHistLast> HistT
    {kMassXiVsMassOmega, o2::framework::kTH2F, "hMassXiVsMassOmega", "mass #Xi vs mass #Omega; m_{#Lambda#pi} (GeV/#it{c}^{2}); m_{#LambdaK} (GeV/#it{c}^{2})"}}};
 
 template <typename T>
-auto makeCascadeAnalysisHistSpecMap(const T& confBinningAnalysis)
+auto makeCascadeHistSpecMap(const T& confBinningAnalysis)
 {
   return std::map<CascadeHist, std::vector<framework::AxisSpec>>{
     {kPt, {confBinningAnalysis.pt}},

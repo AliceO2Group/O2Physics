@@ -620,6 +620,17 @@ struct HfDataCreatorCharmResoReduced {
     return flagV0; // Placeholder, should return the actual flag based on matching logic
   }
 
+  template <typename PParticles>
+  float computeInvMassGen(PParticles const& particlesMc, int indexRec)
+  {
+    auto particleReso = particlesMc.iteratorAt(indexRec);
+    auto dau1 = particlesMc.iteratorAt(particleReso.daughtersIds().front());
+    auto dau2 = particlesMc.iteratorAt(particleReso.daughtersIds().back());
+    std::array<std::array<float, 3>, 2> pArr = {{{dau1.px(), dau1.py(), dau1.pz()}, {dau2.px(), dau2.py(), dau2.pz()}}};
+    std::array<float, 2> mArr = {static_cast<float>(pdg->Mass(dau1.pdgCode())), static_cast<float>(pdg->Mass(dau2.pdgCode()))};
+    return static_cast<float>(RecoDecay::m(pArr, mArr));
+  }
+
   /// Function for filling MC reco information of DV0 candidates in the tables
   /// \tparam dType is the D meson type (Dstar, Dplus or D0)
   /// \param particlesMc is the table with MC particles
@@ -690,7 +701,7 @@ struct HfDataCreatorCharmResoReduced {
       if (indexRec > -1) {
         auto particleReso = particlesMc.iteratorAt(indexRec);
         ptGen = particleReso.pt();
-        invMassGen = RecoDecay::m(particleReso.p(), particleReso.e());
+        invMassGen = computeInvMassGen(particlesMc, indexRec);
       }
       rowHfDstarV0McRecReduced(indexHfCandCharm, indexCandV0Bach,
                                flagReso, flagCharmBach,
@@ -743,7 +754,7 @@ struct HfDataCreatorCharmResoReduced {
       if (indexRec > -1) {
         auto particleReso = particlesMc.iteratorAt(indexRec);
         ptGen = particleReso.pt();
-        invMassGen = RecoDecay::m(particleReso.p(), particleReso.e());
+        invMassGen = computeInvMassGen(particlesMc, indexRec);
       }
       rowHf3PrV0McRecReduced(indexHfCandCharm, indexCandV0Bach,
                              flagReso, flagCharmBach,
@@ -784,7 +795,7 @@ struct HfDataCreatorCharmResoReduced {
       if (indexRec > -1) {
         auto particleReso = particlesMc.iteratorAt(indexRec);
         ptGen = particleReso.pt();
-        invMassGen = RecoDecay::m(particleReso.p(), particleReso.e());
+        invMassGen = computeInvMassGen(particlesMc, indexRec);
       }
       rowHf2PrV0McRecReduced(indexHfCandCharm, indexCandV0Bach,
                              flagReso, flagCharmBach,
@@ -874,7 +885,7 @@ struct HfDataCreatorCharmResoReduced {
       if (indexRec > -1) {
         auto particleReso = particlesMc.iteratorAt(indexRec);
         ptGen = particleReso.pt();
-        invMassGen = RecoDecay::m(particleReso.p(), particleReso.e());
+        invMassGen = computeInvMassGen(particlesMc, indexRec);
       }
       rowHfDstarTrkMcRecReduced(indexHfCandCharm, indexCandTrBach,
                                 flagReso, flagCharmBach,
@@ -914,7 +925,7 @@ struct HfDataCreatorCharmResoReduced {
       if (indexRec > -1) {
         auto particleReso = particlesMc.iteratorAt(indexRec);
         ptGen = particleReso.pt();
-        invMassGen = RecoDecay::m(particleReso.p(), particleReso.e());
+        invMassGen = computeInvMassGen(particlesMc, indexRec);
       }
       rowHf3PrTrkMcRecReduced(indexHfCandCharm, indexCandTrBach,
                               flagReso, flagCharmBach,
@@ -961,7 +972,7 @@ struct HfDataCreatorCharmResoReduced {
       if (indexRec > -1) {
         auto particleReso = particlesMc.iteratorAt(indexRec);
         ptGen = particleReso.pt();
-        invMassGen = RecoDecay::m(particleReso.p(), particleReso.e());
+        invMassGen = computeInvMassGen(particlesMc, indexRec);
       }
       rowHf2PrTrkMcRecReduced(indexHfCandCharm, indexCandTrBach,
                               flagReso, flagCharmBach,
@@ -1679,7 +1690,7 @@ struct HfDataCreatorCharmResoReduced {
           origin = RecoDecay::getCharmHadronOrigin(mcParticlesPerMcColl, particle, false, &idxBhadMothers);
           registry.fill(HIST("hMCGenOrigin"), origin);
           auto ptParticle = particle.pt();
-          auto invMassGen = RecoDecay::m(particle.p(), particle.e());
+          auto invMassGen = computeInvMassGen(mcParticles, particle.globalIndex());
           auto yParticle = RecoDecay::y(particle.pVector(), invMassGen);
           auto etaParticle = particle.eta();
 

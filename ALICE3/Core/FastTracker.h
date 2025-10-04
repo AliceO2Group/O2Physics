@@ -41,7 +41,13 @@ class FastTracker
   virtual ~FastTracker() {}
 
   // Layer and layer configuration
-  void AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
+  DetLayer* AddLayer(TString name, float r, float z, float x0, float xrho, float resRPhi = 0.0f, float resZ = 0.0f, float eff = 0.0f, int type = 0);
+
+  /// Add a dead region in phi for a specific layer
+  /// \param layerName Name of the layer to modify
+  /// \param phiStart Start angle of the dead region (in radians)
+  /// \param phiEnd End angle of the dead region (in radians)
+  void addDeadPhiRegionInLayer(const std::string& layerName, float phiStart, float phiEnd);
   DetLayer GetLayer(const int layer, bool ignoreBarrelLayers = true) const;
   std::vector<DetLayer> GetLayers() const { return layers; }
   int GetLayerIndex(const std::string& name) const;
