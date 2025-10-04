@@ -164,6 +164,7 @@ struct LongRangeDihadronCor {
 
   // FT0 geometry
   o2::ft0::Geometry ft0Det;
+  const uint64_t ft0IndexA = 96;
   std::vector<o2::detectors::AlignParam>* offsetFT0;
   std::vector<float> cstFT0RelGain{};
 
@@ -367,6 +368,9 @@ struct LongRangeDihadronCor {
     auto x = chPos.X() + (*offsetFT0)[i].getX();
     auto y = chPos.Y() + (*offsetFT0)[i].getY();
     auto z = chPos.Z() + (*offsetFT0)[i].getZ();
+    if (chno >= ft0IndexA) {
+      z = -z;
+    }
     auto r = std::sqrt(x * x + y * y);
     auto theta = std::atan2(r, z);
     return -std::log(std::tan(0.5 * theta));
