@@ -892,7 +892,7 @@ struct FlowGfwOmegaXi {
 
   // event selection
   template <typename TCollision>
-  bool eventSelected(TCollision collision, const float centrality , float interactionRate = -1)
+  bool eventSelected(TCollision collision, const float centrality, float interactionRate = -1)
   {
     if (evtSeleOpts.cfgDoTVXinTRD.value && collision.alias_bit(kTVXinTRD)) {
       // TRD triggered
