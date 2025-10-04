@@ -116,14 +116,19 @@ WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
   auto workflow = WorkflowSpec{};
   // Check if 'aod-metadata-tables' option is available in the config context
   if (cfgc.options().hasOption("aod-metadata-tables")) {
+    LOG(debug) << "'aod-metadata-tables' option found in the config context, checking for existing tables";
     // Get the list of tables from the config context
     const std::vector<std::string> tables = cfgc.options().get<std::vector<std::string>>("aod-metadata-tables");
     // If the table is already found, do not add the converter and spawner
     if (std::find(tables.begin(), tables.end(), "O2trackextra_002") == tables.end()) {
+      LOG(debug) << "Adding TracksExtraV002Converter and TracksExtraSpawner to the workflow";
       workflow.push_back(adaptAnalysisTask<TracksExtraV002Converter>(cfgc));
       workflow.push_back(adaptAnalysisTask<TracksExtraSpawner>(cfgc));
+    } else {
+      LOG(debug) << "Table O2trackextra_002 already found, not adding converter and spawner";
     }
   } else {
+    LOG(debug) << "'aod-metadata-tables' option not found in the config context, adding converter and spawner by default";
     workflow.push_back(adaptAnalysisTask<TracksExtraV002Converter>(cfgc));
     workflow.push_back(adaptAnalysisTask<TracksExtraSpawner>(cfgc));
   }
