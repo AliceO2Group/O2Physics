@@ -23,26 +23,41 @@
 
 #include "qaEventTrack.h"
 
-#include "Framework/AnalysisTask.h"
-#include "Framework/HistogramRegistry.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include "ReconstructionDataFormats/DCA.h"
-#include "Common/Core/trackUtilities.h"
+#include "Common/CCDB/EventSelectionParams.h"
+#include "Common/Core/MetadataHelper.h"
 #include "Common/DataModel/EventSelection.h"
 #include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/TrackSelection.h"
-#include "Common/Core/TrackSelectionDefaults.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
 
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/HistogramRegistry.h>
+#include <Framework/HistogramSpec.h>
+#include <Framework/InitContext.h>
+#include <Framework/O2DatabasePDGPlugin.h>
+#include <Framework/runDataProcessing.h>
+
+#include <TH1.h>
+#include <TH2.h>
+#include <TH3.h>
+#include <TString.h>
+
+#include <algorithm>
+#include <array>
+#include <cmath>
+#include <cstdint>
+#include <numeric>
 #include <string>
 #include <vector>
+
+#include <math.h>
 
 using namespace o2;
 using namespace o2::framework;
 using namespace o2::framework::expressions;
-using namespace o2::dataformats;
+
+o2::common::core::MetadataHelper metadataInfo;
 
 // TODO: add PID wagons as dependency + include impact parameter studies (same or separate task in workflow??)
 
@@ -67,6 +82,9 @@ struct qaEventTrack {
 
   // option to apply a timeframe cut
   Configurable<bool> tfCut{"tfCut", false, "applies timeframe cut"};
+
+  // option to add run info to the histograms
+  Configurable<bool> addRunInfo{"addRunInfo", true, "add run info (pass, data) to the histograms"};
 
   // options to select only specific tracks
   Configurable<int> trackSelection{"trackSelection", 1, "Track selection: 0 -> No Cut, 1 -> kGlobalTrack, 2 -> kGlobalTrackWoPtEta, 3 -> kGlobalTrackWoDCA, 4 -> kQualityTracks, 5 -> kInAcceptanceTracks"};
@@ -163,6 +181,14 @@ struct qaEventTrack {
       std::array<bool, 2> casesTRD = {checksTRD.forceTRD, checksTRD.forceNotTRD};
       if (std::accumulate(casesTRD.begin(), casesTRD.end(), 0) != 1) {
         LOGP(fatal, "One and only one case between forceTRD and forceNotTRD can be true at a time. Fix it!");
+      }
+    }
+
+    if (addRunInfo) {
+      auto hRunInfo = histos.add<TH1>("hRunInfo", "Run info", kTH1D, {{1, 0.5, 1.5, "Run info"}});
+      // hRunInfo->SetBit(TH1::kCanRebin); // allow dynamic bin creation based on label
+      if (metadataInfo.isFullyDefined()) {
+        hRunInfo->Fill(metadataInfo.makeMetadataLabel().c_str(), 1.0);
       }
     }
 
@@ -1153,6 +1179,8 @@ struct qaEventTrack {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
+  // Parse the metadata
+  metadataInfo.initMetadata(cfgc);
   return WorkflowSpec{adaptAnalysisTask<qaEventTrack>(cfgc)};
 }
 
