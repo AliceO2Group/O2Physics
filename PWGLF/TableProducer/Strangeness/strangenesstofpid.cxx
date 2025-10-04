@@ -1363,10 +1363,10 @@ struct strangenesstofpid {
     bool isNewTOFFormat = true; // can only happen for new format
 
     // auto-determine if using old format
-    if (dauTrackTOFPIDs.size() != 0)
+    if (dauTrackTOFPIDs.size() != 0) {
       auto firstTOFPID = dauTrackTOFPIDs.rawIteratorAt(0);
-    isNewTOFFormat = firstTOFPID.straCollisionId() < 0 ? false : true;
-  }
+      isNewTOFFormat = firstTOFPID.straCollisionId() < 0 ? false : true;
+    }
 
     if (!isNewTOFFormat && calculationMethod.value > 0) {
       LOGF(fatal, "Using the old derived data format with the new calculation method is not viable due to lack of needed info! Crashing.");
