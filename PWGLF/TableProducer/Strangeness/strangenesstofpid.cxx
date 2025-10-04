@@ -1361,12 +1361,12 @@ struct strangenesstofpid {
   void processDerivedData(soa::Join<aod::StraCollisions, aod::StraStamps, aod::StraEvTimes> const& collisions, V0DerivedDatas const& V0s, CascDerivedDatas const& cascades, dauTracks const& dauTrackTable, aod::DauTrackTOFPIDs const& dauTrackTOFPIDs)
   {
     bool isNewTOFFormat = true; // can only happen for new format
-    
+
     // auto-determine if using old format
     if (dauTrackTOFPIDs.size() != 0)
       auto firstTOFPID = dauTrackTOFPIDs.rawIteratorAt(0);
-      isNewTOFFormat = firstTOFPID.straCollisionId() < 0 ? false : true;
-    }
+    isNewTOFFormat = firstTOFPID.straCollisionId() < 0 ? false : true;
+  }
 
     if (!isNewTOFFormat && calculationMethod.value > 0) {
       LOGF(fatal, "Using the old derived data format with the new calculation method is not viable due to lack of needed info! Crashing.");
