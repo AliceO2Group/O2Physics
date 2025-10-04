@@ -185,6 +185,21 @@ DECLARE_SOA_TABLE(NucleiPairTable, "AOD", "NUCLEIPAIRTABLE",
                   NucleiPairTableNS::ClusterSizesITS2,
                   NucleiPairTableNS::Flags2);
 
+// Reduced table
+DECLARE_SOA_TABLE(NucleiTableRed, "AOD", "NUCLEITABLERED",
+                  NucleiTableNS::Pt,
+                  NucleiTableNS::Eta,
+                  NucleiTableNS::Phi,
+                  NucleiTableNS::TPCInnerParam,
+                  NucleiTableNS::ITSclusterSizes,
+                  NucleiTableNS::TPCsignal,
+                  NucleiTableNS::Beta,
+                  NucleiTableNS::DCAxy,
+                  NucleiTableNS::DCAz,
+                  NucleiTableNS::Flags,
+                  NucleiTableNS::PDGcode,
+                  NucleiTableNS::MotherPDGcode);
+
 } // namespace o2::aod
 
 #endif // PWGLF_DATAMODEL_LFSLIMNUCLEITABLES_H_
