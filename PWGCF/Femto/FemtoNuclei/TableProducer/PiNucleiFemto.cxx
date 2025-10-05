@@ -164,6 +164,8 @@ struct PiNucleiFemto {
   Configurable<float> settingCutEta{"settingCutEta", 0.8f, "Eta cut on daughter track"};
   Configurable<float> settingCutChi2tpcLow{"settingCutChi2tpcLow", 0.0f, "Low cut on TPC chi2"};
   Configurable<float> settingCutChi2tpcHigh{"settingCutChi2tpcHigh", 999.f, "High cut on TPC chi2"};
+  Configurable<float> settingCutChi2tpcLowPion{"settingCutChi2tpcLowPion", 0.5f, "Low cut on TPC chi2 only for pion"};
+  Configurable<float> settingCutChi2tpcHighPion{"settingCutChi2tpcHighPion", 4.f, "High cut on TPC chi2 only for pion"};
   Configurable<float> settingCutInvMass{"settingCutInvMass", 0.0f, "Invariant mass upper limit"};
   Configurable<float> settingCutPtMinDePi{"settingCutPtMinDePi", 0.0f, "Minimum PT cut on DePi4"};
   Configurable<float> settingCutClSizeItsDe{"settingCutClSizeItsDe", 4.0f, "Minimum ITS cluster size for De"};
@@ -171,6 +173,7 @@ struct PiNucleiFemto {
   Configurable<float> settingCutTPCChi2He{"settingCutTPCChi2He", 0.0f, "Minimum tpcChi2He for Hyper He3"};
   Configurable<float> settingCutAverClsSizeHe{"settingCutAverClsSizeHe", 0.0f, "Minimum averClusSizeHe for Hyper He3"};
   Configurable<float> settingCutChi2NClITS{"settingCutChi2NClITS", 999.f, "Maximum ITS Chi2 for tracks"};
+  Configurable<float> settingCutChi2NClITSPion{"settingCutChi2NClITSPion", 36.f, "Maximum ITS Chi2 for tracks only for pion"};
   Configurable<float> settingCutNsigmaTPCPi{"settingCutNsigmaTPCPi", 3.0f, "Value of the TPC Nsigma cut on Pi"};
   Configurable<float> settingCutNsigmaTPCDe{"settingCutNsigmaTPCDe", 2.5f, "Value of the TPC Nsigma cut on De"};
   Configurable<float> settingCutNsigmaITSDe{"settingCutNsigmaITSDe", 2.5f, "Value of the ITD Nsigma cut on De"};
@@ -180,6 +183,7 @@ struct PiNucleiFemto {
   Configurable<float> settingCutNsigmaTOFTPCPi{"settingCutNsigmaTOFTPCPi", 3.0f, "Value of the Pion TOF TPC Nsigma cut"};
   Configurable<int> settingNoMixedEvents{"settingNoMixedEvents", 5, "Number of mixed events per event"};
   Configurable<bool> settingEnableBkgUS{"settingEnableBkgUS", false, "Enable US background"};
+  Configurable<bool> settingSaferME{"settingSaferME", false, "For Safer ME"};
 
   Configurable<bool> settingFillTable{"settingFillTable", false, "Enable table filling"};
   Configurable<float> settingCutPiptMin{"settingCutPiptMin", 0.14f, "Minimum PT cut on Pi"};
@@ -283,6 +287,7 @@ struct PiNucleiFemto {
      {"hkStaVsmTVsCent_US_M", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {100, 0.2f, 3.2f}, {100, 0.0f, 100.0f}}}},
      {"hkStaVsmTVsCent_US_A", ";kStar (GeV/c);mT (GeV/#it{c}^{2});Centrality", {HistType::kTH3F, {{300, 0.0f, 3.0f}, {100, 0.2f, 3.2f}, {100, 0.0f, 100.0f}}}},
      {"hCollIDVsCentEachPion", ";CollisionID;Centrality", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {100, 0.0f, 100.0f}}}},
+     {"hCollIDVsCentEachDe", ";CollisionID;Centrality", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {100, 0.0f, 100.0f}}}},
      {"hNHypsPerPrevColl", "Number of V0Hypers in previous collision used for mixing;N_{V0Hypers};Entries", {HistType::kTH2F, {{4000, 0.0f, 4000.0f}, {50, -0.5, 49.5}}}},
      {"hkStar_LS_M", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
      {"hkStar_LS_A", ";kStar (GeV/c)", {HistType::kTH1F, {{300, 0.0f, 3.0f}}}},
@@ -302,7 +307,7 @@ struct PiNucleiFemto {
   float Vz_step = (Vz_high - Vz_low) / numOfVertexZBins;
 
   struct EventRef {
-    int64_t collisionId;
+    uint64_t collisionId;
   };
 
   struct PoolBin {
@@ -477,6 +482,8 @@ struct PiNucleiFemto {
   template <typename Ttrack>
   bool selectionPIDPion(const Ttrack& candidate)
   {
+    if (candidate.tpcChi2NCl() > settingCutChi2tpcHighPion || candidate.tpcChi2NCl() < settingCutChi2tpcLowPion || candidate.itsChi2NCl() > settingCutChi2NClITSPion)
+      return false;
     if (abs(candidate.dcaXY()) > settingCutPiDCAxyMin || abs(candidate.dcaZ()) > settingCutPiDCAzMin)
       return false;
 
@@ -625,9 +632,11 @@ struct PiNucleiFemto {
         nCand = mFitter.process(trackCovDe, trackCovPi);
       } catch (...) {
         LOG(error) << "Exception caught in DCA fitter process call!";
+        mQaRegistry.fill(HIST("hSkipReasons"), 0);
         return false;
       }
       if (nCand == 0) {
+        mQaRegistry.fill(HIST("hSkipReasons"), 1);
         return false;
       }
 
@@ -650,6 +659,7 @@ struct PiNucleiFemto {
       }
 
       if (!mGoodCollisions[collIdxMin]) {
+        mQaRegistry.fill(HIST("hSkipReasons"), 2);
         return false;
       }
       piNucand.collisionID = collIdxMin;
@@ -662,10 +672,12 @@ struct PiNucleiFemto {
     float invMass = 0;
     invMass = RecoDecay::m(std::array{piNucand.momNu, piNucand.momPi}, std::array{o2::constants::physics::MassDeuteron, o2::constants::physics::MassPiPlus});
     if (settingCutInvMass > 0 && invMass > settingCutInvMass) {
+      mQaRegistry.fill(HIST("hSkipReasons"), 3);
       return false;
     }
     float ptDePi = std::hypot(piNucand.momNu[0] + piNucand.momPi[0], piNucand.momNu[1] + piNucand.momPi[1]);
     if (ptDePi < settingCutPtMinDePi) {
+      mQaRegistry.fill(HIST("hSkipReasons"), 4);
       return false;
     }
 
@@ -816,6 +828,7 @@ struct PiNucleiFemto {
       }
       mQaRegistry.fill(HIST("hTrackSel"), Selections::kPID);
       mQaRegistry.fill(HIST("hSingleNuPt"), track0.pt() * track0.sign());
+      mQaRegistry.fill(HIST("hCollIDVsCentEachDe"), track0.collisionId(), cent);
 
       for (const auto& track1 : tracks) {
         if (track0 == track1) {
@@ -1220,26 +1233,35 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
       LOG(info) << "Initialized event pool with size = " << All_Event_pool.size();
     }
     for (auto const& collision : collisions) {
+      if (!collision.sel8()) {
+        mQaRegistry.fill(HIST("hSkipReasons"), 0);
+        continue;
+      }
       mQaRegistry.fill(HIST("hNcontributor"), collision.numContrib());
       mQaRegistry.fill(HIST("hCentrality"), collision.centFT0C());
       mQaRegistry.fill(HIST("hVtxZ"), collision.posZ());
-      int poolIndexPi = where_pool(collision.posZ(), collision.centFT0C());
 
+      int poolIndexPi = where_pool(collision.posZ(), collision.centFT0C());
       if (poolIndexPi < 0 || static_cast<size_t>(poolIndexPi) >= All_Event_pool.size()) {
         continue;
       }
       auto& pool = All_Event_pool[poolIndexPi];
 
+      const uint64_t collIdxPi = collision.globalIndex();
+      auto trackTableThisCollision = pitracks.sliceBy(mPerCol, collIdxPi);
+      trackTableThisCollision.bindExternalIndices(&pitracks);
+
       for (auto const& storedEvent : pool.events) {
-        const auto& c2 = collisions.iteratorAt(storedEvent.collisionId);
-        if (!collision.sel8() || !c2.sel8()) {
-          mQaRegistry.fill(HIST("hSkipReasons"), 0);
-          continue;
+        const uint64_t collIdxHyp = storedEvent.collisionId;
+        if (settingSaferME) {
+          if (static_cast<int64_t>(collIdxHyp) > collisions.size()) {
+            mQaRegistry.fill(HIST("hSkipReasons"), 4);
+            continue;
+          }
         }
 
-        auto hypdTablepreviousCollision = V0Hypers.sliceBy(hypPerCol, c2.globalIndex());
+        auto hypdTablepreviousCollision = V0Hypers.sliceBy(hypPerCol, collIdxHyp);
         hypdTablepreviousCollision.bindExternalIndices(&V0Hypers);
-
         if (hypdTablepreviousCollision.size() == 0) {
           mQaRegistry.fill(HIST("hSkipReasons"), 1);
           continue;
@@ -1247,23 +1269,19 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
 
         auto firstHyp = hypdTablepreviousCollision.iteratorAt(0);
         int poolIndexHyp = where_pool(firstHyp.zPrimVtx(), firstHyp.centralityFT0C());
-
         if (poolIndexHyp != poolIndexPi) {
           mQaRegistry.fill(HIST("hSkipReasons"), 2);
           continue;
         }
+        mQaRegistry.fill(HIST("hNHypsPerPrevColl"), collIdxHyp, hypdTablepreviousCollision.size());
 
-        auto trackTableThisCollision = pitracks.sliceBy(mPerCol, collision.globalIndex());
-        trackTableThisCollision.bindExternalIndices(&pitracks);
-
-        mQaRegistry.fill(HIST("hNHypsPerPrevColl"), c2.globalIndex(), hypdTablepreviousCollision.size());
         pairHyperEventMixing(trackTableThisCollision, hypdTablepreviousCollision);
       }
 
       if (static_cast<int>(pool.events.size()) >= settingNoMixedEvents) {
         pool.events.pop_front();
       }
-      pool.events.push_back({collision.globalIndex()});
+      pool.events.push_back({collIdxPi});
     }
     fillPairsHyper(collisions, pitracks, V0Hypers, /*isMixedEvent*/ true);
   }
