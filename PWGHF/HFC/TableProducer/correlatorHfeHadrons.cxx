@@ -361,7 +361,8 @@ struct HfCorrelatorHfeHadrons {
 
   void processData(TableCollision const& collision,
                    aod::HfCorrSelEl const& electron,
-                   TableTracks const& tracks, aod::BCsWithTimestamps const& bc)
+                   TableTracks const& tracks,
+                   aod::BCsWithTimestamps const& bc)
   {
     fillCorrelation(collision, electron, tracks, bc);
   }
@@ -372,7 +373,8 @@ struct HfCorrelatorHfeHadrons {
 
   void processMcRec(McTableCollision const& mcCollision,
                     aod::HfCorrSelEl const& mcElectron,
-                    McTableTracks const& mcTracks, aod::BCsWithTimestamps const& bc)
+                    McTableTracks const& mcTracks,
+                    aod::BCsWithTimestamps const& bc)
   {
     fillCorrelation(mcCollision, mcElectron, mcTracks, bc);
   }
