@@ -999,7 +999,7 @@ struct DndetaMFTPbPb {
       if (fillHis) {
         float phi = track.phi();
         o2::math_utils::bringTo02Pi(phi);
-        if (phi < 0.f || TwoPI < phi) {
+        if (phi < kZero || TwoPI < phi) {
           continue;
         }
         if constexpr (has_reco_cent<C>) {
@@ -1042,7 +1042,7 @@ struct DndetaMFTPbPb {
       if (fillHis) {
         float phi = itrack.phi();
         o2::math_utils::bringTo02Pi(phi);
-        if (phi < 0.f || TwoPI < phi) {
+        if (phi < kZero || TwoPI < phi) {
           continue;
         }
         if constexpr (has_reco_cent<C>) {
@@ -1072,7 +1072,7 @@ struct DndetaMFTPbPb {
           registry.fill(HIST("Tracks/hBestTrkSel"), trkBestSelNumReassoc);
           float phi = itrack.phi();
           o2::math_utils::bringTo02Pi(phi);
-          if (phi < 0.f || TwoPI < phi) {
+          if (phi < kZero || TwoPI < phi) {
             continue;
           }
           if constexpr (has_reco_cent<C>) {
@@ -1100,7 +1100,7 @@ struct DndetaMFTPbPb {
       if (fillHis) {
         float phi = track.phi();
         o2::math_utils::bringTo02Pi(phi);
-        if (phi < 0.f || TwoPI < phi) {
+        if (phi < kZero || TwoPI < phi) {
           continue;
         }
         if constexpr (has_reco_cent<C>) {
@@ -1322,7 +1322,7 @@ struct DndetaMFTPbPb {
 
       float phi = particle.phi();
       o2::math_utils::bringTo02Pi(phi);
-      if (phi < 0.f || TwoPI < phi) {
+      if (phi < kZero || TwoPI < phi) {
         continue;
       }
       if constexpr (isCent) {
@@ -1338,7 +1338,7 @@ struct DndetaMFTPbPb {
       if (gtZeroColl) {
         float phi = particle.phi();
         o2::math_utils::bringTo02Pi(phi);
-        if (phi < 0.f || TwoPI < phi) {
+        if (phi < kZero || TwoPI < phi) {
           continue;
         }
         if constexpr (isCent) {
