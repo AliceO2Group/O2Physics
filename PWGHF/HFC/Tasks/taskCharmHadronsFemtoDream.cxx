@@ -583,7 +583,7 @@ struct HfTaskCharmHadronsFemtoDream {
         part.tpcNSigmaPr(),
         part.tofNSigmaPr());
     }
-    if (sliceCharmHad.size() || sliceTrk1.size()) {
+    if (sliceCharmHad.size() > 0 || sliceTrk1.size() > 0) {
       rowFemtoResultColl(
         col.globalIndex(),
         timeStamp,
@@ -632,7 +632,7 @@ struct HfTaskCharmHadronsFemtoDream {
     auto sliceMcTrk1 = partitionMcTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto sliceMcCharmHad = partitionMcCharmHadron->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
 
-    if (sliceMcCharmHad.size()) {
+    if (sliceMcCharmHad.size() > 0) {
       for (auto const& part : sliceMcCharmHad) {
         registryCharmHadronQa.fill(HIST("CharmHadronQA/hPtVsMass"), part.pt(), getCharmHadronMass(part));
       }
