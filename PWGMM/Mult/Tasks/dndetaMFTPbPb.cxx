@@ -60,6 +60,9 @@ using namespace o2::aod::rctsel;
 
 auto static constexpr kMinCharge = 3.f;
 auto static constexpr kNumDecay = 4;
+auto static constexpr kIntZero = 0;
+auto static constexpr kZero = 0.f;
+auto static constexpr kIntOne = 1;
 
 enum TrkSel {
   trkSelAll,
@@ -72,11 +75,14 @@ enum TrkSel {
   nTrkSel
 };
 
-enum TrkAmbSel {
-  trkSelAmbiguousAll,
-  trkSelWoAmbiguous,
-  trkSelNumReassoc,
-  nTrkAmbSel
+enum TrkBestSel {
+  trkBestSelAll,
+  trkBestSelCollID,
+  trkBestSelDCAxyCut,
+  trkBestSelDCAzCut,
+  trkBestSelWoAmbiguous,
+  trkBestSelNumReassoc,
+  nTrkBestSel
 };
 
 struct DndetaMFTPbPb {
@@ -288,10 +294,13 @@ struct DndetaMFTPbPb {
     hev->GetXaxis()->SetBinLabel(13, "Above max occup.");
     hev->GetXaxis()->SetBinLabel(14, "RCT Flag Checker");
 
-    registry.add("Tracks/hAmbTrkSel", "Number of ambiguous tracks; Cut; #Tracks Passed Cut", {HistType::kTH1F, {{nTrkAmbSel, -0.5, +nTrkAmbSel - 0.5}}});
-    registry.get<TH1>(HIST("Tracks/hAmbTrkSel"))->GetXaxis()->SetBinLabel(trkSelAmbiguousAll + 1, "All");
-    registry.get<TH1>(HIST("Tracks/hAmbTrkSel"))->GetXaxis()->SetBinLabel(trkSelWoAmbiguous + 1, "No Ambiguous");
-    registry.get<TH1>(HIST("Tracks/hAmbTrkSel"))->GetXaxis()->SetBinLabel(trkSelNumReassoc + 1, "Reassociated");
+    registry.add("Tracks/hBestTrkSel", "Number of best tracks; Cut; #Tracks Passed Cut", {HistType::kTH1F, {{nTrkBestSel, -0.5, +nTrkBestSel - 0.5}}});
+    registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->GetXaxis()->SetBinLabel(trkBestSelAll + 1, "All");
+    registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->GetXaxis()->SetBinLabel(trkBestSelCollID + 1, "Assigned (ID>=0)");
+    registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->GetXaxis()->SetBinLabel(trkBestSelDCAxyCut + 1, "DCA xy cut");
+    registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->GetXaxis()->SetBinLabel(trkBestSelDCAzCut + 1, "DCA z cut");
+    registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->GetXaxis()->SetBinLabel(trkBestSelWoAmbiguous + 1, "No Ambiguous");
+    registry.get<TH1>(HIST("Tracks/hBestTrkSel"))->GetXaxis()->SetBinLabel(trkBestSelNumReassoc + 1, "Reassociated");
 
     registry.add("Tracks/hTrkSel", "Number of tracks; Cut; #Tracks Passed Cut", {HistType::kTH1F, {{nTrkSel, -0.5, +nTrkSel - 0.5}}});
     registry.get<TH1>(HIST("Tracks/hTrkSel"))->GetXaxis()->SetBinLabel(trkSelAll + 1, "All");
@@ -842,7 +851,7 @@ struct DndetaMFTPbPb {
   /// Filters - tracks
   Filter filtTrkEta = (aod::fwdtrack::eta < trackCuts.maxEta) &&
                       (aod::fwdtrack::eta > trackCuts.minEta);
-  Filter filtATrackID = (aod::fwdtrack::bestCollisionId >= 0);
+  Filter filtATrackID = (aod::fwdtrack::bestCollisionId >= kIntZero);
   Filter filtATrackDCAxy = (nabs(aod::fwdtrack::bestDCAXY) < trackCuts.maxDCAxy);
   Filter filtATrackDCAz = (nabs(aod::fwdtrack::bestDCAZ) < trackCuts.maxDCAz);
 
@@ -852,6 +861,7 @@ struct DndetaMFTPbPb {
   /// Joined tables
   using FullBCs = soa::Join<aod::BCsWithTimestamps, aod::BcSels>;
   using CollBCs = soa::Join<aod::BCsWithTimestamps, aod::Run3MatchedToBCSparse>;
+  // Collisions
   using Colls = soa::Join<aod::Collisions, aod::EvSels>;
   using Coll = Colls::iterator;
   using CollsCentFT0C = soa::Join<aod::Collisions, aod::CentFT0Cs, aod::EvSels>;
@@ -866,7 +876,7 @@ struct DndetaMFTPbPb {
                                      aod::CentFT0Cs, aod::EvSels>;
   using CollGenCent = CollsGenCentFT0C::iterator;
   using CollsCorr = soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::PVMults, aod::CentFT0Cs, aod::CentFV0As, aod::CentFT0CVariant1s, aod::CentFT0Ms, aod::CentNGlobals, aod::CentMFTs>;
-
+  // Tracks
   using MFTTracksLabeled = soa::Join<aod::MFTTracks, aod::McMFTTrackLabels>;
   using MftTracksWColls = soa::Join<aod::MFTTracks, aod::MFTTrkCompColls>;
 
@@ -876,10 +886,37 @@ struct DndetaMFTPbPb {
   using FiltBestTracks = soa::Filtered<aod::BestCollisionsFwd3d>;
   using FiltParticles = soa::Filtered<aod::McParticles>;
 
-  bool isHitAtDisk(uint16_t map, int ilayer)
+  template <bool fillHis = true, typename B>
+  bool isBestTrackSelected(const B& besttrack)
   {
-    LOGF(debug, " map %i --> %i", map, (map >> (ilayer * 6)) & 0x3F);
-    return (map >> (ilayer * 6)) & 0x3F;
+    if (fillHis) {
+      registry.fill(HIST("Tracks/hBestTrkSel"), trkBestSelAll);
+    }
+    if (besttrack.bestCollisionId() < kIntZero) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("Tracks/hBestTrkSel"), trkBestSelCollID);
+    }
+    if (std::abs(besttrack.bestDCAXY()) >= trackCuts.maxDCAxy) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("Tracks/hBestTrkSel"), trkBestSelDCAxyCut);
+    }
+    if (std::abs(besttrack.bestDCAZ()) >= trackCuts.maxDCAxy) {
+      return false;
+    }
+    if constexpr (fillHis) {
+      registry.fill(HIST("Tracks/hBestTrkSel"), trkBestSelDCAzCut);
+    }
+    if (trackCuts.excludeAmbiguous && besttrack.ambDegree() > kIntOne) {
+      return false;
+    }
+    if (fillHis) {
+      registry.fill(HIST("Tracks/hBestTrkSel"), trkBestSelWoAmbiguous);
+    }
+    return true;
   }
 
   template <bool fillHis = true, typename T>
@@ -962,7 +999,7 @@ struct DndetaMFTPbPb {
       if (fillHis) {
         float phi = track.phi();
         o2::math_utils::bringTo02Pi(phi);
-        if (phi < 0.f || TwoPI < phi) {
+        if (phi < kZero || TwoPI < phi) {
           continue;
         }
         if constexpr (has_reco_cent<C>) {
@@ -993,14 +1030,8 @@ struct DndetaMFTPbPb {
     ambiguousTrkIds.reserve(besttracks.size());
     reassignedTrkIds.reserve(besttracks.size());
     for (auto const& atrack : besttracks) {
-      if (fillHis) {
-        registry.fill(HIST("Tracks/hAmbTrkSel"), trkSelAmbiguousAll);
-      }
-      if (trackCuts.excludeAmbiguous && atrack.ambDegree() > 1) {
+      if (!isBestTrackSelected(atrack)) {
         continue;
-      }
-      if (fillHis) {
-        registry.fill(HIST("Tracks/hAmbTrkSel"), trkSelWoAmbiguous);
       }
       auto itrack = atrack.template mfttrack_as<T>();
       if (!isTrackSelected(itrack)) {
@@ -1011,7 +1042,7 @@ struct DndetaMFTPbPb {
       if (fillHis) {
         float phi = itrack.phi();
         o2::math_utils::bringTo02Pi(phi);
-        if (phi < 0.f || TwoPI < phi) {
+        if (phi < kZero || TwoPI < phi) {
           continue;
         }
         if constexpr (has_reco_cent<C>) {
@@ -1038,10 +1069,10 @@ struct DndetaMFTPbPb {
       if (itrack.has_collision() && itrack.collisionId() != atrack.bestCollisionId()) {
         reassignedTrkIds.emplace_back(atrack.mfttrackId());
         if (fillHis) {
-          registry.fill(HIST("Tracks/hAmbTrkSel"), trkSelNumReassoc);
+          registry.fill(HIST("Tracks/hBestTrkSel"), trkBestSelNumReassoc);
           float phi = itrack.phi();
           o2::math_utils::bringTo02Pi(phi);
-          if (phi < 0.f || TwoPI < phi) {
+          if (phi < kZero || TwoPI < phi) {
             continue;
           }
           if constexpr (has_reco_cent<C>) {
@@ -1069,7 +1100,7 @@ struct DndetaMFTPbPb {
       if (fillHis) {
         float phi = track.phi();
         o2::math_utils::bringTo02Pi(phi);
-        if (phi < 0.f || TwoPI < phi) {
+        if (phi < kZero || TwoPI < phi) {
           continue;
         }
         if constexpr (has_reco_cent<C>) {
@@ -1291,7 +1322,7 @@ struct DndetaMFTPbPb {
 
       float phi = particle.phi();
       o2::math_utils::bringTo02Pi(phi);
-      if (phi < 0.f || TwoPI < phi) {
+      if (phi < kZero || TwoPI < phi) {
         continue;
       }
       if constexpr (isCent) {
@@ -1307,7 +1338,7 @@ struct DndetaMFTPbPb {
       if (gtZeroColl) {
         float phi = particle.phi();
         o2::math_utils::bringTo02Pi(phi);
-        if (phi < 0.f || TwoPI < phi) {
+        if (phi < kZero || TwoPI < phi) {
           continue;
         }
         if constexpr (isCent) {
@@ -2157,7 +2188,7 @@ struct DndetaMFTPbPb {
 
     for (auto const& track : besttracks) {
       ambiguousTrkIdsMC.emplace_back(track.mfttrackId());
-      if (trackCuts.excludeAmbiguous && track.ambDegree() > 1) {
+      if (!isBestTrackSelected<false>(track)) {
         continue;
       }
       auto itrack = track.mfttrack_as<FiltMcMftTracks>();
@@ -2639,7 +2670,7 @@ struct DndetaMFTPbPb {
 
     auto nBestTrks = 0;
     for (auto const& atrack : besttracks) {
-      if (trackCuts.excludeAmbiguous && atrack.ambDegree() > 1) {
+      if (cfgUseTrackSel && !isBestTrackSelected<false>(atrack)) {
         continue;
       }
       auto itrack = atrack.template mfttrack_as<FiltMftTracks>();
