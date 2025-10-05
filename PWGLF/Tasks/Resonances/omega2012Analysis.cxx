@@ -36,10 +36,10 @@ using namespace o2::constants::physics;
 
 struct Omega2012Analysis {
   // Constants
-  static constexpr float kSmallNumber = 1e-10f;         // Small number to avoid division by zero
-  static constexpr float kMaxDCAV0ToPV = 1.0f;          // Maximum DCA of V0 to PV
-  static constexpr int kNumExpectedDaughters = 2;       // Expected number of daughters for 2-body decay
-  static constexpr int kPlaceholderPdgCode = 9999999;   // o2-linter: disable=pdg/explicit-code (placeholder for generator-specific Omega(2012) PDG code)
+  static constexpr float kSmallNumber = 1e-10f;       // Small number to avoid division by zero
+  static constexpr float kMaxDCAV0ToPV = 1.0f;        // Maximum DCA of V0 to PV
+  static constexpr int kNumExpectedDaughters = 2;     // Expected number of daughters for 2-body decay
+  static constexpr int kPlaceholderPdgCode = 9999999; // o2-linter: disable=pdg/explicit-code (placeholder for generator-specific Omega(2012) PDG code)
   SliceCache cache;
   Preslice<aod::ResoCascades> perResoCollisionCasc = aod::resodaughter::resoCollisionId;
   Preslice<aod::ResoV0s> perResoCollisionV0 = aod::resodaughter::resoCollisionId;
