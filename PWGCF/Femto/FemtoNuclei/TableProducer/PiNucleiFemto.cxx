@@ -482,7 +482,7 @@ struct PiNucleiFemto {
   template <typename Ttrack>
   bool selectionPIDPion(const Ttrack& candidate)
   {
-    if ( candidate.tpcChi2NCl() > settingCutChi2tpcHighPion ||candidate.tpcChi2NCl() < settingCutChi2tpcLowPion ||candidate.itsChi2NCl() > settingCutChi2NClITSPion)
+    if (candidate.tpcChi2NCl() > settingCutChi2tpcHighPion || candidate.tpcChi2NCl() < settingCutChi2tpcLowPion || candidate.itsChi2NCl() > settingCutChi2NClITSPion)
       return false;
     if (abs(candidate.dcaXY()) > settingCutPiDCAxyMin || abs(candidate.dcaZ()) > settingCutPiDCAzMin)
       return false;
