@@ -372,9 +372,9 @@ struct HfCorrelatorHfeHadrons {
 
   void processMcRec(McTableCollision const& mcCollision,
                     aod::HfCorrSelEl const& mcElectron,
-                    McTableTracks const& mcTracks)
+                    McTableTracks const& mcTracks, aod::BCsWithTimestamps const& bc)
   {
-    fillCorrelation(mcCollision, mcElectron, mcTracks, 0);
+    fillCorrelation(mcCollision, mcElectron, mcTracks, bc);
   }
 
   PROCESS_SWITCH(HfCorrelatorHfeHadrons, processMcRec, "Process MC Reco mode", false);
