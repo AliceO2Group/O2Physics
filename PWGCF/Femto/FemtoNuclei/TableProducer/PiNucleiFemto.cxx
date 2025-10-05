@@ -1254,7 +1254,7 @@ PROCESS_SWITCH(PiNucleiFemto, processMixedEventHyper, "Process Mixed event", fal
       for (auto const& storedEvent : pool.events) {
         const uint64_t collIdxHyp = storedEvent.collisionId;
         if (settingSaferME) {
-          if (collIdxHyp > collisions.size()) {
+          if (static_cast<int64_t>(collIdxHyp) > collisions.size()) {
             mQaRegistry.fill(HIST("hSkipReasons"), 4);
             continue;
           }
