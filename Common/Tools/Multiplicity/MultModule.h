@@ -1231,8 +1231,8 @@ class MultModule
         if (internalOpts.mEnabledTables[kCentFT0CVariant1s])
           getccdb(ft0cVariant1Info, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentFT0CVariant2s])
-	  getccdb(ft0cVariant2Info, internalOpts.generatorName);
-      	if (internalOpts.mEnabledTables[kCentFDDMs])
+          getccdb(ft0cVariant2Info, internalOpts.generatorName);
+        if (internalOpts.mEnabledTables[kCentFDDMs])
           getccdb(fddmInfo, internalOpts.generatorName);
         if (internalOpts.mEnabledTables[kCentNTPVs])
           getccdb(ntpvInfo, internalOpts.generatorName);
@@ -1256,8 +1256,8 @@ class MultModule
     if (
       internalOpts.mEnabledTables[kCentFV0As] || internalOpts.mEnabledTables[kCentFT0Ms] ||
       internalOpts.mEnabledTables[kCentFT0As] || internalOpts.mEnabledTables[kCentFT0Cs] ||
-      internalOpts.mEnabledTables[kCentFT0CVariant1s] || 
-      internalOpts.mEnabledTables[kCentFT0CVariant2s] || 
+      internalOpts.mEnabledTables[kCentFT0CVariant1s] ||
+      internalOpts.mEnabledTables[kCentFT0CVariant2s] ||
       internalOpts.mEnabledTables[kCentFDDMs] ||
       internalOpts.mEnabledTables[kCentNTPVs] || internalOpts.mEnabledTables[kCentNGlobals] ||
       internalOpts.mEnabledTables[kCentMFTs] || internalOpts.mEnabledTables[kBCCentFT0Ms] ||
@@ -1314,7 +1314,7 @@ class MultModule
         if (internalOpts.mEnabledTables[kCentFT0CVariant1s])
           populateTable(cursors.centFT0CVariant1, ft0cVariant1Info, mults[iEv].multFT0CZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFT0CVariant2s])
-	  populateTable(cursors.centFT0CVariant2, ft0cVariant2Info, mults[iEv].multFT0CZeq, isInelGt0);
+          populateTable(cursors.centFT0CVariant2, ft0cVariant2Info, mults[iEv].multFT0CZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentFDDMs])
           populateTable(cursors.centFDDM, fddmInfo, mults[iEv].multFDDAZeq + mults[iEv].multFDDCZeq, isInelGt0);
         if (internalOpts.mEnabledTables[kCentNTPVs])
