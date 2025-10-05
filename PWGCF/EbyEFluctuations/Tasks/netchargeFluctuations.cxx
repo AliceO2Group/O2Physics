@@ -59,20 +59,33 @@ enum RunType {
   kRun2
 };
 
+// Structure to handle net charge fluctuation analysis
 struct NetchargeFluctuations {
+
+  // Macro to define configurable parameters with default values and help text
+
 #define O2_DEFINE_CONFIGURABLE(NAME, TYPE, DEFAULT, HELP) Configurable<TYPE> NAME{#NAME, DEFAULT, HELP};
 
-  Service<o2::framework::O2DatabasePDG> pdgService;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
+  // Services for PDG and CCDB (Calibration and Condition Database)
+  Service<o2::framework::O2DatabasePDG> pdgService; // Particle data group service
+  Service<o2::ccdb::BasicCCDBManager> ccdb;         // CCDB manager service
+
+  // Random number generator for statistical fluctuations, initialized with seed 0
   TRandom3* fRndm = new TRandom3(0);
+
+  // Registry for histograms used in analysis
   HistogramRegistry histogramRegistry{"Histos", {}, OutputObjHandlingPolicy::AnalysisObject};
 
-  // Configurables
+  // -------------------
+  // Configurable parameters
+  // -------------------
+  // CCDB related configurations
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> cfgUrlCCDB{"cfgUrlCCDB", "http://alice-ccdb.cern.ch", "url of ccdb"};
   Configurable<std::string> cfgPathCCDB{"cfgPathCCDB", "Users/n/nimalik/netcharge/p/Run3/LHC24f3d", "Path for ccdb-object"};
   Configurable<bool> cfgLoadEff{"cfgLoadEff", true, "Load efficiency"};
 
+  // Track and event selection cuts
   Configurable<float> vertexZcut{"vertexZcut", 10.f, "Vertex Z"};
   Configurable<float> etaCut{"etaCut", 0.8f, "Eta cut"};
   Configurable<float> ptMinCut{"ptMinCut", 0.2, "Pt min cut"};
@@ -99,38 +112,49 @@ struct NetchargeFluctuations {
   Configurable<bool> cTpcChi{"cTpcChi", true, "TPC chi"};
   Configurable<bool> cFT0C{"cFT0C", true, "cent FT0C"};
   Configurable<bool> cFT0M{"cFT0M", false, "cent FT0M"};
-  ConfigurableAxis centBining{"centBining", {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Centrality/Multiplicity percentile bining"};
-  Configurable<bool> cPileupReject{"cPileupReject", true, "Pileup rejection"};                          // pileup
-  Configurable<bool> cfgUseGoodItsLayerAllCut{"cfgUseGoodItsLayerAllCut", true, "Good ITS Layers All"}; // pileup
-  Configurable<bool> cTFBorder{"cTFBorder", false, "Timeframe Border Selection"};                       // pileup
-  Configurable<bool> cNoItsROBorder{"cNoItsROBorder", false, "No ITSRO Border Cut"};                    // pileup
-  Configurable<bool> cItsTpcVtx{"cItsTpcVtx", true, "ITS+TPC Vertex Selection"};                        // pileup
-  Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "z-vtx time diff selection"};                // pileup
-  Configurable<bool> cPVcont{"cPVcont", true, "primary vertex contributor"};
 
+  // Centrality binning configuration
+  ConfigurableAxis centBining{"centBining", {0, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100}, "Centrality/Multiplicity percentile bining"};
+  Configurable<bool> cPileupReject{"cPileupReject", false, "Pileup rejection"};                          // pileup
+  Configurable<bool> cfgUseGoodItsLayerAllCut{"cfgUseGoodItsLayerAllCut", false, "Good ITS Layers All"}; // pileup
+  Configurable<bool> cTFBorder{"cTFBorder", false, "Timeframe Border Selection"};                        // pileup
+  Configurable<bool> cNoItsROBorder{"cNoItsROBorder", false, "No ITSRO Border Cut"};                     // pileup
+  Configurable<bool> cItsTpcVtx{"cItsTpcVtx", false, "ITS+TPC Vertex Selection"};                        // pileup
+  Configurable<bool> cZVtxTimeDiff{"cZVtxTimeDiff", false, "z-vtx time diff selection"};                 // pileup
+  Configurable<bool> cPVcont{"cPVcont", false, "primary vertex contributor"};
+
+  // Configurable to enable multiplicity correlation cuts
   O2_DEFINE_CONFIGURABLE(cfgEvSelMultCorrelation, bool, true, "Multiplicity correlation cut")
+
+  // Struct grouping multiplicity vs centrality/vertex cuts and related parameters
   struct : ConfigurableGroup {
 
+    // Flags to enable specific multiplicity correlation cuts
     O2_DEFINE_CONFIGURABLE(cfgMultPVT0CCutEnabled, bool, true, "Enable PV multiplicity vs T0C centrality cut")
     O2_DEFINE_CONFIGURABLE(cfgMultGlobalFT0CCutEnabled, bool, true, "Enable globalTracks vs FT0C multiplicity cut")
-    O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCutEnabled, bool, false, "Enable globalTracks vs PV multiplicity cut")
+    O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCutEnabled, bool, true, "Enable globalTracks vs PV multiplicity cut")
 
+    // Parameter values for PV multiplicity vs FT0C centrality cut (polynomial coefficients, etc.)
     Configurable<std::vector<double>> cfgMultPVT0CCutPars{"cfgMultPVT0CCutPars",
-                                                          std::vector<double>{187.621, -5.14575, 0.0716601, -0.000586642, 2.02818e-06, 51.2929, -1.66644, 0.0354762, -0.000389809, 1.55365e-06},
+                                                          std::vector<double>{30.434, -0.917137, 0.0185032, -0.000198425, 7.94381e-07, 13.7406, -0.282656, 0.00556147, -6.32766e-05, 2.51648e-07},
                                                           "PV multiplicity vs T0C centrality cut parameter values"};
 
+    // Parameter values for globalTracks vs FT0C multiplicity cut
     Configurable<std::vector<double>> cfgMultGlobalFT0CCutPars{"cfgMultGlobalFT0CCutPars",
-                                                               std::vector<double>{135.561, -3.7818, 0.0536562, -0.000445155, 1.55429e-06, 38.2336, -1.2568, 0.0270932, -0.000301034, 1.21234e-06},
+                                                               std::vector<double>{18.9628, -0.576466, 0.0117324, -0.000126086, 5.05365e-07, 8.99921, -0.188022, 0.0037089, -4.20275e-05, 1.68234e-07},
                                                                "globalTracks vs FT0C cut parameter values"};
 
+    // Parameter values for globalTracks vs PV multiplicity cut
     Configurable<std::vector<double>> cfgMultGlobalPVCutPars{"cfgMultGlobalPVCutPars",
-                                                             std::vector<double>{100., -2., 0.05, -0.0003, 1e-06, 30., -1.0, 0.02, -0.0002, 8e-07},
+                                                             std::vector<double>{0.148031, 0.616699, 0.603083, 0.112751, -0.0013846, 8.38211e-06},
                                                              "globalTracks vs PV cut parameter values"};
 
+    // Local vectors to store the above parameters
     std::vector<double> multPVT0CCutPars;
     std::vector<double> multGlobalFT0CPars;
     std::vector<double> multGlobalPVCutPars;
 
+    // TF1 objects to represent low/high cut functions for the above correlations
     TF1* fMultPVT0CCutLow = nullptr;
     TF1* fMultPVT0CCutHigh = nullptr;
     TF1* fMultGlobalFT0CCutLow = nullptr;
@@ -140,9 +164,10 @@ struct NetchargeFluctuations {
 
   } cfgFunCoeff;
 
-  // CCDB efficiency histograms
+  // Histogram pointer for CCDB efficiency
   TH1D* efficiency = nullptr;
 
+  // Filters for selecting collisions and tracks
   Filter collisionFilter = nabs(aod::collision::posZ) <= vertexZcut;
   Filter trackFilter = (nabs(aod::track::eta) < etaCut) && (aod::track::pt > ptMinCut) && (aod::track::pt < ptMaxCut) && (requireGlobalTrackInFilter());
 
@@ -166,6 +191,9 @@ struct NetchargeFluctuations {
 
   void init(o2::framework::InitContext&)
   {
+    // -------------------------------
+    // Define histogram axes specifications
+    // -------------------------------
     const AxisSpec vtxzAxis = {800, -20, 20, "V_{Z} (cm)"};
     const AxisSpec dcaAxis = {1000, -0.5, 0.5, "DCA_{xy} (cm)"};
     const AxisSpec dcazAxis = {600, -3, 3, "DCA_{z} (cm)"};
@@ -185,10 +213,12 @@ struct NetchargeFluctuations {
     const AxisSpec nchpAxis = {50000, 0, 50000, "Nch"};
     const AxisSpec cent1Axis{centBining, "Multiplicity percentile from FT0M (%)"};
 
+    // Subsample axis (used for error estimation from subsamples)
     auto noSubsample = static_cast<int>(cfgNSubsample);
     float maxSubsample = 1.0 * noSubsample;
     AxisSpec subsampleAxis = {noSubsample, 0.0, maxSubsample, "subsample no."};
 
+    // Add QA histograms
     histogramRegistry.add("QA/hVtxZ_before", "", kTH1F, {vtxzAxis});
     histogramRegistry.add("QA/hDcaXY_before", "", kTH1F, {dcaAxis});
     histogramRegistry.add("QA/hphi", "", kTH1F, {phiAxis});
@@ -316,6 +346,7 @@ struct NetchargeFluctuations {
     histogramRegistry.add("QA/hNchGlobal", "", kTH1F, {nchAxis});
     histogramRegistry.add("QA/hNchPV", "", kTH1F, {nchAxis});
 
+    // QA histograms for multiplicity correlations
     histogramRegistry.add("MultCorrelationPlots/globalTracks_PV_bef", "", {HistType::kTH2D, {nchAxis, nchAxis}});
     histogramRegistry.add("MultCorrelationPlots/globalTracks_FT0C_bef", "", {HistType::kTH2D, {centAxis, nchAxis}});
     histogramRegistry.add("MultCorrelationPlots/PV_FT0C_bef", "", {HistType::kTH2D, {centAxis, nchAxis}});
@@ -328,42 +359,54 @@ struct NetchargeFluctuations {
     cfgFunCoeff.multGlobalFT0CPars = cfgFunCoeff.cfgMultGlobalFT0CCutPars;
     cfgFunCoeff.multGlobalPVCutPars = cfgFunCoeff.cfgMultGlobalPVCutPars;
 
+    // --- Initialize PV vs FT0C multiplicity cut functions ---
+    // Lower cut function: 4th-order polynomial minus 3.5 sigma deviation
+
     cfgFunCoeff.fMultPVT0CCutLow =
       new TF1("fMultPVT0CCutLow",
-              "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 2.0*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)",
+              "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)",
               0, 100);
     cfgFunCoeff.fMultPVT0CCutLow->SetParameters(&(cfgFunCoeff.multPVT0CCutPars[0]));
 
+    // Upper cut function: 4th-order polynomial plus 3.5 sigma deviation
     cfgFunCoeff.fMultPVT0CCutHigh =
       new TF1("fMultPVT0CCutHigh",
-              "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 2.*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)",
+              "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)",
               0, 100);
     cfgFunCoeff.fMultPVT0CCutHigh->SetParameters(&(cfgFunCoeff.multPVT0CCutPars[0]));
 
+    // --- Initialize globalTracks vs FT0C multiplicity cut functions ---
+    // Lower cut function
     cfgFunCoeff.fMultGlobalFT0CCutLow =
       new TF1("fMultGlobalFT0CCutLow",
-              "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 2.*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)",
+              "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x - 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)",
               0, 100);
     cfgFunCoeff.fMultGlobalFT0CCutLow->SetParameters(&(cfgFunCoeff.multGlobalFT0CPars[0]));
 
+    // Upper cut function
     cfgFunCoeff.fMultGlobalFT0CCutHigh =
       new TF1("fMultGlobalFT0CCutHigh",
-              "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 2.*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)",
+              "[0]+[1]*x+[2]*x*x+[3]*x*x*x+[4]*x*x*x*x + 3.5*([5]+[6]*x+[7]*x*x+[8]*x*x*x+[9]*x*x*x*x)",
               0, 100);
     cfgFunCoeff.fMultGlobalFT0CCutHigh->SetParameters(&(cfgFunCoeff.multGlobalFT0CPars[0]));
 
+    // --- Initialize globalTracks vs PV multiplicity cut functions ---
+    // Lower cut: linear + cubic term minus 3.5 sigma
+
     cfgFunCoeff.fMultGlobalPVCutLow =
       new TF1("fMultGlobalPVCutLow",
-              "[0] + [1]*x - 5.*([2] + [3]*x)",
+              "[0]+[1]*x - 3.5*([2]+[3]*x+[4]*x*x+[5]*x*x*x)",
               0, 100);
     cfgFunCoeff.fMultGlobalPVCutLow->SetParameters(&(cfgFunCoeff.multGlobalPVCutPars[0]));
 
+    // Upper cut: linear + cubic term plus 3.5 sigma
     cfgFunCoeff.fMultGlobalPVCutHigh =
       new TF1("fMultGlobalPVCutHigh",
-              "[0] + [1]*x + 5.*([2] + [3]*x)",
+              "[0]+[1]*x + 3.5*([2]+[3]*x+[4]*x*x+[5]*x*x*x)",
               0, 100);
     cfgFunCoeff.fMultGlobalPVCutHigh->SetParameters(&(cfgFunCoeff.multGlobalPVCutPars[0]));
 
+    // --- Load efficiency histogram from CCDB
     if (cfgLoadEff) {
       ccdb->setURL(cfgUrlCCDB.value);
       ccdb->setCaching(true);
@@ -371,6 +414,7 @@ struct NetchargeFluctuations {
 
       TList* list = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, -1);
       efficiency = reinterpret_cast<TH1D*>(list->FindObject("efficiency_Run3"));
+      // Log fatal error if efficiency histogram is not found
       if (!efficiency) {
         LOGF(info, "FATAL!! Could not find required histograms in CCDB");
       }
@@ -1001,7 +1045,7 @@ struct NetchargeFluctuations {
     }
   }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processDataRun3, "Process for Run3 DATA", true);
+  PROCESS_SWITCH(NetchargeFluctuations, processDataRun3, "Process for Run3 DATA", false);
 
   // process function for Data Run2
   void processDataRun2(MyCollisionRun2 const& coll, MyTracks const& tracks)
@@ -1015,7 +1059,7 @@ struct NetchargeFluctuations {
     }
   }
 
-  PROCESS_SWITCH(NetchargeFluctuations, processDataRun2, "Process for Run2 DATA", false);
+  PROCESS_SWITCH(NetchargeFluctuations, processDataRun2, "Process for Run2 DATA", true);
 
   // process function for MC Run3
 

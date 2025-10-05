@@ -37,7 +37,7 @@
 #include <DataFormatsParameters/GRPMagField.h>
 #include <DetectorsBase/GeometryManager.h>
 #include <DetectorsBase/Propagator.h>
-#include <DetectorsVertexing/HelixHelper.h>
+#include <ReconstructionDataFormats/HelixHelper.h>
 #include <Framework/ASoAHelpers.h>
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisTask.h>
@@ -91,20 +91,32 @@ static constexpr size_t kMaxValidHitsForTruncation56 = 3;
 static constexpr size_t kMaxValidHitsForTruncation34 = 2;
 static constexpr size_t kMaxValidHitsForTruncation12 = 1;
 
+// Constants for LUT binning
+// To do: Include in LUT header or similar
+static constexpr int kLUTEtaBins = 50;
+static constexpr float kLUTEtaMin = -2.5f;
+static constexpr float kLUTEtaMax = 2.5f;
+static constexpr int kLUTPtBins = 500;
+static constexpr float kLUTPtMin = 0.0f;
+static constexpr float kLUTPtMax = 10.0f;
+
 class ToTLUT
 {
  public:
-  ToTLUT(float truncationFractionVal, int maxLayers, int etaBins, float etaMin, float etaMax, int ptBins, float ptMin, float ptMax)
-    : mTruncationFraction(truncationFractionVal),
-      mMaxLayers(maxLayers),
-      mEtaBins(etaBins),
-      mEtaMin(etaMin),
-      mEtaMax(etaMax),
-      mPtBins(ptBins),
-      mPtMin(ptMin),
-      mPtMax(ptMax),
-      mEtaBinWidth((etaMax - etaMin) / etaBins),
-      mPtBinWidth((ptMax - ptMin) / ptBins)
+  explicit ToTLUT(int maxLayers, float analysisEtaMinVal = 0.0f, float analysisEtaMaxVal = 1.0f, float analysisPtMinVal = 0.0f, float analysisPtMaxVal = 10.0f)
+    : mMaxLayers(maxLayers),
+      mAnalysisEtaMin(analysisEtaMinVal),
+      mAnalysisEtaMax(analysisEtaMaxVal),
+      mAnalysisPtMin(analysisPtMinVal),
+      mAnalysisPtMax(analysisPtMaxVal),
+      mEtaBins(kLUTEtaBins),
+      mEtaMin(kLUTEtaMin),
+      mEtaMax(kLUTEtaMax),
+      mPtBins(kLUTPtBins),
+      mPtMin(kLUTPtMin),
+      mPtMax(kLUTPtMax),
+      mEtaBinWidth((kLUTEtaMax - kLUTEtaMin) / kLUTEtaBins),
+      mPtBinWidth((kLUTPtMax - kLUTPtMin) / kLUTPtBins)
   {
     mPdgToIndexMap.reserve(10);
     mIndexToPdgMap.reserve(10);
@@ -179,9 +191,21 @@ class ToTLUT
       for (int etaBin = 0; etaBin < mEtaBins; ++etaBin) {
         float etaMinBin = mEtaMin + etaBin * mEtaBinWidth;
         float etaMaxBin = etaMinBin + mEtaBinWidth;
+
+        float etaCenter = (etaMinBin + etaMaxBin) / 2.0f;
+        if (std::abs(etaCenter) < mAnalysisEtaMin || std::abs(etaCenter) > mAnalysisEtaMax) {
+          continue;
+        }
+
         for (int ptBin = 0; ptBin < mPtBins; ++ptBin) {
           float ptMinBin = mPtMin + ptBin * mPtBinWidth;
           float ptMaxBin = ptMinBin + mPtBinWidth;
+          float ptCenter = (ptMinBin + ptMaxBin) / 2.0f;
+
+          if (ptCenter < mAnalysisPtMin || ptCenter >= mAnalysisPtMax) {
+            continue;
+          }
+
           TString histName = Form("tot_%d_barrel%d_eta%.2f-%.2f_pt%.2f-%.2f", pdg, layer, etaMinBin, etaMaxBin, ptMinBin, ptMaxBin);
 
           TH1F* histFromFile = dynamic_cast<TH1F*>(f->Get(histName));
@@ -252,8 +276,11 @@ class ToTLUT
   std::unordered_map<int, int> mPdgToIndexMap;
   std::vector<int> mIndexToPdgMap;
 
-  float mTruncationFraction;
   int mMaxLayers;
+  float mAnalysisEtaMin;
+  float mAnalysisEtaMax;
+  float mAnalysisPtMin;
+  float mAnalysisPtMax;
   int mEtaBins;
   float mEtaMin;
   float mEtaMax;
@@ -380,16 +407,13 @@ struct OnTheFlyTrackerPid {
   Configurable<std::string> lutTotHe{"lutTotHe", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for helium-3"};
   Configurable<std::string> lutTotAl{"lutTotAl", "ccdb:Users/h/hfribert/ToT_LUTs", "ToT LUT for alphas"};
 
-  Configurable<float> truncationFraction{"truncationFraction", 0.80f, "Fraction of lower entries to consider for truncated standard deviation"};
   Configurable<float> dBz{"dBz", 20, "magnetic field (kilogauss) for track propagation"};
   Configurable<int> maxBarrelLayers{"maxBarrelLayers", 11, "Maximum number of barrel layers"};
-  Configurable<int> etaBins{"etaBins", 50, "Number of eta bins for LUTs and histograms"};
-  Configurable<float> etaMin{"etaMin", -2.5f, "Minimum eta value"};
-  Configurable<float> etaMax{"etaMax", 2.5f, "Maximum eta value"};
-  Configurable<int> ptBins{"ptBins", 500, "Number of pT bins for LUTs (LUTs are pT-based)"};
-  Configurable<float> ptMin{"ptMin", 0.0f, "Minimum pT value for LUT binning"};
-  Configurable<float> ptMax{"ptMax", 10.0f, "Maximum pT value for LUT binning"};
   Configurable<int> numLogBins{"numLogBins", 200, "Number of logarithmic momentum bins"};
+  Configurable<float> analysisEtaMin{"analysisEtaMin", 0.0f, "Minimum |eta| for LUT loading optimization"};
+  Configurable<float> analysisEtaMax{"analysisEtaMax", 1.0f, "Maximum |eta| for LUT loading optimization"};
+  Configurable<float> analysisPtMin{"analysisPtMin", 0.0f, "Minimum pT (GeV/c) for LUT loading optimization"};
+  Configurable<float> analysisPtMax{"analysisPtMax", 10.0f, "Maximum pT (GeV/c) for LUT loading optimization"};
 
   std::vector<double> mLogBins;
 
@@ -416,9 +440,7 @@ struct OnTheFlyTrackerPid {
                  << "). Please adjust maxBarrelLayers.";
     }
 
-    mToTLUT = std::make_unique<ToTLUT>(truncationFraction.value, maxBarrelLayers.value,
-                                       etaBins.value, etaMin.value, etaMax.value,
-                                       ptBins.value, ptMin.value, ptMax.value);
+    mToTLUT = std::make_unique<ToTLUT>(maxBarrelLayers.value, analysisEtaMin.value, analysisEtaMax.value, analysisPtMin.value, analysisPtMax.value);
 
     mToTLUT->setCcdbManager(ccdb.operator->());
 
@@ -526,7 +548,6 @@ struct OnTheFlyTrackerPid {
                aod::McParticles const& /*mcParticles*/,
                aod::McCollisions const& /*mcCollisions*/)
   {
-
     o2::dataformats::VertexBase mcPvVtx({0.0f, 0.0f, 0.0f}, {0.});
 
     if (collision.has_mcCollision()) {

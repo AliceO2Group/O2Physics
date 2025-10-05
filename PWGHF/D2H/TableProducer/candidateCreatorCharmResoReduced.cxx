@@ -389,10 +389,11 @@ struct HfCandidateCreatorCharmResoReduced {
             if (TESTBIT(candV0Tr.v0Type(), V0Type::Lambda)) {
               invMassV0Tr = candV0Tr.invMassLambda();
               signReso = candD.sign();
+              isWrongSign = candD.sign() < 0 ? 1 : 0;
             } else if (TESTBIT(candV0Tr.v0Type(), V0Type::AntiLambda)) {
               invMassV0Tr = candV0Tr.invMassAntiLambda();
               signReso = candD.sign();
-              isWrongSign = 1;
+              isWrongSign = candD.sign() > 0 ? 1 : 0;
             }
             if (useDeltaMass) {
               invMassReso = RecoDecay::m(std::array{pVectorCharmProngs[0], pVectorCharmProngs[1], pVectorCharmProngs[2], pVecV0Tr}, std::array{MassPiPlus, MassKPlus, MassPiPlus, MassLambda}) - invMassD;

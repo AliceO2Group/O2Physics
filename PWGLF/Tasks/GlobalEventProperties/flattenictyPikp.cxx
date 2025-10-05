@@ -564,6 +564,7 @@ struct FlattenictyPikp {
           flatchrg.add("Tracks/postSel/pPtNclPIDTPC", "; #it{p}_{T} (GeV/#it{c}); N_{PID cluster}", {kTProfile, {ptAxis}});
           flatchrg.add("Tracks/postSel/hShTpcClvsPt", "", {kTH2F, {ptAxis, shCluserAxis}});
           flatchrg.add("Tracks/postSel/hNclTPCFoundvsPt", "", {kTH2F, {ptAxis, clTpcAxis}});
+          flatchrg.add("Tracks/postSel/hNClTPCPidvsPt", "", {kTH2F, {ptAxis, clTpcAxis}});
           flatchrg.add("Tracks/postSel/hTPCCluster", "N_{cluster}", kTH1F, {clTpcAxis});
           flatchrg.add("Tracks/postSel/hTPCnClsShared", " ; # shared TPC clusters TPC", kTH1F, {{165, -0.5, 164.5}});
           flatchrg.add("Tracks/postSel/hTPCcrossedRows", " ; # crossed TPC rows", kTH1F, {{165, -0.5, 164.5}});
@@ -1156,9 +1157,9 @@ struct FlattenictyPikp {
           flatchrg.fill(HIST("Tracks/preSel/hPtPhiNclPIDTPC"), track.pt(), phimodn, track.tpcNClsPID());
         } else {
           flatchrg.fill(HIST("Tracks/preSel/hPtPhiNclTPC"), track.pt(), phimodn, track.tpcNClsFound());
+          flatchrg.fill(HIST("Tracks/preSel/hPtPhiNclPIDTPC"), track.pt(), phimodn, track.tpcNClsPID());
           flatchrg.fill(HIST("Tracks/preSel/hPtNclTPC"), track.pt(), track.tpcNClsFound());
           flatchrg.fill(HIST("Tracks/preSel/pPtNclTPC"), track.pt(), track.tpcNClsFound());
-          flatchrg.fill(HIST("Tracks/preSel/hPtPhiNclPIDTPC"), track.pt(), phimodn, track.tpcNClsPID());
           flatchrg.fill(HIST("Tracks/preSel/hPtNclPIDTPC"), track.pt(), track.tpcNClsPID());
           flatchrg.fill(HIST("Tracks/preSel/pPtNclPIDTPC"), track.pt(), track.tpcNClsPID());
         }
@@ -1175,9 +1176,9 @@ struct FlattenictyPikp {
           flatchrg.fill(HIST("Tracks/postSel/hPtPhiNclPIDTPC"), track.pt(), phimodn, track.tpcNClsPID());
         } else {
           flatchrg.fill(HIST("Tracks/postSel/hPtPhiNclTPC"), track.pt(), phimodn, track.tpcNClsFound());
+          flatchrg.fill(HIST("Tracks/postSel/hPtPhiNclPIDTPC"), track.pt(), phimodn, track.tpcNClsPID());
           flatchrg.fill(HIST("Tracks/postSel/hPtNclTPC"), track.pt(), track.tpcNClsFound());
           flatchrg.fill(HIST("Tracks/postSel/pPtNclTPC"), track.pt(), track.tpcNClsFound());
-          flatchrg.fill(HIST("Tracks/postSel/hPtPhiNclPIDTPC"), track.pt(), phimodn, track.tpcNClsPID());
           flatchrg.fill(HIST("Tracks/postSel/hPtNclPIDTPC"), track.pt(), track.tpcNClsPID());
           flatchrg.fill(HIST("Tracks/postSel/pPtNclPIDTPC"), track.pt(), track.tpcNClsPID());
         }

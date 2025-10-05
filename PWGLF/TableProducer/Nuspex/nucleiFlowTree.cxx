@@ -19,54 +19,48 @@
 // o2-analysis-pid-tof-base, o2-analysis-multiplicity-table, o2-analysis-event-selection
 // (to add flow: o2-analysis-qvector-table, o2-analysis-centrality-table)
 
-#include <algorithm>
-#include <cmath>
-#include <memory>
-#include <string>
-#include <vector>
+#include "PWGLF/DataModel/EPCalibrationTables.h"
+#include "PWGLF/DataModel/LFSlimNucleiTables.h"
+#include "PWGLF/Utils/nucleiUtils.h"
 
-#include "Math/Vector4D.h"
-
-#include "CCDB/BasicCCDBManager.h"
-
+#include "Common/Core/EventPlaneHelper.h"
+#include "Common/Core/PID/PIDTOF.h"
+#include "Common/Core/RecoDecay.h"
 #include "Common/Core/TrackSelection.h"
 #include "Common/Core/trackUtilities.h"
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/PIDResponseITS.h"
-#include "Common/DataModel/TrackSelectionTables.h"
-#include "Common/Core/PID/PIDTOF.h"
-#include "Common/TableProducer/PID/pidTOFBase.h"
-#include "Common/Core/EventPlaneHelper.h"
 #include "Common/DataModel/Qvectors.h"
+#include "Common/DataModel/TrackSelectionTables.h"
+#include "Common/TableProducer/PID/pidTOFBase.h"
 #include "Common/Tools/TrackTuner.h"
-#include "Common/Core/RecoDecay.h"
+#include "EventFiltering/Zorro.h"
+#include "EventFiltering/ZorroSummary.h"
 
+#include "CCDB/BasicCCDBManager.h"
 #include "DataFormatsParameters/GRPMagField.h"
 #include "DataFormatsParameters/GRPObject.h"
 #include "DataFormatsTPC/BetheBlochAleph.h"
 #include "DetectorsBase/GeometryManager.h"
 #include "DetectorsBase/Propagator.h"
-
-#include "EventFiltering/Zorro.h"
-#include "EventFiltering/ZorroSummary.h"
-
+#include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
 #include "Framework/AnalysisTask.h"
-#include "Framework/ASoAHelpers.h"
 #include "Framework/HistogramRegistry.h"
 #include "Framework/runDataProcessing.h"
-
 #include "ReconstructionDataFormats/Track.h"
 
-#include "PWGLF/DataModel/EPCalibrationTables.h"
-#include "PWGLF/DataModel/LFSlimNucleiTables.h"
-
+#include "Math/Vector4D.h"
 #include "TRandom3.h"
 
-#include "nucleiUtils.h"
+#include <algorithm>
+#include <cmath>
+#include <memory>
+#include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::framework;
@@ -257,7 +251,7 @@ struct nucleiFlowTree {
     spectra.add("hTpcSignalDataSelected", "Specific energy loss for selected particles", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
     spectra.add("hTofSignalData", "TOF beta", HistType::kTH2F, {{500, 0., 5., "#it{p} (GeV/#it{c})"}, {750, 0, 1.5, "TOF #beta"}});
 
-    for (int iS{0}; iS < nuclei::species; ++iS) {
+    for (int iS{0}; iS < nuclei::Species::kNspecies; ++iS) {
       for (int iMax{0}; iMax < 2; ++iMax) {
         nuclei::pidCutTPC[iS][iMax] = cfgNsigmaTPC->get(iS, iMax); // changed pidCut to pidCutTPC so that it compiles TODO: check if it is correct
       }
@@ -328,7 +322,7 @@ struct nucleiFlowTree {
       bool selectedTPC[5]{false}, goodToAnalyse{false};
       std::array<float, 5> nSigmaTPC;
 
-      for (int iS{0}; iS < nuclei::species; ++iS) {
+      for (int iS{0}; iS < nuclei::Species::kNspecies; ++iS) {
 
         double expBethe{tpc::BetheBlochAleph(static_cast<double>(correctedTpcInnerParam * bgScalings[iS][iC]), cfgBetheBlochParams->get(iS, 0u), cfgBetheBlochParams->get(iS, 1u), cfgBetheBlochParams->get(iS, 2u), cfgBetheBlochParams->get(iS, 3u), cfgBetheBlochParams->get(iS, 4u))};
 
@@ -371,7 +365,7 @@ struct nucleiFlowTree {
       if (!collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
         flag |= kITSrof;
       }
-      for (int iS{0}; iS < nuclei::species; ++iS) {
+      for (int iS{0}; iS < nuclei::Species::kNspecies; ++iS) {
         bool selectedTOF{false};
         if (std::abs(dcaInfo[1]) > cfgDCAcut->get(iS, 1)) {
           continue;
