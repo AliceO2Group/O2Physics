@@ -44,9 +44,9 @@ struct Xi1820Analysis {
 
   // Constants
   static constexpr float kSmallMomentumDenominator = 1e-10f; // Small value to avoid division by zero
-  static constexpr float kMaxDcaToPv = 1.0f;                  // Maximum DCA to primary vertex
-  static constexpr int kPdgXi1820 = 123314;                   // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
-  static constexpr int kExpectedDaughters = 2;                // Expected number of daughters for two-body decay
+  static constexpr float kMaxDcaToPv = 1.0f;                 // Maximum DCA to primary vertex
+  static constexpr int kPdgXi1820 = 123314;                  // o2-linter: disable=pdg/explicit-code (Xi(1820) PDG code not available in PDG_t or o2::constants::physics::Pdg)
+  static constexpr int kExpectedDaughters = 2;               // Expected number of daughters for two-body decay
 
   // Axes
   ConfigurableAxis binsPt{"binsPt", {VARIABLE_WIDTH, 0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.5, 2.0, 3.0, 4.0, 6.0, 8.0, 10.0}, "pT"};
