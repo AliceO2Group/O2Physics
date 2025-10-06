@@ -174,6 +174,16 @@ o2physics_add_dpl_workflow(xi1530analysisqa
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
     COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(omega2012analysis
+    SOURCES omega2012Analysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(xi1820analysis
+    SOURCES xi1820Analysis.cxx
+    PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore
+    COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(initializereventqa
     SOURCES initializereventqa.cxx
     PUBLIC_LINK_LIBRARIES O2Physics::AnalysisCore

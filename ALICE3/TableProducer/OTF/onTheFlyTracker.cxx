@@ -113,6 +113,7 @@ struct OnTheFlyTracker {
   Configurable<std::string> lutDe{"lutDe", "lutCovm.de.dat", "LUT for deuterons"};
   Configurable<std::string> lutTr{"lutTr", "lutCovm.tr.dat", "LUT for tritons"};
   Configurable<std::string> lutHe3{"lutHe3", "lutCovm.he3.dat", "LUT for Helium-3"};
+  Configurable<std::string> lutAl{"lutAl", "lutCovm.he3.dat", "LUT for Alphas"};
 
   struct : ConfigurableGroup {
     ConfigurableAxis axisMomentum{"axisMomentum", {VARIABLE_WIDTH, 0.0f, 0.1f, 0.2f, 0.3f, 0.4f, 0.5f, 0.6f, 0.7f, 0.8f, 0.9f, 1.0f, 1.1f, 1.2f, 1.3f, 1.4f, 1.5f, 1.6f, 1.7f, 1.8f, 1.9f, 2.0f, 2.2f, 2.4f, 2.6f, 2.8f, 3.0f, 3.2f, 3.4f, 3.6f, 3.8f, 4.0f, 4.4f, 4.8f, 5.2f, 5.6f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 9.0f, 10.0f, 11.0f, 12.0f, 13.0f, 14.0f, 15.0f, 17.0f, 19.0f, 21.0f, 23.0f, 25.0f, 30.0f, 35.0f, 40.0f, 50.0f}, "#it{p} (GeV/#it{c})"};
@@ -265,6 +266,7 @@ struct OnTheFlyTracker {
       loadLUT(1000010020, lutDe.value);
       loadLUT(1000010030, lutTr.value);
       loadLUT(1000020030, lutHe3.value);
+      loadLUT(1000020040, lutAl.value);
 
       // interpolate efficiencies if requested to do so
       mSmearer.interpolateEfficiency(static_cast<bool>(interpolateLutEfficiencyVsNch));
@@ -501,6 +503,16 @@ struct OnTheFlyTracker {
     auto ir = irSampler.generateCollisionTime();
     const float eventCollisionTime = ir.timeInBCNS;
 
+    constexpr std::array<int, 9> longLivedHandledPDGs = {kElectron,
+                                                         kMuonMinus,
+                                                         kPiPlus,
+                                                         kKPlus,
+                                                         kProton,
+                                                         o2::constants::physics::kDeuteron,
+                                                         o2::constants::physics::kTriton,
+                                                         o2::constants::physics::kHelium3,
+                                                         o2::constants::physics::kAlpha};
+
     // First we compute the number of charged particles in the event
     dNdEta = 0.f;
     for (const auto& mcParticle : mcParticles) {
@@ -511,7 +523,8 @@ struct OnTheFlyTracker {
         continue;
       }
       const auto pdg = std::abs(mcParticle.pdgCode());
-      if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton) {
+      const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), pdg) != longLivedHandledPDGs.end();
+      if (!longLivedToBeHandled) {
         if (!cascadeDecaySettings.decayXi) {
           continue;
         } else if (pdg != 3312) {
@@ -558,7 +571,8 @@ struct OnTheFlyTracker {
           continue;
         }
       }
-      if (pdg != kElectron && pdg != kMuonMinus && pdg != kPiPlus && pdg != kKPlus && pdg != kProton) {
+      const bool longLivedToBeHandled = std::find(longLivedHandledPDGs.begin(), longLivedHandledPDGs.end(), pdg) != longLivedHandledPDGs.end();
+      if (!longLivedToBeHandled) {
         if (!cascadeDecaySettings.decayXi) {
           continue;
         } else if (pdg != 3312) {

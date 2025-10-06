@@ -54,6 +54,7 @@ class DielectronCut : public TNamed
     kTrackPtRange,
     kTrackEtaRange,
     kTrackPhiRange,
+    kTrackPhiPositionRange,
     kTPCNCls,
     kTPCCrossedRows,
     kTPCCrossedRowsOverNCls,
@@ -179,6 +180,9 @@ class DielectronCut : public TNamed
     }
 
     if (!IsSelectedTrack(track, DielectronCuts::kTrackPhiRange)) {
+      return false;
+    }
+    if (!IsSelectedTrack(track, DielectronCuts::kTrackPhiPositionRange)) {
       return false;
     }
     if (!IsSelectedTrack(track, DielectronCuts::kDCA3Dsigma)) {
@@ -404,6 +408,29 @@ class DielectronCut : public TNamed
           return mRejectTrackPhi ? !is_in_phi_range : is_in_phi_range;
         }
 
+      case DielectronCuts::kTrackPhiPositionRange: {
+        float phiPosition = track.phi() + std::asin(-0.30282 * track.sign() * (mBz * 0.1) * mRefR / (2.f * track.pt()));
+
+        if (mMinTrackPhiPosition < 0.f && mMaxTrackPhiPosition < M_PI) { // threshold across 0 rad.
+          o2::math_utils::bringToPMPi(phiPosition);
+          bool isInAcc = mMinTrackPhiPosition < phiPosition && phiPosition < mMaxTrackPhiPosition;
+          bool isInAccMirrored = false;
+          if (mMirrorTrackPhi) {
+            o2::math_utils::bringTo02Pi(phiPosition);
+            isInAccMirrored = mMinTrackPhiPosition + M_PI < phiPosition && phiPosition < mMaxTrackPhiPosition + M_PI;
+          }
+          return isInAcc || isInAccMirrored;
+        } else {
+          o2::math_utils::bringTo02Pi(phiPosition);
+          bool isInAcc = mMinTrackPhiPosition < phiPosition && phiPosition < mMaxTrackPhiPosition;
+          bool isInAccMirrored = false;
+          if (mMirrorTrackPhi) {
+            isInAccMirrored = mMinTrackPhiPosition + M_PI < phiPosition && phiPosition < mMaxTrackPhiPosition + M_PI;
+          }
+          return isInAcc || isInAccMirrored;
+        }
+      }
+
       case DielectronCuts::kTPCNCls:
         return track.tpcNClsFound() >= mMinNClustersTPC;
 
@@ -462,6 +489,7 @@ class DielectronCut : public TNamed
   void SetTrackPtRange(float minPt = 0.f, float maxPt = 1e10f);
   void SetTrackEtaRange(float minEta = -1e10f, float maxEta = 1e10f);
   void SetTrackPhiRange(float minPhi = 0.f, float maxPhi = 2.f * M_PI, bool mirror = false, bool reject = false);
+  void SetTrackPhiPositionRange(float minPhi, float maxPhi, float refR, float bz, bool mirror);
   void SetMinNClustersTPC(int minNClustersTPC);
   void SetMinNCrossedRowsTPC(int minNCrossedRowsTPC);
   void SetMinNCrossedRowsOverFindableClustersTPC(float minNCrossedRowsOverFindableClustersTPC);
@@ -547,10 +575,13 @@ class DielectronCut : public TNamed
   bool mRequireDiffSides{false}; // flag to require 2 tracks to be from different sides. (A-C combination). If one wants 2 tracks to be in the same side (A-A or C-C), one can simply use track eta cut.
 
   // kinematic cuts
-  float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};          // range in pT
-  float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f};     // range in eta
-  float mMinTrackPhi{0.f}, mMaxTrackPhi{2.f * M_PI};   // range in phi
-  bool mMirrorTrackPhi{false}, mRejectTrackPhi{false}; // phi cut mirror by Pi, rejected/accepted
+  float mMinTrackPt{0.f}, mMaxTrackPt{1e10f};                        // range in pT
+  float mMinTrackEta{-1e10f}, mMaxTrackEta{1e10f};                   // range in eta
+  float mMinTrackPhi{0.f}, mMaxTrackPhi{2.f * M_PI};                 // range in phi
+  float mMinTrackPhiPosition{0.f}, mMaxTrackPhiPosition{2.f * M_PI}; // range in phi
+  bool mMirrorTrackPhi{false}, mRejectTrackPhi{false};               // phi cut mirror by Pi, rejected/accepted
+  float mRefR{0.5};                                                  // reference radius in m
+  float mBz{0.0};                                                    // solenoid magnetic field along Z in kG
 
   // track quality cuts
   int mMinNClustersTPC{0};                                                  // min number of TPC clusters
