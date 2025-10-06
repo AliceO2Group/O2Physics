@@ -18,6 +18,7 @@
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
+
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPECSObject.h"
@@ -40,43 +41,42 @@ using namespace ROOT::Math;
 namespace dimu
 {
 // dimuon
-  DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
-  DECLARE_SOA_COLUMN(M, m, float);
-  DECLARE_SOA_COLUMN(Energy, energy, float);
-  DECLARE_SOA_COLUMN(Px, px, float);
-  DECLARE_SOA_COLUMN(Py, py, float);
-  DECLARE_SOA_COLUMN(Pz, pz, float);
-  DECLARE_SOA_COLUMN(Pt, pt, float);
-  DECLARE_SOA_COLUMN(Rap, rap, float);
-  DECLARE_SOA_COLUMN(Phi, phi, float);
+DECLARE_SOA_COLUMN(RunNumber, runNumber, int);
+DECLARE_SOA_COLUMN(M, m, float);
+DECLARE_SOA_COLUMN(Energy, energy, float);
+DECLARE_SOA_COLUMN(Px, px, float);
+DECLARE_SOA_COLUMN(Py, py, float);
+DECLARE_SOA_COLUMN(Pz, pz, float);
+DECLARE_SOA_COLUMN(Pt, pt, float);
+DECLARE_SOA_COLUMN(Rap, rap, float);
+DECLARE_SOA_COLUMN(Phi, phi, float);
 
-  //tracks positive (p) and negative (n) stored
-  DECLARE_SOA_COLUMN(EnergyP, energyP, float);
-  DECLARE_SOA_COLUMN(Pxp, pxp, float);
-  DECLARE_SOA_COLUMN(Pyp, pyp, float);
-  DECLARE_SOA_COLUMN(Pzp, pzp, float);
-  DECLARE_SOA_COLUMN(Ptp, ptp, float);
-  DECLARE_SOA_COLUMN(Etap, etap, float);
-  DECLARE_SOA_COLUMN(Phip, phip, float);
+// tracks positive (p) and negative (n) stored
+DECLARE_SOA_COLUMN(EnergyP, energyP, float);
+DECLARE_SOA_COLUMN(Pxp, pxp, float);
+DECLARE_SOA_COLUMN(Pyp, pyp, float);
+DECLARE_SOA_COLUMN(Pzp, pzp, float);
+DECLARE_SOA_COLUMN(Ptp, ptp, float);
+DECLARE_SOA_COLUMN(Etap, etap, float);
+DECLARE_SOA_COLUMN(Phip, phip, float);
 
-  DECLARE_SOA_COLUMN(EnergyN, energyN, float);
-  DECLARE_SOA_COLUMN(Pxn, pxn, float);
-  DECLARE_SOA_COLUMN(Pyn, pyn, float);
-  DECLARE_SOA_COLUMN(Pzn, pzn, float);
-  DECLARE_SOA_COLUMN(Ptn, ptn, float);
-  DECLARE_SOA_COLUMN(Etan, etan, float);
-  DECLARE_SOA_COLUMN(Phin, phin, float);
-  
+DECLARE_SOA_COLUMN(EnergyN, energyN, float);
+DECLARE_SOA_COLUMN(Pxn, pxn, float);
+DECLARE_SOA_COLUMN(Pyn, pyn, float);
+DECLARE_SOA_COLUMN(Pzn, pzn, float);
+DECLARE_SOA_COLUMN(Ptn, ptn, float);
+DECLARE_SOA_COLUMN(Etan, etan, float);
+DECLARE_SOA_COLUMN(Phin, phin, float);
+
 } // namespace dimu
 
 namespace o2::aod
 {
-  DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
+DECLARE_SOA_TABLE(DiMu, "AOD", "DIMU",
                   dimu::RunNumber,
                   dimu::M, dimu::Energy, dimu::Px, dimu::Py, dimu::Pz, dimu::Pt, dimu::Rap, dimu::Phi,
-		    dimu::EnergyP, dimu::Pxp, dimu::Pyp, dimu::Pzp, dimu::Ptp, dimu::Etap, dimu::Phip,
-		    dimu::EnergyN, dimu::Pxn, dimu::Pyn, dimu::Pzn, dimu::Ptn, dimu::Etan, dimu::Phin);
-
+                  dimu::EnergyP, dimu::Pxp, dimu::Pyp, dimu::Pzp, dimu::Ptp, dimu::Etap, dimu::Phip,
+                  dimu::EnergyN, dimu::Pxn, dimu::Pyn, dimu::Pzn, dimu::Ptn, dimu::Etan, dimu::Phin);
 
 } // namespace o2::aod
 using namespace o2;
@@ -96,8 +96,6 @@ const int kReqMatchMFTTracks = 2;
 const int kMaxChi2MFTMatch = 30;
 const float kMaxZDCTime = 2.;
 const float kMaxZDCTimeHisto = 10.;
-
-
 
 struct UpcPolarisationJpsiIncoh {
 
@@ -130,19 +128,19 @@ struct UpcPolarisationJpsiIncoh {
   Configurable<int> nBinsPhi{"nBinsPhi", 600, "N bins in phi histo"};
   Configurable<float> lowPhi{"lowPhi", -Pi, "lower limit in phi histo"};
   Configurable<float> highPhi{"highPhi", Pi, "upper limit in phi histo"};
- // pT of single muons                                                                                                    
+  // pT of single muons
   Configurable<int> nBinsPtSingle{"nBinsPtSingle", 500, "N bins in pT histo single muon"};
   Configurable<float> lowPtSingle{"lowPtSingle", 0., "lower limit in pT histo single muon"};
   Configurable<float> highPtSingle{"highPtSingle", 2., "upper limit in pT histo single muon"};
-  // eta of single muons                                                                                                   
+  // eta of single muons
   Configurable<int> nBinsEtaSingle{"nBinsEtaSingle", 250, "N bins in eta histo single muon"};
   Configurable<float> lowEtaSingle{"lowEtaSingle", -4.5, "lower limit in eta histo single muon"};
   Configurable<float> highEtaSingle{"highEtaSingle", -2., "upper limit in eta histo single muon"};
-  // phi of single muons                                                                                                   
+  // phi of single muons
   Configurable<int> nBinsPhiSingle{"nBinsPhiSingle", 600, "N bins in phi histo single muon"};
   Configurable<float> lowPhiSingle{"lowPhiSingle", -Pi, "lower limit in phi histo single muon"};
   Configurable<float> highPhiSingle{"highPhiSingle", Pi, "upper limit in phi histo single muon"};
-  // ZDC                                                                                                                   
+  // ZDC
   Configurable<int> nBinsZDCen{"nBinsZDCen", 200, "N bins in ZN energy"};
   Configurable<float> lowEnZN{"lowEnZN", -50., "lower limit in ZN energy histo"};
   Configurable<float> highEnZN{"highEnZN", 250., "upper limit in ZN energy histo"};
@@ -180,8 +178,6 @@ struct UpcPolarisationJpsiIncoh {
     registry.add("hEtaTrkNeg", "#eta of negative muons;;#counts", kTH1D, {axisEtaSingle});
     registry.add("hPhiTrkPos", "#varphi of positive muons;;#counts", kTH1D, {axisPhiSingle});
     registry.add("hPhiTrkNeg", "#varphi of negative muons;;#counts", kTH1D, {axisPhiSingle});
-
-
   }
 
   // template function that fills a map with the collision id of each udcollision as key
@@ -287,11 +283,11 @@ struct UpcPolarisationJpsiIncoh {
       }
     }
 
-    // select opposite charge events only                                                                                  
+    // select opposite charge events only
     if (cand.netCharge() != 0) {
       return;
     }
-    
+
     // MCH-MID match selection
     int nMIDs = 0;
     if (tr1.chi2MatchMCHMID() > 0)
@@ -355,12 +351,11 @@ struct UpcPolarisationJpsiIncoh {
     registry.fill(HIST("hPhiTrkPos"), p1.Phi());
     registry.fill(HIST("hPhiTrkNeg"), p2.Phi());
 
-    
- // store the event to save it into a tree                                                                                 
+    // store the event to save it into a tree
     if (tr1.sign() > 0) {
       dimuSel(cand.runNumber(),
               p.M(), p.E(), p.Px(), p.Py(), p.Pz(), p.Pt(), p.Rapidity(), p.Phi(),
-	      p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.Eta(), p1.Phi(),
+              p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.Eta(), p1.Phi(),
               p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.Eta(), p2.Phi());
     } else {
       dimuSel(cand.runNumber(),
@@ -368,7 +363,6 @@ struct UpcPolarisationJpsiIncoh {
               p2.E(), p2.Px(), p2.Py(), p2.Pz(), p2.Pt(), p2.Eta(), p2.Phi(),
               p1.E(), p1.Px(), p1.Py(), p1.Pz(), p1.Pt(), p1.Eta(), p1.Phi());
     }
-    
   }
   // PROCESS FUNCTION
   void processData(CandidatesFwd const& eventCandidates,
