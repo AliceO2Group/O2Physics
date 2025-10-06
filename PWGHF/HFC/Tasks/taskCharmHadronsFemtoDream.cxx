@@ -160,8 +160,8 @@ struct HfTaskCharmHadronsFemtoDream {
 
   Filter eventMultiplicity = aod::femtodreamcollision::multNtr >= eventSel.multMin && aod::femtodreamcollision::multNtr <= eventSel.multMax;
   Filter eventMultiplicityPercentile = aod::femtodreamcollision::multV0M >= eventSel.multPercentileMin && aod::femtodreamcollision::multV0M <= eventSel.multPercentileMax;
-  Filter hfCandSelFilter = aod::fdhf::candidateSelFlag >= static_cast<int8_t>(charmHadCandSel.value);
-  Filter hfMcSelFilter = nabs(aod::fdhf::flagMc) == static_cast<int8_t>(charmHadMcSel.value);
+  Filter hfCandSelFilter = aod::fdhf::candidateSelFlag >= charmHadCandSel;
+  Filter hfMcSelFilter = (nabs(aod::fdhf::flagMc) == charmHadMcSel);
   Filter trackEtaFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta < etaTrack1Max, true);
   Filter trackEtaFilterUp = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::eta > etaTrack1Min, true);
   Filter trackPtFilterLow = ifnode(aod::femtodreamparticle::partType == uint8_t(aod::femtodreamparticle::ParticleType::kTrack), aod::femtodreamparticle::pt < ptTrack1Max, true);
@@ -583,7 +583,7 @@ struct HfTaskCharmHadronsFemtoDream {
         part.tpcNSigmaPr(),
         part.tofNSigmaPr());
     }
-    if (!sliceCharmHad.size() || !sliceTrk1.size()) {
+    if (sliceCharmHad.size() > 0 || sliceTrk1.size() > 0) {
       rowFemtoResultColl(
         col.globalIndex(),
         timeStamp,
@@ -592,6 +592,7 @@ struct HfTaskCharmHadronsFemtoDream {
     } else {
       return;
     }
+
     doSameEvent<false>(sliceTrk1, sliceCharmHad, parts, col);
   }
   PROCESS_SWITCH(HfTaskCharmHadronsFemtoDream, processSameEvent, "Enable processing same event", false);
@@ -631,6 +632,11 @@ struct HfTaskCharmHadronsFemtoDream {
     auto sliceMcTrk1 = partitionMcTrk1->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
     auto sliceMcCharmHad = partitionMcCharmHadron->sliceByCached(aod::femtodreamparticle::fdCollisionId, col.globalIndex(), cache);
 
+    if (sliceMcCharmHad.size() > 0) {
+      for (auto const& part : sliceMcCharmHad) {
+        registryCharmHadronQa.fill(HIST("CharmHadronQA/hPtVsMass"), part.pt(), getCharmHadronMass(part));
+      }
+    }
     if (sliceMcTrk1.size() == 0 && sliceMcCharmHad.size() == 0) {
       return;
     }
