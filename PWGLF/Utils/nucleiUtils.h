@@ -348,7 +348,7 @@ bool eventSelection(const Tcollision& collision, HistogramRegistry& registry, La
 template <typename Tcollision>
 float getCentrality(Tcollision const& collision, const int centralityEstimator)
 {
-  if constexpr (!o2::aod::HasCentrality<Tcollision>) {
+  if constexpr (!o2::aod::HasCentrality<Tcollision>) { // requires aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs
     return -1.f;
   }
   if (centralityEstimator == centDetectors::kFV0A) {
