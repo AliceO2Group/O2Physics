@@ -189,7 +189,7 @@ struct nucleiQC {
         track.tpcNClsCrossedRows() < 70 ||
         track.tpcNClsCrossedRows() < 0.8 * track.tpcNClsFindable() ||
         track.tpcChi2NCl() > 4.f ||
-        track.itsChi2NCl() > 36.f false) {
+        track.itsChi2NCl() > 36.f) {
       return false;
     }
     return true;
