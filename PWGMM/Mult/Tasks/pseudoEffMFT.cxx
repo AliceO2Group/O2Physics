@@ -375,7 +375,7 @@ struct PseudoEffMFT {
   uint64_t mOrbit;
   uint64_t mPrevOrbit;
   o2::itsmft::TimeDeadMap* deadmap = nullptr;
-  std::array<std::vector<int>, 10> chipsPerLayer;
+  std::array<std::vector<int>, 10> chipsPerLayer{};
   std::array<TH2I*, 10> layerMasks;
   const o2::itsmft::ChipMappingMFT mapping;
   const std::array<o2::itsmft::MFTChipMappingData, 936> chipMap = mapping.getChipMappingData();
@@ -1041,13 +1041,16 @@ struct PseudoEffMFT {
           std::vector<uint16_t> encodeChips;
           auto lowerOrbit = deadmap->getMapAtOrbit(mOrbit, encodeChips);
           if ((mOrbit - lowerOrbit) > mPrevOrbit) {
-            for (auto& v : chipsPerLayer) {
-              v.clear();
+            for (int i = 0; i < kNlayers; i++) {
+              chipsPerLayer[i].clear();
             }
-            for (auto& h : layerMasks) {
-              if (h)
-                h->Reset("ICES");
-            }
+            // for (auto& v : chipsPerLayer) {
+            //   v.clear();
+            // }
+            // for (auto& h : layerMasks) {
+            //   if (h)
+            //     h->Reset("ICES");
+            // }
             decodeChipVector(encodeChips, chipsPerLayer);
             for (int i = 0; i < kNlayers; i++) {
               computeExclusionMap(i);
