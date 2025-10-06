@@ -527,6 +527,22 @@ struct JetHadronRecoil {
       registry.fill(HIST("hPtPartPtHard"), particle.pt(), particle.pt() / pTHat, weight);
     }
 
+    if (nTT > 0) {
+      trigNumber = rand->Integer(nTT);
+      phiTT = phiTTAr[trigNumber];
+      ptTT = ptTTAr[trigNumber];
+      if (isSigCol) {
+        registry.fill(HIST("hNtrig"), 1.5, weight);
+        registry.fill(HIST("hSigEventTriggers"), nTT, weight);
+        registry.fill(HIST("hSignalTriggersPtHard"), ptTT / pTHat, weight);
+      }
+      if (!isSigCol) {
+        registry.fill(HIST("hNtrig"), 0.5, weight);
+        registry.fill(HIST("hRefEventTriggers"), nTT, weight);
+        registry.fill(HIST("hReferenceTriggersPtHard"), ptTT / pTHat, weight);
+      }
+    }
+
     for (const auto& jet : jets) {
       if (jet.pt() > leadingJetPt) {
         leadingJetPt = jet.pt();
