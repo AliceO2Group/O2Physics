@@ -20,16 +20,18 @@
 #include <Framework/AnalysisDataModel.h>
 #include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
 #include <Framework/runDataProcessing.h>
 
 #include <TH1.h>
+#include <TPDGCode.h>
 
-#include <algorithm>
 #include <cstdlib>
 #include <memory>
+#include <unordered_set>
 #include <vector>
 
 using namespace o2;
@@ -104,14 +106,14 @@ struct HfTaskMcInjection {
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
   PresliceUnsorted<CollisionWLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
-  AxisSpec impParBins = {200, 0, 20};
-  AxisSpec deltaXYbins = {200, -0.05, 0.05};
-  AxisSpec deltaZbins = {200, -10, 10};
-
   HistogramRegistry registry{"registry", {}};
 
   void init(InitContext&)
   {
+    AxisSpec impParBins = {200, 0, 20};
+    AxisSpec deltaXYbins = {200, -0.05, 0.05};
+    AxisSpec deltaZbins = {200, -10, 10};
+
     registry.add("hCharmImpPar", ";Impact parameter (fm);Charm counts", {HistType::kTH1F, {impParBins}});
     registry.add("hCollImpPar", ";Impact parameter (fm);Counts", {HistType::kTH1F, {impParBins}});
     hCharmPerCollImpPar = registry.add<TH1>("hCharmPerCollImpPar", ";Impact parameter (fm);Charm counts per collision", {HistType::kTH1F, {impParBins}});
@@ -139,18 +141,18 @@ struct HfTaskMcInjection {
 
   bool isCharm(int pdg)
   {
-    if (std::abs(pdg) / 1000 == 4) // o2-linter: disable=pdg/explicit-code magic-number
+    if (std::abs(pdg) / 1000 == PDG_t::kCharm)
       return true;
-    if (std::abs(pdg) / 100 == 4) // o2-linter: disable=pdg/explicit-code magic-number
+    if (std::abs(pdg) / 100 == PDG_t::kCharm)
       return true;
     return false;
   }
 
   bool isBeauty(int pdg) // if needed in the future
   {
-    if (std::abs(pdg) / 1000 == 5) // o2-linter: disable=pdg/explicit-code magic-number
+    if (std::abs(pdg) / 1000 == PDG_t::kBottom)
       return true;
-    if (std::abs(pdg) / 100 == 5) // o2-linter: disable=pdg/explicit-code magic-number
+    if (std::abs(pdg) / 100 == PDG_t::kBottom)
       return true;
     return false;
   }
@@ -193,7 +195,6 @@ struct HfTaskMcInjection {
       // Then we fill the histogram with the distances of the collisions
       for (const auto& collision : collSlice) {
         const auto collTracks = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
-        std::vector<int> charmIds{};
         int fromSignalEv{0};
         if (collision.centFT0C() < centMaxForCollDelta) {
           registry.fill(HIST("hDeltaX"), collision.posX() - collision.mcCollision().posX());
@@ -211,13 +212,14 @@ struct HfTaskMcInjection {
             registry.fill(HIST("hDeltaZ_NPV_lt2000"), collision.posZ() - collision.mcCollision().posZ());
           }
         }
+        std::unordered_set<int> charmIds{};
         for (const auto& track : collTracks) {
           if (track.has_mcParticle()) {
             auto mcPart = track.mcParticle_as<aod::McParticles>();
             for (const auto& mother : mcPart.mothers_as<aod::McParticles>()) {
               if (isCharm(mother.pdgCode())) { // charm hadron
-                if (std::find(charmIds.begin(), charmIds.end(), mother.globalIndex()) == charmIds.end()) {
-                  charmIds.push_back(mother.globalIndex());
+                if (!charmIds.contains(mother.globalIndex())) {
+                  charmIds.emplace(mother.globalIndex());
                   fromSignalEv += static_cast<int>(!mother.fromBackgroundEvent());
                 }
                 break;
