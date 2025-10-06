@@ -18,9 +18,6 @@
 #include "PWGUD/DataModel/UDTables.h"
 
 #include "Common/Core/RecoDecay.h"
-
-
-#include "CommonConstants/PhysicsConstants.h"
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
 #include "DataFormatsParameters/GRPECSObject.h"
