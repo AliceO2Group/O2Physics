@@ -15,28 +15,21 @@
 /// \author Fabrizio Chinu <fabrizio.chinu@cern.ch>, Università and INFN Torino
 
 #include "Common/DataModel/Centrality.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/Multiplicity.h"
 
 #include <Framework/ASoA.h>
 #include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
 #include <Framework/AnalysisTask.h>
-#include <Framework/Configurable.h>
 #include <Framework/HistogramRegistry.h>
 #include <Framework/HistogramSpec.h>
 #include <Framework/InitContext.h>
-#include <Framework/StaticFor.h>
 #include <Framework/runDataProcessing.h>
 
-#include <TH2.h>
-#include <TPDGCode.h>
+#include <TH1.h>
 
-#include <array>
-#include <cstdint>
+#include <algorithm>
 #include <cstdlib>
 #include <memory>
-#include <string>
-#include <string_view>
 #include <vector>
 
 using namespace o2;
@@ -62,11 +55,11 @@ DECLARE_SOA_COLUMN(Centrality, centrality, int);           //! Centrality FT0C
 DECLARE_SOA_COLUMN(XCollRec, xCollRec, float);             //! Reconstructed x coordinate of the collision
 DECLARE_SOA_COLUMN(YCollRec, yCollRec, float);             //! Reconstructed y coordinate of the collision
 DECLARE_SOA_COLUMN(ZCollRec, zCollRec, float);             //! Reconstructed z coordinate of the collision
-DECLARE_SOA_COLUMN(BC, Bc, int);                           //! Bunch crossing
+DECLARE_SOA_COLUMN(Bc, bc, int);                           //! Bunch crossing
 // Tracks
-DECLARE_SOA_COLUMN(VX, vx, float);                    // x coordinate of the track production vertex
-DECLARE_SOA_COLUMN(VY, vy, float);                    // y coordinate of the track production vertex
-DECLARE_SOA_COLUMN(VZ, vz, float);                    // z coordinate of the track production vertex
+DECLARE_SOA_COLUMN(Vx, vx, float);                    // x coordinate of the track production vertex
+DECLARE_SOA_COLUMN(Vy, vy, float);                    // y coordinate of the track production vertex
+DECLARE_SOA_COLUMN(Vz, vz, float);                    // z coordinate of the track production vertex
 DECLARE_SOA_COLUMN(IsFromSignal, isFromSignal, bool); // Whether the track is from the signal event
 } // namespace check_mc_pv_contr
 
@@ -85,52 +78,37 @@ DECLARE_SOA_TABLE(CheckInj, "AOD", "CHECKINJ", //! Table with PID information
                   check_mc_pv_contr::NCharmFromInj,
                   check_mc_pv_contr::NPVContributors,
                   check_mc_pv_contr::Centrality,
-                  check_mc_pv_contr::BC);
+                  check_mc_pv_contr::Bc);
 
 DECLARE_SOA_TABLE(TracksInjection, "AOD", "TRKINJ", //! Table with MC labels for tracks
                   check_mc_pv_contr::IdCollGen,
-                  check_mc_pv_contr::VX,
-                  check_mc_pv_contr::VY,
-                  check_mc_pv_contr::VZ,
+                  check_mc_pv_contr::Vx,
+                  check_mc_pv_contr::Vy,
+                  check_mc_pv_contr::Vz,
                   check_mc_pv_contr::IsFromSignal);
 } // namespace o2::aod
 
-struct taskMcInjection {
+struct HfTaskMcInjection {
 
   Produces<o2::aod::CheckInj> checkInj;
   Produces<o2::aod::TracksInjection> tracksInj;
 
+  Configurable<double> centMaxForCollDelta{"centMaxForCollDelta", 20., "max. cent. for gen-rec collision position histograms"};
+
+  std::shared_ptr<TH1> hCharmPerCollImpPar, hCollisions;
+
   using TrackWLabels = soa::Join<aod::Tracks, aod::McTrackLabels>;
   using CollisionWLabels = soa::Join<aod::Collisions, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentNTPVs>;
 
-  PresliceUnsorted<CollisionWLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
   Preslice<TrackWLabels> tracksPerCollision = aod::track::collisionId;
   Preslice<aod::McParticles> perMcCollision = aod::mcparticle::mcCollisionId;
-
-  HistogramRegistry registry{"registry", {}};
-  std::shared_ptr<TH1> hCharmPerCollImpPar, hCollisions;
+  PresliceUnsorted<CollisionWLabels> colPerMcCollision = aod::mccollisionlabel::mcCollisionId;
 
   AxisSpec impParBins = {200, 0, 20};
   AxisSpec deltaXYbins = {200, -0.05, 0.05};
   AxisSpec deltaZbins = {200, -10, 10};
 
-  bool isCharm(int pdg)
-  {
-    if (std::abs(pdg) / 1000 == 4)
-      return true;
-    if (std::abs(pdg) / 100 == 4)
-      return true;
-    return false;
-  }
-
-  bool isBeauty(int pdg) // if needed in the future
-  {
-    if (std::abs(pdg) / 1000 == 5)
-      return true;
-    if (std::abs(pdg) / 100 == 5)
-      return true;
-    return false;
-  }
+  HistogramRegistry registry{"registry", {}};
 
   void init(InitContext&)
   {
@@ -159,12 +137,29 @@ struct taskMcInjection {
     hCollisions->GetXaxis()->SetBinLabel(2, "Reconstructed");
   }
 
+  bool isCharm(int pdg)
+  {
+    if (std::abs(pdg) / 1000 == 4) // o2-linter: disable=pdg/explicit-code magic-number
+      return true;
+    if (std::abs(pdg) / 100 == 4) // o2-linter: disable=pdg/explicit-code magic-number
+      return true;
+    return false;
+  }
+
+  bool isBeauty(int pdg) // if needed in the future
+  {
+    if (std::abs(pdg) / 1000 == 5) // o2-linter: disable=pdg/explicit-code magic-number
+      return true;
+    if (std::abs(pdg) / 100 == 5) // o2-linter: disable=pdg/explicit-code magic-number
+      return true;
+    return false;
+  }
+
   void process(CollisionWLabels const& collisions,
                TrackWLabels const& tracks,
                aod::McParticles const& mcParticles,
                aod::McCollisions const& mcCollisions)
   {
-    int splitColls{0};
     for (const auto& mcColl : mcCollisions) {
       registry.fill(HIST("hCollImpPar"), mcColl.impactParameter());
       const auto mcPartColl = mcParticles.sliceBy(perMcCollision, mcColl.globalIndex());
@@ -200,12 +195,13 @@ struct taskMcInjection {
         const auto collTracks = tracks.sliceBy(tracksPerCollision, collision.globalIndex());
         std::vector<int> charmIds{};
         int fromSignalEv{0};
-        if (collision.centFT0C() < 20.f) {
+        if (collision.centFT0C() < centMaxForCollDelta) {
           registry.fill(HIST("hDeltaX"), collision.posX() - collision.mcCollision().posX());
           registry.fill(HIST("hDeltaY"), collision.posY() - collision.mcCollision().posY());
           registry.fill(HIST("hDeltaZ"), collision.posZ() - collision.mcCollision().posZ());
 
-          if (collision.numContrib() > 2000) {
+          constexpr unsigned maxNcontrib{2000};
+          if (collision.numContrib() > maxNcontrib) {
             registry.fill(HIST("hDeltaX_NPV_gt2000"), collision.posX() - collision.mcCollision().posX());
             registry.fill(HIST("hDeltaY_NPV_gt2000"), collision.posY() - collision.mcCollision().posY());
             registry.fill(HIST("hDeltaZ_NPV_gt2000"), collision.posZ() - collision.mcCollision().posZ());
@@ -245,5 +241,5 @@ struct taskMcInjection {
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
-  return WorkflowSpec{adaptAnalysisTask<taskMcInjection>(cfgc)};
+  return WorkflowSpec{adaptAnalysisTask<HfTaskMcInjection>(cfgc)};
 }
