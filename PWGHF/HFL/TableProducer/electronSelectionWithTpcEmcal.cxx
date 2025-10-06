@@ -163,7 +163,7 @@ struct HfElectronSelectionWithTpcEmcal {
 
   void init(o2::framework::InitContext&)
   {
-    AxisSpec axisPosZ = {binsPosZ, "Pos Z"};
+    AxisSpec const axisPosZ = {binsPosZ, "Pos Z"};
     AxisSpec axisMass = {binsMass, "Mass (GeV/#it{c}^{2}); entries"};
     AxisSpec axisPt = {binsPt, "#it{p_{T}}(GeV/#it{c})"};
     AxisSpec axisEta = {binsEta, "#it{#eta}"};
@@ -315,16 +315,16 @@ struct HfElectronSelectionWithTpcEmcal {
         pdgE2 = kPositron;
       }
 
-      KFPTrack kfpTrack = createKFPTrackFromTrack(electron);
-      KFPTrack kfpAssociatedTrack = createKFPTrackFromTrack(pTrack);
-      KFParticle kfTrack(kfpTrack, pdgE1);
-      KFParticle kfAssociatedTrack(kfpAssociatedTrack, pdgE2);
+      KFPTrack const kfpTrack = createKFPTrackFromTrack(electron);
+      KFPTrack const kfpAssociatedTrack = createKFPTrackFromTrack(pTrack);
+      KFParticle const kfTrack(kfpTrack, pdgE1);
+      KFParticle const kfAssociatedTrack(kfpAssociatedTrack, pdgE2);
       const KFParticle* electronPairs[2] = {&kfTrack, &kfAssociatedTrack};
       kfNonHfe.SetConstructMethod(2);
       kfNonHfe.Construct(electronPairs, 2);
 
-      int ndf = kfNonHfe.GetNDF();
-      double chi2recg = kfNonHfe.GetChi2() / ndf;
+      int const ndf = kfNonHfe.GetNDF();
+      double const chi2recg = kfNonHfe.GetChi2() / ndf;
       if (ndf < 1.0) {
         continue;
       }
@@ -373,11 +373,12 @@ struct HfElectronSelectionWithTpcEmcal {
     hfElectronSelection(electron.collisionId(), electron.globalIndex(), electron.eta(), electron.phi(), electron.pt(), electron.tpcNSigmaEl(), electron.tofNSigmaEl(), nElPairsLS, nElPairsUS, isEMcal);
   }
   // Electron Identification
-  template <bool isMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
+  template <bool IsMc, typename TracksType, typename EmcClusterType, typename MatchType, typename CollisionType, typename ParticleType>
   void fillElectronTrack(CollisionType const& collision, TracksType const& tracks, EmcClusterType const& emcClusters, MatchType const& matchedTracks, ParticleType const& /*particlemc*/)
   {
-    if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7))))
+    if (!(isRun3 ? collision.sel8() : (collision.sel7() && collision.alias_bit(kINT7)))) {
       return;
+    }
 
     registry.fill(HIST("hNevents"), 1);
 
@@ -421,10 +422,12 @@ struct HfElectronSelectionWithTpcEmcal {
       if (!selTracks(track)) {
         continue;
       }
-      if ((phiTrack > phiTrackEMCalMin && phiTrack < phiTrackEMCalMax) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax))
+      if ((phiTrack > phiTrackEMCalMin && phiTrack < phiTrackEMCalMax) && (etaTrack > etaTrackMin && etaTrack < etaTrackMax)) {
         passEMCal = EMCalAcceptance; // EMcal acceptance passed
-      if ((phiTrack > phiTrackDCalMin && phiTrack < phiTrackDCalMax) && ((etaTrack > etaTrackDCalPositiveMin && etaTrack < etaTrackDCalPositiveMax) || (etaTrack > etaTrackDCalNegativeMin && etaTrack < etaTrackDCalNegativeMax)))
+      }
+      if ((phiTrack > phiTrackDCalMin && phiTrack < phiTrackDCalMax) && ((etaTrack > etaTrackDCalPositiveMin && etaTrack < etaTrackDCalPositiveMax) || (etaTrack > etaTrackDCalNegativeMin && etaTrack < etaTrackDCalNegativeMax))) {
         passEMCal = DCalAcceptance; // Dcal acceptance passed
+      }
 
       if (fillTrackInfo) {
         registry.fill(HIST("hTrackEtaPhi"), etaTrack, phiTrack, passEMCal);                 // track etaphi infor after filter bit
@@ -449,7 +452,7 @@ struct HfElectronSelectionWithTpcEmcal {
       float deltaPhiMatch = -999.;
       float deltaEtaMatch = -999.;
       float eop = -999;
-      bool isEMcal = false;
+      bool const isEMcal = false;
 
       float trackRapidity = track.rapidity(MassElectron);
 
