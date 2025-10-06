@@ -58,6 +58,7 @@ enum class InputFeaturesXic0ToXiPi : uint8_t {
   dcaCascDau,
   dcaCharmBaryonDau,
   cosPACharmBaryon,
+  cosPACasc,
   cosPAV0,
   impactParBachFromCharmBaryonXY,
   impactParCascXY
@@ -92,6 +93,7 @@ class HfMlResponseXic0ToXiPi : public HfMlResponse<TypeOutputScore>
         CHECK_AND_FILL_VEC_XIC0TOXIPI(dcaCharmBaryonDau);
         // CosPA
         CHECK_AND_FILL_VEC_XIC0TOXIPI(cosPACharmBaryon);
+        CHECK_AND_FILL_VEC_XIC0TOXIPI(cosPACasc);
         CHECK_AND_FILL_VEC_XIC0TOXIPI(cosPAV0);
         // ImpactPar
         CHECK_AND_FILL_VEC_XIC0TOXIPI(impactParBachFromCharmBaryonXY);
@@ -113,6 +115,7 @@ class HfMlResponseXic0ToXiPi : public HfMlResponse<TypeOutputScore>
       FILL_MAP_XIC0TOXIPI(dcaCascDau),
       FILL_MAP_XIC0TOXIPI(dcaCharmBaryonDau),
       FILL_MAP_XIC0TOXIPI(cosPACharmBaryon),
+      FILL_MAP_XIC0TOXIPI(cosPACasc),
       FILL_MAP_XIC0TOXIPI(cosPAV0),
       FILL_MAP_XIC0TOXIPI(impactParBachFromCharmBaryonXY),
       FILL_MAP_XIC0TOXIPI(impactParCascXY)};
