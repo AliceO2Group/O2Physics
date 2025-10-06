@@ -386,13 +386,13 @@ struct JetHadronRecoil {
         phiTTAr.push_back(particle.phi());
         ptTTAr.push_back(particle.pt());
         nTT++;
-        registry.fill(HIST("hSignalTriggers"), track.pt(), weight);
+        registry.fill(HIST("hSignalTriggers"), particle.pt(), weight);
       }
       if (!isSigCol && particle.pt() < ptTTrefMax && particle.pt() > ptTTrefMin) {
         phiTTAr.push_back(particle.phi());
         ptTTAr.push_back(particle.pt());
         nTT++;
-        registry.fill(HIST("hReferenceTriggers"), track.pt(), weight);
+        registry.fill(HIST("hReferenceTriggers"), particle.pt(), weight);
       }
       registry.fill(HIST("hPtPart"), particle.pt(), weight);
       registry.fill(HIST("hEtaPart"), particle.eta(), weight);
@@ -469,7 +469,7 @@ struct JetHadronRecoil {
   }
 
   template <typename T, typename U, typename V>
-  void fillMCPHistogramsWithMatchedTracks(T const& jets, U const&, V const& tracks, float weight = 1.0, float pTHat = 999.0)
+  void fillMCPHistogramsWithMatchedTracks(T const& jets, U const& particles, V const& tracks, float weight = 1.0, float pTHat = 999.0)
   {
     bool isSigCol;
     std::vector<double> phiTTAr;
@@ -512,13 +512,13 @@ struct JetHadronRecoil {
         phiTTAr.push_back(particle.phi());
         ptTTAr.push_back(particle.pt());
         nTT++;
-        registry.fill(HIST("hSignalTriggers"), track.pt(), weight);
+        registry.fill(HIST("hSignalTriggers"), particle.pt(), weight);
       }
       if (!isSigCol && particle.pt() < ptTTrefMax && particle.pt() > ptTTrefMin) {
         phiTTAr.push_back(particle.phi());
         ptTTAr.push_back(particle.pt());
         nTT++;
-        registry.fill(HIST("hReferenceTriggers"), track.pt(), weight);
+        registry.fill(HIST("hReferenceTriggers"), particle.pt(), weight);
       }
       registry.fill(HIST("hPtPart"), particle.pt(), weight);
       registry.fill(HIST("hEtaPart"), particle.eta(), weight);
@@ -882,7 +882,7 @@ struct JetHadronRecoil {
   void processMCPWeightedWithMatchedTracks(aod::JetMcCollision const& collision,
                                            soa::Filtered<soa::Join<aod::ChargedMCParticleLevelJets, aod::ChargedMCParticleLevelJetConstituents>> const& jets,
                                            soa::Filtered<aod::JetParticles> const& particles,
-                                           soa::Filtered<aod::JetTracks> const& tracks)
+                                           soa::Filtered<aod::JetTracksMCD> const& tracks)
   {
     if (std::abs(collision.posZ()) > vertexZCut) {
       return;
