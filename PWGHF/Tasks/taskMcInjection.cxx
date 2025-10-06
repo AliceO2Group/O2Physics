@@ -96,6 +96,7 @@ struct HfTaskMcInjection {
   Produces<o2::aod::TracksInjection> tracksInj;
 
   Configurable<double> centMaxForCollDelta{"centMaxForCollDelta", 20., "max. cent. for gen-rec collision position histograms"};
+  Configurable<int> nPvContribMaxForCollDelta{"nPvContribMaxForCollDelta", 2000, "max. PV contrib. for gen-rec collision position histograms"};
 
   std::shared_ptr<TH1> hCharmPerCollImpPar, hCollisions;
 
@@ -122,13 +123,13 @@ struct HfTaskMcInjection {
     registry.add("hDeltaY", ";#DeltaY (cm);Counts", {HistType::kTH1F, {{deltaXYbins}}});
     registry.add("hDeltaZ", ";#DeltaZ (cm);Counts", {HistType::kTH1F, {{deltaZbins}}});
 
-    registry.add("hDeltaX_NPV_lt2000", ";#DeltaX (cm);Counts", {HistType::kTH1F, {{deltaXYbins}}});
-    registry.add("hDeltaY_NPV_lt2000", ";#DeltaY (cm);Counts", {HistType::kTH1F, {{deltaXYbins}}});
-    registry.add("hDeltaZ_NPV_lt2000", ";#DeltaZ (cm);Counts", {HistType::kTH1F, {{deltaZbins}}});
+    registry.add("hDeltaX_NPV_lt", ";#DeltaX (cm);Counts", {HistType::kTH1F, {{deltaXYbins}}});
+    registry.add("hDeltaY_NPV_lt", ";#DeltaY (cm);Counts", {HistType::kTH1F, {{deltaXYbins}}});
+    registry.add("hDeltaZ_NPV_lt", ";#DeltaZ (cm);Counts", {HistType::kTH1F, {{deltaZbins}}});
 
-    registry.add("hDeltaX_NPV_gt2000", ";#DeltaX (cm);Counts", {HistType::kTH1F, {{deltaXYbins}}});
-    registry.add("hDeltaY_NPV_gt2000", ";#DeltaY (cm);Counts", {HistType::kTH1F, {{deltaXYbins}}});
-    registry.add("hDeltaZ_NPV_gt2000", ";#DeltaZ (cm);Counts", {HistType::kTH1F, {{deltaZbins}}});
+    registry.add("hDeltaX_NPV_gt", ";#DeltaX (cm);Counts", {HistType::kTH1F, {{deltaXYbins}}});
+    registry.add("hDeltaY_NPV_gt", ";#DeltaY (cm);Counts", {HistType::kTH1F, {{deltaXYbins}}});
+    registry.add("hDeltaZ_NPV_gt", ";#DeltaZ (cm);Counts", {HistType::kTH1F, {{deltaZbins}}});
 
     registry.add("hDeltaXSngBkg", ";#DeltaX (signal/bkg) (cm);Counts", {HistType::kTH1F, {{200, -10, 10}}});
     registry.add("hDeltaYSngBkg", ";#DeltaY (signal/bkg) (cm);Counts", {HistType::kTH1F, {{200, -10, 10}}});
@@ -141,18 +142,18 @@ struct HfTaskMcInjection {
 
   bool isCharm(int pdg)
   {
-    if (std::abs(pdg) / 1000 == PDG_t::kCharm)
+    if (std::abs(pdg) / 1000 == PDG_t::kCharm) // o2-linter: disable=magic-number (get thousands digit)
       return true;
-    if (std::abs(pdg) / 100 == PDG_t::kCharm)
+    if (std::abs(pdg) / 100 == PDG_t::kCharm) // o2-linter: disable=magic-number (get hundreds digit)
       return true;
     return false;
   }
 
   bool isBeauty(int pdg) // if needed in the future
   {
-    if (std::abs(pdg) / 1000 == PDG_t::kBottom)
+    if (std::abs(pdg) / 1000 == PDG_t::kBottom) // o2-linter: disable=magic-number (get thousands digit)
       return true;
-    if (std::abs(pdg) / 100 == PDG_t::kBottom)
+    if (std::abs(pdg) / 100 == PDG_t::kBottom) // o2-linter: disable=magic-number (get hundreds digit)
       return true;
     return false;
   }
@@ -201,15 +202,14 @@ struct HfTaskMcInjection {
           registry.fill(HIST("hDeltaY"), collision.posY() - collision.mcCollision().posY());
           registry.fill(HIST("hDeltaZ"), collision.posZ() - collision.mcCollision().posZ());
 
-          constexpr unsigned maxNcontrib{2000};
-          if (collision.numContrib() > maxNcontrib) {
-            registry.fill(HIST("hDeltaX_NPV_gt2000"), collision.posX() - collision.mcCollision().posX());
-            registry.fill(HIST("hDeltaY_NPV_gt2000"), collision.posY() - collision.mcCollision().posY());
-            registry.fill(HIST("hDeltaZ_NPV_gt2000"), collision.posZ() - collision.mcCollision().posZ());
+          if (collision.numContrib() > nPvContribMaxForCollDelta) {
+            registry.fill(HIST("hDeltaX_NPV_gt"), collision.posX() - collision.mcCollision().posX());
+            registry.fill(HIST("hDeltaY_NPV_gt"), collision.posY() - collision.mcCollision().posY());
+            registry.fill(HIST("hDeltaZ_NPV_gt"), collision.posZ() - collision.mcCollision().posZ());
           } else {
-            registry.fill(HIST("hDeltaX_NPV_lt2000"), collision.posX() - collision.mcCollision().posX());
-            registry.fill(HIST("hDeltaY_NPV_lt2000"), collision.posY() - collision.mcCollision().posY());
-            registry.fill(HIST("hDeltaZ_NPV_lt2000"), collision.posZ() - collision.mcCollision().posZ());
+            registry.fill(HIST("hDeltaX_NPV_lt"), collision.posX() - collision.mcCollision().posX());
+            registry.fill(HIST("hDeltaY_NPV_lt"), collision.posY() - collision.mcCollision().posY());
+            registry.fill(HIST("hDeltaZ_NPV_lt"), collision.posZ() - collision.mcCollision().posZ());
           }
         }
         std::unordered_set<int> charmIds{};
