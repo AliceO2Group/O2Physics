@@ -100,8 +100,8 @@ struct HfCandidateSelectorD0 {
   Configurable<bool> useTriggerMassCut{"useTriggerMassCut", false, "Flag to enable parametrize pT differential mass cut for triggered data"};
 
   o2::analysis::HfMlResponseD0ToKPi<float> hfMlResponse;
-  std::vector<float> outputMlD0 = {};
-  std::vector<float> outputMlD0bar = {};
+  std::vector<float> outputMlD0;
+  std::vector<float> outputMlD0bar;
   o2::ccdb::CcdbApi ccdbApi;
   TrackSelectorPi selectorPion;
   TrackSelectorKa selectorKaon;
@@ -172,7 +172,7 @@ struct HfCandidateSelectorD0 {
   /// \param reconstructionType is the reconstruction type (DCAFitterN or KFParticle)
   /// \param candidate is candidate
   /// \return true if candidate passes all cuts
-  template <int reconstructionType, typename T>
+  template <int ReconstructionType, typename T>
   bool selectionTopol(const T& candidate)
   {
     auto candpT = candidate.pt();
@@ -233,7 +233,7 @@ struct HfCandidateSelectorD0 {
   /// \param trackKaon is the track with the kaon hypothesis
   /// \note trackPion = positive and trackKaon = negative for D0 selection and inverse for D0bar
   /// \return true if candidate passes all cuts for the given Conjugate
-  template <int reconstructionType, typename T1, typename T2>
+  template <int ReconstructionType, typename T1, typename T2>
   bool selectionTopolConjugate(const T1& candidate, const T2& trackPion, const T2& trackKaon)
   {
     auto candpT = candidate.pt();
@@ -244,7 +244,7 @@ struct HfCandidateSelectorD0 {
 
     // invariant-mass cut
     float massD0, massD0bar;
-    if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+    if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
       massD0 = candidate.kfGeoMassD0();
       massD0bar = candidate.kfGeoMassD0bar();
     } else {
@@ -303,7 +303,7 @@ struct HfCandidateSelectorD0 {
 
     return true;
   }
-  template <int reconstructionType, typename CandType>
+  template <int ReconstructionType, typename CandType>
   void processSel(CandType const& candidates,
                   TracksSel const&)
   {
@@ -344,7 +344,7 @@ struct HfCandidateSelectorD0 {
       }
 
       // conjugate-independent topological selection
-      if (!selectionTopol<reconstructionType>(candidate)) {
+      if (!selectionTopol<ReconstructionType>(candidate)) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);
         if (applyMl) {
           hfMlD0Candidate(outputMlD0, outputMlD0bar);
@@ -357,9 +357,9 @@ struct HfCandidateSelectorD0 {
       // need to add special cuts (additional cuts on decay length and d0 norm)
 
       // conjugate-dependent topological selection for D0
-      bool topolD0 = selectionTopolConjugate<reconstructionType>(candidate, trackPos, trackNeg);
+      bool const topolD0 = selectionTopolConjugate<ReconstructionType>(candidate, trackPos, trackNeg);
       // conjugate-dependent topological selection for D0bar
-      bool topolD0bar = selectionTopolConjugate<reconstructionType>(candidate, trackNeg, trackPos);
+      bool const topolD0bar = selectionTopolConjugate<ReconstructionType>(candidate, trackNeg, trackPos);
 
       if (!topolD0 && !topolD0bar) {
         hfSelD0Candidate(statusD0, statusD0bar, statusHFFlag, statusTopol, statusCand, statusPID);

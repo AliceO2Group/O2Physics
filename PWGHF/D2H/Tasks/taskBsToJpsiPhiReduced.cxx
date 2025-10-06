@@ -267,7 +267,7 @@ struct HfTaskBsToJpsiPhiReduced {
   o2::ccdb::CcdbApi ccdbApi;
 
   using TracksKaon = soa::Join<HfRedTracks, HfRedTracksPid>;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
 
   // Filter filterSelectCandidates = (aod::hf_sel_candidate_bplus::isSelBsToJpsiPi >= selectionFlagBs);
 
@@ -355,7 +355,7 @@ struct HfTaskBsToJpsiPhiReduced {
   /// Calculate pseudorapidity from track tan(lambda)
   /// \param tgl is the track tangent of the dip angle
   /// \return pseudorapidity
-  inline float absEta(float tgl)
+  float absEta(float tgl)
   {
     return std::abs(std::log(std::tan(o2::constants::math::PIQuarter - 0.5f * std::atan(tgl))));
   }
@@ -365,7 +365,7 @@ struct HfTaskBsToJpsiPhiReduced {
   /// \param withBsMl is the flag to enable the filling with ML scores for the Bs candidate
   /// \param candidate is the Bs candidate
   /// \param candidatesJpsi is the table with Jpsi candidates
-  template <bool doMc, bool withBsMl, typename Cand>
+  template <bool DoMc, bool WithBsMl, typename Cand>
   void fillCand(Cand const& candidate,
                 aod::HfRedJpsis const& /*candidatesJpsi*/,
                 aod::HfRedBach0Tracks const&,
@@ -376,8 +376,8 @@ struct HfTaskBsToJpsiPhiReduced {
     auto candJpsi = candidate.template jpsi_as<aod::HfRedJpsis>();
     auto candKa0 = candidate.template prong0Phi_as<aod::HfRedBach0Tracks>();
     auto candKa1 = candidate.template prong1Phi_as<aod::HfRedBach1Tracks>();
-    std::array<float, 3> pVecKa0 = {candKa0.px(), candKa0.py(), candKa0.pz()};
-    std::array<float, 3> pVecKa1 = {candKa1.px(), candKa1.py(), candKa1.pz()};
+    std::array<float, 3> const pVecKa0 = {candKa0.px(), candKa0.py(), candKa0.pz()};
+    std::array<float, 3> const pVecKa1 = {candKa1.px(), candKa1.py(), candKa1.pz()};
     auto ptJpsi = candidate.ptProng0();
     auto invMassJpsi = candJpsi.m();
     auto invMassPhi = RecoDecay::m(std::array{pVecKa0, pVecKa1}, std::array{o2::constants::physics::MassKPlus, o2::constants::physics::MassKPlus});
@@ -385,7 +385,7 @@ struct HfTaskBsToJpsiPhiReduced {
 
     int8_t flagMcMatchRec{0}, flagMcDecayChanRec{0}, flagWrongCollision{0};
     bool isSignal = false;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagMcDecayChanRec = candidate.flagMcDecayChanRec();
       flagWrongCollision = candidate.flagWrongCollision();
@@ -421,7 +421,7 @@ struct HfTaskBsToJpsiPhiReduced {
     }
 
     float candidateMlScoreSig = -1;
-    if constexpr (withBsMl) {
+    if constexpr (WithBsMl) {
       // Bs ML selections
       std::vector<float> inputFeatures = hfMlResponse.getInputFeatures(candidate, candKa0, candKa1);
       if (hfMlResponse.isSelectedMl(inputFeatures, ptCandBs, outputMl)) {
@@ -436,7 +436,7 @@ struct HfTaskBsToJpsiPhiReduced {
     registry.fill(HIST("hMassJpsi"), invMassJpsi, candidate.ptProng0());
     registry.fill(HIST("hMassPhi"), invMassPhi, candidate.ptProng0());
     registry.fill(HIST("hd0K"), candidate.impactParameter1(), candidate.ptProng1());
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       if (isSignal) {
         registry.fill(HIST("hMassRecSig"), invMassBs, ptCandBs);
         registry.fill(HIST("hMassJpsiRecSig"), invMassJpsi, candidate.ptProng0());
@@ -448,10 +448,10 @@ struct HfTaskBsToJpsiPhiReduced {
       }
     }
 
-    float pseudoRndm = ptJpsi * 1000. - static_cast<int64_t>(ptJpsi * 1000);
+    float const pseudoRndm = ptJpsi * 1000. - static_cast<int64_t>(ptJpsi * 1000);
     if (ptCandBs >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor) {
       float ptMother = -1.;
-      if constexpr (doMc) {
+      if constexpr (DoMc) {
         ptMother = candidate.ptMother();
       }
 
@@ -532,7 +532,7 @@ struct HfTaskBsToJpsiPhiReduced {
     }
     std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
     std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
-    bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
+    bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
 
     registry.fill(HIST("hPtJpsiGen"), ptProngs[0], ptParticle);
     registry.fill(HIST("hPtKGen"), ptProngs[1], ptParticle);

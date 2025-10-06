@@ -248,7 +248,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     }
 
     // we initialise the summary object
-    if (softwareTrigger.value != "") {
+    if (!softwareTrigger.value.empty()) {
       zorroSummary.setObject(zorro.getZorroSummary());
     }
 
@@ -264,7 +264,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   /// \param ccdb ccdb service needed to retrieve the needed info for zorro
   /// \param registry reference to the histogram registry needed for zorro
   /// \return bitmask with the event selection criteria not satisfied by the collision
-  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename TBcs, typename TCollision>
+  template <bool UseEvSel, o2::hf_centrality::CentralityEstimator CentEstimator, typename TBcs, typename TCollision>
   HfCollisionRejectionMask getHfCollisionRejectionMask(TCollision const& collision,
                                                        float& centrality,
                                                        o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb,
@@ -272,14 +272,14 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
   {
     HfCollisionRejectionMask rejectionMask{};
 
-    if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
-      centrality = o2::hf_centrality::getCentralityColl(collision, centEstimator);
+    if constexpr (CentEstimator != o2::hf_centrality::CentralityEstimator::None) {
+      centrality = o2::hf_centrality::getCentralityColl(collision, CentEstimator);
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(rejectionMask, EventRejection::Centrality);
       }
     }
 
-    if constexpr (useEvSel) {
+    if constexpr (UseEvSel) {
       /// RCT condition
       if (requireGoodRct && !rctChecker.checkTable(collision)) {
         SETBIT(rejectionMask, EventRejection::Rct);
@@ -344,7 +344,7 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
       SETBIT(rejectionMask, EventRejection::PositionZ);
     }
 
-    if (softwareTrigger.value != "") {
+    if (!softwareTrigger.value.empty()) {
       // we might have to update it from CCDB
       const auto bc = collision.template bc_as<TBcs>();
       const auto runNumber = bc.runNumber();
@@ -370,16 +370,16 @@ struct HfEventSelection : o2::framework::ConfigurableGroup {
     return rejectionMask;
   }
 
-  template <bool useEvSel, o2::hf_centrality::CentralityEstimator centEstimator, typename TBcs, typename TCollision>
+  template <bool UseEvSel, o2::hf_centrality::CentralityEstimator CentEstimator, typename TBcs, typename TCollision>
   HfCollisionRejectionMask getHfCollisionRejectionMaskWithUpc(TCollision const& collision,
                                                               float& centrality,
                                                               o2::framework::Service<o2::ccdb::BasicCCDBManager> const& ccdb,
                                                               o2::framework::HistogramRegistry& registry,
                                                               TBcs const& bcs)
   {
-    auto rejectionMaskWithUpc = getHfCollisionRejectionMask<useEvSel, centEstimator, TBcs>(collision, centrality, ccdb, registry);
+    auto rejectionMaskWithUpc = getHfCollisionRejectionMask<UseEvSel, CentEstimator, TBcs>(collision, centrality, ccdb, registry);
 
-    if (useEvSel) {
+    if (UseEvSel) {
       const SGCutParHolder sgCuts = setSgPreselection();
       const auto bc = collision.template foundBC_as<TBcs>();
       const auto bcRange = udhelpers::compatibleBCs(collision, sgCuts.NDtcoll(), bcs, sgCuts.minNBCs());
@@ -435,7 +435,7 @@ struct HfEventSelectionMc {
   float centralityMin{-10.f};                 // Minimum centrality
   float centralityMax{100.f};                 // Maximum centrality
   bool requireGoodRct{false};                 // Apply RCT selection
-  std::string rctLabel{""};                   // RCT selection flag
+  std::string rctLabel;                       // RCT selection flag
   bool rctCheckZDC{false};                    // require ZDC from RCT
   bool rctTreatLimitedAcceptanceAsBad{false}; // RCT flag to reject events with limited acceptance for selected detectors
 
@@ -471,29 +471,29 @@ struct HfEventSelectionMc {
   void configureFromDevice(o2::framework::DeviceSpec const& device)
   {
     for (const auto& option : device.options) {
-      if (option.name.compare("hfEvSel.useSel8Trigger") == 0) {
+      if (option.name == "hfEvSel.useSel8Trigger") {
         useSel8Trigger = option.defaultValue.get<bool>();
-      } else if (option.name.compare("hfEvSel.useTvxTrigger") == 0) {
+      } else if (option.name == "hfEvSel.useTvxTrigger") {
         useTvxTrigger = option.defaultValue.get<bool>();
-      } else if (option.name.compare("hfEvSel.useTimeFrameBorderCut") == 0) {
+      } else if (option.name == "hfEvSel.useTimeFrameBorderCut") {
         useTimeFrameBorderCut = option.defaultValue.get<bool>();
-      } else if (option.name.compare("hfEvSel.useItsRofBorderCut") == 0) {
+      } else if (option.name == "hfEvSel.useItsRofBorderCut") {
         useItsRofBorderCut = option.defaultValue.get<bool>();
-      } else if (option.name.compare("hfEvSel.zPvPosMin") == 0) {
+      } else if (option.name == "hfEvSel.zPvPosMin") {
         zPvPosMin = option.defaultValue.get<float>();
-      } else if (option.name.compare("hfEvSel.zPvPosMax") == 0) {
+      } else if (option.name == "hfEvSel.zPvPosMax") {
         zPvPosMax = option.defaultValue.get<float>();
-      } else if (option.name.compare("hfEvSel.centralityMin") == 0) {
+      } else if (option.name == "hfEvSel.centralityMin") {
         centralityMin = option.defaultValue.get<float>();
-      } else if (option.name.compare("hfEvSel.centralityMax") == 0) {
+      } else if (option.name == "hfEvSel.centralityMax") {
         centralityMax = option.defaultValue.get<float>();
-      } else if (option.name.compare("hfEvSel.requireGoodRct") == 0) {
+      } else if (option.name == "hfEvSel.requireGoodRct") {
         requireGoodRct = option.defaultValue.get<bool>();
-      } else if (option.name.compare("hfEvSel.rctLabel") == 0) {
+      } else if (option.name == "hfEvSel.rctLabel") {
         rctLabel = option.defaultValue.get<std::string>();
-      } else if (option.name.compare("hfEvSel.rctCheckZDC") == 0) {
+      } else if (option.name == "hfEvSel.rctCheckZDC") {
         rctCheckZDC = option.defaultValue.get<bool>();
-      } else if (option.name.compare("hfEvSel.rctTreatLimitedAcceptanceAsBad") == 0) {
+      } else if (option.name == "hfEvSel.rctTreatLimitedAcceptanceAsBad") {
         rctTreatLimitedAcceptanceAsBad = option.defaultValue.get<bool>();
       }
     }
@@ -522,7 +522,7 @@ struct HfEventSelectionMc {
   /// \param collSlice collection of reconstructed collisions
   /// \param centrality centrality variable to be set in this function
   /// \return a bitmask with the event selections not satisfied by the analysed collision
-  template <typename TBcs, o2::hf_centrality::CentralityEstimator centEstimator, typename TCollisions, typename TMcCollision>
+  template <typename TBcs, o2::hf_centrality::CentralityEstimator CentEstimator, typename TCollisions, typename TMcCollision>
   HfCollisionRejectionMask getHfMcCollisionRejectionMask(TMcCollision const& mcCollision,
                                                          TCollisions const& collSlice,
                                                          float& centrality)
@@ -531,8 +531,8 @@ struct HfEventSelectionMc {
     const auto zPv = mcCollision.posZ();
     const auto bc = mcCollision.template bc_as<TBcs>();
 
-    if constexpr (centEstimator != o2::hf_centrality::CentralityEstimator::None) {
-      centrality = o2::hf_centrality::getCentralityGenColl(collSlice, centEstimator);
+    if constexpr (CentEstimator != o2::hf_centrality::CentralityEstimator::None) {
+      centrality = o2::hf_centrality::getCentralityGenColl(collSlice, CentEstimator);
       /// centrality selection
       if (centrality < centralityMin || centrality > centralityMax) {
         SETBIT(rejectionMask, EventRejection::Centrality);
@@ -575,14 +575,14 @@ struct HfEventSelectionMc {
   /// \brief Fills histogram for monitoring event selections satisfied by the collision.
   /// \param collision analysed collision
   /// \param rejectionMask bitmask storing the info about which ev. selections are not satisfied by the collision
-  template <o2::hf_centrality::CentralityEstimator centEstimator, typename TMcCollision>
+  template <o2::hf_centrality::CentralityEstimator CentEstimator, typename TMcCollision>
   void fillHistograms(TMcCollision const& mcCollision,
                       const HfCollisionRejectionMask rejectionMask,
                       const int nSplitColl = 0)
   {
     hGenCollisions->Fill(EventRejection::None);
 
-    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+    if constexpr (CentEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
       if (!TESTBIT(rejectionMask, EventRejection::TimeFrameBorderCut) && !TESTBIT(rejectionMask, EventRejection::ItsRofBorderCut) && !TESTBIT(rejectionMask, EventRejection::PositionZ)) {
         hGenCollisionsCent->Fill(mcCollision.centFT0M());
       }
@@ -595,7 +595,7 @@ struct HfEventSelectionMc {
       hGenCollisions->Fill(reason);
     }
 
-    if constexpr (centEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
+    if constexpr (CentEstimator == o2::hf_centrality::CentralityEstimator::FT0M) {
       hNSplitVertices->Fill(nSplitColl);
       for (int nColl = 0; nColl < nSplitColl; nColl++) {
         hRecCollisionsCentMc->Fill(mcCollision.centFT0M());

@@ -108,7 +108,7 @@ struct HfCandidateSelectorDstarToD0Pi {
 
   HfHelper hfHelper;
   o2::analysis::HfMlResponseDstarToD0Pi<float> hfMlResponse;
-  std::vector<float> outputMlDstarToD0Pi = {};
+  std::vector<float> outputMlDstarToD0Pi;
   o2::ccdb::CcdbApi ccdbApi;
 
   TrackSelectorPi selectorPion;
@@ -393,7 +393,7 @@ struct HfCandidateSelectorDstarToD0Pi {
       // need to add special cuts (additional cuts on decay length and d0 norm)
 
       // conjugate-dependent topological selection for Dstar
-      bool topoDstar = selectionTopolConjugate(candDstar);
+      bool const topoDstar = selectionTopolConjugate(candDstar);
       if (!topoDstar) {
         hfSelDstarCandidate(statusDstar, statusD0Flag, statusTopol, statusCand, statusPID);
         if (applyMl) {

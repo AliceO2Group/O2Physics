@@ -80,7 +80,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
   bool selectionTopol(const T1& hfCandXicc, const T2& hfCandXic, const T3& trackPi)
   {
     auto candpT = hfCandXicc.pt();
-    int pTBin = findBin(binsPt, candpT);
+    int const pTBin = findBin(binsPt, candpT);
     if (pTBin == -1) {
       return false;
     }
@@ -161,7 +161,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
       // final selection flag: 0 - rejected, 1 - accepted
       auto statusXiccToPKPiPi = 0;
 
-      if (!(hfCandXicc.hfflag() & 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi)) {
+      if ((hfCandXicc.hfflag() & 1 << aod::hf_cand_xicc::DecayType::XiccToXicPi) == 0) {
         hfSelXiccToPKPiPiCandidate(statusXiccToPKPiPi);
         continue;
       }
@@ -179,7 +179,7 @@ struct HfCandidateSelectorXiccToPKPiPi {
         pidPi = 1;
       } else {
         // track-level PID selection
-        int pidPion = selectorPion.statusTpcOrTof(trackPi);
+        int const pidPion = selectorPion.statusTpcOrTof(trackPi);
         if (pidPion == TrackSelectorPID::Accepted) {
           pidPi = 1;
         }
