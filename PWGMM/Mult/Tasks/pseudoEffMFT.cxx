@@ -1036,15 +1036,15 @@ struct PseudoEffMFT {
           mRunNumber = currentRun;
           auto orbits = deadmap->getEvolvingMapKeys();
         }
-        if (mOrbit != (static_cast<int64_t>(bc.globalBC() / nBCsPerOrbit))) {
-          mOrbit = (static_cast<int64_t>(bc.globalBC() / nBCsPerOrbit));
+        if (mOrbit != (bc.globalBC() / nBCsPerOrbit)) {
+          mOrbit = (bc.globalBC() / nBCsPerOrbit);
           std::vector<uint16_t> encodeChips;
           auto lowerOrbit = deadmap->getMapAtOrbit(mOrbit, encodeChips);
           if ((mOrbit - lowerOrbit) > mPrevOrbit) {
-            for (const auto& v : chipsPerLayer) {
+            for (auto& v : chipsPerLayer) {
               v.clear();
             }
-            for (const auto& h : layerMasks) {
+            for (auto& h : layerMasks) {
               if (h)
                 h->Reset("ICES");
             }
