@@ -40,7 +40,7 @@ constexpr double BinsPtTrack[NBinsPtTrack + 1] = {
   2.0,
   3.0,
   1000.0};
-auto const vecBinsPtTrack = std::vector<double>{BinsPtTrack, BinsPtTrack + NBinsPtTrack + 1};
+const auto vecBinsPtTrack = std::vector<double>{BinsPtTrack, BinsPtTrack + NBinsPtTrack + 1};
 
 // default values for the dca_xy and dca_z cuts of displaced tracks
 constexpr double CutsTrack[NBinsPtTrack][NCutVarsTrack] = {{0.0000, 10., 0.0000, 100.},  /* 0   < pt < 0.5 */
