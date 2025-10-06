@@ -8,6 +8,14 @@
 // In applying this license CERN does not waive the privileges and immunities
 // granted to it by virtue of its status as an Intergovernmental Organization
 // or submit itself to any jurisdiction.
+//
+/// \file perfK0sResolution.cxx
+/// \brief V0s (K0s, Lambda and antiLambda) analysis task
+///
+/// \author Nicolò Jacazio <nicolo.jacazio@cern.ch>, Universita del Piemonte Orientale
+/// \author Roman Nepeivoda <roman.nepeivoda@cern.ch>, Lund University
+/// \author Romain Schotter <romain.schotter@cern.ch>, Austrian Academy of Sciences & MBI
+//
 
 #include "PWGLF/DataModel/LFStrangenessPIDTables.h"
 #include "PWGLF/DataModel/LFStrangenessTables.h"
@@ -145,12 +153,12 @@ struct perfK0sResolution {
     Configurable<int> requireNegITSib{"requireNegITSib", 0, "require ITS IB selection on negative daughters? -1: no ITS IB, 0: no selection, 1: ITS IB"};
     Configurable<int> requirePosITSafterburner{"requirePosITSafterburner", 0, "require positive track formed out of afterburner ITS tracks? -1: no AB, 0: no selection, 1: AB"};
     Configurable<int> requireNegITSafterburner{"requireNegITSafterburner", 0, "require negative track formed out of afterburner ITS tracks? -1: no AB, 0: no selection, 1: AB"};
-    Configurable<int> requirePosTRD{"trdSelectionPos", 0, "require TRD selection on positive daughters? -1: no TRD, 0: no selection, 1: TRD"};
-    Configurable<int> requireNegTRD{"trdSelectionNeg", 0, "require TRD selection on negative daughters? -1: no TRD, 0: no selection, 1: TRD"};
-    Configurable<int> requirePosTOF{"tofSelectionPos", 0, "require TOF selection on positive daughters? -1: no TOF, 0: no selection, 1: TOF"};
-    Configurable<int> requireNegTOF{"tofSelectionNeg", 0, "require TOF selection on negative daughters? -1: no TOF, 0: no selection, 1: TOF"};
-    Configurable<int> requirePosPIDforTracking{"pidHypoPos", -1, "require specific PID hypothesis used in tracking for the positive daughters? -1: no selection, 0: Electron, 1: Muon, 2: Pion, 3: Kaon, 4: Proton"};
-    Configurable<int> requireNegPIDforTracking{"pidHypoNeg", -1, "require specific PID hypothesis used in tracking for the negative daughters? -1: no selection, 0: Electron, 1: Muon, 2: Pion, 3: Kaon, 4: Proton"};
+    Configurable<int> requirePosTRD{"requirePosTRD", 0, "require TRD selection on positive daughters? -1: no TRD, 0: no selection, 1: TRD"};
+    Configurable<int> requireNegTRD{"requireNegTRD", 0, "require TRD selection on negative daughters? -1: no TRD, 0: no selection, 1: TRD"};
+    Configurable<int> requirePosTOF{"requirePosTOF", 0, "require TOF selection on positive daughters? -1: no TOF, 0: no selection, 1: TOF"};
+    Configurable<int> requireNegTOF{"requireNegTOF", 0, "require TOF selection on negative daughters? -1: no TOF, 0: no selection, 1: TOF"};
+    Configurable<int> requirePosPIDforTracking{"requirePosPIDforTracking", -1, "require specific PID hypothesis used in tracking for the positive daughters? -1: no selection, 0: Electron, 1: Muon, 2: Pion, 3: Kaon, 4: Proton"};
+    Configurable<int> requireNegPIDforTracking{"requireNegPIDforTracking", -1, "require specific PID hypothesis used in tracking for the negative daughters? -1: no selection, 0: Electron, 1: Muon, 2: Pion, 3: Kaon, 4: Proton"};
 
     // PID (TPC/TOF)
     Configurable<float> tpcPidNsigmaCut{"tpcPidNsigmaCut", 10., "tpcPidNsigmaCut"};
@@ -178,7 +186,7 @@ struct perfK0sResolution {
   Configurable<std::string> trackTunerParams{"trackTunerParams", "debugInfo=0|updateTrackCovMat=0|updateCurvature=1|updatePulls=0|isInputFileFromCCDB=1|pathInputFile=Users/m/mfaggin/test/inputsTrackTuner/PbPb2022|nameInputFile=trackTuner_DataLHC22sPass5_McLHC22l1b2_run529397.root|usePvRefitCorrections=0|oneOverPtCurrent=1|oneOverPtUpgr=1.2", "TrackTuner parameter initialization (format: <name>=<value>|<name>=<value>)"};
   OutputObj<TH1D> trackTunedTracks{TH1D("trackTunedTracks", "", 4, 0.5, 4.5), OutputObjHandlingPolicy::AnalysisObject};
   Configurable<std::string> lutPath{"lutPath", "GLO/Param/MatLUTInner", "Path of the Lut parametrization"};
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
+  Configurable<std::string> ccdbUrl{"ccdbUrl", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
   Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
 
   int runNumber = -1;
@@ -228,7 +236,7 @@ struct perfK0sResolution {
 
     rK0sResolution.add("h1_stats", "h1_stats", {HistType::kTH1D, {statAxis}});
     TString hStatsLabels[5] = {"Selected Events", "All V0s", "Selected V0s", "Daughters have MC particles", "Daughters corr. rec."};
-    for (Int_t n = 1; n <= rK0sResolution.get<TH1>(HIST("h1_stats"))->GetNbinsX(); n++) {
+    for (int n = 1; n <= rK0sResolution.get<TH1>(HIST("h1_stats"))->GetNbinsX(); n++) {
       rK0sResolution.get<TH1>(HIST("h1_stats"))->GetXaxis()->SetBinLabel(n, hStatsLabels[n - 1]);
     }
 
@@ -281,7 +289,7 @@ struct perfK0sResolution {
 
     /// TrackTuner initialization
     if (useTrackTuner) {
-      ccdb->setURL(ccdburl);
+      ccdb->setURL(ccdbUrl);
       ccdb->setCaching(true);
       ccdb->setLocalObjectValidityChecking();
       ccdb->setFatalWhenNull(false);
@@ -633,7 +641,7 @@ struct perfK0sResolution {
     rK0sResolution.fill(HIST("hEventOccupancy"), occupancy);
 
     rK0sResolution.fill(HIST("h1_stats"), 0.5);
-    for (auto& v0 : fullV0s) {
+    for (const auto& v0 : fullV0s) {
       rK0sResolution.fill(HIST("h1_stats"), 1.5);
       const auto& posTrack = v0.posTrack_as<PIDTracksIU>();
       const auto& negTrack = v0.negTrack_as<PIDTracksIU>();
@@ -710,7 +718,7 @@ struct perfK0sResolution {
     rK0sResolution.fill(HIST("hEventOccupancy"), occupancy);
 
     rK0sResolution.fill(HIST("h1_stats"), 0.5);
-    for (auto& v0 : fullV0s) {
+    for (const auto& v0 : fullV0s) {
       bool daughtersHaveMCParticles = false;
       bool daughtersCorrRec = false;
       rK0sResolution.fill(HIST("h1_stats"), 1.5);
@@ -723,8 +731,8 @@ struct perfK0sResolution {
       if (posTrack.has_mcParticle() && negTrack.has_mcParticle()) {
         daughtersHaveMCParticles = true;
         rK0sResolution.fill(HIST("h1_stats"), 3.5);
-        bool isPositivePion = posTrack.mcParticle().pdgCode() == 211 || (doTreatPiToMuon && posTrack.mcParticle().pdgCode() == -13);
-        bool isNegativePion = negTrack.mcParticle().pdgCode() == -211 || (doTreatPiToMuon && negTrack.mcParticle().pdgCode() == 13);
+        bool isPositivePion = posTrack.mcParticle().pdgCode() == PDG_t::kPiPlus || (doTreatPiToMuon && posTrack.mcParticle().pdgCode() == PDG_t::kMuonPlus);
+        bool isNegativePion = negTrack.mcParticle().pdgCode() == PDG_t::kPiMinus || (doTreatPiToMuon && negTrack.mcParticle().pdgCode() == PDG_t::kMuonMinus);
         if (isPositivePion && isNegativePion) {
           daughtersCorrRec = true;
           rK0sResolution.fill(HIST("h1_stats"), 4.5);
@@ -747,7 +755,7 @@ struct perfK0sResolution {
                             std::array{o2::constants::physics::MassPionCharged, o2::constants::physics::MassPionCharged});
       }
 
-      bool isTrueK0s = (v0.has_mcParticle() && std::abs(v0.mcParticle().pdgCode()) == 310 && v0.mcParticle().isPhysicalPrimary() && daughtersCorrRec);
+      bool isTrueK0s = (v0.has_mcParticle() && std::abs(v0.mcParticle().pdgCode()) == PDG_t::kK0Short && v0.mcParticle().isPhysicalPrimary() && daughtersCorrRec);
       if (requireTrueK0s && !isTrueK0s) {
         continue;
       }
