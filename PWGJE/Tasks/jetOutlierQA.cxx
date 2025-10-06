@@ -112,7 +112,7 @@ struct JetOutlierQATask {
 
     AxisSpec jetPtAxis = {jetPtBins, "#it{p}_{T} (GeV/#it{c})"};
 
-    if (doprocessJetsAmbiguous ) {
+    if (doprocessJetsAmbiguous) {
       // outliers
       registry.add("h3_pthat_jet_pt_jet_ntracks_outliers", "#it#hat{p} (GeV/#it{c});#it{p}_{T,jet} (GeV/#it{c});N_{jet tracks}", {HistType::kTH3F, {{100, 0, 200}, jetPtAxis, {200, -0.5, 199.5}}});
       registry.add("h3_jet_pt_track_dEta_track_dPhi_outliers", "#it{p}_{T,jet} (GeV/#it{c});#Delta#eta;#Delta#phi", {HistType::kTH3F, {jetPtAxis, {100, -0.5, 0.5}, {100, -0.5, 0.5}}});
@@ -126,30 +126,30 @@ struct JetOutlierQATask {
       registry.add("h3_jet_pt_track_dEta_track_dPhi_all_noweight", "#it{p}_{T,jet} (GeV/#it{c});#Delta#eta;#Delta#phi", {HistType::kTH3F, {jetPtAxis, {100, -0.5, 0.5}, {100, -0.5, 0.5}}});
       registry.add("h2_jet_pt_Dz_all_noweight", "#it{p}_{T,jet} (GeV/#it{c});z = #it{p}_{T,track} / #it{p}_{T,jet}", {HistType::kTH2F, {jetPtAxis, {30, 0, 1}}});
 
-      registry.add("h3_jet_pt_track_pt_pt_hat_ambiguous", "ambiguous;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c}); #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150,0,300}, {100,0,100}, {200,0,600}}});
-      registry.add("h3_jet_pt_track_pt_pt_hat_unambiguous", "matched;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c}); #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150,0,300}, {100,0,100}, {200,0,600}}});
-      registry.add("h3_jet_pt_frac_pt_ambiguous_pt_hat", "fraction pT;#it{p}_{T,jet} (GeV/#it{c});fraction of #it{p}_{T,track} unmatched; #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150,0,300}, {40,0,1.1}, {200,0,600}}});
-      registry.add("h3_jet_pt_frac_constituents_ambiguous_pt_hat", "fraction const;#it{p}_{T,jet} (GeV/#it{c});fraction of constituents matched; #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150,0,300}, {40,0,1.1}, {200,0,600}}});
-      registry.add("h3_jet_pt_track_pt_pt_hat_no_particle", "no matching particle;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c}); #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150,0,300}, {100,0,100}, {200,0,600}}});
-      registry.add("h3_jet_pt_track_pt_pt_hat_with_particle", "with matching particle;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c}); #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150,0,300}, {100,0,100}, {200,0,600}}});
-      registry.add("h3_jet_pt_frac_pt_unmatched_particle_pt_hat", "fraction pT;#it{p}_{T,jet} (GeV/#it{c});fraction of #it{p}_{T,track} unmatched; #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150,0,300}, {40,0,1.1}, {200,0,600}}});
-      registry.add("h3_jet_pt_frac_constituents_unmatched_particle_pt_hat", "fraction const;#it{p}_{T,jet} (GeV/#it{c});fraction of constituents unmatched; #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150,0,300}, {40,0,1.1}, {200,0,600}}});
+      registry.add("h3_jet_pt_track_pt_pt_hat_ambiguous", "ambiguous;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c}); #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150, 0, 300}, {100, 0, 100}, {200, 0, 600}}});
+      registry.add("h3_jet_pt_track_pt_pt_hat_unambiguous", "matched;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c}); #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150, 0, 300}, {100, 0, 100}, {200, 0, 600}}});
+      registry.add("h3_jet_pt_frac_pt_ambiguous_pt_hat", "fraction pT;#it{p}_{T,jet} (GeV/#it{c});fraction of #it{p}_{T,track} unmatched; #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150, 0, 300}, {40, 0, 1.1}, {200, 0, 600}}});
+      registry.add("h3_jet_pt_frac_constituents_ambiguous_pt_hat", "fraction const;#it{p}_{T,jet} (GeV/#it{c});fraction of constituents matched; #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150, 0, 300}, {40, 0, 1.1}, {200, 0, 600}}});
+      registry.add("h3_jet_pt_track_pt_pt_hat_no_particle", "no matching particle;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c}); #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150, 0, 300}, {100, 0, 100}, {200, 0, 600}}});
+      registry.add("h3_jet_pt_track_pt_pt_hat_with_particle", "with matching particle;#it{p}_{T,jet} (GeV/#it{c});#it{p}_{T,track} (GeV/#it{c}); #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150, 0, 300}, {100, 0, 100}, {200, 0, 600}}});
+      registry.add("h3_jet_pt_frac_pt_unmatched_particle_pt_hat", "fraction pT;#it{p}_{T,jet} (GeV/#it{c});fraction of #it{p}_{T,track} unmatched; #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150, 0, 300}, {40, 0, 1.1}, {200, 0, 600}}});
+      registry.add("h3_jet_pt_frac_constituents_unmatched_particle_pt_hat", "fraction const;#it{p}_{T,jet} (GeV/#it{c});fraction of constituents unmatched; #hat{#it{p}_{T}} (GeV/#it{c})", {HistType::kTH3F, {{150, 0, 300}, {40, 0, 1.1}, {200, 0, 600}}});
 
       // collision-level properties
-      registry.add("h_collision_multiplicity_outlier","multiplicity",{HistType::kTH1F, {{200, 0, 200}}});
-      registry.add("h_collision_pTHat_multiplicity_outlier","multiplicity",{HistType::kTH2F, {{100, 0, 500}, {200, 0, 200}}});
-      registry.add("h_collision_multiplicity_all","multiplicity",{HistType::kTH1F, {{200, 0, 200}}});
-      registry.add("h_collision_pTHat_multiplicity_all","multiplicity",{HistType::kTH2F, {{100, 0, 500}, {200, 0, 200}}});
-      registry.add("h_collision_trackOccupancyInTimeRange_outlier","track occupancy",{HistType::kTH1F, {{1000, 0, 10000}}});
-      registry.add("h_collision_trackOccupancyInTimeRange_all","track occupancy",{HistType::kTH1F, {{1000, 0, 10000}}});
-      registry.add("h_collision_multFV0A_outlier","mult V0A",{HistType::kTH1F, {{1000, 0, 1000}}});
-      registry.add("h_collision_multFV0A_all","mult V0A",{HistType::kTH1F, {{1000, 0, 1000}}});
-      registry.add("h_collision_multFV0C_outlier","mult V0A",{HistType::kTH1F, {{1000, 0, 1000}}});
-      registry.add("h_collision_multFV0C_all","mult V0A",{HistType::kTH1F, {{1000, 0, 1000}}});
-      registry.add("h_collision_multFV0M_outlier","mult V0A",{HistType::kTH1F, {{1000, 0, 1000}}});
-      registry.add("h_collision_multFV0M_all","mult V0A",{HistType::kTH1F, {{1000, 0, 1000}}});
+      registry.add("h_collision_multiplicity_outlier", "multiplicity", {HistType::kTH1F, {{200, 0, 200}}});
+      registry.add("h_collision_pTHat_multiplicity_outlier", "multiplicity", {HistType::kTH2F, {{100, 0, 500}, {200, 0, 200}}});
+      registry.add("h_collision_multiplicity_all", "multiplicity", {HistType::kTH1F, {{200, 0, 200}}});
+      registry.add("h_collision_pTHat_multiplicity_all", "multiplicity", {HistType::kTH2F, {{100, 0, 500}, {200, 0, 200}}});
+      registry.add("h_collision_trackOccupancyInTimeRange_outlier", "track occupancy", {HistType::kTH1F, {{1000, 0, 10000}}});
+      registry.add("h_collision_trackOccupancyInTimeRange_all", "track occupancy", {HistType::kTH1F, {{1000, 0, 10000}}});
+      registry.add("h_collision_multFV0A_outlier", "mult V0A", {HistType::kTH1F, {{1000, 0, 1000}}});
+      registry.add("h_collision_multFV0A_all", "mult V0A", {HistType::kTH1F, {{1000, 0, 1000}}});
+      registry.add("h_collision_multFV0C_outlier", "mult V0A", {HistType::kTH1F, {{1000, 0, 1000}}});
+      registry.add("h_collision_multFV0C_all", "mult V0A", {HistType::kTH1F, {{1000, 0, 1000}}});
+      registry.add("h_collision_multFV0M_outlier", "mult V0A", {HistType::kTH1F, {{1000, 0, 1000}}});
+      registry.add("h_collision_multFV0M_all", "mult V0A", {HistType::kTH1F, {{1000, 0, 1000}}});
     }
-    if(doprocessCollisionsBC) {
+    if (doprocessCollisionsBC) {
       // delta Z checks
       registry.add("h_DeltaZ_InBunch", "Delta Z between two events in bunch", {HistType::kTH1F, {{1200, -30, 30}}});
       registry.add("h_DeltaZ_Z1_InBunch", "Delta Z between two events in bunch vs Z1", {HistType::kTH2F, {{1200, 30, 30}, {400, -12, 12}}});
@@ -165,7 +165,7 @@ struct JetOutlierQATask {
       registry.add("h_Z1_Z2_OutOfBunch_JJ", "Z1 vs Z2 between two events out of bunch", {HistType::kTH2F, {{400, -12, 12}, {400, -12, 12}}});
       registry.add("h_Z", "Delta Z between two events", {HistType::kTH1F, {{400, -12, 12}}});
     }
-    if(doprocessTracksBC) {
+    if (doprocessTracksBC) {
       // track checks based on z position
       registry.add("h_Z_resolution", "Z resolution", {HistType::kTH1F, {{200, -0.05, 0.05}}});
       registry.add("h_Z_resolution_wide", "Z resolution", {HistType::kTH1F, {{200, -1, 1}}});
@@ -203,7 +203,7 @@ struct JetOutlierQATask {
 
   Filter trackCuts = (aod::jtrack::pt >= trackPtMin && aod::jtrack::pt < trackPtMax && aod::jtrack::eta > trackEtaMin && aod::jtrack::eta < trackEtaMax);
   Filter eventCuts = (nabs(aod::jcollision::posZ) < vertexZCut && aod::jcollision::centFT0M >= centralityMin && aod::jcollision::centFT0M < centralityMax);
-  
+
   template <typename T, typename U>
   bool isAcceptedJet(U const& jet)
   {
@@ -239,10 +239,10 @@ struct JetOutlierQATask {
 
     return true;
   }
- 
-  void fillHistogramsAmbiguous(soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights>::iterator const& jet, 
-      float weight, 
-      aod::AmbiguousTracks const& tracksAmbiguous)
+
+  void fillHistogramsAmbiguous(soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights>::iterator const& jet,
+                               float weight,
+                               aod::AmbiguousTracks const& tracksAmbiguous)
   {
 
     float pTHat = 10. / (std::pow(weight, 1.0 / pTHatExponent));
@@ -253,8 +253,7 @@ struct JetOutlierQATask {
     if (jet.pt() > pTHatMaxMCDOutlier * pTHat) {
       registry.fill(HIST("h3_pthat_jet_pt_jet_ntracks_outliers"), pTHat, jet.pt(), jet.tracksIds().size(), weight);
       registry.fill(HIST("h3_pthat_jet_pt_jet_ntracks_outliers_noweight"), pTHat, jet.pt(), jet.tracksIds().size());
-    }
-    else {
+    } else {
       registry.fill(HIST("h3_pthat_jet_pt_jet_ntracks_all"), pTHat, jet.pt(), jet.tracksIds().size(), weight);
       registry.fill(HIST("h3_pthat_jet_pt_jet_ntracks_all_noweight"), pTHat, jet.pt(), jet.tracksIds().size());
     }
@@ -263,8 +262,7 @@ struct JetOutlierQATask {
         registry.fill(HIST("h3_jet_pt_track_dEta_track_dPhi_outliers"), jet.pt(), jet.eta() - constituent.eta(), jet.phi() - constituent.phi(), weight);
         registry.fill(HIST("h3_jet_pt_track_dEta_track_dPhi_outliers_noweight"), jet.pt(), jet.eta() - constituent.eta(), jet.phi() - constituent.phi());
         registry.fill(HIST("h2_jet_pt_Dz_outliers_noweight"), jet.pt(), constituent.pt() / jet.pt());
-      }
-      else {
+      } else {
         registry.fill(HIST("h3_jet_pt_track_dEta_track_dPhi_all"), jet.pt(), jet.eta() - constituent.eta(), jet.phi() - constituent.phi(), weight);
         registry.fill(HIST("h3_jet_pt_track_dEta_track_dPhi_all_noweight"), jet.pt(), jet.eta() - constituent.eta(), jet.phi() - constituent.phi());
         registry.fill(HIST("h2_jet_pt_Dz_all_noweight"), jet.pt(), constituent.pt() / jet.pt());
@@ -281,13 +279,12 @@ struct JetOutlierQATask {
     for (auto& constituent : jet.template tracks_as<aod::JetTracksMCD>()) {
       pt_total += constituent.pt();
       bool has_MCparticle = constituent.has_mcParticle();
-      if(!has_MCparticle) {
-        //LOG(info) << "constituent NO MC PARTICLE: track.index()=" << constituent.index() << " track.globalIndex()=" << constituent.globalIndex();
+      if (!has_MCparticle) {
+        // LOG(info) << "constituent NO MC PARTICLE: track.index()=" << constituent.index() << " track.globalIndex()=" << constituent.globalIndex();
         registry.fill(HIST("h3_jet_pt_track_pt_pt_hat_no_particle"), jet.pt(), constituent.pt(), pTHat, weight);
         pt_unmatched += constituent.pt();
         nUnmatchedTracks++;
-      }
-      else {
+      } else {
         registry.fill(HIST("h3_jet_pt_track_pt_pt_hat_with_particle"), jet.pt(), constituent.pt(), pTHat, weight);
       }
 
@@ -307,26 +304,25 @@ struct JetOutlierQATask {
           registry.fill(HIST("h3_jet_pt_track_pt_pt_hat_ambiguous"), jet.pt(), constituent.pt(), pTHat, weight);
           pt_amb += constituent.pt();
           nAmbTracks++;
-        }
-        else {
+        } else {
           registry.fill(HIST("h3_jet_pt_track_pt_pt_hat_unambiguous"), jet.pt(), constituent.pt(), pTHat, weight);
         }
       }
     }
-    registry.fill(HIST("h3_jet_pt_frac_pt_ambiguous_pt_hat"), jet.pt(), pt_amb/pt_total, pTHat, weight);
-    registry.fill(HIST("h3_jet_pt_frac_constituents_ambiguous_pt_hat"), jet.pt(), double(nAmbTracks)/double(jet.template tracks_as<aod::JetTracksMCD>().size()), pTHat, weight);
+    registry.fill(HIST("h3_jet_pt_frac_pt_ambiguous_pt_hat"), jet.pt(), pt_amb / pt_total, pTHat, weight);
+    registry.fill(HIST("h3_jet_pt_frac_constituents_ambiguous_pt_hat"), jet.pt(), double(nAmbTracks) / double(jet.template tracks_as<aod::JetTracksMCD>().size()), pTHat, weight);
 
-    registry.fill(HIST("h3_jet_pt_frac_pt_unmatched_particle_pt_hat"), jet.pt(), pt_unmatched/pt_total, pTHat, weight);
-    registry.fill(HIST("h3_jet_pt_frac_constituents_unmatched_particle_pt_hat"), jet.pt(), double(nUnmatchedTracks)/double(jet.template tracks_as<aod::JetTracksMCD>().size()), pTHat, weight);
+    registry.fill(HIST("h3_jet_pt_frac_pt_unmatched_particle_pt_hat"), jet.pt(), pt_unmatched / pt_total, pTHat, weight);
+    registry.fill(HIST("h3_jet_pt_frac_constituents_unmatched_particle_pt_hat"), jet.pt(), double(nUnmatchedTracks) / double(jet.template tracks_as<aod::JetTracksMCD>().size()), pTHat, weight);
   }
 
-void processJetsAmbiguous(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision, 
-    aod::JetMcCollisions const&, 
-    soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights> const& jets, 
-    aod::JetTracksMCD const&, 
-    const aod::AmbiguousTracks& tracksAmbiguous)
+  void processJetsAmbiguous(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs>>::iterator const& collision,
+                            aod::JetMcCollisions const&,
+                            soa::Join<aod::ChargedMCDetectorLevelJets, aod::ChargedMCDetectorLevelJetConstituents, aod::ChargedMCDetectorLevelJetEventWeights> const& jets,
+                            aod::JetTracksMCD const&,
+                            const aod::AmbiguousTracks& tracksAmbiguous)
   {
-    // 
+    //
     // jet-based outlier checks based on ambiguous tracks
     //
     if (collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
@@ -351,28 +347,26 @@ void processJetsAmbiguous(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCo
         isOutlierEvent = true;
       }
     }
-    if(isOutlierEvent) {
+    if (isOutlierEvent) {
       registry.fill(HIST("h_collision_pTHat_multiplicity_outlier"), pTHat, nTracksJet, collision.weight());
       registry.fill(HIST("h_collision_multiplicity_outlier"), nTracksJet, collision.weight());
       registry.fill(HIST("h_collision_trackOccupancyInTimeRange_outlier"), collision.trackOccupancyInTimeRange(), collision.weight());
       registry.fill(HIST("h_collision_multFV0A_outlier"), collision.multFV0A(), collision.weight());
       registry.fill(HIST("h_collision_multFV0C_outlier"), collision.multFV0C(), collision.weight());
       registry.fill(HIST("h_collision_multFV0M_outlier"), collision.multFV0M(), collision.weight());
-    }
-    else {
+    } else {
       registry.fill(HIST("h_collision_multiplicity_all"), nTracksJet, collision.weight());
       registry.fill(HIST("h_collision_pTHat_multiplicity_all"), pTHat, nTracksJet, collision.weight());
       registry.fill(HIST("h_collision_trackOccupancyInTimeRange_all"), collision.trackOccupancyInTimeRange(), collision.weight());
       registry.fill(HIST("h_collision_multFV0A_all"), collision.multFV0A(), collision.weight());
       registry.fill(HIST("h_collision_multFV0C_all"), collision.multFV0C(), collision.weight());
       registry.fill(HIST("h_collision_multFV0M_all"), collision.multFV0M(), collision.weight());
-     }
+    }
   }
   PROCESS_SWITCH(JetOutlierQATask, processJetsAmbiguous, "jet finder QA mcd with weighted events", false);
 
-  void processCollisionsBC(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionBCs> const& collisions, 
-      aod::JetMcCollisions const&
-      )
+  void processCollisionsBC(soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionBCs> const& collisions,
+                           aod::JetMcCollisions const&)
   {
     //
     // collision-based outlier checks based on BC and z position
@@ -463,17 +457,16 @@ void processJetsAmbiguous(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCo
   }
   PROCESS_SWITCH(JetOutlierQATask, processCollisionsBC, "jet finder QA outliers", false);
 
-  void processTracksBC(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionBCs>> const& collisions, 
-      aod::JetMcCollisions const& collisionsMC,
-      aod::JetTracksMCD const& tracks
-      )
+  void processTracksBC(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCollisionLbs, aod::JCollisionBCs>> const& collisions,
+                       aod::JetMcCollisions const& collisionsMC,
+                       aod::JetTracksMCD const& tracks)
   {
     //
     // track-based outlier checks
     //
-    
+
     // first check for collisions occuring close by in time and z in MC
-    std::set<int> closeByCollisionIDs;  
+    std::set<int> closeByCollisionIDs;
     for (auto const& collisionMC : collisionsMC) {
       if (collisionMC.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
         return;
@@ -481,16 +474,16 @@ void processJetsAmbiguous(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCo
       float posZtrue = collisionMC.posZ();
       for (auto const& collisionCloseMC : collisionsMC) { // check for closeby collisions in MC
         int diffColl = collisionCloseMC.globalIndex() - collisionMC.globalIndex();
-        if( diffColl >= mergeCollisionsDeltaMin && diffColl <= mergeCollisionsDeltaMax) { // check if n collisions prior or after
+        if (diffColl >= mergeCollisionsDeltaMin && diffColl <= mergeCollisionsDeltaMax) { // check if n collisions prior or after
           if (collisionCloseMC.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
             continue;
           }
-          if( diffColl == 0) {
+          if (diffColl == 0) {
             continue;
           }
           if (TMath::Abs(collisionCloseMC.posZ() - posZtrue) < splitCollisionsDeltaZPart) {
             closeByCollisionIDs.insert(collisionMC.globalIndex()); // Save the ID of the close-by collision
-            break; // closeby collision in MC, don't use this event
+            break;                                                 // closeby collision in MC, don't use this event
           }
         }
       }
@@ -521,32 +514,30 @@ void processJetsAmbiguous(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCo
         registry.fill(HIST("h_track_pt_eta"), track.pt(), track.eta(), weight);
         registry.fill(HIST("h_track_pt_phi"), track.pt(), track.phi(), weight);
         // checks on track distributions with/without collision and with/without MC particle
-        if(!track.has_collision() || track.collisionId() != collision.globalIndex()) {
-          registry.fill(HIST("h_track_pt_no_collision"),  track.pt(), weight);
-        }
-        else {
-          registry.fill(HIST("h_track_pt_collision"),  track.pt(), weight);
+        if (!track.has_collision() || track.collisionId() != collision.globalIndex()) {
+          registry.fill(HIST("h_track_pt_no_collision"), track.pt(), weight);
+        } else {
+          registry.fill(HIST("h_track_pt_collision"), track.pt(), weight);
         }
         bool has_MCparticle = track.has_mcParticle();
-        if(!has_MCparticle) {
+        if (!has_MCparticle) {
           registry.fill(HIST("h2_track_pt_pt_hat_no_particle"), track.pt(), collision.mcCollision().ptHard(), weight);
-        }
-        else {
+        } else {
           registry.fill(HIST("h2_track_pt_pt_hat_particle"), track.pt(), collision.mcCollision().ptHard(), weight);
         }
 
         // check outlier tracks and neighbouring collisions
         registry.fill(HIST("h2_pt_hat_track_pt"), pTHat, track.pt());
-        if(track.pt() > 1.5 * pTHat) { // high weight outlier track
+        if (track.pt() > 1.5 * pTHat) { // high weight outlier track
           registry.fill(HIST("h_track_pt_outlier"), track.pt());
-          registry.fill(HIST("h2_pt_hat_track_pt_outlier"),pTHat, track.pt());
+          registry.fill(HIST("h2_pt_hat_track_pt_outlier"), pTHat, track.pt());
           for (auto const& collisionOutlier : collisions) { // find collisions closeby
             int diffColl = collision.globalIndex() - collisionOutlier.globalIndex();
-            if(abs(diffColl) < 6) {
+            if (abs(diffColl) < 6) {
               float eventWeightOutlier = collisionOutlier.mcCollision().weight();
               double pTHatOutlier = collisionOutlier.mcCollision().ptHard();
-              registry.fill(HIST("h2_neighbour_pt_hat_outlier"), float(diffColl+0.1), pTHatOutlier, eventWeightOutlier);
-              registry.fill(HIST("h2_neighbour_track_pt_outlier"), float(diffColl+0.1), track.pt(), eventWeightOutlier);
+              registry.fill(HIST("h2_neighbour_pt_hat_outlier"), float(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
+              registry.fill(HIST("h2_neighbour_track_pt_outlier"), float(diffColl + 0.1), track.pt(), eventWeightOutlier);
             }
           }
         }
@@ -556,10 +547,10 @@ void processJetsAmbiguous(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCo
           double pTHatOutlier = collisionOutlier.mcCollision().ptHard();
           int diffColl = collision.globalIndex() - collisionOutlier.globalIndex();
 
-          if(abs(diffColl) < 6) {
-            //LOG(info) << "pThat = " << pTHat << "pThat neighbour = "<<pTHatOutlier;
-            registry.fill(HIST("h2_neighbour_pt_hat_all"), float(diffColl+0.1), pTHatOutlier, eventWeightOutlier);
-            registry.fill(HIST("h2_neighbour_track_pt_all"), float(diffColl+0.1), track.pt(), eventWeightOutlier);
+          if (abs(diffColl) < 6) {
+            // LOG(info) << "pThat = " << pTHat << "pThat neighbour = "<<pTHatOutlier;
+            registry.fill(HIST("h2_neighbour_pt_hat_all"), float(diffColl + 0.1), pTHatOutlier, eventWeightOutlier);
+            registry.fill(HIST("h2_neighbour_track_pt_all"), float(diffColl + 0.1), track.pt(), eventWeightOutlier);
           }
         }
       }
@@ -592,7 +583,6 @@ void processJetsAmbiguous(soa::Filtered<soa::Join<aod::JetCollisions, aod::JMcCo
     }
   }
   PROCESS_SWITCH(JetOutlierQATask, processTracksBC, "jet finder QA outliers", false);
-
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
