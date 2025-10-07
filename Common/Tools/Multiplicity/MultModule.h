@@ -1191,6 +1191,7 @@ class MultModule
       ft0aInfo.mCalibrationStored = false;
       ft0cInfo.mCalibrationStored = false;
       ft0cVariant1Info.mCalibrationStored = false;
+      ft0cVariant2Info.mCalibrationStored = false;
       fddmInfo.mCalibrationStored = false;
       ntpvInfo.mCalibrationStored = false;
       nGlobalInfo.mCalibrationStored = false;
