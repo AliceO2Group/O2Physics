@@ -29,7 +29,9 @@
 #include "Framework/runDataProcessing.h"
 #include "ReconstructionDataFormats/Track.h"
 
+#include <algorithm>
 #include <string>
+#include <vector>
 
 using namespace o2;
 using namespace o2::aod;
@@ -44,7 +46,7 @@ using MyCollisions = soa::Join<aod::Collisions, aod::EvSels, aod::EMEvSels, aod:
 using MyCollisions_Cent = soa::Join<MyCollisions, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisions_Cent_Qvec = soa::Join<MyCollisions_Cent, MyQvectors>;
 
-using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerInfosTMP>;
+using MyCollisionsWithSWT = soa::Join<MyCollisions, aod::EMSWTriggerBitsTMP>;
 using MyCollisionsWithSWT_Cent = soa::Join<MyCollisionsWithSWT, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs>; // centrality table has dependency on multiplicity table.
 using MyCollisionsWithSWT_Cent_Qvec = soa::Join<MyCollisionsWithSWT_Cent, MyQvectors>;
 
@@ -60,7 +62,9 @@ struct CreateEMEventDilepton {
   Produces<o2::aod::EMEventsMult> event_mult;
   Produces<o2::aod::EMEventsCent> event_cent;
   Produces<o2::aod::EMEventsQvec> event_qvec;
-  Produces<o2::aod::EMSWTriggerInfos> emswtbit;
+  Produces<o2::aod::EMSWTriggerBits> emswtbit;
+  Produces<o2::aod::EMSWTriggerInfos> emswtinfo;
+  Produces<o2::aod::EMSWTriggerCounters> emswtcounter;
   Produces<o2::aod::EMEventNormInfos> event_norm_info;
 
   enum class EMEventType : int {
@@ -69,77 +73,26 @@ struct CreateEMEventDilepton {
     kEvent_Cent_Qvec = 2,
   };
 
-  // CCDB options
-  Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
-  Configurable<std::string> grpPath{"grpPath", "GLO/GRP/GRP", "Path of the grp file"};
-  Configurable<std::string> grpmagPath{"grpmagPath", "GLO/Config/GRPMagField", "CCDB path of the GRPMagField object"};
-  Configurable<bool> skipGRPOquery{"skipGRPOquery", true, "skip grpo query"};
-  Configurable<double> d_bz_input{"d_bz", -999, "bz field, -999 is automatic"};
+  // // CCDB options
+  // Configurable<std::string> ccdburl{"ccdb-url", "http://alice-ccdb.cern.ch", "url of the ccdb repository"};
 
   HistogramRegistry registry{"registry"};
   void init(o2::framework::InitContext&)
   {
-    ccdb->setURL(ccdburl);
-    ccdb->setCaching(true);
-    ccdb->setLocalObjectValidityChecking();
-    ccdb->setFatalWhenNull(false);
+    // ccdb->setURL(ccdburl);
+    // ccdb->setCaching(true);
+    // ccdb->setLocalObjectValidityChecking();
+    // ccdb->setFatalWhenNull(false);
 
     auto hEventCounter = registry.add<TH1>("hEventCounter", "hEventCounter", kTH1I, {{7, 0.5f, 7.5f}});
     hEventCounter->GetXaxis()->SetBinLabel(1, "all");
     hEventCounter->GetXaxis()->SetBinLabel(2, "sel8");
-
-    registry.add("hNInspectedTVX", "N inspected TVX;run number;N_{TVX}", kTProfile, {{80000, 520000.5, 600000.5}}, true);
   }
 
   ~CreateEMEventDilepton() {}
 
-  int mRunNumber;
-  float d_bz;
-  Service<o2::ccdb::BasicCCDBManager> ccdb;
-
-  template <typename TBC>
-  void initCCDB(TBC const& bc)
-  {
-    if (mRunNumber == bc.runNumber()) {
-      return;
-    }
-
-    // In case override, don't proceed, please - no CCDB access required
-    if (d_bz_input > -990) {
-      d_bz = d_bz_input;
-      o2::parameters::GRPMagField grpmag;
-      if (fabs(d_bz) > 1e-5) {
-        grpmag.setL3Current(30000.f / (d_bz / 5.0f));
-      }
-      mRunNumber = bc.runNumber();
-      return;
-    }
-
-    auto run3grp_timestamp = bc.timestamp();
-    o2::parameters::GRPObject* grpo = 0x0;
-    o2::parameters::GRPMagField* grpmag = 0x0;
-    if (!skipGRPOquery)
-      grpo = ccdb->getForTimeStamp<o2::parameters::GRPObject>(grpPath, run3grp_timestamp);
-    if (grpo) {
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = grpo->getNominalL3Field();
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    } else {
-      grpmag = ccdb->getForTimeStamp<o2::parameters::GRPMagField>(grpmagPath, run3grp_timestamp);
-      if (!grpmag) {
-        LOG(fatal) << "Got nullptr from CCDB for path " << grpmagPath << " of object GRPMagField and " << grpPath << " of object GRPObject for timestamp " << run3grp_timestamp;
-      }
-      // Fetch magnetic field from ccdb for current collision
-      d_bz = std::lround(5.f * grpmag->getL3Current() / 30000.f);
-      LOG(info) << "Retrieved GRP for timestamp " << run3grp_timestamp << " with magnetic field of " << d_bz << " kZG";
-    }
-    mRunNumber = bc.runNumber();
-  }
-
-  // Preslice<aod::Collisions> perBC = aod::collision::bcId;
-  // Preslice<aod::V0PhotonsKF> perCollision_pcm = aod::v0photonkf::collisionId;
-  // PresliceUnsorted<aod::EMPrimaryElectrons> perCollision_el = aod::emprimaryelectron::collisionId;
-  // PresliceUnsorted<aod::EMPrimaryMuons> perCollision_mu = aod::emprimarymuon::collisionId;
+  int mRunNumber{0};
+  // Service<o2::ccdb::BasicCCDBManager> ccdb;
 
   template <bool isMC, bool isTriggerAnalysis, EMEventType eventtype, typename TCollisions, typename TBCs>
   void skimEvent(TCollisions const& collisions, TBCs const& bcs)
@@ -161,7 +114,6 @@ struct CreateEMEventDilepton {
       registry.fill(HIST("hEventCounter"), 1);
 
       auto bc = collision.template foundBC_as<TBCs>();
-      initCCDB(bc);
 
       if (collision.selection_bit(o2::aod::evsel::kIsTriggerTVX)) {
         if constexpr (eventtype == EMEventType::kEvent) {
@@ -185,7 +137,7 @@ struct CreateEMEventDilepton {
         if (collision.swtaliastmp_raw() == 0) {
           continue;
         } else {
-          emswtbit(collision.swtaliastmp_raw(), collision.nInspectedTVX());
+          emswtbit(collision.swtaliastmp_raw());
         }
       }
 
@@ -257,23 +209,65 @@ struct CreateEMEventDilepton {
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent_Cent_Qvec, "process event info", false);
 
-  //---------- for data with swt----------
+  //---------- for data with swt ----------
 
-  void processEvent_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs)
+  void processEvent_SWT(MyCollisionsWithSWT const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerCountersTMP const& emswtcounterstmp)
   {
     skimEvent<false, true, EMEventType::kEvent>(collisions, bcs);
+
+    for (const auto& info : emswtinfostmp) {
+      if (mRunNumber != info.runNumber()) {
+        std::vector<uint64_t> scalers;
+        std::vector<uint64_t> selections;
+        std::copy(info.nScalers().begin(), info.nScalers().end(), std::back_inserter(scalers));
+        std::copy(info.nSelections().begin(), info.nSelections().end(), std::back_inserter(selections));
+        emswtinfo(info.runNumber(), info.nInspectedTVX(), scalers, selections);
+        mRunNumber = info.runNumber();
+      }
+    }
+    for (const auto& counter : emswtcounterstmp) {
+      emswtcounter(counter.isAnalyzed_raw(), counter.isAnalyzedToI_raw());
+    }
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT, "process event info", false);
 
-  void processEvent_SWT_Cent(MyCollisionsWithSWT_Cent const& collisions, MyBCs const& bcs)
+  void processEvent_SWT_Cent(MyCollisionsWithSWT_Cent const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerCountersTMP const& emswtcounterstmp)
   {
     skimEvent<false, true, EMEventType::kEvent_Cent>(collisions, bcs);
+
+    for (const auto& info : emswtinfostmp) {
+      if (mRunNumber != info.runNumber()) {
+        std::vector<uint64_t> scalers;
+        std::vector<uint64_t> selections;
+        std::copy(info.nScalers().begin(), info.nScalers().end(), std::back_inserter(scalers));
+        std::copy(info.nSelections().begin(), info.nSelections().end(), std::back_inserter(selections));
+        emswtinfo(info.runNumber(), info.nInspectedTVX(), scalers, selections);
+        mRunNumber = info.runNumber();
+      }
+    }
+    for (const auto& counter : emswtcounterstmp) {
+      emswtcounter(counter.isAnalyzed_raw(), counter.isAnalyzedToI_raw());
+    }
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT_Cent, "process event info", false);
 
-  void processEvent_SWT_Cent_Qvec(MyCollisionsWithSWT_Cent_Qvec const& collisions, MyBCs const& bcs)
+  void processEvent_SWT_Cent_Qvec(MyCollisionsWithSWT_Cent_Qvec const& collisions, MyBCs const& bcs, aod::EMSWTriggerInfosTMP const& emswtinfostmp, aod::EMSWTriggerCountersTMP const& emswtcounterstmp)
   {
     skimEvent<false, true, EMEventType::kEvent_Cent_Qvec>(collisions, bcs);
+
+    for (const auto& info : emswtinfostmp) {
+      if (mRunNumber != info.runNumber()) {
+        std::vector<uint64_t> scalers;
+        std::vector<uint64_t> selections;
+        std::copy(info.nScalers().begin(), info.nScalers().end(), std::back_inserter(scalers));
+        std::copy(info.nSelections().begin(), info.nSelections().end(), std::back_inserter(selections));
+        emswtinfo(info.runNumber(), info.nInspectedTVX(), scalers, selections);
+        mRunNumber = info.runNumber();
+      }
+    }
+    for (const auto& counter : emswtcounterstmp) {
+      emswtcounter(counter.isAnalyzed_raw(), counter.isAnalyzedToI_raw());
+    }
   }
   PROCESS_SWITCH(CreateEMEventDilepton, processEvent_SWT_Cent_Qvec, "process event info", false);
 

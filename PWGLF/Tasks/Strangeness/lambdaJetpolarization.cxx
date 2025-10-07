@@ -11,41 +11,47 @@
 ///
 
 /// \author Youpeng Su (yousu@cern.ch)
+#include "PWGLF/DataModel/lambdaJetpolarization.h"
+
+#include "PWGJE/Core/JetBkgSubUtils.h"
+#include "PWGJE/Core/JetDerivedDataUtilities.h"
+#include "PWGJE/DataModel/Jet.h"
+#include "PWGJE/DataModel/JetReducedData.h"
+#include "PWGLF/DataModel/LFStrangenessTables.h"
+
+#include "Common/Core/trackUtilities.h"
+#include "Common/DataModel/CollisionAssociationTables.h"
+#include "Common/DataModel/EventSelection.h"
+#include "Common/DataModel/PIDResponse.h"
+
+#include "Framework/ASoA.h"
+#include "Framework/AnalysisDataModel.h"
+#include "Framework/AnalysisTask.h"
+#include "Framework/O2DatabasePDGPlugin.h"
+#include "Framework/runDataProcessing.h"
+
+#include "Math/GenVector/Boost.h"
+#include "Math/Vector3D.h"
+#include "Math/Vector4D.h"
+#include "TProfile2D.h"
+#include <TFile.h>
+#include <TLorentzVector.h>
+#include <TMatrixD.h>
+#include <TTree.h>
+
+#include <fastjet/AreaDefinition.hh>
+#include <fastjet/ClusterSequence.hh>
+#include <fastjet/ClusterSequenceArea.hh>
+#include <fastjet/GhostedAreaSpec.hh>
+#include <fastjet/PseudoJet.hh>
+#include <fastjet/Selector.hh>
+#include <fastjet/tools/JetMedianBackgroundEstimator.hh>
+#include <fastjet/tools/Subtractor.hh>
+
+#include <cmath>
 #include <iostream>
 #include <string>
 #include <vector>
-#include <cmath>
-#include "Framework/runDataProcessing.h"
-#include "Framework/AnalysisTask.h"
-#include "Common/DataModel/EventSelection.h"
-#include "PWGLF/DataModel/LFStrangenessTables.h"
-#include "Common/DataModel/PIDResponse.h"
-#include "Framework/O2DatabasePDGPlugin.h"
-#include <TLorentzVector.h>
-#include "Framework/ASoA.h"
-#include "Framework/AnalysisDataModel.h"
-#include <TTree.h>
-#include <TFile.h>
-#include <TMatrixD.h>
-#include "TProfile2D.h"
-#include "PWGLF/DataModel/lambdaJetpolarization.h"
-#include "Math/Vector3D.h"
-#include "Math/Vector4D.h"
-#include "Math/GenVector/Boost.h"
-
-#include <fastjet/ClusterSequence.hh>
-#include <fastjet/ClusterSequenceArea.hh>
-#include <fastjet/tools/JetMedianBackgroundEstimator.hh>
-#include <fastjet/tools/Subtractor.hh>
-#include <fastjet/Selector.hh>
-#include <fastjet/PseudoJet.hh>
-#include <fastjet/AreaDefinition.hh>
-#include <fastjet/GhostedAreaSpec.hh>
-#include "PWGJE/Core/JetBkgSubUtils.h"
-#include "PWGJE/Core/JetDerivedDataUtilities.h"
-#include "PWGJE/DataModel/JetReducedData.h"
-#include "PWGJE/DataModel/Jet.h"
-#include "Common/Core/trackUtilities.h"
 
 using std::cout;
 using std::endl;
@@ -73,6 +79,9 @@ struct LfMyV0s {
   Configurable<float> maxChi2ITS{"maxChi2ITS", 36.0f, "max chi2 per cluster ITS"};
   Configurable<bool> requireTOF{"requireTOF", false, "require TOF hit"};
   Configurable<bool> requireITS{"requireITS", false, "require ITS hit"};
+  Configurable<float> max_tpcSharedCls{"max_tpcSharedCls", 100, "max_tpcSharedCls"};
+  Configurable<float> max_chi2_TPC{"max_chi2_TPC", 4, "max_chi2_TPC"};
+  Configurable<float> max_chi2_ITS{"max_chi2_ITS", 36, "max_chi2_ITS"};
 
   Configurable<float> ptMinV0Proton{"ptMinV0Proton", 0.3f, "pt min of proton from V0"};
   Configurable<float> ptMaxV0Proton{"ptMaxV0Proton", 10.0f, "pt max of proton from V0"};
@@ -87,11 +96,16 @@ struct LfMyV0s {
 
   // v0 parameters
   Configurable<float> v0cospaMin{"v0cospaMin", 0.995f, "Minimum V0 CosPA"};
+  Configurable<float> v0cospainit{"v0cospainit", 0.97f, "Minimum V0 CosPA"};
   Configurable<float> minimumV0Radius{"minimumV0Radius", 0.2f, "Minimum V0 Radius"};
-  Configurable<float> maximumV0Radius{"maximumV0Radius", 40.0f, "Maximum V0 Radius"};
+  Configurable<float> maximumV0Radius{"maximumV0Radius", 100000.0f, "Maximum V0 Radius"};
   Configurable<float> dcaV0DaughtersMax{"dcaV0DaughtersMax", 1.0f, "Maximum DCA Daughters"};
   Configurable<float> dcanegtoPVmin{"dcanegtoPVmin", 0.1f, "Minimum DCA Neg To PV"};
   Configurable<float> dcapostoPVmin{"dcapostoPVmin", 0.1f, "Minimum DCA Pos To PV"};
+  Configurable<float> v0radius{"v0radius", 0.0, "Radius"};
+  Configurable<float> dcav0dau{"dcav0dau", 10, "DCA V0 Daughters"};
+  Configurable<float> dcanegtopv{"dcanegtopv", 0.0, "DCA Neg To PV"};
+  Configurable<float> dcapostopv{"dcapostopv", 0.0, "DCA Pos To PV"};
 
   // jet selection
   Configurable<float> cfgjetPtMin{"cfgjetPtMin", 8.0, "minimum jet pT cut"};
@@ -104,6 +118,7 @@ struct LfMyV0s {
   Configurable<bool> isNoTimeFrameBorder{"isNoTimeFrameBorder", 1, "TF border cut"};
   Configurable<bool> isNoITSROFrameBorder{"isNoITSROFrameBorder", 1, "ITS ROF border cut"};
   Configurable<bool> isVertexTOFmatched{"isVertexTOFmatched", 1, "Is Vertex TOF matched"};
+  Configurable<bool> isNoSameBunchPileup{"isNoSameBunchPileup", 0, "isNoSameBunchPileup"};
   Configurable<bool> isGoodZvtxFT0vsPV{"isGoodZvtxFT0vsPV", 1, "isGoodZvtxFT0vsPV"};
   Configurable<float> cutzvertex{"cutzvertex", 10.0f, "Accepted z-vertex range (cm)"};
   Configurable<float> CtauLambda{"ctauLambda", 30, "C tau Lambda (cm)"};
@@ -120,6 +135,12 @@ struct LfMyV0s {
   Configurable<float> paramArmenterosCut{"paramArmenterosCut", 0.2, "parameter Armenteros Cut"};
   Configurable<bool> doArmenterosCut{"doArmenterosCut", 0, "do Armenteros Cut"};
   Configurable<bool> noSameBunchPileUp{"noSameBunchPileUp", true, "reject SameBunchPileUp"};
+  Configurable<int> v0TypeSelection{"v0TypeSelection", 1, "select on a certain V0 type (leave negative if no selection desired)"};
+  Configurable<bool> NotITSAfterburner{"NotITSAfterburner", 0, "NotITSAfterburner"};
+  Configurable<bool> doQA{"doQA", 1, "fill QA histograms"};
+  Configurable<bool> evSel{"evSel", 1, "evSel"};
+  Configurable<bool> hasTOF2Leg{"hasTOF2Leg", 0, "hasTOF2Leg"};
+  Configurable<bool> hasTOF1Leg{"hasTOF1Leg", 0, "hasTOF1Leg"};
 
   // Jet background subtraction
   JetBkgSubUtils backgroundSub;
@@ -136,15 +157,15 @@ struct LfMyV0s {
     const AxisSpec JetaxisPhi{200, -1, +7, "#phi"};
     const AxisSpec JetaxisPt{200, 0, +200, "#it{p}_{T} (GeV/#it{c})"};
     const AxisSpec ptAxis{100, 0.0f, 10.0f, "#it{p}_{T} (GeV/#it{c})"};
-    const AxisSpec invMassLambdaAxis{200, 1.09, 1.14, "m_{p#pi} (GeV/#it{c}^{2})"};
+    const AxisSpec invMassLambdaAxis{200, 1.016, 1.216, "m_{p#pi} (GeV/#it{c}^{2})"};
 
     ConfigurableAxis TProfile2DaxisPt{"#it{p}_{T} (GeV/#it{c})", {VARIABLE_WIDTH, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.2, 3.7, 4.2, 5, 6, 8, 10, 12}, "pt axis for histograms"};
     ConfigurableAxis TProfile2DaxisMass{"Mass p#pi (GeV/#it{c^{2}})", {VARIABLE_WIDTH, 1.10068, 1.10668, 1.11068, 1.11268, 1.11368, 1.11468, 1.11568, 1.11668, 1.11768, 1.11868, 1.12068, 1.12468, 1.13068}, "Mass axis for histograms"};
 
-    registry.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {{200, 0.9f, 1.2f}}});
+    registry.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {invMassLambdaAxis}});
     registry.add("V0pTInLab", "V0pTInLab", kTH1F, {axisPT});
-    registry.add("hMassVsPtLambda", "hMassVsPtLambda", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.016f, 1.216f}}});
-    registry.add("hMassVsPtAntiLambda", "hMassVsPtAntiLambda", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.016f, 1.216f}}});
+    registry.add("hMassVsPtLambda", "hMassVsPtLambda", {HistType::kTH2F, {ptAxis, invMassLambdaAxis}});
+    registry.add("hMassVsPtAntiLambda", "hMassVsPtAntiLambda", {HistType::kTH2F, {ptAxis, invMassLambdaAxis}});
 
     registry.add("V0pxInLab", "V0pxInLab", kTH1F, {axisPx});
     registry.add("V0pyInLab", "V0pyInLab", kTH1F, {axisPy});
@@ -278,13 +299,13 @@ struct LfMyV0s {
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(8, "isGoodZvtxFT0vsPV");
     registryData.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(9, "Applied selected");
 
-    registryV0Data.add("hLambdaPt", "hLambdaPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}});
-    registryV0Data.add("hAntiLambdaPt", "hAntiLambdaPt", {HistType::kTH1F, {{100, 0.0f, 10.0f}}});
+    registryV0Data.add("hLambdaPt", "hLambdaPt", {HistType::kTH1F, {ptAxis}});
+    registryV0Data.add("hAntiLambdaPt", "hAntiLambdaPt", {HistType::kTH1F, {ptAxis}});
 
-    registryV0Data.add("hMassVsPtLambda", "hMassVsPtLambda", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.016f, 1.216f}}});
-    registryV0Data.add("hMassVsPtAntiLambda", "hMassVsPtAntiLambda", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.016f, 1.216f}}});
-    registryV0Data.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {{200, 0.9f, 1.2f}}});
-    registryV0Data.add("hMassAntiLambda", "hMassAntiLambda", {HistType::kTH1F, {{200, 0.9f, 1.2f}}});
+    registryV0Data.add("hMassVsPtLambda", "hMassVsPtLambda", {HistType::kTH2F, {ptAxis, invMassLambdaAxis}});
+    registryV0Data.add("hMassVsPtAntiLambda", "hMassVsPtAntiLambda", {HistType::kTH2F, {ptAxis, invMassLambdaAxis}});
+    registryV0Data.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {invMassLambdaAxis}});
+    registryV0Data.add("hMassAntiLambda", "hMassAntiLambda", {HistType::kTH1F, {invMassLambdaAxis}});
     registryV0Data.add("nV0sPerEvent", "nV0sPerEvent", kTH1F, {{10, 0.0, 10.0}});
     registryV0Data.add("nV0sPerEventsel", "nV0sPerEventsel", kTH1F, {{10, 0.0, 10.0}});
 
@@ -319,16 +340,25 @@ struct LfMyV0s {
     registryV0Data.add("AverageCosSquarethetainJetV0", "AverageCosSquarethetainJetV0", {HistType::kTProfile, {{200, 0.9, 1.2}}});
 
     // LongitudinalPolarization event selection
-    registryLongitudinalPolarization.add("hNEvents", "hNEvents", {HistType::kTH1I, {{5, 0.f, 5.f}}});
+    registryLongitudinalPolarization.add("hNEvents", "hNEvents", {HistType::kTH1D, {{10, 0.f, 10.f}}});
     registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(1, "all");
     registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(2, "sel8");
-    registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "zvertex");
-    registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "isGoodZvtxFT0vsPV");
-    registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "isNoSameBunchPileup");
-    registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "Applied selected");
+    registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(3, "TVX");
+    registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(4, "zvertex");
+    registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(5, "TFBorder");
+    registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(6, "ITSROFBorder");
+    registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(7, "isTOFVertexMatched");
+    registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(8, "isNoSameBunchPileup");
+    registryLongitudinalPolarization.get<TH1>(HIST("hNEvents"))->GetXaxis()->SetBinLabel(9, "Applied selection");
 
-    registryLongitudinalPolarization.add("hMassVsPtLambda", "hMassVsPtLambda", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.016f, 1.216f}}});
-    registryLongitudinalPolarization.add("hMassVsPtAntiLambda", "hMassVsPtAntiLambda", {HistType::kTH2F, {{100, 0.0f, 10.0f}, {200, 1.016f, 1.216f}}});
+    registryLongitudinalPolarization.add("hMassVsPtLambda", "hMassVsPtLambda", {HistType::kTH2F, {ptAxis, invMassLambdaAxis}});
+    registryLongitudinalPolarization.add("hMassLambda", "hMassLambda", {HistType::kTH1F, {invMassLambdaAxis}});
+    registryLongitudinalPolarization.add("hMassVsPtAntiLambda", "hMassVsPtAntiLambda", {HistType::kTH2F, {ptAxis, invMassLambdaAxis}});
+
+    registryLongitudinalPolarization.add("hMassLambdasel", "hMassLambdasel", {HistType::kTH1F, {invMassLambdaAxis}});
+    registryLongitudinalPolarization.add("hMassAntiLambdasel", "hMassAntiLambdasel", {HistType::kTH1F, {invMassLambdaAxis}});
+    registryLongitudinalPolarization.add("hMassVsPtLambdasel", "hMassVsPtLambdasel", {HistType::kTH2F, {ptAxis, invMassLambdaAxis}});
+    registryLongitudinalPolarization.add("hMassVsPtAntiLambdasel", "hMassVsPtAntiLambdasel", {HistType::kTH2F, {ptAxis, invMassLambdaAxis}});
 
     registryLongitudinalPolarization.add("V0pxInRest_frame", "V0pxInRest_frame", kTH1F, {axisPx});
     registryLongitudinalPolarization.add("V0pyInRest_frame", "V0pyInRest_frame", kTH1F, {axisPy});
@@ -348,9 +378,32 @@ struct LfMyV0s {
     registryLongitudinalPolarization.add("hAntiLambdamassandCosthetaInV0", "hAntiLambdamassandCosthetaInV0", kTH2F, {{200, 0.9, 1.2}, {200, -1, 1}});
     registryLongitudinalPolarization.add("TProfile2DAntiLambdaPtMassCostheta", "TProfile2DAntiLambdaPtMassCostheta", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
     registryLongitudinalPolarization.add("TProfile2DAntiLambdaPtMassCosSquareTheta", "TProfile2DAntiLambdaPtMassCosSquareTheta", kTProfile2D, {TProfile2DaxisMass, TProfile2DaxisPt});
-
     registryLongitudinalPolarization.add("TProfile1DLambdaPtMassCostheta", "Invariant Mass vs cos(#theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
     registryLongitudinalPolarization.add("TProfile1DAntiLambdaPtMassCostheta", "Invariant Mass vs cos(#theta)", {HistType::kTProfile, {{200, 0.9, 1.2}}});
+
+    if (doQA) {
+      registryLongitudinalPolarization.add("QA/hv0sSelection", ";Sel", {HistType::kTH1D, {{22, 0., 22.}}});
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(1, "all");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(2, "Event selection");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(3, "Radius");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(4, "Eta Daughters");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(5, "Dau DCA to PV");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(6, "DCA Daughters");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(7, "min ITS hits");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(8, "has TOF 1 Leg");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(9, "has TOF 2 Legs");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(10, "TPC NCl");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(11, "TPC Cls Shared");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(12, "ITS Chi2");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(13, "TPC Chi2");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(14, "cosPA");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(15, "rapidity");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(16, "ctau");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(17, "v0 rej");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(18, "TPC nsigma Neg Dau");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(19, "TPC nsigma Pos Dau");
+      registryLongitudinalPolarization.get<TH1>(HIST("QA/hv0sSelection"))->GetXaxis()->SetBinLabel(20, "Armenteros-Podolansky");
+    }
   }
   double massPr = o2::constants::physics::MassProton;
   double massLambda = o2::constants::physics::MassLambda;
@@ -415,8 +468,10 @@ struct LfMyV0s {
     return matrixLabToJet;
   }
   // aod::MyCollision const& collision
+
   void processJetV0Analysis(aod::MyTable const& myv0s, aod::MyTableJet const& myJets)
   {
+
     for (auto& candidate : myv0s) {
       registry.fill(HIST("hMassLambda"), candidate.v0Lambdamass());
       registry.fill(HIST("V0pTInLab"), candidate.v0pt());
@@ -631,20 +686,229 @@ struct LfMyV0s {
   template <typename Lambda, typename TrackPos, typename TrackNeg>
   bool passedInitLambdaSelection(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack)
   {
-    if (v0.v0radius() < minimumV0Radius || v0.v0cosPA() < v0cospaMin ||
+    if (v0.v0radius() < v0radius || v0.v0cosPA() < v0cospainit ||
         TMath::Abs(ptrack.eta()) > V0tracketaMax ||
         TMath::Abs(ntrack.eta()) > V0tracketaMax) {
       return false;
     }
-    if (v0.dcaV0daughters() > dcaV0DaughtersMax) {
+    if (v0.dcaV0daughters() > dcav0dau) {
       return false;
     }
-    if (TMath::Abs(v0.dcanegtopv()) < dcanegtoPVmin) {
+    if (TMath::Abs(v0.dcanegtopv()) < dcanegtopv) {
       return false;
     }
-    if (TMath::Abs(v0.dcapostopv()) < dcapostoPVmin) {
+    if (TMath::Abs(v0.dcapostopv()) < dcapostopv) {
       return false;
     }
+    return true;
+  }
+
+  template <typename Lambda, typename TrackPos, typename TrackNeg, typename TCollision>
+  bool AcceptV0Lambda(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack, const TCollision& collision)
+  {
+    // Single-Track Selections
+    if (requirepassedSingleTrackSelection && !passedSingleTrackSelection(ptrack))
+      return false;
+    if (requirepassedSingleTrackSelection && !passedSingleTrackSelection(ntrack))
+      return false;
+
+    int evFlag = 0;
+    if (collision.isInelGt0()) {
+      evFlag = 1;
+    }
+
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 0.5);
+
+    if (evSel && evFlag < 1)
+      return false;
+
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 1.5);
+
+    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+      return false;
+
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 2.5);
+
+    if (TMath::Abs(ptrack.eta()) > V0tracketaMax || TMath::Abs(ntrack.eta()) > V0tracketaMax) {
+      return false;
+    }
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 3.5);
+
+    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
+      return false;
+    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 4.5);
+
+    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 5.5);
+
+    if (requireITS && ptrack.itsNCls() < minITSnCls)
+      return false;
+    if (requireITS && ntrack.itsNCls() < minITSnCls)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 6.5);
+
+    if (hasTOF1Leg && !ptrack.hasTOF() && !ntrack.hasTOF())
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 7.5);
+
+    if (hasTOF2Leg && (!ptrack.hasTOF() || !ntrack.hasTOF()))
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 8.5);
+
+    if (ptrack.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    if (ntrack.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 9.5);
+
+    if (ptrack.tpcNClsShared() > max_tpcSharedCls)
+      return false;
+    if (ntrack.tpcNClsShared() > max_tpcSharedCls)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 10.5);
+
+    if (ptrack.itsChi2NCl() > max_chi2_ITS)
+      return false;
+    if (ntrack.itsChi2NCl() > max_chi2_ITS)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 11.5);
+
+    if (ptrack.tpcChi2NCl() > max_chi2_TPC)
+      return false;
+    if (ntrack.tpcChi2NCl() > max_chi2_TPC)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 12.5);
+
+    if (v0.v0cosPA() < v0cospaMin)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 13.5);
+
+    if (v0.yLambda() < yMin || v0.yLambda() > yMax) {
+      return false;
+    }
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 14.5);
+
+    float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
+    if (ctauLambda >= CtauLambda)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 15.5);
+
+    if (TMath::Abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0rejLambda) {
+      return false;
+    }
+    if (std::abs(v0.mLambda() - o2::constants::physics::MassLambda0) > v0accLambda) {
+      return false;
+    }
+
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 16.5);
+
+    if (ntrack.tpcNSigmaPi() < nsigmaTPCmin || ntrack.tpcNSigmaPi() > nsigmaTPCmax)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 17.5);
+
+    if (ptrack.tpcNSigmaPr() < nsigmaTPCmin || ptrack.tpcNSigmaPr() > nsigmaTPCmax)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 18.5);
+
+    if (doArmenterosCut && v0.qtarm() > (paramArmenterosCut * std::abs(v0.alpha())))
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 19.5);
+
+    return true;
+  }
+
+  template <typename Lambda, typename TrackPos, typename TrackNeg, typename TCollision>
+  bool AcceptV0AntiLambda(const Lambda& v0, const TrackPos& ptrack, const TrackNeg& ntrack, const TCollision& collision)
+  {
+    // Single-Track Selections
+    if (requirepassedSingleTrackSelection && !passedSingleTrackSelection(ptrack))
+      return false;
+    if (requirepassedSingleTrackSelection && !passedSingleTrackSelection(ntrack))
+      return false;
+
+    int evFlag = 0;
+    if (collision.isInelGt0()) {
+      evFlag = 1;
+    }
+
+    if (evSel && evFlag < 1)
+      return false;
+
+    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
+      return false;
+
+    if (TMath::Abs(ptrack.eta()) > V0tracketaMax || TMath::Abs(ntrack.eta()) > V0tracketaMax) {
+      return false;
+    }
+
+    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
+      return false;
+    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
+      return false;
+
+    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+      return false;
+
+    if (requireITS && ptrack.itsNCls() < minITSnCls)
+      return false;
+    if (requireITS && ntrack.itsNCls() < minITSnCls)
+      return false;
+
+    if (hasTOF1Leg && !ptrack.hasTOF() && !ntrack.hasTOF())
+      return false;
+
+    if (hasTOF2Leg && (!ptrack.hasTOF() || !ntrack.hasTOF()))
+      return false;
+
+    if (ptrack.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    if (ntrack.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+
+    if (ptrack.tpcNClsShared() > max_tpcSharedCls)
+      return false;
+    if (ntrack.tpcNClsShared() > max_tpcSharedCls)
+      return false;
+
+    if (ptrack.itsChi2NCl() > max_chi2_ITS)
+      return false;
+    if (ntrack.itsChi2NCl() > max_chi2_ITS)
+      return false;
+
+    if (ptrack.tpcChi2NCl() > max_chi2_TPC)
+      return false;
+    if (ntrack.tpcChi2NCl() > max_chi2_TPC)
+      return false;
+
+    if (v0.v0cosPA() < v0cospaMin)
+      return false;
+
+    if (v0.yLambda() < yMin || v0.yLambda() > yMax) {
+      return false;
+    }
+
+    float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
+    if (ctauAntiLambda >= CtauLambda)
+      return false;
+
+    if (TMath::Abs(v0.mK0Short() - o2::constants::physics::MassK0Short) < v0rejLambda) {
+      return false;
+    }
+    if (std::abs(v0.mAntiLambda() - o2::constants::physics::MassLambda0) > v0accLambda) {
+      return false;
+    }
+    if (ntrack.tpcNSigmaPr() < nsigmaTPCmin || ntrack.tpcNSigmaPr() > nsigmaTPCmax)
+      return false;
+
+    if (ptrack.tpcNSigmaPi() < nsigmaTPCmin || ptrack.tpcNSigmaPi() > nsigmaTPCmax)
+      return false;
+
+    if (doArmenterosCut && v0.qtarm() > (paramArmenterosCut * std::abs(v0.alpha())))
+      return false;
+
     return true;
   }
 
@@ -658,34 +922,74 @@ struct LfMyV0s {
     if (requirepassedSingleTrackSelection && !passedSingleTrackSelection(ntrack))
       return false;
 
-    // Momentum of Lambda Daughters
-    TVector3 proton(v0.pxpos(), v0.pypos(), v0.pzpos());
-    TVector3 pion(v0.pxneg(), v0.pyneg(), v0.pzneg());
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 1.5);
 
-    if (proton.Pt() < ptMinV0Proton)
-      return false;
-    if (proton.Pt() > ptMaxV0Proton)
-      return false;
-    if (pion.Pt() < ptMinV0Pion)
-      return false;
-    if (pion.Pt() > ptMaxV0Pion)
+    if (v0.v0radius() < minimumV0Radius || v0.v0radius() > maximumV0Radius)
       return false;
 
-    // V0 Selections
-    if (v0.v0cosPA() < v0cospaMin)
-      return false;
-    if (v0.v0radius() < minimumV0Radius)
-      return false;
-    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
-      return false;
-    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
-      return false;
-    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
-      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 2.5);
 
     if (TMath::Abs(ptrack.eta()) > V0tracketaMax || TMath::Abs(ntrack.eta()) > V0tracketaMax) {
       return false;
     }
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 3.5);
+
+    if (std::fabs(v0.dcapostopv()) < dcapostoPVmin)
+      return false;
+    if (std::fabs(v0.dcanegtopv()) < dcanegtoPVmin)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 4.5);
+
+    if (std::fabs(v0.dcaV0daughters()) > dcaV0DaughtersMax)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 5.5);
+
+    if (requireITS && ptrack.itsNCls() < minITSnCls)
+      return false;
+    if (requireITS && ntrack.itsNCls() < minITSnCls)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 6.5);
+
+    if (hasTOF1Leg && !ptrack.hasTOF() && !ntrack.hasTOF())
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 7.5);
+
+    if (hasTOF2Leg && (!ptrack.hasTOF() || !ntrack.hasTOF()))
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 8.5);
+
+    if (ptrack.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    if (ntrack.tpcNClsCrossedRows() < minNCrossedRowsTPC)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 9.5);
+
+    if (ptrack.tpcNClsShared() > max_tpcSharedCls)
+      return false;
+    if (ntrack.tpcNClsShared() > max_tpcSharedCls)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 10.5);
+
+    if (ptrack.itsChi2NCl() > max_chi2_ITS)
+      return false;
+    if (ntrack.itsChi2NCl() > max_chi2_ITS)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 11.5);
+
+    if (ptrack.tpcChi2NCl() > max_chi2_TPC)
+      return false;
+    if (ntrack.tpcChi2NCl() > max_chi2_TPC)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 12.5);
+
+    if (v0.v0cosPA() < v0cospaMin)
+      return false;
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 13.5);
+
+    if (v0.yLambda() < yMin || v0.yLambda() > yMax) {
+      return false;
+    }
+    registryLongitudinalPolarization.fill(HIST("QA/hv0sSelection"), 14.5);
 
     // PID Selections (TPC)
     if (requireTPC) {
@@ -858,25 +1162,35 @@ struct LfMyV0s {
   template <typename TCollision>
   bool AcceptEventForLongitudinalPolarization(TCollision const& collision)
   {
+    registryLongitudinalPolarization.fill(HIST("hNEvents"), 0.5);
     if (sel8 && !collision.sel8()) {
       return false;
     }
     registryLongitudinalPolarization.fill(HIST("hNEvents"), 1.5);
-
-    if (iscutzvertex && TMath::Abs(collision.posZ()) > cutzvertex) {
+    if (isTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
       return false;
     }
     registryLongitudinalPolarization.fill(HIST("hNEvents"), 2.5);
-
-    if (noSameBunchPileUp && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+    if (std::abs(collision.posZ()) > cutzvertex) {
       return false;
     }
     registryLongitudinalPolarization.fill(HIST("hNEvents"), 3.5);
-    // check vertex matching to FT0
-    if (isGoodZvtxFT0vsPV && !collision.selection_bit(aod::evsel::kIsGoodZvtxFT0vsPV)) {
+    if (isNoTimeFrameBorder && !collision.selection_bit(aod::evsel::kNoTimeFrameBorder)) {
       return false;
     }
     registryLongitudinalPolarization.fill(HIST("hNEvents"), 4.5);
+    if (isNoITSROFrameBorder && !collision.selection_bit(aod::evsel::kNoITSROFrameBorder)) {
+      return false;
+    }
+    registryLongitudinalPolarization.fill(HIST("hNEvents"), 5.5);
+    if (isVertexTOFmatched && !collision.selection_bit(aod::evsel::kIsVertexTOFmatched)) {
+      return false;
+    }
+    registryLongitudinalPolarization.fill(HIST("hNEvents"), 6.5);
+    if (isNoSameBunchPileup && !collision.selection_bit(aod::evsel::kNoSameBunchPileup)) {
+      return false;
+    }
+    registryLongitudinalPolarization.fill(HIST("hNEvents"), 7.5);
 
     return true;
   }
@@ -1219,25 +1533,42 @@ struct LfMyV0s {
   }
   PROCESS_SWITCH(LfMyV0s, processDataV0, "processDataV0", true);
 
-  void processLongitudinalPolarization(SelCollisions::iterator const& collision, aod::V0Datas const& fullV0s, StrHadronDaughterTracks const&)
+  // V0Collisions
+  // SelCollisions
+  using V0Collisions = soa::Join<aod::Collisions, aod::EvSels, aod::PVMults, aod::CentFT0Ms, aod::CentNGlobals>;
+  void processLongitudinalPolarization(V0Collisions::iterator const& collision, aod::V0Datas const& fullV0s, StrHadronDaughterTracks const&)
   {
-    registryLongitudinalPolarization.fill(HIST("hNEvents"), 0.5);
+
     if (!AcceptEventForLongitudinalPolarization(collision)) {
       return;
     }
-    registryLongitudinalPolarization.fill(HIST("hNEvents"), 5.5);
+    registryLongitudinalPolarization.fill(HIST("hNEvents"), 8.5);
+
     int V0NumbersPerEvent = 0;
     int V0NumbersPerEventsel = 0;
-    for (const auto& v0 : fullV0s) {
+    for (const auto& v0 : fullV0s) { // loop over V0s
+
+      if (v0.v0Type() != v0TypeSelection) {
+        continue;
+      }
+
       V0NumbersPerEvent++;
-      float ctauLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0;
-      float ctauAntiLambda = v0.distovertotmom(collision.posX(), collision.posY(), collision.posZ()) * o2::constants::physics::MassLambda0Bar;
       const auto& pos = v0.posTrack_as<StrHadronDaughterTracks>();
       const auto& neg = v0.negTrack_as<StrHadronDaughterTracks>();
 
-      if (passedLambdaSelection(v0, pos, neg) && ctauLambda < CtauLambda && ifpasslambda) {
-        V0NumbersPerEventsel++;
+      if (NotITSAfterburner && (v0.negTrack_as<StrHadronDaughterTracks>().isITSAfterburner() || v0.posTrack_as<StrHadronDaughterTracks>().isITSAfterburner())) {
+        continue;
+      }
+      if (passedInitLambdaSelection(v0, pos, neg) && ifinitpasslambda) {
         registryLongitudinalPolarization.fill(HIST("hMassVsPtLambda"), v0.pt(), v0.mLambda());
+        registryLongitudinalPolarization.fill(HIST("hMassVsPtAntiLambda"), v0.pt(), v0.mAntiLambda());
+        registryLongitudinalPolarization.fill(HIST("hMassLambda"), v0.mLambda());
+      }
+
+      if (AcceptV0Lambda(v0, pos, neg, collision) && ifpasslambda) {
+        V0NumbersPerEventsel++;
+        registryLongitudinalPolarization.fill(HIST("hMassLambdasel"), v0.mLambda());
+        registryLongitudinalPolarization.fill(HIST("hMassVsPtLambdasel"), v0.pt(), v0.mLambda());
 
         ProtonVec = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPr);
         PionVec = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPi);
@@ -1262,8 +1593,9 @@ struct LfMyV0s {
 
         registryLongitudinalPolarization.fill(HIST("TProfile1DLambdaPtMassCostheta"), v0.mLambda(), protonCosThetainV0);
       }
-      if (passedAntiLambdaSelection(v0, pos, neg) && ctauAntiLambda < CtauLambda && ifpasslambda) {
-        registryLongitudinalPolarization.fill(HIST("hMassVsPtAntiLambda"), v0.pt(), v0.mAntiLambda());
+      if (AcceptV0AntiLambda(v0, pos, neg, collision) && ifpasslambda) {
+        registryLongitudinalPolarization.fill(HIST("hMassAntiLambdasel"), v0.mAntiLambda());
+        registryLongitudinalPolarization.fill(HIST("hMassVsPtAntiLambdasel"), v0.pt(), v0.mAntiLambda());
 
         ProtonVec = ROOT::Math::PxPyPzMVector(v0.pxneg(), v0.pyneg(), v0.pzneg(), massPr);
         PionVec = ROOT::Math::PxPyPzMVector(v0.pxpos(), v0.pypos(), v0.pzpos(), massPi);

@@ -19,9 +19,15 @@
 #define COMMON_TABLEPRODUCER_PID_PIDTPCBASE_H_
 
 #include "Common/DataModel/Multiplicity.h"
-#include "Common/DataModel/PIDResponseTPC.h"
 
-#include "TMatrixD.h"
+#include <Framework/ASoA.h>
+#include <ReconstructionDataFormats/PID.h>
+
+#include <TMatrixD.h> // IWYU pragma: keep (do not replace with TMatrixDfwd.h)
+#include <TMatrixDfwd.h>
+
+#include <cstdlib>
+#include <vector>
 
 namespace o2::aod
 {

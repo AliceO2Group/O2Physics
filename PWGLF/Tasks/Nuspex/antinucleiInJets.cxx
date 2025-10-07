@@ -32,6 +32,7 @@
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CCDB/CcdbApi.h"
+#include "DataFormatsTPC/BetheBlochAleph.h"
 #include "Framework/ASoA.h"
 #include "Framework/ASoAHelpers.h"
 #include "Framework/AnalysisDataModel.h"
@@ -120,6 +121,7 @@ struct AntinucleiInJets {
   Configurable<bool> applyItsPid{"applyItsPid", true, "apply ITS PID"};
   Configurable<int> minItsNclusters{"minItsNclusters", 5, "minimum number of ITS clusters"};
   Configurable<int> minTpcNcrossedRows{"minTpcNcrossedRows", 100, "minimum number of TPC crossed pad rows"};
+  Configurable<double> minChiSquareTpc{"minChiSquareTpc", 0.0, "minimum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareTpc{"maxChiSquareTpc", 4.0, "maximum TPC chi^2/Ncls"};
   Configurable<double> maxChiSquareIts{"maxChiSquareIts", 36.0, "maximum ITS chi^2/Ncls"};
   Configurable<double> minPt{"minPt", 0.3, "minimum pt of the tracks"};
@@ -137,6 +139,8 @@ struct AntinucleiInJets {
   Configurable<double> nSigmaItsMin{"nSigmaItsMin", -3.0, "nSigmaITS min"};
   Configurable<double> nSigmaItsMax{"nSigmaItsMax", +3.0, "nSigmaITS max"};
   Configurable<bool> setMCDefaultItsParams{"setMCDefaultItsParams", false, "set MC default parameters"};
+  Configurable<bool> cfgCompensatePIDinTracking{"cfgCompensatePIDinTracking", false, "If true, divide tpcInnerParam by the electric charge"};
+  Configurable<std::array<double, 5>> cfgBetheBlochParams{"cfgBetheBlochParams", {0.6539, 1.591, 0.8225, 2.363, 0.09}, "TPC Bethe-Bloch parameterisation for He3"};
 
   // CCDB manager service for accessing condition data
   Service<o2::ccdb::BasicCCDBManager> ccdb;
@@ -215,6 +219,9 @@ struct AntinucleiInJets {
       // Jet effective area over piR^2
       registryData.add("jetEffectiveAreaOverPiR2", "jet effective area / piR^2", HistType::kTH1F, {{2000, 0, 2, "Area/#piR^{2}"}});
 
+      // angle between track and jet axis
+      registryData.add("theta_track_jet", "theta_track_jet", HistType::kTH2F, {{100, 0, 100, "#it{p}^{jet}_{T} (GeV/#it{c})"}, {400, 0, 20.0, "#theta_{track-jet} (deg)"}});
+
       // Antiprotons
       registryData.add("antiproton_jet_tpc", "antiproton_jet_tpc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC}"}});
       registryData.add("antiproton_jet_tof", "antiproton_jet_tof", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
@@ -245,6 +252,11 @@ struct AntinucleiInJets {
 
       // nsigmaITS for antiproton candidates
       registryData.add("antiproton_nsigma_its_data", "antiproton_nsigma_its_data", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{ITS}"}});
+
+      // custom nsigma for He3 - needed for 24 pp data
+      registryData.add("tpcsignal_data", "Specific energy loss", HistType::kTH2F, {{600, -6., 6., "#it{p} (GeV/#it{c})"}, {1400, 0, 1400, "d#it{E} / d#it{X} (a. u.)"}});
+      registryData.add("antihelium3_jet_tpc_custom", "antihelium3_jet_tpc_custom", HistType::kTH2F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC} custom"}});
+      registryData.add("antihelium3_ue_tpc_custom", "antihelium3_ue_tpc_custom", HistType::kTH2F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TPC} custom"}});
     }
 
     // Generated antiproton spectra in jets and UE from MC truth
@@ -252,6 +264,7 @@ struct AntinucleiInJets {
 
       // Event counter
       registryMC.add("genEvents", "number of generated events in mc", HistType::kTH1F, {{10, 0, 10, "counter"}});
+      registryMC.add("genJets", "number of generated jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
       // Generated spectra of antiprotons
       registryMC.add("antiproton_gen_jet", "antiproton_gen_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -260,6 +273,10 @@ struct AntinucleiInJets {
       // Normalization histogram
       registryMC.add("antiproton_deltay_deltaphi_jet", "antiproton_deltay_deltaphi_jet", HistType::kTH2F, {{2000, -1.0, 1.0, "#Delta#it{y}"}, {2000, 0.0, 2.0, "#Delta#phi"}});
       registryMC.add("antiproton_deltay_deltaphi_ue", "antiproton_deltay_deltaphi_ue", HistType::kTH2F, {{2000, -1.0, 1.0, "#Delta#it{y}"}, {2000, 0.0, 2.0, "#Delta#phi"}});
+
+      // 2d kinematic distributions (eta,pt) in jets and UE
+      registryMC.add("antiproton_eta_pt_jet", "antiproton_eta_pt_jet", HistType::kTH2F, {{500, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
+      registryMC.add("antiproton_eta_pt_ue", "antiproton_eta_pt_ue", HistType::kTH2F, {{500, 0.0, 5.0, "#it{p}_{T} (GeV/#it{c})"}, {18, -0.9, 0.9, "#eta"}});
     }
 
     // Reconstructed antiproton spectra in jets and UE (MC-matched) with TPC/TOF PID
@@ -267,6 +284,7 @@ struct AntinucleiInJets {
 
       // Event counter
       registryMC.add("recEvents", "number of reconstructed events in mc", HistType::kTH1F, {{20, 0, 20, "counter"}});
+      registryMC.add("recJets", "number of reconstructed jets", HistType::kTH1F, {{10, 0, 10, "counter"}});
 
       // Reconstructed spectra of antiprotons
       registryMC.add("antiproton_rec_tpc_jet", "antiproton_rec_tpc_jet", HistType::kTH1F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}});
@@ -285,9 +303,6 @@ struct AntinucleiInJets {
       registryMC.add("antiproton_prim_dca_ue", "antiproton_prim_dca_ue", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
       registryMC.add("antiproton_all_dca_jet", "antiproton_all_dca_jet", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
       registryMC.add("antiproton_all_dca_ue", "antiproton_all_dca_ue", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {200, -1, 1, "DCA_{xy} (cm)"}});
-
-      // nsigmaITS for antiproton candidates
-      registryMC.add("antiproton_nsigma_its_mc", "antiproton_nsigma_its_mc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{ITS}"}});
 
       // nsigmaTOF for antiprotons
       registryMC.add("antiproton_nsigma_tof_jet_mc", "antiproton_nsigma_tof_jet_mc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{TOF}"}});
@@ -336,6 +351,16 @@ struct AntinucleiInJets {
       registryMC.add("helium3_rec_tpc_ue", "helium3_rec_tpc_ue", HistType::kTH1F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antihelium3_rec_tpc_jet", "antihelium3_rec_tpc_jet", HistType::kTH1F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}});
       registryMC.add("antihelium3_rec_tpc_ue", "antihelium3_rec_tpc_ue", HistType::kTH1F, {{nbins, 3 * min, 3 * max, "#it{p}_{T} (GeV/#it{c})"}});
+
+      // Generated spectra needed for reweighting
+      registryMC.add("protonBar", "protonBar", HistType::kTH1F, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("lambdaBar", "lambdaBar", HistType::kTH1F, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("xiBar", "xiBar", HistType::kTH1F, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("omegaBar", "omegaBar", HistType::kTH1F, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+      registryMC.add("sigmaBar", "sigmaBar", HistType::kTH1F, {{1000, 0, 10, "#it{p}_{T} (GeV/#it{c})"}});
+
+      // nsigmaITS for antiproton candidates
+      registryMC.add("antiproton_nsigma_its_mc", "antiproton_nsigma_its_mc", HistType::kTH2F, {{nbins, min, max, "#it{p}_{T} (GeV/#it{c})"}, {400, -20.0, 20.0, "n#sigma_{ITS}"}});
     }
 
     // Systematic uncertainties (Data)
@@ -556,6 +581,8 @@ struct AntinucleiInJets {
       return false;
     if (track.tpcNClsCrossedRows() < minTpcNcrossedRows)
       return false;
+    if (track.tpcChi2NCl() < minChiSquareTpc)
+      return false;
     if (track.tpcChi2NCl() > maxChiSquareTpc)
       return false;
     if (track.itsChi2NCl() > maxChiSquareIts)
@@ -601,20 +628,6 @@ struct AntinucleiInJets {
       47.61, 44.02, 32.15, 46.21, 34.75, 40.17, 37.14, 30.55, 45.42, 42.30,
       41.79, 33.21, 39.12, 47.98, 36.52, 31.58, 49.44, 38.02, 35.56, 43.49};
 
-    static std::vector<double> minEtaSyst = {
-      -0.804, -0.844, -0.751, -0.784, -0.819, -0.823, -0.768, -0.781, -0.845, -0.787,
-      -0.758, -0.828, -0.776, -0.842, -0.808, -0.763, -0.849, -0.770, -0.799, -0.754,
-      -0.825, -0.847, -0.806, -0.783, -0.796, -0.835, -0.777, -0.752, -0.838, -0.813,
-      -0.785, -0.802, -0.795, -0.846, -0.780, -0.829, -0.817, -0.773, -0.765, -0.789,
-      -0.800, -0.839, -0.758, -0.820, -0.833, -0.762, -0.792, -0.809, -0.827, -0.751};
-
-    static std::vector<double> maxEtaSyst = {
-      0.804, 0.844, 0.751, 0.784, 0.819, 0.823, 0.768, 0.781, 0.845, 0.787,
-      0.758, 0.828, 0.776, 0.842, 0.808, 0.763, 0.849, 0.770, 0.799, 0.754,
-      0.825, 0.847, 0.806, 0.783, 0.796, 0.835, 0.777, 0.752, 0.838, 0.813,
-      0.785, 0.802, 0.795, 0.846, 0.780, 0.829, 0.817, 0.773, 0.765, 0.789,
-      0.800, 0.839, 0.758, 0.820, 0.833, 0.762, 0.792, 0.809, 0.827, 0.751};
-
     // Track Selection
     if (requirePvContributor && !(track.isPVContributor()))
       return false;
@@ -630,7 +643,7 @@ struct AntinucleiInJets {
       return false;
     if (track.itsChi2NCl() > maxChiSquareItsSyst[isyst])
       return false;
-    if (track.eta() < minEtaSyst[isyst] || track.eta() > maxEtaSyst[isyst])
+    if (track.eta() < minEta || track.eta() > maxEta)
       return false;
     if (track.pt() < minPt)
       return false;
@@ -771,6 +784,11 @@ struct AntinucleiInJets {
       fastjet::PseudoJet fourMomentum(track.px(), track.py(), track.pz(), track.energy(MassPionCharged));
       fourMomentum.set_user_index(id);
       fjParticles.emplace_back(fourMomentum);
+
+      // Fill TPC signal vs p*sign for PID calibration
+      bool heliumPID = track.pidForTracking() == o2::track::PID::Helium3;
+      float correctedTpcInnerParam = (heliumPID && cfgCompensatePIDinTracking) ? track.tpcInnerParam() / 2 : track.tpcInnerParam();
+      registryData.fill(HIST("tpcsignal_data"), correctedTpcInnerParam * track.sign(), track.tpcSignal());
     }
 
     // Reject empty events
@@ -846,6 +864,11 @@ struct AntinucleiInJets {
         if (std::fabs(dcaxy) > maxDcaxy || std::fabs(dcaz) > maxDcaz)
           continue;
 
+        // Fill angular distribution of tracks wrt jet axis
+        TVector3 trackDirection(track.px(), track.py(), track.pz());
+        double thetaTrackJet = (180.0 / PI) * jetAxis.Angle(trackDirection);
+        registryData.fill(HIST("theta_track_jet"), jet.pt(), thetaTrackJet);
+
         // Particle identification using the ITS cluster size
         bool passedItsPidProt(true), passedItsPidDeut(true), passedItsPidHel(true);
         double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
@@ -881,6 +904,12 @@ struct AntinucleiInJets {
           }
           if (passedItsPidHel) {
             registryData.fill(HIST("antihelium3_jet_tpc"), 2.0 * pt, nsigmaTPCHe);
+            // custom nsigma He3 based on bethe bloch fit of TPC signal
+            double tpcSignal = track.tpcSignal();
+            double expectedSignalHe3 = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
+            double sigmaHe3 = expectedSignalHe3 * cfgBetheBlochParams.value[4];
+            double nSigmaTPCHe3Custom = (tpcSignal - expectedSignalHe3) / sigmaHe3;
+            registryData.fill(HIST("antihelium3_jet_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
         }
 
@@ -971,6 +1000,12 @@ struct AntinucleiInJets {
           }
           if (passedItsPidHel) {
             registryData.fill(HIST("antihelium3_ue_tpc"), 2.0 * pt, nsigmaTPCHe);
+            // custom nsigma He3 based on bethe bloch fit of TPC signal
+            double tpcSignal = track.tpcSignal();
+            double expectedSignalHe3 = tpc::BetheBlochAleph(static_cast<double>(track.tpcInnerParam() * 2. / o2::constants::physics::MassHelium3), cfgBetheBlochParams.value[0], cfgBetheBlochParams.value[1], cfgBetheBlochParams.value[2], cfgBetheBlochParams.value[3], cfgBetheBlochParams.value[4]);
+            double sigmaHe3 = expectedSignalHe3 * cfgBetheBlochParams.value[4];
+            double nSigmaTPCHe3Custom = (tpcSignal - expectedSignalHe3) / sigmaHe3;
+            registryData.fill(HIST("antihelium3_ue_tpc_custom"), 2.0 * pt, nSigmaTPCHe3Custom);
           }
         }
 
@@ -1259,6 +1294,7 @@ struct AntinucleiInJets {
           case PDG_t::kProtonBar:
             registryMC.fill(HIST("antip_gen_jet"), particle.pt());
             registryMC.fill(HIST("antip_gen_ue"), particle.pt());
+            registryMC.fill(HIST("protonBar"), particle.pt());
             break;
           case o2::constants::physics::Pdg::kDeuteron:
             registryMC.fill(HIST("deuteron_gen_jet"), particle.pt());
@@ -1275,6 +1311,19 @@ struct AntinucleiInJets {
           case -o2::constants::physics::Pdg::kHelium3:
             registryMC.fill(HIST("antihelium3_gen_jet"), particle.pt());
             registryMC.fill(HIST("antihelium3_gen_ue"), particle.pt());
+            break;
+          // Histograms for re-weighting
+          case PDG_t::kLambda0Bar:
+            registryMC.fill(HIST("lambdaBar"), particle.pt());
+            break;
+          case PDG_t::kXiPlusBar:
+            registryMC.fill(HIST("xiBar"), particle.pt());
+            break;
+          case PDG_t::kOmegaPlusBar:
+            registryMC.fill(HIST("omegaBar"), particle.pt());
+            break;
+          case PDG_t::kSigmaBarMinus:
+            registryMC.fill(HIST("sigmaBar"), particle.pt());
             break;
         }
       }
@@ -1321,6 +1370,11 @@ struct AntinucleiInJets {
         }
         if (applyItsPid && (2.0 * pt) < ptMaxItsPidHel && (nSigmaITShel3 < nSigmaItsMin || nSigmaITShel3 > nSigmaItsMax)) {
           passedItsPidHel = false;
+        }
+
+        // Fill nsigmaITS for antiproton candidates
+        if (track.sign() < 0 && particle.pdgCode() == PDG_t::kProtonBar && isHighPurityAntiproton(track)) {
+          registryMC.fill(HIST("antiproton_nsigma_its_mc"), pt, nSigmaITSprot);
         }
 
         // Fill histograms of antiprotons
@@ -1454,6 +1508,9 @@ struct AntinucleiInJets {
           continue;
         isAtLeastOneJetSelected = true;
 
+        // Generated jets
+        registryMC.fill(HIST("genJets"), 0.5);
+
         // Analyze jet constituents
         std::vector<fastjet::PseudoJet> jetConstituents = jet.constituents();
         for (const auto& particle : jetConstituents) {
@@ -1468,6 +1525,9 @@ struct AntinucleiInJets {
 
           // Fill histogram for generated antiprotons
           registryMC.fill(HIST("antiproton_gen_jet"), particle.pt());
+
+          // Fill 2d (pt,eta) distribution of antiprotons
+          registryMC.fill(HIST("antiproton_eta_pt_jet"), particle.pt(), particle.eta());
         }
 
         // Set up two perpendicular cone axes for underlying event estimation
@@ -1508,6 +1568,9 @@ struct AntinucleiInJets {
 
           // Fill histogram for antiprotons in the UE
           registryMC.fill(HIST("antiproton_gen_ue"), protonVec.Pt());
+
+          // Fill 2d (pt,eta) distribution of antiprotons
+          registryMC.fill(HIST("antiproton_eta_pt_ue"), protonVec.Pt(), protonVec.Eta());
         }
       }
       if (isAtLeastOneJetSelected) {
@@ -1622,6 +1685,9 @@ struct AntinucleiInJets {
           continue;
         isAtLeastOneJetSelected = true;
 
+        // Reconstructed jets
+        registryMC.fill(HIST("recJets"), 0.5);
+
         // Set up two perpendicular cone axes for underlying event estimation
         double coneRadius = std::sqrt(jet.area() / PI);
         TVector3 jetAxis(jet.px(), jet.py(), jet.pz());
@@ -1680,11 +1746,6 @@ struct AntinucleiInJets {
 
           // nsigmaITS for antiprotons
           double nSigmaITSprot = static_cast<double>(itsResponse.nSigmaITS<o2::track::PID::Proton>(track));
-
-          // Fill nsigmaITS for antiproton candidates
-          if (isHighPurityAntiproton(track)) {
-            registryMC.fill(HIST("antiproton_nsigma_its_mc"), pt, nSigmaITSprot);
-          }
 
           // Particle identification using the ITS cluster size
           bool passedItsPidProt(true);

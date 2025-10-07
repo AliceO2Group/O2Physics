@@ -13,33 +13,40 @@
 /// \brief Task for muon re-alignment at analysis level
 /// \author Chi Zhang <chi.zhang@cern.ch>, CEA-Saclay
 
-#include <string>
-#include "Framework/AnalysisDataModel.h"
-#include "Framework/AnalysisTask.h"
-#include "Framework/runDataProcessing.h"
-#include "Framework/ASoAHelpers.h"
-
-#include "CCDB/BasicCCDBManager.h"
-#include "CCDB/CCDBTimeStampUtils.h"
-#include "CommonUtils/NameConf.h"
-#include "CommonUtils/ConfigurableParam.h"
-#include "DataFormatsMCH/Cluster.h"
-#include "DataFormatsParameters/GRPObject.h"
-#include "DetectorsBase/GeometryManager.h"
-#include "DetectorsBase/GRPGeomHelper.h"
-#include "DetectorsBase/Propagator.h"
-#include "MathUtils/Cartesian.h"
-#include "MCHGeometryTransformer/Transformations.h"
-#include "MCHTracking/Track.h"
-#include "MCHTracking/TrackExtrap.h"
-#include "MCHTracking/TrackParam.h"
-#include "MCHTracking/TrackFitter.h"
-#include "MCHBase/TrackerParam.h"
-#include "GlobalTracking/MatchGlobalFwd.h"
-#include "ReconstructionDataFormats/TrackFwd.h"
 #include "Common/DataModel/FwdTrackReAlignTables.h"
-#include "Common/DataModel/EventSelection.h"
-#include "Common/DataModel/CollisionAssociationTables.h"
+
+#include <CCDB/BasicCCDBManager.h>
+#include <DataFormatsMCH/Cluster.h>
+#include <DetectorsBase/GRPGeomHelper.h>
+#include <DetectorsBase/GeometryManager.h>
+#include <DetectorsBase/Propagator.h>
+#include <Framework/AnalysisDataModel.h>
+#include <Framework/AnalysisHelpers.h>
+#include <Framework/AnalysisTask.h>
+#include <Framework/Configurable.h>
+#include <Framework/InitContext.h>
+#include <Framework/runDataProcessing.h>
+#include <GlobalTracking/MatchGlobalFwd.h>
+#include <MCHBase/TrackerParam.h>
+#include <MCHGeometryTransformer/Transformations.h>
+#include <MCHTracking/Track.h>
+#include <MCHTracking/TrackExtrap.h>
+#include <MCHTracking/TrackFitter.h>
+#include <MCHTracking/TrackParam.h>
+#include <MathUtils/Cartesian.h>
+#include <ReconstructionDataFormats/TrackFwd.h>
+
+#include <TMath.h>
+
+#include <GPUROOTCartesianFwd.h>
+#include <RtypesCore.h>
+
+#include <chrono>
+#include <cstdint>
+#include <exception>
+#include <iterator>
+#include <map>
+#include <string>
 
 using namespace std;
 using namespace o2;

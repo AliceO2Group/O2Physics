@@ -17,9 +17,11 @@
 
 #include "Common/Core/MetadataHelper.h"
 
+#include <Framework/ConfigContext.h>
 #include <Framework/InitContext.h>
-#include <Framework/RunningWorkflowInfo.h>
+#include <Framework/Logger.h>
 
+#include <array>
 #include <string>
 
 using namespace o2::common::core;
@@ -121,4 +123,20 @@ bool MetadataHelper::isInitialized() const
     LOG(debug) << "Metadata is not initialized";
   }
   return mIsInitialized;
+}
+
+std::string MetadataHelper::makeMetadataLabel() const
+{
+  if (!mIsInitialized) {
+    LOG(fatal) << "Metadata not initialized";
+  }
+  std::string label = get("DataType");
+  label += "_" + get("LPMProductionTag");
+  if (isMC()) {
+    label += "_" + get("AnchorPassName");
+    label += "_" + get("AnchorProduction");
+  } else {
+    label += "_" + get("RecoPassName");
+  }
+  return label;
 }

@@ -31,7 +31,7 @@
 #include <utility> // std::swap
 #include <vector>
 
-#include <math.h>
+#include <math.h> // FIXME: Replace M_PI
 
 using namespace o2;
 using namespace o2::framework;

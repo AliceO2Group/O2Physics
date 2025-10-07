@@ -404,58 +404,68 @@ struct lambdaTwoPartPolarization {
 
     FillHistograms(collision, collision, V0s, V0s);
   }
-  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataSame, "Process Event for same data", true);
+  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataSame, "Process event for same data", true);
 
   SliceCache cache;
-  using BinningTypeVertexContributorFT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
-  using BinningTypeVertexContributorFT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  Preslice<aod::V0Datas> tracksPerCollisionV0 = aod::v0data::collisionId;
+
+  using BinningTypeT0C = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0C>;
+  BinningTypeT0C colBinningT0C{{vertexAxis, centAxis}, true};
+
   void processDataMixedT0C(EventCandidates const& collisions,
                            TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
-    auto tracksTuple = std::make_tuple(V0s);
-    BinningTypeVertexContributorFT0C binningOnPositions{{vertexAxis, centAxis}, true};
-    SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeVertexContributorFT0C> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+    for (auto& [c1, c2] : selfCombinations(colBinningT0C, cfgNoMixedEvents, -1, collisions, collisions)) {
+
+      if (c1.index() == c2.index())
+        continue;
+
       centrality = c1.centFT0C();
-      auto bc = c1.bc_as<aod::BCsWithTimestamps>();
       if (cfgAccCor) {
+        auto bc = c1.bc_as<aod::BCsWithTimestamps>();
         AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
       }
       if (!eventSelected(c1))
         continue;
       if (!eventSelected(c2))
         continue;
-      if (c1.bcId() == c2.bcId())
-        continue;
+
+      auto tracks1 = V0s.sliceBy(tracksPerCollisionV0, c1.globalIndex());
+      auto tracks2 = V0s.sliceBy(tracksPerCollisionV0, c2.globalIndex());
 
       FillHistograms(c1, c2, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0C, "Process Event for mixed data in PbPb", false);
+  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0C, "Process event for mixed data in PbPb", false);
+
+  using BinningTypeT0M = ColumnBinningPolicy<aod::collision::PosZ, aod::cent::CentFT0M>;
+  BinningTypeT0M colBinningT0M{{vertexAxis, centAxis}, true};
 
   void processDataMixedT0M(EventCandidates const& collisions,
                            TrackCandidates const& /*tracks*/, aod::V0Datas const& V0s, aod::BCsWithTimestamps const&)
   {
-    auto tracksTuple = std::make_tuple(V0s);
-    BinningTypeVertexContributorFT0M binningOnPositions{{vertexAxis, centAxis}, true};
-    SameKindPair<EventCandidates, V0TrackCandidate, BinningTypeVertexContributorFT0M> pair{binningOnPositions, cfgNoMixedEvents, -1, collisions, tracksTuple, &cache};
-    for (auto& [c1, tracks1, c2, tracks2] : pair) {
+    for (auto& [c1, c2] : selfCombinations(colBinningT0M, cfgNoMixedEvents, -1, collisions, collisions)) {
+
+      if (c1.index() == c2.index())
+        continue;
+
       centrality = c1.centFT0M();
-      auto bc = c1.bc_as<aod::BCsWithTimestamps>();
       if (cfgAccCor) {
+        auto bc = c1.bc_as<aod::BCsWithTimestamps>();
         AccMap = ccdb->getForTimeStamp<TProfile2D>(cfgAccCorPath.value, bc.timestamp());
       }
       if (!eventSelected(c1))
         continue;
       if (!eventSelected(c2))
         continue;
-      if (c1.bcId() == c2.bcId())
-        continue;
+
+      auto tracks1 = V0s.sliceBy(tracksPerCollisionV0, c1.globalIndex());
+      auto tracks2 = V0s.sliceBy(tracksPerCollisionV0, c2.globalIndex());
 
       FillHistograms(c1, c2, tracks1, tracks2);
     }
   }
-  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0M, "Process Event for mixed data in pp", false);
+  PROCESS_SWITCH(lambdaTwoPartPolarization, processDataMixedT0M, "Process event for mixed data in pp", false);
 };
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)

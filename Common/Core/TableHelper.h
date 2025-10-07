@@ -18,8 +18,10 @@
 #ifndef COMMON_CORE_TABLEHELPER_H_
 #define COMMON_CORE_TABLEHELPER_H_
 
-#include <Framework/Configurable.h>
+#include <Framework/Array2D.h>
+#include <Framework/ConfigParamSpec.h>
 #include <Framework/InitContext.h>
+#include <Framework/Logger.h>
 #include <Framework/RunningWorkflowInfo.h>
 
 #include <string>

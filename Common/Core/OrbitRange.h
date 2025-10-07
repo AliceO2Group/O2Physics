@@ -18,6 +18,11 @@
 
 #include <TNamed.h>
 
+#include <Rtypes.h>
+#include <RtypesCore.h>
+
+#include <cstdint>
+
 class TCollection;
 
 class OrbitRange : public TNamed
