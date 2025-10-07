@@ -1028,7 +1028,7 @@ TH2D* DhCorrelationExtraction::getCorrelHisto(Int_t sEorMe, Int_t sorSb, Int_t p
       hSparse = reinterpret_cast<THnSparseD*>(fDirSE->Get(fSECorrelSignalRegionName.Data()));
     } else if (!fSidebandDivided) {
       hSparse = reinterpret_cast<THnSparseD*>(fDirSE->Get(fSECorrelSidebandsName.Data()));
-    } else if (fSidebandDivided) {
+    } else {
       if (fUseSidebLeft && !fUseSidebRight) {
         hSparse = reinterpret_cast<THnSparseD*>(fDirSE->Get(fSECorrelSidebandLeftName.Data()));
       } else if (!fUseSidebLeft && fUseSidebRight) {
@@ -1045,7 +1045,7 @@ TH2D* DhCorrelationExtraction::getCorrelHisto(Int_t sEorMe, Int_t sorSb, Int_t p
       hSparse = reinterpret_cast<THnSparseD*>(fDirME->Get(fMECorrelSignalRegionName.Data()));
     } else if (!fSidebandDivided) {
       hSparse = reinterpret_cast<THnSparseD*>(fDirME->Get(fMECorrelSidebandsName.Data()));
-    } else if (fSidebandDivided) {
+    } else {
       if (fUseSidebLeft && !fUseSidebRight) {
         hSparse = reinterpret_cast<THnSparseD*>(fDirME->Get(fMECorrelSidebandLeftName.Data()));
       } else if (!fUseSidebLeft && fUseSidebRight) {
@@ -1381,7 +1381,7 @@ Double_t DhCorrelationExtraction::calculateBaseline(TH1D*& histo, Bool_t totalRa
   // total range = 2*Pi
   // half range = Pi , for histogram reflected under symmetric assumption
 
-  Double_t baseline, errBaseline;
+  Double_t baseline;
   Int_t const nBinsPhi = histo->GetNbinsX();
   Int_t const binPhiHalf = nBinsPhi / 2;
   Int_t const binPhiHalfMinus1 = nBinsPhi / 2 - 1;
