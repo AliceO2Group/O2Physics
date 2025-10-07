@@ -53,7 +53,7 @@ using namespace o2::framework::expressions;
 
 void customize(std::vector<o2::framework::ConfigParamSpec>& workflowOptions)
 {
-  ConfigParamSpec optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
+  ConfigParamSpec const optionDoMC{"doMC", VariantType::Bool, true, {"Perform MC matching."}};
   workflowOptions.push_back(optionDoMC);
 }
 
@@ -121,7 +121,7 @@ struct HfCandidateCreatorXicc {
                aod::TracksWCov const& tracks)
   {
     for (const auto& xicCand : xicCands) {
-      if (!(xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::XicToPKPi)) {
+      if ((xicCand.hfflag() & 1 << o2::aod::hf_cand_3prong::DecayType::XicToPKPi) == 0) {
         continue;
       }
       if (xicCand.isSelXicToPKPi() >= selectionFlagXic) {
@@ -147,15 +147,15 @@ struct HfCandidateCreatorXicc {
       trackParVar1.propagateTo(secondaryVertex[0], bz);
       trackParVar2.propagateTo(secondaryVertex[0], bz);
 
-      std::array<float, 3> pvecpK = RecoDecay::pVec(track0.pVector(), track1.pVector());
+      std::array<float, 3> const pvecpK = RecoDecay::pVec(track0.pVector(), track1.pVector());
       std::array<float, 3> pvecxic = RecoDecay::pVec(pvecpK, track2.pVector());
       auto trackpK = o2::dataformats::V0(df3.getPCACandidatePos(), pvecpK, df3.calcPCACovMatrixFlat(), trackParVar0, trackParVar1);
       auto trackxic = o2::dataformats::V0(df3.getPCACandidatePos(), pvecxic, df3.calcPCACovMatrixFlat(), trackpK, trackParVar2);
 
-      int index0Xic = track0.globalIndex();
-      int index1Xic = track1.globalIndex();
-      int index2Xic = track2.globalIndex();
-      int charge = track0.sign() + track1.sign() + track2.sign();
+      int const index0Xic = track0.globalIndex();
+      int const index1Xic = track1.globalIndex();
+      int const index2Xic = track2.globalIndex();
+      int const charge = track0.sign() + track1.sign() + track2.sign();
 
       for (const auto& trackpion : tracks) {
         if (trackpion.pt() < cutPtPionMin) {
@@ -167,7 +167,7 @@ struct HfCandidateCreatorXicc {
         if (trackpion.globalIndex() == index0Xic || trackpion.globalIndex() == index1Xic || trackpion.globalIndex() == index2Xic) {
           continue;
         }
-        std::array<float, 3> pvecpion;
+        std::array<float, 3> pvecpion{};
         auto trackParVarPi = getTrackParCov(trackpion);
 
         // reconstruct the 3-prong X vertex
