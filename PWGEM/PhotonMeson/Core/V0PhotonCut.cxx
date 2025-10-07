@@ -113,12 +113,12 @@ void V0PhotonCut::SetTPCNsigmaElRange(float min, float max)
   mMaxTPCNsigmaEl = max;
   LOG(info) << "V0 Photon selection, set TPC n sigma El range: " << mMinTPCNsigmaEl << " - " << mMaxTPCNsigmaEl;
 }
-void V0PhotonCut::SetTPCNsigmaPiRange(float min, float max)
-{
-  mMinTPCNsigmaPi = min;
-  mMaxTPCNsigmaPi = max;
-  LOG(info) << "V0 Photon selection, set TPC n sigma Pi range: " << mMinTPCNsigmaPi << " - " << mMaxTPCNsigmaPi;
-}
+// void V0PhotonCut::SetTPCNsigmaPiRange(float min, float max)
+// {
+//   mMinTPCNsigmaPi = min;
+//   mMaxTPCNsigmaPi = max;
+//   LOG(info) << "V0 Photon selection, set TPC n sigma Pi range: " << mMinTPCNsigmaPi << " - " << mMaxTPCNsigmaPi;
+// }
 void V0PhotonCut::SetTrackPtRange(float minPt, float maxPt)
 {
   mMinTrackPt = minPt;
