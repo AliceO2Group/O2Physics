@@ -945,13 +945,12 @@ TH1D* DhCorrelationExtraction::evaluateMcClosModulations(Double_t ptCandMin, Dou
   TH1D* hModul = new TH1D();
 
   fFilePromptMc = TFile::Open(fFilePromptMcRecName.Data());
-  fFileNonPromptMc = TFile::Open(fFileNonPromptMcRecName.Data());
-
   if (fFilePromptMc == nullptr) {
-    std::cout << "[ERROR] File prompt MC rec cannot be opened! check your file path!" << std::endl;
+    throw std::runtime_error("[ERROR] File prompt MC rec cannot be opened! check your file path!");
   }
+  fFileNonPromptMc = TFile::Open(fFileNonPromptMcRecName.Data());
   if (fFileNonPromptMc == nullptr) {
-    std::cout << "[ERROR] File non-prompt MC rec cannot be opened! check your file path!" << std::endl;
+    throw std::runtime_error("[ERROR] File non-prompt MC rec cannot be opened! check your file path!");
   }
 
   // TODO: generalise this part
