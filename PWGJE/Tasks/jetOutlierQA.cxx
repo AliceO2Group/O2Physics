@@ -78,7 +78,7 @@ struct JetOutlierQATask {
   Configurable<int> trackOccupancyInTimeRangeMin{"trackOccupancyInTimeRangeMin", -999999, "minimum occupancy of tracks in neighbouring collisions in a given time range; only applied to reconstructed collisions (data and mcd jets), not mc collisions (mcp jets)"};
   Configurable<float> splitCollisionsDeltaZ{"splitCollisionsDeltaZ", 0.2, "threshold in delta z to assign as split collision"};
   Configurable<float> splitCollisionsDeltaZPart{"splitCollisionsDeltaZPart", 0.2, "threshold in delta z to assign as split collision particle level"};
-  Configurable<int> splitCollisionsDeltaBC{"splitCollisionsDeltaBC", 5, "threshold in BC to assign as split collision"};
+  Configurable<unsigned int> splitCollisionsDeltaBC{"splitCollisionsDeltaBC", 5, "threshold in BC to assign as split collision"};
   Configurable<int> mergeCollisionsDeltaMin{"mergeCollisionsDeltaMin", -10, "number of prior collisions to search for close Z position"};
   Configurable<int> mergeCollisionsDeltaMax{"mergeCollisionsDeltaMax", 10, "number of following collisions to search for close Z position"};
 
