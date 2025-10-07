@@ -513,7 +513,7 @@ template <typename C, typename P>
 void ueCharged::processTrue(const C& mcCollision, const P& particles)
 {
   int multTrue = 0;
-  int multTrueINEL = 0;
+  //  int multTrueINEL = 0;
   for (const auto& particle : particles) {
     auto pdgParticle = pdg->GetParticle(particle.pdgCode());
     if (!pdgParticle || pdgParticle->Charge() == 0.) {
@@ -523,7 +523,7 @@ void ueCharged::processTrue(const C& mcCollision, const P& particles)
       continue;
     }
     if (std::abs(particle.eta()) <= 1.0) {
-      multTrueINEL++;
+      //      multTrueINEL++;
     }
     if (std::abs(particle.eta()) >= cfgTrkEtaCut) {
       continue;
