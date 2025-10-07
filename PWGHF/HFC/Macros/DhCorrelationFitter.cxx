@@ -65,6 +65,7 @@ DhCorrelationFitter::DhCorrelationFitter() : // default constructor
                                              fGausNS(nullptr),
                                              fGausAS(nullptr),
                                              fPed(nullptr),
+                                             fBaseTransvReg(nullptr),
                                              fv2AssocPart(0.),
                                              fv2Dmeson(0.),
                                              fNSyieldBinCount(0.),
