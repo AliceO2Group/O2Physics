@@ -2001,7 +2001,7 @@ struct AnalysisSameEventPairing {
                                               t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(),
                                               t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(),
                                               t2.pt(), t2.eta(), t2.phi(),
-                                              t2.pt(), t2.eta(), t2.phi());
+                                              t1.pt(), t1.eta(), t1.phi());
                         }
                       }
                     }
