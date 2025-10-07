@@ -508,13 +508,13 @@ struct JetHadronRecoil {
       if ((pdgParticle->Charge() == 0.0) || (!particle.isPhysicalPrimary())) {
         continue;
       }
-      if (isSigCol && particle.pt() < ptTTsigMax && particle.pt() > ptTTsigMin) {
+      if (isSigCol && particle.pt() < ptTTsigMax && particle.pt() > ptTTsigMin && track.pt() < ptTTsigMax && track.pt() > ptTTsigMin) {
         phiTTAr.push_back(particle.phi());
         ptTTAr.push_back(particle.pt());
         nTT++;
         registry.fill(HIST("hSignalTriggers"), particle.pt(), weight);
       }
-      if (!isSigCol && particle.pt() < ptTTrefMax && particle.pt() > ptTTrefMin) {
+      if (!isSigCol && particle.pt() < ptTTrefMax && particle.pt() > ptTTrefMin && track.pt() < ptTTrefMax && track.pt() > ptTTrefMin) {
         phiTTAr.push_back(particle.phi());
         ptTTAr.push_back(particle.pt());
         nTT++;
