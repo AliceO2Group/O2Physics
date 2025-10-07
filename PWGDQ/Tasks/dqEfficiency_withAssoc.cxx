@@ -97,12 +97,17 @@ DECLARE_SOA_COLUMN(GlobalIndexleg2, globalIndexleg2, uint64_t);
 DECLARE_SOA_COLUMN(Ptassoc, ptassoc, float);
 DECLARE_SOA_COLUMN(PINassoc, pINassoc, float);
 DECLARE_SOA_COLUMN(Etaassoc, etaassoc, float);
+DECLARE_SOA_COLUMN(Phiassoc, phiassoc, float);
 DECLARE_SOA_COLUMN(Ptpair, ptpair, float);
 DECLARE_SOA_COLUMN(Etapair, etapair, float);
+DECLARE_SOA_COLUMN(Ptleg1, ptleg1, float);
 DECLARE_SOA_COLUMN(PINleg1, pINleg1, float);
 DECLARE_SOA_COLUMN(Etaleg1, etaleg1, float);
+DECLARE_SOA_COLUMN(Phileg1, phileg1, float);
+DECLARE_SOA_COLUMN(Ptleg2, ptleg2, float);
 DECLARE_SOA_COLUMN(PINleg2, pINleg2, float);
 DECLARE_SOA_COLUMN(Etaleg2, etaleg2, float);
+DECLARE_SOA_COLUMN(Phileg2, phileg2, float);
 DECLARE_SOA_COLUMN(TPCnsigmaKaassoc, tpcnsigmaKaassoc, float);
 DECLARE_SOA_COLUMN(TPCnsigmaPiassoc, tpcnsigmaPiassoc, float);
 DECLARE_SOA_COLUMN(TPCnsigmaPrassoc, tpcnsigmaPrassoc, float);
@@ -135,15 +140,29 @@ DECLARE_SOA_COLUMN(McFlag, mcFlag, int8_t);
 DECLARE_SOA_BITMAP_COLUMN(IsJpsiFromBSelected, isJpsiFromBSelected, 32);
 // Candidate columns for prompt-non-prompt JPsi separation
 DECLARE_SOA_COLUMN(Massee, massee, float);
+DECLARE_SOA_COLUMN(Etaee, etaee, float);
+DECLARE_SOA_COLUMN(Rapee, rapee, float);
+DECLARE_SOA_COLUMN(Phiee, phiee, float);
 DECLARE_SOA_COLUMN(Ptee, ptee, float);
 DECLARE_SOA_COLUMN(Lxyee, lxyee, float);
 DECLARE_SOA_COLUMN(LxyeePoleMass, lxyeepolemass, float);
 DECLARE_SOA_COLUMN(Lzee, lzee, float);
+DECLARE_SOA_COLUMN(MultiplicityFT0A, multiplicityFT0AJPsi2ee, float);
+DECLARE_SOA_COLUMN(MultiplicityFT0C, multiplicityFT0CJPsi2ee, float);
+DECLARE_SOA_COLUMN(PercentileFT0M, percentileFT0MJPsi2ee, float);
+DECLARE_SOA_COLUMN(MultiplicityNContrib, multiplicityNContribJPsi2ee, float);
 DECLARE_SOA_COLUMN(AmbiguousInBunchPairs, AmbiguousJpsiPairsInBunch, bool);
 DECLARE_SOA_COLUMN(AmbiguousOutOfBunchPairs, AmbiguousJpsiPairsOutOfBunch, bool);
 DECLARE_SOA_COLUMN(Corrassoc, corrassoc, bool);
 DECLARE_SOA_COLUMN(DeltaEta, deltaEta, float);
 DECLARE_SOA_COLUMN(DeltaPhi, deltaPhi, float);
+// Candidate columns efficiency calculation for prompt-non-prompt JPsi separation
+DECLARE_SOA_COLUMN(OniaPt, oniaPt, float);
+DECLARE_SOA_COLUMN(OniaY, oniaY, float);
+DECLARE_SOA_COLUMN(OniaEta, oniaEta, float);
+DECLARE_SOA_COLUMN(OniaPhi, oniaPhi, float);
+DECLARE_SOA_COLUMN(OniaVz, oniaVz, float);
+DECLARE_SOA_COLUMN(OniaVtxZ, oniaVtxZ, float);
 } // namespace dqanalysisflags
 
 DECLARE_SOA_TABLE(EventCuts, "AOD", "DQANAEVCUTS", dqanalysisflags::IsEventSelected);                                                            //!  joinable to ReducedEvents
@@ -171,9 +190,11 @@ DECLARE_SOA_TABLE(BmesonCandidates, "AOD", "DQBMESONS",
                   dqanalysisflags::IsJpsiFromBSelected, dqanalysisflags::IsBarrelSelected, dqanalysisflags::McFlag);
 DECLARE_SOA_TABLE(JPsiMuonCandidates, "AOD", "DQJPSIMUONA",
                   dqanalysisflags::DeltaEta, dqanalysisflags::DeltaPhi,
-                  dqanalysisflags::MassDileptonCandidate, dqanalysisflags::Ptpair, dqanalysisflags::Etapair, dqanalysisflags::Ptassoc, dqanalysisflags::Etaassoc,
+                  dqanalysisflags::MassDileptonCandidate, dqanalysisflags::Ptpair, dqanalysisflags::Etapair, dqanalysisflags::Ptassoc, dqanalysisflags::Etaassoc, dqanalysisflags::Phiassoc,
+                  dqanalysisflags::Ptleg1, dqanalysisflags::Etaleg1, dqanalysisflags::Phileg1, dqanalysisflags::Ptleg2, dqanalysisflags::Etaleg2, dqanalysisflags::Phileg2,
                   dqanalysisflags::McFlag);
-DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER", dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Lxyee, dqanalysisflags::LxyeePoleMass, dqanalysisflags::Lzee, dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::Corrassoc);
+DECLARE_SOA_TABLE(JPsieeCandidates, "AOD", "DQPSEUDOPROPER", dqanalysisflags::Massee, dqanalysisflags::Ptee, dqanalysisflags::Etaee, dqanalysisflags::Rapee, dqanalysisflags::Phiee, dqanalysisflags::Lxyee, dqanalysisflags::LxyeePoleMass, dqanalysisflags::Lzee, dqanalysisflags::AmbiguousInBunchPairs, dqanalysisflags::AmbiguousOutOfBunchPairs, dqanalysisflags::Corrassoc, dqanalysisflags::MultiplicityFT0A, dqanalysisflags::MultiplicityFT0C, dqanalysisflags::PercentileFT0M, dqanalysisflags::MultiplicityNContrib);
+DECLARE_SOA_TABLE(OniaMCTruth, "AOD", "MCTRUTHONIA", dqanalysisflags::OniaPt, dqanalysisflags::OniaEta, dqanalysisflags::OniaY, dqanalysisflags::OniaPhi, dqanalysisflags::OniaVz, dqanalysisflags::OniaVtxZ, dqanalysisflags::MultiplicityFT0A, dqanalysisflags::MultiplicityFT0C, dqanalysisflags::PercentileFT0M, dqanalysisflags::MultiplicityNContrib);
 } // namespace o2::aod
 
 // Declarations of various short names
@@ -364,7 +385,7 @@ struct AnalysisEventSelection {
     // loop over the BC map, get the collision vectors and make in-bunch and out of bunch 2-event correlations
     for (auto bc1It = fBCCollMap.begin(); bc1It != fBCCollMap.end(); ++bc1It) {
       uint64_t bc1 = bc1It->first;
-      auto bc1Events = bc1It->second;
+      auto const& bc1Events = bc1It->second;
 
       // same bunch event correlations, if more than 1 collisions in this bunch
       if (bc1Events.size() > 1) {
@@ -387,9 +408,9 @@ struct AnalysisEventSelection {
       for (auto bc2It = std::next(bc1It); bc2It != fBCCollMap.end(); ++bc2It) {
         uint64_t bc2 = bc2It->first;
         if ((bc2 > bc1 ? bc2 - bc1 : bc1 - bc2) > fConfigSplitCollisionsDeltaBC) {
-          continue;
+          break;
         }
-        auto bc2Events = bc2It->second;
+        auto const& bc2Events = bc2It->second;
 
         // loop over events in the first BC
         for (auto ev1It : bc1Events) {
@@ -1274,6 +1295,7 @@ struct AnalysisSameEventPairing {
   Produces<aod::DileptonsMiniTreeRec> dileptonMiniTreeRec;
   Produces<aod::DileptonsInfo> dileptonInfoList;
   Produces<aod::JPsieeCandidates> PromptNonPromptSepTable;
+  Produces<aod::OniaMCTruth> MCTruthTableEffi;
 
   o2::base::MatLayerCylSet* fLUT = nullptr;
   int fCurrentRun; // needed to detect if the run changed and trigger update of calibrations etc.
@@ -1950,7 +1972,7 @@ struct AnalysisSameEventPairing {
               fHistMan->FillHistClass(histNames[icut][0].Data(), VarManager::fgValues); // reconstructed, unmatched
               for (unsigned int isig = 0; isig < fRecMCSignals.size(); isig++) {        // loop over MC signals
                 if (mcDecision & (static_cast<uint32_t>(1) << isig)) {
-                  PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], isAmbiInBunch, isAmbiOutOfBunch, isCorrect_pair);
+                  PromptNonPromptSepTable(VarManager::fgValues[VarManager::kMass], VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kRap], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kVertexingTauxyProjected], VarManager::fgValues[VarManager::kVertexingTauxyProjectedPoleJPsiMass], VarManager::fgValues[VarManager::kVertexingTauzProjected], isAmbiInBunch, isAmbiOutOfBunch, isCorrect_pair, VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
                   fHistMan->FillHistClass(histNamesMC[icut * fRecMCSignals.size() + isig][0].Data(), VarManager::fgValues); // matched signal
                   if (useMiniTree.fConfigMiniTree) {
                     if constexpr (TPairType == VarManager::kDecayToMuMu) {
@@ -1981,13 +2003,6 @@ struct AnalysisSameEventPairing {
                                               t2.pt(), t2.eta(), t2.phi(),
                                               t2.pt(), t2.eta(), t2.phi());
                         }
-                        dileptonMiniTreeRec(mcDecision,
-                                            VarManager::fgValues[VarManager::kMass],
-                                            VarManager::fgValues[VarManager::kPt], VarManager::fgValues[VarManager::kEta], VarManager::fgValues[VarManager::kPhi], VarManager::fgValues[VarManager::kCentFT0C],
-                                            t1.reducedMCTrack().pt(), t1.reducedMCTrack().eta(), t1.reducedMCTrack().phi(),
-                                            t2.reducedMCTrack().pt(), t2.reducedMCTrack().eta(), t2.reducedMCTrack().phi(),
-                                            VarManager::fgValues[VarManager::kPt1], VarManager::fgValues[VarManager::kEta1], VarManager::fgValues[VarManager::kPhi1],
-                                            VarManager::fgValues[VarManager::kPt2], VarManager::fgValues[VarManager::kEta2], VarManager::fgValues[VarManager::kPhi2]);
                       }
                     }
                   }
@@ -2226,17 +2241,21 @@ struct AnalysisSameEventPairing {
         VarManager::FillTrackMC(mcTracks, track);
         auto track_raw = mcTracks.rawIteratorAt(track.globalIndex());
         // auto track_raw = groupedMCTracks.rawIteratorAt(track.globalIndex());
+        mcDecision = 0;
+        isig = 0;
         for (auto& sig : fGenMCSignals) {
           if (sig->CheckSignal(true, track_raw)) {
             mcDecision |= (static_cast<uint32_t>(1) << isig);
             fHistMan->FillHistClass(Form("MCTruthGenSel_%s", sig->GetName()), VarManager::fgValues);
+            MCTruthTableEffi(VarManager::fgValues[VarManager::kMCPt], VarManager::fgValues[VarManager::kMCEta], VarManager::fgValues[VarManager::kMCY], VarManager::fgValues[VarManager::kMCPhi], VarManager::fgValues[VarManager::kMCVz], VarManager::fgValues[VarManager::kMCVtxZ], VarManager::fgValues[VarManager::kMultFT0A], VarManager::fgValues[VarManager::kMultFT0C], VarManager::fgValues[VarManager::kCentFT0M], VarManager::fgValues[VarManager::kVtxNcontribReal]);
+
             if (useMiniTree.fConfigMiniTree) {
               auto mcEvent = mcEvents.rawIteratorAt(track_raw.reducedMCeventId());
               dileptonMiniTreeGen(mcDecision, mcEvent.impactParameter(), track_raw.pt(), track_raw.eta(), track_raw.phi(), -999, -999, -999);
             }
           }
+          isig++;
         }
-        isig++;
       }
     } // end loop over reconstructed events
     if (fHasTwoProngGenMCsignals) {
@@ -2249,17 +2268,11 @@ struct AnalysisSameEventPairing {
               continue;
             }
             if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-              mcDecision |= (static_cast<uint32_t>(1) << isig);
               VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
               fHistMan->FillHistClass(Form("MCTruthGenPair_%s", sig->GetName()), VarManager::fgValues);
-              if (useMiniTree.fConfigMiniTree) {
-                // WARNING! To be checked
-                dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
-              }
             }
           }
         }
-        isig++;
       }
     }
     // Fill Generated PAIR histograms taking into account selected collisions
@@ -2282,15 +2295,22 @@ struct AnalysisSameEventPairing {
           auto t1_raw = mcTracks.rawIteratorAt(t1.globalIndex());
           auto t2_raw = mcTracks.rawIteratorAt(t2.globalIndex());
           if (t1_raw.reducedMCeventId() == t2_raw.reducedMCeventId()) {
+            mcDecision = 0;
+            isig = 0;
             for (auto& sig : fGenMCSignals) {
               if (sig->GetNProngs() != 2) { // NOTE: 2-prong signals required here
                 continue;
               }
               if (sig->CheckSignal(true, t1_raw, t2_raw)) {
-                // mcDecision |= (static_cast<uint32_t>(1) << isig);
+                mcDecision |= (static_cast<uint32_t>(1) << isig);
                 VarManager::FillPairMC<VarManager::kDecayToMuMu>(t1, t2); // NOTE: This feature will only work for muons
                 fHistMan->FillHistClass(Form("MCTruthGenPairSel_%s", sig->GetName()), VarManager::fgValues);
+                if (useMiniTree.fConfigMiniTree) {
+                  // WARNING! To be checked
+                  dileptonMiniTreeGen(mcDecision, -999, t1.pt(), t1.eta(), t1.phi(), t2.pt(), t2.eta(), t2.phi());
+                }
               }
+              isig++;
             }
           }
         }
@@ -3870,7 +3890,10 @@ struct AnalysisDileptonTrack {
             }
           }
           // Fill table for correlation analysis
-          DileptonTrackTable(fValuesHadron[VarManager::kDeltaEta], fValuesHadron[VarManager::kDeltaPhi], dilepton.mass(), dilepton.pt(), dilepton.eta(), track.pt(), track.eta(), mcDecision);
+          DileptonTrackTable(fValuesHadron[VarManager::kDeltaEta], fValuesHadron[VarManager::kDeltaPhi],
+                             dilepton.mass(), dilepton.pt(), dilepton.eta(), track.pt(), track.eta(), track.phi(),
+                             lepton1.pt(), lepton1.eta(), lepton1.phi(), lepton2.pt(), lepton2.eta(), lepton2.phi(),
+                             mcDecision);
         }
 
         // Fill histograms for the triplets

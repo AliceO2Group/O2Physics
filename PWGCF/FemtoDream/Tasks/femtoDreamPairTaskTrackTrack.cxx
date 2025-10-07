@@ -298,6 +298,7 @@ struct femtoDreamPairTaskTrackTrack {
       sameEventQnCont.init_qn(&Registry,
                               Binning4D.kstar, Binning4D.mT, Binning4D.multPercentile,
                               Option.IsMC, Option.HighkstarCut);
+      sameEventQnCont.setPDGCodes(Track1.PDGCode, Track2.PDGCode);
       if (qnCal.doFillHisto) {
         qnBinCalculator.initQn(&Registry, qnCal.numQnBins);
       }

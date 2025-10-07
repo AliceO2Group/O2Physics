@@ -409,6 +409,7 @@ struct tpcPid {
           track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
         }
         if (input_dimensions == 8 && networkVersion == "3") {
+          track_properties[counter_track_props + 6] = trk.has_collision() ? collisions.iteratorAt(trk.collisionId()).ft0cOccupancyInTimeRange() / 60000. : 1.;
           if (trk.has_collision()) {
             auto trk_bc = (collisions.iteratorAt(trk.collisionId())).template bc_as<B>();
             float hadronicRate = mRateFetcher.fetch(ccdb.service, trk_bc.timestamp(), trk_bc.runNumber(), irSource) * 1.e-3;

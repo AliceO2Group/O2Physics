@@ -24,17 +24,37 @@ o2physics_add_dpl_workflow(femto-v0-qa
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
+o2physics_add_dpl_workflow(femto-kink-qa
+	  SOURCES femtoKinkQa.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
 o2physics_add_dpl_workflow(femto-cascade-qa
 	  SOURCES femtoCascadeQa.cxx
           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
           COMPONENT_NAME Analysis)
 
-# o2physics_add_dpl_workflow(femtounited-pair-track-track
-# 	  SOURCES femtounitedPairTrackTrack.cxx
-#           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-#           COMPONENT_NAME Analysis)
-#
-# o2physics_add_dpl_workflow(femtounited-pair-track-v0
-# 	  SOURCES femtounitedPairTrackV0.cxx
-#           PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-#           COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(femto-pair-track-track
+	  SOURCES femtoPairTrackTrack.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-pair-track-v0
+	  SOURCES femtoPairTrackV0.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-pair-track-two-track-resonance
+	  SOURCES femtoPairTrackTwoTrackResonance.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-pair-track-cascade
+	  SOURCES femtoPairTrackCascade.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)
+
+o2physics_add_dpl_workflow(femto-pair-track-kink
+	  SOURCES femtoPairTrackKink.cxx
+          PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
+          COMPONENT_NAME Analysis)

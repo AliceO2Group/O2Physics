@@ -64,6 +64,8 @@ struct JetFragmentation {
   Configurable<std::string> trackSel{"trackSel", "globalTracks", "choose track selection"};
   Configurable<int> nV0Classes{"nV0Classes", 2, "Must be 2 or 4! Number of V0 signal/bkg classes"};
   Configurable<bool> doCorrectionWithTracks{"doCorrectionWithTracks", false, "add tracks during background subtraction"};
+  Configurable<bool> fillHistsInclusiveV0s{"fillHistsInclusiveV0s", true, "Fill hists for inclusive V0s"};
+  Configurable<bool> fillHistsJets{"fillHistsJets", true, "Fill hists for jets"};
 
   Configurable<std::vector<float>> ptBinsK0S{"ptBinsK0S", {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0, 30.0, 40.0}, "K0S pt Vals"};
   Configurable<std::vector<float>> ptBinsLambda{"ptBinsLambda", {0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 10.0, 15.0, 20.0, 25.0}, "Lambda pt Vals"};
@@ -2734,8 +2736,14 @@ struct JetFragmentation {
 
     registry.fill(HIST("data/hEvents"), 1.5);
     registry.fill(HIST("data/V0/nV0sEvent"), V0s.size());
-    fillDataV0sInclusive(coll, V0s);
-    fillDataV0sInclusiveWeighted(coll, V0s);
+
+    if (fillHistsInclusiveV0s) {
+      fillDataV0sInclusive(coll, V0s);
+      fillDataV0sInclusiveWeighted(coll, V0s);
+    }
+
+    if (!fillHistsJets)
+      return;
 
     for (const auto& jet : jets) {
       if (!jetfindingutilities::isInEtaAcceptance(jet, -99., -99., v0EtaMin, v0EtaMax))
@@ -2822,9 +2830,14 @@ struct JetFragmentation {
     registry.fill(HIST("matching/V0/nV0sEvent"), V0s.size());
     registry.fill(HIST("matching/V0/nV0sEventWeighted"), V0s.size(), weight);
 
-    fillMcdV0sInclusive(coll, V0s, weight);
-    fillMcpV0sInclusive(pV0s, weight);
-    fillMatchingV0sInclusive<aod::JetTracksMCD, aod::JetParticles>(coll, V0s, pV0s, weight);
+    if (fillHistsInclusiveV0s) {
+      fillMcdV0sInclusive(coll, V0s, weight);
+      fillMcpV0sInclusive(pV0s, weight);
+      fillMatchingV0sInclusive<aod::JetTracksMCD, aod::JetParticles>(coll, V0s, pV0s, weight);
+    }
+
+    if (!fillHistsJets)
+      return;
 
     for (const auto& detJet : v0jetsMCD) {
       if (!jetfindingutilities::isInEtaAcceptance(detJet, -99., -99., v0EtaMin, v0EtaMax))

@@ -35,7 +35,7 @@ enum SVFitting {
   NCases
 };
 
-o2::framework::AxisSpec axisCands = {SVFitting::NCases, -0.5f, static_cast<float>(SVFitting::NCases) - 0.5f, ""};
+const o2::framework::AxisSpec axisCands = {SVFitting::NCases, -0.5f, static_cast<float>(SVFitting::NCases) - 0.5f, ""};
 
 /// \brief Function to put labels on candidate monitoring histogram
 /// \param hCandidates is the histogram
@@ -50,7 +50,7 @@ void setLabelHistoCands(THisto& hCandidates)
 
 /// \brief Function to evaluate number of ones in a binary representation of the argument
 /// \param num is the input argument
-int countOnesInBinary(const uint8_t num)
+inline int countOnesInBinary(const uint8_t num)
 {
   int count{0};
   constexpr std::size_t NBits{8u};
