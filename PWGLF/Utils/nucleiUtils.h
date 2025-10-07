@@ -348,18 +348,19 @@ bool eventSelection(const Tcollision& collision, HistogramRegistry& registry, La
 template <typename Tcollision>
 float getCentrality(Tcollision const& collision, const int centralityEstimator)
 {
-  if constexpr (o2::aod::HasCentrality<Tcollision>) {
-    if (centralityEstimator == centDetectors::kFV0A) {
-      return collision.centFV0A();
-    } else if (centralityEstimator == centDetectors::kFT0M) {
-      return collision.centFT0M();
-    } else if (centralityEstimator == centDetectors::kFT0A) {
-      return collision.centFT0A();
-    } else if (centralityEstimator == centDetectors::kFT0C) {
-      return collision.centFT0C();
-    } else {
-      LOG(warning) << "Centrality estimator not valid. Possible values: (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3). Centrality set to -1.";
-    }
+  if constexpr (!o2::aod::HasCentrality<Tcollision>) {
+    return -1.f;
+  }
+  if (centralityEstimator == centDetectors::kFV0A) {
+    return collision.centFV0A();
+  } else if (centralityEstimator == centDetectors::kFT0M) {
+    return collision.centFT0M();
+  } else if (centralityEstimator == centDetectors::kFT0A) {
+    return collision.centFT0A();
+  } else if (centralityEstimator == centDetectors::kFT0C) {
+    return collision.centFT0C();
+  } else {
+    LOG(warning) << "Centrality estimator not valid. Possible values: (FV0A: 0, FT0M: 1, FT0A: 2, FT0C: 3). Centrality set to -1.";
   }
   return -1.f;
 }
@@ -386,9 +387,9 @@ void createHistogramRegistryNucleus(HistogramRegistry& registry)
   registry.add(fmt::format("{}/hTrackSelections", cNames[index]).c_str(), (fmt::format("{} track selections;", cNames[index]) + std::string("Selection step; Counts")).c_str(), HistType::kTH1D, {{trackSelection::kNtrackSelections, -0.5f, static_cast<float>(trackSelection::kNtrackSelections) - 0.5f}});
   registry.add(fmt::format("{}/hPtReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); Counts")).c_str(), HistType::kTH1F, {{240, -6.0f, 6.0f}});
   registry.add(fmt::format("{}/h3PtVsEtaVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); #eta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, -1.0f, 1.f}, {20, 0.0f, 100.0f}});
-  registry.add(fmt::format("{}/h3PhiVsEtaVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#phi (radians); #eta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, 0.0f, o2::constants::math::TwoPI}, {20, 0.0f, 100.0f}});
-  registry.add(fmt::format("{}/h3DCAxyVsPtVsCentrality", cNames[index]).c_str(), (fmt::format(";", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{xy} (cm); CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
-  registry.add(fmt::format("{}/h3DCAzVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{z} (cm); CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3PhiVsEtaVsCentralityReconstructed", cNames[index]).c_str(), (fmt::format("{} - reconstructed variables;", cNames[index]) + std::string("#phi (radians); #eta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{40, 0, o2::constants::math::TwoPI}, {40, -1.0f, 1.f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3DCAxyVsPtVsCentrality", cNames[index]).c_str(), (fmt::format(";", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{xy} (cm); CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {200, -0.5f, 0.5f}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3DCAzVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); DCA_{z} (cm); CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {200, -0.5f, 0.5f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaTPC_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TPC distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TPC}}({}); CentralityFT0C (%)", cNames[index])).c_str(), HistType::kTH3F, {{100, -5.0f, 5.0f}, {400, -10.0f, 10.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaTPCVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} TPC distribution;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{TPC}}({}); Centrality FT0C (%)", cNames[index])).c_str(), HistType::kTH3F, {{20, -5.0f, 5.0f}, {200, -5.0f, 5.0f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/h3NsigmaITS_preselectionVsCentrality", cNames[index]).c_str(), (fmt::format("Nsigma{} ITS distribution;", cNames[index]) + std::string("signed #it{p}_{T} / |#it{Z}| (GeV/#it{c});") + fmt::format("n#sigma_{{ITS}}({}); Centrality FT0C (%)", cNames[index])).c_str(), HistType::kTH3F, {{50, -5.0f, 5.0f}, {120, -3.0f, 3.0f}, {20, 0.0f, 100.0f}});
@@ -400,7 +401,7 @@ void createHistogramRegistryNucleus(HistogramRegistry& registry)
   registry.add(fmt::format("{}/h3ClusterSizeVsPtVsCentrality", cNames[index]).c_str(), (fmt::format("{};", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); Cluster size ITS; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {90, 0.f, 15.f}, {20, 0.0f, 100.0f}});
   registry.add(fmt::format("{}/hPtGenerated", cNames[index]).c_str(), (fmt::format("{} - generated variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); Counts")).c_str(), HistType::kTH1F, {{240, -6.0f, 6.0f}});
   registry.add(fmt::format("{}/h3PtVsEtaVsCentralityGenerated", cNames[index]).c_str(), (fmt::format("{} - generated variables;", cNames[index]) + std::string("#it{p}_{T} / |#it{Z}| (GeV/#it{c}); #eta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, -1.0f, 1.f}, {20, 0.0f, 100.0f}});
-  registry.add(fmt::format("{}/h3PhiVsEtaVsCentralityGenerated", cNames[index]).c_str(), (fmt::format("{} - generated variables;", cNames[index]) + std::string("#phi (radians); #eta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{240, -6.0f, 6.0f}, {40, 0.0f, o2::constants::math::TwoPI}, {20, 0.0f, 100.0f}});
+  registry.add(fmt::format("{}/h3PhiVsEtaVsCentralityGenerated", cNames[index]).c_str(), (fmt::format("{} - generated variables;", cNames[index]) + std::string("#phi (radians); #eta; CentralityFT0C (%)")).c_str(), HistType::kTH3F, {{40, 0, o2::constants::math::TwoPI}, {40, -1.0f, 1.f}, {20, 0.0f, 100.0f}});
 
   for (size_t iSel = 0; iSel < trackSelection::kNtrackSelections; iSel++) {
     registry.get<TH1>(HIST(cNames[index]) + HIST("/hTrackSelections"))->GetXaxis()->SetBinLabel(iSel + 1, trackSelectionLabels[iSel].c_str());
