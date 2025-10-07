@@ -38,10 +38,6 @@ o2physics_add_dpl_workflow(emc-tmmonitor
                     SOURCES emcTmMonitor.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
-o2physics_add_dpl_workflow(hadron-photon-correlation
-                    SOURCES hadronPhotonCorrelation.cxx
-                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
-                    COMPONENT_NAME Analysis)
 o2physics_add_dpl_workflow(mc-generator-studies
                     SOURCES mcGeneratorStudies.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2::EMCALCalib O2Physics::AnalysisCore
@@ -57,6 +53,10 @@ o2physics_add_dpl_workflow(photon-charged-trigger-correlation
 o2physics_add_dpl_workflow(task-emc-extensive-mc-qa
                     SOURCES taskEmcExtensiveMcQa.cxx
                     PUBLIC_LINK_LIBRARIES O2::Framework O2::EMCALBase O2Physics::AnalysisCore O2Physics::EventFilteringUtils
+                    COMPONENT_NAME Analysis)
+o2physics_add_dpl_workflow(photon-charged-trigger-producer
+                    SOURCES photonChargedTriggerProducer.cxx
+                    PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore
                     COMPONENT_NAME Analysis)
 
 if(FastJet_FOUND)
@@ -326,4 +326,17 @@ if(FastJet_FOUND)
                         SOURCES jetShape.cxx
                         PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::PWGJECore O2Physics::AnalysisCore
                         COMPONENT_NAME Analysis)
+endif()
+
+if(pythia_FOUND)
+  if(TARGET ROOT::EGPythia8)
+    set_target_properties(ROOT::EGPythia8 PROPERTIES
+        INTERFACE_LINK_LIBRARIES "ROOT::Core;ROOT::EG;ROOT::Graf;ROOT::Physics;${pythia_LIBRARY_SHARED}"
+    )
+
+    o2physics_add_dpl_workflow(hadron-photon-correlation
+                        SOURCES hadronPhotonCorrelation.cxx
+                        PUBLIC_LINK_LIBRARIES O2::Framework O2Physics::AnalysisCore ROOT::EGPythia8
+                        COMPONENT_NAME Analysis)
+  endif()
 endif()

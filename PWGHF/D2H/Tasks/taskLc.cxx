@@ -45,6 +45,7 @@
 #include <TPDGCode.h>
 
 #include <array>
+#include <cmath>
 #include <numeric>
 #include <string>
 #include <vector> // std::vector
@@ -244,10 +245,10 @@ struct HfTaskLc {
       const AxisSpec thnAxisOccupancy{thnConfigAxisOccupancy, "Occupancy"};
       const AxisSpec thnAxisProperLifetime{thnConfigAxisProperLifetime, "T_{proper} (ps)"};
 
-      bool isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
-      bool isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
-      bool isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M;
-      bool isMcStd = doprocessMcStd || doprocessMcStdWithFT0C || doprocessMcStdWithFT0M;
+      bool const isDataWithMl = doprocessDataWithMl || doprocessDataWithMlWithFT0C || doprocessDataWithMlWithFT0M;
+      bool const isMcWithMl = doprocessMcWithMl || doprocessMcWithMlWithFT0C || doprocessMcWithMlWithFT0M;
+      bool const isDataStd = doprocessDataStd || doprocessDataStdWithFT0C || doprocessDataStdWithFT0M;
+      bool const isMcStd = doprocessMcStd || doprocessMcStdWithFT0C || doprocessMcStdWithFT0M;
 
       std::vector<AxisSpec> axesStd, axesWithBdt, axesGen;
 
@@ -356,7 +357,7 @@ struct HfTaskLc {
 
   /// Fill MC histograms at reconstruction level
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
+  template <bool FillMl, typename CollType, typename CandLcMcRec, typename CandLcMcGen>
   void fillHistosMcRec(CollType const& collision, CandLcMcRec const& candidates, CandLcMcGen const& mcParticles)
   {
     auto thisCollId = collision.globalIndex();
@@ -403,7 +404,7 @@ struct HfTaskLc {
         }
 
         if (fillTHn) {
-          float cent = evaluateCentralityColl(collision);
+          float const cent = evaluateCentralityColl(collision);
           float occ{-1.};
           if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
             occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
@@ -415,7 +416,7 @@ struct HfTaskLc {
           auto fillTHnRecSig = [&](bool isPKPi) {
             massLc = isPKPi ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
 
-            if constexpr (fillMl) {
+            if constexpr (FillMl) {
               if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
                 outputBkg = isPKPi ? candidate.mlProbLcToPKPi()[MlClassBackground] : candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
                 outputPrompt = isPKPi ? candidate.mlProbLcToPKPi()[MlClassPrompt] : candidate.mlProbLcToPiKP()[MlClassPrompt];      /// prompt score
@@ -487,7 +488,7 @@ struct HfTaskLc {
         for (const auto& recCol : recoCollsPerMcColl) {
           numPvContributors = recCol.numContrib() > numPvContributors ? recCol.numContrib() : numPvContributors;
         }
-        float cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl);
+        float const cent = o2::hf_centrality::getCentralityGenColl(recoCollsPerMcColl);
         float occ{-1.};
         if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
           occ = o2::hf_occupancy::getOccupancyGenColl(recoCollsPerMcColl, occEstimator);
@@ -528,7 +529,7 @@ struct HfTaskLc {
 
   /// Fill histograms for real data
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandType>
+  template <bool FillMl, typename CollType, typename CandType>
   void fillHistosData(CollType const& collision, CandType const& candidates)
   {
     auto thisCollId = collision.globalIndex();
@@ -596,7 +597,7 @@ struct HfTaskLc {
       registry.fill(HIST("Data/hDecLenErrVsPt"), candidate.errorDecayLength(), pt);
 
       if (fillTHn) {
-        float cent = evaluateCentralityColl(collision);
+        float const cent = evaluateCentralityColl(collision);
         float occ{-1.};
         if (storeOccupancy && occEstimator != o2::hf_occupancy::OccupancyEstimator::None) {
           occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
@@ -608,7 +609,7 @@ struct HfTaskLc {
         auto fillTHnData = [&](bool isPKPi) {
           massLc = isPKPi ? hfHelper.invMassLcToPKPi(candidate) : hfHelper.invMassLcToPiKP(candidate);
 
-          if constexpr (fillMl) {
+          if constexpr (FillMl) {
             if (candidate.mlProbLcToPKPi().size() == NumberOfMlClasses) {
               outputBkg = isPKPi ? candidate.mlProbLcToPKPi()[MlClassBackground] : candidate.mlProbLcToPiKP()[MlClassBackground]; /// bkg score
               outputPrompt = isPKPi ? candidate.mlProbLcToPKPi()[MlClassPrompt] : candidate.mlProbLcToPiKP()[MlClassPrompt];      /// prompt score
@@ -646,26 +647,26 @@ struct HfTaskLc {
   }
   /// Run the analysis on real data
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandType>
+  template <bool FillMl, typename CollType, typename CandType>
   void runAnalysisPerCollisionData(CollType const& collisions,
                                    CandType const& candidates)
   {
 
     for (const auto& collision : collisions) {
-      fillHistosData<fillMl>(collision, candidates);
+      fillHistosData<FillMl>(collision, candidates);
     }
   }
 
   /// Run the analysis on MC data
   /// \tparam fillMl switch to fill ML histograms
-  template <bool fillMl, typename CollType, typename CandType, typename CandLcMcGen>
+  template <bool FillMl, typename CollType, typename CandType, typename CandLcMcGen>
   void runAnalysisPerCollisionMc(CollType const& collisions,
                                  CandType const& candidates,
                                  CandLcMcGen const& mcParticles)
   {
     for (const auto& collision : collisions) {
       // MC Rec.
-      fillHistosMcRec<fillMl>(collision, candidates, mcParticles);
+      fillHistosMcRec<FillMl>(collision, candidates, mcParticles);
     }
     // MC gen.
     fillHistosMcGen(mcParticles, collisions);

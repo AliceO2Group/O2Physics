@@ -63,7 +63,7 @@ class BaseSelection
     if (static_cast<size_t>(observableIndex) >= NumObservables) {
       LOG(fatal) << "Observable is not valid. Observable (index) has to be smaller than " << NumObservables;
     }
-    if (skipMostPermissiveBit) {
+    if (!selectionValues.empty() && skipMostPermissiveBit) {
       mNSelections += selectionValues.size() - 1;
     } else {
       mNSelections += selectionValues.size();
@@ -115,9 +115,6 @@ class BaseSelection
   /// \param observableIndex Index of the observable.
   void addSelection(int mode, int observableIndex)
   {
-    if (static_cast<size_t>(observableIndex) >= NumObservables) {
-      LOG(fatal) << "Observable is not valid. Observable (index) has to be smaller than " << NumObservables;
-    }
     switch (mode) {
       case -1: // cut is optional and we store bit for the cut
         mNSelections += 1;
@@ -282,12 +279,12 @@ class BaseSelection
           line << std::setw(bitWidth) << "-> loosest minimal selection, no bit saved";
         } else {
           const uint64_t bitmask = uint64_t{1} << globalBitIndex++;
-          line << std::setw(bitWidth) << ("-> bitmask: " + std::to_string(bitmask));
+          std::stringstream hexStream;
+          hexStream << "-> bitmask: 0x" << std::uppercase << std::hex << bitmask;
+          line << std::setw(bitWidth) << hexStream.str();
         }
-
         LOG(info) << line.str();
       }
-
       LOG(info) << ""; // blank line between observables
     }
     LOG(info) << "Printing done";

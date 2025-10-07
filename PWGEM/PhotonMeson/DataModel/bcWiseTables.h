@@ -36,7 +36,7 @@ enum Observable {
   kNCells,
   kM02,
   kTime,
-  kFT0MCent,
+  kCent,
   kZVtx,
   kFT0Amp,
   kpT,
@@ -54,7 +54,7 @@ const float downscalingFactors[nObservables]{
   1E0,   // Number of cells
   1E4,   // M02
   1E2,   // Cluster time
-  2E0,   // FT0M centrality
+  2E0,   // FT0 centrality
   1E3,   // Z-vertex position
   1E-1,  // FT0M amplitude
   1E3,   // MC pi0 pt
@@ -64,37 +64,36 @@ const float downscalingFactors[nObservables]{
 
 namespace bcwisebc
 {
-DECLARE_SOA_COLUMN(HasFT0, hasFT0, bool);                               //! has_foundFT0()
-DECLARE_SOA_COLUMN(HasTVX, hasTVX, bool);                               //! has the TVX trigger flag
-DECLARE_SOA_COLUMN(HaskTVXinEMC, haskTVXinEMC, bool);                   //! kTVXinEMC
-DECLARE_SOA_COLUMN(HasEMCCell, hasEMCCell, bool);                       //! at least one EMCal cell in the BC
-DECLARE_SOA_COLUMN(StoredCentrality, storedCentrality, uint8_t);        //! FT0M centrality (0-100) (x2)
-DECLARE_SOA_COLUMN(StoredFT0MAmplitude, storedFT0MAmplitude, uint16_t); //! ft0a+c amplitude
-DECLARE_SOA_COLUMN(StoredMu, storedMu, uint16_t);                       //! probability of TVX collision per BC (x1000)
-DECLARE_SOA_COLUMN(StoredTimeSinceSOF, storedTimeSinceSOF, uint16_t);   //! time since decreation of ADJUST in seconds (x2)
+DECLARE_SOA_COLUMN(HasFT0, hasFT0, bool);                                //! has_foundFT0()
+DECLARE_SOA_COLUMN(HasTVX, hasTVX, bool);                                //! has the TVX trigger flag
+DECLARE_SOA_COLUMN(HaskTVXinEMC, haskTVXinEMC, bool);                    //! kTVXinEMC
+DECLARE_SOA_COLUMN(HasEMCCell, hasEMCCell, bool);                        //! at least one EMCal cell in the BC
+DECLARE_SOA_COLUMN(StoredFT0CCentrality, storedFt0CCentrality, uint8_t); //! FT0C centrality (0-100) (x2)
+DECLARE_SOA_COLUMN(StoredFT0MCentrality, storedFT0MCentrality, uint8_t); //! FT0M centrality (0-100) (x2)
+DECLARE_SOA_COLUMN(StoredFT0MAmplitude, storedFT0MAmplitude, uint16_t);  //! ft0a+c amplitude
+DECLARE_SOA_COLUMN(StoredMu, storedMu, uint16_t);                        //! probability of TVX collision per BC (x1000)
+DECLARE_SOA_COLUMN(StoredTimeSinceSOF, storedTimeSinceSOF, uint16_t);    //! time since decreation of ADJUST in seconds (x2)
 
-DECLARE_SOA_DYNAMIC_COLUMN(Centrality, centrality, [](uint8_t storedcentrality) -> float { return std::nextafter(storedcentrality / emdownscaling::downscalingFactors[emdownscaling::kFT0MCent], std::numeric_limits<float>::infinity()); });           //! Centrality (0-100)
-DECLARE_SOA_DYNAMIC_COLUMN(FT0MAmplitude, ft0Amplitude, [](uint16_t storedFT0MAmplitude) -> float { return std::nextafter(storedFT0MAmplitude / emdownscaling::downscalingFactors[emdownscaling::kFT0Amp], std::numeric_limits<float>::infinity()); }); //! FT0M amplitude
-DECLARE_SOA_DYNAMIC_COLUMN(Mu, mu, [](uint16_t storedMu) -> float { return std::nextafter(storedMu / emdownscaling::downscalingFactors[emdownscaling::kMu], std::numeric_limits<float>::infinity()); });                                                //! probability of TVX collision per BC
+DECLARE_SOA_DYNAMIC_COLUMN(FT0CCentrality, ft0cCentrality, [](uint8_t storedft0ccentrality) -> float { return std::nextafter(storedft0ccentrality / emdownscaling::downscalingFactors[emdownscaling::kCent], std::numeric_limits<float>::infinity()); });  //! Centrality (0-100)
+DECLARE_SOA_DYNAMIC_COLUMN(FT0MCentrality, ft0mCentrality, [](uint8_t storedft0mcentrality) -> float { return std::nextafter(storedft0mcentrality / emdownscaling::downscalingFactors[emdownscaling::kCent], std::numeric_limits<float>::infinity()); });  //! Centrality (0-100)
+DECLARE_SOA_DYNAMIC_COLUMN(FT0MAmplitude, ft0Amplitude, [](uint16_t storedFT0MAmplitude) -> float { return std::nextafter(storedFT0MAmplitude / emdownscaling::downscalingFactors[emdownscaling::kFT0Amp], std::numeric_limits<float>::infinity()); });    //! FT0M amplitude
+DECLARE_SOA_DYNAMIC_COLUMN(Mu, mu, [](uint16_t storedMu) -> float { return std::nextafter(storedMu / emdownscaling::downscalingFactors[emdownscaling::kMu], std::numeric_limits<float>::infinity()); });                                                   //! probability of TVX collision per BC
 DECLARE_SOA_DYNAMIC_COLUMN(TimeSinceSOF, timeSinceSOF, [](uint16_t storedTimeSinceSOF) -> float { return std::nextafter(storedTimeSinceSOF / emdownscaling::downscalingFactors[emdownscaling::kTimeSinceSOF], std::numeric_limits<float>::infinity()); }); //! probability of TVX collision per BC
 } // namespace bcwisebc
 DECLARE_SOA_TABLE(BCWiseBCs, "AOD", "BCWISEBC", //! table of bc wise centrality estimation and event selection input
-                  o2::soa::Index<>, bcwisebc::HasFT0, bcwisebc::HasTVX, bcwisebc::HaskTVXinEMC, bcwisebc::HasEMCCell, bcwisebc::StoredCentrality,
-                  bcwisebc::StoredFT0MAmplitude, bcwisebc::StoredMu, bcwisebc::StoredTimeSinceSOF, bcwisebc::Centrality<bcwisebc::StoredCentrality>, bcwisebc::FT0MAmplitude<bcwisebc::StoredFT0MAmplitude>, bcwisebc::Mu<bcwisebc::StoredMu>, bcwisebc::TimeSinceSOF<bcwisebc::StoredTimeSinceSOF>);
+                  o2::soa::Index<>, bcwisebc::HasFT0, bcwisebc::HasTVX, bcwisebc::HaskTVXinEMC, bcwisebc::HasEMCCell, bcwisebc::StoredFT0CCentrality, bcwisebc::StoredFT0MCentrality,
+                  bcwisebc::StoredFT0MAmplitude, bcwisebc::StoredMu, bcwisebc::StoredTimeSinceSOF, bcwisebc::FT0CCentrality<bcwisebc::StoredFT0CCentrality>, bcwisebc::FT0MCentrality<bcwisebc::StoredFT0MCentrality>, bcwisebc::FT0MAmplitude<bcwisebc::StoredFT0MAmplitude>, bcwisebc::Mu<bcwisebc::StoredMu>, bcwisebc::TimeSinceSOF<bcwisebc::StoredTimeSinceSOF>);
 
 DECLARE_SOA_INDEX_COLUMN(BCWiseBC, bcWiseBC); //! bunch crossing ID used as index
 
 namespace bcwisecollision
 {
-DECLARE_SOA_COLUMN(StoredCentrality, storedCentrality, uint8_t); //! FT0M centrality (0-100) (x2)
-DECLARE_SOA_COLUMN(StoredZVtx, storedZVtx, int16_t);             //! Z-vertex position (x1000)
+DECLARE_SOA_COLUMN(StoredZVtx, storedZVtx, int16_t); //! Z-vertex position (x1000)
 
-DECLARE_SOA_DYNAMIC_COLUMN(Centrality, centrality, [](uint8_t storedcentrality) -> float { return std::nextafter(storedcentrality / emdownscaling::downscalingFactors[emdownscaling::kFT0MCent], std::numeric_limits<float>::infinity()); }); //! Centrality (0-100)
-DECLARE_SOA_DYNAMIC_COLUMN(ZVtx, zVtx, [](int16_t storedzvtx) -> float { return storedzvtx / emdownscaling::downscalingFactors[emdownscaling::kZVtx]; });                                                                                     //! Centrality (0-100)
+DECLARE_SOA_DYNAMIC_COLUMN(ZVtx, zVtx, [](int16_t storedzvtx) -> float { return storedzvtx / emdownscaling::downscalingFactors[emdownscaling::kZVtx]; }); //! Z-Vertex
 } // namespace bcwisecollision
 DECLARE_SOA_TABLE(BCWiseCollisions, "AOD", "BCWISECOLL", //! table of skimmed EMCal clusters
-                  o2::soa::Index<>, BCWiseBCId, bcwisecollision::StoredCentrality, bcwisecollision::StoredZVtx,
-                  bcwisecollision::Centrality<bcwisecollision::StoredCentrality>, bcwisecollision::ZVtx<bcwisecollision::StoredZVtx>);
+                  o2::soa::Index<>, BCWiseBCId, bcwisecollision::StoredZVtx, bcwisecollision::ZVtx<bcwisecollision::StoredZVtx>);
 
 namespace bcwisecluster
 {

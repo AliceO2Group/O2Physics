@@ -246,19 +246,19 @@ struct HfTreeCreatorToXiPi {
     }
   }
 
-  template <bool useCentrality, typename T>
+  template <bool UseCentrality, typename T>
   void fillEvent(const T& collision, float cutZPv)
   {
     rowEv(
       collision.sel8(), std::abs(collision.posZ()) < cutZPv);
   }
 
-  template <bool useCentrality, typename MyEventTableType, typename T>
+  template <bool UseCentrality, typename MyEventTableType, typename T>
   void fillCandidate(const T& candidate, int8_t flagMc, int8_t debugMc, int8_t originMc, bool collisionMatched)
   {
 
     float centrality = -999.f;
-    if constexpr (useCentrality) {
+    if constexpr (UseCentrality) {
       auto const& collision = candidate.template collision_as<MyEventTableType>();
       centrality = o2::hf_centrality::getCentralityColl(collision);
     }
@@ -376,13 +376,13 @@ struct HfTreeCreatorToXiPi {
       collisionMatched);
   }
 
-  template <bool useCentrality, typename MyEventTableType, typename T>
+  template <bool UseCentrality, typename MyEventTableType, typename T>
   void fillCandidateLite(const T& candidate, int8_t flagMc, int8_t originMc, bool collisionMatched)
   {
     if (candidate.resultSelections() && candidate.statusPidCharmBaryon() && candidate.statusInvMassLambda() && candidate.statusInvMassCascade() && candidate.statusInvMassCharmBaryon()) {
 
       float centrality = -999.f;
-      if constexpr (useCentrality) {
+      if constexpr (UseCentrality) {
         auto const& collision = candidate.template collision_as<MyEventTableType>();
         centrality = o2::hf_centrality::getCentralityColl(collision);
       }

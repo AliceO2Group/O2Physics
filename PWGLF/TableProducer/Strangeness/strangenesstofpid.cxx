@@ -1232,7 +1232,7 @@ struct strangenesstofpid {
     std::vector<double> collisionEventTime(collisions.size(), 0.0);
     std::vector<int> collisionNtracks(collisions.size(), 0);
     for (const auto& track : tracks) {
-      if (track.hasTOF()) {
+      if (track.hasTOF() && track.has_collision()) {
         collisionEventTime[track.collisionId()] += track.tofEvTime();
         collisionNtracks[track.collisionId()]++;
       }
@@ -1360,12 +1360,13 @@ struct strangenesstofpid {
 
   void processDerivedData(soa::Join<aod::StraCollisions, aod::StraStamps, aod::StraEvTimes> const& collisions, V0DerivedDatas const& V0s, CascDerivedDatas const& cascades, dauTracks const& dauTrackTable, aod::DauTrackTOFPIDs const& dauTrackTOFPIDs)
   {
-    // auto-determine if current or old generation of dauTrackTOFPIDs
-    if (dauTrackTOFPIDs.size() == 0) {
-      return;
+    bool isNewTOFFormat = true; // can only happen for new format
+
+    // auto-determine if using old format
+    if (dauTrackTOFPIDs.size() != 0) {
+      auto firstTOFPID = dauTrackTOFPIDs.rawIteratorAt(0);
+      isNewTOFFormat = firstTOFPID.straCollisionId() < 0 ? false : true;
     }
-    auto firstTOFPID = dauTrackTOFPIDs.rawIteratorAt(0);
-    bool isNewTOFFormat = firstTOFPID.straCollisionId() < 0 ? false : true;
 
     if (!isNewTOFFormat && calculationMethod.value > 0) {
       LOGF(fatal, "Using the old derived data format with the new calculation method is not viable due to lack of needed info! Crashing.");
