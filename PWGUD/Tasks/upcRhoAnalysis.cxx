@@ -584,32 +584,28 @@ struct UpcRhoAnalysis {
     unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();            // get time-based seed
     std::shuffle(std::begin(indices), std::end(indices), std::default_random_engine(seed)); // shuffle indices
     // calculate phi
-    ROOT::Math::PxPyPzMVector pOne = cutTracksLVs[indices[0]];
-    ROOT::Math::PxPyPzMVector pTwo = cutTracksLVs[indices[1]];
-    ROOT::Math::PxPyPzMVector pPlus = pOne + pTwo;
-    ROOT::Math::PxPyPzMVector pMinus = pOne - pTwo;
+    ROOT::Math::PxPyPzMVector p1 = cutTracksLVs[indices[0]], p2 = cutTracksLVs[indices[1]];
+    ROOT::Math::PxPyPzMVector pPlus = p1 + p2, pMinus = p1 - p2;
     return deltaPhi(pPlus, pMinus);
   }
 
   template <typename T>
   float getPhiCharge(const T& cutTracks, const std::vector<ROOT::Math::PxPyPzMVector>& cutTracksLVs)
   { // two possible definitions of phi: charge-based assignment
-    ROOT::Math::PxPyPzMVector pOne, pTwo;
-    pOne = (cutTracks[0].sign() > 0) ? cutTracksLVs[0] : cutTracksLVs[1];
-    pTwo = (cutTracks[0].sign() > 0) ? cutTracksLVs[1] : cutTracksLVs[0];
-    ROOT::Math::PxPyPzMVector pPlus = pOne + pTwo;
-    ROOT::Math::PxPyPzMVector pMinus = pOne - pTwo;
+    ROOT::Math::PxPyPzMVector p1, p2;
+    p1 = (cutTracks[0].sign() > 0) ? cutTracksLVs[0] : cutTracksLVs[1];
+    p2 = (cutTracks[0].sign() > 0) ? cutTracksLVs[1] : cutTracksLVs[0];
+    ROOT::Math::PxPyPzMVector pPlus = p1 + p2, pMinus = p1 - p2;
     return deltaPhi(pPlus, pMinus);
   }
 
   template <typename T>
   float getPhiChargeMC(const T& cutTracks, const std::vector<ROOT::Math::PxPyPzMVector>& cutTracksLVs)
   { // the same as for data but using pdg code instead of charge
-    ROOT::Math::PxPyPzMVector pOne, pTwo;
-    pOne = (cutTracks[0].pdgCode() > 0) ? cutTracksLVs[0] : cutTracksLVs[1];
-    pTwo = (cutTracks[0].pdgCode() > 0) ? cutTracksLVs[1] : cutTracksLVs[0];
-    ROOT::Math::PxPyPzMVector pPlus = pOne + pTwo;
-    ROOT::Math::PxPyPzMVector pMinus = pOne - pTwo;
+    ROOT::Math::PxPyPzMVector p1, p2;
+    p1 = (cutTracks[0].pdgCode() > 0) ? cutTracksLVs[0] : cutTracksLVs[1];
+    p2 = (cutTracks[0].pdgCode() > 0) ? cutTracksLVs[1] : cutTracksLVs[0];
+    ROOT::Math::PxPyPzMVector pPlus = p1 + p2, pMinus = p1 - p2;
     return deltaPhi(pPlus, pMinus);
   }
 
