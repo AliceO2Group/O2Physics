@@ -237,14 +237,14 @@ int runMassFitter(const TString& configFileName)
       hMass[iSliceVar] = inputFile->Get<TH1>(inputHistoName[iSliceVar].data());
       if (enableRefl) {
         hMassRefl[iSliceVar] = inputFileRefl->Get<TH1>(reflHistoName[iSliceVar].data());
-        hMassSgn[iSliceVar] = inputFileRefl->Get<TH1>(fdHistoName[iSliceVar].data());
-        hMassSgn[iSliceVar]->Add(inputFileRefl->Get<TH1>(promptHistoName[iSliceVar].data()));
         if (hMassRefl[iSliceVar] == nullptr) {
           throw std::runtime_error("ERROR: MC reflection histogram not found! Exit!");
         }
+        hMassSgn[iSliceVar] = inputFileRefl->Get<TH1>(fdHistoName[iSliceVar].data());
         if (hMassSgn[iSliceVar] == nullptr) {
           throw std::runtime_error("ERROR: MC prompt or FD histogram not found! Exit!");
         }
+        hMassSgn[iSliceVar]->Add(inputFileRefl->Get<TH1>(promptHistoName[iSliceVar].data()));
       }
     } else {
       hMass[iSliceVar] = inputFile->Get<TH1>(promptHistoName[iSliceVar].data());
