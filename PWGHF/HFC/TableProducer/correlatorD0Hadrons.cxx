@@ -130,11 +130,9 @@ struct HfCorrelatorD0HadronsSelection {
       }
     }
     if (useSel8) {
-      isSel8 = false;
       isSel8 = collision.sel8();
     }
     if (selNoSameBunchPileUpColl) {
-      isNosameBunchPileUp = false;
       isNosameBunchPileUp = collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup);
     }
     isSelColl = isD0Found && isSel8 && isNosameBunchPileUp;
@@ -538,14 +536,12 @@ struct HfCorrelatorD0Hadrons {
     // MC reco level
     bool flagD0 = false;
     bool flagD0bar = false;
-    bool isD0Prompt = false;
-    bool isD0NonPrompt = false;
     std::vector<float> outputMlD0 = {-1., -1., -1.};
     std::vector<float> outputMlD0bar = {-1., -1., -1.};
 
     for (const auto& candidate : candidates) {
-      isD0Prompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
-      isD0NonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
+      bool isD0Prompt = candidate.originMcRec() == RecoDecay::OriginType::Prompt;
+      bool isD0NonPrompt = candidate.originMcRec() == RecoDecay::OriginType::NonPrompt;
       // check decay channel flag for candidate
       if (!TESTBIT(candidate.hfflag(), aod::hf_cand_2prong::DecayType::D0ToPiK)) {
         continue;
@@ -640,7 +636,6 @@ struct HfCorrelatorD0Hadrons {
         registry.fill(HIST("hTrackCounter"), 1); // fill no. of tracks before soft pion removal
 
         bool isPhysicalPrimary = false;
-        int trackOrigin = -1;
         // ===== soft pion removal ===================================================
         double invMassDstar1 = 0, invMassDstar2 = 0;
         bool isSoftPiD0 = false, isSoftPiD0bar = false;
@@ -704,7 +699,7 @@ struct HfCorrelatorD0Hadrons {
         if (track.has_mcParticle()) {
           auto mcParticle = track.template mcParticle_as<aod::McParticles>();
           isPhysicalPrimary = mcParticle.isPhysicalPrimary();
-          trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
+          auto trackOrigin = RecoDecay::getCharmHadronOrigin(mcParticles, mcParticle, true);
           entryD0HadronGenInfo(isD0Prompt, isPhysicalPrimary, trackOrigin);
         } else {
           entryD0HadronGenInfo(isD0Prompt, isPhysicalPrimary, 0);
