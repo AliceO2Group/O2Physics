@@ -106,9 +106,10 @@ struct HfTaskXic0ToXiPi {
 
   void init(InitContext&)
   {
-    std::array<bool, 16> doprocess{doprocessDataWithDCAFitter, doprocessDataWithDCAFitterMl, doprocessDataWithDCAFitterFT0C, doprocessDataWithDCAFitterFT0M, doprocessDataWithDCAFitterMlFT0C, doprocessDataWithDCAFitterMlFT0M,
-                                   doprocessDataWithKFParticle, doprocessDataWithKFParticleMl, doprocessDataWithKFParticleFT0C, doprocessDataWithKFParticleFT0M, doprocessDataWithKFParticleMlFT0C, doprocessDataWithKFParticleMlFT0M,
-                                   doprocessMcWithKFParticle, doprocessMcWithKFParticleMl, doprocessMcWithDCAFitter, doprocessMcWithDCAFitterMl};
+    std::array<bool, 16> doprocess{doprocessDataWithDCAFitter, doprocessDataWithDCAFitterMl, doprocessDataWithDCAFitterFT0C, doprocessDataWithDCAFitterFT0M, doprocessDataWithDCAFitterMlFT0C, doprocessDataWithDCAFitterMlFT0M, \
+        doprocessDataWithKFParticle, doprocessDataWithKFParticleMl, doprocessDataWithKFParticleFT0C, doprocessDataWithKFParticleFT0M, doprocessDataWithKFParticleMlFT0C, doprocessDataWithKFParticleMlFT0M, \
+        doprocessMcWithKFParticle, doprocessMcWithKFParticleMl,doprocessMcWithDCAFitter, doprocessMcWithDCAFitterMl
+      };
     if ((std::accumulate(doprocess.begin(), doprocess.end(), 0)) != 1) {
       LOGP(fatal, "One and only one process function should be enabled at a time.");
     }
@@ -164,7 +165,12 @@ struct HfTaskXic0ToXiPi {
     if (candidate.resultSelections() != true) {
       return;
     }
-    double etaCharmBaryon = useKfParticle ? candidate.kfRapXic() : candidate.etaCharmBaryon();
+    double etaCharmBaryon;
+    if constexpr (useKfParticle) {
+        etaCharmBaryon = candidate.kfRapXic();
+    } else {
+        etaCharmBaryon = candidate.etaCharmBaryon();
+    }
     if (yCandRecMax >= 0. && std::abs(etaCharmBaryon) > yCandRecMax) {
       return;
     }
@@ -208,13 +214,18 @@ struct HfTaskXic0ToXiPi {
       if (candidate.resultSelections() != true) {
         return;
       }
-      double etaCharmBaryon = useKfParticle ? candidate.kfRapXic() : candidate.etaCharmBaryon();
+      double etaCharmBaryon;
+      if constexpr (useKfParticle) {
+          etaCharmBaryon = candidate.kfRapXic();
+      } else {
+          etaCharmBaryon = candidate.etaCharmBaryon();
+      }
       if (yCandRecMax >= 0. && std::abs(etaCharmBaryon) > yCandRecMax) {
         return;
       }
 
       auto numPvContributors = candidate.template collision_as<CollType>().numContrib();
-      double ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
+      double ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());      
       if constexpr (applyMl) {
         registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsXic0Type"),
                       candidate.mlProbToXiPi()[0],
@@ -270,7 +281,7 @@ struct HfTaskXic0ToXiPi {
       }
     }
   }
-
+  
   void processDataWithDCAFitter(Xic0Cands const& candidates,
                                 CollisionsWithEvSels const& collisions)
   {
@@ -298,7 +309,7 @@ struct HfTaskXic0ToXiPi {
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticle, "process HfTaskXic0ToXiPi with KFParticle", true);
 
   void processDataWithDCAFitterMl(Xic0CandsMl const& candidates,
-                                  CollisionsWithEvSels const& collisions)
+                                CollisionsWithEvSels const& collisions)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -324,7 +335,7 @@ struct HfTaskXic0ToXiPi {
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticleMl, "process HfTaskXic0ToXiPi with KFParticle and ML selections", false);
 
   void processDataWithDCAFitterFT0C(Xic0Cands const& candidates,
-                                    CollisionsWithFT0C const& collisions)
+                                CollisionsWithFT0C const& collisions)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -350,7 +361,7 @@ struct HfTaskXic0ToXiPi {
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticleFT0C, "process HfTaskXic0ToXiPi with KFParticle and with FT0C centrality", false);
 
   void processDataWithDCAFitterFT0M(Xic0Cands const& candidates,
-                                    CollisionsWithFT0M const& collisions)
+                                CollisionsWithFT0M const& collisions)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -376,7 +387,7 @@ struct HfTaskXic0ToXiPi {
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticleFT0M, "process HfTaskXic0ToXiPi with KFParticle and with FT0M centrality", false);
 
   void processDataWithDCAFitterMlFT0C(Xic0CandsMl const& candidates,
-                                      CollisionsWithFT0C const& collisions)
+                                       CollisionsWithFT0C const& collisions)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -384,10 +395,10 @@ struct HfTaskXic0ToXiPi {
       for (const auto& candidate : groupedXicCandidates) {
         processDataCent<false, true, true>(candidate, collision);
       }
-    }
+    }  
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithDCAFitterMlFT0C, "process HfTaskXic0ToXiPi with DCAFitter and ML selections and with FT0C centrality", false);
-
+  
   void processDataWithKFParticleMlFT0C(Xic0CandsMlKF const& candidates,
                                        CollisionsWithFT0C const& collisions)
   {
@@ -397,12 +408,12 @@ struct HfTaskXic0ToXiPi {
       for (const auto& candidate : groupedXicCandidates) {
         processDataCent<true, true, true>(candidate, collision);
       }
-    }
+    }  
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticleMlFT0C, "process HfTaskXic0ToXiPi with KFParticle and ML selections and with FT0C centrality", false);
 
   void processDataWithDCAFitterMlFT0M(Xic0CandsMl const& candidates,
-                                      CollisionsWithFT0M const& collisions)
+                                       CollisionsWithFT0M const& collisions)
   {
     for (const auto& collision : collisions) {
       auto thisCollId = collision.globalIndex();
@@ -410,7 +421,7 @@ struct HfTaskXic0ToXiPi {
       for (const auto& candidate : groupedXicCandidates) {
         processDataCent<false, true, true>(candidate, collision);
       }
-    }
+    }  
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithDCAFitterMlFT0M, "process HfTaskXic0ToXiPi with DCAFitter and ML selections and with FT0M centrality", false);
 
@@ -423,15 +434,15 @@ struct HfTaskXic0ToXiPi {
       for (const auto& candidate : groupedXicCandidates) {
         processDataCent<true, true, true>(candidate, collision);
       }
-    }
+    }  
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticleMlFT0M, "process HfTaskXic0ToXiPi with KFParticle and ML selections and with FT0M centrality", false);
 
   void processMcWithDCAFitter(Xic0CandsMc const& Xic0CandidatesMc,
-                              Xic0Gen const& mcParticles,
-                              TracksMc const& tracks,
-                              CollisionsWithMcLabels const& collisions,
-                              aod::McCollisions const& mcCollisions)
+                               Xic0Gen const& mcParticles,
+                               TracksMc const& tracks,
+                               CollisionsWithMcLabels const& collisions,
+                               aod::McCollisions const& mcCollisions)
   {
     processMc<false, false>(Xic0CandidatesMc, mcParticles, tracks, collisions, mcCollisions);
   }
@@ -448,10 +459,10 @@ struct HfTaskXic0ToXiPi {
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processMcWithKFParticle, "Process MC with KFParticle", false);
 
   void processMcWithDCAFitterMl(Xic0CandsMlMc const& Xic0CandidatesMlMc,
-                                Xic0Gen const& mcParticles,
-                                TracksMc const& tracks,
-                                CollisionsWithMcLabels const& collisions,
-                                aod::McCollisions const& mcCollisions)
+                                 Xic0Gen const& mcParticles,
+                                 TracksMc const& tracks,
+                                 CollisionsWithMcLabels const& collisions,
+                                 aod::McCollisions const& mcCollisions)
   {
     processMc<false, true>(Xic0CandidatesMlMc, mcParticles, tracks, collisions, mcCollisions);
   }
