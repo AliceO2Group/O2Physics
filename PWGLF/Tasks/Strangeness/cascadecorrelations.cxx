@@ -505,7 +505,7 @@ struct CascadeSelector {
   void processGenMC(aod::McCollision const& mcCollision, soa::SmallGroups<soa::Join<aod::McCollisionLabels, MyCollisions>> const& collisions, aod::McParticles const& mcParticles)
   {
     // evsel
-    if (INEL < 0 || pwglf::isINELgtNmc(mcParticles, INEL, pdgDB))
+    if (INEL >= 0 && !pwglf::isINELgtNmc(mcParticles, INEL, pdgDB))
       return;
     if (std::abs(mcCollision.posZ()) > maxVertexZ)
       return;
