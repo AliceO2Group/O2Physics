@@ -94,9 +94,9 @@ DhCorrelationFitter::DhCorrelationFitter(TH1F* histoToFit, Double_t min, Double_
                                                                                          fIsTotal(kTRUE),
                                                                                          fNbasleinePoints(0),
                                                                                          fBinsBaseline(nullptr),
-                                                                                         fHist(nullptr),
-                                                                                         fMinCorr(0.),
-                                                                                         fMaxCorr(0.),
+                                                                                         fHist(histoToFit),
+                                                                                         fMinCorr(min),
+                                                                                         fMaxCorr(max),
                                                                                          fBaseline(0.),
                                                                                          fErrBaseline(0.),
                                                                                          fFit(nullptr),
@@ -111,9 +111,6 @@ DhCorrelationFitter::DhCorrelationFitter(TH1F* histoToFit, Double_t min, Double_
                                                                                          fASyieldBinCount(0.),
                                                                                          fErrASyieldBinCount(0.)
 {
-  fHist = histoToFit;
-  fMinCorr = min;
-  fMaxCorr = max;
 }
 
 DhCorrelationFitter::DhCorrelationFitter(const DhCorrelationFitter& source)
