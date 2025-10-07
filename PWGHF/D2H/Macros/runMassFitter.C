@@ -505,9 +505,6 @@ int runMassFitter(const TString& configFileName)
       hRawYieldsChiSquareTotal->SetBinError(iSliceVar + 1, 1.e-20);
       if (enableRefl) {
         hReflectionOverSignal->SetBinContent(iSliceVar + 1, reflOverSgn);
-      }
-
-      if (enableRefl) {
         if (nSliceVarBins > 1) {
           canvasRefl[iCanvas]->cd(iSliceVar - nCanvasesMax * iCanvas + 1);
         } else {
