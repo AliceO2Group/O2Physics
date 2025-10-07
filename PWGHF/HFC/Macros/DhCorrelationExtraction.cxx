@@ -116,6 +116,8 @@ DhCorrelationExtraction::DhCorrelationExtraction(const DhCorrelationExtraction& 
                                                                                           fFilePromptMc(source.fFilePromptMc),
                                                                                           fFileNonPromptMc(source.fFileNonPromptMc),
                                                                                           fDirMass(source.fDirMass),
+                                                                                          fDirSE(source.fDirSE),
+                                                                                          fDirME(source.fDirME),
                                                                                           fDirSecPart(source.fDirSecPart),
                                                                                           fCorrectedCorrHisto(source.fCorrectedCorrHisto),
                                                                                           fCorrectedCorrHistoBaselineSubtr(source.fCorrectedCorrHistoBaselineSubtr),
