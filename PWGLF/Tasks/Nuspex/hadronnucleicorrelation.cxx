@@ -158,6 +158,9 @@ struct hadronnucleicorrelation {
   std::map<std::pair<int, float>, std::vector<colType>> mixbinsPID_antidantip;
   std::map<float, std::vector<MCcolType>> mixbinsMC_antidantip;
   std::map<float, std::vector<MCcolType>> mixbinsMC_dp;
+  std::map<float, std::vector<MCcolType>> mixbinsMC_antipantip;
+  std::map<float, std::vector<MCcolType>> mixbinsMC_pp;
+  std::map<float, std::vector<MCcolType>> mixbinsMC_antipp;
 
   std::unique_ptr<o2::aod::singletrackselector::FemtoPair<trkType>> Pair = std::make_unique<o2::aod::singletrackselector::FemtoPair<trkType>>();
   std::unique_ptr<o2::aod::singletrackselector::FemtoPair<trkTypeMC>> PairMC = std::make_unique<o2::aod::singletrackselector::FemtoPair<trkTypeMC>>();
@@ -375,6 +378,9 @@ struct hadronnucleicorrelation {
       registry.add("hReco_EtaPhiPtMC_Deuteron", "Gen (anti)deuteron in reco collisions (MC info used)", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
       registry.add("hReco_Pt_Proton", "Reco (anti)protons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
       registry.add("hReco_Pt_Deuteron", "Reco (anti)deuterons in reco collisions", {HistType::kTH1F, {pTAxis_small}});
+
+      registry.add("hGen_EtaPhiPt_Proton", "Gen (anti)protons in gen collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
+      registry.add("hGen_EtaPhiPt_Deuteron", "Gen (anti)deuteron in gen collisions", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
 
       registry.add("hSec_EtaPhiPt_Proton", "Secondary (anti)protons", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
       registry.add("hPrimSec_EtaPhiPt_Proton", "Primary + Secondary (anti)protons", {HistType::kTH3F, {etaAxis, phiAxis, pTAxis_small}});
@@ -1739,7 +1745,11 @@ struct hadronnucleicorrelation {
   void processGen(SimCollisions const& mcCollisions,
                   SimParticles const& mcParticles)
   {
+
     for (auto particle : mcParticles) {
+
+      if (std::abs(particle.template singleCollSel_as<SimCollisions>().posZ()) > cutzvertex)
+        continue;
 
       if (particle.pdgCode() == pdgProton) {
         registry.fill(HIST("Generated/hQAProtons"), 0.5);
@@ -1776,15 +1786,19 @@ struct hadronnucleicorrelation {
       }
 
       if (particle.pdgCode() == pdgDeuteron) {
+        registry.fill(HIST("hGen_EtaPhiPt_Deuteron"), particle.eta(), particle.phi(), particle.pt());
         selectedparticlesMC_d[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
       }
       if (particle.pdgCode() == -pdgDeuteron) {
+        registry.fill(HIST("hGen_EtaPhiPt_Deuteron"), particle.eta(), particle.phi(), -1. * particle.pt());
         selectedparticlesMC_antid[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
       }
       if (particle.pdgCode() == pdgProton) {
+        registry.fill(HIST("hGen_EtaPhiPt_Proton"), particle.eta(), particle.phi(), particle.pt());
         selectedparticlesMC_p[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
       }
       if (particle.pdgCode() == -pdgProton) {
+        registry.fill(HIST("hGen_EtaPhiPt_Proton"), particle.eta(), particle.phi(), -1. * particle.pt());
         selectedparticlesMC_antip[particle.mcCollisionId()].push_back(std::make_shared<decltype(particle)>(particle));
       }
     }
@@ -1792,6 +1806,10 @@ struct hadronnucleicorrelation {
     for (auto collision1 : mcCollisions) { // loop on collisions
 
       registry.fill(HIST("Generated/hNEventsMC"), 0.5);
+
+      if (std::abs(collision1.posZ()) > cutzvertex) {
+        continue;
+      }
 
       // anti-d - anti-p correlation
       if (selectedparticlesMC_antid.find(collision1.globalIndex()) != selectedparticlesMC_antid.end()) {
