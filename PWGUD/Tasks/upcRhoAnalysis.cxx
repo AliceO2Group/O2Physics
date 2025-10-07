@@ -548,7 +548,7 @@ struct UpcRhoAnalysis {
   {
     int charge = 0;
     for (const auto& track : cutTracks)
-      charge += track.pdgCode();
+      charge += track.pdgCode() / std::abs(track.pdgCode());
     return charge;
   }
 
