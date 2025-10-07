@@ -1748,7 +1748,7 @@ struct hadronnucleicorrelation {
 
     for (auto particle : mcParticles) {
 
-      if (std::abs(particle.template singleCollSel_as<SimCollisions>().posZ()) > cutzvertex)
+      if (std::abs(particle.template mcCollision_as<aod::McCollisions>().posZ()) > cutzvertex)
         continue;
 
       if (particle.pdgCode() == pdgProton) {
