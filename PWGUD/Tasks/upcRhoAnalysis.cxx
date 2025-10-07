@@ -242,6 +242,10 @@ struct UpcRhoAnalysis {
     rQC.get<TH2>(HIST("QC/tracks/hTofHitCheck"))->GetXaxis()->SetBinLabel(2, "hit");
     rQC.get<TH2>(HIST("QC/tracks/hTofHitCheck"))->GetYaxis()->SetBinLabel(1, "no hit");
     rQC.get<TH2>(HIST("QC/tracks/hTofHitCheck"))->GetYaxis()->SetBinLabel(2, "hit");
+    // PID "radii" plots
+    rQC.add("QC/tracks/hPiPIDRadius", ";#it{n#sigma}(#pi) radius;counts", kTH1D, {{1000, 0.0, 10.0}});
+    rQC.add("QC/tracks/hElPIDRadius", ";#it{n#sigma}(e) radius;counts", kTH1D, {{1000, 0.0, 10.0}});
+    rQC.add("QC/tracks/hKaPIDRadius", ";#it{n#sigma}(K) radius;counts", kTH1D, {{1000, 0.0, 10.0}});
 
     // TRACKS (2D)
     rTracks.add("tracks/trackSelections/unlike-sign/hPt", ";#it{p}_{T leading} (GeV/#it{c});#it{p}_{T subleading} (GeV/#it{c});counts", kTH2D, {ptAxis, ptAxis});
@@ -526,12 +530,18 @@ struct UpcRhoAnalysis {
   }
 
   template <typename T>
-  bool tracksPassPiPID(const T& cutTracks) // n-dimensional pion PID cut
+  bool tracksPassPID(const T& cutTracks) // n-dimensional pion PID cut
   {
-    float radius = 0.0;
-    for (const auto& track : cutTracks)
-      radius += std::pow(track.tpcNSigmaPi(), 2);
-    return radius < std::pow(tracksTpcNSigmaPiCut, 2);
+    float radiusPi = 0.0, radiusEl = 0.0, radiusKa = 0.0;
+    for (const auto& track : cutTracks) {
+      radiusEl += std::pow(track.tpcNSigmaEl(), 2);
+      radiusKa += std::pow(track.tpcNSigmaKa(), 2);
+      radiusPi += std::pow(track.tpcNSigmaPi(), 2);
+    }
+    rQC.fill(HIST("QC/tracks/hPiPIDRadius"), std::sqrt(radiusPi));
+    rQC.fill(HIST("QC/tracks/hElPIDRadius"), std::sqrt(radiusEl));
+    rQC.fill(HIST("QC/tracks/hKaPIDRadius"), std::sqrt(radiusKa));
+    return radiusPi < std::pow(tracksTpcNSigmaPiCut, 2);
   }
 
   template <typename T>
@@ -713,7 +723,7 @@ struct UpcRhoAnalysis {
              energyCommonZNA, energyCommonZNC, timeZNA, timeZNC, neutronClass,
              phiRandom, phiCharge, trackSigns, trackPts, trackEtas, trackPhis, trackPiPIDs, trackElPIDs, trackKaPIDs, trackDcaXYs, trackDcaZs, trackTpcSignals);
 
-    if (!tracksPassPiPID(cutTracks)) // apply PID cut
+    if (!tracksPassPID(cutTracks)) // apply PID cut
       return;
 
     for (const auto& cutTrack : cutTracks) {
