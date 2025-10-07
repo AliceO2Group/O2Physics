@@ -63,8 +63,8 @@ struct Filter2Prong {
     O2_DEFINE_CONFIGURABLE(etaTrackMax, std::vector<float>, {0.8, 0.8, 0.8}, "Maximum eta for daughter tracks (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(ptTrackMin, std::vector<float>, {0.1, 0.1, 0.1}, "Minimum pT for daughter tracks (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(minV0DCAPr, std::vector<float>, {0.06, 0.07, 0.0.08}, "Maximum DCAxy for daughter tracks (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(minV0DCAPiLambda, std::vector<float>, {0.1, 0.2, 0.3}, "Min V0 pion DCA for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(minV0DCAPiK0s, std::vector<float>, {0.05, 0.1, 0.2}, "Min V0 pion DCA for K0s (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(minV0DCAPiLambda, std::vector<float>, {0.15, 0.2, 0.25}, "Min V0 pion DCA for lambda (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(minV0DCAPiK0s, std::vector<float>, {0.05, 0.10, 0.15}, "Min V0 pion DCA for K0s (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(daughPIDCuts, std::vector<float>, {3.0, 4.0, 5.0}, "PID nsigma for V0s (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(massK0Min, std::vector<float>, {0.4, 0.4, 0.4}, "Minimum mass for K0 (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(massK0Max, std::vector<float>, {0.6, 0.6, 0.6}, "Maximum mass for K0 (Loose, Default, Tight)");
@@ -72,15 +72,15 @@ struct Filter2Prong {
     O2_DEFINE_CONFIGURABLE(massLambdaMax, std::vector<float>, {1.17, 1.17, 1.17}, "Maximum mass for lambda (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(radiusMaxLambda, std::vector<float>, {20, 30, 40}, "Maximum decay radius (cm) for lambda (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(radiusMinLambda, std::vector<float>, {1.0, 1.2, 1.4}, "Minimum decay radius (cm) for lambda (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(radiusMaxK0s, std::vector<float>, {1.0, 1.2, 1.4}, "Maximum decay radius (cm) for K0s (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(radiusMinK0s, std::vector<float>, {0.0, 0.0, 0.1}, "Minimum decay radius (cm) for K0s (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(radiusMaxK0s, std::vector<float>, {1.2, 1.2, 1.2}, "Maximum decay radius (cm) for K0s (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(radiusMinK0s, std::vector<float>, {1.0, 1.2, 1.5}, "Minimum decay radius (cm) for K0s (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(cosPaMinLambda, std::vector<float>, {0.990, 0.993, 0.995}, "Minimum cosine of pointing angle for lambda (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(cosPaMinK0s, std::vector<float>, {0.990, 0.993, 0.995}, "Minimum cosine of pointing angle for K0s (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxLambda, std::vector<float>, {0.7, 0.8, 0.9}, "Maximum DCA among the V0 daughters (cm) for lambda (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(dcaV0DaughtersMaxK0s, std::vector<float>, {0.7, 0.8, 0.9}, "Maximum DCA among the V0 daughters (cm) for K0s (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(qtArmenterosMinForK0s, std::vector<float>, {0.2, 0.2, 0.2}, "Minimum Armenteros' qt for K0s (Loose, Default, Tight)");
     O2_DEFINE_CONFIGURABLE(maxLambdaLifeTime, std::vector<float>, {40, 30, 25}, "Maximum lambda lifetime (in cm) (Loose, Default, Tight)");
-    O2_DEFINE_CONFIGURABLE(maxK0sLifeTime, std::vector<float>, {40, 30, 25}, "Maximum K0s lifetime (in cm) (Loose, Default, Tight)");
+    O2_DEFINE_CONFIGURABLE(maxK0sLifeTime, std::vector<float>, {15, 20, 25}, "Maximum K0s lifetime (in cm) (Loose, Default, Tight)");
   } grpV0;
 
   struct : ConfigurableGroup {
@@ -628,8 +628,8 @@ struct Filter2Prong {
           massV0 = v0.mAntiLambda();
           output2ProngTracks(cfcollisions.begin().globalIndex(), posTrack.globalIndex(), negTrack.globalIndex(),
                              v0.pt(), v0.eta(), v0.phi(), massV0, aod::cf2prongtrack::AntiLambdaToPiPTight);
-        } 
-      }   // end of Lambda and Anti-Lambda processing
+        }
+      } // end of Lambda and Anti-Lambda processing
     } // end of loop over V0 candidates
 
     // Phi
