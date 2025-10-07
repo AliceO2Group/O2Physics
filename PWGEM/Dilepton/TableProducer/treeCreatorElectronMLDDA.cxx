@@ -27,6 +27,7 @@
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
 #include "Common/DataModel/TrackSelectionTables.h"
+#include "EventFiltering/Zorro.h"
 
 #include "CCDB/BasicCCDBManager.h"
 #include "CommonConstants/PhysicsConstants.h"
@@ -75,7 +76,8 @@ struct TreeCreatorElectronMLDDA {
   HistogramRegistry registry{
     "registry",
     {
-      {"hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
+      {"Event/hEventCounter", "hEventCounter", {HistType::kTH1F, {{5, 0.5f, 5.5f}}}},
+      {"Event/hNumContrib", "Number of contributors to PV;N_{contrib}^{PV};Entries", {HistType::kTH1F, {{65001, -0.5f, 65000.5f}}}},
       {"V0/hAP", "Armenteros Podolanski", {HistType::kTH2F, {{200, -1.f, +1.f}, {250, 0, 0.25}}}},
       {"V0/hXY_Gamma", "photon conversion point in XY;X (cm);Y (cm)", {HistType::kTH2F, {{400, -100, +100}, {400, -100, +100}}}},
       {"V0/hMassGamma_Rxy", "V0 mass gamma", {HistType::kTH2F, {{200, 0, 100}, {100, 0, 0.1}}}},
@@ -123,6 +125,12 @@ struct TreeCreatorElectronMLDDA {
   Configurable<double> d_bz_input{"d_bz_input", -999, "bz field, -999 is automatic"};
   Configurable<int> useMatCorrType{"useMatCorrType", 2, "0: none, 1: TGeo, 2: LUT"};
 
+  // for zorro
+  Configurable<std::string> cfg_swt_names{"cfg_swt_names", "fHighTrackMult,fHighFt0cFv0Mult", "comma-separated software trigger names"};
+  o2::framework::Configurable<std::string> ccdbPathSoftwareTrigger{"ccdbPathSoftwareTrigger", "EventFiltering/Zorro/", "ccdb path for ZORRO objects"};
+  Configurable<uint64_t> bcMarginForSoftwareTrigger{"bcMarginForSoftwareTrigger", 100, "Number of BCs of margin for software triggers"};
+  Configurable<bool> cfgUseZorro{"cfgUseZorro", false, "flag to analyze software-triggered data"};
+
   Configurable<float> downscaling_electron_highP{"downscaling_electron_highP", 1.1, "down scaling factor to store electron at high p"};
   Configurable<float> downscaling_pion_highP{"downscaling_pion_highP", 1.1, "down scaling factor to store pion at high p"};
   Configurable<float> downscaling_kaon_highP{"downscaling_kaon_highP", 1.1, "down scaling factor to store kaon at high p"};
@@ -167,6 +175,8 @@ struct TreeCreatorElectronMLDDA {
     Configurable<bool> cfgRequireGoodITSLayer3{"cfgRequireGoodITSLayer3", false, "number of inactive chips on ITS layer 3 are below threshold "};
     Configurable<bool> cfgRequireGoodITSLayer0123{"cfgRequireGoodITSLayer0123", false, "number of inactive chips on ITS layers 0-3 are below threshold "};
     Configurable<bool> cfgRequireGoodITSLayersAll{"cfgRequireGoodITSLayersAll", false, "number of inactive chips on all ITS layers are below threshold "};
+    Configurable<uint16_t> cfgNumContribMin{"cfgNumContribMin", 0, "min. numContrib"};
+    Configurable<uint16_t> cfgNumContribMax{"cfgNumContribMax", 65000, "max. numContrib"};
   } eventcuts;
 
   struct : ConfigurableGroup {
@@ -287,6 +297,7 @@ struct TreeCreatorElectronMLDDA {
   o2::base::MatLayerCylSet* lut = nullptr;
   o2::dataformats::DCA mDcaInfoCov;
   o2::aod::rctsel::RCTFlagsChecker rctChecker;
+  Zorro zorro;
 
   std::mt19937 engine;
   std::uniform_real_distribution<float> dist01;
@@ -323,6 +334,13 @@ struct TreeCreatorElectronMLDDA {
   {
     if (mRunNumber == bc.runNumber()) {
       return;
+    }
+
+    if (cfgUseZorro) {
+      zorro.setCCDBpath(ccdbPathSoftwareTrigger);
+      zorro.setBCtolerance(bcMarginForSoftwareTrigger); // this does nothing.
+      zorro.initCCDB(ccdb.service, bc.runNumber(), bc.timestamp(), cfg_swt_names.value);
+      zorro.populateHistRegistry(registry, bc.runNumber());
     }
 
     // load matLUT for this timestamp
@@ -762,6 +780,7 @@ struct TreeCreatorElectronMLDDA {
 
   Filter collisionFilter_track_occupancy = eventcuts.cfgTrackOccupancyMin <= o2::aod::evsel::trackOccupancyInTimeRange && o2::aod::evsel::trackOccupancyInTimeRange < eventcuts.cfgTrackOccupancyMax;
   Filter collisionFilter_ft0c_occupancy = eventcuts.cfgFT0COccupancyMin <= o2::aod::evsel::ft0cOccupancyInTimeRange && o2::aod::evsel::ft0cOccupancyInTimeRange < eventcuts.cfgFT0COccupancyMax;
+  Filter collisionFilter_numContrib = eventcuts.cfgNumContribMin <= o2::aod::collision::numContrib && o2::aod::collision::numContrib < eventcuts.cfgNumContribMax;
   Filter collisionFilter_common = nabs(o2::aod::collision::posZ) < 10.f && o2::aod::evsel::sel8 == true;
   using filteredMyCollisions = soa::Filtered<MyCollisions>;
 
@@ -777,7 +796,7 @@ struct TreeCreatorElectronMLDDA {
   {
     stored_trackIds.reserve(tracks.size());
     for (const auto& collision : collisions) {
-      registry.fill(HIST("hEventCounter"), 1.0); // all
+      registry.fill(HIST("Event/hEventCounter"), 1.0); // all
 
       auto bc = collision.template foundBC_as<aod::BCsWithTimestamps>();
       initCCDB(bc);
@@ -786,10 +805,15 @@ struct TreeCreatorElectronMLDDA {
         continue;
       }
 
+      if (cfgUseZorro && !zorro.isSelected(bc.globalBC(), bcMarginForSoftwareTrigger)) {
+        continue;
+      }
+
       if (cfgRequireGoodRCT && !rctChecker.checkTable(collision)) {
         continue;
       }
-      registry.fill(HIST("hEventCounter"), 2.0); // selected
+      registry.fill(HIST("Event/hEventCounter"), 2.0); // selected
+      registry.fill(HIST("Event/hNumContrib"), collision.numContrib());
 
       auto v0s_coll = v0s.sliceBy(perCollision_v0, collision.globalIndex());
       for (const auto& v0 : v0s_coll) {
