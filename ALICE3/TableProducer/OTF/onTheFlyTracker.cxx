@@ -838,6 +838,10 @@ struct OnTheFlyTracker {
                       static_cast<float>(xyz1[1]),
                       static_cast<float>(xyz1[2])};
                     const o2::track::TrackParametrization<float>::dim3_t hitpointcov = {currentTrackingLayer.getResolutionRPhi() * currentTrackingLayer.getResolutionRPhi(), 0.f, currentTrackingLayer.getResolutionZ() * currentTrackingLayer.getResolutionZ()};
+                    if (currentTrackingLayer.isInDeadPhiRegion(phi)) {
+                      continue; // No hit for strangeness tracking update
+                    }
+
                     cascadeTrack.update(hitpoint, hitpointcov);
                     thisCascade.foundClusters++; // add to findable
                   }

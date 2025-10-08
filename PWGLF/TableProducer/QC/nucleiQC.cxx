@@ -71,7 +71,7 @@ struct nucleiQC {
 
   using TrackCandidates = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFSignal, aod::TOFEvTime, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCDe, aod::pidTOFDe, aod::pidTPCTr, aod::pidTOFTr, aod::pidTPCHe, aod::pidTOFHe, aod::pidTPCAl, aod::pidTOFAl>;
   using TrackCandidatesMC = soa::Join<aod::TracksIU, aod::TracksExtra, aod::TracksCovIU, aod::TOFSignal, aod::TOFEvTime, aod::pidTPCPr, aod::pidTOFPr, aod::pidTPCDe, aod::pidTOFDe, aod::pidTPCTr, aod::pidTOFTr, aod::pidTPCHe, aod::pidTOFHe, aod::pidTPCAl, aod::pidTOFAl, aod::McTrackLabels>;
-  using Collision = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::McCollisionLabels>::iterator;
+  using Collision = soa::Join<aod::Collisions, aod::EvSels, aod::CentFV0As, aod::CentFT0Ms, aod::CentFT0As, aod::CentFT0Cs, aod::CentNTPVs, aod::McCollisionLabels>::iterator;
   Preslice<aod::McParticles> mMcParticlesPerCollision = o2::aod::mcparticle::mcCollisionId;
 
   Configurable<bool> cfgFillTable{"cfgFillTable", true, "Fill output tree"};
@@ -205,10 +205,10 @@ struct nucleiQC {
 
     float centrality = nuclei::getCentrality(collision, cfgCentralityEstimator);
     float nsigmaTPC = mPidManagers[kIndex].getNSigmaTPC(track);
-    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTPC_preselectionVsCentrality"), track.pt(), nsigmaTPC, centrality);
+    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTPC_preselectionVsCentrality"), track.pt() * track.sign(), nsigmaTPC, centrality);
     if (std::abs(nsigmaTPC) > cfgNsigmaTPC->get(kIndex, 1))
       return false;
-    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTPCVsCentrality"), track.pt(), nsigmaTPC, centrality);
+    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTPCVsCentrality"), track.pt() * track.sign(), nsigmaTPC, centrality);
 
     float nsigmaITS = mPidManagers[kIndex].getNSigmaITS(track);
     mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaITS_preselectionVsCentrality"), track.sign() * track.pt(), nsigmaITS, centrality);
@@ -216,10 +216,10 @@ struct nucleiQC {
     mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaITSVsCentrality"), track.sign() * track.pt(), nsigmaITS, centrality);
 
     float nsigmaTOF = mPidManagers[kIndex].getNSigmaTOF(track);
-    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTOF_preselectionVsCentrality"), track.pt(), nsigmaTOF, centrality);
-    if (std::abs(nsigmaTOF) > cfgNsigmaTOF->get(kIndex, 1))
+    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTOF_preselectionVsCentrality"), track.sign() * track.pt(), nsigmaTOF, centrality);
+    if (std::abs(nsigmaTOF) > cfgNsigmaTOF->get(kIndex, 1) && track.hasTOF())
       return false;
-    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTOFVsCentrality"), track.pt(), nsigmaTOF, centrality);
+    mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3NsigmaTOFVsCentrality"), track.sign() * track.pt(), nsigmaTOF, centrality);
 
     return true;
   }
@@ -376,10 +376,10 @@ struct nucleiQC {
       mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/hPtReconstructed"), candidate.pt);
       mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3PtVsEtaVsCentralityReconstructed"), candidate.pt, candidate.eta, candidate.centrality);
       mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3PhiVsEtaVsCentralityReconstructed"), candidate.phi, candidate.eta, candidate.centrality);
-      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3DCAxyVsPtVsCentrality"), candidate.DCAxy, candidate.pt, candidate.centrality);
-      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3DCAzVsPtVsCentrality"), candidate.DCAz, candidate.pt, candidate.centrality);
-      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3BetaVsPtVsCentrality"), candidate.beta, candidate.pt, candidate.centrality);
-      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3dEdxVsPVsCentrality"), candidate.TPCsignal, candidate.pt, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3DCAxyVsPtVsCentrality"), candidate.pt, candidate.DCAxy, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3DCAzVsPtVsCentrality"), candidate.pt, candidate.DCAz, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3BetaVsPtVsCentrality"), candidate.pt, candidate.beta, candidate.centrality);
+      mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3dEdxVsPVsCentrality"), candidate.pt, candidate.TPCsignal, candidate.centrality);
       mHistograms.fill(HIST(nuclei::cNames[kIndex]) + HIST("/h3ClusterSizeVsPtVsCentrality"), mPidManagers[kIndex].getClusterSizeCosLambdaITS(candidate.clusterSizesITS, candidate.eta), candidate.pt, candidate.centrality);
     }
   }
@@ -412,7 +412,7 @@ struct nucleiQC {
             if (particle.pdgCode() != nuclei::pdgCodes[kSpeciesRt])
               return;
           }
-          if (particle.y() - cfgRapidityCenterMass < cfgRapidityMin || particle.y() - cfgRapidityCenterMass > cfgRapidityMax) {
+          if ((particle.y() - cfgRapidityCenterMass) < cfgRapidityMin || (particle.y() - cfgRapidityCenterMass) > cfgRapidityMax) {
             return;
           }
         }
