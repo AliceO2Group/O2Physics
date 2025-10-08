@@ -146,6 +146,7 @@ struct LongrangeCorrelation {
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
   Configurable<bool> isReadoutCenter{"isReadoutCenter", false, "Enable Readout Center"};
   Configurable<bool> isUseEffCorr{"isUseEffCorr", false, "Enable efficiency correction"};
+  Configurable<float> cfgLowEffCut{"cfgLowEffCut", 0.001f, "Low efficiency cut"};
   Configurable<bool> isUseItsPid{"isUseItsPid", false, "Use ITS PID for particle identification"};
   Configurable<float> cfgTofPidPtCut{"cfgTofPidPtCut", 0.3f, "Minimum pt to use TOF N-sigma"};
   Configurable<int> cfgTrackPid{"cfgTrackPid", 0, "1 = pion, 2 = kaon, 3 = proton, 0 for no PID"};
@@ -434,7 +435,7 @@ struct LongrangeCorrelation {
     } else {
       eff = 1.0;
     }
-    if (eff < 0.001)
+    if (eff < cfgLowEffCut)
       eff = 1.0;
 
     return eff;
@@ -449,7 +450,7 @@ struct LongrangeCorrelation {
     } else {
       eff = 1.0;
     }
-    if (eff < 0.001)
+    if (eff < cfgLowEffCut)
       eff = 1.0;
 
     return eff;
