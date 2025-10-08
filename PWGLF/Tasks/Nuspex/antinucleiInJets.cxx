@@ -146,10 +146,10 @@ struct AntinucleiInJets {
   Configurable<std::string> urlToCcdb{"urlToCcdb", "http://alice-ccdb.cern.ch", "url of the personal ccdb"};
   Configurable<std::string> pathToFile{"pathToFile", "Users/a/alcaliva/PrimaryFractionAntip", "path to file with reweighting"};
   Configurable<std::string> nameReweightingAntiprotons{"weights_proton", "", "nameReweightingAntiprotons"};
-  Configurable<std::string> nameReweightingAntiLambda{"weights_lambda", "", "nameReweightingAntiLambda"};
-  Configurable<std::string> nameReweightingAntiSigma{"weights_sigma", "", "nameReweightingAntiSigma"};
-  Configurable<std::string> nameReweightingAntiXi{"weights_xi", "", "nameReweightingAntiXi"};
-  Configurable<std::string> nameReweightingAntiOmega{"weights_omega", "", "nameReweightingAntiOmega"};
+  Configurable<std::string> nameReweightingAntilambda{"weights_lambda", "", "nameReweightingAntilambda"};
+  Configurable<std::string> nameReweightingAntisigma{"weights_sigma", "", "nameReweightingAntisigma"};
+  Configurable<std::string> nameReweightingAntixi{"weights_xi", "", "nameReweightingAntixi"};
+  Configurable<std::string> nameReweightingAntiomega{"weights_omega", "", "nameReweightingAntiomega"};
 
   // Reweighting histograms
   TH1F* primaryAntiprotons;
@@ -202,7 +202,7 @@ struct AntinucleiInJets {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       ccdb->setFatalWhenNull(false);
-      getReweightingHistograms(ccdb, TString(pathToFile), TString(nameReweightingAntiprotons), TString(nameReweightingAntiLambda), TString(nameReweightingAntiSigma), TString(nameReweightingAntiXi), TString(nameReweightingAntiOmega));
+      getReweightingHistograms(ccdb, TString(pathToFile), TString(nameReweightingAntiprotons), TString(nameReweightingAntilambda), TString(nameReweightingAntisigma), TString(nameReweightingAntixi), TString(nameReweightingAntiomega));
     }
 
     // Binning
