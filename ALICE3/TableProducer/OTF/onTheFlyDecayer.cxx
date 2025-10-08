@@ -72,6 +72,10 @@ LOG(fatal) << "Particle has daughters";
         mass = xi_mass;
         tau = 4.91;
         break;
+        case 3112:
+        mass = la_mass;
+        tau = 7.89;
+        break;
     }
 
     const double gamma = 1 / sqrt(1 + (particle.p() * particle.p()) / (mass * mass));
