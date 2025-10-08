@@ -346,14 +346,14 @@ struct NonPromptCascadeTask {
       if (!mHistsPerRunMultVsCentZoom.contains(histNameMvCZ)) {
         mHistsPerRunMultVsCentZoom[histNameMvCZ] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameMvCZ.c_str(), histNameMvCZ.c_str(), HistType::kTH2F, {centAxisZoom, multAxisZoom}));
         mHistsPerRunNtracktVsCentZoom[histNameTvCZ] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameTvCZ.c_str(), histNameTvCZ.c_str(), HistType::kTH2F, {centAxisZoom, nTracksAxis}));
-        if(!cfgReducedOutput) {
+        if (!cfgReducedOutput) {
           mHistsPerRunMultVsCent[histNameMvC] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameMvC.c_str(), histNameMvC.c_str(), HistType::kTH2F, {centAxis, multAxis}));
           mHistsPerRunNtracktVsCent[histNameTvC] = std::get<std::shared_ptr<TH2>>(mRegistry.add(histNameTvC.c_str(), histNameTvC.c_str(), HistType::kTH2F, {centAxis, nTracksAxis}));
         }
       }
       mHistsPerRunMultVsCentZoom[histNameMvCZ]->Fill(coll.centFT0M(), coll.multFT0M());
       mHistsPerRunNtracktVsCentZoom[histNameTvCZ]->Fill(coll.centFT0M(), coll.multNTracksGlobal());
-      if(!cfgReducedOutput) {
+      if (!cfgReducedOutput) {
         mHistsPerRunMultVsCent[histNameMvC]->Fill(coll.centFT0M(), coll.multFT0M());
         mHistsPerRunNtracktVsCent[histNameTvC]->Fill(coll.centFT0M(), coll.multNTracksGlobal());
       }
