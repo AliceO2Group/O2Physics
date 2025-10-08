@@ -892,7 +892,7 @@ struct TableMaker {
         if (!fEventCut->IsSelected(VarManager::fgValues)) {
           continue;
         }
-        
+
         bool zorroSel = zorro.isSelected(bc.globalBC(), fConfigZorro.fBcTolerance, reinterpret_cast<TH2D*>(fStatsList->At(kStatsZorroSel)));
         if (zorroSel) {
           tag |= (static_cast<uint64_t>(true) << 56); // the same bit is used for this zorro selections from ccdb
