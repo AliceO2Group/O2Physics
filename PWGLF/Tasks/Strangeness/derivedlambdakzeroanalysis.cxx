@@ -1186,14 +1186,14 @@ struct derivedlambdakzeroanalysis {
   // Calculation taken from CF: https://github.com/AliceO2Group/O2Physics/blob/376392cb87349886a300c75fa2492b50b7f46725/PWGCF/Flow/Tasks/flowAnalysisGF.cxx#L470
   {
     if (magField < 0) // for negative polarity field
-      phi = TMath::TwoPi() - phi;
+      phi = o2::constants::math::TwoPI - phi;
     if (sign < 0) // for negative charge
-      phi = TMath::TwoPi() - phi;
+      phi = o2::constants::math::TwoPI - phi;
     if (phi < 0)
       LOGF(warning, "phi < 0: %g", phi);
 
-    phi += TMath::Pi() / 18.0; // to center gap in the middle
-    return fmod(phi, TMath::Pi() / 9.0);
+    phi += o2::constants::math::PI / 18.0; // to center gap in the middle
+    return fmod(phi, o2::constants::math::PI / 9.0);
   }
 
   bool isTrackFarFromTPCBoundary(double trackPt, double trackPhi, int sign)
@@ -1339,22 +1339,22 @@ struct derivedlambdakzeroanalysis {
   // precalculate this information so that a check is one mask operation, not many
   {
     uint64_t bitMap = 0;
-    bool isPositiveProton = v0.pdgCodePositive() == 2212;
-    bool isPositivePion = v0.pdgCodePositive() == 211 || (doTreatPiToMuon && v0.pdgCodePositive() == -13);
-    bool isNegativeProton = v0.pdgCodeNegative() == -2212;
-    bool isNegativePion = v0.pdgCodeNegative() == -211 || (doTreatPiToMuon && v0.pdgCodeNegative() == 13);
+    bool isPositiveProton = v0.pdgCodePositive() == PDG_t::kProton;
+    bool isPositivePion = v0.pdgCodePositive() == PDG_t::kPiPlus || (doTreatPiToMuon && v0.pdgCodePositive() == PDG_t::kMuonPlus);
+    bool isNegativeProton = v0.pdgCodeNegative() == PDG_t::kProtonBar;
+    bool isNegativePion = v0.pdgCodeNegative() == PDG_t::kPiMinus || (doTreatPiToMuon && v0.pdgCodeNegative() == PDG_t::kMuonMinus);
 
-    if (v0.pdgCode() == 310 && isPositivePion && isNegativePion) {
+    if (v0.pdgCode() == PDG_t::kK0Short && isPositivePion && isNegativePion) {
       BITSET(bitMap, selConsiderK0Short);
       if (v0.isPhysicalPrimary())
         BITSET(bitMap, selPhysPrimK0Short);
     }
-    if (v0.pdgCode() == 3122 && isPositiveProton && isNegativePion) {
+    if (v0.pdgCode() == PDG_t::kLambda0 && isPositiveProton && isNegativePion) {
       BITSET(bitMap, selConsiderLambda);
       if (v0.isPhysicalPrimary())
         BITSET(bitMap, selPhysPrimLambda);
     }
-    if (v0.pdgCode() == -3122 && isPositivePion && isNegativeProton) {
+    if (v0.pdgCode() == PDG_t::kLambda0Bar && isPositivePion && isNegativeProton) {
       BITSET(bitMap, selConsiderAntiLambda);
       if (v0.isPhysicalPrimary())
         BITSET(bitMap, selPhysPrimAntiLambda);
@@ -1942,11 +1942,11 @@ struct derivedlambdakzeroanalysis {
 
     // __________________________________________
     if (verifyMask(selMap, secondaryMaskSelectionLambda) && analyseLambda) {
-      if (v0mother.pdgCode() == 3312 && v0mother.isPhysicalPrimary())
+      if (v0mother.pdgCode() == PDG_t::kXiMinus && v0mother.isPhysicalPrimary())
         histos.fill(HIST("h3dLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
     }
     if (verifyMask(selMap, secondaryMaskSelectionAntiLambda) && analyseAntiLambda) {
-      if (v0mother.pdgCode() == -3312 && v0mother.isPhysicalPrimary())
+      if (v0mother.pdgCode() == PDG_t::kXiPlus && v0mother.isPhysicalPrimary())
         histos.fill(HIST("h3dAntiLambdaFeeddown"), centrality, pt, std::hypot(v0mother.px(), v0mother.py()));
     }
   }
@@ -2586,9 +2586,9 @@ struct derivedlambdakzeroanalysis {
 
       float ptmc = RecoDecay::sqrtSumOfSquares(v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC());
       float ymc = 1e-3;
-      if (v0MC.pdgCode() == 310)
+      if (v0MC.pdgCode() == PDG_t::kK0Short)
         ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassKaonNeutral);
-      else if (std::abs(v0MC.pdgCode()) == 3122)
+      else if (std::abs(v0MC.pdgCode()) == PDG_t::kLambda0)
         ymc = RecoDecay::y(std::array{v0MC.pxPosMC() + v0MC.pxNegMC(), v0MC.pyPosMC() + v0MC.pyNegMC(), v0MC.pzPosMC() + v0MC.pzNegMC()}, o2::constants::physics::MassLambda);
 
       uint64_t selMap = computeReconstructionBitmap(v0, collision, ymc, ymc, ptmc);
@@ -2653,9 +2653,9 @@ struct derivedlambdakzeroanalysis {
 
       float ptmc = v0MC.ptMC();
       float ymc = 1e3;
-      if (v0MC.pdgCode() == 310)
+      if (v0MC.pdgCode() == PDG_t::kK0Short)
         ymc = v0MC.rapidityMC(0);
-      else if (std::abs(v0MC.pdgCode()) == 3122)
+      else if (std::abs(v0MC.pdgCode()) == PDG_t::kLambda0)
         ymc = v0MC.rapidityMC(1);
 
       if (std::abs(ymc) > v0Selections.rapidityCut)
@@ -2684,26 +2684,26 @@ struct derivedlambdakzeroanalysis {
           centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
         }
 
-        if (v0MC.pdgCode() == 310) {
+        if (v0MC.pdgCode() == PDG_t::kK0Short) {
           histos.fill(HIST("h2dGenK0ShortVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
-        if (v0MC.pdgCode() == 3122) {
+        if (v0MC.pdgCode() == PDG_t::kLambda0) {
           histos.fill(HIST("h2dGenLambdaVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
-        if (v0MC.pdgCode() == -3122) {
+        if (v0MC.pdgCode() == PDG_t::kLambda0Bar) {
           histos.fill(HIST("h2dGenAntiLambdaVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
       }
 
-      if (v0MC.pdgCode() == 310) {
+      if (v0MC.pdgCode() == PDG_t::kK0Short) {
         histos.fill(HIST("h2dGenK0Short"), centrality, ptmc);
         histos.fill(HIST("h2dGenK0ShortVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
-      if (v0MC.pdgCode() == 3122) {
+      if (v0MC.pdgCode() == PDG_t::kLambda0) {
         histos.fill(HIST("h2dGenLambda"), centrality, ptmc);
         histos.fill(HIST("h2dGenLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
-      if (v0MC.pdgCode() == -3122) {
+      if (v0MC.pdgCode() == PDG_t::kLambda0Bar) {
         histos.fill(HIST("h2dGenAntiLambda"), centrality, ptmc);
         histos.fill(HIST("h2dGenAntiLambdaVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
@@ -2718,9 +2718,9 @@ struct derivedlambdakzeroanalysis {
 
       float ptmc = cascMC.ptMC();
       float ymc = 1e3;
-      if (std::abs(cascMC.pdgCode()) == 3312)
+      if (std::abs(cascMC.pdgCode()) == PDG_t::kXiMinus)
         ymc = cascMC.rapidityMC(0);
-      else if (std::abs(cascMC.pdgCode()) == 3334)
+      else if (std::abs(cascMC.pdgCode()) == PDG_t::kOmegaMinus)
         ymc = cascMC.rapidityMC(2);
 
       if (std::abs(ymc) > v0Selections.rapidityCut)
@@ -2749,33 +2749,33 @@ struct derivedlambdakzeroanalysis {
           centrality = eventSelections.useSPDTrackletsCent ? collision.centRun2SPDTracklets() : collision.centRun2V0M();
         }
 
-        if (cascMC.pdgCode() == 3312) {
+        if (cascMC.pdgCode() == PDG_t::kXiMinus) {
           histos.fill(HIST("h2dGenXiMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
-        if (cascMC.pdgCode() == -3312) {
+        if (cascMC.pdgCode() == PDG_t::kXiPlus) {
           histos.fill(HIST("h2dGenXiPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
-        if (cascMC.pdgCode() == 3334) {
+        if (cascMC.pdgCode() == PDG_t::kOmegaMinus) {
           histos.fill(HIST("h2dGenOmegaMinusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
-        if (cascMC.pdgCode() == -3334) {
+        if (cascMC.pdgCode() == PDG_t::kOmegaPlus) {
           histos.fill(HIST("h2dGenOmegaPlusVsMultMC_RecoedEvt"), mcCollision.multMCNParticlesEta05(), ptmc);
         }
       }
 
-      if (cascMC.pdgCode() == 3312) {
+      if (cascMC.pdgCode() == PDG_t::kXiMinus) {
         histos.fill(HIST("h2dGenXiMinus"), centrality, ptmc);
         histos.fill(HIST("h2dGenXiMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
-      if (cascMC.pdgCode() == -3312) {
+      if (cascMC.pdgCode() == PDG_t::kXiPlus) {
         histos.fill(HIST("h2dGenXiPlus"), centrality, ptmc);
         histos.fill(HIST("h2dGenXiPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
-      if (cascMC.pdgCode() == 3334) {
+      if (cascMC.pdgCode() == PDG_t::kOmegaMinus) {
         histos.fill(HIST("h2dGenOmegaMinus"), centrality, ptmc);
         histos.fill(HIST("h2dGenOmegaMinusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
-      if (cascMC.pdgCode() == -3334) {
+      if (cascMC.pdgCode() == PDG_t::kOmegaPlus) {
         histos.fill(HIST("h2dGenOmegaPlus"), centrality, ptmc);
         histos.fill(HIST("h2dGenOmegaPlusVsMultMC"), mcCollision.multMCNParticlesEta05(), ptmc);
       }
