@@ -195,7 +195,10 @@ struct HfTaskFlow {
     Configurable<bool> isApplySameTrackCut{"isApplySameTrackCut", false, "apply track1 == track2 cut"};
     Configurable<float> maxMergingRadius{"maxMergingRadius", 2.5, "max radius for merging cut"};
     Configurable<float> mergingCut{"mergingCut", 0.02, "merging cut on track merge"};
+    Configurable<float> minItsClusters{"minItsClusters", 5.0f, "cut for minimum ITS clusters"};
     Configurable<float> minMergingRadius{"minMergingRadius", 0.8, "max radius for merging cut"};
+    Configurable<float> minTpcClusters{"minTpcClusters", 50.0f, "cut for minimum TPC clusters"};
+    Configurable<float> minTpcCrossedRows{"minTpcCrossedRows", 70.0f, "cut for minimum TOC crossed rows"};
     Configurable<LabeledArray<float>> pairCut{"pairCut", {pairCutDefaults[0], 5, {"Photon", "K0", "Lambda", "Phi", "Rho"}}, "Pair cuts on various particles"};
     Configurable<float> ptCentralTrackMin{"ptCentralTrackMin", 0.2f, "min. pT of central tracks"};
     Configurable<float> ptCentralTrackMax{"ptCentralTrackMax", 10.0f, "max. pT of central tracks"};
@@ -250,7 +253,7 @@ struct HfTaskFlow {
   using FilteredCollisionsWSelMult = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults>>;
   using HfCandidatesSelD0 = soa::Filtered<soa::Join<aod::HfCand2Prong, aod::HfSelD0>>;
   using HfCandidatesSelLc = soa::Filtered<soa::Join<aod::HfCand3Prong, aod::HfSelLc>>;
-  using FilteredTracksWDcaSel = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra>>;
+  using FilteredTracksWDcaSel = soa::Filtered<soa::Join<aod::TracksWDca, aod::TrackSelection, aod::TracksExtra, aod::TracksExtra>>;
 
   using FilteredMftTracks = soa::Filtered<aod::MFTTracks>;
 
@@ -850,7 +853,21 @@ struct HfTaskFlow {
     return true;
   }
 
-  //  TODO: Check how to put this into a Filter
+  template <typename TTrack>
+  bool isAcceptedCentralTrack(TTrack const& track)
+  {
+    if (track.tpcNClsFound() < configCentral.minTpcClusters) {
+      return false;
+    }
+    if (track.tpcNClsCrossedRows() < configCentral.minTpcCrossedRows) {
+      return false;
+    }
+    if (track.itsNCls() < configCentral.minItsClusters) {
+      return false;
+    }
+    return true;
+  }
+
   template <typename TTrack>
   bool isAcceptedCandidate(TTrack const& candidate)
   {
@@ -952,15 +969,17 @@ struct HfTaskFlow {
   {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
-
-    // To avoid filling associated tracks QA many times
-    //  I fill it only for the first trigger track of the collision
-    auto loopCounter = 0;
+    auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
 
     // TRIGGER PARTICLE
     for (const auto& track1 : tracks1) {
-
       loopCounter++;
+
+      if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksTrig>) {
+        if (!isAcceptedCentralTrack(track1)) {
+          continue;
+        }
+      }
 
       float eta1 = track1.eta();
       float pt1 = track1.pt();
@@ -1035,28 +1054,23 @@ struct HfTaskFlow {
         }
 
         if (configCentral.isApplySameTrackCut && (track1 == track2)) {
-          LOGF(info, "DO we enter applySameTrackCut ?");
           continue;
         }
 
         if (configCentral.isApplyPtOrderingSameEvent && sameEvent && (track1.pt() <= track2.pt())) {
-          LOGF(info, "Do we enter PtOrderingSameEvent");
           continue;
         }
         if (configCentral.isApplyPtOrderingMixedEvent && !sameEvent && (track1.pt() <= track2.pt())) {
-          LOGF(info, "Do we enter PtOrderingMixedEvent");
           continue;
         }
 
         if (configCentral.isApplyIndexOrdering && (track1.index() <= track2.index())) {
-          LOGF(info, "Do we enter IndexOrdering");
           continue;
         }
 
         // I have to add this condition, because ConversionCut is template to get the same type of tracks for both tracks
         if constexpr (std::is_same_v<TTracksAssoc, TTracksTrig>) {
           if (configCentral.isApplyConversionCut && mPairCuts.conversionCuts(track1, track2)) {
-            LOGF(info, "Do we enter conversionCuts");
             continue;
           }
         }
@@ -1064,8 +1078,6 @@ struct HfTaskFlow {
         // I have to add this condition, because PhiStar need track1.sign()
         if constexpr (std::is_same_v<TTracksTrig, FilteredTracksWDcaSel>) {
           if (configCentral.isApplyTwoTrackCut && std::abs(eta1 - track2.eta()) < configCentral.mergingCut) {
-
-            LOGF(info, "Do we enter phi star cut ?");
 
             double dPhiStarHigh = getDPhiStar(track1, track2, configCentral.maxMergingRadius, magneticField);
             double dPhiStarLow = getDPhiStar(track1, track2, configCentral.minMergingRadius, magneticField);
@@ -1164,15 +1176,17 @@ struct HfTaskFlow {
   {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
-
-    // To avoid filling associated tracks QA many times
-    //  I fill it only for the first trigger track of the collision
-    auto loopCounter = 0;
+    auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
 
     // TRIGGER PARTICLE
     for (const auto& track1 : tracks1) {
-
       loopCounter++;
+
+      if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksTrig>) {
+        if (!isAcceptedCentralTrack(track1)) {
+          continue;
+        }
+      }
 
       float eta1 = track1.eta();
       float pt1 = track1.pt();
@@ -1261,21 +1275,17 @@ struct HfTaskFlow {
         }
 
         if (configCentral.isApplySameTrackCut && (track1 == reassociatedMftTrack)) {
-          LOGF(info, "DO we enter applySameTrackCut ?");
           continue;
         }
 
         if (configCentral.isApplyPtOrderingSameEvent && sameEvent && (track1.pt() <= reassociatedMftTrack.pt())) {
-          LOGF(info, "Do we enter PtOrderingSameEvent");
           continue;
         }
         if (configCentral.isApplyPtOrderingMixedEvent && !sameEvent && (track1.pt() <= reassociatedMftTrack.pt())) {
-          LOGF(info, "Do we enter PtOrderingMixedEvent");
           continue;
         }
 
         if (configCentral.isApplyIndexOrdering && (track1.index() <= reassociatedMftTrack.index())) {
-          LOGF(info, "Do we enter IndexOrdering");
           continue;
         }
 
@@ -1329,15 +1339,17 @@ struct HfTaskFlow {
   {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
-
-    // To avoid filling associated tracks QA many times
-    //  I fill it only for the first trigger track of the collision
-    auto loopCounter = 0;
+    auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
 
     // TRIGGER PARTICLE
     for (auto const& track1 : tracks1) {
-
       loopCounter++;
+
+      if constexpr (std::is_same_v<FilteredTracksWDcaSel, TTracksTrig>) {
+        if (!isAcceptedCentralTrack(track1)) {
+          continue;
+        }
+      }
 
       float eta1 = track1.eta();
       float pt1 = track1.pt();
@@ -1491,10 +1503,7 @@ struct HfTaskFlow {
   {
     auto triggerWeight = 1;
     auto associatedWeight = 1;
-
-    // To avoid filling associated tracks QA many times
-    //  I fill it only for the first trigger track of the collision
-    auto loopCounter = 0;
+    auto loopCounter = 0; // To avoid filling associated tracks QA many times, I fill it only for the first trigger track of the collision
 
     // TRIGGER PARTICLE
     for (auto const& track1 : tracks1) {
@@ -1618,7 +1627,6 @@ struct HfTaskFlow {
       }
 
       auto bc = collision1.template bc_as<aod::BCsWithTimestamps>();
-
       const auto multiplicity = getMultiplicityEstimator(collision1, false);
 
       corrContainer->fillEvent(multiplicity, step);
