@@ -627,7 +627,7 @@ struct JetDerivedDataWriter {
         products.productsDielectron.storedDielectronCollisionIdsTable(collisionMapping[collision.globalIndex()]);
       }
       for (const auto& DielectronCandidate : DielectronCandidates) {
-        jetdqutilities::fillDielectronCandidateTable(DielectronCandidate, products.productsDielectron.storedDielectronCollisionsTable.lastIndex(), products.productsDielectron.storedDielectronsTable,products.productsDielectron.storedDielectronsAllTable);
+        jetdqutilities::fillDielectronCandidateTable(DielectronCandidate, products.productsDielectron.storedDielectronCollisionsTable.lastIndex(), products.productsDielectron.storedDielectronsTable, products.productsDielectron.storedDielectronsAllTable);
         products.productsDielectron.storedDielectronIdsTable(collisionMapping[collision.globalIndex()], trackMapping[DielectronCandidate.prong0Id()], trackMapping[DielectronCandidate.prong1Id()]);
       }
     }
