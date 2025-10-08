@@ -140,8 +140,8 @@ struct lambdaspincorrderived {
     histos.add("hMatchDen_L", "Attempted #Lambda; p_{T}; #eta; #varphi", kTH3D, {{50, 0.0, 5.0}, {40, -1.0, 1.0}, {72, 0.0, 2.0 * TMath::Pi()}}, true);
     histos.add("hMatchDen_AL", "Attempted #bar{#Lambda}; p_{T}; #eta; #varphi", kTH3D, {{50, 0.0, 5.0}, {40, -1.0, 1.0}, {72, 0.0, 2.0 * TMath::Pi()}}, true);
 
-    histos.add("hMatchNum_L", "Succeeded #Lambda; p_{T}; #eta; #varphi", kTH3D, {{50, 0.0, 5.0}, {32, -1.0, 1.0}, {72, 0.0, 2.0 * TMath::Pi()}}, true);
-    histos.add("hMatchNum_AL", "Succeeded #bar{#Lambda}; p_{T}; #eta; #varphi", kTH3D, {{50, 0.0, 5.0}, {32, -1.0, 1.0}, {72, 0.0, 2.0 * TMath::Pi()}}, true);
+    histos.add("hMatchNum_L", "Succeeded #Lambda; p_{T}; #eta; #varphi", kTH3D, {{50, 0.0, 5.0}, {40, -1.0, 1.0}, {72, 0.0, 2.0 * TMath::Pi()}}, true);
+    histos.add("hMatchNum_AL", "Succeeded #bar{#Lambda}; p_{T}; #eta; #varphi", kTH3D, {{50, 0.0, 5.0}, {40, -1.0, 1.0}, {72, 0.0, 2.0 * TMath::Pi()}}, true);
 
     histos.add("hSparseLambdaLambda", "hSparseLambdaLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
     histos.add("hSparseLambdaAntiLambda", "hSparseLambdaAntiLambda", HistType::kTHnSparseF, {configThnAxisInvMass, configThnAxisInvMass, configThnAxisPol, configThnAxisR}, true);
