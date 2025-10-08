@@ -643,6 +643,34 @@ struct derivedlambdakzeroanalysis {
     histos.add("hCentralityVsNch", "hCentralityVsNch", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
     if (doEventQA) {
       if (isRun3) {
+        histos.add("hEventSelectionVsCentrality", "hEventSelectionVsCentrality", kTH2D, {{21, -0.5f, +20.5f}, {101, 0.0f, 101.0f}});
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(1, "All collisions");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(2, "sel8 cut");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(3, "kIsTriggerTVX");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(4, "kNoITSROFrameBorder");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(5, "kNoTimeFrameBorder");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(6, "posZ cut");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(7, "kIsVertexITSTPC");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(8, "kIsGoodZvtxFT0vsPV");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(9, "kIsVertexTOFmatched");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(10, "kIsVertexTRDmatched");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(11, "kNoSameBunchPileup");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(12, "kNoCollInTimeRangeStd");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(13, "kNoCollInTimeRangeStrict");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(14, "kNoCollInTimeRangeNarrow");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(15, "kNoCollInRofStd");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(16, "kNoCollInRofStrict");
+        if (doPPAnalysis) {
+          histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(17, "INEL>0");
+          histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(18, "INEL>1");
+        } else {
+          histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(17, "Below min occup.");
+          histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(18, "Above max occup.");
+        }
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(19, "Below min IR");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(20, "Above max IR");
+        histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(21, "RCT flags");
+        
         histos.add("hCentralityVsNGlobal", "hCentralityVsNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
         histos.add("hEventCentVsMultFT0M", "hEventCentVsMultFT0M", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0M});
         histos.add("hEventCentVsMultFT0C", "hEventCentVsMultFT0C", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0C});
@@ -1924,126 +1952,210 @@ struct derivedlambdakzeroanalysis {
   bool isEventAccepted(TCollision collision, bool fillHists)
   // check whether the collision passes our collision selections
   {
-    if (fillHists)
+    float centrality = -1.0f;
+    if (fillHists) {
       histos.fill(HIST("hEventSelection"), 0. /* all collisions */);
+      if (doEventQA) {
+        if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
+          centrality = getCentralityRun3(collision);
+        }
+        histos.fill(HIST("hEventSelectionVsCentrality"), 0. /* all collisions */, centrality);
+      }
+    }
 
     if constexpr (requires { collision.centFT0C(); }) { // check if we are in Run 3
       if (eventSelections.requireSel8 && !collision.sel8()) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 1 /* sel8 collisions */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 1 /* sel8 collisions */, centrality);
+        }
+      }
 
       if (eventSelections.requireTriggerTVX && !collision.selection_bit(aod::evsel::kIsTriggerTVX)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 2 /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 2 /* FT0 vertex (acceptable FT0C-FT0A time difference) collisions */, centrality);
+        }
+      }
 
       if (eventSelections.rejectITSROFBorder && !collision.selection_bit(o2::aod::evsel::kNoITSROFrameBorder)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 3 /* Not at ITS ROF border */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 3 /* Not at ITS ROF border */, centrality);
+        }
+      }
 
       if (eventSelections.rejectTFBorder && !collision.selection_bit(o2::aod::evsel::kNoTimeFrameBorder)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 4 /* Not at TF border */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 4 /* Not at TF border */, centrality);
+        }
+      }
 
       if (std::abs(collision.posZ()) > eventSelections.maxZVtxPosition) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 5 /* vertex-Z selected */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 5 /* vertex-Z selected */, centrality);
+        }
+      }
 
       if (eventSelections.requireIsVertexITSTPC && !collision.selection_bit(o2::aod::evsel::kIsVertexITSTPC)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 6 /* Contains at least one ITS-TPC track */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 6 /* Contains at least one ITS-TPC track */, centrality);
+        }
+      }
 
       if (eventSelections.requireIsGoodZvtxFT0VsPV && !collision.selection_bit(o2::aod::evsel::kIsGoodZvtxFT0vsPV)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 7 /* PV position consistency check */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 7 /* PV position consistency check */, centrality);
+        }
+      }
 
       if (eventSelections.requireIsVertexTOFmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTOFmatched)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 8 /* PV with at least one contributor matched with TOF */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 8 /* PV with at least one contributor matched with TOF */, centrality);
+        }
+      }
 
       if (eventSelections.requireIsVertexTRDmatched && !collision.selection_bit(o2::aod::evsel::kIsVertexTRDmatched)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 9 /* PV with at least one contributor matched with TRD */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 9 /* PV with at least one contributor matched with TRD */, centrality);
+        }
+      }
 
       if (eventSelections.rejectSameBunchPileup && !collision.selection_bit(o2::aod::evsel::kNoSameBunchPileup)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 10 /* Not at same bunch pile-up */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 10 /* Not at same bunch pile-up */, centrality);
+        }
+      }
 
       if (eventSelections.requireNoCollInTimeRangeStd && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStandard)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 11 /* No other collision within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds*/);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 11 /* No other collision within +/- 2 microseconds or mult above a certain threshold in -4 - -2 microseconds*/, centrality);
+        }
+      }
 
       if (eventSelections.requireNoCollInTimeRangeStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeStrict)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 12 /* No other collision within +/- 10 microseconds */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 12 /* No other collision within +/- 10 microseconds */, centrality);
+        }
+      }
 
       if (eventSelections.requireNoCollInTimeRangeNarrow && !collision.selection_bit(o2::aod::evsel::kNoCollInTimeRangeNarrow)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 13 /* No other collision within +/- 2 microseconds */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 13 /* No other collision within +/- 2 microseconds */, centrality);
+        }
+      }
 
       if (eventSelections.requireNoCollInROFStd && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStandard)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 14 /* No other collision within the same ITS ROF with mult. above a certain threshold */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 14 /* No other collision within the same ITS ROF with mult. above a certain threshold */, centrality);
+        }
+      }
 
       if (eventSelections.requireNoCollInROFStrict && !collision.selection_bit(o2::aod::evsel::kNoCollInRofStrict)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 15 /* No other collision within the same ITS ROF */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 15 /* No other collision within the same ITS ROF */, centrality);
+        }
+      }
 
       if (doPPAnalysis) { // we are in pp
         if (eventSelections.requireINEL0 && collision.multNTracksPVeta1() < 1) {
           return false;
         }
-        if (fillHists)
+        if (fillHists) {
           histos.fill(HIST("hEventSelection"), 16 /* INEL > 0 */);
+          if (doEventQA) {
+            histos.fill(HIST("hEventSelectionVsCentrality"), 16 /* INEL > 0 */, centrality);
+          }
+        }
 
         if (eventSelections.requireINEL1 && collision.multNTracksPVeta1() < 2) {
           return false;
         }
-        if (fillHists)
+        if (fillHists) {
           histos.fill(HIST("hEventSelection"), 17 /* INEL > 1 */);
+          if (doEventQA) {
+            histos.fill(HIST("hEventSelectionVsCentrality"), 17 /* INEL > 1 */, centrality);
+          }
+        }
 
       } else { // we are in Pb-Pb
         float collisionOccupancy = eventSelections.useFT0CbasedOccupancy ? collision.ft0cOccupancyInTimeRange() : collision.trackOccupancyInTimeRange();
         if (eventSelections.minOccupancy >= 0 && collisionOccupancy < eventSelections.minOccupancy) {
           return false;
         }
-        if (fillHists)
+        if (fillHists) {
           histos.fill(HIST("hEventSelection"), 16 /* Below min occupancy */);
+          if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 16 /* Below min occupancy */, centrality);
+        }
+        }
 
         if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
           return false;
         }
-        if (fillHists)
+        if (fillHists) {
           histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
+          if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 17 /* Above max occupancy */, centrality);
+        }
+        }
       }
 
       // Fetch interaction rate only if required (in order to limit ccdb calls)
@@ -2051,20 +2163,32 @@ struct derivedlambdakzeroanalysis {
       if (eventSelections.minIR >= 0 && interactionRate < eventSelections.minIR) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 18 /* Below min IR */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 18 /* Below min IR */, centrality);
+        }
+      }
 
       if (eventSelections.maxIR >= 0 && interactionRate > eventSelections.maxIR) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 19 /* Above max IR */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 19 /* Above max IR */, centrality);
+        }
+      }
 
       if (!rctConfigurations.cfgRCTLabel.value.empty() && !rctFlagsChecker(collision)) {
         return false;
       }
-      if (fillHists)
+      if (fillHists) {
         histos.fill(HIST("hEventSelection"), 20 /* Pass CBT condition */);
+        if (doEventQA) {
+          histos.fill(HIST("hEventSelectionVsCentrality"), 20 /* Pass CBT condition */, centrality);
+        }
+      }
 
     } else { // we are in Run 2
       if (eventSelections.requireSel8 && !collision.sel8()) {
