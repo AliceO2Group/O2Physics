@@ -41,11 +41,12 @@ enum LimitType { kUpperLimit,            ///< simple upper limit for the value, 
                  kAbsUpperLimit,         ///< upper limit of the absolute value, e.g. |eta| < 0.8
                  kLowerLimit,            ///< simple lower limit for the value, e.g. p_T > 0.2 GeV/c
                  kAbsLowerLimit,         ///< lower limit of the absolute value, e.g. |DCA_xyz| > 0.05 cm
-                 kEqual,                 ///< values need to be equal, e.g. sign = 1
                  kUpperFunctionLimit,    ///< simple upper limit of a function value, e.g. DCA_xy > f(pt)
                  kAbsUpperFunctionLimit, ///< upper limit of an absolute value given by a function, e.g. |DCA_xy| > f(pt)
                  kLowerFunctionLimit,    ///< simple lower limit of a function value, e.g. DCA_xy < f(pt)
-                 kAbsLowerFunctionLimit  ///< lower limit of an absolute value given by a function, e.g. |DCA_xy| < f(pt)
+                 kAbsLowerFunctionLimit, ///< lower limit of an absolute value given by a function, e.g. |DCA_xy| < f(pt)
+                 kEqual,                 ///< values need to be equal, e.g. sign = 1
+                 kEqualArray,            ///< values inside an array need to be equal
 };
 
 std::unordered_map<LimitType, std::string> limitTypeAsStrings = {
@@ -53,11 +54,14 @@ std::unordered_map<LimitType, std::string> limitTypeAsStrings = {
   {kAbsUpperLimit, "Absolute Upper Limit"},
   {kLowerLimit, "Lower Limit"},
   {kAbsLowerLimit, "Absolute Lower Limit"},
-  {kEqual, "Equal"},
   {kUpperFunctionLimit, "Upper Function Limit"},
   {kAbsUpperFunctionLimit, "Absolute Upper Function Limit"},
   {kLowerFunctionLimit, "Lower Function Limit"},
-  {kAbsLowerFunctionLimit, "Absolute Lower Function Limit"}};
+  {kAbsLowerFunctionLimit, "Absolute Lower Function Limit"},
+  {kEqual, "Equal"},
+  {kEqualArray, "EqualArray"},
+
+};
 
 }; // namespace limits
 
@@ -70,7 +74,8 @@ class SelectionContainer
 {
  public:
   /// Default constructor
-  SelectionContainer() {}
+  SelectionContainer() = default;
+  ~SelectionContainer() = default;
 
   /// \brief Constructor for static value-based selection.
   /// \param SelectionValues Vector of values for the selection.
@@ -113,9 +118,7 @@ class SelectionContainer
       LOG(fatal) << "Too many selections for single a observable. Limit is " << sizeof(BitmaskType) * CHAR_BIT;
     }
     for (std::size_t i = 0; i < functions.size(); i++) {
-      const std::string& func = functions.at(i);
-      const std::string& safeFunc = func.empty() ? "0.1" : func; // in case string is empty, set to constant value of 0.1
-      mSelectionFunctions.emplace_back((baseName + std::to_string(i)).c_str(), safeFunc.c_str(), lowerLimit, upperLimit);
+      mSelectionFunctions.emplace_back((baseName + std::to_string(i)).c_str(), functions.at(i).c_str(), lowerLimit, upperLimit);
     }
     // functions for selection are not necessarily ordered correctly
     // use value at midpoint to order them
@@ -128,8 +131,6 @@ class SelectionContainer
     }
   }
 
-  virtual ~SelectionContainer() = default;
-
   /// \brief Sort static selection values based on the limit type.
   void sortSelections()
   {
@@ -140,7 +141,6 @@ class SelectionContainer
         break;
       case (limits::kLowerLimit):
       case (limits::kAbsLowerLimit):
-      case (limits::kEqual):
         std::sort(mSelectionValues.begin(), mSelectionValues.end(), [](T a, T b) { return a < b; });
         break;
       default:
@@ -165,6 +165,17 @@ class SelectionContainer
         break;
     }
   }
+
+  /// \brief Add comments to the selection values
+  /// \param comments Vector of comments
+  void addComments(std::vector<std::string> const& comments)
+  {
+    // make sure that the comments are in correct order
+    // the values passed to the selection container can be reordered based on the limit type
+    mComments = comments;
+  }
+
+  std::vector<std::string> getComments() const { return mComments; }
 
   /// \brief Update selection limits using internal functions evaluated at a given value.
   /// \param value Input value to evaluate functions at.
@@ -237,6 +248,26 @@ class SelectionContainer
     }
   }
 
+  /// \brief Evaluate which selection criteria are fulfilled for a given value.
+  /// \param values Values of the observable to evaluate
+  void evaluate(std::vector<T>& values)
+  {
+    if (values.size() != mSelectionValues.size()) {
+      LOG(fatal) << "Wrong number of values have been passed";
+    }
+    for (size_t i = 0; i < mSelectionValues.size(); i++) {
+      switch (mLimitType) {
+        case (limits::kEqualArray):
+          if (std::fabs(values.at(i) - mSelectionValues.at(i)) < constants::math::Epsilon) {
+            mBitmask.set(i);
+          }
+          break;
+        default:
+          continue;
+      }
+    }
+  }
+
   /// \brief Retrieve the bitmask indicating which selections were passed.
   /// \return Bitset representing passed selections.
   std::bitset<sizeof(BitmaskType) * CHAR_BIT> getBitmask() const
@@ -260,8 +291,9 @@ class SelectionContainer
   bool passesAsMinimalCut() const
   {
     if (mIsMinimalCut) {
-      // check if loosest bit is set
-      return mBitmask.test(0);
+      // check if any bit is set
+      // in case were bits are evaluted in order, if the loosests fails, all fail, so testing any is safe here
+      return mBitmask.any();
     } else {
       // if selection is not marked as a minimal cut, we return true by default
       return true;
@@ -325,6 +357,7 @@ class SelectionContainer
 
  private:
   std::vector<T> mSelectionValues = {};                      ///< Values used for the selection
+  std::vector<std::string> mComments = {};                   ///< Comments for the values
   std::vector<TF1> mSelectionFunctions = {};                 ///< Function used for the selection
   limits::LimitType mLimitType;                              ///< Limit type of selection
   std::bitset<sizeof(BitmaskType) * CHAR_BIT> mBitmask = {}; ///< bitmask for the observable
