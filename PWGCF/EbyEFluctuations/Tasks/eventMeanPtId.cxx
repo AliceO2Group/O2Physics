@@ -38,8 +38,8 @@
 #include "Framework/RunningWorkflowInfo.h"
 #include "Framework/runDataProcessing.h"
 
-#include <TPDGCode.h>
 #include "TF1.h"
+#include <TPDGCode.h>
 
 #include <fstream>
 #include <sstream>
@@ -133,8 +133,8 @@ struct EventMeanPtId {
     O2_DEFINE_CONFIGURABLE(cfgMultGlobalPVCutEnabled, bool, true, "Enable globalTracks vs PV multiplicity cut")
 
     Configurable<std::vector<double>> cfgMultPVFT0CCutPars{"cfgMultPVFT0CCutPars",
-                                                          std::vector<double>{3303.11, -121.316, 1.90207, -0.0152644, 5.10121e-05, 190.633, -4.32972, 0.0340001, -5.83261e-05, -3.19566e-07},
-                                                          "PV multiplicity vs T0C centrality cut parameter values"};
+                                                           std::vector<double>{3303.11, -121.316, 1.90207, -0.0152644, 5.10121e-05, 190.633, -4.32972, 0.0340001, -5.83261e-05, -3.19566e-07},
+                                                           "PV multiplicity vs T0C centrality cut parameter values"};
 
     Configurable<std::vector<double>> cfgMultGlobalFT0CCutPars{"cfgMultGlobalFT0CCutPars",
                                                                std::vector<double>{1893.97, -61.3423, 0.790664, -0.00507208, 1.41683e-05, 167.997, -5.29125, 0.0840145, -0.000748102, 2.75743e-06},
@@ -156,37 +156,34 @@ struct EventMeanPtId {
     TF1* fMultGlobalPVCutHigh = nullptr;
 
   } cfgFunCoeff;
-	
 
   Service<o2::ccdb::BasicCCDBManager> ccdb;
   Service<o2::framework::O2DatabasePDG> pdg;
 
-   Filter collisionFilter = nabs(aod::collision::posZ) <= cVtxZcut;
-   Filter trackFilter = (nabs(aod::track::eta) < cEtacut) && (aod::track::pt > ptMin) && (aod::track::pt < ptMax) && (requireGlobalTrackInFilter());
+  Filter collisionFilter = nabs(aod::collision::posZ) <= cVtxZcut;
+  Filter trackFilter = (nabs(aod::track::eta) < cEtacut) && (aod::track::pt > ptMin) && (aod::track::pt < ptMax) && (requireGlobalTrackInFilter());
 
-using MyCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As>>;
-using MyCollision = MyCollisions::iterator;
+  using MyCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As>>;
+  using MyCollision = MyCollisions::iterator;
 
-using MyTracks = soa::Filtered<soa::Join<aod::FullTracks,
-                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                           aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                           aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::StoredTracks,
-                           aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFbeta, aod::TOFSignal, aod::TracksExtra, aod::TracksIU, aod::TracksDCA, aod::TrackSelection>>;
-using MyTrack = MyTracks::iterator;
+  using MyTracks = soa::Filtered<soa::Join<aod::FullTracks,
+                                           aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                           aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                           aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::StoredTracks,
+                                           aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFbeta, aod::TOFSignal, aod::TracksExtra, aod::TracksIU, aod::TracksDCA, aod::TrackSelection>>;
+  using MyTrack = MyTracks::iterator;
 
+  using MyMCRecoCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As>>;
+  using MyMCRecoCollision = MyMCRecoCollisions::iterator;
 
-using MyMCRecoCollisions = soa::Filtered<soa::Join<aod::Collisions, aod::EvSels, aod::Mults, aod::CentFT0Cs, aod::McCollisionLabels, aod::CentFT0Ms, aod::CentFT0As, aod::CentFV0As>>;
-using MyMCRecoCollision = MyMCRecoCollisions::iterator;
+  using MyMCRecoTracks = soa::Filtered<soa::Join<aod::FullTracks,
+                                                 aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
+                                                 aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
+                                                 aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::StoredTracks,
+                                                 aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFbeta, aod::TOFSignal, aod::TracksExtra, aod::TracksIU, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>>;
+  using MyMCRecoTrack = MyMCRecoTracks::iterator;
 
-using MyMCRecoTracks = soa::Filtered<soa::Join<aod::FullTracks,
-                                 aod::pidTPCFullEl, aod::pidTPCFullMu, aod::pidTPCFullPi,
-                                 aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTPCFullDe,
-                                 aod::pidTOFFullEl, aod::pidTOFFullMu, aod::pidTOFFullPi, aod::StoredTracks,
-                                 aod::pidTOFFullKa, aod::pidTOFFullPr, aod::pidTOFFullDe, aod::pidTOFbeta, aod::TOFSignal, aod::TracksExtra, aod::TracksIU, aod::TracksDCA, aod::TrackSelection, aod::McTrackLabels>>;
-using MyMCRecoTrack = MyMCRecoTracks::iterator;
-
-using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::Mults>;
-
+  using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisionLabels, aod::CentFT0Cs, aod::CentFT0Ms, aod::Mults>;
 
   Configurable<int64_t> ccdbNoLaterThan{"ccdbNoLaterThan", std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count(), "latest acceptable timestamp of creation for the object"};
   Configurable<std::string> cfgUrlCCDB{"cfgUrlCCDB", "http://alice-ccdb.cern.ch", "url of ccdb"};
@@ -208,14 +205,14 @@ using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisi
 
       TList* lst = ccdb->getForTimeStamp<TList>(cfgPathCCDB.value, -1);
       ptHistogramAllchargeRec = reinterpret_cast<TH2D*>(lst->FindObject("hPtEta_rec"));
-         }
+    }
 
     std::vector<double> ptBinning = {0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9, 2.0, 2.1, 2.2, 2.3, 2.4, 2.5, 2.6, 2.7, 2.8, 2.9, 3.0, 3.1, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8, 3.9, 4.0};
     //  AxisSpec ptAxis = {ptBinning, "#it{p}_{T} (GeV/#it{c})"};
     AxisSpec vtxZAxis = {100, -20.0, 20.0, "Z (cm)"};
     AxisSpec dcaAxis = {1002, -5.01, 5.01, "DCA_{xy} (cm)"};
     AxisSpec dcazAxis = {1002, -5.01, 5.01, "DCA_{z} (cm)"};
-    AxisSpec ptAxis = {600, 0.0, 6.0, "#it{p}_{T} (GeV/#it{c})"};// 600,0,6
+    AxisSpec ptAxis = {600, 0.0, 6.0, "#it{p}_{T} (GeV/#it{c})"}; // 600,0,6
     AxisSpec pAxis = {400, 0.0, 4.0, "#it{p} (GeV/#it{c})"};
     AxisSpec betaAxis = {200, 0.0, 2.0, "TOF_{#beta} (GeV/#it{c})"};
     AxisSpec dEdxAxis = {2000, 0.0, 200.0, "dE/dx (GeV/#it{c})"};
@@ -359,10 +356,10 @@ using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisi
     histos.add("Data/hNchPV_NchGlobal_after3", "hNchPV_NchGlobal_after3", kTH2D, {nchAxis, nchAxis});
     histos.add("Data/hNchPV_NchGlobal_after4", "hNchPV_NchGlobal_after4", kTH2D, {nchAxis, nchAxis});
     histos.add("Data/hNchPV_NchGlobal_after5", "hNchPV_NchGlobal_after5", kTH2D, {nchAxis, nchAxis});
-    
+
     histos.addClone("Data/", "Rec/");
     // rec histograms
-    histos.add("hcent_nacc_corr", "hcent_nacc_corr", kTH2D, {centAxis, nchAxis});   
+    histos.add("hcent_nacc_corr", "hcent_nacc_corr", kTH2D, {centAxis, nchAxis});
     histos.add("NSigamaTPCpion_rec", "NSigamaTPCpion_rec", kTH2D, {pAxis, nSigmaTPCAxispid});
     histos.add("NSigamaTPCkaon_rec", "NSigamaTPCkaon_rec", kTH2D, {pAxis, nSigmaTPCAxispid});
     histos.add("NSigamaTPCproton_rec", "NSigamaTPCproton_rec", kTH2D, {pAxis, nSigmaTPCAxispid});
@@ -420,7 +417,7 @@ using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisi
     histos.add("hnch_pr", ";hnch_pr", kTH1D, {nchAxis});
     histos.add("hnch_gen", ";hnch_gen", kTH1D, {nchAxis});
     histos.add("hPtvar_gen", ";#it{p}_{T} (GeV/#it{c})", kTH1D, {ptAxis});
-    
+
     histos.add("hVar1x_gen", "hVar1x_gen", kTH2D, {subAxis, nchAxis});
     histos.add("hVar2x_gen", "hVar2x_gen", kTH2D, {subAxis, nchAxis});
     histos.add("hVarx_gen", "hVarx_gen", kTH2D, {subAxis, nchAxis});
@@ -488,13 +485,12 @@ using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisi
     histos.add("hterm2_gen", "hterm2_gen", kTProfile, {tnchAxis});
     histos.add("hCentrality_rec_before", "hCentrality_rec_before", kTH1D, {centAxis});
     histos.add("hEta1", ";hEta1", kTH1D, {etaAxis});
-    
+
     cfgFunCoeff.multPVFT0CCutPars = cfgFunCoeff.cfgMultPVFT0CCutPars;
     cfgFunCoeff.multGlobalFT0CPars = cfgFunCoeff.cfgMultGlobalFT0CCutPars;
     cfgFunCoeff.multGlobalPVCutPars = cfgFunCoeff.cfgMultGlobalPVCutPars;
 
     Configurable<float> cSigmaLowHighcut{"cSigmaLowHighcut", 3.0f, "lower and upper sigma cut"};
-    
 
     cfgFunCoeff.fMultPVFT0CCutLow =
       new TF1("fMultPVFT0CCutLow",
@@ -531,10 +527,9 @@ using EventCandidatesMC = soa::Join<aod::Collisions, aod::EvSels, aod::McCollisi
               "[0] + [1]*x + 3.0*([2] + [3]*x + [4]*x*x + [5]*x*x*x)",
               0, 100);
     cfgFunCoeff.fMultGlobalPVCutHigh->SetParameters(&(cfgFunCoeff.multGlobalPVCutPars[0]));
+  }
 
-     }
-
-bool eventSelected(const float& globalNch, const float& pvTrack, const float& centrality)
+  bool eventSelected(const float& globalNch, const float& pvTrack, const float& centrality)
   {
     if (cfgFunCoeff.cfgMultPVFT0CCutEnabled) {
 
@@ -572,12 +567,12 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
     } // Reject the collisions with large vertex-z
     histos.fill(HIST("hEventcounter"), 2.);
 
-    if(ccentFT0C) {
-     cent = coll.centFT0C(); //centrality from FT0C
+    if (ccentFT0C) {
+      cent = coll.centFT0C(); // centrality from FT0C
     } else {
-     cent = coll.centFT0M(); //centrality from FT0M
-    }     
- 
+      cent = coll.centFT0M(); // centrality from FT0M
+    }
+
     if (cSel8Trig && !coll.sel8()) {
       return false;
     } // require min bias trigger
@@ -605,7 +600,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
       return false;
     }
     histos.fill(HIST("trackSelRec"), 7);
-   
+
     // if (cItslayerall && !coll.selection_bit(aod::evsel::kIsGoodITSLayersAll))         {return false;}
     histos.fill(HIST("trackSelRec"), 8);
 
@@ -625,41 +620,59 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
     } // accept only global tracks
     histos.fill(HIST("tracksel"), 2);
 
-    if (cDCAxy && std::fabs(track.dcaXY()) > cDcaXYcut)             {return false;}
+    if (cDCAxy && std::fabs(track.dcaXY()) > cDcaXYcut) {
+      return false;
+    }
     histos.fill(HIST("tracksel"), 3);
 
-    if (cDCAz && std::fabs(track.dcaZ()) > cDcaZcut)                {return false;}
+    if (cDCAz && std::fabs(track.dcaZ()) > cDcaZcut) {
+      return false;
+    }
     histos.fill(HIST("tracksel"), 4);
 
     if (std::fabs(track.eta()) >= cEtacut) {
       return false;
     }
     histos.fill(HIST("tracksel"), 5);
- 
-    if (cTPCcr && track.tpcNClsCrossedRows() < cTPCcrosscut)         {return false;}
+
+    if (cTPCcr && track.tpcNClsCrossedRows() < cTPCcrosscut) {
+      return false;
+    }
     histos.fill(HIST("tracksel"), 6);
 
-    if (cITSchi && track.itsChi2NCl() >= cItsChiCut)                  {return false;}
+    if (cITSchi && track.itsChi2NCl() >= cItsChiCut) {
+      return false;
+    }
     histos.fill(HIST("tracksel"), 7);
 
-    if (cTPCchi && track.tpcChi2NCl() >= cTpcChiCut)                  {return false;}
+    if (cTPCchi && track.tpcChi2NCl() >= cTpcChiCut) {
+      return false;
+    }
     histos.fill(HIST("tracksel"), 8);
 
-    if (track.sign() == 0)                                           {return false;}
+    if (track.sign() == 0) {
+      return false;
+    }
 
-    if(cPVContributor) 
-    { if (!(track.isPVContributor())) 				     {return false;} 
-    histos.fill(HIST("tracksel"), 9);
+    if (cPVContributor) {
+      if (!(track.isPVContributor())) {
+        return false;
+      }
+      histos.fill(HIST("tracksel"), 9);
     }
 
     if (citsNCluster) {
-    if (track.itsNCls() < cnITSClustersCut) 		  { return false; }
-    histos.fill(HIST("tracksel"), 10);
+      if (track.itsNCls() < cnITSClustersCut) {
+        return false;
+      }
+      histos.fill(HIST("tracksel"), 10);
     }
 
-    if(ctpcNClusterFound) {
-    if (track.tpcNClsFound() < ctpcNClsCut)                {return false;}
-    histos.fill(HIST("tracksel"), 11);
+    if (ctpcNClusterFound) {
+      if (track.tpcNClsFound() < ctpcNClsCut) {
+        return false;
+      }
+      histos.fill(HIST("tracksel"), 11);
     }
 
     return true; // if all checks pass, accept the collision
@@ -755,60 +768,60 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
     return false;
   }
 
-   double getEfficiency(double pt, double eta, TH2D* ptHistogramAllchargeRec)
+  double getEfficiency(double pt, double eta, TH2D* ptHistogramAllchargeRec)
   {
-      int xbin = ptHistogramAllchargeRec->GetXaxis()->FindBin(pt);
-      int ybin = ptHistogramAllchargeRec->GetYaxis()->FindBin(eta);
+    int xbin = ptHistogramAllchargeRec->GetXaxis()->FindBin(pt);
+    int ybin = ptHistogramAllchargeRec->GetYaxis()->FindBin(eta);
 
-      if(xbin < 1 || xbin > ptHistogramAllchargeRec->GetNbinsX() || ybin < 1 || ybin > ptHistogramAllchargeRec->GetNbinsY()) {
+    if (xbin < 1 || xbin > ptHistogramAllchargeRec->GetNbinsX() || ybin < 1 || ybin > ptHistogramAllchargeRec->GetNbinsY()) {
       LOGF(warn, "pt or eta out of histograms bounds : %f, eta = %f", pt, eta);
       return 1e-6;
-      }
-      double eff = ptHistogramAllchargeRec->GetBinContent(xbin, ybin);   
-      return (eff > 0) ? eff : 1e-6; // Avoid division by zero
+    }
+    double eff = ptHistogramAllchargeRec->GetBinContent(xbin, ybin);
+    return (eff > 0) ? eff : 1e-6; // Avoid division by zero
   }
 
-  //++++++++++++++++++++++++++++++++++++DATA CALCULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++// 
-    void processData(MyCollision const& coll, MyTracks const& inputTracks)
+  //++++++++++++++++++++++++++++++++++++DATA CALCULATION +++++++++++++++++++++++++++++++++++++++++++++++++++++//
+  void processData(MyCollision const& coll, MyTracks const& inputTracks)
 
-  { float cent = -1;
+  {
+    float cent = -1;
     histos.fill(HIST("hEventcounter"), 1.);
     histos.fill(HIST("Data/hZvtx_before_sel"), coll.posZ());
 
-    if (!selCollision(coll,cent))
+    if (!selCollision(coll, cent))
       return;
     {
       histos.fill(HIST("Data/hZvtx_after_sel8"), coll.posZ());
-    }     
+    }
 
     histos.fill(HIST("Data/hCentrality"), cent);
 
-     float globalNch = inputTracks.size();
-     float pvTrack   = coll.multNTracksPV();
+    float globalNch = inputTracks.size();
+    float pvTrack = coll.multNTracksPV();
 
-      histos.fill(HIST("Data/hNchPV_NchGlobal_before"), pvTrack, globalNch);
-      histos.fill(HIST("Data/hcentFT0C_GlobalNch_before"),coll.centFT0C(), globalNch);
-      histos.fill(HIST("Data/hcentFT0C_NchPV_before"), coll.centFT0C(), pvTrack);
+    histos.fill(HIST("Data/hNchPV_NchGlobal_before"), pvTrack, globalNch);
+    histos.fill(HIST("Data/hcentFT0C_GlobalNch_before"), coll.centFT0C(), globalNch);
+    histos.fill(HIST("Data/hcentFT0C_NchPV_before"), coll.centFT0C(), pvTrack);
 
- 
-     if (cfgEvSelMultCorrelation && !eventSelected(globalNch, pvTrack, cent)) {
+    if (cfgEvSelMultCorrelation && !eventSelected(globalNch, pvTrack, cent)) {
       return;
-     }
+    }
 
-      histos.fill(HIST("Data/hNchPV_NchGlobal_after"), pvTrack, globalNch);
-      histos.fill(HIST("Data/hcentFT0C_GlobalNch_after"),coll.centFT0C(), globalNch);
-      histos.fill(HIST("Data/hcentFT0C_NchPV_after"), coll.centFT0C(), pvTrack);
-  
-    double nchAll = 0.,  nchAllBfCut = 0., nchEta = 0., nchPt = 0., nch = 0., nchPi = 0., nchKa = 0., nchPr = 0.;
+    histos.fill(HIST("Data/hNchPV_NchGlobal_after"), pvTrack, globalNch);
+    histos.fill(HIST("Data/hcentFT0C_GlobalNch_after"), coll.centFT0C(), globalNch);
+    histos.fill(HIST("Data/hcentFT0C_NchPV_after"), coll.centFT0C(), pvTrack);
+
+    double nchAll = 0., nchAllBfCut = 0., nchEta = 0., nchPt = 0., nch = 0., nchPi = 0., nchKa = 0., nchPr = 0.;
     double q1 = 0., q2 = 0., var1 = 0., var2 = 0.;
     double sumPtWeight = 0., sumWeight = 0., sumPtPtWeight = 0., var1Eff = 0., var2Eff = 0.;
     double q1Pi = 0., q2Pi = 0., var1Pi = 0., var2Pi = 0.;
-    double q1Ka = 0., q2Ka = 0., var1Ka = 0., var2Ka = 0.; 
+    double q1Ka = 0., q2Ka = 0., var1Ka = 0., var2Ka = 0.;
     double q1Pr = 0., q2Pr = 0., var1Pr = 0., var2Pr = 0.;
 
     int sample = histos.get<TH1>(HIST("Data/hZvtx_after_sel8"))->GetEntries();
-    sample = sample % 30; 
-    
+    sample = sample % 30;
+
     for (const auto& track : inputTracks) {
       nchAllBfCut += 1.;
       histos.fill(HIST("Data/hnchAll_bf_cut"), nchAllBfCut);
@@ -817,7 +830,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
       histos.fill(HIST("Data/hTPCchi2perCluster_before"), track.tpcChi2NCl());
       histos.fill(HIST("Data/hITSchi2perCluster_before"), track.itsChi2NCl());
       histos.fill(HIST("Data/hTPCCrossedrows_before"), track.tpcNClsCrossedRows());
-  
+
       if (std::fabs(track.eta()) <= cEtacut) {
         nchEta++;
         histos.fill(HIST("Data/hnchTrue"), nchEta);
@@ -826,16 +839,18 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
         nchPt += 1.;
         histos.fill(HIST("Data/hnchTrue_pt"), nchPt);
       }
-      if (!selTrack(track)) continue;   
-      
-      if (track.pt() >= cPtmincut1 && track.pt() <= cPtmaxcut1) 
-      { nch += 1.;
+      if (!selTrack(track))
+        continue;
+
+      if (track.pt() >= cPtmincut1 && track.pt() <= cPtmaxcut1) {
+        nch += 1.;
         histos.fill(HIST("Data/hnch"), nch);
-	histos.fill(HIST("Data/hPtvar"), track.pt());
+        histos.fill(HIST("Data/hPtvar"), track.pt());
       }
-  
-      if (track.pt() < cPtmincut || track.pt() > cPtmaxcut) continue;
-       
+
+      if (track.pt() < cPtmincut || track.pt() > cPtmaxcut)
+        continue;
+
       nchAll += 1.;
       q1 += track.pt();
       q2 += (track.pt() * track.pt());
@@ -855,13 +870,13 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
       histos.fill(HIST("Data/hPEta"), track.p(), track.eta());
       histos.fill(HIST("Data/hNsigmaTPC"), track.p(), track.tpcNSigmaPr());
 
-       double eff = getEfficiency(track.pt(), track.eta(), ptHistogramAllchargeRec);  
+      double eff = getEfficiency(track.pt(), track.eta(), ptHistogramAllchargeRec);
       if (eff < threshold)
-       continue; 
-      double weight = 1./eff;
+        continue;
+      double weight = 1. / eff;
       sumPtWeight += track.pt() / eff;
       sumPtPtWeight += (track.pt() * track.pt()) / (eff * eff);
-      sumWeight += weight;       
+      sumWeight += weight;
 
       // only TPC tracks: Pion, Kaon, Proton
       if (track.hasTPC() && std::abs(track.tpcNSigmaPi()) < cNSigCut3)
@@ -945,22 +960,22 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
         histos.fill(HIST("Data/hdEdx_afterselection1"), track.p(), track.tpcSignal());
         histos.fill(HIST("Data/hTOFbeta_afterselection1"), track.p(), track.beta());
       }
-   
+
     } // Track loop ends!
     histos.fill(HIST("Data/hcentFV0A_nacc"), coll.multFV0A(), nchAll);
     histos.fill(HIST("Data/hcentFT0A_nacc"), coll.multFT0A(), nchAll);
     histos.fill(HIST("Data/hcentFT0M_nacc"), coll.centFT0M(), nchAll);
     histos.fill(HIST("Data/hcent_nacc"), cent, nchAll);
 
-     if (nchAll < cTwoPtlCut2)
+    if (nchAll < cTwoPtlCut2)
       return;
     var1 = (q1 * q1 - q2) / (nchAll * (nchAll - 1));
     var2 = (q1 / nchAll);
-  
-     //------------------ Efficiency corrected histograms ---------------
+
+    //------------------ Efficiency corrected histograms ---------------
     var1Eff = (sumPtWeight * sumPtWeight - sumPtPtWeight) / (sumWeight * (sumWeight - 1));
     var2Eff = (sumPtWeight / sumWeight);
-    
+
     //---------------------- pions ----------------------------------------
     if (nchPi >= cTwoPtlCut2) {
       var1Pi = (q1Pi * q1Pi - q2Pi) / (nchPi * (nchPi - 1));
@@ -976,8 +991,8 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
       var1Pr = (q1Pr * q1Pr - q2Pr) / (nchPr * (nchPr - 1));
       var2Pr = (q1Pr / nchPr);
     }
-    
-    //------------------ all charges-------------------------------------    
+
+    //------------------ all charges-------------------------------------
     histos.fill(HIST("Data/hVar1"), sample, cent, var1);
     histos.fill(HIST("Data/hVar2"), sample, cent, var2);
     histos.fill(HIST("Data/hVarc"), sample, cent);
@@ -1000,7 +1015,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
     histos.fill(HIST("Data/hdiffVar1x"), sample, nch, var1);
     histos.fill(HIST("Data/hdiffVar2x"), sample, nch, var2);
     histos.fill(HIST("Data/hdiffVarx"), sample, nch);
-    
+
     histos.fill(HIST("hEffVar1x_data"), sample, nchAll, var1Eff);
     histos.fill(HIST("hEffVar2x_data"), sample, nchAll, var2Eff);
     histos.fill(HIST("hEffVarx_data"), sample, nchAll);
@@ -1032,38 +1047,42 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
   } // event loop ends!
 
   PROCESS_SWITCH(EventMeanPtId, processData, "process real data information", true);
- 
+
   //++++++++++++++++++++++++++++++++++++MC Reconstructed +++++++++++++++++++++++++++++++++++++++++++++++++++++//
-   SliceCache cache;
-   Preslice<aod::McParticles> mcTrack = o2::aod::mcparticle::mcCollisionId;
-   void processMcReco(MyMCRecoCollision const& coll, MyMCRecoTracks const& inputTracks, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
-   { float cent = -1;
+  SliceCache cache;
+  Preslice<aod::McParticles> mcTrack = o2::aod::mcparticle::mcCollisionId;
+  void processMcReco(MyMCRecoCollision const& coll, MyMCRecoTracks const& inputTracks, aod::McCollisions const& mcCollisions, aod::McParticles const& mcParticles)
+  {
+    float cent = -1;
     (void)mcCollisions;
-    if (!coll.has_mcCollision())  {return;}
-     
+    if (!coll.has_mcCollision()) {
+      return;
+    }
+
     histos.fill(HIST("Rec/hZvtx_before_sel"), coll.posZ());
     histos.fill(HIST("hVtxZ_before_gen"), coll.mcCollision().posZ());
-    histos.fill(HIST("hCentrality_rec_before"), cent);    
+    histos.fill(HIST("hCentrality_rec_before"), cent);
 
-    if (!selCollision(coll,cent))  return;
+    if (!selCollision(coll, cent))
+      return;
 
     histos.fill(HIST("Rec/hZvtx_after_sel8"), coll.posZ());
-    histos.fill(HIST("Rec/hCentrality"), cent);    
+    histos.fill(HIST("Rec/hCentrality"), cent);
 
     float globalNch = inputTracks.size();
-    float pvTrack   = coll.multNTracksPV();
+    float pvTrack = coll.multNTracksPV();
 
-      histos.fill(HIST("Rec/hNchPV_NchGlobal_before"), pvTrack, globalNch);
-      histos.fill(HIST("Rec/hcentFT0C_GlobalNch_before"),coll.centFT0C(), globalNch);
-      histos.fill(HIST("Rec/hcentFT0C_NchPV_before"), coll.centFT0C(), pvTrack);
- 
-     if (cfgEvSelMultCorrelation && !eventSelected(globalNch, pvTrack, cent)) {
+    histos.fill(HIST("Rec/hNchPV_NchGlobal_before"), pvTrack, globalNch);
+    histos.fill(HIST("Rec/hcentFT0C_GlobalNch_before"), coll.centFT0C(), globalNch);
+    histos.fill(HIST("Rec/hcentFT0C_NchPV_before"), coll.centFT0C(), pvTrack);
+
+    if (cfgEvSelMultCorrelation && !eventSelected(globalNch, pvTrack, cent)) {
       return;
-     }
+    }
 
-      histos.fill(HIST("Rec/hNchPV_NchGlobal_after"), pvTrack, globalNch);
-      histos.fill(HIST("Rec/hcentFT0C_GlobalNch_after"),coll.centFT0C(), globalNch);
-      histos.fill(HIST("Rec/hcentFT0C_NchPV_after"), coll.centFT0C(), pvTrack);
+    histos.fill(HIST("Rec/hNchPV_NchGlobal_after"), pvTrack, globalNch);
+    histos.fill(HIST("Rec/hcentFT0C_GlobalNch_after"), coll.centFT0C(), globalNch);
+    histos.fill(HIST("Rec/hcentFT0C_NchPV_after"), coll.centFT0C(), pvTrack);
 
     double nch = 0., nchPi = 0., nchKa = 0., nchPr = 0., nchAll = 0., nchAllBfCut = 0., nchEta = 0., nchPt = 0.;
     double q1 = 0., q2 = 0.;
@@ -1071,7 +1090,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
     double var1 = 0., var2 = 0.;
     double var1Pi = 0., var2Pi = 0., var1Ka = 0., var2Ka = 0., var1Pr = 0., var2Pr = 0.;
     double sumPtWeight = 0., sumWeight = 0., sumPtPtWeight = 0., var1Eff = 0., var2Eff = 0.;
-   
+
     int sample = histos.get<TH1>(HIST("Rec/hZvtx_after_sel8"))->GetEntries();
     sample = sample % 30;
 
@@ -1082,37 +1101,40 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
       histos.fill(HIST("Rec/hITSchi2perCluster_before"), track.itsChi2NCl());
       histos.fill(HIST("Rec/hTPCCrossedrows_before"), track.tpcNClsCrossedRows());
 
-      if (std::fabs(track.eta()) <= cEtacut)
-      { nchEta++;
+      if (std::fabs(track.eta()) <= cEtacut) {
+        nchEta++;
         histos.fill(HIST("Rec/hnchTrue"), nchEta);
       }
-      if (track.pt() >= cPtmincut && track.pt() <= cPtmaxcut) 
-      { nchPt += 1.;
+      if (track.pt() >= cPtmincut && track.pt() <= cPtmaxcut) {
+        nchPt += 1.;
         histos.fill(HIST("Rec/hnchTrue_pt"), nchPt);
       }
-      
-      if (!selTrack(track))  continue; 
-     
-      if (track.pt() >= cPtmincut1 && track.pt() <= cPtmaxcut1) 
-      { nch += 1.;
+
+      if (!selTrack(track))
+        continue;
+
+      if (track.pt() >= cPtmincut1 && track.pt() <= cPtmaxcut1) {
+        nch += 1.;
         histos.fill(HIST("Rec/hnch"), nch);
-	histos.fill(HIST("Rec/hPtvar"), track.pt());
+        histos.fill(HIST("Rec/hPtvar"), track.pt());
       }
-      if (track.pt() < cPtmincut || track.pt() > cPtmaxcut) continue;
-      
+      if (track.pt() < cPtmincut || track.pt() > cPtmaxcut)
+        continue;
+
       // if (std::fabs(track.y()) > 0.5) continue;
       histos.fill(HIST("hPt_rec"), track.pt());
       histos.fill(HIST("hEta_rec"), track.eta());
 
       double eff = getEfficiency(track.pt(), track.eta(), ptHistogramAllchargeRec);
-      if (eff < threshold) continue;
+      if (eff < threshold)
+        continue;
       double weight = 1.0 / eff;
       sumPtWeight += track.pt() * weight;
       sumPtPtWeight += (track.pt() * track.pt() * weight * weight);
       sumWeight += weight;
-      
-      histos.fill(HIST("hPt_rec_corr"), track.pt() , weight);
-      histos.fill(HIST("hEta_rec_corr"), track.eta() , weight);
+
+      histos.fill(HIST("hPt_rec_corr"), track.pt(), weight);
+      histos.fill(HIST("hEta_rec_corr"), track.eta(), weight);
 
       auto mcParticle = track.mcParticle();
       nchAll += 1.;
@@ -1135,7 +1157,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
       histos.fill(HIST("Rec/hPEta"), track.p(), track.eta());
       histos.fill(HIST("Rec/hNsigmaTPC"), track.p(), track.tpcNSigmaPr());
       histos.fill(HIST("hPtEta_rec"), track.pt(), track.eta());
-    
+
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kPiPlus)
         histos.fill(HIST("ptHistogramPionrec_pdg"), track.pt());
       if (std::abs(mcParticle.pdgCode()) == PDG_t::kKPlus)
@@ -1177,10 +1199,12 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
       }
 
       if (selPion(track)) {
-        if (std::fabs(track.y()) > cRapidityCut05)  continue;
-        if (track.beta() > 1)    continue;
+        if (std::fabs(track.y()) > cRapidityCut05)
+          continue;
+        if (track.beta() > 1)
+          continue;
         histos.fill(HIST("ptHistogramPionrec"), track.pt());
-        histos.fill(HIST("hPtEta_pi_rec"), track.pt(), track.eta());	
+        histos.fill(HIST("hPtEta_pi_rec"), track.pt(), track.eta());
         histos.fill(HIST("Rec/hPtPion"), track.pt());
         histos.fill(HIST("Rec/hEtaPion"), track.eta());
         histos.fill(HIST("Rec/hyPion"), track.rapidity(massPi));
@@ -1191,14 +1215,14 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
         histos.fill(HIST("Rec/hdEdx_afterselection1"), track.p(), track.tpcSignal());
         histos.fill(HIST("Rec/hTOFbeta_afterselection1"), track.p(), track.beta());
         if (std::abs(track.mcParticle().pdgCode()) == PDG_t::kPiPlus) {
-        histos.fill(HIST("ptHistogramPionrec_purity"), track.pt());
+          histos.fill(HIST("ptHistogramPionrec_purity"), track.pt());
         }
         nchPi += 1.;
         q1Pi += track.pt();
         q2Pi += (track.pt() * track.pt());
 
-         histos.fill(HIST("hPyPion_rec"), track.p(), track.rapidity(massPi));
-         histos.fill(HIST("hPtyPion_rec"), track.pt(), track.rapidity(massPi));
+        histos.fill(HIST("hPyPion_rec"), track.p(), track.rapidity(massPi));
+        histos.fill(HIST("hPtyPion_rec"), track.pt(), track.rapidity(massPi));
       }
 
       //===========================kaon===============================================================
@@ -1210,10 +1234,12 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
       }
 
       if (selKaon(track)) {
-        if (std::fabs(track.y()) > cRapidityCut05)  continue;
-        if (track.beta() > 1)   continue;
+        if (std::fabs(track.y()) > cRapidityCut05)
+          continue;
+        if (track.beta() > 1)
+          continue;
         histos.fill(HIST("ptHistogramKaonrec"), track.pt());
-        histos.fill(HIST("hPtEta_ka_rec"), track.pt(), track.eta());	
+        histos.fill(HIST("hPtEta_ka_rec"), track.pt(), track.eta());
         histos.fill(HIST("Rec/hPtKaon"), track.pt());
         histos.fill(HIST("Rec/hEtaKaon"), track.eta());
         histos.fill(HIST("Rec/hyKaon"), track.rapidity(massKa));
@@ -1224,7 +1250,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
         histos.fill(HIST("Rec/hdEdx_afterselection1"), track.p(), track.tpcSignal());
         histos.fill(HIST("Rec/hTOFbeta_afterselection1"), track.p(), track.beta());
         if (std::abs(track.mcParticle().pdgCode()) == PDG_t::kKPlus) {
-        histos.fill(HIST("ptHistogramKaonrec_purity"), track.pt());
+          histos.fill(HIST("ptHistogramKaonrec_purity"), track.pt());
         }
         nchKa += 1.;
         q1Ka += track.pt();
@@ -1243,10 +1269,12 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
       }
 
       if (selProton(track)) {
-        if (std::fabs(track.y()) > cRapidityCut05)  continue;
-        if (track.beta() > 1)    continue;
+        if (std::fabs(track.y()) > cRapidityCut05)
+          continue;
+        if (track.beta() > 1)
+          continue;
         histos.fill(HIST("ptHistogramProtonrec"), track.pt());
-        histos.fill(HIST("hPtEta_pr_rec"), track.pt(), track.eta());	
+        histos.fill(HIST("hPtEta_pr_rec"), track.pt(), track.eta());
         histos.fill(HIST("Rec/hPtProton"), track.pt());
         histos.fill(HIST("Rec/hEtaProton"), track.eta());
         histos.fill(HIST("Rec/hyProton"), track.rapidity(massPr));
@@ -1257,7 +1285,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
         histos.fill(HIST("Rec/hdEdx_afterselection1"), track.p(), track.tpcSignal());
         histos.fill(HIST("Rec/hTOFbeta_afterselection1"), track.p(), track.beta());
         if (std::abs(track.mcParticle().pdgCode()) == PDG_t::kProton) {
-        histos.fill(HIST("ptHistogramProtonrec_purity"), track.pt());
+          histos.fill(HIST("ptHistogramProtonrec_purity"), track.pt());
         }
         nchPr += 1.;
         q1Pr += track.pt();
@@ -1289,7 +1317,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
     histos.fill(HIST("Rec/hVar2"), sample, cent, var2);
     histos.fill(HIST("Rec/hVarc"), sample, cent);
     histos.fill(HIST("Rec/hVar2meanpt"), cent, var2);
-   
+
     //---------------------- pions ----------------------------------------
     if (nchPi >= cTwoPtlCut2) {
       var1Pi = (q1Pi * q1Pi - q2Pi) / (nchPi * (nchPi - 1));
@@ -1299,8 +1327,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
     if (nchKa >= cTwoPtlCut2) {
       var1Ka = (q1Ka * q1Ka - q2Ka) / (nchKa * (nchKa - 1));
       var2Ka = (q1Ka / nchKa);
-
-         }
+    }
     //---------------------------- protons ----------------------------------
     if (nchPr >= cTwoPtlCut2) {
       var1Pr = (q1Pr * q1Pr - q2Pr) / (nchPr * (nchPr - 1));
@@ -1350,7 +1377,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
     histos.fill(HIST("hEffVar1x_Naccorr_xaxis_rec"), sample, sumWeight, var1);
     histos.fill(HIST("hEffVar2x_Naccorr_xaxis_rec"), sample, sumWeight, var2);
     histos.fill(HIST("hEffVarx_Naccorr_xaxis_rec"), sample, sumWeight);
-       
+
     //================= generated level==============================
 
     const auto& mccolgen = coll.mcCollision_as<aod::McCollisions>();
@@ -1377,7 +1404,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
       }
       nch1++;
       histos.fill(HIST("hnch_afterPhysPrimary"), nch1);
-     
+
       int pid = mcpart.pdgCode();
       auto sign = 0;
       auto* pd = pdg->GetParticle(pid);
@@ -1388,17 +1415,19 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
         continue;
       }
       //    histos.fill(HIST("gen_hSign"), sign);
-      if (std::fabs(mcpart.eta()) > cEtacut) continue;
+      if (std::fabs(mcpart.eta()) > cEtacut)
+        continue;
       nchGenTrue++;
       histos.fill(HIST("hnch_gen_after_etacut"), nchGenTrue);
 
-      if (mcpart.pt() >= cPtmincut1 && mcpart.pt() <= cPtmaxcut1) 
-      { nchgen += 1.;
+      if (mcpart.pt() >= cPtmincut1 && mcpart.pt() <= cPtmaxcut1) {
+        nchgen += 1.;
         histos.fill(HIST("hnch_gen"), nchgen);
-	histos.fill(HIST("hPtvar_gen"), mcpart.pt());
+        histos.fill(HIST("hPtvar_gen"), mcpart.pt());
       }
 
-      if ((mcpart.pt() < cPtmincut) || (mcpart.pt() > cPtmaxcut)) continue;
+      if ((mcpart.pt() < cPtmincut) || (mcpart.pt() > cPtmaxcut))
+        continue;
       histos.fill(HIST("hPt_gen"), mcpart.pt());
       histos.fill(HIST("hEta_gen"), mcpart.eta());
       histos.fill(HIST("ptHistogram_allcharge_gen"), mcpart.pt());
@@ -1412,7 +1441,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
 
         if (mcpart.pdgCode() == PDG_t::kPiPlus || mcpart.pdgCode() == PDG_t::kPiMinus) {
           histos.fill(HIST("ptHistogramPion"), mcpart.pt());
-	  histos.fill(HIST("hPtEta_pi_gen"), mcpart.pt(), mcpart.eta());
+          histos.fill(HIST("hPtEta_pi_gen"), mcpart.pt(), mcpart.eta());
           histos.fill(HIST("hPty_pi_gen"), mcpart.pt(), mcpart.y());
           nchPiGen += 1.;
           q1PiGen += mcpart.pt();
@@ -1422,8 +1451,8 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
 
         if (mcpart.pdgCode() == PDG_t::kKPlus || mcpart.pdgCode() == PDG_t::kKMinus) {
           histos.fill(HIST("ptHistogramKaon"), mcpart.pt());
-	  histos.fill(HIST("hPtEta_ka_gen"), mcpart.pt(), mcpart.eta());
-          histos.fill(HIST("hPty_ka_gen"), mcpart.pt(), mcpart.y());	  
+          histos.fill(HIST("hPtEta_ka_gen"), mcpart.pt(), mcpart.eta());
+          histos.fill(HIST("hPty_ka_gen"), mcpart.pt(), mcpart.y());
           nchKaGen += 1.;
           q1KaGen += mcpart.pt();
           q2KaGen += (mcpart.pt() * mcpart.pt());
@@ -1432,8 +1461,8 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
 
         if (mcpart.pdgCode() == PDG_t::kProton || mcpart.pdgCode() == PDG_t::kProtonBar) {
           histos.fill(HIST("ptHistogramProton"), mcpart.pt());
-	  histos.fill(HIST("hPtEta_pr_gen"), mcpart.pt(), mcpart.eta());
-          histos.fill(HIST("hPty_pr_gen"), mcpart.pt(), mcpart.y());	  
+          histos.fill(HIST("hPtEta_pr_gen"), mcpart.pt(), mcpart.eta());
+          histos.fill(HIST("hPty_pr_gen"), mcpart.pt(), mcpart.y());
           nchPrGen += 1.;
           q1PrGen += mcpart.pt();
           q2PrGen += (mcpart.pt() * mcpart.pt());
@@ -1456,7 +1485,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
 
     histos.fill(HIST("hterm1_gen"), nchGenAll, var1AllGen);
     histos.fill(HIST("hterm2_gen"), nchGenAll, var2AllGen);
-//--------------------------Pions-------------------------------------------
+    //--------------------------Pions-------------------------------------------
     if (nchPiGen >= cTwoPtlCut2) {
       var1PiGen = (q1PiGen * q1PiGen - q2PiGen) / (nchPiGen * (nchPiGen - 1));
       var2PiGen = (q1PiGen / nchPiGen);
@@ -1495,8 +1524,7 @@ bool eventSelected(const float& globalNch, const float& pvTrack, const float& ce
 
   } // void process
   PROCESS_SWITCH(EventMeanPtId, processMcReco, "Process reconstructed", false);
-
-   };
+};
 
 WorkflowSpec defineDataProcessing(ConfigContext const& cfgc)
 {
