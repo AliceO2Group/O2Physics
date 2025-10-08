@@ -324,14 +324,14 @@ void fillDielectronCandidateTable(T const& candidate, int32_t collisionIndex, U&
 
     candidate.pt1(), candidate.eta1(), candidate.phi1(),
     candidate.itsClusterMap1(), candidate.itsChi2NCl1(),
-    candidate.tpcNClsCR1(), candidate.tpcNClsFound1(),  candidate.tpcChi2NCl1(),
+    candidate.tpcNClsCR1(), candidate.tpcNClsFound1(), candidate.tpcChi2NCl1(),
     candidate.dcaXY1(), candidate.dcaZ1(),
     candidate.tpcSignal1(), candidate.tpcNSigmaEl1(), candidate.tpcNSigmaPi1(), candidate.tpcNSigmaPr1(),
     candidate.tofBeta1(), candidate.tofNSigmaEl1(), candidate.tofNSigmaPi1(), candidate.tofNSigmaPr1(),
 
     candidate.pt2(), candidate.eta2(), candidate.phi2(),
     candidate.itsClusterMap2(), candidate.itsChi2NCl2(),
-    candidate.tpcNClsCR2(), candidate.tpcNClsFound2(),  candidate.tpcChi2NCl2(),
+    candidate.tpcNClsCR2(), candidate.tpcNClsFound2(), candidate.tpcChi2NCl2(),
     candidate.dcaXY2(), candidate.dcaZ2(),
     candidate.tpcSignal2(), candidate.tpcNSigmaEl2(), candidate.tpcNSigmaPi2(), candidate.tpcNSigmaPr2(),
     candidate.tofBeta2(), candidate.tofNSigmaEl2(), candidate.tofNSigmaPi2(), candidate.tofNSigmaPr2(),
