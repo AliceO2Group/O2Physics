@@ -96,8 +96,8 @@ DECLARE_SOA_COLUMN(NSigTpcPiProng1, nSigTpcPiProng1, float);                 //!
 DECLARE_SOA_COLUMN(NSigTofPiProng1, nSigTofPiProng1, float);                 //! TOF Nsigma separation for prong1 with pion mass hypothesis
 DECLARE_SOA_COLUMN(NSigTpcTofPiProng1, nSigTpcTofPiProng1, float);           //! Combined TPC and TOF Nsigma separation for prong1 with pion mass hypothesis
 // MC truth
-DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t);          //! Flag for association with wrong collision
-DECLARE_SOA_COLUMN(PtGen, ptGen, float);                                     //! Transverse momentum of candidate (GeV/c)
+DECLARE_SOA_COLUMN(FlagWrongCollision, flagWrongCollision, int8_t); //! Flag for association with wrong collision
+DECLARE_SOA_COLUMN(PtGen, ptGen, float);                            //! Transverse momentum of candidate (GeV/c)
 // General vars (unused for now)
 DECLARE_SOA_COLUMN(P, p, float); //! Momentum of candidate (GeV/c)
 DECLARE_SOA_COLUMN(E, e, float); //! Energy of candidate (GeV)
@@ -398,7 +398,7 @@ struct HfTaskBsReduced {
   /// \param withBsMl is the flag to enable the filling with ML scores for the Bs candidate
   /// \param candidate is the Bs candidate
   /// \param candidatesD is the table with Ds- candidates
-  template <bool doMc, bool withDecayTypeCheck, bool withDmesMl, bool withBsMl, typename Cand, typename CandsDmes>
+  template <bool DoMc, bool WithDecayTypeCheck, bool WithDmesMl, bool WithBsMl, typename Cand, typename CandsDmes>
   void fillCand(Cand const& candidate,
                 CandsDmes const&)
   {
@@ -408,9 +408,9 @@ struct HfTaskBsReduced {
     auto ptDs = candidate.ptProng0();
     auto invMassDs = candDs.invMassHypo0() > 0 ? candDs.invMassHypo0() : candDs.invMassHypo1();
     // TODO: here we are assuming that only one of the two hypotheses is filled, to be checked
-    std::array<float, 3> posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
-    std::array<float, 3> posSvDs{candDs.xSecondaryVertex(), candDs.ySecondaryVertex(), candDs.zSecondaryVertex()};
-    std::array<float, 3> momDs{candDs.pVector()};
+    std::array<float, 3> const posPv{candidate.posX(), candidate.posY(), candidate.posZ()};
+    std::array<float, 3> const posSvDs{candDs.xSecondaryVertex(), candDs.ySecondaryVertex(), candDs.zSecondaryVertex()};
+    std::array<float, 3> const momDs{candDs.pVector()};
     auto cospDs = RecoDecay::cpa(posPv, posSvDs, momDs);
     auto cospXyDs = RecoDecay::cpaXY(posPv, posSvDs, momDs);
     auto decLenDs = RecoDecay::distance(posPv, posSvDs);
@@ -419,14 +419,14 @@ struct HfTaskBsReduced {
     int8_t flagMcMatchRec = 0;
     int8_t flagWrongCollision = 0;
     bool isSignal = false;
-    if constexpr (doMc) {
+    if constexpr (DoMc) {
       flagMcMatchRec = candidate.flagMcMatchRec();
       flagWrongCollision = candidate.flagWrongCollision();
       isSignal = TESTBIT(std::abs(flagMcMatchRec), hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi);
     }
 
     if (fillHistograms) {
-      if constexpr (doMc) {
+      if constexpr (DoMc) {
         if (isSignal) {
           registry.fill(HIST("hMassRecSig"), ptCandBs, invMassBs);
           registry.fill(HIST("hPtProng0RecSig"), ptCandBs, candidate.ptProng0());
@@ -446,15 +446,15 @@ struct HfTaskBsReduced {
           registry.fill(HIST("hDecLengthXyDRecSig"), ptDs, decLenXyDs);
           registry.fill(HIST("hCospDRecSig"), ptDs, cospDs);
           registry.fill(HIST("hCospXyDRecSig"), ptDs, cospXyDs);
-          if constexpr (withDecayTypeCheck) {
+          if constexpr (WithDecayTypeCheck) {
             registry.fill(HIST("hDecayTypeMc"), 1 + hf_cand_bs::DecayTypeMc::BsToDsPiToPhiPiPiToKKPiPi, invMassBs, ptCandBs);
           }
-          if constexpr (withDmesMl) {
+          if constexpr (WithDmesMl) {
             registry.fill(HIST("hMlScoreBkgDsRecSig"), ptDs, candidate.prong0MlScoreBkg());
             registry.fill(HIST("hMlScorePromptDsRecSig"), ptDs, candidate.prong0MlScorePrompt());
             registry.fill(HIST("hMlScoreNonPromptDsRecSig"), ptDs, candidate.prong0MlScoreNonprompt());
           }
-          if constexpr (withBsMl) {
+          if constexpr (WithBsMl) {
             registry.fill(HIST("hMlScoreSigBsRecSig"), ptCandBs, candidate.mlProbBsToDsPi()[1]);
           }
         } else if (fillBackground) {
@@ -476,15 +476,15 @@ struct HfTaskBsReduced {
           registry.fill(HIST("hDecLengthXyDRecBg"), ptDs, decLenXyDs);
           registry.fill(HIST("hCospDRecBg"), ptDs, cospDs);
           registry.fill(HIST("hCospXyDRecBg"), ptDs, cospXyDs);
-          if constexpr (withDmesMl) {
+          if constexpr (WithDmesMl) {
             registry.fill(HIST("hMlScoreBkgDsRecBg"), ptDs, candidate.prong0MlScoreBkg());
             registry.fill(HIST("hMlScorePromptDsRecBg"), ptDs, candidate.prong0MlScorePrompt());
             registry.fill(HIST("hMlScoreNonPromptDsRecBg"), ptDs, candidate.prong0MlScoreNonprompt());
           }
-          if constexpr (withBsMl) {
+          if constexpr (WithBsMl) {
             registry.fill(HIST("hMlScoreSigBsRecBg"), ptCandBs, candidate.mlProbBsToDsPi()[1]);
           }
-        } else if constexpr (withDecayTypeCheck) {
+        } else if constexpr (WithDecayTypeCheck) {
           for (uint8_t iFlag = 1; iFlag < hf_cand_bs::DecayTypeMc::NDecayTypeMc; ++iFlag) {
             if (TESTBIT(flagMcMatchRec, iFlag)) {
               registry.fill(HIST("hDecayTypeMc"), 1 + iFlag, invMassBs, ptCandBs);
@@ -511,33 +511,33 @@ struct HfTaskBsReduced {
         registry.fill(HIST("hCospD"), ptDs, cospDs);
         registry.fill(HIST("hCospXyD"), ptDs, cospXyDs);
 
-        if constexpr (withDmesMl) {
+        if constexpr (WithDmesMl) {
           registry.fill(HIST("hMlScoreBkgDs"), ptDs, candidate.prong0MlScoreBkg());
           registry.fill(HIST("hMlScorePromptDs"), ptDs, candidate.prong0MlScorePrompt());
           registry.fill(HIST("hMlScoreNonPromptDs"), ptDs, candidate.prong0MlScoreNonprompt());
         }
-        if constexpr (withBsMl) {
+        if constexpr (WithBsMl) {
           registry.fill(HIST("hMlScoreSigBs"), ptCandBs, candidate.mlProbBsToDsPi()[1]);
         }
       }
     }
     if (fillSparses) {
-      if constexpr (doMc) {
+      if constexpr (DoMc) {
         if (isSignal) {
-          if constexpr (withDmesMl) {
+          if constexpr (WithDmesMl) {
             registry.fill(HIST("hMassPtCutVarsRecSig"), invMassBs, ptCandBs, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassDs, ptDs, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
           } else {
             registry.fill(HIST("hMassPtCutVarsRecSig"), invMassBs, ptCandBs, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassDs, ptDs, decLenDs, cospDs);
           }
         } else if (fillBackground) {
-          if constexpr (withDmesMl) {
+          if constexpr (WithDmesMl) {
             registry.fill(HIST("hMassPtCutVarsRecBg"), invMassBs, ptCandBs, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassDs, ptDs, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
           } else {
             registry.fill(HIST("hMassPtCutVarsRecBg"), invMassBs, ptCandBs, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassDs, ptDs, decLenDs, cospDs);
           }
         }
       } else {
-        if constexpr (withDmesMl) {
+        if constexpr (WithDmesMl) {
           registry.fill(HIST("hMassPtCutVars"), invMassBs, ptCandBs, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassDs, ptDs, candidate.prong0MlScoreBkg(), candidate.prong0MlScoreNonprompt());
         } else {
           registry.fill(HIST("hMassPtCutVars"), invMassBs, ptCandBs, candidate.decayLength(), candidate.decayLengthXY() / candidate.errorDecayLengthXY(), candidate.impactParameterProduct(), candidate.cpa(), invMassDs, ptDs, decLenDs, cospDs);
@@ -545,24 +545,24 @@ struct HfTaskBsReduced {
       }
     }
     if (fillTree) {
-      float pseudoRndm = ptDs * 1000. - static_cast<int64_t>(ptDs * 1000);
-      if (flagMcMatchRec != 0 || (((doMc && fillBackground) || !doMc) && (ptCandBs >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
+      float const pseudoRndm = ptDs * 1000. - static_cast<int64_t>(ptDs * 1000);
+      if (flagMcMatchRec != 0 || (((DoMc && fillBackground) || !DoMc) && (ptCandBs >= ptMaxForDownSample || pseudoRndm < downSampleBkgFactor))) {
         float prong0MlScoreBkg = -1.;
         float prong0MlScorePrompt = -1.;
         float prong0MlScoreNonprompt = -1.;
         float candidateMlScoreSig = -1;
-        if constexpr (withDmesMl) {
+        if constexpr (WithDmesMl) {
           prong0MlScoreBkg = candidate.prong0MlScoreBkg();
           prong0MlScorePrompt = candidate.prong0MlScorePrompt();
           prong0MlScoreNonprompt = candidate.prong0MlScoreNonprompt();
         }
-        if constexpr (withBsMl) {
+        if constexpr (WithBsMl) {
           candidateMlScoreSig = candidate.mlProbBsToDsPi()[1];
         }
         auto prong1 = candidate.template prong1_as<TracksPion>();
 
         float ptMother = -1.;
-        if constexpr (doMc) {
+        if constexpr (DoMc) {
           ptMother = candidate.ptMother();
         }
 
@@ -623,9 +623,9 @@ struct HfTaskBsReduced {
           flagWrongCollision,
           ptMother);
 
-        if constexpr (withDecayTypeCheck) {
+        if constexpr (WithDecayTypeCheck) {
           float candidateMlScoreSig = -1;
-          if constexpr (withBsMl) {
+          if constexpr (WithBsMl) {
             candidateMlScoreSig = candidate.mlProbBsToDsPi()[1];
           }
           hfRedBsMcCheck(
@@ -663,7 +663,7 @@ struct HfTaskBsReduced {
     std::array<float, 2> ptProngs = {particle.ptProng0(), particle.ptProng1()};
     std::array<float, 2> yProngs = {particle.yProng0(), particle.yProng1()};
     std::array<float, 2> etaProngs = {particle.etaProng0(), particle.etaProng1()};
-    bool prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
+    bool const prongsInAcc = isProngInAcceptance(etaProngs[0], ptProngs[0]) && isProngInAcceptance(etaProngs[1], ptProngs[1]);
 
     if (fillHistograms) {
       registry.fill(HIST("hPtProng0Gen"), ptParticle, ptProngs[0]);

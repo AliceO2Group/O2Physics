@@ -321,7 +321,7 @@ struct HfTaskD0 {
     }
   }
 
-  template <int reconstructionType, bool applyMl, typename CandType, typename CollType>
+  template <int ReconstructionType, bool ApplyMl, typename CandType, typename CollType>
   void processData(CandType const& candidates,
                    CollType const&,
                    aod::TracksWExtra const&)
@@ -335,7 +335,7 @@ struct HfTaskD0 {
       }
 
       float massD0, massD0bar;
-      if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
         massD0bar = candidate.kfGeoMassD0bar();
       } else {
@@ -397,9 +397,9 @@ struct HfTaskD0 {
 
       auto trackPos = candidate.template prong0_as<o2::aod::TracksWExtra>(); // positive daughter
       auto trackNeg = candidate.template prong1_as<o2::aod::TracksWExtra>(); // negative daughter
-      int minItsClustersOfProngs = std::min(trackPos.itsNCls(), trackNeg.itsNCls());
-      int minTpcCrossedRowsOfProngs = std::min(trackPos.tpcNClsCrossedRows(), trackNeg.tpcNClsCrossedRows());
-      if constexpr (applyMl) {
+      int const minItsClustersOfProngs = std::min(trackPos.itsNCls(), trackNeg.itsNCls());
+      int const minTpcCrossedRowsOfProngs = std::min(trackPos.tpcNClsCrossedRows(), trackNeg.tpcNClsCrossedRows());
+      if constexpr (ApplyMl) {
         if (storeCentrality && storeOccupancy) {
           if (candidate.isSelD0() >= selectionFlagD0) {
             registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, hfHelper.yD0(candidate), SigD0, cent, occ);
@@ -534,7 +534,7 @@ struct HfTaskD0 {
   PROCESS_SWITCH(HfTaskD0, processDataWithKFParticleMl, "process taskD0 with KFParticle and ML selections", false);
   // TODO: add processKFParticleMlCent
 
-  template <int reconstructionType, bool applyMl, typename CandType, typename CollType>
+  template <int ReconstructionType, bool ApplyMl, typename CandType, typename CollType>
   void processMc(CandType const& candidates,
                  soa::Join<aod::McParticles, aod::HfCand2ProngMcGen> const& mcParticles,
                  TracksSelQuality const&,
@@ -561,7 +561,7 @@ struct HfTaskD0 {
         occ = o2::hf_occupancy::getOccupancyColl(collision, occEstimator);
       }
       float massD0, massD0bar;
-      if constexpr (reconstructionType == aod::hf_cand::VertexerType::KfParticle) {
+      if constexpr (ReconstructionType == aod::hf_cand::VertexerType::KfParticle) {
         massD0 = candidate.kfGeoMassD0();
         massD0bar = candidate.kfGeoMassD0bar();
       } else {
@@ -660,8 +660,8 @@ struct HfTaskD0 {
       auto ctCandidate = hfHelper.ctD0(candidate);
       auto cpaCandidate = candidate.cpa();
       auto cpaxyCandidate = candidate.cpaXY();
-      int minItsClustersOfProngs = std::min(trackPos.itsNCls(), trackNeg.itsNCls());
-      int minTpcCrossedRowsOfProngs = std::min(trackPos.tpcNClsCrossedRows(), trackNeg.tpcNClsCrossedRows());
+      int const minItsClustersOfProngs = std::min(trackPos.itsNCls(), trackNeg.itsNCls());
+      int const minTpcCrossedRowsOfProngs = std::min(trackPos.tpcNClsCrossedRows(), trackNeg.tpcNClsCrossedRows());
       if (candidate.isSelD0() >= selectionFlagD0) {
         registry.fill(HIST("hMassSigBkgD0"), massD0, ptCandidate, rapidityCandidate);
         if (candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
@@ -688,7 +688,7 @@ struct HfTaskD0 {
           registry.fill(HIST("hDecLengthVsPtSig"), declengthCandidate, ptCandidate);
           registry.fill(HIST("hDecLengthxyVsPtSig"), declengthxyCandidate, ptCandidate);
           registry.fill(HIST("hMassSigD0"), massD0, ptCandidate, rapidityCandidate);
-          if constexpr (applyMl) {
+          if constexpr (ApplyMl) {
             if (storeCentrality && storeOccupancy) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, SigD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ);
             } else if (storeCentrality && !storeOccupancy) {
@@ -730,7 +730,7 @@ struct HfTaskD0 {
           registry.fill(HIST("hMassBkgD0"), massD0, ptCandidate, rapidityCandidate);
           if (candidate.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
             registry.fill(HIST("hMassReflBkgD0"), massD0, ptCandidate, rapidityCandidate);
-            if constexpr (applyMl) {
+            if constexpr (ApplyMl) {
               if (storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0()[0], candidate.mlProbD0()[1], candidate.mlProbD0()[2], massD0, ptCandidate, rapidityCandidate, ReflectedD0, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ);
               } else if (storeCentrality && !storeOccupancy) {
@@ -762,7 +762,7 @@ struct HfTaskD0 {
         registry.fill(HIST("hMassSigBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
         if (candidate.flagMcMatchRec() == -o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
           registry.fill(HIST("hMassSigD0bar"), massD0bar, ptCandidate, rapidityCandidate);
-          if constexpr (applyMl) {
+          if constexpr (ApplyMl) {
             if (storeCentrality && storeOccupancy) {
               registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, SigD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ);
             } else if (storeCentrality && !storeOccupancy) {
@@ -791,7 +791,7 @@ struct HfTaskD0 {
           registry.fill(HIST("hMassBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
           if (candidate.flagMcMatchRec() == o2::hf_decay::hf_cand_2prong::DecayChannelMain::D0ToPiK) {
             registry.fill(HIST("hMassReflBkgD0bar"), massD0bar, ptCandidate, rapidityCandidate);
-            if constexpr (applyMl) {
+            if constexpr (ApplyMl) {
               if (storeCentrality && storeOccupancy) {
                 registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsD0Type"), candidate.mlProbD0bar()[0], candidate.mlProbD0bar()[1], candidate.mlProbD0bar()[2], massD0bar, ptCandidate, rapidityCandidate, ReflectedD0bar, candidate.ptBhadMotherPart(), candidate.originMcRec(), numPvContributors, cent, occ);
               } else if (storeCentrality && !storeOccupancy) {

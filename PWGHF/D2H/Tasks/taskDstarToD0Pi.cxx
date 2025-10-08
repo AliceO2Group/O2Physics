@@ -39,6 +39,8 @@
 #include <Framework/Logger.h>
 #include <Framework/runDataProcessing.h>
 
+#include <TH2.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <map>
@@ -119,16 +121,16 @@ struct HfTaskDstarToD0Pi {
     }
     auto vecPtBins = (std::vector<double>)ptBins;
 
-    AxisSpec axisImpactParam = {binningImpactParam, "impact parameter (cm)"};
-    AxisSpec axisDecayLength = {binningDecayLength, " decay length (cm)"};
-    AxisSpec axisNormDecayLength = {binningNormDecayLength, "normalised decay length (cm)"};
+    AxisSpec const axisImpactParam = {binningImpactParam, "impact parameter (cm)"};
+    AxisSpec const axisDecayLength = {binningDecayLength, " decay length (cm)"};
+    AxisSpec const axisNormDecayLength = {binningNormDecayLength, "normalised decay length (cm)"};
     AxisSpec axisCentrality = {binningCentrality, "centrality (%)"};
     AxisSpec axisDeltaInvMass = {binningDeltaInvMass, "#Delta #it{M}_{inv} D*"};
     AxisSpec axisBDTScorePrompt = {binningSigBDTScore, "BDT Score for Prompt Cand"};
     AxisSpec axisBDTScoreNonPrompt = {binningSigBDTScore, "BDT Score for Non-Prompt Cand"};
     AxisSpec axisBDTScoreBackground = {binningBkgBDTScore, "BDT Score for Background Cand"};
     AxisSpec axisPvContrib = {binningPvContrib, "PV Contribution"};
-    AxisSpec axisPt = {vecPtBins, "#it{p}_{T} (GeV/#it{c})"};
+    AxisSpec const axisPt = {vecPtBins, "#it{p}_{T} (GeV/#it{c})"};
 
     axesPtVsCentVsBDTVsPvContrib = {axisPt, axisCentrality, axisBDTScoreBackground, axisBDTScorePrompt, axisBDTScoreNonPrompt, axisPvContrib};
     axesPtVsCentVsPvContrib = {axisPt, axisCentrality, axisPvContrib};
@@ -263,9 +265,9 @@ struct HfTaskDstarToD0Pi {
     // if weights to be applied
     if (useWeight) {
       ccdbApi.init(ccdbUrl);
-      std::map<std::string, std::string> metadata;
+      std::map<std::string, std::string> const metadata;
       // Retrieve the file from CCDB
-      bool isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForWeight, ".", metadata, timestampCCDB, false, weightFileName);
+      bool const isFileAvailable = ccdbApi.retrieveBlob(ccdbPathForWeight, ".", metadata, timestampCCDB, false, weightFileName);
       if (!isFileAvailable) {
         LOGF(fatal, "Failed to retrieve weight file from CCDB: %s", ccdbPathForWeight.value.c_str());
         return;
@@ -274,17 +276,17 @@ struct HfTaskDstarToD0Pi {
       if (isCentStudy) {
         // Open the ROOT file
         TFile* weightFile = TFile::Open(weightFileName.value.c_str(), "READ");
-        if (weightFile && !weightFile->IsZombie()) {
+        if ((weightFile != nullptr) && !weightFile->IsZombie()) {
           // Ensure hWeights is properly sized
           hWeights.resize(nWeights);
           for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
-            std::string histName = "hMult" + std::to_string(ithWeight + 1) + "_Weight";
+            std::string const histName = "hMult" + std::to_string(ithWeight + 1) + "_Weight";
             hWeights[ithWeight] = reinterpret_cast<TH2F*>(weightFile->Get(histName.c_str()));
-            if (!hWeights[ithWeight]) {
+            if (hWeights[ithWeight] == nullptr) {
               LOGF(fatal, "Histogram %s not found in weight file!", histName.c_str());
               return;
             }
-            hWeights[ithWeight]->SetDirectory(0);
+            hWeights[ithWeight]->SetDirectory(nullptr);
             hWeights[ithWeight]->SetName(("hWeight" + std::to_string(ithWeight + 1)).c_str());
           }
           weightFile->Close();
@@ -310,7 +312,7 @@ struct HfTaskDstarToD0Pi {
   /// @param cols reconstructed collision with centrality
   /// @param selectedCands selected candidates with selection flag
   /// @param preslice preslice to slice
-  template <bool applyMl, typename T1, typename T2>
+  template <bool ApplyMl, typename T1, typename T2>
   void runTaskDstar(CollisionsWCent const& cols, T1 selectedCands, T2 preslice)
   {
     for (const auto& col : cols) {
@@ -370,7 +372,7 @@ struct HfTaskDstarToD0Pi {
             nCandsSignalRegion++;
           }
 
-          if constexpr (applyMl) {
+          if constexpr (ApplyMl) {
             auto mlBdtScore = candDstar.mlProbDstarToD0Pi();
             registry.fill(HIST("Yield/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMDstar, candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2]);
           }
@@ -393,7 +395,7 @@ struct HfTaskDstarToD0Pi {
             nCandsSignalRegion++;
           }
 
-          if constexpr (applyMl) {
+          if constexpr (ApplyMl) {
             auto mlBdtScore = candDstar.mlProbDstarToD0Pi();
             registry.fill(HIST("Yield/hDeltaInvMassVsPtVsCentVsBDTScore"), deltaMAntiDstar, candDstar.pt(), centrality, mlBdtScore[0], mlBdtScore[1], mlBdtScore[2]);
           }
@@ -425,7 +427,7 @@ struct HfTaskDstarToD0Pi {
   /// @tparam applyMl a boolean to apply ML or not
   /// @param candsMcRecSel reconstructed candidates with selection flag
   /// @param rowsMcPartilces generated particles  table
-  template <bool applyMl, typename T1>
+  template <bool ApplyMl, typename T1>
   void runMcRecTaskDstar(T1 const& candsMcRecSel, CandDstarMcGen const& rowsMcPartilces)
   {
     int8_t signDstar = 0;
@@ -458,10 +460,11 @@ struct HfTaskDstarToD0Pi {
 
         if (candDstarMcRec.isSelDstarToD0Pi()) { // if all selection passed
           float weightValue = 1.0;
-          if (useWeight && (hWeights.size() < 1 || hWeights[0] == nullptr)) {
+          if (useWeight && (hWeights.empty() || hWeights[0] == nullptr)) {
             LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
             return;
-          } else if (useWeight && isCentStudy) {
+          }
+          if (useWeight && isCentStudy) {
             for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
               if (centrality > centRangesForWeights.value[ithWeight] && centrality <= centRangesForWeights.value[ithWeight + 1]) {
                 weightValue = hWeights[ithWeight]->GetBinContent(hWeights[ithWeight]->FindBin(nPVContributors));
@@ -473,7 +476,7 @@ struct HfTaskDstarToD0Pi {
             registry.fill(HIST("QA/hPtFullRecoDstarRecSig"), ptDstarRecSig);
           }
 
-          if constexpr (applyMl) { // All efficiency histograms at reconstruction level w/ ml
+          if constexpr (ApplyMl) { // All efficiency histograms at reconstruction level w/ ml
             if (isCentStudy) {
               auto bdtScore = candDstarMcRec.mlProbDstarToD0Pi();
               registry.fill(HIST("Efficiency/hPtVsCentVsBDTScoreVsPvContribRecSig"), ptDstarRecSig, centrality, bdtScore[0], bdtScore[1], bdtScore[2], nPVContributors, weightValue);
@@ -584,10 +587,10 @@ struct HfTaskDstarToD0Pi {
         float centFT0MGen;
         float pvContributors;
         // assigning centrality to MC Collision using max FT0M amplitute from Reconstructed collisions
-        if (recCollisions.size()) {
+        if (recCollisions.size() != 0) {
           std::vector<std::pair<soa::Filtered<CollisionsWCentMcLabel>::iterator, int>> tempRecCols;
           for (const auto& recCol : recCollisions) {
-            tempRecCols.push_back(std::make_pair(recCol, recCol.numContrib()));
+            tempRecCols.emplace_back(recCol, recCol.numContrib());
           }
           std::sort(tempRecCols.begin(), tempRecCols.end(), compare);
           centFT0MGen = tempRecCols.at(0).first.centFT0M();
@@ -598,10 +601,11 @@ struct HfTaskDstarToD0Pi {
         }
 
         float weightValue = 1.0;
-        if (useWeight && (hWeights.size() < 1 || hWeights[0] == nullptr)) {
+        if (useWeight && (hWeights.empty() || hWeights[0] == nullptr)) {
           LOGF(fatal, "Weight histograms are not initialized or empty. Check CCDB path or weight file.");
           return;
-        } else if (useWeight && isCentStudy) {
+        }
+        if (useWeight && isCentStudy) {
           for (int ithWeight = 0; ithWeight < nWeights; ++ithWeight) {
             if (centFT0MGen > centRangesForWeights.value[ithWeight] && centFT0MGen <= centRangesForWeights.value[ithWeight + 1]) {
               weightValue = hWeights[ithWeight]->GetBinContent(hWeights[ithWeight]->FindBin(centFT0MGen, pvContributors));

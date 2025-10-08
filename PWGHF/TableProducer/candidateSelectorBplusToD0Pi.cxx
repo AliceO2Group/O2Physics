@@ -100,7 +100,7 @@ struct HfCandidateSelectorBplusToD0Pi {
 
   o2::analysis::HfMlResponseBplusToD0Pi<float> hfMlResponse;
   float outputMlNotPreselected = -1.;
-  std::vector<float> outputMl = {};
+  std::vector<float> outputMl;
   o2::ccdb::CcdbApi ccdbApi;
 
   HfHelper hfHelper;
@@ -162,7 +162,7 @@ struct HfCandidateSelectorBplusToD0Pi {
   /// \param withDmesMl is the flag to use the table with ML scores for the D- daughter (only possible if present in the derived data)
   /// \param hfCandsBp B+ candidates
   /// \param pionTracks pion tracks
-  template <bool withDmesMl, typename Cands, typename CandsDmes>
+  template <bool WithDmesMl, typename Cands, typename CandsDmes>
   void runSelection(Cands const& hfCandsBp,
                     CandsDmes const& /*hfCandsD0*/,
                     TracksPion const& /*pionTracks*/)
@@ -190,7 +190,7 @@ struct HfCandidateSelectorBplusToD0Pi {
       auto trackPi = hfCandBp.template prong1_as<TracksPion>();
       auto hfCandD = hfCandBp.template prong0_as<CandsDmes>();
 
-      if constexpr (withDmesMl) {
+      if constexpr (WithDmesMl) {
         std::vector<float> mlScoresD;
         if (trackPi.sign() < 0) {
           std::copy(hfCandD.mlProbD0().begin(), hfCandD.mlProbD0().end(), std::back_inserter(mlScoresD));
@@ -240,8 +240,8 @@ struct HfCandidateSelectorBplusToD0Pi {
         if (trackPi.sign() > 0) {
           pdgCode = -1 * pdgCode;
         }
-        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<withDmesMl>(hfCandBp, hfCandD, pdgCode, trackPi);
-        bool isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBplus, outputMl);
+        std::vector<float> inputFeatures = hfMlResponse.getInputFeatures<WithDmesMl>(hfCandBp, hfCandD, pdgCode, trackPi);
+        bool const isSelectedMl = hfMlResponse.isSelectedMl(inputFeatures, ptCandBplus, outputMl);
         hfMlBplusToD0PiCandidate(outputMl[1]); // storing ML score for signal class
 
         if (!isSelectedMl) {
