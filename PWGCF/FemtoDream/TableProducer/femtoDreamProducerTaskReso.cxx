@@ -185,7 +185,7 @@ struct FemtoDreamProducerTaskReso {
   Configurable<float> confV0InvKaonMassUpLimit{"confV0InvKaonMassUpLimit", 0.515, "Upper limit of the V0 invariant mass for Kaon rejection"};
   Configurable<bool> confV0MotherIsLambda{"confV0MotherIsLambda", true, "True: Lambda, False: K0Short"};
 
-  Configurable<std::vector<float>> confChildCharge{"confChildCharge", std::vector<float>{-1, 1}, "V0 Child sel: Charge"};
+  Configurable<std::vector<float>> confChildSign{"confChildSign", std::vector<float>{-1, 1}, "V0 Child sel: Charge"};
   Configurable<std::vector<float>> confChildEtaMax{"confChildEtaMax", std::vector<float>{0.8f}, "V0 Child sel: max eta"};
   Configurable<std::vector<float>> confChildTPCnClsMin{"confChildTPCnClsMin", std::vector<float>{80.f, 70.f, 60.f}, "V0 Child sel: Min. nCls TPC"};
   Configurable<std::vector<float>> confChildDCAMin{"confChildDCAMin", std::vector<float>{0.05f, 0.06f}, "V0 Child sel:  Max. DCA Daugh to PV (cm)"};
@@ -197,11 +197,15 @@ struct FemtoDreamProducerTaskReso {
   struct : ConfigurableGroup {
     std::string prefix = std::string("Resonance");
 
+    Configurable<float> confResoInvMass{"confResoInvMass", 1.115683, "Literature value of the Reso invariant mass"};
     Configurable<float> confResoInvMassLowLimit{"confResoInvMassLowLimit", 0.9, "Lower limit of the Reso invariant mass"}; // 1.011461
     Configurable<float> confResoInvMassUpLimit{"confResoInvMassUpLimit", 1.15, "Upper limit of the Reso invariant mass"};  // 1.027461
+    Configurable<bool> confUseMassDiff{"confUseMassDiff", false, "(De)activates the usage of invMassDiff when checking combinations"};
+    Configurable<bool> confDoLikeSign{"confDoLikeSign", false, "(De)activates likeSign histo filling"};
+    Configurable<bool> confUseMassDiffLikeSign{"confUseMassDiffLikeSign", false, "(De)activates the usage of invMassDiff when checking combinations in LikeSign"};
+    Configurable<int> confMassQAPart2PID{"confMassQAPart2PID", o2::track::PID::Pion, "Daughter PID for MassQAPart2 histograms"};
     Configurable<std::vector<float>> confResoSign{"confResoSign", std::vector<float>{-1., 1.}, "Reso Sign selection"};
-    Configurable<int> confResoMotherID{"confResoMotherID", static_cast<int>(femto_dream_reso_selection::kPhi), "ResoID of Mother [0: Phi, 1: KStar]"};
-
+    
     Configurable<std::vector<float>> confDaughterCharge{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kSign, "confDaughter"), std::vector<float>{-1, 1}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kSign, "Reso selection: ")};
     Configurable<std::vector<float>> confDaughterPtMin{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMin, "confDaughter"), std::vector<float>{0.1, 0.15, 0.2}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMin, "Reso selection: ")};
     Configurable<std::vector<float>> confDaughterPtMax{FemtoDreamTrackSelection::getSelectionName(femtoDreamTrackSelection::kpTMax, "confDaughter"), std::vector<float>{5.0, 4.0}, FemtoDreamTrackSelection::getSelectionHelper(femtoDreamTrackSelection::kpTMax, "Reso selection: ")};
@@ -278,16 +282,56 @@ struct FemtoDreamProducerTaskReso {
     resoRegistry.add("AnalysisQA/Reso/InvMass_phi_selected", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});
     resoRegistry.add("AnalysisQA/Reso/InvMassAnti_phi_selected", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});
 
-    resoRegistry.add("AnalysisQA/Reso/Daughter1/Pt", "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    resoRegistry.add("AnalysisQA/Reso/Daughter1/Eta", "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
-    resoRegistry.add("AnalysisQA/Reso/Daughter1/Phi", "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
-    resoRegistry.add("AnalysisQA/Reso/Daughter1/DcaXY", "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
-    resoRegistry.add("AnalysisQA/Reso/Daughter1/DcaZ", "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
-    resoRegistry.add("AnalysisQA/Reso/Daughter2/Pt", "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
-    resoRegistry.add("AnalysisQA/Reso/Daughter2/Eta", "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
-    resoRegistry.add("AnalysisQA/Reso/Daughter2/Phi", "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
-    resoRegistry.add("AnalysisQA/Reso/Daughter2/DcaXY", "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
-    resoRegistry.add("AnalysisQA/Reso/Daughter2/DcaZ", "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+    // Daughter-histos for normal resonance
+    // Histos for PosDaughter
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/PosDaughter/Pt", "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/PosDaughter/Eta", "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/PosDaughter/Phi", "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/PosDaughter/DcaXY", "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/PosDaughter/DcaZ", "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+    // Histos for NegDaughter
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/NegDaughter/Pt", "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/NegDaughter/Eta", "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/NegDaughter/Phi", "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/NegDaughter/DcaXY", "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/NegDaughter/DcaZ", "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+
+    // Daughter-histos for anti resonance
+    // Histos for PosDaughter
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/PosDaughter/Pt", "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/PosDaughter/Eta", "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/PosDaughter/Phi", "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/PosDaughter/DcaXY", "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/PosDaughter/DcaZ", "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+    // Histos for NegDaughter
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/NegDaughter/Pt", "Transverse momentum of all tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/NegDaughter/Eta", "Pseudorapidity of all  tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/NegDaughter/Phi", "Azimuthal angle of all  tracks;#phi;Entries", HistType::kTH1F, {{720, 0, o2::constants::math::TwoPI}});
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/NegDaughter/DcaXY", "dcaXY of all  tracks;d_{XY} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}}); // check if cm is correct here
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/NegDaughter/DcaZ", "dcaZ of all  tracks;d_{Z} (cm);Entries", HistType::kTH1F, {{1000, 0, 1}});    // check if cm is correct here
+
+    // SelectionQA
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/InvMassSwitched", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});  // for opposite mass hypothesis (Reso is anti)
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/InvMassBothPID1", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});  // both particles are of type confDaughterPIDspecies[0]
+    resoRegistry.add("AnalysisQA/Reso/ResoQA/InvMassBothPID2", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});  // both particles are of type confDaughterPIDspecies[1]
+
+    // AntiSelectionQA
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/InvMassSwitched", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});  // for opposite mass hypothesis (Reso is normal)
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/InvMassBothPID1", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});  // both particles are of type confDaughterPIDspecies[0]
+    resoRegistry.add("AnalysisQA/Reso/AntiResoQA/InvMassBothPID2", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});  // both particles are of type confDaughterPIDspecies[1]
+
+    // likeSign
+    if (Resonance.confDoLikeSign.value) {
+      resoRegistry.add("AnalysisQA/ResoLikeSign/ResoQA/InvMass", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});
+      resoRegistry.add("AnalysisQA/ResoLikeSign/ResoQA/InvMassSwitched", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});  // for opposite mass hypothesis (Reso is anti)
+      resoRegistry.add("AnalysisQA/ResoLikeSign/ResoQA/InvMassBothPID1", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});  // both particles are of type confDaughterPIDspecies[0]
+      resoRegistry.add("AnalysisQA/ResoLikeSign/ResoQA/InvMassBothPID2", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});  // both particles are of type confDaughterPIDspecies[1]
+
+      resoRegistry.add("AnalysisQA/ResoLikeSign/AntiResoQA/InvMass", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});
+      resoRegistry.add("AnalysisQA/ResoLikeSign/AntiResoQA/InvMassSwitched", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});  // for opposite mass hypothesis (Reso is anti)
+      resoRegistry.add("AnalysisQA/ResoLikeSign/AntiResoQA/InvMassBothPID1", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});  // both particles are of type confDaughterPIDspecies[0]
+      resoRegistry.add("AnalysisQA/ResoLikeSign/AntiResoQA/InvMassBothPID2", "Invariant mass V0s;M_{KK};Entries", HistType::kTH1F, {{7000, 0.65, 1.5}});  // both particles are of type confDaughterPIDspecies[1]
+    }
 
     resoRegistry.add("AnalysisQA/Reso/Pt_posdaughter_selected", "Transverse momentum of all processed tracks;p_{T} (GeV/c);Entries", HistType::kTH1F, {{1000, 0, 10}});
     resoRegistry.add("AnalysisQA/Reso/Eta_posdaughter_selected", "Pseudorapidity of all processed tracks;#eta;Entries", HistType::kTH1F, {{1000, -2, 2}});
@@ -345,13 +389,13 @@ struct FemtoDreamProducerTaskReso {
       v0Cuts.setSelection(confV0TranRadMin, femto_dream_v0_selection::kV0TranRadMin, femtoDreamSelection::kLowerLimit);
       v0Cuts.setSelection(confV0TranRadMax, femto_dream_v0_selection::kV0TranRadMax, femtoDreamSelection::kUpperLimit);
       v0Cuts.setSelection(confV0DecVtxMax, femto_dream_v0_selection::kV0DecVtxMax, femtoDreamSelection::kUpperLimit);
-      v0Cuts.setChildCuts(femto_dream_v0_selection::kPosTrack, confChildCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      v0Cuts.setChildCuts(femto_dream_v0_selection::kPosTrack, confChildSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
       v0Cuts.setChildCuts(femto_dream_v0_selection::kPosTrack, confChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
       v0Cuts.setChildCuts(femto_dream_v0_selection::kPosTrack, confChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
       v0Cuts.setChildCuts(femto_dream_v0_selection::kPosTrack, confChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
       v0Cuts.setChildCuts(femto_dream_v0_selection::kPosTrack, confChildPIDnSigmaMax, femtoDreamTrackSelection::kPIDnSigmaMax, femtoDreamSelection::kAbsUpperLimit);
 
-      v0Cuts.setChildCuts(femto_dream_v0_selection::kNegTrack, confChildCharge, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
+      v0Cuts.setChildCuts(femto_dream_v0_selection::kNegTrack, confChildSign, femtoDreamTrackSelection::kSign, femtoDreamSelection::kEqual);
       v0Cuts.setChildCuts(femto_dream_v0_selection::kNegTrack, confChildEtaMax, femtoDreamTrackSelection::kEtaMax, femtoDreamSelection::kAbsUpperLimit);
       v0Cuts.setChildCuts(femto_dream_v0_selection::kNegTrack, confChildTPCnClsMin, femtoDreamTrackSelection::kTPCnClsMin, femtoDreamSelection::kLowerLimit);
       v0Cuts.setChildCuts(femto_dream_v0_selection::kNegTrack, confChildDCAMin, femtoDreamTrackSelection::kDCAMin, femtoDreamSelection::kAbsLowerLimit);
@@ -849,43 +893,18 @@ struct FemtoDreamProducerTaskReso {
       auto sliceNegdaugh = daughter2.sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
 
       for (const auto& track1 : slicePosdaugh) {
-        if (!resoCuts.daughterSelectionPos(track1) || !resoCuts.isSelectedMinimalPIDPos(track1, Resonance.confDaughterPIDspecies.value[0])) {
+        if (!resoCuts.daughterSelectionPos(track1) || !resoCuts.isSelectedMinimalPIDPos(track1, Resonance.confDaughterPIDspecies.value)) {
           continue;
         }
 
         for (const auto& track2 : sliceNegdaugh) {
-          if (!resoCuts.daughterSelectionNeg(track2) || !resoCuts.isSelectedMinimalPIDNeg(track2, Resonance.confDaughterPIDspecies.value[1])) {
+          if (!resoCuts.daughterSelectionNeg(track2) || !resoCuts.isSelectedMinimalPIDNeg(track2, Resonance.confDaughterPIDspecies.value)) {
             continue; /// loosest cuts for track2
           }
 
-          bool resoIsNotAnti = true; /// bool for differentianting between particle/antiparticle
-          float resoSign = 1.;
-          if ((Resonance.confDaughterPIDspecies->size() > 1) && (Resonance.confDaughterPIDspecies.value[0] != Resonance.confDaughterPIDspecies.value[1])) {
-            auto [isNormal, WrongCombination] = resoCuts.checkCombination(track1, track2, static_cast<femto_dream_reso_selection::ResoMothers>(Resonance.confResoMotherID.value));
-            if (WrongCombination) {
-              continue;
-            }
-            if (!isNormal) {
-              resoSign = -1.;
-            }
-            resoIsNotAnti = isNormal;
-          }
-          /// Resos, where both daughters have the same PID are defaulted to sign 1. and resoIsNotAnti = true
-
-          resoRegistry.fill(HIST("AnalysisQA/Reso/Daughter1/Pt"), track1.pt());
-          resoRegistry.fill(HIST("AnalysisQA/Reso/Daughter2/Pt"), track2.pt());
-          resoRegistry.fill(HIST("AnalysisQA/Reso/Daughter1/Eta"), track1.eta());
-          resoRegistry.fill(HIST("AnalysisQA/Reso/Daughter2/Eta"), track2.eta());
-          resoRegistry.fill(HIST("AnalysisQA/Reso/Daughter1/DcaXY"), track1.dcaXY());
-          resoRegistry.fill(HIST("AnalysisQA/Reso/Daughter2/DcaXY"), track2.dcaXY());
-          resoRegistry.fill(HIST("AnalysisQA/Reso/Daughter1/DcaZ"), track1.dcaZ());
-          resoRegistry.fill(HIST("AnalysisQA/Reso/Daughter2/DcaZ"), track2.dcaZ());
-          resoRegistry.fill(HIST("AnalysisQA/Reso/Daughter1/Phi"), track1.phi());
-          resoRegistry.fill(HIST("AnalysisQA/Reso/Daughter2/Phi"), track2.phi());
-
-          /// Get masses for calculating invariant Mass
           /// This only works for the case where the mass of opposite charged particles are the same (for example K+/K- have same mass)
-          auto [MassPart1, MassPart2] = resoCuts.getMassDaughters(static_cast<femto_dream_reso_selection::ResoMothers>(Resonance.confResoMotherID.value));
+          float MassPart1 = o2::track::PID::getMass(Resonance.confDaughterPIDspecies.value[0]);
+          float MassPart2 = o2::track::PID::getMass(Resonance.confDaughterPIDspecies.value[1]);
 
           /// Resonance
           ROOT::Math::PtEtaPhiMVector tempD1(track1.pt(), track1.eta(), track1.phi(), MassPart1);
@@ -896,15 +915,80 @@ struct FemtoDreamProducerTaskReso {
           ROOT::Math::PtEtaPhiMVector tempDA2(track2.pt(), track2.eta(), track2.phi(), MassPart1);
           ROOT::Math::PtEtaPhiMVector tempAntiReso = tempDA1 + tempDA2;
 
+          /// For InvMassQA
+          ROOT::Math::PtEtaPhiMVector tempDaughter1MassQA1(track1.pt(), track1.eta(), track1.phi(), MassPart1);
+          ROOT::Math::PtEtaPhiMVector tempDaughter2MassQA1(track2.pt(), track2.eta(), track2.phi(), MassPart1);
+          ROOT::Math::PtEtaPhiMVector tempMassQA1 = tempDaughter1MassQA1 + tempDaughter2MassQA1;
+          
+          float MassQAPart2 = MassPart2;
+          if (Resonance.confDaughterPIDspecies.value[0] == Resonance.confDaughterPIDspecies.value[1]) {
+            MassQAPart2 = o2::track::PID::getMass(Resonance.confMassQAPart2PID.value);
+          }
+          
+          ROOT::Math::PtEtaPhiMVector tempDaughter1MassQA2(track1.pt(), track1.eta(), track1.phi(), MassQAPart2);
+          ROOT::Math::PtEtaPhiMVector tempDaughter2MassQA2(track2.pt(), track2.eta(), track2.phi(), MassQAPart2);
+          ROOT::Math::PtEtaPhiMVector tempMassQA2 = tempDaughter1MassQA2 + tempDaughter2MassQA2;
+
+          float massDiff = std::abs(Resonance.confResoInvMass.value - tempReso.M());
+          float massDiffAnti = std::abs(Resonance.confResoInvMass.value - tempAntiReso.M());
+
+          bool resoIsNotAnti = true; /// bool for differentianting between particle/antiparticle
+          float resoSign = 1.;
+          if ((Resonance.confDaughterPIDspecies->size() > 1) && (Resonance.confDaughterPIDspecies.value[0] != Resonance.confDaughterPIDspecies.value[1])) {
+            auto [isNormal, WrongCombination] = resoCuts.checkCombination(track1, track2, Resonance.confDaughterPIDspecies.value, massDiff, massDiffAnti, Resonance.confUseMassDiff.value);
+            if (WrongCombination) {
+              continue;
+            }
+            if (!isNormal) {
+              resoSign = -1.;
+            }
+            resoIsNotAnti = isNormal;
+          }
+          /// Resos, where both daughters have the same PID are defaulted to sign 1. and resoIsNotAnti = true
+
           if (resoIsNotAnti) {
             resoRegistry.fill(HIST("AnalysisQA/Reso/InvMass"), tempReso.M());
+            // Fill DaughterQA histos
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/PosDaughter/Pt"), track1.pt());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/NegDaughter/Pt"), track2.pt());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/PosDaughter/Eta"), track1.eta());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/NegDaughter/Eta"), track2.eta());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/PosDaughter/DcaXY"), track1.dcaXY());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/NegDaughter/DcaXY"), track2.dcaXY());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/PosDaughter/DcaZ"), track1.dcaZ());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/NegDaughter/DcaZ"), track2.dcaZ());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/PosDaughter/Phi"), track1.phi());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/NegDaughter/Phi"), track2.phi());
+            // Fill InvMassQA histos
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/InvMassSwitched"), tempAntiReso.M());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/InvMassBothPID1"), tempMassQA1.M());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/ResoQA/InvMassBothPID2"), tempMassQA2.M());
+
+            /// MassCut
             if (!(tempReso.M() > Resonance.confResoInvMassLowLimit.value && tempReso.M() < Resonance.confResoInvMassUpLimit.value))
-              continue; /// MassCut
+              continue;
             resoRegistry.fill(HIST("AnalysisQA/Reso/InvMass_phi_selected"), tempReso.M());
           } else {
             resoRegistry.fill(HIST("AnalysisQA/Reso/InvMassAnti"), tempAntiReso.M());
+            // Fill DaughterQA histos
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/PosDaughter/Pt"), track1.pt());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/NegDaughter/Pt"), track2.pt());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/PosDaughter/Eta"), track1.eta());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/NegDaughter/Eta"), track2.eta());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/PosDaughter/DcaXY"), track1.dcaXY());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/NegDaughter/DcaXY"), track2.dcaXY());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/PosDaughter/DcaZ"), track1.dcaZ());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/NegDaughter/DcaZ"), track2.dcaZ());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/PosDaughter/Phi"), track1.phi());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/NegDaughter/Phi"), track2.phi());
+            // Fill InvMassQA histos
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/InvMassSwitched"), tempReso.M());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/InvMassBothPID1"), tempMassQA1.M());
+            resoRegistry.fill(HIST("AnalysisQA/Reso/AntiResoQA/InvMassBothPID2"), tempMassQA2.M());
+
+            /// MassCut
             if (!(tempAntiReso.M() > Resonance.confResoInvMassLowLimit.value && tempAntiReso.M() < Resonance.confResoInvMassUpLimit.value))
-              continue; /// MassCut
+              continue;
             resoRegistry.fill(HIST("AnalysisQA/Reso/InvMassAnti_phi_selected"), tempAntiReso.M());
           }
 
@@ -923,10 +1007,10 @@ struct FemtoDreamProducerTaskReso {
           resoRegistry.fill(HIST("AnalysisQA/Reso/Phi_posdaughter_selected"), track1.phi());
           resoRegistry.fill(HIST("AnalysisQA/Reso/Phi_negdaughter_selected"), track2.phi());
 
-          auto type = resoCuts.getType(track1, track2); //   kResoPosdaughTPC_NegdaughTPC
-                                                        //   kResoPosdaughTPC_NegdaughTOF
-                                                        //   kResoPosdaughTPC_NegdaughTPC
-                                                        //   kResoPosdaughTOF_NegdaughTOF as possible output
+          auto type = resoCuts.getType(track1, track2, resoIsNotAnti);  //   kResoPosdaughTPC_NegdaughTPC
+                                                                        //   kResoPosdaughTPC_NegdaughTOF
+                                                                        //   kResoPosdaughTPC_NegdaughTPC
+                                                                        //   kResoPosdaughTOF_NegdaughTOF as possible output
 
           auto bitmask = resoCuts.getCutContainer<aod::femtodreamparticle::cutContainerType>(track1, track2, resoSign);
 
@@ -998,10 +1082,79 @@ struct FemtoDreamProducerTaskReso {
             fillDebugParticle<true, false>(track2); // QA for negative daughter
             fillDebugParticle<false, false, ROOT::Math::PtEtaPhiMVector, true>(outputReso);
           }
-        }
-      }
-    }
-  }
+        } // for (const auto& track2 : sliceNegdaugh)
+      } // for (const auto& track1 : slicePosdaugh)
+
+      if (Resonance.confDoLikeSign.value) {
+        std::vector<Partition<aod::FemtoFullTracks>*> daughterPartitions = {&daughter1, &daughter2};
+        for (auto* partition : daughterPartitions) {
+          auto sliceDaughters = partition->sliceByCached(aod::track::collisionId, col.globalIndex(), cache);
+          for (const auto& track1 : sliceDaughters) {
+            if (!resoCuts.daughterSelectionPos(track1) || !resoCuts.isSelectedMinimalPIDPos(track1, Resonance.confDaughterPIDspecies.value)) {
+              continue;
+            }
+            for (const auto& track2 : sliceDaughters) {
+              if (!resoCuts.daughterSelectionPos(track2) || !resoCuts.isSelectedMinimalPIDPos(track2, Resonance.confDaughterPIDspecies.value)) {
+                continue;
+              }
+
+              /// This only works for the case where the mass of opposite charged particles are the same (for example K+/K- have same mass)
+              float MassPart1 = o2::track::PID::getMass(Resonance.confDaughterPIDspecies.value[0]);
+              float MassPart2 = o2::track::PID::getMass(Resonance.confDaughterPIDspecies.value[1]);
+
+              /// Resonance
+              ROOT::Math::PtEtaPhiMVector tempD1(track1.pt(), track1.eta(), track1.phi(), MassPart1);
+              ROOT::Math::PtEtaPhiMVector tempD2(track2.pt(), track2.eta(), track2.phi(), MassPart2);
+              ROOT::Math::PtEtaPhiMVector tempReso = tempD1 + tempD2;
+              /// Anti-resonance
+              ROOT::Math::PtEtaPhiMVector tempDA1(track1.pt(), track1.eta(), track1.phi(), MassPart2);
+              ROOT::Math::PtEtaPhiMVector tempDA2(track2.pt(), track2.eta(), track2.phi(), MassPart1);
+              ROOT::Math::PtEtaPhiMVector tempAntiReso = tempDA1 + tempDA2;
+
+              /// For InvMassQA
+              ROOT::Math::PtEtaPhiMVector tempDaughter1MassQA1(track1.pt(), track1.eta(), track1.phi(), MassPart1);
+              ROOT::Math::PtEtaPhiMVector tempDaughter2MassQA1(track2.pt(), track2.eta(), track2.phi(), MassPart1);
+              ROOT::Math::PtEtaPhiMVector tempMassQA1 = tempDaughter1MassQA1 + tempDaughter2MassQA1;
+          
+              float MassQAPart2 = MassPart2;
+              if (Resonance.confDaughterPIDspecies.value[0] == Resonance.confDaughterPIDspecies.value[1]) {
+                MassQAPart2 = o2::track::PID::getMass(Resonance.confMassQAPart2PID.value);
+              }
+          
+              ROOT::Math::PtEtaPhiMVector tempDaughter1MassQA2(track1.pt(), track1.eta(), track1.phi(), MassQAPart2);
+              ROOT::Math::PtEtaPhiMVector tempDaughter2MassQA2(track2.pt(), track2.eta(), track2.phi(), MassQAPart2);
+              ROOT::Math::PtEtaPhiMVector tempMassQA2 = tempDaughter1MassQA2 + tempDaughter2MassQA2;
+
+              float massDiff = std::abs(Resonance.confResoInvMass.value - tempReso.M());
+              float massDiffAnti = std::abs(Resonance.confResoInvMass.value - tempAntiReso.M());
+
+              bool resoIsNotAnti = true; /// bool for differentianting between particle/antiparticle
+              if ((Resonance.confDaughterPIDspecies->size() > 1) && (Resonance.confDaughterPIDspecies.value[0] != Resonance.confDaughterPIDspecies.value[1])) {
+                auto [isNormal, WrongCombination] = resoCuts.checkCombination(track1, track2, Resonance.confDaughterPIDspecies.value, massDiff, massDiffAnti, Resonance.confUseMassDiffLikeSign.value);
+                if (WrongCombination) {
+                  continue;
+                }
+                resoIsNotAnti = isNormal;
+              }
+              /// Resos, where both daughters have the same PID are defaulted to sign 1. and resoIsNotAnti = true
+
+              if (resoIsNotAnti) {
+                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/ResoQA/InvMass"), tempReso.M());
+                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/ResoQA/InvMassSwitched"), tempAntiReso.M());
+                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/ResoQA/InvMassBothPID1"), tempMassQA1.M());
+                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/ResoQA/InvMassBothPID2"), tempMassQA2.M());
+              } else {
+                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/AntiResoQA/InvMass"), tempReso.M());
+                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/AntiResoQA/InvMassSwitched"), tempAntiReso.M());
+                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/AntiResoQA/InvMassBothPID1"), tempMassQA1.M());
+                resoRegistry.fill(HIST("AnalysisQA/ResoLikeSign/AntiResoQA/InvMassBothPID2"), tempMassQA2.M());
+              }              
+            } // for (const &auto track2 : sliceDaughters)
+          } // for (const &auto track1 : sliceDaughters)
+        } // for (auto* partition : daughterPartitions)
+      } // if (Resonance.confDoLikeSign.value)
+    } // if (confIsActivatePhi.value)
+  } // void fillCollisionsAndTracksAndV0(...)
 
   void
     processData(aod::FemtoFullCollision const& col,
