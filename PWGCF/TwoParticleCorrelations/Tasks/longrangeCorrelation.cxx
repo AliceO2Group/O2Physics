@@ -29,6 +29,7 @@
 #include "Common/DataModel/FT0Corrected.h"
 #include "Common/DataModel/Multiplicity.h"
 #include "Common/DataModel/PIDResponse.h"
+#include "Common/DataModel/PIDResponseITS.h"
 #include "Common/DataModel/TrackSelectionTables.h"
 
 #include "CCDB/BasicCCDBManager.h"
@@ -45,6 +46,7 @@
 #include "Framework/O2DatabasePDGPlugin.h"
 #include "Framework/StepTHn.h"
 #include "Framework/runDataProcessing.h"
+#include "ReconstructionDataFormats/PID.h"
 #include "ReconstructionDataFormats/Track.h"
 
 #include <TComplex.h>
@@ -88,6 +90,12 @@ enum KindOfCorrType {
   kMFTGLOBAL,
   kFT0AMFT,
   kFT0AFT0C
+};
+
+enum KindOfParticles {
+  PIONS,
+  KAONS,
+  PROTONS
 };
 
 static constexpr std::string_view kCorrType[] = {"Ft0aGlobal/", "Ft0cGlobal/", "MftGlobal/", "Ft0aMft/", "Ft0aFt0c/"};
@@ -138,6 +146,12 @@ struct LongrangeCorrelation {
   Configurable<bool> isApplyGoodZvtxFT0vsPV{"isApplyGoodZvtxFT0vsPV", false, "Enable GoodZvtxFT0vsPV cut"};
   Configurable<bool> isReadoutCenter{"isReadoutCenter", false, "Enable Readout Center"};
   Configurable<bool> isUseEffCorr{"isUseEffCorr", false, "Enable efficiency correction"};
+  Configurable<bool> isUseItsPid{"isUseItsPid", false, "Use ITS PID for particle identification"};
+  Configurable<float> cfgTofPidPtCut{"cfgTofPidPtCut", 0.3f, "Minimum pt to use TOF N-sigma"};
+  Configurable<int> cfgTrackPid{"cfgTrackPid", 0, "1 = pion, 2 = kaon, 3 = proton, 0 for no PID"};
+  Configurable<std::vector<double>> itsNsigmaPidCut{"itsNsigmaPidCut", std::vector<double>{3, 2.5, 2, -3, -2.5, -2}, "ITS n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
+  Configurable<std::vector<double>> tpcNsigmaPidCut{"tpcNsigmaPidCut", std::vector<double>{1.5, 1.5, 1.5, -1.5, -1.5, -1.5}, "TPC n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
+  Configurable<std::vector<double>> tofNsigmaPidCut{"tofNsigmaPidCut", std::vector<double>{1.5, 1.5, 1.5, -1.5, -1.5, -1.5}, "TOF n-sigma cut for pions_posNsigma, kaons_posNsigma, protons_posNsigma, pions_negNsigma, kaons_negNsigma, protons_negNsigma"};
   Configurable<std::string> cfgEffccdbPath{"cfgEffccdbPath", "/alice/data/CCDB/Users/a/abmodak/OO/Efficiency", "Browse track eff object from CCDB"};
   Configurable<std::string> cfgMultccdbPath{"cfgMultccdbPath", "/alice/data/CCDB/Users/a/abmodak/OO/Multiplicity", "Browse mult efficiency object from CCDB"};
   ConfigurableAxis axisDeltaPhi{"axisDeltaPhi", {72, -PIHalf, PIHalf * 3}, "delta phi axis for histograms"};
@@ -159,7 +173,7 @@ struct LongrangeCorrelation {
   ConfigurableAxis channelFt0aAxis{"channelFt0aAxis", {96, 0.0, 96.0}, "FT0A channel"};
 
   using CollTable = soa::Join<aod::Collisions, aod::EvSels, aod::LRMultTables>;
-  using TrksTable = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection>>;
+  using TrksTable = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::TrackSelection, aod::pidTPCFullPi, aod::pidTPCFullKa, aod::pidTPCFullPr, aod::pidTOFbeta, aod::pidTOFFullPi, aod::pidTOFFullKa, aod::pidTOFFullPr>>;
   using MftTrkTable = soa::Filtered<aod::MFTTracks>;
   using CollTableMC = soa::SmallGroups<soa::Join<aod::McCollisionLabels, aod::Collisions, aod::EvSels, aod::LRMultTables>>;
   using TrksTableMC = soa::Filtered<soa::Join<aod::Tracks, aod::TracksExtra, aod::TracksDCA, aod::McTrackLabels, aod::TrackSelection>>;
@@ -183,6 +197,11 @@ struct LongrangeCorrelation {
   TH1D* hMultEff = nullptr;
   bool fLoadTrkEffCorr = false;
   bool fLoadMultEffCorr = false;
+
+  std::vector<double> tofNsigmaCut;
+  std::vector<double> itsNsigmaCut;
+  std::vector<double> tpcNsigmaCut;
+  o2::aod::ITSResponse itsResponse;
 
   template <KindOfCorrType corrType, KindOfEvntType evntType>
   void addHistos()
@@ -224,6 +243,10 @@ struct LongrangeCorrelation {
                                      {axisEtaEfficiency, "#eta"}};
 
     std::vector<AxisSpec> userAxis;
+
+    tofNsigmaCut = tofNsigmaPidCut;
+    itsNsigmaCut = itsNsigmaPidCut;
+    tpcNsigmaCut = tpcNsigmaPidCut;
 
     if (doprocessEventStat) {
       histos.add("QA/EventHist", "events", kTH1F, {axisEvent}, false);
@@ -343,14 +366,26 @@ struct LongrangeCorrelation {
   }
 
   template <KindOfCorrType corrType, KindOfEvntType evntType, typename TTracks>
-  void fillYield(TTracks tracks)
+  void fillYieldTpc(TTracks tracks)
+  {
+    histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("hMult"), tracks.size());
+    for (auto const& iTrk : tracks) {
+      if (cfgTrackPid && getTrackPID(iTrk) != cfgTrackPid)
+        continue; // if PID is selected, check if the track has the right PID
+      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_etavsphi"), iTrk.phi(), iTrk.eta());
+      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_eta"), iTrk.eta());
+      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_phi"), iTrk.phi());
+      histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_pt"), iTrk.pt());
+    }
+  }
+
+  template <KindOfCorrType corrType, KindOfEvntType evntType, typename TTracks>
+  void fillYieldMft(TTracks tracks)
   {
     histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("hMult"), tracks.size());
     for (auto const& iTrk : tracks) {
       auto phi = iTrk.phi();
-      if constexpr (corrType == kFT0AMFT) {
-        o2::math_utils::bringTo02Pi(phi);
-      }
+      o2::math_utils::bringTo02Pi(phi);
       histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_etavsphi"), phi, iTrk.eta());
       histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_eta"), iTrk.eta());
       histos.fill(HIST(kCorrType[corrType]) + HIST(kEvntType[evntType]) + HIST("Trig_phi"), phi);
@@ -420,6 +455,56 @@ struct LongrangeCorrelation {
     return eff;
   }
 
+  template <typename TTrack>
+  int getTrackPID(TTrack track)
+  {
+    // Computing Nsigma arrays for pion, kaon, and protons
+    std::array<float, 3> nSigmaTPC = {track.tpcNSigmaPi(), track.tpcNSigmaKa(), track.tpcNSigmaPr()};
+    std::array<float, 3> nSigmaTOF = {track.tofNSigmaPi(), track.tofNSigmaKa(), track.tofNSigmaPr()};
+    std::array<float, 3> nSigmaITS = {itsResponse.nSigmaITS<o2::track::PID::Pion>(track), itsResponse.nSigmaITS<o2::track::PID::Kaon>(track), itsResponse.nSigmaITS<o2::track::PID::Proton>(track)};
+    int pid = -1;
+
+    std::array<float, 3> nSigmaToUse = isUseItsPid ? nSigmaITS : nSigmaTPC;            // Choose which nSigma to use: TPC or ITS
+    std::vector<double> detectorNsigmaCut = isUseItsPid ? itsNsigmaCut : tpcNsigmaCut; // Choose which nSigma to use: TPC or ITS
+
+    bool isPion, isKaon, isProton;
+    bool isDetectedPion = nSigmaToUse[0] < detectorNsigmaCut[0] && nSigmaToUse[0] > detectorNsigmaCut[0 + 3];
+    bool isDetectedKaon = nSigmaToUse[1] < detectorNsigmaCut[1] && nSigmaToUse[1] > detectorNsigmaCut[1 + 3];
+    bool isDetectedProton = nSigmaToUse[2] < detectorNsigmaCut[2] && nSigmaToUse[2] > detectorNsigmaCut[2 + 3];
+
+    bool isTofPion = nSigmaTOF[0] < tofNsigmaCut[0] && nSigmaTOF[0] > tofNsigmaCut[0 + 3];
+    bool isTofKaon = nSigmaTOF[1] < tofNsigmaCut[1] && nSigmaTOF[1] > tofNsigmaCut[1 + 3];
+    bool isTofProton = nSigmaTOF[2] < tofNsigmaCut[2] && nSigmaTOF[2] > tofNsigmaCut[2 + 3];
+
+    if (track.pt() > cfgTofPidPtCut && !track.hasTOF()) {
+      return 0;
+    } else if (track.pt() > cfgTofPidPtCut && track.hasTOF()) {
+      isPion = isTofPion && isDetectedPion;
+      isKaon = isTofKaon && isDetectedKaon;
+      isProton = isTofProton && isDetectedProton;
+    } else {
+      isPion = isDetectedPion;
+      isKaon = isDetectedKaon;
+      isProton = isDetectedProton;
+    }
+
+    if ((isPion && isKaon) || (isPion && isProton) || (isKaon && isProton)) {
+      return 0; // more than one particle satisfy the criteria
+    }
+
+    if (isPion) {
+      pid = PIONS;
+    } else if (isKaon) {
+      pid = KAONS;
+    } else if (isProton) {
+      pid = PROTONS;
+    } else {
+      return 0; // no particle satisfies the criteria
+    }
+
+    return pid + 1; // shift the pid by 1, 1 = pion, 2 = kaon, 3 = proton
+  }
+
   template <CorrelationContainer::CFStep step, typename TTarget, typename TTriggers, typename TFT0s>
   void fillCorrFt0aGlobal(TTarget target, TTriggers const& triggers, TFT0s const& ft0, bool mixing, float vz, float multiplicity)
   {
@@ -428,6 +513,8 @@ struct LongrangeCorrelation {
       histos.fill(HIST("Ft0aGlobal/SE/hMult_used"), multiplicity);
 
     for (auto const& triggerTrack : triggers) {
+      if (cfgTrackPid && getTrackPID(triggerTrack) != cfgTrackPid)
+        continue; // if PID is selected, check if the track has the right PID
       float trkeffw = 1.0f;
       if (isUseEffCorr)
         trkeffw = getTrkEffCorr(triggerTrack.eta(), triggerTrack.pt(), vz);
@@ -474,6 +561,8 @@ struct LongrangeCorrelation {
     if (!mixing)
       histos.fill(HIST("Ft0cGlobal/SE/hMult_used"), multiplicity);
     for (auto const& triggerTrack : triggers) {
+      if (cfgTrackPid && getTrackPID(triggerTrack) != cfgTrackPid)
+        continue; // if PID is selected, check if the track has the right PID
       float trkeffw = 1.0f;
       if (isUseEffCorr)
         trkeffw = getTrkEffCorr(triggerTrack.eta(), triggerTrack.pt(), vz);
@@ -520,6 +609,8 @@ struct LongrangeCorrelation {
     if (!mixing)
       histos.fill(HIST("MftGlobal/SE/hMult_used"), multiplicity);
     for (auto const& triggerTrack : triggers) {
+      if (cfgTrackPid && getTrackPID(triggerTrack) != cfgTrackPid)
+        continue; // if PID is selected, check if the track has the right PID
       float trkeffw = 1.0f;
       if (isUseEffCorr)
         trkeffw = getTrkEffCorr(triggerTrack.eta(), triggerTrack.pt(), vz);
@@ -691,7 +782,7 @@ struct LongrangeCorrelation {
       auto bc = col.bc_as<aod::BCsWithTimestamps>();
       loadEffCorrection(bc.timestamp());
       loadMultCorrection(bc.timestamp());
-      fillYield<kFT0AGLOBAL, kSE>(tracks);
+      fillYieldTpc<kFT0AGLOBAL, kSE>(tracks);
       const auto& ft0 = col.foundFT0();
       auto multiplicity = col.multiplicity();
       float multw = getMultEffCorr(multiplicity);
@@ -713,7 +804,7 @@ struct LongrangeCorrelation {
       auto bc = col.bc_as<aod::BCsWithTimestamps>();
       loadEffCorrection(bc.timestamp());
       loadMultCorrection(bc.timestamp());
-      fillYield<kFT0CGLOBAL, kSE>(tracks);
+      fillYieldTpc<kFT0CGLOBAL, kSE>(tracks);
       const auto& ft0 = col.foundFT0();
       auto multiplicity = col.multiplicity();
       float multw = getMultEffCorr(multiplicity);
@@ -734,7 +825,7 @@ struct LongrangeCorrelation {
     auto bc = col.bc_as<aod::BCsWithTimestamps>();
     loadEffCorrection(bc.timestamp());
     loadMultCorrection(bc.timestamp());
-    fillYield<kMFTGLOBAL, kSE>(tracks);
+    fillYieldTpc<kMFTGLOBAL, kSE>(tracks);
     auto multiplicity = col.multiplicity();
     float multw = getMultEffCorr(multiplicity);
     if (isUseEffCorr)
@@ -751,7 +842,7 @@ struct LongrangeCorrelation {
       return;
     }
     if (col.has_foundFT0()) {
-      fillYield<kFT0AMFT, kSE>(mfttracks);
+      fillYieldMft<kFT0AMFT, kSE>(mfttracks);
       auto bc = col.bc_as<aod::BCsWithTimestamps>();
       loadMultCorrection(bc.timestamp());
       const auto& ft0 = col.foundFT0();
@@ -808,7 +899,7 @@ struct LongrangeCorrelation {
         loadEffCorrection(bc.timestamp());
         loadMultCorrection(bc.timestamp());
         auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
-        fillYield<kFT0AGLOBAL, kME>(slicedTriggerTracks);
+        fillYieldTpc<kFT0AGLOBAL, kME>(slicedTriggerTracks);
         const auto& ft0 = col2.foundFT0();
         auto multiplicity = col1.multiplicity();
         float multw = getMultEffCorr(multiplicity);
@@ -843,7 +934,7 @@ struct LongrangeCorrelation {
         loadEffCorrection(bc.timestamp());
         loadMultCorrection(bc.timestamp());
         auto slicedTriggerTracks = tracks.sliceBy(perColGlobal, col1.globalIndex());
-        fillYield<kFT0CGLOBAL, kME>(slicedTriggerTracks);
+        fillYieldTpc<kFT0CGLOBAL, kME>(slicedTriggerTracks);
         const auto& ft0 = col2.foundFT0();
         auto multiplicity = col1.multiplicity();
         float multw = getMultEffCorr(multiplicity);
@@ -906,7 +997,7 @@ struct LongrangeCorrelation {
         auto bc = col1.bc_as<aod::BCsWithTimestamps>();
         loadMultCorrection(bc.timestamp());
         auto slicedTriggerMftTracks = mfttracks.sliceBy(perColMft, col1.globalIndex());
-        fillYield<kFT0AMFT, kME>(slicedTriggerMftTracks);
+        fillYieldMft<kFT0AMFT, kME>(slicedTriggerMftTracks);
         const auto& ft0 = col2.foundFT0();
         auto multiplicity = col1.multiplicity();
         float multw = getMultEffCorr(multiplicity);
