@@ -671,7 +671,7 @@ struct derivedlambdakzeroanalysis {
         histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(19, "Below min IR");
         histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(20, "Above max IR");
         histos.get<TH2>(HIST("hEventSelectionVsCentrality"))->GetXaxis()->SetBinLabel(21, "RCT flags");
-        
+
         histos.add("hCentralityVsNGlobal", "hCentralityVsNGlobal", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisNch});
         histos.add("hEventCentVsMultFT0M", "hEventCentVsMultFT0M", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0M});
         histos.add("hEventCentVsMultFT0C", "hEventCentVsMultFT0C", kTH2D, {{101, 0.0f, 101.0f}, axisConfigurations.axisMultFT0C});
@@ -2146,8 +2146,8 @@ struct derivedlambdakzeroanalysis {
         if (fillHists) {
           histos.fill(HIST("hEventSelection"), 16 /* Below min occupancy */);
           if (doEventQA) {
-          histos.fill(HIST("hEventSelectionVsCentrality"), 16 /* Below min occupancy */, centrality);
-        }
+            histos.fill(HIST("hEventSelectionVsCentrality"), 16 /* Below min occupancy */, centrality);
+          }
         }
 
         if (eventSelections.maxOccupancy >= 0 && collisionOccupancy > eventSelections.maxOccupancy) {
@@ -2156,8 +2156,8 @@ struct derivedlambdakzeroanalysis {
         if (fillHists) {
           histos.fill(HIST("hEventSelection"), 17 /* Above max occupancy */);
           if (doEventQA) {
-          histos.fill(HIST("hEventSelectionVsCentrality"), 17 /* Above max occupancy */, centrality);
-        }
+            histos.fill(HIST("hEventSelectionVsCentrality"), 17 /* Above max occupancy */, centrality);
+          }
         }
       }
 
