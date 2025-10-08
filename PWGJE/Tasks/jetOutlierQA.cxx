@@ -469,7 +469,7 @@ struct JetOutlierQATask {
     std::set<int> closeByCollisionIDs;
     for (auto const& collisionMC : collisionsMC) {
       if (collisionMC.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
-        return;
+        continue;
       }
       float posZtrue = collisionMC.posZ();
       for (auto const& collisionCloseMC : collisionsMC) { // check for closeby collisions in MC
@@ -491,7 +491,7 @@ struct JetOutlierQATask {
     // now make reconstructed-level checks
     for (auto const& collision : collisions) { // loop over reconstructed collisions
       if (collision.subGeneratorId() == jetderiveddatautilities::JCollisionSubGeneratorId::mbGap) {
-        return;
+        continue;
       }
       if (!jetderiveddatautilities::selectCollision(collision, eventSelectionBits)) {
         continue;
