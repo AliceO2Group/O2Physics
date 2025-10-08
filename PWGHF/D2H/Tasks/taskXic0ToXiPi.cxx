@@ -124,7 +124,7 @@ struct HfTaskXic0ToXiPi {
     const AxisSpec thnAxisNumPvContr{thnConfigAxisNumPvContr, "Number of PV contributors"};
 
     if (doprocessMcWithKFParticle || doprocessMcWithKFParticleMl) {
-      std::vector<AxisSpec> axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
+      std::vector<AxisSpec> const axesAcc = {thnAxisGenPtD, thnAxisGenPtB, thnAxisY, thnAxisOrigin, thnAxisNumPvContr};
       registry.add("hSparseAcc", "Thn for generated Xic0 from charm and beauty", HistType::kTHnSparseD, axesAcc);
       registry.get<THnSparse>(HIST("hSparseAcc"))->Sumw2();
     }
@@ -149,8 +149,8 @@ struct HfTaskXic0ToXiPi {
       const AxisSpec thnAxisPromptScore{thnConfigAxisPromptScore, "BDT score prompt."};
       const AxisSpec thnAxisCent{thnConfigAxisCent, "Centrality."};
       const AxisSpec thnAxisPtPion{thnConfigAxisPtPion, "Pt of Pion from Xic0."};
-      std::vector<AxisSpec> axesWithBdtCent = {thnAxisPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisCent, thnAxisPtPion, thnConfigAxisNumPvContr};
-      std::vector<AxisSpec> axesWithCent = {thnAxisMass, thnAxisPt, thnAxisY, thnAxisCent, thnAxisPtPion, thnConfigAxisNumPvContr};
+      std::vector<AxisSpec> const axesWithBdtCent = {thnAxisPromptScore, thnAxisMass, thnAxisPt, thnAxisY, thnAxisCent, thnAxisPtPion, thnConfigAxisNumPvContr};
+      std::vector<AxisSpec> const axesWithCent = {thnAxisMass, thnAxisPt, thnAxisY, thnAxisCent, thnAxisPtPion, thnConfigAxisNumPvContr};
       registry.add("hBdtScoreVsMassVsPtVsYVsCentVsPtPion", "Thn for Xic0 candidates with BDT&Cent&pTpi", HistType::kTHnSparseD, axesWithBdtCent);
       registry.add("hMassVsPtVsYVsCentVsPtPion", "Thn for Xic0 candidates with Cent&pTpi", HistType::kTHnSparseD, axesWithCent);
       registry.get<THnSparse>(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"))->Sumw2();
@@ -158,14 +158,14 @@ struct HfTaskXic0ToXiPi {
     }
   }
 
-  template <bool useKfParticle, bool useCentrality, bool applyMl, typename CandType, typename CollType>
+  template <bool UseKfParticle, bool UseCentrality, bool ApplyMl, typename CandType, typename CollType>
   void processDataCent(const CandType& candidate, CollType const& collision)
   {
     if (candidate.resultSelections() != true) {
       return;
     }
     double etaCharmBaryon;
-    if constexpr (useKfParticle) {
+    if constexpr (UseKfParticle) {
       etaCharmBaryon = candidate.kfRapXic();
     } else {
       etaCharmBaryon = candidate.etaCharmBaryon();
@@ -176,12 +176,12 @@ struct HfTaskXic0ToXiPi {
 
     auto numPvContributors = collision.numContrib();
     float centrality = -999.f;
-    if constexpr (useCentrality) {
+    if constexpr (UseCentrality) {
       centrality = o2::hf_centrality::getCentralityColl(collision);
     }
-    double ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
-    double ptPiFromXic = RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
-    if constexpr (applyMl) {
+    double const ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
+    double const ptPiFromXic = RecoDecay::pt(candidate.pxBachFromCharmBaryon(), candidate.pyBachFromCharmBaryon());
+    if constexpr (ApplyMl) {
       registry.fill(HIST("hBdtScoreVsMassVsPtVsYVsCentVsPtPion"),
                     candidate.mlProbToXiPi()[0],
                     candidate.invMassCharmBaryon(),
@@ -201,7 +201,7 @@ struct HfTaskXic0ToXiPi {
     }
   }
 
-  template <bool useKfParticle, bool applyMl, typename CandType, typename CollType>
+  template <bool UseKfParticle, bool ApplyMl, typename CandType, typename CollType>
   void processMc(const CandType& candidates,
                  Xic0Gen const& mcParticles,
                  TracksMc const&,
@@ -214,7 +214,7 @@ struct HfTaskXic0ToXiPi {
         return;
       }
       double etaCharmBaryon;
-      if constexpr (useKfParticle) {
+      if constexpr (UseKfParticle) {
         etaCharmBaryon = candidate.kfRapXic();
       } else {
         etaCharmBaryon = candidate.etaCharmBaryon();
@@ -224,8 +224,8 @@ struct HfTaskXic0ToXiPi {
       }
 
       auto numPvContributors = candidate.template collision_as<CollType>().numContrib();
-      double ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
-      if constexpr (applyMl) {
+      double const ptXic = RecoDecay::pt(candidate.pxCharmBaryon(), candidate.pyCharmBaryon());
+      if constexpr (ApplyMl) {
         registry.fill(HIST("hBdtScoreVsMassVsPtVsPtBVsYVsOriginVsXic0Type"),
                       candidate.mlProbToXiPi()[0],
                       candidate.invMassCharmBaryon(),
@@ -270,7 +270,7 @@ struct HfTaskXic0ToXiPi {
                       RecoDecay::OriginType::Prompt,
                       maxNumContrib);
       } else {
-        float ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
+        float const ptGenB = mcParticles.rawIteratorAt(particle.idxBhadMotherPart()).pt();
         registry.fill(HIST("hSparseAcc"),
                       ptGen,
                       ptGenB,
@@ -437,43 +437,43 @@ struct HfTaskXic0ToXiPi {
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processDataWithKFParticleMlFT0M, "process HfTaskXic0ToXiPi with KFParticle and ML selections and with FT0M centrality", false);
 
-  void processMcWithDCAFitter(Xic0CandsMc const& Xic0CandidatesMc,
+  void processMcWithDCAFitter(Xic0CandsMc const& xic0CandidatesMc,
                               Xic0Gen const& mcParticles,
                               TracksMc const& tracks,
                               CollisionsWithMcLabels const& collisions,
                               aod::McCollisions const& mcCollisions)
   {
-    processMc<false, false>(Xic0CandidatesMc, mcParticles, tracks, collisions, mcCollisions);
+    processMc<false, false>(xic0CandidatesMc, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processMcWithDCAFitter, "Process MC with KFParticle", false);
 
-  void processMcWithKFParticle(Xic0CandsMcKF const& Xic0CandidatesMcKF,
+  void processMcWithKFParticle(Xic0CandsMcKF const& xic0CandidatesMcKf,
                                Xic0Gen const& mcParticles,
                                TracksMc const& tracks,
                                CollisionsWithMcLabels const& collisions,
                                aod::McCollisions const& mcCollisions)
   {
-    processMc<true, false>(Xic0CandidatesMcKF, mcParticles, tracks, collisions, mcCollisions);
+    processMc<true, false>(xic0CandidatesMcKf, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processMcWithKFParticle, "Process MC with KFParticle", false);
 
-  void processMcWithDCAFitterMl(Xic0CandsMlMc const& Xic0CandidatesMlMc,
+  void processMcWithDCAFitterMl(Xic0CandsMlMc const& xic0CandidatesMlMc,
                                 Xic0Gen const& mcParticles,
                                 TracksMc const& tracks,
                                 CollisionsWithMcLabels const& collisions,
                                 aod::McCollisions const& mcCollisions)
   {
-    processMc<false, true>(Xic0CandidatesMlMc, mcParticles, tracks, collisions, mcCollisions);
+    processMc<false, true>(xic0CandidatesMlMc, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processMcWithDCAFitterMl, "Process MC with KFParticle and ML selections", false);
 
-  void processMcWithKFParticleMl(Xic0CandsMlMcKF const& Xic0CandidatesMlMcKF,
+  void processMcWithKFParticleMl(Xic0CandsMlMcKF const& xic0CandidatesMlMcKf,
                                  Xic0Gen const& mcParticles,
                                  TracksMc const& tracks,
                                  CollisionsWithMcLabels const& collisions,
                                  aod::McCollisions const& mcCollisions)
   {
-    processMc<true, true>(Xic0CandidatesMlMcKF, mcParticles, tracks, collisions, mcCollisions);
+    processMc<true, true>(xic0CandidatesMlMcKf, mcParticles, tracks, collisions, mcCollisions);
   }
   PROCESS_SWITCH(HfTaskXic0ToXiPi, processMcWithKFParticleMl, "Process MC with KFParticle and ML selections", false);
 };
