@@ -944,7 +944,7 @@ Bool_t DhCorrelationExtraction::readInputSecondaryPartContamination()
 TH1D* DhCorrelationExtraction::evaluateMcClosModulations(Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
 
-  TH1D* hModul = new TH1D();
+  TH1D* hModul = nullptr;
 
   fFilePromptMc = TFile::Open(fFilePromptMcRecName.Data());
   if (fFilePromptMc == nullptr) {
@@ -1020,7 +1020,7 @@ TH1D* DhCorrelationExtraction::evaluateMcClosModulations(Double_t ptCandMin, Dou
 TH2D* DhCorrelationExtraction::getCorrelHisto(Int_t sEorMe, Int_t sorSb, Int_t pool, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
   // TODO: Subtraction of softpion
-  TH2D* h2D = new TH2D(); // pointer to be returned
+  TH2D* h2D = nullptr; // pointer to be returned
 
   THnSparseD* hSparse = nullptr;
   if (sEorMe == kSE) { // Same Event
@@ -1184,7 +1184,7 @@ void DhCorrelationExtraction::getSignalAndBackgroundForNorm(Double_t ptCandMin, 
 TH2D* DhCorrelationExtraction::getFdTemplateHisto(Int_t promptOrFd, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
 
-  TH2D* h2D = new TH2D(); // pointer to be returned
+  TH2D* h2D = nullptr; // pointer to be returned
 
   if (promptOrFd == kPrompt) {
     h2D = reinterpret_cast<TH2D*>(fFileFDTemplate->Get(Form("%s%.0f_%.0f_ptassoc%.0f_%.0f", fHistoFDTemplatePromptName.Data(), ptCandMin, ptCandMax, ptHadMin, ptHadMax)));
@@ -1216,7 +1216,7 @@ TH2D* DhCorrelationExtraction::getFdTemplateHisto(Int_t promptOrFd, Double_t ptC
 TH1D* DhCorrelationExtraction::getCorrelHistoSecondaryPart(Int_t partType, Double_t ptCandMin, Double_t ptCandMax, Double_t ptHadMin, Double_t ptHadMax)
 {
 
-  TH1D* h1D = new TH1D(); // pointer to be returned
+  TH1D* h1D = nullptr; // pointer to be returned
 
   THnSparseD* hSparse = nullptr;
 
@@ -1330,8 +1330,7 @@ TH1D* DhCorrelationExtraction::reflectHistoRun2(TH1D* h, Double_t scale)
 Double_t DhCorrelationExtraction::getFdPromptFrac(Double_t ptCandMin, Double_t ptCandMax, Double_t /*ptHadMin*/, Double_t /*ptHadMax*/)
 {
 
-  TH1D* h1D = new TH1D();
-  h1D = reinterpret_cast<TH1D*>(fFileFDPromptFrac->Get(fHistoFDPromptFracName.Data()));
+  TH1D* h1D = reinterpret_cast<TH1D*>(fFileFDPromptFrac->Get(fHistoFDPromptFracName.Data()));
 
   Int_t const binPtCandMin = h1D->GetXaxis()->FindBin(ptCandMin + 0.01);
   Int_t const binPtCandMax = h1D->GetXaxis()->FindBin(ptCandMax - 0.01);
