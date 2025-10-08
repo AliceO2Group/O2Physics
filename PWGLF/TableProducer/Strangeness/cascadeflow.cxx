@@ -156,7 +156,7 @@ struct cascadeFlow {
   Configurable<bool> isQVecT0C{"isQVecT0C", 1, ""};
   Configurable<bool> isQVecT0M{"isQVecT0M", 0, ""};
   Configurable<bool> isQVecV0A{"isQVecV0A", 0, ""};
-  Configurable<bool> isCollisionCentrality{"isCollisionCentrality", 0, ""}; //0: FT0C, 1: FT0M (implemented only for Lambda analysis in OO)
+  Configurable<bool> isCollisionCentrality{"isCollisionCentrality", 0, ""}; // 0: FT0C, 1: FT0M (implemented only for Lambda analysis in OO)
 
   // Output filling criteria
   struct : ConfigurableGroup {
@@ -431,9 +431,9 @@ struct cascadeFlow {
 
     counter++;
 
-    //eta daughters)
-    //    if (abs(posExtra.eta()) > V0Configs.dauTrackV0Eta || abs(negExtra.y()) > V0Configs.dauTrackV0Eta) return false;
-    
+    // eta daughters)
+    //     if (abs(posExtra.eta()) > V0Configs.dauTrackV0Eta || abs(negExtra.y()) > V0Configs.dauTrackV0Eta) return false;
+
     return true;
   }
   template <typename TDaughter>
@@ -1668,12 +1668,12 @@ struct cascadeFlow {
     histos.fill(HIST("hEventCentralityBefEvSelT0M"), coll.centFT0M());
 
     Float_t collisionCentrality = 0;
-    if (isCollisionCentrality ==0) { //T0C
+    if (isCollisionCentrality == 0) { // T0C
       collisionCentrality = coll.centFT0C();
-    } else if (isCollisionCentrality ==1) { //T0M
+    } else if (isCollisionCentrality == 1) { // T0M
       collisionCentrality = coll.centFT0M();
     }
-    
+
     if (!AcceptEvent(coll, 1)) {
       return;
     }
