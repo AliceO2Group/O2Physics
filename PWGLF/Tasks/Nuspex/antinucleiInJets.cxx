@@ -145,11 +145,11 @@ struct AntinucleiInJets {
   // Configuration parameters for CCDB access and reweighting input files
   Configurable<std::string> urlToCcdb{"urlToCcdb", "http://alice-ccdb.cern.ch", "url of the personal ccdb"};
   Configurable<std::string> pathToFile{"pathToFile", "Users/a/alcaliva/PrimaryFractionAntip", "path to file with reweighting"};
-  Configurable<std::string> nameReweightingAntiprotons{"weights_proton", "", "nameReweightingAntiprotons"};
-  Configurable<std::string> nameReweightingAntilambda{"weights_lambda", "", "nameReweightingAntilambda"};
-  Configurable<std::string> nameReweightingAntisigma{"weights_sigma", "", "nameReweightingAntisigma"};
-  Configurable<std::string> nameReweightingAntixi{"weights_xi", "", "nameReweightingAntixi"};
-  Configurable<std::string> nameReweightingAntiomega{"weights_omega", "", "nameReweightingAntiomega"};
+  Configurable<std::string> weightsProton{"weightsProton", "", "weightsProton"};
+  Configurable<std::string> weightsLambda{"weightsLambda", "", "weightsLambda"};
+  Configurable<std::string> weightsSigma{"weightsSigma", "", "weightsSigma"};
+  Configurable<std::string> weightsXi{"weightsXi", "", "weightsXi"};
+  Configurable<std::string> weightsOmega{"weightsOmega", "", "weightsOmega"};
 
   // Reweighting histograms
   TH1F* primaryAntiprotons;
@@ -202,7 +202,7 @@ struct AntinucleiInJets {
       ccdb->setLocalObjectValidityChecking();
       ccdb->setCreatedNotAfter(std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count());
       ccdb->setFatalWhenNull(false);
-      getReweightingHistograms(ccdb, TString(pathToFile), TString(nameReweightingAntiprotons), TString(nameReweightingAntilambda), TString(nameReweightingAntisigma), TString(nameReweightingAntixi), TString(nameReweightingAntiomega));
+      getReweightingHistograms(ccdb, TString(pathToFile), TString(weightsProton), TString(weightsLambda), TString(weightsSigma), TString(weightsXi), TString(weightsOmega));
     }
 
     // Binning
